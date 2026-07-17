@@ -46,6 +46,11 @@ const availableFonts: Record<string, string> = {
 let JASSUBClass: typeof import('jassub').default | null = null
 let jassubInstance: InstanceType<typeof import('jassub').default> | null = null
 let videoEl: HTMLVideoElement | null = null
+let lastSubtitleData: {
+  subContent: string
+  fonts: MkvFont[]
+  availableFonts: Record<string, string>
+} | null = null
 
 function extractAssFamilies(assContent: string): string[] {
   const families = new Set<string>()
@@ -53,8 +58,14 @@ function extractAssFamilies(assContent: string): string[] {
   let inStyles = false
   for (const line of lines) {
     const trimmed = line.trim()
-    if (trimmed.startsWith('[V4+ Styles]')) { inStyles = true; continue }
-    if (trimmed.startsWith('[')) { inStyles = false; continue }
+    if (trimmed.startsWith('[V4+ Styles]')) {
+      inStyles = true
+      continue
+    }
+    if (trimmed.startsWith('[')) {
+      inStyles = false
+      continue
+    }
     if (!inStyles) continue
     if (!trimmed.startsWith('Style:')) continue
     const parts = trimmed.slice(6).split(',')
@@ -79,10 +90,7 @@ async function loadRemoteVariant(
   }
 }
 
-async function buildFontMap(
-  assContent: string,
-  attachmentNames: MkvFont[] = []
-): Promise<any> {
+async function buildFontMap(assContent: string, attachmentNames: MkvFont[] = []): Promise<any> {
   const fontMap: Record<string, any> = { ...availableFonts }
   const localKeys = new Set(Object.keys(availableFonts))
 
@@ -197,7 +205,12 @@ function vttToAss(vtt: string): string {
   const lines = vtt.trim().replace(/\r/g, '').split('\n')
   let i = 0
   while (i < lines.length) {
-    if (lines[i].startsWith('WEBVTT') || lines[i].startsWith('Kind:') || lines[i].startsWith('Language:') || lines[i].trim() === '') {
+    if (
+      lines[i].startsWith('WEBVTT') ||
+      lines[i].startsWith('Kind:') ||
+      lines[i].startsWith('Language:') ||
+      lines[i].trim() === ''
+    ) {
       i++
       continue
     }
@@ -265,6 +278,12 @@ export async function loadSubtitleTrack(track: SubtitleTrack): Promise<void> {
 
   const mkvFonts = (track.fonts || []).map((f) => new Uint8Array(f.data))
 
+  lastSubtitleData = {
+    subContent: assContent,
+    fonts: track.fonts || [],
+    availableFonts: fontMap
+  }
+
   try {
     const [wasmDataUrl, modernWasmDataUrl] = await Promise.all([
       urlToDataUrl(wasmUrl),
@@ -284,6 +303,7 @@ export async function loadSubtitleTrack(track: SubtitleTrack): Promise<void> {
 
     await jassubInstance.ready
   } catch (err) {
+    console.error('[Subtitles] Failed to initialize JASSUB:', err)
     jassubInstance = null
   }
 }
@@ -308,4 +328,60 @@ export function disableSubtitleOverride(): void {
 export function destroySubtitleRenderer(): void {
   removeSubtitleTrack()
   videoEl = null
+}
+
+export function getLastSubtitleData(): {
+  subContent: string
+  fonts: MkvFont[]
+  availableFonts: Record<string, string>
+} | null {
+  if (!lastSubtitleData) return null
+  const availableFonts: Record<string, string> = {}
+  for (const [k, v] of Object.entries(lastSubtitleData.availableFonts)) {
+    if (!v.startsWith('blob:')) availableFonts[k] = v
+  }
+  const plain = {
+    subContent: lastSubtitleData.subContent,
+    fonts: lastSubtitleData.fonts,
+    availableFonts
+  }
+  return JSON.parse(JSON.stringify(plain))
+}
+
+export async function preparePiPSubtitleData(
+  videoPath: string
+): Promise<{
+  subContent: string
+  fonts: MkvFont[]
+  availableFonts: Record<string, string>
+} | null> {
+  const embedded = await window.api.listEmbeddedSubtitles(videoPath)
+  if (!embedded.length) return null
+
+  const target = embedded.find((s) => s.language === 'pol' || s.language === 'pl') || embedded[0]
+  const [result, fonts] = await Promise.all([
+    window.api.extractEmbeddedSubtitle(videoPath, target.index),
+    window.api.extractSubtitleFonts(videoPath)
+  ])
+  if (!result) return null
+
+  const assContent =
+    result.format === 'ass' || result.format === 'ssa'
+      ? result.content
+      : result.format === 'srt'
+        ? srtToAss(result.content)
+        : result.format === 'vtt'
+          ? vttToAss(result.content)
+          : srtToAss(result.content)
+  if (!assContent) return null
+
+  const fontMap = await buildFontMap(assContent, fonts)
+
+  return JSON.parse(
+    JSON.stringify({
+      subContent: assContent,
+      fonts,
+      availableFonts: fontMap
+    })
+  )
 }

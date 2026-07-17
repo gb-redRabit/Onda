@@ -26,12 +26,19 @@ export default defineConfig({
   main: { plugins: [externalizeDepsPlugin()] },
   preload: { plugins: [externalizeDepsPlugin()] },
   renderer: {
+    base: './',
     plugins: [vue(), tailwindcss(), wasmMime()],
     resolve: { alias: { '@renderer': resolve('src/renderer/src') } },
     worker: { format: 'es' },
     css: { devSourcemap: false },
     build: {
-      sourcemap: false
+      sourcemap: false,
+      rollupOptions: {
+        input: {
+          index: resolve('src/renderer/index.html'),
+          pip: resolve('src/renderer/pip.html')
+        }
+      }
     },
     assetsInclude: ['**/*.wasm']
   }

@@ -51,7 +51,9 @@ export const usePlayerStore = defineStore('player', () => {
     }
     currentTrack.value = track
     currentTime.value = 0
-    isPlaying.value = true
+    if (!pipActive.value) {
+      isPlaying.value = true
+    }
   }
 
   function play() {
@@ -200,8 +202,8 @@ export const usePlayerStore = defineStore('player', () => {
         id: `emb-${sub.index}`,
         label: `${label} (wbudowane)`,
         language: sub.language,
-      format: 'ass',
-      source: 'embedded'
+        format: 'ass',
+        source: 'embedded'
       })
     }
 

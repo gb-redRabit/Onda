@@ -61,7 +61,7 @@ function onSliderDrag(e: MouseEvent, index: number) {
 </script>
 
 <template>
-  <div class="bg-bg-elevated border border-border-default rounded-2xl p-4 w-[380px]">
+  <div class="bg-bg-elevated border border-border-default rounded-2xl p-4 w-95">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-sm font-semibold">Equalizer</h3>
       <button
@@ -101,12 +101,12 @@ function onSliderDrag(e: MouseEvent, index: number) {
         <div class="flex-1 w-full relative cursor-pointer" @mousedown="onSliderDrag($event, i)">
           <!-- track background — wider, high contrast -->
           <div
-            class="absolute w-[5px] h-full rounded-full bg-bg-active"
+            class="absolute w-1.25 h-full rounded-full bg-bg-active"
             style="left: 50%; transform: translateX(-50%)"
           />
           <!-- filled portion from center -->
           <div
-            class="absolute w-[5px] rounded-full bg-accent-base"
+            class="absolute w-1.25 rounded-full bg-accent-base"
             style="left: 50%; transform: translateX(-50%)"
             :style="
               player.equalizerBands[i] >= 0
@@ -119,7 +119,7 @@ function onSliderDrag(e: MouseEvent, index: number) {
           />
           <!-- center line -->
           <div
-            class="absolute w-3 h-[2px] rounded-full bg-fg-faint/70"
+            class="absolute w-3 h-0.5 rounded-full bg-fg-faint/70"
             style="left: 50%; transform: translateX(-50%); top: 50%"
           />
           <!-- thumb -->

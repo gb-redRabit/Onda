@@ -46,7 +46,7 @@ function onVolume(e: MouseEvent) {
   <!-- mini player -->
   <div
     v-if="isMini"
-    class="h-[48px] bg-bg-overlay border-t border-border-default flex items-center px-3 gap-3 shrink-0 relative"
+    class="h-12 bg-bg-overlay border-t border-border-default flex items-center px-3 gap-3 shrink-0 relative"
   >
     <div
       class="absolute top-0 left-0 right-0 h-0.5 bg-border-default/50 cursor-pointer group hover:h-1 transition-all z-10"
@@ -98,7 +98,7 @@ function onVolume(e: MouseEvent) {
   <!-- full player -->
   <div
     v-else
-    class="h-[72px] bg-bg-overlay border-t border-border-default flex items-center px-4 shrink-0 relative"
+    class="h-18 bg-bg-overlay border-t border-border-default flex items-center px-4 shrink-0 relative"
   >
     <div
       class="absolute top-0 left-0 right-0 h-1 bg-border-default/50 cursor-pointer group hover:h-1.5 transition-all z-10"
@@ -107,7 +107,7 @@ function onVolume(e: MouseEvent) {
       <div class="h-full bg-accent-base rounded-r-full" :style="{ width: progressPct + '%' }" />
     </div>
 
-    <div class="flex items-center gap-3 w-[280px] min-w-0">
+    <div class="flex items-center gap-3 w-70 min-w-0">
       <div
         class="w-11 h-11 rounded-lg bg-bg-elevated border border-border-default flex items-center justify-center shrink-0 overflow-hidden"
       >
@@ -174,7 +174,7 @@ function onVolume(e: MouseEvent) {
       </div>
     </div>
 
-    <div class="flex items-center gap-1.5 w-[220px] justify-end">
+    <div class="flex items-center gap-1.5 w-55 justify-end">
       <button
         class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
         :class="{ '!text-accent-base': player.equalizerVisible }"

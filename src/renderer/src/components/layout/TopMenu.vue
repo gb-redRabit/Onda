@@ -110,7 +110,7 @@ function closeMenu() {
 
       <div
         v-if="openMenu === idx"
-        class="absolute top-full left-0 mt-1 bg-bg-elevated border border-border-subtle rounded-xl shadow-2xl shadow-black/40 py-1.5 min-w-[200px] z-50"
+        class="absolute top-full left-0 mt-1 bg-bg-elevated border border-border-subtle rounded-xl shadow-2xl shadow-black/40 py-1.5 min-w-50 z-50"
       >
         <template v-for="item in menu.items" :key="JSON.stringify(item)">
           <div v-if="'sep' in item" class="border-t border-border-default my-1 mx-2" />

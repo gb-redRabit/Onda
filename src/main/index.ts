@@ -1,15 +1,12 @@
-import { app, shell, BrowserWindow, ipcMain, Tray, Menu, globalShortcut, screen } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, Tray, Menu, globalShortcut } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { registerIPC } from './ipc/handlers'
+import { pipManager } from './pip-manager'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
-let pipWindow: BrowserWindow | null = null
-let pipLastTime: number = 0
-let pipTimer: ReturnType<typeof setInterval> | null = null
-let pipClosing = false
 
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -165,6 +162,8 @@ app.whenReady().then(() => {
 
   registerIPC()
   mainWindow = createWindow()
+  pipManager.setMainWindow(mainWindow)
+  pipManager.init()
   setupTray()
   registerGlobalShortcuts()
 
@@ -184,188 +183,86 @@ app.whenReady().then(() => {
 
   ipcMain.handle(
     'pip:start',
-    (
+    async (
       _event,
       videoSrc: string,
-      pipSettings?: { position?: string; width?: number; height?: number; startTime?: number }
+      pipSettings?: {
+        position?: string
+        width?: number
+        height?: number
+        startTime?: number
+        subtitle?: {
+          subContent: string
+          fonts: Array<{ name: string; data: number[] }>
+          availableFonts: Record<string, string>
+        } | null
+      }
     ) => {
-      if (pipWindow && !pipWindow.isDestroyed()) {
-        if (pipTimer) {
-          clearInterval(pipTimer)
-          pipTimer = null
-        }
-        pipClosing = true
-        pipWindow.destroy()
-        pipWindow = null
-      }
-      if (!mainWindow) return false
-
-      const pw = pipSettings?.width || 480
-      const ph = pipSettings?.height || 290
-      const pos = pipSettings?.position || 'bottom-right'
-      const startTime = pipSettings?.startTime || 0
-      const display = screen.getPrimaryDisplay().workAreaSize
-      let x: number, y: number
-      const margin = 20
-      switch (pos) {
-        case 'bottom-left':
-          x = margin
-          y = display.height - ph - margin
-          break
-        case 'top-right':
-          x = display.width - pw - margin
-          y = margin
-          break
-        case 'top-left':
-          x = margin
-          y = margin
-          break
-        default:
-          x = display.width - pw - margin
-          y = display.height - ph - margin
-          break
-      }
-
-      const pwWin = new BrowserWindow({
-        x,
-        y,
-        width: pw,
-        height: ph,
-        minWidth: 180,
-        minHeight: 110,
-        alwaysOnTop: true,
-        frame: false,
-        skipTaskbar: true,
-        resizable: true,
-        backgroundColor: '#000000',
-        webPreferences: {
-          preload: join(__dirname, '../preload/index.js'),
-          sandbox: false,
-          contextIsolation: true,
-          nodeIntegration: false,
-          webSecurity: false
-        }
+      console.log(`[PiP][ipc] pip:start received at ${new Date().toISOString()}, src: ${videoSrc.substring(0, 100)}`)
+      return pipManager.show({
+        src: videoSrc,
+        startTime: pipSettings?.startTime || 0,
+        position: pipSettings?.position,
+        width: pipSettings?.width,
+        height: pipSettings?.height,
+        subtitle: pipSettings?.subtitle || null
       })
-      pipWindow = pwWin
-
-      const html = `<!DOCTYPE html><html><head><style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{background:#000;height:100%;overflow:hidden;font-family:sans-serif}
-#wrap{position:relative;width:100%;height:100%;display:flex;flex-direction:column}
-#pipV{flex:1;width:100%;object-fit:contain;background:#000}
-#close{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:12px;background:rgba(0,0,0,0.6);border:none;color:#aaa;font:12px sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;transition:all .15s;opacity:0}
-#close:hover{background:rgba(229,62,62,0.9);color:#fff}
-#barW{height:4px;background:rgba(255,255,255,0.15);cursor:pointer;flex-shrink:0}
-#barF{height:100%;background:#7c6aef;width:0%;pointer-events:none;border-radius:0 2px 2px 0}
-#curT{position:absolute;bottom:8px;left:8px;font:10px monospace;color:rgba(255,255,255,0.5);pointer-events:none}
-#durT{position:absolute;bottom:8px;right:8px;font:10px monospace;color:rgba(255,255,255,0.5);pointer-events:none}
-</style></head><body>
-<div id="wrap">
-  <video id="pipV" preload="auto"></video>
-  <button id="close">&#x2715;</button>
-  <span id="curT">0:00</span>
-  <span id="durT">0:00</span>
-  <div id="barW"><div id="barF"></div></div>
-</div>
-<script>
-var v=document.getElementById('pipV');
-var barF=document.getElementById('barF');
-var barW=document.getElementById('barW');
-var curT=document.getElementById('curT');
-var durT=document.getElementById('durT');
-var fmt=function(t){if(!t||!isFinite(t))return'0:00';var m=Math.floor(t/60),s=Math.floor(t%60);return m+':'+(s<10?'0':'')+s;};
-
-v.onloadedmetadata=function(){
-  durT.textContent=fmt(v.duration);
-  if(!window.__seeked){
-    window.__seeked=true;
-    v.currentTime=${startTime};
-  }
-  v.play().catch(function(){});
-};
-v.ontimeupdate=function(){
-  barF.style.width=(v.duration?(v.currentTime/v.duration*100):0)+'%';
-  curT.textContent=fmt(v.currentTime);
-};
-barW.onclick=function(e){
-  var r=barW.getBoundingClientRect();
-  v.currentTime=((e.clientX-r.left)/r.width)*v.duration;
-};
-document.getElementById('close').onmouseover=function(){this.style.background='rgba(229,62,62,0.9)';this.style.color='#fff';};
-document.getElementById('close').onmouseout=function(){this.style.background='rgba(0,0,0,0.6)';this.style.color='#aaa';};
-document.getElementById('close').onclick=function(){
-  window.close();
-};
-var wrap=document.getElementById('wrap');
-wrap.onmouseenter=function(){document.getElementById('close').style.opacity='1';};
-wrap.onmouseleave=function(){document.getElementById('close').style.opacity='0';};
-v.src=${JSON.stringify(videoSrc)};
-</script></body></html>`
-
-      pwWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
-
-      pipLastTime = startTime
-      if (pipTimer) clearInterval(pipTimer)
-      pipTimer = setInterval(() => {
-        if (pipWindow && !pipWindow.isDestroyed()) {
-          pipWindow.webContents
-            .executeJavaScript(
-              'document.getElementById("pipV") ? document.getElementById("pipV").currentTime : 0'
-            )
-            .then((t) => {
-              pipLastTime = (t as number) || 0
-            })
-            .catch(() => {})
-        }
-      }, 500)
-
-      pwWin.on('closed', () => {
-        if (pipTimer) {
-          clearInterval(pipTimer)
-          pipTimer = null
-        }
-        if (pipClosing) {
-          pipClosing = false
-          pipWindow = null
-          return
-        }
-        const time = pipLastTime
-        pipWindow = null
-        mainWindow?.webContents.send('pip:closed', time)
-      })
-      return true
     }
   )
 
   ipcMain.handle('pip:stop', () => {
-    if (pipWindow && !pipWindow.isDestroyed()) {
-      pipWindow.webContents
-        .executeJavaScript(
-          'document.getElementById("pipV") ? document.getElementById("pipV").currentTime : 0'
-        )
-        .then((t) => {
-          pipLastTime = (t as number) || 0
-        })
-        .catch(() => {})
-        .finally(() => {
-          if (pipWindow && !pipWindow.isDestroyed()) pipWindow.close()
-        })
-    }
+    pipManager.stop()
     return true
   })
 
-  ipcMain.handle('pip:updatesrc', (_event, videoSrc: string) => {
-    if (pipWindow && !pipWindow.isDestroyed()) {
-      pipWindow.webContents
-        .executeJavaScript(
-          `
-        var v=document.getElementById('pipV');
-        if(v){v.src=${JSON.stringify(videoSrc)};v.currentTime=0;v.play().catch(function(){});}
-      `
-        )
-        .catch(() => {})
+  ipcMain.handle(
+    'pip:preload',
+    (
+      _event,
+      videoSrc: string,
+      subtitleData: {
+        subContent: string
+        fonts: Array<{ name: string; data: number[] }>
+        availableFonts: Record<string, string>
+      } | null
+    ) => {
+      pipManager.preload(videoSrc, subtitleData)
     }
+  )
+
+  ipcMain.handle(
+    'pip:loadtrack',
+    (
+      _event,
+      videoSrc: string,
+      subtitleData: {
+        subContent: string
+        fonts: Array<{ name: string; data: number[] }>
+        availableFonts: Record<string, string>
+      } | null
+    ) => {
+      pipManager.loadTrack(videoSrc, subtitleData)
+    }
+  )
+
+  ipcMain.handle('pip:updatesrc', (_event, videoSrc: string, startTime?: number) => {
+    pipManager.loadTrack(videoSrc, null)
+    if (startTime !== undefined) pipManager.play(startTime)
   })
+
+  ipcMain.handle(
+    'pip:updateSubtitle',
+    (
+      _event,
+      data: {
+        subContent: string
+        fonts: Array<{ name: string; data: number[] }>
+        availableFonts: Record<string, string>
+      } | null
+    ) => {
+      pipManager.updateSubtitle(data)
+    }
+  )
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -378,6 +275,7 @@ app.on('window-all-closed', () => {
   globalShortcut.unregisterAll()
   tray?.destroy()
   tray = null
+  pipManager.destroy()
   if (process.platform !== 'darwin') {
     app.quit()
   }

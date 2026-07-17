@@ -391,6 +391,7 @@ Użytkownik: eksplorator → odtwarzacz
 ```
 
 **Kluczowe decyzje:**
+
 - `queryFonts: false` — wewnętrzne query JASSUB (local/remote) zepsute w Electron (fonts.json MIME + brak self.queryLocalFonts)
 - wasm ładowany jako `data:` URL (omija błąd MIME na `file://`/`app://`)
 - worker przez `?worker&url` (Vite auto-blob, self-contained)
@@ -415,20 +416,20 @@ Użytkownik: eksplorator → odtwarzacz
 
 ### 6.2 Media
 
-| Kanał                          | Opis                           |
-| ------------------------------ | ------------------------------ |
-| `media:getMetadata`            | ID3 metadata (music-metadata)  |
-| `media:getThumbnail`           | Embedded cover art (base64)    |
-| `media:getCover`               | Cover result: `{ type: 'video' | 'image' | null, data }`— video = path for`<video>` tag |
-| `media:getDuration`            | ffprobe duration (seconds)     |
-| `media:getReplayGain`          | ReplayGain tags                |
-| `media:findSubtitles`          | Szukanie napisów obok pliku    |
-| `media:loadSubtitle`           | Odczyt pliku napisów           |
-| `media:probeEmbeddedSubtitles` | ffprobe: wbudowane ścieżki     |
-| `media:extractSubtitle`        | ffmpeg: ekstrakcja napisów     |
+| Kanał                          | Opis                                                        |
+| ------------------------------ | ----------------------------------------------------------- |
+| `media:getMetadata`            | ID3 metadata (music-metadata)                               |
+| `media:getThumbnail`           | Embedded cover art (base64)                                 |
+| `media:getCover`               | Cover result: `{ type: 'video'                              | 'image' | null, data }`— video = path for`<video>` tag |
+| `media:getDuration`            | ffprobe duration (seconds)                                  |
+| `media:getReplayGain`          | ReplayGain tags                                             |
+| `media:findSubtitles`          | Szukanie napisów obok pliku                                 |
+| `media:loadSubtitle`           | Odczyt pliku napisów                                        |
+| `media:probeEmbeddedSubtitles` | ffprobe: wbudowane ścieżki                                  |
+| `media:extractSubtitle`        | ffmpeg: ekstrakcja napisów                                  |
 | `subtitles:extractAttachments` | mkvextract: czcionki z MKV → `{name, ext, data:number[]}[]` |
-| `media:toggleFavorite`         | Toggle ulubionego              |
-| `media:getFavorites`           | Pobranie mapy ulubionych       |
+| `media:toggleFavorite`         | Toggle ulubionego                                           |
+| `media:getFavorites`           | Pobranie mapy ulubionych                                    |
 
 ### 6.3 Dialogi
 
@@ -441,14 +442,42 @@ Użytkownik: eksplorator → odtwarzacz
 
 ### 6.4 Picture-in-Picture
 
-| Kanał                | Opis                          |
-| -------------------- | ----------------------------- |
-| `pip:start`          | Utworzenie okna PiP           |
-| `pip:stop`           | Zamknięcie PiP                |
-| `pip:updatesrc`      | Zmiana src w PiP              |
-| `pip:updatesubtitle` | Aktualizacja napisów w PiP    |
-| `pip:timeupdate`     | on (renderer) — czas z PiP    |
-| `pip:closed`         | on (renderer) — PiP zamknięte |
+**Main process (`pip-manager.ts`):** `PipManager` singleton — zarządza ukrytym `BrowserWindow` (nigdy niszczony, tylko show/hide), preload wideo, synchronizacja czasu, napisy JASSUB.
+
+| Kanał (invoke)        | Opis                                              |
+| --------------------- | ------------------------------------------------- |
+| `pip:start`           | Pokaż PiP: wyślij wideo + napisy + play + show    |
+| `pip:stop`            | Zatrzymaj PiP: wyczyść + ukryj + powiadom renderer |
+| `pip:preload`         | Preload: wyślij wideo + napisy, bez play/show     |
+| `pip:loadtrack`       | Zmień utwór w PiP: wideo + napisy + play od 0     |
+| `pip:updateSubtitle`  | Aktualizacja napisów w PiP (bez zmiany wideo)     |
+
+| Kanał (on/send)       | Opis                                              |
+| --------------------- | ------------------------------------------------- |
+| `pip:videoSrc`        | main→PiP: ustaw src wideo                         |
+| `pip:play`            | main→PiP: zacznij odtwarzanie od czasu            |
+| `pip:pause`           | main→PiP: pauza (bez czyszczenia wideo)           |
+| `pip:clear`           | main→PiP: pauza + usuń src + wyczyść napisy       |
+| `pip:subtitle`        | main→PiP: załaduj napisy JASSUB                   |
+| `pip:clearSubtitle`   | main→PiP: usuń napisy                             |
+| `pip:requestTime`     | main→PiP: zapytaj o aktualny czas                 |
+| `pip:timeUpdate`      | PiP→main: aktualny czas odtwarzania               |
+| `pip:hidden`          | PiP→main: okno zamknięte przez użytkownika (X)    |
+| `pip:ended`           | PiP→main: wideo się zakończyło                    |
+| `pip:closed`          | main→renderer: PiP zamknięte + zapisany czas      |
+| `pip:ended`           | main→renderer: wideo w PiP się zakończyło         |
+
+**Renderer (`pip.ts`):** Wpis PiP bundle — JASSUB, listenery `pip:videoSrc`/`pip:play`/`pip:pause`/`pip:clear`/`pip:subtitle`, close button → `pip:hidden`, progress bar, timestamp display.
+
+**Composable (`usePiP.ts`):** `usePiP({onClosed, onEnded})` — interfejs renderera: `start()`, `stop()`, `preload()`, `loadTrack()`, `loadTrackFromCurrent()`, `updateSubtitle()`.
+
+**Kluczowe zachowania:**
+
+- **Preload:** Przy każdym nowym utworze (onMounted + currentTrack watcher), PiP dostaje `pip:videoSrc` w tle (ukryte okno). Po kliknięciu PiP — tylko `pip:play` (natychmiastowy start).
+- **Porównanie ścieżek:** `show()` normalizuje URLe (decode + `file:///` strip + backslash + lowercase) i porównuje z `loadedSrc`. Jeśli takie samo → tylko play, bez przeładowania.
+- **Hide vs Stop:** `hide()` wysyła `pip:pause` (nie `pip:clear`), zachowuje `loadedSrc`. `stop()` czyści wszystko.
+- **Zmiana utworu w PiP:** `pip:ended` → renderer → `nextTrack()` → `currentTrack` watcher → `pip.loadTrack()` (PiP gra nowy) lub `pip.preload()` (PiP gotowy).
+- **PiP aktywne + nowy plik:** `onMounted` wykrywa `pipActive=true` → `pip.loadTrack()` zamiast `pip.preload()` — PiP natychmiast przełącza wideo.
 
 ### 6.5 Ustawienia / Odtwarzanie / Playlista
 
@@ -461,19 +490,19 @@ Użytkownik: eksplorator → odtwarzacz
 
 ### 6.6 Okno / Shell / FFmpeg / Zależności
 
-| Kanał                                           | Opis                                        |
-| ----------------------------------------------- | ------------------------------------------- |
-| `window:createChild` / `window:closeChild`      | Okna podrzędne                              |
-| `shell:openExternal` / `shell:showItemInFolder` | Otwieranie w systemie                       |
-| `ffmpeg:check` / `ffmpeg:install`               | FFmpeg detection/instalacja                 |
-| `dep:checkFfmpeg`                               | Sprawdzenie FFmpeg (cache w electron-store) |
-| `dep:checkFfprobe`                              | Sprawdzenie FFprobe                         |
-| `dep:checkYtdlp`                                | Sprawdzenie yt-dlp                          |
-| `dep:checkMkvextract`                           | Sprawdzenie MKVToolbox (mkvextract)         |
+| Kanał                                           | Opis                                             |
+| ----------------------------------------------- | ------------------------------------------------ |
+| `window:createChild` / `window:closeChild`      | Okna podrzędne                                   |
+| `shell:openExternal` / `shell:showItemInFolder` | Otwieranie w systemie                            |
+| `ffmpeg:check` / `ffmpeg:install`               | FFmpeg detection/instalacja                      |
+| `dep:checkFfmpeg`                               | Sprawdzenie FFmpeg (cache w electron-store)      |
+| `dep:checkFfprobe`                              | Sprawdzenie FFprobe                              |
+| `dep:checkYtdlp`                                | Sprawdzenie yt-dlp                               |
+| `dep:checkMkvextract`                           | Sprawdzenie MKVToolbox (mkvextract)              |
 | `dep:installMkvextract`                         | Instalacja MKVToolbox (choco install mkvtoolnix) |
-| `dep:installFfmpeg`                             | Instalacja FFmpeg (choco)                   |
-| `dep:installYtdlp`                              | Instalacja yt-dlp (GitHub Releases binary)  |
-| `webUtils:getFilePath`                          | Ścieżka pliku z drag&drop (webUtils)        |
+| `dep:installFfmpeg`                             | Instalacja FFmpeg (choco)                        |
+| `dep:installYtdlp`                              | Instalacja yt-dlp (GitHub Releases binary)       |
+| `webUtils:getFilePath`                          | Ścieżka pliku z drag&drop (webUtils)             |
 
 ---
 
@@ -774,23 +803,23 @@ Lazy loading: `() => import(...)` w routerze. Transition fade między widokami.
 
 ### 12.1 Runtime
 
-| Pakiet                        | Cel                                  |
-| ----------------------------- | ------------------------------------ |
-| `vue`                         | Framework UI                         |
-| `vue-router`                  | Routing SPA                          |
-| `pinia`                       | Stan globalny                        |
-| `pinia-plugin-persistedstate` | Persistencja store                   |
-| `@vueuse/core`                | Utility composables                  |
-| `@lucide/vue`                 | Ikony SVG                            |
-| `electron-store`              | Persystencja ustawień (main process) |
-| `electron-updater`            | Auto-aktualizacje                    |
-| `music-metadata`              | Odczyt ID3/FLAC/MP4 tags             |
-| `vuedraggable`                | Drag & drop listy (Sortable.js)      |
-| `@tanstack/vue-virtual`       | Wirtualne listy                      |
-| `@electron-toolkit/preload`   | Preload utilities                                                  |
-| `@electron-toolkit/utils`      | Main process utilities                                            |
-| `jassub`                       | Renderowanie napisów ASS (wasm + web worker, canvas overlay)      |
-| `lfa-ponyfill`                 | `queryLocalFonts`/`queryRemoteFonts` — Google Fonts fallback w Electron |
+| Pakiet                        | Cel                                                                     |
+| ----------------------------- | ----------------------------------------------------------------------- |
+| `vue`                         | Framework UI                                                            |
+| `vue-router`                  | Routing SPA                                                             |
+| `pinia`                       | Stan globalny                                                           |
+| `pinia-plugin-persistedstate` | Persistencja store                                                      |
+| `@vueuse/core`                | Utility composables                                                     |
+| `@lucide/vue`                 | Ikony SVG                                                               |
+| `electron-store`              | Persystencja ustawień (main process)                                    |
+| `electron-updater`            | Auto-aktualizacje                                                       |
+| `music-metadata`              | Odczyt ID3/FLAC/MP4 tags                                                |
+| `vuedraggable`                | Drag & drop listy (Sortable.js)                                         |
+| `@tanstack/vue-virtual`       | Wirtualne listy                                                         |
+| `@electron-toolkit/preload`   | Preload utilities                                                       |
+| `@electron-toolkit/utils`     | Main process utilities                                                  |
+| `jassub`                      | Renderowanie napisów ASS (wasm + web worker, canvas overlay)            |
+| `lfa-ponyfill`                | `queryLocalFonts`/`queryRemoteFonts` — Google Fonts fallback w Electron |
 
 ### 12.2 Dev
 
@@ -808,13 +837,13 @@ Lazy loading: `() => import(...)` w routerze. Transition fade między widokami.
 
 ### 12.3 Zewnętrzne (nie-NPM)
 
-| Narzędzie  | Cel                               | Uwagi                                                               |
-| ---------- | --------------------------------- | ------------------------------------------------------------------- |
-| FFmpeg     | Transkodowanie, napisy, metadane  | Instalacja via `choco install ffmpeg -y`                            |
-| FFprobe    | Probing formatów, duration, cover | Część FFmpeg (tego samego pakietu)                                  |
+| Narzędzie  | Cel                                   | Uwagi                                                                                                         |
+| ---------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| FFmpeg     | Transkodowanie, napisy, metadane      | Instalacja via `choco install ffmpeg -y`                                                                      |
+| FFprobe    | Probing formatów, duration, cover     | Część FFmpeg (tego samego pakietu)                                                                            |
 | MKVToolbox | Wyciąganie czcionek z załączników MKV | Instalacja via `choco install mkvtoolnix -y`; bin: `C:\Program Files\MKVToolNix\mkvextract.exe` (brak w PATH) |
-| yt-dlp     | Pobieranie YouTube                | Instalacja via GitHub Releases binary → `{userData}/bin/yt-dlp.exe` |
-| PowerShell | Wykrywanie dysków                 | Tylko Windows                                                       |
+| yt-dlp     | Pobieranie YouTube                    | Instalacja via GitHub Releases binary → `{userData}/bin/yt-dlp.exe`                                           |
+| PowerShell | Wykrywanie dysków                     | Tylko Windows                                                                                                 |
 
 ### 12.4 Zależności Wzajemne (Internal)
 
@@ -845,20 +874,20 @@ Views → czytają store'y + wywołują akcje store
 
 ## 13. Kluczowe Pliki
 
-| Plik                | Linii | Znaczenie                                                                             |
-| ------------------- | ----- | ------------------------------------------------------------------------------------- |
-| `audioEngine.ts`    | ~300  | **NOWY** — singleton Web Audio API: gapless, crossfade, EQ, RAF loop, position memory |
-| `useMediaPlayer.ts` | ~90   | **REF** — singleton wrapper delegujący do audioEngine, zapewnia Vue reaktywność       |
-| `ModuleManager.ts`  | ~90   | **NOWY** — lifecycle modułów, switchTo (async deactivate→activate), deactivateAll     |
-| `PlayerModule.ts`   | ~50   | **NOWY** — background-capable: deactivate() nie pauzuje audio                         |
-| `handlers.ts`       | ~795  | **Main IPC** — fs, metadata, FFmpeg, mkvextract, dialogs, pip, settings, playlists    |
-| `subtitles.ts`      | ~920  | Parser SRT/VTT/ASS z tagami HTML i ASS                                                |
-| `useSubtitleRenderer.ts` | ~315 | **JASSUB** — inicjalizacja wasm/worker, buildFontMap (lokalne+Google+MKV), binary fonts |
-| `player.ts`         | ~310  | Player store — stan, kolejka, akcje, loadEmbeddedSubtitle(fonts z MKV)               |
-| `PlayerView.vue`    | ~1200 | Odtwarzacz video/audio — fullscreen, PiP, napisy, EQ toggle                           |
-| `PlayerBar.vue`     | ~500  | Dolny pasek — controls, progress (drag-to-seek), volume                               |
-| `constants.ts`      | ~200  | Formaty, presety EQ, motywy, defaults                                                 |
-| `trackMetadata.ts`  | ~220  | enrichTrack(), resolveCover() — metadane + okładki                                    |
+| Plik                     | Linii | Znaczenie                                                                               |
+| ------------------------ | ----- | --------------------------------------------------------------------------------------- |
+| `audioEngine.ts`         | ~300  | **NOWY** — singleton Web Audio API: gapless, crossfade, EQ, RAF loop, position memory   |
+| `useMediaPlayer.ts`      | ~90   | **REF** — singleton wrapper delegujący do audioEngine, zapewnia Vue reaktywność         |
+| `ModuleManager.ts`       | ~90   | **NOWY** — lifecycle modułów, switchTo (async deactivate→activate), deactivateAll       |
+| `PlayerModule.ts`        | ~50   | **NOWY** — background-capable: deactivate() nie pauzuje audio                           |
+| `handlers.ts`            | ~795  | **Main IPC** — fs, metadata, FFmpeg, mkvextract, dialogs, pip, settings, playlists      |
+| `subtitles.ts`           | ~920  | Parser SRT/VTT/ASS z tagami HTML i ASS                                                  |
+| `useSubtitleRenderer.ts` | ~315  | **JASSUB** — inicjalizacja wasm/worker, buildFontMap (lokalne+Google+MKV), binary fonts |
+| `player.ts`              | ~310  | Player store — stan, kolejka, akcje, loadEmbeddedSubtitle(fonts z MKV)                  |
+| `PlayerView.vue`         | ~1200 | Odtwarzacz video/audio — fullscreen, PiP, napisy, EQ toggle                             |
+| `PlayerBar.vue`          | ~500  | Dolny pasek — controls, progress (drag-to-seek), volume                                 |
+| `constants.ts`           | ~200  | Formaty, presety EQ, motywy, defaults                                                   |
+| `trackMetadata.ts`       | ~220  | enrichTrack(), resolveCover() — metadane + okładki                                      |
 
 ---
 

@@ -24,10 +24,17 @@ const api = {
   },
   pipStart: (
     videoSrc: string,
-    settings?: { position?: string; width?: number; height?: number; startTime?: number }
+    settings?: { position?: string; width?: number; height?: number; startTime?: number; subtitle?: unknown }
   ): Promise<boolean> => ipcRenderer.invoke('pip:start', videoSrc, settings),
   pipStop: (): Promise<boolean> => ipcRenderer.invoke('pip:stop'),
-  pipUpdateSrc: (videoSrc: string): Promise<void> => ipcRenderer.invoke('pip:updatesrc', videoSrc),
+  pipPreload: (
+    videoSrc: string,
+    subtitleData: { subContent: string; fonts: Array<{ name: string; data: number[] }>; availableFonts: Record<string, string> } | null
+  ): Promise<void> => ipcRenderer.invoke('pip:preload', videoSrc, subtitleData),
+  pipLoadTrack: (
+    videoSrc: string,
+    subtitleData: { subContent: string; fonts: Array<{ name: string; data: number[] }>; availableFonts: Record<string, string> } | null
+  ): Promise<void> => ipcRenderer.invoke('pip:loadtrack', videoSrc, subtitleData),
   checkFfmpeg: (): Promise<{ installed: boolean; version: string | null }> =>
     ipcRenderer.invoke('dep:checkFfmpeg'),
   checkFfprobe: (): Promise<{ installed: boolean; version: string | null }> =>
@@ -65,7 +72,10 @@ const api = {
   extractSubtitleFonts: (
     filePath: string
   ): Promise<Array<{ name: string; ext: string; data: number[] }>> =>
-    ipcRenderer.invoke('subtitles:extractAttachments', filePath)
+    ipcRenderer.invoke('subtitles:extractAttachments', filePath),
+  pipUpdateSubtitle: (
+    data: { subContent: string; fonts: Array<{ name: string; data: number[] }>; availableFonts: Record<string, string> } | null
+  ): Promise<void> => ipcRenderer.invoke('pip:updateSubtitle', data)
 }
 
 if (process.contextIsolated) {

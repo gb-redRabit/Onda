@@ -34,15 +34,27 @@ export default defineConfig(
           }
         }
       ],
-      '@typescript-eslint/explicit-function-return-type': [
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-empty-function': 'off',
+      '@typescript-eslint/no-unused-vars': [
         'error',
         {
-          allowExpressions: true,
-          allowTypedFunctionExpressions: true,
-          allowDirectConstAssertionInArrowFunctions: true
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_'
         }
       ],
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      'no-useless-escape': 'off',
       'vue/first-attribute-linebreak': 'error'
+    }
+  },
+  {
+    files: ['**/*.vue'],
+    rules: {
+      'prettier/prettier': 'off'
     }
   },
   eslintConfigPrettier

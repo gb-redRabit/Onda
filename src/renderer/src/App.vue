@@ -109,7 +109,10 @@ watch(() => settings.appearance.fontSize, applyTheme)
           v-else
           class="w-full px-3 py-1.5 text-left text-sm hover:bg-accent-ghost hover:text-accent-base transition-colors"
           :class="{ 'opacity-40 pointer-events-none': item.disabled }"
-          @click="item.action?.(); ui.hideContextMenu()"
+          @click="
+            item.action?.();
+            ui.hideContextMenu()
+          "
         >
           {{ item.label }}
         </button>

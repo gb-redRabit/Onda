@@ -124,7 +124,7 @@ function handleDoubleClick(item: FileItem) {
           >
             <span class="text-fg-faint">/</span>
             <button
-              class="px-1 py-0.5 rounded hover:bg-bg-hover text-fg-muted hover:text-fg-base transition-colors truncate max-w-[120px]"
+              class="px-1 py-0.5 rounded hover:bg-bg-hover text-fg-muted hover:text-fg-base transition-colors truncate max-w-30"
               @click="
                 explorer.navigateTo(
                   explorer.currentPath
@@ -216,8 +216,8 @@ function handleDoubleClick(item: FileItem) {
             <HardDrive v-if="explorer.isAtDrives" :size="26" class="text-accent-base" />
             <FolderOpen v-else-if="item.isDirectory" :size="26" class="text-accent-base" />
             <component
-              v-else
               :is="getFileTypeInfo(item.extension || '').category === 'video' ? Film : Music2"
+              v-else
               :size="22"
               :style="{ color: getFileTypeInfo(item.extension || '').color }"
             />
@@ -266,8 +266,8 @@ function handleDoubleClick(item: FileItem) {
             <HardDrive v-if="explorer.isAtDrives" :size="14" class="text-accent-base shrink-0" />
             <FolderOpen v-else-if="item.isDirectory" :size="14" class="text-accent-base shrink-0" />
             <component
-              v-else
               :is="getFileTypeInfo(item.extension || '').category === 'video' ? Film : Music2"
+              v-else
               :size="14"
               :style="{ color: getFileTypeInfo(item.extension || '').color }"
               class="shrink-0"

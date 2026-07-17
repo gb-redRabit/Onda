@@ -62,6 +62,7 @@ body,
 
 input[type='range'] {
   -webkit-appearance: none;
+  appearance: none;
   height: 4px;
   background: var(--color-border-default);
   border-radius: 2px;
@@ -82,10 +83,12 @@ input[type='range']::-webkit-slider-thumb {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 1;
+  line-clamp: 1;
 }
 .line-clamp-2 {
   overflow: hidden;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
 }

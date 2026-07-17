@@ -132,9 +132,9 @@ function playPlaylist(playlistId: string) {
                   v-model="newPlaylistName"
                   placeholder="Nazwa playlisty..."
                   class="w-full px-2 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-xs text-fg-base placeholder:text-fg-faint/50 focus:outline-none focus:ring-1 focus:ring-accent-base"
+                  autofocus
                   @keydown.enter="createPlaylist"
                   @keydown.escape="isCreatingPlaylist = false"
-                  autofocus
                 />
               </div>
               <button

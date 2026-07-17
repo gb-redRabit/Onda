@@ -12,12 +12,40 @@ import {
   removeSubtitleTrack,
   applySubtitleSettings,
   disableSubtitleOverride,
-  destroySubtitleRenderer
+  destroySubtitleRenderer,
+  preparePiPSubtitleData
 } from '@renderer/composables/useSubtitleRenderer'
+import { usePiP } from '@renderer/composables/usePiP'
 
 const player = usePlayerStore()
 const settings = useSettingsStore()
 const router = useRouter()
+
+function getTrackSrc(track: { path: string }): string {
+  return `file:///${track.path.replace(/\\/g, '/')}`
+}
+
+const pip = usePiP({
+  onClosed(savedTime) {
+    console.log('[PlayerView] pip:closed -> restoring main player at', savedTime)
+    player.pipActive = false
+    if (videoRef.value) {
+      videoRef.value.currentTime = savedTime
+      player.currentTime = savedTime
+      videoRef.value.play().catch(() => {})
+    }
+    player.isPlaying = true
+    syncSubtitlesWithPiP()
+  },
+  onEnded() {
+    console.log('[PlayerView] pip:ended -> next track or stop')
+    if (player.queue.length > 0) {
+      player.nextTrack()
+    } else {
+      pip.stop()
+    }
+  }
+})
 
 const videoRef = ref<HTMLVideoElement | null>(null)
 const playerContainerRef = ref<HTMLDivElement | null>(null)
@@ -49,7 +77,7 @@ function onWheel(e: WheelEvent) {
   const newVol = Math.max(0, Math.min(1, player.volume + delta))
   player.setVolume(newVol)
   videoRef.value.volume = player.isMuted ? 0 : newVol
-  showOSD(`Głośność: ${Math.round(newVol * 100)}%`, 'volume', 1200)
+  showOSD(`Glosnosc: ${Math.round(newVol * 100)}%`, 'volume', 1200)
 }
 
 function onSeek(time: number) {
@@ -76,29 +104,48 @@ function toggleFullscreen() {
 
 async function togglePiP() {
   if (player.pipActive) {
-    window.api.pipStop()
+    console.log('[PlayerView] togglePiP -> stopping PiP')
+    pip.stop()
     return
   }
+
   let src = videoRef.value?.src || ''
   if (!src && player.currentTrack) {
-    src = `file:///${player.currentTrack.path.replace(/\\/g, '/')}`
+    src = getTrackSrc(player.currentTrack)
   }
   if (!src) return
-  const pipSettings = {
+
+  const startTime = videoRef.value?.currentTime || player.currentTime
+  const mainSrc = videoRef.value?.src || ''
+  console.log(`[PlayerView] togglePiP -> CLICK at ${new Date().toISOString()}`)
+  console.log(`[PlayerView] togglePiP -> main player src: ${mainSrc.substring(0, 120)}`)
+  console.log(`[PlayerView] togglePiP -> startTime: ${startTime}`)
+
+  const started = await pip.start(src, {
     position: settings.playback.pipPosition,
     width: settings.playback.pipWidth,
     height: settings.playback.pipHeight,
-    startTime: videoRef.value?.currentTime || player.currentTime
-  }
-  const started = await window.api.pipStart(src, pipSettings)
+    startTime,
+    subtitle: true
+  })
   if (started) {
-    player.pipTime = videoRef.value?.currentTime || player.currentTime
+    player.pipTime = startTime
     player.pipActive = true
-    if (videoRef.value) {
-      videoRef.value.pause()
-    }
+    if (videoRef.value) videoRef.value.pause()
     player.isPlaying = false
+    syncSubtitlesWithPiP()
   }
+}
+
+function syncSubtitlesWithPiP(): void {
+  if (player.pipActive) {
+    removeSubtitleTrack()
+    return
+  }
+  const trackId = player.activeSubtitleId
+  if (!trackId) return
+  const track = player.subtitleTracks.find((t) => t.id === trackId)
+  if (track) loadSubtitleTrack(track)
 }
 
 function onMouseMove() {
@@ -119,6 +166,7 @@ function handleClick() {
     return
   }
   clickTimer = setTimeout(() => {
+    if (player.pipActive) return
     player.togglePlay()
     showOSD(
       player.isPlaying ? 'Odtwarzanie' : 'Wstrzymano',
@@ -146,6 +194,7 @@ function connectVideoEvents(el: HTMLVideoElement) {
     if (player.currentTrack) player.currentTrack.duration = el.duration || 0
   })
   el.addEventListener('ended', () => {
+    if (player.pipActive) return
     player.isPlaying = false
     player.nextTrack()
   })
@@ -154,7 +203,7 @@ function connectVideoEvents(el: HTMLVideoElement) {
 function setupVideo(track: import('@renderer/types/media').MediaFile | null) {
   if (!track || track.type !== 'video' || !videoRef.value) return
   const el = videoRef.value
-  const src = `file:///${track.path.replace(/\\/g, '/')}`
+  const src = getTrackSrc(track)
   if (el.getAttribute('data-src') !== src) {
     const seekTo = player.pipTime > 0 ? player.pipTime : player.currentTime
     if (player.pipTime > 0) player.pipTime = 0
@@ -164,17 +213,15 @@ function setupVideo(track: import('@renderer/types/media').MediaFile | null) {
     el.addEventListener(
       'loadedmetadata',
       () => {
-        if (seekTo > 0) {
-          el.currentTime = seekTo
-        }
-        if (player.isPlaying) el.play().catch(() => {})
+        if (seekTo > 0) el.currentTime = seekTo
+        if (player.isPlaying && !player.pipActive) el.play().catch(() => {})
       },
       { once: true }
     )
     el.load()
   } else {
     el.volume = player.isMuted ? 0 : player.volume
-    if (player.isPlaying) el.play().catch(() => {})
+    if (player.isPlaying && !player.pipActive) el.play().catch(() => {})
   }
 }
 
@@ -196,12 +243,16 @@ function onVideoRef(el: unknown) {
           lastLoadedPath = player.currentTrack.path
           player.loadSubtitles(player.currentTrack.path)
         } else {
-          video.addEventListener('loadedmetadata', () => {
-            if (player.currentTrack && player.currentTrack.path !== lastLoadedPath) {
-              lastLoadedPath = player.currentTrack.path
-              player.loadSubtitles(player.currentTrack.path)
-            }
-          }, { once: true })
+          video.addEventListener(
+            'loadedmetadata',
+            () => {
+              if (player.currentTrack && player.currentTrack.path !== lastLoadedPath) {
+                lastLoadedPath = player.currentTrack.path
+                player.loadSubtitles(player.currentTrack.path)
+              }
+            },
+            { once: true }
+          )
         }
       }
     }
@@ -228,13 +279,30 @@ watch(
       return
     }
     setupVideo(track)
+
     if (player.pipActive && track.type === 'video') {
-      const src = `file:///${track.path.replace(/\\/g, '/')}`
-      window.api.pipUpdateSrc(src)
+      console.log('[PlayerView] currentTrack changed while PiP active -> loading into PiP')
+      const src = getTrackSrc(track)
+      pip.loadTrack(src, null)
+      preparePiPSubtitleData(track.path).then((subtitleData) => {
+        if (player.pipActive) {
+          console.log('[PlayerView] PiP subtitles for new track:', subtitleData ? 'found' : 'none')
+          pip.updateSubtitle(subtitleData)
+        }
+      })
+      if (videoRef.value) videoRef.value.pause()
+      player.isPlaying = false
+    } else if (track.type === 'video') {
+      const src = getTrackSrc(track)
+      pip.preload(src, null)
+      preparePiPSubtitleData(track.path).then((subtitleData) => {
+        pip.updateSubtitle(subtitleData)
+      })
     }
+
     const title = track.metadata?.title || track.name
     const artist = track.metadata?.artist
-    showOSD(artist ? `${artist} — ${title}` : title, 'track', 2500)
+    showOSD(artist ? `${artist} - ${title}` : title, 'track', 2500)
   },
   { flush: 'post' }
 )
@@ -243,12 +311,14 @@ watch(
   () => player.isPlaying,
   (playing) => {
     if (!videoRef.value || !isVideo.value) return
+    if (player.pipActive) {
+      videoRef.value.pause()
+      return
+    }
     if (playing) videoRef.value.play().catch(() => {})
     else videoRef.value.pause()
   }
 )
-
-const pipCloseCleanup = ref<(() => void) | null>(null)
 
 onMounted(() => {
   if (!player.currentTrack || player.currentTrack.type !== 'video') {
@@ -256,23 +326,27 @@ onMounted(() => {
     return
   }
   setupVideo(player.currentTrack)
+
+  const src = getTrackSrc(player.currentTrack)
+  if (player.pipActive) {
+    console.log('[PlayerView] onMounted -> PiP active, loading new track into PiP')
+    pip.loadTrack(src, null)
+    preparePiPSubtitleData(player.currentTrack.path).then((subtitleData) => {
+      if (player.pipActive) pip.updateSubtitle(subtitleData)
+    })
+  } else {
+    pip.preload(src, null)
+    preparePiPSubtitleData(player.currentTrack.path).then((subtitleData) => {
+      pip.updateSubtitle(subtitleData)
+    })
+  }
+
   document.addEventListener('fullscreenchange', () => {
     isFullscreen.value = !!document.fullscreenElement
-  })
-
-  pipCloseCleanup.value = window.api.on('pip:closed', (time: unknown) => {
-    const savedTime = (time as number) || 0
-    player.pipActive = false
-    if (videoRef.value) {
-      videoRef.value.currentTime = savedTime
-      player.currentTime = savedTime
-    }
-    player.isPlaying = true
   })
 })
 
 onUnmounted(() => {
-  pipCloseCleanup.value?.()
   destroySubtitleRenderer()
   player.clearSubtitles()
   if (controlsTimeout.value) clearTimeout(controlsTimeout.value)
@@ -315,15 +389,13 @@ watch(
 
 watch(
   () => ({ ...player.subtitleSettings }),
-  (settings) => {
+  (s) => {
     if (player.activeSubtitleId) {
-      applySubtitleSettings(settings)
+      applySubtitleSettings(s)
     }
   },
   { deep: true }
 )
-
-
 </script>
 
 <template>
@@ -356,7 +428,7 @@ watch(
           class="mt-4 px-4 py-2 rounded-xl bg-accent-base text-white text-sm"
           @click="router.push('/explorer')"
         >
-          Przeglądaj pliki
+          Przegladaj pliki
         </button>
       </div>
     </div>

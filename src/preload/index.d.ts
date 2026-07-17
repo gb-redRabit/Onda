@@ -8,10 +8,17 @@ interface OndaAPI {
   removeAllListeners: (channel: string) => void
   pipStart: (
     videoSrc: string,
-    settings?: { position?: string; width?: number; height?: number; startTime?: number }
+    settings?: {position?: string; width?: number; height?: number; startTime?: number; subtitle?: unknown}
   ) => Promise<boolean>
   pipStop: () => Promise<boolean>
-  pipUpdateSrc: (videoSrc: string) => Promise<void>
+  pipPreload: (
+    videoSrc: string,
+    subtitleData: { subContent: string; fonts: Array<{ name: string; data: number[] }>; availableFonts: Record<string, string> } | null
+  ) => Promise<void>
+  pipLoadTrack: (
+    videoSrc: string,
+    subtitleData: {subContent: string; fonts: Array<{ name: string; data: number[] }>; availableFonts: Record<string, string>} | null
+  ) => Promise<void>
   checkFfmpeg: () => Promise<{ installed: boolean; version: string | null }>
   checkFfprobe: () => Promise<{ installed: boolean; version: string | null }>
   checkYtdlp: () => Promise<{ installed: boolean; version: string | null; path: string | null }>
@@ -34,6 +41,9 @@ interface OndaAPI {
   ) => Promise<Array<{ name: string; path: string; format: string }>>
   readSubtitleFile: (filePath: string) => Promise<string | null>
   extractSubtitleFonts: (filePath: string) => Promise<Array<{ name: string; ext: string; data: number[] }>>
+  pipUpdateSubtitle: (
+    data: { subContent: string; fonts: Array<{ name: string; data: number[] }>; availableFonts: Record<string, string> } | null
+  ) => Promise<void>
 }
 
 declare global {

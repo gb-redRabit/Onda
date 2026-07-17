@@ -133,7 +133,7 @@ window.api.on('window:maximized', (val: unknown) => {
     <!-- app icon -->
     <div class="flex items-center gap-2 px-3 shrink-0">
       <div
-        class="w-5 h-5 rounded-md flex items-center justify-center bg-gradient-to-br from-accent-base to-purple-400"
+        class="w-5 h-5 rounded-md flex items-center justify-center bg-linear-to-br from-accent-base to-purple-400"
       >
         <Music2 :size="11" class="text-white" />
       </div>
@@ -147,7 +147,7 @@ window.api.on('window:maximized', (val: unknown) => {
       <div
         v-for="tab in tabs"
         :key="tab.id"
-        class="flex items-center gap-2 h-8 px-3 text-xs rounded-t-lg transition-colors cursor-pointer group max-w-[160px] min-w-[80px]"
+        class="flex items-center gap-2 h-8 px-3 text-xs rounded-t-lg transition-colors cursor-pointer group max-w-40 min-w-20"
         :class="
           activeTabId === tab.id
             ? 'bg-bg-base text-fg-base'
@@ -213,7 +213,7 @@ window.api.on('window:maximized', (val: unknown) => {
       @contextmenu.prevent="closeTabMenu"
     >
       <div
-        class="absolute bg-bg-elevated border border-border-default rounded-xl shadow-2xl shadow-black/50 py-1.5 min-w-[180px]"
+        class="absolute bg-bg-elevated border border-border-default rounded-xl shadow-2xl shadow-black/50 py-1.5 min-w-45"
         :style="{ left: tabMenuPos.x + 'px', top: tabMenuPos.y + 'px' }"
         @click.stop
       >
