@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import { useYouTubeStore } from '@renderer/stores/youtube'
-import { moduleManager } from '@renderer/modules/ModuleManager'
-import { Download, CheckCircle, AlertCircle, XCircle, Clock } from '@lucide/vue'
+import { computed, onMounted } from 'vue';
+import { useYouTubeStore } from '@renderer/stores/youtube';
+import { moduleManager } from '@renderer/modules/ModuleManager';
+import { Download, CheckCircle, AlertCircle, XCircle, Clock } from '@lucide/vue';
 
-const yt = useYouTubeStore()
+const yt = useYouTubeStore();
 
 onMounted(() => {
-  moduleManager.switchTo('youtube')
-})
+  moduleManager.switchTo('youtube');
+});
 const active = computed(() =>
   yt.downloads.filter((d) => d.status === 'downloading' || d.status === 'pending')
-)
-const done = computed(() => yt.downloads.filter((d) => d.status === 'completed'))
+);
+const done = computed(() => yt.downloads.filter((d) => d.status === 'completed'));
 
 const icons = {
   downloading: Download,
@@ -20,14 +20,14 @@ const icons = {
   error: AlertCircle,
   cancelled: XCircle,
   pending: Clock
-} as const
+} as const;
 const colors = {
   downloading: 'text-accent-base',
   completed: 'text-green-base',
   error: 'text-red-base',
   cancelled: 'text-fg-faint',
   pending: 'text-amber-base'
-} as const
+} as const;
 </script>
 
 <template>

@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { ArrowLeft, Maximize2, PictureInPicture } from '@lucide/vue'
-import type { MediaFile } from '@renderer/types/media'
+import { ArrowLeft, Maximize2, PictureInPicture } from '@lucide/vue';
+import type { MediaFile } from '@renderer/types/media';
 
 defineProps<{
-  showControls: boolean
-  track: MediaFile | null
-}>()
+  showControls: boolean;
+  track: MediaFile | null;
+}>();
 
 const emit = defineEmits<{
-  back: []
-  pip: []
-  fullscreen: []
-}>()
+  back: [];
+  pip: [];
+  fullscreen: [];
+}>();
 </script>
 
 <template>

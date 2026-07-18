@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Subtitles, Check } from '@lucide/vue'
-import { usePlayerStore } from '@renderer/stores/player'
+import { ref } from 'vue';
+import { Subtitles, Check } from '@lucide/vue';
+import { usePlayerStore } from '@renderer/stores/player';
 
-const player = usePlayerStore()
-const isOpen = ref(false)
+const player = usePlayerStore();
+const isOpen = ref(false);
 
 function selectTrack(id: string | null) {
-  player.setActiveSubtitle(id)
-  isOpen.value = false
+  player.setActiveSubtitle(id);
+  isOpen.value = false;
 }
 </script>
 

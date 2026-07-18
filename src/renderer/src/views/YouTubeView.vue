@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { Search, Play, Download, ExternalLink, Tv2 } from '@lucide/vue'
-import { useYouTubeStore } from '@renderer/stores/youtube'
-import { moduleManager } from '@renderer/modules/ModuleManager'
-import { formatNumber } from '@renderer/utils/formatters'
+import { ref, onMounted } from 'vue';
+import { Search, Play, Download, ExternalLink, Tv2 } from '@lucide/vue';
+import { useYouTubeStore } from '@renderer/stores/youtube';
+import { moduleManager } from '@renderer/modules/ModuleManager';
+import { formatNumber } from '@renderer/utils/formatters';
 
-const yt = useYouTubeStore()
+const yt = useYouTubeStore();
 
 onMounted(() => {
-  moduleManager.switchTo('youtube')
-})
-const query = ref('')
+  moduleManager.switchTo('youtube');
+});
+const query = ref('');
 
 async function search() {
-  if (!query.value.trim()) return
-  yt.isSearching = true
-  yt.searchQuery = query.value
+  if (!query.value.trim()) return;
+  yt.isSearching = true;
+  yt.searchQuery = query.value;
   try {
-    const result = (await window.api.invoke('yt:search', query.value)) as any
-    if (result) yt.setResults(result.items || [], result.nextPageToken, result.prevPageToken)
+    const result = (await window.api.invoke('yt:search', query.value)) as any;
+    if (result) yt.setResults(result.items || [], result.nextPageToken, result.prevPageToken);
   } catch {}
-  yt.isSearching = false
+  yt.isSearching = false;
 }
 </script>
 

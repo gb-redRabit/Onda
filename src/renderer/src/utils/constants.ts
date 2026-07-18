@@ -1,5 +1,5 @@
-export const APP_NAME = 'Onda'
-export const APP_VERSION = '1.0.0'
+export const APP_NAME = 'Onda';
+export const APP_VERSION = '1.0.0';
 
 export const SUPPORTED_AUDIO_FORMATS = [
   '.mp3',
@@ -12,7 +12,7 @@ export const SUPPORTED_AUDIO_FORMATS = [
   '.opus',
   '.aiff',
   '.alac'
-]
+];
 
 export const SUPPORTED_VIDEO_FORMATS = [
   '.mp4',
@@ -25,17 +25,17 @@ export const SUPPORTED_VIDEO_FORMATS = [
   '.m4v',
   '.ts',
   '.ogv'
-]
+];
 
-export const SUPPORTED_PLAYLIST_FORMATS = ['.m3u', '.m3u8', '.pls', '.asx']
+export const SUPPORTED_PLAYLIST_FORMATS = ['.m3u', '.m3u8', '.pls', '.asx'];
 
-export const SUPPORTED_SUBTITLE_FORMATS = ['.srt', '.vtt', '.ass', '.ssa', '.sub']
+export const SUPPORTED_SUBTITLE_FORMATS = ['.srt', '.vtt', '.ass', '.ssa', '.sub'];
 
 export const ALL_MEDIA_FORMATS = [
   ...SUPPORTED_AUDIO_FORMATS,
   ...SUPPORTED_VIDEO_FORMATS,
   ...SUPPORTED_PLAYLIST_FORMATS
-]
+];
 
 export const DEFAULT_SHORTCUTS: Record<string, string> = {
   'play-pause': 'Space',
@@ -55,9 +55,9 @@ export const DEFAULT_SHORTCUTS: Record<string, string> = {
   explorer: 'Ctrl+E',
   library: 'Ctrl+L',
   home: 'Ctrl+H'
-}
+};
 
-export const DEFAULT_EQUALIZER_BANDS = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 14000, 16000]
+export const DEFAULT_EQUALIZER_BANDS = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 14000, 16000];
 
 export const EQUALIZER_PRESETS: Record<string, number[]> = {
   flat: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -68,7 +68,7 @@ export const EQUALIZER_PRESETS: Record<string, number[]> = {
   bassBoost: [6, 5, 4, 2, 0, -1, -1, -1, -1, -1],
   trebleBoost: [-1, -1, -1, -1, 0, 2, 4, 5, 6, 6],
   vocal: [-2, -1, 0, 3, 5, 5, 3, 1, 0, -1]
-}
+};
 
 export const DEFAULT_APPEARANCE = {
   theme: 'dark' as const,
@@ -78,22 +78,22 @@ export const DEFAULT_APPEARANCE = {
   sidebarPosition: 'left' as const,
   animations: true,
   transparency: 1
-}
+};
 
 export const THEME_PALETTES: Record<
   string,
   {
-    bgBase: string
-    bgSurface: string
-    bgOverlay: string
-    bgElevated: string
-    bgHover: string
-    bgActive: string
-    borderDefault: string
-    borderSubtle: string
-    fgBase: string
-    fgMuted: string
-    fgFaint: string
+    bgBase: string;
+    bgSurface: string;
+    bgOverlay: string;
+    bgElevated: string;
+    bgHover: string;
+    bgActive: string;
+    borderDefault: string;
+    borderSubtle: string;
+    fgBase: string;
+    fgMuted: string;
+    fgFaint: string;
   }
 > = {
   dark: {
@@ -148,7 +148,7 @@ export const THEME_PALETTES: Record<
     fgMuted: '#808080',
     fgFaint: '#535353'
   }
-}
+};
 
 export const DEFAULT_PLAYBACK = {
   defaultPlayer: 'html5' as const,
@@ -166,7 +166,7 @@ export const DEFAULT_PLAYBACK = {
   cursorTimeout: 3,
   playbackSpeed: 1,
   videoFilter: 'none'
-}
+};
 
 export const DEFAULT_DOWNLOAD = {
   defaultPath: '',
@@ -176,4 +176,4 @@ export const DEFAULT_DOWNLOAD = {
   maxConcurrent: 3,
   autoDownloadSubscriptions: false,
   hashFiles: true
-}
+};

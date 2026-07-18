@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { Play, Pause, Volume2, Gauge } from '@lucide/vue'
+import { Play, Pause, Volume2, Gauge } from '@lucide/vue';
 
 defineProps<{
-  visible: boolean
-  text: string
-  icon: 'play' | 'pause' | 'volume' | 'seek' | 'track' | 'speed'
-}>()
+  visible: boolean;
+  text: string;
+  icon: 'play' | 'pause' | 'volume' | 'seek' | 'track' | 'speed';
+}>();
 </script>
 
 <template>

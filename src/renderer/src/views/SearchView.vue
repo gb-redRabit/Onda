@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { Search, Music2 } from '@lucide/vue'
-import { useLibraryStore } from '@renderer/stores/library'
-import { usePlayerStore } from '@renderer/stores/player'
-import { moduleManager } from '@renderer/modules/ModuleManager'
+import { ref, computed, onMounted } from 'vue';
+import { Search, Music2 } from '@lucide/vue';
+import { useLibraryStore } from '@renderer/stores/library';
+import { usePlayerStore } from '@renderer/stores/player';
+import { moduleManager } from '@renderer/modules/ModuleManager';
 
-const library = useLibraryStore()
-const player = usePlayerStore()
+const library = useLibraryStore();
+const player = usePlayerStore();
 
 onMounted(() => {
-  moduleManager.switchTo('home')
-})
-const query = ref('')
-const scope = ref<'all' | 'library' | 'files'>('all')
+  moduleManager.switchTo('home');
+});
+const query = ref('');
+const scope = ref<'all' | 'library' | 'files'>('all');
 
 const results = computed(() => {
-  if (!query.value.trim()) return []
-  const q = query.value.toLowerCase()
+  if (!query.value.trim()) return [];
+  const q = query.value.toLowerCase();
   return library.tracks
     .filter(
       (t) =>
@@ -25,8 +25,8 @@ const results = computed(() => {
         t.metadata?.artist?.toLowerCase().includes(q) ||
         t.metadata?.album?.toLowerCase().includes(q)
     )
-    .slice(0, 50)
-})
+    .slice(0, 50);
+});
 </script>
 
 <template>

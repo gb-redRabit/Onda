@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
-import { useSettingsStore } from '@renderer/stores/settings'
-import { moduleManager } from '@renderer/modules/ModuleManager'
+import { ref, watch, onMounted } from 'vue';
+import { useSettingsStore } from '@renderer/stores/settings';
+import { moduleManager } from '@renderer/modules/ModuleManager';
 import {
   Palette,
   Play,
@@ -13,16 +13,16 @@ import {
   RotateCcw,
   Box,
   PictureInPicture
-} from '@lucide/vue'
+} from '@lucide/vue';
 
-const settings = useSettingsStore()
+const settings = useSettingsStore();
 
 const DEP_LIST = [
   { name: 'FFmpeg', description: 'Transkodowanie i przetwarzanie audio/wideo' },
   { name: 'FFprobe', description: 'Analiza metadanych mediów (formaty, bitrate, duration)' },
   { name: 'yt-dlp', description: 'Pobieranie wideo z YouTube i innych serwisów' },
   { name: 'MKVToolbox', description: 'Wyciąganie czcionek z plików MKV (mkvextract)' }
-]
+];
 
 const deps = ref(
   DEP_LIST.map((d) => ({
@@ -32,20 +32,20 @@ const deps = ref(
     installing: false,
     error: null as string | null
   }))
-)
+);
 
 onMounted(() => {
-  moduleManager.switchTo('settings')
+  moduleManager.switchTo('settings');
   if (!hasCachedDeps()) {
-    checkDependencies()
+    checkDependencies();
   }
-})
+});
 
 function hasCachedDeps(): boolean {
-  return DEP_LIST.every((d) => settings.getDependency(d.name)?.checkedAt)
+  return DEP_LIST.every((d) => settings.getDependency(d.name)?.checkedAt);
 }
 
-const tab = ref('appearance')
+const tab = ref('appearance');
 
 const tabs = [
   { id: 'appearance', label: 'Wygląd', icon: Palette },
@@ -57,17 +57,17 @@ const tabs = [
   { id: 'api-keys', label: 'Klucze API', icon: Key },
   { id: 'updates', label: 'Aktualizacje', icon: RefreshCw },
   { id: 'dependencies', label: 'Zależności', icon: Box }
-]
+];
 
 const themes = [
   { id: 'dark', label: 'Ciemny', bg: '#0f0f17', fg: '#e8e8f0' },
   { id: 'light', label: 'Jasny', bg: '#f8f8fa', fg: '#1a1a2e' },
   { id: 'midnight', label: 'Midnight', bg: '#0d1117', fg: '#c9d1d9' },
   { id: 'spotify', label: 'Spotify', bg: '#121212', fg: '#b3b3b3' }
-] as const
+] as const;
 
-const audioFormats = ['mp3', 'flac', 'ogg', 'aac'] as const
-const videoQualities = ['best', '1080p', '720p', '480p'] as const
+const audioFormats = ['mp3', 'flac', 'ogg', 'aac'] as const;
+const videoQualities = ['best', '1080p', '720p', '480p'] as const;
 
 const toggles = [
   { key: 'gaplessPlayback' as const, label: 'Odtwarzanie bez przerw' },
@@ -76,41 +76,41 @@ const toggles = [
   { key: 'autoPauseOnFocusLoss' as const, label: 'Auto-pauza przy utracie fokusa' },
   { key: 'rememberPosition' as const, label: 'Zapamiętuj pozycję odtwarzania' },
   { key: 'cursorHide' as const, label: 'Ukrywanie kursora' }
-]
+];
 
 const pipPositions = [
   { value: 'bottom-right' as const, label: 'Prawy dolny' },
   { value: 'bottom-left' as const, label: 'Lewy dolny' },
   { value: 'top-right' as const, label: 'Prawy górny' },
   { value: 'top-left' as const, label: 'Lewy górny' }
-] as const
+] as const;
 
-const pipPreviewOpen = ref(false)
+const pipPreviewOpen = ref(false);
 
 async function toggleSettingsPiP() {
   if (pipPreviewOpen.value) {
-    await window.api.pipPreviewStop()
-    pipPreviewOpen.value = false
-    return
+    await window.api.pipPreviewStop();
+    pipPreviewOpen.value = false;
+    return;
   }
 
   const started = await window.api.pipPreviewStart({
     position: settings.playback.pipPosition,
     width: settings.playback.pipWidth,
     height: settings.playback.pipHeight
-  })
+  });
   if (started) {
-    pipPreviewOpen.value = true
+    pipPreviewOpen.value = true;
   }
 }
 
 watch(tab, (_newTab, oldTab) => {
   if (oldTab === 'pip' && pipPreviewOpen.value) {
     window.api.pipPreviewStop().then(() => {
-      pipPreviewOpen.value = false
-    })
+      pipPreviewOpen.value = false;
+    });
   }
-})
+});
 
 watch(
   () => [settings.playback.pipPosition, settings.playback.pipWidth, settings.playback.pipHeight],
@@ -120,78 +120,78 @@ watch(
         position: settings.playback.pipPosition,
         width: settings.playback.pipWidth,
         height: settings.playback.pipHeight
-      })
+      });
     }
   }
-)
+);
 
 async function checkDependencies(): Promise<void> {
   for (const dep of deps.value) {
-    dep.installing = true
-    dep.error = null
+    dep.installing = true;
+    dep.error = null;
   }
   const [ffmpeg, ffprobe, ytdlp, mkv] = await Promise.all([
     window.api.checkFfmpeg(),
     window.api.checkFfprobe(),
     window.api.checkYtdlp(),
     window.api.checkMkvextract()
-  ])
-  const results = [ffmpeg, ffprobe, ytdlp, mkv]
-  const now = Date.now()
+  ]);
+  const results = [ffmpeg, ffprobe, ytdlp, mkv];
+  const now = Date.now();
   deps.value.forEach((dep, i) => {
-    dep.installed = results[i].installed
-    dep.version = results[i].version
-    dep.installing = false
+    dep.installed = results[i].installed;
+    dep.version = results[i].version;
+    dep.installing = false;
     settings.updateDependency(dep.name, {
       installed: results[i].installed,
       version: results[i].version,
       checkedAt: now
-    })
-  })
+    });
+  });
 }
 
 async function installDependency(dep: (typeof deps.value)[0]): Promise<void> {
-  dep.installing = true
-  dep.error = null
+  dep.installing = true;
+  dep.error = null;
 
-  let installFn, checkFn
+  let installFn, checkFn;
   if (dep.name === 'FFmpeg' || dep.name === 'FFprobe') {
-    installFn = window.api.installFfmpeg
-    checkFn = dep.name === 'FFmpeg' ? window.api.checkFfmpeg : window.api.checkFfprobe
+    installFn = window.api.installFfmpeg;
+    checkFn = dep.name === 'FFmpeg' ? window.api.checkFfmpeg : window.api.checkFfprobe;
   } else if (dep.name === 'MKVToolbox') {
-    installFn = window.api.installMkvextract
-    checkFn = window.api.checkMkvextract
+    installFn = window.api.installMkvextract;
+    checkFn = window.api.checkMkvextract;
   } else {
-    installFn = window.api.installYtdlp
-    checkFn = window.api.checkYtdlp
+    installFn = window.api.installYtdlp;
+    checkFn = window.api.checkYtdlp;
   }
 
-  const result = await installFn()
-  const now = Date.now()
+  const result = await installFn();
+  const now = Date.now();
   if (result.success) {
-    const status = await checkFn()
-    dep.installed = status.installed
-    dep.version = status.version
+    const status = await checkFn();
+    dep.installed = status.installed;
+    dep.version = status.version;
     settings.updateDependency(dep.name, {
       installed: status.installed,
       version: status.version,
       checkedAt: now
-    })
+    });
 
     if (dep.name === 'FFmpeg') {
-      const probeStatus = await window.api.checkFfprobe()
-      deps.value[1].installed = probeStatus.installed
-      deps.value[1].version = probeStatus.version
+      const probeStatus = await window.api.checkFfprobe();
+      deps.value[1].installed = probeStatus.installed;
+      deps.value[1].version = probeStatus.version;
       settings.updateDependency('FFprobe', {
         installed: probeStatus.installed,
         version: probeStatus.version,
         checkedAt: now
-      })
+      });
     }
   } else {
-    dep.error = result.error || 'Instalacja nie powiodła się'
+    dep.error = result.error || 'Instalacja nie powiodła się';
   }
-  dep.installing = false
+  dep.installing = false;
 }
 </script>
 

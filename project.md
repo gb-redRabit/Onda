@@ -10,24 +10,25 @@
 
 ## 2. Stos Technologiczny
 
-| Warstwa        | Technologia                                 |
-| -------------- | ------------------------------------------- |
-| Runtime        | Electron 39                                 |
-| Framework UI   | Vue 3.5 (Composition API, `<script setup>`) |
-| Język          | TypeScript                                  |
-| Build          | electron-vite + Vite                        |
-| CSS            | Tailwind CSS 4 (via `@tailwindcss/vite`)    |
-| Stan           | Pinia 3 + pinia-plugin-persistedstate       |
-| Routing        | vue-router 4 (hash history, lazy loading)   |
-| Ikony          | @lucide/vue                                 |
-| Drag & Drop    | vuedraggable (Sortable.js)                  |
-| Virtual Lists  | @tanstack/vue-virtual                       |
-| Utilitki       | @vueuse/core                                |
-| Persystencja   | electron-store (ESM, main process)          |
-| Metadane audio | music-metadata                              |
-| Packaging      | electron-builder (NSIS/DMG/AppImage)        |
-| Linting        | ESLint 9 (flat config) + eslint-plugin-vue  |
-| Formatting     | Prettier                                    |
+| Warstwa        | Technologia                                  |
+| -------------- | -------------------------------------------- |
+| Runtime        | Electron 39.8.10                             |
+| Framework UI   | Vue 3.5.25 (Composition API, `<script setup>`) |
+| Język          | TypeScript 5.9.3                             |
+| Build          | electron-vite 5.0 + Vite 7.2.6              |
+| CSS            | Tailwind CSS 4.3.2 (via `@tailwindcss/vite`) |
+| Stan           | Pinia 3.0.4 + pinia-plugin-persistedstate 4.7.1 |
+| Routing        | vue-router 4.6.4 (hash history, lazy loading) |
+| Ikony          | @lucide/vue 1.24.0                           |
+| Virtual Lists  | @tanstack/vue-virtual 3.13.32                |
+| Utilitki       | @vueuse/core 14.3.0                          |
+| Persystencja   | electron-store 11.0.2 (ESM, main process)   |
+| Metadane audio | jsmediatags 3.9.7                            |
+| Napisy ASS     | jassub 2.5.7 (wasm + web worker)             |
+| Google Fonts   | lfa-ponyfill 1.1.1                           |
+| Packaging      | electron-builder 26.0.12 (NSIS/DMG/AppImage) |
+| Linting        | ESLint 9.39.1 (flat config) + eslint-plugin-vue 10.6.2 |
+| Formatting     | Prettier 3.7.4                               |
 
 ---
 
@@ -42,27 +43,22 @@ Aplikacja składa się z **modułów** — niezależnych funkcjonalności, któr
 - Nie może działać równocześnie z innym modułem tego samego typu
 - Musi **całkowicie zwolnić zasoby** (event listenery, timery, audio context, DOM) przed aktywacją następnego modułu
 
-### 3.2 ModuleManager (`src/renderer/src/modules/ModuleManager.ts`)
+### 3.2 ModuleManager (`src/renderer/src/modules/ModuleManager.ts` — 83 linii)
 
 ```typescript
 interface AppModule {
-  id: string // unikalny identyfikator ('player', 'explorer', 'library', ...)
-  name: string // czytelna nazwa
-  init(): void // jednorazowa inicjalizacja (rejestracja IPC, alloc zasobów)
-  activate(context?: unknown): void // aktywacja modułu (pokaż UI, zacznij odtwarzanie)
-  deactivate(): Promise<void> // dezaktywacja (zatrzymaj odtwarzanie, zwolnij timery, wyczyść stan UI)
-  destroy(): Promise<void> // complete cleanup (opcjonalne, przy zamykaniu app)
-  isActive(): boolean // stan aktywności
+  id: string
+  name: string
+  init(): void
+  activate(context?: unknown): void
+  deactivate(): Promise<void>
+  destroy(): Promise<void>
+  isActive(): boolean
 }
-```
 
-**ModuleManager** jako singleton:
-
-```typescript
 class ModuleManager {
   private modules = new Map<string, AppModule>()
   private activeModuleId: string | null = null
-
   register(module: AppModule): void
   async switchTo(moduleId: string, context?: unknown): Promise<void>
   async deactivateAll(): Promise<void>
@@ -71,112 +67,34 @@ class ModuleManager {
 }
 ```
 
-**Kluczowa metoda `switchTo()`:**
-
-```
-1. Jeśli target == active → return (nic do roboty)
-2. Jeśli istnieje active → wywołaj active.deactivate() (AWAIT)
-3. Czekaj aż deactivate się zakończy (Promise resolved)
-4. Wywołaj target.activate(context)
-5. Ustaw activeModuleId = target.id
-```
-
-**Gwarancja:** Nigdy nie ma dwóch aktywnych modułów jednocześnie. Przełączenie jest **atomowe** — albo stary się zakończył, albo nowy nie wystartował.
-
 ### 3.3 Lista Modułów
 
-| ID         | Moduł          | Opis                   | Zasoby do zwolnienia                                                  |
-| ---------- | -------------- | ---------------------- | --------------------------------------------------------------------- |
-| `player`   | PlayerModule   | Odtwarzacz audio/video | AudioContext, RAF loop, audio/video elements, event listenery, timers |
-| `explorer` | ExplorerModule | Eksplorator plików     | IPC listeners, file watchers                                          |
-| `library`  | LibraryModule  | Biblioteka mediów      | IPC listeners, scan workers                                           |
-| `youtube`  | YouTubeModule  | YouTube integration    | IPC listeners, download workers                                       |
-| `settings` | SettingsModule | Ustawienia             | IPC listeners                                                         |
-| `home`     | HomeModule     | Strona główna          | Drop zone listeners                                                   |
+| ID         | Moduł          | Plik               | Linii | Opis                   | Zasoby do zwolnienia                              |
+| ---------- | -------------- | ------------------ | ----- | ---------------------- | ------------------------------------------------- |
+| `player`   | PlayerModule   | PlayerModule.ts    | 45    | Odtwarzacz audio/video | AudioContext, RAF loop, audio/video, event listenery |
+| `explorer` | ExplorerModule | ExplorerModule.ts  | 35    | Eksplorator plików     | IPC listeners, file watchers                      |
+| `library`  | LibraryModule  | LibraryModule.ts   | 34    | Biblioteka mediów      | IPC listeners, scan workers                       |
+| `youtube`  | YouTubeModule  | YouTubeModule.ts   | 28    | YouTube integration    | IPC listeners, download workers                   |
+| `settings` | SettingsModule | SettingsModule.ts  | 25    | Ustawienia             | IPC listeners                                     |
+| `home`     | HomeModule     | HomeModule.ts      | 25    | Strona główna          | Drop zone listeners                               |
 
 ### 3.4 Przepływ Przełączenia Modułów
 
 ```
 Użytkownik klika "Eksplorator" w Sidebar
   → router.push('/explorer')
-  → ExplorerView.onMounted()
-  → moduleManager.switchTo('explorer')
+  → router.afterEach → moduleManager.switchTo('explorer')
     → playerModule.deactivate()    // AWAITS: pauza audio, zapis pozycji, cleanup RAF
     → explorerModule.activate()    // załaduj pliki, pokaż UI
 ```
 
-```
-Użytkownik klika "Odtwarzacz" z utworem
-  → playerModule.activate({ track })  // bez czekania na deactivate (player→player = skip)
-  → router.push('/player')
-  → PlayerView.onMounted() z kontekstem
-```
+### 3.5 Zasada "Jeden Moduł na Raz"
 
-```
-Aplikacja zamykana
-  → moduleManager.deactivateAll()
-  →依次: player.destroy() → explorer.destroy() → ...
-```
-
-### 3.5 Zarządzanie Zasobami Audio (w Module Player)
-
-**Kluczowe zasoby do zarządzania:**
-
-| Zasob              | Typ                     | Inicjalizacja           | Cleanup                                           |
-| ------------------ | ----------------------- | ----------------------- | ------------------------------------------------- |
-| `audioEl`          | HTMLAudioElement        | `createAudioElement()`  | `pause()` + `removeAttribute('src')` + disconnect |
-| `nextAudioEl`      | HTMLAudioElement        | `ensureNextPreloaded()` | j.w.                                              |
-| `audioCtx`         | AudioContext            | `ensureAudioContext()`  | `suspend()` (nie `close()` — reuse)               |
-| `sourceNode`       | MediaElementAudioSource | `connectAudio()`        | disconnect                                        |
-| `sourceNodeB`      | MediaElementAudioSource | `connectAudioB()`       | disconnect                                        |
-| `eqFilters[0..9]`  | BiquadFilterNode        | `ensureAudioContext()`  | disconnect                                        |
-| `gainNode`         | GainNode                | `ensureAudioContext()`  | disconnect                                        |
-| `analyserNode`     | AnalyserNode            | `ensureAudioContext()`  | disconnect                                        |
-| `crossfadeGainA/B` | GainNode                | `ensureAudioContext()`  | reset gain do 0/1                                 |
-| `rafId`            | requestAnimationFrame   | `startRafLoop()`        | `cancelAnimationFrame(rafId)`                     |
-| `crossfadeTimer`   | setTimeout              | `startCrossfade()`      | `clearTimeout(crossfadeTimer)`                    |
-| `playTimer`        | setTimeout              | `isPlaying` watcher     | `clearTimeout(playTimer)`                         |
-| event listenery    | DOM events              | `setupListeners()`      | `removeEventListener()`                           |
-
-**Reguła:** `deactivate()` musi:
-
-1. Pauzować audio element
-2. Anulować crossfade/gapless timers
-3. Zerować RAF loop
-4. Zapisywać pozycję odtwarzania
-5. Ustawiać `isPlaying = false`
-6. NIE zamykać AudioContext (wznowienie jest szybsze niż recreate)
-
-### 3.6 Singletony vs Per-Instance
-
-**Singletony (module-level):** `audioEl`, `nextAudioEl`, `audioCtx`, `sourceNode*`, `eqFilters`, `gainNode*`, `rafId`
-
-Powód: Web Audio API nie pozwala na wiele `MediaElementAudioSourceNode` z tego samego elementu. Jeden AudioContext na aplikację.
-
-**Per-Store (Pinia):** `currentTrack`, `queue`, `history`, `isPlaying`, `currentTime`, `duration`, `volume`
-
-Powód: Stores żyją dłużej niż moduły. Player store zachowuje stan między przełączeniami (np. muzyka gra w tle gdy użytkownik jest w eksploratorze).
-
-**Per-View (ref):** `showControls`, `isFullscreen`, `cursorHidden`, `subtitleTracks`
-
-Powód: Te zmienne dotyczą wyłącznie UI danego widoku i nie powinny wpływać na inne moduły.
-
-### 3.7 Zasada "Jeden Moduł na Raz"
-
-**Ale z wyjątkiem:** Muzyka może grać w tle gdy użytkownik nawiguje do innego widoku.
-
-Rozwiązanie: **Player to specjalny moduł "background-capable"**:
+**Wyjątek:** Muzyka może grać w tle gdy użytkownik nawiguje do innego widoku.
 
 - `player.deactivate()` NIE pauzuje audio — jedynie ukrywa UI
 - `player.deactivate(force: true)` — pauzuje i czyści (przy zamknięciu app)
-- Inne moduły (explorer, library) DEAKTYWUJĄ się przed `player.activate()` (player zajmuje pełen ekran)
-- Player NIE dezaktywuje się当 przechodzimy do eksploratora — działa w tle
-
-```
-Home → Explorer:  explorerModule.activate() (player continues in background)
-Explorer → Player: playerModule.activate({fullScreen: true}) (explorer deactivated)
-Player → Settings: settingsModule.activate() (player continues, PlayerBar visible)
-```
+- Player NIE dezaktywuje się przy przechodzeniu do eksploratora — działa w tle
 
 ---
 
@@ -193,99 +111,110 @@ D:\Onda\
 │   └── install-ytdlp.sh
 ├── src/
 │   ├── main/                           # === MAIN PROCESS (Node.js) ===
-│   │   ├── index.ts                    # Okno, tray, skróty globalne, PiP
+│   │   ├── index.ts                    # Okno, tray, skróty globalne, PiP (305 linii)
+│   │   ├── pip-manager.ts              # PipManager singleton — PiP + preview (420 linii)
 │   │   └── ipc/
-│   │       └── handlers.ts             # Wszystkie handlery IPC
+│   │       └── handlers.ts             # Wszystkie handlery IPC (746 linii)
 │   │
 │   ├── preload/                        # === PRELOAD BRIDGE ===
-│   │   ├── index.ts                    # contextBridge: window.api
-│   │   └── index.d.ts                  # Type definitions
+│   │   ├── index.ts                    # contextBridge: window.api (122 linie)
+│   │   └── index.d.ts                  # Type definitions (85 linii)
 │   │
 │   └── renderer/                       # === RENDERER PROCESS ===
-│       ├── index.html
+│       ├── index.html                  # Main window HTML
+│       ├── pip.html                    # PiP window HTML
 │       └── src/
-│           ├── main.ts                 # createApp + Pinia + Router
-│           ├── App.vue                 # Root layout + theme engine + drag guard
+│           ├── main.ts                 # createApp + Pinia + Router (32 linie)
+│           ├── App.vue                 # Root layout + theme engine (133 linie)
 │           ├── env.d.ts
 │           │
 │           ├── modules/                # === MODUŁY (kluczowa warstwa) ===
-│           │   ├── ModuleManager.ts    # Singleton: lifecycle, switchTo, deactivateAll
-│           │   ├── audioEngine.ts      # Singleton Web Audio API — gapless, crossfade, EQ, RAF
-│           │   ├── PlayerModule.ts     # Audio engine lifecycle (background-capable)
-│           │   ├── ExplorerModule.ts   # File explorer lifecycle
-│           │   ├── LibraryModule.ts    # Media library lifecycle
-│           │   ├── YouTubeModule.ts    # YouTube integration lifecycle
-│           │   ├── HomeModule.ts       # Home page lifecycle
-│           │   └── SettingsModule.ts   # Settings lifecycle
+│           │   ├── ModuleManager.ts    # Singleton: lifecycle, switchTo (83 linie)
+│           │   ├── audioEngine.ts      # Singleton Web Audio API (431 linia)
+│           │   ├── PlayerModule.ts     # Audio engine lifecycle (45 linii)
+│           │   ├── ExplorerModule.ts   # File explorer lifecycle (35 linii)
+│           │   ├── LibraryModule.ts    # Media library lifecycle (34 linie)
+│           │   ├── YouTubeModule.ts    # YouTube integration lifecycle (28 linii)
+│           │   ├── HomeModule.ts       # Home page lifecycle (25 linii)
+│           │   └── SettingsModule.ts   # Settings lifecycle (25 linii)
 │           │
 │           ├── router/
-│           │   └── index.ts            # Trasy z lazy loading
+│           │   └── index.ts            # Trasy z lazy loading (78 linii)
 │           │
-│           ├── stores/                 # Pinia stores (stan przetrwania między modułami)
-│           │   ├── player.ts           # Stan odtwarzacza (生存 across modules)
-│           │   ├── settings.ts         # Ustawienia (persistowane do electron-store)
-│           │   ├── explorer.ts         # Stan eksploratora
-│           │   ├── library.ts          # Stan biblioteki
-│           │   ├── ui.ts               # Stan UI (sidebar, context menu, notifications)
-│           │   └── youtube.ts          # Stan YouTube
+│           ├── stores/                 # Pinia stores
+│           │   ├── player.ts           # Stan odtwarzacza (293 linie)
+│           │   ├── settings.ts         # Ustawienia → electron-store (118 linii)
+│           │   ├── explorer.ts         # Stan eksploratora (164 linie)
+│           │   ├── library.ts          # Stan biblioteki (123 linie)
+│           │   ├── ui.ts               # Stan UI (102 linie)
+│           │   └── youtube.ts          # Stan YouTube (58 linii)
 │           │
 │           ├── composables/
-│           │   └── useMediaPlayer.ts   # Audio engine (Web Audio API, gapless, crossfade)
+│           │   ├── useMediaPlayer.ts   # Audio engine wrapper (75 linii)
+│           │   ├── usePiP.ts           # PiP composable (94 linie)
+│           │   └── useSubtitleRenderer.ts # JASSUB init + font map (375 linii)
 │           │
 │           ├── types/
-│           │   ├── media.ts            # MediaFile, MediaMetadata, Playlist
-│           │   ├── settings.ts         # AppSettings (appearance, playback, download, ...)
-│           │   ├── explorer.ts         # FileItem, ViewMode, SortBy
-│           │   └── youtube.ts          # YouTubeVideo, Subscription, DownloadTask
+│           │   ├── media.ts            # MediaFile, MediaMetadata (67 linii)
+│           │   ├── settings.ts         # AppSettings (91 linia)
+│           │   ├── explorer.ts         # FileItem, ViewMode (21 linia)
+│           │   ├── youtube.ts          # YouTubeVideo, Subscription (65 linii)
+│           │   └── subtitles.ts        # MkvFont, SubtitleTrack (16 linii)
 │           │
 │           ├── utils/
-│           │   ├── constants.ts        # Formaty, presety EQ, motywy, defaults
-│           │   ├── fileTypes.ts        # Rozszerzenia → ikony/kolory/kategorie
-│           │   ├── trackMetadata.ts    # enrichTrack(), resolveCover(), probeVideoDuration()
-│           │   ├── fileDrop.ts         # getDroppedPaths(), processDroppedFiles()
-│           │   ├── formatters.ts       # Formatowanie czasu, rozmiaru
-│           │   └── subtitles.ts        # Parser SRT/VTT/ASS
+│           │   ├── constants.ts        # Formaty, presety EQ, motywy, defaults (179 linii)
+│           │   ├── fileTypes.ts        # Rozszerzenia → ikony/kolory (49 linii)
+│           │   └── formatters.ts       # Formatowanie czasu, rozmiaru (57 linii)
 │           │
 │           ├── components/
 │           │   ├── layout/
-│           │   │   ├── TitleBar.vue    # Custom titlebar + tabs
-│           │   │   ├── TopMenu.vue     # Menu bar + address bar
-│           │   │   ├── Sidebar.vue     # Nawigacja + resize + playlisty
-│           │   │   ├── PlayerBar.vue   # Dolny pasek odtwarzacza
-│           │   │   └── StatusBar.vue   # Dolny pasek statusu
+│           │   │   ├── TitleBar.vue    # Custom titlebar + tabs (272 linie)
+│           │   │   ├── TopMenu.vue     # Menu bar + address bar (136 linii)
+│           │   │   ├── Sidebar.vue     # Nawigacja + resize + playlisty (208 linii)
+│           │   │   ├── PlayerBar.vue   # Dolny pasek odtwarzacza (225 linii)
+│           │   │   └── StatusBar.vue   # Dolny pasek statusu (67 linii)
 │           │   │
 │           │   └── player/
-│           │       ├── AudioBackground.vue   # Radial visualizer (tło)
-│           │       ├── AudioNowPlaying.vue   # Now-playing bar
-│           │       ├── AudioTrackList.vue    # Lista utworów z okładkami
-│           │       ├── AudioVisualizer.vue   # Canvas visualizer (bars/wave/radial)
-│           │       ├── Equalizer.vue         # 10-pasmowy EQ + presety
-│           │       ├── PlayerControls.vue    # Kontrolki: play, skip, speed ±, filter, volume, time
-│           │       ├── PlayerOSD.vue         # OSD overlay (ikony: play/pause/volume/speed)
-│           │       ├── PlayerTopBar.vue      # Górny pasek (back, PiP, fullscreen)
-│           │       ├── QueuePanel.vue        # Kolejka + historia (draggable)
-│           │       ├── SubtitleTrackSelector.vue # Wybór ścieżki napisów
-│           │       └── TrackArt.vue          # Okładka: video loop / obraz / ikona
+│           │       ├── AudioVisualizer.vue   # Canvas visualizer (bars/wave/radial) (125 linii)
+│           │       ├── Equalizer.vue         # 10-pasmowy EQ + presety (139 linii)
+│           │       ├── PlayerControls.vue    # Kontrolki: play, skip, speed, filter, volume (284 linie)
+│           │       ├── PlayerOSD.vue         # OSD overlay (43 linie)
+│           │       ├── PlayerTopBar.vue      # Górny pasek (back, PiP, fullscreen) (47 linii)
+│           │       ├── QueuePanel.vue        # Kolejka + historia (293 linie)
+│           │       └── SubtitleTrackSelector.vue # Wybór ścieżki napisów (94 linie)
 │           │
 │           ├── views/
-│           │   ├── HomeView.vue        # Strona główna + drop zone
-│           │   ├── PlayerView.vue      # Odtwarzacz video/audio fullscreen
-│           │   ├── AudioFilesView.vue  # Przeglądarka plików audio
-│           │   ├── ExplorerView.vue    # Eksplorator plików
-│           │   ├── LibraryView.vue     # Biblioteka mediów
-│           │   ├── YouTubeView.vue     # YouTube (stub)
-│           │   ├── DownloadsView.vue   # Pobierania (stub)
-│           │   ├── SearchView.vue      # Wyszukiwanie (stub)
-│           │   └── SettingsView.vue    # Ustawienia
+│           │   ├── HomeView.vue        # Strona główna + drop zone (150 linii)
+│           │   ├── PlayerView.vue      # Odtwarzacz video/audio fullscreen (606 linii)
+│           │   ├── ExplorerView.vue    # Eksplorator plików (298 linii)
+│           │   ├── LibraryView.vue     # Biblioteka mediów (188 linii)
+│           │   ├── YouTubeView.vue     # YouTube (stub) (120 linii)
+│           │   ├── DownloadsView.vue   # Pobierania (stub) (93 linie)
+│           │   ├── SearchView.vue      # Wyszukiwanie (stub) (96 linii)
+│           │   └── SettingsView.vue    # Ustawienia (774 linie)
 │           │
-│           └── assets/
-│               └── main.css
+│           ├── assets/
+│           │   └── main.css            # Theme CSS variables (94 linie)
+│           │
+│           └── pip.ts                  # PiP bundle entry (JASSUB, listenery) (181 linia)
+│
+│   └── renderer/
+│       ├── public/
+│       │   └── fonts/                  # Lokalne fonty Windows (18 plików TTF)
+│       │       ├── arial.ttf, arialbd.ttf, ArialBold.ttf, ArialItalic.ttf, ArialBoldItalic.ttf
+│       │       ├── Calibri.ttf, CalibriBold.ttf, CalibriItalic.ttf
+│       │       ├── CourierNew.ttf, ComicSansMS.ttf, Georgia.ttf
+│       │       ├── Tahoma.ttf, TahomaBold.ttf
+│       │       ├── SegoeUIEmoji.ttf, TimesNewRoman.ttf
+│       │       ├── TrebuchetMS.ttf, TrebuchetMSBold.ttf
+│       │       └── Verdana.ttf, VerdanaBold.ttf
 │
 ├── package.json
 ├── electron.vite.config.ts
 ├── electron-builder.yml
 ├── tsconfig.json / tsconfig.web.json / tsconfig.node.json
 ├── eslint.config.mjs
+├── .prettierrc.yaml
 ├── todo.md
 ├── project.md                          # Ten plik
 └── .vscode/
@@ -301,14 +230,8 @@ D:\Onda\
 ┌─────────────────────────────────────────────────────┐
 │                    VIEWS                             │
 │  PlayerView / ExplorerView / LibraryView / ...      │
-│  → wywołują moduleManager.switchTo(id)              │
 │  → czytają store'y (player.currentTrack, etc.)      │
 │  → wywołują akcje store (player.setTrack(), etc.)   │
-├─────────────────────────────────────────────────────┤
-│                 MODULE MANAGER                       │
-│  moduleManager.switchTo('player', {track})           │
-│  → stary_moduł.deactivate() [AWAIT]                 │
-│  → nowy_moduł.activate(context)                     │
 ├─────────────────────────────────────────────────────┤
 │               PINIA STORES                           │
 │  player.ts: currentTrack, isPlaying, queue, ...     │
@@ -318,8 +241,8 @@ D:\Onda\
 ├─────────────────────────────────────────────────────┤
 │             COMPOSABLES                              │
 │  useMediaPlayer.ts → singletony module-level         │
-│  → audioEl, audioCtx, sourceNode, rafId, ...        │
-│  → Web Audio API chain                               │
+│  usePiP.ts → IPC PiP controls                       │
+│  useSubtitleRenderer.ts → JASSUB + font map          │
 ├─────────────────────────────────────────────────────┤
 │             PRELOAD BRIDGE                           │
 │  window.api.invoke(channel, ...args)                │
@@ -327,15 +250,16 @@ D:\Onda\
 ├─────────────────────────────────────────────────────┤
 │             MAIN PROCESS                             │
 │  handlers.ts: fs, media, settings, pip, ...         │
-│  → Node.js fs, child_process (ffmpeg), etc.         │
+│  pip-manager.ts: PiP window + preview window        │
+│  → Node.js fs, child_process (ffmpeg, mkvextract)   │
 └─────────────────────────────────────────────────────┘
 ```
 
 ### 5.2 Flow: Odtwarzanie utworu
 
 ```
-1. Użytkownik: klik "Bounce.mp3" w AudioFilesView
-2. AudioFilesView: player.setTrack(track)        // Pinia store
+1. Użytkownik: klik "Bounce.mp3" w ExplorerView
+2. ExplorerView: player.setTrack(track)
 3. Pinia store: currentTrack = track, isPlaying = true
 4. useMediaPlayer watch (currentTrack):
    a. srcMatches(audioEl, src) → false → loadTrack(track)
@@ -352,67 +276,48 @@ D:\Onda\
    d. ensureNextPreloaded() → następny z queue
 ```
 
-### 5.3 Flow: Przełączenie modułu
-
-```
-Użytkownik: eksplorator → odtwarzacz
-1. router.push('/player')
-2. PlayerView.onMounted()
-3. moduleManager.switchTo('player', { track: currentTrack })
-4. ModuleManager:
-   a. explorerModule.deactivate() → zwolnij file watchers, ukryj UI
-   b. playerModule.activate({ track }) → pokaż fullscreen player
-5. PlayerView: setupVideo(track) / setup audio visualization
-```
-
-### 5.4 Flow: Napisy JASSUB (ASS z MKV)
+### 5.3 Flow: Napisy JASSUB (ASS z MKV)
 
 ```
 1. Użytkownik włącza ścieżkę napisów (embedded ASS lub zewnętrzny .ass/.srt)
-2. player.ts loadEmbeddedSubtitle(videoPath):
-   a. extractEmbeddedSubtitle → ASS content (ffmpeg -c:s copy)
-   b. extractSubtitleFonts(videoPath) → mkvextract wyciąga załączniki:
+2. PlayerView: loadEmbeddedSubtitle(videoPath):
+   a. IPC subtitles:extractEmbedded → ASS content
+   b. IPC subtitles:extractAttachments → mkvextract wyciąga czcionki:
       - ffprobe: lista streamów attachment (index, filename)
-      - mkvextract attachments <attId>:"out.ttf" per-attachment (spawnSync, shell:true)
+      - mkvextract attachments <attId>:"out.ttf" per-attachment
       - odczyt binarny → { name, ext, data:number[] }[]
    → zwraca { content, format, fonts: MkvFont[] }
 3. PlayerView: track.fonts = result.fonts
 4. useSubtitleRenderer.loadSubtitleTrack(track):
-   a. convertToAss(track) → ujednolicony ASS
-   b. buildFontMap(assContent, mkvFonts):
+   a. buildFontMap(assContent, mkvFonts):
       - extractAssFamilies() → rodziny z [V4+ Styles] Fontname
       - dostępne lokalne Windows fonty (availableFonts, lowercase keys)
       - dla brakujących: lfa-ponyfill queryRemoteFonts (Google, postscriptName)
         → URL.createObjectURL(blob) do availableFonts
-   c. new JASSUB({
+   b. new JASSUB({
         subContent: assContent,
         workerUrl, wasmUrl (data:application/wasm;base64), modernWasmUrl,
         queryFonts: false,
-        fonts: mkvFonts.map(f => new Uint8Array(f.data)),  // binarne z MKV
-        availableFonts: fontMap,                            // lokalne + Google
+        fonts: mkvFonts.map(f => new Uint8Array(f.data)),
+        availableFonts: fontMap,
         defaultFont: 'arial'
       })
 ```
 
 **Kluczowe decyzje:**
 
-- `queryFonts: false` — wewnętrzne query JASSUB (local/remote) zepsute w Electron (fonts.json MIME + brak self.queryLocalFonts)
+- `queryFonts: false` — wewnętrzne query JASSUB zepsute w Electron
 - wasm ładowany jako `data:` URL (omija błąd MIME na `file://`/`app://`)
 - worker przez `?worker&url` (Vite auto-blob, self-contained)
 - binarne fonty z MKV → `fonts: Uint8Array[]` (JASSUB sam dopasowuje family name z ASS)
-- custom PL fonty (np. "EraserDust CE PL") z MKV renderują się zamiast Arial fallbacku
 - Google fallback tylko dla nazwanych fontów brakujących lokalnie i w MKV
 
 **Dlaczego edycja stylów ASS nie ma sensu:**
 
-ASS/SSA to złożony format z bogatym systemem stylów zawierającym: nazwy czcionek, rozmiary, kolory (z kanałem alpha), obwódki, cienie, pozycjonowanie (alignment 1-9), marginesy, obrót, skala, i wiele innych właściwości. Próba nadpisania tych stylów (np. przez `styleOverride` lub `setStyle`) psuje wygląd napisów, bo:
-
-1. Oryginalne pliki ASS często mają wiele stylów (nie tylko "Default") — np. style dla postaci, efektów specjalnych, piosenek
+ASS/SSA to złożony format z bogatym systemem stylów. Próba nadpisania stylów psuje wygląd napisów, bo:
+1. Oryginalne pliki ASS często mają wiele stylów (nie tylko "Default")
 2. Każdy styl może mieć różne czcionki, kolory i pozycjonowanie
-3. JASSUB renderuje ASS zgodnie ze specyfikacją — modyfikacja stylów łamie kompatybilność
-4. Nawet proste zmiany (rozmiar czcionki) mogą zmienić układ i czytelność
-
-Dlatego edycja stylów ASS została porzucona — lepiej zostawić oryginalny styl z pliku.
+3. Nawet proste zmiany (rozmiar czcionki) mogą zmienić układ i czytelność
 
 ---
 
@@ -431,22 +336,27 @@ Dlatego edycja stylów ASS została porzucona — lepiej zostawić oryginalny st
 
 ### 6.2 Media
 
-| Kanał                          | Opis                                                        |
-| ------------------------------ | ----------------------------------------------------------- |
-| `media:getMetadata`            | ID3 metadata (music-metadata)                               |
-| `media:getThumbnail`           | Embedded cover art (base64)                                 |
-| `media:getCover`               | Cover result: `{ type: 'video'                              | 'image' | null, data }`— video = path for`<video>` tag |
-| `media:getDuration`            | ffprobe duration (seconds)                                  |
-| `media:getReplayGain`          | ReplayGain tags                                             |
-| `media:findSubtitles`          | Szukanie napisów obok pliku                                 |
-| `media:loadSubtitle`           | Odczyt pliku napisów                                        |
-| `media:probeEmbeddedSubtitles` | ffprobe: wbudowane ścieżki                                  |
-| `media:extractSubtitle`        | ffmpeg: ekstrakcja napisów                                  |
-| `subtitles:extractAttachments` | mkvextract: czcionki z MKV → `{name, ext, data:number[]}[]` |
-| `media:toggleFavorite`         | Toggle ulubionego                                           |
-| `media:getFavorites`           | Pobranie mapy ulubionych                                    |
+| Kanał                    | Opis                                        |
+| ------------------------ | ------------------------------------------- |
+| `media:getMetadata`      | ID3 metadata (jsmediatags)                  |
+| `media:getThumbnail`     | Embedded cover art (base64)                 |
+| `media:getCover`         | Cover: `{ type: 'video' | 'image' | null, data }` |
+| `media:getDuration`      | ffprobe duration (seconds)                  |
+| `media:getReplayGain`    | ReplayGain tags                             |
+| `media:toggleFavorite`   | Toggle ulubionego                           |
+| `media:getFavorites`     | Pobranie mapy ulubionych                    |
 
-### 6.3 Dialogi
+### 6.3 Napisy
+
+| Kanał                         | Opis                                                        |
+| ----------------------------- | ----------------------------------------------------------- |
+| `subtitles:listEmbedded`      | ffprobe: wbudowane ścieżki napisów                          |
+| `subtitles:extractEmbedded`   | ffmpeg: ekstrakcja napisów (content + format)               |
+| `subtitles:findExternal`      | Szukanie napisów obok pliku                                 |
+| `subtitles:readFile`          | Odczyt pliku napisów                                        |
+| `subtitles:extractAttachments`| mkvextract: czcionki z MKV → `{name, ext, data:number[]}[]` |
+
+### 6.4 Dialogi
 
 | Kanał               | Opis                  |
 | ------------------- | --------------------- |
@@ -455,9 +365,9 @@ Dlatego edycja stylów ASS została porzucona — lepiej zostawić oryginalny st
 | `dialog:openFolder` | Dialog wyboru folderu |
 | `dialog:selectFile` | Zwykły select pliku   |
 
-### 6.4 Picture-in-Picture
+### 6.5 Picture-in-Picture
 
-**Main process (`pip-manager.ts`):** `PipManager` singleton — zarządza ukrytym `BrowserWindow` (nigdy niszczony, tylko show/hide), preload wideo, synchronizacja czasu, napisy JASSUB.
+**Main process (`pip-manager.ts` — 420 linii):** `PipManager` singleton — zarządza ukrytym `BrowserWindow` (nigdy niszczony, tylko show/hide), preload wideo, synchronizacja czasu, napisy JASSUB.
 
 | Kanał (invoke)        | Opis                                              |
 | --------------------- | ------------------------------------------------- |
@@ -481,25 +391,16 @@ Dlatego edycja stylów ASS została porzucona — lepiej zostawić oryginalny st
 | `pip:requestTime`     | main→PiP: zapytaj o aktualny czas                 |
 | `pip:timeUpdate`      | PiP→main: aktualny czas odtwarzania               |
 | `pip:hidden`          | PiP→main: okno zamknięte przez użytkownika (X)    |
-| `pip:ended`           | PiP→main: wideo się zakończyło                    |
+| `pip:ended`           | PiP→main/w renderer: wideo się zakończyło         |
 | `pip:closed`          | main→renderer: PiP zamknięte + zapisany czas      |
-| `pip:ended`           | main→renderer: wideo w PiP się zakończyło         |
 
-**Renderer (`pip.ts`):** Wpis PiP bundle — JASSUB, listenery `pip:videoSrc`/`pip:play`/`pip:pause`/`pip:clear`/`pip:subtitle`, close button → `pip:hidden`, progress bar, timestamp display.
+**Renderer (`pip.ts` — 181 linia):** PiP bundle entry — JASSUB init, listenery IPC, close button, progress bar, timestamp display. Osobny HTML (`pip.html`).
 
-**Composable (`usePiP.ts`):** `usePiP({onClosed, onEnded})` — interfejs renderera: `start()`, `stop()`, `preload()`, `loadTrack()`, `loadTrackFromCurrent()`, `updateSubtitle()`.
+**Composable (`usePiP.ts` — 94 linie):** `usePiP({onClosed, onEnded})` — interfejs renderera: `start()`, `stop()`, `preload()`, `loadTrack()`, `loadTrackFromCurrent()`, `updateSubtitle()`.
 
-**Preview window (settings):** Osobny `BrowserWindow` (showPreview/hidePreview/updatePreview) — czarne tło "Podgląd PiP", alwaysOnTop, frameless, bez video. Sluzy do podglądu pozycji/rozmiaru PiP w ustawieniach. Całkowicie niezależny od głównego PiP — nie dotyka istniejącego okna PiP ani żadnych zasobów playera.
+**Preview window (settings):** Osobny `BrowserWindow` (showPreview/hidePreview/updatePreview) — czarne tło "Podgląd PiP", alwaysOnTop, frameless. Całkowicie niezależny od głównego PiP.
 
-**Kluczowe zachowania:**
-
-- **Preload:** Przy każdym nowym utworze (onMounted + currentTrack watcher), PiP dostaje `pip:videoSrc` w tle (ukryte okno). Po kliknięciu PiP — tylko `pip:play` (natychmiastowy start).
-- **Porównanie ścieżek:** `show()` normalizuje URLe (decode + `file:///` strip + backslash + lowercase) i porównuje z `loadedSrc`. Jeśli takie samo → tylko play, bez przeładowania.
-- **Hide vs Stop:** `hide()` wysyła `pip:pause` (nie `pip:clear`), zachowuje `loadedSrc`. `stop()` czyści wszystko.
-- **Zmiana utworu w PiP:** `pip:ended` → renderer → `nextTrack()` → `currentTrack` watcher → `pip.loadTrack()` (PiP gra nowy) lub `pip.preload()` (PiP gotowy).
-- **PiP aktywne + nowy plik:** `onMounted` wykrywa `pipActive=true` → `pip.loadTrack()` zamiast `pip.preload()` — PiP natychmiast przełącza wideo.
-
-### 6.5 Ustawienia / Odtwarzanie / Playlista
+### 6.6 Ustawienia / Odtwarzanie / Playlista
 
 | Kanał                                                   | Opis                  |
 | ------------------------------------------------------- | --------------------- |
@@ -508,13 +409,13 @@ Dlatego edycja stylów ASS została porzucona — lepiej zostawić oryginalny st
 | `playlist:list` / `playlist:create` / `playlist:delete` | CRUD playlist         |
 | `playlist:addTrack` / `playlist:removeTrack`            | Zarządzanie utworami  |
 
-### 6.6 Okno / Shell / FFmpeg / Zależności
+### 6.7 Okno / Shell / FFmpeg / Zależności
 
 | Kanał                                           | Opis                                             |
 | ----------------------------------------------- | ------------------------------------------------ |
 | `window:createChild` / `window:closeChild`      | Okna podrzędne                                   |
+| `window:maximized`                              | main→renderer: stan okna (maximize/unmaximize)   |
 | `shell:openExternal` / `shell:showItemInFolder` | Otwieranie w systemie                            |
-| `ffmpeg:check` / `ffmpeg:install`               | FFmpeg detection/instalacja                      |
 | `dep:checkFfmpeg`                               | Sprawdzenie FFmpeg (cache w electron-store)      |
 | `dep:checkFfprobe`                              | Sprawdzenie FFprobe                              |
 | `dep:checkYtdlp`                                | Sprawdzenie yt-dlp                               |
@@ -528,18 +429,18 @@ Dlatego edycja stylów ASS została porzucona — lepiej zostawić oryginalny st
 
 ## 7. Pinia Stores
 
-### 7.1 `player.ts` — Odtwarzacz
+### 7.1 `player.ts` (293 linie) — Odtwarzacz
 
 **Stan (ref):**
 
-- `currentTrack: MediaFile | null` — aktualny utwór
-- `queue: MediaFile[]` — kolejka (max ~100)
-- `history: MediaFile[]` — historia (max 100)
+- `currentTrack: MediaFile | null`
+- `queue: MediaFile[]` (max ~100)
+- `history: MediaFile[]` (max 100)
 - `isPlaying: boolean`
 - `isMuted: boolean`
 - `volume: number` (0-1, default 0.8)
-- `currentTime: number` — aktualny czas (synchronizowany z RAF loop)
-- `duration: number` — czas trwania (z metadanych lub durationchange)
+- `currentTime: number` — synchronizowany z RAF loop
+- `duration: number`
 - `playbackRate: number`
 - `shuffle: boolean`
 - `repeat: 'none' | 'all' | 'one'`
@@ -548,45 +449,45 @@ Dlatego edycja stylów ASS została porzucona — lepiej zostawić oryginalny st
 - `equalizerBands: number[10]`
 - `visualizerStyle: 'bars' | 'wave' | 'radial'`
 - `pipActive / pipTime`
-- `coverCache: Map<string, CoverResult>` (reactive — Vue 3 Map reactivity)
+- `coverCache: Map<string, CoverResult>` (reactive Vue 3 Map)
 - `enrichTrack(track)` — async: ffprobe duration + cover cache
 
 **Computed:** `hasTrack`, `progress`, `queueLength`
 
 **Akcje:** `setTrack`, `playTrack`, `play/pause/togglePlay/stop/seek`, `setVolume/toggleMute`, `toggleShuffle/cycleRepeat`, `addToQueue/addToQueueMultiple/removeFromQueue/clearQueue/reorderQueue`, `nextTrack/prevTrack/playFromQueue/playFromHistory`, `toggleQueue/toggleEqualizer/toggleVisualizer`
 
-**Persistencja:** Volume, shuffle, repeat, EQ bands, visualizer style → `settings.store` (auto-save przy każdej zmianie)
+**Persistencja:** Volume, shuffle, repeat, EQ bands, visualizer style → `settings.store` (auto-save)
 
-### 7.2 `settings.ts` — Ustawienia
+### 7.2 `settings.ts` (118 linii) — Ustawienia
 
-**Sekcje:** `appearance`, `playback`, `download`, `shortcuts`, `ffmpeg`, `subtitles`
+**Sekcje:** `appearance`, `playback`, `download`, `shortcuts`, `dependencies`
 
-**Playback settings (rozbudowane):**
-- `playbackSpeed` — prędkość odtwarzania (0.2–3.0, default 1.0)
-- `videoFilter` — filtr CSS na `<video>` (none, grayscale, sepia, contrast, brightness, saturate, invert, blur, hue-rotate)
-- `cursorHide` — ukrywanie kursora w fullscreenie (default true)
+**Playback settings:**
+- `playbackSpeed` — 0.2–3.0, default 1.0
+- `videoFilter` — CSS filter na `<video>` (none, grayscale, sepia, contrast, brightness, saturate, invert, blur, hue-rotate)
+- `cursorHide` — ukrywanie kursora w fullscreen (default true)
 - `cursorTimeout` — czas do ukrycia kursora w sekundach (default 3)
 - `pipPosition` — pozycja okna PiP (bottom-right, bottom-left, top-right, top-left)
 - `pipWidth` / `pipHeight` — rozmiar okna PiP (default 480×290)
 
-**Zachowanie:** `playbackSpeed` i `videoFilter` resetują się do defaultów przy każdej zmianie utworu (onMounted + currentTrack watcher).
+**Zachowanie:** `playbackSpeed` i `videoFilter` resetują się do defaultów przy każdej zmianie utworu.
 
-**Persystencja:** Cały obiekt → electron-store w main process (przez IPC `settings:get/set`)
+**Persistencja:** Cały obiekt → electron-store w main process (przez IPC `settings:get/set`)
 
-### 7.3 `explorer.ts` — Eksplorator
+### 7.3 `explorer.ts` (164 linie) — Eksplorator
 
 **State:** `currentPath`, `files: FileItem[]`, `selectedFiles: Set`, `viewMode`, `sortBy/sortOrder`, `history[]`
 
-### 7.4 `library.ts` — Biblioteka
+### 7.4 `library.ts` (123 linie) — Biblioteka
 
 **State:** `tracks: MediaFile[]`, `playlists: Playlist[]`
 **Computed:** `artists`, `albums`, `recentTracks`, `mostPlayed`
 
-### 7.5 `ui.ts` — UI State
+### 7.5 `ui.ts` (102 linie) — UI State
 
 **State:** `sidebarExpanded/Width/Mode`, `topMenuVisible`, `statusBarVisible`, `playerBarVisible`, `contextMenu`, `notifications`
 
-### 7.6 `youtube.ts` — YouTube (stub)
+### 7.6 `youtube.ts` (58 linii) — YouTube (stub)
 
 **State:** `searchResults`, `subscriptions`, `downloads`
 
@@ -599,12 +500,9 @@ Dlatego edycja stylów ASS została porzucona — lepiej zostawić oryginalny st
 ```
 audioEl ──→ sourceNode ──→ crossfadeGainA ──→ [EQ: BiquadFilter ×10] ──→ gainNode ──→ analyserNode ──→ destination
 nextAudioEl ──→ sourceNodeB ──→ crossfadeGainB ─┘
-
-Gapless swap: sourceNodeB przejmuje bycie sourceNode
-Crossfade: crossfadeGainA.linearRampToValueAtTime(0), crossfadeGainB.linearRampToValueAtTime(1)
 ```
 
-### 8.2 Singletony module-level
+### 8.2 Singletony module-level (`audioEngine.ts` — 431 linia)
 
 ```typescript
 let audioEl: HTMLAudioElement | null = null
@@ -622,8 +520,6 @@ let crossfadeTimer: ... | null = null
 let isCrossfading = false
 let isTrackEnding = false
 ```
-
-**Dlaczego singletony:** Web Audio API pozwala na jeden `MediaElementAudioSourceNode` per element audio. Jeden AudioContext na aplikację (wznowienie po suspend jest szybsze niż recreate).
 
 ### 8.3 Gapless Playback
 
@@ -658,7 +554,6 @@ let isTrackEnding = false
 
 ```
 savedPositions = Map<string, { time: number; savedAt: number }>
-
 loadTrack(): sprawdza savedPositions + retentionMinutes → seek do zapisanego czasu
 savePosition(): zapisuje currentTime do Map + IPC playback:setPosition
 clearSavedPosition(): usuwa z Map + IPC playback:clearPosition
@@ -679,15 +574,14 @@ loadTrack() → applyReplayGain(): gainDb → linear → gainNode.gain.value
 | ------------ | --------- | -------------- | ------------------- |
 | `/`          | home      | HomeView       | home                |
 | `/player`    | player    | PlayerView     | player              |
-| `/audio`     | audio     | AudioFilesView | player (audio mode) |
 | `/explorer`  | explorer  | ExplorerView   | explorer            |
 | `/library`   | library   | LibraryView    | library             |
 | `/youtube`   | youtube   | YouTubeView    | youtube             |
 | `/downloads` | downloads | DownloadsView  | youtube (downloads) |
-| `/search`    | search    | SearchView     | —                   |
+| `/search`    | search    | SearchView     | home                |
 | `/settings`  | settings  | SettingsView   | settings            |
 
-Lazy loading: `() => import(...)` w routerze. Transition fade między widokami.
+Lazy loading: `() => import(...)` w routerze. Transition fade (`opacity 0.12s`) między widokami.
 
 ---
 
@@ -708,72 +602,70 @@ Lazy loading: `() => import(...)` w routerze. Transition fade między widokami.
 
 - [x] Instalacja zależności
 - [x] Struktura katalogów
-- [x] Preload bridge
-- [x] Main process + IPC handlers
-- [x] Router z lazy loading
-- [x] **Architektura modułowa** — ModuleManager + 6 modułów (player, explorer, library, youtube, home, settings)
-- [x] **audioEngine.ts** — wyodrębniony silnik audio (Web Audio API, gapless, crossfade, EQ, RAF) jako singleton
-- [x] **useMediaPlayer.ts** — refaktoryzacja na singleton wrapper delegujący do audioEngine
+- [x] Preload bridge (122 linie, pełny type safety)
+- [x] Main process + IPC handlers (305 + 746 linii)
+- [x] Router z lazy loading (78 linii)
+- [x] **Architektura modułowa** — ModuleManager + 6 modułów
+- [x] **audioEngine.ts** — wyodrębniony silnik audio (431 linia)
+- [x] **useMediaPlayer.ts** — refaktoryzacja na singleton wrapper (75 linii)
 - [x] Router `afterEach` guard → `moduleManager.switchTo()` przy każdej nawigacji
-- [x] Widoki zintegrowane z modulem (`onMounted → switchTo()`)
 
 ### FAZA 1: UI Skeleton + Nawigacja — ✅ UKOŃCZONA
 
-- [x] Custom TitleBar (tabs, drag, context menu)
-- [x] TopMenu + TopBar
-- [x] Sidebar (resize, collapse, playlisty, drag & drop)
-- [x] PlayerBar (controls, progress, volume, mini player)
-- [x] StatusBar
+- [x] Custom TitleBar (tabs, drag, context menu) — 272 linie
+- [x] TopMenu + TopBar — 136 linii
+- [x] Sidebar (resize, collapse, playlisty, drag & drop) — 208 linii
+- [x] PlayerBar (controls, progress, volume, mini player) — 225 linii
+- [x] StatusBar — 67 linii
 - [x] System motywów (dark, light, midnight, spotify) + dynamiczne CSS variables
+- [x] Context menu globalny (App.vue)
 - [x] Router + widoki + transitions
 
 ### FAZA 2: Odtwarzacz Multimediów — ✅ ~90% UKOŃCZONA
 
 **Ukończono:**
 
-- [x] Silnik audio: HTML5 Audio + Web Audio API
+- [x] Silnik audio: HTML5 Audio + Web Audio API (audioEngine.ts — 431 linia)
 - [x] Gapless playback (preload + swap)
 - [x] Crossfade (GainNode fade)
-- [x] 10-pasmowy equalizer + presety + custom presets + frequency response curve
-- [x] Wizualizacja (bars, wave, radial) — Canvas + AnalyserNode
-- [x] AudioBackground — radial visualizer jako tło
-- [x] Kolejka + historia (vuedraggable)
+- [x] 10-pasmowy equalizer + presety + custom presets (Equalizer.vue — 139 linii)
+- [x] Wizualizacja (bars, wave, radial) — Canvas + AnalyserNode (AudioVisualizer.vue — 125 linii)
+- [x] Kolejka + historia (QueuePanel.vue — 293 linie)
 - [x] Media Session API + Tray icon + Global shortcuts
 - [x] Drag & Drop z systemu (Electron webUtils.getPathForFile)
 - [x] Okładki (embedded, folder images, cover video matching)
-- [x] TrackArt component
 - [x] Zapamiętywanie pozycji (audio/wideo, konfigurowalny czas)
 - [x] ReplayGain / Normalization
 - [x] Favorites + Playlists (IPC + electron-store)
 - [x] Video player (fullscreen, PiP z pollingiem 250ms)
-- [x] Napisy (SRT/VTT/ASS parser 920 linii, wbudowane ścieżki)
+- [x] Napisy (SRT/VTT/ASS parser)
 - [x] Napisy ASS renderowane przez JASSUB (wasm + worker, canvas overlay na video)
 - [x] Wyciąganie czcionek z MKV (mkvextract) i podawanie binarnych do JASSUB
 - [x] Lokalne fonty Windows (18 fontów w `public/fonts`) jako baza `availableFonts`
-- [x] Google Fonts fallback (lfa-ponyfill `queryRemoteFonts`) dla nazwanych fontów w ASS
-- [x] OSD overlay + sterowanie gestami + playback rate
-- [x] **Cursor hide w fullscreen** — ukrywa się po `cursorTimeout` sekundach bez ruchu myszy, przywraca na ruch. CSS `.hide-cursor *` wymusza `cursor: none !important` na wszystkich elementach (nie tylko kontenerze)
-- [x] **Speed cycling ±** — przyciski `<`/`>` wokół Gauge icon, kroki: 0.2–3.0x. Reset do 1.0x przy nowym utworze
-- [x] **Video filters** — dropdown w kontrolierach: none/grayscale/sepia/contrast/brightness/saturate/invert/blur/hue-rotate. CSS filter na `<video>`. Reset do "none" przy nowym utworze
-- [x] **Skip zones** — lewe/prawe 20% okna: hover pokazuje -10s/+10s. Shift+strzałka = ±30s
-- [x] **Keyboard shortcuts** — Spacja/K=play, ←/→=skip, ↑/↓=volume, M=mute, F=fullscreen, `<`/`>`=speed, 0=jump start. Skróty zdefiniowane w `constants.ts`
+- [x] Google Fonts fallback (lfa-ponyfill `queryRemoteFonts`)
+- [x] OSD overlay + sterowanie gestami + playback rate (PlayerOSD.vue — 43 linie)
+- [x] **Cursor hide w fullscreen** — CSS `.hide-cursor *` z `cursor: none !important`
+- [x] **Speed cycling ±** — kroki: 0.2–3.0x. Reset do 1.0x przy nowym utworze
+- [x] **Video filters** — dropdown w kontrolierach. CSS filter na `<video>`. Reset do "none"
+- [x] **Skip zones** — lewe/prawe 20% okna: hover -10s/+10s. Shift+strzałka = ±30s
+- [x] **Keyboard shortcuts** — Spacja/K=play, ←/→=skip, ↑/↓=volume, M=mute, F=fullscreen, `<`/`>`=speed, 0=jump
 
 **Skróty klawiszowe (player):**
 
-| Klawisz | Akcja |
-|---------|-------|
-| Spacja / K | Play / Pause |
-| ← | Skip -10s (Shift: -30s) |
-| → | Skip +10s (Shift: +30s) |
-| ↑ | Głośność +5% |
-| ↓ | Głośność -5% |
-| M | Wycisz |
-| F | Fullscreen |
-| `<` | Prędkość -0.25x |
-| `>` | Prędkość +0.25x |
-| 0 | Skok do 0:00 |
+| Klawisz      | Akcja           |
+| ------------ | --------------- |
+| Spacja / K   | Play / Pause    |
+| ←            | Skip -10s (Shift: -30s) |
+| →            | Skip +10s (Shift: +30s) |
+| ↑            | Głośność +5%    |
+| ↓            | Głośność -5%    |
+| M            | Wycisz          |
+| F            | Fullscreen      |
+| `<`          | Prędkość -0.25x |
+| `>`          | Prędkość +0.25x |
+| 0            | Skok do 0:00    |
 | MediaPlayPause | Play/Pause (systemowe) |
-| MediaStop | Stop (systemowe) |
+| MediaStop    | Stop (systemowe) |
 | MediaNextTrack | Następny utwór |
 | MediaPreviousTrack | Poprzedni utwór |
 
@@ -785,12 +677,12 @@ Lazy loading: `() => import(...)` w routerze. Transition fade między widokami.
 - [ ] "Add to Queue" z biblioteki i YouTube
 - [ ] Zapis kolejki do M3U
 - [ ] Optymalizacja wielu cover videos
-- [ ] System napisów → `sweet-subtitle` (5 kroków, patrz todo.md)
+- [ ] System napisów → `sweet-subtitle` (patrz todo.md)
 
 ### FAZA 3: YouTube Integration — ❌ NIEZACZĘTA
 
 - [ ] yt-dlp wrapper (main process)
-- [ ] Wyszukiwanie (YouTubeSearch.vue)
+- [ ] Wyszukiwanie
 - [ ] Widok kanału + Subskrypcje
 - [ ] Download dialog (format, jakość, progress bar)
 - [ ] Okładki z YouTube
@@ -799,7 +691,7 @@ Lazy loading: `() => import(...)` w routerze. Transition fade między widokami.
 
 - [ ] Skanowanie folderów + odczyt metadanych ID3
 - [ ] Baza danych biblioteki (JSON/SQLite)
-- [ ] Widoki:wg artysty, albumu, gatunku, roku (siatka + lista)
+- [ ] Widoki: wg artysty, albumu, gatunku, roku (siatka + lista)
 - [ ] Edycja tagów ID3
 - [ ] Automatyczne metadane z MusicBrainz/Discogs
 
@@ -812,15 +704,15 @@ Lazy loading: `() => import(...)` w routerze. Transition fade między widokami.
 - [ ] Drag & Drop (pomiędzy folderami, do kolejki, do playlisty)
 - [ ] Marquee selection (wielokrotne zaznaczenie)
 
-### FAZA 6: Ustawienia — ⏳ CZĘŚCIOWO
+### FAZA 6: Ustawienia — ⏳ CZĘŚCIOWO (774 linie — największy plik!)
 
 - [x] UI shell z sidebar + panels
 - [x] Picture-in-Picture (pozycja, rozmiar)
 - [x] Zapamiętywanie pozycji (audio/wideo, czas)
-- [x] **Zależności** — Settings tab: status check (cache), instalacja FFmpeg (choco), instalacja yt-dlp (GitHub binary)
-- [x] **PiP preview** — osobna zakładka PiP w ustawieniach: live editing (sliders pozycja/rozmiar natychmiast aktualizują okno), przycisk "Pokaż podgląd" (osobne okno BrowserWindow), auto-close przy opuszczeniu zakładki
-- [x] **Skróty klawiszowe** — zakładka w ustawieniach, podgląd wszystkich skrótów playera + systemowych
-- [x] **Odtwarzanie** — cursor hide (fullscreen), cursor timeout, prędkość domyślna, filtry wideo
+- [x] **Zależności** — status check (cache), instalacja FFmpeg, yt-dlp, MKVToolbox
+- [x] **PiP preview** — live editing + osobne okno podglądu + auto-close
+- [x] **Skróty klawiszowe** — zakładka, podgląd wszystkich skrótów
+- [x] **Odtwarzanie** — cursor hide, cursor timeout, prędkość domyślna, filtry wideo
 - [ ] Theme: motyw, kolor akcentu, rozmiar czcionki, density, animacje, transparencja
 - [ ] Odtwarzanie: crossfade time, normalization, gapless toggle, auto-pause
 - [ ] Pobieranie: ścieżka, format, jakość, template nazwy, limit
@@ -832,15 +724,13 @@ Lazy loading: `() => import(...)` w routerze. Transition fade między widokami.
 ### FAZA 7: Zaawansowane Funkcje — ❌ NIEZACZĘTA
 
 - [ ] Wielo-okienność (osobny eksplorator)
-- [ ] Menu kontekstowe globalne (dostosowane do elementu)
-- [ ] Tray icon (dynamiczny based on state, tooltip z utworem)
-- [ ] Command palette (Ctrl+K — wyszukiwanie w entire app)
+- [ ] Command palette (Ctrl+K)
 - [ ] Lista wirtualna (100k+ elementów bez lagów)
 - [ ] System wtyczek (manifest, loader, API hooks, store)
 
 ### FAZA 8: Integracja z Systemem — ❌ NIEZACZĘTA
 
-- [ ] Auto-update (electron-updater — pobieranie, progress, restart)
+- [ ] Auto-update (electron-updater)
 - [ ] File associations (.mp3, .flac, .mp4, .mkv, .m3u)
 - [ ] Protocol handler (onda:// deep linking)
 - [ ] Global shortcuts (rozbudowane, custom combos)
@@ -860,46 +750,52 @@ Lazy loading: `() => import(...)` w routerze. Transition fade między widokami.
 
 ### 12.1 Runtime
 
-| Pakiet                        | Cel                                                                     |
-| ----------------------------- | ----------------------------------------------------------------------- |
-| `vue`                         | Framework UI                                                            |
-| `vue-router`                  | Routing SPA                                                             |
-| `pinia`                       | Stan globalny                                                           |
-| `pinia-plugin-persistedstate` | Persistencja store                                                      |
-| `@vueuse/core`                | Utility composables                                                     |
-| `@lucide/vue`                 | Ikony SVG                                                               |
-| `electron-store`              | Persystencja ustawień (main process)                                    |
-| `electron-updater`            | Auto-aktualizacje                                                       |
-| `music-metadata`              | Odczyt ID3/FLAC/MP4 tags                                                |
-| `vuedraggable`                | Drag & drop listy (Sortable.js)                                         |
-| `@tanstack/vue-virtual`       | Wirtualne listy                                                         |
-| `@electron-toolkit/preload`   | Preload utilities                                                       |
-| `@electron-toolkit/utils`     | Main process utilities                                                  |
-| `jassub`                      | Renderowanie napisów ASS (wasm + web worker, canvas overlay)            |
-| `lfa-ponyfill`                | `queryLocalFonts`/`queryRemoteFonts` — Google Fonts fallback w Electron |
+| Pakiet                        | Wersja    | Cel                                                                     |
+| ----------------------------- | --------- | ----------------------------------------------------------------------- |
+| `vue`                         | 3.5.25    | Framework UI                                                            |
+| `vue-router`                  | 4.6.4     | Routing SPA                                                             |
+| `pinia`                       | 3.0.4     | Stan globalny                                                           |
+| `pinia-plugin-persistedstate` | 4.7.1     | Persistencja store                                                      |
+| `@vueuse/core`                | 14.3.0    | Utility composables                                                     |
+| `@lucide/vue`                 | 1.24.0    | Ikony SVG                                                               |
+| `@tanstack/vue-virtual`       | 3.13.32   | Wirtualne listy                                                         |
+| `electron-store`              | 11.0.2    | Persystencja ustawień (main process)                                    |
+| `electron-updater`            | 6.3.9     | Auto-aktualizacje                                                       |
+| `jsmediatags`                 | 3.9.7     | Odczyt ID3/FLAC/MP4 tags                                                |
+| `@types/jsmediatags`          | 3.9.6     | Type definitions                                                        |
+| `jassub`                      | 2.5.7     | Renderowanie napisów ASS (wasm + web worker, canvas overlay)            |
+| `lfa-ponyfill`                | 1.1.1     | `queryLocalFonts`/`queryRemoteFonts` — Google Fonts fallback w Electron |
+| `@electron-toolkit/preload`   | 3.0.2     | Preload utilities                                                       |
+| `@electron-toolkit/utils`     | 4.0.0     | Main process utilities                                                  |
 
 ### 12.2 Dev
 
-| Pakiet                              | Cel                  |
-| ----------------------------------- | -------------------- |
-| `electron`                          | Runtime desktopowy   |
-| `electron-vite`                     | Build toolchain      |
-| `electron-builder`                  | Packaging            |
-| `vite`                              | Dev server / bundler |
-| `@vitejs/plugin-vue`                | Vite Vue plugin      |
-| `tailwindcss` + `@tailwindcss/vite` | Utility CSS          |
-| `typescript` + `vue-tsc`            | Type checking        |
-| `eslint` + `eslint-plugin-vue`      | Linting              |
-| `prettier`                          | Formatting           |
+| Pakiet                              | Wersja    | Cel                  |
+| ----------------------------------- | --------- | -------------------- |
+| `electron`                          | 39.8.10   | Runtime desktopowy   |
+| `electron-vite`                     | 5.0.0     | Build toolchain      |
+| `electron-builder`                  | 26.0.12   | Packaging            |
+| `vite`                              | 7.2.6     | Dev server / bundler |
+| `@vitejs/plugin-vue`                | 6.0.2     | Vite Vue plugin      |
+| `tailwindcss` + `@tailwindcss/vite` | 4.3.2     | Utility CSS          |
+| `typescript` + `vue-tsc`            | 5.9.3 / 3.1.6 | Type checking   |
+| `eslint`                            | 9.39.1    | Linting              |
+| `eslint-plugin-vue`                 | 10.6.2    | Vue linting          |
+| `vue-eslint-parser`                 | 10.2.0    | Vue SFC parser       |
+| `@electron-toolkit/eslint-config-ts` | 3.1.0   | TS ESLint config     |
+| `@electron-toolkit/eslint-config-prettier` | 3.0.0 | Prettier compat |
+| `@electron-toolkit/tsconfig`        | 2.0.0     | Shared tsconfig      |
+| `prettier`                          | 3.7.4     | Formatting           |
+| `@types/node`                       | 22.19.1   | Node.js types        |
 
 ### 12.3 Zewnętrzne (nie-NPM)
 
 | Narzędzie  | Cel                                   | Uwagi                                                                                                         |
 | ---------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| FFmpeg     | Transkodowanie, napisy, metadane      | Instalacja via `choco install ffmpeg -y`                                                                      |
-| FFprobe    | Probing formatów, duration, cover     | Część FFmpeg (tego samego pakietu)                                                                            |
-| MKVToolbox | Wyciąganie czcionek z załączników MKV | Instalacja via `choco install mkvtoolnix -y`; bin: `C:\Program Files\MKVToolNix\mkvextract.exe` (brak w PATH) |
-| yt-dlp     | Pobieranie YouTube                    | Instalacja via GitHub Releases binary → `{userData}/bin/yt-dlp.exe`                                           |
+| FFmpeg     | Transkodowanie, napisy, metadane      | `choco install ffmpeg -y`                                                                                     |
+| FFprobe    | Probing formatów, duration, cover     | Część FFmpeg                                                                                                  |
+| MKVToolbox | Wyciąganie czcionek z załączników MKV | `choco install mkvtoolnix -y`; bin: `C:\Program Files\MKVToolNix\mkvextract.exe` (brak w PATH)              |
+| yt-dlp     | Pobieranie YouTube                    | GitHub Releases binary → `{userData}/bin/yt-dlp.exe`                                                          |
 | PowerShell | Wykrywanie dysków                     | Tylko Windows                                                                                                 |
 
 ### 12.4 Zależności Wzajemne (Internal)
@@ -907,22 +803,33 @@ Lazy loading: `() => import(...)` w routerze. Transition fade między widokami.
 ```
 App.vue
 ├── settings.load() → settings store → electron-store IPC
-├── player.hydrateFromSettings() → player store
 ├── applyTheme() → constants.ts (THEME_PALETTES)
 └── IPC listeners (pip:closed, pip:timeupdate)
 
 ModuleManager
-├── PlayerModule → useMediaPlayer.ts + player store
+├── PlayerModule → audioEngine.ts + player store
 ├── ExplorerModule → explorer store + IPC fs:*
 ├── LibraryModule → library store + IPC fs:/media:*
 ├── YouTubeModule → youtube store
 └── HomeModule → player store + IPC dialog:*
 
-useMediaPlayer.ts (composable — singletony)
+audioEngine.ts (singletony module-level)
 ├── player store (currentTrack, isPlaying, currentTime, ...)
 ├── settings store (playback.gaplessPlayback, crossfadeDuration, ...)
-├── enrichTrack() → trackMetadata.ts → IPC media:*
 └── Web Audio API (AudioContext → GainNode → BiquadFilterNode → AnalyserNode)
+
+useMediaPlayer.ts (75 linii — thin wrapper)
+├── audioEngine.ts (deleguje wszystko)
+└── player store ( Vue reaktywność)
+
+useSubtitleRenderer.ts (375 linii)
+├── JASSUB init (wasm, worker, fonts)
+├── buildFontMap() → lokalne fonty + Google Fonts + MKV binary fonts
+└── player store (loadEmbeddedSubtitle)
+
+usePiP.ts (94 linie)
+├── IPC pip:* (start, stop, preload, loadTrack, updateSubtitle)
+└── callbacks (onClosed, onEnded)
 
 Views → czytają store'y + wywołują akcje store
 ```
@@ -933,20 +840,22 @@ Views → czytają store'y + wywołują akcje store
 
 | Plik                     | Linii | Znaczenie                                                                               |
 | ------------------------ | ----- | --------------------------------------------------------------------------------------- |
-| `audioEngine.ts`         | ~300  | **NOWY** — singleton Web Audio API: gapless, crossfade, EQ, RAF loop, position memory   |
-| `useMediaPlayer.ts`      | ~90   | **REF** — singleton wrapper delegujący do audioEngine, zapewnia Vue reaktywność         |
-| `ModuleManager.ts`       | ~90   | **NOWY** — lifecycle modułów, switchTo (async deactivate→activate), deactivateAll       |
-| `PlayerModule.ts`        | ~50   | **NOWY** — background-capable: deactivate() nie pauzuje audio                           |
-| `handlers.ts`            | ~795  | **Main IPC** — fs, metadata, FFmpeg, mkvextract, dialogs, pip, settings, playlists      |
-| `subtitles.ts`           | ~920  | Parser SRT/VTT/ASS z tagami HTML i ASS                                                  |
-| `useSubtitleRenderer.ts` | ~315  | **JASSUB** — inicjalizacja wasm/worker, buildFontMap (lokalne+Google+MKV), binary fonts |
-| `player.ts`              | ~310  | Player store — stan, kolejka, akcje, loadEmbeddedSubtitle(fonts z MKV)                  |
-| `PlayerView.vue`         | ~600  | Odtwarzacz video/audio — fullscreen, PiP, napisy, EQ toggle, cursor hide, speed cycling, skip zones, video filters, keyboard shortcuts |
-| `pip-manager.ts`         | ~370  | PipManager singleton — PiP window + preview window, position/size, show/hide, IPC        |
-| `PlayerControls.vue`     | ~270  | Kontrolki playera: play/pause, skip, speed ±, filter dropdown, volume, time display     |
-| `PlayerBar.vue`          | ~500  | Dolny pasek — controls, progress (drag-to-seek), volume                                 |
-| `constants.ts`           | ~200  | Formaty, presety EQ, motywy, defaults, shortcuts, playback defaults                     |
-| `trackMetadata.ts`       | ~220  | enrichTrack(), resolveCover() — metadane + okładki                                      |
+| `audioEngine.ts`         | 431   | Singleton Web Audio API: gapless, crossfade, EQ, RAF loop, position memory             |
+| `useSubtitleRenderer.ts` | 375   | JASSUB — inicjalizacja wasm/worker, buildFontMap (lokalne+Google+MKV), binary fonts     |
+| `pip-manager.ts`         | 420   | PipManager singleton — PiP window + preview window, position/size, show/hide, IPC       |
+| `handlers.ts`            | 746   | Main IPC — fs, metadata, FFmpeg, mkvextract, subtitles, dialogs, pip, settings, playlists |
+| `PlayerView.vue`         | 606   | Odtwarzacz video/audio — fullscreen, PiP, napisy, EQ, cursor hide, speed, filters, shortcuts |
+| `SettingsView.vue`       | 774   | Ustawienia — PiP preview, dependencies, shortcuts, playback, themes (największy plik!)  |
+| `player.ts` (store)      | 293   | Player store — stan, kolejka, akcje, coverCache                                         |
+| `QueuePanel.vue`         | 293   | Kolejka + historia (vuedraggable)                                                       |
+| `PlayerControls.vue`     | 284   | Kontrolki: play/pause, skip, speed ±, filter dropdown, volume, time                     |
+| `TitleBar.vue`           | 272   | Custom titlebar + tabs + context menu                                                   |
+| `PlayerBar.vue`          | 225   | Dolny pasek — controls, progress (drag-to-seek), volume                                 |
+| `Sidebar.vue`            | 208   | Nawigacja + resize + playlisty                                                          |
+| `ExplorerView.vue`       | 298   | Eksplorator plików                                                                      |
+| `main.ts` (main)         | 305   | Okno, tray, skróty globalne, PiP init                                                   |
+| `pip.ts` (renderer)      | 181   | PiP bundle — JASSUB, listenery, progress bar, close button                              |
+| `constants.ts`           | 179   | Formaty, presety EQ, motywy, defaults, shortcuts, playback defaults                     |
 
 ---
 
@@ -955,7 +864,8 @@ Views → czytają store'y + wywołują akcje store
 ### TypeScript
 
 - Interface-first design (types/ folder)
-- No `any` — preferowane `unknown` + type guards
+- `no-explicit-any: off` (practical — JASSUB, Electron APIs)
+- `no-unused-vars` z patternami: `^_` ignore, `allowEmptyCatch`
 
 ### Vue 3
 
@@ -972,15 +882,29 @@ Views → czytają store'y + wywołują akcje store
 ### CSS
 
 - Tailwind CSS 4 utility-first
-- Dynamiczne CSS variables przez JS (applyTheme)
-- Brak scoped CSS (exception: page transitions)
+- Dynamiczne CSS variables przez JS (`applyTheme` w App.vue)
+- Brak scoped CSS (exception: page transitions w App.vue)
+- Accent colors: `--color-accent-base`, `--color-accent-hover`, `--color-accent-strong`, `--color-accent-ghost`
+
+### Formatting (Prettier)
+
+- `semi: true` (semicolony wymagane)
+- `singleQuote: true`
+- `printWidth: 100`
+- `trailingComma: none`
+- `endOfLine: lf`
+
+### ESLint
+
+- Flat config (`eslint.config.mjs`)
+- `prettier/prettier: 'off'` — Prettier zarządza formatowaniem
+- `vue/first-attribute-linebreak: 'error'`
 
 ### Module System
 
 - Każdy moduł rejestruje się w ModuleManager przy init
 - `switchTo()` → deactivate old (AWAIT) → activate new
 - Player jest background-capable (nie pauzuje przy nawigacji)
-- `deactivate()` zwalnia UI, `deactivate(force: true)` zatrzymuje audio
 
 ---
 
@@ -1002,15 +926,44 @@ Views → czytają store'y + wywołują akcje store
 
 ---
 
-Ostatnia aktualizacja: 2026-07-18 (PiP module complete; edycja stylów ASS porzucona; player UI: cursor hide, speed cycling, video filters, skip zones, keyboard shortcuts; PiP settings preview; cursor fix CSS !important)
+## 16. Konfiguracja Projektu
+
+### electron.vite.config.ts
+
+- Main/Preload: `externalizeDepsPlugin()`
+- Renderer: `vue()` + `tailwindcss()` + custom `wasmMime()` plugin (Content-Type: application/wasm)
+- Alias: `@renderer` → `src/renderer/src`
+- Worker format: `es`
+- Multi-page: `index.html` + `pip.html`
+- `assetsInclude: ['**/*.wasm']`
+
+### tsconfig.web.json
+
+- `ignoreDeprecations: "6.0"` (dla `baseUrl` — TS 7.0 removal)
+- Path alias: `@renderer/*` → `src/renderer/src/*`
+
+### tsconfig.node.json
+
+- `ignoreDeprecations: "5.0"`
+- `types: ["electron-vite/node"]`
+
+### electron-builder.yml
+
+- NSIS (Windows), DMG (macOS), AppImage/snap/deb (Linux)
+- asarUnpack: `resources/**`
+- electron mirror: `npmmirror.com`
 
 ---
 
-## 16. Przyszłe ulepszenia
+Ostatnia aktualizacja: 2026-07-18 (full analysis: accurate line counts, dependency versions, removed stale file references, updated IPC channels, config changes semi:true, tsconfig ignoreDeprecations, ESLint flat config)
 
-### 16.1 Edycja prostych napisów (SRT, VTT, SUB)
+---
 
-Formaty takie jak SRT, VTT i SUB nie posiadają złożonego systemu stylów jak ASS — mają tylko tekst, czas i podstawowe formatowanie (pogrubienie, kursywa). Dlatego edycja tych formatów jest realna i nie psuje wyglądu.
+## 17. Przyszłe ulepszenia
+
+### 17.1 Edycja prostych napisów (SRT, VTT, SUB)
+
+Formaty SRT, VTT i SUB nie posiadają złożonego systemu stylów jak ASS — mają tylko tekst, czas i podstawowe formatowanie.
 
 **Co można edytować:**
 - Tekst napisów
@@ -1022,17 +975,10 @@ Formaty takie jak SRT, VTT i SUB nie posiadają złożonego systemu stylów jak 
 - Przesuwanie czasu (offset wszystkich napisów)
 - Import/Export plików SRT/VTT
 
-### 16.2 Własny renderer napisów (bez JASSUB)
+### 17.2 Własny renderer napisów (bez JASSUB)
 
-JASSUB jest świetny do renderowania ASS/SSA z ich złożonymi stylami, ale dla prostych formatów (SRT, VTT) jest overkill. Własny renderer mógłby:
+Dla prostych formatów (SRT, VTT) JASSUB jest overkill. Własny renderer:
 
-**Zalety:**
-- Lepsza kontrola nad wyglądem
-- Brak zależności od WebAssembly
-- Łatwiejsza customizacja stylów
-- Szybsze ładowanie dla prostych formatów
-
-**Implementacja:**
 - Canvas renderer dla napisów
 - Parser SRT/VTT → struktury danych
 - Stylowanie CSS/Canvas (kolory, czcionki, cień, obwódka)
@@ -1047,7 +993,7 @@ useSimpleSubtitleRenderer.ts
 └── applyStyleSettings(settings)
 ```
 
-### 16.3 Hybrydowy system napisów
+### 17.3 Hybrydowy system napisów
 
 Kombinacja obu podejść:
 - ASS/SSA → JASSUB (zachowuje oryginalne style)

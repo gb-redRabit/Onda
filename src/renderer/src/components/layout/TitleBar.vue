@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, computed } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import {
   Minus,
   Square,
@@ -13,28 +13,28 @@ import {
   XCircle,
   FileX,
   Copy
-} from '@lucide/vue'
+} from '@lucide/vue';
 
-const router = useRouter()
-const route = useRoute()
-const isMaximized = ref(false)
-const tabMenuVisible = ref(false)
-const tabMenuPos = ref({ x: 0, y: 0 })
-const tabMenuTab = ref<string | null>(null)
+const router = useRouter();
+const route = useRoute();
+const isMaximized = ref(false);
+const tabMenuVisible = ref(false);
+const tabMenuPos = ref({ x: 0, y: 0 });
+const tabMenuTab = ref<string | null>(null);
 
 interface Tab {
-  id: string
-  label: string
-  icon: string
-  path: string
+  id: string;
+  label: string;
+  icon: string;
+  path: string;
 }
 
-const tabs = ref<Tab[]>([{ id: 'home', label: 'Strona główna', icon: 'home', path: '/' }])
+const tabs = ref<Tab[]>([{ id: 'home', label: 'Strona główna', icon: 'home', path: '/' }]);
 
 const activeTabId = computed(() => {
-  const t = tabs.value.find((t) => t.path === route.path)
-  return t?.id || tabs.value[0]?.id
-})
+  const t = tabs.value.find((t) => t.path === route.path);
+  return t?.id || tabs.value[0]?.id;
+});
 
 const routeLabels: Record<string, string> = {
   '/': 'Strona główna',
@@ -45,84 +45,84 @@ const routeLabels: Record<string, string> = {
   '/settings': 'Ustawienia',
   '/search': 'Szukaj',
   '/player': 'Odtwarzacz'
-}
+};
 
 function addTab() {
-  const path = route.path || '/'
-  const exists = tabs.value.find((t) => t.path === path)
+  const path = route.path || '/';
+  const exists = tabs.value.find((t) => t.path === path);
   if (!exists) {
     tabs.value.push({
       id: `tab-${Date.now()}`,
       label: routeLabels[path] || 'Karta',
       icon: (route.meta?.icon as string) || 'home',
       path
-    })
+    });
   }
 }
 
 function closeTab(id: string, e?: MouseEvent) {
-  e?.stopPropagation()
-  const idx = tabs.value.findIndex((t) => t.id === id)
-  if (idx < 0) return
-  tabs.value.splice(idx, 1)
+  e?.stopPropagation();
+  const idx = tabs.value.findIndex((t) => t.id === id);
+  if (idx < 0) return;
+  tabs.value.splice(idx, 1);
   if (tabs.value.length === 0) {
-    tabs.value.push({ id: 'home', label: 'Strona główna', icon: 'home', path: '/' })
+    tabs.value.push({ id: 'home', label: 'Strona główna', icon: 'home', path: '/' });
   }
   if (activeTabId.value === id) {
-    router.push(tabs.value[Math.min(idx, tabs.value.length - 1)].path)
+    router.push(tabs.value[Math.min(idx, tabs.value.length - 1)].path);
   }
 }
 
 function closeOtherTabs(id: string) {
-  tabs.value = tabs.value.filter((t) => t.id === id)
+  tabs.value = tabs.value.filter((t) => t.id === id);
   if (!tabs.value.find((t) => t.path === route.path)) {
-    router.push(tabs.value[0].path)
+    router.push(tabs.value[0].path);
   }
 }
 
 function closeAllTabs() {
-  tabs.value = [{ id: 'home', label: 'Strona główna', icon: 'home', path: '/' }]
-  router.push('/')
+  tabs.value = [{ id: 'home', label: 'Strona główna', icon: 'home', path: '/' }];
+  router.push('/');
 }
 
 function duplicateTab(tab: Tab) {
-  const exists = tabs.value.find((t) => t.path === tab.path)
+  const exists = tabs.value.find((t) => t.path === tab.path);
   if (!exists) {
-    tabs.value.push({ ...tab, id: `tab-${Date.now()}` })
+    tabs.value.push({ ...tab, id: `tab-${Date.now()}` });
   }
 }
 
 function selectTab(tab: Tab) {
-  router.push(tab.path)
+  router.push(tab.path);
 }
 
 function showTabMenu(e: MouseEvent, tab: Tab) {
-  e.preventDefault()
-  e.stopPropagation()
-  tabMenuVisible.value = true
-  tabMenuPos.value = { x: e.clientX, y: e.clientY }
-  tabMenuTab.value = tab.id
+  e.preventDefault();
+  e.stopPropagation();
+  tabMenuVisible.value = true;
+  tabMenuPos.value = { x: e.clientX, y: e.clientY };
+  tabMenuTab.value = tab.id;
 }
 
 function closeTabMenu() {
-  tabMenuVisible.value = false
-  tabMenuTab.value = null
+  tabMenuVisible.value = false;
+  tabMenuTab.value = null;
 }
 
 function minimize() {
-  window.api.invoke('window:minimize')
+  window.api.invoke('window:minimize');
 }
 function maximize() {
-  window.api.invoke('window:maximize')
-  isMaximized.value = !isMaximized.value
+  window.api.invoke('window:maximize');
+  isMaximized.value = !isMaximized.value;
 }
 function close() {
-  window.api.invoke('window:close')
+  window.api.invoke('window:close');
 }
 
 window.api.on('window:maximized', (val: unknown) => {
-  isMaximized.value = val as boolean
-})
+  isMaximized.value = val as boolean;
+});
 </script>
 
 <template>
@@ -221,7 +221,7 @@ window.api.on('window:maximized', (val: unknown) => {
           class="w-full px-3 py-1.5 text-left text-sm hover:bg-accent-ghost hover:text-accent-base transition-colors flex items-center gap-2"
           @click="
             addTab();
-            closeTabMenu()
+            closeTabMenu();
           "
         >
           <Plus :size="13" /> Nowa karta
@@ -230,7 +230,7 @@ window.api.on('window:maximized', (val: unknown) => {
           class="w-full px-3 py-1.5 text-left text-sm hover:bg-accent-ghost hover:text-accent-base transition-colors flex items-center gap-2"
           @click="
             tabMenuTab && duplicateTab(tabs.find((x) => x.id === tabMenuTab)!);
-            closeTabMenu()
+            closeTabMenu();
           "
         >
           <Copy :size="13" /> Duplikuj
@@ -241,7 +241,7 @@ window.api.on('window:maximized', (val: unknown) => {
           class="w-full px-3 py-1.5 text-left text-sm hover:bg-accent-ghost hover:text-accent-base transition-colors flex items-center gap-2"
           @click="
             tabMenuTab && closeTab(tabMenuTab);
-            closeTabMenu()
+            closeTabMenu();
           "
         >
           <XCircle :size="13" /> Zamknij kartę
@@ -251,7 +251,7 @@ window.api.on('window:maximized', (val: unknown) => {
           class="w-full px-3 py-1.5 text-left text-sm hover:bg-accent-ghost hover:text-accent-base transition-colors flex items-center gap-2"
           @click="
             tabMenuTab && closeOtherTabs(tabMenuTab);
-            closeTabMenu()
+            closeTabMenu();
           "
         >
           <FileX :size="13" /> Zamknij pozostałe
@@ -261,7 +261,7 @@ window.api.on('window:maximized', (val: unknown) => {
           class="w-full px-3 py-1.5 text-left text-sm hover:bg-red-base/80 hover:text-white transition-colors flex items-center gap-2"
           @click="
             closeAllTabs();
-            closeTabMenu()
+            closeTabMenu();
           "
         >
           <XCircle :size="13" /> Zamknij wszystkie

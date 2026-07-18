@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import {
   Home,
   Disc3,
@@ -16,20 +16,20 @@ import {
   Trash2,
   ChevronDown,
   ChevronRight as ChevronRightSmall
-} from '@lucide/vue'
-import { usePlayerStore } from '@renderer/stores/player'
-import { useLibraryStore } from '@renderer/stores/library'
+} from '@lucide/vue';
+import { usePlayerStore } from '@renderer/stores/player';
+import { useLibraryStore } from '@renderer/stores/library';
 
-const router = useRouter()
-const route = useRoute()
-const player = usePlayerStore()
-const library = useLibraryStore()
-const collapsed = ref(false)
-const width = ref(220)
-const isResizing = ref(false)
-const playlistsExpanded = ref(true)
-const newPlaylistName = ref('')
-const isCreatingPlaylist = ref(false)
+const router = useRouter();
+const route = useRoute();
+const player = usePlayerStore();
+const library = useLibraryStore();
+const collapsed = ref(false);
+const width = ref(220);
+const isResizing = ref(false);
+const playlistsExpanded = ref(true);
+const newPlaylistName = ref('');
+const isCreatingPlaylist = ref(false);
 
 const navItems = [
   { label: 'Strona główna', icon: Home, route: '/' },
@@ -37,38 +37,38 @@ const navItems = [
   { label: 'Eksplorator', icon: FolderOpen, route: '/explorer' },
   { label: 'YouTube', icon: Tv2, route: '/youtube' },
   { label: 'Pobrane', icon: Download, route: '/downloads' }
-]
+];
 
 function onResizeStart(e: MouseEvent) {
-  isResizing.value = true
-  const startX = e.clientX
-  const startW = width.value
+  isResizing.value = true;
+  const startX = e.clientX;
+  const startW = width.value;
 
   function onMove(ev: MouseEvent) {
-    const delta = ev.clientX - startX
-    width.value = Math.max(160, Math.min(400, startW + delta))
+    const delta = ev.clientX - startX;
+    width.value = Math.max(160, Math.min(400, startW + delta));
   }
   function onUp() {
-    isResizing.value = false
-    document.removeEventListener('mousemove', onMove)
-    document.removeEventListener('mouseup', onUp)
+    isResizing.value = false;
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
   }
-  document.addEventListener('mousemove', onMove)
-  document.addEventListener('mouseup', onUp)
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
 }
 
 function createPlaylist() {
-  const name = newPlaylistName.value.trim()
-  if (!name) return
-  library.createPlaylist(name)
-  newPlaylistName.value = ''
-  isCreatingPlaylist.value = false
+  const name = newPlaylistName.value.trim();
+  if (!name) return;
+  library.createPlaylist(name);
+  newPlaylistName.value = '';
+  isCreatingPlaylist.value = false;
 }
 
 function playPlaylist(playlistId: string) {
-  const playlist = library.playlists.find((p) => p.id === playlistId)
+  const playlist = library.playlists.find((p) => p.id === playlistId);
   if (playlist && playlist.tracks.length > 0) {
-    player.addToQueueMultiple(playlist.tracks)
+    player.addToQueueMultiple(playlist.tracks);
   }
 }
 </script>

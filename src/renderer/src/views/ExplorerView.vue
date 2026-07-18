@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   ChevronLeft,
   ChevronRight,
@@ -13,18 +13,18 @@ import {
   FolderOpen,
   Music2,
   Film
-} from '@lucide/vue'
-import { useExplorerStore } from '@renderer/stores/explorer'
-import { usePlayerStore } from '@renderer/stores/player'
-import { moduleManager } from '@renderer/modules/ModuleManager'
-import { formatFileSize } from '@renderer/utils/formatters'
-import { getFileTypeInfo } from '@renderer/utils/fileTypes'
-import type { FileItem } from '@renderer/types/explorer'
-import type { MediaFile } from '@renderer/types/media'
+} from '@lucide/vue';
+import { useExplorerStore } from '@renderer/stores/explorer';
+import { usePlayerStore } from '@renderer/stores/player';
+import { moduleManager } from '@renderer/modules/ModuleManager';
+import { formatFileSize } from '@renderer/utils/formatters';
+import { getFileTypeInfo } from '@renderer/utils/fileTypes';
+import type { FileItem } from '@renderer/types/explorer';
+import type { MediaFile } from '@renderer/types/media';
 
-const explorer = useExplorerStore()
-const player = usePlayerStore()
-const router = useRouter()
+const explorer = useExplorerStore();
+const player = usePlayerStore();
+const router = useRouter();
 
 const MEDIA_EXTS = new Set([
   '.mp3',
@@ -43,21 +43,21 @@ const MEDIA_EXTS = new Set([
   '.wmv',
   '.flv',
   '.m4v'
-])
+]);
 
 onMounted(() => {
-  moduleManager.switchTo('explorer')
+  moduleManager.switchTo('explorer');
   if (!explorer.currentPath) {
-    explorer.navigateTo('')
+    explorer.navigateTo('');
   }
-})
+});
 
 function handleDoubleClick(item: FileItem) {
   if (item.isDirectory) {
-    explorer.navigateTo(item.path)
+    explorer.navigateTo(item.path);
   } else if (item.extension && MEDIA_EXTS.has(item.extension)) {
-    const extVideo = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v']
-    const isVideo = extVideo.includes(item.extension)
+    const extVideo = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v'];
+    const isVideo = extVideo.includes(item.extension);
     const track: MediaFile = {
       id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       path: item.path,
@@ -69,9 +69,9 @@ function handleDoubleClick(item: FileItem) {
       mimeType: '',
       addedAt: Date.now(),
       playCount: 0
-    }
-    player.setTrack(track)
-    if (isVideo) router.push('/player')
+    };
+    player.setTrack(track);
+    if (isVideo) router.push('/player');
   }
 }
 </script>

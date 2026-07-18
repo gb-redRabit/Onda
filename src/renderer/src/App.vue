@@ -1,78 +1,78 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, watch } from 'vue'
-import TitleBar from './components/layout/TitleBar.vue'
-import TopMenu from './components/layout/TopMenu.vue'
-import Sidebar from './components/layout/Sidebar.vue'
-import PlayerBar from './components/layout/PlayerBar.vue'
-import StatusBar from './components/layout/StatusBar.vue'
-import QueuePanel from './components/player/QueuePanel.vue'
-import Equalizer from './components/player/Equalizer.vue'
-import { useSettingsStore } from './stores/settings'
-import { usePlayerStore } from './stores/player'
-import { useUIStore } from './stores/ui'
-import { moduleManager } from './modules/ModuleManager'
-import { THEME_PALETTES } from './utils/constants'
+import { onMounted, onBeforeUnmount, watch } from 'vue';
+import TitleBar from './components/layout/TitleBar.vue';
+import TopMenu from './components/layout/TopMenu.vue';
+import Sidebar from './components/layout/Sidebar.vue';
+import PlayerBar from './components/layout/PlayerBar.vue';
+import StatusBar from './components/layout/StatusBar.vue';
+import QueuePanel from './components/player/QueuePanel.vue';
+import Equalizer from './components/player/Equalizer.vue';
+import { useSettingsStore } from './stores/settings';
+import { usePlayerStore } from './stores/player';
+import { useUIStore } from './stores/ui';
+import { moduleManager } from './modules/ModuleManager';
+import { THEME_PALETTES } from './utils/constants';
 
-const settings = useSettingsStore()
-const player = usePlayerStore()
-const ui = useUIStore()
+const settings = useSettingsStore();
+const player = usePlayerStore();
+const ui = useUIStore();
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-  return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : null
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : null;
 }
 
 function applyTheme() {
-  const root = document.documentElement
-  const theme = settings.appearance.theme
-  const accent = settings.appearance.accentColor
-  const fontSize = settings.appearance.fontSize
+  const root = document.documentElement;
+  const theme = settings.appearance.theme;
+  const accent = settings.appearance.accentColor;
+  const fontSize = settings.appearance.fontSize;
 
-  const palette = THEME_PALETTES[theme] || THEME_PALETTES.dark
-  root.style.setProperty('--color-bg-base', palette.bgBase)
-  root.style.setProperty('--color-bg-surface', palette.bgSurface)
-  root.style.setProperty('--color-bg-overlay', palette.bgOverlay)
-  root.style.setProperty('--color-bg-elevated', palette.bgElevated)
-  root.style.setProperty('--color-bg-hover', palette.bgHover)
-  root.style.setProperty('--color-bg-active', palette.bgActive)
-  root.style.setProperty('--color-border-default', palette.borderDefault)
-  root.style.setProperty('--color-border-subtle', palette.borderSubtle)
-  root.style.setProperty('--color-fg-base', palette.fgBase)
-  root.style.setProperty('--color-fg-muted', palette.fgMuted)
-  root.style.setProperty('--color-fg-faint', palette.fgFaint)
+  const palette = THEME_PALETTES[theme] || THEME_PALETTES.dark;
+  root.style.setProperty('--color-bg-base', palette.bgBase);
+  root.style.setProperty('--color-bg-surface', palette.bgSurface);
+  root.style.setProperty('--color-bg-overlay', palette.bgOverlay);
+  root.style.setProperty('--color-bg-elevated', palette.bgElevated);
+  root.style.setProperty('--color-bg-hover', palette.bgHover);
+  root.style.setProperty('--color-bg-active', palette.bgActive);
+  root.style.setProperty('--color-border-default', palette.borderDefault);
+  root.style.setProperty('--color-border-subtle', palette.borderSubtle);
+  root.style.setProperty('--color-fg-base', palette.fgBase);
+  root.style.setProperty('--color-fg-muted', palette.fgMuted);
+  root.style.setProperty('--color-fg-faint', palette.fgFaint);
 
-  root.style.setProperty('--color-accent-base', accent)
-  const rgb = hexToRgb(accent)
+  root.style.setProperty('--color-accent-base', accent);
+  const rgb = hexToRgb(accent);
   if (rgb) {
     root.style.setProperty(
       '--color-accent-hover',
       `rgba(${Math.min(255, rgb.r + 20)}, ${Math.min(255, rgb.g + 20)}, ${Math.min(255, rgb.b + 20)}, 1)`
-    )
+    );
     root.style.setProperty(
       '--color-accent-strong',
       `rgba(${Math.max(0, rgb.r - 20)}, ${Math.max(0, rgb.g - 20)}, ${Math.max(0, rgb.b - 20)}, 1)`
-    )
-    root.style.setProperty('--color-accent-ghost', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.10)`)
+    );
+    root.style.setProperty('--color-accent-ghost', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.10)`);
   }
 
-  root.style.setProperty('--font-size', `${fontSize}px`)
-  root.style.fontSize = `${fontSize}px`
+  root.style.setProperty('--font-size', `${fontSize}px`);
+  root.style.fontSize = `${fontSize}px`;
 }
 
 onMounted(() => {
-  settings.load().then(() => applyTheme())
+  settings.load().then(() => applyTheme());
   if (!moduleManager.getActive()) {
-    moduleManager.switchTo('home')
+    moduleManager.switchTo('home');
   }
-})
+});
 
 onBeforeUnmount(() => {
-  moduleManager.deactivateAll()
-})
+  moduleManager.deactivateAll();
+});
 
-watch(() => settings.appearance.theme, applyTheme)
-watch(() => settings.appearance.accentColor, applyTheme)
-watch(() => settings.appearance.fontSize, applyTheme)
+watch(() => settings.appearance.theme, applyTheme);
+watch(() => settings.appearance.accentColor, applyTheme);
+watch(() => settings.appearance.fontSize, applyTheme);
 </script>
 
 <template>
@@ -111,7 +111,7 @@ watch(() => settings.appearance.fontSize, applyTheme)
           :class="{ 'opacity-40 pointer-events-none': item.disabled }"
           @click="
             item.action?.();
-            ui.hideContextMenu()
+            ui.hideContextMenu();
           "
         >
           {{ item.label }}

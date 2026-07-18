@@ -1,63 +1,63 @@
-import { contextBridge, ipcRenderer, webUtils } from 'electron'
-import { electronAPI } from '@electron-toolkit/preload'
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
+import { electronAPI } from '@electron-toolkit/preload';
 
 const api = {
   invoke: (channel: string, ...args: unknown[]): Promise<unknown> => {
-    return ipcRenderer.invoke(channel, ...args)
+    return ipcRenderer.invoke(channel, ...args);
   },
   send: (channel: string, ...args: unknown[]): void => {
-    ipcRenderer.send(channel, ...args)
+    ipcRenderer.send(channel, ...args);
   },
   on: (channel: string, callback: (...args: unknown[]) => void): (() => void) => {
     const handler = (_event: Electron.IpcRendererEvent, ...args: unknown[]): void =>
-      callback(...args)
-    ipcRenderer.on(channel, handler)
+      callback(...args);
+    ipcRenderer.on(channel, handler);
     return () => {
-      ipcRenderer.removeListener(channel, handler)
-    }
+      ipcRenderer.removeListener(channel, handler);
+    };
   },
   once: (channel: string, callback: (...args: unknown[]) => void): void => {
-    ipcRenderer.once(channel, (_event, ...args) => callback(...args))
+    ipcRenderer.once(channel, (_event, ...args) => callback(...args));
   },
   removeAllListeners: (channel: string): void => {
-    ipcRenderer.removeAllListeners(channel)
+    ipcRenderer.removeAllListeners(channel);
   },
   pipStart: (
     videoSrc: string,
     settings?: {
-      position?: string
-      width?: number
-      height?: number
-      startTime?: number
-      subtitle?: unknown
+      position?: string;
+      width?: number;
+      height?: number;
+      startTime?: number;
+      subtitle?: unknown;
     }
   ): Promise<boolean> => ipcRenderer.invoke('pip:start', videoSrc, settings),
   pipStop: (): Promise<boolean> => ipcRenderer.invoke('pip:stop'),
   pipPreviewStart: (opts: {
-    position?: string
-    width?: number
-    height?: number
+    position?: string;
+    width?: number;
+    height?: number;
   }): Promise<boolean> => ipcRenderer.invoke('pip:previewStart', opts),
   pipPreviewStop: (): Promise<boolean> => ipcRenderer.invoke('pip:previewStop'),
   pipPreviewUpdate: (opts: {
-    position?: string
-    width?: number
-    height?: number
+    position?: string;
+    width?: number;
+    height?: number;
   }): Promise<boolean> => ipcRenderer.invoke('pip:previewUpdate', opts),
   pipPreload: (
     videoSrc: string,
     subtitleData: {
-      subContent: string
-      fonts: Array<{ name: string; data: number[] }>
-      availableFonts: Record<string, string>
+      subContent: string;
+      fonts: Array<{ name: string; data: number[] }>;
+      availableFonts: Record<string, string>;
     } | null
   ): Promise<void> => ipcRenderer.invoke('pip:preload', videoSrc, subtitleData),
   pipLoadTrack: (
     videoSrc: string,
     subtitleData: {
-      subContent: string
-      fonts: Array<{ name: string; data: number[] }>
-      availableFonts: Record<string, string>
+      subContent: string;
+      fonts: Array<{ name: string; data: number[] }>;
+      availableFonts: Record<string, string>;
     } | null
   ): Promise<void> => ipcRenderer.invoke('pip:loadtrack', videoSrc, subtitleData),
   checkFfmpeg: (): Promise<{ installed: boolean; version: string | null }> =>
@@ -100,23 +100,23 @@ const api = {
     ipcRenderer.invoke('subtitles:extractAttachments', filePath),
   pipUpdateSubtitle: (
     data: {
-      subContent: string
-      fonts: Array<{ name: string; data: number[] }>
-      availableFonts: Record<string, string>
+      subContent: string;
+      fonts: Array<{ name: string; data: number[] }>;
+      availableFonts: Record<string, string>;
     } | null
   ): Promise<void> => ipcRenderer.invoke('pip:updateSubtitle', data)
-}
+};
 
 if (process.contextIsolated) {
   try {
-    contextBridge.exposeInMainWorld('electron', electronAPI)
-    contextBridge.exposeInMainWorld('api', api)
+    contextBridge.exposeInMainWorld('electron', electronAPI);
+    contextBridge.exposeInMainWorld('api', api);
   } catch (error) {
-    console.error(error)
+    console.error(error);
   }
 } else {
   // @ts-ignore (define in dts)
-  window.electron = electronAPI
+  window.electron = electronAPI;
   // @ts-ignore (define in dts)
-  window.api = api
+  window.api = api;
 }

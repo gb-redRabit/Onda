@@ -1,12 +1,12 @@
-import { app, shell, BrowserWindow, ipcMain, Tray, Menu, globalShortcut } from 'electron'
-import { join } from 'path'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
-import { registerIPC } from './ipc/handlers'
-import { pipManager } from './pip-manager'
+import { app, shell, BrowserWindow, ipcMain, Tray, Menu, globalShortcut } from 'electron';
+import { join } from 'path';
+import { electronApp, optimizer, is } from '@electron-toolkit/utils';
+import icon from '../../resources/icon.png?asset';
+import { registerIPC } from './ipc/handlers';
+import { pipManager } from './pip-manager';
 
-let mainWindow: BrowserWindow | null = null
-let tray: Tray | null = null
+let mainWindow: BrowserWindow | null = null;
+let tray: Tray | null = null;
 
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -26,39 +26,39 @@ function createWindow(): BrowserWindow {
       nodeIntegration: false,
       webSecurity: false
     }
-  })
+  });
 
   win.on('ready-to-show', () => {
-    win.show()
-  })
+    win.show();
+  });
 
   win.on('maximize', () => {
-    win.webContents.send('window:maximized', true)
-  })
+    win.webContents.send('window:maximized', true);
+  });
 
   win.on('unmaximize', () => {
-    win.webContents.send('window:maximized', false)
-  })
+    win.webContents.send('window:maximized', false);
+  });
 
   win.on('close', (e) => {
     if (tray) {
-      e.preventDefault()
-      win.hide()
+      e.preventDefault();
+      win.hide();
     }
-  })
+  });
 
   win.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
-    return { action: 'deny' }
-  })
+    shell.openExternal(details.url);
+    return { action: 'deny' };
+  });
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    win.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    win.loadURL(process.env['ELECTRON_RENDERER_URL']);
   } else {
-    win.loadFile(join(__dirname, '../renderer/index.html'))
+    win.loadFile(join(__dirname, '../renderer/index.html'));
   }
 
-  return win
+  return win;
 }
 
 function createChildWindow(
@@ -83,25 +83,25 @@ function createChildWindow(
       nodeIntegration: false,
       webSecurity: false
     }
-  })
+  });
 
   child.on('ready-to-show', () => {
-    child.show()
-  })
+    child.show();
+  });
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    child.loadURL(process.env['ELECTRON_RENDERER_URL'] + '#/player')
+    child.loadURL(process.env['ELECTRON_RENDERER_URL'] + '#/player');
   } else {
-    child.loadFile(join(__dirname, '../renderer/index.html'), { hash: '/player' })
+    child.loadFile(join(__dirname, '../renderer/index.html'), { hash: '/player' });
   }
 
-  return child
+  return child;
 }
 
 function setupTray(): void {
-  if (!icon) return
-  tray = new Tray(icon)
-  tray.setToolTip('Onda Player')
+  if (!icon) return;
+  tray = new Tray(icon);
+  tray.setToolTip('Onda Player');
 
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Play / Pause', click: () => mainWindow?.webContents.send('media:playPause') },
@@ -111,26 +111,26 @@ function setupTray(): void {
     {
       label: 'Show Onda',
       click: () => {
-        mainWindow?.show()
-        mainWindow?.focus()
+        mainWindow?.show();
+        mainWindow?.focus();
       }
     },
     { type: 'separator' },
     {
       label: 'Quit',
       click: () => {
-        tray?.destroy()
-        app.quit()
+        tray?.destroy();
+        app.quit();
       }
     }
-  ])
+  ]);
 
-  tray.setContextMenu(contextMenu)
+  tray.setContextMenu(contextMenu);
 
   tray.on('double-click', () => {
-    mainWindow?.show()
-    mainWindow?.focus()
-  })
+    mainWindow?.show();
+    mainWindow?.focus();
+  });
 }
 
 function registerGlobalShortcuts(): void {
@@ -142,11 +142,11 @@ function registerGlobalShortcuts(): void {
     VolumeUp: () => mainWindow?.webContents.send('media:volumeUp'),
     VolumeDown: () => mainWindow?.webContents.send('media:volumeDown'),
     VolumeMute: () => mainWindow?.webContents.send('media:toggleMute')
-  }
+  };
 
   for (const [accelerator, handler] of Object.entries(shortcuts)) {
     try {
-      globalShortcut.register(accelerator, handler)
+      globalShortcut.register(accelerator, handler);
     } catch {
       // Some shortcuts may not be available on all platforms
     }
@@ -154,32 +154,32 @@ function registerGlobalShortcuts(): void {
 }
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.onda.app')
+  electronApp.setAppUserModelId('com.onda.app');
 
   app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
-  })
+    optimizer.watchWindowShortcuts(window);
+  });
 
-  registerIPC()
-  mainWindow = createWindow()
-  pipManager.setMainWindow(mainWindow)
-  pipManager.init()
-  setupTray()
-  registerGlobalShortcuts()
+  registerIPC();
+  mainWindow = createWindow();
+  pipManager.setMainWindow(mainWindow);
+  pipManager.init();
+  setupTray();
+  registerGlobalShortcuts();
 
   ipcMain.handle(
     'window:createChild',
     (_event, options: { title: string; width: number; height: number; alwaysOnTop?: boolean }) => {
-      if (!mainWindow) return null
-      const child = createChildWindow(mainWindow, options)
-      return child.id
+      if (!mainWindow) return null;
+      const child = createChildWindow(mainWindow, options);
+      return child.id;
     }
-  )
+  );
 
   ipcMain.handle('window:closeChild', (_event, childId: number) => {
-    const child = BrowserWindow.fromId(childId)
-    child?.close()
-  })
+    const child = BrowserWindow.fromId(childId);
+    child?.close();
+  });
 
   ipcMain.handle(
     'pip:start',
@@ -187,15 +187,15 @@ app.whenReady().then(() => {
       _event,
       videoSrc: string,
       pipSettings?: {
-        position?: string
-        width?: number
-        height?: number
-        startTime?: number
+        position?: string;
+        width?: number;
+        height?: number;
+        startTime?: number;
         subtitle?: {
-          subContent: string
-          fonts: Array<{ name: string; data: number[] }>
-          availableFonts: Record<string, string>
-        } | null
+          subContent: string;
+          fonts: Array<{ name: string; data: number[] }>;
+          availableFonts: Record<string, string>;
+        } | null;
       }
     ) => {
       return pipManager.show({
@@ -205,34 +205,34 @@ app.whenReady().then(() => {
         width: pipSettings?.width,
         height: pipSettings?.height,
         subtitle: pipSettings?.subtitle || null
-      })
+      });
     }
-  )
+  );
 
   ipcMain.handle('pip:stop', () => {
-    pipManager.stop()
-    return true
-  })
+    pipManager.stop();
+    return true;
+  });
 
   ipcMain.handle(
     'pip:previewStart',
     (_event, opts: { position?: string; width?: number; height?: number }) => {
-      return pipManager.showPreview(opts)
+      return pipManager.showPreview(opts);
     }
-  )
+  );
 
   ipcMain.handle('pip:previewStop', () => {
-    pipManager.hidePreview()
-    return true
-  })
+    pipManager.hidePreview();
+    return true;
+  });
 
   ipcMain.handle(
     'pip:previewUpdate',
     (_event, opts: { position?: string; width?: number; height?: number }) => {
-      pipManager.updatePreview(opts)
-      return true
+      pipManager.updatePreview(opts);
+      return true;
     }
-  )
+  );
 
   ipcMain.handle(
     'pip:preload',
@@ -240,14 +240,14 @@ app.whenReady().then(() => {
       _event,
       videoSrc: string,
       subtitleData: {
-        subContent: string
-        fonts: Array<{ name: string; data: number[] }>
-        availableFonts: Record<string, string>
+        subContent: string;
+        fonts: Array<{ name: string; data: number[] }>;
+        availableFonts: Record<string, string>;
       } | null
     ) => {
-      pipManager.preload(videoSrc, subtitleData)
+      pipManager.preload(videoSrc, subtitleData);
     }
-  )
+  );
 
   ipcMain.handle(
     'pip:loadtrack',
@@ -255,51 +255,51 @@ app.whenReady().then(() => {
       _event,
       videoSrc: string,
       subtitleData: {
-        subContent: string
-        fonts: Array<{ name: string; data: number[] }>
-        availableFonts: Record<string, string>
+        subContent: string;
+        fonts: Array<{ name: string; data: number[] }>;
+        availableFonts: Record<string, string>;
       } | null
     ) => {
-      pipManager.loadTrack(videoSrc, subtitleData)
+      pipManager.loadTrack(videoSrc, subtitleData);
     }
-  )
+  );
 
   ipcMain.handle('pip:updatesrc', (_event, videoSrc: string, startTime?: number) => {
-    pipManager.loadTrack(videoSrc, null)
-    if (startTime !== undefined) pipManager.play(startTime)
-  })
+    pipManager.loadTrack(videoSrc, null);
+    if (startTime !== undefined) pipManager.play(startTime);
+  });
 
   ipcMain.handle(
     'pip:updateSubtitle',
     (
       _event,
       data: {
-        subContent: string
-        fonts: Array<{ name: string; data: number[] }>
-        availableFonts: Record<string, string>
+        subContent: string;
+        fonts: Array<{ name: string; data: number[] }>;
+        availableFonts: Record<string, string>;
       } | null
     ) => {
-      pipManager.updateSubtitle(data)
+      pipManager.updateSubtitle(data);
     }
-  )
+  );
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      mainWindow = createWindow()
+      mainWindow = createWindow();
     }
-  })
-})
+  });
+});
 
 app.on('window-all-closed', () => {
-  globalShortcut.unregisterAll()
-  tray?.destroy()
-  tray = null
-  pipManager.destroy()
+  globalShortcut.unregisterAll();
+  tray?.destroy();
+  tray = null;
+  pipManager.destroy();
   if (process.platform !== 'darwin') {
-    app.quit()
+    app.quit();
   }
-})
+});
 
 app.on('will-quit', () => {
-  globalShortcut.unregisterAll()
-})
+  globalShortcut.unregisterAll();
+});

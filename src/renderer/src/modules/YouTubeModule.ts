@@ -1,28 +1,28 @@
-import type { AppModule } from './ModuleManager'
-import { useYouTubeStore } from '@renderer/stores/youtube'
+import type { AppModule } from './ModuleManager';
+import { useYouTubeStore } from '@renderer/stores/youtube';
 
 export class YouTubeModule implements AppModule {
-  id = 'youtube'
-  name = 'YouTube'
-  private _active = false
+  id = 'youtube';
+  name = 'YouTube';
+  private _active = false;
 
   init(): void {}
 
   activate(_context?: unknown): void {
-    this._active = true
+    this._active = true;
   }
 
   async deactivate(): Promise<void> {
-    this._active = false
-    const yt = useYouTubeStore()
-    yt.isSearching = false
+    this._active = false;
+    const yt = useYouTubeStore();
+    yt.isSearching = false;
   }
 
   async destroy(): Promise<void> {
-    await this.deactivate()
+    await this.deactivate();
   }
 
   isActive(): boolean {
-    return this._active
+    return this._active;
   }
 }

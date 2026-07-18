@@ -48,12 +48,7 @@ export default defineConfig(
       ],
       'no-empty': ['error', { allowEmptyCatch: true }],
       'no-useless-escape': 'off',
-      'vue/first-attribute-linebreak': 'error'
-    }
-  },
-  {
-    files: ['**/*.vue'],
-    rules: {
+      'vue/first-attribute-linebreak': 'error',
       'prettier/prettier': 'off'
     }
   },

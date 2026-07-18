@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { usePlayerStore } from '@renderer/stores/player'
-import { useMediaPlayer } from '@renderer/composables/useMediaPlayer'
-import { RotateCcw } from '@lucide/vue'
+import { usePlayerStore } from '@renderer/stores/player';
+import { useMediaPlayer } from '@renderer/composables/useMediaPlayer';
+import { RotateCcw } from '@lucide/vue';
 
-const player = usePlayerStore()
-const { setEqualizerBand, applyEqPreset } = useMediaPlayer()
+const player = usePlayerStore();
+const { setEqualizerBand, applyEqPreset } = useMediaPlayer();
 
 const presets: Record<string, Record<number, number>> = {
   flat: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 },
@@ -15,7 +15,7 @@ const presets: Record<string, Record<number, number>> = {
   bassBoost: { 0: 8, 1: 6, 2: 4, 3: 2, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 },
   trebleBoost: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 2, 6: 4, 7: 6, 8: 8, 9: 8 },
   vocal: { 0: -2, 1: -3, 2: -3, 3: 1, 4: 4, 5: 4, 6: 3, 7: 1, 8: 0, 9: -2 }
-}
+};
 
 const presetLabels: Record<string, string> = {
   flat: 'Flat',
@@ -26,37 +26,37 @@ const presetLabels: Record<string, string> = {
   bassBoost: 'Bas',
   trebleBoost: 'Wysokie',
   vocal: 'Wokal'
-}
+};
 
-const bandLabels = ['32', '64', '125', '250', '500', '1K', '2K', '4K', '8K', '16K']
+const bandLabels = ['32', '64', '125', '250', '500', '1K', '2K', '4K', '8K', '16K'];
 
 function onBandChange(index: number, value: number) {
-  setEqualizerBand(index, value)
+  setEqualizerBand(index, value);
 }
 
 function selectPreset(name: string) {
-  player.equalizerPreset = name
-  applyEqPreset(presets[name])
+  player.equalizerPreset = name;
+  applyEqPreset(presets[name]);
 }
 
 function onSliderDrag(e: MouseEvent, index: number) {
-  const target = e.currentTarget as HTMLElement
-  const rect = target.getBoundingClientRect()
+  const target = e.currentTarget as HTMLElement;
+  const rect = target.getBoundingClientRect();
   function update(ev: MouseEvent) {
-    const pct = 1 - Math.max(0, Math.min(1, (ev.clientY - rect.top) / rect.height))
-    const val = Math.round(pct * 24 - 12)
-    onBandChange(index, val)
+    const pct = 1 - Math.max(0, Math.min(1, (ev.clientY - rect.top) / rect.height));
+    const val = Math.round(pct * 24 - 12);
+    onBandChange(index, val);
   }
-  update(e)
+  update(e);
   function onMove(ev: MouseEvent) {
-    update(ev)
+    update(ev);
   }
   function onUp() {
-    document.removeEventListener('mousemove', onMove)
-    document.removeEventListener('mouseup', onUp)
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
   }
-  document.addEventListener('mousemove', onMove)
-  document.addEventListener('mouseup', onUp)
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
 }
 </script>
 

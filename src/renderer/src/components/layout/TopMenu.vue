@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { usePlayerStore } from '@renderer/stores/player'
-import type { MediaFile } from '@renderer/types/media'
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { usePlayerStore } from '@renderer/stores/player';
+import type { MediaFile } from '@renderer/types/media';
 
-const router = useRouter()
-const player = usePlayerStore()
+const router = useRouter();
+const player = usePlayerStore();
 
 async function openFiles() {
   const result = (await window.api.invoke('dialog:openFile')) as {
-    filePaths: string[]
-    canceled: boolean
-  }
-  if (result.canceled || !result.filePaths.length) return
-  const extVideo = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v']
+    filePaths: string[];
+    canceled: boolean;
+  };
+  if (result.canceled || !result.filePaths.length) return;
+  const extVideo = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v'];
   const tracks: MediaFile[] = result.filePaths.map((p) => {
-    const name = p.split(/[/\\]/).pop() || p
-    const ext = name.split('.').pop()?.toLowerCase() || ''
+    const name = p.split(/[/\\]/).pop() || p;
+    const ext = name.split('.').pop()?.toLowerCase() || '';
     return {
       id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       path: p,
@@ -28,11 +28,11 @@ async function openFiles() {
       mimeType: '',
       addedAt: Date.now(),
       playCount: 0
-    }
-  })
-  player.setTrack(tracks[0])
-  if (tracks.length > 1) player.addToQueueMultiple(tracks.slice(1))
-  router.push('/player')
+    };
+  });
+  player.setTrack(tracks[0]);
+  if (tracks.length > 1) player.addToQueueMultiple(tracks.slice(1));
+  router.push('/player');
 }
 
 const menus = [
@@ -82,14 +82,14 @@ const menus = [
       { label: 'O Onda' }
     ]
   }
-]
+];
 
-const openMenu = ref<number | null>(null)
+const openMenu = ref<number | null>(null);
 function toggleMenu(i: number) {
-  openMenu.value = openMenu.value === i ? null : i
+  openMenu.value = openMenu.value === i ? null : i;
 }
 function closeMenu() {
-  openMenu.value = null
+  openMenu.value = null;
 }
 </script>
 
@@ -119,7 +119,7 @@ function closeMenu() {
             class="w-full px-3 py-1.5 text-left text-fg-muted hover:bg-accent-ghost hover:text-accent-base transition-colors flex items-center justify-between gap-4"
             @click="
               'action' in item && item.action ? item.action() : null;
-              closeMenu()
+              closeMenu();
             "
           >
             <span>{{ item.label }}</span>

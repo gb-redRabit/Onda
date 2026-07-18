@@ -1,77 +1,77 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
 
 export const useUIStore = defineStore('ui', () => {
-  const sidebarExpanded = ref(true)
-  const sidebarWidth = ref(240)
-  const sidebarMode = ref<'full' | 'icons'>('full')
-  const topMenuVisible = ref(true)
-  const statusBarVisible = ref(true)
-  const playerBarVisible = ref(true)
-  const searchVisible = ref(false)
-  const settingsVisible = ref(false)
-  const currentView = ref('home')
-  const isFullscreen = ref(false)
-  const commandPaletteVisible = ref(false)
-  const contextMenu = ref<{ x: number; y: number; items: ContextMenuItem[] } | null>(null)
-  const notifications = ref<Notification[]>([])
+  const sidebarExpanded = ref(true);
+  const sidebarWidth = ref(240);
+  const sidebarMode = ref<'full' | 'icons'>('full');
+  const topMenuVisible = ref(true);
+  const statusBarVisible = ref(true);
+  const playerBarVisible = ref(true);
+  const searchVisible = ref(false);
+  const settingsVisible = ref(false);
+  const currentView = ref('home');
+  const isFullscreen = ref(false);
+  const commandPaletteVisible = ref(false);
+  const contextMenu = ref<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
+  const notifications = ref<Notification[]>([]);
 
   interface ContextMenuItem {
-    label: string
-    icon?: string
-    action?: () => void
-    separator?: boolean
-    disabled?: boolean
-    children?: ContextMenuItem[]
+    label: string;
+    icon?: string;
+    action?: () => void;
+    separator?: boolean;
+    disabled?: boolean;
+    children?: ContextMenuItem[];
   }
 
   interface Notification {
-    id: string
-    type: 'info' | 'success' | 'warning' | 'error'
-    title: string
-    message?: string
-    duration?: number
+    id: string;
+    type: 'info' | 'success' | 'warning' | 'error';
+    title: string;
+    message?: string;
+    duration?: number;
   }
 
   function toggleSidebar() {
-    sidebarExpanded.value = !sidebarExpanded.value
+    sidebarExpanded.value = !sidebarExpanded.value;
   }
 
   function toggleTopMenu() {
-    topMenuVisible.value = !topMenuVisible.value
+    topMenuVisible.value = !topMenuVisible.value;
   }
   function toggleStatusBar() {
-    statusBarVisible.value = !statusBarVisible.value
+    statusBarVisible.value = !statusBarVisible.value;
   }
   function toggleSearch() {
-    searchVisible.value = !searchVisible.value
+    searchVisible.value = !searchVisible.value;
   }
   function toggleCommandPalette() {
-    commandPaletteVisible.value = !commandPaletteVisible.value
+    commandPaletteVisible.value = !commandPaletteVisible.value;
   }
 
   function setView(view: string) {
-    currentView.value = view
+    currentView.value = view;
   }
 
   function showContextMenu(x: number, y: number, items: ContextMenuItem[]) {
-    contextMenu.value = { x, y, items }
+    contextMenu.value = { x, y, items };
   }
 
   function hideContextMenu() {
-    contextMenu.value = null
+    contextMenu.value = null;
   }
 
   function notify(type: Notification['type'], title: string, message?: string, duration = 5000) {
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
-    notifications.value.push({ id, type, title, message, duration })
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    notifications.value.push({ id, type, title, message, duration });
     if (duration > 0) {
-      setTimeout(() => removeNotification(id), duration)
+      setTimeout(() => removeNotification(id), duration);
     }
   }
 
   function removeNotification(id: string) {
-    notifications.value = notifications.value.filter((n) => n.id !== id)
+    notifications.value = notifications.value.filter((n) => n.id !== id);
   }
 
   return {
@@ -98,5 +98,5 @@ export const useUIStore = defineStore('ui', () => {
     hideContextMenu,
     notify,
     removeNotification
-  }
-})
+  };
+});

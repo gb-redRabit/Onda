@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref } from 'vue';
 import {
   Play,
   Pause,
@@ -16,29 +16,29 @@ import {
   Music2,
   SlidersHorizontal,
   Minimize2
-} from '@lucide/vue'
-import { usePlayerStore } from '@renderer/stores/player'
-import { useMediaPlayer } from '@renderer/composables/useMediaPlayer'
-import { formatDuration } from '@renderer/utils/formatters'
+} from '@lucide/vue';
+import { usePlayerStore } from '@renderer/stores/player';
+import { useMediaPlayer } from '@renderer/composables/useMediaPlayer';
+import { formatDuration } from '@renderer/utils/formatters';
 
-const player = usePlayerStore()
-const { seek: seekAudio, setVolume } = useMediaPlayer()
-const isMini = ref(false)
+const player = usePlayerStore();
+const { seek: seekAudio, setVolume } = useMediaPlayer();
+const isMini = ref(false);
 
 const progressPct = computed(() =>
   player.duration > 0 ? (player.currentTime / player.duration) * 100 : 0
-)
+);
 
 function onSeek(e: MouseEvent) {
-  const rect = (e.target as HTMLElement).getBoundingClientRect()
-  const time = ((e.clientX - rect.left) / rect.width) * player.duration
-  player.seek(time)
-  seekAudio(time)
+  const rect = (e.target as HTMLElement).getBoundingClientRect();
+  const time = ((e.clientX - rect.left) / rect.width) * player.duration;
+  player.seek(time);
+  seekAudio(time);
 }
 
 function onVolume(e: MouseEvent) {
-  const rect = (e.target as HTMLElement).getBoundingClientRect()
-  setVolume((e.clientX - rect.left) / rect.width)
+  const rect = (e.target as HTMLElement).getBoundingClientRect();
+  setVolume((e.clientX - rect.left) / rect.width);
 }
 </script>
 

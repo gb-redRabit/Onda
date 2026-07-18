@@ -1,142 +1,142 @@
 <script setup lang="ts">
-import { ref, watch, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { usePlayerStore } from '@renderer/stores/player'
-import { useSettingsStore } from '@renderer/stores/settings'
-import { useRouter } from 'vue-router'
-import PlayerOSD from '@renderer/components/player/PlayerOSD.vue'
-import PlayerTopBar from '@renderer/components/player/PlayerTopBar.vue'
-import PlayerControls from '@renderer/components/player/PlayerControls.vue'
+import { ref, watch, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { usePlayerStore } from '@renderer/stores/player';
+import { useSettingsStore } from '@renderer/stores/settings';
+import { useRouter } from 'vue-router';
+import PlayerOSD from '@renderer/components/player/PlayerOSD.vue';
+import PlayerTopBar from '@renderer/components/player/PlayerTopBar.vue';
+import PlayerControls from '@renderer/components/player/PlayerControls.vue';
 import {
   initSubtitleRenderer,
   loadSubtitleTrack,
   removeSubtitleTrack,
   destroySubtitleRenderer,
   preparePiPSubtitleData
-} from '@renderer/composables/useSubtitleRenderer'
-import { usePiP } from '@renderer/composables/usePiP'
+} from '@renderer/composables/useSubtitleRenderer';
+import { usePiP } from '@renderer/composables/usePiP';
 
-const player = usePlayerStore()
-const settings = useSettingsStore()
-const router = useRouter()
+const player = usePlayerStore();
+const settings = useSettingsStore();
+const router = useRouter();
 
 function getTrackSrc(track: { path: string }): string {
-  return `file:///${track.path.replace(/\\/g, '/')}`
+  return `file:///${track.path.replace(/\\/g, '/')}`;
 }
 
 const pip = usePiP({
   onClosed(savedTime) {
-    player.pipActive = false
+    player.pipActive = false;
     if (videoRef.value) {
-      videoRef.value.currentTime = savedTime
-      player.currentTime = savedTime
-      videoRef.value.play().catch(() => {})
+      videoRef.value.currentTime = savedTime;
+      player.currentTime = savedTime;
+      videoRef.value.play().catch(() => {});
     }
-    player.isPlaying = true
-    syncSubtitlesWithPiP()
+    player.isPlaying = true;
+    syncSubtitlesWithPiP();
   },
   onEnded() {
     if (player.queue.length > 0) {
-      player.nextTrack()
+      player.nextTrack();
     } else {
-      pip.stop()
+      pip.stop();
     }
   }
-})
+});
 
-const videoRef = ref<HTMLVideoElement | null>(null)
-const playerContainerRef = ref<HTMLDivElement | null>(null)
-const isFullscreen = ref(false)
-const showControls = ref(true)
-const controlsTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
+const videoRef = ref<HTMLVideoElement | null>(null);
+const playerContainerRef = ref<HTMLDivElement | null>(null);
+const isFullscreen = ref(false);
+const showControls = ref(true);
+const controlsTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 
-const osdVisible = ref(false)
-const osdText = ref('')
-const osdIcon = ref<'play' | 'pause' | 'volume' | 'seek' | 'track' | 'speed'>('track')
-const osdTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
+const osdVisible = ref(false);
+const osdText = ref('');
+const osdIcon = ref<'play' | 'pause' | 'volume' | 'seek' | 'track' | 'speed'>('track');
+const osdTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 
-const isVideo = computed(() => player.currentTrack?.type === 'video')
-const isAudio = computed(() => player.currentTrack?.type === 'audio')
+const isVideo = computed(() => player.currentTrack?.type === 'video');
+const isAudio = computed(() => player.currentTrack?.type === 'audio');
 
 const videoFilterStyle = computed(() => {
-  const f = settings.playback.videoFilter
-  if (!f || f === 'none') return {}
-  return { filter: f }
-})
+  const f = settings.playback.videoFilter;
+  if (!f || f === 'none') return {};
+  return { filter: f };
+});
 
 function showOSD(text: string, icon: typeof osdIcon.value = 'track', duration = 1500) {
-  osdText.value = text
-  osdIcon.value = icon
-  osdVisible.value = true
-  if (osdTimeout.value) clearTimeout(osdTimeout.value)
+  osdText.value = text;
+  osdIcon.value = icon;
+  osdVisible.value = true;
+  if (osdTimeout.value) clearTimeout(osdTimeout.value);
   osdTimeout.value = setTimeout(() => {
-    osdVisible.value = false
-  }, duration)
+    osdVisible.value = false;
+  }, duration);
 }
 
 function onWheel(e: WheelEvent) {
-  e.preventDefault()
-  if (!videoRef.value) return
-  const delta = e.deltaY < 0 ? 0.05 : -0.05
-  const newVol = Math.max(0, Math.min(1, player.volume + delta))
-  player.setVolume(newVol)
-  videoRef.value.volume = player.isMuted ? 0 : newVol
-  showOSD(`Glosnosc: ${Math.round(newVol * 100)}%`, 'volume', 1200)
+  e.preventDefault();
+  if (!videoRef.value) return;
+  const delta = e.deltaY < 0 ? 0.05 : -0.05;
+  const newVol = Math.max(0, Math.min(1, player.volume + delta));
+  player.setVolume(newVol);
+  videoRef.value.volume = player.isMuted ? 0 : newVol;
+  showOSD(`Glosnosc: ${Math.round(newVol * 100)}%`, 'volume', 1200);
 }
 
 function onSeek(time: number) {
-  if (!videoRef.value) return
-  player.seek(time)
-  videoRef.value.currentTime = time
+  if (!videoRef.value) return;
+  player.seek(time);
+  videoRef.value.currentTime = time;
 }
 
 function onVolumeChange(value: number) {
-  player.setVolume(value)
-  if (videoRef.value) videoRef.value.volume = player.isMuted ? 0 : value
+  player.setVolume(value);
+  if (videoRef.value) videoRef.value.volume = player.isMuted ? 0 : value;
 }
 
 function toggleFullscreen() {
   if (!document.fullscreenElement) {
-    const target = playerContainerRef.value || document.documentElement
+    const target = playerContainerRef.value || document.documentElement;
     target.requestFullscreen().catch(() => {
-      document.documentElement.requestFullscreen()
-    })
+      document.documentElement.requestFullscreen();
+    });
   } else {
-    document.exitFullscreen()
+    document.exitFullscreen();
   }
 }
 
 function skip(seconds: number) {
-  if (!videoRef.value) return
+  if (!videoRef.value) return;
   const newTime = Math.max(
     0,
     Math.min(videoRef.value.duration || 0, videoRef.value.currentTime + seconds)
-  )
-  videoRef.value.currentTime = newTime
-  player.currentTime = newTime
-  const sign = seconds > 0 ? '+' : ''
-  showOSD(`${sign}${seconds}s`, 'seek', 1000)
+  );
+  videoRef.value.currentTime = newTime;
+  player.currentTime = newTime;
+  const sign = seconds > 0 ? '+' : '';
+  showOSD(`${sign}${seconds}s`, 'seek', 1000);
 }
 
 function setSpeed(speed: number) {
-  const clamped = Math.round(Math.max(0.2, Math.min(3, speed)) * 10) / 10
-  settings.updatePlayback({ playbackSpeed: clamped })
-  if (videoRef.value) videoRef.value.playbackRate = clamped
-  showOSD(`${clamped}x`, 'speed', 1200)
+  const clamped = Math.round(Math.max(0.2, Math.min(3, speed)) * 10) / 10;
+  settings.updatePlayback({ playbackSpeed: clamped });
+  if (videoRef.value) videoRef.value.playbackRate = clamped;
+  showOSD(`${clamped}x`, 'speed', 1200);
 }
 
 async function togglePiP() {
   if (player.pipActive) {
-    pip.stop()
-    return
+    pip.stop();
+    return;
   }
 
-  let src = videoRef.value?.src || ''
+  let src = videoRef.value?.src || '';
   if (!src && player.currentTrack) {
-    src = getTrackSrc(player.currentTrack)
+    src = getTrackSrc(player.currentTrack);
   }
-  if (!src) return
+  if (!src) return;
 
-  const startTime = videoRef.value?.currentTime || player.currentTime
+  const startTime = videoRef.value?.currentTime || player.currentTime;
 
   const started = await pip.start(src, {
     position: settings.playback.pipPosition,
@@ -144,221 +144,221 @@ async function togglePiP() {
     height: settings.playback.pipHeight,
     startTime,
     subtitle: true
-  })
+  });
   if (started) {
-    player.pipTime = startTime
-    player.pipActive = true
-    if (videoRef.value) videoRef.value.pause()
-    player.isPlaying = false
-    syncSubtitlesWithPiP()
+    player.pipTime = startTime;
+    player.pipActive = true;
+    if (videoRef.value) videoRef.value.pause();
+    player.isPlaying = false;
+    syncSubtitlesWithPiP();
   }
 }
 
 function syncSubtitlesWithPiP(): void {
   if (player.pipActive) {
-    removeSubtitleTrack()
-    return
+    removeSubtitleTrack();
+    return;
   }
-  const trackId = player.activeSubtitleId
-  if (!trackId) return
-  const track = player.subtitleTracks.find((t) => t.id === trackId)
-  if (track) loadSubtitleTrack(track)
+  const trackId = player.activeSubtitleId;
+  if (!trackId) return;
+  const track = player.subtitleTracks.find((t) => t.id === trackId);
+  if (track) loadSubtitleTrack(track);
 }
 
 function onMouseMove() {
-  showControls.value = true
+  showControls.value = true;
   if (settings.playback.cursorHide && isFullscreen.value && playerContainerRef.value) {
-    playerContainerRef.value.classList.remove('hide-cursor')
+    playerContainerRef.value.classList.remove('hide-cursor');
   }
-  if (controlsTimeout.value) clearTimeout(controlsTimeout.value)
+  if (controlsTimeout.value) clearTimeout(controlsTimeout.value);
   controlsTimeout.value = setTimeout(() => {
     if (player.isPlaying) {
-      showControls.value = false
+      showControls.value = false;
       if (settings.playback.cursorHide && isFullscreen.value && playerContainerRef.value) {
-        playerContainerRef.value.classList.add('hide-cursor')
+        playerContainerRef.value.classList.add('hide-cursor');
       }
     }
-  }, settings.playback.cursorTimeout * 1000)
+  }, settings.playback.cursorTimeout * 1000);
 }
 
-let clickTimer: ReturnType<typeof setTimeout> | null = null
+let clickTimer: ReturnType<typeof setTimeout> | null = null;
 
 function handleClick() {
   if (clickTimer) {
-    clearTimeout(clickTimer)
-    clickTimer = null
-    toggleFullscreen()
-    return
+    clearTimeout(clickTimer);
+    clickTimer = null;
+    toggleFullscreen();
+    return;
   }
   clickTimer = setTimeout(() => {
-    if (player.pipActive) return
-    player.togglePlay()
+    if (player.pipActive) return;
+    player.togglePlay();
     showOSD(
       player.isPlaying ? 'Odtwarzanie' : 'Wstrzymano',
       player.isPlaying ? 'play' : 'pause',
       1000
-    )
-    clickTimer = null
-  }, 250)
+    );
+    clickTimer = null;
+  }, 250);
 }
 
 function onKeydown(e: KeyboardEvent) {
-  const target = e.target as HTMLElement
+  const target = e.target as HTMLElement;
   if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
-    return
+    return;
 
   switch (e.key) {
     case ' ':
     case 'k':
-      e.preventDefault()
-      if (player.pipActive) return
-      player.togglePlay()
+      e.preventDefault();
+      if (player.pipActive) return;
+      player.togglePlay();
       showOSD(
         player.isPlaying ? 'Odtwarzanie' : 'Wstrzymano',
         player.isPlaying ? 'play' : 'pause',
         1000
-      )
-      break
+      );
+      break;
     case 'ArrowLeft':
-      e.preventDefault()
-      skip(e.shiftKey ? -30 : -10)
-      break
+      e.preventDefault();
+      skip(e.shiftKey ? -30 : -10);
+      break;
     case 'ArrowRight':
-      e.preventDefault()
-      skip(e.shiftKey ? 30 : 10)
-      break
+      e.preventDefault();
+      skip(e.shiftKey ? 30 : 10);
+      break;
     case 'ArrowUp':
-      e.preventDefault()
+      e.preventDefault();
       if (videoRef.value) {
-        const newVol = Math.min(1, player.volume + 0.05)
-        player.setVolume(newVol)
-        videoRef.value.volume = player.isMuted ? 0 : newVol
-        showOSD(`Glosnosc: ${Math.round(newVol * 100)}%`, 'volume', 1200)
+        const newVol = Math.min(1, player.volume + 0.05);
+        player.setVolume(newVol);
+        videoRef.value.volume = player.isMuted ? 0 : newVol;
+        showOSD(`Glosnosc: ${Math.round(newVol * 100)}%`, 'volume', 1200);
       }
-      break
+      break;
     case 'ArrowDown':
-      e.preventDefault()
+      e.preventDefault();
       if (videoRef.value) {
-        const newVol = Math.max(0, player.volume - 0.05)
-        player.setVolume(newVol)
-        videoRef.value.volume = player.isMuted ? 0 : newVol
-        showOSD(`Glosnosc: ${Math.round(newVol * 100)}%`, 'volume', 1200)
+        const newVol = Math.max(0, player.volume - 0.05);
+        player.setVolume(newVol);
+        videoRef.value.volume = player.isMuted ? 0 : newVol;
+        showOSD(`Glosnosc: ${Math.round(newVol * 100)}%`, 'volume', 1200);
       }
-      break
+      break;
     case 'm':
-      e.preventDefault()
-      player.toggleMute()
+      e.preventDefault();
+      player.toggleMute();
       showOSD(
         player.isMuted ? 'Wyciszono' : `Glosnosc: ${Math.round(player.volume * 100)}%`,
         'volume',
         1200
-      )
-      break
+      );
+      break;
     case 'f':
-      e.preventDefault()
-      toggleFullscreen()
-      break
+      e.preventDefault();
+      toggleFullscreen();
+      break;
     case '<':
-      e.preventDefault()
-      setSpeed(settings.playback.playbackSpeed - 0.25)
-      break
+      e.preventDefault();
+      setSpeed(settings.playback.playbackSpeed - 0.25);
+      break;
     case '>':
-      e.preventDefault()
-      setSpeed(settings.playback.playbackSpeed + 0.25)
-      break
+      e.preventDefault();
+      setSpeed(settings.playback.playbackSpeed + 0.25);
+      break;
     case '0':
-      e.preventDefault()
+      e.preventDefault();
       if (videoRef.value) {
-        videoRef.value.currentTime = 0
-        player.currentTime = 0
-        showOSD('0:00', 'seek', 1000)
+        videoRef.value.currentTime = 0;
+        player.currentTime = 0;
+        showOSD('0:00', 'seek', 1000);
       }
-      break
+      break;
   }
 }
 
-const videoEventsConnected = ref(false)
+const videoEventsConnected = ref(false);
 
 function connectVideoEvents(el: HTMLVideoElement) {
-  if (videoEventsConnected.value) return
-  videoEventsConnected.value = true
+  if (videoEventsConnected.value) return;
+  videoEventsConnected.value = true;
   el.addEventListener('timeupdate', () => {
-    player.currentTime = el.currentTime
-  })
+    player.currentTime = el.currentTime;
+  });
   el.addEventListener('durationchange', () => {
-    player.duration = el.duration || 0
-    if (player.currentTrack) player.currentTrack.duration = el.duration || 0
-  })
+    player.duration = el.duration || 0;
+    if (player.currentTrack) player.currentTrack.duration = el.duration || 0;
+  });
   el.addEventListener('loadedmetadata', () => {
-    player.duration = el.duration || 0
-    if (player.currentTrack) player.currentTrack.duration = el.duration || 0
-  })
+    player.duration = el.duration || 0;
+    if (player.currentTrack) player.currentTrack.duration = el.duration || 0;
+  });
   el.addEventListener('ended', () => {
-    if (player.pipActive) return
-    player.isPlaying = false
-    player.nextTrack()
-  })
+    if (player.pipActive) return;
+    player.isPlaying = false;
+    player.nextTrack();
+  });
 }
 
 function setupVideo(track: import('@renderer/types/media').MediaFile | null) {
-  if (!track || track.type !== 'video' || !videoRef.value) return
-  const el = videoRef.value
-  const src = getTrackSrc(track)
+  if (!track || track.type !== 'video' || !videoRef.value) return;
+  const el = videoRef.value;
+  const src = getTrackSrc(track);
   if (el.getAttribute('data-src') !== src) {
-    const seekTo = player.pipTime > 0 ? player.pipTime : player.currentTime
-    if (player.pipTime > 0) player.pipTime = 0
-    el.setAttribute('data-src', src)
-    el.src = src
-    connectVideoEvents(el)
+    const seekTo = player.pipTime > 0 ? player.pipTime : player.currentTime;
+    if (player.pipTime > 0) player.pipTime = 0;
+    el.setAttribute('data-src', src);
+    el.src = src;
+    connectVideoEvents(el);
     el.addEventListener(
       'loadedmetadata',
       () => {
-        if (seekTo > 0) el.currentTime = seekTo
-        el.playbackRate = settings.playback.playbackSpeed
-        if (player.isPlaying && !player.pipActive) el.play().catch(() => {})
+        if (seekTo > 0) el.currentTime = seekTo;
+        el.playbackRate = settings.playback.playbackSpeed;
+        if (player.isPlaying && !player.pipActive) el.play().catch(() => {});
       },
       { once: true }
-    )
-    el.load()
+    );
+    el.load();
   } else {
-    el.volume = player.isMuted ? 0 : player.volume
-    el.playbackRate = settings.playback.playbackSpeed
-    if (player.isPlaying && !player.pipActive) el.play().catch(() => {})
+    el.volume = player.isMuted ? 0 : player.volume;
+    el.playbackRate = settings.playback.playbackSpeed;
+    if (player.isPlaying && !player.pipActive) el.play().catch(() => {});
   }
 }
 
-let lastLoadedPath = ''
+let lastLoadedPath = '';
 
 function onVideoRef(el: unknown) {
-  videoRef.value = el as HTMLVideoElement
+  videoRef.value = el as HTMLVideoElement;
   if (el && player.currentTrack?.type === 'video') {
-    setupVideo(player.currentTrack)
-    const video = el as HTMLVideoElement
+    setupVideo(player.currentTrack);
+    const video = el as HTMLVideoElement;
     const tryInit = () => {
       if (!video.isConnected) {
-        nextTick(tryInit)
-        return
+        nextTick(tryInit);
+        return;
       }
-      initSubtitleRenderer(video)
+      initSubtitleRenderer(video);
       if (player.currentTrack && player.currentTrack.path !== lastLoadedPath) {
         if (video.readyState >= 1 || video.videoWidth > 0) {
-          lastLoadedPath = player.currentTrack.path
-          player.loadSubtitles(player.currentTrack.path)
+          lastLoadedPath = player.currentTrack.path;
+          player.loadSubtitles(player.currentTrack.path);
         } else {
           video.addEventListener(
             'loadedmetadata',
             () => {
               if (player.currentTrack && player.currentTrack.path !== lastLoadedPath) {
-                lastLoadedPath = player.currentTrack.path
-                player.loadSubtitles(player.currentTrack.path)
+                lastLoadedPath = player.currentTrack.path;
+                player.loadSubtitles(player.currentTrack.path);
               }
             },
             { once: true }
-          )
+          );
         }
       }
-    }
-    tryInit()
+    };
+    tryInit();
   }
 }
 
@@ -366,142 +366,142 @@ watch(
   () => player.currentTrack,
   (track) => {
     if (track?.type === 'video' && track.path !== lastLoadedPath) {
-      lastLoadedPath = track.path
-      player.loadSubtitles(track.path)
+      lastLoadedPath = track.path;
+      player.loadSubtitles(track.path);
     }
   }
-)
+);
 
 watch(
   () => player.currentTrack,
   (track) => {
-    if (!track) return
+    if (!track) return;
     if (track.type !== 'video') {
-      router.back()
-      return
+      router.back();
+      return;
     }
 
-    settings.updatePlayback({ videoFilter: 'none', playbackSpeed: 1 })
-    setupVideo(track)
+    settings.updatePlayback({ videoFilter: 'none', playbackSpeed: 1 });
+    setupVideo(track);
 
     if (player.pipActive && track.type === 'video') {
-      const src = getTrackSrc(track)
-      pip.loadTrack(src, null)
+      const src = getTrackSrc(track);
+      pip.loadTrack(src, null);
       preparePiPSubtitleData(track.path).then((subtitleData) => {
         if (player.pipActive) {
-          pip.updateSubtitle(subtitleData)
+          pip.updateSubtitle(subtitleData);
         }
-      })
-      if (videoRef.value) videoRef.value.pause()
-      player.isPlaying = false
+      });
+      if (videoRef.value) videoRef.value.pause();
+      player.isPlaying = false;
     } else if (track.type === 'video') {
-      const src = getTrackSrc(track)
-      pip.preload(src, null)
+      const src = getTrackSrc(track);
+      pip.preload(src, null);
       preparePiPSubtitleData(track.path).then((subtitleData) => {
-        pip.updateSubtitle(subtitleData)
-      })
+        pip.updateSubtitle(subtitleData);
+      });
     }
 
-    const title = track.metadata?.title || track.name
-    const artist = track.metadata?.artist
-    showOSD(artist ? `${artist} - ${title}` : title, 'track', 2500)
+    const title = track.metadata?.title || track.name;
+    const artist = track.metadata?.artist;
+    showOSD(artist ? `${artist} - ${title}` : title, 'track', 2500);
   },
   { flush: 'post' }
-)
+);
 
 watch(
   () => player.isPlaying,
   (playing) => {
-    if (!videoRef.value || !isVideo.value) return
+    if (!videoRef.value || !isVideo.value) return;
     if (player.pipActive) {
-      videoRef.value.pause()
-      return
+      videoRef.value.pause();
+      return;
     }
-    if (playing) videoRef.value.play().catch(() => {})
-    else videoRef.value.pause()
+    if (playing) videoRef.value.play().catch(() => {});
+    else videoRef.value.pause();
   }
-)
+);
 
 watch(
   () => settings.playback.playbackSpeed,
   (speed) => {
-    if (videoRef.value) videoRef.value.playbackRate = speed
+    if (videoRef.value) videoRef.value.playbackRate = speed;
   }
-)
+);
 
 onMounted(() => {
   if (
     !player.currentTrack ||
     (player.currentTrack.type !== 'video' && player.currentTrack.type !== 'audio')
   ) {
-    router.replace('/')
-    return
+    router.replace('/');
+    return;
   }
 
-  settings.updatePlayback({ videoFilter: 'none', playbackSpeed: 1 })
+  settings.updatePlayback({ videoFilter: 'none', playbackSpeed: 1 });
 
   if (player.currentTrack.type === 'video') {
-    setupVideo(player.currentTrack)
+    setupVideo(player.currentTrack);
 
-    const src = getTrackSrc(player.currentTrack)
+    const src = getTrackSrc(player.currentTrack);
     if (player.pipActive) {
-      pip.loadTrack(src, null)
+      pip.loadTrack(src, null);
       preparePiPSubtitleData(player.currentTrack.path).then((subtitleData) => {
-        if (player.pipActive) pip.updateSubtitle(subtitleData)
-      })
+        if (player.pipActive) pip.updateSubtitle(subtitleData);
+      });
     } else {
-      pip.preload(src, null)
+      pip.preload(src, null);
       preparePiPSubtitleData(player.currentTrack.path).then((subtitleData) => {
-        pip.updateSubtitle(subtitleData)
-      })
+        pip.updateSubtitle(subtitleData);
+      });
     }
   }
 
   document.addEventListener('fullscreenchange', () => {
-    isFullscreen.value = !!document.fullscreenElement
-  })
-  document.addEventListener('keydown', onKeydown)
-})
+    isFullscreen.value = !!document.fullscreenElement;
+  });
+  document.addEventListener('keydown', onKeydown);
+});
 
 onUnmounted(() => {
-  destroySubtitleRenderer()
-  player.clearSubtitles()
-  if (controlsTimeout.value) clearTimeout(controlsTimeout.value)
-  if (osdTimeout.value) clearTimeout(osdTimeout.value)
-  if (clickTimer) clearTimeout(clickTimer)
-  document.removeEventListener('keydown', onKeydown)
-  document.body.style.cursor = 'default'
-})
+  destroySubtitleRenderer();
+  player.clearSubtitles();
+  if (controlsTimeout.value) clearTimeout(controlsTimeout.value);
+  if (osdTimeout.value) clearTimeout(osdTimeout.value);
+  if (clickTimer) clearTimeout(clickTimer);
+  document.removeEventListener('keydown', onKeydown);
+  document.body.style.cursor = 'default';
+});
 
 watch([() => player.volume, () => player.isMuted], () => {
-  if (videoRef.value) videoRef.value.volume = player.isMuted ? 0 : player.volume
-})
+  if (videoRef.value) videoRef.value.volume = player.isMuted ? 0 : player.volume;
+});
 
 watch(
   () => player.activeSubtitleId,
   async (trackId) => {
     if (!trackId || !player.currentTrack) {
-      removeSubtitleTrack()
-      return
+      removeSubtitleTrack();
+      return;
     }
-    const track = player.subtitleTracks.find((t) => t.id === trackId)
-    if (!track) return
+    const track = player.subtitleTracks.find((t) => t.id === trackId);
+    if (!track) return;
 
     if (track.source === 'embedded' && !track.content) {
-      const result = await player.loadEmbeddedSubtitle(trackId, player.currentTrack.path)
+      const result = await player.loadEmbeddedSubtitle(trackId, player.currentTrack.path);
       if (result) {
-        track.content = result.content
-        track.format = result.format
-        track.fonts = result.fonts
-        await loadSubtitleTrack(track)
+        track.content = result.content;
+        track.format = result.format;
+        track.fonts = result.fonts;
+        await loadSubtitleTrack(track);
       } else {
-        console.error('[Subtitles] extraction returned null')
+        console.error('[Subtitles] extraction returned null');
       }
     } else {
-      await loadSubtitleTrack(track)
+      await loadSubtitleTrack(track);
     }
   }
-)
+);
 </script>
 
 <template>

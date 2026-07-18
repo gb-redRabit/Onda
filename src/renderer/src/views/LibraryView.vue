@@ -1,29 +1,29 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useLibraryStore } from '@renderer/stores/library'
-import { usePlayerStore } from '@renderer/stores/player'
-import { moduleManager } from '@renderer/modules/ModuleManager'
-import { Music2, List, Grid3X3, Search } from '@lucide/vue'
-import { formatDuration } from '@renderer/utils/formatters'
+import { ref, computed, onMounted } from 'vue';
+import { useLibraryStore } from '@renderer/stores/library';
+import { usePlayerStore } from '@renderer/stores/player';
+import { moduleManager } from '@renderer/modules/ModuleManager';
+import { Music2, List, Grid3X3, Search } from '@lucide/vue';
+import { formatDuration } from '@renderer/utils/formatters';
 
-const library = useLibraryStore()
-const player = usePlayerStore()
+const library = useLibraryStore();
+const player = usePlayerStore();
 
 onMounted(() => {
-  moduleManager.switchTo('library')
-})
-const viewMode = ref<'list' | 'grid'>('list')
-const query = ref('')
-const tab = ref<'tracks' | 'artists' | 'albums' | 'playlists'>('tracks')
+  moduleManager.switchTo('library');
+});
+const viewMode = ref<'list' | 'grid'>('list');
+const query = ref('');
+const tab = ref<'tracks' | 'artists' | 'albums' | 'playlists'>('tracks');
 
 const tabLabels: Record<string, string> = {
   tracks: 'Utwory',
   artists: 'Artyści',
   albums: 'Albumy',
   playlists: 'Playlisty'
-}
+};
 
-const filtered = computed(() => (query.value ? library.search(query.value) : library.tracks))
+const filtered = computed(() => (query.value ? library.search(query.value) : library.tracks));
 </script>
 
 <template>

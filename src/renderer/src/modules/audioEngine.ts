@@ -1,71 +1,71 @@
-import type { MediaFile } from '@renderer/types/media'
-import { usePlayerStore } from '@renderer/stores/player'
-import { useSettingsStore } from '@renderer/stores/settings'
+import type { MediaFile } from '@renderer/types/media';
+import { usePlayerStore } from '@renderer/stores/player';
+import { useSettingsStore } from '@renderer/stores/settings';
 
-let audioEl: HTMLAudioElement | null = null
-let nextAudioEl: HTMLAudioElement | null = null
-let audioCtx: AudioContext | null = null
-let analyserNode: AnalyserNode | null = null
-let sourceNode: MediaElementAudioSourceNode | null = null
-let sourceNodeB: MediaElementAudioSourceNode | null = null
-let crossfadeGainA: GainNode | null = null
-let crossfadeGainB: GainNode | null = null
-let gainNode: GainNode | null = null
-let eqFilters: BiquadFilterNode[] = []
-let rafId: number | null = null
-let crossfadeTimer: ReturnType<typeof setTimeout> | null = null
-let isCrossfading = false
-let _initialized = false
+let audioEl: HTMLAudioElement | null = null;
+let nextAudioEl: HTMLAudioElement | null = null;
+let audioCtx: AudioContext | null = null;
+let analyserNode: AnalyserNode | null = null;
+let sourceNode: MediaElementAudioSourceNode | null = null;
+let sourceNodeB: MediaElementAudioSourceNode | null = null;
+let crossfadeGainA: GainNode | null = null;
+let crossfadeGainB: GainNode | null = null;
+let gainNode: GainNode | null = null;
+let eqFilters: BiquadFilterNode[] = [];
+let rafId: number | null = null;
+let crossfadeTimer: ReturnType<typeof setTimeout> | null = null;
+let isCrossfading = false;
+let _initialized = false;
 
-const eqFrequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
-const savedPositions = new Map<string, number>()
+const eqFrequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+const savedPositions = new Map<string, number>();
 
 function ensureAudioContext(): void {
-  if (audioCtx) return
-  audioCtx = new AudioContext()
-  analyserNode = audioCtx.createAnalyser()
-  analyserNode.fftSize = 2048
-  gainNode = audioCtx.createGain()
-  crossfadeGainA = audioCtx.createGain()
-  crossfadeGainB = audioCtx.createGain()
-  crossfadeGainA.gain.value = 1
-  crossfadeGainB.gain.value = 0
+  if (audioCtx) return;
+  audioCtx = new AudioContext();
+  analyserNode = audioCtx.createAnalyser();
+  analyserNode.fftSize = 2048;
+  gainNode = audioCtx.createGain();
+  crossfadeGainA = audioCtx.createGain();
+  crossfadeGainB = audioCtx.createGain();
+  crossfadeGainA.gain.value = 1;
+  crossfadeGainB.gain.value = 0;
   eqFilters = eqFrequencies.map((freq, i) => {
-    const filter = audioCtx!.createBiquadFilter()
-    filter.type = i === 0 ? 'lowshelf' : i === eqFrequencies.length - 1 ? 'highshelf' : 'peaking'
-    filter.frequency.value = freq
-    filter.Q.value = 1.4
-    filter.gain.value = 0
-    return filter
-  })
+    const filter = audioCtx!.createBiquadFilter();
+    filter.type = i === 0 ? 'lowshelf' : i === eqFrequencies.length - 1 ? 'highshelf' : 'peaking';
+    filter.frequency.value = freq;
+    filter.Q.value = 1.4;
+    filter.gain.value = 0;
+    return filter;
+  });
 }
 
 function connectAudio(el: HTMLAudioElement): void {
-  ensureAudioContext()
-  if (sourceNode) return
+  ensureAudioContext();
+  if (sourceNode) return;
   try {
-    sourceNode = audioCtx!.createMediaElementSource(el)
-    sourceNode.connect(crossfadeGainA!)
-    let eqChain: AudioNode = crossfadeGainA!
+    sourceNode = audioCtx!.createMediaElementSource(el);
+    sourceNode.connect(crossfadeGainA!);
+    let eqChain: AudioNode = crossfadeGainA!;
     for (const filter of eqFilters) {
-      eqChain.connect(filter)
-      eqChain = filter
+      eqChain.connect(filter);
+      eqChain = filter;
     }
-    eqChain.connect(gainNode!)
-    gainNode!.connect(analyserNode!)
-    analyserNode!.connect(audioCtx!.destination)
+    eqChain.connect(gainNode!);
+    gainNode!.connect(analyserNode!);
+    analyserNode!.connect(audioCtx!.destination);
   } catch {
     // already connected
   }
 }
 
 function connectAudioB(el: HTMLAudioElement): void {
-  ensureAudioContext()
-  if (sourceNodeB) return
+  ensureAudioContext();
+  if (sourceNodeB) return;
   try {
-    sourceNodeB = audioCtx!.createMediaElementSource(el)
-    sourceNodeB.connect(crossfadeGainB!)
-    crossfadeGainB!.connect(gainNode!)
+    sourceNodeB = audioCtx!.createMediaElementSource(el);
+    sourceNodeB.connect(crossfadeGainB!);
+    crossfadeGainB!.connect(gainNode!);
   } catch {
     // already connected
   }
@@ -73,277 +73,277 @@ function connectAudioB(el: HTMLAudioElement): void {
 
 function createAudioElement(): HTMLAudioElement {
   if (audioEl) {
-    audioEl.pause()
-    audioEl.removeAttribute('src')
+    audioEl.pause();
+    audioEl.removeAttribute('src');
   }
-  audioEl = new Audio()
-  audioEl.preload = 'auto'
-  audioEl.crossOrigin = 'anonymous'
-  return audioEl
+  audioEl = new Audio();
+  audioEl.preload = 'auto';
+  audioEl.crossOrigin = 'anonymous';
+  return audioEl;
 }
 
 function setupListeners(el: HTMLAudioElement): void {
-  const player = usePlayerStore()
+  const player = usePlayerStore();
   el.addEventListener('timeupdate', () => {
-    player.currentTime = el.currentTime
-  })
+    player.currentTime = el.currentTime;
+  });
   el.addEventListener('durationchange', () => {
-    player.duration = el.duration || 0
-    if (player.currentTrack) player.currentTrack.duration = el.duration || 0
-  })
+    player.duration = el.duration || 0;
+    if (player.currentTrack) player.currentTrack.duration = el.duration || 0;
+  });
   el.addEventListener('ended', () => {
-    handleEnded()
-  })
+    handleEnded();
+  });
   el.addEventListener('play', () => {
-    player.isPlaying = true
-  })
+    player.isPlaying = true;
+  });
   el.addEventListener('pause', () => {
-    if (!isCrossfading) player.isPlaying = false
-  })
+    if (!isCrossfading) player.isPlaying = false;
+  });
   el.addEventListener('loadedmetadata', () => {
-    player.duration = el.duration || 0
-    if (player.currentTrack) player.currentTrack.duration = el.duration || 0
-  })
+    player.duration = el.duration || 0;
+    if (player.currentTrack) player.currentTrack.duration = el.duration || 0;
+  });
 }
 
 function handleEnded(): void {
-  const player = usePlayerStore()
-  const settings = useSettingsStore()
-  if (isCrossfading) return
+  const player = usePlayerStore();
+  const settings = useSettingsStore();
+  if (isCrossfading) return;
 
   if (player.repeat === 'one') {
     if (audioEl) {
-      audioEl.currentTime = 0
-      audioEl.play()
+      audioEl.currentTime = 0;
+      audioEl.play();
     }
-    return
+    return;
   }
 
-  const crossfadeDuration = settings.playback.crossfadeDuration || 0
+  const crossfadeDuration = settings.playback.crossfadeDuration || 0;
   if (crossfadeDuration > 0 && player.queue.length > 0) {
-    startCrossfade(crossfadeDuration)
-    return
+    startCrossfade(crossfadeDuration);
+    return;
   }
 
-  const next = player.nextTrack()
+  const next = player.nextTrack();
   if (!next && player.repeat === 'all' && player.history.length > 0) {
-    player.setTrack(player.history[0])
+    player.setTrack(player.history[0]);
   }
 }
 
 function startRafLoop(): void {
-  const player = usePlayerStore()
+  const player = usePlayerStore();
   const tick = () => {
     if (audioEl && !audioEl.paused) {
-      player.currentTime = audioEl.currentTime
+      player.currentTime = audioEl.currentTime;
     }
-    rafId = requestAnimationFrame(tick)
-  }
-  rafId = requestAnimationFrame(tick)
+    rafId = requestAnimationFrame(tick);
+  };
+  rafId = requestAnimationFrame(tick);
 }
 
 function stopRafLoop(): void {
   if (rafId !== null) {
-    cancelAnimationFrame(rafId)
-    rafId = null
+    cancelAnimationFrame(rafId);
+    rafId = null;
   }
 }
 
 function startCrossfade(duration: number): void {
-  const player = usePlayerStore()
-  if (!audioEl || !audioCtx || !crossfadeGainA || !crossfadeGainB) return
+  const player = usePlayerStore();
+  if (!audioEl || !audioCtx || !crossfadeGainA || !crossfadeGainB) return;
 
-  const next = player.queue[0]
+  const next = player.queue[0];
   if (!next || next.type === 'video') {
-    const nxt = player.nextTrack()
+    const nxt = player.nextTrack();
     if (!nxt && player.repeat === 'all' && player.history.length > 0) {
-      player.setTrack(player.history[0])
+      player.setTrack(player.history[0]);
     }
-    return
+    return;
   }
 
-  isCrossfading = true
+  isCrossfading = true;
 
   if (!nextAudioEl) {
-    nextAudioEl = new Audio()
-    nextAudioEl.preload = 'auto'
-    nextAudioEl.crossOrigin = 'anonymous'
-    connectAudioB(nextAudioEl)
+    nextAudioEl = new Audio();
+    nextAudioEl.preload = 'auto';
+    nextAudioEl.crossOrigin = 'anonymous';
+    connectAudioB(nextAudioEl);
   }
 
-  const src = `file:///${next.path.replace(/\\/g, '/')}`
-  nextAudioEl.src = src
+  const src = `file:///${next.path.replace(/\\/g, '/')}`;
+  nextAudioEl.src = src;
 
   nextAudioEl.addEventListener(
     'canplay',
     () => {
-      crossfadeGainA!.gain.setValueAtTime(1, audioCtx!.currentTime)
-      crossfadeGainA!.gain.linearRampToValueAtTime(0, audioCtx!.currentTime + duration)
-      crossfadeGainB!.gain.setValueAtTime(0, audioCtx!.currentTime)
-      crossfadeGainB!.gain.linearRampToValueAtTime(1, audioCtx!.currentTime + duration)
-      nextAudioEl!.play().catch(() => {})
+      crossfadeGainA!.gain.setValueAtTime(1, audioCtx!.currentTime);
+      crossfadeGainA!.gain.linearRampToValueAtTime(0, audioCtx!.currentTime + duration);
+      crossfadeGainB!.gain.setValueAtTime(0, audioCtx!.currentTime);
+      crossfadeGainB!.gain.linearRampToValueAtTime(1, audioCtx!.currentTime + duration);
+      nextAudioEl!.play().catch(() => {});
 
       crossfadeTimer = setTimeout(() => {
         if (audioEl) {
-          audioEl.pause()
-          audioEl.removeAttribute('src')
+          audioEl.pause();
+          audioEl.removeAttribute('src');
         }
-        player.setTrack(next)
-        audioEl = nextAudioEl
-        nextAudioEl = null
-        sourceNode = sourceNodeB
-        sourceNodeB = null
-        crossfadeGainA!.gain.value = 1
-        crossfadeGainB!.gain.value = 0
-        isCrossfading = false
-        crossfadeTimer = null
-        player.currentTime = 0
-        player.duration = audioEl!.duration || 0
-        if (player.currentTrack) player.currentTrack.duration = audioEl!.duration || 0
-        ensureNextPreloaded()
-      }, duration * 1000)
+        player.setTrack(next);
+        audioEl = nextAudioEl;
+        nextAudioEl = null;
+        sourceNode = sourceNodeB;
+        sourceNodeB = null;
+        crossfadeGainA!.gain.value = 1;
+        crossfadeGainB!.gain.value = 0;
+        isCrossfading = false;
+        crossfadeTimer = null;
+        player.currentTime = 0;
+        player.duration = audioEl!.duration || 0;
+        if (player.currentTrack) player.currentTrack.duration = audioEl!.duration || 0;
+        ensureNextPreloaded();
+      }, duration * 1000);
     },
     { once: true }
-  )
+  );
 }
 
 function ensureNextPreloaded(): void {
-  const player = usePlayerStore()
-  if (player.queue.length === 0) return
-  const nextTrack = player.queue[0]
-  if (!nextTrack || nextTrack.type === 'video') return
+  const player = usePlayerStore();
+  if (player.queue.length === 0) return;
+  const nextTrack = player.queue[0];
+  if (!nextTrack || nextTrack.type === 'video') return;
 
   if (!nextAudioEl) {
-    nextAudioEl = new Audio()
-    nextAudioEl.preload = 'auto'
-    nextAudioEl.crossOrigin = 'anonymous'
-    connectAudioB(nextAudioEl)
+    nextAudioEl = new Audio();
+    nextAudioEl.preload = 'auto';
+    nextAudioEl.crossOrigin = 'anonymous';
+    connectAudioB(nextAudioEl);
   }
-  const src = `file:///${nextTrack.path.replace(/\\/g, '/')}`
+  const src = `file:///${nextTrack.path.replace(/\\/g, '/')}`;
   if (nextAudioEl.src !== src) {
-    nextAudioEl.src = src
+    nextAudioEl.src = src;
   }
 }
 
 function savePosition(): void {
-  const player = usePlayerStore()
+  const player = usePlayerStore();
   if (audioEl && player.currentTrack && player.currentTrack.type === 'audio') {
     if (audioEl.currentTime > 5) {
-      savedPositions.set(player.currentTrack.path, audioEl.currentTime)
-      window.api.invoke('playback:setPosition', player.currentTrack.path, audioEl.currentTime)
+      savedPositions.set(player.currentTrack.path, audioEl.currentTime);
+      window.api.invoke('playback:setPosition', player.currentTrack.path, audioEl.currentTime);
     }
   }
 }
 
 function clearSavedPosition(path: string): void {
-  savedPositions.delete(path)
-  window.api.invoke('playback:clearPosition', path)
+  savedPositions.delete(path);
+  window.api.invoke('playback:clearPosition', path);
 }
 
 function disconnectNodes(): void {
   try {
-    sourceNode?.disconnect()
+    sourceNode?.disconnect();
   } catch {}
   try {
-    sourceNodeB?.disconnect()
+    sourceNodeB?.disconnect();
   } catch {}
   try {
-    crossfadeGainA?.disconnect()
+    crossfadeGainA?.disconnect();
   } catch {}
   try {
-    crossfadeGainB?.disconnect()
+    crossfadeGainB?.disconnect();
   } catch {}
   try {
-    gainNode?.disconnect()
+    gainNode?.disconnect();
   } catch {}
   try {
-    analyserNode?.disconnect()
+    analyserNode?.disconnect();
   } catch {}
   for (const f of eqFilters) {
     try {
-      f.disconnect()
+      f.disconnect();
     } catch {}
   }
 }
 
 function cleanupAudioEl(el: HTMLAudioElement | null): void {
-  if (!el) return
-  el.pause()
-  el.removeAttribute('src')
-  el.load()
+  if (!el) return;
+  el.pause();
+  el.removeAttribute('src');
+  el.load();
 }
 
 export const audioEngine = {
   init(): void {
-    if (_initialized) return
-    _initialized = true
-    ensureAudioContext()
-    const el = createAudioElement()
-    setupListeners(el)
-    startRafLoop()
+    if (_initialized) return;
+    _initialized = true;
+    ensureAudioContext();
+    const el = createAudioElement();
+    setupListeners(el);
+    startRafLoop();
   },
 
   loadTrack(track: MediaFile): void {
-    const player = usePlayerStore()
-    const settings = useSettingsStore()
+    const player = usePlayerStore();
+    const settings = useSettingsStore();
 
-    if (track.type === 'video') return
+    if (track.type === 'video') return;
     if (!audioEl) {
-      const el = createAudioElement()
-      setupListeners(el)
+      const el = createAudioElement();
+      setupListeners(el);
     }
-    const src = `file:///${track.path.replace(/\\/g, '/')}`
-    audioEl!.src = src
-    connectAudio(audioEl!)
-    audioEl!.volume = player.isMuted ? 0 : player.volume
-    isCrossfading = false
+    const src = `file:///${track.path.replace(/\\/g, '/')}`;
+    audioEl!.src = src;
+    connectAudio(audioEl!);
+    audioEl!.volume = player.isMuted ? 0 : player.volume;
+    isCrossfading = false;
 
     if (settings.playback.rememberPosition) {
-      const savedPos = savedPositions.get(track.path) || 0
+      const savedPos = savedPositions.get(track.path) || 0;
       if (savedPos > 0) {
         audioEl!.addEventListener(
           'loadedmetadata',
           () => {
             if (audioEl && audioEl.currentTime < 3) {
-              audioEl.currentTime = savedPos
+              audioEl.currentTime = savedPos;
             }
           },
           { once: true }
-        )
+        );
       }
     }
   },
 
   play(): void {
-    audioEl?.play().catch(() => {})
+    audioEl?.play().catch(() => {});
   },
 
   pause(): void {
-    audioEl?.pause()
+    audioEl?.pause();
   },
 
   seek(time: number): void {
-    if (audioEl) audioEl.currentTime = time
+    if (audioEl) audioEl.currentTime = time;
   },
 
   setVolume(v: number): void {
-    if (audioEl) audioEl.volume = v
-    if (gainNode) gainNode.gain.value = v
+    if (audioEl) audioEl.volume = v;
+    if (gainNode) gainNode.gain.value = v;
   },
 
   setPlaybackRate(rate: number): void {
-    if (audioEl) audioEl.playbackRate = rate
+    if (audioEl) audioEl.playbackRate = rate;
   },
 
   setEqualizerBand(index: number, gain: number): void {
-    if (eqFilters[index]) eqFilters[index].gain.value = gain
+    if (eqFilters[index]) eqFilters[index].gain.value = gain;
   },
 
   applyEqPreset(preset: Record<number, number>): void {
     Object.entries(preset).forEach(([idx, gain]) => {
-      const i = parseInt(idx)
-      if (eqFilters[i]) eqFilters[i].gain.value = gain
-    })
+      const i = parseInt(idx);
+      if (eqFilters[i]) eqFilters[i].gain.value = gain;
+    });
   },
 
   savePosition,
@@ -351,81 +351,81 @@ export const audioEngine = {
   clearSavedPosition,
 
   getAnalyserNode(): AnalyserNode | null {
-    return analyserNode
+    return analyserNode;
   },
 
   getAudioContext(): AudioContext | null {
-    return audioCtx
+    return audioCtx;
   },
 
   getMediaElement(): HTMLAudioElement | null {
-    return audioEl
+    return audioEl;
   },
 
   isActive(): boolean {
-    return _initialized
+    return _initialized;
   },
 
   async deactivate(): Promise<void> {
-    stopRafLoop()
+    stopRafLoop();
     if (crossfadeTimer) {
-      clearTimeout(crossfadeTimer)
-      crossfadeTimer = null
+      clearTimeout(crossfadeTimer);
+      crossfadeTimer = null;
     }
-    isCrossfading = false
-    savePosition()
+    isCrossfading = false;
+    savePosition();
     if (audioEl) {
-      audioEl.pause()
+      audioEl.pause();
     }
     if (audioCtx && audioCtx.state === 'running') {
-      await audioCtx.suspend()
+      await audioCtx.suspend();
     }
   },
 
   async destroy(): Promise<void> {
-    stopRafLoop()
+    stopRafLoop();
     if (crossfadeTimer) {
-      clearTimeout(crossfadeTimer)
-      crossfadeTimer = null
+      clearTimeout(crossfadeTimer);
+      crossfadeTimer = null;
     }
-    isCrossfading = false
-    savePosition()
-    disconnectNodes()
-    cleanupAudioEl(audioEl)
-    cleanupAudioEl(nextAudioEl)
-    audioEl = null
-    nextAudioEl = null
-    sourceNode = null
-    sourceNodeB = null
+    isCrossfading = false;
+    savePosition();
+    disconnectNodes();
+    cleanupAudioEl(audioEl);
+    cleanupAudioEl(nextAudioEl);
+    audioEl = null;
+    nextAudioEl = null;
+    sourceNode = null;
+    sourceNodeB = null;
     if (audioCtx) {
-      await audioCtx.close()
-      audioCtx = null
+      await audioCtx.close();
+      audioCtx = null;
     }
-    _initialized = false
+    _initialized = false;
   },
 
   resumeContext(): void {
     if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume()
+      audioCtx.resume();
     }
   },
 
   setupVideoListeners(el: HTMLVideoElement): void {
-    const player = usePlayerStore()
+    const player = usePlayerStore();
     el.addEventListener('timeupdate', () => {
-      player.currentTime = el.currentTime
-    })
+      player.currentTime = el.currentTime;
+    });
     el.addEventListener('durationchange', () => {
-      player.duration = el.duration || 0
-      if (player.currentTrack) player.currentTrack.duration = el.duration || 0
-    })
+      player.duration = el.duration || 0;
+      if (player.currentTrack) player.currentTrack.duration = el.duration || 0;
+    });
     el.addEventListener('loadedmetadata', () => {
-      player.duration = el.duration || 0
-      if (player.currentTrack) player.currentTrack.duration = el.duration || 0
-    })
+      player.duration = el.duration || 0;
+      if (player.currentTrack) player.currentTrack.duration = el.duration || 0;
+    });
     el.addEventListener('ended', () => {
-      player.isPlaying = false
-      player.nextTrack()
-    })
+      player.isPlaying = false;
+      player.nextTrack();
+    });
   }
-}
+};

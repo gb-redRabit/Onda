@@ -1,56 +1,56 @@
-import { BrowserWindow, ipcMain, screen } from 'electron'
-import { join } from 'path'
-import { is } from '@electron-toolkit/utils'
+import { BrowserWindow, ipcMain, screen } from 'electron';
+import { join } from 'path';
+import { is } from '@electron-toolkit/utils';
 
 interface PipSubtitleData {
-  subContent: string
-  fonts: Array<{ name: string; data: number[] }>
-  availableFonts: Record<string, string>
+  subContent: string;
+  fonts: Array<{ name: string; data: number[] }>;
+  availableFonts: Record<string, string>;
 }
 
 interface PipShowOptions {
-  src: string
-  startTime?: number
-  position?: string
-  width?: number
-  height?: number
-  subtitle?: PipSubtitleData | null
+  src: string;
+  startTime?: number;
+  position?: string;
+  width?: number;
+  height?: number;
+  subtitle?: PipSubtitleData | null;
 }
 
 interface PendingData {
-  src: string
-  subtitle: PipSubtitleData | null
-  autoPlay: boolean
-  startTime: number
+  src: string;
+  subtitle: PipSubtitleData | null;
+  autoPlay: boolean;
+  startTime: number;
 }
 
 class PipManager {
-  private window: BrowserWindow | null = null
-  private previewWindow: BrowserWindow | null = null
-  private lastTime = 0
-  private timeTimer: ReturnType<typeof setInterval> | null = null
-  private ready = false
-  private mainWindow: BrowserWindow | null = null
-  private loadedSrc: string | null = null
-  private pendingData: PendingData | null = null
+  private window: BrowserWindow | null = null;
+  private previewWindow: BrowserWindow | null = null;
+  private lastTime = 0;
+  private timeTimer: ReturnType<typeof setInterval> | null = null;
+  private ready = false;
+  private mainWindow: BrowserWindow | null = null;
+  private loadedSrc: string | null = null;
+  private pendingData: PendingData | null = null;
 
   private static normalizeFilePath(url: string): string {
     try {
-      const decoded = decodeURIComponent(url)
-      const match = decoded.match(/^file:\/\/\/?(.+)/i)
-      return match ? match[1].replace(/\//g, '\\').toLowerCase() : decoded.toLowerCase()
+      const decoded = decodeURIComponent(url);
+      const match = decoded.match(/^file:\/\/\/?(.+)/i);
+      return match ? match[1].replace(/\//g, '\\').toLowerCase() : decoded.toLowerCase();
     } catch {
-      return url.toLowerCase()
+      return url.toLowerCase();
     }
   }
 
   setMainWindow(win: BrowserWindow): void {
-    this.mainWindow = win
+    this.mainWindow = win;
   }
 
   init(): void {
-    this.createWindow()
-    this.registerIpc()
+    this.createWindow();
+    this.registerIpc();
   }
 
   private createWindow(): void {
@@ -72,126 +72,126 @@ class PipManager {
         nodeIntegration: false,
         webSecurity: false
       }
-    })
+    });
 
     this.window.on('closed', () => {
-      this.window = null
-      this.ready = false
-      this.loadedSrc = null
-      this.stopTimeTracking()
-    })
+      this.window = null;
+      this.ready = false;
+      this.loadedSrc = null;
+      this.stopTimeTracking();
+    });
 
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      this.window.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/pip.html`)
+      this.window.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/pip.html`);
     } else {
-      this.window.loadFile(join(__dirname, '../renderer/pip.html'))
+      this.window.loadFile(join(__dirname, '../renderer/pip.html'));
     }
 
     this.window.webContents.on('did-finish-load', () => {
-      this.ready = true
+      this.ready = true;
       if (this.pendingData) {
-        const pd = this.pendingData
-        this.pendingData = null
-        this.sendVideoSrc(pd.src, pd.subtitle, 0)
+        const pd = this.pendingData;
+        this.pendingData = null;
+        this.sendVideoSrc(pd.src, pd.subtitle, 0);
         if (pd.autoPlay) {
-          this.sendPlay(pd.startTime)
-          this.startTimeTracking()
+          this.sendPlay(pd.startTime);
+          this.startTimeTracking();
         }
       }
-    })
+    });
   }
 
   private registerIpc(): void {
     ipcMain.on('pip:hidden', () => {
-      this.hide()
-      this.notifyClosed()
-    })
+      this.hide();
+      this.notifyClosed();
+    });
 
     ipcMain.on('pip:timeUpdate', (_event, time: number) => {
-      this.lastTime = time || 0
-    })
+      this.lastTime = time || 0;
+    });
 
     ipcMain.on('pip:ended', () => {
-      this.stopTimeTracking()
-      this.loadedSrc = null
-      this.mainWindow?.webContents.send('pip:ended')
-    })
+      this.stopTimeTracking();
+      this.loadedSrc = null;
+      this.mainWindow?.webContents.send('pip:ended');
+    });
   }
 
   private sendToRenderer(channel: string, ...args: unknown[]): void {
     if (!this.window || this.window.isDestroyed()) {
-      return
+      return;
     }
-    this.window.webContents.send(channel, ...args)
+    this.window.webContents.send(channel, ...args);
   }
 
   private sendPlay(startTime: number): void {
-    this.sendToRenderer('pip:play', startTime)
+    this.sendToRenderer('pip:play', startTime);
   }
 
   private notifyClosed(): void {
-    const time = this.lastTime
-    this.mainWindow?.webContents.send('pip:closed', time)
+    const time = this.lastTime;
+    this.mainWindow?.webContents.send('pip:closed', time);
   }
 
   private startTimeTracking(): void {
-    this.stopTimeTracking()
+    this.stopTimeTracking();
     this.timeTimer = setInterval(() => {
       if (this.window && !this.window.isDestroyed()) {
-        this.window.webContents.send('pip:requestTime')
+        this.window.webContents.send('pip:requestTime');
       }
-    }, 500)
+    }, 500);
   }
 
   private stopTimeTracking(): void {
     if (this.timeTimer) {
-      clearInterval(this.timeTimer)
-      this.timeTimer = null
+      clearInterval(this.timeTimer);
+      this.timeTimer = null;
     }
   }
 
   private ensureWindow(): BrowserWindow {
     if (!this.window || this.window.isDestroyed()) {
-      this.ready = false
-      this.loadedSrc = null
-      this.createWindow()
+      this.ready = false;
+      this.loadedSrc = null;
+      this.createWindow();
     }
-    return this.window!
+    return this.window!;
   }
 
   private positionWindow(opts: { position?: string; width?: number; height?: number }): {
-    x: number
-    y: number
-    width: number
-    height: number
+    x: number;
+    y: number;
+    width: number;
+    height: number;
   } {
-    const pw = opts.width || 480
-    const ph = opts.height || 290
-    const pos = opts.position || 'bottom-right'
-    const display = screen.getPrimaryDisplay().workAreaSize
-    const margin = 20
-    let x: number, y: number
+    const pw = opts.width || 480;
+    const ph = opts.height || 290;
+    const pos = opts.position || 'bottom-right';
+    const display = screen.getPrimaryDisplay().workAreaSize;
+    const margin = 20;
+    let x: number, y: number;
 
     switch (pos) {
       case 'bottom-left':
-        x = margin
-        y = display.height - ph - margin
-        break
+        x = margin;
+        y = display.height - ph - margin;
+        break;
       case 'top-right':
-        x = display.width - pw - margin
-        y = margin
-        break
+        x = display.width - pw - margin;
+        y = margin;
+        break;
       case 'top-left':
-        x = margin
-        y = margin
-        break
+        x = margin;
+        y = margin;
+        break;
       default:
-        x = display.width - pw - margin
-        y = display.height - ph - margin
-        break
+        x = display.width - pw - margin;
+        y = display.height - ph - margin;
+        break;
     }
 
-    return { x, y, width: pw, height: ph }
+    return { x, y, width: pw, height: ph };
   }
 
   private sendVideoSrc(
@@ -200,48 +200,48 @@ class PipManager {
     startTime: number
   ): void {
     if (!this.window || this.window.isDestroyed()) {
-      return
+      return;
     }
-    this.window.webContents.send('pip:videoSrc', { src, start: startTime || 0 })
-    this.loadedSrc = src
+    this.window.webContents.send('pip:videoSrc', { src, start: startTime || 0 });
+    this.loadedSrc = src;
 
     if (subtitle && subtitle.subContent) {
-      this.window.webContents.send('pip:subtitle', subtitle)
+      this.window.webContents.send('pip:subtitle', subtitle);
     } else if (subtitle !== undefined) {
-      this.window.webContents.send('pip:clearSubtitle')
+      this.window.webContents.send('pip:clearSubtitle');
     }
   }
 
   preload(src: string, subtitleData: PipSubtitleData | null): void {
-    this.ensureWindow()
+    this.ensureWindow();
 
     if (this.ready) {
-      this.sendVideoSrc(src, subtitleData, 0)
+      this.sendVideoSrc(src, subtitleData, 0);
     } else {
-      this.pendingData = { src, subtitle: subtitleData, autoPlay: false, startTime: 0 }
+      this.pendingData = { src, subtitle: subtitleData, autoPlay: false, startTime: 0 };
     }
   }
 
   show(options: PipShowOptions): boolean {
-    const win = this.ensureWindow()
+    const win = this.ensureWindow();
 
-    const bounds = this.positionWindow(options)
-    win.setBounds(bounds)
-    win.show()
-    win.focus()
+    const bounds = this.positionWindow(options);
+    win.setBounds(bounds);
+    win.show();
+    win.focus();
 
-    this.lastTime = options.startTime || 0
+    this.lastTime = options.startTime || 0;
 
     if (this.ready) {
-      const loaded = this.loadedSrc ? PipManager.normalizeFilePath(this.loadedSrc) : null
-      const requested = options.src ? PipManager.normalizeFilePath(options.src) : null
+      const loaded = this.loadedSrc ? PipManager.normalizeFilePath(this.loadedSrc) : null;
+      const requested = options.src ? PipManager.normalizeFilePath(options.src) : null;
       if (loaded && requested && loaded === requested) {
-        this.sendPlay(options.startTime || 0)
-        this.startTimeTracking()
+        this.sendPlay(options.startTime || 0);
+        this.startTimeTracking();
       } else {
-        this.sendVideoSrc(options.src, options.subtitle, options.startTime || 0)
-        this.sendPlay(options.startTime || 0)
-        this.startTimeTracking()
+        this.sendVideoSrc(options.src, options.subtitle, options.startTime || 0);
+        this.sendPlay(options.startTime || 0);
+        this.startTimeTracking();
       }
     } else {
       this.pendingData = {
@@ -249,96 +249,96 @@ class PipManager {
         subtitle: options.subtitle || null,
         autoPlay: true,
         startTime: options.startTime || 0
-      }
+      };
     }
 
-    return true
+    return true;
   }
 
   loadTrack(src: string, subtitleData: PipSubtitleData | null): void {
-    this.ensureWindow()
+    this.ensureWindow();
 
     if (this.ready) {
-      this.lastTime = 0
-      this.sendVideoSrc(src, subtitleData, 0)
-      this.sendPlay(0)
-      this.startTimeTracking()
+      this.lastTime = 0;
+      this.sendVideoSrc(src, subtitleData, 0);
+      this.sendPlay(0);
+      this.startTimeTracking();
     } else {
-      this.pendingData = { src, subtitle: subtitleData, autoPlay: true, startTime: 0 }
+      this.pendingData = { src, subtitle: subtitleData, autoPlay: true, startTime: 0 };
     }
   }
 
   play(startTime: number): void {
-    this.lastTime = startTime
-    this.sendPlay(startTime)
-    this.startTimeTracking()
+    this.lastTime = startTime;
+    this.sendPlay(startTime);
+    this.startTimeTracking();
   }
 
   hide(): void {
-    this.stopTimeTracking()
+    this.stopTimeTracking();
     if (this.window && !this.window.isDestroyed()) {
-      this.window.webContents.send('pip:pause')
-      this.window.hide()
+      this.window.webContents.send('pip:pause');
+      this.window.hide();
     }
   }
 
   stop(): void {
-    this.stopTimeTracking()
+    this.stopTimeTracking();
     if (this.window && !this.window.isDestroyed()) {
-      this.window.webContents.send('pip:clear')
-      this.window.hide()
-      this.loadedSrc = null
+      this.window.webContents.send('pip:clear');
+      this.window.hide();
+      this.loadedSrc = null;
     }
-    this.notifyClosed()
+    this.notifyClosed();
   }
 
   updateSubtitle(data: PipSubtitleData | null): void {
-    if (!this.window || this.window.isDestroyed()) return
+    if (!this.window || this.window.isDestroyed()) return;
     if (data && data.subContent) {
-      this.window.webContents.send('pip:subtitle', data)
+      this.window.webContents.send('pip:subtitle', data);
     } else {
-      this.window.webContents.send('pip:clearSubtitle')
+      this.window.webContents.send('pip:clearSubtitle');
     }
   }
 
   getTime(): number {
-    return this.lastTime
+    return this.lastTime;
   }
 
   isShowing(): boolean {
-    return !!this.window && !this.window.isDestroyed() && this.window.isVisible()
+    return !!this.window && !this.window.isDestroyed() && this.window.isVisible();
   }
 
   showPreview(opts: { position?: string; width?: number; height?: number }): boolean {
     if (this.previewWindow && !this.previewWindow.isDestroyed()) {
-      this.previewWindow.destroy()
+      this.previewWindow.destroy();
     }
-    this.previewWindow = null
+    this.previewWindow = null;
 
-    const pw = opts.width || 480
-    const ph = opts.height || 290
-    const pos = opts.position || 'bottom-right'
-    const display = screen.getPrimaryDisplay().workAreaSize
-    const margin = 20
-    let x: number, y: number
+    const pw = opts.width || 480;
+    const ph = opts.height || 290;
+    const pos = opts.position || 'bottom-right';
+    const display = screen.getPrimaryDisplay().workAreaSize;
+    const margin = 20;
+    let x: number, y: number;
 
     switch (pos) {
       case 'bottom-left':
-        x = margin
-        y = display.height - ph - margin
-        break
+        x = margin;
+        y = display.height - ph - margin;
+        break;
       case 'top-right':
-        x = display.width - pw - margin
-        y = margin
-        break
+        x = display.width - pw - margin;
+        y = margin;
+        break;
       case 'top-left':
-        x = margin
-        y = margin
-        break
+        x = margin;
+        y = margin;
+        break;
       default:
-        x = display.width - pw - margin
-        y = display.height - ph - margin
-        break
+        x = display.width - pw - margin;
+        y = display.height - ph - margin;
+        break;
     }
 
     this.previewWindow = new BrowserWindow({
@@ -356,65 +356,65 @@ class PipManager {
         contextIsolation: true,
         nodeIntegration: false
       }
-    })
+    });
 
     this.previewWindow.loadURL(
       `data:text/html,<!DOCTYPE html><html><head><style>*{margin:0;padding:0}body{background:#1a1a1a;height:100vh;display:flex;align-items:center;justify-content:center;color:#555;font:13px sans-serif;border:1px dashed #333;border-radius:12px;box-sizing:border-box}</style></head><body>Podgląd PiP</body></html>`
-    )
+    );
 
-    this.previewWindow.show()
-    return true
+    this.previewWindow.show();
+    return true;
   }
 
   hidePreview(): void {
     if (this.previewWindow && !this.previewWindow.isDestroyed()) {
-      this.previewWindow.destroy()
+      this.previewWindow.destroy();
     }
-    this.previewWindow = null
+    this.previewWindow = null;
   }
 
   updatePreview(opts: { position?: string; width?: number; height?: number }): void {
-    if (!this.previewWindow || this.previewWindow.isDestroyed()) return
+    if (!this.previewWindow || this.previewWindow.isDestroyed()) return;
 
-    const pw = opts.width || this.previewWindow.getSize()[0]
-    const ph = opts.height || this.previewWindow.getSize()[1]
-    const pos = opts.position || 'bottom-right'
-    const display = screen.getPrimaryDisplay().workAreaSize
-    const margin = 20
-    let x: number, y: number
+    const pw = opts.width || this.previewWindow.getSize()[0];
+    const ph = opts.height || this.previewWindow.getSize()[1];
+    const pos = opts.position || 'bottom-right';
+    const display = screen.getPrimaryDisplay().workAreaSize;
+    const margin = 20;
+    let x: number, y: number;
 
     switch (pos) {
       case 'bottom-left':
-        x = margin
-        y = display.height - ph - margin
-        break
+        x = margin;
+        y = display.height - ph - margin;
+        break;
       case 'top-right':
-        x = display.width - pw - margin
-        y = margin
-        break
+        x = display.width - pw - margin;
+        y = margin;
+        break;
       case 'top-left':
-        x = margin
-        y = margin
-        break
+        x = margin;
+        y = margin;
+        break;
       default:
-        x = display.width - pw - margin
-        y = display.height - ph - margin
-        break
+        x = display.width - pw - margin;
+        y = display.height - ph - margin;
+        break;
     }
 
-    this.previewWindow.setBounds({ x, y, width: pw, height: ph })
+    this.previewWindow.setBounds({ x, y, width: pw, height: ph });
   }
 
   destroy(): void {
-    this.stopTimeTracking()
-    this.hidePreview()
+    this.stopTimeTracking();
+    this.hidePreview();
     if (this.window && !this.window.isDestroyed()) {
-      this.window.destroy()
+      this.window.destroy();
     }
-    this.window = null
-    this.ready = false
-    this.loadedSrc = null
+    this.window = null;
+    this.ready = false;
+    this.loadedSrc = null;
   }
 }
 
-export const pipManager = new PipManager()
+export const pipManager = new PipManager();

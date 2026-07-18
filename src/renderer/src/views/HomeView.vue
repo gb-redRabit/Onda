@@ -1,30 +1,30 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { Music2, Play, Clock, FolderOpen, Disc3, Tv2, ArrowRight } from '@lucide/vue'
-import { usePlayerStore } from '@renderer/stores/player'
-import { useLibraryStore } from '@renderer/stores/library'
-import { moduleManager } from '@renderer/modules/ModuleManager'
-import type { MediaFile } from '@renderer/types/media'
+import { onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { Music2, Play, Clock, FolderOpen, Disc3, Tv2, ArrowRight } from '@lucide/vue';
+import { usePlayerStore } from '@renderer/stores/player';
+import { useLibraryStore } from '@renderer/stores/library';
+import { moduleManager } from '@renderer/modules/ModuleManager';
+import type { MediaFile } from '@renderer/types/media';
 
-const router = useRouter()
-const player = usePlayerStore()
-const library = useLibraryStore()
+const router = useRouter();
+const player = usePlayerStore();
+const library = useLibraryStore();
 
 onMounted(() => {
-  moduleManager.switchTo('home')
-})
+  moduleManager.switchTo('home');
+});
 
 async function openFile() {
   const result = (await window.api.invoke('dialog:openFile')) as {
-    filePaths: string[]
-    canceled: boolean
-  }
-  if (result.canceled || !result.filePaths.length) return
-  const extVideo = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v']
+    filePaths: string[];
+    canceled: boolean;
+  };
+  if (result.canceled || !result.filePaths.length) return;
+  const extVideo = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v'];
   const tracks: MediaFile[] = result.filePaths.map((p) => {
-    const name = p.split(/[/\\]/).pop() || p
-    const ext = name.split('.').pop()?.toLowerCase() || ''
+    const name = p.split(/[/\\]/).pop() || p;
+    const ext = name.split('.').pop()?.toLowerCase() || '';
     return {
       id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       path: p,
@@ -36,11 +36,11 @@ async function openFile() {
       mimeType: '',
       addedAt: Date.now(),
       playCount: 0
-    }
-  })
-  player.setTrack(tracks[0])
-  if (tracks.length > 1) player.addToQueueMultiple(tracks.slice(1))
-  if (tracks[0].type === 'video') router.push('/player')
+    };
+  });
+  player.setTrack(tracks[0]);
+  if (tracks.length > 1) player.addToQueueMultiple(tracks.slice(1));
+  if (tracks[0].type === 'video') router.push('/player');
 }
 
 const actions = [
@@ -57,7 +57,7 @@ const actions = [
     route: () => router.push('/library')
   },
   { label: 'YouTube', desc: 'Szukaj i pobieraj', icon: Tv2, route: () => router.push('/youtube') }
-]
+];
 </script>
 
 <template>

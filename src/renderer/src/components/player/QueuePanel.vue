@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { usePlayerStore } from '@renderer/stores/player'
-import { X, Music2, GripVertical, Trash2 } from '@lucide/vue'
-import { formatDuration } from '@renderer/utils/formatters'
-import type { MediaFile } from '@renderer/types/media'
+import { ref, watch } from 'vue';
+import { usePlayerStore } from '@renderer/stores/player';
+import { X, Music2, GripVertical, Trash2 } from '@lucide/vue';
+import { formatDuration } from '@renderer/utils/formatters';
+import type { MediaFile } from '@renderer/types/media';
 
-const player = usePlayerStore()
-const dragOverIndex = ref<number | null>(null)
-const dragIndex = ref<number | null>(null)
+const player = usePlayerStore();
+const dragOverIndex = ref<number | null>(null);
+const dragIndex = ref<number | null>(null);
 
 async function loadCovers(tracks: MediaFile[]) {
   for (const track of tracks) {
     if (!player.getCover(track.path)) {
-      player.loadCover(track.path)
+      player.loadCover(track.path);
     }
   }
 }
@@ -20,47 +20,47 @@ async function loadCovers(tracks: MediaFile[]) {
 watch(
   () => player.queue,
   (newQueue) => {
-    loadCovers(newQueue)
+    loadCovers(newQueue);
   },
   { immediate: true }
-)
+);
 
 watch(
   () => player.currentTrack,
   (track) => {
-    if (track) player.loadCover(track.path)
+    if (track) player.loadCover(track.path);
   },
   { immediate: true }
-)
+);
 
 function onDragStart(e: DragEvent, index: number) {
-  dragIndex.value = index
-  e.dataTransfer!.effectAllowed = 'move'
-  e.dataTransfer!.setData('text/plain', `queue:${index}`)
+  dragIndex.value = index;
+  e.dataTransfer!.effectAllowed = 'move';
+  e.dataTransfer!.setData('text/plain', `queue:${index}`);
 }
 
 function onDragOver(e: DragEvent, index: number) {
-  e.preventDefault()
-  e.dataTransfer!.dropEffect = 'move'
-  dragOverIndex.value = index
+  e.preventDefault();
+  e.dataTransfer!.dropEffect = 'move';
+  dragOverIndex.value = index;
 }
 
 function onDragLeave() {
-  dragOverIndex.value = null
+  dragOverIndex.value = null;
 }
 
 function onDrop(e: DragEvent, toIndex: number) {
-  e.preventDefault()
-  dragOverIndex.value = null
-  const data = e.dataTransfer!.getData('text/plain')
+  e.preventDefault();
+  dragOverIndex.value = null;
+  const data = e.dataTransfer!.getData('text/plain');
 
   if (data.startsWith('queue:')) {
-    const fromIndex = parseInt(data.split(':')[1])
+    const fromIndex = parseInt(data.split(':')[1]);
     if (fromIndex !== toIndex) {
-      player.reorderQueue(fromIndex, toIndex)
+      player.reorderQueue(fromIndex, toIndex);
     }
   } else if (data.startsWith('file:')) {
-    const filePath = data.replace('file:', '')
+    const filePath = data.replace('file:', '');
     const file: MediaFile = {
       id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       path: filePath,
@@ -72,21 +72,21 @@ function onDrop(e: DragEvent, toIndex: number) {
       mimeType: '',
       addedAt: Date.now(),
       playCount: 0
-    }
-    player.insertInQueue(toIndex, file)
+    };
+    player.insertInQueue(toIndex, file);
     window.api.getDuration(filePath).then((dur) => {
-      file.duration = dur
-    })
+      file.duration = dur;
+    });
   }
 }
 
 function onFileDrop(e: DragEvent) {
-  e.preventDefault()
-  dragOverIndex.value = null
-  const files = e.dataTransfer?.files
-  if (!files) return
+  e.preventDefault();
+  dragOverIndex.value = null;
+  const files = e.dataTransfer?.files;
+  if (!files) return;
   for (const file of Array.from(files)) {
-    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
     const isMedia = [
       'mp3',
       'flac',
@@ -101,9 +101,9 @@ function onFileDrop(e: DragEvent) {
       'avi',
       'webm',
       'mov'
-    ].includes(ext)
+    ].includes(ext);
     if (isMedia) {
-      const filePath = window.api.getFilePath(file)
+      const filePath = window.api.getFilePath(file);
       const mediaFile: MediaFile = {
         id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         path: filePath,
@@ -115,11 +115,11 @@ function onFileDrop(e: DragEvent) {
         mimeType: file.type || '',
         addedAt: Date.now(),
         playCount: 0
-      }
-      player.addToQueue(mediaFile)
+      };
+      player.addToQueue(mediaFile);
       window.api.getDuration(filePath).then((dur) => {
-        mediaFile.duration = dur
-      })
+        mediaFile.duration = dur;
+      });
     }
   }
 }

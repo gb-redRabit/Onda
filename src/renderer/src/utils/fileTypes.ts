@@ -1,4 +1,4 @@
-import type { MediaFile } from '@renderer/types/media'
+import type { MediaFile } from '@renderer/types/media';
 
 const FILE_TYPE_MAP: Record<string, { icon: string; color: string; category: string }> = {
   '.mp3': { icon: 'music', color: '#f59e0b', category: 'audio' },
@@ -27,7 +27,7 @@ const FILE_TYPE_MAP: Record<string, { icon: string; color: string; category: str
   '.png': { icon: 'image', color: '#ec4899', category: 'image' },
   '.webp': { icon: 'image', color: '#ec4899', category: 'image' },
   '.svg': { icon: 'image', color: '#ec4899', category: 'image' }
-}
+};
 
 export function getFileTypeInfo(extension: string) {
   return (
@@ -36,14 +36,14 @@ export function getFileTypeInfo(extension: string) {
       color: '#6b7280',
       category: 'unknown'
     }
-  )
+  );
 }
 
 export function getMediaFileType(file: MediaFile): 'audio' | 'video' | 'unknown' {
-  const ext = file.extension.toLowerCase()
-  const audioExts = ['.mp3', '.flac', '.wav', '.ogg', '.aac', '.m4a', '.wma', '.opus', '.aiff']
-  const videoExts = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v']
-  if (audioExts.includes(ext)) return 'audio'
-  if (videoExts.includes(ext)) return 'video'
-  return 'unknown'
+  const ext = file.extension.toLowerCase();
+  const audioExts = ['.mp3', '.flac', '.wav', '.ogg', '.aac', '.m4a', '.wma', '.opus', '.aiff'];
+  const videoExts = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v'];
+  if (audioExts.includes(ext)) return 'audio';
+  if (videoExts.includes(ext)) return 'video';
+  return 'unknown';
 }

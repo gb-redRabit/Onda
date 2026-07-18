@@ -1,36 +1,36 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { usePlayerStore } from '@renderer/stores/player'
-import { useLibraryStore } from '@renderer/stores/library'
-import { useExplorerStore } from '@renderer/stores/explorer'
-import { useYouTubeStore } from '@renderer/stores/youtube'
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import { usePlayerStore } from '@renderer/stores/player';
+import { useLibraryStore } from '@renderer/stores/library';
+import { useExplorerStore } from '@renderer/stores/explorer';
+import { useYouTubeStore } from '@renderer/stores/youtube';
 
-const route = useRoute()
-const player = usePlayerStore()
-const library = useLibraryStore()
-const explorer = useExplorerStore()
-const youtube = useYouTubeStore()
+const route = useRoute();
+const player = usePlayerStore();
+const library = useLibraryStore();
+const explorer = useExplorerStore();
+const youtube = useYouTubeStore();
 
 const viewInfo = computed(() => {
   switch (route.name) {
     case 'library':
-      return `${library.totalCount} utworów`
+      return `${library.totalCount} utworów`;
     case 'explorer':
-      return `${explorer.sortedFiles.length} elementów`
+      return `${explorer.sortedFiles.length} elementów`;
     case 'youtube':
-      return youtube.searchResults.length ? `${youtube.searchResults.length} wyników` : ''
+      return youtube.searchResults.length ? `${youtube.searchResults.length} wyników` : '';
     case 'downloads':
-      return youtube.downloads.length ? `${youtube.downloads.length} pobrań` : ''
+      return youtube.downloads.length ? `${youtube.downloads.length} pobrań` : '';
     default:
-      return ''
+      return '';
   }
-})
+});
 
 const activeDownloads = computed(() =>
   youtube.downloads.filter((d) => d.status === 'downloading' || d.status === 'pending')
-)
-const activeDownload = computed(() => activeDownloads.value[0] || null)
+);
+const activeDownload = computed(() => activeDownloads.value[0] || null);
 </script>
 
 <template>

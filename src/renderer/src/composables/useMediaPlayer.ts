@@ -1,48 +1,48 @@
-import { ref, onUnmounted } from 'vue'
-import { audioEngine } from '@renderer/modules/audioEngine'
-import { usePlayerStore } from '@renderer/stores/player'
-import type { MediaFile } from '@renderer/types/media'
+import { ref, onUnmounted } from 'vue';
+import { audioEngine } from '@renderer/modules/audioEngine';
+import { usePlayerStore } from '@renderer/stores/player';
+import type { MediaFile } from '@renderer/types/media';
 
-let _initialized = false
-const mediaEl = ref<HTMLAudioElement | HTMLVideoElement | null>(null)
-const isReady = ref(false)
-const error = ref<string | null>(null)
+let _initialized = false;
+const mediaEl = ref<HTMLAudioElement | HTMLVideoElement | null>(null);
+const isReady = ref(false);
+const error = ref<string | null>(null);
 
 export function useMediaPlayer() {
-  const player = usePlayerStore()
+  const player = usePlayerStore();
 
   if (!_initialized) {
-    _initialized = true
+    _initialized = true;
 
-    const origLoadTrack = audioEngine.loadTrack.bind(audioEngine)
+    const origLoadTrack = audioEngine.loadTrack.bind(audioEngine);
     audioEngine.loadTrack = (track: MediaFile) => {
-      origLoadTrack(track)
-      mediaEl.value = audioEngine.getMediaElement()
-      isReady.value = true
-      error.value = null
-    }
+      origLoadTrack(track);
+      mediaEl.value = audioEngine.getMediaElement();
+      isReady.value = true;
+      error.value = null;
+    };
 
     const unwatchCurrentTrack = player.$onAction(({ name, args }) => {
       if (name === 'setTrack') {
-        const track = args[0] as MediaFile
+        const track = args[0] as MediaFile;
         if (track && track.type === 'audio') {
-          audioEngine.loadTrack(track)
+          audioEngine.loadTrack(track);
           setTimeout(() => {
-            if (player.isPlaying) audioEngine.play()
-          }, 100)
+            if (player.isPlaying) audioEngine.play();
+          }, 100);
         }
       }
       if (name === 'togglePlay' || name === 'play' || name === 'pause') {
         setTimeout(() => {
-          if (player.isPlaying) audioEngine.play()
-          else audioEngine.pause()
-        }, 0)
+          if (player.isPlaying) audioEngine.play();
+          else audioEngine.pause();
+        }, 0);
       }
-    })
+    });
 
     onUnmounted(() => {
-      unwatchCurrentTrack()
-    })
+      unwatchCurrentTrack();
+    });
   }
 
   return {
@@ -54,22 +54,22 @@ export function useMediaPlayer() {
     pause: () => audioEngine.pause(),
     seek: (time: number) => audioEngine.seek(time),
     setVolume: (v: number) => {
-      player.setVolume(v)
-      audioEngine.setVolume(player.isMuted ? 0 : v)
+      player.setVolume(v);
+      audioEngine.setVolume(player.isMuted ? 0 : v);
     },
     setPlaybackRate: (rate: number) => audioEngine.setPlaybackRate(rate),
     setEqualizerBand: (index: number, gain: number) => {
-      player.equalizerBands[index] = gain
-      audioEngine.setEqualizerBand(index, gain)
+      player.equalizerBands[index] = gain;
+      audioEngine.setEqualizerBand(index, gain);
     },
     applyEqPreset: (preset: Record<number, number>) => {
       Object.entries(preset).forEach(([idx, gain]) => {
-        const i = parseInt(idx)
-        player.equalizerBands[i] = gain
-      })
-      audioEngine.applyEqPreset(preset)
+        const i = parseInt(idx);
+        player.equalizerBands[i] = gain;
+      });
+      audioEngine.applyEqPreset(preset);
     },
     savePosition: () => audioEngine.savePosition(),
     getAudioContext: () => audioEngine.getAudioContext()
-  }
+  };
 }

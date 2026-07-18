@@ -1,5 +1,5 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
-import { moduleManager } from '@renderer/modules/ModuleManager'
+import { createRouter, createWebHashHistory } from 'vue-router';
+import { moduleManager } from '@renderer/modules/ModuleManager';
 
 const ROUTE_MODULE_MAP: Record<string, string> = {
   home: 'home',
@@ -11,7 +11,7 @@ const ROUTE_MODULE_MAP: Record<string, string> = {
   downloads: 'youtube',
   settings: 'settings',
   search: 'home'
-}
+};
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -65,14 +65,14 @@ const router = createRouter({
       meta: { title: 'Player', icon: 'play' }
     }
   ]
-})
+});
 
 router.afterEach((to) => {
-  const routeName = to.name as string
-  const moduleId = ROUTE_MODULE_MAP[routeName]
+  const routeName = to.name as string;
+  const moduleId = ROUTE_MODULE_MAP[routeName];
   if (moduleId) {
-    moduleManager.switchTo(moduleId)
+    moduleManager.switchTo(moduleId);
   }
-})
+});
 
-export default router
+export default router;
