@@ -134,12 +134,25 @@ export const usePlayerStore = defineStore('player', () => {
   }
 
   function nextTrack(): MediaFile | null {
-    if (queue.value.length === 0) return null;
-    const next = shuffle.value
-      ? queue.value[Math.floor(Math.random() * queue.value.length)]
-      : queue.value[0];
+    if (repeat.value === 'one' && currentTrack.value) {
+      setTrack(currentTrack.value);
+      return currentTrack.value;
+    }
+    if (queue.value.length === 0) {
+      if (repeat.value === 'all' && history.value.length > 0) {
+        const next = history.value[history.value.length - 1];
+        setTrack(next);
+        history.value.pop();
+        return next;
+      }
+      return null;
+    }
+    const nextIdx = shuffle.value
+      ? Math.floor(Math.random() * queue.value.length)
+      : 0;
+    const next = queue.value[nextIdx];
     setTrack(next);
-    queue.value.shift();
+    queue.value.splice(nextIdx, 1);
     return next;
   }
 
