@@ -8,21 +8,16 @@ export interface PiPSubtitleData {
   availableFonts: Record<string, string>
 }
 
-export function usePiP(callbacks?: {
-  onClosed?: (time: number) => void
-  onEnded?: () => void
-}) {
+export function usePiP(callbacks?: { onClosed?: (time: number) => void; onEnded?: () => void }) {
   const isActive = ref(false)
   const currentTime = ref(0)
 
   const cleanups: (() => void)[] = []
 
   function init(): void {
-    console.log('[PiP][usePiP] init -> listening for pip:closed, pip:ended')
     cleanups.push(
       window.api.on('pip:closed', (time: unknown) => {
         const savedTime = (time as number) || 0
-        console.log('[PiP][usePiP] pip:closed received -> time:', savedTime)
         currentTime.value = savedTime
         isActive.value = false
         callbacks?.onClosed?.(savedTime)
@@ -30,7 +25,6 @@ export function usePiP(callbacks?: {
     )
     cleanups.push(
       window.api.on('pip:ended', () => {
-        console.log('[PiP][usePiP] pip:ended received')
         callbacks?.onEnded?.()
       })
     )
@@ -53,28 +47,18 @@ export function usePiP(callbacks?: {
       startTime: options?.startTime || 0,
       subtitle: options?.subtitle !== false ? getLastSubtitleData() : null
     }
-    console.log('[PiP][usePiP] start -> calling pipStart, startTime:', settings.startTime)
     return window.api.pipStart(videoSrc, settings as any)
   }
 
   function stop(): Promise<boolean> {
-    console.log('[PiP][usePiP] stop')
     return window.api.pipStop()
   }
 
-  function loadTrack(
-    videoSrc: string,
-    subtitleData: PiPSubtitleData | null
-  ): void {
-    console.log('[PiP][usePiP] loadTrack -> src:', videoSrc.substring(0, 80))
+  function loadTrack(videoSrc: string, subtitleData: PiPSubtitleData | null): void {
     window.api.pipLoadTrack(videoSrc, subtitleData as any)
   }
 
-  function preload(
-    videoSrc: string,
-    subtitleData: PiPSubtitleData | null
-  ): void {
-    console.log('[PiP][usePiP] preload -> src:', videoSrc.substring(0, 80))
+  function preload(videoSrc: string, subtitleData: PiPSubtitleData | null): void {
     window.api.pipPreload(videoSrc, subtitleData as any)
   }
 
@@ -84,12 +68,10 @@ export function usePiP(callbacks?: {
     const src = videoEl.src || ''
     if (!src) return
     const subtitleData = getLastSubtitleData()
-    console.log('[PiP][usePiP] loadTrackFromCurrent -> src:', src.substring(0, 80))
     window.api.pipLoadTrack(src, subtitleData as any)
   }
 
   function updateSubtitle(subtitleData: PiPSubtitleData | null): void {
-    console.log('[PiP][usePiP] updateSubtitle -> has:', !!(subtitleData?.subContent))
     window.api.pipUpdateSubtitle(subtitleData as any)
   }
 

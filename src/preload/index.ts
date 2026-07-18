@@ -24,16 +24,41 @@ const api = {
   },
   pipStart: (
     videoSrc: string,
-    settings?: { position?: string; width?: number; height?: number; startTime?: number; subtitle?: unknown }
+    settings?: {
+      position?: string
+      width?: number
+      height?: number
+      startTime?: number
+      subtitle?: unknown
+    }
   ): Promise<boolean> => ipcRenderer.invoke('pip:start', videoSrc, settings),
   pipStop: (): Promise<boolean> => ipcRenderer.invoke('pip:stop'),
+  pipPreviewStart: (opts: {
+    position?: string
+    width?: number
+    height?: number
+  }): Promise<boolean> => ipcRenderer.invoke('pip:previewStart', opts),
+  pipPreviewStop: (): Promise<boolean> => ipcRenderer.invoke('pip:previewStop'),
+  pipPreviewUpdate: (opts: {
+    position?: string
+    width?: number
+    height?: number
+  }): Promise<boolean> => ipcRenderer.invoke('pip:previewUpdate', opts),
   pipPreload: (
     videoSrc: string,
-    subtitleData: { subContent: string; fonts: Array<{ name: string; data: number[] }>; availableFonts: Record<string, string> } | null
+    subtitleData: {
+      subContent: string
+      fonts: Array<{ name: string; data: number[] }>
+      availableFonts: Record<string, string>
+    } | null
   ): Promise<void> => ipcRenderer.invoke('pip:preload', videoSrc, subtitleData),
   pipLoadTrack: (
     videoSrc: string,
-    subtitleData: { subContent: string; fonts: Array<{ name: string; data: number[] }>; availableFonts: Record<string, string> } | null
+    subtitleData: {
+      subContent: string
+      fonts: Array<{ name: string; data: number[] }>
+      availableFonts: Record<string, string>
+    } | null
   ): Promise<void> => ipcRenderer.invoke('pip:loadtrack', videoSrc, subtitleData),
   checkFfmpeg: (): Promise<{ installed: boolean; version: string | null }> =>
     ipcRenderer.invoke('dep:checkFfmpeg'),
@@ -74,7 +99,11 @@ const api = {
   ): Promise<Array<{ name: string; ext: string; data: number[] }>> =>
     ipcRenderer.invoke('subtitles:extractAttachments', filePath),
   pipUpdateSubtitle: (
-    data: { subContent: string; fonts: Array<{ name: string; data: number[] }>; availableFonts: Record<string, string> } | null
+    data: {
+      subContent: string
+      fonts: Array<{ name: string; data: number[] }>
+      availableFonts: Record<string, string>
+    } | null
   ): Promise<void> => ipcRenderer.invoke('pip:updateSubtitle', data)
 }
 

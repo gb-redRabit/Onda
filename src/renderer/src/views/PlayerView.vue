@@ -10,8 +10,6 @@ import {
   initSubtitleRenderer,
   loadSubtitleTrack,
   removeSubtitleTrack,
-  applySubtitleSettings,
-  disableSubtitleOverride,
   destroySubtitleRenderer,
   preparePiPSubtitleData
 } from '@renderer/composables/useSubtitleRenderer'
@@ -27,7 +25,6 @@ function getTrackSrc(track: { path: string }): string {
 
 const pip = usePiP({
   onClosed(savedTime) {
-    console.log('[PlayerView] pip:closed -> restoring main player at', savedTime)
     player.pipActive = false
     if (videoRef.value) {
       videoRef.value.currentTime = savedTime
@@ -38,7 +35,6 @@ const pip = usePiP({
     syncSubtitlesWithPiP()
   },
   onEnded() {
-    console.log('[PlayerView] pip:ended -> next track or stop')
     if (player.queue.length > 0) {
       player.nextTrack()
     } else {
@@ -55,10 +51,17 @@ const controlsTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 
 const osdVisible = ref(false)
 const osdText = ref('')
-const osdIcon = ref<'play' | 'pause' | 'volume' | 'seek' | 'track'>('track')
+const osdIcon = ref<'play' | 'pause' | 'volume' | 'seek' | 'track' | 'speed'>('track')
 const osdTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 
 const isVideo = computed(() => player.currentTrack?.type === 'video')
+const isAudio = computed(() => player.currentTrack?.type === 'audio')
+
+const videoFilterStyle = computed(() => {
+  const f = settings.playback.videoFilter
+  if (!f || f === 'none') return {}
+  return { filter: f }
+})
 
 function showOSD(text: string, icon: typeof osdIcon.value = 'track', duration = 1500) {
   osdText.value = text
@@ -102,9 +105,27 @@ function toggleFullscreen() {
   }
 }
 
+function skip(seconds: number) {
+  if (!videoRef.value) return
+  const newTime = Math.max(
+    0,
+    Math.min(videoRef.value.duration || 0, videoRef.value.currentTime + seconds)
+  )
+  videoRef.value.currentTime = newTime
+  player.currentTime = newTime
+  const sign = seconds > 0 ? '+' : ''
+  showOSD(`${sign}${seconds}s`, 'seek', 1000)
+}
+
+function setSpeed(speed: number) {
+  const clamped = Math.round(Math.max(0.2, Math.min(3, speed)) * 10) / 10
+  settings.updatePlayback({ playbackSpeed: clamped })
+  if (videoRef.value) videoRef.value.playbackRate = clamped
+  showOSD(`${clamped}x`, 'speed', 1200)
+}
+
 async function togglePiP() {
   if (player.pipActive) {
-    console.log('[PlayerView] togglePiP -> stopping PiP')
     pip.stop()
     return
   }
@@ -116,10 +137,6 @@ async function togglePiP() {
   if (!src) return
 
   const startTime = videoRef.value?.currentTime || player.currentTime
-  const mainSrc = videoRef.value?.src || ''
-  console.log(`[PlayerView] togglePiP -> CLICK at ${new Date().toISOString()}`)
-  console.log(`[PlayerView] togglePiP -> main player src: ${mainSrc.substring(0, 120)}`)
-  console.log(`[PlayerView] togglePiP -> startTime: ${startTime}`)
 
   const started = await pip.start(src, {
     position: settings.playback.pipPosition,
@@ -150,10 +167,18 @@ function syncSubtitlesWithPiP(): void {
 
 function onMouseMove() {
   showControls.value = true
+  if (settings.playback.cursorHide && isFullscreen.value && playerContainerRef.value) {
+    playerContainerRef.value.classList.remove('hide-cursor')
+  }
   if (controlsTimeout.value) clearTimeout(controlsTimeout.value)
   controlsTimeout.value = setTimeout(() => {
-    if (player.isPlaying) showControls.value = false
-  }, 3000)
+    if (player.isPlaying) {
+      showControls.value = false
+      if (settings.playback.cursorHide && isFullscreen.value && playerContainerRef.value) {
+        playerContainerRef.value.classList.add('hide-cursor')
+      }
+    }
+  }, settings.playback.cursorTimeout * 1000)
 }
 
 let clickTimer: ReturnType<typeof setTimeout> | null = null
@@ -175,6 +200,81 @@ function handleClick() {
     )
     clickTimer = null
   }, 250)
+}
+
+function onKeydown(e: KeyboardEvent) {
+  const target = e.target as HTMLElement
+  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+    return
+
+  switch (e.key) {
+    case ' ':
+    case 'k':
+      e.preventDefault()
+      if (player.pipActive) return
+      player.togglePlay()
+      showOSD(
+        player.isPlaying ? 'Odtwarzanie' : 'Wstrzymano',
+        player.isPlaying ? 'play' : 'pause',
+        1000
+      )
+      break
+    case 'ArrowLeft':
+      e.preventDefault()
+      skip(e.shiftKey ? -30 : -10)
+      break
+    case 'ArrowRight':
+      e.preventDefault()
+      skip(e.shiftKey ? 30 : 10)
+      break
+    case 'ArrowUp':
+      e.preventDefault()
+      if (videoRef.value) {
+        const newVol = Math.min(1, player.volume + 0.05)
+        player.setVolume(newVol)
+        videoRef.value.volume = player.isMuted ? 0 : newVol
+        showOSD(`Glosnosc: ${Math.round(newVol * 100)}%`, 'volume', 1200)
+      }
+      break
+    case 'ArrowDown':
+      e.preventDefault()
+      if (videoRef.value) {
+        const newVol = Math.max(0, player.volume - 0.05)
+        player.setVolume(newVol)
+        videoRef.value.volume = player.isMuted ? 0 : newVol
+        showOSD(`Glosnosc: ${Math.round(newVol * 100)}%`, 'volume', 1200)
+      }
+      break
+    case 'm':
+      e.preventDefault()
+      player.toggleMute()
+      showOSD(
+        player.isMuted ? 'Wyciszono' : `Glosnosc: ${Math.round(player.volume * 100)}%`,
+        'volume',
+        1200
+      )
+      break
+    case 'f':
+      e.preventDefault()
+      toggleFullscreen()
+      break
+    case '<':
+      e.preventDefault()
+      setSpeed(settings.playback.playbackSpeed - 0.25)
+      break
+    case '>':
+      e.preventDefault()
+      setSpeed(settings.playback.playbackSpeed + 0.25)
+      break
+    case '0':
+      e.preventDefault()
+      if (videoRef.value) {
+        videoRef.value.currentTime = 0
+        player.currentTime = 0
+        showOSD('0:00', 'seek', 1000)
+      }
+      break
+  }
 }
 
 const videoEventsConnected = ref(false)
@@ -214,6 +314,7 @@ function setupVideo(track: import('@renderer/types/media').MediaFile | null) {
       'loadedmetadata',
       () => {
         if (seekTo > 0) el.currentTime = seekTo
+        el.playbackRate = settings.playback.playbackSpeed
         if (player.isPlaying && !player.pipActive) el.play().catch(() => {})
       },
       { once: true }
@@ -221,6 +322,7 @@ function setupVideo(track: import('@renderer/types/media').MediaFile | null) {
     el.load()
   } else {
     el.volume = player.isMuted ? 0 : player.volume
+    el.playbackRate = settings.playback.playbackSpeed
     if (player.isPlaying && !player.pipActive) el.play().catch(() => {})
   }
 }
@@ -278,15 +380,15 @@ watch(
       router.back()
       return
     }
+
+    settings.updatePlayback({ videoFilter: 'none', playbackSpeed: 1 })
     setupVideo(track)
 
     if (player.pipActive && track.type === 'video') {
-      console.log('[PlayerView] currentTrack changed while PiP active -> loading into PiP')
       const src = getTrackSrc(track)
       pip.loadTrack(src, null)
       preparePiPSubtitleData(track.path).then((subtitleData) => {
         if (player.pipActive) {
-          console.log('[PlayerView] PiP subtitles for new track:', subtitleData ? 'found' : 'none')
           pip.updateSubtitle(subtitleData)
         }
       })
@@ -320,30 +422,45 @@ watch(
   }
 )
 
+watch(
+  () => settings.playback.playbackSpeed,
+  (speed) => {
+    if (videoRef.value) videoRef.value.playbackRate = speed
+  }
+)
+
 onMounted(() => {
-  if (!player.currentTrack || player.currentTrack.type !== 'video') {
+  if (
+    !player.currentTrack ||
+    (player.currentTrack.type !== 'video' && player.currentTrack.type !== 'audio')
+  ) {
     router.replace('/')
     return
   }
-  setupVideo(player.currentTrack)
 
-  const src = getTrackSrc(player.currentTrack)
-  if (player.pipActive) {
-    console.log('[PlayerView] onMounted -> PiP active, loading new track into PiP')
-    pip.loadTrack(src, null)
-    preparePiPSubtitleData(player.currentTrack.path).then((subtitleData) => {
-      if (player.pipActive) pip.updateSubtitle(subtitleData)
-    })
-  } else {
-    pip.preload(src, null)
-    preparePiPSubtitleData(player.currentTrack.path).then((subtitleData) => {
-      pip.updateSubtitle(subtitleData)
-    })
+  settings.updatePlayback({ videoFilter: 'none', playbackSpeed: 1 })
+
+  if (player.currentTrack.type === 'video') {
+    setupVideo(player.currentTrack)
+
+    const src = getTrackSrc(player.currentTrack)
+    if (player.pipActive) {
+      pip.loadTrack(src, null)
+      preparePiPSubtitleData(player.currentTrack.path).then((subtitleData) => {
+        if (player.pipActive) pip.updateSubtitle(subtitleData)
+      })
+    } else {
+      pip.preload(src, null)
+      preparePiPSubtitleData(player.currentTrack.path).then((subtitleData) => {
+        pip.updateSubtitle(subtitleData)
+      })
+    }
   }
 
   document.addEventListener('fullscreenchange', () => {
     isFullscreen.value = !!document.fullscreenElement
   })
+  document.addEventListener('keydown', onKeydown)
 })
 
 onUnmounted(() => {
@@ -352,6 +469,8 @@ onUnmounted(() => {
   if (controlsTimeout.value) clearTimeout(controlsTimeout.value)
   if (osdTimeout.value) clearTimeout(osdTimeout.value)
   if (clickTimer) clearTimeout(clickTimer)
+  document.removeEventListener('keydown', onKeydown)
+  document.body.style.cursor = 'default'
 })
 
 watch([() => player.volume, () => player.isMuted], () => {
@@ -363,7 +482,6 @@ watch(
   async (trackId) => {
     if (!trackId || !player.currentTrack) {
       removeSubtitleTrack()
-      disableSubtitleOverride()
       return
     }
     const track = player.subtitleTracks.find((t) => t.id === trackId)
@@ -376,25 +494,13 @@ watch(
         track.format = result.format
         track.fonts = result.fonts
         await loadSubtitleTrack(track)
-        applySubtitleSettings(player.subtitleSettings)
       } else {
         console.error('[Subtitles] extraction returned null')
       }
     } else {
       await loadSubtitleTrack(track)
-      applySubtitleSettings(player.subtitleSettings)
     }
   }
-)
-
-watch(
-  () => ({ ...player.subtitleSettings }),
-  (s) => {
-    if (player.activeSubtitleId) {
-      applySubtitleSettings(s)
-    }
-  },
-  { deep: true }
 )
 </script>
 
@@ -415,25 +521,71 @@ watch(
       @fullscreen="toggleFullscreen"
     />
 
-    <div class="relative flex-1 flex items-center justify-center overflow-hidden">
+    <!-- video area -->
+    <div v-if="isVideo" class="relative flex-1 flex items-center justify-center overflow-hidden">
       <video
-        v-if="isVideo"
         :ref="onVideoRef"
         class="w-full h-full object-contain cursor-pointer"
+        :style="videoFilterStyle"
         @click="handleClick"
       />
-      <div v-if="!isVideo" class="text-center">
-        <p class="text-lg text-white/60">Brak wideo do odtworzenia</p>
-        <button
-          class="mt-4 px-4 py-2 rounded-xl bg-accent-base text-white text-sm"
-          @click="router.push('/explorer')"
+
+      <!-- skip left zone -->
+      <div
+        class="absolute left-0 top-0 bottom-0 w-[20%] z-10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+        @click="skip(-10)"
+      >
+        <div
+          class="bg-black/50 rounded-full px-4 py-2 text-white text-sm font-medium pointer-events-none"
         >
-          Przegladaj pliki
-        </button>
+          -10s
+        </div>
+      </div>
+
+      <!-- skip right zone -->
+      <div
+        class="absolute right-0 top-0 bottom-0 w-[20%] z-10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+        @click="skip(10)"
+      >
+        <div
+          class="bg-black/50 rounded-full px-4 py-2 text-white text-sm font-medium pointer-events-none"
+        >
+          +10s
+        </div>
       </div>
     </div>
 
-    <PlayerControls :show-controls="showControls" @seek="onSeek" @volume-change="onVolumeChange" />
+    <!-- audio area -->
+    <div
+      v-else-if="isAudio"
+      class="relative flex-1 flex items-center justify-center overflow-hidden bg-bg-base"
+    >
+      <div class="text-center">
+        <p class="text-lg text-fg-base">
+          {{ player.currentTrack?.metadata?.title || player.currentTrack?.name }}
+        </p>
+        <p class="text-sm text-fg-muted">{{ player.currentTrack?.metadata?.artist || '' }}</p>
+      </div>
+    </div>
+
+    <div v-else class="relative flex-1 flex items-center justify-center overflow-hidden">
+      <p class="text-lg text-white/60">Brak wideo do odtworzenia</p>
+      <button
+        class="mt-4 px-4 py-2 rounded-xl bg-accent-base text-white text-sm"
+        @click="router.push('/explorer')"
+      >
+        Przegladaj pliki
+      </button>
+    </div>
+
+    <PlayerControls
+      :show-controls="showControls"
+      :speed="settings.playback.playbackSpeed"
+      @seek="onSeek"
+      @volume-change="onVolumeChange"
+      @set-speed="setSpeed"
+      @skip="skip"
+    />
   </div>
 </template>
 
@@ -441,6 +593,10 @@ watch(
 .player-container:fullscreen {
   width: 100vw;
   height: 100vh;
+}
+.player-container:fullscreen.hide-cursor,
+.player-container:fullscreen.hide-cursor * {
+  cursor: none !important;
 }
 .player-container:fullscreen video {
   width: 100%;

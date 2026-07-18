@@ -14,15 +14,3 @@ export interface SubtitleTrack {
   content?: string
   fonts?: MkvFont[]
 }
-
-export interface SubtitleSettings {
-  fontSize: number
-  fontName: string
-  opacity: number
-  textColor: string
-  bgColor: string
-  position: 'bottom' | 'center' | 'top'
-  margin: number
-  bold: boolean
-  italic: boolean
-}

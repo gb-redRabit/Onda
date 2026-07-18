@@ -39,12 +39,17 @@ export const ALL_MEDIA_FORMATS = [
 
 export const DEFAULT_SHORTCUTS: Record<string, string> = {
   'play-pause': 'Space',
+  'skip-forward': 'ArrowRight',
+  'skip-backward': 'ArrowLeft',
+  'volume-up': 'ArrowUp',
+  'volume-down': 'ArrowDown',
+  mute: 'M',
+  fullscreen: 'F',
+  'speed-up': '>',
+  'speed-down': '<',
+  'jump-start': '0',
   'next-track': 'MediaTrackNext',
   'prev-track': 'MediaTrackPrevious',
-  'volume-up': 'MediaVolumeUp',
-  'volume-down': 'MediaVolumeDown',
-  mute: 'MediaMute',
-  fullscreen: 'F11',
   search: 'Ctrl+K',
   settings: 'Ctrl+,',
   explorer: 'Ctrl+E',
@@ -156,7 +161,11 @@ export const DEFAULT_PLAYBACK = {
   rememberPosition: true,
   pipPosition: 'bottom-right' as const,
   pipWidth: 480,
-  pipHeight: 290
+  pipHeight: 290,
+  cursorHide: true,
+  cursorTimeout: 3,
+  playbackSpeed: 1,
+  videoFilter: 'none'
 }
 
 export const DEFAULT_DOWNLOAD = {

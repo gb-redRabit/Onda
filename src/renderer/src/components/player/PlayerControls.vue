@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import {
   Play,
   Pause,
@@ -11,26 +11,50 @@ import {
   Repeat,
   Repeat1,
   ListMusic,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Gauge,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles
 } from '@lucide/vue'
 import { usePlayerStore } from '@renderer/stores/player'
+import { useSettingsStore } from '@renderer/stores/settings'
 import { formatDuration } from '@renderer/utils/formatters'
 import SubtitleTrackSelector from './SubtitleTrackSelector.vue'
 
-defineProps<{
+const props = defineProps<{
   showControls: boolean
+  speed: number
 }>()
 
 const emit = defineEmits<{
   seek: [time: number]
   volumeChange: [value: number]
+  setSpeed: [speed: number]
+  skip: [seconds: number]
 }>()
 
 const player = usePlayerStore()
+const settings = useSettingsStore()
+const showFilters = ref(false)
 
 const progressPct = computed(() =>
   player.duration > 0 ? (player.currentTime / player.duration) * 100 : 0
 )
+
+const videoFilters = [
+  { id: 'none', label: 'Brak', css: 'none' },
+  { id: 'grayscale', label: 'Czarno-biale', css: 'grayscale(100%)' },
+  { id: 'sepia', label: 'Sepia', css: 'sepia(80%)' },
+  { id: 'contrast', label: 'Wysoki kontrast', css: 'contrast(150%)' },
+  { id: 'brightness', label: 'Jasnosc +50%', css: 'brightness(150%)' },
+  { id: 'saturate', label: 'Nasycenie +200%', css: 'saturate(200%)' },
+  { id: 'invert', label: 'Inwersja', css: 'invert(100%)' },
+  { id: 'blur', label: 'Rozmycie 2px', css: 'blur(2px)' },
+  { id: 'hue-rotate', label: 'Obrót kolorow 90°', css: 'hue-rotate(90deg)' }
+]
+
+const speedSteps = [0.2, 0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3]
 
 function onSeek(e: MouseEvent) {
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
@@ -42,6 +66,23 @@ function onVolumeClick(e: MouseEvent) {
   const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
   const v = (e.clientX - r.left) / r.width
   emit('volumeChange', v)
+}
+
+function setFilter(filter: (typeof videoFilters)[0]) {
+  settings.updatePlayback({ videoFilter: filter.css })
+  showFilters.value = false
+}
+
+function cycleSpeed(direction: number) {
+  const currentIdx = speedSteps.indexOf(props.speed)
+  if (currentIdx >= 0) {
+    const nextIdx = Math.max(0, Math.min(speedSteps.length - 1, currentIdx + direction))
+    emit('setSpeed', speedSteps[nextIdx])
+  } else {
+    const newSpeed =
+      Math.round(Math.max(0.2, Math.min(3, props.speed + direction * 0.25)) * 10) / 10
+    emit('setSpeed', newSpeed)
+  }
 }
 </script>
 
@@ -97,15 +138,95 @@ function onVolumeClick(e: MouseEvent) {
         </button>
       </div>
 
-      <!-- time display -->
-      <div class="flex items-center gap-3 text-white/60 text-xs font-mono tabular-nums">
-        <span>{{ formatDuration(player.currentTime) }}</span>
-        <span class="text-white/30">/</span>
-        <span>{{ formatDuration(player.duration) }}</span>
+      <!-- center: time + speed + skip buttons -->
+      <div class="flex items-center gap-3">
+        <!-- skip back 10s -->
+        <button class="text-white/50 hover:text-white transition-colors" @click="emit('skip', -10)">
+          <ChevronLeft :size="16" />
+          <span class="text-[9px] absolute -mt-3 ml-0.5">10</span>
+        </button>
+
+        <div class="flex items-center gap-3 text-white/60 text-xs font-mono tabular-nums">
+          <span>{{ formatDuration(player.currentTime) }}</span>
+          <span class="text-white/30">/</span>
+          <span>{{ formatDuration(player.duration) }}</span>
+        </div>
+
+        <!-- speed -->
+        <div class="relative flex items-center">
+          <button
+            class="text-white/30 hover:text-white/60 transition-colors px-0.5"
+            @click.stop="cycleSpeed(-1)"
+          >
+            <ChevronLeft :size="10" />
+          </button>
+          <button
+            class="flex items-center gap-1 px-1.5 py-1 rounded-lg text-xs font-mono transition-colors"
+            :class="
+              speed !== 1 ? 'text-accent-base bg-accent-ghost' : 'text-white/50 hover:text-white'
+            "
+            @click.stop="cycleSpeed(1)"
+          >
+            <Gauge :size="12" />
+            {{ speed }}x
+          </button>
+          <button
+            class="text-white/30 hover:text-white/60 transition-colors px-0.5"
+            @click.stop="cycleSpeed(1)"
+          >
+            <ChevronRight :size="10" />
+          </button>
+        </div>
+
+        <!-- skip forward 10s -->
+        <button class="text-white/50 hover:text-white transition-colors" @click="emit('skip', 10)">
+          <ChevronRight :size="16" />
+          <span class="text-[9px] absolute -mt-3 ml-0.5">10</span>
+        </button>
       </div>
 
-      <!-- right side: eq, queue, volume -->
+      <!-- right side: filters, eq, queue, subs, volume -->
       <div class="flex items-center gap-2">
+        <!-- filters -->
+        <div class="relative">
+          <button
+            class="text-white/50 hover:text-white transition-colors"
+            :class="{ '!text-accent-base': settings.playback.videoFilter !== 'none' }"
+            @click="showFilters = !showFilters"
+          >
+            <Sparkles :size="14" />
+          </button>
+          <Transition name="menu-fade">
+            <div
+              v-if="showFilters"
+              class="absolute bottom-full right-0 mb-2 w-44 bg-bg-elevated border border-border-subtle rounded-xl shadow-2xl shadow-black/50 py-1.5 z-50"
+            >
+              <div
+                class="px-3 py-1.5 text-[10px] text-fg-faint font-medium uppercase tracking-wider"
+              >
+                Filtry wideo
+              </div>
+              <button
+                v-for="f in videoFilters"
+                :key="f.id"
+                class="w-full px-3 py-1.5 text-left text-sm hover:bg-accent-ghost hover:text-accent-base transition-colors flex items-center gap-2"
+                :class="{ 'text-accent-base': settings.playback.videoFilter === f.css }"
+                @click="setFilter(f)"
+              >
+                <span
+                  class="w-3 h-3 rounded-full border border-border-default shrink-0"
+                  :class="
+                    settings.playback.videoFilter === f.css
+                      ? 'bg-accent-base border-accent-base'
+                      : ''
+                  "
+                />
+                {{ f.label }}
+              </button>
+            </div>
+          </Transition>
+        </div>
+
         <button
           class="text-white/50 hover:text-white transition-colors"
           :class="{ '!text-accent-base': player.equalizerVisible }"
@@ -135,3 +256,17 @@ function onVolumeClick(e: MouseEvent) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.menu-fade-enter-active,
+.menu-fade-leave-active {
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+.menu-fade-enter-from,
+.menu-fade-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
+}
+</style>

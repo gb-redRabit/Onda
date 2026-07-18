@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Play, Pause, Volume2 } from '@lucide/vue'
+import { Play, Pause, Volume2, Gauge } from '@lucide/vue'
 
 defineProps<{
   visible: boolean
   text: string
-  icon: 'play' | 'pause' | 'volume' | 'seek' | 'track'
+  icon: 'play' | 'pause' | 'volume' | 'seek' | 'track' | 'speed'
 }>()
 </script>
 
@@ -17,6 +17,7 @@ defineProps<{
       <Play v-if="icon === 'play'" :size="16" class="text-accent-base" fill="currentColor" />
       <Pause v-else-if="icon === 'pause'" :size="16" class="text-accent-base" />
       <Volume2 v-else-if="icon === 'volume'" :size="16" class="text-accent-base" />
+      <Gauge v-else-if="icon === 'speed'" :size="16" class="text-accent-base" />
       <span class="text-white text-sm font-medium truncate max-w-100">{{ text }}</span>
     </div>
   </Transition>

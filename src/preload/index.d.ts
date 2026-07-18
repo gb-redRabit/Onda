@@ -8,16 +8,41 @@ interface OndaAPI {
   removeAllListeners: (channel: string) => void
   pipStart: (
     videoSrc: string,
-    settings?: {position?: string; width?: number; height?: number; startTime?: number; subtitle?: unknown}
+    settings?: {
+      position?: string
+      width?: number
+      height?: number
+      startTime?: number
+      subtitle?: unknown
+    }
   ) => Promise<boolean>
   pipStop: () => Promise<boolean>
+  pipPreviewStart: (opts: {
+    position?: string
+    width?: number
+    height?: number
+  }) => Promise<boolean>
+  pipPreviewStop: () => Promise<boolean>
+  pipPreviewUpdate: (opts: {
+    position?: string
+    width?: number
+    height?: number
+  }) => Promise<boolean>
   pipPreload: (
     videoSrc: string,
-    subtitleData: { subContent: string; fonts: Array<{ name: string; data: number[] }>; availableFonts: Record<string, string> } | null
+    subtitleData: {
+      subContent: string
+      fonts: Array<{ name: string; data: number[] }>
+      availableFonts: Record<string, string>
+    } | null
   ) => Promise<void>
   pipLoadTrack: (
     videoSrc: string,
-    subtitleData: {subContent: string; fonts: Array<{ name: string; data: number[] }>; availableFonts: Record<string, string>} | null
+    subtitleData: {
+      subContent: string
+      fonts: Array<{ name: string; data: number[] }>
+      availableFonts: Record<string, string>
+    } | null
   ) => Promise<void>
   checkFfmpeg: () => Promise<{ installed: boolean; version: string | null }>
   checkFfprobe: () => Promise<{ installed: boolean; version: string | null }>
@@ -40,9 +65,15 @@ interface OndaAPI {
     videoPath: string
   ) => Promise<Array<{ name: string; path: string; format: string }>>
   readSubtitleFile: (filePath: string) => Promise<string | null>
-  extractSubtitleFonts: (filePath: string) => Promise<Array<{ name: string; ext: string; data: number[] }>>
+  extractSubtitleFonts: (
+    filePath: string
+  ) => Promise<Array<{ name: string; ext: string; data: number[] }>>
   pipUpdateSubtitle: (
-    data: { subContent: string; fonts: Array<{ name: string; data: number[] }>; availableFonts: Record<string, string> } | null
+    data: {
+      subContent: string
+      fonts: Array<{ name: string; data: number[] }>
+      availableFonts: Record<string, string>
+    } | null
   ) => Promise<void>
 }
 

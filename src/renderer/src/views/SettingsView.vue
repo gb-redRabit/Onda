@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useSettingsStore } from '@renderer/stores/settings'
 import { moduleManager } from '@renderer/modules/ModuleManager'
 import {
@@ -11,7 +11,8 @@ import {
   Key,
   RefreshCw,
   RotateCcw,
-  Box
+  Box,
+  PictureInPicture
 } from '@lucide/vue'
 
 const settings = useSettingsStore()
@@ -49,6 +50,7 @@ const tab = ref('appearance')
 const tabs = [
   { id: 'appearance', label: 'Wygląd', icon: Palette },
   { id: 'playback', label: 'Odtwarzanie', icon: Play },
+  { id: 'pip', label: 'PiP', icon: PictureInPicture },
   { id: 'download', label: 'Pobieranie', icon: Download },
   { id: 'shortcuts', label: 'Skróty', icon: Keyboard },
   { id: 'network', label: 'Sieć', icon: Globe },
@@ -72,7 +74,8 @@ const toggles = [
   { key: 'normalization' as const, label: 'Normalizacja głośności' },
   { key: 'replayGain' as const, label: 'Replay Gain' },
   { key: 'autoPauseOnFocusLoss' as const, label: 'Auto-pauza przy utracie fokusa' },
-  { key: 'rememberPosition' as const, label: 'Zapamiętuj pozycję odtwarzania' }
+  { key: 'rememberPosition' as const, label: 'Zapamiętuj pozycję odtwarzania' },
+  { key: 'cursorHide' as const, label: 'Ukrywanie kursora' }
 ]
 
 const pipPositions = [
@@ -81,6 +84,46 @@ const pipPositions = [
   { value: 'top-right' as const, label: 'Prawy górny' },
   { value: 'top-left' as const, label: 'Lewy górny' }
 ] as const
+
+const pipPreviewOpen = ref(false)
+
+async function toggleSettingsPiP() {
+  if (pipPreviewOpen.value) {
+    await window.api.pipPreviewStop()
+    pipPreviewOpen.value = false
+    return
+  }
+
+  const started = await window.api.pipPreviewStart({
+    position: settings.playback.pipPosition,
+    width: settings.playback.pipWidth,
+    height: settings.playback.pipHeight
+  })
+  if (started) {
+    pipPreviewOpen.value = true
+  }
+}
+
+watch(tab, (_newTab, oldTab) => {
+  if (oldTab === 'pip' && pipPreviewOpen.value) {
+    window.api.pipPreviewStop().then(() => {
+      pipPreviewOpen.value = false
+    })
+  }
+})
+
+watch(
+  () => [settings.playback.pipPosition, settings.playback.pipWidth, settings.playback.pipHeight],
+  () => {
+    if (pipPreviewOpen.value) {
+      window.api.pipPreviewUpdate({
+        position: settings.playback.pipPosition,
+        width: settings.playback.pipWidth,
+        height: settings.playback.pipHeight
+      })
+    }
+  }
+)
 
 async function checkDependencies(): Promise<void> {
   for (const dep of deps.value) {
@@ -349,61 +392,131 @@ async function installDependency(dep: (typeof deps.value)[0]): Promise<void> {
           </div>
         </div>
 
-        <div class="pt-4 border-t border-border-default space-y-4">
-          <h3 class="text-sm font-semibold">Obraz w obrazie (PiP)</h3>
-          <div>
-            <h2 class="text-sm font-semibold mb-3">Pozycja okna</h2>
-            <div class="flex gap-2">
+        <!-- cursor timeout -->
+        <div v-if="settings.playback.cursorHide">
+          <h2 class="text-sm font-semibold mb-3">
+            Czas ukrycia kursora: {{ settings.playback.cursorTimeout }}s
+          </h2>
+          <input
+            type="range"
+            min="1"
+            max="10"
+            step="1"
+            :value="settings.playback.cursorTimeout"
+            class="w-full"
+            @input="
+              settings.updatePlayback({
+                cursorTimeout: parseInt(($event.target as HTMLInputElement).value)
+              })
+            "
+          />
+        </div>
+
+        <!-- playback speed -->
+        <div>
+          <h2 class="text-sm font-semibold mb-3">
+            Domyślna prędkość: {{ settings.playback.playbackSpeed }}x
+          </h2>
+          <input
+            type="range"
+            min="0.2"
+            max="3"
+            step="0.25"
+            :value="settings.playback.playbackSpeed"
+            class="w-full"
+            @input="
+              settings.updatePlayback({
+                playbackSpeed: parseFloat(($event.target as HTMLInputElement).value)
+              })
+            "
+          />
+        </div>
+      </div>
+
+      <!-- PiP -->
+      <div v-if="tab === 'pip'" class="space-y-6 max-w-2xl">
+        <div>
+          <h2 class="text-sm font-semibold mb-3">Obraz w obrazie (PiP)</h2>
+          <p class="text-xs text-fg-faint mb-4">
+            Dostosuj ustawienia PiP. Zmiany są widoczne natychmiast jeśli PiP jest otwarte.
+          </p>
+
+          <div class="p-4 rounded-xl bg-bg-elevated border border-border-default space-y-4">
+            <!-- preview button -->
+            <div class="flex items-center justify-between pb-3 border-b border-border-default">
+              <span class="text-sm">Podgląd PiP</span>
               <button
-                v-for="p in pipPositions"
-                :key="p.value"
-                class="px-4 py-2 rounded-xl text-sm border transition-colors"
+                class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
                 :class="
-                  settings.playback.pipPosition === p.value
-                    ? 'border-accent-base bg-accent-ghost text-accent-base font-medium'
-                    : 'border-border-default text-fg-muted hover:bg-bg-hover'
+                  pipPreviewOpen
+                    ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                    : 'bg-accent-base text-white hover:bg-accent-hover'
                 "
-                @click="settings.updatePlayback({ pipPosition: p.value })"
+                @click="toggleSettingsPiP"
               >
-                {{ p.label }}
+                {{ pipPreviewOpen ? 'Zamknij podgląd' : 'Pokaż podgląd' }}
               </button>
             </div>
-          </div>
-          <div>
-            <h2 class="text-sm font-semibold mb-3">
-              Szerokość: {{ settings.playback.pipWidth }}px
-            </h2>
-            <input
-              type="range"
-              min="240"
-              max="1200"
-              step="10"
-              :value="settings.playback.pipWidth"
-              class="w-full"
-              @input="
-                settings.updatePlayback({
-                  pipWidth: parseInt(($event.target as HTMLInputElement).value)
-                })
-              "
-            />
-          </div>
-          <div>
-            <h2 class="text-sm font-semibold mb-3">
-              Wysokość: {{ settings.playback.pipHeight }}px
-            </h2>
-            <input
-              type="range"
-              min="140"
-              max="800"
-              step="10"
-              :value="settings.playback.pipHeight"
-              class="w-full"
-              @input="
-                settings.updatePlayback({
-                  pipHeight: parseInt(($event.target as HTMLInputElement).value)
-                })
-              "
-            />
+
+            <!-- position -->
+            <div>
+              <h3 class="text-sm font-semibold mb-3">Pozycja okna</h3>
+              <div class="flex gap-2">
+                <button
+                  v-for="p in pipPositions"
+                  :key="p.value"
+                  class="px-4 py-2 rounded-xl text-sm border transition-colors"
+                  :class="
+                    settings.playback.pipPosition === p.value
+                      ? 'border-accent-base bg-accent-ghost text-accent-base font-medium'
+                      : 'border-border-default text-fg-muted hover:bg-bg-hover'
+                  "
+                  @click="settings.updatePlayback({ pipPosition: p.value })"
+                >
+                  {{ p.label }}
+                </button>
+              </div>
+            </div>
+
+            <!-- width -->
+            <div>
+              <h3 class="text-sm font-semibold mb-3">
+                Szerokość: {{ settings.playback.pipWidth }}px
+              </h3>
+              <input
+                type="range"
+                min="240"
+                max="1200"
+                step="10"
+                :value="settings.playback.pipWidth"
+                class="w-full"
+                @input="
+                  settings.updatePlayback({
+                    pipWidth: parseInt(($event.target as HTMLInputElement).value)
+                  })
+                "
+              />
+            </div>
+
+            <!-- height -->
+            <div>
+              <h3 class="text-sm font-semibold mb-3">
+                Wysokość: {{ settings.playback.pipHeight }}px
+              </h3>
+              <input
+                type="range"
+                min="140"
+                max="800"
+                step="10"
+                :value="settings.playback.pipHeight"
+                class="w-full"
+                @input="
+                  settings.updatePlayback({
+                    pipHeight: parseInt(($event.target as HTMLInputElement).value)
+                  })
+                "
+              />
+            </div>
           </div>
         </div>
       </div>

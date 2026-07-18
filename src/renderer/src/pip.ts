@@ -24,7 +24,6 @@ interface PipSubtitleData {
 }
 
 async function main() {
-  console.log('[PiP][renderer] main -> initializing')
   const styleEl = document.createElement('style')
   styleEl.textContent = STYLE
   document.head.appendChild(styleEl)
@@ -46,7 +45,6 @@ async function main() {
   let waitingForPlay = false
 
   v.onloadedmetadata = () => {
-    console.log(`[PiP][renderer] loadedmetadata -> ${new Date().toISOString()}, duration: ${fmt(v.duration)}, waitingForPlay: ${waitingForPlay}`)
     durT.textContent = fmt(v.duration)
     if (pendingStart > 0) {
       v.currentTime = pendingStart
@@ -62,7 +60,6 @@ async function main() {
   }
 
   v.onended = () => {
-    console.log('[PiP][renderer] video ended')
     window.api.send('pip:ended')
   }
 
@@ -81,7 +78,6 @@ async function main() {
     closeBtn.style.color = '#aaa'
   }
   closeBtn.onclick = () => {
-    console.log('[PiP][renderer] close button clicked -> sending pip:hidden')
     window.api.send('pip:hidden')
   }
   const wrap = document.getElementById('wrap') as HTMLDivElement
@@ -90,7 +86,6 @@ async function main() {
 
   window.api.on('pip:videoSrc', (...args: unknown[]) => {
     const { src, start } = args[0] as { src: string; start: number }
-    console.log(`[PiP][renderer] pip:videoSrc -> ${new Date().toISOString()}, start: ${start}, src: ${src.substring(0, 100)}`)
     pendingStart = start || 0
     waitingForPlay = true
     v.src = src
@@ -98,7 +93,6 @@ async function main() {
 
   window.api.on('pip:play', (...args: unknown[]) => {
     const startTime = args[0] as number
-    console.log(`[PiP][renderer] pip:play -> ${new Date().toISOString()}, startTime: ${startTime}, currentSrc: ${v.src.substring(0, 100)}, readyState: ${v.readyState}`)
     waitingForPlay = false
     if (startTime > 0) v.currentTime = startTime
     v.play().catch(() => {})
@@ -109,12 +103,10 @@ async function main() {
   })
 
   window.api.on('pip:pause', () => {
-    console.log('[PiP][renderer] pip:pause -> pausing video only (keeping loaded)')
     v.pause()
   })
 
   window.api.on('pip:clear', () => {
-    console.log('[PiP][renderer] pip:clear -> clearing video + subtitles')
     clearSubtitle()
     waitingForPlay = false
     v.pause()
@@ -126,13 +118,11 @@ async function main() {
 
   async function loadSubtitle(data: PipSubtitleData) {
     try {
-      console.log('[PiP][renderer] loadSubtitle -> destroying old JASSUB:', !!jassub)
       if (jassub) {
         jassub.destroy()
         jassub = null
       }
       const fonts = data.fonts.map((f) => new Uint8Array(f.data))
-      console.log('[PiP][renderer] loadSubtitle -> fonts:', fonts.length, 'subContent length:', data.subContent.length)
       const [wasmData, modernWasmData] = await Promise.all([
         fetch(wasmUrl).then((r) => r.arrayBuffer()),
         fetch(modernWasmUrl).then((r) => r.arrayBuffer())
@@ -160,15 +150,11 @@ async function main() {
         defaultFont: 'arial'
       })
       await jassub.ready
-      console.log('[PiP][renderer] JASSUB ready OK')
-    } catch (e) {
-      console.error('[PiP][renderer] JASSUB failed:', e)
-    }
+    } catch {}
   }
 
   function clearSubtitle() {
     if (jassub) {
-      console.log('[PiP][renderer] clearSubtitle -> destroying JASSUB')
       jassub.destroy()
       jassub = null
     }

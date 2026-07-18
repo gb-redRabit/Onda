@@ -198,7 +198,6 @@ app.whenReady().then(() => {
         } | null
       }
     ) => {
-      console.log(`[PiP][ipc] pip:start received at ${new Date().toISOString()}, src: ${videoSrc.substring(0, 100)}`)
       return pipManager.show({
         src: videoSrc,
         startTime: pipSettings?.startTime || 0,
@@ -214,6 +213,26 @@ app.whenReady().then(() => {
     pipManager.stop()
     return true
   })
+
+  ipcMain.handle(
+    'pip:previewStart',
+    (_event, opts: { position?: string; width?: number; height?: number }) => {
+      return pipManager.showPreview(opts)
+    }
+  )
+
+  ipcMain.handle('pip:previewStop', () => {
+    pipManager.hidePreview()
+    return true
+  })
+
+  ipcMain.handle(
+    'pip:previewUpdate',
+    (_event, opts: { position?: string; width?: number; height?: number }) => {
+      pipManager.updatePreview(opts)
+      return true
+    }
+  )
 
   ipcMain.handle(
     'pip:preload',

@@ -1,4 +1,4 @@
-import type { SubtitleTrack, SubtitleSettings, MkvFont } from '@renderer/types/subtitles'
+import type { SubtitleTrack, MkvFont } from '@renderer/types/subtitles'
 import workerUrl from 'jassub/dist/worker/worker.js?worker&url'
 import wasmUrl from 'jassub/dist/wasm/jassub-worker.wasm?url'
 import modernWasmUrl from 'jassub/dist/wasm/jassub-worker-modern.wasm?url'
@@ -315,16 +315,6 @@ export function removeSubtitleTrack(): void {
   }
 }
 
-export function applySubtitleSettings(_settings: SubtitleSettings): void {
-  if (!jassubInstance) return
-  jassubInstance.timeOffset = 0
-}
-
-export function disableSubtitleOverride(): void {
-  if (!jassubInstance) return
-  jassubInstance.timeOffset = 0
-}
-
 export function destroySubtitleRenderer(): void {
   removeSubtitleTrack()
   videoEl = null
@@ -348,9 +338,7 @@ export function getLastSubtitleData(): {
   return JSON.parse(JSON.stringify(plain))
 }
 
-export async function preparePiPSubtitleData(
-  videoPath: string
-): Promise<{
+export async function preparePiPSubtitleData(videoPath: string): Promise<{
   subContent: string
   fonts: MkvFont[]
   availableFonts: Record<string, string>

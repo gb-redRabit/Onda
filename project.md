@@ -260,7 +260,11 @@ D:\Onda\
 │           │       ├── AudioTrackList.vue    # Lista utworów z okładkami
 │           │       ├── AudioVisualizer.vue   # Canvas visualizer (bars/wave/radial)
 │           │       ├── Equalizer.vue         # 10-pasmowy EQ + presety
+│           │       ├── PlayerControls.vue    # Kontrolki: play, skip, speed ±, filter, volume, time
+│           │       ├── PlayerOSD.vue         # OSD overlay (ikony: play/pause/volume/speed)
+│           │       ├── PlayerTopBar.vue      # Górny pasek (back, PiP, fullscreen)
 │           │       ├── QueuePanel.vue        # Kolejka + historia (draggable)
+│           │       ├── SubtitleTrackSelector.vue # Wybór ścieżki napisów
 │           │       └── TrackArt.vue          # Okładka: video loop / obraz / ikona
 │           │
 │           ├── views/
@@ -399,6 +403,17 @@ Użytkownik: eksplorator → odtwarzacz
 - custom PL fonty (np. "EraserDust CE PL") z MKV renderują się zamiast Arial fallbacku
 - Google fallback tylko dla nazwanych fontów brakujących lokalnie i w MKV
 
+**Dlaczego edycja stylów ASS nie ma sensu:**
+
+ASS/SSA to złożony format z bogatym systemem stylów zawierającym: nazwy czcionek, rozmiary, kolory (z kanałem alpha), obwódki, cienie, pozycjonowanie (alignment 1-9), marginesy, obrót, skala, i wiele innych właściwości. Próba nadpisania tych stylów (np. przez `styleOverride` lub `setStyle`) psuje wygląd napisów, bo:
+
+1. Oryginalne pliki ASS często mają wiele stylów (nie tylko "Default") — np. style dla postaci, efektów specjalnych, piosenek
+2. Każdy styl może mieć różne czcionki, kolory i pozycjonowanie
+3. JASSUB renderuje ASS zgodnie ze specyfikacją — modyfikacja stylów łamie kompatybilność
+4. Nawet proste zmiany (rozmiar czcionki) mogą zmienić układ i czytelność
+
+Dlatego edycja stylów ASS została porzucona — lepiej zostawić oryginalny styl z pliku.
+
 ---
 
 ## 6. IPC API (Main ↔ Renderer)
@@ -451,6 +466,9 @@ Użytkownik: eksplorator → odtwarzacz
 | `pip:preload`         | Preload: wyślij wideo + napisy, bez play/show     |
 | `pip:loadtrack`       | Zmień utwór w PiP: wideo + napisy + play od 0     |
 | `pip:updateSubtitle`  | Aktualizacja napisów w PiP (bez zmiany wideo)     |
+| `pip:previewStart`    | Pokaż okno podglądu PiP (ustawienia)              |
+| `pip:previewStop`     | Zamknij okno podglądu PiP                         |
+| `pip:previewUpdate`   | Aktualizuj pozycję/rozmiar podglądu na żywo       |
 
 | Kanał (on/send)       | Opis                                              |
 | --------------------- | ------------------------------------------------- |
@@ -470,6 +488,8 @@ Użytkownik: eksplorator → odtwarzacz
 **Renderer (`pip.ts`):** Wpis PiP bundle — JASSUB, listenery `pip:videoSrc`/`pip:play`/`pip:pause`/`pip:clear`/`pip:subtitle`, close button → `pip:hidden`, progress bar, timestamp display.
 
 **Composable (`usePiP.ts`):** `usePiP({onClosed, onEnded})` — interfejs renderera: `start()`, `stop()`, `preload()`, `loadTrack()`, `loadTrackFromCurrent()`, `updateSubtitle()`.
+
+**Preview window (settings):** Osobny `BrowserWindow` (showPreview/hidePreview/updatePreview) — czarne tło "Podgląd PiP", alwaysOnTop, frameless, bez video. Sluzy do podglądu pozycji/rozmiaru PiP w ustawieniach. Całkowicie niezależny od głównego PiP — nie dotyka istniejącego okna PiP ani żadnych zasobów playera.
 
 **Kluczowe zachowania:**
 
@@ -540,6 +560,16 @@ Użytkownik: eksplorator → odtwarzacz
 ### 7.2 `settings.ts` — Ustawienia
 
 **Sekcje:** `appearance`, `playback`, `download`, `shortcuts`, `ffmpeg`, `subtitles`
+
+**Playback settings (rozbudowane):**
+- `playbackSpeed` — prędkość odtwarzania (0.2–3.0, default 1.0)
+- `videoFilter` — filtr CSS na `<video>` (none, grayscale, sepia, contrast, brightness, saturate, invert, blur, hue-rotate)
+- `cursorHide` — ukrywanie kursora w fullscreenie (default true)
+- `cursorTimeout` — czas do ukrycia kursora w sekundach (default 3)
+- `pipPosition` — pozycja okna PiP (bottom-right, bottom-left, top-right, top-left)
+- `pipWidth` / `pipHeight` — rozmiar okna PiP (default 480×290)
+
+**Zachowanie:** `playbackSpeed` i `videoFilter` resetują się do defaultów przy każdej zmianie utworu (onMounted + currentTrack watcher).
 
 **Persystencja:** Cały obiekt → electron-store w main process (przez IPC `settings:get/set`)
 
@@ -722,6 +752,30 @@ Lazy loading: `() => import(...)` w routerze. Transition fade między widokami.
 - [x] Lokalne fonty Windows (18 fontów w `public/fonts`) jako baza `availableFonts`
 - [x] Google Fonts fallback (lfa-ponyfill `queryRemoteFonts`) dla nazwanych fontów w ASS
 - [x] OSD overlay + sterowanie gestami + playback rate
+- [x] **Cursor hide w fullscreen** — ukrywa się po `cursorTimeout` sekundach bez ruchu myszy, przywraca na ruch. CSS `.hide-cursor *` wymusza `cursor: none !important` na wszystkich elementach (nie tylko kontenerze)
+- [x] **Speed cycling ±** — przyciski `<`/`>` wokół Gauge icon, kroki: 0.2–3.0x. Reset do 1.0x przy nowym utworze
+- [x] **Video filters** — dropdown w kontrolierach: none/grayscale/sepia/contrast/brightness/saturate/invert/blur/hue-rotate. CSS filter na `<video>`. Reset do "none" przy nowym utworze
+- [x] **Skip zones** — lewe/prawe 20% okna: hover pokazuje -10s/+10s. Shift+strzałka = ±30s
+- [x] **Keyboard shortcuts** — Spacja/K=play, ←/→=skip, ↑/↓=volume, M=mute, F=fullscreen, `<`/`>`=speed, 0=jump start. Skróty zdefiniowane w `constants.ts`
+
+**Skróty klawiszowe (player):**
+
+| Klawisz | Akcja |
+|---------|-------|
+| Spacja / K | Play / Pause |
+| ← | Skip -10s (Shift: -30s) |
+| → | Skip +10s (Shift: +30s) |
+| ↑ | Głośność +5% |
+| ↓ | Głośność -5% |
+| M | Wycisz |
+| F | Fullscreen |
+| `<` | Prędkość -0.25x |
+| `>` | Prędkość +0.25x |
+| 0 | Skok do 0:00 |
+| MediaPlayPause | Play/Pause (systemowe) |
+| MediaStop | Stop (systemowe) |
+| MediaNextTrack | Następny utwór |
+| MediaPreviousTrack | Poprzedni utwór |
 
 **Pozostało:**
 
@@ -764,6 +818,9 @@ Lazy loading: `() => import(...)` w routerze. Transition fade między widokami.
 - [x] Picture-in-Picture (pozycja, rozmiar)
 - [x] Zapamiętywanie pozycji (audio/wideo, czas)
 - [x] **Zależności** — Settings tab: status check (cache), instalacja FFmpeg (choco), instalacja yt-dlp (GitHub binary)
+- [x] **PiP preview** — osobna zakładka PiP w ustawieniach: live editing (sliders pozycja/rozmiar natychmiast aktualizują okno), przycisk "Pokaż podgląd" (osobne okno BrowserWindow), auto-close przy opuszczeniu zakładki
+- [x] **Skróty klawiszowe** — zakładka w ustawieniach, podgląd wszystkich skrótów playera + systemowych
+- [x] **Odtwarzanie** — cursor hide (fullscreen), cursor timeout, prędkość domyślna, filtry wideo
 - [ ] Theme: motyw, kolor akcentu, rozmiar czcionki, density, animacje, transparencja
 - [ ] Odtwarzanie: crossfade time, normalization, gapless toggle, auto-pause
 - [ ] Pobieranie: ścieżka, format, jakość, template nazwy, limit
@@ -884,9 +941,11 @@ Views → czytają store'y + wywołują akcje store
 | `subtitles.ts`           | ~920  | Parser SRT/VTT/ASS z tagami HTML i ASS                                                  |
 | `useSubtitleRenderer.ts` | ~315  | **JASSUB** — inicjalizacja wasm/worker, buildFontMap (lokalne+Google+MKV), binary fonts |
 | `player.ts`              | ~310  | Player store — stan, kolejka, akcje, loadEmbeddedSubtitle(fonts z MKV)                  |
-| `PlayerView.vue`         | ~1200 | Odtwarzacz video/audio — fullscreen, PiP, napisy, EQ toggle                             |
+| `PlayerView.vue`         | ~600  | Odtwarzacz video/audio — fullscreen, PiP, napisy, EQ toggle, cursor hide, speed cycling, skip zones, video filters, keyboard shortcuts |
+| `pip-manager.ts`         | ~370  | PipManager singleton — PiP window + preview window, position/size, show/hide, IPC        |
+| `PlayerControls.vue`     | ~270  | Kontrolki playera: play/pause, skip, speed ±, filter dropdown, volume, time display     |
 | `PlayerBar.vue`          | ~500  | Dolny pasek — controls, progress (drag-to-seek), volume                                 |
-| `constants.ts`           | ~200  | Formaty, presety EQ, motywy, defaults                                                   |
+| `constants.ts`           | ~200  | Formaty, presety EQ, motywy, defaults, shortcuts, playback defaults                     |
 | `trackMetadata.ts`       | ~220  | enrichTrack(), resolveCover() — metadane + okładki                                      |
 
 ---
@@ -943,4 +1002,54 @@ Views → czytają store'y + wywołują akcje store
 
 ---
 
-Ostatnia aktualizacja: 2026-07-17 (JASSUB napisy: mkvextract binary fonts z MKV, lokalne Windows fonty, Google fallback; nowa zależność MKVToolbox w ustawieniach)
+Ostatnia aktualizacja: 2026-07-18 (PiP module complete; edycja stylów ASS porzucona; player UI: cursor hide, speed cycling, video filters, skip zones, keyboard shortcuts; PiP settings preview; cursor fix CSS !important)
+
+---
+
+## 16. Przyszłe ulepszenia
+
+### 16.1 Edycja prostych napisów (SRT, VTT, SUB)
+
+Formaty takie jak SRT, VTT i SUB nie posiadają złożonego systemu stylów jak ASS — mają tylko tekst, czas i podstawowe formatowanie (pogrubienie, kursywa). Dlatego edycja tych formatów jest realna i nie psuje wyglądu.
+
+**Co można edytować:**
+- Tekst napisów
+- Timing (start/end)
+- Podstawowe formatowanie (bold/italic)
+
+**Implementacja:**
+- Prosty edytor textarea z podglądem na żywo
+- Przesuwanie czasu (offset wszystkich napisów)
+- Import/Export plików SRT/VTT
+
+### 16.2 Własny renderer napisów (bez JASSUB)
+
+JASSUB jest świetny do renderowania ASS/SSA z ich złożonymi stylami, ale dla prostych formatów (SRT, VTT) jest overkill. Własny renderer mógłby:
+
+**Zalety:**
+- Lepsza kontrola nad wyglądem
+- Brak zależności od WebAssembly
+- Łatwiejsza customizacja stylów
+- Szybsze ładowanie dla prostych formatów
+
+**Implementacja:**
+- Canvas renderer dla napisów
+- Parser SRT/VTT → struktury danych
+- Stylowanie CSS/Canvas (kolory, czcionki, cień, obwódka)
+- synchronizacja z video elementem
+
+**Architektura:**
+```
+useSimpleSubtitleRenderer.ts
+├── parseSRT(content) → SubtitleEvent[]
+├── parseVTT(content) → SubtitleEvent[]
+├── renderSubtitles(events, time, canvas)
+└── applyStyleSettings(settings)
+```
+
+### 16.3 Hybrydowy system napisów
+
+Kombinacja obu podejść:
+- ASS/SSA → JASSUB (zachowuje oryginalne style)
+- SRT/VTT/SUB → własny renderer (pełna kontrola)
+- Auto-detect formatu i wybranie odpowiedniego renderera

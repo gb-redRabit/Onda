@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, reactive, computed } from 'vue'
 import type { MediaFile } from '@renderer/types/media'
-import type { SubtitleTrack, SubtitleSettings, MkvFont } from '@renderer/types/subtitles'
+import type { SubtitleTrack, MkvFont } from '@renderer/types/subtitles'
 
 export const usePlayerStore = defineStore('player', () => {
   const currentTrack = ref<MediaFile | null>(null)
@@ -28,17 +28,6 @@ export const usePlayerStore = defineStore('player', () => {
 
   const subtitleTracks = ref<SubtitleTrack[]>([])
   const activeSubtitleId = ref<string | null>(null)
-  const subtitleSettings = reactive<SubtitleSettings>({
-    fontSize: 24,
-    fontName: 'Arial',
-    opacity: 0.75,
-    textColor: '#FFFFFF',
-    bgColor: '#000000',
-    position: 'bottom',
-    margin: 30,
-    bold: false,
-    italic: false
-  })
 
   const hasTrack = computed(() => currentTrack.value !== null)
   const progress = computed(() => (duration.value > 0 ? currentTime.value / duration.value : 0))
@@ -296,7 +285,6 @@ export const usePlayerStore = defineStore('player', () => {
     enrichTrack,
     subtitleTracks,
     activeSubtitleId,
-    subtitleSettings,
     loadSubtitles,
     loadEmbeddedSubtitle,
     setActiveSubtitle,

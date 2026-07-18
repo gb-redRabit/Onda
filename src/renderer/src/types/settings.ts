@@ -32,6 +32,10 @@ export interface PlaybackSettings {
   pipPosition: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
   pipWidth: number
   pipHeight: number
+  cursorHide: boolean
+  cursorTimeout: number
+  playbackSpeed: number
+  videoFilter: string
 }
 
 export interface DownloadSettings {

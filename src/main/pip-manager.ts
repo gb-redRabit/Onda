@@ -26,6 +26,7 @@ interface PendingData {
 
 class PipManager {
   private window: BrowserWindow | null = null
+  private previewWindow: BrowserWindow | null = null
   private lastTime = 0
   private timeTimer: ReturnType<typeof setInterval> | null = null
   private ready = false
@@ -48,13 +49,11 @@ class PipManager {
   }
 
   init(): void {
-    console.log('[PiP][manager] init -> creating hidden window')
     this.createWindow()
     this.registerIpc()
   }
 
   private createWindow(): void {
-    console.log('[PiP][manager] createWindow')
     this.window = new BrowserWindow({
       width: 480,
       height: 290,
@@ -76,7 +75,6 @@ class PipManager {
     })
 
     this.window.on('closed', () => {
-      console.warn('[PiP][manager] window CLOSED -> should not happen during normal use')
       this.window = null
       this.ready = false
       this.loadedSrc = null
@@ -90,15 +88,10 @@ class PipManager {
     }
 
     this.window.webContents.on('did-finish-load', () => {
-      console.log('[PiP][manager] did-finish-load -> ready=true')
       this.ready = true
       if (this.pendingData) {
         const pd = this.pendingData
         this.pendingData = null
-        console.log(
-          '[PiP][manager] did-finish-load -> flushing pending, autoPlay:',
-          pd.autoPlay
-        )
         this.sendVideoSrc(pd.src, pd.subtitle, 0)
         if (pd.autoPlay) {
           this.sendPlay(pd.startTime)
@@ -110,7 +103,6 @@ class PipManager {
 
   private registerIpc(): void {
     ipcMain.on('pip:hidden', () => {
-      console.log('[PiP][manager] received pip:hidden -> hiding window')
       this.hide()
       this.notifyClosed()
     })
@@ -120,7 +112,6 @@ class PipManager {
     })
 
     ipcMain.on('pip:ended', () => {
-      console.log('[PiP][manager] received pip:ended -> video finished')
       this.stopTimeTracking()
       this.loadedSrc = null
       this.mainWindow?.webContents.send('pip:ended')
@@ -129,20 +120,17 @@ class PipManager {
 
   private sendToRenderer(channel: string, ...args: unknown[]): void {
     if (!this.window || this.window.isDestroyed()) {
-      console.warn('[PiP][manager] sendToRenderer -> window null or destroyed, channel:', channel)
       return
     }
     this.window.webContents.send(channel, ...args)
   }
 
   private sendPlay(startTime: number): void {
-    console.log('[PiP][manager] sendPlay -> startTime:', startTime)
     this.sendToRenderer('pip:play', startTime)
   }
 
   private notifyClosed(): void {
     const time = this.lastTime
-    console.log('[PiP][manager] notifyClosed -> time:', time)
     this.mainWindow?.webContents.send('pip:closed', time)
   }
 
@@ -212,37 +200,29 @@ class PipManager {
     startTime: number
   ): void {
     if (!this.window || this.window.isDestroyed()) {
-      console.warn('[PiP][manager] sendVideoSrc -> window null, abort')
       return
     }
-    console.log('[PiP][manager] sendVideoSrc -> src:', src.substring(0, 80), 'start:', startTime)
     this.window.webContents.send('pip:videoSrc', { src, start: startTime || 0 })
     this.loadedSrc = src
 
     if (subtitle && subtitle.subContent) {
-      console.log('[PiP][manager] sendVideoSrc -> subtitle length:', subtitle.subContent.length)
       this.window.webContents.send('pip:subtitle', subtitle)
     } else if (subtitle !== undefined) {
-      console.log('[PiP][manager] sendVideoSrc -> no subtitle, clearing')
       this.window.webContents.send('pip:clearSubtitle')
     }
   }
 
   preload(src: string, subtitleData: PipSubtitleData | null): void {
     this.ensureWindow()
-    console.log(`[PiP][manager] preload -> src: ${src.substring(0, 100)} (ready: ${this.ready})`)
 
     if (this.ready) {
       this.sendVideoSrc(src, subtitleData, 0)
-      console.log(`[PiP][manager] preload -> loadedSrc now: ${this.loadedSrc?.substring(0, 100)}`)
     } else {
-      console.log('[PiP][manager] preload -> not ready, buffering')
       this.pendingData = { src, subtitle: subtitleData, autoPlay: false, startTime: 0 }
     }
   }
 
   show(options: PipShowOptions): boolean {
-    console.log(`[PiP][manager] show -> startTime: ${options.startTime} (${new Date().toISOString()})`)
     const win = this.ensureWindow()
 
     const bounds = this.positionWindow(options)
@@ -255,16 +235,10 @@ class PipManager {
     if (this.ready) {
       const loaded = this.loadedSrc ? PipManager.normalizeFilePath(this.loadedSrc) : null
       const requested = options.src ? PipManager.normalizeFilePath(options.src) : null
-      console.log(`[PiP][manager] show -> loadedSrc: ${this.loadedSrc?.substring(0, 100) || 'null'}`)
-      console.log(`[PiP][manager] show -> loaded norm: ${loaded || 'null'}`)
-      console.log(`[PiP][manager] show -> requested norm: ${requested || 'null'}`)
-      console.log(`[PiP][manager] show -> match: ${loaded && requested && loaded === requested}`)
       if (loaded && requested && loaded === requested) {
-        console.log(`[PiP][manager] show -> already preloaded, JUST PLAYING at ${options.startTime}`)
         this.sendPlay(options.startTime || 0)
         this.startTimeTracking()
       } else {
-        console.log(`[PiP][manager] show -> fresh load, sending VIDEO + SUBTITLE + PLAY`)
         this.sendVideoSrc(options.src, options.subtitle, options.startTime || 0)
         this.sendPlay(options.startTime || 0)
         this.startTimeTracking()
@@ -283,7 +257,6 @@ class PipManager {
 
   loadTrack(src: string, subtitleData: PipSubtitleData | null): void {
     this.ensureWindow()
-    console.log('[PiP][manager] loadTrack -> src:', src.substring(0, 80))
 
     if (this.ready) {
       this.lastTime = 0
@@ -296,30 +269,25 @@ class PipManager {
   }
 
   play(startTime: number): void {
-    console.log('[PiP][manager] play -> startTime:', startTime)
     this.lastTime = startTime
     this.sendPlay(startTime)
     this.startTimeTracking()
   }
 
   hide(): void {
-    console.log('[PiP][manager] hide')
     this.stopTimeTracking()
     if (this.window && !this.window.isDestroyed()) {
       this.window.webContents.send('pip:pause')
       this.window.hide()
-      console.log('[PiP][manager] hide -> window hidden, video paused (NOT cleared), loadedSrc preserved')
     }
   }
 
   stop(): void {
-    console.log('[PiP][manager] stop')
     this.stopTimeTracking()
     if (this.window && !this.window.isDestroyed()) {
       this.window.webContents.send('pip:clear')
       this.window.hide()
       this.loadedSrc = null
-      console.log('[PiP][manager] stop -> window hidden + cleared + loadedSrc reset')
     }
     this.notifyClosed()
   }
@@ -327,10 +295,8 @@ class PipManager {
   updateSubtitle(data: PipSubtitleData | null): void {
     if (!this.window || this.window.isDestroyed()) return
     if (data && data.subContent) {
-      console.log('[PiP][manager] updateSubtitle -> subContent length:', data.subContent.length)
       this.window.webContents.send('pip:subtitle', data)
     } else {
-      console.log('[PiP][manager] updateSubtitle -> clearing')
       this.window.webContents.send('pip:clearSubtitle')
     }
   }
@@ -343,11 +309,106 @@ class PipManager {
     return !!this.window && !this.window.isDestroyed() && this.window.isVisible()
   }
 
+  showPreview(opts: { position?: string; width?: number; height?: number }): boolean {
+    if (this.previewWindow && !this.previewWindow.isDestroyed()) {
+      this.previewWindow.destroy()
+    }
+    this.previewWindow = null
+
+    const pw = opts.width || 480
+    const ph = opts.height || 290
+    const pos = opts.position || 'bottom-right'
+    const display = screen.getPrimaryDisplay().workAreaSize
+    const margin = 20
+    let x: number, y: number
+
+    switch (pos) {
+      case 'bottom-left':
+        x = margin
+        y = display.height - ph - margin
+        break
+      case 'top-right':
+        x = display.width - pw - margin
+        y = margin
+        break
+      case 'top-left':
+        x = margin
+        y = margin
+        break
+      default:
+        x = display.width - pw - margin
+        y = display.height - ph - margin
+        break
+    }
+
+    this.previewWindow = new BrowserWindow({
+      x,
+      y,
+      width: pw,
+      height: ph,
+      show: false,
+      alwaysOnTop: true,
+      frame: false,
+      skipTaskbar: true,
+      resizable: false,
+      backgroundColor: '#1a1a1a',
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false
+      }
+    })
+
+    this.previewWindow.loadURL(
+      `data:text/html,<!DOCTYPE html><html><head><style>*{margin:0;padding:0}body{background:#1a1a1a;height:100vh;display:flex;align-items:center;justify-content:center;color:#555;font:13px sans-serif;border:1px dashed #333;border-radius:12px;box-sizing:border-box}</style></head><body>Podgląd PiP</body></html>`
+    )
+
+    this.previewWindow.show()
+    return true
+  }
+
+  hidePreview(): void {
+    if (this.previewWindow && !this.previewWindow.isDestroyed()) {
+      this.previewWindow.destroy()
+    }
+    this.previewWindow = null
+  }
+
+  updatePreview(opts: { position?: string; width?: number; height?: number }): void {
+    if (!this.previewWindow || this.previewWindow.isDestroyed()) return
+
+    const pw = opts.width || this.previewWindow.getSize()[0]
+    const ph = opts.height || this.previewWindow.getSize()[1]
+    const pos = opts.position || 'bottom-right'
+    const display = screen.getPrimaryDisplay().workAreaSize
+    const margin = 20
+    let x: number, y: number
+
+    switch (pos) {
+      case 'bottom-left':
+        x = margin
+        y = display.height - ph - margin
+        break
+      case 'top-right':
+        x = display.width - pw - margin
+        y = margin
+        break
+      case 'top-left':
+        x = margin
+        y = margin
+        break
+      default:
+        x = display.width - pw - margin
+        y = display.height - ph - margin
+        break
+    }
+
+    this.previewWindow.setBounds({ x, y, width: pw, height: ph })
+  }
+
   destroy(): void {
-    console.log('[PiP][manager] destroy -> cleaning up')
     this.stopTimeTracking()
+    this.hidePreview()
     if (this.window && !this.window.isDestroyed()) {
-      console.log('[PiP][manager] destroy -> destroying window')
       this.window.destroy()
     }
     this.window = null
