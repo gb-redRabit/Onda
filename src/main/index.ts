@@ -6,7 +6,10 @@ import { registerIPC } from './ipc/handlers';
 import { pipManager } from './pip-manager';
 
 let mainWindow: BrowserWindow | null = null;
+let splashWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
+let mainReady = false;
+let minTimerDone = false;
 
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -17,7 +20,7 @@ function createWindow(): BrowserWindow {
     show: false,
     frame: false,
     titleBarStyle: 'hidden',
-    backgroundColor: '#0f0f0f',
+    backgroundColor: '#0f0f17',
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -29,7 +32,7 @@ function createWindow(): BrowserWindow {
   });
 
   win.on('ready-to-show', () => {
-    win.show();
+    if (!splashWindow) win.show();
   });
 
   win.on('maximize', () => {
@@ -153,6 +156,50 @@ function registerGlobalShortcuts(): void {
   }
 }
 
+function createSplashWindow(): BrowserWindow {
+  const splash = new BrowserWindow({
+    width: 400,
+    height: 300,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    ...(process.platform === 'linux' ? { icon } : {}),
+    webPreferences: {
+      sandbox: true
+    }
+  });
+
+  splash.loadFile(join(__dirname, '../../resources/splash.html'));
+  return splash;
+}
+
+function checkAndShow(): void {
+  if (mainReady && minTimerDone) {
+    splashWindow?.close();
+    splashWindow = null;
+    mainWindow?.show();
+    mainWindow?.focus();
+  }
+}
+
+function onMainReady(): void {
+  mainReady = true;
+  checkAndShow();
+}
+
+function forceCloseSplash(): void {
+  if (splashWindow) {
+    splashWindow.close();
+    splashWindow = null;
+    if (!mainWindow?.isVisible()) {
+      mainWindow?.show();
+      mainWindow?.focus();
+    }
+  }
+}
+
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.onda.app');
 
@@ -160,12 +207,22 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window);
   });
 
+  splashWindow = createSplashWindow();
+
   registerIPC();
   mainWindow = createWindow();
+  mainWindow.webContents.on('did-finish-load', onMainReady);
   pipManager.setMainWindow(mainWindow);
   pipManager.init();
   setupTray();
   registerGlobalShortcuts();
+
+  setTimeout(() => {
+    minTimerDone = true;
+    checkAndShow();
+  }, 1000);
+
+  setTimeout(forceCloseSplash, 10000);
 
   ipcMain.handle(
     'window:createChild',
@@ -286,6 +343,7 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       mainWindow = createWindow();
+      mainWindow.webContents.on('did-finish-load', onMainReady);
     }
   });
 });
@@ -294,6 +352,8 @@ app.on('window-all-closed', () => {
   globalShortcut.unregisterAll();
   tray?.destroy();
   tray = null;
+  splashWindow?.destroy();
+  splashWindow = null;
   pipManager.destroy();
   if (process.platform !== 'darwin') {
     app.quit();

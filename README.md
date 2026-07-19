@@ -14,6 +14,7 @@ Onda obsługuje odtwarzanie lokalnych plików audio/wideo, eksplorację plików,
   - Wyciąganie czcionek z MKV (mkvextract), lokalne fonty Windows, Google Fonts fallback
 - **Wideo** — fullscreen, Picture-in-Picture, OSD, playback rate
 - **Okładki** — embedded, folder images, cover video matching
+- **Splash screen** — animowana wizualizacja dźwiękowa na canvas (standalone HTML, zero deps)
 - **Dodatkowo** — ReplayGain / normalizacja, zapamiętywanie pozycji, favorites, playlisty, Media Session API, tray icon, global shortcuts, drag & drop z systemu
 
 ## Architektura
@@ -90,10 +91,10 @@ npm run build:linux
 
 ## Status
 
-- ✅ Fundament i architektura modułowa
+- ✅ Fundament i architektura modułowa + splash screen
 - ✅ UI skeleton + nawigacja + system motywów
-- ✅ Odtwarzacz multimediów (~90%)
+- ✅ Odtwarzacz multimediów (~95%) — audio w tle, wideo z PiP, napisy ASS
 - ⏳ Ustawienia (częściowo)
-- ❌ Integracja YouTube, biblioteka mediów, eksplorator plików
+- ⏳ Integracja YouTube, biblioteka mediów, eksplorator plików
 
 Szczegółowa mapa faz: [`project.md`](./project.md) sekcja 11.

@@ -2,7 +2,7 @@
 
 ## 1. Przegląd
 
-**Onda** to desktopowy odtwarzacz muzyki i wideo zbudowany na Electron + Vue 3 + TypeScript + Tailwind CSS. Aplikacja obsługuje odtwarzanie lokalnych plików audio/video, eksplorację plików, bibliotekę mediów z metadanymi ID3, equalizer, wizualizację audio, kolejki odtwarzania, napisy wideo, Picture-in-Picture oraz system motywów.
+**Onda** to desktopowy odtwarzacz muzyki i wideo zbudowany na Electron + Vue 3 + TypeScript + Tailwind CSS. Aplikacja obsługuje odtwarzanie lokalnych plików audio/video, eksplorację plików, bibliotekę mediów z metadanymi ID3, equalizer, wizualizację audio, kolejki odtwarzania, napisy wideo, Picture-in-Picture, splash screen z animowaną wizualizacją dźwiękową oraz system motywów.
 
 **Kluczowe zasady architektury:**
 1. Aplikacja jest **modułowa** — każdy główny widok (player, explorer, library, youtube) jest niezależnym modulem z własnym cyklem życia. Centralny **ModuleManager** steruje przełączaniem modułów.
@@ -112,13 +112,14 @@ D:\Onda\
 ├── build/
 │   └── entitlements.mac.plist
 ├── resources/
-│   └── icon.png
+│   ├── icon.png
+│   └── splash.html             # Splash screen (animowana wizualizacja, 131 linia)
 ├── scripts/
 │   ├── install-ytdlp.ps1
 │   └── install-ytdlp.sh
 ├── src/
 │   ├── main/                           # === MAIN PROCESS (Node.js) ===
-│   │   ├── index.ts                    # Okno, tray, skróty globalne, PiP (269 linii)
+│   │   ├── index.ts                    # Okno, tray, skróty globalne, PiP, splash screen (322 linie)
 │   │   ├── pip-manager.ts              # PipManager singleton — PiP + preview (367 linii)
 │   │   └── ipc/
 │   │       └── handlers.ts             # Wszystkie handlery IPC (718 linii)
@@ -160,7 +161,8 @@ D:\Onda\
 │           │   ├── useAudioPlayer.ts    # Singleton: audio state, store $subscribe (108 linii)
 │           │   ├── useOpenMedia.ts      # Open files from filesystem (59 linii)
 │           │   ├── usePiP.ts            # PiP composable (81 linie)
-│           │   └── useSubtitleRenderer.ts # JASSUB init + font map (335 linii)
+│           │   ├── useSubtitleRenderer.ts # JASSUB init + font map (335 linii)
+│           │   └── useVideoPlayer.ts    # Video player: setup, PiP, subtitles, watches (304 linie)
 │           │
 │           ├── types/
 │           │   ├── media.ts            # MediaFile, MediaMetadata (63 linie)
@@ -189,11 +191,12 @@ D:\Onda\
 │           │       ├── PlayerOSD.vue         # OSD overlay (40 linii)
 │           │       ├── PlayerTopBar.vue      # Górny pasek (back, PiP, fullscreen) (44 linie)
 │           │       ├── QueuePanel.vue        # Kolejka + historia (276 linii)
+│           │       ├── ResumePrompt.vue      # Prompt kontynuacji odtwarzania (34 linie)
 │           │       └── SubtitleTrackSelector.vue # Wybór ścieżki napisów (86 linii)
 │           │
 │           ├── views/
 │           │   ├── HomeView.vue        # Strona główna + drop zone (132 linie)
-│           │   ├── PlayerView.vue      # Odtwarzacz video/audio fullscreen (648 linii)
+│           │   ├── PlayerView.vue      # Odtwarzacz video — UI orchestration (357 linii)
 │           │   ├── AudioView.vue       # Widok audio: wizualizacja + EQ (18 linii)
 │           │   ├── ExplorerView.vue    # Eksplorator plików (285 linii)
 │           │   ├── LibraryView.vue     # Biblioteka mediów (175 linii)
@@ -689,6 +692,7 @@ Lazy loading: `() => import(...)` w routerze (98 linii). Transition fade (`opaci
 - [x] **audioEngine.ts** — wyodrębniony silnik audio (447 linii)
 - [x] **useAudioPlayer.ts** — singleton audio state bridge z $subscribe (108 linii)
 - [x] Router `afterEach` guard → smart path: audio w tle bez dezaktywacji playera
+- [x] **Splash screen** — `resources/splash.html` (standalone HTML, inline CSS, animowana wizualizacja dźwiękowa na canvas) + `createSplashWindow()` / `checkAndShow()` / `forceCloseSplash()` w `index.ts`
 
 ### FAZA 1: UI Skeleton + Nawigacja — ✅ UKOŃCZONA
 
@@ -720,7 +724,7 @@ Lazy loading: `() => import(...)` w routerze (98 linii). Transition fade (`opaci
 - [x] Zapamiętywanie pozycji (audio/wideo, konfigurowalny czas)
 - [x] ReplayGain / Normalization
 - [x] Favorites + Playlists (IPC + electron-store)
-- [x] **Wideo player** (fullscreen, PiP z pollingiem 250ms) — 648 linii
+- [x] **Wideo player** (fullscreen, PiP z pollingiem 250ms) — useVideoPlayer composable (304 linii) + PlayerView (357 linii)
 - [x] **AudioView** — oddzielny widok audio z wizualizacją + EQ (18 linii)
 - [x] Napisy (SRT/VTT/ASS parser)
 - [x] Napisy ASS renderowane przez JASSUB (wasm + worker, canvas overlay na video)
@@ -759,13 +763,12 @@ Lazy loading: `() => import(...)` w routerze (98 linii). Transition fade (`opaci
 
 **Pozostało:**
 
-- [ ] ID3 tags wewnątrz canvas visualizera
-- [ ] Wiele presetów wizualizacji / custom presets
-- [ ] Beat detection
-- [ ] "Add to Queue" z biblioteki i YouTube
-- [ ] Zapis kolejki do M3U
-- [ ] Optymalizacja wielu cover videos
-- [ ] System napisów → `sweet-subtitle` (patrz todo.md)
+- [ ] **ID3 tags w canvas visualizera** — nałożenie metadanych (tytuł, artysta, album) na canvas AudioVisualizer
+- [ ] **Custom presets wizualizacji** — gotowe preset (Neon, Sunset, Monochrome) + zapis własnych (kolory, bar count, smoothing)
+- [ ] **Beat detection** — analiza FFT/transjentów → detekcja beatów + BPM estimation + efekty wizualne sync
+- [ ] **"Add to Queue" z biblioteki/YouTube** — context menu na utworze w LibraryView + przycisk "Queue" w YouTubeView
+- [ ] **Zapis kolejki do M3U** — eksport aktualnej kolejki jako .m3u (dialog:saveFile + generowanie EXTINF)
+- [ ] **Optymalizacja cover videos** — lazy loading (IntersectionObserver), limit aktywnych <video>, placeholder gdy hidden
 
 ### FAZA 3: YouTube Integration — ❌ NIEZACZĘTA
 
@@ -934,13 +937,15 @@ usePiP.ts (81 linie)
 ├── IPC pip:* (start, stop, preload, loadTrack, updateSubtitle)
 └── callbacks (onClosed, onEnded)
 
-PlayerView.vue (648 linii)
-├── player store (currentTrack, isPlaying, repeat, pipActive, etc.)
-├── useSubtitleRenderer (init, load, remove, destroy, preparePiP)
+PlayerView.vue (357 linii)
+├── useVideoPlayer composable (setup, PiP, subtitles, watches, lifecycle)
+│   ├── videoRef, videoFilterStyle, onVideoRef, togglePiP, init, destroy
+│   ├── audioEngine.connectVideoElement / disconnectVideoElement
+│   └── useSubtitleRenderer (init, load, remove, destroy, preparePiPSubtitleData)
 ├── usePiP (start, stop, preload, loadTrack)
-├── audioEngine (connectVideoElement, disconnectVideoElement, setupVideoListeners)
-├── WŁASNY stan: currentTime, isPlaying (niezależny od audio)
-└── watch(currentTrack) → setupVideo → src + play
+├── player store (currentTrack, isPlaying, repeat, pipActive, etc.)
+├── WŁASNY stan: OSD, controls visibility, fullscreen, keyboard shortcuts
+└── ResumePrompt component (resume prompt overlay)
 
 AudioView.vue (18 linii)
 ├── player store (currentTrack, isPlaying)
@@ -963,9 +968,10 @@ Views → czytają store'y + wywołują akcje store (BEZ moduleManager.switchTo 
 | ------------------------ | ----- | --------------------------------------------------------------------------------------- |
 | `audioEngine.ts`         | 447   | Singleton Web Audio API: gapless, crossfade, EQ, RAF loop, position memory, callbacks   |
 | `useSubtitleRenderer.ts` | 335   | JASSUB — inicjalizacja wasm/worker, buildFontMap (lokalne+Google+MKV), binary fonts     |
+| `useVideoPlayer.ts`      | 304   | Video player composable: setup, PiP, subtitles, watches, lifecycle                     |
 | `pip-manager.ts`         | 367   | PipManager singleton — PiP window + preview window, position/size, show/hide, IPC       |
 | `handlers.ts`            | 718   | Main IPC — fs, metadata, FFmpeg, mkvextract, subtitles, dialogs, pip, settings, playlists |
-| `PlayerView.vue`         | 648   | Odtwarzacz video — fullscreen, PiP, napisy, EQ, cursor hide, speed, filters, shortcuts |
+| `PlayerView.vue`         | 357   | Odtwarzacz video — UI orchestration: OSD, fullscreen, keyboard, controls                |
 | `SettingsView.vue`       | 731   | Ustawienia — PiP preview, dependencies, shortcuts, playback, themes (największy plik!)  |
 | `player.ts` (store)      | 321   | Player store — stan, kolejka, akcje, coverCache, $subscribe compatibility               |
 | `QueuePanel.vue`         | 276   | Kolejka + historia (vuedraggable)                                                       |
@@ -976,9 +982,10 @@ Views → czytają store'y + wywołują akcje store (BEZ moduleManager.switchTo 
 | `ExplorerView.vue`       | 285   | Eksplorator plików                                                                      |
 | `useAudioPlayer.ts`      | 108   | Singleton: audio state bridge, $subscribe na player store, callbacks z audioEngine      |
 | `useOpenMedia.ts`        | 59    | Otwieranie plików z filesystem → MediaFile → player store                               |
-| `main.ts` (main)         | 269   | Okno, tray, skróty globalne, PiP init                                                   |
+| `main.ts` (main)         | 322   | Okno, tray, skróty globalne, PiP init, splash screen                                  |
 | `pip.ts` (renderer)      | 158   | PiP bundle — JASSUB, listenery, progress bar, close button                              |
 | `constants.ts`           | 167   | Formaty, presety EQ, motywy, defaults, shortcuts, playback defaults                     |
+| `splash.html`            | 131   | Splash screen — standalone HTML, inline CSS, canvas wizualizacja dźwiękowa (64 barów)  |
 
 ---
 
@@ -1079,7 +1086,7 @@ Views → czytają store'y + wywołują akcje store (BEZ moduleManager.switchTo 
 
 ---
 
-Ostatnia aktualizacja: 2026-07-19 (dokładne lin counts, struktura plików zgodna z rzeczywistością, architektura audio w tle, afterEach guard)
+Ostatnia aktualizacja: 2026-07-19 (splash screen z animowaną wizualizacją dźwiękową, refaktor PlayerView → useVideoPlayer composable + ResumePrompt, opisy brakujących elementów Fazy 2, sweet-subtitle → sekcja 18)
 
 ---
 
@@ -1166,3 +1173,25 @@ Kombinacja obu podejść:
 - ASS/SSA → JASSUB (zachowuje oryginalne style)
 - SRT/VTT/SUB → własny renderer (pełna kontrola)
 - Auto-detect formatu i wybranie odpowiedniego renderera
+
+### 18.4 System napisów → `sweet-subtitle`
+
+Zastąpienie JASSUB library dedykowanym systemem napisów. `sweet-subtitle` — lekka alternatywa z lepszą obsługą formatów SRT/VTT.
+
+**Zakres:**
+- Parser SRT/VTT/ASS → jednolita struktura danych
+- Renderer canvas z overlay na `<video>`
+- Stylowanie CSS (kolory, czcionki, cień, obwódka, pozycjonowanie)
+- Font loading (lokalne + Google Fonts fallback)
+- Synchronizacja z video timeupdate
+- Obsługa wielu ścieżek napisów (wybór aktywnej)
+
+**Architektura:**
+```
+sweet-subtitle/
+├── parser.ts          — parseSRT, parseVTT, parseASS → SubtitleEvent[]
+├── renderer.ts        — canvas draw loop, stylowanie, font rendering
+├── fontManager.ts     — lokalne fonty + Google Fonts + MKV binary fonts
+├── synchronizer.ts    — timeupdate → aktywne eventy
+└── useSubtitleSystem.ts — Vue composable: init, load, destroy, active track
+```
