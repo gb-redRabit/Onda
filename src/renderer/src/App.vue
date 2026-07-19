@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import TitleBar from './components/layout/TitleBar.vue';
 import TopMenu from './components/layout/TopMenu.vue';
 import Sidebar from './components/layout/Sidebar.vue';
@@ -18,6 +18,7 @@ const settings = useSettingsStore();
 const player = usePlayerStore();
 const ui = useUIStore();
 const route = useRoute();
+const router = useRouter();
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -75,6 +76,29 @@ onBeforeUnmount(() => {
 watch(() => settings.appearance.theme, applyTheme);
 watch(() => settings.appearance.accentColor, applyTheme);
 watch(() => settings.appearance.fontSize, applyTheme);
+
+let lastTrackType: string | null = null;
+
+watch(
+  () => player.currentTrack,
+  (track) => {
+    const newType = track?.type ?? null;
+    const currentRoute = route.name as string;
+
+    if (newType !== lastTrackType) {
+      console.log('[APP] track type changed:', lastTrackType, '→', newType, 'currentRoute:', currentRoute);
+      lastTrackType = newType;
+      const onPlayerRoute = currentRoute === 'player' || currentRoute === 'audio';
+      if (onPlayerRoute && newType === 'video' && currentRoute !== 'player') {
+        console.log('[APP] → navigating to /player');
+        router.push('/player');
+      } else if (onPlayerRoute && newType === 'audio' && currentRoute !== 'audio') {
+        console.log('[APP] → navigating to /audio');
+        router.push('/audio');
+      }
+    }
+  }
+);
 </script>
 
 <template>

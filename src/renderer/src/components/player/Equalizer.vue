@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { usePlayerStore } from '@renderer/stores/player';
-import { useMediaPlayer } from '@renderer/composables/useMediaPlayer';
+import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { RotateCcw } from '@lucide/vue';
 
 const player = usePlayerStore();
-const { setEqualizerBand, applyEqPreset } = useMediaPlayer();
+const { setEqualizerBand, applyEqPreset } = useAudioPlayer();
 
 const presets: Record<string, Record<number, number>> = {
   flat: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 },

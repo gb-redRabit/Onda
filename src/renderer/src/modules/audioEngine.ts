@@ -19,6 +19,11 @@ let isCrossfading = false;
 let _initialized = false;
 let eqChainBuilt = false;
 
+let _onTimeUpdate: ((time: number) => void) | null = null;
+let _onDurationChange: ((duration: number) => void) | null = null;
+let _onPlayStateChange: ((playing: boolean) => void) | null = null;
+let _onTrackEnd: (() => void) | null = null;
+
 const eqFrequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 const savedPositions = new Map<string, number>();
 
@@ -102,32 +107,28 @@ function createAudioElement(): HTMLAudioElement {
 }
 
 function setupListeners(el: HTMLAudioElement): void {
-  const player = usePlayerStore();
   el.addEventListener('timeupdate', () => {
-    player.currentTime = el.currentTime;
+    if (_onTimeUpdate) _onTimeUpdate(el.currentTime);
   });
   el.addEventListener('durationchange', () => {
-    player.duration = el.duration || 0;
-    if (player.currentTrack) player.currentTrack.duration = el.duration || 0;
+    if (_onDurationChange) _onDurationChange(el.duration || 0);
   });
   el.addEventListener('ended', () => {
-    handleEnded();
+    if (_onTrackEnd) _onTrackEnd();
   });
   el.addEventListener('play', () => {
-    player.isPlaying = true;
+    if (_onPlayStateChange) _onPlayStateChange(true);
   });
   el.addEventListener('pause', () => {
-    if (!isCrossfading) player.isPlaying = false;
+    if (!isCrossfading && _onPlayStateChange) _onPlayStateChange(false);
   });
   el.addEventListener('loadedmetadata', () => {
-    player.duration = el.duration || 0;
-    if (player.currentTrack) player.currentTrack.duration = el.duration || 0;
+    if (_onDurationChange) _onDurationChange(el.duration || 0);
   });
 }
 
 function handleEnded(): void {
   const player = usePlayerStore();
-  const settings = useSettingsStore();
   if (isCrossfading) return;
 
   if (player.repeat === 'one') {
@@ -138,23 +139,20 @@ function handleEnded(): void {
     return;
   }
 
+  const settings = useSettingsStore();
   const crossfadeDuration = settings.playback.crossfadeDuration || 0;
   if (crossfadeDuration > 0 && player.queue.length > 0) {
     startCrossfade(crossfadeDuration);
     return;
   }
 
-  const next = player.nextTrack();
-  if (!next && player.repeat === 'all' && player.history.length > 0) {
-    player.setTrack(player.history[0]);
-  }
+  if (_onTrackEnd) _onTrackEnd();
 }
 
 function startRafLoop(): void {
-  const player = usePlayerStore();
   const tick = () => {
     if (audioEl && !audioEl.paused) {
-      player.currentTime = audioEl.currentTime;
+      if (_onTimeUpdate) _onTimeUpdate(audioEl.currentTime);
     }
     rafId = requestAnimationFrame(tick);
   };
@@ -174,10 +172,7 @@ function startCrossfade(duration: number): void {
 
   const next = player.queue[0];
   if (!next || next.type === 'video') {
-    const nxt = player.nextTrack();
-    if (!nxt && player.repeat === 'all' && player.history.length > 0) {
-      player.setTrack(player.history[0]);
-    }
+    if (_onTrackEnd) _onTrackEnd();
     return;
   }
 
@@ -216,8 +211,8 @@ function startCrossfade(duration: number): void {
         crossfadeGainB!.gain.value = 0;
         isCrossfading = false;
         crossfadeTimer = null;
-        player.currentTime = 0;
-        player.duration = audioEl!.duration || 0;
+        if (_onTimeUpdate) _onTimeUpdate(0);
+        if (_onDurationChange) _onDurationChange(audioEl!.duration || 0);
         if (player.currentTrack) player.currentTrack.duration = audioEl!.duration || 0;
         ensureNextPreloaded();
       }, duration * 1000);
@@ -330,6 +325,11 @@ function cleanupAudioEl(el: HTMLAudioElement | null): void {
 }
 
 export const audioEngine = {
+  set onTimeUpdate(fn: (time: number) => void) { _onTimeUpdate = fn; },
+  set onDurationChange(fn: (duration: number) => void) { _onDurationChange = fn; },
+  set onPlayStateChange(fn: (playing: boolean) => void) { _onPlayStateChange = fn; },
+  set onTrackEnd(fn: () => void) { _onTrackEnd = fn; },
+
   init(): void {
     if (_initialized) return;
     _initialized = true;

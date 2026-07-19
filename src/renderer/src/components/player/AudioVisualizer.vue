@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue';
-import { usePlayerStore } from '@renderer/stores/player';
-import { useMediaPlayer } from '@renderer/composables/useMediaPlayer';
+import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 
-const player = usePlayerStore();
-const { analyserNode } = useMediaPlayer();
+const audio = useAudioPlayer();
+const { analyserNode } = audio;
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const style = ref<'bars' | 'wave' | 'radial'>('bars');
@@ -88,11 +87,11 @@ function cycleStyle() {
 }
 
 onMounted(() => {
-  if (player.isPlaying) draw();
+  if (audio.isPlaying.value) draw();
 });
 
 watch(
-  () => player.isPlaying,
+  () => audio.isPlaying.value,
   (playing) => {
     if (playing) draw();
     else if (animFrame) cancelAnimationFrame(animFrame);
@@ -116,7 +115,7 @@ onUnmounted(() => {
       }}</span>
     </div>
     <div
-      v-if="!player.isPlaying"
+      v-if="!audio.isPlaying.value"
       class="absolute inset-0 flex items-center justify-center bg-black/20"
     >
       <span class="text-fg-faint text-xs">Kliknij aby odtworzyć</span>

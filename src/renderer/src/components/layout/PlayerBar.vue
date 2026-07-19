@@ -19,27 +19,35 @@ import {
   Maximize2
 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
-import { useMediaPlayer } from '@renderer/composables/useMediaPlayer';
+import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { formatDuration } from '@renderer/utils/formatters';
 
 const player = usePlayerStore();
-const { seek: seekAudio, setVolume } = useMediaPlayer();
+const audio = useAudioPlayer();
 const isMini = ref(false);
 
 const progressPct = computed(() =>
-  player.duration > 0 ? (player.currentTime / player.duration) * 100 : 0
+  audio.duration.value > 0 ? (audio.currentTime.value / audio.duration.value) * 100 : 0
 );
 
 function onSeek(e: MouseEvent) {
   const rect = (e.target as HTMLElement).getBoundingClientRect();
-  const time = ((e.clientX - rect.left) / rect.width) * player.duration;
-  player.seek(time);
-  seekAudio(time);
+  const time = ((e.clientX - rect.left) / rect.width) * audio.duration.value;
+  audio.seek(time);
 }
 
 function onVolume(e: MouseEvent) {
   const rect = (e.target as HTMLElement).getBoundingClientRect();
-  setVolume((e.clientX - rect.left) / rect.width);
+  audio.setVolume((e.clientX - rect.left) / rect.width);
+}
+
+function togglePlay() {
+  console.log('[PLAYERBAR] togglePlay → audio.isPlaying:', audio.isPlaying.value);
+  if (audio.isPlaying.value) {
+    audio.pause();
+  } else {
+    audio.play();
+  }
 }
 </script>
 
@@ -56,8 +64,23 @@ function onVolume(e: MouseEvent) {
       <div class="h-full bg-accent-base rounded-r-full" :style="{ width: progressPct + '%' }" />
     </div>
 
-    <div class="w-8 h-8 rounded-lg bg-bg-elevated flex items-center justify-center shrink-0">
-      <Music2 :size="14" :class="player.currentTrack ? 'text-accent-base' : 'text-fg-faint'" />
+    <div class="w-8 h-8 rounded-lg bg-bg-elevated flex items-center justify-center shrink-0 overflow-hidden">
+      <template v-if="player.currentTrack">
+        <video
+          v-if="player.getCover(player.currentTrack.path).type === 'video'"
+          :src="'file:///' + player.getCover(player.currentTrack.path).data"
+          class="w-full h-full object-cover"
+          muted
+          loop
+        />
+        <img
+          v-else-if="player.getCover(player.currentTrack.path).type === 'image'"
+          :src="player.getCover(player.currentTrack.path).data || ''"
+          class="w-full h-full object-cover"
+        />
+        <Music2 v-else :size="14" class="text-accent-base" />
+      </template>
+      <Music2 v-else :size="14" class="text-fg-faint" />
     </div>
     <div class="min-w-0 flex-1">
       <div class="text-xs font-medium truncate">
@@ -73,9 +96,9 @@ function onVolume(e: MouseEvent) {
       </button>
       <button
         class="w-8 h-8 rounded-full bg-fg-base flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
-        @click="player.togglePlay"
+        @click="togglePlay"
       >
-        <Pause v-if="player.isPlaying" :size="14" class="text-bg-base" fill="currentColor" />
+        <Pause v-if="audio.isPlaying.value" :size="14" class="text-bg-base" fill="currentColor" />
         <Play v-else :size="14" class="text-bg-base ml-0.5" fill="currentColor" />
       </button>
       <button
@@ -86,7 +109,7 @@ function onVolume(e: MouseEvent) {
       </button>
     </div>
     <span class="text-[10px] text-fg-faint font-mono tabular-nums">{{
-      formatDuration(player.currentTime)
+      formatDuration(audio.currentTime.value)
     }}</span>
     <button
       class="p-1.5 text-fg-faint hover:text-fg-base transition-colors"
@@ -112,8 +135,22 @@ function onVolume(e: MouseEvent) {
       <div
         class="w-11 h-11 rounded-lg bg-bg-elevated border border-border-default flex items-center justify-center shrink-0 overflow-hidden"
       >
-        <Music2 v-if="!player.currentTrack" :size="18" class="text-fg-faint" />
-        <Music2 v-else :size="18" class="text-accent-base" />
+        <template v-if="player.currentTrack">
+          <video
+            v-if="player.getCover(player.currentTrack.path).type === 'video'"
+            :src="'file:///' + player.getCover(player.currentTrack.path).data"
+            class="w-full h-full object-cover"
+            muted
+            loop
+          />
+          <img
+            v-else-if="player.getCover(player.currentTrack.path).type === 'image'"
+            :src="player.getCover(player.currentTrack.path).data || ''"
+            class="w-full h-full object-cover"
+          />
+          <Music2 v-else :size="18" class="text-accent-base" />
+        </template>
+        <Music2 v-else :size="18" class="text-fg-faint" />
       </div>
       <div class="min-w-0 flex-1">
         <div class="text-sm font-semibold text-fg-base truncate">
@@ -149,9 +186,9 @@ function onVolume(e: MouseEvent) {
         </button>
         <button
           class="w-10 h-10 rounded-full bg-fg-base flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
-          @click="player.togglePlay"
+          @click="togglePlay"
         >
-          <Pause v-if="player.isPlaying" :size="18" class="text-bg-base" fill="currentColor" />
+          <Pause v-if="audio.isPlaying.value" :size="18" class="text-bg-base" fill="currentColor" />
           <Play v-else :size="18" class="text-bg-base ml-0.5" fill="currentColor" />
         </button>
         <button
@@ -169,9 +206,9 @@ function onVolume(e: MouseEvent) {
         </button>
       </div>
       <div class="flex items-center gap-2 text-[11px] text-fg-faint font-mono tabular-nums">
-        <span>{{ formatDuration(player.currentTime) }}</span>
+        <span>{{ formatDuration(audio.currentTime.value) }}</span>
         <span>/</span>
-        <span>{{ formatDuration(player.duration) }}</span>
+        <span>{{ formatDuration(audio.duration.value) }}</span>
       </div>
     </div>
 

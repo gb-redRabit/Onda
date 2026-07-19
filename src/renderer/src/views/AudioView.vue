@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { onMounted, computed } from 'vue';
 import { usePlayerStore } from '@renderer/stores/player';
-import { useMediaPlayer } from '@renderer/composables/useMediaPlayer';
+import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { moduleManager } from '@renderer/modules/ModuleManager';
 
 const player = usePlayerStore();
-useMediaPlayer();
+const audio = useAudioPlayer();
 
 onMounted(() => {
   moduleManager.switchTo('player');
   if (player.currentTrack?.type === 'audio') {
     audioEngine.loadTrack(player.currentTrack);
     setTimeout(() => {
-      if (player.isPlaying) audioEngine.play();
+      if (audio.isPlaying.value) audioEngine.play();
     }, 100);
     player.flushPendingQueue();
   }
