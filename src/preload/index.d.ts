@@ -68,6 +68,9 @@ interface OndaAPI {
   extractSubtitleFonts: (
     filePath: string
   ) => Promise<Array<{ name: string; ext: string; data: number[] }>>;
+  getPlaybackPosition: (filePath: string) => Promise<number>;
+  setPlaybackPosition: (filePath: string, position: number) => Promise<void>;
+  clearPlaybackPosition: (filePath: string) => Promise<void>;
   pipUpdateSubtitle: (
     data: {
       subContent: string;

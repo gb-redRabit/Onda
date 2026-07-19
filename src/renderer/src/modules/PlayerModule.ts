@@ -21,6 +21,7 @@ export class PlayerModule implements AppModule {
     const track = ctx?.track || player.currentTrack;
     if (track && track.type === 'video') {
       // Video: PlayerView handles playback via <video> element
+      audioEngine.pause();
     } else if (track && track.type === 'audio') {
       audioEngine.loadTrack(track);
       if (player.isPlaying) {

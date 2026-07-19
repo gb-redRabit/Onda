@@ -63,6 +63,12 @@ const router = createRouter({
       name: 'player',
       component: () => import('@renderer/views/PlayerView.vue'),
       meta: { title: 'Player', icon: 'play' }
+    },
+    {
+      path: '/audio',
+      name: 'audio',
+      component: () => import('@renderer/views/AudioView.vue'),
+      meta: { title: 'Audio', icon: 'music' }
     }
   ]
 });

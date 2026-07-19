@@ -8,6 +8,7 @@ let audioCtx: AudioContext | null = null;
 let analyserNode: AnalyserNode | null = null;
 let sourceNode: MediaElementAudioSourceNode | null = null;
 let sourceNodeB: MediaElementAudioSourceNode | null = null;
+let videoSourceNode: MediaElementAudioSourceNode | null = null;
 let crossfadeGainA: GainNode | null = null;
 let crossfadeGainB: GainNode | null = null;
 let gainNode: GainNode | null = null;
@@ -16,6 +17,7 @@ let rafId: number | null = null;
 let crossfadeTimer: ReturnType<typeof setTimeout> | null = null;
 let isCrossfading = false;
 let _initialized = false;
+let eqChainBuilt = false;
 
 const eqFrequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 const savedPositions = new Map<string, number>();
@@ -40,27 +42,44 @@ function ensureAudioContext(): void {
   });
 }
 
+function ensureEqChain(): void {
+  ensureAudioContext();
+  if (eqChainBuilt) return;
+  let eqChain: AudioNode = crossfadeGainA!;
+  for (const filter of eqFilters) {
+    eqChain.connect(filter);
+    eqChain = filter;
+  }
+  eqChain.connect(gainNode!);
+  gainNode!.connect(analyserNode!);
+  analyserNode!.connect(audioCtx!.destination);
+  eqChainBuilt = true;
+}
+
 function connectAudio(el: HTMLAudioElement): void {
   ensureAudioContext();
-  if (sourceNode) return;
-  try {
-    sourceNode = audioCtx!.createMediaElementSource(el);
-    sourceNode.connect(crossfadeGainA!);
-    let eqChain: AudioNode = crossfadeGainA!;
-    for (const filter of eqFilters) {
-      eqChain.connect(filter);
-      eqChain = filter;
-    }
-    eqChain.connect(gainNode!);
-    gainNode!.connect(analyserNode!);
-    analyserNode!.connect(audioCtx!.destination);
-  } catch {
-    // already connected
+  ensureEqChain();
+
+  // Odłącz wideo jeśli było aktywne
+  if (videoSourceNode) {
+    try {
+      videoSourceNode.disconnect();
+    } catch {}
   }
+
+  if (!sourceNode) {
+    sourceNode = audioCtx!.createMediaElementSource(el);
+  } else {
+    try {
+      sourceNode.disconnect();
+    } catch {}
+  }
+  sourceNode.connect(crossfadeGainA!);
 }
 
 function connectAudioB(el: HTMLAudioElement): void {
   ensureAudioContext();
+  ensureEqChain();
   if (sourceNodeB) return;
   try {
     sourceNodeB = audioCtx!.createMediaElementSource(el);
@@ -240,12 +259,49 @@ function clearSavedPosition(path: string): void {
   window.api.invoke('playback:clearPosition', path);
 }
 
+function connectVideoElement(el: HTMLVideoElement): void {
+  ensureAudioContext();
+  ensureEqChain();
+
+  // Odłącz audio jeśli było aktywne
+  if (sourceNode) {
+    try {
+      sourceNode.disconnect();
+    } catch {}
+  }
+
+  if (!videoSourceNode || (videoSourceNode as any).mediaElement !== el) {
+    if (videoSourceNode) {
+      try {
+        videoSourceNode.disconnect();
+      } catch {}
+    }
+    videoSourceNode = audioCtx!.createMediaElementSource(el);
+  } else {
+    try {
+      videoSourceNode.disconnect();
+    } catch {}
+  }
+  videoSourceNode.connect(crossfadeGainA!);
+}
+
+function disconnectVideoElement(): void {
+  if (videoSourceNode) {
+    try {
+      videoSourceNode.disconnect();
+    } catch {}
+  }
+}
+
 function disconnectNodes(): void {
   try {
     sourceNode?.disconnect();
   } catch {}
   try {
     sourceNodeB?.disconnect();
+  } catch {}
+  try {
+    videoSourceNode?.disconnect();
   } catch {}
   try {
     crossfadeGainA?.disconnect();
@@ -397,6 +453,8 @@ export const audioEngine = {
     nextAudioEl = null;
     sourceNode = null;
     sourceNodeB = null;
+    videoSourceNode = null;
+    eqChainBuilt = false;
     if (audioCtx) {
       await audioCtx.close();
       audioCtx = null;
@@ -427,5 +485,13 @@ export const audioEngine = {
       player.isPlaying = false;
       player.nextTrack();
     });
+  },
+
+  connectVideoElement(el: HTMLVideoElement): void {
+    connectVideoElement(el);
+  },
+
+  disconnectVideoElement(): void {
+    disconnectVideoElement();
   }
 };

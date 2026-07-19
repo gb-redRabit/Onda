@@ -15,7 +15,8 @@ import {
   ListMusic,
   Music2,
   SlidersHorizontal,
-  Minimize2
+  Minimize2,
+  Maximize2
 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useMediaPlayer } from '@renderer/composables/useMediaPlayer';

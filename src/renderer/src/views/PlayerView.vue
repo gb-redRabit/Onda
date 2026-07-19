@@ -14,6 +14,8 @@ import {
   preparePiPSubtitleData
 } from '@renderer/composables/useSubtitleRenderer';
 import { usePiP } from '@renderer/composables/usePiP';
+import { audioEngine } from '@renderer/modules/audioEngine';
+import { formatDuration } from '@renderer/utils/formatters';
 
 const player = usePlayerStore();
 const settings = useSettingsStore();
@@ -56,6 +58,40 @@ const osdTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 
 const isVideo = computed(() => player.currentTrack?.type === 'video');
 const isAudio = computed(() => player.currentTrack?.type === 'audio');
+
+let resumePromptTimer: ReturnType<typeof setTimeout> | null = null;
+
+function onResumeContinue() {
+  const prompt = player.resumePrompt;
+  if (prompt && videoRef.value) {
+    videoRef.value.currentTime = prompt.position;
+    player.currentTime = prompt.position;
+    videoRef.value.play().catch(() => {});
+    window.api.setPlaybackPosition(prompt.path, prompt.position);
+  }
+  player.clearResumePrompt();
+}
+
+function onResumeStart() {
+  const prompt = player.resumePrompt;
+  if (prompt) window.api.clearPlaybackPosition(prompt.path);
+  player.clearResumePrompt();
+}
+
+watch(
+  () => player.resumePrompt,
+  (prompt) => {
+    if (resumePromptTimer) {
+      clearTimeout(resumePromptTimer);
+      resumePromptTimer = null;
+    }
+    if (prompt) {
+      resumePromptTimer = setTimeout(() => {
+        player.clearResumePrompt();
+      }, 7000);
+    }
+  }
+);
 
 const videoFilterStyle = computed(() => {
   const f = settings.playback.videoFilter;
@@ -282,8 +318,13 @@ const videoEventsConnected = ref(false);
 function connectVideoEvents(el: HTMLVideoElement) {
   if (videoEventsConnected.value) return;
   videoEventsConnected.value = true;
+  let lastSaved = 0;
   el.addEventListener('timeupdate', () => {
     player.currentTime = el.currentTime;
+    if (player.currentTrack && el.currentTime - lastSaved > 3) {
+      lastSaved = el.currentTime;
+      window.api.setPlaybackPosition(player.currentTrack.path, el.currentTime);
+    }
   });
   el.addEventListener('durationchange', () => {
     player.duration = el.duration || 0;
@@ -293,7 +334,15 @@ function connectVideoEvents(el: HTMLVideoElement) {
     player.duration = el.duration || 0;
     if (player.currentTrack) player.currentTrack.duration = el.duration || 0;
   });
+  el.addEventListener('pause', () => {
+    if (player.currentTrack && player.currentTrack.type === 'video') {
+      window.api.setPlaybackPosition(player.currentTrack.path, el.currentTime);
+    }
+  });
   el.addEventListener('ended', () => {
+    if (player.currentTrack && player.currentTrack.type === 'video') {
+      window.api.clearPlaybackPosition(player.currentTrack.path);
+    }
     if (player.pipActive) return;
     player.isPlaying = false;
     player.nextTrack();
@@ -310,15 +359,35 @@ function setupVideo(track: import('@renderer/types/media').MediaFile | null) {
     el.setAttribute('data-src', src);
     el.src = src;
     connectVideoEvents(el);
+    audioEngine.connectVideoElement(el);
+
+    el.addEventListener(
+      'canplay',
+      () => {
+        if (player.isPlaying && !player.pipActive) {
+          el.play().catch(() => {});
+        }
+      },
+      { once: true }
+    );
+
     el.addEventListener(
       'loadedmetadata',
       () => {
         if (seekTo > 0) el.currentTime = seekTo;
         el.playbackRate = settings.playback.playbackSpeed;
-        if (player.isPlaying && !player.pipActive) el.play().catch(() => {});
       },
       { once: true }
     );
+
+    el.addEventListener(
+      'playing',
+      () => {
+        player.flushPendingQueue();
+      },
+      { once: true }
+    );
+
     el.load();
   } else {
     el.volume = player.isMuted ? 0 : player.volume;
@@ -376,10 +445,7 @@ watch(
   () => player.currentTrack,
   (track) => {
     if (!track) return;
-    if (track.type !== 'video') {
-      router.back();
-      return;
-    }
+    if (track.type !== 'video') return;
 
     settings.updatePlayback({ videoFilter: 'none', playbackSpeed: 1 });
     setupVideo(track);
@@ -406,7 +472,9 @@ watch(
     const artist = track.metadata?.artist;
     showOSD(artist ? `${artist} - ${title}` : title, 'track', 2500);
   },
-  { flush: 'post' }
+  {
+    flush: 'post'
+  }
 );
 
 watch(
@@ -464,6 +532,13 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  if (resumePromptTimer) clearTimeout(resumePromptTimer);
+  audioEngine.disconnectVideoElement();
+  if (videoRef.value) {
+    videoRef.value.pause();
+    videoRef.value.removeAttribute('src');
+    videoRef.value.load();
+  }
   destroySubtitleRenderer();
   player.clearSubtitles();
   if (controlsTimeout.value) clearTimeout(controlsTimeout.value);
@@ -552,6 +627,31 @@ watch(
         >
           +10s
         </div>
+      </div>
+
+      <!-- resume prompt -->
+      <div
+        v-if="player.resumePrompt"
+        class="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 bg-black/80 border border-white/15 rounded-2xl px-5 py-4 flex items-center gap-4 shadow-2xl shadow-black/50"
+      >
+        <div class="text-white text-sm">
+          <div class="font-semibold">Wykryto zapisaną pozycję</div>
+          <div class="text-white/60 text-xs mt-0.5">
+            {{ formatDuration(player.resumePrompt.position) }} — kontynuować czy od początku?
+          </div>
+        </div>
+        <button
+          class="px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs font-medium transition-colors"
+          @click="onResumeContinue"
+        >
+          Kontynuuj
+        </button>
+        <button
+          class="px-3 py-1.5 rounded-lg bg-accent-base hover:bg-accent-hover text-white text-xs font-medium transition-colors"
+          @click="onResumeStart"
+        >
+          Od początku
+        </button>
       </div>
     </div>
 

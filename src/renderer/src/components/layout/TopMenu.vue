@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { usePlayerStore } from '@renderer/stores/player';
-import type { MediaFile } from '@renderer/types/media';
+import { openMediaFiles } from '@renderer/composables/useOpenMedia';
 
 const router = useRouter();
-const player = usePlayerStore();
 
 async function openFiles() {
   const result = (await window.api.invoke('dialog:openFile')) as {
@@ -13,26 +11,16 @@ async function openFiles() {
     canceled: boolean;
   };
   if (result.canceled || !result.filePaths.length) return;
-  const extVideo = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v'];
-  const tracks: MediaFile[] = result.filePaths.map((p) => {
-    const name = p.split(/[/\\]/).pop() || p;
-    const ext = name.split('.').pop()?.toLowerCase() || '';
-    return {
-      id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      path: p,
-      name,
-      type: extVideo.includes(`.${ext}`) ? 'video' : 'audio',
-      size: 0,
-      duration: 0,
-      extension: ext,
-      mimeType: '',
-      addedAt: Date.now(),
-      playCount: 0
-    };
-  });
-  player.setTrack(tracks[0]);
-  if (tracks.length > 1) player.addToQueueMultiple(tracks.slice(1));
-  router.push('/player');
+  await openMediaFiles(result.filePaths, router);
+}
+
+async function openFolder() {
+  const result = (await window.api.invoke('dialog:openFolderFiles')) as {
+    filePaths: string[];
+    canceled: boolean;
+  };
+  if (result.canceled || !result.filePaths.length) return;
+  await openMediaFiles(result.filePaths, router);
 }
 
 const menus = [
@@ -43,7 +31,7 @@ const menus = [
       {
         label: 'Otwórz folder',
         shortcut: 'Ctrl+Shift+O',
-        action: () => window.api.invoke('dialog:openFolder')
+        action: openFolder
       },
       { sep: true },
       { label: 'Zamknij', shortcut: 'Alt+F4', action: () => window.api.invoke('app:quit') }

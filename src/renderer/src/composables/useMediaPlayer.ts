@@ -1,4 +1,4 @@
-import { ref, onUnmounted } from 'vue';
+import { ref } from 'vue';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { usePlayerStore } from '@renderer/stores/player';
 import type { MediaFile } from '@renderer/types/media';
@@ -22,14 +22,17 @@ export function useMediaPlayer() {
       error.value = null;
     };
 
-    const unwatchCurrentTrack = player.$onAction(({ name, args }) => {
+    player.$onAction(({ name, args }) => {
       if (name === 'setTrack') {
         const track = args[0] as MediaFile;
-        if (track && track.type === 'audio') {
+        if (track && track.type === 'video') {
+          audioEngine.pause();
+        } else if (track && track.type === 'audio') {
           audioEngine.loadTrack(track);
           setTimeout(() => {
             if (player.isPlaying) audioEngine.play();
           }, 100);
+          player.flushPendingQueue();
         }
       }
       if (name === 'togglePlay' || name === 'play' || name === 'pause') {
@@ -38,10 +41,6 @@ export function useMediaPlayer() {
           else audioEngine.pause();
         }, 0);
       }
-    });
-
-    onUnmounted(() => {
-      unwatchCurrentTrack();
     });
   }
 

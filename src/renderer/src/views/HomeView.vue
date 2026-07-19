@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { Music2, Play, Clock, FolderOpen, Disc3, Tv2, ArrowRight } from '@lucide/vue';
+import { Music2, Play, Clock, FolderOpen, Disc3, Tv2, ArrowRight, FolderUp } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useLibraryStore } from '@renderer/stores/library';
 import { moduleManager } from '@renderer/modules/ModuleManager';
-import type { MediaFile } from '@renderer/types/media';
+import { openMediaFiles } from '@renderer/composables/useOpenMedia';
 
 const router = useRouter();
 const player = usePlayerStore();
@@ -21,26 +21,16 @@ async function openFile() {
     canceled: boolean;
   };
   if (result.canceled || !result.filePaths.length) return;
-  const extVideo = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v'];
-  const tracks: MediaFile[] = result.filePaths.map((p) => {
-    const name = p.split(/[/\\]/).pop() || p;
-    const ext = name.split('.').pop()?.toLowerCase() || '';
-    return {
-      id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      path: p,
-      name,
-      type: extVideo.includes(`.${ext}`) ? 'video' : 'audio',
-      size: 0,
-      duration: 0,
-      extension: ext,
-      mimeType: '',
-      addedAt: Date.now(),
-      playCount: 0
-    };
-  });
-  player.setTrack(tracks[0]);
-  if (tracks.length > 1) player.addToQueueMultiple(tracks.slice(1));
-  if (tracks[0].type === 'video') router.push('/player');
+  await openMediaFiles(result.filePaths, router);
+}
+
+async function openFolder() {
+  const result = (await window.api.invoke('dialog:openFolderFiles')) as {
+    filePaths: string[];
+    canceled: boolean;
+  };
+  if (result.canceled || !result.filePaths.length) return;
+  await openMediaFiles(result.filePaths, router);
 }
 
 const actions = [
@@ -49,6 +39,12 @@ const actions = [
     desc: 'Przeglądaj lokalne multimedia',
     icon: FolderOpen,
     route: openFile
+  },
+  {
+    label: 'Otwórz folder',
+    desc: 'Wczytaj multimedia z folderu',
+    icon: FolderUp,
+    route: openFolder
   },
   {
     label: 'Biblioteka',
@@ -67,7 +63,7 @@ const actions = [
       <p class="text-fg-muted text-sm">Czego chcesz słuchać?</p>
     </div>
 
-    <div class="grid grid-cols-3 gap-4 mb-8">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <button
         v-for="a in actions"
         :key="a.label"

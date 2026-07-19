@@ -35,7 +35,7 @@ async function extractVideoFrame(filePath: string, time = '00:00:00.5'): Promise
   try {
     await mkdir(getTempDir(), { recursive: true });
     const outPath = join(getTempDir(), `frame_${Date.now()}.jpg`);
-    execSync(
+    await execAsync(
       `ffmpeg -v quiet -ss ${time} -i "${filePath}" -vframes 1 -q:v 2 -update 1 "${outPath}" -y`,
       { encoding: 'utf-8', timeout: 15000, windowsHide: true }
     );
@@ -49,14 +49,14 @@ async function extractVideoFrame(filePath: string, time = '00:00:00.5'): Promise
 
 async function extractEmbeddedCover(filePath: string): Promise<string | null> {
   try {
-    const output = execSync(
+    const { stdout } = await execAsync(
       `ffprobe -v quiet -select_streams v:0 -show_entries stream=codec_type -of csv=p=0 "${filePath}"`,
       { encoding: 'utf-8', timeout: 10000, windowsHide: true }
-    ).trim();
-    if (output !== 'video') return null;
+    );
+    if (stdout.trim() !== 'video') return null;
     await mkdir(getTempDir(), { recursive: true });
     const outPath = join(getTempDir(), `cover_${Date.now()}.jpg`);
-    execSync(`ffmpeg -v quiet -i "${filePath}" -vframes 1 -q:v 2 -update 1 "${outPath}" -y`, {
+    await execAsync(`ffmpeg -v quiet -i "${filePath}" -vframes 1 -q:v 2 -update 1 "${outPath}" -y`, {
       encoding: 'utf-8',
       timeout: 15000,
       windowsHide: true
@@ -254,6 +254,44 @@ export function registerIPC(): void {
       ...options
     });
     return result;
+  });
+
+  ipcMain.handle('dialog:openFolderFiles', async (_event) => {
+    const win = BrowserWindow.getFocusedWindow();
+    const result = await dialog.showOpenDialog(win!, {
+      properties: ['openDirectory']
+    });
+    if (result.canceled || !result.filePaths.length) {
+      return { canceled: true, filePaths: [] as string[] };
+    }
+    const folder = result.filePaths[0];
+    const mediaExts = [...VIDEO_EXTS, ...AUDIO_EXTS];
+    let entries: string[] = [];
+    try {
+      const dirEntries = await readdir(folder);
+      entries = dirEntries
+        .filter((f) => mediaExts.includes(extname(f).toLowerCase()))
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+        .map((f) => join(folder, f));
+    } catch {
+      entries = [];
+    }
+    return { canceled: false, filePaths: entries };
+  });
+
+  const playbackPositions = new Map<string, number>();
+
+  ipcMain.handle('playback:getPosition', (_event, filePath: string): number => {
+    return playbackPositions.get(filePath) || 0;
+  });
+
+  ipcMain.handle('playback:setPosition', (_event, filePath: string, position: number): void => {
+    if (position > 0) playbackPositions.set(filePath, position);
+    else playbackPositions.delete(filePath);
+  });
+
+  ipcMain.handle('playback:clearPosition', (_event, filePath: string): void => {
+    playbackPositions.delete(filePath);
   });
 
   ipcMain.handle('dialog:saveFile', async (_event, options?: Electron.SaveDialogOptions) => {
@@ -574,11 +612,11 @@ export function registerIPC(): void {
 
   ipcMain.handle('media:getDuration', async (_event, filePath: string): Promise<number> => {
     try {
-      const output = execSync(
+      const { stdout } = await execAsync(
         `ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${filePath}"`,
         { encoding: 'utf-8', timeout: 10000, windowsHide: true }
-      ).trim();
-      return parseFloat(output) || 0;
+      );
+      return parseFloat(stdout.trim()) || 0;
     } catch {
       return 0;
     }

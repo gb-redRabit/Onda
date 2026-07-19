@@ -11,14 +11,12 @@ const dragIndex = ref<number | null>(null);
 
 async function loadCovers(tracks: MediaFile[]) {
   for (const track of tracks) {
-    if (!player.getCover(track.path)) {
-      player.loadCover(track.path);
-    }
+    player.loadCover(track.path);
   }
 }
 
 watch(
-  () => player.queue,
+  () => player.displayQueue,
   (newQueue) => {
     loadCovers(newQueue);
   },
@@ -138,7 +136,7 @@ function onFileDrop(e: DragEvent) {
       </h3>
       <div class="flex items-center gap-1">
         <button
-          v-if="player.queue.length"
+          v-if="player.displayQueue.length"
           class="text-[11px] text-fg-faint hover:text-red-base transition-colors px-2 py-1"
           @click="player.clearQueue"
         >
@@ -193,7 +191,7 @@ function onFileDrop(e: DragEvent) {
 
     <!-- drop hint when empty -->
     <div
-      v-if="player.queue.length === 0"
+      v-if="player.displayQueue.length === 0"
       class="flex-1 flex flex-col items-center justify-center py-12 text-fg-faint"
     >
       <Music2 :size="32" class="mb-2 opacity-30" />
@@ -205,7 +203,7 @@ function onFileDrop(e: DragEvent) {
     <div v-else class="flex-1 overflow-auto">
       <div class="py-1">
         <div
-          v-for="(track, i) in player.queue"
+          v-for="(track, i) in player.displayQueue"
           :key="i"
           class="flex items-center gap-2 px-4 py-2 hover:bg-bg-hover transition-colors group cursor-pointer"
           :class="{ 'border-t-2 border-accent-base': dragOverIndex === i }"

@@ -22,6 +22,8 @@ export const usePlayerStore = defineStore('player', () => {
   const equalizerPreset = ref('flat');
   const pipActive = ref(false);
   const pipTime = ref(0);
+  const resumePrompt = ref<{ path: string; position: number } | null>(null);
+  const pendingQueue = ref<MediaFile[]>([]);
   const coverCache = reactive(
     new Map<string, { type: 'video' | 'image' | null; data: string | null }>()
   );
@@ -31,7 +33,8 @@ export const usePlayerStore = defineStore('player', () => {
 
   const hasTrack = computed(() => currentTrack.value !== null);
   const progress = computed(() => (duration.value > 0 ? currentTime.value / duration.value : 0));
-  const queueLength = computed(() => queue.value.length);
+  const queueLength = computed(() => queue.value.length + pendingQueue.value.length);
+  const displayQueue = computed(() => [...pendingQueue.value, ...queue.value]);
 
   function setTrack(track: MediaFile) {
     if (currentTrack.value) {
@@ -86,10 +89,20 @@ export const usePlayerStore = defineStore('player', () => {
     tracks.forEach(enrichTrack);
   }
   function removeFromQueue(index: number) {
-    queue.value.splice(index, 1);
+    if (index < pendingQueue.value.length) {
+      pendingQueue.value.splice(index, 1);
+    } else {
+      queue.value.splice(index - pendingQueue.value.length, 1);
+    }
   }
   function clearQueue() {
     queue.value = [];
+    pendingQueue.value = [];
+  }
+  function flushPendingQueue() {
+    if (pendingQueue.value.length) {
+      pendingQueue.value.forEach(enrichTrack);
+    }
   }
   function toggleQueue() {
     queueVisible.value = !queueVisible.value;
@@ -99,8 +112,21 @@ export const usePlayerStore = defineStore('player', () => {
   }
 
   function reorderQueue(from: number, to: number) {
-    const item = queue.value.splice(from, 1)[0];
-    if (item) queue.value.splice(to, 0, item);
+    const items = displayQueue.value;
+    if (from < 0 || from >= items.length) return;
+    const item = items[from];
+    const fromInPending = from < pendingQueue.value.length;
+    const toInPending = to < pendingQueue.value.length;
+    if (fromInPending) {
+      pendingQueue.value.splice(from, 1);
+    } else {
+      queue.value.splice(from - pendingQueue.value.length, 1);
+    }
+    if (toInPending) {
+      pendingQueue.value.splice(to, 0, item);
+    } else {
+      queue.value.splice(to - pendingQueue.value.length, 0, item);
+    }
   }
 
   function insertInQueue(index: number, track: MediaFile) {
@@ -127,7 +153,6 @@ export const usePlayerStore = defineStore('player', () => {
       const dur = await window.api.getDuration(track.path);
       if (dur > 0) {
         track.duration = dur;
-        queue.value = [...queue.value];
       }
     }
     loadCover(track.path);
@@ -138,6 +163,11 @@ export const usePlayerStore = defineStore('player', () => {
       setTrack(currentTrack.value);
       return currentTrack.value;
     }
+    if (pendingQueue.value.length > 0) {
+      const next = pendingQueue.value.shift()!;
+      setTrack(next);
+      return next;
+    }
     if (queue.value.length === 0) {
       if (repeat.value === 'all' && history.value.length > 0) {
         const next = history.value[history.value.length - 1];
@@ -147,9 +177,7 @@ export const usePlayerStore = defineStore('player', () => {
       }
       return null;
     }
-    const nextIdx = shuffle.value
-      ? Math.floor(Math.random() * queue.value.length)
-      : 0;
+    const nextIdx = shuffle.value ? Math.floor(Math.random() * queue.value.length) : 0;
     const next = queue.value[nextIdx];
     setTrack(next);
     queue.value.splice(nextIdx, 1);
@@ -250,6 +278,13 @@ export const usePlayerStore = defineStore('player', () => {
     activeSubtitleId.value = null;
   }
 
+  function showResumePrompt(path: string, position: number): void {
+    resumePrompt.value = { path, position };
+  }
+  function clearResumePrompt(): void {
+    resumePrompt.value = null;
+  }
+
   return {
     currentTrack,
     queue,
@@ -272,6 +307,7 @@ export const usePlayerStore = defineStore('player', () => {
     hasTrack,
     progress,
     queueLength,
+    displayQueue,
     setTrack,
     play,
     pause,
@@ -286,6 +322,8 @@ export const usePlayerStore = defineStore('player', () => {
     addToQueueMultiple,
     removeFromQueue,
     clearQueue,
+    pendingQueue,
+    flushPendingQueue,
     reorderQueue,
     insertInQueue,
     toggleQueue,
@@ -301,6 +339,9 @@ export const usePlayerStore = defineStore('player', () => {
     loadSubtitles,
     loadEmbeddedSubtitle,
     setActiveSubtitle,
-    clearSubtitles
+    clearSubtitles,
+    resumePrompt,
+    showResumePrompt,
+    clearResumePrompt
   };
 });

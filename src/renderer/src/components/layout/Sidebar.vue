@@ -163,10 +163,11 @@ function playPlaylist(playlistId: string) {
         </div>
         <div class="space-y-0.5 max-h-28 overflow-auto">
           <div
-            v-for="(track, i) in player.queue.slice(0, 5)"
+            v-for="(track, i) in player.displayQueue.slice(0, 5)"
             :key="i"
             class="flex items-center gap-2 text-xs text-fg-muted truncate px-2 py-1.5 rounded-lg hover:bg-bg-hover hover:text-fg-base transition-colors"
           >
+          <!--track.name.slice(track.name.length-3 ,track.name.length)- pobranie formatu pliku -> dodać z zmiane ikony zależności czy to auido czy wideo -->
             <Music2 :size="11" class="shrink-0 text-accent-base" />
             <span class="truncate">{{ track.metadata?.title || track.name }}</span>
           </div>

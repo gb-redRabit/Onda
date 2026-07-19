@@ -98,6 +98,12 @@ const api = {
     filePath: string
   ): Promise<Array<{ name: string; ext: string; data: number[] }>> =>
     ipcRenderer.invoke('subtitles:extractAttachments', filePath),
+  getPlaybackPosition: (filePath: string): Promise<number> =>
+    ipcRenderer.invoke('playback:getPosition', filePath),
+  setPlaybackPosition: (filePath: string, position: number): Promise<void> =>
+    ipcRenderer.invoke('playback:setPosition', filePath, position),
+  clearPlaybackPosition: (filePath: string): Promise<void> =>
+    ipcRenderer.invoke('playback:clearPosition', filePath),
   pipUpdateSubtitle: (
     data: {
       subContent: string;

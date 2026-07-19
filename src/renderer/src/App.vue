@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import TitleBar from './components/layout/TitleBar.vue';
 import TopMenu from './components/layout/TopMenu.vue';
 import Sidebar from './components/layout/Sidebar.vue';
@@ -16,6 +17,7 @@ import { THEME_PALETTES } from './utils/constants';
 const settings = useSettingsStore();
 const player = usePlayerStore();
 const ui = useUIStore();
+const route = useRoute();
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -94,7 +96,11 @@ watch(() => settings.appearance.fontSize, applyTheme);
         <Equalizer />
       </div>
     </div>
-    <PlayerBar v-if="ui.playerBarVisible && player.currentTrack?.type === 'audio'" />
+    <PlayerBar
+      v-if="
+        ui.playerBarVisible && (player.currentTrack?.type === 'audio' || route.name === 'audio')
+      "
+    />
     <StatusBar v-if="ui.statusBarVisible" />
 
     <div
