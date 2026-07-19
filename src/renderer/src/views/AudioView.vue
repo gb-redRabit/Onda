@@ -1,23 +1,8 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue';
+import { computed } from 'vue';
 import { usePlayerStore } from '@renderer/stores/player';
-import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
-import { audioEngine } from '@renderer/modules/audioEngine';
-import { moduleManager } from '@renderer/modules/ModuleManager';
 
 const player = usePlayerStore();
-const audio = useAudioPlayer();
-
-onMounted(() => {
-  moduleManager.switchTo('player');
-  if (player.currentTrack?.type === 'audio') {
-    audioEngine.loadTrack(player.currentTrack);
-    setTimeout(() => {
-      if (audio.isPlaying.value) audioEngine.play();
-    }, 100);
-    player.flushPendingQueue();
-  }
-});
 
 const title = computed(
   () => player.currentTrack?.metadata?.title || player.currentTrack?.name || 'Brak utworu'

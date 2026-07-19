@@ -16,7 +16,6 @@ import {
 } from '@lucide/vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
 import { usePlayerStore } from '@renderer/stores/player';
-import { moduleManager } from '@renderer/modules/ModuleManager';
 import { formatFileSize } from '@renderer/utils/formatters';
 import { getFileTypeInfo } from '@renderer/utils/fileTypes';
 import type { FileItem } from '@renderer/types/explorer';
@@ -46,7 +45,6 @@ const MEDIA_EXTS = new Set([
 ]);
 
 onMounted(() => {
-  moduleManager.switchTo('explorer');
   if (!explorer.currentPath) {
     explorer.navigateTo('');
   }

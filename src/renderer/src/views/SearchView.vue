@@ -1,16 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { Search, Music2 } from '@lucide/vue';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
-import { moduleManager } from '@renderer/modules/ModuleManager';
 
 const library = useLibraryStore();
 const player = usePlayerStore();
 
-onMounted(() => {
-  moduleManager.switchTo('home');
-});
 const query = ref('');
 const scope = ref<'all' | 'library' | 'files'>('all');
 

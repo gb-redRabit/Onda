@@ -228,7 +228,7 @@ function handleClick() {
   }
   clickTimer = setTimeout(() => {
     if (player.pipActive) return;
-    console.log('[VIDEO] handleClick → calling togglePlay');
+
     player.togglePlay();
     showOSD(
       player.isPlaying ? 'Odtwarzanie' : 'Wstrzymano',
@@ -341,13 +341,11 @@ function connectVideoEvents(el: HTMLVideoElement) {
     }
   });
   el.addEventListener('ended', () => {
-    console.log('[VIDEO] ended event → currentTrack:', player.currentTrack?.name, 'repeat:', player.repeat, 'pipActive:', player.pipActive);
     if (player.currentTrack && player.currentTrack.type === 'video') {
       window.api.clearPlaybackPosition(player.currentTrack.path);
     }
     if (player.pipActive) return;
     if (player.repeat === 'one') {
-      console.log('[VIDEO] ended → repeat=one, restarting video');
       el.currentTime = 0;
       el.play().catch(() => {});
       return;
@@ -361,7 +359,6 @@ function setupVideo(track: import('@renderer/types/media').MediaFile | null) {
   if (!track || track.type !== 'video' || !videoRef.value) return;
   const el = videoRef.value;
   const src = getTrackSrc(track);
-  console.log('[VIDEO] setupVideo:', track.name, 'src===current:', el.getAttribute('data-src') === src);
   if (el.getAttribute('data-src') !== src) {
     const seekTo = player.pipTime > 0 ? player.pipTime : player.currentTime;
     if (player.pipTime > 0) player.pipTime = 0;
@@ -373,7 +370,6 @@ function setupVideo(track: import('@renderer/types/media').MediaFile | null) {
     el.addEventListener(
       'canplay',
       () => {
-        console.log('[VIDEO] canplay → isPlaying:', player.isPlaying, 'pipActive:', player.pipActive);
         if (player.isPlaying && !player.pipActive) {
           el.play().catch(() => {});
         }
@@ -457,8 +453,6 @@ watch(
     if (!track) return;
     if (track.type !== 'video') return;
 
-    console.log('[VIDEO] currentTrack watch →', track.name, '(' + track.type + ')');
-
     settings.updatePlayback({ videoFilter: 'none', playbackSpeed: 1 });
     setupVideo(track);
 
@@ -492,7 +486,6 @@ watch(
 watch(
   () => player.isPlaying,
   (playing) => {
-    console.log('[VIDEO] isPlaying watch →', playing ? 'PLAY' : 'PAUSE', 'hasVideoRef:', !!videoRef.value, 'isVideo:', isVideo.value);
     if (!videoRef.value || !isVideo.value) return;
     if (player.pipActive) {
       videoRef.value.pause();

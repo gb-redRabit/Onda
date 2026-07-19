@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 import { moduleManager } from '@renderer/modules/ModuleManager';
+import { usePlayerStore } from '@renderer/stores/player';
 
 const ROUTE_MODULE_MAP: Record<string, string> = {
   home: 'home',
@@ -76,9 +77,22 @@ const router = createRouter({
 router.afterEach((to) => {
   const routeName = to.name as string;
   const moduleId = ROUTE_MODULE_MAP[routeName];
-  if (moduleId) {
-    moduleManager.switchTo(moduleId);
+  if (!moduleId) return;
+
+  const currentActive = moduleManager.getActiveId();
+
+  if (currentActive === 'player' && moduleId !== 'player') {
+    const player = usePlayerStore();
+    if (player.currentTrack?.type === 'audio') {
+      const target = moduleManager.get(moduleId);
+      if (!target.isActive()) {
+        target.activate();
+      }
+      return;
+    }
   }
+
+  moduleManager.switchTo(moduleId);
 });
 
 export default router;

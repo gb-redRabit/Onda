@@ -468,6 +468,15 @@ export const audioEngine = {
     }
   },
 
+  resume(): void {
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    if (rafId === null) {
+      startRafLoop();
+    }
+  },
+
   setupVideoListeners(el: HTMLVideoElement): void {
     const player = usePlayerStore();
     el.addEventListener('timeupdate', () => {

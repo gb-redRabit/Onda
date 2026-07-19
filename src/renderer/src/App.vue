@@ -86,15 +86,10 @@ watch(
     const currentRoute = route.name as string;
 
     if (newType !== lastTrackType) {
-      console.log('[APP] track type changed:', lastTrackType, '→', newType, 'currentRoute:', currentRoute);
+
       lastTrackType = newType;
-      const onPlayerRoute = currentRoute === 'player' || currentRoute === 'audio';
-      if (onPlayerRoute && newType === 'video' && currentRoute !== 'player') {
-        console.log('[APP] → navigating to /player');
+      if (newType === 'video' && currentRoute !== 'player') {
         router.push('/player');
-      } else if (onPlayerRoute && newType === 'audio' && currentRoute !== 'audio') {
-        console.log('[APP] → navigating to /audio');
-        router.push('/audio');
       }
     }
   }
@@ -122,7 +117,9 @@ watch(
     </div>
     <PlayerBar
       v-if="
-        ui.playerBarVisible && (player.currentTrack?.type === 'audio' || route.name === 'audio')
+        ui.playerBarVisible &&
+        player.currentTrack?.type === 'audio' &&
+        route.name !== 'player'
       "
     />
     <StatusBar v-if="ui.statusBarVisible" />

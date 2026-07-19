@@ -12,6 +12,11 @@ const mediaEl = ref<HTMLAudioElement | null>(null);
 const isReady = ref(false);
 const error = ref<string | null>(null);
 
+function resumeAndPlay() {
+  audioEngine.resume();
+  setTimeout(() => audioEngine.play(), 50);
+}
+
 export function useAudioPlayer() {
   const player = usePlayerStore();
 
@@ -20,7 +25,6 @@ export function useAudioPlayer() {
 
     const origLoadTrack = audioEngine.loadTrack.bind(audioEngine);
     audioEngine.loadTrack = (track: MediaFile) => {
-      console.log('[AUDIO] loadTrack:', track.name, '(' + track.type + ')');
       origLoadTrack(track);
       mediaEl.value = audioEngine.getMediaElement();
       isReady.value = true;
@@ -36,12 +40,10 @@ export function useAudioPlayer() {
     };
 
     audioEngine.onPlayStateChange = (playing: boolean) => {
-      console.log('[AUDIO] onPlayStateChange:', playing ? 'PLAYING' : 'PAUSED');
       isPlaying.value = playing;
     };
 
     audioEngine.onTrackEnd = () => {
-      console.log('[AUDIO] onTrackEnd → calling player.nextTrack()');
       player.nextTrack();
     };
 
@@ -54,23 +56,15 @@ export function useAudioPlayer() {
       _lastTrackPath = path;
 
       if (!track) {
-        console.log('[AUDIO] $subscribe currentTrack → null, pausing');
         audioEngine.pause();
         return;
       }
 
-      console.log('[AUDIO] $subscribe currentTrack →', track.name, '(' + track.type + ')');
-
       if (track.type === 'video') {
-        console.log('[AUDIO] $subscribe → VIDEO, pausing audioEngine');
         audioEngine.pause();
       } else if (track.type === 'audio') {
-        console.log('[AUDIO] $subscribe → AUDIO, loading + will play in 100ms');
         audioEngine.loadTrack(track);
-        setTimeout(() => {
-          console.log('[AUDIO] $subscribe setTimeout → player.isPlaying:', player.isPlaying);
-          if (player.isPlaying) audioEngine.play();
-        }, 100);
+        resumeAndPlay();
         player.flushPendingQueue();
       }
     });
@@ -83,11 +77,19 @@ export function useAudioPlayer() {
       _lastPlaying = playing;
 
       const trackType = state.currentTrack?.type;
-      console.log('[AUDIO] $subscribe isPlaying →', playing ? 'PLAY' : 'PAUSE', 'trackType:', trackType);
       if (trackType !== 'audio') return;
-      if (playing) audioEngine.play();
-      else audioEngine.pause();
+      if (playing) {
+        resumeAndPlay();
+      } else {
+        audioEngine.pause();
+      }
     });
+
+    const existingTrack = player.currentTrack;
+    if (existingTrack?.type === 'audio' && player.isPlaying) {
+      audioEngine.loadTrack(existingTrack);
+      resumeAndPlay();
+    }
   }
 
   const progress = computed(() => (duration.value > 0 ? currentTime.value / duration.value : 0));
@@ -101,7 +103,7 @@ export function useAudioPlayer() {
     isReady,
     error,
     analyserNode: audioEngine.getAnalyserNode(),
-    play: () => audioEngine.play(),
+    play: () => resumeAndPlay(),
     pause: () => audioEngine.pause(),
     seek: (time: number) => audioEngine.seek(time),
     setVolume: (v: number) => {

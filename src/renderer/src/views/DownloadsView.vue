@@ -1,14 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed } from 'vue';
 import { useYouTubeStore } from '@renderer/stores/youtube';
-import { moduleManager } from '@renderer/modules/ModuleManager';
 import { Download, CheckCircle, AlertCircle, XCircle, Clock } from '@lucide/vue';
 
 const yt = useYouTubeStore();
 
-onMounted(() => {
-  moduleManager.switchTo('youtube');
-});
 const active = computed(() =>
   yt.downloads.filter((d) => d.status === 'downloading' || d.status === 'pending')
 );

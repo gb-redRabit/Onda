@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
-import { moduleManager } from '@renderer/modules/ModuleManager';
 import {
   Palette,
   Play,
@@ -35,7 +34,6 @@ const deps = ref(
 );
 
 onMounted(() => {
-  moduleManager.switchTo('settings');
   if (!hasCachedDeps()) {
     checkDependencies();
   }

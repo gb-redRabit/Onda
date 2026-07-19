@@ -1,15 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { Search, Play, Download, ExternalLink, Tv2 } from '@lucide/vue';
 import { useYouTubeStore } from '@renderer/stores/youtube';
-import { moduleManager } from '@renderer/modules/ModuleManager';
 import { formatNumber } from '@renderer/utils/formatters';
 
 const yt = useYouTubeStore();
 
-onMounted(() => {
-  moduleManager.switchTo('youtube');
-});
 const query = ref('');
 
 async function search() {

@@ -42,7 +42,6 @@ function onVolume(e: MouseEvent) {
 }
 
 function togglePlay() {
-  console.log('[PLAYERBAR] togglePlay → audio.isPlaying:', audio.isPlaying.value);
   if (audio.isPlaying.value) {
     audio.pause();
   } else {

@@ -1,17 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
-import { moduleManager } from '@renderer/modules/ModuleManager';
 import { Music2, List, Grid3X3, Search } from '@lucide/vue';
 import { formatDuration } from '@renderer/utils/formatters';
 
 const library = useLibraryStore();
 const player = usePlayerStore();
 
-onMounted(() => {
-  moduleManager.switchTo('library');
-});
 const viewMode = ref<'list' | 'grid'>('list');
 const query = ref('');
 const tab = ref<'tracks' | 'artists' | 'albums' | 'playlists'>('tracks');

@@ -37,7 +37,6 @@ export const usePlayerStore = defineStore('player', () => {
   const displayQueue = computed(() => [...pendingQueue.value, ...queue.value]);
 
   function setTrack(track: MediaFile) {
-    console.log('[STORE] setTrack:', track.name, '(' + track.type + ')', 'isPlaying→true', 'pipActive:', pipActive.value);
     if (currentTrack.value) {
       history.value.unshift(currentTrack.value);
       if (history.value.length > 100) history.value.pop();
@@ -50,15 +49,12 @@ export const usePlayerStore = defineStore('player', () => {
   }
 
   function play() {
-    console.log('[STORE] play()');
     isPlaying.value = true;
   }
   function pause() {
-    console.log('[STORE] pause()');
     isPlaying.value = false;
   }
   function togglePlay() {
-    console.log('[STORE] togglePlay() →', !isPlaying.value ? 'PLAY' : 'PAUSE');
     isPlaying.value = !isPlaying.value;
   }
   function seek(time: number) {
@@ -71,7 +67,6 @@ export const usePlayerStore = defineStore('player', () => {
     isMuted.value = !isMuted.value;
   }
   function toggleShuffle() {
-    console.log('[STORE] toggleShuffle() →', !shuffle.value ? 'ON' : 'OFF');
     shuffle.value = !shuffle.value;
   }
 
@@ -79,7 +74,6 @@ export const usePlayerStore = defineStore('player', () => {
     const modes: Array<'none' | 'all' | 'one'> = ['none', 'all', 'one'];
     const idx = modes.indexOf(repeat.value);
     repeat.value = modes[(idx + 1) % modes.length];
-    console.log('[STORE] cycleRepeat() →', repeat.value);
   }
 
   function addToQueue(track: MediaFile) {
@@ -162,33 +156,27 @@ export const usePlayerStore = defineStore('player', () => {
   }
 
   function nextTrack(): MediaFile | null {
-    console.log('[STORE] nextTrack() shuffle:', shuffle.value, 'repeat:', repeat.value, 'queue:', queue.value.length, 'pending:', pendingQueue.value.length, 'history:', history.value.length);
     if (repeat.value === 'one' && currentTrack.value) {
-      console.log('[STORE] nextTrack → repeat=one, resetting currentTime');
       currentTime.value = 0;
       return currentTrack.value;
     }
     if (pendingQueue.value.length > 0) {
       const idx = shuffle.value ? Math.floor(Math.random() * pendingQueue.value.length) : 0;
       const next = pendingQueue.value.splice(idx, 1)[0]!;
-      console.log('[STORE] nextTrack → from pendingQueue[' + idx + ']:', next.name);
       setTrack(next);
       return next;
     }
     if (queue.value.length === 0) {
       if (repeat.value === 'all' && history.value.length > 0) {
         const next = history.value[history.value.length - 1];
-        console.log('[STORE] nextTrack → repeat=all, from history:', next.name);
         setTrack(next);
         history.value.pop();
         return next;
       }
-      console.log('[STORE] nextTrack → NO MORE TRACKS');
       return null;
     }
     const nextIdx = shuffle.value ? Math.floor(Math.random() * queue.value.length) : 0;
     const next = queue.value[nextIdx];
-    console.log('[STORE] nextTrack → from queue[' + nextIdx + ']:', next.name);
     setTrack(next);
     queue.value.splice(nextIdx, 1);
     return next;
@@ -207,13 +195,10 @@ export const usePlayerStore = defineStore('player', () => {
   }
 
   function prevTrack(): MediaFile | null {
-    console.log('[STORE] prevTrack() history:', history.value.length);
     if (history.value.length === 0) {
-      console.log('[STORE] prevTrack → NO HISTORY');
       return null;
     }
     const prev = history.value.shift()!;
-    console.log('[STORE] prevTrack →', prev.name);
     currentTrack.value = prev;
     currentTime.value = 0;
     isPlaying.value = true;

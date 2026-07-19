@@ -1,19 +1,13 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Music2, Play, Clock, FolderOpen, Disc3, Tv2, ArrowRight, FolderUp } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useLibraryStore } from '@renderer/stores/library';
-import { moduleManager } from '@renderer/modules/ModuleManager';
 import { openMediaFiles } from '@renderer/composables/useOpenMedia';
 
 const router = useRouter();
 const player = usePlayerStore();
 const library = useLibraryStore();
-
-onMounted(() => {
-  moduleManager.switchTo('home');
-});
 
 async function openFile() {
   const result = (await window.api.invoke('dialog:openFile')) as {
