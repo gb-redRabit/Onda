@@ -10,10 +10,17 @@ import { promisify } from 'util';
 import https from 'https';
 import http from 'http';
 import os from 'os';
-import Store from 'electron-store';
 
 const execAsync = promisify(execCb);
-const store = new Store();
+
+let _store: InstanceType<typeof import('electron-store').default> | null = null;
+async function getStore() {
+  if (!_store) {
+    const { default: Store } = await import('electron-store');
+    _store = new Store();
+  }
+  return _store;
+}
 
 const VIDEO_EXTS = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v', '.ts', '.ogv'];
 const AUDIO_EXTS = [
@@ -352,6 +359,7 @@ export function registerIPC(): void {
 
   ipcMain.handle('settings:get', async () => {
     try {
+      const store = await getStore();
       return store.store || {};
     } catch {
       return {};
@@ -360,6 +368,7 @@ export function registerIPC(): void {
 
   ipcMain.handle('settings:set', async (_event, data: Record<string, unknown>) => {
     try {
+      const store = await getStore();
       for (const [key, value] of Object.entries(data)) {
         store.set(key, value);
       }
