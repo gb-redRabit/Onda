@@ -101,6 +101,8 @@ watch(
 onUnmounted(() => {
   if (animFrame) cancelAnimationFrame(animFrame);
 });
+
+defineExpose({ style, cycleStyle });
 </script>
 
 <template>

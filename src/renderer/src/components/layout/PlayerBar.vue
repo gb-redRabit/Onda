@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   Play,
   Pause,
@@ -16,7 +17,8 @@ import {
   Music2,
   SlidersHorizontal,
   Minimize2,
-  Maximize2
+  Maximize2,
+  Disc3
 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
@@ -24,6 +26,7 @@ import { formatDuration } from '@renderer/utils/formatters';
 
 const player = usePlayerStore();
 const audio = useAudioPlayer();
+const router = useRouter();
 const isMini = ref(false);
 
 const progressPct = computed(() =>
@@ -111,6 +114,13 @@ function togglePlay() {
       formatDuration(audio.currentTime.value)
     }}</span>
     <button
+      class="p-1.5 text-fg-faint hover:text-accent-base transition-colors"
+      title="Widok audio"
+      @click="router.push('/audio')"
+    >
+      <Disc3 :size="13" />
+    </button>
+    <button
       class="p-1.5 text-fg-faint hover:text-fg-base transition-colors"
       @click="isMini = false"
     >
@@ -163,8 +173,16 @@ function togglePlay() {
           {{ player.currentTrack?.metadata?.artist || 'Wybierz utwór' }}
         </div>
       </div>
-      <button class="shrink-0 p-1.5 text-fg-faint hover:text-red-base transition-colors">
-        <Heart :size="15" />
+      <button
+        class="shrink-0 p-1.5 transition-colors"
+        :class="player.currentTrack && player.isFavorite(player.currentTrack.path) ? 'text-red-base' : 'text-fg-faint hover:text-red-base'"
+        :disabled="!player.currentTrack"
+        @click="player.currentTrack && player.toggleFavorite(player.currentTrack.path)"
+      >
+        <Heart
+          :size="15"
+          :fill="player.currentTrack && player.isFavorite(player.currentTrack.path) ? 'currentColor' : 'none'"
+        />
       </button>
     </div>
 
@@ -250,6 +268,13 @@ function togglePlay() {
           :style="{ width: (player.isMuted ? 0 : player.volume * 100) + '%' }"
         />
       </div>
+      <button
+        class="p-1.5 rounded-lg text-fg-faint hover:text-accent-base hover:bg-bg-hover transition-colors"
+        title="Widok audio"
+        @click="router.push('/audio')"
+      >
+        <Disc3 :size="15" />
+      </button>
       <button
         class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
         title="Mini odtwarzacz"

@@ -102,7 +102,7 @@ watch(
     <TopMenu v-if="ui.topMenuVisible" />
     <div class="flex flex-1 min-h-0">
       <Sidebar v-if="ui.sidebarExpanded && settings.appearance.sidebarPosition === 'left'" />
-      <main class="flex-1 min-w-0 overflow-auto">
+      <main class="flex-1 min-w-0 relative overflow-auto">
         <router-view v-slot="{ Component }">
           <transition name="page" mode="out-in">
             <component :is="Component" />
@@ -119,7 +119,8 @@ watch(
       v-if="
         ui.playerBarVisible &&
         player.currentTrack?.type === 'audio' &&
-        route.name !== 'player'
+        route.name !== 'player' &&
+        route.name !== 'audio'
       "
     />
     <StatusBar v-if="ui.statusBarVisible" />

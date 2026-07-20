@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue';
+import { ref, computed, watch, effectScope } from 'vue';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { usePlayerStore } from '@renderer/stores/player';
 import type { MediaFile } from '@renderer/types/media';
@@ -8,6 +8,7 @@ let _initialized = false;
 const currentTime = ref(0);
 const duration = ref(0);
 const isPlaying = ref(false);
+const volume = ref(0.8);
 const mediaEl = ref<HTMLAudioElement | null>(null);
 const isReady = ref(false);
 const error = ref<string | null>(null);
@@ -44,52 +45,75 @@ export function useAudioPlayer() {
     };
 
     audioEngine.onTrackEnd = () => {
-      player.nextTrack();
+      if (player.repeat === 'one') {
+        audioEngine.seek(0);
+        audioEngine.play();
+      } else {
+        player.nextTrack();
+      }
     };
 
-    let _lastTrackPath: string | null = null;
+    const scope = effectScope(true);
 
-    player.$subscribe((_mutation, state) => {
-      const track = state.currentTrack;
-      const path = track?.path ?? null;
-      if (path === _lastTrackPath) return;
-      _lastTrackPath = path;
+    scope.run(() => {
+      watch(
+        () => player.currentTrack?.path ?? null,
+        (path) => {
+          const track = player.currentTrack;
+          if (!track || !path) {
+            audioEngine.pause();
+            return;
+          }
 
-      if (!track) {
-        audioEngine.pause();
-        return;
-      }
+          if (track.type === 'video') {
+            audioEngine.pause();
+          } else if (track.type === 'audio') {
+            audioEngine.loadTrack(track);
+            resumeAndPlay();
+            player.flushPendingQueue();
+          }
+        }
+      );
 
-      if (track.type === 'video') {
-        audioEngine.pause();
-      } else if (track.type === 'audio') {
-        audioEngine.loadTrack(track);
-        resumeAndPlay();
-        player.flushPendingQueue();
-      }
-    });
+      watch(
+        () => player.isPlaying,
+        (playing) => {
+          const trackType = player.currentTrack?.type;
+          if (trackType !== 'audio') return;
+          if (playing) {
+            resumeAndPlay();
+          } else {
+            audioEngine.pause();
+          }
+        }
+      );
 
-    let _lastPlaying: boolean | null = null;
+      watch(
+        () => player.isMuted,
+        (muted) => {
+          audioEngine.setVolume(muted ? 0 : player.volume);
+        }
+      );
 
-    player.$subscribe((_mutation, state) => {
-      const playing = state.isPlaying;
-      if (playing === _lastPlaying) return;
-      _lastPlaying = playing;
-
-      const trackType = state.currentTrack?.type;
-      if (trackType !== 'audio') return;
-      if (playing) {
-        resumeAndPlay();
-      } else {
-        audioEngine.pause();
-      }
+      watch(
+        () => player.volume,
+        (v) => {
+          if (!player.isMuted) {
+            audioEngine.setVolume(v);
+          }
+        }
+      );
     });
 
     const existingTrack = player.currentTrack;
-    if (existingTrack?.type === 'audio' && player.isPlaying) {
+    if (existingTrack?.type === 'audio') {
       audioEngine.loadTrack(existingTrack);
-      resumeAndPlay();
+      if (player.isPlaying) {
+        resumeAndPlay();
+      }
     }
+
+    volume.value = player.volume;
   }
 
   const progress = computed(() => (duration.value > 0 ? currentTime.value / duration.value : 0));
@@ -98,6 +122,7 @@ export function useAudioPlayer() {
     currentTime,
     duration,
     isPlaying,
+    volume,
     progress,
     mediaEl,
     isReady,
@@ -107,6 +132,7 @@ export function useAudioPlayer() {
     pause: () => audioEngine.pause(),
     seek: (time: number) => audioEngine.seek(time),
     setVolume: (v: number) => {
+      volume.value = v;
       player.setVolume(v);
       audioEngine.setVolume(player.isMuted ? 0 : v);
     },

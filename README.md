@@ -8,7 +8,7 @@ Onda obsługuje odtwarzanie lokalnych plików audio/wideo, eksplorację plików,
 
 - **Silnik audio** — HTML5 Audio + Web Audio API z gapless playback i crossfade
 - **Equalizer** — 10 pasm + presety + custom presets + krzywa odpowiedzi częstotliwościowej
-- **Wizualizacja** — style bars / wave / radial (Canvas + AnalyserNode)
+- **Wizualizacja** — style bars / wave / radial (Canvas + AnalyserNode), 3 layouty audio view
 - **Kolejka i historia** — z drag & drop
 - **Napisy** — parser SRT/VTT/ASS, renderowanie ASS przez JASSUB (wasm + worker)
   - Wyciąganie czcionek z MKV (mkvextract), lokalne fonty Windows, Google Fonts fallback
@@ -93,7 +93,7 @@ npm run build:linux
 
 - ✅ Fundament i architektura modułowa + splash screen
 - ✅ UI skeleton + nawigacja + system motywów
-- ✅ Odtwarzacz multimediów (~95%) — audio w tle, wideo z PiP, napisy ASS
+- ✅ Odtwarzacz multimediów (~98%) — audio w tle, wideo z PiP, napisy ASS, AudioView z 3 layoutami
 - ⏳ Ustawienia (częściowo)
 - ⏳ Integracja YouTube, biblioteka mediów, eksplorator plików
 

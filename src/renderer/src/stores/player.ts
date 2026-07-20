@@ -28,10 +28,54 @@ export const usePlayerStore = defineStore('player', () => {
     new Map<string, { type: 'video' | 'image' | null; data: string | null }>()
   );
 
+  const favorites = ref<Set<string>>(new Set());
   const subtitleTracks = ref<SubtitleTrack[]>([]);
   const activeSubtitleId = ref<string | null>(null);
 
   const hasTrack = computed(() => currentTrack.value !== null);
+
+  function isFavorite(path: string): boolean {
+    return favorites.value.has(path);
+  }
+
+  function toggleFavorite(path: string) {
+    const next = new Set(favorites.value);
+    if (next.has(path)) {
+      next.delete(path);
+    } else {
+      next.add(path);
+    }
+    favorites.value = next;
+    saveFavorites();
+  }
+
+  async function loadFavorites() {
+    try {
+      if (window.api) {
+        const data = (await window.api.invoke('settings:get')) as Record<string, unknown>;
+        const list = data.favorites;
+        if (Array.isArray(list)) {
+          favorites.value = new Set(list as string[]);
+        }
+      }
+    } catch {
+      // use defaults
+    }
+  }
+
+  async function saveFavorites() {
+    try {
+      if (window.api) {
+        await window.api.invoke('settings:set', {
+          favorites: [...favorites.value]
+        });
+      }
+    } catch {
+      // silent fail
+    }
+  }
+
+  loadFavorites();
   const progress = computed(() => (duration.value > 0 ? currentTime.value / duration.value : 0));
   const queueLength = computed(() => queue.value.length + pendingQueue.value.length);
   const displayQueue = computed(() => [...pendingQueue.value, ...queue.value]);
@@ -341,6 +385,10 @@ export const usePlayerStore = defineStore('player', () => {
     clearSubtitles,
     resumePrompt,
     showResumePrompt,
-    clearResumePrompt
+    clearResumePrompt,
+    favorites,
+    isFavorite,
+    toggleFavorite,
+    loadFavorites
   };
 });
