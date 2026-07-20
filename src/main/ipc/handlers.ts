@@ -11,6 +11,7 @@ import https from 'https';
 import http from 'http';
 import os from 'os';
 import { VIDEO_EXTS, AUDIO_EXTS } from '../../shared/constants';
+import { logger } from '../utils/logger';
 
 const execAsync = promisify(execCb);
 
@@ -108,7 +109,13 @@ async function getWindowsDrives(): Promise<FileItem[]> {
       'powershell.exe -NoProfile -NonInteractive -Command "Get-PSDrive -PSProvider FileSystem | Select-Object Name,Root,Free,Used | ConvertTo-Json -Compress"';
     const { stdout } = await execAsync(cmd, { encoding: 'utf-8', timeout: 10000, windowsHide: true });
     if (!stdout || !stdout.trim()) return fallback;
-    let parsed: any[];
+    interface DriveInfo {
+      Name: string
+      Root: string
+      Free: number
+      Used: number
+    }
+    let parsed: DriveInfo[];
     try {
       parsed = JSON.parse(stdout.trim());
     } catch {
@@ -390,35 +397,38 @@ export function registerIPC(): void {
     }
   });
 
-  ipcMain.handle('media:getThumbnail', async (_event, _filePath: string) => {
+  ipcMain.handle('yt:search', async (_event, query: string) => {
+    logger.warn('yt', 'search not implemented — yt-dlp API required. Query:', query);
+    return { items: [], nextPageToken: null, prevPageToken: null };
+  });
+
+  ipcMain.handle('yt:getInfo', async (_event, videoId: string) => {
+    logger.warn('yt', 'getInfo not implemented — yt-dlp API required. Id:', videoId);
     return null;
   });
 
-  ipcMain.handle('yt:search', async (_event, _query: string) => {
-    return { items: [], nextPageToken: null };
+  ipcMain.handle('yt:download', async (_event, url: string, format: string) => {
+    logger.warn('yt', 'download not implemented — yt-dlp API required. URL:', url, 'Format:', format);
+    return { success: false, error: 'yt-dlp integration not yet implemented' };
   });
 
-  ipcMain.handle('yt:getInfo', async (_event, _videoId: string) => {
-    return null;
-  });
-
-  ipcMain.handle('yt:download', async (_event, _url: string, _format: string) => {
-    return { success: false, error: 'yt-dlp not installed' };
-  });
-
-  ipcMain.handle('yt:getChannel', async (_event, _channelId: string) => {
+  ipcMain.handle('yt:getChannel', async (_event, channelId: string) => {
+    logger.warn('yt', 'getChannel not implemented — yt-dlp API required. Id:', channelId);
     return null;
   });
 
   ipcMain.handle('update:check', async () => {
+    logger.info('update', 'check requested — using electron-updater (not configured)');
     return { available: false, version: app.getVersion(), notes: '' };
   });
 
   ipcMain.handle('update:download', async () => {
-    return { success: false };
+    logger.info('update', 'download requested — not available');
+    return { success: false, error: 'Auto-update not configured' };
   });
 
   ipcMain.handle('update:install', async () => {
+    logger.info('update', 'install requested — relaunching');
     app.relaunch();
     app.exit(0);
   });
@@ -471,8 +481,9 @@ export function registerIPC(): void {
         windowsHide: true
       });
       return { success: true, output: stdout + stderr };
-    } catch (e: any) {
-      const msg = e.stderr || e.stdout || e.message || 'Nieznany błąd';
+    } catch (e: unknown) {
+      const err = e as { stderr?: string; stdout?: string; message?: string };
+      const msg = err.stderr || err.stdout || err.message || 'Nieznany błąd';
       if (msg.includes('requires elevated permissions') || msg.includes('elevation required')) {
         return {
           success: false,
@@ -494,8 +505,9 @@ export function registerIPC(): void {
         dest
       );
       return { success: true };
-    } catch (e: any) {
-      return { success: false, error: e.message || 'Nie udało się pobrać yt-dlp' };
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      return { success: false, error: err.message || 'Nie udało się pobrać yt-dlp' };
     }
   });
 
@@ -538,8 +550,9 @@ export function registerIPC(): void {
         windowsHide: true
       });
       return { success: true, output: stdout + stderr };
-    } catch (e: any) {
-      const msg = e.stderr || e.stdout || e.message || 'Nieznany błąd';
+    } catch (e: unknown) {
+      const err = e as { stderr?: string; stdout?: string; message?: string };
+      const msg = err.stderr || err.stdout || err.message || 'Nieznany błąd';
       if (msg.includes('requires elevated permissions') || msg.includes('elevation required')) {
         return {
           success: false,
@@ -642,7 +655,7 @@ export function registerIPC(): void {
         await unlink(outPath).catch(() => {});
         return { content, format: 'ass' };
       } catch (err) {
-        console.error('[Onda/subtitles] extractEmbedded failed:', err);
+        logger.error('subtitles', 'extractEmbedded failed', err);
         return null;
       }
     }
@@ -709,7 +722,7 @@ export function registerIPC(): void {
         const parsed = JSON.parse(stdout);
         const streams: Array<{ index: number; tags?: { filename?: string } }> = (
           parsed.streams || []
-        ).filter((s: any) => s.codec_type === 'attachment');
+        ).filter((s: { codec_type?: string }) => s.codec_type === 'attachment');
 
         if (!streams.length) return [];
 
@@ -745,14 +758,15 @@ export function registerIPC(): void {
               /* skip failed attachment */
             }
           }
-        } catch (e: any) {
-          console.error('[Onda/attachments] mkvextract failed:', e.message?.split('\n')[0] || e);
+        } catch (e: unknown) {
+          const err = e as { message?: string };
+          logger.error('attachments', 'mkvextract failed', err.message?.split('\n')[0] || e);
         }
         await rm(dumpDir, { recursive: true, force: true }).catch(() => {});
 
         return fonts;
       } catch (err) {
-        console.error('[Onda/subtitles] extractAttachments failed:', err);
+        logger.error('subtitles', 'extractAttachments failed', err);
         return [];
       }
     }

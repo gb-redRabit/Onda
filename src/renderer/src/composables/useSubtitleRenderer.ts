@@ -21,6 +21,7 @@ import georgiaUrl from '/fonts/Georgia.ttf?url';
 import comicSansMsUrl from '/fonts/ComicSansMS.ttf?url';
 import segoeUiEmojiUrl from '/fonts/SegoeUIEmoji.ttf?url';
 import { queryRemoteFonts } from 'lfa-ponyfill';
+import { logger } from '@renderer/utils/logger';
 
 const fontMapCache = new Map<string, any>();
 
@@ -97,7 +98,7 @@ async function loadRemoteVariant(
     const blob = await fonts[0].blob();
     fontMap[mapKey] = URL.createObjectURL(blob);
   } catch (e) {
-    console.error('[Subtitles][fonts] failed to load', mapKey, e);
+    logger.error('Subtitles', 'failed to load font', mapKey, e);
   }
 }
 
@@ -149,7 +150,7 @@ async function ensureJASSUB(): Promise<typeof import('jassub').default | null> {
     JASSUBClass = mod.default;
     return JASSUBClass;
   } catch (err) {
-    console.error('[Subtitles] Failed to load JASSUB:', err);
+    logger.error('Subtitles', 'Failed to load JASSUB', err);
     return null;
   }
 }
@@ -302,7 +303,7 @@ export async function loadSubtitleTrack(track: SubtitleTrack): Promise<void> {
 
     await jassubInstance.ready;
   } catch (err) {
-    console.error('[Subtitles] Failed to initialize JASSUB:', err);
+    logger.error('Subtitles', 'Failed to initialize JASSUB', err);
     jassubInstance = null;
   }
 }

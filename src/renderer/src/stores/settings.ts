@@ -5,13 +5,19 @@ import type {
   AppearanceSettings,
   PlaybackSettings,
   DownloadSettings,
+  NetworkSettings,
+  ApiKeySettings,
+  UpdateSettings,
   DependencyStatus
 } from '@renderer/types/settings';
 import {
   DEFAULT_APPEARANCE,
   DEFAULT_PLAYBACK,
   DEFAULT_DOWNLOAD,
-  DEFAULT_SHORTCUTS
+  DEFAULT_SHORTCUTS,
+  DEFAULT_NETWORK,
+  DEFAULT_API_KEYS,
+  DEFAULT_UPDATES
 } from '@renderer/utils/constants';
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -21,6 +27,9 @@ export const useSettingsStore = defineStore('settings', () => {
   const playback = ref<PlaybackSettings>({ ...DEFAULT_PLAYBACK });
   const download = ref<DownloadSettings>({ ...DEFAULT_DOWNLOAD });
   const shortcuts = ref<Record<string, string>>({ ...DEFAULT_SHORTCUTS });
+  const network = ref<NetworkSettings>({ ...DEFAULT_NETWORK });
+  const apiKeys = ref<ApiKeySettings>({ ...DEFAULT_API_KEYS });
+  const updates = ref<UpdateSettings>({ ...DEFAULT_UPDATES });
   const dependencies = ref<Record<string, DependencyStatus>>({});
   const isLoaded = ref(false);
 
@@ -37,6 +46,9 @@ export const useSettingsStore = defineStore('settings', () => {
         if (data.playback) playback.value = data.playback;
         if (data.download) download.value = data.download;
         if (data.shortcuts) shortcuts.value = data.shortcuts;
+        if (data.network) network.value = data.network;
+        if (data.apiKeys) apiKeys.value = data.apiKeys;
+        if (data.updates) updates.value = data.updates;
         if (data.dependencies) dependencies.value = data.dependencies;
       }
     } catch {
@@ -53,6 +65,9 @@ export const useSettingsStore = defineStore('settings', () => {
           playback: playback.value,
           download: download.value,
           shortcuts: shortcuts.value,
+          network: network.value,
+          apiKeys: apiKeys.value,
+          updates: updates.value,
           dependencies: dependencies.value
         });
       }
@@ -91,6 +106,9 @@ export const useSettingsStore = defineStore('settings', () => {
     playback.value = { ...DEFAULT_PLAYBACK };
     download.value = { ...DEFAULT_DOWNLOAD };
     shortcuts.value = { ...DEFAULT_SHORTCUTS };
+    network.value = { ...DEFAULT_NETWORK };
+    apiKeys.value = { ...DEFAULT_API_KEYS };
+    updates.value = { ...DEFAULT_UPDATES };
     dependencies.value = {};
     save();
   }
@@ -109,6 +127,9 @@ export const useSettingsStore = defineStore('settings', () => {
     playback,
     download,
     shortcuts,
+    network,
+    apiKeys,
+    updates,
     dependencies,
     isLoaded,
     cssVariables,

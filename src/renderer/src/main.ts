@@ -5,6 +5,7 @@ import router from './router';
 import App from './App.vue';
 import './assets/main.css';
 import { useUIStore } from './stores/ui';
+import { logger } from './utils/logger';
 
 import { moduleManager } from './modules/ModuleManager';
 import { PlayerModule } from './modules/PlayerModule';
@@ -29,7 +30,7 @@ app.use(pinia);
 app.use(router);
 
 app.config.errorHandler = (err, _instance, info) => {
-  console.error('[Onda Error]', err, info);
+  logger.error('Error', `${err}`, info);
   try {
     const ui = useUIStore();
     ui.notify('error', 'Wystąpił błąd', (err as Error).message || String(err));

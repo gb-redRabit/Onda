@@ -82,7 +82,7 @@ router.beforeEach(async (to) => {
   const moduleId = ROUTE_MODULE_MAP[routeName];
   if (!moduleId) return true;
 
-  // Smart path: audio gra w tle → nie deaktywuj playera
+  // Smart path: audio plays in background → do not deactivate player
   const currentActive = moduleManager.getActiveId();
   if (currentActive === 'player' && moduleId !== 'player') {
     const player = usePlayerStore();
@@ -95,7 +95,7 @@ router.beforeEach(async (to) => {
     }
   }
 
-  // Zapobiega rekurencji gdy switchTo wyzwala nawigację (np. watch w App.vue)
+  // Prevent recursion when switchTo triggers navigation (e.g. watch in App.vue)
   if (_isSwitching) {
     _pendingSwitch = routeName;
     return false;
@@ -108,7 +108,7 @@ router.beforeEach(async (to) => {
     _isSwitching = false;
   }
 
-  // Jeśli podczas switchTo pojawiła się inna nawigacja, przekieruj
+  // If another navigation occurred during switchTo, redirect
   if (_pendingSwitch && _pendingSwitch !== routeName) {
     const target = _pendingSwitch;
     _pendingSwitch = null;

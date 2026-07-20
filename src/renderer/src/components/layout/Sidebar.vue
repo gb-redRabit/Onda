@@ -167,7 +167,7 @@ function playPlaylist(playlistId: string) {
             :key="i"
             class="flex items-center gap-2 text-xs text-fg-muted truncate px-2 py-1.5 rounded-lg hover:bg-bg-hover hover:text-fg-base transition-colors"
           >
-          <!--track.name.slice(track.name.length-3 ,track.name.length)- pobranie formatu pliku -> dodać z zmiane ikony zależności czy to auido czy wideo -->
+          <!-- TODO: extract file extension from track.name to change icon based on audio/video type -->
             <Music2 :size="11" class="shrink-0 text-accent-base" />
             <span class="truncate">{{ track.metadata?.title || track.name }}</span>
           </div>

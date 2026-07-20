@@ -11,6 +11,7 @@ import {
   preparePiPSubtitleData
 } from '@renderer/composables/useSubtitleRenderer';
 import { audioEngine } from '@renderer/modules/audioEngine';
+import { logger } from '@renderer/utils/logger';
 
 export function useVideoPlayer(ctx: {
   player: ReturnType<typeof usePlayerStore>;
@@ -321,7 +322,7 @@ export function useVideoPlayer(ctx: {
           track.fonts = result.fonts;
           await loadSubtitleTrack(track);
         } else {
-          console.error('[Subtitles] extraction returned null');
+          logger.error('Subtitles', 'extraction returned null');
         }
       } else {
         await loadSubtitleTrack(track);

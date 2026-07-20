@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { Search, Play, Download, ExternalLink, Tv2 } from '@lucide/vue';
 import { useYouTubeStore } from '@renderer/stores/youtube';
 import { formatNumber } from '@renderer/utils/formatters';
+import type { YouTubeSearchResult } from '@renderer/types/youtube';
 
 const yt = useYouTubeStore();
 
@@ -13,7 +14,7 @@ async function search() {
   yt.isSearching = true;
   yt.searchQuery = query.value;
   try {
-    const result = (await window.api.invoke('yt:search', query.value)) as any;
+    const result = (await window.api.invoke('yt:search', query.value)) as YouTubeSearchResult | null;
     if (result) yt.setResults(result.items || [], result.nextPageToken, result.prevPageToken);
   } catch {}
   yt.isSearching = false;
