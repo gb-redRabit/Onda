@@ -103,7 +103,7 @@ watch(
     <TopMenu v-if="ui.topMenuVisible" />
     <div class="flex flex-1 min-h-0">
       <Sidebar v-if="ui.sidebarExpanded && settings.appearance.sidebarPosition === 'left'" />
-      <main class="flex-1 min-w-0 relative overflow-auto">
+      <main class="flex-1 min-w-0 relative overflow-auto flex flex-col">
         <router-view v-slot="{ Component }">
           <transition name="page" mode="out-in">
             <ErrorBoundary>

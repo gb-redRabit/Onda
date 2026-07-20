@@ -10,7 +10,7 @@ onErrorCaptured((err) => {
 </script>
 
 <template>
-  <div class="h-full">
+  <div class="flex-1 min-h-0">
     <div v-if="error" class="flex items-center justify-center h-full p-8">
       <div class="max-w-md p-6 rounded-2xl bg-red-500/10 border border-red-500/20 text-center">
         <div class="text-3xl mb-2">!</div>
