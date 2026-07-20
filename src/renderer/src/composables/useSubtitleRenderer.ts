@@ -22,6 +22,17 @@ import comicSansMsUrl from '/fonts/ComicSansMS.ttf?url';
 import segoeUiEmojiUrl from '/fonts/SegoeUIEmoji.ttf?url';
 import { queryRemoteFonts } from 'lfa-ponyfill';
 
+const fontMapCache = new Map<string, any>();
+
+function hashContent(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return String(hash);
+}
+
 const availableFonts: Record<string, string> = {
   arial: arialUrl,
   'arial bold': arialBoldUrl,
@@ -91,6 +102,9 @@ async function loadRemoteVariant(
 }
 
 async function buildFontMap(assContent: string, attachmentNames: MkvFont[] = []): Promise<any> {
+  const cacheKey = `${hashContent(assContent)}-${attachmentNames.map(f => f.name).join(',')}`;
+  if (fontMapCache.has(cacheKey)) return fontMapCache.get(cacheKey);
+
   const fontMap: Record<string, any> = { ...availableFonts };
   const localKeys = new Set(Object.keys(availableFonts));
 
@@ -124,6 +138,7 @@ async function buildFontMap(assContent: string, attachmentNames: MkvFont[] = [])
     else missing.push(family);
   }
 
+  fontMapCache.set(cacheKey, fontMap);
   return fontMap;
 }
 
@@ -251,18 +266,6 @@ export function initSubtitleRenderer(video: HTMLVideoElement, _container?: HTMLE
   videoEl = video;
 }
 
-async function urlToDataUrl(url: string): Promise<string> {
-  const res = await fetch(url);
-  const buf = await res.arrayBuffer();
-  let binary = '';
-  const bytes = new Uint8Array(buf);
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
-  }
-  return `data:application/wasm;base64,${btoa(binary)}`;
-}
-
 export async function loadSubtitleTrack(track: SubtitleTrack): Promise<void> {
   if (!videoEl) return;
   removeSubtitleTrack();
@@ -285,16 +288,12 @@ export async function loadSubtitleTrack(track: SubtitleTrack): Promise<void> {
   };
 
   try {
-    const [wasmDataUrl, modernWasmDataUrl] = await Promise.all([
-      urlToDataUrl(wasmUrl),
-      urlToDataUrl(modernWasmUrl)
-    ]);
     jassubInstance = new JASSUBCtor({
       video: videoEl,
       subContent: assContent,
       workerUrl,
-      wasmUrl: wasmDataUrl,
-      modernWasmUrl: modernWasmDataUrl,
+      wasmUrl,
+      modernWasmUrl,
       queryFonts: false,
       fonts: mkvFonts,
       availableFonts: fontMap,

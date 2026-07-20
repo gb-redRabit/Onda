@@ -338,6 +338,13 @@ export const audioEngine = {
     const el = createAudioElement();
     setupListeners(el);
     startRafLoop();
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        stopRafLoop();
+      } else if (audioEl && !audioEl.paused) {
+        startRafLoop();
+      }
+    });
   },
 
   loadTrack(track: MediaFile): void {

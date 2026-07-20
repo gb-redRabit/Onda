@@ -1,8 +1,8 @@
 import { ipcMain, dialog, BrowserWindow, shell, app } from 'electron';
 import { readdir, stat, readFile, writeFile, mkdir, rename, unlink, rm } from 'fs/promises';
-import { statSync, readFileSync } from 'fs';
+
 import { join, extname, basename } from 'path';
-import { execSync, exec as execCb, spawnSync } from 'child_process';
+import { exec as execCb } from 'child_process';
 import { pipeline } from 'stream/promises';
 import { createWriteStream } from 'fs';
 import type { FileItem } from '../../renderer/src/types/explorer';
@@ -10,8 +10,10 @@ import { promisify } from 'util';
 import https from 'https';
 import http from 'http';
 import os from 'os';
+import Store from 'electron-store';
 
 const execAsync = promisify(execCb);
+const store = new Store();
 
 const VIDEO_EXTS = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v', '.ts', '.ogv'];
 const AUDIO_EXTS = [
@@ -94,7 +96,7 @@ function downloadFile(url: string, dest: string): Promise<void> {
   });
 }
 
-function getWindowsDrives(): FileItem[] {
+async function getWindowsDrives(): Promise<FileItem[]> {
   const fallback = [
     {
       name: 'C:',
@@ -110,11 +112,11 @@ function getWindowsDrives(): FileItem[] {
   try {
     const cmd =
       'powershell.exe -NoProfile -NonInteractive -Command "Get-PSDrive -PSProvider FileSystem | Select-Object Name,Root,Free,Used | ConvertTo-Json -Compress"';
-    const output = execSync(cmd, { encoding: 'utf-8', timeout: 10000, windowsHide: true });
-    if (!output || !output.trim()) return fallback;
+    const { stdout } = await execAsync(cmd, { encoding: 'utf-8', timeout: 10000, windowsHide: true });
+    if (!stdout || !stdout.trim()) return fallback;
     let parsed: any[];
     try {
-      parsed = JSON.parse(output.trim());
+      parsed = JSON.parse(stdout.trim());
     } catch {
       return fallback;
     }
@@ -155,7 +157,7 @@ function getFileItem(fullPath: string, stats: import('fs').Stats, name: string):
 }
 
 export function registerIPC(): void {
-  ipcMain.handle('fs:getDrives', (): FileItem[] => {
+  ipcMain.handle('fs:getDrives', async (): Promise<FileItem[]> => {
     return getWindowsDrives();
   });
 
@@ -350,8 +352,6 @@ export function registerIPC(): void {
 
   ipcMain.handle('settings:get', async () => {
     try {
-      const Store = (await import('electron-store')).default;
-      const store = new Store();
       return store.store || {};
     } catch {
       return {};
@@ -360,8 +360,6 @@ export function registerIPC(): void {
 
   ipcMain.handle('settings:set', async (_event, data: Record<string, unknown>) => {
     try {
-      const Store = (await import('electron-store')).default;
-      const store = new Store();
       for (const [key, value] of Object.entries(data)) {
         store.set(key, value);
       }
@@ -428,18 +426,20 @@ export function registerIPC(): void {
     app.exit(0);
   });
 
-  ipcMain.handle('dep:checkFfmpeg', async () => {
+  async function checkVersion(cmd: string, regex: RegExp): Promise<{ installed: boolean; version: string | null }> {
     try {
-      const output = execSync('ffmpeg -version', {
-        encoding: 'utf-8',
-        timeout: 10000,
-        windowsHide: true
+      const { stdout } = await execAsync(cmd, {
+        encoding: 'utf-8', timeout: 10000, windowsHide: true
       });
-      const match = output.match(/ffmpeg version (\S+)/);
+      const match = stdout.match(regex);
       return { installed: true, version: match ? match[1] : 'unknown' };
     } catch {
       return { installed: false, version: null };
     }
+  }
+
+  ipcMain.handle('dep:checkFfmpeg', async () => {
+    return checkVersion('ffmpeg -version', /ffmpeg version (\S+)/);
   });
 
   ipcMain.handle('dep:checkYtdlp', async () => {
@@ -447,38 +447,24 @@ export function registerIPC(): void {
       const localBin = join(app.getPath('userData'), 'bin', 'yt-dlp.exe');
       try {
         await stat(localBin);
-        const output = execSync(`"${localBin}" --version`, {
-          encoding: 'utf-8',
-          timeout: 10000,
-          windowsHide: true
+        const { stdout } = await execAsync(`"${localBin}" --version`, {
+          encoding: 'utf-8', timeout: 10000, windowsHide: true
         });
-        return { installed: true, version: output.trim(), path: localBin };
+        return { installed: true, version: stdout.trim(), path: localBin };
       } catch {
         // not in local bin
       }
-      const output = execSync('yt-dlp --version', {
-        encoding: 'utf-8',
-        timeout: 10000,
-        windowsHide: true
+      const { stdout } = await execAsync('yt-dlp --version', {
+        encoding: 'utf-8', timeout: 10000, windowsHide: true
       });
-      return { installed: true, version: output.trim(), path: 'yt-dlp' };
+      return { installed: true, version: stdout.trim(), path: 'yt-dlp' };
     } catch {
       return { installed: false, version: null, path: null };
     }
   });
 
   ipcMain.handle('dep:checkFfprobe', async () => {
-    try {
-      const output = execSync('ffprobe -version', {
-        encoding: 'utf-8',
-        timeout: 10000,
-        windowsHide: true
-      });
-      const match = output.match(/ffprobe version (\S+)/);
-      return { installed: true, version: match ? match[1] : 'unknown' };
-    } catch {
-      return { installed: false, version: null };
-    }
+    return checkVersion('ffprobe -version', /ffprobe version (\S+)/);
   });
 
   ipcMain.handle('dep:installFfmpeg', async () => {
@@ -516,7 +502,7 @@ export function registerIPC(): void {
     }
   });
 
-  function getMkvExtractPath(): string {
+  async function getMkvExtractPath(): Promise<string> {
     const candidates = [
       'mkvextract',
       'C:\\Program Files\\MKVToolNix\\mkvextract.exe',
@@ -524,13 +510,10 @@ export function registerIPC(): void {
     ];
     for (const c of candidates) {
       try {
-        const res = spawnSync(`"${c}"`, ['--version'], {
-          timeout: 5000,
-          windowsHide: true,
-          stdio: 'ignore',
-          shell: true
+        await execAsync(`"${c}" --version`, {
+          timeout: 5000, windowsHide: true
         });
-        if (res.status === 0) return c;
+        return c;
       } catch {
         /* try next */
       }
@@ -541,12 +524,10 @@ export function registerIPC(): void {
   ipcMain.handle('dep:checkMkvextract', async () => {
     try {
       const bin = getMkvExtractPath();
-      const output = execSync(`"${bin}" --version`, {
-        encoding: 'utf-8',
-        timeout: 10000,
-        windowsHide: true
+      const { stdout } = await execAsync(`"${bin}" --version`, {
+        encoding: 'utf-8', timeout: 10000, windowsHide: true
       });
-      const match = output.match(/mkvextract v([\d.]+)/);
+      const match = stdout.match(/mkvextract v([\d.]+)/);
       return { installed: true, version: match ? match[1] : 'unknown' };
     } catch {
       return { installed: false, version: null };
@@ -629,11 +610,11 @@ export function registerIPC(): void {
       filePath: string
     ): Promise<Array<{ index: number; language: string; title: string; codec: string }>> => {
       try {
-        const output = execSync(
+        const { stdout } = await execAsync(
           `ffprobe -v quiet -select_streams s -show_entries stream=index,codec_name:stream_tags=language,title -of json "${filePath}"`,
           { encoding: 'utf-8', timeout: 10000, windowsHide: true }
         );
-        const parsed = JSON.parse(output);
+        const parsed = JSON.parse(stdout);
         return (parsed.streams || []).map((s: Record<string, unknown>) => ({
           index: s.index as number,
           language: ((s.tags as Record<string, string>)?.language || 'und') as string,
@@ -656,7 +637,7 @@ export function registerIPC(): void {
       try {
         await mkdir(getTempDir(), { recursive: true });
         const outPath = join(getTempDir(), `sub_${Date.now()}.ass`);
-        execSync(
+        await execAsync(
           `ffmpeg -v error -i "${filePath}" -map 0:${streamIndex} -c:s copy -y "${outPath}"`,
           { encoding: 'utf-8', timeout: 30000, windowsHide: true }
         );
@@ -724,11 +705,11 @@ export function registerIPC(): void {
       filePath: string
     ): Promise<Array<{ name: string; ext: string; data: number[] }>> => {
       try {
-        const probe = execSync(
+        const { stdout } = await execAsync(
           `ffprobe -v quiet -show_entries stream=index,codec_type,codec_name:stream_tags=filename -of json "${filePath}"`,
           { encoding: 'utf-8', timeout: 15000, windowsHide: true }
         );
-        const parsed = JSON.parse(probe);
+        const parsed = JSON.parse(stdout);
         const streams: Array<{ index: number; tags?: { filename?: string } }> = (
           parsed.streams || []
         ).filter((s: any) => s.codec_type === 'attachment');
@@ -743,30 +724,27 @@ export function registerIPC(): void {
         const fonts: Array<{ name: string; ext: string; data: number[] }> = [];
         try {
           const bin = getMkvExtractPath();
-          let count = 0;
-          streams.forEach((s, attId) => {
+          for (const [attId, s] of streams.entries()) {
             const fileName = s.tags?.filename || `font_${attId}.ttf`;
             const ext = (fileName.split('.').pop() || 'ttf').toLowerCase();
             const outPath = join(dumpDir, `att_${attId}.${ext}`);
             try {
-              const res = spawnSync(
-                `"${bin}"`,
-                [`"${filePath}"`, 'attachments', `${attId}:"${outPath}"`],
-                { encoding: 'utf-8', timeout: 30000, windowsHide: true, shell: true }
+              const res = await execAsync(
+                `"${bin}" "${filePath}" attachments ${attId}:"${outPath}"`,
+                { encoding: 'utf-8', timeout: 30000, windowsHide: true }
               );
-              if (res.status === 0 && statSync(outPath)) {
-                const buf = readFileSync(outPath);
+              if (res.stdout !== null) {
+                const buf = await readFile(outPath);
                 fonts.push({
                   name: fileName.replace(/\.(ttf|otf|ttc)$/i, ''),
                   ext,
                   data: Array.from(buf)
                 });
-                count++;
               }
             } catch {
               /* skip failed attachment */
             }
-          });
+          }
         } catch (e: any) {
           console.error('[Onda/attachments] mkvextract failed:', e.message?.split('\n')[0] || e);
         }

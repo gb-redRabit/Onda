@@ -14,6 +14,8 @@ import {
   DEFAULT_SHORTCUTS
 } from '@renderer/utils/constants';
 
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+
 export const useSettingsStore = defineStore('settings', () => {
   const appearance = ref<AppearanceSettings>({ ...DEFAULT_APPEARANCE });
   const playback = ref<PlaybackSettings>({ ...DEFAULT_PLAYBACK });
@@ -43,7 +45,7 @@ export const useSettingsStore = defineStore('settings', () => {
     isLoaded.value = true;
   }
 
-  async function save() {
+  const _save = async () => {
     try {
       if (window.api) {
         await window.api.invoke('settings:set', {
@@ -57,7 +59,12 @@ export const useSettingsStore = defineStore('settings', () => {
     } catch {
       // silent fail
     }
-  }
+  };
+
+  const save = () => {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(_save, 300);
+  };
 
   function updateAppearance(partial: Partial<AppearanceSettings>) {
     Object.assign(appearance.value, partial);
