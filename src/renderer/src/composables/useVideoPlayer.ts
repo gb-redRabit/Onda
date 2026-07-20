@@ -24,6 +24,7 @@ export function useVideoPlayer(ctx: {
   const videoRef = ref<HTMLVideoElement | null>(null);
   const videoEventsConnected = ref(false);
   let lastLoadedPath = '';
+  let currentLoadId = 0;
 
   const videoFilterStyle = computed(() => {
     const f = settings.playback.videoFilter;
@@ -43,7 +44,7 @@ export function useVideoPlayer(ctx: {
       player.currentTime = el.currentTime;
       if (player.currentTrack && el.currentTime - lastSaved > 3) {
         lastSaved = el.currentTime;
-        window.api.setPlaybackPosition(player.currentTrack.path, el.currentTime);
+        window.api?.setPlaybackPosition(player.currentTrack.path, el.currentTime);
       }
     });
     el.addEventListener('durationchange', () => {
@@ -56,12 +57,12 @@ export function useVideoPlayer(ctx: {
     });
     el.addEventListener('pause', () => {
       if (player.currentTrack && player.currentTrack.type === 'video') {
-        window.api.setPlaybackPosition(player.currentTrack.path, el.currentTime);
+        window.api?.setPlaybackPosition(player.currentTrack.path, el.currentTime);
       }
     });
     el.addEventListener('ended', () => {
       if (player.currentTrack && player.currentTrack.type === 'video') {
-        window.api.clearPlaybackPosition(player.currentTrack.path);
+        window.api?.clearPlaybackPosition(player.currentTrack.path);
       }
       if (player.pipActive) return;
       if (player.repeat === 'one') {
@@ -124,9 +125,11 @@ export function useVideoPlayer(ctx: {
   function onVideoRef(el: unknown) {
     videoRef.value = el as HTMLVideoElement;
     if (el && player.currentTrack?.type === 'video') {
+      const loadId = ++currentLoadId;
       setupVideo(player.currentTrack);
       const video = el as HTMLVideoElement;
       const tryInit = () => {
+        if (loadId !== currentLoadId) return;
         if (!video.isConnected) {
           nextTick(tryInit);
           return;
@@ -140,6 +143,7 @@ export function useVideoPlayer(ctx: {
             video.addEventListener(
               'loadedmetadata',
               () => {
+                if (loadId !== currentLoadId) return;
                 if (player.currentTrack && player.currentTrack.path !== lastLoadedPath) {
                   lastLoadedPath = player.currentTrack.path;
                   player.loadSubtitles(player.currentTrack.path);
@@ -229,7 +233,10 @@ export function useVideoPlayer(ctx: {
 
   watch(
     () => player.currentTrack,
-    (track) => {
+    (track, oldTrack) => {
+      if (oldTrack && track?.path !== oldTrack?.path) {
+        currentLoadId++;
+      }
       if (track?.type === 'video' && track.path !== lastLoadedPath) {
         lastLoadedPath = track.path;
         player.loadSubtitles(track.path);

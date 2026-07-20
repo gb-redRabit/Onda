@@ -1,4 +1,4 @@
-import { ref, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import type { MkvFont } from '@renderer/types/subtitles';
 import { getLastSubtitleData } from '@renderer/composables/useSubtitleRenderer';
 
@@ -14,7 +14,8 @@ export function usePiP(callbacks?: { onClosed?: (time: number) => void; onEnded?
 
   const cleanups: (() => void)[] = [];
 
-  function init(): void {
+  onMounted(() => {
+    if (!window.api) return;
     cleanups.push(
       window.api.on('pip:closed', (time: unknown) => {
         const savedTime = (time as number) || 0;
@@ -28,7 +29,7 @@ export function usePiP(callbacks?: { onClosed?: (time: number) => void; onEnded?
         callbacks?.onEnded?.();
       })
     );
-  }
+  });
 
   function start(
     videoSrc: string,
@@ -47,19 +48,19 @@ export function usePiP(callbacks?: { onClosed?: (time: number) => void; onEnded?
       startTime: options?.startTime || 0,
       subtitle: options?.subtitle !== false ? getLastSubtitleData() : null
     };
-    return window.api.pipStart(videoSrc, settings as any);
+    return window.api?.pipStart(videoSrc, settings as any) ?? Promise.resolve(false);
   }
 
   function stop(): Promise<boolean> {
-    return window.api.pipStop();
+    return window.api?.pipStop() ?? Promise.resolve(false);
   }
 
   function loadTrack(videoSrc: string, subtitleData: PiPSubtitleData | null): void {
-    window.api.pipLoadTrack(videoSrc, subtitleData as any);
+    window.api?.pipLoadTrack(videoSrc, subtitleData as any);
   }
 
   function preload(videoSrc: string, subtitleData: PiPSubtitleData | null): void {
-    window.api.pipPreload(videoSrc, subtitleData as any);
+    window.api?.pipPreload(videoSrc, subtitleData as any);
   }
 
   function loadTrackFromCurrent(): void {
@@ -68,14 +69,12 @@ export function usePiP(callbacks?: { onClosed?: (time: number) => void; onEnded?
     const src = videoEl.src || '';
     if (!src) return;
     const subtitleData = getLastSubtitleData();
-    window.api.pipLoadTrack(src, subtitleData as any);
+    window.api?.pipLoadTrack(src, subtitleData as any);
   }
 
   function updateSubtitle(subtitleData: PiPSubtitleData | null): void {
-    window.api.pipUpdateSubtitle(subtitleData as any);
+    window.api?.pipUpdateSubtitle(subtitleData as any);
   }
-
-  init();
 
   onUnmounted(() => {
     cleanups.forEach((fn) => fn());

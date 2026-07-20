@@ -128,7 +128,8 @@ function setupListeners(el: HTMLAudioElement): void {
 }
 
 function handleEnded(): void {
-  const player = usePlayerStore();
+  let player;
+  try { player = usePlayerStore(); } catch { return; }
   if (isCrossfading) return;
 
   if (player.repeat === 'one') {
@@ -244,14 +245,14 @@ function savePosition(): void {
   if (audioEl && player.currentTrack && player.currentTrack.type === 'audio') {
     if (audioEl.currentTime > 5) {
       savedPositions.set(player.currentTrack.path, audioEl.currentTime);
-      window.api.invoke('playback:setPosition', player.currentTrack.path, audioEl.currentTime);
+      window.api?.invoke('playback:setPosition', player.currentTrack.path, audioEl.currentTime);
     }
   }
 }
 
 function clearSavedPosition(path: string): void {
   savedPositions.delete(path);
-  window.api.invoke('playback:clearPosition', path);
+  window.api?.invoke('playback:clearPosition', path);
 }
 
 function connectVideoElement(el: HTMLVideoElement): void {

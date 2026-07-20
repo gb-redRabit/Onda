@@ -28,24 +28,23 @@ export const usePlayerStore = defineStore('player', () => {
     new Map<string, { type: 'video' | 'image' | null; data: string | null }>()
   );
 
-  const favorites = ref<Set<string>>(new Set());
+  const favorites = ref<string[]>([]);
   const subtitleTracks = ref<SubtitleTrack[]>([]);
   const activeSubtitleId = ref<string | null>(null);
 
   const hasTrack = computed(() => currentTrack.value !== null);
 
   function isFavorite(path: string): boolean {
-    return favorites.value.has(path);
+    return favorites.value.includes(path);
   }
 
   function toggleFavorite(path: string) {
-    const next = new Set(favorites.value);
-    if (next.has(path)) {
-      next.delete(path);
+    const idx = favorites.value.indexOf(path);
+    if (idx >= 0) {
+      favorites.value.splice(idx, 1);
     } else {
-      next.add(path);
+      favorites.value.push(path);
     }
-    favorites.value = next;
     saveFavorites();
   }
 
@@ -55,7 +54,7 @@ export const usePlayerStore = defineStore('player', () => {
         const data = (await window.api.invoke('settings:get')) as Record<string, unknown>;
         const list = data.favorites;
         if (Array.isArray(list)) {
-          favorites.value = new Set(list as string[]);
+          favorites.value = list as string[];
         }
       }
     } catch {
@@ -67,7 +66,7 @@ export const usePlayerStore = defineStore('player', () => {
     try {
       if (window.api) {
         await window.api.invoke('settings:set', {
-          favorites: [...favorites.value]
+          favorites: favorites.value
         });
       }
     } catch {
@@ -180,7 +179,7 @@ export const usePlayerStore = defineStore('player', () => {
   ): Promise<{ type: 'video' | 'image' | null; data: string | null }> {
     if (coverCache.has(filePath)) return coverCache.get(filePath)!;
     coverCache.set(filePath, { type: null, data: null });
-    const cover = await window.api.getCover(filePath);
+    const cover = await window.api?.getCover(filePath) ?? { type: null, data: null };
     coverCache.set(filePath, cover);
     return cover;
   }
@@ -191,7 +190,7 @@ export const usePlayerStore = defineStore('player', () => {
 
   async function enrichTrack(track: MediaFile): Promise<void> {
     if (!track.duration) {
-      const dur = await window.api.getDuration(track.path);
+      const dur = (await window.api?.getDuration(track.path)) || 0;
       if (dur > 0) {
         track.duration = dur;
       }
@@ -253,9 +252,9 @@ export const usePlayerStore = defineStore('player', () => {
     const prevId = activeSubtitleId.value;
     const tracks: SubtitleTrack[] = [];
 
-    const external = await window.api.findExternalSubtitles(videoPath);
+    const external = (await window.api?.findExternalSubtitles(videoPath)) ?? [];
     for (const sub of external) {
-      const content = await window.api.readSubtitleFile(sub.path);
+      const content = await window.api?.readSubtitleFile(sub.path);
       if (content) {
         tracks.push({
           id: `ext-${sub.path}`,
@@ -269,7 +268,7 @@ export const usePlayerStore = defineStore('player', () => {
       }
     }
 
-    const embedded = await window.api.listEmbeddedSubtitles(videoPath);
+    const embedded = (await window.api?.listEmbeddedSubtitles(videoPath)) ?? [];
     for (const sub of embedded) {
       const label = sub.title || sub.language || `Track ${sub.index}`;
       tracks.push({
@@ -302,8 +301,8 @@ export const usePlayerStore = defineStore('player', () => {
     const embIndex = parseInt(trackId.replace('emb-', ''));
     if (isNaN(embIndex)) return null;
     const [result, fonts] = await Promise.all([
-      window.api.extractEmbeddedSubtitle(videoPath, embIndex),
-      window.api.extractSubtitleFonts(videoPath)
+      window.api?.extractEmbeddedSubtitle(videoPath, embIndex) ?? Promise.resolve(null),
+      window.api?.extractSubtitleFonts(videoPath) ?? Promise.resolve([] as MkvFont[])
     ]);
     if (!result) return null;
     return {

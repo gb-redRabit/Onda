@@ -343,13 +343,13 @@ export async function preparePiPSubtitleData(videoPath: string): Promise<{
   fonts: MkvFont[];
   availableFonts: Record<string, string>;
 } | null> {
-  const embedded = await window.api.listEmbeddedSubtitles(videoPath);
+  const embedded = (await window.api?.listEmbeddedSubtitles(videoPath)) ?? [];
   if (!embedded.length) return null;
 
   const target = embedded.find((s) => s.language === 'pol' || s.language === 'pl') || embedded[0];
   const [result, fonts] = await Promise.all([
-    window.api.extractEmbeddedSubtitle(videoPath, target.index),
-    window.api.extractSubtitleFonts(videoPath)
+    window.api?.extractEmbeddedSubtitle(videoPath, target.index) ?? Promise.resolve(null),
+    window.api?.extractSubtitleFonts(videoPath) ?? Promise.resolve([])
   ]);
   if (!result) return null;
 

@@ -1,9 +1,10 @@
-import { createApp } from 'vue';
+import { createApp, onErrorCaptured } from 'vue';
 import { createPinia } from 'pinia';
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate';
 import router from './router';
 import App from './App.vue';
 import './assets/main.css';
+import { useUIStore } from './stores/ui';
 
 import { moduleManager } from './modules/ModuleManager';
 import { PlayerModule } from './modules/PlayerModule';
@@ -26,6 +27,16 @@ pinia.use(piniaPluginPersistedstate);
 
 app.use(pinia);
 app.use(router);
+
+app.config.errorHandler = (err, _instance, info) => {
+  console.error('[Onda Error]', err, info);
+  try {
+    const ui = useUIStore();
+    ui.notify('error', 'Wystąpił błąd', (err as Error).message || String(err));
+  } catch {
+    // UI store may not be ready
+  }
+};
 
 moduleManager.initAll().then(() => {
   app.mount('#app');

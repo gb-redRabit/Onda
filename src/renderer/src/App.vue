@@ -8,6 +8,7 @@ import PlayerBar from './components/layout/PlayerBar.vue';
 import StatusBar from './components/layout/StatusBar.vue';
 import QueuePanel from './components/player/QueuePanel.vue';
 import Equalizer from './components/player/Equalizer.vue';
+import ErrorBoundary from './components/ErrorBoundary.vue';
 import { useSettingsStore } from './stores/settings';
 import { usePlayerStore } from './stores/player';
 import { useUIStore } from './stores/ui';
@@ -105,7 +106,9 @@ watch(
       <main class="flex-1 min-w-0 relative overflow-auto">
         <router-view v-slot="{ Component }">
           <transition name="page" mode="out-in">
-            <component :is="Component" />
+            <ErrorBoundary>
+              <component :is="Component" />
+            </ErrorBoundary>
           </transition>
         </router-view>
       </main>

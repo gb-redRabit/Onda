@@ -40,7 +40,7 @@ export async function openMediaFiles(paths: string[], router: Router): Promise<v
   const [first, ...rest] = playQueue;
 
   if (first.type === 'audio') {
-    await window.api.clearPlaybackPosition(first.path);
+    await window.api?.clearPlaybackPosition(first.path);
   } else {
     await handleVideoResume(first, player);
   }
@@ -61,13 +61,13 @@ async function handleVideoResume(
 ): Promise<void> {
   let savedPos = 0;
   try {
-    savedPos = (await window.api.getPlaybackPosition(track.path)) || 0;
+    savedPos = (await window.api?.getPlaybackPosition(track.path)) || 0;
   } catch {
     savedPos = 0;
   }
   if (savedPos > 5) {
     player.seek(0);
-    await window.api.clearPlaybackPosition(track.path);
+    await window.api?.clearPlaybackPosition(track.path);
     player.showResumePrompt(track.path, savedPos);
   }
 }

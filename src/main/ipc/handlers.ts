@@ -1,4 +1,4 @@
-import { ipcMain, dialog, BrowserWindow, shell } from 'electron';
+import { ipcMain, dialog, BrowserWindow, shell, app } from 'electron';
 import { readdir, stat, readFile, writeFile, mkdir, rename, unlink, rm } from 'fs/promises';
 import { statSync, readFileSync } from 'fs';
 import { join, extname, basename } from 'path';
@@ -221,7 +221,8 @@ export function registerIPC(): void {
 
   ipcMain.handle('dialog:openFile', async (_event, options?: Electron.OpenDialogOptions) => {
     const win = BrowserWindow.getFocusedWindow();
-    const result = await dialog.showOpenDialog(win!, {
+    if (!win) return { canceled: true, filePaths: [] };
+    const result = await dialog.showOpenDialog(win, {
       properties: ['openFile', 'multiSelections'],
       filters: [
         {
@@ -249,7 +250,8 @@ export function registerIPC(): void {
 
   ipcMain.handle('dialog:openFolder', async (_event, options?: Electron.OpenDialogOptions) => {
     const win = BrowserWindow.getFocusedWindow();
-    const result = await dialog.showOpenDialog(win!, {
+    if (!win) return { canceled: true, filePaths: [] };
+    const result = await dialog.showOpenDialog(win, {
       properties: ['openDirectory'],
       ...options
     });
@@ -258,7 +260,8 @@ export function registerIPC(): void {
 
   ipcMain.handle('dialog:openFolderFiles', async (_event) => {
     const win = BrowserWindow.getFocusedWindow();
-    const result = await dialog.showOpenDialog(win!, {
+    if (!win) return { canceled: true, filePaths: [] };
+    const result = await dialog.showOpenDialog(win, {
       properties: ['openDirectory']
     });
     if (result.canceled || !result.filePaths.length) {
@@ -296,7 +299,8 @@ export function registerIPC(): void {
 
   ipcMain.handle('dialog:saveFile', async (_event, options?: Electron.SaveDialogOptions) => {
     const win = BrowserWindow.getFocusedWindow();
-    const result = await dialog.showSaveDialog(win!, {
+    if (!win) return { canceled: true, filePath: '' };
+    const result = await dialog.showSaveDialog(win, {
       filters: [
         { name: 'Media Files', extensions: ['mp3', 'flac', 'mp4', 'mkv'] },
         { name: 'All Files', extensions: ['*'] }
@@ -337,12 +341,10 @@ export function registerIPC(): void {
   });
 
   ipcMain.handle('app:getPath', (_event, name: string) => {
-    const { app } = require('electron');
     return app.getPath(name as any);
   });
 
   ipcMain.handle('app:getVersion', () => {
-    const { app } = require('electron');
     return app.getVersion();
   });
 
@@ -414,7 +416,6 @@ export function registerIPC(): void {
   });
 
   ipcMain.handle('update:check', async () => {
-    const { app } = require('electron');
     return { available: false, version: app.getVersion(), notes: '' };
   });
 
@@ -423,7 +424,6 @@ export function registerIPC(): void {
   });
 
   ipcMain.handle('update:install', async () => {
-    const { app } = require('electron');
     app.relaunch();
     app.exit(0);
   });
@@ -444,7 +444,6 @@ export function registerIPC(): void {
 
   ipcMain.handle('dep:checkYtdlp', async () => {
     try {
-      const { app } = require('electron');
       const localBin = join(app.getPath('userData'), 'bin', 'yt-dlp.exe');
       try {
         await stat(localBin);
@@ -504,7 +503,6 @@ export function registerIPC(): void {
 
   ipcMain.handle('dep:installYtdlp', async () => {
     try {
-      const { app } = require('electron');
       const binDir = join(app.getPath('userData'), 'bin');
       await mkdir(binDir, { recursive: true });
       const dest = join(binDir, 'yt-dlp.exe');
