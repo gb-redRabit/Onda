@@ -222,7 +222,7 @@ onUnmounted(() => {
 <template>
   <div
     ref="playerContainerRef"
-    class="player-container flex flex-col bg-black relative"
+    class="player-container flex flex-col h-full bg-black relative"
     @mousemove="onMouseMove"
     @wheel.prevent="onWheel"
   >
