@@ -532,7 +532,7 @@ export function registerIPC(): void {
 
   ipcMain.handle('dep:checkMkvextract', async () => {
     try {
-      const bin = getMkvExtractPath();
+      const bin = await getMkvExtractPath();
       const { stdout } = await execAsync(`"${bin}" --version`, {
         encoding: 'utf-8', timeout: 10000, windowsHide: true
       });
@@ -732,23 +732,26 @@ export function registerIPC(): void {
         await mkdir(dumpDir, { recursive: true });
         const fonts: Array<{ name: string; ext: string; data: number[] }> = [];
         try {
-          const bin = getMkvExtractPath();
+          const bin = await getMkvExtractPath();
           for (const [attId, s] of streams.entries()) {
             const fileName = s.tags?.filename || `font_${attId}.ttf`;
             const ext = (fileName.split('.').pop() || 'ttf').toLowerCase();
             const outPath = join(dumpDir, `att_${attId}.${ext}`);
             try {
-              const res = await execAsync(
+              await execAsync(
                 `"${bin}" "${filePath}" attachments ${attId}:"${outPath}"`,
                 { encoding: 'utf-8', timeout: 30000, windowsHide: true }
               );
-              if (res.stdout !== null) {
+              try {
+                await stat(outPath);
                 const buf = await readFile(outPath);
                 fonts.push({
                   name: fileName.replace(/\.(ttf|otf|ttc)$/i, ''),
                   ext,
                   data: Array.from(buf)
                 });
+              } catch {
+                /* file not created */
               }
             } catch {
               /* skip failed attachment */
