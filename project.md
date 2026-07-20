@@ -806,7 +806,7 @@ Lazy loading: `() => import(...)` w routerze (98 linii). Transition fade (`opaci
 - [ ] Drag & Drop (pomiędzy folderami, do kolejki, do playlisty)
 - [ ] Marquee selection (wielokrotne zaznaczenie)
 
-### FAZA 6: Ustawienia — ⏳ CZĘŚCIOWO (731 linia — największy plik!)
+### FAZA 6: Ustawienia — ✅ CZĘŚCIOWO (refaktor: 731 → 69 linii + 9 komponentów)
 
 - [x] UI shell z sidebar + panels
 - [x] Picture-in-Picture (pozycja, rozmiar)
@@ -903,7 +903,7 @@ Lazy loading: `() => import(...)` w routerze (98 linii). Transition fade (`opaci
 ### 12.4 Zależności Wzajemne (Internal)
 
 ```
-App.vue (145 linii)
+App.vue (164 linie)
 ├── settings.load() → settings store → electron-store IPC
 ├── applyTheme() → constants.ts (THEME_PALETTES)
 ├── watch(player.currentTrack) → auto-nawigacja do /player przy video
@@ -917,14 +917,14 @@ ModuleManager (69 linii)
 ├── YouTubeModule → youtube store
 └── HomeModule → player store + IPC dialog:*
 
-audioEngine.ts (447 linii — singletony module-level)
+audioEngine.ts (514 linii — singletony module-level)
 ├── player store (read: currentTrack — only for setupVideoListeners)
 ├── settings store (playback.crossfadeDuration)
 ├── Callbacks → useAudioPlayer (onTimeUpdate, onDurationChange, onPlayStateChange, onTrackEnd)
 ├── resume() → AudioContext.resume() + restart RAF loop (fix video→audio transition)
 └── Web Audio API (AudioContext → GainNode → BiquadFilterNode → AnalyserNode)
 
-useAudioPlayer.ts (134 linii — singleton)
+useAudioPlayer.ts (154 linie — singleton)
 ├── audioEngine.ts (deleguje play/pause/seek/load, resumeAndPlay, odbiera callbacks)
 ├── effectScope(true) z watch() na player store (currentTrack → loadTrack/pause, isPlaying → play/pause)
 ├── effectScope(true) z watch() na player.isMuted → audioEngine.setVolume(0 lub volume)
@@ -932,26 +932,26 @@ useAudioPlayer.ts (134 linii — singleton)
 ├── _lastTrackPath dedup, _lastPlaying dedup
 └── Vue reaktywność (currentTime, duration, isPlaying, progress, volume)
 
-router/index.ts (91 linii)
+router/index.ts (98 linii)
 ├── ROUTE_MODULE_MAP — route name → module ID
 ├── afterEach guard — smart path: player active + audio playing → activate target without deactivating player
 └── switchTo(moduleId) — standard path for all other navigations
 
-useOpenMedia.ts (59 linii)
+useOpenMedia.ts (73 linie)
 ├── player store (setTrack, addToQueueMultiple, clearQueue)
 ├── types (MediaFile, Router)
 └── IPC (getDuration, getCover)
 
-useSubtitleRenderer.ts (335 linii)
+useSubtitleRenderer.ts (374 linie)
 ├── JASSUB init (wasm, worker, fonts)
 ├── buildFontMap() → lokalne fonty + Google Fonts + MKV binary fonts
 └── player store (loadEmbeddedSubtitle)
 
-usePiP.ts (81 linie)
+usePiP.ts (93 linie)
 ├── IPC pip:* (start, stop, preload, loadTrack, updateSubtitle)
 └── callbacks (onClosed, onEnded)
 
-PlayerView.vue (357 linii)
+PlayerView.vue (394 linie)
 ├── useVideoPlayer composable (setup, PiP, subtitles, watches, lifecycle)
 │   ├── videoRef, videoFilterStyle, onVideoRef, togglePiP, init, destroy
 │   ├── audioEngine.connectVideoElement / disconnectVideoElement
@@ -989,29 +989,36 @@ Views → czytają store'y + wywołują akcje store (BEZ moduleManager.switchTo 
 
 ## 13. Kluczowe Pliki
 
-| Plik                     | Linii | Znaczenie                                                                               |
-| ------------------------ | ----- | --------------------------------------------------------------------------------------- |
-| `audioEngine.ts`         | 447   | Singleton Web Audio API: gapless, crossfade, EQ, RAF loop, position memory, callbacks   |
-| `useSubtitleRenderer.ts` | 335   | JASSUB — inicjalizacja wasm/worker, buildFontMap (lokalne+Google+MKV), binary fonts     |
-| `useVideoPlayer.ts`      | 304   | Video player composable: setup, PiP, subtitles, watches, lifecycle                     |
-| `pip-manager.ts`         | 367   | PipManager singleton — PiP window + preview window, position/size, show/hide, IPC       |
-| `handlers.ts`            | 718   | Main IPC — fs, metadata, FFmpeg, mkvextract, subtitles, dialogs, pip, settings, playlists |
-| `PlayerView.vue`         | 357   | Odtwarzacz video — UI orchestration: OSD, fullscreen, keyboard, controls                |
-| `AudioView.vue`          | 165   | Audio player — 3 layouty, controls, shortcuts, sub-components (AudioCover, AudioTrackInfo) |
-| `SettingsView.vue`       | 731   | Ustawienia — PiP preview, dependencies, shortcuts, playback, themes (największy plik!)  |
-| `player.ts` (store)      | 364   | Player store — stan, kolejka, akcje, coverCache, favorites, electron-store persistence  |
-| `QueuePanel.vue`         | 276   | Kolejka + historia (vuedraggable)                                                       |
-| `PlayerControls.vue`     | 262   | Kontrolki: play/pause, skip, speed ±, filter dropdown, volume, time                     |
-| `TitleBar.vue`           | 253   | Custom titlebar + tabs + context menu                                                   |
-| `PlayerBar.vue`          | 276   | Dolny pasek — okładka (video/img/icon), controls, progress (drag-to-seek), volume, Heart, Disc3 |
-| `Sidebar.vue`            | 196   | Nawigacja + resize + playlisty                                                          |
-| `ExplorerView.vue`       | 285   | Eksplorator plików                                                                      |
-| `useAudioPlayer.ts`      | 134   | Singleton: audio state bridge, effectScope(true) + watch(), callbacks z audioEngine     |
-| `useOpenMedia.ts`        | 59    | Otwieranie plików z filesystem → MediaFile → player store                               |
-| `main.ts` (main)         | 322   | Okno, tray, skróty globalne, PiP init, splash screen                                  |
-| `pip.ts` (renderer)      | 158   | PiP bundle — JASSUB, listenery, progress bar, close button                              |
-| `constants.ts`           | 167   | Formaty, presety EQ, motywy, defaults, shortcuts, playback defaults                     |
-| `splash.html`            | 131   | Splash screen — standalone HTML, inline CSS, canvas wizualizacja dźwiękowa (64 barów)  |
+| Plik                            | Linii | Znaczenie                                                                               |
+| ------------------------------- | ----- | --------------------------------------------------------------------------------------- |
+| `audioEngine.ts`                | 514   | Singleton Web Audio API: gapless, crossfade, EQ, RAF loop, position memory, callbacks   |
+| `useSubtitleRenderer.ts`        | 374   | JASSUB — inicjalizacja wasm/worker, buildFontMap (lokalne+Google+MKV), binary fonts     |
+| `useVideoPlayer.ts`             | 342   | Video player composable: setup, PiP, subtitles, watches, lifecycle                     |
+| `pip-manager.ts`                | 420   | PipManager singleton — PiP window + preview window, position/size, show/hide, IPC       |
+| `handlers.ts`                   | 772   | Main IPC — fs, metadata, FFmpeg, mkvextract, subtitles, dialogs, pip, settings, playlists |
+| `PlayerView.vue`                | 394   | Odtwarzacz video — UI orchestration: OSD, fullscreen, keyboard, controls                |
+| `AudioView.vue`                 | 180   | Audio player — 3 layouty, controls, shortcuts, sub-components (AudioCover, AudioTrackInfo) |
+| `SettingsView.vue`              | 69    | Shell ustawień — lazy import 9 komponentów per-zakładka                                 |
+| `player.ts` (store)             | 393   | Player store — stan, kolejka, akcje, coverCache, favorites, electron-store persistence  |
+| `QueuePanel.vue`                | 276   | Kolejka + historia (vuedraggable)                                                       |
+| `PlayerControls.vue`            | 262   | Kontrolki: play/pause, skip, speed ±, filter dropdown, volume, time                     |
+| `TitleBar.vue`                  | 253   | Custom titlebar + tabs + context menu                                                   |
+| `PlayerBar.vue`                 | 276   | Dolny pasek — okładka (video/img/icon), controls, progress (drag-to-seek), volume, Heart, Disc3 |
+| `Sidebar.vue`                   | 196   | Nawigacja + resize + playlisty                                                          |
+| `ExplorerView.vue`              | 285   | Eksplorator plików                                                                      |
+| `useAudioPlayer.ts`             | 154   | Singleton: audio state bridge, effectScope(true) + watch(), callbacks z audioEngine     |
+| `useOpenMedia.ts`               | 73    | Otwieranie plików z filesystem → MediaFile → player store                               |
+| `main.ts` (main)                | 365   | Okno, tray, skróty globalne, PiP init, splash screen                                  |
+| `pip.ts` (renderer)             | 181   | PiP bundle — JASSUB, listenery, progress bar, close button                              |
+| `constants.ts`                  | 179   | Formaty, presety EQ, motywy, defaults, shortcuts, playback defaults                     |
+| `splash.html`                   | 131   | Splash screen — standalone HTML, inline CSS, canvas wizualizacja dźwiękowa (64 barów)  |
+| `App.vue`                       | 164   | Root app — settings load, applyTheme, router-view, PlayerBar visibility                 |
+| `router/index.ts`               | 98    | Routing + afterEach guard — smart path dla audio w tle, switchTo helper                 |
+| `settings.ts` (store)           | 125   | Settings store — debounced save, appearance, playback, pip, dependencies, shortcuts      |
+| `usePiP.ts`                     | 93    | PiP composable — lifecycle listeners, start/stop/preload/loadTrack/updateSubtitle       |
+| `main.ts` (renderer)            | 43    | Vue app init — ErrorHandler, errorHandler, warnHandler, use()                           |
+| `ErrorBoundary.vue`             | 29    | Global error catcher — onErrorCaptured, fallback UI z komunikatem błędu                 |
+| `utils/ipc.ts`                  | 7     | safeInvoke — window.api?.invoke wrapper z domyślnym null                                 |
 
 ---
 
@@ -1113,7 +1120,7 @@ Views → czytają store'y + wywołują akcje store (BEZ moduleManager.switchTo 
 
 ---
 
-Ostatnia aktualizacja: 2026-07-19 (favorites system, audio components reorganization, layout toggle + viz mode switcher, AudioCover/AudioTrackInfo sub-components, mute fix, volume watcher, effectScope(true) fix)
+Ostatnia aktualizacja: 2026-07-20 (Phase 1 — stabilność, Phase 2 — wydajność, podział SettingsView, fixy po Phase 2)
 
 ---
 
@@ -1157,7 +1164,7 @@ Ostatnia aktualizacja: 2026-07-19 (favorites system, audio components reorganiza
 ### 17.3 Favorites + AudioView Refactor (2026-07-19)
 
 **Favorites system:**
-- `favorites: Set<string>` w player store — przechowuje ścieżki ulubionych
+- `favorites: string[]` w player store — przechowuje ścieżki ulubionych (Phase 1: zamieniono z `Set<string>` dla serializacji)
 - `toggleFavorite(path)`, `isFavorite(path)` — akcje store
 - Heart button w PlayerBar + AudioView (wszystkie 3 layouty)
 - Persistencja: electron-store przez IPC `settings:set`/`settings:get` klucz `favorites` (array paths)
@@ -1173,6 +1180,37 @@ Ostatnia aktualizacja: 2026-07-19 (favorites system, audio components reorganiza
 - **Layout toggle** — przeniesiony z `fixed top-20 right-4` do `fixed bottom-20 right-4`, auto-chowa się z `showUI`
 - **Viz mode button** — bottom-left w full layout, cykluje bars/wave/radial
 - `AudioVisualizer` eksponuje `style` + `cycleStyle()` przez `defineExpose`
+
+### 17.4 Phase 1 — Stabilność (2026-07-20)
+
+**8 zmian — priorytet CRITICAL:**
+
+- **1.1** — Zastąpiono `require('electron')` static importem `app` w `handlers.ts`
+- **1.2** — Dodano ErrorHandler (`app.config.errorHandler`/`warnHandler`) w `main.ts` + `ErrorBoundary.vue` — globalny catcher błędów komponentów
+- **1.3** — Usunięto `win!` non-null assertions w `handlers.ts` — dodano guard clauses (`if (!win) return`)
+- **1.4** — Ujednolicono `window.api?.` optional chaining we wszystkich store'ach i composablach — `safeInvoke` wrapper w `utils/ipc.ts`
+- **1.5** — Przeniesiono `init()` w `usePiP` do `onMounted` — listenery IPC rejestrowane tylko gdy komponent zmontowany
+- **1.6** — Dodano `currentLoadId` flagę w `useVideoPlayer` — race condition guard dla subtitles, duration, cover
+- **1.7** — Dodano try-catch guard w `audioEngine.handleEnded` dla `usePlayerStore()` — bezpieczny dostęp gdy store niezainicjalizowany
+- **1.8** — Zmieniono `Set<string>` na `string[]` dla `favorites` — poprawna serializacja do electron-store
+
+### 17.5 Phase 2 — Wydajność (2026-07-20)
+
+**7 zmian — priorytet HIGH:**
+
+- **2.1** — Static import `electron-store` z lazy init przez dynamic import (ESM workaround) — eliminacja kosztownego `await import()` przy każdym odczycie/zapisie
+- **2.2** — Debounce 300ms na `save()` w settings store — eliminacja write storm przy przeciąganiu sliderów
+- **2.3** — Wszystkie `execSync` → `execAsync` w `handlers.ts` — odblokowanie event loop main process (FFmpeg, yt-dlp, mkvextract, ffprobe)
+- **2.5** — Page Visibility API — RAF loop pauzowany gdy `document.hidden`, wznawiany gdy okno widoczne + audio gra
+- **2.6** — Cache dla `buildFontMap` w `useSubtitleRenderer.ts` — hash zawartości ASS → fontMap, pomija sieciowe `queryRemoteFonts` przy powtórnych ładowaniach
+- **2.7** — Usunięto `urlToDataUrl` — WASM URL-e przekazywane oryginalnie do JASSUB (Vite już serwuje poprawnie, bez kosztownej konwersji ArrayBuffer → base64)
+- **2.8** — Podział `SettingsView.vue` (772 → 69 linii) na 9 komponentów per-zakładka lazy-importowanych: `SettingsAppearance`, `SettingsPlayback`, `SettingsPiP`, `SettingsDownload`, `SettingsShortcuts`, `SettingsNetwork`, `SettingsApiKeys`, `SettingsUpdates`, `SettingsDependencies`
+
+### 17.6 Fixy po Phase 2 (2026-07-20)
+
+- **electron-store ESM import** — lazy init z `(() => new Store())()` przez dynamic import — circumwencja ESM/CJS mismatch w Node.js
+- **Brak `await` na `getMkvExtractPath()`** — czcionki z MKV nie były wyciągane bo Promise nie był awaitowany w `buildFontMap`
+- **ErrorBoundary brak single root element** — warning Transition w Vue: `<div v-if>` i `<slot v-else>` opakowane w `<template>`
 
 ### 17.0a Dlaczego effectScope(true) + watch() zamiast $subscribe
 
