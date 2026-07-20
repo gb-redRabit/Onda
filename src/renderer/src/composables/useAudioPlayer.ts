@@ -1,7 +1,7 @@
 import { ref, computed, watch, effectScope } from 'vue';
 import { audioEngine } from '@renderer/modules/audioEngine';
+import { audioEvents } from '@renderer/utils/audioEvents';
 import { usePlayerStore } from '@renderer/stores/player';
-import type { MediaFile } from '@renderer/types/media';
 
 let _initialized = false;
 
@@ -12,6 +12,8 @@ const volume = ref(0.8);
 const mediaEl = ref<HTMLAudioElement | null>(null);
 const isReady = ref(false);
 const error = ref<string | null>(null);
+
+const cleanups: (() => void)[] = [];
 
 function resumeAndPlay() {
   audioEngine.resume();
@@ -24,34 +26,37 @@ export function useAudioPlayer() {
   if (!_initialized) {
     _initialized = true;
 
-    const origLoadTrack = audioEngine.loadTrack.bind(audioEngine);
-    audioEngine.loadTrack = (track: MediaFile) => {
-      origLoadTrack(track);
-      mediaEl.value = audioEngine.getMediaElement();
-      isReady.value = true;
-      error.value = null;
-    };
+    cleanups.push(
+      audioEvents.on('timeUpdate', (time: number) => {
+        currentTime.value = time;
+      })
+    );
 
-    audioEngine.onTimeUpdate = (time: number) => {
-      currentTime.value = time;
-    };
+    cleanups.push(
+      audioEvents.on('durationChange', (dur: number) => {
+        duration.value = dur;
+      })
+    );
 
-    audioEngine.onDurationChange = (dur: number) => {
-      duration.value = dur;
-    };
+    cleanups.push(
+      audioEvents.on('playStateChange', (playing: boolean) => {
+        isPlaying.value = playing;
+      })
+    );
 
-    audioEngine.onPlayStateChange = (playing: boolean) => {
-      isPlaying.value = playing;
-    };
-
-    audioEngine.onTrackEnd = () => {
-      if (player.repeat === 'one') {
-        audioEngine.seek(0);
-        audioEngine.play();
-      } else {
+    cleanups.push(
+      audioEvents.on('trackEnd', () => {
         player.nextTrack();
-      }
-    };
+      })
+    );
+
+    cleanups.push(
+      audioEvents.on('trackLoaded', () => {
+        mediaEl.value = audioEngine.getMediaElement();
+        isReady.value = true;
+        error.value = null;
+      })
+    );
 
     const scope = effectScope(true);
 

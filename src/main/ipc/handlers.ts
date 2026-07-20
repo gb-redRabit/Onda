@@ -10,6 +10,7 @@ import { promisify } from 'util';
 import https from 'https';
 import http from 'http';
 import os from 'os';
+import { VIDEO_EXTS, AUDIO_EXTS } from '../../shared/constants';
 
 const execAsync = promisify(execCb);
 
@@ -21,20 +22,6 @@ async function getStore() {
   }
   return _store;
 }
-
-const VIDEO_EXTS = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v', '.ts', '.ogv'];
-const AUDIO_EXTS = [
-  '.mp3',
-  '.flac',
-  '.wav',
-  '.ogg',
-  '.aac',
-  '.m4a',
-  '.wma',
-  '.opus',
-  '.aiff',
-  '.alac'
-];
 
 function getTempDir(): string {
   return join(os.tmpdir(), 'onda-covers');
@@ -277,6 +264,7 @@ export function registerIPC(): void {
       return { canceled: true, filePaths: [] as string[] };
     }
     const folder = result.filePaths[0];
+    if (!folder) return { canceled: false, filePaths: [] };
     const mediaExts = [...VIDEO_EXTS, ...AUDIO_EXTS];
     let entries: string[] = [];
     try {
@@ -441,7 +429,7 @@ export function registerIPC(): void {
         encoding: 'utf-8', timeout: 10000, windowsHide: true
       });
       const match = stdout.match(regex);
-      return { installed: true, version: match ? match[1] : 'unknown' };
+      return { installed: true, version: match?.[1] ?? 'unknown' };
     } catch {
       return { installed: false, version: null };
     }

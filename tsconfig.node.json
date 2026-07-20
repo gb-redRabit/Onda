@@ -1,9 +1,12 @@
 {
   "extends": "@electron-toolkit/tsconfig/tsconfig.node.json",
-  "include": ["electron.vite.config.*", "src/main/**/*", "src/preload/**/*", "src/renderer/src/types/explorer"],
+  "include": ["electron.vite.config.*", "src/main/**/*", "src/preload/**/*", "src/shared/**/*", "src/renderer/src/types/explorer"],
   "compilerOptions": {
     "composite": true,
     "ignoreDeprecations": "5.0",
+    "strict": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
     "types": ["electron-vite/node"]
   }
 }

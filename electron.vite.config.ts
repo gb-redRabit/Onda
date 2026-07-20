@@ -28,7 +28,7 @@ export default defineConfig({
   renderer: {
     base: './',
     plugins: [vue(), tailwindcss(), wasmMime()],
-    resolve: { alias: { '@renderer': resolve('src/renderer/src') } },
+    resolve: { alias: { '@renderer': resolve('src/renderer/src'), '@shared': resolve('src/shared') } },
     worker: { format: 'es' },
     css: { devSourcemap: false },
     build: {

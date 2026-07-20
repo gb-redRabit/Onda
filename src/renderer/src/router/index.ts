@@ -14,6 +14,9 @@ const ROUTE_MODULE_MAP: Record<string, string> = {
   search: 'home'
 };
 
+let _isSwitching = false;
+let _pendingSwitch: string | null = null;
+
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [
@@ -74,13 +77,13 @@ const router = createRouter({
   ]
 });
 
-router.afterEach((to) => {
+router.beforeEach(async (to) => {
   const routeName = to.name as string;
   const moduleId = ROUTE_MODULE_MAP[routeName];
-  if (!moduleId) return;
+  if (!moduleId) return true;
 
+  // Smart path: audio gra w tle → nie deaktywuj playera
   const currentActive = moduleManager.getActiveId();
-
   if (currentActive === 'player' && moduleId !== 'player') {
     const player = usePlayerStore();
     if (player.currentTrack?.type === 'audio') {
@@ -88,11 +91,33 @@ router.afterEach((to) => {
       if (!target.isActive()) {
         target.activate();
       }
-      return;
+      return true;
     }
   }
 
-  moduleManager.switchTo(moduleId);
+  // Zapobiega rekurencji gdy switchTo wyzwala nawigację (np. watch w App.vue)
+  if (_isSwitching) {
+    _pendingSwitch = routeName;
+    return false;
+  }
+
+  _isSwitching = true;
+  try {
+    await moduleManager.switchTo(moduleId);
+  } finally {
+    _isSwitching = false;
+  }
+
+  // Jeśli podczas switchTo pojawiła się inna nawigacja, przekieruj
+  if (_pendingSwitch && _pendingSwitch !== routeName) {
+    const target = _pendingSwitch;
+    _pendingSwitch = null;
+    router.push({ name: target });
+  } else {
+    _pendingSwitch = null;
+  }
+
+  return true;
 });
 
 export default router;

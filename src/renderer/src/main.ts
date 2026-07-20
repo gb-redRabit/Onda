@@ -1,4 +1,4 @@
-import { createApp, onErrorCaptured } from 'vue';
+import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate';
 import router from './router';

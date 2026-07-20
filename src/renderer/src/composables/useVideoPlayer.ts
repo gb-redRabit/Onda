@@ -1,5 +1,4 @@
 import { ref, watch, computed, nextTick } from 'vue';
-import type { Ref } from 'vue';
 import type { usePlayerStore } from '@renderer/stores/player';
 import type { useSettingsStore } from '@renderer/stores/settings';
 import type { usePiP } from '@renderer/composables/usePiP';

@@ -4,15 +4,22 @@
     "src/renderer/src/env.d.ts",
     "src/renderer/src/**/*",
     "src/renderer/src/**/*.vue",
+    "src/shared/**/*",
     "src/preload/*.d.ts"
   ],
   "compilerOptions": {
     "composite": true,
-    "ignoreDeprecations": "6.0",
+    "ignoreDeprecations": "5.0",
+    "strict": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
     "baseUrl": ".",
     "paths": {
       "@renderer/*": [
         "src/renderer/src/*"
+      ],
+      "@shared/*": [
+        "src/shared/*"
       ]
     }
   }

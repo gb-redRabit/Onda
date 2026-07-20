@@ -1,6 +1,8 @@
 export interface AppModule {
   id: string;
   name: string;
+  dependencies?: string[];
+  priority?: number;
   init(): void;
   activate(context?: unknown): void;
   deactivate(): Promise<void>;
@@ -20,7 +22,21 @@ class ModuleManager {
   async initAll(): Promise<void> {
     if (this.initialized) return;
     this.initialized = true;
-    for (const module of this.modules.values()) {
+
+    const sorted = [...this.modules.values()].sort(
+      (a, b) => (b.priority ?? 0) - (a.priority ?? 0)
+    );
+
+    for (const module of sorted) {
+      if (module.dependencies) {
+        for (const depId of module.dependencies) {
+          if (!this.modules.has(depId)) {
+            console.warn(
+              `[ModuleManager] Module "${module.id}" depends on "${depId}" which is not registered`
+            );
+          }
+        }
+      }
       module.init();
     }
   }

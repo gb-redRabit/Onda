@@ -1,8 +1,7 @@
 import type { Router } from 'vue-router';
 import { usePlayerStore } from '@renderer/stores/player';
 import type { MediaFile } from '@renderer/types/media';
-
-const VIDEO_EXTS = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v', '.ts', '.ogv'];
+import { VIDEO_EXTS } from '@shared/constants';
 
 function toMediaFile(path: string): MediaFile {
   const name = path.split(/[/\\]/).pop() || path;

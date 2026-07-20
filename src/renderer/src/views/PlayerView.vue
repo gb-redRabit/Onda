@@ -9,6 +9,7 @@ import PlayerControls from '@renderer/components/player/PlayerControls.vue';
 import ResumePrompt from '@renderer/components/player/ResumePrompt.vue';
 import { usePiP } from '@renderer/composables/usePiP';
 import { useVideoPlayer } from '@renderer/composables/useVideoPlayer';
+import { usePlayerKeyboard } from '@renderer/composables/usePlayerKeyboard';
 
 const player = usePlayerStore();
 const settings = useSettingsStore();
@@ -150,81 +151,6 @@ function handleClick() {
   }, 250);
 }
 
-function onKeydown(e: KeyboardEvent) {
-  const target = e.target as HTMLElement;
-  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
-    return;
-
-  switch (e.key) {
-    case ' ':
-    case 'k':
-      e.preventDefault();
-      if (player.pipActive) return;
-      player.togglePlay();
-      showOSD(
-        player.isPlaying ? 'Odtwarzanie' : 'Wstrzymano',
-        player.isPlaying ? 'play' : 'pause',
-        1000
-      );
-      break;
-    case 'ArrowLeft':
-      e.preventDefault();
-      skip(e.shiftKey ? -30 : -10);
-      break;
-    case 'ArrowRight':
-      e.preventDefault();
-      skip(e.shiftKey ? 30 : 10);
-      break;
-    case 'ArrowUp':
-      e.preventDefault();
-      if (vp.videoRef.value) {
-        const newVol = Math.min(1, player.volume + 0.05);
-        player.setVolume(newVol);
-        vp.videoRef.value.volume = player.isMuted ? 0 : newVol;
-        showOSD(`Glosnosc: ${Math.round(newVol * 100)}%`, 'volume', 1200);
-      }
-      break;
-    case 'ArrowDown':
-      e.preventDefault();
-      if (vp.videoRef.value) {
-        const newVol = Math.max(0, player.volume - 0.05);
-        player.setVolume(newVol);
-        vp.videoRef.value.volume = player.isMuted ? 0 : newVol;
-        showOSD(`Glosnosc: ${Math.round(newVol * 100)}%`, 'volume', 1200);
-      }
-      break;
-    case 'm':
-      e.preventDefault();
-      player.toggleMute();
-      showOSD(
-        player.isMuted ? 'Wyciszono' : `Glosnosc: ${Math.round(player.volume * 100)}%`,
-        'volume',
-        1200
-      );
-      break;
-    case 'f':
-      e.preventDefault();
-      toggleFullscreen();
-      break;
-    case '<':
-      e.preventDefault();
-      setSpeed(settings.playback.playbackSpeed - 0.25);
-      break;
-    case '>':
-      e.preventDefault();
-      setSpeed(settings.playback.playbackSpeed + 0.25);
-      break;
-    case '0':
-      e.preventDefault();
-      if (vp.videoRef.value) {
-        vp.videoRef.value.currentTime = 0;
-        player.currentTime = 0;
-        showOSD('0:00', 'seek', 1000);
-      }
-      break;
-  }
-}
-
 function onResumeContinue() {
   const prompt = player.resumePrompt;
   if (prompt && vp.videoRef.value) {
@@ -268,10 +194,19 @@ onMounted(() => {
 
   vp.init(player.currentTrack);
 
+  usePlayerKeyboard({
+    player,
+    settings,
+    vp,
+    showOSD,
+    skip,
+    setSpeed,
+    toggleFullscreen
+  });
+
   document.addEventListener('fullscreenchange', () => {
     isFullscreen.value = !!document.fullscreenElement;
   });
-  document.addEventListener('keydown', onKeydown);
 });
 
 onUnmounted(() => {
@@ -280,7 +215,6 @@ onUnmounted(() => {
   if (controlsTimeout.value) clearTimeout(controlsTimeout.value);
   if (osdTimeout.value) clearTimeout(osdTimeout.value);
   if (clickTimer) clearTimeout(clickTimer);
-  document.removeEventListener('keydown', onKeydown);
   document.body.style.cursor = 'default';
 });
 </script>
@@ -288,7 +222,7 @@ onUnmounted(() => {
 <template>
   <div
     ref="playerContainerRef"
-    class="player-container flex flex-col h-full bg-black relative"
+    class="player-container flex flex-col bg-black relative"
     @mousemove="onMouseMove"
     @wheel.prevent="onWheel"
   >
@@ -307,7 +241,7 @@ onUnmounted(() => {
       <video
         :ref="vp.onVideoRef"
         class="w-full h-full object-contain cursor-pointer"
-        :style="vp.videoFilterStyle"
+        :style="vp.videoFilterStyle.value"
         @click="handleClick"
       />
 

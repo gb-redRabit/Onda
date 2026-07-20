@@ -38,7 +38,7 @@ class PipManager {
     try {
       const decoded = decodeURIComponent(url);
       const match = decoded.match(/^file:\/\/\/?(.+)/i);
-      return match ? match[1].replace(/\//g, '\\').toLowerCase() : decoded.toLowerCase();
+      return match?.[1] ? match[1].replace(/\//g, '\\').toLowerCase() : decoded.toLowerCase();
     } catch {
       return url.toLowerCase();
     }
@@ -376,8 +376,9 @@ class PipManager {
   updatePreview(opts: { position?: string; width?: number; height?: number }): void {
     if (!this.previewWindow || this.previewWindow.isDestroyed()) return;
 
-    const pw = opts.width || this.previewWindow.getSize()[0];
-    const ph = opts.height || this.previewWindow.getSize()[1];
+    const size = this.previewWindow.getSize();
+    const pw = opts.width ?? size[0] ?? 400;
+    const ph = opts.height ?? size[1] ?? 300;
     const pos = opts.position || 'bottom-right';
     const display = screen.getPrimaryDisplay().workAreaSize;
     const margin = 20;
