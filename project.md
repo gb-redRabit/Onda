@@ -5,8 +5,9 @@
 **Onda** to desktopowy odtwarzacz muzyki i wideo zbudowany na Electron + Vue 3 + TypeScript + Tailwind CSS. Aplikacja obsługuje odtwarzanie lokalnych plików audio/video, eksplorację plików, bibliotekę mediów z metadanymi ID3, equalizer, wizualizację audio, kolejki odtwarzania, napisy wideo, Picture-in-Picture, splash screen z animowaną wizualizacją dźwiękową oraz system motywów.
 
 **Kluczowe zasady architektury:**
-1. Aplikacja jest **modułowa** — każdy główny widok (player, explorer, library, youtube) jest niezależnym modulem z własnym cyklem życia. Centralny **ModuleManager** steruje przełączaniem modułów.
-2. **Separacja audio/video** — silnik audio (`audioEngine.ts`) i wideoplayer (`PlayerView.vue`) mają **niezależny stan czasu/odtwarzania**. Audio działa w tle gdy użytkownik nawiguje do innego widoku. Stan audio jest zarządzany przez `useAudioPlayer` composable (singleton), stan wideo bezpośrednio w `PlayerView.vue`.
+1. Aplikacja jest **modułowa** — każdy główny widok (player, explorer, library, youtube) jest niezależnym modulem z własnym cyklem życia. Centralny **ModuleManager** steruje przełączaniem modułów z obsługą zależności i priorytetów.
+2. **Separacja audio/video** — silnik audio (`AudioEngine` class) i wideoplayer (`PlayerView.vue`) mają **niezależny stan czasu/odtwarzania**. Audio działa w tle gdy użytkownik nawiguje do innego widoku. Stan audio jest zarządzany przez `useAudioPlayer` composable (singleton), stan wideo bezpośrednio w `PlayerView.vue`.
+3. **Komunikacja przez EventBus** — `audioEngine` → `useAudioPlayer` przez zdarzenia (`audioEvents.ts`), nie callbacki. Luźne sprzężenie między silnikiem audio a warstwą UI.
 
 ---
 
@@ -45,12 +46,14 @@ Aplikacja składa się z **modułów** — niezależnych funkcjonalności, któr
 - Nie może działać równocześnie z innym modułem tego samego typu
 - Musi **całkowicie zwolnić zasoby** (event listenery, timery, audio context, DOM) przed aktywacją następnego modułu
 
-### 3.2 ModuleManager (`src/renderer/src/modules/ModuleManager.ts` — 69 linii)
+### 3.2 ModuleManager (`src/renderer/src/modules/ModuleManager.ts` — 83 linie)
 
 ```typescript
 interface AppModule {
   id: string
   name: string
+  dependencies?: string[]    // Phase 3.7 — IDs wymaganych modułów
+  priority?: number          // Phase 3.7 — kolejność initAll (desc)
   init(): void
   activate(context?: unknown): void
   deactivate(): Promise<void>
@@ -66,6 +69,7 @@ class ModuleManager {
   async deactivateAll(): Promise<void>
   getActive(): AppModule | null
   get<T extends AppModule>(id: string): T
+  async initAll(): Promise<void>         // sortuje po priority (desc), sprawdza dependencies
 }
 ```
 
@@ -85,10 +89,12 @@ class ModuleManager {
 ```
 Użytkownik klika "Eksplorator" w Sidebar
   → router.push('/explorer')
-  → router.afterEach:
+  → router.beforeEach:              // Phase 3.1 — z afterEach na beforeEach
+    → sprawdza _isSwitching flagę (recursion guard)
+    → oblicza nowy moduł z route name
     → currentActive === 'player' && currentTrack?.type === 'audio'?
       → TAK: activate target module (bez dezaktywacji playera — audio gra w tle)
-      → NIE: moduleManager.switchTo('explorer')
+      → NIE: _pendingSwitch = id → await moduleManager.switchTo('explorer')
         → playerModule.deactivate()    // AWAITS: pauza audio, zapis pozycji, cleanup RAF
         → explorerModule.activate()    // załaduj pliki, pokaż UI
 ```
@@ -97,7 +103,7 @@ Użytkownik klika "Eksplorator" w Sidebar
 
 **Kluczowa zasada:** Muzyka **zawsze** gra w tle gdy użytkownik nawiguje do innego widoku.
 
-- `router.afterEach` sprawdza: jeśli aktywny jest player i currentTrack.type === 'audio', aktywuje docelowy moduł **bez dezaktywacji playera**
+- `router.beforeEach` sprawdza (Phase 3.1): jeśli aktywny jest player i currentTrack.type === 'audio', aktywuje docelowy moduł **bez dezaktywacji playera** (z `_isSwitching` / `_pendingSwitch` recursion guard)
 - `player.deactivate()` NIE pauzuje audio — jedynie cleanup RAF + AudioContext suspend
 - `player.deactivate(force: true)` — pauzuje i czyści (przy zamknięciu app)
 - **Widoki NIE wywołują `moduleManager.switchTo()`** — tylko router zarządza modułami
@@ -138,8 +144,8 @@ D:\Onda\
 │           ├── env.d.ts
 │           │
 │           ├── modules/                # === MODUŁY (kluczowa warstwa) ===
-│           │   ├── ModuleManager.ts    # Singleton: lifecycle, switchTo (69 linii)
-│           │   ├── audioEngine.ts      # Singleton Web Audio API (447 linii)
+│           │   ├── ModuleManager.ts    # Singleton: lifecycle, switchTo, initAll (83 linie)
+│           │   ├── audioEngine.ts      # Class AudioEngine singleton (424 linie)
 │           │   ├── PlayerModule.ts     # Audio engine lifecycle (36 linii)
 │           │   ├── ExplorerModule.ts   # File explorer lifecycle (29 linii)
 │           │   ├── LibraryModule.ts    # Media library lifecycle (28 linie)
@@ -148,7 +154,7 @@ D:\Onda\
 │           │   └── SettingsModule.ts   # Settings lifecycle (19 linii)
 │           │
 │           ├── router/
-│           │   └── index.ts            # Trasy z lazy loading + afterEach guard (91 linii)
+│           │   └── index.ts            # Trasy z lazy loading + beforeEach guard (113 linii)
 │           │
 │           ├── stores/                 # Pinia stores
 │           │   ├── player.ts           # Stan odtwarzacza (364 linie)
@@ -159,11 +165,12 @@ D:\Onda\
 │           │   └── youtube.ts          # Stan YouTube (50 linii)
 │           │
 │           ├── composables/
-│           │   ├── useAudioPlayer.ts    # Singleton: audio state, effectScope(true) z watch() (134 linie)
+│           │   ├── useAudioPlayer.ts    # Singleton: audio state, effectScope(true) z watch() (138 linii)
 │           │   ├── useOpenMedia.ts      # Open files from filesystem (59 linii)
-│           │   ├── usePiP.ts            # PiP composable (81 linie)
-│           │   ├── useSubtitleRenderer.ts # JASSUB init + font map (335 linii)
-│           │   └── useVideoPlayer.ts    # Video player: setup, PiP, subtitles, watches (304 linie)
+│           │   ├── usePiP.ts            # PiP composable (81 linii)
+│           │   ├── usePlayerKeyboard.ts # Keyboard shortcuts dla PlayerView (106 linii, Phase 3.4)
+│           │   ├── useSubtitleRenderer.ts # JASSUB init + font map (332 linie)
+│           │   └── useVideoPlayer.ts    # Video player: setup, PiP, subtitles, watches (310 linii)
 │           │
 │           ├── types/
 │           │   ├── media.ts            # MediaFile, MediaMetadata (63 linie)
@@ -173,6 +180,7 @@ D:\Onda\
 │           │   └── subtitles.ts        # MkvFont, SubtitleTrack (15 linii)
 │           │
 │           ├── utils/
+│           │   ├── audioEvents.ts      # EventBus: AudioEventBus — komunikacja audioEngine → store (30 linii, Phase 3.2)
 │           │   ├── constants.ts        # Formaty, presety EQ, motywy, defaults (167 linii)
 │           │   ├── fileTypes.ts        # Rozszerzenia → ikony/kolory (46 linii)
 │           │   └── formatters.ts       # Formatowanie czasu, rozmiaru (50 linii)
@@ -204,7 +212,7 @@ D:\Onda\
 │           │
 │           ├── views/
 │           │   ├── HomeView.vue        # Strona główna + drop zone (132 linie)
-│           │   ├── PlayerView.vue      # Odtwarzacz video — UI orchestration (357 linii)
+│           │   ├── PlayerView.vue      # Odtwarzacz video — UI orchestration (292 linie)
 │           │   ├── AudioView.vue       # Audio player — 3 layouty, controls, shortcuts (165 linii)
 │           │   ├── ExplorerView.vue    # Eksplorator plików (285 linii)
 │           │   ├── LibraryView.vue     # Biblioteka mediów (175 linii)
@@ -568,28 +576,33 @@ audioEl ──→ sourceNode ──→ crossfadeGainA ──→ [EQ: BiquadFilte
 nextAudioEl ──→ sourceNodeB ──→ crossfadeGainB ─┘
 ```
 
-### 8.2 Singletony module-level (`audioEngine.ts` — 447 linii)
+### 8.2 Klasa AudioEngine (`audioEngine.ts` — 424 linie, Phase 3.3)
+
+**Phase 3.3:** Przeniesiono z 15+ module-level `let` zmiennych na klasę `AudioEngine` z private fields.
 
 ```typescript
-let audioEl: HTMLAudioElement | null = null
-let nextAudioEl: HTMLAudioElement | null = null
-let audioCtx: AudioContext | null = null
-let sourceNode: MediaElementAudioSourceNode | null = null
-let sourceNodeB: MediaElementAudioSourceNode | null = null
-let crossfadeGainA: GainNode | null = null
-let crossfadeGainB: GainNode | null = null
-let eqFilters: BiquadFilterNode[] = []
-let gainNode: GainNode | null = null
-let analyserNode: AnalyserNode | null = null
-let rafId: number | null = null
-let crossfadeTimer: ... | null = null
-let isCrossfading = false
+class AudioEngine {
+  private audioEl: HTMLAudioElement | null = null
+  private nextAudioEl: HTMLAudioElement | null = null
+  private audioCtx: AudioContext | null = null
+  private sourceNode: MediaElementAudioSourceNode | null = null
+  private sourceNodeB: MediaElementAudioSourceNode | null = null
+  private crossfadeGainA: GainNode | null = null
+  private crossfadeGainB: GainNode | null = null
+  private eqFilters: BiquadFilterNode[] = []
+  private gainNode: GainNode | null = null
+  private analyserNode: AnalyserNode | null = null
+  private rafId: number | null = null
+  private crossfadeTimer: ... | null = null
+  private isCrossfading = false
 
-// Callbacks (dla useAudioPlayer — izolacja od store)
-let _onTimeUpdate: ((time: number) => void) | null = null
-let _onDurationChange: ((dur: number) => void) | null = null
-let _onPlayStateChange: ((playing: boolean) => void) | null = null
-let _onTrackEnd: (() => void) | null = null
+  private onTimeUpdate: ((time: number) => void) | null = null
+  private onDurationChange: ((dur: number) => void) | null = null
+  private onPlayStateChange: ((playing: boolean) => void) | null = null
+  private onTrackEnd: (() => void) | null = null
+}
+
+export const audioEngine = new AudioEngine()  // singleton
 ```
 
 ### 8.3 Gapless Playback
@@ -611,21 +624,34 @@ let _onTrackEnd: (() => void) | null = null
    g. ensureNextPreloaded() → następny z queue
 ```
 
-### 8.3a Callback System (audioEngine → useAudioPlayer)
+### 8.3a EventBus (audioEngine → useAudioPlayer, Phase 3.2)
 
+**Phase 3.2:** Callbacki zastąpione EventBus (`utils/audioEvents.ts` — 30 linii). `AudioEngine` emituje zdarzenia, `useAudioPlayer` subskrybuje przez `audioEvents.on()`. Luźniejsze sprzężenie — brak bezpośrednich referencji między silnikiem a store.
+
+```typescript
+class AudioEventBus {
+  private handlers = new Map<string, Set<(...args: unknown[]) => void>>()
+  on(event: string, cb: (...args: unknown[]) => void): void
+  off(event: string, cb: (...args: unknown[]) => void): void
+  emit(event: string, ...args: unknown[]): void
+}
+
+export const audioEvents = new AudioEventBus()
+
+// Zdarzenia:
+// timeUpdate(time)       → useAudioPlayer.currentTime.value = time
+// durationChange(dur)    → useAudioPlayer.duration.value = dur
+// playStateChange(bool)  → useAudioPlayer.isPlaying.value = playing
+// trackEnd()             → player.nextTrack()
+// trackLoaded()          → player.setTrack() po loadTrack
 ```
-audioEngine callbacks (ustawiane przez useAudioPlayer):
-├── onTimeUpdate(time)     → useAudioPlayer.currentTime.value = time
-├── onDurationChange(dur)  → useAudioPlayer.duration.value = dur
-├── onPlayStateChange(bool) → useAudioPlayer.isPlaying.value = playing
-└── onTrackEnd()           → player.nextTrack()
 
-Dlaczego callbacks zamiast bezpośredniego zapisu do store:
+Dlaczego EventBus zamiast callbacków:
 - audioEngine NIE pisze bezpośrednio do player store (izolacja)
-- useAudioPlayer synchronizuje stan audio → store przez effectScope(true) + watch()
-- PlayerView (video) ma WŁASNY independently zarządzany element <video>
-- Pozwala to na jednoczesne działanie audio (PlayerBar) i wideo (PlayerView)
-```
+- useAudioPlayer subskrybuje zdarzenia zamiast ustawiać callbacki
+- Wiele subskrybentów może nasłuchiwać (future-proof)
+- Łatwiejsze testowanie i mockowanie
+- PlayerView (video) ma WŁASNY niezależny element `<video>`
 
 ### 8.4 Crossfade
 
@@ -670,11 +696,11 @@ loadTrack() → applyReplayGain(): gainDb → linear → gainNode.gain.value
 | `/search`    | search    | SearchView     | home                |
 | `/settings`  | settings  | SettingsView   | settings            |
 
-Lazy loading: `() => import(...)` w routerze (98 linii). Transition fade (`opacity 0.12s`) między widokami.
+Lazy loading: `() => import(...)` w routerze (113 linii). Transition fade (`opacity 0.12s`) między widokami.
 
 **Nawigacja auto:** `App.vue` watch na `player.currentTrack` automatycznie przełącza do `/player` gdy typ zmienia się na video. Audio pozostaje w bieżącym widoku (gra w tle).
 
-**afterEach guard:** Gdy aktywny jest player (audio) i nawiguje się do innego widoku, aktywuje docelowy moduł BEZ dezaktywacji playera — audio kontynuuje odtwarzanie w tle.
+**beforeEach guard (Phase 3.1):** Router używa `beforeEach` zamiast `afterEach`, z `await moduleManager.switchTo(moduleId)` i recursion guard (`_isSwitching` / `_pendingSwitch`). Gdy aktywny jest player (audio) i nawiguje się do innego widoku, aktywuje docelowy moduł BEZ dezaktywacji playera — audio kontynuuje odtwarzanie w tle. Guard zapobiega rekurencji przy switchTo wywołanym z routera.
 
 ---
 
@@ -903,7 +929,7 @@ Lazy loading: `() => import(...)` w routerze (98 linii). Transition fade (`opaci
 ### 12.4 Zależności Wzajemne (Internal)
 
 ```
-App.vue (164 linie)
+App.vue (148 linii)
 ├── settings.load() → settings store → electron-store IPC
 ├── applyTheme() → constants.ts (THEME_PALETTES)
 ├── watch(player.currentTrack) → auto-nawigacja do /player przy video
@@ -917,48 +943,50 @@ ModuleManager (69 linii)
 ├── YouTubeModule → youtube store
 └── HomeModule → player store + IPC dialog:*
 
-audioEngine.ts (514 linii — singletony module-level)
+audioEngine.ts (424 linie — class AudioEngine singleton)
 ├── player store (read: currentTrack — only for setupVideoListeners)
 ├── settings store (playback.crossfadeDuration)
 ├── Callbacks → useAudioPlayer (onTimeUpdate, onDurationChange, onPlayStateChange, onTrackEnd)
 ├── resume() → AudioContext.resume() + restart RAF loop (fix video→audio transition)
 └── Web Audio API (AudioContext → GainNode → BiquadFilterNode → AnalyserNode)
 
-useAudioPlayer.ts (154 linie — singleton)
-├── audioEngine.ts (deleguje play/pause/seek/load, resumeAndPlay, odbiera callbacks)
+useAudioPlayer.ts (138 linii — singleton)
+├── audioEngine.ts (deleguje play/pause/seek/load, resumeAndPlay)
+├── audioEvents.on() — subskrybuje zdarzenia zamiast callbacków (Phase 3.2)
 ├── effectScope(true) z watch() na player store (currentTrack → loadTrack/pause, isPlaying → play/pause)
 ├── effectScope(true) z watch() na player.isMuted → audioEngine.setVolume(0 lub volume)
 ├── effectScope(true) z watch() na player.volume → audioEngine.setVolume(volume)
 ├── _lastTrackPath dedup, _lastPlaying dedup
 └── Vue reaktywność (currentTime, duration, isPlaying, progress, volume)
 
-router/index.ts (98 linii)
+router/index.ts (113 linii)
 ├── ROUTE_MODULE_MAP — route name → module ID
-├── afterEach guard — smart path: player active + audio playing → activate target without deactivating player
+├── beforeEach guard (Phase 3.1) — await switchTo, recursion guard, smart path
 └── switchTo(moduleId) — standard path for all other navigations
 
-useOpenMedia.ts (73 linie)
+useOpenMedia.ts (59 linii)
 ├── player store (setTrack, addToQueueMultiple, clearQueue)
 ├── types (MediaFile, Router)
 └── IPC (getDuration, getCover)
 
-useSubtitleRenderer.ts (374 linie)
+useSubtitleRenderer.ts (332 linie)
 ├── JASSUB init (wasm, worker, fonts)
 ├── buildFontMap() → lokalne fonty + Google Fonts + MKV binary fonts
 └── player store (loadEmbeddedSubtitle)
 
-usePiP.ts (93 linie)
+usePiP.ts (81 linii)
 ├── IPC pip:* (start, stop, preload, loadTrack, updateSubtitle)
 └── callbacks (onClosed, onEnded)
 
-PlayerView.vue (394 linie)
+PlayerView.vue (292 linie — Phase 3.4: keyboard extracted)
 ├── useVideoPlayer composable (setup, PiP, subtitles, watches, lifecycle)
 │   ├── videoRef, videoFilterStyle, onVideoRef, togglePiP, init, destroy
 │   ├── audioEngine.connectVideoElement / disconnectVideoElement
 │   └── useSubtitleRenderer (init, load, remove, destroy, preparePiPSubtitleData)
+├── usePlayerKeyboard (Phase 3.4) — extracted keyboard shortcuts
 ├── usePiP (start, stop, preload, loadTrack)
 ├── player store (currentTrack, isPlaying, repeat, pipActive, etc.)
-├── WŁASNY stan: OSD, controls visibility, fullscreen, keyboard shortcuts
+├── WŁASNY stan: OSD, controls visibility, fullscreen
 └── ResumePrompt component (resume prompt overlay)
 
 AudioView.vue (165 linii)
@@ -991,33 +1019,37 @@ Views → czytają store'y + wywołują akcje store (BEZ moduleManager.switchTo 
 
 | Plik                            | Linii | Znaczenie                                                                               |
 | ------------------------------- | ----- | --------------------------------------------------------------------------------------- |
-| `audioEngine.ts`                | 514   | Singleton Web Audio API: gapless, crossfade, EQ, RAF loop, position memory, callbacks   |
-| `useSubtitleRenderer.ts`        | 374   | JASSUB — inicjalizacja wasm/worker, buildFontMap (lokalne+Google+MKV), binary fonts     |
-| `useVideoPlayer.ts`             | 342   | Video player composable: setup, PiP, subtitles, watches, lifecycle                     |
-| `pip-manager.ts`                | 420   | PipManager singleton — PiP window + preview window, position/size, show/hide, IPC       |
-| `handlers.ts`                   | 772   | Main IPC — fs, metadata, FFmpeg, mkvextract, subtitles, dialogs, pip, settings, playlists |
-| `PlayerView.vue`                | 394   | Odtwarzacz video — UI orchestration: OSD, fullscreen, keyboard, controls                |
-| `AudioView.vue`                 | 180   | Audio player — 3 layouty, controls, shortcuts, sub-components (AudioCover, AudioTrackInfo) |
-| `SettingsView.vue`              | 69    | Shell ustawień — lazy import 9 komponentów per-zakładka                                 |
-| `player.ts` (store)             | 393   | Player store — stan, kolejka, akcje, coverCache, favorites, electron-store persistence  |
+| `audioEngine.ts`                | 424   | Class AudioEngine singleton — gapless, crossfade, EQ, RAF loop, position memory, EventBus |
+| `useSubtitleRenderer.ts`        | 332   | JASSUB — inicjalizacja wasm/worker, buildFontMap (lokalne+Google+MKV), binary fonts     |
+| `useVideoPlayer.ts`             | 310   | Video player composable: setup, PiP, subtitles, watches, lifecycle                     |
+| `pip-manager.ts`                | 368   | PipManager singleton — PiP window + preview window, position/size, show/hide, IPC       |
+| `handlers.ts`                   | 692   | Main IPC — fs, metadata, FFmpeg, mkvextract, subtitles, dialogs, pip, settings, playlists |
+| `PlayerView.vue`                | 292   | Odtwarzacz video — UI orchestration + usePlayerKeyboard (Phase 3.4)                    |
+| `AudioView.vue`                 | 165   | Audio player — 3 layouty, controls, shortcuts, sub-components (AudioCover, AudioTrackInfo) |
+| `SettingsView.vue`              | 63    | Shell ustawień — lazy import 9 komponentów per-zakładka                                 |
+| `player.ts` (store)             | 363   | Player store — stan, kolejka, akcje, coverCache, favorites, electron-store persistence  |
 | `QueuePanel.vue`                | 276   | Kolejka + historia (vuedraggable)                                                       |
 | `PlayerControls.vue`            | 262   | Kontrolki: play/pause, skip, speed ±, filter dropdown, volume, time                     |
 | `TitleBar.vue`                  | 253   | Custom titlebar + tabs + context menu                                                   |
-| `PlayerBar.vue`                 | 276   | Dolny pasek — okładka (video/img/icon), controls, progress (drag-to-seek), volume, Heart, Disc3 |
+| `PlayerBar.vue`                 | 276   | Dolny pasek — okładka (video/img/icon), controls, progress, volume, Heart, Disc3        |
 | `Sidebar.vue`                   | 196   | Nawigacja + resize + playlisty                                                          |
 | `ExplorerView.vue`              | 285   | Eksplorator plików                                                                      |
-| `useAudioPlayer.ts`             | 154   | Singleton: audio state bridge, effectScope(true) + watch(), callbacks z audioEngine     |
-| `useOpenMedia.ts`               | 73    | Otwieranie plików z filesystem → MediaFile → player store                               |
-| `main.ts` (main)                | 365   | Okno, tray, skróty globalne, PiP init, splash screen                                  |
-| `pip.ts` (renderer)             | 181   | PiP bundle — JASSUB, listenery, progress bar, close button                              |
-| `constants.ts`                  | 179   | Formaty, presety EQ, motywy, defaults, shortcuts, playback defaults                     |
-| `splash.html`                   | 131   | Splash screen — standalone HTML, inline CSS, canvas wizualizacja dźwiękowa (64 barów)  |
-| `App.vue`                       | 164   | Root app — settings load, applyTheme, router-view, PlayerBar visibility                 |
-| `router/index.ts`               | 98    | Routing + afterEach guard — smart path dla audio w tle, switchTo helper                 |
-| `settings.ts` (store)           | 125   | Settings store — debounced save, appearance, playback, pip, dependencies, shortcuts      |
-| `usePiP.ts`                     | 93    | PiP composable — lifecycle listeners, start/stop/preload/loadTrack/updateSubtitle       |
-| `main.ts` (renderer)            | 43    | Vue app init — ErrorHandler, errorHandler, warnHandler, use()                           |
-| `ErrorBoundary.vue`             | 29    | Global error catcher — onErrorCaptured, fallback UI z komunikatem błędu                 |
+| `useAudioPlayer.ts`             | 138   | Singleton: audio state bridge, effectScope(true) + watch(), subskrybuje audioEvents     |
+| `usePlayerKeyboard.ts`          | 106   | Keyboard shortcuts dla PlayerView — extracted (Phase 3.4)                               |
+| `useOpenMedia.ts`               | 59    | Otwieranie plików z filesystem → MediaFile → player store                               |
+| `main.ts` (main)                | 321   | Okno, tray, skróty globalne, PiP init, splash screen                                    |
+| `pip.ts` (renderer)             | 158   | PiP bundle — JASSUB, listenery, progress bar, close button                              |
+| `constants.ts`                  | 167   | Formaty, presety EQ, motywy, defaults, shortcuts, playback defaults                     |
+| `utils/audioEvents.ts`          | 30    | AudioEventBus — zdarzenia audioEngine → useAudioPlayer (Phase 3.2)                      |
+| `splash.html`                   | 131   | Splash screen — standalone HTML, inline CSS, canvas wizualizacja dźwiękowa (64 barów)   |
+| `App.vue`                       | 148   | Root app — settings load, applyTheme, router-view, ErrorBoundary flex height            |
+| `router/index.ts`               | 113   | Routing + beforeEach guard — smart path, recursion guard, switchTo helper               |
+| `ModuleManager.ts`              | 83    | ModuleManager — register, switchTo, initAll, deps + priority sorting                    |
+| `settings.ts` (store)           | 111   | Settings store — debounced save, appearance, playback, pip, dependencies, shortcuts      |
+| `shared/constants.ts`           | 13    | Wspólne stałe VIDEO_EXTS/AUDIO_EXTS (Phase 3.5) — alias @shared                         |
+| `usePiP.ts`                     | 81    | PiP composable — lifecycle listeners, start/stop/preload/loadTrack/updateSubtitle       |
+| `main.ts` (renderer)            | 37    | Vue app init — ErrorHandler, errorHandler, warnHandler, use()                           |
+| `ErrorBoundary.vue`             | 26    | Global error catcher — flex-1 height (Phase 3 height fix)                              |
 | `utils/ipc.ts`                  | 7     | safeInvoke — window.api?.invoke wrapper z domyślnym null                                 |
 
 ---
@@ -1027,6 +1059,8 @@ Views → czytają store'y + wywołują akcje store (BEZ moduleManager.switchTo 
 ### TypeScript
 
 - Interface-first design (types/ folder)
+- `strict: true` + `noImplicitAny: true` (Phase 3.6)
+- `noUncheckedIndexedAccess` — guard clauses dla tablic
 - `no-explicit-any: off` (practical — JASSUB, Electron APIs)
 - `no-unused-vars` z patternami: `^_` ignore, `allowEmptyCatch`
 
@@ -1097,15 +1131,16 @@ Views → czytają store'y + wywołują akcje store (BEZ moduleManager.switchTo 
 
 - Main/Preload: `externalizeDepsPlugin()`
 - Renderer: `vue()` + `tailwindcss()` + custom `wasmMime()` plugin (Content-Type: application/wasm)
-- Alias: `@renderer` → `src/renderer/src`
+- Alias: `@renderer` → `src/renderer/src`, `@shared` → `src/shared` (Phase 3.5)
 - Worker format: `es`
 - Multi-page: `index.html` + `pip.html`
 - `assetsInclude: ['**/*.wasm']`
 
 ### tsconfig.web.json
 
+- `strict: true` + `noImplicitAny: true` (Phase 3.6)
 - `ignoreDeprecations: "6.0"` (dla `baseUrl` — TS 7.0 removal)
-- Path alias: `@renderer/*` → `src/renderer/src/*`
+- Path alias: `@renderer/*` → `src/renderer/src/*`, `@shared/*` → `src/shared/*`
 
 ### tsconfig.node.json
 
@@ -1120,13 +1155,13 @@ Views → czytają store'y + wywołują akcje store (BEZ moduleManager.switchTo 
 
 ---
 
-Ostatnia aktualizacja: 2026-07-20 (Phase 1 — stabilność, Phase 2 — wydajność, podział SettingsView, fixy po Phase 2)
+Ostatnia aktualizacja: 2026-07-20 (Phase 1 — stabilność, Phase 2 — wydajność, Phase 3 — architektura, height fix)
 
 ---
 
 ## 17. Zmiany od 2026-07-18
 
-### 17.0 Separacja Audio/Video (2026-07-19)
+### 17.0 Separacja Audio/Video plus refactor (2026-07-19)
 
 **Problem:** Audio i wideo dzieliły ten sam store state (currentTime, isPlaying), powodując konflikty gdy odtwarzacz audio i wideo próbowały kontrolować ten sam stan.
 
@@ -1211,6 +1246,87 @@ Ostatnia aktualizacja: 2026-07-20 (Phase 1 — stabilność, Phase 2 — wydajno
 - **electron-store ESM import** — lazy init z `(() => new Store())()` przez dynamic import — circumwencja ESM/CJS mismatch w Node.js
 - **Brak `await` na `getMkvExtractPath()`** — czcionki z MKV nie były wyciągane bo Promise nie był awaitowany w `buildFontMap`
 - **ErrorBoundary brak single root element** — warning Transition w Vue: `<div v-if>` i `<slot v-else>` opakowane w `<template>`
+
+### 17.7 Phase 3 — Architektura (2026-07-20)
+
+**7 zmian — refaktoryzacja wewnętrznej komunikacji i bezpieczeństwa typów:**
+
+#### 3.1 Router: afterEach → beforeEach z await switchTo (Phase 3.1)
+
+**Problem:** `afterEach` nie pozwalał na `await moduleManager.switchTo()` — przełączanie modułów było asynchroniczne i powodowało race condition (router nawigował dalej zanim poprzedni moduł się dezaktywował).
+
+**Rozwiązanie:**
+- `router.beforeEach` z `await moduleManager.switchTo(moduleId)` — przełączanie modułów **synchroniczne** względem nawigacji
+- Recursion guard: `_isSwitching` flag + `_pendingSwitch` — zapobiega nieskończonej rekurencji gdy `switchTo` wywołuje `router.push`
+- Smart path: `beforeEach` sprawdza `currentActive === 'player' && currentTrack?.type === 'audio'` — audio w tle bez dezaktywacji playera
+
+#### 3.2 EventBus — audioEvents.ts (Phase 3.2)
+
+**Problem:** `audioEngine.ts` miał 4 module-level callbacki (`_onTimeUpdate`, `_onDurationChange`, `_onPlayStateChange`, `_onTrackEnd`), które `useAudioPlayer` ustawiał bezpośrednio. Silne sprzężenie — zmiana w jednym wymagała zmiany w drugim.
+
+**Rozwiązanie:**
+- Nowy `utils/audioEvents.ts` z klasą `AudioEventBus` — `on()`, `off()`, `emit()`
+- `audioEngine` emituje zdarzenia: `timeUpdate`, `durationChange`, `playStateChange`, `trackEnd`, `trackLoaded`
+- `useAudioPlayer` subskrybuje przez `audioEvents.on()` zamiast ustawiać callbacki
+- Luźniejsze sprzężenie, wsparcie dla wielu subskrybentów, łatwiejsze testowanie
+
+#### 3.3 audioEngine.ts → Class AudioEngine (Phase 3.3)
+
+**Problem:** `audioEngine.ts` używał 15+ module-level `let` zmiennych jako mutable state. Brak enkapsulacji — każda funkcja mogła modyfikować stan globalny, trudno było śledzić zależności.
+
+**Rozwiązanie:**
+- Przeniesiono wszystkie `let` zmienne do private fields klasy `AudioEngine`
+- Wszystkie funkcje → metody klasy
+- Singleton: `export const audioEngine = new AudioEngine()`
+- Methods: `init()`, `loadTrack()`, `play()`, `pause()`, `seek()`, `deactivate()`, `destroy()`, `resume()`, `setVolume()`, `setPlaybackRate()`, `connectVideoElement()`, `disconnectVideoElement()`, itd.
+- Privatized: `rafLoop()`, `handleEnded()`, `startCrossfade()`, `swap()`, `ensureNextPreloaded()`, `savePosition()`, `applyReplayGain()`, itd.
+
+#### 3.4 Keyboard events → usePlayerKeyboard.ts (Phase 3.4)
+
+**Problem:** Wszystkie skróty klawiszowe dla wideo playera były zdefiniowane bezpośrednio w `PlayerView.vue`, zwiększając jego odpowiedzialność i utrudniając testowanie.
+
+**Rozwiązanie:**
+- Ekstrakcja do `composables/usePlayerKeyboard.ts` (106 linii)
+- Typowane parametry: `{ player, settings, vp, showOSD, skip, setSpeed, toggleFullscreen }`
+- `PlayerView.vue` spadł z 357 → 292 linii
+
+#### 3.5 Wspólne stałe — @shared/constants.ts (Phase 3.5)
+
+**Problem:** `VIDEO_EXTS` i `AUDIO_EXTS` były zduplikowane w `handlers.ts` i `useOpenMedia.ts`. Ryzyko rozjazdu definicji.
+
+**Rozwiązanie:**
+- Nowy plik `src/shared/constants.ts` (13 linii) z deduplikowanymi stałymi
+- Alias `@shared` dodany w `tsconfig.web.json`, `tsconfig.node.json` i `electron.vite.config.ts`
+- Importowany przez main, preload i renderer
+
+#### 3.6 strict: true + noImplicitAny: true (Phase 3.6)
+
+**Problem:** TypeScript `strict: false` pozwalał na `any` i niejawnie `undefined`, maskując potencjalne błędy runtime.
+
+**Rozwiązanie:**
+- Włączono `strict: true` + `noImplicitAny: true` w obu `tsconfig.web.json` i `tsconfig.node.json`
+- Fixy: usunięto nieużywane importy (`Ref`, `onErrorCaptured`, `player`), naprawiono ComputedRef style binding, dodano type declaration dla `lfa-ponyfill`, `noUncheckedIndexedAccess` guards w `pip-manager.ts` i `handlers.ts`
+- `npm run typecheck` — 100% clean (0 błędów)
+
+#### 3.7 dependencies + priority w AppModule (Phase 3.7)
+
+**Problem:** ModuleManager nie wspierał kolejności inicjalizacji ani sprawdzania zależności między modułami.
+
+**Rozwiązanie:**
+- Dodano `dependencies?: string[]` i `priority?: number` do `AppModule` interface
+- `initAll()` sortuje moduły po `priority` (malejąco)
+- Warnuje o brakujących modułach zależnych (`console.warn`)
+
+### 17.8 Height Chain Fix (2026-07-20)
+
+**Problem:** `ErrorBoundary.vue` używał `h-full` (`height: 100%`). W CSS `height: 100%` patrzy na `height` property rodzica, nie na flex-allocated height. `<main>` miało tylko `flex-1` (bez explicit height), więc `h-full` wewnątrz niego wynosiło 0px. Powodowało to:
+- Video player nie na pełną wysokość (PlayerView nie wypełniał main)
+- Scroll w stacked layout AudioView (wysokość kontenera mniejsza niż content)
+
+**Rozwiązanie:**
+- `<main class="... flex flex-col">` — flex container
+- `ErrorBoundary` → `<div class="flex-1 min-h-0">` — flex child rozciąga się na flex-allocated height main
+- Wszystkie widoki używają `h-full` → poprawnie dziedziczą z flex-allocated height
 
 ### 17.0a Dlaczego effectScope(true) + watch() zamiast $subscribe
 
