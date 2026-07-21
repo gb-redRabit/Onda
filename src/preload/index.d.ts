@@ -53,6 +53,17 @@ interface OndaAPI {
   installMkvextract: () => Promise<{ success: boolean; error?: string }>;
   getCover: (filePath: string) => Promise<{ type: 'video' | 'image' | null; data: string | null }>;
   getDuration: (filePath: string) => Promise<number>;
+  writeTags: (
+    filePath: string,
+    tags: Record<string, string | undefined>
+  ) => Promise<{ success: boolean; error?: string }>;
+  renameFile: (oldPath: string, newName: string) => Promise<{ success: boolean; error?: string; newPath?: string }>;
+  writeCover: (filePath: string, imageSource: number[] | string) => Promise<{ success: boolean; error?: string }>;
+  readCover: (filePath: string) => Promise<{ mime?: string; data?: number[] } | null>;
+  openImageDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>;
+  musicbrainzSearchRelease: (query: string) => Promise<{ success: boolean; releases: any[]; error?: string }>;
+  musicbrainzLookupRelease: (releaseId: string) => Promise<{ success: boolean; release?: any; error?: string }>;
+  musicbrainzGetCoverData: (releaseId: string) => Promise<{ success: boolean; data?: number[]; mime?: string; error?: string }>;
   getFilePath: (file: File) => string;
   listEmbeddedSubtitles: (
     filePath: string

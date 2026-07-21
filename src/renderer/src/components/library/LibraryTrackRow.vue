@@ -3,12 +3,15 @@ import { ref } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
-import { Plus, Play, Trash2, ListMusic } from '@lucide/vue';
+import { Plus, Play, Trash2, ListMusic, Edit3, Heart } from '@lucide/vue';
 
 const props = defineProps<{
   track: MediaFile;
   showPlaylist?: boolean;
   playlistId?: string;
+}>();
+const emit = defineEmits<{
+  edit: [track: MediaFile];
 }>();
 
 const library = useLibraryStore();
@@ -52,6 +55,7 @@ function togglePlaylist(e: MouseEvent) {
   <div
     class="group flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-bg-hover transition-colors cursor-pointer"
     @dblclick="playNow"
+    @contextmenu.prevent="emit('edit', track)"
   >
     <div class="relative shrink-0 w-9 h-9 rounded-lg overflow-hidden bg-bg-elevated">
       <video
@@ -96,6 +100,14 @@ function togglePlaylist(e: MouseEvent) {
     <div
       class="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
     >
+      <button
+        class="p-1.5 rounded-lg transition-colors"
+        :class="player.isFavorite(track.path) ? 'text-red-base hover:text-red-hover' : 'text-fg-faint hover:text-fg-base hover:bg-bg-elevated'"
+        :title="player.isFavorite(track.path) ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'"
+        @click.stop="player.toggleFavorite(track.path)"
+      >
+        <Heart :size="14" :fill="player.isFavorite(track.path) ? 'currentColor' : 'none'" />
+      </button>
       <div v-if="showPlaylist" ref="playlistBtn" class="relative">
         <button
           class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-elevated transition-colors"
@@ -124,6 +136,14 @@ function togglePlaylist(e: MouseEvent) {
           </div>
         </div>
       </div>
+
+      <button
+        class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-elevated transition-colors"
+        title="Edytuj tagi"
+        @click="emit('edit', track)"
+      >
+        <Edit3 :size="14" />
+      </button>
 
       <button
         v-if="playlistId"

@@ -5,6 +5,11 @@ import { audioEvents } from '@renderer/utils/audioEvents';
 
 const eqFrequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 
+function toFileUrl(filePath: string): string {
+  const normalized = filePath.replace(/\\/g, '/');
+  return `file:///${encodeURI(normalized).replace(/#/g, '%23').replace(/\?/g, '%3F')}`;
+}
+
 class AudioEngine {
   private audioEl: HTMLAudioElement | null = null;
   private nextAudioEl: HTMLAudioElement | null = null;
@@ -185,7 +190,7 @@ class AudioEngine {
       this.connectAudioB(this.nextAudioEl);
     }
 
-    const src = `file:///${next.path.replace(/\\/g, '/')}`;
+    const src = toFileUrl(next.path);
     this.nextAudioEl.src = src;
 
     this.nextAudioEl.addEventListener(
@@ -233,7 +238,7 @@ class AudioEngine {
       this.nextAudioEl.crossOrigin = 'anonymous';
       this.connectAudioB(this.nextAudioEl);
     }
-    const src = `file:///${nextTrack.path.replace(/\\/g, '/')}`;
+    const src = toFileUrl(nextTrack.path);
     if (this.nextAudioEl.src !== src) {
       this.nextAudioEl.src = src;
     }
@@ -320,7 +325,7 @@ class AudioEngine {
       const el = this.createAudioElement();
       this.setupListeners(el);
     }
-    const src = `file:///${track.path.replace(/\\/g, '/')}`;
+    const src = toFileUrl(track.path);
     this.audioEl!.src = src;
     this.connectAudio(this.audioEl!);
     this.audioEl!.volume = player.isMuted ? 0 : player.volume;

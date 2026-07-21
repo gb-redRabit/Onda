@@ -6,8 +6,8 @@
 
 | Metryka | Wartość |
 |---------|---------|
-| Pliki źródłowe | 88 (45 `.ts` + 39 `.vue` + 3 `.d.ts` + 1 `.css`) |
-| Linie kodu | ~8,700 |
+| Pliki źródłowe | 95 (46 `.ts` + 44 `.vue` + 3 `.d.ts` + 1 `.css`) |
+| Linie kodu | ~11,800 |
 | Pliki testowe | 2 (34 testy) |
 | Zależności npm | 36 (14 runtime + 22 dev) |
 | TODO/FIXME w kodzie | 1 |
@@ -391,4 +391,45 @@ type IpcInvoke = <C extends keyof IpcChannels>(
 | Pliki źródłowe | 87 | 88 |
 | TODO/FIXME | 1 | 1 |
 
-*Ostatnia aktualizacja: 2026-07-21*
+*Ostatnia aktualizacja: 2026-07-22*
+
+---
+
+## 10. Sprint Naprawczy — Fix Sprint 2 (2026-07-22)
+
+### 10.1 Co zrobiono
+
+| # | Problem | Rozwiązanie | Pliki |
+|---|---------|-------------|-------|
+| 1 | **Dane gubione przy edycji tagów** — `NodeID3.write()` zastępuje wszystkie tagi; każdy pominięty tag jest kasowany, w tym okładka | Zastąpiono `write()` → `update()` (merge, nie replace) | `handlers.ts` |
+| 2 | **Okładka kasowana po zapisie metadanych** — zapis tylko tagów tekstowych powodował utratę obrazka | `writeCover` używa `update()` z samym obrazkiem, zachowując resztę tagów | `handlers.ts` |
+| 3 | **"An object could not be cloned"** — Vue reactive Proxy trafiał przez IPC do structured clone, który nie umie serializować Proxy | Deep copy `folderTypes` przez `JSON.parse(JSON.stringify(...))` przed `ipcRenderer.invoke` | `LibraryView.vue` |
+| 4 | **Brak integracji MusicBrainz** — ręczne wpisywanie tagów | Modal `MusicBrainzLookup.vue` + handler `musicbrainz:*` z search/lookup/cover | `musicbrainz.ts`, `MusicBrainzLookup.vue`, `handlers.ts` |
+| 5 | **Brak ulubionych** — szybkie oznaczanie ulubionych utworów | Ikona Heart (♥) na liście utworów i w playerze | `LibraryTrackRow.vue`, `PlayerControls.vue` |
+| 6 | **Metadane nie utrzymują się po restarcie** — po edycji tagów stan w bibliotece nie był persistowany | Dodano `library:saveScanned` po każdej edycji | `LibraryView.vue` |
+
+### 10.2 Zmiany w architekturze
+
+```diff
+- NodeID3.write(tags, path)  →  kasuje wszystkie nieprzekazane tagi
++ NodeID3.update(tags, path)  →  merge'uje tylko przekazane tagi
+- IPC args zawierały Vue reactive Proxy (folderTypes)
++ IPC args deep-clone'owane przed transportem
+```
+
+### 10.3 Nowe pliki
+
+| Plik | Opis |
+|------|------|
+| `src/main/ipc/musicbrainz.ts` | MusicBrainz API: searchRelease, lookupRelease, getCoverData |
+| `src/renderer/src/components/library/MusicBrainzLookup.vue` | Modal wyszukiwania MusicBrainz z listą release'ów i tracków |
+
+### 10.4 Statystyki (po sprincie 2)
+
+| Metryka | Przed | Po |
+|---------|-------|----|
+| typecheck | 0 błędów | 0 błędów |
+| build | OK | OK |
+| Nowe pliki | — | 2 |
+| Pliki źródłowe | 88 | 95 |
+| Linie kodu | ~8,700 | ~11,800 |

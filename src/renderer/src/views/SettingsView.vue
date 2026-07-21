@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, defineAsyncComponent } from 'vue';
 import {
   Palette,
   Play,
@@ -14,16 +14,17 @@ import {
   Folder
 } from '@lucide/vue';
 import { useSettingsStore } from '@renderer/stores/settings';
-import SettingsAppearance from '@renderer/components/settings/SettingsAppearance.vue';
-import SettingsPlayback from '@renderer/components/settings/SettingsPlayback.vue';
-import SettingsPiP from '@renderer/components/settings/SettingsPiP.vue';
-import SettingsDownload from '@renderer/components/settings/SettingsDownload.vue';
-import SettingsShortcuts from '@renderer/components/settings/SettingsShortcuts.vue';
-import SettingsNetwork from '@renderer/components/settings/SettingsNetwork.vue';
-import SettingsApiKeys from '@renderer/components/settings/SettingsApiKeys.vue';
-import SettingsUpdates from '@renderer/components/settings/SettingsUpdates.vue';
-import SettingsDependencies from '@renderer/components/settings/SettingsDependencies.vue';
-import SettingsLibraryFolders from '@renderer/components/settings/SettingsLibraryFolders.vue';
+
+const SettingsAppearance = defineAsyncComponent(() => import('@renderer/components/settings/SettingsAppearance.vue'));
+const SettingsPlayback = defineAsyncComponent(() => import('@renderer/components/settings/SettingsPlayback.vue'));
+const SettingsPiP = defineAsyncComponent(() => import('@renderer/components/settings/SettingsPiP.vue'));
+const SettingsDownload = defineAsyncComponent(() => import('@renderer/components/settings/SettingsDownload.vue'));
+const SettingsShortcuts = defineAsyncComponent(() => import('@renderer/components/settings/SettingsShortcuts.vue'));
+const SettingsNetwork = defineAsyncComponent(() => import('@renderer/components/settings/SettingsNetwork.vue'));
+const SettingsApiKeys = defineAsyncComponent(() => import('@renderer/components/settings/SettingsApiKeys.vue'));
+const SettingsUpdates = defineAsyncComponent(() => import('@renderer/components/settings/SettingsUpdates.vue'));
+const SettingsDependencies = defineAsyncComponent(() => import('@renderer/components/settings/SettingsDependencies.vue'));
+const SettingsLibraryFolders = defineAsyncComponent(() => import('@renderer/components/settings/SettingsLibraryFolders.vue'));
 
 const settings = useSettingsStore();
 

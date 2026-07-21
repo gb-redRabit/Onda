@@ -15,7 +15,8 @@ import {
   Gauge,
   ChevronLeft,
   ChevronRight,
-  Wand
+  Wand,
+  Heart
 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -115,6 +116,14 @@ function cycleSpeed(direction: number) {
           @click="player.toggleShuffle"
         >
           <Shuffle :size="16" />
+        </button>
+        <button
+          class="text-white/40 hover:text-white/80 transition-colors"
+          :class="{ '!text-red-base': player.isFavorite(player.currentTrack?.path || '') }"
+          :title="player.isFavorite(player.currentTrack?.path || '') ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'"
+          @click="player.toggleFavorite(player.currentTrack?.path || '')"
+        >
+          <Heart :size="16" :fill="player.isFavorite(player.currentTrack?.path || '') ? 'currentColor' : 'none'" />
         </button>
         <button class="text-white/60 hover:text-white transition-colors" @click="player.prevTrack">
           <SkipBack :size="18" fill="currentColor" />

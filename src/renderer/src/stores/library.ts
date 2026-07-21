@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, triggerRef } from 'vue';
 import type { MediaFile, Playlist } from '@renderer/types/media';
 export const useLibraryStore = defineStore('library', () => {
   const tracks = ref<MediaFile[]>([]);
@@ -198,6 +198,10 @@ export const useLibraryStore = defineStore('library', () => {
     );
   }
 
+  function refreshDerived() {
+    triggerRef(tracks);
+  }
+
   return {
     tracks,
     playlists,
@@ -228,6 +232,7 @@ export const useLibraryStore = defineStore('library', () => {
     addToPlaylist,
     removeFromPlaylist,
     deletePlaylist,
-    search
+    search,
+    refreshDerived
   };
 });

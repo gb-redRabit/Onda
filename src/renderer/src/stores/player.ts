@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, reactive, computed } from 'vue';
+import { ref, computed, triggerRef } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import type { SubtitleTrack, MkvFont } from '@renderer/types/subtitles';
 
@@ -24,9 +24,11 @@ export const usePlayerStore = defineStore('player', () => {
   const pipTime = ref(0);
   const resumePrompt = ref<{ path: string; position: number } | null>(null);
   const pendingQueue = ref<MediaFile[]>([]);
-  const coverCache = reactive(
-    new Map<string, { type: 'video' | 'image' | null; data: string | null }>()
-  );
+  interface CoverResult {
+    type: 'video' | 'image' | null;
+    data: string | null;
+  }
+  const coverCache = ref<Record<string, CoverResult>>({});
 
   const favorites = ref<string[]>([]);
   const subtitleTracks = ref<SubtitleTrack[]>([]);
@@ -196,23 +198,28 @@ export const usePlayerStore = defineStore('player', () => {
   }
 
   async function doLoadCover(filePath: string): Promise<void> {
-    if (coverCache.has(filePath)) return;
-    coverCache.set(filePath, { type: null, data: null });
+    if (filePath in coverCache.value) return;
+    coverCache.value[filePath] = { type: null, data: null };
+    triggerRef(coverCache);
     const cover = (await window.api?.getCover(filePath)) ?? { type: null, data: null };
-    coverCache.set(filePath, cover);
+    coverCache.value[filePath] = cover;
+    triggerRef(coverCache);
   }
 
-  async function loadCover(
-    filePath: string
-  ): Promise<{ type: 'video' | 'image' | null; data: string | null }> {
-    if (coverCache.has(filePath)) return coverCache.get(filePath)!;
+  async function loadCover(filePath: string): Promise<CoverResult> {
+    if (filePath in coverCache.value) return coverCache.value[filePath]!;
     coverQueue.push(filePath);
     scheduleCoverFlush();
     return { type: null, data: null };
   }
 
-  function getCover(filePath: string): { type: 'video' | 'image' | null; data: string | null } {
-    return coverCache.get(filePath) ?? { type: null, data: null };
+  function getCover(filePath: string): CoverResult {
+    return coverCache.value[filePath] ?? { type: null, data: null };
+  }
+
+  function invalidateCoverCache(filePath: string) {
+    delete coverCache.value[filePath];
+    triggerRef(coverCache);
   }
 
   async function enrichTrack(track: MediaFile): Promise<void> {
@@ -402,6 +409,7 @@ export const usePlayerStore = defineStore('player', () => {
     playFromHistory,
     loadCover,
     getCover,
+    invalidateCoverCache,
     enrichTrack,
     subtitleTracks,
     activeSubtitleId,

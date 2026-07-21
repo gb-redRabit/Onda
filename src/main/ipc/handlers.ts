@@ -1,3 +1,4 @@
+import { registerMusicBrainzHandlers } from './musicbrainz';
 import { ipcMain, dialog, BrowserWindow, shell, app } from 'electron';
 import { readdir, stat, readFile, writeFile, mkdir, rename, unlink, rm } from 'fs/promises';
 
@@ -8,6 +9,7 @@ import { createWriteStream } from 'fs';
 import type { FileItem } from '../../renderer/src/types/explorer';
 import type { MediaFile, Playlist } from '../../renderer/src/types/media';
 import { promisify } from 'util';
+import NodeID3 from 'node-id3';
 import https from 'https';
 import http from 'http';
 import os from 'os';
@@ -166,6 +168,7 @@ function getFileItem(fullPath: string, stats: import('fs').Stats, name: string):
 }
 
 export function registerIPC(): void {
+  registerMusicBrainzHandlers();
   ipcMain.handle('fs:getDrives', async (): Promise<FileItem[]> => {
     return getWindowsDrives();
   });
@@ -228,6 +231,18 @@ export function registerIPC(): void {
       await unlink(filePath);
     }
     return true;
+  });
+
+  ipcMain.handle('dialog:openImage', async (_event): Promise<{ canceled: boolean; filePaths: string[] }> => {
+    const win = BrowserWindow.getFocusedWindow();
+    if (!win) return { canceled: true, filePaths: [] };
+    const result = await dialog.showOpenDialog(win, {
+      properties: ['openFile'],
+      filters: [
+        { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'bmp'] }
+      ]
+    });
+    return { canceled: result.canceled, filePaths: result.filePaths.slice() };
   });
 
   ipcMain.handle('dialog:openFile', async (_event, options?: Electron.OpenDialogOptions) => {
@@ -364,6 +379,97 @@ export function registerIPC(): void {
   const AUDIO_EXT_SET = new Set(AUDIO_EXTS);
   const VIDEO_EXT_SET = new Set(VIDEO_EXTS);
 
+  async function getDuration(filePath: string): Promise<number> {
+    try {
+      const { stdout } = await execAsync(
+        `ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${filePath}"`,
+        { encoding: 'utf-8', timeout: 10000, windowsHide: true }
+      );
+      return parseFloat(stdout.trim()) || 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  async function getMetadata(
+    filePath: string,
+    ext: string
+  ): Promise<{
+    title: string;
+    artist: string;
+    album: string;
+    year?: number;
+    genre?: string;
+    track?: { no: number; of?: number };
+    duration: number;
+    bitrate: number;
+    sampleRate: number;
+    channels: number;
+    format: string;
+    isVideo: boolean;
+    size: number;
+  } | null> {
+    try {
+      const s = await stat(filePath).catch(() => null);
+      if (!s) return null;
+
+      const isVideo = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v'].includes(
+        ext
+      );
+
+      let title = basename(filePath, ext);
+      let artist = '';
+      let album = '';
+      let year: number | undefined;
+      let genre = '';
+      let trackNo: number | undefined;
+      let trackOf: number | undefined;
+      let duration = 0;
+
+      if (['.mp3', '.flac', '.ogg', '.m4a', '.wav'].includes(ext)) {
+        try {
+          const id3 = NodeID3.read(filePath);
+          if (id3) {
+            if (id3.title) title = id3.title;
+            if (id3.artist) artist = id3.artist;
+            if (id3.album) album = id3.album;
+            if (id3.year) year = parseInt(id3.year) || undefined;
+            if (id3.genre) genre = id3.genre;
+            if (id3.trackNumber) {
+              const parts = id3.trackNumber.split('/');
+              trackNo = parseInt(parts[0]) || undefined;
+              if (parts[1]) trackOf = parseInt(parts[1]) || undefined;
+            }
+          }
+        } catch {
+          // fallback to filename
+        }
+      }
+
+      if (!isVideo) {
+        duration = await getDuration(filePath);
+      }
+
+      return {
+        title,
+        artist,
+        album,
+        year,
+        genre,
+        track: trackNo ? { no: trackNo, of: trackOf } : undefined,
+        duration,
+        bitrate: 0,
+        sampleRate: 0,
+        channels: 0,
+        format: ext.slice(1),
+        isVideo,
+        size: s.size
+      };
+    } catch {
+      return null;
+    }
+  }
+
   async function scanDir(
     dirPath: string,
     maxDepth = 10,
@@ -388,6 +494,7 @@ export function registerIPC(): void {
           if (AUDIO_EXT_SET.has(ext)) {
             audioCount++;
             const s = await stat(fullPath).catch(() => null);
+            const meta = await getMetadata(fullPath, ext);
             files.push({
               id: fullPath,
               name: entry.name,
@@ -396,6 +503,17 @@ export function registerIPC(): void {
               mimeType: '',
               size: s?.size ?? 0,
               type: 'audio',
+              metadata: meta
+                ? {
+                    title: meta.title,
+                    artist: meta.artist,
+                    album: meta.album,
+                    year: meta.year,
+                    genre: meta.genre,
+                    track: meta.track
+                  }
+                : undefined,
+              duration: meta?.duration || 0,
               addedAt: s?.birthtimeMs ?? Date.now(),
               playCount: 0
             });
@@ -410,6 +528,7 @@ export function registerIPC(): void {
               mimeType: '',
               size: s?.size ?? 0,
               type: 'video',
+              duration: 0,
               addedAt: s?.birthtimeMs ?? Date.now(),
               playCount: 0
             });
@@ -564,23 +683,8 @@ export function registerIPC(): void {
 
   ipcMain.handle('media:getMetadata', async (_event, filePath: string) => {
     try {
-      const s = await stat(filePath);
       const ext = extname(filePath).toLowerCase();
-      const isVideo = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v'].includes(
-        ext
-      );
-      return {
-        title: basename(filePath, ext),
-        artist: '',
-        album: '',
-        duration: 0,
-        bitrate: 0,
-        sampleRate: 0,
-        channels: 0,
-        format: ext.slice(1),
-        isVideo,
-        size: s.size
-      };
+      return await getMetadata(filePath, ext);
     } catch {
       return null;
     }
@@ -815,6 +919,77 @@ export function registerIPC(): void {
       return parseFloat(stdout.trim()) || 0;
     } catch {
       return 0;
+    }
+  });
+
+  ipcMain.handle(
+    'media:writeTags',
+    async (
+      _event,
+      filePath: string,
+      tags: Record<string, string | undefined>
+    ): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const toWrite: Record<string, string> = {};
+        for (const [key, val] of Object.entries(tags)) {
+          if (val !== undefined) toWrite[key] = val;
+        }
+        NodeID3.update(toWrite, filePath);
+        return { success: true };
+      } catch (e: any) {
+        return { success: false, error: String(e && e.message ? e.message : e) };
+      }
+    }
+  );
+
+  ipcMain.handle('media:renameFile', async (_event, oldPath: string, newName: string): Promise<{ success: boolean; error?: string; newPath?: string }> => {
+    try {
+      const dir = join(oldPath, '..');
+      const ext = extname(oldPath);
+      const safeName = newName.replace(/[<>:"/\\|?*]/g, '_');
+      const newPath = join(dir, safeName.endsWith(ext) ? safeName : safeName + ext);
+      await rename(oldPath, newPath);
+      return { success: true, newPath };
+    } catch (e: any) {
+      return { success: false, error: String(e && e.message ? e.message : e) };
+    }
+  });
+
+  ipcMain.handle('media:writeCover', async (_event, filePath: string, imageSource: number[] | string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      let imageBuffer: Buffer;
+      let mime = 'image/jpeg';
+      if (typeof imageSource === 'string') {
+        imageBuffer = await readFile(imageSource);
+        const ext = extname(imageSource).toLowerCase();
+        const mimeMap: Record<string, string> = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.bmp': 'image/bmp' };
+        mime = mimeMap[ext] || 'image/jpeg';
+      } else {
+        imageBuffer = Buffer.from(imageSource);
+      }
+      NodeID3.update({
+        image: { mime, type: { id: 3 }, imageBuffer, description: 'Cover' }
+      }, filePath);
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, error: String(e && e.message ? e.message : e) };
+    }
+  });
+
+  ipcMain.handle('media:readCover', async (_event, filePath: string): Promise<{ mime?: string; data?: number[] } | null> => {
+    try {
+      const tags = NodeID3.read(filePath);
+      if (tags?.image) {
+        const img = typeof tags.image === 'string'
+          ? { imageBuffer: await readFile(tags.image).catch(() => null), mime: 'image/jpeg' }
+          : tags.image;
+        if (img?.imageBuffer && Buffer.isBuffer(img.imageBuffer)) {
+          return { mime: img.mime || 'image/jpeg', data: Array.from(img.imageBuffer) };
+        }
+      }
+      return null;
+    } catch {
+      return null;
     }
   });
 
