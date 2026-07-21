@@ -38,9 +38,7 @@ function onVolume(e: MouseEvent) {
     <button
       class="p-2 rounded-full transition-colors"
       :class="
-        player.shuffle
-          ? 'text-accent-base'
-          : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+        player.shuffle ? 'text-accent-base' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
       "
       @click="player.toggleShuffle"
     >
@@ -57,7 +55,10 @@ function onVolume(e: MouseEvent) {
 
     <!-- play/pause — glassmorphism -->
     <div class="relative">
-      <div v-if="audio.isPlaying.value" class="absolute inset-0 rounded-full bg-accent-base/15 blur-xl" />
+      <div
+        v-if="audio.isPlaying.value"
+        class="absolute inset-0 rounded-full bg-accent-base/15 blur-xl"
+      />
       <button
         class="relative w-12 h-12 rounded-full bg-accent-base/15 backdrop-blur-xl border border-accent-base/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
         @click="togglePlay"
@@ -96,10 +97,7 @@ function onVolume(e: MouseEvent) {
 
   <!-- volume row -->
   <div class="flex items-center justify-center gap-2 mt-3">
-    <button
-      class="text-fg-faint hover:text-fg-base transition-colors"
-      @click="player.toggleMute"
-    >
+    <button class="text-fg-faint hover:text-fg-base transition-colors" @click="player.toggleMute">
       <VolumeX v-if="player.isMuted" :size="14" />
       <Volume2 v-else :size="14" />
     </button>

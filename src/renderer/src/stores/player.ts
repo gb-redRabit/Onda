@@ -174,14 +174,41 @@ export const usePlayerStore = defineStore('player', () => {
     enrichTrack(track);
   }
 
+  const coverQueue: string[] = [];
+  let coverFlushScheduled = false;
+
+  function scheduleCoverFlush(): void {
+    if (coverFlushScheduled) return;
+    coverFlushScheduled = true;
+    const flush = (): void => {
+      coverFlushScheduled = false;
+      const batch = coverQueue.splice(0, 5);
+      if (batch.length === 0) return;
+      Promise.all(batch.map((p) => doLoadCover(p))).then(() => {
+        if (coverQueue.length > 0) scheduleCoverFlush();
+      });
+    };
+    if (typeof requestIdleCallback !== 'undefined') {
+      requestIdleCallback(flush, { timeout: 1000 });
+    } else {
+      setTimeout(flush, 50);
+    }
+  }
+
+  async function doLoadCover(filePath: string): Promise<void> {
+    if (coverCache.has(filePath)) return;
+    coverCache.set(filePath, { type: null, data: null });
+    const cover = (await window.api?.getCover(filePath)) ?? { type: null, data: null };
+    coverCache.set(filePath, cover);
+  }
+
   async function loadCover(
     filePath: string
   ): Promise<{ type: 'video' | 'image' | null; data: string | null }> {
     if (coverCache.has(filePath)) return coverCache.get(filePath)!;
-    coverCache.set(filePath, { type: null, data: null });
-    const cover = await window.api?.getCover(filePath) ?? { type: null, data: null };
-    coverCache.set(filePath, cover);
-    return cover;
+    coverQueue.push(filePath);
+    scheduleCoverFlush();
+    return { type: null, data: null };
   }
 
   function getCover(filePath: string): { type: 'video' | 'image' | null; data: string | null } {

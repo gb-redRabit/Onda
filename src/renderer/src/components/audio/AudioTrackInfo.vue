@@ -24,13 +24,21 @@ const album = computed(() => player.currentTrack?.metadata?.album || '');
     </p>
     <button
       class="mx-auto flex items-center gap-1.5 transition-colors"
-      :class="player.currentTrack && player.isFavorite(player.currentTrack.path) ? 'text-red-base' : 'text-fg-faint hover:text-red-base'"
+      :class="
+        player.currentTrack && player.isFavorite(player.currentTrack.path)
+          ? 'text-red-base'
+          : 'text-fg-faint hover:text-red-base'
+      "
       :disabled="!player.currentTrack"
       @click="player.currentTrack && player.toggleFavorite(player.currentTrack.path)"
     >
       <Heart
         :size="16"
-        :fill="player.currentTrack && player.isFavorite(player.currentTrack.path) ? 'currentColor' : 'none'"
+        :fill="
+          player.currentTrack && player.isFavorite(player.currentTrack.path)
+            ? 'currentColor'
+            : 'none'
+        "
       />
     </button>
   </div>

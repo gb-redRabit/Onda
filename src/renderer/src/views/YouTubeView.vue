@@ -14,7 +14,10 @@ async function search() {
   yt.isSearching = true;
   yt.searchQuery = query.value;
   try {
-    const result = (await window.api.invoke('yt:search', query.value)) as YouTubeSearchResult | null;
+    const result = (await window.api.invoke(
+      'yt:search',
+      query.value
+    )) as YouTubeSearchResult | null;
     if (result) yt.setResults(result.items || [], result.nextPageToken, result.prevPageToken);
   } catch {}
   yt.isSearching = false;

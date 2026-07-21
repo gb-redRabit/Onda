@@ -6,6 +6,7 @@ import { exec as execCb } from 'child_process';
 import { pipeline } from 'stream/promises';
 import { createWriteStream } from 'fs';
 import type { FileItem } from '../../renderer/src/types/explorer';
+import type { MediaFile, Playlist } from '../../renderer/src/types/media';
 import { promisify } from 'util';
 import https from 'https';
 import http from 'http';
@@ -53,11 +54,14 @@ async function extractEmbeddedCover(filePath: string): Promise<string | null> {
     if (stdout.trim() !== 'video') return null;
     await mkdir(getTempDir(), { recursive: true });
     const outPath = join(getTempDir(), `cover_${Date.now()}.jpg`);
-    await execAsync(`ffmpeg -v quiet -i "${filePath}" -vframes 1 -q:v 2 -update 1 "${outPath}" -y`, {
-      encoding: 'utf-8',
-      timeout: 15000,
-      windowsHide: true
-    });
+    await execAsync(
+      `ffmpeg -v quiet -i "${filePath}" -vframes 1 -q:v 2 -update 1 "${outPath}" -y`,
+      {
+        encoding: 'utf-8',
+        timeout: 15000,
+        windowsHide: true
+      }
+    );
     const buf = await readFile(outPath);
     await unlink(outPath).catch(() => {});
     return `data:image/jpeg;base64,${buf.toString('base64')}`;
@@ -107,13 +111,17 @@ async function getWindowsDrives(): Promise<FileItem[]> {
   try {
     const cmd =
       'powershell.exe -NoProfile -NonInteractive -Command "Get-PSDrive -PSProvider FileSystem | Select-Object Name,Root,Free,Used | ConvertTo-Json -Compress"';
-    const { stdout } = await execAsync(cmd, { encoding: 'utf-8', timeout: 10000, windowsHide: true });
+    const { stdout } = await execAsync(cmd, {
+      encoding: 'utf-8',
+      timeout: 10000,
+      windowsHide: true
+    });
     if (!stdout || !stdout.trim()) return fallback;
     interface DriveInfo {
-      Name: string
-      Root: string
-      Free: number
-      Used: number
+      Name: string;
+      Root: string;
+      Free: number;
+      Used: number;
     }
     let parsed: DriveInfo[];
     try {
@@ -251,14 +259,13 @@ export function registerIPC(): void {
     return result;
   });
 
-  ipcMain.handle('dialog:openFolder', async (_event, options?: Electron.OpenDialogOptions) => {
+  ipcMain.handle('dialog:openFolder', async (_event): Promise<string[]> => {
     const win = BrowserWindow.getFocusedWindow();
-    if (!win) return { canceled: true, filePaths: [] };
+    if (!win) return [];
     const result = await dialog.showOpenDialog(win, {
-      properties: ['openDirectory'],
-      ...options
+      properties: ['openDirectory']
     });
-    return result;
+    return result.canceled ? [] : result.filePaths;
   });
 
   ipcMain.handle('dialog:openFolderFiles', async (_event) => {
@@ -352,6 +359,188 @@ export function registerIPC(): void {
     return app.getVersion();
   });
 
+  // --- Library scan ---
+
+  const AUDIO_EXT_SET = new Set(AUDIO_EXTS);
+  const VIDEO_EXT_SET = new Set(VIDEO_EXTS);
+
+  async function scanDir(
+    dirPath: string,
+    maxDepth = 10,
+    depth = 0
+  ): Promise<{ files: MediaFile[]; audioCount: number; videoCount: number }> {
+    if (depth > maxDepth) return { files: [], audioCount: 0, videoCount: 0 };
+    const files: MediaFile[] = [];
+    let audioCount = 0;
+    let videoCount = 0;
+
+    try {
+      const entries = await readdir(dirPath, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = join(dirPath, entry.name);
+        if (entry.isDirectory()) {
+          const sub = await scanDir(fullPath, maxDepth, depth + 1);
+          files.push(...sub.files);
+          audioCount += sub.audioCount;
+          videoCount += sub.videoCount;
+        } else if (entry.isFile()) {
+          const ext = extname(entry.name).toLowerCase();
+          if (AUDIO_EXT_SET.has(ext)) {
+            audioCount++;
+            const s = await stat(fullPath).catch(() => null);
+            files.push({
+              id: fullPath,
+              name: entry.name,
+              path: fullPath,
+              extension: ext,
+              mimeType: '',
+              size: s?.size ?? 0,
+              type: 'audio',
+              addedAt: s?.birthtimeMs ?? Date.now(),
+              playCount: 0
+            });
+          } else if (VIDEO_EXT_SET.has(ext)) {
+            videoCount++;
+            const s = await stat(fullPath).catch(() => null);
+            files.push({
+              id: fullPath,
+              name: entry.name,
+              path: fullPath,
+              extension: ext,
+              mimeType: '',
+              size: s?.size ?? 0,
+              type: 'video',
+              addedAt: s?.birthtimeMs ?? Date.now(),
+              playCount: 0
+            });
+          }
+        }
+      }
+    } catch (err) {
+      logger.warn('library', `scanDir error reading ${dirPath}: ${err}`);
+    }
+
+    return { files, audioCount, videoCount };
+  }
+
+  ipcMain.handle(
+    'library:scan',
+    async (
+      _event,
+      folderPaths: string[]
+    ): Promise<{ count: number; folderTypes: Record<string, 'audio' | 'video' | 'mixed'> }> => {
+      try {
+        const allFiles: MediaFile[] = [];
+        const folderTypes: Record<string, 'audio' | 'video' | 'mixed'> = {};
+
+        for (const folderPath of folderPaths) {
+          try {
+            const result = await scanDir(folderPath, 8);
+            let folderType: 'audio' | 'video' | 'mixed' = 'mixed';
+            if (result.audioCount > result.videoCount) {
+              folderType = 'audio';
+            } else if (result.videoCount > result.audioCount) {
+              folderType = 'video';
+            }
+            folderTypes[folderPath] = folderType;
+
+            for (const f of result.files) {
+              if (folderType === 'audio' && f.type === 'video') continue;
+              if (folderType === 'video' && f.type === 'audio') continue;
+              allFiles.push(f);
+            }
+          } catch (err) {
+            logger.warn('library', `scan error for ${folderPath}: ${err}`);
+          }
+        }
+
+        const store = await getStore();
+        store.set('libraryScanned', JSON.parse(JSON.stringify({ files: allFiles, folderTypes })));
+
+        logger.info('library', `scan completed: ${allFiles.length} files`);
+        return { count: allFiles.length, folderTypes };
+      } catch (err) {
+        logger.error('library', 'scan handler failed', err);
+        return { count: 0, folderTypes: {} };
+      }
+    }
+  );
+
+  ipcMain.handle('library:loadFolders', async (): Promise<string[]> => {
+    try {
+      const store = await getStore();
+      const folders = store.get('libraryFolders', []);
+      return Array.isArray(folders) ? folders : [];
+    } catch (err) {
+      logger.error('library', 'loadFolders failed', err);
+      return [];
+    }
+  });
+
+  ipcMain.handle('library:saveFolders', async (_event, folders: string[]): Promise<string[]> => {
+    try {
+      const store = await getStore();
+      store.set('libraryFolders', folders);
+      return folders;
+    } catch (err) {
+      logger.error('library', 'saveFolders failed', err);
+      throw err;
+    }
+  });
+
+  ipcMain.handle(
+    'library:loadScanned',
+    async (): Promise<{
+      files: MediaFile[];
+      folderTypes: Record<string, 'audio' | 'video' | 'mixed'>;
+    } | null> => {
+      try {
+        const store = await getStore();
+        const data = store.get('libraryScanned', null);
+        return data as any;
+      } catch (err) {
+        logger.error('library', 'loadScanned failed', err);
+        return null;
+      }
+    }
+  );
+
+  ipcMain.handle(
+    'library:saveScanned',
+    async (
+      _event,
+      data: { files: MediaFile[]; folderTypes: Record<string, 'audio' | 'video' | 'mixed'> }
+    ): Promise<void> => {
+      try {
+        const store = await getStore();
+        store.set('libraryScanned', data);
+      } catch (err) {
+        logger.error('library', 'saveScanned failed', err);
+      }
+    }
+  );
+
+  // --- Playlist CRUD ---
+
+  ipcMain.handle('playlist:loadAll', async (): Promise<Playlist[]> => {
+    try {
+      const store = await getStore();
+      return (store.get('playlists', []) || []) as Playlist[];
+    } catch (err) {
+      logger.error('library', 'loadPlaylists failed', err);
+      return [];
+    }
+  });
+
+  ipcMain.handle('playlist:saveAll', async (_event, playlists: Playlist[]): Promise<void> => {
+    try {
+      const store = await getStore();
+      store.set('playlists', playlists);
+    } catch (err) {
+      logger.error('library', 'savePlaylists failed', err);
+    }
+  });
+
   ipcMain.handle('settings:get', async () => {
     try {
       const store = await getStore();
@@ -408,7 +597,13 @@ export function registerIPC(): void {
   });
 
   ipcMain.handle('yt:download', async (_event, url: string, format: string) => {
-    logger.warn('yt', 'download not implemented — yt-dlp API required. URL:', url, 'Format:', format);
+    logger.warn(
+      'yt',
+      'download not implemented — yt-dlp API required. URL:',
+      url,
+      'Format:',
+      format
+    );
     return { success: false, error: 'yt-dlp integration not yet implemented' };
   });
 
@@ -433,10 +628,15 @@ export function registerIPC(): void {
     app.exit(0);
   });
 
-  async function checkVersion(cmd: string, regex: RegExp): Promise<{ installed: boolean; version: string | null }> {
+  async function checkVersion(
+    cmd: string,
+    regex: RegExp
+  ): Promise<{ installed: boolean; version: string | null }> {
     try {
       const { stdout } = await execAsync(cmd, {
-        encoding: 'utf-8', timeout: 10000, windowsHide: true
+        encoding: 'utf-8',
+        timeout: 10000,
+        windowsHide: true
       });
       const match = stdout.match(regex);
       return { installed: true, version: match?.[1] ?? 'unknown' };
@@ -455,14 +655,18 @@ export function registerIPC(): void {
       try {
         await stat(localBin);
         const { stdout } = await execAsync(`"${localBin}" --version`, {
-          encoding: 'utf-8', timeout: 10000, windowsHide: true
+          encoding: 'utf-8',
+          timeout: 10000,
+          windowsHide: true
         });
         return { installed: true, version: stdout.trim(), path: localBin };
       } catch {
         // not in local bin
       }
       const { stdout } = await execAsync('yt-dlp --version', {
-        encoding: 'utf-8', timeout: 10000, windowsHide: true
+        encoding: 'utf-8',
+        timeout: 10000,
+        windowsHide: true
       });
       return { installed: true, version: stdout.trim(), path: 'yt-dlp' };
     } catch {
@@ -520,7 +724,8 @@ export function registerIPC(): void {
     for (const c of candidates) {
       try {
         await execAsync(`"${c}" --version`, {
-          timeout: 5000, windowsHide: true
+          timeout: 5000,
+          windowsHide: true
         });
         return c;
       } catch {
@@ -534,7 +739,9 @@ export function registerIPC(): void {
     try {
       const bin = await getMkvExtractPath();
       const { stdout } = await execAsync(`"${bin}" --version`, {
-        encoding: 'utf-8', timeout: 10000, windowsHide: true
+        encoding: 'utf-8',
+        timeout: 10000,
+        windowsHide: true
       });
       const match = stdout.match(/mkvextract v([\d.]+)/);
       return { installed: true, version: match ? match[1] : 'unknown' };
@@ -739,10 +946,11 @@ export function registerIPC(): void {
             const ext = (fileName.split('.').pop() || 'ttf').toLowerCase();
             const outPath = join(dumpDir, `att_${attId}.${ext}`);
             try {
-              await execAsync(
-                `"${bin}" "${filePath}" attachments ${attId}:"${outPath}"`,
-                { encoding: 'utf-8', timeout: 30000, windowsHide: true }
-              );
+              await execAsync(`"${bin}" "${filePath}" attachments ${attId}:"${outPath}"`, {
+                encoding: 'utf-8',
+                timeout: 30000,
+                windowsHide: true
+              });
               try {
                 await stat(outPath);
                 const buf = await readFile(outPath);

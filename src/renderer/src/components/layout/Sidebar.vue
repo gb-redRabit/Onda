@@ -68,7 +68,10 @@ function createPlaylist() {
 function playPlaylist(playlistId: string) {
   const playlist = library.playlists.find((p) => p.id === playlistId);
   if (playlist && playlist.tracks.length > 0) {
+    player.clearQueue();
     player.addToQueueMultiple(playlist.tracks);
+    player.setTrack(playlist.tracks[0]);
+    player.play();
   }
 }
 </script>
@@ -167,7 +170,7 @@ function playPlaylist(playlistId: string) {
             :key="i"
             class="flex items-center gap-2 text-xs text-fg-muted truncate px-2 py-1.5 rounded-lg hover:bg-bg-hover hover:text-fg-base transition-colors"
           >
-          <!-- TODO: extract file extension from track.name to change icon based on audio/video type -->
+            <!-- TODO: extract file extension from track.name to change icon based on audio/video type -->
             <Music2 :size="11" class="shrink-0 text-accent-base" />
             <span class="truncate">{{ track.metadata?.title || track.name }}</span>
           </div>

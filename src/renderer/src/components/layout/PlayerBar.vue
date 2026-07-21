@@ -66,7 +66,9 @@ function togglePlay() {
       <div class="h-full bg-accent-base rounded-r-full" :style="{ width: progressPct + '%' }" />
     </div>
 
-    <div class="w-8 h-8 rounded-lg bg-bg-elevated flex items-center justify-center shrink-0 overflow-hidden">
+    <div
+      class="w-8 h-8 rounded-lg bg-bg-elevated flex items-center justify-center shrink-0 overflow-hidden"
+    >
       <template v-if="player.currentTrack">
         <video
           v-if="player.getCover(player.currentTrack.path).type === 'video'"
@@ -175,13 +177,21 @@ function togglePlay() {
       </div>
       <button
         class="shrink-0 p-1.5 transition-colors"
-        :class="player.currentTrack && player.isFavorite(player.currentTrack.path) ? 'text-red-base' : 'text-fg-faint hover:text-red-base'"
+        :class="
+          player.currentTrack && player.isFavorite(player.currentTrack.path)
+            ? 'text-red-base'
+            : 'text-fg-faint hover:text-red-base'
+        "
         :disabled="!player.currentTrack"
         @click="player.currentTrack && player.toggleFavorite(player.currentTrack.path)"
       >
         <Heart
           :size="15"
-          :fill="player.currentTrack && player.isFavorite(player.currentTrack.path) ? 'currentColor' : 'none'"
+          :fill="
+            player.currentTrack && player.isFavorite(player.currentTrack.path)
+              ? 'currentColor'
+              : 'none'
+          "
         />
       </button>
     </div>

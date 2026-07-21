@@ -28,7 +28,10 @@ onMounted(() => {
 });
 
 async function checkDependencies(): Promise<void> {
-  for (const dep of deps.value) { dep.installing = true; dep.error = null; }
+  for (const dep of deps.value) {
+    dep.installing = true;
+    dep.error = null;
+  }
 
   const [ffmpeg, ffprobe, ytdlp, mkv] = await Promise.all([
     window.api?.checkFfmpeg() ?? Promise.resolve({ installed: false, version: null }),
@@ -73,13 +76,21 @@ async function installDependency(dep: (typeof deps.value)[0]): Promise<void> {
     const status = await checkFn?.();
     dep.installed = status?.installed ?? false;
     dep.version = status?.version ?? null;
-    settings.updateDependency(dep.name, { installed: dep.installed, version: dep.version, checkedAt: now });
+    settings.updateDependency(dep.name, {
+      installed: dep.installed,
+      version: dep.version,
+      checkedAt: now
+    });
 
     if (dep.name === 'FFmpeg') {
-      const probeStatus = await window.api?.checkFfprobe() ?? { installed: false, version: null };
+      const probeStatus = (await window.api?.checkFfprobe()) ?? { installed: false, version: null };
       deps.value[1].installed = probeStatus.installed;
       deps.value[1].version = probeStatus.version;
-      settings.updateDependency('FFprobe', { installed: probeStatus.installed, version: probeStatus.version, checkedAt: now });
+      settings.updateDependency('FFprobe', {
+        installed: probeStatus.installed,
+        version: probeStatus.version,
+        checkedAt: now
+      });
     }
   } else {
     dep.error = result?.error ?? 'Instalacja nie powiodła się';
@@ -91,26 +102,44 @@ async function installDependency(dep: (typeof deps.value)[0]): Promise<void> {
 <template>
   <div class="space-y-6 max-w-2xl">
     <h2 class="text-lg font-bold">Zależności systemowe</h2>
-    <p class="text-xs text-fg-faint mb-4">Niektóre funkcje wymagają zewnętrznych narzędzi. Sprawdź ich status i zainstaluj brakujące.</p>
-    <button class="px-4 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm font-medium hover:bg-bg-hover transition-colors mb-4"
-      @click="checkDependencies">Odśwież status</button>
+    <p class="text-xs text-fg-faint mb-4">
+      Niektóre funkcje wymagają zewnętrznych narzędzi. Sprawdź ich status i zainstaluj brakujące.
+    </p>
+    <button
+      class="px-4 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm font-medium hover:bg-bg-hover transition-colors mb-4"
+      @click="checkDependencies"
+    >
+      Odśwież status
+    </button>
     <div class="space-y-3">
-      <div v-for="dep in deps" :key="dep.name" class="p-4 rounded-xl bg-bg-elevated border border-border-default">
+      <div
+        v-for="dep in deps"
+        :key="dep.name"
+        class="p-4 rounded-xl bg-bg-elevated border border-border-default"
+      >
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <div class="w-2 h-2 rounded-full" :class="dep.installed ? 'bg-green-500' : 'bg-red-500'" />
+            <div
+              class="w-2 h-2 rounded-full"
+              :class="dep.installed ? 'bg-green-500' : 'bg-red-500'"
+            />
             <div>
               <div class="text-sm font-medium">{{ dep.name }}</div>
               <div class="text-xs text-fg-faint">{{ dep.description }}</div>
             </div>
           </div>
           <div class="flex items-center gap-3">
-            <span v-if="dep.version" class="text-xs text-fg-faint font-mono">v{{ dep.version }}</span>
+            <span v-if="dep.version" class="text-xs text-fg-faint font-mono"
+              >v{{ dep.version }}</span
+            >
             <span v-else-if="dep.installed" class="text-xs text-green-500">Zainstalowano</span>
             <span v-else class="text-xs text-red-500">Brak</span>
-            <button v-if="!dep.installed"
+            <button
+              v-if="!dep.installed"
               class="px-3 py-1.5 rounded-lg bg-accent-base text-white text-xs font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
-              :disabled="dep.installing" @click="installDependency(dep)">
+              :disabled="dep.installing"
+              @click="installDependency(dep)"
+            >
               {{ dep.installing ? 'Instalowanie...' : 'Instaluj' }}
             </button>
           </div>

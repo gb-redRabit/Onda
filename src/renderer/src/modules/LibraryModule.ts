@@ -8,11 +8,14 @@ export class LibraryModule implements AppModule {
 
   init(): void {}
 
-  activate(_context?: unknown): void {
+  async activate(_context?: unknown): Promise<void> {
     this._active = true;
     const library = useLibraryStore();
-    if (library.tracks.length === 0 && !library.isScanning) {
-      // Library will be populated via scan or IPC
+    if (!library.isLoaded && library.tracks.length === 0 && !library.isLoading) {
+      await library.loadFromDisk();
+    }
+    if (library.folders.length > 0 && library.tracks.length === 0 && !library.isScanning) {
+      library.scanFolders();
     }
   }
 

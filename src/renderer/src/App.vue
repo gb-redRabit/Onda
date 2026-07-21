@@ -12,12 +12,14 @@ import ErrorBoundary from './components/ErrorBoundary.vue';
 import { useSettingsStore } from './stores/settings';
 import { usePlayerStore } from './stores/player';
 import { useUIStore } from './stores/ui';
+import { useLibraryStore } from './stores/library';
 import { moduleManager } from './modules/ModuleManager';
 import { THEME_PALETTES } from './utils/constants';
 
 const settings = useSettingsStore();
 const player = usePlayerStore();
 const ui = useUIStore();
+const library = useLibraryStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -65,6 +67,7 @@ function applyTheme() {
 
 onMounted(() => {
   settings.load().then(() => applyTheme());
+  library.loadFromDisk();
   if (!moduleManager.getActive()) {
     moduleManager.switchTo('home');
   }
@@ -78,20 +81,11 @@ watch(() => settings.appearance.theme, applyTheme);
 watch(() => settings.appearance.accentColor, applyTheme);
 watch(() => settings.appearance.fontSize, applyTheme);
 
-let lastTrackType: string | null = null;
-
 watch(
   () => player.currentTrack,
   (track) => {
-    const newType = track?.type ?? null;
-    const currentRoute = route.name as string;
-
-    if (newType !== lastTrackType) {
-
-      lastTrackType = newType;
-      if (newType === 'video' && currentRoute !== 'player') {
-        router.push('/player');
-      }
+    if (track?.type === 'video' && route.name !== 'player') {
+      router.push('/player');
     }
   }
 );

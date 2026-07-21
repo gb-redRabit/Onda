@@ -5,4 +5,4 @@ export const logger = {
     console.error(`[Onda/${tag}]`, msg, ...args),
   warn: (tag: string, msg: string, ...args: unknown[]) =>
     console.warn(`[Onda/${tag}]`, msg, ...args)
-}
+};

@@ -124,7 +124,11 @@ class AudioEngine {
 
   private handleEnded(): void {
     let player;
-    try { player = usePlayerStore(); } catch { return; }
+    try {
+      player = usePlayerStore();
+    } catch {
+      return;
+    }
     if (this.isCrossfading) return;
 
     if (player.repeat === 'one') {
@@ -236,15 +240,31 @@ class AudioEngine {
   }
 
   private disconnectNodes(): void {
-    try { this.sourceNode?.disconnect(); } catch {}
-    try { this.sourceNodeB?.disconnect(); } catch {}
-    try { this.videoSourceNode?.disconnect(); } catch {}
-    try { this.crossfadeGainA?.disconnect(); } catch {}
-    try { this.crossfadeGainB?.disconnect(); } catch {}
-    try { this.gainNode?.disconnect(); } catch {}
-    try { this.analyserNode?.disconnect(); } catch {}
+    try {
+      this.sourceNode?.disconnect();
+    } catch {}
+    try {
+      this.sourceNodeB?.disconnect();
+    } catch {}
+    try {
+      this.videoSourceNode?.disconnect();
+    } catch {}
+    try {
+      this.crossfadeGainA?.disconnect();
+    } catch {}
+    try {
+      this.crossfadeGainB?.disconnect();
+    } catch {}
+    try {
+      this.gainNode?.disconnect();
+    } catch {}
+    try {
+      this.analyserNode?.disconnect();
+    } catch {}
     for (const f of this.eqFilters) {
-      try { f.disconnect(); } catch {}
+      try {
+        f.disconnect();
+      } catch {}
     }
   }
 
@@ -277,7 +297,11 @@ class AudioEngine {
     if (this.audioEl && player.currentTrack && player.currentTrack.type === 'audio') {
       if (this.audioEl.currentTime > 5) {
         this.savedPositions.set(player.currentTrack.path, this.audioEl.currentTime);
-        window.api?.invoke('playback:setPosition', player.currentTrack.path, this.audioEl.currentTime);
+        window.api?.invoke(
+          'playback:setPosition',
+          player.currentTrack.path,
+          this.audioEl.currentTime
+        );
       }
     }
   }

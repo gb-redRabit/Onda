@@ -19,7 +19,11 @@ export function usePlayerKeyboard(params: {
   vp: {
     videoRef: { value: HTMLVideoElement | null };
   };
-  showOSD: (text: string, icon: 'play' | 'pause' | 'volume' | 'seek' | 'track' | 'speed', duration?: number) => void;
+  showOSD: (
+    text: string,
+    icon: 'play' | 'pause' | 'volume' | 'seek' | 'track' | 'speed',
+    duration?: number
+  ) => void;
   skip: (seconds: number) => void;
   setSpeed: (speed: number) => void;
   toggleFullscreen: () => void;

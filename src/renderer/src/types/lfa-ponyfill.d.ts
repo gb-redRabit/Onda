@@ -3,10 +3,7 @@ declare module 'lfa-ponyfill' {
     Array<{ family: string; fullName: string; postscriptName: string }>
   >;
 
-  export function queryRemoteFonts(opts: {
-    postscriptNames?: string[];
-    family?: string;
-  }): Promise<
+  export function queryRemoteFonts(opts: { postscriptNames?: string[]; family?: string }): Promise<
     Array<{
       url: string;
       family: string;

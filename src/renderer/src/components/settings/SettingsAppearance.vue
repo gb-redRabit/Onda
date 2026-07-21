@@ -12,7 +12,14 @@ const themes = [
 ] as const;
 
 const accentColors = [
-  '#7c6aef', '#3b82f6', '#34d399', '#fbbf24', '#f87171', '#ec4899', '#8b5cf6', '#06b6d4'
+  '#7c6aef',
+  '#3b82f6',
+  '#34d399',
+  '#fbbf24',
+  '#f87171',
+  '#ec4899',
+  '#8b5cf6',
+  '#06b6d4'
 ];
 </script>
 
@@ -20,7 +27,10 @@ const accentColors = [
   <div class="space-y-8 max-w-2xl">
     <div class="flex items-center justify-between">
       <h2 class="text-lg font-bold">Wygląd</h2>
-      <button class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover transition-colors" @click="settings.resetToDefaults">
+      <button
+        class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover transition-colors"
+        @click="settings.resetToDefaults"
+      >
         <RotateCcw :size="14" />
       </button>
     </div>
@@ -28,10 +38,21 @@ const accentColors = [
     <div>
       <h3 class="text-sm font-semibold mb-3">Motyw</h3>
       <div class="grid grid-cols-4 gap-3">
-        <button v-for="th in themes" :key="th.id" class="p-3 rounded-xl border-2 transition-all text-center"
-          :class="settings.appearance.theme === th.id ? 'border-accent-base shadow-lg shadow-accent-base/20' : 'border-border-default hover:border-border-subtle'"
-          @click="settings.updateAppearance({ theme: th.id })">
-          <div class="w-full h-8 rounded-lg mb-2 flex items-center justify-center" :style="{ backgroundColor: th.bg }">
+        <button
+          v-for="th in themes"
+          :key="th.id"
+          class="p-3 rounded-xl border-2 transition-all text-center"
+          :class="
+            settings.appearance.theme === th.id
+              ? 'border-accent-base shadow-lg shadow-accent-base/20'
+              : 'border-border-default hover:border-border-subtle'
+          "
+          @click="settings.updateAppearance({ theme: th.id })"
+        >
+          <div
+            class="w-full h-8 rounded-lg mb-2 flex items-center justify-center"
+            :style="{ backgroundColor: th.bg }"
+          >
             <div class="w-6 h-1 rounded-full" style="background: #7c6aef" />
           </div>
           <span class="text-xs text-fg-muted">{{ th.label }}</span>
@@ -42,35 +63,72 @@ const accentColors = [
     <div>
       <h3 class="text-sm font-semibold mb-3">Kolor akcentu</h3>
       <div class="flex gap-2">
-        <button v-for="c in accentColors" :key="c" class="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110"
-          :class="settings.appearance.accentColor === c ? 'border-white scale-110' : 'border-transparent'"
-          :style="{ backgroundColor: c }" @click="settings.updateAppearance({ accentColor: c })" />
+        <button
+          v-for="c in accentColors"
+          :key="c"
+          class="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110"
+          :class="
+            settings.appearance.accentColor === c ? 'border-white scale-110' : 'border-transparent'
+          "
+          :style="{ backgroundColor: c }"
+          @click="settings.updateAppearance({ accentColor: c })"
+        />
       </div>
     </div>
 
     <div>
-      <h3 class="text-sm font-semibold mb-3">Rozmiar czcionki: {{ settings.appearance.fontSize }}px</h3>
-      <input type="range" min="12" max="18" :value="settings.appearance.fontSize" class="w-full"
-        @input="settings.updateAppearance({ fontSize: parseInt(($event.target as HTMLInputElement).value) })" />
+      <h3 class="text-sm font-semibold mb-3">
+        Rozmiar czcionki: {{ settings.appearance.fontSize }}px
+      </h3>
+      <input
+        type="range"
+        min="12"
+        max="18"
+        :value="settings.appearance.fontSize"
+        class="w-full"
+        @input="
+          settings.updateAppearance({
+            fontSize: parseInt(($event.target as HTMLInputElement).value)
+          })
+        "
+      />
     </div>
 
     <div>
       <h3 class="text-sm font-semibold mb-3">Gęstość</h3>
       <div class="flex gap-2">
-        <button v-for="d in ['compact', 'comfortable', 'spacious'] as const" :key="d"
+        <button
+          v-for="d in ['compact', 'comfortable', 'spacious'] as const"
+          :key="d"
           class="px-4 py-2 rounded-xl text-sm capitalize border transition-colors"
-          :class="settings.appearance.density === d ? 'border-accent-base bg-accent-ghost text-accent-base font-medium' : 'border-border-default text-fg-muted hover:bg-bg-hover'"
-          @click="settings.updateAppearance({ density: d })">{{ d }}</button>
+          :class="
+            settings.appearance.density === d
+              ? 'border-accent-base bg-accent-ghost text-accent-base font-medium'
+              : 'border-border-default text-fg-muted hover:bg-bg-hover'
+          "
+          @click="settings.updateAppearance({ density: d })"
+        >
+          {{ d }}
+        </button>
       </div>
     </div>
 
     <div>
       <h3 class="text-sm font-semibold mb-3">Pozycja panelu bocznego</h3>
       <div class="flex gap-2">
-        <button v-for="pos in ['left', 'right'] as const" :key="pos"
+        <button
+          v-for="pos in ['left', 'right'] as const"
+          :key="pos"
           class="px-4 py-2 rounded-xl text-sm border transition-colors"
-          :class="settings.appearance.sidebarPosition === pos ? 'border-accent-base bg-accent-ghost text-accent-base font-medium' : 'border-border-default text-fg-muted hover:bg-bg-hover'"
-          @click="settings.updateAppearance({ sidebarPosition: pos })">{{ pos === 'left' ? 'Lewa' : 'Prawa' }}</button>
+          :class="
+            settings.appearance.sidebarPosition === pos
+              ? 'border-accent-base bg-accent-ghost text-accent-base font-medium'
+              : 'border-border-default text-fg-muted hover:bg-bg-hover'
+          "
+          @click="settings.updateAppearance({ sidebarPosition: pos })"
+        >
+          {{ pos === 'left' ? 'Lewa' : 'Prawa' }}
+        </button>
       </div>
     </div>
   </div>

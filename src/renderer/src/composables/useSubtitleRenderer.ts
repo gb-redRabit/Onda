@@ -28,7 +28,7 @@ const fontMapCache = new Map<string, any>();
 function hashContent(str: string): string {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash = (hash << 5) - hash + str.charCodeAt(i);
     hash |= 0;
   }
   return String(hash);
@@ -103,7 +103,7 @@ async function loadRemoteVariant(
 }
 
 async function buildFontMap(assContent: string, attachmentNames: MkvFont[] = []): Promise<any> {
-  const cacheKey = `${hashContent(assContent)}-${attachmentNames.map(f => f.name).join(',')}`;
+  const cacheKey = `${hashContent(assContent)}-${attachmentNames.map((f) => f.name).join(',')}`;
   if (fontMapCache.has(cacheKey)) return fontMapCache.get(cacheKey);
 
   const fontMap: Record<string, any> = { ...availableFonts };

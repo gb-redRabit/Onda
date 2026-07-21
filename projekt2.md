@@ -6,8 +6,8 @@
 
 | Metryka | Wartość |
 |---------|---------|
-| Pliki źródłowe | 87 (45 `.ts` + 38 `.vue` + 3 `.d.ts` + 1 `.css`) |
-| Linie kodu | ~8,400 |
+| Pliki źródłowe | 88 (45 `.ts` + 39 `.vue` + 3 `.d.ts` + 1 `.css`) |
+| Linie kodu | ~8,700 |
 | Pliki testowe | 2 (34 testy) |
 | Zależności npm | 36 (14 runtime + 22 dev) |
 | TODO/FIXME w kodzie | 1 |
@@ -133,23 +133,49 @@ Implementacja pełnej integracji z YouTube przez yt-dlp.
 
 **Pliki:** `src/main/ytdlp.ts` (nowy), `handlers.ts`, `YouTubeView.vue`, `youtube.store.ts`
 
-### Faza 6: Library Management (Priority: WYSOKI)
+### Faza 6: Library Management — Biblioteka mediow (Priority: WYSOKI)
 
-Pełna biblioteka mediów z zarządzaniem metadanymi.
+Pelna biblioteka audio+video z zarzadzaniem folderami, playlistami i metadanymi.
 
-**Kroki:**
-- [ ] **6.1** Skaner biblioteki — worker thread do skanowania folderów + odczytu ID3
-  - Cache w electron-store lub SQLite (better-sqlite3)
-  - Obsługa dużych kolekcji (10k+ utworów)
-- [ ] **6.2** Widoki biblioteki:
-  - Siatka albumów (cover art)
-  - Lista artystów (z liczbą utworów/albumów)
-  - Widok gatunków i lat
-  - Wirtualizacja (@tanstack/vue-virtual) dla list >500 elementów
-- [ ] **6.3** Edycja tagów ID3 — bezpośrednia modyfikacja metadanych przez jsmediatags
-- [ ] **6.4** Automatyczne metadane — MusicBrainz API, Discogs API
+**Zalozenia:**
+- Biblioteka skanuje wskazane foldery + podfoldery
+- Automatyczna detekcja typu folderu na podstawie proporcji plikow:
+  - **Audio folder** — >50% plikow audio LUB wiecej audio niz video
+  - **Video folder** — >50% plikow video
+  - **Mixed folder** — po 50% (pokazuje zarowno audio jak i video)
+- Subfoldery dziedzicza kategorie po rodzicu, ale moga byc przeskalowane
+- Obsluga playlist dla audio I video (osobne lub mieszane)
 
-**Pliki:** `LibraryView.vue`, `library.store.ts`, `src/main/scanner.ts` (nowy), `handlers.ts`
+**Zakladki w LibraryView:**
+| Zakladka | Zawartosc |
+|----------|-----------|
+| Utwory | Wszystkie audio tracks z wirtualizacja + wyszukiwarka |
+| Video | Wszystkie video tracks z wirtualizacja + wyszukiwarka |
+| Foldery | Drzewiasta struktura folderow z wykrytym typem (ikona) |
+| Artyści | Grupowanie po artist (tylko audio) |
+| Albumy | Siatka albumow z cover art (tylko audio) |
+| Playlisty | Lista playlist + podglad zawartosci po kliknieciu |
+
+**Playlisty:**
+- Wspolne dla audio i video
+- Odtwarzanie: `player.setTrack(playlist.tracks[0])` + laduje cala liste do queue
+- Drag & drop tracks do playlisty
+- Kontekstowe menu: "Dodaj do playlisty", "Utworz playliste z zaznaczonych"
+- Persystencja przez IPC (zapis do electron-store jako JSON)
+
+**Kroki implementacji:**
+- [ ] **6.1** IPC handlery: `library:scan`, `library:getAll`, `playlist:*`, `library:folders:*` (handlers.ts)
+- [ ] **6.2** library.store — `loadFromDisk()`, `scanFolders()`, `savePlaylists()`, `addFolder()`/`removeFolder()`
+- [ ] **6.3** LibraryModule — `activate()` z auto-load + auto-scan
+- [ ] **6.4** SettingsLibraryFolders.vue — zarzadzanie folderami + przycisk skanowania
+- [ ] **6.5** LibraryPlaylistManager.vue — panel playlist + drag & drop
+- [ ] **6.6** LibraryTrackRow.vue — wiersz z akcjami (play, fav, dodaj do playlisty, context menu)
+- [ ] **6.7** LibraryView — virtualizacja (@tanstack/vue-virtual), video tab, folder browse, cover art
+- [ ] **6.8** Edycja tagow ID3 — jsmediatags zapis
+- [ ] **6.9** Automatyczne metadane — MusicBrainz API, Discogs API
+
+**Pliki:** `LibraryView.vue`, `library.store.ts`, `handlers.ts`, `LibraryModule.ts`,  
+`SettingsLibraryFolders.vue` (nowy), `LibraryPlaylistManager.vue` (nowy), `LibraryTrackRow.vue` (nowy)
 
 ### Faza 7: Jakość i Testy (Priority: ŚREDNI)
 
@@ -320,4 +346,49 @@ type IpcInvoke = <C extends keyof IpcChannels>(
 
 ---
 
-*Ostatnia aktualizacja: 2026-07-20*
+---
+
+## 9. Sprint Naprawczy — Fix Sprint (2026-07-21)
+
+### 9.1 Co zrobiono
+
+| # | Problem | Rozwiązanie | Pliki |
+|---|---------|-------------|-------|
+| 1 | **Freeze przy starcie** — biblioteka ładuje się synchronicznie, blokuje main process | Splash zamyka się natychmiast (bez czekania na bibliotekę). `loadFromDisk()` dzieli na fazy: playlists/foldery (eager) → tracks (przez `requestIdleCallback` z timeoutem 3s). Cover loading batchowany po 5 IPC na ramkę. | `index.ts`, `App.vue`, `library.ts`, `player.ts` |
+| 2 | **Cover loading flood** — 500 IPC invoke jednocześnie przy starcie | `player.loadCover()` wkłada do kolejki (`coverQueue: string[]`), flush po 5 przez `requestIdleCallback`. Usunięto `loadCoversForTracks` z `library.ts`. `LibraryTrackRow` nie woła `loadCover` w `onMounted`. | `player.ts`, `library.ts`, `LibraryTrackRow.vue` |
+| 3 | **Video nie nawiguje za drugim razem** | Usunięto `lastTrackType` guard w watcherze App.vue — zawsze nawiguje do `/player` gdy `currentTrack.type === 'video'`. | `App.vue` |
+| 4 | **Folder file count = 0** dla głęboko zagnieżdżonych | `getTracksInDir` zwraca wszystkie pliki rekurencyjnie (przez `startsWith`). Nowa `getDirectTracksInDir` dla listowania. Nowy komponent `DirNode.vue` z rekurencyjną strukturą. | `DirNode.vue`, `LibraryView.vue` |
+| 5 | **Czyszczenie kolejki przed odtworzeniem** | `playTracks()` → `clearQueue()` + `addToQueueMultiple` + `setTrack` + `play()`. Dotyczy folderów, playlist, artistów, albumów. | `LibraryView.vue`, `Sidebar.vue` |
+| 6 | **Playlisty nie widoczne od razu** | `library.loadFromDisk()` wołane w `App.vue.onMounted` (nie dopiero w LibraryModule). | `App.vue` |
+| 7 | **Brak okładek wideo** | `<video>` dla coverów typu `'video'` z `autoplay muted loop`. Kafelki w LibraryView też pokazują cover. | `LibraryTrackRow.vue`, `LibraryView.vue` |
+| 8 | **Loading state w HomeView** | Skeleton placeholders podczas `isLoading` / `!isLoaded`. | `HomeView.vue` |
+
+### 9.2 Zmiany w architekturze
+
+```diff
+- library.loadFromDisk()  →  await (blokuje splash)
++ library.loadFromDisk()  →  nieblokujące: playlists/foldery natychmiast, tracks przez IdleCallback
+- loadCover()  →  IPC invoke natychmiast
++ loadCover()  →  kolejka, flush po 5 przez IdleCallback
+- Splash czeka na app:ready z renderer
++ Splash zamyka się po did-finish-load + 1s timer
+```
+
+### 9.3 Nowe pliki
+
+| Plik | Opis |
+|------|------|
+| `src/renderer/src/components/library/DirNode.vue` | Rekurencyjny komponent folder tree |
+
+### 9.4 Statystyki (po sprincie)
+
+| Metryka | Przed | Po |
+|---------|-------|----|
+| typecheck | 0 błędów | 0 błędów |
+| lint errors | 0 | 0 |
+| test | 34/34 | 34/34 |
+| Nowe pliki | — | 1 |
+| Pliki źródłowe | 87 | 88 |
+| TODO/FIXME | 1 | 1 |
+
+*Ostatnia aktualizacja: 2026-07-21*

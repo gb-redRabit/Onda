@@ -17,7 +17,11 @@ export function useVideoPlayer(ctx: {
   player: ReturnType<typeof usePlayerStore>;
   settings: ReturnType<typeof useSettingsStore>;
   pip: ReturnType<typeof usePiP>;
-  showOSD: (text: string, icon?: 'play' | 'pause' | 'volume' | 'seek' | 'track' | 'speed', duration?: number) => void;
+  showOSD: (
+    text: string,
+    icon?: 'play' | 'pause' | 'volume' | 'seek' | 'track' | 'speed',
+    duration?: number
+  ) => void;
 }) {
   const { player, settings, pip, showOSD } = ctx;
 

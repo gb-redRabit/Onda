@@ -79,19 +79,31 @@ const actions = [
     </div>
 
     <div class="grid grid-cols-4 gap-3 mb-8">
-      <div
-        v-for="s in [
-          { v: library.totalCount, l: 'Łącznie utworów', c: 'text-fg-base' },
-          { v: library.audioCount, l: 'Pliki audio', c: 'text-accent-base' },
-          { v: library.videoCount, l: 'Pliki wideo', c: 'text-green-base' },
-          { v: library.playlists.length, l: 'Playlisty', c: 'text-amber-base' }
-        ]"
-        :key="s.l"
-        class="p-4 rounded-xl bg-bg-elevated border border-border-default"
-      >
-        <div :class="['text-3xl font-bold', s.c]">{{ s.v }}</div>
-        <div class="text-xs text-fg-faint mt-1">{{ s.l }}</div>
-      </div>
+      <template v-if="library.isLoading || !library.isLoaded">
+        <div
+          v-for="i in 4"
+          :key="i"
+          class="p-4 rounded-xl bg-bg-elevated border border-border-default animate-pulse"
+        >
+          <div class="h-8 w-16 rounded bg-bg-hover mb-2" />
+          <div class="h-3 w-24 rounded bg-bg-hover" />
+        </div>
+      </template>
+      <template v-else>
+        <div
+          v-for="s in [
+            { v: library.totalCount, l: 'Łącznie utworów', c: 'text-fg-base' },
+            { v: library.audioCount, l: 'Pliki audio', c: 'text-accent-base' },
+            { v: library.videoCount, l: 'Pliki wideo', c: 'text-green-base' },
+            { v: library.playlists.length, l: 'Playlisty', c: 'text-amber-base' }
+          ]"
+          :key="s.l"
+          class="p-4 rounded-xl bg-bg-elevated border border-border-default"
+        >
+          <div :class="['text-3xl font-bold', s.c]">{{ s.v }}</div>
+          <div class="text-xs text-fg-faint mt-1">{{ s.l }}</div>
+        </div>
+      </template>
     </div>
 
     <div class="mb-8">
@@ -107,7 +119,7 @@ const actions = [
         </button>
       </div>
       <div
-        v-if="library.recentTracks.length === 0"
+        v-if="!library.isLoaded || library.recentTracks.length === 0"
         class="text-center py-14 rounded-2xl bg-bg-elevated border border-border-default"
       >
         <Music2 :size="40" class="mx-auto mb-3 text-fg-faint/40" />

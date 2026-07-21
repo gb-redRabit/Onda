@@ -100,9 +100,11 @@ onUnmounted(() => {
 
 <template>
   <div class="h-full w-full bg-bg-base select-none" @mousemove="onMouseMove">
-
-     <!-- LAYOUT TOGGLE — bottom-right, always visible -->
-    <div class=" absolute top-4 left-4 z-30 transition-opacity" :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }">
+    <!-- LAYOUT TOGGLE — bottom-right, always visible -->
+    <div
+      class="absolute top-4 left-4 z-30 transition-opacity"
+      :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }"
+    >
       <AudioLayoutToggle v-model:mode="layoutMode" />
     </div>
 
@@ -117,7 +119,10 @@ onUnmounted(() => {
         <div class="text-center mb-6 max-w-md">
           <AudioTrackInfo title-size="text-xl" />
         </div>
-        <div class="w-full max-w-md mb-3 transition-opacity" :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }">
+        <div
+          class="w-full max-w-md mb-3 transition-opacity"
+          :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }"
+        >
           <AudioProgressBar />
         </div>
         <div class="transition-opacity" :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }">
@@ -146,7 +151,10 @@ onUnmounted(() => {
         <div class="text-center mb-4 max-w-sm w-full">
           <AudioTrackInfo />
         </div>
-        <div class="w-full max-w-sm mb-5 transition-opacity" :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }">
+        <div
+          class="w-full max-w-sm mb-5 transition-opacity"
+          :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }"
+        >
           <AudioProgressBar />
         </div>
         <div class="transition-opacity" :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }">
@@ -165,7 +173,10 @@ onUnmounted(() => {
         <div class="text-center mb-4">
           <AudioTrackInfo />
         </div>
-        <div class="w-full mb-5 transition-opacity" :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }">
+        <div
+          class="w-full mb-5 transition-opacity"
+          :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }"
+        >
           <AudioProgressBar />
         </div>
         <div class="w-full h-36 mb-5">

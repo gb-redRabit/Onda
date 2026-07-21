@@ -222,7 +222,7 @@ app.whenReady().then(() => {
     checkAndShow();
   }, 1000);
 
-  setTimeout(forceCloseSplash, 10000);
+  setTimeout(forceCloseSplash, 15000);
 
   ipcMain.handle(
     'window:createChild',

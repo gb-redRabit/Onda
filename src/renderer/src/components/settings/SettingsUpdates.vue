@@ -1,5 +1,4 @@
-<script setup lang="ts">
-</script>
+<script setup lang="ts"></script>
 
 <template>
   <div class="space-y-6 max-w-2xl">
@@ -16,14 +15,20 @@
       </div>
       <div>
         <label class="text-xs text-fg-faint mb-1 block">Interwał sprawdzania</label>
-        <select class="w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none">
+        <select
+          class="w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+        >
           <option value="startup">Przy starcie</option>
           <option value="hourly">Co godzinę</option>
           <option value="daily">Codziennie</option>
           <option value="weekly">Co tydzień</option>
         </select>
       </div>
-      <button class="px-4 py-2 rounded-xl bg-accent-base text-white text-sm font-medium hover:bg-accent-hover transition-colors">Sprawdź teraz</button>
+      <button
+        class="px-4 py-2 rounded-xl bg-accent-base text-white text-sm font-medium hover:bg-accent-hover transition-colors"
+      >
+        Sprawdź teraz
+      </button>
     </div>
   </div>
 </template>

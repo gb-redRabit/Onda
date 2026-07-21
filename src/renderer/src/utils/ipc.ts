@@ -1,4 +1,4 @@
-import { logger } from '@renderer/utils/logger'
+import { logger } from '@renderer/utils/logger';
 
 export function safeInvoke<T = unknown>(channel: string, ...args: unknown[]): Promise<T | null> {
   if (!window.api) return Promise.resolve(null);

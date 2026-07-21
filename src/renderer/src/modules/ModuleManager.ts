@@ -23,9 +23,7 @@ class ModuleManager {
     if (this.initialized) return;
     this.initialized = true;
 
-    const sorted = [...this.modules.values()].sort(
-      (a, b) => (b.priority ?? 0) - (a.priority ?? 0)
-    );
+    const sorted = [...this.modules.values()].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
 
     for (const module of sorted) {
       if (module.dependencies) {

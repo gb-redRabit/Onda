@@ -1,5 +1,4 @@
-<script setup lang="ts">
-</script>
+<script setup lang="ts"></script>
 
 <template>
   <div class="space-y-6 max-w-2xl">
@@ -12,9 +11,18 @@
         </button>
       </div>
       <div class="grid grid-cols-3 gap-3">
-        <input placeholder="Host" class="px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none placeholder:text-fg-faint" />
-        <input placeholder="Port" type="number" class="px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none placeholder:text-fg-faint" />
-        <select class="px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none">
+        <input
+          placeholder="Host"
+          class="px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none placeholder:text-fg-faint"
+        />
+        <input
+          placeholder="Port"
+          type="number"
+          class="px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none placeholder:text-fg-faint"
+        />
+        <select
+          class="px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+        >
           <option>HTTP</option>
           <option>HTTPS</option>
           <option>SOCKS5</option>
