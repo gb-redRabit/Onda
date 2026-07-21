@@ -2,8 +2,8 @@
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { useUIStore } from '@renderer/stores/ui';
 import { useRouter } from 'vue-router';
-import PlayerOSD from '@renderer/components/player/PlayerOSD.vue';
 import PlayerTopBar from '@renderer/components/player/PlayerTopBar.vue';
 import PlayerControls from '@renderer/components/player/PlayerControls.vue';
 import ResumePrompt from '@renderer/components/player/ResumePrompt.vue';
@@ -13,6 +13,7 @@ import { usePlayerKeyboard } from '@renderer/composables/usePlayerKeyboard';
 
 const player = usePlayerStore();
 const settings = useSettingsStore();
+const ui = useUIStore();
 const router = useRouter();
 
 const playerContainerRef = ref<HTMLDivElement | null>(null);
@@ -20,24 +21,13 @@ const isFullscreen = ref(false);
 const showControls = ref(true);
 const controlsTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 
-const osdVisible = ref(false);
-const osdText = ref('');
-const osdIcon = ref<'play' | 'pause' | 'volume' | 'seek' | 'track' | 'speed'>('track');
-const osdTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
-
 const isVideo = computed(() => player.currentTrack?.type === 'video');
 const isAudio = computed(() => player.currentTrack?.type === 'audio');
 
 let resumePromptTimer: ReturnType<typeof setTimeout> | null = null;
 
-function showOSD(text: string, icon: typeof osdIcon.value = 'track', duration = 1500) {
-  osdText.value = text;
-  osdIcon.value = icon;
-  osdVisible.value = true;
-  if (osdTimeout.value) clearTimeout(osdTimeout.value);
-  osdTimeout.value = setTimeout(() => {
-    osdVisible.value = false;
-  }, duration);
+function showToast(text: string, duration = 1500) {
+  ui.notify('info', text, undefined, duration);
 }
 
 const pip = usePiP({
@@ -60,7 +50,7 @@ const pip = usePiP({
   }
 });
 
-const vp = useVideoPlayer({ player, settings, pip, showOSD });
+const vp = useVideoPlayer({ player, settings, pip, notify: showToast });
 
 function onWheel(e: WheelEvent) {
   e.preventDefault();
@@ -69,7 +59,7 @@ function onWheel(e: WheelEvent) {
   const newVol = Math.max(0, Math.min(1, player.volume + delta));
   player.setVolume(newVol);
   vp.videoRef.value.volume = player.isMuted ? 0 : newVol;
-  showOSD(`Glosnosc: ${Math.round(newVol * 100)}%`, 'volume', 1200);
+  showToast(`Glosnosc: ${Math.round(newVol * 100)}%`, 1200);
 }
 
 function onSeek(time: number) {
@@ -103,14 +93,14 @@ function skip(seconds: number) {
   vp.videoRef.value.currentTime = newTime;
   player.currentTime = newTime;
   const sign = seconds > 0 ? '+' : '';
-  showOSD(`${sign}${seconds}s`, 'seek', 1000);
+  showToast(`${sign}${seconds}s`, 1000);
 }
 
 function setSpeed(speed: number) {
   const clamped = Math.round(Math.max(0.2, Math.min(3, speed)) * 10) / 10;
   settings.updatePlayback({ playbackSpeed: clamped });
   if (vp.videoRef.value) vp.videoRef.value.playbackRate = clamped;
-  showOSD(`${clamped}x`, 'speed', 1200);
+  showToast(`${clamped}x`, 1200);
 }
 
 function onMouseMove() {
@@ -142,11 +132,7 @@ function handleClick() {
     if (player.pipActive) return;
 
     player.togglePlay();
-    showOSD(
-      player.isPlaying ? 'Odtwarzanie' : 'Wstrzymano',
-      player.isPlaying ? 'play' : 'pause',
-      1000
-    );
+    showToast(player.isPlaying ? 'Odtwarzanie' : 'Wstrzymano', 1000);
     clickTimer = null;
   }, 250);
 }
@@ -198,7 +184,7 @@ onMounted(() => {
     player,
     settings,
     vp,
-    showOSD,
+    notify: showToast,
     skip,
     setSpeed,
     toggleFullscreen
@@ -213,7 +199,6 @@ onUnmounted(() => {
   if (resumePromptTimer) clearTimeout(resumePromptTimer);
   vp.destroy();
   if (controlsTimeout.value) clearTimeout(controlsTimeout.value);
-  if (osdTimeout.value) clearTimeout(osdTimeout.value);
   if (clickTimer) clearTimeout(clickTimer);
   document.body.style.cursor = 'default';
 });
@@ -226,8 +211,6 @@ onUnmounted(() => {
     @mousemove="onMouseMove"
     @wheel.prevent="onWheel"
   >
-    <PlayerOSD :visible="osdVisible" :text="osdText" :icon="osdIcon" />
-
     <PlayerTopBar
       :show-controls="showControls"
       :track="player.currentTrack"

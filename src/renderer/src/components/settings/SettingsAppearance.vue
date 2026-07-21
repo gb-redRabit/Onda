@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useSettingsStore } from '@renderer/stores/settings';
-import { RotateCcw } from '@lucide/vue';
+import { RotateCcw, PanelLeftOpen, PanelRightOpen } from '@lucide/vue';
 
 const settings = useSettingsStore();
 
@@ -115,21 +115,28 @@ const accentColors = [
 
     <div>
       <h3 class="text-sm font-semibold mb-3">Pozycja panelu bocznego</h3>
-      <div class="flex gap-2">
-        <button
-          v-for="pos in ['left', 'right'] as const"
-          :key="pos"
-          class="px-4 py-2 rounded-xl text-sm border transition-colors"
-          :class="
-            settings.appearance.sidebarPosition === pos
-              ? 'border-accent-base bg-accent-ghost text-accent-base font-medium'
-              : 'border-border-default text-fg-muted hover:bg-bg-hover'
-          "
-          @click="settings.updateAppearance({ sidebarPosition: pos })"
-        >
-          {{ pos === 'left' ? 'Lewa' : 'Prawa' }}
-        </button>
+      <div class="w-48 h-36 rounded-2xl bg-bg-elevated border-2 border-border-default p-2 relative select-none">
+        <div class="grid grid-cols-2 gap-2 w-full h-full">
+          <button
+            v-for="pos in ['left', 'right'] as const"
+            :key="pos"
+            class="rounded-xl text-[11px] font-medium transition-all border-2 flex flex-col items-center justify-center gap-1"
+            :class="settings.appearance.sidebarPosition === pos
+              ? 'border-accent-base bg-accent-ghost text-accent-base shadow-sm shadow-accent-base/20'
+              : 'border-transparent text-fg-faint hover:bg-bg-hover hover:text-fg-muted'"
+            @click="settings.updateAppearance({ sidebarPosition: pos })"
+          >
+            <component :is="pos === 'left' ? PanelLeftOpen : PanelRightOpen" :size="18" />
+            <span>{{ pos === 'left' ? 'Lewa' : 'Prawa' }}</span>
+          </button>
+        </div>
+        <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
+          <div class="w-5 h-5 rounded border-2 border-dashed border-fg-faint/20" />
+        </div>
       </div>
+      <p class="text-[11px] text-fg-faint mt-2">
+        Wybrany: <span class="text-fg-base font-medium">{{ settings.appearance.sidebarPosition === 'left' ? 'Lewa' : 'Prawa' }}</span>
+      </p>
     </div>
   </div>
 </template>

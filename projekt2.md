@@ -433,3 +433,54 @@ type IpcInvoke = <C extends keyof IpcChannels>(
 | Nowe pliki | — | 2 |
 | Pliki źródłowe | 88 | 95 |
 | Linie kodu | ~8,700 | ~11,800 |
+
+---
+
+## 11. Sprint UI/UX — Sprint 3 (2026-07-22)
+
+### 11.1 Co zrobiono
+
+| # | Zadanie | Rozwiązanie | Pliki |
+|---|---------|-------------|-------|
+| 1 | **AlbumCard + VideoCard** — dedykowane komponenty siatki | `AlbumCard.vue` z cover art + nazwa + artysta; `VideoCard.vue` z cover thumbnail + duration badge | `AlbumCard.vue`, `VideoCard.vue` |
+| 2 | **C1: Context menu** — prawy klik na track/album/video | Wykorzystano istniejący `ui.showContextMenu()` (App.vue). Opcje: Odtwórz, Dodaj do kolejki, Edytuj tagi, Pokaż w folderze, dodaj/usuń z playlisty (togglowanie) | `LibraryTrackRow.vue`, `AlbumCard.vue`, `VideoCard.vue` |
+| 3 | **C2: Drag & drop do playlist** — przeciąganie tracków | HTML5 DnD: `draggable="true"` + `dataTransfer` z JSON-em ścieżek. Sidebar i LibraryPlaylistManager obsługują drop z wizualnym highlightem (ring) | `LibraryTrackRow.vue`, `AlbumCard.vue`, `VideoCard.vue`, `Sidebar.vue`, `LibraryPlaylistManager.vue` |
+| 4 | **Fix: toggle add/remove w playlistach** — nieskończone dodawanie tego samego tracka | `addToPlaylist` w store deduplikuje po `path`. Context menu i inline popup pokazują `−` (usuń) jeśli track już w playliście, `+` (dodaj) jeśli nie | `library.ts`, `LibraryTrackRow.vue` |
+| 5 | **C3: Command Palette (Ctrl+K)** — modal wyszukiwania | `CommandPalette.vue`: search po tytule/artyście/albumie, nawigacja strzałkami + Enter, szybkie akcje (play, nawigacja). Lupa w TitleBar zamiast `/search` | `CommandPalette.vue`, `TitleBar.vue`, `App.vue` |
+| 6 | **C4: Toast notification system** — globalne toasty | `ToastNotification.vue` renderuje `ui.notifications`. 4 typy (info/success/warning/error) z kolorami. Auto-dismiss + przycisk X. Slide-up animacja | `ToastNotification.vue`, `ui.ts` |
+| 7 | **Inline message → toast** — TrackTagEditor, ErrorBoundary, foldery, scan | `console.error` i inline `message` ref zastąpione `ui.notify()`: zapis tagów, okładki, zmiana nazwy, błąd skanowania, błąd dodawania folderu, błąd renderowania | `TrackTagEditor.vue`, `ErrorBoundary.vue`, `SettingsLibraryFolders.vue`, `library.ts` |
+| 8 | **PlayerOSD → Toast** — OSD w odtwarzaczu video zastąpione | `showOSD()` → `showToast()` → `ui.notify('info', text, undefined, duration)`. Usunięto `PlayerOSD.vue` | `PlayerView.vue`, `usePlayerKeyboard.ts`, `useVideoPlayer.ts` |
+| 9 | **Toast settings** — pozycja + filtr typów | Nowe `ToastSettings` w store. Visual position picker (kwadrat 2×2). Filtry: Sukces, Informacje, Ostrzeżenia (Błędy zawsze widoczne). Zakładka "Powiadomienia" w ustawieniach | `settings.ts`, `constants.ts`, `ToastNotification.vue`, `SettingsToast.vue`, `SettingsView.vue` |
+| 10 | **Visual position pickers** — PiP i sidebar też | Te same wizualne selektory pozycji (kwadrat 2×2 dla PiP, prostokąt 2×1 dla sidebar) zamiast przycisków | `SettingsPiP.vue`, `SettingsAppearance.vue` |
+| 11 | **Usunięto SearchView** — zastąpiony przez Command Palette | `/search` route usunięty, `SearchView.vue` skasowany | `router/index.ts`, `SearchView.vue` |
+
+### 11.2 Zmiany w architekturze
+
+```diff
++ AlbumCard.vue, VideoCard.vue  —  reusable grid cards
++ CommandPalette.vue  —  Ctrl+K modal search
++ ToastNotification.vue  —  globalny system toastów
++ SettingsToast.vue  —  konfiguracja powiadomień
+- SearchView.vue  —  zastąpiony Command Palette
+- PlayerOSD.vue  —  zastąpiony ToastNotification
+```
+
+### 11.3 Nowe pliki
+
+| Plik | Opis |
+|------|------|
+| `src/renderer/src/components/library/AlbumCard.vue` | Karta albumu z cover art |
+| `src/renderer/src/components/library/VideoCard.vue` | Karta video z thumbnail + duration |
+| `src/renderer/src/components/CommandPalette.vue` | Command Palette (Ctrl+K) |
+| `src/renderer/src/components/ToastNotification.vue` | Globalny system toastów |
+| `src/renderer/src/components/settings/SettingsToast.vue` | Ustawienia powiadomień |
+
+### 11.4 Statystyki (po sprincie 3)
+
+| Metryka | Przed | Po |
+|---------|-------|----|
+| typecheck | 0 błędów | 0 błędów |
+| build | OK | OK |
+| Nowe pliki | — | 5 |
+| Usunięte pliki | — | 2 |
+| Pliki źródłowe | 95 | 98 |

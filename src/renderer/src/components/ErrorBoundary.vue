@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref, onErrorCaptured } from 'vue';
+import { useUIStore } from '@renderer/stores/ui';
 
 const error = ref<Error | null>(null);
+const ui = useUIStore();
 
 onErrorCaptured((err) => {
   error.value = err;
+  ui.notify('error', 'Wystąpił błąd', err.message || String(err));
   return false;
 });
 </script>

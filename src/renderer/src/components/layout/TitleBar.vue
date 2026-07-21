@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useUIStore } from '@renderer/stores/ui';
 import {
   Minus,
   Square,
@@ -17,6 +18,7 @@ import {
 
 const router = useRouter();
 const route = useRoute();
+const ui = useUIStore();
 const isMaximized = ref(false);
 const tabMenuVisible = ref(false);
 const tabMenuPos = ref({ x: 0, y: 0 });
@@ -43,7 +45,6 @@ const routeLabels: Record<string, string> = {
   '/youtube': 'YouTube',
   '/downloads': 'Pobrane',
   '/settings': 'Ustawienia',
-  '/search': 'Szukaj',
   '/player': 'Odtwarzacz'
 };
 
@@ -178,7 +179,7 @@ window.api.on('window:maximized', (val: unknown) => {
     <div class="flex items-center shrink-0" style="-webkit-app-region: no-drag">
       <button
         class="h-9 px-3 flex items-center hover:bg-bg-hover transition-colors"
-        @click="router.push('/search')"
+        @click="ui.toggleCommandPalette()"
       >
         <Search :size="14" class="text-fg-muted" />
       </button>

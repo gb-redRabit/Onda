@@ -19,6 +19,7 @@ import {
 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useLibraryStore } from '@renderer/stores/library';
+import { useUIStore } from '@renderer/stores/ui';
 
 const router = useRouter();
 const route = useRoute();
@@ -30,6 +31,8 @@ const isResizing = ref(false);
 const playlistsExpanded = ref(true);
 const newPlaylistName = ref('');
 const isCreatingPlaylist = ref(false);
+const dragOverPlaylistId = ref<string | null>(null);
+const ui = useUIStore();
 
 const navItems = [
   { label: 'Strona główna', icon: Home, route: '/' },
@@ -63,6 +66,25 @@ function createPlaylist() {
   library.createPlaylist(name);
   newPlaylistName.value = '';
   isCreatingPlaylist.value = false;
+}
+
+function onPlaylistDrop(e: DragEvent, playlistId: string) {
+  const raw = e.dataTransfer?.getData('text/plain');
+  if (!raw) return;
+  try {
+    const { paths } = JSON.parse(raw);
+    if (!Array.isArray(paths)) return;
+    const playlist = library.playlists.find((p) => p.id === playlistId);
+    if (!playlist) return;
+    paths.forEach((path: string) => {
+      const track = library.tracks.find((t) => t.path === path);
+      if (track) library.addToPlaylist(playlistId, track);
+    });
+    dragOverPlaylistId.value = null;
+    ui.notify('success', `Dodano ${paths.length} utw. do playlisty "${playlist.name}"`);
+  } catch {
+    // not our data format
+  }
 }
 
 function playPlaylist(playlistId: string) {
@@ -116,7 +138,11 @@ function playPlaylist(playlistId: string) {
                 v-for="playlist in library.playlists"
                 :key="playlist.id"
                 class="group flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-colors cursor-pointer"
+                :class="{ 'ring-1 ring-accent-base/50 bg-accent-ghost': dragOverPlaylistId === playlist.id }"
                 @click="playPlaylist(playlist.id)"
+                @dragover.prevent="dragOverPlaylistId = playlist.id"
+                @dragleave="dragOverPlaylistId = null"
+                @drop.prevent="onPlaylistDrop($event, playlist.id)"
               >
                 <ListMusic :size="13" class="shrink-0 text-accent-base/70" />
                 <span class="truncate flex-1">{{ playlist.name }}</span>

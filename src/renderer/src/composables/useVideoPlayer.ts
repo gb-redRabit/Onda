@@ -17,13 +17,9 @@ export function useVideoPlayer(ctx: {
   player: ReturnType<typeof usePlayerStore>;
   settings: ReturnType<typeof useSettingsStore>;
   pip: ReturnType<typeof usePiP>;
-  showOSD: (
-    text: string,
-    icon?: 'play' | 'pause' | 'volume' | 'seek' | 'track' | 'speed',
-    duration?: number
-  ) => void;
+  notify: (text: string, duration?: number) => void;
 }) {
-  const { player, settings, pip, showOSD } = ctx;
+  const { player, settings, pip, notify } = ctx;
 
   const videoRef = ref<HTMLVideoElement | null>(null);
   const videoEventsConnected = ref(false);
@@ -277,7 +273,7 @@ export function useVideoPlayer(ctx: {
 
       const title = track.metadata?.title || track.name;
       const artist = track.metadata?.artist;
-      showOSD(artist ? `${artist} - ${title}` : title, 'track', 2500);
+      notify(artist ? `${artist} - ${title}` : title, 2500);
     },
     {
       flush: 'post'

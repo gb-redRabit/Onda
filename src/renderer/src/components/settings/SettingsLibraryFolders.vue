@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useLibraryStore } from '@renderer/stores/library';
+import { useUIStore } from '@renderer/stores/ui';
 
 const library = useLibraryStore();
+const ui = useUIStore();
 
 async function addFolder() {
   try {
@@ -12,8 +14,9 @@ async function addFolder() {
       await library.addFolder(fp);
     }
     await library.scanFolders();
+    ui.notify('success', 'Dodano folder do biblioteki');
   } catch (err) {
-    console.error('addFolder error:', err);
+    ui.notify('error', 'Błąd dodawania folderu', (err as Error).message || String(err));
   }
 }
 

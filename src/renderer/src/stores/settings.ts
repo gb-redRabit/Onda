@@ -8,6 +8,7 @@ import type {
   NetworkSettings,
   ApiKeySettings,
   UpdateSettings,
+  ToastSettings,
   DependencyStatus
 } from '@renderer/types/settings';
 import {
@@ -17,7 +18,8 @@ import {
   DEFAULT_SHORTCUTS,
   DEFAULT_NETWORK,
   DEFAULT_API_KEYS,
-  DEFAULT_UPDATES
+  DEFAULT_UPDATES,
+  DEFAULT_TOAST
 } from '@renderer/utils/constants';
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -30,6 +32,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const network = ref<NetworkSettings>({ ...DEFAULT_NETWORK });
   const apiKeys = ref<ApiKeySettings>({ ...DEFAULT_API_KEYS });
   const updates = ref<UpdateSettings>({ ...DEFAULT_UPDATES });
+  const toast = ref<ToastSettings>({ ...DEFAULT_TOAST });
   const dependencies = ref<Record<string, DependencyStatus>>({});
   const isLoaded = ref(false);
 
@@ -49,6 +52,7 @@ export const useSettingsStore = defineStore('settings', () => {
         if (data.network) network.value = data.network;
         if (data.apiKeys) apiKeys.value = data.apiKeys;
         if (data.updates) updates.value = data.updates;
+        if (data.toast) toast.value = data.toast;
         if (data.dependencies) dependencies.value = data.dependencies;
       }
     } catch {
@@ -68,6 +72,7 @@ export const useSettingsStore = defineStore('settings', () => {
           network: network.value,
           apiKeys: apiKeys.value,
           updates: updates.value,
+          toast: toast.value,
           dependencies: dependencies.value
         });
       }
@@ -110,6 +115,7 @@ export const useSettingsStore = defineStore('settings', () => {
     apiKeys.value = { ...DEFAULT_API_KEYS };
     updates.value = { ...DEFAULT_UPDATES };
     dependencies.value = {};
+    toast.value = { ...DEFAULT_TOAST };
     save();
   }
 
@@ -122,6 +128,11 @@ export const useSettingsStore = defineStore('settings', () => {
     return dependencies.value[name];
   }
 
+  function updateToast(partial: Partial<ToastSettings>) {
+    Object.assign(toast.value, partial);
+    save();
+  }
+
   return {
     appearance,
     playback,
@@ -130,6 +141,7 @@ export const useSettingsStore = defineStore('settings', () => {
     network,
     apiKeys,
     updates,
+    toast,
     dependencies,
     isLoaded,
     cssVariables,
@@ -141,6 +153,7 @@ export const useSettingsStore = defineStore('settings', () => {
     updateShortcut,
     resetToDefaults,
     updateDependency,
-    getDependency
+    getDependency,
+    updateToast
   };
 });

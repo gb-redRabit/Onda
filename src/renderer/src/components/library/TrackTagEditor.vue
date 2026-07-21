@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useUIStore } from '@renderer/stores/ui';
 import { X, Image, Upload, Music2 } from '@lucide/vue';
 
 const props = defineProps<{
@@ -13,6 +14,7 @@ const emit = defineEmits<{
 }>();
 
 const player = usePlayerStore();
+const ui = useUIStore();
 
 const title = ref('');
 const artist = ref('');
@@ -23,7 +25,6 @@ const trackNumber = ref('');
 const name = ref('');
 const saving = ref(false);
 const uploadingCover = ref(false);
-const message = ref('');
 const coverUrl = ref<string | null>(null);
 
 watch(
@@ -38,7 +39,6 @@ watch(
       trackNumber.value = t.metadata?.track?.no?.toString() || '';
       name.value = t.name.replace(/\.[^.]+$/, '');
     }
-    message.value = '';
     loadCover();
   },
   { immediate: true }
@@ -68,18 +68,17 @@ async function pickCover() {
   const result = await window.api?.openImageDialog();
   if (result?.canceled || !result?.filePaths?.[0]) return;
   uploadingCover.value = true;
-  message.value = '';
   try {
     const r = await window.api?.writeCover(props.track.path, result.filePaths[0]);
     if (r?.success) {
-      message.value = 'Okładka zapisana!';
+      ui.notify('success', 'Okładka zapisana!');
       player.invalidateCoverCache(props.track.path);
       loadCover();
     } else {
-      message.value = r?.error || 'Błąd zapisu okładki';
+      ui.notify('error', 'Błąd zapisu okładki', r?.error);
     }
   } catch (e) {
-    message.value = String(e);
+    ui.notify('error', 'Błąd zapisu okładki', String(e));
   }
   uploadingCover.value = false;
 }
@@ -87,13 +86,12 @@ async function pickCover() {
 async function save() {
   if (!props.track) return;
   saving.value = true;
-  message.value = '';
   const hasRename = name.value && name.value + (props.track.name.match(/\.[^.]+$/)?.[0] || '') !== props.track.name;
   let newPath: string | undefined;
   if (hasRename) {
     const r = await window.api?.renameFile(props.track.path, name.value);
     if (!r?.success) {
-      message.value = r?.error || 'Błąd zmiany nazwy';
+      ui.notify('error', 'Błąd zmiany nazwy', r?.error);
       saving.value = false;
       return;
     }
@@ -120,10 +118,10 @@ async function save() {
       path: newPath
     });
     saving.value = false;
-    message.value = 'Zapisano!';
-    setTimeout(() => emit('close'), 800);
+    ui.notify('success', 'Zapisano!');
+    setTimeout(() => emit('close'), 600);
   } else {
-    message.value = result?.error || 'Błąd zapisu tagów';
+    ui.notify('error', 'Błąd zapisu tagów', result?.error);
     saving.value = false;
   }
 }
@@ -160,10 +158,6 @@ async function save() {
           </div>
 
           <div class="flex-1 space-y-2.5 min-w-0">
-            <div v-if="message" class="text-xs px-3 py-2 rounded-lg" :class="message.includes('Błąd') || message.includes('błąd') ? 'bg-red-500/10 text-red-500' : 'bg-accent-ghost text-accent-base'">
-              {{ message }}
-            </div>
-
             <label class="block">
               <span class="text-xs font-medium text-fg-muted">Nazwa pliku</span>
               <input v-model="name" class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none" />

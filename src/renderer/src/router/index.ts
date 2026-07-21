@@ -57,12 +57,6 @@ const router = createRouter({
       meta: { title: 'Settings', icon: 'settings' }
     },
     {
-      path: '/search',
-      name: 'search',
-      component: () => import('@renderer/views/SearchView.vue'),
-      meta: { title: 'Search', icon: 'search' }
-    },
-    {
       path: '/player',
       name: 'player',
       component: () => import('@renderer/views/PlayerView.vue'),

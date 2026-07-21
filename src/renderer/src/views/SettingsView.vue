@@ -11,7 +11,8 @@ import {
   Box,
   PictureInPicture,
   RotateCcw,
-  Folder
+  Folder,
+  Bell
 } from '@lucide/vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 
@@ -25,6 +26,7 @@ const SettingsApiKeys = defineAsyncComponent(() => import('@renderer/components/
 const SettingsUpdates = defineAsyncComponent(() => import('@renderer/components/settings/SettingsUpdates.vue'));
 const SettingsDependencies = defineAsyncComponent(() => import('@renderer/components/settings/SettingsDependencies.vue'));
 const SettingsLibraryFolders = defineAsyncComponent(() => import('@renderer/components/settings/SettingsLibraryFolders.vue'));
+const SettingsToast = defineAsyncComponent(() => import('@renderer/components/settings/SettingsToast.vue'));
 
 const settings = useSettingsStore();
 
@@ -39,6 +41,7 @@ const tabs = [
   { id: 'network', label: 'Sieć', icon: Globe },
   { id: 'api-keys', label: 'Klucze API', icon: Key },
   { id: 'updates', label: 'Aktualizacje', icon: RefreshCw },
+  { id: 'toast', label: 'Powiadomienia', icon: Bell },
   { id: 'library', label: 'Biblioteka', icon: Folder },
   { id: 'dependencies', label: 'Zależności', icon: Box }
 ];
@@ -88,6 +91,7 @@ watch(tab, (_newTab, oldTab) => {
       <SettingsNetwork v-if="tab === 'network'" />
       <SettingsApiKeys v-if="tab === 'api-keys'" />
       <SettingsUpdates v-if="tab === 'updates'" />
+      <SettingsToast v-if="tab === 'toast'" />
       <SettingsLibraryFolders v-if="tab === 'library'" />
       <SettingsDependencies v-if="tab === 'dependencies'" />
     </div>

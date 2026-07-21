@@ -9,6 +9,8 @@ import LibraryPlaylistManager from '@renderer/components/library/LibraryPlaylist
 import DirNode from '@renderer/components/library/DirNode.vue';
 import TrackTagEditor from '@renderer/components/library/TrackTagEditor.vue';
 import MusicBrainzLookup from '@renderer/components/library/MusicBrainzLookup.vue';
+import AlbumCard from '@renderer/components/library/AlbumCard.vue';
+import VideoCard from '@renderer/components/library/VideoCard.vue';
 import {
   Music2,
   Film,
@@ -229,18 +231,6 @@ watch(
   { immediate: true }
 );
 
-function formatSize(bytes: number): string {
-  if (bytes === 0) return '—';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  let i = 0;
-  let size = bytes;
-  while (size >= 1024 && i < units.length - 1) {
-    size /= 1024;
-    i++;
-  }
-  return `${size.toFixed(1)} ${units[i]}`;
-}
-
 function onTagSaved(tags: {
   title?: string;
   artist?: string;
@@ -447,41 +437,12 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
                   padding: '6px'
                 }"
               >
-                <button
+                <VideoCard
                   v-for="t in row.tracks"
                   :key="t.path"
-                  class="flex-1 flex flex-col rounded-xl bg-bg-elevated border border-border-default hover:bg-bg-hover transition-all overflow-hidden group text-left min-w-0"
-                  @click="playTrack(t)"
-                >
-                  <div
-                    class="aspect-video bg-bg-overlay flex items-center justify-center relative overflow-hidden"
-                  >
-                    <img
-                      v-if="player.getCover(t.path).type === 'image'"
-                      :src="player.getCover(t.path).data || ''"
-                      class="w-full h-full object-cover"
-                    />
-                    <img
-                      v-else-if="player.getCover(t.path).type === 'video'"
-                      :src="'file:///' + player.getCover(t.path).data"
-                      class="w-full h-full object-cover"
-                    />
-                    <Film v-else :size="32" class="text-fg-faint/40" />
-                    <div
-                      class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors"
-                    >
-                      <div
-                        class="w-10 h-10 rounded-full bg-accent-base/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Music2 :size="18" class="text-white ml-0.5" />
-                      </div>
-                    </div>
-                  </div>
-                  <div class="p-2.5">
-                    <div class="text-xs font-medium truncate">{{ t.name }}</div>
-                    <div class="text-[11px] text-fg-faint mt-0.5">{{ formatSize(t.size) }}</div>
-                  </div>
-                </button>
+                  :track="t"
+                  @play="playTrack"
+                />
               </div>
             </div>
           </div>
@@ -599,43 +560,13 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
                   padding: '6px'
                 }"
               >
-                <button
+                <AlbumCard
                   v-for="[name, tracks] in row.albums"
                   :key="name"
-                  class="flex-1 flex flex-col rounded-xl bg-bg-elevated border border-border-default hover:bg-bg-hover transition-all overflow-hidden group text-left min-w-0"
-                  @click="playTracks(tracks)"
-                >
-                  <div
-                    class="w-full aspect-square bg-bg-overlay flex items-center justify-center relative overflow-hidden"
-                  >
-                    <img
-                      v-if="player.getCover(tracks[0].path).type === 'image'"
-                      :src="player.getCover(tracks[0].path).data || ''"
-                      class="w-full h-full object-cover"
-                    />
-                    <img
-                      v-else-if="player.getCover(tracks[0].path).type === 'video'"
-                      :src="'file:///' + player.getCover(tracks[0].path).data"
-                      class="w-full h-full object-cover"
-                    />
-                    <Disc3 v-else :size="28" class="text-fg-faint/40" />
-                    <div
-                      class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors"
-                    >
-                      <div
-                        class="w-10 h-10 rounded-full bg-accent-base/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Music2 :size="18" class="text-white ml-0.5" />
-                      </div>
-                    </div>
-                  </div>
-                  <div class="p-2.5">
-                    <div class="text-sm font-medium truncate">{{ name }}</div>
-                    <div class="text-xs text-fg-faint mt-0.5 truncate">
-                      {{ tracks[0].metadata?.artist || 'Nieznany' }} · {{ tracks.length }} utw.
-                    </div>
-                  </div>
-                </button>
+                  :name="name"
+                  :tracks="tracks"
+                  @play="playTracks"
+                />
               </div>
             </div>
           </div>

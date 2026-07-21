@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { CornerUpRight, CornerUpLeft, CornerDownRight, CornerDownLeft } from '@lucide/vue';
 
 const settings = useSettingsStore();
 
 const pipPositions = [
-  { value: 'bottom-right' as const, label: 'Prawy dolny' },
-  { value: 'bottom-left' as const, label: 'Lewy dolny' },
-  { value: 'top-right' as const, label: 'Prawy górny' },
-  { value: 'top-left' as const, label: 'Lewy górny' }
+  { id: 'top-left' as const, label: 'Lewa góra', row: 0, col: 0, icon: CornerUpLeft },
+  { id: 'top-right' as const, label: 'Prawa góra', row: 0, col: 1, icon: CornerUpRight },
+  { id: 'bottom-left' as const, label: 'Lewy dół', row: 1, col: 0, icon: CornerDownLeft },
+  { id: 'bottom-right' as const, label: 'Prawy dół', row: 1, col: 1, icon: CornerDownRight }
 ];
 
 const pipPreviewOpen = ref(false);
@@ -66,21 +67,28 @@ watch(
 
       <div>
         <h3 class="text-sm font-semibold mb-3">Pozycja okna</h3>
-        <div class="flex gap-2">
-          <button
-            v-for="p in pipPositions"
-            :key="p.value"
-            class="px-4 py-2 rounded-xl text-sm border transition-colors"
-            :class="
-              settings.playback.pipPosition === p.value
-                ? 'border-accent-base bg-accent-ghost text-accent-base font-medium'
-                : 'border-border-default text-fg-muted hover:bg-bg-hover'
-            "
-            @click="settings.updatePlayback({ pipPosition: p.value })"
-          >
-            {{ p.label }}
-          </button>
+        <div class="w-48 aspect-square rounded-2xl bg-bg-elevated border-2 border-border-default p-2 relative select-none">
+          <div class="grid grid-cols-2 grid-rows-2 gap-2 w-full h-full">
+            <button
+              v-for="p in pipPositions"
+              :key="p.id"
+              class="rounded-xl text-[11px] font-medium transition-all border-2 flex flex-col items-center justify-center gap-1"
+              :class="settings.playback.pipPosition === p.id
+                ? 'border-accent-base bg-accent-ghost text-accent-base shadow-sm shadow-accent-base/20'
+                : 'border-transparent text-fg-faint hover:bg-bg-hover hover:text-fg-muted'"
+              @click="settings.updatePlayback({ pipPosition: p.id })"
+            >
+              <component :is="p.icon" :size="16" />
+              <span>{{ p.label.split(' ')[1] }}</span>
+            </button>
+          </div>
+          <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
+            <div class="w-5 h-5 rounded border-2 border-dashed border-fg-faint/20" />
+          </div>
         </div>
+        <p class="text-[11px] text-fg-faint mt-2">
+          Wybrany: <span class="text-fg-base font-medium">{{ pipPositions.find(p => p.id === settings.playback.pipPosition)?.label }}</span>
+        </p>
       </div>
 
       <div>

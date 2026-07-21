@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useUIStore } from '@renderer/stores/ui';
 import { Plus, Play, Trash2, ListMusic, Edit3, Heart } from '@lucide/vue';
 
 const props = defineProps<{
@@ -16,6 +17,7 @@ const emit = defineEmits<{
 
 const library = useLibraryStore();
 const player = usePlayerStore();
+const ui = useUIStore();
 const showPlaylistMenu = ref(false);
 const playlistBtn = ref<HTMLElement | null>(null);
 
@@ -35,6 +37,17 @@ function removeFromPlaylist() {
   }
 }
 
+function toggleTrackInPlaylist(playlistId: string) {
+  const p = library.playlists.find((pl) => pl.id === playlistId);
+  if (!p) return;
+  if (p.tracks.some((t) => t.path === props.track.path)) {
+    library.removeFromPlaylist(playlistId, props.track.path);
+  } else {
+    library.addToPlaylist(playlistId, props.track);
+  }
+  showPlaylistMenu.value = false;
+}
+
 function onClickOutside(e: MouseEvent) {
   const target = e.target as HTMLElement;
   if (!playlistBtn.value?.contains(target) && !target.closest('.playlist-popup')) {
@@ -49,13 +62,44 @@ function togglePlaylist(e: MouseEvent) {
     document.addEventListener('click', onClickOutside, { once: true });
   }
 }
+
+function onContextMenu(e: MouseEvent) {
+  e.preventDefault();
+  ui.showContextMenu(e.clientX, e.clientY, [
+    { label: 'Odtwórz', action: () => playNow() },
+    { label: 'Dodaj do kolejki', action: () => player.addToQueue(props.track) },
+    { label: 'Edytuj tagi', action: () => emit('edit', props.track) },
+    { label: 'Pokaż w folderze', action: () => window.api?.invoke('shell:showItemInFolder', props.track.path) },
+    ...(library.playlists.length > 0 ? [{ label: '—', separator: true } as const] : []),
+    ...library.playlists.map((p) => {
+      const inPlaylist = p.tracks.some((t) => t.path === props.track.path);
+      return {
+        label: `${inPlaylist ? '−' : '+'} ${p.name}`,
+        action: () => {
+          if (inPlaylist) {
+            library.removeFromPlaylist(p.id, props.track.path);
+          } else {
+            library.addToPlaylist(p.id, props.track);
+          }
+        }
+      };
+    })
+  ]);
+}
+
+function onDragStart(e: DragEvent) {
+  e.dataTransfer?.setData('text/plain', JSON.stringify({ paths: [props.track.path] }));
+  e.dataTransfer!.effectAllowed = 'move';
+}
 </script>
 
 <template>
   <div
     class="group flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-bg-hover transition-colors cursor-pointer"
+    draggable="true"
     @dblclick="playNow"
-    @contextmenu.prevent="emit('edit', track)"
+    @contextmenu.prevent="onContextMenu"
+    @dragstart="onDragStart"
   >
     <div class="relative shrink-0 w-9 h-9 rounded-lg overflow-hidden bg-bg-elevated">
       <video
@@ -124,9 +168,10 @@ function togglePlaylist(e: MouseEvent) {
             v-for="p in library.playlists"
             :key="p.id"
             class="w-full text-left px-3 py-1.5 text-xs rounded-lg hover:bg-bg-hover transition-colors truncate flex items-center gap-2"
-            @click="addToPlaylist(p.id)"
+            :class="{ 'text-accent-base': p.tracks.some((t) => t.path === props.track.path) }"
+            @click="toggleTrackInPlaylist(p.id)"
           >
-            <ListMusic :size="12" class="shrink-0" />{{ p.name }}
+            <ListMusic :size="12" class="shrink-0" />{{ p.tracks.some((t) => t.path === props.track.path) ? '✓ ' : '+ ' }}{{ p.name }}
           </button>
           <div
             v-if="library.playlists.length === 0"

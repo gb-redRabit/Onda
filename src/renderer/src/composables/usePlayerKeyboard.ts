@@ -19,16 +19,12 @@ export function usePlayerKeyboard(params: {
   vp: {
     videoRef: { value: HTMLVideoElement | null };
   };
-  showOSD: (
-    text: string,
-    icon: 'play' | 'pause' | 'volume' | 'seek' | 'track' | 'speed',
-    duration?: number
-  ) => void;
+  notify: (text: string, duration?: number) => void;
   skip: (seconds: number) => void;
   setSpeed: (speed: number) => void;
   toggleFullscreen: () => void;
 }) {
-  const { player, settings, vp, showOSD, skip, setSpeed, toggleFullscreen } = params;
+  const { player, settings, vp, notify, skip, setSpeed, toggleFullscreen } = params;
 
   function onKeydown(e: KeyboardEvent) {
     const target = e.target as HTMLElement;
@@ -41,11 +37,7 @@ export function usePlayerKeyboard(params: {
         e.preventDefault();
         if (player.pipActive) return;
         player.togglePlay();
-        showOSD(
-          player.isPlaying ? 'Odtwarzanie' : 'Wstrzymano',
-          player.isPlaying ? 'play' : 'pause',
-          1000
-        );
+        notify(player.isPlaying ? 'Odtwarzanie' : 'Wstrzymano', 1000);
         break;
       case 'ArrowLeft':
         e.preventDefault();
@@ -61,7 +53,7 @@ export function usePlayerKeyboard(params: {
           const newVol = Math.min(1, player.volume + 0.05);
           player.setVolume(newVol);
           vp.videoRef.value.volume = player.isMuted ? 0 : newVol;
-          showOSD(`Glosnosc: ${Math.round(newVol * 100)}%`, 'volume', 1200);
+          notify(`Glosnosc: ${Math.round(newVol * 100)}%`, 1200);
         }
         break;
       case 'ArrowDown':
@@ -70,15 +62,14 @@ export function usePlayerKeyboard(params: {
           const newVol = Math.max(0, player.volume - 0.05);
           player.setVolume(newVol);
           vp.videoRef.value.volume = player.isMuted ? 0 : newVol;
-          showOSD(`Glosnosc: ${Math.round(newVol * 100)}%`, 'volume', 1200);
+          notify(`Glosnosc: ${Math.round(newVol * 100)}%`, 1200);
         }
         break;
       case 'm':
         e.preventDefault();
         player.toggleMute();
-        showOSD(
+        notify(
           player.isMuted ? 'Wyciszono' : `Glosnosc: ${Math.round(player.volume * 100)}%`,
-          'volume',
           1200
         );
         break;
@@ -99,7 +90,7 @@ export function usePlayerKeyboard(params: {
         if (vp.videoRef.value) {
           vp.videoRef.value.currentTime = 0;
           player.currentTime = 0;
-          showOSD('0:00', 'seek', 1000);
+          notify('0:00', 1000);
         }
         break;
     }

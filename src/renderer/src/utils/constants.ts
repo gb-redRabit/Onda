@@ -37,7 +37,7 @@ export const ALL_MEDIA_FORMATS = [
   ...SUPPORTED_PLAYLIST_FORMATS
 ];
 
-import type { NetworkSettings, ApiKeySettings, UpdateSettings } from '@renderer/types/settings';
+import type { NetworkSettings, ApiKeySettings, UpdateSettings, ToastSettings } from '@renderer/types/settings';
 
 export const DEFAULT_NETWORK: NetworkSettings = {
   proxy: { enabled: false, type: 'http', host: '', port: 8080 },
@@ -52,6 +52,13 @@ export const DEFAULT_API_KEYS: ApiKeySettings = {
 export const DEFAULT_UPDATES: UpdateSettings = {
   autoCheck: true,
   checkInterval: 'startup'
+};
+
+export const DEFAULT_TOAST: ToastSettings = {
+  position: 'bottom-right',
+  showInfo: true,
+  showSuccess: true,
+  showWarning: true
 };
 
 export const DEFAULT_SHORTCUTS: Record<string, string> = {

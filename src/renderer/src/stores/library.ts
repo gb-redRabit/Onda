@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed, triggerRef } from 'vue';
 import type { MediaFile, Playlist } from '@renderer/types/media';
+import { useUIStore } from './ui';
 export const useLibraryStore = defineStore('library', () => {
   const tracks = ref<MediaFile[]>([]);
   const playlists = ref<Playlist[]>([]);
@@ -108,7 +109,7 @@ export const useLibraryStore = defineStore('library', () => {
         scheduleLoadTracks();
       }
     } catch (err) {
-      console.error('scanFolders error:', err);
+      useUIStore().notify('error', 'Błąd skanowania biblioteki', (err as Error).message || String(err));
     } finally {
       isScanning.value = false;
     }
@@ -167,9 +168,11 @@ export const useLibraryStore = defineStore('library', () => {
   function addToPlaylist(playlistId: string, track: MediaFile) {
     const playlist = playlists.value.find((p) => p.id === playlistId);
     if (playlist) {
-      playlist.tracks.push(track);
-      playlist.updatedAt = Date.now();
-      savePlaylists();
+      if (!playlist.tracks.some((t) => t.path === track.path)) {
+        playlist.tracks.push(track);
+        playlist.updatedAt = Date.now();
+        savePlaylists();
+      }
     }
   }
 

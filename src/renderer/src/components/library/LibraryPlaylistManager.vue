@@ -2,14 +2,17 @@
 import { ref, computed } from 'vue';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useUIStore } from '@renderer/stores/ui';
 import { Plus, Play, Trash2 } from '@lucide/vue';
 import LibraryTrackRow from './LibraryTrackRow.vue';
 
 const library = useLibraryStore();
 const player = usePlayerStore();
+const ui = useUIStore();
 
 const selectedPlaylistId = ref<string | null>(null);
 const newName = ref('');
+const dragOverPlaylistId = ref<string | null>(null);
 
 const selectedPlaylist = computed(() =>
   library.playlists.find((p) => p.id === selectedPlaylistId.value)
@@ -31,6 +34,25 @@ function deleteSelected() {
   if (selectedPlaylistId.value) {
     library.deletePlaylist(selectedPlaylistId.value);
     selectedPlaylistId.value = null;
+  }
+}
+
+function onPlaylistDrop(e: DragEvent, playlistId: string) {
+  const raw = e.dataTransfer?.getData('text/plain');
+  if (!raw) return;
+  try {
+    const { paths } = JSON.parse(raw);
+    if (!Array.isArray(paths)) return;
+    const playlist = library.playlists.find((p) => p.id === playlistId);
+    if (!playlist) return;
+    paths.forEach((path: string) => {
+      const track = library.tracks.find((t) => t.path === path);
+      if (track) library.addToPlaylist(playlistId, track);
+    });
+    dragOverPlaylistId.value = null;
+    ui.notify('success', `Dodano ${paths.length} utw. do playlisty "${playlist.name}"`);
+  } catch {
+    // not our data format
   }
 }
 
@@ -73,9 +95,14 @@ function playAll() {
           :class="
             selectedPlaylistId === p.id
               ? 'bg-accent-ghost text-accent-base'
-              : 'hover:bg-bg-hover text-fg-muted'
+              : dragOverPlaylistId === p.id
+                ? 'ring-1 ring-accent-base/50 bg-accent-ghost'
+                : 'hover:bg-bg-hover text-fg-muted'
           "
           @click="selectPlaylist(p.id)"
+          @dragover.prevent="dragOverPlaylistId = p.id"
+          @dragleave="dragOverPlaylistId = null"
+          @drop.prevent="onPlaylistDrop($event, p.id)"
         >
           <span class="truncate flex-1">{{ p.name }}</span>
           <span class="text-fg-faint">{{ p.tracks.length }}</span>
@@ -108,7 +135,7 @@ function playAll() {
           </button>
         </div>
       </div>
-      <div class="flex-1 overflow-auto p-2">
+      <div class="flex-1 overflow-auto p-2" @dragover.prevent @drop.prevent="selectedPlaylistId && onPlaylistDrop($event, selectedPlaylistId)">
         <LibraryTrackRow
           v-for="track in selectedPlaylist.tracks"
           :key="track.path"

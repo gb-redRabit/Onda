@@ -6,6 +6,7 @@ export interface AppSettings {
   network: NetworkSettings;
   apiKeys: ApiKeySettings;
   updates: UpdateSettings;
+  toast: ToastSettings;
   dependencies: Record<string, DependencyStatus>;
 }
 
@@ -81,6 +82,13 @@ export interface ApiKeyEntry {
 export interface UpdateSettings {
   autoCheck: boolean;
   checkInterval: 'startup' | 'hourly' | 'daily' | 'weekly';
+}
+
+export interface ToastSettings {
+  position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  showInfo: boolean;
+  showSuccess: boolean;
+  showWarning: boolean;
 }
 
 export interface DependencyStatus {

@@ -9,6 +9,8 @@ import StatusBar from './components/layout/StatusBar.vue';
 import QueuePanel from './components/player/QueuePanel.vue';
 import Equalizer from './components/player/Equalizer.vue';
 import ErrorBoundary from './components/ErrorBoundary.vue';
+import CommandPalette from './components/CommandPalette.vue';
+import ToastNotification from './components/ToastNotification.vue';
 import { useSettingsStore } from './stores/settings';
 import { usePlayerStore } from './stores/player';
 import { useUIStore } from './stores/ui';
@@ -71,10 +73,12 @@ onMounted(() => {
   if (!moduleManager.getActive()) {
     moduleManager.switchTo('home');
   }
+  document.addEventListener('keydown', onGlobalKeydown);
 });
 
 onBeforeUnmount(() => {
   moduleManager.deactivateAll();
+  document.removeEventListener('keydown', onGlobalKeydown);
 });
 
 watch(() => settings.appearance.theme, applyTheme);
@@ -89,6 +93,18 @@ watch(
     }
   }
 );
+
+function onGlobalKeydown(e: KeyboardEvent) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    if (!document.querySelector('input:focus, textarea:focus')) {
+      ui.toggleCommandPalette();
+    }
+  }
+  if (e.key === 'Escape') {
+    ui.hideContextMenu();
+  }
+}
 </script>
 
 <template>
@@ -121,6 +137,9 @@ watch(
       "
     />
     <StatusBar v-if="ui.statusBarVisible" />
+
+    <CommandPalette />
+    <ToastNotification />
 
     <div
       v-if="ui.contextMenu"
