@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { openMediaFiles } from '@renderer/composables/useOpenMedia';
 
 const router = useRouter();
+const { t } = useI18n();
 
 async function openFiles() {
   const result = (await window.api.invoke('dialog:openFile')) as {
@@ -23,54 +25,54 @@ async function openFolder() {
   await openMediaFiles(result.filePaths, router);
 }
 
-const menus = [
+const menus = computed(() => [
   {
-    label: 'Plik',
+    label: t('menu.file'),
     items: [
-      { label: 'Otwórz plik', shortcut: 'Ctrl+O', action: openFiles },
+      { label: t('menu.openFile'), shortcut: 'Ctrl+O', action: openFiles },
       {
-        label: 'Otwórz folder',
+        label: t('menu.openFolder'),
         shortcut: 'Ctrl+Shift+O',
         action: openFolder
       },
       { sep: true },
-      { label: 'Zamknij', shortcut: 'Alt+F4', action: () => window.api.invoke('app:quit') }
+      { label: t('menu.close'), shortcut: 'Alt+F4', action: () => window.api.invoke('app:quit') }
     ]
   },
   {
-    label: 'Widok',
+    label: t('menu.view'),
     items: [
-      { label: 'Strona główna', action: () => router.push('/') },
-      { label: 'Biblioteka', action: () => router.push('/library') },
-      { label: 'Eksplorator', action: () => router.push('/explorer') },
-      { label: 'YouTube', action: () => router.push('/youtube') },
+      { label: t('menu.home'), action: () => router.push('/') },
+      { label: t('menu.library'), action: () => router.push('/library') },
+      { label: t('menu.explorer'), action: () => router.push('/explorer') },
+      { label: t('menu.youtube'), action: () => router.push('/youtube') },
       { sep: true },
-      { label: 'Ustawienia', shortcut: 'Ctrl+,', action: () => router.push('/settings') }
+      { label: t('menu.settings'), shortcut: 'Ctrl+,', action: () => router.push('/settings') }
     ]
   },
   {
-    label: 'Odtwarzanie',
+    label: t('menu.playback'),
     items: [
-      { label: 'Odtwórz / Pauza', shortcut: 'Space' },
-      { label: 'Następny utwór' },
-      { label: 'Poprzedni utwór' },
+      { label: t('menu.playPause'), shortcut: 'Space' },
+      { label: t('menu.nextTrack') },
+      { label: t('menu.prevTrack') },
       { sep: true },
-      { label: 'Losowo' },
-      { label: 'Powtarzanie' }
+      { label: t('menu.shuffle') },
+      { label: t('menu.repeat') }
     ]
   },
   {
-    label: 'Pomoc',
+    label: t('menu.help'),
     items: [
       {
-        label: 'Dokumentacja',
+        label: t('menu.documentation'),
         action: () => window.api.invoke('shell:openExternal', 'https://electron-vite.org')
       },
       { sep: true },
-      { label: 'O Onda' }
+      { label: t('menu.about') }
     ]
   }
-];
+]);
 
 const openMenu = ref<number | null>(null);
 function toggleMenu(i: number) {
@@ -86,7 +88,7 @@ function closeMenu() {
     class="h-8 flex items-center bg-bg-surface/80 border-b border-border-default px-1 text-xs shrink-0"
     @mouseleave="closeMenu"
   >
-    <div v-for="(menu, idx) in menus" :key="menu.label" class="relative">
+    <div v-for="(menu, idx) in menus" :key="idx" class="relative">
       <button
         class="px-2.5 py-1 rounded-md text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
         :class="{ 'bg-accent-ghost text-accent-base': openMenu === idx }"

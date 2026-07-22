@@ -134,7 +134,7 @@ onUnmounted(() => {
       <button
         class="absolute bottom-4 left-4 z-20 p-2 rounded-lg bg-bg-overlay/80 backdrop-blur-sm text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-all opacity-0 hover:opacity-100 focus:opacity-100"
         :class="{ 'opacity-60': showUI }"
-        title="Tryb wizualizacji"
+        :title="$t('audioView.vizMode')"
         @click="vizRef?.cycleStyle()"
       >
         <div class="flex items-center gap-1.5">

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useUIStore } from '@renderer/stores/ui';
+import { useI18n } from 'vue-i18n';
 import {
   Minus,
   Square,
@@ -19,6 +20,7 @@ import {
 const router = useRouter();
 const route = useRoute();
 const ui = useUIStore();
+const { t, locale } = useI18n();
 const isMaximized = ref(false);
 const tabMenuVisible = ref(false);
 const tabMenuPos = ref({ x: 0, y: 0 });
@@ -31,22 +33,25 @@ interface Tab {
   path: string;
 }
 
-const tabs = ref<Tab[]>([{ id: 'home', label: 'Strona główna', icon: 'home', path: '/' }]);
+const tabs = ref<Tab[]>([{ id: 'home', label: t('nav.home'), icon: 'home', path: '/' }]);
 
 const activeTabId = computed(() => {
   const t = tabs.value.find((t) => t.path === route.path);
   return t?.id || tabs.value[0]?.id;
 });
 
-const routeLabels: Record<string, string> = {
-  '/': 'Strona główna',
-  '/library': 'Biblioteka',
-  '/explorer': 'Eksplorator',
-  '/youtube': 'YouTube',
-  '/downloads': 'Pobrane',
-  '/settings': 'Ustawienia',
-  '/player': 'Odtwarzacz'
-};
+function routeLabel(path: string): string {
+  const map: Record<string, string> = {
+    '/': t('nav.home'),
+    '/library': t('nav.library'),
+    '/explorer': t('nav.explorer'),
+    '/youtube': t('nav.youtube'),
+    '/downloads': t('nav.downloads'),
+    '/settings': t('nav.settings'),
+    '/player': t('nav.player')
+  };
+  return map[path] || t('nav.newTab');
+}
 
 function addTab() {
   const path = route.path || '/';
@@ -54,7 +59,7 @@ function addTab() {
   if (!exists) {
     tabs.value.push({
       id: `tab-${Date.now()}`,
-      label: routeLabels[path] || 'Karta',
+      label: routeLabel(path),
       icon: (route.meta?.icon as string) || 'home',
       path
     });
@@ -67,7 +72,7 @@ function closeTab(id: string, e?: MouseEvent) {
   if (idx < 0) return;
   tabs.value.splice(idx, 1);
   if (tabs.value.length === 0) {
-    tabs.value.push({ id: 'home', label: 'Strona główna', icon: 'home', path: '/' });
+    tabs.value.push({ id: 'home', label: t('nav.home'), icon: 'home', path: '/' });
   }
   if (activeTabId.value === id) {
     router.push(tabs.value[Math.min(idx, tabs.value.length - 1)].path);
@@ -82,7 +87,7 @@ function closeOtherTabs(id: string) {
 }
 
 function closeAllTabs() {
-  tabs.value = [{ id: 'home', label: 'Strona główna', icon: 'home', path: '/' }];
+  tabs.value = [{ id: 'home', label: t('nav.home'), icon: 'home', path: '/' }];
   router.push('/');
 }
 
@@ -123,6 +128,10 @@ function close() {
 
 window.api.on('window:maximized', (val: unknown) => {
   isMaximized.value = val as boolean;
+});
+
+watch(locale, () => {
+  tabs.value.forEach((tab) => { tab.label = routeLabel(tab.path); });
 });
 </script>
 
@@ -225,7 +234,7 @@ window.api.on('window:maximized', (val: unknown) => {
             closeTabMenu();
           "
         >
-          <Plus :size="13" /> Nowa karta
+          <Plus :size="13" /> {{ $t('nav.newTab') }}
         </button>
         <button
           class="w-full px-3 py-1.5 text-left text-sm hover:bg-accent-ghost hover:text-accent-base transition-colors flex items-center gap-2"
@@ -234,7 +243,7 @@ window.api.on('window:maximized', (val: unknown) => {
             closeTabMenu();
           "
         >
-          <Copy :size="13" /> Duplikuj
+          <Copy :size="13" /> {{ $t('nav.duplicate') }}
         </button>
         <div class="border-t border-border-default my-1 mx-2" />
         <button
@@ -245,7 +254,7 @@ window.api.on('window:maximized', (val: unknown) => {
             closeTabMenu();
           "
         >
-          <XCircle :size="13" /> Zamknij kartę
+          <XCircle :size="13" /> {{ $t('nav.closeTab') }}
         </button>
         <button
           v-if="tabs.length > 2"
@@ -255,7 +264,7 @@ window.api.on('window:maximized', (val: unknown) => {
             closeTabMenu();
           "
         >
-          <FileX :size="13" /> Zamknij pozostałe
+          <FileX :size="13" /> {{ $t('nav.closeOthers') }}
         </button>
         <button
           v-if="tabs.length > 1"
@@ -265,7 +274,7 @@ window.api.on('window:maximized', (val: unknown) => {
             closeTabMenu();
           "
         >
-          <XCircle :size="13" /> Zamknij wszystkie
+          <XCircle :size="13" /> {{ $t('nav.closeAll') }}
         </button>
       </div>
     </div>

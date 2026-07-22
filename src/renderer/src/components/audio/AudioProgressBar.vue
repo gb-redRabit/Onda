@@ -40,7 +40,7 @@ function onDragSeek(e: MouseEvent) {
       {{ formatDuration(audio.currentTime.value) }}
     </span>
     <div
-      class="flex-1 h-1.5 bg-bg-active rounded-full cursor-pointer hover:h-2 transition-all group relative"
+      class="flex-1 h-1.5 bg-bg-active rounded-full cursor-pointer hover:h-2 transition-[height] group relative"
       @click="onSeek"
       @mousedown="onDragSeek"
     >

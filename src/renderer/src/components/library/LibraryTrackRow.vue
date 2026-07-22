@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { MediaFile } from '@renderer/types/media';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useUIStore } from '@renderer/stores/ui';
 import { Plus, Play, Trash2, ListMusic, Edit3, Heart } from '@lucide/vue';
+import MediaCover from '@renderer/components/MediaCover.vue';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   track: MediaFile;
@@ -26,10 +30,6 @@ function playNow() {
   player.play();
 }
 
-function addToPlaylist(id: string) {
-  library.addToPlaylist(id, props.track);
-  showPlaylistMenu.value = false;
-}
 
 function removeFromPlaylist() {
   if (props.playlistId) {
@@ -66,10 +66,10 @@ function togglePlaylist(e: MouseEvent) {
 function onContextMenu(e: MouseEvent) {
   e.preventDefault();
   ui.showContextMenu(e.clientX, e.clientY, [
-    { label: 'Odtwórz', action: () => playNow() },
-    { label: 'Dodaj do kolejki', action: () => player.addToQueue(props.track) },
-    { label: 'Edytuj tagi', action: () => emit('edit', props.track) },
-    { label: 'Pokaż w folderze', action: () => window.api?.invoke('shell:showItemInFolder', props.track.path) },
+    { label: t('common.play'), action: () => playNow() },
+    { label: t('common.addToQueue'), action: () => player.addToQueue(props.track) },
+    { label: t('common.editTags'), action: () => emit('edit', props.track) },
+    { label: t('common.showInFolder'), action: () => window.api?.invoke('shell:showItemInFolder', props.track.path) },
     ...(library.playlists.length > 0 ? [{ label: '—', separator: true } as const] : []),
     ...library.playlists.map((p) => {
       const inPlaylist = p.tracks.some((t) => t.path === props.track.path);
@@ -102,26 +102,7 @@ function onDragStart(e: DragEvent) {
     @dragstart="onDragStart"
   >
     <div class="relative shrink-0 w-9 h-9 rounded-lg overflow-hidden bg-bg-elevated">
-      <video
-        v-if="player.getCover(props.track.path).type === 'video'"
-        :src="'file:///' + player.getCover(props.track.path).data"
-        class="w-full h-full object-cover"
-        muted
-        loop
-        playsinline
-        autoplay
-      />
-      <img
-        v-else-if="player.getCover(props.track.path).type === 'image'"
-        :src="player.getCover(props.track.path).data || ''"
-        class="w-full h-full object-cover"
-      />
-      <div
-        v-else
-        class="w-full h-full flex items-center justify-center text-fg-faint/40 group-hover:hidden"
-      >
-        <Play :size="14" />
-      </div>
+      <MediaCover :path="props.track.path" :size="14" :autoplay="true" fallback="play" />
       <button
         class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 transition-colors"
         @click="playNow"
@@ -135,7 +116,7 @@ function onDragStart(e: DragEvent) {
       <div class="text-xs text-fg-faint truncate">
         {{
           track.metadata?.artist || track.metadata?.album
-            ? `${track.metadata?.artist || 'Nieznany'} · ${track.metadata?.album || ''}`
+            ? `${track.metadata?.artist || $t('common.unknown')} · ${track.metadata?.album || ''}`
             : track.extension
         }}
       </div>
@@ -147,7 +128,7 @@ function onDragStart(e: DragEvent) {
       <button
         class="p-1.5 rounded-lg transition-colors"
         :class="player.isFavorite(track.path) ? 'text-red-base hover:text-red-hover' : 'text-fg-faint hover:text-fg-base hover:bg-bg-elevated'"
-        :title="player.isFavorite(track.path) ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'"
+        :title="player.isFavorite(track.path) ? $t('common.removeFav') : $t('common.addFav')"
         @click.stop="player.toggleFavorite(track.path)"
       >
         <Heart :size="14" :fill="player.isFavorite(track.path) ? 'currentColor' : 'none'" />
@@ -177,14 +158,14 @@ function onDragStart(e: DragEvent) {
             v-if="library.playlists.length === 0"
             class="px-3 py-1.5 text-xs text-fg-faint italic"
           >
-            Brak playlist
+            {{ $t('common.noPlaylists') }}
           </div>
         </div>
       </div>
 
       <button
         class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-elevated transition-colors"
-        title="Edytuj tagi"
+        :title="$t('common.editTags')"
         @click="emit('edit', track)"
       >
         <Edit3 :size="14" />

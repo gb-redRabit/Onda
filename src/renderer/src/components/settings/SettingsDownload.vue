@@ -9,10 +9,10 @@ const videoQualities = ['best', '1080p', '720p', '480p'] as const;
 
 <template>
   <div class="space-y-6 max-w-2xl">
-    <h2 class="text-lg font-bold">Pobieranie</h2>
+    <h2 class="text-lg font-bold">{{ $t('settings.downloadSection') }}</h2>
 
     <div>
-      <h3 class="text-sm font-semibold mb-3">Domyślny format audio</h3>
+      <h3 class="text-sm font-semibold mb-3">{{ $t('settings.defaultAudioFormat') }}</h3>
       <div class="flex gap-2">
         <button
           v-for="f in audioFormats"
@@ -31,7 +31,7 @@ const videoQualities = ['best', '1080p', '720p', '480p'] as const;
     </div>
 
     <div>
-      <h3 class="text-sm font-semibold mb-3">Domyślna jakość wideo</h3>
+      <h3 class="text-sm font-semibold mb-3">{{ $t('settings.defaultVideoQuality') }}</h3>
       <div class="flex gap-2">
         <button
           v-for="q in videoQualities"
@@ -50,7 +50,7 @@ const videoQualities = ['best', '1080p', '720p', '480p'] as const;
     </div>
 
     <div>
-      <h3 class="text-sm font-semibold mb-3">Szablon nazwy pliku</h3>
+      <h3 class="text-sm font-semibold mb-3">{{ $t('settings.filenameTemplate') }}</h3>
       <input
         :value="settings.download.filenameTemplate"
         class="w-full px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none"
@@ -59,13 +59,13 @@ const videoQualities = ['best', '1080p', '720p', '480p'] as const;
         "
       />
       <p class="text-xs text-fg-faint mt-1">
-        Dostępne: {'{title}'}, {'{artist}'}, {'{album}'}, {'{year}'}
+        {{ $t('settings.available') }} {'{title}'}, {'{artist}'}, {'{album}'}, {'{year}'}
       </p>
     </div>
 
     <div>
       <h3 class="text-sm font-semibold mb-3">
-        Maks. równoległych: {{ settings.download.maxConcurrent }}
+        {{ $t('settings.maxConcurrent') }} {{ settings.download.maxConcurrent }}
       </h3>
       <input
         type="range"

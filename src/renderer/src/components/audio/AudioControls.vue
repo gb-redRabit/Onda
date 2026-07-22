@@ -102,7 +102,7 @@ function onVolume(e: MouseEvent) {
       <Volume2 v-else :size="14" />
     </button>
     <div
-      class="w-24 h-1 bg-bg-active rounded-full cursor-pointer hover:h-1.5 transition-all"
+      class="w-24 h-1 bg-bg-active rounded-full cursor-pointer hover:h-1.5 transition-[height]"
       @click="onVolume"
     >
       <div
@@ -136,7 +136,7 @@ function onVolume(e: MouseEvent) {
       @click="player.toggleQueue"
     >
       <ListMusic :size="12" />
-      Kolejka
+      {{ $t('queue.title') }}
     </button>
   </div>
 </template>

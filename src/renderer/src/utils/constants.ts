@@ -100,6 +100,7 @@ export const DEFAULT_APPEARANCE = {
   fontSize: 14,
   density: 'comfortable' as const,
   sidebarPosition: 'left' as const,
+  locale: 'pl' as const,
   animations: true,
   transparency: 1
 };

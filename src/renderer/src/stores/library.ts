@@ -18,33 +18,39 @@ export const useLibraryStore = defineStore('library', () => {
   const audioTracks = computed(() => tracks.value.filter((t) => t.type === 'audio'));
   const videoTracks = computed(() => tracks.value.filter((t) => t.type === 'video'));
 
-  const recentTracks = computed(() =>
-    [...tracks.value]
-      .filter((t) => t.lastPlayed)
-      .sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0))
-      .slice(0, 20)
-  );
-  const mostPlayed = computed(() =>
-    [...tracks.value].sort((a, b) => b.playCount - a.playCount).slice(0, 20)
-  );
+  const recentTracks = computed(() => {
+    const ts = tracks.value;
+    const withPlayed = ts.filter((t) => t.lastPlayed);
+    if (withPlayed.length === 0) return [];
+    return withPlayed.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0)).slice(0, 20);
+  });
+  const mostPlayed = computed(() => {
+    const ts = tracks.value;
+    if (ts.length === 0) return [];
+    return [...ts].sort((a, b) => b.playCount - a.playCount).slice(0, 20);
+  });
 
   const artists = computed(() => {
+    const ts = tracks.value;
+    if (ts.length === 0) return [];
     const map = new Map<string, MediaFile[]>();
-    tracks.value.forEach((t) => {
-      const artist = t.metadata?.artist || 'Unknown Artist';
+    for (let i = 0; i < ts.length; i++) {
+      const artist = ts[i].metadata?.artist || 'Unknown Artist';
       if (!map.has(artist)) map.set(artist, []);
-      map.get(artist)!.push(t);
-    });
+      map.get(artist)!.push(ts[i]);
+    }
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   });
 
   const albums = computed(() => {
+    const ts = tracks.value;
+    if (ts.length === 0) return [];
     const map = new Map<string, MediaFile[]>();
-    tracks.value.forEach((t) => {
-      const album = t.metadata?.album || 'Unknown Album';
+    for (let i = 0; i < ts.length; i++) {
+      const album = ts[i].metadata?.album || 'Unknown Album';
       if (!map.has(album)) map.set(album, []);
-      map.get(album)!.push(t);
-    });
+      map.get(album)!.push(ts[i]);
+    }
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   });
 

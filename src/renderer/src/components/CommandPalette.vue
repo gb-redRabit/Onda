@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import type { MediaFile } from '@renderer/types/media';
 import { useUIStore } from '@renderer/stores/ui';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
-import { Search, Music2, Film, Disc3, Settings, Home, Hash, ArrowRight } from '@lucide/vue';
+import { Search, Music2, Film, Disc3, Settings, Home, ArrowRight } from '@lucide/vue';
+
+const { t } = useI18n();
 
 const ui = useUIStore();
 const library = useLibraryStore();
@@ -16,22 +19,22 @@ const query = ref('');
 const input = ref<HTMLInputElement | null>(null);
 const activeIndex = ref(0);
 
-const actions = [
-  { label: 'Strona główna', icon: Home, action: () => router.push('/') },
-  { label: 'Biblioteka', icon: Disc3, action: () => router.push('/library') },
-  { label: 'Ustawienia', icon: Settings, action: () => router.push('/settings') }
-];
+const actions = computed(() => [
+  { label: t('nav.home'), icon: Home, action: () => router.push('/') },
+  { label: t('nav.library'), icon: Disc3, action: () => router.push('/library') },
+  { label: t('nav.settings'), icon: Settings, action: () => router.push('/settings') }
+]);
 
 const results = computed(() => {
   const q = query.value.toLowerCase().trim();
-  if (!q) return { tracks: [] as MediaFile[], actions: actions };
+  if (!q) return { tracks: [] as MediaFile[], actions: actions.value };
   const tracks = library.tracks.filter(
     (t) =>
       (t.metadata?.title || t.name).toLowerCase().includes(q) ||
       (t.metadata?.artist || '').toLowerCase().includes(q) ||
       (t.metadata?.album || '').toLowerCase().includes(q)
   ).slice(0, 10);
-  return { tracks, actions: actions.filter((a) => a.label.toLowerCase().includes(q)) };
+  return { tracks, actions: actions.value.filter((a) => a.label.toLowerCase().includes(q)) };
 });
 
 const flatItems = computed(() => {
@@ -92,13 +95,13 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
         <input
           ref="input"
           v-model="query"
-          placeholder="Szukaj utworów, albumów, akcji..."
+          :placeholder="$t('cmdPalette.placeholder')"
           class="flex-1 bg-transparent text-sm text-fg-base outline-none placeholder:text-fg-faint/50"
         />
       </div>
       <div class="max-h-80 overflow-y-auto py-1">
         <div v-if="results.tracks.length === 0 && !query" class="px-3 py-4 text-center text-xs text-fg-faint italic">
-          Wpisz szukaną frazę...
+          {{ $t('cmdPalette.empty') }}
         </div>
         <template v-for="(item, i) in flatItems" :key="i">
           <div

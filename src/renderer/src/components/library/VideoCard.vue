@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { MediaFile } from '@renderer/types/media';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useUIStore } from '@renderer/stores/ui';
-import { Film, Music2 } from '@lucide/vue';
+import { Music2 } from '@lucide/vue';
+import MediaCover from '@renderer/components/MediaCover.vue';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   track: MediaFile;
@@ -30,9 +34,9 @@ function formatDur(seconds?: number): string {
 function onContextMenu(e: MouseEvent) {
   e.preventDefault();
   ui.showContextMenu(e.clientX, e.clientY, [
-    { label: 'Odtwórz', action: () => emit('play', props.track) },
-    { label: 'Dodaj do kolejki', action: () => player.addToQueue(props.track) },
-    { label: 'Pokaż w folderze', action: () => window.api?.invoke('shell:showItemInFolder', props.track.path) }
+    { label: t('common.play'), action: () => emit('play', props.track) },
+    { label: t('common.addToQueue'), action: () => player.addToQueue(props.track) },
+    { label: t('common.showInFolder'), action: () => window.api?.invoke('shell:showItemInFolder', props.track.path) }
   ]);
 }
 
@@ -50,20 +54,8 @@ function onDragStart(e: DragEvent) {
     @contextmenu.prevent="onContextMenu"
     @dragstart="onDragStart"
   >
-    <div
-      class="aspect-video bg-bg-overlay flex items-center justify-center relative overflow-hidden"
-    >
-      <img
-        v-if="cover.type === 'image'"
-        :src="cover.data || ''"
-        class="w-full h-full object-cover"
-      />
-      <img
-        v-else-if="cover.type === 'video'"
-        :src="'file:///' + cover.data"
-        class="w-full h-full object-cover"
-      />
-      <Film v-else :size="32" class="text-fg-faint/40" />
+      <div class="aspect-video bg-bg-overlay flex items-center justify-center relative overflow-hidden">
+        <MediaCover :cover="cover" :size="32" :render-as-video="false" fallback="film" />
       <div
         class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors"
       >

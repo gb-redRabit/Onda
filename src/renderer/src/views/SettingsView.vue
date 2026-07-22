@@ -12,7 +12,8 @@ import {
   PictureInPicture,
   RotateCcw,
   Folder,
-  Bell
+  Bell,
+  Languages
 } from '@lucide/vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 
@@ -27,23 +28,25 @@ const SettingsUpdates = defineAsyncComponent(() => import('@renderer/components/
 const SettingsDependencies = defineAsyncComponent(() => import('@renderer/components/settings/SettingsDependencies.vue'));
 const SettingsLibraryFolders = defineAsyncComponent(() => import('@renderer/components/settings/SettingsLibraryFolders.vue'));
 const SettingsToast = defineAsyncComponent(() => import('@renderer/components/settings/SettingsToast.vue'));
+const SettingsLanguage = defineAsyncComponent(() => import('@renderer/components/settings/SettingsLanguage.vue'));
 
 const settings = useSettingsStore();
 
 const tab = ref('appearance');
 
 const tabs = [
-  { id: 'appearance', label: 'Wygląd', icon: Palette },
-  { id: 'playback', label: 'Odtwarzanie', icon: Play },
-  { id: 'pip', label: 'PiP', icon: PictureInPicture },
-  { id: 'download', label: 'Pobieranie', icon: Download },
-  { id: 'shortcuts', label: 'Skróty', icon: Keyboard },
-  { id: 'network', label: 'Sieć', icon: Globe },
-  { id: 'api-keys', label: 'Klucze API', icon: Key },
-  { id: 'updates', label: 'Aktualizacje', icon: RefreshCw },
-  { id: 'toast', label: 'Powiadomienia', icon: Bell },
-  { id: 'library', label: 'Biblioteka', icon: Folder },
-  { id: 'dependencies', label: 'Zależności', icon: Box }
+  { id: 'appearance', labelKey: 'settings.appearance', icon: Palette },
+  { id: 'playback', labelKey: 'settings.playback', icon: Play },
+  { id: 'pip', labelKey: 'settings.pip', icon: PictureInPicture },
+  { id: 'download', labelKey: 'settings.download', icon: Download },
+  { id: 'shortcuts', labelKey: 'settings.shortcuts', icon: Keyboard },
+  { id: 'network', labelKey: 'settings.network', icon: Globe },
+  { id: 'api-keys', labelKey: 'settings.apiKeys', icon: Key },
+  { id: 'updates', labelKey: 'settings.updates', icon: RefreshCw },
+  { id: 'toast', labelKey: 'settings.notifications', icon: Bell },
+  { id: 'language', labelKey: 'settings.language', icon: Languages },
+  { id: 'library', labelKey: 'settings.library', icon: Folder },
+  { id: 'dependencies', labelKey: 'settings.dependencies', icon: Box }
 ];
 
 watch(tab, (_newTab, oldTab) => {
@@ -57,7 +60,7 @@ watch(tab, (_newTab, oldTab) => {
   <div class="flex h-full">
     <div class="w-56 border-r border-border-default p-3 shrink-0">
       <div class="flex items-center justify-between mb-3 px-2">
-        <h1 class="text-lg font-bold">Ustawienia</h1>
+        <h1 class="text-lg font-bold">{{ $t('settings.title') }}</h1>
         <button
           class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover transition-colors"
           @click="settings.resetToDefaults"
@@ -77,7 +80,7 @@ watch(tab, (_newTab, oldTab) => {
           "
           @click="tab = t.id"
         >
-          <component :is="t.icon" :size="16" />{{ t.label }}
+          <component :is="t.icon" :size="16" />{{ $t(t.labelKey) }}
         </button>
       </div>
     </div>
@@ -92,6 +95,7 @@ watch(tab, (_newTab, oldTab) => {
       <SettingsApiKeys v-if="tab === 'api-keys'" />
       <SettingsUpdates v-if="tab === 'updates'" />
       <SettingsToast v-if="tab === 'toast'" />
+      <SettingsLanguage v-if="tab === 'language'" />
       <SettingsLibraryFolders v-if="tab === 'library'" />
       <SettingsDependencies v-if="tab === 'dependencies'" />
     </div>

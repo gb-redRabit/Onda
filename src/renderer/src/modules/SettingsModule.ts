@@ -5,8 +5,6 @@ export class SettingsModule implements AppModule {
   name = 'Settings';
   private _active = false;
 
-  init(): void {}
-
   activate(_context?: unknown): void {
     this._active = true;
   }

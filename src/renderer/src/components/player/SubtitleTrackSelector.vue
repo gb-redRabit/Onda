@@ -28,7 +28,7 @@ function selectTrack(id: string | null) {
         class="absolute bottom-full right-0 mb-2 w-55 bg-bg-elevated border border-border-subtle rounded-xl shadow-2xl shadow-black/50 py-1.5 z-50"
       >
         <div class="px-3 py-1.5 text-[10px] text-fg-faint font-medium uppercase tracking-wider">
-          Napisy
+          {{ $t('subtitles.title') }}
         </div>
 
         <button
@@ -38,14 +38,14 @@ function selectTrack(id: string | null) {
         >
           <Check v-if="!player.activeSubtitleId" :size="14" class="shrink-0" />
           <span v-else class="w-3.5 shrink-0" />
-          Wyłącz napisy
+          {{ $t('subtitles.disable') }}
         </button>
 
         <div
           v-if="player.subtitleTracks.some((t) => t.source === 'embedded')"
           class="border-t border-border-default my-1 mx-2"
         />
-        <div class="px-3 py-1 text-[10px] text-fg-faint/60">Wbudowane</div>
+        <div class="px-3 py-1 text-[10px] text-fg-faint/60">{{ $t('subtitles.embedded') }}</div>
         <button
           v-for="track in player.subtitleTracks.filter((t) => t.source === 'embedded')"
           :key="track.id"
@@ -62,7 +62,7 @@ function selectTrack(id: string | null) {
           v-if="player.subtitleTracks.some((t) => t.source === 'external')"
           class="border-t border-border-default my-1 mx-2"
         />
-        <div class="px-3 py-1 text-[10px] text-fg-faint/60">Z folderu</div>
+        <div class="px-3 py-1 text-[10px] text-fg-faint/60">{{ $t('subtitles.fromFolder') }}</div>
         <button
           v-for="track in player.subtitleTracks.filter((t) => t.source === 'external')"
           :key="track.id"

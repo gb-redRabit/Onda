@@ -1,19 +1,22 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { useI18n } from 'vue-i18n';
 
 const settings = useSettingsStore();
+const { t } = useI18n();
 
 const DEP_LIST = [
-  { name: 'FFmpeg', description: 'Transkodowanie i przetwarzanie audio/wideo' },
-  { name: 'FFprobe', description: 'Analiza metadanych mediów (formaty, bitrate, duration)' },
-  { name: 'yt-dlp', description: 'Pobieranie wideo z YouTube i innych serwisów' },
-  { name: 'MKVToolbox', description: 'Wyciąganie czcionek z plików MKV (mkvextract)' }
+  { name: 'FFmpeg', descriptionKey: 'settings.ffmpegDesc' },
+  { name: 'FFprobe', descriptionKey: 'settings.ffprobeDesc' },
+  { name: 'yt-dlp', descriptionKey: 'settings.ytdlpDesc' },
+  { name: 'MKVToolbox', descriptionKey: 'settings.mkvDesc' }
 ];
 
 const deps = ref(
   DEP_LIST.map((d) => ({
     ...d,
+    description: t(d.descriptionKey),
     installed: settings.getDependency(d.name)?.installed ?? false,
     version: settings.getDependency(d.name)?.version ?? null,
     installing: false,
@@ -93,7 +96,7 @@ async function installDependency(dep: (typeof deps.value)[0]): Promise<void> {
       });
     }
   } else {
-    dep.error = result?.error ?? 'Instalacja nie powiodła się';
+    dep.error = result?.error ?? t('settings.depInstallFailed');
   }
   dep.installing = false;
 }
@@ -101,15 +104,15 @@ async function installDependency(dep: (typeof deps.value)[0]): Promise<void> {
 
 <template>
   <div class="space-y-6 max-w-2xl">
-    <h2 class="text-lg font-bold">Zależności systemowe</h2>
+    <h2 class="text-lg font-bold">{{ $t('settings.depTitle') }}</h2>
     <p class="text-xs text-fg-faint mb-4">
-      Niektóre funkcje wymagają zewnętrznych narzędzi. Sprawdź ich status i zainstaluj brakujące.
+      {{ $t('settings.depDesc') }}
     </p>
     <button
       class="px-4 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm font-medium hover:bg-bg-hover transition-colors mb-4"
       @click="checkDependencies"
     >
-      Odśwież status
+      {{ $t('settings.depRefresh') }}
     </button>
     <div class="space-y-3">
       <div
@@ -132,15 +135,15 @@ async function installDependency(dep: (typeof deps.value)[0]): Promise<void> {
             <span v-if="dep.version" class="text-xs text-fg-faint font-mono"
               >v{{ dep.version }}</span
             >
-            <span v-else-if="dep.installed" class="text-xs text-green-500">Zainstalowano</span>
-            <span v-else class="text-xs text-red-500">Brak</span>
+            <span v-else-if="dep.installed" class="text-xs text-green-500">{{ $t('settings.depInstalled') }}</span>
+            <span v-else class="text-xs text-red-500">{{ $t('settings.depMissing') }}</span>
             <button
               v-if="!dep.installed"
               class="px-3 py-1.5 rounded-lg bg-accent-base text-white text-xs font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
               :disabled="dep.installing"
               @click="installDependency(dep)"
             >
-              {{ dep.installing ? 'Instalowanie...' : 'Instaluj' }}
+              {{ dep.installing ? $t('settings.depInstalling') : $t('settings.depInstall') }}
             </button>
           </div>
         </div>

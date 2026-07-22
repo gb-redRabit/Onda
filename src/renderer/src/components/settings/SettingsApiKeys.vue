@@ -2,19 +2,19 @@
 
 <template>
   <div class="space-y-6 max-w-2xl">
-    <h2 class="text-lg font-bold">Klucze API</h2>
+    <h2 class="text-lg font-bold">{{ $t('settings.apiKeysSection') }}</h2>
     <div class="p-4 rounded-xl bg-bg-elevated border border-border-default space-y-3">
       <div>
-        <label class="text-xs text-fg-faint mb-1 block">YouTube Data API v3 — Klucz API</label>
+        <label class="text-xs text-fg-faint mb-1 block">{{ $t('settings.youtubeApiKey') }}</label>
         <input
           type="password"
-          placeholder="Wpisz klucz API YouTube..."
+          :placeholder="$t('settings.youtubeApiPlaceholder')"
           class="w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none placeholder:text-fg-faint"
         />
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="text-xs text-fg-faint mb-1 block">Maks. wyników (1-50)</label>
+          <label class="text-xs text-fg-faint mb-1 block">{{ $t('settings.maxResults') }}</label>
           <input
             type="number"
             min="1"
@@ -24,7 +24,7 @@
           />
         </div>
         <div>
-          <label class="text-xs text-fg-faint mb-1 block">Kod regionu</label>
+          <label class="text-xs text-fg-faint mb-1 block">{{ $t('settings.regionCode') }}</label>
           <input
             type="text"
             value="US"
@@ -36,7 +36,7 @@
       <button
         class="px-4 py-2 rounded-xl bg-accent-base text-white text-sm font-medium hover:bg-accent-hover transition-colors"
       >
-        Zapisz klucz API
+        {{ $t('settings.saveApiKey') }}
       </button>
     </div>
   </div>

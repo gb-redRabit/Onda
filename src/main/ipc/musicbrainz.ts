@@ -47,7 +47,7 @@ export function registerMusicBrainzHandlers() {
 
   ipcMain.handle('musicbrainz:getCoverUrl', async (_event, releaseId: string) => {
     try {
-      const data = await mbFetch(`${CA_URL}/release/${releaseId}/front`);
+      await mbFetch(`${CA_URL}/release/${releaseId}/front`);
       return { success: true };
     } catch (e) {
       const resp = e as any;

@@ -4,22 +4,22 @@ import { useSettingsStore } from '@renderer/stores/settings';
 const settings = useSettingsStore();
 
 const toggles = [
-  { key: 'gaplessPlayback' as const, label: 'Odtwarzanie bez przerw' },
-  { key: 'normalization' as const, label: 'Normalizacja głośności' },
+  { key: 'gaplessPlayback' as const, labelKey: 'settings.gapless' },
+  { key: 'normalization' as const, labelKey: 'settings.volumeNorm' },
   { key: 'replayGain' as const, label: 'Replay Gain' },
-  { key: 'autoPauseOnFocusLoss' as const, label: 'Auto-pauza przy utracie fokusa' },
-  { key: 'rememberPosition' as const, label: 'Zapamiętuj pozycję odtwarzania' },
-  { key: 'cursorHide' as const, label: 'Ukrywanie kursora' }
+  { key: 'autoPauseOnFocusLoss' as const, labelKey: 'settings.autoPause' },
+  { key: 'rememberPosition' as const, labelKey: 'settings.rememberPos' },
+  { key: 'cursorHide' as const, labelKey: 'settings.hideCursor' }
 ];
 </script>
 
 <template>
   <div class="space-y-6 max-w-2xl">
-    <h2 class="text-lg font-bold">Odtwarzanie</h2>
+    <h2 class="text-lg font-bold">{{ $t('settings.playbackSection') }}</h2>
 
     <div>
       <h3 class="text-sm font-semibold mb-3">
-        Przejście: {{ settings.playback.crossfadeDuration }}s
+        {{ $t('settings.crossfade') }} {{ settings.playback.crossfadeDuration }}s
       </h3>
       <input
         type="range"
@@ -37,7 +37,7 @@ const toggles = [
 
     <div>
       <h3 class="text-sm font-semibold mb-3">
-        Domyślna głośność: {{ Math.round(settings.playback.defaultVolume * 100) }}%
+        {{ $t('settings.defaultVolume') }} {{ Math.round(settings.playback.defaultVolume * 100) }}%
       </h3>
       <input
         type="range"
@@ -59,7 +59,7 @@ const toggles = [
         :key="opt.key"
         class="flex items-center justify-between py-2.5 border-b border-border-default"
       >
-        <span class="text-sm">{{ opt.label }}</span>
+        <span class="text-sm">{{ opt.labelKey ? $t(opt.labelKey) : opt.label }}</span>
         <button
           class="relative w-10 h-5.5 rounded-full transition-colors"
           :class="settings.playback[opt.key] ? 'bg-accent-base' : 'bg-border-subtle'"
@@ -75,7 +75,7 @@ const toggles = [
 
     <div v-if="settings.playback.cursorHide">
       <h3 class="text-sm font-semibold mb-3">
-        Czas ukrycia kursora: {{ settings.playback.cursorTimeout }}s
+        {{ $t('settings.cursorHideTimeout') }} {{ settings.playback.cursorTimeout }}s
       </h3>
       <input
         type="range"
@@ -94,7 +94,7 @@ const toggles = [
 
     <div>
       <h3 class="text-sm font-semibold mb-3">
-        Domyślna prędkość: {{ settings.playback.playbackSpeed }}x
+        {{ $t('settings.defaultSpeed') }} {{ settings.playback.playbackSpeed }}x
       </h3>
       <input
         type="range"

@@ -61,4 +61,65 @@ describe('getMediaFileType', () => {
     expect(getMediaFileType(makeFile('.pdf'))).toBe('unknown');
     expect(getMediaFileType(makeFile('.txt'))).toBe('unknown');
   });
+
+  it('returns unknown for missing extension', () => {
+    const f = makeFile('.txt');
+    f.extension = '';
+    expect(getMediaFileType(f)).toBe('unknown');
+  });
+
+  it('throws for null extension', () => {
+    const f = makeFile('.txt');
+    (f as any).extension = null;
+    expect(() => getMediaFileType(f)).toThrow();
+  });
+});
+
+describe('getFileTypeInfo additional categories', () => {
+  it('returns playlist info for m3u files', () => {
+    const info = getFileTypeInfo('.m3u');
+    expect(info.icon).toBe('list-music');
+    expect(info.color).toBe('#10b981');
+    expect(info.category).toBe('playlist');
+  });
+
+  it('returns playlist info for m3u8 files', () => {
+    const info = getFileTypeInfo('.m3u8');
+    expect(info.icon).toBe('list-music');
+    expect(info.category).toBe('playlist');
+  });
+
+  it('returns subtitle info for srt files', () => {
+    const info = getFileTypeInfo('.srt');
+    expect(info.icon).toBe('subtitles');
+    expect(info.color).toBe('#8b5cf6');
+    expect(info.category).toBe('subtitle');
+  });
+
+  it('returns subtitle info for vtt files', () => {
+    const info = getFileTypeInfo('.vtt');
+    expect(info.icon).toBe('subtitles');
+    expect(info.category).toBe('subtitle');
+  });
+
+  it('returns image info for jpg/png/webp/svg', () => {
+    for (const ext of ['.jpg', '.jpeg', '.png', '.webp', '.svg']) {
+      const info = getFileTypeInfo(ext);
+      expect(info.icon).toBe('image');
+      expect(info.color).toBe('#ec4899');
+      expect(info.category).toBe('image');
+    }
+  });
+
+  it('handles dot-only input', () => {
+    const info = getFileTypeInfo('.');
+    expect(info.icon).toBe('file');
+    expect(info.category).toBe('unknown');
+  });
+
+  it('handles empty string', () => {
+    const info = getFileTypeInfo('');
+    expect(info.icon).toBe('file');
+    expect(info.category).toBe('unknown');
+  });
 });

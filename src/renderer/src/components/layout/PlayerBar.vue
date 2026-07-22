@@ -14,7 +14,6 @@ import {
   Volume1,
   Heart,
   ListMusic,
-  Music2,
   SlidersHorizontal,
   Minimize2,
   Maximize2,
@@ -23,6 +22,8 @@ import {
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { formatDuration } from '@renderer/utils/formatters';
+import MediaCover from '@renderer/components/MediaCover.vue';
+import TrackInfo from '@renderer/components/TrackInfo.vue';
 
 const player = usePlayerStore();
 const audio = useAudioPlayer();
@@ -60,37 +61,16 @@ function togglePlay() {
     class="h-12 bg-bg-overlay border-t border-border-default flex items-center px-3 gap-3 shrink-0 relative"
   >
     <div
-      class="absolute top-0 left-0 right-0 h-0.5 bg-border-default/50 cursor-pointer group hover:h-1 transition-all z-10"
+      class="absolute top-0 left-0 right-0 h-0.5 bg-border-default/50 cursor-pointer group hover:h-1 transition-[height] z-10"
       @click="onSeek"
     >
       <div class="h-full bg-accent-base rounded-r-full" :style="{ width: progressPct + '%' }" />
     </div>
 
-    <div
-      class="w-8 h-8 rounded-lg bg-bg-elevated flex items-center justify-center shrink-0 overflow-hidden"
-    >
-      <template v-if="player.currentTrack">
-        <video
-          v-if="player.getCover(player.currentTrack.path).type === 'video'"
-          :src="'file:///' + player.getCover(player.currentTrack.path).data"
-          class="w-full h-full object-cover"
-          muted
-          loop
-        />
-        <img
-          v-else-if="player.getCover(player.currentTrack.path).type === 'image'"
-          :src="player.getCover(player.currentTrack.path).data || ''"
-          class="w-full h-full object-cover"
-        />
-        <Music2 v-else :size="14" class="text-accent-base" />
-      </template>
-      <Music2 v-else :size="14" class="text-fg-faint" />
+    <div class="w-8 h-8 rounded-lg bg-bg-elevated flex items-center justify-center shrink-0 overflow-hidden">
+      <MediaCover :path="player.currentTrack?.path" :size="14" fallback="music" />
     </div>
-    <div class="min-w-0 flex-1">
-      <div class="text-xs font-medium truncate">
-        {{ player.currentTrack?.metadata?.title || player.currentTrack?.name || 'Brak utworu' }}
-      </div>
-    </div>
+    <TrackInfo :track="player.currentTrack" class="min-w-0 flex-1" titleSize="text-xs" :showArtist="false" :showFallback="true" />
     <div class="flex items-center gap-1">
       <button
         class="p-1.5 text-fg-muted hover:text-fg-base transition-colors"
@@ -99,7 +79,7 @@ function togglePlay() {
         <SkipBack :size="14" fill="currentColor" />
       </button>
       <button
-        class="w-8 h-8 rounded-full bg-fg-base flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+        class="w-8 h-8 rounded-full bg-fg-base flex items-center justify-center hover:scale-105 active:scale-95 transition-[transform,opacity]"
         @click="togglePlay"
       >
         <Pause v-if="audio.isPlaying.value" :size="14" class="text-bg-base" fill="currentColor" />
@@ -117,7 +97,7 @@ function togglePlay() {
     }}</span>
     <button
       class="p-1.5 text-fg-faint hover:text-accent-base transition-colors"
-      title="Widok audio"
+      :title="$t('common.audioView')"
       @click="router.push('/audio')"
     >
       <Disc3 :size="13" />
@@ -136,45 +116,17 @@ function togglePlay() {
     class="h-18 bg-bg-overlay border-t border-border-default flex items-center px-4 shrink-0 relative"
   >
     <div
-      class="absolute top-0 left-0 right-0 h-1 bg-border-default/50 cursor-pointer group hover:h-1.5 transition-all z-10"
+      class="absolute top-0 left-0 right-0 h-1 bg-border-default/50 cursor-pointer group hover:h-1.5 transition-[height] z-10"
       @click="onSeek"
     >
       <div class="h-full bg-accent-base rounded-r-full" :style="{ width: progressPct + '%' }" />
     </div>
 
     <div class="flex items-center gap-3 w-70 min-w-0">
-      <div
-        class="w-11 h-11 rounded-lg bg-bg-elevated border border-border-default flex items-center justify-center shrink-0 overflow-hidden"
-      >
-        <template v-if="player.currentTrack">
-          <video
-            v-if="player.getCover(player.currentTrack.path).type === 'video'"
-            :src="'file:///' + player.getCover(player.currentTrack.path).data"
-            class="w-full h-full object-cover"
-            muted
-            loop
-          />
-          <img
-            v-else-if="player.getCover(player.currentTrack.path).type === 'image'"
-            :src="player.getCover(player.currentTrack.path).data || ''"
-            class="w-full h-full object-cover"
-          />
-          <Music2 v-else :size="18" class="text-accent-base" />
-        </template>
-        <Music2 v-else :size="18" class="text-fg-faint" />
+      <div class="w-11 h-11 rounded-lg bg-bg-elevated border border-border-default flex items-center justify-center shrink-0 overflow-hidden">
+        <MediaCover :path="player.currentTrack?.path" :size="18" fallback="music" />
       </div>
-      <div class="min-w-0 flex-1">
-        <div class="text-sm font-semibold text-fg-base truncate">
-          {{
-            player.currentTrack?.metadata?.title ||
-            player.currentTrack?.name ||
-            'Nie załadowano utworu'
-          }}
-        </div>
-        <div class="text-xs text-fg-faint truncate">
-          {{ player.currentTrack?.metadata?.artist || 'Wybierz utwór' }}
-        </div>
-      </div>
+      <TrackInfo :track="player.currentTrack" class="min-w-0 flex-1" titleSize="text-sm" titleClass="text-fg-base" :showFallback="true" />
       <button
         class="shrink-0 p-1.5 transition-colors"
         :class="
@@ -212,7 +164,7 @@ function togglePlay() {
           <SkipBack :size="17" fill="currentColor" />
         </button>
         <button
-          class="w-10 h-10 rounded-full bg-fg-base flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
+          class="w-10 h-10 rounded-full bg-fg-base flex items-center justify-center hover:scale-105 active:scale-95 transition-[transform,opacity] shadow-lg"
           @click="togglePlay"
         >
           <Pause v-if="audio.isPlaying.value" :size="18" class="text-bg-base" fill="currentColor" />
@@ -270,7 +222,7 @@ function togglePlay() {
         />
       </button>
       <div
-        class="w-24 h-1 bg-border-default/60 rounded-full cursor-pointer hover:h-1.5 transition-all"
+        class="w-24 h-1 bg-border-default/60 rounded-full cursor-pointer hover:h-1.5 transition-[height]"
         @click="onVolume"
       >
         <div
@@ -280,14 +232,14 @@ function togglePlay() {
       </div>
       <button
         class="p-1.5 rounded-lg text-fg-faint hover:text-accent-base hover:bg-bg-hover transition-colors"
-        title="Widok audio"
+        :title="$t('common.audioView')"
         @click="router.push('/audio')"
       >
         <Disc3 :size="15" />
       </button>
       <button
         class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
-        title="Mini odtwarzacz"
+        :title="$t('common.miniPlayer')"
         @click="isMini = true"
       >
         <Minimize2 :size="13" />

@@ -11,6 +11,7 @@ import Equalizer from './components/player/Equalizer.vue';
 import ErrorBoundary from './components/ErrorBoundary.vue';
 import CommandPalette from './components/CommandPalette.vue';
 import ToastNotification from './components/ToastNotification.vue';
+import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from './stores/settings';
 import { usePlayerStore } from './stores/player';
 import { useUIStore } from './stores/ui';
@@ -24,6 +25,7 @@ const ui = useUIStore();
 const library = useLibraryStore();
 const route = useRoute();
 const router = useRouter();
+const { locale } = useI18n();
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -68,7 +70,10 @@ function applyTheme() {
 }
 
 onMounted(() => {
-  settings.load().then(() => applyTheme());
+  settings.load().then(() => {
+    applyTheme();
+    locale.value = settings.appearance.locale;
+  });
   library.loadFromDisk();
   if (!moduleManager.getActive()) {
     moduleManager.switchTo('home');
@@ -84,6 +89,7 @@ onBeforeUnmount(() => {
 watch(() => settings.appearance.theme, applyTheme);
 watch(() => settings.appearance.accentColor, applyTheme);
 watch(() => settings.appearance.fontSize, applyTheme);
+watch(() => settings.appearance.locale, (loc) => { locale.value = loc; });
 
 watch(
   () => player.currentTrack,

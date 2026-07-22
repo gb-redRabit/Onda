@@ -138,7 +138,7 @@ function handleDoubleClick(item: FileItem) {
             </button>
           </template>
         </template>
-        <span v-else class="text-fg-faint px-1">Ten komputer</span>
+        <span v-else class="text-fg-faint px-1">{{ $t('explorer.thisComputer') }}</span>
       </div>
 
       <div class="flex gap-0.5">
@@ -179,7 +179,7 @@ function handleDoubleClick(item: FileItem) {
         class="flex flex-col items-center justify-center py-16 text-fg-faint"
       >
         <FolderOpen :size="48" class="mb-3 opacity-30" />
-        <p class="text-sm">Ten folder jest pusty</p>
+        <p class="text-sm">{{ $t('explorer.folderEmpty') }}</p>
       </div>
 
       <!-- drives header -->
@@ -188,7 +188,7 @@ function handleDoubleClick(item: FileItem) {
           class="text-xs font-medium text-fg-faint uppercase tracking-wider flex items-center gap-2 px-1"
         >
           <HardDrive :size="12" />
-          Dyski
+          {{ $t('explorer.drives') }}
         </h3>
       </div>
 
@@ -236,7 +236,7 @@ function handleDoubleClick(item: FileItem) {
             class="text-left flex items-center gap-1 hover:text-fg-base"
             @click="explorer.toggleSort('name')"
           >
-            Nazwa
+            {{ $t('explorer.name') }}
             <ChevronUp
               v-if="explorer.sortBy === 'name' && explorer.sortOrder === 'asc'"
               :size="10"
@@ -246,9 +246,9 @@ function handleDoubleClick(item: FileItem) {
               :size="10"
             />
           </button>
-          <span>Rozmiar</span>
-          <span>Typ</span>
-          <span class="text-right">Zmodyfikowany</span>
+          <span>{{ $t('explorer.size') }}</span>
+          <span>{{ $t('explorer.type') }}</span>
+          <span class="text-right">{{ $t('explorer.modified') }}</span>
         </div>
         <button
           v-for="item in explorer.sortedFiles"
@@ -284,7 +284,7 @@ function handleDoubleClick(item: FileItem) {
             }}
           </span>
           <span class="text-fg-faint text-xs">{{
-            item.extension || (explorer.isAtDrives ? 'Dysk' : '—')
+            item.extension || (explorer.isAtDrives ? $t('explorer.drive') : '—')
           }}</span>
           <span class="text-fg-faint text-xs text-right font-mono">{{
             new Date(item.modifiedAt).toLocaleDateString()

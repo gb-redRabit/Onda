@@ -5,10 +5,10 @@ import { CornerDownRight, CornerDownLeft, CornerUpRight, CornerUpLeft } from '@l
 const settings = useSettingsStore();
 
 const positions = [
-  { id: 'top-left' as const, label: 'Lewa góra', row: 0, col: 0 },
-  { id: 'top-right' as const, label: 'Prawa góra', row: 0, col: 1 },
-  { id: 'bottom-left' as const, label: 'Lewy dół', row: 1, col: 0 },
-  { id: 'bottom-right' as const, label: 'Prawy dół', row: 1, col: 1 }
+  { id: 'top-left' as const, labelKey: 'settings.topLeft', row: 0, col: 0 },
+  { id: 'top-right' as const, labelKey: 'settings.topRight', row: 0, col: 1 },
+  { id: 'bottom-left' as const, labelKey: 'settings.bottomLeft', row: 1, col: 0 },
+  { id: 'bottom-right' as const, labelKey: 'settings.bottomRight', row: 1, col: 1 }
 ];
 
 const grid: (typeof positions)[number][] = [
@@ -20,14 +20,14 @@ const grid: (typeof positions)[number][] = [
 <template>
   <div class="max-w-md space-y-6">
     <div>
-      <h2 class="text-sm font-bold mb-1">Powiadomienia</h2>
+      <h2 class="text-sm font-bold mb-1">{{ $t('settings.toastTitle') }}</h2>
       <p class="text-xs text-fg-faint">
-        Błędy są zawsze wyświetlane — nie można ich wyłączyć.
+        {{ $t('settings.toastDesc') }}
       </p>
     </div>
 
     <div>
-      <label class="text-xs font-medium text-fg-muted block mb-2">Pozycja toastów</label>
+      <label class="text-xs font-medium text-fg-muted block mb-2">{{ $t('settings.toastPosition') }}</label>
       <div class="w-48  aspect-square rounded-2xl bg-bg-elevated border-2 border-border-default p-2 relative select-none">
         <div class="grid grid-cols-2 grid-rows-2 gap-2 w-full h-full">
           <button
@@ -41,7 +41,7 @@ const grid: (typeof positions)[number][] = [
           >
             <component :is="p.row === 0 ? CornerUpRight : CornerDownRight" :size="16" v-if="p.col === 1" />
             <component :is="p.row === 0 ? CornerUpLeft : CornerDownLeft" :size="16" v-if="p.col === 0" />
-            <span>{{ p.label.split(' ')[1] }}</span>
+            <span>{{ $t(p.labelKey) }}</span>
           </button>
         </div>
         <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
@@ -49,12 +49,12 @@ const grid: (typeof positions)[number][] = [
         </div>
       </div>
       <p class="text-[11px] text-fg-faint mt-2">
-        Wybrany: <span class="text-fg-base font-medium">{{ positions.find(p => p.id === settings.toast.position)?.label }}</span>
+        {{ $t('settings.selected') }} <span class="text-fg-base font-medium">{{ $t(positions.find(p => p.id === settings.toast.position)?.labelKey ?? '') }}</span>
       </p>
     </div>
 
     <div class="space-y-2">
-      <label class="text-xs font-medium text-fg-muted block">Typy powiadomień</label>
+      <label class="text-xs font-medium text-fg-muted block">{{ $t('settings.toastTypes') }}</label>
       <label class="flex items-center gap-3 px-3 py-2 rounded-xl bg-bg-elevated cursor-pointer">
         <input
           type="checkbox"
@@ -62,8 +62,8 @@ const grid: (typeof positions)[number][] = [
           :checked="settings.toast.showSuccess"
           @change="settings.updateToast({ showSuccess: !settings.toast.showSuccess })"
         />
-        <span class="text-sm text-fg-base">Sukces</span>
-        <span class="ml-auto text-[11px] text-fg-faint">✓ zapisano, dodano</span>
+        <span class="text-sm text-fg-base">{{ $t('settings.toastSuccess') }}</span>
+        <span class="ml-auto text-[11px] text-fg-faint">{{ $t('settings.toastSuccessHint') }}</span>
       </label>
       <label class="flex items-center gap-3 px-3 py-2 rounded-xl bg-bg-elevated cursor-pointer">
         <input
@@ -72,8 +72,8 @@ const grid: (typeof positions)[number][] = [
           :checked="settings.toast.showInfo"
           @change="settings.updateToast({ showInfo: !settings.toast.showInfo })"
         />
-        <span class="text-sm text-fg-base">Informacje</span>
-        <span class="ml-auto text-[11px] text-fg-faint">ℹ odtwarzanie, głośność</span>
+        <span class="text-sm text-fg-base">{{ $t('settings.toastInfo') }}</span>
+        <span class="ml-auto text-[11px] text-fg-faint">{{ $t('settings.toastInfoHint') }}</span>
       </label>
       <label class="flex items-center gap-3 px-3 py-2 rounded-xl bg-bg-elevated cursor-pointer">
         <input
@@ -82,13 +82,13 @@ const grid: (typeof positions)[number][] = [
           :checked="settings.toast.showWarning"
           @change="settings.updateToast({ showWarning: !settings.toast.showWarning })"
         />
-        <span class="text-sm text-fg-base">Ostrzeżenia</span>
-        <span class="ml-auto text-[11px] text-fg-faint">⚠ niekrytyczne problemy</span>
+        <span class="text-sm text-fg-base">{{ $t('settings.toastWarn') }}</span>
+        <span class="ml-auto text-[11px] text-fg-faint">{{ $t('settings.toastWarnHint') }}</span>
       </label>
       <div class="flex items-center gap-3 px-3 py-2 rounded-xl bg-bg-elevated opacity-60">
         <input type="checkbox" class="w-4 h-4 rounded accent-accent-base" checked disabled />
-        <span class="text-sm text-fg-base">Błędy</span>
-        <span class="ml-auto text-[11px] text-fg-faint">✗ zawsze widoczne</span>
+        <span class="text-sm text-fg-base">{{ $t('settings.toastErrors') }}</span>
+        <span class="ml-auto text-[11px] text-fg-faint">{{ $t('settings.toastErrorsHint') }}</span>
       </div>
     </div>
   </div>

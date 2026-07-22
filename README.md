@@ -13,7 +13,8 @@ Onda obsługuje odtwarzanie lokalnych plików audio/wideo, eksplorację plików,
 - **Napisy** — parser SRT/VTT/ASS, renderowanie ASS przez JASSUB (wasm + worker)
   - Wyciąganie czcionek z MKV (mkvextract), lokalne fonty Windows, Google Fonts fallback
 - **Wideo** — fullscreen, Picture-in-Picture, OSD, playback rate
-- **Okładki** — embedded, folder images, cover video matching
+- **Okładki** — lazy loading (IntersectionObserver), memory + disk cache (JPEG w temp), music-metadata zamiast ffmpeg, batch processing
+- **i18n** — pełna internacjonalizacja (PL/EN, ~300 kluczy), przełączanie locale w ustawieniach
 - **Splash screen** — animowana wizualizacja dźwiękowa na canvas (standalone HTML, zero deps)
 - **Dodatkowo** — ReplayGain / normalizacja, zapamiętywanie pozycji, favorites, playlisty, Media Session API, tray icon, global shortcuts, drag & drop z systemu
 
@@ -35,6 +36,8 @@ Pełna dokumentacja architektury: [`project.md`](./project.md).
 | Build        | electron-vite + Vite                        |
 | CSS          | Tailwind CSS 4                              |
 | Stan         | Pinia 3                                     |
+| i18n         | vue-i18n 10 (PL/EN)                         |
+| Metadane     | music-metadata (tagi, duration, okładki)     |
 | Routing      | vue-router 4 (hash history, lazy loading)   |
 | Napisy       | JASSUB (ASS), własny parser SRT/VTT/ASS     |
 | Packaging    | electron-builder (NSIS / DMG / AppImage)    |
@@ -43,7 +46,7 @@ Pełna dokumentacja architektury: [`project.md`](./project.md).
 
 Niektóre funkcje wymagają narzędzi zewnętrznych (instalowanych z poziomu Ustawień):
 
-- **FFmpeg / FFprobe** — transkodowanie, napisy, metadane, duration, cover (`choco install ffmpeg`)
+- **FFmpeg / FFprobe** — transkodowanie, napisy, klatka z wideo, video cover (`choco install ffmpeg`)
 - **MKVToolNix (mkvextract)** — wyciąganie czcionek z załączników MKV (`choco install mkvtoolnix`)
 - **yt-dlp** — pobieranie z YouTube (binary z GitHub Releases)
 
@@ -93,8 +96,10 @@ npm run build:linux
 
 - ✅ Fundament i architektura modułowa + splash screen
 - ✅ UI skeleton + nawigacja + system motywów
-- ✅ Odtwarzacz multimediów (~98%) — audio w tle, wideo z PiP, napisy ASS, AudioView z 3 layoutami
+- ✅ Odtwarzacz multimediów — audio w tle, wideo z PiP, napisy ASS, AudioView z 3 layoutami
+- ✅ i18n — pełna internacjonalizacja (PL/EN)
+- ✅ Biblioteka mediów — skanowanie, metadane (music-metadata), okładki (lazy + cache), wirtualny scroll
 - ⏳ Ustawienia (częściowo)
-- ⏳ Integracja YouTube, biblioteka mediów, eksplorator plików
+- ⏳ Integracja YouTube, eksplorator plików
 
 Szczegółowa mapa faz: [`project.md`](./project.md) sekcja 11.

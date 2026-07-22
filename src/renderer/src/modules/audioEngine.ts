@@ -283,10 +283,6 @@ class AudioEngine {
   init(): void {
     if (this.initialized) return;
     this.initialized = true;
-    this.ensureAudioContext();
-    const el = this.createAudioElement();
-    this.setupListeners(el);
-    this.startRafLoop();
     this.visibilityHandler = () => {
       if (document.hidden) {
         this.stopRafLoop();

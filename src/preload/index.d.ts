@@ -1,7 +1,9 @@
 import { ElectronAPI } from '@electron-toolkit/preload';
 
+import type { IpcChannels, IpcChannel } from '@shared/types/ipc';
+
 interface OndaAPI {
-  invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
+  invoke: <C extends IpcChannel>(channel: C, ...args: IpcChannels[C]['args']) => Promise<IpcChannels[C]['result']>;
   send: (channel: string, ...args: unknown[]) => void;
   on: (channel: string, callback: (...args: unknown[]) => void) => () => void;
   once: (channel: string, callback: (...args: unknown[]) => void) => void;

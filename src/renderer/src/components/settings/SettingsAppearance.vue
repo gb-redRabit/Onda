@@ -4,12 +4,12 @@ import { RotateCcw, PanelLeftOpen, PanelRightOpen } from '@lucide/vue';
 
 const settings = useSettingsStore();
 
-const themes = [
-  { id: 'dark', label: 'Ciemny', bg: '#0f0f17', fg: '#e8e8f0' },
-  { id: 'light', label: 'Jasny', bg: '#f8f8fa', fg: '#1a1a2e' },
+const themes: { id: (typeof settings.appearance.theme); labelKey?: string; label: string; bg: string; fg: string }[] = [
+  { id: 'dark', labelKey: 'settings.dark', label: 'Ciemny', bg: '#0f0f17', fg: '#e8e8f0' },
+  { id: 'light', labelKey: 'settings.light', label: 'Jasny', bg: '#f8f8fa', fg: '#1a1a2e' },
   { id: 'midnight', label: 'Midnight', bg: '#0d1117', fg: '#c9d1d9' },
   { id: 'spotify', label: 'Spotify', bg: '#121212', fg: '#b3b3b3' }
-] as const;
+];
 
 const accentColors = [
   '#7c6aef',
@@ -26,7 +26,7 @@ const accentColors = [
 <template>
   <div class="space-y-8 max-w-2xl">
     <div class="flex items-center justify-between">
-      <h2 class="text-lg font-bold">Wygląd</h2>
+      <h2 class="text-lg font-bold">{{ $t('settings.appearanceSection') }}</h2>
       <button
         class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover transition-colors"
         @click="settings.resetToDefaults"
@@ -36,7 +36,7 @@ const accentColors = [
     </div>
 
     <div>
-      <h3 class="text-sm font-semibold mb-3">Motyw</h3>
+      <h3 class="text-sm font-semibold mb-3">{{ $t('settings.theme') }}</h3>
       <div class="grid grid-cols-4 gap-3">
         <button
           v-for="th in themes"
@@ -55,13 +55,13 @@ const accentColors = [
           >
             <div class="w-6 h-1 rounded-full" style="background: #7c6aef" />
           </div>
-          <span class="text-xs text-fg-muted">{{ th.label }}</span>
+          <span class="text-xs text-fg-muted">{{ th.labelKey ? $t(th.labelKey) : th.label }}</span>
         </button>
       </div>
     </div>
 
     <div>
-      <h3 class="text-sm font-semibold mb-3">Kolor akcentu</h3>
+      <h3 class="text-sm font-semibold mb-3">{{ $t('settings.accentColor') }}</h3>
       <div class="flex gap-2">
         <button
           v-for="c in accentColors"
@@ -78,7 +78,7 @@ const accentColors = [
 
     <div>
       <h3 class="text-sm font-semibold mb-3">
-        Rozmiar czcionki: {{ settings.appearance.fontSize }}px
+        {{ $t('settings.fontSize') }}: {{ settings.appearance.fontSize }}px
       </h3>
       <input
         type="range"
@@ -95,7 +95,7 @@ const accentColors = [
     </div>
 
     <div>
-      <h3 class="text-sm font-semibold mb-3">Gęstość</h3>
+      <h3 class="text-sm font-semibold mb-3">{{ $t('settings.density') }}</h3>
       <div class="flex gap-2">
         <button
           v-for="d in ['compact', 'comfortable', 'spacious'] as const"
@@ -108,13 +108,13 @@ const accentColors = [
           "
           @click="settings.updateAppearance({ density: d })"
         >
-          {{ d }}
+          {{ $t('settings.' + d) }}
         </button>
       </div>
     </div>
 
     <div>
-      <h3 class="text-sm font-semibold mb-3">Pozycja panelu bocznego</h3>
+      <h3 class="text-sm font-semibold mb-3">{{ $t('settings.sidebarPosition') }}</h3>
       <div class="w-48 h-36 rounded-2xl bg-bg-elevated border-2 border-border-default p-2 relative select-none">
         <div class="grid grid-cols-2 gap-2 w-full h-full">
           <button
@@ -127,7 +127,7 @@ const accentColors = [
             @click="settings.updateAppearance({ sidebarPosition: pos })"
           >
             <component :is="pos === 'left' ? PanelLeftOpen : PanelRightOpen" :size="18" />
-            <span>{{ pos === 'left' ? 'Lewa' : 'Prawa' }}</span>
+            <span>{{ $t('settings.' + pos) }}</span>
           </button>
         </div>
         <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
@@ -135,7 +135,7 @@ const accentColors = [
         </div>
       </div>
       <p class="text-[11px] text-fg-faint mt-2">
-        Wybrany: <span class="text-fg-base font-medium">{{ settings.appearance.sidebarPosition === 'left' ? 'Lewa' : 'Prawa' }}</span>
+        {{ $t('settings.selected') }} <span class="text-fg-base font-medium">{{ $t('settings.' + settings.appearance.sidebarPosition) }}</span>
       </p>
     </div>
   </div>

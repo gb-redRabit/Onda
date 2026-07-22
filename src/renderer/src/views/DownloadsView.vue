@@ -30,16 +30,16 @@ const colors = {
   <div class="flex flex-col h-full">
     <div class="p-4 border-b border-border-default flex items-center gap-3">
       <Download :size="24" class="text-accent-base" />
-      <h1 class="text-xl font-bold">Pobrane</h1>
+      <h1 class="text-xl font-bold">{{ $t('downloads.title') }}</h1>
       <span
         v-if="active.length"
         class="text-xs bg-accent-ghost text-accent-base px-2 py-0.5 rounded-full font-medium"
-        >{{ active.length }} aktywne</span
+        >{{ active.length }} {{ $t('status.active') }}</span
       >
     </div>
     <div class="flex-1 overflow-auto p-4">
       <div v-if="active.length" class="mb-6">
-        <h2 class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-3">Aktywne</h2>
+        <h2 class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-3">{{ $t('downloads.active') }}</h2>
         <div class="space-y-2">
           <div
             v-for="t in active"
@@ -66,7 +66,7 @@ const colors = {
         </div>
       </div>
       <div v-if="done.length" class="mb-6">
-        <h2 class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-3">Ukończone</h2>
+        <h2 class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-3">{{ $t('downloads.completed') }}</h2>
         <div
           v-for="t in done"
           :key="t.id"
@@ -82,7 +82,7 @@ const colors = {
         class="flex flex-col items-center justify-center py-16 text-fg-faint"
       >
         <Download :size="48" class="mb-3 opacity-30" />
-        <p class="text-sm">Brak pobranych plików</p>
+        <p class="text-sm">{{ $t('downloads.empty') }}</p>
       </div>
     </div>
   </div>

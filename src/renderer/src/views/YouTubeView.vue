@@ -29,14 +29,14 @@ async function search() {
     <div class="p-4 border-b border-border-default">
       <div class="flex items-center gap-3 mb-3">
         <Tv2 :size="24" class="text-red-base" />
-        <h1 class="text-xl font-bold">YouTube</h1>
+        <h1 class="text-xl font-bold">{{ $t('youtube.title') }}</h1>
       </div>
       <div class="flex gap-2">
         <div class="relative flex-1">
           <Search :size="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-fg-faint" />
           <input
             v-model="query"
-            placeholder="Szukaj na YouTube..."
+            :placeholder="$t('youtube.searchPlaceholder')"
             class="w-full pl-9 pr-3 py-2.5 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none placeholder:text-fg-faint"
             @keydown.enter="search"
           />
@@ -45,7 +45,7 @@ async function search() {
           class="px-5 py-2.5 rounded-xl bg-accent-base text-white text-sm font-medium hover:bg-accent-hover transition-colors"
           @click="search"
         >
-          Szukaj
+          {{ $t('youtube.search') }}
         </button>
       </div>
     </div>
@@ -61,8 +61,8 @@ async function search() {
         class="flex flex-col items-center justify-center py-16 text-fg-faint"
       >
         <Tv2 :size="64" class="mb-4 opacity-20" />
-        <p class="text-lg font-medium mb-1">Szukaj na YouTube</p>
-        <p class="text-sm">Znajdź muzykę, filmy i więcej</p>
+        <p class="text-lg font-medium mb-1">{{ $t('youtube.searchHeading') }}</p>
+        <p class="text-sm">{{ $t('youtube.discover') }}</p>
       </div>
       <div v-else class="space-y-2">
         <div
@@ -95,7 +95,7 @@ async function search() {
             <h3 class="text-sm font-medium line-clamp-2 mb-1">{{ v.title }}</h3>
             <div class="text-xs text-fg-faint">
               {{ v.channelTitle }}
-              <span v-if="v.viewCount"> · {{ formatNumber(v.viewCount) }} wyświetleń</span>
+              <span v-if="v.viewCount"> · {{ formatNumber(v.viewCount) }} {{ $t('youtube.views') }}</span>
             </div>
             <p class="text-xs text-fg-faint mt-1 line-clamp-2">{{ v.description }}</p>
           </div>

@@ -16,6 +16,7 @@ export interface AppearanceSettings {
   fontSize: number;
   density: 'compact' | 'comfortable' | 'spacious';
   sidebarPosition: 'left' | 'right';
+  locale: 'pl' | 'en';
   animations: boolean;
   transparency: number;
   customBackground?: string;

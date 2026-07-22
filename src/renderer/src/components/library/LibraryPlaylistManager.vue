@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useUIStore } from '@renderer/stores/ui';
 import { Plus, Play, Trash2 } from '@lucide/vue';
 import LibraryTrackRow from './LibraryTrackRow.vue';
+
+const { t } = useI18n();
 
 const library = useLibraryStore();
 const player = usePlayerStore();
@@ -50,7 +53,7 @@ function onPlaylistDrop(e: DragEvent, playlistId: string) {
       if (track) library.addToPlaylist(playlistId, track);
     });
     dragOverPlaylistId.value = null;
-    ui.notify('success', `Dodano ${paths.length} utw. do playlisty "${playlist.name}"`);
+    ui.notify('success', `Dodano ${paths.length} ${t('common.tracks')} do playlisty "${playlist.name}"`);
   } catch {
     // not our data format
   }
@@ -69,13 +72,13 @@ function playAll() {
 <template>
   <div class="flex h-full">
     <div class="w-56 border-r border-border-default p-3 shrink-0 flex flex-col">
-      <h2 class="text-sm font-bold mb-3">Playlisty</h2>
+      <h2 class="text-sm font-bold mb-3">{{ $t('library.playlists') }}</h2>
 
       <div class="flex gap-2 mb-3">
         <input
           v-model="newName"
           class="flex-1 px-2 py-1 text-xs rounded-lg bg-bg-elevated border border-border-default outline-none focus:border-accent-base"
-          placeholder="Nazwa..."
+          :placeholder="$t('library.playlistName')"
           @keyup.enter="createPlaylist"
         />
         <button
@@ -108,7 +111,7 @@ function playAll() {
           <span class="text-fg-faint">{{ p.tracks.length }}</span>
         </button>
         <div v-if="library.playlists.length === 0" class="text-xs text-fg-faint italic px-2">
-          Brak playlist
+          {{ $t('common.noPlaylists') }}
         </div>
       </div>
     </div>
@@ -117,7 +120,7 @@ function playAll() {
       <div class="flex items-center justify-between p-3 border-b border-border-default">
         <div>
           <h2 class="text-sm font-bold">{{ selectedPlaylist.name }}</h2>
-          <p class="text-xs text-fg-faint">{{ selectedPlaylist.tracks.length }} utworów</p>
+          <p class="text-xs text-fg-faint">{{ selectedPlaylist.tracks.length }} {{ $t('library.tracksCount') }}</p>
         </div>
         <div class="flex items-center gap-2">
           <button
@@ -125,7 +128,7 @@ function playAll() {
             :disabled="selectedPlaylist.tracks.length === 0"
             @click="playAll"
           >
-            <Play :size="12" /> Odtwarzaj wszystko
+            <Play :size="12" /> {{ $t('library.playAll') }}
           </button>
           <button
             class="p-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-bg-elevated transition-colors"

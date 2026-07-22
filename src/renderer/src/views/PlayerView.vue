@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore } from '@renderer/stores/ui';
@@ -11,6 +12,7 @@ import { usePiP } from '@renderer/composables/usePiP';
 import { useVideoPlayer } from '@renderer/composables/useVideoPlayer';
 import { usePlayerKeyboard } from '@renderer/composables/usePlayerKeyboard';
 
+const { t } = useI18n();
 const player = usePlayerStore();
 const settings = useSettingsStore();
 const ui = useUIStore();
@@ -132,7 +134,7 @@ function handleClick() {
     if (player.pipActive) return;
 
     player.togglePlay();
-    showToast(player.isPlaying ? 'Odtwarzanie' : 'Wstrzymano', 1000);
+    showToast(player.isPlaying ? t('player.playing') : t('player.paused'), 1000);
     clickTimer = null;
   }, 250);
 }
@@ -274,12 +276,12 @@ onUnmounted(() => {
     </div>
 
     <div v-else class="relative flex-1 flex items-center justify-center overflow-hidden">
-      <p class="text-lg text-white/60">Brak wideo do odtworzenia</p>
+      <p class="text-lg text-white/60">{{ $t('playerView.noVideo') }}</p>
       <button
         class="mt-4 px-4 py-2 rounded-xl bg-accent-base text-white text-sm"
         @click="router.push('/explorer')"
       >
-        Przegladaj pliki
+        {{ $t('playerView.browseFiles') }}
       </button>
     </div>
 

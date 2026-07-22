@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useLibraryStore } from '@renderer/stores/library';
 import { useExplorerStore } from '@renderer/stores/explorer';
 import { useYouTubeStore } from '@renderer/stores/youtube';
+
+const { t } = useI18n();
 
 const route = useRoute();
 const player = usePlayerStore();
@@ -15,13 +18,13 @@ const youtube = useYouTubeStore();
 const viewInfo = computed(() => {
   switch (route.name) {
     case 'library':
-      return `${library.totalCount} utworów`;
+      return `${library.totalCount} ${t('status.tracks')}`;
     case 'explorer':
-      return `${explorer.sortedFiles.length} elementów`;
+      return `${explorer.sortedFiles.length} ${t('status.items')}`;
     case 'youtube':
-      return youtube.searchResults.length ? `${youtube.searchResults.length} wyników` : '';
+      return youtube.searchResults.length ? `${youtube.searchResults.length} ${t('status.results')}` : '';
     case 'downloads':
-      return youtube.downloads.length ? `${youtube.downloads.length} pobrań` : '';
+      return youtube.downloads.length ? `${youtube.downloads.length} ${t('status.downloads')}` : '';
     default:
       return '';
   }
@@ -51,12 +54,12 @@ const activeDownload = computed(() => activeDownloads.value[0] || null);
           · {{ player.currentTrack.metadata.sampleRate / 1000 }}kHz</template
         >
       </span>
-      <span v-else>Nie załadowano mediów</span>
+      <span v-else>{{ $t('status.noMedia') }}</span>
     </div>
     <div class="h-3 w-px bg-border-default" />
     <span v-if="viewInfo">{{ viewInfo }}</span>
-    <span>{{ library.totalCount }} utworów</span>
-    <span>{{ library.playlists.length }} playlist</span>
+    <span>{{ library.totalCount }} {{ $t('status.tracks') }}</span>
+    <span>{{ library.playlists.length }} {{ $t('status.playlists') }}</span>
     <div class="flex-1" />
     <span v-if="activeDownload" class="flex items-center gap-1.5">
       <span class="w-1.5 h-1.5 rounded-full bg-accent-base animate-pulse" />

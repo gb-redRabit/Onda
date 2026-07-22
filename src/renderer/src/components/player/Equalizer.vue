@@ -17,15 +17,19 @@ const presets: Record<string, Record<number, number>> = {
   vocal: { 0: -2, 1: -3, 2: -3, 3: 1, 4: 4, 5: 4, 6: 3, 7: 1, 8: 0, 9: -2 }
 };
 
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
+
 const presetLabels: Record<string, string> = {
   flat: 'Flat',
   pop: 'Pop',
   rock: 'Rock',
   jazz: 'Jazz',
-  classical: 'Klasyka',
-  bassBoost: 'Bas',
-  trebleBoost: 'Wysokie',
-  vocal: 'Wokal'
+  classical: t('equalizer.classical'),
+  bassBoost: t('equalizer.bass'),
+  trebleBoost: t('equalizer.treble'),
+  vocal: t('equalizer.vocal')
 };
 
 const bandLabels = ['32', '64', '125', '250', '500', '1K', '2K', '4K', '8K', '16K'];
@@ -63,7 +67,7 @@ function onSliderDrag(e: MouseEvent, index: number) {
 <template>
   <div class="bg-bg-elevated border border-border-default rounded-2xl p-4 w-95">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-sm font-semibold">Equalizer</h3>
+      <h3 class="text-sm font-semibold">{{ $t('equalizer.title') }}</h3>
       <button
         class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover hover:text-fg-base transition-colors"
         title="Reset"

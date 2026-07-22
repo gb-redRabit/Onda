@@ -4,6 +4,8 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { X, Music2, GripVertical, Trash2 } from '@lucide/vue';
 import { formatDuration } from '@renderer/utils/formatters';
 import type { MediaFile } from '@renderer/types/media';
+import MediaCover from '@renderer/components/MediaCover.vue';
+import TrackInfo from '@renderer/components/TrackInfo.vue';
 
 const player = usePlayerStore();
 const dragOverIndex = ref<number | null>(null);
@@ -131,7 +133,7 @@ function onFileDrop(e: DragEvent) {
   >
     <div class="flex items-center justify-between px-4 py-3 border-b border-border-default">
       <h3 class="text-sm font-semibold flex items-center gap-2">
-        <span>Kolejka</span>
+        <span>{{ $t('queue.title') }}</span>
         <span class="text-[11px] text-fg-faint font-normal">({{ player.queueLength }})</span>
       </h3>
       <div class="flex items-center gap-1">
@@ -140,7 +142,7 @@ function onFileDrop(e: DragEvent) {
           class="text-[11px] text-fg-faint hover:text-red-base transition-colors px-2 py-1"
           @click="player.clearQueue"
         >
-          Wyczyść
+          {{ $t('queue.clear') }}
         </button>
         <button
           class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover hover:text-fg-base transition-colors"
@@ -154,35 +156,13 @@ function onFileDrop(e: DragEvent) {
     <!-- now playing -->
     <div v-if="player.currentTrack" class="px-4 py-3 border-b border-border-default bg-bg-elevated">
       <div class="text-[10px] text-accent-base font-medium uppercase tracking-wider mb-2">
-        Teraz odtwarzane
+        {{ $t('queue.nowPlaying') }}
       </div>
       <div class="flex items-center gap-3">
-        <div
-          class="w-10 h-10 rounded-lg bg-accent-ghost flex items-center justify-center shrink-0 overflow-hidden"
-        >
-          <video
-            v-if="player.getCover(player.currentTrack.path).type === 'video'"
-            :src="'file:///' + player.getCover(player.currentTrack.path).data"
-            class="w-full h-full object-cover"
-            muted
-            loop
-            autoplay
-          />
-          <img
-            v-else-if="player.getCover(player.currentTrack.path).type === 'image'"
-            :src="player.getCover(player.currentTrack.path).data || ''"
-            class="w-full h-full object-cover"
-          />
-          <Music2 v-else :size="16" class="text-accent-base" />
+        <div class="w-10 h-10 rounded-lg bg-accent-ghost flex items-center justify-center shrink-0 overflow-hidden">
+          <MediaCover :path="player.currentTrack.path" :size="16" :autoplay="true" fallback="music" />
         </div>
-        <div class="min-w-0 flex-1">
-          <div class="text-sm font-medium truncate">
-            {{ player.currentTrack.metadata?.title || player.currentTrack.name }}
-          </div>
-          <div class="text-xs text-fg-faint truncate">
-            {{ player.currentTrack.metadata?.artist || 'Nieznany' }}
-          </div>
-        </div>
+        <TrackInfo :track="player.currentTrack" class="min-w-0 flex-1" titleSize="text-sm" />
         <span class="text-xs text-fg-faint font-mono shrink-0">{{
           formatDuration(player.currentTrack.duration || 0)
         }}</span>
@@ -195,8 +175,8 @@ function onFileDrop(e: DragEvent) {
       class="flex-1 flex flex-col items-center justify-center py-12 text-fg-faint"
     >
       <Music2 :size="32" class="mb-2 opacity-30" />
-      <p class="text-xs">Kolejka jest pusta</p>
-      <p class="text-[10px] text-fg-faint/50 mt-1">Upuść pliki tutaj aby dodać</p>
+      <p class="text-xs">{{ $t('queue.empty') }}</p>
+      <p class="text-[10px] text-fg-faint/50 mt-1">{{ $t('queue.dropHint') }}</p>
     </div>
 
     <!-- queue list with drag & drop -->
@@ -218,27 +198,10 @@ function onFileDrop(e: DragEvent) {
             :size="12"
             class="text-fg-faint/40 shrink-0 opacity-0 group-hover:opacity-100 cursor-grab"
           />
-          <div
-            class="w-8 h-8 rounded-md bg-bg-overlay flex items-center justify-center shrink-0 overflow-hidden"
-          >
-            <video
-              v-if="player.getCover(track.path).type === 'video'"
-              :src="'file:///' + player.getCover(track.path).data"
-              class="w-full h-full object-cover"
-              muted
-              loop
-            />
-            <img
-              v-else-if="player.getCover(track.path).type === 'image'"
-              :src="player.getCover(track.path).data || ''"
-              class="w-full h-full object-cover"
-            />
-            <Music2 v-else :size="12" class="text-fg-faint" />
+          <div class="w-8 h-8 rounded-md bg-bg-overlay flex items-center justify-center shrink-0 overflow-hidden">
+            <MediaCover :path="track.path" :size="12" fallback="music" />
           </div>
-          <div class="min-w-0 flex-1">
-            <div class="text-sm truncate">{{ track.metadata?.title || track.name }}</div>
-            <div class="text-[11px] text-fg-faint truncate">{{ track.metadata?.artist || '' }}</div>
-          </div>
+          <TrackInfo :track="track" class="min-w-0 flex-1" titleSize="text-sm" artistSize="text-[11px]" />
           <span class="text-[11px] text-fg-faint font-mono shrink-0">{{
             formatDuration(track.duration || 0)
           }}</span>
@@ -258,7 +221,7 @@ function onFileDrop(e: DragEvent) {
       class="border-t border-border-default max-h-40 overflow-auto"
     >
       <div class="px-4 py-2 text-[10px] text-fg-faint font-medium uppercase tracking-wider">
-        Historia
+        {{ $t('queue.history') }}
       </div>
       <div
         v-for="(track, i) in player.history.slice(0, 10)"
@@ -266,22 +229,8 @@ function onFileDrop(e: DragEvent) {
         class="flex items-center gap-2 px-4 py-1.5 hover:bg-bg-hover transition-colors cursor-pointer opacity-60"
         @click="player.playFromHistory(i)"
       >
-        <div
-          class="w-6 h-6 rounded bg-bg-overlay flex items-center justify-center shrink-0 overflow-hidden"
-        >
-          <video
-            v-if="player.getCover(track.path).type === 'video'"
-            :src="'file:///' + player.getCover(track.path).data"
-            class="w-full h-full object-cover"
-            muted
-            loop
-          />
-          <img
-            v-else-if="player.getCover(track.path).type === 'image'"
-            :src="player.getCover(track.path).data || ''"
-            class="w-full h-full object-cover"
-          />
-          <Music2 v-else :size="10" class="text-fg-faint" />
+        <div class="w-6 h-6 rounded bg-bg-overlay flex items-center justify-center shrink-0 overflow-hidden">
+          <MediaCover :path="track.path" :size="10" fallback="music" />
         </div>
         <span class="text-xs truncate flex-1">{{ track.metadata?.title || track.name }}</span>
         <span class="text-[10px] text-fg-faint">{{ formatDuration(track.duration || 0) }}</span>

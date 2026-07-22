@@ -2,9 +2,11 @@
 import { computed } from 'vue';
 import { useLibraryStore } from '@renderer/stores/library';
 import { useUIStore } from '@renderer/stores/ui';
+import { useI18n } from 'vue-i18n';
 
 const library = useLibraryStore();
 const ui = useUIStore();
+const { t } = useI18n();
 
 async function addFolder() {
   try {
@@ -14,9 +16,9 @@ async function addFolder() {
       await library.addFolder(fp);
     }
     await library.scanFolders();
-    ui.notify('success', 'Dodano folder do biblioteki');
+    ui.notify('success', t('settings.libAddedNotif'));
   } catch (err) {
-    ui.notify('error', 'Błąd dodawania folderu', (err as Error).message || String(err));
+    ui.notify('error', t('settings.libAddError'), (err as Error).message || String(err));
   }
 }
 
@@ -41,9 +43,9 @@ function folderIcon(type: string): string {
 
 <template>
   <div class="space-y-6 max-w-2xl">
-    <h2 class="text-lg font-bold">Foldery biblioteki</h2>
+    <h2 class="text-lg font-bold">{{ $t('settings.libTitle') }}</h2>
     <p class="text-xs text-fg-faint mb-4">
-      Dodaj foldery z mediami do biblioteki. Onda przeskanuje je i skategoryzuje jako audio/wideo.
+      {{ $t('settings.libDesc') }}
     </p>
 
     <div class="flex items-center gap-3">
@@ -51,19 +53,19 @@ function folderIcon(type: string): string {
         class="px-4 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm font-medium hover:bg-bg-hover transition-colors"
         @click="addFolder"
       >
-        Dodaj folder
+        {{ $t('settings.libAddFolder') }}
       </button>
       <button
         class="px-4 py-2 rounded-xl bg-accent-base text-white text-sm font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
         :disabled="library.isScanning || library.folders.length === 0"
         @click="scan"
       >
-        {{ library.isScanning ? 'Skanowanie...' : 'Skanuj teraz' }}
+        {{ library.isScanning ? $t('settings.libScanning') : $t('settings.libScanNow') }}
       </button>
     </div>
 
     <div v-if="library.folders.length === 0" class="text-sm text-fg-faint italic py-4">
-      Brak dodanych folderów. Kliknij "Dodaj folder", aby rozpocząć.
+      {{ $t('settings.libEmpty') }}
     </div>
 
     <div v-else class="space-y-2">
@@ -77,15 +79,15 @@ function folderIcon(type: string): string {
           <div class="min-w-0">
             <div class="text-sm font-medium truncate">{{ entry.path }}</div>
             <div class="text-xs text-fg-faint mt-0.5">
-              Typ:
+              {{ $t('settings.libType') }}
               {{
                 entry.type === 'audio'
-                  ? 'Audio'
+                  ? $t('settings.libAudio')
                   : entry.type === 'video'
-                    ? 'Video'
+                    ? $t('settings.libVideo')
                     : entry.type === 'mixed'
-                      ? 'Mieszany'
-                      : 'Nieznany'
+                      ? $t('settings.libMixed')
+                      : $t('settings.libUnknown')
               }}
             </div>
           </div>
@@ -94,7 +96,7 @@ function folderIcon(type: string): string {
           class="px-2 py-1 text-xs text-red-400 hover:text-red-300 transition-colors shrink-0"
           @click="library.removeFolder(entry.path)"
         >
-          Usuń
+          {{ $t('settings.libRemove') }}
         </button>
       </div>
     </div>
@@ -104,8 +106,8 @@ function folderIcon(type: string): string {
     </div>
 
     <div v-if="library.totalCount > 0" class="text-xs text-fg-faint">
-      Łącznie: {{ library.totalCount }} plików ({{ library.audioCount }} audio,
-      {{ library.videoCount }} video)
+      {{ $t('settings.libTotal') }} {{ library.totalCount }} {{ $t('library.files') }} ({{ library.audioCount }} {{ $t('settings.libAudio').toLowerCase() }},
+      {{ library.videoCount }} {{ $t('settings.libVideo').toLowerCase() }})
     </div>
   </div>
 </template>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import {
   Play,
   Pause,
@@ -35,6 +36,7 @@ const emit = defineEmits<{
   skip: [seconds: number];
 }>();
 
+const { t } = useI18n();
 const player = usePlayerStore();
 const settings = useSettingsStore();
 const showFilters = ref(false);
@@ -44,15 +46,15 @@ const progressPct = computed(() =>
 );
 
 const videoFilters = [
-  { id: 'none', label: 'Brak', css: 'none' },
-  { id: 'grayscale', label: 'Czarno-biale', css: 'grayscale(100%)' },
-  { id: 'sepia', label: 'Sepia', css: 'sepia(80%)' },
-  { id: 'contrast', label: 'Wysoki kontrast', css: 'contrast(150%)' },
-  { id: 'brightness', label: 'Jasnosc +50%', css: 'brightness(150%)' },
-  { id: 'saturate', label: 'Nasycenie +200%', css: 'saturate(200%)' },
-  { id: 'invert', label: 'Inwersja', css: 'invert(100%)' },
-  { id: 'blur', label: 'Rozmycie 2px', css: 'blur(2px)' },
-  { id: 'hue-rotate', label: 'Obrót kolorow 90°', css: 'hue-rotate(90deg)' }
+  { id: 'none', label: () => t('videoFilters.none'), css: 'none' },
+  { id: 'grayscale', label: () => t('videoFilters.grayscale'), css: 'grayscale(100%)' },
+  { id: 'sepia', label: () => t('videoFilters.sepia'), css: 'sepia(80%)' },
+  { id: 'contrast', label: () => t('videoFilters.highContrast'), css: 'contrast(150%)' },
+  { id: 'brightness', label: () => t('videoFilters.brightness'), css: 'brightness(150%)' },
+  { id: 'saturate', label: () => t('videoFilters.saturation'), css: 'saturate(200%)' },
+  { id: 'invert', label: () => t('videoFilters.invert'), css: 'invert(100%)' },
+  { id: 'blur', label: () => t('videoFilters.blur'), css: 'blur(2px)' },
+  { id: 'hue-rotate', label: () => t('videoFilters.hueRotate'), css: 'hue-rotate(90deg)' }
 ];
 
 const speedSteps = [0.2, 0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3];
@@ -94,7 +96,7 @@ function cycleSpeed(direction: number) {
   >
     <!-- seek bar -->
     <div
-      class="w-full h-1.5 bg-white/10 rounded-full cursor-pointer hover:h-2.5 transition-all mb-4"
+      class="w-full h-1.5 bg-white/10 rounded-full cursor-pointer hover:h-2.5 transition-[height] mb-4"
       @click="onSeek"
     >
       <div
@@ -120,7 +122,7 @@ function cycleSpeed(direction: number) {
         <button
           class="text-white/40 hover:text-white/80 transition-colors"
           :class="{ '!text-red-base': player.isFavorite(player.currentTrack?.path || '') }"
-          :title="player.isFavorite(player.currentTrack?.path || '') ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'"
+          :title="player.isFavorite(player.currentTrack?.path || '') ? $t('common.removeFav') : $t('common.addFav')"
           @click="player.toggleFavorite(player.currentTrack?.path || '')"
         >
           <Heart :size="16" :fill="player.isFavorite(player.currentTrack?.path || '') ? 'currentColor' : 'none'" />
@@ -220,7 +222,7 @@ function cycleSpeed(direction: number) {
               <div
                 class="px-3 py-1.5 text-[10px] text-white/30 font-medium uppercase tracking-wider"
               >
-                Filtry wideo
+                {{ $t('videoFilters.title') }}
               </div>
               <button
                 v-for="f in videoFilters"
@@ -237,7 +239,7 @@ function cycleSpeed(direction: number) {
                       : 'border-white/20'
                   "
                 />
-                {{ f.label }}
+                {{ f.label() }}
               </button>
             </div>
           </Transition>
@@ -265,7 +267,7 @@ function cycleSpeed(direction: number) {
 
         <!-- volume bar — accent -->
         <div
-          class="w-20 h-1 bg-white/10 rounded-full cursor-pointer hover:h-1.5 transition-all"
+          class="w-20 h-1 bg-white/10 rounded-full cursor-pointer hover:h-1.5 transition-[height]"
           @click="onVolumeClick"
         >
           <div

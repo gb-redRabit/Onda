@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { Heart } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 
 defineProps<{ titleSize?: string; artistSize?: string }>();
 
+const { t } = useI18n();
 const player = usePlayerStore();
 
 const title = computed(
-  () => player.currentTrack?.metadata?.title || player.currentTrack?.name || 'Brak utworu'
+  () => player.currentTrack?.metadata?.title || player.currentTrack?.name || t('playerBar.noTrack')
 );
 const artist = computed(() => player.currentTrack?.metadata?.artist || '');
 const album = computed(() => player.currentTrack?.metadata?.album || '');

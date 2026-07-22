@@ -7,8 +7,6 @@ export class ExplorerModule implements AppModule {
   private _active = false;
   private cleanupListeners: (() => void)[] = [];
 
-  init(): void {}
-
   activate(_context?: unknown): void {
     this._active = true;
     const explorer = useExplorerStore();

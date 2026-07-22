@@ -3,7 +3,7 @@ export interface AppModule {
   name: string;
   dependencies?: string[];
   priority?: number;
-  init(): void;
+  init?(): void;
   activate(context?: unknown): void;
   deactivate(): Promise<void>;
   destroy(): Promise<void>;
@@ -35,7 +35,7 @@ class ModuleManager {
           }
         }
       }
-      module.init();
+      module.init?.();
     }
   }
 

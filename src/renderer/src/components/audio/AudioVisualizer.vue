@@ -120,7 +120,7 @@ defineExpose({ style, cycleStyle });
       v-if="!audio.isPlaying.value"
       class="absolute inset-0 flex items-center justify-center bg-black/20"
     >
-      <span class="text-fg-faint text-xs">Kliknij aby odtworzyć</span>
+      <span class="text-fg-faint text-xs">{{ $t('audioView.vizMode') }}</span>
     </div>
   </div>
 </template>

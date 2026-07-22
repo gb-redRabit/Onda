@@ -6,8 +6,6 @@ export class LibraryModule implements AppModule {
   name = 'Library';
   private _active = false;
 
-  init(): void {}
-
   async activate(_context?: unknown): Promise<void> {
     this._active = true;
     const library = useLibraryStore();

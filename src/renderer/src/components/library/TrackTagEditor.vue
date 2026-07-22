@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { MediaFile } from '@renderer/types/media';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useUIStore } from '@renderer/stores/ui';
-import { X, Image, Upload, Music2 } from '@lucide/vue';
+import { X, Upload } from '@lucide/vue';
+import MediaCover from '@renderer/components/MediaCover.vue';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   track: MediaFile | null;
@@ -26,6 +30,10 @@ const name = ref('');
 const saving = ref(false);
 const uploadingCover = ref(false);
 const coverUrl = ref<string | null>(null);
+const coverObj = computed<{ type: string | null; data: string | null } | undefined>(() => {
+  if (!coverUrl.value) return undefined;
+  return coverUrl.value.startsWith('file:///') ? { type: 'video', data: coverUrl.value.replace('file:///', '') } : { type: 'image', data: coverUrl.value };
+});
 
 watch(
   () => props.track,
@@ -71,14 +79,14 @@ async function pickCover() {
   try {
     const r = await window.api?.writeCover(props.track.path, result.filePaths[0]);
     if (r?.success) {
-      ui.notify('success', 'Okładka zapisana!');
+      ui.notify('success', t('tags.coverSaved'));
       player.invalidateCoverCache(props.track.path);
       loadCover();
     } else {
-      ui.notify('error', 'Błąd zapisu okładki', r?.error);
+      ui.notify('error', t('tags.coverError'), r?.error);
     }
   } catch (e) {
-    ui.notify('error', 'Błąd zapisu okładki', String(e));
+    ui.notify('error', t('tags.coverError'), String(e));
   }
   uploadingCover.value = false;
 }
@@ -91,7 +99,7 @@ async function save() {
   if (hasRename) {
     const r = await window.api?.renameFile(props.track.path, name.value);
     if (!r?.success) {
-      ui.notify('error', 'Błąd zmiany nazwy', r?.error);
+      ui.notify('error', t('tags.renameError'), r?.error);
       saving.value = false;
       return;
     }
@@ -118,10 +126,10 @@ async function save() {
       path: newPath
     });
     saving.value = false;
-    ui.notify('success', 'Zapisano!');
+    ui.notify('success', t('tags.saved'));
     setTimeout(() => emit('close'), 600);
   } else {
-    ui.notify('error', 'Błąd zapisu tagów', result?.error);
+    ui.notify('error', t('tags.saveError'), result?.error);
     saving.value = false;
   }
 }
@@ -136,7 +144,7 @@ async function save() {
     >
       <div class="w-full max-w-lg mx-4 rounded-2xl bg-bg-base border border-border-default shadow-xl overflow-hidden">
         <div class="flex items-center justify-between px-5 py-4 border-b border-border-default">
-          <h2 class="text-base font-bold">Edytuj tagi</h2>
+          <h2 class="text-base font-bold">{{ $t('tags.title') }}</h2>
           <button class="p-1.5 rounded-lg hover:bg-bg-hover transition-colors text-fg-faint" @click="emit('close')">
             <X :size="16" />
           </button>
@@ -145,56 +153,55 @@ async function save() {
         <div class="flex gap-5 p-5">
           <div class="shrink-0 flex flex-col items-center gap-2">
             <div class="w-28 h-28 rounded-xl bg-bg-elevated border border-border-default overflow-hidden flex items-center justify-center">
-              <img v-if="coverUrl" :src="coverUrl" class="w-full h-full object-cover" />
-              <Music2 v-else :size="32" class="text-fg-faint/40" />
+              <MediaCover :cover="coverObj" :size="32" fallback="music" />
             </div>
             <button
               class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent-ghost text-accent-base hover:bg-accent-base hover:text-white transition-colors"
               :disabled="uploadingCover"
               @click="pickCover"
             >
-              <Upload :size="12" /> {{ uploadingCover ? '...' : 'Okładka' }}
+              <Upload :size="12" /> {{ uploadingCover ? '...' : $t('tags.cover') }}
             </button>
           </div>
 
           <div class="flex-1 space-y-2.5 min-w-0">
             <label class="block">
-              <span class="text-xs font-medium text-fg-muted">Nazwa pliku</span>
+              <span class="text-xs font-medium text-fg-muted">{{ $t('tags.filename') }}</span>
               <input v-model="name" class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none" />
             </label>
             <label class="block">
-              <span class="text-xs font-medium text-fg-muted">Tytuł</span>
+              <span class="text-xs font-medium text-fg-muted">{{ $t('tags.titleField') }}</span>
               <input v-model="title" class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none" />
             </label>
             <label class="block">
-              <span class="text-xs font-medium text-fg-muted">Artysta</span>
+              <span class="text-xs font-medium text-fg-muted">{{ $t('tags.artist') }}</span>
               <input v-model="artist" class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none" />
             </label>
             <label class="block">
-              <span class="text-xs font-medium text-fg-muted">Album</span>
+              <span class="text-xs font-medium text-fg-muted">{{ $t('tags.album') }}</span>
               <input v-model="album" class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none" />
             </label>
             <div class="grid grid-cols-3 gap-2.5">
               <label class="block">
-                <span class="text-xs font-medium text-fg-muted">Rok</span>
+                <span class="text-xs font-medium text-fg-muted">{{ $t('tags.year') }}</span>
                 <input v-model="year" class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none" />
               </label>
               <label class="block col-span-2">
-                <span class="text-xs font-medium text-fg-muted">Gatunek</span>
+                <span class="text-xs font-medium text-fg-muted">{{ $t('tags.genre') }}</span>
                 <input v-model="genre" class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none" />
               </label>
             </div>
             <label class="block">
-              <span class="text-xs font-medium text-fg-muted">Numer utworu</span>
+              <span class="text-xs font-medium text-fg-muted">{{ $t('tags.trackNo') }}</span>
               <input v-model="trackNumber" class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none" />
             </label>
           </div>
         </div>
 
         <div class="flex justify-end gap-2 px-5 py-4 border-t border-border-default">
-          <button class="px-4 py-2 rounded-xl text-sm font-medium text-fg-muted hover:bg-bg-hover transition-colors" @click="emit('close')">Anuluj</button>
+          <button class="px-4 py-2 rounded-xl text-sm font-medium text-fg-muted hover:bg-bg-hover transition-colors" @click="emit('close')">{{ $t('common.cancel') }}</button>
           <button class="px-4 py-2 rounded-xl text-sm font-medium bg-accent-base text-white hover:bg-accent-hover transition-colors disabled:opacity-50" :disabled="saving || uploadingCover" @click="save">
-            {{ saving ? 'Zapisywanie...' : 'Zapisz' }}
+            {{ saving ? $t('tags.saving') : $t('common.save') }}
           </button>
         </div>
       </div>

@@ -69,10 +69,10 @@ function playDir(fp: string) {
         <Folder :size="12" class="shrink-0" />
         <span>{{ sub }}</span>
         <span class="text-fg-faint ml-auto">{{ getTracksInDir(dir + '\\' + sub).length }}</span>
-        <span class="text-[10px] text-fg-faint/40 ml-0.5">pl.</span>
+        <span class="text-[10px] text-fg-faint/40 ml-0.5">{{ $t('library.files') }}</span>
         <span
           class="ml-1 p-0.5 rounded text-fg-faint/50 hover:text-accent-base transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
-          title="Odtwarzaj"
+          :title="$t('folders.play')"
           @click.stop="playDir(dir + '\\' + sub)"
         >
           <svg viewBox="0 0 24 24" fill="currentColor" width="10" height="10">

@@ -39,6 +39,12 @@ export default defineConfig({
         input: {
           index: resolve('src/renderer/index.html'),
           pip: resolve('src/renderer/pip.html')
+        },
+        output: {
+          manualChunks: {
+            'vendor-vue': ['vue', 'vue-router', 'pinia', 'vue-i18n'],
+            'vendor-ui': ['@lucide/vue', '@tanstack/vue-virtual']
+          }
         }
       }
     },

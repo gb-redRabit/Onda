@@ -6,8 +6,6 @@ export class YouTubeModule implements AppModule {
   name = 'YouTube';
   private _active = false;
 
-  init(): void {}
-
   activate(_context?: unknown): void {
     this._active = true;
   }

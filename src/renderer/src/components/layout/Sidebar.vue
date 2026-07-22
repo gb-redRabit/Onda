@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import {
   Home,
   Disc3,
@@ -23,6 +24,7 @@ import { useUIStore } from '@renderer/stores/ui';
 
 const router = useRouter();
 const route = useRoute();
+const { t } = useI18n();
 const player = usePlayerStore();
 const library = useLibraryStore();
 const collapsed = ref(false);
@@ -34,13 +36,13 @@ const isCreatingPlaylist = ref(false);
 const dragOverPlaylistId = ref<string | null>(null);
 const ui = useUIStore();
 
-const navItems = [
-  { label: 'Strona główna', icon: Home, route: '/' },
-  { label: 'Biblioteka', icon: Disc3, route: '/library' },
-  { label: 'Eksplorator', icon: FolderOpen, route: '/explorer' },
-  { label: 'YouTube', icon: Tv2, route: '/youtube' },
-  { label: 'Pobrane', icon: Download, route: '/downloads' }
-];
+const navItems = computed(() => [
+  { label: t('nav.home'), icon: Home, route: '/' },
+  { label: t('nav.library'), icon: Disc3, route: '/library' },
+  { label: t('nav.explorer'), icon: FolderOpen, route: '/explorer' },
+  { label: t('nav.youtube'), icon: Tv2, route: '/youtube' },
+  { label: t('nav.downloads'), icon: Download, route: '/downloads' }
+]);
 
 function onResizeStart(e: MouseEvent) {
   isResizing.value = true;
@@ -81,7 +83,7 @@ function onPlaylistDrop(e: DragEvent, playlistId: string) {
       if (track) library.addToPlaylist(playlistId, track);
     });
     dragOverPlaylistId.value = null;
-    ui.notify('success', `Dodano ${paths.length} utw. do playlisty "${playlist.name}"`);
+    ui.notify('success', t('common.addToPlaylist'));
   } catch {
     // not our data format
   }
@@ -129,7 +131,7 @@ function playPlaylist(playlistId: string) {
             >
               <ChevronDown v-if="playlistsExpanded" :size="12" />
               <ChevronRightSmall v-else :size="12" />
-              <span>Playlisty</span>
+              <span>{{ $t('library.playlists') }}</span>
               <span class="ml-auto text-fg-faint/60">{{ library.playlists.length }}</span>
             </button>
 
@@ -159,7 +161,7 @@ function playPlaylist(playlistId: string) {
               <div v-if="isCreatingPlaylist" class="px-2 py-1">
                 <input
                   v-model="newPlaylistName"
-                  placeholder="Nazwa playlisty..."
+                  :placeholder="$t('library.playlistName')"
                   class="w-full px-2 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-xs text-fg-base placeholder:text-fg-faint/50 focus:outline-none focus:ring-1 focus:ring-accent-base"
                   autofocus
                   @keydown.enter="createPlaylist"
@@ -172,7 +174,7 @@ function playPlaylist(playlistId: string) {
                 @click="isCreatingPlaylist = true"
               >
                 <Plus :size="13" class="shrink-0" />
-                <span>Nowa playlista</span>
+                <span>{{ $t('library.newPlaylist') }}</span>
               </button>
             </div>
           </div>
@@ -187,7 +189,7 @@ function playPlaylist(playlistId: string) {
           class="flex items-center gap-2 text-[11px] text-fg-faint mb-2 font-medium uppercase tracking-wider"
         >
           <ListMusic :size="12" />
-          <span>Kolejka</span>
+          <span>{{ $t('nav.queue') }}</span>
           <span class="ml-auto text-fg-muted">{{ player.queueLength }}</span>
         </div>
         <div class="space-y-0.5 max-h-28 overflow-auto">
@@ -196,7 +198,6 @@ function playPlaylist(playlistId: string) {
             :key="i"
             class="flex items-center gap-2 text-xs text-fg-muted truncate px-2 py-1.5 rounded-lg hover:bg-bg-hover hover:text-fg-base transition-colors"
           >
-            <!-- TODO: extract file extension from track.name to change icon based on audio/video type -->
             <Music2 :size="11" class="shrink-0 text-accent-base" />
             <span class="truncate">{{ track.metadata?.title || track.name }}</span>
           </div>
@@ -214,7 +215,7 @@ function playPlaylist(playlistId: string) {
           @click="router.push('/settings')"
         >
           <Settings :size="18" class="shrink-0" />
-          <span v-if="!collapsed">Ustawienia</span>
+          <span v-if="!collapsed">{{ $t('nav.settings') }}</span>
         </button>
         <button
           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-fg-faint hover:bg-bg-hover hover:text-fg-muted transition-colors"
@@ -222,7 +223,7 @@ function playPlaylist(playlistId: string) {
         >
           <ChevronRight v-if="collapsed" :size="18" class="shrink-0" />
           <ChevronLeft v-else :size="18" class="shrink-0" />
-          <span v-if="!collapsed">Zwiń</span>
+          <span v-if="!collapsed">{{ $t('nav.collapse') }}</span>
         </button>
       </div>
     </aside>

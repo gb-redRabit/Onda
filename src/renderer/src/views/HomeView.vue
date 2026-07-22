@@ -29,38 +29,38 @@ async function openFolder() {
 
 const actions = [
   {
-    label: 'Otwórz plik',
-    desc: 'Przeglądaj lokalne multimedia',
+    labelKey: 'home.openFile',
+    descKey: 'home.browseLocalMedia',
     icon: FolderOpen,
     route: openFile
   },
   {
-    label: 'Otwórz folder',
-    desc: 'Wczytaj multimedia z folderu',
+    labelKey: 'home.openFolder',
+    descKey: 'home.loadMediaFromFolder',
     icon: FolderUp,
     route: openFolder
   },
   {
-    label: 'Biblioteka',
-    desc: 'Twoja kolekcja muzyki',
+    labelKey: 'library.title',
+    descKey: 'home.yourMusicCollection',
     icon: Disc3,
     route: () => router.push('/library')
   },
-  { label: 'YouTube', desc: 'Szukaj i pobieraj', icon: Tv2, route: () => router.push('/youtube') }
+  { labelKey: 'youtube.title', descKey: 'home.searchAndDownload', icon: Tv2, route: () => router.push('/youtube') }
 ];
 </script>
 
 <template>
   <div class="p-6 max-w-5xl mx-auto">
     <div class="mb-8">
-      <h1 class="text-3xl font-bold mb-1">Witaj ponownie</h1>
-      <p class="text-fg-muted text-sm">Czego chcesz słuchać?</p>
+      <h1 class="text-3xl font-bold mb-1">{{ $t('home.welcome') }}</h1>
+      <p class="text-fg-muted text-sm">{{ $t('home.subtitle') }}</p>
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <button
         v-for="a in actions"
-        :key="a.label"
+        :key="a.labelKey"
         class="flex items-center gap-4 p-5 rounded-2xl bg-bg-elevated border border-border-default hover:border-border-subtle hover:bg-bg-hover transition-all group text-left"
         @click="a.route()"
       >
@@ -68,8 +68,8 @@ const actions = [
           <component :is="a.icon" :size="22" class="text-accent-base" />
         </div>
         <div class="flex-1">
-          <div class="text-sm font-semibold">{{ a.label }}</div>
-          <div class="text-xs text-fg-faint mt-0.5">{{ a.desc }}</div>
+          <div class="text-sm font-semibold">{{ $t(a.labelKey) }}</div>
+          <div class="text-xs text-fg-faint mt-0.5">{{ $t(a.descKey) }}</div>
         </div>
         <ArrowRight
           :size="16"
@@ -92,16 +92,16 @@ const actions = [
       <template v-else>
         <div
           v-for="s in [
-            { v: library.totalCount, l: 'Łącznie utworów', c: 'text-fg-base' },
-            { v: library.audioCount, l: 'Pliki audio', c: 'text-accent-base' },
-            { v: library.videoCount, l: 'Pliki wideo', c: 'text-green-base' },
-            { v: library.playlists.length, l: 'Playlisty', c: 'text-amber-base' }
+            { v: library.totalCount, k: 'home.totalTracks', c: 'text-fg-base' },
+            { v: library.audioCount, k: 'home.audioFiles', c: 'text-accent-base' },
+            { v: library.videoCount, k: 'home.videoFiles', c: 'text-green-base' },
+            { v: library.playlists.length, k: 'library.playlists', c: 'text-amber-base' }
           ]"
-          :key="s.l"
+          :key="s.k"
           class="p-4 rounded-xl bg-bg-elevated border border-border-default"
         >
           <div :class="['text-3xl font-bold', s.c]">{{ s.v }}</div>
-          <div class="text-xs text-fg-faint mt-1">{{ s.l }}</div>
+          <div class="text-xs text-fg-faint mt-1">{{ $t(s.k) }}</div>
         </div>
       </template>
     </div>
@@ -109,13 +109,13 @@ const actions = [
     <div class="mb-8">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-base font-semibold flex items-center gap-2">
-          <Clock :size="16" class="text-accent-base" /> Ostatnio odtwarzane
+          <Clock :size="16" class="text-accent-base" /> {{ $t('home.recentlyPlayed') }}
         </h2>
         <button
           class="text-xs text-accent-base hover:text-accent-hover font-medium transition-colors"
           @click="router.push('/library')"
         >
-          Pokaż wszystko
+          {{ $t('home.showAll') }}
         </button>
       </div>
       <div
@@ -123,8 +123,8 @@ const actions = [
         class="text-center py-14 rounded-2xl bg-bg-elevated border border-border-default"
       >
         <Music2 :size="40" class="mx-auto mb-3 text-fg-faint/40" />
-        <p class="text-sm text-fg-muted">Brak odtwarzanych utworów</p>
-        <p class="text-xs text-fg-faint mt-1">Otwórz plik aby rozpocząć</p>
+        <p class="text-sm text-fg-muted">{{ $t('home.noTracks') }}</p>
+        <p class="text-xs text-fg-faint mt-1">{{ $t('home.openFileToStart') }}</p>
       </div>
       <div v-else class="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <button
@@ -143,7 +143,7 @@ const actions = [
           </div>
           <div class="min-w-0">
             <div class="text-sm font-medium truncate">{{ t.metadata?.title || t.name }}</div>
-            <div class="text-xs text-fg-faint truncate">{{ t.metadata?.artist || 'Nieznany' }}</div>
+            <div class="text-xs text-fg-faint truncate">{{ t.metadata?.artist || $t('home.unknown') }}</div>
           </div>
         </button>
       </div>

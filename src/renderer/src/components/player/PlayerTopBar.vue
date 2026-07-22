@@ -27,7 +27,7 @@ const emit = defineEmits<{
     </button>
     <div class="text-center flex-1">
       <p class="text-white text-sm font-medium truncate">
-        {{ track?.metadata?.title || track?.name || 'Brak wideo' }}
+        {{ track?.metadata?.title || track?.name || $t('playerView.noVideo') }}
       </p>
       <p class="text-white/50 text-xs">{{ track?.metadata?.artist || '' }}</p>
     </div>

@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { Search, Disc3, Music2, Album, Hash, Calendar, Check, Loader2, X } from '@lucide/vue';
+
+const { t } = useI18n();
 
 const emit = defineEmits<{
   apply: [data: {
@@ -29,7 +32,7 @@ async function search() {
   if (r?.success && r.releases?.length) {
     releases.value = r.releases;
   } else {
-    error.value = r?.error || 'Brak wyników';
+    error.value = r?.error || t('musicbrainz.noResults');
   }
   loading.value = false;
 }
@@ -48,7 +51,7 @@ async function selectRelease(release: any) {
       lookupResult.value._coverMime = coverR.mime;
     }
   } else {
-    error.value = r?.error || 'Błąd pobierania szczegółów';
+    error.value = r?.error || t('musicbrainz.fetchError');
   }
   lookingUp.value = null;
 }
@@ -69,10 +72,10 @@ function applyTags() {
   emit('apply', emitData);
 }
 
-function applyAllTracks() {
-  if (!lookupResult.value) return;
-  applyTags();
+function displayTrackNumber(track: any, index: number): number {
+  return Number(track.number) || Number(track.position) || index + 1;
 }
+
 </script>
 
 <template>
@@ -80,7 +83,7 @@ function applyAllTracks() {
     <div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" @click.self="emit('close')">
       <div class="w-full max-w-xl mx-4 rounded-2xl bg-bg-base border border-border-default shadow-xl overflow-hidden max-h-[80vh] flex flex-col">
         <div class="flex items-center justify-between px-5 py-4 border-b border-border-default shrink-0">
-          <h2 class="text-base font-bold flex items-center gap-2"><Disc3 :size="18" /> MusicBrainz</h2>
+          <h2 class="text-base font-bold flex items-center gap-2"><Disc3 :size="18" /> {{ $t('musicbrainz.title') }}</h2>
           <button class="p-1.5 rounded-lg hover:bg-bg-hover transition-colors text-fg-faint" @click="emit('close')">
             <X :size="16" />
           </button>
@@ -88,24 +91,24 @@ function applyAllTracks() {
 
         <div class="p-4 border-b border-border-default shrink-0">
           <div class="flex gap-2">
-            <input v-model="query" placeholder="Szukaj: artist &quot;album&quot;..." class="flex-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none"
+            <input v-model="query" :placeholder="$t('musicbrainz.searchPlaceholder')" class="flex-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none"
               @keydown.enter="search" />
             <button class="px-4 py-2 rounded-xl bg-accent-base text-white text-sm font-medium hover:bg-accent-hover disabled:opacity-50 flex items-center gap-1.5"
               :disabled="loading || !query.trim()" @click="search">
-              <Search :size="14" /> Szukaj
+              <Search :size="14" /> {{ $t('musicbrainz.search') }}
             </button>
           </div>
         </div>
 
         <div class="flex-1 overflow-y-auto p-4 space-y-3">
           <div v-if="loading" class="flex items-center justify-center py-8 text-fg-muted gap-2">
-            <Loader2 :size="18" class="animate-spin" /> Szukanie...
+            <Loader2 :size="18" class="animate-spin" /> {{ $t('musicbrainz.searching') }}
           </div>
 
           <div v-else-if="error" class="text-sm text-red-500 bg-red-500/10 px-3 py-2 rounded-lg">{{ error }}</div>
 
           <div v-else-if="!releases.length" class="text-sm text-fg-muted text-center py-8">
-            Wpisz artystę i album, aby wyszukać w MusicBrainz
+            {{ $t('musicbrainz.emptyHint') }}
           </div>
 
           <template v-for="rel in releases" :key="rel.id">
@@ -133,7 +136,7 @@ function applyAllTracks() {
 
               <div v-if="lookupResult && selectedId === rel.id" class="border-t border-border-default p-3 space-y-3">
                 <div class="text-xs text-fg-muted">
-                  <span class="font-medium text-fg-base">Wybrano:</span> {{ lookupResult.title }}
+                  <span class="font-medium text-fg-base">{{ $t('musicbrainz.selected') }}</span> {{ lookupResult.title }}
                   <span v-if="lookupResult.date">({{ lookupResult.date.slice(0, 4) }})</span>
                   — {{ lookupResult['artist-credit']?.[0]?.name || '?' }}
                 </div>
@@ -141,18 +144,18 @@ function applyAllTracks() {
                 <div v-if="lookupResult.media?.[0]?.tracks" class="space-y-1 max-h-32 overflow-y-auto">
                   <div v-for="(track, ti) in lookupResult.media[0].tracks.slice(0, 30)" :key="track.id"
                     class="flex items-center gap-2 text-xs text-fg-muted">
-                    <span class="w-5 text-right shrink-0 text-fg-faint">{{ track.number || track.position || ti + 1 }}</span>
+                    <span class="w-5 text-right shrink-0 text-fg-faint">{{ displayTrackNumber(track, ti as number) }}</span>
                     <span class="truncate">{{ track.title }}</span>
                   </div>
                   <div v-if="lookupResult.media[0].tracks.length > 30" class="text-xs text-fg-faint text-center pt-1">
-                    + {{ lookupResult.media[0].tracks.length - 30 }} więcej
+                    + {{ lookupResult.media[0].tracks.length - 30 }} {{ $t('musicbrainz.more') }}
                   </div>
                 </div>
 
                 <div class="flex gap-2">
                   <button class="flex-1 px-3 py-2 rounded-xl text-sm font-medium bg-accent-base text-white hover:bg-accent-hover transition-colors"
                     @click="applyTags">
-                    <Check :size="14" class="inline mr-1" />Zastosuj dla tego utworu
+                    <Check :size="14" class="inline mr-1" />{{ $t('musicbrainz.apply') }}
                   </button>
                 </div>
               </div>

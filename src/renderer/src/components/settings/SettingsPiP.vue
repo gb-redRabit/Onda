@@ -6,10 +6,10 @@ import { CornerUpRight, CornerUpLeft, CornerDownRight, CornerDownLeft } from '@l
 const settings = useSettingsStore();
 
 const pipPositions = [
-  { id: 'top-left' as const, label: 'Lewa góra', row: 0, col: 0, icon: CornerUpLeft },
-  { id: 'top-right' as const, label: 'Prawa góra', row: 0, col: 1, icon: CornerUpRight },
-  { id: 'bottom-left' as const, label: 'Lewy dół', row: 1, col: 0, icon: CornerDownLeft },
-  { id: 'bottom-right' as const, label: 'Prawy dół', row: 1, col: 1, icon: CornerDownRight }
+  { id: 'top-left' as const, labelKey: 'settings.topLeft', row: 0, col: 0, icon: CornerUpLeft },
+  { id: 'top-right' as const, labelKey: 'settings.topRight', row: 0, col: 1, icon: CornerUpRight },
+  { id: 'bottom-left' as const, labelKey: 'settings.bottomLeft', row: 1, col: 0, icon: CornerDownLeft },
+  { id: 'bottom-right' as const, labelKey: 'settings.bottomRight', row: 1, col: 1, icon: CornerDownRight }
 ];
 
 const pipPreviewOpen = ref(false);
@@ -44,14 +44,14 @@ watch(
 
 <template>
   <div class="space-y-6 max-w-2xl">
-    <h2 class="text-lg font-bold">Obraz w obrazie (PiP)</h2>
+    <h2 class="text-lg font-bold">{{ $t('settings.pip') }}</h2>
     <p class="text-xs text-fg-faint mb-4">
-      Dostosuj ustawienia PiP. Zmiany są widoczne natychmiast jeśli PiP jest otwarte.
+      {{ $t('settings.pipDesc') }}
     </p>
 
     <div class="p-4 rounded-xl bg-bg-elevated border border-border-default space-y-4">
       <div class="flex items-center justify-between pb-3 border-b border-border-default">
-        <span class="text-sm">Podgląd PiP</span>
+        <span class="text-sm">{{ $t('settings.pipPreview') }}</span>
         <button
           class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
           :class="
@@ -61,7 +61,7 @@ watch(
           "
           @click="toggleSettingsPiP"
         >
-          {{ pipPreviewOpen ? 'Zamknij podgląd' : 'Pokaż podgląd' }}
+          {{ pipPreviewOpen ? $t('settings.closePreview') : $t('settings.showPreview') }}
         </button>
       </div>
 
@@ -79,7 +79,7 @@ watch(
               @click="settings.updatePlayback({ pipPosition: p.id })"
             >
               <component :is="p.icon" :size="16" />
-              <span>{{ p.label.split(' ')[1] }}</span>
+              <span>{{ $t(p.labelKey) }}</span>
             </button>
           </div>
           <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
@@ -87,12 +87,12 @@ watch(
           </div>
         </div>
         <p class="text-[11px] text-fg-faint mt-2">
-          Wybrany: <span class="text-fg-base font-medium">{{ pipPositions.find(p => p.id === settings.playback.pipPosition)?.label }}</span>
+          {{ $t('settings.selected') }} <span class="text-fg-base font-medium">{{ $t(pipPositions.find(p => p.id === settings.playback.pipPosition)?.labelKey ?? '') }}</span>
         </p>
       </div>
 
       <div>
-        <h3 class="text-sm font-semibold mb-3">Szerokość: {{ settings.playback.pipWidth }}px</h3>
+        <h3 class="text-sm font-semibold mb-3">{{ $t('settings.width') }} {{ settings.playback.pipWidth }}px</h3>
         <input
           type="range"
           min="240"
@@ -109,7 +109,7 @@ watch(
       </div>
 
       <div>
-        <h3 class="text-sm font-semibold mb-3">Wysokość: {{ settings.playback.pipHeight }}px</h3>
+        <h3 class="text-sm font-semibold mb-3">{{ $t('settings.height') }} {{ settings.playback.pipHeight }}px</h3>
         <input
           type="range"
           min="140"

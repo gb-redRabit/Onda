@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useVirtualizer } from '@tanstack/vue-virtual';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
@@ -23,20 +24,21 @@ import {
   ChevronDown
 } from '@lucide/vue';
 
+const { t } = useI18n();
 const library = useLibraryStore();
 const player = usePlayerStore();
 
 const query = ref('');
 const tab = ref<'tracks' | 'video' | 'folders' | 'artists' | 'albums' | 'playlists'>('tracks');
 
-const tabs = [
-  { id: 'tracks', label: 'Utwory', icon: Music2 },
-  { id: 'video', label: 'Video', icon: Film },
-  { id: 'folders', label: 'Foldery', icon: Folder },
-  { id: 'artists', label: 'Artyści', icon: Mic2 },
-  { id: 'albums', label: 'Albumy', icon: Disc3 },
-  { id: 'playlists', label: 'Playlisty', icon: ListMusic }
-] as const;
+const tabs = computed(() => [
+  { id: 'tracks', label: t('library.tracks'), icon: Music2 },
+  { id: 'video', label: t('library.video'), icon: Film },
+  { id: 'folders', label: t('library.folders'), icon: Folder },
+  { id: 'artists', label: t('library.artists'), icon: Mic2 },
+  { id: 'albums', label: t('library.albums'), icon: Disc3 },
+  { id: 'playlists', label: t('library.playlists'), icon: ListMusic }
+] as const);
 
 const filteredTracks = computed(() => {
   const q = query.value.toLowerCase();
@@ -298,12 +300,12 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
   <div class="flex flex-col h-full">
     <div class="p-4 border-b border-border-default">
       <div class="flex items-center justify-between mb-3">
-        <h1 class="text-xl font-bold">Biblioteka</h1>
+        <h1 class="text-xl font-bold">{{ $t('library.title') }}</h1>
         <div class="flex items-center gap-2 text-xs text-fg-faint">
-          <span>{{ library.totalCount }} plików</span>
+          <span>{{ library.totalCount }} {{ $t('library.files') }}</span>
           <button
             class="p-1.5 rounded-lg hover:bg-bg-hover transition-colors"
-            title="Przeskanuj ponownie"
+            :title="$t('library.rescan')"
             @click="library.scanFolders()"
           >
             <RefreshCw :size="14" :class="{ 'animate-spin': library.isScanning }" />
@@ -329,14 +331,14 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
           <Search :size="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-fg-faint" />
           <input
             v-model="query"
-            placeholder="Szukaj..."
+            :placeholder="$t('library.search')"
             class="w-full pl-9 pr-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none placeholder:text-fg-faint"
           />
         </div>
         <button
           v-if="tab === 'tracks'"
           class="px-3 py-2 rounded-xl bg-accent-ghost text-accent-base text-xs font-medium hover:bg-accent-base hover:text-white transition-colors flex items-center gap-1.5 shrink-0"
-          title="Szukaj w MusicBrainz"
+          :title="$t('library.searchInMusicBrainz')"
           @click="showingMBLookup = true"
         >
           <Disc3 :size="14" /> MusicBrainz
@@ -352,19 +354,19 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
           class="flex flex-col items-center justify-center h-full gap-3 text-fg-faint"
         >
           <Music2 :size="48" class="opacity-30" />
-          <p class="text-sm">Brak utworów audio</p>
-          <p class="text-xs">Dodaj foldery w Ustawieniach > Biblioteka</p>
+          <p class="text-sm">{{ $t('library.noAudio') }}</p>
+          <p class="text-xs">{{ $t('library.addFolderHint') }}</p>
         </div>
         <template v-else>
           <div
             class="flex items-center justify-between px-4 py-2 border-b border-border-default shrink-0"
           >
-            <span class="text-xs text-fg-faint">{{ filteredTracks.length }} utworów</span>
+            <span class="text-xs text-fg-faint">{{ filteredTracks.length }} {{ $t('library.tracksCount') }}</span>
             <button
               class="flex items-center gap-1 px-3 py-1 rounded-lg bg-accent-ghost text-accent-base text-xs font-medium hover:bg-accent-base hover:text-white transition-colors"
               @click="playAllTracks"
             >
-              <Music2 :size="12" /> Odtwarzaj wszystko
+              <Music2 :size="12" /> {{ $t('library.playAll') }}
             </button>
           </div>
           <div ref="trackListRef" class="flex-1 overflow-auto">
@@ -405,19 +407,19 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
           class="flex flex-col items-center justify-center h-full gap-3 text-fg-faint"
         >
           <Film :size="48" class="opacity-30" />
-          <p class="text-sm">Brak plików wideo</p>
-          <p class="text-xs">Dodaj foldery w Ustawieniach > Biblioteka</p>
+          <p class="text-sm">{{ $t('library.noVideo') }}</p>
+          <p class="text-xs">{{ $t('library.addFolderHint') }}</p>
         </div>
         <template v-else>
           <div
             class="flex items-center justify-between px-4 py-2 border-b border-border-default shrink-0"
           >
-            <span class="text-xs text-fg-faint">{{ filteredVideo.length }} plików</span>
+            <span class="text-xs text-fg-faint">{{ filteredVideo.length }} {{ $t('library.files') }}</span>
             <button
               class="flex items-center gap-1 px-3 py-1 rounded-lg bg-accent-ghost text-accent-base text-xs font-medium hover:bg-accent-base hover:text-white transition-colors"
               @click="playAllVideo"
             >
-              <Film :size="12" /> Odtwarzaj wszystko
+              <Film :size="12" /> {{ $t('library.playAll') }}
             </button>
           </div>
           <div ref="videoGridRef" class="flex-1 overflow-auto p-4">
@@ -456,8 +458,8 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
           class="flex flex-col items-center justify-center h-full gap-3 text-fg-faint"
         >
           <Folder :size="48" class="opacity-30" />
-          <p class="text-sm">Brak folderów</p>
-          <p class="text-xs">Dodaj foldery w Ustawieniach > Biblioteka</p>
+          <p class="text-sm">{{ $t('library.noFolders') }}</p>
+          <p class="text-xs">{{ $t('library.addFolderHint') }}</p>
         </div>
         <div v-else class="p-3 space-y-3">
           <div
@@ -476,7 +478,7 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
                 <div class="min-w-0 text-left">
                   <div class="text-sm font-medium">{{ dirName(folderPath) }}</div>
                   <div class="text-xs text-fg-faint truncate">
-                    {{ folderPath }} · {{ folderFileCount(folderPath) }} plików
+                    {{ folderPath }} · {{ folderFileCount(folderPath) }} {{ $t('library.folderFiles') }}
                   </div>
                 </div>
               </div>
@@ -485,7 +487,7 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
                   class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent-ghost text-accent-base text-xs font-medium hover:bg-accent-base hover:text-white transition-colors"
                   @click.stop="playFolder(folderPath)"
                 >
-                  <Music2 :size="12" /> Odtwarzaj
+                  <Music2 :size="12" /> {{ $t('folders.play') }}
                 </button>
                 <ChevronDown
                   :size="16"
@@ -513,7 +515,7 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
           class="flex flex-col items-center justify-center h-full gap-3 text-fg-faint"
         >
           <Mic2 :size="48" class="opacity-30" />
-          <p class="text-sm">Brak artystów</p>
+          <p class="text-sm">{{ $t('library.noArtists') }}</p>
         </div>
         <div v-else class="grid gap-3 p-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           <button
@@ -528,7 +530,7 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
               <Mic2 :size="24" class="text-accent-base" />
             </div>
             <div class="text-sm font-medium truncate w-full">{{ name }}</div>
-            <div class="text-xs text-fg-faint mt-0.5">{{ tracks.length }} utworów</div>
+            <div class="text-xs text-fg-faint mt-0.5">{{ tracks.length }} {{ $t('library.tracksCount') }}</div>
           </button>
         </div>
       </template>
@@ -540,7 +542,7 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
           class="flex flex-col items-center justify-center h-full gap-3 text-fg-faint"
         >
           <Disc3 :size="48" class="opacity-30" />
-          <p class="text-sm">Brak albumów</p>
+          <p class="text-sm">{{ $t('library.noAlbums') }}</p>
         </div>
         <template v-else>
           <div ref="albumGridRef" class="flex-1 overflow-auto p-4">

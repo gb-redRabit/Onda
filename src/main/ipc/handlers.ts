@@ -9,7 +9,9 @@ import { createWriteStream } from 'fs';
 import type { FileItem } from '../../renderer/src/types/explorer';
 import type { MediaFile, Playlist } from '../../renderer/src/types/media';
 import { promisify } from 'util';
+import { createHash } from 'crypto';
 import NodeID3 from 'node-id3';
+import { parseFile } from 'music-metadata';
 import https from 'https';
 import http from 'http';
 import os from 'os';
@@ -31,6 +33,145 @@ function getTempDir(): string {
   return join(os.tmpdir(), 'onda-covers');
 }
 
+interface CachedCover {
+  result: { type: 'video' | 'image' | null; data: string | null };
+  mtimeMs: number;
+}
+const coverResultCache = new Map<string, CachedCover>();
+const durationCache = new Map<string, { duration: number; mtimeMs: number }>();
+
+const PERSISTENT_COVER_DIR = join(getTempDir(), 'persistent');
+const COVER_CACHE_MAP_KEY = 'coverCacheMap';
+
+function hashPath(filePath: string): string {
+  return createHash('md5').update(filePath.toLowerCase()).digest('hex');
+}
+
+async function getPersistentCover(filePath: string): Promise<{ type: 'video' | 'image' | null; data: string | null } | null> {
+  try {
+    const store = await getStore();
+    const cacheMap: Record<string, { cacheFile: string; mtime: number }> | undefined = store.get(COVER_CACHE_MAP_KEY) as any;
+    const entry = cacheMap?.[filePath];
+    if (!entry) return null;
+
+    const s = await stat(filePath).catch(() => null);
+    if (!s || s.mtimeMs > entry.mtime) {
+      if (entry && cacheMap) { delete cacheMap[filePath]; store.set(COVER_CACHE_MAP_KEY, cacheMap); }
+      return null;
+    }
+
+    const cachePath = join(PERSISTENT_COVER_DIR, entry.cacheFile);
+    const buf = await readFile(cachePath).catch(() => null);
+    if (!buf) return null;
+
+    const isJpeg = entry.cacheFile.endsWith('.jpg');
+    const dataUrl = isJpeg ? `data:image/jpeg;base64,${buf.toString('base64')}` : `data:image/png;base64,${buf.toString('base64')}`;
+    return { type: 'image', data: dataUrl };
+  } catch {
+    return null;
+  }
+}
+
+async function savePersistentCover(filePath: string, binary: Buffer, ext: string): Promise<void> {
+  try {
+    await mkdir(PERSISTENT_COVER_DIR, { recursive: true });
+    const hash = hashPath(filePath);
+    const cacheFile = `${hash}.${ext}`;
+    const cachePath = join(PERSISTENT_COVER_DIR, cacheFile);
+    await writeFile(cachePath, binary);
+
+    const s = await stat(filePath).catch(() => null);
+    const store = await getStore();
+    const cacheMap: Record<string, { cacheFile: string; mtime: number }> = (store.get(COVER_CACHE_MAP_KEY) as any) || {};
+    cacheMap[filePath] = { cacheFile, mtime: s?.mtimeMs ?? Date.now() };
+    store.set(COVER_CACHE_MAP_KEY, JSON.parse(JSON.stringify(cacheMap)));
+  } catch {
+    // non-fatal
+  }
+}
+
+async function getCachedCover(filePath: string): Promise<{ type: 'video' | 'image' | null; data: string | null } | null> {
+  const memCached = coverResultCache.get(filePath);
+  if (memCached) {
+    try {
+      const { mtimeMs } = await stat(filePath);
+      if (mtimeMs <= memCached.mtimeMs) return memCached.result;
+    } catch {
+      /* file gone */
+    }
+    coverResultCache.delete(filePath);
+  }
+
+  const diskCached = await getPersistentCover(filePath);
+  if (diskCached) {
+    const s = await stat(filePath).catch(() => null);
+    coverResultCache.set(filePath, { result: diskCached, mtimeMs: s?.mtimeMs ?? Date.now() });
+    return diskCached;
+  }
+
+  return null;
+}
+
+async function extractAudioCover(filePath: string): Promise<string | null> {
+  try {
+    const meta = await parseFile(filePath, { duration: false });
+    if (meta.common.picture && meta.common.picture.length > 0) {
+      const pic = meta.common.picture[0];
+      const buf = Buffer.from(pic.data);
+      const imgExt = pic.format === 'image/jpeg' ? 'jpg' : pic.format.replace('image/', '');
+      savePersistentCover(filePath, buf, imgExt);
+      return `data:${pic.format};base64,${buf.toString('base64')}`;
+    }
+  } catch { /* no cover in metadata */ }
+  return extractEmbeddedCover(filePath);
+}
+
+async function extractAndCacheCover(filePath: string): Promise<{ type: 'video' | 'image' | null; data: string | null }> {
+  const cached = await getCachedCover(filePath);
+  if (cached) return cached;
+
+  const ext = extname(filePath).toLowerCase();
+  const dir = join(filePath, '..');
+  const name = basename(filePath, ext);
+  let result: { type: 'video' | 'image' | null; data: string | null } = { type: null, data: null };
+
+  if (AUDIO_EXTS.includes(ext)) {
+    let foundVideo = false;
+    for (const vExt of VIDEO_EXTS) {
+      const videoPath = join(dir, name + vExt);
+      try {
+        await stat(videoPath);
+        result = { type: 'video', data: videoPath };
+        foundVideo = true;
+        break;
+      } catch { /* no video */ }
+    }
+    if (!foundVideo) {
+      const cover = await extractAudioCover(filePath);
+      if (cover) result = { type: 'image', data: cover };
+    }
+  } else if (VIDEO_EXTS.includes(ext)) {
+    const frame = await extractVideoFrame(filePath);
+    result = frame ? { type: 'image', data: frame } : { type: null, data: null };
+  } else {
+    result = { type: null, data: null };
+  }
+
+  const statResult = await stat(filePath).catch(() => null);
+  coverResultCache.set(filePath, { result, mtimeMs: statResult?.mtimeMs ?? Date.now() });
+
+  if (result.type === 'image' && result.data?.startsWith('data:')) {
+    const match = result.data.match(/^data:image\/(\w+);base64,(.+)$/);
+    if (match) {
+      const imgExt = match[1] === 'jpeg' ? 'jpg' : match[1];
+      const buf = Buffer.from(match[2], 'base64');
+      savePersistentCover(filePath, buf, imgExt);
+    }
+  }
+
+  return result;
+}
+
 async function extractVideoFrame(filePath: string, time = '00:00:00.5'): Promise<string | null> {
   try {
     await mkdir(getTempDir(), { recursive: true });
@@ -49,20 +190,11 @@ async function extractVideoFrame(filePath: string, time = '00:00:00.5'): Promise
 
 async function extractEmbeddedCover(filePath: string): Promise<string | null> {
   try {
-    const { stdout } = await execAsync(
-      `ffprobe -v quiet -select_streams v:0 -show_entries stream=codec_type -of csv=p=0 "${filePath}"`,
-      { encoding: 'utf-8', timeout: 10000, windowsHide: true }
-    );
-    if (stdout.trim() !== 'video') return null;
     await mkdir(getTempDir(), { recursive: true });
     const outPath = join(getTempDir(), `cover_${Date.now()}.jpg`);
     await execAsync(
       `ffmpeg -v quiet -i "${filePath}" -vframes 1 -q:v 2 -update 1 "${outPath}" -y`,
-      {
-        encoding: 'utf-8',
-        timeout: 15000,
-        windowsHide: true
-      }
+      { encoding: 'utf-8', timeout: 15000, windowsHide: true }
     );
     const buf = await readFile(outPath);
     await unlink(outPath).catch(() => {});
@@ -380,14 +512,69 @@ export function registerIPC(): void {
   const VIDEO_EXT_SET = new Set(VIDEO_EXTS);
 
   async function getDuration(filePath: string): Promise<number> {
+    const cached = durationCache.get(filePath);
+    if (cached) {
+      try {
+        const { mtimeMs } = await stat(filePath);
+        if (mtimeMs <= cached.mtimeMs) return cached.duration;
+      } catch { /* file gone */ }
+      durationCache.delete(filePath);
+    }
+
     try {
       const { stdout } = await execAsync(
         `ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${filePath}"`,
         { encoding: 'utf-8', timeout: 10000, windowsHide: true }
       );
-      return parseFloat(stdout.trim()) || 0;
+      const duration = parseFloat(stdout.trim()) || 0;
+      const s = await stat(filePath).catch(() => null);
+      if (s) durationCache.set(filePath, { duration, mtimeMs: s.mtimeMs });
+      return duration;
     } catch {
       return 0;
+    }
+  }
+
+  async function getAudioMetadata(filePath: string, ext: string): Promise<{
+    title: string; artist: string; album: string; year?: number; genre?: string;
+    track?: { no: number; of?: number }; duration: number; bitrate: number;
+    sampleRate: number; channels: number; format: string; isVideo: boolean; size: number;
+  } | null> {
+    try {
+      const s = await stat(filePath).catch(() => null);
+      if (!s) return null;
+
+      const meta = await parseFile(filePath, { duration: true });
+      const c = meta.common;
+
+      let genreStr = '';
+      if (c.genre && c.genre.length > 0) genreStr = c.genre[0];
+
+      // save cover to persistent cache
+      if (c.picture && c.picture.length > 0) {
+        const pic = c.picture[0];
+        const imgExt = pic.format === 'image/jpeg' ? 'jpg' : pic.format.replace('image/', '');
+        const buf = Buffer.from(pic.data);
+        savePersistentCover(filePath, buf, imgExt);
+      }
+
+      return {
+        title: c.title || basename(filePath, ext),
+        artist: c.artist || '',
+        album: c.album || '',
+        year: c.year || undefined,
+        genre: genreStr,
+        track: c.track?.no ? { no: c.track.no, of: c.track.of ?? undefined } : undefined,
+        duration: meta.format?.duration || 0,
+        bitrate: meta.format?.bitrate || 0,
+        sampleRate: meta.format?.sampleRate || 0,
+        channels: 0,
+        format: ext.slice(1),
+        isVideo: false,
+        size: s.size
+      };
+    } catch {
+      return null;
     }
   }
 
@@ -413,61 +600,69 @@ export function registerIPC(): void {
       const s = await stat(filePath).catch(() => null);
       if (!s) return null;
 
-      const isVideo = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v'].includes(
-        ext
-      );
-
-      let title = basename(filePath, ext);
-      let artist = '';
-      let album = '';
-      let year: number | undefined;
-      let genre = '';
-      let trackNo: number | undefined;
-      let trackOf: number | undefined;
-      let duration = 0;
-
-      if (['.mp3', '.flac', '.ogg', '.m4a', '.wav'].includes(ext)) {
-        try {
-          const id3 = NodeID3.read(filePath);
-          if (id3) {
-            if (id3.title) title = id3.title;
-            if (id3.artist) artist = id3.artist;
-            if (id3.album) album = id3.album;
-            if (id3.year) year = parseInt(id3.year) || undefined;
-            if (id3.genre) genre = id3.genre;
-            if (id3.trackNumber) {
-              const parts = id3.trackNumber.split('/');
-              trackNo = parseInt(parts[0]) || undefined;
-              if (parts[1]) trackOf = parseInt(parts[1]) || undefined;
-            }
-          }
-        } catch {
-          // fallback to filename
-        }
-      }
+      const isVideo = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v'].includes(ext);
 
       if (!isVideo) {
-        duration = await getDuration(filePath);
+        return getAudioMetadata(filePath, ext);
       }
 
       return {
-        title,
-        artist,
-        album,
-        year,
-        genre,
-        track: trackNo ? { no: trackNo, of: trackOf } : undefined,
-        duration,
+        title: basename(filePath, ext),
+        artist: '',
+        album: '',
+        duration: 0,
         bitrate: 0,
         sampleRate: 0,
         channels: 0,
         format: ext.slice(1),
-        isVideo,
+        isVideo: true,
         size: s.size
       };
     } catch {
       return null;
     }
+  }
+
+  async function processAudioFile(fullPath: string, entryName: string, ext: string): Promise<{ file: MediaFile | null }> {
+    const s = await stat(fullPath).catch(() => null);
+    if (!s) return { file: null };
+    const meta = await getMetadata(fullPath, ext);
+    return {
+      file: {
+        id: fullPath,
+        name: entryName,
+        path: fullPath,
+        extension: ext,
+        mimeType: '',
+        size: s.size,
+        type: 'audio',
+        metadata: meta
+          ? { title: meta.title, artist: meta.artist, album: meta.album, year: meta.year, genre: meta.genre, track: meta.track }
+          : undefined,
+        duration: meta?.duration || 0,
+        addedAt: s.birthtimeMs ?? Date.now(),
+        playCount: 0
+      }
+    };
+  }
+
+  async function processVideoFile(fullPath: string, entryName: string, ext: string): Promise<{ file: MediaFile | null }> {
+    const s = await stat(fullPath).catch(() => null);
+    if (!s) return { file: null };
+    return {
+      file: {
+        id: fullPath,
+        name: entryName,
+        path: fullPath,
+        extension: ext,
+        mimeType: '',
+        size: s.size,
+        type: 'video',
+        duration: 0,
+        addedAt: s.birthtimeMs ?? Date.now(),
+        playCount: 0
+      }
+    };
   }
 
   async function scanDir(
@@ -476,70 +671,56 @@ export function registerIPC(): void {
     depth = 0
   ): Promise<{ files: MediaFile[]; audioCount: number; videoCount: number }> {
     if (depth > maxDepth) return { files: [], audioCount: 0, videoCount: 0 };
-    const files: MediaFile[] = [];
-    let audioCount = 0;
-    let videoCount = 0;
 
     try {
       const entries = await readdir(dirPath, { withFileTypes: true });
+      const subDirPromises: Promise<{ files: MediaFile[]; audioCount: number; videoCount: number }>[] = [];
+      const filePromises: Promise<{ file: MediaFile | null }>[] = [];
+      let audioCount = 0;
+      let videoCount = 0;
+
       for (const entry of entries) {
         const fullPath = join(dirPath, entry.name);
         if (entry.isDirectory()) {
-          const sub = await scanDir(fullPath, maxDepth, depth + 1);
-          files.push(...sub.files);
-          audioCount += sub.audioCount;
-          videoCount += sub.videoCount;
+          subDirPromises.push(scanDir(fullPath, maxDepth, depth + 1));
         } else if (entry.isFile()) {
           const ext = extname(entry.name).toLowerCase();
           if (AUDIO_EXT_SET.has(ext)) {
             audioCount++;
-            const s = await stat(fullPath).catch(() => null);
-            const meta = await getMetadata(fullPath, ext);
-            files.push({
-              id: fullPath,
-              name: entry.name,
-              path: fullPath,
-              extension: ext,
-              mimeType: '',
-              size: s?.size ?? 0,
-              type: 'audio',
-              metadata: meta
-                ? {
-                    title: meta.title,
-                    artist: meta.artist,
-                    album: meta.album,
-                    year: meta.year,
-                    genre: meta.genre,
-                    track: meta.track
-                  }
-                : undefined,
-              duration: meta?.duration || 0,
-              addedAt: s?.birthtimeMs ?? Date.now(),
-              playCount: 0
-            });
+            filePromises.push(processAudioFile(fullPath, entry.name, ext));
           } else if (VIDEO_EXT_SET.has(ext)) {
             videoCount++;
-            const s = await stat(fullPath).catch(() => null);
-            files.push({
-              id: fullPath,
-              name: entry.name,
-              path: fullPath,
-              extension: ext,
-              mimeType: '',
-              size: s?.size ?? 0,
-              type: 'video',
-              duration: 0,
-              addedAt: s?.birthtimeMs ?? Date.now(),
-              playCount: 0
-            });
+            filePromises.push(processVideoFile(fullPath, entry.name, ext));
           }
         }
       }
+
+      const [subResults, fileResults] = await Promise.all([
+        Promise.all(subDirPromises),
+        Promise.all(filePromises)
+      ]);
+
+      const files: MediaFile[] = [];
+      let totalAudio = 0;
+      let totalVideo = 0;
+
+      for (const r of subResults) {
+        files.push(...r.files);
+        totalAudio += r.audioCount;
+        totalVideo += r.videoCount;
+      }
+
+      for (const r of fileResults) {
+        if (r.file) files.push(r.file);
+      }
+      totalAudio += audioCount;
+      totalVideo += videoCount;
+
+      return { files, audioCount: totalAudio, videoCount: totalVideo };
     } catch (err) {
       logger.warn('library', `scanDir error reading ${dirPath}: ${err}`);
+      return { files: [], audioCount: 0, videoCount: 0 };
     }
-
-    return { files, audioCount, videoCount };
   }
 
   ipcMain.handle(
@@ -549,28 +730,32 @@ export function registerIPC(): void {
       folderPaths: string[]
     ): Promise<{ count: number; folderTypes: Record<string, 'audio' | 'video' | 'mixed'> }> => {
       try {
+        const folderResults = await Promise.all(
+          folderPaths.map(async (folderPath) => {
+            try {
+              const result = await scanDir(folderPath, 8);
+              let folderType: 'audio' | 'video' | 'mixed' = 'mixed';
+              if (result.audioCount > result.videoCount) folderType = 'audio';
+              else if (result.videoCount > result.audioCount) folderType = 'video';
+              const files = result.files.filter((f) => {
+                if (folderType === 'audio' && f.type === 'video') return false;
+                if (folderType === 'video' && f.type === 'audio') return false;
+                return true;
+              });
+              return { folderType, files, folderPath };
+            } catch (err) {
+              logger.warn('library', `scan error for ${folderPath}: ${err}`);
+              return null;
+            }
+          })
+        );
+
         const allFiles: MediaFile[] = [];
         const folderTypes: Record<string, 'audio' | 'video' | 'mixed'> = {};
-
-        for (const folderPath of folderPaths) {
-          try {
-            const result = await scanDir(folderPath, 8);
-            let folderType: 'audio' | 'video' | 'mixed' = 'mixed';
-            if (result.audioCount > result.videoCount) {
-              folderType = 'audio';
-            } else if (result.videoCount > result.audioCount) {
-              folderType = 'video';
-            }
-            folderTypes[folderPath] = folderType;
-
-            for (const f of result.files) {
-              if (folderType === 'audio' && f.type === 'video') continue;
-              if (folderType === 'video' && f.type === 'audio') continue;
-              allFiles.push(f);
-            }
-          } catch (err) {
-            logger.warn('library', `scan error for ${folderPath}: ${err}`);
-          }
+        for (const r of folderResults) {
+          if (!r) continue;
+          folderTypes[r.folderPath] = r.folderType;
+          allFiles.push(...r.files);
         }
 
         const store = await getStore();
@@ -881,45 +1066,12 @@ export function registerIPC(): void {
       _event,
       filePath: string
     ): Promise<{ type: 'video' | 'image' | null; data: string | null }> => {
-      const ext = extname(filePath).toLowerCase();
-      const dir = join(filePath, '..');
-      const name = basename(filePath, ext);
-
-      if (AUDIO_EXTS.includes(ext)) {
-        for (const vExt of VIDEO_EXTS) {
-          const videoPath = join(dir, name + vExt);
-          try {
-            await stat(videoPath);
-            return { type: 'video', data: videoPath };
-          } catch {
-            /* no video */
-          }
-        }
-        const embedded = await extractEmbeddedCover(filePath);
-        if (embedded) return { type: 'image', data: embedded };
-        return { type: null, data: null };
-      }
-
-      if (VIDEO_EXTS.includes(ext)) {
-        const frame = await extractVideoFrame(filePath);
-        if (frame) return { type: 'image', data: frame };
-        return { type: null, data: null };
-      }
-
-      return { type: null, data: null };
+      return extractAndCacheCover(filePath);
     }
   );
 
   ipcMain.handle('media:getDuration', async (_event, filePath: string): Promise<number> => {
-    try {
-      const { stdout } = await execAsync(
-        `ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${filePath}"`,
-        { encoding: 'utf-8', timeout: 10000, windowsHide: true }
-      );
-      return parseFloat(stdout.trim()) || 0;
-    } catch {
-      return 0;
-    }
+    return getDuration(filePath);
   });
 
   ipcMain.handle(

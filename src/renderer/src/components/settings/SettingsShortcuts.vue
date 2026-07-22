@@ -6,7 +6,7 @@ const settings = useSettingsStore();
 
 <template>
   <div class="space-y-1 max-w-2xl">
-    <h2 class="text-lg font-bold mb-4">Skróty klawiszowe</h2>
+    <h2 class="text-lg font-bold mb-4">{{ $t('settings.shortcutsSection') }}</h2>
     <div
       v-for="(key, action) in settings.shortcuts"
       :key="action"
