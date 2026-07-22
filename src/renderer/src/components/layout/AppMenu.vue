@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUIStore } from '@renderer/stores/ui';
 import { useI18n } from 'vue-i18n';
@@ -14,6 +14,15 @@ const ui = useUIStore();
 const { t } = useI18n();
 const isMaximized = ref(false);
 const openDropdown = ref<string | null>(null);
+const menuBar = ref<HTMLElement | null>(null);
+
+function onClickAway(e: MouseEvent) {
+  if (!openDropdown.value) return;
+  if (!menuBar.value?.contains(e.target as Node)) closeDropdown();
+}
+
+onMounted(() => document.addEventListener('click', onClickAway));
+onUnmounted(() => document.removeEventListener('click', onClickAway));
 
 const viewLabel = computed(() => {
   const map: Record<string, string> = {
@@ -58,9 +67,9 @@ window.api.on('window:maximized', (val: unknown) => { isMaximized.value = val as
 
 <template>
   <div
+    ref="menuBar"
     class="flex h-9 bg-bg-surface border-b border-border-default shrink-0 select-none"
     style="-webkit-app-region: drag"
-    @mouseleave="closeDropdown"
   >
     <!-- Logo + static menus -->
     <div class="flex items-center shrink-0" style="-webkit-app-region: no-drag">
