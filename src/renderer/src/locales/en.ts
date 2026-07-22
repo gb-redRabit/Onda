@@ -38,7 +38,8 @@ export default {
     repeat: 'Repeat',
     help: 'Help',
     documentation: 'Documentation',
-    about: 'About Onda'
+    about: 'About Onda',
+    search: 'Search'
   },
   home: {
     welcome: 'Welcome back',
