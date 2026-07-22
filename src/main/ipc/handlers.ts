@@ -5,7 +5,7 @@ import { readdir, stat, lstat, readFile, writeFile, mkdir, rename, unlink, rm } 
 import { join, extname, basename, dirname } from 'path';
 import { exec as execCb } from 'child_process';
 import { pipeline } from 'stream/promises';
-import { createWriteStream } from 'fs';
+import { createWriteStream, statSync } from 'fs';
 import type { FileItem } from '../../renderer/src/types/explorer';
 import type { MediaFile, Playlist } from '../../renderer/src/types/media';
 import { promisify } from 'util';
@@ -167,9 +167,31 @@ async function extractAudioCover(filePath: string): Promise<string | null> {
   return extractEmbeddedCover(filePath);
 }
 
+function findSiblingVideo(filePath: string): string | null {
+  const ext = extname(filePath).toLowerCase();
+  if (!AUDIO_EXTS.includes(ext)) return null;
+  const dir = dirname(filePath);
+  const name = basename(filePath, ext);
+  for (const vExt of VIDEO_EXTS) {
+    const videoPath = join(dir, name + vExt);
+    try {
+      statSync(videoPath);
+      return videoPath;
+    } catch {
+      /* no video */
+    }
+  }
+  return null;
+}
+
 async function extractAndCacheCover(
   filePath: string
 ): Promise<{ type: 'video' | 'image' | null; data: string | null }> {
+  const siblingVideo = findSiblingVideo(filePath);
+  if (siblingVideo) {
+    return { type: 'video', data: siblingVideo };
+  }
+
   while (coverCacheLocks.has(filePath)) {
     await new Promise((r) => setTimeout(r, 10));
   }
@@ -180,27 +202,11 @@ async function extractAndCacheCover(
 
   try {
     const ext = extname(filePath).toLowerCase();
-    const dir = dirname(filePath);
-    const name = basename(filePath, ext);
     let result: { type: 'video' | 'image' | null; data: string | null } = { type: null, data: null };
 
     if (AUDIO_EXTS.includes(ext)) {
-      let foundVideo = false;
-      for (const vExt of VIDEO_EXTS) {
-        const videoPath = join(dir, name + vExt);
-        try {
-          await stat(videoPath);
-          result = { type: 'video', data: videoPath };
-          foundVideo = true;
-          break;
-        } catch {
-          /* no video */
-        }
-      }
-      if (!foundVideo) {
-        const cover = await extractAudioCover(filePath);
-        if (cover) result = { type: 'image', data: cover };
-      }
+      const cover = await extractAudioCover(filePath);
+      if (cover) result = { type: 'image', data: cover };
     } else if (VIDEO_EXTS.includes(ext)) {
       const frame = await extractVideoFrame(filePath);
       result = frame ? { type: 'image', data: frame } : { type: null, data: null };
@@ -817,7 +823,8 @@ export function registerIPC(): void {
         audioCount: number;
         videoCount: number;
       }>[] = [];
-      const fileTasks: Array<() => Promise<{ file: MediaFile | null }>> = [];
+      const audioTasks: Array<() => Promise<{ file: MediaFile | null }>> = [];
+      const videoTasks: Array<() => Promise<{ file: MediaFile | null }>> = [];
       let audioCount = 0;
       let videoCount = 0;
 
@@ -829,18 +836,27 @@ export function registerIPC(): void {
           const ext = extname(entry.name).toLowerCase();
           if (AUDIO_EXT_SET.has(ext)) {
             audioCount++;
-            fileTasks.push(() => processAudioFile(fullPath, entry.name, ext));
+            audioTasks.push(() => processAudioFile(fullPath, entry.name, ext));
           } else if (VIDEO_EXT_SET.has(ext)) {
             videoCount++;
-            fileTasks.push(() => processVideoFile(fullPath, entry.name, ext));
+            videoTasks.push(() => processVideoFile(fullPath, entry.name, ext));
           }
         }
       }
 
       const chunkSize = 50;
       const fileResults: Array<{ file: MediaFile | null }> = [];
-      for (let i = 0; i < fileTasks.length; i += chunkSize) {
-        const chunk = fileTasks.slice(i, i + chunkSize);
+      let ai = 0;
+      let vi = 0;
+      while (ai < audioTasks.length || vi < videoTasks.length) {
+        const chunk: Array<() => Promise<{ file: MediaFile | null }>> = [];
+        while (chunk.length < chunkSize && (ai < audioTasks.length || vi < videoTasks.length)) {
+          if (ai < audioTasks.length && (vi >= videoTasks.length || chunk.length % 2 === 0)) {
+            chunk.push(audioTasks[ai++]);
+          } else if (vi < videoTasks.length) {
+            chunk.push(videoTasks[vi++]);
+          }
+        }
         const results = await Promise.all(chunk.map((fn) => fn()));
         fileResults.push(...results);
       }

@@ -54,10 +54,6 @@ class AudioEngine {
   private ensureEqChain(): void {
     this.ensureAudioContext();
     if (this.eqChainBuilt) return;
-    for (const filter of this.eqFilters) {
-      this.crossfadeGainA!.connect(filter);
-      this.crossfadeGainB!.connect(filter);
-    }
     const firstFilter = this.eqFilters[0];
     if (firstFilter) {
       this.crossfadeGainA!.connect(firstFilter);
