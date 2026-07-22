@@ -220,6 +220,7 @@ export const usePlayerStore = defineStore('player', () => {
   function invalidateCoverCache(filePath: string) {
     delete coverCache.value[filePath];
     triggerRef(coverCache);
+    loadCover(filePath);
   }
 
   async function enrichTrack(track: MediaFile): Promise<void> {

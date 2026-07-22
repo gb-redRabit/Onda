@@ -1316,6 +1316,18 @@ export function registerIPC(): void {
           },
           filePath
         );
+        coverResultCache.delete(filePath);
+        const store = await getStore();
+        const cacheMap: Record<string, { cacheFile: string; mtime: number }> | undefined = store.get(
+          COVER_CACHE_MAP_KEY
+        ) as any;
+        if (cacheMap?.[filePath]) {
+          const old = cacheMap[filePath];
+          const cachePath = join(PERSISTENT_COVER_DIR, old.cacheFile);
+          try { await unlink(cachePath); } catch { /* ok */ }
+          delete cacheMap[filePath];
+          store.set(COVER_CACHE_MAP_KEY, JSON.parse(JSON.stringify(cacheMap)));
+        }
         return { success: true };
       } catch (e: unknown) {
         return { success: false, error: errMsg(e) };
