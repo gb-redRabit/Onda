@@ -31,14 +31,17 @@ const player = usePlayerStore();
 const query = ref('');
 const tab = ref<'tracks' | 'video' | 'folders' | 'artists' | 'albums' | 'playlists'>('tracks');
 
-const tabs = computed(() => [
-  { id: 'tracks', label: t('library.tracks'), icon: Music2 },
-  { id: 'video', label: t('library.video'), icon: Film },
-  { id: 'folders', label: t('library.folders'), icon: Folder },
-  { id: 'artists', label: t('library.artists'), icon: Mic2 },
-  { id: 'albums', label: t('library.albums'), icon: Disc3 },
-  { id: 'playlists', label: t('library.playlists'), icon: ListMusic }
-] as const);
+const tabs = computed(
+  () =>
+    [
+      { id: 'tracks', label: t('library.tracks'), icon: Music2 },
+      { id: 'video', label: t('library.video'), icon: Film },
+      { id: 'folders', label: t('library.folders'), icon: Folder },
+      { id: 'artists', label: t('library.artists'), icon: Mic2 },
+      { id: 'albums', label: t('library.albums'), icon: Disc3 },
+      { id: 'playlists', label: t('library.playlists'), icon: ListMusic }
+    ] as const
+);
 
 const filteredTracks = computed(() => {
   const q = query.value.toLowerCase();
@@ -217,10 +220,20 @@ function folderTypeIcon(type: string): string {
   return '📁';
 }
 
+let coverDebounce: ReturnType<typeof setTimeout> | null = null;
+
+function debouncedPreloadCovers(coverList: string[]): void {
+  if (coverDebounce) clearTimeout(coverDebounce);
+  coverDebounce = setTimeout(() => {
+    coverDebounce = null;
+    for (const path of coverList) player.loadCover(path);
+  }, 300);
+}
+
 watch(
   filteredVideo,
   (tracks) => {
-    tracks.forEach((t) => player.loadCover(t.path));
+    debouncedPreloadCovers(tracks.slice(0, 100).map((t) => t.path));
   },
   { immediate: true }
 );
@@ -228,7 +241,7 @@ watch(
 watch(
   filteredTracks,
   (tracks) => {
-    tracks.slice(0, 200).forEach((t) => player.loadCover(t.path));
+    debouncedPreloadCovers(tracks.slice(0, 200).map((t) => t.path));
   },
   { immediate: true }
 );
@@ -267,10 +280,21 @@ function onTagSaved(tags: {
     const files = JSON.parse(JSON.stringify(library.tracks));
     const folderTypes = JSON.parse(JSON.stringify(library.folderTypes));
     window.api?.invoke('library:saveScanned', { files, folderTypes }).catch(() => {});
-  } catch (_e) { /* serialization failed silently */ }
+  } catch (_e) {
+    /* serialization failed silently */
+  }
 }
 
-function onMBApply(data: { title?: string; artist?: string; album?: string; year?: number; genre?: string; track?: { no: number }; coverData?: number[]; coverMime?: string }) {
+function onMBApply(data: {
+  title?: string;
+  artist?: string;
+  album?: string;
+  year?: number;
+  genre?: string;
+  track?: { no: number };
+  coverData?: number[];
+  coverMime?: string;
+}) {
   if (!editingTrack.value) return;
   editingTrack.value.metadata = {
     ...(editingTrack.value.metadata || {}),
@@ -290,7 +314,9 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
     const files = JSON.parse(JSON.stringify(library.tracks));
     const folderTypes = JSON.parse(JSON.stringify(library.folderTypes));
     window.api?.invoke('library:saveScanned', { files, folderTypes }).catch(() => {});
-  } catch (_e) { /* serialization failed silently */ }
+  } catch (_e) {
+    /* serialization failed silently */
+  }
   showingMBLookup.value = false;
   editingTrack.value = null;
 }
@@ -315,14 +341,16 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
 
       <div class="flex gap-1 mb-3 overflow-x-auto">
         <button
-          v-for="t in tabs"
-          :key="t.id"
+          v-for="tabItem in tabs"
+          :key="tabItem.id"
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors"
-          :class="tab === t.id ? 'bg-accent-base text-white' : 'text-fg-muted hover:bg-bg-hover'"
-          @click="tab = t.id"
+          :class="
+            tab === tabItem.id ? 'bg-accent-base text-white' : 'text-fg-muted hover:bg-bg-hover'
+          "
+          @click="tab = tabItem.id"
         >
-          <component :is="t.icon" :size="14" />
-          {{ t.label }}
+          <component :is="tabItem.icon" :size="14" />
+          {{ tabItem.label }}
         </button>
       </div>
 
@@ -361,7 +389,9 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
           <div
             class="flex items-center justify-between px-4 py-2 border-b border-border-default shrink-0"
           >
-            <span class="text-xs text-fg-faint">{{ filteredTracks.length }} {{ $t('library.tracksCount') }}</span>
+            <span class="text-xs text-fg-faint"
+              >{{ filteredTracks.length }} {{ $t('library.tracksCount') }}</span
+            >
             <button
               class="flex items-center gap-1 px-3 py-1 rounded-lg bg-accent-ghost text-accent-base text-xs font-medium hover:bg-accent-base hover:text-white transition-colors"
               @click="playAllTracks"
@@ -414,7 +444,9 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
           <div
             class="flex items-center justify-between px-4 py-2 border-b border-border-default shrink-0"
           >
-            <span class="text-xs text-fg-faint">{{ filteredVideo.length }} {{ $t('library.files') }}</span>
+            <span class="text-xs text-fg-faint"
+              >{{ filteredVideo.length }} {{ $t('library.files') }}</span
+            >
             <button
               class="flex items-center gap-1 px-3 py-1 rounded-lg bg-accent-ghost text-accent-base text-xs font-medium hover:bg-accent-base hover:text-white transition-colors"
               @click="playAllVideo"
@@ -440,9 +472,9 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
                 }"
               >
                 <VideoCard
-                  v-for="t in row.tracks"
-                  :key="t.path"
-                  :track="t"
+                  v-for="videoCard in row.tracks"
+                  :key="videoCard.path"
+                  :track="videoCard"
                   @play="playTrack"
                 />
               </div>
@@ -478,7 +510,8 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
                 <div class="min-w-0 text-left">
                   <div class="text-sm font-medium">{{ dirName(folderPath) }}</div>
                   <div class="text-xs text-fg-faint truncate">
-                    {{ folderPath }} · {{ folderFileCount(folderPath) }} {{ $t('library.folderFiles') }}
+                    {{ folderPath }} · {{ folderFileCount(folderPath) }}
+                    {{ $t('library.folderFiles') }}
                   </div>
                 </div>
               </div>
@@ -530,7 +563,9 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
               <Mic2 :size="24" class="text-accent-base" />
             </div>
             <div class="text-sm font-medium truncate w-full">{{ name }}</div>
-            <div class="text-xs text-fg-faint mt-0.5">{{ tracks.length }} {{ $t('library.tracksCount') }}</div>
+            <div class="text-xs text-fg-faint mt-0.5">
+              {{ tracks.length }} {{ $t('library.tracksCount') }}
+            </div>
           </button>
         </div>
       </template>
@@ -582,9 +617,5 @@ function onMBApply(data: { title?: string; artist?: string; album?: string; year
     </div>
   </div>
   <TrackTagEditor :track="editingTrack" @close="editingTrack = null" @saved="onTagSaved" />
-  <MusicBrainzLookup
-    v-if="showingMBLookup"
-    @close="showingMBLookup = false"
-    @apply="onMBApply"
-  />
+  <MusicBrainzLookup v-if="showingMBLookup" @close="showingMBLookup = false" @apply="onMBApply" />
 </template>

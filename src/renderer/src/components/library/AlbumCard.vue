@@ -30,8 +30,16 @@ const count = computed(() => props.tracks.length);
 function onContextMenu(e: MouseEvent) {
   e.preventDefault();
   ui.showContextMenu(e.clientX, e.clientY, [
-    { label: t('common.playAlbum') + ' (' + count.value + ' ' + t('common.tracks') + ')', action: () => emit('play', props.tracks) },
-    { label: t('common.addAllToQueue'), action: () => { props.tracks.forEach((t) => player.addToQueue(t)); } }
+    {
+      label: t('common.playAlbum') + ' (' + count.value + ' ' + t('common.tracks') + ')',
+      action: () => emit('play', props.tracks)
+    },
+    {
+      label: t('common.addAllToQueue'),
+      action: () => {
+        props.tracks.forEach((t) => player.addToQueue(t));
+      }
+    }
   ]);
 }
 
@@ -49,8 +57,10 @@ function onDragStart(e: DragEvent) {
     @contextmenu.prevent="onContextMenu"
     @dragstart="onDragStart"
   >
-      <div class="w-full aspect-square bg-bg-overlay flex items-center justify-center relative overflow-hidden">
-        <MediaCover :cover="cover" :size="28" :render-as-video="false" fallback="disc" />
+    <div
+      class="w-full aspect-square bg-bg-overlay flex items-center justify-center relative overflow-hidden"
+    >
+      <MediaCover :cover="cover" :size="28" :render-as-video="false" fallback="disc" />
       <div
         class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors"
       >

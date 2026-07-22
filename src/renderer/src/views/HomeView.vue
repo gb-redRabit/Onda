@@ -46,7 +46,12 @@ const actions = [
     icon: Disc3,
     route: () => router.push('/library')
   },
-  { labelKey: 'youtube.title', descKey: 'home.searchAndDownload', icon: Tv2, route: () => router.push('/youtube') }
+  {
+    labelKey: 'youtube.title',
+    descKey: 'home.searchAndDownload',
+    icon: Tv2,
+    route: () => router.push('/youtube')
+  }
 ];
 </script>
 
@@ -143,7 +148,9 @@ const actions = [
           </div>
           <div class="min-w-0">
             <div class="text-sm font-medium truncate">{{ t.metadata?.title || t.name }}</div>
-            <div class="text-xs text-fg-faint truncate">{{ t.metadata?.artist || $t('home.unknown') }}</div>
+            <div class="text-xs text-fg-faint truncate">
+              {{ t.metadata?.artist || $t('home.unknown') }}
+            </div>
           </div>
         </button>
       </div>

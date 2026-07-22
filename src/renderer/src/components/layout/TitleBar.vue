@@ -131,7 +131,9 @@ window.api.on('window:maximized', (val: unknown) => {
 });
 
 watch(locale, () => {
-  tabs.value.forEach((tab) => { tab.label = routeLabel(tab.path); });
+  tabs.value.forEach((tab) => {
+    tab.label = routeLabel(tab.path);
+  });
 });
 </script>
 

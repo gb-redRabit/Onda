@@ -28,29 +28,37 @@ const actions = computed(() => [
 const results = computed(() => {
   const q = query.value.toLowerCase().trim();
   if (!q) return { tracks: [] as MediaFile[], actions: actions.value };
-  const tracks = library.tracks.filter(
-    (t) =>
-      (t.metadata?.title || t.name).toLowerCase().includes(q) ||
-      (t.metadata?.artist || '').toLowerCase().includes(q) ||
-      (t.metadata?.album || '').toLowerCase().includes(q)
-  ).slice(0, 10);
+  const tracks = library.tracks
+    .filter(
+      (t) =>
+        (t.metadata?.title || t.name).toLowerCase().includes(q) ||
+        (t.metadata?.artist || '').toLowerCase().includes(q) ||
+        (t.metadata?.album || '').toLowerCase().includes(q)
+    )
+    .slice(0, 10);
   return { tracks, actions: actions.value.filter((a) => a.label.toLowerCase().includes(q)) };
 });
 
 const flatItems = computed(() => {
-  const items: ({ type: 'track'; track: MediaFile } | { type: 'action'; label: string; icon: any; action: () => void })[] = [];
+  const items: (
+    | { type: 'track'; track: MediaFile }
+    | { type: 'action'; label: string; icon: any; action: () => void }
+  )[] = [];
   results.value.tracks.forEach((t) => items.push({ type: 'track', track: t }));
   results.value.actions.forEach((a) => items.push({ type: 'action', ...a }));
   return items;
 });
 
-watch(() => ui.commandPaletteVisible, (v) => {
-  if (v) {
-    query.value = '';
-    activeIndex.value = 0;
-    setTimeout(() => input.value?.focus(), 50);
+watch(
+  () => ui.commandPaletteVisible,
+  (v) => {
+    if (v) {
+      query.value = '';
+      activeIndex.value = 0;
+      setTimeout(() => input.value?.focus(), 50);
+    }
   }
-});
+);
 
 function onKeydown(e: KeyboardEvent) {
   if (!ui.commandPaletteVisible) return;
@@ -100,7 +108,10 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
         />
       </div>
       <div class="max-h-80 overflow-y-auto py-1">
-        <div v-if="results.tracks.length === 0 && !query" class="px-3 py-4 text-center text-xs text-fg-faint italic">
+        <div
+          v-if="results.tracks.length === 0 && !query"
+          class="px-3 py-4 text-center text-xs text-fg-faint italic"
+        >
           {{ $t('cmdPalette.empty') }}
         </div>
         <template v-for="(item, i) in flatItems" :key="i">
@@ -108,18 +119,31 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
             v-if="item.type === 'track'"
             class="flex items-center gap-2.5 px-3 py-2 cursor-pointer text-sm transition-colors"
             :class="i === activeIndex ? 'bg-accent-ghost text-accent-base' : 'hover:bg-bg-hover'"
-            @click="player.setTrack(item.track); player.play(); ui.toggleCommandPalette()"
+            @click="
+              player.setTrack(item.track);
+              player.play();
+              ui.toggleCommandPalette();
+            "
             @mouseenter="activeIndex = i"
           >
-            <component :is="item.track.type === 'video' ? Film : Music2" :size="14" class="shrink-0 text-fg-faint" />
+            <component
+              :is="item.track.type === 'video' ? Film : Music2"
+              :size="14"
+              class="shrink-0 text-fg-faint"
+            />
             <span class="truncate flex-1">{{ item.track.metadata?.title || item.track.name }}</span>
-            <span class="text-[11px] text-fg-faint shrink-0 truncate max-w-[120px]">{{ item.track.metadata?.artist || item.track.extension }}</span>
+            <span class="text-[11px] text-fg-faint shrink-0 truncate max-w-[120px]">{{
+              item.track.metadata?.artist || item.track.extension
+            }}</span>
           </div>
           <div
             v-else
             class="flex items-center gap-2.5 px-3 py-2 cursor-pointer text-sm transition-colors"
             :class="i === activeIndex ? 'bg-accent-ghost text-accent-base' : 'hover:bg-bg-hover'"
-            @click="item.action(); ui.toggleCommandPalette()"
+            @click="
+              item.action();
+              ui.toggleCommandPalette();
+            "
             @mouseenter="activeIndex = i"
           >
             <component :is="item.icon" :size="14" class="shrink-0 text-fg-faint" />

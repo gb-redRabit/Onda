@@ -53,7 +53,10 @@ function onPlaylistDrop(e: DragEvent, playlistId: string) {
       if (track) library.addToPlaylist(playlistId, track);
     });
     dragOverPlaylistId.value = null;
-    ui.notify('success', `Dodano ${paths.length} ${t('common.tracks')} do playlisty "${playlist.name}"`);
+    ui.notify(
+      'success',
+      `Dodano ${paths.length} ${t('common.tracks')} do playlisty "${playlist.name}"`
+    );
   } catch {
     // not our data format
   }
@@ -120,7 +123,9 @@ function playAll() {
       <div class="flex items-center justify-between p-3 border-b border-border-default">
         <div>
           <h2 class="text-sm font-bold">{{ selectedPlaylist.name }}</h2>
-          <p class="text-xs text-fg-faint">{{ selectedPlaylist.tracks.length }} {{ $t('library.tracksCount') }}</p>
+          <p class="text-xs text-fg-faint">
+            {{ selectedPlaylist.tracks.length }} {{ $t('library.tracksCount') }}
+          </p>
         </div>
         <div class="flex items-center gap-2">
           <button
@@ -138,7 +143,11 @@ function playAll() {
           </button>
         </div>
       </div>
-      <div class="flex-1 overflow-auto p-2" @dragover.prevent @drop.prevent="selectedPlaylistId && onPlaylistDrop($event, selectedPlaylistId)">
+      <div
+        class="flex-1 overflow-auto p-2"
+        @dragover.prevent
+        @drop.prevent="selectedPlaylistId && onPlaylistDrop($event, selectedPlaylistId)"
+      >
         <LibraryTrackRow
           v-for="track in selectedPlaylist.tracks"
           :key="track.path"

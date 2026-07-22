@@ -17,18 +17,42 @@ import {
 } from '@lucide/vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 
-const SettingsAppearance = defineAsyncComponent(() => import('@renderer/components/settings/SettingsAppearance.vue'));
-const SettingsPlayback = defineAsyncComponent(() => import('@renderer/components/settings/SettingsPlayback.vue'));
-const SettingsPiP = defineAsyncComponent(() => import('@renderer/components/settings/SettingsPiP.vue'));
-const SettingsDownload = defineAsyncComponent(() => import('@renderer/components/settings/SettingsDownload.vue'));
-const SettingsShortcuts = defineAsyncComponent(() => import('@renderer/components/settings/SettingsShortcuts.vue'));
-const SettingsNetwork = defineAsyncComponent(() => import('@renderer/components/settings/SettingsNetwork.vue'));
-const SettingsApiKeys = defineAsyncComponent(() => import('@renderer/components/settings/SettingsApiKeys.vue'));
-const SettingsUpdates = defineAsyncComponent(() => import('@renderer/components/settings/SettingsUpdates.vue'));
-const SettingsDependencies = defineAsyncComponent(() => import('@renderer/components/settings/SettingsDependencies.vue'));
-const SettingsLibraryFolders = defineAsyncComponent(() => import('@renderer/components/settings/SettingsLibraryFolders.vue'));
-const SettingsToast = defineAsyncComponent(() => import('@renderer/components/settings/SettingsToast.vue'));
-const SettingsLanguage = defineAsyncComponent(() => import('@renderer/components/settings/SettingsLanguage.vue'));
+const SettingsAppearance = defineAsyncComponent(
+  () => import('@renderer/components/settings/SettingsAppearance.vue')
+);
+const SettingsPlayback = defineAsyncComponent(
+  () => import('@renderer/components/settings/SettingsPlayback.vue')
+);
+const SettingsPiP = defineAsyncComponent(
+  () => import('@renderer/components/settings/SettingsPiP.vue')
+);
+const SettingsDownload = defineAsyncComponent(
+  () => import('@renderer/components/settings/SettingsDownload.vue')
+);
+const SettingsShortcuts = defineAsyncComponent(
+  () => import('@renderer/components/settings/SettingsShortcuts.vue')
+);
+const SettingsNetwork = defineAsyncComponent(
+  () => import('@renderer/components/settings/SettingsNetwork.vue')
+);
+const SettingsApiKeys = defineAsyncComponent(
+  () => import('@renderer/components/settings/SettingsApiKeys.vue')
+);
+const SettingsUpdates = defineAsyncComponent(
+  () => import('@renderer/components/settings/SettingsUpdates.vue')
+);
+const SettingsDependencies = defineAsyncComponent(
+  () => import('@renderer/components/settings/SettingsDependencies.vue')
+);
+const SettingsLibraryFolders = defineAsyncComponent(
+  () => import('@renderer/components/settings/SettingsLibraryFolders.vue')
+);
+const SettingsToast = defineAsyncComponent(
+  () => import('@renderer/components/settings/SettingsToast.vue')
+);
+const SettingsLanguage = defineAsyncComponent(
+  () => import('@renderer/components/settings/SettingsLanguage.vue')
+);
 
 const settings = useSettingsStore();
 

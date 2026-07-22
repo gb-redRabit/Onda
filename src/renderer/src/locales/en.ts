@@ -155,7 +155,8 @@ export default {
     weekly: 'Weekly',
     checkNow: 'Check now',
     depTitle: 'System dependencies',
-    depDesc: 'Some features require external tools. Check their status and install any missing ones.',
+    depDesc:
+      'Some features require external tools. Check their status and install any missing ones.',
     depRefresh: 'Refresh status',
     depInstalled: 'Installed',
     depMissing: 'Missing',

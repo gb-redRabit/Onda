@@ -4,7 +4,13 @@ import { RotateCcw, PanelLeftOpen, PanelRightOpen } from '@lucide/vue';
 
 const settings = useSettingsStore();
 
-const themes: { id: (typeof settings.appearance.theme); labelKey?: string; label: string; bg: string; fg: string }[] = [
+const themes: {
+  id: typeof settings.appearance.theme;
+  labelKey?: string;
+  label: string;
+  bg: string;
+  fg: string;
+}[] = [
   { id: 'dark', labelKey: 'settings.dark', label: 'Ciemny', bg: '#0f0f17', fg: '#e8e8f0' },
   { id: 'light', labelKey: 'settings.light', label: 'Jasny', bg: '#f8f8fa', fg: '#1a1a2e' },
   { id: 'midnight', label: 'Midnight', bg: '#0d1117', fg: '#c9d1d9' },
@@ -115,15 +121,19 @@ const accentColors = [
 
     <div>
       <h3 class="text-sm font-semibold mb-3">{{ $t('settings.sidebarPosition') }}</h3>
-      <div class="w-48 h-36 rounded-2xl bg-bg-elevated border-2 border-border-default p-2 relative select-none">
+      <div
+        class="w-48 h-36 rounded-2xl bg-bg-elevated border-2 border-border-default p-2 relative select-none"
+      >
         <div class="grid grid-cols-2 gap-2 w-full h-full">
           <button
             v-for="pos in ['left', 'right'] as const"
             :key="pos"
             class="rounded-xl text-[11px] font-medium transition-all border-2 flex flex-col items-center justify-center gap-1"
-            :class="settings.appearance.sidebarPosition === pos
-              ? 'border-accent-base bg-accent-ghost text-accent-base shadow-sm shadow-accent-base/20'
-              : 'border-transparent text-fg-faint hover:bg-bg-hover hover:text-fg-muted'"
+            :class="
+              settings.appearance.sidebarPosition === pos
+                ? 'border-accent-base bg-accent-ghost text-accent-base shadow-sm shadow-accent-base/20'
+                : 'border-transparent text-fg-faint hover:bg-bg-hover hover:text-fg-muted'
+            "
             @click="settings.updateAppearance({ sidebarPosition: pos })"
           >
             <component :is="pos === 'left' ? PanelLeftOpen : PanelRightOpen" :size="18" />
@@ -135,7 +145,10 @@ const accentColors = [
         </div>
       </div>
       <p class="text-[11px] text-fg-faint mt-2">
-        {{ $t('settings.selected') }} <span class="text-fg-base font-medium">{{ $t('settings.' + settings.appearance.sidebarPosition) }}</span>
+        {{ $t('settings.selected') }}
+        <span class="text-fg-base font-medium">{{
+          $t('settings.' + settings.appearance.sidebarPosition)
+        }}</span>
       </p>
     </div>
   </div>

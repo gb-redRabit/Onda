@@ -140,7 +140,9 @@ function playPlaylist(playlistId: string) {
                 v-for="playlist in library.playlists"
                 :key="playlist.id"
                 class="group flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-colors cursor-pointer"
-                :class="{ 'ring-1 ring-accent-base/50 bg-accent-ghost': dragOverPlaylistId === playlist.id }"
+                :class="{
+                  'ring-1 ring-accent-base/50 bg-accent-ghost': dragOverPlaylistId === playlist.id
+                }"
                 @click="playPlaylist(playlist.id)"
                 @dragover.prevent="dragOverPlaylistId = playlist.id"
                 @dragleave="dragOverPlaylistId = null"

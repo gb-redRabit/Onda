@@ -3,6 +3,7 @@
 ## Completed
 
 ### Core
+
 - Virtualized track list (`@tanstack/vue-virtual` row-based)
 - Virtualized video grid (column-based)
 - Virtualized album grid (column-based)
@@ -11,6 +12,7 @@
 - Settings components code-split via `defineAsyncComponent`
 
 ### ID3 Tag Editing (B3)
+
 - `node-id3` installed
 - `media:writeTags` IPC handler
 - `TrackTagEditor.vue` component — edit title, artist, album, year, genre, track number
@@ -21,12 +23,14 @@
   - `media:writeCover` / `media:readCover` IPC handlers
 
 ### Scan Fixes
+
 - `scanDir` now populates `metadata` and `duration` via `getMetadata()` using `NodeID3.read()`
 - `media:getMetadata` reads actual ID3 tags
 - `refreshDerived()` in library store with `triggerRef(tracks)`
 - Fixed `ListMusic` import
 
 ### MusicBrainz Integration (B4)
+
 - `src/main/ipc/musicbrainz.ts` — service wrapping MusicBrainz API + Cover Art Archive
   - `musicbrainz:searchRelease` — search releases by query
   - `musicbrainz:lookupRelease` — get release details (track list, credits)
@@ -36,5 +40,6 @@
 - Applies metadata + cover art to currently editing track
 
 ## In Progress / Not Started
+
 - Favorites column (heart toggle per track)
 - Configurable info columns

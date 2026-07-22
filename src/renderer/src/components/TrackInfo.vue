@@ -5,33 +5,43 @@ import type { MediaFile } from '@renderer/types/media';
 
 const { t } = useI18n();
 
-const props = withDefaults(defineProps<{
-  track: MediaFile | null;
-  showArtist?: boolean;
-  showAlbum?: boolean;
-  titleSize?: string;
-  artistSize?: string;
-  titleClass?: string;
-  artistClass?: string;
-  showFallback?: boolean;
-}>(), {
-  showArtist: true,
-  showAlbum: false,
-  titleSize: 'text-sm',
-  artistSize: 'text-xs',
-  titleClass: '',
-  artistClass: '',
-  showFallback: true
-});
+const props = withDefaults(
+  defineProps<{
+    track: MediaFile | null;
+    showArtist?: boolean;
+    showAlbum?: boolean;
+    titleSize?: string;
+    artistSize?: string;
+    titleClass?: string;
+    artistClass?: string;
+    showFallback?: boolean;
+  }>(),
+  {
+    showArtist: true,
+    showAlbum: false,
+    titleSize: 'text-sm',
+    artistSize: 'text-xs',
+    titleClass: '',
+    artistClass: '',
+    showFallback: true
+  }
+);
 
-const displayTitle = computed(() => props.track?.metadata?.title || props.track?.name || (props.showFallback ? t('playerBar.noTrack') : ''));
+const displayTitle = computed(
+  () =>
+    props.track?.metadata?.title ||
+    props.track?.name ||
+    (props.showFallback ? t('playerBar.noTrack') : '')
+);
 const displayArtist = computed(() => {
   if (!props.showArtist) return '';
   if (props.track?.metadata?.artist) return props.track.metadata.artist;
   if (props.track?.metadata?.album) return props.track.metadata.album;
   return props.showFallback ? t('common.unknown') : '';
 });
-const displayAlbum = computed(() => props.showAlbum && props.track?.metadata?.album ? props.track.metadata.album : '');
+const displayAlbum = computed(() =>
+  props.showAlbum && props.track?.metadata?.album ? props.track.metadata.album : ''
+);
 </script>
 
 <template>

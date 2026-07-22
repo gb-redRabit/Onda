@@ -1,7 +1,8 @@
 import { vi } from 'vitest';
 
 if (typeof globalThis.requestIdleCallback === 'undefined') {
-  globalThis.requestIdleCallback = (cb: IdleRequestCallback) => setTimeout(cb, 0) as unknown as number;
+  globalThis.requestIdleCallback = (cb: IdleRequestCallback) =>
+    setTimeout(cb, 0) as unknown as number;
 }
 
 (window as any).api = {

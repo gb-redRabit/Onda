@@ -30,7 +30,6 @@ function playNow() {
   player.play();
 }
 
-
 function removeFromPlaylist() {
   if (props.playlistId) {
     library.removeFromPlaylist(props.playlistId, props.track.path);
@@ -69,7 +68,10 @@ function onContextMenu(e: MouseEvent) {
     { label: t('common.play'), action: () => playNow() },
     { label: t('common.addToQueue'), action: () => player.addToQueue(props.track) },
     { label: t('common.editTags'), action: () => emit('edit', props.track) },
-    { label: t('common.showInFolder'), action: () => window.api?.invoke('shell:showItemInFolder', props.track.path) },
+    {
+      label: t('common.showInFolder'),
+      action: () => window.api?.invoke('shell:showItemInFolder', props.track.path)
+    },
     ...(library.playlists.length > 0 ? [{ label: '—', separator: true } as const] : []),
     ...library.playlists.map((p) => {
       const inPlaylist = p.tracks.some((t) => t.path === props.track.path);
@@ -127,7 +129,11 @@ function onDragStart(e: DragEvent) {
     >
       <button
         class="p-1.5 rounded-lg transition-colors"
-        :class="player.isFavorite(track.path) ? 'text-red-base hover:text-red-hover' : 'text-fg-faint hover:text-fg-base hover:bg-bg-elevated'"
+        :class="
+          player.isFavorite(track.path)
+            ? 'text-red-base hover:text-red-hover'
+            : 'text-fg-faint hover:text-fg-base hover:bg-bg-elevated'
+        "
         :title="player.isFavorite(track.path) ? $t('common.removeFav') : $t('common.addFav')"
         @click.stop="player.toggleFavorite(track.path)"
       >
@@ -152,7 +158,9 @@ function onDragStart(e: DragEvent) {
             :class="{ 'text-accent-base': p.tracks.some((t) => t.path === props.track.path) }"
             @click="toggleTrackInPlaylist(p.id)"
           >
-            <ListMusic :size="12" class="shrink-0" />{{ p.tracks.some((t) => t.path === props.track.path) ? '✓ ' : '+ ' }}{{ p.name }}
+            <ListMusic :size="12" class="shrink-0" />{{
+              p.tracks.some((t) => t.path === props.track.path) ? '✓ ' : '+ '
+            }}{{ p.name }}
           </button>
           <div
             v-if="library.playlists.length === 0"

@@ -89,7 +89,12 @@ onBeforeUnmount(() => {
 watch(() => settings.appearance.theme, applyTheme);
 watch(() => settings.appearance.accentColor, applyTheme);
 watch(() => settings.appearance.fontSize, applyTheme);
-watch(() => settings.appearance.locale, (loc) => { locale.value = loc; });
+watch(
+  () => settings.appearance.locale,
+  (loc) => {
+    locale.value = loc;
+  }
+);
 
 watch(
   () => player.currentTrack,

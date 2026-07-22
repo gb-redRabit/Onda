@@ -95,7 +95,9 @@ async function search() {
             <h3 class="text-sm font-medium line-clamp-2 mb-1">{{ v.title }}</h3>
             <div class="text-xs text-fg-faint">
               {{ v.channelTitle }}
-              <span v-if="v.viewCount"> · {{ formatNumber(v.viewCount) }} {{ $t('youtube.views') }}</span>
+              <span v-if="v.viewCount">
+                · {{ formatNumber(v.viewCount) }} {{ $t('youtube.views') }}</span
+              >
             </div>
             <p class="text-xs text-fg-faint mt-1 line-clamp-2">{{ v.description }}</p>
           </div>

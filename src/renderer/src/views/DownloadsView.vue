@@ -39,7 +39,9 @@ const colors = {
     </div>
     <div class="flex-1 overflow-auto p-4">
       <div v-if="active.length" class="mb-6">
-        <h2 class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-3">{{ $t('downloads.active') }}</h2>
+        <h2 class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-3">
+          {{ $t('downloads.active') }}
+        </h2>
         <div class="space-y-2">
           <div
             v-for="t in active"
@@ -66,7 +68,9 @@ const colors = {
         </div>
       </div>
       <div v-if="done.length" class="mb-6">
-        <h2 class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-3">{{ $t('downloads.completed') }}</h2>
+        <h2 class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-3">
+          {{ $t('downloads.completed') }}
+        </h2>
         <div
           v-for="t in done"
           :key="t.id"

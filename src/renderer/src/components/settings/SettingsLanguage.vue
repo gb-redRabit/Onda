@@ -25,9 +25,11 @@ function setLocale(loc: string) {
         v-for="lang in languages"
         :key="lang.id"
         class="flex-1 p-4 rounded-xl border-2 transition-all text-center"
-        :class="settings.appearance.locale === lang.id
-          ? 'border-accent-base shadow-lg shadow-accent-base/20'
-          : 'border-border-default hover:border-border-subtle'"
+        :class="
+          settings.appearance.locale === lang.id
+            ? 'border-accent-base shadow-lg shadow-accent-base/20'
+            : 'border-border-default hover:border-border-subtle'
+        "
         @click="setLocale(lang.id)"
       >
         <span class="text-2xl block mb-1">{{ lang.id === 'pl' ? '🇵🇱' : '🇬🇧' }}</span>

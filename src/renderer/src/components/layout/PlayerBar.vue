@@ -67,10 +67,18 @@ function togglePlay() {
       <div class="h-full bg-accent-base rounded-r-full" :style="{ width: progressPct + '%' }" />
     </div>
 
-    <div class="w-8 h-8 rounded-lg bg-bg-elevated flex items-center justify-center shrink-0 overflow-hidden">
+    <div
+      class="w-8 h-8 rounded-lg bg-bg-elevated flex items-center justify-center shrink-0 overflow-hidden"
+    >
       <MediaCover :path="player.currentTrack?.path" :size="14" fallback="music" />
     </div>
-    <TrackInfo :track="player.currentTrack" class="min-w-0 flex-1" titleSize="text-xs" :showArtist="false" :showFallback="true" />
+    <TrackInfo
+      :track="player.currentTrack"
+      class="min-w-0 flex-1"
+      titleSize="text-xs"
+      :showArtist="false"
+      :showFallback="true"
+    />
     <div class="flex items-center gap-1">
       <button
         class="p-1.5 text-fg-muted hover:text-fg-base transition-colors"
@@ -123,10 +131,18 @@ function togglePlay() {
     </div>
 
     <div class="flex items-center gap-3 w-70 min-w-0">
-      <div class="w-11 h-11 rounded-lg bg-bg-elevated border border-border-default flex items-center justify-center shrink-0 overflow-hidden">
+      <div
+        class="w-11 h-11 rounded-lg bg-bg-elevated border border-border-default flex items-center justify-center shrink-0 overflow-hidden"
+      >
         <MediaCover :path="player.currentTrack?.path" :size="18" fallback="music" />
       </div>
-      <TrackInfo :track="player.currentTrack" class="min-w-0 flex-1" titleSize="text-sm" titleClass="text-fg-base" :showFallback="true" />
+      <TrackInfo
+        :track="player.currentTrack"
+        class="min-w-0 flex-1"
+        titleSize="text-sm"
+        titleClass="text-fg-base"
+        :showFallback="true"
+      />
       <button
         class="shrink-0 p-1.5 transition-colors"
         :class="

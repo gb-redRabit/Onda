@@ -332,14 +332,26 @@ describe('favorites', () => {
   it('toggleFavorite persists via saveFavorites (invokes settings:set)', () => {
     const store = usePlayerStore();
     store.toggleFavorite('/x.mp3');
-    expect((window as any).api.invoke).toHaveBeenCalledWith('settings:set', { favorites: ['/x.mp3'] });
+    expect((window as any).api.invoke).toHaveBeenCalledWith('settings:set', {
+      favorites: ['/x.mp3']
+    });
   });
 });
 
 describe('subtitles', () => {
   it('clearSubtitles resets subtitleTracks and activeSubtitleId', () => {
     const store = usePlayerStore();
-    store.subtitleTracks = [{ id: '1', label: 'Test', language: 'pl', format: 'srt', source: 'external', filePath: '/test.srt', content: '' }];
+    store.subtitleTracks = [
+      {
+        id: '1',
+        label: 'Test',
+        language: 'pl',
+        format: 'srt',
+        source: 'external',
+        filePath: '/test.srt',
+        content: ''
+      }
+    ];
     store.activeSubtitleId = '1';
     store.clearSubtitles();
     expect(store.subtitleTracks).toHaveLength(0);
@@ -357,7 +369,9 @@ describe('subtitles', () => {
   it('loadSubtitles fetches external and embedded subtitles', async () => {
     const store = usePlayerStore();
     const api = (window as any).api;
-    api.findExternalSubtitles.mockResolvedValue([{ path: '/sub.srt', name: 'sub.srt', format: 'srt' }]);
+    api.findExternalSubtitles.mockResolvedValue([
+      { path: '/sub.srt', name: 'sub.srt', format: 'srt' }
+    ]);
     api.readSubtitleFile.mockResolvedValue('1\n00:00:01,000 --> 00:00:02,000\nHello');
     api.listEmbeddedSubtitles.mockResolvedValue([{ index: 0, language: 'eng', title: 'English' }]);
 

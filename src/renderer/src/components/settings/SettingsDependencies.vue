@@ -135,7 +135,9 @@ async function installDependency(dep: (typeof deps.value)[0]): Promise<void> {
             <span v-if="dep.version" class="text-xs text-fg-faint font-mono"
               >v{{ dep.version }}</span
             >
-            <span v-else-if="dep.installed" class="text-xs text-green-500">{{ $t('settings.depInstalled') }}</span>
+            <span v-else-if="dep.installed" class="text-xs text-green-500">{{
+              $t('settings.depInstalled')
+            }}</span>
             <span v-else class="text-xs text-red-500">{{ $t('settings.depMissing') }}</span>
             <button
               v-if="!dep.installed"

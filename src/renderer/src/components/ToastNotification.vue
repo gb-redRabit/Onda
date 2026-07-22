@@ -26,19 +26,27 @@ const filtered = computed(() =>
 
 function icon(type: string) {
   switch (type) {
-    case 'success': return CheckCircle2;
-    case 'warning': return AlertTriangle;
-    case 'error': return XCircle;
-    default: return Info;
+    case 'success':
+      return CheckCircle2;
+    case 'warning':
+      return AlertTriangle;
+    case 'error':
+      return XCircle;
+    default:
+      return Info;
   }
 }
 
 function color(type: string) {
   switch (type) {
-    case 'success': return 'text-green-400';
-    case 'warning': return 'text-yellow-400';
-    case 'error': return 'text-red-400';
-    default: return 'text-accent-base';
+    case 'success':
+      return 'text-green-400';
+    case 'warning':
+      return 'text-yellow-400';
+    case 'error':
+      return 'text-red-400';
+    default:
+      return 'text-accent-base';
   }
 }
 </script>
@@ -58,7 +66,10 @@ function color(type: string) {
         <div class="text-xs font-medium text-fg-base">{{ n.title }}</div>
         <div v-if="n.message" class="text-[11px] text-fg-faint mt-0.5">{{ n.message }}</div>
       </div>
-      <button class="p-0.5 shrink-0 text-fg-faint hover:text-fg-base transition-colors" @click="ui.removeNotification(n.id)">
+      <button
+        class="p-0.5 shrink-0 text-fg-faint hover:text-fg-base transition-colors"
+        @click="ui.removeNotification(n.id)"
+      >
         <X :size="12" />
       </button>
     </div>
@@ -67,8 +78,14 @@ function color(type: string) {
 
 <style scoped>
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .animate-in {
   animation: slide-up 0.2s ease-out;

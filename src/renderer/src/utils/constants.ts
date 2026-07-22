@@ -37,7 +37,12 @@ export const ALL_MEDIA_FORMATS = [
   ...SUPPORTED_PLAYLIST_FORMATS
 ];
 
-import type { NetworkSettings, ApiKeySettings, UpdateSettings, ToastSettings } from '@renderer/types/settings';
+import type {
+  NetworkSettings,
+  ApiKeySettings,
+  UpdateSettings,
+  ToastSettings
+} from '@renderer/types/settings';
 
 export const DEFAULT_NETWORK: NetworkSettings = {
   proxy: { enabled: false, type: 'http', host: '', port: 8080 },

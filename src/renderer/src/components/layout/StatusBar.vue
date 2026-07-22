@@ -22,7 +22,9 @@ const viewInfo = computed(() => {
     case 'explorer':
       return `${explorer.sortedFiles.length} ${t('status.items')}`;
     case 'youtube':
-      return youtube.searchResults.length ? `${youtube.searchResults.length} ${t('status.results')}` : '';
+      return youtube.searchResults.length
+        ? `${youtube.searchResults.length} ${t('status.results')}`
+        : '';
     case 'downloads':
       return youtube.downloads.length ? `${youtube.downloads.length} ${t('status.downloads')}` : '';
     default:

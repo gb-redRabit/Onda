@@ -83,19 +83,31 @@ const api = {
     tags: Record<string, string | undefined>
   ): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke('media:writeTags', filePath, tags),
-  renameFile: (oldPath: string, newName: string): Promise<{ success: boolean; error?: string; newPath?: string }> =>
+  renameFile: (
+    oldPath: string,
+    newName: string
+  ): Promise<{ success: boolean; error?: string; newPath?: string }> =>
     ipcRenderer.invoke('media:renameFile', oldPath, newName),
-  writeCover: (filePath: string, imageSource: number[] | string): Promise<{ success: boolean; error?: string }> =>
+  writeCover: (
+    filePath: string,
+    imageSource: number[] | string
+  ): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke('media:writeCover', filePath, imageSource),
   readCover: (filePath: string): Promise<{ mime?: string; data?: number[] } | null> =>
     ipcRenderer.invoke('media:readCover', filePath),
   openImageDialog: (): Promise<{ canceled: boolean; filePaths: string[] }> =>
     ipcRenderer.invoke('dialog:openImage'),
-  musicbrainzSearchRelease: (query: string): Promise<{ success: boolean; releases: any[]; error?: string }> =>
+  musicbrainzSearchRelease: (
+    query: string
+  ): Promise<{ success: boolean; releases: any[]; error?: string }> =>
     ipcRenderer.invoke('musicbrainz:searchRelease', query),
-  musicbrainzLookupRelease: (releaseId: string): Promise<{ success: boolean; release?: any; error?: string }> =>
+  musicbrainzLookupRelease: (
+    releaseId: string
+  ): Promise<{ success: boolean; release?: any; error?: string }> =>
     ipcRenderer.invoke('musicbrainz:lookupRelease', releaseId),
-  musicbrainzGetCoverData: (releaseId: string): Promise<{ success: boolean; data?: number[]; mime?: string; error?: string }> =>
+  musicbrainzGetCoverData: (
+    releaseId: string
+  ): Promise<{ success: boolean; data?: number[]; mime?: string; error?: string }> =>
     ipcRenderer.invoke('musicbrainz:getCoverData', releaseId),
   getFilePath: (file: File): string => webUtils.getPathForFile(file),
   listEmbeddedSubtitles: (

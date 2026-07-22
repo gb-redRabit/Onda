@@ -8,8 +8,20 @@ const settings = useSettingsStore();
 const pipPositions = [
   { id: 'top-left' as const, labelKey: 'settings.topLeft', row: 0, col: 0, icon: CornerUpLeft },
   { id: 'top-right' as const, labelKey: 'settings.topRight', row: 0, col: 1, icon: CornerUpRight },
-  { id: 'bottom-left' as const, labelKey: 'settings.bottomLeft', row: 1, col: 0, icon: CornerDownLeft },
-  { id: 'bottom-right' as const, labelKey: 'settings.bottomRight', row: 1, col: 1, icon: CornerDownRight }
+  {
+    id: 'bottom-left' as const,
+    labelKey: 'settings.bottomLeft',
+    row: 1,
+    col: 0,
+    icon: CornerDownLeft
+  },
+  {
+    id: 'bottom-right' as const,
+    labelKey: 'settings.bottomRight',
+    row: 1,
+    col: 1,
+    icon: CornerDownRight
+  }
 ];
 
 const pipPreviewOpen = ref(false);
@@ -67,15 +79,19 @@ watch(
 
       <div>
         <h3 class="text-sm font-semibold mb-3">Pozycja okna</h3>
-        <div class="w-48 aspect-square rounded-2xl bg-bg-elevated border-2 border-border-default p-2 relative select-none">
+        <div
+          class="w-48 aspect-square rounded-2xl bg-bg-elevated border-2 border-border-default p-2 relative select-none"
+        >
           <div class="grid grid-cols-2 grid-rows-2 gap-2 w-full h-full">
             <button
               v-for="p in pipPositions"
               :key="p.id"
               class="rounded-xl text-[11px] font-medium transition-all border-2 flex flex-col items-center justify-center gap-1"
-              :class="settings.playback.pipPosition === p.id
-                ? 'border-accent-base bg-accent-ghost text-accent-base shadow-sm shadow-accent-base/20'
-                : 'border-transparent text-fg-faint hover:bg-bg-hover hover:text-fg-muted'"
+              :class="
+                settings.playback.pipPosition === p.id
+                  ? 'border-accent-base bg-accent-ghost text-accent-base shadow-sm shadow-accent-base/20'
+                  : 'border-transparent text-fg-faint hover:bg-bg-hover hover:text-fg-muted'
+              "
               @click="settings.updatePlayback({ pipPosition: p.id })"
             >
               <component :is="p.icon" :size="16" />
@@ -87,12 +103,17 @@ watch(
           </div>
         </div>
         <p class="text-[11px] text-fg-faint mt-2">
-          {{ $t('settings.selected') }} <span class="text-fg-base font-medium">{{ $t(pipPositions.find(p => p.id === settings.playback.pipPosition)?.labelKey ?? '') }}</span>
+          {{ $t('settings.selected') }}
+          <span class="text-fg-base font-medium">{{
+            $t(pipPositions.find((p) => p.id === settings.playback.pipPosition)?.labelKey ?? '')
+          }}</span>
         </p>
       </div>
 
       <div>
-        <h3 class="text-sm font-semibold mb-3">{{ $t('settings.width') }} {{ settings.playback.pipWidth }}px</h3>
+        <h3 class="text-sm font-semibold mb-3">
+          {{ $t('settings.width') }} {{ settings.playback.pipWidth }}px
+        </h3>
         <input
           type="range"
           min="240"
@@ -109,7 +130,9 @@ watch(
       </div>
 
       <div>
-        <h3 class="text-sm font-semibold mb-3">{{ $t('settings.height') }} {{ settings.playback.pipHeight }}px</h3>
+        <h3 class="text-sm font-semibold mb-3">
+          {{ $t('settings.height') }} {{ settings.playback.pipHeight }}px
+        </h3>
         <input
           type="range"
           min="140"

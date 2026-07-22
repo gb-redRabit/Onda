@@ -37,7 +37,7 @@ Pełna dokumentacja architektury: [`project.md`](./project.md).
 | CSS          | Tailwind CSS 4                              |
 | Stan         | Pinia 3                                     |
 | i18n         | vue-i18n 10 (PL/EN)                         |
-| Metadane     | music-metadata (tagi, duration, okładki)     |
+| Metadane     | music-metadata (tagi, duration, okładki)    |
 | Routing      | vue-router 4 (hash history, lazy loading)   |
 | Napisy       | JASSUB (ASS), własny parser SRT/VTT/ASS     |
 | Packaging    | electron-builder (NSIS / DMG / AppImage)    |

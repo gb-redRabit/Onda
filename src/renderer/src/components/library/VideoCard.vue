@@ -36,7 +36,10 @@ function onContextMenu(e: MouseEvent) {
   ui.showContextMenu(e.clientX, e.clientY, [
     { label: t('common.play'), action: () => emit('play', props.track) },
     { label: t('common.addToQueue'), action: () => player.addToQueue(props.track) },
-    { label: t('common.showInFolder'), action: () => window.api?.invoke('shell:showItemInFolder', props.track.path) }
+    {
+      label: t('common.showInFolder'),
+      action: () => window.api?.invoke('shell:showItemInFolder', props.track.path)
+    }
   ]);
 }
 
@@ -54,8 +57,10 @@ function onDragStart(e: DragEvent) {
     @contextmenu.prevent="onContextMenu"
     @dragstart="onDragStart"
   >
-      <div class="aspect-video bg-bg-overlay flex items-center justify-center relative overflow-hidden">
-        <MediaCover :cover="cover" :size="32" :render-as-video="false" fallback="film" />
+    <div
+      class="aspect-video bg-bg-overlay flex items-center justify-center relative overflow-hidden"
+    >
+      <MediaCover :cover="cover" :size="32" :render-as-video="false" fallback="film" />
       <div
         class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors"
       >

@@ -11,10 +11,7 @@ const positions = [
   { id: 'bottom-right' as const, labelKey: 'settings.bottomRight', row: 1, col: 1 }
 ];
 
-const grid: (typeof positions)[number][] = [
-  positions[0], positions[1],
-  positions[2], positions[3]
-];
+const grid: (typeof positions)[number][] = [positions[0], positions[1], positions[2], positions[3]];
 </script>
 
 <template>
@@ -27,20 +24,34 @@ const grid: (typeof positions)[number][] = [
     </div>
 
     <div>
-      <label class="text-xs font-medium text-fg-muted block mb-2">{{ $t('settings.toastPosition') }}</label>
-      <div class="w-48  aspect-square rounded-2xl bg-bg-elevated border-2 border-border-default p-2 relative select-none">
+      <label class="text-xs font-medium text-fg-muted block mb-2">{{
+        $t('settings.toastPosition')
+      }}</label>
+      <div
+        class="w-48 aspect-square rounded-2xl bg-bg-elevated border-2 border-border-default p-2 relative select-none"
+      >
         <div class="grid grid-cols-2 grid-rows-2 gap-2 w-full h-full">
           <button
             v-for="p in grid"
             :key="p.id"
             class="rounded-xl text-[11px] font-medium transition-all border-2 flex flex-col items-center justify-center gap-1"
-            :class="settings.toast.position === p.id
-              ? 'border-accent-base bg-accent-ghost text-accent-base shadow-sm shadow-accent-base/20'
-              : 'border-transparent text-fg-faint hover:bg-bg-hover hover:text-fg-muted'"
+            :class="
+              settings.toast.position === p.id
+                ? 'border-accent-base bg-accent-ghost text-accent-base shadow-sm shadow-accent-base/20'
+                : 'border-transparent text-fg-faint hover:bg-bg-hover hover:text-fg-muted'
+            "
             @click="settings.updateToast({ position: p.id })"
           >
-            <component :is="p.row === 0 ? CornerUpRight : CornerDownRight" :size="16" v-if="p.col === 1" />
-            <component :is="p.row === 0 ? CornerUpLeft : CornerDownLeft" :size="16" v-if="p.col === 0" />
+            <component
+              :is="p.row === 0 ? CornerUpRight : CornerDownRight"
+              :size="16"
+              v-if="p.col === 1"
+            />
+            <component
+              :is="p.row === 0 ? CornerUpLeft : CornerDownLeft"
+              :size="16"
+              v-if="p.col === 0"
+            />
             <span>{{ $t(p.labelKey) }}</span>
           </button>
         </div>
@@ -49,7 +60,10 @@ const grid: (typeof positions)[number][] = [
         </div>
       </div>
       <p class="text-[11px] text-fg-faint mt-2">
-        {{ $t('settings.selected') }} <span class="text-fg-base font-medium">{{ $t(positions.find(p => p.id === settings.toast.position)?.labelKey ?? '') }}</span>
+        {{ $t('settings.selected') }}
+        <span class="text-fg-base font-medium">{{
+          $t(positions.find((p) => p.id === settings.toast.position)?.labelKey ?? '')
+        }}</span>
       </p>
     </div>
 

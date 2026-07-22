@@ -3,19 +3,22 @@ import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { Music2, Play, Disc3, Film } from '@lucide/vue';
 
-const props = withDefaults(defineProps<{
-  path?: string;
-  cover?: { type: string | null; data: string | null };
-  size?: number;
-  autoplay?: boolean;
-  renderAsVideo?: boolean;
-  fallback?: 'music' | 'play' | 'disc' | 'film';
-}>(), {
-  size: 40,
-  autoplay: false,
-  renderAsVideo: true,
-  fallback: 'music'
-});
+const props = withDefaults(
+  defineProps<{
+    path?: string;
+    cover?: { type: string | null; data: string | null };
+    size?: number;
+    autoplay?: boolean;
+    renderAsVideo?: boolean;
+    fallback?: 'music' | 'play' | 'disc' | 'film';
+  }>(),
+  {
+    size: 40,
+    autoplay: false,
+    renderAsVideo: true,
+    fallback: 'music'
+  }
+);
 
 const player = usePlayerStore();
 const el = ref<HTMLElement>();
@@ -55,13 +58,16 @@ onMounted(() => {
     return;
   }
 
-  observer = new IntersectionObserver(([entry]) => {
-    if (entry.isIntersecting) {
-      observer?.disconnect();
-      loaded.value = true;
-      player.loadCover(props.path!);
-    }
-  }, { rootMargin: '200px 0px' });
+  observer = new IntersectionObserver(
+    ([entry]) => {
+      if (entry.isIntersecting) {
+        observer?.disconnect();
+        loaded.value = true;
+        player.loadCover(props.path!);
+      }
+    },
+    { rootMargin: '200px 0px' }
+  );
   if (el.value) observer.observe(el.value);
 });
 
@@ -80,11 +86,7 @@ onUnmounted(() => {
       muted
       loop
     />
-    <img
-      v-else-if="result.data"
-      :src="src"
-      class="w-full h-full object-cover"
-    />
+    <img v-else-if="result.data" :src="src" class="w-full h-full object-cover" />
     <component :is="iconComponent" v-else :size="iconSize" />
   </div>
 </template>

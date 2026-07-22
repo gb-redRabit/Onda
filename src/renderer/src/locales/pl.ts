@@ -155,7 +155,8 @@ export default {
     weekly: 'Co tydzień',
     checkNow: 'Sprawdź teraz',
     depTitle: 'Zależności systemowe',
-    depDesc: 'Niektóre funkcje wymagają zewnętrznych narzędzi. Sprawdź ich status i zainstaluj brakujące.',
+    depDesc:
+      'Niektóre funkcje wymagają zewnętrznych narzędzi. Sprawdź ich status i zainstaluj brakujące.',
     depRefresh: 'Odśwież status',
     depInstalled: 'Zainstalowano',
     depMissing: 'Brak',
@@ -167,7 +168,8 @@ export default {
     ytdlpDesc: 'Pobieranie wideo z YouTube i innych serwisów',
     mkvDesc: 'Wyciąganie czcionek z plików MKV (mkvextract)',
     libTitle: 'Foldery biblioteki',
-    libDesc: 'Dodaj foldery z mediami do biblioteki. Onda przeskanuje je i skategoryzuje jako audio/wideo.',
+    libDesc:
+      'Dodaj foldery z mediami do biblioteki. Onda przeskanuje je i skategoryzuje jako audio/wideo.',
     libAddFolder: 'Dodaj folder',
     libScanning: 'Skanowanie...',
     libScanNow: 'Skanuj teraz',

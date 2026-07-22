@@ -43,7 +43,11 @@ describe('computed counts', () => {
 
   it('audioCount / videoCount filters by type', () => {
     const store = useLibraryStore();
-    store.tracks = [makeTrack('1', { type: 'audio' }), makeTrack('2', { type: 'video' }), makeTrack('3', { type: 'audio' })];
+    store.tracks = [
+      makeTrack('1', { type: 'audio' }),
+      makeTrack('2', { type: 'video' }),
+      makeTrack('3', { type: 'audio' })
+    ];
     expect(store.audioCount).toBe(2);
     expect(store.videoCount).toBe(1);
   });
@@ -61,14 +65,22 @@ describe('computed counts', () => {
 describe('recentTracks / mostPlayed', () => {
   it('recentTracks returns up to 20 tracks sorted by lastPlayed desc', () => {
     const store = useLibraryStore();
-    store.tracks = [makeTrack('a', { lastPlayed: 100 }), makeTrack('b', { lastPlayed: 200 }), makeTrack('c', {})];
+    store.tracks = [
+      makeTrack('a', { lastPlayed: 100 }),
+      makeTrack('b', { lastPlayed: 200 }),
+      makeTrack('c', {})
+    ];
     expect(store.recentTracks.map((t) => t.id)).toEqual(['b', 'a']);
     expect(store.recentTracks).toHaveLength(2);
   });
 
   it('mostPlayed returns up to 20 tracks sorted by playCount desc', () => {
     const store = useLibraryStore();
-    store.tracks = [makeTrack('1', { playCount: 5 }), makeTrack('2', { playCount: 10 }), makeTrack('3', { playCount: 1 })];
+    store.tracks = [
+      makeTrack('1', { playCount: 5 }),
+      makeTrack('2', { playCount: 10 }),
+      makeTrack('3', { playCount: 1 })
+    ];
     expect(store.mostPlayed.map((t) => t.id)).toEqual(['2', '1', '3']);
   });
 });
@@ -154,7 +166,10 @@ describe('folder management', () => {
     const store = useLibraryStore();
     store.folders = ['/music', '/video'];
     store.folderTypes = { '/music': 'audio', '/video': 'video' };
-    store.tracks = [makeTrack('1', { path: '/music/song.mp3' }), makeTrack('2', { path: '/video/clip.mp4' })];
+    store.tracks = [
+      makeTrack('1', { path: '/music/song.mp3' }),
+      makeTrack('2', { path: '/video/clip.mp4' })
+    ];
     await store.removeFolder('/music');
     expect(store.folders).toEqual(['/video']);
     expect(store.tracks).toHaveLength(1);
@@ -217,7 +232,10 @@ describe('search', () => {
 
   it('finds tracks by metadata title', () => {
     const store = useLibraryStore();
-    store.tracks = [makeTrack('1', { metadata: { title: 'Bohemian Rhapsody' } }), makeTrack('2', { metadata: { title: 'Another One' } })];
+    store.tracks = [
+      makeTrack('1', { metadata: { title: 'Bohemian Rhapsody' } }),
+      makeTrack('2', { metadata: { title: 'Another One' } })
+    ];
     expect(store.search('rhapsody')).toHaveLength(1);
   });
 
@@ -252,7 +270,10 @@ describe('loadFromDisk', () => {
     const store = useLibraryStore();
     const api = (window as any).api;
     api.invoke.mockImplementation((channel: string) => {
-      if (channel === 'playlist:loadAll') return Promise.resolve([{ id: 'pl1', name: 'Test', tracks: [], createdAt: 0, updatedAt: 0 }]);
+      if (channel === 'playlist:loadAll')
+        return Promise.resolve([
+          { id: 'pl1', name: 'Test', tracks: [], createdAt: 0, updatedAt: 0 }
+        ]);
       if (channel === 'library:loadFolders') return Promise.resolve(['/music']);
       return Promise.resolve(undefined);
     });

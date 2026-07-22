@@ -159,8 +159,15 @@ function onFileDrop(e: DragEvent) {
         {{ $t('queue.nowPlaying') }}
       </div>
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-lg bg-accent-ghost flex items-center justify-center shrink-0 overflow-hidden">
-          <MediaCover :path="player.currentTrack.path" :size="16" :autoplay="true" fallback="music" />
+        <div
+          class="w-10 h-10 rounded-lg bg-accent-ghost flex items-center justify-center shrink-0 overflow-hidden"
+        >
+          <MediaCover
+            :path="player.currentTrack.path"
+            :size="16"
+            :autoplay="true"
+            fallback="music"
+          />
         </div>
         <TrackInfo :track="player.currentTrack" class="min-w-0 flex-1" titleSize="text-sm" />
         <span class="text-xs text-fg-faint font-mono shrink-0">{{
@@ -198,10 +205,17 @@ function onFileDrop(e: DragEvent) {
             :size="12"
             class="text-fg-faint/40 shrink-0 opacity-0 group-hover:opacity-100 cursor-grab"
           />
-          <div class="w-8 h-8 rounded-md bg-bg-overlay flex items-center justify-center shrink-0 overflow-hidden">
+          <div
+            class="w-8 h-8 rounded-md bg-bg-overlay flex items-center justify-center shrink-0 overflow-hidden"
+          >
             <MediaCover :path="track.path" :size="12" fallback="music" />
           </div>
-          <TrackInfo :track="track" class="min-w-0 flex-1" titleSize="text-sm" artistSize="text-[11px]" />
+          <TrackInfo
+            :track="track"
+            class="min-w-0 flex-1"
+            titleSize="text-sm"
+            artistSize="text-[11px]"
+          />
           <span class="text-[11px] text-fg-faint font-mono shrink-0">{{
             formatDuration(track.duration || 0)
           }}</span>
@@ -229,7 +243,9 @@ function onFileDrop(e: DragEvent) {
         class="flex items-center gap-2 px-4 py-1.5 hover:bg-bg-hover transition-colors cursor-pointer opacity-60"
         @click="player.playFromHistory(i)"
       >
-        <div class="w-6 h-6 rounded bg-bg-overlay flex items-center justify-center shrink-0 overflow-hidden">
+        <div
+          class="w-6 h-6 rounded bg-bg-overlay flex items-center justify-center shrink-0 overflow-hidden"
+        >
           <MediaCover :path="track.path" :size="10" fallback="music" />
         </div>
         <span class="text-xs truncate flex-1">{{ track.metadata?.title || track.name }}</span>

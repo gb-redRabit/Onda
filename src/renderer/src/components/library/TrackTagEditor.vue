@@ -14,7 +14,18 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
   close: [];
-  saved: [tags: { title?: string; artist?: string; album?: string; year?: number; genre?: string; track?: { no: number }; name?: string; path?: string }];
+  saved: [
+    tags: {
+      title?: string;
+      artist?: string;
+      album?: string;
+      year?: number;
+      genre?: string;
+      track?: { no: number };
+      name?: string;
+      path?: string;
+    }
+  ];
 }>();
 
 const player = usePlayerStore();
@@ -32,7 +43,9 @@ const uploadingCover = ref(false);
 const coverUrl = ref<string | null>(null);
 const coverObj = computed<{ type: string | null; data: string | null } | undefined>(() => {
   if (!coverUrl.value) return undefined;
-  return coverUrl.value.startsWith('file:///') ? { type: 'video', data: coverUrl.value.replace('file:///', '') } : { type: 'image', data: coverUrl.value };
+  return coverUrl.value.startsWith('file:///')
+    ? { type: 'video', data: coverUrl.value.replace('file:///', '') }
+    : { type: 'image', data: coverUrl.value };
 });
 
 watch(
@@ -94,7 +107,8 @@ async function pickCover() {
 async function save() {
   if (!props.track) return;
   saving.value = true;
-  const hasRename = name.value && name.value + (props.track.name.match(/\.[^.]+$/)?.[0] || '') !== props.track.name;
+  const hasRename =
+    name.value && name.value + (props.track.name.match(/\.[^.]+$/)?.[0] || '') !== props.track.name;
   let newPath: string | undefined;
   if (hasRename) {
     const r = await window.api?.renameFile(props.track.path, name.value);
@@ -142,17 +156,24 @@ async function save() {
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       @click.self="emit('close')"
     >
-      <div class="w-full max-w-lg mx-4 rounded-2xl bg-bg-base border border-border-default shadow-xl overflow-hidden">
+      <div
+        class="w-full max-w-lg mx-4 rounded-2xl bg-bg-base border border-border-default shadow-xl overflow-hidden"
+      >
         <div class="flex items-center justify-between px-5 py-4 border-b border-border-default">
           <h2 class="text-base font-bold">{{ $t('tags.title') }}</h2>
-          <button class="p-1.5 rounded-lg hover:bg-bg-hover transition-colors text-fg-faint" @click="emit('close')">
+          <button
+            class="p-1.5 rounded-lg hover:bg-bg-hover transition-colors text-fg-faint"
+            @click="emit('close')"
+          >
             <X :size="16" />
           </button>
         </div>
 
         <div class="flex gap-5 p-5">
           <div class="shrink-0 flex flex-col items-center gap-2">
-            <div class="w-28 h-28 rounded-xl bg-bg-elevated border border-border-default overflow-hidden flex items-center justify-center">
+            <div
+              class="w-28 h-28 rounded-xl bg-bg-elevated border border-border-default overflow-hidden flex items-center justify-center"
+            >
               <MediaCover :cover="coverObj" :size="32" fallback="music" />
             </div>
             <button
@@ -167,40 +188,70 @@ async function save() {
           <div class="flex-1 space-y-2.5 min-w-0">
             <label class="block">
               <span class="text-xs font-medium text-fg-muted">{{ $t('tags.filename') }}</span>
-              <input v-model="name" class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none" />
+              <input
+                v-model="name"
+                class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none"
+              />
             </label>
             <label class="block">
               <span class="text-xs font-medium text-fg-muted">{{ $t('tags.titleField') }}</span>
-              <input v-model="title" class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none" />
+              <input
+                v-model="title"
+                class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none"
+              />
             </label>
             <label class="block">
               <span class="text-xs font-medium text-fg-muted">{{ $t('tags.artist') }}</span>
-              <input v-model="artist" class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none" />
+              <input
+                v-model="artist"
+                class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none"
+              />
             </label>
             <label class="block">
               <span class="text-xs font-medium text-fg-muted">{{ $t('tags.album') }}</span>
-              <input v-model="album" class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none" />
+              <input
+                v-model="album"
+                class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none"
+              />
             </label>
             <div class="grid grid-cols-3 gap-2.5">
               <label class="block">
                 <span class="text-xs font-medium text-fg-muted">{{ $t('tags.year') }}</span>
-                <input v-model="year" class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none" />
+                <input
+                  v-model="year"
+                  class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                />
               </label>
               <label class="block col-span-2">
                 <span class="text-xs font-medium text-fg-muted">{{ $t('tags.genre') }}</span>
-                <input v-model="genre" class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none" />
+                <input
+                  v-model="genre"
+                  class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                />
               </label>
             </div>
             <label class="block">
               <span class="text-xs font-medium text-fg-muted">{{ $t('tags.trackNo') }}</span>
-              <input v-model="trackNumber" class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none" />
+              <input
+                v-model="trackNumber"
+                class="w-full mt-1 px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none"
+              />
             </label>
           </div>
         </div>
 
         <div class="flex justify-end gap-2 px-5 py-4 border-t border-border-default">
-          <button class="px-4 py-2 rounded-xl text-sm font-medium text-fg-muted hover:bg-bg-hover transition-colors" @click="emit('close')">{{ $t('common.cancel') }}</button>
-          <button class="px-4 py-2 rounded-xl text-sm font-medium bg-accent-base text-white hover:bg-accent-hover transition-colors disabled:opacity-50" :disabled="saving || uploadingCover" @click="save">
+          <button
+            class="px-4 py-2 rounded-xl text-sm font-medium text-fg-muted hover:bg-bg-hover transition-colors"
+            @click="emit('close')"
+          >
+            {{ $t('common.cancel') }}
+          </button>
+          <button
+            class="px-4 py-2 rounded-xl text-sm font-medium bg-accent-base text-white hover:bg-accent-hover transition-colors disabled:opacity-50"
+            :disabled="saving || uploadingCover"
+            @click="save"
+          >
             {{ saving ? $t('tags.saving') : $t('common.save') }}
           </button>
         </div>
