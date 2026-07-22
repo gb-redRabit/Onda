@@ -794,16 +794,21 @@ export function registerIPC(): void {
     const s = await stat(fullPath).catch(() => null);
     if (!s) return { file: null };
     const duration = await getDuration(fullPath);
-    const frame = await extractVideoFrame(fullPath).catch(() => null);
-    if (frame) {
-      const match = frame.match(/^data:image\/(\w+);base64,(.+)$/);
-      if (match) {
-        const imgExt = match[1] === 'jpeg' ? 'jpg' : match[1];
-        const buf = Buffer.from(match[2], 'base64');
-        savePersistentCover(fullPath, buf, imgExt);
+    (async () => {
+      try {
+        const frame = await extractVideoFrame(fullPath);
+        if (!frame) return;
+        const match = frame.match(/^data:image\/(\w+);base64,(.+)$/);
+        if (match) {
+          const imgExt = match[1] === 'jpeg' ? 'jpg' : match[1];
+          const buf = Buffer.from(match[2], 'base64');
+          savePersistentCover(fullPath, buf, imgExt);
+        }
+        cacheSet(coverResultCache, fullPath, { result: { type: 'image', data: frame }, mtimeMs: s.mtimeMs });
+      } catch {
+        /* frame extraction failed */
       }
-      cacheSet(coverResultCache, fullPath, { result: { type: 'image', data: frame }, mtimeMs: s.mtimeMs });
-    }
+    })();
     return {
       file: {
         id: fullPath,

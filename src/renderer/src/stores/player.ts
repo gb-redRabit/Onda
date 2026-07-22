@@ -179,22 +179,25 @@ export const usePlayerStore = defineStore('player', () => {
   const coverQueue: string[] = [];
   let coverFlushScheduled = false;
 
-  function scheduleCoverFlush(): void {
-    if (coverFlushScheduled) return;
-    coverFlushScheduled = true;
-    const flush = (): void => {
-      coverFlushScheduled = false;
+  let coverProcessing = false;
+
+  async function processCoverBatch(): Promise<void> {
+    coverProcessing = true;
+    while (coverQueue.length > 0) {
       const batch = coverQueue.splice(0, 5);
-      if (batch.length === 0) return;
-      Promise.all(batch.map((p) => doLoadCover(p))).then(() => {
-        if (coverQueue.length > 0) scheduleCoverFlush();
-      });
-    };
-    if (typeof requestIdleCallback !== 'undefined') {
-      requestIdleCallback(flush, { timeout: 1000 });
-    } else {
-      setTimeout(flush, 50);
+      await Promise.all(batch.map((p) => doLoadCover(p)));
+      if (coverQueue.length > 0) await new Promise((r) => setTimeout(r, 0));
     }
+    coverProcessing = false;
+  }
+
+  function scheduleCoverFlush(): void {
+    if (coverProcessing || coverFlushScheduled) return;
+    coverFlushScheduled = true;
+    setTimeout(() => {
+      coverFlushScheduled = false;
+      processCoverBatch();
+    }, 0);
   }
 
   async function doLoadCover(filePath: string): Promise<void> {
