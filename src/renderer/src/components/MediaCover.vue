@@ -26,7 +26,7 @@ const loaded = ref(false);
 let observer: IntersectionObserver | null = null;
 
 const result = computed(() => {
-  if (props.cover) return props.cover;
+  if (props.cover?.data) return props.cover;
   if (props.path && loaded.value) {
     const cached = player.getCover(props.path);
     if (cached.data) return cached;
@@ -50,7 +50,7 @@ const iconComponent = computed(() => {
 const iconSize = computed(() => Math.max(12, Math.round(props.size * 0.35)));
 
 onMounted(() => {
-  if (!props.path || props.cover) return;
+  if (!props.path || props.cover?.data) return;
 
   const cached = player.getCover(props.path);
   if (cached.data) {
