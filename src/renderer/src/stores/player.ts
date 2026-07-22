@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed, triggerRef } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import type { SubtitleTrack, MkvFont } from '@renderer/types/subtitles';
+import { VIDEO_EXTS } from '@shared/constants';
 
 export const usePlayerStore = defineStore('player', () => {
   const currentTrack = ref<MediaFile | null>(null);
@@ -200,11 +201,63 @@ export const usePlayerStore = defineStore('player', () => {
     }, 0);
   }
 
+  async function captureVideoFrame(filePath: string): Promise<CoverResult> {
+    const ext = filePath.slice(filePath.lastIndexOf('.')).toLowerCase();
+    if (!VIDEO_EXTS.includes(ext)) return { type: null, data: null };
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.muted = true;
+      video.crossOrigin = 'anonymous';
+      video.src = `file:///${filePath.replace(/\\/g, '/')}`;
+
+      let resolved = false;
+      function done(result: CoverResult) {
+        if (resolved) return;
+        resolved = true;
+        video.remove();
+        resolve(result);
+      }
+
+      video.onloadeddata = () => {
+        video.currentTime = 0;
+      };
+
+      video.onseeked = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return done({ type: null, data: null });
+          ctx.drawImage(video, 0, 0);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+          done({ type: 'image', data: dataUrl });
+        } catch {
+          done({ type: null, data: null });
+        }
+      };
+
+      video.onerror = () => done({ type: null, data: null });
+      video.onabort = () => done({ type: null, data: null });
+
+      setTimeout(() => done({ type: null, data: null }), 10000);
+    });
+  }
+
   async function doLoadCover(filePath: string): Promise<void> {
     if (filePath in coverCache.value) return;
     coverCache.value[filePath] = { type: null, data: null };
     triggerRef(coverCache);
     const cover = (await window.api?.getCover(filePath)) ?? { type: null, data: null };
+    if (!cover.data) {
+      const frame = await captureVideoFrame(filePath);
+      if (frame.data) {
+        coverCache.value[filePath] = frame;
+        triggerRef(coverCache);
+        return;
+      }
+    }
     coverCache.value[filePath] = cover;
     triggerRef(coverCache);
   }
