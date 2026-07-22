@@ -793,6 +793,17 @@ export function registerIPC(): void {
   ): Promise<{ file: MediaFile | null }> {
     const s = await stat(fullPath).catch(() => null);
     if (!s) return { file: null };
+    const duration = await getDuration(fullPath);
+    const frame = await extractVideoFrame(fullPath).catch(() => null);
+    if (frame) {
+      const match = frame.match(/^data:image\/(\w+);base64,(.+)$/);
+      if (match) {
+        const imgExt = match[1] === 'jpeg' ? 'jpg' : match[1];
+        const buf = Buffer.from(match[2], 'base64');
+        savePersistentCover(fullPath, buf, imgExt);
+      }
+      cacheSet(coverResultCache, fullPath, { result: { type: 'image', data: frame }, mtimeMs: s.mtimeMs });
+    }
     return {
       file: {
         id: fullPath,
@@ -802,7 +813,7 @@ export function registerIPC(): void {
         mimeType: '',
         size: s.size,
         type: 'video',
-        duration: 0,
+        duration,
         addedAt: s.birthtimeMs ?? Date.now(),
         playCount: 0
       }
