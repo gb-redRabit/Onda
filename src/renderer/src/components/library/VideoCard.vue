@@ -20,7 +20,11 @@ const emit = defineEmits<{
 const player = usePlayerStore();
 const ui = useUIStore();
 
-const cover = computed(() => player.getCover(props.track.path));
+const cover = computed(() => {
+  const cached = player.getCover(props.track.path);
+  if (cached.data) return cached;
+  return { type: 'video', data: props.track.path.replace(/\\/g, '/') };
+});
 
 function formatDur(seconds?: number): string {
   if (!seconds || seconds <= 0) return '—';

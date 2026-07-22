@@ -257,18 +257,7 @@ export const usePlayerStore = defineStore('player', () => {
       return;
     }
     const frame = await captureVideoFrame(filePath);
-    if (frame.data) {
-      coverCache.value[filePath] = frame;
-      triggerRef(coverCache);
-      return;
-    }
-    const ext = filePath.slice(filePath.lastIndexOf('.')).toLowerCase();
-    if (VIDEO_EXTS.includes(ext)) {
-      coverCache.value[filePath] = { type: 'video', data: filePath.replace(/\\/g, '/') };
-      triggerRef(coverCache);
-      return;
-    }
-    coverCache.value[filePath] = cover;
+    coverCache.value[filePath] = frame;
     triggerRef(coverCache);
   }
 
