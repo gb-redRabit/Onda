@@ -37,7 +37,8 @@ const result = computed(() => {
 const isVideo = computed(() => result.value.type === 'video' && props.renderAsVideo);
 const src = computed(() => {
   if (!result.value.data) return '';
-  return result.value.type === 'video' ? 'file:///' + result.value.data : result.value.data;
+  if (result.value.type === 'video') return 'file:///' + result.value.data.replace(/\\/g, '/');
+  return result.value.data;
 });
 
 const iconComponent = computed(() => {
@@ -85,6 +86,8 @@ onUnmounted(() => {
       :autoplay="autoplay"
       muted
       loop
+      preload="auto"
+      playsinline
     />
     <img v-else-if="result.data" :src="src" class="w-full h-full object-cover" />
     <component :is="iconComponent" v-else :size="iconSize" />

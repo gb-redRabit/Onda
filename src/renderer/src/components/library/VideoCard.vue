@@ -60,7 +60,7 @@ function onDragStart(e: DragEvent) {
     <div
       class="aspect-video bg-bg-overlay flex items-center justify-center relative overflow-hidden"
     >
-      <MediaCover :cover="cover" :size="32" :render-as-video="false" fallback="film" />
+      <MediaCover :cover="cover" :size="32" fallback="film" />
       <div
         class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors"
       >

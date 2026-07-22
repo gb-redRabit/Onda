@@ -206,9 +206,8 @@ export const usePlayerStore = defineStore('player', () => {
     if (!VIDEO_EXTS.includes(ext)) return { type: null, data: null };
     return new Promise((resolve) => {
       const video = document.createElement('video');
-      video.preload = 'metadata';
       video.muted = true;
-      video.crossOrigin = 'anonymous';
+      video.playsInline = true;
       video.src = `file:///${filePath.replace(/\\/g, '/')}`;
 
       let resolved = false;
@@ -219,11 +218,15 @@ export const usePlayerStore = defineStore('player', () => {
         resolve(result);
       }
 
-      video.onloadeddata = () => {
-        video.currentTime = 0;
+      const timer = setTimeout(() => done({ type: null, data: null }), 15000);
+
+      video.onloadedmetadata = () => {
+        const t = Math.min(1, video.duration || 1);
+        video.currentTime = t > 0 ? t : 0.5;
       };
 
       video.onseeked = () => {
+        clearTimeout(timer);
         try {
           const canvas = document.createElement('canvas');
           canvas.width = video.videoWidth;
@@ -238,10 +241,8 @@ export const usePlayerStore = defineStore('player', () => {
         }
       };
 
-      video.onerror = () => done({ type: null, data: null });
-      video.onabort = () => done({ type: null, data: null });
-
-      setTimeout(() => done({ type: null, data: null }), 10000);
+      video.onerror = () => { clearTimeout(timer); done({ type: null, data: null }); };
+      video.onabort = () => { clearTimeout(timer); done({ type: null, data: null }); };
     });
   }
 
@@ -250,13 +251,22 @@ export const usePlayerStore = defineStore('player', () => {
     coverCache.value[filePath] = { type: null, data: null };
     triggerRef(coverCache);
     const cover = (await window.api?.getCover(filePath)) ?? { type: null, data: null };
-    if (!cover.data) {
-      const frame = await captureVideoFrame(filePath);
-      if (frame.data) {
-        coverCache.value[filePath] = frame;
-        triggerRef(coverCache);
-        return;
-      }
+    if (cover.data) {
+      coverCache.value[filePath] = cover;
+      triggerRef(coverCache);
+      return;
+    }
+    const frame = await captureVideoFrame(filePath);
+    if (frame.data) {
+      coverCache.value[filePath] = frame;
+      triggerRef(coverCache);
+      return;
+    }
+    const ext = filePath.slice(filePath.lastIndexOf('.')).toLowerCase();
+    if (VIDEO_EXTS.includes(ext)) {
+      coverCache.value[filePath] = { type: 'video', data: filePath.replace(/\\/g, '/') };
+      triggerRef(coverCache);
+      return;
     }
     coverCache.value[filePath] = cover;
     triggerRef(coverCache);
