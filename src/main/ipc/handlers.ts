@@ -1,8 +1,8 @@
 import { registerMusicBrainzHandlers } from './musicbrainz';
 import { ipcMain, dialog, BrowserWindow, shell, app } from 'electron';
-import { readdir, stat, readFile, writeFile, mkdir, rename, unlink, rm } from 'fs/promises';
+import { readdir, stat, lstat, readFile, writeFile, mkdir, rename, unlink, rm } from 'fs/promises';
 
-import { join, extname, basename } from 'path';
+import { join, extname, basename, dirname } from 'path';
 import { exec as execCb } from 'child_process';
 import { pipeline } from 'stream/promises';
 import { createWriteStream } from 'fs';
@@ -19,6 +19,14 @@ import { VIDEO_EXTS, AUDIO_EXTS } from '../../shared/constants';
 import { logger } from '../utils/logger';
 
 const execAsync = promisify(execCb);
+
+function errMsg(e: unknown): string {
+  return e && typeof e === 'object' && 'message' in e ? String((e as Error).message) : String(e);
+}
+
+function uniqueId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
 
 let _store: InstanceType<typeof import('electron-store').default> | null = null;
 async function getStore() {
@@ -39,6 +47,25 @@ interface CachedCover {
 }
 const coverResultCache = new Map<string, CachedCover>();
 const durationCache = new Map<string, { duration: number; mtimeMs: number }>();
+const coverCacheLocks = new Set<string>();
+
+const CACHE_MAX_SIZE = 5000;
+
+function evictCache(map: Map<string, unknown>, maxSize: number): void {
+  if (map.size <= maxSize) return;
+  const toDelete = map.size - maxSize;
+  let i = 0;
+  for (const key of map.keys()) {
+    if (i >= toDelete) break;
+    map.delete(key);
+    i++;
+  }
+}
+
+function cacheSet<T>(map: Map<string, T>, key: string, value: T, maxSize: number = CACHE_MAX_SIZE): void {
+  map.set(key, value);
+  evictCache(map as Map<string, unknown>, maxSize);
+}
 
 const PERSISTENT_COVER_DIR = join(getTempDir(), 'persistent');
 const COVER_CACHE_MAP_KEY = 'coverCacheMap';
@@ -47,16 +74,23 @@ function hashPath(filePath: string): string {
   return createHash('md5').update(filePath.toLowerCase()).digest('hex');
 }
 
-async function getPersistentCover(filePath: string): Promise<{ type: 'video' | 'image' | null; data: string | null } | null> {
+async function getPersistentCover(
+  filePath: string
+): Promise<{ type: 'video' | 'image' | null; data: string | null } | null> {
   try {
     const store = await getStore();
-    const cacheMap: Record<string, { cacheFile: string; mtime: number }> | undefined = store.get(COVER_CACHE_MAP_KEY) as any;
+    const cacheMap: Record<string, { cacheFile: string; mtime: number }> | undefined = store.get(
+      COVER_CACHE_MAP_KEY
+    ) as any;
     const entry = cacheMap?.[filePath];
     if (!entry) return null;
 
     const s = await stat(filePath).catch(() => null);
     if (!s || s.mtimeMs > entry.mtime) {
-      if (entry && cacheMap) { delete cacheMap[filePath]; store.set(COVER_CACHE_MAP_KEY, cacheMap); }
+      if (entry && cacheMap) {
+        delete cacheMap[filePath];
+        store.set(COVER_CACHE_MAP_KEY, cacheMap);
+      }
       return null;
     }
 
@@ -65,7 +99,9 @@ async function getPersistentCover(filePath: string): Promise<{ type: 'video' | '
     if (!buf) return null;
 
     const isJpeg = entry.cacheFile.endsWith('.jpg');
-    const dataUrl = isJpeg ? `data:image/jpeg;base64,${buf.toString('base64')}` : `data:image/png;base64,${buf.toString('base64')}`;
+    const dataUrl = isJpeg
+      ? `data:image/jpeg;base64,${buf.toString('base64')}`
+      : `data:image/png;base64,${buf.toString('base64')}`;
     return { type: 'image', data: dataUrl };
   } catch {
     return null;
@@ -82,7 +118,8 @@ async function savePersistentCover(filePath: string, binary: Buffer, ext: string
 
     const s = await stat(filePath).catch(() => null);
     const store = await getStore();
-    const cacheMap: Record<string, { cacheFile: string; mtime: number }> = (store.get(COVER_CACHE_MAP_KEY) as any) || {};
+    const cacheMap: Record<string, { cacheFile: string; mtime: number }> =
+      (store.get(COVER_CACHE_MAP_KEY) as any) || {};
     cacheMap[filePath] = { cacheFile, mtime: s?.mtimeMs ?? Date.now() };
     store.set(COVER_CACHE_MAP_KEY, JSON.parse(JSON.stringify(cacheMap)));
   } catch {
@@ -90,7 +127,9 @@ async function savePersistentCover(filePath: string, binary: Buffer, ext: string
   }
 }
 
-async function getCachedCover(filePath: string): Promise<{ type: 'video' | 'image' | null; data: string | null } | null> {
+async function getCachedCover(
+  filePath: string
+): Promise<{ type: 'video' | 'image' | null; data: string | null } | null> {
   const memCached = coverResultCache.get(filePath);
   if (memCached) {
     try {
@@ -105,7 +144,7 @@ async function getCachedCover(filePath: string): Promise<{ type: 'video' | 'imag
   const diskCached = await getPersistentCover(filePath);
   if (diskCached) {
     const s = await stat(filePath).catch(() => null);
-    coverResultCache.set(filePath, { result: diskCached, mtimeMs: s?.mtimeMs ?? Date.now() });
+    cacheSet(coverResultCache, filePath, { result: diskCached, mtimeMs: s?.mtimeMs ?? Date.now() });
     return diskCached;
   }
 
@@ -122,60 +161,75 @@ async function extractAudioCover(filePath: string): Promise<string | null> {
       savePersistentCover(filePath, buf, imgExt);
       return `data:${pic.format};base64,${buf.toString('base64')}`;
     }
-  } catch { /* no cover in metadata */ }
+  } catch {
+    /* no cover in metadata */
+  }
   return extractEmbeddedCover(filePath);
 }
 
-async function extractAndCacheCover(filePath: string): Promise<{ type: 'video' | 'image' | null; data: string | null }> {
+async function extractAndCacheCover(
+  filePath: string
+): Promise<{ type: 'video' | 'image' | null; data: string | null }> {
+  while (coverCacheLocks.has(filePath)) {
+    await new Promise((r) => setTimeout(r, 10));
+  }
   const cached = await getCachedCover(filePath);
   if (cached) return cached;
 
-  const ext = extname(filePath).toLowerCase();
-  const dir = join(filePath, '..');
-  const name = basename(filePath, ext);
-  let result: { type: 'video' | 'image' | null; data: string | null } = { type: null, data: null };
+  coverCacheLocks.add(filePath);
 
-  if (AUDIO_EXTS.includes(ext)) {
-    let foundVideo = false;
-    for (const vExt of VIDEO_EXTS) {
-      const videoPath = join(dir, name + vExt);
-      try {
-        await stat(videoPath);
-        result = { type: 'video', data: videoPath };
-        foundVideo = true;
-        break;
-      } catch { /* no video */ }
+  try {
+    const ext = extname(filePath).toLowerCase();
+    const dir = dirname(filePath);
+    const name = basename(filePath, ext);
+    let result: { type: 'video' | 'image' | null; data: string | null } = { type: null, data: null };
+
+    if (AUDIO_EXTS.includes(ext)) {
+      let foundVideo = false;
+      for (const vExt of VIDEO_EXTS) {
+        const videoPath = join(dir, name + vExt);
+        try {
+          await stat(videoPath);
+          result = { type: 'video', data: videoPath };
+          foundVideo = true;
+          break;
+        } catch {
+          /* no video */
+        }
+      }
+      if (!foundVideo) {
+        const cover = await extractAudioCover(filePath);
+        if (cover) result = { type: 'image', data: cover };
+      }
+    } else if (VIDEO_EXTS.includes(ext)) {
+      const frame = await extractVideoFrame(filePath);
+      result = frame ? { type: 'image', data: frame } : { type: null, data: null };
+    } else {
+      result = { type: null, data: null };
     }
-    if (!foundVideo) {
-      const cover = await extractAudioCover(filePath);
-      if (cover) result = { type: 'image', data: cover };
+
+    const statResult = await stat(filePath).catch(() => null);
+    cacheSet(coverResultCache, filePath, { result, mtimeMs: statResult?.mtimeMs ?? Date.now() });
+
+    if (result.type === 'image' && result.data?.startsWith('data:')) {
+      const match = result.data.match(/^data:image\/(\w+);base64,(.+)$/);
+      if (match) {
+        const imgExt = match[1] === 'jpeg' ? 'jpg' : match[1];
+        const buf = Buffer.from(match[2], 'base64');
+        savePersistentCover(filePath, buf, imgExt);
+      }
     }
-  } else if (VIDEO_EXTS.includes(ext)) {
-    const frame = await extractVideoFrame(filePath);
-    result = frame ? { type: 'image', data: frame } : { type: null, data: null };
-  } else {
-    result = { type: null, data: null };
+
+    return result;
+  } finally {
+    coverCacheLocks.delete(filePath);
   }
-
-  const statResult = await stat(filePath).catch(() => null);
-  coverResultCache.set(filePath, { result, mtimeMs: statResult?.mtimeMs ?? Date.now() });
-
-  if (result.type === 'image' && result.data?.startsWith('data:')) {
-    const match = result.data.match(/^data:image\/(\w+);base64,(.+)$/);
-    if (match) {
-      const imgExt = match[1] === 'jpeg' ? 'jpg' : match[1];
-      const buf = Buffer.from(match[2], 'base64');
-      savePersistentCover(filePath, buf, imgExt);
-    }
-  }
-
-  return result;
 }
 
 async function extractVideoFrame(filePath: string, time = '00:00:00.5'): Promise<string | null> {
   try {
     await mkdir(getTempDir(), { recursive: true });
-    const outPath = join(getTempDir(), `frame_${Date.now()}.jpg`);
+    const outPath = join(getTempDir(), `frame_${uniqueId()}.jpg`);
     await execAsync(
       `ffmpeg -v quiet -ss ${time} -i "${filePath}" -vframes 1 -q:v 2 -update 1 "${outPath}" -y`,
       { encoding: 'utf-8', timeout: 15000, windowsHide: true }
@@ -191,7 +245,7 @@ async function extractVideoFrame(filePath: string, time = '00:00:00.5'): Promise
 async function extractEmbeddedCover(filePath: string): Promise<string | null> {
   try {
     await mkdir(getTempDir(), { recursive: true });
-    const outPath = join(getTempDir(), `cover_${Date.now()}.jpg`);
+    const outPath = join(getTempDir(), `cover_${uniqueId()}.jpg`);
     await execAsync(
       `ffmpeg -v quiet -i "${filePath}" -vframes 1 -q:v 2 -update 1 "${outPath}" -y`,
       { encoding: 'utf-8', timeout: 15000, windowsHide: true }
@@ -326,56 +380,83 @@ export function registerIPC(): void {
   });
 
   ipcMain.handle('fs:stat', async (_event, filePath: string) => {
-    const s = await stat(filePath);
-    return {
-      size: s.size,
-      modifiedAt: s.mtimeMs,
-      createdAt: s.birthtimeMs,
-      isDirectory: s.isDirectory()
-    };
+    try {
+      const s = await stat(filePath);
+      return {
+        size: s.size,
+        modifiedAt: s.mtimeMs,
+        createdAt: s.birthtimeMs,
+        isDirectory: s.isDirectory()
+      };
+    } catch {
+      return null;
+    }
   });
 
   ipcMain.handle('fs:readFile', async (_event, filePath: string) => {
-    const buf = await readFile(filePath);
-    return buf.toString('base64');
+    try {
+      const buf = await readFile(filePath);
+      return buf.toString('base64');
+    } catch {
+      return null;
+    }
   });
 
   ipcMain.handle('fs:writeFile', async (_event, filePath: string, content: string) => {
-    await writeFile(filePath, Buffer.from(content, 'base64'));
-    return true;
+    try {
+      await writeFile(filePath, Buffer.from(content, 'base64'));
+      return true;
+    } catch {
+      return false;
+    }
   });
 
   ipcMain.handle('fs:mkdir', async (_event, dirPath: string) => {
-    await mkdir(dirPath, { recursive: true });
-    return true;
+    try {
+      await mkdir(dirPath, { recursive: true });
+      return true;
+    } catch {
+      return false;
+    }
   });
 
   ipcMain.handle('fs:rename', async (_event, oldPath: string, newPath: string) => {
-    await rename(oldPath, newPath);
-    return true;
+    try {
+      await rename(oldPath, newPath);
+      return true;
+    } catch {
+      return false;
+    }
   });
 
   ipcMain.handle('fs:delete', async (_event, filePath: string) => {
-    const s = await stat(filePath);
-    if (s.isDirectory()) {
-      await rm(filePath, { recursive: true, force: true });
-    } else {
-      await unlink(filePath);
+    try {
+      const s = await lstat(filePath);
+      if (s.isSymbolicLink()) {
+        await unlink(filePath);
+      } else if (s.isDirectory()) {
+        await rm(filePath, { recursive: true, force: true });
+      } else {
+        await unlink(filePath);
+      }
+      return true;
+    } catch {
+      return false;
     }
-    return true;
   });
 
-  ipcMain.handle('dialog:openImage', async (_event): Promise<{ canceled: boolean; filePaths: string[] }> => {
-    const win = BrowserWindow.getFocusedWindow();
-    if (!win) return { canceled: true, filePaths: [] };
-    const result = await dialog.showOpenDialog(win, {
-      properties: ['openFile'],
-      filters: [
-        { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'bmp'] }
-      ]
-    });
-    return { canceled: result.canceled, filePaths: result.filePaths.slice() };
-  });
+  ipcMain.handle(
+    'dialog:openImage',
+    async (_event): Promise<{ canceled: boolean; filePaths: string[] }> => {
+      const win = BrowserWindow.getFocusedWindow();
+      if (!win) return { canceled: true, filePaths: [] };
+      const result = await dialog.showOpenDialog(win, {
+        properties: ['openFile'],
+        filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'bmp'] }]
+      });
+      return { canceled: result.canceled, filePaths: result.filePaths.slice() };
+    }
+  );
 
   ipcMain.handle('dialog:openFile', async (_event, options?: Electron.OpenDialogOptions) => {
     const win = BrowserWindow.getFocusedWindow();
@@ -499,7 +580,23 @@ export function registerIPC(): void {
   });
 
   ipcMain.handle('app:getPath', (_event, name: string) => {
-    return app.getPath(name as any);
+    const validPaths: Array<Parameters<typeof app.getPath>[0]> = [
+      'home',
+      'userData',
+      'temp',
+      'desktop',
+      'documents',
+      'downloads',
+      'music',
+      'pictures',
+      'videos',
+      'recent',
+      'logs',
+      'crashDumps'
+    ];
+    return app.getPath(
+      validPaths.includes(name as any) ? (name as Parameters<typeof app.getPath>[0]) : 'userData'
+    );
   });
 
   ipcMain.handle('app:getVersion', () => {
@@ -517,28 +614,52 @@ export function registerIPC(): void {
       try {
         const { mtimeMs } = await stat(filePath);
         if (mtimeMs <= cached.mtimeMs) return cached.duration;
-      } catch { /* file gone */ }
+      } catch {
+        /* file gone */
+      }
       durationCache.delete(filePath);
     }
 
     try {
-      const { stdout } = await execAsync(
-        `ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${filePath}"`,
-        { encoding: 'utf-8', timeout: 10000, windowsHide: true }
-      );
-      const duration = parseFloat(stdout.trim()) || 0;
+      const meta = await parseFile(filePath, { duration: true });
+      const duration = meta.format?.duration || 0;
       const s = await stat(filePath).catch(() => null);
-      if (s) durationCache.set(filePath, { duration, mtimeMs: s.mtimeMs });
+      if (s) cacheSet(durationCache, filePath, { duration, mtimeMs: s.mtimeMs });
       return duration;
     } catch {
-      return 0;
+      // ffprobe fallback for unsupported formats (e.g. video containers)
+      try {
+        const { stdout } = await execAsync(
+          `ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${filePath}"`,
+          { encoding: 'utf-8', timeout: 10000, windowsHide: true }
+        );
+        const duration = parseFloat(stdout.trim()) || 0;
+        const s = await stat(filePath).catch(() => null);
+        if (s) cacheSet(durationCache, filePath, { duration, mtimeMs: s.mtimeMs });
+        return duration;
+      } catch {
+        return 0;
+      }
     }
   }
 
-  async function getAudioMetadata(filePath: string, ext: string): Promise<{
-    title: string; artist: string; album: string; year?: number; genre?: string;
-    track?: { no: number; of?: number }; duration: number; bitrate: number;
-    sampleRate: number; channels: number; format: string; isVideo: boolean; size: number;
+  async function getAudioMetadata(
+    filePath: string,
+    ext: string
+  ): Promise<{
+    title: string;
+    artist: string;
+    album: string;
+    year?: number;
+    genre?: string;
+    track?: { no: number; of?: number };
+    duration: number;
+    bitrate: number;
+    sampleRate: number;
+    channels: number;
+    format: string;
+    isVideo: boolean;
+    size: number;
   } | null> {
     try {
       const s = await stat(filePath).catch(() => null);
@@ -600,7 +721,9 @@ export function registerIPC(): void {
       const s = await stat(filePath).catch(() => null);
       if (!s) return null;
 
-      const isVideo = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v'].includes(ext);
+      const isVideo = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v'].includes(
+        ext
+      );
 
       if (!isVideo) {
         return getAudioMetadata(filePath, ext);
@@ -623,7 +746,11 @@ export function registerIPC(): void {
     }
   }
 
-  async function processAudioFile(fullPath: string, entryName: string, ext: string): Promise<{ file: MediaFile | null }> {
+  async function processAudioFile(
+    fullPath: string,
+    entryName: string,
+    ext: string
+  ): Promise<{ file: MediaFile | null }> {
     const s = await stat(fullPath).catch(() => null);
     if (!s) return { file: null };
     const meta = await getMetadata(fullPath, ext);
@@ -637,7 +764,14 @@ export function registerIPC(): void {
         size: s.size,
         type: 'audio',
         metadata: meta
-          ? { title: meta.title, artist: meta.artist, album: meta.album, year: meta.year, genre: meta.genre, track: meta.track }
+          ? {
+              title: meta.title,
+              artist: meta.artist,
+              album: meta.album,
+              year: meta.year,
+              genre: meta.genre,
+              track: meta.track
+            }
           : undefined,
         duration: meta?.duration || 0,
         addedAt: s.birthtimeMs ?? Date.now(),
@@ -646,7 +780,11 @@ export function registerIPC(): void {
     };
   }
 
-  async function processVideoFile(fullPath: string, entryName: string, ext: string): Promise<{ file: MediaFile | null }> {
+  async function processVideoFile(
+    fullPath: string,
+    entryName: string,
+    ext: string
+  ): Promise<{ file: MediaFile | null }> {
     const s = await stat(fullPath).catch(() => null);
     if (!s) return { file: null };
     return {
@@ -674,8 +812,12 @@ export function registerIPC(): void {
 
     try {
       const entries = await readdir(dirPath, { withFileTypes: true });
-      const subDirPromises: Promise<{ files: MediaFile[]; audioCount: number; videoCount: number }>[] = [];
-      const filePromises: Promise<{ file: MediaFile | null }>[] = [];
+      const subDirPromises: Promise<{
+        files: MediaFile[];
+        audioCount: number;
+        videoCount: number;
+      }>[] = [];
+      const fileTasks: Array<() => Promise<{ file: MediaFile | null }>> = [];
       let audioCount = 0;
       let videoCount = 0;
 
@@ -687,18 +829,23 @@ export function registerIPC(): void {
           const ext = extname(entry.name).toLowerCase();
           if (AUDIO_EXT_SET.has(ext)) {
             audioCount++;
-            filePromises.push(processAudioFile(fullPath, entry.name, ext));
+            fileTasks.push(() => processAudioFile(fullPath, entry.name, ext));
           } else if (VIDEO_EXT_SET.has(ext)) {
             videoCount++;
-            filePromises.push(processVideoFile(fullPath, entry.name, ext));
+            fileTasks.push(() => processVideoFile(fullPath, entry.name, ext));
           }
         }
       }
 
-      const [subResults, fileResults] = await Promise.all([
-        Promise.all(subDirPromises),
-        Promise.all(filePromises)
-      ]);
+      const chunkSize = 50;
+      const fileResults: Array<{ file: MediaFile | null }> = [];
+      for (let i = 0; i < fileTasks.length; i += chunkSize) {
+        const chunk = fileTasks.slice(i, i + chunkSize);
+        const results = await Promise.all(chunk.map((fn) => fn()));
+        fileResults.push(...results);
+      }
+
+      const subResults = await Promise.all(subDirPromises);
 
       const files: MediaFile[] = [];
       let totalAudio = 0;
@@ -734,15 +881,13 @@ export function registerIPC(): void {
           folderPaths.map(async (folderPath) => {
             try {
               const result = await scanDir(folderPath, 8);
-              let folderType: 'audio' | 'video' | 'mixed' = 'mixed';
-              if (result.audioCount > result.videoCount) folderType = 'audio';
-              else if (result.videoCount > result.audioCount) folderType = 'video';
-              const files = result.files.filter((f) => {
-                if (folderType === 'audio' && f.type === 'video') return false;
-                if (folderType === 'video' && f.type === 'audio') return false;
-                return true;
-              });
-              return { folderType, files, folderPath };
+              const folderType: 'audio' | 'video' | 'mixed' =
+                result.audioCount > 0 && result.videoCount === 0
+                  ? 'audio'
+                  : result.videoCount > 0 && result.audioCount === 0
+                    ? 'video'
+                    : 'mixed';
+              return { folderType, files: result.files, folderPath };
             } catch (err) {
               logger.warn('library', `scan error for ${folderPath}: ${err}`);
               return null;
@@ -877,12 +1022,18 @@ export function registerIPC(): void {
 
   ipcMain.handle('yt:search', async (_event, query: string) => {
     logger.warn('yt', 'search not implemented — yt-dlp API required. Query:', query);
-    return { items: [], nextPageToken: null, prevPageToken: null };
+    return {
+      success: false,
+      error: 'YouTube integration not yet implemented',
+      items: [],
+      nextPageToken: null,
+      prevPageToken: null
+    };
   });
 
   ipcMain.handle('yt:getInfo', async (_event, videoId: string) => {
     logger.warn('yt', 'getInfo not implemented — yt-dlp API required. Id:', videoId);
-    return null;
+    return { success: false, error: 'YouTube integration not yet implemented' };
   });
 
   ipcMain.handle('yt:download', async (_event, url: string, format: string) => {
@@ -893,12 +1044,12 @@ export function registerIPC(): void {
       'Format:',
       format
     );
-    return { success: false, error: 'yt-dlp integration not yet implemented' };
+    return { success: false, error: 'YouTube integration not yet implemented' };
   });
 
   ipcMain.handle('yt:getChannel', async (_event, channelId: string) => {
     logger.warn('yt', 'getChannel not implemented — yt-dlp API required. Id:', channelId);
-    return null;
+    return { success: false, error: 'YouTube integration not yet implemented' };
   });
 
   ipcMain.handle('update:check', async () => {
@@ -1088,62 +1239,89 @@ export function registerIPC(): void {
         }
         NodeID3.update(toWrite, filePath);
         return { success: true };
-      } catch (e: any) {
-        return { success: false, error: String(e && e.message ? e.message : e) };
+      } catch (e: unknown) {
+        return { success: false, error: errMsg(e) };
       }
     }
   );
 
-  ipcMain.handle('media:renameFile', async (_event, oldPath: string, newName: string): Promise<{ success: boolean; error?: string; newPath?: string }> => {
-    try {
-      const dir = join(oldPath, '..');
-      const ext = extname(oldPath);
-      const safeName = newName.replace(/[<>:"/\\|?*]/g, '_');
-      const newPath = join(dir, safeName.endsWith(ext) ? safeName : safeName + ext);
-      await rename(oldPath, newPath);
-      return { success: true, newPath };
-    } catch (e: any) {
-      return { success: false, error: String(e && e.message ? e.message : e) };
-    }
-  });
-
-  ipcMain.handle('media:writeCover', async (_event, filePath: string, imageSource: number[] | string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      let imageBuffer: Buffer;
-      let mime = 'image/jpeg';
-      if (typeof imageSource === 'string') {
-        imageBuffer = await readFile(imageSource);
-        const ext = extname(imageSource).toLowerCase();
-        const mimeMap: Record<string, string> = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.bmp': 'image/bmp' };
-        mime = mimeMap[ext] || 'image/jpeg';
-      } else {
-        imageBuffer = Buffer.from(imageSource);
+  ipcMain.handle(
+    'media:renameFile',
+    async (
+      _event,
+      oldPath: string,
+      newName: string
+    ): Promise<{ success: boolean; error?: string; newPath?: string }> => {
+      try {
+        const dir = dirname(oldPath);
+        const ext = extname(oldPath);
+        const safeName = newName.replace(/[<>:"/\\|?*]/g, '_');
+        const newPath = join(dir, safeName.endsWith(ext) ? safeName : safeName + ext);
+        await rename(oldPath, newPath);
+        return { success: true, newPath };
+      } catch (e: unknown) {
+        return { success: false, error: errMsg(e) };
       }
-      NodeID3.update({
-        image: { mime, type: { id: 3 }, imageBuffer, description: 'Cover' }
-      }, filePath);
-      return { success: true };
-    } catch (e: any) {
-      return { success: false, error: String(e && e.message ? e.message : e) };
     }
-  });
+  );
 
-  ipcMain.handle('media:readCover', async (_event, filePath: string): Promise<{ mime?: string; data?: number[] } | null> => {
-    try {
-      const tags = NodeID3.read(filePath);
-      if (tags?.image) {
-        const img = typeof tags.image === 'string'
-          ? { imageBuffer: await readFile(tags.image).catch(() => null), mime: 'image/jpeg' }
-          : tags.image;
-        if (img?.imageBuffer && Buffer.isBuffer(img.imageBuffer)) {
-          return { mime: img.mime || 'image/jpeg', data: Array.from(img.imageBuffer) };
+  ipcMain.handle(
+    'media:writeCover',
+    async (
+      _event,
+      filePath: string,
+      imageSource: number[] | string
+    ): Promise<{ success: boolean; error?: string }> => {
+      try {
+        let imageBuffer: Buffer;
+        let mime = 'image/jpeg';
+        if (typeof imageSource === 'string') {
+          imageBuffer = await readFile(imageSource);
+          const ext = extname(imageSource).toLowerCase();
+          const mimeMap: Record<string, string> = {
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.webp': 'image/webp',
+            '.bmp': 'image/bmp'
+          };
+          mime = mimeMap[ext] || 'image/jpeg';
+        } else {
+          imageBuffer = Buffer.from(imageSource);
         }
+        NodeID3.update(
+          {
+            image: { mime, type: { id: 3 }, imageBuffer, description: 'Cover' }
+          },
+          filePath
+        );
+        return { success: true };
+      } catch (e: unknown) {
+        return { success: false, error: errMsg(e) };
       }
-      return null;
-    } catch {
-      return null;
     }
-  });
+  );
+
+  ipcMain.handle(
+    'media:readCover',
+    async (_event, filePath: string): Promise<{ mime?: string; data?: number[] } | null> => {
+      try {
+        const tags = NodeID3.read(filePath);
+        if (tags?.image) {
+          const img =
+            typeof tags.image === 'string'
+              ? { imageBuffer: await readFile(tags.image).catch(() => null), mime: 'image/jpeg' }
+              : tags.image;
+          if (img?.imageBuffer && Buffer.isBuffer(img.imageBuffer)) {
+            return { mime: img.mime || 'image/jpeg', data: Array.from(img.imageBuffer) };
+          }
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    }
+  );
 
   // --- Subtitles ---
 
@@ -1180,7 +1358,7 @@ export function registerIPC(): void {
     ): Promise<{ content: string; format: string } | null> => {
       try {
         await mkdir(getTempDir(), { recursive: true });
-        const outPath = join(getTempDir(), `sub_${Date.now()}.ass`);
+        const outPath = join(getTempDir(), `sub_${uniqueId()}.ass`);
         await execAsync(
           `ffmpeg -v error -i "${filePath}" -map 0:${streamIndex} -c:s copy -y "${outPath}"`,
           { encoding: 'utf-8', timeout: 30000, windowsHide: true }

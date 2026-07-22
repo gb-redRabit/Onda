@@ -76,7 +76,7 @@ export const usePlayerStore = defineStore('player', () => {
     }
   }
 
-  loadFavorites();
+  loadFavorites().catch(() => {});
   const progress = computed(() => (duration.value > 0 ? currentTime.value / duration.value : 0));
   const queueLength = computed(() => queue.value.length + pendingQueue.value.length);
   const displayQueue = computed(() => [...pendingQueue.value, ...queue.value]);
@@ -274,6 +274,10 @@ export const usePlayerStore = defineStore('player', () => {
   function prevTrack(): MediaFile | null {
     if (history.value.length === 0) {
       return null;
+    }
+    if (currentTrack.value) {
+      history.value.push(currentTrack.value);
+      if (history.value.length > 100) history.value.shift();
     }
     const prev = history.value.shift()!;
     currentTrack.value = prev;

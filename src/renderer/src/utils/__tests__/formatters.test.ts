@@ -155,8 +155,8 @@ describe('truncate', () => {
 });
 
 describe('formatDuration edge cases', () => {
-  it('handles negative values (passed through to formatting)', () => {
-    expect(formatDuration(-1)).toBe('-1:-1');
+  it('handles negative values (clamped to 0)', () => {
+    expect(formatDuration(-1)).toBe('0:00');
   });
 
   it('handles very large values', () => {
@@ -173,12 +173,12 @@ describe('formatFileSize edge cases', () => {
     expect(formatFileSize(1024)).toBe('1.0 KB');
   });
 
-  it('handles negative values (NaN result)', () => {
-    expect(formatFileSize(-1)).toBe('NaN undefined');
+  it('handles negative values (clamped to 0)', () => {
+    expect(formatFileSize(-1)).toBe('0 B');
   });
 
   it('handles fractional bytes (float input)', () => {
-    expect(formatFileSize(0.5)).toBe('512 undefined');
+    expect(formatFileSize(0.5)).toBe('< 1 B');
   });
 });
 
