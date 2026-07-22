@@ -3,6 +3,7 @@
 ## Architektura aplikacji
 
 ### Stos technologiczny
+
 - **Electron 39.8.10** — okno główne + child windows (PiP, audio window)
 - **Vue 3.5.25 + TypeScript 5.9.3** — frontend SPA
 - **Pinia 3.0.4** — stan (player, settings, library, ui)
@@ -131,29 +132,29 @@ HTMLVideoElement → videoSourceNode → [EQ BiquadFilter ×10] → gainNode →
 
 ---
 
-## FAZA 1 — Widok Audio Player 
+## FAZA 1 — Widok Audio Player
 
 ### Pliki zmodyfikowane / utworzone:
 
-| Plik | Operacja | Opis |
-|---|---|---|
-| `types/media.ts` | modyfikacja | Dodano `isFavorite?: boolean` do `MediaFile` |
-| `stores/player.ts` | modyfikacja | Dodano `audioViewActive`, `toggleFavorite(path)`, `loadCover()` w `setTrack()`, `clearQueue()` w `setTrack()` dla wideo |
-| `router/index.ts` | modyfikacja | Dodano route `/audio` → `AudioView.vue` |
-| `components/audio/AudioVisualizer.vue` | **NOWY** | Canvas z 4 stylami wizualizacji (bars/wave/radial/circular), AnalyserNode z audioEngine |
-| `components/audio/AudioLayout.vue` | **NOWY** | Wrapper dla QueuePanel + Equalizer |
-| `views/AudioView.vue` | **NOWY** | Pełny audio player (~442 linii): 3 layouty, kontrolki, EQ, queue, favorites, fullscreen, klawiatura |
-| `App.vue` | modyfikacja | `isAudioRoute` computed, warunkowe ukrywanie QueuePanel/Equalizer/PlayerBar/QueuePanel na `/audio`, `useMediaPlayer()` init, `audioWindow:*` IPC listeners |
-| `views/PlayerView.vue` | modyfikacja | Audio track → `router.replace('/audio')` zamiast `router.back()` |
-| `components/layout/PlayerBar.vue` | modyfikacja | Ukryty na `/audio` via warunek w App.vue, naprawiony brakujący import `Maximize2` |
-| `views/ExplorerView.vue` | modyfikacja | `playTrack()` helper: wideo → `/player`, audio → `/audio` |
-| `views/HomeView.vue` | modyfikacja | `playTrack()` helper: wideo → `/player`, audio → `/audio` |
-| `views/LibraryView.vue` | modyfikacja | `playTrack()` helper: wideo → `/player`, audio → `/audio` |
-| `views/SearchView.vue` | modyfikacja | `playTrack()` helper: wideo → `/player`, audio → `/audio` |
-| `components/player/QueuePanel.vue` | modyfikacja | `playTrack()` helper + `useRouter` import |
-| `components/layout/TopMenu.vue` | modyfikacja | Warunkowy routing audio/wideo |
-| `modules/audioEngine.ts` | modyfikacja | `connectVideo(el)`, `connectVideoToGraph(el)`, `setVolume()` via gainNode, `loadTrack()` ustawia gainNode |
-| `composables/useMediaPlayer.ts` | modyfikacja | `$onAction` nasłuchuje `setTrack` (audio→loadTrack, video→pause), `togglePlay/play/pause` → play/pause audioEngine, auto-show audio window, IPC do floating window |
+| Plik                                   | Operacja    | Opis                                                                                                                                                               |
+| -------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `types/media.ts`                       | modyfikacja | Dodano `isFavorite?: boolean` do `MediaFile`                                                                                                                       |
+| `stores/player.ts`                     | modyfikacja | Dodano `audioViewActive`, `toggleFavorite(path)`, `loadCover()` w `setTrack()`, `clearQueue()` w `setTrack()` dla wideo                                            |
+| `router/index.ts`                      | modyfikacja | Dodano route `/audio` → `AudioView.vue`                                                                                                                            |
+| `components/audio/AudioVisualizer.vue` | **NOWY**    | Canvas z 4 stylami wizualizacji (bars/wave/radial/circular), AnalyserNode z audioEngine                                                                            |
+| `components/audio/AudioLayout.vue`     | **NOWY**    | Wrapper dla QueuePanel + Equalizer                                                                                                                                 |
+| `views/AudioView.vue`                  | **NOWY**    | Pełny audio player (~442 linii): 3 layouty, kontrolki, EQ, queue, favorites, fullscreen, klawiatura                                                                |
+| `App.vue`                              | modyfikacja | `isAudioRoute` computed, warunkowe ukrywanie QueuePanel/Equalizer/PlayerBar/QueuePanel na `/audio`, `useMediaPlayer()` init, `audioWindow:*` IPC listeners         |
+| `views/PlayerView.vue`                 | modyfikacja | Audio track → `router.replace('/audio')` zamiast `router.back()`                                                                                                   |
+| `components/layout/PlayerBar.vue`      | modyfikacja | Ukryty na `/audio` via warunek w App.vue, naprawiony brakujący import `Maximize2`                                                                                  |
+| `views/ExplorerView.vue`               | modyfikacja | `playTrack()` helper: wideo → `/player`, audio → `/audio`                                                                                                          |
+| `views/HomeView.vue`                   | modyfikacja | `playTrack()` helper: wideo → `/player`, audio → `/audio`                                                                                                          |
+| `views/LibraryView.vue`                | modyfikacja | `playTrack()` helper: wideo → `/player`, audio → `/audio`                                                                                                          |
+| `views/SearchView.vue`                 | modyfikacja | `playTrack()` helper: wideo → `/player`, audio → `/audio`                                                                                                          |
+| `components/player/QueuePanel.vue`     | modyfikacja | `playTrack()` helper + `useRouter` import                                                                                                                          |
+| `components/layout/TopMenu.vue`        | modyfikacja | Warunkowy routing audio/wideo                                                                                                                                      |
+| `modules/audioEngine.ts`               | modyfikacja | `connectVideo(el)`, `connectVideoToGraph(el)`, `setVolume()` via gainNode, `loadTrack()` ustawia gainNode                                                          |
+| `composables/useMediaPlayer.ts`        | modyfikacja | `$onAction` nasłuchuje `setTrack` (audio→loadTrack, video→pause), `togglePlay/play/pause` → play/pause audioEngine, auto-show audio window, IPC do floating window |
 
 ### Co działa po fazie 1:
 
@@ -171,22 +172,22 @@ HTMLVideoElement → videoSourceNode → [EQ BiquadFilter ×10] → gainNode →
 
 ---
 
-## FAZA 2 — Okno Audio (Floating Window) 
+## FAZA 2 — Okno Audio (Floating Window)
 
 ### Pliki zmodyfikowane / utworzone:
 
-| Plik | Operacja | Opis |
-|---|---|---|
-| `src/main/audio-window-manager.ts` | **NOWY** | Klasa `AudioWindowManager` (~290 linii): createWindow (start), show/hide, showPreview/hidePreview, updateTrackData, updateLayout, IPC (togglePlay→main, prevTrack→main, nextTrack→main, close→main, closed→main) |
-| `src/renderer/audio-window.html` | **NOWY** | HTML okna audio: cover, title, artist, prev/play/next buttons, close button, CSS glassmorphism |
-| `src/renderer/src/audio-window.ts` | **NOWY** | Renderer IPC: nasłuchiwanie `audioWindow:trackData`, `audioWindow:layout`, buttons → send IPC |
-| `src/renderer/src/types/settings.ts` | modyfikacja | Dodano `AudioWindowSettings { enabled, position, width, height }` do `AppSettings` |
-| `src/renderer/src/utils/constants.ts` | modyfikacja | Dodano `DEFAULT_AUDIO_WINDOW` |
-| `src/renderer/src/stores/settings.ts` | modyfikacja | Dodano `audioWindow` ref, `updateAudioWindow()`, load/save |
-| `src/renderer/src/views/SettingsView.vue` | modyfikacja | Nowa zakładka "Okno audio": toggle auto-open, preview, pozycja, szerokość/wysokość |
-| `src/preload/index.ts` | modyfikacja | 7 nowych metod: `audioWindowStart/Stop/UpdateTrack/UpdateLayout/PreviewStart/PreviewStop/PreviewUpdate` |
-| `src/preload/index.d.ts` | modyfikacja | Deklaracje typów dla 7 metod |
-| `src/main/index.ts` | modyfikacja | AudioWindowManager init + 7 handlerów IPC + destroy |
+| Plik                                      | Operacja    | Opis                                                                                                                                                                                                             |
+| ----------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/main/audio-window-manager.ts`        | **NOWY**    | Klasa `AudioWindowManager` (~290 linii): createWindow (start), show/hide, showPreview/hidePreview, updateTrackData, updateLayout, IPC (togglePlay→main, prevTrack→main, nextTrack→main, close→main, closed→main) |
+| `src/renderer/audio-window.html`          | **NOWY**    | HTML okna audio: cover, title, artist, prev/play/next buttons, close button, CSS glassmorphism                                                                                                                   |
+| `src/renderer/src/audio-window.ts`        | **NOWY**    | Renderer IPC: nasłuchiwanie `audioWindow:trackData`, `audioWindow:layout`, buttons → send IPC                                                                                                                    |
+| `src/renderer/src/types/settings.ts`      | modyfikacja | Dodano `AudioWindowSettings { enabled, position, width, height }` do `AppSettings`                                                                                                                               |
+| `src/renderer/src/utils/constants.ts`     | modyfikacja | Dodano `DEFAULT_AUDIO_WINDOW`                                                                                                                                                                                    |
+| `src/renderer/src/stores/settings.ts`     | modyfikacja | Dodano `audioWindow` ref, `updateAudioWindow()`, load/save                                                                                                                                                       |
+| `src/renderer/src/views/SettingsView.vue` | modyfikacja | Nowa zakładka "Okno audio": toggle auto-open, preview, pozycja, szerokość/wysokość                                                                                                                               |
+| `src/preload/index.ts`                    | modyfikacja | 7 nowych metod: `audioWindowStart/Stop/UpdateTrack/UpdateLayout/PreviewStart/PreviewStop/PreviewUpdate`                                                                                                          |
+| `src/preload/index.d.ts`                  | modyfikacja | Deklaracje typów dla 7 metod                                                                                                                                                                                     |
+| `src/main/index.ts`                       | modyfikacja | AudioWindowManager init + 7 handlerów IPC + destroy                                                                                                                                                              |
 
 ### Co działa po fazie 2:
 
@@ -211,11 +212,12 @@ Renderer (audio-window.ts) → IPC send('audioWindow:togglePlay')
 
 ---
 
-## FAZA 3 — Połączenie AudioView z Floating Window 
+## FAZA 3 — Połączenie AudioView z Floating Window
 
 ### Status: Częściowo zrobione
 
 ### Co już działa (poprawione w sesji 2):
+
 1. **prevTrack/nextTrack** — teraz prawidłowo ładowały utwory w audioEngine (B9, B10)
 2. **Auto-show** — okno audio pokazuje się tylko gdy app jest w tle (B11)
 3. **Toggle switch** — niespójny CSS naprawiony (B12)
@@ -231,8 +233,10 @@ Renderer (audio-window.ts) → IPC send('audioWindow:togglePlay')
 
 ---
 
-## FAZA 4 — Pełnyscreen Audio Layouts 
+## FAZA 4 — Pełnyscreen Audio Layouts
+
 ### Zadania:
+
 1. Layout "cover" — duży artwork + info + controls (rozbudowany)
 2. Layout "visualizer" — pełnoekranowa wizualizacja canvas z animacjami
 3. Layout "combined" — artwork + wizualizacja w tle z efektami
@@ -242,9 +246,10 @@ Renderer (audio-window.ts) → IPC send('audioWindow:togglePlay')
 
 ---
 
-## FAZA 5 — Ulubione + Ulepszona Biblioteka 
+## FAZA 5 — Ulubione + Ulepszona Biblioteka
 
 ### Zadania:
+
 1. Widok "Ulubione" w bibliotece (filter po `isFavorite`)
 2. Sortowanie wg częstotliwości odtwarzania (playCount)
 3. Szybkie dodawanie/usuwanie z ulubionych w każdym widoku (kontekst menu)
@@ -253,9 +258,10 @@ Renderer (audio-window.ts) → IPC send('audioWindow:togglePlay')
 
 ---
 
-## FAZA 6 — Playlista (electron-store) 
+## FAZA 6 — Playlista (electron-store)
 
 ### Zadania:
+
 1. Tworzenie/edycja/usuwanie playlist
 2. Zapis w `electron-store` (persistent)
 3. Drag & drop kolejności w playlist
@@ -264,9 +270,10 @@ Renderer (audio-window.ts) → IPC send('audioWindow:togglePlay')
 
 ---
 
-## FAZA 7 — Zarządzanie folderami + Ustawienia 
+## FAZA 7 — Zarządzanie folderami + Ustawienia
 
 ### Zadania:
+
 1. Skanowanie folderów muzycznych (background)
 2. Auto-dodawanie nowych plików do biblioteki
 3. Zaawansowane ustawienia EQ (zapis custom presetów)
@@ -275,3 +282,33 @@ Renderer (audio-window.ts) → IPC send('audioWindow:togglePlay')
 
 ---
 
+## Sprint Naprawczy 2026-07-22 — Bug Fixes
+
+### Naprawione błędy
+
+1. **Crossfade silence** — po crossfade sourceNodeB podłączany do crossfadeGainA (gain=1) zamiast crossfadeGainB (gain=0). Przełomowy fix — poprzednio nowy utwór po crossfade był niesłyszalny.
+
+2. **EQ bypass** — crossfadeGainB był podłączony bezpośrednio do gainNode (omijając EQ). Poprawiono: teraz oba kanały przechodzą przez ensureEqChain().
+
+3. **Volume distortion** — `ensureEqChain()` podłączał crossfadeGainA/B do WSZYSTKICH 10 filtrów równolegle ORAZ do pierwszego filtra (szereg), tworząc 10× zwielokrotnienie sygnału. Usunięto pętlę `for..connect` — tylko szeregowy chain.
+
+4. **Okładki wideo** — `extractAndCacheCover` sprawdzał cache przed szukaniem pasującego pliku wideo. Jeśli audio miało zapisaną okładkę, zwracał ją natychmiast, nie szukając wideo o tej samej nazwie. Dodano `findSiblingVideo()` na początku — jeśli pasujący plik wideo istnieje w tym samym katalogu, zwraca go od razu omijając cache.
+
+5. **Zmiana okładki nie odświeżała widoku** — `writeCover` nie czyścił cache (ani in-memory `coverResultCache`, ani persistent w electron-store). Dowolna zmiana okładki była niewidoczna do restartu. Dodano czyszczenie obu cache'ów w handlerze.
+
+6. **Typ folderu** — 1 video + 99 audio = 'mixed'. Zmieniono na ratio: ≥70% = typ dominujący, else 'mixed'.
+
+7. **Skanowanie 50/50** — audio zadania i video zadania przeplatane w chunkach (co drugie), zamiast procesować wszystkie audio najpierw.
+
+8. **Liczniejsze** — prevTrack history, loadFavorites startup, formatters negative/fractional guards, cache memory limit, race condition na persistent cover, chunkowanie scanu przez thunki zamiast promise'ów, dialog:saveFile return type.
+
+### Zmiany w plikach
+
+| Plik                        | Zmiany                                                                   |
+| --------------------------- | ------------------------------------------------------------------------ |
+| `audioEngine.ts`            | Crossfade silence, EQ bypass, preload cleanup, videoSourceNode, destroy, volume distortion |
+| `player.ts`                 | prevTrack history, loadFavorites startup, invalidateCoverCache reload    |
+| `handlers.ts`               | Cache eviction, cover race lock, thunk chunking, sibling video, cover invalidation, folder ratio, scan interleave |
+| `formatters.ts`             | Negative/fractional guards, `< 1 B` dla ułamków                         |
+| `formatters.test.ts`        | Testy dostosowane do nowego clamped zachowania                           |
+| `ipc.ts`                    | `dialog:saveFile` return type                                            |
