@@ -897,12 +897,17 @@ export function registerIPC(): void {
           folderPaths.map(async (folderPath) => {
             try {
               const result = await scanDir(folderPath, 8);
+              const total = result.audioCount + result.videoCount;
               const folderType: 'audio' | 'video' | 'mixed' =
                 result.audioCount > 0 && result.videoCount === 0
                   ? 'audio'
                   : result.videoCount > 0 && result.audioCount === 0
                     ? 'video'
-                    : 'mixed';
+                    : result.audioCount / total >= 0.7
+                      ? 'audio'
+                      : result.videoCount / total >= 0.7
+                        ? 'video'
+                        : 'mixed';
               return { folderType, files: result.files, folderPath };
             } catch (err) {
               logger.warn('library', `scan error for ${folderPath}: ${err}`);
