@@ -411,7 +411,7 @@ type IpcInvoke = <C extends keyof IpcChannels>(
 | Pliki źródłowe | 87       | 88       |
 | TODO/FIXME     | 1        | 1        |
 
-_Ostatnia aktualizacja: 2026-07-22_
+_Ostatnia aktualizacja: 2026-07-23_
 
 ---
 
@@ -556,4 +556,68 @@ _Ostatnia aktualizacja: 2026-07-22_
 | typecheck web  | 0 błędów | 0 błędów |
 | lint           | 0 błędów | 0 błędów |
 | testy          | 141 pass | 141 pass |
+
+---
+
+## 13. Sprint 5 — Video Covers + Audio Fixes (2026-07-23)
+
+### 13.1 Co zrobiono
+
+| #  | Problem                                                                                                      | Rozwiązanie                                                                                                                                                                                                                                                                                        | Pliki                                               |
+| -- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| 1  | **AppMenu dropdown zamyka się przy najechaniu** — `@mouseleave="closeDropdown"` na parent bar fire'uje gdy kursor przechodzi z przycisku do dropdownu | Zamieniono na document click-away handler (`onClickAway`) + `ref="menuBar"`. Usunięto `@mouseleave="closeDropdown"`                                                                                                                                                                                | `AppMenu.vue`                                       |
+| 2  | **Brak okładek wideo w bibliotece** — ffmpeg extraction timeout przy równoległym skanowaniu, canvas capture też nie działał niezawodnie | `VideoCard` zawsze przekazuje `{ type: 'video', data: path }` jako fallback gdy brak cache. `MediaCover` renderuje `<video preload="auto" muted playsinline>` pokazujące pierwszą klatkę natywnie. tło: `scheduleCoverFlush` → `setTimeout(0)` + batch 5; `captureVideoFrame` → HTML5 canvas fallback | `VideoCard.vue`, `MediaCover.vue`, `player.ts`      |
+| 3  | **Brak audio w video** — AudioContext startuje w "suspended". Dla audio `resumeAndPlay()` zawsze wołany, dla video nigdy | `audioEngine.resume()` tworzy AudioContext+EQ chain jeśli nie istnieje. `setTrack()` woła `audioEngine.resume()` dla video w ramach gestu kliknięcia. `setupVideo` → `createMediaElementSource` PRZED `el.src` (Chromium może nie przechwycić audio jeśli source created po src)               | `audioEngine.ts`, `player.ts`, `useVideoPlayer.ts`  |
+| 4  | **AC3/DTS audio nie działa** — Chromium nie wspiera tych kodeków nawet natywnie w `<video>`                    | `createMediaElementSource` usunięty dla video → audio gra natywnie przez system. To nie wystarczyło — Chromium nadal nie dekoduje AC3. **Ostateczne rozwiązanie:** ffmpeg wykrywa kodek i transkoduje audio do AAC. Najpierw 30s chunk (~1s) → natychmiastowe odtwarzanie, potem pełny transkoding w tle → cicha podmiana | `handlers.ts`, `audioEngine.ts`, `useVideoPlayer.ts` |
+| 5  | **Preload / typy / preload** — dodanie `media:checkAudioCodec`, `media:transcodeAudio`, `media:transcodeAudioChunk` IPC, preload API, type definitions, IpcChannels | 6 plików: handlers.ts, preload/index.ts, preload/index.d.ts, shared/types/ipc.ts, audioEngine.ts, useVideoPlayer.ts. Obsługa offsetu czasowego dla chunków + sync seek/play/pause. Ciche przejście z chunka na pełny plik                                  | 6 plików wymienionych                               |
+
+### 13.2 Zmiany w architekturze
+
+```diff
+- createMediaElementSource dla video → problemy z AC3/DTS
++ Video gra natywnie (bez createMediaElementSource), a dla nieobsługiwanych kodeków:
++   1. ffprobe wykrywa kodowanie audio
++   2. ffmpeg transkoduje 30s chunk z aktualnej pozycji (-ss <pos> -t 30) → ~1s
++   3. Chunk odtwarzany przez ukryte <audio> przez Web Audio (pełny EQ/głośność)
++   4. W tle: pełny transkoding całego pliku do AAC
++   5. Gdy gotowe: cicha podmiana (disconnectSecondaryAudio → connectSecondaryAudio)
++   6. Kolejne odpalenia: instant (cache w %TEMP%/onda/audio-transcodes/)
+```
+
+### 13.3 Nowe IPC channels
+
+| Kanał                       | Opis                                                       |
+| --------------------------- | ---------------------------------------------------------- |
+| `media:checkAudioCodec`     | ffprobe: sprawdza kodek audio (AC3 = unsupported)          |
+| `media:transcodeAudioChunk` | ffmpeg -ss <pos> -t 30 → szybki chunk ~1s                 |
+| `media:transcodeAudio`      | ffmpeg pełny transkoding do AAC                            |
+| `media:cleanupTranscodedAudio` | Usunięcie cache audio                                   |
+
+### 13.4 Nowe metody audioEngine
+
+| Metoda                          | Opis                                                               |
+| ------------------------------- | ------------------------------------------------------------------ |
+| `connectSecondaryAudio(path)`   | Tworzy ukryte `<audio>` dla transcoded audio, podłącza do Web Audio |
+| `disconnectSecondaryAudio()`    | Czyści secondary audio element + source node                       |
+| `seekSecondaryAudio(videoTime)` | Seek w secondary audio z uwzględnieniem offsetu                    |
+| `playSecondaryAudio()`          | Play secondary audio                                               |
+| `pauseSecondaryAudio()`         | Pause secondary audio                                              |
+| `hasSecondaryAudio` (getter)    | Czy secondary audio jest aktywny                                   |
+
+### 13.5 Wykrywane kodeki
+
+| Wspierane (brak transkodu)                | Niewspierane (autotranskod do AAC) |
+| ----------------------------------------- | ---------------------------------- |
+| AAC, MP3, MP2, Opus, Vorbis, FLAC,       | AC3, E-AC3 (Dolby Digital)         |
+| PCM (s16le, s16be, s24le, f32le),        | DTS, DCA                           |
+| ALAC, TrueHD                              | WMA, RealAudio, ATRAC, inne        |
+
+### 13.6 Statystyki (po sprincie 5)
+
+| Metryka        | Przed    | Po       |
+| -------------- | -------- | -------- |
+| typecheck      | 0 błędów | 0 błędów |
+| testy          | 141 pass | 141 pass |
+| Linii dodanych | —        | ~210     |
+| Commit         | b492302  | 212bc76  |
 

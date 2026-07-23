@@ -1021,7 +1021,56 @@ Views → czytają store'y + wywołują akcje store (BEZ moduleManager.switchTo 
 
 ---
 
-## 13. Kluczowe Pliki
+## 13. Video Audio Transcoding
+
+### 13.1 Problem
+
+Chromium (i Electron) nie wspiera kodeków AC3, E-AC3, DTS, TrueHD i wielu innych używanych w plikach MKV z dubbingiem. Nawet natywne `<video>` bez Web Audio nie odtworzy tych kodeków. Rozwiązanie: transkodowanie audio do AAC przez ffmpeg.
+
+### 13.2 Strategia chunk-first
+
+Pełny transkoding filmu 2-godzinnego zajmuje 30-60s. Zamiast czekać:
+
+1. **Fast chunk** (30s z aktualnej pozycji, `ffmpeg -ss <pos> -t 30`) → ~1s
+2. Chunk grany natychmiast przez ukryte `<audio>` przez Web Audio (EQ, głośność)
+3. W tle: pełny transkoding całego pliku do AAC (`ffmpeg -i file -c:a aac full.m4a`)
+4. Gdy gotowe: cicha podmiana (disconnect → connect z pełnym plikiem)
+5. Kolejne odpalenia: instant (cache w `%TEMP%/onda/audio-transcodes/`)
+
+### 13.3 Architektura
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                     MAIN PROCESS                               │
+│  media:checkAudioCodec → ffprobe                               │
+│  media:transcodeAudioChunk → ffmpeg -ss <pos> -t 30 -c:a aac  │
+│  media:transcodeAudio → ffmpeg -i file -c:a aac full.m4a       │
+├────────────────────────────────────────────────────────────────┤
+│                      RENDERER                                  │
+│  useVideoPlayer.checkVideoAudioCodec():                         │
+│    1. checkAudioCodec(path) → unsupported → mute <video>       │
+│    2. transcodeAudioChunk(path, seekPos, 30) → play chunk      │
+│    3. transcodeAudio(path) → swap to full when ready           │
+│  audioEngine.connectSecondaryAudio(path, timeOffset):          │
+│    - new Audio() + createMediaElementSource + connect to chain  │
+│  Sync: seekSecondaryAudio, play/pauseSecondaryAudio            │
+│  Volume: <video volume=0>, Web Audio gainNode controls volume   │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### 13.4 Kluczowe szczegóły
+
+- `secondaryAudioOffset` — chunk zaczyna się od `seekPos`, pełny plik od 0. `seekSecondaryAudio(videoTime)` konwertuje: `audioEl.currentTime = videoTime - offset`
+- `currentTime` watcher automatycznie synchornizuje seek
+- `isPlaying` watcher kontroluje play/pause secondary audio
+- Volume watcher: gdy `hasSecondaryAudio`, video mute, Web Audio gainNode steruje głośnością
+- `disconnectSecondaryAudio()` wołane przy `disconnectNodes()`, `connectAudio()`, `destroy()`
+- Cache: hash MD5 ścieżki pliku, `%TEMP%/onda/audio-transcodes/<hash>.m4a`
+- Chunk cache: `<hash>_<start>_<dur>.m4a`
+
+---
+
+## 14. Kluczowe Pliki
 
 | Plik                     | Linii | Znaczenie                                                                                  |
 | ------------------------ | ----- | ------------------------------------------------------------------------------------------ |
@@ -1060,7 +1109,7 @@ Views → czytają store'y + wywołują akcje store (BEZ moduleManager.switchTo 
 
 ---
 
-## 14. Konwencje Kodowe
+## 15. Konwencje Kodowe
 
 ### TypeScript
 
@@ -1113,7 +1162,7 @@ Views → czytają store'y + wywołują akcje store (BEZ moduleManager.switchTo 
 
 ---
 
-## 15. Komendy
+## 16. Komendy
 
 | Komenda                  | Cel                          |
 | ------------------------ | ---------------------------- |
@@ -1131,7 +1180,7 @@ Views → czytają store'y + wywołują akcje store (BEZ moduleManager.switchTo 
 
 ---
 
-## 16. Konfiguracja Projektu
+## 17. Konfiguracja Projektu
 
 ### electron.vite.config.ts
 
@@ -1165,9 +1214,9 @@ Ostatnia aktualizacja: 2026-07-20 (Phase 1 — stabilność, Phase 2 — wydajno
 
 ---
 
-## 17. Zmiany od 2026-07-18
+## 18. Zmiany od 2026-07-18
 
-### 17.0 Separacja Audio/Video plus refactor (2026-07-19)
+### 18.0 Separacja Audio/Video plus refactor (2026-07-19)
 
 **Problem:** Audio i wideo dzieliły ten sam store state (currentTime, isPlaying), powodując konflikty gdy odtwarzacz audio i wideo próbowały kontrolować ten sam stan.
 
@@ -1179,7 +1228,7 @@ Ostatnia aktualizacja: 2026-07-20 (Phase 1 — stabilność, Phase 2 — wydajno
 - `PlayerView.vue` — wideo ma WŁASNY independently zarządzany element `<video>` z własnym `currentTime` i `isPlaying`
 - `PlayerBar.vue` — wyświetla okładki (video loop, image, icon fallback) tak jak QueuePanel
 
-### 17.1 Audio w Tle — Nawigacja (2026-07-19)
+### 18.1 Audio w Tle — Nawigacja (2026-07-19)
 
 **Problem:** Każde przejście do innego widoku Dezaktywowało PlayerModule → `audioEngine.deactivate()` → pauza audio + stop RAF loop + AudioContext suspend.
 
@@ -1197,7 +1246,7 @@ Ostatnia aktualizacja: 2026-07-20 (Phase 1 — stabilność, Phase 2 — wydajno
 - Po odtworzeniu wideo, `deactivate()` zatrzymuje RAF loop + pauzuje AudioContext
 - Gdy audio startuje później, `resume()` przywraca oba — RAF loop i AudioContext
 
-### 17.2 Fixy (2026-07-19)
+### 18.2 Fixy (2026-07-19)
 
 - **Shuffle z pendingQueue** — `nextTrack()` teraz losuje random index z pendingQueue (nie tylko shift)
 - **repeat='one' audio** — resetuje currentTime zamiast wywoływać setTrack (brak duplikatów w historii)
@@ -1205,7 +1254,7 @@ Ostatnia aktualizacja: 2026-07-20 (Phase 1 — stabilność, Phase 2 — wydajno
 - **reorderQueue** — adjustedTo fix dla sytuacji gdy from < to
 - **Node.js v26 compat** — patched nested backticks w electron-vite (`node_modules/electron-vite/dist/chunks/lib-q6ns0vZr.js`)
 
-### 17.3 Favorites + AudioView Refactor (2026-07-19)
+### 18.3 Favorites + AudioView Refactor (2026-07-19)
 
 **Favorites system:**
 
@@ -1228,7 +1277,7 @@ Ostatnia aktualizacja: 2026-07-20 (Phase 1 — stabilność, Phase 2 — wydajno
 - **Viz mode button** — bottom-left w full layout, cykluje bars/wave/radial
 - `AudioVisualizer` eksponuje `style` + `cycleStyle()` przez `defineExpose`
 
-### 17.4 Phase 1 — Stabilność (2026-07-20)
+### 18.4 Phase 1 — Stabilność (2026-07-20)
 
 **8 zmian — priorytet CRITICAL:**
 
@@ -1241,7 +1290,7 @@ Ostatnia aktualizacja: 2026-07-20 (Phase 1 — stabilność, Phase 2 — wydajno
 - **1.7** — Dodano try-catch guard w `audioEngine.handleEnded` dla `usePlayerStore()` — bezpieczny dostęp gdy store niezainicjalizowany
 - **1.8** — Zmieniono `Set<string>` na `string[]` dla `favorites` — poprawna serializacja do electron-store
 
-### 17.5 Phase 2 — Wydajność (2026-07-20)
+### 18.5 Phase 2 — Wydajność (2026-07-20)
 
 **7 zmian — priorytet HIGH:**
 
@@ -1253,13 +1302,13 @@ Ostatnia aktualizacja: 2026-07-20 (Phase 1 — stabilność, Phase 2 — wydajno
 - **2.7** — Usunięto `urlToDataUrl` — WASM URL-e przekazywane oryginalnie do JASSUB (Vite już serwuje poprawnie, bez kosztownej konwersji ArrayBuffer → base64)
 - **2.8** — Podział `SettingsView.vue` (772 → 69 linii) na 9 komponentów per-zakładka lazy-importowanych: `SettingsAppearance`, `SettingsPlayback`, `SettingsPiP`, `SettingsDownload`, `SettingsShortcuts`, `SettingsNetwork`, `SettingsApiKeys`, `SettingsUpdates`, `SettingsDependencies`
 
-### 17.6 Fixy po Phase 2 (2026-07-20)
+### 18.6 Fixy po Phase 2 (2026-07-20)
 
 - **electron-store ESM import** — lazy init z `(() => new Store())()` przez dynamic import — circumwencja ESM/CJS mismatch w Node.js
 - **Brak `await` na `getMkvExtractPath()`** — czcionki z MKV nie były wyciągane bo Promise nie był awaitowany w `buildFontMap`
 - **ErrorBoundary brak single root element** — warning Transition w Vue: `<div v-if>` i `<slot v-else>` opakowane w `<template>`
 
-### 17.7 Phase 3 — Architektura (2026-07-20)
+### 18.7 Phase 3 — Architektura (2026-07-20)
 
 **7 zmian — refaktoryzacja wewnętrznej komunikacji i bezpieczeństwa typów:**
 
@@ -1336,7 +1385,7 @@ Ostatnia aktualizacja: 2026-07-20 (Phase 1 — stabilność, Phase 2 — wydajno
 - `initAll()` sortuje moduły po `priority` (malejąco)
 - Warnuje o brakujących modułach zależnych (`console.warn`)
 
-### 17.8 Height Chain Fix (2026-07-20)
+### 18.8 Height Chain Fix (2026-07-20)
 
 **Problem:** `ErrorBoundary.vue` używał `h-full` (`height: 100%`). W CSS `height: 100%` patrzy na `height` property rodzica, nie na flex-allocated height. `<main>` miało tylko `flex-1` (bez explicit height), więc `h-full` wewnątrz niego wynosiło 0px. Powodowało to:
 
@@ -1349,7 +1398,7 @@ Ostatnia aktualizacja: 2026-07-20 (Phase 1 — stabilność, Phase 2 — wydajno
 - `ErrorBoundary` → `<div class="flex-1 min-h-0">` — flex child rozciąga się na flex-allocated height main
 - Wszystkie widoki używają `h-full` → poprawnie dziedziczą z flex-allocated height
 
-### 17.0a Dlaczego effectScope(true) + watch() zamiast $subscribe
+### 18.0a Dlaczego effectScope(true) + watch() zamiast $subscribe
 
 `player.$subscribe()` w module-level singleton NIE fire'uje się poprawnie po init (Pinia limitation). `watch()` w module-level też nie fire'uje się dla subsequent mutations.
 
@@ -1359,9 +1408,9 @@ Kluczowe: `effectScope(true)` musi być utworzony na module level (nie w composa
 
 ---
 
-## 18. Przyszłe ulepszenia
+## 19. Przyszłe ulepszenia
 
-### 18.1 Edycja prostych napisów (SRT, VTT, SUB)
+### 19.1 Edycja prostych napisów (SRT, VTT, SUB)
 
 Formaty SRT, VTT i SUB nie posiadają złożonego systemu stylów jak ASS — mają tylko tekst, czas i podstawowe formatowanie.
 
@@ -1377,7 +1426,7 @@ Formaty SRT, VTT i SUB nie posiadają złożonego systemu stylów jak ASS — ma
 - Przesuwanie czasu (offset wszystkich napisów)
 - Import/Export plików SRT/VTT
 
-### 18.2 Własny renderer napisów (bez JASSUB)
+### 19.2 Własny renderer napisów (bez JASSUB)
 
 Dla prostych formatów (SRT, VTT) JASSUB jest overkill. Własny renderer:
 
@@ -1396,7 +1445,7 @@ useSimpleSubtitleRenderer.ts
 └── applyStyleSettings(settings)
 ```
 
-### 18.3 Hybrydowy system napisów
+### 19.3 Hybrydowy system napisów
 
 Kombinacja obu podejść:
 
@@ -1404,7 +1453,7 @@ Kombinacja obu podejść:
 - SRT/VTT/SUB → własny renderer (pełna kontrola)
 - Auto-detect formatu i wybranie odpowiedniego renderera
 
-### 18.4 System napisów → `sweet-subtitle`
+### 19.4 System napisów → `sweet-subtitle`
 
 Zastąpienie JASSUB library dedykowanym systemem napisów. `sweet-subtitle` — lekka alternatywa z lepszą obsługą formatów SRT/VTT.
 

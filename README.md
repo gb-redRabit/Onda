@@ -13,6 +13,7 @@ Onda obsługuje odtwarzanie lokalnych plików audio/wideo, eksplorację plików,
 - **Napisy** — parser SRT/VTT/ASS, renderowanie ASS przez JASSUB (wasm + worker)
   - Wyciąganie czcionek z MKV (mkvextract), lokalne fonty Windows, Google Fonts fallback
 - **Wideo** — fullscreen, Picture-in-Picture, OSD, playback rate
+- **Audio AC3/DTS → AAC** — automatyczne transkodowanie dla kodeków niewspieranych przez Chromium (chunk-first: ~1s do pierwszego dźwięku)
 - **Okładki** — lazy loading (IntersectionObserver), memory + disk cache (JPEG w temp), music-metadata zamiast ffmpeg, batch processing
 - **i18n** — pełna internacjonalizacja (PL/EN, ~300 kluczy), przełączanie locale w ustawieniach
 - **Splash screen** — animowana wizualizacja dźwiękowa na canvas (standalone HTML, zero deps)
