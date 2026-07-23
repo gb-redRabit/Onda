@@ -108,6 +108,8 @@ export default {
     comfortable: 'Comfortable',
     spacious: 'Spacious',
     sidebarPosition: 'Sidebar position',
+    sidebarSections: 'Sidebar sections',
+    sidebarCollapsed: 'Sidebar collapsed',
     left: 'Left',
     right: 'Right',
     appearanceSection: 'Appearance',
@@ -234,7 +236,31 @@ export default {
     size: 'Size',
     type: 'Type',
     modified: 'Modified',
-    drive: 'Drive'
+    drive: 'Drive',
+    search: 'Search...',
+    quickAccess: 'Quick Access',
+    ThisPC: 'This PC',
+    Desktop: 'Desktop',
+    Downloads: 'Downloads',
+    libraryFolders: 'Library Folders',
+    open: 'Open',
+    addToLibrary: 'Add to library',
+    removeFromLibrary: 'Remove from library',
+    openInTerminal: 'Open in terminal',
+    copyPath: 'Copy path',
+    rename: 'Rename',
+    openImage: 'Open image',
+    openWithDefaultApp: 'Open with default app',
+    deleteConfirm: 'Delete "{name}"?',
+    deleteMultipleConfirm: 'Delete these {count} items?',
+    newFolder: 'New folder',
+    viewMode: 'View mode',
+    viewExtraSmall: 'Extra small icons (Ctrl+Scroll)',
+    viewSmall: 'Small icons',
+    viewMedium: 'Medium icons',
+    viewLarge: 'Large icons',
+    viewExtraLarge: 'Extra large icons',
+    viewDetails: 'Details'
   },
   downloads: {
     title: 'Downloads',
@@ -244,6 +270,7 @@ export default {
     downloads: 'downloads'
   },
   common: {
+    ok: 'OK',
     play: 'Play',
     addToQueue: 'Add to queue',
     editTags: 'Edit tags',
@@ -270,7 +297,9 @@ export default {
     folderMixed: 'Mixed',
     folderUnknown: 'Unknown',
     tracks: 'tracks',
-    files: 'files'
+    files: 'files',
+    selected: 'selected',
+    selectAll: 'Select all'
   },
   equalizer: {
     title: 'Equalizer',

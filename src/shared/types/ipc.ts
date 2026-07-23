@@ -24,9 +24,11 @@ interface IpcPlaylist {
 
 export interface IpcChannels {
   'fs:getDrives': { args: []; result: unknown[] };
-  'fs:readdir': { args: [dirPath: string]; result: unknown[] };
+  'fs:readdir': { args: [dirPath: string]; result: void };
+  'fs:readdir:batch': { args: []; result: { done: boolean; items: unknown[] } };
   'fs:stat': { args: [filePath: string]; result: unknown };
   'fs:rename': { args: [oldPath: string, newPath: string]; result: void };
+  'fs:mkdir': { args: [dirPath: string]; result: boolean };
   'fs:delete': { args: [filePath: string]; result: void };
   'dialog:openFile': {
     args: [options?: unknown];
@@ -43,6 +45,10 @@ export interface IpcChannels {
   'window:setAlwaysOnTop': { args: [flag: boolean]; result: void };
   'shell:openExternal': { args: [url: string]; result: void };
   'shell:showItemInFolder': { args: [fullPath: string]; result: void };
+  'shell:openTerminal': { args: [dirPath: string]; result: void };
+  'shell:openWithDefault': { args: [filePath: string]; result: void };
+  'fs:copyPath': { args: [filePath: string]; result: void };
+  'fs:readFile': { args: [filePath: string]; result: string | null };
   'app:getPath': { args: [name: string]; result: string };
   'app:getVersion': { args: []; result: string };
   'library:scan': {
@@ -133,6 +139,10 @@ export interface IpcChannels {
   'media:cleanupTranscodedAudio': {
     args: [audioPath: string];
     result: void;
+  };
+  'shell:getFileIcon': {
+    args: [filePath: string];
+    result: string | null;
   };
 }
 

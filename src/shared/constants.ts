@@ -23,3 +23,16 @@ export const AUDIO_EXTS = [
   '.aiff',
   '.alac'
 ];
+
+export const IMAGE_EXTS = [
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  '.gif',
+  '.bmp',
+  '.svg',
+  '.ico',
+  '.tiff',
+  '.tif'
+];

@@ -621,3 +621,65 @@ _Ostatnia aktualizacja: 2026-07-23_
 | Linii dodanych | —        | ~210     |
 | Commit         | b492302  | 212bc76  |
 
+---
+
+## 14. Sprint 6 — Explorer Overhaul + ImageViewer (2026-07-23)
+
+### 14.1 Co zrobiono
+
+| #  | Zadanie                                                                              | Rozwiązanie                                                                                                                                                                                        | Pliki                                                                                            |
+| -- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| 1  | **View modes** — 4 tryby wyświetlania                                                 | `extraSmall` (gęsta lista), `icons` (siatka), `compact`, `details` (tabela). Virtual scrolling dla wszystkich. Overscan reduced do 2.                                                               | `ExplorerView.vue`, `ExplorerGridItem.vue`, `ExplorerTableRow.vue`                               |
+| 2  | **Virtual scrolling** — @tanstack/vue-virtual                                         | `useVirtualizer` dla trybów, `will-change: transform` na wierszach. `shallowRef` + `triggerRef` dla `extraSmallIcons` z LRU cache (500)                                                             | `ExplorerView.vue`                                                                               |
+| 3  | **Slideshow button fix** — `pointer-events-none` na Lucide icons                     | Lucide SVG nie przepuszcza kliknięć przez warstwę SVG → dodano `pointer-events-none` do wszystkich ikon w przyciskach                                                                              | `ExplorerView.vue`, `ImageViewer.vue`                                                            |
+| 4  | **Context menu fix** — brak rename/delete                                             | `@contextmenu.prevent` nie stopował propagacji → `handleEmptyContextMenu` na scrollRef nadpisywał menu. Zmiana na `@contextmenu.stop.prevent`                                                       | `ExplorerView.vue`, `ExplorerGridItem.vue`, `ExplorerTableRow.vue`                               |
+| 5  | **Context menu restrukturyzacja**                                                      | `pushSeparator()` helper, max 3 separatory. Wszystkie opcje (rename, delete, showInFolder, copyPath, openWithDefault) dla każdego typu pliku. `:key="idx"` zamiast `:key="item.label"`              | `ExplorerView.vue`, `App.vue`                                                                    |
+| 6  | **ImageViewer** — kompletny lightbox                                                  | Dual-image transition system (symultaniczne old-exit / new-enter). 4 tryby: fade, slide, zoom, swirl. Zoom/rotate/fullscreen/wheel/touch. Pasek postępu slideshow                                   | `ImageViewer.vue` (550 linii, przepisany od nowa)                                               |
+| 7  | **Thumbnail strip** — pasek miniaturek na dole                                        | Lazy-loaded cache (±4 wokół aktualnego). Przewijalny. Toggle show/hide. Kliknięcie → goTo                                                                                                          | `ImageViewer.vue`                                                                                |
+| 8  | **Slideshow settings** — dropdown pod Play                                            | Interval (1s-10s), transition type (fade/slide/zoom/swirl), duration (200-1000ms), loop toggle. Progress bar na górze                                                                               | `ImageViewer.vue`                                                                                |
+| 9  | **Fullscreen** — Fullscreen API                                                       | Przycisk Fullscreen (Lucide) + klawisz F. `document.fullscreenElement` + `fullscreenchange` listener                                                                                                | `ImageViewer.vue`                                                                                |
+| 10 | **Breadcrumb** — Windows-style display                                                | Split na `\` z `v-if="idx > 0"` → `D:\tapety\Konachan`                                                                                                                                            | `ExplorerView.vue`                                                                               |
+| 11 | **Toolbar vertical** — pasek narzędzi po prawej                                       | Przeniesiony toolbar ImageViewer na prawą stronę. Przyciski: Close, Play/Settings, Fit, ZoomIn/Out, Rotate, Fullscreen                                                                             | `ImageViewer.vue`                                                                                |
+| 12 | **Readdir streaming** — batch push-based IPC                                          | `fs:readdir` → `event.sender.send('fs:readdir:batch', { done, items })` w batchach 200. Store aktualizowany przez `window.api.on('fs:readdir:batch')`                                               | `handlers.ts`, `explorer.ts`, `preload/index.ts`, `shared/types/ipc.ts`                          |
+| 13 | **Settings shortcuts editable** — klik → nagraj → zapisz                              | `SettingsShortcuts.vue` przepisane: click shortcut → listen keydown → `settings.updateShortcut()`                                                                                                   | `SettingsShortcuts.vue`, `settings.ts`, `constants.ts`                                          |
+| 14 | **Locale keys** — brakujące tłumaczenia                                               | `explorer.viewMode`, `common.selected`, `common.selectAll`, `common.ok` dodane do en.ts i pl.ts                                                                                                     | `en.ts`, `pl.ts`                                                                                 |
+| 15 | **IpcChannels interface** — `fs:mkdir`, `fs:copyPath`, `shell:*`                      | Nowe kanały IPC: `fs:mkdir`, `fs:copyPath`, `shell:showItemInFolder`, `shell:openWithDefault`, `shell:openTerminal`                                                                                | `shared/types/ipc.ts`                                                                            |
+| 16 | **Electron security warning suppressed**                                              | `app.commandLine.appendSwitch('no-electrosecurity-warnings')`                                                                                                                                      | `main/index.ts`                                                                                  |
+| 17 | **`statSync` fix** — `{ throwIfNoEntry: false }`                                      | Deprecation warning + crash fix                                                                                                                                                                    | `handlers.ts`                                                                                    |
+| 18 | **`handleKeydown` typo fix** — `TAGAREA` → `TEXTAREA`                                | Input nie mógł rejestrować skrótów                                                                                                                                                                 | `ExplorerView.vue`                                                                               |
+| 19 | **Empty-space context menu** — New folder, Open terminal, Select all                  | `handleEmptyContextMenu()` w ExplorerView                                                                                                                                                           | `ExplorerView.vue`                                                                               |
+| 20 | **`prompt()` replacement** — custom Teleport dialog                                   | `prompt()` nie działa w Electron → `<Teleport>` dialog dla rename/new folder                                                                                                                         | `ExplorerView.vue`                                                                               |
+
+### 14.2 Zmiany w architekturze
+
+```diff
++ ExplorerGridItem.vue  —  kafelek siatki z miniaturami
++ ExplorerTableRow.vue  —  wiersz tabeli z detalami
++ ExplorerNavPane.vue   —  lewy panel nawigacyjny
++ ExplorerToolbar.vue   —  górny pasek narzędzi
++ ImageViewer.vue       —  lightbox image viewer (550 linii)
++ IPC streaming: fs:readdir → batch events (fs:readdir:batch)
++ shallowRef + triggerRef dla extraSmallIcons z LRU cache
+- `@contextmenu.prevent` → `@contextmenu.stop.prevent` (fix propagation)
+```
+
+### 14.3 Nowe IPC channels
+
+| Kanał                       | Opis                                                          |
+| --------------------------- | ------------------------------------------------------------- |
+| `fs:readdir:batch`          | Main→Renderer: batch plików (200/batch) + done flag           |
+| `fs:mkdir`                  | Tworzenie folderu                                              |
+| `fs:copyPath`               | Kopiowanie ścieżki do schowka                                  |
+| `shell:showItemInFolder`    | Otwiera folder rodzica w explorerze systemowym                 |
+| `shell:openWithDefault`     | Otwiera plik domyślną aplikacją                                |
+| `shell:openTerminal`        | Otwiera terminal w ścieżce                                     |
+
+### 14.4 Statystyki (po sprincie 6)
+
+| Metryka        | Wartość      |
+| -------------- | ------------ |
+| typecheck      | 0 błędów     |
+| Nowe pliki     | 5            |
+| Pliki źródłowe | 103          |
+| Linii dodanych | ~1200        |
+

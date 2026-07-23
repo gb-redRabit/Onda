@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import {
@@ -21,20 +21,30 @@ import {
 import { usePlayerStore } from '@renderer/stores/player';
 import { useLibraryStore } from '@renderer/stores/library';
 import { useUIStore } from '@renderer/stores/ui';
+import { useSettingsStore } from '@renderer/stores/settings';
 
 const router = useRouter();
 const route = useRoute();
 const { t } = useI18n();
 const player = usePlayerStore();
 const library = useLibraryStore();
-const collapsed = ref(false);
+const ui = useUIStore();
+const settings = useSettingsStore();
+const collapsed = ref(settings.appearance.sidebarCollapsed);
 const width = ref(220);
 const isResizing = ref(false);
 const playlistsExpanded = ref(true);
+const albumsExpanded = ref(true);
 const newPlaylistName = ref('');
 const isCreatingPlaylist = ref(false);
 const dragOverPlaylistId = ref<string | null>(null);
-const ui = useUIStore();
+
+watch(collapsed, (val) => {
+  settings.updateAppearance({ sidebarCollapsed: val });
+});
+watch(() => settings.appearance.sidebarCollapsed, (val) => {
+  collapsed.value = val;
+});
 
 const navItems = computed(() => [
   { label: t('nav.home'), icon: Home, route: '/' },
@@ -124,7 +134,7 @@ function playPlaylist(playlistId: string) {
 
         <!-- playlists section -->
         <template v-if="!collapsed">
-          <div class="pt-3">
+          <div v-if="settings.appearance.showPlaylists" class="pt-3">
             <button
               class="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] font-medium text-fg-faint uppercase tracking-wider hover:text-fg-muted transition-colors"
               @click="playlistsExpanded = !playlistsExpanded"
@@ -178,6 +188,31 @@ function playPlaylist(playlistId: string) {
                 <Plus :size="13" class="shrink-0" />
                 <span>{{ $t('library.newPlaylist') }}</span>
               </button>
+            </div>
+          </div>
+
+          <!-- albums section -->
+          <div v-if="settings.appearance.showAlbums" class="pt-1">
+            <button
+              class="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] font-medium text-fg-faint uppercase tracking-wider hover:text-fg-muted transition-colors"
+              @click="albumsExpanded = !albumsExpanded"
+            >
+              <ChevronDown v-if="albumsExpanded" :size="12" />
+              <ChevronRightSmall v-else :size="12" />
+              <span>{{ $t('library.albums') }}</span>
+              <span class="ml-auto text-fg-faint/60">{{ library.albums.length }}</span>
+            </button>
+            <div v-if="albumsExpanded" class="mt-1 space-y-0.5">
+              <div
+                v-for="[album, tracks] in library.albums"
+                :key="album"
+                class="group flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-colors cursor-pointer"
+                @click="router.push('/library?album=' + encodeURIComponent(album))"
+              >
+                <Disc3 :size="13" class="shrink-0 text-accent-base/70" />
+                <span class="truncate flex-1">{{ album }}</span>
+                <span class="text-[10px] text-fg-faint/50">{{ tracks.length }}</span>
+              </div>
             </div>
           </div>
         </template>

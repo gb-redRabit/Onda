@@ -16,6 +16,9 @@ export interface AppearanceSettings {
   fontSize: number;
   density: 'compact' | 'comfortable' | 'spacious';
   sidebarPosition: 'left' | 'right';
+  sidebarCollapsed: boolean;
+  showPlaylists: boolean;
+  showAlbums: boolean;
   locale: 'pl' | 'en';
   animations: boolean;
   transparency: number;

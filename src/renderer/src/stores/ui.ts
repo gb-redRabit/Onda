@@ -1,6 +1,16 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
+export interface ContextMenuItem {
+  label: string;
+  icon?: string;
+  action?: () => void;
+  separator?: boolean;
+  disabled?: boolean;
+  shortcut?: string;
+  children?: ContextMenuItem[];
+}
+
 export const useUIStore = defineStore('ui', () => {
   const sidebarExpanded = ref(true);
   const sidebarWidth = ref(240);
@@ -15,15 +25,6 @@ export const useUIStore = defineStore('ui', () => {
   const commandPaletteVisible = ref(false);
   const contextMenu = ref<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const notifications = ref<Notification[]>([]);
-
-  interface ContextMenuItem {
-    label: string;
-    icon?: string;
-    action?: () => void;
-    separator?: boolean;
-    disabled?: boolean;
-    children?: ContextMenuItem[];
-  }
 
   interface Notification {
     id: string;

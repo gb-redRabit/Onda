@@ -5,6 +5,8 @@ import icon from '../../resources/icon.png?asset';
 import { registerIPC } from './ipc/handlers';
 import { pipManager } from './pip-manager';
 
+app.commandLine.appendSwitch('no-electrosecurity-warnings');
+
 let mainWindow: BrowserWindow | null = null;
 let splashWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;

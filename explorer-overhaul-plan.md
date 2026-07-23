@@ -31,7 +31,7 @@ przeglądarki obrazów, pokazu slajdów oraz integracji z biblioteką.
 
 ---
 
-## Faza 2: UI Explorer — Windows 11 Styl
+## Faza 2: UI Explorer — Windows 11 Styl ✅ UKOŃCZONA
 
 ### 2.1 Navigation Pane (lewy panel)
 
@@ -128,7 +128,7 @@ przeglądarki obrazów, pokazu slajdów oraz integracji z biblioteką.
 
 ---
 
-## Faza 3: Image Viewer
+## Faza 3: Image Viewer ✅ UKOŃCZONA (wszystkie elementy zintegrowane w ImageViewer.vue)
 
 ### 3.1 Nowy widok / modal
 
@@ -166,7 +166,7 @@ przeglądarki obrazów, pokazu slajdów oraz integracji z biblioteką.
 
 ---
 
-## Faza 4: Pokaz Slajdów (Slideshow)
+## Faza 4: Pokaz Slajdów (Slideshow) ✅ UKOŃCZONA
 
 ### 4.1 Uruchamianie
 
@@ -201,7 +201,7 @@ przeglądarki obrazów, pokazu slajdów oraz integracji z biblioteką.
 
 ---
 
-## Faza 5: Context Menu
+## Faza 5: Context Menu ✅ UKOŃCZONA
 
 ### 5.1 Dla plików (obrazki)
 

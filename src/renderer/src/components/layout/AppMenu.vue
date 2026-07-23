@@ -118,6 +118,7 @@ window.api.on('window:maximized', (val: unknown) => { isMaximized.value = val as
         >
           <button class="w-full px-3 py-1.5 text-left text-xs text-fg-muted hover:bg-accent-ghost hover:text-accent-base transition-colors" @click="router.push('/'); closeDropdown()">{{ t('menu.home') }}</button>
           <button class="w-full px-3 py-1.5 text-left text-xs text-fg-muted hover:bg-accent-ghost hover:text-accent-base transition-colors" @click="router.push('/library'); closeDropdown()">{{ t('menu.library') }}</button>
+          <button class="w-full px-3 py-1.5 text-left text-xs text-fg-muted hover:bg-accent-ghost hover:text-accent-base transition-colors" @click="router.push('/explorer'); closeDropdown()">{{ t('menu.explorer') }} <span class="ml-2 text-[10px] text-fg-faint font-mono">Ctrl+E</span></button>
           <div class="border-t border-border-default my-1 mx-2" />
           <button class="w-full px-3 py-1.5 text-left text-xs text-fg-muted hover:bg-accent-ghost hover:text-accent-base transition-colors" @click="router.push('/settings'); closeDropdown()">{{ t('menu.settings') }} <span class="ml-2 text-[10px] text-fg-faint font-mono">Ctrl+,</span></button>
         </div>

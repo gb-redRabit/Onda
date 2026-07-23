@@ -203,19 +203,26 @@ D:\Onda\
 │           │   │   ├── AudioTrackInfo.vue    # Title/artist/album + favorite (33 linie)
 │           │   │   └── Equalizer.vue         # 10-pasmowy EQ + presety (129 linii)
 │           │   │
-│           │   └── player/
-│           │       ├── PlayerControls.vue    # Kontrolki: play, skip, speed, filter, volume (262 linie)
-│           │       ├── PlayerOSD.vue         # OSD overlay (40 linii)
-│           │       ├── PlayerTopBar.vue      # Górny pasek (back, PiP, fullscreen) (44 linie)
-│           │       ├── QueuePanel.vue        # Kolejka + historia (276 linii)
-│           │       ├── ResumePrompt.vue      # Prompt kontynuacji odtwarzania (34 linie)
-│           │       └── SubtitleTrackSelector.vue # Wybór ścieżki napisów (86 linii)
+│           │   ├── player/
+│           │   │   ├── PlayerControls.vue    # Kontrolki: play, skip, speed, filter, volume (262 linie)
+│           │   │   ├── PlayerOSD.vue         # OSD overlay (40 linii)
+│           │   │   ├── PlayerTopBar.vue      # Górny pasek (back, PiP, fullscreen) (44 linie)
+│           │   │   ├── QueuePanel.vue        # Kolejka + historia (276 linii)
+│           │   │   ├── ResumePrompt.vue      # Prompt kontynuacji odtwarzania (34 linie)
+│           │   │   └── SubtitleTrackSelector.vue # Wybór ścieżki napisów (86 linii)
+│           │   │
+│           │   └── explorer/
+│           │       ├── ExplorerNavPane.vue   # Lewy panel nawigacyjny (drzewo folderów)
+│           │       ├── ExplorerToolbar.vue   # Górny pasek narzędzi + wyszukiwarka
+│           │       ├── ExplorerGridItem.vue  # Kafelek grid view (miniatury)
+│           │       ├── ExplorerTableRow.vue  # Wiersz list view
+│           │       └── ImageViewer.vue       # Podgląd obrazu lightbox-style (550 linii)
 │           │
 │           ├── views/
 │           │   ├── HomeView.vue        # Strona główna + drop zone (132 linie)
 │           │   ├── PlayerView.vue      # Odtwarzacz video — UI orchestration (292 linie)
 │           │   ├── AudioView.vue       # Audio player — 3 layouty, controls, shortcuts (165 linii)
-│           │   ├── ExplorerView.vue    # Eksplorator plików (285 linii)
+│           │   ├── ExplorerView.vue    # Eksplorator plików (450+ linii)
 │           │   ├── LibraryView.vue     # Biblioteka mediów (175 linii)
 │           │   ├── YouTubeView.vue     # YouTube (111 linii)
 │           │   ├── DownloadsView.vue   # Pobierania (85 linii)
@@ -829,14 +836,20 @@ Lazy loading: `() => import(...)` w routerze (113 linii). Transition fade (`opac
 - [ ] Edycja tagów ID3
 - [ ] Automatyczne metadane z MusicBrainz/Discogs
 
-### FAZA 5: Eksplorator Plików — ❌ NIEZACZĘTA
+### FAZA 5: Eksplorator Plików — ✅ UKOŃCZONA
 
-- [ ] TreeView (drzewo folderów, lewy panel)
-- [ ] AddressBar (breadcrumb, back/forward, edycja ścieżki)
-- [ ] FileGrid / FileList (siatka + lista z sortowaniem po kolumnach)
-- [ ] Menu kontekstowe (open, play, queue, properties, delete, rename)
-- [ ] Drag & Drop (pomiędzy folderami, do kolejki, do playlisty)
-- [ ] Marquee selection (wielokrotne zaznaczenie)
+- [x] **FileGrid / FileList** — 4 view modes (extraSmall/icons/compact/details) z @tanstack/vue-virtual
+- [x] **Navigation Pane** — lewy panel z dyskami + szybki dostęp + foldery biblioteczne (ExplorerNavPane.vue)
+- [x] **Command Bar** — górny pasek z widokiem, sortowaniem, nowym folderem (ExplorerToolbar.vue)
+- [x] **AddressBar / Breadcrumb** — klikalny breadcrumb: `D:\tapety\Konachan`
+- [x] **Menu kontekstowe** — rename, delete, showInFolder, copyPath, openWith, selectAll, new folder
+- [x] **ImageViewer** — lightbox-style overlay z zoom/rotate/fullscreen/slideshow (550 linii)
+- [x] **Slideshow** — play/pause, interval, loop, 4 tryby przejść (fade/slide/zoom/swirl)
+- [x] **Thumbnail strip** — pasek miniaturek z lazy-loading cache (±4 wokół aktualnego)
+- [x] **Keyboard shortcuts** — ←/→, +/-, R, F, Space, Esc
+- [x] **Virtual scrolling** — `@tanstack/vue-virtual` we wszystkich trybach (overscan: 2)
+- [x] **Streaming readdir** — batch push-based IPC (`fs:readdir:batch`, 200/batch)
+- [x] **Slideshow settings** — interval, transition type, duration, loop toggle
 
 ### FAZA 6: Ustawienia — ✅ CZĘŚCIOWO (refaktor: 731 → 69 linii + 9 komponentów)
 

@@ -8,5 +8,8 @@
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "markdown.validate.enabled": true
+  "markdown.validate.enabled": true,
+  "i18n-ally.localesPaths": [
+    "src/renderer/src/locales"
+  ]
 }

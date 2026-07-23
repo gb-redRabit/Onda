@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { FileItem, ViewMode, SortBy, SortOrder } from '@renderer/types/explorer';
+import { VIEW_MODES } from '@renderer/types/explorer';
 
 function isDrivePath(p: string): boolean {
   return /^[A-Z]:\\?$/i.test(p) || p === '';
@@ -20,7 +21,7 @@ export const useExplorerStore = defineStore('explorer', () => {
   const currentPath = ref('');
   const files = ref<FileItem[]>([]);
   const selectedFiles = ref<Set<string>>(new Set());
-  const viewMode = ref<ViewMode>('grid');
+  const viewMode = ref<ViewMode>('medium');
   const sortBy = ref<SortBy>('name');
   const sortOrder = ref<SortOrder>('asc');
   const history = ref<string[]>([]);
@@ -91,17 +92,33 @@ export const useExplorerStore = defineStore('explorer', () => {
     }
   }
 
+  let batchCleanup: (() => void) | null = null;
+
   async function loadFiles(path: string) {
+    files.value = [];
     isLoading.value = true;
-    try {
-      if (window.api) {
-        const result = (await window.api.invoke('fs:readdir', path)) as FileItem[];
-        files.value = result;
+    batchCleanup?.();
+    if (!window.api) { isLoading.value = false; return; }
+    const stopListening = window.api.on('fs:readdir:batch', (...args: unknown[]) => {
+      const data = args[0] as { done: boolean; items: FileItem[] };
+      if (data.items.length > 0) {
+        files.value = [...files.value, ...data.items];
       }
+      if (data.done) {
+        isLoading.value = false;
+        stopListening();
+        batchCleanup = null;
+      }
+    });
+    batchCleanup = stopListening;
+    try {
+      await window.api.invoke('fs:readdir', path);
     } catch {
       files.value = [];
+      isLoading.value = false;
+      stopListening();
+      batchCleanup = null;
     }
-    isLoading.value = false;
   }
 
   function toggleSelect(path: string) {
@@ -120,8 +137,20 @@ export const useExplorerStore = defineStore('explorer', () => {
     selectedFiles.value.clear();
   }
 
-  function toggleViewMode() {
-    viewMode.value = viewMode.value === 'grid' ? 'list' : 'grid';
+  const viewModeIndex = computed(() => VIEW_MODES.indexOf(viewMode.value));
+
+  function nextViewMode() {
+    const idx = viewModeIndex.value;
+    viewMode.value = VIEW_MODES[(idx + 1) % VIEW_MODES.length];
+  }
+
+  function prevViewMode() {
+    const idx = viewModeIndex.value;
+    viewMode.value = VIEW_MODES[(idx - 1 + VIEW_MODES.length) % VIEW_MODES.length];
+  }
+
+  function setViewMode(mode: ViewMode) {
+    viewMode.value = mode;
   }
 
   function toggleSort(field: SortBy) {
@@ -138,6 +167,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     files,
     selectedFiles,
     viewMode,
+    viewModeIndex,
     sortBy,
     sortOrder,
     history,
@@ -158,7 +188,9 @@ export const useExplorerStore = defineStore('explorer', () => {
     toggleSelect,
     selectAll,
     clearSelection,
-    toggleViewMode,
+    nextViewMode,
+    prevViewMode,
+    setViewMode,
     toggleSort
   };
 });

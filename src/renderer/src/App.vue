@@ -156,18 +156,19 @@ function onGlobalKeydown(e: KeyboardEvent) {
       :style="{ left: ui.contextMenu.x + 'px', top: ui.contextMenu.y + 'px' }"
       @click="ui.hideContextMenu"
     >
-      <template v-for="item in ui.contextMenu.items" :key="item.label">
+      <template v-for="(item, idx) in ui.contextMenu.items" :key="idx">
         <div v-if="item.separator" class="border-t border-border-default my-1 mx-2" />
         <button
           v-else
-          class="w-full px-3 py-1.5 text-left text-sm hover:bg-accent-ghost hover:text-accent-base transition-colors"
+          class="w-full flex items-center justify-between gap-4 px-3 py-1.5 text-left text-sm hover:bg-accent-ghost hover:text-accent-base transition-colors"
           :class="{ 'opacity-40 pointer-events-none': item.disabled }"
           @click="
             item.action?.();
             ui.hideContextMenu();
           "
         >
-          {{ item.label }}
+          <span>{{ item.label }}</span>
+          <span v-if="item.shortcut" class="text-[10px] text-fg-faint/60 font-mono">{{ item.shortcut }}</span>
         </button>
       </template>
     </div>

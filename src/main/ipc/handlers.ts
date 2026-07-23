@@ -1,5 +1,5 @@
 import { registerMusicBrainzHandlers } from './musicbrainz';
-import { ipcMain, dialog, BrowserWindow, shell, app } from 'electron';
+import { ipcMain, dialog, BrowserWindow, shell, app, clipboard } from 'electron';
 import { readdir, stat, lstat, readFile, writeFile, mkdir, rename, unlink, rm } from 'fs/promises';
 
 import { join, extname, basename, dirname } from 'path';
@@ -174,12 +174,8 @@ function findSiblingVideo(filePath: string): string | null {
   const name = basename(filePath, ext);
   for (const vExt of VIDEO_EXTS) {
     const videoPath = join(dir, name + vExt);
-    try {
-      statSync(videoPath);
-      return videoPath;
-    } catch {
-      /* no video */
-    }
+    const stats = statSync(videoPath, { throwIfNoEntry: false });
+    if (stats) return videoPath;
   }
   return null;
 }
@@ -365,24 +361,31 @@ export function registerIPC(): void {
     return getWindowsDrives();
   });
 
-  ipcMain.handle('fs:readdir', async (_event, dirPath: string): Promise<FileItem[]> => {
+  ipcMain.handle('fs:readdir', async (event, dirPath: string): Promise<void> => {
     if (!dirPath || dirPath === '/') {
-      return getWindowsDrives();
+      event.sender.send('fs:readdir:batch', { done: true, items: await getWindowsDrives() });
+      return;
     }
     const resolvedPath = /^[A-Z]:$/i.test(dirPath) ? `${dirPath}\\` : dirPath;
     const entries = await readdir(resolvedPath, { withFileTypes: true });
-    const items: FileItem[] = [];
-    for (const entry of entries) {
-      if (entry.name.startsWith('.')) continue;
-      try {
-        const fullPath = join(resolvedPath, entry.name);
-        const stats = await stat(fullPath);
-        items.push(getFileItem(fullPath, stats, entry.name));
-      } catch {
-        // skip inaccessible files
+    const filtered = entries.filter((entry) => !entry.name.startsWith('.'));
+    const BATCH = 200;
+    for (let i = 0; i < filtered.length; i += BATCH) {
+      const batch = filtered.slice(i, i + BATCH);
+      const results = await Promise.allSettled(
+        batch.map(async (entry) => {
+          const fullPath = join(resolvedPath, entry.name);
+          const stats = await stat(fullPath);
+          return getFileItem(fullPath, stats, entry.name);
+        })
+      );
+      const items: FileItem[] = [];
+      for (const r of results) {
+        if (r.status === 'fulfilled') items.push(r.value);
       }
+      event.sender.send('fs:readdir:batch', { done: false, items });
     }
-    return items;
+    event.sender.send('fs:readdir:batch', { done: true, items: [] });
   });
 
   ipcMain.handle('fs:stat', async (_event, filePath: string) => {
@@ -583,6 +586,32 @@ export function registerIPC(): void {
 
   ipcMain.handle('shell:showItemInFolder', (_event, fullPath: string) => {
     shell.showItemInFolder(fullPath);
+  });
+
+  ipcMain.handle('shell:openTerminal', async (_event, dirPath: string) => {
+    const isWindows = process.platform === 'win32';
+    if (isWindows) {
+      execCb(`start cmd /K "cd /d "${dirPath}""`, { windowsHide: true });
+    } else {
+      execCb(`open -a Terminal "${dirPath}"`);
+    }
+  });
+
+  ipcMain.handle('shell:openWithDefault', async (_event, filePath: string) => {
+    await shell.openPath(filePath);
+  });
+
+  ipcMain.handle('shell:getFileIcon', async (_event, filePath: string) => {
+    try {
+      const icon = await app.getFileIcon(filePath, { size: 'small' });
+      return icon.toDataURL();
+    } catch {
+      return null;
+    }
+  });
+
+  ipcMain.handle('fs:copyPath', (_event, filePath: string) => {
+    clipboard.writeText(filePath);
   });
 
   ipcMain.handle('app:getPath', (_event, name: string) => {

@@ -151,5 +151,38 @@ const accentColors = [
         }}</span>
       </p>
     </div>
+
+    <div>
+      <h3 class="text-sm font-semibold mb-3">{{ $t('settings.sidebarSections') }}</h3>
+      <div class="space-y-2">
+        <label class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-bg-hover cursor-pointer transition-colors">
+          <input
+            type="checkbox"
+            :checked="settings.appearance.showPlaylists"
+            class="w-4 h-4 rounded accent-accent-base"
+            @change="settings.updateAppearance({ showPlaylists: ($event.target as HTMLInputElement).checked })"
+          />
+          <span class="text-sm">{{ $t('library.playlists') }}</span>
+        </label>
+        <label class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-bg-hover cursor-pointer transition-colors">
+          <input
+            type="checkbox"
+            :checked="settings.appearance.showAlbums"
+            class="w-4 h-4 rounded accent-accent-base"
+            @change="settings.updateAppearance({ showAlbums: ($event.target as HTMLInputElement).checked })"
+          />
+          <span class="text-sm">{{ $t('library.albums') }}</span>
+        </label>
+        <label class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-bg-hover cursor-pointer transition-colors">
+          <input
+            type="checkbox"
+            :checked="settings.appearance.sidebarCollapsed"
+            class="w-4 h-4 rounded accent-accent-base"
+            @change="settings.updateAppearance({ sidebarCollapsed: ($event.target as HTMLInputElement).checked })"
+          />
+          <span class="text-sm">{{ $t('settings.sidebarCollapsed') }}</span>
+        </label>
+      </div>
+    </div>
   </div>
 </template>

@@ -108,6 +108,8 @@ export default {
     comfortable: 'Wygodny',
     spacious: 'Przestrzenny',
     sidebarPosition: 'Pozycja panelu bocznego',
+    sidebarSections: 'Sekcje panelu bocznego',
+    sidebarCollapsed: 'Zwinięty panel boczny',
     left: 'Lewa',
     right: 'Prawa',
     appearanceSection: 'Wygląd',
@@ -235,7 +237,31 @@ export default {
     size: 'Rozmiar',
     type: 'Typ',
     modified: 'Zmodyfikowany',
-    drive: 'Dysk'
+    drive: 'Dysk',
+    search: 'Szukaj...',
+    quickAccess: 'Szybki dostęp',
+    ThisPC: 'Ten komputer',
+    Desktop: 'Pulpit',
+    Downloads: 'Pobrane',
+    libraryFolders: 'Foldery biblioteki',
+    open: 'Otwórz',
+    addToLibrary: 'Dodaj do biblioteki',
+    removeFromLibrary: 'Usuń z biblioteki',
+    openInTerminal: 'Otwórz w terminalu',
+    copyPath: 'Kopiuj ścieżkę',
+    rename: 'Zmień nazwę',
+    openImage: 'Otwórz obraz',
+    openWithDefaultApp: 'Otwórz domyślną aplikacją',
+    deleteConfirm: 'Usuń "{name}"?',
+    deleteMultipleConfirm: 'Usunąć te {count} elementów?',
+    newFolder: 'Nowy folder',
+    viewMode: 'Tryb widoku',
+    viewExtraSmall: 'Bardzo małe ikony (Ctrl+Scroll)',
+    viewSmall: 'Małe ikony',
+    viewMedium: 'Średnie ikony',
+    viewLarge: 'Duże ikony',
+    viewExtraLarge: 'Bardzo duże ikony',
+    viewDetails: 'Szczegóły'
   },
   downloads: {
     title: 'Pobrane',
@@ -245,6 +271,7 @@ export default {
     downloads: 'pobrań'
   },
   common: {
+    ok: 'OK',
     play: 'Odtwórz',
     addToQueue: 'Dodaj do kolejki',
     editTags: 'Edytuj tagi',
@@ -271,7 +298,9 @@ export default {
     folderMixed: 'Mieszany',
     folderUnknown: 'Nieznany',
     tracks: 'utw.',
-    files: 'plików'
+    files: 'plików',
+    selected: 'wybranych',
+    selectAll: 'Zaznacz wszystko'
   },
   equalizer: {
     title: 'Equalizer',

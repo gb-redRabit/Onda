@@ -31,6 +31,19 @@ export const SUPPORTED_PLAYLIST_FORMATS = ['.m3u', '.m3u8', '.pls', '.asx'];
 
 export const SUPPORTED_SUBTITLE_FORMATS = ['.srt', '.vtt', '.ass', '.ssa', '.sub'];
 
+export const SUPPORTED_IMAGE_FORMATS = [
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  '.gif',
+  '.bmp',
+  '.svg',
+  '.ico',
+  '.tiff',
+  '.tif'
+];
+
 export const ALL_MEDIA_FORMATS = [
   ...SUPPORTED_AUDIO_FORMATS,
   ...SUPPORTED_VIDEO_FORMATS,
@@ -105,6 +118,9 @@ export const DEFAULT_APPEARANCE = {
   fontSize: 14,
   density: 'comfortable' as const,
   sidebarPosition: 'left' as const,
+  sidebarCollapsed: false,
+  showPlaylists: true,
+  showAlbums: true,
   locale: 'pl' as const,
   animations: true,
   transparency: 1
