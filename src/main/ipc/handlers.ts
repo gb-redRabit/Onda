@@ -1455,7 +1455,63 @@ export function registerIPC(): void {
   });
 
   ipcMain.handle(
-    'subtitles:extractAttachments',
+    'media:checkAudioCodec',
+  async (_event, filePath: string): Promise<{ codec: string; supported: boolean } | null> => {
+    try {
+      const { stdout } = await execAsync(
+        `ffprobe -v quiet -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 "${filePath}"`,
+        { timeout: 15000, windowsHide: true }
+      );
+      const codec = stdout.trim().toLowerCase();
+      const supported = [
+        'aac', 'mp3', 'mp2', 'opus', 'vorbis', 'flac',
+        'pcm_s16le', 'pcm_s16be', 'pcm_s24le', 'pcm_f32le',
+        'alac', 'truehd'
+      ].includes(codec);
+      return { codec, supported };
+    } catch {
+      return null;
+    }
+  }
+);
+
+ipcMain.handle(
+  'media:transcodeAudio',
+  async (_event, filePath: string): Promise<string | null> => {
+    const tempDir = join(os.tmpdir(), 'onda', 'audio-transcodes');
+    await mkdir(tempDir, { recursive: true });
+    const hash = createHash('md5').update(filePath).digest('hex');
+    const outPath = join(tempDir, `${hash}.m4a`);
+
+    try {
+      await stat(outPath);
+      return outPath; // already cached
+    } catch {}
+
+    try {
+      await execAsync(
+        `ffmpeg -v error -i "${filePath}" -map 0:a:0 -c:a aac -b:a 192k "${outPath}" -y`,
+        { timeout: 600000, windowsHide: true }
+      );
+      return outPath;
+    } catch (err) {
+      logger.error('transcode', 'audio transcode failed', errMsg(err));
+      return null;
+    }
+  }
+);
+
+ipcMain.handle(
+  'media:cleanupTranscodedAudio',
+  async (_event, audioPath: string): Promise<void> => {
+    try {
+      await unlink(audioPath);
+    } catch {}
+  }
+);
+
+ipcMain.handle(
+  'subtitles:extractAttachments',
     async (
       _event,
       filePath: string

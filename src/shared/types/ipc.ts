@@ -118,6 +118,18 @@ export interface IpcChannels {
     args: [releaseId: string];
     result: { success: boolean; data?: number[]; mime?: string; error?: string };
   };
+  'media:checkAudioCodec': {
+    args: [filePath: string];
+    result: { codec: string; supported: boolean } | null;
+  };
+  'media:transcodeAudio': {
+    args: [filePath: string];
+    result: string | null;
+  };
+  'media:cleanupTranscodedAudio': {
+    args: [audioPath: string];
+    result: void;
+  };
 }
 
 export type IpcChannel = keyof IpcChannels;

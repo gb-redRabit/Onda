@@ -17,7 +17,6 @@ class AudioEngine {
   private analyserNode: AnalyserNode | null = null;
   private sourceNode: MediaElementAudioSourceNode | null = null;
   private sourceNodeB: MediaElementAudioSourceNode | null = null;
-
   private crossfadeGainA: GainNode | null = null;
   private crossfadeGainB: GainNode | null = null;
   private gainNode: GainNode | null = null;
@@ -27,6 +26,8 @@ class AudioEngine {
   private isCrossfading = false;
   private initialized = false;
   private eqChainBuilt = false;
+  private secondaryAudioEl: HTMLAudioElement | null = null;
+  private secondarySourceNode: MediaElementAudioSourceNode | null = null;
   private savedPositions = new Map<string, number>();
   private visibilityHandler: (() => void) | null = null;
 
@@ -75,6 +76,8 @@ class AudioEngine {
   private connectAudio(el: HTMLAudioElement): void {
     this.ensureAudioContext();
     this.ensureEqChain();
+
+    this.disconnectSecondaryAudio();
 
     if (!this.sourceNode) {
       this.sourceNode = this.audioCtx!.createMediaElementSource(el);
@@ -413,6 +416,83 @@ class AudioEngine {
     if (this.gainNode) this.gainNode.gain.value = v;
   }
 
+  get hasSecondaryAudio(): boolean {
+    return this.secondaryAudioEl !== null;
+  }
+
+  async connectSecondaryAudio(audioPath: string): Promise<void> {
+    await this.disconnectSecondaryAudio();
+
+    this.ensureAudioContext();
+    this.ensureEqChain();
+
+    if (this.sourceNode) {
+      try {
+        this.sourceNode.disconnect();
+      } catch {}
+    }
+
+    const el = new Audio();
+    el.src = toFileUrl(audioPath);
+    el.preload = 'auto';
+
+    await new Promise<void>((resolve, reject) => {
+      const onCanPlay = (): void => {
+        cleanup();
+        resolve();
+      };
+      const onError = (): void => {
+        cleanup();
+        reject(new Error('Failed to load secondary audio'));
+      };
+      const cleanup = (): void => {
+        el.removeEventListener('canplay', onCanPlay);
+        el.removeEventListener('error', onError);
+      };
+      el.addEventListener('canplay', onCanPlay);
+      el.addEventListener('error', onError);
+      el.load();
+    });
+
+    this.secondaryAudioEl = el;
+    this.secondarySourceNode = this.audioCtx!.createMediaElementSource(el);
+    this.secondarySourceNode.connect(this.crossfadeGainA!);
+    el.volume = 1;
+  }
+
+  disconnectSecondaryAudio(): void {
+    if (this.secondarySourceNode) {
+      try {
+        this.secondarySourceNode.disconnect();
+      } catch {}
+      this.secondarySourceNode = null;
+    }
+    if (this.secondaryAudioEl) {
+      this.secondaryAudioEl.pause();
+      this.secondaryAudioEl.removeAttribute('src');
+      this.secondaryAudioEl.load();
+      this.secondaryAudioEl = null;
+    }
+  }
+
+  seekSecondaryAudio(time: number): void {
+    if (this.secondaryAudioEl) {
+      this.secondaryAudioEl.currentTime = time;
+    }
+  }
+
+  playSecondaryAudio(): void {
+    if (this.secondaryAudioEl) {
+      this.secondaryAudioEl.play().catch(() => {});
+    }
+  }
+
+  pauseSecondaryAudio(): void {
+    if (this.secondaryAudioEl) {
+      this.secondaryAudioEl.pause();
+    }
+  }
+
   setPlaybackRate(rate: number): void {
     if (this.audioEl) this.audioEl.playbackRate = rate;
   }
@@ -468,6 +548,7 @@ class AudioEngine {
     }
     this.isCrossfading = false;
     this.savePosition();
+    this.disconnectSecondaryAudio();
     this.disconnectNodes();
     this.cleanupAudioEl(this.audioEl);
     this.cleanupAudioEl(this.nextAudioEl);

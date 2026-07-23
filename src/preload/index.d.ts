@@ -106,6 +106,9 @@ interface OndaAPI {
       availableFonts: Record<string, string>;
     } | null
   ) => Promise<void>;
+  checkAudioCodec: (filePath: string) => Promise<{ codec: string; supported: boolean } | null>;
+  transcodeAudio: (filePath: string) => Promise<string | null>;
+  cleanupTranscodedAudio: (audioPath: string) => Promise<void>;
 }
 
 declare global {

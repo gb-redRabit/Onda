@@ -75,11 +75,14 @@ export function useVideoPlayer(ctx: {
     });
   }
 
+  let audioCodecChecked = '';
+
   function setupVideo(track: MediaFile | null) {
     if (!track || track.type !== 'video' || !videoRef.value) return;
     const el = videoRef.value;
     const src = getTrackSrc(track);
     if (el.getAttribute('data-src') !== src) {
+      audioEngine.disconnectSecondaryAudio();
       const seekTo = player.pipTime > 0 ? player.pipTime : player.currentTime;
       if (player.pipTime > 0) player.pipTime = 0;
       el.setAttribute('data-src', src);
@@ -115,10 +118,38 @@ export function useVideoPlayer(ctx: {
       );
 
       el.load();
+      checkVideoAudioCodec(track, el);
     } else {
       el.volume = player.isMuted ? 0 : player.volume;
       el.playbackRate = settings.playback.playbackSpeed;
       if (player.isPlaying && !player.pipActive) el.play().catch(() => {});
+    }
+  }
+
+  async function checkVideoAudioCodec(track: MediaFile, el: HTMLVideoElement): Promise<void> {
+    if (audioCodecChecked === track.path) return;
+    audioCodecChecked = track.path;
+
+    const result = await window.api?.checkAudioCodec(track.path);
+    if (!result || result.supported) return;
+
+    el.volume = 0;
+    notify(`${result.codec.toUpperCase()} audio – transcoding...`, 8000);
+
+    const audioPath = await window.api?.transcodeAudio(track.path);
+    if (!audioPath) {
+      notify('Audio transcode failed', 3000);
+      return;
+    }
+
+    try {
+      await audioEngine.connectSecondaryAudio(audioPath);
+      audioEngine.seekSecondaryAudio(el.currentTime);
+      if (!el.paused && player.isPlaying) {
+        audioEngine.playSecondaryAudio();
+      }
+    } catch {
+      notify('Failed to connect transcoded audio', 3000);
     }
   }
 
@@ -222,6 +253,7 @@ export function useVideoPlayer(ctx: {
 
   function destroy() {
     audioEngine.disconnectVideoElement();
+    audioEngine.disconnectSecondaryAudio();
     if (videoRef.value) {
       videoRef.value.pause();
       videoRef.value.removeAttribute('src');
@@ -286,10 +318,16 @@ export function useVideoPlayer(ctx: {
       if (!videoRef.value || player.currentTrack?.type !== 'video') return;
       if (player.pipActive) {
         videoRef.value.pause();
+        audioEngine.pauseSecondaryAudio();
         return;
       }
-      if (playing) videoRef.value.play().catch(() => {});
-      else videoRef.value.pause();
+      if (playing) {
+        videoRef.value.play().catch(() => {});
+        audioEngine.playSecondaryAudio();
+      } else {
+        videoRef.value.pause();
+        audioEngine.pauseSecondaryAudio();
+      }
     }
   );
 
@@ -300,8 +338,23 @@ export function useVideoPlayer(ctx: {
     }
   );
 
+  watch(
+    () => player.currentTime,
+    (time) => {
+      if (audioEngine.hasSecondaryAudio) {
+        audioEngine.seekSecondaryAudio(time);
+      }
+    }
+  );
+
   watch([() => player.volume, () => player.isMuted], () => {
-    if (videoRef.value) videoRef.value.volume = player.isMuted ? 0 : player.volume;
+    if (!videoRef.value) return;
+    if (audioEngine.hasSecondaryAudio) {
+      videoRef.value.volume = 0;
+      audioEngine.setVolume(player.isMuted ? 0 : player.volume);
+    } else {
+      videoRef.value.volume = player.isMuted ? 0 : player.volume;
+    }
   });
 
   watch(

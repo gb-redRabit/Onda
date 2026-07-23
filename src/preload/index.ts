@@ -141,7 +141,13 @@ const api = {
       fonts: Array<{ name: string; data: number[] }>;
       availableFonts: Record<string, string>;
     } | null
-  ): Promise<void> => ipcRenderer.invoke('pip:updateSubtitle', data)
+  ): Promise<void> => ipcRenderer.invoke('pip:updateSubtitle', data),
+  checkAudioCodec: (filePath: string): Promise<{ codec: string; supported: boolean } | null> =>
+    ipcRenderer.invoke('media:checkAudioCodec', filePath),
+  transcodeAudio: (filePath: string): Promise<string | null> =>
+    ipcRenderer.invoke('media:transcodeAudio', filePath),
+  cleanupTranscodedAudio: (audioPath: string): Promise<void> =>
+    ipcRenderer.invoke('media:cleanupTranscodedAudio', audioPath)
 };
 
 if (process.contextIsolated) {
