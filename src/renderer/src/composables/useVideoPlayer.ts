@@ -83,9 +83,9 @@ export function useVideoPlayer(ctx: {
       const seekTo = player.pipTime > 0 ? player.pipTime : player.currentTime;
       if (player.pipTime > 0) player.pipTime = 0;
       el.setAttribute('data-src', src);
-      el.src = src;
-      connectVideoEvents(el);
       audioEngine.connectVideoElement(el);
+      connectVideoEvents(el);
+      el.src = src;
 
       el.addEventListener(
         'canplay',
