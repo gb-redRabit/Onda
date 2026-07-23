@@ -506,6 +506,10 @@ class AudioEngine {
   }
 
   resume(): void {
+    if (!this.audioCtx) {
+      this.ensureAudioContext();
+      this.ensureEqChain();
+    }
     if (this.audioCtx && this.audioCtx.state === 'suspended') {
       this.audioCtx.resume();
     }

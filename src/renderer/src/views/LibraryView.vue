@@ -12,6 +12,7 @@ import TrackTagEditor from '@renderer/components/library/TrackTagEditor.vue';
 import MusicBrainzLookup from '@renderer/components/library/MusicBrainzLookup.vue';
 import AlbumCard from '@renderer/components/library/AlbumCard.vue';
 import VideoCard from '@renderer/components/library/VideoCard.vue';
+import { audioEngine } from '@renderer/modules/audioEngine';
 import {
   Music2,
   Film,
@@ -191,6 +192,7 @@ onMounted(() => {
 
 function playTracks(tracks: typeof library.tracks) {
   if (tracks.length === 0) return;
+  if (tracks[0].type === 'video') audioEngine.resume();
   player.clearQueue();
   player.addToQueueMultiple(tracks);
   player.setTrack(tracks[0]);

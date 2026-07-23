@@ -3,6 +3,7 @@ import { ref, computed, triggerRef } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import type { SubtitleTrack, MkvFont } from '@renderer/types/subtitles';
 import { VIDEO_EXTS } from '@shared/constants';
+import { audioEngine } from '@renderer/modules/audioEngine';
 
 export const usePlayerStore = defineStore('player', () => {
   const currentTrack = ref<MediaFile | null>(null);
@@ -87,6 +88,7 @@ export const usePlayerStore = defineStore('player', () => {
       history.value.unshift(currentTrack.value);
       if (history.value.length > 100) history.value.pop();
     }
+    if (track.type === 'video') audioEngine.resume();
     currentTrack.value = track;
     currentTime.value = 0;
     if (!pipActive.value) {
