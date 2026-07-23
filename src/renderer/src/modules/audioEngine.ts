@@ -536,6 +536,7 @@ class AudioEngine {
   connectVideoElement(el: HTMLVideoElement): void {
     this.ensureAudioContext();
     this.ensureEqChain();
+    this.resume();
 
     if (this.sourceNode) {
       try {
