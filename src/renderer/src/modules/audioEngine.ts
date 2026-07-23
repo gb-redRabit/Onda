@@ -17,8 +17,7 @@ class AudioEngine {
   private analyserNode: AnalyserNode | null = null;
   private sourceNode: MediaElementAudioSourceNode | null = null;
   private sourceNodeB: MediaElementAudioSourceNode | null = null;
-  private videoSourceNode: MediaElementAudioSourceNode | null = null;
-  private videoEl: HTMLVideoElement | null = null;
+
   private crossfadeGainA: GainNode | null = null;
   private crossfadeGainB: GainNode | null = null;
   private gainNode: GainNode | null = null;
@@ -76,12 +75,6 @@ class AudioEngine {
   private connectAudio(el: HTMLAudioElement): void {
     this.ensureAudioContext();
     this.ensureEqChain();
-
-    if (this.videoSourceNode) {
-      try {
-        this.videoSourceNode.disconnect();
-      } catch {}
-    }
 
     if (!this.sourceNode) {
       this.sourceNode = this.audioCtx!.createMediaElementSource(el);
@@ -293,9 +286,6 @@ class AudioEngine {
       this.sourceNodeB?.disconnect();
     } catch {}
     try {
-      this.videoSourceNode?.disconnect();
-    } catch {}
-    try {
       this.crossfadeGainA?.disconnect();
     } catch {}
     try {
@@ -485,8 +475,6 @@ class AudioEngine {
     this.nextAudioEl = null;
     this.sourceNode = null;
     this.sourceNodeB = null;
-    this.videoSourceNode = null;
-    this.videoEl = null;
     this.eqChainBuilt = false;
     if (this.visibilityHandler) {
       document.removeEventListener('visibilitychange', this.visibilityHandler);
@@ -537,7 +525,7 @@ class AudioEngine {
     });
   }
 
-  connectVideoElement(el: HTMLVideoElement): void {
+  connectVideoElement(): void {
     this.ensureAudioContext();
     this.ensureEqChain();
     this.resume();
@@ -547,30 +535,9 @@ class AudioEngine {
         this.sourceNode.disconnect();
       } catch {}
     }
-
-    if (this.videoEl !== el) {
-      if (this.videoSourceNode) {
-        try {
-          this.videoSourceNode.disconnect();
-        } catch {}
-      }
-      this.videoSourceNode = this.audioCtx!.createMediaElementSource(el);
-      this.videoEl = el;
-    } else if (this.videoSourceNode) {
-      try {
-        this.videoSourceNode.disconnect();
-      } catch {}
-    }
-    this.videoSourceNode!.connect(this.crossfadeGainA!);
   }
 
   disconnectVideoElement(): void {
-    if (this.videoSourceNode) {
-      try {
-        this.videoSourceNode.disconnect();
-      } catch {}
-    }
-    this.videoEl = null;
   }
 }
 
