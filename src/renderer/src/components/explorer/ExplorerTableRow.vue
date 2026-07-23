@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { HardDrive, FolderOpen } from '@lucide/vue';
 import { formatFileSize } from '@renderer/utils/formatters';
 import type { FileItem } from '@renderer/types/explorer';
-import { thumbTasks, thumbCache, iconCache, processThumbQueue, thumbTaskDone } from '@renderer/utils/thumbLoader';
+import { useThumbnail } from '@renderer/composables/useThumbnail';
 
 const props = defineProps<{
   item: FileItem;
@@ -18,78 +17,14 @@ const emit = defineEmits<{
   (e: 'contextMenu', event: MouseEvent, item: FileItem): void;
 }>();
 
-const systemIcon = ref<string | null>(null);
-const mediaThumb = ref<string | null>(null);
-const visible = ref(false);
-const rootEl = ref<HTMLElement | null>(null);
-let observer: IntersectionObserver | null = null;
-let thumbFired = false;
-
-onMounted(() => {
-  if (rootEl.value) {
-    observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          visible.value = true;
-          observer?.disconnect();
-        }
-      },
-      { rootMargin: '400px' }
-    );
-    observer.observe(rootEl.value);
-  }
-});
-
-onBeforeUnmount(() => {
-  observer?.disconnect();
-});
+const { rootEl, systemIcon, mediaThumb } = useThumbnail(props.item.path, props.item.isDirectory, props.isAtDrives, 96);
+if (import.meta.env.DEV) { void rootEl; }
 
 function iconComponent() {
   if (props.isAtDrives) return HardDrive;
   if (props.item.isDirectory) return FolderOpen;
   return null;
 }
-
-function loadThumbnail(path: string) {
-  const cached = thumbCache.get(path);
-  if (cached) {
-    mediaThumb.value = cached;
-    return;
-  }
-  thumbTasks.push(() => {
-    window.api?.invoke('media:getThumbnail', path, 96).then((dataUrl) => {
-      if (dataUrl) {
-        thumbCache.set(path, dataUrl as string);
-        mediaThumb.value = dataUrl as string;
-      } else {
-        const cachedIcon = iconCache.get(path);
-        if (cachedIcon) { systemIcon.value = cachedIcon; }
-        else {
-          window.api?.invoke('shell:getFileIcon', path).then((icon) => {
-            if (icon) { iconCache.set(path, icon as string); systemIcon.value = icon as string; }
-          }).catch(() => {});
-        }
-      }
-    }).catch(() => {
-      const cachedIcon = iconCache.get(path);
-      if (cachedIcon) { systemIcon.value = cachedIcon; }
-      else {
-        window.api?.invoke('shell:getFileIcon', path).then((icon) => {
-          if (icon) { iconCache.set(path, icon as string); systemIcon.value = icon as string; }
-        }).catch(() => {});
-      }
-    })
-    .finally(() => { thumbTaskDone(); });
-  });
-  processThumbQueue();
-}
-
-watch(visible, (isVisible) => {
-  if (!isVisible || props.isAtDrives || props.item.isDirectory) return;
-  if (thumbFired) return;
-  thumbFired = true;
-  loadThumbnail(props.item.path);
-});
 </script>
 
 <template>
@@ -103,9 +38,8 @@ watch(visible, (isVisible) => {
     @click="(e: MouseEvent) => emit('select', item.path, e)"
     @dblclick="emit('doubleClick', item)"
     @contextmenu.stop.prevent="emit('contextMenu', $event, item)"
-  >asdsd
-    <div class="flex items-center gap-2 min-w-0">
-      <img v-if="mediaThumb && !isAtDrives && !item.isDirectory" :src="mediaThumb" class="w-4 h-4 object-contain shrink-0" />
+  >
+    <div class="flex items-center gap-2 min-w-0"><img v-if="mediaThumb && !isAtDrives && !item.isDirectory" :src="mediaThumb" class="w-4 h-4 object-contain shrink-0" />
       <img v-else-if="systemIcon && !isAtDrives && !item.isDirectory" :src="systemIcon" class="w-4 h-4 object-contain shrink-0" />
       <component v-else :is="iconComponent()" :size="14" :class="isAtDrives || item.isDirectory ? 'text-accent-base shrink-0' : 'shrink-0'" />
       <span class="truncate">{{ item.name }}</span>

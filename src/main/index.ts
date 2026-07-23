@@ -27,6 +27,7 @@ let splashWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let mainReady = false;
 let minTimerDone = false;
+let preFullscreenBounds: Electron.Rectangle | null = null;
 
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -58,6 +59,14 @@ function createWindow(): BrowserWindow {
 
   win.on('unmaximize', () => {
     win.webContents.send('window:maximized', false);
+  });
+
+  win.on('enter-full-screen', () => {
+    win.webContents.send('window:fullscreenChanged', true);
+  });
+
+  win.on('leave-full-screen', () => {
+    win.webContents.send('window:fullscreenChanged', false);
   });
 
   win.on('close', (e) => {
@@ -287,6 +296,44 @@ app.whenReady().then(() => {
       return child.id;
     }
   );
+
+  ipcMain.handle('window:toggleFullscreen', () => {
+    if (!mainWindow) return false;
+    const isFull = mainWindow.isFullScreen();
+    if (isFull) {
+      mainWindow.setFullScreen(false);
+      if (preFullscreenBounds) {
+        mainWindow.setBounds(preFullscreenBounds);
+        preFullscreenBounds = null;
+      } else {
+      }
+      mainWindow.setResizable(false);
+      mainWindow.setResizable(true);
+      return false;
+    } else {
+      preFullscreenBounds = mainWindow.getBounds();
+      mainWindow.setFullScreen(true);
+      return true;
+    }
+  });
+
+  ipcMain.handle('window:exitFullscreen', () => {
+    if (!mainWindow) return;
+    const isFull = mainWindow.isFullScreen();
+    if (isFull) {
+      mainWindow.setFullScreen(false);
+      if (preFullscreenBounds) {
+        mainWindow.setBounds(preFullscreenBounds);
+        preFullscreenBounds = null;
+      }
+      mainWindow.setResizable(false);
+      mainWindow.setResizable(true);
+    }
+  });
+
+  ipcMain.handle('window:isFullscreen', () => {
+    return mainWindow?.isFullScreen() ?? false;
+  });
 
   ipcMain.handle('window:closeChild', (_event, childId: number) => {
     const child = BrowserWindow.fromId(childId);

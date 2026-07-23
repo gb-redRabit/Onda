@@ -43,6 +43,9 @@ export interface IpcChannels {
   'window:close': { args: []; result: void };
   'window:isMaximized': { args: []; result: boolean };
   'window:setAlwaysOnTop': { args: [flag: boolean]; result: void };
+  'window:toggleFullscreen': { args: []; result: boolean };
+  'window:exitFullscreen': { args: []; result: void };
+  'window:isFullscreen': { args: []; result: boolean };
   'shell:openExternal': { args: [url: string]; result: void };
   'shell:showItemInFolder': { args: [fullPath: string]; result: void };
   'shell:openTerminal': { args: [dirPath: string]; result: void };

@@ -1287,7 +1287,6 @@ export function registerIPC(): void {
       const hash = createHash('md5').update(filePath + maxSize).digest('hex');
       const cacheFile = join(cacheDir, `${hash}.jpg`);
       if (existsSync(cacheFile)) {
-        logger.info('getThumbnail', `cache HIT ${filePath}`);
         return `data:image/jpeg;base64,${readFileSync(cacheFile).toString('base64')}`;
       }
 
@@ -1301,9 +1300,7 @@ export function registerIPC(): void {
           writeFileSync(cacheFile, buf);
         }
       } catch (e) {
-        logger.info('getThumbnail', `nativeImage FAILED ${filePath}: ${errMsg(e)}`);
         buf = await SharpService.getThumbnail(filePath, maxSize);
-        logger.info('getThumbnail', `Sharp result for ${filePath}: ${buf ? 'OK' : 'null'}`);
       }
 
       if (!buf) {
@@ -1323,14 +1320,12 @@ export function registerIPC(): void {
       }
 
       if (!buf) {
-        logger.info('getThumbnail', `NO THUMBNAIL for ${filePath}`);
         return null;
       }
       if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
       writeFileSync(cacheFile, buf);
       return `data:image/jpeg;base64,${buf.toString('base64')}`;
     } catch (e) {
-      logger.info('getThumbnail', `ERROR ${filePath}: ${errMsg(e)}`);
       return null;
     }
   });

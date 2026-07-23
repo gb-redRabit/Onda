@@ -8,8 +8,11 @@ const emit = defineEmits<{
   (e: 'search', query: string): void;
 }>();
 
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
 watch(searchQuery, (val) => {
-  emit('search', val);
+  if (debounceTimer) clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => emit('search', val), 150);
 });
 
 function clearSearch() {

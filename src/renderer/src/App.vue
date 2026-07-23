@@ -78,11 +78,13 @@ onMounted(() => {
     moduleManager.switchTo('home');
   }
   document.addEventListener('keydown', onGlobalKeydown);
+document.addEventListener('mousedown', onGlobalMouseDown);
 });
 
 onBeforeUnmount(() => {
   moduleManager.deactivateAll();
   document.removeEventListener('keydown', onGlobalKeydown);
+  document.removeEventListener('mousedown', onGlobalMouseDown);
 });
 
 watch(() => settings.appearance.theme, applyTheme);
@@ -112,6 +114,13 @@ function onGlobalKeydown(e: KeyboardEvent) {
     }
   }
   if (e.key === 'Escape') {
+    ui.hideContextMenu();
+  }
+}
+
+function onGlobalMouseDown(e: MouseEvent) {
+  const el = document.getElementById('context-menu');
+  if (el && !el.contains(e.target as Node)) {
     ui.hideContextMenu();
   }
 }
@@ -152,9 +161,10 @@ function onGlobalKeydown(e: KeyboardEvent) {
 
     <div
       v-if="ui.contextMenu"
+      id="context-menu"
       class="fixed z-50 bg-bg-elevated border border-border-subtle rounded-xl shadow-2xl shadow-black/50 py-1.5 min-w-45"
       :style="{ left: ui.contextMenu.x + 'px', top: ui.contextMenu.y + 'px' }"
-      @click="ui.hideContextMenu"
+      @click.stop
     >
       <template v-for="(item, idx) in ui.contextMenu.items" :key="idx">
         <div v-if="item.separator" class="border-t border-border-default my-1 mx-2" />

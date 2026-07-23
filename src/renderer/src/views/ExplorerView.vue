@@ -1,19 +1,22 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onBeforeUnmount, shallowRef, triggerRef } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, shallowRef, triggerRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useVirtualizer } from '@tanstack/vue-virtual';
 import {
-  ChevronLeft, ChevronRight, ChevronUp, ChevronDown,
-  LayoutGrid, List, Home, HardDrive, FolderOpen, Plus, Pin, PinOff
+  ChevronUp, ChevronDown,
+  HardDrive, FolderOpen, Plus, Pin, PinOff
 } from '@lucide/vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useUIStore, ContextMenuItem } from '@renderer/stores/ui';
+import { usePromptDialog } from '@renderer/composables/usePromptDialog';
 import { SUPPORTED_IMAGE_FORMATS } from '@renderer/utils/constants';
 import ExplorerNavPane from '@renderer/components/explorer/ExplorerNavPane.vue';
 import ExplorerToolbar from '@renderer/components/explorer/ExplorerToolbar.vue';
+import ExplorerBreadcrumb from '@renderer/components/explorer/ExplorerBreadcrumb.vue';
+import ExplorerViewModeDropdown from '@renderer/components/explorer/ExplorerViewModeDropdown.vue';
 import ExplorerGridItem from '@renderer/components/explorer/ExplorerGridItem.vue';
 import ExplorerTableRow from '@renderer/components/explorer/ExplorerTableRow.vue';
 import ImageViewer from '@renderer/components/explorer/ImageViewer.vue';
@@ -50,15 +53,6 @@ const GRID_GAPS: Record<string, number> = { small: 4, medium: 8, large: 12, extr
 const GRID_ITEM_HEIGHTS: Record<string, number> = { small: 66, medium: 90, large: 118, extraLarge: 146 };
 const LIST_ITEM_HEIGHTS: Record<string, number> = { extraSmall: 28, details: 36 };
 
-const VIEW_MODES_LIST = [
-  { key: 'extraSmall' as const, icon: List, label: 'ExtraSmall' },
-  { key: 'small' as const, icon: LayoutGrid, label: 'Small' },
-  { key: 'medium' as const, icon: LayoutGrid, label: 'Medium' },
-  { key: 'large' as const, icon: LayoutGrid, label: 'Large' },
-  { key: 'extraLarge' as const, icon: LayoutGrid, label: 'ExtraLarge' },
-  { key: 'details' as const, icon: List, label: 'Details' },
-];
-
 const searchQuery = ref('');
 const imageViewerIndex = ref<number | null>(null);
 const imageViewerFiles = ref<FileItem[]>([]);
@@ -66,33 +60,8 @@ const scrollRef = ref<HTMLDivElement | null>(null);
 const containerWidth = ref(800);
 const selectionAnchorIndex = ref(-1);
 const extraSmallIcons = shallowRef<Record<string, string>>({});
-const viewModeOpen = ref(false);
-const viewModeRef = ref<HTMLElement | null>(null);
 
-// --- prompt dialog ---
-const promptVisible = ref(false);
-const promptMessage = ref('');
-const promptValue = ref('');
-let _promptResolve: ((v: string | null) => void) | null = null;
-
-function showPrompt(msg: string, val = ''): Promise<string | null> {
-  promptMessage.value = msg;
-  promptValue.value = val;
-  promptVisible.value = true;
-  nextTick(() => {
-    const el = document.getElementById('prompt-input') as HTMLInputElement;
-    el?.focus();
-    el?.select();
-  });
-  return new Promise((r) => { _promptResolve = r; });
-}
-
-function promptConfirm() { _promptResolve?.(promptValue.value); promptVisible.value = false; }
-function promptCancel() { _promptResolve?.(null); promptVisible.value = false; }
-function promptKeydown(e: KeyboardEvent) {
-  if (e.key === 'Enter') promptConfirm();
-  if (e.key === 'Escape') promptCancel();
-}
+const { showPrompt, showConfirm, promptVisible, promptIsConfirm, promptMessage, promptValue, promptConfirm, promptCancel, promptKeydown } = usePromptDialog();
 
 const filteredFiles = computed(() => {
   const q = searchQuery.value.toLowerCase().trim();
@@ -127,6 +96,30 @@ function getRowItems(rowIndex: number): FileItem[] {
   return filteredFiles.value.slice(start, start + itemsPerRow.value);
 }
 
+const iconPendingQueue = new Set<string>();
+let iconBatchTimer: ReturnType<typeof setTimeout> | null = null;
+
+function flushIconQueue() {
+  if (iconPendingQueue.size === 0) return;
+  const paths = [...iconPendingQueue];
+  iconPendingQueue.clear();
+  paths.forEach((path) => {
+    window.api?.invoke('shell:getFileIcon', path).then((icon) => {
+      if (icon) {
+        const map = { ...extraSmallIcons.value };
+        if (iconCacheOrder.length >= ICON_CACHE_MAX) {
+          const evicted = iconCacheOrder.pop()!;
+          delete map[evicted];
+        }
+        iconCacheOrder.unshift(path);
+        map[path] = icon as string;
+        extraSmallIcons.value = map;
+        triggerRef(extraSmallIcons);
+      }
+    }).catch(() => {});
+  });
+}
+
 function extraSmallIcon(item: FileItem): string | null {
   if (explorer.isAtDrives || item.isDirectory) return null;
   if (extraSmallIcons.value[item.path]) {
@@ -134,19 +127,12 @@ function extraSmallIcon(item: FileItem): string | null {
     if (idx > 0) { iconCacheOrder.splice(idx, 1); iconCacheOrder.unshift(item.path); }
     return extraSmallIcons.value[item.path];
   }
-  window.api?.invoke('shell:getFileIcon', item.path).then((icon) => {
-    if (icon) {
-      const map = { ...extraSmallIcons.value };
-      if (iconCacheOrder.length >= ICON_CACHE_MAX) {
-        const evicted = iconCacheOrder.pop()!;
-        delete map[evicted];
-      }
-      iconCacheOrder.unshift(item.path);
-      map[item.path] = icon as string;
-      extraSmallIcons.value = map;
-      triggerRef(extraSmallIcons);
+  if (!iconPendingQueue.has(item.path)) {
+    iconPendingQueue.add(item.path);
+    if (iconBatchTimer === null) {
+      iconBatchTimer = setTimeout(() => { iconBatchTimer = null; flushIconQueue(); }, 0);
     }
-  }).catch(() => {});
+  }
   return null;
 }
 
@@ -165,7 +151,6 @@ onMounted(() => {
   if (!explorer.currentPath) explorer.navigateTo('');
   window.addEventListener('wheel', onWheel, { passive: false });
   window.addEventListener('keydown', handleKeydown);
-  document.addEventListener('mousedown', handleClickOutside);
   if (scrollRef.value) {
     resizeObserver = new ResizeObserver((entries) => {
       containerWidth.value = entries[0].contentRect.width;
@@ -177,15 +162,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('wheel', onWheel);
   window.removeEventListener('keydown', handleKeydown);
-  document.removeEventListener('mousedown', handleClickOutside);
   resizeObserver?.disconnect();
 });
-
-function handleClickOutside(e: MouseEvent) {
-  if (viewModeRef.value && !viewModeRef.value.contains(e.target as Node)) {
-    viewModeOpen.value = false;
-  }
-}
 
 // --- multi-select ---
 function onItemClick(event: MouseEvent, path: string, index: number) {
@@ -233,8 +211,11 @@ function handleKeydown(e: KeyboardEvent) {
 async function deleteSelected() {
   const items = filteredFiles.value.filter((f) => explorer.selectedFiles.has(f.path));
   if (items.length === 0) return;
-  if (items.length === 1 && !confirm(t('explorer.deleteConfirm', { name: items[0].name }))) return;
-  if (items.length > 1 && !confirm(t('explorer.deleteMultipleConfirm', { count: items.length }))) return;
+  const msg = items.length === 1
+    ? t('explorer.deleteConfirm', { name: items[0].name })
+    : t('explorer.deleteMultipleConfirm', { count: items.length });
+  const ok = await showConfirm(msg);
+  if (!ok) return;
   await Promise.all(items.map((f) => window.api?.invoke('fs:delete', f.path)));
   explorer.loadFiles(explorer.currentPath);
 }
@@ -414,37 +395,11 @@ async function renameItem(item: FileItem) {
     <div class="flex flex-col flex-1 min-w-0">
       <!-- toolbar -->
       <div class="flex items-center gap-2 px-3 py-2 border-b border-border-default bg-bg-base">
-        <div class="flex gap-0.5">
-          <button class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover disabled:opacity-30 transition-colors" :disabled="!explorer.canGoBack" @click="explorer.goBack"><ChevronLeft :size="16" class="pointer-events-none" /></button>
-          <button class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover disabled:opacity-30 transition-colors" :disabled="!explorer.canGoForward" @click="explorer.goForward"><ChevronRight :size="16" class="pointer-events-none" /></button>
-          <button class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover disabled:opacity-30 transition-colors" :disabled="!explorer.canGoUp" @click="explorer.goUp"><ChevronUp :size="16" class="pointer-events-none" /></button>
-        </div>
-
-        <div class="flex-1 flex items-center gap-0.5 px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs overflow-hidden">
-          <button class="shrink-0 p-0.5 text-fg-faint hover:text-fg-base transition-colors" @click="explorer.navigateTo('')"><Home :size="12" class="pointer-events-none" /></button>
-          <template v-if="explorer.currentPath">
-            <template v-for="(part, idx) in explorer.currentPath.split('\\').filter(Boolean)" :key="idx">
-              <span v-if="idx > 0" class="text-fg-faint">\</span>
-              <button class="px-1 py-0.5 rounded hover:bg-bg-hover text-fg-muted hover:text-fg-base transition-colors truncate max-w-30" @click="explorer.navigateTo(explorer.currentPath.split('\\').filter(Boolean).slice(0, idx + 1).join('\\'))">{{ part }}</button>
-            </template>
-          </template>
-          <span v-else class="text-fg-faint px-1">{{ $t('explorer.thisComputer') }}</span>
-        </div>
+        <ExplorerBreadcrumb />
 
         <ExplorerToolbar @search="searchQuery = $event" />
 
-        <!-- view mode dropdown -->
-        <div ref="viewModeRef" class="relative">
-          <button class="p-1.5 rounded-lg transition-colors text-fg-faint hover:text-fg-base hover:bg-bg-hover" @click="viewModeOpen = !viewModeOpen" :title="$t('explorer.viewMode')">
-            <component :is="explorer.viewMode === 'details' ? List : LayoutGrid" :size="14" class="pointer-events-none" />
-          </button>
-          <div v-if="viewModeOpen" class="absolute top-full right-0 mt-1 bg-bg-elevated border border-border-default rounded-xl shadow-2xl z-30 py-1 min-w-[140px]" @mouseleave="viewModeOpen = false">
-            <button v-for="mode in VIEW_MODES_LIST" :key="mode.key" class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left transition-colors whitespace-nowrap" :class="explorer.viewMode === mode.key ? 'text-accent-base bg-accent-ghost' : 'text-fg-muted hover:bg-bg-hover hover:text-fg-base'" @click="explorer.setViewMode(mode.key); viewModeOpen = false">
-              <component :is="mode.icon" :size="12" class="pointer-events-none" />
-              <span>{{ $t('explorer.view' + mode.label) }}</span>
-            </button>
-          </div>
-        </div>
+        <ExplorerViewModeDropdown />
 
         <button class="p-1.5 rounded-lg transition-colors" :class="pinned ? 'text-accent-base bg-accent-ghost' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'" title="Always on top" @click="togglePin"><Pin v-if="pinned" :size="14" class="pointer-events-none" /><PinOff v-else :size="14" class="pointer-events-none" /></button>
 
@@ -484,8 +439,8 @@ async function renameItem(item: FileItem) {
         <!-- grid modes: virtualized rows -->
         <div v-else-if="isGridMode && filteredFiles.length > 0" :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
           <div v-for="virtualRow in virtualizer.getVirtualItems()" :key="virtualRow.index" :style="{ position: 'absolute', top: 0, transform: `translateY(${virtualRow.start}px)`, height: `${virtualRow.size}px`, width: '100%', display: 'flex', gap: `${GRID_GAPS[explorer.viewMode]}px` }" class="items-start px-[2px]">
-            <div v-for="item in getRowItems(virtualRow.index)" :key="item.path" :style="{ width: `${GRID_ITEM_WIDTHS[explorer.viewMode]}px`, flex: '0 0 auto' }">
-              <ExplorerGridItem :item="item" :view-mode="explorer.viewMode" :is-selected="explorer.selectedFiles.has(item.path)" :is-at-drives="explorer.isAtDrives" :is-library-folder="!item.isDirectory ? false : isLibraryFolder(item.path)" @select="(path: string, e: MouseEvent) => onItemClick(e, path, filteredFiles.findIndex((f: FileItem) => f.path === path))" @double-click="handleDoubleClick" @context-menu="handleContextMenu" />
+            <div v-for="(item, i) in getRowItems(virtualRow.index)" :key="item.path" :style="{ width: `${GRID_ITEM_WIDTHS[explorer.viewMode]}px`, flex: '0 0 auto' }">
+              <ExplorerGridItem :item="item" :view-mode="explorer.viewMode" :is-selected="explorer.selectedFiles.has(item.path)" :is-at-drives="explorer.isAtDrives" :is-library-folder="!item.isDirectory ? false : isLibraryFolder(item.path)" @select="(path: string, e: MouseEvent) => onItemClick(e, path, virtualRow.index * itemsPerRow + i)" @double-click="handleDoubleClick" @context-menu="handleContextMenu" />
             </div>
           </div>
         </div>
@@ -511,7 +466,7 @@ async function renameItem(item: FileItem) {
         <div v-if="promptVisible" class="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center" @click.self="promptCancel">
           <div class="bg-bg-surface border border-border-default rounded-xl p-5 min-w-[300px] shadow-2xl">
             <p class="text-sm text-fg-base mb-3 whitespace-pre-wrap">{{ promptMessage }}</p>
-            <input id="prompt-input" v-model="promptValue" type="text" class="w-full px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-sm text-fg-base outline-none focus:ring-1 focus:ring-accent-base" @keydown="promptKeydown">
+            <input v-if="!promptIsConfirm" id="prompt-input" v-model="promptValue" type="text" class="w-full px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-sm text-fg-base outline-none focus:ring-1 focus:ring-accent-base" @keydown="promptKeydown">
             <div class="flex justify-end gap-2 mt-4">
               <button class="px-4 py-1.5 rounded-lg text-xs text-fg-muted hover:bg-bg-hover transition-colors" @click="promptCancel">{{ $t('common.cancel') }}</button>
               <button class="px-4 py-1.5 rounded-lg text-xs bg-accent-base text-white hover:bg-accent-base/90 transition-colors" @click="promptConfirm">{{ $t('common.ok') }}</button>
@@ -520,7 +475,7 @@ async function renameItem(item: FileItem) {
         </div>
       </Teleport>
 
-      <ImageViewer v-show="imageViewerIndex !== null" :files="imageViewerFiles" :initial-index="imageViewerIndex ?? 0" @close="closeImageViewer" />
+      <ImageViewer v-if="imageViewerIndex !== null" :files="imageViewerFiles" :initial-index="imageViewerIndex ?? 0" @close="closeImageViewer" />
     </div>
   </div>
 </template>

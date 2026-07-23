@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { computed } from 'vue';
 import { HardDrive, FolderOpen, Image, Film } from '@lucide/vue';
 import { getFileTypeInfo } from '@renderer/utils/fileTypes';
 import { formatFileSize } from '@renderer/utils/formatters';
 import type { FileItem } from '@renderer/types/explorer';
-import { thumbTasks, thumbCache, iconCache, processThumbQueue, thumbTaskDone } from '@renderer/utils/thumbLoader';
+import { useThumbnail } from '@renderer/composables/useThumbnail';
 
 const props = defineProps<{
   item: FileItem;
@@ -20,12 +20,8 @@ const emit = defineEmits<{
   (e: 'contextMenu', event: MouseEvent, item: FileItem): void;
 }>();
 
-const systemIcon = ref<string | null>(null);
-const mediaThumb = ref<string | null>(null);
-const visible = ref(false);
-const rootEl = ref<HTMLElement | null>(null);
-let observer: IntersectionObserver | null = null;
-let thumbFired = false;
+const { rootEl, systemIcon, mediaThumb } = useThumbnail(props.item.path, props.item.isDirectory, props.isAtDrives, 320);
+if (import.meta.env.DEV) { void rootEl; }
 
 const size = computed(() => {
   switch (props.viewMode) {
@@ -35,74 +31,6 @@ const size = computed(() => {
     case 'extraLarge': return { icon: 80, pad: 18, fs: 'text-[13px]', mb: 2.5 };
     default: return { icon: 48, pad: 10, fs: 'text-[11px]', mb: 1.5 };
   }
-});
-
-onMounted(() => {
-  if (rootEl.value) {
-    observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          visible.value = true;
-          observer?.disconnect();
-        }
-      },
-      { rootMargin: '400px' }
-    );
-    observer.observe(rootEl.value);
-  }
-});
-
-onBeforeUnmount(() => {
-  observer?.disconnect();
-});
-
-function loadThumbnail(path: string) {
-  const cached = thumbCache.get(path);
-  if (cached) {
-    console.log('[gridThumb] CACHE HIT', path.slice(-30));
-    mediaThumb.value = cached;
-    return;
-  }
-  console.log('[gridThumb] QUEUE', path.slice(-30));
-  thumbTasks.push(() => {
-    console.time('[gridThumb] ' + path.slice(-30));
-    window.api?.invoke('media:getThumbnail', path, 320).then((dataUrl) => {
-      if (dataUrl) {
-        const url = dataUrl as string;
-        thumbCache.set(path, url);
-        mediaThumb.value = url;
-      } else {
-        console.log('[gridThumb] NULL, fallback icon');
-        const cachedIcon = iconCache.get(path);
-        if (cachedIcon) { systemIcon.value = cachedIcon; }
-        else {
-          window.api?.invoke('shell:getFileIcon', path).then((icon) => {
-            if (icon) { iconCache.set(path, icon as string); systemIcon.value = icon as string; }
-          }).catch(() => {});
-        }
-      }
-      console.timeEnd('[gridThumb] ' + path.slice(-30));
-    }).catch(() => {
-      console.log('[gridThumb] ERR, fallback icon');
-      const cachedIcon = iconCache.get(path);
-      if (cachedIcon) { systemIcon.value = cachedIcon; }
-      else {
-        window.api?.invoke('shell:getFileIcon', path).then((icon) => {
-          if (icon) { iconCache.set(path, icon as string); systemIcon.value = icon as string; }
-        }).catch(() => {});
-      }
-      console.timeEnd('[gridThumb] ' + path.slice(-30));
-    })
-    .finally(() => { thumbTaskDone(); });
-  });
-  processThumbQueue();
-}
-
-watch(visible, (isVisible) => {
-  if (!isVisible || props.isAtDrives || props.item.isDirectory) return;
-  if (thumbFired) return;
-  thumbFired = true;
-  loadThumbnail(props.item.path);
 });
 </script>
 

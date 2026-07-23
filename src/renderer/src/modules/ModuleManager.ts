@@ -29,9 +29,6 @@ class ModuleManager {
       if (module.dependencies) {
         for (const depId of module.dependencies) {
           if (!this.modules.has(depId)) {
-            console.warn(
-              `[ModuleManager] Module "${module.id}" depends on "${depId}" which is not registered`
-            );
           }
         }
       }
@@ -42,7 +39,6 @@ class ModuleManager {
   async switchTo(moduleId: string, context?: unknown): Promise<void> {
     const target = this.modules.get(moduleId);
     if (!target) {
-      console.warn(`[ModuleManager] Unknown module: ${moduleId}`);
       return;
     }
 
