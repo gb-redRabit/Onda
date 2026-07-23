@@ -28,6 +28,7 @@ class AudioEngine {
   private eqChainBuilt = false;
   private secondaryAudioEl: HTMLAudioElement | null = null;
   private secondarySourceNode: MediaElementAudioSourceNode | null = null;
+  private secondaryAudioOffset = 0;
   private savedPositions = new Map<string, number>();
   private visibilityHandler: (() => void) | null = null;
 
@@ -420,7 +421,11 @@ class AudioEngine {
     return this.secondaryAudioEl !== null;
   }
 
-  async connectSecondaryAudio(audioPath: string): Promise<void> {
+  set secondaryAudioTimeOffset(offset: number) {
+    this.secondaryAudioOffset = offset;
+  }
+
+  async connectSecondaryAudio(audioPath: string, timeOffset = 0): Promise<void> {
     await this.disconnectSecondaryAudio();
 
     this.ensureAudioContext();
@@ -457,6 +462,7 @@ class AudioEngine {
     this.secondaryAudioEl = el;
     this.secondarySourceNode = this.audioCtx!.createMediaElementSource(el);
     this.secondarySourceNode.connect(this.crossfadeGainA!);
+    this.secondaryAudioOffset = timeOffset;
     el.volume = 1;
   }
 
@@ -475,9 +481,9 @@ class AudioEngine {
     }
   }
 
-  seekSecondaryAudio(time: number): void {
+  seekSecondaryAudio(videoTime: number): void {
     if (this.secondaryAudioEl) {
-      this.secondaryAudioEl.currentTime = time;
+      this.secondaryAudioEl.currentTime = Math.max(0, videoTime - this.secondaryAudioOffset);
     }
   }
 

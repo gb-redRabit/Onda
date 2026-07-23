@@ -1476,6 +1476,33 @@ export function registerIPC(): void {
 );
 
 ipcMain.handle(
+  'media:transcodeAudioChunk',
+  async (_event, filePath: string, startTime: number, duration: number): Promise<string | null> => {
+    const tempDir = join(os.tmpdir(), 'onda', 'audio-transcodes');
+    await mkdir(tempDir, { recursive: true });
+    const hash = createHash('md5').update(filePath).digest('hex');
+    const chunkKey = `${hash}_${Math.floor(startTime)}_${Math.ceil(duration)}`;
+    const outPath = join(tempDir, `${chunkKey}.m4a`);
+
+    try {
+      await stat(outPath);
+      return outPath;
+    } catch {}
+
+    try {
+      await execAsync(
+        `ffmpeg -v error -ss ${startTime} -i "${filePath}" -map 0:a:0 -t ${duration} -c:a aac -b:a 192k "${outPath}" -y`,
+        { timeout: 120000, windowsHide: true }
+      );
+      return outPath;
+    } catch (err) {
+      logger.error('transcode', 'audio chunk failed', errMsg(err));
+      return null;
+    }
+  }
+);
+
+ipcMain.handle(
   'media:transcodeAudio',
   async (_event, filePath: string): Promise<string | null> => {
     const tempDir = join(os.tmpdir(), 'onda', 'audio-transcodes');

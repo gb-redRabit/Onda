@@ -146,6 +146,8 @@ const api = {
     ipcRenderer.invoke('media:checkAudioCodec', filePath),
   transcodeAudio: (filePath: string): Promise<string | null> =>
     ipcRenderer.invoke('media:transcodeAudio', filePath),
+  transcodeAudioChunk: (filePath: string, startTime: number, duration: number): Promise<string | null> =>
+    ipcRenderer.invoke('media:transcodeAudioChunk', filePath, startTime, duration),
   cleanupTranscodedAudio: (audioPath: string): Promise<void> =>
     ipcRenderer.invoke('media:cleanupTranscodedAudio', audioPath)
 };

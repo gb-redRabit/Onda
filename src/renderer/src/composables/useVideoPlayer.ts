@@ -134,22 +134,33 @@ export function useVideoPlayer(ctx: {
     if (!result || result.supported) return;
 
     el.volume = 0;
-    notify(`${result.codec.toUpperCase()} audio – transcoding...`, 8000);
+    const seekPos = el.currentTime || 0;
 
-    const audioPath = await window.api?.transcodeAudio(track.path);
-    if (!audioPath) {
-      notify('Audio transcode failed', 3000);
-      return;
+    const chunkPath = await window.api?.transcodeAudioChunk(track.path, seekPos, 30);
+    if (chunkPath) {
+      try {
+        await audioEngine.connectSecondaryAudio(chunkPath, seekPos);
+        if (!el.paused && player.isPlaying) {
+          audioEngine.playSecondaryAudio();
+        }
+      } catch {
+        /* chunk failed, fall through to full transcode */
+      }
     }
 
-    try {
-      await audioEngine.connectSecondaryAudio(audioPath);
-      audioEngine.seekSecondaryAudio(el.currentTime);
-      if (!el.paused && player.isPlaying) {
-        audioEngine.playSecondaryAudio();
+    const fullPath = await window.api?.transcodeAudio(track.path);
+    if (fullPath) {
+      if (fullPath === chunkPath) return;
+      audioEngine.disconnectSecondaryAudio();
+      try {
+        await audioEngine.connectSecondaryAudio(fullPath, 0);
+        audioEngine.seekSecondaryAudio(el.currentTime);
+        if (!el.paused && player.isPlaying) {
+          audioEngine.playSecondaryAudio();
+        }
+      } catch {
+        notify('Audio playback failed', 3000);
       }
-    } catch {
-      notify('Failed to connect transcoded audio', 3000);
     }
   }
 

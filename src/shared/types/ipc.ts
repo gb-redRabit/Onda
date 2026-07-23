@@ -126,6 +126,10 @@ export interface IpcChannels {
     args: [filePath: string];
     result: string | null;
   };
+  'media:transcodeAudioChunk': {
+    args: [filePath: string, startTime: number, duration: number];
+    result: string | null;
+  };
   'media:cleanupTranscodedAudio': {
     args: [audioPath: string];
     result: void;
