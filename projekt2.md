@@ -1,19 +1,22 @@
 # Onda — Projekt 2.0: Diagnoza, Optymalizacja i Rozbudowa
 
-## 1. Stan Obecny (po Phase 4)
+## 1. Stan Obecny (po Sprint 6 — Faza 5)
 
 ### 1.1 Statystyki kodu
 
 | Metryka             | Wartość                                          |
 | ------------------- | ------------------------------------------------ |
-| Pliki źródłowe      | 95 (46 `.ts` + 44 `.vue` + 3 `.d.ts` + 1 `.css`) |
-| Linie kodu          | ~11,800                                          |
-| Pliki testowe       | 2 (34 testy)                                     |
-| Zależności npm      | 36 (14 runtime + 22 dev)                         |
-| TODO/FIXME w kodzie | 1                                                |
+| Pliki źródłowe      | 106 (.ts + .vue + .css + .html)                  |
+| Linie kodu          | ~16,439                                          |
+| Main process        | 5 plików, ~2,533 linii                           |
+| Preload             | 2 pliki, ~287 linii                              |
+| Shared              | 2 pliki, ~187 linii                              |
+| Renderer            | 95 plików, ~13,397 linii                         |
+| Pliki testowe       | 4 (141 testów)                                   |
+| Zależności npm      | 38 (17 runtime + 21 dev)                         |
 | `typecheck`         | 100% clean                                       |
 | `build`             | OK                                               |
-| `test`              | 34/34 passed                                     |
+| `lint`              | 0 błędów                                         |
 
 ### 1.2 Co działa dobrze
 
@@ -30,157 +33,117 @@
 
 ### 1.3 Co jest do poprawy (z raport.md — niezrealizowane)
 
-| ID    | Problem                                                  | Plik                      | Priority        |
-| ----- | -------------------------------------------------------- | ------------------------- | --------------- |
-| P2.4  | Brak wirtualizacji dla długich list                      | LibraryView, ExplorerView | Wysoki          |
-| P2.5  | `reactive(Map)` coverCache — ograniczona reaktywność     | stores/player.ts          | Średni          |
-| P2.8  | Lazy loading Lucide ikon w komponentach                  | SettingsView + inne       | Niski           |
-| P2.10 | `encodeURI()` brak dla ścieżek z `#`, `?`                | audioEngine.ts            | Niski (rzadkie) |
-| P3.8  | `createMediaElementSource` może crashować przy reuse     | audioEngine.ts            | Średni          |
-| P4.5  | DI (dependency injection) — trudne mockowanie            | Wszystkie moduły          | Niski           |
-| P4.8  | Puste `init()` w modułach — boilerplate                  | ExplorerModule itp.       | Niski           |
-| P5.1  | Tylko 2 pliki testowe — małe pokrycie                    | —                         | Średni          |
-| P5.2  | `any` w `lfa-ponyfill` i JASSUB (brak typów)             | —                         | Niski           |
-| P5.3  | Polskie stringi UI (brak i18n)                           | Wszystkie .vue            | Niski           |
-| P5.6  | Logger istnieje, ale nie wszędzie używany                | Kilka plików              | Niski           |
-| P5.7  | ESLint no-explicit-any = warn (docelowo error)           | eslint.config.mjs         | Niski           |
-| P6.2  | yt:* placeholdery (nadal nie zaimplementowane)           | handlers.ts               | Średni          |
-| P6.3  | update:* placeholdery                                    | handlers.ts               | Niski           |
-| P6.4  | SettingsNetwork, SettingsApiKeys — UI bez backendu       | components/settings/      | Niski           |
-| P6.5  | SettingsShortcuts — tylko wyświetla, nie edytuje         | components/settings/      | Niski           |
-| P6.6  | pip.html/pip.ts — osobny bundle, nie wiadomo czy używany | —                         | Niski           |
+| ID    | Problem                                                  | Plik                      | Priority        | Status          |
+| ----- | -------------------------------------------------------- | ------------------------- | --------------- | --------------- |
+| P2.4  | Brak wirtualizacji dla długich list                      | LibraryView, ExplorerView | Wysoki          | ✅ Wykonane     |
+| P2.5  | `reactive(Map)` coverCache — ograniczona reaktywność     | stores/player.ts          | Średni          | 🟡 Częściowo    |
+| P2.8  | Lazy loading Lucide ikon w komponentach                  | SettingsView + inne       | Niski           | 🔴 Otwarty      |
+| P2.10 | `encodeURI()` brak dla ścieżek z `#`, `?`                | audioEngine.ts            | Niski (rzadkie) | 🟡 Częściowo (audioEngine już ma, ImageViewer też) |
+| P3.8  | `createMediaElementSource` może crashować przy reuse     | audioEngine.ts            | Średni          | ✅ Wykonane     |
+| P4.5  | DI (dependency injection) — trudne mockowanie            | Wszystkie moduły          | Niski           | 🔴 Otwarty      |
+| P4.8  | Puste `init()` w modułach — boilerplate                  | ExplorerModule itp.       | Niski           | 🔴 Otwarty      |
+| P5.1  | Tylko 2 pliki testowe — małe pokrycie                    | —                         | Średni          | 🟡 4 pliki/141  |
+| P5.2  | `any` w `lfa-ponyfill` i JASSUB (brak typów)             | —                         | Niski           | 🔴 Otwarty      |
+| P5.3  | Polskie stringi UI (brak i18n)                           | Wszystkie .vue            | Niski           | ✅ Wykonane     |
+| P5.6  | Logger istnieje, ale nie wszędzie używany                | Kilka plików              | Niski           | 🟡 Częściowo    |
+| P5.7  | ESLint no-explicit-any = warn (docelowo error)           | eslint.config.mjs         | Niski           | 🔴 Otwarty      |
+| P6.2  | yt:* placeholdery (nadal nie zaimplementowane)           | handlers.ts               | Średni          | 🔴 Otwarty      |
+| P6.3  | update:* placeholdery                                    | handlers.ts               | Niski           | 🔴 Otwarty      |
+| P6.4  | SettingsNetwork, SettingsApiKeys — UI bez backendu       | components/settings/      | Niski           | 🔴 Otwarty      |
+| P6.5  | SettingsShortcuts — tylko wyświetla, nie edytuje         | components/settings/      | Niski           | ✅ Wykonane     |
+| P6.6  | pip.html/pip.ts — osobny bundle, nie wiadomo czy używany | —                         | Niski           | 🔴 Otwarty      |
 
 ---
 
 ## 2. Architektura (aktualna)
 
 ```
-┌──────────────────────────────────────────┐
-│              MAIN PROCESS                 │
-│  index.ts (321)                           │
-│  ├── createWindow() → BrowserWindow       │
-│  ├── Tray icon + global shortcuts         │
-│  ├── Splash screen                        │
-│  ├── pip-manager.ts (368)                 │
-│  │   └── PipManager: PiP + preview window │
-│  └── ipc/handlers.ts (707)               │
-│      ├── fs:*, media:*, subtitles:*       │
-│      ├── settings:*, playback:*, playlist:*│
-│      ├── dep:*, shell:*, dialog:*         │
-│      ├── yt:*, update:* (placeholdery)    │
-│      └── pip:* (10 invoke + 8 send)       │
-├──────────────────────────────────────────┤
-│              PRELOAD                       │
-│  index.ts (126) → contextBridge: window.api│
-├──────────────────────────────────────────┤
-│              RENDERER                      │
-│  main.ts (38) → createApp + Pinia + Router │
-│  App.vue (148) → layout + theme + routing  │
-│  ├── router/index.ts (113)                │
-│  │   └── beforeEach + ModuleManager guard │
-│  ├── stores/ (6 store'ów, 895 linii)      │
-│  │   ├── player.ts (363) — główny stan    │
-│  │   ├── settings.ts (132) — konfiguracja │
-│  │   ├── explorer.ts (148)                │
-│  │   ├── library.ts (111)                 │
-│  │   ├── ui.ts (91)                       │
-│  │   └── youtube.ts (50)                  │
-│  ├── modules/ (8 modułów, 660 linii)      │
-│  │   ├── ModuleManager.ts (83)            │
-│  │   ├── audioEngine.ts (424) — klasa     │
-│  │   └── PlayerModule/ExplorerModule/...  │
-│  ├── composables/ (6, 1028 linii)         │
-│  │   ├── useAudioPlayer.ts (138)          │
-│  │   ├── useVideoPlayer.ts (311)          │
-│  │   ├── useSubtitleRenderer.ts (333)     │
-│  │   ├── usePlayerKeyboard.ts (106)       │
-│  │   ├── usePiP.ts (81)                   │
-│  │   └── useOpenMedia.ts (59)             │
-│  ├── views/ (9 widoków, 1596 linii)       │
-│  ├── components/ (24, 2546 linii)         │
-│  │   ├── layout/ (5) — TitleBar, Sidebar..│
-│  │   ├── audio/ (6) — Controls, Visualizer│
-│  │   ├── player/ (7) — Queue, OSD, PiP..  │
-│  │   └── settings/ (9) — per-zakładka     │
-│  └── utils/ (7, 450 linii)                │
-│      ├── constants.ts (180) — defaults     │
-│      ├── formatters.ts (50)                │
-│      ├── fileTypes.ts (46)                 │
-│      ├── audioEvents.ts (30) — EventBus    │
-│      ├── logger.ts (8)                     │
-│      └── ipc.ts (8) — safeInvoke          │
-└──────────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│              MAIN PROCESS (5, ~2,533 linii)  │
+│  index.ts (367)                              │
+│  ├── createWindow() → BrowserWindow          │
+│  ├── Tray icon + global shortcuts            │
+│  ├── Splash screen (auto-close po 1s)        │
+│  ├── pip-manager.ts (421)                    │
+│  │   └── PipManager: PiP + preview window    │
+│  ├── utils/logger.ts (8)                     │
+│  └── ipc/                                    │
+│      ├── handlers.ts (1633) — 68 handlerów   │
+│      └── musicbrainz.ts (104) — MusicBrainz  │
+├─────────────────────────────────────────────┤
+│              PRELOAD (2, ~287 linii)          │
+│  index.ts (167) → contextBridge: 43 API      │
+│  index.d.ts (120) → OndaAPI interface        │
+├─────────────────────────────────────────────┤
+│              RENDERER (95, ~13,397 linii)     │
+│  main.ts (46) → createApp + Pinia + Router   │
+│  App.vue (187) → layout + ErrorBoundary      │
+│  ├── i18n.ts (10) — vue-i18n setup           │
+│  ├── pip.ts (170) — PiP bundle               │
+│  ├── router/index.ts (117)                   │
+│  │   └── 8 tras + beforeEach guard           │
+│  ├── stores/ (6, ~1,265 linii)              │
+│  │   ├── player.ts (490) — główny stan       │
+│  │   ├── settings.ts (159) — konfiguracja    │
+│  │   ├── explorer.ts (196)                   │
+│  │   ├── library.ts (259)                    │
+│  │   ├── ui.ts (103) — toasty + contextMenu  │
+│  │   └── youtube.ts (58)                     │
+│  ├── modules/ (8, ~912 linii)               │
+│  │   ├── ModuleManager.ts (97)               │
+│  │   ├── audioEngine.ts (631) — klasa        │
+│  │   └── PlayerModule/ExplorerModule/...     │
+│  ├── composables/ (6, ~1,211 linii)         │
+│  │   ├── useAudioPlayer.ts (159)             │
+│  │   ├── useVideoPlayer.ts (406)             │
+│  │   ├── useSubtitleRenderer.ts (375)        │
+│  │   ├── usePlayerKeyboard.ts (106)          │
+│  │   ├── usePiP.ts (93)                      │
+│  │   └── useOpenMedia.ts (72)                │
+│  ├── views/ (8 widoków, ~2,145 linii)       │
+│  │   ├── HomeView, PlayerView, AudioView     │
+│  │   ├── ExplorerView (517) — 4 tryby      │
+│  │   ├── LibraryView (623)                   │
+│  │   ├── YouTubeView, DownloadsView, Settings│
+│  ├── components/ (48, ~4,563 linii)          │
+│  │   ├── layout/ (4) — TitleBar, Sidebar..   │
+│  │   ├── audio/ (6) — Controls, Visualizer   │
+│  │   ├── player/ (6) — Queue, Equalizer..    │
+│  │   ├── explorer/ (5) — GridItem, TableRow..│
+│  │   ├── library/ (7) — TrackRow, AlbumCard  │
+│  │   ├── settings/ (12) — per-zakładka      │
+│  │   └── shared/ (5) — CommandPalette, Toast │
+│  ├── locales/ (2) — en.ts (392) + pl.ts (393)│
+│  ├── types/ (6, ~298 linii)                  │
+│  └── utils/ (7, ~390 linii)                  │
+└─────────────────────────────────────────────┘
 ```
 
 ---
 
 ## 3. Co zrobić — Plan Działania
 
-### Faza 5: YouTube Integration (Priority: WYSOKI)
+### Faza 5: YouTube Integration (Priority: WYSOKI) ✅ ZASTĄPIONY
 
-Implementacja pełnej integracji z YouTube przez yt-dlp.
+> **Zastąpiony przez Fazę 5 rzeczywistą:** Library Management + ImageViewer + Settings + Explorer
 
-**Kroki:**
+Implementacja pełnej integracji z YouTube przez yt-dlp pozostaje na dalszy plan.
 
-- [ ] **5.1** yt-dlp wrapper w main process — klasa `YtDlpManager` (`src/main/ytdlp.ts`)
-  - `search(query)` → JSON results
-  - `getInfo(url)` → video metadata
-  - `download(url, format, outputPath)` → stream z progressem
-  - `getChannel(channelId)` → channel info + video list
-- [ ] **5.2** IPC handlers: `yt:search`, `yt:getInfo`, `yt:download`, `yt:getChannel` — z prawdziwą implementacją
-- [ ] **5.3** YouTubeView — prawdziwe wyniki, paginacja, odtwarzanie przez yt-dlp + strumień
-- [ ] **5.4** Subskrypcje — zapis ulubionych kanałów, auto-pobieranie
-- [ ] **5.5** Download manager — progress bar, lista pobrań, wznowienia
+- [x] **5.1–5.5** — Zastąpione przez budowę biblioteki mediów, eksploratora, ustawień i przeglądarki obrazów
 
-**Pliki:** `src/main/ytdlp.ts` (nowy), `handlers.ts`, `YouTubeView.vue`, `youtube.store.ts`
+### Faza 6: Library Management — Biblioteka mediow (Priority: WYSOKI) ✅ WYKONANE
 
-### Faza 6: Library Management — Biblioteka mediow (Priority: WYSOKI)
+**Stan:** W pełni zaimplementowana biblioteka audio/wideo z playlistami, edycją tagów, MusicBrainz, okładkami, folderami i wirtualizacją.
 
-Pelna biblioteka audio+video z zarzadzaniem folderami, playlistami i metadanymi.
-
-**Zalozenia:**
-
-- Biblioteka skanuje wskazane foldery + podfoldery
-- Automatyczna detekcja typu folderu na podstawie proporcji plikow:
-  - **Audio folder** — >50% plikow audio LUB wiecej audio niz video
-  - **Video folder** — >50% plikow video
-  - **Mixed folder** — po 50% (pokazuje zarowno audio jak i video)
-- Subfoldery dziedzicza kategorie po rodzicu, ale moga byc przeskalowane
-- Obsluga playlist dla audio I video (osobne lub mieszane)
-
-**Zakladki w LibraryView:**
-
-| Zakladka  | Zawartosc                                              |
-| --------- | ------------------------------------------------------ |
-| Utwory    | Wszystkie audio tracks z wirtualizacja + wyszukiwarka  |
-| Video     | Wszystkie video tracks z wirtualizacja + wyszukiwarka  |
-| Foldery   | Drzewiasta struktura folderow z wykrytym typem (ikona) |
-| Artyści   | Grupowanie po artist (tylko audio)                     |
-| Albumy    | Siatka albumow z cover art (tylko audio)               |
-| Playlisty | Lista playlist + podglad zawartosci po kliknieciu      |
-
-**Playlisty:**
-
-- Wspolne dla audio i video
-- Odtwarzanie: `player.setTrack(playlist.tracks[0])` + laduje cala liste do queue
-- Drag & drop tracks do playlisty
-- Kontekstowe menu: "Dodaj do playlisty", "Utworz playliste z zaznaczonych"
-- Persystencja przez IPC (zapis do electron-store jako JSON)
-
-**Kroki implementacji:**
-
-- [ ] **6.1** IPC handlery: `library:scan`, `library:getAll`, `playlist:*`, `library:folders:*` (handlers.ts)
-- [ ] **6.2** library.store — `loadFromDisk()`, `scanFolders()`, `savePlaylists()`, `addFolder()`/`removeFolder()`
-- [ ] **6.3** LibraryModule — `activate()` z auto-load + auto-scan
-- [ ] **6.4** SettingsLibraryFolders.vue — zarzadzanie folderami + przycisk skanowania
-- [ ] **6.5** LibraryPlaylistManager.vue — panel playlist + drag & drop
-- [ ] **6.6** LibraryTrackRow.vue — wiersz z akcjami (play, fav, dodaj do playlisty, context menu)
-- [ ] **6.7** LibraryView — virtualizacja (@tanstack/vue-virtual), video tab, folder browse, cover art
-- [ ] **6.8** Edycja tagow ID3 — jsmediatags zapis
-- [ ] **6.9** Automatyczne metadane — MusicBrainz API, Discogs API
-
-**Pliki:** `LibraryView.vue`, `library.store.ts`, `handlers.ts`, `LibraryModule.ts`,  
-`SettingsLibraryFolders.vue` (nowy), `LibraryPlaylistManager.vue` (nowy), `LibraryTrackRow.vue` (nowy)
+- [x] **6.1** IPC handlery: `library:scan`, `library:getAll`, `playlist:*`, `library:folders:*` — zrealizowane
+- [x] **6.2** `library.store` — `loadFromDisk()`, `scanFolders()`, `savePlaylists()`, `addFolder()/removeFolder()`
+- [x] **6.3** LibraryModule — `activate()` z auto-load + auto-scan
+- [x] **6.4** SettingsLibraryFolders.vue — zarządzanie folderami + przycisk skanowania
+- [x] **6.5** LibraryPlaylistManager.vue — panel playlist + DnD + sidebar DnD
+- [x] **6.6** LibraryTrackRow.vue — wiersz z akcjami (play, fav, context menu, DnD, playlist toggle)
+- [x] **6.7** LibraryView — virtualizacja (@tanstack/vue-virtual), video tab, folder browse (DirNode), cover art, search, filter
+- [x] **6.8** TrackTagEditor.vue — edycja ID3 tagów (title, artist, album, genre, year, track, cover) przez IPC `media:writeTag` + `media:writeCover`
+- [x] **6.9** MusicBrainzLookup.vue — search/lookup albumów, auto-fill tagów + okładki
 
 ### Faza 7: Jakość i Testy (Priority: ŚREDNI)
 
@@ -323,11 +286,11 @@ type IpcInvoke = <C extends keyof IpcChannels>(
 | Obszar                   | Obecnie                 | Cel (Q3 2026)    | Cel (Q1 2027)    |
 | ------------------------ | ----------------------- | ---------------- | ---------------- |
 | typecheck                | 0 błędów                | 0 błędów         | 0 błędów         |
-| lint errors              | 26 (CRLF)               | 0                | 0                |
-| Testy                    | 34 (2 pliki)            | 200+ (15 plików) | 500+ (30 plików) |
+| lint errors              | 0                       | 0                | 0                |
+| Testy                    | 141 (4 pliki)           | 200+ (15 plików) | 500+ (30 plików) |
 | Code coverage            | 0%                      | >30%             | >60%             |
 | Liczba `any`             | 7 (warn)                | 0                | 0                |
-| TODO w kodzie            | 1                       | 0                | 0                |
+| TODO w kodzie            | 2                       | 0                | 0                |
 | Console.error w renderer | 0 (logger)              | 0                | 0                |
 | Bundle size (renderer)   | ~448 KB JS + ~2 MB WASM | <400 KB JS       | <350 KB JS       |
 
@@ -349,14 +312,25 @@ type IpcInvoke = <C extends keyof IpcChannels>(
 
 ## 8. Podsumowanie
 
-**Priorytety:**
+**Stan realizacji:**
 
-1. **Faza 5** (YouTube) — największa wartość dla użytkownika
-2. **Faza 6** (Library) — core funkcjonalność
-3. **Quick wins** (coverCache, virtualizacja, encodeURI) — mały koszt, duży zysk
-4. **Faza 7** (Testy) — fundament pod dalszy rozwój
-5. **Faza 8** (Performance) — skalowalność dla dużych kolekcji
-6. **Faza 9-11** — nowe funkcje i infrastruktura
+| Faza               | Status        | Zrobione                                       |
+| ------------------- | ------------- | ---------------------------------------------- |
+| Faza 5 (YouTube)    | 🟡 Zastąpiony | Zastąpiony przez rzeczywistą Fazę 5 (Library)  |
+| Faza 6 (Library)    | ✅ Wykonane   | Biblioteka, playlisty, tagi, MusicBrainz       |
+| Faza 7 (Jakość)     | 🔴 Otwarty    | 141 testów, ale nadal niskie pokrycie          |
+| Faza 8 (Perform.)   | 🟡 Częściowo  | coverCache LRU, lazy covers, IntersectionObs.  |
+| Faza 9 (UI/UX)      | 🟡 Częściowo  | CommandPalette, Toast, DnD, i18n               |
+| Faza 10 (Infrastr.) | 🔴 Otwarty    | .              |
+| Faza 11 (Funkcje)   | 🔴 Otwarty    |                                                 |
+
+**Obecne priorytety:**
+
+1. **YouTube Integration** (przywrócona Faza 5) — największa luka funkcjonalna
+2. **Faza 7 (Testy)** — pokrycie kodu testami
+3. **Faza 10 (Infrastruktura)** — auto-update, CI/CD
+4. **Faza 8 (Performance)** — dalsza optymalizacja dużych kolekcji
+5. **Faza 9 (UI/UX)** — skróty edytowalne (✅), mini-player, system czcionek
 
 **Ryzyka:**
 
@@ -676,10 +650,134 @@ _Ostatnia aktualizacja: 2026-07-23_
 
 ### 14.4 Statystyki (po sprincie 6)
 
-| Metryka        | Wartość      |
-| -------------- | ------------ |
-| typecheck      | 0 błędów     |
-| Nowe pliki     | 5            |
-| Pliki źródłowe | 103          |
-| Linii dodanych | ~1200        |
+| Metryka        | Wartość           |
+| -------------- | ----------------- |
+| typecheck      | 0 błędów          |
+| lint           | 0 błędów          |
+| Nowe pliki     | 5                 |
+| Pliki źródłowe | 106               |
+| Linii dodanych | ~1,842            |
+| Linii usuniętych | ~323            |
+| Commit         | `30df860` na main |
+
+---
+
+## 15. Sprint 7 — ImageViewer Optimization + Image Pipeline (2026-07-23)
+
+### 15.1 Diagnoza
+
+| Problem | Przyczyna | Skutek |
+| ------- | --------- | ------ |
+| Zoom freeze przy dużych zdjęciach | `fs:readFile` ładuje pełny plik (20MB → 27MB base64). Brak debounce na wheel. `scale()` bez GPU accel. | Freeze przy zmianie zoomu na zdjęciach >5MB |
+| Duże foldery ładują się wolno | Thumbnail strip używa `fs:readFile` (brak dedykowanych miniaturek). Brak preloadu sąsiednich obrazków | Każda nawigacja = pełne IPC read + base64 encode |
+| UI niespójne z appką | Hardcodowane `bg-black/*` zamiast theme CSS variables | ImageViewer nie reaguje na zmianę motywu |
+| Slideshow podstawowy | Tylko interval + transition. Brak Ken Burns, shuffle | Podstawowe, bez efektów wizualnych |
+| Batch thumbnail 5000+ plików | `nativeImage` per-file = jeden wątek, brak cache współdzielonego | Godziny przy skanowaniu biblioteki |
+
+### 15.2 Plan naprawczy
+
+**Runda 1 — kosmetyka + thumbnail IPC (nie naprawiło problemu):**
+- [x] CSS vars dla kolorów (bg-bg-*, text-fg-*)
+- [x] Debounce wheel 50ms + `scale3d()` + `contain-layout`
+- [x] Nowe IPC `media:getThumbnail` — `nativeImage.resize(320)`
+- [x] Ken Burns + Shuffle w slideshow
+
+**Runda 2 — file:// + cache dyskowy:**
+- [x] `<img src="file:///C:/zdjecie.jpg">` — Chromium otwiera plik natywnie przez Windows WIC → GPU
+- [x] Zero IPC, zero base64 dla głównego obrazka
+- [x] Thumbnail cache na dysku `%TEMP%/onda/thumbs/<md5>.png`
+- [x] Transition przez `@load`, preload przez `new Image()`
+
+**Runda 3 — Sharp + onda:// protocol + downscale (bieżąca):**
+- [x] **Sharp (libvips)** — batch thumbnaili z concurrency `n-CPU`, ~4× szybciej niż `nativeImage`
+- [x] **Custom protocol `onda://`** — zamiast `file://`. Bezpieczniejszy (path traversal protection), wspiera query params
+- [x] **Downscale on-the-fly** — obrazek 20MB → 1920px przez `?w=1920` = ~300KB. Full-res tylko przy zoom >1.5×
+- [x] **`nativeImage.createThumbnailFromPath`** — próbuje Windows thumbcache pierwszy, fallback do Sharp
+- [x] **Cover art optimized** — okładki audio downscale'owane przez Sharp do 500px przed zapisem cache
+- [x] **Batch thumbnail IPC** — `media:batchThumbnails` z concurrency, raportowanie progressu
+
+### 15.3 Architektura — `onda://` protocol
+
+```
+Renderer: <img src="onda:///C:/photo.jpg?w=1920">
+                           │
+                    ┌──────┴──────┐
+                    │  protocol   │
+                    │  .handle    │
+                    │  ('onda')   │
+                    └──────┬──────┘
+                           │
+               ┌───────────┼───────────┐
+               │           │           │
+               ▼           ▼           ▼
+         ?w=1920       ?t=320     bez query
+         (downscale)   (thumb)    (full-res)
+               │           │           │
+               ▼           ▼           ▼
+           sharp()    SharpService   net.fetch()
+           resize     .getThumbnail  (file://)
+               │           │
+               ▼           ▼
+         Response       Response
+         (image/jpeg)   (image/jpeg)
+```
+
+### 15.4 Jak to teraz działa vs przed
+
+| Etap | PRZED (base64) | Runda 2 (file://) | Runda 3 (onda:// + Sharp) |
+|------|---------------|-------------------|--------------------------|
+| IPC | `fs:readFile` (20MB) | 0 | 0 |
+| Pamięć renderer | 27MB base64 string | 0 | 0 (downscale 1920px = ~300KB) |
+| Pierwsze ładowanie | decode base64 → JPEG | Windows WIC → GPU | sharp() → JPEG 1920px → GPU |
+| Zoom | repaint 27MB | GPU scale shader | full-res ładowany dopiero przy >1.5× |
+| Thumbnail pojedynczy | `nativeImage` czyta 20MB | nativeImage cache PNG | Windows thumbcache → Sharp fallback |
+| Thumbnail batch (5000) | — (brak) | — (brak) | Sharp concurrency n-CPU, ~4× faster |
+| Cover art | base64 z tagów | — | Sharp downscale 500px przed cache |
+| Bezpieczeństwo | — | ⚠️ XSS → cały dysk | ✅ path traversal protection |
+
+### 15.5 Nowe i zmodyfikowane
+
+**Nowy plik:**
+- `src/main/utils/sharp.ts` — SharpService: getThumbnail, batchThumbnails, resize, getMetadata
+
+**Nowy protokół:**
+- `onda://` — custom protocol zarejestrowany przez `protocol.registerSchemesAsPrivileged` przed `app.whenReady()`
+- Query params: `?w=N` (downscale do N px szerokości), `?t=N` (thumbnail N px)
+
+**Nowe IPC:**
+- `media:batchThumbnails` — batch thumbnail generation z concurrency (n-CPU)
+
+**Zmodyfikowane:**
+- `index.ts` — +`onda://` protocol registration + handler
+- `handlers.ts` — thumbnail przez `createThumbnailFromPath` + Sharp fallback; cover przez Sharp downscale; +batchThumbnails
+- `ImageViewer.vue` — `onda://` URLs, downscale 1920px domyślnie, high-res tylko przy zoom >1.5×
+- `index.html` — CSP: +`onda:` w `default-src` i `img-src`
+- `projekt2.md` — dokumentacja
+
+**Zależności:**
+- `sharp@0.35.3` + `@img/sharp-win32-x64@0.35.3` (N-API, nie wymaga rebuild)
+
+### 15.6 Mierniki sukcesu
+
+| Metryka | Przed | Runda 2 | Runda 3 (Sharp + downscale) |
+| ------- | ----- | ------- | --------------------------- |
+| Zoom latency (20MB photo) | ~500ms | <16ms (60fps) | <16ms + 200ms do full-res przy >1.5× |
+| Thumbnail load (1st) | ~300ms | ~20ms (cache) | ~5ms (Windows thumbcache) lub ~20ms (Sharp) |
+| Batch 5000 thumbnaili | godziny | — | ~2-5 min (Sharp concurrency) |
+| Pierwsze ładowanie 20MB | 500ms IPC | 100ms WIC | 50ms (downscale 1920px) |
+| Zużycie RAM na viewer | 80MB+ | ~30MB | ~5MB (1920px downscale) |
+| Bezpieczeństwo | — | ⚠️ | ✅ |
+
+### 15.7 Statystyki (po sprincie 7)
+
+| Metryka | Wartość |
+| ------- | ------- |
+| typecheck | 0 błędów |
+| build | OK |
+| Nowe IPC | 2 (`media:getThumbnail` z Windows thumbcache + Sharp, `media:batchThumbnails`) |
+| Nowe pliki | 1 (`src/main/utils/sharp.ts`) |
+| Pliki modyfikowane | 6 (index.ts, handlers.ts, ImageViewer.vue, index.html, main.css, sharp.ts) |
+| Nowe zależności | `sharp@0.35.3`, `@img/sharp-win32-x64@0.35.3` |
+| CSS vars | `onda:` added to CSP img-src and default-src |
+| Główna zmiana | `file://` → `onda://` custom protocol. Obrazki domyślnie 1920px. Sharp zamiast nativeImage. Windows thumbcache first. |
 

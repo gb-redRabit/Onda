@@ -25,6 +25,10 @@
   --color-amber-base: #fbbf24;
 }
 
+.contain-layout {
+  contain: layout style paint;
+}
+
 html,
 body,
 #app {

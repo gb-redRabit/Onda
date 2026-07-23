@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
-import { HardDrive, FolderOpen, Music2, Film } from '@lucide/vue';
+import { HardDrive, FolderOpen, Image, Film } from '@lucide/vue';
 import { getFileTypeInfo } from '@renderer/utils/fileTypes';
 import { formatFileSize } from '@renderer/utils/formatters';
-import { SUPPORTED_IMAGE_FORMATS } from '@renderer/utils/constants';
 import type { FileItem } from '@renderer/types/explorer';
+import { thumbTasks, thumbCache, iconCache, processThumbQueue, thumbTaskDone } from '@renderer/utils/thumbLoader';
 
 const props = defineProps<{
   item: FileItem;
@@ -20,12 +20,12 @@ const emit = defineEmits<{
   (e: 'contextMenu', event: MouseEvent, item: FileItem): void;
 }>();
 
-const IMAGE_EXTS = new Set(SUPPORTED_IMAGE_FORMATS);
-const thumbError = ref(false);
 const systemIcon = ref<string | null>(null);
+const mediaThumb = ref<string | null>(null);
 const visible = ref(false);
 const rootEl = ref<HTMLElement | null>(null);
 let observer: IntersectionObserver | null = null;
+let thumbFired = false;
 
 const size = computed(() => {
   switch (props.viewMode) {
@@ -46,7 +46,7 @@ onMounted(() => {
           observer?.disconnect();
         }
       },
-      { rootMargin: '200px' }
+      { rootMargin: '400px' }
     );
     observer.observe(rootEl.value);
   }
@@ -56,22 +56,54 @@ onBeforeUnmount(() => {
   observer?.disconnect();
 });
 
+function loadThumbnail(path: string) {
+  const cached = thumbCache.get(path);
+  if (cached) {
+    console.log('[gridThumb] CACHE HIT', path.slice(-30));
+    mediaThumb.value = cached;
+    return;
+  }
+  console.log('[gridThumb] QUEUE', path.slice(-30));
+  thumbTasks.push(() => {
+    console.time('[gridThumb] ' + path.slice(-30));
+    window.api?.invoke('media:getThumbnail', path, 320).then((dataUrl) => {
+      if (dataUrl) {
+        const url = dataUrl as string;
+        thumbCache.set(path, url);
+        mediaThumb.value = url;
+      } else {
+        console.log('[gridThumb] NULL, fallback icon');
+        const cachedIcon = iconCache.get(path);
+        if (cachedIcon) { systemIcon.value = cachedIcon; }
+        else {
+          window.api?.invoke('shell:getFileIcon', path).then((icon) => {
+            if (icon) { iconCache.set(path, icon as string); systemIcon.value = icon as string; }
+          }).catch(() => {});
+        }
+      }
+      console.timeEnd('[gridThumb] ' + path.slice(-30));
+    }).catch(() => {
+      console.log('[gridThumb] ERR, fallback icon');
+      const cachedIcon = iconCache.get(path);
+      if (cachedIcon) { systemIcon.value = cachedIcon; }
+      else {
+        window.api?.invoke('shell:getFileIcon', path).then((icon) => {
+          if (icon) { iconCache.set(path, icon as string); systemIcon.value = icon as string; }
+        }).catch(() => {});
+      }
+      console.timeEnd('[gridThumb] ' + path.slice(-30));
+    })
+    .finally(() => { thumbTaskDone(); });
+  });
+  processThumbQueue();
+}
+
 watch(visible, (isVisible) => {
-  if (!isVisible) return;
-  if (props.isAtDrives || props.item.isDirectory) return;
-  if (hasThumbnail()) return;
-  window.api?.invoke('shell:getFileIcon', props.item.path).then((icon) => {
-    if (icon) systemIcon.value = icon as string;
-  }).catch(() => {});
+  if (!isVisible || props.isAtDrives || props.item.isDirectory) return;
+  if (thumbFired) return;
+  thumbFired = true;
+  loadThumbnail(props.item.path);
 });
-
-function thumbSrc(path: string): string {
-  return `file:///${path.replace(/\\/g, '/')}`;
-}
-
-function hasThumbnail(): boolean {
-  return !props.isAtDrives && !props.item.isDirectory && !!props.item.extension && IMAGE_EXTS.has(props.item.extension);
-}
 </script>
 
 <template>
@@ -95,20 +127,18 @@ function hasThumbnail(): boolean {
       <HardDrive v-if="isAtDrives" :size="Math.round(size.icon * 0.55)" class="text-accent-base" />
       <FolderOpen v-else-if="item.isDirectory" :size="Math.round(size.icon * 0.55)" class="text-accent-base" />
       <img
-        v-else-if="hasThumbnail() && !thumbError"
-        :src="thumbSrc(item.path)"
+        v-else-if="mediaThumb"
+        :src="mediaThumb"
         class="w-full h-full object-cover"
-        loading="lazy"
-        @error="thumbError = true"
       />
       <img
-        v-else-if="systemIcon && !thumbError"
+        v-else-if="systemIcon"
         :src="systemIcon"
         :style="{ width: `${Math.round(size.icon * 0.5)}px`, height: `${Math.round(size.icon * 0.5)}px` }"
         class="object-contain"
       />
       <component
-        :is="getFileTypeInfo(item.extension || '').category === 'video' ? Film : Music2"
+        :is="getFileTypeInfo(item.extension || '').category === 'video' ? Film : Image"
         v-else
         :size="Math.round(size.icon * 0.45)"
         :style="{ color: getFileTypeInfo(item.extension || '').color }"

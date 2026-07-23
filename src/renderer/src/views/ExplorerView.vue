@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n';
 import { useVirtualizer } from '@tanstack/vue-virtual';
 import {
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown,
-  LayoutGrid, List, Home, HardDrive, FolderOpen, Plus
+  LayoutGrid, List, Home, HardDrive, FolderOpen, Plus, Pin, PinOff
 } from '@lucide/vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
 import { useLibraryStore } from '@renderer/stores/library';
@@ -26,6 +26,13 @@ const player = usePlayerStore();
 const ui = useUIStore();
 const router = useRouter();
 const { t } = useI18n();
+
+const pinned = ref(false);
+
+function togglePin() {
+  pinned.value = !pinned.value;
+  window.api?.invoke('window:setAlwaysOnTop', pinned.value);
+}
 
 const IMAGE_EXTS = new Set(SUPPORTED_IMAGE_FORMATS);
 const ICON_CACHE_MAX = 500;
@@ -438,6 +445,8 @@ async function renameItem(item: FileItem) {
             </button>
           </div>
         </div>
+
+        <button class="p-1.5 rounded-lg transition-colors" :class="pinned ? 'text-accent-base bg-accent-ghost' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'" title="Always on top" @click="togglePin"><Pin v-if="pinned" :size="14" class="pointer-events-none" /><PinOff v-else :size="14" class="pointer-events-none" /></button>
 
         <button class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors" :title="$t('explorer.newFolder')" @click="createNewFolder"><Plus :size="16" class="pointer-events-none" /></button>
 

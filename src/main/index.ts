@@ -1,11 +1,26 @@
-import { app, shell, BrowserWindow, ipcMain, Tray, Menu, globalShortcut } from 'electron';
-import { join } from 'path';
+import { app, shell, BrowserWindow, ipcMain, Tray, Menu, globalShortcut, protocol, net } from 'electron';
+import { join, normalize, isAbsolute } from 'path';
+import { pathToFileURL } from 'url';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
 import { registerIPC } from './ipc/handlers';
 import { pipManager } from './pip-manager';
+import { SharpService } from './utils/sharp';
 
 app.commandLine.appendSwitch('no-electrosecurity-warnings');
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'onda',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true
+    }
+  }
+]);
 
 let mainWindow: BrowserWindow | null = null;
 let splashWindow: BrowserWindow | null = null;
@@ -212,6 +227,44 @@ app.whenReady().then(() => {
   splashWindow = createSplashWindow();
 
   registerIPC();
+
+  protocol.handle('onda', async (req) => {
+    try {
+      const url = new URL(req.url);
+      const rawPath = url.searchParams.get('path') || '';
+      if (!rawPath) return new Response('missing path', { status: 400 });
+      const normalized = normalize(rawPath);
+      if (!isAbsolute(normalized)) {
+        return new Response(`invalid path: ${normalized}`, { status: 400 });
+      }
+      const maxWidth = parseInt(url.searchParams.get('w') || '0');
+      const thumbSize = parseInt(url.searchParams.get('t') || '0');
+
+      if (thumbSize > 0) {
+        const buf = await SharpService.getThumbnail(normalized, thumbSize);
+        if (buf) {
+          return new Response(new Uint8Array(buf), {
+            headers: { 'content-type': 'image/jpeg', 'cache-control': 'private, max-age=86400' }
+          });
+        }
+        return new Response('', { status: 404 });
+      }
+
+      if (maxWidth > 0 && maxWidth < 4000) {
+        const buf = await SharpService.resize(normalized, maxWidth);
+        if (buf) {
+          return new Response(new Uint8Array(buf), {
+            headers: { 'content-type': 'image/jpeg', 'cache-control': 'private, max-age=3600' }
+          });
+        }
+      }
+
+      return net.fetch(pathToFileURL(normalized).toString());
+    } catch {
+      return new Response('', { status: 500 });
+    }
+  });
+
   mainWindow = createWindow();
   mainWindow.webContents.on('did-finish-load', onMainReady);
   pipManager.setMainWindow(mainWindow);

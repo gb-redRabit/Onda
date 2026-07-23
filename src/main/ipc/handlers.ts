@@ -1,11 +1,12 @@
 import { registerMusicBrainzHandlers } from './musicbrainz';
-import { ipcMain, dialog, BrowserWindow, shell, app, clipboard } from 'electron';
+import { ipcMain, dialog, BrowserWindow, shell, app, clipboard, nativeImage } from 'electron';
 import { readdir, stat, lstat, readFile, writeFile, mkdir, rename, unlink, rm } from 'fs/promises';
-
 import { join, extname, basename, dirname } from 'path';
+import { SharpService } from '../utils/sharp';
+import sharp from 'sharp';
 import { exec as execCb } from 'child_process';
 import { pipeline } from 'stream/promises';
-import { createWriteStream, statSync } from 'fs';
+import { createWriteStream, statSync, existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
 import type { FileItem } from '../../renderer/src/types/explorer';
 import type { MediaFile, Playlist } from '../../renderer/src/types/media';
 import { promisify } from 'util';
@@ -156,10 +157,14 @@ async function extractAudioCover(filePath: string): Promise<string | null> {
     const meta = await parseFile(filePath, { duration: false });
     if (meta.common.picture && meta.common.picture.length > 0) {
       const pic = meta.common.picture[0];
-      const buf = Buffer.from(pic.data);
+      let buf = Buffer.from(pic.data);
       const imgExt = pic.format === 'image/jpeg' ? 'jpg' : pic.format.replace('image/', '');
+      try {
+        const resized = await sharp(buf).resize(500, 500, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 85 }).toBuffer();
+        buf = resized;
+      } catch { /* use original */ }
       savePersistentCover(filePath, buf, imgExt);
-      return `data:${pic.format};base64,${buf.toString('base64')}`;
+      return `data:image/jpeg;base64,${buf.toString('base64')}`;
     }
   } catch {
     /* no cover in metadata */
@@ -1274,6 +1279,105 @@ export function registerIPC(): void {
 
   ipcMain.handle('media:getDuration', async (_event, filePath: string): Promise<number> => {
     return getDuration(filePath);
+  });
+
+  ipcMain.handle('media:getThumbnail', async (_event, filePath: string, maxSize: number = 320): Promise<string | null> => {
+    try {
+      const cacheDir = join(os.tmpdir(), 'onda', 'thumbs');
+      const hash = createHash('md5').update(filePath + maxSize).digest('hex');
+      const cacheFile = join(cacheDir, `${hash}.jpg`);
+      if (existsSync(cacheFile)) {
+        logger.info('getThumbnail', `cache HIT ${filePath}`);
+        return `data:image/jpeg;base64,${readFileSync(cacheFile).toString('base64')}`;
+      }
+
+      let buf: Buffer | null = null;
+
+      try {
+        const thumb = await nativeImage.createThumbnailFromPath(filePath, { width: maxSize, height: maxSize });
+        if (!thumb.isEmpty()) {
+          buf = thumb.toJPEG(85);
+          if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
+          writeFileSync(cacheFile, buf);
+        }
+      } catch (e) {
+        logger.info('getThumbnail', `nativeImage FAILED ${filePath}: ${errMsg(e)}`);
+        buf = await SharpService.getThumbnail(filePath, maxSize);
+        logger.info('getThumbnail', `Sharp result for ${filePath}: ${buf ? 'OK' : 'null'}`);
+      }
+
+      if (!buf) {
+        const ext = extname(filePath).toLowerCase();
+        if (AUDIO_EXTS.includes(ext) || VIDEO_EXTS.includes(ext)) {
+          const cover = await extractAndCacheCover(filePath);
+          if (cover.type === 'image' && cover.data) {
+            const b64 = cover.data.replace(/^data:image\/\w+;base64,/, '');
+            buf = Buffer.from(b64, 'base64');
+            if (buf.length > 50000) {
+              try {
+                buf = await sharp(buf).resize(maxSize, maxSize, { fit: 'outside' }).jpeg({ quality: 85 }).toBuffer();
+              } catch { /* use original */ }
+            }
+          }
+        }
+      }
+
+      if (!buf) {
+        logger.info('getThumbnail', `NO THUMBNAIL for ${filePath}`);
+        return null;
+      }
+      if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
+      writeFileSync(cacheFile, buf);
+      return `data:image/jpeg;base64,${buf.toString('base64')}`;
+    } catch (e) {
+      logger.info('getThumbnail', `ERROR ${filePath}: ${errMsg(e)}`);
+      return null;
+    }
+  });
+
+  ipcMain.handle('media:batchThumbnails', async (
+    _event,
+    files: string[],
+    maxSize: number = 320
+  ): Promise<Record<string, string>> => {
+    const result: Record<string, string> = {};
+    const cacheDir = join(os.tmpdir(), 'onda', 'thumbs');
+    if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
+    const concurrency = Math.max(1, os.cpus().length - 1);
+
+    for (let i = 0; i < files.length; i += concurrency) {
+      const batch = files.slice(i, i + concurrency);
+      const promises = batch.map(async (filePath) => {
+        try {
+          const hash = createHash('md5').update(filePath + maxSize).digest('hex');
+          const cacheFile = join(cacheDir, `${hash}.jpg`);
+          if (existsSync(cacheFile)) {
+            result[filePath] = `data:image/jpeg;base64,${readFileSync(cacheFile).toString('base64')}`;
+            return;
+          }
+
+          let buf: Buffer | null = null;
+          try {
+            const thumb = await nativeImage.createThumbnailFromPath(filePath, { width: maxSize, height: maxSize });
+            if (!thumb.isEmpty()) {
+              buf = thumb.toJPEG(85);
+              writeFileSync(cacheFile, buf);
+            }
+          } catch {
+            buf = await SharpService.getThumbnail(filePath, maxSize);
+          }
+
+          if (buf) {
+            writeFileSync(cacheFile, buf);
+            result[filePath] = `data:image/jpeg;base64,${buf.toString('base64')}`;
+          }
+        } catch {
+          // skip
+        }
+      });
+      await Promise.all(promises);
+    }
+    return result;
   });
 
   ipcMain.handle(

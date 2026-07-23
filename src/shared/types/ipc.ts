@@ -144,6 +144,10 @@ export interface IpcChannels {
     args: [filePath: string];
     result: string | null;
   };
+  'media:getThumbnail': {
+    args: [filePath: string, maxSize?: number];
+    result: string | null;
+  };
 }
 
 export type IpcChannel = keyof IpcChannels;

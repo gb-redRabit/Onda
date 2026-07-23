@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick, reactive } from 'vue';
-import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, Maximize2, Play, Pause, Settings2, Fullscreen, PanelBottom, Clock, Repeat, GripHorizontal } from '@lucide/vue';
+import {
+  X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw,
+  Maximize2, Play, Pause, Settings2, Fullscreen, PanelBottom,
+  Clock, Repeat, GripHorizontal, Shuffle
+} from '@lucide/vue';
 import type { FileItem } from '@renderer/types/explorer';
-
-const MIME_MAP: Record<string, string> = {
-  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp',
-  gif: 'image/gif', bmp: 'image/bmp', svg: 'image/svg+xml', ico: 'image/x-icon',
-  tiff: 'image/tiff', tif: 'image/tif'
-};
 
 const props = defineProps<{
   files: FileItem[];
@@ -19,7 +17,8 @@ const emit = defineEmits<{
 }>();
 
 const SLIDESHOW_INTERVALS = [1000, 2000, 3000, 5000, 10000] as const;
-const TRANSITION_TYPES = ['fade', 'slide', 'zoom', 'swirl'] as const;
+const TRANSITION_TYPES = ['fade', 'slide', 'zoom', 'swirl', 'slideUp', 'slideDown', 'zoomOut', 'random'] as const;
+const NON_RANDOM_TYPES = ['fade', 'slide', 'zoom', 'swirl', 'slideUp', 'slideDown', 'zoomOut'] as const;
 const TRANSITION_DURATIONS = [200, 400, 500, 600, 800, 1000] as const;
 
 const currentIndex = ref(props.initialIndex);
@@ -30,7 +29,8 @@ const oldSrc = ref('');
 const imgError = ref(false);
 const slideshowActive = ref(false);
 const slideshowInterval = ref(3000);
-const transitionType = ref<'fade' | 'slide' | 'zoom' | 'swirl'>('fade');
+const transitionType = ref<(typeof TRANSITION_TYPES)[number]>('fade');
+const activeTransition = ref<(typeof NON_RANDOM_TYPES)[number]>('fade');
 const transitionDuration = ref(500);
 const direction = ref<'next' | 'prev'>('next');
 const transitioning = ref(false);
@@ -39,97 +39,170 @@ const fullscreen = ref(false);
 const loop = ref(false);
 const showThumbnails = ref(true);
 const slideshowProgress = ref(0);
+const kenBurns = ref(false);
+const shuffleSlideshow = ref(false);
+const usingHighRes = ref(false);
+const showBottom = ref(true);
 let slideshowTimer: ReturnType<typeof setTimeout> | null = null;
 let progressTimer: ReturnType<typeof setInterval> | null = null;
 let transitionTimer: ReturnType<typeof setTimeout> | null = null;
+let preloadTimer: ReturnType<typeof setTimeout> | null = null;
+let wheelTimeout: ReturnType<typeof setTimeout> | null = null;
+let kenRaf: number | null = null;
+let shuffleOrder: number[] = [];
+let highResLoadTimer: ReturnType<typeof setTimeout> | null = null;
+let idleTimer: ReturnType<typeof setTimeout> | null = null;
+const autoHideUI = ref(true);
+const uiVisible = ref(true);
+
+function resetIdleTimer() {
+  if (!slideshowActive.value || !autoHideUI.value) { uiVisible.value = true; return; }
+  uiVisible.value = true;
+  if (idleTimer !== null) clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => { uiVisible.value = false; }, 3000);
+}
+
+function onMouseMove() { resetIdleTimer(); }
 
 const currentFile = computed(() => props.files[currentIndex.value] ?? null);
 const hasPrev = computed(() => loop.value || currentIndex.value > 0);
 const hasNext = computed(() => loop.value || currentIndex.value < props.files.length - 1);
 const counter = computed(() => `${currentIndex.value + 1} / ${props.files.length}`);
 
-const newStyle = reactive({ opacity: 1, transform: 'translateX(0) scale(1)', filter: 'blur(0px)' });
-const oldStyle = reactive({ opacity: 0, transform: 'translateX(0) scale(1)', filter: 'blur(0px)' });
+const newStyle = reactive({ opacity: 1, transform: 'translateX(0) scale3d(1,1,1)', filter: 'blur(0px)' });
+const oldStyle = reactive({ opacity: 0, transform: 'translateX(0) scale3d(1,1,1)', filter: 'blur(0px)' });
+const kenStyle = reactive({ scale: 1, translateX: 0, translateY: 0 });
 
-// thumbnail cache
-const thumbCache = new Map<string, string>();
-const thumbWindow = computed(() => {
-  const range = 4;
-  const start = Math.max(0, currentIndex.value - range);
-  const end = Math.min(props.files.length - 1, currentIndex.value + range);
-  const indices: number[] = [];
-  for (let i = start; i <= end; i++) indices.push(i);
-  return indices;
-});
+const thumbCache = reactive(new Map<string, string>());
+const stripRef = ref<HTMLElement | null>(null);
+const thumbQueue: (() => void)[] = [];
+let thumbActive = 0;
+const THUMB_MAX_CONCURRENT = 3;
 
-function loadThumbnail(file: FileItem) {
-  if (thumbCache.has(file.path)) return;
-  thumbCache.set(file.path, '');
-  if (window.api) {
-    window.api.invoke('fs:readFile', file.path).then((b64: any) => {
-      if (b64) {
-        const mime = getMimeType(file.extension);
-        thumbCache.set(file.path, `data:${mime};base64,${b64}`);
-      }
-    }).catch(() => {});
+function processThumbQueue() {
+  while (thumbActive < THUMB_MAX_CONCURRENT && thumbQueue.length > 0) {
+    const task = thumbQueue.shift()!;
+    thumbActive++;
+    task();
   }
 }
 
-watch(thumbWindow, (indices) => {
-  indices.forEach(i => { const f = props.files[i]; if (f) loadThumbnail(f); });
-}, { immediate: true });
+function loadThumbnail(file: FileItem) {
+  if (thumbCache.has(file.path) || !window.api) {
+    return;
+  }
+  thumbCache.set(file.path, '');
+  const path = file.path;
+  thumbQueue.push(() => {
+    window.api.invoke('media:getThumbnail', path, 320).then((dataUrl) => {
+      if (dataUrl) thumbCache.set(path, dataUrl);
+    }).catch(() => {
+    }).finally(() => { thumbActive--; processThumbQueue(); });
+  });
+  processThumbQueue();
+}
+
+function toFileUrl(file: FileItem): string {
+  return `file:///${file.path.replace(/\\/g, '/')}`;
+}
+
+async function loadDisplayImage(file: FileItem, maxWidth: number = 1920): Promise<string> {
+  try {
+    const resp = await fetch(`onda:///?path=${encodeURIComponent(file.path)}&w=${maxWidth}`);
+    if (!resp.ok) throw new Error(resp.statusText);
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    return url;
+  } catch {
+    return toFileUrl(file);
+  }
+}
 
 function computeEnterStart() {
-  switch (transitionType.value) {
-    case 'fade': return { opacity: 0, transform: 'translateX(0) scale(1)', filter: 'blur(0px)' };
+  switch (activeTransition.value) {
+    case 'fade': return { opacity: 0, transform: 'translateX(0) scale3d(1,1,1)', filter: 'blur(0px)' };
     case 'slide':
       return direction.value === 'next'
-        ? { opacity: 1, transform: 'translateX(15%) scale(0.95)', filter: 'blur(4px)' }
-        : { opacity: 1, transform: 'translateX(-15%) scale(0.95)', filter: 'blur(4px)' };
-    case 'zoom': return { opacity: 0, transform: 'translateX(0) scale(0.7)', filter: 'blur(0px)' };
-    case 'swirl': return { opacity: 0, transform: 'translateX(0) scale(0.5) rotate(-15deg)', filter: 'blur(6px)' };
-    default: return { opacity: 1, transform: 'translateX(0) scale(1)', filter: 'blur(0px)' };
+        ? { opacity: 1, transform: 'translateX(15%) scale3d(0.95,0.95,1)', filter: 'blur(4px)' }
+        : { opacity: 1, transform: 'translateX(-15%) scale3d(0.95,0.95,1)', filter: 'blur(4px)' };
+    case 'zoom': return { opacity: 0, transform: 'translateX(0) scale3d(0.7,0.7,1)', filter: 'blur(0px)' };
+    case 'swirl': return { opacity: 0, transform: 'translateX(0) scale3d(0.5,0.5,1) rotate(-15deg)', filter: 'blur(6px)' };
+    case 'slideUp': return { opacity: 1, transform: 'translateY(15%) scale3d(0.95,0.95,1)', filter: 'blur(4px)' };
+    case 'slideDown': return { opacity: 1, transform: 'translateY(-15%) scale3d(0.95,0.95,1)', filter: 'blur(4px)' };
+    case 'zoomOut': return { opacity: 0, transform: 'translateX(0) scale3d(1.3,1.3,1)', filter: 'blur(0px)' };
+    default: return { opacity: 1, transform: 'translateX(0) scale3d(1,1,1)', filter: 'blur(0px)' };
   }
 }
 
 function computeOldExit() {
-  switch (transitionType.value) {
-    case 'fade': return { opacity: 0, transform: 'translateX(0) scale(1.05)', filter: 'blur(0px)' };
+  switch (activeTransition.value) {
+    case 'fade': return { opacity: 0, transform: 'translateX(0) scale3d(1.05,1.05,1)', filter: 'blur(0px)' };
     case 'slide':
       return direction.value === 'next'
-        ? { opacity: 0, transform: 'translateX(-15%) scale(0.95)', filter: 'blur(4px)' }
-        : { opacity: 0, transform: 'translateX(15%) scale(0.95)', filter: 'blur(4px)' };
-    case 'zoom': return { opacity: 0, transform: 'translateX(0) scale(1.2)', filter: 'blur(0px)' };
-    case 'swirl': return { opacity: 0, transform: 'translateX(0) scale(1.3) rotate(15deg)', filter: 'blur(6px)' };
-    default: return { opacity: 0, transform: 'translateX(0) scale(1)', filter: 'blur(0px)' };
+        ? { opacity: 0, transform: 'translateX(-15%) scale3d(0.95,0.95,1)', filter: 'blur(4px)' }
+        : { opacity: 0, transform: 'translateX(15%) scale3d(0.95,0.95,1)', filter: 'blur(4px)' };
+    case 'zoom': return { opacity: 0, transform: 'translateX(0) scale3d(1.2,1.2,1)', filter: 'blur(0px)' };
+    case 'swirl': return { opacity: 0, transform: 'translateX(0) scale3d(1.3,1.3,1) rotate(15deg)', filter: 'blur(6px)' };
+    case 'slideUp': return { opacity: 0, transform: 'translateY(-15%) scale3d(0.95,0.95,1)', filter: 'blur(4px)' };
+    case 'slideDown': return { opacity: 0, transform: 'translateY(15%) scale3d(0.95,0.95,1)', filter: 'blur(4px)' };
+    case 'zoomOut': return { opacity: 0, transform: 'translateX(0) scale3d(0.7,0.7,1)', filter: 'blur(0px)' };
+    default: return { opacity: 0, transform: 'translateX(0) scale3d(1,1,1)', filter: 'blur(0px)' };
   }
 }
 
-function fitToScreen() { scale.value = 1; rotation.value = 0; }
+function fitToScreen() { scale.value = 1; rotation.value = 0; kenStyle.scale = 1; kenStyle.translateX = 0; kenStyle.translateY = 0; scheduleHighRes(); }
 
-function getMimeType(ext?: string): string {
-  return MIME_MAP[ext?.replace('.', '').toLowerCase() || ''] || 'image/jpeg';
+function scheduleHighRes() {
+  if (highResLoadTimer !== null) { clearTimeout(highResLoadTimer); }
+  const file = currentFile.value;
+  if (!file) return;
+  if (scale.value > 1.5) {
+    highResLoadTimer = setTimeout(() => {
+      const img = new Image();
+      img.onload = () => {
+        displaySrc.value = toFileUrl(file);
+        usingHighRes.value = true;
+      };
+      img.src = toFileUrl(file);
+    }, 200);
+  } else if (usingHighRes.value) {
+    usingHighRes.value = false;
+    loadDisplayImage(file, 1920).then(url => { displaySrc.value = url; });
+  }
 }
 
-async function loadImage(file: FileItem): Promise<string> {
-  if (!file) return '';
-  imgError.value = false;
-  try {
-    if (window.api) {
-      const b64 = await window.api.invoke('fs:readFile', file.path) as string | null;
-      if (b64) { const mime = getMimeType(file.extension); return `data:${mime};base64,${b64}`; }
-    } else { return `file:///${file.path.replace(/\\/g, '/')}`; }
-  } catch { /* noop */ }
-  imgError.value = true;
-  return '';
+function onImageLoaded() {
+  if (!transitioning.value) return;
+  nextTick(() => {
+    Object.assign(newStyle, { opacity: 1, transform: 'translateX(0) scale3d(1,1,1)', filter: 'blur(0px)' });
+    Object.assign(oldStyle, computeOldExit());
+    transitionTimer = setTimeout(endTransition, transitionDuration.value);
+  });
+}
+
+function onImageError() {
+  if (transitioning.value) { imgError.value = true; endTransition(); }
+}
+
+function endTransition() {
+  Object.assign(oldStyle, { opacity: 0, transform: 'translateX(0) scale3d(1,1,1)', filter: 'blur(0px)' });
+  oldSrc.value = '';
+  transitioning.value = false;
 }
 
 function navigateTo(newIdx: number, dir: 'prev' | 'next') {
   if (transitioning.value || newIdx === currentIndex.value) return;
   direction.value = dir;
+  if (transitionType.value === 'random') {
+    activeTransition.value = NON_RANDOM_TYPES[Math.floor(Math.random() * NON_RANDOM_TYPES.length)];
+  } else {
+    activeTransition.value = transitionType.value;
+  }
   if (displaySrc.value) oldSrc.value = displaySrc.value;
   currentIndex.value = newIdx;
   transitioning.value = true;
+  imgError.value = false;
 
   const enterStart = computeEnterStart();
   Object.assign(newStyle, { opacity: 0, transform: enterStart.transform, filter: enterStart.filter });
@@ -137,22 +210,22 @@ function navigateTo(newIdx: number, dir: 'prev' | 'next') {
   const file = props.files[newIdx];
   if (!file) { transitioning.value = false; return; }
 
-  loadImage(file).then(src => {
-    if (!src) { imgError.value = true; endTransition(); return; }
-    displaySrc.value = src;
-    nextTick(() => {
-      Object.assign(newStyle, { opacity: 1, transform: 'translateX(0) scale(1)', filter: 'blur(0px)' });
-      Object.assign(oldStyle, computeOldExit());
-      transitionTimer = setTimeout(endTransition, transitionDuration.value);
-    });
-  });
+  usingHighRes.value = false;
+  loadDisplayImage(file, 1920).then(url => { displaySrc.value = url; });
+  preloadNext();
 }
 
-function endTransition() {
-  Object.assign(oldStyle, { opacity: 0, transform: 'translateX(0) scale(1)', filter: 'blur(0px)' });
-  oldSrc.value = '';
-  transitioning.value = false;
+function preloadNext() {
+  if (preloadTimer !== null) { clearTimeout(preloadTimer); preloadTimer = null; }
+  const nextIdx = currentIndex.value + 1;
+  if (nextIdx >= props.files.length) return;
+  const nextFile = props.files[nextIdx];
+  if (!nextFile) return;
+  const img = new Image();
+  img.src = toFileUrl(nextFile);
 }
+
+
 
 function prev() {
   if (!hasPrev.value) return;
@@ -171,8 +244,17 @@ function goTo(idx: number) {
   navigateTo(idx, idx > currentIndex.value ? 'next' : 'prev');
 }
 
-function zoomIn() { scale.value = Math.min(scale.value * 1.3, 5); }
-function zoomOut() { scale.value = Math.max(scale.value / 1.3, 0.2); }
+function zoomIn() {
+  scale.value = Math.min(scale.value * 1.3, 5);
+  scheduleHighRes();
+}
+function zoomOut() {
+  scale.value = Math.max(scale.value / 1.3, 0.2);
+  if (scale.value <= 1.5 && usingHighRes.value) {
+    usingHighRes.value = false;
+    loadDisplayImage(currentFile.value!, 1920).then(url => { displaySrc.value = url; });
+  }
+}
 function rotate() { rotation.value = (rotation.value + 90) % 360; }
 
 function toggleSlideshow() {
@@ -183,25 +265,52 @@ function startSlideshow() {
   slideshowActive.value = true;
   settingsOpen.value = false;
   slideshowProgress.value = 0;
+  showBottom.value = false;
+  uiVisible.value = true;
   if (props.files.length < 2) { stopSlideshow(); return; }
-  advanceWhenReady();
+  if (autoHideUI.value) resetIdleTimer();
+  if (shuffleSlideshow.value) {
+    shuffleOrder = [...Array(props.files.length).keys()].filter(i => i !== currentIndex.value);
+    for (let i = shuffleOrder.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffleOrder[i], shuffleOrder[j]] = [shuffleOrder[j], shuffleOrder[i]];
+    }
+  }
+  runProgress();
+  slideshowTimer = setTimeout(advanceWhenReady, slideshowInterval.value);
 }
 
 function advanceWhenReady() {
   if (!slideshowActive.value) return;
-  if (hasNext.value) {
+  if (shuffleSlideshow.value && shuffleOrder.length > 0) {
+    const nextIdx = shuffleOrder.shift()!;
+    navigateTo(nextIdx, 'next');
+    runProgress();
+    slideshowTimer = setTimeout(advanceWhenReady, slideshowInterval.value);
+  } else if (hasNext.value) {
     next(); runProgress();
     slideshowTimer = setTimeout(advanceWhenReady, slideshowInterval.value);
   } else if (loop.value) {
-    const firstIdx = 0;
-    currentIndex.value = firstIdx;
-    const file = props.files[firstIdx];
-    if (file) loadImage(file).then(src => { if (src) displaySrc.value = src; });
+    const file = props.files[0];
+    if (file) { currentIndex.value = 0; usingHighRes.value = false; loadDisplayImage(file, 1920).then(url => { displaySrc.value = url; }); }
     runProgress();
     slideshowTimer = setTimeout(advanceWhenReady, slideshowInterval.value);
   } else {
     stopSlideshow();
   }
+}
+
+function runKenBurns() {
+  if (!kenBurns.value || !slideshowActive.value) {
+    if (kenRaf !== null) { cancelAnimationFrame(kenRaf); kenRaf = null; }
+    return;
+  }
+  const elapsed = performance.now() % slideshowInterval.value;
+  const t = elapsed / slideshowInterval.value;
+  kenStyle.scale = 1 + t * 0.15;
+  kenStyle.translateX = t * 2;
+  kenStyle.translateY = t * 1;
+  kenRaf = requestAnimationFrame(runKenBurns);
 }
 
 function runProgress() {
@@ -211,10 +320,16 @@ function runProgress() {
   progressTimer = setInterval(() => {
     slideshowProgress.value = Math.min(slideshowProgress.value + step, 100);
   }, 16);
+  if (kenBurns.value) runKenBurns();
 }
 
 function stopSlideshow() {
   slideshowActive.value = false; slideshowProgress.value = 0;
+  showBottom.value = true;
+  uiVisible.value = true;
+  if (idleTimer !== null) { clearTimeout(idleTimer); idleTimer = null; }
+  kenStyle.scale = 1; kenStyle.translateX = 0; kenStyle.translateY = 0;
+  if (kenRaf !== null) { cancelAnimationFrame(kenRaf); kenRaf = null; }
   if (slideshowTimer !== null) { clearTimeout(slideshowTimer); slideshowTimer = null; }
   if (progressTimer !== null) { clearInterval(progressTimer); progressTimer = null; }
 }
@@ -235,6 +350,8 @@ function toggleFullscreen() {
 }
 
 function onWheel(e: WheelEvent) {
+  if (wheelTimeout !== null) return;
+  wheelTimeout = setTimeout(() => { wheelTimeout = null; }, 50);
   if (e.deltaY < 0) zoomIn(); else zoomOut();
 }
 
@@ -250,54 +367,100 @@ function onKeydown(e: KeyboardEvent) {
   else if (e.key === '-') { zoomOut(); }
   else if (e.key === 'r') { rotate(); }
   else if (e.key === 'f') { toggleFullscreen(); }
+  else if (e.key === 'h') { if (slideshowActive.value) { uiVisible.value = !uiVisible.value; if (idleTimer !== null) { clearTimeout(idleTimer); idleTimer = null; } } }
   else if (e.key === ' ') { e.preventDefault(); toggleSlideshow(); }
 }
 
 function onFullscreenChange() { fullscreen.value = !!document.fullscreenElement; }
 
+let thumbObserver: IntersectionObserver | null = null;
+
+function setupThumbObserver() {
+  thumbObserver?.disconnect();
+  if (!stripRef.value) {
+    return;
+  }
+  const els = stripRef.value.querySelectorAll('[data-thumb-idx]');
+  thumbObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const idx = Number(entry.target.getAttribute('data-thumb-idx'));
+      if (entry.isIntersecting) {
+        const f = props.files[idx];
+        if (f) loadThumbnail(f);
+      }
+    });
+  }, { root: stripRef.value, rootMargin: '100px' });
+  els.forEach(el => thumbObserver!.observe(el));
+}
+
+watch(showThumbnails, (val) => { if (val) nextTick(setupThumbObserver); else thumbObserver?.disconnect(); });
+
+watch(() => props.files.length, () => { nextTick(setupThumbObserver); });
+
+watch(currentIndex, () => {
+  if (!stripRef.value) return;
+  const el = stripRef.value.querySelector(`[data-thumb-idx="${currentIndex.value}"]`) as HTMLElement | null;
+  el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+});
+
 watch([() => props.files, () => props.initialIndex], ([files, idx]) => {
   if (files.length === 0) return;
   currentIndex.value = idx;
   const file = files[idx];
-  if (file) loadImage(file).then(src => { if (src) displaySrc.value = src; });
+  if (file) { usingHighRes.value = false; loadDisplayImage(file, 1920).then(url => { displaySrc.value = url; }); preloadNext(); }
 });
 
 onMounted(() => {
   window.addEventListener('keydown', onKeydown);
+  window.addEventListener('mousemove', onMouseMove);
   document.addEventListener('fullscreenchange', onFullscreenChange);
+  nextTick(setupThumbObserver);
   const file = currentFile.value;
-  if (file) loadImage(file).then(src => { if (src) displaySrc.value = src; });
+  if (file) { usingHighRes.value = false; loadDisplayImage(file, 1920).then(url => { displaySrc.value = url; }); preloadNext(); }
 });
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown);
+  window.removeEventListener('mousemove', onMouseMove);
+  if (idleTimer !== null) { clearTimeout(idleTimer); idleTimer = null; }
   document.removeEventListener('fullscreenchange', onFullscreenChange);
   stopSlideshow();
+  thumbObserver?.disconnect();
+  thumbQueue.length = 0;
   if (transitionTimer !== null) clearTimeout(transitionTimer);
+  if (preloadTimer !== null) clearTimeout(preloadTimer);
+  if (wheelTimeout !== null) clearTimeout(wheelTimeout);
+  if (kenRaf !== null) cancelAnimationFrame(kenRaf);
+  if (highResLoadTimer !== null) clearTimeout(highResLoadTimer);
   if (fullscreen.value) document.exitFullscreen();
 });
+
+function makeTransform(base: string): string {
+  const s = scale.value * kenStyle.scale;
+  return `${base} scale3d(${s},${s},1) rotate(${rotation.value}deg) translateX(${kenStyle.translateX}px) translateY(${kenStyle.translateY}px)`;
+}
 </script>
 
 <template>
   <div
-    class="fixed inset-0 z-50 flex flex-col bg-black/95 select-none"
+    class="fixed inset-0 z-50 flex flex-col bg-bg-base/95 select-none"
+    :class="slideshowActive && !uiVisible ? 'cursor-none' : ''"
     @click.self="emit('close')"
   >
-    <div class="flex-1 flex flex-row min-h-0">
-      <!-- image area -->
+    <div class="flex-1 flex flex-row min-h-0 relative">
       <div
-        class="flex-1 flex items-center justify-center relative overflow-hidden"
+        class="absolute inset-0 flex items-center justify-center overflow-hidden contain-layout"
         @wheel.prevent="onWheel"
       >
         <button
           v-if="hasPrev && !slideshowActive"
-          class="absolute left-3 z-10 p-2 rounded-full bg-black/40 text-white/70 hover:bg-black/60 hover:text-white transition-all"
+          class="absolute left-3 z-10 p-2 rounded-full bg-bg-overlay/60 text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-all"
           @click="prev"
         >
           <ChevronLeft :size="28" class="pointer-events-none" />
         </button>
 
-        <div class="flex items-center justify-center w-full h-full p-8">
+        <div class="flex items-center justify-center w-full h-full p-8 contain-layout">
           <img
             v-if="oldSrc"
             :src="oldSrc"
@@ -305,7 +468,7 @@ onUnmounted(() => {
             :style="{
               ...oldStyle,
               transition: `all ${transitionDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`,
-              transform: `${oldStyle.transform} scale(${scale}) rotate(${rotation}deg)`,
+              transform: makeTransform(oldStyle.transform),
               willChange: 'transform, opacity, filter'
             }"
             draggable="false"
@@ -318,11 +481,12 @@ onUnmounted(() => {
             :style="{
               ...newStyle,
               transition: `all ${transitionDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`,
-              transform: `${newStyle.transform} scale(${scale}) rotate(${rotation}deg)`,
+              transform: makeTransform(newStyle.transform),
               willChange: 'transform, opacity, filter'
             }"
             draggable="false"
-            @error="imgError = true"
+            @load="onImageLoaded"
+            @error="onImageError"
             @dblclick="fitToScreen"
           />
           <div v-if="!displaySrc && !oldSrc" class="text-fg-faint text-sm">
@@ -336,7 +500,7 @@ onUnmounted(() => {
 
         <button
           v-if="hasNext && !slideshowActive"
-          class="absolute right-3 z-10 p-2 rounded-full bg-black/40 text-white/70 hover:bg-black/60 hover:text-white transition-all"
+          class="absolute right-3 z-10 p-2 rounded-full bg-bg-overlay/60 text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-all"
           @click="next"
         >
           <ChevronRight :size="28" class="pointer-events-none" />
@@ -344,7 +508,8 @@ onUnmounted(() => {
 
         <div
           v-if="slideshowActive"
-          class="absolute top-0 left-0 right-0 h-0.5 bg-white/10 z-10"
+          class="absolute top-0 left-0 right-0 h-0.5 bg-border-default/30 z-10 transition-opacity duration-300"
+          :class="uiVisible ? 'opacity-100' : 'opacity-0'"
         >
           <div
             class="h-full bg-accent-base transition-all duration-150 ease-linear"
@@ -353,18 +518,13 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- toolbar on the right -->
-      <div class="relative flex flex-col items-center px-2 py-3 bg-black/60 gap-1 shrink-0" @click.stop>
-        <button
-          class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
-          title="Close (Esc)"
-          @click="emit('close')"
-        >
+      <div class="absolute right-0 inset-y-0 flex flex-col items-center px-2 py-3 gap-1 transition-all duration-300" :class="slideshowActive && !uiVisible ? 'opacity-0 pointer-events-none' : ''" @click.stop>
+        <button class="p-1.5 rounded-lg bg-bg-overlay/80 text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors" title="Close (Esc)" @click="emit('close')">
           <X :size="16" class="pointer-events-none" />
         </button>
         <div class="flex-1" />
 
-        <div class="flex flex-col items-center gap-1">
+        <div class="flex flex-col items-center gap-1 bg-bg-overlay/80 rounded-xl px-1.5 py-2">
           <div class="relative">
             <button
               class="p-1.5 rounded-lg transition-colors"
@@ -385,7 +545,7 @@ onUnmounted(() => {
             </button>
             <div
               v-if="settingsOpen"
-              class="absolute right-full mr-2 top-0 bg-surface-dialog border border-border-default rounded-lg shadow-xl p-3 min-w-[220px] z-20"
+              class="absolute right-full mr-2 top-0 bg-bg-elevated border border-border-default rounded-lg shadow-xl p-3 min-w-[220px] z-20"
               @click.stop
             >
               <div class="text-xs font-semibold text-fg-base mb-2 tracking-wide uppercase">Slideshow</div>
@@ -400,9 +560,7 @@ onUnmounted(() => {
                   class="px-2 py-1 text-xs rounded-md transition-colors"
                   :class="slideshowInterval === ms ? 'bg-accent-base text-white' : 'bg-bg-hover text-fg-muted hover:text-fg-base'"
                   @click="changeInterval(ms)"
-                >
-                  {{ ms / 1000 + 's' }}
-                </button>
+                >{{ ms / 1000 + 's' }}</button>
               </div>
 
               <div class="text-[11px] text-fg-muted mb-1 flex items-center gap-1">
@@ -415,9 +573,7 @@ onUnmounted(() => {
                   class="px-2 py-1 text-xs rounded-md capitalize transition-colors"
                   :class="transitionType === type ? 'bg-accent-base text-white' : 'bg-bg-hover text-fg-muted hover:text-fg-base'"
                   @click="transitionType = type"
-                >
-                  {{ type }}
-                </button>
+                >{{ type }}</button>
               </div>
 
               <div class="text-[11px] text-fg-muted mb-1 flex items-center gap-1">
@@ -430,9 +586,7 @@ onUnmounted(() => {
                   class="px-2 py-1 text-xs rounded-md transition-colors"
                   :class="transitionDuration === d ? 'bg-accent-base text-white' : 'bg-bg-hover text-fg-muted hover:text-fg-base'"
                   @click="transitionDuration = d"
-                >
-                  {{ d }}ms
-                </button>
+                >{{ d }}ms</button>
               </div>
 
               <div class="flex items-center justify-between mb-1">
@@ -450,43 +604,77 @@ onUnmounted(() => {
                   />
                 </button>
               </div>
+
+              <div class="flex items-center justify-between mb-1">
+                <div class="text-[11px] text-fg-muted flex items-center gap-1">
+                  <Shuffle :size="11" class="pointer-events-none" /> Shuffle
+                </div>
+                <button
+                  class="w-7 h-4 rounded-full transition-colors relative"
+                  :class="shuffleSlideshow ? 'bg-accent-base' : 'bg-bg-hover'"
+                  @click="shuffleSlideshow = !shuffleSlideshow"
+                >
+                  <div
+                    class="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform"
+                    :class="shuffleSlideshow ? 'translate-x-3.5' : 'translate-x-0.5'"
+                  />
+                </button>
+              </div>
+
+              <div class="flex items-center justify-between mb-1">
+                <div class="text-[11px] text-fg-muted flex items-center gap-1">
+                  <Maximize2 :size="11" class="pointer-events-none" /> Ken Burns
+                </div>
+                <button
+                  class="w-7 h-4 rounded-full transition-colors relative"
+                  :class="kenBurns ? 'bg-accent-base' : 'bg-bg-hover'"
+                  @click="kenBurns = !kenBurns"
+                >
+                  <div
+                    class="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform"
+                    :class="kenBurns ? 'translate-x-3.5' : 'translate-x-0.5'"
+                  />
+                </button>
+              </div>
+
+              <div class="border-t border-border-default/20 my-2" />
+
+              <div class="flex items-center justify-between">
+                <div class="text-[11px] text-fg-muted flex items-center gap-1">
+                  <Maximize2 :size="11" class="pointer-events-none" /> Auto-hide
+                </div>
+                <button
+                  class="w-7 h-4 rounded-full transition-colors relative"
+                  :class="autoHideUI ? 'bg-accent-base' : 'bg-bg-hover'"
+                  @click="autoHideUI = !autoHideUI"
+                >
+                  <div
+                    class="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform"
+                    :class="autoHideUI ? 'translate-x-3.5' : 'translate-x-0.5'"
+                  />
+                </button>
+              </div>
+
+              <div class="text-[10px] text-fg-muted/60 mt-1.5 leading-relaxed">
+                <span class="text-fg-muted/80 font-semibold">H</span> toggle UI &middot;
+                <span class="text-fg-muted/80 font-semibold">Space</span> stop
+              </div>
             </div>
           </div>
 
-          <button
-            class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
-            title="Fit to screen"
-            @click="fitToScreen"
-          >
+          <button class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors" title="Fit to screen" @click="fitToScreen">
             <Maximize2 :size="16" class="pointer-events-none" />
           </button>
-          <button
-            class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
-            title="Zoom In (+)"
-            @click="zoomIn"
-          >
+          <button class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors" title="Zoom In (+)" @click="zoomIn">
             <ZoomIn :size="16" class="pointer-events-none" />
           </button>
-          <button
-            class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
-            title="Zoom Out (-)"
-            @click="zoomOut"
-          >
+          <button class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors" title="Zoom Out (-)" @click="zoomOut">
             <ZoomOut :size="16" class="pointer-events-none" />
           </button>
-          <button
-            class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
-            title="Rotate (R)"
-            @click="rotate"
-          >
+          <button class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors" title="Rotate (R)" @click="rotate">
             <RotateCw :size="16" class="pointer-events-none" />
           </button>
-          <button
-            class="p-1.5 rounded-lg transition-colors"
-            :class="fullscreen ? 'text-accent-base bg-accent-ghost' : 'text-fg-muted hover:text-fg-base hover:bg-bg-hover'"
-            :title="fullscreen ? 'Exit fullscreen (F)' : 'Fullscreen (F)'"
-            @click="toggleFullscreen"
-          >
+          <button class="p-1.5 rounded-lg transition-colors" :class="fullscreen ? 'text-accent-base bg-accent-ghost' : 'text-fg-muted hover:text-fg-base hover:bg-bg-hover'" title="Fullscreen (F)" @click="toggleFullscreen">
             <Fullscreen :size="16" class="pointer-events-none" />
           </button>
         </div>
@@ -495,53 +683,54 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- thumbnail strip -->
     <div
-      v-if="files.length > 1"
-      class="flex items-center gap-1 px-3 py-2 bg-black/50 border-t border-white/5 overflow-x-auto shrink-0 transition-all duration-200"
-      :class="showThumbnails ? 'h-16' : 'h-0 py-0 overflow-hidden'"
-      @click.stop
+      class="shrink-0 transition-all duration-300 ease-in-out overflow-hidden"
+      :class="showBottom ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'"
     >
-      <template v-for="(file, idx) in files" :key="file.path">
-        <div
-          class="shrink-0 rounded-md overflow-hidden border-2 transition-all cursor-pointer flex items-center justify-center"
-          :class="[
-            idx === currentIndex ? 'border-accent-base ring-1 ring-accent-base/30' : 'border-transparent',
-            thumbWindow.includes(idx) ? 'brightness-50 hover:brightness-75' : ''
-          ]"
-          :style="{ width: '64px', height: '48px' }"
-          @click="goTo(idx)"
-        >
-          <img
-            v-if="thumbCache.get(file.path)"
-            :src="thumbCache.get(file.path)!"
-            :alt="file.name"
-            class="w-full h-full object-cover"
-            draggable="false"
-          />
-          <span v-else class="text-[10px] text-fg-faint">{{ idx + 1 }}</span>
-        </div>
-      </template>
-    </div>
-
-    <!-- footer bar -->
-    <div class="flex items-center justify-between px-4 py-1.5 bg-black/40 text-xs text-fg-faint shrink-0">
-      <div class="flex items-center gap-2">
-        <button
-          class="p-1 rounded transition-colors"
-          :class="showThumbnails ? 'text-accent-base' : 'text-fg-muted hover:text-fg-base'"
-          title="Toggle thumbnails"
-          @click="showThumbnails = !showThumbnails"
-        >
-          <PanelBottom :size="14" class="pointer-events-none" />
-        </button>
-        <div class="w-px h-3 bg-white/10" />
-        <span>{{ counter }}</span>
-        <span v-if="currentFile" class="text-fg-muted truncate max-w-[200px]">{{ currentFile.name }}</span>
+      <div
+        v-if="files.length > 1"
+        ref="stripRef"
+        class="flex items-center gap-1 px-3 py-2 bg-bg-overlay/60 border-t border-border-default/20 overflow-x-auto transition-all duration-200"
+        :class="showThumbnails ? 'h-20' : 'h-0 py-0 overflow-hidden'"
+        @click.stop
+      >
+        <template v-for="(file, idx) in files" :key="file.path">
+          <div
+            :data-thumb-idx="idx"
+            class="shrink-0 rounded-md overflow-hidden border-2 transition-all cursor-pointer flex items-center justify-center"
+            :class="[
+              idx === currentIndex ? 'border-accent-base ring-1 ring-accent-base/30' : 'border-transparent',
+              thumbCache.get(file.path) && idx !== currentIndex ? 'brightness-50 hover:brightness-75' : ''
+            ]"
+            :style="{ width: '64px', height: '48px' }"
+            @click="goTo(idx)"
+          >
+            <img
+              v-if="thumbCache.get(file.path)"
+              :src="thumbCache.get(file.path)!"
+              :alt="file.name"
+              class="w-full h-full object-cover"
+              draggable="false"
+              loading="lazy"
+            />
+            <span v-else class="text-[10px] text-fg-faint">{{ idx + 1 }}</span>
+          </div>
+        </template>
       </div>
-      <div class="flex items-center gap-2 text-fg-muted">
-        <span v-if="scale !== 1">{{ Math.round(scale * 100) }}%</span>
-        <span v-if="rotation !== 0">{{ rotation }}°</span>
+
+      <div class="flex items-center justify-between px-4 py-1.5 bg-bg-elevated/60 text-xs text-fg-faint">
+        <div class="flex items-center gap-2">
+          <button class="p-1 rounded transition-colors" :class="showThumbnails ? 'text-accent-base' : 'text-fg-muted hover:text-fg-base'" title="Toggle thumbnails" @click="showThumbnails = !showThumbnails">
+            <PanelBottom :size="14" class="pointer-events-none" />
+          </button>
+          <div class="w-px h-3 bg-border-default/30" />
+          <span>{{ counter }}</span>
+          <span v-if="currentFile" class="text-fg-muted truncate max-w-[200px]">{{ currentFile.name }}</span>
+        </div>
+        <div class="flex items-center gap-2 text-fg-muted">
+          <span v-if="scale !== 1">{{ Math.round(scale * 100) }}%</span>
+          <span v-if="rotation !== 0">{{ rotation }}°</span>
+        </div>
       </div>
     </div>
 
