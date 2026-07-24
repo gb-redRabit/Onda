@@ -12,6 +12,7 @@ import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useUIStore, ContextMenuItem } from '@renderer/stores/ui';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
+import { logger } from '@renderer/utils/logger';
 import { SUPPORTED_IMAGE_FORMATS } from '@renderer/utils/constants';
 import ExplorerNavPane from '@renderer/components/explorer/ExplorerNavPane.vue';
 import ExplorerToolbar from '@renderer/components/explorer/ExplorerToolbar.vue';
@@ -116,7 +117,7 @@ function flushIconQueue() {
         extraSmallIcons.value = map;
         triggerRef(extraSmallIcons);
       }
-    }).catch(() => {});
+    }).catch((err) => logger.error('Explorer', 'getFileIcon', err));
   });
 }
 
@@ -240,7 +241,7 @@ function copySelectedPaths() {
     .filter((f) => explorer.selectedFiles.has(f.path))
     .map((f) => f.path);
   if (paths.length > 0) {
-    navigator.clipboard.writeText(paths.join('\n')).catch(() => {});
+    navigator.clipboard.writeText(paths.join('\n')).catch((err) => logger.error('Explorer', 'clipboardWrite', err));
   }
 }
 

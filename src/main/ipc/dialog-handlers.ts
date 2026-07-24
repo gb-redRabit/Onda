@@ -1,0 +1,95 @@
+import { ipcMain, dialog, BrowserWindow } from 'electron';
+import { readdir } from 'fs/promises';
+import { join, extname } from 'path';
+import { VIDEO_EXTS, AUDIO_EXTS } from '../../shared/constants';
+
+export function registerDialogHandlers(): void {
+  ipcMain.handle(
+    'dialog:openImage',
+    async (_event): Promise<{ canceled: boolean; filePaths: string[] }> => {
+      const win = BrowserWindow.getFocusedWindow();
+      if (!win) return { canceled: true, filePaths: [] };
+      const result = await dialog.showOpenDialog(win, {
+        properties: ['openFile'],
+        filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'bmp'] }]
+      });
+      return { canceled: result.canceled, filePaths: result.filePaths.slice() };
+    }
+  );
+
+  ipcMain.handle('dialog:openFile', async (_event, options?: Electron.OpenDialogOptions) => {
+    const win = BrowserWindow.getFocusedWindow();
+    if (!win) return { canceled: true, filePaths: [] };
+    const result = await dialog.showOpenDialog(win, {
+      properties: ['openFile', 'multiSelections'],
+      filters: [
+        {
+          name: 'Media Files',
+          extensions: [
+            'mp3',
+            'flac',
+            'wav',
+            'ogg',
+            'aac',
+            'm4a',
+            'mp4',
+            'mkv',
+            'avi',
+            'webm',
+            'mov'
+          ]
+        },
+        { name: 'All Files', extensions: ['*'] }
+      ],
+      ...options
+    });
+    return result;
+  });
+
+  ipcMain.handle('dialog:openFolder', async (_event): Promise<string[]> => {
+    const win = BrowserWindow.getFocusedWindow();
+    if (!win) return [];
+    const result = await dialog.showOpenDialog(win, {
+      properties: ['openDirectory']
+    });
+    return result.canceled ? [] : result.filePaths;
+  });
+
+  ipcMain.handle('dialog:openFolderFiles', async (_event) => {
+    const win = BrowserWindow.getFocusedWindow();
+    if (!win) return { canceled: true, filePaths: [] };
+    const result = await dialog.showOpenDialog(win, {
+      properties: ['openDirectory']
+    });
+    if (result.canceled || !result.filePaths.length) {
+      return { canceled: true, filePaths: [] as string[] };
+    }
+    const folder = result.filePaths[0];
+    if (!folder) return { canceled: false, filePaths: [] };
+    const mediaExts = [...VIDEO_EXTS, ...AUDIO_EXTS];
+    let entries: string[] = [];
+    try {
+      const dirEntries = await readdir(folder);
+      entries = dirEntries
+        .filter((f) => mediaExts.includes(extname(f).toLowerCase()))
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+        .map((f) => join(folder, f));
+    } catch {
+      entries = [];
+    }
+    return { canceled: false, filePaths: entries };
+  });
+
+  ipcMain.handle('dialog:saveFile', async (_event, options?: Electron.SaveDialogOptions) => {
+    const win = BrowserWindow.getFocusedWindow();
+    if (!win) return { canceled: true, filePath: '' };
+    const result = await dialog.showSaveDialog(win, {
+      filters: [
+        { name: 'Media Files', extensions: ['mp3', 'flac', 'mp4', 'mkv'] },
+        { name: 'All Files', extensions: ['*'] }
+      ],
+      ...options
+    });
+    return result;
+  });
+}

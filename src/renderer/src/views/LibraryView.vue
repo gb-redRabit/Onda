@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { logger } from '@renderer/utils/logger';
 import { useVirtualizer } from '@tanstack/vue-virtual';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
@@ -281,7 +282,7 @@ function onTagSaved(tags: {
   try {
     const files = JSON.parse(JSON.stringify(library.tracks));
     const folderTypes = JSON.parse(JSON.stringify(library.folderTypes));
-    window.api?.invoke('library:saveScanned', { files, folderTypes }).catch(() => {});
+    window.api?.invoke('library:saveScanned', { files, folderTypes }).catch((err) => logger.error('Library', 'saveScanned', err));
   } catch (_e) {
     /* serialization failed silently */
   }
@@ -315,7 +316,7 @@ function onMBApply(data: {
   try {
     const files = JSON.parse(JSON.stringify(library.tracks));
     const folderTypes = JSON.parse(JSON.stringify(library.folderTypes));
-    window.api?.invoke('library:saveScanned', { files, folderTypes }).catch(() => {});
+    window.api?.invoke('library:saveScanned', { files, folderTypes }).catch((err) => logger.error('Library', 'saveScanned', err));
   } catch (_e) {
     /* serialization failed silently */
   }

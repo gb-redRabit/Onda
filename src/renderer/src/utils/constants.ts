@@ -21,7 +21,6 @@ export const SUPPORTED_VIDEO_FORMATS = [
   '.webm',
   '.mov',
   '.wmv',
-  '.flv',
   '.m4v',
   '.ts',
   '.ogv'

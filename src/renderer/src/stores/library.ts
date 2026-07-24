@@ -1,11 +1,9 @@
 import { defineStore } from 'pinia';
 import { ref, computed, triggerRef } from 'vue';
 import type { MediaFile, Playlist } from '@renderer/types/media';
+import { errMsg } from '@shared/helpers';
 import { useUIStore } from './ui';
 
-function errMsg(e: unknown): string {
-  return e && typeof e === 'object' && 'message' in e ? String((e as Error).message) : String(e);
-}
 export const useLibraryStore = defineStore('library', () => {
   const tracks = ref<MediaFile[]>([]);
   const playlists = ref<Playlist[]>([]);

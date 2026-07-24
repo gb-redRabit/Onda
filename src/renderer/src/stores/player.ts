@@ -4,6 +4,7 @@ import type { MediaFile } from '@renderer/types/media';
 import type { SubtitleTrack, MkvFont } from '@renderer/types/subtitles';
 import { VIDEO_EXTS } from '@shared/constants';
 import { audioEngine } from '@renderer/modules/audioEngine';
+import { logger } from '@renderer/utils/logger';
 
 export const usePlayerStore = defineStore('player', () => {
   const currentTrack = ref<MediaFile | null>(null);
@@ -78,7 +79,7 @@ export const usePlayerStore = defineStore('player', () => {
     }
   }
 
-  loadFavorites().catch(() => {});
+  loadFavorites().catch((err) => logger.error('Player', 'loadFavorites', err));
   const progress = computed(() => (duration.value > 0 ? currentTime.value / duration.value : 0));
   const queueLength = computed(() => queue.value.length + pendingQueue.value.length);
   const displayQueue = computed(() => [...pendingQueue.value, ...queue.value]);

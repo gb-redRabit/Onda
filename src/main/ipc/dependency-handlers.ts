@@ -1,0 +1,198 @@
+import { ipcMain, app } from 'electron';
+import { stat, mkdir } from 'fs/promises';
+import { join } from 'path';
+import { exec as execCb } from 'child_process';
+import { promisify } from 'util';
+import https from 'https';
+import http from 'http';
+import { createWriteStream } from 'fs';
+import { pipeline } from 'stream/promises';
+import { logger } from '../utils/logger';
+
+const execAsync = promisify(execCb);
+
+function downloadFile(url: string, dest: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const client = url.startsWith('https') ? https : http;
+    client
+      .get(url, { headers: { 'User-Agent': 'Onda/1.0' } }, (res) => {
+        if (
+          res.statusCode &&
+          res.statusCode >= 300 &&
+          res.statusCode < 400 &&
+          res.headers.location
+        ) {
+          downloadFile(res.headers.location, dest).then(resolve).catch(reject);
+          return;
+        }
+        if (res.statusCode !== 200) {
+          reject(new Error(`HTTP ${res.statusCode}`));
+          return;
+        }
+        const file = createWriteStream(dest);
+        pipeline(res, file).then(resolve).catch(reject);
+      })
+      .on('error', reject);
+  });
+}
+
+async function checkVersion(
+  cmd: string,
+  regex: RegExp
+): Promise<{ installed: boolean; version: string | null }> {
+  try {
+    const { stdout } = await execAsync(cmd, {
+      encoding: 'utf-8',
+      timeout: 10000,
+      windowsHide: true
+    });
+    const match = stdout.match(regex);
+    return { installed: true, version: match?.[1] ?? 'unknown' };
+  } catch {
+    return { installed: false, version: null };
+  }
+}
+
+export async function getMkvExtractPath(): Promise<string> {
+  const candidates = [
+    'mkvextract',
+    'C:\\Program Files\\MKVToolNix\\mkvextract.exe',
+    'C:\\Program Files (x86)\\MKVToolNix\\mkvextract.exe'
+  ];
+  for (const c of candidates) {
+    try {
+      await execAsync(`"${c}" --version`, {
+        timeout: 5000,
+        windowsHide: true
+      });
+      return c;
+    } catch {
+      /* try next */
+    }
+  }
+  return 'mkvextract';
+}
+
+export function registerDependencyHandlers(): void {
+  ipcMain.handle('dep:checkFfmpeg', async () => {
+    return checkVersion('ffmpeg -version', /ffmpeg version (\S+)/);
+  });
+
+  ipcMain.handle('dep:checkYtdlp', async () => {
+    try {
+      const localBin = join(app.getPath('userData'), 'bin', 'yt-dlp.exe');
+      try {
+        await stat(localBin);
+        const { stdout } = await execAsync(`"${localBin}" --version`, {
+          encoding: 'utf-8',
+          timeout: 10000,
+          windowsHide: true
+        });
+        return { installed: true, version: stdout.trim(), path: localBin };
+      } catch {
+        // not in local bin
+      }
+      const { stdout } = await execAsync('yt-dlp --version', {
+        encoding: 'utf-8',
+        timeout: 10000,
+        windowsHide: true
+      });
+      return { installed: true, version: stdout.trim(), path: 'yt-dlp' };
+    } catch {
+      return { installed: false, version: null, path: null };
+    }
+  });
+
+  ipcMain.handle('dep:checkFfprobe', async () => {
+    return checkVersion('ffprobe -version', /ffprobe version (\S+)/);
+  });
+
+  ipcMain.handle('dep:installFfmpeg', async () => {
+    try {
+      const { stdout, stderr } = await execAsync('choco install ffmpeg -y --no-progress', {
+        timeout: 300000,
+        windowsHide: true
+      });
+      return { success: true, output: stdout + stderr };
+    } catch (e: unknown) {
+      const err = e as { stderr?: string; stdout?: string; message?: string };
+      const msg = err.stderr || err.stdout || err.message || 'Nieznany błąd';
+      if (msg.includes('requires elevated permissions') || msg.includes('elevation required')) {
+        return {
+          success: false,
+          error:
+            'Wymagane uprawnienia administratora. Uruchom choco install ffmpeg -y w terminalu jako admin.'
+        };
+      }
+      return { success: false, error: msg };
+    }
+  });
+
+  ipcMain.handle('dep:installYtdlp', async () => {
+    try {
+      const binDir = join(app.getPath('userData'), 'bin');
+      await mkdir(binDir, { recursive: true });
+      const dest = join(binDir, 'yt-dlp.exe');
+      await downloadFile(
+        'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe',
+        dest
+      );
+      return { success: true };
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      return { success: false, error: err.message || 'Nie udało się pobrać yt-dlp' };
+    }
+  });
+
+  ipcMain.handle('dep:checkMkvextract', async () => {
+    try {
+      const bin = await getMkvExtractPath();
+      const { stdout } = await execAsync(`"${bin}" --version`, {
+        encoding: 'utf-8',
+        timeout: 10000,
+        windowsHide: true
+      });
+      const match = stdout.match(/mkvextract v([\d.]+)/);
+      return { installed: true, version: match ? match[1] : 'unknown' };
+    } catch {
+      return { installed: false, version: null };
+    }
+  });
+
+  ipcMain.handle('dep:installMkvextract', async () => {
+    try {
+      const { stdout, stderr } = await execAsync('choco install mkvtoolnix -y --no-progress', {
+        timeout: 300000,
+        windowsHide: true
+      });
+      return { success: true, output: stdout + stderr };
+    } catch (e: unknown) {
+      const err = e as { stderr?: string; stdout?: string; message?: string };
+      const msg = err.stderr || err.stdout || err.message || 'Nieznany błąd';
+      if (msg.includes('requires elevated permissions') || msg.includes('elevation required')) {
+        return {
+          success: false,
+          error:
+            'Wymagane uprawnienia administratora. Uruchom choco install mkvtoolnix -y w terminalu jako admin.'
+        };
+      }
+      return { success: false, error: msg };
+    }
+  });
+
+  ipcMain.handle('update:check', async () => {
+    logger.info('update', 'check requested — using electron-updater (not configured)');
+    return { available: false, version: app.getVersion(), notes: '' };
+  });
+
+  ipcMain.handle('update:download', async () => {
+    logger.info('update', 'download requested — not available');
+    return { success: false, error: 'Auto-update not configured' };
+  });
+
+  ipcMain.handle('update:install', async () => {
+    logger.info('update', 'install requested — relaunching');
+    app.relaunch();
+    app.exit(0);
+  });
+}

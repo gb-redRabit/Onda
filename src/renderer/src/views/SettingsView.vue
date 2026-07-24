@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, defineAsyncComponent } from 'vue';
+import { logger } from '@renderer/utils/logger';
 import {
   Palette,
   Play,
@@ -75,7 +76,7 @@ const tabs = [
 
 watch(tab, (_newTab, oldTab) => {
   if (oldTab === 'pip') {
-    window.api?.pipPreviewStop().catch(() => {});
+    window.api?.pipPreviewStop().catch((err) => logger.error('Settings', 'pipPreviewStop', err));
   }
 });
 </script>

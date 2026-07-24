@@ -29,7 +29,7 @@ function loadThumbnail(file: FileItem) {
   thumbTasks.push(() => {
     window.api.invoke('media:getThumbnail', file.path, 320).then((dataUrl) => {
       if (dataUrl) props.thumbCache.set(file.path, dataUrl as string);
-    }).catch(() => {}).finally(() => { thumbTaskDone(); });
+    }).catch(() => { /* thumb fail, ignore */ }).finally(() => { thumbTaskDone(); });
   });
   processThumbQueue();
 }
@@ -50,8 +50,31 @@ function setupThumbObserver() {
   els.forEach(el => thumbObserver!.observe(el));
 }
 
-watch(() => props.showThumbs, (val) => { if (val) nextTick(setupThumbObserver); else thumbObserver?.disconnect(); });
+function scrollToCurrent() {
+  if (!stripRef.value) return;
+  const el = stripRef.value.querySelector(`[data-thumb-idx="${props.currentIndex}"]`) as HTMLElement | null;
+  if (!el) return;
+  const strip = stripRef.value;
+  const targetLeft = el.offsetLeft - strip.offsetWidth / 2 + el.offsetWidth / 2;
+  strip.scrollTo({ left: targetLeft, behavior: 'smooth' });
+}
+
+function preloadNearby() {
+  const half = 4;
+  const start = Math.max(0, props.currentIndex - half);
+  const end = Math.min(props.files.length - 1, props.currentIndex + half);
+  for (let i = start; i <= end; i++) {
+    const f = props.files[i];
+    if (f && !props.thumbCache.has(f.path)) loadThumbnail(f);
+  }
+}
+
+watch(() => props.showThumbs, (val) => { if (val) nextTick(() => { setupThumbObserver(); scrollToCurrent(); }); else thumbObserver?.disconnect(); });
 watch(() => props.files.length, () => { nextTick(setupThumbObserver); });
+watch(() => props.currentIndex, () => {
+  preloadNearby();
+  if (props.showThumbs) nextTick(scrollToCurrent);
+});
 
 onMounted(() => { nextTick(setupThumbObserver); });
 onBeforeUnmount(() => { thumbObserver?.disconnect(); });

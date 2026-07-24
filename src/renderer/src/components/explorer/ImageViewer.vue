@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick, reactive } from 'vue';
+import { useTimeoutFn, useIntervalFn, useRafFn, useDebounceFn } from '@vueuse/core';
 import {
   X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw,
   Maximize2, Play, Pause, Settings2, Fullscreen
@@ -7,6 +8,7 @@ import {
 import type { FileItem } from '@renderer/types/explorer';
 import ImageViewerSettings from './ImageViewerSettings.vue';
 import ImageViewerThumbnails from './ImageViewerThumbnails.vue';
+import { logger } from '@renderer/utils/logger';
 
 const props = defineProps<{
   files: FileItem[];
@@ -41,23 +43,53 @@ const kenBurns = ref(false);
 const shuffleSlideshow = ref(false);
 const usingHighRes = ref(false);
 const showBottom = ref(true);
-let slideshowTimer: ReturnType<typeof setTimeout> | null = null;
-let progressTimer: ReturnType<typeof setInterval> | null = null;
-let transitionTimer: ReturnType<typeof setTimeout> | null = null;
-let preloadTimer: ReturnType<typeof setTimeout> | null = null;
-let wheelTimeout: ReturnType<typeof setTimeout> | null = null;
-let kenRaf: number | null = null;
-let shuffleOrder: number[] = [];
-let highResLoadTimer: ReturnType<typeof setTimeout> | null = null;
-let idleTimer: ReturnType<typeof setTimeout> | null = null;
 const autoHideUI = ref(true);
 const uiVisible = ref(true);
+let shuffleOrder: number[] = [];
+
+// --- VueUse timer composables (auto-cleanup on unmount) ---
+
+const progressStep = computed(() => 100 / (slideshowInterval.value / 16));
+
+const { start: startTransition, stop: stopTransition } = useTimeoutFn(endTransition, transitionDuration);
+
+const { start: startIdle, stop: stopIdle } = useTimeoutFn(() => { uiVisible.value = false; }, 3000);
+
+const { start: startHighRes, stop: stopHighRes } = useTimeoutFn(() => {
+  const file = currentFile.value;
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    displaySrc.value = toFileUrl(file);
+    usingHighRes.value = true;
+  };
+  img.src = toFileUrl(file);
+}, 200);
+
+const { pause: pauseProgress, resume: resumeProgress } = useIntervalFn(() => {
+  slideshowProgress.value = Math.min(slideshowProgress.value + progressStep.value, 100);
+}, 16, { immediate: false });
+
+const { pause: pauseKen, resume: resumeKen } = useRafFn(() => {
+  if (!kenBurns.value || !slideshowActive.value) { pauseKen(); return; }
+  const elapsed = performance.now() % slideshowInterval.value;
+  const t = elapsed / slideshowInterval.value;
+  kenStyle.scale = 1 + t * 0.15;
+  kenStyle.translateX = t * 2;
+  kenStyle.translateY = t * 1;
+}, { immediate: false });
+
+const debouncedZoom = useDebounceFn((delta: number) => {
+  if (delta < 0) zoomIn(); else zoomOut();
+}, 50);
+
+// ---
 
 function resetIdleTimer() {
   if (!slideshowActive.value || !autoHideUI.value) { uiVisible.value = true; return; }
   uiVisible.value = true;
-  if (idleTimer !== null) clearTimeout(idleTimer);
-  idleTimer = setTimeout(() => { uiVisible.value = false; }, 3000);
+  stopIdle();
+  startIdle();
 }
 
 function onMouseMove() { resetIdleTimer(); }
@@ -125,18 +157,11 @@ function computeOldExit() {
 function fitToScreen() { scale.value = 1; rotation.value = 0; kenStyle.scale = 1; kenStyle.translateX = 0; kenStyle.translateY = 0; scheduleHighRes(); }
 
 function scheduleHighRes() {
-  if (highResLoadTimer !== null) { clearTimeout(highResLoadTimer); }
+  stopHighRes();
   const file = currentFile.value;
   if (!file) return;
   if (scale.value > 1.5) {
-    highResLoadTimer = setTimeout(() => {
-      const img = new Image();
-      img.onload = () => {
-        displaySrc.value = toFileUrl(file);
-        usingHighRes.value = true;
-      };
-      img.src = toFileUrl(file);
-    }, 200);
+    startHighRes();
   } else if (usingHighRes.value) {
     usingHighRes.value = false;
     loadDisplayImage(file, 1920).then(url => { displaySrc.value = url; });
@@ -148,7 +173,7 @@ function onImageLoaded() {
   nextTick(() => {
     Object.assign(newStyle, { opacity: 1, transform: 'translateX(0) scale3d(1,1,1)', filter: 'blur(0px)' });
     Object.assign(oldStyle, computeOldExit());
-    transitionTimer = setTimeout(endTransition, transitionDuration.value);
+    startTransition();
   });
 }
 
@@ -187,7 +212,6 @@ function navigateTo(newIdx: number, dir: 'prev' | 'next') {
 }
 
 function preloadNext() {
-  if (preloadTimer !== null) { clearTimeout(preloadTimer); preloadTimer = null; }
   const nextIdx = currentIndex.value + 1;
   if (nextIdx >= props.files.length) return;
   const nextFile = props.files[nextIdx];
@@ -195,8 +219,6 @@ function preloadNext() {
   const img = new Image();
   img.src = toFileUrl(nextFile);
 }
-
-
 
 function prev() {
   if (!hasPrev.value) return;
@@ -248,61 +270,46 @@ function startSlideshow() {
     }
   }
   runProgress();
-  slideshowTimer = setTimeout(advanceWhenReady, slideshowInterval.value);
+  scheduleAdvance();
 }
 
-function advanceWhenReady() {
+const { start: scheduleAdvance, stop: cancelAdvance } = useTimeoutFn(() => {
   if (!slideshowActive.value) return;
   if (shuffleSlideshow.value && shuffleOrder.length > 0) {
     const nextIdx = shuffleOrder.shift()!;
     navigateTo(nextIdx, 'next');
     runProgress();
-    slideshowTimer = setTimeout(advanceWhenReady, slideshowInterval.value);
+    scheduleAdvance();
   } else if (hasNext.value) {
     next(); runProgress();
-    slideshowTimer = setTimeout(advanceWhenReady, slideshowInterval.value);
+    scheduleAdvance();
   } else if (loop.value) {
     const file = props.files[0];
     if (file) { currentIndex.value = 0; usingHighRes.value = false; loadDisplayImage(file, 1920).then(url => { displaySrc.value = url; }); }
     runProgress();
-    slideshowTimer = setTimeout(advanceWhenReady, slideshowInterval.value);
+    scheduleAdvance();
   } else {
     stopSlideshow();
   }
-}
-
-function runKenBurns() {
-  if (!kenBurns.value || !slideshowActive.value) {
-    if (kenRaf !== null) { cancelAnimationFrame(kenRaf); kenRaf = null; }
-    return;
-  }
-  const elapsed = performance.now() % slideshowInterval.value;
-  const t = elapsed / slideshowInterval.value;
-  kenStyle.scale = 1 + t * 0.15;
-  kenStyle.translateX = t * 2;
-  kenStyle.translateY = t * 1;
-  kenRaf = requestAnimationFrame(runKenBurns);
-}
+}, slideshowInterval);
 
 function runProgress() {
-  if (progressTimer) clearInterval(progressTimer);
+  pauseProgress();
   slideshowProgress.value = 0;
-  const step = 100 / (slideshowInterval.value / 16);
-  progressTimer = setInterval(() => {
-    slideshowProgress.value = Math.min(slideshowProgress.value + step, 100);
-  }, 16);
-  if (kenBurns.value) runKenBurns();
+  resumeProgress();
+  if (kenBurns.value) resumeKen();
 }
 
 function stopSlideshow() {
-  slideshowActive.value = false; slideshowProgress.value = 0;
+  slideshowActive.value = false;
+  slideshowProgress.value = 0;
   showBottom.value = true;
   uiVisible.value = true;
-  if (idleTimer !== null) { clearTimeout(idleTimer); idleTimer = null; }
+  stopIdle();
   kenStyle.scale = 1; kenStyle.translateX = 0; kenStyle.translateY = 0;
-  if (kenRaf !== null) { cancelAnimationFrame(kenRaf); kenRaf = null; }
-  if (slideshowTimer !== null) { clearTimeout(slideshowTimer); slideshowTimer = null; }
-  if (progressTimer !== null) { clearInterval(progressTimer); progressTimer = null; }
+  pauseKen();
+  cancelAdvance();
+  pauseProgress();
 }
 
 function changeInterval(ms: number) {
@@ -319,13 +326,11 @@ function handleClose() {
 function toggleFullscreen() {
   window.api?.invoke('window:toggleFullscreen').then((fs) => {
     fullscreen.value = !!fs;
-  }).catch(() => {});
+  }).catch((err) => logger.error('ImageViewer', 'toggleFullscreen', err));
 }
 
 function onWheel(e: WheelEvent) {
-  if (wheelTimeout !== null) return;
-  wheelTimeout = setTimeout(() => { wheelTimeout = null; }, 50);
-  if (e.deltaY < 0) zoomIn(); else zoomOut();
+  debouncedZoom(e.deltaY);
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -338,7 +343,7 @@ function onKeydown(e: KeyboardEvent) {
   else if (e.key === '-') { zoomOut(); }
   else if (e.key === 'r') { rotate(); }
   else if (e.key === 'f') { toggleFullscreen(); }
-  else if (e.key === 'h') { if (slideshowActive.value) { uiVisible.value = !uiVisible.value; if (idleTimer !== null) { clearTimeout(idleTimer); idleTimer = null; } } }
+  else if (e.key === 'h') { if (slideshowActive.value) { uiVisible.value = !uiVisible.value; stopIdle(); } }
   else if (e.key === ' ') { e.preventDefault(); toggleSlideshow(); }
 }
 
@@ -358,7 +363,7 @@ onMounted(() => {
   window.addEventListener('mousemove', onMouseMove);
   window.api?.invoke('window:isFullscreen').then((fs) => {
     fullscreen.value = !!fs;
-  }).catch(() => {});
+  }).catch((err) => logger.error('ImageViewer', 'isFullscreen', err));
   const cleanup = window.api?.on('window:fullscreenChanged', onFullscreenChange);
   if (cleanup) fsCleanup = cleanup;
   const file = currentFile.value;
@@ -368,14 +373,9 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown);
   window.removeEventListener('mousemove', onMouseMove);
-  if (idleTimer !== null) { clearTimeout(idleTimer); idleTimer = null; }
   if (fsCleanup) { fsCleanup(); fsCleanup = null; }
   stopSlideshow();
-  if (transitionTimer !== null) clearTimeout(transitionTimer);
-  if (preloadTimer !== null) clearTimeout(preloadTimer);
-  if (wheelTimeout !== null) clearTimeout(wheelTimeout);
-  if (kenRaf !== null) cancelAnimationFrame(kenRaf);
-  if (highResLoadTimer !== null) clearTimeout(highResLoadTimer);
+  stopTransition();
   if (fullscreen.value) {
     window.api?.invoke('window:exitFullscreen');
   }

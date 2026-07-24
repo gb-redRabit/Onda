@@ -781,3 +781,312 @@ Renderer: <img src="onda:///C:/photo.jpg?w=1920">
 | CSS vars | `onda:` added to CSP img-src and default-src |
 | Główna zmiana | `file://` → `onda://` custom protocol. Obrazki domyślnie 1920px. Sharp zamiast nativeImage. Windows thumbcache first. |
 
+---
+
+## 16. Sprint 8 — Code Quality & Security Fixes (2026-07-23)
+
+### 16.1 Co zrobiono
+
+| # | Problem | Rozwiązanie | Pliki |
+|---|---------|-------------|-------|
+| 1 | **Brak CSP w pip.html** — dodany CSP zablokował napisy (JASSUB był-worker + blob: nie miał uprawnień) | **COFNIĘTE** — CSP usunięty z pip.html. PiP wymaga `file:`, `blob:`, `'unsafe-eval'` dla JASSUB | `pip.html` |
+| 2 | **`app.commandLine.appendSwitch('no-electrosecurity-warnings')`** — wyłącza ostrzeżenia | Usunięty flag | `main/index.ts:10` |
+| 3 | **`as any` w usePiP.ts** — 5 castów bez typów | Typy dopasowane między preload/OndaAPI a composable, casty usunięte | `usePiP.ts`, `preload/index.ts` |
+| 4 | **Duplikacja `errMsg()`** — ta sama funkcja w library.ts i handlers.ts | Przeniesiona do `shared/helpers.ts`, oba pliki importują | `shared/helpers.ts` (nowy), `library.ts`, `handlers.ts` |
+| 5 | **FLV w formatach** — nieużywany format z 2000s | Usunięty z `shared/constants.ts` i `constants.ts` | `shared/constants.ts` |
+| 6 | **IPC wrapper** — typowany `ipcInvoke<C>()` z auto-logowaniem błędów | Nowa funkcja w `utils/ipc.ts`, gotowa do stopniowego wdrożenia | `utils/ipc.ts` (nowy) |
+| 7 | **Type declarations** — `window.api` bez pełnego interfejsu | Pełny `OndaAPI` interface w `env.d.ts` z `declare global { Window { api: OndaAPI } }` | `env.d.ts` |
+| 8 | **`catch(() => {})` → `logger.error()`** — 11 IPC catchów bez logowania | Zastąpione `logger.error(tag, msg, err)` | `SettingsView.vue`, `LibraryView.vue` (×2), `ExplorerView.vue` (×2), `ImageViewer.vue` (×2), `useThumbnail.ts` (×2), `player.ts` |
+
+### 16.2 Statystyki (po sprincie 8)
+
+| Metryka | Wartość |
+| ------- | ------- |
+| typecheck | 0 błędów |
+| build | OK |
+| Nowe pliki | 2 (`utils/ipc.ts`, `shared/helpers.ts`) |
+| `as any` w produkcji | 0 (z 5) |
+| `catch(() => {})` (IPC) | 0 (z 11) |
+| `catch(() => {})` (play) | 11 (autoplay policy, poprawne) |
+
+---
+
+## 17. Deferred Refactors — Szczegółowy Plan
+
+Trzy główne refaktory odłożone ze względu na ryzyko regresji. Każdy wymaga osobnej sesji z testowaniem.
+
+### 17.1 Podział `handlers.ts` (1732 linie)
+
+**Problem:**
+Jeden plik `src/main/ipc/handlers.ts` zawiera ~70 handlerów IPC w jednej funkcji `registerIPC()`. To monolit:
+- 1732 linie, 80+ importów
+- Mieszane domeny: fs, library, settings, pip, media, youtube, subtitles, dependencies
+- `SharpService`, `music-metadata`, `node-id3`, `child_process`, `crypto` — wszystko w jednym pliku
+- Trudno testować, łatwo o merge conflicty, long load time w IDE
+
+**Plan podziału:**
+
+```
+src/main/ipc/
+├── handlers.ts              ← entry point, re-exportuje wszystkie sub-handlery
+├── fs-handlers.ts           ← fs:readdir, fs:mkdir, fs:rename, fs:delete, fs:stat, shell:*
+├── library-handlers.ts      ← library:scan, library:loadScanned, library:saveFolders, playlist:*
+├── settings-handlers.ts     ← settings:get, settings:set
+├── media-handlers.ts        ← media:getThumbnail, media:getCover, media:getDuration, media:writeTags, media:renameFile, media:writeCover, media:readCover, media:checkAudioCodec, media:transcodeAudio*, media:cleanup*
+├── cover-handlers.ts        ← coverResultCache, persistent cover cache, getCover, findSiblingVideo
+├── subtitle-handlers.ts     ← subtitles:listEmbedded, extractEmbedded, findExternal, readFile, extractAttachments
+├── playback-handlers.ts     ← playback:getPosition, setPosition, clearPosition
+├── dependency-handlers.ts   ← dep:checkFfmpeg, dep:checkYtdlp, dep:checkMkvextract, dep:install*
+├── youtube-handlers.ts      ← yt:search, yt:getInfo, yt:download (placeholdery)
+├── dialog-handlers.ts       ← dialog:openFile, dialog:openFolder, dialog:saveFile, dialog:openImage
+└── musicbrainz.ts           ← już istnieje (104 linie)
+```
+
+**Ryzyka:**
+- `electron-store` singleton — lazy import z cache, trzeba zachować
+- `SharpService` importowany z `../utils/sharp` — względne ścieżki zmienią się przy restrukturyzacji
+- `coverResultCache` i `coverCacheLocks` — zmienne globalne w obrębie pliku, trzeba przenieść do współdzielonego modułu `cover-cache.ts`
+- `_store` — lazy init `electron-store`, też globalny
+- Wszystkie handlery rejestrowane są przez `ipcMain.handle()` w ramach `registerIPC()` — nowy plik musi exportować `register*()` które są wołane z `handlers.ts`
+
+**Przykładowa implementacja:**
+
+```typescript
+// fs-handlers.ts
+import { ipcMain, shell } from 'electron';
+import { readdir, stat, mkdir, rename, unlink } from 'fs/promises';
+
+export function registerFsHandlers(): void {
+  ipcMain.handle('fs:readdir', async (_event, dirPath: string) => { ... });
+  ipcMain.handle('fs:mkdir', async (_event, dirPath: string) => { ... });
+  // ...
+}
+```
+
+```typescript
+// handlers.ts — entry point
+import { registerFsHandlers } from './fs-handlers';
+import { registerLibraryHandlers } from './library-handlers';
+// ...
+
+export function registerIPC(): void {
+  registerFsHandlers();
+  registerLibraryHandlers();
+  // ...
+}
+```
+
+**Czas:** ~2-3h z testowaniem każdego handlera po przeniesieniu.
+
+---
+
+### 17.2 Timer Management w ImageViewer
+
+**Problem:**
+`ImageViewer.vue` ma 9 mutable zmiennych timerowych:
+
+```typescript
+let slideshowTimer: ReturnType<typeof setTimeout> | null = null;
+let progressTimer: ReturnType<typeof setInterval> | null = null;
+let transitionTimer: ReturnType<typeof setTimeout> | null = null;
+let preloadTimer: ReturnType<typeof setTimeout> | null = null;
+let wheelTimeout: ReturnType<typeof setTimeout> | null = null;
+let kenRaf: number | null = null;
+let shuffleOrder: number[] = [];
+let highResLoadTimer: ReturnType<typeof setTimeout> | null = null;
+let idleTimer: ReturnType<typeof setTimeout> | null = null;
+```
+
+Każda wymaga ręcznego `clearTimeout`/`clearInterval`/`cancelAnimationFrame` w wielu miejscach (onUnmounted, stopSlideshow, changeInterval itp.). Łatwo o:
+- Timer leak po zamknięciu ImageViewer
+- Podwójne wywołanie (transition timer + slideshow timer nakładające się)
+- Zapomniany cleanup w nowej ścieżce
+
+**Rozwiązanie — VueUse composables:**
+
+Zamiast ręcznego zarządzania timerami, użyć VueUse composables które same clean-up przy unmount:
+
+| Obecny timer | VueUse zamiennik |
+|---|---|
+| `slideshowTimer` — `setTimeout(advance, interval)` | `useTimeoutFn(advance, interval, { controls: true })` — `start()`/`stop()` z auto-cleanup |
+| `progressTimer` — `setInterval(update, 16)` | `useIntervalFn(update, 16, { controls: true })` |
+| `transitionTimer` — `setTimeout(endTransition, dur)` | `useTimeoutFn(endTransition, dur, { controls: true })` |
+| `kenRaf` — `requestAnimationFrame(runKenBurns)` | `useRafFn(runKenBurns, { controls: true })` — pauza przez `pause()`/`resume()` |
+| `idleTimer` — `setTimeout(hide, 3000)` | `useTimeoutFn(() => { uiVisible = false }, 3000, { controls: true })` — restart przez `{ ...controls, reset() }` |
+
+**Zalety:**
+- Auto-cleanup przy `onUnmounted` (VueUse composables rejestrują się w lifecycle)
+- `controls.promise` dla transition — można `await` bez callbacków
+- `controls.isPending`/`isActive` — stan widoczny w template
+- Mniej kodu, mniej mutable stanu
+
+**Przykład:**
+
+```typescript
+// Obecnie:
+slideshowTimer = setTimeout(advanceWhenReady, slideshowInterval.value);
+// + cleanup w stopSlideshow, onUnmounted, changeInterval
+
+// Po refaktorze:
+const { start, stop, isPending } = useTimeoutFn(advanceWhenReady, slideshowInterval, {
+  controls: true
+});
+// start() / stop() — auto-cleanup przy unmount
+```
+
+**Ryzyka:**
+- `resetIdleTimer()` restartuje `idleTimer` — VueUse nie ma `reset()` na `useTimeoutFn`, trzeba `stop()` + `start()`
+- `kenRaf` pauzowany przy `kenBurns` toggle — `useRafFn` ma `pause()`/`resume()`
+- `wheelTimeout` nie jest timerem slideshow — to prosty debounce, można zastąpić `useDebounceFn`
+- Slideshow jest tightly coupled: `startSlideshow()` woła `runProgress()` → `setInterval` + `setTimeout(advance)`. Przy zamianie na composables trzeba zachować tę samą kolejność
+
+**Czas:** ~2h, wymaga dokładnego testowania slideshow (start/stop/change interval/loop/shuffle/Ken Burns).
+
+---
+
+### 17.3 `webSecurity: true` — Migracja z `file://` na `onda://`
+
+**Problem:**
+`webSecurity: false` w `main/index.ts:48` wyłącza CORS i security w renderer. To poważna luka:
+- Każda załadowana strona/subresource ma dostęp do `file://`
+- Skrypty z zewnętrznych źródeł (YouTube, MusicBrainz) mogą czytać lokalne pliki
+- W połączeniu z brakiem CSP: atak XSS = pełny dostęp do dysku
+
+**Dlaczego obecnie `webSecurity: false`?**
+Renderer ładuje pliki przez `file:///` URL w kilku miejscach:
+1. **ImageViewer** — `toFileUrl()` w `loadDisplayImage()`: `<img src="file:///C:/photo.jpg">`
+2. **Video player** — `useVideoPlayer.ts`: `<video src="file:///C:/video.mp4">`
+3. **Audio player** — `audioEngine.ts`: `<audio src="file:///C:/track.mp3">`
+4. **Cover capture** — `captureVideoFrame()`: `video.src = "file:///..."`
+5. **PiP** — `pip.ts`: `pipV.src = "file:///..."`
+6. **PiP window** — child window z `file://` URL
+
+Bez `webSecurity: false`, Chromium blokuje `file://` requesty z `http://` lub `https://` kontekstu.
+
+**Plan migracji:**
+
+**Krok 1: Downgrade do `webSecurity: false` z uzasadnieniem (⚠️ obecny stan)**
+- Dodać komentarz w `main/index.ts` dlaczego to potrzebne
+- Nie zmieniać na razie
+
+**Krok 2: Migracja wszystkich `file://` na `onda://` (tylko renderer)**
+```diff
+- video.src = `file:///${filePath.replace(/\\/g, '/')}`;
++ video.src = `onda:///?path=${encodeURIComponent(filePath)}`;
+```
+
+Miejsca do zmiany:
+| Plik | Linia | Obecnie | Po zmianie |
+|------|-------|---------|------------|
+| `ImageViewer.vue` | `toFileUrl()` | `file:///${path}` | `onda:///?path=${encodeURIComponent(path)}` |
+| `useVideoPlayer.ts` | `setupVideo()` | `el.src = file:///...` | `el.src = onda:///?path=...` |
+| `audioEngine.ts` | `setupAudio()` | `audioEl.src = file:///...` | `audioEl.src = onda:///?path=...` |
+| `player.ts` | `captureVideoFrame()` | `video.src = file:///...` | `video.src = onda:///?path=...` |
+| `pip.ts` | `loadVideo()` | `pipV.src = file:///...` | `pipV.src = onda:///?path=...` |
+| `pip-manager.ts` | `show()` | child.loadURL(path) | child.loadURL(path) — tu gra HTML, nie file |
+
+**Krok 3: Rozszerzenie `onda://` handlera w main**
+Obecny handler obsługuje tylko obrazy i thumbnail. Trzeba dodać:
+```typescript
+protocol.handle('onda', async (req) => {
+  const url = new URL(req.url);
+  const rawPath = url.searchParams.get('path') || '';
+  // ...
+  // Dla video/audio: zwrócić pełny plik (bez resize)
+  return net.fetch(pathToFileURL(normalized).toString());
+});
+```
+To JEST już zaimplementowane — `net.fetch(pathToFileURL(normalized).toString())` jest fallbackiem. Więc video/audio przez `onda://` powinny działać.
+
+**Krok 4: Włączenie `webSecurity: true`**
+Po migracji wszystkich `file://` na `onda://`:
+```typescript
+webPreferences: {
+  webSecurity: true,  // ← zmiana
+  // ...
+}
+```
+
+**Testowanie (krytyczne):**
+- [ ] ImageViewer — wszystkie obrazy ładują się poprawnie
+- [ ] ImageViewer — Zoom >1.5× ładuje full-res
+- [ ] Video player — wszystkie formaty (.mp4, .mkv, .avi, .webm, .mov)
+- [ ] Video player — AC3/DTS transkoding (audio przez Web Audio też przez `onda://`)
+- [ ] Audio player — mp3, flac, wav, opus, aac
+- [ ] Audio player — crossfade
+- [ ] PiP — film w okienku PiP
+- [ ] Cover capture — `captureVideoFrame` (canvas z video)
+- [ ] Subtitles — napisy nad video
+- [ ] ExplorerView — thumbnail preview w ImageViewer
+
+**Ryzyka:**
+- `onda://` request idzie przez main process (inter-process). Dla wideo 4GB to może być bottleneck
+- `net.fetch` nie wspiera streaming range requests (range requests dla seek w video)
+- Video/audio przez `onda://` może nie wspierać seeking (brak `Accept-Ranges`)
+- Chromium może wymagać 'Content-Type' header dla poprawnego dekodowania wideo
+
+**Rozwiązanie range requests:**
+```typescript
+protocol.handle('onda', async (req) => {
+  const range = req.headers.get('range'); // "bytes=0-1000"
+  if (range) {
+    const filePath = ...;
+    const stat = await fsp.stat(filePath);
+    const total = stat.size;
+    const parts = range.replace(/bytes=/, '').split('-');
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : total - 1;
+    const stream = fs.createReadStream(filePath, { start, end });
+    return new Response(stream as any, {
+      status: 206,
+      headers: {
+        'Content-Type': 'video/mp4', // /application/octet-stream
+        'Content-Range': `bytes ${start}-${end}/${total}`,
+        'Content-Length': String(end - start + 1),
+        'Accept-Ranges': 'bytes'
+      }
+    });
+  }
+  // bez range: zwykły response
+});
+```
+
+**Czas:** Krok 2 (migracja URLi) — ~1h. Krok 4 (testowanie) — ~2h. Range requests — ~1h. Razem: ~4-5h.
+
+**Wniosek:** Na razie pozostawić `webSecurity: false` z komentarzem `// Wymagane dla file:// loading video/audio. Docelowo: webSecurity: true + toda:// dla wszystkiego`. Migracja jest bezpieczna tylko po dodaniu range requests do handlera `onda://`.
+
+---
+
+## 18. Znane Problemy — Notatki
+
+### CSP w pip.html złamał napisy
+
+**Data:** 2026-07-23
+**Problem:** Dodanie `<meta http-equiv="Content-Security-Policy">` do `pip.html` zablokowało JASSUB subtitle renderer. PiP używa:
+- `blob:` dla workerów JASSUB
+- `'unsafe-eval'` dla WASM
+- `file:` dla źródeł wideo
+
+CSP był:
+```html
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self' file:; script-src 'self' blob:;
+               style-src 'self' 'unsafe-inline'; img-src 'self' data:;
+               media-src 'self' file:; connect-src 'self' https:">
+```
+
+**Fix:** CSP usunięty całkowicie z `pip.html`. PiP to izolowany kontekst (child window, brak dostępu do main window API), więc ryzyko jest niższe niż w głównej aplikacji, ale nadal nieidealne.
+
+**Wniosek:** Jeśli kiedykolwiek dodawać CSP do `pip.html`, trzeba dodać:
+- `worker-src 'self' blob:` — dla JASSUB worker
+- `script-src 'self' 'unsafe-eval' blob:` — dla WASM w JASSUB
+- `media-src 'self' file: blob:` — dla wideo + możliwych blob URLi
+
+**Status:** ⚠️ Otwarty — pip.html działa bez CSP
+
+### `no-electrosecurity-warnings` flag usunięty
+
+**Data:** 2026-07-23
+**Status:** ✅ Usunięty z `src/main/index.ts:10`
+**Skutek:** Ostrzeżenia `webSecurity` i `allowRunningInsecureContent` pojawiają się w konsoli renderer podczas dev. Są nieszkodliwe (tylko dev). W production build nie występują.
+

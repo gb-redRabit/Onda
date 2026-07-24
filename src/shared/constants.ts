@@ -5,7 +5,6 @@ export const VIDEO_EXTS = [
   '.webm',
   '.mov',
   '.wmv',
-  '.flv',
   '.m4v',
   '.ts',
   '.ogv'

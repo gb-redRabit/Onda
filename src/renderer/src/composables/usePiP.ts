@@ -48,7 +48,7 @@ export function usePiP(callbacks?: { onClosed?: (time: number) => void; onEnded?
       startTime: options?.startTime || 0,
       subtitle: options?.subtitle !== false ? getLastSubtitleData() : null
     };
-    return window.api?.pipStart(videoSrc, settings as any) ?? Promise.resolve(false);
+    return window.api?.pipStart(videoSrc, settings) ?? Promise.resolve(false);
   }
 
   function stop(): Promise<boolean> {
@@ -56,11 +56,11 @@ export function usePiP(callbacks?: { onClosed?: (time: number) => void; onEnded?
   }
 
   function loadTrack(videoSrc: string, subtitleData: PiPSubtitleData | null): void {
-    window.api?.pipLoadTrack(videoSrc, subtitleData as any);
+    window.api?.pipLoadTrack(videoSrc, subtitleData);
   }
 
   function preload(videoSrc: string, subtitleData: PiPSubtitleData | null): void {
-    window.api?.pipPreload(videoSrc, subtitleData as any);
+    window.api?.pipPreload(videoSrc, subtitleData);
   }
 
   function loadTrackFromCurrent(): void {
@@ -69,11 +69,11 @@ export function usePiP(callbacks?: { onClosed?: (time: number) => void; onEnded?
     const src = videoEl.src || '';
     if (!src) return;
     const subtitleData = getLastSubtitleData();
-    window.api?.pipLoadTrack(src, subtitleData as any);
+    window.api?.pipLoadTrack(src, subtitleData);
   }
 
   function updateSubtitle(subtitleData: PiPSubtitleData | null): void {
-    window.api?.pipUpdateSubtitle(subtitleData as any);
+    window.api?.pipUpdateSubtitle(subtitleData);
   }
 
   onUnmounted(() => {

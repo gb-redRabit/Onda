@@ -1,5 +1,6 @@
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { thumbTasks, cachedThumb, setCachedThumb, cachedIcon, setCachedIcon, processThumbQueue, thumbTaskDone } from '@renderer/utils/thumbLoader';
+import { logger } from '@renderer/utils/logger';
 
 export function useThumbnail(path: string, isDirectory: boolean, isAtDrives: boolean, thumbSize = 320) {
   const systemIcon = ref<string | null>(null);
@@ -48,16 +49,17 @@ export function useThumbnail(path: string, isDirectory: boolean, isAtDrives: boo
           else {
             window.api?.invoke('shell:getFileIcon', path).then((icon) => {
               if (icon) { setCachedIcon(path, icon as string); systemIcon.value = icon as string; }
-            }).catch(() => {});
+            }).catch((err) => logger.error('Thumbnail', 'getFileIcon (fallback)', err));
           }
         }
-      }).catch(() => {
+      }).catch((err) => {
+        logger.error('Thumbnail', 'getThumbnail', err);
         const icon = cachedIcon(path);
         if (icon) { systemIcon.value = icon; }
         else {
           window.api?.invoke('shell:getFileIcon', path).then((icon) => {
             if (icon) { setCachedIcon(path, icon as string); systemIcon.value = icon as string; }
-          }).catch(() => {});
+          }).catch((err) => logger.error('Thumbnail', 'getFileIcon (error fallback)', err));
         }
       }).finally(() => { thumbTaskDone(); });
     });

@@ -7,8 +7,6 @@ import { registerIPC } from './ipc/handlers';
 import { pipManager } from './pip-manager';
 import { SharpService } from './utils/sharp';
 
-app.commandLine.appendSwitch('no-electrosecurity-warnings');
-
 protocol.registerSchemesAsPrivileged([
   {
     scheme: 'onda',
@@ -305,7 +303,6 @@ app.whenReady().then(() => {
       if (preFullscreenBounds) {
         mainWindow.setBounds(preFullscreenBounds);
         preFullscreenBounds = null;
-      } else {
       }
       mainWindow.setResizable(false);
       mainWindow.setResizable(true);

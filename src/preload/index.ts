@@ -29,7 +29,11 @@ const api = {
       width?: number;
       height?: number;
       startTime?: number;
-      subtitle?: unknown;
+      subtitle?: {
+        subContent: string;
+        fonts: Array<{ name: string; data: number[] }>;
+        availableFonts: Record<string, string>;
+      } | null;
     }
   ): Promise<boolean> => ipcRenderer.invoke('pip:start', videoSrc, settings),
   pipStop: (): Promise<boolean> => ipcRenderer.invoke('pip:stop'),
