@@ -31,6 +31,13 @@ const library = useLibraryStore();
 const player = usePlayerStore();
 
 const query = ref('');
+const debouncedQuery = ref('');
+let queryTimer: ReturnType<typeof setTimeout> | null = null;
+watch(query, (q) => {
+  if (queryTimer) clearTimeout(queryTimer);
+  queryTimer = setTimeout(() => { debouncedQuery.value = q; }, 200);
+}, { immediate: true });
+onUnmounted(() => { if (queryTimer) clearTimeout(queryTimer); });
 const tab = ref<'tracks' | 'video' | 'folders' | 'artists' | 'albums' | 'playlists'>('tracks');
 
 const tabs = computed(
@@ -46,7 +53,7 @@ const tabs = computed(
 );
 
 const filteredTracks = computed(() => {
-  const q = query.value.toLowerCase();
+  const q = debouncedQuery.value.toLowerCase();
   return library.audioTracks.filter(
     (t) =>
       !q ||
@@ -58,19 +65,19 @@ const filteredTracks = computed(() => {
 });
 
 const filteredVideo = computed(() => {
-  const q = query.value.toLowerCase();
+  const q = debouncedQuery.value.toLowerCase();
   return library.videoTracks.filter(
     (t) => !q || t.name.toLowerCase().includes(q) || t.metadata?.title?.toLowerCase().includes(q)
   );
 });
 
 const filteredArtists = computed(() => {
-  const q = query.value.toLowerCase();
+  const q = debouncedQuery.value.toLowerCase();
   return library.artists.filter(([name]) => !q || name.toLowerCase().includes(q));
 });
 
 const filteredAlbums = computed(() => {
-  const q = query.value.toLowerCase();
+  const q = debouncedQuery.value.toLowerCase();
   return library.albums.filter(([name]) => !q || name.toLowerCase().includes(q));
 });
 
@@ -260,28 +267,31 @@ function onTagSaved(tags: {
   path?: string;
 }) {
   if (!editingTrack.value) return;
-  editingTrack.value.metadata = {
-    ...(editingTrack.value.metadata || {}),
-    title: tags.title,
-    artist: tags.artist,
-    album: tags.album,
-    year: tags.year,
-    genre: tags.genre,
-    track: tags.track
-  };
-  if (tags.name) {
-    editingTrack.value.name = tags.name + (editingTrack.value.name.match(/\.[^.]+$/)?.[0] || '');
-  }
+  const oldPath = editingTrack.value.path;
+  library.updateTrack(oldPath, (track) => {
+    track.metadata = {
+      ...(track.metadata || {}),
+      title: tags.title,
+      artist: tags.artist,
+      album: tags.album,
+      year: tags.year,
+      genre: tags.genre,
+      track: tags.track
+    };
+    if (tags.name) {
+      track.name = tags.name + (track.name.match(/\.[^.]+$/)?.[0] || '');
+    }
+    if (tags.path) {
+      track.path = tags.path;
+      track.id = tags.path;
+    }
+  });
   if (tags.path) {
-    const oldPath = editingTrack.value.path;
-    editingTrack.value.path = tags.path;
-    editingTrack.value.id = tags.path;
     player.invalidateCoverCache(oldPath);
   }
-  library.refreshDerived();
   try {
-    const files = JSON.parse(JSON.stringify(library.tracks));
-    const folderTypes = JSON.parse(JSON.stringify(library.folderTypes));
+    const files = structuredClone(library.tracks);
+    const folderTypes = structuredClone(library.folderTypes);
     window.api?.invoke('library:saveScanned', { files, folderTypes }).catch((err) => logger.error('Library', 'saveScanned', err));
   } catch (_e) {
     /* serialization failed silently */
@@ -314,8 +324,8 @@ function onMBApply(data: {
   }
   library.refreshDerived();
   try {
-    const files = JSON.parse(JSON.stringify(library.tracks));
-    const folderTypes = JSON.parse(JSON.stringify(library.folderTypes));
+    const files = structuredClone(library.tracks);
+    const folderTypes = structuredClone(library.folderTypes);
     window.api?.invoke('library:saveScanned', { files, folderTypes }).catch((err) => logger.error('Library', 'saveScanned', err));
   } catch (_e) {
     /* serialization failed silently */

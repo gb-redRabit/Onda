@@ -5,6 +5,7 @@ import type { SubtitleTrack, MkvFont } from '@renderer/types/subtitles';
 import { VIDEO_EXTS } from '@shared/constants';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { logger } from '@renderer/utils/logger';
+import { useLibraryStore } from '@renderer/stores/library';
 
 export const usePlayerStore = defineStore('player', () => {
   const currentTrack = ref<MediaFile | null>(null);
@@ -190,7 +191,7 @@ export const usePlayerStore = defineStore('player', () => {
     while (coverQueue.length > 0) {
       const batch = coverQueue.splice(0, 5);
       await Promise.all(batch.map((p) => doLoadCover(p)));
-      if (coverQueue.length > 0) await new Promise((r) => setTimeout(r, 0));
+      if (coverQueue.length > 0) await new Promise<void>((r) => queueMicrotask(() => r()));
     }
     coverProcessing = false;
   }
@@ -285,7 +286,7 @@ export const usePlayerStore = defineStore('player', () => {
     if (!track.duration) {
       const dur = (await window.api?.getDuration(track.path)) || 0;
       if (dur > 0) {
-        track.duration = dur;
+        useLibraryStore().updateTrack(track.path, (t) => { t.duration = dur; });
       }
     }
     loadCover(track.path);
@@ -294,7 +295,7 @@ export const usePlayerStore = defineStore('player', () => {
   function nextTrack(): MediaFile | null {
     if (repeat.value === 'one' && currentTrack.value) {
       currentTime.value = 0;
-      return currentTrack.value;
+      return { ...currentTrack.value };
     }
     if (pendingQueue.value.length > 0) {
       const idx = shuffle.value ? Math.floor(Math.random() * pendingQueue.value.length) : 0;
@@ -402,6 +403,7 @@ export const usePlayerStore = defineStore('player', () => {
       window.api?.extractSubtitleFonts(videoPath) ?? Promise.resolve([] as MkvFont[])
     ]);
     if (!result) return null;
+    logger.info('Subtitles', `loadEmbedded: format=${result.format} fonts=${fonts.length} fontNames=[${fonts.map(f => f.name).join(', ')}]`);
     return {
       content: result.content,
       format: result.format as SubtitleTrack['format'],

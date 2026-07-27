@@ -53,12 +53,27 @@ async function checkVersion(
   }
 }
 
-export async function getMkvExtractPath(): Promise<string> {
-  const candidates = [
+function getMkvExtractCandidates(): string[] {
+  const isWin = process.platform === 'win32';
+  if (isWin) {
+    return [
+      'mkvextract',
+      'C:\\Program Files\\MKVToolNix\\mkvextract.exe',
+      'C:\\Program Files (x86)\\MKVToolNix\\mkvextract.exe'
+    ];
+  }
+  const home = process.env.HOME || '/usr/local';
+  return [
     'mkvextract',
-    'C:\\Program Files\\MKVToolNix\\mkvextract.exe',
-    'C:\\Program Files (x86)\\MKVToolNix\\mkvextract.exe'
+    '/usr/local/bin/mkvextract',
+    '/usr/bin/mkvextract',
+    join(home, 'bin', 'mkvextract'),
+    '/opt/homebrew/bin/mkvextract'
   ];
+}
+
+export async function getMkvExtractPath(): Promise<string> {
+  const candidates = getMkvExtractCandidates();
   for (const c of candidates) {
     try {
       await execAsync(`"${c}" --version`, {
@@ -107,9 +122,17 @@ export function registerDependencyHandlers(): void {
     return checkVersion('ffprobe -version', /ffprobe version (\S+)/);
   });
 
+  function getInstallFfmpegCmd(): string {
+    if (process.platform === 'win32') {
+      return 'choco install ffmpeg -y --no-progress';
+    }
+    return 'which ffmpeg 2>/dev/null || (brew install ffmpeg 2>/dev/null || apt-get install -y ffmpeg 2>/dev/null || echo "unsupported")';
+  }
+
   ipcMain.handle('dep:installFfmpeg', async () => {
     try {
-      const { stdout, stderr } = await execAsync('choco install ffmpeg -y --no-progress', {
+      const cmd = getInstallFfmpegCmd();
+      const { stdout, stderr } = await execAsync(cmd, {
         timeout: 300000,
         windowsHide: true
       });
@@ -159,9 +182,17 @@ export function registerDependencyHandlers(): void {
     }
   });
 
+  function getInstallMkvextractCmd(): string {
+    if (process.platform === 'win32') {
+      return 'choco install mkvtoolnix -y --no-progress';
+    }
+    return 'which mkvextract 2>/dev/null || (brew install mkvtoolnix 2>/dev/null || apt-get install -y mkvtoolnix 2>/dev/null || echo "unsupported")';
+  }
+
   ipcMain.handle('dep:installMkvextract', async () => {
     try {
-      const { stdout, stderr } = await execAsync('choco install mkvtoolnix -y --no-progress', {
+      const cmd = getInstallMkvextractCmd();
+      const { stdout, stderr } = await execAsync(cmd, {
         timeout: 300000,
         windowsHide: true
       });

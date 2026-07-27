@@ -1,4 +1,4 @@
-import { ref, computed, watch, effectScope } from 'vue';
+import { ref, computed, watch, effectScope, onUnmounted, type EffectScope } from 'vue';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { audioEvents } from '@renderer/utils/audioEvents';
 import { usePlayerStore } from '@renderer/stores/player';
@@ -14,6 +14,7 @@ const isReady = ref(false);
 const error = ref<string | null>(null);
 
 const cleanups: (() => void)[] = [];
+let scope: EffectScope | null = null;
 
 function resumeAndPlay() {
   audioEngine.resume();
@@ -58,7 +59,7 @@ export function useAudioPlayer() {
       })
     );
 
-    const scope = effectScope(true);
+    scope = effectScope(true);
 
     scope.run(() => {
       watch(
@@ -120,6 +121,8 @@ export function useAudioPlayer() {
 
     volume.value = player.volume;
   }
+
+  onUnmounted(() => { cleanups.forEach(fn => fn()); scope?.stop(); });
 
   const progress = computed(() => (duration.value > 0 ? currentTime.value / duration.value : 0));
 

@@ -474,6 +474,11 @@ class AudioEngine {
     this.secondaryAudioEl = el;
     this.secondarySourceNode = this.audioCtx!.createMediaElementSource(el);
     this.secondarySourceNode.connect(this.crossfadeGainA!);
+    try {
+      if (this.sourceNode && this.crossfadeGainA) {
+        this.sourceNode.connect(this.crossfadeGainA);
+      }
+    } catch {}
     this.secondaryAudioOffset = timeOffset;
     el.volume = 1;
   }

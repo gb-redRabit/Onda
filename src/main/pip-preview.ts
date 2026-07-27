@@ -56,6 +56,10 @@ export class PipPreview {
       `data:text/html,<!DOCTYPE html><html><head><style>*{margin:0;padding:0}body{background:#1a1a1a;height:100vh;display:flex;align-items:center;justify-content:center;color:#555;font:13px sans-serif;border:1px dashed #333;border-radius:12px;box-sizing:border-box}</style></head><body>Podgląd PiP</body></html>`
     );
 
+    this.window.on('closed', () => {
+      this.window = null;
+    });
+
     this.window.show();
     return true;
   }

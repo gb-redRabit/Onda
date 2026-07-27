@@ -1,12 +1,13 @@
 import { ipcMain } from 'electron';
 import https from 'https';
 import http from 'http';
+import { errMsg } from '../../shared/helpers';
 
 const USER_AGENT = 'Onda/1.0.0 (onda-player.app)';
 const MB_URL = 'https://musicbrainz.org/ws/2';
 const CA_URL = 'https://coverartarchive.org';
 
-function mbFetch(url: string): Promise<any> {
+function mbFetch(url: string): Promise<Record<string, unknown> | string> {
   return new Promise((resolve, reject) => {
     const protocol = url.startsWith('https') ? https : http;
     const req = protocol.get(
@@ -18,7 +19,7 @@ function mbFetch(url: string): Promise<any> {
         res.on('end', () => {
           if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
             try {
-              resolve(JSON.parse(data));
+              resolve(JSON.parse(data) as Record<string, unknown>);
             } catch {
               resolve(data);
             }
@@ -40,8 +41,9 @@ export function registerMusicBrainzHandlers() {
   ipcMain.handle('musicbrainz:searchRelease', async (_event, query: string) => {
     try {
       const q = encodeURIComponent(query);
-      const data = await mbFetch(`${MB_URL}/release/?query=${q}&fmt=json&limit=10`);
-      return { success: true, releases: data.releases || [] };
+      const res = await mbFetch(`${MB_URL}/release/?query=${q}&fmt=json&limit=10`);
+      const data = typeof res === 'string' ? { releases: [] } : (res as Record<string, unknown>);
+      return { success: true, releases: ((data as any).releases || []) as any[] };
     } catch (e) {
       return { success: false, error: String(e), releases: [] };
     }
@@ -49,10 +51,10 @@ export function registerMusicBrainzHandlers() {
 
   ipcMain.handle('musicbrainz:lookupRelease', async (_event, releaseId: string) => {
     try {
-      const data = await mbFetch(
+      const res = await mbFetch(
         `${MB_URL}/release/${releaseId}?inc=recordings+artist-credits+labels&fmt=json`
       );
-      return { success: true, release: data };
+      return { success: true, release: typeof res === 'string' ? {} : res };
     } catch (e) {
       return { success: false, error: String(e) };
     }
@@ -63,11 +65,11 @@ export function registerMusicBrainzHandlers() {
       await mbFetch(`${CA_URL}/release/${releaseId}/front`);
       return { success: true };
     } catch (e) {
-      const resp = e as any;
-      if (resp?.message?.startsWith?.('HTTP 404')) {
+      const msg = errMsg(e);
+      if (msg.startsWith('HTTP 404')) {
         return { success: false, notFound: true };
       }
-      return { success: false, error: String(e) };
+      return { success: false, error: msg };
     }
   });
 

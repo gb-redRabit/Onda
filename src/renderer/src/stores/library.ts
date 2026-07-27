@@ -72,7 +72,7 @@ export const useLibraryStore = defineStore('library', () => {
     } catch {
       // individual catches handle errors
     }
-    scheduleLoadTracks();
+    await scheduleLoadTracksAsync();
   }
 
   let loadTracksScheduled = false;
@@ -217,6 +217,31 @@ export const useLibraryStore = defineStore('library', () => {
     );
   }
 
+  function scheduleLoadTracksAsync(): Promise<void> {
+    return new Promise((resolve) => {
+      const orig = scheduleLoadTracks;
+      const wrapped = () => {
+        orig();
+        const check = setInterval(() => {
+          if (!loadTracksScheduled) {
+            clearInterval(check);
+            resolve();
+          }
+        }, 10);
+        setTimeout(() => { clearInterval(check); resolve(); }, 5000);
+      };
+      wrapped();
+    });
+  }
+
+  function updateTrack(path: string, updater: (track: MediaFile) => void) {
+    const idx = tracks.value.findIndex((t) => t.path === path);
+    if (idx >= 0) {
+      updater(tracks.value[idx]);
+      triggerRef(tracks);
+    }
+  }
+
   function refreshDerived() {
     triggerRef(tracks);
   }
@@ -240,6 +265,7 @@ export const useLibraryStore = defineStore('library', () => {
     artists,
     albums,
     loadFromDisk,
+    scheduleLoadTracksAsync,
     scanFolders,
     savePlaylists,
     addFolder,
@@ -247,6 +273,7 @@ export const useLibraryStore = defineStore('library', () => {
     getFolderType,
     addTrack,
     removeTrack,
+    updateTrack,
     createPlaylist,
     addToPlaylist,
     removeFromPlaylist,

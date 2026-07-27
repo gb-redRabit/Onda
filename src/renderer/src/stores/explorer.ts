@@ -93,13 +93,16 @@ export const useExplorerStore = defineStore('explorer', () => {
   }
 
   let batchCleanup: (() => void) | null = null;
+  let currentLoadId = 0;
 
   async function loadFiles(path: string) {
+    const loadId = ++currentLoadId;
     files.value = [];
     isLoading.value = true;
     batchCleanup?.();
     if (!window.api) { isLoading.value = false; return; }
     const stopListening = window.api.on('fs:readdir:batch', (...args: unknown[]) => {
+      if (loadId !== currentLoadId) { stopListening(); return; }
       const data = args[0] as { done: boolean; items: FileItem[] };
       if (data.items.length > 0) {
         files.value = [...files.value, ...data.items];
@@ -114,10 +117,12 @@ export const useExplorerStore = defineStore('explorer', () => {
     try {
       await window.api.invoke('fs:readdir', path);
     } catch {
-      files.value = [];
-      isLoading.value = false;
-      stopListening();
-      batchCleanup = null;
+      if (loadId === currentLoadId) {
+        files.value = [];
+        isLoading.value = false;
+        stopListening();
+        batchCleanup = null;
+      }
     }
   }
 

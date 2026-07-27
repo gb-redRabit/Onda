@@ -1,7 +1,6 @@
 import { ipcMain, nativeImage } from 'electron';
-import { readFile, rename, unlink, stat, mkdir } from 'fs/promises';
+import { readFile, rename, unlink, stat, mkdir, access, writeFile } from 'fs/promises';
 import { join, extname, dirname } from 'path';
-import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
 import { createHash } from 'crypto';
 import NodeID3 from 'node-id3';
 import sharp from 'sharp';
@@ -22,9 +21,10 @@ export function registerMediaHandlers(): void {
       const cacheDir = join(os.tmpdir(), 'onda', 'thumbs');
       const hash = createHash('md5').update(filePath + maxSize).digest('hex');
       const cacheFile = join(cacheDir, `${hash}.jpg`);
-      if (existsSync(cacheFile)) {
-        return `data:image/jpeg;base64,${readFileSync(cacheFile).toString('base64')}`;
-      }
+      try {
+        await access(cacheFile);
+        return `data:image/jpeg;base64,${(await readFile(cacheFile)).toString('base64')}`;
+      } catch {}
 
       let buf: Buffer | null = null;
 
@@ -32,8 +32,8 @@ export function registerMediaHandlers(): void {
         const thumb = await nativeImage.createThumbnailFromPath(filePath, { width: maxSize, height: maxSize });
         if (!thumb.isEmpty()) {
           buf = thumb.toJPEG(85);
-          if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
-          writeFileSync(cacheFile, buf);
+          await mkdir(cacheDir, { recursive: true }).catch(() => {});
+          await writeFile(cacheFile, buf);
         }
       } catch (e) {
         buf = await SharpService.getThumbnail(filePath, maxSize);
@@ -58,13 +58,15 @@ export function registerMediaHandlers(): void {
       if (!buf) {
         return null;
       }
-      if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
-      writeFileSync(cacheFile, buf);
+      await mkdir(cacheDir, { recursive: true }).catch(() => {});
+      await writeFile(cacheFile, buf);
       return `data:image/jpeg;base64,${buf.toString('base64')}`;
     } catch (e) {
       return null;
     }
   });
+
+const batchThumbnailLocks = new Set<string>();
 
   ipcMain.handle('media:batchThumbnails', async (
     _event,
@@ -73,7 +75,7 @@ export function registerMediaHandlers(): void {
   ): Promise<Record<string, string>> => {
     const result: Record<string, string> = {};
     const cacheDir = join(os.tmpdir(), 'onda', 'thumbs');
-    if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
+    await mkdir(cacheDir, { recursive: true }).catch(() => {});
     const concurrency = Math.max(1, os.cpus().length - 1);
 
     for (let i = 0; i < files.length; i += concurrency) {
@@ -82,25 +84,40 @@ export function registerMediaHandlers(): void {
         try {
           const hash = createHash('md5').update(filePath + maxSize).digest('hex');
           const cacheFile = join(cacheDir, `${hash}.jpg`);
-          if (existsSync(cacheFile)) {
-            result[filePath] = `data:image/jpeg;base64,${readFileSync(cacheFile).toString('base64')}`;
-            return;
-          }
-
-          let buf: Buffer | null = null;
           try {
-            const thumb = await nativeImage.createThumbnailFromPath(filePath, { width: maxSize, height: maxSize });
-            if (!thumb.isEmpty()) {
-              buf = thumb.toJPEG(85);
-              writeFileSync(cacheFile, buf);
-            }
-          } catch {
-            buf = await SharpService.getThumbnail(filePath, maxSize);
-          }
+            await access(cacheFile);
+            result[filePath] = `data:image/jpeg;base64,${(await readFile(cacheFile)).toString('base64')}`;
+            return;
+          } catch {}
 
-          if (buf) {
-            writeFileSync(cacheFile, buf);
-            result[filePath] = `data:image/jpeg;base64,${buf.toString('base64')}`;
+          while (batchThumbnailLocks.has(cacheFile)) {
+            await new Promise<void>((resolve) => {
+              const check = setInterval(() => {
+                if (!batchThumbnailLocks.has(cacheFile)) { clearInterval(check); resolve(); }
+              }, 10);
+              setTimeout(() => { clearInterval(check); resolve(); }, 5000);
+            });
+          }
+          batchThumbnailLocks.add(cacheFile);
+
+          try {
+            let buf: Buffer | null = null;
+            try {
+              const thumb = await nativeImage.createThumbnailFromPath(filePath, { width: maxSize, height: maxSize });
+              if (!thumb.isEmpty()) {
+                buf = thumb.toJPEG(85);
+                await writeFile(cacheFile, buf);
+              }
+            } catch {
+              buf = await SharpService.getThumbnail(filePath, maxSize);
+            }
+
+            if (buf) {
+              await writeFile(cacheFile, buf);
+              result[filePath] = `data:image/jpeg;base64,${buf.toString('base64')}`;
+            }
+          } finally {
+            batchThumbnailLocks.delete(cacheFile);
           }
         } catch {
           // skip
@@ -191,7 +208,7 @@ export function registerMediaHandlers(): void {
           const cachePath = join(PERSISTENT_COVER_DIR, old.cacheFile);
           try { await unlink(cachePath); } catch { /* ok */ }
           delete cacheMap[filePath];
-          store.set(COVER_CACHE_MAP_KEY, JSON.parse(JSON.stringify(cacheMap)));
+          store.set(COVER_CACHE_MAP_KEY, structuredClone(cacheMap));
         }
         return { success: true };
       } catch (e: unknown) {
@@ -303,4 +320,25 @@ export function registerMediaHandlers(): void {
       } catch {}
     }
   );
+
+  // cleanup old transcoded files on startup
+  (async () => {
+    try {
+      const tempDir = join(os.tmpdir(), 'onda', 'audio-transcodes');
+      await mkdir(tempDir, { recursive: true });
+      const { readdir } = await import('fs/promises');
+      const { rm } = await import('fs/promises');
+      const entries = await readdir(tempDir);
+      const now = Date.now();
+      for (const entry of entries) {
+        try {
+          const fullPath = join(tempDir, entry);
+          const s = await stat(fullPath);
+          if (now - s.mtimeMs > 24 * 60 * 60 * 1000) {
+            await rm(fullPath, { force: true });
+          }
+        } catch {}
+      }
+    } catch {}
+  })();
 }

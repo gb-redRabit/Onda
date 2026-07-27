@@ -47,14 +47,48 @@ export function registerSubtitleHandlers(): void {
     ): Promise<{ content: string; format: string } | null> => {
       try {
         await mkdir(getTempDir(), { recursive: true });
-        const outPath = join(getTempDir(), `sub_${uniqueId()}.ass`);
-        await execAsync(
-          `ffmpeg -v error -i "${filePath}" -map 0:${streamIndex} -c:s copy -y "${outPath}"`,
-          { encoding: 'utf-8', timeout: 30000, windowsHide: true }
+        // detect codec to choose best output format
+        const { stdout } = await execAsync(
+          `ffprobe -v quiet -select_streams ${streamIndex} -show_entries stream=codec_name -of csv=p=0 "${filePath}"`,
+          { encoding: 'utf-8', timeout: 10000, windowsHide: true }
         );
+        const codec = stdout.trim().toLowerCase();
+        logger.info('subtitles', `extractEmbedded stream=${streamIndex} codec=${codec}`);
+        const TEXT_CODECS = new Set(['subrip', 'ass', 'ssa', 'webvtt', 'mov_text']);
+        const ext = (codec === 'ass' || codec === 'ssa') ? '.ass' : '.srt';
+        const outPath = join(getTempDir(), `sub_${uniqueId()}${ext}`);
+
+        if (TEXT_CODECS.has(codec)) {
+          // text-based codec: try extract with native format first
+          try {
+            await execAsync(
+              `ffmpeg -v error -i "${filePath}" -map 0:${streamIndex} -c:s copy -y "${outPath}"`,
+              { encoding: 'utf-8', timeout: 30000, windowsHide: true }
+            );
+          } catch (e1) {
+            logger.warn('subtitles', `copy failed for stream ${streamIndex} (${codec}), trying transcode`, (e1 as Error).message?.split('\n')[0]);
+            // copy failed, try transcoding to srt
+            const srtPath = join(getTempDir(), `sub_${uniqueId()}.srt`);
+            await execAsync(
+              `ffmpeg -v error -i "${filePath}" -map 0:${streamIndex} -c:s srt -y "${srtPath}"`,
+              { encoding: 'utf-8', timeout: 30000, windowsHide: true }
+            );
+            const content = await readFile(srtPath, 'utf-8');
+            await unlink(outPath).catch(() => {});
+            await unlink(srtPath).catch(() => {});
+            return { content, format: 'srt' };
+          }
+        } else {
+          // binary codec (pgs, dvd_subtitle, etc): transcode to srt
+          await execAsync(
+            `ffmpeg -v error -i "${filePath}" -map 0:${streamIndex} -c:s srt -y "${outPath}"`,
+            { encoding: 'utf-8', timeout: 30000, windowsHide: true }
+          );
+        }
+
         const content = await readFile(outPath, 'utf-8');
         await unlink(outPath).catch(() => {});
-        return { content, format: 'ass' };
+        return { content, format: ext.slice(1) };
       } catch (err) {
         logger.error('subtitles', 'extractEmbedded failed', err);
         return null;
@@ -81,7 +115,8 @@ export function registerSubtitleHandlers(): void {
         return files
           .filter((f) => {
             const ext = extname(f).toLowerCase();
-            return subExts.includes(ext) && basename(f, ext).startsWith(videoName);
+            const baseName = basename(f, ext);
+            return subExts.includes(ext) && (baseName === videoName || baseName.startsWith(videoName + '.'));
           })
           .map((f) => ({
             name: f,
@@ -115,62 +150,97 @@ export function registerSubtitleHandlers(): void {
       _event,
       filePath: string
     ): Promise<Array<{ name: string; ext: string; data: number[] }>> => {
+      const dumpDir = join(
+        getTempDir(),
+        `fonts_${Date.now()}_${Math.random().toString(36).slice(2)}`
+      );
+      await mkdir(dumpDir, { recursive: true });
+      const fonts: Array<{ name: string; ext: string; data: number[] }> = [];
+
       try {
-        const { stdout } = await execAsync(
-          `ffprobe -v quiet -show_entries stream=index,codec_type,codec_name:stream_tags=filename -of json "${filePath}"`,
-          { encoding: 'utf-8', timeout: 15000, windowsHide: true }
-        );
-        const parsed = JSON.parse(stdout);
-        const streams: Array<{ index: number; tags?: { filename?: string } }> = (
-          parsed.streams || []
-        ).filter((s: { codec_type?: string }) => s.codec_type === 'attachment');
-
-        if (!streams.length) return [];
-
-        const dumpDir = join(
-          getTempDir(),
-          `fonts_${Date.now()}_${Math.random().toString(36).slice(2)}`
-        );
-        await mkdir(dumpDir, { recursive: true });
-        const fonts: Array<{ name: string; ext: string; data: number[] }> = [];
+        // list attachments via ffprobe
+        let attachmentStreams: Array<{ index: number; filename: string }> = [];
         try {
-          const bin = await getMkvExtractPath();
-          for (const [attId, s] of streams.entries()) {
-            const fileName = s.tags?.filename || `font_${attId}.ttf`;
-            const ext = (fileName.split('.').pop() || 'ttf').toLowerCase();
-            const outPath = join(dumpDir, `att_${attId}.${ext}`);
+          const { stdout } = await execAsync(
+            `ffprobe -v quiet -show_entries stream=index,codec_type:stream_tags=filename -of json "${filePath}"`,
+            { encoding: 'utf-8', timeout: 15000, windowsHide: true }
+          );
+          const parsed = JSON.parse(stdout);
+          attachmentStreams = (parsed.streams || [])
+            .filter((s: { codec_type?: string; tags?: { filename?: string } }) => s.codec_type === 'attachment' && s.tags?.filename)
+            .map((s: { index: number; tags: { filename: string } }) => ({
+              index: s.index,
+              filename: s.tags.filename
+            }));
+        } catch (err) {
+          logger.warn('attachments', 'ffprobe list failed', err);
+        }
+
+        if (!attachmentStreams.length) return [];
+
+        // try mkvextract first
+        let bin: string | null = null;
+        try { bin = await getMkvExtractPath(); } catch { /* not available */ }
+
+        let allOk = true;
+
+        for (const [i, s] of attachmentStreams.entries()) {
+          const ext = (s.filename.split('.').pop() || 'ttf').toLowerCase();
+          const outPath = join(dumpDir, `att_${i}.${ext}`);
+
+          if (bin) {
             try {
-              await execAsync(`"${bin}" "${filePath}" attachments ${attId}:"${outPath}"`, {
+              await execAsync(`"${bin}" "${filePath}" attachments ${i}:"${outPath}"`, {
                 encoding: 'utf-8',
                 timeout: 30000,
                 windowsHide: true
               });
-              try {
-                await stat(outPath);
-                const buf = await readFile(outPath);
-                fonts.push({
-                  name: fileName.replace(/\.(ttf|otf|ttc)$/i, ''),
-                  ext,
-                  data: Array.from(buf)
-                });
-              } catch {
-                /* file not created */
-              }
+              await stat(outPath);
             } catch {
-              /* skip failed attachment */
+              allOk = false;
             }
+          } else {
+            allOk = false;
           }
-        } catch (e: unknown) {
-          const err = e as { message?: string };
-          logger.error('attachments', 'mkvextract failed', err.message?.split('\n')[0] || e);
         }
-        await rm(dumpDir, { recursive: true, force: true }).catch(() => {});
 
-        return fonts;
+        if (!allOk) {
+          // fallback: dump all attachments via ffmpeg
+          try {
+            await execAsync(
+              `ffmpeg -v error -y -dump_attachment "" -i "${filePath}" -f null -`,
+              { encoding: 'utf-8', timeout: 30000, windowsHide: true, cwd: dumpDir }
+            );
+          } catch (e2) {
+            logger.warn('attachments', `ffmpeg dump_all failed`, (e2 as Error).message?.split('\n')[0]);
+          }
+        }
+
+        // read all dumped files
+        const dumped = await readdir(dumpDir);
+        const seen = new Set<string>();
+        for (const fname of dumped) {
+          if (seen.has(fname)) continue;
+          seen.add(fname);
+          const fpath = join(dumpDir, fname);
+          try {
+            await stat(fpath);
+            const buf = await readFile(fpath);
+            fonts.push({
+              name: fname.replace(/\.(ttf|otf|ttc)$/i, ''),
+              ext: (fname.split('.').pop() || 'ttf').toLowerCase(),
+              data: Array.from(buf)
+            });
+          } catch { /* skip unreadable */ }
+        }
       } catch (err) {
         logger.error('subtitles', 'extractAttachments failed', err);
-        return [];
+      } finally {
+        await rm(dumpDir, { recursive: true, force: true }).catch(() => {});
       }
+
+      logger.info('attachments', `extracted ${fonts.length} fonts`);
+      return fonts;
     }
   );
 }

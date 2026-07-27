@@ -163,7 +163,10 @@ export class PipManager {
       this.loadedSrc = null;
       this.createWindow();
     }
-    return this.window!;
+    if (!this.window) {
+      throw new Error('PipManager: window creation failed');
+    }
+    return this.window;
   }
 
   private positionWindow(opts: { position?: string; width?: number; height?: number }): {
@@ -337,6 +340,9 @@ export class PipManager {
     this.window = null;
     this.ready = false;
     this.loadedSrc = null;
+    ipcMain.removeAllListeners('pip:hidden');
+    ipcMain.removeAllListeners('pip:timeUpdate');
+    ipcMain.removeAllListeners('pip:ended');
   }
 }
 

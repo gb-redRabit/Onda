@@ -322,7 +322,7 @@ export function registerLibraryHandlers(): void {
         }
 
         const store = await getStore();
-        store.set('libraryScanned', JSON.parse(JSON.stringify({ files: allFiles, folderTypes })));
+        store.set('libraryScanned', structuredClone({ files: allFiles, folderTypes }));
 
         logger.info('library', `scan completed: ${allFiles.length} files`);
         return { count: allFiles.length, folderTypes };
@@ -363,8 +363,11 @@ export function registerLibraryHandlers(): void {
     } | null> => {
       try {
         const store = await getStore();
-        const data = store.get('libraryScanned', null);
-        return data as any;
+        const data = store.get('libraryScanned', null) as { files: MediaFile[]; folderTypes: Record<string, 'audio' | 'video' | 'mixed'> } | null;
+        if (data && typeof data === 'object' && Array.isArray((data as any).files)) {
+          return data;
+        }
+        return null;
       } catch (err) {
         logger.error('library', 'loadScanned failed', err);
         return null;
@@ -387,10 +390,16 @@ export function registerLibraryHandlers(): void {
     }
   );
 
+  function isValidPlaylistArray(v: unknown): v is Playlist[] {
+    return Array.isArray(v) && v.every((item) => item && typeof item === 'object' && 'id' in item && 'name' in item && 'tracks' in item);
+  }
+
   ipcMain.handle('playlist:loadAll', async (): Promise<Playlist[]> => {
     try {
       const store = await getStore();
-      return (store.get('playlists', []) || []) as Playlist[];
+      const raw = store.get('playlists', []);
+      if (isValidPlaylistArray(raw)) return raw;
+      return [];
     } catch (err) {
       logger.error('library', 'loadPlaylists failed', err);
       return [];

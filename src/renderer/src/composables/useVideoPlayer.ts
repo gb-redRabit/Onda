@@ -235,7 +235,7 @@ export function useVideoPlayer(ctx: {
     if (started) {
       player.pipTime = startTime;
       player.pipActive = true;
-      if (videoRef.value) videoRef.value.pause();
+      videoRef.value?.pause();
       player.isPlaying = false;
       syncSubtitlesWithPiP();
     }
@@ -304,7 +304,7 @@ export function useVideoPlayer(ctx: {
             pip.updateSubtitle(subtitleData);
           }
         });
-        if (videoRef.value) videoRef.value.pause();
+      videoRef.value?.pause();
         player.isPlaying = false;
       } else if (track.type === 'video') {
         const src = getTrackSrc(track);

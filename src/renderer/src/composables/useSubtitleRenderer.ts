@@ -109,6 +109,16 @@ async function buildFontMap(assContent: string, attachmentNames: MkvFont[] = [])
   const fontMap: Record<string, any> = { ...availableFonts };
   const localKeys = new Set(Object.keys(availableFonts));
 
+  // add embedded font data as blob URLs so jassub can use them
+  for (const f of attachmentNames) {
+    const key = f.name.toLowerCase();
+    if (!fontMap[key]) {
+      const blob = new Blob([new Uint8Array(f.data)], { type: 'font/ttf' });
+      fontMap[key] = URL.createObjectURL(blob);
+      logger.info('Subtitles', `added embedded font blob: ${f.name} (${f.data.length} bytes)`);
+    }
+  }
+
   const families = new Set<string>(extractAssFamilies(assContent));
   for (const f of attachmentNames) families.add(f.name);
 
@@ -118,7 +128,7 @@ async function buildFontMap(assContent: string, attachmentNames: MkvFont[] = [])
 
   for (const family of families) {
     const key = family.toLowerCase();
-    if (localKeys.has(key)) {
+    if (localKeys.has(key) || fontMap[key]) {
       local.push(family);
       continue;
     }
@@ -139,6 +149,7 @@ async function buildFontMap(assContent: string, attachmentNames: MkvFont[] = [])
     else missing.push(family);
   }
 
+  logger.info('Subtitles', `buildFontMap: local=${local.length} google=${google.length} missing=${missing.length} missingNames=[${missing.join(', ')}]`);
   fontMapCache.set(cacheKey, fontMap);
   return fontMap;
 }
@@ -274,6 +285,7 @@ export async function loadSubtitleTrack(track: SubtitleTrack): Promise<void> {
   if (!assContent) return;
 
   const fontMap = await buildFontMap(assContent, track.fonts || []);
+  logger.info('Subtitles', `loadSubtitleTrack: format=${track.format} fonts=${(track.fonts || []).length} assLen=${assContent.length} fontMapKeys=${Object.keys(fontMap).length}`);
 
   const JASSUBCtor = await ensureJASSUB();
   if (!JASSUBCtor) {
@@ -281,6 +293,7 @@ export async function loadSubtitleTrack(track: SubtitleTrack): Promise<void> {
   }
 
   const mkvFonts = (track.fonts || []).map((f) => new Uint8Array(f.data));
+  logger.info('Subtitles', `jassub fonts: ${mkvFonts.length} items, total=${mkvFonts.reduce((s, f) => s + f.length, 0)} bytes`);
 
   lastSubtitleData = {
     subContent: assContent,
@@ -335,7 +348,7 @@ export function getLastSubtitleData(): {
     fonts: lastSubtitleData.fonts,
     availableFonts
   };
-  return JSON.parse(JSON.stringify(plain));
+  return structuredClone(plain);
 }
 
 export async function preparePiPSubtitleData(videoPath: string): Promise<{
@@ -365,11 +378,9 @@ export async function preparePiPSubtitleData(videoPath: string): Promise<{
 
   const fontMap = await buildFontMap(assContent, fonts);
 
-  return JSON.parse(
-    JSON.stringify({
-      subContent: assContent,
-      fonts,
-      availableFonts: fontMap
-    })
-  );
+  return structuredClone({
+    subContent: assContent,
+    fonts,
+    availableFonts: fontMap
+  });
 }

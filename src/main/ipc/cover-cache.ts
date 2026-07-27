@@ -92,6 +92,8 @@ export async function getPersistentCover(
   }
 }
 
+let saveMapLock: Promise<void> | null = null;
+
 export async function savePersistentCover(filePath: string, binary: Buffer, ext: string): Promise<void> {
   try {
     await mkdir(PERSISTENT_COVER_DIR, { recursive: true });
@@ -100,12 +102,20 @@ export async function savePersistentCover(filePath: string, binary: Buffer, ext:
     const cachePath = join(PERSISTENT_COVER_DIR, cacheFile);
     await writeFile(cachePath, binary);
 
-    const s = await stat(filePath).catch(() => null);
-    const store = await getStore();
-    const cacheMap: Record<string, { cacheFile: string; mtime: number }> =
-      (store.get(COVER_CACHE_MAP_KEY) as any) || {};
-    cacheMap[filePath] = { cacheFile, mtime: s?.mtimeMs ?? Date.now() };
-    store.set(COVER_CACHE_MAP_KEY, JSON.parse(JSON.stringify(cacheMap)));
+    while (saveMapLock) { await saveMapLock; }
+    let resolveLock: () => void;
+    saveMapLock = new Promise((r) => { resolveLock = r; });
+    try {
+      const s = await stat(filePath).catch(() => null);
+      const store = await getStore();
+      const cacheMap: Record<string, { cacheFile: string; mtime: number }> =
+        (store.get(COVER_CACHE_MAP_KEY) as any) || {};
+      cacheMap[filePath] = { cacheFile, mtime: s?.mtimeMs ?? Date.now() };
+      store.set(COVER_CACHE_MAP_KEY, structuredClone(cacheMap));
+    } finally {
+      saveMapLock = null;
+      resolveLock!();
+    }
   } catch {
     // non-fatal
   }
@@ -189,7 +199,15 @@ export async function extractAndCacheCover(
   }
 
   while (coverCacheLocks.has(filePath)) {
-    await new Promise((r) => setTimeout(r, 10));
+    await new Promise<void>((resolve) => {
+      const check = setInterval(() => {
+        if (!coverCacheLocks.has(filePath)) {
+          clearInterval(check);
+          resolve();
+        }
+      }, 10);
+      setTimeout(() => { clearInterval(check); resolve(); }, 5000);
+    });
   }
   const cached = await getCachedCover(filePath);
   if (cached) return cached;
@@ -251,3 +269,20 @@ export async function getCachedCover(
 
   return null;
 }
+
+// startup — clean up orphaned cover files not referenced in cache map
+(async () => {
+  try {
+    const { readdir, rm } = await import('fs/promises');
+    const store = await getStore();
+    const cacheMap: Record<string, { cacheFile: string }> =
+      (store.get(COVER_CACHE_MAP_KEY) as any) || {};
+    const referenced = new Set(Object.values(cacheMap).map((v) => v.cacheFile));
+    const entries = await readdir(PERSISTENT_COVER_DIR).catch(() => []);
+    for (const entry of entries) {
+      if (!referenced.has(entry)) {
+        await rm(join(PERSISTENT_COVER_DIR, entry), { force: true }).catch(() => {});
+      }
+    }
+  } catch {}
+})();

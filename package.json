@@ -2,6 +2,9 @@
   "name": "onda",
   "version": "1.0.0",
   "description": "An Electron application with Vue and TypeScript",
+  "engines": {
+    "node": ">=18"
+  },
   "main": "./out/main/index.js",
   "author": "example.com",
   "homepage": "https://electron-vite.org",
