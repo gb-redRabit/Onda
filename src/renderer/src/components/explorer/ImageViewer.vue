@@ -106,7 +106,7 @@ const thumbCache = reactive(new Map<string, string>());
 let fsCleanup: (() => void) | null = null;
 
 function toFileUrl(file: FileItem): string {
-  return `file:///${file.path.replace(/\\/g, '/')}`;
+  return `${window.api.mediaServerUrl}/?path=${encodeURIComponent(file.path.replace(/\\/g, '/'))}`;
 }
 
 async function loadDisplayImage(file: FileItem, maxWidth: number = 1920): Promise<string> {
@@ -446,7 +446,7 @@ function makeTransform(base: string): string {
 
         <button
           v-if="hasNext && !slideshowActive"
-          class="absolute right-3 z-10 p-2 rounded-full bg-bg-overlay/60 text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-all"
+          class="absolute right-3 z-10 p-2 rounded-full mr-12 bg-bg-overlay/60 text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-all"
           @click="next"
         >
           <ChevronRight :size="28" class="pointer-events-none" />

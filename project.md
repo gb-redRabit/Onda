@@ -4,16 +4,16 @@
 
 **Onda** to desktopowy odtwarzacz muzyki i wideo zbudowany na Electron + Vue 3 + TypeScript + Tailwind CSS. Aplikacja obsługuje odtwarzanie lokalnych plików audio/video, eksplorację plików, bibliotekę mediów z metadanymi ID3, equalizer, wizualizację audio, kolejki odtwarzania, napisy wideo, Picture-in-Picture, splash screen z animowaną wizualizacją dźwiękową oraz system motywów.
 
-**Aktualne statystyki (2026-07-23):**
+**Aktualne statystyki (2026-07-26):**
 
 | Metryka | Wartość |
 |---------|---------|
-| Pliki źródłowe (.ts + .vue + .css + .html) | 106 |
-| Linie kodu | ~16,439 |
-| Main process | 6 plików, ~2,700 linii |
-| Preload | 2 pliki, ~287 linii |
-| Shared | 2 pliki, ~187 linii |
-| Renderer | 95 plików, ~13,397 linii |
+| Pliki źródłowe (.ts + .vue + .css + .html) | 132 |
+| Linie kodu | ~17,022 |
+| Main process | 18 plików, ~2,788 linii |
+| Preload | 2 pliki, ~288 linii |
+| Shared | 3 pliki, ~191 linii |
+| Renderer | 109 plików, ~13,755 linii |
 | Pliki testowe | 4 (1,133 linii) |
 | Testy | 141 pass |
 | Zależności npm | 38 (17 runtime + 21 dev) |
@@ -143,146 +143,168 @@ D:\Onda\
 │   ├── install-ytdlp.ps1
 │   └── install-ytdlp.sh
 ├── src/
-│   ├── main/                           # === MAIN PROCESS (Node.js) — 5 files, 2,533 lines ===
-│   │   ├── index.ts                    # Okno, tray, skróty globalne, PiP, splash screen (367 linii)
-│   │   ├── pip-manager.ts              # PipManager singleton — PiP + preview + preview window (421 linii)
-│   │   ├── ipc/handlers.ts             # 68 handlerów IPC (1633 linie)
-│   │   ├── ipc/musicbrainz.ts          # MusicBrainz API: search, lookup, cover data (104 linie)
+│   ├── main/                           # === MAIN PROCESS (Node.js) — 18 files, 2,788 lines ===
+│   │   ├── index.ts                    # Okno, tray, skróty globalne, PiP, splash screen, media server (434 linie)
+│   │   ├── media-server.ts             # Lokalny HTTP server dla mediów (range requests 206) (94 linie)
+│   │   ├── pip-manager.ts              # PipManager singleton — PiP + preview + preview window (374 linie)
+│   │   ├── ipc/                        # 13 plików, 1,765 linii — podział handlers.ts na dedykowane moduły (17.1)
+│   │   │   ├── handlers.ts             # Orkiestrator: rejestruje wszystkie sub-handlery (24 linie)
+│   │   │   ├── cover-cache.ts          # Cache okładek + thumbnaili (221 linii)
+│   │   │   ├── cover-handlers.ts       # Handler `media:getCover` (13 linii)
+│   │   │   ├── dependency-handlers.ts  # FFmpeg, FFprobe, yt-dlp, mkvextract (184 linie)
+│   │   │   ├── dialog-handlers.ts      # Dialogi open/save/folder (90 linii)
+│   │   │   ├── fs-handlers.ts          # Operacje na plikach: readdir, readFile, writeFile, rename, delete (233 linie)
+│   │   │   ├── library-handlers.ts     # Biblioteka: scan, playlisty, tagi (383 linie)
+│   │   │   ├── media-handlers.ts       # Metadane, kodeki, transkodowanie (284 linie)
+│   │   │   ├── musicbrainz.ts          # MusicBrainz API: search, lookup, cover data (98 linii)
+│   │   │   ├── playback-handlers.ts    # Zapamiętywanie pozycji (14 linii)
+│   │   │   ├── settings-handlers.ts    # Odczyt/zapis ustawień (23 linie)
+│   │   │   ├── subtitle-handlers.ts    # Napisy embedded + zewnętrzne (166 linii)
+│   │   │   └── youtube-handlers.ts     # YouTube download (32 linie)
 │   │   ├── utils/logger.ts             # Logger (8 linii)
-│   │   └── utils/sharp.ts              # SharpService: thumbnail batch, resize, metadata
+│   │   └── utils/sharp.ts              # SharpService: thumbnail batch, resize, metadata (113 linii)
 │   │
-│   ├── preload/                        # === PRELOAD BRIDGE — 2 files, 287 lines ===
-│   │   ├── index.ts                    # contextBridge: 43 API (window.api) (167 linii)
-│   │   └── index.d.ts                  # OndaAPI interface + Window augmentation (120 linii)
+│   ├── preload/                        # === PRELOAD BRIDGE — 2 files, 288 lines ===
+│   │   ├── index.ts                    # contextBridge: 43 API (window.api) + mediaServerUrl (170 linii)
+│   │   └── index.d.ts                  # OndaAPI interface + Window augmentation (118 linii)
 │   │
-│   └── renderer/                       # === RENDERER PROCESS — 95 files, 13,397 lines ===
+│   └── renderer/                       # === RENDERER PROCESS — 109 files, 13,755 lines ===
 │       ├── index.html                  # Main window HTML (17 linii)
 │       ├── pip.html                    # PiP window HTML (18 linii)
 │       └── src/
-│           ├── main.ts                 # createApp + Pinia + Router + i18n (46 linii)
-│           ├── App.vue                 # Root layout + ErrorBoundary + toast + context menu (187 linii)
-│           ├── env.d.ts                # Vue SFC type declaration (5 linii)
-│           ├── i18n.ts                 # vue-i18n setup (10 linii)
-│           ├── pip.ts                  # PiP bundle entry: JASSUB + IPC listeners (170 linii)
+│           ├── main.ts                 # createApp + Pinia + Router + i18n (40 linii)
+│           ├── App.vue                 # Root layout + ErrorBoundary + toast + context menu (181 linii)
+│           ├── env.d.ts                # Vue SFC type declaration + OndaAPI augmentation (54 linie)
+│           ├── i18n.ts                 # vue-i18n setup (9 linii)
+│           ├── pip.ts                  # PiP bundle entry: JASSUB + IPC listeners (159 linii)
+│           ├── vitest.setup.ts         # Vitest setup (15 linii)
 │           │
-│           ├── modules/                # === MODUŁY — 8 files, 912 lines ===
-│           │   ├── ModuleManager.ts    # Singleton: lifecycle, switchTo, initAll (97 linii)
-│           │   ├── audioEngine.ts      # Class AudioEngine singleton (631 linii)
-│           │   ├── PlayerModule.ts     # Audio engine lifecycle (44 linie)
-│           │   ├── ExplorerModule.ts   # File explorer lifecycle (33 linie)
-│           │   ├── LibraryModule.ts    # Media library lifecycle + auto-scan (35 linii)
-│           │   ├── YouTubeModule.ts    # YouTube integration lifecycle (26 linii)
-│           │   ├── HomeModule.ts       # Home page lifecycle (23 linie)
-│           │   └── SettingsModule.ts   # Settings lifecycle (23 linie)
+│           ├── modules/                # === MODUŁY — 8 files, 789 lines ===
+│           │   ├── ModuleManager.ts    # Singleton: lifecycle, switchTo, initAll (77 linii)
+│           │   ├── audioEngine.ts      # Class AudioEngine singleton (561 linii)
+│           │   ├── PlayerModule.ts     # Audio engine lifecycle (36 linii)
+│           │   ├── ExplorerModule.ts   # File explorer lifecycle (28 linii)
+│           │   ├── LibraryModule.ts    # Media library lifecycle + auto-scan (30 linii)
+│           │   ├── YouTubeModule.ts    # YouTube integration lifecycle (21 linii)
+│           │   ├── HomeModule.ts       # Home page lifecycle (18 linii)
+│           │   └── SettingsModule.ts   # Settings lifecycle (18 linii)
 │           │
 │           ├── router/
-│           │   └── index.ts            # 8 tras + beforeEach guard + module switching (117 linii)
+│           │   └── index.ts            # 8 tras + beforeEach guard + module switching (107 linii)
 │           │
-│           ├── stores/                 # === Pinia stores — 6 files, 1,265 lines ===
-│           │   ├── player.ts           # Stan odtwarzacza + kolejka + ulubione + coverCache (490 linii)
-│           │   ├── settings.ts         # Ustawienia → electron-store debounced (159 linii)
-│           │   ├── explorer.ts         # Stan eksploratora: currentPath, files, streaming batch (196 linii)
-│           │   ├── library.ts          # Stan biblioteki + playlisty + foldery (259 linii)
-│           │   ├── ui.ts               # Stan UI: sidebar, contextMenu, notifications, toasts (103 linie)
-│           │   └── youtube.ts          # Stan YouTube: search, subscriptions, downloads (58 linii)
+│           ├── stores/                 # === Pinia stores — 6 files + 2 testowe, 1,797 lines ===
+│           │   ├── player.ts           # Stan odtwarzacza + kolejka + ulubione + coverCache (449 linii)
+│           │   ├── settings.ts         # Ustawienia → electron-store debounced (144 linie)
+│           │   ├── explorer.ts         # Stan eksploratora: currentPath, files, streaming batch (176 linii)
+│           │   ├── library.ts          # Stan biblioteki + playlisty + foldery (235 linii)
+│           │   ├── ui.ts               # Stan UI: sidebar, contextMenu, notifications, toasts (92 linie)
+│           │   └── youtube.ts          # Stan YouTube: search, subscriptions, downloads (50 linii)
 │           │
-│           ├── composables/
-│           │   ├── useAudioPlayer.ts    # Singleton: audio state bridge, effectScope(true) (159 linii)
-│           │   ├── useVideoPlayer.ts   # Video player: setup, PiP, subtitles, AC3/DTS (406 linii)
-│           │   ├── useSubtitleRenderer.ts # JASSUB init + font map + Google fonts (375 linii)
-│           │   ├── usePlayerKeyboard.ts # Keyboard shortcuts dla PlayerView (106 linii)
-│           │   ├── usePiP.ts            # PiP composable: start, stop, preload, loadTrack (93 linie)
-│           │   └── useOpenMedia.ts      # Open files from filesystem + auto-navigate (72 linie)
+│           ├── composables/            # === 8 composables, 1,187 lines ===
+│           │   ├── useAudioPlayer.ts    # Singleton: audio state bridge, effectScope(true) (138 linii)
+│           │   ├── useVideoPlayer.ts   # Video player: setup, PiP, subtitles, AC3/DTS (368 linii)
+│           │   ├── useSubtitleRenderer.ts # JASSUB init + font map + Google fonts (333 linie)
+│           │   ├── usePlayerKeyboard.ts # Keyboard shortcuts dla PlayerView (101 linii)
+│           │   ├── usePiP.ts            # PiP composable: start, stop, preload, loadTrack (81 linii)
+│           │   ├── useOpenMedia.ts      # Open files from filesystem + auto-navigate (59 linii)
+│           │   ├── usePromptDialog.ts   # Prompt dialog composable (42 linie)
+│           │   └── useThumbnail.ts      # Thumbnail cache + preload (65 linii)
 │           │
 │           ├── types/
-│           │   ├── media.ts            # MediaFile, MediaMetadata (67 linii)
-│           │   ├── settings.ts         # AppSettings + ToastSettings (103 linie)
-│           │   ├── explorer.ts         # FileItem, ViewMode, ContextMenuItem (31 linii)
-│           │   ├── youtube.ts          # YouTubeVideo, Subscription (65 linii)
-│           │   ├── subtitles.ts        # MkvFont, SubtitleTrack (16 linii)
-│           │   └── lfa-ponyfill.d.ts   # Type declarations for lfa-ponyfill (16 linii)
+│           │   ├── media.ts            # MediaFile, MediaMetadata (63 linie)
+│           │   ├── settings.ts         # AppSettings + ToastSettings (93 linie)
+│           │   ├── explorer.ts         # FileItem, ViewMode, ContextMenuItem (28 linii)
+│           │   ├── youtube.ts          # YouTubeVideo, Subscription (60 linii)
+│           │   ├── subtitles.ts        # MkvFont, SubtitleTrack (15 linii)
+│           │   └── lfa-ponyfill.d.ts   # Type declarations for lfa-ponyfill (15 linii)
 │           │
-│           ├── utils/
-│           │   ├── constants.ts        # Formaty, presety EQ, motywy, defaults, shortcuts (225 linii)
-│           │   ├── formatters.ts       # Formatowanie czasu, rozmiaru (59 linii)
-│           │   ├── fileTypes.ts        # Rozszerzenia → ikony/kolory (49 linii)
-│           │   ├── audioEvents.ts      # EventBus: AudioEventBus (37 linii)
-│           │   ├── ipc.ts              # safeInvoke wrapper (13 linii)
-│           │   └── logger.ts           # Logger (8 linii)
+│           ├── utils/                  # === 9 files, 742 lines ===
+│           │   ├── constants.ts        # Formaty, presety EQ, motywy, defaults, shortcuts (206 linii)
+│           │   ├── formatters.ts       # Formatowanie czasu, rozmiaru (52 linie)
+│           │   ├── fileTypes.ts        # Rozszerzenia → ikony/kolory (46 linii)
+│           │   ├── audioEvents.ts      # EventBus: AudioEventBus (30 linii)
+│           │   ├── ipc.ts              # safeInvoke wrapper (22 linie)
+│           │   ├── logger.ts           # Logger (8 linii)
+│           │   └── thumbLoader.ts      # Thumbnail loader dla ImageViewer (48 linii)
 │           │
 │           ├── locales/
 │           │   ├── en.ts               # Angielskie tłumaczenia (392 linie)
 │           │   └── pl.ts               # Polskie tłumaczenia (393 linie)
 │           │
-│           ├── components/             # === 48 komponentów, ~4,563 linii ===
-│           │   ├── layout/             # 4 komponenty, ~776 linii
-│           │   │   ├── TitleBar.vue    # Custom titlebar + tabs + lupa (253 linie)
-│           │   │   ├── Sidebar.vue     # Nawigacja + resize + playlisty + DnD (276 linii)
-│           │   │   ├── PlayerBar.vue   # Dolny pasek odtwarzacza (265 linii)
-│           │   │   └── StatusBar.vue   # Dolny pasek statusu (72 linie)
+│           ├── components/             # === 50 komponentów, ~5,553 linii ===
+│           │   ├── layout/             # 4 komponenty, ~727 linii
+│           │   │   ├── AppMenu.vue     # Custom titlebar + tabs (146 linii)
+│           │   │   ├── Sidebar.vue     # Nawigacja + resize + playlisty + DnD (260 linii)
+│           │   │   ├── PlayerBar.vue   # Dolny pasek odtwarzacza (254 linie)
+│           │   │   └── StatusBar.vue   # Dolny pasek statusu (67 linii)
 │           │   │
-│           │   ├── audio/              # 6 komponentów, ~435 linii
-│           │   │   ├── AudioControls.vue     # Transport controls + volume (142 linie)
-│           │   │   ├── AudioProgressBar.vue  # Seek bar z czasem (60 linii)
-│           │   │   ├── AudioLayoutToggle.vue # Przełącznik layoutów (36 linii)
-│           │   │   ├── AudioVisualizer.vue   # Canvas visualizer (126 linii)
-│           │   │   ├── AudioCover.vue        # Extracted cover art (24 linie)
-│           │   │   └── AudioTrackInfo.vue    # Title/artist/album (47 linii)
+│           │   ├── audio/              # 6 komponentów, ~394 linii
+│           │   │   ├── AudioControls.vue     # Transport controls + volume (132 linie)
+│           │   │   ├── AudioProgressBar.vue  # Seek bar z czasem (55 linii)
+│           │   │   ├── AudioLayoutToggle.vue # Przełącznik layoutów (32 linie)
+│           │   │   ├── AudioVisualizer.vue   # Canvas visualizer (111 linii)
+│           │   │   ├── AudioCover.vue        # Extracted cover art (21 linii)
+│           │   │   └── AudioTrackInfo.vue    # Title/artist/album (43 linie)
 │           │   │
-│           │   ├── player/             # 6 komponentów, ~929 linii
-│           │   │   ├── PlayerControls.vue    # Kontrolki: play, skip, speed, filter (302 linie)
-│           │   │   ├── PlayerTopBar.vue      # Górny pasek: back, PiP, FS (47 linii)
-│           │   │   ├── QueuePanel.vue        # Kolejka + historia + DnD (256 linii)
-│           │   │   ├── SubtitleTrackSelector.vue # Wybór ścieżki napisów (94 linie)
-│           │   │   ├── ResumePrompt.vue      # Prompt kontynuacji (37 linii)
-│           │   │   └── Equalizer.vue         # 10-pasmowy EQ + presety (143 linie)
+│           │   ├── player/             # 6 komponentów, ~816 linii
+│           │   │   ├── PlayerControls.vue    # Kontrolki: play, skip, speed, filter (280 linii)
+│           │   │   ├── PlayerTopBar.vue      # Górny pasek: back, PiP, FS (44 linie)
+│           │   │   ├── QueuePanel.vue        # Kolejka + historia + DnD (241 linii)
+│           │   │   ├── SubtitleTrackSelector.vue # Wybór ścieżki napisów (86 linii)
+│           │   │   ├── ResumePrompt.vue      # Prompt kontynuacji (34 linie)
+│           │   │   └── Equalizer.vue         # 10-pasmowy EQ + presety (131 linii)
 │           │   │
-│           │   ├── explorer/           # 5 komponentów, ~913 linii
-│           │   │   ├── ExplorerNavPane.vue   # Lewy panel nawigacyjny (102 linie)
-│           │   │   ├── ExplorerToolbar.vue   # Górny pasek narzędzi (40 linii)
-│           │   │   ├── ExplorerGridItem.vue  # Kafelek grid view (123 linie)
-│           │   │   ├── ExplorerTableRow.vue  # Wiersz list view (98 linii)
-│   │   │   └── ImageViewer.vue       # Lightbox: onda:// src, downscale 1920px, Ken Burns, shuffle (~560 linii)
+│           │   ├── explorer/           # 10 komponentów, ~1,087 linii
+│           │   │   ├── ExplorerBreadcrumb.vue    # Breadcrumb nawigacja (22 linie)
+│           │   │   ├── ExplorerGridItem.vue      # Kafelek grid view (76 linii)
+│           │   │   ├── ExplorerNavPane.vue       # Lewy panel nawigacyjny (94 linie)
+│           │   │   ├── ExplorerPromptDialog.vue  # Dialog rename/new folder (19 linii)
+│           │   │   ├── ExplorerTableRow.vue      # Wiersz list view (61 linii)
+│           │   │   ├── ExplorerToolbar.vue       # Górny pasek narzędzi (37 linii)
+│           │   │   ├── ExplorerViewModeDropdown.vue # Dropdown trybów widoku (36 linii)
+│           │   │   ├── ImageViewer.vue           # Lightbox: HTTP server src, Ken Burns, shuffle (486 linii)
+│           │   │   ├── ImageViewerSettings.vue   # Ustawienia slideshow (133 linie)
+│           │   │   └── ImageViewerThumbnails.vue # Pasek miniaturek z lazy cache (123 linie)
 │           │   │
-│           │   ├── library/            # 7 komponentów, ~1,138 linii
-│           │   │   ├── LibraryTrackRow.vue   # Wiersz utworu z akcjami (191 linii)
-│           │   │   ├── AlbumCard.vue         # Karta albumu z cover art (81 linii)
-│           │   │   ├── VideoCard.vue         # Karta video z thumbnail (91 linii)
-│           │   │   ├── DirNode.vue           # Rekurencyjny folder tree (109 linii)
-│           │   │   ├── LibraryPlaylistManager.vue # Panel playlist (170 linii)
-│           │   │   ├── TrackTagEditor.vue    # Edycja tagów ID3 modal (261 linii)
-│           │   │   └── MusicBrainzLookup.vue # MusicBrainz search modal (235 linii)
+│           │   ├── library/            # 7 komponentów, ~1,056 linii
+│           │   │   ├── LibraryTrackRow.vue   # Wiersz utworu z akcjami (176 linii)
+│           │   │   ├── AlbumCard.vue         # Karta albumu z cover art (73 linie)
+│           │   │   ├── VideoCard.vue         # Karta video z thumbnail (82 linie)
+│           │   │   ├── DirNode.vue           # Rekurencyjny folder tree (101 linii)
+│           │   │   ├── LibraryPlaylistManager.vue # Panel playlist (156 linii)
+│           │   │   ├── TrackTagEditor.vue    # Edycja tagów ID3 modal (250 linii)
+│           │   │   └── MusicBrainzLookup.vue # MusicBrainz search modal (218 linii)
 │           │   │
-│           │   ├── settings/           # 12 komponentów, ~1,253 linii
-│           │   │   ├── SettingsAppearance.vue   # Motyw, akcent, czcionka (188 linii)
-│           │   │   ├── SettingsPlayback.vue     # Odtwarzanie: zapamiętywanie, itp (114 linii)
-│           │   │   ├── SettingsDependencies.vue # Status zależności + instalacja (156 linii)
-│           │   │   ├── SettingsPiP.vue          # PiP: pozycja, rozmiar (152 linie)
-│           │   │   ├── SettingsShortcuts.vue    # Skróty klawiszowe — edytowalne (85 linii)
-│           │   │   ├── SettingsToast.vue        # Powiadomienia: pozycja, filtry (109 linii)
-│           │   │   ├── SettingsLibraryFolders.vue # Zarządzanie folderami biblioteki (116 linii)
-│           │   │   ├── SettingsDownload.vue     # Pobieranie: ścieżka, jakość (84 linie)
-│           │   │   ├── SettingsNetwork.vue      # Proxy, DNS (33 linie)
-│           │   │   ├── SettingsApiKeys.vue      # Klucze API: YouTube, Last.fm (43 linie)
-│           │   │   ├── SettingsLanguage.vue     # Wybór języka (41 linii)
-│           │   │   └── SettingsUpdates.vue      # Aktualizacje: auto-check (34 linie)
+│           │   ├── settings/           # 12 komponentów, ~1,071 linii
+│           │   │   ├── SettingsAppearance.vue   # Motyw, akcent, czcionka (178 linii)
+│           │   │   ├── SettingsPlayback.vue     # Odtwarzanie: zapamiętywanie, itp (106 linii)
+│           │   │   ├── SettingsDependencies.vue # Status zależności + instalacja (144 linie)
+│           │   │   ├── SettingsPiP.vue          # PiP: pozycja, rozmiar (142 linie)
+│           │   │   ├── SettingsShortcuts.vue    # Skróty klawiszowe — edytowalne (72 linie)
+│           │   │   ├── SettingsToast.vue        # Powiadomienia: pozycja, filtry (103 linie)
+│           │   │   ├── SettingsLibraryFolders.vue # Zarządzanie folderami biblioteki (105 linii)
+│           │   │   ├── SettingsDownload.vue     # Pobieranie: ścieżka, jakość (77 linii)
+│           │   │   ├── SettingsNetwork.vue      # Proxy, DNS (32 linie)
+│           │   │   ├── SettingsApiKeys.vue      # Klucze API: YouTube, Last.fm (42 linie)
+│           │   │   ├── SettingsLanguage.vue     # Wybór języka (37 linii)
+│           │   │   └── SettingsUpdates.vue      # Aktualizacje: auto-check (33 linie)
 │           │   │
-│           │   └── shared/             # 4 komponenty, ~240 linii
-│           │       ├── CommandPalette.vue   # Ctrl+K modal search (157 linii)
-│           │       ├── ToastNotification.vue # Globalny system toastów (93 linie)
-│           │       ├── ErrorBoundary.vue     # Error isolation (36 linii)
-│           │       ├── MediaCover.vue        # Cover renderer (video/img/icon) (95 linii)
-│           │       └── TrackInfo.vue         # Track info display (56 linii)
+│           │   └── shared/             # 5 komponentów, ~402 linii
+│           │       ├── CommandPalette.vue   # Ctrl+K modal search (147 linii)
+│           │       ├── ToastNotification.vue # Globalny system toastów (86 linii)
+│           │       ├── ErrorBoundary.vue     # Error isolation (33 linie)
+│           │       ├── MediaCover.vue        # Cover renderer (video/img/icon) (84 linie)
+│           │       └── TrackInfo.vue         # Track info display (52 linie)
 │           │
-│           ├── views/                  # 8 widoków, ~2,145 linii (SearchView usunięty)
-│           │   ├── HomeView.vue        # Strona główna + drop zone + skeleton (159 linii)
-│           │   ├── PlayerView.vue      # Odtwarzacz video — UI orchestration (313 linii)
-│           │   ├── AudioView.vue       # Audio player — 3 layouty + shortcuts (191 linii)
-│           │   ├── ExplorerView.vue    # Eksplorator plików (517 linii)
-│           │   ├── LibraryView.vue     # Biblioteka mediów (623 linie)
-│           │   ├── YouTubeView.vue     # YouTube stub (122 linie)
-│           │   ├── DownloadsView.vue   # Pobrania stub (93 linie)
-│           │   └── SettingsView.vue    # Ustawienia (127 linii)
+│           ├── views/                  # 8 widoków, ~1,942 linii
+│           │   ├── HomeView.vue        # Strona główna + drop zone + skeleton (151 linii)
+│           │   ├── PlayerView.vue      # Odtwarzacz video — UI orchestration (280 linii)
+│           │   ├── AudioView.vue       # Audio player — 3 layouty + shortcuts (177 linii)
+│           │   ├── ExplorerView.vue    # Eksplorator plików (427 linii)
+│           │   ├── LibraryView.vue     # Biblioteka mediów (580 linii)
+│           │   ├── YouTubeView.vue     # YouTube stub (117 linii)
+│           │   ├── DownloadsView.vue   # Pobrania stub (89 linii)
+│           │   └── SettingsView.vue    # Ustawienia (121 linii)
 │           │
 │           ├── assets/
 │           │   └── main.css            # Theme CSS variables (94 linie)
@@ -1149,9 +1171,14 @@ Pełny transkoding filmu 2-godzinnego zajmuje 30-60s. Zamiast czekać:
 
 | Plik                        | Linii | Znaczenie                                                                       |
 | --------------------------- | ----- | ------------------------------------------------------------------------------- |
-| `ipc/handlers.ts`           | 1633  | Main IPC — 68 handlerów: fs, metadata, FFmpeg, mkvextract, subtitles, PiP, deps |
-| `ImageViewer.vue`           | 550   | Lightbox: dual-image transitions (fade/slide/zoom/swirl), slideshow, thumbnails |
-| `player.ts` (store)         | 490   | Player + kolejka + history + coverCache + favorites (electron-store persistence)|
+| `ipc/handlers.ts`           | 24    | Orkiestrator IPC — rejestruje 12 sub-handlerów (13 plików, 1,765 linii łącznie) |
+| `ipc/library-handlers.ts`   | 383   | Biblioteka: scan, playlisty, CRUD, tagi ID3                                     |
+| `ipc/media-handlers.ts`     | 284   | Metadane, kodeki, transkodowanie AC3/DTS                                        |
+| `ipc/fs-handlers.ts`        | 233   | Operacje na plikach: readdir (batch), readFile, writeFile, rename, delete       |
+| `ipc/cover-cache.ts`        | 221   | Cache okładek + thumbnaili (Sharp fallback + Windows thumbcache)                |
+| `media-server.ts`           | 94    | Lokalny HTTP server dla mediów (range requests 206, CORS, port losowy)          |
+| `ImageViewer.vue`           | 486   | Lightbox: dual-image transitions (fade/slide/zoom/swirl), slideshow, thumbnails |
+| `player.ts` (store)         | 449   | Player + kolejka + history + coverCache + favorites (electron-store persistence)|
 | `pip-manager.ts`            | 421   | PipManager — PiP window + preview window, position/size, show/hide              |
 | `useVideoPlayer.ts`         | 406   | Video composable: setup, PiP, subtitles, AC3/DTS, lifecycle                     |
 | `useSubtitleRenderer.ts`    | 375   | JASSUB: wasm/worker init, buildFontMap (MKV+Google+lokalne), binary fonts       |
@@ -1289,7 +1316,7 @@ Pełny transkoding filmu 2-godzinnego zajmuje 30-60s. Zamiast czekać:
 
 ---
 
-Ostatnia aktualizacja: 2026-07-23 (Phase 1–3 zakończone, Faza 4 — explorer, Faza 5 — ImageViewer, library, settings)
+Ostatnia aktualizacja: 2026-07-26 (Phase 1–3 zakończone, Faza 4 — explorer, Faza 5 — ImageViewer, library, settings, 17.3 webSecurity)
 
 ---
 
@@ -1639,7 +1666,7 @@ Kluczowe: `effectScope(true)` musi być utworzony na module level (nie w composa
 | Plik | Zmiana |
 | ---- | ------ |
 | `shared/types/ipc.ts` | +`media:getThumbnail` channel |
-| `main/ipc/handlers.ts` | +handler: `nativeImage.createFromPath().resize(320).toDataURL()` |
+| `main/ipc/cover-cache.ts` | +handler: `nativeImage.createFromPath().resize(320).toDataURL()` |
 | `ImageViewer.vue` | Tła: CSS vars, Zoom: debounce 50ms + RAF + scale3d + contain, Thumb: `media:getThumbnail`, Preload: next+LRU cache(5), Slideshow: Ken Burns + shuffle |
 | `main.css` | +`.contain-layout { contain: layout style paint }` |
 
@@ -1650,7 +1677,7 @@ Kluczowe: `effectScope(true)` musi być utworzony na module level (nie w composa
 | `src/main/utils/sharp.ts` | **NOWY** — SharpService: getThumbnail, batchThumbnails, resize przez sharp (libvips) | Batch 5000 thumbnaili ~2-5 min (concurrency n-CPU) zamiast godzin |
 | `src/main/index.ts` | +`protocol.registerSchemesAsPrivileged('onda')` + `protocol.handle('onda', handler)` | Custom protocol: path traversal protection, query params (?w=1920 downscale, ?t=320 thumb) |
 | `ImageViewer.vue` | `onda://` zamiast `file://`, domyślnie `?w=1920` (300KB zamiast 20MB), full-res tylko przy zoom >1.5× | 1. ładowanie 50ms, RAM ~5MB zamiast 80MB+ |
-| `main/ipc/handlers.ts` | `createThumbnailFromPath` (Windows thumbcache) → Sharp fallback. Batch thumbnails. Cover przez Sharp downscale 500px | Thumbnail 1. raz ~5ms (OS cache) lub ~20ms (Sharp) |
+| `main/ipc/cover-cache.ts` | `createThumbnailFromPath` (Windows thumbcache) → Sharp fallback. Batch thumbnails. Cover przez Sharp downscale 500px | Thumbnail 1. raz ~5ms (OS cache) lub ~20ms (Sharp) |
 | `index.html` | CSP +`onda:` w default-src i img-src | Onda protocol dozwolony |
 
 **Jak to teraz działa:**
@@ -1674,6 +1701,106 @@ Runda 3: Użytkownik klika zdjęcie
   → Batch 5000 thumbnaili: Sharp concurrency
   → Cover: Sharp downscale 500px przed cache
 ```
+
+---
+
+## 18.11 17.3 — webSecurity: true + Media Server + handlers.ts Split (2026-07-24/26)
+
+### 18.11.1 17.1 — Podział handlers.ts (2026-07-24)
+
+**Problem:** `handlers.ts` osiągnął 1,633 linii — 68 handlerów w jednym pliku. Utrudnione utrzymanie, testowanie i nawigacja.
+
+**Rozwiązanie:** Podział na 13 plików w `src/main/ipc/`:
+
+| Plik | Linii | Odpowiedzialność |
+| ---- | ----- | ---------------- |
+| `handlers.ts` | 24 | Orkiestrator: rejestruje wszystkie sub-handlery |
+| `fs-handlers.ts` | 233 | Operacje na plikach (readdir batch, readFile, writeFile, rename, delete) |
+| `media-handlers.ts` | 284 | Metadane, kodeki, transkodowanie audio (AC3/DTS) |
+| `subtitle-handlers.ts` | 166 | Napisy embedded MKV + zewnętrzne SRT/ASS/VTT |
+| `library-handlers.ts` | 383 | Biblioteka: scan, playlisty, tagi ID3, MusicBrainz |
+| `dialog-handlers.ts` | 90 | Dialogi open/save/folder |
+| `cover-cache.ts` | 221 | Cache okładek + thumbnaili (Sharp + Windows thumbcache) |
+| `cover-handlers.ts` | 13 | Handler `media:getCover` (deleguje do cover-cache) |
+| `dependency-handlers.ts` | 184 | Sprawdzanie i instalacja FFmpeg, yt-dlp, mkvextract |
+| `playback-handlers.ts` | 14 | Zapamiętywanie pozycji odtwarzania |
+| `settings-handlers.ts` | 23 | Odczyt/zapis ustawień (electron-store) |
+| `youtube-handlers.ts` | 32 | YouTube download (yt-dlp wrapper) |
+| `musicbrainz.ts` | 98 | MusicBrainz API: search, lookup, cover data |
+
+### 18.11.2 17.2 — Timer Management: ImageViewer (2026-07-25)
+
+**Problem:** `ImageViewer.vue` używał `setInterval`/`setTimeout` bezpośrednio, bez cleanup — ryzyko przecieków przy szybkiej nawigacji.
+
+**Rozwiązanie:**
+- Zastąpiono `setInterval` → `useIntervalFn` (VueUse) z natychmiastowym cleanup
+- Zastąpiono `setTimeout` → `useTimeoutFn` (VueUse)
+- Zastąpiono `requestAnimationFrame` → `useRafFn` (VueUse) dla Ken Burns effect
+- Wszystkie VueUse composable automatycznie czyścią się przy `onUnmounted`
+
+**Dodatkowo:**
+- Nowy podkomponent `ImageViewerThumbnails.vue` — wydzielony pasek miniaturek z lazy cache, `scrollToCurrent()` i `preloadNearby()`
+- Nowy podkomponent `ImageViewerSettings.vue` — wydzielone ustawienia slideshow
+- `ImageViewer.vue` spadł z 550 → 486 linii
+
+### 18.11.3 17.3 — webSecurity: true + Media Server (2026-07-26)
+
+**Problem:** `webSecurity: false` wyłączało CORS i Content Security Policy w Chromium — luka bezpieczeństwa. Po włączeniu `webSecurity: true`, Chromium blokuje custom scheme `onda://` dla `<video>`/`<audio>` elementów.
+
+**Rozwiązanie: Lokalny HTTP server dla mediów**
+
+Wzorzec znany z Discord, VS Code, Slack — uruchomienie lokalnego serwera HTTP na `127.0.0.1` zamiast custom scheme:
+
+```
+PRZED: <video src="onda:///C:/video.mp4"> → blokowane przez webSecurity: true
+PO:    <video src="http://127.0.0.1:PORT/?path=C:\video.mp4"> → działa z CORS
+```
+
+**Co zrobiono:**
+
+| Plik | Zmiana |
+| ---- | ------ |
+| `src/main/media-server.ts` | **NOWY** — HTTP server: `fs.createReadStream().pipe(res)` dla range requests (206), CORS `Access-Control-Allow-Origin: *`, port losowy `server.listen(0)` |
+| `src/main/index.ts` | Start serwera PRED utworzeniem okna (`await startMediaServer()`), `webSecurity: true` we wszystkich oknach (main, child, PiP), okrojony handler `onda://` tylko dla obrazków (Sharp thumbnail + resize), cleanup w `app.on('will-quit')` |
+| `src/main/pip-manager.ts` | `webSecurity: true`, `normalizeFilePath` rozpoznaje `onda://` i zwraca raw path |
+| `src/preload/index.ts` | `mediaServerUrl: string` udostępniony przez `ipcRenderer.sendSync('get-media-server-url')` przed ready-to-show |
+| `src/preload/index.d.ts` | +`mediaServerUrl: string` w OndaAPI interface |
+| `src/renderer/index.html` | CSP rozszerzony o `http://127.0.0.1:*` w `media-src`, `img-src`, `default-src`, `connect-src` |
+| `src/renderer/src/modules/audioEngine.ts` | `toFileUrl()` → `${window.api.mediaServerUrl}/?path=` zamiast `file:///` |
+| `src/renderer/src/composables/useVideoPlayer.ts` | `getTrackSrc()` → HTTP server URL |
+| `src/renderer/src/stores/player.ts` | `captureVideoFrame()` → HTTP server URL |
+| `src/renderer/src/components/MediaCover.vue` | video cover src → HTTP server URL |
+| `src/renderer/src/components/explorer/ImageViewer.vue` | `toFileUrl()` → HTTP server URL (obrazy nadal przez `onda://` dla downscale) |
+| `src/renderer/src/components/library/TrackTagEditor.vue` | video cover → raw path (konsystentne z MediaCover.vue) |
+| `src/renderer/src/views/PlayerView.vue` | `<video crossorigin="anonymous">` — wymagane dla CORS |
+| `src/renderer/src/pip.ts` | `crossOrigin = 'anonymous'` w JASSUB video element |
+
+**Architektura media servera:**
+
+```
+media-server.ts (94 linie)
+├── startMediaServer(): Promise<string>
+│   ├── http.createServer(requestHandler)
+│   ├── server.listen(0) → port losowy
+│   └── zwraca "http://127.0.0.1:PORT"
+├── requestHandler(req, res):
+│   ├── CORS headers (Access-Control-Allow-Origin: *)
+│   ├── Range requests: fs.createReadStream(path, { start, end }) → 206 Partial Content
+│   ├── Pełne żądania: fs.createReadStream(path) → 200 OK
+│   └── Content-Type z mime-types
+└── stopMediaServer(): Promise<void>
+    └── server.close()
+```
+
+**Co się zmieniło dla `onda://`:**
+- Handler okrojony tylko do obrazków (SharpService: thumbnail + resize z query params)
+- `fetch()` działa z custom scheme (tylko `<video>`/`<audio>` go blokują)
+- ImageViewer nadal używa `onda://?w=1920` dla downscale
+
+**Weryfikacja:**
+- `npm run typecheck` — 0 błędów
+- `npm test` — 141/141 pass
+- Wszystkie debug logi usunięte
 
 ---
 

@@ -1,24 +1,12 @@
-import { app, shell, BrowserWindow, ipcMain, Tray, Menu, globalShortcut, protocol, net } from 'electron';
-import { join, normalize, isAbsolute } from 'path';
-import { pathToFileURL } from 'url';
+import { app, shell, BrowserWindow, ipcMain, Tray, Menu, globalShortcut } from 'electron';
+import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
+import { createMediaServer } from './media-server';
+import { registerOndaProtocolHandler } from './protocol';
+import { registerWindowHandlers } from './window-ipc';
 import icon from '../../resources/icon.png?asset';
 import { registerIPC } from './ipc/handlers';
 import { pipManager } from './pip-manager';
-import { SharpService } from './utils/sharp';
-
-protocol.registerSchemesAsPrivileged([
-  {
-    scheme: 'onda',
-    privileges: {
-      standard: true,
-      secure: true,
-      supportFetchAPI: true,
-      corsEnabled: true,
-      stream: true
-    }
-  }
-]);
 
 let mainWindow: BrowserWindow | null = null;
 let splashWindow: BrowserWindow | null = null;
@@ -43,7 +31,7 @@ function createWindow(): BrowserWindow {
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: false
+      webSecurity: true
     }
   });
 
@@ -75,7 +63,14 @@ function createWindow(): BrowserWindow {
   });
 
   win.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url);
+    try {
+      const parsed = new URL(details.url);
+      if (['https:', 'http:', 'mailto:'].includes(parsed.protocol)) {
+        shell.openExternal(details.url);
+      }
+    } catch {
+      // ignore invalid URLs
+    }
     return { action: 'deny' };
   });
 
@@ -108,7 +103,7 @@ function createChildWindow(
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: false
+      webSecurity: true
     }
   });
 
@@ -175,7 +170,7 @@ function registerGlobalShortcuts(): void {
     try {
       globalShortcut.register(accelerator, handler);
     } catch {
-      // Some shortcuts may not be available on all platforms
+      /* Some shortcuts may not be available on all platforms */
     }
   }
 }
@@ -224,7 +219,7 @@ function forceCloseSplash(): void {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   electronApp.setAppUserModelId('com.onda.app');
 
   app.on('browser-window-created', (_, window) => {
@@ -235,42 +230,18 @@ app.whenReady().then(() => {
 
   registerIPC();
 
-  protocol.handle('onda', async (req) => {
-    try {
-      const url = new URL(req.url);
-      const rawPath = url.searchParams.get('path') || '';
-      if (!rawPath) return new Response('missing path', { status: 400 });
-      const normalized = normalize(rawPath);
-      if (!isAbsolute(normalized)) {
-        return new Response(`invalid path: ${normalized}`, { status: 400 });
-      }
-      const maxWidth = parseInt(url.searchParams.get('w') || '0');
-      const thumbSize = parseInt(url.searchParams.get('t') || '0');
+  const mediaServer = await createMediaServer();
+  const mediaServerUrl = `http://127.0.0.1:${mediaServer.port}`;
 
-      if (thumbSize > 0) {
-        const buf = await SharpService.getThumbnail(normalized, thumbSize);
-        if (buf) {
-          return new Response(new Uint8Array(buf), {
-            headers: { 'content-type': 'image/jpeg', 'cache-control': 'private, max-age=86400' }
-          });
-        }
-        return new Response('', { status: 404 });
-      }
-
-      if (maxWidth > 0 && maxWidth < 4000) {
-        const buf = await SharpService.resize(normalized, maxWidth);
-        if (buf) {
-          return new Response(new Uint8Array(buf), {
-            headers: { 'content-type': 'image/jpeg', 'cache-control': 'private, max-age=3600' }
-          });
-        }
-      }
-
-      return net.fetch(pathToFileURL(normalized).toString());
-    } catch {
-      return new Response('', { status: 500 });
-    }
+  ipcMain.on('media:getServerUrlSync', (event) => {
+    event.returnValue = mediaServerUrl;
   });
+
+  app.on('will-quit', () => {
+    mediaServer.close();
+  });
+
+  registerOndaProtocolHandler();
 
   mainWindow = createWindow();
   mainWindow.webContents.on('did-finish-load', onMainReady);
@@ -286,158 +257,12 @@ app.whenReady().then(() => {
 
   setTimeout(forceCloseSplash, 15000);
 
-  ipcMain.handle(
-    'window:createChild',
-    (_event, options: { title: string; width: number; height: number; alwaysOnTop?: boolean }) => {
-      if (!mainWindow) return null;
-      const child = createChildWindow(mainWindow, options);
-      return child.id;
-    }
-  );
-
-  ipcMain.handle('window:toggleFullscreen', () => {
-    if (!mainWindow) return false;
-    const isFull = mainWindow.isFullScreen();
-    if (isFull) {
-      mainWindow.setFullScreen(false);
-      if (preFullscreenBounds) {
-        mainWindow.setBounds(preFullscreenBounds);
-        preFullscreenBounds = null;
-      }
-      mainWindow.setResizable(false);
-      mainWindow.setResizable(true);
-      return false;
-    } else {
-      preFullscreenBounds = mainWindow.getBounds();
-      mainWindow.setFullScreen(true);
-      return true;
-    }
+  registerWindowHandlers({
+    getMainWindow: () => mainWindow,
+    preFullscreenBounds: { current: preFullscreenBounds },
+    createChildWindow: (parent, options) => createChildWindow(parent, options),
+    pipManager
   });
-
-  ipcMain.handle('window:exitFullscreen', () => {
-    if (!mainWindow) return;
-    const isFull = mainWindow.isFullScreen();
-    if (isFull) {
-      mainWindow.setFullScreen(false);
-      if (preFullscreenBounds) {
-        mainWindow.setBounds(preFullscreenBounds);
-        preFullscreenBounds = null;
-      }
-      mainWindow.setResizable(false);
-      mainWindow.setResizable(true);
-    }
-  });
-
-  ipcMain.handle('window:isFullscreen', () => {
-    return mainWindow?.isFullScreen() ?? false;
-  });
-
-  ipcMain.handle('window:closeChild', (_event, childId: number) => {
-    const child = BrowserWindow.fromId(childId);
-    child?.close();
-  });
-
-  ipcMain.handle(
-    'pip:start',
-    async (
-      _event,
-      videoSrc: string,
-      pipSettings?: {
-        position?: string;
-        width?: number;
-        height?: number;
-        startTime?: number;
-        subtitle?: {
-          subContent: string;
-          fonts: Array<{ name: string; data: number[] }>;
-          availableFonts: Record<string, string>;
-        } | null;
-      }
-    ) => {
-      return pipManager.show({
-        src: videoSrc,
-        startTime: pipSettings?.startTime || 0,
-        position: pipSettings?.position,
-        width: pipSettings?.width,
-        height: pipSettings?.height,
-        subtitle: pipSettings?.subtitle || null
-      });
-    }
-  );
-
-  ipcMain.handle('pip:stop', () => {
-    pipManager.stop();
-    return true;
-  });
-
-  ipcMain.handle(
-    'pip:previewStart',
-    (_event, opts: { position?: string; width?: number; height?: number }) => {
-      return pipManager.showPreview(opts);
-    }
-  );
-
-  ipcMain.handle('pip:previewStop', () => {
-    pipManager.hidePreview();
-    return true;
-  });
-
-  ipcMain.handle(
-    'pip:previewUpdate',
-    (_event, opts: { position?: string; width?: number; height?: number }) => {
-      pipManager.updatePreview(opts);
-      return true;
-    }
-  );
-
-  ipcMain.handle(
-    'pip:preload',
-    (
-      _event,
-      videoSrc: string,
-      subtitleData: {
-        subContent: string;
-        fonts: Array<{ name: string; data: number[] }>;
-        availableFonts: Record<string, string>;
-      } | null
-    ) => {
-      pipManager.preload(videoSrc, subtitleData);
-    }
-  );
-
-  ipcMain.handle(
-    'pip:loadtrack',
-    (
-      _event,
-      videoSrc: string,
-      subtitleData: {
-        subContent: string;
-        fonts: Array<{ name: string; data: number[] }>;
-        availableFonts: Record<string, string>;
-      } | null
-    ) => {
-      pipManager.loadTrack(videoSrc, subtitleData);
-    }
-  );
-
-  ipcMain.handle('pip:updatesrc', (_event, videoSrc: string, startTime?: number) => {
-    pipManager.loadTrack(videoSrc, null);
-    if (startTime !== undefined) pipManager.play(startTime);
-  });
-
-  ipcMain.handle(
-    'pip:updateSubtitle',
-    (
-      _event,
-      data: {
-        subContent: string;
-        fonts: Array<{ name: string; data: number[] }>;
-        availableFonts: Record<string, string>;
-      } | null
-    ) => {
-      pipManager.updateSubtitle(data);
-    }
-  );
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

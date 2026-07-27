@@ -3,6 +3,7 @@ import { ElectronAPI } from '@electron-toolkit/preload';
 import type { IpcChannels, IpcChannel } from '@shared/types/ipc';
 
 interface OndaAPI {
+  mediaServerUrl: string;
   invoke: <C extends IpcChannel>(
     channel: C,
     ...args: IpcChannels[C]['args']

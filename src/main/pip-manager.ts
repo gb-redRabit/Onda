@@ -1,6 +1,7 @@
 import { BrowserWindow, ipcMain, screen } from 'electron';
 import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
+import { PipPreview } from './pip-preview';
 
 interface PipSubtitleData {
   subContent: string;
@@ -24,9 +25,9 @@ interface PendingData {
   startTime: number;
 }
 
-class PipManager {
+export class PipManager {
   private window: BrowserWindow | null = null;
-  private previewWindow: BrowserWindow | null = null;
+  private preview: PipPreview = new PipPreview();
   private lastTime = 0;
   private timeTimer: ReturnType<typeof setInterval> | null = null;
   private ready = false;
@@ -37,8 +38,14 @@ class PipManager {
   private static normalizeFilePath(url: string): string {
     try {
       const decoded = decodeURIComponent(url);
-      const match = decoded.match(/^file:\/\/\/?(.+)/i);
-      return match?.[1] ? match[1].replace(/\//g, '\\').toLowerCase() : decoded.toLowerCase();
+      const ondaMatch = decoded.match(/^onda:\/\/\/?\?path=(.+)/i);
+      if (ondaMatch?.[1]) {
+        return decodeURIComponent(ondaMatch[1]).replace(/\//g, '\\').toLowerCase();
+      }
+      const fileMatch = decoded.match(/^file:\/\/\/?(.+)/i);
+      return fileMatch?.[1]
+        ? fileMatch[1].replace(/\//g, '\\').toLowerCase()
+        : decoded.toLowerCase();
     } catch {
       return url.toLowerCase();
     }
@@ -70,7 +77,7 @@ class PipManager {
         sandbox: false,
         contextIsolation: true,
         nodeIntegration: false,
-        webSecurity: false
+        webSecurity: true
       }
     });
 
@@ -310,105 +317,20 @@ class PipManager {
   }
 
   showPreview(opts: { position?: string; width?: number; height?: number }): boolean {
-    if (this.previewWindow && !this.previewWindow.isDestroyed()) {
-      this.previewWindow.destroy();
-    }
-    this.previewWindow = null;
-
-    const pw = opts.width || 480;
-    const ph = opts.height || 290;
-    const pos = opts.position || 'bottom-right';
-    const display = screen.getPrimaryDisplay().workAreaSize;
-    const margin = 20;
-    let x: number, y: number;
-
-    switch (pos) {
-      case 'bottom-left':
-        x = margin;
-        y = display.height - ph - margin;
-        break;
-      case 'top-right':
-        x = display.width - pw - margin;
-        y = margin;
-        break;
-      case 'top-left':
-        x = margin;
-        y = margin;
-        break;
-      default:
-        x = display.width - pw - margin;
-        y = display.height - ph - margin;
-        break;
-    }
-
-    this.previewWindow = new BrowserWindow({
-      x,
-      y,
-      width: pw,
-      height: ph,
-      show: false,
-      alwaysOnTop: true,
-      frame: false,
-      skipTaskbar: true,
-      resizable: false,
-      backgroundColor: '#1a1a1a',
-      webPreferences: {
-        contextIsolation: true,
-        nodeIntegration: false
-      }
-    });
-
-    this.previewWindow.loadURL(
-      `data:text/html,<!DOCTYPE html><html><head><style>*{margin:0;padding:0}body{background:#1a1a1a;height:100vh;display:flex;align-items:center;justify-content:center;color:#555;font:13px sans-serif;border:1px dashed #333;border-radius:12px;box-sizing:border-box}</style></head><body>Podgląd PiP</body></html>`
-    );
-
-    this.previewWindow.show();
-    return true;
+    return this.preview.show(opts);
   }
 
   hidePreview(): void {
-    if (this.previewWindow && !this.previewWindow.isDestroyed()) {
-      this.previewWindow.destroy();
-    }
-    this.previewWindow = null;
+    this.preview.hide();
   }
 
   updatePreview(opts: { position?: string; width?: number; height?: number }): void {
-    if (!this.previewWindow || this.previewWindow.isDestroyed()) return;
-
-    const size = this.previewWindow.getSize();
-    const pw = opts.width ?? size[0] ?? 400;
-    const ph = opts.height ?? size[1] ?? 300;
-    const pos = opts.position || 'bottom-right';
-    const display = screen.getPrimaryDisplay().workAreaSize;
-    const margin = 20;
-    let x: number, y: number;
-
-    switch (pos) {
-      case 'bottom-left':
-        x = margin;
-        y = display.height - ph - margin;
-        break;
-      case 'top-right':
-        x = display.width - pw - margin;
-        y = margin;
-        break;
-      case 'top-left':
-        x = margin;
-        y = margin;
-        break;
-      default:
-        x = display.width - pw - margin;
-        y = display.height - ph - margin;
-        break;
-    }
-
-    this.previewWindow.setBounds({ x, y, width: pw, height: ph });
+    this.preview.update(opts);
   }
 
   destroy(): void {
     this.stopTimeTracking();
-    this.hidePreview();
+    this.preview.destroy();
     if (this.window && !this.window.isDestroyed()) {
       this.window.destroy();
     }

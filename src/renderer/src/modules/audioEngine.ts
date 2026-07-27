@@ -7,7 +7,7 @@ const eqFrequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 
 function toFileUrl(filePath: string): string {
   const normalized = filePath.replace(/\\/g, '/');
-  return `file:///${encodeURI(normalized).replace(/#/g, '%23').replace(/\?/g, '%3F')}`;
+  return `${window.api.mediaServerUrl}/?path=${encodeURIComponent(normalized)}`;
 }
 
 class AudioEngine {
@@ -288,23 +288,35 @@ class AudioEngine {
     } catch {}
     try {
       this.sourceNodeB?.disconnect();
-    } catch {}
+    } catch {
+      /* already disconnected */
+    }
     try {
       this.crossfadeGainA?.disconnect();
-    } catch {}
+    } catch {
+      /* already disconnected */
+    }
     try {
       this.crossfadeGainB?.disconnect();
-    } catch {}
+    } catch {
+      /* already disconnected */
+    }
     try {
       this.gainNode?.disconnect();
-    } catch {}
+    } catch {
+      /* already disconnected */
+    }
     try {
       this.analyserNode?.disconnect();
-    } catch {}
+    } catch {
+      /* already disconnected */
+    }
     for (const f of this.eqFilters) {
       try {
         f.disconnect();
-      } catch {}
+      } catch {
+        /* already disconnected */
+      }
     }
   }
 

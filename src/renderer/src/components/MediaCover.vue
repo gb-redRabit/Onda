@@ -37,7 +37,7 @@ const result = computed(() => {
 const isVideo = computed(() => result.value.type === 'video' && props.renderAsVideo);
 const src = computed(() => {
   if (!result.value.data) return '';
-  if (result.value.type === 'video') return 'file:///' + result.value.data.replace(/\\/g, '/');
+  if (result.value.type === 'video') return `${window.api.mediaServerUrl}/?path=${encodeURIComponent(result.value.data.replace(/\\/g, '/'))}`;
   return result.value.data;
 });
 

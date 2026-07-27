@@ -33,7 +33,7 @@ export function useVideoPlayer(ctx: {
   });
 
   function getTrackSrc(track: { path: string }): string {
-    return `file:///${track.path.replace(/\\/g, '/')}`;
+    return `${window.api.mediaServerUrl}/?path=${encodeURIComponent(track.path.replace(/\\/g, '/'))}`;
   }
 
   function connectVideoEvents(el: HTMLVideoElement) {
@@ -144,7 +144,7 @@ export function useVideoPlayer(ctx: {
           audioEngine.playSecondaryAudio();
         }
       } catch {
-        /* chunk failed, fall through to full transcode */
+        /* chunk failed — fall through to full transcode */
       }
     }
 
@@ -252,12 +252,12 @@ export function useVideoPlayer(ctx: {
         pip.loadTrack(src, null);
         preparePiPSubtitleData(track.path).then((subtitleData) => {
           if (player.pipActive) pip.updateSubtitle(subtitleData);
-        });
+        }).catch(() => {});
       } else {
         pip.preload(src, null);
         preparePiPSubtitleData(track.path).then((subtitleData) => {
           pip.updateSubtitle(subtitleData);
-        });
+        }).catch(() => {});
       }
     }
   }

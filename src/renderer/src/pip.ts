@@ -29,6 +29,7 @@ async function main() {
   document.head.appendChild(styleEl);
 
   const v = document.getElementById('pipV') as HTMLVideoElement;
+  v.crossOrigin = 'anonymous';
   const barF = document.getElementById('barF') as HTMLDivElement;
   const barW = document.getElementById('barW') as HTMLDivElement;
   const curT = document.getElementById('curT') as HTMLSpanElement;

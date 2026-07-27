@@ -19,7 +19,9 @@ async function search() {
       query.value
     )) as YouTubeSearchResult | null;
     if (result) yt.setResults(result.items || [], result.nextPageToken, result.prevPageToken);
-  } catch {}
+  } catch {
+    /* YouTube search not implemented yet */
+  }
   yt.isSearching = false;
 }
 </script>

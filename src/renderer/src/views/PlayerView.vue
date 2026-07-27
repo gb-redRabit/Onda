@@ -227,6 +227,7 @@ onUnmounted(() => {
         :ref="vp.onVideoRef"
         class="w-full h-full object-contain cursor-pointer"
         :style="vp.videoFilterStyle.value"
+        crossorigin="anonymous"
         @click="handleClick"
       />
 

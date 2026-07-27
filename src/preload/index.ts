@@ -1,7 +1,10 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import { electronAPI } from '@electron-toolkit/preload';
 
+const mediaServerUrl: string = ipcRenderer.sendSync('media:getServerUrlSync');
+
 const api = {
+  mediaServerUrl,
   invoke: (channel: string, ...args: unknown[]): Promise<unknown> => {
     return ipcRenderer.invoke(channel, ...args);
   },

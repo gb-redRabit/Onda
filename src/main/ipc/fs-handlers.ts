@@ -198,24 +198,47 @@ export function registerFsHandlers(): void {
   });
 
   ipcMain.handle('shell:openExternal', async (_event, url: string) => {
-    await shell.openExternal(url);
+    try {
+      const allowedProtocols = ['https:', 'http:', 'mailto:'];
+      try {
+        const parsed = new URL(url);
+        if (!allowedProtocols.includes(parsed.protocol)) return;
+      } catch {
+        return;
+      }
+      await shell.openExternal(url);
+    } catch {
+      // ignore
+    }
   });
 
   ipcMain.handle('shell:showItemInFolder', (_event, fullPath: string) => {
-    shell.showItemInFolder(fullPath);
+    try {
+      shell.showItemInFolder(fullPath);
+    } catch {
+      // ignore
+    }
   });
 
   ipcMain.handle('shell:openTerminal', async (_event, dirPath: string) => {
-    const isWindows = process.platform === 'win32';
-    if (isWindows) {
-      execCb(`start cmd /K "cd /d "${dirPath}""`, { windowsHide: true });
-    } else {
-      execCb(`open -a Terminal "${dirPath}"`);
+    try {
+      const isWindows = process.platform === 'win32';
+      if (isWindows) {
+        execCb(`start cmd /K "cd /d "${dirPath}""`, { windowsHide: true });
+      } else {
+        execCb(`open -a Terminal "${dirPath}"`);
+      }
+    } catch {
+      // ignore
     }
   });
 
   ipcMain.handle('shell:openWithDefault', async (_event, filePath: string) => {
-    await shell.openPath(filePath);
+    try {
+      await shell.openPath(filePath);
+    } catch {
+      // ignore
+    }
   });
 
   ipcMain.handle('shell:getFileIcon', async (_event, filePath: string) => {

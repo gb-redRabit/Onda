@@ -43,9 +43,10 @@ const uploadingCover = ref(false);
 const coverUrl = ref<string | null>(null);
 const coverObj = computed<{ type: string | null; data: string | null } | undefined>(() => {
   if (!coverUrl.value) return undefined;
-  return coverUrl.value.startsWith('file:///')
-    ? { type: 'video', data: coverUrl.value.replace('file:///', '') }
-    : { type: 'image', data: coverUrl.value };
+  if (coverUrl.value.startsWith('data:') || coverUrl.value.startsWith('blob:')) {
+    return { type: 'image', data: coverUrl.value };
+  }
+  return { type: 'video', data: coverUrl.value };
 });
 
 watch(
@@ -73,7 +74,7 @@ async function loadCover() {
     if (cached.type === 'image') {
       coverUrl.value = cached.data;
     } else if (cached.type === 'video') {
-      coverUrl.value = 'file:///' + cached.data;
+      coverUrl.value = cached.data;
     }
     return;
   }

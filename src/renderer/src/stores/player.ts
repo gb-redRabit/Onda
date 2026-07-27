@@ -211,7 +211,7 @@ export const usePlayerStore = defineStore('player', () => {
       const video = document.createElement('video');
       video.muted = true;
       video.playsInline = true;
-      video.src = `file:///${filePath.replace(/\\/g, '/')}`;
+      video.src = `${window.api.mediaServerUrl}/?path=${encodeURIComponent(filePath.replace(/\\/g, '/'))}`;
 
       let resolved = false;
       function done(result: CoverResult) {
