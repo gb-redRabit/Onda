@@ -1,67 +1,63 @@
 import { ipcMain, shell, app, clipboard, BrowserWindow } from 'electron';
 import { readdir, stat, lstat, readFile, writeFile, mkdir, rename, unlink, rm } from 'fs/promises';
 import { join, extname } from 'path';
-import { exec as execCb } from 'child_process';
+import { exec as execCb, spawn } from 'child_process';
 import { promisify } from 'util';
 import type { FileItem } from '../../renderer/src/types/explorer';
 
 const execAsync = promisify(execCb);
 
-async function getWindowsDrives(): Promise<FileItem[]> {
-  const fallback = [
-    {
-      name: 'C:',
-      path: 'C:',
-      isDirectory: true,
-      size: 0,
-      modifiedAt: Date.now(),
-      createdAt: Date.now(),
-      extension: '',
-      mimeType: undefined
-    }
-  ];
-  try {
-    const cmd =
-      'powershell.exe -NoProfile -NonInteractive -Command "Get-PSDrive -PSProvider FileSystem | Select-Object Name,Root,Free,Used | ConvertTo-Json -Compress"';
-    const { stdout } = await execAsync(cmd, {
-      encoding: 'utf-8',
-      timeout: 10000,
-      windowsHide: true
-    });
-    if (!stdout || !stdout.trim()) return fallback;
-    interface DriveInfo {
-      Name: string;
-      Root: string;
-      Free: number;
-      Used: number;
-    }
-    let parsed: DriveInfo[];
+async function getDrives(): Promise<FileItem[]> {
+  const platform = process.platform;
+  if (platform === 'win32') {
     try {
-      parsed = JSON.parse(stdout.trim());
-    } catch {
-      return fallback;
-    }
-    if (!Array.isArray(parsed)) parsed = [parsed];
-    return parsed
-      .filter((d) => d && d.Name)
-      .map((d) => {
-        const name: string = d.Name;
-        const used: number = d.Used || 0;
-        const free: number = d.Free || 0;
-        return {
-          name: `${name}:`,
-          path: `${name}:`,
-          isDirectory: true,
-          size: used + free,
-          modifiedAt: Date.now(),
-          createdAt: Date.now(),
-          extension: '',
-          mimeType: undefined
-        };
+      const cmd =
+        'powershell.exe -NoProfile -NonInteractive -Command "Get-PSDrive -PSProvider FileSystem | Select-Object Name,Root,Free,Used | ConvertTo-Json -Compress"';
+      const { stdout } = await execAsync(cmd, {
+        encoding: 'utf-8',
+        timeout: 10000,
+        windowsHide: true
       });
-  } catch {
-    return fallback;
+      if (!stdout || !stdout.trim()) return [];
+      interface DriveInfo {
+        Name: string;
+        Root: string;
+        Free: number;
+        Used: number;
+      }
+      let parsed: DriveInfo[];
+      try {
+        parsed = JSON.parse(stdout.trim());
+      } catch {
+        return [];
+      }
+      if (!Array.isArray(parsed)) parsed = [parsed];
+      return parsed
+        .filter((d) => d && d.Name)
+        .map((d) => {
+          const name: string = d.Name;
+          const used: number = d.Used || 0;
+          const free: number = d.Free || 0;
+          return {
+            name: `${name}:`,
+            path: `${name}:`,
+            isDirectory: true,
+            size: used + free,
+            modifiedAt: Date.now(),
+            createdAt: Date.now(),
+            extension: '',
+            mimeType: undefined
+          };
+        });
+    } catch {
+      return [];
+    }
   }
+  if (platform === 'darwin') {
+    return [{ name: 'Macintosh HD', path: '/', isDirectory: true, size: 0, modifiedAt: Date.now(), createdAt: Date.now(), extension: '', mimeType: undefined }];
+  }
+  // linux
+  return [{ name: '/', path: '/', isDirectory: true, size: 0, modifiedAt: Date.now(), createdAt: Date.now(), extension: '', mimeType: undefined }];
 }
 
 function getFileItem(fullPath: string, stats: import('fs').Stats, name: string): FileItem {
@@ -79,12 +75,12 @@ function getFileItem(fullPath: string, stats: import('fs').Stats, name: string):
 
 export function registerFsHandlers(): void {
   ipcMain.handle('fs:getDrives', async (): Promise<FileItem[]> => {
-    return getWindowsDrives();
+    return getDrives();
   });
 
   ipcMain.handle('fs:readdir', async (event, dirPath: string): Promise<void> => {
     if (!dirPath || dirPath === '/') {
-      event.sender.send('fs:readdir:batch', { done: true, items: await getWindowsDrives() });
+      event.sender.send('fs:readdir:batch', { done: true, items: await getDrives() });
       return;
     }
     const resolvedPath = /^[A-Z]:$/i.test(dirPath) ? `${dirPath}\\` : dirPath;
@@ -224,9 +220,9 @@ export function registerFsHandlers(): void {
     try {
       const isWindows = process.platform === 'win32';
       if (isWindows) {
-        execCb(`start cmd /K "cd /d "${dirPath}""`, { windowsHide: true });
+        spawn('cmd', ['/K', 'cd', '/d', dirPath], { windowsHide: true, detached: true }).unref();
       } else {
-        execCb(`open -a Terminal "${dirPath}"`);
+        spawn('open', ['-a', 'Terminal', dirPath], { detached: true }).unref();
       }
     } catch {
       // ignore

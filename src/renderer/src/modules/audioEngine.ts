@@ -565,11 +565,11 @@ class AudioEngine {
 
   async destroy(): Promise<void> {
     this.stopRafLoop();
+    this.isCrossfading = false;
     if (this.crossfadeTimer) {
       clearTimeout(this.crossfadeTimer);
       this.crossfadeTimer = null;
     }
-    this.isCrossfading = false;
     this.savePosition();
     this.disconnectSecondaryAudio();
     this.disconnectNodes();

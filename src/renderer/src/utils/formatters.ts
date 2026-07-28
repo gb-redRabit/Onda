@@ -34,10 +34,11 @@ export function formatRelativeTime(timestamp: number): string {
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
   if (days > 30) return new Date(timestamp).toLocaleDateString();
-  if (days > 0) return `${days}d ago`;
-  if (hours > 0) return `${hours}h ago`;
-  if (minutes > 0) return `${minutes}m ago`;
-  return 'Just now';
+  const rtf = new Intl.RelativeTimeFormat('pl', { numeric: 'auto' });
+  if (days > 0) return rtf.format(-days, 'day');
+  if (hours > 0) return rtf.format(-hours, 'hour');
+  if (minutes > 0) return rtf.format(-minutes, 'minute');
+  return rtf.format(-seconds, 'second');
 }
 
 export function generateId(): string {

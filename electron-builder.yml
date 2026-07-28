@@ -26,6 +26,9 @@ mac:
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: false
+  # to enable notarization:
+  #   1. set notarize: true
+  #   2. set env vars: APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID
 dmg:
   artifactName: ${name}-${version}.${ext}
 linux:
@@ -39,7 +42,9 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: ${env.GH_OWNER:-your-gh-username}
+  repo: onda
+  # requires GH_TOKEN env var with repo scope for releases
 electronDownload:
-  mirror: https://npmmirror.com/mirrors/electron/
+  # mirror: https://npmmirror.com/mirrors/electron/

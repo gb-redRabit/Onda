@@ -67,7 +67,7 @@ export const useUIStore = defineStore('ui', () => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     notifications.value.push({ id, type, title, message, duration });
     if (duration > 0) {
-      setTimeout(() => removeNotification(id), duration);
+      setTimeout(() => { try { removeNotification(id); } catch { /* ignore */ } }, duration);
     }
   }
 

@@ -40,12 +40,15 @@ export class PipManager {
       const decoded = decodeURIComponent(url);
       const ondaMatch = decoded.match(/^onda:\/\/\/?\?path=(.+)/i);
       if (ondaMatch?.[1]) {
-        return decodeURIComponent(ondaMatch[1]).replace(/\//g, '\\').toLowerCase();
+        const p = decodeURIComponent(ondaMatch[1]).replace(/\//g, '\\');
+        return process.platform === 'win32' ? p.toLowerCase() : p;
       }
       const fileMatch = decoded.match(/^file:\/\/\/?(.+)/i);
-      return fileMatch?.[1]
-        ? fileMatch[1].replace(/\//g, '\\').toLowerCase()
-        : decoded.toLowerCase();
+      if (fileMatch?.[1]) {
+        const p = fileMatch[1].replace(/\//g, '\\');
+        return process.platform === 'win32' ? p.toLowerCase() : p;
+      }
+      return process.platform === 'win32' ? decoded.toLowerCase() : decoded;
     } catch {
       return url.toLowerCase();
     }

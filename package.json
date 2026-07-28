@@ -49,7 +49,6 @@
     "@electron-toolkit/tsconfig": "^2.0.0",
     "@tailwindcss/vite": "^4.3.2",
     "@types/node": "^22.19.1",
-    "@types/sharp": "^0.31.1",
     "@vitejs/plugin-vue": "^6.0.2",
     "@vue/test-utils": "^2.4.11",
     "electron": "^39.8.10",

@@ -13,9 +13,11 @@ export function usePiP(callbacks?: { onClosed?: (time: number) => void; onEnded?
   const currentTime = ref(0);
 
   const cleanups: (() => void)[] = [];
+  let listenersRegistered = false;
 
   onMounted(() => {
-    if (!window.api) return;
+    if (!window.api || listenersRegistered) return;
+    listenersRegistered = true;
     cleanups.push(
       window.api.on('pip:closed', (time: unknown) => {
         const savedTime = (time as number) || 0;

@@ -88,21 +88,21 @@ describe('formatNumber', () => {
 });
 
 describe('formatRelativeTime', () => {
-  it('returns Just now for recent timestamps', () => {
-    expect(formatRelativeTime(Date.now())).toBe('Just now');
-    expect(formatRelativeTime(Date.now() - 30000)).toBe('Just now');
+  it('returns teraz for recent timestamps', () => {
+    expect(formatRelativeTime(Date.now())).toBe('teraz');
+    expect(formatRelativeTime(Date.now() - 30000)).toBe('30 sekund temu');
   });
 
   it('returns minutes ago', () => {
-    expect(formatRelativeTime(Date.now() - 120000)).toBe('2m ago');
+    expect(formatRelativeTime(Date.now() - 120000)).toBe('2 minuty temu');
   });
 
   it('returns hours ago', () => {
-    expect(formatRelativeTime(Date.now() - 7200000)).toBe('2h ago');
+    expect(formatRelativeTime(Date.now() - 7200000)).toBe('2 godziny temu');
   });
 
   it('returns days ago', () => {
-    expect(formatRelativeTime(Date.now() - 172800000)).toBe('2d ago');
+    expect(formatRelativeTime(Date.now() - 172800000)).toBe('przedwczoraj');
   });
 });
 
@@ -205,16 +205,17 @@ describe('formatRelativeTime edge cases', () => {
   it('returns date string for timestamps older than 30 days', () => {
     const old = Date.now() - 31 * 24 * 60 * 60 * 1000;
     const result = formatRelativeTime(old);
-    expect(result).not.toBe('Just now');
-    expect(result).not.toMatch(/[dmh] ago/);
+    expect(result).not.toBe('teraz');
+    expect(result).not.toBe('przedwczoraj');
+    expect(result).not.toMatch(/temu/);
   });
 
-  it('returns Just now for future timestamps (negative diff)', () => {
-    expect(formatRelativeTime(Date.now() + 10000)).toBe('Just now');
+  it('returns future relative string for future timestamps (negative diff)', () => {
+    expect(formatRelativeTime(Date.now() + 10000)).toBe('za 10 sekund');
   });
 
-  it('returns 0d ago for exactly 0 diff', () => {
-    expect(formatRelativeTime(Date.now())).toBe('Just now');
+  it('returns teraz for exactly 0 diff', () => {
+    expect(formatRelativeTime(Date.now())).toBe('teraz');
   });
 });
 

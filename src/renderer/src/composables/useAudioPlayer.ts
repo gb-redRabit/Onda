@@ -3,7 +3,7 @@ import { audioEngine } from '@renderer/modules/audioEngine';
 import { audioEvents } from '@renderer/utils/audioEvents';
 import { usePlayerStore } from '@renderer/stores/player';
 
-let _initialized = false;
+let initCount = 0;
 
 const currentTime = ref(0);
 const duration = ref(0);
@@ -13,7 +13,6 @@ const mediaEl = ref<HTMLAudioElement | null>(null);
 const isReady = ref(false);
 const error = ref<string | null>(null);
 
-const cleanups: (() => void)[] = [];
 let scope: EffectScope | null = null;
 
 function resumeAndPlay() {
@@ -23,10 +22,10 @@ function resumeAndPlay() {
 
 export function useAudioPlayer() {
   const player = usePlayerStore();
+  const cleanups: (() => void)[] = [];
+  const instanceId = ++initCount;
 
-  if (!_initialized) {
-    _initialized = true;
-
+  if (instanceId === 1) {
     cleanups.push(
       audioEvents.on('timeUpdate', (time: number) => {
         currentTime.value = time;
@@ -122,7 +121,7 @@ export function useAudioPlayer() {
     volume.value = player.volume;
   }
 
-  onUnmounted(() => { cleanups.forEach(fn => fn()); scope?.stop(); });
+  onUnmounted(() => { cleanups.forEach(fn => fn()); if (instanceId === 1) scope?.stop(); });
 
   const progress = computed(() => (duration.value > 0 ? currentTime.value / duration.value : 0));
 

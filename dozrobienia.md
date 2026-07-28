@@ -1,6 +1,6 @@
 # Do zrobienia — Onda
 
-> Stan na: 2026-07-27 (fixy napisów + fontów)
+> Stan na: 2026-07-28 (kompleksowy przegląd + fixy)
 > typecheck: 0 błędów, testy: 141/141
 
 ---
@@ -153,21 +153,31 @@
 
 ### ⏳ Zostało do ogarnięcia
 
-| # | Opis | Plik/kontekst |
-|---|------|----------------|
-| 52 | Brak CI/CD (GitHub Actions) | — |
-| 54 | Generic publish URL (`https://example.com/auto-updates`) | `electron-builder.yml:41` |
-| 55 | `notarize: false` — macOS build nie podpisany | `electron-builder.yml:28` |
-| 56 | Notification auto-removal może zgasnąć jeśli `removeNotification` rzuci | `ui.ts:66-72` |
-| 58 | `youtube.ts` — brak walidacji, brak anulowania po stronie serwera | `youtube.ts:38-39` |
-| 59 | `sharp` wersja `^0.35.3` — bardzo stara | `package.json` |
-| 60 | `@lucide/vue` `^1.24.0` — v2 dostępne | `package.json` |
+| # | Opis | Status |
+|---|------|--------|
+| 52 | CI/CD (GitHub Actions) | ✅ zrobione |
+| 54 | publish URL | ✅ zmieniono na github provider |
+| 55 | notarize | ✅ dodana instrukcja z env vars |
+| 56 | Notification auto-removal | ✅ try-catch |
+| 57 | settings save setTimeout | ✅ usunięty debounce |
+| 58 | youtube.ts | ❌ całość to stub — wymaga yt-dlp implementacji |
+| 59 | sharp | ❌ już najnowszy (0.35.3) |
+| 60 | @lucide/vue | ❌ już najnowszy (1.27), v2 nie istnieje |
+
+### Nowe itemy z audytu kodu — do decyzji
+
+| # | Opis | Plik | Severity |
+|---|------|------|----------|
+| 61 | `audioEngine.ts` — crossfade cleanup przy unmount | `audioEngine.ts:183-265` | medium |
+| 62 | `reorderQueue` — miesza computed z surowymi tablicami | `player.ts:160-177` | medium |
+| 63 | `library.ts` — `artists`/`albums` computed O(n) na każdą zmianę | `library.ts:35-57` | low |
+| 64 | `player.ts` — `loadFavorites()` wołane przed `window.api` ready | `player.ts:83` | low |
+| 65 | `usePiP.ts` — listenery mogą być duplikowane | `usePiP.ts:17-31` | low |
 
 ### ✅ Zrobione
 
 | # | Opis | Fix |
 |---|------|-----|
-| 57 | `save()` w settings z `setTimeout(300)` — utrata danych przy zamknięciu | ✅ usunięto debounce, zapis natychmiastowy (IPC narzut pomijalny) |
 
 ---
 
@@ -245,3 +255,23 @@
 | **Fix: dodano packageManager w package.json** | **2026-07-27** |
 | **Zweryfikowano: items 43-50 to false alarms / celowe zachowanie** | **2026-07-27** |
 | **Fix: settings save() bez setTimeout — natychmiastowy zapis** | **2026-07-27** |
+| **Fix: notification try-catch w setTimeout** | **2026-07-27** |
+| **Fix: CI/CD — GitHub Actions (lint + typecheck + test + build)** | **2026-07-27** |
+| **Fix: publish generic → github provider** | **2026-07-27** |
+| **Fix: notarize — dodano komentarz + env var instrukcja** | **2026-07-27** |
+| **Zweryfikowano: youtube-handlers to stub, nie do walidacji** | **2026-07-27** |
+| **Zweryfikowano: sharp 0.35.3 i @lucide/vue 1.27 już najnowsze** | **2026-07-27** |
+| **Fix: shell:openTerminal — spawn zamiast exec (shell injection)** | **2026-07-28** |
+| **Fix: protocol.ts — path whitelist (dozwolone tylko katalogi usera)** | **2026-07-28** |
+| **Fix: electron-store z encryptionKey (maszynowy klucz)** | **2026-07-28** |
+| **Fix: cover-cache busy-wait polling → Promise queue** | **2026-07-28** |
+| **Fix: library.ts scheduleLoadTracksAsync polling → Promise queue** | **2026-07-28** |
+| **Fix: useAudioPlayer — listener leak na remount (initCount + per-call cleanups)** | **2026-07-28** |
+| **Fix: getWindowsDrives → getDrives cross-platform** | **2026-07-28** |
+| **Fix: PipManager normalizeFilePath — case-sensitive tylko na Windows** | **2026-07-28** |
+| **Fix: sourcemap: false → 'hidden' w electron.vite.config** | **2026-07-28** |
+| **Fix: electron-builder.yml — usunięto Chinese mirror** | **2026-07-28** |
+| **Fix: usunięto @types/sharp (sharp 0.35 ma własne typy)** | **2026-07-28** |
+| **Fix: formatRelativeTime — Intl.RelativeTimeFormat('pl') zamiast "d ago"** | **2026-07-28** |
+| **Fix: uint8ToBase64 — optymalizacja (bez apply + Array.from)** | **2026-07-28** |
+| **Fix: captureVideoFrame dedup — import z player-cover zamiast kopii** | **2026-07-28** |

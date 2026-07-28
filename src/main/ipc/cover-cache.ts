@@ -12,10 +12,15 @@ import { AUDIO_EXTS, VIDEO_EXTS } from '../../shared/constants';
 const execAsync = promisify(execCb);
 
 let _store: InstanceType<typeof import('electron-store').default> | null = null;
+function getEncryptionKey(): string {
+  // derive a machine-specific key from hostname + app name
+  const host = os.hostname();
+  return createHash('sha256').update(`onda-settings-${host}`).digest('hex').slice(0, 32);
+}
 export async function getStore() {
   if (!_store) {
     const { default: Store } = await import('electron-store');
-    _store = new Store();
+    _store = new Store({ encryptionKey: getEncryptionKey() });
   }
   return _store;
 }
@@ -31,7 +36,7 @@ export interface CachedCover {
 
 export const coverResultCache = new Map<string, CachedCover>();
 export const durationCache = new Map<string, { duration: number; mtimeMs: number }>();
-export const coverCacheLocks = new Set<string>();
+export const coverCacheLocks = new Map<string, Array<() => void>>();
 
 const CACHE_MAX_SIZE = 5000;
 
@@ -200,19 +205,15 @@ export async function extractAndCacheCover(
 
   while (coverCacheLocks.has(filePath)) {
     await new Promise<void>((resolve) => {
-      const check = setInterval(() => {
-        if (!coverCacheLocks.has(filePath)) {
-          clearInterval(check);
-          resolve();
-        }
-      }, 10);
-      setTimeout(() => { clearInterval(check); resolve(); }, 5000);
+      const list = coverCacheLocks.get(filePath)!;
+      list.push(resolve);
+      setTimeout(resolve, 5000);
     });
   }
   const cached = await getCachedCover(filePath);
   if (cached) return cached;
 
-  coverCacheLocks.add(filePath);
+  coverCacheLocks.set(filePath, []);
 
   try {
     const ext = extname(filePath).toLowerCase();
@@ -242,7 +243,9 @@ export async function extractAndCacheCover(
 
     return result;
   } finally {
+    const waiting = coverCacheLocks.get(filePath);
     coverCacheLocks.delete(filePath);
+    if (waiting) waiting.forEach((r) => r());
   }
 }
 

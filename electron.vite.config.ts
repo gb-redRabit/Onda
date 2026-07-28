@@ -34,7 +34,7 @@ export default defineConfig({
     worker: { format: 'es' },
     css: { devSourcemap: false },
     build: {
-      sourcemap: false,
+      sourcemap: 'hidden',
       rollupOptions: {
         input: {
           index: resolve('src/renderer/index.html'),

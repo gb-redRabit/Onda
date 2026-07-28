@@ -2,10 +2,10 @@ import { defineStore } from 'pinia';
 import { ref, computed, triggerRef } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import type { SubtitleTrack, MkvFont } from '@renderer/types/subtitles';
-import { VIDEO_EXTS } from '@shared/constants';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { logger } from '@renderer/utils/logger';
 import { useLibraryStore } from '@renderer/stores/library';
+import { captureVideoFrame } from './player-cover';
 
 export const usePlayerStore = defineStore('player', () => {
   const currentTrack = ref<MediaFile | null>(null);
@@ -40,7 +40,20 @@ export const usePlayerStore = defineStore('player', () => {
 
   const hasTrack = computed(() => currentTrack.value !== null);
 
+  let favoritesLoaded = false;
+  async function ensureFavorites(): Promise<void> {
+    if (favoritesLoaded) return;
+    favoritesLoaded = true;
+    if (!window.api) return;
+    try {
+      const data = (await window.api.invoke('settings:get')) as Record<string, unknown>;
+      const list = data.favorites;
+      if (Array.isArray(list)) favorites.value = list;
+    } catch { /* defaults */ }
+  }
+
   function isFavorite(path: string): boolean {
+    ensureFavorites();
     return favorites.value.includes(path);
   }
 
@@ -55,17 +68,8 @@ export const usePlayerStore = defineStore('player', () => {
   }
 
   async function loadFavorites() {
-    try {
-      if (window.api) {
-        const data = (await window.api.invoke('settings:get')) as Record<string, unknown>;
-        const list = data.favorites;
-        if (Array.isArray(list)) {
-          favorites.value = list as string[];
-        }
-      }
-    } catch {
-      // use defaults
-    }
+    favoritesLoaded = false;
+    await ensureFavorites();
   }
 
   async function saveFavorites() {
@@ -80,7 +84,6 @@ export const usePlayerStore = defineStore('player', () => {
     }
   }
 
-  loadFavorites().catch((err) => logger.error('Player', 'loadFavorites', err));
   const progress = computed(() => (duration.value > 0 ? currentTime.value / duration.value : 0));
   const queueLength = computed(() => queue.value.length + pendingQueue.value.length);
   const displayQueue = computed(() => [...pendingQueue.value, ...queue.value]);
@@ -161,19 +164,17 @@ export const usePlayerStore = defineStore('player', () => {
     const items = displayQueue.value;
     if (from < 0 || from >= items.length || to < 0 || to >= items.length || from === to) return;
     const item = items[from];
-    const fromInPending = from < pendingQueue.value.length;
-    if (fromInPending) {
-      pendingQueue.value.splice(from, 1);
-    } else {
-      queue.value.splice(from - pendingQueue.value.length, 1);
-    }
+    const pendingLen = pendingQueue.value.length;
+    const fromInPending = from < pendingLen;
+    const sourceArr = fromInPending ? pendingQueue.value : queue.value;
+    const sourceIdx = fromInPending ? from : from - pendingLen;
+    sourceArr.splice(sourceIdx, 1);
+    const newPendingLen = pendingQueue.value.length;
     const adjustedTo = from < to ? to - 1 : to;
-    const toInPending = adjustedTo < pendingQueue.value.length;
-    if (toInPending) {
-      pendingQueue.value.splice(adjustedTo, 0, item);
-    } else {
-      queue.value.splice(adjustedTo - pendingQueue.value.length, 0, item);
-    }
+    const toInPending = adjustedTo < newPendingLen;
+    const destArr = toInPending ? pendingQueue.value : queue.value;
+    const destIdx = toInPending ? adjustedTo : adjustedTo - newPendingLen;
+    destArr.splice(destIdx, 0, item);
   }
 
   function insertInQueue(index: number, track: MediaFile) {
@@ -203,51 +204,6 @@ export const usePlayerStore = defineStore('player', () => {
       coverFlushScheduled = false;
       processCoverBatch();
     }, 0);
-  }
-
-  async function captureVideoFrame(filePath: string): Promise<CoverResult> {
-    const ext = filePath.slice(filePath.lastIndexOf('.')).toLowerCase();
-    if (!VIDEO_EXTS.includes(ext)) return { type: null, data: null };
-    return new Promise((resolve) => {
-      const video = document.createElement('video');
-      video.muted = true;
-      video.playsInline = true;
-      video.src = `${window.api.mediaServerUrl}/?path=${encodeURIComponent(filePath.replace(/\\/g, '/'))}`;
-
-      let resolved = false;
-      function done(result: CoverResult) {
-        if (resolved) return;
-        resolved = true;
-        video.remove();
-        resolve(result);
-      }
-
-      const timer = setTimeout(() => done({ type: null, data: null }), 15000);
-
-      video.onloadedmetadata = () => {
-        const t = Math.min(1, video.duration || 1);
-        video.currentTime = t > 0 ? t : 0.5;
-      };
-
-      video.onseeked = () => {
-        clearTimeout(timer);
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) return done({ type: null, data: null });
-          ctx.drawImage(video, 0, 0);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-          done({ type: 'image', data: dataUrl });
-        } catch {
-          done({ type: null, data: null });
-        }
-      };
-
-      video.onerror = () => { clearTimeout(timer); done({ type: null, data: null }); };
-      video.onabort = () => { clearTimeout(timer); done({ type: null, data: null }); };
-    });
   }
 
   async function doLoadCover(filePath: string): Promise<void> {

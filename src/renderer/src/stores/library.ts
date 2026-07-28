@@ -32,28 +32,46 @@ export const useLibraryStore = defineStore('library', () => {
     return [...ts].sort((a, b) => b.playCount - a.playCount).slice(0, 20);
   });
 
+  let lastTracksHash = 0;
+  let cachedArtists: Array<[string, MediaFile[]]> = [];
+  let cachedAlbums: Array<[string, MediaFile[]]> = [];
+
+  function hashTracks(tracks: MediaFile[]): number {
+    let h = 0;
+    for (let i = 0; i < tracks.length; i++) h ^= tracks[i].path.length;
+    return h;
+  }
+
   const artists = computed(() => {
     const ts = tracks.value;
     if (ts.length === 0) return [];
+    const h = hashTracks(ts);
+    if (h === lastTracksHash && cachedArtists.length) return cachedArtists;
     const map = new Map<string, MediaFile[]>();
     for (let i = 0; i < ts.length; i++) {
       const artist = ts[i].metadata?.artist || 'Unknown Artist';
       if (!map.has(artist)) map.set(artist, []);
       map.get(artist)!.push(ts[i]);
     }
-    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    cachedArtists = Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    lastTracksHash = h;
+    return cachedArtists;
   });
 
   const albums = computed(() => {
     const ts = tracks.value;
     if (ts.length === 0) return [];
+    const h = hashTracks(ts);
+    if (h === lastTracksHash && cachedAlbums.length) return cachedAlbums;
     const map = new Map<string, MediaFile[]>();
     for (let i = 0; i < ts.length; i++) {
       const album = ts[i].metadata?.album || 'Unknown Album';
       if (!map.has(album)) map.set(album, []);
       map.get(album)!.push(ts[i]);
     }
-    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    cachedAlbums = Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    lastTracksHash = h;
+    return cachedAlbums;
   });
 
   async function loadFromDisk() {
@@ -76,12 +94,12 @@ export const useLibraryStore = defineStore('library', () => {
   }
 
   let loadTracksScheduled = false;
+  let loadTracksResolve: (() => void)[] = [];
 
   function scheduleLoadTracks(): void {
     if (loadTracksScheduled) return;
     loadTracksScheduled = true;
     const doLoad = (): void => {
-      loadTracksScheduled = false;
       isLoading.value = false;
       window.api
         ?.invoke('library:loadScanned')
@@ -94,6 +112,12 @@ export const useLibraryStore = defineStore('library', () => {
         })
         .catch(() => {
           isLoaded.value = true;
+        })
+        .finally(() => {
+          loadTracksScheduled = false;
+          const res = loadTracksResolve;
+          loadTracksResolve = [];
+          res.forEach((r) => r());
         });
     };
     if (typeof requestIdleCallback !== 'undefined') {
@@ -219,18 +243,9 @@ export const useLibraryStore = defineStore('library', () => {
 
   function scheduleLoadTracksAsync(): Promise<void> {
     return new Promise((resolve) => {
-      const orig = scheduleLoadTracks;
-      const wrapped = () => {
-        orig();
-        const check = setInterval(() => {
-          if (!loadTracksScheduled) {
-            clearInterval(check);
-            resolve();
-          }
-        }, 10);
-        setTimeout(() => { clearInterval(check); resolve(); }, 5000);
-      };
-      wrapped();
+      if (!loadTracksScheduled) scheduleLoadTracks();
+      loadTracksResolve.push(resolve);
+      setTimeout(resolve, 5000);
     });
   }
 
