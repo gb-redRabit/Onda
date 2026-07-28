@@ -148,10 +148,10 @@ export class AudioPipManager {
 
   private getModeSize(): { width: number; height: number } {
     switch (this.mode) {
-      case 'medium': return { width: 400, height: 120 };
+      case 'medium': return { width: 400, height: 132 };
       case 'max': {
         const display = screen.getPrimaryDisplay().workAreaSize;
-        return { width: display.width, height: Math.round(display.height / 10) };
+        return { width: display.width, height: 118 };
       }
       default: return { width: 280, height: 40 };
     }
@@ -226,15 +226,14 @@ export class AudioPipManager {
     });
 
     ipcMain.on('audio-pip:timeUpdate', (_event, state: AudioPipState) => {
-      this.currentState.currentTime = state.currentTime;
-      this.currentState.isPlaying = state.isPlaying;
+      Object.assign(this.currentState, state);
       if (this.window && !this.window.isDestroyed() && this.window.isVisible() && this.ready) {
         this.window.webContents.send('audio-pip:update', {
           mode: this.mode,
           state: this.currentState,
           opacity: this.opacity
         });
-      } 
+      }
     });
   }
 
