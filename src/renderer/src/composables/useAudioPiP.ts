@@ -33,6 +33,8 @@ export function useAudioPiP() {
 
   let autoShowEnabled = true;
   let timeInterval: ReturnType<typeof setInterval> | null = null;
+  let coverRetryTimer: ReturnType<typeof setInterval> | null = null;
+  let coverRetryCount = 0;
 
   function getState() {
     const player = usePlayerStore();
@@ -59,6 +61,7 @@ export function useAudioPiP() {
   function sendUpdate(state: AudioPipState) {
     lastState = { ...state };
     const settings = useSettingsStore();
+    console.log('[PiP] sendUpdate mode=', mode.value, 'vol=', state.volume, 'muted=', state.isMuted, 'cover=', state.coverData ? state.coverData.length : 0);
     window.api?.audioPipUpdate(state, mode.value, settings.appearance.audioPipOpacity, settings.appearance.audioPipPosition);
   }
 
@@ -68,7 +71,9 @@ export function useAudioPiP() {
     lastState = { ...state };
     isActive.value = true;
     const settings = useSettingsStore();
+    console.log('[PiP] show mode=', mode.value, 'track=', state.trackName);
     await window.api?.audioPipShow(state, mode.value, settings.appearance.audioPipOpacity, settings.appearance.audioPipPosition);
+    startCoverRetry();
     startTimeTracking();
   }
 
@@ -83,6 +88,9 @@ export function useAudioPiP() {
     timeInterval = setInterval(() => {
       if (!isActive.value) { stopTimeTracking(); return; }
       const state = getState();
+      if (state.volume !== lastState.volume || state.isPlaying !== lastState.isPlaying) {
+        console.log('[PiP] tick vol:', state.volume, 'play:', state.isPlaying, 'cover:', state.coverData ? state.coverData.length : 0);
+      }
       lastState = { ...state };
       window.api?.send('audio-pip:timeUpdate', lastState);
     }, 500);
@@ -92,6 +100,30 @@ export function useAudioPiP() {
     if (timeInterval) {
       clearInterval(timeInterval);
       timeInterval = null;
+    }
+  }
+
+  function startCoverRetry() {
+    stopCoverRetry();
+    coverRetryCount = 0;
+    coverRetryTimer = setInterval(() => {
+      if (!isActive.value) { stopCoverRetry(); return; }
+      const state = getState();
+      if (state.coverData || coverRetryCount >= 10) {
+        stopCoverRetry();
+      }
+      if (state.coverData && state.coverData !== lastState.coverData) {
+        lastState = { ...state };
+        sendUpdate(state);
+      }
+      coverRetryCount++;
+    }, 200);
+  }
+
+  function stopCoverRetry() {
+    if (coverRetryTimer) {
+      clearInterval(coverRetryTimer);
+      coverRetryTimer = null;
     }
   }
 
@@ -107,19 +139,22 @@ export function useAudioPiP() {
 
   function handleAction(action: string) {
     const player = usePlayerStore();
+    console.log('[PiP] action:', action);
     if (action === 'playPause') {
       player.togglePlay();
     } else if (action === 'next') {
-      player.nextTrack();
+      const r = player.nextTrack();
+      console.log('[PiP] nextTrack result:', r ? r.name : 'null');
     } else if (action === 'prev') {
-      player.prevTrack();
+      const r = player.prevTrack();
+      console.log('[PiP] prevTrack result:', r ? r.name : 'null');
     } else if (action === 'shuffle') {
       player.toggleShuffle();
     } else if (action === 'repeat') {
       player.cycleRepeat();
     } else if (action.startsWith('volume:')) {
       const vol = parseFloat(action.slice(7));
-      if (!isNaN(vol)) player.setVolume(vol);
+      if (!isNaN(vol)) { player.setVolume(vol); console.log('[PiP] setVolume:', vol); }
     } else if (action === 'cycleMode') {
       const settings = useSettingsStore();
       const modes: PipMode[] = ['minimal', 'medium', 'max'];
@@ -155,6 +190,7 @@ export function useAudioPiP() {
       if (isActive.value) {
         const state = getState();
         sendUpdate(state);
+        startCoverRetry();
         if (state.isPlaying) {
           startTimeTracking();
         }
@@ -199,6 +235,7 @@ export function useAudioPiP() {
 
   onUnmounted(() => {
     stopTimeTracking();
+    stopCoverRetry();
     cleanups.forEach((fn) => fn());
   });
 

@@ -68,6 +68,30 @@ function applyTheme() {
 
   root.style.setProperty('--font-size', `${fontSize}px`);
   root.style.fontSize = `${fontSize}px`;
+
+  // push theme CSS vars to PiP window
+  window.api?.send('audio-pip:theme', {
+    '--color-bg-base': palette.bgBase,
+    '--color-bg-surface': palette.bgSurface,
+    '--color-bg-overlay': palette.bgOverlay,
+    '--color-bg-elevated': palette.bgElevated,
+    '--color-bg-hover': palette.bgHover,
+    '--color-bg-active': palette.bgActive,
+    '--color-border-default': palette.borderDefault,
+    '--color-border-subtle': palette.borderSubtle,
+    '--color-fg-base': palette.fgBase,
+    '--color-fg-muted': palette.fgMuted,
+    '--color-fg-faint': palette.fgFaint,
+    '--color-accent-base': accent,
+    '--color-accent-hover': rgb
+      ? `rgba(${Math.min(255, rgb.r + 20)}, ${Math.min(255, rgb.g + 20)}, ${Math.min(255, rgb.b + 20)}, 1)`
+      : accent,
+    '--color-accent-strong': rgb
+      ? `rgba(${Math.max(0, rgb.r - 20)}, ${Math.max(0, rgb.g - 20)}, ${Math.max(0, rgb.b - 20)}, 1)`
+      : accent,
+    '--color-accent-ghost': rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.10)` : 'transparent',
+    '--font-size': `${fontSize}px`
+  });
 }
 
 onMounted(async () => {

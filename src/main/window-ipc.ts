@@ -221,8 +221,8 @@ export function registerWindowHandlers(context: {
       opacity?: number,
       position?: string
     ) => {
-      audioPipManager.update(state);
       if (mode) audioPipManager.setMode(mode as 'minimal' | 'medium' | 'max');
+      audioPipManager.update(state);
       if (opacity !== undefined) audioPipManager.setOpacity(opacity);
       if (position) audioPipManager.setPosition(position as 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left');
       return true;

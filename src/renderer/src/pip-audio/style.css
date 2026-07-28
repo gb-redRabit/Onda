@@ -1,0 +1,105 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-bg-base: #0f0f17;
+  --color-bg-surface: #181825;
+  --color-bg-overlay: #1e1e2e;
+  --color-bg-elevated: #252536;
+  --color-bg-hover: #2e2e42;
+  --color-bg-active: #3a3a52;
+
+  --color-border-default: #2a2a40;
+  --color-border-subtle: #363650;
+
+  --color-fg-base: #e8e8f0;
+  --color-fg-muted: #a0a0b8;
+  --color-fg-faint: #6a6a84;
+
+  --color-accent-base: #7c6aef;
+  --color-accent-hover: #9080f5;
+  --color-accent-strong: #5a48d9;
+  --color-accent-ghost: rgba(124, 106, 239, 0.1);
+
+  --color-green-base: #34d399;
+  --color-red-base: #f87171;
+  --color-amber-base: #fbbf24;
+}
+
+html, body, #app {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: transparent;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* pip buttons */
+.btn-pip {
+  border: none;
+  background: transparent;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all .1s;
+  flex-shrink: 0;
+  font-family: inherit;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  font-size: 11px;
+}
+.btn-pip:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-fg-base);
+}
+.btn-pip:active {
+  background: var(--color-bg-active);
+}
+.btn-play {
+  background: var(--color-accent-ghost);
+  color: var(--color-accent-hover);
+  border-radius: 50%;
+}
+.btn-play:hover {
+  background: color-mix(in srgb, var(--color-accent-base) 35%, transparent);
+  color: var(--color-accent-hover);
+}
+.btn-play:active {
+  background: color-mix(in srgb, var(--color-accent-base) 45%, transparent);
+}
+
+/* range slider */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  background: var(--color-bg-hover);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-accent-base);
+  border: none;
+  cursor: pointer;
+}
+
+/* eq bars */
+.eq-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--color-accent-base);
+  transition: height .15s;
+  flex-shrink: 0;
+  min-height: 1px;
+  opacity: 0.6;
+}

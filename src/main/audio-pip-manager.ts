@@ -27,6 +27,7 @@ export class AudioPipManager {
   private mode: PipMode = 'minimal';
   private position: PipPosition = 'bottom-right';
   private opacity = 0.35;
+  private cssVars: Record<string, string> = {};
   private currentState: AudioPipState = {
     trackName: '',
     artist: '',
@@ -53,6 +54,13 @@ export class AudioPipManager {
     this.position = pos;
     if (this.window && !this.window.isDestroyed() && this.window.isVisible()) {
       this.positionWindow();
+    }
+  }
+
+  setTheme(vars: Record<string, string>): void {
+    this.cssVars = vars;
+    if (this.window && !this.window.isDestroyed() && this.window.isVisible() && this.ready) {
+      this.window.webContents.send('audio-pip:theme', vars);
     }
   }
 
@@ -148,12 +156,12 @@ export class AudioPipManager {
 
   private getModeSize(): { width: number; height: number } {
     switch (this.mode) {
-      case 'medium': return { width: 400, height: 132 };
+      case 'medium': return { width: 400, height: 100 };
       case 'max': {
         const display = screen.getPrimaryDisplay().workAreaSize;
-        return { width: display.width, height: 118 };
+        return { width: display.width, height: 100 };
       }
-      default: return { width: 280, height: 40 };
+      default: return { width: 280, height: 36 };
     }
   }
 
@@ -199,7 +207,8 @@ export class AudioPipManager {
     this.window.webContents.send('audio-pip:update', {
       mode: this.mode,
       state: this.currentState,
-      opacity: this.opacity
+      opacity: this.opacity,
+      cssVars: this.cssVars
     });
   }
 
@@ -223,6 +232,10 @@ export class AudioPipManager {
 
     ipcMain.on('audio-pip:progressClick', (_event, percent: number) => {
       this.mainWindow?.webContents.send('audio-pip:progressClick', percent);
+    });
+
+    ipcMain.on('audio-pip:theme', (_event, vars: Record<string, string>) => {
+      this.setTheme(vars);
     });
 
     ipcMain.on('audio-pip:timeUpdate', (_event, state: AudioPipState) => {
@@ -252,6 +265,7 @@ export class AudioPipManager {
     ipcMain.removeAllListeners('audio-pip:action');
     ipcMain.removeAllListeners('audio-pip:progressClick');
     ipcMain.removeAllListeners('audio-pip:timeUpdate');
+    ipcMain.removeAllListeners('audio-pip:theme');
   }
 }
 
