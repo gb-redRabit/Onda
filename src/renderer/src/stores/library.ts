@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia';
-import { ref, computed, triggerRef } from 'vue';
+import { ref, shallowRef, computed, triggerRef } from 'vue';
 import type { MediaFile, Playlist } from '@renderer/types/media';
 import { errMsg } from '@shared/helpers';
 import { useUIStore } from './ui';
 
 export const useLibraryStore = defineStore('library', () => {
-  const tracks = ref<MediaFile[]>([]);
+  const tracks = shallowRef<MediaFile[]>([]);
   const playlists = ref<Playlist[]>([]);
   const folders = ref<string[]>([]);
   const folderTypes = ref<Record<string, 'audio' | 'video' | 'mixed'>>({});
@@ -15,10 +15,28 @@ export const useLibraryStore = defineStore('library', () => {
   const isLoading = ref(false);
 
   const totalCount = computed(() => tracks.value.length);
-  const audioCount = computed(() => tracks.value.filter((t) => t.type === 'audio').length);
-  const videoCount = computed(() => tracks.value.filter((t) => t.type === 'video').length);
-  const audioTracks = computed(() => tracks.value.filter((t) => t.type === 'audio'));
-  const videoTracks = computed(() => tracks.value.filter((t) => t.type === 'video'));
+
+  const trackStats = computed(() => {
+    let audio = 0, video = 0;
+    const audioArr: MediaFile[] = [];
+    const videoArr: MediaFile[] = [];
+    const ts = tracks.value;
+    for (let i = 0; i < ts.length; i++) {
+      if (ts[i].type === 'audio') {
+        audio++;
+        audioArr.push(ts[i]);
+      } else if (ts[i].type === 'video') {
+        video++;
+        videoArr.push(ts[i]);
+      }
+    }
+    return { audio, video, audioArr, videoArr };
+  });
+
+  const audioCount = computed(() => trackStats.value.audio);
+  const videoCount = computed(() => trackStats.value.video);
+  const audioTracks = computed(() => trackStats.value.audioArr);
+  const videoTracks = computed(() => trackStats.value.videoArr);
 
   const recentTracks = computed(() => {
     const ts = tracks.value;

@@ -130,7 +130,6 @@ export default {
     rememberPos: 'Remember playback position',
     hideCursor: 'Hide cursor',
     playbackSection: 'Playback',
-    crossfade: 'Crossfade:',
     defaultVolume: 'Default volume:',
     defaultSpeed: 'Default speed:',
     cursorHideTimeout: 'Cursor hide timeout:',

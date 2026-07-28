@@ -103,7 +103,7 @@ function playPlaylist(playlistId: string) {
   const playlist = library.playlists.find((p) => p.id === playlistId);
   if (playlist && playlist.tracks.length > 0) {
     player.clearQueue();
-    player.addToQueueMultiple(playlist.tracks);
+    if (playlist.tracks.length > 1) player.addToQueueMultiple(playlist.tracks.slice(1));
     player.setTrack(playlist.tracks[0]);
     player.play();
   }

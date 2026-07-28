@@ -19,7 +19,6 @@ export const usePlayerStore = defineStore('player', () => {
   const playbackRate = ref(1);
   const shuffle = ref(false);
   const repeat = ref<'none' | 'all' | 'one'>('none');
-  const crossfadeDuration = ref(3);
   const queueVisible = ref(false);
   const equalizerVisible = ref(false);
   const equalizerBands = ref<number[]>([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
@@ -395,7 +394,6 @@ export const usePlayerStore = defineStore('player', () => {
     playbackRate,
     shuffle,
     repeat,
-    crossfadeDuration,
     queueVisible,
     equalizerVisible,
     equalizerBands,

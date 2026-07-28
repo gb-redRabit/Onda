@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { HardDrive, FolderOpen } from '@lucide/vue';
+import { HardDrive, FolderOpen, Music2, Film, Image } from '@lucide/vue';
 import { formatFileSize } from '@renderer/utils/formatters';
+import { getFileTypeInfo } from '@renderer/utils/fileTypes';
 import type { FileItem } from '@renderer/types/explorer';
 import { useThumbnail } from '@renderer/composables/useThumbnail';
 
@@ -23,7 +24,10 @@ if (import.meta.env.DEV) { void rootEl; }
 function iconComponent() {
   if (props.isAtDrives) return HardDrive;
   if (props.item.isDirectory) return FolderOpen;
-  return null;
+  const cat = getFileTypeInfo(props.item.extension || '').category;
+  if (cat === 'video') return Film;
+  if (cat === 'audio') return Music2;
+  return Image;
 }
 </script>
 

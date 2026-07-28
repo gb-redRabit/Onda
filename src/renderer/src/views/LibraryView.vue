@@ -202,7 +202,7 @@ function playTracks(tracks: typeof library.tracks) {
   if (tracks.length === 0) return;
   if (tracks[0].type === 'video') audioEngine.resume();
   player.clearQueue();
-  player.addToQueueMultiple(tracks);
+  if (tracks.length > 1) player.addToQueueMultiple(tracks.slice(1));
   player.setTrack(tracks[0]);
   player.play();
 }
@@ -240,21 +240,20 @@ function debouncedPreloadCovers(coverList: string[]): void {
   }, 300);
 }
 
-watch(
-  filteredVideo,
-  (tracks) => {
-    debouncedPreloadCovers(tracks.slice(0, 100).map((t) => t.path));
-  },
-  { immediate: true }
-);
+onMounted(() => {
+  requestAnimationFrame(() => {
+    debouncedPreloadCovers(filteredTracks.value.slice(0, 200).map((t) => t.path));
+    debouncedPreloadCovers(filteredVideo.value.slice(0, 100).map((t) => t.path));
+  });
+});
 
-watch(
-  filteredTracks,
-  (tracks) => {
-    debouncedPreloadCovers(tracks.slice(0, 200).map((t) => t.path));
-  },
-  { immediate: true }
-);
+watch(filteredVideo, (tracks) => {
+  debouncedPreloadCovers(tracks.slice(0, 100).map((t) => t.path));
+});
+
+watch(filteredTracks, (tracks) => {
+  debouncedPreloadCovers(tracks.slice(0, 200).map((t) => t.path));
+});
 
 function onTagSaved(tags: {
   title?: string;

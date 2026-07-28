@@ -9,11 +9,11 @@
 | Metryka | Wartość |
 |---------|---------|
 | Pliki źródłowe (.ts + .vue + .css + .html) | 132 |
-| Linie kodu | ~17,022 |
+| Linie kodu | ~16,870 |
 | Main process | 18 plików, ~2,788 linii |
 | Preload | 2 pliki, ~288 linii |
 | Shared | 3 pliki, ~191 linii |
-| Renderer | 109 plików, ~13,755 linii |
+| Renderer | 109 plików, ~13,603 linii |
 | Pliki testowe | 4 (1,133 linii) |
 | Testy | 141 pass |
 | Zależności npm | 38 (17 runtime + 21 dev) |
@@ -382,21 +382,22 @@ D:\Onda\
 4. useAudioPlayer effectScope(true) + watch() (currentTrack changed):
    a. track.type === 'audio' → audioEngine.loadTrack(track)
    b. audioEngine: audioEl.src = makeSrc(path)
-   c. connectAudio(audioEl) → sourceNode → crossfadeGainA → EQ → gainNode → analyser
+    c. connectAudio(audioEl) → sourceNode → EQ → gainNode → analyser
    d. setTimeout(100ms): audioEngine.play() (jeśli isPlaying)
 5. RAF loop (60fps): audioEngine.onTimeUpdate → useAudioPlayer.currentTime
 6. PlayerBar: czyta audio.currentTime/audio.duration → progress bar
 7. Gdy audioEl ended:
    a. audioEngine.handleEnded() → sprawdza repeat mode
    b. repeat='one' → restart currentTime=0, play()
-   c. crossfade > 0 → startCrossfade(): fade out A, fade in B
-   d. otherwise → useAudioPlayer.onTrackEnd → player.nextTrack()
+    c. otherwise → player.nextTrack()
 8. player.nextTrack():
    a. repeat='one' → reset currentTime (bez zmiany utworu)
    b. pendingQueue.length > 0 → splice(randomIdx) jeśli shuffle, inaczej shift()
    c. queue.length > 0 → splice(randomIdx) jeśli shuffle, inaczej shift(0)
-   d. repeat='all' → weź ostatni z history
-   e. otherwise → NO MORE TRACKS
+    d. repeat='all' → weź ostatni z history
+    e. otherwise → NO MORE TRACKS
+
+**Sprint 9:** `trackEnd` → `player.nextTrack()` bezpośrednio. Usunięto crossfade (cały przepływ 8.4). `handleEnded()` woła `player.nextTrack()` lub restartuje `repeat=one`.
 ```
 
 ### 5.2a Flow: Odtwarzanie wideo
@@ -585,7 +586,7 @@ ASS/SSA to złożony format z bogatym systemem stylów. Próba nadpisania styló
 - `playbackRate: number`
 - `shuffle: boolean`
 - `repeat: 'none' | 'all' | 'one'`
-- `crossfadeDuration: number`
+
 - `queueVisible / equalizerVisible` — UI toggles
 - `equalizerBands: number[10]`
 - `equalizerPreset: string`
@@ -668,59 +669,46 @@ ASS/SSA to złożony format z bogatym systemem stylów. Próba nadpisania styló
 ### 8.1 Łańcuch sygnałowy
 
 ```
-audioEl ──→ sourceNode ──→ crossfadeGainA ──→ [EQ: BiquadFilter ×10] ──→ gainNode ──→ analyserNode ──→ destination
-nextAudioEl ──→ sourceNodeB ──→ crossfadeGainB ─┘
+audioEl ──→ sourceNode ──→ [EQ: BiquadFilter ×10] ──→ gainNode ──→ analyserNode ──→ destination
 ```
 
-### 8.2 Klasa AudioEngine (`audioEngine.ts` — 631 linii, Phase 3.3)
+### 8.2 Klasa AudioEngine (`audioEngine.ts` — 473 linie, Phase 3.3)
 
 **Phase 3.3:** Przeniesiono z 15+ module-level `let` zmiennych na klasę `AudioEngine` z private fields.
 
 ```typescript
 class AudioEngine {
   private audioEl: HTMLAudioElement | null = null
-  private nextAudioEl: HTMLAudioElement | null = null
   private audioCtx: AudioContext | null = null
-  private sourceNode: MediaElementAudioSourceNode | null = null
-  private sourceNodeB: MediaElementAudioSourceNode | null = null
-  private crossfadeGainA: GainNode | null = null
-  private crossfadeGainB: GainNode | null = null
-  private eqFilters: BiquadFilterNode[] = []
-  private gainNode: GainNode | null = null
   private analyserNode: AnalyserNode | null = null
+  private sourceNode: MediaElementAudioSourceNode | null = null
+  private gainNode: GainNode | null = null
+  private eqFilters: BiquadFilterNode[] = []
   private rafId: number | null = null
-  private crossfadeTimer: ... | null = null
-  private isCrossfading = false
-
-  private onTimeUpdate: ((time: number) => void) | null = null
-  private onDurationChange: ((dur: number) => void) | null = null
-  private onPlayStateChange: ((playing: boolean) => void) | null = null
-  private onTrackEnd: (() => void) | null = null
+  private initialized = false
+  private eqChainBuilt = false
+  private secondaryAudioEl: HTMLAudioElement | null = null
+  private secondarySourceNode: MediaElementAudioSourceNode | null = null
+  private secondaryAudioOffset = 0
+  private savedPositions = new Map<string, number>()
+  private visibilityHandler: (() => void) | null = null
 }
 
 export const audioEngine = new AudioEngine()  // singleton
 ```
 
-### 8.3 Gapless Playback
+### 8.3 Przepływ odtwarzania
 
 ```
-1. ensureNextPreloaded(): nextAudioEl.src = następny utwór
-2. current ended → handleEnded()
-3. repeat='one' → audioEl.currentTime = 0; audioEl.play(); return
-4. startGapless(): sprawdza nextAudioEl.readyState
-   a. readyState >= 3 → swap() natychmiast
-   b. readyState < 3 → czekaj na 'canplay' event → swap()
-5. swap():
-   a. audioEl.pause(), audioEl.removeAttribute('src')
-   b. player.removeFromQueue(0), player.setTrack(nextTrack)
-   c. audioEl = nextAudioEl, nextAudioEl = null
-   d. sourceNode = sourceNodeB, sourceNodeB = null
-   e. crossfadeGainA.gain = 0, crossfadeGainB.gain = 1
-   f. audioEl.play()
-   g. ensureNextPreloaded() → następny z queue
+1. current ended → handleEnded()
+2. repeat='one' → audioEl.currentTime = 0; audioEl.play(); return
+3. repeat='all' + empty queue → weź ostatni z history
+4. pendingQueue.length > 0 → splice, setTrack, play
+5. queue.length > 0 → splice, setTrack, play
+6. Brak utworów → stop
 ```
 
-### 8.3a EventBus (audioEngine → useAudioPlayer, Phase 3.2)
+### 8.3b EventBus (audioEngine → useAudioPlayer, Phase 3.2 + Sprint 9)
 
 **Phase 3.2:** Callbacki zastąpione EventBus (`utils/audioEvents.ts` — 30 linii). `AudioEngine` emituje zdarzenia, `useAudioPlayer` subskrybuje przez `audioEvents.on()`. Luźniejsze sprzężenie — brak bezpośrednich referencji między silnikiem a store.
 
@@ -738,7 +726,6 @@ export const audioEvents = new AudioEventBus();
 // timeUpdate(time)       → useAudioPlayer.currentTime.value = time
 // durationChange(dur)    → useAudioPlayer.duration.value = dur
 // playStateChange(bool)  → useAudioPlayer.isPlaying.value = playing
-// trackEnd()             → player.nextTrack()
 // trackLoaded()          → player.setTrack() po loadTrack
 ```
 
@@ -750,16 +737,7 @@ Dlaczego EventBus zamiast callbacków:
 - Łatwiejsze testowanie i mockowanie
 - PlayerView (video) ma WŁASNY niezależny element `<video>`
 
-### 8.4 Crossfade
-
-```
-1. nextAudioEl.src = następny utwór
-2. Czekaj na 'canplay'
-3. crossfadeGainA.gain.setValueAtTime(1).linearRampToValueAtTime(0, currentTime + duration)
-4. crossfadeGainB.gain.setValueAtTime(0).linearRampToValueAtTime(1, currentTime + duration)
-5. nextAudioEl.play()
-6. Po duration*1000ms → swap() jak w gapless
-```
+**Sprint 9:** `trackEnd` usunięty — `handleEnded()` woła `player.nextTrack()` bezpośrednio. `useAudioPlayer` subskrybuje tylko `timeUpdate`, `durationChange`, `playStateChange`, `trackLoaded` przez EventBus. Wszystkie watchery na store przeniesione do `ensureModule()` z `detached effectScope(true)` — przeżywają HMR.
 
 ### 8.5 Remember Position
 
@@ -847,7 +825,7 @@ Lazy loading: `() => import(...)` w routerze (113 linii). Transition fade (`opac
 - [x] **Audio w tle** — nawigacja do innego widoku NIE pauzuje audio, PlayerBar widoczny zawsze
 - [x] **Video→audio transition** — audioEngine.resume() przywraca RAF loop + AudioContext
 - [x] Gapless playback (preload + swap)
-- [x] Crossfade (GainNode fade)
+
 - [x] 10-pasmowy equalizer + presety + custom presets (Equalizer.vue — 129 linii)
 - [x] Wizualizacja (bars, wave, radial) — Canvas + AnalyserNode (AudioVisualizer.vue — 110 linii)
 - [x] Kolejka + historia z drag-and-drop (QueuePanel.vue — 276 linii)
@@ -945,7 +923,7 @@ Lazy loading: `() => import(...)` w routerze (113 linii). Transition fade (`opac
 - [x] **Skróty klawiszowe** — zakładka, podgląd wszystkich skrótów
 - [x] **Odtwarzanie** — cursor hide, cursor timeout, prędkość domyślna, filtry wideo
 - [ ] Theme: motyw, kolor akcentu, rozmiar czcionki, density, animacje, transparencja
-- [ ] Odtwarzanie: crossfade time, normalization, gapless toggle, auto-pause
+- [ ] Odtwarzanie: normalization, gapless toggle, auto-pause
 - [ ] Pobieranie: ścieżka, format, jakość, template nazwy, limit
 - [ ] Skróty klawiszowe (edycja click+key combo, eksport/import, reset)
 - [ ] Sieć: proxy (HTTP/HTTPS/SOCKS), limit prędkości, DNS cache, User-Agent
@@ -1048,12 +1026,12 @@ ModuleManager (69 linii)
 
 audioEngine.ts (631 linii — class AudioEngine singleton)
 ├── player store (read: currentTrack — only for setupVideoListeners)
-├── settings store (playback.crossfadeDuration)
+├── settings store (playback.defaultVolume, playback.rememberPosition)
 ├── Callbacks → useAudioPlayer (onTimeUpdate, onDurationChange, onPlayStateChange, onTrackEnd)
 ├── resume() → AudioContext.resume() + restart RAF loop (fix video→audio transition)
 └── Web Audio API (AudioContext → GainNode → BiquadFilterNode → AnalyserNode)
 
-useAudioPlayer.ts (159 linii — singleton)
+useAudioPlayer.ts (131 linii — singleton)
 ├── audioEngine.ts (deleguje play/pause/seek/load, resumeAndPlay)
 ├── audioEvents.on() — subskrybuje zdarzenia zamiast callbacków (Phase 3.2)
 ├── effectScope(true) z watch() na player store (currentTrack → loadTrack/pause, isPlaying → play/pause)
@@ -1178,11 +1156,11 @@ Pełny transkoding filmu 2-godzinnego zajmuje 30-60s. Zamiast czekać:
 | `ipc/cover-cache.ts`        | 221   | Cache okładek + thumbnaili (Sharp fallback + Windows thumbcache)                |
 | `media-server.ts`           | 94    | Lokalny HTTP server dla mediów (range requests 206, CORS, port losowy)          |
 | `ImageViewer.vue`           | 486   | Lightbox: dual-image transitions (fade/slide/zoom/swirl), slideshow, thumbnails |
-| `player.ts` (store)         | 449   | Player + kolejka + history + coverCache + favorites (electron-store persistence)|
+| `player.ts` (store)         | 457   | Player + kolejka + history + coverCache + favorites (electron-store persistence)|
 | `pip-manager.ts`            | 421   | PipManager — PiP window + preview window, position/size, show/hide              |
 | `useVideoPlayer.ts`         | 406   | Video composable: setup, PiP, subtitles, AC3/DTS, lifecycle                     |
 | `useSubtitleRenderer.ts`    | 375   | JASSUB: wasm/worker init, buildFontMap (MKV+Google+lokalne), binary fonts       |
-| `audioEngine.ts`            | 631   | Class AudioEngine — gapless, crossfade, EQ, RAF loop, EventBus                  |
+| `audioEngine.ts`            | 473   | Class AudioEngine — gapless, EQ, RAF loop, EventBus                  |
 | `index.ts` (main)           | 367   | Okno, tray, skróty globalne, PiP init, splash screen                           |
 | `PlayerControls.vue`        | 302   | Kontrolki: play/pause, skip, speed, filter, volume, time                        |
 | `ExplorerView.vue`          | 517   | Eksplorator — 4 widoki, breadcrumb, streaming readdir, context menu             |
@@ -1203,10 +1181,10 @@ Pełny transkoding filmu 2-godzinnego zajmuje 30-60s. Zamiast czekać:
 | `CommandPalette.vue`        | 157   | Ctrl+K modal search                                                             |
 | `SettingsPiP.vue`           | 152   | PiP: pozycja, rozmiar, podgląd na żywo                                          |
 | `app.vue`                   | 187   | Root layout: ErrorBoundary, Theme, Toast, context menu, route routing           |
-| `audioEngine.ts` (modules)  | 631   | Class AudioEngine singleton — gapless, crossfade, EQ, RAF loop, EventBus        |
+| `audioEngine.ts` (modules)  | 473   | Class AudioEngine singleton — gapless, EQ, RAF loop, EventBus        |
 | `Equalizer.vue`             | 143   | 10-pasmowy EQ + presety                                                         |
 | `AudioControls.vue`         | 142   | Transport controls + volume slider                                              |
-| `useAudioPlayer.ts`         | 159   | Singleton: audio state bridge, effectScope(true) + watch(), EventBus sub        |
+| `useAudioPlayer.ts`         | 131   | Singleton: audio state bridge, effectScope(true) + watch(), EventBus sub        |
 | `settings.ts` (store)       | 159   | Settings store + debounced IPC save                                             |
 | `splash.html`               | 131   | Splash screen — canvas wizualizacja dźwiękowa (64 barów)                        |
 | `AudioVisualizer.vue`       | 126   | Canvas visualizer: bars/wave/radial                                              |
@@ -1316,7 +1294,7 @@ Pełny transkoding filmu 2-godzinnego zajmuje 30-60s. Zamiast czekać:
 
 ---
 
-Ostatnia aktualizacja: 2026-07-26 (Phase 1–3 zakończone, Faza 4 — explorer, Faza 5 — ImageViewer, library, settings, 17.3 webSecurity)
+Ostatnia aktualizacja: 2026-07-28 (Phase 1–3 zakończone, Faza 4 — explorer, Faza 5 — ImageViewer, library, settings, 17.3 webSecurity, Sprint 9 — audio PiP fix, crossfade removal)
 
 ---
 
@@ -1750,6 +1728,39 @@ Runda 3: Użytkownik klika zdjęcie
 **Rozwiązanie: Lokalny HTTP server dla mediów**
 
 Wzorzec znany z Discord, VS Code, Slack — uruchomienie lokalnego serwera HTTP na `127.0.0.1` zamiast custom scheme:
+
+---
+
+### 18.12 Sprint 9 — Audio PiP Fix + Crossfade Removal (2026-07-28)
+
+**Problemy:**
+
+| # | Problem | Przyczyna | Rozwiązanie |
+|---|---------|-----------|-------------|
+| 1 | **Audio PiP progress bar zastyga** | `onTrackChange` nie restartował time trackingu; lokalne refy odseparowane | `onTrackChange` restartuje tracking; PiP czyta modułowe `currentTime`/`duration` z `useAudioPlayer` |
+| 2 | **Automatyczne "next" nie działa** | `handleEnded()` emitował `trackEnd` → listener → `nextTrack()`. Crossfade resetował src, zabijając `ended` | `handleEnded()` woła `player.nextTrack()` bezpośrednio; usunięto `trackEnd` event |
+| 3 | **HMR zrywa subskrypcje** | Listenery/watchery w ciele composable | Przeniesione do `ensureModule()` z `detached effectScope(true)` na poziomie modułu |
+| 4 | **RAF loop nie emituje czasu gdy paused** | `rafLoop` emitował `timeUpdate` tylko przy `!paused` | Zawsze emituje `timeUpdate` |
+| 5 | **Crossfade komplikuje przepływ** | Drugi Audio element, osobne GainNode, timer, swap | Usunięty całkowicie |
+
+**Usunięte pola/metody crossfade:**
+- `nextAudioEl`, `crossfadeGainA/B`, `crossfadeTimer`, `isCrossfading`, `sourceNodeB` (fields)
+- `startCrossfade()`, `connectAudioB()`, `ensureNextPreloaded()` (methods)
+- `crossfadeDuration` (player store, types, constants, locales, UI)
+
+**Zmodyfikowane pliki:**
+
+| Plik | Przed | Po |
+|------|-------|----|
+| `audioEngine.ts` | 631 | 473 |
+| `useAudioPlayer.ts` | 159 | 131 |
+| `useAudioPiP.ts` | 202 | ~152 |
+| `player.ts` | 490 | 457 |
+| `SettingsPlayback.vue` | 114 | ~95 |
+
+**Usunięte `console.log` (debug):** 53 → 0 we wszystkich plikach.
+
+**Weryfikacja:** `npm run typecheck` — 0 błędów. `npm test` — 141/141 pass.
 
 ```
 PRZED: <video src="onda:///C:/video.mp4"> → blokowane przez webSecurity: true

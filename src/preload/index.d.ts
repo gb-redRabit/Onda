@@ -111,6 +111,33 @@ interface OndaAPI {
   transcodeAudio: (filePath: string) => Promise<string | null>;
   transcodeAudioChunk: (filePath: string, startTime: number, duration: number) => Promise<string | null>;
   cleanupTranscodedAudio: (audioPath: string) => Promise<void>;
+  audioPipShow: (
+    state: {
+      trackName: string;
+      artist: string;
+      coverData: string | null;
+      isPlaying: boolean;
+      currentTime: number;
+      duration: number;
+      volume: number;
+    },
+    mode?: string,
+    opacity?: number
+  ) => Promise<boolean>;
+  audioPipHide: () => Promise<boolean>;
+  audioPipUpdate: (
+    state: {
+      trackName: string;
+      artist: string;
+      coverData: string | null;
+      isPlaying: boolean;
+      currentTime: number;
+      duration: number;
+      volume: number;
+    },
+    mode?: string,
+    opacity?: number
+  ) => Promise<boolean>;
 }
 
 declare global {

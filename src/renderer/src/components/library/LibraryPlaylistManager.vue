@@ -66,7 +66,7 @@ function playAll() {
   if (!selectedPlaylist.value) return;
   const tracks = selectedPlaylist.value.tracks;
   if (tracks.length === 0) return;
-  player.addToQueueMultiple(tracks);
+  if (tracks.length > 1) player.addToQueueMultiple(tracks.slice(1));
   player.setTrack(tracks[0]);
   player.play();
 }

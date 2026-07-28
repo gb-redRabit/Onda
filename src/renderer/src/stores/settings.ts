@@ -4,6 +4,7 @@ import type {
   AppSettings,
   AppearanceSettings,
   PlaybackSettings,
+  ExplorerSettings,
   DownloadSettings,
   NetworkSettings,
   ApiKeySettings,
@@ -15,6 +16,7 @@ import {
   DEFAULT_APPEARANCE,
   DEFAULT_PLAYBACK,
   DEFAULT_DOWNLOAD,
+  DEFAULT_EXPLORER,
   DEFAULT_SHORTCUTS,
   DEFAULT_NETWORK,
   DEFAULT_API_KEYS,
@@ -25,6 +27,7 @@ import {
 export const useSettingsStore = defineStore('settings', () => {
   const appearance = ref<AppearanceSettings>({ ...DEFAULT_APPEARANCE });
   const playback = ref<PlaybackSettings>({ ...DEFAULT_PLAYBACK });
+  const explorer = ref<ExplorerSettings>({ ...DEFAULT_EXPLORER });
   const download = ref<DownloadSettings>({ ...DEFAULT_DOWNLOAD });
   const shortcuts = ref<Record<string, string>>({ ...DEFAULT_SHORTCUTS });
   const network = ref<NetworkSettings>({ ...DEFAULT_NETWORK });
@@ -43,9 +46,10 @@ export const useSettingsStore = defineStore('settings', () => {
     try {
       if (window.api) {
         const data = (await window.api.invoke('settings:get')) as Partial<AppSettings>;
-        if (data.appearance) appearance.value = data.appearance;
-        if (data.playback) playback.value = data.playback;
-        if (data.download) download.value = data.download;
+      if (data.appearance) appearance.value = data.appearance;
+      if (data.playback) playback.value = data.playback;
+      if (data.explorer) explorer.value = data.explorer;
+      if (data.download) download.value = data.download;
         if (data.shortcuts) shortcuts.value = data.shortcuts;
         if (data.network) network.value = data.network;
         if (data.apiKeys) apiKeys.value = data.apiKeys;
@@ -59,12 +63,15 @@ export const useSettingsStore = defineStore('settings', () => {
     isLoaded.value = true;
   }
 
+  let saveTimer: ReturnType<typeof setTimeout> | null = null;
+
   const _save = async () => {
     try {
       if (window.api) {
         await window.api.invoke('settings:set', {
           appearance: appearance.value,
           playback: playback.value,
+          explorer: explorer.value,
           download: download.value,
           shortcuts: shortcuts.value,
           network: network.value,
@@ -80,7 +87,11 @@ export const useSettingsStore = defineStore('settings', () => {
   };
 
   const save = () => {
-    _save();
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      _save();
+    }, 300);
   };
 
   function updateAppearance(partial: Partial<AppearanceSettings>) {
@@ -130,9 +141,15 @@ export const useSettingsStore = defineStore('settings', () => {
     save();
   }
 
+  function updateExplorer(partial: Partial<ExplorerSettings>) {
+    Object.assign(explorer.value, partial);
+    save();
+  }
+
   return {
     appearance,
     playback,
+    explorer,
     download,
     shortcuts,
     network,
@@ -146,6 +163,7 @@ export const useSettingsStore = defineStore('settings', () => {
     save,
     updateAppearance,
     updatePlayback,
+    updateExplorer,
     updateDownload,
     updateShortcut,
     resetToDefaults,

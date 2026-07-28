@@ -1,5 +1,6 @@
 import { ipcMain, BrowserWindow } from 'electron';
 import type { PipManager } from './pip-manager';
+import type { AudioPipManager } from './audio-pip-manager';
 
 export function registerWindowHandlers(context: {
   getMainWindow: () => BrowserWindow | null;
@@ -9,8 +10,9 @@ export function registerWindowHandlers(context: {
     options: { title: string; width: number; height: number; alwaysOnTop?: boolean }
   ) => BrowserWindow;
   pipManager: PipManager;
+  audioPipManager: AudioPipManager;
 }): void {
-  const { getMainWindow, preFullscreenBounds, createChildWindow, pipManager } = context;
+  const { getMainWindow, preFullscreenBounds, createChildWindow, pipManager, audioPipManager } = context;
 
   ipcMain.handle(
     'window:createChild',
@@ -172,6 +174,55 @@ export function registerWindowHandlers(context: {
       } | null
     ) => {
       pipManager.updateSubtitle(data);
+    }
+  );
+
+  ipcMain.handle(
+    'audio-pip:show',
+    (
+      _event,
+      state: {
+        trackName: string;
+        artist: string;
+        coverData: string | null;
+        isPlaying: boolean;
+        currentTime: number;
+        duration: number;
+        volume: number;
+      },
+      mode?: string,
+      opacity?: number
+    ) => {
+      audioPipManager.show(state, mode as 'minimal' | 'medium' | 'max', opacity);
+      return true;
+    }
+  );
+
+  ipcMain.handle('audio-pip:hide', () => {
+    audioPipManager.hide();
+    return true;
+  });
+
+  ipcMain.handle(
+    'audio-pip:update',
+    (
+      _event,
+      state: {
+        trackName: string;
+        artist: string;
+        coverData: string | null;
+        isPlaying: boolean;
+        currentTime: number;
+        duration: number;
+        volume: number;
+      },
+      mode?: string,
+      opacity?: number
+    ) => {
+      audioPipManager.update(state);
+      if (mode) audioPipManager.setMode(mode as 'minimal' | 'medium' | 'max');
+      if (opacity !== undefined) audioPipManager.setOpacity(opacity);
+      return true;
     }
   );
 }

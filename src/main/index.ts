@@ -7,6 +7,7 @@ import { registerWindowHandlers } from './window-ipc';
 import icon from '../../resources/icon.png?asset';
 import { registerIPC } from './ipc/handlers';
 import { pipManager } from './pip-manager';
+import { audioPipManager } from './audio-pip-manager';
 
 let mainWindow: BrowserWindow | null = null;
 let splashWindow: BrowserWindow | null = null;
@@ -247,6 +248,8 @@ app.whenReady().then(async () => {
   mainWindow.webContents.on('did-finish-load', onMainReady);
   pipManager.setMainWindow(mainWindow);
   pipManager.init();
+  audioPipManager.setMainWindow(mainWindow);
+  audioPipManager.init();
   setupTray();
   registerGlobalShortcuts();
 
@@ -261,7 +264,8 @@ app.whenReady().then(async () => {
     getMainWindow: () => mainWindow,
     preFullscreenBounds: { current: preFullscreenBounds },
     createChildWindow: (parent, options) => createChildWindow(parent, options),
-    pipManager
+    pipManager,
+    audioPipManager
   });
 
   app.on('activate', () => {
@@ -279,6 +283,7 @@ app.on('window-all-closed', () => {
   splashWindow?.destroy();
   splashWindow = null;
   pipManager.destroy();
+  audioPipManager.destroy();
   if (process.platform !== 'darwin') {
     app.quit();
   }

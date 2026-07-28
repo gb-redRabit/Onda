@@ -1,6 +1,7 @@
 export interface AppSettings {
   appearance: AppearanceSettings;
   playback: PlaybackSettings;
+  explorer: ExplorerSettings;
   download: DownloadSettings;
   shortcuts: ShortcutSettings;
   network: NetworkSettings;
@@ -8,6 +9,12 @@ export interface AppSettings {
   updates: UpdateSettings;
   toast: ToastSettings;
   dependencies: Record<string, DependencyStatus>;
+}
+
+export interface ExplorerSettings {
+  viewMode: 'extraSmall' | 'small' | 'medium' | 'large' | 'extraLarge' | 'details';
+  sortBy: 'name' | 'size' | 'type' | 'modified';
+  sortOrder: 'asc' | 'desc';
 }
 
 export interface AppearanceSettings {
@@ -23,11 +30,13 @@ export interface AppearanceSettings {
   animations: boolean;
   transparency: number;
   customBackground?: string;
+  audioPipMode: 'minimal' | 'medium' | 'max';
+  audioPipAutoShow: boolean;
+  audioPipOpacity: number;
 }
 
 export interface PlaybackSettings {
   defaultPlayer: 'html5' | 'vlc';
-  crossfadeDuration: number;
   normalization: boolean;
   replayGain: boolean;
   gaplessPlayback: boolean;

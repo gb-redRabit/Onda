@@ -12,18 +12,12 @@ function toFileUrl(filePath: string): string {
 
 class AudioEngine {
   private audioEl: HTMLAudioElement | null = null;
-  private nextAudioEl: HTMLAudioElement | null = null;
   private audioCtx: AudioContext | null = null;
   private analyserNode: AnalyserNode | null = null;
   private sourceNode: MediaElementAudioSourceNode | null = null;
-  private sourceNodeB: MediaElementAudioSourceNode | null = null;
-  private crossfadeGainA: GainNode | null = null;
-  private crossfadeGainB: GainNode | null = null;
   private gainNode: GainNode | null = null;
   private eqFilters: BiquadFilterNode[] = [];
   private rafId: number | null = null;
-  private crossfadeTimer: ReturnType<typeof setTimeout> | null = null;
-  private isCrossfading = false;
   private initialized = false;
   private eqChainBuilt = false;
   private secondaryAudioEl: HTMLAudioElement | null = null;
@@ -38,10 +32,6 @@ class AudioEngine {
     this.analyserNode = this.audioCtx.createAnalyser();
     this.analyserNode.fftSize = 2048;
     this.gainNode = this.audioCtx.createGain();
-    this.crossfadeGainA = this.audioCtx.createGain();
-    this.crossfadeGainB = this.audioCtx.createGain();
-    this.crossfadeGainA.gain.value = 1;
-    this.crossfadeGainB.gain.value = 0;
     this.eqFilters = eqFrequencies.map((freq, i) => {
       const filter = this.audioCtx!.createBiquadFilter();
       filter.type = i === 0 ? 'lowshelf' : i === eqFrequencies.length - 1 ? 'highshelf' : 'peaking';
@@ -57,8 +47,7 @@ class AudioEngine {
     if (this.eqChainBuilt) return;
     const firstFilter = this.eqFilters[0];
     if (firstFilter) {
-      this.crossfadeGainA!.connect(firstFilter);
-      this.crossfadeGainB!.connect(firstFilter);
+      this.sourceNode?.connect(firstFilter);
       let eqChain: AudioNode = firstFilter;
       for (let i = 1; i < this.eqFilters.length; i++) {
         eqChain.connect(this.eqFilters[i]);
@@ -66,8 +55,7 @@ class AudioEngine {
       }
       eqChain.connect(this.gainNode!);
     } else {
-      this.crossfadeGainA!.connect(this.gainNode!);
-      this.crossfadeGainB!.connect(this.gainNode!);
+      this.sourceNode?.connect(this.gainNode!);
     }
     this.gainNode!.connect(this.analyserNode!);
     this.analyserNode!.connect(this.audioCtx!.destination);
@@ -76,28 +64,35 @@ class AudioEngine {
 
   private connectAudio(el: HTMLAudioElement): void {
     this.ensureAudioContext();
-    this.ensureEqChain();
+
+    if (!this.eqChainBuilt) {
+      if (!this.sourceNode) {
+        this.sourceNode = this.audioCtx!.createMediaElementSource(el);
+      } else {
+        try { this.sourceNode.disconnect(); } catch {}
+      }
+      this.ensureEqChain();
+    } else {
+      if (!this.sourceNode) {
+        this.sourceNode = this.audioCtx!.createMediaElementSource(el);
+        const firstFilter = this.eqFilters[0];
+        if (firstFilter) {
+          this.sourceNode.connect(firstFilter);
+        } else {
+          this.sourceNode.connect(this.gainNode!);
+        }
+      } else {
+        try { this.sourceNode.disconnect(); } catch {}
+        const firstFilter = this.eqFilters[0];
+        if (firstFilter) {
+          this.sourceNode.connect(firstFilter);
+        } else {
+          this.sourceNode.connect(this.gainNode!);
+        }
+      }
+    }
 
     this.disconnectSecondaryAudio();
-
-    if (!this.sourceNode) {
-      this.sourceNode = this.audioCtx!.createMediaElementSource(el);
-    } else {
-      try {
-        this.sourceNode.disconnect();
-      } catch {}
-    }
-    this.sourceNode.connect(this.crossfadeGainA!);
-  }
-
-  private connectAudioB(el: HTMLAudioElement): void {
-    this.ensureAudioContext();
-    this.ensureEqChain();
-    if (this.sourceNodeB) return;
-    try {
-      this.sourceNodeB = this.audioCtx!.createMediaElementSource(el);
-      this.sourceNodeB.connect(this.crossfadeGainB!);
-    } catch {}
   }
 
   private createAudioElement(): HTMLAudioElement {
@@ -125,7 +120,7 @@ class AudioEngine {
       audioEvents.emit('playStateChange', true);
     });
     el.addEventListener('pause', () => {
-      if (!this.isCrossfading) audioEvents.emit('playStateChange', false);
+      audioEvents.emit('playStateChange', false);
     });
     el.addEventListener('loadedmetadata', () => {
       audioEvents.emit('durationChange', el.duration || 0);
@@ -139,7 +134,6 @@ class AudioEngine {
     } catch {
       return;
     }
-    if (this.isCrossfading) return;
 
     if (player.repeat === 'one') {
       if (this.audioEl) {
@@ -148,24 +142,12 @@ class AudioEngine {
       }
       return;
     }
-
-    try {
-      const settings = useSettingsStore();
-      const crossfadeDuration = settings.playback.crossfadeDuration || 0;
-      if (crossfadeDuration > 0 && player.queue.length > 0) {
-        this.startCrossfade(crossfadeDuration);
-        return;
-      }
-    } catch {
-      // store not available
-    }
-
-    audioEvents.emit('trackEnd', undefined);
+    player.nextTrack();
   }
 
   private startRafLoop(): void {
     const tick = () => {
-      if (this.audioEl && !this.audioEl.paused) {
+      if (this.audioEl) {
         audioEvents.emit('timeUpdate', this.audioEl.currentTime);
       }
       this.rafId = requestAnimationFrame(tick);
@@ -180,143 +162,12 @@ class AudioEngine {
     }
   }
 
-  private startCrossfade(duration: number): void {
-    const player = usePlayerStore();
-    if (!this.audioEl || !this.audioCtx || !this.crossfadeGainA || !this.crossfadeGainB) return;
-
-    const next = player.queue[0];
-    if (!next || next.type === 'video') {
-      audioEvents.emit('trackEnd', undefined);
-      return;
-    }
-
-    this.isCrossfading = true;
-
-    if (!this.nextAudioEl) {
-      this.nextAudioEl = new Audio();
-      this.nextAudioEl.preload = 'auto';
-      this.nextAudioEl.crossOrigin = 'anonymous';
-      this.connectAudioB(this.nextAudioEl);
-    }
-
-    const src = toFileUrl(next.path);
-    this.nextAudioEl.src = src;
-
-    const fallbackTimeout = setTimeout(
-      () => {
-        if (this.isCrossfading) {
-          this.isCrossfading = false;
-          this.cleanupAudioEl(this.nextAudioEl);
-          this.nextAudioEl = null;
-          audioEvents.emit('trackEnd', undefined);
-        }
-      },
-      (duration + 10) * 1000
-    );
-
-    const doCrossfade = (): void => {
-      clearTimeout(fallbackTimeout);
-      const baseTime = this.audioCtx!.currentTime;
-      this.crossfadeGainA!.gain.setValueAtTime(1, baseTime);
-      this.crossfadeGainA!.gain.linearRampToValueAtTime(0, baseTime + duration);
-      this.crossfadeGainB!.gain.setValueAtTime(0, baseTime);
-      this.crossfadeGainB!.gain.linearRampToValueAtTime(1, baseTime + duration);
-      this.nextAudioEl!.play().catch(() => {});
-
-      this.crossfadeTimer = setTimeout(() => {
-        if (this.audioEl) {
-          this.audioEl.pause();
-          this.audioEl.removeAttribute('src');
-        }
-        player.setTrack(next);
-        try { this.sourceNodeB?.disconnect(); } catch {}
-        this.sourceNodeB!.connect(this.crossfadeGainA!);
-        this.crossfadeGainA!.gain.value = 1;
-        this.crossfadeGainB!.gain.value = 0;
-        this.sourceNode = this.sourceNodeB;
-        this.sourceNodeB = null;
-        this.audioEl = this.nextAudioEl;
-        this.nextAudioEl = null;
-        this.isCrossfading = false;
-        this.crossfadeTimer = null;
-        audioEvents.emit('timeUpdate', 0);
-        audioEvents.emit('durationChange', this.audioEl!.duration || 0);
-        if (player.currentTrack) player.currentTrack.duration = this.audioEl!.duration || 0;
-        this.ensureNextPreloaded();
-      }, duration * 1000);
-    };
-
-    if (this.nextAudioEl.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
-      doCrossfade();
-    } else {
-      this.nextAudioEl.addEventListener('canplay', doCrossfade, { once: true });
-      this.nextAudioEl.addEventListener(
-        'error',
-        () => {
-          clearTimeout(fallbackTimeout);
-          if (this.isCrossfading) {
-            this.isCrossfading = false;
-            audioEvents.emit('trackEnd', undefined);
-          }
-        },
-        { once: true }
-      );
-    }
-  }
-
-  private ensureNextPreloaded(): void {
-    const player = usePlayerStore();
-    if (player.queue.length === 0) return;
-    const nextTrack = player.queue[0];
-    if (!nextTrack || nextTrack.type === 'video') return;
-
-    if (!this.nextAudioEl) {
-      this.nextAudioEl = new Audio();
-      this.nextAudioEl.preload = 'auto';
-      this.nextAudioEl.crossOrigin = 'anonymous';
-      this.connectAudioB(this.nextAudioEl);
-    }
-    const src = toFileUrl(nextTrack.path);
-    if (this.nextAudioEl.src !== src) {
-      this.nextAudioEl.src = src;
-    }
-  }
-
   private disconnectNodes(): void {
-    try {
-      this.sourceNode?.disconnect();
-    } catch {}
-    try {
-      this.sourceNodeB?.disconnect();
-    } catch {
-      /* already disconnected */
-    }
-    try {
-      this.crossfadeGainA?.disconnect();
-    } catch {
-      /* already disconnected */
-    }
-    try {
-      this.crossfadeGainB?.disconnect();
-    } catch {
-      /* already disconnected */
-    }
-    try {
-      this.gainNode?.disconnect();
-    } catch {
-      /* already disconnected */
-    }
-    try {
-      this.analyserNode?.disconnect();
-    } catch {
-      /* already disconnected */
-    }
+    try { this.sourceNode?.disconnect(); } catch {}
+    try { this.gainNode?.disconnect(); } catch {}
+    try { this.analyserNode?.disconnect(); } catch {}
     for (const f of this.eqFilters) {
-      try {
-        f.disconnect();
-      } catch {
-        /* already disconnected */
-      }
+      try { f.disconnect(); } catch {}
     }
   }
 
@@ -333,7 +184,7 @@ class AudioEngine {
     this.visibilityHandler = () => {
       if (document.hidden) {
         this.stopRafLoop();
-      } else if (this.audioEl && !this.audioEl.paused) {
+      } else if (this.audioEl) {
         this.startRafLoop();
       }
     };
@@ -360,41 +211,19 @@ class AudioEngine {
   }
 
   loadTrack(track: MediaFile): void {
-    const player = usePlayerStore();
     const settings = useSettingsStore();
 
     if (track.type === 'video') {
-      if (this.crossfadeTimer) {
-        clearTimeout(this.crossfadeTimer);
-        this.crossfadeTimer = null;
-      }
-      this.isCrossfading = false;
       return;
-    }
-
-    if (this.crossfadeTimer) {
-      clearTimeout(this.crossfadeTimer);
-      this.crossfadeTimer = null;
-    }
-    this.isCrossfading = false;
-    if (this.nextAudioEl) {
-      this.cleanupAudioEl(this.nextAudioEl);
-      this.nextAudioEl = null;
-    }
-    if (this.sourceNodeB) {
-      try { this.sourceNodeB.disconnect(); } catch {}
-      this.sourceNodeB = null;
     }
 
     if (!this.audioEl) {
       const el = this.createAudioElement();
       this.setupListeners(el);
     }
-    const src = toFileUrl(track.path);
-    this.audioEl!.src = src;
+    this.audioEl!.src = toFileUrl(track.path);
     this.connectAudio(this.audioEl!);
-    if (this.gainNode) this.gainNode.gain.value = player.isMuted ? 0 : player.volume;
-    this.isCrossfading = false;
+    if (this.gainNode) this.gainNode.gain.value = usePlayerStore().isMuted ? 0 : usePlayerStore().volume;
 
     audioEvents.emit('trackLoaded', undefined);
     if (settings.playback.rememberPosition) {
@@ -441,12 +270,9 @@ class AudioEngine {
     await this.disconnectSecondaryAudio();
 
     this.ensureAudioContext();
-    this.ensureEqChain();
 
     if (this.sourceNode) {
-      try {
-        this.sourceNode.disconnect();
-      } catch {}
+      try { this.sourceNode.disconnect(); } catch {}
     }
 
     const el = new Audio();
@@ -473,10 +299,10 @@ class AudioEngine {
 
     this.secondaryAudioEl = el;
     this.secondarySourceNode = this.audioCtx!.createMediaElementSource(el);
-    this.secondarySourceNode.connect(this.crossfadeGainA!);
+    this.secondarySourceNode.connect(this.gainNode!);
     try {
-      if (this.sourceNode && this.crossfadeGainA) {
-        this.sourceNode.connect(this.crossfadeGainA);
+      if (this.sourceNode && this.gainNode) {
+        this.sourceNode.connect(this.gainNode);
       }
     } catch {}
     this.secondaryAudioOffset = timeOffset;
@@ -485,9 +311,7 @@ class AudioEngine {
 
   disconnectSecondaryAudio(): void {
     if (this.secondarySourceNode) {
-      try {
-        this.secondarySourceNode.disconnect();
-      } catch {}
+      try { this.secondarySourceNode.disconnect(); } catch {}
       this.secondarySourceNode = null;
     }
     if (this.secondaryAudioEl) {
@@ -549,11 +373,6 @@ class AudioEngine {
 
   async deactivate(): Promise<void> {
     this.stopRafLoop();
-    if (this.crossfadeTimer) {
-      clearTimeout(this.crossfadeTimer);
-      this.crossfadeTimer = null;
-    }
-    this.isCrossfading = false;
     this.savePosition();
     if (this.audioEl) {
       this.audioEl.pause();
@@ -565,20 +384,12 @@ class AudioEngine {
 
   async destroy(): Promise<void> {
     this.stopRafLoop();
-    this.isCrossfading = false;
-    if (this.crossfadeTimer) {
-      clearTimeout(this.crossfadeTimer);
-      this.crossfadeTimer = null;
-    }
     this.savePosition();
     this.disconnectSecondaryAudio();
     this.disconnectNodes();
     this.cleanupAudioEl(this.audioEl);
-    this.cleanupAudioEl(this.nextAudioEl);
     this.audioEl = null;
-    this.nextAudioEl = null;
     this.sourceNode = null;
-    this.sourceNodeB = null;
     this.eqChainBuilt = false;
     if (this.visibilityHandler) {
       document.removeEventListener('visibilitychange', this.visibilityHandler);
@@ -600,7 +411,6 @@ class AudioEngine {
   resume(): void {
     if (!this.audioCtx) {
       this.ensureAudioContext();
-      this.ensureEqChain();
     }
     if (this.audioCtx && this.audioCtx.state === 'suspended') {
       this.audioCtx.resume();
@@ -631,13 +441,9 @@ class AudioEngine {
 
   connectVideoElement(): void {
     this.ensureAudioContext();
-    this.ensureEqChain();
     this.resume();
-
     if (this.sourceNode) {
-      try {
-        this.sourceNode.disconnect();
-      } catch {}
+      try { this.sourceNode.disconnect(); } catch {}
     }
   }
 

@@ -61,7 +61,6 @@ export interface PlayerState {
   playbackRate: number;
   shuffle: boolean;
   repeat: 'none' | 'all' | 'one';
-  crossfadeDuration: number;
   equalizerPreset: string;
   equalizerBands: number[];
 }

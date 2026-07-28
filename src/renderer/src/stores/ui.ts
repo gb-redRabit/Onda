@@ -12,9 +12,6 @@ export interface ContextMenuItem {
 }
 
 export const useUIStore = defineStore('ui', () => {
-  const sidebarExpanded = ref(true);
-  const sidebarWidth = ref(240);
-  const sidebarMode = ref<'full' | 'icons'>('full');
   const topMenuVisible = ref(true);
   const statusBarVisible = ref(true);
   const playerBarVisible = ref(true);
@@ -32,10 +29,6 @@ export const useUIStore = defineStore('ui', () => {
     title: string;
     message?: string;
     duration?: number;
-  }
-
-  function toggleSidebar() {
-    sidebarExpanded.value = !sidebarExpanded.value;
   }
 
   function toggleTopMenu() {
@@ -76,9 +69,6 @@ export const useUIStore = defineStore('ui', () => {
   }
 
   return {
-    sidebarExpanded,
-    sidebarWidth,
-    sidebarMode,
     topMenuVisible,
     statusBarVisible,
     playerBarVisible,
@@ -89,7 +79,6 @@ export const useUIStore = defineStore('ui', () => {
     commandPaletteVisible,
     contextMenu,
     notifications,
-    toggleSidebar,
     toggleTopMenu,
     toggleStatusBar,
     toggleSearch,

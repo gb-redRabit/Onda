@@ -4,8 +4,6 @@ type AudioEvents = {
   playStateChange: boolean;
   trackEnd: void;
   trackLoaded: void;
-  crossfadeStart: void;
-  crossfadeEnd: void;
 };
 
 type Listener<T> = (data: T) => void;

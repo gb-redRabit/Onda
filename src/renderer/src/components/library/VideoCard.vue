@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import type { MediaFile } from '@renderer/types/media';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useUIStore } from '@renderer/stores/ui';
-import { Music2 } from '@lucide/vue';
+import { Play } from '@lucide/vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
 
 const { t } = useI18n();
@@ -71,7 +71,7 @@ function onDragStart(e: DragEvent) {
         <div
           class="w-10 h-10 rounded-full bg-accent-base/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
         >
-          <Music2 :size="18" class="text-white ml-0.5" />
+          <Play :size="18" class="text-white ml-0.5" />
         </div>
       </div>
       <div

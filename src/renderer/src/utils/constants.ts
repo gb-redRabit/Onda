@@ -51,6 +51,7 @@ export const ALL_MEDIA_FORMATS = [
 
 import type {
   NetworkSettings,
+  ExplorerSettings,
   ApiKeySettings,
   UpdateSettings,
   ToastSettings
@@ -60,6 +61,12 @@ export const DEFAULT_NETWORK: NetworkSettings = {
   proxy: { enabled: false, type: 'http', host: '', port: 8080 },
   downloadSpeedLimit: 0,
   userAgent: ''
+};
+
+export const DEFAULT_EXPLORER: ExplorerSettings = {
+  viewMode: 'medium',
+  sortBy: 'name',
+  sortOrder: 'asc'
 };
 
 export const DEFAULT_API_KEYS: ApiKeySettings = {
@@ -122,7 +129,10 @@ export const DEFAULT_APPEARANCE = {
   showAlbums: true,
   locale: 'pl' as const,
   animations: true,
-  transparency: 1
+  transparency: 1,
+  audioPipMode: 'minimal' as const,
+  audioPipAutoShow: true,
+  audioPipOpacity: 0.35
 };
 
 export const THEME_PALETTES: Record<
@@ -197,7 +207,6 @@ export const THEME_PALETTES: Record<
 
 export const DEFAULT_PLAYBACK = {
   defaultPlayer: 'html5' as const,
-  crossfadeDuration: 3,
   normalization: false,
   replayGain: false,
   gaplessPlayback: true,

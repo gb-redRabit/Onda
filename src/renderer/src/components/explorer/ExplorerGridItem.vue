@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { HardDrive, FolderOpen, Image, Film } from '@lucide/vue';
+import { HardDrive, FolderOpen, Image, Film, Music2 } from '@lucide/vue';
 import { getFileTypeInfo } from '@renderer/utils/fileTypes';
 import { formatFileSize } from '@renderer/utils/formatters';
 import type { FileItem } from '@renderer/types/explorer';
@@ -22,6 +22,13 @@ const emit = defineEmits<{
 
 const { rootEl, systemIcon, mediaThumb } = useThumbnail(props.item.path, props.item.isDirectory, props.isAtDrives, 320);
 if (import.meta.env.DEV) { void rootEl; }
+
+const fileTypeIcon = computed(() => {
+  const cat = getFileTypeInfo(props.item.extension || '').category;
+  if (cat === 'video') return Film;
+  if (cat === 'audio') return Music2;
+  return Image;
+});
 
 const size = computed(() => {
   switch (props.viewMode) {
@@ -65,12 +72,7 @@ const size = computed(() => {
         :style="{ width: `${Math.round(size.icon * 0.5)}px`, height: `${Math.round(size.icon * 0.5)}px` }"
         class="object-contain"
       />
-      <component
-        :is="getFileTypeInfo(item.extension || '').category === 'video' ? Film : Image"
-        v-else
-        :size="Math.round(size.icon * 0.45)"
-        :style="{ color: getFileTypeInfo(item.extension || '').color }"
-      />
+      <component :is="fileTypeIcon" v-else :size="Math.round(size.icon * 0.45)" :style="{ color: getFileTypeInfo(item.extension || '').color }" />
     </div>
     <span :class="`truncate w-full leading-tight font-medium ${size.fs}`">{{ item.name }}</span>
     <span v-if="isAtDrives && item.size > 0" :class="`text-[10px] text-fg-faint ${size.fs}`">{{

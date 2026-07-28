@@ -7,11 +7,11 @@
 | Metryka             | Wartość                                          |
 | ------------------- | ------------------------------------------------ |
 | Pliki źródłowe      | 106 (.ts + .vue + .css + .html)                  |
-| Linie kodu          | ~16,439                                          |
+| Linie kodu          | ~16,287                                          |
 | Main process        | 5 plików, ~2,533 linii                           |
 | Preload             | 2 pliki, ~287 linii                              |
 | Shared              | 2 pliki, ~187 linii                              |
-| Renderer            | 95 plików, ~13,397 linii                         |
+| Renderer            | 95 plików, ~13,254 linii                         |
 | Pliki testowe       | 4 (141 testów)                                   |
 | Zależności npm      | 38 (17 runtime + 21 dev)                         |
 | `typecheck`         | 100% clean                                       |
@@ -91,10 +91,10 @@
 │  │   └── youtube.ts (58)                     │
 │  ├── modules/ (8, ~912 linii)               │
 │  │   ├── ModuleManager.ts (97)               │
-│  │   ├── audioEngine.ts (631) — klasa        │
+│  │   ├── audioEngine.ts (473) — klasa        │
 │  │   └── PlayerModule/ExplorerModule/...     │
 │  ├── composables/ (6, ~1,211 linii)         │
-│  │   ├── useAudioPlayer.ts (159)             │
+│  │   ├── useAudioPlayer.ts (131)             │
 │  │   ├── useVideoPlayer.ts (406)             │
 │  │   ├── useSubtitleRenderer.ts (375)        │
 │  │   ├── usePlayerKeyboard.ts (106)          │
@@ -1089,4 +1089,96 @@ CSP był:
 **Data:** 2026-07-23
 **Status:** ✅ Usunięty z `src/main/index.ts:10`
 **Skutek:** Ostrzeżenia `webSecurity` i `allowRunningInsecureContent` pojawiają się w konsoli renderer podczas dev. Są nieszkodliwe (tylko dev). W production build nie występują.
+
+---
+
+## 19. Sprint 9 — Audio PiP Fix + Crossfade Removal (2026-07-28)
+
+### 19.1 Problemy
+
+| # | Problem | Przyczyna | Skutek |
+|---|---------|-----------|--------|
+| 1 | **Audio PiP: progress bar zastyga po zmianie utworu** | `onTrackChange` nie restartował time trackingu w `useAudioPiP`. Local `audioTime`/`audioDuration` były odseparowane od głównego stanu | PiP pokazywał stare czasy, progress bar nieruchomy |
+| 2 | **Automatyczne "next" nie działa** | `handleEnded()` w `audioEngine` emitował event `trackEnd`, a `useAudioPlayer` nasłuchiwał i wołał `player.nextTrack()`. Crossfade (`startCrossfade`) resetował src elementu audio po drodze, co zabijało `ended` event | Kolejny utwór nie startował automatycznie; przycisk "next" działał (wołał `player.nextTrack()` bezpośrednio) |
+| 3 | **HMR zrywa nasłuchiwania** | Listenery `audioEvents.on()` i watchery `watch()` były rejestrowane w ciele `useAudioPlayer()` (per-component). Po hot reload ginęły subskrypcje | Po HMR audio nie reagowało na zmiany store |
+| 4 | **RAF loop nie emituje timeUpdate gdy paused** | `rafLoop` emitował `timeUpdate` tylko gdy `!this.audioEl.paused` — podczas ładowania nowego utworu `paused=true` | `currentTime` nie był aktualizowany między utworami |
+| 5 | **Crossfade komplikuje przepływ** | `startCrossfade()` tworzy drugi `Audio` element, miksa przez osobne GainNode, po swap resetuje src głównego elementu. Wieloetapowy przepływ z timerami | Dodatkowe ryzyko regresji, znikoma wartość dla użytkownika |
+
+### 19.2 Co zrobiono
+
+#### Fixy audio PiP
+
+| # | Rozwiązanie | Pliki |
+|---|-------------|-------|
+| 1 | `useAudioPiP.ts`: `onTrackChange` restartuje `startTimeTracking()` jeśli utwór gra; usunięto lokalne `audioTime`/`audioDuration` — PiP czyta z modułowych `currentTime`/`duration` refów z `useAudioPlayer` | `useAudioPiP.ts` |
+| 2 | `useAudioPlayer.ts`: wyeksportowano modułowe `currentTime`/`duration` refy | `useAudioPlayer.ts` |
+| 3 | `useAudioPiP.ts`: import `currentTime`/`duration` z `useAudioPlayer` zamiast lokalnych refów | `useAudioPiP.ts` |
+
+#### Fixy odtwarzania (engine + store)
+
+| # | Rozwiązanie | Pliki |
+|---|-------------|-------|
+| 1 | `handleEnded()` woła `player.nextTrack()` bezpośrednio (zamiast `audioEvents.emit('trackEnd')`). Usunięto event `trackEnd` i listener w `useAudioPlayer` | `audioEngine.ts`, `useAudioPlayer.ts` |
+| 2 | RAF loop: zawsze emituje `timeUpdate`, niezależnie od `paused` state | `audioEngine.ts` |
+| 3 | Visibility handler: restartuje RAF loop po powrocie do widoku, bez warunku `paused` | `audioEngine.ts` |
+| 4 | Wszystkie listenery eventów i watchery przeniesione na poziom modułu (`ensureModule()`) z `detached effectScope(true)` — przeżywają HMR | `useAudioPlayer.ts` |
+| 5 | Crossfade całkowicie usunięty z `audioEngine.ts`: usunięto pola (`nextAudioEl`, `crossfadeGainA/B`, `crossfadeTimer`, `isCrossfading`, `sourceNodeB`), metody (`startCrossfade`, `connectAudioB`, `ensureNextPreloaded`), uproszczono `ensureEqChain`/`connectAudio`/`handleEnded`/`disconnectNodes`/`loadTrack`/`connectSecondaryAudio`/`deactivate`/`destroy`. Usunięto `crossfadeDuration` z `player.ts`, `types/settings.ts`, `types/media.ts`, `utils/constants.ts`, `locales/en.ts`/`pl.ts`, `utils/audioEvents.ts`, `components/settings/SettingsPlayback.vue` | 9 plików |
+
+#### Cleanup — debug logi
+
+| # | Rozwiązanie | Pliki |
+|---|-------------|-------|
+| 1 | Usunięto wszystkie `console.log` dodane podczas debugowania | `audioEngine.ts`, `useAudioPlayer.ts`, `useAudioPiP.ts`, `player.ts` |
+
+### 19.3 Zmiany w architekturze
+
+```diff
+- audioEngine → audioEvents.emit('trackEnd') → useAudioPlayer → player.nextTrack()
++ audioEngine → player.nextTrack() bezpośrednio
+
+- crossfadeGainA → eqFilters[] → gainNode → analyser
++ sourceNode → eqFilters[] → gainNode → analyser
+- sourceNodeB → crossfadeGainB ─┘
+- nextAudioEl, crossfadeGainA/B, crossfadeTimer, isCrossfading, sourceNodeB
+
+- useAudioPlayer(): listenery/watchery w ciele composable (giną przy HMR)
++ ensureModule(): detached effectScope(true) na poziomie modułu (przeżywa HMR)
+
+- useAudioPiP(): local audioTime/audioDuration refs
++ useAudioPiP(): import currentTime/duration z useAudioPlayer (modułowe refy)
+
+- rafLoop: emituje timeUpdate tylko gdy !paused
++ rafLoop: zawsze emituje timeUpdate
+
+- player.ts: crossfadeDuration ref + return
++ player.ts: crossfadeDuration usunięty
+```
+
+### 19.4 Zmodyfikowane pliki
+
+| Plik | Przed | Po | Zmiana |
+|------|-------|----|--------|
+| `modules/audioEngine.ts` | 631 linii | 473 | Usunięcie crossfade + refactor |
+| `composables/useAudioPlayer.ts` | 159 | 131 | Module-level scope, usunięcie logów |
+| `composables/useAudioPiP.ts` | 202 | ~152 | Współdzielone refy, usunięcie logów |
+| `stores/player.ts` | 490 | 457 | usunięcie crossfadeDuration + logów |
+| `types/settings.ts` | — | — | usunięcie `crossfadeDuration` z interface |
+| `types/media.ts` | — | — | usunięcie `crossfadeDuration` z PlayerState |
+| `utils/constants.ts` | — | — | usunięcie `crossfadeDuration: 3` z DEFAULT_PLAYBACK |
+| `utils/audioEvents.ts` | — | — | usunięcie eventów `crossfadeStart`/`crossfadeEnd` |
+| `locales/en.ts` | — | — | usunięcie `crossfade` translation |
+| `locales/pl.ts` | — | — | usunięcie `crossfade` translation |
+| `components/settings/SettingsPlayback.vue` | 114 | ~95 | usunięcie slidera crossfade |
+
+### 19.5 Statystyki (po sprincie 9)
+
+| Metryka | Przed | Po |
+|---------|-------|----|
+| Pliki źródłowe | 106 | 106 (bez zmian — tylko modyfikacje) |
+| Linie kodu | ~16,439 | ~16,287 |
+| Renderer | ~13,397 | ~13,254 |
+| `typecheck` | 0 błędów | 0 błędów |
+| `console.log` (debug) | 53 | 0 |
+
+_Ostatnia aktualizacja: 2026-07-28_
 

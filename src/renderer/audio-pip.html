@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'" />
+<title>Onda Audio PiP</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;user-select:none}
+body{background:#1a1a2e;display:flex;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;transition:opacity .2s}
+#w{display:flex;align-items:center;height:40px;padding:0 8px;gap:4px;width:100%;position:relative;background:#1a1a2e;color:#e0e0e0}
+#i{flex:1;min-width:0}
+#tn{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#c{display:flex;align-items:center;gap:2px;flex-shrink:0}
+.b{width:26px;height:26px;border:none;background:transparent;color:#ccc;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:5px;font-size:13px;transition:all .12s}
+.b:hover{background:rgba(255,255,255,0.12);color:#fff}
+.bp{width:30px;height:30px;font-size:15px;background:rgba(124,106,239,0.25);color:#7c6aef}
+.bp:hover{background:rgba(124,106,239,0.45);color:#9b8cf5}
+#p{position:absolute;bottom:0;left:0;right:0;height:4px;background:rgba(255,255,255,0.15);cursor:pointer}
+#p:hover{height:6px;background:rgba(255,255,255,0.2)}
+#f{height:100%;background:linear-gradient(90deg,#7c6aef,#9b8cf5);width:0%;border-radius:0 2px 2px 0}
+</style>
+</head>
+<body>
+<div id="w">
+  <div id="i"><div id="tn">—</div></div>
+  <div id="c">
+    <button class="b" id="pr">⏮</button>
+    <button class="b bp" id="pl">▶</button>
+    <button class="b" id="nx">⏭</button>
+  </div>
+  <div id="p"><div id="f"></div></div>
+</div>
+<script>
+;(function(){
+  var $ = document.getElementById.bind(document)
+  var tn = $('tn'), pl = $('pl'), pf = $('f'), pw = $('p'), bd = document.body
+  var over = false, baseOpacity = 0.35, currentMode = 'minimal'
+
+  function send(a){ if(window.api) window.api.send('audio-pip:action', a) }
+
+  function render(s){
+    if (s.trackName !== undefined) {
+      tn.textContent = s.trackName || '—'
+    }
+    if (s.isPlaying !== undefined) {
+      pl.textContent = s.isPlaying ? '⏸' : '▶'
+    }
+    if (s.currentTime !== undefined && s.duration !== undefined && s.duration > 0) {
+      var pct = (s.currentTime / s.duration) * 100
+      pf.style.width = pct + '%'
+    }
+  }
+
+  bd.onmouseenter = function(){ over = true; bd.style.opacity = '1' }
+  bd.onmouseleave = function(){ over = false; bd.style.opacity = String(baseOpacity) }
+  bd.ondblclick = function(){ if(window.api) window.api.send('audio-pip:showMain') }
+
+  pl.onclick = function(){ send('playPause') }
+  $('pr').onclick = function(){ send('prev') }
+  $('nx').onclick = function(){ send('next') }
+  pw.onclick = function(e){
+    var r = pw.getBoundingClientRect()
+    var pct = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width))
+    if(window.api) window.api.send('audio-pip:progressClick', pct)
+  }
+
+  if (window.api) {
+    window.api.on('audio-pip:update', function(){
+      var d = arguments[0]
+      if (d.mode !== undefined && d.mode !== currentMode) {
+        currentMode = d.mode
+      }
+      if (d.state) {
+        render(d.state)
+      }
+      if (d.opacity !== undefined) {
+        baseOpacity = d.opacity
+        if (!over) bd.style.opacity = String(baseOpacity)
+      }
+    })
+  }
+
+  render({ trackName: '', artist: '', coverData: null, isPlaying: false, currentTime: 0, duration: 0, volume: 1 })
+  bd.style.opacity = String(baseOpacity)
+
+})()
+</script>
+</body>
+</html>

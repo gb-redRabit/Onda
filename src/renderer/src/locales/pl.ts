@@ -130,7 +130,6 @@ export default {
     rememberPos: 'Zapamiętuj pozycję odtwarzania',
     hideCursor: 'Ukrywanie kursora',
     playbackSection: 'Odtwarzanie',
-    crossfade: 'Przejście:',
     defaultVolume: 'Domyślna głośność:',
     defaultSpeed: 'Domyślna prędkość:',
     cursorHideTimeout: 'Czas ukrycia kursora:',

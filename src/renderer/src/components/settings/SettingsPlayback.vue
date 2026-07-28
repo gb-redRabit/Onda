@@ -19,24 +19,6 @@ const toggles = [
 
     <div>
       <h3 class="text-sm font-semibold mb-3">
-        {{ $t('settings.crossfade') }} {{ settings.playback.crossfadeDuration }}s
-      </h3>
-      <input
-        type="range"
-        min="0"
-        max="12"
-        :value="settings.playback.crossfadeDuration"
-        class="w-full"
-        @input="
-          settings.updatePlayback({
-            crossfadeDuration: parseInt(($event.target as HTMLInputElement).value)
-          })
-        "
-      />
-    </div>
-
-    <div>
-      <h3 class="text-sm font-semibold mb-3">
         {{ $t('settings.defaultVolume') }} {{ Math.round(settings.playback.defaultVolume * 100) }}%
       </h3>
       <input

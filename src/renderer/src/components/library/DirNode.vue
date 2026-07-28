@@ -47,7 +47,7 @@ function playDir(fp: string) {
   const tracks = library.tracks.filter((t) => t.path.startsWith(fp));
   if (tracks.length === 0) return;
   player.clearQueue();
-  player.addToQueueMultiple(tracks);
+  if (tracks.length > 1) player.addToQueueMultiple(tracks.slice(1));
   player.setTrack(tracks[0]);
   player.play();
 }

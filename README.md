@@ -7,13 +7,13 @@ Odtwarza lokalne pliki audio/wideo, zarządza biblioteką mediów z metadanymi I
 ## Funkcje
 
 ### Odtwarzanie
-- **Silnik audio** — HTML5 Audio + Web Audio API z gapless playback i crossfade
+- **Silnik audio** — HTML5 Audio + Web Audio API z gapless playback
 - **Equalizer** — 10 pasm + presety + custom presets + krzywa odpowiedzi
 - **Wizualizacja** — style bars / wave / radial (Canvas + AnalyserNode), 3 layouty AudioView
 - **Kolejka i historia** — z drag & drop (przeciąganie, shuffle, repeat all/one/none)
 - **Wideo** — fullscreen, Picture-in-Picture, OSD, playback rate (0.2–3.0x), filtry wideo, skip zone
 - **Audio AC3/DTS → AAC** — automatyczne transkodowanie chunk-first (~1s do pierwszego dźwięku) dla kodeków niewspieranych przez Chromium
-- **Gapless / Crossfade** — preload + swap następnego utworu z opcjonalnym płynnym przejściem
+- **Gapless** — native HTML5 Audio z Web Audio API (brak przerw między utworami)
 - **ReplayGain** — normalizacja głośności, zapamiętywanie pozycji
 
 ### Napisy (ASS/SRT/VTT)
@@ -174,7 +174,7 @@ npm run build:linux
 | Fundament i architektura modułowa | ✅ |
 | Splash screen | ✅ |
 | UI skeleton + nawigacja + system motywów | ✅ |
-| Odtwarzacz audio — gapless, crossfade, EQ, wizualizacja, AudioView (3 layouty) | ✅ |
+| Odtwarzacz audio — gapless, EQ, wizualizacja, AudioView (3 layouty) | ✅ |
 | Odtwarzacz wideo — fullscreen, PiP, napisy ASS/SRT/VTT, OSD | ✅ |
 | Transkodowanie AC3/DTS → AAC chunk-first | ✅ |
 | Eksplorator plików — 6 widoków, virtual scroll, streaming, context menu | ✅ |

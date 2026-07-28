@@ -17,6 +17,7 @@ import { useUIStore } from './stores/ui';
 import { useLibraryStore } from './stores/library';
 import { moduleManager } from './modules/ModuleManager';
 import { THEME_PALETTES } from './utils/constants';
+import { useAudioPiP } from './composables/useAudioPiP';
 
 const settings = useSettingsStore();
 const player = usePlayerStore();
@@ -25,6 +26,7 @@ const library = useLibraryStore();
 const route = useRoute();
 const router = useRouter();
 const { locale } = useI18n();
+const audioPip = useAudioPiP();
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -68,17 +70,18 @@ function applyTheme() {
   root.style.fontSize = `${fontSize}px`;
 }
 
-onMounted(() => {
-  settings.load().then(() => {
-    applyTheme();
-    locale.value = settings.appearance.locale;
-  });
+onMounted(async () => {
+  document.addEventListener('keydown', onGlobalKeydown);
+  document.addEventListener('mousedown', onGlobalMouseDown);
+  await settings.load();
+  applyTheme();
+  locale.value = settings.appearance.locale;
   library.loadFromDisk();
   if (!moduleManager.getActive()) {
     moduleManager.switchTo('home');
   }
-  document.addEventListener('keydown', onGlobalKeydown);
-document.addEventListener('mousedown', onGlobalMouseDown);
+  audioPip.mode.value = settings.appearance.audioPipMode;
+  audioPip.setAutoShow(settings.appearance.audioPipAutoShow);
 });
 
 onBeforeUnmount(() => {
@@ -130,7 +133,7 @@ function onGlobalMouseDown(e: MouseEvent) {
   <div class="flex flex-col h-full w-full overflow-hidden">
     <AppMenu v-if="ui.topMenuVisible" />
     <div class="flex flex-1 min-h-0">
-      <Sidebar v-if="ui.sidebarExpanded && settings.appearance.sidebarPosition === 'left'" />
+      <Sidebar v-if="settings.appearance.sidebarPosition === 'left'" />
       <main class="flex-1 min-w-0 relative overflow-auto flex flex-col">
         <router-view v-slot="{ Component }">
           <transition name="page" mode="out-in">
@@ -141,7 +144,7 @@ function onGlobalMouseDown(e: MouseEvent) {
         </router-view>
       </main>
       <QueuePanel v-if="player.queueVisible" class="w-75 shrink-0" />
-      <Sidebar v-if="ui.sidebarExpanded && settings.appearance.sidebarPosition === 'right'" />
+      <Sidebar v-if="settings.appearance.sidebarPosition === 'right'" />
       <div v-if="player.equalizerVisible" class="fixed bottom-24 right-6 z-40">
         <Equalizer />
       </div>

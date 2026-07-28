@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import type { FileItem, ViewMode, SortBy, SortOrder } from '@renderer/types/explorer';
 import { VIEW_MODES } from '@renderer/types/explorer';
+import { useSettingsStore } from './settings';
 
 function isDrivePath(p: string): boolean {
   return /^[A-Z]:\\?$/i.test(p) || p === '';
@@ -18,12 +19,13 @@ function parentPath(p: string): string {
 }
 
 export const useExplorerStore = defineStore('explorer', () => {
+  const settings = useSettingsStore();
   const currentPath = ref('');
   const files = ref<FileItem[]>([]);
   const selectedFiles = ref<Set<string>>(new Set());
-  const viewMode = ref<ViewMode>('medium');
-  const sortBy = ref<SortBy>('name');
-  const sortOrder = ref<SortOrder>('asc');
+  const viewMode = ref<ViewMode>(settings.explorer.viewMode);
+  const sortBy = ref<SortBy>(settings.explorer.sortBy);
+  const sortOrder = ref<SortOrder>(settings.explorer.sortOrder);
   const history = ref<string[]>([]);
   const historyIndex = ref(-1);
   const isLoading = ref(false);
@@ -166,6 +168,10 @@ export const useExplorerStore = defineStore('explorer', () => {
       sortOrder.value = 'asc';
     }
   }
+
+  watch(viewMode, (val) => settings.updateExplorer({ viewMode: val }));
+  watch(sortBy, (val) => settings.updateExplorer({ sortBy: val }));
+  watch(sortOrder, (val) => settings.updateExplorer({ sortOrder: val }));
 
   return {
     currentPath,

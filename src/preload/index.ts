@@ -156,7 +156,34 @@ const api = {
   transcodeAudioChunk: (filePath: string, startTime: number, duration: number): Promise<string | null> =>
     ipcRenderer.invoke('media:transcodeAudioChunk', filePath, startTime, duration),
   cleanupTranscodedAudio: (audioPath: string): Promise<void> =>
-    ipcRenderer.invoke('media:cleanupTranscodedAudio', audioPath)
+    ipcRenderer.invoke('media:cleanupTranscodedAudio', audioPath),
+  audioPipShow: (
+    state: {
+      trackName: string;
+      artist: string;
+      coverData: string | null;
+      isPlaying: boolean;
+      currentTime: number;
+      duration: number;
+      volume: number;
+    },
+    mode?: string,
+    opacity?: number
+  ): Promise<boolean> => ipcRenderer.invoke('audio-pip:show', state, mode, opacity),
+  audioPipHide: (): Promise<boolean> => ipcRenderer.invoke('audio-pip:hide'),
+  audioPipUpdate: (
+    state: {
+      trackName: string;
+      artist: string;
+      coverData: string | null;
+      isPlaying: boolean;
+      currentTime: number;
+      duration: number;
+      volume: number;
+    },
+    mode?: string,
+    opacity?: number
+  ): Promise<boolean> => ipcRenderer.invoke('audio-pip:update', state, mode, opacity)
 };
 
 if (process.contextIsolated) {
