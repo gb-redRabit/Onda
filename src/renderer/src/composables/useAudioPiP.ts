@@ -15,6 +15,9 @@ interface AudioPipState {
   currentTime: number;
   duration: number;
   volume: number;
+  equalizerBands?: number[];
+  nextTrackName?: string;
+  nextTrackArtist?: string;
 }
 
 export function useAudioPiP() {
@@ -30,19 +33,25 @@ export function useAudioPiP() {
   let autoShowEnabled = true;
   let timeInterval: ReturnType<typeof setInterval> | null = null;
 
-  function getStateFromPlayer(): AudioPipState {
+  function getStateFromPlayer() {
     const player = usePlayerStore();
     const track = player.currentTrack;
-    const state = {
+    const path = track?.path || '';
+    const cached = player.getCover(path);
+    if (path && !cached.data) player.loadCover(path);
+    const nextTrack = player.displayQueue[0];
+    return {
       trackName: track?.name || '',
       artist: (track?.metadata?.artist) || '',
-      coverData: player.getCover(track?.path || '').data || null,
+      coverData: cached.data || null,
       isPlaying: player.isPlaying,
       currentTime: currentTime.value,
       duration: duration.value,
-      volume: player.volume
+      volume: player.volume,
+      equalizerBands: player.equalizerBands,
+      nextTrackName: nextTrack?.name || '',
+      nextTrackArtist: nextTrack?.metadata?.artist || ''
     };
-    return state;
   }
 
   function sendUpdate(state: AudioPipState) {
@@ -109,6 +118,13 @@ export function useAudioPiP() {
     } else if (action.startsWith('volume:')) {
       const vol = parseFloat(action.slice(7));
       if (!isNaN(vol)) player.setVolume(vol);
+    } else if (action === 'cycleMode') {
+      const settings = useSettingsStore();
+      const modes: PipMode[] = ['minimal', 'medium', 'max'];
+      const idx = modes.indexOf(mode.value);
+      const next = modes[(idx + 1) % modes.length];
+      mode.value = next;
+      settings.updateAppearance({ audioPipMode: next });
     } else if (action.startsWith('mute:')) {
       const shouldMute = action.slice(5) === '1';
       if (player.isMuted !== shouldMute) player.toggleMute();

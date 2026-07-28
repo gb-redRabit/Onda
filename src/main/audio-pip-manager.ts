@@ -14,6 +14,9 @@ interface AudioPipState {
   currentTime: number;
   duration: number;
   volume: number;
+  equalizerBands?: number[];
+  nextTrackName?: string;
+  nextTrackArtist?: string;
 }
 
 export class AudioPipManager {
@@ -164,7 +167,7 @@ export class AudioPipManager {
 
     if (this.mode === 'max') {
       x = 0;
-      y = display.height - winSize.height;
+      y = 0;
     } else {
       switch (this.position) {
         case 'bottom-right':
