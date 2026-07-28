@@ -14,6 +14,7 @@ interface AudioPipState {
   currentTime: number;
   duration: number;
   volume: number;
+  isMuted?: boolean;
   equalizerBands?: number[];
   nextTrackName?: string;
   nextTrackArtist?: string;

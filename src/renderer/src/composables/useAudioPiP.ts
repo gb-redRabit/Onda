@@ -15,6 +15,7 @@ interface AudioPipState {
   currentTime: number;
   duration: number;
   volume: number;
+  isMuted?: boolean;
   equalizerBands?: number[];
   nextTrackName?: string;
   nextTrackArtist?: string;
@@ -48,6 +49,7 @@ export function useAudioPiP() {
       currentTime: +currentTime.value,
       duration: +duration.value,
       volume: +player.volume,
+      isMuted: !!player.isMuted,
       equalizerBands: (player.equalizerBands || []).slice(),
       nextTrackName: '' + ((nextTrack?.name) || ''),
       nextTrackArtist: '' + ((nextTrack?.metadata?.artist) || '')
@@ -125,9 +127,8 @@ export function useAudioPiP() {
       const next = modes[(idx + 1) % modes.length];
       mode.value = next;
       settings.updateAppearance({ audioPipMode: next });
-    } else if (action.startsWith('mute:')) {
-      const shouldMute = action.slice(5) === '1';
-      if (player.isMuted !== shouldMute) player.toggleMute();
+    } else if (action === 'mute') {
+      player.toggleMute();
     }
   }
 
