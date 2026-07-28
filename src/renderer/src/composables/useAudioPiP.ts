@@ -33,7 +33,7 @@ export function useAudioPiP() {
   let autoShowEnabled = true;
   let timeInterval: ReturnType<typeof setInterval> | null = null;
 
-  function getStateFromPlayer() {
+  function getState() {
     const player = usePlayerStore();
     const track = player.currentTrack;
     const path = track?.path || '';
@@ -41,16 +41,16 @@ export function useAudioPiP() {
     if (path && !cached.data) player.loadCover(path);
     const nextTrack = player.displayQueue[0];
     return {
-      trackName: track?.name || '',
-      artist: (track?.metadata?.artist) || '',
+      trackName: '' + (track?.name || ''),
+      artist: '' + ((track?.metadata?.artist) || ''),
       coverData: cached.data || null,
-      isPlaying: player.isPlaying,
-      currentTime: currentTime.value,
-      duration: duration.value,
-      volume: player.volume,
-      equalizerBands: player.equalizerBands,
-      nextTrackName: nextTrack?.name || '',
-      nextTrackArtist: nextTrack?.metadata?.artist || ''
+      isPlaying: !!player.isPlaying,
+      currentTime: +currentTime.value,
+      duration: +duration.value,
+      volume: +player.volume,
+      equalizerBands: (player.equalizerBands || []).slice(),
+      nextTrackName: '' + ((nextTrack?.name) || ''),
+      nextTrackArtist: '' + ((nextTrack?.metadata?.artist) || '')
     };
   }
 
@@ -61,7 +61,7 @@ export function useAudioPiP() {
   }
 
   async function show() {
-    const state = getStateFromPlayer();
+    const state = getState();
     if (!state.trackName) return;
     lastState = { ...state };
     isActive.value = true;
@@ -80,7 +80,7 @@ export function useAudioPiP() {
     stopTimeTracking();
     timeInterval = setInterval(() => {
       if (!isActive.value) { stopTimeTracking(); return; }
-      const state = getStateFromPlayer();
+      const state = getState();
       lastState = { ...state };
       window.api?.send('audio-pip:timeUpdate', lastState);
     }, 500);
@@ -152,7 +152,7 @@ export function useAudioPiP() {
 
     const onTrackChange = () => {
       if (isActive.value) {
-        const state = getStateFromPlayer();
+        const state = getState();
         sendUpdate(state);
         if (state.isPlaying) {
           startTimeTracking();
@@ -162,7 +162,7 @@ export function useAudioPiP() {
 
     const onPlayState = (playing: boolean) => {
       if (isActive.value) {
-        const fresh = getStateFromPlayer();
+        const fresh = getState();
         fresh.isPlaying = playing;
         sendUpdate(fresh);
         if (playing) {
@@ -189,7 +189,7 @@ export function useAudioPiP() {
       () => {
         mode.value = settings.appearance.audioPipMode;
         if (isActive.value) {
-          sendUpdate(getStateFromPlayer());
+          sendUpdate(getState());
         }
       }
     );
