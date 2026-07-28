@@ -131,38 +131,43 @@
 
 ## 🔵 Niski priorytet
 
-### Martwy kod / kosmetyka
+### ❌ Zweryfikowane — do skasowania z listy
 
-| # | Opis | Plik | Linie |
-|---|------|------|-------|
-| 43 | `normalizeFilePath` w PipManager — nigdy nie używana | `pip-manager.ts:38-51` | — |
-| 44 | `extname` w sharp.ts — nieużywany import | `utils/sharp.ts:2` | — |
-| 45 | `crossfadeGainB` — zawsze gain = 0, nigdy nie używany | `audioEngine.ts:15,34-36` | — |
-| 46 | `crossfadeGainA` / `crossfadeGainB` — mylące nazwy, to permanentne gainy | `audioEngine.ts:14-17` | — |
-| 47 | Duplikacja `globalShortcut.unregisterAll()` w `will-quit` i `window-all-closed` | `main/index.ts:278,291` | — |
+| # | Opis | Werdykt |
+|---|------|---------|
+| 43 | `normalizeFilePath` w PipManager — nigdy nie używana | ❌ **Jest używana** (linie 246-247) |
+| 44 | `extname` w sharp.ts — nieużywany import | ❌ **Jest używane** (linie 35, 56) |
+| 45 | `crossfadeGainB` — zawsze gain = 0, nigdy nie używany | ❌ **Jest używany** w crossfade (ramp 0→1) |
+| 46 | `crossfadeGainA` / `crossfadeGainB` — mylące nazwy | ❌ **Nazwy celowe** — A=primary, B=secondary source |
+| 47 | Duplikacja `globalShortcut.unregisterAll()` | ❌ **Celowa** — różne eventy (window-all-closed vs will-quit) |
+| 48 | `v-for` key `'vr-' + row.top` — duplikaty | ❌ **Unikalne** — row.top z virtualizera |
+| 49 | `v-for` key `'ar-' + row.top` — duplikaty | ❌ **Unikalne** — row.top z virtualizera |
+| 50 | `v-for` key `:key="name"` dla albumów | ❌ **Unikalne** — albumy deduplikowane przez Map |
 
-### Vue anty-wzorce
+### ✅ Zrobione
 
-| # | Opis | Plik | Linie |
-|---|------|------|-------|
-| 48 | `v-for` key `'vr-' + row.top` — duplikaty możliwe | `LibraryView.vue:475` | — |
-| 49 | `v-for` key `'ar-' + row.top` — duplikaty możliwe | `LibraryView.vue:602` | — |
-| 50 | `v-for` key `:key="name"` dla albumów — możliwe duplikaty (Unknown Album) | `LibraryView.vue:614` | — |
+| # | Opis | Fix |
+|---|------|-----|
+| 51 | Brak `.nvmrc` | ✅ utworzono `.nvmrc` (Node 22) |
+| 53 | Brak `packageManager` w package.json | ✅ dodano `"packageManager": "npm@11.13.0"` |
 
-### Inne
+### ⏳ Zostało do ogarnięcia
 
 | # | Opis | Plik/kontekst |
 |---|------|----------------|
-| 51 | Brak `.nvmrc` | root projektu |
 | 52 | Brak CI/CD (GitHub Actions) | — |
-| 53 | Brak `packageManager` w package.json | — |
 | 54 | Generic publish URL (`https://example.com/auto-updates`) | `electron-builder.yml:41` |
-| 55 | `notarize: false` — macOS build nie podpisany, Gatekeeper blokuje | `electron-builder.yml:28` |
+| 55 | `notarize: false` — macOS build nie podpisany | `electron-builder.yml:28` |
 | 56 | Notification auto-removal może zgasnąć jeśli `removeNotification` rzuci | `ui.ts:66-72` |
-| 57 | `save()` w settings z `setTimeout` — utrata danych przy zamknięciu | `settings.ts:84-87` |
 | 58 | `youtube.ts` — brak walidacji, brak anulowania po stronie serwera | `youtube.ts:38-39` |
-| 59 | `sharp` wersja `^0.35.3` — bardzo stara, aktualna to `0.33+` (sic, wersje sharp to numery) | `package.json` |
+| 59 | `sharp` wersja `^0.35.3` — bardzo stara | `package.json` |
 | 60 | `@lucide/vue` `^1.24.0` — v2 dostępne | `package.json` |
+
+### ✅ Zrobione
+
+| # | Opis | Fix |
+|---|------|-----|
+| 57 | `save()` w settings z `setTimeout(300)` — utrata danych przy zamknięciu | ✅ usunięto debounce, zapis natychmiastowy (IPC narzut pomijalny) |
 
 ---
 
@@ -236,3 +241,7 @@
 | **Fix: embedded fonty — blob URL-e w fontMap zamiast tylko `fonts: mkvFonts`** | **2026-07-27** |
 | **Fix: ffmpeg fallback dump_attachment — `-dump_attachment:T` → `"" -f null -`** | **2026-07-27** |
 | **Fix: logi w pipeline napisów (codec, font count, font names, missing)** | **2026-07-27** |
+| **Fix: dodano .nvmrc (Node 22)** | **2026-07-27** |
+| **Fix: dodano packageManager w package.json** | **2026-07-27** |
+| **Zweryfikowano: items 43-50 to false alarms / celowe zachowanie** | **2026-07-27** |
+| **Fix: settings save() bez setTimeout — natychmiastowy zapis** | **2026-07-27** |

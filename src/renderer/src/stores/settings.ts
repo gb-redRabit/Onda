@@ -22,8 +22,6 @@ import {
   DEFAULT_TOAST
 } from '@renderer/utils/constants';
 
-let saveTimer: ReturnType<typeof setTimeout> | null = null;
-
 export const useSettingsStore = defineStore('settings', () => {
   const appearance = ref<AppearanceSettings>({ ...DEFAULT_APPEARANCE });
   const playback = ref<PlaybackSettings>({ ...DEFAULT_PLAYBACK });
@@ -82,8 +80,7 @@ export const useSettingsStore = defineStore('settings', () => {
   };
 
   const save = () => {
-    if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(_save, 300);
+    _save();
   };
 
   function updateAppearance(partial: Partial<AppearanceSettings>) {
