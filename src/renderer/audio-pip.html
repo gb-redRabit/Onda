@@ -3,63 +3,204 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
 <title>Onda Audio PiP</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;overflow:hidden;user-select:none}
-body{background:#1a1a2e;display:flex;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;transition:opacity .2s}
-#w{display:flex;align-items:center;height:40px;padding:0 8px;gap:4px;width:100%;position:relative;background:#1a1a2e;color:#e0e0e0}
-#i{flex:1;min-width:0}
-#tn{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#c{display:flex;align-items:center;gap:2px;flex-shrink:0}
-.b{width:26px;height:26px;border:none;background:transparent;color:#ccc;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:5px;font-size:13px;transition:all .12s}
+body{background:#1a1a2e;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;transition:opacity .2s;position:relative}
+#viz{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.15}
+#w{display:flex;position:relative;z-index:1;width:100%;height:100%}
+
+/* minimal */
+body[data-m="m"] #w{align-items:center;height:40px;padding:0 8px;gap:4px}
+body[data-m="m"] #cover,body[data-m="m"] #info,body[data-m="m"] #tm,body[data-m="m"] #vol{display:none}
+body[data-m="m"] #tn-m{display:block;font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+
+/* medium */
+body[data-m="d"] #w{height:120px;padding:8px 10px;gap:8px}
+body[data-m="d"] #tn-m{display:none}
+body[data-m="d"] #cover{display:block;width:64px;height:64px;border-radius:6px;overflow:hidden;flex-shrink:0}
+body[data-m="d"] #info{display:flex;flex:1;min-width:0;flex-direction:column;justify-content:center;gap:2px}
+body[data-m="d"] #tm{display:block;font-size:11px;color:#aaa;font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0}
+body[data-m="d"] #vol{display:flex}
+body[data-m="d"] .mx{display:none}
+
+/* max */
+body[data-m="x"] #w{height:100%;padding:10px 14px;gap:10px}
+body[data-m="x"] #tn-m{display:none}
+body[data-m="x"] #cover{display:block;width:100px;height:100px;border-radius:8px;overflow:hidden;flex-shrink:0}
+body[data-m="x"] #info{display:flex;flex:1;min-width:0;flex-direction:column;justify-content:center;gap:4px}
+body[data-m="x"] #tm{display:block;font-size:12px;color:#aaa;font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0}
+body[data-m="x"] #vol{display:flex}
+body[data-m="x"] .mx{display:flex}
+body[data-m="x"] #tn{font-size:15px}
+body[data-m="x"] #ar{font-size:12px}
+
+#cover img{width:100%;height:100%;object-fit:cover;display:block}
+#tn{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ar{font-size:11px;color:#a0a0a0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ctrls{display:flex;align-items:center;flex-shrink:0}
+body[data-m="m"] #ctrls{gap:2px}
+body[data-m="d"] #ctrls{gap:4px}
+body[data-m="x"] #ctrls{gap:6px}
+
+.b{border:none;background:transparent;color:#ccc;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:5px;transition:all .12s}
 .b:hover{background:rgba(255,255,255,0.12);color:#fff}
-.bp{width:30px;height:30px;font-size:15px;background:rgba(124,106,239,0.25);color:#7c6aef}
+body[data-m="m"] .b{width:26px;height:26px;font-size:13px}
+body[data-m="d"] .b{width:30px;height:30px;font-size:14px}
+body[data-m="x"] .b{width:34px;height:34px;font-size:16px}
+.bp{background:rgba(124,106,239,0.25);color:#7c6aef;border-radius:50%}
 .bp:hover{background:rgba(124,106,239,0.45);color:#9b8cf5}
-#p{position:absolute;bottom:0;left:0;right:0;height:4px;background:rgba(255,255,255,0.15);cursor:pointer}
+
+.mx{display:none}
+
+#p{position:absolute;bottom:0;left:0;right:0;height:4px;background:rgba(255,255,255,0.15);cursor:pointer;z-index:2}
 #p:hover{height:6px;background:rgba(255,255,255,0.2)}
 #f{height:100%;background:linear-gradient(90deg,#7c6aef,#9b8cf5);width:0%;border-radius:0 2px 2px 0}
+
+#vol{gap:4px;flex-shrink:0;align-items:center}
+#vol-slider{width:60px;height:4px;-webkit-appearance:none;appearance:none;background:rgba(255,255,255,0.2);border-radius:2px;outline:none;cursor:pointer}
+#vol-slider::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#7c6aef;border:none;cursor:pointer}
+body[data-m="x"] #vol-slider{width:80px}
+#vol-val{font-size:10px;color:#aaa;min-width:28px;text-align:right}
+body[data-m="d"] #vol-val{display:none}
+body[data-m="x"] #vol-val{display:block}
 </style>
 </head>
-<body>
+<body data-m="m">
+<canvas id="viz"></canvas>
 <div id="w">
-  <div id="i"><div id="tn">—</div></div>
-  <div id="c">
+  <div id="cover"><img id="cv" src="" alt="" /></div>
+  <div id="tn-m">—</div>
+  <div id="info">
+    <div id="tn">—</div>
+    <div id="ar"></div>
+  </div>
+  <div id="ctrls">
+    <button class="b mx" id="sh">⤵</button>
     <button class="b" id="pr">⏮</button>
     <button class="b bp" id="pl">▶</button>
     <button class="b" id="nx">⏭</button>
+    <button class="b mx" id="rp">↻</button>
+  </div>
+  <div id="tm">0:00 / 0:00</div>
+  <div id="vol">
+    <button class="b" id="vb">🔊</button>
+    <input type="range" id="vs" min="0" max="1" step="0.05" value="1" />
+    <span id="vv">100%</span>
   </div>
   <div id="p"><div id="f"></div></div>
 </div>
 <script>
 ;(function(){
-  var $ = document.getElementById.bind(document)
-  var tn = $('tn'), pl = $('pl'), pf = $('f'), pw = $('p'), bd = document.body
-  var over = false, baseOpacity = 0.35, currentMode = 'minimal'
+  var D = document, Bd = D.body, $ = D.getElementById.bind(D)
+  var tn = $('tn'), tnm = $('tn-m'), ar = $('ar'), pl = $('pl'), pf = $('f'), pw = $('p')
+  var tm = $('tm'), cv = $('cv'), vs = $('vs'), vb = $('vb'), vv = $('vv')
+  var sh = $('sh'), rp = $('rp')
+  var over = false, baseOpacity = 0.35, mode = 'm', vol = 1, muted = false
+  var canvas = $('viz'), ctx = canvas.getContext('2d')
+  var animId = null, vizBars = 64
+
+  function resizeCanvas(){
+    canvas.width = Bd.clientWidth
+    canvas.height = Bd.clientHeight
+  }
+  resizeCanvas()
+  window.addEventListener('resize', resizeCanvas)
+
+  function drawViz(){
+    var w = canvas.width, h = canvas.height
+    if (w === 0 || h === 0) { animId = requestAnimationFrame(drawViz); return }
+    ctx.clearRect(0, 0, w, h)
+    var barW = (w / vizBars) * 0.6, gap = (w / vizBars) * 0.4
+    var mid = h / 2
+    for (var i = 0; i < vizBars; i++) {
+      var amp = (Math.sin(Date.now() / 300 + i * 0.4) * 0.4 + 0.6) * mid * 0.7
+      ctx.fillStyle = '#7c6aef'
+      ctx.globalAlpha = 0.3 + Math.sin(Date.now() / 500 + i * 0.2) * 0.15
+      ctx.fillRect(i * (barW + gap), mid - amp, barW, amp * 2)
+    }
+    ctx.globalAlpha = 1
+    animId = requestAnimationFrame(drawViz)
+  }
+  drawViz()
 
   function send(a){ if(window.api) window.api.send('audio-pip:action', a) }
 
-  function render(s){
-    if (s.trackName !== undefined) {
-      tn.textContent = s.trackName || '—'
-    }
-    if (s.isPlaying !== undefined) {
-      pl.textContent = s.isPlaying ? '⏸' : '▶'
-    }
-    if (s.currentTime !== undefined && s.duration !== undefined && s.duration > 0) {
-      var pct = (s.currentTime / s.duration) * 100
-      pf.style.width = pct + '%'
+  function fmt(t){
+    var m = Math.floor(t / 60), s = Math.floor(t % 60)
+    return m + ':' + (s < 10 ? '0' : '') + s
+  }
+
+  function setMode(m){
+    mode = m
+    Bd.dataset.m = m
+    if (m === 'x') {
+      if (!animId) drawViz()
+    } else {
+      if (animId) { cancelAnimationFrame(animId); animId = null }
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
     }
   }
 
-  bd.onmouseenter = function(){ over = true; bd.style.opacity = '1' }
-  bd.onmouseleave = function(){ over = false; bd.style.opacity = String(baseOpacity) }
-  bd.ondblclick = function(){ if(window.api) window.api.send('audio-pip:showMain') }
+  function render(s){
+    var name = s.trackName || '—'
+    tn.textContent = name
+    tnm.textContent = name
+    ar.textContent = s.artist || ''
+
+    if (s.coverData) {
+      cv.src = s.coverData
+      cv.style.display = 'block'
+    } else {
+      cv.src = ''
+      cv.style.display = 'none'
+    }
+
+    pl.textContent = s.isPlaying ? '⏸' : '▶'
+
+    if (s.currentTime !== undefined && s.duration !== undefined && s.duration > 0) {
+      var pct = (s.currentTime / s.duration) * 100
+      pf.style.width = pct + '%'
+      tm.textContent = fmt(s.currentTime) + ' / ' + fmt(s.duration)
+    }
+
+    if (s.volume !== undefined) {
+      vol = s.volume
+      vs.value = String(vol)
+      vb.textContent = muted ? '🔇' : vol === 0 ? '🔇' : vol < 0.33 ? '🔈' : vol < 0.66 ? '🔉' : '🔊'
+      vv.textContent = Math.round(vol * 100) + '%'
+    }
+  }
+
+  Bd.onmouseenter = function(){ over = true; Bd.style.opacity = '1' }
+  Bd.onmouseleave = function(){ over = false; Bd.style.opacity = String(baseOpacity) }
+  Bd.ondblclick = function(){ if(window.api) window.api.send('audio-pip:showMain') }
 
   pl.onclick = function(){ send('playPause') }
   $('pr').onclick = function(){ send('prev') }
   $('nx').onclick = function(){ send('next') }
+  if (sh) sh.onclick = function(){ send('shuffle') }
+  if (rp) rp.onclick = function(){ send('repeat') }
+
+  vs.oninput = function(){
+    var v = parseFloat(vs.value)
+    vb.textContent = v === 0 ? '🔇' : v < 0.33 ? '🔈' : v < 0.66 ? '🔉' : '🔊'
+    vv.textContent = Math.round(v * 100) + '%'
+    send('volume:' + v.toFixed(2))
+  }
+
+  vb.onclick = function(){
+    muted = !muted
+    send('mute:' + (muted ? '1' : '0'))
+    if (muted) {
+      vb.textContent = '🔇'
+    } else {
+      vb.textContent = vol === 0 ? '🔇' : vol < 0.33 ? '🔈' : vol < 0.66 ? '🔉' : '🔊'
+    }
+  }
+
   pw.onclick = function(e){
     var r = pw.getBoundingClientRect()
     var pct = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width))
@@ -69,22 +210,20 @@ body{background:#1a1a2e;display:flex;font-family:-apple-system,BlinkMacSystemFon
   if (window.api) {
     window.api.on('audio-pip:update', function(){
       var d = arguments[0]
-      if (d.mode !== undefined && d.mode !== currentMode) {
-        currentMode = d.mode
+      if (d.mode && d.mode !== mode) {
+        setMode(d.mode === 'max' ? 'x' : d.mode === 'medium' ? 'd' : 'm')
       }
-      if (d.state) {
-        render(d.state)
-      }
+      if (d.state) render(d.state)
       if (d.opacity !== undefined) {
         baseOpacity = d.opacity
-        if (!over) bd.style.opacity = String(baseOpacity)
+        if (!over) Bd.style.opacity = String(baseOpacity)
       }
     })
   }
 
   render({ trackName: '', artist: '', coverData: null, isPlaying: false, currentTime: 0, duration: 0, volume: 1 })
-  bd.style.opacity = String(baseOpacity)
-
+  Bd.style.opacity = String(baseOpacity)
+  setMode('m')
 })()
 </script>
 </body>

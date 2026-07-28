@@ -24,6 +24,12 @@ const pipPositions = [
   }
 ];
 
+const audioPipModes = [
+  { id: 'minimal' as const, labelKey: 'settings.pipMinimal' },
+  { id: 'medium' as const, labelKey: 'settings.pipMedium' },
+  { id: 'max' as const, labelKey: 'settings.pipMax' }
+];
+
 const pipPreviewOpen = ref(false);
 
 async function toggleSettingsPiP() {
@@ -61,9 +67,10 @@ watch(
       {{ $t('settings.pipDesc') }}
     </p>
 
+    <!-- Video PiP -->
     <div class="p-4 rounded-xl bg-bg-elevated border border-border-default space-y-4">
       <div class="flex items-center justify-between pb-3 border-b border-border-default">
-        <span class="text-sm">{{ $t('settings.pipPreview') }}</span>
+        <span class="text-sm">Video PiP</span>
         <button
           class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
           :class="
@@ -146,6 +153,84 @@ watch(
             })
           "
         />
+      </div>
+    </div>
+
+    <!-- Audio PiP -->
+    <div class="p-4 rounded-xl bg-bg-elevated border border-border-default space-y-4">
+      <h3 class="text-sm font-semibold pb-3 border-b border-border-default">{{ $t('settings.audioPipSection') }}</h3>
+
+      <div class="flex items-center justify-between">
+        <span class="text-sm">{{ $t('settings.audioPipMode') }}</span>
+        <div class="flex gap-1">
+          <button
+            v-for="m in audioPipModes"
+            :key="m.id"
+            class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+            :class="
+              settings.appearance.audioPipMode === m.id
+                ? 'bg-accent-base text-white'
+                : 'bg-bg-hover text-fg-muted hover:text-fg-base'
+            "
+            @click="settings.updateAppearance({ audioPipMode: m.id })"
+          >
+            {{ $t(m.labelKey) }}
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="text-sm font-semibold mb-3">
+          {{ $t('settings.audioPipOpacity') }}: {{ Math.round(settings.appearance.audioPipOpacity * 100) }}%
+        </h3>
+        <input
+          type="range"
+          min="0.1"
+          max="1"
+          step="0.05"
+          :value="settings.appearance.audioPipOpacity"
+          class="w-full"
+          @input="
+            settings.updateAppearance({
+              audioPipOpacity: parseFloat(($event.target as HTMLInputElement).value)
+            })
+          "
+        />
+      </div>
+
+      <div class="flex items-center justify-between">
+        <span class="text-sm">{{ $t('settings.audioPipAutoShow') }}</span>
+        <button
+          class="w-10 h-6 rounded-full transition-colors relative"
+          :class="settings.appearance.audioPipAutoShow ? 'bg-accent-base' : 'bg-bg-hover'"
+          @click="settings.updateAppearance({ audioPipAutoShow: !settings.appearance.audioPipAutoShow })"
+        >
+          <div
+            class="w-4 h-4 rounded-full bg-white absolute top-1 transition-all"
+            :class="settings.appearance.audioPipAutoShow ? 'left-5' : 'left-1'"
+          />
+        </button>
+      </div>
+
+      <div>
+        <h3 class="text-sm font-semibold mb-3">{{ $t('settings.audioPipPosition') }}</h3>
+        <select
+          :value="settings.appearance.audioPipPosition"
+          class="w-full px-3 py-2 rounded-lg bg-bg-hover text-fg-base border border-border-default text-sm outline-none"
+          @change="
+            settings.updateAppearance({
+              audioPipPosition: ($event.target as HTMLSelectElement).value as any
+            })
+          "
+        >
+          <option
+            v-for="p in pipPositions"
+            :key="p.id"
+            :value="p.id"
+          >
+            {{ $t(p.labelKey) }}
+          </option>
+        </select>
       </div>
     </div>
   </div>

@@ -52,37 +52,14 @@
 
 ---
 
-### Faza 3b — Audio PiP: średni i max tryb + UI settings
+### Faza 3b — Audio PiP: średni i max tryb + UI settings ✅
 
-**Czas: ~4-5h | Priorytet: 🔴🔴🔴 KRYTYCZNY**
-
-**Brakujące elementy:**
-
-**A. `audio-pip.html` — layout dla medium (400×120px):**
-- Dodać `<div id="cover">` dla okładki (np. 64×64px)
-- Dodać artystę (`<div id="ar">`)
-- Volume slider
-- Większe kontrolki + czas (currentTime / duration)
-- Przełączać layout na podstawie `data.mode` z IPC
-
-**B. `audio-pip.html` — layout dla max (full-width, 1/10 ekranu):**
-- Pełna szerokość ekranu, okładka 100×100px
-- Shuffle / repeat przyciski
-- Volume slider z wyświetlaniem wartości
-- AudioVisualizer jako półprzezroczyste tło (canvas)
-- Czas: currentTime / duration
-- Przezroczystość paska
-
-**C. `SettingsPiP.vue` — sekcja Audio PiP:**
-- Tryb: minimal / medium / max (select lub przyciski)
-- Przezroczystość (slider 0.1–1.0)
-- Auto-show toggle (gdy app w tle)
-- Pozycja okna Audio PiP (bottom-right / bottom-left / top-right / top-left)
-
-**D. Position dla Audio PiP:**
-- Dodać `audioPipPosition` do `AppearanceSettings` w `types/settings.ts`
-- Domyślna wartość `'bottom-right'`
-- `AudioPipManager.positionWindow()` — używać `audioPipPosition` zamiast hardcoded
+- [x] `audio-pip.html` — medium layout: cover 64×64, artist, volume slider, time, bigger controls
+- [x] `audio-pip.html` — max layout: cover 100×100, shuffle/repeat, volume + value, canvas visualizer, time
+- [x] `SettingsPiP.vue` — sekcja Audio PiP: mode (przyciski), opacity slider, auto-show toggle, position dropdown
+- [x] `audioPipPosition` w `AppearanceSettings` + `constants.ts` (domyślnie `'bottom-right'`)
+- [x] `AudioPipManager.positionWindow()` — używa `this.position` zamiast hardcoded
+- [x] Ipc thread: position przekazywany przez preload → window-ipc → audio-pip-manager
 
 ---
 
@@ -142,7 +119,7 @@
 | **F1** Settings | — | ✅ |
 | **F2** Library perf | — | ✅ |
 | **F3a** Audio PiP (minimal) | F1 | ✅ |
-| **F3b** Audio PiP (medium/max + UI) | F3a | ⬜ |
+| **F3b** Audio PiP (medium/max + UI) | F3a | ✅ |
 | **F4** Video PiP | — | ⬜ |
 | **F5** Library UI | F2 ✅ | ⬜ |
 | **F6** Explorer+Viz | F1 ✅ | ⬜ |

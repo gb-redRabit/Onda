@@ -198,7 +198,15 @@ export default {
     toastWarnHint: 'niekrytyczne problemy',
     toastErrors: 'Błędy',
     toastErrorsHint: 'zawsze widoczne',
-    shortcutsSection: 'Skróty klawiszowe'
+    shortcutsSection: 'Skróty klawiszowe',
+    audioPipSection: 'Audio PiP',
+    audioPipMode: 'Tryb PiP',
+    pipMinimal: 'Minimalny',
+    pipMedium: 'Średni',
+    pipMax: 'Maksymalny',
+    audioPipOpacity: 'Przezroczystość',
+    audioPipAutoShow: 'Auto-pokazuj w tle',
+    audioPipPosition: 'Pozycja'
   },
   status: {
     noMedia: 'Nie załadowano mediów',

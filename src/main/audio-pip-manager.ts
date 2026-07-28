@@ -4,6 +4,7 @@ import { is } from '@electron-toolkit/utils';
 
 
 type PipMode = 'minimal' | 'medium' | 'max';
+type PipPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 
 interface AudioPipState {
   trackName: string;
@@ -20,6 +21,7 @@ export class AudioPipManager {
   private ready = false;
   private mainWindow: BrowserWindow | null = null;
   private mode: PipMode = 'minimal';
+  private position: PipPosition = 'bottom-right';
   private opacity = 0.35;
   private currentState: AudioPipState = {
     trackName: '',
@@ -43,6 +45,13 @@ export class AudioPipManager {
     this.mode = mode;
   }
 
+  setPosition(pos: PipPosition): void {
+    this.position = pos;
+    if (this.window && !this.window.isDestroyed() && this.window.isVisible()) {
+      this.positionWindow();
+    }
+  }
+
   setOpacity(val: number): void {
     this.opacity = val;
     if (this.window && !this.window.isDestroyed() && this.window.isVisible() && this.ready) {
@@ -50,9 +59,10 @@ export class AudioPipManager {
     }
   }
 
-  show(state: AudioPipState, mode?: PipMode, opacity?: number): void {
+  show(state: AudioPipState, mode?: PipMode, opacity?: number, position?: PipPosition): void {
     if (mode) this.mode = mode;
     if (opacity !== undefined) this.opacity = opacity;
+    if (position) this.position = position;
     Object.assign(this.currentState, state);
     this.ensureWindow();
     this.positionWindow();
@@ -156,8 +166,24 @@ export class AudioPipManager {
       x = 0;
       y = display.height - winSize.height;
     } else {
-      x = display.width - winSize.width - margin;
-      y = display.height - winSize.height - margin;
+      switch (this.position) {
+        case 'bottom-right':
+          x = display.width - winSize.width - margin;
+          y = display.height - winSize.height - margin;
+          break;
+        case 'bottom-left':
+          x = margin;
+          y = display.height - winSize.height - margin;
+          break;
+        case 'top-right':
+          x = display.width - winSize.width - margin;
+          y = margin;
+          break;
+        case 'top-left':
+          x = margin;
+          y = margin;
+          break;
+      }
     }
     this.window.setBounds({ x, y, width: winSize.width, height: winSize.height });
   }

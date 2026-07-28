@@ -122,7 +122,8 @@ interface OndaAPI {
       volume: number;
     },
     mode?: string,
-    opacity?: number
+    opacity?: number,
+    position?: string
   ) => Promise<boolean>;
   audioPipHide: () => Promise<boolean>;
   audioPipUpdate: (
@@ -136,7 +137,8 @@ interface OndaAPI {
       volume: number;
     },
     mode?: string,
-    opacity?: number
+    opacity?: number,
+    position?: string
   ) => Promise<boolean>;
 }
 

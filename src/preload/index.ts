@@ -168,8 +168,9 @@ const api = {
       volume: number;
     },
     mode?: string,
-    opacity?: number
-  ): Promise<boolean> => ipcRenderer.invoke('audio-pip:show', state, mode, opacity),
+    opacity?: number,
+    position?: string
+  ): Promise<boolean> => ipcRenderer.invoke('audio-pip:show', state, mode, opacity, position),
   audioPipHide: (): Promise<boolean> => ipcRenderer.invoke('audio-pip:hide'),
   audioPipUpdate: (
     state: {
@@ -182,8 +183,9 @@ const api = {
       volume: number;
     },
     mode?: string,
-    opacity?: number
-  ): Promise<boolean> => ipcRenderer.invoke('audio-pip:update', state, mode, opacity)
+    opacity?: number,
+    position?: string
+  ): Promise<boolean> => ipcRenderer.invoke('audio-pip:update', state, mode, opacity, position)
 };
 
 if (process.contextIsolated) {

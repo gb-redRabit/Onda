@@ -132,7 +132,8 @@ export const DEFAULT_APPEARANCE = {
   transparency: 1,
   audioPipMode: 'minimal' as const,
   audioPipAutoShow: true,
-  audioPipOpacity: 0.35
+  audioPipOpacity: 0.35,
+  audioPipPosition: 'bottom-right' as const
 };
 
 export const THEME_PALETTES: Record<

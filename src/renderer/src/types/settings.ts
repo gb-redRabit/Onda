@@ -33,6 +33,7 @@ export interface AppearanceSettings {
   audioPipMode: 'minimal' | 'medium' | 'max';
   audioPipAutoShow: boolean;
   audioPipOpacity: number;
+  audioPipPosition: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 }
 
 export interface PlaybackSettings {

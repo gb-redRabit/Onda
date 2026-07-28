@@ -191,9 +191,10 @@ export function registerWindowHandlers(context: {
         volume: number;
       },
       mode?: string,
-      opacity?: number
+      opacity?: number,
+      position?: string
     ) => {
-      audioPipManager.show(state, mode as 'minimal' | 'medium' | 'max', opacity);
+      audioPipManager.show(state, mode as 'minimal' | 'medium' | 'max', opacity, position as 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left');
       return true;
     }
   );
@@ -217,11 +218,13 @@ export function registerWindowHandlers(context: {
         volume: number;
       },
       mode?: string,
-      opacity?: number
+      opacity?: number,
+      position?: string
     ) => {
       audioPipManager.update(state);
       if (mode) audioPipManager.setMode(mode as 'minimal' | 'medium' | 'max');
       if (opacity !== undefined) audioPipManager.setOpacity(opacity);
+      if (position) audioPipManager.setPosition(position as 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left');
       return true;
     }
   );

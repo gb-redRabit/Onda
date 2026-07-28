@@ -197,7 +197,15 @@ export default {
     toastWarnHint: 'non-critical issues',
     toastErrors: 'Errors',
     toastErrorsHint: 'always visible',
-    shortcutsSection: 'Keyboard shortcuts'
+    shortcutsSection: 'Keyboard shortcuts',
+    audioPipSection: 'Audio PiP',
+    audioPipMode: 'PiP mode',
+    pipMinimal: 'Minimal',
+    pipMedium: 'Medium',
+    pipMax: 'Max',
+    audioPipOpacity: 'Opacity',
+    audioPipAutoShow: 'Auto-show when in background',
+    audioPipPosition: 'Position'
   },
   status: {
     noMedia: 'No media loaded',

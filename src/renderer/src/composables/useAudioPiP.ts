@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { audioEvents } from '@renderer/utils/audioEvents';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { usePlayerStore } from '@renderer/stores/player';
@@ -48,7 +48,7 @@ export function useAudioPiP() {
   function sendUpdate(state: AudioPipState) {
     lastState = { ...state };
     const settings = useSettingsStore();
-    window.api?.audioPipUpdate(state, mode.value, settings.appearance.audioPipOpacity);
+    window.api?.audioPipUpdate(state, mode.value, settings.appearance.audioPipOpacity, settings.appearance.audioPipPosition);
   }
 
   async function show() {
@@ -57,7 +57,7 @@ export function useAudioPiP() {
     lastState = { ...state };
     isActive.value = true;
     const settings = useSettingsStore();
-    await window.api?.audioPipShow(state, mode.value, settings.appearance.audioPipOpacity);
+    await window.api?.audioPipShow(state, mode.value, settings.appearance.audioPipOpacity, settings.appearance.audioPipPosition);
     startTimeTracking();
   }
 
@@ -102,9 +102,16 @@ export function useAudioPiP() {
       player.nextTrack();
     } else if (action === 'prev') {
       player.prevTrack();
+    } else if (action === 'shuffle') {
+      player.toggleShuffle();
+    } else if (action === 'repeat') {
+      player.cycleRepeat();
     } else if (action.startsWith('volume:')) {
       const vol = parseFloat(action.slice(7));
       if (!isNaN(vol)) player.setVolume(vol);
+    } else if (action.startsWith('mute:')) {
+      const shouldMute = action.slice(5) === '1';
+      if (player.isMuted !== shouldMute) player.toggleMute();
     }
   }
 
@@ -159,6 +166,18 @@ export function useAudioPiP() {
     cleanups.push(() => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     });
+
+    const settings = useSettingsStore();
+    const stopSettingsWatch = watch(
+      [() => settings.appearance.audioPipMode, () => settings.appearance.audioPipOpacity, () => settings.appearance.audioPipPosition],
+      () => {
+        mode.value = settings.appearance.audioPipMode;
+        if (isActive.value) {
+          sendUpdate(getStateFromPlayer());
+        }
+      }
+    );
+    cleanups.push(stopSettingsWatch);
   });
 
   onUnmounted(() => {
@@ -171,6 +190,7 @@ export function useAudioPiP() {
     mode,
     show,
     hide,
-    setAutoShow: (v: boolean) => { autoShowEnabled = v; }
+    setAutoShow: (v: boolean) => { autoShowEnabled = v; },
+    setMode: (m: PipMode) => { mode.value = m; }
   };
 }
