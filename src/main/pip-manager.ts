@@ -34,6 +34,7 @@ export class PipManager {
   private mainWindow: BrowserWindow | null = null;
   private loadedSrc: string | null = null;
   private pendingData: PendingData | null = null;
+  private cssVars: Record<string, string> = {};
 
   private static normalizeFilePath(url: string): string {
     try {
@@ -99,6 +100,7 @@ export class PipManager {
 
     this.window.webContents.on('did-finish-load', () => {
       this.ready = true;
+      this.sendToRenderer('pip:theme', this.cssVars);
       if (this.pendingData) {
         const pd = this.pendingData;
         this.pendingData = null;
@@ -125,6 +127,11 @@ export class PipManager {
       this.stopTimeTracking();
       this.loadedSrc = null;
       this.mainWindow?.webContents.send('pip:ended');
+    });
+
+    ipcMain.on('pip:theme', (_event, vars: Record<string, string>) => {
+      this.cssVars = vars;
+      this.sendToRenderer('pip:theme', vars);
     });
   }
 
@@ -346,6 +353,7 @@ export class PipManager {
     ipcMain.removeAllListeners('pip:hidden');
     ipcMain.removeAllListeners('pip:timeUpdate');
     ipcMain.removeAllListeners('pip:ended');
+    ipcMain.removeAllListeners('pip:theme');
   }
 }
 

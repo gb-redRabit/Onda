@@ -69,8 +69,8 @@ function applyTheme() {
   root.style.setProperty('--font-size', `${fontSize}px`);
   root.style.fontSize = `${fontSize}px`;
 
-  // push theme CSS vars to PiP window
-  window.api?.send('audio-pip:theme', {
+  // push theme CSS vars to PiP windows
+  const themeVars = {
     '--color-bg-base': palette.bgBase,
     '--color-bg-surface': palette.bgSurface,
     '--color-bg-overlay': palette.bgOverlay,
@@ -91,7 +91,9 @@ function applyTheme() {
       : accent,
     '--color-accent-ghost': rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.10)` : 'transparent',
     '--font-size': `${fontSize}px`
-  });
+  };
+  window.api?.send('audio-pip:theme', themeVars);
+  window.api?.send('pip:theme', themeVars);
 }
 
 onMounted(async () => {
