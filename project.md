@@ -1839,6 +1839,41 @@ media-server.ts (94 linie)
 
 ---
 
+### 18.14 Sprint 11 — Video PiP: Vue + theme reactivity + log cleanup (2026-07-29)
+
+**Video PiP przerobiony na Vue:**
+- `pip-video/App.vue` — komponent Vue z `<video>`, overlay UI (close, czas, progress bar), JASSUB subtitle integration
+- `pip-video/style.css` — Tailwind + `@theme` ze zmiennymi kolorów (identyczny zestaw jak audio PiP)
+- `pip-video-main.ts` — entry point: `createApp(PipVideoApp).mount('#app')`
+- `pip.html` — zmieniony na `<div id="app">` + Vue entry (zamiast inline JS)
+- Usunięty stary `pip.ts` (197 linii, inline CSS + DOM)
+- Video PiP reaguje na zmianę motywu i koloru przewodniego przez kanał `pip:theme`
+
+**Theme propagation:**
+- `pip-manager.ts` — dodany handler `ipcMain.on('pip:theme')`, przechowywanie `cssVars`, wysyłanie do PiP przy `did-finish-load`
+- `App.vue` — `applyTheme()` wysyła `themeVars` do obu PiP: `audio-pip:theme` i `pip:theme`
+
+**Czyszczenie logów:**
+- Usunięto 3 logi w `subtitle-handlers.ts`:
+  - `[Onda/subtitles] extractEmbedded stream=2 codec=ass`
+  - `[Onda/attachments] ffmpeg dump_all failed ...`
+  - `[Onda/attachments] extracted 21 fonts`
+
+**Zmodyfikowane pliki:**
+
+| Plik | Zmiana |
+|------|--------|
+| `src/renderer/src/pip-video/App.vue` | **NOWY** — Vue component z video, JASSUB, theme listener |
+| `src/renderer/src/pip-video/style.css` | **NOWY** — Tailwind + theme vars |
+| `src/renderer/src/pip-video-main.ts` | **NOWY** — entry point |
+| `src/renderer/pip.html` | Zmieniony na Vue mount |
+| `src/renderer/src/pip.ts` | **USUNIĘTY** (zastąpiony przez Vue) |
+| `src/main/pip-manager.ts` | +`pip:theme` handler, `cssVars` storage, send na `did-finish-load` |
+| `src/renderer/src/App.vue` | `applyTheme()` wysyła też `pip:theme` |
+| `src/main/ipc/subtitle-handlers.ts` | Usunięto 3 logi |
+
+---
+
 ## 19. Przyszłe ulepszenia
 
 ### 19.1 Edycja prostych napisów (SRT, VTT, SUB)

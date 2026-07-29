@@ -1,7 +1,7 @@
 # Onda — Plan rozwoju
 
 > Na podstawie audytu kodu 2026-07-28. Status: typecheck 0 błędów, testy 141/141.
-> Ostatnia aktualizacja: 2026-07-29 (po realizacji F1-F3c).
+> Ostatnia aktualizacja: 2026-07-29 (po realizacji F1-F4).
 
 ---
 
@@ -64,10 +64,14 @@
 
 ---
 
-### Faza 4 — Video PiP optymalizacja + przyciski
+### Faza 4 — Video PiP: Vue + theme reactivity + optymalizacja
 
 **Czas: ~3-4h | Priorytet: 🟡 ŚREDNI**
 
+- [x] `pip.html` → Vue SFC (`pip-video/App.vue`) z JASSUB, theme listenerem `pip:theme`
+- [x] `pip-manager.ts` — handler `pip:theme`, przechowywanie cssVars
+- [x] `App.vue` — `applyTheme()` wysyła `themeVars` do video PiP (`pip:theme`)
+- [x] Usunięto logi debug: `extractEmbedded`, `dump_all failed`, `extracted fonts`
 - Pre-buffer: zacząć buforować video w pip.html ZANIM okno jest widoczne
 - Synchronizacja seek: gdy PiP startuje, od razu seek do `player.currentTime`
 - Przyciski w pip.html:
@@ -122,6 +126,6 @@
 | **F3a** Audio PiP (minimal) | F1 | ✅ |
 | **F3b** Audio PiP (medium/max + UI) | F3a | ✅ |
 | **F3c** Audio PiP (wide + viz + covers) | F3b | ✅ |
-| **F4** Video PiP | — | ⬜ |
+| **F4** Video PiP (Vue + theme) | — | ✅ (częściowo) |
 | **F5** Library UI | F2 ✅ | ⬜ |
 | **F6** Explorer+Viz | F1 ✅ | ⬜ |

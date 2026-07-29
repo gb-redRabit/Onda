@@ -53,7 +53,6 @@ export function registerSubtitleHandlers(): void {
           { encoding: 'utf-8', timeout: 10000, windowsHide: true }
         );
         const codec = stdout.trim().toLowerCase();
-        logger.info('subtitles', `extractEmbedded stream=${streamIndex} codec=${codec}`);
         const TEXT_CODECS = new Set(['subrip', 'ass', 'ssa', 'webvtt', 'mov_text']);
         const ext = (codec === 'ass' || codec === 'ssa') ? '.ass' : '.srt';
         const outPath = join(getTempDir(), `sub_${uniqueId()}${ext}`);
@@ -212,7 +211,6 @@ export function registerSubtitleHandlers(): void {
               { encoding: 'utf-8', timeout: 30000, windowsHide: true, cwd: dumpDir }
             );
           } catch (e2) {
-            logger.warn('attachments', `ffmpeg dump_all failed`, (e2 as Error).message?.split('\n')[0]);
           }
         }
 
@@ -239,7 +237,6 @@ export function registerSubtitleHandlers(): void {
         await rm(dumpDir, { recursive: true, force: true }).catch(() => {});
       }
 
-      logger.info('attachments', `extracted ${fonts.length} fonts`);
       return fonts;
     }
   );
