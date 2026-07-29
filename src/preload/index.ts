@@ -3,14 +3,31 @@ import { electronAPI } from '@electron-toolkit/preload';
 
 const mediaServerUrl: string = ipcRenderer.sendSync('media:getServerUrlSync');
 
+function trySend(channel: string, ...args: unknown[]): void {
+  try {
+    ipcRenderer.send(channel, ...args);
+  } catch (e) {
+    console.error('[IPC send error]', channel, e);
+  }
+}
+
+function tryInvoke(channel: string, ...args: unknown[]): Promise<unknown> {
+  try {
+    const p = ipcRenderer.invoke(channel, ...args);
+    return p.catch((e) => {
+      console.error('[IPC invoke rejection]', channel, e);
+      return undefined;
+    });
+  } catch (e) {
+    console.error('[IPC invoke error]', channel, e);
+    return Promise.resolve(undefined);
+  }
+}
+
 const api = {
   mediaServerUrl,
-  invoke: (channel: string, ...args: unknown[]): Promise<unknown> => {
-    return ipcRenderer.invoke(channel, ...args);
-  },
-  send: (channel: string, ...args: unknown[]): void => {
-    ipcRenderer.send(channel, ...args);
-  },
+  invoke: tryInvoke,
+  send: trySend,
   on: (channel: string, callback: (...args: unknown[]) => void): (() => void) => {
     const handler = (_event: Electron.IpcRendererEvent, ...args: unknown[]): void =>
       callback(...args);
@@ -25,7 +42,7 @@ const api = {
   removeAllListeners: (channel: string): void => {
     ipcRenderer.removeAllListeners(channel);
   },
-  pipStart: (
+  pipStart: async (
     videoSrc: string,
     settings?: {
       position?: string;
@@ -38,8 +55,14 @@ const api = {
         availableFonts: Record<string, string>;
       } | null;
     }
-  ): Promise<boolean> => ipcRenderer.invoke('pip:start', videoSrc, settings),
-  pipStop: (): Promise<boolean> => ipcRenderer.invoke('pip:stop'),
+  ): Promise<boolean> => {
+    const r = await tryInvoke('pip:start', videoSrc, settings);
+    return !!r;
+  },
+  pipStop: async (): Promise<boolean> => {
+    const r = await tryInvoke('pip:stop');
+    return !!r;
+  },
   pipPreviewStart: (opts: {
     position?: string;
     width?: number;
@@ -51,22 +74,22 @@ const api = {
     width?: number;
     height?: number;
   }): Promise<boolean> => ipcRenderer.invoke('pip:previewUpdate', opts),
-  pipPreload: (
+  pipPreload: async (
     videoSrc: string,
     subtitleData: {
       subContent: string;
       fonts: Array<{ name: string; data: number[] }>;
       availableFonts: Record<string, string>;
     } | null
-  ): Promise<void> => ipcRenderer.invoke('pip:preload', videoSrc, subtitleData),
-  pipLoadTrack: (
+  ): Promise<void> => { await tryInvoke('pip:preload', videoSrc, subtitleData); },
+  pipLoadTrack: async (
     videoSrc: string,
     subtitleData: {
       subContent: string;
       fonts: Array<{ name: string; data: number[] }>;
       availableFonts: Record<string, string>;
     } | null
-  ): Promise<void> => ipcRenderer.invoke('pip:loadtrack', videoSrc, subtitleData),
+  ): Promise<void> => { await tryInvoke('pip:loadtrack', videoSrc, subtitleData); },
   checkFfmpeg: (): Promise<{ installed: boolean; version: string | null }> =>
     ipcRenderer.invoke('dep:checkFfmpeg'),
   checkFfprobe: (): Promise<{ installed: boolean; version: string | null }> =>
@@ -142,13 +165,13 @@ const api = {
     ipcRenderer.invoke('playback:setPosition', filePath, position),
   clearPlaybackPosition: (filePath: string): Promise<void> =>
     ipcRenderer.invoke('playback:clearPosition', filePath),
-  pipUpdateSubtitle: (
+  pipUpdateSubtitle: async (
     data: {
       subContent: string;
       fonts: Array<{ name: string; data: number[] }>;
       availableFonts: Record<string, string>;
     } | null
-  ): Promise<void> => ipcRenderer.invoke('pip:updateSubtitle', data),
+  ): Promise<void> => { await tryInvoke('pip:updateSubtitle', data); },
   checkAudioCodec: (filePath: string): Promise<{ codec: string; supported: boolean } | null> =>
     ipcRenderer.invoke('media:checkAudioCodec', filePath),
   transcodeAudio: (filePath: string): Promise<string | null> =>
@@ -157,19 +180,19 @@ const api = {
     ipcRenderer.invoke('media:transcodeAudioChunk', filePath, startTime, duration),
   cleanupTranscodedAudio: (audioPath: string): Promise<void> =>
     ipcRenderer.invoke('media:cleanupTranscodedAudio', audioPath),
-  audioPipShow: (
+  audioPipShow: async (
     state: Record<string, unknown>,
     mode?: string,
     opacity?: number,
     position?: string
-  ): Promise<boolean> => ipcRenderer.invoke('audio-pip:show', state, mode, opacity, position),
-  audioPipHide: (): Promise<boolean> => ipcRenderer.invoke('audio-pip:hide'),
-  audioPipUpdate: (
+  ): Promise<boolean> => { const r = await tryInvoke('audio-pip:show', state, mode, opacity, position); return !!r; },
+  audioPipHide: async (): Promise<boolean> => { const r = await tryInvoke('audio-pip:hide'); return !!r; },
+  audioPipUpdate: async (
     state: Record<string, unknown>,
     mode?: string,
     opacity?: number,
     position?: string
-  ): Promise<boolean> => ipcRenderer.invoke('audio-pip:update', state, mode, opacity, position)
+  ): Promise<boolean> => { const r = await tryInvoke('audio-pip:update', state, mode, opacity, position); return !!r; }
 };
 
 if (process.contextIsolated) {

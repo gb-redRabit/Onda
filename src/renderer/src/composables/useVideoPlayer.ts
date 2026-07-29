@@ -260,7 +260,7 @@ export function useVideoPlayer(ctx: {
 
       const src = getTrackSrc(track);
       if (player.pipActive) {
-        pip.loadTrack(src, null);
+        // PiP already playing — don't reload, just update subs
         preparePiPSubtitleData(track.path).then((subtitleData) => {
           if (player.pipActive) pip.updateSubtitle(subtitleData);
         }).catch(() => {});
@@ -307,22 +307,23 @@ export function useVideoPlayer(ctx: {
       settings.updatePlayback({ videoFilter: 'none', playbackSpeed: 1 });
       setupVideo(track);
 
-      if (player.pipActive && track.type === 'video') {
+      if (track.type === 'video') {
         const src = getTrackSrc(track);
-        pip.loadTrack(src, null);
-        preparePiPSubtitleData(track.path).then((subtitleData) => {
-          if (player.pipActive) {
+        if (player.pipActive) {
+          // PiP already playing — don't reload, just update subs
+          preparePiPSubtitleData(track.path).then((subtitleData) => {
+            if (player.pipActive) {
+              pip.updateSubtitle(subtitleData);
+            }
+          });
+          videoRef.value?.pause();
+          player.isPlaying = false;
+        } else {
+          pip.preload(src, null);
+          preparePiPSubtitleData(track.path).then((subtitleData) => {
             pip.updateSubtitle(subtitleData);
-          }
-        });
-      videoRef.value?.pause();
-        player.isPlaying = false;
-      } else if (track.type === 'video') {
-        const src = getTrackSrc(track);
-        pip.preload(src, null);
-        preparePiPSubtitleData(track.path).then((subtitleData) => {
-          pip.updateSubtitle(subtitleData);
-        });
+          });
+        }
       }
 
       const title = track.metadata?.title || track.name;

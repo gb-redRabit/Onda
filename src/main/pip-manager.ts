@@ -35,6 +35,7 @@ export class PipManager {
   private loadedSrc: string | null = null;
   private pendingData: PendingData | null = null;
   private cssVars: Record<string, string> = {};
+  private pipLocale = 'en';
 
   private static normalizeFilePath(url: string): string {
     try {
@@ -101,6 +102,7 @@ export class PipManager {
     this.window.webContents.on('did-finish-load', () => {
       this.ready = true;
       this.sendToRenderer('pip:theme', this.cssVars);
+      this.sendToRenderer('pip:locale', this.pipLocale);
       if (this.pendingData) {
         const pd = this.pendingData;
         this.pendingData = null;
@@ -136,11 +138,13 @@ export class PipManager {
 
     ipcMain.on('pip:maximize', (_event, time: number) => {
       this.lastTime = time || 0;
-      this.stopTimeTracking();
-      if (this.window && !this.window.isDestroyed()) {
-        this.window.hide();
-      }
+      this.stop();
       this.mainWindow?.webContents.send('pip:maximize', this.lastTime);
+    });
+
+    ipcMain.on('pip:locale', (_event, locale: string) => {
+      this.pipLocale = locale || 'en';
+      this.sendToRenderer('pip:locale', this.pipLocale);
     });
   }
 
@@ -364,6 +368,7 @@ export class PipManager {
     ipcMain.removeAllListeners('pip:ended');
     ipcMain.removeAllListeners('pip:theme');
     ipcMain.removeAllListeners('pip:maximize');
+    ipcMain.removeAllListeners('pip:locale');
   }
 }
 

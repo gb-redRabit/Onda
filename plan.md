@@ -1,7 +1,7 @@
 # Onda — Plan rozwoju
 
 > Na podstawie audytu kodu 2026-07-28. Status: typecheck 0 błędów, testy 141/141.
-> Ostatnia aktualizacja: 2026-07-29 (po realizacji F1-F4).
+> Ostatnia aktualizacja: 2026-07-29 (F1-F4 + fixy).
 
 ---
 
@@ -76,6 +76,14 @@
 - [x] Przycisk Maximize (&#x26F6;) w PiP → wysyła `pip:maximize` → zamyka PiP, wznawia w `/player`
 - [x] Przycisk Settings (&#x2699;) w PiP → overlay z toggle napisów, suwakami brightness/contrast (CSS filter)
 - [x] `SettingsPiP.vue` — toggle Pre-buffer video
+- [x] Bugfix: Maximize teraz woła `pipManager.stop()` zamiast tylko `hide()` — zamyka PiP całkowicie
+- [x] Bugfix: `pip:closed` globalny handler w `App.vue` — zawsze aktualizuje store, nawet bez PlayerView
+- [x] Bugfix: `onClosed` czyści `player.pipTime`, `setTrack()` czyści `pipTime`
+- [x] Bugfix: `structuredClone` w `useSubtitleRenderer` objęty try-catch
+- [x] Bugfix: IPC invoke/send w preload objęte try-catch
+- [x] i18n: `pip:locale` IPC — locale przesyłana z App.vue do PiP, PiP reaguje na zmianę
+- [x] Bugfix: `init()` nie woła `pip.loadTrack()` gdy PiP aktywny — tylko update napisów
+- [x] Maximize wchodzi w fullscreen (`toggleFullscreen()` + `pendingFullscreen`)
 
 ---
 
@@ -124,6 +132,6 @@
 | **F3a** Audio PiP (minimal) | F1 | ✅ |
 | **F3b** Audio PiP (medium/max + UI) | F3a | ✅ |
 | **F3c** Audio PiP (wide + viz + covers) | F3b | ✅ |
-| **F4** Video PiP (Vue + theme) | — | ✅ (częściowo) |
+| **F4** Video PiP (Vue + theme) | — | ✅ |
 | **F5** Library UI | F2 ✅ | ⬜ |
 | **F6** Explorer+Viz | F1 ✅ | ⬜ |

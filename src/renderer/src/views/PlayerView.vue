@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
+import { ref, watch, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -35,6 +35,7 @@ function showToast(text: string, duration = 1500) {
 const pip = usePiP({
   onClosed(savedTime) {
     player.pipActive = false;
+    player.pipTime = 0;
     if (vp.videoRef.value) {
       vp.videoRef.value.currentTime = savedTime;
       player.currentTime = savedTime;
@@ -51,8 +52,8 @@ const pip = usePiP({
     }
   },
   onMaximize(time) {
-    pip.stop();
     player.pipActive = false;
+    player.pipTime = 0;
     if (vp.videoRef.value) {
       vp.videoRef.value.currentTime = time;
       player.currentTime = time;
@@ -60,7 +61,7 @@ const pip = usePiP({
     }
     player.isPlaying = true;
     vp.syncSubtitlesWithPiP();
-    router.push('/player');
+    toggleFullscreen();
   }
 });
 
@@ -207,6 +208,11 @@ onMounted(() => {
   document.addEventListener('fullscreenchange', () => {
     isFullscreen.value = !!document.fullscreenElement;
   });
+
+  if (player.pendingFullscreen) {
+    player.pendingFullscreen = false;
+    nextTick(() => toggleFullscreen());
+  }
 });
 
 onUnmounted(() => {

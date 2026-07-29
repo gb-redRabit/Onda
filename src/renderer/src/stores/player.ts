@@ -25,6 +25,7 @@ export const usePlayerStore = defineStore('player', () => {
   const equalizerPreset = ref('flat');
   const pipActive = ref(false);
   const pipTime = ref(0);
+  const pendingFullscreen = ref(false);
   const resumePrompt = ref<{ path: string; position: number } | null>(null);
   const pendingQueue = ref<MediaFile[]>([]);
   interface CoverResult {
@@ -95,6 +96,7 @@ export const usePlayerStore = defineStore('player', () => {
     if (track.type === 'video') audioEngine.resume();
     currentTrack.value = track;
     currentTime.value = 0;
+    pipTime.value = 0;
     if (!pipActive.value) {
       isPlaying.value = true;
     }
@@ -400,6 +402,7 @@ export const usePlayerStore = defineStore('player', () => {
     equalizerPreset,
     pipActive,
     pipTime,
+    pendingFullscreen,
     hasTrack,
     progress,
     queueLength,

@@ -348,7 +348,11 @@ export function getLastSubtitleData(): {
     fonts: lastSubtitleData.fonts,
     availableFonts
   };
-  return structuredClone(plain);
+  try {
+    return structuredClone(plain);
+  } catch {
+    return plain;
+  }
 }
 
 export async function preparePiPSubtitleData(videoPath: string): Promise<{
@@ -378,9 +382,13 @@ export async function preparePiPSubtitleData(videoPath: string): Promise<{
 
   const fontMap = await buildFontMap(assContent, fonts);
 
-  return structuredClone({
-    subContent: assContent,
-    fonts,
-    availableFonts: fontMap
-  });
+  try {
+    return structuredClone({
+      subContent: assContent,
+      fonts,
+      availableFonts: fontMap
+    });
+  } catch {
+    return { subContent: assContent, fonts, availableFonts: fontMap };
+  }
 }

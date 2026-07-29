@@ -9,11 +9,11 @@
 | Metryka | Wartość |
 |---------|---------|
 | Pliki źródłowe (.ts + .vue + .css + .html) | 132 |
-| Linie kodu | ~16,870 |
-| Main process | 18 plików, ~2,788 linii |
-| Preload | 2 pliki, ~288 linii |
+| Linie kodu | ~16,950 |
+| Main process | 18 plików, ~2,800 linii |
+| Preload | 2 pliki, ~300 linii |
 | Shared | 3 pliki, ~191 linii |
-| Renderer | 109 plików, ~13,603 linii |
+| Renderer | 109 plików, ~13,660 linii |
 | Pliki testowe | 4 (1,133 linii) |
 | Testy | 141 pass |
 | Zależności npm | 38 (17 runtime + 21 dev) |
@@ -205,7 +205,7 @@ D:\Onda\
 │           │   ├── useVideoPlayer.ts   # Video player: setup, PiP, subtitles, AC3/DTS (368 linii)
 │           │   ├── useSubtitleRenderer.ts # JASSUB init + font map + Google fonts (333 linie)
 │           │   ├── usePlayerKeyboard.ts # Keyboard shortcuts dla PlayerView (101 linii)
-│           │   ├── usePiP.ts            # PiP composable: start, stop, preload, loadTrack (81 linii)
+│           │   ├── usePiP.ts            # PiP composable: start, stop, preload, loadTrack (101 linii)
 │           │   ├── useOpenMedia.ts      # Open files from filesystem + auto-navigate (59 linii)
 │           │   ├── usePromptDialog.ts   # Prompt dialog composable (42 linie)
 │           │   └── useThumbnail.ts      # Thumbnail cache + preload (65 linii)
@@ -298,7 +298,7 @@ D:\Onda\
 │           │
 │           ├── views/                  # 8 widoków, ~1,942 linii
 │           │   ├── HomeView.vue        # Strona główna + drop zone + skeleton (151 linii)
-│           │   ├── PlayerView.vue      # Odtwarzacz video — UI orchestration (280 linii)
+│           │   ├── PlayerView.vue      # Odtwarzacz video — UI orchestration (330 linii)
 │           │   ├── AudioView.vue       # Audio player — 3 layouty + shortcuts (177 linii)
 │           │   ├── ExplorerView.vue    # Eksplorator plików (427 linii)
 │           │   ├── LibraryView.vue     # Biblioteka mediów (580 linii)
@@ -537,7 +537,7 @@ ASS/SSA to złożony format z bogatym systemem stylów. Próba nadpisania styló
 
 **Renderer (`pip.ts` — 181 linia):** PiP bundle entry — JASSUB init, listenery IPC, close button, progress bar, timestamp display. Osobny HTML (`pip.html`).
 
-**Composable (`usePiP.ts` — 81 linie):** `usePiP({onClosed, onEnded})` — interfejs renderera: `start()`, `stop()`, `preload()`, `loadTrack()`, `loadTrackFromCurrent()`, `updateSubtitle()`.
+**Composable (`usePiP.ts` — 101 linii):** `usePiP({onClosed, onEnded, onMaximize})` — interfejs renderera: `start()`, `stop()`, `preload()`, `loadTrack()`, `loadTrackFromCurrent()`, `updateSubtitle()`.
 
 **Preview window (settings):** Osobny `BrowserWindow` (showPreview/hidePreview/updatePreview) — czarne tło "Podgląd PiP", alwaysOnTop, frameless. Całkowicie niezależny od głównego PiP.
 
@@ -1055,11 +1055,11 @@ useSubtitleRenderer.ts (375 linii)
 ├── buildFontMap() → lokalne fonty + Google Fonts + MKV binary fonts
 └── player store (loadEmbeddedSubtitle)
 
-usePiP.ts (93 linie)
+usePiP.ts (101 linii)
 ├── IPC pip:* (start, stop, preload, loadTrack, updateSubtitle)
 └── callbacks (onClosed, onEnded)
 
-PlayerView.vue (313 linii — Phase 3.4: keyboard extracted)
+PlayerView.vue (330 linii — Phase 3.4: keyboard extracted)
 ├── useVideoPlayer composable (setup, PiP, subtitles, watches, lifecycle)
 │   ├── videoRef, videoFilterStyle, onVideoRef, togglePiP, init, destroy
 │   ├── audioEngine.connectVideoElement / disconnectVideoElement
@@ -1159,7 +1159,7 @@ Pełny transkoding filmu 2-godzinnego zajmuje 30-60s. Zamiast czekać:
 | `player.ts` (store)         | 457   | Player + kolejka + history + coverCache + favorites (electron-store persistence)|
 | `pip-manager.ts`            | 421   | PipManager — PiP window + preview window, position/size, show/hide              |
 | `useVideoPlayer.ts`         | 406   | Video composable: setup, PiP, subtitles, AC3/DTS, lifecycle                     |
-| `useSubtitleRenderer.ts`    | 375   | JASSUB: wasm/worker init, buildFontMap (MKV+Google+lokalne), binary fonts       |
+| `useSubtitleRenderer.ts`    | 390   | JASSUB: wasm/worker init, buildFontMap (MKV+Google+lokalne), binary fonts       |
 | `audioEngine.ts`            | 473   | Class AudioEngine — gapless, EQ, RAF loop, EventBus                  |
 | `index.ts` (main)           | 367   | Okno, tray, skróty globalne, PiP init, splash screen                           |
 | `PlayerControls.vue`        | 302   | Kontrolki: play/pause, skip, speed, filter, volume, time                        |
@@ -1175,7 +1175,7 @@ Pełny transkoding filmu 2-godzinnego zajmuje 30-60s. Zamiast czekać:
 | `constants.ts`              | 225   | Formaty, presety EQ, motywy, defaults, shortcuts                                |
 | `LibraryPlaylistManager.vue`| 170   | Panel playlist: create/delete/toggle/rename                                     |
 | `pip.ts` (renderer)         | 170   | PiP bundle: JASSUB, IPC, progress bar, close button                             |
-| `preload/index.ts`          | 167   | contextBridge: 43 API (window.api)                                              |
+| `preload/index.ts`          | 200   | contextBridge: 43 API (window.api) + try-catch IPC wrappers                     |
 | `AudioView.vue`             | 191   | Audio player — 3 layouty, sub-components (AudioCover, AudioTrackInfo)           |
 | `SettingsAppearance.vue`    | 188   | Motyw, akcent, czcionka                                                         |
 | `CommandPalette.vue`        | 157   | Ctrl+K modal search                                                             |
@@ -1294,7 +1294,7 @@ Pełny transkoding filmu 2-godzinnego zajmuje 30-60s. Zamiast czekać:
 
 ---
 
-Ostatnia aktualizacja: 2026-07-28 (Phase 1–3 zakończone, Faza 4 — explorer, Faza 5 — ImageViewer, library, settings, 17.3 webSecurity, Sprint 9 — audio PiP fix, crossfade removal)
+Ostatnia aktualizacja: 2026-07-29 (Phase 1–3 zakończone, Faza 4 — explorer, Faza 5 — ImageViewer, library, settings, 17.3 webSecurity, Sprint 9–12)
 
 ---
 
@@ -1893,6 +1893,35 @@ media-server.ts (94 linie)
 | `src/renderer/src/utils/constants.ts` | +`pipPreBuffer: false` |
 | `src/renderer/src/components/settings/SettingsPiP.vue` | +toggle Pre-buffer |
 | `src/renderer/src/locales/{en,pl}.ts` | +`pipPreBuffer` |
+
+---
+
+### 18.15 Sprint 12 — Video PiP bugfix: maximize, structuredClone, i18n, video freeze (2026-07-29)
+
+**Problemy i fixy:**
+
+| # | Problem | Przyczyna | Rozwiązanie |
+|---|---------|-----------|-------------|
+| 1 | **Maximize zamykał PiP ale nie wznawiał w głównym oknie + `structuredClone` błąd** | `pip:maximize` handler wołał `this.window.hide()` zamiast `this.stop()`, a `onMaximize` w PlayerView wołał `pip.stop()` → podwójne `notifyClosed` → race condition | `pip:maximize` woła `this.stop()` (full clear + notifyClosed), `onMaximize` nie woła `pip.stop()`, zamiast tego `toggleFullscreen()` |
+| 2 | **PiP zamknięty X na innym widoku → nowy film nie startował od zera** | `pip:closed` IPC listener był w `usePiP.ts` (PlayerView-scoped). Gdy PlayerView odmontowany, listener nieaktualny — `player.pipActive` zostawał `true` | Globalne `pip:closed`/`pip:ended`/`pip:maximize` listenery w `App.vue` (zawsze aktywne) aktualizują store |
+| 3 | **`structuredClone` błąd na fontach** | `structuredClone()` w `useSubtitleRenderer` wyrzucał `DataCloneError` | try-catch w `getLastSubtitleData()` i `preparePiPSubtitleData()`, fallback do raw object |
+| 4 | **i18n w PiP — język nie zmieniał się z aplikacją** | PiP używał `navigator.language` (statyczny) | Nowy kanał `pip:locale` — `App.vue` wysyła locale przy starcie i przy zmianie, PiP reaguje przez listener |
+| 5 | **Nowy film po PiP pokazywał starą ramkę + brak dźwięku** | `pipTime` nie czyścił się przy `onClosed` i `setTrack`, powodując seek do starego czasu | `player.pipTime = 0` dodane w `onClosed`, `setTrack`, plus globalny `pip:closed` handler |
+| 6 | **Powrót do video tab z PiP aktywnym resetował PiP do 0** | `init()` wołał `pip.loadTrack()` który wysyłał `pip:videoSrc` + `start=0` | `init()` i `currentTrack` watcher nie wołają `loadTrack()` gdy PiP aktywny — tylko update napisów |
+| 7 | **Maximize gdy PlayerView nie zamontowany** | `router.push('/player')` + `toggleFullscreen()` wymagał zamontowanego PlayerView | `pendingFullscreen` flag w player store — PlayerView sprawdza w `onMounted` i wchodzi w fullscreen |
+
+**Zmodyfikowane pliki (Sprint 12):**
+
+| Plik | Zmiana |
+|------|--------|
+| `src/main/pip-manager.ts` | `pip:maximize` → `this.stop()`; +`pipLocale`, +`pip:locale` handler; locale w `did-finish-load` |
+| `src/preload/index.ts` | Wszystkie `ipcRenderer.send/invoke` objęte try-catch (`trySend`/`tryInvoke`) |
+| `src/renderer/src/App.vue` | +globalne `pip:closed`/`ended`/`maximize` listenery; +`pip:locale` w `applyTheme()` i w watcherze locale |
+| `src/renderer/src/stores/player.ts` | +`pendingFullscreen`, `setTrack` czyści `pipTime` |
+| `src/renderer/src/composables/useVideoPlayer.ts` | `init()` i `currentTrack` watcher nie wołają `loadTrack()` gdy PiP aktywny |
+| `src/renderer/src/composables/useSubtitleRenderer.ts` | `structuredClone` w `getLastSubtitleData()` i `preparePiPSubtitleData()` objęte try-catch |
+| `src/renderer/src/views/PlayerView.vue` | +`import nextTick`; +`pendingFullscreen` check w `onMounted`; `onClosed`+`onMaximize` czyszczą `pipTime` + `toggleFullscreen()` |
+| `src/renderer/src/pip-video/App.vue` | +`currentLocale` ref, +`t(key)` i18n, +`pip:locale` listener; locale zamiast `navigator.language` |
 
 ---
 

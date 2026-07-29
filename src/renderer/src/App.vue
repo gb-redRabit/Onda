@@ -94,6 +94,7 @@ function applyTheme() {
   };
   window.api?.send('audio-pip:theme', themeVars);
   window.api?.send('pip:theme', themeVars);
+  window.api?.send('pip:locale', settings.appearance.locale);
 }
 
 onMounted(async () => {
@@ -108,6 +109,28 @@ onMounted(async () => {
   }
   audioPip.mode.value = settings.appearance.audioPipMode;
   audioPip.setAutoShow(settings.appearance.audioPipAutoShow);
+
+  // global PiP IPC — always active even when PlayerView is unmounted
+  window.api?.on('pip:closed', (_time: unknown) => {
+    player.pipActive = false;
+    player.pipTime = 0;
+  });
+  window.api?.on('pip:ended', () => {
+    if (player.queue.length > 0) {
+      player.nextTrack();
+    } else {
+      window.api?.pipStop();
+    }
+  });
+  window.api?.on('pip:maximize', (time: unknown) => {
+    const t = (time as number) || 0;
+    player.pipActive = false;
+    player.pipTime = 0;
+    player.currentTime = t;
+    player.isPlaying = true;
+    player.pendingFullscreen = true;
+    if (route.name !== 'player') router.push('/player');
+  });
 });
 
 onBeforeUnmount(() => {
@@ -123,6 +146,7 @@ watch(
   () => settings.appearance.locale,
   (loc) => {
     locale.value = loc;
+    window.api?.send('pip:locale', loc);
   }
 );
 

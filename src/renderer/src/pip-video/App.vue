@@ -23,6 +23,19 @@ const settingsOpen = ref(false)
 const subsVisible = ref(true)
 const brightness = ref(100)
 const contrast = ref(100)
+
+const labels: Record<string, Record<string, string>> = {
+  settings: { en: 'Settings', pl: 'Ustawienia' },
+  subtitles: { en: 'Subtitles', pl: 'Napisy' },
+  brightness: { en: 'Brightness', pl: 'Jasność' },
+  contrast: { en: 'Contrast', pl: 'Kontrast' },
+  close: { en: 'Close', pl: 'Zamknij' },
+  maximize: { en: 'Maximize', pl: 'Maksymalizuj' },
+}
+const currentLocale = ref(navigator.language.startsWith('pl') ? 'pl' : 'en')
+function t(key: string): string {
+  return labels[key][currentLocale.value] || labels[key].en
+}
 let pendingStart = 0
 let waitingForPlay = false
 let jassub: any = null
@@ -197,6 +210,11 @@ onMounted(() => {
     applyCssVars(args[0] as Record<string, string>)
   })
   cleanups.push(c8)
+
+  const c9 = api.on('pip:locale', (...args: unknown[]) => {
+    currentLocale.value = (args[0] as string || 'en').startsWith('pl') ? 'pl' : 'en'
+  })
+  cleanups.push(c9)
 })
 
 onUnmounted(() => {
@@ -230,17 +248,17 @@ onUnmounted(() => {
       <button
         class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[11px] top-btn"
         @click="settingsOpen = !settingsOpen"
-        title="Settings"
+        :title="t('settings')"
       >&#x2699;</button>
       <button
         class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[10px] top-btn"
         @click="sendMaximize"
-        title="Maximize"
+        :title="t('maximize')"
       >&#x26F6;</button>
       <button
         class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[11px] close-btn"
         @click="api?.send('pip:hidden')"
-        title="Close"
+        :title="t('close')"
       >&#x2715;</button>
     </div>
 
@@ -251,7 +269,7 @@ onUnmounted(() => {
       :style="{ background: 'var(--color-bg-overlay, #1e1e2e)', border: '1px solid var(--color-border-default, #2a2a40)' }"
     >
       <div class="flex items-center justify-between mb-2">
-        <span class="text-[11px]" :style="{ color: 'var(--color-fg-base, #e8e8f0)' }">Subtitles</span>
+        <span class="text-[11px]" :style="{ color: 'var(--color-fg-base, #e8e8f0)' }">{{ t('subtitles') }}</span>
         <button
           class="w-8 h-4.5 rounded-full transition-colors relative"
           :class="subsVisible ? 'bg-accent-base' : ''"
@@ -265,7 +283,7 @@ onUnmounted(() => {
         </button>
       </div>
       <div class="mb-1.5">
-        <span class="text-[10px]" :style="{ color: 'var(--color-fg-faint, #6a6a84)' }">Brightness {{ brightness }}%</span>
+        <span class="text-[10px]" :style="{ color: 'var(--color-fg-faint, #6a6a84)' }">{{ t('brightness') }} {{ brightness }}%</span>
         <input
           type="range" min="10" max="200" step="5"
           :value="brightness"
@@ -275,7 +293,7 @@ onUnmounted(() => {
         />
       </div>
       <div>
-        <span class="text-[10px]" :style="{ color: 'var(--color-fg-faint, #6a6a84)' }">Contrast {{ contrast }}%</span>
+        <span class="text-[10px]" :style="{ color: 'var(--color-fg-faint, #6a6a84)' }">{{ t('contrast') }} {{ contrast }}%</span>
         <input
           type="range" min="10" max="200" step="5"
           :value="contrast"
