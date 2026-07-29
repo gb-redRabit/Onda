@@ -64,7 +64,7 @@ Odtwarza lokalne pliki audio/wideo, zarządza biblioteką mediów z metadanymi I
 
 ### Inne
 - **i18n** — pełna internacjonalizacja PL/EN (~400 kluczy), przełączanie locale
-- **Picture-in-Picture** — osobne okno z niezależnym odtwarzaniem, napisami i synchronizacją czasu
+- **Picture-in-Picture** — osobne okno z niezależnym odtwarzaniem, napisami i synchronizacją czasu; audio PiP z 4 trybami (minimal, medium, max, wide), wizualizacją canvas 60fps, okładkami (image/video), EQ presetami i stanem przycisków
 - **Splash screen** — animowana wizualizacja dźwiękowa na canvas (standalone HTML, zero deps)
 - **Media Session API** — systemowe kontrolki multimedialne
 - **Tray icon** — Play/Pause, Next, Previous, Show, Quit

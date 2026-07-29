@@ -158,30 +158,14 @@ const api = {
   cleanupTranscodedAudio: (audioPath: string): Promise<void> =>
     ipcRenderer.invoke('media:cleanupTranscodedAudio', audioPath),
   audioPipShow: (
-    state: {
-      trackName: string;
-      artist: string;
-      coverData: string | null;
-      isPlaying: boolean;
-      currentTime: number;
-      duration: number;
-      volume: number;
-    },
+    state: Record<string, unknown>,
     mode?: string,
     opacity?: number,
     position?: string
   ): Promise<boolean> => ipcRenderer.invoke('audio-pip:show', state, mode, opacity, position),
   audioPipHide: (): Promise<boolean> => ipcRenderer.invoke('audio-pip:hide'),
   audioPipUpdate: (
-    state: {
-      trackName: string;
-      artist: string;
-      coverData: string | null;
-      isPlaying: boolean;
-      currentTime: number;
-      duration: number;
-      volume: number;
-    },
+    state: Record<string, unknown>,
     mode?: string,
     opacity?: number,
     position?: string

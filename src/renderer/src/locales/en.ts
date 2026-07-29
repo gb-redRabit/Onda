@@ -203,6 +203,7 @@ export default {
     pipMinimal: 'Minimal',
     pipMedium: 'Medium',
     pipMax: 'Max',
+    pipWide: 'Wide',
     audioPipOpacity: 'Opacity',
     audioPipAutoShow: 'Auto-show when in background',
     audioPipPosition: 'Position'

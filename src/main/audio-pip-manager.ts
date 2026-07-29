@@ -3,21 +3,27 @@ import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
 
 
-type PipMode = 'minimal' | 'medium' | 'max';
+type PipMode = 'minimal' | 'medium' | 'max' | 'wide';
 type PipPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 
 interface AudioPipState {
-  trackName: string;
-  artist: string;
-  coverData: string | null;
-  isPlaying: boolean;
-  currentTime: number;
-  duration: number;
-  volume: number;
-  isMuted?: boolean;
-  equalizerBands?: number[];
-  nextTrackName?: string;
-  nextTrackArtist?: string;
+  trackName?: string
+  artist?: string
+  coverData?: string | null
+  coverType?: 'image' | 'video' | null
+  isPlaying?: boolean
+  currentTime?: number
+  duration?: number
+  volume?: number
+  isMuted?: boolean
+  shuffle?: boolean
+  repeat?: 'none' | 'all' | 'one'
+  equalizerBands?: number[]
+  equalizerPreset?: string
+  vizData?: number[]
+  nextTrackName?: string
+  nextTrackArtist?: string
+  [key: string]: unknown
 }
 
 export class AudioPipManager {
@@ -161,6 +167,10 @@ export class AudioPipManager {
         const display = screen.getPrimaryDisplay().workAreaSize;
         return { width: display.width, height: 100 };
       }
+      case 'wide': {
+        const display = screen.getPrimaryDisplay().workAreaSize;
+        return { width: display.width, height: 36 };
+      }
       default: return { width: 280, height: 36 };
     }
   }
@@ -174,7 +184,7 @@ export class AudioPipManager {
 
     let x: number, y: number;
 
-    if (this.mode === 'max') {
+    if (this.mode === 'max' || this.mode === 'wide') {
       x = 0;
       y = 0;
     } else {
@@ -248,6 +258,12 @@ export class AudioPipManager {
         });
       }
     });
+
+    ipcMain.on('audio-pip:vizData', (_event, data: number[]) => {
+      if (this.window && !this.window.isDestroyed() && this.window.isVisible() && this.ready) {
+        this.window.webContents.send('audio-pip:vizData', data);
+      }
+    });
   }
 
   isShowing(): boolean {
@@ -265,6 +281,7 @@ export class AudioPipManager {
     ipcMain.removeAllListeners('audio-pip:action');
     ipcMain.removeAllListeners('audio-pip:progressClick');
     ipcMain.removeAllListeners('audio-pip:timeUpdate');
+    ipcMain.removeAllListeners('audio-pip:vizData');
     ipcMain.removeAllListeners('audio-pip:theme');
   }
 }

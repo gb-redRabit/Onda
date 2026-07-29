@@ -30,7 +30,7 @@ export interface AppearanceSettings {
   animations: boolean;
   transparency: number;
   customBackground?: string;
-  audioPipMode: 'minimal' | 'medium' | 'max';
+  audioPipMode: 'minimal' | 'medium' | 'max' | 'wide';
   audioPipAutoShow: boolean;
   audioPipOpacity: number;
   audioPipPosition: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';

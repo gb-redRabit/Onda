@@ -4,7 +4,7 @@
 
 **Onda** to desktopowy odtwarzacz muzyki i wideo zbudowany na Electron + Vue 3 + TypeScript + Tailwind CSS. Aplikacja obsługuje odtwarzanie lokalnych plików audio/video, eksplorację plików, bibliotekę mediów z metadanymi ID3, equalizer, wizualizację audio, kolejki odtwarzania, napisy wideo, Picture-in-Picture, splash screen z animowaną wizualizacją dźwiękową oraz system motywów.
 
-**Aktualne statystyki (2026-07-26):**
+**Aktualne statystyki (2026-07-29):**
 
 | Metryka | Wartość |
 |---------|---------|
@@ -1812,6 +1812,30 @@ media-server.ts (94 linie)
 - `npm run typecheck` — 0 błędów
 - `npm test` — 141/141 pass
 - Wszystkie debug logi usunięte
+
+---
+
+### 18.13 Sprint 10 — Audio PiP: wide mode, canvas viz 60fps, cover type, shuffle/repeat state (2026-07-29)
+
+**Nowości:**
+- 4. tryb "wide" — full-width × 36px, cienki pasek z transportem, czasem, volume, 4 presetami EQ i cycleMode
+- Wizualizacja canvas: 192 bary (3×64 pasma), smoothstep interpolacja, glow pass zamiast shadowBlur, peak dots
+- Osobny kanał IPC `audio-pip:vizData` co 60ms (dane frequency wysyłane 16× częściej niż wcześniej)
+- Renderowanie 60fps: geometria cachowana, `fillRect` zamiast `roundRect`, bez `createLinearGradient`/`getComputedStyle` na klatkę
+- Okładki wideo (sibling video cover) — `coverType` wysyłany w stanie, PiP renderuje `<video>` z media server URL
+- Shuffle/repeat z podświetleniem (`!text-accent-base`), repeat one z nakładką "1"
+
+**Zmodyfikowane pliki:**
+
+| Plik | Zmiana |
+|------|--------|
+| `src/renderer/src/pip-audio/App.vue` | 4 tryby, canvas viz 192 bary, coverType obsługa video, shuffle/repeat state, optymalizacja 60fps |
+| `src/renderer/src/composables/useAudioPiP.ts` | +`coverType`, `shuffle`, `repeat` w stanie; osobny `vizInterval` 60ms |
+| `src/main/audio-pip-manager.ts` | +`coverType`, `shuffle`, `repeat` w interface; handler `audio-pip:vizData` |
+| `src/renderer/src/components/settings/SettingsPiP.vue` | +pipWide |
+| `src/renderer/src/types/settings.ts` | `audioPipMode` → `'wide'` |
+| `src/renderer/src/locales/{en,pl}.ts` | +pipWide label |
+| `src/renderer/src/pip-audio/style.css` | Usunięto nieużywane style `.btn-viz-*` |
 
 ---
 

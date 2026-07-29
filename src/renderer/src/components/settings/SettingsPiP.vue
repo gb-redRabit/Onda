@@ -27,7 +27,8 @@ const pipPositions = [
 const audioPipModes = [
   { id: 'minimal' as const, labelKey: 'settings.pipMinimal' },
   { id: 'medium' as const, labelKey: 'settings.pipMedium' },
-  { id: 'max' as const, labelKey: 'settings.pipMax' }
+  { id: 'max' as const, labelKey: 'settings.pipMax' },
+  { id: 'wide' as const, labelKey: 'settings.pipWide' }
 ];
 
 const pipPreviewOpen = ref(false);

@@ -204,6 +204,7 @@ export default {
     pipMinimal: 'Minimalny',
     pipMedium: 'Średni',
     pipMax: 'Maksymalny',
+    pipWide: 'Szeroki',
     audioPipOpacity: 'Przezroczystość',
     audioPipAutoShow: 'Auto-pokazuj w tle',
     audioPipPosition: 'Pozycja'

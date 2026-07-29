@@ -1,7 +1,7 @@
 # Onda — Plan rozwoju
 
 > Na podstawie audytu kodu 2026-07-28. Status: typecheck 0 błędów, testy 141/141.
-> Ostatnia aktualizacja: 2026-07-28 (po realizacji F1-F3).
+> Ostatnia aktualizacja: 2026-07-29 (po realizacji F1-F3c).
 
 ---
 
@@ -52,14 +52,15 @@
 
 ---
 
-### Faza 3b — Audio PiP: średni i max tryb + UI settings ✅
+### Faza 3c — Audio PiP: wide tryb + wizualizacja + okładki wideo + stan przycisków ✅
 
-- [x] `audio-pip.html` — medium layout: cover 64×64, artist, volume slider, time, bigger controls
-- [x] `audio-pip.html` — max layout: cover 100×100, shuffle/repeat, volume + value, canvas visualizer, time
-- [x] `SettingsPiP.vue` — sekcja Audio PiP: mode (przyciski), opacity slider, auto-show toggle, position dropdown
-- [x] `audioPipPosition` w `AppearanceSettings` + `constants.ts` (domyślnie `'bottom-right'`)
-- [x] `AudioPipManager.positionWindow()` — używa `this.position` zamiast hardcoded
-- [x] Ipc thread: position przekazywany przez preload → window-ipc → audio-pip-manager
+- [x] 4. wide tryb (full-width × 36px, cienki pasek, transport, czas, volume, 4 presety EQ)
+- [x] Canvas wizualizacja: 192 bary (3×64), smoothstep interpolacja, glow, peak dots
+- [x] Wizualizacja 60fps: geometria cachowana, fillRect zamiast roundRect/shadowBlur, brak getComputedStyle/gradient/klatkę
+- [x] Dane frequency co 60ms przez osobny kanał IPC `audio-pip:vizData`
+- [x] Okładki: obsługa typu video (sibling video cover → `<video>` z media server)
+- [x] Stan shuffle/repeat: podświetlenie przycisków (!text-accent-base) + repeat one z "1" overlay
+- [x] Settings: pipWide w UI + typy + locale (pl/en)
 
 ---
 
@@ -120,6 +121,7 @@
 | **F2** Library perf | — | ✅ |
 | **F3a** Audio PiP (minimal) | F1 | ✅ |
 | **F3b** Audio PiP (medium/max + UI) | F3a | ✅ |
+| **F3c** Audio PiP (wide + viz + covers) | F3b | ✅ |
 | **F4** Video PiP | — | ⬜ |
 | **F5** Library UI | F2 ✅ | ⬜ |
 | **F6** Explorer+Viz | F1 ✅ | ⬜ |

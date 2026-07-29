@@ -3,22 +3,51 @@ import { audioEvents } from '@renderer/utils/audioEvents';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
-import { currentTime, duration } from '@renderer/composables/useAudioPlayer';
+import { currentTime, duration, useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 
-type PipMode = 'minimal' | 'medium' | 'max';
+type PipMode = 'minimal' | 'medium' | 'max' | 'wide';
 
-interface AudioPipState {
-  trackName: string;
-  artist: string;
-  coverData: string | null;
-  isPlaying: boolean;
-  currentTime: number;
-  duration: number;
-  volume: number;
-  isMuted?: boolean;
-  equalizerBands?: number[];
-  nextTrackName?: string;
-  nextTrackArtist?: string;
+interface AudioPipState extends Record<string, unknown> {
+  trackName: string
+  artist: string
+  coverData: string | null
+  coverType: 'image' | 'video' | null
+  isPlaying: boolean
+  currentTime: number
+  duration: number
+  volume: number
+  isMuted?: boolean
+  shuffle?: boolean
+  repeat?: 'none' | 'all' | 'one'
+  equalizerBands?: number[]
+  equalizerPreset?: string
+  vizData?: number[]
+  nextTrackName?: string
+  nextTrackArtist?: string
+}
+
+function getFrequencyBins(): number[] {
+  try {
+    const analyser = audioEngine.getAnalyserNode()
+    if (!analyser) return []
+    const len = analyser.frequencyBinCount
+    const raw = new Uint8Array(len)
+    analyser.getByteFrequencyData(raw)
+    // reduce 1024 bins → 64
+    const count = 64
+    const bins: number[] = []
+    const binSize = Math.floor(len / count)
+    for (let i = 0; i < count; i++) {
+      let sum = 0
+      const start = i * binSize
+      const end = Math.min(start + binSize, len)
+      for (let j = start; j < end; j++) sum += raw[j]
+      bins.push(Math.round(sum / (end - start)))
+    }
+    return bins
+  } catch {
+    return []
+  }
 }
 
 export function useAudioPiP() {
@@ -27,12 +56,13 @@ export function useAudioPiP() {
 
   const cleanups: (() => void)[] = [];
   let lastState: AudioPipState = {
-    trackName: '', artist: '', coverData: null,
+    trackName: '', artist: '', coverData: null, coverType: null,
     isPlaying: false, currentTime: 0, duration: 0, volume: 1
   };
 
   let autoShowEnabled = true;
   let timeInterval: ReturnType<typeof setInterval> | null = null;
+  let vizInterval: ReturnType<typeof setInterval> | null = null;
   let coverRetryTimer: ReturnType<typeof setInterval> | null = null;
   let coverRetryCount = 0;
 
@@ -47,12 +77,17 @@ export function useAudioPiP() {
       trackName: '' + (track?.name || ''),
       artist: '' + ((track?.metadata?.artist) || ''),
       coverData: cached.data || null,
+      coverType: cached.type || null,
       isPlaying: !!player.isPlaying,
+      shuffle: !!player.shuffle,
+      repeat: player.repeat || 'none',
       currentTime: +currentTime.value,
       duration: +duration.value,
       volume: +player.volume,
       isMuted: !!player.isMuted,
       equalizerBands: (player.equalizerBands || []).slice(),
+      equalizerPreset: player.equalizerPreset || 'flat',
+      vizData: getFrequencyBins(),
       nextTrackName: '' + ((nextTrack?.name) || ''),
       nextTrackArtist: '' + ((nextTrack?.metadata?.artist) || '')
     };
@@ -75,12 +110,29 @@ export function useAudioPiP() {
     await window.api?.audioPipShow(state, mode.value, settings.appearance.audioPipOpacity, settings.appearance.audioPipPosition);
     startCoverRetry();
     startTimeTracking();
+    startVizTracking();
   }
 
   async function hide() {
     isActive.value = false;
     stopTimeTracking();
+    stopVizTracking();
     await window.api?.audioPipHide();
+  }
+
+  function startVizTracking() {
+    stopVizTracking();
+    vizInterval = setInterval(() => {
+      if (!isActive.value) { stopVizTracking(); return; }
+      window.api?.send('audio-pip:vizData', getFrequencyBins());
+    }, 60);
+  }
+
+  function stopVizTracking() {
+    if (vizInterval) {
+      clearInterval(vizInterval);
+      vizInterval = null;
+    }
   }
 
   function startTimeTracking() {
@@ -157,13 +209,31 @@ export function useAudioPiP() {
       if (!isNaN(vol)) { player.setVolume(vol); console.log('[PiP] setVolume:', vol); }
     } else if (action === 'cycleMode') {
       const settings = useSettingsStore();
-      const modes: PipMode[] = ['minimal', 'medium', 'max'];
+      const modes: PipMode[] = ['minimal', 'medium', 'max', 'wide'];
       const idx = modes.indexOf(mode.value);
       const next = modes[(idx + 1) % modes.length];
       mode.value = next;
       settings.updateAppearance({ audioPipMode: next });
     } else if (action === 'mute') {
       player.toggleMute();
+    } else if (action.startsWith('eqPreset:')) {
+      const presetName = action.slice(9);
+      const { applyEqPreset } = useAudioPlayer();
+      const presets: Record<string, Record<number, number>> = {
+        flat: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 },
+        pop: { 0: -1, 1: 2, 2: 4, 3: 4, 4: 2, 5: -1, 6: -1, 7: -1, 8: 2, 9: 2 },
+        rock: { 0: 5, 1: 3, 2: -2, 3: -4, 4: -2, 5: 2, 6: 5, 7: 6, 8: 6, 9: 5 },
+        jazz: { 0: 3, 1: 2, 2: 0, 3: 2, 4: -2, 5: -2, 6: 0, 7: 2, 8: 3, 9: 4 },
+        classical: { 0: 4, 1: 3, 2: 2, 3: 1, 4: -1, 5: -1, 6: 0, 7: 2, 8: 3, 9: 4 },
+        bassBoost: { 0: 8, 1: 6, 2: 4, 3: 2, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 },
+        trebleBoost: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 2, 6: 4, 7: 6, 8: 8, 9: 8 },
+        vocal: { 0: -2, 1: -3, 2: -3, 3: 1, 4: 4, 5: 4, 6: 3, 7: 1, 8: 0, 9: -2 }
+      };
+      if (presets[presetName]) {
+        player.equalizerPreset = presetName;
+        applyEqPreset(presets[presetName]);
+        console.log('[PiP] eqPreset:', presetName);
+      }
     }
   }
 
@@ -193,6 +263,7 @@ export function useAudioPiP() {
         startCoverRetry();
         if (state.isPlaying) {
           startTimeTracking();
+          startVizTracking();
         }
       }
     };
@@ -204,8 +275,10 @@ export function useAudioPiP() {
         sendUpdate(fresh);
         if (playing) {
           startTimeTracking();
+          startVizTracking();
         } else {
           stopTimeTracking();
+          stopVizTracking();
         }
       }
       if (document.hidden && playing && !isActive.value && autoShowEnabled) {
@@ -235,6 +308,7 @@ export function useAudioPiP() {
 
   onUnmounted(() => {
     stopTimeTracking();
+    stopVizTracking();
     stopCoverRetry();
     cleanups.forEach((fn) => fn());
   });
