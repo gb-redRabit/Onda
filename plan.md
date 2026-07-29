@@ -1,7 +1,7 @@
 # Onda — Plan rozwoju
 
 > Na podstawie audytu kodu 2026-07-28. Status: typecheck 0 błędów, testy 141/141.
-> Ostatnia aktualizacja: 2026-07-29 (F1-F4 + fixy).
+> Ostatnia aktualizacja: 2026-07-29 (F1-F5 + fixy).
 
 ---
 
@@ -46,12 +46,6 @@
 - [x] `Sidebar.vue` — `playPlaylist()`: `slice(1)` dla queue
 - [x] `DirNode.vue` — `playDir()`: `slice(1)` dla queue
 
----
-
-## 📋 Pozostałe zadania
-
----
-
 ### Faza 3c — Audio PiP: wide tryb + wizualizacja + okładki wideo + stan przycisków ✅
 
 - [x] 4. wide tryb (full-width × 36px, cienki pasek, transport, czas, volume, 4 presety EQ)
@@ -62,11 +56,7 @@
 - [x] Stan shuffle/repeat: podświetlenie przycisków (!text-accent-base) + repeat one z "1" overlay
 - [x] Settings: pipWide w UI + typy + locale (pl/en)
 
----
-
-### Faza 4 — Video PiP: Vue + theme reactivity + optymalizacja
-
-**Czas: ~3-4h | Priorytet: 🟡 ŚREDNI**
+### Faza 4 — Video PiP: Vue + theme reactivity + optymalizacja ✅
 
 - [x] `pip.html` → Vue SFC (`pip-video/App.vue`) z JASSUB, theme listenerem `pip:theme`
 - [x] `pip-manager.ts` — handler `pip:theme`, przechowywanie cssVars
@@ -87,14 +77,30 @@
 
 ---
 
-### Faza 5 — Library view toggle + Top menu
+## 📋 Pozostałe zadania
+
+---
+
+### Faza 5 — Library view toggle + Top menu ✅
 
 **Czas: ~3-4h | Priorytet: 🟡 ŚREDNI**
 
-- `LibraryView.vue` — dodać `viewMode` (list/grid) dla każdej zakładki
-- Nowe komponenty: `LibraryTrackCard.vue`, `LibraryVideoRow.vue`
-- `AppMenu.vue` — przebudowa z nawigacją do widoków
-- Skróty klawiszowe Alt+1..N dla widoków
+- [x] `types/settings.ts` — dodano `LibrarySettings { viewModes }`
+- [x] `constants.ts` — dodano `DEFAULT_LIBRARY`
+- [x] `stores/settings.ts` — dodano `library` ref + `updateLibrary()`
+- [x] `LibraryTrackCard.vue` — grid card dla utworów (cover, play/fav/edit/playlist)
+- [x] `LibraryVideoRow.vue` — list row dla video (thumbnail, play, queue)
+- [x] `LibraryView.vue` — viewMode toggle (list/grid) per tab (tracks, video, albums, artists)
+- [x] `AppMenu.vue` — View dropdown: wszystkie widoki z Alt+1..6
+- [x] Skróty Alt+1..N — globalny keydown handler w AppMenu
+- [x] i18n: `menu.downloads`, `library.viewModeList`, `library.viewModeGrid` (en/pl)
+
+### Fix session 2 (post-F5)
+
+- [x] Settings save — `JSON.parse(JSON.stringify())` zamiast Proxy przez IPC (fix "object could not be cloned")
+- [x] Audio PiP — double-click przywraca główne okno (`show()` + `moveTop()` + `focus()`)
+- [x] `LibraryTrackCard` — akcje przeniesione na okładkę (prawy górny róg), karty powiększone (aspect 4:3)
+- [x] `LibraryView.vue` — ResizeObserver dla gridów przez `watch([tab, viewMode])` + `nextTick`
 
 ---
 
@@ -133,5 +139,5 @@
 | **F3b** Audio PiP (medium/max + UI) | F3a | ✅ |
 | **F3c** Audio PiP (wide + viz + covers) | F3b | ✅ |
 | **F4** Video PiP (Vue + theme) | — | ✅ |
-| **F5** Library UI | F2 ✅ | ⬜ |
+| **F5** Library UI | F2 ✅ | ✅ |
 | **F6** Explorer+Viz | F1 ✅ | ⬜ |

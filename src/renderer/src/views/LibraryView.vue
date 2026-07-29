@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { logger } from '@renderer/utils/logger';
 import { useVirtualizer } from '@tanstack/vue-virtual';
 import { useLibraryStore } from '@renderer/stores/library';
+import { useSettingsStore } from '@renderer/stores/settings';
 import { usePlayerStore } from '@renderer/stores/player';
 import type { MediaFile } from '@renderer/types/media';
 import LibraryTrackRow from '@renderer/components/library/LibraryTrackRow.vue';
+import LibraryTrackCard from '@renderer/components/library/LibraryTrackCard.vue';
+import LibraryVideoRow from '@renderer/components/library/LibraryVideoRow.vue';
 import LibraryPlaylistManager from '@renderer/components/library/LibraryPlaylistManager.vue';
 import DirNode from '@renderer/components/library/DirNode.vue';
 import TrackTagEditor from '@renderer/components/library/TrackTagEditor.vue';
@@ -23,11 +26,14 @@ import {
   ListMusic,
   Search,
   RefreshCw,
-  ChevronDown
+  ChevronDown,
+  LayoutList,
+  LayoutGrid
 } from '@lucide/vue';
 
 const { t } = useI18n();
 const library = useLibraryStore();
+const settings = useSettingsStore();
 const player = usePlayerStore();
 
 const query = ref('');
@@ -39,6 +45,15 @@ watch(query, (q) => {
 }, { immediate: true });
 onUnmounted(() => { if (queryTimer) clearTimeout(queryTimer); });
 const tab = ref<'tracks' | 'video' | 'folders' | 'artists' | 'albums' | 'playlists'>('tracks');
+
+const viewMode = computed(() => settings.library.viewModes[tab.value] ?? 'list');
+
+function setViewMode(mode: 'list' | 'grid') {
+  const viewModes = { ...settings.library.viewModes, [tab.value]: mode };
+  settings.updateLibrary({ viewModes });
+}
+
+const toggleableViews = new Set(['tracks', 'video', 'albums', 'artists']);
 
 const tabs = computed(
   () =>
@@ -118,6 +133,49 @@ const trackVirtualizer = useVirtualizer({
   overscan: 10
 });
 
+const trackGridRef = ref<HTMLElement | null>(null);
+const trackCols = ref(6);
+
+function updateTrackCols() {
+  if (!trackGridRef.value) return;
+  const w = trackGridRef.value.clientWidth;
+  trackCols.value = Math.max(2, Math.floor(w / 220));
+}
+
+const trackRowVirtualizer = useVirtualizer({
+  get count() {
+    return Math.ceil(filteredTracks.value.length / trackCols.value);
+  },
+  getScrollElement: () => trackGridRef.value,
+  estimateSize: () => 280,
+  overscan: 3
+});
+
+const visibleTracksGrid = computed(() => {
+  const items = trackRowVirtualizer.value.getVirtualItems();
+  const cols = trackCols.value;
+  const result: Array<{ top: number; tracks: MediaFile[] }> = [];
+  for (const row of items) {
+    const start = row.index * cols;
+    const end = Math.min(start + cols, filteredTracks.value.length);
+    result.push({
+      top: row.start,
+      tracks: filteredTracks.value.slice(start, end)
+    });
+  }
+  return result;
+});
+
+const videoListRef = ref<HTMLElement | null>(null);
+const videoListVirtualizer = useVirtualizer({
+  get count() {
+    return filteredVideo.value.length;
+  },
+  getScrollElement: () => videoListRef.value,
+  estimateSize: () => 48,
+  overscan: 10
+});
+
 const videoGridRef = ref<HTMLElement | null>(null);
 const videoCols = ref(6);
 
@@ -149,6 +207,16 @@ const visibleVideo = computed(() => {
     });
   }
   return result;
+});
+
+const albumListRef = ref<HTMLElement | null>(null);
+const albumListVirtualizer = useVirtualizer({
+  get count() {
+    return filteredAlbums.value.length;
+  },
+  getScrollElement: () => albumListRef.value,
+  estimateSize: () => 48,
+  overscan: 10
 });
 
 const albumGridRef = ref<HTMLElement | null>(null);
@@ -184,18 +252,31 @@ const visibleAlbums = computed(() => {
   return result;
 });
 
-onMounted(() => {
-  updateVideoCols();
-  if (videoGridRef.value) {
-    const ro = new ResizeObserver(() => updateVideoCols());
-    ro.observe(videoGridRef.value);
-    onUnmounted(() => ro.disconnect());
-  }
-  updateAlbumCols();
-  if (albumGridRef.value) {
-    const ro = new ResizeObserver(() => updateAlbumCols());
-    ro.observe(albumGridRef.value);
-  }
+const observers = ref<ResizeObserver[]>([]);
+
+function observeGrid(ref: Ref<HTMLElement | null>, update: () => void) {
+  const el = ref.value;
+  if (!el) return;
+  const ro = new ResizeObserver(() => update());
+  ro.observe(el);
+  observers.value.push(ro);
+}
+
+watch([tab, viewMode], () => {
+  nextTick(() => {
+    for (const ro of observers.value) ro.disconnect();
+    observers.value = [];
+    updateTrackCols();
+    updateVideoCols();
+    updateAlbumCols();
+    observeGrid(trackGridRef, updateTrackCols);
+    observeGrid(videoGridRef, updateVideoCols);
+    observeGrid(albumGridRef, updateAlbumCols);
+  });
+}, { immediate: true });
+
+onUnmounted(() => {
+  for (const ro of observers.value) ro.disconnect();
 });
 
 function playTracks(tracks: typeof library.tracks) {
@@ -404,13 +485,34 @@ function onMBApply(data: {
             <span class="text-xs text-fg-faint"
               >{{ filteredTracks.length }} {{ $t('library.tracksCount') }}</span
             >
-            <button
-              class="flex items-center gap-1 px-3 py-1 rounded-lg bg-accent-ghost text-accent-base text-xs font-medium hover:bg-accent-base hover:text-white transition-colors"
-              @click="playAllTracks"
-            >
-              <Music2 :size="12" /> {{ $t('library.playAll') }}
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                class="p-1.5 rounded-lg transition-colors"
+                :class="viewMode === 'list' ? 'bg-accent-ghost text-accent-base' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'"
+                :title="$t('library.viewModeList')"
+                @click="setViewMode('list')"
+              >
+                <LayoutList :size="14" />
+              </button>
+              <button
+                class="p-1.5 rounded-lg transition-colors"
+                :class="viewMode === 'grid' ? 'bg-accent-ghost text-accent-base' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'"
+                :title="$t('library.viewModeGrid')"
+                @click="setViewMode('grid')"
+              >
+                <LayoutGrid :size="14" />
+              </button>
+              <button
+                class="flex items-center gap-1 px-3 py-1 rounded-lg bg-accent-ghost text-accent-base text-xs font-medium hover:bg-accent-base hover:text-white transition-colors"
+                @click="playAllTracks"
+              >
+                <Music2 :size="12" /> {{ $t('library.playAll') }}
+              </button>
+            </div>
           </div>
+
+          <!-- Tracks: list mode -->
+          <template v-if="viewMode === 'list'">
           <div ref="trackListRef" class="flex-1 overflow-auto">
             <div
               :style="{
@@ -437,10 +539,43 @@ function onMBApply(data: {
                   @edit="editingTrack = $event"
                 />
               </div>
+          </div>
+          </div>
+          </template>   <!-- /tracks list -->
+
+          <!-- Tracks: grid mode -->
+          <template v-else>
+          <div ref="trackGridRef" class="flex-1 overflow-auto p-4">
+            <div
+              :style="{ height: trackRowVirtualizer.getTotalSize() + 'px', position: 'relative' }"
+            >
+              <div
+                v-for="row in visibleTracksGrid"
+                :key="'tgr-' + row.top"
+                :style="{
+                  position: 'absolute',
+                  top: row.top + 'px',
+                  left: 0,
+                  width: '100%',
+                  display: 'flex',
+                  gap: '12px',
+                  padding: '6px'
+                }"
+              >
+                <LibraryTrackCard
+                  v-for="card in row.tracks"
+                  :key="card.path"
+                  :track="card"
+                  :show-playlist="true"
+                  @play="playTrack"
+                  @edit="editingTrack = $event"
+                />
+              </div>
             </div>
           </div>
-        </template>
-      </template>
+          </template>   <!-- /tracks grid -->
+        </template>   <!-- /tracks else (has tracks) -->
+      </template>   <!-- /tracks tab -->
 
       <!-- Video -->
       <template v-else-if="tab === 'video'">
@@ -459,13 +594,65 @@ function onMBApply(data: {
             <span class="text-xs text-fg-faint"
               >{{ filteredVideo.length }} {{ $t('library.files') }}</span
             >
-            <button
-              class="flex items-center gap-1 px-3 py-1 rounded-lg bg-accent-ghost text-accent-base text-xs font-medium hover:bg-accent-base hover:text-white transition-colors"
-              @click="playAllVideo"
-            >
-              <Film :size="12" /> {{ $t('library.playAll') }}
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                class="p-1.5 rounded-lg transition-colors"
+                :class="viewMode === 'list' ? 'bg-accent-ghost text-accent-base' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'"
+                :title="$t('library.viewModeList')"
+                @click="setViewMode('list')"
+              >
+                <LayoutList :size="14" />
+              </button>
+              <button
+                class="p-1.5 rounded-lg transition-colors"
+                :class="viewMode === 'grid' ? 'bg-accent-ghost text-accent-base' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'"
+                :title="$t('library.viewModeGrid')"
+                @click="setViewMode('grid')"
+              >
+                <LayoutGrid :size="14" />
+              </button>
+              <button
+                class="flex items-center gap-1 px-3 py-1 rounded-lg bg-accent-ghost text-accent-base text-xs font-medium hover:bg-accent-base hover:text-white transition-colors"
+                @click="playAllVideo"
+              >
+                <Film :size="12" /> {{ $t('library.playAll') }}
+              </button>
+            </div>
           </div>
+
+          <!-- Video: list mode -->
+          <template v-if="viewMode === 'list'">
+          <div ref="videoListRef" class="flex-1 overflow-auto">
+            <div
+              :style="{
+                height: videoListVirtualizer.getTotalSize() + 'px',
+                width: '100%',
+                position: 'relative'
+              }"
+            >
+              <div
+                v-for="v in videoListVirtualizer.getVirtualItems()"
+                :key="'vl-' + v.key"
+                :style="{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: v.size + 'px',
+                  transform: 'translateY(' + v.start + 'px)'
+                }"
+              >
+                <LibraryVideoRow
+                  :track="filteredVideo[v.index]"
+                  @play="playTrack"
+                />
+              </div>
+            </div>
+          </div>
+          </template>
+
+          <!-- Video: grid mode -->
+          <template v-else>
           <div ref="videoGridRef" class="flex-1 overflow-auto p-4">
             <div
               :style="{ height: videoRowVirtualizer.getTotalSize() + 'px', position: 'relative' }"
@@ -492,6 +679,7 @@ function onMBApply(data: {
               </div>
             </div>
           </div>
+          </template>
         </template>
       </template>
 
@@ -562,24 +750,75 @@ function onMBApply(data: {
           <Mic2 :size="48" class="opacity-30" />
           <p class="text-sm">{{ $t('library.noArtists') }}</p>
         </div>
-        <div v-else class="grid gap-3 p-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          <button
-            v-for="[name, tracks] in filteredArtists"
-            :key="name"
-            class="flex flex-col items-center p-4 rounded-xl bg-bg-elevated border border-border-default hover:bg-bg-hover transition-all text-center"
-            @click="playTracks(tracks)"
+        <template v-else>
+          <div
+            class="flex items-center justify-between px-4 py-2 border-b border-border-default shrink-0"
           >
-            <div
-              class="w-16 h-16 rounded-full bg-accent-ghost flex items-center justify-center mb-2"
+            <span class="text-xs text-fg-faint"
+              >{{ filteredArtists.length }} {{ $t('library.tracksCount') }}</span
             >
-              <Mic2 :size="24" class="text-accent-base" />
+            <div class="flex items-center gap-2">
+              <button
+                class="p-1.5 rounded-lg transition-colors"
+                :class="viewMode === 'list' ? 'bg-accent-ghost text-accent-base' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'"
+                :title="$t('library.viewModeList')"
+                @click="setViewMode('list')"
+              >
+                <LayoutList :size="14" />
+              </button>
+              <button
+                class="p-1.5 rounded-lg transition-colors"
+                :class="viewMode === 'grid' ? 'bg-accent-ghost text-accent-base' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'"
+                :title="$t('library.viewModeGrid')"
+                @click="setViewMode('grid')"
+              >
+                <LayoutGrid :size="14" />
+              </button>
             </div>
-            <div class="text-sm font-medium truncate w-full">{{ name }}</div>
-            <div class="text-xs text-fg-faint mt-0.5">
-              {{ tracks.length }} {{ $t('library.tracksCount') }}
+          </div>
+
+          <!-- Artists: list mode -->
+          <template v-if="viewMode === 'list'">
+          <div class="flex-1 overflow-auto">
+            <div
+              v-for="[name, tracks] in filteredArtists"
+              :key="name"
+              class="flex items-center gap-3 px-4 py-2 hover:bg-bg-hover transition-colors cursor-pointer"
+              @click="playTracks(tracks)"
+            >
+              <div class="w-8 h-8 rounded-full bg-accent-ghost flex items-center justify-center shrink-0">
+                <Mic2 :size="14" class="text-accent-base" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium truncate">{{ name }}</div>
+                <div class="text-xs text-fg-faint">{{ tracks.length }} {{ $t('library.tracksCount') }}</div>
+              </div>
             </div>
-          </button>
-        </div>
+          </div>
+          </template>
+
+          <!-- Artists: grid mode -->
+          <template v-else>
+          <div class="grid gap-3 p-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 overflow-auto flex-1">
+            <button
+              v-for="[name, tracks] in filteredArtists"
+              :key="name"
+              class="flex flex-col items-center p-4 rounded-xl bg-bg-elevated border border-border-default hover:bg-bg-hover transition-all text-center"
+              @click="playTracks(tracks)"
+            >
+              <div
+                class="w-16 h-16 rounded-full bg-accent-ghost flex items-center justify-center mb-2"
+              >
+                <Mic2 :size="24" class="text-accent-base" />
+              </div>
+              <div class="text-sm font-medium truncate w-full">{{ name }}</div>
+              <div class="text-xs text-fg-faint mt-0.5">
+                {{ tracks.length }} {{ $t('library.tracksCount') }}
+              </div>
+            </button>
+          </div>
+          </template>
+        </template>
       </template>
 
       <!-- Albumy -->
@@ -592,6 +831,73 @@ function onMBApply(data: {
           <p class="text-sm">{{ $t('library.noAlbums') }}</p>
         </div>
         <template v-else>
+          <div
+            class="flex items-center justify-between px-4 py-2 border-b border-border-default shrink-0"
+          >
+            <span class="text-xs text-fg-faint"
+              >{{ filteredAlbums.length }} {{ $t('library.tracksCount') }}</span
+            >
+            <div class="flex items-center gap-2">
+              <button
+                class="p-1.5 rounded-lg transition-colors"
+                :class="viewMode === 'list' ? 'bg-accent-ghost text-accent-base' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'"
+                :title="$t('library.viewModeList')"
+                @click="setViewMode('list')"
+              >
+                <LayoutList :size="14" />
+              </button>
+              <button
+                class="p-1.5 rounded-lg transition-colors"
+                :class="viewMode === 'grid' ? 'bg-accent-ghost text-accent-base' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'"
+                :title="$t('library.viewModeGrid')"
+                @click="setViewMode('grid')"
+              >
+                <LayoutGrid :size="14" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Albums: list mode -->
+          <template v-if="viewMode === 'list'">
+          <div ref="albumListRef" class="flex-1 overflow-auto">
+            <div
+              :style="{
+                height: albumListVirtualizer.getTotalSize() + 'px',
+                width: '100%',
+                position: 'relative'
+              }"
+            >
+              <div
+                v-for="v in albumListVirtualizer.getVirtualItems()"
+                :key="'al-' + v.key"
+                :style="{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: v.size + 'px',
+                  transform: 'translateY(' + v.start + 'px)'
+                }"
+              >
+                <div
+                  class="flex items-center gap-3 px-4 py-2 hover:bg-bg-hover transition-colors cursor-pointer h-full"
+                  @click="playTracks(filteredAlbums[v.index][1])"
+                >
+                  <div class="w-8 h-8 rounded-lg bg-accent-ghost flex items-center justify-center shrink-0">
+                    <Disc3 :size="14" class="text-accent-base" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium truncate">{{ filteredAlbums[v.index][0] }}</div>
+                    <div class="text-xs text-fg-faint">{{ filteredAlbums[v.index][1].length }} {{ $t('library.tracksCount') }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          </template>
+
+          <!-- Albums: grid mode -->
+          <template v-else>
           <div ref="albumGridRef" class="flex-1 overflow-auto p-4">
             <div
               :style="{ height: albumRowVirtualizer.getTotalSize() + 'px', position: 'relative' }"
@@ -619,6 +925,7 @@ function onMBApply(data: {
               </div>
             </div>
           </div>
+          </template>
         </template>
       </template>
 

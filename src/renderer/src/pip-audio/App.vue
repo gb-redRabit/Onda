@@ -87,7 +87,12 @@ const pipAlpha = computed(() => {
 })
 
 function showMain() {
-  api?.send('audio-pip:showMain')
+  if (api) {
+    api.send('audio-pip:showMain')
+  } else {
+    // fallback: try direct IPC
+    try { (window as any).electron?.ipcRenderer?.send('audio-pip:showMain') } catch {}
+  }
 }
 
 function send(action: string) {

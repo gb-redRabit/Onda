@@ -232,6 +232,8 @@ export class AudioPipManager {
     ipcMain.on('audio-pip:showMain', () => {
       if (this.mainWindow && !this.mainWindow.isDestroyed()) {
         if (this.mainWindow.isMinimized()) this.mainWindow.restore();
+        this.mainWindow.show();
+        this.mainWindow.moveTop();
         this.mainWindow.focus();
       }
     });

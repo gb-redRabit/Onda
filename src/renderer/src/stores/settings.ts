@@ -5,6 +5,7 @@ import type {
   AppearanceSettings,
   PlaybackSettings,
   ExplorerSettings,
+  LibrarySettings,
   DownloadSettings,
   NetworkSettings,
   ApiKeySettings,
@@ -17,6 +18,7 @@ import {
   DEFAULT_PLAYBACK,
   DEFAULT_DOWNLOAD,
   DEFAULT_EXPLORER,
+  DEFAULT_LIBRARY,
   DEFAULT_SHORTCUTS,
   DEFAULT_NETWORK,
   DEFAULT_API_KEYS,
@@ -28,6 +30,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const appearance = ref<AppearanceSettings>({ ...DEFAULT_APPEARANCE });
   const playback = ref<PlaybackSettings>({ ...DEFAULT_PLAYBACK });
   const explorer = ref<ExplorerSettings>({ ...DEFAULT_EXPLORER });
+  const library = ref<LibrarySettings>({ ...DEFAULT_LIBRARY });
   const download = ref<DownloadSettings>({ ...DEFAULT_DOWNLOAD });
   const shortcuts = ref<Record<string, string>>({ ...DEFAULT_SHORTCUTS });
   const network = ref<NetworkSettings>({ ...DEFAULT_NETWORK });
@@ -49,6 +52,7 @@ export const useSettingsStore = defineStore('settings', () => {
       if (data.appearance) appearance.value = data.appearance;
       if (data.playback) playback.value = data.playback;
       if (data.explorer) explorer.value = data.explorer;
+      if (data.library) library.value = data.library;
       if (data.download) download.value = data.download;
         if (data.shortcuts) shortcuts.value = data.shortcuts;
         if (data.network) network.value = data.network;
@@ -68,10 +72,11 @@ export const useSettingsStore = defineStore('settings', () => {
   const _save = async () => {
     try {
       if (window.api) {
-        await window.api.invoke('settings:set', {
+        const payload = JSON.parse(JSON.stringify({
           appearance: appearance.value,
           playback: playback.value,
           explorer: explorer.value,
+          library: library.value,
           download: download.value,
           shortcuts: shortcuts.value,
           network: network.value,
@@ -79,10 +84,11 @@ export const useSettingsStore = defineStore('settings', () => {
           updates: updates.value,
           toast: toast.value,
           dependencies: dependencies.value
-        });
+        }));
+        await window.api.invoke('settings:set', payload);
       }
     } catch {
-      // silent fail
+      // silent
     }
   };
 
@@ -146,10 +152,16 @@ export const useSettingsStore = defineStore('settings', () => {
     save();
   }
 
+  function updateLibrary(partial: Partial<LibrarySettings>) {
+    Object.assign(library.value, partial);
+    save();
+  }
+
   return {
     appearance,
     playback,
     explorer,
+    library,
     download,
     shortcuts,
     network,
@@ -164,6 +176,7 @@ export const useSettingsStore = defineStore('settings', () => {
     updateAppearance,
     updatePlayback,
     updateExplorer,
+    updateLibrary,
     updateDownload,
     updateShortcut,
     resetToDefaults,

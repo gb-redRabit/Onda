@@ -1,7 +1,12 @@
+export interface LibrarySettings {
+  viewModes: Record<string, 'list' | 'grid'>;
+}
+
 export interface AppSettings {
   appearance: AppearanceSettings;
   playback: PlaybackSettings;
   explorer: ExplorerSettings;
+  library: LibrarySettings;
   download: DownloadSettings;
   shortcuts: ShortcutSettings;
   network: NetworkSettings;

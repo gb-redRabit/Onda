@@ -62,6 +62,26 @@ function maximize() { window.api.invoke('window:maximize'); isMaximized.value = 
 function closeWin() { window.api.invoke('window:close'); }
 function quitApp() { window.api.invoke('app:quit'); }
 
+function onKeydown(e: KeyboardEvent) {
+  if (!e.altKey || e.ctrlKey || e.metaKey) return;
+  const map: Record<string, string> = {
+    '1': '/',
+    '2': '/library',
+    '3': '/explorer',
+    '4': '/youtube',
+    '5': '/downloads',
+    '6': '/settings'
+  };
+  const path = map[e.key];
+  if (path) {
+    e.preventDefault();
+    router.push(path);
+  }
+}
+
+onMounted(() => document.addEventListener('keydown', onKeydown));
+onUnmounted(() => document.removeEventListener('keydown', onKeydown));
+
 window.api.on('window:maximized', (val: unknown) => { isMaximized.value = val as boolean; });
 </script>
 
@@ -116,11 +136,13 @@ window.api.on('window:maximized', (val: unknown) => { isMaximized.value = val as
           v-if="openDropdown === 'view'"
           class="absolute top-full left-0 mt-0.5 bg-bg-elevated border border-border-subtle rounded-xl shadow-2xl shadow-black/40 py-1.5 min-w-48 z-50"
         >
-          <button class="w-full px-3 py-1.5 text-left text-xs text-fg-muted hover:bg-accent-ghost hover:text-accent-base transition-colors" @click="router.push('/'); closeDropdown()">{{ t('menu.home') }}</button>
-          <button class="w-full px-3 py-1.5 text-left text-xs text-fg-muted hover:bg-accent-ghost hover:text-accent-base transition-colors" @click="router.push('/library'); closeDropdown()">{{ t('menu.library') }}</button>
-          <button class="w-full px-3 py-1.5 text-left text-xs text-fg-muted hover:bg-accent-ghost hover:text-accent-base transition-colors" @click="router.push('/explorer'); closeDropdown()">{{ t('menu.explorer') }} <span class="ml-2 text-[10px] text-fg-faint font-mono">Ctrl+E</span></button>
+          <button class="w-full px-3 py-1.5 text-left text-xs text-fg-muted hover:bg-accent-ghost hover:text-accent-base transition-colors flex items-center gap-2" @click="router.push('/'); closeDropdown()">{{ t('menu.home') }} <span class="ml-auto text-[10px] text-fg-faint font-mono">Alt+1</span></button>
+          <button class="w-full px-3 py-1.5 text-left text-xs text-fg-muted hover:bg-accent-ghost hover:text-accent-base transition-colors flex items-center gap-2" @click="router.push('/library'); closeDropdown()">{{ t('menu.library') }} <span class="ml-auto text-[10px] text-fg-faint font-mono">Alt+2</span></button>
+          <button class="w-full px-3 py-1.5 text-left text-xs text-fg-muted hover:bg-accent-ghost hover:text-accent-base transition-colors flex items-center gap-2" @click="router.push('/explorer'); closeDropdown()">{{ t('menu.explorer') }} <span class="ml-auto text-[10px] text-fg-faint font-mono">Alt+3</span></button>
+          <button class="w-full px-3 py-1.5 text-left text-xs text-fg-muted hover:bg-accent-ghost hover:text-accent-base transition-colors flex items-center gap-2" @click="router.push('/youtube'); closeDropdown()">{{ t('menu.youtube') }} <span class="ml-auto text-[10px] text-fg-faint font-mono">Alt+4</span></button>
+          <button class="w-full px-3 py-1.5 text-left text-xs text-fg-muted hover:bg-accent-ghost hover:text-accent-base transition-colors flex items-center gap-2" @click="router.push('/downloads'); closeDropdown()">{{ t('menu.downloads') }} <span class="ml-auto text-[10px] text-fg-faint font-mono">Alt+5</span></button>
           <div class="border-t border-border-default my-1 mx-2" />
-          <button class="w-full px-3 py-1.5 text-left text-xs text-fg-muted hover:bg-accent-ghost hover:text-accent-base transition-colors" @click="router.push('/settings'); closeDropdown()">{{ t('menu.settings') }} <span class="ml-2 text-[10px] text-fg-faint font-mono">Ctrl+,</span></button>
+          <button class="w-full px-3 py-1.5 text-left text-xs text-fg-muted hover:bg-accent-ghost hover:text-accent-base transition-colors flex items-center gap-2" @click="router.push('/settings'); closeDropdown()">{{ t('menu.settings') }} <span class="ml-auto text-[10px] text-fg-faint font-mono">Alt+6</span></button>
         </div>
       </div>
     </div>

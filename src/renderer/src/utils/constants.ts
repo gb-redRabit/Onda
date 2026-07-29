@@ -52,6 +52,7 @@ export const ALL_MEDIA_FORMATS = [
 import type {
   NetworkSettings,
   ExplorerSettings,
+  LibrarySettings,
   ApiKeySettings,
   UpdateSettings,
   ToastSettings
@@ -61,6 +62,15 @@ export const DEFAULT_NETWORK: NetworkSettings = {
   proxy: { enabled: false, type: 'http', host: '', port: 8080 },
   downloadSpeedLimit: 0,
   userAgent: ''
+};
+
+export const DEFAULT_LIBRARY: LibrarySettings = {
+  viewModes: {
+    tracks: 'list',
+    video: 'grid',
+    albums: 'grid',
+    artists: 'grid'
+  }
 };
 
 export const DEFAULT_EXPLORER: ExplorerSettings = {
