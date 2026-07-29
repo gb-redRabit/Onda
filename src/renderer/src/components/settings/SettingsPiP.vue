@@ -155,6 +155,20 @@ watch(
           "
         />
       </div>
+
+      <div class="flex items-center justify-between pt-3 border-t border-border-default">
+        <span class="text-sm">{{ $t('settings.pipPreBuffer') }}</span>
+        <button
+          class="w-10 h-6 rounded-full transition-colors relative"
+          :class="settings.playback.pipPreBuffer ? 'bg-accent-base' : 'bg-bg-hover'"
+          @click="settings.updatePlayback({ pipPreBuffer: !settings.playback.pipPreBuffer })"
+        >
+          <div
+            class="w-4 h-4 rounded-full bg-white absolute top-1 transition-all"
+            :class="settings.playback.pipPreBuffer ? 'left-5' : 'left-1'"
+          />
+        </button>
+      </div>
     </div>
 
     <!-- Audio PiP -->

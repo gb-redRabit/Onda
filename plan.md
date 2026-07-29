@@ -72,12 +72,10 @@
 - [x] `pip-manager.ts` — handler `pip:theme`, przechowywanie cssVars
 - [x] `App.vue` — `applyTheme()` wysyła `themeVars` do video PiP (`pip:theme`)
 - [x] Usunięto logi debug: `extractEmbedded`, `dump_all failed`, `extracted fonts`
-- Pre-buffer: zacząć buforować video w pip.html ZANIM okno jest widoczne
-- Synchronizacja seek: gdy PiP startuje, od razu seek do `player.currentTime`
-- Przyciski w pip.html:
-  - Maximize → zamknij PiP, otwórz `/player` z danym trackiem
-  - Settings → overlay z filtrami/napisami
-- `SettingsPiP.vue` — dodać opcje pre-buffera
+- [x] Pre-buffer: ustawienie `pipPreBuffer` w settings + automatyczne `pip.preload()` przy `setupVideo()`
+- [x] Przycisk Maximize (&#x26F6;) w PiP → wysyła `pip:maximize` → zamyka PiP, wznawia w `/player`
+- [x] Przycisk Settings (&#x2699;) w PiP → overlay z toggle napisów, suwakami brightness/contrast (CSS filter)
+- [x] `SettingsPiP.vue` — toggle Pre-buffer video
 
 ---
 

@@ -119,6 +119,17 @@ export function useVideoPlayer(ctx: {
 
       el.load();
       checkVideoAudioCodec(track, el);
+
+      // pre-buffer for PiP
+      if (settings.playback.pipPreBuffer && track && !player.pipActive) {
+        if (track.type === 'video') {
+          preparePiPSubtitleData(track.path).then((subtitleData) => {
+            pip.preload(src, subtitleData);
+          });
+        } else {
+          pip.preload(src, null);
+        }
+      }
     } else {
       el.volume = player.isMuted ? 0 : player.volume;
       el.playbackRate = settings.playback.playbackSpeed;

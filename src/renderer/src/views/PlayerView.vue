@@ -49,6 +49,18 @@ const pip = usePiP({
     } else {
       pip.stop();
     }
+  },
+  onMaximize(time) {
+    pip.stop();
+    player.pipActive = false;
+    if (vp.videoRef.value) {
+      vp.videoRef.value.currentTime = time;
+      player.currentTime = time;
+      vp.videoRef.value.play().catch(() => {});
+    }
+    player.isPlaying = true;
+    vp.syncSubtitlesWithPiP();
+    router.push('/player');
   }
 });
 

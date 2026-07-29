@@ -8,7 +8,7 @@ export interface PiPSubtitleData {
   availableFonts: Record<string, string>;
 }
 
-export function usePiP(callbacks?: { onClosed?: (time: number) => void; onEnded?: () => void }) {
+export function usePiP(callbacks?: { onClosed?: (time: number) => void; onEnded?: () => void; onMaximize?: (time: number) => void }) {
   const isActive = ref(false);
   const currentTime = ref(0);
 
@@ -29,6 +29,12 @@ export function usePiP(callbacks?: { onClosed?: (time: number) => void; onEnded?
     cleanups.push(
       window.api.on('pip:ended', () => {
         callbacks?.onEnded?.();
+      })
+    );
+
+    cleanups.push(
+      window.api.on('pip:maximize', (time: unknown) => {
+        callbacks?.onMaximize?.((time as number) || 0);
       })
     );
   });

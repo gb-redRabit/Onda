@@ -34,3 +34,20 @@ html, body, #app {
   padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
+
+.top-btn {
+  background: rgba(0,0,0,0.6);
+  color: var(--color-fg-faint, #aaa);
+}
+.top-btn:hover {
+  background: rgba(0,0,0,0.8);
+  color: var(--color-fg-base, #fff);
+}
+.close-btn {
+  background: rgba(0,0,0,0.6);
+  color: var(--color-fg-faint, #aaa);
+}
+.close-btn:hover {
+  background: rgba(229,62,62,0.9);
+  color: #fff;
+}

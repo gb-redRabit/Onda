@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import JASSUB from 'jassub'
 import wasmUrl from 'jassub/dist/wasm/jassub-worker.wasm?url'
 import modernWasmUrl from 'jassub/dist/wasm/jassub-worker-modern.wasm?url'
@@ -19,10 +19,22 @@ const currentTime = ref('0:00')
 const duration = ref('0:00')
 const progress = ref(0)
 const showOverlay = ref(false)
+const settingsOpen = ref(false)
+const subsVisible = ref(true)
+const brightness = ref(100)
+const contrast = ref(100)
 let pendingStart = 0
 let waitingForPlay = false
 let jassub: any = null
+let lastSubtitleData: PipSubtitleData | null = null
 let cleanups: (() => void)[] = []
+
+const videoFilter = computed(() => {
+  const parts: string[] = []
+  if (brightness.value !== 100) parts.push(`brightness(${brightness.value}%)`)
+  if (contrast.value !== 100) parts.push(`contrast(${contrast.value}%)`)
+  return parts.length > 0 ? parts.join(' ') : 'none'
+})
 
 function fmt(t: number): string {
   if (!t || !isFinite(t)) return '0:00'
@@ -74,6 +86,15 @@ function clearSubtitle() {
   if (jassub) { jassub.destroy(); jassub = null }
 }
 
+function toggleSubtitles() {
+  subsVisible.value = !subsVisible.value
+  if (subsVisible.value && lastSubtitleData) {
+    loadSubtitle(lastSubtitleData)
+  } else {
+    clearSubtitle()
+  }
+}
+
 function uint8ToBase64(bytes: Uint8Array): string {
   const chars = new Array(bytes.length)
   for (let i = 0; i < bytes.length; i++) chars[i] = String.fromCharCode(bytes[i])
@@ -107,6 +128,10 @@ function onProgressClick(e: MouseEvent) {
   v.currentTime = ((e.clientX - r.left) / r.width) * v.duration
 }
 
+function sendMaximize() {
+  api?.send('pip:maximize', videoRef.value?.currentTime || 0)
+}
+
 onMounted(() => {
   const v = videoRef.value
   if (v) v.crossOrigin = 'anonymous'
@@ -117,6 +142,7 @@ onMounted(() => {
     const { src, start } = args[0] as { src: string; start: number }
     pendingStart = start || 0
     waitingForPlay = true
+    lastSubtitleData = null
     if (videoRef.value) videoRef.value.src = src
   })
   cleanups.push(c1)
@@ -144,6 +170,7 @@ onMounted(() => {
   const c5 = api.on('pip:clear', () => {
     clearSubtitle()
     waitingForPlay = false
+    lastSubtitleData = null
     const v = videoRef.value
     if (!v) return
     v.pause()
@@ -154,12 +181,16 @@ onMounted(() => {
 
   const c6 = api.on('pip:subtitle', (...args: unknown[]) => {
     const data = args[0] as PipSubtitleData | null
-    if (data && data.subContent) loadSubtitle(data)
+    lastSubtitleData = data
+    if (data && data.subContent && subsVisible.value) loadSubtitle(data)
     else clearSubtitle()
   })
   cleanups.push(c6)
 
-  const c7 = api.on('pip:clearSubtitle', () => clearSubtitle())
+  const c7 = api.on('pip:clearSubtitle', () => {
+    clearSubtitle()
+    lastSubtitleData = null
+  })
   cleanups.push(c7)
 
   const c8 = api.on('pip:theme', (...args: unknown[]) => {
@@ -179,26 +210,81 @@ onUnmounted(() => {
   <div
     class="relative w-full h-full flex flex-col bg-black select-none"
     @mouseenter="showOverlay = true"
-    @mouseleave="showOverlay = false"
+    @mouseleave="showOverlay = false; settingsOpen = false"
   >
     <video
       ref="videoRef"
       class="flex-1 w-full object-contain bg-black"
+      :style="videoFilter !== 'none' ? { filter: videoFilter } : {}"
       preload="auto"
       @loadedmetadata="onVideoMeta"
       @timeupdate="onTimeUpdate"
       @ended="onVideoEnded"
     />
 
-    <button
-      class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center z-10 border-none cursor-pointer transition-all duration-150"
-      :style="{
-        background: showOverlay ? 'rgba(229,62,62,0.9)' : 'rgba(0,0,0,0.6)',
-        color: showOverlay ? '#fff' : 'var(--color-fg-faint, #aaa)',
-        opacity: showOverlay ? 1 : 0
-      }"
-      @click="api?.send('pip:hidden')"
-    >&#x2715;</button>
+    <!-- close + maximize + settings buttons -->
+    <div
+      class="absolute top-1.5 right-1.5 flex gap-1 z-10 transition-opacity duration-150"
+      :style="{ opacity: showOverlay ? 1 : 0 }"
+    >
+      <button
+        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[11px] top-btn"
+        @click="settingsOpen = !settingsOpen"
+        title="Settings"
+      >&#x2699;</button>
+      <button
+        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[10px] top-btn"
+        @click="sendMaximize"
+        title="Maximize"
+      >&#x26F6;</button>
+      <button
+        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[11px] close-btn"
+        @click="api?.send('pip:hidden')"
+        title="Close"
+      >&#x2715;</button>
+    </div>
+
+    <!-- settings overlay -->
+    <div
+      v-if="settingsOpen"
+      class="absolute top-9 right-1.5 z-20 rounded-lg p-3 min-w-44"
+      :style="{ background: 'var(--color-bg-overlay, #1e1e2e)', border: '1px solid var(--color-border-default, #2a2a40)' }"
+    >
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-[11px]" :style="{ color: 'var(--color-fg-base, #e8e8f0)' }">Subtitles</span>
+        <button
+          class="w-8 h-4.5 rounded-full transition-colors relative"
+          :class="subsVisible ? 'bg-accent-base' : ''"
+          :style="!subsVisible ? { background: 'var(--color-bg-hover, #2e2e42)' } : {}"
+          @click="toggleSubtitles"
+        >
+          <div
+            class="w-3 h-3 rounded-full bg-white absolute top-0.5 transition-all"
+            :class="subsVisible ? 'left-4' : 'left-0.5'"
+          />
+        </button>
+      </div>
+      <div class="mb-1.5">
+        <span class="text-[10px]" :style="{ color: 'var(--color-fg-faint, #6a6a84)' }">Brightness {{ brightness }}%</span>
+        <input
+          type="range" min="10" max="200" step="5"
+          :value="brightness"
+          class="w-full h-0.75"
+          :style="{ background: 'var(--color-bg-hover, #2e2e42)' }"
+          @input="brightness = parseInt(($event.target as HTMLInputElement).value)"
+        />
+      </div>
+      <div>
+        <span class="text-[10px]" :style="{ color: 'var(--color-fg-faint, #6a6a84)' }">Contrast {{ contrast }}%</span>
+        <input
+          type="range" min="10" max="200" step="5"
+          :value="contrast"
+          class="w-full h-0.75"
+          :style="{ background: 'var(--color-bg-hover, #2e2e42)' }"
+          @input="contrast = parseInt(($event.target as HTMLInputElement).value)"
+        />
+      </div>
+    </div>
 
     <div class="absolute bottom-2 left-2 text-[10px] font-mono pointer-events-none" :style="{ color: 'var(--color-fg-faint, rgba(255,255,255,0.5))' }">{{ currentTime }}</div>
 

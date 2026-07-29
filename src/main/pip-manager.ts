@@ -133,6 +133,15 @@ export class PipManager {
       this.cssVars = vars;
       this.sendToRenderer('pip:theme', vars);
     });
+
+    ipcMain.on('pip:maximize', (_event, time: number) => {
+      this.lastTime = time || 0;
+      this.stopTimeTracking();
+      if (this.window && !this.window.isDestroyed()) {
+        this.window.hide();
+      }
+      this.mainWindow?.webContents.send('pip:maximize', this.lastTime);
+    });
   }
 
   private sendToRenderer(channel: string, ...args: unknown[]): void {
@@ -354,6 +363,7 @@ export class PipManager {
     ipcMain.removeAllListeners('pip:timeUpdate');
     ipcMain.removeAllListeners('pip:ended');
     ipcMain.removeAllListeners('pip:theme');
+    ipcMain.removeAllListeners('pip:maximize');
   }
 }
 

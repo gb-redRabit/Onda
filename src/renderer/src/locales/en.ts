@@ -118,6 +118,7 @@ export default {
     pipPreview: 'PiP Preview',
     closePreview: 'Close preview',
     showPreview: 'Show preview',
+    pipPreBuffer: 'Pre-buffer video in PiP',
     width: 'Width:',
     height: 'Height:',
     topLeft: 'Top left',

@@ -47,6 +47,7 @@ export interface PlaybackSettings {
   pipPosition: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
   pipWidth: number;
   pipHeight: number;
+  pipPreBuffer: boolean;
   cursorHide: boolean;
   cursorTimeout: number;
   playbackSpeed: number;

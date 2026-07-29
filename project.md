@@ -1839,11 +1839,11 @@ media-server.ts (94 linie)
 
 ---
 
-### 18.14 Sprint 11 — Video PiP: Vue + theme reactivity + log cleanup (2026-07-29)
+### 18.14 Sprint 11 — Video PiP: Vue + theme reactivity + controls + pre-buffer (2026-07-29)
 
 **Video PiP przerobiony na Vue:**
-- `pip-video/App.vue` — komponent Vue z `<video>`, overlay UI (close, czas, progress bar), JASSUB subtitle integration
-- `pip-video/style.css` — Tailwind + `@theme` ze zmiennymi kolorów (identyczny zestaw jak audio PiP)
+- `pip-video/App.vue` — komponent Vue z `<video>`, overlay UI (close, maximize, settings), JASSUB subtitle integration
+- `pip-video/style.css` — Tailwind + `@theme` ze zmiennymi kolorów + style `.top-btn`/`.close-btn`
 - `pip-video-main.ts` — entry point: `createApp(PipVideoApp).mount('#app')`
 - `pip.html` — zmieniony na `<div id="app">` + Vue entry (zamiast inline JS)
 - Usunięty stary `pip.ts` (197 linii, inline CSS + DOM)
@@ -1852,6 +1852,21 @@ media-server.ts (94 linie)
 **Theme propagation:**
 - `pip-manager.ts` — dodany handler `ipcMain.on('pip:theme')`, przechowywanie `cssVars`, wysyłanie do PiP przy `did-finish-load`
 - `App.vue` — `applyTheme()` wysyła `themeVars` do obu PiP: `audio-pip:theme` i `pip:theme`
+
+**Nowe przyciski w PiP:**
+- **Maximize** (&#x26F6;) — zamyka PiP, wznawia odtwarzanie w głównym oknie `/player` z zachowaniem czasu
+- **Settings** (&#x2699;) — otwiera overlay z:
+  - **Subtitles toggle** — włącz/wyłącz napisy (z zapamiętaniem ostatnich danych subtitle)
+  - **Brightness** — suwak 10-200% (CSS filter na `<video>`)
+  - **Contrast** — suwak 10-200% (CSS filter na `<video>`)
+
+**Pre-buffer:**
+- Nowe ustawienie `pipPreBuffer` (domyślnie `false`) w `PlaybackSettings`
+- Gdy włączone, `useVideoPlayer.setupVideo()` automatycznie woła `pip.preload()` z bieżącym wideo i napisami
+- PiP ładuje wideo w tle, gotowe do natychmiastowego pokazania
+
+**IPC:**
+- `pip:maximize` — PiP → main → renderer: zamyka PiP, otwiera `/player`, wznawia od `savedTime`
 
 **Czyszczenie logów:**
 - Usunięto 3 logi w `subtitle-handlers.ts`:
@@ -1863,14 +1878,21 @@ media-server.ts (94 linie)
 
 | Plik | Zmiana |
 |------|--------|
-| `src/renderer/src/pip-video/App.vue` | **NOWY** — Vue component z video, JASSUB, theme listener |
-| `src/renderer/src/pip-video/style.css` | **NOWY** — Tailwind + theme vars |
+| `src/renderer/src/pip-video/App.vue` | **NOWY** — Vue component: video, JASSUB, maximize, settings overlay, brightness/contrast filtry |
+| `src/renderer/src/pip-video/style.css` | **NOWY** — Tailwind + theme vars + `.top-btn`/`.close-btn` |
 | `src/renderer/src/pip-video-main.ts` | **NOWY** — entry point |
 | `src/renderer/pip.html` | Zmieniony na Vue mount |
-| `src/renderer/src/pip.ts` | **USUNIĘTY** (zastąpiony przez Vue) |
-| `src/main/pip-manager.ts` | +`pip:theme` handler, `cssVars` storage, send na `did-finish-load` |
+| `src/renderer/src/pip.ts` | **USUNIĘTY** |
+| `src/main/pip-manager.ts` | +`pip:theme`, `pip:maximize` handlers; cssVars storage; send na did-finish-load |
 | `src/renderer/src/App.vue` | `applyTheme()` wysyła też `pip:theme` |
 | `src/main/ipc/subtitle-handlers.ts` | Usunięto 3 logi |
+| `src/renderer/src/composables/usePiP.ts` | +`onMaximize` callback, listener `pip:maximize` |
+| `src/renderer/src/views/PlayerView.vue` | +`onMaximize`: stop PiP, seek, play, push `/player` |
+| `src/renderer/src/composables/useVideoPlayer.ts` | +pre-buffer: `pip.preload()` w `setupVideo()` gdy `pipPreBuffer` |
+| `src/renderer/src/types/settings.ts` | +`pipPreBuffer: boolean` |
+| `src/renderer/src/utils/constants.ts` | +`pipPreBuffer: false` |
+| `src/renderer/src/components/settings/SettingsPiP.vue` | +toggle Pre-buffer |
+| `src/renderer/src/locales/{en,pl}.ts` | +`pipPreBuffer` |
 
 ---
 

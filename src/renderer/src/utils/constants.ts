@@ -217,6 +217,7 @@ export const DEFAULT_PLAYBACK = {
   pipPosition: 'bottom-right' as const,
   pipWidth: 480,
   pipHeight: 290,
+  pipPreBuffer: false,
   cursorHide: true,
   cursorTimeout: 3,
   playbackSpeed: 1,
