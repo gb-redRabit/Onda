@@ -211,7 +211,8 @@ export default {
     pipWide: 'Szeroki',
     audioPipOpacity: 'Przezroczystość',
     audioPipAutoShow: 'Auto-pokazuj w tle',
-    audioPipPosition: 'Pozycja'
+    audioPipPosition: 'Pozycja',
+    audioViz: 'Wizualizacja'
   },
   status: {
     noMedia: 'Nie załadowano mediów',
@@ -273,7 +274,15 @@ export default {
     viewMedium: 'Średnie ikony',
     viewLarge: 'Duże ikony',
     viewExtraLarge: 'Bardzo duże ikony',
-    viewDetails: 'Szczegóły'
+    viewDetails: 'Szczegóły',
+    confirmBeforeMove: 'Potwierdź przed przenoszeniem plików',
+    moveConfirm: 'Przenieść {n} element(ów) do "{dir}"?',
+    copyConfirm: 'Skopiować {n} element(ów) do "{dir}"?',
+    moveAction: 'Przenieś',
+    copyAction: 'Kopiuj',
+    nItems: '{n} element(ów)',
+    alwaysOnTop: 'Zawsze na wierzchu',
+    libraryFolder: 'Folder biblioteki'
   },
   downloads: {
     title: 'Pobrane',

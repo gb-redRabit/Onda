@@ -20,6 +20,7 @@ export interface ExplorerSettings {
   viewMode: 'extraSmall' | 'small' | 'medium' | 'large' | 'extraLarge' | 'details';
   sortBy: 'name' | 'size' | 'type' | 'modified';
   sortOrder: 'asc' | 'desc';
+  confirmBeforeMove: boolean;
 }
 
 export interface AppearanceSettings {
@@ -41,6 +42,15 @@ export interface AppearanceSettings {
   audioPipPosition: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 }
 
+export type VisualizationMode = 'circle' | 'bars' | 'particles' | 'wave' | 'radial' | 'none';
+
+export interface VisualizationSettings {
+  mode: VisualizationMode;
+  primaryColor: string;
+  secondaryColor: string;
+  sensitivity: number;
+}
+
 export interface PlaybackSettings {
   defaultPlayer: 'html5' | 'vlc';
   normalization: boolean;
@@ -57,6 +67,7 @@ export interface PlaybackSettings {
   cursorTimeout: number;
   playbackSpeed: number;
   videoFilter: string;
+  visualization: VisualizationSettings;
 }
 
 export interface DownloadSettings {

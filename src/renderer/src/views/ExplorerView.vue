@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, shallowRef, triggerRef } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, shallowRef, triggerRef, provide } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useVirtualizer } from '@tanstack/vue-virtual';
 import {
   ChevronUp, ChevronDown,
-  HardDrive, FolderOpen, Plus, Pin, PinOff
+  HardDrive, FolderOpen, Plus, Pin, PinOff, X
 } from '@lucide/vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore, ContextMenuItem } from '@renderer/stores/ui';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
 import { logger } from '@renderer/utils/logger';
@@ -27,9 +28,14 @@ import type { MediaFile } from '@renderer/types/media';
 const explorer = useExplorerStore();
 const library = useLibraryStore();
 const player = usePlayerStore();
+const settings = useSettingsStore();
 const ui = useUIStore();
 const router = useRouter();
 const { t } = useI18n();
+
+const { showPrompt, showConfirm, promptVisible, promptIsConfirm, promptMessage, promptValue, promptConfirm, promptCancel, promptKeydown } = usePromptDialog();
+
+provide('showConfirm', showConfirm);
 
 const pinned = ref(false);
 
@@ -62,7 +68,15 @@ const containerWidth = ref(800);
 const selectionAnchorIndex = ref(-1);
 const extraSmallIcons = shallowRef<Record<string, string>>({});
 
-const { showPrompt, showConfirm, promptVisible, promptIsConfirm, promptMessage, promptValue, promptConfirm, promptCancel, promptKeydown } = usePromptDialog();
+// tab drag state
+const tabDropTargetIdx = ref(-1);
+const tabDragEnterCount = ref(0);
+const tabDropTimer = ref<ReturnType<typeof setTimeout> | null>(null);
+const hoveredFolderPath = ref<string | null>(null);
+
+// band select
+const bandSelect = ref<{ left: number; top: number; width: number; height: number } | null>(null);
+const bandOrigin = ref<{ clientX: number; clientY: number } | null>(null);
 
 const filteredFiles = computed(() => {
   const q = searchQuery.value.toLowerCase().trim();
@@ -149,7 +163,7 @@ const virtualizer = useVirtualizer(virtualizerOptions);
 let resizeObserver: ResizeObserver | null = null;
 
 onMounted(() => {
-  if (!explorer.currentPath) explorer.navigateTo('');
+  if (explorer.tabs.length === 0) explorer.addTab(explorer.currentPath || '');
   window.addEventListener('wheel', onWheel, { passive: false });
   window.addEventListener('keydown', handleKeydown);
   if (scrollRef.value) {
@@ -376,7 +390,8 @@ function handleContextMenu(event: MouseEvent, item: FileItem) {
 }
 
 async function deleteItem(item: FileItem) {
-  if (!confirm(t('explorer.deleteConfirm', { name: item.name }))) return;
+  const ok = await showConfirm(t('explorer.deleteConfirm', { name: item.name }));
+  if (!ok) return;
   await window.api?.invoke('fs:delete', item.path);
   explorer.loadFiles(explorer.currentPath);
 }
@@ -388,12 +403,161 @@ async function renameItem(item: FileItem) {
     explorer.loadFiles(explorer.currentPath);
   }
 }
+
+// --- content area drag & drop ---
+function onContentDragOver(e: DragEvent) {
+  if (e.dataTransfer) e.dataTransfer.dropEffect = (e.ctrlKey || e.metaKey) ? 'copy' : 'move';
+  const el = (e.target as HTMLElement)?.closest('[data-folder-path]');
+  if (el) {
+    hoveredFolderPath.value = el.getAttribute('data-folder-path');
+  } else {
+    hoveredFolderPath.value = null;
+  }
+}
+
+function onContentDragLeave(e: DragEvent) {
+  const el = (e.target as HTMLElement)?.closest('[data-folder-path]');
+  if (!el) hoveredFolderPath.value = null;
+}
+
+async function onContentDrop(e: DragEvent) {
+  e.preventDefault();
+  const raw = e.dataTransfer?.getData('text/plain') || '';
+  const paths = raw.split('\n').filter(Boolean);
+  const targetDir = hoveredFolderPath.value || explorer.currentPath;
+  hoveredFolderPath.value = null;
+  if (paths.length === 0) return;
+  const ctrl = e.ctrlKey || e.metaKey;
+  if (settings.explorer.confirmBeforeMove) {
+    const key = ctrl ? 'explorer.copyConfirm' : 'explorer.moveConfirm';
+    const ok = await showConfirm(t(key, { n: paths.length, dir: targetDir.split('\\').pop() || targetDir }));
+    if (!ok) return;
+  }
+  const method = ctrl ? 'fs:copy' : 'fs:move';
+  await window.api?.invoke(method, paths, targetDir);
+  explorer.loadFiles(explorer.currentPath);
+}
+
+// --- tab drag & drop ---
+function onTabDragOver(e: DragEvent, idx: number) {
+  e.preventDefault();
+  if (e.dataTransfer) e.dataTransfer.dropEffect = (e.ctrlKey || e.metaKey) ? 'copy' : 'move';
+  tabDropTargetIdx.value = idx;
+  if (idx !== explorer.activeTabIndex && tabDropTimer.value === null) {
+    tabDropTimer.value = setTimeout(() => {
+      explorer.switchTab(idx);
+      tabDropTimer.value = null;
+    }, 600);
+  }
+}
+
+function onTabDragEnter(_e: DragEvent, idx: number) {
+  tabDragEnterCount.value++;
+  tabDropTargetIdx.value = idx;
+}
+
+function onTabDragLeave() {
+  tabDragEnterCount.value--;
+  if (tabDragEnterCount.value <= 0) {
+    tabDragEnterCount.value = 0;
+    tabDropTargetIdx.value = -1;
+  }
+}
+
+async function onTabDrop(e: DragEvent, idx: number) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (tabDropTimer.value) { clearTimeout(tabDropTimer.value); tabDropTimer.value = null; }
+  tabDropTargetIdx.value = -1;
+  tabDragEnterCount.value = 0;
+  const raw = e.dataTransfer?.getData('text/plain') || '';
+  const paths = raw.split('\n').filter(Boolean);
+  if (paths.length === 0) return;
+  const targetPath = explorer.tabs[idx].path;
+  const ctrl = e.ctrlKey || e.metaKey;
+  if (settings.explorer.confirmBeforeMove) {
+    const key = ctrl ? 'explorer.copyConfirm' : 'explorer.moveConfirm';
+    const ok = await showConfirm(t(key, { n: paths.length, dir: targetPath.split('\\').pop() || targetPath }));
+    if (!ok) return;
+  }
+  const method = ctrl ? 'fs:copy' : 'fs:move';
+  await window.api?.invoke(method, paths, targetPath);
+  explorer.loadFiles(targetPath);
+  explorer.switchTab(idx);
+}
+
+// --- band (marquee) select ---
+function onBandMouseDown(e: MouseEvent) {
+  const target = e.target as HTMLElement;
+  if (target.tagName === 'BUTTON' || target.closest('button')) return;
+  explorer.clearSelection();
+  const rect = scrollRef.value?.getBoundingClientRect();
+  if (!rect) return;
+  bandOrigin.value = { clientX: e.clientX, clientY: e.clientY };
+  bandSelect.value = { left: e.clientX, top: e.clientY, width: 0, height: 0 };
+  document.addEventListener('mousemove', onBandMouseMove);
+  document.addEventListener('mouseup', onBandMouseUp);
+}
+
+function onBandMouseMove(e: MouseEvent) {
+  if (!bandOrigin.value) return;
+  const ox = bandOrigin.value.clientX;
+  const oy = bandOrigin.value.clientY;
+  bandSelect.value = {
+    left: Math.min(e.clientX, ox),
+    top: Math.min(e.clientY, oy),
+    width: Math.abs(e.clientX - ox),
+    height: Math.abs(e.clientY - oy)
+  };
+  const sel = bandSelect.value;
+  const buttons = scrollRef.value?.querySelectorAll('button[data-file-path]');
+  if (!buttons) return;
+  explorer.clearSelection();
+  buttons.forEach((btn) => {
+    const r = btn.getBoundingClientRect();
+    const overlap = !(r.right < sel.left || r.left > sel.left + sel.width || r.bottom < sel.top || r.top > sel.top + sel.height);
+    if (overlap) {
+      const path = btn.getAttribute('data-file-path');
+      if (path) explorer.selectedFiles.add(path);
+    }
+  });
+}
+
+function onBandMouseUp() {
+  bandSelect.value = null;
+  bandOrigin.value = null;
+  document.removeEventListener('mousemove', onBandMouseMove);
+  document.removeEventListener('mouseup', onBandMouseUp);
+}
 </script>
 
 <template>
-  <div class="flex h-full">
+  <div class="flex h-full" @dragover.prevent @drop.prevent>
     <ExplorerNavPane />
-    <div class="flex flex-col flex-1 min-w-0">
+    <div class="flex flex-col flex-1 min-w-0" @dragover.prevent @drop.prevent>
+      <!-- tab bar -->
+      <div v-if="explorer.tabs.length > 0" class="flex items-center gap-0.5 px-2 pt-1.5 pb-0.5 bg-bg-surface border-b border-border-default overflow-x-auto shrink-0">
+        <button
+          v-for="(tab, idx) in explorer.tabs"
+          :key="tab.id"
+          class="flex items-center gap-1 px-2.5 py-1 text-xs rounded-t-md transition-colors shrink-0 max-w-40"
+          :class="{
+            'bg-bg-base text-fg-base border border-border-default border-b-transparent': explorer.activeTabIndex === idx,
+            'text-fg-muted hover:text-fg-base hover:bg-bg-hover': explorer.activeTabIndex !== idx,
+            'ring-2 ring-accent-base': tabDropTargetIdx === idx
+          }"
+          @click="explorer.switchTab(idx)"
+          @dragover="onTabDragOver($event, idx)"
+          @dragenter="onTabDragEnter($event, idx)"
+          @dragleave="onTabDragLeave"
+          @drop="onTabDrop($event, idx)"
+        >
+          <span class="truncate">{{ tab.label || $t('explorer.thisComputer') }}</span>
+          <span class="shrink-0 p-0.5 rounded cursor-pointer hover:bg-bg-hover/50 text-fg-faint hover:text-fg-base transition-colors" @click.stop="explorer.closeTab(idx)"><X :size="10" /></span>
+        </button>
+        <button class="shrink-0 p-1 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors" :title="$t('nav.newTab')" @click="explorer.addTab(explorer.currentPath || '')"><Plus :size="12" /></button>
+      </div>
+
       <!-- toolbar -->
       <div class="flex items-center gap-2 px-3 py-2 border-b border-border-default bg-bg-base">
         <ExplorerBreadcrumb />
@@ -402,15 +566,15 @@ async function renameItem(item: FileItem) {
 
         <ExplorerViewModeDropdown />
 
-        <button class="p-1.5 rounded-lg transition-colors" :class="pinned ? 'text-accent-base bg-accent-ghost' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'" title="Always on top" @click="togglePin"><Pin v-if="pinned" :size="14" class="pointer-events-none" /><PinOff v-else :size="14" class="pointer-events-none" /></button>
+        <button class="p-1.5 rounded-lg transition-colors" :class="pinned ? 'text-accent-base bg-accent-ghost' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'" :title="$t('explorer.alwaysOnTop')" @click="togglePin"><Pin v-if="pinned" :size="14" class="pointer-events-none" /><PinOff v-else :size="14" class="pointer-events-none" /></button>
 
         <button class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors" :title="$t('explorer.newFolder')" @click="createNewFolder"><Plus :size="16" class="pointer-events-none" /></button>
 
-        <span v-if="explorer.selectedCount > 0" class="text-[11px] text-fg-muted whitespace-nowrap">{{ explorer.selectedCount }} {{ $t('common.selected') }}</span>
+        <span v-if="explorer.selectedCount > 0" class="text-[11px] text-fg-muted whitespace-nowrap">{{ t('explorer.nItems', { n: explorer.selectedCount }) }}</span>
       </div>
 
       <!-- content -->
-      <div ref="scrollRef" class="flex-1 overflow-auto p-3" :class="{ 'cursor-progress': explorer.isLoading }" @contextmenu.prevent="handleEmptyContextMenu">
+      <div ref="scrollRef" class="flex-1 overflow-auto p-3" :class="{ 'cursor-progress': explorer.isLoading }" @contextmenu.prevent="handleEmptyContextMenu" @dragover="onContentDragOver" @dragleave="onContentDragLeave" @drop="onContentDrop" @mousedown="onBandMouseDown">
         <div v-if="filteredFiles.length === 0 && !explorer.isLoading" class="flex flex-col items-center justify-center py-16 text-fg-faint">
           <FolderOpen :size="48" class="mb-3 opacity-30" />
           <p class="text-sm">{{ $t('explorer.folderEmpty') }}</p>
@@ -427,7 +591,11 @@ async function renameItem(item: FileItem) {
         <!-- extraSmall: virtualized list -->
         <div v-if="explorer.viewMode === 'extraSmall' && filteredFiles.length > 0" :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
           <div v-for="virtualRow in virtualizer.getVirtualItems()" :key="virtualRow.index" :style="{ position: 'absolute', top: 0, transform: `translateY(${virtualRow.start}px)`, height: `${virtualRow.size}px`, width: '100%' }">
-            <button class="w-full flex items-center gap-2 px-2 py-1 rounded-md hover:bg-bg-hover transition-colors text-left text-xs group relative h-full" :class="{ 'bg-accent-ghost ring-1 ring-accent-base': explorer.selectedFiles.has(filteredFiles[virtualRow.index].path), 'bg-accent-ghost/15 ring-1 ring-accent-base/30': !filteredFiles[virtualRow.index].isDirectory ? false : isLibraryFolder(filteredFiles[virtualRow.index].path) && !explorer.selectedFiles.has(filteredFiles[virtualRow.index].path) }" @click="onItemClick($event, filteredFiles[virtualRow.index].path, virtualRow.index)" @dblclick="handleDoubleClick(filteredFiles[virtualRow.index])" @contextmenu.stop.prevent="handleContextMenu($event, filteredFiles[virtualRow.index])">
+            <button
+              :draggable="!explorer.isAtDrives"
+              :data-file-path="filteredFiles[virtualRow.index].path"
+              :data-folder-path="filteredFiles[virtualRow.index].isDirectory ? filteredFiles[virtualRow.index].path : undefined"
+              class="w-full flex items-center gap-2 px-2 py-1 rounded-md hover:bg-bg-hover transition-colors text-left text-xs group relative h-full" :class="{ 'bg-accent-ghost ring-1 ring-accent-base': explorer.selectedFiles.has(filteredFiles[virtualRow.index].path), 'bg-accent-ghost/15 ring-1 ring-accent-base/30': !filteredFiles[virtualRow.index].isDirectory ? false : isLibraryFolder(filteredFiles[virtualRow.index].path) && !explorer.selectedFiles.has(filteredFiles[virtualRow.index].path), 'ring-2 ring-accent-base bg-accent-ghost/50': hoveredFolderPath && hoveredFolderPath === filteredFiles[virtualRow.index].path }" @click="onItemClick($event, filteredFiles[virtualRow.index].path, virtualRow.index)" @dblclick="handleDoubleClick(filteredFiles[virtualRow.index])" @contextmenu.stop.prevent="handleContextMenu($event, filteredFiles[virtualRow.index])" @dragstart="(e: DragEvent) => { const p = filteredFiles[virtualRow.index].path; if (explorer.selectedFiles.has(p)) { e.dataTransfer?.setData('text/plain', [...explorer.selectedFiles].join('\n')); } else { e.dataTransfer?.setData('text/plain', p); } if (e.dataTransfer) e.dataTransfer.effectAllowed = 'all'; }">
               <img v-if="extraSmallIcon(filteredFiles[virtualRow.index])" :src="extraSmallIcon(filteredFiles[virtualRow.index])!" class="w-4 h-4 object-contain shrink-0" />
               <HardDrive v-else-if="explorer.isAtDrives" :size="12" class="text-accent-base shrink-0" />
               <FolderOpen v-else-if="filteredFiles[virtualRow.index].isDirectory" :size="12" class="text-accent-base shrink-0" />
@@ -441,7 +609,7 @@ async function renameItem(item: FileItem) {
         <div v-else-if="isGridMode && filteredFiles.length > 0" :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
           <div v-for="virtualRow in virtualizer.getVirtualItems()" :key="virtualRow.index" :style="{ position: 'absolute', top: 0, transform: `translateY(${virtualRow.start}px)`, height: `${virtualRow.size}px`, width: '100%', display: 'flex', gap: `${GRID_GAPS[explorer.viewMode]}px` }" class="items-start px-[2px]">
             <div v-for="(item, i) in getRowItems(virtualRow.index)" :key="item.path" :style="{ width: `${GRID_ITEM_WIDTHS[explorer.viewMode]}px`, flex: '0 0 auto' }">
-              <ExplorerGridItem :item="item" :view-mode="explorer.viewMode" :is-selected="explorer.selectedFiles.has(item.path)" :is-at-drives="explorer.isAtDrives" :is-library-folder="!item.isDirectory ? false : isLibraryFolder(item.path)" @select="(path: string, e: MouseEvent) => onItemClick(e, path, virtualRow.index * itemsPerRow + i)" @double-click="handleDoubleClick" @context-menu="handleContextMenu" />
+              <ExplorerGridItem :item="item" :view-mode="explorer.viewMode" :is-selected="explorer.selectedFiles.has(item.path)" :is-at-drives="explorer.isAtDrives" :is-library-folder="!item.isDirectory ? false : isLibraryFolder(item.path)" :hovered-folder-path="hoveredFolderPath" @select="(path: string, e: MouseEvent) => onItemClick(e, path, virtualRow.index * itemsPerRow + i)" @double-click="handleDoubleClick" @context-menu="handleContextMenu" />
             </div>
           </div>
         </div>
@@ -456,11 +624,14 @@ async function renameItem(item: FileItem) {
           </div>
           <div :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
             <div v-for="virtualRow in virtualizer.getVirtualItems()" :key="virtualRow.index" :style="{ position: 'absolute', top: 0, transform: `translateY(${virtualRow.start}px)`, height: `${virtualRow.size}px`, width: '100%' }">
-              <ExplorerTableRow :item="filteredFiles[virtualRow.index]" :is-selected="explorer.selectedFiles.has(filteredFiles[virtualRow.index].path)" :is-at-drives="explorer.isAtDrives" :is-library-folder="!filteredFiles[virtualRow.index].isDirectory ? false : isLibraryFolder(filteredFiles[virtualRow.index].path)" @select="(path: string, e: MouseEvent) => onItemClick(e, path, virtualRow.index)" @double-click="handleDoubleClick" @context-menu="handleContextMenu" />
+              <ExplorerTableRow :item="filteredFiles[virtualRow.index]" :is-selected="explorer.selectedFiles.has(filteredFiles[virtualRow.index].path)" :is-at-drives="explorer.isAtDrives" :is-library-folder="!filteredFiles[virtualRow.index].isDirectory ? false : isLibraryFolder(filteredFiles[virtualRow.index].path)" :hovered-folder-path="hoveredFolderPath" @select="(path: string, e: MouseEvent) => onItemClick(e, path, virtualRow.index)" @double-click="handleDoubleClick" @context-menu="handleContextMenu" />
             </div>
           </div>
         </div>
       </div>
+
+      <!-- band select overlay -->
+      <div v-if="bandSelect" class="fixed pointer-events-none z-40 rounded border" :style="{ left: bandSelect.left + 'px', top: bandSelect.top + 'px', width: bandSelect.width + 'px', height: bandSelect.height + 'px', borderColor: 'rgb(99,102,241)', backgroundColor: 'rgba(99,102,241,0.08)' }" />
 
       <!-- prompt dialog -->
       <Teleport to="body">

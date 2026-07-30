@@ -20,6 +20,12 @@ export type ViewMode = 'extraSmall' | 'small' | 'medium' | 'large' | 'extraLarge
 export type SortBy = 'name' | 'size' | 'modified' | 'type';
 export type SortOrder = 'asc' | 'desc';
 
+export interface ExplorerTab {
+  id: string;
+  path: string;
+  label: string;
+}
+
 export const VIEW_MODES: ViewMode[] = ['extraSmall', 'small', 'medium', 'large', 'extraLarge', 'details']; 
 export const VIEW_MODE_LABELS: Record<ViewMode, string> = {
   extraSmall: 'Extra small icons',

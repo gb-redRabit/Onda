@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useExplorerStore } from '@renderer/stores/explorer';
 import { HardDrive, FolderOpen, Image, Film, Music2 } from '@lucide/vue';
 import { getFileTypeInfo } from '@renderer/utils/fileTypes';
 import { formatFileSize } from '@renderer/utils/formatters';
@@ -12,6 +13,7 @@ const props = defineProps<{
   isAtDrives: boolean;
   isLibraryFolder?: boolean;
   viewMode?: string;
+  hoveredFolderPath?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -44,15 +46,20 @@ const size = computed(() => {
 <template>
   <button
     ref="rootEl"
+    :draggable="!isAtDrives"
+    :data-file-path="item.path"
+    :data-folder-path="item.isDirectory ? item.path : undefined"
     class="flex flex-col items-center rounded-xl hover:bg-bg-hover transition-colors text-center group relative w-full"
     :class="{
       'bg-accent-ghost ring-1 ring-accent-base': isSelected,
-      'bg-accent-ghost/15 ring-1 ring-accent-base/30': isLibraryFolder && !isSelected
+      'bg-accent-ghost/15 ring-1 ring-accent-base/30': isLibraryFolder && !isSelected,
+      'ring-2 ring-accent-base bg-accent-ghost/50': hoveredFolderPath && item.isDirectory && hoveredFolderPath === item.path
     }"
     :style="{ padding: `${size.pad}px` }"
     @click="(e: MouseEvent) => emit('select', item.path, e)"
     @dblclick="emit('doubleClick', item)"
     @contextmenu.stop.prevent="emit('contextMenu', $event, item)"
+    @dragstart="(e: DragEvent) => { const store = useExplorerStore(); if (store.selectedFiles.has(item.path)) { e.dataTransfer?.setData('text/plain', [...store.selectedFiles].join('\n')); } else { e.dataTransfer?.setData('text/plain', item.path); } if (e.dataTransfer) e.dataTransfer.effectAllowed = 'all'; }"
   >
     <div
       class="rounded-lg flex items-center justify-center overflow-hidden shrink-0"

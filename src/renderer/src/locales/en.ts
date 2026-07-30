@@ -210,7 +210,8 @@ export default {
     pipWide: 'Wide',
     audioPipOpacity: 'Opacity',
     audioPipAutoShow: 'Auto-show when in background',
-    audioPipPosition: 'Position'
+    audioPipPosition: 'Position',
+    audioViz: 'Visualization'
   },
   status: {
     noMedia: 'No media loaded',
@@ -272,7 +273,15 @@ export default {
     viewMedium: 'Medium icons',
     viewLarge: 'Large icons',
     viewExtraLarge: 'Extra large icons',
-    viewDetails: 'Details'
+    viewDetails: 'Details',
+    confirmBeforeMove: 'Confirm before moving files',
+    moveConfirm: 'Move {n} item(s) to "{dir}"?',
+    copyConfirm: 'Copy {n} item(s) to "{dir}"?',
+    moveAction: 'Move',
+    copyAction: 'Copy',
+    nItems: '{n} item(s)',
+    alwaysOnTop: 'Always on top',
+    libraryFolder: 'Library folder'
   },
   downloads: {
     title: 'Downloads',

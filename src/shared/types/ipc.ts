@@ -30,6 +30,8 @@ export interface IpcChannels {
   'fs:rename': { args: [oldPath: string, newPath: string]; result: void };
   'fs:mkdir': { args: [dirPath: string]; result: boolean };
   'fs:delete': { args: [filePath: string]; result: void };
+  'fs:move': { args: [paths: string[], destination: string]; result: void };
+  'fs:copy': { args: [paths: string[], destination: string]; result: void };
   'dialog:openFile': {
     args: [options?: unknown];
     result: { canceled: boolean; filePaths: string[] };

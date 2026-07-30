@@ -1,5 +1,5 @@
 import { ipcMain, shell, app, clipboard, BrowserWindow } from 'electron';
-import { readdir, stat, lstat, readFile, writeFile, mkdir, rename, unlink, rm } from 'fs/promises';
+import { readdir, stat, lstat, readFile, writeFile, mkdir, rename, unlink, rm, copyFile, cp } from 'fs/promises';
 import { join, extname } from 'path';
 import { exec as execCb, spawn } from 'child_process';
 import { promisify } from 'util';
@@ -168,6 +168,51 @@ export function registerFsHandlers(): void {
       return true;
     } catch {
       return false;
+    }
+  });
+
+  ipcMain.handle('fs:move', async (_event, paths: string[], destination: string) => {
+    for (const src of paths) {
+      try {
+        const name = src.split('\\').pop() || src.split('/').pop() || '';
+        const dest = join(destination, name);
+        if (src.toLowerCase() === dest.toLowerCase()) {
+          continue;
+        }
+        await rename(src, dest);
+      } catch (err1) {
+        try {
+          const name = src.split('\\').pop() || src.split('/').pop() || '';
+          const dest = join(destination, name);
+          const s = await lstat(src);
+          if (s.isDirectory()) {
+            await cp(src, dest, { recursive: true });
+            await rm(src, { recursive: true, force: true });
+          } else {
+            await copyFile(src, dest);
+            await unlink(src);
+          }
+        } catch (err2) {
+          console.error('[fs:move] failed for', src, err2);
+        }
+      }
+    }
+  });
+
+  ipcMain.handle('fs:copy', async (_event, paths: string[], destination: string) => {
+    for (const src of paths) {
+      try {
+        const name = src.split('\\').pop() || src.split('/').pop() || '';
+        const dest = join(destination, name);
+        const s = await lstat(src);
+        if (s.isDirectory()) {
+          await cp(src, dest, { recursive: true });
+        } else {
+          await copyFile(src, dest);
+        }
+      } catch (err) {
+        console.error('[fs:copy] failed for', src, err);
+      }
     }
   });
 

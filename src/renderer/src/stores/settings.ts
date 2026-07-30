@@ -49,17 +49,17 @@ export const useSettingsStore = defineStore('settings', () => {
     try {
       if (window.api) {
         const data = (await window.api.invoke('settings:get')) as Partial<AppSettings>;
-      if (data.appearance) appearance.value = data.appearance;
-      if (data.playback) playback.value = data.playback;
-      if (data.explorer) explorer.value = data.explorer;
-      if (data.library) library.value = data.library;
-      if (data.download) download.value = data.download;
-        if (data.shortcuts) shortcuts.value = data.shortcuts;
-        if (data.network) network.value = data.network;
-        if (data.apiKeys) apiKeys.value = data.apiKeys;
-        if (data.updates) updates.value = data.updates;
-        if (data.toast) toast.value = data.toast;
-        if (data.dependencies) dependencies.value = data.dependencies;
+      if (data.appearance) Object.assign(appearance.value, data.appearance);
+      if (data.playback) Object.assign(playback.value, data.playback);
+      if (data.explorer) Object.assign(explorer.value, data.explorer);
+      if (data.library) Object.assign(library.value, data.library);
+      if (data.download) Object.assign(download.value, data.download);
+        if (data.shortcuts) Object.assign(shortcuts.value, data.shortcuts);
+        if (data.network) Object.assign(network.value, data.network);
+        if (data.apiKeys) Object.assign(apiKeys.value, data.apiKeys);
+        if (data.updates) Object.assign(updates.value, data.updates);
+        if (data.toast) Object.assign(toast.value, data.toast);
+        if (data.dependencies) Object.assign(dependencies.value, data.dependencies);
       }
     } catch {
       // use defaults

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useExplorerStore } from '@renderer/stores/explorer';
 import { HardDrive, FolderOpen, Music2, Film, Image } from '@lucide/vue';
 import { formatFileSize } from '@renderer/utils/formatters';
 import { getFileTypeInfo } from '@renderer/utils/fileTypes';
@@ -10,6 +11,7 @@ const props = defineProps<{
   isSelected: boolean;
   isAtDrives: boolean;
   isLibraryFolder?: boolean;
+  hoveredFolderPath?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -34,14 +36,19 @@ function iconComponent() {
 <template>
   <button
     ref="rootEl"
+    :draggable="!isAtDrives"
+    :data-file-path="item.path"
+    :data-folder-path="item.isDirectory ? item.path : undefined"
     class="w-full grid grid-cols-[1fr_120px_100px_100px] gap-2 px-3 py-2 rounded-lg hover:bg-bg-hover transition-colors text-left items-center text-sm group relative"
     :class="{
       'bg-accent-ghost ring-1 ring-accent-base': isSelected,
-      'bg-accent-ghost/15 ring-1 ring-accent-base/30': isLibraryFolder && !isSelected
+      'bg-accent-ghost/15 ring-1 ring-accent-base/30': isLibraryFolder && !isSelected,
+      'ring-2 ring-accent-base bg-accent-ghost/50': hoveredFolderPath && item.isDirectory && hoveredFolderPath === item.path
     }"
     @click="(e: MouseEvent) => emit('select', item.path, e)"
     @dblclick="emit('doubleClick', item)"
     @contextmenu.stop.prevent="emit('contextMenu', $event, item)"
+    @dragstart="(e: DragEvent) => { const store = useExplorerStore(); if (store.selectedFiles.has(item.path)) { e.dataTransfer?.setData('text/plain', [...store.selectedFiles].join('\n')); } else { e.dataTransfer?.setData('text/plain', item.path); } if (e.dataTransfer) e.dataTransfer.effectAllowed = 'all'; }"
   >
     <div class="flex items-center gap-2 min-w-0"><img v-if="mediaThumb && !isAtDrives && !item.isDirectory" :src="mediaThumb" class="w-4 h-4 object-contain shrink-0" />
       <img v-else-if="systemIcon && !isAtDrives && !item.isDirectory" :src="systemIcon" class="w-4 h-4 object-contain shrink-0" />

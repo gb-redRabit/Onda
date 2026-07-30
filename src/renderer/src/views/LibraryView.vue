@@ -53,8 +53,6 @@ function setViewMode(mode: 'list' | 'grid') {
   settings.updateLibrary({ viewModes });
 }
 
-const toggleableViews = new Set(['tracks', 'video', 'albums', 'artists']);
-
 const tabs = computed(
   () =>
     [
@@ -254,7 +252,7 @@ const visibleAlbums = computed(() => {
 
 const observers = ref<ResizeObserver[]>([]);
 
-function observeGrid(ref: Ref<HTMLElement | null>, update: () => void) {
+function observeGrid(ref: { value: HTMLElement | null }, update: () => void) {
   const el = ref.value;
   if (!el) return;
   const ro = new ResizeObserver(() => update());

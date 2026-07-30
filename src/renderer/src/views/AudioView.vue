@@ -8,15 +8,18 @@ import AudioProgressBar from '@renderer/components/audio/AudioProgressBar.vue';
 import AudioLayoutToggle from '@renderer/components/audio/AudioLayoutToggle.vue';
 import AudioCover from '@renderer/components/audio/AudioCover.vue';
 import AudioTrackInfo from '@renderer/components/audio/AudioTrackInfo.vue';
-import { BarChart3 } from '@lucide/vue';
+import AudioVizSettings from '@renderer/components/audio/AudioVizSettings.vue';
+import { BarChart3, Settings2 } from '@lucide/vue';
 
 const player = usePlayerStore();
 const audio = useAudioPlayer();
 
 const layoutMode = ref<'split' | 'full' | 'stacked'>('split');
+const splitRatio = ref(50);
 const showUI = ref(true);
 const uiTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 const vizRef = ref<InstanceType<typeof AudioVisualizer> | null>(null);
+const showVizSettings = ref(false);
 
 function hideUIAfterDelay() {
   if (uiTimeout.value) clearTimeout(uiTimeout.value);
@@ -87,6 +90,26 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
+function onSplitDividerMouseDown(e: MouseEvent) {
+  const target = e.target as HTMLElement;
+  if (!target.classList.contains('split-divider')) return;
+  e.preventDefault();
+  const startX = e.clientX;
+  const startRatio = splitRatio.value;
+  const parent = target.parentElement;
+  if (!parent) return;
+  const rect = parent.getBoundingClientRect();
+  function onMove(ev: MouseEvent) {
+    splitRatio.value = Math.max(20, Math.min(80, startRatio + ((ev.clientX - startX) / rect.width) * 100));
+  }
+  function onUp() {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
 onMounted(() => {
   document.addEventListener('keydown', onKeydown);
   hideUIAfterDelay();
@@ -130,23 +153,36 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- viz mode — bottom-left -->
-      <button
-        class="absolute bottom-4 left-4 z-20 p-2 rounded-lg bg-bg-overlay/80 backdrop-blur-sm text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-all opacity-0 hover:opacity-100 focus:opacity-100"
-        :class="{ 'opacity-60': showUI }"
-        :title="$t('audioView.vizMode')"
-        @click="vizRef?.cycleStyle()"
-      >
-        <div class="flex items-center gap-1.5">
-          <BarChart3 :size="14" />
-          <span class="text-[10px] uppercase font-medium">{{ vizRef?.style ?? 'bars' }}</span>
-        </div>
-      </button>
+      <!-- viz controls — bottom-left -->
+      <div class="absolute bottom-4 left-4 z-20 flex items-center gap-1">
+        <button
+          class="p-2 rounded-lg bg-bg-overlay/80 backdrop-blur-sm text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-all"
+          :class="{ 'opacity-60': showUI }"
+          :title="$t('audioView.vizMode')"
+          @click="vizRef?.cycleStyle()"
+        >
+          <div class="flex items-center gap-1.5">
+            <BarChart3 :size="14" />
+            <span class="text-[10px] uppercase font-medium">{{ vizRef?.style ?? 'bars' }}</span>
+          </div>
+        </button>
+        <button
+          class="p-2 rounded-lg bg-bg-overlay/80 backdrop-blur-sm transition-all"
+          :class="showVizSettings ? 'text-accent-base bg-accent-ghost' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'"
+          :title="$t('settings.audioViz')"
+          @click="showVizSettings = !showVizSettings"
+        >
+          <Settings2 :size="14" />
+        </button>
+      </div>
+      <div v-if="showVizSettings" class="absolute bottom-16 left-4 z-20">
+        <AudioVizSettings />
+      </div>
     </div>
 
     <!-- ═══════ SPLIT layout — cover left, visualizer right ═══════ -->
-    <div v-else-if="layoutMode === 'split'" class="h-full w-full flex overflow-hidden">
-      <div class="flex-1 flex flex-col items-center justify-center px-8 min-w-0">
+    <div v-else-if="layoutMode === 'split'" class="h-full w-full flex overflow-hidden" @mousedown="onSplitDividerMouseDown">
+      <div class="flex flex-col items-center justify-center px-8 min-w-0 overflow-auto" :style="{ width: splitRatio + '%' }">
         <AudioCover size="w-96 h-96 shadow-xl shadow-black/30" class="mb-6" />
         <div class="text-center mb-4 max-w-sm w-full">
           <AudioTrackInfo />
@@ -161,29 +197,76 @@ onUnmounted(() => {
           <AudioControls />
         </div>
       </div>
-      <div class="w-1/2 h-full shrink-0 p-4 pl-0">
+      <div class="split-divider w-1 shrink-0 cursor-col-resize" />
+      <div class="h-full p-4 pl-0 relative" :style="{ width: (100 - splitRatio) + '%' }">
         <AudioVisualizer class="h-full" />
+        <div class="absolute top-2 right-2 z-10 flex gap-1">
+          <button
+            class="p-1.5 rounded-lg bg-bg-overlay/80 backdrop-blur-sm text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-all text-[10px]"
+            :title="$t('audioView.vizMode')"
+            @click="vizRef?.cycleStyle()"
+          >
+            <div class="flex items-center gap-1">
+              <BarChart3 :size="12" />
+              <span class="uppercase font-medium">{{ vizRef?.style ?? 'bars' }}</span>
+            </div>
+          </button>
+          <button
+            class="p-1.5 rounded-lg bg-bg-overlay/80 backdrop-blur-sm transition-all"
+            :class="showVizSettings ? 'text-accent-base bg-accent-ghost' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'"
+            :title="$t('settings.audioViz')"
+            @click="showVizSettings = !showVizSettings"
+          >
+            <Settings2 :size="12" />
+          </button>
+        </div>
+        <div v-if="showVizSettings" class="absolute top-10 right-2 z-10">
+          <AudioVizSettings />
+        </div>
       </div>
     </div>
 
-    <!-- ═══════ STACKED layout — cover top, viz middle, controls bottom ═══════ -->
-    <div v-else class="h-full w-full flex flex-col items-center overflow-auto">
-      <div class="flex flex-col items-center max-w-sm w-full px-6 py-8">
-        <AudioCover size="w-96 h-96 shadow-xl shadow-black/30" class="mb-5" />
-        <div class="text-center mb-4">
-          <AudioTrackInfo />
+    <!-- ═══════ STACKED layout — compact vertical stack ═══════ -->
+    <div v-else class="h-full w-full flex flex-col overflow-hidden">
+      <div class="flex-1 flex flex-col items-center justify-center px-6 py-4 overflow-auto">
+        <AudioCover size="w-48 h-48 shadow-xl shadow-black/30" class="mb-3 shrink-0" />
+        <div class="text-center mb-2 max-w-xs">
+          <AudioTrackInfo title-size="text-base" />
         </div>
         <div
-          class="w-full mb-5 transition-opacity"
+          class="w-full max-w-xs mb-2 transition-opacity shrink-0"
           :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }"
         >
           <AudioProgressBar />
         </div>
-        <div class="w-full h-36 mb-5">
-          <AudioVisualizer class="h-full" />
-        </div>
-        <div class="transition-opacity" :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }">
+        <div class="transition-opacity shrink-0" :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }">
           <AudioControls />
+        </div>
+      </div>
+      <div class="h-32 shrink-0 relative border-t border-border-default">
+        <AudioVisualizer class="h-full" />
+        <div class="absolute top-1 right-1 z-10 flex gap-1">
+          <button
+            class="p-1 rounded-lg bg-bg-overlay/80 backdrop-blur-sm text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-all text-[9px]"
+            :title="$t('audioView.vizMode')"
+            @click="vizRef?.cycleStyle()"
+          >
+            <div class="flex items-center gap-1">
+              <BarChart3 :size="10" />
+              <span class="uppercase font-medium">{{ vizRef?.style ?? 'bars' }}</span>
+            </div>
+          </button>
+          <button
+            class="p-1 rounded-lg bg-bg-overlay/80 backdrop-blur-sm transition-all"
+            :class="showVizSettings ? 'text-accent-base bg-accent-ghost' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'"
+            :title="$t('settings.audioViz')"
+            @click="showVizSettings = !showVizSettings"
+          >
+            <Settings2 :size="10" />
+          </button>
+        </div>
+        <div v-if="showVizSettings" class="absolute bottom-10 right-1 z-10">
+          <AudioVizSettings />
         </div>
       </div>
     </div>

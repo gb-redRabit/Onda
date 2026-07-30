@@ -76,7 +76,8 @@ export const DEFAULT_LIBRARY: LibrarySettings = {
 export const DEFAULT_EXPLORER: ExplorerSettings = {
   viewMode: 'medium',
   sortBy: 'name',
-  sortOrder: 'asc'
+  sortOrder: 'asc',
+  confirmBeforeMove: true
 };
 
 export const DEFAULT_API_KEYS: ApiKeySettings = {
@@ -231,7 +232,13 @@ export const DEFAULT_PLAYBACK = {
   cursorHide: true,
   cursorTimeout: 3,
   playbackSpeed: 1,
-  videoFilter: 'none'
+  videoFilter: 'none',
+  visualization: {
+    mode: 'circle' as const,
+    primaryColor: '#7c6aef',
+    secondaryColor: '#4f46e5',
+    sensitivity: 0.5
+  }
 };
 
 export const DEFAULT_DOWNLOAD = {

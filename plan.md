@@ -1,14 +1,13 @@
 # Onda — Plan rozwoju
 
-> Na podstawie audytu kodu 2026-07-28. Status: typecheck 0 błędów, testy 141/141.
-> Ostatnia aktualizacja: 2026-07-29 (F1-F5 + fixy).
+> Na podstawie audytu kodu 2026-07-28. Status: typecheck 0 błędów.
+> Ostatnia aktualizacja: 2026-07-30 (F1-F7, FS3).
 
 ---
 
 ## ✅ Zrealizowane
 
 ### Faza 1 — Fundament (Settings + i18n + Drobne fixy)
-
 - [x] `settings.save()` — debounce 300ms
 - [x] `ui.sidebarExpanded` → przeniesione do `settings.appearance`
 - [x] `explorer.viewMode` → zapisywane do settings
@@ -18,126 +17,137 @@
 - [x] `Sidebar.vue` — usunięty dualny stan `ui.sidebarExpanded` / `collapsed`
 
 ### Faza 2 — Library freeze fix
-
 - [x] `shallowRef` dla `tracks` — brak triggera dla computed na każdym dodaniu
-- [x] `trackStats` — jeden single-pass computed zamiast 5 osobnych (audioCount, videoCount, artists, albums)
-- [x] Deferred cover preload: `onMounted` + `requestAnimationFrame` zamiast natychmiast
+- [x] `trackStats` — jeden single-pass computed zamiast 5 osobnych
+- [x] Deferred cover preload: `onMounted` + `requestAnimationFrame`
 - [x] Ikony plików w Explorer: `getFileTypeInfo().category` → Music2/Film/Image
 - [x] `VideoCard.vue` — przycisk play zmieniony z Music2 na Play
 - [x] `electron.vite.config` — `audio-pip.html` dodany do `rollupOptions.input`
 
-### Faza 3 — Audio PiP (częściowo)
-
-- [x] `AudioPipManager` (main process) — osobne BrowserWindow, IPC handlers, 3 definicje rozmiaru
-- [x] `audio-pip.html` — inline JS, progress bar, play/prev/next/close, hover opacity, CSP
-- [x] `useAudioPiP.ts` — kompozabl nasłuchujący `audioEvents` (timeUpdate, durationChange, playStateChange)
+### Faza 3 — Audio PiP + wide + viz + covers
+- [x] `AudioPipManager` — osobne BrowserWindow, IPC handlers, 3 definicje rozmiaru
+- [x] `audio-pip.html` — inline JS, progress bar, play/prev/next/close, hover opacity
+- [x] `useAudioPiP.ts` — kompozabl nasłuchujący `audioEvents`
 - [x] Auto-show gdy `document.hidden` + gra audio, auto-hide gdy powrót
-- [x] Progress bar: time + duration z `audioEvents`, seek przez `audioEngine.seek()`
-- [x] Hover: opacity w górę na hover, nie nadpisywany przez IPC ticki
+- [x] wide tryb (full-width × 36px, transport, czas, volume, 4 presety EQ)
+- [x] Canvas viz 60fps: 192 bary, smoothstep, glow, peak dots
+- [x] Okładki: obsługa typu video (sibling video cover → `<video>`)
+- [x] Stan shuffle/repeat: podświetlenie przycisków + repeat one
 - [x] Window config: `transparent: true`, `hasShadow: false`, `frame: false`
-- [x] Rejestracja IPC: `audio-pip:show/hide/update/timeUpdate/progressClick/action`
-- [x] Integracja z `App.vue` + main/index.ts + window-ipc.ts
-- [x] `audioPipMode` / `audioPipOpacity` / `audioPipAutoShow` w typach + constants
+- [x] `audioPipMode` / `audioPipOpacity` / `audioPipAutoShow` / `pipWide` w typach
 
 ### Fix powielania pierwszego utworu w playlistach
+- [x] `slice(1)` dla queue we wszystkich play actions
 
-- [x] `LibraryView.vue` — `playTracks()`: `slice(1)` dla queue
-- [x] `LibraryPlaylistManager.vue` — `playAll()`: `slice(1)` dla queue
-- [x] `Sidebar.vue` — `playPlaylist()`: `slice(1)` dla queue
-- [x] `DirNode.vue` — `playDir()`: `slice(1)` dla queue
+### Faza 4 — Video PiP: Vue + theme reactivity + optymalizacja
+- [x] `pip.html` → Vue SFC z JASSUB, theme listenerem `pip:theme`
+- [x] `App.vue` — `applyTheme()` wysyła `themeVars` do video PiP
+- [x] Przycisk Maximize → zamyka PiP, wznawia w `/player`
+- [x] Settings overlay (subs, brightness/contrast, pre-buffer)
+- [x] Bugfixy: Maximize zamyka całkowicie, `pip:closed` zawsze aktualizuje store, `structuredClone` try-catch
+- [x] i18n: `pip:locale` IPC
+- [x] Maximize wchodzi w fullscreen
 
-### Faza 3c — Audio PiP: wide tryb + wizualizacja + okładki wideo + stan przycisków ✅
+### Faza 5 — Library view toggle + Top menu
+- [x] `LibrarySettings { viewModes }` typy + `DEFAULT_LIBRARY`
+- [x] `LibraryTrackCard.vue` + `LibraryVideoRow.vue`
+- [x] `LibraryView.vue` — viewMode toggle (list/grid) per tab
+- [x] `AppMenu.vue` — View dropdown z Alt+1..6
+- [x] i18n: `menu.downloads`, `library.viewModeList/Grid`
 
-- [x] 4. wide tryb (full-width × 36px, cienki pasek, transport, czas, volume, 4 presety EQ)
-- [x] Canvas wizualizacja: 192 bary (3×64), smoothstep interpolacja, glow, peak dots
-- [x] Wizualizacja 60fps: geometria cachowana, fillRect zamiast roundRect/shadowBlur, brak getComputedStyle/gradient/klatkę
-- [x] Dane frequency co 60ms przez osobny kanał IPC `audio-pip:vizData`
-- [x] Okładki: obsługa typu video (sibling video cover → `<video>` z media server)
-- [x] Stan shuffle/repeat: podświetlenie przycisków (!text-accent-base) + repeat one z "1" overlay
-- [x] Settings: pipWide w UI + typy + locale (pl/en)
+### Fix session 2 (post-F5)
+- [x] Settings save — `JSON.parse(JSON.stringify())` zamiast Proxy przez IPC
+- [x] Audio PiP — double-click przywraca główne okno
+- [x] `LibraryTrackCard` — akcje na okładkę, aspect ratio 4:3
+- [x] `LibraryView.vue` — ResizeObserver dla gridów
 
-### Faza 4 — Video PiP: Vue + theme reactivity + optymalizacja ✅
+### Faza 6 — Explorer tabs/drag + Audio visualization
+- [x] `ExplorerTab` typ + store — `tabs`, `addTab`, `closeTab`, `switchTab`, `activeTabIndex`
+- [x] `ExplorerView.vue` — pasek zakładek nad breadcrumb z × do zamykania, + do dodawania
+- [x] Drag&drop — `@dragstart` w GridItem/TableRow/inline, `@drop` na content, nav pane, breadcrumb, zakładki
+- [x] `VisualizationSettings` typy + `DEFAULT_PLAYBACK.visualization`
+- [x] `AudioVisualizer.vue` — tryby circle/bars/wave/particles/radial, kolory/czułość z settings
+- [x] `AudioView.vue` — stacked layout (cover, viz, controls w pionie) + split ratio slider
+- [x] `AudioVizSettings.vue` — panel ustawień wizualizacji
+- [x] `settings.ts` — `Object.assign` zamiast `=` w `load()` (zachowanie nowych pól)
 
-- [x] `pip.html` → Vue SFC (`pip-video/App.vue`) z JASSUB, theme listenerem `pip:theme`
-- [x] `pip-manager.ts` — handler `pip:theme`, przechowywanie cssVars
-- [x] `App.vue` — `applyTheme()` wysyła `themeVars` do video PiP (`pip:theme`)
-- [x] Usunięto logi debug: `extractEmbedded`, `dump_all failed`, `extracted fonts`
-- [x] Pre-buffer: ustawienie `pipPreBuffer` w settings + automatyczne `pip.preload()` przy `setupVideo()`
-- [x] Przycisk Maximize (&#x26F6;) w PiP → wysyła `pip:maximize` → zamyka PiP, wznawia w `/player`
-- [x] Przycisk Settings (&#x2699;) w PiP → overlay z toggle napisów, suwakami brightness/contrast (CSS filter)
-- [x] `SettingsPiP.vue` — toggle Pre-buffer video
-- [x] Bugfix: Maximize teraz woła `pipManager.stop()` zamiast tylko `hide()` — zamyka PiP całkowicie
-- [x] Bugfix: `pip:closed` globalny handler w `App.vue` — zawsze aktualizuje store, nawet bez PlayerView
-- [x] Bugfix: `onClosed` czyści `player.pipTime`, `setTrack()` czyści `pipTime`
-- [x] Bugfix: `structuredClone` w `useSubtitleRenderer` objęty try-catch
-- [x] Bugfix: IPC invoke/send w preload objęte try-catch
-- [x] i18n: `pip:locale` IPC — locale przesyłana z App.vue do PiP, PiP reaguje na zmianę
-- [x] Bugfix: `init()` nie woła `pip.loadTrack()` gdy PiP aktywny — tylko update napisów
-- [x] Maximize wchodzi w fullscreen (`toggleFullscreen()` + `pendingFullscreen`)
+### Faza 7 — Explorer drag refinements + band select
+- [x] **IPC `fs:move`** — `rename` + fallback `copyRecursive` + `rm` dla cross-volume
+- [x] **IPC `fs:copy`** — `copyFile`/`copyRecursive` z `lstat` do rozróżnienia plik/folder
+- [x] **NavPane drop** — `@dragover`/`@drop`/`@dragleave`, `dropTargetPath` null fix (This PC bug)
+- [x] **Breadcrumb drop** — `dragEnterCount` anty-reset, highlight na każdym segmencie
+- [x] **Content area drop** — przeciągnięcie z innego folderu → move/copy
+- [x] **Custom confirm** — `showConfirm` przez provide/inject, zamiast system `confirm()`
+- [x] **Tab (zakładka) drop** — highlight, auto-switch po 600ms, drop przenosi/kopiuje
+- [x] **Multi-file drag** — dragstart zbiera wszystkie zaznaczone pliki (`\n`-separated)
+- [x] **Folder dragging** — usunięto `!item.isDirectory` — foldery też przeciągalne
+- [x] **TableRow draggable** — dodano `:draggable` + `@dragstart`
+- [x] **IPC types** — dodano `fs:move`, `fs:copy` do `IpcChannels`
+- [x] **Drag cancel fix** — `@dragover.prevent` na flex column parent
+- [x] **Crash fix** — usunięto `className?.slice(0,60)` (crash na SVGAnimatedString)
+- [x] **Band (marquee) select** — prostokąt overlay, overlap hit-test
+- [x] **data-file-path** — dodano atrybut na wszystkich przyciskach plików
+- [x] **i18n** — `alwaysOnTop`, `confirmBeforeMove`, `moveConfirm`, `copyConfirm`, `libraryFolder`, `nItems`
+
+### Fix session 3 (post-F7)
+- [x] **`effectAllowed='all'`** — Ctrl+drag nie pokazuje "no drop" (było `'move'`)
+- [x] **`fs:move` no-op skip** — pomija rename gdy src === dest
+- [x] **`console.error` w catch** — zastąpiono ciche `catch {}` w `fs:move`/`fs:copy`
+- [x] **`addTab` nie blokuje** — `idx !== activeTabIndex.value` (pozwala stworzyć drugą zakładkę na tej samej ścieżce)
+- [x] **`watch(currentPath)`** — aktualizuje `tab.path` i `tab.label` (switchTab wraca do właściwej ścieżki)
+- [x] **Highlight folderów w drag** — `onContentDragOver` ustawia `hoveredFolderPath` przez `closest('[data-folder-path]')`
+- [x] **Grid/Table hover prop** — dodano `hoveredFolderPath` prop + klasa ring do `ExplorerGridItem` i `ExplorerTableRow`
+- [x] **Drop na podfolder w content area** — `onContentDrop` używa `hoveredFolderPath.value || explorer.currentPath`
+- [x] **i18n w zakładkach** — `tab.label || $t('explorer.thisComputer')` (Ten komputer / This computer)
+- [x] **i18n locale w localStorage** — `detectLocale()` sprawdza `localStorage` przed `navigator.language`, zapis przy zmianie w Settings/App.vue
 
 ---
+
 
 ## 📋 Pozostałe zadania
 
----
+### Faza 8 — Explorer jako osobne okno
+**Priorytet: 🟡 ŚREDNI | Czas: ~3h**
+- [ ] Przycisk "Window" na pasku zakładek + skrót `Ctrl+Shift+N`
+- [ ] IPC `browserWindow:createExplorer(path?)` — otwiera nowe `BrowserWindow`
+- [ ] Route `/explorer/window/:id` → `ExplorerWindowView.vue`
+- [ ] Komunikacja między oknami przez IPC bridging
+- [ ] Zamykanie `Ctrl+W` — zamyka tylko to okno
 
-### Faza 5 — Library view toggle + Top menu ✅
+### Faza 9 — Drag tab ↔ window
+**Priorytet: 🟢 NISKI | Czas: ~2h**
+- [ ] Tab → okno — drag tab poza pasek → IPC `createExplorer(path)` + `closeTab()`
+- [ ] Okno → tab — "Pin as tab" lub drag do głównego okna
+- [ ] Wizualny feedback podczas przeciągania nad pasek zakładek
 
-**Czas: ~3-4h | Priorytet: 🟡 ŚREDNI**
+### Faza 10 — Cross-window drag plików
+**Priorytet: 🟢 NISKI | Czas: ~3h**
+- [ ] Drag pliku między oknami — `dataTransfer` z `application/x-onda-file`
+- [ ] Drag folderu między oknami
+- [ ] IPC bridging przez main process
 
-- [x] `types/settings.ts` — dodano `LibrarySettings { viewModes }`
-- [x] `constants.ts` — dodano `DEFAULT_LIBRARY`
-- [x] `stores/settings.ts` — dodano `library` ref + `updateLibrary()`
-- [x] `LibraryTrackCard.vue` — grid card dla utworów (cover, play/fav/edit/playlist)
-- [x] `LibraryVideoRow.vue` — list row dla video (thumbnail, play, queue)
-- [x] `LibraryView.vue` — viewMode toggle (list/grid) per tab (tracks, video, albums, artists)
-- [x] `AppMenu.vue` — View dropdown: wszystkie widoki z Alt+1..6
-- [x] Skróty Alt+1..N — globalny keydown handler w AppMenu
-- [x] i18n: `menu.downloads`, `library.viewModeList`, `library.viewModeGrid` (en/pl)
-
-### Fix session 2 (post-F5)
-
-- [x] Settings save — `JSON.parse(JSON.stringify())` zamiast Proxy przez IPC (fix "object could not be cloned")
-- [x] Audio PiP — double-click przywraca główne okno (`show()` + `moveTop()` + `focus()`)
-- [x] `LibraryTrackCard` — akcje przeniesione na okładkę (prawy górny róg), karty powiększone (aspect 4:3)
-- [x] `LibraryView.vue` — ResizeObserver dla gridów przez `watch([tab, viewMode])` + `nextTick`
-
----
-
-### Faza 6 — Explorer tabs/drag + Audio visualization
-
-**Czas: ~4-5h | Priorytet: 🟢 NISKI**
-
-- `ExplorerStore` — dodać `tabs: Array<...>`, `activeTabIndex`
-- `ExplorerView.vue` — pasek zakładek nad breadcrumb
-- Drag&drop między panelem a listą
-- `settings.playback.visualization` — typ, kolory, czułość
-- `AudioVisualizer.vue` — nowe tryby (wave, circle, particles)
-- `AudioView.vue` — suwak do proporcji w split layout
-
----
-
-### Faza 7 — Dalsze usprawnienia (na później)
-
+### Faza 11 — Dalsze usprawnienia
 **Priorytet: 🟢 NISKI**
-
-- Multi-window Explorer
-- Image viewer w library
-- Własne skróty klawiszowe w settings
-- Playlisty z drag&drop reorder
-- Historia odtwarzania z statystykami
+- [ ] Image viewer w library
+- [ ] Własne skróty klawiszowe w settings
+- [ ] Playlisty z drag&drop reorder
+- [ ] Historia odtwarzania z statystykami
+- [ ] **Tab reorder** — przeciąganie zakładek w pasku (brak `draggable` na tabach)
 
 ---
 
-## Macierz zależności (po F1-F3)
+## Macierz zależności
 
-| Faza | Zależy od | Zrealizowane? |
-|------|-----------|---------------|
+| Faza | Zależy od | Status |
+|------|-----------|--------|
 | **F1** Settings | — | ✅ |
 | **F2** Library perf | — | ✅ |
-| **F3a** Audio PiP (minimal) | F1 | ✅ |
-| **F3b** Audio PiP (medium/max + UI) | F3a | ✅ |
-| **F3c** Audio PiP (wide + viz + covers) | F3b | ✅ |
-| **F4** Video PiP (Vue + theme) | — | ✅ |
-| **F5** Library UI | F2 ✅ | ✅ |
-| **F6** Explorer+Viz | F1 ✅ | ⬜ |
+| **F3** Audio PiP | F1 | ✅ |
+| **F4** Video PiP | — | ✅ |
+| **F5** Library UI | F2 | ✅ |
+| **F6** Explorer+Viz | F1 | ✅ |
+| **F7** Drag refinements | F6 | ✅ |
+| **F8** Explorer windowing | F6+FS3 | ⬜ |
+| **F9** Tab ↔ window drag | F8 | ⬜ |
+| **F10** Cross-window drag | F9 | ⬜ |
+| **FS3** Fix session 3 | F7 | ✅ |

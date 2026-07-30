@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed, watch } from 'vue';
-import type { FileItem, ViewMode, SortBy, SortOrder } from '@renderer/types/explorer';
+import type { FileItem, ViewMode, SortBy, SortOrder, ExplorerTab } from '@renderer/types/explorer';
 import { VIEW_MODES } from '@renderer/types/explorer';
 import { useSettingsStore } from './settings';
 
@@ -30,6 +30,39 @@ export const useExplorerStore = defineStore('explorer', () => {
   const historyIndex = ref(-1);
   const isLoading = ref(false);
   const sidebarWidth = ref(250);
+
+  const tabs = ref<ExplorerTab[]>([]);
+  const activeTabIndex = ref(-1);
+
+  function addTab(path: string) {
+    const existing = tabs.value.findIndex((t, idx) => t.path === path && idx !== activeTabIndex.value);
+    if (existing >= 0) {
+      switchTab(existing);
+      return;
+    }
+    const label = path ? path.split('\\').filter(Boolean).pop() || path : '';
+    const id = `tab-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    tabs.value.push({ id, path, label });
+    switchTab(tabs.value.length - 1);
+  }
+
+  function closeTab(index: number) {
+    if (tabs.value.length <= 1) return;
+    tabs.value.splice(index, 1);
+    if (activeTabIndex.value === index) {
+      const newIdx = Math.min(index, tabs.value.length - 1);
+      switchTab(newIdx);
+    } else if (activeTabIndex.value > index) {
+      activeTabIndex.value--;
+    }
+  }
+
+  function switchTab(index: number) {
+    if (index < 0 || index >= tabs.value.length) return;
+    activeTabIndex.value = index;
+    const tab = tabs.value[index];
+    navigateTo(tab.path);
+  }
 
   const isAtDrives = computed(() => isDrivePath(currentPath.value));
   const canGoBack = computed(() => historyIndex.value > 0);
@@ -172,6 +205,12 @@ export const useExplorerStore = defineStore('explorer', () => {
   watch(viewMode, (val) => settings.updateExplorer({ viewMode: val }));
   watch(sortBy, (val) => settings.updateExplorer({ sortBy: val }));
   watch(sortOrder, (val) => settings.updateExplorer({ sortOrder: val }));
+  watch(currentPath, (path) => {
+    if (activeTabIndex.value >= 0 && tabs.value[activeTabIndex.value]) {
+      tabs.value[activeTabIndex.value].path = path;
+      tabs.value[activeTabIndex.value].label = path ? path.split('\\').filter(Boolean).pop() || path : '';
+    }
+  });
 
   return {
     currentPath,
@@ -185,6 +224,8 @@ export const useExplorerStore = defineStore('explorer', () => {
     historyIndex,
     isLoading,
     sidebarWidth,
+    tabs,
+    activeTabIndex,
     isAtDrives,
     canGoBack,
     canGoForward,
@@ -202,6 +243,9 @@ export const useExplorerStore = defineStore('explorer', () => {
     nextViewMode,
     prevViewMode,
     setViewMode,
-    toggleSort
+    toggleSort,
+    addTab,
+    closeTab,
+    switchTab
   };
 });
