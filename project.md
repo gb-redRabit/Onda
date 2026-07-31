@@ -4,7 +4,7 @@
 
 **Onda** to desktopowy odtwarzacz muzyki i wideo zbudowany na Electron + Vue 3 + TypeScript + Tailwind CSS. Aplikacja obsługuje odtwarzanie lokalnych plików audio/video, eksplorację plików, bibliotekę mediów z metadanymi ID3, equalizer, wizualizację audio, kolejki odtwarzania, napisy wideo, Picture-in-Picture, splash screen z animowaną wizualizacją dźwiękową oraz system motywów.
 
-**Aktualne statystyki (2026-07-29):**
+**Aktualne statystyki (2026-07-31):**
 
 | Metryka | Wartość |
 |---------|---------|
@@ -14,12 +14,12 @@
 | Preload | 2 pliki, ~300 linii |
 | Shared | 3 pliki, ~191 linii |
 | Renderer | 109 plików, ~13,660 linii |
-| Pliki testowe | 4 (1,133 linii) |
-| Testy | 141 pass |
+| Pliki testowe | 5 (1,400+ linii) |
+| Testy | 153 pass |
 | Zależności npm | 38 (17 runtime + 21 dev) |
 | `typecheck` | 100% clean |
 | `build` | OK |
-| `lint` | 0 błędów |
+| `lint` | 0 nowych błędów (pre-existing 8 w plikach poza F11) |
 
 **Kluczowe zasady architektury:**
 
@@ -1294,7 +1294,7 @@ Pełny transkoding filmu 2-godzinnego zajmuje 30-60s. Zamiast czekać:
 
 ---
 
-Ostatnia aktualizacja: 2026-07-29 (Phase 1–3 zakończone, Faza 4 — explorer, Faza 5 — ImageViewer, library, settings, 17.3 webSecurity, Sprint 9–12)
+Ostatnia aktualizacja: 2026-07-31 (F1–F10 ✅, FS3–FS7 ✅, F11a–e ✅ — Sprint 13)
 
 ---
 
@@ -1925,9 +1925,21 @@ media-server.ts (94 linie)
 
 ---
 
-## 19. Przyszłe ulepszenia
+### 18.16 Sprint 13 — F11a–e: images w library, playlisty reorder, statystyki, tab reorder, QoL (2026-07-31)
 
-### 19.1 Edycja prostych napisów (SRT, VTT, SUB)
+| Podfaza | Opis |
+|---------|------|
+| **F11a** Image viewer w library | Skan obrazów (`IMAGE_EXTS`, `processImageFile`, typ `'image'` w `MediaFile.type`, `imageCount`/`imageTracks` w store), nowa zakładka `images` w `LibraryView.vue` (siatka miniatur przez `mediaServerUrl`), reuse `ImageViewer.vue` przez adapter `imageFileItems` (MediaFile → FileItem), i18n `library.images`/`library.noImages` |
+| **F11b** Playlisty reorder | `reorderPlaylistTrack(playlistId, fromIdx, toIdx)` w `library.ts` (+`updatedAt`, `savePlaylists`); `LibraryTrackRow` wysyła `{ paths, playlistId, dragIndex }`; `LibraryPlaylistManager` rozróżnia reorder playlisty od dropu z biblioteki (`parseDragPayload`, `onTrackDrop`, korekta indeksu, highlight `dragOverTrackIdx`) |
+| **F11c** Statystyki odtwarzania | Bugfix: `recordPlay(track)` w `player.ts` (wołany w `setTrack`/`prevTrack`/`playFromHistory`) inkrementuje `playCount` + ustawia `lastPlayed` przez `updateTrack` (tylko tracki z biblioteki), `persistStats()` debounced 1s → `library:saveScanned` — `recentTracks`/`mostPlayed` teraz zasilane |
+| **F11d** Tab reorder | `reorderTab(from, to)` w `explorer.ts` z korektą `activeTabIndex`; `ExplorerView.vue` DnD kart (reorder wewnątrz paska vs tab→window, `isDraggingTab` wyłącza auto-switch) |
+| **F11e** QoL | Fix `prefer-const` (`preFullscreenBounds` w `index.ts`), aktualizacja `plan.md` + `project.md` |
+
+**Weryfikacja F11:** `vue-tsc` 0 błędów, **153/153 testy pass** (nowe: `explorer.test.ts` 5× reorderTab, `player.test.ts` 3× recordPlay, `library.test.ts` reorder+image), `electron-vite build` OK, eslint 0 nowych błędów.
+
+---
+
+## 19. Przyszłe ulepszenia
 
 Formaty SRT, VTT i SUB nie posiadają złożonego systemu stylów jak ASS — mają tylko tekst, czas i podstawowe formatowanie.
 

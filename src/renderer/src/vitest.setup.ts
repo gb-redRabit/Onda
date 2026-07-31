@@ -7,6 +7,8 @@ if (typeof globalThis.requestIdleCallback === 'undefined') {
 
 (window as any).api = {
   invoke: vi.fn(),
+  send: vi.fn(),
+  on: vi.fn(() => () => {}),
   getCover: vi.fn(),
   getDuration: vi.fn(),
   findExternalSubtitles: vi.fn(),

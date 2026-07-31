@@ -64,6 +64,21 @@ export const useExplorerStore = defineStore('explorer', () => {
     navigateTo(tab.path);
   }
 
+  function reorderTab(from: number, to: number) {
+    if (from < 0 || from >= tabs.value.length || to < 0 || to >= tabs.value.length) return;
+    if (from === to) return;
+    const [tab] = tabs.value.splice(from, 1);
+    tabs.value.splice(to, 0, tab);
+    const active = activeTabIndex.value;
+    if (active === from) {
+      activeTabIndex.value = to;
+    } else if (active > from && active <= to) {
+      activeTabIndex.value = active - 1;
+    } else if (active < from && active >= to) {
+      activeTabIndex.value = active + 1;
+    }
+  }
+
   const isAtDrives = computed(() => isDrivePath(currentPath.value));
   const canGoBack = computed(() => historyIndex.value > 0);
   const canGoForward = computed(() => historyIndex.value < history.value.length - 1);
@@ -246,6 +261,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     toggleSort,
     addTab,
     closeTab,
-    switchTab
+    switchTab,
+    reorderTab
   };
 });

@@ -17,9 +17,10 @@ export const useLibraryStore = defineStore('library', () => {
   const totalCount = computed(() => tracks.value.length);
 
   const trackStats = computed(() => {
-    let audio = 0, video = 0;
+    let audio = 0, video = 0, image = 0;
     const audioArr: MediaFile[] = [];
     const videoArr: MediaFile[] = [];
+    const imageArr: MediaFile[] = [];
     const ts = tracks.value;
     for (let i = 0; i < ts.length; i++) {
       if (ts[i].type === 'audio') {
@@ -28,15 +29,20 @@ export const useLibraryStore = defineStore('library', () => {
       } else if (ts[i].type === 'video') {
         video++;
         videoArr.push(ts[i]);
+      } else if (ts[i].type === 'image') {
+        image++;
+        imageArr.push(ts[i]);
       }
     }
-    return { audio, video, audioArr, videoArr };
+    return { audio, video, image, audioArr, videoArr, imageArr };
   });
 
   const audioCount = computed(() => trackStats.value.audio);
   const videoCount = computed(() => trackStats.value.video);
+  const imageCount = computed(() => trackStats.value.image);
   const audioTracks = computed(() => trackStats.value.audioArr);
   const videoTracks = computed(() => trackStats.value.videoArr);
+  const imageTracks = computed(() => trackStats.value.imageArr);
 
   const recentTracks = computed(() => {
     const ts = tracks.value;
@@ -243,6 +249,18 @@ export const useLibraryStore = defineStore('library', () => {
     }
   }
 
+  function reorderPlaylistTrack(playlistId: string, fromIdx: number, toIdx: number) {
+    const playlist = playlists.value.find((p) => p.id === playlistId);
+    if (!playlist) return;
+    if (fromIdx < 0 || fromIdx >= playlist.tracks.length) return;
+    if (toIdx < 0 || toIdx >= playlist.tracks.length) return;
+    if (fromIdx === toIdx) return;
+    const [track] = playlist.tracks.splice(fromIdx, 1);
+    playlist.tracks.splice(toIdx, 0, track);
+    playlist.updatedAt = Date.now();
+    savePlaylists();
+  }
+
   function deletePlaylist(playlistId: string) {
     playlists.value = playlists.value.filter((p) => p.id !== playlistId);
     savePlaylists();
@@ -291,8 +309,10 @@ export const useLibraryStore = defineStore('library', () => {
     totalCount,
     audioCount,
     videoCount,
+    imageCount,
     audioTracks,
     videoTracks,
+    imageTracks,
     recentTracks,
     mostPlayed,
     artists,
@@ -310,6 +330,7 @@ export const useLibraryStore = defineStore('library', () => {
     createPlaylist,
     addToPlaylist,
     removeFromPlaylist,
+    reorderPlaylistTrack,
     deletePlaylist,
     search,
     refreshDerived

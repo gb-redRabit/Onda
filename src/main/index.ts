@@ -14,7 +14,7 @@ let splashWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let mainReady = false;
 let minTimerDone = false;
-let preFullscreenBounds: Electron.Rectangle | null = null;
+const preFullscreenBounds: Electron.Rectangle | null = null;
 
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({

@@ -5,13 +5,27 @@ import { parseFile } from 'music-metadata';
 import { exec as execCb } from 'child_process';
 import { promisify } from 'util';
 import type { MediaFile, Playlist } from '../../renderer/src/types/media';
-import { VIDEO_EXTS, AUDIO_EXTS } from '../../shared/constants';
+import { VIDEO_EXTS, AUDIO_EXTS, IMAGE_EXTS } from '../../shared/constants';
 import { getStore, durationCache, cacheSet, savePersistentCover } from './cover-cache';
 import { logger } from '../utils/logger';
 
 const execAsync = promisify(execCb);
 const AUDIO_EXT_SET = new Set(AUDIO_EXTS);
 const VIDEO_EXT_SET = new Set(VIDEO_EXTS);
+const IMAGE_EXT_SET = new Set(IMAGE_EXTS);
+
+const IMAGE_MIME: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
+  '.bmp': 'image/bmp',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.tiff': 'image/tiff',
+  '.tif': 'image/tiff'
+};
 
 async function getDuration(filePath: string): Promise<number> {
   const cached = durationCache.get(filePath);
@@ -205,12 +219,34 @@ async function processVideoFile(
   };
 }
 
+async function processImageFile(
+  fullPath: string,
+  entryName: string,
+  ext: string
+): Promise<{ file: MediaFile | null }> {
+  const s = await stat(fullPath).catch(() => null);
+  if (!s) return { file: null };
+  return {
+    file: {
+      id: fullPath,
+      name: entryName,
+      path: fullPath,
+      extension: ext,
+      mimeType: IMAGE_MIME[ext] || '',
+      size: s.size,
+      type: 'image',
+      addedAt: s.birthtimeMs ?? Date.now(),
+      playCount: 0
+    }
+  };
+}
+
 async function scanDir(
   dirPath: string,
   maxDepth = 10,
   depth = 0
-): Promise<{ files: MediaFile[]; audioCount: number; videoCount: number }> {
-  if (depth > maxDepth) return { files: [], audioCount: 0, videoCount: 0 };
+): Promise<{ files: MediaFile[]; audioCount: number; videoCount: number; imageCount: number }> {
+  if (depth > maxDepth) return { files: [], audioCount: 0, videoCount: 0, imageCount: 0 };
 
   try {
     const entries = await readdir(dirPath, { withFileTypes: true });
@@ -218,11 +254,14 @@ async function scanDir(
       files: MediaFile[];
       audioCount: number;
       videoCount: number;
+      imageCount: number;
     }>[] = [];
     const audioTasks: Array<() => Promise<{ file: MediaFile | null }>> = [];
     const videoTasks: Array<() => Promise<{ file: MediaFile | null }>> = [];
+    const imageTasks: Array<() => Promise<{ file: MediaFile | null }>> = [];
     let audioCount = 0;
     let videoCount = 0;
+    let imageCount = 0;
 
     for (const entry of entries) {
       const fullPath = join(dirPath, entry.name);
@@ -236,6 +275,9 @@ async function scanDir(
         } else if (VIDEO_EXT_SET.has(ext)) {
           videoCount++;
           videoTasks.push(() => processVideoFile(fullPath, entry.name, ext));
+        } else if (IMAGE_EXT_SET.has(ext)) {
+          imageCount++;
+          imageTasks.push(() => processImageFile(fullPath, entry.name, ext));
         }
       }
     }
@@ -244,13 +286,23 @@ async function scanDir(
     const fileResults: Array<{ file: MediaFile | null }> = [];
     let ai = 0;
     let vi = 0;
-    while (ai < audioTasks.length || vi < videoTasks.length) {
+    let ii = 0;
+    while (ai < audioTasks.length || vi < videoTasks.length || ii < imageTasks.length) {
       const chunk: Array<() => Promise<{ file: MediaFile | null }>> = [];
-      while (chunk.length < chunkSize && (ai < audioTasks.length || vi < videoTasks.length)) {
-        if (ai < audioTasks.length && (vi >= videoTasks.length || chunk.length % 2 === 0)) {
+      while (
+        chunk.length < chunkSize &&
+        (ai < audioTasks.length || vi < videoTasks.length || ii < imageTasks.length)
+      ) {
+        if (ai < audioTasks.length && (vi >= videoTasks.length || chunk.length % 3 === 0)) {
           chunk.push(audioTasks[ai++]);
+        } else if (ii < imageTasks.length && (vi >= videoTasks.length || chunk.length % 3 === 1)) {
+          chunk.push(imageTasks[ii++]);
         } else if (vi < videoTasks.length) {
           chunk.push(videoTasks[vi++]);
+        } else if (ai < audioTasks.length) {
+          chunk.push(audioTasks[ai++]);
+        } else if (ii < imageTasks.length) {
+          chunk.push(imageTasks[ii++]);
         }
       }
       const results = await Promise.all(chunk.map((fn) => fn()));
@@ -262,11 +314,13 @@ async function scanDir(
     const files: MediaFile[] = [];
     let totalAudio = 0;
     let totalVideo = 0;
+    let totalImage = 0;
 
     for (const r of subResults) {
       files.push(...r.files);
       totalAudio += r.audioCount;
       totalVideo += r.videoCount;
+      totalImage += r.imageCount;
     }
 
     for (const r of fileResults) {
@@ -274,11 +328,12 @@ async function scanDir(
     }
     totalAudio += audioCount;
     totalVideo += videoCount;
+    totalImage += imageCount;
 
-    return { files, audioCount: totalAudio, videoCount: totalVideo };
+    return { files, audioCount: totalAudio, videoCount: totalVideo, imageCount: totalImage };
   } catch (err) {
     logger.warn('library', `scanDir error reading ${dirPath}: ${err}`);
-    return { files: [], audioCount: 0, videoCount: 0 };
+    return { files: [], audioCount: 0, videoCount: 0, imageCount: 0 };
   }
 }
 

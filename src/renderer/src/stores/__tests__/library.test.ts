@@ -60,6 +60,15 @@ describe('computed counts', () => {
     expect(store.audioTracks.map((t) => t.id)).toEqual(['1']);
     expect(store.videoTracks.map((t) => t.id)).toEqual(['2']);
   });
+
+  it('imageTracks / imageCount returns image files', () => {
+    const store = useLibraryStore();
+    const a = makeTrack('1', { type: 'audio' });
+    const img = makeTrack('2', { type: 'image' });
+    store.tracks = [a, img];
+    expect(store.imageCount).toBe(1);
+    expect(store.imageTracks.map((t) => t.id)).toEqual(['2']);
+  });
 });
 
 describe('recentTracks / mostPlayed', () => {
@@ -318,5 +327,36 @@ describe('refreshDerived', () => {
   it('calls triggerRef on tracks (does not throw)', () => {
     const store = useLibraryStore();
     expect(() => store.refreshDerived()).not.toThrow();
+  });
+});
+
+describe('reorderPlaylistTrack', () => {
+  function playlistWith(tracks: string[]): { id: string } {
+    const store = useLibraryStore();
+    const p = store.createPlaylist('P');
+    tracks.forEach((id) => store.addToPlaylist(p.id, makeTrack(id)));
+    return p;
+  }
+
+  it('moves a track to a later position', () => {
+    const store = useLibraryStore();
+    const p = playlistWith(['1', '2', '3']);
+    store.reorderPlaylistTrack(p.id, 0, 2);
+    expect(store.playlists[0].tracks.map((t) => t.id)).toEqual(['2', '3', '1']);
+  });
+
+  it('moves a track to an earlier position', () => {
+    const store = useLibraryStore();
+    const p = playlistWith(['1', '2', '3']);
+    store.reorderPlaylistTrack(p.id, 2, 0);
+    expect(store.playlists[0].tracks.map((t) => t.id)).toEqual(['3', '1', '2']);
+  });
+
+  it('is a no-op when from === to or out of range', () => {
+    const store = useLibraryStore();
+    const p = playlistWith(['1', '2', '3']);
+    store.reorderPlaylistTrack(p.id, 1, 1);
+    store.reorderPlaylistTrack(p.id, 5, 0);
+    expect(store.playlists[0].tracks.map((t) => t.id)).toEqual(['1', '2', '3']);
   });
 });

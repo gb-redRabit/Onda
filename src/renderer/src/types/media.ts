@@ -6,7 +6,7 @@ export interface MediaFile {
   mimeType: string;
   size: number;
   duration?: number;
-  type: 'audio' | 'video' | 'unknown';
+  type: 'audio' | 'video' | 'image' | 'unknown';
   metadata?: MediaMetadata;
   thumbnail?: string;
   addedAt: number;

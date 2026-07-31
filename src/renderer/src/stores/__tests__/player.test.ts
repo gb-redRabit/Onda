@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { usePlayerStore } from '../player';
+import { useLibraryStore } from '../library';
 import type { MediaFile } from '@renderer/types/media';
 
 function makeTrack(id: string): MediaFile {
@@ -409,5 +410,41 @@ describe('cover cache', () => {
     store.loadCover('/test.mp3');
     store.invalidateCoverCache('/test.mp3');
     expect(store.getCover('/test.mp3')).toEqual({ type: null, data: null });
+  });
+});
+
+describe('recordPlay (playCount/lastPlayed)', () => {
+  it('increments playCount and sets lastPlayed when track is in library', () => {
+    const library = useLibraryStore();
+    library.addTrack(makeTrack('lib1'));
+    const store = usePlayerStore();
+    store.setTrack(makeTrack('lib1'));
+    const track = library.tracks[0]!;
+    expect(track.playCount).toBe(1);
+    expect(track.lastPlayed).toBeGreaterThan(0);
+  });
+
+  it('does not touch library when track is not there', () => {
+    const library = useLibraryStore();
+    library.addTrack(makeTrack('lib1'));
+    const store = usePlayerStore();
+    store.setTrack(makeTrack('foreign'));
+    expect(library.tracks[0]!.playCount).toBe(0);
+  });
+
+  it('records via prevTrack and playFromHistory too', () => {
+    const library = useLibraryStore();
+    library.addTrack(makeTrack('a'));
+    library.addTrack(makeTrack('b'));
+    library.addTrack(makeTrack('c'));
+    const store = usePlayerStore();
+    store.setTrack(makeTrack('a'));
+    store.setTrack(makeTrack('b'));
+    store.setTrack(makeTrack('c'));
+    store.prevTrack();
+    store.playFromHistory(0);
+    expect(library.tracks[0]!.playCount).toBe(2);
+    expect(library.tracks[1]!.playCount).toBe(2);
+    expect(library.tracks[2]!.playCount).toBe(1);
   });
 });

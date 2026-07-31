@@ -7,6 +7,7 @@ import { useLibraryStore } from '@renderer/stores/library';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { usePlayerStore } from '@renderer/stores/player';
 import type { MediaFile } from '@renderer/types/media';
+import type { FileItem } from '@renderer/types/explorer';
 import LibraryTrackRow from '@renderer/components/library/LibraryTrackRow.vue';
 import LibraryTrackCard from '@renderer/components/library/LibraryTrackCard.vue';
 import LibraryVideoRow from '@renderer/components/library/LibraryVideoRow.vue';
@@ -16,6 +17,7 @@ import TrackTagEditor from '@renderer/components/library/TrackTagEditor.vue';
 import MusicBrainzLookup from '@renderer/components/library/MusicBrainzLookup.vue';
 import AlbumCard from '@renderer/components/library/AlbumCard.vue';
 import VideoCard from '@renderer/components/library/VideoCard.vue';
+import ImageViewer from '@renderer/components/explorer/ImageViewer.vue';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import {
   Music2,
@@ -28,13 +30,15 @@ import {
   RefreshCw,
   ChevronDown,
   LayoutList,
-  LayoutGrid
+  LayoutGrid,
+  Images
 } from '@lucide/vue';
 
 const { t } = useI18n();
 const library = useLibraryStore();
 const settings = useSettingsStore();
 const player = usePlayerStore();
+const mediaServerUrl = window.api.mediaServerUrl;
 
 const query = ref('');
 const debouncedQuery = ref('');
@@ -44,7 +48,7 @@ watch(query, (q) => {
   queryTimer = setTimeout(() => { debouncedQuery.value = q; }, 200);
 }, { immediate: true });
 onUnmounted(() => { if (queryTimer) clearTimeout(queryTimer); });
-const tab = ref<'tracks' | 'video' | 'folders' | 'artists' | 'albums' | 'playlists'>('tracks');
+const tab = ref<'tracks' | 'video' | 'images' | 'folders' | 'artists' | 'albums' | 'playlists'>('tracks');
 
 const viewMode = computed(() => settings.library.viewModes[tab.value] ?? 'list');
 
@@ -58,6 +62,7 @@ const tabs = computed(
     [
       { id: 'tracks', label: t('library.tracks'), icon: Music2 },
       { id: 'video', label: t('library.video'), icon: Film },
+      { id: 'images', label: t('library.images'), icon: Images },
       { id: 'folders', label: t('library.folders'), icon: Folder },
       { id: 'artists', label: t('library.artists'), icon: Mic2 },
       { id: 'albums', label: t('library.albums'), icon: Disc3 },
@@ -83,6 +88,30 @@ const filteredVideo = computed(() => {
     (t) => !q || t.name.toLowerCase().includes(q) || t.metadata?.title?.toLowerCase().includes(q)
   );
 });
+
+const filteredImages = computed(() => {
+  const q = debouncedQuery.value.toLowerCase();
+  return library.imageTracks.filter((t) => !q || t.name.toLowerCase().includes(q));
+});
+
+const imageViewerIndex = ref<number | null>(null);
+
+const imageFileItems = computed<FileItem[]>(() =>
+  filteredImages.value.map((t) => ({
+    name: t.name,
+    path: t.path,
+    isDirectory: false,
+    size: t.size,
+    modifiedAt: t.addedAt,
+    createdAt: t.addedAt,
+    extension: t.extension,
+    mimeType: t.mimeType
+  }))
+);
+
+function openImageViewer(index: number) {
+  imageViewerIndex.value = index;
+}
 
 const filteredArtists = computed(() => {
   const q = debouncedQuery.value.toLowerCase();
@@ -681,6 +710,50 @@ function onMBApply(data: {
         </template>
       </template>
 
+      <!-- Obrazy -->
+      <template v-else-if="tab === 'images'">
+        <div
+          v-if="filteredImages.length === 0"
+          class="flex flex-col items-center justify-center h-full gap-3 text-fg-faint"
+        >
+          <Images :size="48" class="opacity-30" />
+          <p class="text-sm">{{ $t('library.noImages') }}</p>
+          <p class="text-xs">{{ $t('library.addFolderHint') }}</p>
+        </div>
+        <template v-else>
+          <div
+            class="flex items-center justify-between px-4 py-2 border-b border-border-default shrink-0"
+          >
+            <span class="text-xs text-fg-faint"
+              >{{ filteredImages.length }} {{ $t('library.files') }}</span
+            >
+          </div>
+          <div class="flex-1 overflow-auto p-4">
+            <div class="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              <button
+                v-for="(img, idx) in filteredImages"
+                :key="img.path"
+                class="group rounded-xl overflow-hidden bg-bg-elevated border border-border-default hover:border-accent-base transition-colors text-left flex flex-col"
+                :title="img.name"
+                @click="openImageViewer(idx)"
+              >
+                <div class="aspect-square bg-bg-base overflow-hidden flex items-center justify-center">
+                  <img
+                    :src="`${mediaServerUrl}/?path=${encodeURIComponent(img.path.replace(/\\/g, '/'))}`"
+                    :alt="img.name"
+                    class="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                </div>
+                <div class="px-2.5 py-2 min-w-0">
+                  <div class="text-xs font-medium truncate">{{ img.name }}</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </template>
+      </template>
+
       <!-- Foldery -->
       <template v-else-if="tab === 'folders'">
         <div
@@ -935,4 +1008,10 @@ function onMBApply(data: {
   </div>
   <TrackTagEditor :track="editingTrack" @close="editingTrack = null" @saved="onTagSaved" />
   <MusicBrainzLookup v-if="showingMBLookup" @close="showingMBLookup = false" @apply="onMBApply" />
+  <ImageViewer
+    v-if="imageViewerIndex !== null"
+    :files="imageFileItems"
+    :initial-index="imageViewerIndex"
+    @close="imageViewerIndex = null"
+  />
 </template>

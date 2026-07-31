@@ -16,10 +16,27 @@ const ui = useUIStore();
 const selectedPlaylistId = ref<string | null>(null);
 const newName = ref('');
 const dragOverPlaylistId = ref<string | null>(null);
+const dragOverTrackIdx = ref<number | null>(null);
 
 const selectedPlaylist = computed(() =>
   library.playlists.find((p) => p.id === selectedPlaylistId.value)
 );
+
+interface PlaylistDragPayload {
+  paths?: string[];
+  playlistId?: string;
+  dragIndex?: number;
+}
+
+function parseDragPayload(raw: string): PlaylistDragPayload | null {
+  try {
+    const p = JSON.parse(raw) as PlaylistDragPayload;
+    if (!Array.isArray(p.paths)) return null;
+    return p;
+  } catch {
+    return null;
+  }
+}
 
 function selectPlaylist(id: string) {
   selectedPlaylistId.value = id;
@@ -43,23 +60,45 @@ function deleteSelected() {
 function onPlaylistDrop(e: DragEvent, playlistId: string) {
   const raw = e.dataTransfer?.getData('text/plain');
   if (!raw) return;
-  try {
-    const { paths } = JSON.parse(raw);
-    if (!Array.isArray(paths)) return;
-    const playlist = library.playlists.find((p) => p.id === playlistId);
-    if (!playlist) return;
-    paths.forEach((path: string) => {
-      const track = library.tracks.find((t) => t.path === path);
-      if (track) library.addToPlaylist(playlistId, track);
-    });
-    dragOverPlaylistId.value = null;
-    ui.notify(
-      'success',
-      `Dodano ${paths.length} ${t('common.tracks')} do playlisty "${playlist.name}"`
-    );
-  } catch {
-    // not our data format
+  const payload = parseDragPayload(raw);
+  if (!payload) return;
+  const playlist = library.playlists.find((p) => p.id === playlistId);
+  if (!playlist) return;
+  payload.paths!.forEach((path: string) => {
+    const track = library.tracks.find((t) => t.path === path);
+    if (track) library.addToPlaylist(playlistId, track);
+  });
+  dragOverPlaylistId.value = null;
+  ui.notify(
+    'success',
+    `Dodano ${payload.paths!.length} ${t('common.tracks')} do playlisty "${playlist.name}"`
+  );
+}
+
+function onTrackDrop(e: DragEvent, toIdx: number) {
+  const raw = e.dataTransfer?.getData('text/plain');
+  if (!raw) return;
+  const payload = parseDragPayload(raw);
+  if (!payload) return;
+  dragOverTrackIdx.value = null;
+  if (payload.playlistId === selectedPlaylistId.value && typeof payload.dragIndex === 'number') {
+    // reorder within the same playlist
+    const from = payload.dragIndex;
+    const to = from < toIdx ? toIdx - 1 : toIdx;
+    library.reorderPlaylistTrack(selectedPlaylistId.value!, from, to);
+    return;
   }
+  // drop from the library → add to playlist
+  const playlist = selectedPlaylist.value;
+  if (!playlist) return;
+  payload.paths!.forEach((path: string) => {
+    const track = library.tracks.find((t) => t.path === path);
+    if (track) library.addToPlaylist(playlist.id, track);
+  });
+  ui.notify(
+    'success',
+    `Dodano ${payload.paths!.length} ${t('common.tracks')} do playlisty "${playlist.name}"`
+  );
 }
 
 function playAll() {
@@ -148,12 +187,21 @@ function playAll() {
         @dragover.prevent
         @drop.prevent="selectedPlaylistId && onPlaylistDrop($event, selectedPlaylistId)"
       >
-        <LibraryTrackRow
-          v-for="track in selectedPlaylist.tracks"
+        <div
+          v-for="(track, idx) in selectedPlaylist.tracks"
           :key="track.path"
-          :track="track"
-          :playlist-id="selectedPlaylist.id"
-        />
+          class="rounded-lg"
+          :class="dragOverTrackIdx === idx ? 'ring-1 ring-accent-base bg-accent-ghost' : ''"
+          @dragover.prevent.stop="dragOverTrackIdx = idx"
+          @dragleave.stop="dragOverTrackIdx = null"
+          @drop.prevent.stop="onTrackDrop($event, idx)"
+        >
+          <LibraryTrackRow
+            :track="track"
+            :playlist-id="selectedPlaylist.id"
+            :drag-index="idx"
+          />
+        </div>
         <div
           v-if="selectedPlaylist.tracks.length === 0"
           class="text-xs text-fg-faint italic p-4 text-center"

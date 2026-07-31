@@ -143,6 +143,7 @@ const tabDragEnterCount = ref(0);
 const tabDropTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 const hoveredFolderPath = ref<string | null>(null);
 const isDraggingTab = ref(false);
+const draggingTabIdx = ref(-1);
 
 const TAB_PAYLOAD_PREFIX = 'ONDA_TAB::';
 
@@ -666,6 +667,7 @@ function onTabDragStart(e: DragEvent, idx: number) {
   const tab = explorer.tabs[idx];
   if (!tab) return;
   isDraggingTab.value = true;
+  draggingTabIdx.value = idx;
   beginTabDrag(tab.path);
   if (e.dataTransfer) {
     e.dataTransfer.setData('text/plain', encodeTabPayload(window.api?.windowId ?? 0, tab.path));
@@ -675,6 +677,7 @@ function onTabDragStart(e: DragEvent, idx: number) {
 
 function onTabDragEnd() {
   isDraggingTab.value = false;
+  draggingTabIdx.value = -1;
   tabDropTargetIdx.value = -1;
   tabDragEnterCount.value = 0;
   if (tabDropTimer.value) { clearTimeout(tabDropTimer.value); tabDropTimer.value = null; }
@@ -718,7 +721,7 @@ function handleTabDrop(raw: string) {
   if (!parsed) return false;
   const { wid, path } = parsed;
   if (wid === (window.api?.windowId ?? 0)) {
-    // same window → no-op for now (reorder = F11); mark the drag as handled
+    // same window → reorder tab (drop position decided in onTabDrop)
     claimTabDrag(path);
     return true;
   }
@@ -730,7 +733,10 @@ function handleTabDrop(raw: string) {
 function onTabDragOver(e: DragEvent, idx: number) {
   e.preventDefault();
   if (e.dataTransfer) e.dataTransfer.dropEffect = (e.ctrlKey || e.metaKey) ? 'copy' : 'move';
-  if (isDraggingTab.value) return;
+  if (isDraggingTab.value) {
+    tabDropTargetIdx.value = idx;
+    return;
+  }
   tabDropTargetIdx.value = idx;
   if (idx !== explorer.activeTabIndex && tabDropTimer.value === null) {
     tabDropTimer.value = setTimeout(() => {
@@ -741,13 +747,19 @@ function onTabDragOver(e: DragEvent, idx: number) {
 }
 
 function onTabDragEnter(_e: DragEvent, idx: number) {
-  if (isDraggingTab.value) return;
+  if (isDraggingTab.value) {
+    tabDropTargetIdx.value = idx;
+    return;
+  }
   tabDragEnterCount.value++;
   tabDropTargetIdx.value = idx;
 }
 
 function onTabDragLeave() {
-  if (isDraggingTab.value) return;
+  if (isDraggingTab.value) {
+    tabDropTargetIdx.value = -1;
+    return;
+  }
   tabDragEnterCount.value--;
   if (tabDragEnterCount.value <= 0) {
     tabDragEnterCount.value = 0;
@@ -762,6 +774,15 @@ async function onTabDrop(e: DragEvent, idx: number) {
   tabDropTargetIdx.value = -1;
   tabDragEnterCount.value = 0;
   const raw = e.dataTransfer?.getData('text/plain') || '';
+  const parsed = parseTabPayload(raw);
+  if (parsed && parsed.wid === (window.api?.windowId ?? 0)) {
+    // same-window tab drag → reorder (draggingTabIdx → idx)
+    claimTabDrag(parsed.path);
+    if (draggingTabIdx.value >= 0 && draggingTabIdx.value !== idx) {
+      explorer.reorderTab(draggingTabIdx.value, idx);
+    }
+    return;
+  }
   if (handleTabDrop(raw)) return;
   const paths = getDropPaths(e.dataTransfer, raw);
   if (paths.length === 0) return;
@@ -838,7 +859,7 @@ function onBandMouseUp() {
           :class="{
             'bg-accent-base text-white border-transparent': explorer.activeTabIndex === idx,
             'bg-bg-base text-fg-muted border-transparent hover:text-fg-base hover:bg-bg-hover': explorer.activeTabIndex !== idx,
-            'ring-2 ring-accent-base': tabDropTargetIdx === idx && !isDraggingTab
+            'ring-2 ring-accent-base': tabDropTargetIdx === idx
           }"
           @click="explorer.switchTab(idx)"
           @auxclick="onTabAuxClick($event, idx)"

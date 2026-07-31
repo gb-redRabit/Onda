@@ -6,7 +6,7 @@ interface IpcMediaFile {
   mimeType: string;
   size: number;
   duration?: number;
-  type: 'audio' | 'video' | 'unknown';
+  type: 'audio' | 'video' | 'image' | 'unknown';
   addedAt: number;
   lastPlayed?: number;
   playCount: number;

@@ -14,6 +14,7 @@ const props = defineProps<{
   track: MediaFile;
   showPlaylist?: boolean;
   playlistId?: string;
+  dragIndex?: number;
 }>();
 const emit = defineEmits<{
   edit: [track: MediaFile];
@@ -90,7 +91,14 @@ function onContextMenu(e: MouseEvent) {
 }
 
 function onDragStart(e: DragEvent) {
-  e.dataTransfer?.setData('text/plain', JSON.stringify({ paths: [props.track.path] }));
+  const payload: { paths: string[]; playlistId?: string; dragIndex?: number } = {
+    paths: [props.track.path]
+  };
+  if (props.playlistId) {
+    payload.playlistId = props.playlistId;
+    payload.dragIndex = props.dragIndex;
+  }
+  e.dataTransfer?.setData('text/plain', JSON.stringify(payload));
   e.dataTransfer!.effectAllowed = 'move';
 }
 </script>

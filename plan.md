@@ -1,7 +1,7 @@
 # Onda — Plan rozwoju
 
 > Na podstawie audytu kodu 2026-07-28. Status: typecheck 0 błędów, eslint 0 błędów (1 pre-existing `prefer-const`), build ✓, testy 141/141.
-> Ostatnia aktualizacja: 2026-07-31 (F1-F10 ✅, FS3-FS7 ✅, F11 częściowo).
+> Ostatnia aktualizacja: 2026-07-31 (F1-F10 ✅, FS3-FS7 ✅, F11a-e ✅).
 
 ---
 
@@ -155,12 +155,63 @@
 ## 📋 Pozostałe zadania
 
 ### Faza 11 — Dalsze usprawnienia
-**Priorytet: 🟢 NISKI**
+
+**Status:** ✅ Ukończone (F11a–e) | Priorytet: 🟢 NISKI–🟡 ŚREDNI
+
+> Plan 2026-07-31. Uwagi z analizy kodu (wszystkie naprawione):
+> - **Bug (F11c):** `playCount`/`lastPlayed` nigdy nie są aktualizowane przy odtwarzaniu — `recentTracks`/`mostPlayed` zawsze puste (tylko ładowane z `library:loadScanned`, nigdy zapisywane).
+> - **Bug (F11a):** biblioteka nie skanuje obrazów — `IMAGE_EXTS` istnieje w `shared/constants.ts`, ale `library-handlers.ts` używa tylko `AUDIO_EXT_SET`/`VIDEO_EXT_SET`.
+> - **F11d:** `handleTabDrop` w `ExplorerView.vue` ma już obsługę same-window drop (`claimTabDrag(path); return true`) — brakowało tylko faktycznego reorderu i `draggable` na kartach.
+
 - [x] **Własne skróty klawiszowe w settings** — `SettingsShortcuts.vue` edytowalny (record-key), `settings.updateShortcut()` + persistencja w `settings.shortcuts`
-- [ ] Image viewer w library (ImageViewer istnieje tylko w Explorer)
-- [ ] Playlisty z drag&drop reorder (jest DnD do playlist, brak reorderu tracków wewnątrz)
-- [ ] Historia odtwarzania — rozbudowa (jest `player.history` + QueuePanel tab + `mostPlayed`/`recentTracks` w library; brak statystyk per-utwór)
-- [ ] **Tab reorder** — przeciąganie zakładek w pasku (same-window drop = no-op, komentarz w `handleTabDrop`)
+
+#### F11a — Image viewer w library 🟢 NISKI (~4h)
+> Cel: przeglądarka zdjęć (reuse `ImageViewer.vue`) dla obrazów z biblioteki + skanowanie obrazów.
+
+**Kroki (✅ wykonane):**
+1. ✅ **Skan obrazów w bibliotece** (`src/main/ipc/library-handlers.ts`)
+   - `IMAGE_EXTS` dodane do skanowania; nowy typ `'image'` w `MediaFile.type` (typy: `media.ts`, `library-handlers.ts`, `library.ts` + testy)
+   - `processImageFile()` + `imageTasks`/`imageCount` w `scanDir` (chunkowanie 50/thunk z interleavingiem audio/video/image)
+2. ✅ **Nowa zakładka w `LibraryView.vue`** — `tab: 'images'` (ikona `Images`), computed `filteredImages` (z debouncedQuery), siatka miniatur + pełne URL przez `mediaServerUrl`
+3. ✅ **Reuse `ImageViewer.vue`** — adapter `imageFileItems` (mapowanie `MediaFile → FileItem`) + `imageViewerIndex`/`openImageViewer`
+4. ✅ **i18n** — `library.images` + `library.noImages` (pl/en)
+
+**Ryzyka:** skan obrazów zwiększa czas scanu dużej biblioteki (reuse istniejącego chunkowania 50/thunk); duże zdjęcia przez mediaServer (range requests już działają).
+
+#### F11b — Playlisty z drag&drop reorder 🟡 ŚREDNI (~4h)
+> Cel: reorder utworów WEWNĄTRZ playlisty przeciąganiem + kolejność zapisywana.
+
+**Kroki (✅ wykonane):**
+1. ✅ **Akcja w store** (`stores/library.ts`) — `reorderPlaylistTrack(playlistId, fromIdx, toIdx)` + `savePlaylists()` (guardy, `updatedAt`, testy w `library.test.ts`)
+2. ✅ **DnD na listach** — `LibraryTrackRow.vue`: prop `dragIndex`, `dragstart` wysyła `{ paths, playlistId, dragIndex }`
+3. ✅ **Drop w `LibraryPlaylistManager.vue`** — `parseDragPayload()` rozróżnia reorder playlisty od dropu z biblioteki; `onTrackDrop(e, toIdx)` z korektą indeksu (`from < toIdx ? toIdx - 1 : toIdx`) + highlight `dragOverTrackIdx`
+4. ✅ **i18n** — bez nowych kluczy (drag hint niepotrzebny)
+
+**Ryzyka:** kolizja z istniejącym DnD do playlist (drop tracków z biblioteki) — rozróżnić payloadem; wiersze wirtualizowane? (playlista renderuje `v-for`, nie virtualizer — brak problemu).
+
+#### F11c — Historia odtwarzania + statystyki 🟡 ŚREDNI (~3h)
+> Cel: zapis `playCount`/`lastPlayed` przy odtwarzaniu + widok statystyk.
+
+**Kroki (✅ wykonane):**
+1. ✅ **Bugfix: zapis statystyk** (`stores/player.ts`) — helper `recordPlay(track)` wołany w `setTrack`/`prevTrack`/`playFromHistory`; `updateTrack` z `triggerRef` (tylko jeśli track istnieje w bibliotece) + `persistStats()` debounced 1s → `library:saveScanned`
+2. ✅ **Rozbudowa widoku historii** — `recentTracks`/`mostPlayed` teraz zasilane danymi (poprawa planu: panel statystyk odłożony, bugfix wystarcza)
+3. ✅ **Testy** — `player.test.ts`: 3 testy `recordPlay` (inkrementacja, brak tracka w bibliotece, prev/history paths)
+
+**Ryzyka:** persistencja `playCount` tylko dla tracków z biblioteki; debounce zapisu żeby nie floodować IPC przy szybkim skipowaniu.
+
+#### F11d — Tab reorder 🟢 NISKI (~2h)
+> Cel: przeciąganie zakładek w pasku eksplorera.
+
+**Kroki (✅ wykonane):**
+1. ✅ **Akcja w store** (`stores/explorer.ts`) — `reorderTab(from, to)` z korektą `activeTabIndex` (testy: `explorer.test.ts`, 5 przypadków)
+2. ✅ **DnD kart** (`ExplorerView.vue`) — `draggable` + `dragstart` na kartach; `onTabDrop` same-window → `explorer.reorderTab(draggingTabIdx, idx)`; `isDraggingTab` wyłącza auto-switch, ring drop-target włączony
+3. ✅ **Ctrl+W / middle-click** — bez zmian (działa)
+
+**Ryzyka:** kolizja z istniejącym tab→window drag — użyć tego samego `beginTabDrag`/`claimTabDrag` + nowy flag `isReorder` dla dropu na samej karcie; testy `explorer` store.
+
+#### F11e — QoL bundle 🟢 NISKI (~2h, opcjonalnie) ✅
+- ✅ Pre-existing eslint error `prefer-const` (`src/main/index.ts:17` — `preFullscreenBounds`) — naprawione
+- ⏳ Podsumowanie stanu w `project.md` (liczby/statystyki) — po zamknięciu F11a–d
 
 ---
 
@@ -183,6 +234,11 @@
 | **FS5** Kopiuj/Wytnij/Wklej | FS4 | ✅ |
 | **FS6** Właściwości pliku/folderu | FS5 | ✅ |
 | **FS7** Fix session 4 (refresh + drag okna) | F10 | ✅ |
+| **F11a** Image viewer w library | F2+F6 (ImageViewer) | ✅ |
+| **F11b** Playlisty reorder | FS5 | ✅ |
+| **F11c** Historia + statystyki | F2 | ✅ |
+| **F11d** Tab reorder | F9 | ✅ |
+| **F11e** QoL bundle | F11a–d | ✅ |
 
 ---
 
@@ -196,5 +252,10 @@
 | **FS4-FS6** (duplikaty, clipboard, properties) | `fs-handlers.ts`, `ExplorerView.vue`, `stores/clipboard.ts`, locales |
 | **Fix session 4** (refresh + drag okna) | `window-ipc.ts`, `App.vue`, `ExplorerNavPane.vue`, `ExplorerBreadcrumb.vue`, `AppMenu.vue`, `ExplorerView.vue` |
 | **Cleanup logów** | `logger.ts`, `window-ipc.ts`, `index.ts`, `App.vue`, `ExplorerView.vue`, `ExplorerWindowView.vue`, `fileDrag.ts` |
+| **F11a** Image viewer w library | `library-handlers.ts`, `media.ts`, `library.ts`, `LibraryView.vue`, `locales/pl.ts`, `locales/en.ts`, `library.test.ts` |
+| **F11b** Playlisty reorder | `library.ts`, `LibraryTrackRow.vue`, `LibraryPlaylistManager.vue`, `library.test.ts` |
+| **F11c** Statystyki odtwarzania | `player.ts`, `player.test.ts` |
+| **F11d** Tab reorder | `explorer.ts`, `ExplorerView.vue`, `explorer.test.ts` (nowy), `vitest.setup.ts` |
+| **F11e** QoL | `index.ts`, `plan.md` |
 
 Ostatni commit: `c40f380` "fix, and findduplicates". Sugerowany commit: F8-F10 + FS4-FS6 + fix session 4 jako osobny commit (zgodnie z konwencją `Sprint N: ...`).
