@@ -5,15 +5,17 @@ import { useI18n } from 'vue-i18n';
 import { useVirtualizer } from '@tanstack/vue-virtual';
 import {
   ChevronUp, ChevronDown,
-  HardDrive, FolderOpen, Plus, Pin, PinOff, X
+  HardDrive, FolderOpen, Monitor, Plus, Pin, PinOff, X, Copy, Trash2, Check, RotateCw, FileText
 } from '@lucide/vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
+import { useClipboardStore } from '@renderer/stores/clipboard';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore, ContextMenuItem } from '@renderer/stores/ui';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
 import { logger } from '@renderer/utils/logger';
+import { formatFileSize } from '@renderer/utils/formatters';
 import { SUPPORTED_IMAGE_FORMATS } from '@renderer/utils/constants';
 import ExplorerNavPane from '@renderer/components/explorer/ExplorerNavPane.vue';
 import ExplorerToolbar from '@renderer/components/explorer/ExplorerToolbar.vue';
@@ -26,6 +28,7 @@ import type { FileItem } from '@renderer/types/explorer';
 import type { MediaFile } from '@renderer/types/media';
 
 const explorer = useExplorerStore();
+const fileClipboard = useClipboardStore();
 const library = useLibraryStore();
 const player = usePlayerStore();
 const settings = useSettingsStore();
@@ -42,6 +45,68 @@ const pinned = ref(false);
 function togglePin() {
   pinned.value = !pinned.value;
   window.api?.invoke('window:setAlwaysOnTop', pinned.value);
+}
+
+function toggleDuplicatesPanel() {
+  dupPanelOpen.value = !dupPanelOpen.value;
+  if (dupPanelOpen.value && dupGroups.value.length === 0 && !dupLoading.value) runDuplicatesScan();
+}
+
+async function runDuplicatesScan() {
+  if (!explorer.currentPath) return;
+  dupLoading.value = true;
+  dupSelected.value = new Set();
+  try {
+    const result = (await window.api?.invoke('fs:findDuplicates', explorer.currentPath)) as DupGroup[] || [];
+    dupGroups.value = result;
+  } catch {
+    dupGroups.value = [];
+  } finally {
+    dupLoading.value = false;
+  }
+}
+
+function selectAllDuplicates() {
+  const set = new Set<string>();
+  for (const g of dupGroups.value) for (const d of g.duplicates) set.add(d);
+  dupSelected.value = set;
+}
+
+function toggleDupSelection(path: string) {
+  const set = new Set(dupSelected.value);
+  if (set.has(path)) set.delete(path);
+  else set.add(path);
+  dupSelected.value = set;
+}
+
+async function deleteSelectedDuplicates() {
+  const paths = [...dupSelected.value];
+  if (paths.length === 0) return;
+  const ok = await showConfirm(t('explorer.duplicatesDeleteConfirm', { n: paths.length }));
+  if (!ok) return;
+  await Promise.all(paths.map((p) => window.api?.invoke('fs:delete', p)));
+  dupSelected.value = new Set();
+  await runDuplicatesScan();
+  explorer.loadFiles(explorer.currentPath);
+}
+
+function basenameOf(p: string): string {
+  const parts = p.split(/[\\/]/);
+  return parts[parts.length - 1] || p;
+}
+
+function dupName(group: DupGroup, di: number): string {
+  return basenameOf(group.duplicates[di]);
+}
+
+function revealDupFile(path: string) {
+  const idx = filteredFiles.value.findIndex((f) => f.path === path);
+  explorer.clearSelection();
+  explorer.selectedFiles.add(path);
+  if (idx >= 0) {
+    const row = isListMode.value ? idx : Math.floor(idx / itemsPerRow.value);
+    virtualizer.value.scrollToIndex(row, { align: 'center' });
+  }
 }
 
 const IMAGE_EXTS = new Set(SUPPORTED_IMAGE_FORMATS);
@@ -73,6 +138,31 @@ const tabDropTargetIdx = ref(-1);
 const tabDragEnterCount = ref(0);
 const tabDropTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 const hoveredFolderPath = ref<string | null>(null);
+
+// duplicate finder state
+interface DupGroup { original: string; duplicates: string[] }
+const dupPanelOpen = ref(false);
+const dupLoading = ref(false);
+const dupGroups = ref<DupGroup[]>([]);
+const dupSelected = ref<Set<string>>(new Set());
+
+// properties dialog state
+interface PropertiesData {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  size: number;
+  createdAt: number;
+  modifiedAt: number;
+  itemCount?: number;
+  dirCount?: number;
+  fileCount?: number;
+  totalSize?: number;
+  truncated?: boolean;
+}
+const propertiesItem = ref<FileItem | null>(null);
+const propertiesData = ref<PropertiesData | null>(null);
+const propertiesName = ref('');
 
 // band select
 const bandSelect = ref<{ left: number; top: number; width: number; height: number } | null>(null);
@@ -212,6 +302,10 @@ function handleKeydown(e: KeyboardEvent) {
   } else if (e.key === 'F2') {
     e.preventDefault();
     renameSelected();
+  } else if (e.altKey && e.key === 'Enter') {
+    e.preventDefault();
+    const item = filteredFiles.value.find((f) => explorer.selectedFiles.has(f.path));
+    if (item) openProperties(item);
   } else if (e.key === 'Enter') {
     enterSelected();
   } else if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
@@ -219,7 +313,14 @@ function handleKeydown(e: KeyboardEvent) {
     explorer.clearSelection();
     filteredFiles.value.forEach((f) => explorer.selectedFiles.add(f.path));
   } else if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+    e.preventDefault();
     copySelectedPaths();
+  } else if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
+    e.preventDefault();
+    cutSelectedPaths();
+  } else if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+    e.preventDefault();
+    pasteClipboard();
   }
 }
 
@@ -255,8 +356,31 @@ function copySelectedPaths() {
     .filter((f) => explorer.selectedFiles.has(f.path))
     .map((f) => f.path);
   if (paths.length > 0) {
-    navigator.clipboard.writeText(paths.join('\n')).catch((err) => logger.error('Explorer', 'clipboardWrite', err));
+    fileClipboard.setClipboard(paths, 'copy');
   }
+}
+
+function cutSelectedPaths() {
+  const paths = filteredFiles.value
+    .filter((f) => explorer.selectedFiles.has(f.path))
+    .map((f) => f.path);
+  if (paths.length > 0) {
+    fileClipboard.setClipboard(paths, 'cut');
+  }
+}
+
+async function pasteClipboard() {
+  if (fileClipboard.items.length === 0 || !fileClipboard.action) return;
+  if (!explorer.currentPath) return;
+  const paths = fileClipboard.items.map((i) => i.path);
+  const dest = explorer.currentPath;
+  if (fileClipboard.action === 'copy') {
+    await window.api?.invoke('fs:copy', paths, dest);
+  } else {
+    await window.api?.invoke('fs:move', paths, dest);
+    fileClipboard.clear();
+  }
+  explorer.loadFiles(dest);
 }
 
 async function createNewFolder() {
@@ -321,8 +445,21 @@ function pushSeparator(items: ContextMenuItem[]) {
   items.push({ separator: true, label: '' });
 }
 
+function pushClipboardItems(items: ContextMenuItem[]) {
+  if (explorer.selectedCount > 0) {
+    items.push({ label: t('common.copy'), action: () => copySelectedPaths(), shortcut: 'Ctrl+C' });
+    items.push({ label: t('common.cut'), action: () => cutSelectedPaths(), shortcut: 'Ctrl+X' });
+  }
+  if (fileClipboard.items.length > 0) {
+    items.push({ label: t('common.paste'), action: () => pasteClipboard(), shortcut: 'Ctrl+V' });
+  }
+}
+
 function handleEmptyContextMenu(event: MouseEvent) {
   const items: ContextMenuItem[] = [];
+  explorer.clearSelection();
+  pushClipboardItems(items);
+  if (items.length > 0) pushSeparator(items);
   items.push({ label: t('explorer.newFolder'), action: () => createNewFolder() });
   items.push({ label: t('explorer.openInTerminal'), action: () => window.api?.invoke('shell:openTerminal', explorer.currentPath) });
   pushSeparator(items);
@@ -334,7 +471,13 @@ function handleEmptyContextMenu(event: MouseEvent) {
 }
 
 function handleContextMenu(event: MouseEvent, item: FileItem) {
+  if (!explorer.selectedFiles.has(item.path)) {
+    explorer.clearSelection();
+    explorer.selectedFiles.add(item.path);
+  }
   const items: ContextMenuItem[] = [];
+  pushClipboardItems(items);
+  if (items.length > 0) pushSeparator(items);
 
   if (item.isDirectory) {
     items.push({ label: t('explorer.open'), action: () => explorer.navigateTo(item.path), shortcut: 'Enter' });
@@ -385,6 +528,8 @@ function handleContextMenu(event: MouseEvent, item: FileItem) {
   }
 
   pushSeparator(items);
+  items.push({ label: t('explorer.properties'), action: () => openProperties(item), shortcut: 'Alt+Enter' });
+  pushSeparator(items);
   items.push({ label: t('common.selectAll'), action: () => { explorer.clearSelection(); filteredFiles.value.forEach((f) => explorer.selectedFiles.add(f.path)); }, shortcut: 'Ctrl+A' });
   ui.showContextMenu(event.clientX, event.clientY, items);
 }
@@ -402,6 +547,30 @@ async function renameItem(item: FileItem) {
     await window.api?.invoke('media:renameFile', item.path, newName);
     explorer.loadFiles(explorer.currentPath);
   }
+}
+
+// --- properties dialog ---
+async function openProperties(item: FileItem) {
+  propertiesItem.value = item;
+  propertiesName.value = item.name;
+  propertiesData.value = null;
+  const data = (await window.api?.invoke('fs:getProperties', item.path)) as PropertiesData | null || null;
+  propertiesData.value = data;
+}
+
+function closeProperties() {
+  propertiesItem.value = null;
+  propertiesData.value = null;
+}
+
+async function applyProperties() {
+  if (!propertiesItem.value) return;
+  const newName = propertiesName.value.trim();
+  if (newName && newName !== propertiesItem.value.name) {
+    await window.api?.invoke('media:renameFile', propertiesItem.value.path, newName);
+    explorer.loadFiles(explorer.currentPath);
+  }
+  closeProperties();
 }
 
 // --- content area drag & drop ---
@@ -436,6 +605,22 @@ async function onContentDrop(e: DragEvent) {
   const method = ctrl ? 'fs:copy' : 'fs:move';
   await window.api?.invoke(method, paths, targetDir);
   explorer.loadFiles(explorer.currentPath);
+}
+
+// --- tab icons & middle-click close ---
+function tabIcon(tab: { path: string }) {
+  return tab.path ? FolderOpen : Monitor;
+}
+
+function onTabAuxClick(e: MouseEvent, idx: number) {
+  if (e.button === 1) {
+    e.preventDefault();
+    explorer.closeTab(idx);
+  }
+}
+
+function onTabMouseDown(e: MouseEvent) {
+  if (e.button === 1) e.preventDefault();
 }
 
 // --- tab drag & drop ---
@@ -534,26 +719,33 @@ function onBandMouseUp() {
 <template>
   <div class="flex h-full" @dragover.prevent @drop.prevent>
     <ExplorerNavPane />
-    <div class="flex flex-col flex-1 min-w-0" @dragover.prevent @drop.prevent>
+    <div class="flex flex-col flex-1 min-w-0 relative" @dragover.prevent @drop.prevent>
       <!-- tab bar -->
-      <div v-if="explorer.tabs.length > 0" class="flex items-center gap-0.5 px-2 pt-1.5 pb-0.5 bg-bg-surface border-b border-border-default overflow-x-auto shrink-0">
+      <div v-if="explorer.tabs.length > 0" class="flex items-center gap-1 px-2 pt-1.5 pb-1 bg-bg-surface border-b border-border-default overflow-x-auto shrink-0">
         <button
           v-for="(tab, idx) in explorer.tabs"
           :key="tab.id"
-          class="flex items-center gap-1 px-2.5 py-1 text-xs rounded-t-md transition-colors shrink-0 max-w-40"
+          class="group flex items-center gap-1.5 px-2.5 h-7 text-xs rounded-md transition-colors shrink-0 min-w-0 max-w-44 border"
           :class="{
-            'bg-bg-base text-fg-base border border-border-default border-b-transparent': explorer.activeTabIndex === idx,
-            'text-fg-muted hover:text-fg-base hover:bg-bg-hover': explorer.activeTabIndex !== idx,
+            'bg-accent-base text-white border-transparent': explorer.activeTabIndex === idx,
+            'bg-bg-base text-fg-muted border-transparent hover:text-fg-base hover:bg-bg-hover': explorer.activeTabIndex !== idx,
             'ring-2 ring-accent-base': tabDropTargetIdx === idx
           }"
           @click="explorer.switchTab(idx)"
+          @auxclick="onTabAuxClick($event, idx)"
+          @mousedown="onTabMouseDown"
           @dragover="onTabDragOver($event, idx)"
           @dragenter="onTabDragEnter($event, idx)"
           @dragleave="onTabDragLeave"
           @drop="onTabDrop($event, idx)"
         >
-          <span class="truncate">{{ tab.label || $t('explorer.thisComputer') }}</span>
-          <span class="shrink-0 p-0.5 rounded cursor-pointer hover:bg-bg-hover/50 text-fg-faint hover:text-fg-base transition-colors" @click.stop="explorer.closeTab(idx)"><X :size="10" /></span>
+          <component :is="tabIcon(tab)" :size="12" class="shrink-0" :class="explorer.activeTabIndex === idx ? 'text-white/80' : 'text-accent-base'" />
+          <span class="truncate flex-1">{{ tab.label || $t('explorer.thisComputer') }}</span>
+          <span
+            class="shrink-0 p-0.5 rounded cursor-pointer hover:bg-black/20 transition-opacity"
+            :class="explorer.activeTabIndex === idx ? 'text-white/80 hover:text-white opacity-100' : 'text-fg-faint opacity-0 group-hover:opacity-100 hover:bg-bg-hover hover:text-fg-base'"
+            @click.stop="explorer.closeTab(idx)"
+          ><X :size="10" /></span>
         </button>
         <button class="shrink-0 p-1 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors" :title="$t('nav.newTab')" @click="explorer.addTab(explorer.currentPath || '')"><Plus :size="12" /></button>
       </div>
@@ -567,6 +759,8 @@ function onBandMouseUp() {
         <ExplorerViewModeDropdown />
 
         <button class="p-1.5 rounded-lg transition-colors" :class="pinned ? 'text-accent-base bg-accent-ghost' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'" :title="$t('explorer.alwaysOnTop')" @click="togglePin"><Pin v-if="pinned" :size="14" class="pointer-events-none" /><PinOff v-else :size="14" class="pointer-events-none" /></button>
+
+        <button class="p-1.5 rounded-lg transition-colors" :class="dupPanelOpen ? 'text-accent-base bg-accent-ghost' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'" :title="$t('explorer.duplicates')" @click="toggleDuplicatesPanel"><Copy :size="14" class="pointer-events-none" /></button>
 
         <button class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors" :title="$t('explorer.newFolder')" @click="createNewFolder"><Plus :size="16" class="pointer-events-none" /></button>
 
@@ -595,7 +789,7 @@ function onBandMouseUp() {
               :draggable="!explorer.isAtDrives"
               :data-file-path="filteredFiles[virtualRow.index].path"
               :data-folder-path="filteredFiles[virtualRow.index].isDirectory ? filteredFiles[virtualRow.index].path : undefined"
-              class="w-full flex items-center gap-2 px-2 py-1 rounded-md hover:bg-bg-hover transition-colors text-left text-xs group relative h-full" :class="{ 'bg-accent-ghost ring-1 ring-accent-base': explorer.selectedFiles.has(filteredFiles[virtualRow.index].path), 'bg-accent-ghost/15 ring-1 ring-accent-base/30': !filteredFiles[virtualRow.index].isDirectory ? false : isLibraryFolder(filteredFiles[virtualRow.index].path) && !explorer.selectedFiles.has(filteredFiles[virtualRow.index].path), 'ring-2 ring-accent-base bg-accent-ghost/50': hoveredFolderPath && hoveredFolderPath === filteredFiles[virtualRow.index].path }" @click="onItemClick($event, filteredFiles[virtualRow.index].path, virtualRow.index)" @dblclick="handleDoubleClick(filteredFiles[virtualRow.index])" @contextmenu.stop.prevent="handleContextMenu($event, filteredFiles[virtualRow.index])" @dragstart="(e: DragEvent) => { const p = filteredFiles[virtualRow.index].path; if (explorer.selectedFiles.has(p)) { e.dataTransfer?.setData('text/plain', [...explorer.selectedFiles].join('\n')); } else { e.dataTransfer?.setData('text/plain', p); } if (e.dataTransfer) e.dataTransfer.effectAllowed = 'all'; }">
+              class="w-full flex items-center gap-2 px-2 py-1 rounded-md hover:bg-bg-hover transition-colors text-left text-xs group relative h-full" :class="{ 'bg-accent-ghost ring-1 ring-accent-base': explorer.selectedFiles.has(filteredFiles[virtualRow.index].path), 'bg-accent-ghost/15 ring-1 ring-accent-base/30': !filteredFiles[virtualRow.index].isDirectory ? false : isLibraryFolder(filteredFiles[virtualRow.index].path) && !explorer.selectedFiles.has(filteredFiles[virtualRow.index].path), 'ring-2 ring-accent-base bg-accent-ghost/50': hoveredFolderPath && hoveredFolderPath === filteredFiles[virtualRow.index].path, 'opacity-40': fileClipboard.isCut(filteredFiles[virtualRow.index].path) }" @click="onItemClick($event, filteredFiles[virtualRow.index].path, virtualRow.index)" @dblclick="handleDoubleClick(filteredFiles[virtualRow.index])" @contextmenu.stop.prevent="handleContextMenu($event, filteredFiles[virtualRow.index])" @dragstart="(e: DragEvent) => { const p = filteredFiles[virtualRow.index].path; if (explorer.selectedFiles.has(p)) { e.dataTransfer?.setData('text/plain', [...explorer.selectedFiles].join('\n')); } else { e.dataTransfer?.setData('text/plain', p); } if (e.dataTransfer) e.dataTransfer.effectAllowed = 'all'; }">
               <img v-if="extraSmallIcon(filteredFiles[virtualRow.index])" :src="extraSmallIcon(filteredFiles[virtualRow.index])!" class="w-4 h-4 object-contain shrink-0" />
               <HardDrive v-else-if="explorer.isAtDrives" :size="12" class="text-accent-base shrink-0" />
               <FolderOpen v-else-if="filteredFiles[virtualRow.index].isDirectory" :size="12" class="text-accent-base shrink-0" />
@@ -609,7 +803,7 @@ function onBandMouseUp() {
         <div v-else-if="isGridMode && filteredFiles.length > 0" :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
           <div v-for="virtualRow in virtualizer.getVirtualItems()" :key="virtualRow.index" :style="{ position: 'absolute', top: 0, transform: `translateY(${virtualRow.start}px)`, height: `${virtualRow.size}px`, width: '100%', display: 'flex', gap: `${GRID_GAPS[explorer.viewMode]}px` }" class="items-start px-[2px]">
             <div v-for="(item, i) in getRowItems(virtualRow.index)" :key="item.path" :style="{ width: `${GRID_ITEM_WIDTHS[explorer.viewMode]}px`, flex: '0 0 auto' }">
-              <ExplorerGridItem :item="item" :view-mode="explorer.viewMode" :is-selected="explorer.selectedFiles.has(item.path)" :is-at-drives="explorer.isAtDrives" :is-library-folder="!item.isDirectory ? false : isLibraryFolder(item.path)" :hovered-folder-path="hoveredFolderPath" @select="(path: string, e: MouseEvent) => onItemClick(e, path, virtualRow.index * itemsPerRow + i)" @double-click="handleDoubleClick" @context-menu="handleContextMenu" />
+              <ExplorerGridItem :item="item" :view-mode="explorer.viewMode" :is-selected="explorer.selectedFiles.has(item.path)" :is-at-drives="explorer.isAtDrives" :is-library-folder="!item.isDirectory ? false : isLibraryFolder(item.path)" :hovered-folder-path="hoveredFolderPath" :is-cut="fileClipboard.isCut(item.path)" @select="(path: string, e: MouseEvent) => onItemClick(e, path, virtualRow.index * itemsPerRow + i)" @double-click="handleDoubleClick" @context-menu="handleContextMenu" />
             </div>
           </div>
         </div>
@@ -624,8 +818,48 @@ function onBandMouseUp() {
           </div>
           <div :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
             <div v-for="virtualRow in virtualizer.getVirtualItems()" :key="virtualRow.index" :style="{ position: 'absolute', top: 0, transform: `translateY(${virtualRow.start}px)`, height: `${virtualRow.size}px`, width: '100%' }">
-              <ExplorerTableRow :item="filteredFiles[virtualRow.index]" :is-selected="explorer.selectedFiles.has(filteredFiles[virtualRow.index].path)" :is-at-drives="explorer.isAtDrives" :is-library-folder="!filteredFiles[virtualRow.index].isDirectory ? false : isLibraryFolder(filteredFiles[virtualRow.index].path)" :hovered-folder-path="hoveredFolderPath" @select="(path: string, e: MouseEvent) => onItemClick(e, path, virtualRow.index)" @double-click="handleDoubleClick" @context-menu="handleContextMenu" />
+              <ExplorerTableRow :item="filteredFiles[virtualRow.index]" :is-selected="explorer.selectedFiles.has(filteredFiles[virtualRow.index].path)" :is-at-drives="explorer.isAtDrives" :is-library-folder="!filteredFiles[virtualRow.index].isDirectory ? false : isLibraryFolder(filteredFiles[virtualRow.index].path)" :hovered-folder-path="hoveredFolderPath" :is-cut="fileClipboard.isCut(filteredFiles[virtualRow.index].path)" @select="(path: string, e: MouseEvent) => onItemClick(e, path, virtualRow.index)" @double-click="handleDoubleClick" @context-menu="handleContextMenu" />
             </div>
+          </div>
+        </div>
+
+        <!-- duplicates side panel -->
+        <div v-if="dupPanelOpen" class="absolute right-0 top-0 bottom-0 w-80 max-w-[85%] z-20 flex flex-col bg-bg-surface border-l border-border-default shadow-2xl">
+          <div class="flex items-center justify-between px-3 py-2.5 border-b border-border-default shrink-0">
+            <h3 class="text-xs font-semibold text-fg-base flex items-center gap-2"><Copy :size="14" class="text-accent-base" /> {{ $t('explorer.duplicates') }}</h3>
+            <button class="p-1 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors" @click="dupPanelOpen = false"><X :size="14" /></button>
+          </div>
+
+          <div v-if="dupLoading" class="flex flex-col items-center justify-center py-10 text-fg-faint gap-2">
+            <RotateCw :size="20" class="animate-spin" />
+            <p class="text-xs">{{ $t('explorer.duplicatesScanning') }}</p>
+          </div>
+
+          <div v-else-if="dupGroups.length === 0" class="flex flex-col items-center justify-center py-10 text-fg-faint gap-2">
+            <Check :size="24" class="opacity-40" />
+            <p class="text-xs">{{ $t('explorer.duplicatesNone') }}</p>
+          </div>
+
+          <div v-else class="flex-1 overflow-y-auto p-2 space-y-2">
+            <p class="text-[11px] text-fg-muted px-1">{{ $t('explorer.duplicatesFound', { n: dupGroups.length }) }}</p>
+            <div v-for="group in dupGroups" :key="group.original" class="rounded-lg border border-border-default overflow-hidden">
+              <div class="flex items-center gap-2 px-2.5 py-1.5 bg-bg-elevated border-b border-border-default cursor-pointer hover:bg-bg-hover transition-colors" @click="revealDupFile(group.original)">
+                <FileText :size="13" class="text-accent-base shrink-0" />
+                <span class="text-xs font-medium text-fg-base truncate flex-1">{{ basenameOf(group.original) }}</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-accent-base/15 text-accent-base font-semibold shrink-0">{{ $t('explorer.duplicatesOriginal') }}</span>
+              </div>
+              <div class="py-1">
+                <div v-for="(dup, di) in group.duplicates" :key="dup" class="flex items-center gap-2 px-2.5 py-1.5 hover:bg-bg-hover transition-colors cursor-pointer" @click="revealDupFile(dup)">
+                  <input type="checkbox" class="accent-accent-base shrink-0" :checked="dupSelected.has(dup)" @click.stop="toggleDupSelection(dup)">
+                  <span class="text-xs text-fg-base truncate flex-1">{{ dupName(group, di) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="dupGroups.length > 0" class="flex items-center gap-2 px-3 py-2.5 border-t border-border-default shrink-0">
+            <button class="flex-1 px-2 py-1.5 rounded-lg text-[11px] text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors" @click="selectAllDuplicates">{{ $t('explorer.duplicatesSelectAll') }}</button>
+            <button class="flex-1 px-2 py-1.5 rounded-lg text-[11px] bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors flex items-center justify-center gap-1 disabled:opacity-40 disabled:pointer-events-none" :disabled="dupSelected.size === 0" @click="deleteSelectedDuplicates"><Trash2 :size="12" /> {{ $t('explorer.duplicatesDelete', { n: dupSelected.size }) }}</button>
           </div>
         </div>
       </div>
@@ -642,6 +876,52 @@ function onBandMouseUp() {
             <div class="flex justify-end gap-2 mt-4">
               <button class="px-4 py-1.5 rounded-lg text-xs text-fg-muted hover:bg-bg-hover transition-colors" @click="promptCancel">{{ $t('common.cancel') }}</button>
               <button class="px-4 py-1.5 rounded-lg text-xs bg-accent-base text-white hover:bg-accent-base/90 transition-colors" @click="promptConfirm">{{ $t('common.ok') }}</button>
+            </div>
+          </div>
+        </div>
+      </Teleport>
+
+      <!-- properties dialog -->
+      <Teleport to="body">
+        <div v-if="propertiesItem" class="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center" @click.self="closeProperties">
+          <div class="bg-bg-surface border border-border-default rounded-xl w-[440px] max-w-[92vw] shadow-2xl overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-border-default">
+              <h3 class="text-sm font-semibold text-fg-base flex items-center gap-2">
+                <FolderOpen v-if="propertiesItem.isDirectory" :size="16" class="text-accent-base" />
+                <FileText v-else :size="16" class="text-accent-base" />
+                {{ $t('explorer.properties') }}
+              </h3>
+              <button class="p-1 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors" @click="closeProperties"><X :size="14" /></button>
+            </div>
+            <div class="p-4 space-y-3">
+              <div>
+                <label class="text-[11px] text-fg-faint uppercase tracking-wider">{{ $t('explorer.name') }}</label>
+                <input v-model="propertiesName" type="text" class="w-full mt-1 px-3 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-sm text-fg-base outline-none focus:ring-1 focus:ring-accent-base" @keydown.enter="applyProperties">
+              </div>
+              <div class="grid grid-cols-[120px_1fr] gap-x-3 gap-y-2 text-xs">
+                <span class="text-fg-faint">{{ $t('explorer.propertiesType') }}</span>
+                <span class="text-fg-base">{{ propertiesItem.isDirectory ? $t('explorer.propertiesFolder') : (propertiesItem.extension || '—') }}</span>
+                <span class="text-fg-faint">{{ $t('explorer.propertiesLocation') }}</span>
+                <span class="text-fg-base break-all font-mono">{{ propertiesItem.path }}</span>
+                <template v-if="propertiesItem.isDirectory && propertiesData">
+                  <span class="text-fg-faint">{{ $t('explorer.propertiesSize') }}</span>
+                  <span class="text-fg-base">{{ formatFileSize(propertiesData.totalSize || 0) }}</span>
+                  <span class="text-fg-faint">{{ $t('explorer.propertiesContains') }}</span>
+                  <span class="text-fg-base">{{ $t('explorer.propertiesContainsValue', { n: propertiesData.itemCount || 0, d: propertiesData.dirCount || 0, f: propertiesData.fileCount || 0 }) }}</span>
+                </template>
+                <template v-else>
+                  <span class="text-fg-faint">{{ $t('explorer.propertiesSize') }}</span>
+                  <span class="text-fg-base">{{ formatFileSize(propertiesItem.size) }}</span>
+                </template>
+                <span class="text-fg-faint">{{ $t('explorer.propertiesCreated') }}</span>
+                <span class="text-fg-base">{{ new Date(propertiesItem.createdAt).toLocaleString() }}</span>
+                <span class="text-fg-faint">{{ $t('explorer.propertiesModified') }}</span>
+                <span class="text-fg-base">{{ new Date(propertiesItem.modifiedAt).toLocaleString() }}</span>
+              </div>
+            </div>
+            <div class="flex justify-end gap-2 px-4 py-3 border-t border-border-default">
+              <button class="px-4 py-1.5 rounded-lg text-xs text-fg-muted hover:bg-bg-hover transition-colors" @click="closeProperties">{{ $t('common.cancel') }}</button>
+              <button class="px-4 py-1.5 rounded-lg text-xs bg-accent-base text-white hover:bg-accent-base/90 transition-colors" @click="applyProperties">{{ $t('common.ok') }}</button>
             </div>
           </div>
         </div>

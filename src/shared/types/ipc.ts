@@ -32,6 +32,26 @@ export interface IpcChannels {
   'fs:delete': { args: [filePath: string]; result: void };
   'fs:move': { args: [paths: string[], destination: string]; result: void };
   'fs:copy': { args: [paths: string[], destination: string]; result: void };
+  'fs:findDuplicates': {
+    args: [directory: string];
+    result: { original: string; duplicates: string[] }[];
+  };
+  'fs:getProperties': {
+    args: [filePath: string];
+    result: {
+      name: string;
+      path: string;
+      isDirectory: boolean;
+      size: number;
+      createdAt: number;
+      modifiedAt: number;
+      itemCount?: number;
+      dirCount?: number;
+      fileCount?: number;
+      totalSize?: number;
+      truncated?: boolean;
+    } | null;
+  };
   'dialog:openFile': {
     args: [options?: unknown];
     result: { canceled: boolean; filePaths: string[] };

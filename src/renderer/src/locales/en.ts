@@ -281,7 +281,24 @@ export default {
     copyAction: 'Copy',
     nItems: '{n} item(s)',
     alwaysOnTop: 'Always on top',
-    libraryFolder: 'Library folder'
+    libraryFolder: 'Library folder',
+    duplicates: 'Find duplicates',
+    duplicatesScanning: 'Scanning for duplicates…',
+    duplicatesNone: 'No duplicates found',
+    duplicatesFound: '{n} group(s) of duplicates',
+    duplicatesOriginal: 'original',
+    duplicatesSelectAll: 'Select all',
+    duplicatesDelete: 'Delete ({n})',
+    duplicatesDeleteConfirm: 'Delete {n} duplicate file(s)?',
+    properties: 'Properties',
+    propertiesType: 'Type',
+    propertiesFolder: 'Folder',
+    propertiesLocation: 'Location',
+    propertiesSize: 'Size',
+    propertiesContains: 'Contains',
+    propertiesContainsValue: '{n} items ({d} folders, {f} files)',
+    propertiesCreated: 'Created',
+    propertiesModified: 'Modified'
   },
   downloads: {
     title: 'Downloads',
@@ -320,7 +337,10 @@ export default {
     tracks: 'tracks',
     files: 'files',
     selected: 'selected',
-    selectAll: 'Select all'
+    selectAll: 'Select all',
+    copy: 'Copy',
+    cut: 'Cut',
+    paste: 'Paste'
   },
   equalizer: {
     title: 'Equalizer',

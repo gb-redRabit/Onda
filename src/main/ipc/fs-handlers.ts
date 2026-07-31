@@ -1,6 +1,8 @@
 import { ipcMain, shell, app, clipboard, BrowserWindow } from 'electron';
 import { readdir, stat, lstat, readFile, writeFile, mkdir, rename, unlink, rm, copyFile, cp } from 'fs/promises';
-import { join, extname } from 'path';
+import { createReadStream } from 'fs';
+import { createHash } from 'crypto';
+import { join, extname, basename } from 'path';
 import { exec as execCb, spawn } from 'child_process';
 import { promisify } from 'util';
 import type { FileItem } from '../../renderer/src/types/explorer';
@@ -73,9 +75,122 @@ function getFileItem(fullPath: string, stats: import('fs').Stats, name: string):
   };
 }
 
+function stripDuplicateSuffix(name: string): string | null {
+  const dot = name.lastIndexOf('.');
+  const ext = dot >= 0 ? name.slice(dot) : '';
+  const base = dot >= 0 ? name.slice(0, dot) : name;
+  let m: RegExpExecArray | null;
+
+  // Windows/macOS: " - Copy", " - Kopiuj", " — kopia", " – kopia", " - kopia (2)"
+  m = /^(.+?)\s+[-\u2013\u2014]\s+(?:Copy|Kopiuj|kopia)(?:\s*\((\d+)\))?$/i.exec(base);
+  if (m) return m[1] + ext;
+
+  // GNOME/KDE: " (copy)", " (copy 2)", " (kopia)", " (kopia 2)"
+  m = /^(.+?)\s+\(((?:copy|kopia)(?:\s+\d+)?)\)$/i.exec(base);
+  if (m) return m[1] + ext;
+
+  // macOS: " copy", " copy 2"
+  m = /^(.+?)\s+(copy)(?:\s+(\d+))?$/i.exec(base);
+  if (m) return m[1] + ext;
+
+  // Windows 11 keep-both / macOS conflict: " (2)", " (3)", " 2", " 3"
+  m = /^(.+?)\s+\((\d+)\)$/.exec(base) || /^(.+?)\s+(\d+)$/.exec(base);
+  if (m) return m[1] + ext;
+
+  return null;
+}
+
+function fileHash(filePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const hash = createHash('sha256');
+    const stream = createReadStream(filePath);
+    stream.on('error', reject);
+    stream.on('data', (chunk) => hash.update(chunk));
+    stream.on('end', () => resolve(hash.digest('hex')));
+  });
+}
+
+async function uniqueDestPath(dest: string): Promise<string> {
+  try {
+    await lstat(dest);
+  } catch {
+    return dest;
+  }
+  const dir = dest.substring(0, dest.lastIndexOf('\\')) || dest.substring(0, dest.lastIndexOf('/')) || '';
+  const ext = extname(dest);
+  const base = basename(dest, ext);
+  for (let i = 2; i < 10000; i++) {
+    const candidate = join(dir, `${base} (${i})${ext}`);
+    try {
+      await lstat(candidate);
+    } catch {
+      return candidate;
+    }
+  }
+  return dest;
+}
+
 export function registerFsHandlers(): void {
   ipcMain.handle('fs:getDrives', async (): Promise<FileItem[]> => {
     return getDrives();
+  });
+
+  ipcMain.handle('fs:getProperties', async (_event, filePath: string) => {
+    let s;
+    try {
+      s = await stat(filePath);
+    } catch {
+      return null;
+    }
+    const base = {
+      name: basename(filePath),
+      path: filePath,
+      isDirectory: s.isDirectory(),
+      size: s.size,
+      createdAt: s.birthtimeMs,
+      modifiedAt: s.mtimeMs
+    };
+    if (!s.isDirectory()) return base;
+    let itemCount = 0;
+    let dirCount = 0;
+    let fileCount = 0;
+    let totalSize = 0;
+    let processed = 0;
+    const MAX = 100000;
+    async function walk(dir: string) {
+      if (processed >= MAX) return;
+      let entries;
+      try {
+        entries = await readdir(dir, { withFileTypes: true });
+      } catch {
+        return;
+      }
+      for (const e of entries) {
+        if (processed >= MAX) return;
+        processed++;
+        if (e.isDirectory()) {
+          dirCount++;
+          itemCount++;
+          await walk(join(dir, e.name));
+        } else if (e.isFile()) {
+          fileCount++;
+          itemCount++;
+          try {
+            const st = await stat(join(dir, e.name));
+            totalSize += st.size;
+          } catch { /* skip */ }
+        }
+      }
+    }
+    await walk(filePath);
+    return {
+      ...base,
+      itemCount,
+      dirCount,
+      fileCount,
+      totalSize,
+      truncated: processed >= MAX
+    };
   });
 
   ipcMain.handle('fs:readdir', async (event, dirPath: string): Promise<void> => {
@@ -175,15 +290,15 @@ export function registerFsHandlers(): void {
     for (const src of paths) {
       try {
         const name = src.split('\\').pop() || src.split('/').pop() || '';
-        const dest = join(destination, name);
+        const dest = await uniqueDestPath(join(destination, name));
         if (src.toLowerCase() === dest.toLowerCase()) {
           continue;
         }
         await rename(src, dest);
-      } catch (err1) {
+      } catch {
         try {
           const name = src.split('\\').pop() || src.split('/').pop() || '';
-          const dest = join(destination, name);
+          const dest = await uniqueDestPath(join(destination, name));
           const s = await lstat(src);
           if (s.isDirectory()) {
             await cp(src, dest, { recursive: true });
@@ -203,7 +318,7 @@ export function registerFsHandlers(): void {
     for (const src of paths) {
       try {
         const name = src.split('\\').pop() || src.split('/').pop() || '';
-        const dest = join(destination, name);
+        const dest = await uniqueDestPath(join(destination, name));
         const s = await lstat(src);
         if (s.isDirectory()) {
           await cp(src, dest, { recursive: true });
@@ -214,6 +329,50 @@ export function registerFsHandlers(): void {
         console.error('[fs:copy] failed for', src, err);
       }
     }
+  });
+
+  ipcMain.handle('fs:findDuplicates', async (_event, directory: string) => {
+    interface DupGroup { original: string; duplicates: string[] }
+    const groups: DupGroup[] = [];
+    try {
+      const entries = await readdir(directory, { withFileTypes: true });
+      const files = entries.filter((e) => e.isFile()).map((e) => join(directory, e.name));
+
+      const bucket = new Map<string, string[]>();
+      for (const f of files) {
+        const stripped = stripDuplicateSuffix(basename(f));
+        if (stripped) {
+          if (!bucket.has(stripped)) bucket.set(stripped, []);
+          bucket.get(stripped)!.push(f);
+        }
+      }
+
+      for (const [origName, candidates] of bucket) {
+        const originalPath = join(directory, origName);
+        let refPath = originalPath;
+        let refStats: Awaited<ReturnType<typeof stat>> | null = null;
+        try { refStats = await stat(originalPath); } catch { /* original missing */ }
+        if (!refStats?.isFile()) {
+          if (candidates.length < 2) continue;
+          refPath = candidates[0];
+          try { refStats = await stat(refPath); } catch { continue; }
+        }
+        const refSize = refStats.size;
+        let refHash = '';
+        try { refHash = await fileHash(refPath); } catch { continue; }
+        const dups: string[] = [];
+        for (const c of candidates) {
+          if (c.toLowerCase() === refPath.toLowerCase()) continue;
+          try {
+            const s = await stat(c);
+            if (s.size !== refSize) continue;
+            if ((await fileHash(c)) === refHash) dups.push(c);
+          } catch { /* skip unreadable */ }
+        }
+        if (dups.length > 0) groups.push({ original: refPath, duplicates: dups });
+      }
+    } catch { /* empty/unreadable dir */ }
+    return groups;
   });
 
   ipcMain.handle('window:minimize', () => {

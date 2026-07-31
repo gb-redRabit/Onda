@@ -282,7 +282,24 @@ export default {
     copyAction: 'Kopiuj',
     nItems: '{n} element(ów)',
     alwaysOnTop: 'Zawsze na wierzchu',
-    libraryFolder: 'Folder biblioteki'
+    libraryFolder: 'Folder biblioteki',
+    duplicates: 'Znajdź duplikaty',
+    duplicatesScanning: 'Skanowanie w poszukiwaniu duplikatów…',
+    duplicatesNone: 'Nie znaleziono duplikatów',
+    duplicatesFound: '{n} grup(y) duplikatów',
+    duplicatesOriginal: 'oryginał',
+    duplicatesSelectAll: 'Zaznacz wszystkie',
+    duplicatesDelete: 'Usuń ({n})',
+    duplicatesDeleteConfirm: 'Usunąć {n} plik(ów) duplikatów?',
+    properties: 'Właściwości',
+    propertiesType: 'Typ',
+    propertiesFolder: 'Folder',
+    propertiesLocation: 'Lokalizacja',
+    propertiesSize: 'Rozmiar',
+    propertiesContains: 'Zawartość',
+    propertiesContainsValue: '{n} element(ów) ({d} folder(y), {f} plik(ów))',
+    propertiesCreated: 'Utworzono',
+    propertiesModified: 'Zmodyfikowano'
   },
   downloads: {
     title: 'Pobrane',
@@ -321,7 +338,10 @@ export default {
     tracks: 'utw.',
     files: 'plików',
     selected: 'wybranych',
-    selectAll: 'Zaznacz wszystko'
+    selectAll: 'Zaznacz wszystko',
+    copy: 'Kopiuj',
+    cut: 'Wytnij',
+    paste: 'Wklej'
   },
   equalizer: {
     title: 'Equalizer',

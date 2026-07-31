@@ -101,6 +101,27 @@
 - [x] **i18n w zakładkach** — `tab.label || $t('explorer.thisComputer')` (Ten komputer / This computer)
 - [x] **i18n locale w localStorage** — `detectLocale()` sprawdza `localStorage` przed `navigator.language`, zapis przy zmianie w Settings/App.vue
 
+### Duplikaty plików (post-FS3)
+- [x] **`fs:findDuplicates`** — IPC w main: grupowanie po wzorcach sufiksów duplikatów OS (` - Copy/Kopiuj`, `(copy/kopia)`, `copy`, ` (2)`, ` 2`) + weryfikacja SHA-256 (tylko pliki o tej samej wielkości); fallback na pierwszy kandydat gdy oryginał usunięty
+- [x] **Fix sufiksów PL** — regex obsługuje ` — kopia`/` – kopia` (em/en-dash, `\u2014`/`\u2013`) oraz ` - kopia`/` - kopiuj` (polski Windows); wykrywa `wp1334950-... — kopia.jpg`
+- [x] **Przycisk w toolbarze** — ikona `Copy` obok pin, skan bieżącego folderu
+- [x] **Panel boczny (overlay)** — grupy oryginał/duplikaty, checkboxy, "Zaznacz wszystkie", usuwanie wybranych z potwierdzeniem, ponowny skan + refresh po usunięciu
+- [x] **i18n** — klucze `explorer.duplicates*` (pl/en)
+
+### Kopiuj/Wytnij/Wklej (post-FS4)
+- [x] **`stores/clipboard.ts`** — schowek plików (path+name, akcja copy/cut), `isCut()` dla wizualnego feedbacku
+- [x] **Konflikt nazw w main** — `uniqueDestPath()` w `fs:copy`/`fs:move` (auto ` (2)`, ` (3)`… jak w Explorerze)
+- [x] **Skróty** — `Ctrl+C`/`Ctrl+X`/`Ctrl+V` (obok istniejących `Ctrl+A`, `Del`, `F2`, `Enter`, `Esc`)
+- [x] **Menu kontekstowe** — Copy/Cut (przy zaznaczeniu) i Paste (gdy schowek niepusty) w menu pliku i pustego obszaru
+- [x] **Feedback wycięcia** — przyciemnienie (`opacity-40`) wyciętych plików w grid/lista/tabela
+- [x] **i18n** — `common.copy/cut/paste` (pl/en)
+
+### Właściwości pliku/folderu (post-FS5)
+- [x] **`fs:getProperties`** — IPC: dla pliku rozmiar/daty; dla folderu rekurencyjny skan (elementy, foldery, pliki, rozmiar, limit 100k wpisów)
+- [x] **Okno "Właściwości"** — modal z edytowalną nazwą (rename po OK), typ, lokalizacja, rozmiar, zawartość (folder), daty utworzenia/modyfikacji
+- [x] **Menu kontekstowe** — pozycja "Właściwości" + skrót `Alt+Enter` (naprawiona kolejność przed zwykłym Enter)
+- [x] **i18n** — `explorer.properties*` (pl/en)
+
 ---
 
 
@@ -151,3 +172,6 @@
 | **F9** Tab ↔ window drag | F8 | ⬜ |
 | **F10** Cross-window drag | F9 | ⬜ |
 | **FS3** Fix session 3 | F7 | ✅ |
+| **FS4** Duplikaty plików | FS3 | ✅ |
+| **FS5** Kopiuj/Wytnij/Wklej | FS4 | ✅ |
+| **FS6** Właściwości pliku/folderu | FS5 | ✅ |

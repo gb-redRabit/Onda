@@ -14,6 +14,7 @@ const props = defineProps<{
   isLibraryFolder?: boolean;
   viewMode?: string;
   hoveredFolderPath?: string | null;
+  isCut?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -53,7 +54,8 @@ const size = computed(() => {
     :class="{
       'bg-accent-ghost ring-1 ring-accent-base': isSelected,
       'bg-accent-ghost/15 ring-1 ring-accent-base/30': isLibraryFolder && !isSelected,
-      'ring-2 ring-accent-base bg-accent-ghost/50': hoveredFolderPath && item.isDirectory && hoveredFolderPath === item.path
+      'ring-2 ring-accent-base bg-accent-ghost/50': hoveredFolderPath && item.isDirectory && hoveredFolderPath === item.path,
+      'opacity-40': isCut
     }"
     :style="{ padding: `${size.pad}px` }"
     @click="(e: MouseEvent) => emit('select', item.path, e)"

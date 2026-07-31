@@ -171,7 +171,7 @@ defineExpose({ style, cycleStyle });
 
 <template>
   <div
-    class="relative w-full h-full bg-bg-overlay rounded-xl overflow-hidden cursor-pointer group"
+    class="relative w-full h-full bg-bg-overlay overflow-hidden cursor-pointer group"
     @click="cycleStyle"
   >
     <canvas ref="canvasRef" class="w-full h-full" />
