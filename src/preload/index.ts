@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import { electronAPI } from '@electron-toolkit/preload';
 
 const mediaServerUrl: string = ipcRenderer.sendSync('media:getServerUrlSync');
+const windowId: number = ipcRenderer.sendSync('window:idSync');
 
 function trySend(channel: string, ...args: unknown[]): void {
   try {
@@ -26,6 +27,7 @@ function tryInvoke(channel: string, ...args: unknown[]): Promise<unknown> {
 
 const api = {
   mediaServerUrl,
+  windowId,
   invoke: tryInvoke,
   send: trySend,
   on: (channel: string, callback: (...args: unknown[]) => void): (() => void) => {

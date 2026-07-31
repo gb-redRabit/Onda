@@ -3,6 +3,7 @@ import { useExplorerStore } from '@renderer/stores/explorer';
 import { HardDrive, FolderOpen, Music2, Film, Image } from '@lucide/vue';
 import { formatFileSize } from '@renderer/utils/formatters';
 import { getFileTypeInfo } from '@renderer/utils/fileTypes';
+import { beginFileDrag } from '@renderer/utils/fileDrag';
 import type { FileItem } from '@renderer/types/explorer';
 import { useThumbnail } from '@renderer/composables/useThumbnail';
 
@@ -50,7 +51,7 @@ function iconComponent() {
     @click="(e: MouseEvent) => emit('select', item.path, e)"
     @dblclick="emit('doubleClick', item)"
     @contextmenu.stop.prevent="emit('contextMenu', $event, item)"
-    @dragstart="(e: DragEvent) => { const store = useExplorerStore(); if (store.selectedFiles.has(item.path)) { e.dataTransfer?.setData('text/plain', [...store.selectedFiles].join('\n')); } else { e.dataTransfer?.setData('text/plain', item.path); } if (e.dataTransfer) e.dataTransfer.effectAllowed = 'all'; }"
+    @dragstart="(e: DragEvent) => { const store = useExplorerStore(); if (store.selectedFiles.has(props.item.path)) { beginFileDrag(e, [...store.selectedFiles]); } else { beginFileDrag(e, [props.item.path]); } }"
   >
     <div class="flex items-center gap-2 min-w-0"><img v-if="mediaThumb && !isAtDrives && !item.isDirectory" :src="mediaThumb" class="w-4 h-4 object-contain shrink-0" />
       <img v-else-if="systemIcon && !isAtDrives && !item.isDirectory" :src="systemIcon" class="w-4 h-4 object-contain shrink-0" />

@@ -4,6 +4,7 @@ import { useExplorerStore } from '@renderer/stores/explorer';
 import { HardDrive, FolderOpen, Image, Film, Music2 } from '@lucide/vue';
 import { getFileTypeInfo } from '@renderer/utils/fileTypes';
 import { formatFileSize } from '@renderer/utils/formatters';
+import { beginFileDrag } from '@renderer/utils/fileDrag';
 import type { FileItem } from '@renderer/types/explorer';
 import { useThumbnail } from '@renderer/composables/useThumbnail';
 
@@ -61,7 +62,7 @@ const size = computed(() => {
     @click="(e: MouseEvent) => emit('select', item.path, e)"
     @dblclick="emit('doubleClick', item)"
     @contextmenu.stop.prevent="emit('contextMenu', $event, item)"
-    @dragstart="(e: DragEvent) => { const store = useExplorerStore(); if (store.selectedFiles.has(item.path)) { e.dataTransfer?.setData('text/plain', [...store.selectedFiles].join('\n')); } else { e.dataTransfer?.setData('text/plain', item.path); } if (e.dataTransfer) e.dataTransfer.effectAllowed = 'all'; }"
+    @dragstart="(e: DragEvent) => { const store = useExplorerStore(); if (store.selectedFiles.has(props.item.path)) { beginFileDrag(e, [...store.selectedFiles]); } else { beginFileDrag(e, [props.item.path]); } }"
   >
     <div
       class="rounded-lg flex items-center justify-center overflow-hidden shrink-0"

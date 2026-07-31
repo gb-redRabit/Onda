@@ -4,6 +4,7 @@ import type { IpcChannels, IpcChannel } from '@shared/types/ipc';
 
 interface OndaAPI {
   mediaServerUrl: string;
+  windowId: number;
   invoke: <C extends IpcChannel>(
     channel: C,
     ...args: IpcChannels[C]['args']

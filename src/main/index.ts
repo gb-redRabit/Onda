@@ -238,6 +238,11 @@ app.whenReady().then(async () => {
     event.returnValue = mediaServerUrl;
   });
 
+  ipcMain.on('window:idSync', (event) => {
+    const id = BrowserWindow.fromWebContents(event.sender)?.id ?? 0;
+    event.returnValue = id;
+  });
+
   app.on('will-quit', () => {
     mediaServer.close();
   });

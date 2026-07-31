@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, shallowRef, triggerRef, provide } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useVirtualizer } from '@tanstack/vue-virtual';
 import {
@@ -16,6 +16,8 @@ import { useUIStore, ContextMenuItem } from '@renderer/stores/ui';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
 import { logger } from '@renderer/utils/logger';
 import { formatFileSize } from '@renderer/utils/formatters';
+import { beginTabDrag, claimTabDrag, getActiveTabDrag, clearTabDrag } from '@renderer/utils/tabDrag';
+import { beginFileDrag, getDroppedFilePaths } from '@renderer/utils/fileDrag';
 import { SUPPORTED_IMAGE_FORMATS } from '@renderer/utils/constants';
 import ExplorerNavPane from '@renderer/components/explorer/ExplorerNavPane.vue';
 import ExplorerToolbar from '@renderer/components/explorer/ExplorerToolbar.vue';
@@ -34,6 +36,7 @@ const player = usePlayerStore();
 const settings = useSettingsStore();
 const ui = useUIStore();
 const router = useRouter();
+const route = useRoute();
 const { t } = useI18n();
 
 const { showPrompt, showConfirm, promptVisible, promptIsConfirm, promptMessage, promptValue, promptConfirm, promptCancel, promptKeydown } = usePromptDialog();
@@ -41,6 +44,7 @@ const { showPrompt, showConfirm, promptVisible, promptIsConfirm, promptMessage, 
 provide('showConfirm', showConfirm);
 
 const pinned = ref(false);
+const isExplorerWindow = computed(() => route.name === 'explorer-window');
 
 function togglePin() {
   pinned.value = !pinned.value;
@@ -138,6 +142,24 @@ const tabDropTargetIdx = ref(-1);
 const tabDragEnterCount = ref(0);
 const tabDropTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 const hoveredFolderPath = ref<string | null>(null);
+const isDraggingTab = ref(false);
+
+const TAB_PAYLOAD_PREFIX = 'ONDA_TAB::';
+
+function encodeTabPayload(windowId: number, path: string): string {
+  return TAB_PAYLOAD_PREFIX + encodeURIComponent(JSON.stringify({ wid: windowId, path }));
+}
+
+function parseTabPayload(raw: string): { wid: number; path: string } | null {
+  if (!raw.startsWith(TAB_PAYLOAD_PREFIX)) return null;
+  try {
+    const parsed = JSON.parse(decodeURIComponent(raw.slice(TAB_PAYLOAD_PREFIX.length))) as { wid: number; path: string };
+    if (typeof parsed.wid !== 'number' || typeof parsed.path !== 'string') return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
 
 // duplicate finder state
 interface DupGroup { original: string; duplicates: string[] }
@@ -321,6 +343,9 @@ function handleKeydown(e: KeyboardEvent) {
   } else if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
     e.preventDefault();
     pasteClipboard();
+  } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'n') {
+    e.preventDefault();
+    openInWindow();
   }
 }
 
@@ -381,6 +406,11 @@ async function pasteClipboard() {
     fileClipboard.clear();
   }
   explorer.loadFiles(dest);
+  window.api?.send('explorer:refreshAll');
+}
+
+async function openInWindow() {
+  await window.api?.invoke('explorer:create', explorer.currentPath || undefined);
 }
 
 async function createNewFolder() {
@@ -574,6 +604,12 @@ async function applyProperties() {
 }
 
 // --- content area drag & drop ---
+function getDropPaths(dt: DataTransfer | null, raw: string): string[] {
+  const fromPlain = raw.split('\n').filter(Boolean);
+  if (fromPlain.length > 0) return fromPlain;
+  return getDroppedFilePaths(dt);
+}
+
 function onContentDragOver(e: DragEvent) {
   if (e.dataTransfer) e.dataTransfer.dropEffect = (e.ctrlKey || e.metaKey) ? 'copy' : 'move';
   const el = (e.target as HTMLElement)?.closest('[data-folder-path]');
@@ -592,7 +628,8 @@ function onContentDragLeave(e: DragEvent) {
 async function onContentDrop(e: DragEvent) {
   e.preventDefault();
   const raw = e.dataTransfer?.getData('text/plain') || '';
-  const paths = raw.split('\n').filter(Boolean);
+  if (handleTabDrop(raw)) return;
+  const paths = getDropPaths(e.dataTransfer, raw);
   const targetDir = hoveredFolderPath.value || explorer.currentPath;
   hoveredFolderPath.value = null;
   if (paths.length === 0) return;
@@ -605,6 +642,7 @@ async function onContentDrop(e: DragEvent) {
   const method = ctrl ? 'fs:copy' : 'fs:move';
   await window.api?.invoke(method, paths, targetDir);
   explorer.loadFiles(explorer.currentPath);
+  window.api?.send('explorer:refreshAll');
 }
 
 // --- tab icons & middle-click close ---
@@ -624,9 +662,75 @@ function onTabMouseDown(e: MouseEvent) {
 }
 
 // --- tab drag & drop ---
+function onTabDragStart(e: DragEvent, idx: number) {
+  const tab = explorer.tabs[idx];
+  if (!tab) return;
+  isDraggingTab.value = true;
+  beginTabDrag(tab.path);
+  if (e.dataTransfer) {
+    e.dataTransfer.setData('text/plain', encodeTabPayload(window.api?.windowId ?? 0, tab.path));
+    e.dataTransfer.effectAllowed = 'move';
+  }
+}
+
+function onTabDragEnd() {
+  isDraggingTab.value = false;
+  tabDropTargetIdx.value = -1;
+  tabDragEnterCount.value = 0;
+  if (tabDropTimer.value) { clearTimeout(tabDropTimer.value); tabDropTimer.value = null; }
+  const drag = getActiveTabDrag();
+  if (!drag || drag.claimed) {
+    clearTabDrag();
+    return;
+  }
+  // dropped somewhere that didn't accept the tab (desktop, cancel) →
+  // give the target window a moment to confirm acceptance via IPC, then open a new window
+  setTimeout(() => {
+    const current = getActiveTabDrag();
+    clearTabDrag();
+    if (!current || current.claimed) return;
+    window.api?.invoke('explorer:create', current.path);
+    removeTabByPath(current.path);
+  }, 200);
+}
+
+function removeTabByPath(path: string) {
+  const idx = explorer.tabs.findIndex((t) => t.path === path);
+  if (idx < 0) return;
+  if (explorer.tabs.length <= 1) {
+    if (isExplorerWindow.value) {
+      window.api?.invoke('window:close');
+    } else {
+      explorer.navigateTo('');
+    }
+    return;
+  }
+  explorer.closeTab(idx);
+}
+
+function onWindowTabDrop(e: DragEvent) {
+  const raw = e.dataTransfer?.getData('text/plain') || '';
+  handleTabDrop(raw);
+}
+
+function handleTabDrop(raw: string) {
+  const parsed = parseTabPayload(raw);
+  if (!parsed) return false;
+  const { wid, path } = parsed;
+  if (wid === (window.api?.windowId ?? 0)) {
+    // same window → no-op for now (reorder = F11); mark the drag as handled
+    claimTabDrag(path);
+    return true;
+  }
+  explorer.addTab(path);
+  window.api?.invoke('explorer:tabMoved', wid, path);
+  return true;
+}
+
 function onTabDragOver(e: DragEvent, idx: number) {
   e.preventDefault();
   if (e.dataTransfer) e.dataTransfer.dropEffect = (e.ctrlKey || e.metaKey) ? 'copy' : 'move';
+  if (isDraggingTab.value) return;
   tabDropTargetIdx.value = idx;
   if (idx !== explorer.activeTabIndex && tabDropTimer.value === null) {
     tabDropTimer.value = setTimeout(() => {
@@ -637,11 +741,13 @@ function onTabDragOver(e: DragEvent, idx: number) {
 }
 
 function onTabDragEnter(_e: DragEvent, idx: number) {
+  if (isDraggingTab.value) return;
   tabDragEnterCount.value++;
   tabDropTargetIdx.value = idx;
 }
 
 function onTabDragLeave() {
+  if (isDraggingTab.value) return;
   tabDragEnterCount.value--;
   if (tabDragEnterCount.value <= 0) {
     tabDragEnterCount.value = 0;
@@ -656,7 +762,8 @@ async function onTabDrop(e: DragEvent, idx: number) {
   tabDropTargetIdx.value = -1;
   tabDragEnterCount.value = 0;
   const raw = e.dataTransfer?.getData('text/plain') || '';
-  const paths = raw.split('\n').filter(Boolean);
+  if (handleTabDrop(raw)) return;
+  const paths = getDropPaths(e.dataTransfer, raw);
   if (paths.length === 0) return;
   const targetPath = explorer.tabs[idx].path;
   const ctrl = e.ctrlKey || e.metaKey;
@@ -669,6 +776,7 @@ async function onTabDrop(e: DragEvent, idx: number) {
   await window.api?.invoke(method, paths, targetPath);
   explorer.loadFiles(targetPath);
   explorer.switchTab(idx);
+  window.api?.send('explorer:refreshAll');
 }
 
 // --- band (marquee) select ---
@@ -717,7 +825,7 @@ function onBandMouseUp() {
 </script>
 
 <template>
-  <div class="flex h-full" @dragover.prevent @drop.prevent>
+  <div class="flex h-full" @dragover.prevent @drop.prevent="onWindowTabDrop">
     <ExplorerNavPane />
     <div class="flex flex-col flex-1 min-w-0 relative" @dragover.prevent @drop.prevent>
       <!-- tab bar -->
@@ -725,15 +833,18 @@ function onBandMouseUp() {
         <button
           v-for="(tab, idx) in explorer.tabs"
           :key="tab.id"
+          draggable="true"
           class="group flex items-center gap-1.5 px-2.5 h-7 text-xs rounded-md transition-colors shrink-0 min-w-0 max-w-44 border"
           :class="{
             'bg-accent-base text-white border-transparent': explorer.activeTabIndex === idx,
             'bg-bg-base text-fg-muted border-transparent hover:text-fg-base hover:bg-bg-hover': explorer.activeTabIndex !== idx,
-            'ring-2 ring-accent-base': tabDropTargetIdx === idx
+            'ring-2 ring-accent-base': tabDropTargetIdx === idx && !isDraggingTab
           }"
           @click="explorer.switchTab(idx)"
           @auxclick="onTabAuxClick($event, idx)"
           @mousedown="onTabMouseDown"
+          @dragstart="onTabDragStart($event, idx)"
+          @dragend="onTabDragEnd"
           @dragover="onTabDragOver($event, idx)"
           @dragenter="onTabDragEnter($event, idx)"
           @dragleave="onTabDragLeave"
@@ -764,6 +875,8 @@ function onBandMouseUp() {
 
         <button class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors" :title="$t('explorer.newFolder')" @click="createNewFolder"><Plus :size="16" class="pointer-events-none" /></button>
 
+        <button class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors" :title="$t('explorer.openInWindow')" @click="openInWindow"><Monitor :size="14" class="pointer-events-none" /></button>
+
         <span v-if="explorer.selectedCount > 0" class="text-[11px] text-fg-muted whitespace-nowrap">{{ t('explorer.nItems', { n: explorer.selectedCount }) }}</span>
       </div>
 
@@ -789,7 +902,7 @@ function onBandMouseUp() {
               :draggable="!explorer.isAtDrives"
               :data-file-path="filteredFiles[virtualRow.index].path"
               :data-folder-path="filteredFiles[virtualRow.index].isDirectory ? filteredFiles[virtualRow.index].path : undefined"
-              class="w-full flex items-center gap-2 px-2 py-1 rounded-md hover:bg-bg-hover transition-colors text-left text-xs group relative h-full" :class="{ 'bg-accent-ghost ring-1 ring-accent-base': explorer.selectedFiles.has(filteredFiles[virtualRow.index].path), 'bg-accent-ghost/15 ring-1 ring-accent-base/30': !filteredFiles[virtualRow.index].isDirectory ? false : isLibraryFolder(filteredFiles[virtualRow.index].path) && !explorer.selectedFiles.has(filteredFiles[virtualRow.index].path), 'ring-2 ring-accent-base bg-accent-ghost/50': hoveredFolderPath && hoveredFolderPath === filteredFiles[virtualRow.index].path, 'opacity-40': fileClipboard.isCut(filteredFiles[virtualRow.index].path) }" @click="onItemClick($event, filteredFiles[virtualRow.index].path, virtualRow.index)" @dblclick="handleDoubleClick(filteredFiles[virtualRow.index])" @contextmenu.stop.prevent="handleContextMenu($event, filteredFiles[virtualRow.index])" @dragstart="(e: DragEvent) => { const p = filteredFiles[virtualRow.index].path; if (explorer.selectedFiles.has(p)) { e.dataTransfer?.setData('text/plain', [...explorer.selectedFiles].join('\n')); } else { e.dataTransfer?.setData('text/plain', p); } if (e.dataTransfer) e.dataTransfer.effectAllowed = 'all'; }">
+              class="w-full flex items-center gap-2 px-2 py-1 rounded-md hover:bg-bg-hover transition-colors text-left text-xs group relative h-full" :class="{ 'bg-accent-ghost ring-1 ring-accent-base': explorer.selectedFiles.has(filteredFiles[virtualRow.index].path), 'bg-accent-ghost/15 ring-1 ring-accent-base/30': !filteredFiles[virtualRow.index].isDirectory ? false : isLibraryFolder(filteredFiles[virtualRow.index].path) && !explorer.selectedFiles.has(filteredFiles[virtualRow.index].path), 'ring-2 ring-accent-base bg-accent-ghost/50': hoveredFolderPath && hoveredFolderPath === filteredFiles[virtualRow.index].path, 'opacity-40': fileClipboard.isCut(filteredFiles[virtualRow.index].path) }" @click="onItemClick($event, filteredFiles[virtualRow.index].path, virtualRow.index)" @dblclick="handleDoubleClick(filteredFiles[virtualRow.index])" @contextmenu.stop.prevent="handleContextMenu($event, filteredFiles[virtualRow.index])" @dragstart="(e: DragEvent) => { const p = filteredFiles[virtualRow.index].path; if (explorer.selectedFiles.has(p)) { beginFileDrag(e, [...explorer.selectedFiles]); } else { beginFileDrag(e, [p]); } }">
               <img v-if="extraSmallIcon(filteredFiles[virtualRow.index])" :src="extraSmallIcon(filteredFiles[virtualRow.index])!" class="w-4 h-4 object-contain shrink-0" />
               <HardDrive v-else-if="explorer.isAtDrives" :size="12" class="text-accent-base shrink-0" />
               <FolderOpen v-else-if="filteredFiles[virtualRow.index].isDirectory" :size="12" class="text-accent-base shrink-0" />

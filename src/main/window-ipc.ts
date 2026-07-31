@@ -1,6 +1,51 @@
 import { ipcMain, BrowserWindow } from 'electron';
+import { join } from 'path';
+import { is } from '@electron-toolkit/utils';
 import type { PipManager } from './pip-manager';
 import type { AudioPipManager } from './audio-pip-manager';
+
+const explorerWindows = new Map<number, BrowserWindow>();
+
+export function createExplorerWindow(initialPath?: string): number | null {
+  try {
+    const win = new BrowserWindow({
+      width: 1000,
+      height: 700,
+      minWidth: 600,
+      minHeight: 400,
+      show: false,
+      frame: false,
+      title: 'Explorer',
+      backgroundColor: '#0f0f17',
+      webPreferences: {
+        preload: join(__dirname, '../preload/index.js'),
+        sandbox: false,
+        contextIsolation: true,
+        nodeIntegration: false,
+        webSecurity: true
+      }
+    });
+    const id = win.id;
+    explorerWindows.set(id, win);
+    win.on('ready-to-show', () => win.show());
+    win.on('closed', () => {
+      explorerWindows.delete(id);
+    });
+    const hash = `/explorer/window/${id}${initialPath ? `?path=${encodeURIComponent(initialPath)}` : ''}`;
+    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+      win.loadURL(process.env['ELECTRON_RENDERER_URL'] + '#' + hash);
+    } else {
+      win.loadFile(join(__dirname, '../renderer/index.html'), { hash });
+    }
+    return id;
+  } catch {
+    return null;
+  }
+}
+
+export function getExplorerWindows(): BrowserWindow[] {
+  return [...explorerWindows.values()];
+}
 
 export function registerWindowHandlers(context: {
   getMainWindow: () => BrowserWindow | null;
@@ -14,9 +59,7 @@ export function registerWindowHandlers(context: {
 }): void {
   const { getMainWindow, preFullscreenBounds, createChildWindow, pipManager, audioPipManager } = context;
 
-  ipcMain.handle(
-    'window:createChild',
-    (
+  ipcMain.handle('window:createChild', (
       _event,
       options: { title: string; width: number; height: number; alwaysOnTop?: boolean }
     ) => {
@@ -30,6 +73,38 @@ export function registerWindowHandlers(context: {
       }
     }
   );
+
+  ipcMain.handle('explorer:create', (_event, path?: string) => {
+    return createExplorerWindow(typeof path === 'string' ? path : undefined);
+  });
+
+  ipcMain.handle('explorer:list', () => {
+    return getExplorerWindows().map((w) => w.id);
+  });
+
+  ipcMain.handle('explorer:tabMoved', (_event, sourceWindowId: number, path: string) => {
+    const source = BrowserWindow.fromId(sourceWindowId);
+    if (source && !source.isDestroyed()) {
+      source.webContents.send('explorer:remove-tab', path);
+    }
+  });
+
+  ipcMain.handle('explorer:sendTabToMain', (_event, path: string) => {
+    const mainWindow = getMainWindow();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('explorer:add-tab', path);
+    }
+  });
+
+  ipcMain.on('explorer:refreshAll', () => {
+    const mainWindow = getMainWindow();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('explorer:refresh');
+    }
+    for (const w of getExplorerWindows()) {
+      if (!w.isDestroyed()) w.webContents.send('explorer:refresh');
+    }
+  });
 
   ipcMain.handle('window:toggleFullscreen', () => {
     const mainWindow = getMainWindow();

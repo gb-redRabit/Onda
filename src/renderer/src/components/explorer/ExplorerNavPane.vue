@@ -79,6 +79,7 @@ async function onNavDrop(e: DragEvent, path: string) {
   const method = ctrl ? 'fs:copy' : 'fs:move';
   await window.api?.invoke(method, paths, path);
   explorer.loadFiles(explorer.currentPath);
+  window.api?.send('explorer:refreshAll');
 }
 </script>
 

@@ -64,6 +64,10 @@ export interface IpcChannels {
   'window:maximize': { args: []; result: void };
   'window:close': { args: []; result: void };
   'window:isMaximized': { args: []; result: boolean };
+  'explorer:create': { args: [path?: string]; result: number | null };
+  'explorer:list': { args: []; result: number[] };
+  'explorer:tabMoved': { args: [sourceWindowId: number, path: string]; result: void };
+  'explorer:sendTabToMain': { args: [path: string]; result: void };
   'window:setAlwaysOnTop': { args: [flag: boolean]; result: void };
   'window:toggleFullscreen': { args: []; result: boolean };
   'window:exitFullscreen': { args: []; result: void };

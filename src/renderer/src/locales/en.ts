@@ -3,6 +3,11 @@ export default {
     name: 'Onda',
     error: 'An error occurred'
   },
+  window: {
+    minimize: 'Minimize',
+    maximize: 'Maximize',
+    close: 'Close'
+  },
   nav: {
     home: 'Home',
     library: 'Library',
@@ -283,6 +288,8 @@ export default {
     alwaysOnTop: 'Always on top',
     libraryFolder: 'Library folder',
     duplicates: 'Find duplicates',
+    openInWindow: 'Open in new window (Ctrl+Shift+N)',
+    pinAsTab: 'Send as tab to main window',
     duplicatesScanning: 'Scanning for duplicates…',
     duplicatesNone: 'No duplicates found',
     duplicatesFound: '{n} group(s) of duplicates',

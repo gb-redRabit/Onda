@@ -1,7 +1,7 @@
 # Onda — Plan rozwoju
 
-> Na podstawie audytu kodu 2026-07-28. Status: typecheck 0 błędów.
-> Ostatnia aktualizacja: 2026-07-30 (F1-F7, FS3).
+> Na podstawie audytu kodu 2026-07-28. Status: typecheck 0 błędów, eslint 0 błędów (1 pre-existing `prefer-const`), build ✓, testy 141/141.
+> Ostatnia aktualizacja: 2026-07-31 (F1-F10 ✅, FS3-FS7 ✅, F11 częściowo).
 
 ---
 
@@ -125,35 +125,42 @@
 ---
 
 
-## 📋 Pozostałe zadania
-
 ### Faza 8 — Explorer jako osobne okno
-**Priorytet: 🟡 ŚREDNI | Czas: ~3h**
-- [ ] Przycisk "Window" na pasku zakładek + skrót `Ctrl+Shift+N`
-- [ ] IPC `browserWindow:createExplorer(path?)` — otwiera nowe `BrowserWindow`
-- [ ] Route `/explorer/window/:id` → `ExplorerWindowView.vue`
-- [ ] Komunikacja między oknami przez IPC bridging
-- [ ] Zamykanie `Ctrl+W` — zamyka tylko to okno
+**Priorytet: 🟡 ŚREDNI | Czas: ~3h** ✅
+- [x] Przycisk "Window" na pasku zakładek + skrót `Ctrl+Shift+N`
+- [x] IPC `explorer:create(path?)` — otwiera nowe `BrowserWindow`
+- [x] Route `/explorer/window/:id` → `ExplorerWindowView.vue`
+- [x] Komunikacja między oknami przez IPC bridging *(zrealizowane w F9)*
+- [x] Zamykanie `Ctrl+W` — zamyka tylko to okno
 
 ### Faza 9 — Drag tab ↔ window
-**Priorytet: 🟢 NISKI | Czas: ~2h**
-- [ ] Tab → okno — drag tab poza pasek → IPC `createExplorer(path)` + `closeTab()`
-- [ ] Okno → tab — "Pin as tab" lub drag do głównego okna
-- [ ] Wizualny feedback podczas przeciągania nad pasek zakładek
+**Priorytet: 🟢 NISKI | Czas: ~2h** ✅
+- [x] Tab → okno — drag tab poza okno (dropEffect 'none') → `explorer:create(path)` + usunięcie karty ze źródła
+- [x] Tab → inne okno — drop na pasku/obszarze → `addTab(path)` + IPC `explorer:tabMoved` → źródło usuwa kartę
+- [x] Okno → tab — "Pin as tab" w pasku tytułowym okna eksplorera (`explorer:sendTabToMain`) + drag w drugą stronę
+- [x] Wizualny feedback podczas przeciągania nad pasek zakładek (istniejący ring `tabDropTargetIdx`, wyłączony podczas dragu karty)
+- [x] `windowId` synchronicznie w preload (`window:idSync`) + bridging między oknami (F8 → F9)
 
 ### Faza 10 — Cross-window drag plików
-**Priorytet: 🟢 NISKI | Czas: ~3h**
-- [ ] Drag pliku między oknami — `dataTransfer` z `application/x-onda-file`
-- [ ] Drag folderu między oknami
-- [ ] IPC bridging przez main process
+**Priorytet: 🟢 NISKI | Czas: ~3h** ✅
+- [x] Drag pliku między oknami — `text/uri-list` (file://) + `text/plain` + fallback `Files`/`webUtils.getPathForFile`
+- [x] Drag folderu między oknami (drop na folderze/docelowej karcie/obszarze)
+- [x] IPC bridging przez main process (move/copy przez `fs:move`/`fs:copy` w oknie docelowym)
+
+### Fix session 4 (post-F10)
+- [x] **Odświeżanie okien po move/copy** — tylko okno-docelowe wołało `loadFiles`; źródło pokazywało nieaktualne pliki. Dodano broadcast `explorer:refreshAll`: renderer wysyła po każdym move/copy (`onContentDrop`, `onTabDrop`, `pasteClipboard`, NavPane, Breadcrumb) → main rozsyła `explorer:refresh` do okna głównego + wszystkich okien eksplorera → `App.vue` przeładowuje `explorer.currentPath`
+- [x] **Przeciąganie okna aplikacji po pulpicie** — na trasie `home` środkowy kontener akcji w `AppMenu.vue` miał `-webkit-app-region: no-drag`, więc cały pasek był niedraggable (działał dopiero po otwarciu drugiego okna). `no-drag` zostawiono tylko na przyciskach Home (openFile/openFolder)
+- [x] **Cleanup logów debugowych** — usunięto forward logów renderer→main (`renderer:log` IPC), logi DnD/window/mounted w `ExplorerView`, `ExplorerWindowView`, `App`, `fileDrag`, `window-ipc`, `index.ts`; `logger.ts` ponownie zwykły `console`; zostawiono `logger.error`
+
+## 📋 Pozostałe zadania
 
 ### Faza 11 — Dalsze usprawnienia
 **Priorytet: 🟢 NISKI**
-- [ ] Image viewer w library
-- [ ] Własne skróty klawiszowe w settings
-- [ ] Playlisty z drag&drop reorder
-- [ ] Historia odtwarzania z statystykami
-- [ ] **Tab reorder** — przeciąganie zakładek w pasku (brak `draggable` na tabach)
+- [x] **Własne skróty klawiszowe w settings** — `SettingsShortcuts.vue` edytowalny (record-key), `settings.updateShortcut()` + persistencja w `settings.shortcuts`
+- [ ] Image viewer w library (ImageViewer istnieje tylko w Explorer)
+- [ ] Playlisty z drag&drop reorder (jest DnD do playlist, brak reorderu tracków wewnątrz)
+- [ ] Historia odtwarzania — rozbudowa (jest `player.history` + QueuePanel tab + `mostPlayed`/`recentTracks` w library; brak statystyk per-utwór)
+- [ ] **Tab reorder** — przeciąganie zakładek w pasku (same-window drop = no-op, komentarz w `handleTabDrop`)
 
 ---
 
@@ -168,10 +175,26 @@
 | **F5** Library UI | F2 | ✅ |
 | **F6** Explorer+Viz | F1 | ✅ |
 | **F7** Drag refinements | F6 | ✅ |
-| **F8** Explorer windowing | F6+FS3 | ⬜ |
-| **F9** Tab ↔ window drag | F8 | ⬜ |
-| **F10** Cross-window drag | F9 | ⬜ |
+| **F8** Explorer windowing | F6+FS3 | ✅ |
+| **F9** Tab ↔ window drag | F8 | ✅ |
+| **F10** Cross-window drag | F9 | ✅ |
 | **FS3** Fix session 3 | F7 | ✅ |
 | **FS4** Duplikaty plików | FS3 | ✅ |
 | **FS5** Kopiuj/Wytnij/Wklej | FS4 | ✅ |
 | **FS6** Właściwości pliku/folderu | FS5 | ✅ |
+| **FS7** Fix session 4 (refresh + drag okna) | F10 | ✅ |
+
+---
+
+## 🔄 Do zacommitowania (niezacommitowane zmiany)
+
+> Stan na 2026-07-31 — wszystkie poniższe zmiany są w working tree, nie w git:
+
+| Grupa | Pliki |
+|-------|-------|
+| **F8-F10** (window/explorer + drag) | `window-ipc.ts`, `router/index.ts`, `ExplorerWindowView.vue` (nowy), `tabDrag.ts` (nowy), `fileDrag.ts` (nowy), `ExplorerView.vue`, `ExplorerGridItem.vue`, `ExplorerTableRow.vue`, `AppMenu.vue`, `preload/index.ts` + `.d.ts`, `ipc.ts` (shared) |
+| **FS4-FS6** (duplikaty, clipboard, properties) | `fs-handlers.ts`, `ExplorerView.vue`, `stores/clipboard.ts`, locales |
+| **Fix session 4** (refresh + drag okna) | `window-ipc.ts`, `App.vue`, `ExplorerNavPane.vue`, `ExplorerBreadcrumb.vue`, `AppMenu.vue`, `ExplorerView.vue` |
+| **Cleanup logów** | `logger.ts`, `window-ipc.ts`, `index.ts`, `App.vue`, `ExplorerView.vue`, `ExplorerWindowView.vue`, `fileDrag.ts` |
+
+Ostatni commit: `c40f380` "fix, and findduplicates". Sugerowany commit: F8-F10 + FS4-FS6 + fix session 4 jako osobny commit (zgodnie z konwencją `Sprint N: ...`).

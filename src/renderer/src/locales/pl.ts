@@ -3,6 +3,11 @@ export default {
     name: 'Onda',
     error: 'Wystąpił błąd'
   },
+  window: {
+    minimize: 'Minimalizuj',
+    maximize: 'Maksymalizuj',
+    close: 'Zamknij'
+  },
   nav: {
     home: 'Strona główna',
     library: 'Biblioteka',
@@ -284,6 +289,8 @@ export default {
     alwaysOnTop: 'Zawsze na wierzchu',
     libraryFolder: 'Folder biblioteki',
     duplicates: 'Znajdź duplikaty',
+    openInWindow: 'Otwórz w osobnym oknie (Ctrl+Shift+N)',
+    pinAsTab: 'Wyślij jako kartę do głównego okna',
     duplicatesScanning: 'Skanowanie w poszukiwaniu duplikatów…',
     duplicatesNone: 'Nie znaleziono duplikatów',
     duplicatesFound: '{n} grup(y) duplikatów',

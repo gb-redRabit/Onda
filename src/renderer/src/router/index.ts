@@ -39,6 +39,11 @@ const router = createRouter({
       meta: { title: 'Explorer', icon: 'folder-open' }
     },
     {
+      path: '/explorer/window/:id',
+      name: 'explorer-window',
+      component: () => import('@renderer/views/ExplorerWindowView.vue')
+    },
+    {
       path: '/youtube',
       name: 'youtube',
       component: () => import('@renderer/views/YouTubeView.vue'),

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, watch } from 'vue';
+import { onMounted, onBeforeUnmount, watch, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMenu from './components/layout/AppMenu.vue';
 import Sidebar from './components/layout/Sidebar.vue';
@@ -15,6 +15,8 @@ import { useSettingsStore } from './stores/settings';
 import { usePlayerStore } from './stores/player';
 import { useUIStore } from './stores/ui';
 import { useLibraryStore } from './stores/library';
+import { useExplorerStore } from './stores/explorer';
+import { claimTabDrag } from './utils/tabDrag';
 import { moduleManager } from './modules/ModuleManager';
 import { THEME_PALETTES } from './utils/constants';
 import { useAudioPiP } from './composables/useAudioPiP';
@@ -27,6 +29,8 @@ const route = useRoute();
 const router = useRouter();
 const { locale } = useI18n();
 const audioPip = useAudioPiP();
+
+const isExplorerWindow = computed(() => route.name === 'explorer-window');
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -131,6 +135,31 @@ onMounted(async () => {
     player.pendingFullscreen = true;
     if (route.name !== 'player') router.push('/player');
   });
+
+  // cross-window explorer tabs (tab moved between windows)
+  window.api?.on('explorer:add-tab', (path: unknown) => {
+    if (typeof path === 'string') useExplorerStore().addTab(path);
+  });
+  window.api?.on('explorer:refresh', () => {
+    const explorerStore = useExplorerStore();
+    explorerStore.loadFiles(explorerStore.currentPath);
+  });
+  window.api?.on('explorer:remove-tab', (path: unknown) => {
+    if (typeof path !== 'string') return;
+    claimTabDrag(path);
+    const explorerStore = useExplorerStore();
+    const idx = explorerStore.tabs.findIndex((tab) => tab.path === path);
+    if (idx < 0) return;
+    if (explorerStore.tabs.length <= 1) {
+      if (route.name === 'explorer-window') {
+        window.api?.invoke('window:close');
+      } else {
+        explorerStore.navigateTo('');
+      }
+      return;
+    }
+    explorerStore.closeTab(idx);
+  });
 });
 
 onBeforeUnmount(() => {
@@ -182,9 +211,9 @@ function onGlobalMouseDown(e: MouseEvent) {
 
 <template>
   <div class="flex flex-col h-full w-full overflow-hidden">
-    <AppMenu v-if="ui.topMenuVisible" />
+    <AppMenu v-if="ui.topMenuVisible && !isExplorerWindow" />
     <div class="flex flex-1 min-h-0">
-      <Sidebar v-if="settings.appearance.sidebarPosition === 'left'" />
+      <Sidebar v-if="!isExplorerWindow && settings.appearance.sidebarPosition === 'left'" />
       <main class="flex-1 min-w-0 relative overflow-auto flex flex-col">
         <router-view v-slot="{ Component }">
           <transition name="page" mode="out-in">
@@ -194,21 +223,22 @@ function onGlobalMouseDown(e: MouseEvent) {
           </transition>
         </router-view>
       </main>
-      <QueuePanel v-if="player.queueVisible" class="w-75 shrink-0" />
-      <Sidebar v-if="settings.appearance.sidebarPosition === 'right'" />
-      <div v-if="player.equalizerVisible" class="fixed bottom-24 right-6 z-40">
+      <QueuePanel v-if="!isExplorerWindow && player.queueVisible" class="w-75 shrink-0" />
+      <Sidebar v-if="!isExplorerWindow && settings.appearance.sidebarPosition === 'right'" />
+      <div v-if="!isExplorerWindow && player.equalizerVisible" class="fixed bottom-24 right-6 z-40">
         <Equalizer />
       </div>
     </div>
     <PlayerBar
       v-if="
+        !isExplorerWindow &&
         ui.playerBarVisible &&
         player.currentTrack?.type === 'audio' &&
         route.name !== 'player' &&
         route.name !== 'audio'
       "
     />
-    <StatusBar v-if="ui.statusBarVisible" />
+    <StatusBar v-if="ui.statusBarVisible && !isExplorerWindow" />
 
     <CommandPalette />
     <ToastNotification />

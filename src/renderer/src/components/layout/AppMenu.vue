@@ -147,15 +147,15 @@ window.api.on('window:maximized', (val: unknown) => { isMaximized.value = val as
       </div>
     </div>
 
-    <!-- View-specific actions -->
-    <div v-if="showViewActions" class="flex items-center gap-1 px-2 flex-1 min-w-0" style="-webkit-app-region: no-drag">
+    <!-- View-specific actions (middle area stays draggable; only buttons opt out) -->
+    <div v-if="showViewActions" class="flex items-center gap-1 px-2 flex-1 min-w-0">
       <span class="text-xs font-medium text-fg-base mr-2 truncate">{{ viewLabel }}</span>
 
       <template v-if="route.name === 'home'">
-        <button class="h-7 px-2.5 text-xs text-fg-muted hover:text-fg-base hover:bg-bg-hover rounded-md transition-colors flex items-center gap-1.5" @click="openFile">
+        <button class="h-7 px-2.5 text-xs text-fg-muted hover:text-fg-base hover:bg-bg-hover rounded-md transition-colors flex items-center gap-1.5" style="-webkit-app-region: no-drag" @click="openFile">
           <FileAudio :size="12" /> {{ t('home.openFile') }}
         </button>
-        <button class="h-7 px-2.5 text-xs text-fg-muted hover:text-fg-base hover:bg-bg-hover rounded-md transition-colors flex items-center gap-1.5" @click="openFolder">
+        <button class="h-7 px-2.5 text-xs text-fg-muted hover:text-fg-base hover:bg-bg-hover rounded-md transition-colors flex items-center gap-1.5" style="-webkit-app-region: no-drag" @click="openFolder">
           <FolderOpen :size="12" /> {{ t('home.openFolder') }}
         </button>
       </template>

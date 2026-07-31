@@ -375,26 +375,26 @@ export function registerFsHandlers(): void {
     return groups;
   });
 
-  ipcMain.handle('window:minimize', () => {
-    BrowserWindow.getFocusedWindow()?.minimize();
+  ipcMain.handle('window:minimize', (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.minimize();
   });
 
-  ipcMain.handle('window:maximize', () => {
-    const win = BrowserWindow.getFocusedWindow();
+  ipcMain.handle('window:maximize', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
     if (win?.isMaximized()) win.unmaximize();
     else win?.maximize();
   });
 
-  ipcMain.handle('window:close', () => {
-    BrowserWindow.getFocusedWindow()?.close();
+  ipcMain.handle('window:close', (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.close();
   });
 
-  ipcMain.handle('window:isMaximized', () => {
-    return BrowserWindow.getFocusedWindow()?.isMaximized() ?? false;
+  ipcMain.handle('window:isMaximized', (event) => {
+    return BrowserWindow.fromWebContents(event.sender)?.isMaximized() ?? false;
   });
 
-  ipcMain.handle('window:setAlwaysOnTop', (_event, flag: boolean) => {
-    BrowserWindow.getFocusedWindow()?.setAlwaysOnTop(flag);
+  ipcMain.handle('window:setAlwaysOnTop', (event, flag: boolean) => {
+    BrowserWindow.fromWebContents(event.sender)?.setAlwaysOnTop(flag);
   });
 
   ipcMain.handle('shell:openExternal', async (_event, url: string) => {
