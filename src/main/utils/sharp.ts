@@ -12,14 +12,15 @@ async function ensureCacheDir(): Promise<void> {
 }
 
 function cachePath(filePath: string, maxSize: number, ext: string = 'jpg'): string {
-  const hash = createHash('md5').update(filePath + maxSize + ext).digest('hex');
+  const hash = createHash('md5')
+    .update(filePath + maxSize + ext)
+    .digest('hex');
   return join(CACHE_DIR, `${hash}.${ext}`);
 }
 
 const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tiff', '.avif']);
 
 export class SharpService {
-
   static async getThumbnail(filePath: string, maxSize: number = 320): Promise<Buffer | null> {
     try {
       await ensureCacheDir();
@@ -51,7 +52,11 @@ export class SharpService {
     }
   }
 
-  static async resize(filePath: string, width: number, quality: number = 90): Promise<Buffer | null> {
+  static async resize(
+    filePath: string,
+    width: number,
+    quality: number = 90
+  ): Promise<Buffer | null> {
     try {
       const ext = extname(filePath).toLowerCase();
       if (!IMAGE_EXTS.has(ext)) return null;
@@ -65,5 +70,4 @@ export class SharpService {
       return null;
     }
   }
-
 }

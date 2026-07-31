@@ -83,7 +83,9 @@ const api = {
       fonts: Array<{ name: string; data: number[] }>;
       availableFonts: Record<string, string>;
     } | null
-  ): Promise<void> => { await tryInvoke('pip:preload', videoSrc, subtitleData); },
+  ): Promise<void> => {
+    await tryInvoke('pip:preload', videoSrc, subtitleData);
+  },
   pipLoadTrack: async (
     videoSrc: string,
     subtitleData: {
@@ -91,7 +93,9 @@ const api = {
       fonts: Array<{ name: string; data: number[] }>;
       availableFonts: Record<string, string>;
     } | null
-  ): Promise<void> => { await tryInvoke('pip:loadtrack', videoSrc, subtitleData); },
+  ): Promise<void> => {
+    await tryInvoke('pip:loadtrack', videoSrc, subtitleData);
+  },
   checkFfmpeg: (): Promise<{ installed: boolean; version: string | null }> =>
     ipcRenderer.invoke('dep:checkFfmpeg'),
   checkFfprobe: (): Promise<{ installed: boolean; version: string | null }> =>
@@ -173,12 +177,18 @@ const api = {
       fonts: Array<{ name: string; data: number[] }>;
       availableFonts: Record<string, string>;
     } | null
-  ): Promise<void> => { await tryInvoke('pip:updateSubtitle', data); },
+  ): Promise<void> => {
+    await tryInvoke('pip:updateSubtitle', data);
+  },
   checkAudioCodec: (filePath: string): Promise<{ codec: string; supported: boolean } | null> =>
     ipcRenderer.invoke('media:checkAudioCodec', filePath),
   transcodeAudio: (filePath: string): Promise<string | null> =>
     ipcRenderer.invoke('media:transcodeAudio', filePath),
-  transcodeAudioChunk: (filePath: string, startTime: number, duration: number): Promise<string | null> =>
+  transcodeAudioChunk: (
+    filePath: string,
+    startTime: number,
+    duration: number
+  ): Promise<string | null> =>
     ipcRenderer.invoke('media:transcodeAudioChunk', filePath, startTime, duration),
   cleanupTranscodedAudio: (audioPath: string): Promise<void> =>
     ipcRenderer.invoke('media:cleanupTranscodedAudio', audioPath),
@@ -187,14 +197,23 @@ const api = {
     mode?: string,
     opacity?: number,
     position?: string
-  ): Promise<boolean> => { const r = await tryInvoke('audio-pip:show', state, mode, opacity, position); return !!r; },
-  audioPipHide: async (): Promise<boolean> => { const r = await tryInvoke('audio-pip:hide'); return !!r; },
+  ): Promise<boolean> => {
+    const r = await tryInvoke('audio-pip:show', state, mode, opacity, position);
+    return !!r;
+  },
+  audioPipHide: async (): Promise<boolean> => {
+    const r = await tryInvoke('audio-pip:hide');
+    return !!r;
+  },
   audioPipUpdate: async (
     state: Record<string, unknown>,
     mode?: string,
     opacity?: number,
     position?: string
-  ): Promise<boolean> => { const r = await tryInvoke('audio-pip:update', state, mode, opacity, position); return !!r; }
+  ): Promise<boolean> => {
+    const r = await tryInvoke('audio-pip:update', state, mode, opacity, position);
+    return !!r;
+  }
 };
 
 if (process.contextIsolated) {
@@ -202,6 +221,7 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('electron', electronAPI);
     contextBridge.exposeInMainWorld('api', api);
   } catch (error) {
+    console.error('[preload] exposeInMainWorld failed', error);
   }
 } else {
   // @ts-ignore (define in dts)

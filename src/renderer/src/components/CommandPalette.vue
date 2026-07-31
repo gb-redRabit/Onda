@@ -92,11 +92,11 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
 <template>
   <div
     v-if="ui.commandPaletteVisible"
-    class="fixed inset-0 z-[70] flex items-start justify-center pt-[15vh] bg-gray-900/45 backdrop-blur-sm"
+    class="fixed inset-0 z-70 flex items-start justify-center pt-[15vh] bg-gray-900/45 backdrop-blur-sm"
     @click.self="ui.toggleCommandPalette"
   >
     <div
-      class="w-[480px] max-w-[90vw] bg-bg-elevated border border-border-default rounded-xl shadow-2xl shadow-black/50 overflow-hidden"
+      class="w-120 max-w-[90vw] bg-bg-elevated border border-border-default rounded-xl shadow-2xl shadow-black/50 overflow-hidden"
     >
       <div class="flex items-center gap-2 px-3 py-2.5 border-b border-border-default">
         <Search :size="16" class="text-fg-faint shrink-0" />
@@ -132,7 +132,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
               class="shrink-0 text-fg-faint"
             />
             <span class="truncate flex-1">{{ item.track.metadata?.title || item.track.name }}</span>
-            <span class="text-[11px] text-fg-faint shrink-0 truncate max-w-[120px]">{{
+            <span class="text-[11px] text-fg-faint shrink-0 truncate max-w-30">{{
               item.track.metadata?.artist || item.track.extension
             }}</span>
           </div>

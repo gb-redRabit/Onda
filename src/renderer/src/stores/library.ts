@@ -4,6 +4,10 @@ import type { MediaFile, Playlist } from '@renderer/types/media';
 import { errMsg } from '@shared/helpers';
 import { useUIStore } from './ui';
 
+export function isUnderPath(p: string, folder: string): boolean {
+  return p === folder || p.startsWith(folder + '/') || p.startsWith(folder + '\\');
+}
+
 export const useLibraryStore = defineStore('library', () => {
   const tracks = shallowRef<MediaFile[]>([]);
   const playlists = ref<Playlist[]>([]);
@@ -17,7 +21,9 @@ export const useLibraryStore = defineStore('library', () => {
   const totalCount = computed(() => tracks.value.length);
 
   const trackStats = computed(() => {
-    let audio = 0, video = 0, image = 0;
+    let audio = 0,
+      video = 0,
+      image = 0;
     const audioArr: MediaFile[] = [];
     const videoArr: MediaFile[] = [];
     const imageArr: MediaFile[] = [];
@@ -60,9 +66,21 @@ export const useLibraryStore = defineStore('library', () => {
   let cachedArtists: Array<[string, MediaFile[]]> = [];
   let cachedAlbums: Array<[string, MediaFile[]]> = [];
 
+  function invalidateDerivedCache() {
+    lastTracksHash = 0;
+    cachedArtists = [];
+    cachedAlbums = [];
+  }
+
   function hashTracks(tracks: MediaFile[]): number {
-    let h = 0;
-    for (let i = 0; i < tracks.length; i++) h ^= tracks[i].path.length;
+    let h = 0x811c9dc5;
+    for (let i = 0; i < tracks.length; i++) {
+      const p = tracks[i].path;
+      for (let j = 0; j < p.length; j++) {
+        h ^= p.charCodeAt(j);
+        h = (h * 0x01000193) >>> 0;
+      }
+    }
     return h;
   }
 
@@ -195,7 +213,8 @@ export const useLibraryStore = defineStore('library', () => {
     const newTypes = { ...folderTypes.value };
     delete newTypes[folderPath];
     folderTypes.value = newTypes;
-    tracks.value = tracks.value.filter((t) => !t.path.startsWith(folderPath));
+    tracks.value = tracks.value.filter((t) => !isUnderPath(t.path, folderPath));
+    invalidateDerivedCache();
   }
 
   function getFolderType(folderPath: string): 'audio' | 'video' | 'mixed' | 'unknown' {
@@ -217,7 +236,7 @@ export const useLibraryStore = defineStore('library', () => {
 
   function createPlaylist(name: string, description?: string): Playlist {
     const playlist: Playlist = {
-      id: `playlist-${Date.now()}`,
+      id: `playlist-${crypto.randomUUID()}`,
       name,
       description,
       tracks: [],
@@ -290,11 +309,13 @@ export const useLibraryStore = defineStore('library', () => {
     if (idx >= 0) {
       updater(tracks.value[idx]);
       triggerRef(tracks);
+      invalidateDerivedCache();
     }
   }
 
   function refreshDerived() {
     triggerRef(tracks);
+    invalidateDerivedCache();
   }
 
   return {

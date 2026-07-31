@@ -84,7 +84,8 @@ function onDragStart(e: DragEvent) {
     <div class="flex-1 min-w-0">
       <div class="text-sm font-medium truncate">{{ track.metadata?.title || track.name }}</div>
       <div class="text-xs text-fg-faint truncate">
-        {{ track.extension?.toUpperCase() || t('common.unknown') }} · {{ formatDur(track.duration) }}
+        {{ track.extension?.toUpperCase() || t('common.unknown') }} ·
+        {{ formatDur(track.duration) }}
       </div>
     </div>
 

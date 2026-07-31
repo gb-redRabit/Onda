@@ -54,7 +54,7 @@ export function registerSubtitleHandlers(): void {
         );
         const codec = stdout.trim().toLowerCase();
         const TEXT_CODECS = new Set(['subrip', 'ass', 'ssa', 'webvtt', 'mov_text']);
-        const ext = (codec === 'ass' || codec === 'ssa') ? '.ass' : '.srt';
+        const ext = codec === 'ass' || codec === 'ssa' ? '.ass' : '.srt';
         const outPath = join(getTempDir(), `sub_${uniqueId()}${ext}`);
 
         if (TEXT_CODECS.has(codec)) {
@@ -65,7 +65,11 @@ export function registerSubtitleHandlers(): void {
               { encoding: 'utf-8', timeout: 30000, windowsHide: true }
             );
           } catch (e1) {
-            logger.warn('subtitles', `copy failed for stream ${streamIndex} (${codec}), trying transcode`, (e1 as Error).message?.split('\n')[0]);
+            logger.warn(
+              'subtitles',
+              `copy failed for stream ${streamIndex} (${codec}), trying transcode`,
+              (e1 as Error).message?.split('\n')[0]
+            );
             // copy failed, try transcoding to srt
             const srtPath = join(getTempDir(), `sub_${uniqueId()}.srt`);
             await execAsync(
@@ -115,7 +119,10 @@ export function registerSubtitleHandlers(): void {
           .filter((f) => {
             const ext = extname(f).toLowerCase();
             const baseName = basename(f, ext);
-            return subExts.includes(ext) && (baseName === videoName || baseName.startsWith(videoName + '.'));
+            return (
+              subExts.includes(ext) &&
+              (baseName === videoName || baseName.startsWith(videoName + '.'))
+            );
           })
           .map((f) => ({
             name: f,
@@ -166,7 +173,10 @@ export function registerSubtitleHandlers(): void {
           );
           const parsed = JSON.parse(stdout);
           attachmentStreams = (parsed.streams || [])
-            .filter((s: { codec_type?: string; tags?: { filename?: string } }) => s.codec_type === 'attachment' && s.tags?.filename)
+            .filter(
+              (s: { codec_type?: string; tags?: { filename?: string } }) =>
+                s.codec_type === 'attachment' && s.tags?.filename
+            )
             .map((s: { index: number; tags: { filename: string } }) => ({
               index: s.index,
               filename: s.tags.filename
@@ -179,7 +189,11 @@ export function registerSubtitleHandlers(): void {
 
         // try mkvextract first
         let bin: string | null = null;
-        try { bin = await getMkvExtractPath(); } catch { /* not available */ }
+        try {
+          bin = await getMkvExtractPath();
+        } catch {
+          /* not available */
+        }
 
         let allOk = true;
 
@@ -206,12 +220,13 @@ export function registerSubtitleHandlers(): void {
         if (!allOk) {
           // fallback: dump all attachments via ffmpeg
           try {
-            await execAsync(
-              `ffmpeg -v error -y -dump_attachment "" -i "${filePath}" -f null -`,
-              { encoding: 'utf-8', timeout: 30000, windowsHide: true, cwd: dumpDir }
-            );
-          } catch (e2) {
-          }
+            await execAsync(`ffmpeg -v error -y -dump_attachment "" -i "${filePath}" -f null -`, {
+              encoding: 'utf-8',
+              timeout: 30000,
+              windowsHide: true,
+              cwd: dumpDir
+            });
+          } catch {}
         }
 
         // read all dumped files
@@ -229,7 +244,9 @@ export function registerSubtitleHandlers(): void {
               ext: (fname.split('.').pop() || 'ttf').toLowerCase(),
               data: Array.from(buf)
             });
-          } catch { /* skip unreadable */ }
+          } catch {
+            /* skip unreadable */
+          }
         }
       } catch (err) {
         logger.error('subtitles', 'extractAttachments failed', err);

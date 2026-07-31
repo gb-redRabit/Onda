@@ -46,7 +46,13 @@ export function captureVideoFrame(filePath: string): Promise<CoverResult> {
       }
     };
 
-    video.onerror = () => { clearTimeout(timer); done({ type: null, data: null }); };
-    video.onabort = () => { clearTimeout(timer); done({ type: null, data: null }); };
+    video.onerror = () => {
+      clearTimeout(timer);
+      done({ type: null, data: null });
+    };
+    video.onabort = () => {
+      clearTimeout(timer);
+      done({ type: null, data: null });
+    };
   });
 }

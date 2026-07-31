@@ -196,11 +196,7 @@ function playAll() {
           @dragleave.stop="dragOverTrackIdx = null"
           @drop.prevent.stop="onTrackDrop($event, idx)"
         >
-          <LibraryTrackRow
-            :track="track"
-            :playlist-id="selectedPlaylist.id"
-            :drag-index="idx"
-          />
+          <LibraryTrackRow :track="track" :playlist-id="selectedPlaylist.id" :drag-index="idx" />
         </div>
         <div
           v-if="selectedPlaylist.tracks.length === 0"

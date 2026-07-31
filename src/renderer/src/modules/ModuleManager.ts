@@ -26,12 +26,6 @@ class ModuleManager {
     const sorted = [...this.modules.values()].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
 
     for (const module of sorted) {
-      if (module.dependencies) {
-        for (const depId of module.dependencies) {
-          if (!this.modules.has(depId)) {
-          }
-        }
-      }
       module.init?.();
     }
   }

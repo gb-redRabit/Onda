@@ -1,5 +1,17 @@
 import { ipcMain, shell, app, clipboard, BrowserWindow } from 'electron';
-import { readdir, stat, lstat, readFile, writeFile, mkdir, rename, unlink, rm, copyFile, cp } from 'fs/promises';
+import {
+  readdir,
+  stat,
+  lstat,
+  readFile,
+  writeFile,
+  mkdir,
+  rename,
+  unlink,
+  rm,
+  copyFile,
+  cp
+} from 'fs/promises';
 import { createReadStream } from 'fs';
 import { createHash } from 'crypto';
 import { join, extname, basename } from 'path';
@@ -56,10 +68,32 @@ async function getDrives(): Promise<FileItem[]> {
     }
   }
   if (platform === 'darwin') {
-    return [{ name: 'Macintosh HD', path: '/', isDirectory: true, size: 0, modifiedAt: Date.now(), createdAt: Date.now(), extension: '', mimeType: undefined }];
+    return [
+      {
+        name: 'Macintosh HD',
+        path: '/',
+        isDirectory: true,
+        size: 0,
+        modifiedAt: Date.now(),
+        createdAt: Date.now(),
+        extension: '',
+        mimeType: undefined
+      }
+    ];
   }
   // linux
-  return [{ name: '/', path: '/', isDirectory: true, size: 0, modifiedAt: Date.now(), createdAt: Date.now(), extension: '', mimeType: undefined }];
+  return [
+    {
+      name: '/',
+      path: '/',
+      isDirectory: true,
+      size: 0,
+      modifiedAt: Date.now(),
+      createdAt: Date.now(),
+      extension: '',
+      mimeType: undefined
+    }
+  ];
 }
 
 function getFileItem(fullPath: string, stats: import('fs').Stats, name: string): FileItem {
@@ -116,7 +150,8 @@ async function uniqueDestPath(dest: string): Promise<string> {
   } catch {
     return dest;
   }
-  const dir = dest.substring(0, dest.lastIndexOf('\\')) || dest.substring(0, dest.lastIndexOf('/')) || '';
+  const dir =
+    dest.substring(0, dest.lastIndexOf('\\')) || dest.substring(0, dest.lastIndexOf('/')) || '';
   const ext = extname(dest);
   const base = basename(dest, ext);
   for (let i = 2; i < 10000; i++) {
@@ -178,7 +213,9 @@ export function registerFsHandlers(): void {
           try {
             const st = await stat(join(dir, e.name));
             totalSize += st.size;
-          } catch { /* skip */ }
+          } catch {
+            /* skip */
+          }
         }
       }
     }
@@ -332,7 +369,10 @@ export function registerFsHandlers(): void {
   });
 
   ipcMain.handle('fs:findDuplicates', async (_event, directory: string) => {
-    interface DupGroup { original: string; duplicates: string[] }
+    interface DupGroup {
+      original: string;
+      duplicates: string[];
+    }
     const groups: DupGroup[] = [];
     try {
       const entries = await readdir(directory, { withFileTypes: true });
@@ -351,15 +391,27 @@ export function registerFsHandlers(): void {
         const originalPath = join(directory, origName);
         let refPath = originalPath;
         let refStats: Awaited<ReturnType<typeof stat>> | null = null;
-        try { refStats = await stat(originalPath); } catch { /* original missing */ }
+        try {
+          refStats = await stat(originalPath);
+        } catch {
+          /* original missing */
+        }
         if (!refStats?.isFile()) {
           if (candidates.length < 2) continue;
           refPath = candidates[0];
-          try { refStats = await stat(refPath); } catch { continue; }
+          try {
+            refStats = await stat(refPath);
+          } catch {
+            continue;
+          }
         }
         const refSize = refStats.size;
         let refHash = '';
-        try { refHash = await fileHash(refPath); } catch { continue; }
+        try {
+          refHash = await fileHash(refPath);
+        } catch {
+          continue;
+        }
         const dups: string[] = [];
         for (const c of candidates) {
           if (c.toLowerCase() === refPath.toLowerCase()) continue;
@@ -367,11 +419,15 @@ export function registerFsHandlers(): void {
             const s = await stat(c);
             if (s.size !== refSize) continue;
             if ((await fileHash(c)) === refHash) dups.push(c);
-          } catch { /* skip unreadable */ }
+          } catch {
+            /* skip unreadable */
+          }
         }
         if (dups.length > 0) groups.push({ original: refPath, duplicates: dups });
       }
-    } catch { /* empty/unreadable dir */ }
+    } catch {
+      /* empty/unreadable dir */
+    }
     return groups;
   });
 
@@ -469,9 +525,8 @@ export function registerFsHandlers(): void {
       'logs',
       'crashDumps'
     ];
-    return app.getPath(
-      validPaths.includes(name as any) ? (name as Parameters<typeof app.getPath>[0]) : 'userData'
-    );
+    const pathName = validPaths.find((validPath) => validPath === name) ?? 'userData';
+    return app.getPath(pathName);
   });
 
   ipcMain.handle('app:getVersion', () => {

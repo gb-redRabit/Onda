@@ -49,11 +49,11 @@ export const useSettingsStore = defineStore('settings', () => {
     try {
       if (window.api) {
         const data = (await window.api.invoke('settings:get')) as Partial<AppSettings>;
-      if (data.appearance) Object.assign(appearance.value, data.appearance);
-      if (data.playback) Object.assign(playback.value, data.playback);
-      if (data.explorer) Object.assign(explorer.value, data.explorer);
-      if (data.library) Object.assign(library.value, data.library);
-      if (data.download) Object.assign(download.value, data.download);
+        if (data.appearance) Object.assign(appearance.value, data.appearance);
+        if (data.playback) Object.assign(playback.value, data.playback);
+        if (data.explorer) Object.assign(explorer.value, data.explorer);
+        if (data.library) Object.assign(library.value, data.library);
+        if (data.download) Object.assign(download.value, data.download);
         if (data.shortcuts) Object.assign(shortcuts.value, data.shortcuts);
         if (data.network) Object.assign(network.value, data.network);
         if (data.apiKeys) Object.assign(apiKeys.value, data.apiKeys);
@@ -72,19 +72,21 @@ export const useSettingsStore = defineStore('settings', () => {
   const _save = async () => {
     try {
       if (window.api) {
-        const payload = JSON.parse(JSON.stringify({
-          appearance: appearance.value,
-          playback: playback.value,
-          explorer: explorer.value,
-          library: library.value,
-          download: download.value,
-          shortcuts: shortcuts.value,
-          network: network.value,
-          apiKeys: apiKeys.value,
-          updates: updates.value,
-          toast: toast.value,
-          dependencies: dependencies.value
-        }));
+        const payload = JSON.parse(
+          JSON.stringify({
+            appearance: appearance.value,
+            playback: playback.value,
+            explorer: explorer.value,
+            library: library.value,
+            download: download.value,
+            shortcuts: shortcuts.value,
+            network: network.value,
+            apiKeys: apiKeys.value,
+            updates: updates.value,
+            toast: toast.value,
+            dependencies: dependencies.value
+          })
+        );
         await window.api.invoke('settings:set', payload);
       }
     } catch {

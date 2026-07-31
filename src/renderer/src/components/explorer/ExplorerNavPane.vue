@@ -10,7 +10,9 @@ const { t } = useI18n();
 const explorer = useExplorerStore();
 const library = useLibraryStore();
 const settings = useSettingsStore();
-const showConfirm = inject<(msg: string) => Promise<boolean>>('showConfirm', async (msg: string) => confirm(msg));
+const showConfirm = inject<(msg: string) => Promise<boolean>>('showConfirm', async (msg: string) =>
+  confirm(msg)
+);
 
 const drives = ref<{ name: string; path: string }[]>([]);
 const desktopPath = ref('');
@@ -37,7 +39,7 @@ onMounted(async () => {
   }
 });
 
-function resolvePath(link: typeof quickLinks[number]): string {
+function resolvePath(link: (typeof quickLinks)[number]): string {
   if (link.label === 'Desktop') return desktopPath.value;
   if (link.label === 'Downloads') return downloadsPath.value;
   return link.path;
@@ -45,7 +47,7 @@ function resolvePath(link: typeof quickLinks[number]): string {
 
 function onNavDragOver(e: DragEvent, path: string) {
   e.preventDefault();
-  if (e.dataTransfer) e.dataTransfer.dropEffect = (e.ctrlKey || e.metaKey) ? 'copy' : 'move';
+  if (e.dataTransfer) e.dataTransfer.dropEffect = e.ctrlKey || e.metaKey ? 'copy' : 'move';
   dropTargetPath.value = path;
 }
 
@@ -84,7 +86,9 @@ async function onNavDrop(e: DragEvent, path: string) {
 </script>
 
 <template>
-  <div class="w-56 shrink-0 border-r border-border-default bg-bg-surface flex flex-col overflow-hidden">
+  <div
+    class="w-56 shrink-0 border-r border-border-default bg-bg-surface flex flex-col overflow-hidden"
+  >
     <div class="flex-1 overflow-y-auto p-2 space-y-0.5">
       <!-- quick links -->
       <div class="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-fg-faint">
@@ -110,7 +114,9 @@ async function onNavDrop(e: DragEvent, path: string) {
       </button>
 
       <!-- drives -->
-      <div class="mt-3 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-fg-faint">
+      <div
+        class="mt-3 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-fg-faint"
+      >
         {{ t('explorer.drives') }}
       </div>
       <button
@@ -132,7 +138,9 @@ async function onNavDrop(e: DragEvent, path: string) {
       </button>
 
       <!-- library folders -->
-      <div class="mt-3 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-fg-faint">
+      <div
+        class="mt-3 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-fg-faint"
+      >
         {{ t('explorer.libraryFolders') }}
       </div>
       <button

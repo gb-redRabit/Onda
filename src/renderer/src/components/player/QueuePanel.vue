@@ -74,9 +74,12 @@ function onDrop(e: DragEvent, toIndex: number) {
       playCount: 0
     };
     player.insertInQueue(toIndex, file);
-    window.api.getDuration(filePath).then((dur) => {
-      file.duration = dur;
-    });
+    window.api
+      .getDuration(filePath)
+      .then((dur) => {
+        file.duration = dur;
+      })
+      .catch(() => {});
   }
 }
 
@@ -117,9 +120,12 @@ function onFileDrop(e: DragEvent) {
         playCount: 0
       };
       player.addToQueue(mediaFile);
-      window.api.getDuration(filePath).then((dur) => {
-        mediaFile.duration = dur;
-      });
+      window.api
+        .getDuration(filePath)
+        .then((dur) => {
+          mediaFile.duration = dur;
+        })
+        .catch(() => {});
     }
   }
 }

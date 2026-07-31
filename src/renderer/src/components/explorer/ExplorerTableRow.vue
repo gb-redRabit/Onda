@@ -22,8 +22,15 @@ const emit = defineEmits<{
   (e: 'contextMenu', event: MouseEvent, item: FileItem): void;
 }>();
 
-const { rootEl, systemIcon, mediaThumb } = useThumbnail(props.item.path, props.item.isDirectory, props.isAtDrives, 96);
-if (import.meta.env.DEV) { void rootEl; }
+const { rootEl, systemIcon, mediaThumb } = useThumbnail(
+  props.item.path,
+  props.item.isDirectory,
+  props.isAtDrives,
+  96
+);
+if (import.meta.env.DEV) {
+  void rootEl;
+}
 
 function iconComponent() {
   if (props.isAtDrives) return HardDrive;
@@ -45,19 +52,47 @@ function iconComponent() {
     :class="{
       'bg-accent-ghost ring-1 ring-accent-base': isSelected,
       'bg-accent-ghost/15 ring-1 ring-accent-base/30': isLibraryFolder && !isSelected,
-      'ring-2 ring-accent-base bg-accent-ghost/50': hoveredFolderPath && item.isDirectory && hoveredFolderPath === item.path,
+      'ring-2 ring-accent-base bg-accent-ghost/50':
+        hoveredFolderPath && item.isDirectory && hoveredFolderPath === item.path,
       'opacity-40': isCut
     }"
     @click="(e: MouseEvent) => emit('select', item.path, e)"
     @dblclick="emit('doubleClick', item)"
     @contextmenu.stop.prevent="emit('contextMenu', $event, item)"
-    @dragstart="(e: DragEvent) => { const store = useExplorerStore(); if (store.selectedFiles.has(props.item.path)) { beginFileDrag(e, [...store.selectedFiles]); } else { beginFileDrag(e, [props.item.path]); } }"
+    @dragstart="
+      (e: DragEvent) => {
+        const store = useExplorerStore();
+        if (store.selectedFiles.has(props.item.path)) {
+          beginFileDrag(e, [...store.selectedFiles]);
+        } else {
+          beginFileDrag(e, [props.item.path]);
+        }
+      }
+    "
   >
-    <div class="flex items-center gap-2 min-w-0"><img v-if="mediaThumb && !isAtDrives && !item.isDirectory" :src="mediaThumb" class="w-4 h-4 object-contain shrink-0" />
-      <img v-else-if="systemIcon && !isAtDrives && !item.isDirectory" :src="systemIcon" class="w-4 h-4 object-contain shrink-0" />
-      <component v-else :is="iconComponent()" :size="14" :class="isAtDrives || item.isDirectory ? 'text-accent-base shrink-0' : 'shrink-0'" />
+    <div class="flex items-center gap-2 min-w-0">
+      <img
+        v-if="mediaThumb && !isAtDrives && !item.isDirectory"
+        :src="mediaThumb"
+        class="w-4 h-4 object-contain shrink-0"
+      />
+      <img
+        v-else-if="systemIcon && !isAtDrives && !item.isDirectory"
+        :src="systemIcon"
+        class="w-4 h-4 object-contain shrink-0"
+      />
+      <component
+        :is="iconComponent()"
+        v-else
+        :size="14"
+        :class="isAtDrives || item.isDirectory ? 'text-accent-base shrink-0' : 'shrink-0'"
+      />
       <span class="truncate">{{ item.name }}</span>
-      <span v-if="isLibraryFolder && !isAtDrives" class="shrink-0 text-[8px] px-1 py-0.5 rounded-md bg-accent-base/20 text-accent-base font-bold border border-accent-base/40 leading-none">LIB</span>
+      <span
+        v-if="isLibraryFolder && !isAtDrives"
+        class="shrink-0 text-[8px] px-1 py-0.5 rounded-md bg-accent-base/20 text-accent-base font-bold border border-accent-base/40 leading-none"
+        >LIB</span
+      >
     </div>
     <span class="text-fg-faint text-xs font-mono">
       {{

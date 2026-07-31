@@ -81,12 +81,16 @@ export function createMediaServer(): Promise<MediaServer> {
 
           const stream = fs.createReadStream(normalized, { start, end });
           stream.pipe(res);
-          stream.on('error', () => { res.destroy(); });
+          stream.on('error', () => {
+            res.destroy();
+          });
         } else {
           res.writeHead(200, { 'content-length': String(fileSize) });
           const stream = fs.createReadStream(normalized);
           stream.pipe(res);
-          stream.on('error', () => { res.destroy(); });
+          stream.on('error', () => {
+            res.destroy();
+          });
         }
       } catch {
         res.writeHead(500);

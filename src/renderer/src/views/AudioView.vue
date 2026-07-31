@@ -100,7 +100,10 @@ function onSplitDividerMouseDown(e: MouseEvent) {
   if (!parent) return;
   const rect = parent.getBoundingClientRect();
   function onMove(ev: MouseEvent) {
-    splitRatio.value = Math.max(20, Math.min(80, startRatio + ((ev.clientX - startX) / rect.width) * 100));
+    splitRatio.value = Math.max(
+      20,
+      Math.min(80, startRatio + ((ev.clientX - startX) / rect.width) * 100)
+    );
   }
   function onUp() {
     document.removeEventListener('mousemove', onMove);
@@ -136,7 +139,7 @@ onUnmounted(() => {
       <div class="absolute inset-0 opacity-60">
         <AudioVisualizer ref="vizRef" />
       </div>
-      <div class="absolute inset-0 bg-gradient-to-t from-bg-base/90 via-bg-base/40 to-bg-base/60" />
+      <div class="absolute inset-0 bg-linear-to-t from-bg-base/90 via-bg-base/40 to-bg-base/60" />
       <div class="absolute inset-0 flex flex-col items-center justify-center z-10 px-8">
         <AudioCover size="w-96 h-96" class="mb-6" />
         <div class="text-center mb-6 max-w-md">
@@ -168,7 +171,11 @@ onUnmounted(() => {
         </button>
         <button
           class="p-2 rounded-lg bg-bg-overlay/80 backdrop-blur-sm transition-all"
-          :class="showVizSettings ? 'text-accent-base bg-accent-ghost' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'"
+          :class="
+            showVizSettings
+              ? 'text-accent-base bg-accent-ghost'
+              : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+          "
           :title="$t('settings.audioViz')"
           @click="showVizSettings = !showVizSettings"
         >
@@ -181,8 +188,15 @@ onUnmounted(() => {
     </div>
 
     <!-- ═══════ SPLIT layout — cover left, visualizer right ═══════ -->
-    <div v-else-if="layoutMode === 'split'" class="h-full w-full flex overflow-hidden" @mousedown="onSplitDividerMouseDown">
-      <div class="flex flex-col items-center justify-center px-8 min-w-0 overflow-auto" :style="{ width: splitRatio + '%' }">
+    <div
+      v-else-if="layoutMode === 'split'"
+      class="h-full w-full flex overflow-hidden"
+      @mousedown="onSplitDividerMouseDown"
+    >
+      <div
+        class="flex flex-col items-center justify-center px-8 min-w-0 overflow-auto"
+        :style="{ width: splitRatio + '%' }"
+      >
         <AudioCover size="w-96 h-96 shadow-xl shadow-black/30" class="mb-6" />
         <div class="text-center mb-4 max-w-sm w-full">
           <AudioTrackInfo />
@@ -198,7 +212,7 @@ onUnmounted(() => {
         </div>
       </div>
       <div class="split-divider w-1 shrink-0 cursor-col-resize" />
-      <div class="h-full p-4 pl-0 relative" :style="{ width: (100 - splitRatio) + '%' }">
+      <div class="h-full p-4 pl-0 relative" :style="{ width: 100 - splitRatio + '%' }">
         <AudioVisualizer class="h-full" />
         <div class="absolute top-2 right-2 z-10 flex gap-1">
           <button
@@ -213,7 +227,11 @@ onUnmounted(() => {
           </button>
           <button
             class="p-1.5 rounded-lg bg-bg-overlay/80 backdrop-blur-sm transition-all"
-            :class="showVizSettings ? 'text-accent-base bg-accent-ghost' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'"
+            :class="
+              showVizSettings
+                ? 'text-accent-base bg-accent-ghost'
+                : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+            "
             :title="$t('settings.audioViz')"
             @click="showVizSettings = !showVizSettings"
           >
@@ -239,7 +257,10 @@ onUnmounted(() => {
         >
           <AudioProgressBar />
         </div>
-        <div class="transition-opacity shrink-0" :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }">
+        <div
+          class="transition-opacity shrink-0"
+          :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }"
+        >
           <AudioControls />
         </div>
       </div>
@@ -258,7 +279,11 @@ onUnmounted(() => {
           </button>
           <button
             class="p-1 rounded-lg bg-bg-overlay/80 backdrop-blur-sm transition-all"
-            :class="showVizSettings ? 'text-accent-base bg-accent-ghost' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'"
+            :class="
+              showVizSettings
+                ? 'text-accent-base bg-accent-ghost'
+                : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+            "
             :title="$t('settings.audioViz')"
             @click="showVizSettings = !showVizSettings"
           >

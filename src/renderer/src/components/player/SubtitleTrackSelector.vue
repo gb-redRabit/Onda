@@ -16,7 +16,7 @@ function selectTrack(id: string | null) {
   <div class="relative inline-flex items-center">
     <button
       class="text-white/50 hover:text-white transition-colors"
-      :class="{ '!text-accent-base': player.activeSubtitleId }"
+      :class="{ 'text-accent-base!': player.activeSubtitleId }"
       @click="isOpen = !isOpen"
     >
       <Subtitles :size="16" />

@@ -1,14 +1,4 @@
-export const VIDEO_EXTS = [
-  '.mp4',
-  '.mkv',
-  '.avi',
-  '.webm',
-  '.mov',
-  '.wmv',
-  '.m4v',
-  '.ts',
-  '.ogv'
-];
+export const VIDEO_EXTS = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.m4v', '.ts', '.ogv'];
 
 export const AUDIO_EXTS = [
   '.mp3',

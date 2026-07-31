@@ -13,7 +13,12 @@ export class SecondaryAudioManager {
     this.offset = offset;
   }
 
-  async connect(audioCtx: AudioContext, targetGain: GainNode, audioPath: string, timeOffset = 0): Promise<void> {
+  async connect(
+    audioCtx: AudioContext,
+    targetGain: GainNode,
+    audioPath: string,
+    timeOffset = 0
+  ): Promise<void> {
     this.disconnect();
 
     const el = new Audio();
@@ -47,7 +52,9 @@ export class SecondaryAudioManager {
 
   disconnect(): void {
     if (this.sourceNode) {
-      try { this.sourceNode.disconnect(); } catch {}
+      try {
+        this.sourceNode.disconnect();
+      } catch {}
       this.sourceNode = null;
     }
     if (this.el) {

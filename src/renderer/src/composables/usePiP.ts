@@ -8,7 +8,11 @@ export interface PiPSubtitleData {
   availableFonts: Record<string, string>;
 }
 
-export function usePiP(callbacks?: { onClosed?: (time: number) => void; onEnded?: () => void; onMaximize?: (time: number) => void }) {
+export function usePiP(callbacks?: {
+  onClosed?: (time: number) => void;
+  onEnded?: () => void;
+  onMaximize?: (time: number) => void;
+}) {
   const isActive = ref(false);
   const currentTime = ref(0);
 

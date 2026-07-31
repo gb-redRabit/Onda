@@ -168,7 +168,7 @@ function togglePlay() {
       <div class="flex items-center gap-3">
         <button
           class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
-          :class="{ '!text-accent-base': player.shuffle }"
+          :class="{ 'text-accent-base!': player.shuffle }"
           @click="player.toggleShuffle"
         >
           <Shuffle :size="15" />
@@ -194,7 +194,7 @@ function togglePlay() {
         </button>
         <button
           class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
-          :class="{ '!text-accent-base': player.repeat !== 'none' }"
+          :class="{ 'text-accent-base!': player.repeat !== 'none' }"
           @click="player.cycleRepeat"
         >
           <component :is="player.repeat === 'one' ? Repeat1 : Repeat" :size="15" />
@@ -210,14 +210,14 @@ function togglePlay() {
     <div class="flex items-center gap-1.5 w-55 justify-end">
       <button
         class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
-        :class="{ '!text-accent-base': player.equalizerVisible }"
+        :class="{ 'text-accent-base!': player.equalizerVisible }"
         @click="player.toggleEqualizer"
       >
         <SlidersHorizontal :size="15" />
       </button>
       <button
         class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
-        :class="{ '!text-accent-base': player.queueVisible }"
+        :class="{ 'text-accent-base!': player.queueVisible }"
         @click="player.toggleQueue"
       >
         <ListMusic :size="15" />

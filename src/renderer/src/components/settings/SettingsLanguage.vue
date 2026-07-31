@@ -14,7 +14,11 @@ function setLocale(loc: string) {
   if (loc !== 'pl' && loc !== 'en') return;
   locale.value = loc;
   settings.updateAppearance({ locale: loc });
-  try { localStorage.setItem('onda-locale', loc); } catch { /* noop */ }
+  try {
+    localStorage.setItem('onda-locale', loc);
+  } catch {
+    /* noop */
+  }
 }
 </script>
 

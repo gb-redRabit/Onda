@@ -51,7 +51,12 @@ function evictCache(map: Map<string, unknown>, maxSize: number): void {
   }
 }
 
-export function cacheSet<T>(map: Map<string, T>, key: string, value: T, maxSize: number = CACHE_MAX_SIZE): void {
+export function cacheSet<T>(
+  map: Map<string, T>,
+  key: string,
+  value: T,
+  maxSize: number = CACHE_MAX_SIZE
+): void {
   map.set(key, value);
   evictCache(map as Map<string, unknown>, maxSize);
 }
@@ -99,7 +104,11 @@ export async function getPersistentCover(
 
 let saveMapLock: Promise<void> | null = null;
 
-export async function savePersistentCover(filePath: string, binary: Buffer, ext: string): Promise<void> {
+export async function savePersistentCover(
+  filePath: string,
+  binary: Buffer,
+  ext: string
+): Promise<void> {
   try {
     await mkdir(PERSISTENT_COVER_DIR, { recursive: true });
     const hash = hashPath(filePath);
@@ -107,9 +116,13 @@ export async function savePersistentCover(filePath: string, binary: Buffer, ext:
     const cachePath = join(PERSISTENT_COVER_DIR, cacheFile);
     await writeFile(cachePath, binary);
 
-    while (saveMapLock) { await saveMapLock; }
+    while (saveMapLock) {
+      await saveMapLock;
+    }
     let resolveLock: () => void;
-    saveMapLock = new Promise((r) => { resolveLock = r; });
+    saveMapLock = new Promise((r) => {
+      resolveLock = r;
+    });
     try {
       const s = await stat(filePath).catch(() => null);
       const store = await getStore();
@@ -151,9 +164,14 @@ async function extractAudioCover(filePath: string): Promise<string | null> {
       let buf = Buffer.from(pic.data);
       const imgExt = pic.format === 'image/jpeg' ? 'jpg' : pic.format.replace('image/', '');
       try {
-        const resized = await sharp(buf).resize(500, 500, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 85 }).toBuffer();
+        const resized = await sharp(buf)
+          .resize(500, 500, { fit: 'inside', withoutEnlargement: true })
+          .jpeg({ quality: 85 })
+          .toBuffer();
         buf = resized;
-      } catch { /* use original */ }
+      } catch {
+        /* use original */
+      }
       savePersistentCover(filePath, buf, imgExt);
       return `data:image/jpeg;base64,${buf.toString('base64')}`;
     }
@@ -217,7 +235,10 @@ export async function extractAndCacheCover(
 
   try {
     const ext = extname(filePath).toLowerCase();
-    let result: { type: 'video' | 'image' | null; data: string | null } = { type: null, data: null };
+    let result: { type: 'video' | 'image' | null; data: string | null } = {
+      type: null,
+      data: null
+    };
 
     if (AUDIO_EXTS.includes(ext)) {
       const cover = await extractAudioCover(filePath);

@@ -4,8 +4,20 @@ import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useVirtualizer } from '@tanstack/vue-virtual';
 import {
-  ChevronUp, ChevronDown,
-  HardDrive, FolderOpen, Monitor, Plus, Pin, PinOff, X, Copy, Trash2, Check, RotateCw, FileText
+  ChevronUp,
+  ChevronDown,
+  HardDrive,
+  FolderOpen,
+  Monitor,
+  Plus,
+  Pin,
+  PinOff,
+  X,
+  Copy,
+  Trash2,
+  Check,
+  RotateCw,
+  FileText
 } from '@lucide/vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
 import { useClipboardStore } from '@renderer/stores/clipboard';
@@ -16,7 +28,12 @@ import { useUIStore, ContextMenuItem } from '@renderer/stores/ui';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
 import { logger } from '@renderer/utils/logger';
 import { formatFileSize } from '@renderer/utils/formatters';
-import { beginTabDrag, claimTabDrag, getActiveTabDrag, clearTabDrag } from '@renderer/utils/tabDrag';
+import {
+  beginTabDrag,
+  claimTabDrag,
+  getActiveTabDrag,
+  clearTabDrag
+} from '@renderer/utils/tabDrag';
 import { beginFileDrag, getDroppedFilePaths } from '@renderer/utils/fileDrag';
 import { SUPPORTED_IMAGE_FORMATS } from '@renderer/utils/constants';
 import ExplorerNavPane from '@renderer/components/explorer/ExplorerNavPane.vue';
@@ -39,7 +56,17 @@ const router = useRouter();
 const route = useRoute();
 const { t } = useI18n();
 
-const { showPrompt, showConfirm, promptVisible, promptIsConfirm, promptMessage, promptValue, promptConfirm, promptCancel, promptKeydown } = usePromptDialog();
+const {
+  showPrompt,
+  showConfirm,
+  promptVisible,
+  promptIsConfirm,
+  promptMessage,
+  promptValue,
+  promptConfirm,
+  promptCancel,
+  promptKeydown
+} = usePromptDialog();
 
 provide('showConfirm', showConfirm);
 
@@ -61,7 +88,8 @@ async function runDuplicatesScan() {
   dupLoading.value = true;
   dupSelected.value = new Set();
   try {
-    const result = (await window.api?.invoke('fs:findDuplicates', explorer.currentPath)) as DupGroup[] || [];
+    const result =
+      ((await window.api?.invoke('fs:findDuplicates', explorer.currentPath)) as DupGroup[]) || [];
     dupGroups.value = result;
   } catch {
     dupGroups.value = [];
@@ -119,14 +147,38 @@ const iconCacheOrder: string[] = [];
 const VIDEO_EXTS = new Set(['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v']);
 
 const MEDIA_EXTS = new Set([
-  '.mp3', '.flac', '.wav', '.ogg', '.aac', '.m4a', '.opus', '.aiff',
-  '.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v',
+  '.mp3',
+  '.flac',
+  '.wav',
+  '.ogg',
+  '.aac',
+  '.m4a',
+  '.opus',
+  '.aiff',
+  '.mp4',
+  '.mkv',
+  '.avi',
+  '.webm',
+  '.mov',
+  '.wmv',
+  '.flv',
+  '.m4v',
   ...SUPPORTED_IMAGE_FORMATS
 ]);
 
-const GRID_ITEM_WIDTHS: Record<string, number> = { small: 72, medium: 108, large: 160, extraLarge: 240 };
+const GRID_ITEM_WIDTHS: Record<string, number> = {
+  small: 72,
+  medium: 108,
+  large: 160,
+  extraLarge: 240
+};
 const GRID_GAPS: Record<string, number> = { small: 4, medium: 8, large: 12, extraLarge: 16 };
-const GRID_ITEM_HEIGHTS: Record<string, number> = { small: 66, medium: 90, large: 118, extraLarge: 146 };
+const GRID_ITEM_HEIGHTS: Record<string, number> = {
+  small: 66,
+  medium: 90,
+  large: 118,
+  extraLarge: 146
+};
 const LIST_ITEM_HEIGHTS: Record<string, number> = { extraSmall: 28, details: 36 };
 
 const searchQuery = ref('');
@@ -154,7 +206,10 @@ function encodeTabPayload(windowId: number, path: string): string {
 function parseTabPayload(raw: string): { wid: number; path: string } | null {
   if (!raw.startsWith(TAB_PAYLOAD_PREFIX)) return null;
   try {
-    const parsed = JSON.parse(decodeURIComponent(raw.slice(TAB_PAYLOAD_PREFIX.length))) as { wid: number; path: string };
+    const parsed = JSON.parse(decodeURIComponent(raw.slice(TAB_PAYLOAD_PREFIX.length))) as {
+      wid: number;
+      path: string;
+    };
     if (typeof parsed.wid !== 'number' || typeof parsed.path !== 'string') return null;
     return parsed;
   } catch {
@@ -163,7 +218,10 @@ function parseTabPayload(raw: string): { wid: number; path: string } | null {
 }
 
 // duplicate finder state
-interface DupGroup { original: string; duplicates: string[] }
+interface DupGroup {
+  original: string;
+  duplicates: string[];
+}
 const dupPanelOpen = ref(false);
 const dupLoading = ref(false);
 const dupGroups = ref<DupGroup[]>([]);
@@ -199,7 +257,9 @@ const filteredFiles = computed(() => {
   );
 });
 
-const isListMode = computed(() => explorer.viewMode === 'extraSmall' || explorer.viewMode === 'details');
+const isListMode = computed(
+  () => explorer.viewMode === 'extraSmall' || explorer.viewMode === 'details'
+);
 const isGridMode = computed(() => !isListMode.value);
 
 const itemsPerRow = computed(() => {
@@ -232,19 +292,22 @@ function flushIconQueue() {
   const paths = [...iconPendingQueue];
   iconPendingQueue.clear();
   paths.forEach((path) => {
-    window.api?.invoke('shell:getFileIcon', path).then((icon) => {
-      if (icon) {
-        const map = { ...extraSmallIcons.value };
-        if (iconCacheOrder.length >= ICON_CACHE_MAX) {
-          const evicted = iconCacheOrder.pop()!;
-          delete map[evicted];
+    window.api
+      ?.invoke('shell:getFileIcon', path)
+      .then((icon) => {
+        if (icon) {
+          const map = { ...extraSmallIcons.value };
+          if (iconCacheOrder.length >= ICON_CACHE_MAX) {
+            const evicted = iconCacheOrder.pop()!;
+            delete map[evicted];
+          }
+          iconCacheOrder.unshift(path);
+          map[path] = icon as string;
+          extraSmallIcons.value = map;
+          triggerRef(extraSmallIcons);
         }
-        iconCacheOrder.unshift(path);
-        map[path] = icon as string;
-        extraSmallIcons.value = map;
-        triggerRef(extraSmallIcons);
-      }
-    }).catch((err) => logger.error('Explorer', 'getFileIcon', err));
+      })
+      .catch((err) => logger.error('Explorer', 'getFileIcon', err));
   });
 }
 
@@ -252,13 +315,19 @@ function extraSmallIcon(item: FileItem): string | null {
   if (explorer.isAtDrives || item.isDirectory) return null;
   if (extraSmallIcons.value[item.path]) {
     const idx = iconCacheOrder.indexOf(item.path);
-    if (idx > 0) { iconCacheOrder.splice(idx, 1); iconCacheOrder.unshift(item.path); }
+    if (idx > 0) {
+      iconCacheOrder.splice(idx, 1);
+      iconCacheOrder.unshift(item.path);
+    }
     return extraSmallIcons.value[item.path];
   }
   if (!iconPendingQueue.has(item.path)) {
     iconPendingQueue.add(item.path);
     if (iconBatchTimer === null) {
-      iconBatchTimer = setTimeout(() => { iconBatchTimer = null; flushIconQueue(); }, 0);
+      iconBatchTimer = setTimeout(() => {
+        iconBatchTimer = null;
+        flushIconQueue();
+      }, 0);
     }
   }
   return null;
@@ -268,7 +337,7 @@ const virtualizerOptions = computed(() => ({
   count: totalVirtualRows.value,
   getScrollElement: () => scrollRef.value,
   estimateSize: () => virtualItemHeight.value,
-  overscan: 2,
+  overscan: 2
 }));
 const virtualizer = useVirtualizer(virtualizerOptions);
 
@@ -353,9 +422,10 @@ function handleKeydown(e: KeyboardEvent) {
 async function deleteSelected() {
   const items = filteredFiles.value.filter((f) => explorer.selectedFiles.has(f.path));
   if (items.length === 0) return;
-  const msg = items.length === 1
-    ? t('explorer.deleteConfirm', { name: items[0].name })
-    : t('explorer.deleteMultipleConfirm', { count: items.length });
+  const msg =
+    items.length === 1
+      ? t('explorer.deleteConfirm', { name: items[0].name })
+      : t('explorer.deleteMultipleConfirm', { count: items.length });
   const ok = await showConfirm(msg);
   if (!ok) return;
   await Promise.all(items.map((f) => window.api?.invoke('fs:delete', f.path)));
@@ -462,9 +532,15 @@ function handleDoubleClick(item: FileItem) {
     const isVideo = VIDEO_EXTS.has(item.extension);
     const track: MediaFile = {
       id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      path: item.path, name: item.name, type: isVideo ? 'video' : 'audio',
-      size: item.size, duration: 0, extension: item.extension,
-      mimeType: '', addedAt: Date.now(), playCount: 0
+      path: item.path,
+      name: item.name,
+      type: isVideo ? 'video' : 'audio',
+      size: item.size,
+      duration: 0,
+      extension: item.extension,
+      mimeType: '',
+      addedAt: Date.now(),
+      playCount: 0
     };
     player.setTrack(track);
     if (isVideo) router.push('/player');
@@ -492,12 +568,28 @@ function handleEmptyContextMenu(event: MouseEvent) {
   pushClipboardItems(items);
   if (items.length > 0) pushSeparator(items);
   items.push({ label: t('explorer.newFolder'), action: () => createNewFolder() });
-  items.push({ label: t('explorer.openInTerminal'), action: () => window.api?.invoke('shell:openTerminal', explorer.currentPath) });
+  items.push({
+    label: t('explorer.openInTerminal'),
+    action: () => window.api?.invoke('shell:openTerminal', explorer.currentPath)
+  });
   pushSeparator(items);
-  items.push({ label: t('explorer.openWithDefaultApp'), action: () => window.api?.invoke('shell:openWithDefault', explorer.currentPath) });
-  items.push({ label: t('common.showInFolder'), action: () => window.api?.invoke('shell:showItemInFolder', explorer.currentPath) });
+  items.push({
+    label: t('explorer.openWithDefaultApp'),
+    action: () => window.api?.invoke('shell:openWithDefault', explorer.currentPath)
+  });
+  items.push({
+    label: t('common.showInFolder'),
+    action: () => window.api?.invoke('shell:showItemInFolder', explorer.currentPath)
+  });
   pushSeparator(items);
-  items.push({ label: t('common.selectAll'), action: () => { explorer.clearSelection(); filteredFiles.value.forEach((f) => explorer.selectedFiles.add(f.path)); }, shortcut: 'Ctrl+A' });
+  items.push({
+    label: t('common.selectAll'),
+    action: () => {
+      explorer.clearSelection();
+      filteredFiles.value.forEach((f) => explorer.selectedFiles.add(f.path));
+    },
+    shortcut: 'Ctrl+A'
+  });
   ui.showContextMenu(event.clientX, event.clientY, items);
 }
 
@@ -511,57 +603,148 @@ function handleContextMenu(event: MouseEvent, item: FileItem) {
   if (items.length > 0) pushSeparator(items);
 
   if (item.isDirectory) {
-    items.push({ label: t('explorer.open'), action: () => explorer.navigateTo(item.path), shortcut: 'Enter' });
+    items.push({
+      label: t('explorer.open'),
+      action: () => explorer.navigateTo(item.path),
+      shortcut: 'Enter'
+    });
     pushSeparator(items);
     const alreadyInLibrary = isLibraryFolder(item.path);
     items.push({
       label: alreadyInLibrary ? t('explorer.removeFromLibrary') : t('explorer.addToLibrary'),
-      action: () => { if (alreadyInLibrary) library.removeFolder(item.path); else library.addFolder(item.path); }
+      action: () => {
+        if (alreadyInLibrary) library.removeFolder(item.path);
+        else library.addFolder(item.path);
+      }
     });
-    items.push({ label: t('explorer.openInTerminal'), action: () => window.api?.invoke('shell:openTerminal', item.path) });
-    items.push({ label: t('explorer.openWithDefaultApp'), action: () => window.api?.invoke('shell:openWithDefault', item.path) });
-    items.push({ label: t('explorer.copyPath'), action: () => window.api?.invoke('fs:copyPath', item.path), shortcut: 'Ctrl+C' });
-    items.push({ label: t('common.showInFolder'), action: () => window.api?.invoke('shell:showItemInFolder', item.path) });
+    items.push({
+      label: t('explorer.openInTerminal'),
+      action: () => window.api?.invoke('shell:openTerminal', item.path)
+    });
+    items.push({
+      label: t('explorer.openWithDefaultApp'),
+      action: () => window.api?.invoke('shell:openWithDefault', item.path)
+    });
+    items.push({
+      label: t('explorer.copyPath'),
+      action: () => window.api?.invoke('fs:copyPath', item.path),
+      shortcut: 'Ctrl+C'
+    });
+    items.push({
+      label: t('common.showInFolder'),
+      action: () => window.api?.invoke('shell:showItemInFolder', item.path)
+    });
     pushSeparator(items);
     items.push({ label: t('explorer.rename'), action: () => renameItem(item), shortcut: 'F2' });
-    items.push({ label: t('common.delete'), disabled: isLibraryFolder(item.path), action: () => deleteItem(item), shortcut: 'Del' });
+    items.push({
+      label: t('common.delete'),
+      disabled: isLibraryFolder(item.path),
+      action: () => deleteItem(item),
+      shortcut: 'Del'
+    });
   } else if (item.extension && IMAGE_EXTS.has(item.extension)) {
-    items.push({ label: t('explorer.openImage'), action: () => { const idx = filteredFiles.value.findIndex((f) => f.path === item.path); openImageViewer(idx); }, shortcut: 'Enter' });
+    items.push({
+      label: t('explorer.openImage'),
+      action: () => {
+        const idx = filteredFiles.value.findIndex((f) => f.path === item.path);
+        openImageViewer(idx);
+      },
+      shortcut: 'Enter'
+    });
     pushSeparator(items);
-    items.push({ label: t('explorer.openWithDefaultApp'), action: () => window.api?.invoke('shell:openWithDefault', item.path) });
-    items.push({ label: t('explorer.copyPath'), action: () => window.api?.invoke('fs:copyPath', item.path), shortcut: 'Ctrl+C' });
-    items.push({ label: t('common.showInFolder'), action: () => window.api?.invoke('shell:showItemInFolder', item.path) });
+    items.push({
+      label: t('explorer.openWithDefaultApp'),
+      action: () => window.api?.invoke('shell:openWithDefault', item.path)
+    });
+    items.push({
+      label: t('explorer.copyPath'),
+      action: () => window.api?.invoke('fs:copyPath', item.path),
+      shortcut: 'Ctrl+C'
+    });
+    items.push({
+      label: t('common.showInFolder'),
+      action: () => window.api?.invoke('shell:showItemInFolder', item.path)
+    });
     pushSeparator(items);
     items.push({ label: t('explorer.rename'), action: () => renameItem(item), shortcut: 'F2' });
     items.push({ label: t('common.delete'), action: () => deleteItem(item), shortcut: 'Del' });
   } else if (item.extension && MEDIA_EXTS.has(item.extension)) {
     const isVideo = VIDEO_EXTS.has(item.extension);
-    items.push({ label: t('common.play'), action: () => handleDoubleClick(item), shortcut: 'Enter' });
-    items.push({ label: t('common.addToQueue'), action: () => {
-      const mf: MediaFile = { id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, path: item.path, name: item.name, type: isVideo ? 'video' : 'audio', size: item.size, duration: 0, extension: item.extension || '', mimeType: '', addedAt: Date.now(), playCount: 0 };
-      player.addToQueue(mf);
-    }});
+    items.push({
+      label: t('common.play'),
+      action: () => handleDoubleClick(item),
+      shortcut: 'Enter'
+    });
+    items.push({
+      label: t('common.addToQueue'),
+      action: () => {
+        const mf: MediaFile = {
+          id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          path: item.path,
+          name: item.name,
+          type: isVideo ? 'video' : 'audio',
+          size: item.size,
+          duration: 0,
+          extension: item.extension || '',
+          mimeType: '',
+          addedAt: Date.now(),
+          playCount: 0
+        };
+        player.addToQueue(mf);
+      }
+    });
     pushSeparator(items);
-    items.push({ label: t('explorer.openWithDefaultApp'), action: () => window.api?.invoke('shell:openWithDefault', item.path) });
-    items.push({ label: t('explorer.copyPath'), action: () => window.api?.invoke('fs:copyPath', item.path), shortcut: 'Ctrl+C' });
-    items.push({ label: t('common.showInFolder'), action: () => window.api?.invoke('shell:showItemInFolder', item.path) });
+    items.push({
+      label: t('explorer.openWithDefaultApp'),
+      action: () => window.api?.invoke('shell:openWithDefault', item.path)
+    });
+    items.push({
+      label: t('explorer.copyPath'),
+      action: () => window.api?.invoke('fs:copyPath', item.path),
+      shortcut: 'Ctrl+C'
+    });
+    items.push({
+      label: t('common.showInFolder'),
+      action: () => window.api?.invoke('shell:showItemInFolder', item.path)
+    });
     pushSeparator(items);
     items.push({ label: t('explorer.rename'), action: () => renameItem(item), shortcut: 'F2' });
     items.push({ label: t('common.delete'), action: () => deleteItem(item), shortcut: 'Del' });
   } else {
-    items.push({ label: t('explorer.openWithDefaultApp'), action: () => window.api?.invoke('shell:openWithDefault', item.path) });
-    items.push({ label: t('explorer.copyPath'), action: () => window.api?.invoke('fs:copyPath', item.path), shortcut: 'Ctrl+C' });
+    items.push({
+      label: t('explorer.openWithDefaultApp'),
+      action: () => window.api?.invoke('shell:openWithDefault', item.path)
+    });
+    items.push({
+      label: t('explorer.copyPath'),
+      action: () => window.api?.invoke('fs:copyPath', item.path),
+      shortcut: 'Ctrl+C'
+    });
     pushSeparator(items);
     items.push({ label: t('explorer.rename'), action: () => renameItem(item), shortcut: 'F2' });
     items.push({ label: t('common.delete'), action: () => deleteItem(item), shortcut: 'Del' });
     pushSeparator(items);
-    items.push({ label: t('common.showInFolder'), action: () => window.api?.invoke('shell:showItemInFolder', item.path) });
+    items.push({
+      label: t('common.showInFolder'),
+      action: () => window.api?.invoke('shell:showItemInFolder', item.path)
+    });
   }
 
   pushSeparator(items);
-  items.push({ label: t('explorer.properties'), action: () => openProperties(item), shortcut: 'Alt+Enter' });
+  items.push({
+    label: t('explorer.properties'),
+    action: () => openProperties(item),
+    shortcut: 'Alt+Enter'
+  });
   pushSeparator(items);
-  items.push({ label: t('common.selectAll'), action: () => { explorer.clearSelection(); filteredFiles.value.forEach((f) => explorer.selectedFiles.add(f.path)); }, shortcut: 'Ctrl+A' });
+  items.push({
+    label: t('common.selectAll'),
+    action: () => {
+      explorer.clearSelection();
+      filteredFiles.value.forEach((f) => explorer.selectedFiles.add(f.path));
+    },
+    shortcut: 'Ctrl+A'
+  });
   ui.showContextMenu(event.clientX, event.clientY, items);
 }
 
@@ -585,7 +768,8 @@ async function openProperties(item: FileItem) {
   propertiesItem.value = item;
   propertiesName.value = item.name;
   propertiesData.value = null;
-  const data = (await window.api?.invoke('fs:getProperties', item.path)) as PropertiesData | null || null;
+  const data =
+    ((await window.api?.invoke('fs:getProperties', item.path)) as PropertiesData | null) || null;
   propertiesData.value = data;
 }
 
@@ -612,7 +796,7 @@ function getDropPaths(dt: DataTransfer | null, raw: string): string[] {
 }
 
 function onContentDragOver(e: DragEvent) {
-  if (e.dataTransfer) e.dataTransfer.dropEffect = (e.ctrlKey || e.metaKey) ? 'copy' : 'move';
+  if (e.dataTransfer) e.dataTransfer.dropEffect = e.ctrlKey || e.metaKey ? 'copy' : 'move';
   const el = (e.target as HTMLElement)?.closest('[data-folder-path]');
   if (el) {
     hoveredFolderPath.value = el.getAttribute('data-folder-path');
@@ -637,7 +821,9 @@ async function onContentDrop(e: DragEvent) {
   const ctrl = e.ctrlKey || e.metaKey;
   if (settings.explorer.confirmBeforeMove) {
     const key = ctrl ? 'explorer.copyConfirm' : 'explorer.moveConfirm';
-    const ok = await showConfirm(t(key, { n: paths.length, dir: targetDir.split('\\').pop() || targetDir }));
+    const ok = await showConfirm(
+      t(key, { n: paths.length, dir: targetDir.split('\\').pop() || targetDir })
+    );
     if (!ok) return;
   }
   const method = ctrl ? 'fs:copy' : 'fs:move';
@@ -680,7 +866,10 @@ function onTabDragEnd() {
   draggingTabIdx.value = -1;
   tabDropTargetIdx.value = -1;
   tabDragEnterCount.value = 0;
-  if (tabDropTimer.value) { clearTimeout(tabDropTimer.value); tabDropTimer.value = null; }
+  if (tabDropTimer.value) {
+    clearTimeout(tabDropTimer.value);
+    tabDropTimer.value = null;
+  }
   const drag = getActiveTabDrag();
   if (!drag || drag.claimed) {
     clearTabDrag();
@@ -732,7 +921,7 @@ function handleTabDrop(raw: string) {
 
 function onTabDragOver(e: DragEvent, idx: number) {
   e.preventDefault();
-  if (e.dataTransfer) e.dataTransfer.dropEffect = (e.ctrlKey || e.metaKey) ? 'copy' : 'move';
+  if (e.dataTransfer) e.dataTransfer.dropEffect = e.ctrlKey || e.metaKey ? 'copy' : 'move';
   if (isDraggingTab.value) {
     tabDropTargetIdx.value = idx;
     return;
@@ -770,7 +959,10 @@ function onTabDragLeave() {
 async function onTabDrop(e: DragEvent, idx: number) {
   e.preventDefault();
   e.stopPropagation();
-  if (tabDropTimer.value) { clearTimeout(tabDropTimer.value); tabDropTimer.value = null; }
+  if (tabDropTimer.value) {
+    clearTimeout(tabDropTimer.value);
+    tabDropTimer.value = null;
+  }
   tabDropTargetIdx.value = -1;
   tabDragEnterCount.value = 0;
   const raw = e.dataTransfer?.getData('text/plain') || '';
@@ -790,7 +982,9 @@ async function onTabDrop(e: DragEvent, idx: number) {
   const ctrl = e.ctrlKey || e.metaKey;
   if (settings.explorer.confirmBeforeMove) {
     const key = ctrl ? 'explorer.copyConfirm' : 'explorer.moveConfirm';
-    const ok = await showConfirm(t(key, { n: paths.length, dir: targetPath.split('\\').pop() || targetPath }));
+    const ok = await showConfirm(
+      t(key, { n: paths.length, dir: targetPath.split('\\').pop() || targetPath })
+    );
     if (!ok) return;
   }
   const method = ctrl ? 'fs:copy' : 'fs:move';
@@ -829,7 +1023,12 @@ function onBandMouseMove(e: MouseEvent) {
   explorer.clearSelection();
   buttons.forEach((btn) => {
     const r = btn.getBoundingClientRect();
-    const overlap = !(r.right < sel.left || r.left > sel.left + sel.width || r.bottom < sel.top || r.top > sel.top + sel.height);
+    const overlap = !(
+      r.right < sel.left ||
+      r.left > sel.left + sel.width ||
+      r.bottom < sel.top ||
+      r.top > sel.top + sel.height
+    );
     if (overlap) {
       const path = btn.getAttribute('data-file-path');
       if (path) explorer.selectedFiles.add(path);
@@ -850,7 +1049,10 @@ function onBandMouseUp() {
     <ExplorerNavPane />
     <div class="flex flex-col flex-1 min-w-0 relative" @dragover.prevent @drop.prevent>
       <!-- tab bar -->
-      <div v-if="explorer.tabs.length > 0" class="flex items-center gap-1 px-2 pt-1.5 pb-1 bg-bg-surface border-b border-border-default overflow-x-auto shrink-0">
+      <div
+        v-if="explorer.tabs.length > 0"
+        class="flex items-center gap-1 px-2 pt-1.5 pb-1 bg-bg-surface border-b border-border-default overflow-x-auto shrink-0"
+      >
         <button
           v-for="(tab, idx) in explorer.tabs"
           :key="tab.id"
@@ -858,7 +1060,8 @@ function onBandMouseUp() {
           class="group flex items-center gap-1.5 px-2.5 h-7 text-xs rounded-md transition-colors shrink-0 min-w-0 max-w-44 border"
           :class="{
             'bg-accent-base text-white border-transparent': explorer.activeTabIndex === idx,
-            'bg-bg-base text-fg-muted border-transparent hover:text-fg-base hover:bg-bg-hover': explorer.activeTabIndex !== idx,
+            'bg-bg-base text-fg-muted border-transparent hover:text-fg-base hover:bg-bg-hover':
+              explorer.activeTabIndex !== idx,
             'ring-2 ring-accent-base': tabDropTargetIdx === idx
           }"
           @click="explorer.switchTab(idx)"
@@ -871,15 +1074,31 @@ function onBandMouseUp() {
           @dragleave="onTabDragLeave"
           @drop="onTabDrop($event, idx)"
         >
-          <component :is="tabIcon(tab)" :size="12" class="shrink-0" :class="explorer.activeTabIndex === idx ? 'text-white/80' : 'text-accent-base'" />
+          <component
+            :is="tabIcon(tab)"
+            :size="12"
+            class="shrink-0"
+            :class="explorer.activeTabIndex === idx ? 'text-white/80' : 'text-accent-base'"
+          />
           <span class="truncate flex-1">{{ tab.label || $t('explorer.thisComputer') }}</span>
           <span
             class="shrink-0 p-0.5 rounded cursor-pointer hover:bg-black/20 transition-opacity"
-            :class="explorer.activeTabIndex === idx ? 'text-white/80 hover:text-white opacity-100' : 'text-fg-faint opacity-0 group-hover:opacity-100 hover:bg-bg-hover hover:text-fg-base'"
+            :class="
+              explorer.activeTabIndex === idx
+                ? 'text-white/80 hover:text-white opacity-100'
+                : 'text-fg-faint opacity-0 group-hover:opacity-100 hover:bg-bg-hover hover:text-fg-base'
+            "
             @click.stop="explorer.closeTab(idx)"
-          ><X :size="10" /></span>
+            ><X :size="10"
+          /></span>
         </button>
-        <button class="shrink-0 p-1 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors" :title="$t('nav.newTab')" @click="explorer.addTab(explorer.currentPath || '')"><Plus :size="12" /></button>
+        <button
+          class="shrink-0 p-1 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+          :title="$t('nav.newTab')"
+          @click="explorer.addTab(explorer.currentPath || '')"
+        >
+          <Plus :size="12" />
+        </button>
       </div>
 
       <!-- toolbar -->
@@ -890,126 +1109,447 @@ function onBandMouseUp() {
 
         <ExplorerViewModeDropdown />
 
-        <button class="p-1.5 rounded-lg transition-colors" :class="pinned ? 'text-accent-base bg-accent-ghost' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'" :title="$t('explorer.alwaysOnTop')" @click="togglePin"><Pin v-if="pinned" :size="14" class="pointer-events-none" /><PinOff v-else :size="14" class="pointer-events-none" /></button>
+        <button
+          class="p-1.5 rounded-lg transition-colors"
+          :class="
+            pinned
+              ? 'text-accent-base bg-accent-ghost'
+              : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+          "
+          :title="$t('explorer.alwaysOnTop')"
+          @click="togglePin"
+        >
+          <Pin v-if="pinned" :size="14" class="pointer-events-none" /><PinOff
+            v-else
+            :size="14"
+            class="pointer-events-none"
+          />
+        </button>
 
-        <button class="p-1.5 rounded-lg transition-colors" :class="dupPanelOpen ? 'text-accent-base bg-accent-ghost' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'" :title="$t('explorer.duplicates')" @click="toggleDuplicatesPanel"><Copy :size="14" class="pointer-events-none" /></button>
+        <button
+          class="p-1.5 rounded-lg transition-colors"
+          :class="
+            dupPanelOpen
+              ? 'text-accent-base bg-accent-ghost'
+              : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+          "
+          :title="$t('explorer.duplicates')"
+          @click="toggleDuplicatesPanel"
+        >
+          <Copy :size="14" class="pointer-events-none" />
+        </button>
 
-        <button class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors" :title="$t('explorer.newFolder')" @click="createNewFolder"><Plus :size="16" class="pointer-events-none" /></button>
+        <button
+          class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+          :title="$t('explorer.newFolder')"
+          @click="createNewFolder"
+        >
+          <Plus :size="16" class="pointer-events-none" />
+        </button>
 
-        <button class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors" :title="$t('explorer.openInWindow')" @click="openInWindow"><Monitor :size="14" class="pointer-events-none" /></button>
+        <button
+          class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+          :title="$t('explorer.openInWindow')"
+          @click="openInWindow"
+        >
+          <Monitor :size="14" class="pointer-events-none" />
+        </button>
 
-        <span v-if="explorer.selectedCount > 0" class="text-[11px] text-fg-muted whitespace-nowrap">{{ t('explorer.nItems', { n: explorer.selectedCount }) }}</span>
+        <span
+          v-if="explorer.selectedCount > 0"
+          class="text-[11px] text-fg-muted whitespace-nowrap"
+          >{{ t('explorer.nItems', { n: explorer.selectedCount }) }}</span
+        >
       </div>
 
       <!-- content -->
-      <div ref="scrollRef" class="flex-1 overflow-auto p-3" :class="{ 'cursor-progress': explorer.isLoading }" @contextmenu.prevent="handleEmptyContextMenu" @dragover="onContentDragOver" @dragleave="onContentDragLeave" @drop="onContentDrop" @mousedown="onBandMouseDown">
-        <div v-if="filteredFiles.length === 0 && !explorer.isLoading" class="flex flex-col items-center justify-center py-16 text-fg-faint">
+      <div
+        ref="scrollRef"
+        class="flex-1 overflow-auto p-3"
+        :class="{ 'cursor-progress': explorer.isLoading }"
+        @contextmenu.prevent="handleEmptyContextMenu"
+        @dragover="onContentDragOver"
+        @dragleave="onContentDragLeave"
+        @drop="onContentDrop"
+        @mousedown="onBandMouseDown"
+      >
+        <div
+          v-if="filteredFiles.length === 0 && !explorer.isLoading"
+          class="flex flex-col items-center justify-center py-16 text-fg-faint"
+        >
           <FolderOpen :size="48" class="mb-3 opacity-30" />
           <p class="text-sm">{{ $t('explorer.folderEmpty') }}</p>
         </div>
 
-        <div v-if="explorer.isLoading && filteredFiles.length === 0" class="flex justify-center py-8">
-          <div class="w-6 h-6 border-2 border-accent-base border-t-transparent rounded-full animate-spin" />
+        <div
+          v-if="explorer.isLoading && filteredFiles.length === 0"
+          class="flex justify-center py-8"
+        >
+          <div
+            class="w-6 h-6 border-2 border-accent-base border-t-transparent rounded-full animate-spin"
+          />
         </div>
 
         <div v-if="explorer.isAtDrives && filteredFiles.length > 0" class="mb-3">
-          <h3 class="text-xs font-medium text-fg-faint uppercase tracking-wider flex items-center gap-2 px-1"><HardDrive :size="12" /> {{ $t('explorer.drives') }}</h3>
+          <h3
+            class="text-xs font-medium text-fg-faint uppercase tracking-wider flex items-center gap-2 px-1"
+          >
+            <HardDrive :size="12" /> {{ $t('explorer.drives') }}
+          </h3>
         </div>
 
         <!-- extraSmall: virtualized list -->
-        <div v-if="explorer.viewMode === 'extraSmall' && filteredFiles.length > 0" :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
-          <div v-for="virtualRow in virtualizer.getVirtualItems()" :key="virtualRow.index" :style="{ position: 'absolute', top: 0, transform: `translateY(${virtualRow.start}px)`, height: `${virtualRow.size}px`, width: '100%' }">
+        <div
+          v-if="explorer.viewMode === 'extraSmall' && filteredFiles.length > 0"
+          :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }"
+        >
+          <div
+            v-for="virtualRow in virtualizer.getVirtualItems()"
+            :key="virtualRow.index"
+            :style="{
+              position: 'absolute',
+              top: 0,
+              transform: `translateY(${virtualRow.start}px)`,
+              height: `${virtualRow.size}px`,
+              width: '100%'
+            }"
+          >
             <button
               :draggable="!explorer.isAtDrives"
               :data-file-path="filteredFiles[virtualRow.index].path"
-              :data-folder-path="filteredFiles[virtualRow.index].isDirectory ? filteredFiles[virtualRow.index].path : undefined"
-              class="w-full flex items-center gap-2 px-2 py-1 rounded-md hover:bg-bg-hover transition-colors text-left text-xs group relative h-full" :class="{ 'bg-accent-ghost ring-1 ring-accent-base': explorer.selectedFiles.has(filteredFiles[virtualRow.index].path), 'bg-accent-ghost/15 ring-1 ring-accent-base/30': !filteredFiles[virtualRow.index].isDirectory ? false : isLibraryFolder(filteredFiles[virtualRow.index].path) && !explorer.selectedFiles.has(filteredFiles[virtualRow.index].path), 'ring-2 ring-accent-base bg-accent-ghost/50': hoveredFolderPath && hoveredFolderPath === filteredFiles[virtualRow.index].path, 'opacity-40': fileClipboard.isCut(filteredFiles[virtualRow.index].path) }" @click="onItemClick($event, filteredFiles[virtualRow.index].path, virtualRow.index)" @dblclick="handleDoubleClick(filteredFiles[virtualRow.index])" @contextmenu.stop.prevent="handleContextMenu($event, filteredFiles[virtualRow.index])" @dragstart="(e: DragEvent) => { const p = filteredFiles[virtualRow.index].path; if (explorer.selectedFiles.has(p)) { beginFileDrag(e, [...explorer.selectedFiles]); } else { beginFileDrag(e, [p]); } }">
-              <img v-if="extraSmallIcon(filteredFiles[virtualRow.index])" :src="extraSmallIcon(filteredFiles[virtualRow.index])!" class="w-4 h-4 object-contain shrink-0" />
-              <HardDrive v-else-if="explorer.isAtDrives" :size="12" class="text-accent-base shrink-0" />
-              <FolderOpen v-else-if="filteredFiles[virtualRow.index].isDirectory" :size="12" class="text-accent-base shrink-0" />
+              :data-folder-path="
+                filteredFiles[virtualRow.index].isDirectory
+                  ? filteredFiles[virtualRow.index].path
+                  : undefined
+              "
+              class="w-full flex items-center gap-2 px-2 py-1 rounded-md hover:bg-bg-hover transition-colors text-left text-xs group relative h-full"
+              :class="{
+                'bg-accent-ghost ring-1 ring-accent-base': explorer.selectedFiles.has(
+                  filteredFiles[virtualRow.index].path
+                ),
+                'bg-accent-ghost/15 ring-1 ring-accent-base/30': !filteredFiles[virtualRow.index]
+                  .isDirectory
+                  ? false
+                  : isLibraryFolder(filteredFiles[virtualRow.index].path) &&
+                    !explorer.selectedFiles.has(filteredFiles[virtualRow.index].path),
+                'ring-2 ring-accent-base bg-accent-ghost/50':
+                  hoveredFolderPath && hoveredFolderPath === filteredFiles[virtualRow.index].path,
+                'opacity-40': fileClipboard.isCut(filteredFiles[virtualRow.index].path)
+              }"
+              @click="onItemClick($event, filteredFiles[virtualRow.index].path, virtualRow.index)"
+              @dblclick="handleDoubleClick(filteredFiles[virtualRow.index])"
+              @contextmenu.stop.prevent="handleContextMenu($event, filteredFiles[virtualRow.index])"
+              @dragstart="
+                (e: DragEvent) => {
+                  const p = filteredFiles[virtualRow.index].path;
+                  if (explorer.selectedFiles.has(p)) {
+                    beginFileDrag(e, [...explorer.selectedFiles]);
+                  } else {
+                    beginFileDrag(e, [p]);
+                  }
+                }
+              "
+            >
+              <img
+                v-if="extraSmallIcon(filteredFiles[virtualRow.index])"
+                :src="extraSmallIcon(filteredFiles[virtualRow.index])!"
+                class="w-4 h-4 object-contain shrink-0"
+              />
+              <HardDrive
+                v-else-if="explorer.isAtDrives"
+                :size="12"
+                class="text-accent-base shrink-0"
+              />
+              <FolderOpen
+                v-else-if="filteredFiles[virtualRow.index].isDirectory"
+                :size="12"
+                class="text-accent-base shrink-0"
+              />
               <span class="truncate flex-1">{{ filteredFiles[virtualRow.index].name }}</span>
-              <span v-if="isLibraryFolder(filteredFiles[virtualRow.index].path) && !explorer.isAtDrives" class="text-[8px] px-1 rounded bg-accent-base/20 text-accent-base font-bold border border-accent-base/40">LIB</span>
+              <span
+                v-if="isLibraryFolder(filteredFiles[virtualRow.index].path) && !explorer.isAtDrives"
+                class="text-[8px] px-1 rounded bg-accent-base/20 text-accent-base font-bold border border-accent-base/40"
+                >LIB</span
+              >
             </button>
           </div>
         </div>
 
         <!-- grid modes: virtualized rows -->
-        <div v-else-if="isGridMode && filteredFiles.length > 0" :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
-          <div v-for="virtualRow in virtualizer.getVirtualItems()" :key="virtualRow.index" :style="{ position: 'absolute', top: 0, transform: `translateY(${virtualRow.start}px)`, height: `${virtualRow.size}px`, width: '100%', display: 'flex', gap: `${GRID_GAPS[explorer.viewMode]}px` }" class="items-start px-[2px]">
-            <div v-for="(item, i) in getRowItems(virtualRow.index)" :key="item.path" :style="{ width: `${GRID_ITEM_WIDTHS[explorer.viewMode]}px`, flex: '0 0 auto' }">
-              <ExplorerGridItem :item="item" :view-mode="explorer.viewMode" :is-selected="explorer.selectedFiles.has(item.path)" :is-at-drives="explorer.isAtDrives" :is-library-folder="!item.isDirectory ? false : isLibraryFolder(item.path)" :hovered-folder-path="hoveredFolderPath" :is-cut="fileClipboard.isCut(item.path)" @select="(path: string, e: MouseEvent) => onItemClick(e, path, virtualRow.index * itemsPerRow + i)" @double-click="handleDoubleClick" @context-menu="handleContextMenu" />
+        <div
+          v-else-if="isGridMode && filteredFiles.length > 0"
+          :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }"
+        >
+          <div
+            v-for="virtualRow in virtualizer.getVirtualItems()"
+            :key="virtualRow.index"
+            :style="{
+              position: 'absolute',
+              top: 0,
+              transform: `translateY(${virtualRow.start}px)`,
+              height: `${virtualRow.size}px`,
+              width: '100%',
+              display: 'flex',
+              gap: `${GRID_GAPS[explorer.viewMode]}px`
+            }"
+            class="items-start px-0.5"
+          >
+            <div
+              v-for="(item, i) in getRowItems(virtualRow.index)"
+              :key="item.path"
+              :style="{ width: `${GRID_ITEM_WIDTHS[explorer.viewMode]}px`, flex: '0 0 auto' }"
+            >
+              <ExplorerGridItem
+                :item="item"
+                :view-mode="explorer.viewMode"
+                :is-selected="explorer.selectedFiles.has(item.path)"
+                :is-at-drives="explorer.isAtDrives"
+                :is-library-folder="!item.isDirectory ? false : isLibraryFolder(item.path)"
+                :hovered-folder-path="hoveredFolderPath"
+                :is-cut="fileClipboard.isCut(item.path)"
+                @select="
+                  (path: string, e: MouseEvent) =>
+                    onItemClick(e, path, virtualRow.index * itemsPerRow + i)
+                "
+                @double-click="handleDoubleClick"
+                @context-menu="handleContextMenu"
+              />
             </div>
           </div>
         </div>
 
         <!-- details: virtualized table -->
         <div v-else-if="explorer.viewMode === 'details' && filteredFiles.length > 0">
-          <div class="grid grid-cols-[1fr_120px_100px_100px] gap-2 px-3 py-2 text-[11px] text-fg-faint font-medium uppercase tracking-wider border-b border-border-default mb-1 sticky top-0 bg-bg-base z-10">
-            <button class="text-left flex items-center gap-1 hover:text-fg-base" @click="explorer.toggleSort('name')">{{ $t('explorer.name') }}<ChevronUp v-if="explorer.sortBy === 'name' && explorer.sortOrder === 'asc'" :size="10" /><ChevronDown v-if="explorer.sortBy === 'name' && explorer.sortOrder === 'desc'" :size="10" /></button>
-            <button class="text-left flex items-center gap-1 hover:text-fg-base" @click="explorer.toggleSort('size')">{{ $t('explorer.size') }}<ChevronUp v-if="explorer.sortBy === 'size' && explorer.sortOrder === 'asc'" :size="10" /><ChevronDown v-if="explorer.sortBy === 'size' && explorer.sortOrder === 'desc'" :size="10" /></button>
-            <button class="text-left flex items-center gap-1 hover:text-fg-base" @click="explorer.toggleSort('type')">{{ $t('explorer.type') }}<ChevronUp v-if="explorer.sortBy === 'type' && explorer.sortOrder === 'asc'" :size="10" /><ChevronDown v-if="explorer.sortBy === 'type' && explorer.sortOrder === 'desc'" :size="10" /></button>
-            <button class="text-right flex items-center gap-1 justify-end hover:text-fg-base" @click="explorer.toggleSort('modified')">{{ $t('explorer.modified') }}<ChevronUp v-if="explorer.sortBy === 'modified' && explorer.sortOrder === 'asc'" :size="10" /><ChevronDown v-if="explorer.sortBy === 'modified' && explorer.sortOrder === 'desc'" :size="10" /></button>
+          <div
+            class="grid grid-cols-[1fr_120px_100px_100px] gap-2 px-3 py-2 text-[11px] text-fg-faint font-medium uppercase tracking-wider border-b border-border-default mb-1 sticky top-0 bg-bg-base z-10"
+          >
+            <button
+              class="text-left flex items-center gap-1 hover:text-fg-base"
+              @click="explorer.toggleSort('name')"
+            >
+              {{ $t('explorer.name')
+              }}<ChevronUp
+                v-if="explorer.sortBy === 'name' && explorer.sortOrder === 'asc'"
+                :size="10"
+              /><ChevronDown
+                v-if="explorer.sortBy === 'name' && explorer.sortOrder === 'desc'"
+                :size="10"
+              />
+            </button>
+            <button
+              class="text-left flex items-center gap-1 hover:text-fg-base"
+              @click="explorer.toggleSort('size')"
+            >
+              {{ $t('explorer.size')
+              }}<ChevronUp
+                v-if="explorer.sortBy === 'size' && explorer.sortOrder === 'asc'"
+                :size="10"
+              /><ChevronDown
+                v-if="explorer.sortBy === 'size' && explorer.sortOrder === 'desc'"
+                :size="10"
+              />
+            </button>
+            <button
+              class="text-left flex items-center gap-1 hover:text-fg-base"
+              @click="explorer.toggleSort('type')"
+            >
+              {{ $t('explorer.type')
+              }}<ChevronUp
+                v-if="explorer.sortBy === 'type' && explorer.sortOrder === 'asc'"
+                :size="10"
+              /><ChevronDown
+                v-if="explorer.sortBy === 'type' && explorer.sortOrder === 'desc'"
+                :size="10"
+              />
+            </button>
+            <button
+              class="text-right flex items-center gap-1 justify-end hover:text-fg-base"
+              @click="explorer.toggleSort('modified')"
+            >
+              {{ $t('explorer.modified')
+              }}<ChevronUp
+                v-if="explorer.sortBy === 'modified' && explorer.sortOrder === 'asc'"
+                :size="10"
+              /><ChevronDown
+                v-if="explorer.sortBy === 'modified' && explorer.sortOrder === 'desc'"
+                :size="10"
+              />
+            </button>
           </div>
           <div :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
-            <div v-for="virtualRow in virtualizer.getVirtualItems()" :key="virtualRow.index" :style="{ position: 'absolute', top: 0, transform: `translateY(${virtualRow.start}px)`, height: `${virtualRow.size}px`, width: '100%' }">
-              <ExplorerTableRow :item="filteredFiles[virtualRow.index]" :is-selected="explorer.selectedFiles.has(filteredFiles[virtualRow.index].path)" :is-at-drives="explorer.isAtDrives" :is-library-folder="!filteredFiles[virtualRow.index].isDirectory ? false : isLibraryFolder(filteredFiles[virtualRow.index].path)" :hovered-folder-path="hoveredFolderPath" :is-cut="fileClipboard.isCut(filteredFiles[virtualRow.index].path)" @select="(path: string, e: MouseEvent) => onItemClick(e, path, virtualRow.index)" @double-click="handleDoubleClick" @context-menu="handleContextMenu" />
+            <div
+              v-for="virtualRow in virtualizer.getVirtualItems()"
+              :key="virtualRow.index"
+              :style="{
+                position: 'absolute',
+                top: 0,
+                transform: `translateY(${virtualRow.start}px)`,
+                height: `${virtualRow.size}px`,
+                width: '100%'
+              }"
+            >
+              <ExplorerTableRow
+                :item="filteredFiles[virtualRow.index]"
+                :is-selected="explorer.selectedFiles.has(filteredFiles[virtualRow.index].path)"
+                :is-at-drives="explorer.isAtDrives"
+                :is-library-folder="
+                  !filteredFiles[virtualRow.index].isDirectory
+                    ? false
+                    : isLibraryFolder(filteredFiles[virtualRow.index].path)
+                "
+                :hovered-folder-path="hoveredFolderPath"
+                :is-cut="fileClipboard.isCut(filteredFiles[virtualRow.index].path)"
+                @select="(path: string, e: MouseEvent) => onItemClick(e, path, virtualRow.index)"
+                @double-click="handleDoubleClick"
+                @context-menu="handleContextMenu"
+              />
             </div>
           </div>
         </div>
 
         <!-- duplicates side panel -->
-        <div v-if="dupPanelOpen" class="absolute right-0 top-0 bottom-0 w-80 max-w-[85%] z-20 flex flex-col bg-bg-surface border-l border-border-default shadow-2xl">
-          <div class="flex items-center justify-between px-3 py-2.5 border-b border-border-default shrink-0">
-            <h3 class="text-xs font-semibold text-fg-base flex items-center gap-2"><Copy :size="14" class="text-accent-base" /> {{ $t('explorer.duplicates') }}</h3>
-            <button class="p-1 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors" @click="dupPanelOpen = false"><X :size="14" /></button>
+        <div
+          v-if="dupPanelOpen"
+          class="absolute right-0 top-0 bottom-0 w-80 max-w-[85%] z-20 flex flex-col bg-bg-surface border-l border-border-default shadow-2xl"
+        >
+          <div
+            class="flex items-center justify-between px-3 py-2.5 border-b border-border-default shrink-0"
+          >
+            <h3 class="text-xs font-semibold text-fg-base flex items-center gap-2">
+              <Copy :size="14" class="text-accent-base" /> {{ $t('explorer.duplicates') }}
+            </h3>
+            <button
+              class="p-1 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+              @click="dupPanelOpen = false"
+            >
+              <X :size="14" />
+            </button>
           </div>
 
-          <div v-if="dupLoading" class="flex flex-col items-center justify-center py-10 text-fg-faint gap-2">
+          <div
+            v-if="dupLoading"
+            class="flex flex-col items-center justify-center py-10 text-fg-faint gap-2"
+          >
             <RotateCw :size="20" class="animate-spin" />
             <p class="text-xs">{{ $t('explorer.duplicatesScanning') }}</p>
           </div>
 
-          <div v-else-if="dupGroups.length === 0" class="flex flex-col items-center justify-center py-10 text-fg-faint gap-2">
+          <div
+            v-else-if="dupGroups.length === 0"
+            class="flex flex-col items-center justify-center py-10 text-fg-faint gap-2"
+          >
             <Check :size="24" class="opacity-40" />
             <p class="text-xs">{{ $t('explorer.duplicatesNone') }}</p>
           </div>
 
           <div v-else class="flex-1 overflow-y-auto p-2 space-y-2">
-            <p class="text-[11px] text-fg-muted px-1">{{ $t('explorer.duplicatesFound', { n: dupGroups.length }) }}</p>
-            <div v-for="group in dupGroups" :key="group.original" class="rounded-lg border border-border-default overflow-hidden">
-              <div class="flex items-center gap-2 px-2.5 py-1.5 bg-bg-elevated border-b border-border-default cursor-pointer hover:bg-bg-hover transition-colors" @click="revealDupFile(group.original)">
+            <p class="text-[11px] text-fg-muted px-1">
+              {{ $t('explorer.duplicatesFound', { n: dupGroups.length }) }}
+            </p>
+            <div
+              v-for="group in dupGroups"
+              :key="group.original"
+              class="rounded-lg border border-border-default overflow-hidden"
+            >
+              <div
+                class="flex items-center gap-2 px-2.5 py-1.5 bg-bg-elevated border-b border-border-default cursor-pointer hover:bg-bg-hover transition-colors"
+                @click="revealDupFile(group.original)"
+              >
                 <FileText :size="13" class="text-accent-base shrink-0" />
-                <span class="text-xs font-medium text-fg-base truncate flex-1">{{ basenameOf(group.original) }}</span>
-                <span class="text-[10px] px-1.5 py-0.5 rounded bg-accent-base/15 text-accent-base font-semibold shrink-0">{{ $t('explorer.duplicatesOriginal') }}</span>
+                <span class="text-xs font-medium text-fg-base truncate flex-1">{{
+                  basenameOf(group.original)
+                }}</span>
+                <span
+                  class="text-[10px] px-1.5 py-0.5 rounded bg-accent-base/15 text-accent-base font-semibold shrink-0"
+                  >{{ $t('explorer.duplicatesOriginal') }}</span
+                >
               </div>
               <div class="py-1">
-                <div v-for="(dup, di) in group.duplicates" :key="dup" class="flex items-center gap-2 px-2.5 py-1.5 hover:bg-bg-hover transition-colors cursor-pointer" @click="revealDupFile(dup)">
-                  <input type="checkbox" class="accent-accent-base shrink-0" :checked="dupSelected.has(dup)" @click.stop="toggleDupSelection(dup)">
+                <div
+                  v-for="(dup, di) in group.duplicates"
+                  :key="dup"
+                  class="flex items-center gap-2 px-2.5 py-1.5 hover:bg-bg-hover transition-colors cursor-pointer"
+                  @click="revealDupFile(dup)"
+                >
+                  <input
+                    type="checkbox"
+                    class="accent-accent-base shrink-0"
+                    :checked="dupSelected.has(dup)"
+                    @click.stop="toggleDupSelection(dup)"
+                  />
                   <span class="text-xs text-fg-base truncate flex-1">{{ dupName(group, di) }}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div v-if="dupGroups.length > 0" class="flex items-center gap-2 px-3 py-2.5 border-t border-border-default shrink-0">
-            <button class="flex-1 px-2 py-1.5 rounded-lg text-[11px] text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors" @click="selectAllDuplicates">{{ $t('explorer.duplicatesSelectAll') }}</button>
-            <button class="flex-1 px-2 py-1.5 rounded-lg text-[11px] bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors flex items-center justify-center gap-1 disabled:opacity-40 disabled:pointer-events-none" :disabled="dupSelected.size === 0" @click="deleteSelectedDuplicates"><Trash2 :size="12" /> {{ $t('explorer.duplicatesDelete', { n: dupSelected.size }) }}</button>
+          <div
+            v-if="dupGroups.length > 0"
+            class="flex items-center gap-2 px-3 py-2.5 border-t border-border-default shrink-0"
+          >
+            <button
+              class="flex-1 px-2 py-1.5 rounded-lg text-[11px] text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
+              @click="selectAllDuplicates"
+            >
+              {{ $t('explorer.duplicatesSelectAll') }}
+            </button>
+            <button
+              class="flex-1 px-2 py-1.5 rounded-lg text-[11px] bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors flex items-center justify-center gap-1 disabled:opacity-40 disabled:pointer-events-none"
+              :disabled="dupSelected.size === 0"
+              @click="deleteSelectedDuplicates"
+            >
+              <Trash2 :size="12" /> {{ $t('explorer.duplicatesDelete', { n: dupSelected.size }) }}
+            </button>
           </div>
         </div>
       </div>
 
       <!-- band select overlay -->
-      <div v-if="bandSelect" class="fixed pointer-events-none z-40 rounded border" :style="{ left: bandSelect.left + 'px', top: bandSelect.top + 'px', width: bandSelect.width + 'px', height: bandSelect.height + 'px', borderColor: 'rgb(99,102,241)', backgroundColor: 'rgba(99,102,241,0.08)' }" />
+      <div
+        v-if="bandSelect"
+        class="fixed pointer-events-none z-40 rounded border"
+        :style="{
+          left: bandSelect.left + 'px',
+          top: bandSelect.top + 'px',
+          width: bandSelect.width + 'px',
+          height: bandSelect.height + 'px',
+          borderColor: 'rgb(99,102,241)',
+          backgroundColor: 'rgba(99,102,241,0.08)'
+        }"
+      />
 
       <!-- prompt dialog -->
       <Teleport to="body">
-        <div v-if="promptVisible" class="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center" @click.self="promptCancel">
-          <div class="bg-bg-surface border border-border-default rounded-xl p-5 min-w-[300px] shadow-2xl">
+        <div
+          v-if="promptVisible"
+          class="fixed inset-0 z-9999 bg-black/50 flex items-center justify-center"
+          @click.self="promptCancel"
+        >
+          <div
+            class="bg-bg-surface border border-border-default rounded-xl p-5 min-w-75 shadow-2xl"
+          >
             <p class="text-sm text-fg-base mb-3 whitespace-pre-wrap">{{ promptMessage }}</p>
-            <input v-if="!promptIsConfirm" id="prompt-input" v-model="promptValue" type="text" class="w-full px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-sm text-fg-base outline-none focus:ring-1 focus:ring-accent-base" @keydown="promptKeydown">
+            <input
+              v-if="!promptIsConfirm"
+              id="prompt-input"
+              v-model="promptValue"
+              type="text"
+              class="w-full px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-sm text-fg-base outline-none focus:ring-1 focus:ring-accent-base"
+              @keydown="promptKeydown"
+            />
             <div class="flex justify-end gap-2 mt-4">
-              <button class="px-4 py-1.5 rounded-lg text-xs text-fg-muted hover:bg-bg-hover transition-colors" @click="promptCancel">{{ $t('common.cancel') }}</button>
-              <button class="px-4 py-1.5 rounded-lg text-xs bg-accent-base text-white hover:bg-accent-base/90 transition-colors" @click="promptConfirm">{{ $t('common.ok') }}</button>
+              <button
+                class="px-4 py-1.5 rounded-lg text-xs text-fg-muted hover:bg-bg-hover transition-colors"
+                @click="promptCancel"
+              >
+                {{ $t('common.cancel') }}
+              </button>
+              <button
+                class="px-4 py-1.5 rounded-lg text-xs bg-accent-base text-white hover:bg-accent-base/90 transition-colors"
+                @click="promptConfirm"
+              >
+                {{ $t('common.ok') }}
+              </button>
             </div>
           </div>
         </div>
@@ -1017,51 +1557,100 @@ function onBandMouseUp() {
 
       <!-- properties dialog -->
       <Teleport to="body">
-        <div v-if="propertiesItem" class="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center" @click.self="closeProperties">
-          <div class="bg-bg-surface border border-border-default rounded-xl w-[440px] max-w-[92vw] shadow-2xl overflow-hidden">
+        <div
+          v-if="propertiesItem"
+          class="fixed inset-0 z-9999 bg-black/50 flex items-center justify-center"
+          @click.self="closeProperties"
+        >
+          <div
+            class="bg-bg-surface border border-border-default rounded-xl w-110 max-w-[92vw] shadow-2xl overflow-hidden"
+          >
             <div class="flex items-center justify-between px-4 py-3 border-b border-border-default">
               <h3 class="text-sm font-semibold text-fg-base flex items-center gap-2">
                 <FolderOpen v-if="propertiesItem.isDirectory" :size="16" class="text-accent-base" />
                 <FileText v-else :size="16" class="text-accent-base" />
                 {{ $t('explorer.properties') }}
               </h3>
-              <button class="p-1 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors" @click="closeProperties"><X :size="14" /></button>
+              <button
+                class="p-1 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+                @click="closeProperties"
+              >
+                <X :size="14" />
+              </button>
             </div>
             <div class="p-4 space-y-3">
               <div>
-                <label class="text-[11px] text-fg-faint uppercase tracking-wider">{{ $t('explorer.name') }}</label>
-                <input v-model="propertiesName" type="text" class="w-full mt-1 px-3 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-sm text-fg-base outline-none focus:ring-1 focus:ring-accent-base" @keydown.enter="applyProperties">
+                <label class="text-[11px] text-fg-faint uppercase tracking-wider">{{
+                  $t('explorer.name')
+                }}</label>
+                <input
+                  v-model="propertiesName"
+                  type="text"
+                  class="w-full mt-1 px-3 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-sm text-fg-base outline-none focus:ring-1 focus:ring-accent-base"
+                  @keydown.enter="applyProperties"
+                />
               </div>
               <div class="grid grid-cols-[120px_1fr] gap-x-3 gap-y-2 text-xs">
                 <span class="text-fg-faint">{{ $t('explorer.propertiesType') }}</span>
-                <span class="text-fg-base">{{ propertiesItem.isDirectory ? $t('explorer.propertiesFolder') : (propertiesItem.extension || '—') }}</span>
+                <span class="text-fg-base">{{
+                  propertiesItem.isDirectory
+                    ? $t('explorer.propertiesFolder')
+                    : propertiesItem.extension || '—'
+                }}</span>
                 <span class="text-fg-faint">{{ $t('explorer.propertiesLocation') }}</span>
                 <span class="text-fg-base break-all font-mono">{{ propertiesItem.path }}</span>
                 <template v-if="propertiesItem.isDirectory && propertiesData">
                   <span class="text-fg-faint">{{ $t('explorer.propertiesSize') }}</span>
-                  <span class="text-fg-base">{{ formatFileSize(propertiesData.totalSize || 0) }}</span>
+                  <span class="text-fg-base">{{
+                    formatFileSize(propertiesData.totalSize || 0)
+                  }}</span>
                   <span class="text-fg-faint">{{ $t('explorer.propertiesContains') }}</span>
-                  <span class="text-fg-base">{{ $t('explorer.propertiesContainsValue', { n: propertiesData.itemCount || 0, d: propertiesData.dirCount || 0, f: propertiesData.fileCount || 0 }) }}</span>
+                  <span class="text-fg-base">{{
+                    $t('explorer.propertiesContainsValue', {
+                      n: propertiesData.itemCount || 0,
+                      d: propertiesData.dirCount || 0,
+                      f: propertiesData.fileCount || 0
+                    })
+                  }}</span>
                 </template>
                 <template v-else>
                   <span class="text-fg-faint">{{ $t('explorer.propertiesSize') }}</span>
                   <span class="text-fg-base">{{ formatFileSize(propertiesItem.size) }}</span>
                 </template>
                 <span class="text-fg-faint">{{ $t('explorer.propertiesCreated') }}</span>
-                <span class="text-fg-base">{{ new Date(propertiesItem.createdAt).toLocaleString() }}</span>
+                <span class="text-fg-base">{{
+                  new Date(propertiesItem.createdAt).toLocaleString()
+                }}</span>
                 <span class="text-fg-faint">{{ $t('explorer.propertiesModified') }}</span>
-                <span class="text-fg-base">{{ new Date(propertiesItem.modifiedAt).toLocaleString() }}</span>
+                <span class="text-fg-base">{{
+                  new Date(propertiesItem.modifiedAt).toLocaleString()
+                }}</span>
               </div>
             </div>
             <div class="flex justify-end gap-2 px-4 py-3 border-t border-border-default">
-              <button class="px-4 py-1.5 rounded-lg text-xs text-fg-muted hover:bg-bg-hover transition-colors" @click="closeProperties">{{ $t('common.cancel') }}</button>
-              <button class="px-4 py-1.5 rounded-lg text-xs bg-accent-base text-white hover:bg-accent-base/90 transition-colors" @click="applyProperties">{{ $t('common.ok') }}</button>
+              <button
+                class="px-4 py-1.5 rounded-lg text-xs text-fg-muted hover:bg-bg-hover transition-colors"
+                @click="closeProperties"
+              >
+                {{ $t('common.cancel') }}
+              </button>
+              <button
+                class="px-4 py-1.5 rounded-lg text-xs bg-accent-base text-white hover:bg-accent-base/90 transition-colors"
+                @click="applyProperties"
+              >
+                {{ $t('common.ok') }}
+              </button>
             </div>
           </div>
         </div>
       </Teleport>
 
-      <ImageViewer v-if="imageViewerIndex !== null" :files="imageViewerFiles" :initial-index="imageViewerIndex ?? 0" @close="closeImageViewer" />
+      <ImageViewer
+        v-if="imageViewerIndex !== null"
+        :files="imageViewerFiles"
+        :initial-index="imageViewerIndex ?? 0"
+        @close="closeImageViewer"
+      />
     </div>
   </div>
 </template>

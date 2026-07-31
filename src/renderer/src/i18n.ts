@@ -6,7 +6,9 @@ function detectLocale(): string {
   try {
     const saved = localStorage.getItem('onda-locale');
     if (saved === 'pl' || saved === 'en') return saved;
-  } catch { /* noop */ }
+  } catch {
+    /* noop */
+  }
   const sysLang = navigator.language || '';
   if (sysLang.startsWith('pl')) return 'pl';
   return 'en';

@@ -25,7 +25,9 @@
   --color-amber-base: #fbbf24;
 }
 
-html, body, #app {
+html,
+body,
+#app {
   height: 100%;
   width: 100%;
   overflow: hidden;
@@ -45,7 +47,7 @@ html, body, #app {
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  transition: all .1s;
+  transition: all 0.1s;
   flex-shrink: 0;
   font-family: inherit;
   padding: 0;
@@ -92,4 +94,3 @@ input[type='range']::-webkit-slider-thumb {
   border: none;
   cursor: pointer;
 }
-

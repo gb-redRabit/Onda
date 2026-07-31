@@ -11,6 +11,14 @@ export interface ContextMenuItem {
   children?: ContextMenuItem[];
 }
 
+export interface Notification {
+  id: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+  message?: string;
+  duration?: number;
+}
+
 export const useUIStore = defineStore('ui', () => {
   const topMenuVisible = ref(true);
   const statusBarVisible = ref(true);
@@ -22,14 +30,6 @@ export const useUIStore = defineStore('ui', () => {
   const commandPaletteVisible = ref(false);
   const contextMenu = ref<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const notifications = ref<Notification[]>([]);
-
-  interface Notification {
-    id: string;
-    type: 'info' | 'success' | 'warning' | 'error';
-    title: string;
-    message?: string;
-    duration?: number;
-  }
 
   function toggleTopMenu() {
     topMenuVisible.value = !topMenuVisible.value;
@@ -60,7 +60,13 @@ export const useUIStore = defineStore('ui', () => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     notifications.value.push({ id, type, title, message, duration });
     if (duration > 0) {
-      setTimeout(() => { try { removeNotification(id); } catch { /* ignore */ } }, duration);
+      setTimeout(() => {
+        try {
+          removeNotification(id);
+        } catch {
+          /* ignore */
+        }
+      }, duration);
     }
   }
 

@@ -35,7 +35,9 @@ export const useExplorerStore = defineStore('explorer', () => {
   const activeTabIndex = ref(-1);
 
   function addTab(path: string) {
-    const existing = tabs.value.findIndex((t, idx) => t.path === path && idx !== activeTabIndex.value);
+    const existing = tabs.value.findIndex(
+      (t, idx) => t.path === path && idx !== activeTabIndex.value
+    );
     if (existing >= 0) {
       switchTab(existing);
       return;
@@ -150,9 +152,15 @@ export const useExplorerStore = defineStore('explorer', () => {
     files.value = [];
     isLoading.value = true;
     batchCleanup?.();
-    if (!window.api) { isLoading.value = false; return; }
+    if (!window.api) {
+      isLoading.value = false;
+      return;
+    }
     const stopListening = window.api.on('fs:readdir:batch', (...args: unknown[]) => {
-      if (loadId !== currentLoadId) { stopListening(); return; }
+      if (loadId !== currentLoadId) {
+        stopListening();
+        return;
+      }
       const data = args[0] as { done: boolean; items: FileItem[] };
       if (data.items.length > 0) {
         files.value = [...files.value, ...data.items];
@@ -223,7 +231,9 @@ export const useExplorerStore = defineStore('explorer', () => {
   watch(currentPath, (path) => {
     if (activeTabIndex.value >= 0 && tabs.value[activeTabIndex.value]) {
       tabs.value[activeTabIndex.value].path = path;
-      tabs.value[activeTabIndex.value].label = path ? path.split('\\').filter(Boolean).pop() || path : '';
+      tabs.value[activeTabIndex.value].label = path
+        ? path.split('\\').filter(Boolean).pop() || path
+        : '';
     }
   });
 

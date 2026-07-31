@@ -2,10 +2,19 @@
 import { Clock, GripHorizontal, Repeat, Shuffle, Maximize2 } from '@lucide/vue';
 
 const SLIDESHOW_INTERVALS = [1000, 2000, 3000, 5000, 10000] as const;
-const TRANSITION_TYPES = ['fade', 'slide', 'zoom', 'swirl', 'slideUp', 'slideDown', 'zoomOut', 'random'] as const;
+const TRANSITION_TYPES = [
+  'fade',
+  'slide',
+  'zoom',
+  'swirl',
+  'slideUp',
+  'slideDown',
+  'zoomOut',
+  'random'
+] as const;
 const TRANSITION_DURATIONS = [200, 400, 500, 600, 800, 1000] as const;
 
-const props = defineProps<{
+defineProps<{
   interval: number;
   transitionType: string;
   transitionDuration: number;
@@ -28,7 +37,7 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="absolute right-full mr-2 top-0 bg-bg-elevated border border-border-default rounded-lg shadow-xl p-3 min-w-[220px] z-20"
+    class="absolute right-full mr-2 top-0 bg-bg-elevated border border-border-default rounded-lg shadow-xl p-3 min-w-55 z-20"
     @click.stop
   >
     <div class="text-xs font-semibold text-fg-base mb-2 tracking-wide uppercase">Slideshow</div>
@@ -41,9 +50,15 @@ const emit = defineEmits<{
         v-for="ms in SLIDESHOW_INTERVALS"
         :key="ms"
         class="px-2 py-1 text-xs rounded-md transition-colors"
-        :class="interval === ms ? 'bg-accent-base text-white' : 'bg-bg-hover text-fg-muted hover:text-fg-base'"
+        :class="
+          interval === ms
+            ? 'bg-accent-base text-white'
+            : 'bg-bg-hover text-fg-muted hover:text-fg-base'
+        "
         @click="emit('update:interval', ms)"
-      >{{ ms / 1000 + 's' }}</button>
+      >
+        {{ ms / 1000 + 's' }}
+      </button>
     </div>
 
     <div class="text-[11px] text-fg-muted mb-1 flex items-center gap-1">
@@ -54,9 +69,15 @@ const emit = defineEmits<{
         v-for="type in TRANSITION_TYPES"
         :key="type"
         class="px-2 py-1 text-xs rounded-md capitalize transition-colors"
-        :class="transitionType === type ? 'bg-accent-base text-white' : 'bg-bg-hover text-fg-muted hover:text-fg-base'"
+        :class="
+          transitionType === type
+            ? 'bg-accent-base text-white'
+            : 'bg-bg-hover text-fg-muted hover:text-fg-base'
+        "
         @click="emit('update:transitionType', type)"
-      >{{ type }}</button>
+      >
+        {{ type }}
+      </button>
     </div>
 
     <div class="text-[11px] text-fg-muted mb-1 flex items-center gap-1">
@@ -67,9 +88,15 @@ const emit = defineEmits<{
         v-for="d in TRANSITION_DURATIONS"
         :key="d"
         class="px-2 py-1 text-xs rounded-md transition-colors"
-        :class="transitionDuration === d ? 'bg-accent-base text-white' : 'bg-bg-hover text-fg-muted hover:text-fg-base'"
+        :class="
+          transitionDuration === d
+            ? 'bg-accent-base text-white'
+            : 'bg-bg-hover text-fg-muted hover:text-fg-base'
+        "
         @click="emit('update:transitionDuration', d)"
-      >{{ d }}ms</button>
+      >
+        {{ d }}ms
+      </button>
     </div>
 
     <div class="flex items-center justify-between mb-1">

@@ -32,7 +32,12 @@ function onKeydown(e: KeyboardEvent) {
     parts.push(key);
   } else if (key === ' ') {
     parts.push('Space');
-  } else if (key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight') {
+  } else if (
+    key === 'ArrowUp' ||
+    key === 'ArrowDown' ||
+    key === 'ArrowLeft' ||
+    key === 'ArrowRight'
+  ) {
     parts.push(key);
   } else if (key.length === 1) {
     parts.push(key.toUpperCase());
@@ -73,8 +78,12 @@ function displayKey(key: string): string {
     >
       <span class="text-sm capitalize">{{ String(action).replace(/-/g, ' ') }}</span>
       <button
-        class="px-2 py-1 rounded-lg border text-xs font-mono transition-colors min-w-[60px] text-center"
-        :class="recording === action ? 'border-accent-base bg-accent-ghost text-accent-base animate-pulse' : 'border-border-default bg-bg-elevated text-fg-muted hover:border-accent-base hover:text-fg-base'"
+        class="px-2 py-1 rounded-lg border text-xs font-mono transition-colors min-w-15 text-center"
+        :class="
+          recording === action
+            ? 'border-accent-base bg-accent-ghost text-accent-base animate-pulse'
+            : 'border-border-default bg-bg-elevated text-fg-muted hover:border-accent-base hover:text-fg-base'
+        "
         @click="startRecording(String(action))"
       >
         <template v-if="recording === action">...</template>

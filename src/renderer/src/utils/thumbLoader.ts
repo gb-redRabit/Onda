@@ -10,7 +10,10 @@ function lruGet(cache: Map<string, string>, order: string[], key: string): strin
   const val = cache.get(key);
   if (val !== undefined) {
     const idx = order.indexOf(key);
-    if (idx > 0) { order.splice(idx, 1); order.unshift(key); }
+    if (idx > 0) {
+      order.splice(idx, 1);
+      order.unshift(key);
+    }
   }
   return val;
 }

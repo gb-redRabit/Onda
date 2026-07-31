@@ -171,14 +171,18 @@ onBeforeUnmount(() => {
 watch(() => settings.appearance.theme, applyTheme);
 watch(() => settings.appearance.accentColor, applyTheme);
 watch(() => settings.appearance.fontSize, applyTheme);
-  watch(
-    () => settings.appearance.locale,
-    (loc) => {
-      locale.value = loc;
-      window.api?.send('pip:locale', loc);
-      try { localStorage.setItem('onda-locale', loc); } catch { /* noop */ }
+watch(
+  () => settings.appearance.locale,
+  (loc) => {
+    locale.value = loc;
+    window.api?.send('pip:locale', loc);
+    try {
+      localStorage.setItem('onda-locale', loc);
+    } catch {
+      /* noop */
     }
-  );
+  }
+);
 
 watch(
   () => player.currentTrack,
@@ -262,7 +266,9 @@ function onGlobalMouseDown(e: MouseEvent) {
           "
         >
           <span>{{ item.label }}</span>
-          <span v-if="item.shortcut" class="text-[10px] text-fg-faint/60 font-mono">{{ item.shortcut }}</span>
+          <span v-if="item.shortcut" class="text-[10px] text-fg-faint/60 font-mono">{{
+            item.shortcut
+          }}</span>
         </button>
       </template>
     </div>

@@ -12,7 +12,9 @@ export function usePromptDialog() {
     promptMessage.value = msg;
     promptIsConfirm.value = true;
     promptVisible.value = true;
-    return new Promise((r) => { _confirmResolve = r; });
+    return new Promise((r) => {
+      _confirmResolve = r;
+    });
   }
 
   function showPrompt(msg: string, val = ''): Promise<string | null> {
@@ -25,18 +27,26 @@ export function usePromptDialog() {
       el?.focus();
       el?.select();
     });
-    return new Promise((r) => { _promptResolve = r; });
+    return new Promise((r) => {
+      _promptResolve = r;
+    });
   }
 
   function promptConfirm() {
-    if (promptIsConfirm.value) { _confirmResolve?.(true); }
-    else { _promptResolve?.(promptValue.value); }
+    if (promptIsConfirm.value) {
+      _confirmResolve?.(true);
+    } else {
+      _promptResolve?.(promptValue.value);
+    }
     promptVisible.value = false;
   }
 
   function promptCancel() {
-    if (promptIsConfirm.value) { _confirmResolve?.(false); }
-    else { _promptResolve?.(null); }
+    if (promptIsConfirm.value) {
+      _confirmResolve?.(false);
+    } else {
+      _promptResolve?.(null);
+    }
     promptVisible.value = false;
   }
 
@@ -45,5 +55,15 @@ export function usePromptDialog() {
     if (e.key === 'Escape') promptCancel();
   }
 
-  return { promptVisible, promptMessage, promptValue, promptIsConfirm, showConfirm, showPrompt, promptConfirm, promptCancel, promptKeydown };
+  return {
+    promptVisible,
+    promptMessage,
+    promptValue,
+    promptIsConfirm,
+    showConfirm,
+    showPrompt,
+    promptConfirm,
+    promptCancel,
+    promptKeydown
+  };
 }

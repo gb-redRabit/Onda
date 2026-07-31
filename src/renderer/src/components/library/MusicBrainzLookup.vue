@@ -88,7 +88,7 @@ function displayTrackNumber(track: any, index: number): number {
 <template>
   <Teleport to="body">
     <div
-      class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40"
+      class="fixed inset-0 z-60 flex items-center justify-center bg-black/40"
       @click.self="emit('close')"
     >
       <div

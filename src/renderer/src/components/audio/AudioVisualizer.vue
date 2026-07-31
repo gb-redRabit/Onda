@@ -12,7 +12,9 @@ const canvasRef = ref<HTMLCanvasElement | null>(null);
 const style = ref<VisualizationMode>(settings.playback.visualization.mode);
 let animFrame: number | null = null;
 
-const particles = ref<{ x: number; y: number; vx: number; vy: number; size: number; alpha: number }[]>([]);
+const particles = ref<
+  { x: number; y: number; vx: number; vy: number; size: number; alpha: number }[]
+>([]);
 
 function draw() {
   if (!canvasRef.value || !analyserNode) return;
@@ -89,9 +91,12 @@ function draw() {
     if (particles.value.length === 0) {
       for (let i = 0; i < count; i++) {
         particles.value.push({
-          x: Math.random() * cw, y: Math.random() * ch,
-          vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2,
-          size: Math.random() * 3 + 1, alpha: Math.random() * 0.5 + 0.3
+          x: Math.random() * cw,
+          y: Math.random() * ch,
+          vx: (Math.random() - 0.5) * 2,
+          vy: (Math.random() - 0.5) * 2,
+          size: Math.random() * 3 + 1,
+          alpha: Math.random() * 0.5 + 0.3
         });
       }
     }
@@ -145,10 +150,17 @@ const CYCLES: VisualizationMode[] = ['circle', 'bars', 'wave', 'particles', 'rad
 function cycleStyle() {
   const idx = CYCLES.indexOf(style.value);
   style.value = CYCLES[(idx + 1) % CYCLES.length];
-  settings.updatePlayback({ visualization: { ...settings.playback.visualization, mode: style.value } });
+  settings.updatePlayback({
+    visualization: { ...settings.playback.visualization, mode: style.value }
+  });
 }
 
-watch(() => settings.playback.visualization.mode, (m) => { style.value = m; });
+watch(
+  () => settings.playback.visualization.mode,
+  (m) => {
+    style.value = m;
+  }
+);
 
 onMounted(() => {
   if (audio.isPlaying.value) draw();

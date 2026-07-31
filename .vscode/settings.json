@@ -1,5 +1,10 @@
 {
+  "files.eol": "\n",
+  "editor.formatOnSave": true,
   "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[vue]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[javascript]": {
@@ -9,7 +14,10 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "markdown.validate.enabled": true,
-  "i18n-ally.localesPaths": [
-    "src/renderer/src/locales"
-  ]
+  "css.lint.unknownAtRules": "ignore",
+  "i18n-ally.enabledFrameworks": ["vue-i18n"],
+  "i18n-ally.keystyle": "nested",
+  "i18n-ally.sourceLanguage": "pl",
+  "i18n-ally.displayLanguage": "pl",
+  "i18n-ally.localesPaths": ["src/renderer/src/locales"]
 }

@@ -261,14 +261,18 @@ export function useVideoPlayer(ctx: {
       const src = getTrackSrc(track);
       if (player.pipActive) {
         // PiP already playing — don't reload, just update subs
-        preparePiPSubtitleData(track.path).then((subtitleData) => {
-          if (player.pipActive) pip.updateSubtitle(subtitleData);
-        }).catch(() => {});
+        preparePiPSubtitleData(track.path)
+          .then((subtitleData) => {
+            if (player.pipActive) pip.updateSubtitle(subtitleData);
+          })
+          .catch(() => {});
       } else {
         pip.preload(src, null);
-        preparePiPSubtitleData(track.path).then((subtitleData) => {
-          pip.updateSubtitle(subtitleData);
-        }).catch(() => {});
+        preparePiPSubtitleData(track.path)
+          .then((subtitleData) => {
+            pip.updateSubtitle(subtitleData);
+          })
+          .catch(() => {});
       }
     }
   }

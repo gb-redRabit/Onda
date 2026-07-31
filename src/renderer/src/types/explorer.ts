@@ -26,7 +26,14 @@ export interface ExplorerTab {
   label: string;
 }
 
-export const VIEW_MODES: ViewMode[] = ['extraSmall', 'small', 'medium', 'large', 'extraLarge', 'details']; 
+export const VIEW_MODES: ViewMode[] = [
+  'extraSmall',
+  'small',
+  'medium',
+  'large',
+  'extraLarge',
+  'details'
+];
 export const VIEW_MODE_LABELS: Record<ViewMode, string> = {
   extraSmall: 'Extra small icons',
   small: 'Small icons',

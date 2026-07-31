@@ -8,7 +8,9 @@ import { useI18n } from 'vue-i18n';
 const explorer = useExplorerStore();
 const settings = useSettingsStore();
 const { t } = useI18n();
-const showConfirm = inject<(msg: string) => Promise<boolean>>('showConfirm', async (msg: string) => confirm(msg));
+const showConfirm = inject<(msg: string) => Promise<boolean>>('showConfirm', async (msg: string) =>
+  confirm(msg)
+);
 
 const dropTargetIdx = ref(-2);
 const dragEnterCount = ref(0);
@@ -21,7 +23,7 @@ function segmentPath(idx: number): string {
 
 function onDragOver(e: DragEvent, idx: number) {
   e.preventDefault();
-  if (e.dataTransfer) e.dataTransfer.dropEffect = (e.ctrlKey || e.metaKey) ? 'copy' : 'move';
+  if (e.dataTransfer) e.dataTransfer.dropEffect = e.ctrlKey || e.metaKey ? 'copy' : 'move';
   dropTargetIdx.value = idx;
 }
 
@@ -48,7 +50,9 @@ async function onDrop(e: DragEvent, targetPath: string) {
   const ctrl = e.ctrlKey || e.metaKey;
   if (settings.explorer.confirmBeforeMove) {
     const key = ctrl ? 'explorer.copyConfirm' : 'explorer.moveConfirm';
-    const ok = await showConfirm(t(key, { n: paths.length, dir: targetPath.split('\\').pop() || targetPath }));
+    const ok = await showConfirm(
+      t(key, { n: paths.length, dir: targetPath.split('\\').pop() || targetPath })
+    );
     if (!ok) return;
   }
   const method = ctrl ? 'fs:copy' : 'fs:move';
@@ -60,11 +64,33 @@ async function onDrop(e: DragEvent, targetPath: string) {
 
 <template>
   <div class="flex gap-0.5">
-    <button class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover disabled:opacity-30 transition-colors" :disabled="!explorer.canGoBack" @click="explorer.goBack"><ChevronLeft :size="16" class="pointer-events-none" /></button>
-    <button class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover disabled:opacity-30 transition-colors" :disabled="!explorer.canGoForward" @click="explorer.goForward"><ChevronRight :size="16" class="pointer-events-none" /></button>
-    <button class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover disabled:opacity-30 transition-colors" :disabled="!explorer.canGoUp" @click="explorer.goUp"><ChevronUp :size="16" class="pointer-events-none" /></button>
+    <button
+      class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover disabled:opacity-30 transition-colors"
+      :disabled="!explorer.canGoBack"
+      @click="explorer.goBack"
+    >
+      <ChevronLeft :size="16" class="pointer-events-none" />
+    </button>
+    <button
+      class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover disabled:opacity-30 transition-colors"
+      :disabled="!explorer.canGoForward"
+      @click="explorer.goForward"
+    >
+      <ChevronRight :size="16" class="pointer-events-none" />
+    </button>
+    <button
+      class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover disabled:opacity-30 transition-colors"
+      :disabled="!explorer.canGoUp"
+      @click="explorer.goUp"
+    >
+      <ChevronUp :size="16" class="pointer-events-none" />
+    </button>
   </div>
-  <div class="flex-1 flex items-center gap-0.5 px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs overflow-hidden" @dragover.prevent @drop.prevent>
+  <div
+    class="flex-1 flex items-center gap-0.5 px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs overflow-hidden"
+    @dragover.prevent
+    @drop.prevent
+  >
     <button
       class="shrink-0 p-0.5 text-fg-faint hover:text-fg-base transition-colors"
       :class="{ 'ring-2 ring-accent-base bg-accent-ghost/50 rounded': dropTargetIdx === -1 }"
@@ -73,7 +99,9 @@ async function onDrop(e: DragEvent, targetPath: string) {
       @dragenter="onDragEnter($event, -1)"
       @dragleave="onDragLeave"
       @drop="onDrop($event, '')"
-    ><Home :size="12" class="pointer-events-none" /></button>
+    >
+      <Home :size="12" class="pointer-events-none" />
+    </button>
     <template v-if="explorer.currentPath">
       <template v-for="(part, idx) in explorer.currentPath.split('\\').filter(Boolean)" :key="idx">
         <span v-if="idx > 0" class="text-fg-faint">\</span>
@@ -85,7 +113,9 @@ async function onDrop(e: DragEvent, targetPath: string) {
           @dragenter="onDragEnter($event, idx)"
           @dragleave="onDragLeave"
           @drop="onDrop($event, segmentPath(idx))"
-        >{{ part }}</button>
+        >
+          {{ part }}
+        </button>
       </template>
     </template>
     <span v-else class="text-fg-faint px-1">{{ $t('explorer.thisComputer') }}</span>

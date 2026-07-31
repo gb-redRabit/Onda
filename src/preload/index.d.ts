@@ -110,7 +110,11 @@ interface OndaAPI {
   ) => Promise<void>;
   checkAudioCodec: (filePath: string) => Promise<{ codec: string; supported: boolean } | null>;
   transcodeAudio: (filePath: string) => Promise<string | null>;
-  transcodeAudioChunk: (filePath: string, startTime: number, duration: number) => Promise<string | null>;
+  transcodeAudioChunk: (
+    filePath: string,
+    startTime: number,
+    duration: number
+  ) => Promise<string | null>;
   cleanupTranscodedAudio: (audioPath: string) => Promise<void>;
   audioPipShow: (
     state: Record<string, unknown>,

@@ -42,9 +42,12 @@ const dragOverPlaylistId = ref<string | null>(null);
 watch(collapsed, (val) => {
   settings.updateAppearance({ sidebarCollapsed: val });
 });
-watch(() => settings.appearance.sidebarCollapsed, (val) => {
-  collapsed.value = val;
-});
+watch(
+  () => settings.appearance.sidebarCollapsed,
+  (val) => {
+    collapsed.value = val;
+  }
+);
 
 const navItems = computed(() => [
   { label: t('nav.home'), icon: Home, route: '/' },

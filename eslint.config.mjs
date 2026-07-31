@@ -21,6 +21,7 @@ export default defineConfig(
       }
     }
   },
+  eslintConfigPrettier,
   {
     files: ['**/*.{ts,mts,tsx,vue}'],
     rules: {
@@ -35,7 +36,8 @@ export default defineConfig(
         }
       ],
       '@typescript-eslint/explicit-function-return-type': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
+      // IPC and third-party media APIs expose dynamic payloads; validate them at use sites.
+      '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-require-imports': 'off',
       '@typescript-eslint/no-empty-function': 'off',
       '@typescript-eslint/no-unused-vars': [
@@ -49,8 +51,15 @@ export default defineConfig(
       'no-empty': ['error', { allowEmptyCatch: true }],
       'no-useless-escape': 'off',
       'vue/first-attribute-linebreak': 'error',
+      // Vue accepts camelCase props in templates; this project consistently uses that form.
+      'vue/attribute-hyphenation': 'off',
       'prettier/prettier': 'off'
     }
   },
-  eslintConfigPrettier
+  {
+    files: ['**/*.test.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off'
+    }
+  }
 );

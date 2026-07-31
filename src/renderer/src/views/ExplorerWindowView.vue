@@ -68,10 +68,34 @@ function titleText(): string {
         <span class="truncate font-medium">{{ titleText() }}</span>
       </div>
       <div class="flex items-center gap-0.5 shrink-0" style="-webkit-app-region: no-drag">
-        <button class="p-1.5 rounded-md text-fg-faint hover:text-accent-base hover:bg-accent-ghost transition-colors" :title="$t('explorer.pinAsTab')" @click="pinAsTab"><Pin :size="13" /></button>
-        <button class="p-1.5 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors" :title="$t('window.minimize')" @click="minimize"><Minus :size="14" /></button>
-        <button class="p-1.5 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors" :title="$t('window.maximize')" @click="maximize"><Square :size="12" /></button>
-        <button class="p-1.5 rounded-md text-fg-faint hover:text-white hover:bg-red-500/80 transition-colors" :title="$t('window.close')" @click="close"><X :size="14" /></button>
+        <button
+          class="p-1.5 rounded-md text-fg-faint hover:text-accent-base hover:bg-accent-ghost transition-colors"
+          :title="$t('explorer.pinAsTab')"
+          @click="pinAsTab"
+        >
+          <Pin :size="13" />
+        </button>
+        <button
+          class="p-1.5 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+          :title="$t('window.minimize')"
+          @click="minimize"
+        >
+          <Minus :size="14" />
+        </button>
+        <button
+          class="p-1.5 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+          :title="$t('window.maximize')"
+          @click="maximize"
+        >
+          <Square :size="12" />
+        </button>
+        <button
+          class="p-1.5 rounded-md text-fg-faint hover:text-white hover:bg-red-500/80 transition-colors"
+          :title="$t('window.close')"
+          @click="close"
+        >
+          <X :size="14" />
+        </button>
       </div>
     </div>
     <div class="flex-1 min-h-0">

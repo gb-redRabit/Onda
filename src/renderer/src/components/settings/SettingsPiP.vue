@@ -173,7 +173,9 @@ watch(
 
     <!-- Audio PiP -->
     <div class="p-4 rounded-xl bg-bg-elevated border border-border-default space-y-4">
-      <h3 class="text-sm font-semibold pb-3 border-b border-border-default">{{ $t('settings.audioPipSection') }}</h3>
+      <h3 class="text-sm font-semibold pb-3 border-b border-border-default">
+        {{ $t('settings.audioPipSection') }}
+      </h3>
 
       <div class="flex items-center justify-between">
         <span class="text-sm">{{ $t('settings.audioPipMode') }}</span>
@@ -196,7 +198,8 @@ watch(
 
       <div>
         <h3 class="text-sm font-semibold mb-3">
-          {{ $t('settings.audioPipOpacity') }}: {{ Math.round(settings.appearance.audioPipOpacity * 100) }}%
+          {{ $t('settings.audioPipOpacity') }}:
+          {{ Math.round(settings.appearance.audioPipOpacity * 100) }}%
         </h3>
         <input
           type="range"
@@ -218,7 +221,9 @@ watch(
         <button
           class="w-10 h-6 rounded-full transition-colors relative"
           :class="settings.appearance.audioPipAutoShow ? 'bg-accent-base' : 'bg-bg-hover'"
-          @click="settings.updateAppearance({ audioPipAutoShow: !settings.appearance.audioPipAutoShow })"
+          @click="
+            settings.updateAppearance({ audioPipAutoShow: !settings.appearance.audioPipAutoShow })
+          "
         >
           <div
             class="w-4 h-4 rounded-full bg-white absolute top-1 transition-all"
@@ -238,11 +243,7 @@ watch(
             })
           "
         >
-          <option
-            v-for="p in pipPositions"
-            :key="p.id"
-            :value="p.id"
-          >
+          <option v-for="p in pipPositions" :key="p.id" :value="p.id">
             {{ $t(p.labelKey) }}
           </option>
         </select>

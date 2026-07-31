@@ -69,7 +69,9 @@ class AudioEngine {
       if (!this.sourceNode) {
         this.sourceNode = this.audioCtx!.createMediaElementSource(el);
       } else {
-        try { this.sourceNode.disconnect(); } catch {}
+        try {
+          this.sourceNode.disconnect();
+        } catch {}
       }
       this.ensureEqChain();
     } else {
@@ -82,7 +84,9 @@ class AudioEngine {
           this.sourceNode.connect(this.gainNode!);
         }
       } else {
-        try { this.sourceNode.disconnect(); } catch {}
+        try {
+          this.sourceNode.disconnect();
+        } catch {}
         const firstFilter = this.eqFilters[0];
         if (firstFilter) {
           this.sourceNode.connect(firstFilter);
@@ -163,11 +167,19 @@ class AudioEngine {
   }
 
   private disconnectNodes(): void {
-    try { this.sourceNode?.disconnect(); } catch {}
-    try { this.gainNode?.disconnect(); } catch {}
-    try { this.analyserNode?.disconnect(); } catch {}
+    try {
+      this.sourceNode?.disconnect();
+    } catch {}
+    try {
+      this.gainNode?.disconnect();
+    } catch {}
+    try {
+      this.analyserNode?.disconnect();
+    } catch {}
     for (const f of this.eqFilters) {
-      try { f.disconnect(); } catch {}
+      try {
+        f.disconnect();
+      } catch {}
     }
   }
 
@@ -223,7 +235,8 @@ class AudioEngine {
     }
     this.audioEl!.src = toFileUrl(track.path);
     this.connectAudio(this.audioEl!);
-    if (this.gainNode) this.gainNode.gain.value = usePlayerStore().isMuted ? 0 : usePlayerStore().volume;
+    if (this.gainNode)
+      this.gainNode.gain.value = usePlayerStore().isMuted ? 0 : usePlayerStore().volume;
 
     audioEvents.emit('trackLoaded', undefined);
     if (settings.playback.rememberPosition) {
@@ -272,7 +285,9 @@ class AudioEngine {
     this.ensureAudioContext();
 
     if (this.sourceNode) {
-      try { this.sourceNode.disconnect(); } catch {}
+      try {
+        this.sourceNode.disconnect();
+      } catch {}
     }
 
     const el = new Audio();
@@ -311,7 +326,9 @@ class AudioEngine {
 
   disconnectSecondaryAudio(): void {
     if (this.secondarySourceNode) {
-      try { this.secondarySourceNode.disconnect(); } catch {}
+      try {
+        this.secondarySourceNode.disconnect();
+      } catch {}
       this.secondarySourceNode = null;
     }
     if (this.secondaryAudioEl) {
@@ -443,12 +460,13 @@ class AudioEngine {
     this.ensureAudioContext();
     this.resume();
     if (this.sourceNode) {
-      try { this.sourceNode.disconnect(); } catch {}
+      try {
+        this.sourceNode.disconnect();
+      } catch {}
     }
   }
 
-  disconnectVideoElement(): void {
-  }
+  disconnectVideoElement(): void {}
 }
 
 export const audioEngine = new AudioEngine();

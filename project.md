@@ -6,20 +6,20 @@
 
 **Aktualne statystyki (2026-07-31):**
 
-| Metryka | Wartość |
-|---------|---------|
-| Pliki źródłowe (.ts + .vue + .css + .html) | 132 |
-| Linie kodu | ~16,950 |
-| Main process | 18 plików, ~2,800 linii |
-| Preload | 2 pliki, ~300 linii |
-| Shared | 3 pliki, ~191 linii |
-| Renderer | 109 plików, ~13,660 linii |
-| Pliki testowe | 5 (1,400+ linii) |
-| Testy | 153 pass |
-| Zależności npm | 38 (17 runtime + 21 dev) |
-| `typecheck` | 100% clean |
-| `build` | OK |
-| `lint` | 0 nowych błędów (pre-existing 8 w plikach poza F11) |
+| Metryka                                    | Wartość                                             |
+| ------------------------------------------ | --------------------------------------------------- |
+| Pliki źródłowe (.ts + .vue + .css + .html) | 132                                                 |
+| Linie kodu                                 | ~16,950                                             |
+| Main process                               | 18 plików, ~2,800 linii                             |
+| Preload                                    | 2 pliki, ~300 linii                                 |
+| Shared                                     | 3 pliki, ~191 linii                                 |
+| Renderer                                   | 109 plików, ~13,660 linii                           |
+| Pliki testowe                              | 5 (1,400+ linii)                                    |
+| Testy                                      | 153 pass                                            |
+| Zależności npm                             | 38 (17 runtime + 21 dev)                            |
+| `typecheck`                                | 100% clean                                          |
+| `build`                                    | OK                                                  |
+| `lint`                                     | 0 nowych błędów (pre-existing 8 w plikach poza F11) |
 
 **Kluczowe zasady architektury:**
 
@@ -678,23 +678,23 @@ audioEl ──→ sourceNode ──→ [EQ: BiquadFilter ×10] ──→ gainNod
 
 ```typescript
 class AudioEngine {
-  private audioEl: HTMLAudioElement | null = null
-  private audioCtx: AudioContext | null = null
-  private analyserNode: AnalyserNode | null = null
-  private sourceNode: MediaElementAudioSourceNode | null = null
-  private gainNode: GainNode | null = null
-  private eqFilters: BiquadFilterNode[] = []
-  private rafId: number | null = null
-  private initialized = false
-  private eqChainBuilt = false
-  private secondaryAudioEl: HTMLAudioElement | null = null
-  private secondarySourceNode: MediaElementAudioSourceNode | null = null
-  private secondaryAudioOffset = 0
-  private savedPositions = new Map<string, number>()
-  private visibilityHandler: (() => void) | null = null
+  private audioEl: HTMLAudioElement | null = null;
+  private audioCtx: AudioContext | null = null;
+  private analyserNode: AnalyserNode | null = null;
+  private sourceNode: MediaElementAudioSourceNode | null = null;
+  private gainNode: GainNode | null = null;
+  private eqFilters: BiquadFilterNode[] = [];
+  private rafId: number | null = null;
+  private initialized = false;
+  private eqChainBuilt = false;
+  private secondaryAudioEl: HTMLAudioElement | null = null;
+  private secondarySourceNode: MediaElementAudioSourceNode | null = null;
+  private secondaryAudioOffset = 0;
+  private savedPositions = new Map<string, number>();
+  private visibilityHandler: (() => void) | null = null;
 }
 
-export const audioEngine = new AudioEngine()  // singleton
+export const audioEngine = new AudioEngine(); // singleton
 ```
 
 ### 8.3 Przepływ odtwarzania
@@ -1147,49 +1147,49 @@ Pełny transkoding filmu 2-godzinnego zajmuje 30-60s. Zamiast czekać:
 
 ## 14. Kluczowe Pliki
 
-| Plik                        | Linii | Znaczenie                                                                       |
-| --------------------------- | ----- | ------------------------------------------------------------------------------- |
-| `ipc/handlers.ts`           | 24    | Orkiestrator IPC — rejestruje 12 sub-handlerów (13 plików, 1,765 linii łącznie) |
-| `ipc/library-handlers.ts`   | 383   | Biblioteka: scan, playlisty, CRUD, tagi ID3                                     |
-| `ipc/media-handlers.ts`     | 284   | Metadane, kodeki, transkodowanie AC3/DTS                                        |
-| `ipc/fs-handlers.ts`        | 233   | Operacje na plikach: readdir (batch), readFile, writeFile, rename, delete       |
-| `ipc/cover-cache.ts`        | 221   | Cache okładek + thumbnaili (Sharp fallback + Windows thumbcache)                |
-| `media-server.ts`           | 94    | Lokalny HTTP server dla mediów (range requests 206, CORS, port losowy)          |
-| `ImageViewer.vue`           | 486   | Lightbox: dual-image transitions (fade/slide/zoom/swirl), slideshow, thumbnails |
-| `player.ts` (store)         | 457   | Player + kolejka + history + coverCache + favorites (electron-store persistence)|
-| `pip-manager.ts`            | 421   | PipManager — PiP window + preview window, position/size, show/hide              |
-| `useVideoPlayer.ts`         | 406   | Video composable: setup, PiP, subtitles, AC3/DTS, lifecycle                     |
-| `useSubtitleRenderer.ts`    | 390   | JASSUB: wasm/worker init, buildFontMap (MKV+Google+lokalne), binary fonts       |
-| `audioEngine.ts`            | 473   | Class AudioEngine — gapless, EQ, RAF loop, EventBus                  |
-| `index.ts` (main)           | 367   | Okno, tray, skróty globalne, PiP init, splash screen                           |
-| `PlayerControls.vue`        | 302   | Kontrolki: play/pause, skip, speed, filter, volume, time                        |
-| `ExplorerView.vue`          | 517   | Eksplorator — 4 widoki, breadcrumb, streaming readdir, context menu             |
-| `PlayerView.vue`            | 313   | Video player UI orchestration + keyboard shortcuts                              |
-| `Sidebar.vue`               | 276   | Nawigacja + resize + playlisty + DnD                                            |
-| `PlayerBar.vue`             | 265   | Dolny pasek: MediaCover, AudioProgressBar, controls, volume, Heart, Disc3       |
-| `QueuePanel.vue`            | 256   | Kolejka + historia (vuedraggable)                                               |
-| `TitleBar.vue`              | 253   | Custom titlebar + tabs + context menu                                           |
-| `LibraryView.vue`           | 623   | Biblioteka: list/cover grid/search/filter/delete                                |
-| `TrackTagEditor.vue`        | 261   | ID3 tag editor modal                                                            |
-| `MusicBrainzLookup.vue`     | 235   | MusicBrainz search: album, metadata, cover art                                  |
-| `constants.ts`              | 225   | Formaty, presety EQ, motywy, defaults, shortcuts                                |
-| `LibraryPlaylistManager.vue`| 170   | Panel playlist: create/delete/toggle/rename                                     |
-| `pip.ts` (renderer)         | 170   | PiP bundle: JASSUB, IPC, progress bar, close button                             |
-| `preload/index.ts`          | 200   | contextBridge: 43 API (window.api) + try-catch IPC wrappers                     |
-| `AudioView.vue`             | 191   | Audio player — 3 layouty, sub-components (AudioCover, AudioTrackInfo)           |
-| `SettingsAppearance.vue`    | 188   | Motyw, akcent, czcionka                                                         |
-| `CommandPalette.vue`        | 157   | Ctrl+K modal search                                                             |
-| `SettingsPiP.vue`           | 152   | PiP: pozycja, rozmiar, podgląd na żywo                                          |
-| `app.vue`                   | 187   | Root layout: ErrorBoundary, Theme, Toast, context menu, route routing           |
-| `audioEngine.ts` (modules)  | 473   | Class AudioEngine singleton — gapless, EQ, RAF loop, EventBus        |
-| `Equalizer.vue`             | 143   | 10-pasmowy EQ + presety                                                         |
-| `AudioControls.vue`         | 142   | Transport controls + volume slider                                              |
-| `useAudioPlayer.ts`         | 131   | Singleton: audio state bridge, effectScope(true) + watch(), EventBus sub        |
-| `settings.ts` (store)       | 159   | Settings store + debounced IPC save                                             |
-| `splash.html`               | 131   | Splash screen — canvas wizualizacja dźwiękowa (64 barów)                        |
-| `AudioVisualizer.vue`       | 126   | Canvas visualizer: bars/wave/radial                                              |
-| `router/index.ts`           | 117   | 8 tras + beforeEach guard + smart path + recursion guard                         |
-| `SettingsDependencies.vue`  | 156   | Status zależności: FFmpeg, FFprobe, yt-dlp, mkvextract + instalacja             |
+| Plik                         | Linii | Znaczenie                                                                        |
+| ---------------------------- | ----- | -------------------------------------------------------------------------------- |
+| `ipc/handlers.ts`            | 24    | Orkiestrator IPC — rejestruje 12 sub-handlerów (13 plików, 1,765 linii łącznie)  |
+| `ipc/library-handlers.ts`    | 383   | Biblioteka: scan, playlisty, CRUD, tagi ID3                                      |
+| `ipc/media-handlers.ts`      | 284   | Metadane, kodeki, transkodowanie AC3/DTS                                         |
+| `ipc/fs-handlers.ts`         | 233   | Operacje na plikach: readdir (batch), readFile, writeFile, rename, delete        |
+| `ipc/cover-cache.ts`         | 221   | Cache okładek + thumbnaili (Sharp fallback + Windows thumbcache)                 |
+| `media-server.ts`            | 94    | Lokalny HTTP server dla mediów (range requests 206, CORS, port losowy)           |
+| `ImageViewer.vue`            | 486   | Lightbox: dual-image transitions (fade/slide/zoom/swirl), slideshow, thumbnails  |
+| `player.ts` (store)          | 457   | Player + kolejka + history + coverCache + favorites (electron-store persistence) |
+| `pip-manager.ts`             | 421   | PipManager — PiP window + preview window, position/size, show/hide               |
+| `useVideoPlayer.ts`          | 406   | Video composable: setup, PiP, subtitles, AC3/DTS, lifecycle                      |
+| `useSubtitleRenderer.ts`     | 390   | JASSUB: wasm/worker init, buildFontMap (MKV+Google+lokalne), binary fonts        |
+| `audioEngine.ts`             | 473   | Class AudioEngine — gapless, EQ, RAF loop, EventBus                              |
+| `index.ts` (main)            | 367   | Okno, tray, skróty globalne, PiP init, splash screen                             |
+| `PlayerControls.vue`         | 302   | Kontrolki: play/pause, skip, speed, filter, volume, time                         |
+| `ExplorerView.vue`           | 517   | Eksplorator — 4 widoki, breadcrumb, streaming readdir, context menu              |
+| `PlayerView.vue`             | 313   | Video player UI orchestration + keyboard shortcuts                               |
+| `Sidebar.vue`                | 276   | Nawigacja + resize + playlisty + DnD                                             |
+| `PlayerBar.vue`              | 265   | Dolny pasek: MediaCover, AudioProgressBar, controls, volume, Heart, Disc3        |
+| `QueuePanel.vue`             | 256   | Kolejka + historia (vuedraggable)                                                |
+| `TitleBar.vue`               | 253   | Custom titlebar + tabs + context menu                                            |
+| `LibraryView.vue`            | 623   | Biblioteka: list/cover grid/search/filter/delete                                 |
+| `TrackTagEditor.vue`         | 261   | ID3 tag editor modal                                                             |
+| `MusicBrainzLookup.vue`      | 235   | MusicBrainz search: album, metadata, cover art                                   |
+| `constants.ts`               | 225   | Formaty, presety EQ, motywy, defaults, shortcuts                                 |
+| `LibraryPlaylistManager.vue` | 170   | Panel playlist: create/delete/toggle/rename                                      |
+| `pip.ts` (renderer)          | 170   | PiP bundle: JASSUB, IPC, progress bar, close button                              |
+| `preload/index.ts`           | 200   | contextBridge: 43 API (window.api) + try-catch IPC wrappers                      |
+| `AudioView.vue`              | 191   | Audio player — 3 layouty, sub-components (AudioCover, AudioTrackInfo)            |
+| `SettingsAppearance.vue`     | 188   | Motyw, akcent, czcionka                                                          |
+| `CommandPalette.vue`         | 157   | Ctrl+K modal search                                                              |
+| `SettingsPiP.vue`            | 152   | PiP: pozycja, rozmiar, podgląd na żywo                                           |
+| `app.vue`                    | 187   | Root layout: ErrorBoundary, Theme, Toast, context menu, route routing            |
+| `audioEngine.ts` (modules)   | 473   | Class AudioEngine singleton — gapless, EQ, RAF loop, EventBus                    |
+| `Equalizer.vue`              | 143   | 10-pasmowy EQ + presety                                                          |
+| `AudioControls.vue`          | 142   | Transport controls + volume slider                                               |
+| `useAudioPlayer.ts`          | 131   | Singleton: audio state bridge, effectScope(true) + watch(), EventBus sub         |
+| `settings.ts` (store)        | 159   | Settings store + debounced IPC save                                              |
+| `splash.html`                | 131   | Splash screen — canvas wizualizacja dźwiękowa (64 barów)                         |
+| `AudioVisualizer.vue`        | 126   | Canvas visualizer: bars/wave/radial                                              |
+| `router/index.ts`            | 117   | 8 tras + beforeEach guard + smart path + recursion guard                         |
+| `SettingsDependencies.vue`   | 156   | Status zależności: FFmpeg, FFprobe, yt-dlp, mkvextract + instalacja              |
 
 ---
 
@@ -1493,6 +1493,7 @@ Kluczowe: `effectScope(true)` musi być utworzony na module level (nie w composa
 ### 18.9 Faza 4 — Explorer Overhaul + Context Menu Fix (2026-07-21/22)
 
 **Explorer — 4 tryby widoku:**
+
 - `icon` — duże ikony (domyślny), `list` — tabela, `grid` — miniatury, `details` — szczegóły
 - `ExplorerNavPane.vue` — lewy panel nawigacyjny z drzewem folderów i szybkim dostępem
 - `ExplorerToolbar.vue` — górny pasek z trybami widoku i sortowaniem
@@ -1502,10 +1503,12 @@ Kluczowe: `effectScope(true)` musi być utworzony na module level (nie w composa
 - Virtual scrolling: `@tanstack/vue-virtual` dla wszystkich trybów, overscan 2
 
 **Context Menu — naprawa propagacji:**
+
 - Problem: `@contextmenu.prevent` nie stopuje propagacji, `handleEmptyContextMenu` na scrollRef nadpisywał menu
 - Fix: `@contextmenu.stop.prevent` na indywidualnych itemach
 
 **Library — rozbudowa:**
+
 - `LibraryTrackRow.vue` — wiersz z okładką, title/artist/album, duration, favorite, delete
 - `AlbumCard.vue`, `VideoCard.vue` — karty z cover/thumbnail
 - `DirNode.vue` — rekurencyjny folder tree
@@ -1515,6 +1518,7 @@ Kluczowe: `effectScope(true)` musi być utworzony na module level (nie w composa
 - `LibraryView.vue` — 623 linie: list/cover grid, search, filter, sort, bulk delete
 
 **Settings — 12 podkomponentów:**
+
 - `SettingsAppearance.vue`, `SettingsPlayback.vue`, `SettingsDependencies.vue`,
 - `SettingsPiP.vue`, `SettingsShortcuts.vue`, `SettingsToast.vue`,
 - `SettingsLibraryFolders.vue`, `SettingsDownload.vue`, `SettingsNetwork.vue`,
@@ -1523,13 +1527,16 @@ Kluczowe: `effectScope(true)` musi być utworzony na module level (nie w composa
 - `main/handlers.ts` — +680 linii nowych handlerów (fs:readdir:batch, fs:rename, fs:mkdir, fs:delete, media:writeTag, media:writeCover, musicbrainz:*)
 
 **i18n:**
+
 - `vue-i18n` + `locales/en.ts` (392), `locales/pl.ts` (393)
 - Language switch w SettingsLanguage.vue
 
 **Command Palette:**
+
 - `CommandPalette.vue` — Ctrl+K modal, wyszukiwanie router + actions
 
 **Globalne:**
+
 - `ToastNotification.vue` — system powiadomień, `ui.store` zarządza toasts
 - `ErrorBoundary.vue` — izolacja błędów komponentów
 - `MediaCover.vue` — uniwersalny cover (wideo loop/img/icon fallback)
@@ -1539,6 +1546,7 @@ Kluczowe: `effectScope(true)` musi być utworzony na module level (nie w composa
 ### 18.9.5 Faza 4.5 — Library & Settings (2026-07-21/22)
 
 **Library — rozbudowa:**
+
 - `LibraryTrackRow.vue` — wiersz z okładką, title/artist/album, duration, favorite, delete
 - `AlbumCard.vue`, `VideoCard.vue` — karty z cover/thumbnail
 - `DirNode.vue` — rekurencyjny folder tree
@@ -1548,6 +1556,7 @@ Kluczowe: `effectScope(true)` musi być utworzony na module level (nie w composa
 - `LibraryView.vue` — 623 linie: list/cover grid, search, filter, sort, bulk delete
 
 **Settings — 12 podkomponentów:**
+
 - `SettingsAppearance.vue`, `SettingsPlayback.vue`, `SettingsDependencies.vue`,
 - `SettingsPiP.vue`, `SettingsShortcuts.vue`, `SettingsToast.vue`,
 - `SettingsLibraryFolders.vue`, `SettingsDownload.vue`, `SettingsNetwork.vue`,
@@ -1562,41 +1571,49 @@ Kluczowe: `effectScope(true)` musi być utworzony na module level (nie w composa
 ### 18.10 Faza 5 — ImageViewer + Fixy (2026-07-22/23)
 
 **ImageViewer — kompletny przepis (550 linii):**
+
 - Dual-image transition system: stary obrazek exit + nowy enter jednocześnie
 - 4 tryby przejścia: fade (opacity), slide (translate+blur), zoom (scale 0.7→1), swirl (scale 0.5 + rotate -15deg + blur)
 - `will-change: transform, opacity, filter` dla GPU acceleration
 - `cubic-bezier(0.4, 0, 0.2, 1)` — smooth easing
 
 **Toolbar po prawej stronie:**
+
 - Górna grupa: Close (X), Fit to Screen (Maximize2), Zoom In/Out, Fullscreen (Maximize)
 - Dolna grupa: Play/Pause, Previous/Next, Settings (Settings2)
 - Slideshow dropdown: interval (1s/2s/3s/5s/10s), transition type/duration, loop toggle
 - Loop mode: `hasPrev`/`hasNext` uwzględniają loop
 
 **Thumbnail strip:**
+
 - Bottom filmstrip, toggle przez PanelBottom button
 - Lazy cache: `thumbCache = new Map()`, ładuje ±4 wokół currentIndex
 - Click-to-navigate
 
 **Fullscreen:**
+
 - Fullscreen API toggle + F key
 - `fullscreenchange` listener, cleanup na unmount
 - Maximize2 → fitToScreen (scale=1, rotation=0)
 - Double-click na image → fitToScreen
 
 **Slideshow:**
+
 - Progress bar na górze viewportu, `transition-all duration-150 ease-linear`
 - Działa przez setInterval(16ms), odświeża progress bar
 - Przy pauzie: progress bar zatrzymuje się
 
 **Mouse wheel zoom:**
+
 - `@wheel.prevent` na image area → zoomIn/zoomOut
 
 **Footer:**
+
 - Counter (X/Y), filename, zoom %, rotation degrees
 - showThumbnails toggle button
 
 **Context Menu fix:**
+
 - `@contextmenu.prevent` → `@contextmenu.stop.prevent` na ExplorerView.vue, ExplorerGridItem.vue, ExplorerTableRow.vue
 - Fix TypeScript: `setInterval` → `changeInterval` (shadow global)
 - 0 typecheck errors
@@ -1604,59 +1621,66 @@ Kluczowe: `effectScope(true)` musi być utworzony na module level (nie w composa
 ### 18.11 Faza 5.5 — ImageViewer Performance + UI Consistency (2026-07-23)
 
 **Problem 1: Zoom freeze przy dużych zdjęciach**
+
 - `fs:readFile` ładuje pełny plik (20MB → ~27MB base64 w DOM)
 - Brak debounce na wheel → szybkie zmiany zoomu kaskadują repainty
 - CSS `scale()` bez GPU acceleration, brak `contain: layout style paint`
 
 **Fix:**
+
 - Debounce wheel przez `requestAnimationFrame` (50ms coalesce)
 - `scale3d()` zamiast `scale()` dla GPU compositing
 - `contain: layout style paint` na kontenerze obrazka
 - Opcjonalny downscale przy ładowaniu: canvas resize do max viewport
 
 **Problem 2: Duże foldery zdjęć ładują się wolno**
+
 - Thumbnail strip ładuje pełne pliki (brak miniaturek)
 - Brak preloadu sąsiednich obrazków
 - Każda nawigacja → pełny `fs:readFile` → IPC → base64
 
 **Fix:**
+
 - Nowe IPC `media:getThumbnail` z `nativeImage.resize({ width: 320 })` w main process
 - Preload następnego obrazka (index+1) w tle
 - Lazy loading thumbnaili przez dedykowany kanał (nie `fs:readFile`)
 - Image pool: 1 aktywny + 1 preload (anulowanie przy szybkiej nawigacji)
 
 **Problem 3: UI niespójne z aplikacją**
+
 - Hardcodowane `bg-black/95`, `bg-black/60` zamiast theme CSS variables
 - Brak spójności z systemem motywów
 
 **Fix:**
+
 - `bg-black/*` → `bg-bg-base/*`, `bg-bg-overlay/*`, `bg-bg-surface/*`
 - `text-white/*` → `text-fg-base/*`, `text-fg-muted/*`
 - `border-white/*` → `border-border-default/*`
 
 **Rozszerzenia slideshow:**
+
 - Ken Burns effect (powolny zoom + pan) przez RAF loop
 - Random shuffle (Fisher-Yates) z opcją w settings
 - Transition preview w settings dropdown
 
 **Co zaimplementowano (2026-07-23) — Runda 1 (CSS + zoom debounce + thumbnail IPC + Ken Burns):**
 
-| Plik | Zmiana |
-| ---- | ------ |
-| `shared/types/ipc.ts` | +`media:getThumbnail` channel |
-| `main/ipc/cover-cache.ts` | +handler: `nativeImage.createFromPath().resize(320).toDataURL()` |
-| `ImageViewer.vue` | Tła: CSS vars, Zoom: debounce 50ms + RAF + scale3d + contain, Thumb: `media:getThumbnail`, Preload: next+LRU cache(5), Slideshow: Ken Burns + shuffle |
-| `main.css` | +`.contain-layout { contain: layout style paint }` |
+| Plik                      | Zmiana                                                                                                                                                |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shared/types/ipc.ts`     | +`media:getThumbnail` channel                                                                                                                         |
+| `main/ipc/cover-cache.ts` | +handler: `nativeImage.createFromPath().resize(320).toDataURL()`                                                                                      |
+| `ImageViewer.vue`         | Tła: CSS vars, Zoom: debounce 50ms + RAF + scale3d + contain, Thumb: `media:getThumbnail`, Preload: next+LRU cache(5), Slideshow: Ken Burns + shuffle |
+| `main.css`                | +`.contain-layout { contain: layout style paint }`                                                                                                    |
 
 **Runda 2 + 3 — file:// → onda:// protocol + Sharp + downscale:**
 
-| Plik | Zmiana | Zysk |
-| ---- | ------ | ---- |
-| `src/main/utils/sharp.ts` | **NOWY** — SharpService: getThumbnail, batchThumbnails, resize przez sharp (libvips) | Batch 5000 thumbnaili ~2-5 min (concurrency n-CPU) zamiast godzin |
-| `src/main/index.ts` | +`protocol.registerSchemesAsPrivileged('onda')` + `protocol.handle('onda', handler)` | Custom protocol: path traversal protection, query params (?w=1920 downscale, ?t=320 thumb) |
-| `ImageViewer.vue` | `onda://` zamiast `file://`, domyślnie `?w=1920` (300KB zamiast 20MB), full-res tylko przy zoom >1.5× | 1. ładowanie 50ms, RAM ~5MB zamiast 80MB+ |
-| `main/ipc/cover-cache.ts` | `createThumbnailFromPath` (Windows thumbcache) → Sharp fallback. Batch thumbnails. Cover przez Sharp downscale 500px | Thumbnail 1. raz ~5ms (OS cache) lub ~20ms (Sharp) |
-| `index.html` | CSP +`onda:` w default-src i img-src | Onda protocol dozwolony |
+| Plik                      | Zmiana                                                                                                               | Zysk                                                                                       |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `src/main/utils/sharp.ts` | **NOWY** — SharpService: getThumbnail, batchThumbnails, resize przez sharp (libvips)                                 | Batch 5000 thumbnaili ~2-5 min (concurrency n-CPU) zamiast godzin                          |
+| `src/main/index.ts`       | +`protocol.registerSchemesAsPrivileged('onda')` + `protocol.handle('onda', handler)`                                 | Custom protocol: path traversal protection, query params (?w=1920 downscale, ?t=320 thumb) |
+| `ImageViewer.vue`         | `onda://` zamiast `file://`, domyślnie `?w=1920` (300KB zamiast 20MB), full-res tylko przy zoom >1.5×                | 1. ładowanie 50ms, RAM ~5MB zamiast 80MB+                                                  |
+| `main/ipc/cover-cache.ts` | `createThumbnailFromPath` (Windows thumbcache) → Sharp fallback. Batch thumbnails. Cover przez Sharp downscale 500px | Thumbnail 1. raz ~5ms (OS cache) lub ~20ms (Sharp)                                         |
+| `index.html`              | CSP +`onda:` w default-src i img-src                                                                                 | Onda protocol dozwolony                                                                    |
 
 **Jak to teraz działa:**
 
@@ -1690,33 +1714,35 @@ Runda 3: Użytkownik klika zdjęcie
 
 **Rozwiązanie:** Podział na 13 plików w `src/main/ipc/`:
 
-| Plik | Linii | Odpowiedzialność |
-| ---- | ----- | ---------------- |
-| `handlers.ts` | 24 | Orkiestrator: rejestruje wszystkie sub-handlery |
-| `fs-handlers.ts` | 233 | Operacje na plikach (readdir batch, readFile, writeFile, rename, delete) |
-| `media-handlers.ts` | 284 | Metadane, kodeki, transkodowanie audio (AC3/DTS) |
-| `subtitle-handlers.ts` | 166 | Napisy embedded MKV + zewnętrzne SRT/ASS/VTT |
-| `library-handlers.ts` | 383 | Biblioteka: scan, playlisty, tagi ID3, MusicBrainz |
-| `dialog-handlers.ts` | 90 | Dialogi open/save/folder |
-| `cover-cache.ts` | 221 | Cache okładek + thumbnaili (Sharp + Windows thumbcache) |
-| `cover-handlers.ts` | 13 | Handler `media:getCover` (deleguje do cover-cache) |
-| `dependency-handlers.ts` | 184 | Sprawdzanie i instalacja FFmpeg, yt-dlp, mkvextract |
-| `playback-handlers.ts` | 14 | Zapamiętywanie pozycji odtwarzania |
-| `settings-handlers.ts` | 23 | Odczyt/zapis ustawień (electron-store) |
-| `youtube-handlers.ts` | 32 | YouTube download (yt-dlp wrapper) |
-| `musicbrainz.ts` | 98 | MusicBrainz API: search, lookup, cover data |
+| Plik                     | Linii | Odpowiedzialność                                                         |
+| ------------------------ | ----- | ------------------------------------------------------------------------ |
+| `handlers.ts`            | 24    | Orkiestrator: rejestruje wszystkie sub-handlery                          |
+| `fs-handlers.ts`         | 233   | Operacje na plikach (readdir batch, readFile, writeFile, rename, delete) |
+| `media-handlers.ts`      | 284   | Metadane, kodeki, transkodowanie audio (AC3/DTS)                         |
+| `subtitle-handlers.ts`   | 166   | Napisy embedded MKV + zewnętrzne SRT/ASS/VTT                             |
+| `library-handlers.ts`    | 383   | Biblioteka: scan, playlisty, tagi ID3, MusicBrainz                       |
+| `dialog-handlers.ts`     | 90    | Dialogi open/save/folder                                                 |
+| `cover-cache.ts`         | 221   | Cache okładek + thumbnaili (Sharp + Windows thumbcache)                  |
+| `cover-handlers.ts`      | 13    | Handler `media:getCover` (deleguje do cover-cache)                       |
+| `dependency-handlers.ts` | 184   | Sprawdzanie i instalacja FFmpeg, yt-dlp, mkvextract                      |
+| `playback-handlers.ts`   | 14    | Zapamiętywanie pozycji odtwarzania                                       |
+| `settings-handlers.ts`   | 23    | Odczyt/zapis ustawień (electron-store)                                   |
+| `youtube-handlers.ts`    | 32    | YouTube download (yt-dlp wrapper)                                        |
+| `musicbrainz.ts`         | 98    | MusicBrainz API: search, lookup, cover data                              |
 
 ### 18.11.2 17.2 — Timer Management: ImageViewer (2026-07-25)
 
 **Problem:** `ImageViewer.vue` używał `setInterval`/`setTimeout` bezpośrednio, bez cleanup — ryzyko przecieków przy szybkiej nawigacji.
 
 **Rozwiązanie:**
+
 - Zastąpiono `setInterval` → `useIntervalFn` (VueUse) z natychmiastowym cleanup
 - Zastąpiono `setTimeout` → `useTimeoutFn` (VueUse)
 - Zastąpiono `requestAnimationFrame` → `useRafFn` (VueUse) dla Ken Burns effect
 - Wszystkie VueUse composable automatycznie czyścią się przy `onUnmounted`
 
 **Dodatkowo:**
+
 - Nowy podkomponent `ImageViewerThumbnails.vue` — wydzielony pasek miniaturek z lazy cache, `scrollToCurrent()` i `preloadNearby()`
 - Nowy podkomponent `ImageViewerSettings.vue` — wydzielone ustawienia slideshow
 - `ImageViewer.vue` spadł z 550 → 486 linii
@@ -1735,28 +1761,29 @@ Wzorzec znany z Discord, VS Code, Slack — uruchomienie lokalnego serwera HTTP 
 
 **Problemy:**
 
-| # | Problem | Przyczyna | Rozwiązanie |
-|---|---------|-----------|-------------|
-| 1 | **Audio PiP progress bar zastyga** | `onTrackChange` nie restartował time trackingu; lokalne refy odseparowane | `onTrackChange` restartuje tracking; PiP czyta modułowe `currentTime`/`duration` z `useAudioPlayer` |
-| 2 | **Automatyczne "next" nie działa** | `handleEnded()` emitował `trackEnd` → listener → `nextTrack()`. Crossfade resetował src, zabijając `ended` | `handleEnded()` woła `player.nextTrack()` bezpośrednio; usunięto `trackEnd` event |
-| 3 | **HMR zrywa subskrypcje** | Listenery/watchery w ciele composable | Przeniesione do `ensureModule()` z `detached effectScope(true)` na poziomie modułu |
-| 4 | **RAF loop nie emituje czasu gdy paused** | `rafLoop` emitował `timeUpdate` tylko przy `!paused` | Zawsze emituje `timeUpdate` |
-| 5 | **Crossfade komplikuje przepływ** | Drugi Audio element, osobne GainNode, timer, swap | Usunięty całkowicie |
+| #   | Problem                                   | Przyczyna                                                                                                  | Rozwiązanie                                                                                         |
+| --- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| 1   | **Audio PiP progress bar zastyga**        | `onTrackChange` nie restartował time trackingu; lokalne refy odseparowane                                  | `onTrackChange` restartuje tracking; PiP czyta modułowe `currentTime`/`duration` z `useAudioPlayer` |
+| 2   | **Automatyczne "next" nie działa**        | `handleEnded()` emitował `trackEnd` → listener → `nextTrack()`. Crossfade resetował src, zabijając `ended` | `handleEnded()` woła `player.nextTrack()` bezpośrednio; usunięto `trackEnd` event                   |
+| 3   | **HMR zrywa subskrypcje**                 | Listenery/watchery w ciele composable                                                                      | Przeniesione do `ensureModule()` z `detached effectScope(true)` na poziomie modułu                  |
+| 4   | **RAF loop nie emituje czasu gdy paused** | `rafLoop` emitował `timeUpdate` tylko przy `!paused`                                                       | Zawsze emituje `timeUpdate`                                                                         |
+| 5   | **Crossfade komplikuje przepływ**         | Drugi Audio element, osobne GainNode, timer, swap                                                          | Usunięty całkowicie                                                                                 |
 
 **Usunięte pola/metody crossfade:**
+
 - `nextAudioEl`, `crossfadeGainA/B`, `crossfadeTimer`, `isCrossfading`, `sourceNodeB` (fields)
 - `startCrossfade()`, `connectAudioB()`, `ensureNextPreloaded()` (methods)
 - `crossfadeDuration` (player store, types, constants, locales, UI)
 
 **Zmodyfikowane pliki:**
 
-| Plik | Przed | Po |
-|------|-------|----|
-| `audioEngine.ts` | 631 | 473 |
-| `useAudioPlayer.ts` | 159 | 131 |
-| `useAudioPiP.ts` | 202 | ~152 |
-| `player.ts` | 490 | 457 |
-| `SettingsPlayback.vue` | 114 | ~95 |
+| Plik                   | Przed | Po   |
+| ---------------------- | ----- | ---- |
+| `audioEngine.ts`       | 631   | 473  |
+| `useAudioPlayer.ts`    | 159   | 131  |
+| `useAudioPiP.ts`       | 202   | ~152 |
+| `player.ts`            | 490   | 457  |
+| `SettingsPlayback.vue` | 114   | ~95  |
 
 **Usunięte `console.log` (debug):** 53 → 0 we wszystkich plikach.
 
@@ -1769,22 +1796,22 @@ PO:    <video src="http://127.0.0.1:PORT/?path=C:\video.mp4"> → działa z CORS
 
 **Co zrobiono:**
 
-| Plik | Zmiana |
-| ---- | ------ |
-| `src/main/media-server.ts` | **NOWY** — HTTP server: `fs.createReadStream().pipe(res)` dla range requests (206), CORS `Access-Control-Allow-Origin: *`, port losowy `server.listen(0)` |
-| `src/main/index.ts` | Start serwera PRED utworzeniem okna (`await startMediaServer()`), `webSecurity: true` we wszystkich oknach (main, child, PiP), okrojony handler `onda://` tylko dla obrazków (Sharp thumbnail + resize), cleanup w `app.on('will-quit')` |
-| `src/main/pip-manager.ts` | `webSecurity: true`, `normalizeFilePath` rozpoznaje `onda://` i zwraca raw path |
-| `src/preload/index.ts` | `mediaServerUrl: string` udostępniony przez `ipcRenderer.sendSync('get-media-server-url')` przed ready-to-show |
-| `src/preload/index.d.ts` | +`mediaServerUrl: string` w OndaAPI interface |
-| `src/renderer/index.html` | CSP rozszerzony o `http://127.0.0.1:*` w `media-src`, `img-src`, `default-src`, `connect-src` |
-| `src/renderer/src/modules/audioEngine.ts` | `toFileUrl()` → `${window.api.mediaServerUrl}/?path=` zamiast `file:///` |
-| `src/renderer/src/composables/useVideoPlayer.ts` | `getTrackSrc()` → HTTP server URL |
-| `src/renderer/src/stores/player.ts` | `captureVideoFrame()` → HTTP server URL |
-| `src/renderer/src/components/MediaCover.vue` | video cover src → HTTP server URL |
-| `src/renderer/src/components/explorer/ImageViewer.vue` | `toFileUrl()` → HTTP server URL (obrazy nadal przez `onda://` dla downscale) |
-| `src/renderer/src/components/library/TrackTagEditor.vue` | video cover → raw path (konsystentne z MediaCover.vue) |
-| `src/renderer/src/views/PlayerView.vue` | `<video crossorigin="anonymous">` — wymagane dla CORS |
-| `src/renderer/src/pip.ts` | `crossOrigin = 'anonymous'` w JASSUB video element |
+| Plik                                                     | Zmiana                                                                                                                                                                                                                                   |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/main/media-server.ts`                               | **NOWY** — HTTP server: `fs.createReadStream().pipe(res)` dla range requests (206), CORS `Access-Control-Allow-Origin: *`, port losowy `server.listen(0)`                                                                                |
+| `src/main/index.ts`                                      | Start serwera PRED utworzeniem okna (`await startMediaServer()`), `webSecurity: true` we wszystkich oknach (main, child, PiP), okrojony handler `onda://` tylko dla obrazków (Sharp thumbnail + resize), cleanup w `app.on('will-quit')` |
+| `src/main/pip-manager.ts`                                | `webSecurity: true`, `normalizeFilePath` rozpoznaje `onda://` i zwraca raw path                                                                                                                                                          |
+| `src/preload/index.ts`                                   | `mediaServerUrl: string` udostępniony przez `ipcRenderer.sendSync('get-media-server-url')` przed ready-to-show                                                                                                                           |
+| `src/preload/index.d.ts`                                 | +`mediaServerUrl: string` w OndaAPI interface                                                                                                                                                                                            |
+| `src/renderer/index.html`                                | CSP rozszerzony o `http://127.0.0.1:*` w `media-src`, `img-src`, `default-src`, `connect-src`                                                                                                                                            |
+| `src/renderer/src/modules/audioEngine.ts`                | `toFileUrl()` → `${window.api.mediaServerUrl}/?path=` zamiast `file:///`                                                                                                                                                                 |
+| `src/renderer/src/composables/useVideoPlayer.ts`         | `getTrackSrc()` → HTTP server URL                                                                                                                                                                                                        |
+| `src/renderer/src/stores/player.ts`                      | `captureVideoFrame()` → HTTP server URL                                                                                                                                                                                                  |
+| `src/renderer/src/components/MediaCover.vue`             | video cover src → HTTP server URL                                                                                                                                                                                                        |
+| `src/renderer/src/components/explorer/ImageViewer.vue`   | `toFileUrl()` → HTTP server URL (obrazy nadal przez `onda://` dla downscale)                                                                                                                                                             |
+| `src/renderer/src/components/library/TrackTagEditor.vue` | video cover → raw path (konsystentne z MediaCover.vue)                                                                                                                                                                                   |
+| `src/renderer/src/views/PlayerView.vue`                  | `<video crossorigin="anonymous">` — wymagane dla CORS                                                                                                                                                                                    |
+| `src/renderer/src/pip.ts`                                | `crossOrigin = 'anonymous'` w JASSUB video element                                                                                                                                                                                       |
 
 **Architektura media servera:**
 
@@ -1804,11 +1831,13 @@ media-server.ts (94 linie)
 ```
 
 **Co się zmieniło dla `onda://`:**
+
 - Handler okrojony tylko do obrazków (SharpService: thumbnail + resize z query params)
 - `fetch()` działa z custom scheme (tylko `<video>`/`<audio>` go blokują)
 - ImageViewer nadal używa `onda://?w=1920` dla downscale
 
 **Weryfikacja:**
+
 - `npm run typecheck` — 0 błędów
 - `npm test` — 141/141 pass
 - Wszystkie debug logi usunięte
@@ -1818,6 +1847,7 @@ media-server.ts (94 linie)
 ### 18.13 Sprint 10 — Audio PiP: wide mode, canvas viz 60fps, cover type, shuffle/repeat state (2026-07-29)
 
 **Nowości:**
+
 - 4. tryb "wide" — full-width × 36px, cienki pasek z transportem, czasem, volume, 4 presetami EQ i cycleMode
 - Wizualizacja canvas: 192 bary (3×64 pasma), smoothstep interpolacja, glow pass zamiast shadowBlur, peak dots
 - Osobny kanał IPC `audio-pip:vizData` co 60ms (dane frequency wysyłane 16× częściej niż wcześniej)
@@ -1827,21 +1857,22 @@ media-server.ts (94 linie)
 
 **Zmodyfikowane pliki:**
 
-| Plik | Zmiana |
-|------|--------|
-| `src/renderer/src/pip-audio/App.vue` | 4 tryby, canvas viz 192 bary, coverType obsługa video, shuffle/repeat state, optymalizacja 60fps |
-| `src/renderer/src/composables/useAudioPiP.ts` | +`coverType`, `shuffle`, `repeat` w stanie; osobny `vizInterval` 60ms |
-| `src/main/audio-pip-manager.ts` | +`coverType`, `shuffle`, `repeat` w interface; handler `audio-pip:vizData` |
-| `src/renderer/src/components/settings/SettingsPiP.vue` | +pipWide |
-| `src/renderer/src/types/settings.ts` | `audioPipMode` → `'wide'` |
-| `src/renderer/src/locales/{en,pl}.ts` | +pipWide label |
-| `src/renderer/src/pip-audio/style.css` | Usunięto nieużywane style `.btn-viz-*` |
+| Plik                                                   | Zmiana                                                                                           |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `src/renderer/src/pip-audio/App.vue`                   | 4 tryby, canvas viz 192 bary, coverType obsługa video, shuffle/repeat state, optymalizacja 60fps |
+| `src/renderer/src/composables/useAudioPiP.ts`          | +`coverType`, `shuffle`, `repeat` w stanie; osobny `vizInterval` 60ms                            |
+| `src/main/audio-pip-manager.ts`                        | +`coverType`, `shuffle`, `repeat` w interface; handler `audio-pip:vizData`                       |
+| `src/renderer/src/components/settings/SettingsPiP.vue` | +pipWide                                                                                         |
+| `src/renderer/src/types/settings.ts`                   | `audioPipMode` → `'wide'`                                                                        |
+| `src/renderer/src/locales/{en,pl}.ts`                  | +pipWide label                                                                                   |
+| `src/renderer/src/pip-audio/style.css`                 | Usunięto nieużywane style `.btn-viz-*`                                                           |
 
 ---
 
 ### 18.14 Sprint 11 — Video PiP: Vue + theme reactivity + controls + pre-buffer (2026-07-29)
 
 **Video PiP przerobiony na Vue:**
+
 - `pip-video/App.vue` — komponent Vue z `<video>`, overlay UI (close, maximize, settings), JASSUB subtitle integration
 - `pip-video/style.css` — Tailwind + `@theme` ze zmiennymi kolorów + style `.top-btn`/`.close-btn`
 - `pip-video-main.ts` — entry point: `createApp(PipVideoApp).mount('#app')`
@@ -1850,10 +1881,12 @@ media-server.ts (94 linie)
 - Video PiP reaguje na zmianę motywu i koloru przewodniego przez kanał `pip:theme`
 
 **Theme propagation:**
+
 - `pip-manager.ts` — dodany handler `ipcMain.on('pip:theme')`, przechowywanie `cssVars`, wysyłanie do PiP przy `did-finish-load`
 - `App.vue` — `applyTheme()` wysyła `themeVars` do obu PiP: `audio-pip:theme` i `pip:theme`
 
 **Nowe przyciski w PiP:**
+
 - **Maximize** (&#x26F6;) — zamyka PiP, wznawia odtwarzanie w głównym oknie `/player` z zachowaniem czasu
 - **Settings** (&#x2699;) — otwiera overlay z:
   - **Subtitles toggle** — włącz/wyłącz napisy (z zapamiętaniem ostatnich danych subtitle)
@@ -1861,14 +1894,17 @@ media-server.ts (94 linie)
   - **Contrast** — suwak 10-200% (CSS filter na `<video>`)
 
 **Pre-buffer:**
+
 - Nowe ustawienie `pipPreBuffer` (domyślnie `false`) w `PlaybackSettings`
 - Gdy włączone, `useVideoPlayer.setupVideo()` automatycznie woła `pip.preload()` z bieżącym wideo i napisami
 - PiP ładuje wideo w tle, gotowe do natychmiastowego pokazania
 
 **IPC:**
+
 - `pip:maximize` — PiP → main → renderer: zamyka PiP, otwiera `/player`, wznawia od `savedTime`
 
 **Czyszczenie logów:**
+
 - Usunięto 3 logi w `subtitle-handlers.ts`:
   - `[Onda/subtitles] extractEmbedded stream=2 codec=ass`
   - `[Onda/attachments] ffmpeg dump_all failed ...`
@@ -1876,23 +1912,23 @@ media-server.ts (94 linie)
 
 **Zmodyfikowane pliki:**
 
-| Plik | Zmiana |
-|------|--------|
-| `src/renderer/src/pip-video/App.vue` | **NOWY** — Vue component: video, JASSUB, maximize, settings overlay, brightness/contrast filtry |
-| `src/renderer/src/pip-video/style.css` | **NOWY** — Tailwind + theme vars + `.top-btn`/`.close-btn` |
-| `src/renderer/src/pip-video-main.ts` | **NOWY** — entry point |
-| `src/renderer/pip.html` | Zmieniony na Vue mount |
-| `src/renderer/src/pip.ts` | **USUNIĘTY** |
-| `src/main/pip-manager.ts` | +`pip:theme`, `pip:maximize` handlers; cssVars storage; send na did-finish-load |
-| `src/renderer/src/App.vue` | `applyTheme()` wysyła też `pip:theme` |
-| `src/main/ipc/subtitle-handlers.ts` | Usunięto 3 logi |
-| `src/renderer/src/composables/usePiP.ts` | +`onMaximize` callback, listener `pip:maximize` |
-| `src/renderer/src/views/PlayerView.vue` | +`onMaximize`: stop PiP, seek, play, push `/player` |
-| `src/renderer/src/composables/useVideoPlayer.ts` | +pre-buffer: `pip.preload()` w `setupVideo()` gdy `pipPreBuffer` |
-| `src/renderer/src/types/settings.ts` | +`pipPreBuffer: boolean` |
-| `src/renderer/src/utils/constants.ts` | +`pipPreBuffer: false` |
-| `src/renderer/src/components/settings/SettingsPiP.vue` | +toggle Pre-buffer |
-| `src/renderer/src/locales/{en,pl}.ts` | +`pipPreBuffer` |
+| Plik                                                   | Zmiana                                                                                          |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `src/renderer/src/pip-video/App.vue`                   | **NOWY** — Vue component: video, JASSUB, maximize, settings overlay, brightness/contrast filtry |
+| `src/renderer/src/pip-video/style.css`                 | **NOWY** — Tailwind + theme vars + `.top-btn`/`.close-btn`                                      |
+| `src/renderer/src/pip-video-main.ts`                   | **NOWY** — entry point                                                                          |
+| `src/renderer/pip.html`                                | Zmieniony na Vue mount                                                                          |
+| `src/renderer/src/pip.ts`                              | **USUNIĘTY**                                                                                    |
+| `src/main/pip-manager.ts`                              | +`pip:theme`, `pip:maximize` handlers; cssVars storage; send na did-finish-load                 |
+| `src/renderer/src/App.vue`                             | `applyTheme()` wysyła też `pip:theme`                                                           |
+| `src/main/ipc/subtitle-handlers.ts`                    | Usunięto 3 logi                                                                                 |
+| `src/renderer/src/composables/usePiP.ts`               | +`onMaximize` callback, listener `pip:maximize`                                                 |
+| `src/renderer/src/views/PlayerView.vue`                | +`onMaximize`: stop PiP, seek, play, push `/player`                                             |
+| `src/renderer/src/composables/useVideoPlayer.ts`       | +pre-buffer: `pip.preload()` w `setupVideo()` gdy `pipPreBuffer`                                |
+| `src/renderer/src/types/settings.ts`                   | +`pipPreBuffer: boolean`                                                                        |
+| `src/renderer/src/utils/constants.ts`                  | +`pipPreBuffer: false`                                                                          |
+| `src/renderer/src/components/settings/SettingsPiP.vue` | +toggle Pre-buffer                                                                              |
+| `src/renderer/src/locales/{en,pl}.ts`                  | +`pipPreBuffer`                                                                                 |
 
 ---
 
@@ -1900,40 +1936,40 @@ media-server.ts (94 linie)
 
 **Problemy i fixy:**
 
-| # | Problem | Przyczyna | Rozwiązanie |
-|---|---------|-----------|-------------|
-| 1 | **Maximize zamykał PiP ale nie wznawiał w głównym oknie + `structuredClone` błąd** | `pip:maximize` handler wołał `this.window.hide()` zamiast `this.stop()`, a `onMaximize` w PlayerView wołał `pip.stop()` → podwójne `notifyClosed` → race condition | `pip:maximize` woła `this.stop()` (full clear + notifyClosed), `onMaximize` nie woła `pip.stop()`, zamiast tego `toggleFullscreen()` |
-| 2 | **PiP zamknięty X na innym widoku → nowy film nie startował od zera** | `pip:closed` IPC listener był w `usePiP.ts` (PlayerView-scoped). Gdy PlayerView odmontowany, listener nieaktualny — `player.pipActive` zostawał `true` | Globalne `pip:closed`/`pip:ended`/`pip:maximize` listenery w `App.vue` (zawsze aktywne) aktualizują store |
-| 3 | **`structuredClone` błąd na fontach** | `structuredClone()` w `useSubtitleRenderer` wyrzucał `DataCloneError` | try-catch w `getLastSubtitleData()` i `preparePiPSubtitleData()`, fallback do raw object |
-| 4 | **i18n w PiP — język nie zmieniał się z aplikacją** | PiP używał `navigator.language` (statyczny) | Nowy kanał `pip:locale` — `App.vue` wysyła locale przy starcie i przy zmianie, PiP reaguje przez listener |
-| 5 | **Nowy film po PiP pokazywał starą ramkę + brak dźwięku** | `pipTime` nie czyścił się przy `onClosed` i `setTrack`, powodując seek do starego czasu | `player.pipTime = 0` dodane w `onClosed`, `setTrack`, plus globalny `pip:closed` handler |
-| 6 | **Powrót do video tab z PiP aktywnym resetował PiP do 0** | `init()` wołał `pip.loadTrack()` który wysyłał `pip:videoSrc` + `start=0` | `init()` i `currentTrack` watcher nie wołają `loadTrack()` gdy PiP aktywny — tylko update napisów |
-| 7 | **Maximize gdy PlayerView nie zamontowany** | `router.push('/player')` + `toggleFullscreen()` wymagał zamontowanego PlayerView | `pendingFullscreen` flag w player store — PlayerView sprawdza w `onMounted` i wchodzi w fullscreen |
+| #   | Problem                                                                            | Przyczyna                                                                                                                                                          | Rozwiązanie                                                                                                                          |
+| --- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | **Maximize zamykał PiP ale nie wznawiał w głównym oknie + `structuredClone` błąd** | `pip:maximize` handler wołał `this.window.hide()` zamiast `this.stop()`, a `onMaximize` w PlayerView wołał `pip.stop()` → podwójne `notifyClosed` → race condition | `pip:maximize` woła `this.stop()` (full clear + notifyClosed), `onMaximize` nie woła `pip.stop()`, zamiast tego `toggleFullscreen()` |
+| 2   | **PiP zamknięty X na innym widoku → nowy film nie startował od zera**              | `pip:closed` IPC listener był w `usePiP.ts` (PlayerView-scoped). Gdy PlayerView odmontowany, listener nieaktualny — `player.pipActive` zostawał `true`             | Globalne `pip:closed`/`pip:ended`/`pip:maximize` listenery w `App.vue` (zawsze aktywne) aktualizują store                            |
+| 3   | **`structuredClone` błąd na fontach**                                              | `structuredClone()` w `useSubtitleRenderer` wyrzucał `DataCloneError`                                                                                              | try-catch w `getLastSubtitleData()` i `preparePiPSubtitleData()`, fallback do raw object                                             |
+| 4   | **i18n w PiP — język nie zmieniał się z aplikacją**                                | PiP używał `navigator.language` (statyczny)                                                                                                                        | Nowy kanał `pip:locale` — `App.vue` wysyła locale przy starcie i przy zmianie, PiP reaguje przez listener                            |
+| 5   | **Nowy film po PiP pokazywał starą ramkę + brak dźwięku**                          | `pipTime` nie czyścił się przy `onClosed` i `setTrack`, powodując seek do starego czasu                                                                            | `player.pipTime = 0` dodane w `onClosed`, `setTrack`, plus globalny `pip:closed` handler                                             |
+| 6   | **Powrót do video tab z PiP aktywnym resetował PiP do 0**                          | `init()` wołał `pip.loadTrack()` który wysyłał `pip:videoSrc` + `start=0`                                                                                          | `init()` i `currentTrack` watcher nie wołają `loadTrack()` gdy PiP aktywny — tylko update napisów                                    |
+| 7   | **Maximize gdy PlayerView nie zamontowany**                                        | `router.push('/player')` + `toggleFullscreen()` wymagał zamontowanego PlayerView                                                                                   | `pendingFullscreen` flag w player store — PlayerView sprawdza w `onMounted` i wchodzi w fullscreen                                   |
 
 **Zmodyfikowane pliki (Sprint 12):**
 
-| Plik | Zmiana |
-|------|--------|
-| `src/main/pip-manager.ts` | `pip:maximize` → `this.stop()`; +`pipLocale`, +`pip:locale` handler; locale w `did-finish-load` |
-| `src/preload/index.ts` | Wszystkie `ipcRenderer.send/invoke` objęte try-catch (`trySend`/`tryInvoke`) |
-| `src/renderer/src/App.vue` | +globalne `pip:closed`/`ended`/`maximize` listenery; +`pip:locale` w `applyTheme()` i w watcherze locale |
-| `src/renderer/src/stores/player.ts` | +`pendingFullscreen`, `setTrack` czyści `pipTime` |
-| `src/renderer/src/composables/useVideoPlayer.ts` | `init()` i `currentTrack` watcher nie wołają `loadTrack()` gdy PiP aktywny |
-| `src/renderer/src/composables/useSubtitleRenderer.ts` | `structuredClone` w `getLastSubtitleData()` i `preparePiPSubtitleData()` objęte try-catch |
-| `src/renderer/src/views/PlayerView.vue` | +`import nextTick`; +`pendingFullscreen` check w `onMounted`; `onClosed`+`onMaximize` czyszczą `pipTime` + `toggleFullscreen()` |
-| `src/renderer/src/pip-video/App.vue` | +`currentLocale` ref, +`t(key)` i18n, +`pip:locale` listener; locale zamiast `navigator.language` |
+| Plik                                                  | Zmiana                                                                                                                          |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `src/main/pip-manager.ts`                             | `pip:maximize` → `this.stop()`; +`pipLocale`, +`pip:locale` handler; locale w `did-finish-load`                                 |
+| `src/preload/index.ts`                                | Wszystkie `ipcRenderer.send/invoke` objęte try-catch (`trySend`/`tryInvoke`)                                                    |
+| `src/renderer/src/App.vue`                            | +globalne `pip:closed`/`ended`/`maximize` listenery; +`pip:locale` w `applyTheme()` i w watcherze locale                        |
+| `src/renderer/src/stores/player.ts`                   | +`pendingFullscreen`, `setTrack` czyści `pipTime`                                                                               |
+| `src/renderer/src/composables/useVideoPlayer.ts`      | `init()` i `currentTrack` watcher nie wołają `loadTrack()` gdy PiP aktywny                                                      |
+| `src/renderer/src/composables/useSubtitleRenderer.ts` | `structuredClone` w `getLastSubtitleData()` i `preparePiPSubtitleData()` objęte try-catch                                       |
+| `src/renderer/src/views/PlayerView.vue`               | +`import nextTick`; +`pendingFullscreen` check w `onMounted`; `onClosed`+`onMaximize` czyszczą `pipTime` + `toggleFullscreen()` |
+| `src/renderer/src/pip-video/App.vue`                  | +`currentLocale` ref, +`t(key)` i18n, +`pip:locale` listener; locale zamiast `navigator.language`                               |
 
 ---
 
 ### 18.16 Sprint 13 — F11a–e: images w library, playlisty reorder, statystyki, tab reorder, QoL (2026-07-31)
 
-| Podfaza | Opis |
-|---------|------|
+| Podfaza                         | Opis                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **F11a** Image viewer w library | Skan obrazów (`IMAGE_EXTS`, `processImageFile`, typ `'image'` w `MediaFile.type`, `imageCount`/`imageTracks` w store), nowa zakładka `images` w `LibraryView.vue` (siatka miniatur przez `mediaServerUrl`), reuse `ImageViewer.vue` przez adapter `imageFileItems` (MediaFile → FileItem), i18n `library.images`/`library.noImages` |
-| **F11b** Playlisty reorder | `reorderPlaylistTrack(playlistId, fromIdx, toIdx)` w `library.ts` (+`updatedAt`, `savePlaylists`); `LibraryTrackRow` wysyła `{ paths, playlistId, dragIndex }`; `LibraryPlaylistManager` rozróżnia reorder playlisty od dropu z biblioteki (`parseDragPayload`, `onTrackDrop`, korekta indeksu, highlight `dragOverTrackIdx`) |
-| **F11c** Statystyki odtwarzania | Bugfix: `recordPlay(track)` w `player.ts` (wołany w `setTrack`/`prevTrack`/`playFromHistory`) inkrementuje `playCount` + ustawia `lastPlayed` przez `updateTrack` (tylko tracki z biblioteki), `persistStats()` debounced 1s → `library:saveScanned` — `recentTracks`/`mostPlayed` teraz zasilane |
-| **F11d** Tab reorder | `reorderTab(from, to)` w `explorer.ts` z korektą `activeTabIndex`; `ExplorerView.vue` DnD kart (reorder wewnątrz paska vs tab→window, `isDraggingTab` wyłącza auto-switch) |
-| **F11e** QoL | Fix `prefer-const` (`preFullscreenBounds` w `index.ts`), aktualizacja `plan.md` + `project.md` |
+| **F11b** Playlisty reorder      | `reorderPlaylistTrack(playlistId, fromIdx, toIdx)` w `library.ts` (+`updatedAt`, `savePlaylists`); `LibraryTrackRow` wysyła `{ paths, playlistId, dragIndex }`; `LibraryPlaylistManager` rozróżnia reorder playlisty od dropu z biblioteki (`parseDragPayload`, `onTrackDrop`, korekta indeksu, highlight `dragOverTrackIdx`)       |
+| **F11c** Statystyki odtwarzania | Bugfix: `recordPlay(track)` w `player.ts` (wołany w `setTrack`/`prevTrack`/`playFromHistory`) inkrementuje `playCount` + ustawia `lastPlayed` przez `updateTrack` (tylko tracki z biblioteki), `persistStats()` debounced 1s → `library:saveScanned` — `recentTracks`/`mostPlayed` teraz zasilane                                   |
+| **F11d** Tab reorder            | `reorderTab(from, to)` w `explorer.ts` z korektą `activeTabIndex`; `ExplorerView.vue` DnD kart (reorder wewnątrz paska vs tab→window, `isDraggingTab` wyłącza auto-switch)                                                                                                                                                          |
+| **F11e** QoL                    | Fix `prefer-const` (`preFullscreenBounds` w `index.ts`), aktualizacja `plan.md` + `project.md`                                                                                                                                                                                                                                      |
 
 **Weryfikacja F11:** `vue-tsc` 0 błędów, **153/153 testy pass** (nowe: `explorer.test.ts` 5× reorderTab, `player.test.ts` 3× recordPlay, `library.test.ts` reorder+image), `electron-vite build` OK, eslint 0 nowych błędów.
 

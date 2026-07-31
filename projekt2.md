@@ -4,19 +4,19 @@
 
 ### 1.1 Statystyki kodu
 
-| Metryka             | Wartość                                          |
-| ------------------- | ------------------------------------------------ |
-| Pliki źródłowe      | 106 (.ts + .vue + .css + .html)                  |
-| Linie kodu          | ~16,287                                          |
-| Main process        | 5 plików, ~2,533 linii                           |
-| Preload             | 2 pliki, ~287 linii                              |
-| Shared              | 2 pliki, ~187 linii                              |
-| Renderer            | 95 plików, ~13,254 linii                         |
-| Pliki testowe       | 4 (141 testów)                                   |
-| Zależności npm      | 38 (17 runtime + 21 dev)                         |
-| `typecheck`         | 100% clean                                       |
-| `build`             | OK                                               |
-| `lint`              | 0 błędów                                         |
+| Metryka        | Wartość                         |
+| -------------- | ------------------------------- |
+| Pliki źródłowe | 106 (.ts + .vue + .css + .html) |
+| Linie kodu     | ~16,287                         |
+| Main process   | 5 plików, ~2,533 linii          |
+| Preload        | 2 pliki, ~287 linii             |
+| Shared         | 2 pliki, ~187 linii             |
+| Renderer       | 95 plików, ~13,254 linii        |
+| Pliki testowe  | 4 (141 testów)                  |
+| Zależności npm | 38 (17 runtime + 21 dev)        |
+| `typecheck`    | 100% clean                      |
+| `build`        | OK                              |
+| `lint`         | 0 błędów                        |
 
 ### 1.2 Co działa dobrze
 
@@ -33,25 +33,25 @@
 
 ### 1.3 Co jest do poprawy (z raport.md — niezrealizowane)
 
-| ID    | Problem                                                  | Plik                      | Priority        | Status          |
-| ----- | -------------------------------------------------------- | ------------------------- | --------------- | --------------- |
-| P2.4  | Brak wirtualizacji dla długich list                      | LibraryView, ExplorerView | Wysoki          | ✅ Wykonane     |
-| P2.5  | `reactive(Map)` coverCache — ograniczona reaktywność     | stores/player.ts          | Średni          | 🟡 Częściowo    |
-| P2.8  | Lazy loading Lucide ikon w komponentach                  | SettingsView + inne       | Niski           | 🔴 Otwarty      |
+| ID    | Problem                                                  | Plik                      | Priority        | Status                                             |
+| ----- | -------------------------------------------------------- | ------------------------- | --------------- | -------------------------------------------------- |
+| P2.4  | Brak wirtualizacji dla długich list                      | LibraryView, ExplorerView | Wysoki          | ✅ Wykonane                                        |
+| P2.5  | `reactive(Map)` coverCache — ograniczona reaktywność     | stores/player.ts          | Średni          | 🟡 Częściowo                                       |
+| P2.8  | Lazy loading Lucide ikon w komponentach                  | SettingsView + inne       | Niski           | 🔴 Otwarty                                         |
 | P2.10 | `encodeURI()` brak dla ścieżek z `#`, `?`                | audioEngine.ts            | Niski (rzadkie) | 🟡 Częściowo (audioEngine już ma, ImageViewer też) |
-| P3.8  | `createMediaElementSource` może crashować przy reuse     | audioEngine.ts            | Średni          | ✅ Wykonane     |
-| P4.5  | DI (dependency injection) — trudne mockowanie            | Wszystkie moduły          | Niski           | 🔴 Otwarty      |
-| P4.8  | Puste `init()` w modułach — boilerplate                  | ExplorerModule itp.       | Niski           | 🔴 Otwarty      |
-| P5.1  | Tylko 2 pliki testowe — małe pokrycie                    | —                         | Średni          | 🟡 4 pliki/141  |
-| P5.2  | `any` w `lfa-ponyfill` i JASSUB (brak typów)             | —                         | Niski           | 🔴 Otwarty      |
-| P5.3  | Polskie stringi UI (brak i18n)                           | Wszystkie .vue            | Niski           | ✅ Wykonane     |
-| P5.6  | Logger istnieje, ale nie wszędzie używany                | Kilka plików              | Niski           | 🟡 Częściowo    |
-| P5.7  | ESLint no-explicit-any = warn (docelowo error)           | eslint.config.mjs         | Niski           | 🔴 Otwarty      |
-| P6.2  | yt:* placeholdery (nadal nie zaimplementowane)           | handlers.ts               | Średni          | 🔴 Otwarty      |
-| P6.3  | update:* placeholdery                                    | handlers.ts               | Niski           | 🔴 Otwarty      |
-| P6.4  | SettingsNetwork, SettingsApiKeys — UI bez backendu       | components/settings/      | Niski           | 🔴 Otwarty      |
-| P6.5  | SettingsShortcuts — tylko wyświetla, nie edytuje         | components/settings/      | Niski           | ✅ Wykonane     |
-| P6.6  | pip.html/pip.ts — osobny bundle, nie wiadomo czy używany | —                         | Niski           | 🔴 Otwarty      |
+| P3.8  | `createMediaElementSource` może crashować przy reuse     | audioEngine.ts            | Średni          | ✅ Wykonane                                        |
+| P4.5  | DI (dependency injection) — trudne mockowanie            | Wszystkie moduły          | Niski           | 🔴 Otwarty                                         |
+| P4.8  | Puste `init()` w modułach — boilerplate                  | ExplorerModule itp.       | Niski           | 🔴 Otwarty                                         |
+| P5.1  | Tylko 2 pliki testowe — małe pokrycie                    | —                         | Średni          | 🟡 4 pliki/141                                     |
+| P5.2  | `any` w `lfa-ponyfill` i JASSUB (brak typów)             | —                         | Niski           | 🔴 Otwarty                                         |
+| P5.3  | Polskie stringi UI (brak i18n)                           | Wszystkie .vue            | Niski           | ✅ Wykonane                                        |
+| P5.6  | Logger istnieje, ale nie wszędzie używany                | Kilka plików              | Niski           | 🟡 Częściowo                                       |
+| P5.7  | ESLint no-explicit-any = warn (docelowo error)           | eslint.config.mjs         | Niski           | 🔴 Otwarty                                         |
+| P6.2  | yt:* placeholdery (nadal nie zaimplementowane)           | handlers.ts               | Średni          | 🔴 Otwarty                                         |
+| P6.3  | update:* placeholdery                                    | handlers.ts               | Niski           | 🔴 Otwarty                                         |
+| P6.4  | SettingsNetwork, SettingsApiKeys — UI bez backendu       | components/settings/      | Niski           | 🔴 Otwarty                                         |
+| P6.5  | SettingsShortcuts — tylko wyświetla, nie edytuje         | components/settings/      | Niski           | ✅ Wykonane                                        |
+| P6.6  | pip.html/pip.ts — osobny bundle, nie wiadomo czy używany | —                         | Niski           | 🔴 Otwarty                                         |
 
 ---
 
@@ -314,15 +314,15 @@ type IpcInvoke = <C extends keyof IpcChannels>(
 
 **Stan realizacji:**
 
-| Faza               | Status        | Zrobione                                       |
-| ------------------- | ------------- | ---------------------------------------------- |
-| Faza 5 (YouTube)    | 🟡 Zastąpiony | Zastąpiony przez rzeczywistą Fazę 5 (Library)  |
-| Faza 6 (Library)    | ✅ Wykonane   | Biblioteka, playlisty, tagi, MusicBrainz       |
-| Faza 7 (Jakość)     | 🔴 Otwarty    | 141 testów, ale nadal niskie pokrycie          |
-| Faza 8 (Perform.)   | 🟡 Częściowo  | coverCache LRU, lazy covers, IntersectionObs.  |
-| Faza 9 (UI/UX)      | 🟡 Częściowo  | CommandPalette, Toast, DnD, i18n               |
-| Faza 10 (Infrastr.) | 🔴 Otwarty    | .              |
-| Faza 11 (Funkcje)   | 🔴 Otwarty    |                                                 |
+| Faza                | Status        | Zrobione                                      |
+| ------------------- | ------------- | --------------------------------------------- |
+| Faza 5 (YouTube)    | 🟡 Zastąpiony | Zastąpiony przez rzeczywistą Fazę 5 (Library) |
+| Faza 6 (Library)    | ✅ Wykonane   | Biblioteka, playlisty, tagi, MusicBrainz      |
+| Faza 7 (Jakość)     | 🔴 Otwarty    | 141 testów, ale nadal niskie pokrycie         |
+| Faza 8 (Perform.)   | 🟡 Częściowo  | coverCache LRU, lazy covers, IntersectionObs. |
+| Faza 9 (UI/UX)      | 🟡 Częściowo  | CommandPalette, Toast, DnD, i18n              |
+| Faza 10 (Infrastr.) | 🔴 Otwarty    | .                                             |
+| Faza 11 (Funkcje)   | 🔴 Otwarty    |                                               |
 
 **Obecne priorytety:**
 
@@ -485,36 +485,36 @@ _Ostatnia aktualizacja: 2026-07-23_
 
 ### 12.1 Co zrobiono
 
-| #  | Problem                                                              | Rozwiązanie                                                                                                                                                             | Pliki                                                             |
-| -- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| 1  | **Crossfade silence** — po crossfade nowy utwór cichy                 | Po swap: `sourceNodeB.connect(crossfadeGainA)` zamiast zostawiać B na `crossfadeGainB` (gain=0)                                                                         | `audioEngine.ts`                                                 |
-| 2  | **EQ bypass** — drugi kanał crossfade omijał EQ                      | `crossfadeGainB` podłączony przez EQ chain zamiast bezpośrednio do `gainNode`                                                                                           | `audioEngine.ts`                                                 |
-| 3  | **Preload leak** — zmiana utworu nie czyściła preload                 | `loadTrack()` czyści `nextAudioEl`/`sourceNodeB`/`crossfadeTimer`/`isCrossfading`                                                                                       | `audioEngine.ts`                                                 |
-| 4  | **videoSourceNode always-recreate** — nowy `<video>` = nowy source    | Dodano `videoEl` field; `disconnectVideoElement()` porównuje referencję zamiast castować na `any`                                                                       | `audioEngine.ts`                                                 |
-| 5  | **destroy() cleanup** — `visibilitychange` listener nie usuwany       | `destroy()` usuwa listener i nulluje `videoEl`                                                                                                                          | `audioEngine.ts`                                                 |
-| 6  | **prevTrack history** — poprzedni utwór gubiony z historii            | `prevTrack()` przesuwa obecny do `history` przed shiftem poprzedniego                                                                                                    | `player.ts`                                                      |
-| 7  | **loadFavorites** — ulubione nie ładowane przy starcie                | `loadFavorites()` wołane z `.catch(() => {})` w setup store                                                                                                              | `player.ts`                                                      |
-| 8  | **formatDuration/formatFileSize** — ujemne i ułamkowe dane            | `formatDuration`: clamp do 0 + floor; `formatFileSize`: clamp do 0, `< 1 B` dla ułamków, cap unit index                                                                  | `formatters.ts`, `formatters.test.ts`                            |
-| 9  | **Cache memory leak** — `coverResultCache`/`durationCache` bez limitu | Dodano `cacheSet()` z evict (CACHE_MAX_SIZE=5000)                                                                                                                        | `handlers.ts`                                                    |
-| 10 | **Persistent cover race condition** — podwójny zapis do store         | Per-file lock przez `coverCacheLocks` Set + `while` wait + `finally` cleanup                                                                                              | `handlers.ts`                                                    |
-| 11 | **processInChunks no-op** — promisy startowały przed chunkowaniem     | `filePromises` → `fileTasks` (thunki), procesowane 50 na raz                                                                                                              | `handlers.ts`                                                    |
-| 12 | **Volume distortion** — sygnał mnożony 10× przez równoległe filtry    | `ensureEqChain()`: usunięto pętlę `for..connect` do wszystkich filtrów (duplikacja połączeń). Zostawiono tylko szeregowy chain: firstFilter → ... → lastFilter → gainNode | `audioEngine.ts`                                                 |
-| 13 | **Brak okładek wideo** — okładka wideo nie pokazywała się dla audio   | Dodano `findSiblingVideo()`: sprawdza pasujący plik wideo PRZED cache. Jeśli znaleziony → zwraca video od razu, omijając cachowaną okładkę obrazkową                      | `handlers.ts`                                                    |
-| 14 | **Skanowanie 50/50** — audio processing all-first                     | Zbiórka audio/video osobno, interleave w chunkach (co drugi audio, co drugi video)                                                                                        | `handlers.ts`                                                    |
-| 15 | **Zmiana okładki nie odświeżała widoku** — stare cache zwracane       | `writeCover` usuwa z `coverResultCache` + persistent cache. `invalidateCoverCache` woła `loadCover` ponownie                                                              | `handlers.ts`, `player.ts`                                       |
-| 16 | **Typ folderu** — 1 video + 99 audio = 'mixed'                       | Ratio: ≥70% audio → 'audio', ≥70% video → 'video', else 'mixed'                                                                                                          | `handlers.ts`                                                    |
-| 17 | **dialog:saveFile return type** — brak `canceled`                     | Typ zmieniony na `Electron.SaveDialogReturnValue`                                                                                                                        | `ipc.ts`                                                         |
+| #   | Problem                                                               | Rozwiązanie                                                                                                                                                               | Pliki                                 |
+| --- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| 1   | **Crossfade silence** — po crossfade nowy utwór cichy                 | Po swap: `sourceNodeB.connect(crossfadeGainA)` zamiast zostawiać B na `crossfadeGainB` (gain=0)                                                                           | `audioEngine.ts`                      |
+| 2   | **EQ bypass** — drugi kanał crossfade omijał EQ                       | `crossfadeGainB` podłączony przez EQ chain zamiast bezpośrednio do `gainNode`                                                                                             | `audioEngine.ts`                      |
+| 3   | **Preload leak** — zmiana utworu nie czyściła preload                 | `loadTrack()` czyści `nextAudioEl`/`sourceNodeB`/`crossfadeTimer`/`isCrossfading`                                                                                         | `audioEngine.ts`                      |
+| 4   | **videoSourceNode always-recreate** — nowy `<video>` = nowy source    | Dodano `videoEl` field; `disconnectVideoElement()` porównuje referencję zamiast castować na `any`                                                                         | `audioEngine.ts`                      |
+| 5   | **destroy() cleanup** — `visibilitychange` listener nie usuwany       | `destroy()` usuwa listener i nulluje `videoEl`                                                                                                                            | `audioEngine.ts`                      |
+| 6   | **prevTrack history** — poprzedni utwór gubiony z historii            | `prevTrack()` przesuwa obecny do `history` przed shiftem poprzedniego                                                                                                     | `player.ts`                           |
+| 7   | **loadFavorites** — ulubione nie ładowane przy starcie                | `loadFavorites()` wołane z `.catch(() => {})` w setup store                                                                                                               | `player.ts`                           |
+| 8   | **formatDuration/formatFileSize** — ujemne i ułamkowe dane            | `formatDuration`: clamp do 0 + floor; `formatFileSize`: clamp do 0, `< 1 B` dla ułamków, cap unit index                                                                   | `formatters.ts`, `formatters.test.ts` |
+| 9   | **Cache memory leak** — `coverResultCache`/`durationCache` bez limitu | Dodano `cacheSet()` z evict (CACHE_MAX_SIZE=5000)                                                                                                                         | `handlers.ts`                         |
+| 10  | **Persistent cover race condition** — podwójny zapis do store         | Per-file lock przez `coverCacheLocks` Set + `while` wait + `finally` cleanup                                                                                              | `handlers.ts`                         |
+| 11  | **processInChunks no-op** — promisy startowały przed chunkowaniem     | `filePromises` → `fileTasks` (thunki), procesowane 50 na raz                                                                                                              | `handlers.ts`                         |
+| 12  | **Volume distortion** — sygnał mnożony 10× przez równoległe filtry    | `ensureEqChain()`: usunięto pętlę `for..connect` do wszystkich filtrów (duplikacja połączeń). Zostawiono tylko szeregowy chain: firstFilter → ... → lastFilter → gainNode | `audioEngine.ts`                      |
+| 13  | **Brak okładek wideo** — okładka wideo nie pokazywała się dla audio   | Dodano `findSiblingVideo()`: sprawdza pasujący plik wideo PRZED cache. Jeśli znaleziony → zwraca video od razu, omijając cachowaną okładkę obrazkową                      | `handlers.ts`                         |
+| 14  | **Skanowanie 50/50** — audio processing all-first                     | Zbiórka audio/video osobno, interleave w chunkach (co drugi audio, co drugi video)                                                                                        | `handlers.ts`                         |
+| 15  | **Zmiana okładki nie odświeżała widoku** — stare cache zwracane       | `writeCover` usuwa z `coverResultCache` + persistent cache. `invalidateCoverCache` woła `loadCover` ponownie                                                              | `handlers.ts`, `player.ts`            |
+| 16  | **Typ folderu** — 1 video + 99 audio = 'mixed'                        | Ratio: ≥70% audio → 'audio', ≥70% video → 'video', else 'mixed'                                                                                                           | `handlers.ts`                         |
+| 17  | **dialog:saveFile return type** — brak `canceled`                     | Typ zmieniony na `Electron.SaveDialogReturnValue`                                                                                                                         | `ipc.ts`                              |
 
 ### 12.2 Performance
 
-| #  | Optymalizacja                                                                  | Pliki                            |
-| -- | ------------------------------------------------------------------------------ | -------------------------------- |
-| 1  | Lazy loading covers — IntersectionObserver + batch 5 IPC/frame przez IdleCallback | `MediaCover.vue`, `player.ts`    |
-| 2  | music-metadata zamiast jsmediatags (szybsze, więcej formatów)                  | `handlers.ts`, `package.json`    |
-| 3  | Parallel scanDir — concurrent subdirectories, chunked file processing (50/thunk) | `handlers.ts`                    |
-| 4  | Vendor code splitting — `optimizeDeps` w electron-vite                         | `electron.vite.config.ts`        |
-| 5  | Lazy AudioContext — tworzony przy pierwszym `ensureEqChain()`                  | `audioEngine.ts`                 |
-| 6  | Crossfade transition — direct swap zamiast `setTimeout` fade                   | `audioEngine.ts`                 |
+| #   | Optymalizacja                                                                     | Pliki                         |
+| --- | --------------------------------------------------------------------------------- | ----------------------------- |
+| 1   | Lazy loading covers — IntersectionObserver + batch 5 IPC/frame przez IdleCallback | `MediaCover.vue`, `player.ts` |
+| 2   | music-metadata zamiast jsmediatags (szybsze, więcej formatów)                     | `handlers.ts`, `package.json` |
+| 3   | Parallel scanDir — concurrent subdirectories, chunked file processing (50/thunk)  | `handlers.ts`                 |
+| 4   | Vendor code splitting — `optimizeDeps` w electron-vite                            | `electron.vite.config.ts`     |
+| 5   | Lazy AudioContext — tworzony przy pierwszym `ensureEqChain()`                     | `audioEngine.ts`              |
+| 6   | Crossfade transition — direct swap zamiast `setTimeout` fade                      | `audioEngine.ts`              |
 
 ### 12.3 Zmiany w architekturze
 
@@ -537,13 +537,13 @@ _Ostatnia aktualizacja: 2026-07-23_
 
 ### 13.1 Co zrobiono
 
-| #  | Problem                                                                                                      | Rozwiązanie                                                                                                                                                                                                                                                                                        | Pliki                                               |
-| -- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| 1  | **AppMenu dropdown zamyka się przy najechaniu** — `@mouseleave="closeDropdown"` na parent bar fire'uje gdy kursor przechodzi z przycisku do dropdownu | Zamieniono na document click-away handler (`onClickAway`) + `ref="menuBar"`. Usunięto `@mouseleave="closeDropdown"`                                                                                                                                                                                | `AppMenu.vue`                                       |
-| 2  | **Brak okładek wideo w bibliotece** — ffmpeg extraction timeout przy równoległym skanowaniu, canvas capture też nie działał niezawodnie | `VideoCard` zawsze przekazuje `{ type: 'video', data: path }` jako fallback gdy brak cache. `MediaCover` renderuje `<video preload="auto" muted playsinline>` pokazujące pierwszą klatkę natywnie. tło: `scheduleCoverFlush` → `setTimeout(0)` + batch 5; `captureVideoFrame` → HTML5 canvas fallback | `VideoCard.vue`, `MediaCover.vue`, `player.ts`      |
-| 3  | **Brak audio w video** — AudioContext startuje w "suspended". Dla audio `resumeAndPlay()` zawsze wołany, dla video nigdy | `audioEngine.resume()` tworzy AudioContext+EQ chain jeśli nie istnieje. `setTrack()` woła `audioEngine.resume()` dla video w ramach gestu kliknięcia. `setupVideo` → `createMediaElementSource` PRZED `el.src` (Chromium może nie przechwycić audio jeśli source created po src)               | `audioEngine.ts`, `player.ts`, `useVideoPlayer.ts`  |
-| 4  | **AC3/DTS audio nie działa** — Chromium nie wspiera tych kodeków nawet natywnie w `<video>`                    | `createMediaElementSource` usunięty dla video → audio gra natywnie przez system. To nie wystarczyło — Chromium nadal nie dekoduje AC3. **Ostateczne rozwiązanie:** ffmpeg wykrywa kodek i transkoduje audio do AAC. Najpierw 30s chunk (~1s) → natychmiastowe odtwarzanie, potem pełny transkoding w tle → cicha podmiana | `handlers.ts`, `audioEngine.ts`, `useVideoPlayer.ts` |
-| 5  | **Preload / typy / preload** — dodanie `media:checkAudioCodec`, `media:transcodeAudio`, `media:transcodeAudioChunk` IPC, preload API, type definitions, IpcChannels | 6 plików: handlers.ts, preload/index.ts, preload/index.d.ts, shared/types/ipc.ts, audioEngine.ts, useVideoPlayer.ts. Obsługa offsetu czasowego dla chunków + sync seek/play/pause. Ciche przejście z chunka na pełny plik                                  | 6 plików wymienionych                               |
+| #   | Problem                                                                                                                                                             | Rozwiązanie                                                                                                                                                                                                                                                                                                               | Pliki                                                |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| 1   | **AppMenu dropdown zamyka się przy najechaniu** — `@mouseleave="closeDropdown"` na parent bar fire'uje gdy kursor przechodzi z przycisku do dropdownu               | Zamieniono na document click-away handler (`onClickAway`) + `ref="menuBar"`. Usunięto `@mouseleave="closeDropdown"`                                                                                                                                                                                                       | `AppMenu.vue`                                        |
+| 2   | **Brak okładek wideo w bibliotece** — ffmpeg extraction timeout przy równoległym skanowaniu, canvas capture też nie działał niezawodnie                             | `VideoCard` zawsze przekazuje `{ type: 'video', data: path }` jako fallback gdy brak cache. `MediaCover` renderuje `<video preload="auto" muted playsinline>` pokazujące pierwszą klatkę natywnie. tło: `scheduleCoverFlush` → `setTimeout(0)` + batch 5; `captureVideoFrame` → HTML5 canvas fallback                     | `VideoCard.vue`, `MediaCover.vue`, `player.ts`       |
+| 3   | **Brak audio w video** — AudioContext startuje w "suspended". Dla audio `resumeAndPlay()` zawsze wołany, dla video nigdy                                            | `audioEngine.resume()` tworzy AudioContext+EQ chain jeśli nie istnieje. `setTrack()` woła `audioEngine.resume()` dla video w ramach gestu kliknięcia. `setupVideo` → `createMediaElementSource` PRZED `el.src` (Chromium może nie przechwycić audio jeśli source created po src)                                          | `audioEngine.ts`, `player.ts`, `useVideoPlayer.ts`   |
+| 4   | **AC3/DTS audio nie działa** — Chromium nie wspiera tych kodeków nawet natywnie w `<video>`                                                                         | `createMediaElementSource` usunięty dla video → audio gra natywnie przez system. To nie wystarczyło — Chromium nadal nie dekoduje AC3. **Ostateczne rozwiązanie:** ffmpeg wykrywa kodek i transkoduje audio do AAC. Najpierw 30s chunk (~1s) → natychmiastowe odtwarzanie, potem pełny transkoding w tle → cicha podmiana | `handlers.ts`, `audioEngine.ts`, `useVideoPlayer.ts` |
+| 5   | **Preload / typy / preload** — dodanie `media:checkAudioCodec`, `media:transcodeAudio`, `media:transcodeAudioChunk` IPC, preload API, type definitions, IpcChannels | 6 plików: handlers.ts, preload/index.ts, preload/index.d.ts, shared/types/ipc.ts, audioEngine.ts, useVideoPlayer.ts. Obsługa offsetu czasowego dla chunków + sync seek/play/pause. Ciche przejście z chunka na pełny plik                                                                                                 | 6 plików wymienionych                                |
 
 ### 13.2 Zmiany w architekturze
 
@@ -560,31 +560,31 @@ _Ostatnia aktualizacja: 2026-07-23_
 
 ### 13.3 Nowe IPC channels
 
-| Kanał                       | Opis                                                       |
-| --------------------------- | ---------------------------------------------------------- |
-| `media:checkAudioCodec`     | ffprobe: sprawdza kodek audio (AC3 = unsupported)          |
-| `media:transcodeAudioChunk` | ffmpeg -ss <pos> -t 30 → szybki chunk ~1s                 |
-| `media:transcodeAudio`      | ffmpeg pełny transkoding do AAC                            |
-| `media:cleanupTranscodedAudio` | Usunięcie cache audio                                   |
+| Kanał                          | Opis                                              |
+| ------------------------------ | ------------------------------------------------- |
+| `media:checkAudioCodec`        | ffprobe: sprawdza kodek audio (AC3 = unsupported) |
+| `media:transcodeAudioChunk`    | ffmpeg -ss <pos> -t 30 → szybki chunk ~1s         |
+| `media:transcodeAudio`         | ffmpeg pełny transkoding do AAC                   |
+| `media:cleanupTranscodedAudio` | Usunięcie cache audio                             |
 
 ### 13.4 Nowe metody audioEngine
 
-| Metoda                          | Opis                                                               |
-| ------------------------------- | ------------------------------------------------------------------ |
+| Metoda                          | Opis                                                                |
+| ------------------------------- | ------------------------------------------------------------------- |
 | `connectSecondaryAudio(path)`   | Tworzy ukryte `<audio>` dla transcoded audio, podłącza do Web Audio |
-| `disconnectSecondaryAudio()`    | Czyści secondary audio element + source node                       |
-| `seekSecondaryAudio(videoTime)` | Seek w secondary audio z uwzględnieniem offsetu                    |
-| `playSecondaryAudio()`          | Play secondary audio                                               |
-| `pauseSecondaryAudio()`         | Pause secondary audio                                              |
-| `hasSecondaryAudio` (getter)    | Czy secondary audio jest aktywny                                   |
+| `disconnectSecondaryAudio()`    | Czyści secondary audio element + source node                        |
+| `seekSecondaryAudio(videoTime)` | Seek w secondary audio z uwzględnieniem offsetu                     |
+| `playSecondaryAudio()`          | Play secondary audio                                                |
+| `pauseSecondaryAudio()`         | Pause secondary audio                                               |
+| `hasSecondaryAudio` (getter)    | Czy secondary audio jest aktywny                                    |
 
 ### 13.5 Wykrywane kodeki
 
-| Wspierane (brak transkodu)                | Niewspierane (autotranskod do AAC) |
-| ----------------------------------------- | ---------------------------------- |
-| AAC, MP3, MP2, Opus, Vorbis, FLAC,       | AC3, E-AC3 (Dolby Digital)         |
-| PCM (s16le, s16be, s24le, f32le),        | DTS, DCA                           |
-| ALAC, TrueHD                              | WMA, RealAudio, ATRAC, inne        |
+| Wspierane (brak transkodu)         | Niewspierane (autotranskod do AAC) |
+| ---------------------------------- | ---------------------------------- |
+| AAC, MP3, MP2, Opus, Vorbis, FLAC, | AC3, E-AC3 (Dolby Digital)         |
+| PCM (s16le, s16be, s24le, f32le),  | DTS, DCA                           |
+| ALAC, TrueHD                       | WMA, RealAudio, ATRAC, inne        |
 
 ### 13.6 Statystyki (po sprincie 5)
 
@@ -601,28 +601,28 @@ _Ostatnia aktualizacja: 2026-07-23_
 
 ### 14.1 Co zrobiono
 
-| #  | Zadanie                                                                              | Rozwiązanie                                                                                                                                                                                        | Pliki                                                                                            |
-| -- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| 1  | **View modes** — 4 tryby wyświetlania                                                 | `extraSmall` (gęsta lista), `icons` (siatka), `compact`, `details` (tabela). Virtual scrolling dla wszystkich. Overscan reduced do 2.                                                               | `ExplorerView.vue`, `ExplorerGridItem.vue`, `ExplorerTableRow.vue`                               |
-| 2  | **Virtual scrolling** — @tanstack/vue-virtual                                         | `useVirtualizer` dla trybów, `will-change: transform` na wierszach. `shallowRef` + `triggerRef` dla `extraSmallIcons` z LRU cache (500)                                                             | `ExplorerView.vue`                                                                               |
-| 3  | **Slideshow button fix** — `pointer-events-none` na Lucide icons                     | Lucide SVG nie przepuszcza kliknięć przez warstwę SVG → dodano `pointer-events-none` do wszystkich ikon w przyciskach                                                                              | `ExplorerView.vue`, `ImageViewer.vue`                                                            |
-| 4  | **Context menu fix** — brak rename/delete                                             | `@contextmenu.prevent` nie stopował propagacji → `handleEmptyContextMenu` na scrollRef nadpisywał menu. Zmiana na `@contextmenu.stop.prevent`                                                       | `ExplorerView.vue`, `ExplorerGridItem.vue`, `ExplorerTableRow.vue`                               |
-| 5  | **Context menu restrukturyzacja**                                                      | `pushSeparator()` helper, max 3 separatory. Wszystkie opcje (rename, delete, showInFolder, copyPath, openWithDefault) dla każdego typu pliku. `:key="idx"` zamiast `:key="item.label"`              | `ExplorerView.vue`, `App.vue`                                                                    |
-| 6  | **ImageViewer** — kompletny lightbox                                                  | Dual-image transition system (symultaniczne old-exit / new-enter). 4 tryby: fade, slide, zoom, swirl. Zoom/rotate/fullscreen/wheel/touch. Pasek postępu slideshow                                   | `ImageViewer.vue` (550 linii, przepisany od nowa)                                               |
-| 7  | **Thumbnail strip** — pasek miniaturek na dole                                        | Lazy-loaded cache (±4 wokół aktualnego). Przewijalny. Toggle show/hide. Kliknięcie → goTo                                                                                                          | `ImageViewer.vue`                                                                                |
-| 8  | **Slideshow settings** — dropdown pod Play                                            | Interval (1s-10s), transition type (fade/slide/zoom/swirl), duration (200-1000ms), loop toggle. Progress bar na górze                                                                               | `ImageViewer.vue`                                                                                |
-| 9  | **Fullscreen** — Fullscreen API                                                       | Przycisk Fullscreen (Lucide) + klawisz F. `document.fullscreenElement` + `fullscreenchange` listener                                                                                                | `ImageViewer.vue`                                                                                |
-| 10 | **Breadcrumb** — Windows-style display                                                | Split na `\` z `v-if="idx > 0"` → `D:\tapety\Konachan`                                                                                                                                            | `ExplorerView.vue`                                                                               |
-| 11 | **Toolbar vertical** — pasek narzędzi po prawej                                       | Przeniesiony toolbar ImageViewer na prawą stronę. Przyciski: Close, Play/Settings, Fit, ZoomIn/Out, Rotate, Fullscreen                                                                             | `ImageViewer.vue`                                                                                |
-| 12 | **Readdir streaming** — batch push-based IPC                                          | `fs:readdir` → `event.sender.send('fs:readdir:batch', { done, items })` w batchach 200. Store aktualizowany przez `window.api.on('fs:readdir:batch')`                                               | `handlers.ts`, `explorer.ts`, `preload/index.ts`, `shared/types/ipc.ts`                          |
-| 13 | **Settings shortcuts editable** — klik → nagraj → zapisz                              | `SettingsShortcuts.vue` przepisane: click shortcut → listen keydown → `settings.updateShortcut()`                                                                                                   | `SettingsShortcuts.vue`, `settings.ts`, `constants.ts`                                          |
-| 14 | **Locale keys** — brakujące tłumaczenia                                               | `explorer.viewMode`, `common.selected`, `common.selectAll`, `common.ok` dodane do en.ts i pl.ts                                                                                                     | `en.ts`, `pl.ts`                                                                                 |
-| 15 | **IpcChannels interface** — `fs:mkdir`, `fs:copyPath`, `shell:*`                      | Nowe kanały IPC: `fs:mkdir`, `fs:copyPath`, `shell:showItemInFolder`, `shell:openWithDefault`, `shell:openTerminal`                                                                                | `shared/types/ipc.ts`                                                                            |
-| 16 | **Electron security warning suppressed**                                              | `app.commandLine.appendSwitch('no-electrosecurity-warnings')`                                                                                                                                      | `main/index.ts`                                                                                  |
-| 17 | **`statSync` fix** — `{ throwIfNoEntry: false }`                                      | Deprecation warning + crash fix                                                                                                                                                                    | `handlers.ts`                                                                                    |
-| 18 | **`handleKeydown` typo fix** — `TAGAREA` → `TEXTAREA`                                | Input nie mógł rejestrować skrótów                                                                                                                                                                 | `ExplorerView.vue`                                                                               |
-| 19 | **Empty-space context menu** — New folder, Open terminal, Select all                  | `handleEmptyContextMenu()` w ExplorerView                                                                                                                                                           | `ExplorerView.vue`                                                                               |
-| 20 | **`prompt()` replacement** — custom Teleport dialog                                   | `prompt()` nie działa w Electron → `<Teleport>` dialog dla rename/new folder                                                                                                                         | `ExplorerView.vue`                                                                               |
+| #   | Zadanie                                                              | Rozwiązanie                                                                                                                                                                            | Pliki                                                                   |
+| --- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| 1   | **View modes** — 4 tryby wyświetlania                                | `extraSmall` (gęsta lista), `icons` (siatka), `compact`, `details` (tabela). Virtual scrolling dla wszystkich. Overscan reduced do 2.                                                  | `ExplorerView.vue`, `ExplorerGridItem.vue`, `ExplorerTableRow.vue`      |
+| 2   | **Virtual scrolling** — @tanstack/vue-virtual                        | `useVirtualizer` dla trybów, `will-change: transform` na wierszach. `shallowRef` + `triggerRef` dla `extraSmallIcons` z LRU cache (500)                                                | `ExplorerView.vue`                                                      |
+| 3   | **Slideshow button fix** — `pointer-events-none` na Lucide icons     | Lucide SVG nie przepuszcza kliknięć przez warstwę SVG → dodano `pointer-events-none` do wszystkich ikon w przyciskach                                                                  | `ExplorerView.vue`, `ImageViewer.vue`                                   |
+| 4   | **Context menu fix** — brak rename/delete                            | `@contextmenu.prevent` nie stopował propagacji → `handleEmptyContextMenu` na scrollRef nadpisywał menu. Zmiana na `@contextmenu.stop.prevent`                                          | `ExplorerView.vue`, `ExplorerGridItem.vue`, `ExplorerTableRow.vue`      |
+| 5   | **Context menu restrukturyzacja**                                    | `pushSeparator()` helper, max 3 separatory. Wszystkie opcje (rename, delete, showInFolder, copyPath, openWithDefault) dla każdego typu pliku. `:key="idx"` zamiast `:key="item.label"` | `ExplorerView.vue`, `App.vue`                                           |
+| 6   | **ImageViewer** — kompletny lightbox                                 | Dual-image transition system (symultaniczne old-exit / new-enter). 4 tryby: fade, slide, zoom, swirl. Zoom/rotate/fullscreen/wheel/touch. Pasek postępu slideshow                      | `ImageViewer.vue` (550 linii, przepisany od nowa)                       |
+| 7   | **Thumbnail strip** — pasek miniaturek na dole                       | Lazy-loaded cache (±4 wokół aktualnego). Przewijalny. Toggle show/hide. Kliknięcie → goTo                                                                                              | `ImageViewer.vue`                                                       |
+| 8   | **Slideshow settings** — dropdown pod Play                           | Interval (1s-10s), transition type (fade/slide/zoom/swirl), duration (200-1000ms), loop toggle. Progress bar na górze                                                                  | `ImageViewer.vue`                                                       |
+| 9   | **Fullscreen** — Fullscreen API                                      | Przycisk Fullscreen (Lucide) + klawisz F. `document.fullscreenElement` + `fullscreenchange` listener                                                                                   | `ImageViewer.vue`                                                       |
+| 10  | **Breadcrumb** — Windows-style display                               | Split na `\` z `v-if="idx > 0"` → `D:\tapety\Konachan`                                                                                                                                 | `ExplorerView.vue`                                                      |
+| 11  | **Toolbar vertical** — pasek narzędzi po prawej                      | Przeniesiony toolbar ImageViewer na prawą stronę. Przyciski: Close, Play/Settings, Fit, ZoomIn/Out, Rotate, Fullscreen                                                                 | `ImageViewer.vue`                                                       |
+| 12  | **Readdir streaming** — batch push-based IPC                         | `fs:readdir` → `event.sender.send('fs:readdir:batch', { done, items })` w batchach 200. Store aktualizowany przez `window.api.on('fs:readdir:batch')`                                  | `handlers.ts`, `explorer.ts`, `preload/index.ts`, `shared/types/ipc.ts` |
+| 13  | **Settings shortcuts editable** — klik → nagraj → zapisz             | `SettingsShortcuts.vue` przepisane: click shortcut → listen keydown → `settings.updateShortcut()`                                                                                      | `SettingsShortcuts.vue`, `settings.ts`, `constants.ts`                  |
+| 14  | **Locale keys** — brakujące tłumaczenia                              | `explorer.viewMode`, `common.selected`, `common.selectAll`, `common.ok` dodane do en.ts i pl.ts                                                                                        | `en.ts`, `pl.ts`                                                        |
+| 15  | **IpcChannels interface** — `fs:mkdir`, `fs:copyPath`, `shell:*`     | Nowe kanały IPC: `fs:mkdir`, `fs:copyPath`, `shell:showItemInFolder`, `shell:openWithDefault`, `shell:openTerminal`                                                                    | `shared/types/ipc.ts`                                                   |
+| 16  | **Electron security warning suppressed**                             | `app.commandLine.appendSwitch('no-electrosecurity-warnings')`                                                                                                                          | `main/index.ts`                                                         |
+| 17  | **`statSync` fix** — `{ throwIfNoEntry: false }`                     | Deprecation warning + crash fix                                                                                                                                                        | `handlers.ts`                                                           |
+| 18  | **`handleKeydown` typo fix** — `TAGAREA` → `TEXTAREA`                | Input nie mógł rejestrować skrótów                                                                                                                                                     | `ExplorerView.vue`                                                      |
+| 19  | **Empty-space context menu** — New folder, Open terminal, Select all | `handleEmptyContextMenu()` w ExplorerView                                                                                                                                              | `ExplorerView.vue`                                                      |
+| 20  | **`prompt()` replacement** — custom Teleport dialog                  | `prompt()` nie działa w Electron → `<Teleport>` dialog dla rename/new folder                                                                                                           | `ExplorerView.vue`                                                      |
 
 ### 14.2 Zmiany w architekturze
 
@@ -639,26 +639,26 @@ _Ostatnia aktualizacja: 2026-07-23_
 
 ### 14.3 Nowe IPC channels
 
-| Kanał                       | Opis                                                          |
-| --------------------------- | ------------------------------------------------------------- |
-| `fs:readdir:batch`          | Main→Renderer: batch plików (200/batch) + done flag           |
-| `fs:mkdir`                  | Tworzenie folderu                                              |
-| `fs:copyPath`               | Kopiowanie ścieżki do schowka                                  |
-| `shell:showItemInFolder`    | Otwiera folder rodzica w explorerze systemowym                 |
-| `shell:openWithDefault`     | Otwiera plik domyślną aplikacją                                |
-| `shell:openTerminal`        | Otwiera terminal w ścieżce                                     |
+| Kanał                    | Opis                                                |
+| ------------------------ | --------------------------------------------------- |
+| `fs:readdir:batch`       | Main→Renderer: batch plików (200/batch) + done flag |
+| `fs:mkdir`               | Tworzenie folderu                                   |
+| `fs:copyPath`            | Kopiowanie ścieżki do schowka                       |
+| `shell:showItemInFolder` | Otwiera folder rodzica w explorerze systemowym      |
+| `shell:openWithDefault`  | Otwiera plik domyślną aplikacją                     |
+| `shell:openTerminal`     | Otwiera terminal w ścieżce                          |
 
 ### 14.4 Statystyki (po sprincie 6)
 
-| Metryka        | Wartość           |
-| -------------- | ----------------- |
-| typecheck      | 0 błędów          |
-| lint           | 0 błędów          |
-| Nowe pliki     | 5                 |
-| Pliki źródłowe | 106               |
-| Linii dodanych | ~1,842            |
-| Linii usuniętych | ~323            |
-| Commit         | `30df860` na main |
+| Metryka          | Wartość           |
+| ---------------- | ----------------- |
+| typecheck        | 0 błędów          |
+| lint             | 0 błędów          |
+| Nowe pliki       | 5                 |
+| Pliki źródłowe   | 106               |
+| Linii dodanych   | ~1,842            |
+| Linii usuniętych | ~323              |
+| Commit           | `30df860` na main |
 
 ---
 
@@ -666,29 +666,32 @@ _Ostatnia aktualizacja: 2026-07-23_
 
 ### 15.1 Diagnoza
 
-| Problem | Przyczyna | Skutek |
-| ------- | --------- | ------ |
-| Zoom freeze przy dużych zdjęciach | `fs:readFile` ładuje pełny plik (20MB → 27MB base64). Brak debounce na wheel. `scale()` bez GPU accel. | Freeze przy zmianie zoomu na zdjęciach >5MB |
-| Duże foldery ładują się wolno | Thumbnail strip używa `fs:readFile` (brak dedykowanych miniaturek). Brak preloadu sąsiednich obrazków | Każda nawigacja = pełne IPC read + base64 encode |
-| UI niespójne z appką | Hardcodowane `bg-black/*` zamiast theme CSS variables | ImageViewer nie reaguje na zmianę motywu |
-| Slideshow podstawowy | Tylko interval + transition. Brak Ken Burns, shuffle | Podstawowe, bez efektów wizualnych |
-| Batch thumbnail 5000+ plików | `nativeImage` per-file = jeden wątek, brak cache współdzielonego | Godziny przy skanowaniu biblioteki |
+| Problem                           | Przyczyna                                                                                              | Skutek                                           |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| Zoom freeze przy dużych zdjęciach | `fs:readFile` ładuje pełny plik (20MB → 27MB base64). Brak debounce na wheel. `scale()` bez GPU accel. | Freeze przy zmianie zoomu na zdjęciach >5MB      |
+| Duże foldery ładują się wolno     | Thumbnail strip używa `fs:readFile` (brak dedykowanych miniaturek). Brak preloadu sąsiednich obrazków  | Każda nawigacja = pełne IPC read + base64 encode |
+| UI niespójne z appką              | Hardcodowane `bg-black/*` zamiast theme CSS variables                                                  | ImageViewer nie reaguje na zmianę motywu         |
+| Slideshow podstawowy              | Tylko interval + transition. Brak Ken Burns, shuffle                                                   | Podstawowe, bez efektów wizualnych               |
+| Batch thumbnail 5000+ plików      | `nativeImage` per-file = jeden wątek, brak cache współdzielonego                                       | Godziny przy skanowaniu biblioteki               |
 
 ### 15.2 Plan naprawczy
 
 **Runda 1 — kosmetyka + thumbnail IPC (nie naprawiło problemu):**
-- [x] CSS vars dla kolorów (bg-bg-*, text-fg-*)
+
+- [x] CSS vars dla kolorów (bg-bg-_, text-fg-_)
 - [x] Debounce wheel 50ms + `scale3d()` + `contain-layout`
 - [x] Nowe IPC `media:getThumbnail` — `nativeImage.resize(320)`
 - [x] Ken Burns + Shuffle w slideshow
 
 **Runda 2 — file:// + cache dyskowy:**
+
 - [x] `<img src="file:///C:/zdjecie.jpg">` — Chromium otwiera plik natywnie przez Windows WIC → GPU
 - [x] Zero IPC, zero base64 dla głównego obrazka
 - [x] Thumbnail cache na dysku `%TEMP%/onda/thumbs/<md5>.png`
 - [x] Transition przez `@load`, preload przez `new Image()`
 
 **Runda 3 — Sharp + onda:// protocol + downscale (bieżąca):**
+
 - [x] **Sharp (libvips)** — batch thumbnaili z concurrency `n-CPU`, ~4× szybciej niż `nativeImage`
 - [x] **Custom protocol `onda://`** — zamiast `file://`. Bezpieczniejszy (path traversal protection), wspiera query params
 - [x] **Downscale on-the-fly** — obrazek 20MB → 1920px przez `?w=1920` = ~300KB. Full-res tylko przy zoom >1.5×
@@ -724,30 +727,34 @@ Renderer: <img src="onda:///C:/photo.jpg?w=1920">
 
 ### 15.4 Jak to teraz działa vs przed
 
-| Etap | PRZED (base64) | Runda 2 (file://) | Runda 3 (onda:// + Sharp) |
-|------|---------------|-------------------|--------------------------|
-| IPC | `fs:readFile` (20MB) | 0 | 0 |
-| Pamięć renderer | 27MB base64 string | 0 | 0 (downscale 1920px = ~300KB) |
-| Pierwsze ładowanie | decode base64 → JPEG | Windows WIC → GPU | sharp() → JPEG 1920px → GPU |
-| Zoom | repaint 27MB | GPU scale shader | full-res ładowany dopiero przy >1.5× |
-| Thumbnail pojedynczy | `nativeImage` czyta 20MB | nativeImage cache PNG | Windows thumbcache → Sharp fallback |
-| Thumbnail batch (5000) | — (brak) | — (brak) | Sharp concurrency n-CPU, ~4× faster |
-| Cover art | base64 z tagów | — | Sharp downscale 500px przed cache |
-| Bezpieczeństwo | — | ⚠️ XSS → cały dysk | ✅ path traversal protection |
+| Etap                   | PRZED (base64)           | Runda 2 (file://)     | Runda 3 (onda:// + Sharp)            |
+| ---------------------- | ------------------------ | --------------------- | ------------------------------------ |
+| IPC                    | `fs:readFile` (20MB)     | 0                     | 0                                    |
+| Pamięć renderer        | 27MB base64 string       | 0                     | 0 (downscale 1920px = ~300KB)        |
+| Pierwsze ładowanie     | decode base64 → JPEG     | Windows WIC → GPU     | sharp() → JPEG 1920px → GPU          |
+| Zoom                   | repaint 27MB             | GPU scale shader      | full-res ładowany dopiero przy >1.5× |
+| Thumbnail pojedynczy   | `nativeImage` czyta 20MB | nativeImage cache PNG | Windows thumbcache → Sharp fallback  |
+| Thumbnail batch (5000) | — (brak)                 | — (brak)              | Sharp concurrency n-CPU, ~4× faster  |
+| Cover art              | base64 z tagów           | —                     | Sharp downscale 500px przed cache    |
+| Bezpieczeństwo         | —                        | ⚠️ XSS → cały dysk    | ✅ path traversal protection         |
 
 ### 15.5 Nowe i zmodyfikowane
 
 **Nowy plik:**
+
 - `src/main/utils/sharp.ts` — SharpService: getThumbnail, batchThumbnails, resize, getMetadata
 
 **Nowy protokół:**
+
 - `onda://` — custom protocol zarejestrowany przez `protocol.registerSchemesAsPrivileged` przed `app.whenReady()`
 - Query params: `?w=N` (downscale do N px szerokości), `?t=N` (thumbnail N px)
 
 **Nowe IPC:**
+
 - `media:batchThumbnails` — batch thumbnail generation z concurrency (n-CPU)
 
 **Zmodyfikowane:**
+
 - `index.ts` — +`onda://` protocol registration + handler
 - `handlers.ts` — thumbnail przez `createThumbnailFromPath` + Sharp fallback; cover przez Sharp downscale; +batchThumbnails
 - `ImageViewer.vue` — `onda://` URLs, downscale 1920px domyślnie, high-res tylko przy zoom >1.5×
@@ -755,31 +762,32 @@ Renderer: <img src="onda:///C:/photo.jpg?w=1920">
 - `projekt2.md` — dokumentacja
 
 **Zależności:**
+
 - `sharp@0.35.3` + `@img/sharp-win32-x64@0.35.3` (N-API, nie wymaga rebuild)
 
 ### 15.6 Mierniki sukcesu
 
-| Metryka | Przed | Runda 2 | Runda 3 (Sharp + downscale) |
-| ------- | ----- | ------- | --------------------------- |
-| Zoom latency (20MB photo) | ~500ms | <16ms (60fps) | <16ms + 200ms do full-res przy >1.5× |
-| Thumbnail load (1st) | ~300ms | ~20ms (cache) | ~5ms (Windows thumbcache) lub ~20ms (Sharp) |
-| Batch 5000 thumbnaili | godziny | — | ~2-5 min (Sharp concurrency) |
-| Pierwsze ładowanie 20MB | 500ms IPC | 100ms WIC | 50ms (downscale 1920px) |
-| Zużycie RAM na viewer | 80MB+ | ~30MB | ~5MB (1920px downscale) |
-| Bezpieczeństwo | — | ⚠️ | ✅ |
+| Metryka                   | Przed     | Runda 2       | Runda 3 (Sharp + downscale)                 |
+| ------------------------- | --------- | ------------- | ------------------------------------------- |
+| Zoom latency (20MB photo) | ~500ms    | <16ms (60fps) | <16ms + 200ms do full-res przy >1.5×        |
+| Thumbnail load (1st)      | ~300ms    | ~20ms (cache) | ~5ms (Windows thumbcache) lub ~20ms (Sharp) |
+| Batch 5000 thumbnaili     | godziny   | —             | ~2-5 min (Sharp concurrency)                |
+| Pierwsze ładowanie 20MB   | 500ms IPC | 100ms WIC     | 50ms (downscale 1920px)                     |
+| Zużycie RAM na viewer     | 80MB+     | ~30MB         | ~5MB (1920px downscale)                     |
+| Bezpieczeństwo            | —         | ⚠️            | ✅                                          |
 
 ### 15.7 Statystyki (po sprincie 7)
 
-| Metryka | Wartość |
-| ------- | ------- |
-| typecheck | 0 błędów |
-| build | OK |
-| Nowe IPC | 2 (`media:getThumbnail` z Windows thumbcache + Sharp, `media:batchThumbnails`) |
-| Nowe pliki | 1 (`src/main/utils/sharp.ts`) |
-| Pliki modyfikowane | 6 (index.ts, handlers.ts, ImageViewer.vue, index.html, main.css, sharp.ts) |
-| Nowe zależności | `sharp@0.35.3`, `@img/sharp-win32-x64@0.35.3` |
-| CSS vars | `onda:` added to CSP img-src and default-src |
-| Główna zmiana | `file://` → `onda://` custom protocol. Obrazki domyślnie 1920px. Sharp zamiast nativeImage. Windows thumbcache first. |
+| Metryka            | Wartość                                                                                                               |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| typecheck          | 0 błędów                                                                                                              |
+| build              | OK                                                                                                                    |
+| Nowe IPC           | 2 (`media:getThumbnail` z Windows thumbcache + Sharp, `media:batchThumbnails`)                                        |
+| Nowe pliki         | 1 (`src/main/utils/sharp.ts`)                                                                                         |
+| Pliki modyfikowane | 6 (index.ts, handlers.ts, ImageViewer.vue, index.html, main.css, sharp.ts)                                            |
+| Nowe zależności    | `sharp@0.35.3`, `@img/sharp-win32-x64@0.35.3`                                                                         |
+| CSS vars           | `onda:` added to CSP img-src and default-src                                                                          |
+| Główna zmiana      | `file://` → `onda://` custom protocol. Obrazki domyślnie 1920px. Sharp zamiast nativeImage. Windows thumbcache first. |
 
 ---
 
@@ -787,27 +795,27 @@ Renderer: <img src="onda:///C:/photo.jpg?w=1920">
 
 ### 16.1 Co zrobiono
 
-| # | Problem | Rozwiązanie | Pliki |
-|---|---------|-------------|-------|
-| 1 | **Brak CSP w pip.html** — dodany CSP zablokował napisy (JASSUB był-worker + blob: nie miał uprawnień) | **COFNIĘTE** — CSP usunięty z pip.html. PiP wymaga `file:`, `blob:`, `'unsafe-eval'` dla JASSUB | `pip.html` |
-| 2 | **`app.commandLine.appendSwitch('no-electrosecurity-warnings')`** — wyłącza ostrzeżenia | Usunięty flag | `main/index.ts:10` |
-| 3 | **`as any` w usePiP.ts** — 5 castów bez typów | Typy dopasowane między preload/OndaAPI a composable, casty usunięte | `usePiP.ts`, `preload/index.ts` |
-| 4 | **Duplikacja `errMsg()`** — ta sama funkcja w library.ts i handlers.ts | Przeniesiona do `shared/helpers.ts`, oba pliki importują | `shared/helpers.ts` (nowy), `library.ts`, `handlers.ts` |
-| 5 | **FLV w formatach** — nieużywany format z 2000s | Usunięty z `shared/constants.ts` i `constants.ts` | `shared/constants.ts` |
-| 6 | **IPC wrapper** — typowany `ipcInvoke<C>()` z auto-logowaniem błędów | Nowa funkcja w `utils/ipc.ts`, gotowa do stopniowego wdrożenia | `utils/ipc.ts` (nowy) |
-| 7 | **Type declarations** — `window.api` bez pełnego interfejsu | Pełny `OndaAPI` interface w `env.d.ts` z `declare global { Window { api: OndaAPI } }` | `env.d.ts` |
-| 8 | **`catch(() => {})` → `logger.error()`** — 11 IPC catchów bez logowania | Zastąpione `logger.error(tag, msg, err)` | `SettingsView.vue`, `LibraryView.vue` (×2), `ExplorerView.vue` (×2), `ImageViewer.vue` (×2), `useThumbnail.ts` (×2), `player.ts` |
+| #   | Problem                                                                                               | Rozwiązanie                                                                                     | Pliki                                                                                                                            |
+| --- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Brak CSP w pip.html** — dodany CSP zablokował napisy (JASSUB był-worker + blob: nie miał uprawnień) | **COFNIĘTE** — CSP usunięty z pip.html. PiP wymaga `file:`, `blob:`, `'unsafe-eval'` dla JASSUB | `pip.html`                                                                                                                       |
+| 2   | **`app.commandLine.appendSwitch('no-electrosecurity-warnings')`** — wyłącza ostrzeżenia               | Usunięty flag                                                                                   | `main/index.ts:10`                                                                                                               |
+| 3   | **`as any` w usePiP.ts** — 5 castów bez typów                                                         | Typy dopasowane między preload/OndaAPI a composable, casty usunięte                             | `usePiP.ts`, `preload/index.ts`                                                                                                  |
+| 4   | **Duplikacja `errMsg()`** — ta sama funkcja w library.ts i handlers.ts                                | Przeniesiona do `shared/helpers.ts`, oba pliki importują                                        | `shared/helpers.ts` (nowy), `library.ts`, `handlers.ts`                                                                          |
+| 5   | **FLV w formatach** — nieużywany format z 2000s                                                       | Usunięty z `shared/constants.ts` i `constants.ts`                                               | `shared/constants.ts`                                                                                                            |
+| 6   | **IPC wrapper** — typowany `ipcInvoke<C>()` z auto-logowaniem błędów                                  | Nowa funkcja w `utils/ipc.ts`, gotowa do stopniowego wdrożenia                                  | `utils/ipc.ts` (nowy)                                                                                                            |
+| 7   | **Type declarations** — `window.api` bez pełnego interfejsu                                           | Pełny `OndaAPI` interface w `env.d.ts` z `declare global { Window { api: OndaAPI } }`           | `env.d.ts`                                                                                                                       |
+| 8   | **`catch(() => {})` → `logger.error()`** — 11 IPC catchów bez logowania                               | Zastąpione `logger.error(tag, msg, err)`                                                        | `SettingsView.vue`, `LibraryView.vue` (×2), `ExplorerView.vue` (×2), `ImageViewer.vue` (×2), `useThumbnail.ts` (×2), `player.ts` |
 
 ### 16.2 Statystyki (po sprincie 8)
 
-| Metryka | Wartość |
-| ------- | ------- |
-| typecheck | 0 błędów |
-| build | OK |
-| Nowe pliki | 2 (`utils/ipc.ts`, `shared/helpers.ts`) |
-| `as any` w produkcji | 0 (z 5) |
-| `catch(() => {})` (IPC) | 0 (z 11) |
-| `catch(() => {})` (play) | 11 (autoplay policy, poprawne) |
+| Metryka                  | Wartość                                 |
+| ------------------------ | --------------------------------------- |
+| typecheck                | 0 błędów                                |
+| build                    | OK                                      |
+| Nowe pliki               | 2 (`utils/ipc.ts`, `shared/helpers.ts`) |
+| `as any` w produkcji     | 0 (z 5)                                 |
+| `catch(() => {})` (IPC)  | 0 (z 11)                                |
+| `catch(() => {})` (play) | 11 (autoplay policy, poprawne)          |
 
 ---
 
@@ -819,6 +827,7 @@ Trzy główne refaktory odłożone ze względu na ryzyko regresji. Każdy wymaga
 
 **Problem:**
 Jeden plik `src/main/ipc/handlers.ts` zawiera ~70 handlerów IPC w jednej funkcji `registerIPC()`. To monolit:
+
 - 1732 linie, 80+ importów
 - Mieszane domeny: fs, library, settings, pip, media, youtube, subtitles, dependencies
 - `SharpService`, `music-metadata`, `node-id3`, `child_process`, `crypto` — wszystko w jednym pliku
@@ -843,6 +852,7 @@ src/main/ipc/
 ```
 
 **Ryzyka:**
+
 - `electron-store` singleton — lazy import z cache, trzeba zachować
 - `SharpService` importowany z `../utils/sharp` — względne ścieżki zmienią się przy restrukturyzacji
 - `coverResultCache` i `coverCacheLocks` — zmienne globalne w obrębie pliku, trzeba przenieść do współdzielonego modułu `cover-cache.ts`
@@ -898,6 +908,7 @@ let idleTimer: ReturnType<typeof setTimeout> | null = null;
 ```
 
 Każda wymaga ręcznego `clearTimeout`/`clearInterval`/`cancelAnimationFrame` w wielu miejscach (onUnmounted, stopSlideshow, changeInterval itp.). Łatwo o:
+
 - Timer leak po zamknięciu ImageViewer
 - Podwójne wywołanie (transition timer + slideshow timer nakładające się)
 - Zapomniany cleanup w nowej ścieżce
@@ -906,15 +917,16 @@ Każda wymaga ręcznego `clearTimeout`/`clearInterval`/`cancelAnimationFrame` w 
 
 Zamiast ręcznego zarządzania timerami, użyć VueUse composables które same clean-up przy unmount:
 
-| Obecny timer | VueUse zamiennik |
-|---|---|
-| `slideshowTimer` — `setTimeout(advance, interval)` | `useTimeoutFn(advance, interval, { controls: true })` — `start()`/`stop()` z auto-cleanup |
-| `progressTimer` — `setInterval(update, 16)` | `useIntervalFn(update, 16, { controls: true })` |
-| `transitionTimer` — `setTimeout(endTransition, dur)` | `useTimeoutFn(endTransition, dur, { controls: true })` |
-| `kenRaf` — `requestAnimationFrame(runKenBurns)` | `useRafFn(runKenBurns, { controls: true })` — pauza przez `pause()`/`resume()` |
-| `idleTimer` — `setTimeout(hide, 3000)` | `useTimeoutFn(() => { uiVisible = false }, 3000, { controls: true })` — restart przez `{ ...controls, reset() }` |
+| Obecny timer                                         | VueUse zamiennik                                                                                                 |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `slideshowTimer` — `setTimeout(advance, interval)`   | `useTimeoutFn(advance, interval, { controls: true })` — `start()`/`stop()` z auto-cleanup                        |
+| `progressTimer` — `setInterval(update, 16)`          | `useIntervalFn(update, 16, { controls: true })`                                                                  |
+| `transitionTimer` — `setTimeout(endTransition, dur)` | `useTimeoutFn(endTransition, dur, { controls: true })`                                                           |
+| `kenRaf` — `requestAnimationFrame(runKenBurns)`      | `useRafFn(runKenBurns, { controls: true })` — pauza przez `pause()`/`resume()`                                   |
+| `idleTimer` — `setTimeout(hide, 3000)`               | `useTimeoutFn(() => { uiVisible = false }, 3000, { controls: true })` — restart przez `{ ...controls, reset() }` |
 
 **Zalety:**
+
 - Auto-cleanup przy `onUnmounted` (VueUse composables rejestrują się w lifecycle)
 - `controls.promise` dla transition — można `await` bez callbacków
 - `controls.isPending`/`isActive` — stan widoczny w template
@@ -935,6 +947,7 @@ const { start, stop, isPending } = useTimeoutFn(advanceWhenReady, slideshowInter
 ```
 
 **Ryzyka:**
+
 - `resetIdleTimer()` restartuje `idleTimer` — VueUse nie ma `reset()` na `useTimeoutFn`, trzeba `stop()` + `start()`
 - `kenRaf` pauzowany przy `kenBurns` toggle — `useRafFn` ma `pause()`/`resume()`
 - `wheelTimeout` nie jest timerem slideshow — to prosty debounce, można zastąpić `useDebounceFn`
@@ -948,12 +961,14 @@ const { start, stop, isPending } = useTimeoutFn(advanceWhenReady, slideshowInter
 
 **Problem:**
 `webSecurity: false` w `main/index.ts:48` wyłącza CORS i security w renderer. To poważna luka:
+
 - Każda załadowana strona/subresource ma dostęp do `file://`
 - Skrypty z zewnętrznych źródeł (YouTube, MusicBrainz) mogą czytać lokalne pliki
 - W połączeniu z brakiem CSP: atak XSS = pełny dostęp do dysku
 
 **Dlaczego obecnie `webSecurity: false`?**
 Renderer ładuje pliki przez `file:///` URL w kilku miejscach:
+
 1. **ImageViewer** — `toFileUrl()` w `loadDisplayImage()`: `<img src="file:///C:/photo.jpg">`
 2. **Video player** — `useVideoPlayer.ts`: `<video src="file:///C:/video.mp4">`
 3. **Audio player** — `audioEngine.ts`: `<audio src="file:///C:/track.mp3">`
@@ -966,27 +981,31 @@ Bez `webSecurity: false`, Chromium blokuje `file://` requesty z `http://` lub `h
 **Plan migracji:**
 
 **Krok 1: Downgrade do `webSecurity: false` z uzasadnieniem (⚠️ obecny stan)**
+
 - Dodać komentarz w `main/index.ts` dlaczego to potrzebne
 - Nie zmieniać na razie
 
 **Krok 2: Migracja wszystkich `file://` na `onda://` (tylko renderer)**
+
 ```diff
 - video.src = `file:///${filePath.replace(/\\/g, '/')}`;
 + video.src = `onda:///?path=${encodeURIComponent(filePath)}`;
 ```
 
 Miejsca do zmiany:
-| Plik | Linia | Obecnie | Po zmianie |
-|------|-------|---------|------------|
-| `ImageViewer.vue` | `toFileUrl()` | `file:///${path}` | `onda:///?path=${encodeURIComponent(path)}` |
-| `useVideoPlayer.ts` | `setupVideo()` | `el.src = file:///...` | `el.src = onda:///?path=...` |
-| `audioEngine.ts` | `setupAudio()` | `audioEl.src = file:///...` | `audioEl.src = onda:///?path=...` |
-| `player.ts` | `captureVideoFrame()` | `video.src = file:///...` | `video.src = onda:///?path=...` |
-| `pip.ts` | `loadVideo()` | `pipV.src = file:///...` | `pipV.src = onda:///?path=...` |
-| `pip-manager.ts` | `show()` | child.loadURL(path) | child.loadURL(path) — tu gra HTML, nie file |
+
+| Plik                | Linia                 | Obecnie                     | Po zmianie                                  |
+| ------------------- | --------------------- | --------------------------- | ------------------------------------------- |
+| `ImageViewer.vue`   | `toFileUrl()`         | `file:///${path}`           | `onda:///?path=${encodeURIComponent(path)}` |
+| `useVideoPlayer.ts` | `setupVideo()`        | `el.src = file:///...`      | `el.src = onda:///?path=...`                |
+| `audioEngine.ts`    | `setupAudio()`        | `audioEl.src = file:///...` | `audioEl.src = onda:///?path=...`           |
+| `player.ts`         | `captureVideoFrame()` | `video.src = file:///...`   | `video.src = onda:///?path=...`             |
+| `pip.ts`            | `loadVideo()`         | `pipV.src = file:///...`    | `pipV.src = onda:///?path=...`              |
+| `pip-manager.ts`    | `show()`              | child.loadURL(path)         | child.loadURL(path) — tu gra HTML, nie file |
 
 **Krok 3: Rozszerzenie `onda://` handlera w main**
 Obecny handler obsługuje tylko obrazy i thumbnail. Trzeba dodać:
+
 ```typescript
 protocol.handle('onda', async (req) => {
   const url = new URL(req.url);
@@ -996,10 +1015,12 @@ protocol.handle('onda', async (req) => {
   return net.fetch(pathToFileURL(normalized).toString());
 });
 ```
+
 To JEST już zaimplementowane — `net.fetch(pathToFileURL(normalized).toString())` jest fallbackiem. Więc video/audio przez `onda://` powinny działać.
 
 **Krok 4: Włączenie `webSecurity: true`**
 Po migracji wszystkich `file://` na `onda://`:
+
 ```typescript
 webPreferences: {
   webSecurity: true,  // ← zmiana
@@ -1008,6 +1029,7 @@ webPreferences: {
 ```
 
 **Testowanie (krytyczne):**
+
 - [ ] ImageViewer — wszystkie obrazy ładują się poprawnie
 - [ ] ImageViewer — Zoom >1.5× ładuje full-res
 - [ ] Video player — wszystkie formaty (.mp4, .mkv, .avi, .webm, .mov)
@@ -1020,12 +1042,14 @@ webPreferences: {
 - [ ] ExplorerView — thumbnail preview w ImageViewer
 
 **Ryzyka:**
+
 - `onda://` request idzie przez main process (inter-process). Dla wideo 4GB to może być bottleneck
 - `net.fetch` nie wspiera streaming range requests (range requests dla seek w video)
 - Video/audio przez `onda://` może nie wspierać seeking (brak `Accept-Ranges`)
 - Chromium może wymagać 'Content-Type' header dla poprawnego dekodowania wideo
 
 **Rozwiązanie range requests:**
+
 ```typescript
 protocol.handle('onda', async (req) => {
   const range = req.headers.get('range'); // "bytes=0-1000"
@@ -1063,21 +1087,26 @@ protocol.handle('onda', async (req) => {
 
 **Data:** 2026-07-23
 **Problem:** Dodanie `<meta http-equiv="Content-Security-Policy">` do `pip.html` zablokowało JASSUB subtitle renderer. PiP używa:
+
 - `blob:` dla workerów JASSUB
 - `'unsafe-eval'` dla WASM
 - `file:` dla źródeł wideo
 
 CSP był:
+
 ```html
-<meta http-equiv="Content-Security-Policy"
-      content="default-src 'self' file:; script-src 'self' blob:;
+<meta
+  http-equiv="Content-Security-Policy"
+  content="default-src 'self' file:; script-src 'self' blob:;
                style-src 'self' 'unsafe-inline'; img-src 'self' data:;
-               media-src 'self' file:; connect-src 'self' https:">
+               media-src 'self' file:; connect-src 'self' https:"
+/>
 ```
 
 **Fix:** CSP usunięty całkowicie z `pip.html`. PiP to izolowany kontekst (child window, brak dostępu do main window API), więc ryzyko jest niższe niż w głównej aplikacji, ale nadal nieidealne.
 
 **Wniosek:** Jeśli kiedykolwiek dodawać CSP do `pip.html`, trzeba dodać:
+
 - `worker-src 'self' blob:` — dla JASSUB worker
 - `script-src 'self' 'unsafe-eval' blob:` — dla WASM w JASSUB
 - `media-src 'self' file: blob:` — dla wideo + możliwych blob URLi
@@ -1096,39 +1125,39 @@ CSP był:
 
 ### 19.1 Problemy
 
-| # | Problem | Przyczyna | Skutek |
-|---|---------|-----------|--------|
-| 1 | **Audio PiP: progress bar zastyga po zmianie utworu** | `onTrackChange` nie restartował time trackingu w `useAudioPiP`. Local `audioTime`/`audioDuration` były odseparowane od głównego stanu | PiP pokazywał stare czasy, progress bar nieruchomy |
-| 2 | **Automatyczne "next" nie działa** | `handleEnded()` w `audioEngine` emitował event `trackEnd`, a `useAudioPlayer` nasłuchiwał i wołał `player.nextTrack()`. Crossfade (`startCrossfade`) resetował src elementu audio po drodze, co zabijało `ended` event | Kolejny utwór nie startował automatycznie; przycisk "next" działał (wołał `player.nextTrack()` bezpośrednio) |
-| 3 | **HMR zrywa nasłuchiwania** | Listenery `audioEvents.on()` i watchery `watch()` były rejestrowane w ciele `useAudioPlayer()` (per-component). Po hot reload ginęły subskrypcje | Po HMR audio nie reagowało na zmiany store |
-| 4 | **RAF loop nie emituje timeUpdate gdy paused** | `rafLoop` emitował `timeUpdate` tylko gdy `!this.audioEl.paused` — podczas ładowania nowego utworu `paused=true` | `currentTime` nie był aktualizowany między utworami |
-| 5 | **Crossfade komplikuje przepływ** | `startCrossfade()` tworzy drugi `Audio` element, miksa przez osobne GainNode, po swap resetuje src głównego elementu. Wieloetapowy przepływ z timerami | Dodatkowe ryzyko regresji, znikoma wartość dla użytkownika |
+| #   | Problem                                               | Przyczyna                                                                                                                                                                                                              | Skutek                                                                                                       |
+| --- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| 1   | **Audio PiP: progress bar zastyga po zmianie utworu** | `onTrackChange` nie restartował time trackingu w `useAudioPiP`. Local `audioTime`/`audioDuration` były odseparowane od głównego stanu                                                                                  | PiP pokazywał stare czasy, progress bar nieruchomy                                                           |
+| 2   | **Automatyczne "next" nie działa**                    | `handleEnded()` w `audioEngine` emitował event `trackEnd`, a `useAudioPlayer` nasłuchiwał i wołał `player.nextTrack()`. Crossfade (`startCrossfade`) resetował src elementu audio po drodze, co zabijało `ended` event | Kolejny utwór nie startował automatycznie; przycisk "next" działał (wołał `player.nextTrack()` bezpośrednio) |
+| 3   | **HMR zrywa nasłuchiwania**                           | Listenery `audioEvents.on()` i watchery `watch()` były rejestrowane w ciele `useAudioPlayer()` (per-component). Po hot reload ginęły subskrypcje                                                                       | Po HMR audio nie reagowało na zmiany store                                                                   |
+| 4   | **RAF loop nie emituje timeUpdate gdy paused**        | `rafLoop` emitował `timeUpdate` tylko gdy `!this.audioEl.paused` — podczas ładowania nowego utworu `paused=true`                                                                                                       | `currentTime` nie był aktualizowany między utworami                                                          |
+| 5   | **Crossfade komplikuje przepływ**                     | `startCrossfade()` tworzy drugi `Audio` element, miksa przez osobne GainNode, po swap resetuje src głównego elementu. Wieloetapowy przepływ z timerami                                                                 | Dodatkowe ryzyko regresji, znikoma wartość dla użytkownika                                                   |
 
 ### 19.2 Co zrobiono
 
 #### Fixy audio PiP
 
-| # | Rozwiązanie | Pliki |
-|---|-------------|-------|
-| 1 | `useAudioPiP.ts`: `onTrackChange` restartuje `startTimeTracking()` jeśli utwór gra; usunięto lokalne `audioTime`/`audioDuration` — PiP czyta z modułowych `currentTime`/`duration` refów z `useAudioPlayer` | `useAudioPiP.ts` |
-| 2 | `useAudioPlayer.ts`: wyeksportowano modułowe `currentTime`/`duration` refy | `useAudioPlayer.ts` |
-| 3 | `useAudioPiP.ts`: import `currentTime`/`duration` z `useAudioPlayer` zamiast lokalnych refów | `useAudioPiP.ts` |
+| #   | Rozwiązanie                                                                                                                                                                                                 | Pliki               |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| 1   | `useAudioPiP.ts`: `onTrackChange` restartuje `startTimeTracking()` jeśli utwór gra; usunięto lokalne `audioTime`/`audioDuration` — PiP czyta z modułowych `currentTime`/`duration` refów z `useAudioPlayer` | `useAudioPiP.ts`    |
+| 2   | `useAudioPlayer.ts`: wyeksportowano modułowe `currentTime`/`duration` refy                                                                                                                                  | `useAudioPlayer.ts` |
+| 3   | `useAudioPiP.ts`: import `currentTime`/`duration` z `useAudioPlayer` zamiast lokalnych refów                                                                                                                | `useAudioPiP.ts`    |
 
 #### Fixy odtwarzania (engine + store)
 
-| # | Rozwiązanie | Pliki |
-|---|-------------|-------|
-| 1 | `handleEnded()` woła `player.nextTrack()` bezpośrednio (zamiast `audioEvents.emit('trackEnd')`). Usunięto event `trackEnd` i listener w `useAudioPlayer` | `audioEngine.ts`, `useAudioPlayer.ts` |
-| 2 | RAF loop: zawsze emituje `timeUpdate`, niezależnie od `paused` state | `audioEngine.ts` |
-| 3 | Visibility handler: restartuje RAF loop po powrocie do widoku, bez warunku `paused` | `audioEngine.ts` |
-| 4 | Wszystkie listenery eventów i watchery przeniesione na poziom modułu (`ensureModule()`) z `detached effectScope(true)` — przeżywają HMR | `useAudioPlayer.ts` |
-| 5 | Crossfade całkowicie usunięty z `audioEngine.ts`: usunięto pola (`nextAudioEl`, `crossfadeGainA/B`, `crossfadeTimer`, `isCrossfading`, `sourceNodeB`), metody (`startCrossfade`, `connectAudioB`, `ensureNextPreloaded`), uproszczono `ensureEqChain`/`connectAudio`/`handleEnded`/`disconnectNodes`/`loadTrack`/`connectSecondaryAudio`/`deactivate`/`destroy`. Usunięto `crossfadeDuration` z `player.ts`, `types/settings.ts`, `types/media.ts`, `utils/constants.ts`, `locales/en.ts`/`pl.ts`, `utils/audioEvents.ts`, `components/settings/SettingsPlayback.vue` | 9 plików |
+| #   | Rozwiązanie                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Pliki                                 |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| 1   | `handleEnded()` woła `player.nextTrack()` bezpośrednio (zamiast `audioEvents.emit('trackEnd')`). Usunięto event `trackEnd` i listener w `useAudioPlayer`                                                                                                                                                                                                                                                                                                                                                                                                              | `audioEngine.ts`, `useAudioPlayer.ts` |
+| 2   | RAF loop: zawsze emituje `timeUpdate`, niezależnie od `paused` state                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | `audioEngine.ts`                      |
+| 3   | Visibility handler: restartuje RAF loop po powrocie do widoku, bez warunku `paused`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `audioEngine.ts`                      |
+| 4   | Wszystkie listenery eventów i watchery przeniesione na poziom modułu (`ensureModule()`) z `detached effectScope(true)` — przeżywają HMR                                                                                                                                                                                                                                                                                                                                                                                                                               | `useAudioPlayer.ts`                   |
+| 5   | Crossfade całkowicie usunięty z `audioEngine.ts`: usunięto pola (`nextAudioEl`, `crossfadeGainA/B`, `crossfadeTimer`, `isCrossfading`, `sourceNodeB`), metody (`startCrossfade`, `connectAudioB`, `ensureNextPreloaded`), uproszczono `ensureEqChain`/`connectAudio`/`handleEnded`/`disconnectNodes`/`loadTrack`/`connectSecondaryAudio`/`deactivate`/`destroy`. Usunięto `crossfadeDuration` z `player.ts`, `types/settings.ts`, `types/media.ts`, `utils/constants.ts`, `locales/en.ts`/`pl.ts`, `utils/audioEvents.ts`, `components/settings/SettingsPlayback.vue` | 9 plików                              |
 
 #### Cleanup — debug logi
 
-| # | Rozwiązanie | Pliki |
-|---|-------------|-------|
-| 1 | Usunięto wszystkie `console.log` dodane podczas debugowania | `audioEngine.ts`, `useAudioPlayer.ts`, `useAudioPiP.ts`, `player.ts` |
+| #   | Rozwiązanie                                                 | Pliki                                                                |
+| --- | ----------------------------------------------------------- | -------------------------------------------------------------------- |
+| 1   | Usunięto wszystkie `console.log` dodane podczas debugowania | `audioEngine.ts`, `useAudioPlayer.ts`, `useAudioPiP.ts`, `player.ts` |
 
 ### 19.3 Zmiany w architekturze
 
@@ -1156,29 +1185,28 @@ CSP był:
 
 ### 19.4 Zmodyfikowane pliki
 
-| Plik | Przed | Po | Zmiana |
-|------|-------|----|--------|
-| `modules/audioEngine.ts` | 631 linii | 473 | Usunięcie crossfade + refactor |
-| `composables/useAudioPlayer.ts` | 159 | 131 | Module-level scope, usunięcie logów |
-| `composables/useAudioPiP.ts` | 202 | ~152 | Współdzielone refy, usunięcie logów |
-| `stores/player.ts` | 490 | 457 | usunięcie crossfadeDuration + logów |
-| `types/settings.ts` | — | — | usunięcie `crossfadeDuration` z interface |
-| `types/media.ts` | — | — | usunięcie `crossfadeDuration` z PlayerState |
-| `utils/constants.ts` | — | — | usunięcie `crossfadeDuration: 3` z DEFAULT_PLAYBACK |
-| `utils/audioEvents.ts` | — | — | usunięcie eventów `crossfadeStart`/`crossfadeEnd` |
-| `locales/en.ts` | — | — | usunięcie `crossfade` translation |
-| `locales/pl.ts` | — | — | usunięcie `crossfade` translation |
-| `components/settings/SettingsPlayback.vue` | 114 | ~95 | usunięcie slidera crossfade |
+| Plik                                       | Przed     | Po   | Zmiana                                              |
+| ------------------------------------------ | --------- | ---- | --------------------------------------------------- |
+| `modules/audioEngine.ts`                   | 631 linii | 473  | Usunięcie crossfade + refactor                      |
+| `composables/useAudioPlayer.ts`            | 159       | 131  | Module-level scope, usunięcie logów                 |
+| `composables/useAudioPiP.ts`               | 202       | ~152 | Współdzielone refy, usunięcie logów                 |
+| `stores/player.ts`                         | 490       | 457  | usunięcie crossfadeDuration + logów                 |
+| `types/settings.ts`                        | —         | —    | usunięcie `crossfadeDuration` z interface           |
+| `types/media.ts`                           | —         | —    | usunięcie `crossfadeDuration` z PlayerState         |
+| `utils/constants.ts`                       | —         | —    | usunięcie `crossfadeDuration: 3` z DEFAULT_PLAYBACK |
+| `utils/audioEvents.ts`                     | —         | —    | usunięcie eventów `crossfadeStart`/`crossfadeEnd`   |
+| `locales/en.ts`                            | —         | —    | usunięcie `crossfade` translation                   |
+| `locales/pl.ts`                            | —         | —    | usunięcie `crossfade` translation                   |
+| `components/settings/SettingsPlayback.vue` | 114       | ~95  | usunięcie slidera crossfade                         |
 
 ### 19.5 Statystyki (po sprincie 9)
 
-| Metryka | Przed | Po |
-|---------|-------|----|
-| Pliki źródłowe | 106 | 106 (bez zmian — tylko modyfikacje) |
-| Linie kodu | ~16,439 | ~16,287 |
-| Renderer | ~13,397 | ~13,254 |
-| `typecheck` | 0 błędów | 0 błędów |
-| `console.log` (debug) | 53 | 0 |
+| Metryka               | Przed    | Po                                  |
+| --------------------- | -------- | ----------------------------------- |
+| Pliki źródłowe        | 106      | 106 (bez zmian — tylko modyfikacje) |
+| Linie kodu            | ~16,439  | ~16,287                             |
+| Renderer              | ~13,397  | ~13,254                             |
+| `typecheck`           | 0 błędów | 0 błędów                            |
+| `console.log` (debug) | 53       | 0                                   |
 
 _Ostatnia aktualizacja: 2026-07-28_
-

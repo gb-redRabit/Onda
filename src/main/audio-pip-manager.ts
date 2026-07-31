@@ -2,28 +2,27 @@ import { BrowserWindow, screen, ipcMain } from 'electron';
 import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
 
-
 type PipMode = 'minimal' | 'medium' | 'max' | 'wide';
 type PipPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 
 interface AudioPipState {
-  trackName?: string
-  artist?: string
-  coverData?: string | null
-  coverType?: 'image' | 'video' | null
-  isPlaying?: boolean
-  currentTime?: number
-  duration?: number
-  volume?: number
-  isMuted?: boolean
-  shuffle?: boolean
-  repeat?: 'none' | 'all' | 'one'
-  equalizerBands?: number[]
-  equalizerPreset?: string
-  vizData?: number[]
-  nextTrackName?: string
-  nextTrackArtist?: string
-  [key: string]: unknown
+  trackName?: string;
+  artist?: string;
+  coverData?: string | null;
+  coverType?: 'image' | 'video' | null;
+  isPlaying?: boolean;
+  currentTime?: number;
+  duration?: number;
+  volume?: number;
+  isMuted?: boolean;
+  shuffle?: boolean;
+  repeat?: 'none' | 'all' | 'one';
+  equalizerBands?: number[];
+  equalizerPreset?: string;
+  vizData?: number[];
+  nextTrackName?: string;
+  nextTrackArtist?: string;
+  [key: string]: unknown;
 }
 
 export class AudioPipManager {
@@ -49,7 +48,7 @@ export class AudioPipManager {
   }
 
   init(): void {
-      this.registerIpc();
+    this.registerIpc();
   }
 
   setMode(mode: PipMode): void {
@@ -105,8 +104,13 @@ export class AudioPipManager {
   stop(): void {
     this.hide();
     this.currentState = {
-      trackName: '', artist: '', coverData: null,
-      isPlaying: false, currentTime: 0, duration: 0, volume: 1
+      trackName: '',
+      artist: '',
+      coverData: null,
+      isPlaying: false,
+      currentTime: 0,
+      duration: 0,
+      volume: 1
     };
   }
 
@@ -162,7 +166,8 @@ export class AudioPipManager {
 
   private getModeSize(): { width: number; height: number } {
     switch (this.mode) {
-      case 'medium': return { width: 400, height: 100 };
+      case 'medium':
+        return { width: 400, height: 100 };
       case 'max': {
         const display = screen.getPrimaryDisplay().workAreaSize;
         return { width: display.width, height: 100 };
@@ -171,7 +176,8 @@ export class AudioPipManager {
         const display = screen.getPrimaryDisplay().workAreaSize;
         return { width: display.width, height: 36 };
       }
-      default: return { width: 280, height: 36 };
+      default:
+        return { width: 280, height: 36 };
     }
   }
 
@@ -223,7 +229,6 @@ export class AudioPipManager {
   }
 
   private registerIpc(): void {
-
     ipcMain.on('audio-pip:hidden', () => {
       this.hide();
       this.mainWindow?.webContents.send('audio-pip:closed');

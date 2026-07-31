@@ -8,7 +8,13 @@ import { exec as execCb } from 'child_process';
 import { promisify } from 'util';
 import os from 'os';
 import { AUDIO_EXTS, VIDEO_EXTS } from '../../shared/constants';
-import { coverResultCache, getStore, COVER_CACHE_MAP_KEY, PERSISTENT_COVER_DIR, extractAndCacheCover } from './cover-cache';
+import {
+  coverResultCache,
+  getStore,
+  COVER_CACHE_MAP_KEY,
+  PERSISTENT_COVER_DIR,
+  extractAndCacheCover
+} from './cover-cache';
 import { SharpService } from '../utils/sharp';
 import { errMsg } from '../../shared/helpers';
 import { logger } from '../utils/logger';
@@ -16,117 +22,141 @@ import { logger } from '../utils/logger';
 const execAsync = promisify(execCb);
 
 export function registerMediaHandlers(): void {
-  ipcMain.handle('media:getThumbnail', async (_event, filePath: string, maxSize: number = 320): Promise<string | null> => {
-    try {
-      const cacheDir = join(os.tmpdir(), 'onda', 'thumbs');
-      const hash = createHash('md5').update(filePath + maxSize).digest('hex');
-      const cacheFile = join(cacheDir, `${hash}.jpg`);
+  ipcMain.handle(
+    'media:getThumbnail',
+    async (_event, filePath: string, maxSize: number = 320): Promise<string | null> => {
       try {
-        await access(cacheFile);
-        return `data:image/jpeg;base64,${(await readFile(cacheFile)).toString('base64')}`;
-      } catch {}
-
-      let buf: Buffer | null = null;
-
-      try {
-        const thumb = await nativeImage.createThumbnailFromPath(filePath, { width: maxSize, height: maxSize });
-        if (!thumb.isEmpty()) {
-          buf = thumb.toJPEG(85);
-          await mkdir(cacheDir, { recursive: true }).catch(() => {});
-          await writeFile(cacheFile, buf);
-        }
-      } catch (e) {
-        buf = await SharpService.getThumbnail(filePath, maxSize);
-      }
-
-      if (!buf) {
-        const ext = extname(filePath).toLowerCase();
-        if (AUDIO_EXTS.includes(ext) || VIDEO_EXTS.includes(ext)) {
-          const cover = await extractAndCacheCover(filePath);
-          if (cover.type === 'image' && cover.data) {
-            const b64 = cover.data.replace(/^data:image\/\w+;base64,/, '');
-            buf = Buffer.from(b64, 'base64');
-            if (buf.length > 50000) {
-              try {
-                buf = await sharp(buf).resize(maxSize, maxSize, { fit: 'outside' }).jpeg({ quality: 85 }).toBuffer();
-              } catch { /* use original */ }
-            }
-          }
-        }
-      }
-
-      if (!buf) {
-        return null;
-      }
-      await mkdir(cacheDir, { recursive: true }).catch(() => {});
-      await writeFile(cacheFile, buf);
-      return `data:image/jpeg;base64,${buf.toString('base64')}`;
-    } catch (e) {
-      return null;
-    }
-  });
-
-const batchThumbnailLocks = new Set<string>();
-
-  ipcMain.handle('media:batchThumbnails', async (
-    _event,
-    files: string[],
-    maxSize: number = 320
-  ): Promise<Record<string, string>> => {
-    const result: Record<string, string> = {};
-    const cacheDir = join(os.tmpdir(), 'onda', 'thumbs');
-    await mkdir(cacheDir, { recursive: true }).catch(() => {});
-    const concurrency = Math.max(1, os.cpus().length - 1);
-
-    for (let i = 0; i < files.length; i += concurrency) {
-      const batch = files.slice(i, i + concurrency);
-      const promises = batch.map(async (filePath) => {
+        const cacheDir = join(os.tmpdir(), 'onda', 'thumbs');
+        const hash = createHash('md5')
+          .update(filePath + maxSize)
+          .digest('hex');
+        const cacheFile = join(cacheDir, `${hash}.jpg`);
         try {
-          const hash = createHash('md5').update(filePath + maxSize).digest('hex');
-          const cacheFile = join(cacheDir, `${hash}.jpg`);
-          try {
-            await access(cacheFile);
-            result[filePath] = `data:image/jpeg;base64,${(await readFile(cacheFile)).toString('base64')}`;
-            return;
-          } catch {}
+          await access(cacheFile);
+          return `data:image/jpeg;base64,${(await readFile(cacheFile)).toString('base64')}`;
+        } catch {}
 
-          while (batchThumbnailLocks.has(cacheFile)) {
-            await new Promise<void>((resolve) => {
-              const check = setInterval(() => {
-                if (!batchThumbnailLocks.has(cacheFile)) { clearInterval(check); resolve(); }
-              }, 10);
-              setTimeout(() => { clearInterval(check); resolve(); }, 5000);
-            });
-          }
-          batchThumbnailLocks.add(cacheFile);
+        let buf: Buffer | null = null;
 
-          try {
-            let buf: Buffer | null = null;
-            try {
-              const thumb = await nativeImage.createThumbnailFromPath(filePath, { width: maxSize, height: maxSize });
-              if (!thumb.isEmpty()) {
-                buf = thumb.toJPEG(85);
-                await writeFile(cacheFile, buf);
-              }
-            } catch {
-              buf = await SharpService.getThumbnail(filePath, maxSize);
-            }
-
-            if (buf) {
-              await writeFile(cacheFile, buf);
-              result[filePath] = `data:image/jpeg;base64,${buf.toString('base64')}`;
-            }
-          } finally {
-            batchThumbnailLocks.delete(cacheFile);
+        try {
+          const thumb = await nativeImage.createThumbnailFromPath(filePath, {
+            width: maxSize,
+            height: maxSize
+          });
+          if (!thumb.isEmpty()) {
+            buf = thumb.toJPEG(85);
+            await mkdir(cacheDir, { recursive: true }).catch(() => {});
+            await writeFile(cacheFile, buf);
           }
         } catch {
-          // skip
+          buf = await SharpService.getThumbnail(filePath, maxSize);
         }
-      });
-      await Promise.all(promises);
+
+        if (!buf) {
+          const ext = extname(filePath).toLowerCase();
+          if (AUDIO_EXTS.includes(ext) || VIDEO_EXTS.includes(ext)) {
+            const cover = await extractAndCacheCover(filePath);
+            if (cover.type === 'image' && cover.data) {
+              const b64 = cover.data.replace(/^data:image\/\w+;base64,/, '');
+              buf = Buffer.from(b64, 'base64');
+              if (buf.length > 50000) {
+                try {
+                  buf = await sharp(buf)
+                    .resize(maxSize, maxSize, { fit: 'outside' })
+                    .jpeg({ quality: 85 })
+                    .toBuffer();
+                } catch {
+                  /* use original */
+                }
+              }
+            }
+          }
+        }
+
+        if (!buf) {
+          return null;
+        }
+        await mkdir(cacheDir, { recursive: true }).catch(() => {});
+        await writeFile(cacheFile, buf);
+        return `data:image/jpeg;base64,${buf.toString('base64')}`;
+      } catch {
+        return null;
+      }
     }
-    return result;
-  });
+  );
+
+  const batchThumbnailLocks = new Set<string>();
+
+  ipcMain.handle(
+    'media:batchThumbnails',
+    async (_event, files: string[], maxSize: number = 320): Promise<Record<string, string>> => {
+      const result: Record<string, string> = {};
+      const cacheDir = join(os.tmpdir(), 'onda', 'thumbs');
+      await mkdir(cacheDir, { recursive: true }).catch(() => {});
+      const concurrency = Math.max(1, os.cpus().length - 1);
+
+      for (let i = 0; i < files.length; i += concurrency) {
+        const batch = files.slice(i, i + concurrency);
+        const promises = batch.map(async (filePath) => {
+          try {
+            const hash = createHash('md5')
+              .update(filePath + maxSize)
+              .digest('hex');
+            const cacheFile = join(cacheDir, `${hash}.jpg`);
+            try {
+              await access(cacheFile);
+              result[filePath] =
+                `data:image/jpeg;base64,${(await readFile(cacheFile)).toString('base64')}`;
+              return;
+            } catch {}
+
+            while (batchThumbnailLocks.has(cacheFile)) {
+              await new Promise<void>((resolve) => {
+                const check = setInterval(() => {
+                  if (!batchThumbnailLocks.has(cacheFile)) {
+                    clearInterval(check);
+                    resolve();
+                  }
+                }, 10);
+                setTimeout(() => {
+                  clearInterval(check);
+                  resolve();
+                }, 5000);
+              });
+            }
+            batchThumbnailLocks.add(cacheFile);
+
+            try {
+              let buf: Buffer | null = null;
+              try {
+                const thumb = await nativeImage.createThumbnailFromPath(filePath, {
+                  width: maxSize,
+                  height: maxSize
+                });
+                if (!thumb.isEmpty()) {
+                  buf = thumb.toJPEG(85);
+                  await writeFile(cacheFile, buf);
+                }
+              } catch {
+                buf = await SharpService.getThumbnail(filePath, maxSize);
+              }
+
+              if (buf) {
+                await writeFile(cacheFile, buf);
+                result[filePath] = `data:image/jpeg;base64,${buf.toString('base64')}`;
+              }
+            } finally {
+              batchThumbnailLocks.delete(cacheFile);
+            }
+          } catch {
+            // skip
+          }
+        });
+        await Promise.all(promises);
+      }
+      return result;
+    }
+  );
 
   ipcMain.handle(
     'media:writeTags',
@@ -200,13 +230,16 @@ const batchThumbnailLocks = new Set<string>();
         );
         coverResultCache.delete(filePath);
         const store = await getStore();
-        const cacheMap: Record<string, { cacheFile: string; mtime: number }> | undefined = store.get(
-          COVER_CACHE_MAP_KEY
-        ) as any;
+        const cacheMap: Record<string, { cacheFile: string; mtime: number }> | undefined =
+          store.get(COVER_CACHE_MAP_KEY) as any;
         if (cacheMap?.[filePath]) {
           const old = cacheMap[filePath];
           const cachePath = join(PERSISTENT_COVER_DIR, old.cacheFile);
-          try { await unlink(cachePath); } catch { /* ok */ }
+          try {
+            await unlink(cachePath);
+          } catch {
+            /* ok */
+          }
           delete cacheMap[filePath];
           store.set(COVER_CACHE_MAP_KEY, structuredClone(cacheMap));
         }
@@ -248,9 +281,18 @@ const batchThumbnailLocks = new Set<string>();
         );
         const codec = stdout.trim().toLowerCase();
         const supported = [
-          'aac', 'mp3', 'mp2', 'opus', 'vorbis', 'flac',
-          'pcm_s16le', 'pcm_s16be', 'pcm_s24le', 'pcm_f32le',
-          'alac', 'truehd'
+          'aac',
+          'mp3',
+          'mp2',
+          'opus',
+          'vorbis',
+          'flac',
+          'pcm_s16le',
+          'pcm_s16be',
+          'pcm_s24le',
+          'pcm_f32le',
+          'alac',
+          'truehd'
         ].includes(codec);
         return { codec, supported };
       } catch {
@@ -261,7 +303,12 @@ const batchThumbnailLocks = new Set<string>();
 
   ipcMain.handle(
     'media:transcodeAudioChunk',
-    async (_event, filePath: string, startTime: number, duration: number): Promise<string | null> => {
+    async (
+      _event,
+      filePath: string,
+      startTime: number,
+      duration: number
+    ): Promise<string | null> => {
       const tempDir = join(os.tmpdir(), 'onda', 'audio-transcodes');
       await mkdir(tempDir, { recursive: true });
       const hash = createHash('md5').update(filePath).digest('hex');

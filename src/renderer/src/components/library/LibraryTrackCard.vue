@@ -114,7 +114,7 @@ function formatDur(seconds?: number): string {
     @dragstart="onDragStart"
   >
     <div
-      class="w-full aspect-[4/3] bg-bg-overlay flex items-center justify-center relative overflow-hidden"
+      class="w-full aspect-4/3 bg-bg-overlay flex items-center justify-center relative overflow-hidden"
     >
       <MediaCover :path="props.track.path" :size="40" fallback="play" />
       <div
@@ -199,9 +199,12 @@ function formatDur(seconds?: number): string {
       </div>
     </div>
     <div class="p-3">
-      <div class="text-sm font-medium truncate leading-snug">{{ track.metadata?.title || track.name }}</div>
+      <div class="text-sm font-medium truncate leading-snug">
+        {{ track.metadata?.title || track.name }}
+      </div>
       <div class="text-xs text-fg-faint mt-1 truncate">
-        {{ track.metadata?.artist || t('common.unknown') }}{{ track.metadata?.album ? ` · ${track.metadata.album}` : '' }}
+        {{ track.metadata?.artist || t('common.unknown')
+        }}{{ track.metadata?.album ? ` · ${track.metadata.album}` : '' }}
       </div>
     </div>
   </button>

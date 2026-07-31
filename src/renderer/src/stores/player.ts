@@ -7,6 +7,11 @@ import { logger } from '@renderer/utils/logger';
 import { useLibraryStore } from '@renderer/stores/library';
 import { captureVideoFrame } from './player-cover';
 
+export interface CoverResult {
+  type: 'video' | 'image' | null;
+  data: string | null;
+}
+
 export const usePlayerStore = defineStore('player', () => {
   const currentTrack = ref<MediaFile | null>(null);
   const queue = ref<MediaFile[]>([]);
@@ -28,10 +33,6 @@ export const usePlayerStore = defineStore('player', () => {
   const pendingFullscreen = ref(false);
   const resumePrompt = ref<{ path: string; position: number } | null>(null);
   const pendingQueue = ref<MediaFile[]>([]);
-  interface CoverResult {
-    type: 'video' | 'image' | null;
-    data: string | null;
-  }
   const coverCache = ref<Record<string, CoverResult>>({});
 
   const favorites = ref<string[]>([]);
@@ -49,7 +50,9 @@ export const usePlayerStore = defineStore('player', () => {
       const data = (await window.api.invoke('settings:get')) as Record<string, unknown>;
       const list = data.favorites;
       if (Array.isArray(list)) favorites.value = list;
-    } catch { /* defaults */ }
+    } catch {
+      /* defaults */
+    }
   }
 
   function isFavorite(path: string): boolean {
@@ -99,8 +102,12 @@ export const usePlayerStore = defineStore('player', () => {
         const library = useLibraryStore();
         const files = structuredClone(library.tracks);
         const folderTypes = structuredClone(library.folderTypes);
-        window.api?.invoke('library:saveScanned', { files, folderTypes }).catch(() => { /* non-fatal */ });
-      } catch { /* serialization failed silently */ }
+        window.api?.invoke('library:saveScanned', { files, folderTypes }).catch(() => {
+          /* non-fatal */
+        });
+      } catch {
+        /* serialization failed silently */
+      }
     }, 1000);
   }
 
@@ -270,9 +277,16 @@ export const usePlayerStore = defineStore('player', () => {
 
   async function enrichTrack(track: MediaFile): Promise<void> {
     if (!track.duration) {
-      const dur = (await window.api?.getDuration(track.path)) || 0;
+      let dur = 0;
+      try {
+        dur = (await window.api?.getDuration(track.path)) || 0;
+      } catch {
+        dur = 0;
+      }
       if (dur > 0) {
-        useLibraryStore().updateTrack(track.path, (t) => { t.duration = dur; });
+        useLibraryStore().updateTrack(track.path, (t) => {
+          t.duration = dur;
+        });
       }
     }
     loadCover(track.path);
@@ -391,7 +405,10 @@ export const usePlayerStore = defineStore('player', () => {
       window.api?.extractSubtitleFonts(videoPath) ?? Promise.resolve([] as MkvFont[])
     ]);
     if (!result) return null;
-    logger.info('Subtitles', `loadEmbedded: format=${result.format} fonts=${fonts.length} fontNames=[${fonts.map(f => f.name).join(', ')}]`);
+    logger.info(
+      'Subtitles',
+      `loadEmbedded: format=${result.format} fonts=${fonts.length} fontNames=[${fonts.map((f) => f.name).join(', ')}]`
+    );
     return {
       content: result.content,
       format: result.format as SubtitleTrack['format'],

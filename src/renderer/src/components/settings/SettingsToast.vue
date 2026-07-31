@@ -44,13 +44,13 @@ const grid: (typeof positions)[number][] = [positions[0], positions[1], position
           >
             <component
               :is="p.row === 0 ? CornerUpRight : CornerDownRight"
-              :size="16"
               v-if="p.col === 1"
+              :size="16"
             />
             <component
               :is="p.row === 0 ? CornerUpLeft : CornerDownLeft"
-              :size="16"
               v-if="p.col === 0"
+              :size="16"
             />
             <span>{{ $t(p.labelKey) }}</span>
           </button>

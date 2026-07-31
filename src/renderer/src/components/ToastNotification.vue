@@ -53,7 +53,7 @@ function color(type: string) {
 
 <template>
   <div
-    class="fixed z-[80] flex flex-col gap-2 pointer-events-none"
+    class="fixed z-80 flex flex-col gap-2 pointer-events-none"
     :class="positionClasses[settings.toast.position] || positionClasses['bottom-right']"
   >
     <div

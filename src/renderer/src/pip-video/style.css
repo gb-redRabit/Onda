@@ -25,7 +25,9 @@
   --color-amber-base: #fbbf24;
 }
 
-html, body, #app {
+html,
+body,
+#app {
   height: 100%;
   width: 100%;
   overflow: hidden;
@@ -36,18 +38,18 @@ html, body, #app {
 }
 
 .top-btn {
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
   color: var(--color-fg-faint, #aaa);
 }
 .top-btn:hover {
-  background: rgba(0,0,0,0.8);
+  background: rgba(0, 0, 0, 0.8);
   color: var(--color-fg-base, #fff);
 }
 .close-btn {
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
   color: var(--color-fg-faint, #aaa);
 }
 .close-btn:hover {
-  background: rgba(229,62,62,0.9);
+  background: rgba(229, 62, 62, 0.9);
   color: #fff;
 }

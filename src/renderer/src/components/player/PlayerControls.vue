@@ -114,14 +114,14 @@ function cycleSpeed(direction: number) {
       <div class="flex items-center gap-3">
         <button
           class="text-white/40 hover:text-white/80 transition-colors"
-          :class="{ '!text-accent-base': player.shuffle }"
+          :class="{ 'text-accent-base!': player.shuffle }"
           @click="player.toggleShuffle"
         >
           <Shuffle :size="16" />
         </button>
         <button
           class="text-white/40 hover:text-white/80 transition-colors"
-          :class="{ '!text-red-base': player.isFavorite(player.currentTrack?.path || '') }"
+          :class="{ 'text-red-base!': player.isFavorite(player.currentTrack?.path || '') }"
           :title="
             player.isFavorite(player.currentTrack?.path || '')
               ? $t('common.removeFav')
@@ -155,7 +155,7 @@ function cycleSpeed(direction: number) {
         </button>
         <button
           class="text-white/40 hover:text-white/80 transition-colors"
-          :class="{ '!text-accent-base': player.repeat !== 'none' }"
+          :class="{ 'text-accent-base!': player.repeat !== 'none' }"
           @click="player.cycleRepeat"
         >
           <component :is="player.repeat === 'one' ? Repeat1 : Repeat" :size="16" />
@@ -216,7 +216,7 @@ function cycleSpeed(direction: number) {
         <div class="relative">
           <button
             class="text-white/40 hover:text-white/80 transition-colors mt-1"
-            :class="{ '!text-accent-base': settings.playback.videoFilter !== 'none' }"
+            :class="{ 'text-accent-base!': settings.playback.videoFilter !== 'none' }"
             @click="showFilters = !showFilters"
           >
             <Wand :size="14" />
@@ -235,7 +235,7 @@ function cycleSpeed(direction: number) {
                 v-for="f in videoFilters"
                 :key="f.id"
                 class="w-full px-3 py-1.5 text-left text-sm text-white/50 hover:text-white hover:bg-white/6 transition-colors flex items-center gap-2"
-                :class="{ '!text-accent-base': settings.playback.videoFilter === f.css }"
+                :class="{ 'text-accent-base!': settings.playback.videoFilter === f.css }"
                 @click="setFilter(f)"
               >
                 <span
@@ -254,14 +254,14 @@ function cycleSpeed(direction: number) {
 
         <button
           class="text-white/40 hover:text-white/80 transition-colors"
-          :class="{ '!text-accent-base': player.equalizerVisible }"
+          :class="{ 'text-accent-base!': player.equalizerVisible }"
           @click="player.toggleEqualizer"
         >
           <SlidersHorizontal :size="16" />
         </button>
         <button
           class="text-white/40 hover:text-white/80 transition-colors"
-          :class="{ '!text-accent-base': player.queueVisible }"
+          :class="{ 'text-accent-base!': player.queueVisible }"
           @click="player.toggleQueue"
         >
           <ListMusic :size="16" />

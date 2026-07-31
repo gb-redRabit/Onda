@@ -418,8 +418,15 @@ export function registerLibraryHandlers(): void {
     } | null> => {
       try {
         const store = await getStore();
-        const data = store.get('libraryScanned', null) as { files: MediaFile[]; folderTypes: Record<string, 'audio' | 'video' | 'mixed'> } | null;
-        if (data && typeof data === 'object' && Array.isArray((data as any).files)) {
+        const data = store.get('libraryScanned', null) as {
+          files: MediaFile[];
+          folderTypes: Record<string, 'audio' | 'video' | 'mixed'>;
+        } | null;
+        if (
+          data &&
+          typeof data === 'object' &&
+          Array.isArray((data as { files?: unknown }).files)
+        ) {
           return data;
         }
         return null;
@@ -446,7 +453,13 @@ export function registerLibraryHandlers(): void {
   );
 
   function isValidPlaylistArray(v: unknown): v is Playlist[] {
-    return Array.isArray(v) && v.every((item) => item && typeof item === 'object' && 'id' in item && 'name' in item && 'tracks' in item);
+    return (
+      Array.isArray(v) &&
+      v.every(
+        (item) =>
+          item && typeof item === 'object' && 'id' in item && 'name' in item && 'tracks' in item
+      )
+    );
   }
 
   ipcMain.handle('playlist:loadAll', async (): Promise<Playlist[]> => {
@@ -476,6 +489,15 @@ export function registerLibraryHandlers(): void {
       return await getMetadata(filePath, ext);
     } catch {
       return null;
+    }
+  });
+
+  ipcMain.handle('media:getDuration', async (_event, filePath: string): Promise<number> => {
+    try {
+      return await getDuration(filePath);
+    } catch (err) {
+      logger.warn('library', `media:getDuration failed for ${filePath}: ${err}`);
+      return 0;
     }
   });
 }

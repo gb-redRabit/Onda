@@ -8,6 +8,7 @@
 ## ✅ Zrealizowane
 
 ### Faza 1 — Fundament (Settings + i18n + Drobne fixy)
+
 - [x] `settings.save()` — debounce 300ms
 - [x] `ui.sidebarExpanded` → przeniesione do `settings.appearance`
 - [x] `explorer.viewMode` → zapisywane do settings
@@ -17,6 +18,7 @@
 - [x] `Sidebar.vue` — usunięty dualny stan `ui.sidebarExpanded` / `collapsed`
 
 ### Faza 2 — Library freeze fix
+
 - [x] `shallowRef` dla `tracks` — brak triggera dla computed na każdym dodaniu
 - [x] `trackStats` — jeden single-pass computed zamiast 5 osobnych
 - [x] Deferred cover preload: `onMounted` + `requestAnimationFrame`
@@ -25,6 +27,7 @@
 - [x] `electron.vite.config` — `audio-pip.html` dodany do `rollupOptions.input`
 
 ### Faza 3 — Audio PiP + wide + viz + covers
+
 - [x] `AudioPipManager` — osobne BrowserWindow, IPC handlers, 3 definicje rozmiaru
 - [x] `audio-pip.html` — inline JS, progress bar, play/prev/next/close, hover opacity
 - [x] `useAudioPiP.ts` — kompozabl nasłuchujący `audioEvents`
@@ -37,9 +40,11 @@
 - [x] `audioPipMode` / `audioPipOpacity` / `audioPipAutoShow` / `pipWide` w typach
 
 ### Fix powielania pierwszego utworu w playlistach
+
 - [x] `slice(1)` dla queue we wszystkich play actions
 
 ### Faza 4 — Video PiP: Vue + theme reactivity + optymalizacja
+
 - [x] `pip.html` → Vue SFC z JASSUB, theme listenerem `pip:theme`
 - [x] `App.vue` — `applyTheme()` wysyła `themeVars` do video PiP
 - [x] Przycisk Maximize → zamyka PiP, wznawia w `/player`
@@ -49,6 +54,7 @@
 - [x] Maximize wchodzi w fullscreen
 
 ### Faza 5 — Library view toggle + Top menu
+
 - [x] `LibrarySettings { viewModes }` typy + `DEFAULT_LIBRARY`
 - [x] `LibraryTrackCard.vue` + `LibraryVideoRow.vue`
 - [x] `LibraryView.vue` — viewMode toggle (list/grid) per tab
@@ -56,12 +62,14 @@
 - [x] i18n: `menu.downloads`, `library.viewModeList/Grid`
 
 ### Fix session 2 (post-F5)
+
 - [x] Settings save — `JSON.parse(JSON.stringify())` zamiast Proxy przez IPC
 - [x] Audio PiP — double-click przywraca główne okno
 - [x] `LibraryTrackCard` — akcje na okładkę, aspect ratio 4:3
 - [x] `LibraryView.vue` — ResizeObserver dla gridów
 
 ### Faza 6 — Explorer tabs/drag + Audio visualization
+
 - [x] `ExplorerTab` typ + store — `tabs`, `addTab`, `closeTab`, `switchTab`, `activeTabIndex`
 - [x] `ExplorerView.vue` — pasek zakładek nad breadcrumb z × do zamykania, + do dodawania
 - [x] Drag&drop — `@dragstart` w GridItem/TableRow/inline, `@drop` na content, nav pane, breadcrumb, zakładki
@@ -72,6 +80,7 @@
 - [x] `settings.ts` — `Object.assign` zamiast `=` w `load()` (zachowanie nowych pól)
 
 ### Faza 7 — Explorer drag refinements + band select
+
 - [x] **IPC `fs:move`** — `rename` + fallback `copyRecursive` + `rm` dla cross-volume
 - [x] **IPC `fs:copy`** — `copyFile`/`copyRecursive` z `lstat` do rozróżnienia plik/folder
 - [x] **NavPane drop** — `@dragover`/`@drop`/`@dragleave`, `dropTargetPath` null fix (This PC bug)
@@ -90,6 +99,7 @@
 - [x] **i18n** — `alwaysOnTop`, `confirmBeforeMove`, `moveConfirm`, `copyConfirm`, `libraryFolder`, `nItems`
 
 ### Fix session 3 (post-F7)
+
 - [x] **`effectAllowed='all'`** — Ctrl+drag nie pokazuje "no drop" (było `'move'`)
 - [x] **`fs:move` no-op skip** — pomija rename gdy src === dest
 - [x] **`console.error` w catch** — zastąpiono ciche `catch {}` w `fs:move`/`fs:copy`
@@ -102,6 +112,7 @@
 - [x] **i18n locale w localStorage** — `detectLocale()` sprawdza `localStorage` przed `navigator.language`, zapis przy zmianie w Settings/App.vue
 
 ### Duplikaty plików (post-FS3)
+
 - [x] **`fs:findDuplicates`** — IPC w main: grupowanie po wzorcach sufiksów duplikatów OS (` - Copy/Kopiuj`, `(copy/kopia)`, `copy`, ` (2)`, ` 2`) + weryfikacja SHA-256 (tylko pliki o tej samej wielkości); fallback na pierwszy kandydat gdy oryginał usunięty
 - [x] **Fix sufiksów PL** — regex obsługuje ` — kopia`/` – kopia` (em/en-dash, `\u2014`/`\u2013`) oraz ` - kopia`/` - kopiuj` (polski Windows); wykrywa `wp1334950-... — kopia.jpg`
 - [x] **Przycisk w toolbarze** — ikona `Copy` obok pin, skan bieżącego folderu
@@ -109,6 +120,7 @@
 - [x] **i18n** — klucze `explorer.duplicates*` (pl/en)
 
 ### Kopiuj/Wytnij/Wklej (post-FS4)
+
 - [x] **`stores/clipboard.ts`** — schowek plików (path+name, akcja copy/cut), `isCut()` dla wizualnego feedbacku
 - [x] **Konflikt nazw w main** — `uniqueDestPath()` w `fs:copy`/`fs:move` (auto ` (2)`, ` (3)`… jak w Explorerze)
 - [x] **Skróty** — `Ctrl+C`/`Ctrl+X`/`Ctrl+V` (obok istniejących `Ctrl+A`, `Del`, `F2`, `Enter`, `Esc`)
@@ -117,6 +129,7 @@
 - [x] **i18n** — `common.copy/cut/paste` (pl/en)
 
 ### Właściwości pliku/folderu (post-FS5)
+
 - [x] **`fs:getProperties`** — IPC: dla pliku rozmiar/daty; dla folderu rekurencyjny skan (elementy, foldery, pliki, rozmiar, limit 100k wpisów)
 - [x] **Okno "Właściwości"** — modal z edytowalną nazwą (rename po OK), typ, lokalizacja, rozmiar, zawartość (folder), daty utworzenia/modyfikacji
 - [x] **Menu kontekstowe** — pozycja "Właściwości" + skrót `Alt+Enter` (naprawiona kolejność przed zwykłym Enter)
@@ -124,17 +137,20 @@
 
 ---
 
-
 ### Faza 8 — Explorer jako osobne okno
+
 **Priorytet: 🟡 ŚREDNI | Czas: ~3h** ✅
+
 - [x] Przycisk "Window" na pasku zakładek + skrót `Ctrl+Shift+N`
 - [x] IPC `explorer:create(path?)` — otwiera nowe `BrowserWindow`
 - [x] Route `/explorer/window/:id` → `ExplorerWindowView.vue`
-- [x] Komunikacja między oknami przez IPC bridging *(zrealizowane w F9)*
+- [x] Komunikacja między oknami przez IPC bridging _(zrealizowane w F9)_
 - [x] Zamykanie `Ctrl+W` — zamyka tylko to okno
 
 ### Faza 9 — Drag tab ↔ window
+
 **Priorytet: 🟢 NISKI | Czas: ~2h** ✅
+
 - [x] Tab → okno — drag tab poza okno (dropEffect 'none') → `explorer:create(path)` + usunięcie karty ze źródła
 - [x] Tab → inne okno — drop na pasku/obszarze → `addTab(path)` + IPC `explorer:tabMoved` → źródło usuwa kartę
 - [x] Okno → tab — "Pin as tab" w pasku tytułowym okna eksplorera (`explorer:sendTabToMain`) + drag w drugą stronę
@@ -142,12 +158,15 @@
 - [x] `windowId` synchronicznie w preload (`window:idSync`) + bridging między oknami (F8 → F9)
 
 ### Faza 10 — Cross-window drag plików
+
 **Priorytet: 🟢 NISKI | Czas: ~3h** ✅
+
 - [x] Drag pliku między oknami — `text/uri-list` (file://) + `text/plain` + fallback `Files`/`webUtils.getPathForFile`
 - [x] Drag folderu między oknami (drop na folderze/docelowej karcie/obszarze)
 - [x] IPC bridging przez main process (move/copy przez `fs:move`/`fs:copy` w oknie docelowym)
 
 ### Fix session 4 (post-F10)
+
 - [x] **Odświeżanie okien po move/copy** — tylko okno-docelowe wołało `loadFiles`; źródło pokazywało nieaktualne pliki. Dodano broadcast `explorer:refreshAll`: renderer wysyła po każdym move/copy (`onContentDrop`, `onTabDrop`, `pasteClipboard`, NavPane, Breadcrumb) → main rozsyła `explorer:refresh` do okna głównego + wszystkich okien eksplorera → `App.vue` przeładowuje `explorer.currentPath`
 - [x] **Przeciąganie okna aplikacji po pulpicie** — na trasie `home` środkowy kontener akcji w `AppMenu.vue` miał `-webkit-app-region: no-drag`, więc cały pasek był niedraggable (działał dopiero po otwarciu drugiego okna). `no-drag` zostawiono tylko na przyciskach Home (openFile/openFolder)
 - [x] **Cleanup logów debugowych** — usunięto forward logów renderer→main (`renderer:log` IPC), logi DnD/window/mounted w `ExplorerView`, `ExplorerWindowView`, `App`, `fileDrag`, `window-ipc`, `index.ts`; `logger.ts` ponownie zwykły `console`; zostawiono `logger.error`
@@ -159,6 +178,7 @@
 **Status:** ✅ Ukończone (F11a–e) | Priorytet: 🟢 NISKI–🟡 ŚREDNI
 
 > Plan 2026-07-31. Uwagi z analizy kodu (wszystkie naprawione):
+>
 > - **Bug (F11c):** `playCount`/`lastPlayed` nigdy nie są aktualizowane przy odtwarzaniu — `recentTracks`/`mostPlayed` zawsze puste (tylko ładowane z `library:loadScanned`, nigdy zapisywane).
 > - **Bug (F11a):** biblioteka nie skanuje obrazów — `IMAGE_EXTS` istnieje w `shared/constants.ts`, ale `library-handlers.ts` używa tylko `AUDIO_EXT_SET`/`VIDEO_EXT_SET`.
 > - **F11d:** `handleTabDrop` w `ExplorerView.vue` ma już obsługę same-window drop (`claimTabDrag(path); return true`) — brakowało tylko faktycznego reorderu i `draggable` na kartach.
@@ -166,9 +186,11 @@
 - [x] **Własne skróty klawiszowe w settings** — `SettingsShortcuts.vue` edytowalny (record-key), `settings.updateShortcut()` + persistencja w `settings.shortcuts`
 
 #### F11a — Image viewer w library 🟢 NISKI (~4h)
+
 > Cel: przeglądarka zdjęć (reuse `ImageViewer.vue`) dla obrazów z biblioteki + skanowanie obrazów.
 
 **Kroki (✅ wykonane):**
+
 1. ✅ **Skan obrazów w bibliotece** (`src/main/ipc/library-handlers.ts`)
    - `IMAGE_EXTS` dodane do skanowania; nowy typ `'image'` w `MediaFile.type` (typy: `media.ts`, `library-handlers.ts`, `library.ts` + testy)
    - `processImageFile()` + `imageTasks`/`imageCount` w `scanDir` (chunkowanie 50/thunk z interleavingiem audio/video/image)
@@ -179,9 +201,11 @@
 **Ryzyka:** skan obrazów zwiększa czas scanu dużej biblioteki (reuse istniejącego chunkowania 50/thunk); duże zdjęcia przez mediaServer (range requests już działają).
 
 #### F11b — Playlisty z drag&drop reorder 🟡 ŚREDNI (~4h)
+
 > Cel: reorder utworów WEWNĄTRZ playlisty przeciąganiem + kolejność zapisywana.
 
 **Kroki (✅ wykonane):**
+
 1. ✅ **Akcja w store** (`stores/library.ts`) — `reorderPlaylistTrack(playlistId, fromIdx, toIdx)` + `savePlaylists()` (guardy, `updatedAt`, testy w `library.test.ts`)
 2. ✅ **DnD na listach** — `LibraryTrackRow.vue`: prop `dragIndex`, `dragstart` wysyła `{ paths, playlistId, dragIndex }`
 3. ✅ **Drop w `LibraryPlaylistManager.vue`** — `parseDragPayload()` rozróżnia reorder playlisty od dropu z biblioteki; `onTrackDrop(e, toIdx)` z korektą indeksu (`from < toIdx ? toIdx - 1 : toIdx`) + highlight `dragOverTrackIdx`
@@ -190,9 +214,11 @@
 **Ryzyka:** kolizja z istniejącym DnD do playlist (drop tracków z biblioteki) — rozróżnić payloadem; wiersze wirtualizowane? (playlista renderuje `v-for`, nie virtualizer — brak problemu).
 
 #### F11c — Historia odtwarzania + statystyki 🟡 ŚREDNI (~3h)
+
 > Cel: zapis `playCount`/`lastPlayed` przy odtwarzaniu + widok statystyk.
 
 **Kroki (✅ wykonane):**
+
 1. ✅ **Bugfix: zapis statystyk** (`stores/player.ts`) — helper `recordPlay(track)` wołany w `setTrack`/`prevTrack`/`playFromHistory`; `updateTrack` z `triggerRef` (tylko jeśli track istnieje w bibliotece) + `persistStats()` debounced 1s → `library:saveScanned`
 2. ✅ **Rozbudowa widoku historii** — `recentTracks`/`mostPlayed` teraz zasilane danymi (poprawa planu: panel statystyk odłożony, bugfix wystarcza)
 3. ✅ **Testy** — `player.test.ts`: 3 testy `recordPlay` (inkrementacja, brak tracka w bibliotece, prev/history paths)
@@ -200,9 +226,11 @@
 **Ryzyka:** persistencja `playCount` tylko dla tracków z biblioteki; debounce zapisu żeby nie floodować IPC przy szybkim skipowaniu.
 
 #### F11d — Tab reorder 🟢 NISKI (~2h)
+
 > Cel: przeciąganie zakładek w pasku eksplorera.
 
 **Kroki (✅ wykonane):**
+
 1. ✅ **Akcja w store** (`stores/explorer.ts`) — `reorderTab(from, to)` z korektą `activeTabIndex` (testy: `explorer.test.ts`, 5 przypadków)
 2. ✅ **DnD kart** (`ExplorerView.vue`) — `draggable` + `dragstart` na kartach; `onTabDrop` same-window → `explorer.reorderTab(draggingTabIdx, idx)`; `isDraggingTab` wyłącza auto-switch, ring drop-target włączony
 3. ✅ **Ctrl+W / middle-click** — bez zmian (działa)
@@ -210,6 +238,7 @@
 **Ryzyka:** kolizja z istniejącym tab→window drag — użyć tego samego `beginTabDrag`/`claimTabDrag` + nowy flag `isReorder` dla dropu na samej karcie; testy `explorer` store.
 
 #### F11e — QoL bundle 🟢 NISKI (~2h, opcjonalnie) ✅
+
 - ✅ Pre-existing eslint error `prefer-const` (`src/main/index.ts:17` — `preFullscreenBounds`) — naprawione
 - ⏳ Podsumowanie stanu w `project.md` (liczby/statystyki) — po zamknięciu F11a–d
 
@@ -217,28 +246,28 @@
 
 ## Macierz zależności
 
-| Faza | Zależy od | Status |
-|------|-----------|--------|
-| **F1** Settings | — | ✅ |
-| **F2** Library perf | — | ✅ |
-| **F3** Audio PiP | F1 | ✅ |
-| **F4** Video PiP | — | ✅ |
-| **F5** Library UI | F2 | ✅ |
-| **F6** Explorer+Viz | F1 | ✅ |
-| **F7** Drag refinements | F6 | ✅ |
-| **F8** Explorer windowing | F6+FS3 | ✅ |
-| **F9** Tab ↔ window drag | F8 | ✅ |
-| **F10** Cross-window drag | F9 | ✅ |
-| **FS3** Fix session 3 | F7 | ✅ |
-| **FS4** Duplikaty plików | FS3 | ✅ |
-| **FS5** Kopiuj/Wytnij/Wklej | FS4 | ✅ |
-| **FS6** Właściwości pliku/folderu | FS5 | ✅ |
-| **FS7** Fix session 4 (refresh + drag okna) | F10 | ✅ |
-| **F11a** Image viewer w library | F2+F6 (ImageViewer) | ✅ |
-| **F11b** Playlisty reorder | FS5 | ✅ |
-| **F11c** Historia + statystyki | F2 | ✅ |
-| **F11d** Tab reorder | F9 | ✅ |
-| **F11e** QoL bundle | F11a–d | ✅ |
+| Faza                                        | Zależy od           | Status |
+| ------------------------------------------- | ------------------- | ------ |
+| **F1** Settings                             | —                   | ✅     |
+| **F2** Library perf                         | —                   | ✅     |
+| **F3** Audio PiP                            | F1                  | ✅     |
+| **F4** Video PiP                            | —                   | ✅     |
+| **F5** Library UI                           | F2                  | ✅     |
+| **F6** Explorer+Viz                         | F1                  | ✅     |
+| **F7** Drag refinements                     | F6                  | ✅     |
+| **F8** Explorer windowing                   | F6+FS3              | ✅     |
+| **F9** Tab ↔ window drag                    | F8                  | ✅     |
+| **F10** Cross-window drag                   | F9                  | ✅     |
+| **FS3** Fix session 3                       | F7                  | ✅     |
+| **FS4** Duplikaty plików                    | FS3                 | ✅     |
+| **FS5** Kopiuj/Wytnij/Wklej                 | FS4                 | ✅     |
+| **FS6** Właściwości pliku/folderu           | FS5                 | ✅     |
+| **FS7** Fix session 4 (refresh + drag okna) | F10                 | ✅     |
+| **F11a** Image viewer w library             | F2+F6 (ImageViewer) | ✅     |
+| **F11b** Playlisty reorder                  | FS5                 | ✅     |
+| **F11c** Historia + statystyki              | F2                  | ✅     |
+| **F11d** Tab reorder                        | F9                  | ✅     |
+| **F11e** QoL bundle                         | F11a–d              | ✅     |
 
 ---
 
@@ -246,16 +275,16 @@
 
 > Stan na 2026-07-31 — wszystkie poniższe zmiany są w working tree, nie w git:
 
-| Grupa | Pliki |
-|-------|-------|
-| **F8-F10** (window/explorer + drag) | `window-ipc.ts`, `router/index.ts`, `ExplorerWindowView.vue` (nowy), `tabDrag.ts` (nowy), `fileDrag.ts` (nowy), `ExplorerView.vue`, `ExplorerGridItem.vue`, `ExplorerTableRow.vue`, `AppMenu.vue`, `preload/index.ts` + `.d.ts`, `ipc.ts` (shared) |
-| **FS4-FS6** (duplikaty, clipboard, properties) | `fs-handlers.ts`, `ExplorerView.vue`, `stores/clipboard.ts`, locales |
-| **Fix session 4** (refresh + drag okna) | `window-ipc.ts`, `App.vue`, `ExplorerNavPane.vue`, `ExplorerBreadcrumb.vue`, `AppMenu.vue`, `ExplorerView.vue` |
-| **Cleanup logów** | `logger.ts`, `window-ipc.ts`, `index.ts`, `App.vue`, `ExplorerView.vue`, `ExplorerWindowView.vue`, `fileDrag.ts` |
-| **F11a** Image viewer w library | `library-handlers.ts`, `media.ts`, `library.ts`, `LibraryView.vue`, `locales/pl.ts`, `locales/en.ts`, `library.test.ts` |
-| **F11b** Playlisty reorder | `library.ts`, `LibraryTrackRow.vue`, `LibraryPlaylistManager.vue`, `library.test.ts` |
-| **F11c** Statystyki odtwarzania | `player.ts`, `player.test.ts` |
-| **F11d** Tab reorder | `explorer.ts`, `ExplorerView.vue`, `explorer.test.ts` (nowy), `vitest.setup.ts` |
-| **F11e** QoL | `index.ts`, `plan.md` |
+| Grupa                                          | Pliki                                                                                                                                                                                                                                              |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **F8-F10** (window/explorer + drag)            | `window-ipc.ts`, `router/index.ts`, `ExplorerWindowView.vue` (nowy), `tabDrag.ts` (nowy), `fileDrag.ts` (nowy), `ExplorerView.vue`, `ExplorerGridItem.vue`, `ExplorerTableRow.vue`, `AppMenu.vue`, `preload/index.ts` + `.d.ts`, `ipc.ts` (shared) |
+| **FS4-FS6** (duplikaty, clipboard, properties) | `fs-handlers.ts`, `ExplorerView.vue`, `stores/clipboard.ts`, locales                                                                                                                                                                               |
+| **Fix session 4** (refresh + drag okna)        | `window-ipc.ts`, `App.vue`, `ExplorerNavPane.vue`, `ExplorerBreadcrumb.vue`, `AppMenu.vue`, `ExplorerView.vue`                                                                                                                                     |
+| **Cleanup logów**                              | `logger.ts`, `window-ipc.ts`, `index.ts`, `App.vue`, `ExplorerView.vue`, `ExplorerWindowView.vue`, `fileDrag.ts`                                                                                                                                   |
+| **F11a** Image viewer w library                | `library-handlers.ts`, `media.ts`, `library.ts`, `LibraryView.vue`, `locales/pl.ts`, `locales/en.ts`, `library.test.ts`                                                                                                                            |
+| **F11b** Playlisty reorder                     | `library.ts`, `LibraryTrackRow.vue`, `LibraryPlaylistManager.vue`, `library.test.ts`                                                                                                                                                               |
+| **F11c** Statystyki odtwarzania                | `player.ts`, `player.test.ts`                                                                                                                                                                                                                      |
+| **F11d** Tab reorder                           | `explorer.ts`, `ExplorerView.vue`, `explorer.test.ts` (nowy), `vitest.setup.ts`                                                                                                                                                                    |
+| **F11e** QoL                                   | `index.ts`, `plan.md`                                                                                                                                                                                                                              |
 
 Ostatni commit: `c40f380` "fix, and findduplicates". Sugerowany commit: F8-F10 + FS4-FS6 + fix session 4 jako osobny commit (zgodnie z konwencją `Sprint N: ...`).

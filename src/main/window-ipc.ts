@@ -57,12 +57,12 @@ export function registerWindowHandlers(context: {
   pipManager: PipManager;
   audioPipManager: AudioPipManager;
 }): void {
-  const { getMainWindow, preFullscreenBounds, createChildWindow, pipManager, audioPipManager } = context;
+  const { getMainWindow, preFullscreenBounds, createChildWindow, pipManager, audioPipManager } =
+    context;
 
-  ipcMain.handle('window:createChild', (
-      _event,
-      options: { title: string; width: number; height: number; alwaysOnTop?: boolean }
-    ) => {
+  ipcMain.handle(
+    'window:createChild',
+    (_event, options: { title: string; width: number; height: number; alwaysOnTop?: boolean }) => {
       try {
         const mainWindow = getMainWindow();
         if (!mainWindow) return null;
@@ -269,7 +269,12 @@ export function registerWindowHandlers(context: {
       opacity?: number,
       position?: string
     ) => {
-      audioPipManager.show(state, mode as 'minimal' | 'medium' | 'max', opacity, position as 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left');
+      audioPipManager.show(
+        state,
+        mode as 'minimal' | 'medium' | 'max',
+        opacity,
+        position as 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
+      );
       return true;
     }
   );
@@ -299,7 +304,10 @@ export function registerWindowHandlers(context: {
       if (mode) audioPipManager.setMode(mode as 'minimal' | 'medium' | 'max');
       audioPipManager.update(state);
       if (opacity !== undefined) audioPipManager.setOpacity(opacity);
-      if (position) audioPipManager.setPosition(position as 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left');
+      if (position)
+        audioPipManager.setPosition(
+          position as 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
+        );
       return true;
     }
   );
