@@ -114,6 +114,18 @@ onMounted(async () => {
   audioPip.mode.value = settings.appearance.audioPipMode;
   audioPip.setAutoShow(settings.appearance.audioPipAutoShow);
 
+  // global media keys / tray — wire to player store
+  window.api?.on('media:playPause', () => player.togglePlay());
+  window.api?.on('media:next', () => player.nextTrack());
+  window.api?.on('media:previous', () => player.prevTrack());
+  window.api?.on('media:stop', () => {
+    player.pause();
+    player.seek(0);
+  });
+  window.api?.on('media:volumeUp', () => player.setVolume(player.volume + 0.05));
+  window.api?.on('media:volumeDown', () => player.setVolume(player.volume - 0.05));
+  window.api?.on('media:toggleMute', () => player.toggleMute());
+
   // global PiP IPC — always active even when PlayerView is unmounted
   window.api?.on('pip:closed', (_time: unknown) => {
     player.pipActive = false;

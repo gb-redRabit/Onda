@@ -6,6 +6,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { useUIStore } from '@renderer/stores/ui';
 import { Play } from '@lucide/vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
+import { formatDuration } from '@renderer/utils/formatters';
 
 const { t } = useI18n();
 
@@ -25,15 +26,6 @@ const cover = computed(() => {
   if (cached.data) return cached;
   return { type: 'video', data: props.track.path.replace(/\\/g, '/') };
 });
-
-function formatDur(seconds?: number): string {
-  if (!seconds || seconds <= 0) return '—';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
 
 function onContextMenu(e: MouseEvent) {
   e.preventDefault();
@@ -78,13 +70,13 @@ function onDragStart(e: DragEvent) {
         v-if="track.duration"
         class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/60 text-white text-[10px] font-medium"
       >
-        {{ formatDur(track.duration) }}
+        {{ formatDuration(track.duration, '—') }}
       </div>
     </div>
     <div class="p-2.5">
       <div class="text-xs font-medium truncate">{{ track.name }}</div>
       <div class="text-[11px] text-fg-faint mt-0.5">
-        {{ formatDur(track.duration) }}
+        {{ formatDuration(track.duration, '—') }}
       </div>
     </div>
   </button>

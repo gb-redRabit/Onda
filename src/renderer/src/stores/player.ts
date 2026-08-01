@@ -3,7 +3,7 @@ import { ref, computed, triggerRef } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import type { SubtitleTrack, MkvFont } from '@renderer/types/subtitles';
 import { audioEngine } from '@renderer/modules/audioEngine';
-import { logger } from '@renderer/utils/logger';
+import { logger } from '@shared/logger';
 import { useLibraryStore } from '@renderer/stores/library';
 import { captureVideoFrame } from './player-cover';
 
@@ -68,11 +68,6 @@ export const usePlayerStore = defineStore('player', () => {
       favorites.value.push(path);
     }
     saveFavorites();
-  }
-
-  async function loadFavorites() {
-    favoritesLoaded = false;
-    await ensureFavorites();
   }
 
   async function saveFavorites() {
@@ -246,7 +241,6 @@ export const usePlayerStore = defineStore('player', () => {
   async function doLoadCover(filePath: string): Promise<void> {
     if (filePath in coverCache.value) return;
     coverCache.value[filePath] = { type: null, data: null };
-    triggerRef(coverCache);
     const cover = (await window.api?.getCover(filePath)) ?? { type: null, data: null };
     if (cover.data) {
       coverCache.value[filePath] = cover;
@@ -492,7 +486,6 @@ export const usePlayerStore = defineStore('player', () => {
     clearResumePrompt,
     favorites,
     isFavorite,
-    toggleFavorite,
-    loadFavorites
+    toggleFavorite
   };
 });

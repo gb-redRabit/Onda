@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { MediaFile } from '@renderer/types/media';
 import { usePlayerStore } from '@renderer/stores/player';
@@ -41,6 +41,10 @@ const name = ref('');
 const saving = ref(false);
 const uploadingCover = ref(false);
 const coverUrl = ref<string | null>(null);
+let closeTimer: ReturnType<typeof setTimeout> | null = null;
+onBeforeUnmount(() => {
+  if (closeTimer) clearTimeout(closeTimer);
+});
 const coverObj = computed<{ type: string | null; data: string | null } | undefined>(() => {
   if (!coverUrl.value) return undefined;
   if (coverUrl.value.startsWith('data:') || coverUrl.value.startsWith('blob:')) {
@@ -142,7 +146,7 @@ async function save() {
     });
     saving.value = false;
     ui.notify('success', t('tags.saved'));
-    setTimeout(() => emit('close'), 600);
+    closeTimer = setTimeout(() => emit('close'), 600);
   } else {
     ui.notify('error', t('tags.saveError'), result?.error);
     saving.value = false;

@@ -26,8 +26,6 @@ export interface IpcChannels {
   'fs:getDrives': { args: []; result: unknown[] };
   'fs:readdir': { args: [dirPath: string]; result: void };
   'fs:readdir:batch': { args: []; result: { done: boolean; items: unknown[] } };
-  'fs:stat': { args: [filePath: string]; result: unknown };
-  'fs:rename': { args: [oldPath: string, newPath: string]; result: void };
   'fs:mkdir': { args: [dirPath: string]; result: boolean };
   'fs:delete': { args: [filePath: string]; result: void };
   'fs:move': { args: [paths: string[], destination: string]; result: void };
@@ -58,28 +56,22 @@ export interface IpcChannels {
   };
   'dialog:openFolder': { args: []; result: string[] };
   'dialog:openFolderFiles': { args: []; result: { canceled: boolean; filePaths: string[] } };
-  'dialog:saveFile': { args: [options?: unknown]; result: Electron.SaveDialogReturnValue };
   'app:quit': { args: []; result: void };
   'window:minimize': { args: []; result: void };
   'window:maximize': { args: []; result: void };
   'window:close': { args: []; result: void };
-  'window:isMaximized': { args: []; result: boolean };
   'explorer:create': { args: [path?: string]; result: number | null };
-  'explorer:list': { args: []; result: number[] };
   'explorer:tabMoved': { args: [sourceWindowId: number, path: string]; result: void };
   'explorer:sendTabToMain': { args: [path: string]; result: void };
   'window:setAlwaysOnTop': { args: [flag: boolean]; result: void };
   'window:toggleFullscreen': { args: []; result: boolean };
   'window:exitFullscreen': { args: []; result: void };
   'window:isFullscreen': { args: []; result: boolean };
-  'shell:openExternal': { args: [url: string]; result: void };
   'shell:showItemInFolder': { args: [fullPath: string]; result: void };
   'shell:openTerminal': { args: [dirPath: string]; result: void };
   'shell:openWithDefault': { args: [filePath: string]; result: void };
   'fs:copyPath': { args: [filePath: string]; result: void };
-  'fs:readFile': { args: [filePath: string]; result: string | null };
   'app:getPath': { args: [name: string]; result: string };
-  'app:getVersion': { args: []; result: string };
   'library:scan': {
     args: [folderPaths: string[]];
     result: { count: number; folderTypes: Record<string, 'audio' | 'video' | 'mixed'> };
@@ -103,7 +95,6 @@ export interface IpcChannels {
   'playlist:saveAll': { args: [playlists: IpcPlaylist[]]; result: void };
   'settings:get': { args: []; result: Record<string, unknown> };
   'settings:set': { args: [data: Record<string, unknown>]; result: void };
-  'media:getMetadata': { args: [filePath: string]; result: unknown };
   'media:getCover': {
     args: [filePath: string];
     result: { type: 'video' | 'image' | null; data: string | null };
@@ -129,8 +120,6 @@ export interface IpcChannels {
   'playback:setPosition': { args: [filePath: string, position: number]; result: void };
   'playback:clearPosition': { args: [filePath: string]; result: void };
   'yt:search': { args: [query: string]; result: unknown };
-  'yt:getInfo': { args: [videoId: string]; result: unknown };
-  'yt:download': { args: [url: string, format: string]; result: unknown };
   'dep:checkFfmpeg': { args: []; result: { installed: boolean; version: string | null } };
   'dep:checkYtdlp': {
     args: [];
@@ -164,10 +153,6 @@ export interface IpcChannels {
   'media:transcodeAudioChunk': {
     args: [filePath: string, startTime: number, duration: number];
     result: string | null;
-  };
-  'media:cleanupTranscodedAudio': {
-    args: [audioPath: string];
-    result: void;
   };
   'shell:getFileIcon': {
     args: [filePath: string];

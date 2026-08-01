@@ -6,6 +6,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { useUIStore } from '@renderer/stores/ui';
 import { Play, Plus } from '@lucide/vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
+import { formatDuration } from '@renderer/utils/formatters';
 
 const { t } = useI18n();
 
@@ -25,15 +26,6 @@ const cover = computed(() => {
   if (cached.data) return cached;
   return { type: 'video', data: props.track.path.replace(/\\/g, '/') };
 });
-
-function formatDur(seconds?: number): string {
-  if (!seconds || seconds <= 0) return '—';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
 
 function playNow() {
   emit('play', props.track);
@@ -77,7 +69,7 @@ function onDragStart(e: DragEvent) {
         v-if="track.duration"
         class="absolute bottom-0.5 right-0.5 px-1 py-0.5 rounded bg-black/60 text-white text-[9px] font-medium leading-none"
       >
-        {{ formatDur(track.duration) }}
+        {{ formatDuration(track.duration, '—') }}
       </div>
     </div>
 
@@ -85,7 +77,7 @@ function onDragStart(e: DragEvent) {
       <div class="text-sm font-medium truncate">{{ track.metadata?.title || track.name }}</div>
       <div class="text-xs text-fg-faint truncate">
         {{ track.extension?.toUpperCase() || t('common.unknown') }} ·
-        {{ formatDur(track.duration) }}
+        {{ formatDuration(track.duration, '—') }}
       </div>
     </div>
 

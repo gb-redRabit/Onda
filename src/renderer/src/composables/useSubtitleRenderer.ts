@@ -20,8 +20,7 @@ import verdanaBoldUrl from '/fonts/VerdanaBold.ttf?url';
 import georgiaUrl from '/fonts/Georgia.ttf?url';
 import comicSansMsUrl from '/fonts/ComicSansMS.ttf?url';
 import segoeUiEmojiUrl from '/fonts/SegoeUIEmoji.ttf?url';
-import { queryRemoteFonts } from 'lfa-ponyfill';
-import { logger } from '@renderer/utils/logger';
+import { logger } from '@shared/logger';
 
 const fontMapCache = new Map<string, any>();
 
@@ -93,6 +92,7 @@ async function loadRemoteVariant(
 ): Promise<void> {
   if (fontMap[mapKey]) return;
   try {
+    const { queryRemoteFonts } = await import('lfa-ponyfill');
     const fonts = await queryRemoteFonts({ postscriptNames: [postscript] });
     if (!fonts.length) return;
     const blob = await fonts[0].blob();
@@ -340,6 +340,16 @@ export function removeSubtitleTrack(): void {
 export function destroySubtitleRenderer(): void {
   removeSubtitleTrack();
   videoEl = null;
+  const seen = new Set<string>();
+  for (const [, fontMap] of fontMapCache) {
+    for (const v of Object.values(fontMap)) {
+      if (typeof v === 'string' && v.startsWith('blob:') && !seen.has(v)) {
+        seen.add(v);
+        URL.revokeObjectURL(v);
+      }
+    }
+  }
+  fontMapCache.clear();
 }
 
 export function getLastSubtitleData(): {
@@ -350,18 +360,18 @@ export function getLastSubtitleData(): {
   if (!lastSubtitleData) return null;
   const availableFonts: Record<string, string> = {};
   for (const [k, v] of Object.entries(lastSubtitleData.availableFonts)) {
-    if (!v.startsWith('blob:')) availableFonts[k] = v;
+    if (typeof v === 'string' && !v.startsWith('blob:')) availableFonts[k] = v;
   }
-  const plain = {
+  const fonts: MkvFont[] = (lastSubtitleData.fonts || []).map((f) => ({
+    name: f.name,
+    ext: f.ext || 'ttf',
+    data: Array.from(f.data || [])
+  }));
+  return {
     subContent: lastSubtitleData.subContent,
-    fonts: lastSubtitleData.fonts,
+    fonts,
     availableFonts
   };
-  try {
-    return structuredClone(plain);
-  } catch {
-    return plain;
-  }
 }
 
 export async function preparePiPSubtitleData(videoPath: string): Promise<{
@@ -391,13 +401,18 @@ export async function preparePiPSubtitleData(videoPath: string): Promise<{
 
   const fontMap = await buildFontMap(assContent, fonts);
 
-  try {
-    return structuredClone({
-      subContent: assContent,
-      fonts,
-      availableFonts: fontMap
-    });
-  } catch {
-    return { subContent: assContent, fonts, availableFonts: fontMap };
+  const availableFonts: Record<string, string> = {};
+  for (const [k, v] of Object.entries(fontMap)) {
+    if (typeof v === 'string' && !v.startsWith('blob:')) availableFonts[k] = v;
   }
+  const plainFonts: MkvFont[] = (fonts || []).map((f) => ({
+    name: f.name,
+    ext: f.ext || 'ttf',
+    data: Array.from(f.data || [])
+  }));
+  return {
+    subContent: assContent,
+    fonts: plainFonts,
+    availableFonts
+  };
 }

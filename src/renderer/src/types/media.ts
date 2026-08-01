@@ -47,20 +47,3 @@ export interface Playlist {
   createdAt: number;
   updatedAt: number;
 }
-
-export interface PlayerState {
-  currentTrack: MediaFile | null;
-  queue: MediaFile[];
-  history: MediaFile[];
-  isPlaying: boolean;
-  isPaused: boolean;
-  isMuted: boolean;
-  volume: number;
-  currentTime: number;
-  duration: number;
-  playbackRate: number;
-  shuffle: boolean;
-  repeat: 'none' | 'all' | 'one';
-  equalizerPreset: string;
-  equalizerBands: number[];
-}

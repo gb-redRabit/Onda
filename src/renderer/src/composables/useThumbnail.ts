@@ -8,7 +8,7 @@ import {
   processThumbQueue,
   thumbTaskDone
 } from '@renderer/utils/thumbLoader';
-import { logger } from '@renderer/utils/logger';
+import { logger } from '@shared/logger';
 
 export function useThumbnail(
   path: string,
@@ -52,8 +52,12 @@ export function useThumbnail(
       return;
     }
     thumbTasks.push(() => {
-      window.api
-        ?.invoke('media:getThumbnail', path, thumbSize)
+      const thumbReq = window.api?.invoke('media:getThumbnail', path, thumbSize);
+      if (!thumbReq) {
+        thumbTaskDone();
+        return;
+      }
+      thumbReq
         .then((dataUrl) => {
           if (dataUrl) {
             setCachedThumb(path, dataUrl as string);
@@ -63,15 +67,17 @@ export function useThumbnail(
             if (icon) {
               systemIcon.value = icon;
             } else {
-              window.api
-                ?.invoke('shell:getFileIcon', path)
-                .then((icon) => {
-                  if (icon) {
-                    setCachedIcon(path, icon as string);
-                    systemIcon.value = icon as string;
-                  }
-                })
-                .catch((err) => logger.error('Thumbnail', 'getFileIcon (fallback)', err));
+              const iconReq = window.api?.invoke('shell:getFileIcon', path);
+              if (iconReq) {
+                iconReq
+                  .then((icon) => {
+                    if (icon) {
+                      setCachedIcon(path, icon as string);
+                      systemIcon.value = icon as string;
+                    }
+                  })
+                  .catch((err) => logger.error('Thumbnail', 'getFileIcon (fallback)', err));
+              }
             }
           }
         })
@@ -81,15 +87,17 @@ export function useThumbnail(
           if (icon) {
             systemIcon.value = icon;
           } else {
-            window.api
-              ?.invoke('shell:getFileIcon', path)
-              .then((icon) => {
-                if (icon) {
-                  setCachedIcon(path, icon as string);
-                  systemIcon.value = icon as string;
-                }
-              })
-              .catch((err) => logger.error('Thumbnail', 'getFileIcon (error fallback)', err));
+            const iconReq = window.api?.invoke('shell:getFileIcon', path);
+            if (iconReq) {
+              iconReq
+                .then((icon) => {
+                  if (icon) {
+                    setCachedIcon(path, icon as string);
+                    systemIcon.value = icon as string;
+                  }
+                })
+                .catch((err) => logger.error('Thumbnail', 'getFileIcon (error fallback)', err));
+            }
           }
         })
         .finally(() => {

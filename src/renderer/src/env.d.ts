@@ -112,7 +112,6 @@ interface OndaAPI {
     startTime: number,
     duration: number
   ) => Promise<string | null>;
-  cleanupTranscodedAudio: (audioPath: string) => Promise<void>;
 }
 
 declare global {

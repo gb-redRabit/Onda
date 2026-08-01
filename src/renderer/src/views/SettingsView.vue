@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, defineAsyncComponent } from 'vue';
-import { logger } from '@renderer/utils/logger';
+import { logger } from '@shared/logger';
 import {
   Palette,
   Play,

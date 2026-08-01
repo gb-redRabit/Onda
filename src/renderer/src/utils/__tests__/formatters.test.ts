@@ -1,14 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  formatDuration,
-  formatFileSize,
-  formatNumber,
-  formatRelativeTime,
-  generateId,
-  getFileExtension,
-  getFileNameWithoutExtension,
-  truncate
-} from '../formatters';
+import { formatDuration, formatFileSize, formatNumber } from '../formatters';
 
 describe('formatDuration', () => {
   it('returns 0:00 for null/NaN/undefined', () => {
@@ -87,73 +78,6 @@ describe('formatNumber', () => {
   });
 });
 
-describe('formatRelativeTime', () => {
-  it('returns teraz for recent timestamps', () => {
-    expect(formatRelativeTime(Date.now())).toBe('teraz');
-    expect(formatRelativeTime(Date.now() - 30000)).toBe('30 sekund temu');
-  });
-
-  it('returns minutes ago', () => {
-    expect(formatRelativeTime(Date.now() - 120000)).toBe('2 minuty temu');
-  });
-
-  it('returns hours ago', () => {
-    expect(formatRelativeTime(Date.now() - 7200000)).toBe('2 godziny temu');
-  });
-
-  it('returns days ago', () => {
-    expect(formatRelativeTime(Date.now() - 172800000)).toBe('przedwczoraj');
-  });
-});
-
-describe('generateId', () => {
-  it('returns a string with timestamp prefix', () => {
-    const id = generateId();
-    expect(id).toContain('-');
-    expect(id.length).toBeGreaterThan(10);
-  });
-
-  it('generates unique ids', () => {
-    const ids = new Set(Array.from({ length: 100 }, () => generateId()));
-    expect(ids.size).toBe(100);
-  });
-});
-
-describe('getFileExtension', () => {
-  it('returns extension from filename', () => {
-    expect(getFileExtension('song.mp3')).toBe('.mp3');
-    expect(getFileExtension('video.mp4')).toBe('.mp4');
-  });
-
-  it('returns empty string for files without extension', () => {
-    expect(getFileExtension('Makefile')).toBe('');
-  });
-
-  it('handles multiple dots', () => {
-    expect(getFileExtension('archive.tar.gz')).toBe('.gz');
-  });
-});
-
-describe('getFileNameWithoutExtension', () => {
-  it('strips extension', () => {
-    expect(getFileNameWithoutExtension('song.mp3')).toBe('song');
-  });
-
-  it('returns full name for files without extension', () => {
-    expect(getFileNameWithoutExtension('Makefile')).toBe('Makefile');
-  });
-});
-
-describe('truncate', () => {
-  it('returns string as-is when shorter than max', () => {
-    expect(truncate('hello', 10)).toBe('hello');
-  });
-
-  it('truncates and adds ellipsis', () => {
-    expect(truncate('hello world', 5)).toBe('hello...');
-  });
-});
-
 describe('formatDuration edge cases', () => {
   it('handles negative values (clamped to 0)', () => {
     expect(formatDuration(-1)).toBe('0:00');
@@ -198,77 +122,5 @@ describe('formatNumber edge cases', () => {
 
   it('handles empty string', () => {
     expect(formatNumber('')).toBe('0');
-  });
-});
-
-describe('formatRelativeTime edge cases', () => {
-  it('returns date string for timestamps older than 30 days', () => {
-    const old = Date.now() - 31 * 24 * 60 * 60 * 1000;
-    const result = formatRelativeTime(old);
-    expect(result).not.toBe('teraz');
-    expect(result).not.toBe('przedwczoraj');
-    expect(result).not.toMatch(/temu/);
-  });
-
-  it('returns future relative string for future timestamps (negative diff)', () => {
-    expect(formatRelativeTime(Date.now() + 10000)).toBe('za 10 sekund');
-  });
-
-  it('returns teraz for exactly 0 diff', () => {
-    expect(formatRelativeTime(Date.now())).toBe('teraz');
-  });
-});
-
-describe('generateId edge cases', () => {
-  it('contains a dash separator', () => {
-    expect(generateId()).toContain('-');
-  });
-
-  it('generates strings of consistent length', () => {
-    const ids = Array.from({ length: 10 }, () => generateId());
-    ids.forEach((id) => {
-      expect(id.split('-')[0]).toMatch(/^\d+$/);
-      expect(id.split('-')[1]).toMatch(/^[a-z0-9]+$/);
-    });
-  });
-});
-
-describe('getFileExtension edge cases', () => {
-  it('handles dotfiles (returns filename as-is)', () => {
-    expect(getFileExtension('.gitignore')).toBe('.gitignore');
-  });
-
-  it('handles filename ending with dot', () => {
-    expect(getFileExtension('noext.')).toBe('.');
-  });
-
-  it('handles empty string', () => {
-    expect(getFileExtension('')).toBe('');
-  });
-
-  it('handles just a dot', () => {
-    expect(getFileExtension('.')).toBe('.');
-  });
-
-  it('handles full paths', () => {
-    expect(getFileExtension('/path/to/file.mp3')).toBe('.mp3');
-  });
-});
-
-describe('getFileNameWithoutExtension edge cases', () => {
-  it('handles dotfiles', () => {
-    expect(getFileNameWithoutExtension('.gitignore')).toBe('');
-  });
-
-  it('handles filename ending with dot', () => {
-    expect(getFileNameWithoutExtension('noext.')).toBe('noext');
-  });
-
-  it('handles empty string', () => {
-    expect(getFileNameWithoutExtension('')).toBe('');
-  });
-
-  it('handles full paths', () => {
-    expect(getFileNameWithoutExtension('/path/to/file.mp3')).toBe('/path/to/file');
   });
 });

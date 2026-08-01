@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
 
 interface PipUpdate {
   mode?: string;
@@ -78,7 +79,7 @@ const volLabel = computed(() => (isMuted.value ? 'MUT' : 'VOL'));
 const isVideoCover = computed(() => coverType.value === 'video' && !!coverData.value);
 const videoCoverSrc = computed(() => {
   if (coverType.value !== 'video' || !coverData.value) return '';
-  return `${api?.mediaServerUrl || ''}/?path=${encodeURIComponent(coverData.value.replace(/\\/g, '/'))}`;
+  return toMediaServerUrl(coverData.value);
 });
 
 const pipAlpha = computed(() => {

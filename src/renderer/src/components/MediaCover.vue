@@ -2,6 +2,7 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { Music2, Play, Disc3, Film } from '@lucide/vue';
+import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
 
 const props = withDefaults(
   defineProps<{
@@ -37,8 +38,7 @@ const result = computed(() => {
 const isVideo = computed(() => result.value.type === 'video' && props.renderAsVideo);
 const src = computed(() => {
   if (!result.value.data) return '';
-  if (result.value.type === 'video')
-    return `${window.api.mediaServerUrl}/?path=${encodeURIComponent(result.value.data.replace(/\\/g, '/'))}`;
+  if (result.value.type === 'video') return toMediaServerUrl(result.value.data);
   return result.value.data;
 });
 

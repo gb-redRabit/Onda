@@ -95,21 +95,4 @@ export function registerDialogHandlers(): void {
       return { canceled: true, filePaths: [] };
     }
   });
-
-  ipcMain.handle('dialog:saveFile', async (_event, options?: Electron.SaveDialogOptions) => {
-    try {
-      const win = BrowserWindow.getFocusedWindow();
-      if (!win) return { canceled: true, filePath: '' };
-      const result = await dialog.showSaveDialog(win, {
-        filters: [
-          { name: 'Media Files', extensions: ['mp3', 'flac', 'mp4', 'mkv'] },
-          { name: 'All Files', extensions: ['*'] }
-        ],
-        ...options
-      });
-      return result;
-    } catch {
-      return { canceled: true, filePath: '' };
-    }
-  });
 }

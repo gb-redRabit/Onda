@@ -301,12 +301,6 @@ export class PipManager {
     }
   }
 
-  play(startTime: number): void {
-    this.lastTime = startTime;
-    this.sendPlay(startTime);
-    this.startTimeTracking();
-  }
-
   hide(): void {
     this.stopTimeTracking();
     if (this.window && !this.window.isDestroyed()) {

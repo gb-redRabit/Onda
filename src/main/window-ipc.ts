@@ -57,29 +57,10 @@ export function registerWindowHandlers(context: {
   pipManager: PipManager;
   audioPipManager: AudioPipManager;
 }): void {
-  const { getMainWindow, preFullscreenBounds, createChildWindow, pipManager, audioPipManager } =
-    context;
-
-  ipcMain.handle(
-    'window:createChild',
-    (_event, options: { title: string; width: number; height: number; alwaysOnTop?: boolean }) => {
-      try {
-        const mainWindow = getMainWindow();
-        if (!mainWindow) return null;
-        const child = createChildWindow(mainWindow, options);
-        return child.id;
-      } catch {
-        return null;
-      }
-    }
-  );
+  const { getMainWindow, preFullscreenBounds, pipManager, audioPipManager } = context;
 
   ipcMain.handle('explorer:create', (_event, path?: string) => {
     return createExplorerWindow(typeof path === 'string' ? path : undefined);
-  });
-
-  ipcMain.handle('explorer:list', () => {
-    return getExplorerWindows().map((w) => w.id);
   });
 
   ipcMain.handle('explorer:tabMoved', (_event, sourceWindowId: number, path: string) => {
@@ -143,11 +124,6 @@ export function registerWindowHandlers(context: {
 
   ipcMain.handle('window:isFullscreen', () => {
     return getMainWindow()?.isFullScreen() ?? false;
-  });
-
-  ipcMain.handle('window:closeChild', (_event, childId: number) => {
-    const child = BrowserWindow.fromId(childId);
-    child?.close();
   });
 
   ipcMain.handle(
@@ -232,11 +208,6 @@ export function registerWindowHandlers(context: {
       pipManager.loadTrack(videoSrc, subtitleData);
     }
   );
-
-  ipcMain.handle('pip:updatesrc', (_event, videoSrc: string, startTime?: number) => {
-    pipManager.loadTrack(videoSrc, null);
-    if (startTime !== undefined) pipManager.play(startTime);
-  });
 
   ipcMain.handle(
     'pip:updateSubtitle',

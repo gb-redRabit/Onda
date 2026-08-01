@@ -17,7 +17,8 @@ import {
 import type { FileItem } from '@renderer/types/explorer';
 import ImageViewerSettings from './ImageViewerSettings.vue';
 import ImageViewerThumbnails from './ImageViewerThumbnails.vue';
-import { logger } from '@renderer/utils/logger';
+import { logger } from '@shared/logger';
+import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
 
 const props = defineProps<{
   files: FileItem[];
@@ -150,9 +151,10 @@ const kenStyle = reactive({ scale: 1, translateX: 0, translateY: 0 });
 
 const thumbCache = reactive(new Map<string, string>());
 let fsCleanup: (() => void) | null = null;
+let currentObjectUrl: string | null = null;
 
 function toFileUrl(file: FileItem): string {
-  return `${window.api.mediaServerUrl}/?path=${encodeURIComponent(file.path.replace(/\\/g, '/'))}`;
+  return toMediaServerUrl(file.path);
 }
 
 async function loadDisplayImage(file: FileItem, maxWidth: number = 1920): Promise<string> {
@@ -161,7 +163,11 @@ async function loadDisplayImage(file: FileItem, maxWidth: number = 1920): Promis
     if (!resp.ok) throw new Error(resp.statusText);
     const blob = await resp.blob();
     const url = URL.createObjectURL(blob);
-    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    if (currentObjectUrl) {
+      const stale = currentObjectUrl;
+      setTimeout(() => URL.revokeObjectURL(stale), 1000);
+    }
+    currentObjectUrl = url;
     return url;
   } catch {
     return toFileUrl(file);

@@ -17,7 +17,7 @@ import {
 } from './cover-cache';
 import { SharpService } from '../utils/sharp';
 import { errMsg } from '../../shared/helpers';
-import { logger } from '../utils/logger';
+import { logger } from '../../shared/logger';
 
 const execAsync = promisify(execCb);
 
@@ -186,9 +186,12 @@ export function registerMediaHandlers(): void {
       newName: string
     ): Promise<{ success: boolean; error?: string; newPath?: string }> => {
       try {
+        const safeName = newName.trim().replace(/[<>:"/\\|?*]/g, '_');
+        if (!safeName) {
+          return { success: false, error: 'Nazwa nie może być pusta' };
+        }
         const dir = dirname(oldPath);
         const ext = extname(oldPath);
-        const safeName = newName.replace(/[<>:"/\\|?*]/g, '_');
         const newPath = join(dir, safeName.endsWith(ext) ? safeName : safeName + ext);
         await rename(oldPath, newPath);
         return { success: true, newPath };
@@ -356,15 +359,6 @@ export function registerMediaHandlers(): void {
         logger.error('transcode', 'audio transcode failed', errMsg(err));
         return null;
       }
-    }
-  );
-
-  ipcMain.handle(
-    'media:cleanupTranscodedAudio',
-    async (_event, audioPath: string): Promise<void> => {
-      try {
-        await unlink(audioPath);
-      } catch {}
     }
   );
 

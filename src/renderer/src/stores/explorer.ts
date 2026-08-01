@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue';
 import type { FileItem, ViewMode, SortBy, SortOrder, ExplorerTab } from '@renderer/types/explorer';
 import { VIEW_MODES } from '@renderer/types/explorer';
 import { useSettingsStore } from './settings';
+import { useUIStore } from './ui';
 
 function isDrivePath(p: string): boolean {
   return /^[A-Z]:\\?$/i.test(p) || p === '';
@@ -161,7 +162,10 @@ export const useExplorerStore = defineStore('explorer', () => {
         stopListening();
         return;
       }
-      const data = args[0] as { done: boolean; items: FileItem[] };
+      const data = args[0] as { done: boolean; items: FileItem[]; error?: string };
+      if (data.error) {
+        useUIStore().notify('error', 'Błąd odczytu folderu', data.error);
+      }
       if (data.items.length > 0) {
         files.value = [...files.value, ...data.items];
       }

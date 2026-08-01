@@ -11,7 +11,8 @@ import {
   preparePiPSubtitleData
 } from '@renderer/composables/useSubtitleRenderer';
 import { audioEngine } from '@renderer/modules/audioEngine';
-import { logger } from '@renderer/utils/logger';
+import { logger } from '@shared/logger';
+import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
 
 export function useVideoPlayer(ctx: {
   player: ReturnType<typeof usePlayerStore>;
@@ -33,7 +34,7 @@ export function useVideoPlayer(ctx: {
   });
 
   function getTrackSrc(track: { path: string }): string {
-    return `${window.api.mediaServerUrl}/?path=${encodeURIComponent(track.path.replace(/\\/g, '/'))}`;
+    return toMediaServerUrl(track.path);
   }
 
   function connectVideoEvents(el: HTMLVideoElement) {

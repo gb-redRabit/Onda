@@ -14,7 +14,7 @@ let splashWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let mainReady = false;
 let minTimerDone = false;
-const preFullscreenBounds: Electron.Rectangle | null = null;
+const preFullscreenBounds: { current: Electron.Rectangle | null } = { current: null };
 
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -232,7 +232,7 @@ app.whenReady().then(async () => {
   registerIPC();
 
   const mediaServer = await createMediaServer();
-  const mediaServerUrl = `http://127.0.0.1:${mediaServer.port}`;
+  const mediaServerUrl = `http://127.0.0.1:${mediaServer.port}/${mediaServer.token}`;
 
   ipcMain.on('media:getServerUrlSync', (event) => {
     event.returnValue = mediaServerUrl;
@@ -241,6 +241,12 @@ app.whenReady().then(async () => {
   ipcMain.on('window:idSync', (event) => {
     const id = BrowserWindow.fromWebContents(event.sender)?.id ?? 0;
     event.returnValue = id;
+  });
+
+  ipcMain.handle('app:quit', () => {
+    tray?.destroy();
+    tray = null;
+    app.quit();
   });
 
   app.on('will-quit', () => {
@@ -267,7 +273,7 @@ app.whenReady().then(async () => {
 
   registerWindowHandlers({
     getMainWindow: () => mainWindow,
-    preFullscreenBounds: { current: preFullscreenBounds },
+    preFullscreenBounds,
     createChildWindow: (parent, options) => createChildWindow(parent, options),
     pipManager,
     audioPipManager

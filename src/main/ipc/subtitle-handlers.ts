@@ -1,11 +1,11 @@
 import { ipcMain } from 'electron';
 import { readdir, readFile, mkdir, unlink, rm, stat } from 'fs/promises';
-import { join, extname, basename } from 'path';
+import { join, extname, basename, dirname } from 'path';
 import { exec as execCb } from 'child_process';
 import { promisify } from 'util';
 import { getTempDir } from './cover-cache';
 import { getMkvExtractPath } from './dependency-handlers';
-import { logger } from '../utils/logger';
+import { logger } from '../../shared/logger';
 
 const execAsync = promisify(execCb);
 
@@ -106,12 +106,7 @@ export function registerSubtitleHandlers(): void {
       videoPath: string
     ): Promise<Array<{ name: string; path: string; format: string }>> => {
       try {
-        const dir = videoPath.substring(
-          0,
-          videoPath.lastIndexOf('\\') !== -1
-            ? videoPath.lastIndexOf('\\')
-            : videoPath.lastIndexOf('/')
-        );
+        const dir = dirname(videoPath);
         const videoName = basename(videoPath, extname(videoPath));
         const subExts = ['.srt', '.ass', '.ssa', '.vtt', '.sub'];
         const files = await readdir(dir);

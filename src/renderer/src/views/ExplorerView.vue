@@ -26,7 +26,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore, ContextMenuItem } from '@renderer/stores/ui';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
-import { logger } from '@renderer/utils/logger';
+import { logger } from '@shared/logger';
 import { formatFileSize } from '@renderer/utils/formatters';
 import {
   beginTabDrag,
@@ -35,7 +35,7 @@ import {
   clearTabDrag
 } from '@renderer/utils/tabDrag';
 import { beginFileDrag, getDroppedFilePaths } from '@renderer/utils/fileDrag';
-import { SUPPORTED_IMAGE_FORMATS } from '@renderer/utils/constants';
+import { AUDIO_EXTS, VIDEO_EXTS, IMAGE_EXTS } from '@shared/constants';
 import ExplorerNavPane from '@renderer/components/explorer/ExplorerNavPane.vue';
 import ExplorerToolbar from '@renderer/components/explorer/ExplorerToolbar.vue';
 import ExplorerBreadcrumb from '@renderer/components/explorer/ExplorerBreadcrumb.vue';
@@ -141,30 +141,12 @@ function revealDupFile(path: string) {
   }
 }
 
-const IMAGE_EXTS = new Set(SUPPORTED_IMAGE_FORMATS);
+const IMAGE_EXT_SET = new Set(IMAGE_EXTS);
 const ICON_CACHE_MAX = 500;
 const iconCacheOrder: string[] = [];
-const VIDEO_EXTS = new Set(['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.flv', '.m4v']);
+const VIDEO_EXT_SET = new Set(VIDEO_EXTS);
 
-const MEDIA_EXTS = new Set([
-  '.mp3',
-  '.flac',
-  '.wav',
-  '.ogg',
-  '.aac',
-  '.m4a',
-  '.opus',
-  '.aiff',
-  '.mp4',
-  '.mkv',
-  '.avi',
-  '.webm',
-  '.mov',
-  '.wmv',
-  '.flv',
-  '.m4v',
-  ...SUPPORTED_IMAGE_FORMATS
-]);
+const MEDIA_EXT_SET = new Set([...AUDIO_EXTS, ...VIDEO_EXTS, ...IMAGE_EXTS]);
 
 const GRID_ITEM_WIDTHS: Record<string, number> = {
   small: 72,
@@ -504,7 +486,7 @@ function onWheel(e: WheelEvent) {
 // --- image viewer ---
 function openImageViewer(index: number) {
   imageViewerFiles.value = filteredFiles.value.filter(
-    (f) => !f.isDirectory && f.extension && IMAGE_EXTS.has(f.extension)
+    (f) => !f.isDirectory && f.extension && IMAGE_EXT_SET.has(f.extension)
   );
   const actualIndex = imageViewerFiles.value.findIndex(
     (f) => f.path === filteredFiles.value[index].path
@@ -525,11 +507,11 @@ function isLibraryFolder(path: string): boolean {
 function handleDoubleClick(item: FileItem) {
   if (item.isDirectory) {
     explorer.navigateTo(item.path);
-  } else if (item.extension && IMAGE_EXTS.has(item.extension)) {
+  } else if (item.extension && IMAGE_EXT_SET.has(item.extension)) {
     const idx = filteredFiles.value.findIndex((f) => f.path === item.path);
     openImageViewer(idx);
-  } else if (item.extension && MEDIA_EXTS.has(item.extension)) {
-    const isVideo = VIDEO_EXTS.has(item.extension);
+  } else if (item.extension && MEDIA_EXT_SET.has(item.extension)) {
+    const isVideo = VIDEO_EXT_SET.has(item.extension);
     const track: MediaFile = {
       id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       path: item.path,
@@ -642,7 +624,7 @@ function handleContextMenu(event: MouseEvent, item: FileItem) {
       action: () => deleteItem(item),
       shortcut: 'Del'
     });
-  } else if (item.extension && IMAGE_EXTS.has(item.extension)) {
+  } else if (item.extension && IMAGE_EXT_SET.has(item.extension)) {
     items.push({
       label: t('explorer.openImage'),
       action: () => {
@@ -668,8 +650,8 @@ function handleContextMenu(event: MouseEvent, item: FileItem) {
     pushSeparator(items);
     items.push({ label: t('explorer.rename'), action: () => renameItem(item), shortcut: 'F2' });
     items.push({ label: t('common.delete'), action: () => deleteItem(item), shortcut: 'Del' });
-  } else if (item.extension && MEDIA_EXTS.has(item.extension)) {
-    const isVideo = VIDEO_EXTS.has(item.extension);
+  } else if (item.extension && MEDIA_EXT_SET.has(item.extension)) {
+    const isVideo = VIDEO_EXT_SET.has(item.extension);
     items.push({
       label: t('common.play'),
       action: () => handleDoubleClick(item),

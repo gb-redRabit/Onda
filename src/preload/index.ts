@@ -190,8 +190,6 @@ const api = {
     duration: number
   ): Promise<string | null> =>
     ipcRenderer.invoke('media:transcodeAudioChunk', filePath, startTime, duration),
-  cleanupTranscodedAudio: (audioPath: string): Promise<void> =>
-    ipcRenderer.invoke('media:cleanupTranscodedAudio', audioPath),
   audioPipShow: async (
     state: Record<string, unknown>,
     mode?: string,

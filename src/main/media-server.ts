@@ -1,5 +1,6 @@
 import http from 'http';
 import fs from 'fs';
+import crypto from 'crypto';
 import { normalize, isAbsolute, extname } from 'path';
 
 const MIME_TYPES: Record<string, string> = {
@@ -33,14 +34,70 @@ function getContentType(filePath: string): string {
 
 export interface MediaServer {
   port: number;
+  token: string;
   close: () => void;
+}
+
+function timingSafeEqualString(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ab, bb);
+}
+
+function allowedOrigin(origin: string | undefined): string | null {
+  if (!origin) return null;
+  if (origin === 'null') return 'null';
+  let parsed: URL;
+  try {
+    parsed = new URL(origin);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol === 'file:') return origin;
+  const isLocalDev =
+    (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
+    (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1');
+  return isLocalDev ? origin : null;
 }
 
 export function createMediaServer(): Promise<MediaServer> {
   return new Promise((resolve, reject) => {
+    const token = crypto.randomUUID();
+
     const server = http.createServer(async (req, res) => {
       try {
         const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+
+        const origin = allowedOrigin(req.headers.origin);
+        if (req.headers.origin && origin === null) {
+          res.writeHead(403);
+          res.end('forbidden');
+          return;
+        }
+        if (origin !== null) {
+          res.setHeader('access-control-allow-origin', origin);
+          res.setHeader('access-control-allow-methods', 'GET, HEAD, OPTIONS');
+          res.setHeader(
+            'access-control-allow-headers',
+            req.headers['access-control-request-headers'] || '*'
+          );
+          res.setHeader('access-control-expose-headers', 'content-range, accept-ranges, content-length');
+        }
+
+        if (req.method === 'OPTIONS') {
+          res.writeHead(204);
+          res.end();
+          return;
+        }
+
+        const pathSeg = url.pathname.replace(/^\/+/, '').split('/')[0] || '';
+        if (!pathSeg || !timingSafeEqualString(pathSeg, token)) {
+          res.writeHead(403);
+          res.end('forbidden');
+          return;
+        }
+
         const rawPath = url.searchParams.get('path') || '';
         if (!rawPath) {
           res.writeHead(400);
@@ -60,10 +117,31 @@ export function createMediaServer(): Promise<MediaServer> {
         const range = req.headers.range;
 
         res.setHeader('accept-ranges', 'bytes');
-        res.setHeader('access-control-allow-origin', '*');
         res.setHeader('content-type', contentType);
 
         if (range) {
+          const suffixMatch = range.match(/^bytes=-(\d+)$/);
+          if (suffixMatch) {
+            const n = parseInt(suffixMatch[1], 10);
+            if (n <= 0) {
+              res.writeHead(416);
+              res.end();
+              return;
+            }
+            const start = Math.max(fileSize - n, 0);
+            const end = fileSize - 1;
+            const chunkLen = end - start + 1;
+            res.writeHead(206, {
+              'content-range': `bytes ${start}-${end}/${fileSize}`,
+              'content-length': String(chunkLen)
+            });
+            const stream = fs.createReadStream(normalized, { start, end });
+            stream.pipe(res);
+            stream.on('error', () => {
+              res.destroy();
+            });
+            return;
+          }
           const match = range.match(/bytes=(\d+)-(\d*)/);
           if (!match) {
             res.writeHead(416);
@@ -72,6 +150,11 @@ export function createMediaServer(): Promise<MediaServer> {
           }
           const start = parseInt(match[1], 10);
           const end = match[2] ? parseInt(match[2], 10) : fileSize - 1;
+          if (start > end || start >= fileSize) {
+            res.writeHead(416);
+            res.end();
+            return;
+          }
           const chunkLen = end - start + 1;
 
           res.writeHead(206, {
@@ -102,7 +185,7 @@ export function createMediaServer(): Promise<MediaServer> {
     server.listen(0, '127.0.0.1', () => {
       const addr = server.address();
       const port = typeof addr === 'object' && addr ? addr.port : 0;
-      resolve({ port, close: () => server.close() });
+      resolve({ port, token, close: () => server.close() });
     });
   });
 }

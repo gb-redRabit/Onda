@@ -1,7 +1,6 @@
 import { ipcMain } from 'electron';
 import https from 'https';
 import http from 'http';
-import { errMsg } from '../../shared/helpers';
 
 const USER_AGENT = 'Onda/1.0.0 (onda-player.app)';
 const MB_URL = 'https://musicbrainz.org/ws/2';
@@ -57,19 +56,6 @@ export function registerMusicBrainzHandlers() {
       return { success: true, release: typeof res === 'string' ? {} : res };
     } catch (e) {
       return { success: false, error: String(e) };
-    }
-  });
-
-  ipcMain.handle('musicbrainz:getCoverUrl', async (_event, releaseId: string) => {
-    try {
-      await mbFetch(`${CA_URL}/release/${releaseId}/front`);
-      return { success: true };
-    } catch (e) {
-      const msg = errMsg(e);
-      if (msg.startsWith('HTTP 404')) {
-        return { success: false, notFound: true };
-      }
-      return { success: false, error: msg };
     }
   });
 

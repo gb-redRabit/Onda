@@ -3,8 +3,6 @@ import {
   readdir,
   stat,
   lstat,
-  readFile,
-  writeFile,
   mkdir,
   rename,
   unlink,
@@ -14,9 +12,10 @@ import {
 } from 'fs/promises';
 import { createReadStream } from 'fs';
 import { createHash } from 'crypto';
-import { join, extname, basename } from 'path';
+import { join, extname, basename, dirname } from 'path';
 import { exec as execCb, spawn } from 'child_process';
 import { promisify } from 'util';
+import { errMsg } from '../../shared/helpers';
 import type { FileItem } from '../../renderer/src/types/explorer';
 
 const execAsync = promisify(execCb);
@@ -150,8 +149,7 @@ async function uniqueDestPath(dest: string): Promise<string> {
   } catch {
     return dest;
   }
-  const dir =
-    dest.substring(0, dest.lastIndexOf('\\')) || dest.substring(0, dest.lastIndexOf('/')) || '';
+  const dir = dirname(dest);
   const ext = extname(dest);
   const base = basename(dest, ext);
   for (let i = 2; i < 10000; i++) {
@@ -236,7 +234,17 @@ export function registerFsHandlers(): void {
       return;
     }
     const resolvedPath = /^[A-Z]:$/i.test(dirPath) ? `${dirPath}\\` : dirPath;
-    const entries = await readdir(resolvedPath, { withFileTypes: true });
+    let entries;
+    try {
+      entries = await readdir(resolvedPath, { withFileTypes: true });
+    } catch (err) {
+      event.sender.send('fs:readdir:batch', {
+        done: true,
+        items: [],
+        error: errMsg(err)
+      });
+      return;
+    }
     const filtered = entries.filter((entry) => !entry.name.startsWith('.'));
     const BATCH = 200;
     for (let i = 0; i < filtered.length; i += BATCH) {
@@ -257,50 +265,9 @@ export function registerFsHandlers(): void {
     event.sender.send('fs:readdir:batch', { done: true, items: [] });
   });
 
-  ipcMain.handle('fs:stat', async (_event, filePath: string) => {
-    try {
-      const s = await stat(filePath);
-      return {
-        size: s.size,
-        modifiedAt: s.mtimeMs,
-        createdAt: s.birthtimeMs,
-        isDirectory: s.isDirectory()
-      };
-    } catch {
-      return null;
-    }
-  });
-
-  ipcMain.handle('fs:readFile', async (_event, filePath: string) => {
-    try {
-      const buf = await readFile(filePath);
-      return buf.toString('base64');
-    } catch {
-      return null;
-    }
-  });
-
-  ipcMain.handle('fs:writeFile', async (_event, filePath: string, content: string) => {
-    try {
-      await writeFile(filePath, Buffer.from(content, 'base64'));
-      return true;
-    } catch {
-      return false;
-    }
-  });
-
   ipcMain.handle('fs:mkdir', async (_event, dirPath: string) => {
     try {
       await mkdir(dirPath, { recursive: true });
-      return true;
-    } catch {
-      return false;
-    }
-  });
-
-  ipcMain.handle('fs:rename', async (_event, oldPath: string, newPath: string) => {
-    try {
-      await rename(oldPath, newPath);
       return true;
     } catch {
       return false;
@@ -445,27 +412,8 @@ export function registerFsHandlers(): void {
     BrowserWindow.fromWebContents(event.sender)?.close();
   });
 
-  ipcMain.handle('window:isMaximized', (event) => {
-    return BrowserWindow.fromWebContents(event.sender)?.isMaximized() ?? false;
-  });
-
   ipcMain.handle('window:setAlwaysOnTop', (event, flag: boolean) => {
     BrowserWindow.fromWebContents(event.sender)?.setAlwaysOnTop(flag);
-  });
-
-  ipcMain.handle('shell:openExternal', async (_event, url: string) => {
-    try {
-      const allowedProtocols = ['https:', 'http:', 'mailto:'];
-      try {
-        const parsed = new URL(url);
-        if (!allowedProtocols.includes(parsed.protocol)) return;
-      } catch {
-        return;
-      }
-      await shell.openExternal(url);
-    } catch {
-      // ignore
-    }
   });
 
   ipcMain.handle('shell:showItemInFolder', (_event, fullPath: string) => {
@@ -527,9 +475,5 @@ export function registerFsHandlers(): void {
     ];
     const pathName = validPaths.find((validPath) => validPath === name) ?? 'userData';
     return app.getPath(pathName);
-  });
-
-  ipcMain.handle('app:getVersion', () => {
-    return app.getVersion();
   });
 }

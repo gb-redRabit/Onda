@@ -11,24 +11,6 @@ export interface YouTubeVideo {
   tags?: string[];
 }
 
-export interface YouTubeChannel {
-  id: string;
-  title: string;
-  description: string;
-  thumbnail: string;
-  subscriberCount: string;
-  videoCount: string;
-}
-
-export interface YouTubePlaylist {
-  id: string;
-  title: string;
-  description: string;
-  thumbnail: string;
-  videoCount: string;
-  channelTitle: string;
-}
-
 export interface YouTubeSearchResult {
   items: YouTubeVideo[];
   nextPageToken?: string;

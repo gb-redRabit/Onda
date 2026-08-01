@@ -8,6 +8,30 @@ export function isUnderPath(p: string, folder: string): boolean {
   return p === folder || p.startsWith(folder + '/') || p.startsWith(folder + '\\');
 }
 
+function topN<T>(items: T[], n: number, score: (t: T) => number): T[] {
+  const out: T[] = [];
+  for (const item of items) {
+    const s = score(item);
+    if (out.length < n) {
+      let i = out.length;
+      out.push(item);
+      while (i > 0 && score(out[i - 1]) < s) {
+        out[i] = out[i - 1];
+        i--;
+      }
+      out[i] = item;
+    } else if (s > score(out[out.length - 1])) {
+      let i = out.length - 1;
+      while (i > 0 && score(out[i - 1]) < s) {
+        out[i] = out[i - 1];
+        i--;
+      }
+      out[i] = item;
+    }
+  }
+  return out;
+}
+
 export const useLibraryStore = defineStore('library', () => {
   const tracks = shallowRef<MediaFile[]>([]);
   const playlists = ref<Playlist[]>([]);
@@ -54,12 +78,12 @@ export const useLibraryStore = defineStore('library', () => {
     const ts = tracks.value;
     const withPlayed = ts.filter((t) => t.lastPlayed);
     if (withPlayed.length === 0) return [];
-    return withPlayed.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0)).slice(0, 20);
+    return topN(withPlayed, 20, (t) => t.lastPlayed || 0);
   });
   const mostPlayed = computed(() => {
     const ts = tracks.value;
     if (ts.length === 0) return [];
-    return [...ts].sort((a, b) => b.playCount - a.playCount).slice(0, 20);
+    return topN(ts, 20, (t) => t.playCount);
   });
 
   let lastTracksHash = 0;

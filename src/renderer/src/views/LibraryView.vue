@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { logger } from '@renderer/utils/logger';
+import { logger } from '@shared/logger';
+import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
 import { useVirtualizer } from '@tanstack/vue-virtual';
 import { isUnderPath, useLibraryStore } from '@renderer/stores/library';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -38,7 +39,6 @@ const { t } = useI18n();
 const library = useLibraryStore();
 const settings = useSettingsStore();
 const player = usePlayerStore();
-const mediaServerUrl = window.api.mediaServerUrl;
 
 const query = ref('');
 const debouncedQuery = ref('');
@@ -144,9 +144,15 @@ function togglePath(fp: string) {
   expandedPaths.value = s;
 }
 
-function folderFileCount(fp: string): number {
-  return library.tracks.filter((t) => isUnderPath(t.path, fp)).length;
-}
+const folderFileCounts = computed(() => {
+  const counts = new Map<string, number>();
+  for (const t of library.tracks) {
+    for (const fp of library.folders) {
+      if (isUnderPath(t.path, fp)) counts.set(fp, (counts.get(fp) || 0) + 1);
+    }
+  }
+  return counts;
+});
 
 function dirName(fp: string): string {
   return fp.split('\\').pop() || fp;
@@ -778,7 +784,7 @@ function onMBApply(data: {
                   class="aspect-square bg-bg-base overflow-hidden flex items-center justify-center"
                 >
                   <img
-                    :src="`${mediaServerUrl}/?path=${encodeURIComponent(img.path.replace(/\\/g, '/'))}`"
+                    :src="toMediaServerUrl(img.path)"
                     :alt="img.name"
                     class="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
                     loading="lazy"
@@ -820,7 +826,7 @@ function onMBApply(data: {
                 <div class="min-w-0 text-left">
                   <div class="text-sm font-medium">{{ dirName(folderPath) }}</div>
                   <div class="text-xs text-fg-faint truncate">
-                    {{ folderPath }} · {{ folderFileCount(folderPath) }}
+                    {{ folderPath }} · {{ folderFileCounts.get(folderPath) || 0 }}
                     {{ $t('library.folderFiles') }}
                   </div>
                 </div>

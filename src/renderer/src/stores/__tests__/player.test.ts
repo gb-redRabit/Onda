@@ -322,14 +322,6 @@ describe('favorites', () => {
     expect(store.favorites).not.toContain(path);
   });
 
-  it('loadFavorites reads from settings:get', async () => {
-    const store = usePlayerStore();
-    const invokeMock = (window as any).api.invoke as ReturnType<typeof vi.fn>;
-    invokeMock.mockResolvedValue({ favorites: ['/a.mp3', '/b.mp3'] });
-    await store.loadFavorites();
-    expect(store.favorites).toEqual(['/a.mp3', '/b.mp3']);
-  });
-
   it('toggleFavorite persists via saveFavorites (invokes settings:set)', () => {
     const store = usePlayerStore();
     store.toggleFavorite('/x.mp3');

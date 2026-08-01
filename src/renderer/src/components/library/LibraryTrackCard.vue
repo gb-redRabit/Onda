@@ -7,6 +7,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { useUIStore } from '@renderer/stores/ui';
 import { Play, Plus, Heart, Edit3, ListMusic, Trash2 } from '@lucide/vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
+import { formatDuration } from '@renderer/utils/formatters';
 
 const { t } = useI18n();
 
@@ -93,15 +94,6 @@ function onContextMenu(e: MouseEvent) {
 function onDragStart(e: DragEvent) {
   e.dataTransfer?.setData('text/plain', JSON.stringify({ paths: [props.track.path] }));
   e.dataTransfer!.effectAllowed = 'move';
-}
-
-function formatDur(seconds?: number): string {
-  if (!seconds || seconds <= 0) return '—';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  return `${m}:${String(s).padStart(2, '0')}`;
 }
 </script>
 
@@ -195,7 +187,7 @@ function formatDur(seconds?: number): string {
         v-if="track.duration"
         class="absolute bottom-1.5 right-1.5 px-2 py-0.5 rounded bg-black/60 text-white text-[11px] font-medium"
       >
-        {{ formatDur(track.duration) }}
+        {{ formatDuration(track.duration, '—') }}
       </div>
     </div>
     <div class="p-3">

@@ -6,7 +6,7 @@ import App from './App.vue';
 import './assets/main.css';
 import { i18n } from './i18n';
 import { useUIStore } from './stores/ui';
-import { logger } from './utils/logger';
+import { logger } from '@shared/logger';
 
 import { moduleManager } from './modules/ModuleManager';
 import { PlayerModule } from './modules/PlayerModule';

@@ -2,13 +2,9 @@ import type { MediaFile } from '@renderer/types/media';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { audioEvents } from '@renderer/utils/audioEvents';
+import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
 
 const eqFrequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
-
-function toFileUrl(filePath: string): string {
-  const normalized = filePath.replace(/\\/g, '/');
-  return `${window.api.mediaServerUrl}/?path=${encodeURIComponent(normalized)}`;
-}
 
 class AudioEngine {
   private audioEl: HTMLAudioElement | null = null;
@@ -111,9 +107,6 @@ class AudioEngine {
   }
 
   private setupListeners(el: HTMLAudioElement): void {
-    el.addEventListener('timeupdate', () => {
-      audioEvents.emit('timeUpdate', el.currentTime);
-    });
     el.addEventListener('durationchange', () => {
       audioEvents.emit('durationChange', el.duration || 0);
     });
@@ -233,7 +226,7 @@ class AudioEngine {
       const el = this.createAudioElement();
       this.setupListeners(el);
     }
-    this.audioEl!.src = toFileUrl(track.path);
+    this.audioEl!.src = toMediaServerUrl(track.path);
     this.connectAudio(this.audioEl!);
     if (this.gainNode)
       this.gainNode.gain.value = usePlayerStore().isMuted ? 0 : usePlayerStore().volume;
@@ -291,7 +284,7 @@ class AudioEngine {
     }
 
     const el = new Audio();
-    el.src = toFileUrl(audioPath);
+    el.src = toMediaServerUrl(audioPath);
     el.preload = 'auto';
 
     await new Promise<void>((resolve, reject) => {

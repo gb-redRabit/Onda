@@ -68,7 +68,6 @@ function minimize() {
 }
 function maximize() {
   window.api.invoke('window:maximize');
-  isMaximized.value = !isMaximized.value;
 }
 function closeWin() {
   window.api.invoke('window:close');

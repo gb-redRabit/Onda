@@ -4,6 +4,7 @@ export const THUMB_MAX = 3;
 const CACHE_MAX = 500;
 export const thumbCache = new Map<string, string>();
 export const iconCache = new Map<string, string>();
+const thumbAccessOrder: string[] = [];
 const iconAccessOrder: string[] = [];
 
 function lruGet(cache: Map<string, string>, order: string[], key: string): string | undefined {
@@ -30,11 +31,11 @@ function lruSet(cache: Map<string, string>, order: string[], key: string, val: s
 }
 
 export function cachedThumb(path: string): string | undefined {
-  return lruGet(thumbCache, iconAccessOrder, path);
+  return lruGet(thumbCache, thumbAccessOrder, path);
 }
 
 export function setCachedThumb(path: string, dataUrl: string) {
-  lruSet(thumbCache, iconAccessOrder, path, dataUrl);
+  lruSet(thumbCache, thumbAccessOrder, path, dataUrl);
 }
 
 export function cachedIcon(path: string): string | undefined {

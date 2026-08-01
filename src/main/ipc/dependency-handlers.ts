@@ -7,7 +7,6 @@ import https from 'https';
 import http from 'http';
 import { createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
-import { logger } from '../utils/logger';
 
 const execAsync = promisify(execCb);
 
@@ -209,21 +208,5 @@ export function registerDependencyHandlers(): void {
       }
       return { success: false, error: msg };
     }
-  });
-
-  ipcMain.handle('update:check', async () => {
-    logger.info('update', 'check requested — using electron-updater (not configured)');
-    return { available: false, version: app.getVersion(), notes: '' };
-  });
-
-  ipcMain.handle('update:download', async () => {
-    logger.info('update', 'download requested — not available');
-    return { success: false, error: 'Auto-update not configured' };
-  });
-
-  ipcMain.handle('update:install', async () => {
-    logger.info('update', 'install requested — relaunching');
-    app.relaunch();
-    app.exit(0);
   });
 }

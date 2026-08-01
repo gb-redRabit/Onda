@@ -115,7 +115,6 @@ interface OndaAPI {
     startTime: number,
     duration: number
   ) => Promise<string | null>;
-  cleanupTranscodedAudio: (audioPath: string) => Promise<void>;
   audioPipShow: (
     state: Record<string, unknown>,
     mode?: string,

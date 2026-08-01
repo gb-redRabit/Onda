@@ -1,54 +1,3 @@
-export const APP_NAME = 'Onda';
-export const APP_VERSION = '1.0.0';
-
-export const SUPPORTED_AUDIO_FORMATS = [
-  '.mp3',
-  '.flac',
-  '.wav',
-  '.ogg',
-  '.aac',
-  '.m4a',
-  '.wma',
-  '.opus',
-  '.aiff',
-  '.alac'
-];
-
-export const SUPPORTED_VIDEO_FORMATS = [
-  '.mp4',
-  '.mkv',
-  '.avi',
-  '.webm',
-  '.mov',
-  '.wmv',
-  '.m4v',
-  '.ts',
-  '.ogv'
-];
-
-export const SUPPORTED_PLAYLIST_FORMATS = ['.m3u', '.m3u8', '.pls', '.asx'];
-
-export const SUPPORTED_SUBTITLE_FORMATS = ['.srt', '.vtt', '.ass', '.ssa', '.sub'];
-
-export const SUPPORTED_IMAGE_FORMATS = [
-  '.jpg',
-  '.jpeg',
-  '.png',
-  '.webp',
-  '.gif',
-  '.bmp',
-  '.svg',
-  '.ico',
-  '.tiff',
-  '.tif'
-];
-
-export const ALL_MEDIA_FORMATS = [
-  ...SUPPORTED_AUDIO_FORMATS,
-  ...SUPPORTED_VIDEO_FORMATS,
-  ...SUPPORTED_PLAYLIST_FORMATS
-];
-
 import type {
   NetworkSettings,
   ExplorerSettings,
@@ -57,6 +6,17 @@ import type {
   UpdateSettings,
   ToastSettings
 } from '@renderer/types/settings';
+
+export const EQUALIZER_PRESETS: Record<string, Record<number, number>> = {
+  flat: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 },
+  pop: { 0: -1, 1: 2, 2: 4, 3: 4, 4: 2, 5: -1, 6: -1, 7: -1, 8: 2, 9: 2 },
+  rock: { 0: 5, 1: 3, 2: -2, 3: -4, 4: -2, 5: 2, 6: 5, 7: 6, 8: 6, 9: 5 },
+  jazz: { 0: 3, 1: 2, 2: 0, 3: 2, 4: -2, 5: -2, 6: 0, 7: 2, 8: 3, 9: 4 },
+  classical: { 0: 4, 1: 3, 2: 2, 3: 1, 4: -1, 5: -1, 6: 0, 7: 2, 8: 3, 9: 4 },
+  bassBoost: { 0: 8, 1: 6, 2: 4, 3: 2, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 },
+  trebleBoost: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 2, 6: 4, 7: 6, 8: 8, 9: 8 },
+  vocal: { 0: -2, 1: -3, 2: -3, 3: 1, 4: 4, 5: 4, 6: 3, 7: 1, 8: 0, 9: -2 }
+};
 
 export const DEFAULT_NETWORK: NetworkSettings = {
   proxy: { enabled: false, type: 'http', host: '', port: 8080 },
@@ -114,19 +74,6 @@ export const DEFAULT_SHORTCUTS: Record<string, string> = {
   explorer: 'Ctrl+E',
   library: 'Ctrl+L',
   home: 'Ctrl+H'
-};
-
-export const DEFAULT_EQUALIZER_BANDS = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 14000, 16000];
-
-export const EQUALIZER_PRESETS: Record<string, number[]> = {
-  flat: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  pop: [-1, 2, 4, 5, 3, 0, -1, -1, -1, -1],
-  rock: [5, 4, 3, 1, -1, -1, 0, 2, 3, 4],
-  jazz: [3, 2, 1, 2, -1, -1, 0, 1, 2, 3],
-  classical: [0, 0, 0, 0, 0, 0, -3, -3, -3, -5],
-  bassBoost: [6, 5, 4, 2, 0, -1, -1, -1, -1, -1],
-  trebleBoost: [-1, -1, -1, -1, 0, 2, 4, 5, 6, 6],
-  vocal: [-2, -1, 0, 3, 5, 5, 3, 1, 0, -1]
 };
 
 export const DEFAULT_APPEARANCE = {

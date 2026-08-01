@@ -3,7 +3,7 @@ import { join, extname } from 'path';
 import { mkdir, readFile, writeFile, access } from 'fs/promises';
 import { createHash } from 'crypto';
 import os from 'os';
-import { logger } from './logger';
+import { logger } from '../../shared/logger';
 
 const CACHE_DIR = join(os.tmpdir(), 'onda', 'thumbs');
 

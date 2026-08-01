@@ -1,4 +1,5 @@
 import { VIDEO_EXTS } from '@shared/constants';
+import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
 
 export interface CoverResult {
   type: 'video' | 'image' | null;
@@ -13,7 +14,7 @@ export function captureVideoFrame(filePath: string): Promise<CoverResult> {
     const video = document.createElement('video');
     video.muted = true;
     video.playsInline = true;
-    video.src = `${window.api.mediaServerUrl}/?path=${encodeURIComponent(filePath.replace(/\\/g, '/'))}`;
+    video.src = toMediaServerUrl(filePath);
 
     let resolved = false;
     function done(result: CoverResult) {

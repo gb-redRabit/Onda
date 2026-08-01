@@ -7,7 +7,7 @@ import { promisify } from 'util';
 import type { MediaFile, Playlist } from '../../renderer/src/types/media';
 import { VIDEO_EXTS, AUDIO_EXTS, IMAGE_EXTS } from '../../shared/constants';
 import { getStore, durationCache, cacheSet, savePersistentCover } from './cover-cache';
-import { logger } from '../utils/logger';
+import { logger } from '../../shared/logger';
 
 const execAsync = promisify(execCb);
 const AUDIO_EXT_SET = new Set(AUDIO_EXTS);
@@ -480,15 +480,6 @@ export function registerLibraryHandlers(): void {
       store.set('playlists', playlists);
     } catch (err) {
       logger.error('library', 'savePlaylists failed', err);
-    }
-  });
-
-  ipcMain.handle('media:getMetadata', async (_event, filePath: string) => {
-    try {
-      const ext = extname(filePath).toLowerCase();
-      return await getMetadata(filePath, ext);
-    } catch {
-      return null;
     }
   });
 
