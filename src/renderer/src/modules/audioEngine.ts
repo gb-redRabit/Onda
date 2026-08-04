@@ -3,6 +3,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { audioEvents } from '@renderer/utils/audioEvents';
 import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
+import { logger } from '@shared/logger';
 
 const eqFrequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 
@@ -67,7 +68,9 @@ class AudioEngine {
       } else {
         try {
           this.sourceNode.disconnect();
-        } catch {}
+        } catch (e) {
+          logger.warn('audioEngine', 'disconnect source node failed', e);
+        }
       }
       this.ensureEqChain();
     } else {
@@ -82,7 +85,9 @@ class AudioEngine {
       } else {
         try {
           this.sourceNode.disconnect();
-        } catch {}
+        } catch (e) {
+          logger.warn('audioEngine', 'disconnect source node failed', e);
+        }
         const firstFilter = this.eqFilters[0];
         if (firstFilter) {
           this.sourceNode.connect(firstFilter);
@@ -115,9 +120,11 @@ class AudioEngine {
     });
     el.addEventListener('play', () => {
       audioEvents.emit('playStateChange', true);
+      this.startRafLoop();
     });
     el.addEventListener('pause', () => {
       audioEvents.emit('playStateChange', false);
+      this.stopRafLoop();
     });
     el.addEventListener('loadedmetadata', () => {
       audioEvents.emit('durationChange', el.duration || 0);
@@ -128,7 +135,8 @@ class AudioEngine {
     let player;
     try {
       player = usePlayerStore();
-    } catch {
+    } catch (e) {
+      logger.warn('audioEngine', 'handleEnded: store unavailable', e);
       return;
     }
 
@@ -143,8 +151,13 @@ class AudioEngine {
   }
 
   private startRafLoop(): void {
+    if (this.rafId !== null) return;
     const tick = () => {
       if (this.audioEl) {
+        if (this.audioEl.paused) {
+          this.stopRafLoop();
+          return;
+        }
         audioEvents.emit('timeUpdate', this.audioEl.currentTime);
       }
       this.rafId = requestAnimationFrame(tick);
@@ -162,17 +175,25 @@ class AudioEngine {
   private disconnectNodes(): void {
     try {
       this.sourceNode?.disconnect();
-    } catch {}
+    } catch (e) {
+      logger.warn('audioEngine', 'disconnect source node failed', e);
+    }
     try {
       this.gainNode?.disconnect();
-    } catch {}
+    } catch (e) {
+      logger.warn('audioEngine', 'disconnect gain node failed', e);
+    }
     try {
       this.analyserNode?.disconnect();
-    } catch {}
+    } catch (e) {
+      logger.warn('audioEngine', 'disconnect analyser failed', e);
+    }
     for (const f of this.eqFilters) {
       try {
         f.disconnect();
-      } catch {}
+      } catch (e) {
+        logger.warn('audioEngine', 'disconnect eq filter failed', e);
+      }
     }
   }
 
@@ -249,7 +270,9 @@ class AudioEngine {
   }
 
   play(): void {
-    this.audioEl?.play().catch(() => {});
+    this.audioEl?.play().catch((e) => {
+      logger.warn('audioEngine', 'audio play() rejected', e);
+    });
   }
 
   pause(): void {
@@ -280,7 +303,9 @@ class AudioEngine {
     if (this.sourceNode) {
       try {
         this.sourceNode.disconnect();
-      } catch {}
+      } catch (e) {
+        logger.warn('audioEngine', 'disconnect source node failed', e);
+      }
     }
 
     const el = new Audio();
@@ -312,7 +337,9 @@ class AudioEngine {
       if (this.sourceNode && this.gainNode) {
         this.sourceNode.connect(this.gainNode);
       }
-    } catch {}
+    } catch (e) {
+      logger.warn('audioEngine', 'reconnect source node failed', e);
+    }
     this.secondaryAudioOffset = timeOffset;
     el.volume = 1;
   }
@@ -321,7 +348,9 @@ class AudioEngine {
     if (this.secondarySourceNode) {
       try {
         this.secondarySourceNode.disconnect();
-      } catch {}
+      } catch (e) {
+        logger.warn('audioEngine', 'disconnect secondary source failed', e);
+      }
       this.secondarySourceNode = null;
     }
     if (this.secondaryAudioEl) {
@@ -340,7 +369,9 @@ class AudioEngine {
 
   playSecondaryAudio(): void {
     if (this.secondaryAudioEl) {
-      this.secondaryAudioEl.play().catch(() => {});
+      this.secondaryAudioEl.play().catch((e) => {
+        logger.warn('audioEngine', 'secondary audio play() rejected', e);
+      });
     }
   }
 
@@ -430,36 +461,35 @@ class AudioEngine {
     }
   }
 
-  setupVideoListeners(el: HTMLVideoElement): void {
-    const player = usePlayerStore();
-    el.addEventListener('timeupdate', () => {
-      player.currentTime = el.currentTime;
-    });
-    el.addEventListener('durationchange', () => {
-      player.duration = el.duration || 0;
-      if (player.currentTrack) player.currentTrack.duration = el.duration || 0;
-    });
-    el.addEventListener('loadedmetadata', () => {
-      player.duration = el.duration || 0;
-      if (player.currentTrack) player.currentTrack.duration = el.duration || 0;
-    });
-    el.addEventListener('ended', () => {
-      player.isPlaying = false;
-      player.nextTrack();
-    });
-  }
-
   connectVideoElement(): void {
     this.ensureAudioContext();
-    this.resume();
+    if (this.audioCtx && this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume();
+    }
+    // video drives its own time via the <video> element timeupdate event
+    this.stopRafLoop();
     if (this.sourceNode) {
       try {
         this.sourceNode.disconnect();
-      } catch {}
+      } catch (e) {
+        logger.warn('audioEngine', 'connectVideoElement: source disconnect failed', e);
+      }
     }
   }
 
-  disconnectVideoElement(): void {}
+  disconnectVideoElement(): void {
+    if (!this.sourceNode) return;
+    const firstFilter = this.eqFilters[0];
+    try {
+      if (firstFilter) {
+        this.sourceNode.connect(firstFilter);
+      } else if (this.gainNode) {
+        this.sourceNode.connect(this.gainNode);
+      }
+    } catch (e) {
+      logger.warn('audioEngine', 'disconnectVideoElement: reconnect failed (source already disconnected)', e);
+    }
+  }
 }
 
 export const audioEngine = new AudioEngine();

@@ -2,14 +2,11 @@ import { ipcMain } from 'electron';
 import { readdir, stat } from 'fs/promises';
 import { join, extname, basename } from 'path';
 import { parseFile } from 'music-metadata';
-import { exec as execCb } from 'child_process';
-import { promisify } from 'util';
 import type { MediaFile, Playlist } from '../../renderer/src/types/media';
 import { VIDEO_EXTS, AUDIO_EXTS, IMAGE_EXTS } from '../../shared/constants';
 import { getStore, durationCache, cacheSet, savePersistentCover } from './cover-cache';
 import { logger } from '../../shared/logger';
-
-const execAsync = promisify(execCb);
+import { runCommand } from '../utils/exec';
 const AUDIO_EXT_SET = new Set(AUDIO_EXTS);
 const VIDEO_EXT_SET = new Set(VIDEO_EXTS);
 const IMAGE_EXT_SET = new Set(IMAGE_EXTS);
@@ -34,7 +31,7 @@ async function getDuration(filePath: string): Promise<number> {
       const { mtimeMs } = await stat(filePath);
       if (mtimeMs <= cached.mtimeMs) return cached.duration;
     } catch {
-      /* file gone */
+      // file gone â€” fall through and re-probe
     }
     durationCache.delete(filePath);
   }
@@ -45,17 +42,20 @@ async function getDuration(filePath: string): Promise<number> {
     const s = await stat(filePath).catch(() => null);
     if (s) cacheSet(durationCache, filePath, { duration, mtimeMs: s.mtimeMs });
     return duration;
-  } catch {
+  } catch (e) {
+    logger.warn('library', `music-metadata failed for ${filePath}`, e);
     try {
-      const { stdout } = await execAsync(
-        `ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${filePath}"`,
-        { encoding: 'utf-8', timeout: 10000, windowsHide: true }
+      const stdout = await runCommand(
+        'ffprobe',
+        ['-v', 'quiet', '-show_entries', 'format=duration', '-of', 'csv=p=0', filePath],
+        { timeout: 10000 }
       );
       const duration = parseFloat(stdout.trim()) || 0;
       const s = await stat(filePath).catch(() => null);
       if (s) cacheSet(durationCache, filePath, { duration, mtimeMs: s.mtimeMs });
       return duration;
-    } catch {
+    } catch (e2) {
+      logger.warn('library', `ffprobe duration failed for ${filePath}`, e2);
       return 0;
     }
   }
@@ -111,7 +111,8 @@ async function getAudioMetadata(
       isVideo: false,
       size: s.size
     };
-  } catch {
+  } catch (e) {
+    logger.warn('library', `getAudioMetadata failed for ${filePath}`, e);
     return null;
   }
 }
@@ -156,7 +157,8 @@ async function getMetadata(
       isVideo: true,
       size: s.size
     };
-  } catch {
+  } catch (e) {
+    logger.warn('library', `getMetadata failed for ${filePath}`, e);
     return null;
   }
 }
@@ -343,23 +345,28 @@ export function registerLibraryHandlers(): void {
     async (
       _event,
       folderPaths: string[]
-    ): Promise<{ count: number; folderTypes: Record<string, 'audio' | 'video' | 'mixed'> }> => {
+    ): Promise<{
+      count: number;
+      folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
+    }> => {
       try {
         const folderResults = await Promise.all(
           folderPaths.map(async (folderPath) => {
             try {
               const result = await scanDir(folderPath, 8);
               const total = result.audioCount + result.videoCount;
-              const folderType: 'audio' | 'video' | 'mixed' =
-                result.audioCount > 0 && result.videoCount === 0
-                  ? 'audio'
-                  : result.videoCount > 0 && result.audioCount === 0
-                    ? 'video'
-                    : result.audioCount / total >= 0.7
-                      ? 'audio'
-                      : result.videoCount / total >= 0.7
-                        ? 'video'
-                        : 'mixed';
+              const folderType: 'audio' | 'video' | 'image' | 'mixed' =
+                result.imageCount > 0 && result.audioCount === 0 && result.videoCount === 0
+                  ? 'image'
+                  : result.audioCount > 0 && result.videoCount === 0
+                    ? 'audio'
+                    : result.videoCount > 0 && result.audioCount === 0
+                      ? 'video'
+                      : total > 0 && result.audioCount / total >= 0.7
+                        ? 'audio'
+                        : total > 0 && result.videoCount / total >= 0.7
+                          ? 'video'
+                          : 'mixed';
               return { folderType, files: result.files, folderPath };
             } catch (err) {
               logger.warn('library', `scan error for ${folderPath}: ${err}`);
@@ -369,7 +376,7 @@ export function registerLibraryHandlers(): void {
         );
 
         const allFiles: MediaFile[] = [];
-        const folderTypes: Record<string, 'audio' | 'video' | 'mixed'> = {};
+        const folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'> = {};
         for (const r of folderResults) {
           if (!r) continue;
           folderTypes[r.folderPath] = r.folderType;
@@ -414,13 +421,13 @@ export function registerLibraryHandlers(): void {
     'library:loadScanned',
     async (): Promise<{
       files: MediaFile[];
-      folderTypes: Record<string, 'audio' | 'video' | 'mixed'>;
+      folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
     } | null> => {
       try {
         const store = await getStore();
         const data = store.get('libraryScanned', null) as {
           files: MediaFile[];
-          folderTypes: Record<string, 'audio' | 'video' | 'mixed'>;
+          folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
         } | null;
         if (
           data &&
@@ -441,7 +448,7 @@ export function registerLibraryHandlers(): void {
     'library:saveScanned',
     async (
       _event,
-      data: { files: MediaFile[]; folderTypes: Record<string, 'audio' | 'video' | 'mixed'> }
+      data: { files: MediaFile[]; folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'> }
     ): Promise<void> => {
       try {
         const store = await getStore();

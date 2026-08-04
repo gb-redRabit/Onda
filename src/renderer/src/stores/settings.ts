@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type {
-  AppSettings,
   AppearanceSettings,
   PlaybackSettings,
   ExplorerSettings,
@@ -11,7 +10,8 @@ import type {
   ApiKeySettings,
   UpdateSettings,
   ToastSettings,
-  DependencyStatus
+  DependencyStatus,
+  AppSettings
 } from '@renderer/types/settings';
 import {
   DEFAULT_APPEARANCE,
@@ -48,7 +48,7 @@ export const useSettingsStore = defineStore('settings', () => {
   async function load() {
     try {
       if (window.api) {
-        const data = (await window.api.invoke('settings:get')) as Partial<AppSettings>;
+        const data = await window.api.invoke('settings:get');
         if (data.appearance) Object.assign(appearance.value, data.appearance);
         if (data.playback) Object.assign(playback.value, data.playback);
         if (data.explorer) Object.assign(explorer.value, data.explorer);
@@ -135,6 +135,21 @@ export const useSettingsStore = defineStore('settings', () => {
     save();
   }
 
+  function applyImported(data: Partial<AppSettings>) {
+    if (data.appearance) Object.assign(appearance.value, data.appearance);
+    if (data.playback) Object.assign(playback.value, data.playback);
+    if (data.explorer) Object.assign(explorer.value, data.explorer);
+    if (data.library) Object.assign(library.value, data.library);
+    if (data.download) Object.assign(download.value, data.download);
+    if (data.shortcuts) Object.assign(shortcuts.value, data.shortcuts);
+    if (data.network) Object.assign(network.value, data.network);
+    if (data.apiKeys) Object.assign(apiKeys.value, data.apiKeys);
+    if (data.updates) Object.assign(updates.value, data.updates);
+    if (data.toast) Object.assign(toast.value, data.toast);
+    if (data.dependencies) Object.assign(dependencies.value, data.dependencies);
+    save();
+  }
+
   function updateDependency(name: string, status: Omit<DependencyStatus, 'name'>) {
     dependencies.value[name] = { name, ...status };
     save();
@@ -182,6 +197,7 @@ export const useSettingsStore = defineStore('settings', () => {
     updateDownload,
     updateShortcut,
     resetToDefaults,
+    applyImported,
     updateDependency,
     getDependency,
     updateToast

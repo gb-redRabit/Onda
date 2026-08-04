@@ -14,6 +14,7 @@ export interface AppSettings {
   updates: UpdateSettings;
   toast: ToastSettings;
   dependencies: Record<string, DependencyStatus>;
+  favorites?: string[];
 }
 
 export interface ExplorerSettings {

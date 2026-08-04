@@ -8,6 +8,7 @@ import icon from '../../resources/icon.png?asset';
 import { registerIPC } from './ipc/handlers';
 import { pipManager } from './pip-manager';
 import { audioPipManager } from './audio-pip-manager';
+import { logger } from '../shared/logger';
 
 let mainWindow: BrowserWindow | null = null;
 let splashWindow: BrowserWindow | null = null;
@@ -69,8 +70,8 @@ function createWindow(): BrowserWindow {
       if (['https:', 'http:', 'mailto:'].includes(parsed.protocol)) {
         shell.openExternal(details.url);
       }
-    } catch {
-      // ignore invalid URLs
+    } catch (e) {
+      logger.warn('main', 'setWindowOpenHandler: invalid URL', details.url, e);
     }
     return { action: 'deny' };
   });
@@ -170,8 +171,8 @@ function registerGlobalShortcuts(): void {
   for (const [accelerator, handler] of Object.entries(shortcuts)) {
     try {
       globalShortcut.register(accelerator, handler);
-    } catch {
-      /* Some shortcuts may not be available on all platforms */
+    } catch (e) {
+      logger.warn('main', `global shortcut unavailable: ${accelerator}`, e);
     }
   }
 }

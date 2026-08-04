@@ -2,6 +2,7 @@ import http from 'http';
 import fs from 'fs';
 import crypto from 'crypto';
 import { normalize, isAbsolute, extname } from 'path';
+import { logger } from '../shared/logger';
 
 const MIME_TYPES: Record<string, string> = {
   '.mp4': 'video/mp4',
@@ -100,12 +101,14 @@ export function createMediaServer(): Promise<MediaServer> {
 
         const rawPath = url.searchParams.get('path') || '';
         if (!rawPath) {
+          logger.warn('media-server', 'request missing path param');
           res.writeHead(400);
           res.end('missing path');
           return;
         }
         const normalized = normalize(rawPath);
         if (!isAbsolute(normalized)) {
+          logger.warn('media-server', `rejected non-absolute path: ${rawPath}`);
           res.writeHead(400);
           res.end('invalid path');
           return;
@@ -137,13 +140,15 @@ export function createMediaServer(): Promise<MediaServer> {
             });
             const stream = fs.createReadStream(normalized, { start, end });
             stream.pipe(res);
-            stream.on('error', () => {
+            stream.on('error', (err) => {
+              logger.warn('media-server', `stream error (suffix range) ${rawPath}: ${err.message}`);
               res.destroy();
             });
             return;
           }
           const match = range.match(/bytes=(\d+)-(\d*)/);
           if (!match) {
+            logger.warn('media-server', `invalid range header: ${range}`);
             res.writeHead(416);
             res.end();
             return;
@@ -164,24 +169,35 @@ export function createMediaServer(): Promise<MediaServer> {
 
           const stream = fs.createReadStream(normalized, { start, end });
           stream.pipe(res);
-          stream.on('error', () => {
+          stream.on('error', (err) => {
+            logger.warn('media-server', `stream error (range) ${rawPath}: ${err.message}`);
             res.destroy();
           });
         } else {
           res.writeHead(200, { 'content-length': String(fileSize) });
           const stream = fs.createReadStream(normalized);
           stream.pipe(res);
-          stream.on('error', () => {
+          stream.on('error', (err) => {
+            logger.warn('media-server', `stream error ${rawPath}: ${err.message}`);
             res.destroy();
           });
         }
-      } catch {
-        res.writeHead(500);
-        res.end();
+      } catch (e) {
+        const err = e as { message?: string; code?: string };
+        logger.error('media-server', `request failed: ${req.method} ${req.url}`, err.message ?? '');
+        if (!res.headersSent) {
+          res.writeHead(500);
+          res.end();
+        } else {
+          res.destroy();
+        }
       }
     });
 
-    server.on('error', reject);
+    server.on('error', (err) => {
+      logger.error('media-server', 'server error', err.message);
+      reject(err);
+    });
     server.listen(0, '127.0.0.1', () => {
       const addr = server.address();
       const port = typeof addr === 'object' && addr ? addr.port : 0;

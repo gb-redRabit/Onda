@@ -1,6 +1,6 @@
 import { ElectronAPI } from '@electron-toolkit/preload';
 
-import type { IpcChannels, IpcChannel } from '@shared/types/ipc';
+import type { IpcChannels, IpcChannel, MusicbrainzRelease } from '@shared/types/ipc';
 
 interface OndaAPI {
   mediaServerUrl: string;
@@ -76,10 +76,10 @@ interface OndaAPI {
   openImageDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>;
   musicbrainzSearchRelease: (
     query: string
-  ) => Promise<{ success: boolean; releases: any[]; error?: string }>;
+  ) => Promise<{ success: boolean; releases: MusicbrainzRelease[]; error?: string }>;
   musicbrainzLookupRelease: (
     releaseId: string
-  ) => Promise<{ success: boolean; release?: any; error?: string }>;
+  ) => Promise<{ success: boolean; release?: MusicbrainzRelease; error?: string }>;
   musicbrainzGetCoverData: (
     releaseId: string
   ) => Promise<{ success: boolean; data?: number[]; mime?: string; error?: string }>;

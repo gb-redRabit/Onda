@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useI18n } from 'vue-i18n';
+import { logger } from '@shared/logger';
 
 const settings = useSettingsStore();
 const { t } = useI18n();
@@ -30,31 +31,43 @@ onMounted(() => {
   }
 });
 
+async function safeCheck<T>(fn: (() => Promise<T>) | undefined, fallback: T): Promise<T> {
+  if (!fn) return fallback;
+  try {
+    return await fn();
+  } catch {
+    return fallback;
+  }
+}
+
 async function checkDependencies(): Promise<void> {
   for (const dep of deps.value) {
     dep.installing = true;
     dep.error = null;
   }
 
-  const [ffmpeg, ffprobe, ytdlp, mkv] = await Promise.all([
-    window.api?.checkFfmpeg() ?? Promise.resolve({ installed: false, version: null }),
-    window.api?.checkFfprobe() ?? Promise.resolve({ installed: false, version: null }),
-    window.api?.checkYtdlp() ?? Promise.resolve({ installed: false, version: null, path: null }),
-    window.api?.checkMkvextract() ?? Promise.resolve({ installed: false, version: null })
-  ]);
+  try {
+    const [ffmpeg, ffprobe, ytdlp, mkv] = await Promise.all([
+      safeCheck(() => window.api?.checkFfmpeg(), { installed: false, version: null }),
+      safeCheck(() => window.api?.checkFfprobe(), { installed: false, version: null }),
+      safeCheck(() => window.api?.checkYtdlp(), { installed: false, version: null, path: null }),
+      safeCheck(() => window.api?.checkMkvextract(), { installed: false, version: null })
+    ]);
 
-  const results = [ffmpeg, ffprobe, ytdlp, mkv];
-  const now = Date.now();
-  deps.value.forEach((dep, i) => {
-    dep.installed = results[i].installed;
-    dep.version = results[i].version;
-    dep.installing = false;
-    settings.updateDependency(dep.name, {
-      installed: results[i].installed,
-      version: results[i].version,
-      checkedAt: now
+    const results = [ffmpeg, ffprobe, ytdlp, mkv];
+    const now = Date.now();
+    deps.value.forEach((dep, i) => {
+      dep.installed = results[i].installed;
+      dep.version = results[i].version;
+      settings.updateDependency(dep.name, {
+        installed: results[i].installed,
+        version: results[i].version,
+        checkedAt: now
+      });
     });
-  });
+  } finally {
+    for (const dep of deps.value) dep.installing = false;
+  }
 }
 
 async function installDependency(dep: (typeof deps.value)[0]): Promise<void> {
@@ -73,7 +86,15 @@ async function installDependency(dep: (typeof deps.value)[0]): Promise<void> {
     checkFn = window.api?.checkYtdlp;
   }
 
-  const result = await installFn?.();
+  const result = await (async () => {
+    try {
+      return await installFn?.();
+    } catch (e) {
+      logger.warn('deps', `install ${dep.name} failed`, e);
+      return { success: false, error: t('settings.depInstallFailed') } as { success?: boolean; error?: string };
+    }
+  })();
+
   const now = Date.now();
   if (result?.success) {
     const status = await checkFn?.();

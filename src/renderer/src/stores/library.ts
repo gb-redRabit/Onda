@@ -36,7 +36,7 @@ export const useLibraryStore = defineStore('library', () => {
   const tracks = shallowRef<MediaFile[]>([]);
   const playlists = ref<Playlist[]>([]);
   const folders = ref<string[]>([]);
-  const folderTypes = ref<Record<string, 'audio' | 'video' | 'mixed'>>({});
+  const folderTypes = ref<Record<string, 'audio' | 'video' | 'image' | 'mixed'>>({});
   const isScanning = ref(false);
   const scanProgress = ref({ current: 0, total: 0 });
   const isLoaded = ref(false);
@@ -169,7 +169,7 @@ export const useLibraryStore = defineStore('library', () => {
       isLoading.value = false;
       window.api
         ?.invoke('library:loadScanned')
-        .then((result: any) => {
+        .then((result) => {
           if (result?.files) {
             tracks.value = result.files;
             folderTypes.value = result.folderTypes || {};
@@ -200,7 +200,7 @@ export const useLibraryStore = defineStore('library', () => {
     try {
       const result = (await window.api?.invoke('library:scan', [...folders.value])) as {
         count: number;
-        folderTypes: Record<string, 'audio' | 'video' | 'mixed'>;
+        folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
       };
       if (result) {
         folderTypes.value = result.folderTypes;
@@ -241,7 +241,7 @@ export const useLibraryStore = defineStore('library', () => {
     invalidateDerivedCache();
   }
 
-  function getFolderType(folderPath: string): 'audio' | 'video' | 'mixed' | 'unknown' {
+  function getFolderType(folderPath: string): 'audio' | 'video' | 'image' | 'mixed' | 'unknown' {
     return folderTypes.value[folderPath] || 'unknown';
   }
 

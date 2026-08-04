@@ -2,8 +2,14 @@
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Search, Disc3, Music2, Album, Hash, Calendar, Check, Loader2, X } from '@lucide/vue';
+import type { MusicbrainzRelease } from '@shared/types/ipc';
 
 const { t } = useI18n();
+
+type LookupResult = MusicbrainzRelease & {
+  _coverData?: number[];
+  _coverMime?: string;
+};
 
 const emit = defineEmits<{
   apply: [
@@ -22,12 +28,12 @@ const emit = defineEmits<{
 }>();
 
 const query = ref('');
-const releases = ref<any[]>([]);
+const releases = ref<MusicbrainzRelease[]>([]);
 const loading = ref(false);
 const selectedId = ref<string | null>(null);
 const lookingUp = ref<string | null>(null);
 const error = ref('');
-const lookupResult = ref<any>(null);
+const lookupResult = ref<LookupResult | null>(null);
 
 async function search() {
   if (!query.value.trim()) return;
@@ -45,19 +51,20 @@ async function search() {
   loading.value = false;
 }
 
-async function selectRelease(release: any) {
+async function selectRelease(release: MusicbrainzRelease) {
   selectedId.value = release.id;
   lookingUp.value = release.id;
   error.value = '';
   lookupResult.value = null;
   const r = await window.api?.musicbrainzLookupRelease(release.id);
   if (r?.success && r.release) {
-    lookupResult.value = r.release;
+    const result: LookupResult = { ...r.release };
     const coverR = await window.api?.musicbrainzGetCoverData(release.id);
     if (coverR?.success && coverR.data) {
-      lookupResult.value._coverData = coverR.data;
-      lookupResult.value._coverMime = coverR.mime;
+      result._coverData = coverR.data;
+      result._coverMime = coverR.mime;
     }
+    lookupResult.value = result;
   } else {
     error.value = r?.error || t('musicbrainz.fetchError');
   }
@@ -65,10 +72,19 @@ async function selectRelease(release: any) {
 }
 
 function applyTags() {
-  if (!lookupResult.value) return;
   const rel = lookupResult.value;
+  if (!rel) return;
 
-  const emitData: any = {
+  const emitData: {
+    title?: string;
+    artist?: string;
+    album?: string;
+    year?: number;
+    genre?: string;
+    track?: { no: number };
+    coverData?: number[];
+    coverMime?: string;
+  } = {
     album: rel.title,
     year: rel.date ? parseInt(rel.date.slice(0, 4)) : undefined,
     artist: rel['artist-credit']?.[0]?.name || rel['artist-credit']?.[0]?.artist?.name
@@ -80,7 +96,10 @@ function applyTags() {
   emit('apply', emitData);
 }
 
-function displayTrackNumber(track: any, index: number): number {
+function displayTrackNumber(
+  track: { number?: string; position?: string },
+  index: number
+): number {
   return Number(track.number) || Number(track.position) || index + 1;
 }
 </script>
@@ -165,7 +184,7 @@ function displayTrackNumber(track: any, index: number): number {
                       ><Calendar :size="10" />{{ rel.date || '?' }}</span
                     >
                     <span class="flex items-center gap-1"
-                      ><Hash :size="10" />{{ rel.trackCount || rel['track-count'] || '?' }}</span
+                      ><Hash :size="10" />{{ rel['track-count'] || '?' }}</span
                     >
                     <span class="flex items-center gap-1"
                       ><Album :size="10" />{{ rel.country || '?' }}</span

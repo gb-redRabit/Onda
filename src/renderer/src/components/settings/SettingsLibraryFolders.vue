@@ -36,6 +36,7 @@ const folderEntries = computed(() =>
 function folderIcon(type: string): string {
   if (type === 'audio') return '🎵';
   if (type === 'video') return '🎬';
+  if (type === 'image') return '🖼️';
   if (type === 'mixed') return '📁';
   return '📁';
 }
@@ -85,9 +86,11 @@ function folderIcon(type: string): string {
                   ? $t('settings.libAudio')
                   : entry.type === 'video'
                     ? $t('settings.libVideo')
-                    : entry.type === 'mixed'
-                      ? $t('settings.libMixed')
-                      : $t('settings.libUnknown')
+                    : entry.type === 'image'
+                      ? $t('settings.libImage')
+                      : entry.type === 'mixed'
+                        ? $t('settings.libMixed')
+                        : $t('settings.libUnknown')
               }}
             </div>
           </div>

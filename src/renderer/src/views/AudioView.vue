@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { BarChart3, Settings2 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import AudioVisualizer from '@renderer/components/audio/AudioVisualizer.vue';
@@ -9,7 +10,6 @@ import AudioLayoutToggle from '@renderer/components/audio/AudioLayoutToggle.vue'
 import AudioCover from '@renderer/components/audio/AudioCover.vue';
 import AudioTrackInfo from '@renderer/components/audio/AudioTrackInfo.vue';
 import AudioVizSettings from '@renderer/components/audio/AudioVizSettings.vue';
-import { BarChart3, Settings2 } from '@lucide/vue';
 
 const player = usePlayerStore();
 const audio = useAudioPlayer();

@@ -1,15 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, watch, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import AppMenu from './components/layout/AppMenu.vue';
-import Sidebar from './components/layout/Sidebar.vue';
-import PlayerBar from './components/layout/PlayerBar.vue';
-import StatusBar from './components/layout/StatusBar.vue';
-import QueuePanel from './components/player/QueuePanel.vue';
-import Equalizer from './components/player/Equalizer.vue';
-import ErrorBoundary from './components/ErrorBoundary.vue';
-import CommandPalette from './components/CommandPalette.vue';
-import ToastNotification from './components/ToastNotification.vue';
 import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from './stores/settings';
 import { usePlayerStore } from './stores/player';
@@ -20,6 +11,15 @@ import { claimTabDrag } from './utils/tabDrag';
 import { moduleManager } from './modules/ModuleManager';
 import { THEME_PALETTES } from './utils/constants';
 import { useAudioPiP } from './composables/useAudioPiP';
+import AppMenu from './components/layout/AppMenu.vue';
+import Sidebar from './components/layout/Sidebar.vue';
+import PlayerBar from './components/layout/PlayerBar.vue';
+import StatusBar from './components/layout/StatusBar.vue';
+import QueuePanel from './components/player/QueuePanel.vue';
+import Equalizer from './components/player/Equalizer.vue';
+import ErrorBoundary from './components/ErrorBoundary.vue';
+import CommandPalette from './components/CommandPalette.vue';
+import ToastNotification from './components/ToastNotification.vue';
 
 const settings = useSettingsStore();
 const player = usePlayerStore();

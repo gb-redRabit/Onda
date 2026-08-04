@@ -2,6 +2,7 @@ import { ipcMain, dialog, BrowserWindow } from 'electron';
 import { readdir } from 'fs/promises';
 import { join, extname } from 'path';
 import { VIDEO_EXTS, AUDIO_EXTS } from '../../shared/constants';
+import { logger } from '../../shared/logger';
 
 export function registerDialogHandlers(): void {
   ipcMain.handle(
@@ -15,7 +16,8 @@ export function registerDialogHandlers(): void {
           filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'bmp'] }]
         });
         return { canceled: result.canceled, filePaths: result.filePaths.slice() };
-      } catch {
+      } catch (e) {
+        logger.warn('dialog', 'openImage failed', e);
         return { canceled: true, filePaths: [] };
       }
     }
@@ -49,7 +51,8 @@ export function registerDialogHandlers(): void {
         ...options
       });
       return result;
-    } catch {
+    } catch (e) {
+      logger.warn('dialog', 'openFile failed', e);
       return { canceled: true, filePaths: [] };
     }
   });
@@ -62,7 +65,8 @@ export function registerDialogHandlers(): void {
         properties: ['openDirectory']
       });
       return result.canceled ? [] : result.filePaths;
-    } catch {
+    } catch (e) {
+      logger.warn('dialog', 'openFolder failed', e);
       return [];
     }
   });
@@ -87,11 +91,13 @@ export function registerDialogHandlers(): void {
           .filter((f) => mediaExts.includes(extname(f).toLowerCase()))
           .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
           .map((f) => join(folder, f));
-      } catch {
+      } catch (e) {
+        logger.warn('dialog', `openFolderFiles readdir failed for ${folder}`, e);
         entries = [];
       }
       return { canceled: false, filePaths: entries };
-    } catch {
+    } catch (e) {
+      logger.warn('dialog', 'openFolderFiles failed', e);
       return { canceled: true, filePaths: [] };
     }
   });

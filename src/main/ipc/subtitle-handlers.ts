@@ -1,13 +1,10 @@
 import { ipcMain } from 'electron';
 import { readdir, readFile, mkdir, unlink, rm, stat } from 'fs/promises';
 import { join, extname, basename, dirname } from 'path';
-import { exec as execCb } from 'child_process';
-import { promisify } from 'util';
 import { getTempDir } from './cover-cache';
 import { getMkvExtractPath } from './dependency-handlers';
 import { logger } from '../../shared/logger';
-
-const execAsync = promisify(execCb);
+import { runCommand } from '../utils/exec';
 
 function uniqueId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -21,9 +18,20 @@ export function registerSubtitleHandlers(): void {
       filePath: string
     ): Promise<Array<{ index: number; language: string; title: string; codec: string }>> => {
       try {
-        const { stdout } = await execAsync(
-          `ffprobe -v quiet -select_streams s -show_entries stream=index,codec_name:stream_tags=language,title -of json "${filePath}"`,
-          { encoding: 'utf-8', timeout: 10000, windowsHide: true }
+        const stdout = await runCommand(
+          'ffprobe',
+          [
+            '-v',
+            'quiet',
+            '-select_streams',
+            's',
+            '-show_entries',
+            'stream=index,codec_name:stream_tags=language,title',
+            '-of',
+            'json',
+            filePath
+          ],
+          { timeout: 10000 }
         );
         const parsed = JSON.parse(stdout);
         return (parsed.streams || []).map((s: Record<string, unknown>) => ({
@@ -48,9 +56,20 @@ export function registerSubtitleHandlers(): void {
       try {
         await mkdir(getTempDir(), { recursive: true });
         // detect codec to choose best output format
-        const { stdout } = await execAsync(
-          `ffprobe -v quiet -select_streams ${streamIndex} -show_entries stream=codec_name -of csv=p=0 "${filePath}"`,
-          { encoding: 'utf-8', timeout: 10000, windowsHide: true }
+        const stdout = await runCommand(
+          'ffprobe',
+          [
+            '-v',
+            'quiet',
+            '-select_streams',
+            String(streamIndex),
+            '-show_entries',
+            'stream=codec_name',
+            '-of',
+            'csv=p=0',
+            filePath
+          ],
+          { timeout: 10000 }
         );
         const codec = stdout.trim().toLowerCase();
         const TEXT_CODECS = new Set(['subrip', 'ass', 'ssa', 'webvtt', 'mov_text']);
@@ -60,9 +79,10 @@ export function registerSubtitleHandlers(): void {
         if (TEXT_CODECS.has(codec)) {
           // text-based codec: try extract with native format first
           try {
-            await execAsync(
-              `ffmpeg -v error -i "${filePath}" -map 0:${streamIndex} -c:s copy -y "${outPath}"`,
-              { encoding: 'utf-8', timeout: 30000, windowsHide: true }
+            await runCommand(
+              'ffmpeg',
+              ['-v', 'error', '-i', filePath, '-map', `0:${streamIndex}`, '-c:s', 'copy', '-y', outPath],
+              { timeout: 30000 }
             );
           } catch (e1) {
             logger.warn(
@@ -72,9 +92,10 @@ export function registerSubtitleHandlers(): void {
             );
             // copy failed, try transcoding to srt
             const srtPath = join(getTempDir(), `sub_${uniqueId()}.srt`);
-            await execAsync(
-              `ffmpeg -v error -i "${filePath}" -map 0:${streamIndex} -c:s srt -y "${srtPath}"`,
-              { encoding: 'utf-8', timeout: 30000, windowsHide: true }
+            await runCommand(
+              'ffmpeg',
+              ['-v', 'error', '-i', filePath, '-map', `0:${streamIndex}`, '-c:s', 'srt', '-y', srtPath],
+              { timeout: 30000 }
             );
             const content = await readFile(srtPath, 'utf-8');
             await unlink(outPath).catch(() => {});
@@ -83,9 +104,10 @@ export function registerSubtitleHandlers(): void {
           }
         } else {
           // binary codec (pgs, dvd_subtitle, etc): transcode to srt
-          await execAsync(
-            `ffmpeg -v error -i "${filePath}" -map 0:${streamIndex} -c:s srt -y "${outPath}"`,
-            { encoding: 'utf-8', timeout: 30000, windowsHide: true }
+          await runCommand(
+            'ffmpeg',
+            ['-v', 'error', '-i', filePath, '-map', `0:${streamIndex}`, '-c:s', 'srt', '-y', outPath],
+            { timeout: 30000 }
           );
         }
 
@@ -162,9 +184,18 @@ export function registerSubtitleHandlers(): void {
         // list attachments via ffprobe
         let attachmentStreams: Array<{ index: number; filename: string }> = [];
         try {
-          const { stdout } = await execAsync(
-            `ffprobe -v quiet -show_entries stream=index,codec_type:stream_tags=filename -of json "${filePath}"`,
-            { encoding: 'utf-8', timeout: 15000, windowsHide: true }
+          const stdout = await runCommand(
+            'ffprobe',
+            [
+              '-v',
+              'quiet',
+              '-show_entries',
+              'stream=index,codec_type:stream_tags=filename',
+              '-of',
+              'json',
+              filePath
+            ],
+            { timeout: 15000 }
           );
           const parsed = JSON.parse(stdout);
           attachmentStreams = (parsed.streams || [])
@@ -186,8 +217,8 @@ export function registerSubtitleHandlers(): void {
         let bin: string | null = null;
         try {
           bin = await getMkvExtractPath();
-        } catch {
-          /* not available */
+        } catch (e) {
+          logger.warn('subtitles', 'mkvextract unavailable', e);
         }
 
         let allOk = true;
@@ -198,10 +229,8 @@ export function registerSubtitleHandlers(): void {
 
           if (bin) {
             try {
-              await execAsync(`"${bin}" "${filePath}" attachments ${i}:"${outPath}"`, {
-                encoding: 'utf-8',
-                timeout: 30000,
-                windowsHide: true
+              await runCommand(bin, [filePath, 'attachments', `${i}:${outPath}`], {
+                timeout: 30000
               });
               await stat(outPath);
             } catch {
@@ -215,13 +244,14 @@ export function registerSubtitleHandlers(): void {
         if (!allOk) {
           // fallback: dump all attachments via ffmpeg
           try {
-            await execAsync(`ffmpeg -v error -y -dump_attachment "" -i "${filePath}" -f null -`, {
-              encoding: 'utf-8',
-              timeout: 30000,
-              windowsHide: true,
-              cwd: dumpDir
-            });
-          } catch {}
+            await runCommand(
+              'ffmpeg',
+              ['-v', 'error', '-y', '-dump_attachment', '', '-i', filePath, '-f', 'null', '-'],
+              { timeout: 30000, cwd: dumpDir }
+            );
+          } catch (e) {
+            logger.warn('subtitles', `ffmpeg attachment dump failed for ${filePath}`, e);
+          }
         }
 
         // read all dumped files

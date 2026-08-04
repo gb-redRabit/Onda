@@ -1,3 +1,5 @@
+import type { AppSettings } from '../../renderer/src/types/settings';
+
 interface IpcMediaFile {
   id: string;
   name: string;
@@ -22,10 +24,65 @@ interface IpcPlaylist {
   updatedAt: number;
 }
 
+interface IpcFileItem {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  size: number;
+  modifiedAt: number;
+  createdAt: number;
+  extension?: string;
+  mimeType?: string;
+  thumbnail?: string;
+}
+
+interface OpenFileOptions {
+  title?: string;
+  filters?: Array<{ name: string; extensions: string[] }>;
+  properties?: string[];
+}
+
+export interface MusicbrainzArtistCredit {
+  name?: string;
+  artist?: { name?: string };
+}
+
+export interface MusicbrainzRelease {
+  id: string;
+  title: string;
+  date?: string;
+  country?: string;
+  'track-count'?: number;
+  'artist-credit'?: MusicbrainzArtistCredit[];
+  media?: Array<{
+    tracks: Array<{
+      id?: string;
+      number?: string;
+      position?: string;
+      title: string;
+    }>;
+  }>;
+}
+
+interface IpcYoutubeVideo {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail: string;
+  channelTitle: string;
+  channelId: string;
+  duration?: string;
+  viewCount?: string;
+  publishedAt: string;
+}
+
 export interface IpcChannels {
-  'fs:getDrives': { args: []; result: unknown[] };
+  'fs:getDrives': { args: []; result: IpcFileItem[] };
   'fs:readdir': { args: [dirPath: string]; result: void };
-  'fs:readdir:batch': { args: []; result: { done: boolean; items: unknown[] } };
+  'fs:readdir:batch': {
+    args: [];
+    result: { done: boolean; items: IpcFileItem[]; error?: string };
+  };
   'fs:mkdir': { args: [dirPath: string]; result: boolean };
   'fs:delete': { args: [filePath: string]; result: void };
   'fs:move': { args: [paths: string[], destination: string]; result: void };
@@ -51,7 +108,7 @@ export interface IpcChannels {
     } | null;
   };
   'dialog:openFile': {
-    args: [options?: unknown];
+    args: [options?: OpenFileOptions];
     result: { canceled: boolean; filePaths: string[] };
   };
   'dialog:openFolder': { args: []; result: string[] };
@@ -74,7 +131,7 @@ export interface IpcChannels {
   'app:getPath': { args: [name: string]; result: string };
   'library:scan': {
     args: [folderPaths: string[]];
-    result: { count: number; folderTypes: Record<string, 'audio' | 'video' | 'mixed'> };
+    result: { count: number; folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'> };
   };
   'library:loadFolders': { args: []; result: string[] };
   'library:saveFolders': { args: [folders: string[]]; result: string[] };
@@ -82,19 +139,29 @@ export interface IpcChannels {
     args: [];
     result: {
       files: IpcMediaFile[];
-      folderTypes: Record<string, 'audio' | 'video' | 'mixed'>;
+      folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
     } | null;
   };
   'library:saveScanned': {
     args: [
-      data: { files: IpcMediaFile[]; folderTypes: Record<string, 'audio' | 'video' | 'mixed'> }
+      data: { files: IpcMediaFile[]; folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'> }
     ];
     result: void;
   };
   'playlist:loadAll': { args: []; result: IpcPlaylist[] };
   'playlist:saveAll': { args: [playlists: IpcPlaylist[]]; result: void };
-  'settings:get': { args: []; result: Record<string, unknown> };
-  'settings:set': { args: [data: Record<string, unknown>]; result: void };
+  'settings:get': { args: []; result: Partial<AppSettings> };
+  'settings:set': { args: [data: Partial<AppSettings>]; result: boolean };
+  'settings:export': { args: []; result: { success: boolean; canceled?: boolean; error?: string } };
+  'settings:import': {
+    args: [];
+    result: {
+      success: boolean;
+      canceled?: boolean;
+      data?: Partial<AppSettings>;
+      error?: string;
+    };
+  };
   'media:getCover': {
     args: [filePath: string];
     result: { type: 'video' | 'image' | null; data: string | null };
@@ -119,7 +186,16 @@ export interface IpcChannels {
   'playback:getPosition': { args: [filePath: string]; result: number };
   'playback:setPosition': { args: [filePath: string, position: number]; result: void };
   'playback:clearPosition': { args: [filePath: string]; result: void };
-  'yt:search': { args: [query: string]; result: unknown };
+  'yt:search': {
+    args: [query: string];
+    result: {
+      success: boolean;
+      error?: string;
+      items: IpcYoutubeVideo[];
+      nextPageToken: string | null;
+      prevPageToken: string | null;
+    };
+  };
   'dep:checkFfmpeg': { args: []; result: { installed: boolean; version: string | null } };
   'dep:checkYtdlp': {
     args: [];
@@ -132,11 +208,11 @@ export interface IpcChannels {
   'dep:installMkvextract': { args: []; result: { success: boolean; error?: string } };
   'musicbrainz:searchRelease': {
     args: [query: string];
-    result: { success: boolean; releases: unknown[]; error?: string };
+    result: { success: boolean; releases: MusicbrainzRelease[]; error?: string };
   };
   'musicbrainz:lookupRelease': {
     args: [releaseId: string];
-    result: { success: boolean; release?: unknown; error?: string };
+    result: { success: boolean; release?: MusicbrainzRelease; error?: string };
   };
   'musicbrainz:getCoverData': {
     args: [releaseId: string];

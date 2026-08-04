@@ -1,5 +1,5 @@
 import { ipcMain, app } from 'electron';
-import { stat, mkdir } from 'fs/promises';
+import { stat, mkdir, chmod } from 'fs/promises';
 import { join } from 'path';
 import { exec as execCb } from 'child_process';
 import { promisify } from 'util';
@@ -7,6 +7,9 @@ import https from 'https';
 import http from 'http';
 import { createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
+import { runCommand } from '../utils/exec';
+import { ytdlpBinaryName, ytdlpDownloadUrl, getMkvExtractCandidates } from './dependency-utils';
+import { logger } from '../../shared/logger';
 
 const execAsync = promisify(execCb);
 
@@ -36,52 +39,39 @@ function downloadFile(url: string, dest: string): Promise<void> {
 }
 
 async function checkVersion(
-  cmd: string,
+  bin: string,
+  args: string[],
   regex: RegExp
 ): Promise<{ installed: boolean; version: string | null }> {
   try {
-    const { stdout } = await execAsync(cmd, {
-      encoding: 'utf-8',
-      timeout: 10000,
-      windowsHide: true
-    });
+    const stdout = await runCommand(bin, args, { timeout: 10000 });
     const match = stdout.match(regex);
     return { installed: true, version: match?.[1] ?? 'unknown' };
-  } catch {
+  } catch (e) {
+    logger.warn('deps', `checkVersion failed for ${bin}`, e);
     return { installed: false, version: null };
   }
 }
 
-function getMkvExtractCandidates(): string[] {
-  const isWin = process.platform === 'win32';
-  if (isWin) {
-    return [
-      'mkvextract',
-      'C:\\Program Files\\MKVToolNix\\mkvextract.exe',
-      'C:\\Program Files (x86)\\MKVToolNix\\mkvextract.exe'
-    ];
+export async function getYtdlpPath(): Promise<string> {
+  const localBin = join(app.getPath('userData'), 'bin', ytdlpBinaryName());
+  try {
+    await stat(localBin);
+    return localBin;
+  } catch {
+    // not installed locally — fall back to PATH
   }
-  const home = process.env.HOME || '/usr/local';
-  return [
-    'mkvextract',
-    '/usr/local/bin/mkvextract',
-    '/usr/bin/mkvextract',
-    join(home, 'bin', 'mkvextract'),
-    '/opt/homebrew/bin/mkvextract'
-  ];
+  return 'yt-dlp';
 }
 
 export async function getMkvExtractPath(): Promise<string> {
   const candidates = getMkvExtractCandidates();
   for (const c of candidates) {
     try {
-      await execAsync(`"${c}" --version`, {
-        timeout: 5000,
-        windowsHide: true
-      });
+      await runCommand(c, ['--version'], { timeout: 5000 });
       return c;
     } catch {
-      /* try next */
+      // candidate not available — try next
     }
   }
   return 'mkvextract';
@@ -89,36 +79,29 @@ export async function getMkvExtractPath(): Promise<string> {
 
 export function registerDependencyHandlers(): void {
   ipcMain.handle('dep:checkFfmpeg', async () => {
-    return checkVersion('ffmpeg -version', /ffmpeg version (\S+)/);
+    return checkVersion('ffmpeg', ['-version'], /ffmpeg version (\S+)/);
   });
 
   ipcMain.handle('dep:checkYtdlp', async () => {
+    const localBin = join(app.getPath('userData'), 'bin', ytdlpBinaryName());
     try {
-      const localBin = join(app.getPath('userData'), 'bin', 'yt-dlp.exe');
-      try {
-        await stat(localBin);
-        const { stdout } = await execAsync(`"${localBin}" --version`, {
-          encoding: 'utf-8',
-          timeout: 10000,
-          windowsHide: true
-        });
-        return { installed: true, version: stdout.trim(), path: localBin };
-      } catch {
-        // not in local bin
-      }
-      const { stdout } = await execAsync('yt-dlp --version', {
-        encoding: 'utf-8',
-        timeout: 10000,
-        windowsHide: true
-      });
-      return { installed: true, version: stdout.trim(), path: 'yt-dlp' };
+      await stat(localBin);
+      const stdout = await runCommand(localBin, ['--version'], { timeout: 10000 });
+      return { installed: true, version: stdout.trim(), path: localBin };
     } catch {
+      // not in local bin — check PATH
+    }
+    try {
+      const stdout = await runCommand('yt-dlp', ['--version'], { timeout: 10000 });
+      return { installed: true, version: stdout.trim(), path: 'yt-dlp' };
+    } catch (e) {
+      logger.warn('deps', 'yt-dlp not found on PATH', e);
       return { installed: false, version: null, path: null };
     }
   });
 
   ipcMain.handle('dep:checkFfprobe', async () => {
-    return checkVersion('ffprobe -version', /ffprobe version (\S+)/);
+    return checkVersion('ffprobe', ['-version'], /ffprobe version (\S+)/);
   });
 
   function getInstallFfmpegCmd(): string {
@@ -154,11 +137,11 @@ export function registerDependencyHandlers(): void {
     try {
       const binDir = join(app.getPath('userData'), 'bin');
       await mkdir(binDir, { recursive: true });
-      const dest = join(binDir, 'yt-dlp.exe');
-      await downloadFile(
-        'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe',
-        dest
-      );
+      const dest = join(binDir, ytdlpBinaryName());
+      await downloadFile(ytdlpDownloadUrl(process.platform), dest);
+      if (process.platform !== 'win32') {
+        await chmod(dest, 0o755);
+      }
       return { success: true };
     } catch (e: unknown) {
       const err = e as { message?: string };
@@ -169,14 +152,11 @@ export function registerDependencyHandlers(): void {
   ipcMain.handle('dep:checkMkvextract', async () => {
     try {
       const bin = await getMkvExtractPath();
-      const { stdout } = await execAsync(`"${bin}" --version`, {
-        encoding: 'utf-8',
-        timeout: 10000,
-        windowsHide: true
-      });
+      const stdout = await runCommand(bin, ['--version'], { timeout: 10000 });
       const match = stdout.match(/mkvextract v([\d.]+)/);
       return { installed: true, version: match ? match[1] : 'unknown' };
-    } catch {
+    } catch (e) {
+      logger.warn('deps', 'mkvextract not found', e);
       return { installed: false, version: null };
     }
   });

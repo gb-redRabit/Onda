@@ -10,20 +10,18 @@ const player = usePlayerStore();
 const library = useLibraryStore();
 
 async function openFile() {
-  const result = (await window.api.invoke('dialog:openFile')) as {
-    filePaths: string[];
-    canceled: boolean;
-  };
-  if (result.canceled || !result.filePaths.length) return;
+  const result = (await window.api?.invoke('dialog:openFile')) as
+    | { filePaths: string[]; canceled: boolean }
+    | undefined;
+  if (!result || result.canceled || !result.filePaths.length) return;
   await openMediaFiles(result.filePaths, router);
 }
 
 async function openFolder() {
-  const result = (await window.api.invoke('dialog:openFolderFiles')) as {
-    filePaths: string[];
-    canceled: boolean;
-  };
-  if (result.canceled || !result.filePaths.length) return;
+  const result = (await window.api?.invoke('dialog:openFolderFiles')) as
+    | { filePaths: string[]; canceled: boolean }
+    | undefined;
+  if (!result || result.canceled || !result.filePaths.length) return;
   await openMediaFiles(result.filePaths, router);
 }
 
@@ -83,10 +81,10 @@ const actions = [
       </button>
     </div>
 
-    <div class="grid grid-cols-4 gap-3 mb-8">
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
       <template v-if="library.isLoading || !library.isLoaded">
         <div
-          v-for="i in 4"
+          v-for="i in 5"
           :key="i"
           class="p-4 rounded-xl bg-bg-elevated border border-border-default animate-pulse"
         >
@@ -100,6 +98,7 @@ const actions = [
             { v: library.totalCount, k: 'home.totalTracks', c: 'text-fg-base' },
             { v: library.audioCount, k: 'home.audioFiles', c: 'text-accent-base' },
             { v: library.videoCount, k: 'home.videoFiles', c: 'text-green-base' },
+            { v: library.imageCount, k: 'home.imageFiles', c: 'text-purple-base' },
             { v: library.playlists.length, k: 'library.playlists', c: 'text-amber-base' }
           ]"
           :key="s.k"

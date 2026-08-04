@@ -301,8 +301,8 @@ export function useAudioPiP() {
       }
     };
 
-    audioEvents.on('trackLoaded', onTrackChange);
-    audioEvents.on('playStateChange', onPlayState);
+    cleanups.push(audioEvents.on('trackLoaded', onTrackChange));
+    cleanups.push(audioEvents.on('playStateChange', onPlayState));
 
     cleanups.push(() => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);

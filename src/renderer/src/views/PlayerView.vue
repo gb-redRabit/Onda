@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore } from '@renderer/stores/ui';
-import { useRouter } from 'vue-router';
 import PlayerTopBar from '@renderer/components/player/PlayerTopBar.vue';
 import PlayerControls from '@renderer/components/player/PlayerControls.vue';
 import ResumePrompt from '@renderer/components/player/ResumePrompt.vue';
@@ -158,14 +158,14 @@ function onResumeContinue() {
     vp.videoRef.value.currentTime = prompt.position;
     player.currentTime = prompt.position;
     vp.videoRef.value.play().catch(() => {});
-    window.api.setPlaybackPosition(prompt.path, prompt.position);
+    window.api?.setPlaybackPosition(prompt.path, prompt.position);
   }
   player.clearResumePrompt();
 }
 
 function onResumeStart() {
   const prompt = player.resumePrompt;
-  if (prompt) window.api.clearPlaybackPosition(prompt.path);
+  if (prompt) window.api?.clearPlaybackPosition(prompt.path);
   player.clearResumePrompt();
 }
 
@@ -183,6 +183,10 @@ watch(
     }
   }
 );
+
+const onFullscreenChange = () => {
+  isFullscreen.value = !!document.fullscreenElement;
+};
 
 onMounted(() => {
   if (
@@ -205,9 +209,7 @@ onMounted(() => {
     toggleFullscreen
   });
 
-  document.addEventListener('fullscreenchange', () => {
-    isFullscreen.value = !!document.fullscreenElement;
-  });
+  document.addEventListener('fullscreenchange', onFullscreenChange);
 
   if (player.pendingFullscreen) {
     player.pendingFullscreen = false;
@@ -216,6 +218,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  document.removeEventListener('fullscreenchange', onFullscreenChange);
   if (resumePromptTimer) clearTimeout(resumePromptTimer);
   vp.destroy();
   if (controlsTimeout.value) clearTimeout(controlsTimeout.value);

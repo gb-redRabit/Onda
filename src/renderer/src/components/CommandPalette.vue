@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onBeforeUnmount, type Component } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import type { MediaFile } from '@renderer/types/media';
@@ -42,7 +42,7 @@ const results = computed(() => {
 const flatItems = computed(() => {
   const items: (
     | { type: 'track'; track: MediaFile }
-    | { type: 'action'; label: string; icon: any; action: () => void }
+    | { type: 'action'; label: string; icon: Component; action: () => void }
   )[] = [];
   results.value.tracks.forEach((t) => items.push({ type: 'track', track: t }));
   results.value.actions.forEach((a) => items.push({ type: 'action', ...a }));

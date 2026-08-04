@@ -1,5 +1,7 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import { electronAPI } from '@electron-toolkit/preload';
+import type { MusicbrainzRelease } from '../shared/types/ipc';
+import { logger } from '../shared/logger';
 
 const mediaServerUrl: string = ipcRenderer.sendSync('media:getServerUrlSync');
 const windowId: number = ipcRenderer.sendSync('window:idSync');
@@ -8,7 +10,7 @@ function trySend(channel: string, ...args: unknown[]): void {
   try {
     ipcRenderer.send(channel, ...args);
   } catch (e) {
-    console.error('[IPC send error]', channel, e);
+    logger.error('preload', `IPC send failed on '${channel}'`, e);
   }
 }
 
@@ -16,11 +18,11 @@ function tryInvoke(channel: string, ...args: unknown[]): Promise<unknown> {
   try {
     const p = ipcRenderer.invoke(channel, ...args);
     return p.catch((e) => {
-      console.error('[IPC invoke rejection]', channel, e);
+      logger.error('preload', `IPC invoke rejected on '${channel}'`, e);
       return undefined;
     });
   } catch (e) {
-    console.error('[IPC invoke error]', channel, e);
+    logger.error('preload', `IPC invoke failed on '${channel}'`, e);
     return Promise.resolve(undefined);
   }
 }
@@ -135,11 +137,11 @@ const api = {
     ipcRenderer.invoke('dialog:openImage'),
   musicbrainzSearchRelease: (
     query: string
-  ): Promise<{ success: boolean; releases: any[]; error?: string }> =>
+  ): Promise<{ success: boolean; releases: MusicbrainzRelease[]; error?: string }> =>
     ipcRenderer.invoke('musicbrainz:searchRelease', query),
   musicbrainzLookupRelease: (
     releaseId: string
-  ): Promise<{ success: boolean; release?: any; error?: string }> =>
+  ): Promise<{ success: boolean; release?: MusicbrainzRelease; error?: string }> =>
     ipcRenderer.invoke('musicbrainz:lookupRelease', releaseId),
   musicbrainzGetCoverData: (
     releaseId: string
@@ -219,7 +221,7 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('electron', electronAPI);
     contextBridge.exposeInMainWorld('api', api);
   } catch (error) {
-    console.error('[preload] exposeInMainWorld failed', error);
+    logger.error('preload', 'exposeInMainWorld failed', error);
   }
 } else {
   // @ts-ignore (define in dts)

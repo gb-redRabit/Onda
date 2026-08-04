@@ -1,15 +1,43 @@
 import { ipcMain } from 'electron';
+import { runCommand } from '../utils/exec';
+import { getYtdlpPath } from './dependency-handlers';
 import { logger } from '../../shared/logger';
+import { formatDuration, formatUploadDate, pickThumbnail, type YtDlpEntry } from './youtube-utils';
 
 export function registerYoutubeHandlers(): void {
   ipcMain.handle('yt:search', async (_event, query: string) => {
-    logger.warn('yt', 'search not implemented — yt-dlp API required. Query:', query);
-    return {
-      success: false,
-      error: 'YouTube integration not yet implemented',
-      items: [],
-      nextPageToken: null,
-      prevPageToken: null
-    };
+    try {
+      const bin = await getYtdlpPath();
+      const stdout = await runCommand(
+        bin,
+        [`ytsearch10:${query}`, '--flat-playlist', '--no-warnings', '-J'],
+        { timeout: 60000 }
+      );
+      const parsed = JSON.parse(stdout) as { entries?: YtDlpEntry[] };
+      const items = (parsed.entries || [])
+        .filter((e) => e.id && e.title)
+        .map((e) => ({
+          id: e.id as string,
+          title: e.title as string,
+          description: e.description || '',
+          thumbnail: pickThumbnail(e),
+          channelTitle: e.channel || e.uploader || '',
+          channelId: e.channel_id || '',
+          duration: formatDuration(e.duration),
+          viewCount: e.view_count != null ? String(e.view_count) : undefined,
+          publishedAt: formatUploadDate(e.upload_date)
+        }));
+      return { success: true, items, nextPageToken: null, prevPageToken: null };
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      logger.warn('yt', 'search failed', err.message || String(e));
+      return {
+        success: false,
+        error: err.message || 'YouTube search failed',
+        items: [],
+        nextPageToken: null,
+        prevPageToken: null
+      };
+    }
   });
 }

@@ -1,7 +1,14 @@
 /// <reference types="vite/client" />
 
+import type { MusicbrainzRelease, IpcChannel, IpcChannels } from '@shared/types/ipc';
+
 interface OndaAPI {
-  invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
+  mediaServerUrl: string;
+  windowId: number;
+  invoke: <C extends IpcChannel>(
+    channel: C,
+    ...args: IpcChannels[C]['args']
+  ) => Promise<IpcChannels[C]['result']>;
   send: (channel: string, ...args: unknown[]) => void;
   on: (channel: string, callback: (...args: unknown[]) => void) => () => void;
   once: (channel: string, callback: (...args: unknown[]) => void) => void;
@@ -80,10 +87,10 @@ interface OndaAPI {
   openImageDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>;
   musicbrainzSearchRelease: (
     query: string
-  ) => Promise<{ success: boolean; releases: any[]; error?: string }>;
+  ) => Promise<{ success: boolean; releases: MusicbrainzRelease[]; error?: string }>;
   musicbrainzLookupRelease: (
     releaseId: string
-  ) => Promise<{ success: boolean; release?: any; error?: string }>;
+  ) => Promise<{ success: boolean; release?: MusicbrainzRelease; error?: string }>;
   musicbrainzGetCoverData: (
     releaseId: string
   ) => Promise<{ success: boolean; data?: number[]; mime?: string; error?: string }>;
@@ -112,6 +119,19 @@ interface OndaAPI {
     startTime: number,
     duration: number
   ) => Promise<string | null>;
+  audioPipShow: (
+    state: Record<string, unknown>,
+    mode?: string,
+    opacity?: number,
+    position?: string
+  ) => Promise<boolean>;
+  audioPipHide: () => Promise<boolean>;
+  audioPipUpdate: (
+    state: Record<string, unknown>,
+    mode?: string,
+    opacity?: number,
+    position?: string
+  ) => Promise<boolean>;
 }
 
 declare global {

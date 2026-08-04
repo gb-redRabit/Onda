@@ -2,6 +2,7 @@ import { BrowserWindow, ipcMain, screen } from 'electron';
 import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
 import { PipPreview } from './pip-preview';
+import { logger } from '../shared/logger';
 
 interface PipSubtitleData {
   subContent: string;
@@ -51,7 +52,8 @@ export class PipManager {
         return process.platform === 'win32' ? p.toLowerCase() : p;
       }
       return process.platform === 'win32' ? decoded.toLowerCase() : decoded;
-    } catch {
+    } catch (e) {
+      logger.warn('pip', 'normalizeFilePath failed', url, e);
       return url.toLowerCase();
     }
   }

@@ -47,7 +47,7 @@ export const usePlayerStore = defineStore('player', () => {
     favoritesLoaded = true;
     if (!window.api) return;
     try {
-      const data = (await window.api.invoke('settings:get')) as Record<string, unknown>;
+      const data = await window.api.invoke('settings:get');
       const list = data.favorites;
       if (Array.isArray(list)) favorites.value = list;
     } catch {

@@ -1,24 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick, reactive } from 'vue';
 import { useTimeoutFn, useIntervalFn, useRafFn, useDebounceFn } from '@vueuse/core';
-import {
-  X,
-  ChevronLeft,
-  ChevronRight,
-  ZoomIn,
-  ZoomOut,
-  RotateCw,
-  Maximize2,
-  Play,
-  Pause,
-  Settings2,
-  Fullscreen
-} from '@lucide/vue';
+import { ChevronLeft, ChevronRight } from '@lucide/vue';
 import type { FileItem } from '@renderer/types/explorer';
-import ImageViewerSettings from './ImageViewerSettings.vue';
 import ImageViewerThumbnails from './ImageViewerThumbnails.vue';
+import ImageViewerToolbar from './ImageViewerToolbar.vue';
 import { logger } from '@shared/logger';
 import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
+import { computeEnterStart, computeOldExit } from '@renderer/utils/imageTransitions';
 
 const props = defineProps<{
   files: FileItem[];
@@ -149,7 +138,7 @@ const oldStyle = reactive({
 });
 const kenStyle = reactive({ scale: 1, translateX: 0, translateY: 0 });
 
-const thumbCache = reactive(new Map<string, string>());
+const thumbCache = ref<Map<string, string>>(new Map());
 let fsCleanup: (() => void) | null = null;
 let currentObjectUrl: string | null = null;
 
@@ -174,66 +163,12 @@ async function loadDisplayImage(file: FileItem, maxWidth: number = 1920): Promis
   }
 }
 
-function computeEnterStart() {
-  switch (activeTransition.value) {
-    case 'fade':
-      return { opacity: 0, transform: 'translateX(0) scale3d(1,1,1)', filter: 'blur(0px)' };
-    case 'slide':
-      return direction.value === 'next'
-        ? { opacity: 1, transform: 'translateX(15%) scale3d(0.95,0.95,1)', filter: 'blur(4px)' }
-        : { opacity: 1, transform: 'translateX(-15%) scale3d(0.95,0.95,1)', filter: 'blur(4px)' };
-    case 'zoom':
-      return { opacity: 0, transform: 'translateX(0) scale3d(0.7,0.7,1)', filter: 'blur(0px)' };
-    case 'swirl':
-      return {
-        opacity: 0,
-        transform: 'translateX(0) scale3d(0.5,0.5,1) rotate(-15deg)',
-        filter: 'blur(6px)'
-      };
-    case 'slideUp':
-      return { opacity: 1, transform: 'translateY(15%) scale3d(0.95,0.95,1)', filter: 'blur(4px)' };
-    case 'slideDown':
-      return {
-        opacity: 1,
-        transform: 'translateY(-15%) scale3d(0.95,0.95,1)',
-        filter: 'blur(4px)'
-      };
-    case 'zoomOut':
-      return { opacity: 0, transform: 'translateX(0) scale3d(1.3,1.3,1)', filter: 'blur(0px)' };
-    default:
-      return { opacity: 1, transform: 'translateX(0) scale3d(1,1,1)', filter: 'blur(0px)' };
-  }
+function getEnterStart() {
+  return computeEnterStart(activeTransition.value, direction.value);
 }
 
-function computeOldExit() {
-  switch (activeTransition.value) {
-    case 'fade':
-      return { opacity: 0, transform: 'translateX(0) scale3d(1.05,1.05,1)', filter: 'blur(0px)' };
-    case 'slide':
-      return direction.value === 'next'
-        ? { opacity: 0, transform: 'translateX(-15%) scale3d(0.95,0.95,1)', filter: 'blur(4px)' }
-        : { opacity: 0, transform: 'translateX(15%) scale3d(0.95,0.95,1)', filter: 'blur(4px)' };
-    case 'zoom':
-      return { opacity: 0, transform: 'translateX(0) scale3d(1.2,1.2,1)', filter: 'blur(0px)' };
-    case 'swirl':
-      return {
-        opacity: 0,
-        transform: 'translateX(0) scale3d(1.3,1.3,1) rotate(15deg)',
-        filter: 'blur(6px)'
-      };
-    case 'slideUp':
-      return {
-        opacity: 0,
-        transform: 'translateY(-15%) scale3d(0.95,0.95,1)',
-        filter: 'blur(4px)'
-      };
-    case 'slideDown':
-      return { opacity: 0, transform: 'translateY(15%) scale3d(0.95,0.95,1)', filter: 'blur(4px)' };
-    case 'zoomOut':
-      return { opacity: 0, transform: 'translateX(0) scale3d(0.7,0.7,1)', filter: 'blur(0px)' };
-    default:
-      return { opacity: 0, transform: 'translateX(0) scale3d(1,1,1)', filter: 'blur(0px)' };
-  }
+function getOldExit() {
+  return computeOldExit(activeTransition.value, direction.value);
 }
 
 function fitToScreen() {
@@ -267,7 +202,7 @@ function onImageLoaded() {
       transform: 'translateX(0) scale3d(1,1,1)',
       filter: 'blur(0px)'
     });
-    Object.assign(oldStyle, computeOldExit());
+    Object.assign(oldStyle, getOldExit());
     startTransition();
   });
 }
@@ -302,7 +237,7 @@ function navigateTo(newIdx: number, dir: 'prev' | 'next') {
   transitioning.value = true;
   imgError.value = false;
 
-  const enterStart = computeEnterStart();
+  const enterStart = getEnterStart();
   Object.assign(newStyle, {
     opacity: 0,
     transform: enterStart.transform,
@@ -634,110 +569,34 @@ function makeTransform(base: string): string {
         </div>
       </div>
 
-      <div
-        class="absolute right-0 inset-y-0 flex flex-col items-center px-2 py-3 gap-1 transition-all duration-300"
-        :class="slideshowActive && !uiVisible ? 'opacity-0 pointer-events-none' : ''"
-        @click.stop
-      >
-        <button
-          class="p-1.5 rounded-lg bg-bg-overlay/80 text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
-          title="Close (Esc)"
-          @click="handleClose"
-        >
-          <X :size="16" class="pointer-events-none" />
-        </button>
-        <div class="flex-1" />
-
-        <div class="flex flex-col items-center gap-1 bg-bg-overlay/80 rounded-xl px-1.5 py-2">
-          <div class="relative">
-            <button
-              class="p-1.5 rounded-lg transition-colors"
-              :class="
-                slideshowActive
-                  ? 'text-accent-base bg-accent-ghost'
-                  : 'text-fg-muted hover:text-fg-base hover:bg-bg-hover'
-              "
-              :title="slideshowActive ? 'Stop slideshow (Space)' : 'Start slideshow (Space)'"
-              @click="toggleSlideshow"
-            >
-              <span v-show="!slideshowActive"><Play :size="16" class="pointer-events-none" /></span>
-              <span v-show="slideshowActive"><Pause :size="16" class="pointer-events-none" /></span>
-            </button>
-            <button
-              class="p-1 rounded-lg transition-colors block mx-auto mt-0.5"
-              :class="
-                settingsOpen
-                  ? 'text-accent-base bg-accent-ghost'
-                  : 'text-fg-muted hover:text-fg-base hover:bg-bg-hover'
-              "
-              title="Slideshow settings"
-              @click="settingsOpen = !settingsOpen"
-            >
-              <Settings2 :size="12" class="pointer-events-none" />
-            </button>
-            <ImageViewerSettings
-              v-if="settingsOpen"
-              :interval="slideshowInterval"
-              :transition-type="transitionType"
-              :transition-duration="transitionDuration"
-              :loop="loop"
-              :shuffle="shuffleSlideshow"
-              :ken-burns="kenBurns"
-              :auto-hide="autoHideUI"
-              @update:interval="changeInterval"
-              @update:transition-type="transitionType = $event"
-              @update:transition-duration="transitionDuration = $event"
-              @update:loop="loop = $event"
-              @update:shuffle="shuffleSlideshow = $event"
-              @update:ken-burns="kenBurns = $event"
-              @update:auto-hide="autoHideUI = $event"
-            />
-          </div>
-
-          <button
-            class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
-            title="Fit to screen"
-            @click="fitToScreen"
-          >
-            <Maximize2 :size="16" class="pointer-events-none" />
-          </button>
-          <button
-            class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
-            title="Zoom In (+)"
-            @click="zoomIn"
-          >
-            <ZoomIn :size="16" class="pointer-events-none" />
-          </button>
-          <button
-            class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
-            title="Zoom Out (-)"
-            @click="zoomOut"
-          >
-            <ZoomOut :size="16" class="pointer-events-none" />
-          </button>
-          <button
-            class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
-            title="Rotate (R)"
-            @click="rotate"
-          >
-            <RotateCw :size="16" class="pointer-events-none" />
-          </button>
-          <button
-            class="p-1.5 rounded-lg transition-colors"
-            :class="
-              fullscreen
-                ? 'text-accent-base bg-accent-ghost'
-                : 'text-fg-muted hover:text-fg-base hover:bg-bg-hover'
-            "
-            title="Fullscreen (F)"
-            @click="toggleFullscreen"
-          >
-            <Fullscreen :size="16" class="pointer-events-none" />
-          </button>
-        </div>
-
-        <div class="flex-1" />
-      </div>
+      <ImageViewerToolbar
+        :slideshow-active="slideshowActive"
+        :settings-open="settingsOpen"
+        :slideshow-interval="slideshowInterval"
+        :transition-type="transitionType"
+        :transition-duration="transitionDuration"
+        :loop="loop"
+        :shuffle="shuffleSlideshow"
+        :ken-burns="kenBurns"
+        :auto-hide="autoHideUI"
+        :fullscreen="fullscreen"
+        :ui-visible="uiVisible"
+        @close="handleClose"
+        @toggle-slideshow="toggleSlideshow"
+        @toggle-settings="settingsOpen = !settingsOpen"
+        @fit-to-screen="fitToScreen"
+        @zoom-in="zoomIn"
+        @zoom-out="zoomOut"
+        @rotate="rotate"
+        @toggle-fullscreen="toggleFullscreen"
+        @update:interval="changeInterval"
+        @update:transition-type="transitionType = $event"
+        @update:transition-duration="transitionDuration = $event"
+        @update:loop="loop = $event"
+        @update:shuffle="shuffleSlideshow = $event"
+        @update:ken-burns="kenBurns = $event"
+        @update:auto-hide="autoHideUI = $event"
+      />
     </div>
 
     <ImageViewerThumbnails

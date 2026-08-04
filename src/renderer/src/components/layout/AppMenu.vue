@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useUIStore } from '@renderer/stores/ui';
 import { useI18n } from 'vue-i18n';
-import { openMediaFiles } from '@renderer/composables/useOpenMedia';
 import { Minus, Square, X, Search, Music2, Maximize2, FolderOpen, FileAudio } from '@lucide/vue';
+import { useUIStore } from '@renderer/stores/ui';
+import { openMediaFiles } from '@renderer/composables/useOpenMedia';
 
 const route = useRoute();
 const router = useRouter();
@@ -38,20 +38,18 @@ const showViewActions = computed(() =>
 );
 
 async function openFile() {
-  const result = (await window.api.invoke('dialog:openFile')) as {
-    filePaths: string[];
-    canceled: boolean;
-  };
-  if (result.canceled || !result.filePaths.length) return;
+  const result = (await window.api?.invoke('dialog:openFile')) as
+    | { filePaths: string[]; canceled: boolean }
+    | undefined;
+  if (!result || result.canceled || !result.filePaths.length) return;
   await openMediaFiles(result.filePaths, router);
 }
 
 async function openFolder() {
-  const result = (await window.api.invoke('dialog:openFolderFiles')) as {
-    filePaths: string[];
-    canceled: boolean;
-  };
-  if (result.canceled || !result.filePaths.length) return;
+  const result = (await window.api?.invoke('dialog:openFolderFiles')) as
+    | { filePaths: string[]; canceled: boolean }
+    | undefined;
+  if (!result || result.canceled || !result.filePaths.length) return;
   await openMediaFiles(result.filePaths, router);
 }
 
@@ -64,16 +62,16 @@ function closeDropdown() {
 }
 
 function minimize() {
-  window.api.invoke('window:minimize');
+  window.api?.invoke('window:minimize');
 }
 function maximize() {
-  window.api.invoke('window:maximize');
+  window.api?.invoke('window:maximize');
 }
 function closeWin() {
-  window.api.invoke('window:close');
+  window.api?.invoke('window:close');
 }
 function quitApp() {
-  window.api.invoke('app:quit');
+  window.api?.invoke('app:quit');
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -93,11 +91,18 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
-onMounted(() => document.addEventListener('keydown', onKeydown));
-onUnmounted(() => document.removeEventListener('keydown', onKeydown));
-
-window.api.on('window:maximized', (val: unknown) => {
+function onMaximized(val: unknown) {
   isMaximized.value = val as boolean;
+}
+
+let offMaximized: (() => void) | null = null;
+onMounted(() => {
+  document.addEventListener('keydown', onKeydown);
+  offMaximized = window.api?.on('window:maximized', onMaximized) ?? null;
+});
+onUnmounted(() => {
+  document.removeEventListener('keydown', onKeydown);
+  offMaximized?.();
 });
 </script>
 

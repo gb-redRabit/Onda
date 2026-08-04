@@ -1,6 +1,8 @@
 import { ipcMain } from 'electron';
 import https from 'https';
 import http from 'http';
+import type { MusicbrainzRelease } from '../../shared/types/ipc';
+import { logger } from '../../shared/logger';
 
 const USER_AGENT = 'Onda/1.0.0 (onda-player.app)';
 const MB_URL = 'https://musicbrainz.org/ws/2';
@@ -19,7 +21,8 @@ function mbFetch(url: string): Promise<Record<string, unknown> | string> {
           if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
             try {
               resolve(JSON.parse(data) as Record<string, unknown>);
-            } catch {
+            } catch (e) {
+              logger.warn('musicbrainz', 'non-JSON response', url, e);
               resolve(data);
             }
           } else {
@@ -41,8 +44,9 @@ export function registerMusicBrainzHandlers() {
     try {
       const q = encodeURIComponent(query);
       const res = await mbFetch(`${MB_URL}/release/?query=${q}&fmt=json&limit=10`);
-      const data = typeof res === 'string' ? { releases: [] } : (res as Record<string, unknown>);
-      return { success: true, releases: ((data as any).releases || []) as any[] };
+      const data = typeof res === 'string' ? { releases: [] } : res;
+      const releases = (data.releases as MusicbrainzRelease[] | undefined) || [];
+      return { success: true, releases };
     } catch (e) {
       return { success: false, error: String(e), releases: [] };
     }
@@ -53,7 +57,10 @@ export function registerMusicBrainzHandlers() {
       const res = await mbFetch(
         `${MB_URL}/release/${releaseId}?inc=recordings+artist-credits+labels&fmt=json`
       );
-      return { success: true, release: typeof res === 'string' ? {} : res };
+      if (typeof res === 'string') {
+        return { success: false, error: 'Invalid response' };
+      }
+      return { success: true, release: res as unknown as MusicbrainzRelease };
     } catch (e) {
       return { success: false, error: String(e) };
     }

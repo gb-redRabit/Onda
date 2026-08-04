@@ -134,15 +134,25 @@ function ensureGeom(w: number, count: number) {
   cachedCount = count;
 }
 
+let vizIdleTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleVizIdle(): void {
+  if (vizIdleTimer) return;
+  vizIdleTimer = setTimeout(() => {
+    vizIdleTimer = null;
+    drawViz();
+  }, 500);
+}
+
 function drawViz() {
   const canvas = vizCanvas.value;
   if (!canvas || !canvas.isConnected) {
-    vizAnimId = requestAnimationFrame(drawViz);
+    scheduleVizIdle();
     return;
   }
   const ctx = canvas.getContext('2d');
   if (!ctx) {
-    vizAnimId = requestAnimationFrame(drawViz);
+    scheduleVizIdle();
     return;
   }
   const parent = canvas.parentElement;
@@ -154,7 +164,7 @@ function drawViz() {
   const h = canvas.height;
   const data = vizData.value;
   if (data.length < 4) {
-    vizAnimId = requestAnimationFrame(drawViz);
+    scheduleVizIdle();
     return;
   }
 
@@ -302,6 +312,10 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  if (vizIdleTimer) {
+    clearTimeout(vizIdleTimer);
+    vizIdleTimer = null;
+  }
   cancelAnimationFrame(vizAnimId);
   vizAnimId = 0;
   cleanup?.();

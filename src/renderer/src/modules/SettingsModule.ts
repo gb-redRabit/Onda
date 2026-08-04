@@ -13,10 +13,6 @@ export class SettingsModule implements AppModule {
     this._active = false;
   }
 
-  async destroy(): Promise<void> {
-    await this.deactivate();
-  }
-
   isActive(): boolean {
     return this._active;
   }

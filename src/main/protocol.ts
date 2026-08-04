@@ -1,6 +1,7 @@
 import { protocol, app } from 'electron';
 import { normalize, isAbsolute } from 'path';
 import { SharpService } from './utils/sharp';
+import { logger } from '../shared/logger';
 
 const allowedPrefixes: string[] = [];
 
@@ -87,7 +88,8 @@ export function registerOndaProtocolHandler(): void {
       }
 
       return new Response('not found', { status: 404 });
-    } catch {
+    } catch (e) {
+      logger.warn('protocol', `onda:// request failed: ${req.url}`, e);
       return new Response('', { status: 500 });
     }
   });

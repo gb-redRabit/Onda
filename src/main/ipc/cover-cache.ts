@@ -4,12 +4,10 @@ import { createHash } from 'crypto';
 import { statSync } from 'fs';
 import { parseFile } from 'music-metadata';
 import sharp from 'sharp';
-import { exec as execCb } from 'child_process';
-import { promisify } from 'util';
 import os from 'os';
 import { AUDIO_EXTS, VIDEO_EXTS } from '../../shared/constants';
-
-const execAsync = promisify(execCb);
+import { runCommand } from '../utils/exec';
+import { logger } from '../../shared/logger';
 
 let _store: InstanceType<typeof import('electron-store').default> | null = null;
 function getEncryptionKey(): string {
@@ -73,9 +71,9 @@ export async function getPersistentCover(
 ): Promise<{ type: 'video' | 'image' | null; data: string | null } | null> {
   try {
     const store = await getStore();
-    const cacheMap: Record<string, { cacheFile: string; mtime: number }> | undefined = store.get(
-      COVER_CACHE_MAP_KEY
-    ) as any;
+    const cacheMap = store.get(COVER_CACHE_MAP_KEY) as
+      | Record<string, { cacheFile: string; mtime: number }>
+      | undefined;
     const entry = cacheMap?.[filePath];
     if (!entry) return null;
 
@@ -97,7 +95,8 @@ export async function getPersistentCover(
       ? `data:image/jpeg;base64,${buf.toString('base64')}`
       : `data:image/png;base64,${buf.toString('base64')}`;
     return { type: 'image', data: dataUrl };
-  } catch {
+  } catch (e) {
+    logger.warn('cover', `getPersistentCover failed for ${filePath}`, e);
     return null;
   }
 }
@@ -126,16 +125,17 @@ export async function savePersistentCover(
     try {
       const s = await stat(filePath).catch(() => null);
       const store = await getStore();
-      const cacheMap: Record<string, { cacheFile: string; mtime: number }> =
-        (store.get(COVER_CACHE_MAP_KEY) as any) || {};
+      const cacheMap =
+        (store.get(COVER_CACHE_MAP_KEY) as Record<string, { cacheFile: string; mtime: number }>) ||
+        {};
       cacheMap[filePath] = { cacheFile, mtime: s?.mtimeMs ?? Date.now() };
       store.set(COVER_CACHE_MAP_KEY, structuredClone(cacheMap));
     } finally {
       saveMapLock = null;
       resolveLock!();
     }
-  } catch {
-    // non-fatal
+  } catch (e) {
+    logger.warn('cover', `savePersistentCover failed for ${filePath}`, e);
   }
 }
 
@@ -169,14 +169,14 @@ async function extractAudioCover(filePath: string): Promise<string | null> {
           .jpeg({ quality: 85 })
           .toBuffer();
         buf = resized;
-      } catch {
-        /* use original */
+      } catch (e) {
+        logger.warn('cover', `cover resize failed for ${filePath}`, e);
       }
       savePersistentCover(filePath, buf, imgExt);
       return `data:image/jpeg;base64,${buf.toString('base64')}`;
     }
-  } catch {
-    /* no cover in metadata */
+  } catch (e) {
+    logger.warn('cover', `no cover in metadata for ${filePath}`, e);
   }
   return extractEmbeddedCover(filePath);
 }
@@ -185,14 +185,16 @@ async function extractVideoFrame(filePath: string, time = '00:00:00.5'): Promise
   try {
     await mkdir(getTempDir(), { recursive: true });
     const outPath = join(getTempDir(), `frame_${uniqueId()}.jpg`);
-    await execAsync(
-      `ffmpeg -v quiet -ss ${time} -i "${filePath}" -vframes 1 -q:v 2 -update 1 "${outPath}" -y`,
-      { encoding: 'utf-8', timeout: 15000, windowsHide: true }
+    await runCommand(
+      'ffmpeg',
+      ['-v', 'quiet', '-ss', time, '-i', filePath, '-vframes', '1', '-q:v', '2', '-update', '1', outPath, '-y'],
+      { timeout: 15000 }
     );
     const buf = await readFile(outPath);
     await unlink(outPath).catch(() => {});
     return `data:image/jpeg;base64,${buf.toString('base64')}`;
-  } catch {
+  } catch (e) {
+    logger.warn('cover', `extractVideoFrame failed for ${filePath}`, e);
     return null;
   }
 }
@@ -201,14 +203,16 @@ async function extractEmbeddedCover(filePath: string): Promise<string | null> {
   try {
     await mkdir(getTempDir(), { recursive: true });
     const outPath = join(getTempDir(), `cover_${uniqueId()}.jpg`);
-    await execAsync(
-      `ffmpeg -v quiet -i "${filePath}" -vframes 1 -q:v 2 -update 1 "${outPath}" -y`,
-      { encoding: 'utf-8', timeout: 15000, windowsHide: true }
+    await runCommand(
+      'ffmpeg',
+      ['-v', 'quiet', '-i', filePath, '-vframes', '1', '-q:v', '2', '-update', '1', outPath, '-y'],
+      { timeout: 15000 }
     );
     const buf = await readFile(outPath);
     await unlink(outPath).catch(() => {});
     return `data:image/jpeg;base64,${buf.toString('base64')}`;
-  } catch {
+  } catch (e) {
+    logger.warn('cover', `extractEmbeddedCover failed for ${filePath}`, e);
     return null;
   }
 }
@@ -278,8 +282,8 @@ export async function getCachedCover(
     try {
       const { mtimeMs } = await stat(filePath);
       if (mtimeMs <= memCached.mtimeMs) return memCached.result;
-    } catch {
-      /* file gone */
+    } catch (e) {
+      logger.warn('cover', `mem cache size check failed for ${filePath}`, e);
     }
     coverResultCache.delete(filePath);
   }
@@ -299,8 +303,8 @@ export async function getCachedCover(
   try {
     const { readdir, rm } = await import('fs/promises');
     const store = await getStore();
-    const cacheMap: Record<string, { cacheFile: string }> =
-      (store.get(COVER_CACHE_MAP_KEY) as any) || {};
+    const cacheMap =
+      (store.get(COVER_CACHE_MAP_KEY) as Record<string, { cacheFile: string }>) || {};
     const referenced = new Set(Object.values(cacheMap).map((v) => v.cacheFile));
     const entries = await readdir(PERSISTENT_COVER_DIR).catch(() => []);
     for (const entry of entries) {
@@ -308,5 +312,7 @@ export async function getCachedCover(
         await rm(join(PERSISTENT_COVER_DIR, entry), { force: true }).catch(() => {});
       }
     }
-  } catch {}
+  } catch (e) {
+    logger.warn('cover', 'orphan cover cleanup failed', e);
+  }
 })();

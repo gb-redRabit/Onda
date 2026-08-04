@@ -16,6 +16,7 @@ import { join, extname, basename, dirname } from 'path';
 import { exec as execCb, spawn } from 'child_process';
 import { promisify } from 'util';
 import { errMsg } from '../../shared/helpers';
+import { logger } from '../../shared/logger';
 import type { FileItem } from '../../renderer/src/types/explorer';
 
 const execAsync = promisify(execCb);
@@ -42,6 +43,7 @@ async function getDrives(): Promise<FileItem[]> {
       try {
         parsed = JSON.parse(stdout.trim());
       } catch {
+        logger.warn('fs', 'could not parse drive list output');
         return [];
       }
       if (!Array.isArray(parsed)) parsed = [parsed];
@@ -62,7 +64,8 @@ async function getDrives(): Promise<FileItem[]> {
             mimeType: undefined
           };
         });
-    } catch {
+    } catch (e) {
+      logger.warn('fs', 'getDrives (win32) failed', e);
       return [];
     }
   }
@@ -172,7 +175,8 @@ export function registerFsHandlers(): void {
     let s;
     try {
       s = await stat(filePath);
-    } catch {
+    } catch (e) {
+      logger.warn('fs', `getProperties stat failed for ${filePath}`, e);
       return null;
     }
     const base = {
@@ -195,7 +199,8 @@ export function registerFsHandlers(): void {
       let entries;
       try {
         entries = await readdir(dir, { withFileTypes: true });
-      } catch {
+      } catch (e) {
+        logger.warn('fs', `getProperties walk failed for ${dir}`, e);
         return;
       }
       for (const e of entries) {
@@ -211,8 +216,8 @@ export function registerFsHandlers(): void {
           try {
             const st = await stat(join(dir, e.name));
             totalSize += st.size;
-          } catch {
-            /* skip */
+          } catch (err) {
+            logger.warn('fs', `getProperties stat failed for ${join(dir, e.name)}`, err);
           }
         }
       }
@@ -269,7 +274,8 @@ export function registerFsHandlers(): void {
     try {
       await mkdir(dirPath, { recursive: true });
       return true;
-    } catch {
+    } catch (e) {
+      logger.warn('fs', `mkdir failed for ${dirPath}`, e);
       return false;
     }
   });
@@ -285,7 +291,8 @@ export function registerFsHandlers(): void {
         await unlink(filePath);
       }
       return true;
-    } catch {
+    } catch (e) {
+      logger.warn('fs', `delete failed for ${filePath}`, e);
       return false;
     }
   });
@@ -312,7 +319,7 @@ export function registerFsHandlers(): void {
             await unlink(src);
           }
         } catch (err2) {
-          console.error('[fs:move] failed for', src, err2);
+          logger.error('fs', `fs:move failed for ${src}`, err2);
         }
       }
     }
@@ -330,7 +337,7 @@ export function registerFsHandlers(): void {
           await copyFile(src, dest);
         }
       } catch (err) {
-        console.error('[fs:copy] failed for', src, err);
+        logger.error('fs', `fs:copy failed for ${src}`, err);
       }
     }
   });
@@ -361,14 +368,15 @@ export function registerFsHandlers(): void {
         try {
           refStats = await stat(originalPath);
         } catch {
-          /* original missing */
+          // original missing — expected, may pick candidate as reference
         }
         if (!refStats?.isFile()) {
           if (candidates.length < 2) continue;
           refPath = candidates[0];
           try {
             refStats = await stat(refPath);
-          } catch {
+          } catch (e) {
+            logger.warn('fs', `duplicate reference stat failed for ${refPath}`, e);
             continue;
           }
         }
@@ -376,7 +384,8 @@ export function registerFsHandlers(): void {
         let refHash = '';
         try {
           refHash = await fileHash(refPath);
-        } catch {
+        } catch (e) {
+          logger.warn('fs', `duplicate reference hash failed for ${refPath}`, e);
           continue;
         }
         const dups: string[] = [];
@@ -386,14 +395,14 @@ export function registerFsHandlers(): void {
             const s = await stat(c);
             if (s.size !== refSize) continue;
             if ((await fileHash(c)) === refHash) dups.push(c);
-          } catch {
-            /* skip unreadable */
+          } catch (e) {
+            logger.warn('fs', `duplicate compare failed for ${c}`, e);
           }
         }
         if (dups.length > 0) groups.push({ original: refPath, duplicates: dups });
       }
-    } catch {
-      /* empty/unreadable dir */
+    } catch (e) {
+      logger.warn('fs', `findDuplicates failed for ${directory}`, e);
     }
     return groups;
   });
@@ -419,8 +428,8 @@ export function registerFsHandlers(): void {
   ipcMain.handle('shell:showItemInFolder', (_event, fullPath: string) => {
     try {
       shell.showItemInFolder(fullPath);
-    } catch {
-      // ignore
+    } catch (e) {
+      logger.warn('fs', `showItemInFolder failed for ${fullPath}`, e);
     }
   });
 
@@ -432,16 +441,16 @@ export function registerFsHandlers(): void {
       } else {
         spawn('open', ['-a', 'Terminal', dirPath], { detached: true }).unref();
       }
-    } catch {
-      // ignore
+    } catch (e) {
+      logger.warn('fs', `openTerminal failed for ${dirPath}`, e);
     }
   });
 
   ipcMain.handle('shell:openWithDefault', async (_event, filePath: string) => {
     try {
       await shell.openPath(filePath);
-    } catch {
-      // ignore
+    } catch (e) {
+      logger.warn('fs', `openWithDefault failed for ${filePath}`, e);
     }
   });
 
@@ -449,7 +458,8 @@ export function registerFsHandlers(): void {
     try {
       const icon = await app.getFileIcon(filePath, { size: 'small' });
       return icon.toDataURL();
-    } catch {
+    } catch (e) {
+      logger.warn('fs', `getFileIcon failed for ${filePath}`, e);
       return null;
     }
   });

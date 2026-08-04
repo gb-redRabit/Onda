@@ -5,12 +5,12 @@ export interface AppModule {
   priority?: number;
   init?(): void;
   activate(context?: unknown): void;
-  deactivate(): Promise<void>;
-  destroy(): Promise<void>;
+  deactivate?(): Promise<void>;
+  destroy?(): Promise<void>;
   isActive(): boolean;
 }
 
-class ModuleManager {
+export class ModuleManager {
   private modules = new Map<string, AppModule>();
   private activeModuleId: string | null = null;
   private initialized = false;
@@ -40,7 +40,7 @@ class ModuleManager {
 
     const active = this.getActive();
     if (active) {
-      await active.deactivate();
+      await active.deactivate?.();
     }
 
     target.activate(context);
@@ -50,7 +50,7 @@ class ModuleManager {
   async deactivateAll(): Promise<void> {
     for (const module of this.modules.values()) {
       if (module.isActive()) {
-        await module.deactivate();
+        await module.deactivate?.();
       }
     }
     this.activeModuleId = null;
@@ -58,7 +58,7 @@ class ModuleManager {
 
   async destroyAll(): Promise<void> {
     for (const module of this.modules.values()) {
-      await module.destroy();
+      await module.destroy?.();
     }
     this.modules.clear();
     this.activeModuleId = null;

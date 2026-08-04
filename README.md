@@ -92,7 +92,7 @@ Aplikacja jest **modułowa** — każdy główny widok (player, explorer, librar
 - **Lokalny HTTP server dla mediów** — `http://127.0.0.1:PORT/?path=` zamiast `file://`/`onda://` dla `<video>`/`<audio>` (omija blokadę CSP przy `webSecurity: true`)
 - **IPC podzielony na 13 plików** — fs-handlers, media-handlers, library-handlers, subtitle-handlers, cover-cache, dialog-handlers, dependency-handlers, settings-handlers, playback-handlers, youtube-handlers, musicbrainz, cover-handlers + orkiestrator
 
-Pełna dokumentacja architektury: [`project.md`](./project.md).
+Pełny plan stabilizacji i optymalizacji: [`plan.md`](./plan.md). Analiza błędów, martwego kodu i optymalizacji: [`analiza.md`](./analiza.md).
 
 ## Stos technologiczny
 
@@ -142,7 +142,7 @@ npm run dev
 ### Testy
 
 ```bash
-npm test          # 141 testów, 4 pliki (Vitest)
+npm test          # 190 testów (Vitest)
 npm run test:watch
 ```
 
@@ -195,4 +195,4 @@ npm run build:linux
 | YouTube integration                                                     | ❌ (szkielet)  |
 | Ekran pobierania                                                        | ❌ (szkielet)  |
 
-Szczegółowa mapa faz i changelog: [`project.md`](./project.md).
+Szczegółowa mapa faz i changelog: [`plan.md`](./plan.md).

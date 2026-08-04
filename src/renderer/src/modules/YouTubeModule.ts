@@ -16,10 +16,6 @@ export class YouTubeModule implements AppModule {
     yt.isSearching = false;
   }
 
-  async destroy(): Promise<void> {
-    await this.deactivate();
-  }
-
   isActive(): boolean {
     return this._active;
   }

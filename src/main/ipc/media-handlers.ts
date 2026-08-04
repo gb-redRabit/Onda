@@ -4,8 +4,6 @@ import { join, extname, dirname } from 'path';
 import { createHash } from 'crypto';
 import NodeID3 from 'node-id3';
 import sharp from 'sharp';
-import { exec as execCb } from 'child_process';
-import { promisify } from 'util';
 import os from 'os';
 import { AUDIO_EXTS, VIDEO_EXTS } from '../../shared/constants';
 import {
@@ -18,8 +16,7 @@ import {
 import { SharpService } from '../utils/sharp';
 import { errMsg } from '../../shared/helpers';
 import { logger } from '../../shared/logger';
-
-const execAsync = promisify(execCb);
+import { runCommand } from '../utils/exec';
 
 export function registerMediaHandlers(): void {
   ipcMain.handle(
@@ -34,7 +31,9 @@ export function registerMediaHandlers(): void {
         try {
           await access(cacheFile);
           return `data:image/jpeg;base64,${(await readFile(cacheFile)).toString('base64')}`;
-        } catch {}
+        } catch {
+          // cache miss — expected control flow
+        }
 
         let buf: Buffer | null = null;
 
@@ -48,7 +47,8 @@ export function registerMediaHandlers(): void {
             await mkdir(cacheDir, { recursive: true }).catch(() => {});
             await writeFile(cacheFile, buf);
           }
-        } catch {
+        } catch (e) {
+          logger.warn('media', `native thumbnail failed for ${filePath}`, e);
           buf = await SharpService.getThumbnail(filePath, maxSize);
         }
 
@@ -65,8 +65,8 @@ export function registerMediaHandlers(): void {
                     .resize(maxSize, maxSize, { fit: 'outside' })
                     .jpeg({ quality: 85 })
                     .toBuffer();
-                } catch {
-                  /* use original */
+                } catch (e) {
+                  logger.warn('media', `cover downscale failed for ${filePath}`, e);
                 }
               }
             }
@@ -79,7 +79,8 @@ export function registerMediaHandlers(): void {
         await mkdir(cacheDir, { recursive: true }).catch(() => {});
         await writeFile(cacheFile, buf);
         return `data:image/jpeg;base64,${buf.toString('base64')}`;
-      } catch {
+      } catch (e) {
+        logger.warn('media', `getThumbnail failed for ${filePath}`, e);
         return null;
       }
     }
@@ -108,7 +109,9 @@ export function registerMediaHandlers(): void {
               result[filePath] =
                 `data:image/jpeg;base64,${(await readFile(cacheFile)).toString('base64')}`;
               return;
-            } catch {}
+            } catch {
+              // batch cache miss — expected control flow
+            }
 
             while (batchThumbnailLocks.has(cacheFile)) {
               await new Promise<void>((resolve) => {
@@ -137,7 +140,8 @@ export function registerMediaHandlers(): void {
                   buf = thumb.toJPEG(85);
                   await writeFile(cacheFile, buf);
                 }
-              } catch {
+              } catch (e) {
+                logger.warn('media', `native thumbnail failed for ${filePath}`, e);
                 buf = await SharpService.getThumbnail(filePath, maxSize);
               }
 
@@ -148,8 +152,8 @@ export function registerMediaHandlers(): void {
             } finally {
               batchThumbnailLocks.delete(cacheFile);
             }
-          } catch {
-            // skip
+          } catch (e) {
+            logger.warn('media', `batch thumbnail skipped for ${filePath}`, e);
           }
         });
         await Promise.all(promises);
@@ -233,15 +237,16 @@ export function registerMediaHandlers(): void {
         );
         coverResultCache.delete(filePath);
         const store = await getStore();
-        const cacheMap: Record<string, { cacheFile: string; mtime: number }> | undefined =
-          store.get(COVER_CACHE_MAP_KEY) as any;
+        const cacheMap = store.get(COVER_CACHE_MAP_KEY) as
+          | Record<string, { cacheFile: string; mtime: number }>
+          | undefined;
         if (cacheMap?.[filePath]) {
           const old = cacheMap[filePath];
           const cachePath = join(PERSISTENT_COVER_DIR, old.cacheFile);
           try {
             await unlink(cachePath);
           } catch {
-            /* ok */
+            // cached cover gone — ok to skip
           }
           delete cacheMap[filePath];
           store.set(COVER_CACHE_MAP_KEY, structuredClone(cacheMap));
@@ -268,7 +273,8 @@ export function registerMediaHandlers(): void {
           }
         }
         return null;
-      } catch {
+      } catch (e) {
+        logger.warn('media', `readCover failed for ${filePath}`, e);
         return null;
       }
     }
@@ -278,9 +284,20 @@ export function registerMediaHandlers(): void {
     'media:checkAudioCodec',
     async (_event, filePath: string): Promise<{ codec: string; supported: boolean } | null> => {
       try {
-        const { stdout } = await execAsync(
-          `ffprobe -v quiet -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 "${filePath}"`,
-          { timeout: 15000, windowsHide: true }
+        const stdout = await runCommand(
+          'ffprobe',
+          [
+            '-v',
+            'quiet',
+            '-select_streams',
+            'a:0',
+            '-show_entries',
+            'stream=codec_name',
+            '-of',
+            'csv=p=0',
+            filePath
+          ],
+          { timeout: 15000 }
         );
         const codec = stdout.trim().toLowerCase();
         const supported = [
@@ -298,7 +315,8 @@ export function registerMediaHandlers(): void {
           'truehd'
         ].includes(codec);
         return { codec, supported };
-      } catch {
+      } catch (e) {
+        logger.warn('media', `checkAudioCodec failed for ${filePath}`, e);
         return null;
       }
     }
@@ -321,12 +339,32 @@ export function registerMediaHandlers(): void {
       try {
         await stat(outPath);
         return outPath;
-      } catch {}
+      } catch {
+        // transcoded chunk does not exist yet — expected control flow
+      }
 
       try {
-        await execAsync(
-          `ffmpeg -v error -ss ${startTime} -i "${filePath}" -map 0:a:0 -t ${duration} -c:a aac -b:a 192k "${outPath}" -y`,
-          { timeout: 120000, windowsHide: true }
+        await runCommand(
+          'ffmpeg',
+          [
+            '-v',
+            'error',
+            '-ss',
+            String(startTime),
+            '-i',
+            filePath,
+            '-map',
+            '0:a:0',
+            '-t',
+            String(duration),
+            '-c:a',
+            'aac',
+            '-b:a',
+            '192k',
+            outPath,
+            '-y'
+          ],
+          { timeout: 120000 }
         );
         return outPath;
       } catch (err) {
@@ -347,12 +385,28 @@ export function registerMediaHandlers(): void {
       try {
         await stat(outPath);
         return outPath;
-      } catch {}
+      } catch {
+        // transcoded file does not exist yet — expected control flow
+      }
 
       try {
-        await execAsync(
-          `ffmpeg -v error -i "${filePath}" -map 0:a:0 -c:a aac -b:a 192k "${outPath}" -y`,
-          { timeout: 600000, windowsHide: true }
+        await runCommand(
+          'ffmpeg',
+          [
+            '-v',
+            'error',
+            '-i',
+            filePath,
+            '-map',
+            '0:a:0',
+            '-c:a',
+            'aac',
+            '-b:a',
+            '192k',
+            outPath,
+            '-y'
+          ],
+          { timeout: 600000 }
         );
         return outPath;
       } catch (err) {
@@ -378,8 +432,12 @@ export function registerMediaHandlers(): void {
           if (now - s.mtimeMs > 24 * 60 * 60 * 1000) {
             await rm(fullPath, { force: true });
           }
-        } catch {}
+        } catch (e) {
+          logger.warn('media', `transcode cleanup failed for ${entry}`, e);
+        }
       }
-    } catch {}
+    } catch (e) {
+      logger.warn('media', 'transcode cleanup failed', e);
+    }
   })();
 }

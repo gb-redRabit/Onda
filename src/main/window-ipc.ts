@@ -3,6 +3,7 @@ import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
 import type { PipManager } from './pip-manager';
 import type { AudioPipManager } from './audio-pip-manager';
+import { logger } from '../shared/logger';
 
 const explorerWindows = new Map<number, BrowserWindow>();
 
@@ -31,6 +32,12 @@ export function createExplorerWindow(initialPath?: string): number | null {
     win.on('closed', () => {
       explorerWindows.delete(id);
     });
+    win.on('enter-full-screen', () => {
+      win.webContents.send('window:fullscreenChanged', true);
+    });
+    win.on('leave-full-screen', () => {
+      win.webContents.send('window:fullscreenChanged', false);
+    });
     const hash = `/explorer/window/${id}${initialPath ? `?path=${encodeURIComponent(initialPath)}` : ''}`;
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
       win.loadURL(process.env['ELECTRON_RENDERER_URL'] + '#' + hash);
@@ -38,7 +45,8 @@ export function createExplorerWindow(initialPath?: string): number | null {
       win.loadFile(join(__dirname, '../renderer/index.html'), { hash });
     }
     return id;
-  } catch {
+  } catch (e) {
+    logger.warn('window', 'createExplorerWindow failed', e);
     return null;
   }
 }
@@ -87,43 +95,43 @@ export function registerWindowHandlers(context: {
     }
   });
 
-  ipcMain.handle('window:toggleFullscreen', () => {
-    const mainWindow = getMainWindow();
-    if (!mainWindow) return false;
-    const isFull = mainWindow.isFullScreen();
+  ipcMain.handle('window:toggleFullscreen', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender) ?? getMainWindow();
+    if (!win) return false;
+    const isFull = win.isFullScreen();
     if (isFull) {
-      mainWindow.setFullScreen(false);
+      win.setFullScreen(false);
       if (preFullscreenBounds.current) {
-        mainWindow.setBounds(preFullscreenBounds.current);
+        win.setBounds(preFullscreenBounds.current);
         preFullscreenBounds.current = null;
       }
-      mainWindow.setResizable(false);
-      mainWindow.setResizable(true);
+      win.setResizable(false);
+      win.setResizable(true);
       return false;
     } else {
-      preFullscreenBounds.current = mainWindow.getBounds();
-      mainWindow.setFullScreen(true);
+      preFullscreenBounds.current = win.getBounds();
+      win.setFullScreen(true);
       return true;
     }
   });
 
-  ipcMain.handle('window:exitFullscreen', () => {
-    const mainWindow = getMainWindow();
-    if (!mainWindow) return;
-    const isFull = mainWindow.isFullScreen();
+  ipcMain.handle('window:exitFullscreen', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender) ?? getMainWindow();
+    if (!win) return;
+    const isFull = win.isFullScreen();
     if (isFull) {
-      mainWindow.setFullScreen(false);
+      win.setFullScreen(false);
       if (preFullscreenBounds.current) {
-        mainWindow.setBounds(preFullscreenBounds.current);
+        win.setBounds(preFullscreenBounds.current);
         preFullscreenBounds.current = null;
       }
-      mainWindow.setResizable(false);
-      mainWindow.setResizable(true);
+      win.setResizable(false);
+      win.setResizable(true);
     }
   });
 
-  ipcMain.handle('window:isFullscreen', () => {
-    return getMainWindow()?.isFullScreen() ?? false;
+  ipcMain.handle('window:isFullscreen', (event) => {
+    return BrowserWindow.fromWebContents(event.sender)?.isFullScreen() ?? false;
   });
 
   ipcMain.handle(

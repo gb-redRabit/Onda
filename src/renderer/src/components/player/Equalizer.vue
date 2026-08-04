@@ -1,15 +1,14 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+import { RotateCcw } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { EQUALIZER_PRESETS } from '@renderer/utils/constants';
-import { RotateCcw } from '@lucide/vue';
 
 const player = usePlayerStore();
 const { setEqualizerBand, applyEqPreset } = useAudioPlayer();
 
 const presets = EQUALIZER_PRESETS;
-
-import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 

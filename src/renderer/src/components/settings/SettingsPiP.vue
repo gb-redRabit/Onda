@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
+import type { AppSettings } from '@renderer/types/settings';
 import { CornerUpRight, CornerUpLeft, CornerDownRight, CornerDownLeft } from '@lucide/vue';
 
 const settings = useSettingsStore();
@@ -239,7 +240,8 @@ watch(
           class="w-full px-3 py-2 rounded-lg bg-bg-hover text-fg-base border border-border-default text-sm outline-none"
           @change="
             settings.updateAppearance({
-              audioPipPosition: ($event.target as HTMLSelectElement).value as any
+              audioPipPosition: ($event.target as HTMLSelectElement)
+                .value as AppSettings['appearance']['audioPipPosition']
             })
           "
         >

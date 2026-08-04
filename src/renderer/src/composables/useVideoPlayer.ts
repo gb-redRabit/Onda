@@ -68,7 +68,7 @@ export function useVideoPlayer(ctx: {
       if (player.pipActive) return;
       if (player.repeat === 'one') {
         el.currentTime = 0;
-        el.play().catch(() => {});
+        el.play().catch((e) => logger.warn('video', 'repeat play rejected', e));
         return;
       }
       player.isPlaying = false;
@@ -95,7 +95,7 @@ export function useVideoPlayer(ctx: {
         'canplay',
         () => {
           if (player.isPlaying && !player.pipActive) {
-            el.play().catch(() => {});
+            el.play().catch((e) => logger.warn('video', 'autoplay rejected', e));
           }
         },
         { once: true }
@@ -134,7 +134,8 @@ export function useVideoPlayer(ctx: {
     } else {
       el.volume = player.isMuted ? 0 : player.volume;
       el.playbackRate = settings.playback.playbackSpeed;
-      if (player.isPlaying && !player.pipActive) el.play().catch(() => {});
+      if (player.isPlaying && !player.pipActive)
+        el.play().catch((e) => logger.warn('video', 'resume play rejected', e));
     }
   }
 
@@ -182,10 +183,13 @@ export function useVideoPlayer(ctx: {
       const loadId = ++currentLoadId;
       setupVideo(player.currentTrack);
       const video = el as HTMLVideoElement;
+      let connectAttempts = 0;
       const tryInit = () => {
         if (loadId !== currentLoadId) return;
         if (!video.isConnected) {
-          nextTick(tryInit);
+          if (++connectAttempts <= 50) {
+            nextTick(tryInit);
+          }
           return;
         }
         initSubtitleRenderer(video);
@@ -350,7 +354,7 @@ export function useVideoPlayer(ctx: {
         return;
       }
       if (playing) {
-        videoRef.value.play().catch(() => {});
+        videoRef.value.play().catch((e) => logger.warn('video', 'play rejected', e));
         audioEngine.playSecondaryAudio();
       } else {
         videoRef.value.pause();
