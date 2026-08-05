@@ -1,8 +1,11 @@
-import { BrowserWindow, ipcMain, screen } from 'electron';
+import { BrowserWindow, ipcMain } from 'electron';
 import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
 import { PipPreview } from './pip-preview';
 import { logger } from '../shared/logger';
+import { getMediaUrlArgs } from './media-url-args';
+import { computePipPosition } from './pip-position';
+import { resolveMediaPath } from './path-utils';
 
 interface PipSubtitleData {
   subContent: string;
@@ -40,18 +43,7 @@ export class PipManager {
 
   private static normalizeFilePath(url: string): string {
     try {
-      const decoded = decodeURIComponent(url);
-      const ondaMatch = decoded.match(/^onda:\/\/\/?\?path=(.+)/i);
-      if (ondaMatch?.[1]) {
-        const p = decodeURIComponent(ondaMatch[1]).replace(/\//g, '\\');
-        return process.platform === 'win32' ? p.toLowerCase() : p;
-      }
-      const fileMatch = decoded.match(/^file:\/\/\/?(.+)/i);
-      if (fileMatch?.[1]) {
-        const p = fileMatch[1].replace(/\//g, '\\');
-        return process.platform === 'win32' ? p.toLowerCase() : p;
-      }
-      return process.platform === 'win32' ? decoded.toLowerCase() : decoded;
+      return resolveMediaPath(url);
     } catch (e) {
       logger.warn('pip', 'normalizeFilePath failed', url, e);
       return url.toLowerCase();
@@ -84,7 +76,8 @@ export class PipManager {
         sandbox: false,
         contextIsolation: true,
         nodeIntegration: false,
-        webSecurity: true
+        webSecurity: true,
+        additionalArguments: getMediaUrlArgs()
       }
     });
 
@@ -202,31 +195,7 @@ export class PipManager {
   } {
     const pw = opts.width || 480;
     const ph = opts.height || 290;
-    const pos = opts.position || 'bottom-right';
-    const display = screen.getPrimaryDisplay().workAreaSize;
-    const margin = 20;
-    let x: number, y: number;
-
-    switch (pos) {
-      case 'bottom-left':
-        x = margin;
-        y = display.height - ph - margin;
-        break;
-      case 'top-right':
-        x = display.width - pw - margin;
-        y = margin;
-        break;
-      case 'top-left':
-        x = margin;
-        y = margin;
-        break;
-      default:
-        x = display.width - pw - margin;
-        y = display.height - ph - margin;
-        break;
-    }
-
-    return { x, y, width: pw, height: ph };
+    return computePipPosition({ position: opts.position, width: pw, height: ph });
   }
 
   private sendVideoSrc(

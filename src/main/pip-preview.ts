@@ -1,4 +1,5 @@
-import { BrowserWindow, screen } from 'electron';
+import { BrowserWindow } from 'electron';
+import { computePipPosition } from './pip-position';
 
 export class PipPreview {
   private window: BrowserWindow | null = null;
@@ -11,33 +12,11 @@ export class PipPreview {
 
     const pw = opts.width || 480;
     const ph = opts.height || 290;
-    const pos = opts.position || 'bottom-right';
-    const display = screen.getPrimaryDisplay().workAreaSize;
-    const margin = 20;
-    let x: number, y: number;
-
-    switch (pos) {
-      case 'bottom-left':
-        x = margin;
-        y = display.height - ph - margin;
-        break;
-      case 'top-right':
-        x = display.width - pw - margin;
-        y = margin;
-        break;
-      case 'top-left':
-        x = margin;
-        y = margin;
-        break;
-      default:
-        x = display.width - pw - margin;
-        y = display.height - ph - margin;
-        break;
-    }
+    const bounds = computePipPosition({ position: opts.position, width: pw, height: ph });
 
     this.window = new BrowserWindow({
-      x,
-      y,
+      x: bounds.x,
+      y: bounds.y,
       width: pw,
       height: ph,
       show: false,
@@ -77,31 +56,7 @@ export class PipPreview {
     const size = this.window.getSize();
     const pw = opts.width ?? size[0] ?? 400;
     const ph = opts.height ?? size[1] ?? 300;
-    const pos = opts.position || 'bottom-right';
-    const display = screen.getPrimaryDisplay().workAreaSize;
-    const margin = 20;
-    let x: number, y: number;
-
-    switch (pos) {
-      case 'bottom-left':
-        x = margin;
-        y = display.height - ph - margin;
-        break;
-      case 'top-right':
-        x = display.width - pw - margin;
-        y = margin;
-        break;
-      case 'top-left':
-        x = margin;
-        y = margin;
-        break;
-      default:
-        x = display.width - pw - margin;
-        y = display.height - ph - margin;
-        break;
-    }
-
-    this.window.setBounds({ x, y, width: pw, height: ph });
+    this.window.setBounds(computePipPosition({ position: opts.position, width: pw, height: ph }));
   }
 
   destroy(): void {

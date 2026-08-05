@@ -15,10 +15,13 @@ import {
   RotateCcw,
   Folder,
   Bell,
-  Languages,
   Search,
   FileDown,
-  FileUp
+  FileUp,
+  Activity,
+  Info,
+  X,
+  Settings
 } from '@lucide/vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore } from '@renderer/stores/ui';
@@ -58,8 +61,11 @@ const SettingsLibraryFolders = defineAsyncComponent(
 const SettingsToast = defineAsyncComponent(
   () => import('@renderer/components/settings/SettingsToast.vue')
 );
-const SettingsLanguage = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsLanguage.vue')
+const SettingsDiagnostics = defineAsyncComponent(
+  () => import('@renderer/components/settings/SettingsDiagnostics.vue')
+);
+const SettingsAbout = defineAsyncComponent(
+  () => import('@renderer/components/settings/SettingsAbout.vue')
 );
 
 const settings = useSettingsStore();
@@ -77,11 +83,12 @@ const tabs = [
   { id: 'pip', labelKey: 'settings.pip', icon: PictureInPicture, section: 'playback' },
   { id: 'download', labelKey: 'settings.download', icon: Download, section: 'playback' },
   { id: 'shortcuts', labelKey: 'settings.shortcuts', icon: Keyboard, section: 'playback' },
-  { id: 'language', labelKey: 'settings.language', icon: Languages, section: 'appearance' },
   { id: 'toast', labelKey: 'settings.notifications', icon: Bell, section: 'appearance' },
   { id: 'network', labelKey: 'settings.network', icon: Globe, section: 'network' },
   { id: 'api-keys', labelKey: 'settings.apiKeys', icon: Key, section: 'network' },
   { id: 'updates', labelKey: 'settings.updates', icon: RefreshCw, section: 'network' },
+  { id: 'diagnostics', labelKey: 'settings.diagnostics', icon: Activity, section: 'system' },
+  { id: 'about', labelKey: 'settings.about', icon: Info, section: 'system' },
   { id: 'library', labelKey: 'settings.library', icon: Folder, section: 'library' },
   { id: 'dependencies', labelKey: 'settings.dependencies', icon: Box, section: 'library' }
 ];
@@ -90,6 +97,7 @@ const sectionOrder = [
   { id: 'playback', labelKey: 'settings.sectionPlayback' },
   { id: 'appearance', labelKey: 'settings.sectionAppearance' },
   { id: 'network', labelKey: 'settings.sectionNetwork' },
+  { id: 'system', labelKey: 'settings.sectionSystem' },
   { id: 'library', labelKey: 'settings.sectionLibrary' }
 ];
 
@@ -144,93 +152,136 @@ watch(tab, (_newTab, oldTab) => {
 
 <template>
   <div class="flex h-full">
-    <div class="w-64 border-r border-border-default p-3 shrink-0 flex flex-col">
-      <div class="flex items-center justify-between mb-3 px-2">
-        <h1 class="text-lg font-bold">{{ $t('settings.title') }}</h1>
+    <aside class="w-72 border-r border-border-default shrink-0 flex flex-col bg-bg-surface/50">
+      <div class="flex items-center justify-between px-4 pt-5 pb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-accent-ghost flex items-center justify-center text-accent-base">
+            <Settings :size="16" />
+          </div>
+          <h1 class="text-base font-bold tracking-tight">{{ $t('settings.title') }}</h1>
+        </div>
         <button
-          class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover transition-colors"
-          title="Reset"
+          class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover hover:text-fg-base transition-colors"
+          :title="$t('settings.reset')"
           @click="onReset"
         >
           <RotateCcw :size="14" />
         </button>
       </div>
 
-      <div class="relative mb-3">
-        <Search
-          :size="14"
-          class="absolute left-3 top-1/2 -translate-y-1/2 text-fg-faint pointer-events-none"
-        />
-        <input
-          v-model="search"
-          :placeholder="$t('settings.searchSettings')"
-          class="w-full pl-8 pr-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm text-fg-base outline-none focus:ring-1 focus:ring-accent-base"
-        />
+      <div class="px-4 pb-4">
+        <div class="relative">
+          <Search
+            :size="15"
+            class="absolute left-3 top-1/2 -translate-y-1/2 text-fg-faint pointer-events-none"
+          />
+          <input
+            v-model="search"
+            :placeholder="$t('settings.searchSettings')"
+            class="w-full pl-9 pr-8 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm text-fg-base outline-none transition-all focus:border-accent-base/60 focus:ring-2 focus:ring-accent-base/15"
+          />
+          <button
+            v-if="search"
+            class="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-md text-fg-faint hover:text-fg-base transition-colors"
+            @click="search = ''"
+          >
+            <X :size="14" />
+          </button>
+        </div>
       </div>
 
-      <div class="flex-1 overflow-auto space-y-4">
+      <div class="flex-1 overflow-auto px-2 pb-4 space-y-6">
         <template v-if="query">
-          <div class="space-y-0.5">
-            <div v-if="!filteredTabs.length" class="px-3 py-2 text-xs text-fg-faint">
+          <div class="space-y-1">
+            <div
+              v-if="!filteredTabs.length"
+              class="px-3 py-3 text-xs text-fg-faint text-center"
+            >
               {{ $t('settings.noResults') }}
             </div>
             <button
               v-for="ft in filteredTabs"
               :key="ft.id"
-              class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
-              :class="
-                tab === ft.id
-                  ? 'bg-accent-ghost text-accent-base'
-                  : 'text-fg-muted hover:bg-bg-hover hover:text-fg-base'
-              "
+              class="group relative flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors"
+              :class="tab === ft.id ? 'bg-accent-ghost' : 'hover:bg-bg-hover'"
               @click="tab = ft.id"
             >
-              <component :is="ft.icon" :size="16" />{{ $t(ft.labelKey) }}
+              <span
+                class="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-full bg-accent-base transition-opacity"
+                :class="tab === ft.id ? 'opacity-100' : 'opacity-0'"
+              />
+              <component
+                :is="ft.icon"
+                :size="16"
+                :class="tab === ft.id ? 'text-accent-base' : 'text-fg-faint group-hover:text-fg-base'"
+              />
+              <span
+                class="min-w-0 truncate"
+                :class="
+                  tab === ft.id
+                    ? 'text-accent-base font-semibold'
+                    : 'text-fg-muted group-hover:text-fg-base'
+                "
+              >{{ $t(ft.labelKey) }}</span>
             </button>
           </div>
         </template>
 
         <template v-for="section in sectionOrder" v-else :key="section.id">
           <div>
-            <div class="px-2 mb-1 text-[11px] font-semibold uppercase tracking-wide text-fg-faint">
+            <div class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-fg-faint">
               {{ $t(section.labelKey) }}
             </div>
-            <div class="space-y-0.5">
+            <div class="space-y-1">
               <button
                 v-for="st in tabs.filter((tab) => tab.section === section.id)"
                 :key="st.id"
-                class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
-                :class="
-                  tab === st.id
-                    ? 'bg-accent-ghost text-accent-base'
-                    : 'text-fg-muted hover:bg-bg-hover hover:text-fg-base'
-                "
+                class="group relative flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors"
+                :class="tab === st.id ? 'bg-accent-ghost' : 'hover:bg-bg-hover'"
                 @click="tab = st.id"
               >
-                <component :is="st.icon" :size="16" />{{ $t(st.labelKey) }}
+                <span
+                  class="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-full bg-accent-base transition-opacity"
+                  :class="tab === st.id ? 'opacity-100' : 'opacity-0'"
+                />
+                <component
+                  :is="st.icon"
+                  :size="16"
+                  :class="
+                    tab === st.id ? 'text-accent-base' : 'text-fg-faint group-hover:text-fg-base'
+                  "
+                />
+                <span
+                  class="min-w-0 truncate"
+                  :class="
+                    tab === st.id
+                      ? 'text-accent-base font-semibold'
+                      : 'text-fg-muted group-hover:text-fg-base'
+                  "
+                >{{ $t(st.labelKey) }}</span>
               </button>
             </div>
           </div>
         </template>
       </div>
 
-      <div class="border-t border-border-default pt-3 mt-3 space-y-1">
+      <div class="border-t border-border-default p-2.5 space-y-1">
         <button
-          class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-colors"
+          class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-colors"
           @click="onExport"
         >
           <FileDown :size="16" />{{ $t('settings.export') }}
         </button>
         <button
-          class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-colors"
+          class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-colors"
           @click="onImport"
         >
           <FileUp :size="16" />{{ $t('settings.import') }}
         </button>
       </div>
-    </div>
+    </aside>
 
-    <div class="flex-1 overflow-auto p-6">
+    <main class="flex-1 min-w-0 overflow-auto p-6 lg:p-8">
       <SettingsAppearance v-if="tab === 'appearance'" />
       <SettingsPlayback v-if="tab === 'playback'" />
       <SettingsPiP v-if="tab === 'pip'" />
@@ -240,10 +291,11 @@ watch(tab, (_newTab, oldTab) => {
       <SettingsApiKeys v-if="tab === 'api-keys'" />
       <SettingsUpdates v-if="tab === 'updates'" />
       <SettingsToast v-if="tab === 'toast'" />
-      <SettingsLanguage v-if="tab === 'language'" />
+      <SettingsDiagnostics v-if="tab === 'diagnostics'" />
+      <SettingsAbout v-if="tab === 'about'" />
       <SettingsLibraryFolders v-if="tab === 'library'" />
       <SettingsDependencies v-if="tab === 'dependencies'" />
-    </div>
+    </main>
 
     <ExplorerPromptDialog
       :visible="promptVisible"

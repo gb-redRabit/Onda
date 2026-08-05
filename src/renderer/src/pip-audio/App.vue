@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
+import { formatDuration } from '@shared/formatDuration';
 
 interface PipUpdate {
   mode?: string;
@@ -61,12 +62,7 @@ const mode = ref<'m' | 'd' | 'x' | 'w'>('m');
 const bgAlpha = ref(0.85);
 const hover = ref(false);
 
-function fmt(t: number): string {
-  if (typeof t !== 'number' || t < 0 || isNaN(t)) return '0:00';
-  const m = Math.floor(t / 60);
-  const s = Math.floor(t % 60);
-  return m + ':' + (s < 10 ? '0' : '') + s;
-}
+const fmt = formatDuration;
 
 const progressPct = computed(() => {
   const d = duration.value > 0 ? duration.value : 0;
@@ -250,7 +246,33 @@ function drawViz() {
 
   ctx.globalAlpha = 1;
 
+  if (!vizPaused) vizAnimId = requestAnimationFrame(drawViz);
+}
+
+let vizPaused = false;
+
+function startVizLoop(): void {
+  if (vizPaused || vizAnimId) return;
   vizAnimId = requestAnimationFrame(drawViz);
+}
+
+function stopVizLoop(): void {
+  if (vizIdleTimer) {
+    clearTimeout(vizIdleTimer);
+    vizIdleTimer = null;
+  }
+  cancelAnimationFrame(vizAnimId);
+  vizAnimId = 0;
+}
+
+function onVizVisibilityChange(): void {
+  if (document.hidden) {
+    vizPaused = true;
+    stopVizLoop();
+  } else {
+    vizPaused = false;
+    startVizLoop();
+  }
 }
 
 let cleanup: (() => void) | null = null;
@@ -264,7 +286,8 @@ function applyCssVars(vars: Record<string, string> | undefined) {
 }
 
 onMounted(() => {
-  vizAnimId = requestAnimationFrame(drawViz);
+  startVizLoop();
+  document.addEventListener('visibilitychange', onVizVisibilityChange);
   if (!api) return;
   const cleanup1 = api.on('audio-pip:update', (...args: unknown[]) => {
     const d = args[0] as PipUpdate | undefined;
@@ -312,6 +335,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  document.removeEventListener('visibilitychange', onVizVisibilityChange);
   if (vizIdleTimer) {
     clearTimeout(vizIdleTimer);
     vizIdleTimer = null;

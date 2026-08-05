@@ -1,9 +1,11 @@
 import { BrowserWindow, screen, ipcMain } from 'electron';
 import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
+import { getMediaUrlArgs } from './media-url-args';
+import { computePipPosition } from './pip-position';
 
 type PipMode = 'minimal' | 'medium' | 'max' | 'wide';
-type PipPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+type PipPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'top' | 'bottom';
 
 interface AudioPipState {
   trackName?: string;
@@ -141,7 +143,8 @@ export class AudioPipManager {
         sandbox: false,
         contextIsolation: true,
         nodeIntegration: false,
-        webSecurity: true
+        webSecurity: true,
+        additionalArguments: getMediaUrlArgs()
       }
     });
 
@@ -185,35 +188,11 @@ export class AudioPipManager {
     if (!this.window || this.window.isDestroyed()) return;
 
     const winSize = this.getModeSize();
-    const display = screen.getPrimaryDisplay().workAreaSize;
-    const margin = 20;
-
-    let x: number, y: number;
-
+    let pos: PipPosition = this.position;
     if (this.mode === 'max' || this.mode === 'wide') {
-      x = 0;
-      y = 0;
-    } else {
-      switch (this.position) {
-        case 'bottom-right':
-          x = display.width - winSize.width - margin;
-          y = display.height - winSize.height - margin;
-          break;
-        case 'bottom-left':
-          x = margin;
-          y = display.height - winSize.height - margin;
-          break;
-        case 'top-right':
-          x = display.width - winSize.width - margin;
-          y = margin;
-          break;
-        case 'top-left':
-          x = margin;
-          y = margin;
-          break;
-      }
+      if (pos.includes('-')) pos = pos.startsWith('top') ? 'top' : 'bottom';
     }
-    this.window.setBounds({ x, y, width: winSize.width, height: winSize.height });
+    this.window.setBounds(computePipPosition({ position: pos, ...winSize }));
   }
 
   private updateUi(): void {

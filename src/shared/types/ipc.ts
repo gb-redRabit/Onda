@@ -76,6 +76,37 @@ interface IpcYoutubeVideo {
   publishedAt: string;
 }
 
+export interface AppInfo {
+  appName: string;
+  appVersion: string;
+  electron: string;
+  chrome: string;
+  node: string;
+  v8: string;
+  os: string;
+  platform: string;
+  arch: string;
+  userDataPath: string;
+  logPath: string;
+  uptime: number;
+}
+
+export interface UpdaterState {
+  status:
+    | 'idle'
+    | 'checking'
+    | 'available'
+    | 'not-available'
+    | 'downloading'
+    | 'downloaded'
+    | 'error';
+  current: string;
+  version: string;
+  progress: number;
+  error: string;
+  enabled: boolean;
+}
+
 export interface IpcChannels {
   'fs:getDrives': { args: []; result: IpcFileItem[] };
   'fs:readdir': { args: [dirPath: string]; result: void };
@@ -238,6 +269,21 @@ export interface IpcChannels {
     args: [filePath: string, maxSize?: number];
     result: string | null;
   };
+  'app:getInfo': { args: []; result: AppInfo };
+  'app:getLicenses': {
+    args: [];
+    result: Array<{ name: string; version?: string; license?: string }>;
+  };
+  'diagnostics:readLogs': { args: [lines?: number]; result: string };
+  'diagnostics:clearLogs': { args: []; result: boolean };
+  'diagnostics:downloadLog': {
+    args: [];
+    result: { success: boolean; canceled?: boolean; error?: string };
+  };
+  'updater:getState': { args: []; result: UpdaterState };
+  'updater:check': { args: []; result: { checking: boolean } };
+  'updater:download': { args: []; result: boolean };
+  'updater:install': { args: []; result: void };
 }
 
 export type IpcChannel = keyof IpcChannels;

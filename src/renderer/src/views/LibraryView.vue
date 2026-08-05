@@ -220,24 +220,28 @@ function onTagSaved(tags: {
 }) {
   if (!editingTrack.value) return;
   const oldPath = editingTrack.value.path;
-  library.updateTrack(oldPath, (track) => {
-    track.metadata = {
-      ...(track.metadata || {}),
-      title: tags.title,
-      artist: tags.artist,
-      album: tags.album,
-      year: tags.year,
-      genre: tags.genre,
-      track: tags.track
-    };
-    if (tags.name) {
-      track.name = tags.name + (track.name.match(/\.[^.]+$/)?.[0] || '');
-    }
-    if (tags.path) {
-      track.path = tags.path;
-      track.id = tags.path;
-    }
-  });
+  library.updateTrack(
+    oldPath,
+    (track) => {
+      track.metadata = {
+        ...(track.metadata || {}),
+        title: tags.title,
+        artist: tags.artist,
+        album: tags.album,
+        year: tags.year,
+        genre: tags.genre,
+        track: tags.track
+      };
+      if (tags.name) {
+        track.name = tags.name + (track.name.match(/\.[^.]+$/)?.[0] || '');
+      }
+      if (tags.path) {
+        track.path = tags.path;
+        track.id = tags.path;
+      }
+    },
+    true
+  );
   if (tags.path) {
     player.invalidateCoverCache(oldPath);
   }

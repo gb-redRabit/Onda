@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import type {
   AppearanceSettings,
   PlaybackSettings,
@@ -39,11 +39,6 @@ export const useSettingsStore = defineStore('settings', () => {
   const toast = ref<ToastSettings>({ ...DEFAULT_TOAST });
   const dependencies = ref<Record<string, DependencyStatus>>({});
   const isLoaded = ref(false);
-
-  const cssVariables = computed(() => ({
-    '--accent-color': appearance.value.accentColor,
-    '--font-size': `${appearance.value.fontSize}px`
-  }));
 
   async function load() {
     try {
@@ -174,6 +169,11 @@ export const useSettingsStore = defineStore('settings', () => {
     save();
   }
 
+  function updateUpdates(partial: Partial<UpdateSettings>) {
+    Object.assign(updates.value, partial);
+    save();
+  }
+
   return {
     appearance,
     playback,
@@ -187,7 +187,6 @@ export const useSettingsStore = defineStore('settings', () => {
     toast,
     dependencies,
     isLoaded,
-    cssVariables,
     load,
     save,
     updateAppearance,
@@ -200,6 +199,7 @@ export const useSettingsStore = defineStore('settings', () => {
     applyImported,
     updateDependency,
     getDependency,
-    updateToast
+    updateToast,
+    updateUpdates
   };
 });

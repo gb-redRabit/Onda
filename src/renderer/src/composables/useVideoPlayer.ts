@@ -370,12 +370,16 @@ export function useVideoPlayer(ctx: {
     }
   );
 
+  let lastSecondarySyncTime = -1;
+
   watch(
     () => player.currentTime,
     (time) => {
-      if (audioEngine.hasSecondaryAudio) {
+      if (!audioEngine.hasSecondaryAudio) return;
+      if (lastSecondarySyncTime < 0 || Math.abs(time - lastSecondarySyncTime) > 0.5) {
         audioEngine.seekSecondaryAudio(time);
       }
+      lastSecondarySyncTime = time;
     }
   );
 

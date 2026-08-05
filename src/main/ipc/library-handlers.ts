@@ -4,25 +4,33 @@ import { join, extname, basename } from 'path';
 import { parseFile } from 'music-metadata';
 import type { MediaFile, Playlist } from '../../renderer/src/types/media';
 import { VIDEO_EXTS, AUDIO_EXTS, IMAGE_EXTS } from '../../shared/constants';
+import { MIME_TYPES } from '../../shared/mime';
 import { getStore, durationCache, cacheSet, savePersistentCover } from './cover-cache';
 import { logger } from '../../shared/logger';
 import { runCommand } from '../utils/exec';
+import { resolveBin } from '../binaries';
 const AUDIO_EXT_SET = new Set(AUDIO_EXTS);
 const VIDEO_EXT_SET = new Set(VIDEO_EXTS);
 const IMAGE_EXT_SET = new Set(IMAGE_EXTS);
 
-const IMAGE_MIME: Record<string, string> = {
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.png': 'image/png',
-  '.webp': 'image/webp',
-  '.gif': 'image/gif',
-  '.bmp': 'image/bmp',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.tiff': 'image/tiff',
-  '.tif': 'image/tiff'
-};
+const SUBDIR_CONCURRENCY = 16;
+
+async function mapLimit<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let index = 0;
+  const workers = Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, async () => {
+    while (index < items.length) {
+      const i = index++;
+      results[i] = await fn(items[i]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
 
 async function getDuration(filePath: string): Promise<number> {
   const cached = durationCache.get(filePath);
@@ -45,8 +53,9 @@ async function getDuration(filePath: string): Promise<number> {
   } catch (e) {
     logger.warn('library', `music-metadata failed for ${filePath}`, e);
     try {
+      const ffprobe = (await resolveBin('ffprobe')) || 'ffprobe';
       const stdout = await runCommand(
-        'ffprobe',
+        ffprobe,
         ['-v', 'quiet', '-show_entries', 'format=duration', '-of', 'csv=p=0', filePath],
         { timeout: 10000 }
       );
@@ -234,7 +243,7 @@ async function processImageFile(
       name: entryName,
       path: fullPath,
       extension: ext,
-      mimeType: IMAGE_MIME[ext] || '',
+      mimeType: MIME_TYPES[ext] || '',
       size: s.size,
       type: 'image',
       addedAt: s.birthtimeMs ?? Date.now(),
@@ -252,12 +261,12 @@ async function scanDir(
 
   try {
     const entries = await readdir(dirPath, { withFileTypes: true });
-    const subDirPromises: Promise<{
+    const subDirTasks: Array<() => Promise<{
       files: MediaFile[];
       audioCount: number;
       videoCount: number;
       imageCount: number;
-    }>[] = [];
+    }>> = [];
     const audioTasks: Array<() => Promise<{ file: MediaFile | null }>> = [];
     const videoTasks: Array<() => Promise<{ file: MediaFile | null }>> = [];
     const imageTasks: Array<() => Promise<{ file: MediaFile | null }>> = [];
@@ -268,7 +277,7 @@ async function scanDir(
     for (const entry of entries) {
       const fullPath = join(dirPath, entry.name);
       if (entry.isDirectory()) {
-        subDirPromises.push(scanDir(fullPath, maxDepth, depth + 1));
+        subDirTasks.push(() => scanDir(fullPath, maxDepth, depth + 1));
       } else if (entry.isFile()) {
         const ext = extname(entry.name).toLowerCase();
         if (AUDIO_EXT_SET.has(ext)) {
@@ -311,7 +320,7 @@ async function scanDir(
       fileResults.push(...results);
     }
 
-    const subResults = await Promise.all(subDirPromises);
+    const subResults = await mapLimit(subDirTasks, SUBDIR_CONCURRENCY, (fn) => fn());
 
     const files: MediaFile[] = [];
     let totalAudio = 0;
@@ -343,37 +352,50 @@ export function registerLibraryHandlers(): void {
   ipcMain.handle(
     'library:scan',
     async (
-      _event,
+      event,
       folderPaths: string[]
     ): Promise<{
       count: number;
       folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
     }> => {
       try {
-        const folderResults = await Promise.all(
-          folderPaths.map(async (folderPath) => {
-            try {
-              const result = await scanDir(folderPath, 8);
-              const total = result.audioCount + result.videoCount;
-              const folderType: 'audio' | 'video' | 'image' | 'mixed' =
-                result.imageCount > 0 && result.audioCount === 0 && result.videoCount === 0
-                  ? 'image'
-                  : result.audioCount > 0 && result.videoCount === 0
-                    ? 'audio'
-                    : result.videoCount > 0 && result.audioCount === 0
-                      ? 'video'
-                      : total > 0 && result.audioCount / total >= 0.7
-                        ? 'audio'
-                        : total > 0 && result.videoCount / total >= 0.7
-                          ? 'video'
-                          : 'mixed';
-              return { folderType, files: result.files, folderPath };
-            } catch (err) {
-              logger.warn('library', `scan error for ${folderPath}: ${err}`);
-              return null;
-            }
-          })
-        );
+        const folderResults: Array<{
+          folderType: 'audio' | 'video' | 'image' | 'mixed';
+          files: MediaFile[];
+          folderPath: string;
+        } | null> = [];
+
+        const folderTotal = folderPaths.length;
+        let doneCount = 0;
+
+        // Scan folders sequentially to avoid saturating the disk, emitting progress per folder.
+        for (const folderPath of folderPaths) {
+          doneCount++;
+          try {
+            event.sender.send('library:scan:progress', {
+              current: doneCount,
+              total: folderTotal
+            });
+            const result = await scanDir(folderPath, 8);
+            const mediaTotal = result.audioCount + result.videoCount;
+            const folderType: 'audio' | 'video' | 'image' | 'mixed' =
+              result.imageCount > 0 && result.audioCount === 0 && result.videoCount === 0
+                ? 'image'
+                : result.audioCount > 0 && result.videoCount === 0
+                  ? 'audio'
+                  : result.videoCount > 0 && result.audioCount === 0
+                    ? 'video'
+                    : mediaTotal > 0 && result.audioCount / mediaTotal >= 0.7
+                      ? 'audio'
+                      : mediaTotal > 0 && result.videoCount / mediaTotal >= 0.7
+                        ? 'video'
+                        : 'mixed';
+            folderResults.push({ folderType, files: result.files, folderPath });
+          } catch (err) {
+            logger.warn('library', `scan error for ${folderPath}: ${err}`);
+            folderResults.push(null);
+          }
+        }
 
         const allFiles: MediaFile[] = [];
         const folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'> = {};

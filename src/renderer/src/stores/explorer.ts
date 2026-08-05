@@ -30,7 +30,6 @@ export const useExplorerStore = defineStore('explorer', () => {
   const history = ref<string[]>([]);
   const historyIndex = ref(-1);
   const isLoading = ref(false);
-  const sidebarWidth = ref(250);
 
   const tabs = ref<ExplorerTab[]>([]);
   const activeTabIndex = ref(-1);
@@ -252,7 +251,6 @@ export const useExplorerStore = defineStore('explorer', () => {
     history,
     historyIndex,
     isLoading,
-    sidebarWidth,
     tabs,
     activeTabIndex,
     isAtDrives,

@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, provide } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { Monitor, Plus, Pin, PinOff } from '@lucide/vue';
+import { Monitor, Plus, Pin, PinOff, Copy } from '@lucide/vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
 import { useClipboardStore } from '@renderer/stores/clipboard';
 import { useLibraryStore } from '@renderer/stores/library';
@@ -10,6 +10,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { useUIStore, ContextMenuItem } from '@renderer/stores/ui';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
 import { handleTabDrop } from '@renderer/utils/explorerTabDrop';
+import { isLibraryFolder } from '@renderer/utils/libraryFolders';
 import { AUDIO_EXTS, VIDEO_EXTS, IMAGE_EXTS } from '@shared/constants';
 import ExplorerNavPane from '@renderer/components/explorer/ExplorerNavPane.vue';
 import ExplorerToolbar from '@renderer/components/explorer/ExplorerToolbar.vue';
@@ -229,11 +230,6 @@ function openImageViewer(index: number) {
 function closeImageViewer() {
   imageViewerIndex.value = null;
   imageViewerFiles.value = [];
-}
-
-function isLibraryFolder(path: string): boolean {
-  const normalized = path.replace(/[\\/]$/, '');
-  return library.folders.some((f) => f.replace(/[\\/]$/, '') === normalized);
 }
 
 function handleDoubleClick(item: FileItem) {
@@ -487,9 +483,9 @@ function onPropertiesRenamed() {
 }
 
 // --- outer window tab drop ---
-function onWindowTabDrop(e: DragEvent) {
+async function onWindowTabDrop(e: DragEvent) {
   const raw = e.dataTransfer?.getData('text/plain') || '';
-  handleTabDrop(raw);
+  await handleTabDrop(raw);
 }
 
 function onContentMenu(event: MouseEvent, item: FileItem | null) {

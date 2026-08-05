@@ -5,9 +5,9 @@ import { useI18n } from 'vue-i18n';
 import { ChevronUp, ChevronDown, HardDrive, FolderOpen } from '@lucide/vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
 import { useClipboardStore } from '@renderer/stores/clipboard';
-import { useLibraryStore } from '@renderer/stores/library';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { logger } from '@shared/logger';
+import { isLibraryFolder } from '@renderer/utils/libraryFolders';
 import { beginFileDrag } from '@renderer/utils/fileDrag';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
 import { handleTabDrop } from '@renderer/utils/explorerTabDrop';
@@ -26,7 +26,6 @@ const emit = defineEmits<{
 
 const explorer = useExplorerStore();
 const fileClipboard = useClipboardStore();
-const library = useLibraryStore();
 const settings = useSettingsStore();
 const { t } = useI18n();
 const showConfirm = inject<(msg: string) => Promise<boolean>>('showConfirm', async () => true);
@@ -78,11 +77,6 @@ function getRowItems(rowIndex: number): FileItem[] {
   if (isListMode.value) return [files.value[rowIndex]];
   const start = rowIndex * itemsPerRow.value;
   return files.value.slice(start, start + itemsPerRow.value);
-}
-
-function isLibraryFolder(path: string): boolean {
-  const normalized = path.replace(/[\\/]$/, '');
-  return library.folders.some((f) => f.replace(/[\\/]$/, '') === normalized);
 }
 
 const ICON_CACHE_MAX = 500;
@@ -225,7 +219,7 @@ function onContentDragLeave(e: DragEvent) {
 async function onContentDrop(e: DragEvent) {
   e.preventDefault();
   const raw = e.dataTransfer?.getData('text/plain') || '';
-  if (handleTabDrop(raw)) return;
+  if (await handleTabDrop(raw)) return;
   const paths = getDropPaths(e.dataTransfer, raw);
   const targetDir = hoveredFolderPath.value || explorer.currentPath;
   hoveredFolderPath.value = null;
@@ -247,6 +241,8 @@ async function onContentDrop(e: DragEvent) {
 // --- band (marquee) select ---
 const bandSelect = ref<{ left: number; top: number; width: number; height: number } | null>(null);
 const bandOrigin = ref<{ clientX: number; clientY: number } | null>(null);
+let bandRects: { path: string; left: number; top: number; right: number; bottom: number }[] = [];
+let bandRafId: number | null = null;
 
 function onBandMouseDown(e: MouseEvent) {
   const target = e.target as HTMLElement;
@@ -256,40 +252,53 @@ function onBandMouseDown(e: MouseEvent) {
   if (!rect) return;
   bandOrigin.value = { clientX: e.clientX, clientY: e.clientY };
   bandSelect.value = { left: e.clientX, top: e.clientY, width: 0, height: 0 };
+  bandRects = [];
+  const buttons = scrollRef.value?.querySelectorAll('button[data-file-path]');
+  buttons?.forEach((btn) => {
+    const path = btn.getAttribute('data-file-path');
+    if (!path) return;
+    const r = btn.getBoundingClientRect();
+    bandRects.push({ path, left: r.left, top: r.top, right: r.right, bottom: r.bottom });
+  });
   document.addEventListener('mousemove', onBandMouseMove);
   document.addEventListener('mouseup', onBandMouseUp);
 }
 
 function onBandMouseMove(e: MouseEvent) {
-  if (!bandOrigin.value) return;
+  if (!bandOrigin.value || bandRafId !== null) return;
   const ox = bandOrigin.value.clientX;
   const oy = bandOrigin.value.clientY;
-  bandSelect.value = {
-    left: Math.min(e.clientX, ox),
-    top: Math.min(e.clientY, oy),
-    width: Math.abs(e.clientX - ox),
-    height: Math.abs(e.clientY - oy)
-  };
-  const sel = bandSelect.value;
-  const buttons = scrollRef.value?.querySelectorAll('button[data-file-path]');
-  if (!buttons) return;
-  explorer.clearSelection();
-  buttons.forEach((btn) => {
-    const r = btn.getBoundingClientRect();
-    const overlap = !(
-      r.right < sel.left ||
-      r.left > sel.left + sel.width ||
-      r.bottom < sel.top ||
-      r.top > sel.top + sel.height
-    );
-    if (overlap) {
-      const path = btn.getAttribute('data-file-path');
-      if (path) explorer.selectedFiles.add(path);
+  const clientX = e.clientX;
+  const clientY = e.clientY;
+  bandRafId = requestAnimationFrame(() => {
+    bandRafId = null;
+    if (!bandOrigin.value) return;
+    const sel = {
+      left: Math.min(clientX, ox),
+      top: Math.min(clientY, oy),
+      width: Math.abs(clientX - ox),
+      height: Math.abs(clientY - oy)
+    };
+    bandSelect.value = sel;
+    explorer.clearSelection();
+    for (const btn of bandRects) {
+      const overlap = !(
+        btn.right < sel.left ||
+        btn.left > sel.left + sel.width ||
+        btn.bottom < sel.top ||
+        btn.top > sel.top + sel.height
+      );
+      if (overlap) explorer.selectedFiles.add(btn.path);
     }
   });
 }
 
 function onBandMouseUp() {
+  if (bandRafId !== null) {
+    cancelAnimationFrame(bandRafId);
+    bandRafId = null;
+  }
+  bandRects = [];
   bandSelect.value = null;
   bandOrigin.value = null;
   document.removeEventListener('mousemove', onBandMouseMove);

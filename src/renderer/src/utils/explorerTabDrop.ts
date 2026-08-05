@@ -1,5 +1,6 @@
 import { useExplorerStore } from '@renderer/stores/explorer';
 import { claimTabDrag } from '@renderer/utils/tabDrag';
+import { getWindowId } from '@renderer/utils/windowId';
 
 const TAB_PAYLOAD_PREFIX = 'ONDA_TAB::';
 
@@ -21,11 +22,11 @@ export function parseTabPayload(raw: string): { wid: number; path: string } | nu
   }
 }
 
-export function handleTabDrop(raw: string): boolean {
+export async function handleTabDrop(raw: string): Promise<boolean> {
   const parsed = parseTabPayload(raw);
   if (!parsed) return false;
   const { wid, path } = parsed;
-  if (wid === (window.api?.windowId ?? 0)) {
+  if (wid === (await getWindowId())) {
     claimTabDrag(path);
     return true;
   }

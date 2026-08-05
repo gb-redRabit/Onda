@@ -40,7 +40,7 @@ export interface AppearanceSettings {
   audioPipMode: 'minimal' | 'medium' | 'max' | 'wide';
   audioPipAutoShow: boolean;
   audioPipOpacity: number;
-  audioPipPosition: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  audioPipPosition: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'top' | 'bottom';
 }
 
 export type VisualizationMode = 'circle' | 'bars' | 'particles' | 'wave' | 'radial' | 'none';
@@ -128,4 +128,8 @@ export interface DependencyStatus {
   installed: boolean;
   version: string | null;
   checkedAt: number | null;
+  path?: string | null;
+  managed?: boolean;
+  latestVersion?: string | null;
+  updateAvailable?: boolean;
 }

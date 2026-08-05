@@ -1,192 +1,430 @@
-import { ipcMain, app } from 'electron';
-import { stat, mkdir, chmod } from 'fs/promises';
-import { join } from 'path';
+import { ipcMain, type WebContents } from 'electron';
+import { mkdir, chmod, unlink, readFile, rm } from 'fs/promises';
+import { join, basename } from 'path';
 import { exec as execCb } from 'child_process';
 import { promisify } from 'util';
 import https from 'https';
 import http from 'http';
 import { createWriteStream } from 'fs';
-import { pipeline } from 'stream/promises';
+import { createHash } from 'crypto';
 import { runCommand } from '../utils/exec';
-import { ytdlpBinaryName, ytdlpDownloadUrl, getMkvExtractCandidates } from './dependency-utils';
+import {
+  ytdlpBinaryName,
+  ytdlpDownloadUrl,
+  ytdlpShaUrl,
+  ffmpegDownloadUrl,
+  detectPkgManagers,
+  inferPkgManager,
+  pkgInstallCmd,
+  pkgUninstallCmd,
+  toolFileName,
+  type BinTool
+} from './dependency-utils';
+import { getBinDir, resolveBin, resolveBinInfo, invalidateBinaries } from '../binaries';
 import { logger } from '../../shared/logger';
 
 const execAsync = promisify(execCb);
 
-function downloadFile(url: string, dest: string): Promise<void> {
+interface InstallResult {
+  success: boolean;
+  error?: string;
+  cancelled?: boolean;
+  path?: string | null;
+  managed?: boolean;
+}
+
+const activeControllers = new Map<string, AbortController>();
+
+function emitProgress(sender: WebContents, tool: string, stage: string, percent: number): void {
+  if (sender.isDestroyed()) return;
+  sender.send('dep:progress', { tool, stage, percent });
+}
+
+function newSignal(tool: BinTool): AbortSignal {
+  activeControllers.get(tool)?.abort();
+  const controller = new AbortController();
+  activeControllers.set(tool, controller);
+  return controller.signal;
+}
+
+function clearSignal(tool: BinTool): void {
+  activeControllers.delete(tool);
+}
+
+function downloadFile(
+  url: string,
+  dest: string,
+  signal: AbortSignal,
+  onProgress?: (received: number, total: number) => void
+): Promise<void> {
   return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new Error('cancelled'));
+      return;
+    }
     const client = url.startsWith('https') ? https : http;
-    client
-      .get(url, { headers: { 'User-Agent': 'Onda/1.0' } }, (res) => {
+    const onAbort = () => reject(new Error('cancelled'));
+    signal.addEventListener('abort', onAbort, { once: true });
+
+    const req = client.get(
+      url,
+      { headers: { 'User-Agent': 'Onda/1.0' } },
+      (res) => {
         if (
           res.statusCode &&
           res.statusCode >= 300 &&
           res.statusCode < 400 &&
           res.headers.location
         ) {
-          downloadFile(res.headers.location, dest).then(resolve).catch(reject);
+          downloadFile(res.headers.location, dest, signal, onProgress).then(resolve).catch(reject);
           return;
         }
         if (res.statusCode !== 200) {
           reject(new Error(`HTTP ${res.statusCode}`));
           return;
         }
+        const total = Number(res.headers['content-length'] || 0);
+        let received = 0;
+        res.on('data', (chunk: Buffer) => {
+          received += chunk.length;
+          onProgress?.(received, total);
+        });
         const file = createWriteStream(dest);
-        pipeline(res, file).then(resolve).catch(reject);
-      })
-      .on('error', reject);
+        file.on('finish', () => {
+          signal.removeEventListener('abort', onAbort);
+          file.close(() => resolve());
+        });
+        file.on('error', reject);
+        res.pipe(file);
+      }
+    );
+    req.on('error', (err) => {
+      signal.removeEventListener('abort', onAbort);
+      reject(err);
+    });
   });
 }
 
-async function checkVersion(
-  bin: string,
-  args: string[],
-  regex: RegExp
-): Promise<{ installed: boolean; version: string | null }> {
-  try {
-    const stdout = await runCommand(bin, args, { timeout: 10000 });
-    const match = stdout.match(regex);
-    return { installed: true, version: match?.[1] ?? 'unknown' };
-  } catch (e) {
-    logger.warn('deps', `checkVersion failed for ${bin}`, e);
-    return { installed: false, version: null };
-  }
+async function fetchLatestYtdlpVersion(): Promise<string | null> {
+  return new Promise((resolve) => {
+    const req = https.get(
+      'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest',
+      { headers: { 'User-Agent': 'Onda/1.0', Accept: 'application/vnd.github+json' } },
+      (res) => {
+        let body = '';
+        res.on('data', (d) => (body += d.toString('utf-8')));
+        res.on('end', () => {
+          try {
+            const json = JSON.parse(body) as { tag_name?: string };
+            resolve(json.tag_name ? json.tag_name.replace(/^v/, '') : null);
+          } catch {
+            resolve(null);
+          }
+        });
+      }
+    );
+    req.on('error', () => resolve(null));
+    req.setTimeout(10000, () => {
+      req.destroy();
+      resolve(null);
+    });
+  });
 }
 
-export async function getYtdlpPath(): Promise<string> {
-  const localBin = join(app.getPath('userData'), 'bin', ytdlpBinaryName());
-  try {
-    await stat(localBin);
-    return localBin;
-  } catch {
-    // not installed locally — fall back to PATH
-  }
-  return 'yt-dlp';
+async function sha256OfFile(filePath: string): Promise<string> {
+  const data = await readFile(filePath);
+  return createHash('sha256').update(data).digest('hex');
 }
 
-export async function getMkvExtractPath(): Promise<string> {
-  const candidates = getMkvExtractCandidates();
-  for (const c of candidates) {
+// Downloads the yt-dlp release asset into userData/bin and verifies its SHA-256.
+async function installYtdlpManaged(
+  sender: WebContents,
+  reinstall: boolean
+): Promise<InstallResult> {
+  const signal = newSignal('yt-dlp');
+  try {
+    const binDir = getBinDir();
+    await mkdir(binDir, { recursive: true });
+    const dest = join(binDir, ytdlpBinaryName());
+    const url = ytdlpDownloadUrl();
+    const shaUrl = ytdlpShaUrl();
+
+    emitProgress(sender, 'yt-dlp', reinstall ? 'update' : 'download', 5);
+    await downloadFile(url, dest, signal, (received, total) => {
+      const pct = total > 0 ? 5 + Math.round((received / total) * 85) : 5;
+      emitProgress(sender, 'yt-dlp', 'download', pct);
+    });
+    if (process.platform !== 'win32') {
+      await chmod(dest, 0o755);
+    }
+
+    emitProgress(sender, 'yt-dlp', 'verify', 92);
+    const sumsDest = join(binDir, 'SHA2-256SUMS');
     try {
-      await runCommand(c, ['--version'], { timeout: 5000 });
-      return c;
-    } catch {
-      // candidate not available — try next
+      await downloadFile(shaUrl, sumsDest, signal);
+      const assetName = basename(url);
+      // SHA2-256SUMS lines look like `<hash>  <filename>`.
+      const line = (await readFile(sumsDest, 'utf-8'))
+        .split(/\r?\n/)
+        .find((l) => l.trim().endsWith(` ${assetName}`) || l.trim().endsWith(` *${assetName}`));
+      const expected = line?.trim().split(/\s+/)[0]?.toLowerCase() ?? '';
+      const actual = await sha256OfFile(dest);
+      if (!expected || expected !== actual) {
+        await unlink(dest).catch(() => {});
+        await unlink(sumsDest).catch(() => {});
+        return {
+          success: false,
+          error: 'Weryfikacja sumy kontrolnej nie powiodła się — pobrany plik jest uszkodzony.'
+        };
+      }
+      await unlink(sumsDest).catch(() => {});
+    } catch (e) {
+      logger.warn('deps', 'yt-dlp checksum verification unavailable', e);
+    }
+
+    invalidateBinaries();
+    emitProgress(sender, 'yt-dlp', 'done', 100);
+    return { success: true, path: dest, managed: true };
+  } catch (e) {
+    const err = e as { message?: string };
+    if (err.message === 'cancelled' || signal.aborted) {
+      return { success: false, cancelled: true };
+    }
+    return { success: false, error: err.message || 'Nie udało się pobrać yt-dlp' };
+  } finally {
+    clearSignal('yt-dlp');
+  }
+}
+
+// Downloads a managed FFmpeg build (Windows only) and extracts ffmpeg.exe + ffprobe.exe.
+async function installFfmpegManaged(sender: WebContents): Promise<InstallResult> {
+  const signal = newSignal('ffmpeg');
+  try {
+    const url = ffmpegDownloadUrl();
+    if (!url) return { success: false, error: 'Managed FFmpeg nie jest dostępny na tej platformie.' };
+
+    const binDir = getBinDir();
+    await mkdir(binDir, { recursive: true });
+    const zipPath = join(binDir, 'ffmpeg-download.zip');
+    const extractDir = join(binDir, 'ffmpeg-extract');
+
+    emitProgress(sender, 'ffmpeg', 'download', 5);
+    await downloadFile(url, zipPath, signal, (received, total) => {
+      const pct = total > 0 ? 5 + Math.round((received / total) * 80) : 5;
+      emitProgress(sender, 'ffmpeg', 'download', pct);
+    });
+
+    emitProgress(sender, 'ffmpeg', 'extract', 88);
+    await rm(extractDir, { recursive: true, force: true }).catch(() => {});
+    await mkdir(extractDir, { recursive: true });
+    await runCommand(
+      'powershell',
+      [
+        '-NoProfile',
+        '-Command',
+        `Expand-Archive -LiteralPath '${zipPath}' -DestinationPath '${extractDir}' -Force`
+      ],
+      { timeout: 300000 }
+    ).catch(async () => {
+      await runCommand('tar', ['-xf', zipPath, '-C', extractDir], { timeout: 300000 });
+    });
+
+    const { findFile } = await import('./zip-utils');
+    const ffmpegExe = await findFile(extractDir, 'ffmpeg.exe');
+    const ffprobeExe = await findFile(extractDir, 'ffprobe.exe');
+    if (!ffmpegExe || !ffprobeExe) {
+      return { success: false, error: 'Nie znaleziono ffmpeg.exe/ffprobe.exe w pobranym archiwum.' };
+    }
+
+    const ffmpegDest = join(binDir, 'ffmpeg.exe');
+    const ffprobeDest = join(binDir, 'ffprobe.exe');
+    await import('fs/promises').then(({ copyFile }) =>
+      Promise.all([copyFile(ffmpegExe, ffmpegDest), copyFile(ffprobeExe, ffprobeDest)])
+    );
+    await rm(zipPath, { force: true }).catch(() => {});
+    await rm(extractDir, { recursive: true, force: true }).catch(() => {});
+
+    invalidateBinaries();
+    emitProgress(sender, 'ffmpeg', 'done', 100);
+    return { success: true, path: ffmpegDest, managed: true };
+  } catch (e) {
+    const err = e as { message?: string };
+    if (err.message === 'cancelled' || signal.aborted) {
+      return { success: false, cancelled: true };
+    }
+    return { success: false, error: err.message || 'Nie udało się zainstalować FFmpeg' };
+  } finally {
+    clearSignal('ffmpeg');
+  }
+}
+
+async function runShell(cmd: string): Promise<string> {
+  const { stdout, stderr } = await execAsync(cmd, {
+    timeout: 600000,
+    windowsHide: true
+  });
+  return stdout + stderr;
+}
+
+// System install through a package manager with real post-install verification.
+async function installSystem(
+  sender: WebContents,
+  tool: BinTool
+): Promise<InstallResult> {
+  emitProgress(sender, tool, 'manager', 10);
+  const pkgManager = (await detectPkgManagers())[0] ?? null;
+  if (!pkgManager) {
+    return {
+      success: false,
+      error:
+        'Nie znaleziono menedżera pakietów. Zainstaluj ręcznie (winget/choco/scoop/brew/apt/dnf/pacman) i odśwież.'
+    };
+  }
+
+  const cmd = pkgInstallCmd(pkgManager, tool);
+  try {
+    const output = await runShell(cmd);
+    emitProgress(sender, tool, 'verify', 90);
+    invalidateBinaries();
+    const info = await resolveBinInfo(tool);
+    if (info) {
+      emitProgress(sender, tool, 'done', 100);
+      return { success: true, path: info.path, managed: info.managed };
+    }
+    return {
+      success: false,
+      error: `Instalacja zakończyła się, ale binarka nie jest dostępna. Skopiuj komendę i uruchom ręcznie: ${cmd}\n\n${output}`
+    };
+  } catch (e) {
+    const err = e as { stderr?: string; stdout?: string; message?: string };
+    const msg = err.stderr || err.stdout || err.message || 'Nieznany błąd';
+    const hint = msg.includes('requires elevated permissions')
+      ? ' Wymagane uprawnienia administratora.'
+      : '';
+    return {
+      success: false,
+      error: `${msg}${hint} Skopiuj komendę i uruchom ręcznie: ${cmd}`
+    };
+  } finally {
+    clearSignal(tool);
+  }
+}
+
+async function uninstallTool(_sender: WebContents, tool: BinTool): Promise<InstallResult> {
+  const info = await resolveBinInfo(tool);
+  if (info?.managed) {
+    try {
+      await unlink(info.path);
+      invalidateBinaries();
+      return { success: true, path: null, managed: true };
+    } catch (e) {
+      const err = e as { message?: string };
+      return { success: false, error: err.message || 'Nie udało się usunąć pliku' };
     }
   }
-  return 'mkvextract';
+
+  // System install — infer which manager actually owns it from the resolved
+  // path (choco/winGet/scoop shims live in distinctive folders), then fall
+  // back to every available manager until the binary is really gone.
+  const managers = await detectPkgManagers();
+  const inferred = inferPkgManager(info?.path ?? null);
+  const candidates = inferred
+    ? [inferred, ...managers.filter((m) => m !== inferred)]
+    : managers;
+
+  const errors: string[] = [];
+  for (const pm of candidates) {
+    const cmd = pkgUninstallCmd(pm, tool);
+    try {
+      const output = await runShell(cmd);
+      invalidateBinaries();
+      const stillThere = await resolveBinInfo(tool);
+      if (!stillThere) return { success: true };
+      errors.push(`${cmd} — binarka nadal istnieje\n${output}`);
+    } catch (e) {
+      const err = e as { stderr?: string; stdout?: string; message?: string };
+      errors.push(`${cmd} — ${err.stderr || err.stdout || err.message || 'nieznany błąd'}`);
+    }
+  }
+
+  return {
+    success: false,
+    error:
+      'Odinstalowanie nie powiodło się. Skopiuj i uruchom ręcznie:\n' +
+      candidates.map((pm) => pkgUninstallCmd(pm, tool)).join('\n') +
+      '\n\n' +
+      errors.join('\n')
+  };
+}
+
+async function checkTool(tool: BinTool): Promise<{
+  installed: boolean;
+  version: string | null;
+  path: string | null;
+  managed: boolean;
+}> {
+  const info = await resolveBinInfo(tool);
+  if (!info) return { installed: false, version: null, path: null, managed: false };
+  return {
+    installed: true,
+    version: info.version,
+    path: info.path,
+    managed: info.managed
+  };
 }
 
 export function registerDependencyHandlers(): void {
-  ipcMain.handle('dep:checkFfmpeg', async () => {
-    return checkVersion('ffmpeg', ['-version'], /ffmpeg version (\S+)/);
-  });
+  ipcMain.handle('dep:checkFfmpeg', async () => checkTool('ffmpeg'));
+  ipcMain.handle('dep:checkFfprobe', async () => checkTool('ffprobe'));
+  ipcMain.handle('dep:checkMkvextract', async () => checkTool('mkvextract'));
+  ipcMain.handle('dep:checkYtdlp', async () => checkTool('yt-dlp'));
 
-  ipcMain.handle('dep:checkYtdlp', async () => {
-    const localBin = join(app.getPath('userData'), 'bin', ytdlpBinaryName());
-    try {
-      await stat(localBin);
-      const stdout = await runCommand(localBin, ['--version'], { timeout: 10000 });
-      return { installed: true, version: stdout.trim(), path: localBin };
-    } catch {
-      // not in local bin — check PATH
+  ipcMain.handle(
+    'dep:getPaths',
+    async (): Promise<
+      Array<{ tool: BinTool; path: string | null; managed: boolean; version: string | null }>
+    > => {
+      const tools: BinTool[] = ['ffmpeg', 'ffprobe', 'yt-dlp', 'mkvextract'];
+      const results = await Promise.all(tools.map((t) => resolveBinInfo(t)));
+      return tools.map((tool, i) => ({
+        tool,
+        path: results[i]?.path ?? null,
+        managed: results[i]?.managed ?? false,
+        version: results[i]?.version ?? null
+      }));
     }
-    try {
-      const stdout = await runCommand('yt-dlp', ['--version'], { timeout: 10000 });
-      return { installed: true, version: stdout.trim(), path: 'yt-dlp' };
-    } catch (e) {
-      logger.warn('deps', 'yt-dlp not found on PATH', e);
-      return { installed: false, version: null, path: null };
-    }
+  );
+
+  ipcMain.handle('dep:checkUpdateYtdlp', async () => {
+    const latest = await fetchLatestYtdlpVersion();
+    const info = await resolveBinInfo('yt-dlp');
+    const current = info?.version ?? null;
+    const updateAvailable = !!(latest && current && latest !== current);
+    return { updateAvailable, current, latest };
   });
 
-  ipcMain.handle('dep:checkFfprobe', async () => {
-    return checkVersion('ffprobe', ['-version'], /ffprobe version (\S+)/);
+  ipcMain.handle('dep:cancelInstall', (_event, tool: string) => {
+    activeControllers.get(tool as BinTool)?.abort();
+    return true;
   });
 
-  function getInstallFfmpegCmd(): string {
+  ipcMain.handle('dep:installFfmpeg', async (event) => {
     if (process.platform === 'win32') {
-      return 'choco install ffmpeg -y --no-progress';
+      return installFfmpegManaged(event.sender);
     }
-    return 'which ffmpeg 2>/dev/null || (brew install ffmpeg 2>/dev/null || apt-get install -y ffmpeg 2>/dev/null || echo "unsupported")';
-  }
-
-  ipcMain.handle('dep:installFfmpeg', async () => {
-    try {
-      const cmd = getInstallFfmpegCmd();
-      const { stdout, stderr } = await execAsync(cmd, {
-        timeout: 300000,
-        windowsHide: true
-      });
-      return { success: true, output: stdout + stderr };
-    } catch (e: unknown) {
-      const err = e as { stderr?: string; stdout?: string; message?: string };
-      const msg = err.stderr || err.stdout || err.message || 'Nieznany błąd';
-      if (msg.includes('requires elevated permissions') || msg.includes('elevation required')) {
-        return {
-          success: false,
-          error:
-            'Wymagane uprawnienia administratora. Uruchom choco install ffmpeg -y w terminalu jako admin.'
-        };
-      }
-      return { success: false, error: msg };
-    }
+    return installSystem(event.sender, 'ffmpeg');
   });
 
-  ipcMain.handle('dep:installYtdlp', async () => {
-    try {
-      const binDir = join(app.getPath('userData'), 'bin');
-      await mkdir(binDir, { recursive: true });
-      const dest = join(binDir, ytdlpBinaryName());
-      await downloadFile(ytdlpDownloadUrl(process.platform), dest);
-      if (process.platform !== 'win32') {
-        await chmod(dest, 0o755);
-      }
-      return { success: true };
-    } catch (e: unknown) {
-      const err = e as { message?: string };
-      return { success: false, error: err.message || 'Nie udało się pobrać yt-dlp' };
-    }
-  });
+  ipcMain.handle('dep:installMkvextract', async (event) => installSystem(event.sender, 'mkvextract'));
 
-  ipcMain.handle('dep:checkMkvextract', async () => {
-    try {
-      const bin = await getMkvExtractPath();
-      const stdout = await runCommand(bin, ['--version'], { timeout: 10000 });
-      const match = stdout.match(/mkvextract v([\d.]+)/);
-      return { installed: true, version: match ? match[1] : 'unknown' };
-    } catch (e) {
-      logger.warn('deps', 'mkvextract not found', e);
-      return { installed: false, version: null };
-    }
-  });
+  ipcMain.handle('dep:installYtdlp', async (event) => installYtdlpManaged(event.sender, false));
 
-  function getInstallMkvextractCmd(): string {
-    if (process.platform === 'win32') {
-      return 'choco install mkvtoolnix -y --no-progress';
-    }
-    return 'which mkvextract 2>/dev/null || (brew install mkvtoolnix 2>/dev/null || apt-get install -y mkvtoolnix 2>/dev/null || echo "unsupported")';
-  }
+  ipcMain.handle('dep:updateYtdlp', async (event) => installYtdlpManaged(event.sender, true));
 
-  ipcMain.handle('dep:installMkvextract', async () => {
-    try {
-      const cmd = getInstallMkvextractCmd();
-      const { stdout, stderr } = await execAsync(cmd, {
-        timeout: 300000,
-        windowsHide: true
-      });
-      return { success: true, output: stdout + stderr };
-    } catch (e: unknown) {
-      const err = e as { stderr?: string; stdout?: string; message?: string };
-      const msg = err.stderr || err.stdout || err.message || 'Nieznany błąd';
-      if (msg.includes('requires elevated permissions') || msg.includes('elevation required')) {
-        return {
-          success: false,
-          error:
-            'Wymagane uprawnienia administratora. Uruchom choco install mkvtoolnix -y w terminalu jako admin.'
-        };
-      }
-      return { success: false, error: msg };
-    }
-  });
+  ipcMain.handle('dep:removeYtdlp', async (event) => uninstallTool(event.sender, 'yt-dlp'));
+  ipcMain.handle('dep:removeFfmpeg', async (event) => uninstallTool(event.sender, 'ffmpeg'));
+  ipcMain.handle('dep:removeMkvextract', async (event) => uninstallTool(event.sender, 'mkvextract'));
 }
+
+// keep re-exported for legacy callers/tests
+export { toolFileName, resolveBin };

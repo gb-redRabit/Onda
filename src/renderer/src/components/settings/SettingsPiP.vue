@@ -1,10 +1,25 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@renderer/stores/settings';
 import type { AppSettings } from '@renderer/types/settings';
-import { CornerUpRight, CornerUpLeft, CornerDownRight, CornerDownLeft } from '@lucide/vue';
+import {
+  CornerUpRight,
+  CornerUpLeft,
+  CornerDownRight,
+  CornerDownLeft,
+  PanelTop,
+  PanelBottom
+} from '@lucide/vue';
+import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
+import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
+import SettingsSectionTitle from '@renderer/components/settings/SettingsSectionTitle.vue';
+import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
+import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
+import SettingsPositionGrid from '@renderer/components/settings/SettingsPositionGrid.vue';
 
 const settings = useSettingsStore();
+const { t } = useI18n();
 
 const pipPositions = [
   { id: 'top-left' as const, labelKey: 'settings.topLeft', row: 0, col: 0, icon: CornerUpLeft },
@@ -32,7 +47,46 @@ const audioPipModes = [
   { id: 'wide' as const, labelKey: 'settings.pipWide' }
 ];
 
+const audioEdgePositions = [
+  { id: 'top' as const, labelKey: 'settings.pipTop', icon: PanelTop },
+  { id: 'bottom' as const, labelKey: 'settings.pipBottom', icon: PanelBottom }
+];
+
+const isAudioEdgeMode = computed(
+  () => settings.appearance.audioPipMode === 'max' || settings.appearance.audioPipMode === 'wide'
+);
+
+const audioPositions = computed(() =>
+  isAudioEdgeMode.value ? audioEdgePositions : pipPositions
+);
+
+const pipPositionOptions = computed(() =>
+  pipPositions.map((p) => ({ id: p.id, label: t(p.labelKey), icon: p.icon }))
+);
+
+const audioPositionOptions = computed(() =>
+  audioPositions.value.map((p) => ({ id: p.id, label: t(p.labelKey), icon: p.icon }))
+);
+
 const pipPreviewOpen = ref(false);
+
+function setAudioPosition(id: string): void {
+  settings.updateAppearance({
+    audioPipPosition: id as AppSettings['appearance']['audioPipPosition']
+  });
+}
+
+watch(
+  () => settings.appearance.audioPipMode,
+  (mode) => {
+    if (mode === 'max' || mode === 'wide') {
+      const pos = settings.appearance.audioPipPosition;
+      if (pos !== 'top' && pos !== 'bottom') {
+        settings.updateAppearance({ audioPipPosition: pos.startsWith('top') ? 'top' : 'bottom' });
+      }
+    }
+  }
+);
 
 async function toggleSettingsPiP() {
   if (pipPreviewOpen.value) {
@@ -63,16 +117,10 @@ watch(
 </script>
 
 <template>
-  <div class="space-y-6 max-w-2xl">
-    <h2 class="text-lg font-bold">{{ $t('settings.pip') }}</h2>
-    <p class="text-xs text-fg-faint mb-4">
-      {{ $t('settings.pipDesc') }}
-    </p>
-
-    <!-- Video PiP -->
-    <div class="p-4 rounded-xl bg-bg-elevated border border-border-default space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-border-default">
-        <span class="text-sm">Video PiP</span>
+  <SettingsPanel :title="$t('settings.pip')" :description="$t('settings.pipDesc')">
+    <SettingsCard>
+      <div class="flex items-center justify-between pb-4 border-b border-border-default">
+        <SettingsSectionTitle :title="$t('settings.videoPipSection')" class="!mb-0" />
         <button
           class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
           :class="
@@ -87,42 +135,19 @@ watch(
       </div>
 
       <div>
-        <h3 class="text-sm font-semibold mb-3">Pozycja okna</h3>
-        <div
-          class="w-48 aspect-square rounded-2xl bg-bg-elevated border-2 border-border-default p-2 relative select-none"
-        >
-          <div class="grid grid-cols-2 grid-rows-2 gap-2 w-full h-full">
-            <button
-              v-for="p in pipPositions"
-              :key="p.id"
-              class="rounded-xl text-[11px] font-medium transition-all border-2 flex flex-col items-center justify-center gap-1"
-              :class="
-                settings.playback.pipPosition === p.id
-                  ? 'border-accent-base bg-accent-ghost text-accent-base shadow-sm shadow-accent-base/20'
-                  : 'border-transparent text-fg-faint hover:bg-bg-hover hover:text-fg-muted'
-              "
-              @click="settings.updatePlayback({ pipPosition: p.id })"
-            >
-              <component :is="p.icon" :size="16" />
-              <span>{{ $t(p.labelKey) }}</span>
-            </button>
-          </div>
-          <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
-            <div class="w-5 h-5 rounded border-2 border-dashed border-fg-faint/20" />
-          </div>
-        </div>
-        <p class="text-[11px] text-fg-faint mt-2">
-          {{ $t('settings.selected') }}
-          <span class="text-fg-base font-medium">{{
-            $t(pipPositions.find((p) => p.id === settings.playback.pipPosition)?.labelKey ?? '')
-          }}</span>
-        </p>
+        <SettingsSectionTitle :title="$t('settings.pipPositionLabel')" />
+        <SettingsPositionGrid
+          :model-value="settings.playback.pipPosition"
+          :options="pipPositionOptions"
+          :selected-label="t(pipPositions.find((p) => p.id === settings.playback.pipPosition)?.labelKey ?? '')"
+          @update:model-value="settings.updatePlayback({ pipPosition: $event as (typeof pipPositions)[number]['id'] })"
+        />
       </div>
 
       <div>
-        <h3 class="text-sm font-semibold mb-3">
-          {{ $t('settings.width') }} {{ settings.playback.pipWidth }}px
-        </h3>
+        <SettingsSectionTitle
+          :title="`${$t('settings.width')} ${settings.playback.pipWidth}px`"
+        />
         <input
           type="range"
           min="240"
@@ -139,9 +164,9 @@ watch(
       </div>
 
       <div>
-        <h3 class="text-sm font-semibold mb-3">
-          {{ $t('settings.height') }} {{ settings.playback.pipHeight }}px
-        </h3>
+        <SettingsSectionTitle
+          :title="`${$t('settings.height')} ${settings.playback.pipHeight}px`"
+        />
         <input
           type="range"
           min="140"
@@ -157,30 +182,21 @@ watch(
         />
       </div>
 
-      <div class="flex items-center justify-between pt-3 border-t border-border-default">
-        <span class="text-sm">{{ $t('settings.pipPreBuffer') }}</span>
-        <button
-          class="w-10 h-6 rounded-full transition-colors relative"
-          :class="settings.playback.pipPreBuffer ? 'bg-accent-base' : 'bg-bg-hover'"
-          @click="settings.updatePlayback({ pipPreBuffer: !settings.playback.pipPreBuffer })"
-        >
-          <div
-            class="w-4 h-4 rounded-full bg-white absolute top-1 transition-all"
-            :class="settings.playback.pipPreBuffer ? 'left-5' : 'left-1'"
+      <div class="pt-4 border-t border-border-default">
+        <SettingsRow :label="$t('settings.pipPreBuffer')">
+          <SettingsToggle
+            :model-value="settings.playback.pipPreBuffer"
+            @update:model-value="settings.updatePlayback({ pipPreBuffer: $event })"
           />
-        </button>
+        </SettingsRow>
       </div>
-    </div>
+    </SettingsCard>
 
-    <!-- Audio PiP -->
-    <div class="p-4 rounded-xl bg-bg-elevated border border-border-default space-y-4">
-      <h3 class="text-sm font-semibold pb-3 border-b border-border-default">
-        {{ $t('settings.audioPipSection') }}
-      </h3>
-
-      <div class="flex items-center justify-between">
+    <SettingsCard>
+      <SettingsSectionTitle :title="$t('settings.audioPipSection')" />
+      <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-1">
         <span class="text-sm">{{ $t('settings.audioPipMode') }}</span>
-        <div class="flex gap-1">
+        <div class="flex gap-1 bg-bg-base rounded-xl p-1">
           <button
             v-for="m in audioPipModes"
             :key="m.id"
@@ -188,7 +204,7 @@ watch(
             :class="
               settings.appearance.audioPipMode === m.id
                 ? 'bg-accent-base text-white'
-                : 'bg-bg-hover text-fg-muted hover:text-fg-base'
+                : 'text-fg-muted hover:text-fg-base'
             "
             @click="settings.updateAppearance({ audioPipMode: m.id })"
           >
@@ -198,10 +214,9 @@ watch(
       </div>
 
       <div>
-        <h3 class="text-sm font-semibold mb-3">
-          {{ $t('settings.audioPipOpacity') }}:
-          {{ Math.round(settings.appearance.audioPipOpacity * 100) }}%
-        </h3>
+        <SettingsSectionTitle
+          :title="`${$t('settings.audioPipOpacity')}: ${Math.round(settings.appearance.audioPipOpacity * 100)}%`"
+        />
         <input
           type="range"
           min="0.1"
@@ -217,39 +232,24 @@ watch(
         />
       </div>
 
-      <div class="flex items-center justify-between">
-        <span class="text-sm">{{ $t('settings.audioPipAutoShow') }}</span>
-        <button
-          class="w-10 h-6 rounded-full transition-colors relative"
-          :class="settings.appearance.audioPipAutoShow ? 'bg-accent-base' : 'bg-bg-hover'"
-          @click="
-            settings.updateAppearance({ audioPipAutoShow: !settings.appearance.audioPipAutoShow })
-          "
-        >
-          <div
-            class="w-4 h-4 rounded-full bg-white absolute top-1 transition-all"
-            :class="settings.appearance.audioPipAutoShow ? 'left-5' : 'left-1'"
+      <div class="pt-2">
+        <SettingsRow :label="$t('settings.audioPipAutoShow')">
+          <SettingsToggle
+            :model-value="settings.appearance.audioPipAutoShow"
+            @update:model-value="settings.updateAppearance({ audioPipAutoShow: $event })"
           />
-        </button>
+        </SettingsRow>
       </div>
 
       <div>
-        <h3 class="text-sm font-semibold mb-3">{{ $t('settings.audioPipPosition') }}</h3>
-        <select
-          :value="settings.appearance.audioPipPosition"
-          class="w-full px-3 py-2 rounded-lg bg-bg-hover text-fg-base border border-border-default text-sm outline-none"
-          @change="
-            settings.updateAppearance({
-              audioPipPosition: ($event.target as HTMLSelectElement)
-                .value as AppSettings['appearance']['audioPipPosition']
-            })
-          "
-        >
-          <option v-for="p in pipPositions" :key="p.id" :value="p.id">
-            {{ $t(p.labelKey) }}
-          </option>
-        </select>
+        <SettingsSectionTitle :title="$t('settings.audioPipPosition')" />
+        <SettingsPositionGrid
+          :model-value="settings.appearance.audioPipPosition"
+          :options="audioPositionOptions"
+          :selected-label="t(audioPositions.find((p) => p.id === settings.appearance.audioPipPosition)?.labelKey ?? '')"
+          @update:model-value="setAudioPosition($event)"
+        />
       </div>
-    </div>
-  </div>
+    </SettingsCard>
+  </SettingsPanel>
 </template>

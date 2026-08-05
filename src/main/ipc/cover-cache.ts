@@ -7,6 +7,7 @@ import sharp from 'sharp';
 import os from 'os';
 import { AUDIO_EXTS, VIDEO_EXTS } from '../../shared/constants';
 import { runCommand } from '../utils/exec';
+import { resolveBin } from '../binaries';
 import { logger } from '../../shared/logger';
 
 let _store: InstanceType<typeof import('electron-store').default> | null = null;
@@ -183,10 +184,11 @@ async function extractAudioCover(filePath: string): Promise<string | null> {
 
 async function extractVideoFrame(filePath: string, time = '00:00:00.5'): Promise<string | null> {
   try {
+    const ffmpeg = (await resolveBin('ffmpeg')) || 'ffmpeg';
     await mkdir(getTempDir(), { recursive: true });
     const outPath = join(getTempDir(), `frame_${uniqueId()}.jpg`);
     await runCommand(
-      'ffmpeg',
+      ffmpeg,
       ['-v', 'quiet', '-ss', time, '-i', filePath, '-vframes', '1', '-q:v', '2', '-update', '1', outPath, '-y'],
       { timeout: 15000 }
     );
@@ -201,18 +203,18 @@ async function extractVideoFrame(filePath: string, time = '00:00:00.5'): Promise
 
 async function extractEmbeddedCover(filePath: string): Promise<string | null> {
   try {
+    const ffmpeg = (await resolveBin('ffmpeg')) || 'ffmpeg';
     await mkdir(getTempDir(), { recursive: true });
     const outPath = join(getTempDir(), `cover_${uniqueId()}.jpg`);
     await runCommand(
-      'ffmpeg',
+      ffmpeg,
       ['-v', 'quiet', '-i', filePath, '-vframes', '1', '-q:v', '2', '-update', '1', outPath, '-y'],
       { timeout: 15000 }
     );
     const buf = await readFile(outPath);
     await unlink(outPath).catch(() => {});
     return `data:image/jpeg;base64,${buf.toString('base64')}`;
-  } catch (e) {
-    logger.warn('cover', `extractEmbeddedCover failed for ${filePath}`, e);
+  } catch {
     return null;
   }
 }

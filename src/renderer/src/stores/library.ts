@@ -86,33 +86,20 @@ export const useLibraryStore = defineStore('library', () => {
     return topN(ts, 20, (t) => t.playCount);
   });
 
-  let lastTracksHash = 0;
+  let lastTracksCount = -1;
   let cachedArtists: Array<[string, MediaFile[]]> = [];
   let cachedAlbums: Array<[string, MediaFile[]]> = [];
 
   function invalidateDerivedCache() {
-    lastTracksHash = 0;
+    lastTracksCount = -1;
     cachedArtists = [];
     cachedAlbums = [];
-  }
-
-  function hashTracks(tracks: MediaFile[]): number {
-    let h = 0x811c9dc5;
-    for (let i = 0; i < tracks.length; i++) {
-      const p = tracks[i].path;
-      for (let j = 0; j < p.length; j++) {
-        h ^= p.charCodeAt(j);
-        h = (h * 0x01000193) >>> 0;
-      }
-    }
-    return h;
   }
 
   const artists = computed(() => {
     const ts = tracks.value;
     if (ts.length === 0) return [];
-    const h = hashTracks(ts);
-    if (h === lastTracksHash && cachedArtists.length) return cachedArtists;
+    if (ts.length === lastTracksCount && cachedArtists.length) return cachedArtists;
     const map = new Map<string, MediaFile[]>();
     for (let i = 0; i < ts.length; i++) {
       const artist = ts[i].metadata?.artist || 'Unknown Artist';
@@ -120,15 +107,14 @@ export const useLibraryStore = defineStore('library', () => {
       map.get(artist)!.push(ts[i]);
     }
     cachedArtists = Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-    lastTracksHash = h;
+    lastTracksCount = ts.length;
     return cachedArtists;
   });
 
   const albums = computed(() => {
     const ts = tracks.value;
     if (ts.length === 0) return [];
-    const h = hashTracks(ts);
-    if (h === lastTracksHash && cachedAlbums.length) return cachedAlbums;
+    if (ts.length === lastTracksCount && cachedAlbums.length) return cachedAlbums;
     const map = new Map<string, MediaFile[]>();
     for (let i = 0; i < ts.length; i++) {
       const album = ts[i].metadata?.album || 'Unknown Album';
@@ -136,7 +122,7 @@ export const useLibraryStore = defineStore('library', () => {
       map.get(album)!.push(ts[i]);
     }
     cachedAlbums = Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-    lastTracksHash = h;
+    lastTracksCount = ts.length;
     return cachedAlbums;
   });
 
@@ -152,7 +138,10 @@ export const useLibraryStore = defineStore('library', () => {
         )
       ]);
       if (loadedPlaylists) playlists.value = loadedPlaylists;
-      if (loadedFolders) folders.value = loadedFolders;
+      if (loadedFolders) {
+        folders.value = loadedFolders;
+        window.api?.setAllowedRoots([...folders.value]);
+      }
     } catch {
       // individual catches handle errors
     }
@@ -197,6 +186,15 @@ export const useLibraryStore = defineStore('library', () => {
     if (folders.value.length === 0) return;
     isScanning.value = true;
     scanProgress.value = { current: 0, total: folders.value.length };
+    const stopListening = window.api?.on('library:scan:progress', (...args: unknown[]) => {
+      const data = args[0] as { current?: number; total?: number } | undefined;
+      if (data) {
+        scanProgress.value = {
+          current: data.current ?? 0,
+          total: data.total ?? folders.value.length
+        };
+      }
+    });
     try {
       const result = (await window.api?.invoke('library:scan', [...folders.value])) as {
         count: number;
@@ -204,6 +202,7 @@ export const useLibraryStore = defineStore('library', () => {
       };
       if (result) {
         folderTypes.value = result.folderTypes;
+        scanProgress.value = { current: folders.value.length, total: folders.value.length };
         scheduleLoadTracks();
       }
     } catch (err) {
@@ -213,6 +212,7 @@ export const useLibraryStore = defineStore('library', () => {
         // store not available
       }
     } finally {
+      stopListening?.();
       isScanning.value = false;
     }
   }
@@ -229,11 +229,13 @@ export const useLibraryStore = defineStore('library', () => {
     if (folders.value.includes(folderPath)) return;
     folders.value.push(folderPath);
     await window.api?.invoke('library:saveFolders', [...folders.value]);
+    window.api?.setAllowedRoots([...folders.value]);
   }
 
   async function removeFolder(folderPath: string) {
     folders.value = folders.value.filter((f) => f !== folderPath);
     await window.api?.invoke('library:saveFolders', [...folders.value]);
+    window.api?.setAllowedRoots([...folders.value]);
     const newTypes = { ...folderTypes.value };
     delete newTypes[folderPath];
     folderTypes.value = newTypes;
@@ -252,6 +254,8 @@ export const useLibraryStore = defineStore('library', () => {
     } else {
       tracks.value.push(track);
     }
+    triggerRef(tracks);
+    invalidateDerivedCache();
   }
 
   function removeTrack(path: string) {
@@ -328,12 +332,12 @@ export const useLibraryStore = defineStore('library', () => {
     });
   }
 
-  function updateTrack(path: string, updater: (track: MediaFile) => void) {
+  function updateTrack(path: string, updater: (track: MediaFile) => void, metadataChanged = false) {
     const idx = tracks.value.findIndex((t) => t.path === path);
     if (idx >= 0) {
       updater(tracks.value[idx]);
       triggerRef(tracks);
-      invalidateDerivedCache();
+      if (metadataChanged) invalidateDerivedCache();
     }
   }
 

@@ -1,8 +1,7 @@
 import type { SubtitleTrack, MkvFont } from '@renderer/types/subtitles';
 import { convertToAss, extractAssFamilies, hashContent } from '@renderer/utils/subtitleConvert';
-import workerUrl from 'jassub/dist/worker/worker.js?worker&url';
-import wasmUrl from 'jassub/dist/wasm/jassub-worker.wasm?url';
-import modernWasmUrl from 'jassub/dist/wasm/jassub-worker-modern.wasm?url';
+import { createJassub } from '@renderer/utils/jassub';
+import { logger } from '@shared/logger';
 import arialUrl from '/fonts/arial.ttf?url';
 import arialBoldUrl from '/fonts/ArialBold.ttf?url';
 import arialItalicUrl from '/fonts/ArialItalic.ttf?url';
@@ -21,10 +20,10 @@ import verdanaBoldUrl from '/fonts/VerdanaBold.ttf?url';
 import georgiaUrl from '/fonts/Georgia.ttf?url';
 import comicSansMsUrl from '/fonts/ComicSansMS.ttf?url';
 import segoeUiEmojiUrl from '/fonts/SegoeUIEmoji.ttf?url';
-import { logger } from '@shared/logger';
 
 const fontMapCache = new Map<string, Record<string, string>>();
 const remoteFontCache = new Map<string, string>();
+let subtitleLoadSeq = 0;
 
 const availableFonts: Record<string, string> = {
   arial: arialUrl,
@@ -155,6 +154,7 @@ export function initSubtitleRenderer(video: HTMLVideoElement, _container?: HTMLE
 
 export async function loadSubtitleTrack(track: SubtitleTrack): Promise<void> {
   if (!videoEl) return;
+  const seq = ++subtitleLoadSeq;
   removeSubtitleTrack();
   const assContent = convertToAss(track);
   if (!assContent) return;
@@ -176,6 +176,8 @@ export async function loadSubtitleTrack(track: SubtitleTrack): Promise<void> {
     `jassub fonts: ${mkvFonts.length} items, total=${mkvFonts.reduce((s, f) => s + f.length, 0)} bytes`
   );
 
+  if (seq !== subtitleLoadSeq) return;
+
   lastSubtitleData = {
     subContent: assContent,
     fonts: track.fonts || [],
@@ -183,20 +185,19 @@ export async function loadSubtitleTrack(track: SubtitleTrack): Promise<void> {
   };
 
   try {
-    jassubInstance = new JASSUBCtor({
+    const instance = await createJassub(JASSUBCtor, {
       video: videoEl,
       subContent: assContent,
-      workerUrl,
-      wasmUrl,
-      modernWasmUrl,
-      queryFonts: false,
       fonts: mkvFonts,
-      availableFonts: fontMap,
-      defaultFont: 'arial'
+      availableFonts: fontMap
     });
-
-    await jassubInstance.ready;
+    if (seq !== subtitleLoadSeq) {
+      instance.destroy();
+      return;
+    }
+    jassubInstance = instance;
   } catch (err) {
+    if (seq !== subtitleLoadSeq) return;
     logger.error('Subtitles', 'Failed to initialize JASSUB', err);
     jassubInstance = null;
   }

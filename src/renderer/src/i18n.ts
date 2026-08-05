@@ -1,8 +1,9 @@
 import { createI18n } from 'vue-i18n';
-import pl from './locales/pl';
-import en from './locales/en';
 
-function detectLocale(): string {
+type Locale = 'pl' | 'en';
+type LocaleModule = typeof import('./locales/en');
+
+function detectLocale(): Locale {
   try {
     const saved = localStorage.getItem('onda-locale');
     if (saved === 'pl' || saved === 'en') return saved;
@@ -14,9 +15,29 @@ function detectLocale(): string {
   return 'en';
 }
 
+// Static map keeps the imports analyzable for Vite (code-splits each locale).
+const localeLoaders: Record<Locale, () => Promise<LocaleModule>> = {
+  pl: () => import('./locales/pl'),
+  en: () => import('./locales/en')
+};
+
+const initialLocale = detectLocale();
+const initialMessages = await localeLoaders[initialLocale]();
+
 export const i18n = createI18n({
   legacy: false,
-  locale: detectLocale(),
+  locale: initialLocale,
   fallbackLocale: 'en',
-  messages: { pl, en }
+  messages: { [initialLocale]: initialMessages.default }
 });
+
+export async function loadLocaleMessages(loc: string): Promise<void> {
+  const current = i18n.global.getLocaleMessage(loc);
+  if (current && Object.keys(current).length) {
+    i18n.global.locale.value = loc;
+    return;
+  }
+  const mod = await localeLoaders[loc as Locale]();
+  i18n.global.setLocaleMessage(loc, mod.default);
+  i18n.global.locale.value = loc;
+}

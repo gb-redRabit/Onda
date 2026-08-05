@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, watch, computed } from 'vue';
+import { onMounted, onBeforeUnmount, watch, computed, defineAsyncComponent } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useI18n } from 'vue-i18n';
+import { loadLocaleMessages } from './i18n';
 import { useSettingsStore } from './stores/settings';
 import { usePlayerStore } from './stores/player';
 import { useUIStore } from './stores/ui';
@@ -15,11 +15,14 @@ import AppMenu from './components/layout/AppMenu.vue';
 import Sidebar from './components/layout/Sidebar.vue';
 import PlayerBar from './components/layout/PlayerBar.vue';
 import StatusBar from './components/layout/StatusBar.vue';
-import QueuePanel from './components/player/QueuePanel.vue';
-import Equalizer from './components/player/Equalizer.vue';
 import ErrorBoundary from './components/ErrorBoundary.vue';
-import CommandPalette from './components/CommandPalette.vue';
-import ToastNotification from './components/ToastNotification.vue';
+
+const QueuePanel = defineAsyncComponent(() => import('./components/player/QueuePanel.vue'));
+const Equalizer = defineAsyncComponent(() => import('./components/player/Equalizer.vue'));
+const CommandPalette = defineAsyncComponent(() => import('./components/CommandPalette.vue'));
+const ToastNotification = defineAsyncComponent(() =>
+  import('./components/ToastNotification.vue')
+);
 
 const settings = useSettingsStore();
 const player = usePlayerStore();
@@ -27,7 +30,6 @@ const ui = useUIStore();
 const library = useLibraryStore();
 const route = useRoute();
 const router = useRouter();
-const { locale } = useI18n();
 const audioPip = useAudioPiP();
 
 const isExplorerWindow = computed(() => route.name === 'explorer-window');
@@ -106,7 +108,7 @@ onMounted(async () => {
   document.addEventListener('mousedown', onGlobalMouseDown);
   await settings.load();
   applyTheme();
-  locale.value = settings.appearance.locale;
+  await loadLocaleMessages(settings.appearance.locale);
   library.loadFromDisk();
   if (!moduleManager.getActive()) {
     moduleManager.switchTo('home');
@@ -185,8 +187,8 @@ watch(() => settings.appearance.accentColor, applyTheme);
 watch(() => settings.appearance.fontSize, applyTheme);
 watch(
   () => settings.appearance.locale,
-  (loc) => {
-    locale.value = loc;
+  async (loc) => {
+    await loadLocaleMessages(loc);
     window.api?.send('pip:locale', loc);
     try {
       localStorage.setItem('onda-locale', loc);

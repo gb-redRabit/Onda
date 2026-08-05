@@ -1,10 +1,16 @@
 /// <reference types="vite/client" />
 
-import type { MusicbrainzRelease, IpcChannel, IpcChannels } from '@shared/types/ipc';
+import type {
+  MusicbrainzRelease,
+  IpcChannel,
+  IpcChannels,
+  AppInfo,
+  UpdaterState
+} from '@shared/types/ipc';
 
 interface OndaAPI {
   mediaServerUrl: string;
-  windowId: number;
+  getWindowId: () => Promise<number>;
   invoke: <C extends IpcChannel>(
     channel: C,
     ...args: IpcChannels[C]['args']
@@ -62,13 +68,46 @@ interface OndaAPI {
       availableFonts: Record<string, string>;
     } | null
   ) => Promise<void>;
-  checkFfmpeg: () => Promise<{ installed: boolean; version: string | null }>;
-  checkFfprobe: () => Promise<{ installed: boolean; version: string | null }>;
-  checkYtdlp: () => Promise<{ installed: boolean; version: string | null; path: string | null }>;
-  installFfmpeg: () => Promise<{ success: boolean; error?: string }>;
-  installYtdlp: () => Promise<{ success: boolean; error?: string }>;
-  checkMkvextract: () => Promise<{ installed: boolean; version: string | null }>;
-  installMkvextract: () => Promise<{ success: boolean; error?: string }>;
+  checkFfmpeg: () => Promise<{
+    installed: boolean;
+    version: string | null;
+    path: string | null;
+    managed: boolean;
+  }>;
+  checkFfprobe: () => Promise<{
+    installed: boolean;
+    version: string | null;
+    path: string | null;
+    managed: boolean;
+  }>;
+  checkYtdlp: () => Promise<{
+    installed: boolean;
+    version: string | null;
+    path: string | null;
+    managed: boolean;
+  }>;
+  installFfmpeg: () => Promise<{ success: boolean; error?: string; cancelled?: boolean }>;
+  installYtdlp: () => Promise<{ success: boolean; error?: string; cancelled?: boolean }>;
+  checkMkvextract: () => Promise<{
+    installed: boolean;
+    version: string | null;
+    path: string | null;
+    managed: boolean;
+  }>;
+  installMkvextract: () => Promise<{ success: boolean; error?: string; cancelled?: boolean }>;
+  getDependencyPaths: () => Promise<
+    Array<{ tool: string; path: string | null; managed: boolean; version: string | null }>
+  >;
+  checkUpdateYtdlp: () => Promise<{
+    updateAvailable: boolean;
+    current: string | null;
+    latest: string | null;
+  }>;
+  updateYtdlp: () => Promise<{ success: boolean; error?: string; cancelled?: boolean }>;
+  removeYtdlp: () => Promise<{ success: boolean; error?: string }>;
+  removeFfmpeg: () => Promise<{ success: boolean; error?: string }>;
+  removeMkvextract: () => Promise<{ success: boolean; error?: string }>;
+  cancelDepInstall: (tool: string) => Promise<boolean>;
   getCover: (filePath: string) => Promise<{ type: 'video' | 'image' | null; data: string | null }>;
   getDuration: (filePath: string) => Promise<number>;
   writeTags: (
@@ -95,6 +134,7 @@ interface OndaAPI {
     releaseId: string
   ) => Promise<{ success: boolean; data?: number[]; mime?: string; error?: string }>;
   getFilePath: (file: File) => string;
+  setAllowedRoots: (roots: string[]) => Promise<void>;
   listEmbeddedSubtitles: (
     filePath: string
   ) => Promise<Array<{ index: number; language: string; title: string; codec: string }>>;
@@ -132,6 +172,15 @@ interface OndaAPI {
     opacity?: number,
     position?: string
   ) => Promise<boolean>;
+  getAppInfo: () => Promise<AppInfo>;
+  getLicenses: () => Promise<Array<{ name: string; version?: string; license?: string }>>;
+  readLogs: (lines?: number) => Promise<string>;
+  clearLogs: () => Promise<boolean>;
+  downloadLog: () => Promise<{ success: boolean; canceled?: boolean; error?: string }>;
+  getUpdaterState: () => Promise<UpdaterState>;
+  checkForUpdates: () => Promise<{ checking: boolean }>;
+  downloadUpdate: () => Promise<boolean>;
+  installUpdate: () => Promise<void>;
 }
 
 declare global {

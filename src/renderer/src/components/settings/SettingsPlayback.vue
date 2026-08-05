@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { useSettingsStore } from '@renderer/stores/settings';
+import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
+import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
+import SettingsSectionTitle from '@renderer/components/settings/SettingsSectionTitle.vue';
+import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
+import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
 
 const settings = useSettingsStore();
 
 const toggles = [
   { key: 'gaplessPlayback' as const, labelKey: 'settings.gapless' },
   { key: 'normalization' as const, labelKey: 'settings.volumeNorm' },
-  { key: 'replayGain' as const, label: 'Replay Gain' },
+  { key: 'replayGain' as const, labelKey: 'settings.replayGain' },
   { key: 'autoPauseOnFocusLoss' as const, labelKey: 'settings.autoPause' },
   { key: 'rememberPosition' as const, labelKey: 'settings.rememberPos' },
   { key: 'cursorHide' as const, labelKey: 'settings.hideCursor' }
@@ -14,13 +19,11 @@ const toggles = [
 </script>
 
 <template>
-  <div class="space-y-6 max-w-2xl">
-    <h2 class="text-lg font-bold">{{ $t('settings.playbackSection') }}</h2>
-
-    <div>
-      <h3 class="text-sm font-semibold mb-3">
-        {{ $t('settings.defaultVolume') }} {{ Math.round(settings.playback.defaultVolume * 100) }}%
-      </h3>
+  <SettingsPanel :title="$t('settings.playbackSection')">
+    <SettingsCard>
+      <SettingsSectionTitle
+        :title="`${$t('settings.defaultVolume')} ${Math.round(settings.playback.defaultVolume * 100)}%`"
+      />
       <input
         type="range"
         min="0"
@@ -33,32 +36,27 @@ const toggles = [
           })
         "
       />
-    </div>
+    </SettingsCard>
 
-    <div class="space-y-1">
-      <div
-        v-for="opt in toggles"
-        :key="opt.key"
-        class="flex items-center justify-between py-2.5 border-b border-border-default"
-      >
-        <span class="text-sm">{{ opt.labelKey ? $t(opt.labelKey) : opt.label }}</span>
-        <button
-          class="relative w-10 h-5.5 rounded-full transition-colors"
-          :class="settings.playback[opt.key] ? 'bg-accent-base' : 'bg-border-subtle'"
-          @click="settings.updatePlayback({ [opt.key]: !settings.playback[opt.key] })"
+    <SettingsCard>
+      <div class="divide-y divide-border-default">
+        <SettingsRow
+          v-for="opt in toggles"
+          :key="opt.key"
+          :label="$t(opt.labelKey) ?? ''"
         >
-          <div
-            class="absolute top-0.75 w-4 h-4 rounded-full bg-white shadow transition-all"
-            :class="settings.playback[opt.key] ? 'left-5.5' : 'left-0.75'"
+          <SettingsToggle
+            :model-value="settings.playback[opt.key]"
+            @update:model-value="settings.updatePlayback({ [opt.key]: $event })"
           />
-        </button>
+        </SettingsRow>
       </div>
-    </div>
+    </SettingsCard>
 
-    <div v-if="settings.playback.cursorHide">
-      <h3 class="text-sm font-semibold mb-3">
-        {{ $t('settings.cursorHideTimeout') }} {{ settings.playback.cursorTimeout }}s
-      </h3>
+    <SettingsCard v-if="settings.playback.cursorHide">
+      <SettingsSectionTitle
+        :title="`${$t('settings.cursorHideTimeout')} ${settings.playback.cursorTimeout}s`"
+      />
       <input
         type="range"
         min="1"
@@ -72,12 +70,12 @@ const toggles = [
           })
         "
       />
-    </div>
+    </SettingsCard>
 
-    <div>
-      <h3 class="text-sm font-semibold mb-3">
-        {{ $t('settings.defaultSpeed') }} {{ settings.playback.playbackSpeed }}x
-      </h3>
+    <SettingsCard>
+      <SettingsSectionTitle
+        :title="`${$t('settings.defaultSpeed')} ${settings.playback.playbackSpeed}x`"
+      />
       <input
         type="range"
         min="0.2"
@@ -91,6 +89,6 @@ const toggles = [
           })
         "
       />
-    </div>
-  </div>
+    </SettingsCard>
+  </SettingsPanel>
 </template>

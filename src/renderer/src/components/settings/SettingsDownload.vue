@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { useSettingsStore } from '@renderer/stores/settings';
+import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
+import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
+import SettingsSectionTitle from '@renderer/components/settings/SettingsSectionTitle.vue';
 
 const settings = useSettingsStore();
 
@@ -8,12 +11,10 @@ const videoQualities = ['best', '1080p', '720p', '480p'] as const;
 </script>
 
 <template>
-  <div class="space-y-6 max-w-2xl">
-    <h2 class="text-lg font-bold">{{ $t('settings.downloadSection') }}</h2>
-
-    <div>
-      <h3 class="text-sm font-semibold mb-3">{{ $t('settings.defaultAudioFormat') }}</h3>
-      <div class="flex gap-2">
+  <SettingsPanel :title="$t('settings.downloadSection')">
+    <SettingsCard>
+      <SettingsSectionTitle :title="$t('settings.defaultAudioFormat')" />
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <button
           v-for="f in audioFormats"
           :key="f"
@@ -28,11 +29,11 @@ const videoQualities = ['best', '1080p', '720p', '480p'] as const;
           {{ f }}
         </button>
       </div>
-    </div>
+    </SettingsCard>
 
-    <div>
-      <h3 class="text-sm font-semibold mb-3">{{ $t('settings.defaultVideoQuality') }}</h3>
-      <div class="flex gap-2">
+    <SettingsCard>
+      <SettingsSectionTitle :title="$t('settings.defaultVideoQuality')" />
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <button
           v-for="q in videoQualities"
           :key="q"
@@ -47,26 +48,26 @@ const videoQualities = ['best', '1080p', '720p', '480p'] as const;
           {{ q }}
         </button>
       </div>
-    </div>
+    </SettingsCard>
 
-    <div>
-      <h3 class="text-sm font-semibold mb-3">{{ $t('settings.filenameTemplate') }}</h3>
+    <SettingsCard>
+      <SettingsSectionTitle :title="$t('settings.filenameTemplate')" />
       <input
         :value="settings.download.filenameTemplate"
-        class="w-full px-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none"
+        class="w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none focus:ring-2 focus:ring-accent-base/15 transition-all"
         @change="
           settings.updateDownload({ filenameTemplate: ($event.target as HTMLInputElement).value })
         "
       />
-      <p class="text-xs text-fg-faint mt-1">
+      <p class="text-xs text-fg-faint">
         {{ $t('settings.available') }} {'{title}'}, {'{artist}'}, {'{album}'}, {'{year}'}
       </p>
-    </div>
+    </SettingsCard>
 
-    <div>
-      <h3 class="text-sm font-semibold mb-3">
-        {{ $t('settings.maxConcurrent') }} {{ settings.download.maxConcurrent }}
-      </h3>
+    <SettingsCard>
+      <SettingsSectionTitle
+        :title="`${$t('settings.maxConcurrent')} ${settings.download.maxConcurrent}`"
+      />
       <input
         type="range"
         min="1"
@@ -79,6 +80,6 @@ const videoQualities = ['best', '1080p', '720p', '480p'] as const;
           })
         "
       />
-    </div>
-  </div>
+    </SettingsCard>
+  </SettingsPanel>
 </template>

@@ -1,42 +1,20 @@
 import http from 'http';
 import fs from 'fs';
 import crypto from 'crypto';
-import { normalize, isAbsolute, extname } from 'path';
+import { normalize, isAbsolute } from 'path';
 import { logger } from '../shared/logger';
-
-const MIME_TYPES: Record<string, string> = {
-  '.mp4': 'video/mp4',
-  '.webm': 'video/webm',
-  '.mkv': 'video/x-matroska',
-  '.avi': 'video/x-msvideo',
-  '.mov': 'video/quicktime',
-  '.m4v': 'video/mp4',
-  '.mp3': 'audio/mpeg',
-  '.flac': 'audio/flac',
-  '.wav': 'audio/wav',
-  '.ogg': 'audio/ogg',
-  '.m4a': 'audio/mp4',
-  '.wma': 'audio/x-ms-wma',
-  '.aac': 'audio/aac',
-  '.opus': 'audio/opus',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.png': 'image/png',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
-  '.bmp': 'image/bmp',
-  '.tiff': 'image/tiff'
-};
-
-function getContentType(filePath: string): string {
-  const ext = extname(filePath).toLowerCase();
-  return MIME_TYPES[ext] || 'application/octet-stream';
-}
+import { getMimeType } from '../shared/mime';
 
 export interface MediaServer {
   port: number;
   token: string;
   close: () => void;
+}
+
+let allowedRoots: string[] = [];
+
+export function setAllowedRoots(roots: string[]): void {
+  allowedRoots = roots.map(r => normalize(r));
 }
 
 function timingSafeEqualString(a: string, b: string): boolean {
@@ -114,9 +92,19 @@ export function createMediaServer(): Promise<MediaServer> {
           return;
         }
 
+        if (allowedRoots.length > 0) {
+          const isAllowed = allowedRoots.some(root => normalized.startsWith(root));
+          if (!isAllowed) {
+            logger.warn('media-server', `rejected path outside allowed roots: ${normalized}`);
+            res.writeHead(403);
+            res.end('forbidden');
+            return;
+          }
+        }
+
         const stat = await fs.promises.stat(normalized);
         const fileSize = stat.size;
-        const contentType = getContentType(normalized);
+        const contentType = getMimeType(normalized);
         const range = req.headers.range;
 
         res.setHeader('accept-ranges', 'bytes');

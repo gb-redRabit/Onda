@@ -3,8 +3,10 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import JASSUB from 'jassub';
 import wasmUrl from 'jassub/dist/wasm/jassub-worker.wasm?url';
 import modernWasmUrl from 'jassub/dist/wasm/jassub-worker-modern.wasm?url';
-import workerUrl from 'jassub/dist/worker/worker.js?url';
 import type { MkvFont } from '@renderer/types/subtitles';
+import { logger } from '@shared/logger';
+import { formatDuration } from '@shared/formatDuration';
+import { createJassub } from '@renderer/utils/jassub';
 
 interface PipSubtitleData {
   subContent: string;
@@ -41,6 +43,18 @@ let waitingForPlay = false;
 let jassub: InstanceType<typeof JASSUB> | null = null;
 let lastSubtitleData: PipSubtitleData | null = null;
 let cleanups: (() => void)[] = [];
+let subtitleLoadSeq = 0;
+
+function destroyJassub(): void {
+  if (jassub) {
+    try {
+      jassub.destroy();
+    } catch {
+      /* already broken */
+    }
+    jassub = null;
+  }
+}
 
 const videoFilter = computed(() => {
   const parts: string[] = [];
@@ -49,12 +63,7 @@ const videoFilter = computed(() => {
   return parts.length > 0 ? parts.join(' ') : 'none';
 });
 
-function fmt(t: number): string {
-  if (!t || !isFinite(t)) return '0:00';
-  const m = Math.floor(t / 60);
-  const s = Math.floor(t % 60);
-  return m + ':' + (s < 10 ? '0' : '') + s;
-}
+const fmt = formatDuration;
 
 function applyCssVars(vars: Record<string, string> | undefined) {
   if (!vars) return;
@@ -65,11 +74,9 @@ function applyCssVars(vars: Record<string, string> | undefined) {
 }
 
 async function loadSubtitle(data: PipSubtitleData) {
+  const seq = ++subtitleLoadSeq;
+  destroyJassub();
   try {
-    if (jassub) {
-      jassub.destroy();
-      jassub = null;
-    }
     const v = videoRef.value;
     if (!v) return;
     const fonts = data.fonts.map((f) => new Uint8Array(f.data));
@@ -77,6 +84,7 @@ async function loadSubtitle(data: PipSubtitleData) {
       fetch(wasmUrl).then((r) => r.arrayBuffer()),
       fetch(modernWasmUrl).then((r) => r.arrayBuffer())
     ]);
+    if (seq !== subtitleLoadSeq) return;
     const wasmDataUrl = 'data:application/wasm;base64,' + uint8ToBase64(new Uint8Array(wasmData));
     const modernWasmDataUrl =
       'data:application/wasm;base64,' + uint8ToBase64(new Uint8Array(modernWasmData));
@@ -88,26 +96,35 @@ async function loadSubtitle(data: PipSubtitleData) {
         availableFonts[k] = val;
       }
     }
-    jassub = new JASSUB({
+    if (seq !== subtitleLoadSeq) return;
+    const instance = await createJassub(JASSUB, {
       video: v,
       subContent: data.subContent,
-      workerUrl,
-      wasmUrl: wasmDataUrl,
-      modernWasmUrl: modernWasmDataUrl,
-      queryFonts: 'localandremote',
       fonts,
       availableFonts,
-      defaultFont: 'arial'
+      queryFonts: 'localandremote',
+      wasmUrlOverride: wasmDataUrl,
+      modernWasmUrlOverride: modernWasmDataUrl
     });
-    await jassub.ready;
-  } catch {}
+    if (seq !== subtitleLoadSeq) {
+      try {
+        instance.destroy();
+      } catch {
+        /* superseded */
+      }
+      return;
+    }
+    jassub = instance;
+  } catch (err) {
+    if (seq !== subtitleLoadSeq) return;
+    logger.error('pip-video', 'JASSUB init failed – subtitles disabled', err);
+    destroyJassub();
+  }
 }
 
 function clearSubtitle() {
-  if (jassub) {
-    jassub.destroy();
-    jassub = null;
-  }
+  subtitleLoadSeq++;
+  destroyJassub();
 }
 
 function toggleSubtitles() {
@@ -167,6 +184,7 @@ onMounted(() => {
     pendingStart = start || 0;
     waitingForPlay = true;
     lastSubtitleData = null;
+    clearSubtitle();
     if (videoRef.value) videoRef.value.src = src;
   });
   cleanups.push(c1);

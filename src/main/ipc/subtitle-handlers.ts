@@ -2,7 +2,7 @@ import { ipcMain } from 'electron';
 import { readdir, readFile, mkdir, unlink, rm, stat } from 'fs/promises';
 import { join, extname, basename, dirname } from 'path';
 import { getTempDir } from './cover-cache';
-import { getMkvExtractPath } from './dependency-handlers';
+import { resolveBin } from '../binaries';
 import { logger } from '../../shared/logger';
 import { runCommand } from '../utils/exec';
 
@@ -18,8 +18,9 @@ export function registerSubtitleHandlers(): void {
       filePath: string
     ): Promise<Array<{ index: number; language: string; title: string; codec: string }>> => {
       try {
+        const ffprobe = (await resolveBin('ffprobe')) || 'ffprobe';
         const stdout = await runCommand(
-          'ffprobe',
+          ffprobe,
           [
             '-v',
             'quiet',
@@ -40,7 +41,8 @@ export function registerSubtitleHandlers(): void {
           title: ((s.tags as Record<string, string>)?.title || '') as string,
           codec: (s.codec_name as string) || 'unknown'
         }));
-      } catch {
+      } catch (err) {
+        logger.warn('subtitles', `listEmbedded ffprobe failed for ${filePath}`, err);
         return [];
       }
     }
@@ -56,8 +58,9 @@ export function registerSubtitleHandlers(): void {
       try {
         await mkdir(getTempDir(), { recursive: true });
         // detect codec to choose best output format
+        const ffprobe = (await resolveBin('ffprobe')) || 'ffprobe';
         const stdout = await runCommand(
-          'ffprobe',
+          ffprobe,
           [
             '-v',
             'quiet',
@@ -75,12 +78,13 @@ export function registerSubtitleHandlers(): void {
         const TEXT_CODECS = new Set(['subrip', 'ass', 'ssa', 'webvtt', 'mov_text']);
         const ext = codec === 'ass' || codec === 'ssa' ? '.ass' : '.srt';
         const outPath = join(getTempDir(), `sub_${uniqueId()}${ext}`);
+        const ffmpeg = (await resolveBin('ffmpeg')) || 'ffmpeg';
 
         if (TEXT_CODECS.has(codec)) {
           // text-based codec: try extract with native format first
           try {
             await runCommand(
-              'ffmpeg',
+              ffmpeg,
               ['-v', 'error', '-i', filePath, '-map', `0:${streamIndex}`, '-c:s', 'copy', '-y', outPath],
               { timeout: 30000 }
             );
@@ -93,7 +97,7 @@ export function registerSubtitleHandlers(): void {
             // copy failed, try transcoding to srt
             const srtPath = join(getTempDir(), `sub_${uniqueId()}.srt`);
             await runCommand(
-              'ffmpeg',
+              ffmpeg,
               ['-v', 'error', '-i', filePath, '-map', `0:${streamIndex}`, '-c:s', 'srt', '-y', srtPath],
               { timeout: 30000 }
             );
@@ -105,7 +109,7 @@ export function registerSubtitleHandlers(): void {
         } else {
           // binary codec (pgs, dvd_subtitle, etc): transcode to srt
           await runCommand(
-            'ffmpeg',
+            ffmpeg,
             ['-v', 'error', '-i', filePath, '-map', `0:${streamIndex}`, '-c:s', 'srt', '-y', outPath],
             { timeout: 30000 }
           );
@@ -184,8 +188,9 @@ export function registerSubtitleHandlers(): void {
         // list attachments via ffprobe
         let attachmentStreams: Array<{ index: number; filename: string }> = [];
         try {
+          const ffprobe = (await resolveBin('ffprobe')) || 'ffprobe';
           const stdout = await runCommand(
-            'ffprobe',
+            ffprobe,
             [
               '-v',
               'quiet',
@@ -216,7 +221,7 @@ export function registerSubtitleHandlers(): void {
         // try mkvextract first
         let bin: string | null = null;
         try {
-          bin = await getMkvExtractPath();
+          bin = await resolveBin('mkvextract');
         } catch (e) {
           logger.warn('subtitles', 'mkvextract unavailable', e);
         }
@@ -243,9 +248,10 @@ export function registerSubtitleHandlers(): void {
 
         if (!allOk) {
           // fallback: dump all attachments via ffmpeg
+          const ffmpeg = (await resolveBin('ffmpeg')) || 'ffmpeg';
           try {
             await runCommand(
-              'ffmpeg',
+              ffmpeg,
               ['-v', 'error', '-y', '-dump_attachment', '', '-i', filePath, '-f', 'null', '-'],
               { timeout: 30000, cwd: dumpDir }
             );

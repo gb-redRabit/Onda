@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed, triggerRef } from 'vue';
+import { ref, computed, triggerRef, shallowRef } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import type { SubtitleTrack, MkvFont } from '@renderer/types/subtitles';
 import { audioEngine } from '@renderer/modules/audioEngine';
@@ -33,7 +33,7 @@ export const usePlayerStore = defineStore('player', () => {
   const pendingFullscreen = ref(false);
   const resumePrompt = ref<{ path: string; position: number } | null>(null);
   const pendingQueue = ref<MediaFile[]>([]);
-  const coverCache = ref<Record<string, CoverResult>>({});
+  const coverCache = shallowRef<Record<string, CoverResult>>({});
 
   const favorites = ref<string[]>([]);
   const subtitleTracks = ref<SubtitleTrack[]>([]);
@@ -238,17 +238,30 @@ export const usePlayerStore = defineStore('player', () => {
     }, 0);
   }
 
+  const COVER_CACHE_MAX = 100;
+
+  function evictCoverCache(): void {
+    const keys = Object.keys(coverCache.value);
+    if (keys.length <= COVER_CACHE_MAX) return;
+    const excess = keys.length - COVER_CACHE_MAX;
+    for (let i = 0; i < excess; i++) {
+      delete coverCache.value[keys[i]];
+    }
+  }
+
   async function doLoadCover(filePath: string): Promise<void> {
     if (filePath in coverCache.value) return;
     coverCache.value[filePath] = { type: null, data: null };
     const cover = (await window.api?.getCover(filePath)) ?? { type: null, data: null };
     if (cover.data) {
       coverCache.value[filePath] = cover;
+      evictCoverCache();
       triggerRef(coverCache);
       return;
     }
     const frame = await captureVideoFrame(filePath);
     coverCache.value[filePath] = frame;
+    evictCoverCache();
     triggerRef(coverCache);
   }
 

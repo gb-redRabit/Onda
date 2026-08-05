@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick, reactive } from 'vue';
-import { useTimeoutFn, useIntervalFn, useRafFn, useDebounceFn } from '@vueuse/core';
 import { ChevronLeft, ChevronRight } from '@lucide/vue';
 import type { FileItem } from '@renderer/types/explorer';
 import ImageViewerThumbnails from './ImageViewerThumbnails.vue';
@@ -8,6 +7,7 @@ import ImageViewerToolbar from './ImageViewerToolbar.vue';
 import { logger } from '@shared/logger';
 import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
 import { computeEnterStart, computeOldExit } from '@renderer/utils/imageTransitions';
+import { useTimeoutFn, useIntervalFn, useRafFn, useDebounceFn } from '@renderer/composables/useTimers';
 
 const props = defineProps<{
   files: FileItem[];
@@ -60,7 +60,7 @@ const progressStep = computed(() => 100 / (slideshowInterval.value / 16));
 
 const { start: startTransition, stop: stopTransition } = useTimeoutFn(
   endTransition,
-  transitionDuration
+  transitionDuration.value
 );
 
 const { start: startIdle, stop: stopIdle } = useTimeoutFn(() => {
@@ -86,8 +86,7 @@ const { pause: pauseProgress, resume: resumeProgress } = useIntervalFn(
   { immediate: false }
 );
 
-const { pause: pauseKen, resume: resumeKen } = useRafFn(
-  () => {
+const { pause: pauseKen, resume: resumeKen } = useRafFn(() => {
     if (!kenBurns.value || !slideshowActive.value) {
       pauseKen();
       return;
@@ -97,9 +96,7 @@ const { pause: pauseKen, resume: resumeKen } = useRafFn(
     kenStyle.scale = 1 + t * 0.15;
     kenStyle.translateX = t * 2;
     kenStyle.translateY = t * 1;
-  },
-  { immediate: false }
-);
+  });
 
 const debouncedZoom = useDebounceFn((delta: number) => {
   if (delta < 0) zoomIn();
@@ -352,7 +349,7 @@ const { start: scheduleAdvance, stop: cancelAdvance } = useTimeoutFn(() => {
   } else {
     stopSlideshow();
   }
-}, slideshowInterval);
+}, slideshowInterval.value);
 
 function runProgress() {
   pauseProgress();

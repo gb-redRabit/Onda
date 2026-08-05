@@ -28,18 +28,16 @@
     "build:linux": "npm run build && electron-builder --linux"
   },
   "dependencies": {
-    "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "@lucide/vue": "^1.24.0",
     "@tanstack/vue-virtual": "^3.13.32",
-    "@vueuse/core": "^14.3.0",
     "electron-store": "^11.0.2",
+    "electron-updater": "^6.8.9",
     "jassub": "^2.5.7",
     "lfa-ponyfill": "^1.1.1",
     "music-metadata": "^11.14.0",
     "node-id3": "^0.2.9",
     "pinia": "^3.0.4",
-    "pinia-plugin-persistedstate": "^4.7.1",
     "sharp": "^0.35.3",
     "vue-i18n": "^11.4.7",
     "vue-router": "^4.6.4"

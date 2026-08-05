@@ -17,8 +17,13 @@ import { SharpService } from '../utils/sharp';
 import { errMsg } from '../../shared/helpers';
 import { logger } from '../../shared/logger';
 import { runCommand } from '../utils/exec';
+import { resolveBin } from '../binaries';
+import { setAllowedRoots } from '../media-server';
 
 export function registerMediaHandlers(): void {
+  ipcMain.handle('media:setAllowedRoots', (_event, roots: string[]) => {
+    setAllowedRoots(roots);
+  });
   ipcMain.handle(
     'media:getThumbnail',
     async (_event, filePath: string, maxSize: number = 320): Promise<string | null> => {
@@ -36,24 +41,30 @@ export function registerMediaHandlers(): void {
         }
 
         let buf: Buffer | null = null;
+        const ext = extname(filePath).toLowerCase();
+        const isAudio = AUDIO_EXTS.includes(ext);
 
-        try {
-          const thumb = await nativeImage.createThumbnailFromPath(filePath, {
-            width: maxSize,
-            height: maxSize
-          });
-          if (!thumb.isEmpty()) {
-            buf = thumb.toJPEG(85);
-            await mkdir(cacheDir, { recursive: true }).catch(() => {});
-            await writeFile(cacheFile, buf);
+        if (!isAudio) {
+          try {
+            const thumb = await nativeImage.createThumbnailFromPath(filePath, {
+              width: maxSize,
+              height: maxSize
+            });
+            if (!thumb.isEmpty()) {
+              buf = thumb.toJPEG(85);
+              await mkdir(cacheDir, { recursive: true }).catch(() => {});
+              await writeFile(cacheFile, buf);
+            }
+          } catch (e) {
+            logger.info('media', `native thumbnail failed for ${filePath}`, e);
           }
-        } catch (e) {
-          logger.warn('media', `native thumbnail failed for ${filePath}`, e);
+        }
+
+        if (!buf) {
           buf = await SharpService.getThumbnail(filePath, maxSize);
         }
 
         if (!buf) {
-          const ext = extname(filePath).toLowerCase();
           if (AUDIO_EXTS.includes(ext) || VIDEO_EXTS.includes(ext)) {
             const cover = await extractAndCacheCover(filePath);
             if (cover.type === 'image' && cover.data) {
@@ -131,18 +142,34 @@ export function registerMediaHandlers(): void {
 
             try {
               let buf: Buffer | null = null;
-              try {
-                const thumb = await nativeImage.createThumbnailFromPath(filePath, {
-                  width: maxSize,
-                  height: maxSize
-                });
-                if (!thumb.isEmpty()) {
-                  buf = thumb.toJPEG(85);
-                  await writeFile(cacheFile, buf);
+              const ext = extname(filePath).toLowerCase();
+              const isAudio = AUDIO_EXTS.includes(ext);
+
+              if (!isAudio) {
+                try {
+                  const thumb = await nativeImage.createThumbnailFromPath(filePath, {
+                    width: maxSize,
+                    height: maxSize
+                  });
+                  if (!thumb.isEmpty()) {
+                    buf = thumb.toJPEG(85);
+                    await writeFile(cacheFile, buf);
+                  }
+                } catch (e) {
+                  logger.info('media', `native thumbnail failed for ${filePath}`, e);
                 }
-              } catch (e) {
-                logger.warn('media', `native thumbnail failed for ${filePath}`, e);
+              }
+
+              if (!buf) {
                 buf = await SharpService.getThumbnail(filePath, maxSize);
+              }
+
+              if (!buf && isAudio) {
+                const cover = await extractAndCacheCover(filePath);
+                if (cover.type === 'image' && cover.data) {
+                  const b64 = cover.data.replace(/^data:image\/\w+;base64,/, '');
+                  buf = Buffer.from(b64, 'base64');
+                }
               }
 
               if (buf) {
@@ -284,8 +311,9 @@ export function registerMediaHandlers(): void {
     'media:checkAudioCodec',
     async (_event, filePath: string): Promise<{ codec: string; supported: boolean } | null> => {
       try {
+        const ffprobe = (await resolveBin('ffprobe')) || 'ffprobe';
         const stdout = await runCommand(
-          'ffprobe',
+          ffprobe,
           [
             '-v',
             'quiet',
@@ -344,8 +372,9 @@ export function registerMediaHandlers(): void {
       }
 
       try {
+        const ffmpeg = (await resolveBin('ffmpeg')) || 'ffmpeg';
         await runCommand(
-          'ffmpeg',
+          ffmpeg,
           [
             '-v',
             'error',
@@ -390,8 +419,9 @@ export function registerMediaHandlers(): void {
       }
 
       try {
+        const ffmpeg = (await resolveBin('ffmpeg')) || 'ffmpeg';
         await runCommand(
-          'ffmpeg',
+          ffmpeg,
           [
             '-v',
             'error',

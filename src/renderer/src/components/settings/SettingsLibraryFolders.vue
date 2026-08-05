@@ -3,6 +3,9 @@ import { computed } from 'vue';
 import { useLibraryStore } from '@renderer/stores/library';
 import { useUIStore } from '@renderer/stores/ui';
 import { useI18n } from 'vue-i18n';
+import { FolderPlus, FolderSearch } from '@lucide/vue';
+import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
+import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
 
 const library = useLibraryStore();
 const ui = useUIStore();
@@ -43,24 +46,20 @@ function folderIcon(type: string): string {
 </script>
 
 <template>
-  <div class="space-y-6 max-w-2xl">
-    <h2 class="text-lg font-bold">{{ $t('settings.libTitle') }}</h2>
-    <p class="text-xs text-fg-faint mb-4">
-      {{ $t('settings.libDesc') }}
-    </p>
-
+  <SettingsPanel :title="$t('settings.libTitle')" :description="$t('settings.libDesc')">
     <div class="flex items-center gap-3">
       <button
-        class="px-4 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm font-medium hover:bg-bg-hover transition-colors"
+        class="flex items-center gap-2 px-4 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm font-medium hover:bg-bg-hover transition-colors"
         @click="addFolder"
       >
-        {{ $t('settings.libAddFolder') }}
+        <FolderPlus :size="16" />{{ $t('settings.libAddFolder') }}
       </button>
       <button
-        class="px-4 py-2 rounded-xl bg-accent-base text-white text-sm font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
+        class="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent-base text-white text-sm font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
         :disabled="library.isScanning || library.folders.length === 0"
         @click="scan"
       >
+        <FolderSearch :size="16" />
         {{ library.isScanning ? $t('settings.libScanning') : $t('settings.libScanNow') }}
       </button>
     </div>
@@ -69,11 +68,11 @@ function folderIcon(type: string): string {
       {{ $t('settings.libEmpty') }}
     </div>
 
-    <div v-else class="space-y-2">
+    <SettingsCard v-else :padded="false">
       <div
         v-for="entry in folderEntries"
         :key="entry.path"
-        class="flex items-center justify-between p-3 rounded-xl bg-bg-elevated border border-border-default"
+        class="flex items-center justify-between px-4 py-3 border-b border-border-default last:border-b-0"
       >
         <div class="flex items-center gap-3 min-w-0">
           <span class="text-lg">{{ folderIcon(entry.type) }}</span>
@@ -102,7 +101,7 @@ function folderIcon(type: string): string {
           {{ $t('settings.libRemove') }}
         </button>
       </div>
-    </div>
+    </SettingsCard>
 
     <div v-if="library.isScanning" class="text-xs text-fg-faint">
       {{ library.scanProgress.current }} / {{ library.scanProgress.total }} folderów...
@@ -115,5 +114,5 @@ function folderIcon(type: string): string {
       {{ $t('settings.libAudio').toLowerCase() }}, {{ library.videoCount }}
       {{ $t('settings.libVideo').toLowerCase() }})
     </div>
-  </div>
+  </SettingsPanel>
 </template>

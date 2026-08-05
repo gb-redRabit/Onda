@@ -86,6 +86,7 @@ router.beforeEach(async (to) => {
   if (currentActive === 'player' && moduleId !== 'player') {
     const player = usePlayerStore();
     if (player.currentTrack?.type === 'audio') {
+      if (!moduleManager.has(moduleId)) return true;
       const target = moduleManager.get(moduleId);
       if (!target.isActive()) {
         target.activate();

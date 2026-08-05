@@ -4,6 +4,7 @@ import { mkdir, readFile, writeFile, access } from 'fs/promises';
 import { createHash } from 'crypto';
 import os from 'os';
 import { logger } from '../../shared/logger';
+import { IMAGE_EXTS as SHARED_IMAGE_EXTS } from '../../shared/constants';
 
 const CACHE_DIR = join(os.tmpdir(), 'onda', 'thumbs');
 
@@ -18,7 +19,7 @@ function cachePath(filePath: string, maxSize: number, ext: string = 'jpg'): stri
   return join(CACHE_DIR, `${hash}.${ext}`);
 }
 
-const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tiff', '.avif']);
+const IMAGE_EXTS = new Set(SHARED_IMAGE_EXTS);
 
 export class SharpService {
   static async getThumbnail(filePath: string, maxSize: number = 320): Promise<Buffer | null> {

@@ -11,14 +11,11 @@ export interface YtDlpEntry {
   thumbnails?: Array<{ url?: string; width?: number }>;
 }
 
+import { formatDuration as formatDurationBase } from '../../shared/formatDuration';
+
 export function formatDuration(seconds?: number): string | undefined {
-  if (!seconds || seconds <= 0) return undefined;
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  const mm = String(m).padStart(2, '0');
-  const ss = String(s).padStart(2, '0');
-  return h > 0 ? `${h}:${mm}:${ss}` : `${m}:${ss}`;
+  const formatted = formatDurationBase(seconds, '');
+  return formatted === '' ? undefined : formatted;
 }
 
 export function formatUploadDate(date: string | undefined): string {

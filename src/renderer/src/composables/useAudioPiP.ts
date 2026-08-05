@@ -259,6 +259,14 @@ export function useAudioPiP() {
   onMounted(() => {
     if (!window.api) return;
 
+    const removeClosed = window.api.on('audio-pip:closed', () => {
+      isActive.value = false;
+      stopTimeTracking();
+      stopVizTracking();
+      stopCoverRetry();
+    });
+    cleanups.push(removeClosed);
+
     const removeAction = window.api.on('audio-pip:action', (action: unknown) => {
       handleAction(action as string);
     });

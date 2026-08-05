@@ -9,6 +9,10 @@ import { registerIPC } from './ipc/handlers';
 import { pipManager } from './pip-manager';
 import { audioPipManager } from './audio-pip-manager';
 import { logger } from '../shared/logger';
+import { getMediaUrlArgs, setMediaServerUrl } from './media-url-args';
+import { setupFileLogging } from './log-file';
+import { initAutoUpdater } from './updater';
+import { configureAutoCheck } from './updater-scheduler';
 
 let mainWindow: BrowserWindow | null = null;
 let splashWindow: BrowserWindow | null = null;
@@ -33,7 +37,8 @@ function createWindow(): BrowserWindow {
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: true
+      webSecurity: true,
+      additionalArguments: getMediaUrlArgs()
     }
   });
 
@@ -105,7 +110,8 @@ function createChildWindow(
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: true
+      webSecurity: true,
+      additionalArguments: getMediaUrlArgs()
     }
   });
 
@@ -224,6 +230,8 @@ function forceCloseSplash(): void {
 app.whenReady().then(async () => {
   electronApp.setAppUserModelId('com.onda.app');
 
+  setupFileLogging();
+
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window);
   });
@@ -233,15 +241,10 @@ app.whenReady().then(async () => {
   registerIPC();
 
   const mediaServer = await createMediaServer();
-  const mediaServerUrl = `http://127.0.0.1:${mediaServer.port}/${mediaServer.token}`;
+  setMediaServerUrl(`http://127.0.0.1:${mediaServer.port}/${mediaServer.token}`);
 
-  ipcMain.on('media:getServerUrlSync', (event) => {
-    event.returnValue = mediaServerUrl;
-  });
-
-  ipcMain.on('window:idSync', (event) => {
-    const id = BrowserWindow.fromWebContents(event.sender)?.id ?? 0;
-    event.returnValue = id;
+  ipcMain.handle('window:id', (event) => {
+    return BrowserWindow.fromWebContents(event.sender)?.id ?? 0;
   });
 
   ipcMain.handle('app:quit', () => {
@@ -258,6 +261,8 @@ app.whenReady().then(async () => {
 
   mainWindow = createWindow();
   mainWindow.webContents.on('did-finish-load', onMainReady);
+  initAutoUpdater(() => mainWindow?.webContents ?? null);
+  configureAutoCheck();
   pipManager.setMainWindow(mainWindow);
   pipManager.init();
   audioPipManager.setMainWindow(mainWindow);

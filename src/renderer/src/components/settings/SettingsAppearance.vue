@@ -1,8 +1,41 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { loadLocaleMessages } from '@renderer/i18n';
 import { RotateCcw, PanelLeftOpen, PanelRightOpen } from '@lucide/vue';
+import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
+import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
+import SettingsSectionTitle from '@renderer/components/settings/SettingsSectionTitle.vue';
+import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
+import SettingsPositionGrid from '@renderer/components/settings/SettingsPositionGrid.vue';
 
 const settings = useSettingsStore();
+const { t } = useI18n();
+
+const sidebarPositionOptions = computed(() =>
+  (['left', 'right'] as const).map((pos) => ({
+    id: pos,
+    label: t(`settings.${pos}`),
+    icon: pos === 'left' ? PanelLeftOpen : PanelRightOpen
+  }))
+);
+
+const languages = [
+  { id: 'pl', label: 'Polski', native: 'Polski', flag: '🇵🇱' },
+  { id: 'en', label: 'English', native: 'English', flag: '🇬🇧' }
+];
+
+async function setLocale(loc: string) {
+  if (loc !== 'pl' && loc !== 'en') return;
+  await loadLocaleMessages(loc);
+  settings.updateAppearance({ locale: loc });
+  try {
+    localStorage.setItem('onda-locale', loc);
+  } catch {
+    /* noop */
+  }
+}
 
 const themes: {
   id: typeof settings.appearance.theme;
@@ -30,20 +63,20 @@ const accentColors = [
 </script>
 
 <template>
-  <div class="space-y-8 max-w-2xl">
-    <div class="flex items-center justify-between">
-      <h2 class="text-lg font-bold">{{ $t('settings.appearanceSection') }}</h2>
+  <SettingsPanel :title="$t('settings.appearanceSection')">
+    <template #actions>
       <button
-        class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover transition-colors"
+        class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover hover:text-fg-base transition-colors"
+        :title="$t('settings.reset')"
         @click="settings.resetToDefaults"
       >
         <RotateCcw :size="14" />
       </button>
-    </div>
+    </template>
 
-    <div>
-      <h3 class="text-sm font-semibold mb-3">{{ $t('settings.theme') }}</h3>
-      <div class="grid grid-cols-4 gap-3">
+    <SettingsCard>
+      <SettingsSectionTitle :title="$t('settings.theme')" />
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
         <button
           v-for="th in themes"
           :key="th.id"
@@ -64,11 +97,34 @@ const accentColors = [
           <span class="text-xs text-fg-muted">{{ th.labelKey ? $t(th.labelKey) : th.label }}</span>
         </button>
       </div>
-    </div>
+    </SettingsCard>
 
-    <div>
-      <h3 class="text-sm font-semibold mb-3">{{ $t('settings.accentColor') }}</h3>
-      <div class="flex gap-2">
+    <SettingsCard>
+      <SettingsSectionTitle :title="$t('settings.language')" />
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <button
+          v-for="lang in languages"
+          :key="lang.id"
+          class="flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left"
+          :class="
+            settings.appearance.locale === lang.id
+              ? 'border-accent-base shadow-lg shadow-accent-base/20'
+              : 'border-border-default hover:border-border-subtle'
+          "
+          @click="setLocale(lang.id)"
+        >
+          <span class="text-2xl">{{ lang.flag }}</span>
+          <div>
+            <div class="text-sm font-medium">{{ lang.native }}</div>
+            <div class="text-xs text-fg-muted">{{ lang.label }}</div>
+          </div>
+        </button>
+      </div>
+    </SettingsCard>
+
+    <SettingsCard>
+      <SettingsSectionTitle :title="$t('settings.accentColor')" />
+      <div class="flex flex-wrap gap-2">
         <button
           v-for="c in accentColors"
           :key="c"
@@ -80,12 +136,12 @@ const accentColors = [
           @click="settings.updateAppearance({ accentColor: c })"
         />
       </div>
-    </div>
+    </SettingsCard>
 
-    <div>
-      <h3 class="text-sm font-semibold mb-3">
-        {{ $t('settings.fontSize') }}: {{ settings.appearance.fontSize }}px
-      </h3>
+    <SettingsCard>
+      <SettingsSectionTitle
+        :title="`${$t('settings.fontSize')}: ${settings.appearance.fontSize}px`"
+      />
       <input
         type="range"
         min="12"
@@ -98,11 +154,11 @@ const accentColors = [
           })
         "
       />
-    </div>
+    </SettingsCard>
 
-    <div>
-      <h3 class="text-sm font-semibold mb-3">{{ $t('settings.density') }}</h3>
-      <div class="flex gap-2">
+    <SettingsCard>
+      <SettingsSectionTitle :title="$t('settings.density')" />
+      <div class="flex flex-wrap gap-2">
         <button
           v-for="d in ['compact', 'comfortable', 'spacious'] as const"
           :key="d"
@@ -117,47 +173,22 @@ const accentColors = [
           {{ $t('settings.' + d) }}
         </button>
       </div>
-    </div>
+    </SettingsCard>
 
-    <div>
-      <h3 class="text-sm font-semibold mb-3">{{ $t('settings.sidebarPosition') }}</h3>
-      <div
-        class="w-48 h-36 rounded-2xl bg-bg-elevated border-2 border-border-default p-2 relative select-none"
-      >
-        <div class="grid grid-cols-2 gap-2 w-full h-full">
-          <button
-            v-for="pos in ['left', 'right'] as const"
-            :key="pos"
-            class="rounded-xl text-[11px] font-medium transition-all border-2 flex flex-col items-center justify-center gap-1"
-            :class="
-              settings.appearance.sidebarPosition === pos
-                ? 'border-accent-base bg-accent-ghost text-accent-base shadow-sm shadow-accent-base/20'
-                : 'border-transparent text-fg-faint hover:bg-bg-hover hover:text-fg-muted'
-            "
-            @click="settings.updateAppearance({ sidebarPosition: pos })"
-          >
-            <component :is="pos === 'left' ? PanelLeftOpen : PanelRightOpen" :size="18" />
-            <span>{{ $t('settings.' + pos) }}</span>
-          </button>
-        </div>
-        <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
-          <div class="w-5 h-5 rounded border-2 border-dashed border-fg-faint/20" />
-        </div>
-      </div>
-      <p class="text-[11px] text-fg-faint mt-2">
-        {{ $t('settings.selected') }}
-        <span class="text-fg-base font-medium">{{
-          $t('settings.' + settings.appearance.sidebarPosition)
-        }}</span>
-      </p>
-    </div>
+    <SettingsCard>
+      <SettingsSectionTitle :title="$t('settings.sidebarPosition')" />
+      <SettingsPositionGrid
+        :model-value="settings.appearance.sidebarPosition"
+        :options="sidebarPositionOptions"
+        :selected-label="t(settings.appearance.sidebarPosition)"
+        @update:model-value="settings.updateAppearance({ sidebarPosition: $event as 'left' | 'right' })"
+      />
+    </SettingsCard>
 
-    <div>
-      <h3 class="text-sm font-semibold mb-3">{{ $t('settings.sidebarSections') }}</h3>
-      <div class="space-y-2">
-        <label
-          class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-bg-hover cursor-pointer transition-colors"
-        >
+    <SettingsCard>
+      <SettingsSectionTitle :title="$t('settings.sidebarSections')" />
+      <div class="divide-y divide-border-default">
+        <SettingsRow :label="$t('library.playlists')">
           <input
             type="checkbox"
             :checked="settings.appearance.showPlaylists"
@@ -168,11 +199,8 @@ const accentColors = [
               })
             "
           />
-          <span class="text-sm">{{ $t('library.playlists') }}</span>
-        </label>
-        <label
-          class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-bg-hover cursor-pointer transition-colors"
-        >
+        </SettingsRow>
+        <SettingsRow :label="$t('library.albums')">
           <input
             type="checkbox"
             :checked="settings.appearance.showAlbums"
@@ -181,11 +209,8 @@ const accentColors = [
               settings.updateAppearance({ showAlbums: ($event.target as HTMLInputElement).checked })
             "
           />
-          <span class="text-sm">{{ $t('library.albums') }}</span>
-        </label>
-        <label
-          class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-bg-hover cursor-pointer transition-colors"
-        >
+        </SettingsRow>
+        <SettingsRow :label="$t('settings.sidebarCollapsed')">
           <input
             type="checkbox"
             :checked="settings.appearance.sidebarCollapsed"
@@ -196,9 +221,8 @@ const accentColors = [
               })
             "
           />
-          <span class="text-sm">{{ $t('settings.sidebarCollapsed') }}</span>
-        </label>
+        </SettingsRow>
       </div>
-    </div>
-  </div>
+    </SettingsCard>
+  </SettingsPanel>
 </template>

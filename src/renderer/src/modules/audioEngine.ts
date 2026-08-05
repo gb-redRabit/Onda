@@ -14,15 +14,12 @@ class AudioEngine {
   private sourceNode: MediaElementAudioSourceNode | null = null;
   private gainNode: GainNode | null = null;
   private eqFilters: BiquadFilterNode[] = [];
-  private rafId: number | null = null;
   private initialized = false;
   private eqChainBuilt = false;
   private secondaryAudioEl: HTMLAudioElement | null = null;
   private secondarySourceNode: MediaElementAudioSourceNode | null = null;
   private secondaryAudioOffset = 0;
   private savedPositions = new Map<string, number>();
-  private visibilityHandler: (() => void) | null = null;
-
   private ensureAudioContext(): void {
     if (this.audioCtx) return;
     this.audioCtx = new AudioContext();
@@ -61,42 +58,26 @@ class AudioEngine {
 
   private connectAudio(el: HTMLAudioElement): void {
     this.ensureAudioContext();
-
-    if (!this.eqChainBuilt) {
-      if (!this.sourceNode) {
-        this.sourceNode = this.audioCtx!.createMediaElementSource(el);
-      } else {
-        try {
-          this.sourceNode.disconnect();
-        } catch (e) {
-          logger.warn('audioEngine', 'disconnect source node failed', e);
-        }
-      }
-      this.ensureEqChain();
+    if (!this.sourceNode) {
+      this.sourceNode = this.audioCtx!.createMediaElementSource(el);
     } else {
-      if (!this.sourceNode) {
-        this.sourceNode = this.audioCtx!.createMediaElementSource(el);
-        const firstFilter = this.eqFilters[0];
-        if (firstFilter) {
-          this.sourceNode.connect(firstFilter);
-        } else {
-          this.sourceNode.connect(this.gainNode!);
-        }
-      } else {
-        try {
-          this.sourceNode.disconnect();
-        } catch (e) {
-          logger.warn('audioEngine', 'disconnect source node failed', e);
-        }
-        const firstFilter = this.eqFilters[0];
-        if (firstFilter) {
-          this.sourceNode.connect(firstFilter);
-        } else {
-          this.sourceNode.connect(this.gainNode!);
-        }
+      try {
+        this.sourceNode.disconnect();
+      } catch {
+        // ok
       }
     }
-
+    
+    if (!this.eqChainBuilt) {
+      this.ensureEqChain();
+    } else {
+      const firstFilter = this.eqFilters[0];
+      if (firstFilter) {
+        this.sourceNode.connect(firstFilter);
+      } else {
+        this.sourceNode.connect(this.gainNode!);
+      }
+    }
     this.disconnectSecondaryAudio();
   }
 
@@ -120,11 +101,12 @@ class AudioEngine {
     });
     el.addEventListener('play', () => {
       audioEvents.emit('playStateChange', true);
-      this.startRafLoop();
     });
     el.addEventListener('pause', () => {
       audioEvents.emit('playStateChange', false);
-      this.stopRafLoop();
+    });
+    el.addEventListener('timeupdate', () => {
+      audioEvents.emit('timeUpdate', el.currentTime);
     });
     el.addEventListener('loadedmetadata', () => {
       audioEvents.emit('durationChange', el.duration || 0);
@@ -148,28 +130,6 @@ class AudioEngine {
       return;
     }
     player.nextTrack();
-  }
-
-  private startRafLoop(): void {
-    if (this.rafId !== null) return;
-    const tick = () => {
-      if (this.audioEl) {
-        if (this.audioEl.paused) {
-          this.stopRafLoop();
-          return;
-        }
-        audioEvents.emit('timeUpdate', this.audioEl.currentTime);
-      }
-      this.rafId = requestAnimationFrame(tick);
-    };
-    this.rafId = requestAnimationFrame(tick);
-  }
-
-  private stopRafLoop(): void {
-    if (this.rafId !== null) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = null;
-    }
   }
 
   private disconnectNodes(): void {
@@ -207,14 +167,6 @@ class AudioEngine {
   init(): void {
     if (this.initialized) return;
     this.initialized = true;
-    this.visibilityHandler = () => {
-      if (document.hidden) {
-        this.stopRafLoop();
-      } else if (this.audioEl) {
-        this.startRafLoop();
-      }
-    };
-    document.addEventListener('visibilitychange', this.visibilityHandler);
   }
 
   savePosition(): void {
@@ -413,7 +365,6 @@ class AudioEngine {
   }
 
   async deactivate(): Promise<void> {
-    this.stopRafLoop();
     this.savePosition();
     if (this.audioEl) {
       this.audioEl.pause();
@@ -424,7 +375,6 @@ class AudioEngine {
   }
 
   async destroy(): Promise<void> {
-    this.stopRafLoop();
     this.savePosition();
     this.disconnectSecondaryAudio();
     this.disconnectNodes();
@@ -432,10 +382,6 @@ class AudioEngine {
     this.audioEl = null;
     this.sourceNode = null;
     this.eqChainBuilt = false;
-    if (this.visibilityHandler) {
-      document.removeEventListener('visibilitychange', this.visibilityHandler);
-      this.visibilityHandler = null;
-    }
     if (this.audioCtx) {
       await this.audioCtx.close();
       this.audioCtx = null;
@@ -456,9 +402,6 @@ class AudioEngine {
     if (this.audioCtx && this.audioCtx.state === 'suspended') {
       this.audioCtx.resume();
     }
-    if (this.rafId === null) {
-      this.startRafLoop();
-    }
   }
 
   connectVideoElement(): void {
@@ -466,8 +409,6 @@ class AudioEngine {
     if (this.audioCtx && this.audioCtx.state === 'suspended') {
       this.audioCtx.resume();
     }
-    // video drives its own time via the <video> element timeupdate event
-    this.stopRafLoop();
     if (this.sourceNode) {
       try {
         this.sourceNode.disconnect();

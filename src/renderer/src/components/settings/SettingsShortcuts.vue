@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
+import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
+import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
 
 const settings = useSettingsStore();
 
@@ -69,26 +71,27 @@ function displayKey(key: string): string {
 </script>
 
 <template>
-  <div class="space-y-1 max-w-2xl">
-    <h2 class="text-lg font-bold mb-4">{{ $t('settings.shortcutsSection') }}</h2>
-    <div
-      v-for="(key, action) in settings.shortcuts"
-      :key="action"
-      class="flex items-center justify-between py-2.5 border-b border-border-default group"
-    >
-      <span class="text-sm capitalize">{{ String(action).replace(/-/g, ' ') }}</span>
-      <button
-        class="px-2 py-1 rounded-lg border text-xs font-mono transition-colors min-w-15 text-center"
-        :class="
-          recording === action
-            ? 'border-accent-base bg-accent-ghost text-accent-base animate-pulse'
-            : 'border-border-default bg-bg-elevated text-fg-muted hover:border-accent-base hover:text-fg-base'
-        "
-        @click="startRecording(String(action))"
+  <SettingsPanel :title="$t('settings.shortcutsSection')">
+    <SettingsCard :padded="false">
+      <div
+        v-for="(key, action) in settings.shortcuts"
+        :key="action"
+        class="flex items-center justify-between gap-4 px-4 py-2.5 border-b border-border-default last:border-b-0"
       >
-        <template v-if="recording === action">...</template>
-        <template v-else>{{ displayKey(key) }}</template>
-      </button>
-    </div>
-  </div>
+        <span class="text-sm capitalize">{{ String(action).replace(/-/g, ' ') }}</span>
+        <button
+          class="px-3 py-1 rounded-lg border text-xs font-mono transition-colors min-w-15 text-center"
+          :class="
+            recording === action
+              ? 'border-accent-base bg-accent-ghost text-accent-base animate-pulse'
+              : 'border-border-default bg-bg-base text-fg-muted hover:border-accent-base hover:text-fg-base'
+          "
+          @click="startRecording(String(action))"
+        >
+          <template v-if="recording === action">...</template>
+          <template v-else>{{ displayKey(key) }}</template>
+        </button>
+      </div>
+    </SettingsCard>
+  </SettingsPanel>
 </template>

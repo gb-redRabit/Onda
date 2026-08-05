@@ -119,11 +119,11 @@ function playPlaylist(playlistId: string) {
       class="bg-bg-surface border-r border-border-default flex flex-col overflow-hidden transition-[width] duration-150 h-full"
       :style="{ width: (collapsed ? 56 : width) + 'px' }"
     >
-      <nav class="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
+      <nav class="flex-1 p-2 space-y-1 overflow-y-auto">
         <button
           v-for="item in navItems"
           :key="item.label"
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
+          class="w-full flex items-center gap-3 p-3  rounded-xl text-sm font-medium transition-all"
           :class="
             route.path === item.route
               ? 'bg-accent-base text-white shadow-lg shadow-accent-base/25'

@@ -1,10 +1,14 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
-import { electronAPI } from '@electron-toolkit/preload';
-import type { MusicbrainzRelease } from '../shared/types/ipc';
+import type { MusicbrainzRelease, AppInfo, UpdaterState } from '../shared/types/ipc';
 import { logger } from '../shared/logger';
 
-const mediaServerUrl: string = ipcRenderer.sendSync('media:getServerUrlSync');
-const windowId: number = ipcRenderer.sendSync('window:idSync');
+function getArg(name: string): string | undefined {
+  const prefix = `--${name}=`;
+  const arg = process.argv.find((a) => a.startsWith(prefix));
+  return arg ? arg.slice(prefix.length) : undefined;
+}
+
+const mediaServerUrl: string = getArg('onda-media-url') ?? '';
 
 function trySend(channel: string, ...args: unknown[]): void {
   try {
@@ -29,8 +33,8 @@ function tryInvoke(channel: string, ...args: unknown[]): Promise<unknown> {
 
 const api = {
   mediaServerUrl,
-  windowId,
   invoke: tryInvoke,
+  getWindowId: (): Promise<number> => ipcRenderer.invoke('window:id'),
   send: trySend,
   on: (channel: string, callback: (...args: unknown[]) => void): (() => void) => {
     const handler = (_event: Electron.IpcRendererEvent, ...args: unknown[]): void =>
@@ -112,6 +116,24 @@ const api = {
     ipcRenderer.invoke('dep:checkMkvextract'),
   installMkvextract: (): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke('dep:installMkvextract'),
+  getDependencyPaths: (): Promise<
+    Array<{ tool: string; path: string | null; managed: boolean; version: string | null }>
+  > => ipcRenderer.invoke('dep:getPaths'),
+  checkUpdateYtdlp: (): Promise<{
+    updateAvailable: boolean;
+    current: string | null;
+    latest: string | null;
+  }> => ipcRenderer.invoke('dep:checkUpdateYtdlp'),
+  updateYtdlp: (): Promise<{ success: boolean; error?: string; cancelled?: boolean }> =>
+    ipcRenderer.invoke('dep:updateYtdlp'),
+  removeYtdlp: (): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('dep:removeYtdlp'),
+  removeFfmpeg: (): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('dep:removeFfmpeg'),
+  removeMkvextract: (): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('dep:removeMkvextract'),
+  cancelDepInstall: (tool: string): Promise<boolean> =>
+    ipcRenderer.invoke('dep:cancelInstall', tool),
   getCover: (filePath: string): Promise<{ type: 'video' | 'image' | null; data: string | null }> =>
     ipcRenderer.invoke('media:getCover', filePath),
   getDuration: (filePath: string): Promise<number> =>
@@ -184,6 +206,9 @@ const api = {
   },
   checkAudioCodec: (filePath: string): Promise<{ codec: string; supported: boolean } | null> =>
     ipcRenderer.invoke('media:checkAudioCodec', filePath),
+  setAllowedRoots: async (roots: string[]): Promise<void> => {
+    await tryInvoke('media:setAllowedRoots', roots);
+  },
   transcodeAudio: (filePath: string): Promise<string | null> =>
     ipcRenderer.invoke('media:transcodeAudio', filePath),
   transcodeAudioChunk: (
@@ -213,19 +238,27 @@ const api = {
   ): Promise<boolean> => {
     const r = await tryInvoke('audio-pip:update', state, mode, opacity, position);
     return !!r;
-  }
+  },
+  getAppInfo: (): Promise<AppInfo> => ipcRenderer.invoke('app:getInfo'),
+  getLicenses: (): Promise<Array<{ name: string; version?: string; license?: string }>> =>
+    ipcRenderer.invoke('app:getLicenses'),
+  readLogs: (lines?: number): Promise<string> => ipcRenderer.invoke('diagnostics:readLogs', lines),
+  clearLogs: (): Promise<boolean> => ipcRenderer.invoke('diagnostics:clearLogs'),
+  downloadLog: (): Promise<{ success: boolean; canceled?: boolean; error?: string }> =>
+    ipcRenderer.invoke('diagnostics:downloadLog'),
+  getUpdaterState: (): Promise<UpdaterState> => ipcRenderer.invoke('updater:getState'),
+  checkForUpdates: (): Promise<{ checking: boolean }> => ipcRenderer.invoke('updater:check'),
+  downloadUpdate: (): Promise<boolean> => ipcRenderer.invoke('updater:download'),
+  installUpdate: (): Promise<void> => ipcRenderer.invoke('updater:install')
 };
 
 if (process.contextIsolated) {
   try {
-    contextBridge.exposeInMainWorld('electron', electronAPI);
     contextBridge.exposeInMainWorld('api', api);
   } catch (error) {
     logger.error('preload', 'exposeInMainWorld failed', error);
   }
 } else {
-  // @ts-ignore (define in dts)
-  window.electron = electronAPI;
   // @ts-ignore (define in dts)
   window.api = api;
 }

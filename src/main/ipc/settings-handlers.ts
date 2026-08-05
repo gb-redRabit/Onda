@@ -1,6 +1,7 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron';
 import { writeFile, readFile } from 'fs/promises';
 import { getStore } from './cover-cache';
+import { configureAutoCheck } from '../updater-scheduler';
 import type { AppSettings } from '../../renderer/src/types/settings';
 import { logger } from '../../shared/logger';
 
@@ -21,6 +22,7 @@ export function registerSettingsHandlers(): void {
       for (const [key, value] of Object.entries(data)) {
         store.set(key, value);
       }
+      if (data.updates) void configureAutoCheck();
       return true;
     } catch (e) {
       logger.warn('settings', 'settings:set failed', e);
@@ -69,6 +71,7 @@ export function registerSettingsHandlers(): void {
         for (const [key, value] of Object.entries(parsed)) {
           store.set(key, value);
         }
+        if (parsed.updates) void configureAutoCheck();
         return { success: true, data: parsed };
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);

@@ -13,12 +13,15 @@ import {
 } from '@renderer/utils/tabDrag';
 import { encodeTabPayload, parseTabPayload, handleTabDrop } from '@renderer/utils/explorerTabDrop';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
+import { getCachedWindowId, getWindowId } from '@renderer/utils/windowId';
 
 const explorer = useExplorerStore();
 const settings = useSettingsStore();
 const route = useRoute();
 const { t } = useI18n();
 const showConfirm = inject<(msg: string) => Promise<boolean>>('showConfirm', async () => true);
+
+getWindowId();
 
 const isExplorerWindow = computed(() => route.name === 'explorer-window');
 
@@ -50,7 +53,7 @@ function onTabDragStart(e: DragEvent, idx: number) {
   draggingTabIdx.value = idx;
   beginTabDrag(tab.path);
   if (e.dataTransfer) {
-    e.dataTransfer.setData('text/plain', encodeTabPayload(window.api?.windowId ?? 0, tab.path));
+    e.dataTransfer.setData('text/plain', encodeTabPayload(getCachedWindowId(), tab.path));
     e.dataTransfer.effectAllowed = 'move';
   }
 }
@@ -140,14 +143,14 @@ async function onTabDrop(e: DragEvent, idx: number) {
   tabDragEnterCount.value = 0;
   const raw = e.dataTransfer?.getData('text/plain') || '';
   const parsed = parseTabPayload(raw);
-  if (parsed && parsed.wid === (window.api?.windowId ?? 0)) {
+  if (parsed && parsed.wid === (await getWindowId())) {
     claimTabDrag(parsed.path);
     if (draggingTabIdx.value >= 0 && draggingTabIdx.value !== idx) {
       explorer.reorderTab(draggingTabIdx.value, idx);
     }
     return;
   }
-  if (handleTabDrop(raw)) return;
+  if (await handleTabDrop(raw)) return;
   const paths = getDropPaths(e.dataTransfer, raw);
   if (paths.length === 0) return;
   const targetPath = explorer.tabs[idx].path;

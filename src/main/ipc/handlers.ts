@@ -9,6 +9,8 @@ import { registerPlaybackHandlers } from './playback-handlers';
 import { registerDependencyHandlers } from './dependency-handlers';
 import { registerYoutubeHandlers } from './youtube-handlers';
 import { registerDialogHandlers } from './dialog-handlers';
+import { registerDiagnosticsHandlers } from './diagnostics-handlers';
+import { registerUpdaterHandlers } from './updater-handlers';
 
 export function registerIPC(): void {
   registerFsHandlers();
@@ -22,4 +24,6 @@ export function registerIPC(): void {
   registerYoutubeHandlers();
   registerDialogHandlers();
   registerMusicBrainzHandlers();
+  registerDiagnosticsHandlers();
+  registerUpdaterHandlers();
 }

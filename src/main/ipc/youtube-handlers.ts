@@ -1,13 +1,13 @@
 import { ipcMain } from 'electron';
 import { runCommand } from '../utils/exec';
-import { getYtdlpPath } from './dependency-handlers';
+import { resolveBin } from '../binaries';
 import { logger } from '../../shared/logger';
 import { formatDuration, formatUploadDate, pickThumbnail, type YtDlpEntry } from './youtube-utils';
 
 export function registerYoutubeHandlers(): void {
   ipcMain.handle('yt:search', async (_event, query: string) => {
     try {
-      const bin = await getYtdlpPath();
+      const bin = (await resolveBin('yt-dlp')) || 'yt-dlp';
       const stdout = await runCommand(
         bin,
         [`ytsearch10:${query}`, '--flat-playlist', '--no-warnings', '-J'],
