@@ -21,8 +21,8 @@ describe('ytdlpBinaryName', () => {
 });
 
 describe('ytdlpDownloadUrl', () => {
-  const base = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download';
-  it('maps every platform to a yt-dlp release asset', () => {
+  const base = 'https://github.com/yt-dlp/yt-dlp/releases/download/v2026.07.04';
+  it('maps every platform to a pinned yt-dlp release asset', () => {
     expect(ytdlpDownloadUrl('win32')).toBe(`${base}/yt-dlp.exe`);
     expect(ytdlpDownloadUrl('linux')).toBe(`${base}/yt-dlp`);
     expect(ytdlpDownloadUrl('freebsd')).toBe(`${base}/yt-dlp`);
@@ -39,9 +39,23 @@ describe('ytdlpDownloadUrl', () => {
     expect(ytdlpDownloadUrl('linux', 'x64')).toBe(`${base}/yt-dlp`);
   });
 
-  it('points the checksum source at the SHA2-256SUMS manifest', () => {
+  it('never uses the mutable latest redirect', () => {
+    expect(ytdlpDownloadUrl('win32')).not.toContain('/latest/');
+    expect(ytdlpDownloadUrl('win32')).toContain('/releases/download/v');
+  });
+
+  it('honours an explicit version (used by the in-app updater)', () => {
+    expect(ytdlpDownloadUrl('win32', 'x64', '2026.01.01')).toBe(
+      'https://github.com/yt-dlp/yt-dlp/releases/download/v2026.01.01/yt-dlp.exe'
+    );
+  });
+
+  it('points the checksum source at the pinned SHA2-256SUMS manifest', () => {
     expect(ytdlpShaUrl()).toBe(
-      'https://github.com/yt-dlp/yt-dlp/releases/latest/download/SHA2-256SUMS'
+      'https://github.com/yt-dlp/yt-dlp/releases/download/v2026.07.04/SHA2-256SUMS'
+    );
+    expect(ytdlpShaUrl('2026.01.01')).toBe(
+      'https://github.com/yt-dlp/yt-dlp/releases/download/v2026.01.01/SHA2-256SUMS'
     );
   });
 });

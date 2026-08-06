@@ -1,7 +1,6 @@
 import { BrowserWindow, screen, ipcMain } from 'electron';
 import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
-import { getMediaUrlArgs } from './media-url-args';
 import { computePipPosition } from './pip-position';
 
 type PipMode = 'minimal' | 'medium' | 'max' | 'wide';
@@ -140,11 +139,10 @@ export class AudioPipManager {
       backgroundColor: '#00000000',
       webPreferences: {
         preload: join(__dirname, '../preload/audio-pip.js'),
-        sandbox: false,
+        sandbox: true,
         contextIsolation: true,
         nodeIntegration: false,
-        webSecurity: true,
-        additionalArguments: getMediaUrlArgs()
+        webSecurity: true
       }
     });
 

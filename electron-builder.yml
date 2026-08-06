@@ -13,6 +13,11 @@ asarUnpack:
   - resources/**
 win:
   executableName: onda
+  # Code-signing / update verification (Windows). `publisherName` must match the
+  # subject of the certificate used to sign the installer, otherwise
+  # electron-updater refuses the update. Set CODE_SIGN_PUBLISHER at build time.
+  publisherName: ${env.CODE_SIGN_PUBLISHER}
+  verifyUpdateCodeSignature: true
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}

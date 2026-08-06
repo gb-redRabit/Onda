@@ -3,7 +3,6 @@ import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
 import { PipPreview } from './pip-preview';
 import { logger } from '../shared/logger';
-import { getMediaUrlArgs } from './media-url-args';
 import { computePipPosition } from './pip-position';
 import { resolveMediaPath } from './path-utils';
 
@@ -73,11 +72,10 @@ export class PipManager {
       backgroundColor: '#000000',
       webPreferences: {
         preload: join(__dirname, '../preload/pip.js'),
-        sandbox: false,
+        sandbox: true,
         contextIsolation: true,
         nodeIntegration: false,
-        webSecurity: true,
-        additionalArguments: getMediaUrlArgs()
+        webSecurity: true
       }
     });
 

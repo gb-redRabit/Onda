@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
 import { readdir, stat } from 'fs/promises';
-import { join, extname, basename } from 'path';
+import { join, extname, basename, isAbsolute } from 'path';
 import { parseFile } from 'music-metadata';
 import type { MediaFile, Playlist } from '../../renderer/src/types/media';
 import { VIDEO_EXTS, AUDIO_EXTS, IMAGE_EXTS } from '../../shared/constants';
@@ -15,6 +15,25 @@ const VIDEO_EXT_SET = new Set(VIDEO_EXTS);
 const IMAGE_EXT_SET = new Set(IMAGE_EXTS);
 
 const SUBDIR_CONCURRENCY = 16;
+const MAX_SCAN_FOLDERS = 100;
+const MAX_SCANNED_FILES = 50000;
+
+// Folders/paths arriving from the renderer are untrusted — keep only non-empty
+// absolute paths, dedupe and cap the count.
+function sanitizeFolderPaths(input: unknown): string[] {
+  if (!Array.isArray(input)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const item of input) {
+    if (typeof item !== 'string') continue;
+    const p = item.trim();
+    if (!p || !isAbsolute(p) || seen.has(p)) continue;
+    seen.add(p);
+    out.push(p);
+    if (out.length >= MAX_SCAN_FOLDERS) break;
+  }
+  return out;
+}
 
 async function mapLimit<T, R>(
   items: T[],
@@ -57,7 +76,7 @@ async function getDuration(filePath: string): Promise<number> {
       const ffprobe = (await resolveBin('ffprobe')) || 'ffprobe';
       const stdout = await runCommand(
         ffprobe,
-        ['-v', 'quiet', '-show_entries', 'format=duration', '-of', 'csv=p=0', filePath],
+        ['-v', 'quiet', '-show_entries', 'format=duration', '-of', 'csv=p=0', '--', filePath],
         { timeout: 10000 }
       );
       const duration = parseFloat(stdout.trim()) || 0;
@@ -366,17 +385,24 @@ export function registerLibraryHandlers(): void {
           folderPath: string;
         } | null> = [];
 
-        const folderTotal = folderPaths.length;
+        const safePaths = sanitizeFolderPaths(folderPaths);
+        const folderTotal = safePaths.length;
         let doneCount = 0;
 
         // Scan folders sequentially to avoid saturating the disk, emitting progress per folder.
-        for (const folderPath of folderPaths) {
+        for (const folderPath of safePaths) {
           doneCount++;
           try {
             event.sender.send('library:scan:progress', {
               current: doneCount,
               total: folderTotal
             });
+            const s = await stat(folderPath).catch(() => null);
+            if (!s || !s.isDirectory()) {
+              logger.warn('library', `scan skipped (not a directory): ${folderPath}`);
+              folderResults.push(null);
+              continue;
+            }
             const result = await scanDir(folderPath, 8);
             const mediaTotal = result.audioCount + result.videoCount;
             const folderType: 'audio' | 'video' | 'image' | 'mixed' =
@@ -406,6 +432,9 @@ export function registerLibraryHandlers(): void {
           allFiles.push(...r.files);
         }
 
+        // Hard cap so a renderer cannot flood the store with an unbounded scan.
+        if (allFiles.length > MAX_SCANNED_FILES) allFiles.length = MAX_SCANNED_FILES;
+
         const store = await getStore();
         store.set('libraryScanned', structuredClone({ files: allFiles, folderTypes }));
 
@@ -422,7 +451,7 @@ export function registerLibraryHandlers(): void {
     try {
       const store = await getStore();
       const folders = store.get('libraryFolders', []);
-      const result = Array.isArray(folders) ? folders : [];
+      const result = sanitizeFolderPaths(folders);
       await setAllowedRoots(result);
       return result;
     } catch (err) {
@@ -433,10 +462,11 @@ export function registerLibraryHandlers(): void {
 
   ipcMain.handle('library:saveFolders', async (_event, folders: string[]): Promise<string[]> => {
     try {
+      const clean = sanitizeFolderPaths(folders);
       const store = await getStore();
-      store.set('libraryFolders', folders);
-      await setAllowedRoots(folders);
-      return folders;
+      store.set('libraryFolders', clean);
+      await setAllowedRoots(clean);
+      return clean;
     } catch (err) {
       logger.error('library', 'saveFolders failed', err);
       throw err;

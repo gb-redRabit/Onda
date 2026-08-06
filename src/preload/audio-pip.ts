@@ -1,12 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-function getArg(name: string): string | undefined {
-  const prefix = `--${name}=`;
-  const arg = process.argv.find((a) => a.startsWith(prefix));
-  return arg ? arg.slice(prefix.length) : undefined;
+let mediaServerUrl = '';
+try {
+  mediaServerUrl = ipcRenderer.sendSync('media:getServerUrl') as string;
+} catch {
+  mediaServerUrl = '';
 }
-
-const mediaServerUrl: string = getArg('onda-media-url') ?? '';
 
 const ALLOWED_SEND_CHANNELS = new Set<string>([
   'audio-pip:showMain',

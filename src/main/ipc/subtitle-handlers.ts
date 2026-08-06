@@ -1,13 +1,22 @@
 import { ipcMain } from 'electron';
-import { readdir, readFile, mkdir, unlink, rm, stat } from 'fs/promises';
-import { join, extname, basename, dirname } from 'path';
+import { readdir, readFile, mkdir, unlink, rm, stat, realpath } from 'fs/promises';
+import { join, extname, basename, dirname, sep } from 'path';
 import { getTempDir } from './cover-cache';
 import { resolveBin } from '../binaries';
 import { logger } from '../../shared/logger';
 import { runCommand } from '../utils/exec';
+import { isNonNegativeInt } from '../../shared/helpers';
 
 function uniqueId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+// Attachment filenames in MKV metadata are controlled by the author — the
+// extension must not be trusted (it can contain path separators / traversal).
+const FONT_EXTS = new Set(['ttf', 'otf', 'ttc', 'woff', 'woff2', 'eot']);
+function safeFontExt(filename: string, fallback: string = 'ttf'): string {
+  const last = (filename.split('.').pop() || '').toLowerCase();
+  return FONT_EXTS.has(last) ? last : fallback;
 }
 
 export function registerSubtitleHandlers(): void {
@@ -30,6 +39,7 @@ export function registerSubtitleHandlers(): void {
             'stream=index,codec_name:stream_tags=language,title',
             '-of',
             'json',
+            '--',
             filePath
           ],
           { timeout: 10000 }
@@ -56,6 +66,7 @@ export function registerSubtitleHandlers(): void {
       streamIndex: number
     ): Promise<{ content: string; format: string } | null> => {
       try {
+        if (!isNonNegativeInt(streamIndex)) return null;
         await mkdir(getTempDir(), { recursive: true });
         // detect codec to choose best output format
         const ffprobe = (await resolveBin('ffprobe')) || 'ffprobe';
@@ -70,6 +81,7 @@ export function registerSubtitleHandlers(): void {
             'stream=codec_name',
             '-of',
             'csv=p=0',
+            '--',
             filePath
           ],
           { timeout: 10000 }
@@ -198,6 +210,7 @@ export function registerSubtitleHandlers(): void {
               'stream=index,codec_type:stream_tags=filename',
               '-of',
               'json',
+              '--',
               filePath
             ],
             { timeout: 15000 }
@@ -229,7 +242,7 @@ export function registerSubtitleHandlers(): void {
         let allOk = true;
 
         for (const [i, s] of attachmentStreams.entries()) {
-          const ext = (s.filename.split('.').pop() || 'ttf').toLowerCase();
+          const ext = safeFontExt(s.filename);
           const outPath = join(dumpDir, `att_${i}.${ext}`);
 
           if (bin) {
@@ -250,7 +263,7 @@ export function registerSubtitleHandlers(): void {
           const ffmpeg = (await resolveBin('ffmpeg')) || 'ffmpeg';
           const args: string[] = ['-v', 'error', '-y'];
           for (const [i, s] of attachmentStreams.entries()) {
-            const ext = (s.filename.split('.').pop() || 'ttf').toLowerCase();
+            const ext = safeFontExt(s.filename);
             args.push(`-dump_attachment:${s.index}`, `att_${i}.${ext}`);
           }
           args.push('-i', filePath, '-f', 'null', '-');
@@ -261,7 +274,8 @@ export function registerSubtitleHandlers(): void {
           }
         }
 
-        // read all dumped files
+        // read all dumped files (only ones actually inside dumpDir)
+        const realDumpDir = await realpath(dumpDir);
         const dumped = await readdir(dumpDir);
         const seen = new Set<string>();
         for (const fname of dumped) {
@@ -269,11 +283,14 @@ export function registerSubtitleHandlers(): void {
           seen.add(fname);
           const fpath = join(dumpDir, fname);
           try {
+            const real = await realpath(fpath);
+            if (real !== realDumpDir && !real.startsWith(realDumpDir + sep)) continue;
             await stat(fpath);
             const buf = await readFile(fpath);
+            const ext = safeFontExt(fname);
             fonts.push({
               name: fname.replace(/\.(ttf|otf|ttc)$/i, ''),
-              ext: (fname.split('.').pop() || 'ttf').toLowerCase(),
+              ext,
               data: Array.from(buf)
             });
           } catch {

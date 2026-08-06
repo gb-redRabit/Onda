@@ -38,7 +38,12 @@ export function registerDiagnosticsHandlers(): void {
     }
   });
 
-  ipcMain.handle('diagnostics:readLogs', (_event, lines?: number) => readLogTail(lines));
+  ipcMain.handle('diagnostics:readLogs', (_event, lines?: number) => {
+    // Cap how many log lines a renderer can pull in one call.
+    const n = Math.floor(Number(lines));
+    const clamped = Number.isFinite(n) && n > 0 ? Math.min(n, 2000) : undefined;
+    return readLogTail(clamped);
+  });
 
   ipcMain.handle('diagnostics:clearLogs', () => clearLogFile());
 

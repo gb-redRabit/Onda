@@ -5,7 +5,7 @@ import { createHash } from 'crypto';
 import NodeID3 from 'node-id3';
 import sharp from 'sharp';
 import os from 'os';
-import { AUDIO_EXTS, VIDEO_EXTS } from '../../shared/constants';
+import { AUDIO_EXTS, VIDEO_EXTS, MAX_THUMB_SIZE } from '../../shared/constants';
 import {
   coverResultCache,
   getStore,
@@ -20,10 +20,19 @@ import { runCommand } from '../utils/exec';
 import { resolveBin } from '../binaries';
 
 export function registerMediaHandlers(): void {
+  // Renderer-supplied thumbnail sizes are untrusted — clamp to a sane upper
+  // bound so a malicious/buggy renderer cannot trigger unbounded sharp work.
+  const sanitizeThumbSize = (size: number): number => {
+    const n = Math.floor(Number(size));
+    if (!Number.isFinite(n) || n < 16) return 320;
+    return Math.min(n, MAX_THUMB_SIZE);
+  };
+
   ipcMain.handle(
     'media:getThumbnail',
     async (_event, filePath: string, maxSize: number = 320): Promise<string | null> => {
       try {
+        maxSize = sanitizeThumbSize(maxSize);
         const cacheDir = join(os.tmpdir(), 'onda', 'thumbs');
         const hash = createHash('md5')
           .update(filePath + maxSize)
@@ -98,6 +107,7 @@ export function registerMediaHandlers(): void {
   ipcMain.handle(
     'media:batchThumbnails',
     async (_event, files: string[], maxSize: number = 320): Promise<Record<string, string>> => {
+      maxSize = sanitizeThumbSize(maxSize);
       const result: Record<string, string> = {};
       const cacheDir = join(os.tmpdir(), 'onda', 'thumbs');
       await mkdir(cacheDir, { recursive: true }).catch(() => {});
@@ -319,6 +329,7 @@ export function registerMediaHandlers(): void {
             'stream=codec_name',
             '-of',
             'csv=p=0',
+            '--',
             filePath
           ],
           { timeout: 15000 }
@@ -354,6 +365,14 @@ export function registerMediaHandlers(): void {
       startTime: number,
       duration: number
     ): Promise<string | null> => {
+      if (
+        !Number.isFinite(startTime) ||
+        !Number.isFinite(duration) ||
+        startTime < 0 ||
+        duration <= 0
+      ) {
+        return null;
+      }
       const tempDir = join(os.tmpdir(), 'onda', 'audio-transcodes');
       await mkdir(tempDir, { recursive: true });
       const hash = createHash('md5').update(filePath).digest('hex');

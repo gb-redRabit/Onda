@@ -25,3 +25,8 @@ export const IMAGE_EXTS = [
   '.tiff',
   '.tif'
 ];
+
+// Upper bound for thumbnail / resize dimensions requested over IPC or onda://
+// (renderer input is untrusted — never let it drive unbounded sharp work).
+export const MAX_THUMB_SIZE = 1024;
+export const MAX_RESIZE_WIDTH = 4000;

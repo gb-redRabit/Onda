@@ -3,6 +3,7 @@ import { normalize, isAbsolute, sep } from 'path';
 import { realpath } from 'fs/promises';
 import { SharpService } from './utils/sharp';
 import { logger } from '../shared/logger';
+import { MAX_THUMB_SIZE, MAX_RESIZE_WIDTH } from '../shared/constants';
 
 const allowedPrefixes: string[] = [];
 
@@ -86,8 +87,10 @@ export function registerOndaProtocolHandler(): void {
       if (!allowed) {
         return new Response('path not allowed', { status: 403 });
       }
-      const maxWidth = parseInt(url.searchParams.get('w') || '0');
-      const thumbSize = parseInt(url.searchParams.get('t') || '0');
+      // Query params drive sharp work — clamp so the renderer can never
+      // request unbounded image processing through the onda:// handler.
+      const maxWidth = Math.min(parseInt(url.searchParams.get('w') || '0', 10) || 0, MAX_RESIZE_WIDTH);
+      const thumbSize = Math.min(parseInt(url.searchParams.get('t') || '0', 10) || 0, MAX_THUMB_SIZE);
       const cors = corsHeaders(req.headers.get('origin'));
 
       if (thumbSize > 0) {

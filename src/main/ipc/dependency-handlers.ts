@@ -1,8 +1,6 @@
-import { ipcMain, type WebContents } from 'electron';
+import { ipcMain, dialog, BrowserWindow, type WebContents } from 'electron';
 import { mkdir, chmod, unlink, readFile, rm } from 'fs/promises';
 import { join, basename } from 'path';
-import { exec as execCb } from 'child_process';
-import { promisify } from 'util';
 import https from 'https';
 import http from 'http';
 import { createWriteStream } from 'fs';
@@ -16,14 +14,14 @@ import {
   ffmpegShaUrl,
   detectPkgManagers,
   inferPkgManager,
-  pkgInstallCmd,
-  pkgUninstallCmd,
+  pkgInstallCommand,
+  pkgUninstallCommand,
+  needsSudo,
+  YTDLP_PINNED_VERSION,
   toolFileName,
   type BinTool
 } from './dependency-utils';
 import { getBinDir, resolveBin, resolveBinInfo, invalidateBinaries } from '../binaries';
-
-const execAsync = promisify(execCb);
 
 interface InstallResult {
   success: boolean;
@@ -173,8 +171,13 @@ async function installYtdlpManaged(
     const binDir = getBinDir();
     await mkdir(binDir, { recursive: true });
     const dest = join(binDir, ytdlpBinaryName());
-    const url = ytdlpDownloadUrl();
-    const shaUrl = ytdlpShaUrl();
+    // Fresh installs use the pinned release; updates fetch the specific latest
+    // tag (never the mutable `latest` redirect).
+    const version = reinstall
+      ? ((await fetchLatestYtdlpVersion()) ?? YTDLP_PINNED_VERSION)
+      : YTDLP_PINNED_VERSION;
+    const url = ytdlpDownloadUrl(process.platform, process.arch, version);
+    const shaUrl = ytdlpShaUrl(version);
 
     emitProgress(sender, 'yt-dlp', reinstall ? 'update' : 'download', 5);
     await downloadFile(url, dest, signal, (received, total) => {
@@ -294,12 +297,28 @@ async function installFfmpegManaged(sender: WebContents): Promise<InstallResult>
   }
 }
 
-async function runShell(cmd: string): Promise<string> {
-  const { stdout, stderr } = await execAsync(cmd, {
-    timeout: 600000,
-    windowsHide: true
-  });
-  return stdout + stderr;
+async function runShell(argv: string[]): Promise<string> {
+  const output = await runCommand(argv[0], argv.slice(1), { timeout: 600000 });
+  return output;
+}
+
+// Ask the user for explicit consent before running a privileged (sudo -n)
+// system command from the renderer's request. Returns false when cancelled.
+async function confirmPrivileged(sender: WebContents, command: string): Promise<boolean> {
+  const win = BrowserWindow.fromWebContents(sender);
+  const options = {
+    type: 'warning' as const,
+    buttons: ['Anuluj', 'Kontynuuj'],
+    defaultId: 1,
+    cancelId: 0,
+    title: 'Potwierdzenie instalacji systemowej',
+    message: 'Wymagane podniesione uprawnienia (sudo)',
+    detail: `Onda uruchomi:\n${command}\n\nSystem może poprosić o hasło administratora (sudo).`
+  };
+  const { response } = win
+    ? await dialog.showMessageBox(win, options)
+    : await dialog.showMessageBox(options);
+  return response === 1;
 }
 
 // System install through a package manager with real post-install verification.
@@ -317,9 +336,12 @@ async function installSystem(
     };
   }
 
-  const cmd = pkgInstallCmd(pkgManager, tool);
+  const { cmd, argv } = pkgInstallCommand(pkgManager, tool);
+  if (needsSudo(pkgManager) && !(await confirmPrivileged(sender, cmd))) {
+    return { success: false, cancelled: true };
+  }
   try {
-    const output = await runShell(cmd);
+    const output = await runShell(argv);
     emitProgress(sender, tool, 'verify', 90);
     invalidateBinaries();
     const info = await resolveBinInfo(tool);
@@ -346,7 +368,7 @@ async function installSystem(
   }
 }
 
-async function uninstallTool(_sender: WebContents, tool: BinTool): Promise<InstallResult> {
+async function uninstallTool(sender: WebContents, tool: BinTool): Promise<InstallResult> {
   const info = await resolveBinInfo(tool);
   if (info?.managed) {
     try {
@@ -370,9 +392,12 @@ async function uninstallTool(_sender: WebContents, tool: BinTool): Promise<Insta
 
   const errors: string[] = [];
   for (const pm of candidates) {
-    const cmd = pkgUninstallCmd(pm, tool);
+    const { cmd, argv } = pkgUninstallCommand(pm, tool);
+    if (needsSudo(pm) && !(await confirmPrivileged(sender, cmd))) {
+      return { success: false, cancelled: true };
+    }
     try {
-      const output = await runShell(cmd);
+      const output = await runShell(argv);
       invalidateBinaries();
       const stillThere = await resolveBinInfo(tool);
       if (!stillThere) return { success: true };
@@ -387,7 +412,7 @@ async function uninstallTool(_sender: WebContents, tool: BinTool): Promise<Insta
     success: false,
     error:
       'Odinstalowanie nie powiodło się. Skopiuj i uruchom ręcznie:\n' +
-      candidates.map((pm) => pkgUninstallCmd(pm, tool)).join('\n') +
+      candidates.map((pm) => pkgUninstallCommand(pm, tool).cmd).join('\n') +
       '\n\n' +
       errors.join('\n')
   };

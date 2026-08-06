@@ -8,7 +8,8 @@ import {
   unlink,
   rm,
   copyFile,
-  cp
+  cp,
+  realpath
 } from 'fs/promises';
 import { createReadStream } from 'fs';
 import { createHash } from 'crypto';
@@ -437,11 +438,17 @@ export function registerFsHandlers(): void {
 
   ipcMain.handle('shell:openTerminal', async (_event, dirPath: string) => {
     try {
+      const info = await stat(dirPath);
+      if (!info.isDirectory()) {
+        logger.warn('fs', `openTerminal rejected (not a directory): ${dirPath}`);
+        return;
+      }
+      const real = await realpath(dirPath);
       const isWindows = process.platform === 'win32';
       if (isWindows) {
-        spawn('cmd', ['/K', 'cd', '/d', dirPath], { windowsHide: true, detached: true }).unref();
+        spawn('cmd', ['/K', 'cd', '/d', real], { windowsHide: true, detached: true }).unref();
       } else {
-        spawn('open', ['-a', 'Terminal', dirPath], { detached: true }).unref();
+        spawn('open', ['-a', 'Terminal', real], { detached: true }).unref();
       }
     } catch (e) {
       logger.warn('fs', `openTerminal failed for ${dirPath}`, e);
@@ -450,7 +457,13 @@ export function registerFsHandlers(): void {
 
   ipcMain.handle('shell:openWithDefault', async (_event, filePath: string) => {
     try {
-      await shell.openPath(filePath);
+      const ext = extname(filePath).toLowerCase();
+      if (ext === '.lnk' || ext === '.url') {
+        logger.warn('fs', `openWithDefault blocked (shortcut file): ${filePath}`);
+        return;
+      }
+      const real = await realpath(filePath);
+      await shell.openPath(real);
     } catch (e) {
       logger.warn('fs', `openWithDefault failed for ${filePath}`, e);
     }
@@ -471,21 +484,10 @@ export function registerFsHandlers(): void {
   });
 
   ipcMain.handle('app:getPath', (_event, name: string) => {
-    const validPaths: Array<Parameters<typeof app.getPath>[0]> = [
-      'home',
-      'userData',
-      'temp',
-      'desktop',
-      'documents',
-      'downloads',
-      'music',
-      'pictures',
-      'videos',
-      'recent',
-      'logs',
-      'crashDumps'
-    ];
-    const pathName = validPaths.find((validPath) => validPath === name) ?? 'userData';
-    return app.getPath(pathName);
+    // Only expose the specific system paths the renderer actually needs —
+    // never the full app.getPath() surface (userData, temp, crashDumps, ...).
+    const validPaths = ['desktop', 'downloads'] as const;
+    const match = validPaths.find((validPath) => validPath === name);
+    return match ? app.getPath(match) : '';
   });
 }

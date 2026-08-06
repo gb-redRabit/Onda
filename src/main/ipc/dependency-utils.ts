@@ -19,11 +19,18 @@ export function managedBinPath(binDir: string, tool: BinTool): string {
   return join(binDir, toolFileName(tool));
 }
 
+// Pinned to a concrete release tag instead of `releases/latest/download` — the
+// `latest` URL is mutable, so a compromised or mistaken release would be pulled
+// silently on the next fresh install. Bump this manually; the in-app updater
+// still fetches the specific latest tag when the user explicitly updates.
+export const YTDLP_PINNED_VERSION = '2026.07.04';
+
 export function ytdlpDownloadUrl(
   platform: NodeJS.Platform = process.platform,
-  arch: string = process.arch
+  arch: string = process.arch,
+  version: string = YTDLP_PINNED_VERSION
 ): string {
-  const base = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download';
+  const base = `https://github.com/yt-dlp/yt-dlp/releases/download/v${version}`;
   switch (platform) {
     case 'win32':
       return `${base}/yt-dlp.exe`;
@@ -39,8 +46,8 @@ export function ytdlpDownloadUrl(
 }
 
 // yt-dlp publishes a single checksums manifest (SHA2-256SUMS), not per-file hashes.
-export function ytdlpShaUrl(): string {
-  return 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/SHA2-256SUMS';
+export function ytdlpShaUrl(version: string = YTDLP_PINNED_VERSION): string {
+  return `https://github.com/yt-dlp/yt-dlp/releases/download/v${version}/SHA2-256SUMS`;
 }
 
 export function ffmpegDownloadUrl(platform: NodeJS.Platform = process.platform): string | null {
@@ -196,52 +203,94 @@ export function inferPkgManager(binPath: string | null): PkgManager | null {
   return null;
 }
 
-export function pkgInstallCmd(pkgManager: PkgManager, tool: BinTool): string {
-  const pkg = installPackageName(tool);
-  switch (pkgManager) {
-    case 'winget':
-      return tool === 'ffmpeg' || tool === 'ffprobe'
-        ? 'winget install --id Gyan.FFmpeg -e --silent --accept-package-agreements'
-        : tool === 'mkvextract'
-          ? 'winget install --id MoritzBunkus.MKVToolNix -e --silent --accept-package-agreements'
-          : 'winget install --id yt-dlp.yt-dlp -e --silent --accept-package-agreements';
-    case 'choco':
-      return `choco install ${pkg} -y --no-progress`;
-    case 'scoop':
-      return `scoop install ${pkg}`;
-    case 'brew':
-      return `brew install ${pkg}`;
-    case 'apt':
-      return `sudo -n apt-get install -y ${pkg}`;
-    case 'dnf':
-      return `sudo -n dnf install -y ${pkg}`;
-    case 'pacman':
-      return `sudo -n pacman -S --noconfirm ${pkg}`;
-  }
+export interface PkgCommand {
+  /** Full human-readable command line (for error messages / user hints). */
+  cmd: string;
+  /** argv array ready for spawn — no shell, no injection surface. */
+  argv: string[];
 }
 
-export function pkgUninstallCmd(pkgManager: PkgManager, tool: BinTool): string {
+function joinCmd(argv: string[]): string {
+  return argv.map((a) => (/[\s"'\\]/.test(a) ? `"${a}"` : a)).join(' ');
+}
+
+function wingetInstallId(tool: BinTool): string {
+  if (tool === 'ffmpeg' || tool === 'ffprobe') return 'Gyan.FFmpeg';
+  if (tool === 'mkvextract') return 'MoritzBunkus.MKVToolNix';
+  return 'yt-dlp.yt-dlp';
+}
+
+export function pkgInstallCommand(pkgManager: PkgManager, tool: BinTool): PkgCommand {
   const pkg = installPackageName(tool);
+  let argv: string[];
   switch (pkgManager) {
     case 'winget':
-      return tool === 'ffmpeg' || tool === 'ffprobe'
-        ? 'winget uninstall --id Gyan.FFmpeg'
-        : tool === 'mkvextract'
-          ? 'winget uninstall --id MoritzBunkus.MKVToolNix'
-          : 'winget uninstall --id yt-dlp.yt-dlp';
+      argv = ['winget', 'install', '--id', wingetInstallId(tool), '-e', '--silent', '--accept-package-agreements'];
+      break;
     case 'choco':
-      return `choco uninstall ${pkg} -y`;
+      argv = ['choco', 'install', pkg, '-y', '--no-progress'];
+      break;
     case 'scoop':
-      return `scoop uninstall ${pkg}`;
+      argv = ['scoop', 'install', pkg];
+      break;
     case 'brew':
-      return `brew uninstall ${pkg}`;
+      argv = ['brew', 'install', pkg];
+      break;
     case 'apt':
-      return `sudo -n apt-get remove -y ${pkg}`;
+      argv = ['sudo', '-n', 'apt-get', 'install', '-y', pkg];
+      break;
     case 'dnf':
-      return `sudo -n dnf remove -y ${pkg}`;
+      argv = ['sudo', '-n', 'dnf', 'install', '-y', pkg];
+      break;
     case 'pacman':
-      return `sudo -n pacman -R --noconfirm ${pkg}`;
+      argv = ['sudo', '-n', 'pacman', '-S', '--noconfirm', pkg];
+      break;
   }
+  return { cmd: joinCmd(argv), argv };
+}
+
+export function pkgUninstallCommand(pkgManager: PkgManager, tool: BinTool): PkgCommand {
+  const pkg = installPackageName(tool);
+  let argv: string[];
+  switch (pkgManager) {
+    case 'winget':
+      argv = ['winget', 'uninstall', '--id', wingetInstallId(tool)];
+      break;
+    case 'choco':
+      argv = ['choco', 'uninstall', pkg, '-y'];
+      break;
+    case 'scoop':
+      argv = ['scoop', 'uninstall', pkg];
+      break;
+    case 'brew':
+      argv = ['brew', 'uninstall', pkg];
+      break;
+    case 'apt':
+      argv = ['sudo', '-n', 'apt-get', 'remove', '-y', pkg];
+      break;
+    case 'dnf':
+      argv = ['sudo', '-n', 'dnf', 'remove', '-y', pkg];
+      break;
+    case 'pacman':
+      argv = ['sudo', '-n', 'pacman', '-R', '--noconfirm', pkg];
+      break;
+  }
+  return { cmd: joinCmd(argv), argv };
+}
+
+/** True when the manager's commands require elevated privileges (sudo -n). */
+export function needsSudo(pkgManager: PkgManager): boolean {
+  return pkgManager === 'apt' || pkgManager === 'dnf' || pkgManager === 'pacman';
+}
+
+/** @deprecated use pkgInstallCommand() for spawn-ready argv. */
+export function pkgInstallCmd(pkgManager: PkgManager, tool: BinTool): string {
+  return pkgInstallCommand(pkgManager, tool).cmd;
+}
+
+/** @deprecated use pkgUninstallCommand() for spawn-ready argv. */
+export function pkgUninstallCmd(pkgManager: PkgManager, tool: BinTool): string {
+  return pkgUninstallCommand(pkgManager, tool).cmd;
 }
 
 export function getMkvExtractCandidates(): string[] {

@@ -2,13 +2,15 @@ import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import type { MusicbrainzRelease, AppInfo, UpdaterState } from '../shared/types/ipc';
 import { logger } from '../shared/logger';
 
-function getArg(name: string): string | undefined {
-  const prefix = `--${name}=`;
-  const arg = process.argv.find((a) => a.startsWith(prefix));
-  return arg ? arg.slice(prefix.length) : undefined;
+// Fetched over IPC (not CLI args) so the media-server token never shows up in
+// the process command line. The main handler is registered before any window
+// is created, so sendSync resolves immediately.
+let mediaServerUrl = '';
+try {
+  mediaServerUrl = ipcRenderer.sendSync('media:getServerUrl') as string;
+} catch {
+  mediaServerUrl = '';
 }
-
-const mediaServerUrl: string = getArg('onda-media-url') ?? '';
 
 const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'fs:readdir',

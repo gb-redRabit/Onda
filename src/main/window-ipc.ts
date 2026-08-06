@@ -20,7 +20,7 @@ export function createExplorerWindow(initialPath?: string): number | null {
       backgroundColor: '#0f0f17',
       webPreferences: {
         preload: join(__dirname, '../preload/index.js'),
-        sandbox: false,
+        sandbox: true,
         contextIsolation: true,
         nodeIntegration: false,
         webSecurity: true

@@ -9,8 +9,7 @@ import { registerIPC } from './ipc/handlers';
 import { pipManager } from './pip-manager';
 import { audioPipManager } from './audio-pip-manager';
 import { logger } from '../shared/logger';
-import { getMediaUrlArgs, setMediaServerUrl } from './media-url-args';
-import { setAllowedRoots } from './media-server';
+import { setMediaServerUrl, registerMediaUrlHandler } from './media-url-args';import { setAllowedRoots } from './media-server';
 import { getStore } from './ipc/cover-cache';
 import { setupFileLogging } from './log-file';
 import { initAutoUpdater } from './updater';
@@ -36,11 +35,10 @@ function createWindow(): BrowserWindow {
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
+      sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: true,
-      additionalArguments: getMediaUrlArgs()
+      webSecurity: true
     }
   });
 
@@ -109,11 +107,10 @@ function createChildWindow(
     skipTaskbar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
+      sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: true,
-      additionalArguments: getMediaUrlArgs()
+      webSecurity: true
     }
   });
 
@@ -241,6 +238,7 @@ app.whenReady().then(async () => {
   splashWindow = createSplashWindow();
 
   registerIPC();
+  registerMediaUrlHandler();
 
   const mediaServer = await createMediaServer();
   setMediaServerUrl(`http://127.0.0.1:${mediaServer.port}/${mediaServer.token}`);
