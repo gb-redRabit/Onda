@@ -140,7 +140,6 @@ export const useLibraryStore = defineStore('library', () => {
       if (loadedPlaylists) playlists.value = loadedPlaylists;
       if (loadedFolders) {
         folders.value = loadedFolders;
-        window.api?.setAllowedRoots([...folders.value]);
       }
     } catch {
       // individual catches handle errors
@@ -229,13 +228,11 @@ export const useLibraryStore = defineStore('library', () => {
     if (folders.value.includes(folderPath)) return;
     folders.value.push(folderPath);
     await window.api?.invoke('library:saveFolders', [...folders.value]);
-    window.api?.setAllowedRoots([...folders.value]);
   }
 
   async function removeFolder(folderPath: string) {
     folders.value = folders.value.filter((f) => f !== folderPath);
     await window.api?.invoke('library:saveFolders', [...folders.value]);
-    window.api?.setAllowedRoots([...folders.value]);
     const newTypes = { ...folderTypes.value };
     delete newTypes[folderPath];
     folderTypes.value = newTypes;

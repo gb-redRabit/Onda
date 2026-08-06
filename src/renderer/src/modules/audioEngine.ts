@@ -14,6 +14,9 @@ class AudioEngine {
   private sourceNode: MediaElementAudioSourceNode | null = null;
   private gainNode: GainNode | null = null;
   private eqFilters: BiquadFilterNode[] = [];
+  private videoSourceNode: MediaElementAudioSourceNode | null = null;
+  private videoGainNode: GainNode | null = null;
+  private videoSourceEl: HTMLVideoElement | null = null;
   private initialized = false;
   private eqChainBuilt = false;
   private secondaryAudioEl: HTMLAudioElement | null = null;
@@ -79,6 +82,7 @@ class AudioEngine {
       }
     }
     this.disconnectSecondaryAudio();
+    this.disconnectVideoElement();
   }
 
   private createAudioElement(): HTMLAudioElement {
@@ -138,6 +142,19 @@ class AudioEngine {
     } catch (e) {
       logger.warn('audioEngine', 'disconnect source node failed', e);
     }
+    try {
+      this.videoSourceNode?.disconnect();
+    } catch (e) {
+      logger.warn('audioEngine', 'disconnect video source node failed', e);
+    }
+    try {
+      this.videoGainNode?.disconnect();
+    } catch (e) {
+      logger.warn('audioEngine', 'disconnect video gain node failed', e);
+    }
+    this.videoSourceNode = null;
+    this.videoGainNode = null;
+    this.videoSourceEl = null;
     try {
       this.gainNode?.disconnect();
     } catch (e) {
@@ -404,7 +421,7 @@ class AudioEngine {
     }
   }
 
-  connectVideoElement(): void {
+  connectVideoElement(videoEl: HTMLVideoElement): void {
     this.ensureAudioContext();
     if (this.audioCtx && this.audioCtx.state === 'suspended') {
       this.audioCtx.resume();
@@ -416,9 +433,50 @@ class AudioEngine {
         logger.warn('audioEngine', 'connectVideoElement: source disconnect failed', e);
       }
     }
+
+    if (this.videoSourceNode) {
+      if (this.videoSourceEl === videoEl) return;
+      this.disconnectVideoElement();
+    }
+
+    if (!this.audioCtx) return;
+    this.videoSourceNode = this.audioCtx.createMediaElementSource(videoEl);
+    this.videoGainNode = this.audioCtx.createGain();
+    this.videoSourceEl = videoEl;
+
+    this.ensureEqChain();
+    const firstFilter = this.eqFilters[0];
+    if (firstFilter) {
+      this.videoSourceNode.connect(this.videoGainNode);
+      this.videoGainNode.connect(firstFilter);
+    } else if (this.gainNode) {
+      this.videoSourceNode.connect(this.videoGainNode);
+      this.videoGainNode.connect(this.gainNode);
+    }
+
+    const player = usePlayerStore();
+    this.videoGainNode.gain.value = player.isMuted ? 0 : player.volume;
   }
 
   disconnectVideoElement(): void {
+    if (this.videoSourceNode) {
+      try {
+        this.videoSourceNode.disconnect();
+      } catch (e) {
+        logger.warn('audioEngine', 'disconnectVideoElement: video source disconnect failed', e);
+      }
+    }
+    if (this.videoGainNode) {
+      try {
+        this.videoGainNode.disconnect();
+      } catch (e) {
+        logger.warn('audioEngine', 'disconnectVideoElement: video gain disconnect failed', e);
+      }
+    }
+    this.videoSourceNode = null;
+    this.videoGainNode = null;
+    this.videoSourceEl = null;
+
     if (!this.sourceNode) return;
     const firstFilter = this.eqFilters[0];
     try {
@@ -429,6 +487,15 @@ class AudioEngine {
       }
     } catch (e) {
       logger.warn('audioEngine', 'disconnectVideoElement: reconnect failed (source already disconnected)', e);
+    }
+  }
+
+  setVideoVolume(v: number): void {
+    if (this.videoGainNode) {
+      this.videoGainNode.gain.value = v;
+    }
+    if (this.videoSourceEl) {
+      this.videoSourceEl.volume = v;
     }
   }
 }

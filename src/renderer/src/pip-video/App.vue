@@ -102,7 +102,7 @@ async function loadSubtitle(data: PipSubtitleData) {
       subContent: data.subContent,
       fonts,
       availableFonts,
-      queryFonts: 'localandremote',
+      queryFonts: false,
       wasmUrlOverride: wasmDataUrl,
       modernWasmUrlOverride: modernWasmDataUrl
     });

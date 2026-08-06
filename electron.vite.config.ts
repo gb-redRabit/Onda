@@ -1,4 +1,4 @@
-import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
+import { defineConfig } from 'electron-vite';
 import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'path';
@@ -23,13 +23,26 @@ function wasmMime() {
 }
 
 export default defineConfig({
-  main: { plugins: [externalizeDepsPlugin()] },
-  preload: { plugins: [externalizeDepsPlugin()] },
+  main: {},
+  preload: {
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve('src/preload/index.ts'),
+          pip: resolve('src/preload/pip.ts'),
+          'audio-pip': resolve('src/preload/audio-pip.ts')
+        }
+      }
+    }
+  },
   renderer: {
     base: './',
     plugins: [vue(), tailwindcss(), wasmMime()],
     resolve: {
-      alias: { '@renderer': resolve('src/renderer/src'), '@shared': resolve('src/shared') }
+      alias: { 
+        '@renderer': resolve('src/renderer/src'), 
+        '@shared': resolve('src/shared') 
+      }
     },
     worker: { format: 'es' },
     css: { devSourcemap: false },

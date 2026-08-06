@@ -236,7 +236,7 @@ watch(tab, (_newTab, oldTab) => {
               <button
                 v-for="st in tabs.filter((tab) => tab.section === section.id)"
                 :key="st.id"
-                class="group relative flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors"
+                class="group relative flex w-full items-center gap-3 rounded-sm px-3 py-2 text-sm transition-colors"
                 :class="tab === st.id ? 'bg-accent-ghost' : 'hover:bg-bg-hover'"
                 @click="tab = st.id"
               >

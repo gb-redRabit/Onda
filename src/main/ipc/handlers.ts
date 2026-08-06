@@ -1,3 +1,4 @@
+import { installIpcGuards } from './guard';
 import { registerMusicBrainzHandlers } from './musicbrainz';
 import { registerFsHandlers } from './fs-handlers';
 import { registerLibraryHandlers } from './library-handlers';
@@ -13,6 +14,7 @@ import { registerDiagnosticsHandlers } from './diagnostics-handlers';
 import { registerUpdaterHandlers } from './updater-handlers';
 
 export function registerIPC(): void {
+  installIpcGuards();
   registerFsHandlers();
   registerLibraryHandlers();
   registerSettingsHandlers();

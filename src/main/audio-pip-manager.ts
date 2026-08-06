@@ -139,7 +139,7 @@ export class AudioPipManager {
       transparent: true,
       backgroundColor: '#00000000',
       webPreferences: {
-        preload: join(__dirname, '../preload/index.js'),
+        preload: join(__dirname, '../preload/audio-pip.js'),
         sandbox: false,
         contextIsolation: true,
         nodeIntegration: false,

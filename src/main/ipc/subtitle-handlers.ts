@@ -247,14 +247,15 @@ export function registerSubtitleHandlers(): void {
         }
 
         if (!allOk) {
-          // fallback: dump all attachments via ffmpeg
           const ffmpeg = (await resolveBin('ffmpeg')) || 'ffmpeg';
+          const args: string[] = ['-v', 'error', '-y'];
+          for (const [i, s] of attachmentStreams.entries()) {
+            const ext = (s.filename.split('.').pop() || 'ttf').toLowerCase();
+            args.push(`-dump_attachment:${s.index}`, `att_${i}.${ext}`);
+          }
+          args.push('-i', filePath, '-f', 'null', '-');
           try {
-            await runCommand(
-              ffmpeg,
-              ['-v', 'error', '-y', '-dump_attachment', '', '-i', filePath, '-f', 'null', '-'],
-              { timeout: 30000, cwd: dumpDir }
-            );
+            await runCommand(ffmpeg, args, { timeout: 30000, cwd: dumpDir });
           } catch (e) {
             logger.warn('subtitles', `ffmpeg attachment dump failed for ${filePath}`, e);
           }

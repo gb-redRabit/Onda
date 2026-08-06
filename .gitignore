@@ -8,4 +8,6 @@ out
 .git.bak
 logs/
 opencode.json
-
+docs
+.opencode
+.vscode

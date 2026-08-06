@@ -134,7 +134,6 @@ interface OndaAPI {
     releaseId: string
   ) => Promise<{ success: boolean; data?: number[]; mime?: string; error?: string }>;
   getFilePath: (file: File) => string;
-  setAllowedRoots: (roots: string[]) => Promise<void>;
   listEmbeddedSubtitles: (
     filePath: string
   ) => Promise<Array<{ index: number; language: string; title: string; codec: string }>>;

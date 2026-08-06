@@ -32,6 +32,9 @@ function ensureModule() {
 
   audioEvents.on('playStateChange', (playing: boolean) => {
     isPlaying.value = playing;
+    if (player.currentTrack?.type === 'audio') {
+      player.isPlaying = playing;
+    }
   });
 
   audioEvents.on('trackLoaded', () => {

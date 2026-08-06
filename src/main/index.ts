@@ -10,6 +10,8 @@ import { pipManager } from './pip-manager';
 import { audioPipManager } from './audio-pip-manager';
 import { logger } from '../shared/logger';
 import { getMediaUrlArgs, setMediaServerUrl } from './media-url-args';
+import { setAllowedRoots } from './media-server';
+import { getStore } from './ipc/cover-cache';
 import { setupFileLogging } from './log-file';
 import { initAutoUpdater } from './updater';
 import { configureAutoCheck } from './updater-scheduler';
@@ -242,6 +244,16 @@ app.whenReady().then(async () => {
 
   const mediaServer = await createMediaServer();
   setMediaServerUrl(`http://127.0.0.1:${mediaServer.port}/${mediaServer.token}`);
+
+  try {
+    const store = await getStore();
+    const folders = store.get('libraryFolders', []);
+    if (Array.isArray(folders)) {
+      await setAllowedRoots(folders);
+    }
+  } catch (e) {
+    logger.warn('main', 'seeding media server roots from library folders failed', e);
+  }
 
   ipcMain.handle('window:id', (event) => {
     return BrowserWindow.fromWebContents(event.sender)?.id ?? 0;

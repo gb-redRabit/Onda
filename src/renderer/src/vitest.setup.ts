@@ -15,6 +15,5 @@ if (typeof globalThis.requestIdleCallback === 'undefined') {
   readSubtitleFile: vi.fn(),
   listEmbeddedSubtitles: vi.fn(),
   extractEmbeddedSubtitle: vi.fn(),
-  extractSubtitleFonts: vi.fn(),
-  setAllowedRoots: vi.fn()
+  extractSubtitleFonts: vi.fn()
 };

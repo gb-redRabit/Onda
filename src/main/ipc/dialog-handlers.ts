@@ -1,7 +1,8 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron';
 import { readdir } from 'fs/promises';
-import { join, extname } from 'path';
+import { join, extname, dirname } from 'path';
 import { VIDEO_EXTS, AUDIO_EXTS } from '../../shared/constants';
+import { addAllowedRoot } from '../media-server';
 import { logger } from '../../shared/logger';
 
 export function registerDialogHandlers(): void {
@@ -50,6 +51,11 @@ export function registerDialogHandlers(): void {
         ],
         ...options
       });
+      if (!result.canceled) {
+        for (const p of result.filePaths) {
+          await addAllowedRoot(dirname(p));
+        }
+      }
       return result;
     } catch (e) {
       logger.warn('dialog', 'openFile failed', e);
@@ -64,6 +70,11 @@ export function registerDialogHandlers(): void {
       const result = await dialog.showOpenDialog(win, {
         properties: ['openDirectory']
       });
+      if (!result.canceled) {
+        for (const p of result.filePaths) {
+          await addAllowedRoot(p);
+        }
+      }
       return result.canceled ? [] : result.filePaths;
     } catch (e) {
       logger.warn('dialog', 'openFolder failed', e);
@@ -83,6 +94,7 @@ export function registerDialogHandlers(): void {
       }
       const folder = result.filePaths[0];
       if (!folder) return { canceled: false, filePaths: [] };
+      await addAllowedRoot(folder);
       const mediaExts = [...VIDEO_EXTS, ...AUDIO_EXTS];
       let entries: string[] = [];
       try {

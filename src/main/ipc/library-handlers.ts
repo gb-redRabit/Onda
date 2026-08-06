@@ -9,6 +9,7 @@ import { getStore, durationCache, cacheSet, savePersistentCover } from './cover-
 import { logger } from '../../shared/logger';
 import { runCommand } from '../utils/exec';
 import { resolveBin } from '../binaries';
+import { setAllowedRoots } from '../media-server';
 const AUDIO_EXT_SET = new Set(AUDIO_EXTS);
 const VIDEO_EXT_SET = new Set(VIDEO_EXTS);
 const IMAGE_EXT_SET = new Set(IMAGE_EXTS);
@@ -421,7 +422,9 @@ export function registerLibraryHandlers(): void {
     try {
       const store = await getStore();
       const folders = store.get('libraryFolders', []);
-      return Array.isArray(folders) ? folders : [];
+      const result = Array.isArray(folders) ? folders : [];
+      await setAllowedRoots(result);
+      return result;
     } catch (err) {
       logger.error('library', 'loadFolders failed', err);
       return [];
@@ -432,6 +435,7 @@ export function registerLibraryHandlers(): void {
     try {
       const store = await getStore();
       store.set('libraryFolders', folders);
+      await setAllowedRoots(folders);
       return folders;
     } catch (err) {
       logger.error('library', 'saveFolders failed', err);

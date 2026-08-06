@@ -18,6 +18,7 @@ import { promisify } from 'util';
 import { errMsg } from '../../shared/helpers';
 import { logger } from '../../shared/logger';
 import type { FileItem } from '../../renderer/src/types/explorer';
+import { addAllowedRoot } from '../media-server';
 
 const execAsync = promisify(execCb);
 
@@ -239,6 +240,7 @@ export function registerFsHandlers(): void {
       return;
     }
     const resolvedPath = /^[A-Z]:$/i.test(dirPath) ? `${dirPath}\\` : dirPath;
+    await addAllowedRoot(resolvedPath);
     let entries;
     try {
       entries = await readdir(resolvedPath, { withFileTypes: true });

@@ -180,7 +180,7 @@ const accentColors = [
       <SettingsPositionGrid
         :model-value="settings.appearance.sidebarPosition"
         :options="sidebarPositionOptions"
-        :selected-label="t(settings.appearance.sidebarPosition)"
+        :selected-label="t(`settings.${settings.appearance.sidebarPosition}`)"
         @update:model-value="settings.updateAppearance({ sidebarPosition: $event as 'left' | 'right' })"
       />
     </SettingsCard>

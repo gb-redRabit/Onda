@@ -72,7 +72,7 @@ export class PipManager {
       resizable: true,
       backgroundColor: '#000000',
       webPreferences: {
-        preload: join(__dirname, '../preload/index.js'),
+        preload: join(__dirname, '../preload/pip.js'),
         sandbox: false,
         contextIsolation: true,
         nodeIntegration: false,

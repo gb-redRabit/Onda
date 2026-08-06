@@ -224,6 +224,11 @@ onUnmounted(() => {
   if (controlsTimeout.value) clearTimeout(controlsTimeout.value);
   if (clickTimer) clearTimeout(clickTimer);
   document.body.style.cursor = 'default';
+  // clear the currently played video on exit so the same file can be reopened
+  if (player.currentTrack?.type === 'video' && !player.pipActive) {
+    player.currentTrack = null;
+    player.isPlaying = false;
+  }
 });
 </script>
 

@@ -120,7 +120,7 @@ watch(
   <SettingsPanel :title="$t('settings.pip')" :description="$t('settings.pipDesc')">
     <SettingsCard>
       <div class="flex items-center justify-between pb-4 border-b border-border-default">
-        <SettingsSectionTitle :title="$t('settings.videoPipSection')" class="!mb-0" />
+        <SettingsSectionTitle :title="$t('settings.videoPipSection')" class="mb-0!" />
         <button
           class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
           :class="

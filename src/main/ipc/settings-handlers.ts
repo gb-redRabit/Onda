@@ -2,6 +2,8 @@ import { ipcMain, dialog, BrowserWindow } from 'electron';
 import { writeFile, readFile } from 'fs/promises';
 import { getStore } from './cover-cache';
 import { configureAutoCheck } from '../updater-scheduler';
+import { sanitizeSettings } from './settings-schema';
+import { encryptApiKeys, decryptApiKeys } from './settings-crypto';
 import type { AppSettings } from '../../renderer/src/types/settings';
 import { logger } from '../../shared/logger';
 
@@ -9,7 +11,9 @@ export function registerSettingsHandlers(): void {
   ipcMain.handle('settings:get', async (): Promise<Partial<AppSettings>> => {
     try {
       const store = await getStore();
-      return (store.store || {}) as Partial<AppSettings>;
+      const { sanitized } = sanitizeSettings(store.store || {});
+      if (sanitized.apiKeys) sanitized.apiKeys = decryptApiKeys(sanitized.apiKeys);
+      return sanitized;
     } catch (e) {
       logger.warn('settings', 'settings:get failed', e);
       return {};
@@ -18,11 +22,16 @@ export function registerSettingsHandlers(): void {
 
   ipcMain.handle('settings:set', async (_event, data: Partial<AppSettings>): Promise<boolean> => {
     try {
+      const { sanitized, droppedKeys } = sanitizeSettings(data);
+      if (droppedKeys.length > 0) {
+        logger.warn('settings', `settings:set dropped invalid keys: ${droppedKeys.join(', ')}`);
+      }
+      if (sanitized.apiKeys) sanitized.apiKeys = encryptApiKeys(sanitized.apiKeys);
       const store = await getStore();
-      for (const [key, value] of Object.entries(data)) {
+      for (const [key, value] of Object.entries(sanitized)) {
         store.set(key, value);
       }
-      if (data.updates) void configureAutoCheck();
+      if (sanitized.updates) void configureAutoCheck();
       return true;
     } catch (e) {
       logger.warn('settings', 'settings:set failed', e);
@@ -43,7 +52,9 @@ export function registerSettingsHandlers(): void {
         });
         if (result.canceled || !result.filePath) return { success: false, canceled: true };
         const store = await getStore();
-        await writeFile(result.filePath, JSON.stringify(store.store || {}, null, 2), 'utf-8');
+        const { sanitized } = sanitizeSettings(store.store || {});
+        if (sanitized.apiKeys) sanitized.apiKeys = decryptApiKeys(sanitized.apiKeys);
+        await writeFile(result.filePath, JSON.stringify(sanitized, null, 2), 'utf-8');
         return { success: true };
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -55,7 +66,9 @@ export function registerSettingsHandlers(): void {
 
   ipcMain.handle(
     'settings:import',
-    async (event): Promise<{ success: boolean; canceled?: boolean; data?: Partial<AppSettings>; error?: string }> => {
+    async (
+      event
+    ): Promise<{ success: boolean; canceled?: boolean; data?: Partial<AppSettings>; error?: string }> => {
       try {
         const win = BrowserWindow.fromWebContents(event.sender);
         if (!win) return { success: false, error: 'No window' };
@@ -67,12 +80,19 @@ export function registerSettingsHandlers(): void {
         if (result.canceled || !result.filePaths[0]) return { success: false, canceled: true };
         const raw = await readFile(result.filePaths[0], 'utf-8');
         const parsed = JSON.parse(raw) as Partial<AppSettings>;
+        const { sanitized, droppedKeys } = sanitizeSettings(parsed);
+        if (droppedKeys.length > 0) {
+          logger.warn('settings', `settings:import dropped invalid keys: ${droppedKeys.join(', ')}`);
+        }
         const store = await getStore();
-        for (const [key, value] of Object.entries(parsed)) {
+        for (const [key, value] of Object.entries(sanitized)) {
           store.set(key, value);
         }
-        if (parsed.updates) void configureAutoCheck();
-        return { success: true, data: parsed };
+        if (sanitized.updates) void configureAutoCheck();
+        // return plaintext keys so the renderer store stays consistent (no double-encrypt on save)
+        const data: Partial<AppSettings> = { ...sanitized };
+        if (data.apiKeys) data.apiKeys = decryptApiKeys(data.apiKeys);
+        return { success: true, data };
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         logger.warn('settings', 'settings:import failed', e);

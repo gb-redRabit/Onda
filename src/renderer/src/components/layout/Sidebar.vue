@@ -123,7 +123,7 @@ function playPlaylist(playlistId: string) {
         <button
           v-for="item in navItems"
           :key="item.label"
-          class="w-full flex items-center gap-3 p-3  rounded-xl text-sm font-medium transition-all"
+          class="w-full flex items-center justify-center gap-3 p-3 rounded-xl text-sm font-medium transition-all"
           :class="
             route.path === item.route
               ? 'bg-accent-base text-white shadow-lg shadow-accent-base/25'

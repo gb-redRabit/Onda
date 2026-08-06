@@ -87,7 +87,7 @@ export function useVideoPlayer(ctx: {
       const seekTo = player.pipTime > 0 ? player.pipTime : player.currentTime;
       if (player.pipTime > 0) player.pipTime = 0;
       el.setAttribute('data-src', src);
-      audioEngine.connectVideoElement();
+      audioEngine.connectVideoElement(el);
       connectVideoEvents(el);
       el.src = src;
 
@@ -132,7 +132,7 @@ export function useVideoPlayer(ctx: {
         }
       }
     } else {
-      el.volume = player.isMuted ? 0 : player.volume;
+      audioEngine.setVideoVolume(player.isMuted ? 0 : player.volume);
       el.playbackRate = settings.playback.playbackSpeed;
       if (player.isPlaying && !player.pipActive)
         el.play().catch((e) => logger.warn('video', 'resume play rejected', e));
@@ -146,7 +146,7 @@ export function useVideoPlayer(ctx: {
     const result = await window.api?.checkAudioCodec(track.path);
     if (!result || result.supported) return;
 
-    el.volume = 0;
+    audioEngine.setVideoVolume(0);
     const seekPos = el.currentTime || 0;
 
     const chunkPath = await window.api?.transcodeAudioChunk(track.path, seekPos, 30);
@@ -386,10 +386,10 @@ export function useVideoPlayer(ctx: {
   watch([() => player.volume, () => player.isMuted], () => {
     if (!videoRef.value) return;
     if (audioEngine.hasSecondaryAudio) {
-      videoRef.value.volume = 0;
+      audioEngine.setVideoVolume(0);
       audioEngine.setVolume(player.isMuted ? 0 : player.volume);
     } else {
-      videoRef.value.volume = player.isMuted ? 0 : player.volume;
+      audioEngine.setVideoVolume(player.isMuted ? 0 : player.volume);
     }
   });
 

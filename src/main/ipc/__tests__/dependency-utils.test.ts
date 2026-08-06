@@ -6,6 +6,8 @@ import {
   ytdlpBinaryName,
   ytdlpDownloadUrl,
   ytdlpShaUrl,
+  ffmpegDownloadUrl,
+  ffmpegShaUrl,
   whichInPath,
   inferPkgManager,
   getMkvExtractCandidates
@@ -41,6 +43,18 @@ describe('ytdlpDownloadUrl', () => {
     expect(ytdlpShaUrl()).toBe(
       'https://github.com/yt-dlp/yt-dlp/releases/latest/download/SHA2-256SUMS'
     );
+  });
+});
+
+describe('ffmpegDownloadUrl / ffmpegShaUrl', () => {
+  it('serves a Windows zip and null on other platforms', () => {
+    expect(ffmpegDownloadUrl('win32')).toContain('ffmpeg-master-latest-win64-gpl.zip');
+    expect(ffmpegDownloadUrl('linux')).toBeNull();
+  });
+
+  it('points the checksum at the sibling .sha256 file of the zip', () => {
+    expect(ffmpegShaUrl('win32')).toBe(`${ffmpegDownloadUrl('win32')}.sha256`);
+    expect(ffmpegShaUrl('linux')).toBeNull();
   });
 });
 

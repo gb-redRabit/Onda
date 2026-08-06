@@ -50,6 +50,12 @@ export function ffmpegDownloadUrl(platform: NodeJS.Platform = process.platform):
   return null;
 }
 
+// BtbN publishes a `.sha256` file next to every release asset (same name + `.sha256`).
+export function ffmpegShaUrl(platform: NodeJS.Platform = process.platform): string | null {
+  const url = ffmpegDownloadUrl(platform);
+  return url ? `${url}.sha256` : null;
+}
+
 // Search the system PATH for an executable (respecting PATHEXT on Windows).
 export function whichInPath(binName: string): string | null {
   const isWin = process.platform === 'win32';

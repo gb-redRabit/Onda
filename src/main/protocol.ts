@@ -1,5 +1,6 @@
 import { protocol, app } from 'electron';
-import { normalize, isAbsolute } from 'path';
+import { normalize, isAbsolute, sep } from 'path';
+import { realpath } from 'fs/promises';
 import { SharpService } from './utils/sharp';
 import { logger } from '../shared/logger';
 
@@ -20,13 +21,32 @@ function getAllowedPrefixes(): string[] {
     for (const p of paths) {
       const n = normalize(p).toLowerCase();
       allowedPrefixes.push(n);
-      // on Windows also add the root letter (e.g. D:\)
-      if (process.platform === 'win32' && /^[A-Z]:\\/i.test(n)) {
-        allowedPrefixes.push(n.slice(0, 3)); // "D:\"
-      }
     }
   }
   return allowedPrefixes;
+}
+
+function isAllowedOrigin(origin: string | null | undefined): string | null {
+  if (!origin) return null;
+  let parsed: URL;
+  try {
+    parsed = new URL(origin);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol === 'file:') return origin;
+  const isLocalDev =
+    (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
+    (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1');
+  return isLocalDev ? origin : null;
+}
+
+function corsHeaders(origin: string | null | undefined): Record<string, string> {
+  const allowed = isAllowedOrigin(origin);
+  if (allowed) {
+    return { 'access-control-allow-origin': allowed };
+  }
+  return {};
 }
 
 protocol.registerSchemesAsPrivileged([
@@ -52,22 +72,32 @@ export function registerOndaProtocolHandler(): void {
       if (!isAbsolute(normalized)) {
         return new Response(`invalid path: ${normalized}`, { status: 400 });
       }
-      const normalizedLower = normalized.toLowerCase();
+      let real = normalized;
+      try {
+        real = await realpath(normalized);
+      } catch {
+        // root check below still applies
+      }
+      const normalizedLower = normalize(real).toLowerCase();
       const prefixes = getAllowedPrefixes();
-      if (!prefixes.some((p) => normalizedLower.startsWith(p))) {
+      const allowed = prefixes.some(
+        (p) => normalizedLower === p || normalizedLower.startsWith(p + sep)
+      );
+      if (!allowed) {
         return new Response('path not allowed', { status: 403 });
       }
       const maxWidth = parseInt(url.searchParams.get('w') || '0');
       const thumbSize = parseInt(url.searchParams.get('t') || '0');
+      const cors = corsHeaders(req.headers.get('origin'));
 
       if (thumbSize > 0) {
-        const buf = await SharpService.getThumbnail(normalized, thumbSize);
+        const buf = await SharpService.getThumbnail(real, thumbSize);
         if (buf) {
           return new Response(new Uint8Array(buf), {
             headers: {
               'content-type': 'image/jpeg',
               'cache-control': 'private, max-age=86400',
-              'access-control-allow-origin': '*'
+              ...cors
             }
           });
         }
@@ -75,13 +105,13 @@ export function registerOndaProtocolHandler(): void {
       }
 
       if (maxWidth > 0 && maxWidth < 4000) {
-        const buf = await SharpService.resize(normalized, maxWidth);
+        const buf = await SharpService.resize(real, maxWidth);
         if (buf) {
           return new Response(new Uint8Array(buf), {
             headers: {
               'content-type': 'image/jpeg',
               'cache-control': 'private, max-age=3600',
-              'access-control-allow-origin': '*'
+              ...cors
             }
           });
         }

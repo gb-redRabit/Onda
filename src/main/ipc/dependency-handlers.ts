@@ -13,6 +13,7 @@ import {
   ytdlpDownloadUrl,
   ytdlpShaUrl,
   ffmpegDownloadUrl,
+  ffmpegShaUrl,
   detectPkgManagers,
   inferPkgManager,
   pkgInstallCmd,
@@ -21,7 +22,6 @@ import {
   type BinTool
 } from './dependency-utils';
 import { getBinDir, resolveBin, resolveBinInfo, invalidateBinaries } from '../binaries';
-import { logger } from '../../shared/logger';
 
 const execAsync = promisify(execCb);
 
@@ -136,6 +136,33 @@ async function sha256OfFile(filePath: string): Promise<string> {
   return createHash('sha256').update(data).digest('hex');
 }
 
+// Fail-closed checksum verification: downloads a SHA manifest, finds the entry for
+// `assetName`, and compares it against the SHA-256 of `filePath`. Throws on any
+// failure (download error, missing entry, or mismatch) so the caller never keeps
+// an unverified binary.
+async function verifyDownloadedFile(
+  filePath: string,
+  shaUrl: string,
+  assetName: string,
+  signal: AbortSignal
+): Promise<void> {
+  const shaDest = join(getBinDir(), `onda-${Date.now()}.sha256`);
+  try {
+    await downloadFile(shaUrl, shaDest, signal);
+    // Manifest lines look like `<hash>  <filename>` (and sometimes `*filename`).
+    const line = (await readFile(shaDest, 'utf-8'))
+      .split(/\r?\n/)
+      .find((l) => l.trim().endsWith(` ${assetName}`) || l.trim().endsWith(` *${assetName}`));
+    const expected = line?.trim().split(/\s+/)[0]?.toLowerCase() ?? '';
+    const actual = await sha256OfFile(filePath);
+    if (!expected || expected !== actual) {
+      throw new Error(`Checksum mismatch for ${assetName}`);
+    }
+  } finally {
+    await unlink(shaDest).catch(() => {});
+  }
+}
+
 // Downloads the yt-dlp release asset into userData/bin and verifies its SHA-256.
 async function installYtdlpManaged(
   sender: WebContents,
@@ -159,27 +186,18 @@ async function installYtdlpManaged(
     }
 
     emitProgress(sender, 'yt-dlp', 'verify', 92);
-    const sumsDest = join(binDir, 'SHA2-256SUMS');
     try {
-      await downloadFile(shaUrl, sumsDest, signal);
-      const assetName = basename(url);
-      // SHA2-256SUMS lines look like `<hash>  <filename>`.
-      const line = (await readFile(sumsDest, 'utf-8'))
-        .split(/\r?\n/)
-        .find((l) => l.trim().endsWith(` ${assetName}`) || l.trim().endsWith(` *${assetName}`));
-      const expected = line?.trim().split(/\s+/)[0]?.toLowerCase() ?? '';
-      const actual = await sha256OfFile(dest);
-      if (!expected || expected !== actual) {
-        await unlink(dest).catch(() => {});
-        await unlink(sumsDest).catch(() => {});
-        return {
-          success: false,
-          error: 'Weryfikacja sumy kontrolnej nie powiodła się — pobrany plik jest uszkodzony.'
-        };
-      }
-      await unlink(sumsDest).catch(() => {});
+      await verifyDownloadedFile(dest, shaUrl, basename(url), signal);
     } catch (e) {
-      logger.warn('deps', 'yt-dlp checksum verification unavailable', e);
+      await unlink(dest).catch(() => {});
+      const err = e as { message?: string };
+      if (err.message === 'cancelled' || signal.aborted) {
+        return { success: false, cancelled: true };
+      }
+      return {
+        success: false,
+        error: 'Weryfikacja sumy kontrolnej nie powiodła się — pobrany plik jest uszkodzony.'
+      };
     }
 
     invalidateBinaries();
@@ -213,6 +231,24 @@ async function installFfmpegManaged(sender: WebContents): Promise<InstallResult>
       const pct = total > 0 ? 5 + Math.round((received / total) * 80) : 5;
       emitProgress(sender, 'ffmpeg', 'download', pct);
     });
+
+    const shaUrl = ffmpegShaUrl();
+    if (shaUrl) {
+      emitProgress(sender, 'ffmpeg', 'verify', 86);
+      try {
+        await verifyDownloadedFile(zipPath, shaUrl, basename(url), signal);
+      } catch (e) {
+        await rm(zipPath, { force: true }).catch(() => {});
+        const err = e as { message?: string };
+        if (err.message === 'cancelled' || signal.aborted) {
+          return { success: false, cancelled: true };
+        }
+        return {
+          success: false,
+          error: 'Weryfikacja sumy kontrolnej nie powiodła się — pobrany plik jest uszkodzony.'
+        };
+      }
+    }
 
     emitProgress(sender, 'ffmpeg', 'extract', 88);
     await rm(extractDir, { recursive: true, force: true }).catch(() => {});

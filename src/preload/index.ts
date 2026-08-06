@@ -10,7 +10,122 @@ function getArg(name: string): string | undefined {
 
 const mediaServerUrl: string = getArg('onda-media-url') ?? '';
 
+const ALLOWED_INVOKE_CHANNELS = new Set<string>([
+  'fs:readdir',
+  'fs:getDrives',
+  'fs:findDuplicates',
+  'fs:delete',
+  'fs:copy',
+  'fs:move',
+  'fs:mkdir',
+  'fs:copyPath',
+  'fs:getProperties',
+  'app:getPath',
+  'app:quit',
+  'window:close',
+  'window:minimize',
+  'window:maximize',
+  'window:exitFullscreen',
+  'window:isFullscreen',
+  'window:toggleFullscreen',
+  'window:setAlwaysOnTop',
+  'dialog:openFile',
+  'dialog:openFolder',
+  'dialog:openFolderFiles',
+  'shell:showItemInFolder',
+  'shell:openTerminal',
+  'shell:openWithDefault',
+  'shell:getFileIcon',
+  'media:getThumbnail',
+  'media:renameFile',
+  'explorer:create',
+  'explorer:tabMoved',
+  'explorer:sendTabToMain',
+  'settings:get',
+  'settings:set',
+  'settings:export',
+  'settings:import',
+  'library:scan',
+  'library:loadFolders',
+  'library:loadScanned',
+  'library:saveFolders',
+  'library:saveScanned',
+  'playlist:loadAll',
+  'playlist:saveAll',
+  'playback:setPosition',
+  'playback:clearPosition',
+  'yt:search',
+  'pip:start',
+  'pip:stop',
+  'pip:preload',
+  'pip:loadtrack',
+  'pip:updateSubtitle',
+  'pip:previewStart',
+  'pip:previewStop',
+  'pip:previewUpdate',
+  'audio-pip:show',
+  'audio-pip:hide',
+  'audio-pip:update'
+]);
+
+const ALLOWED_SEND_CHANNELS = new Set<string>([
+  'explorer:refreshAll',
+  'audio-pip:vizData',
+  'audio-pip:timeUpdate',
+  'audio-pip:theme',
+  'audio-pip:showMain',
+  'audio-pip:action',
+  'audio-pip:progressClick',
+  'pip:theme',
+  'pip:locale',
+  'pip:ended',
+  'pip:maximize',
+  'pip:timeUpdate',
+  'pip:hidden'
+]);
+
+const ALLOWED_RECEIVE_CHANNELS = new Set<string>([
+  'window:maximized',
+  'window:fullscreenChanged',
+  'dep:progress',
+  'updater:event',
+  'audio-pip:closed',
+  'audio-pip:action',
+  'audio-pip:progressClick',
+  'audio-pip:update',
+  'audio-pip:vizData',
+  'audio-pip:theme',
+  'pip:closed',
+  'pip:ended',
+  'pip:maximize',
+  'pip:videoSrc',
+  'pip:play',
+  'pip:requestTime',
+  'pip:pause',
+  'pip:clear',
+  'pip:subtitle',
+  'pip:clearSubtitle',
+  'pip:theme',
+  'pip:locale',
+  'fs:readdir:batch',
+  'library:scan:progress',
+  'media:playPause',
+  'media:next',
+  'media:previous',
+  'media:stop',
+  'media:volumeUp',
+  'media:volumeDown',
+  'media:toggleMute',
+  'explorer:add-tab',
+  'explorer:refresh',
+  'explorer:remove-tab'
+]);
+
 function trySend(channel: string, ...args: unknown[]): void {
+  if (!ALLOWED_SEND_CHANNELS.has(channel)) {
+    logger.warn('preload', `IPC send on non-allowlisted channel '${channel}' blocked`);
+    return;
+  }
   try {
     ipcRenderer.send(channel, ...args);
   } catch (e) {
@@ -19,6 +134,10 @@ function trySend(channel: string, ...args: unknown[]): void {
 }
 
 function tryInvoke(channel: string, ...args: unknown[]): Promise<unknown> {
+  if (!ALLOWED_INVOKE_CHANNELS.has(channel)) {
+    logger.warn('preload', `IPC invoke on non-allowlisted channel '${channel}' blocked`);
+    return Promise.resolve(undefined);
+  }
   try {
     const p = ipcRenderer.invoke(channel, ...args);
     return p.catch((e) => {
@@ -37,6 +156,10 @@ const api = {
   getWindowId: (): Promise<number> => ipcRenderer.invoke('window:id'),
   send: trySend,
   on: (channel: string, callback: (...args: unknown[]) => void): (() => void) => {
+    if (!ALLOWED_RECEIVE_CHANNELS.has(channel)) {
+      logger.warn('preload', `IPC on for non-allowlisted channel '${channel}' blocked`);
+      return () => {};
+    }
     const handler = (_event: Electron.IpcRendererEvent, ...args: unknown[]): void =>
       callback(...args);
     ipcRenderer.on(channel, handler);
@@ -45,9 +168,17 @@ const api = {
     };
   },
   once: (channel: string, callback: (...args: unknown[]) => void): void => {
+    if (!ALLOWED_RECEIVE_CHANNELS.has(channel)) {
+      logger.warn('preload', `IPC once for non-allowlisted channel '${channel}' blocked`);
+      return;
+    }
     ipcRenderer.once(channel, (_event, ...args) => callback(...args));
   },
   removeAllListeners: (channel: string): void => {
+    if (!ALLOWED_RECEIVE_CHANNELS.has(channel)) {
+      logger.warn('preload', `IPC removeAllListeners on non-allowlisted channel '${channel}' blocked`);
+      return;
+    }
     ipcRenderer.removeAllListeners(channel);
   },
   pipStart: async (
@@ -71,17 +202,26 @@ const api = {
     const r = await tryInvoke('pip:stop');
     return !!r;
   },
-  pipPreviewStart: (opts: {
+  pipPreviewStart: async (opts: {
     position?: string;
     width?: number;
     height?: number;
-  }): Promise<boolean> => ipcRenderer.invoke('pip:previewStart', opts),
-  pipPreviewStop: (): Promise<boolean> => ipcRenderer.invoke('pip:previewStop'),
-  pipPreviewUpdate: (opts: {
+  }): Promise<boolean> => {
+    const r = await tryInvoke('pip:previewStart', opts);
+    return !!r;
+  },
+  pipPreviewStop: async (): Promise<boolean> => {
+    const r = await tryInvoke('pip:previewStop');
+    return !!r;
+  },
+  pipPreviewUpdate: async (opts: {
     position?: string;
     width?: number;
     height?: number;
-  }): Promise<boolean> => ipcRenderer.invoke('pip:previewUpdate', opts),
+  }): Promise<boolean> => {
+    const r = await tryInvoke('pip:previewUpdate', opts);
+    return !!r;
+  },
   pipPreload: async (
     videoSrc: string,
     subtitleData: {
@@ -206,9 +346,6 @@ const api = {
   },
   checkAudioCodec: (filePath: string): Promise<{ codec: string; supported: boolean } | null> =>
     ipcRenderer.invoke('media:checkAudioCodec', filePath),
-  setAllowedRoots: async (roots: string[]): Promise<void> => {
-    await tryInvoke('media:setAllowedRoots', roots);
-  },
   transcodeAudio: (filePath: string): Promise<string | null> =>
     ipcRenderer.invoke('media:transcodeAudio', filePath),
   transcodeAudioChunk: (

@@ -140,7 +140,6 @@ interface OndaAPI {
     } | null
   ) => Promise<void>;
   checkAudioCodec: (filePath: string) => Promise<{ codec: string; supported: boolean } | null>;
-  setAllowedRoots: (roots: string[]) => Promise<void>;
   transcodeAudio: (filePath: string) => Promise<string | null>;
   transcodeAudioChunk: (
     filePath: string,

@@ -15,9 +15,11 @@ type FakeNode = {
 
 type TestableAudioEngine = {
   sourceNode: FakeNode | null;
+  videoSourceNode: FakeNode | null;
+  videoGainNode: FakeNode | null;
   eqFilters: FakeNode[];
   connectAudio(el: unknown): void;
-  connectVideoElement(): void;
+  connectVideoElement(el: unknown): void;
   disconnectVideoElement(): void;
 };
 
@@ -86,7 +88,7 @@ describe('audioEngine video element routing', () => {
     engine.connectAudio(el);
     expect(engine.sourceNode).not.toBeNull();
 
-    engine.connectVideoElement();
+    engine.connectVideoElement(el);
     expect(engine.sourceNode?.disconnect).toHaveBeenCalled();
   });
 
@@ -95,7 +97,7 @@ describe('audioEngine video element routing', () => {
     engine.connectAudio(el);
     expect(engine.sourceNode).not.toBeNull();
 
-    engine.connectVideoElement();
+    engine.connectVideoElement(el);
     engine.sourceNode!.disconnect.mockClear();
 
     engine.disconnectVideoElement();
@@ -108,6 +110,21 @@ describe('audioEngine video element routing', () => {
   });
 
   it('connectVideoElement is a no-op without a source node', () => {
-    expect(() => engine.connectVideoElement()).not.toThrow();
+    const el = new FakeAudio() as unknown as HTMLAudioElement;
+    expect(() => engine.connectVideoElement(el)).not.toThrow();
+  });
+
+  it('routes the video element through the video gain node into the EQ chain', () => {
+    const el = new FakeAudio() as unknown as HTMLAudioElement;
+
+    engine.connectVideoElement(el);
+
+    const videoSource = engine.videoSourceNode;
+    const videoGain = engine.videoGainNode;
+    expect(videoSource).not.toBeNull();
+    expect(videoGain).not.toBeNull();
+    expect(videoSource!.connect).toHaveBeenCalledWith(videoGain);
+    const firstFilter = engine.eqFilters[0];
+    expect(videoGain!.connect).toHaveBeenCalledWith(firstFilter);
   });
 });

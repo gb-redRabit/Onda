@@ -1,7 +1,7 @@
 import http from 'http';
 import fs from 'fs';
 import crypto from 'crypto';
-import { normalize, isAbsolute } from 'path';
+import { normalize, isAbsolute, sep } from 'path';
 import { logger } from '../shared/logger';
 import { getMimeType } from '../shared/mime';
 
@@ -13,8 +13,38 @@ export interface MediaServer {
 
 let allowedRoots: string[] = [];
 
-export function setAllowedRoots(roots: string[]): void {
-  allowedRoots = roots.map(r => normalize(r));
+async function resolveReal(root: string): Promise<string> {
+  try {
+    return await fs.promises.realpath(root);
+  } catch {
+    return normalize(root);
+  }
+}
+
+export async function setAllowedRoots(roots: string[]): Promise<void> {
+  const resolved: string[] = [];
+  for (const r of roots) {
+    if (typeof r === 'string' && r) {
+      resolved.push(await resolveReal(r));
+    }
+  }
+  allowedRoots = resolved;
+}
+
+export async function addAllowedRoot(root: string): Promise<void> {
+  if (typeof root !== 'string' || !root) return;
+  const real = await resolveReal(root);
+  if (!allowedRoots.includes(real)) {
+    allowedRoots.push(real);
+  }
+}
+
+function isWithinRoot(filePath: string, root: string): boolean {
+  if (filePath === root) return true;
+  return (
+    filePath.startsWith(root) &&
+    (filePath.charAt(root.length) === sep || filePath.charAt(root.length) === '/')
+  );
 }
 
 function timingSafeEqualString(a: string, b: string): boolean {
@@ -25,8 +55,7 @@ function timingSafeEqualString(a: string, b: string): boolean {
 }
 
 function allowedOrigin(origin: string | undefined): string | null {
-  if (!origin) return null;
-  if (origin === 'null') return 'null';
+  if (!origin || origin === 'null') return null;
   let parsed: URL;
   try {
     parsed = new URL(origin);
@@ -92,19 +121,26 @@ export function createMediaServer(): Promise<MediaServer> {
           return;
         }
 
+        let realPath = normalized;
+        try {
+          realPath = await fs.promises.realpath(normalized);
+        } catch {
+          // fall back to normalized path; root check below still applies
+        }
+
         if (allowedRoots.length > 0) {
-          const isAllowed = allowedRoots.some(root => normalized.startsWith(root));
-          if (!isAllowed) {
-            logger.warn('media-server', `rejected path outside allowed roots: ${normalized}`);
+          const allowed = allowedRoots.some((root) => isWithinRoot(realPath, root));
+          if (!allowed) {
+            logger.warn('media-server', `rejected path outside allowed roots: ${realPath}`);
             res.writeHead(403);
             res.end('forbidden');
             return;
           }
         }
 
-        const stat = await fs.promises.stat(normalized);
+        const stat = await fs.promises.stat(realPath);
         const fileSize = stat.size;
-        const contentType = getMimeType(normalized);
+        const contentType = getMimeType(realPath);
         const range = req.headers.range;
 
         res.setHeader('accept-ranges', 'bytes');
@@ -126,12 +162,12 @@ export function createMediaServer(): Promise<MediaServer> {
               'content-range': `bytes ${start}-${end}/${fileSize}`,
               'content-length': String(chunkLen)
             });
-            const stream = fs.createReadStream(normalized, { start, end });
-            stream.pipe(res);
+            const stream = fs.createReadStream(realPath, { start, end });
             stream.on('error', (err) => {
               logger.warn('media-server', `stream error (suffix range) ${rawPath}: ${err.message}`);
               res.destroy();
             });
+            stream.pipe(res);
             return;
           }
           const match = range.match(/bytes=(\d+)-(\d*)/);
@@ -155,20 +191,20 @@ export function createMediaServer(): Promise<MediaServer> {
             'content-length': String(chunkLen)
           });
 
-          const stream = fs.createReadStream(normalized, { start, end });
-          stream.pipe(res);
+          const stream = fs.createReadStream(realPath, { start, end });
           stream.on('error', (err) => {
             logger.warn('media-server', `stream error (range) ${rawPath}: ${err.message}`);
             res.destroy();
           });
+          stream.pipe(res);
         } else {
           res.writeHead(200, { 'content-length': String(fileSize) });
-          const stream = fs.createReadStream(normalized);
-          stream.pipe(res);
+          const stream = fs.createReadStream(realPath);
           stream.on('error', (err) => {
             logger.warn('media-server', `stream error ${rawPath}: ${err.message}`);
             res.destroy();
           });
+          stream.pipe(res);
         }
       } catch (e) {
         const err = e as { message?: string; code?: string };

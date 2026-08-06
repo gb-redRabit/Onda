@@ -1,4 +1,5 @@
 import { onMounted, onUnmounted } from 'vue';
+import { audioEngine } from '@renderer/modules/audioEngine';
 
 export function usePlayerKeyboard(params: {
   player: {
@@ -52,7 +53,7 @@ export function usePlayerKeyboard(params: {
         if (vp.videoRef.value) {
           const newVol = Math.min(1, player.volume + 0.05);
           player.setVolume(newVol);
-          vp.videoRef.value.volume = player.isMuted ? 0 : newVol;
+          audioEngine.setVideoVolume(player.isMuted ? 0 : newVol);
           notify(`Glosnosc: ${Math.round(newVol * 100)}%`, 1200);
         }
         break;
@@ -61,7 +62,7 @@ export function usePlayerKeyboard(params: {
         if (vp.videoRef.value) {
           const newVol = Math.max(0, player.volume - 0.05);
           player.setVolume(newVol);
-          vp.videoRef.value.volume = player.isMuted ? 0 : newVol;
+          audioEngine.setVideoVolume(player.isMuted ? 0 : newVol);
           notify(`Glosnosc: ${Math.round(newVol * 100)}%`, 1200);
         }
         break;

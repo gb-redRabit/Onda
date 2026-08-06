@@ -18,12 +18,8 @@ import { errMsg } from '../../shared/helpers';
 import { logger } from '../../shared/logger';
 import { runCommand } from '../utils/exec';
 import { resolveBin } from '../binaries';
-import { setAllowedRoots } from '../media-server';
 
 export function registerMediaHandlers(): void {
-  ipcMain.handle('media:setAllowedRoots', (_event, roots: string[]) => {
-    setAllowedRoots(roots);
-  });
   ipcMain.handle(
     'media:getThumbnail',
     async (_event, filePath: string, maxSize: number = 320): Promise<string | null> => {
