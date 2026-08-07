@@ -30,7 +30,13 @@ export class PlayerModule implements AppModule {
 
   async deactivate(): Promise<void> {
     this._active = false;
-    await audioEngine.deactivate();
+    const player = usePlayerStore();
+    if (player.currentTrack?.type === 'video') {
+      await audioEngine.deactivate();
+    } else {
+      // Audio track (or none) — keep playing in the background during navigation.
+      audioEngine.savePosition();
+    }
   }
 
   async destroy(): Promise<void> {

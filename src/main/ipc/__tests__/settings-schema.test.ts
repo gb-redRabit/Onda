@@ -46,7 +46,8 @@ describe('sanitizeSettings', () => {
         locale: 'pl',
         sidebarPosition: 'right',
         audioPipMode: 'wide',
-        audioPipPosition: 'bottom',
+        audioPipPosition: 'bottom-right',
+        audioPipEdgePosition: 'bottom',
         transparency: 0.2
       }
     });
@@ -55,9 +56,17 @@ describe('sanitizeSettings', () => {
       locale: 'pl',
       sidebarPosition: 'right',
       audioPipMode: 'wide',
-      audioPipPosition: 'bottom',
+      audioPipPosition: 'bottom-right',
+      audioPipEdgePosition: 'bottom',
       transparency: 0.2
     });
+  });
+
+  it('drops corner-only audioPipPosition values that are not corners', () => {
+    const { sanitized } = sanitizeSettings({
+      appearance: { audioPipPosition: 'top', audioPipEdgePosition: 'top' }
+    });
+    expect(sanitized.appearance).toEqual({ audioPipEdgePosition: 'top' });
   });
 
   it('sanitizes apiKeys structure without encrypting', () => {

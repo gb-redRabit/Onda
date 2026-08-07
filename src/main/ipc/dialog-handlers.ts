@@ -24,6 +24,30 @@ export function registerDialogHandlers(): void {
     }
   );
 
+  ipcMain.handle(
+    'dialog:openSubtitle',
+    async (_event): Promise<{ canceled: boolean; filePaths: string[] }> => {
+      try {
+        const win = BrowserWindow.getFocusedWindow();
+        if (!win) return { canceled: true, filePaths: [] };
+        const result = await dialog.showOpenDialog(win, {
+          properties: ['openFile', 'multiSelections'],
+          filters: [
+            {
+              name: 'Subtitles',
+              extensions: ['srt', 'ass', 'ssa', 'vtt', 'sub']
+            },
+            { name: 'All Files', extensions: ['*'] }
+          ]
+        });
+        return { canceled: result.canceled, filePaths: result.filePaths.slice() };
+      } catch (e) {
+        logger.warn('dialog', 'openSubtitle failed', e);
+        return { canceled: true, filePaths: [] };
+      }
+    }
+  );
+
   ipcMain.handle('dialog:openFile', async (_event, options?: Electron.OpenDialogOptions) => {
     try {
       const win = BrowserWindow.getFocusedWindow();

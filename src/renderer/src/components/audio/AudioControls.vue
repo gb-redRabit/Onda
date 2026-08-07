@@ -121,6 +121,7 @@ function onVolume(e: MouseEvent) {
           ? 'bg-accent-ghost text-accent-base'
           : 'text-fg-faint hover:text-fg-muted hover:bg-bg-hover'
       "
+      data-eq-toggle
       @click="player.toggleEqualizer"
     >
       <SlidersHorizontal :size="12" />

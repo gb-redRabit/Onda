@@ -45,6 +45,11 @@ function resolvePath(link: (typeof quickLinks)[number]): string {
   return link.path;
 }
 
+function isActiveLink(link: (typeof quickLinks)[number]): boolean {
+  if (link.label !== 'This PC' && !resolvePath(link)) return false;
+  return explorer.currentPath === resolvePath(link);
+}
+
 function onNavDragOver(e: DragEvent, path: string) {
   e.preventDefault();
   if (e.dataTransfer) e.dataTransfer.dropEffect = e.ctrlKey || e.metaKey ? 'copy' : 'move';
@@ -99,7 +104,7 @@ async function onNavDrop(e: DragEvent, path: string) {
         :key="link.label"
         class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors text-left disabled:opacity-40"
         :class="{
-          'bg-accent-ghost text-accent-base': explorer.currentPath === resolvePath(link),
+          'bg-accent-ghost text-accent-base': isActiveLink(link),
           'ring-2 ring-accent-base bg-accent-ghost/50': dropTargetPath === resolvePath(link)
         }"
         :disabled="link.label !== 'This PC' && !resolvePath(link)"

@@ -105,6 +105,7 @@ interface OndaAPI {
   ) => Promise<{ success: boolean; error?: string }>;
   readCover: (filePath: string) => Promise<{ mime?: string; data?: number[] } | null>;
   openImageDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>;
+  openSubtitleDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>;
   musicbrainzSearchRelease: (
     query: string
   ) => Promise<{ success: boolean; releases: MusicbrainzRelease[]; error?: string }>;

@@ -1,16 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, shallowRef, triggerRef, inject } from 'vue';
-import { useVirtualizer } from '@tanstack/vue-virtual';
-import { useI18n } from 'vue-i18n';
+import { inject, ref } from 'vue';
 import { ChevronUp, ChevronDown, HardDrive, FolderOpen } from '@lucide/vue';
-import { useExplorerStore } from '@renderer/stores/explorer';
-import { useClipboardStore } from '@renderer/stores/clipboard';
-import { useSettingsStore } from '@renderer/stores/settings';
-import { logger } from '@shared/logger';
 import { isLibraryFolder } from '@renderer/utils/libraryFolders';
 import { beginFileDrag } from '@renderer/utils/fileDrag';
-import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
-import { handleTabDrop } from '@renderer/utils/explorerTabDrop';
+import { useExplorerContent } from '@renderer/composables/useExplorerContent';
 import ExplorerGridItem from '@renderer/components/explorer/ExplorerGridItem.vue';
 import ExplorerTableRow from '@renderer/components/explorer/ExplorerTableRow.vue';
 import type { FileItem } from '@renderer/types/explorer';
@@ -24,296 +17,30 @@ const emit = defineEmits<{
   menu: [event: MouseEvent, item: FileItem | null];
 }>();
 
-const explorer = useExplorerStore();
-const fileClipboard = useClipboardStore();
-const settings = useSettingsStore();
-const { t } = useI18n();
 const showConfirm = inject<(msg: string) => Promise<boolean>>('showConfirm', async () => true);
 
-const GRID_ITEM_WIDTHS: Record<string, number> = {
-  small: 72,
-  medium: 108,
-  large: 160,
-  extraLarge: 240
-};
-const GRID_GAPS: Record<string, number> = { small: 4, medium: 8, large: 12, extraLarge: 16 };
-const GRID_ITEM_HEIGHTS: Record<string, number> = {
-  small: 66,
-  medium: 90,
-  large: 118,
-  extraLarge: 146
-};
-const LIST_ITEM_HEIGHTS: Record<string, number> = { extraSmall: 28, details: 36 };
-
-const files = computed(() => props.files);
 const scrollRef = ref<HTMLDivElement | null>(null);
-const containerWidth = ref(800);
-const selectionAnchorIndex = ref(-1);
-const hoveredFolderPath = ref<string | null>(null);
-const extraSmallIcons = shallowRef<Record<string, string>>({});
 
-const isListMode = computed(
-  () => explorer.viewMode === 'extraSmall' || explorer.viewMode === 'details'
-);
-const isGridMode = computed(() => !isListMode.value);
-
-const itemsPerRow = computed(() => {
-  if (isListMode.value) return 1;
-  const config = GRID_ITEM_WIDTHS[explorer.viewMode] + GRID_GAPS[explorer.viewMode];
-  return Math.max(1, Math.floor((containerWidth.value + GRID_GAPS[explorer.viewMode]) / config));
-});
-
-const totalVirtualRows = computed(() => {
-  if (isListMode.value) return files.value.length;
-  return Math.ceil(files.value.length / itemsPerRow.value);
-});
-
-const virtualItemHeight = computed(() => {
-  if (isListMode.value) return LIST_ITEM_HEIGHTS[explorer.viewMode];
-  return GRID_ITEM_HEIGHTS[explorer.viewMode];
-});
-
-function getRowItems(rowIndex: number): FileItem[] {
-  if (isListMode.value) return [files.value[rowIndex]];
-  const start = rowIndex * itemsPerRow.value;
-  return files.value.slice(start, start + itemsPerRow.value);
-}
-
-const ICON_CACHE_MAX = 500;
-const ICON_CONCURRENCY = 6;
-const iconCacheOrder: string[] = [];
-const iconPendingQueue = new Set<string>();
-let iconActive = 0;
-let iconQueueTimer: ReturnType<typeof setTimeout> | null = null;
-let iconRenderTimer: ReturnType<typeof setTimeout> | null = null;
-let pendingIcons: Record<string, string> = {};
-
-function scheduleIconRender() {
-  if (iconRenderTimer !== null) return;
-  iconRenderTimer = setTimeout(() => {
-    iconRenderTimer = null;
-    if (Object.keys(pendingIcons).length === 0) return;
-    extraSmallIcons.value = { ...extraSmallIcons.value, ...pendingIcons };
-    pendingIcons = {};
-    triggerRef(extraSmallIcons);
-  }, 0);
-}
-
-function pumpIcons() {
-  while (iconActive < ICON_CONCURRENCY && iconPendingQueue.size > 0) {
-    const path = iconPendingQueue.values().next().value as string;
-    iconPendingQueue.delete(path);
-    iconActive++;
-    window.api
-      ?.invoke('shell:getFileIcon', path)
-      .then((icon) => {
-        if (icon) {
-          if (iconCacheOrder.length >= ICON_CACHE_MAX) {
-            const evicted = iconCacheOrder.pop()!;
-            delete pendingIcons[evicted];
-            delete extraSmallIcons.value[evicted];
-          }
-          iconCacheOrder.unshift(path);
-          pendingIcons[path] = icon as string;
-          scheduleIconRender();
-        }
-      })
-      .catch((err) => logger.error('Explorer', 'getFileIcon', err))
-      .finally(() => {
-        iconActive--;
-        pumpIcons();
-      });
-  }
-}
-
-function extraSmallIcon(item: FileItem): string | null {
-  if (explorer.isAtDrives || item.isDirectory) return null;
-  if (extraSmallIcons.value[item.path]) {
-    const idx = iconCacheOrder.indexOf(item.path);
-    if (idx > 0) {
-      iconCacheOrder.splice(idx, 1);
-      iconCacheOrder.unshift(item.path);
-    }
-    return extraSmallIcons.value[item.path];
-  }
-  if (!iconPendingQueue.has(item.path)) {
-    iconPendingQueue.add(item.path);
-    if (iconQueueTimer === null) {
-      iconQueueTimer = setTimeout(() => {
-        iconQueueTimer = null;
-        pumpIcons();
-      }, 0);
-    }
-  }
-  return null;
-}
-
-const virtualizerOptions = computed(() => ({
-  count: totalVirtualRows.value,
-  getScrollElement: () => scrollRef.value,
-  estimateSize: () => virtualItemHeight.value,
-  overscan: 2
-}));
-const virtualizer = useVirtualizer(virtualizerOptions);
-
-let resizeObserver: ResizeObserver | null = null;
-
-onMounted(() => {
-  if (scrollRef.value) {
-    resizeObserver = new ResizeObserver((entries) => {
-      containerWidth.value = entries[0].contentRect.width;
-    });
-    resizeObserver.observe(scrollRef.value);
-  }
-});
-
-onBeforeUnmount(() => {
-  resizeObserver?.disconnect();
-  if (iconQueueTimer) {
-    clearTimeout(iconQueueTimer);
-    iconQueueTimer = null;
-  }
-  if (iconRenderTimer) {
-    clearTimeout(iconRenderTimer);
-    iconRenderTimer = null;
-  }
-});
-
-function onItemClick(event: MouseEvent, path: string, index: number) {
-  if (event.ctrlKey || event.metaKey) {
-    explorer.toggleSelect(path);
-    selectionAnchorIndex.value = index;
-  } else if (event.shiftKey && selectionAnchorIndex.value >= 0) {
-    const start = Math.min(selectionAnchorIndex.value, index);
-    const end = Math.max(selectionAnchorIndex.value, index);
-    explorer.clearSelection();
-    for (let i = start; i <= end; i++) {
-      explorer.selectedFiles.add(files.value[i].path);
-    }
-    selectionAnchorIndex.value = index;
-  } else {
-    explorer.clearSelection();
-    explorer.selectedFiles.add(path);
-    selectionAnchorIndex.value = index;
-  }
-}
-
-// --- content drag & drop ---
-function getDropPaths(dt: DataTransfer | null, raw: string): string[] {
-  const fromPlain = raw.split('\n').filter(Boolean);
-  if (fromPlain.length > 0) return fromPlain;
-  return getDroppedFilePaths(dt);
-}
-
-function onContentDragOver(e: DragEvent) {
-  if (e.dataTransfer) e.dataTransfer.dropEffect = e.ctrlKey || e.metaKey ? 'copy' : 'move';
-  const el = (e.target as HTMLElement)?.closest('[data-folder-path]');
-  hoveredFolderPath.value = el ? el.getAttribute('data-folder-path') : null;
-}
-
-function onContentDragLeave(e: DragEvent) {
-  const el = (e.target as HTMLElement)?.closest('[data-folder-path]');
-  if (!el) hoveredFolderPath.value = null;
-}
-
-async function onContentDrop(e: DragEvent) {
-  e.preventDefault();
-  const raw = e.dataTransfer?.getData('text/plain') || '';
-  if (await handleTabDrop(raw)) return;
-  const paths = getDropPaths(e.dataTransfer, raw);
-  const targetDir = hoveredFolderPath.value || explorer.currentPath;
-  hoveredFolderPath.value = null;
-  if (paths.length === 0) return;
-  const ctrl = e.ctrlKey || e.metaKey;
-  if (settings.explorer.confirmBeforeMove) {
-    const key = ctrl ? 'explorer.copyConfirm' : 'explorer.moveConfirm';
-    const ok = await showConfirm(
-      t(key, { n: paths.length, dir: targetDir.split('\\').pop() || targetDir })
-    );
-    if (!ok) return;
-  }
-  const method = ctrl ? 'fs:copy' : 'fs:move';
-  await window.api?.invoke(method, paths, targetDir);
-  explorer.loadFiles(explorer.currentPath);
-  window.api?.send('explorer:refreshAll');
-}
-
-// --- band (marquee) select ---
-const bandSelect = ref<{ left: number; top: number; width: number; height: number } | null>(null);
-const bandOrigin = ref<{ clientX: number; clientY: number } | null>(null);
-let bandRects: { path: string; left: number; top: number; right: number; bottom: number }[] = [];
-let bandRafId: number | null = null;
-
-function onBandMouseDown(e: MouseEvent) {
-  const target = e.target as HTMLElement;
-  if (target.tagName === 'BUTTON' || target.closest('button')) return;
-  explorer.clearSelection();
-  const rect = scrollRef.value?.getBoundingClientRect();
-  if (!rect) return;
-  bandOrigin.value = { clientX: e.clientX, clientY: e.clientY };
-  bandSelect.value = { left: e.clientX, top: e.clientY, width: 0, height: 0 };
-  bandRects = [];
-  const buttons = scrollRef.value?.querySelectorAll('button[data-file-path]');
-  buttons?.forEach((btn) => {
-    const path = btn.getAttribute('data-file-path');
-    if (!path) return;
-    const r = btn.getBoundingClientRect();
-    bandRects.push({ path, left: r.left, top: r.top, right: r.right, bottom: r.bottom });
-  });
-  document.addEventListener('mousemove', onBandMouseMove);
-  document.addEventListener('mouseup', onBandMouseUp);
-}
-
-function onBandMouseMove(e: MouseEvent) {
-  if (!bandOrigin.value || bandRafId !== null) return;
-  const ox = bandOrigin.value.clientX;
-  const oy = bandOrigin.value.clientY;
-  const clientX = e.clientX;
-  const clientY = e.clientY;
-  bandRafId = requestAnimationFrame(() => {
-    bandRafId = null;
-    if (!bandOrigin.value) return;
-    const sel = {
-      left: Math.min(clientX, ox),
-      top: Math.min(clientY, oy),
-      width: Math.abs(clientX - ox),
-      height: Math.abs(clientY - oy)
-    };
-    bandSelect.value = sel;
-    explorer.clearSelection();
-    for (const btn of bandRects) {
-      const overlap = !(
-        btn.right < sel.left ||
-        btn.left > sel.left + sel.width ||
-        btn.bottom < sel.top ||
-        btn.top > sel.top + sel.height
-      );
-      if (overlap) explorer.selectedFiles.add(btn.path);
-    }
-  });
-}
-
-function onBandMouseUp() {
-  if (bandRafId !== null) {
-    cancelAnimationFrame(bandRafId);
-    bandRafId = null;
-  }
-  bandRects = [];
-  bandSelect.value = null;
-  bandOrigin.value = null;
-  document.removeEventListener('mousemove', onBandMouseMove);
-  document.removeEventListener('mouseup', onBandMouseUp);
-}
-
-function reveal(path: string) {
-  const idx = files.value.findIndex((f) => f.path === path);
-  explorer.clearSelection();
-  explorer.selectedFiles.add(path);
-  if (idx >= 0) {
-    const row = isListMode.value ? idx : Math.floor(idx / itemsPerRow.value);
-    virtualizer.value.scrollToIndex(row, { align: 'center' });
-  }
-}
+const {
+  files,
+  explorer,
+  fileClipboard,
+  hoveredFolderPath,
+  extraSmallIcon,
+  isGridMode,
+  itemsPerRow,
+  getRowItems,
+  virtualizer,
+  GRID_ITEM_WIDTHS,
+  GRID_GAPS,
+  bandSelect,
+  onItemClick,
+  onContentDragOver,
+  onContentDragLeave,
+  onContentDrop,
+  onBandMouseDown,
+  reveal
+} = useExplorerContent(props, showConfirm, scrollRef);
 
 defineExpose({ reveal });
 </script>
@@ -341,9 +68,7 @@ defineExpose({ reveal });
       v-if="explorer.isLoading && files.length === 0"
       class="flex justify-center py-8"
     >
-      <div
-        class="w-6 h-6 border-2 border-accent-base border-t-transparent rounded-full animate-spin"
-      />
+      <div class="w-6 h-6 border-2 border-accent-base border-t-transparent rounded-full animate-spin" />
     </div>
 
     <div v-if="explorer.isAtDrives && files.length > 0" class="mb-3">

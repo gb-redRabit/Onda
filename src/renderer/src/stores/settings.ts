@@ -25,6 +25,11 @@ import {
   DEFAULT_UPDATES,
   DEFAULT_TOAST
 } from '@renderer/utils/constants';
+import {
+  loadSettings,
+  persistSettings,
+  mergeSettings
+} from '@renderer/utils/settingsStorage';
 
 export const useSettingsStore = defineStore('settings', () => {
   const appearance = ref<AppearanceSettings>({ ...DEFAULT_APPEARANCE });
@@ -41,59 +46,41 @@ export const useSettingsStore = defineStore('settings', () => {
   const isLoaded = ref(false);
 
   async function load() {
-    try {
-      if (window.api) {
-        const data = await window.api.invoke('settings:get');
-        if (data.appearance) Object.assign(appearance.value, data.appearance);
-        if (data.playback) Object.assign(playback.value, data.playback);
-        if (data.explorer) Object.assign(explorer.value, data.explorer);
-        if (data.library) Object.assign(library.value, data.library);
-        if (data.download) Object.assign(download.value, data.download);
-        if (data.shortcuts) Object.assign(shortcuts.value, data.shortcuts);
-        if (data.network) Object.assign(network.value, data.network);
-        if (data.apiKeys) Object.assign(apiKeys.value, data.apiKeys);
-        if (data.updates) Object.assign(updates.value, data.updates);
-        if (data.toast) Object.assign(toast.value, data.toast);
-        if (data.dependencies) Object.assign(dependencies.value, data.dependencies);
-      }
-    } catch {
-      // use defaults
-    }
+    await loadSettings({
+      appearance,
+      playback,
+      explorer,
+      library,
+      download,
+      shortcuts,
+      network,
+      apiKeys,
+      updates,
+      toast,
+      dependencies
+    });
     isLoaded.value = true;
   }
 
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const _save = async () => {
-    try {
-      if (window.api) {
-        const payload = JSON.parse(
-          JSON.stringify({
-            appearance: appearance.value,
-            playback: playback.value,
-            explorer: explorer.value,
-            library: library.value,
-            download: download.value,
-            shortcuts: shortcuts.value,
-            network: network.value,
-            apiKeys: apiKeys.value,
-            updates: updates.value,
-            toast: toast.value,
-            dependencies: dependencies.value
-          })
-        );
-        await window.api.invoke('settings:set', payload);
-      }
-    } catch {
-      // silent
-    }
-  };
-
   const save = () => {
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
       saveTimer = null;
-      _save();
+      persistSettings({
+        appearance,
+        playback,
+        explorer,
+        library,
+        download,
+        shortcuts,
+        network,
+        apiKeys,
+        updates,
+        toast,
+        dependencies
+      });
     }, 300);
   };
 
@@ -131,17 +118,22 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   function applyImported(data: Partial<AppSettings>) {
-    if (data.appearance) Object.assign(appearance.value, data.appearance);
-    if (data.playback) Object.assign(playback.value, data.playback);
-    if (data.explorer) Object.assign(explorer.value, data.explorer);
-    if (data.library) Object.assign(library.value, data.library);
-    if (data.download) Object.assign(download.value, data.download);
-    if (data.shortcuts) Object.assign(shortcuts.value, data.shortcuts);
-    if (data.network) Object.assign(network.value, data.network);
-    if (data.apiKeys) Object.assign(apiKeys.value, data.apiKeys);
-    if (data.updates) Object.assign(updates.value, data.updates);
-    if (data.toast) Object.assign(toast.value, data.toast);
-    if (data.dependencies) Object.assign(dependencies.value, data.dependencies);
+    mergeSettings(
+      {
+        appearance,
+        playback,
+        explorer,
+        library,
+        download,
+        shortcuts,
+        network,
+        apiKeys,
+        updates,
+        toast,
+        dependencies
+      },
+      data
+    );
     save();
   }
 

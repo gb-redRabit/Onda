@@ -43,6 +43,16 @@ function ensureModule() {
     error.value = null;
   });
 
+  audioEvents.on('trackEnd', () => {
+    const p = usePlayerStore();
+    if (p.repeat === 'one' && p.currentTrack?.type === 'audio') {
+      audioEngine.seek(0);
+      audioEngine.play();
+    } else {
+      p.nextTrack();
+    }
+  });
+
   const player = usePlayerStore();
   const scope = effectScope(true);
 

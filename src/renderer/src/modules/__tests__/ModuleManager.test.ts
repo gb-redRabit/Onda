@@ -96,4 +96,14 @@ describe('ModuleManager', () => {
     manager.register(makeModule('a'));
     expect(() => manager.get('nope')).toThrow(/Module not found/);
   });
+
+  it('logs a warning when switching to an unknown module', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      await manager.switchTo('does-not-exist');
+      expect(warnSpy).toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
 });

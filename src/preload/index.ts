@@ -32,6 +32,7 @@ const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'window:toggleFullscreen',
   'window:setAlwaysOnTop',
   'dialog:openFile',
+  'dialog:openSubtitle',
   'dialog:openFolder',
   'dialog:openFolderFiles',
   'shell:showItemInFolder',
@@ -299,6 +300,8 @@ const api = {
     ipcRenderer.invoke('media:readCover', filePath),
   openImageDialog: (): Promise<{ canceled: boolean; filePaths: string[] }> =>
     ipcRenderer.invoke('dialog:openImage'),
+  openSubtitleDialog: (): Promise<{ canceled: boolean; filePaths: string[] }> =>
+    ipcRenderer.invoke('dialog:openSubtitle'),
   musicbrainzSearchRelease: (
     query: string
   ): Promise<{ success: boolean; releases: MusicbrainzRelease[]; error?: string }> =>

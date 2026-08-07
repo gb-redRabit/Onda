@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { audioEngine } from '../audioEngine';
+import { audioEvents } from '@renderer/utils/audioEvents';
 
 type FakeNode = {
   connect: ReturnType<typeof vi.fn>;
@@ -21,6 +22,7 @@ type TestableAudioEngine = {
   connectAudio(el: unknown): void;
   connectVideoElement(el: unknown): void;
   disconnectVideoElement(): void;
+  handleEnded(): void;
 };
 
 function createFakeNode(): FakeNode {
@@ -126,5 +128,13 @@ describe('audioEngine video element routing', () => {
     expect(videoSource!.connect).toHaveBeenCalledWith(videoGain);
     const firstFilter = engine.eqFilters[0];
     expect(videoGain!.connect).toHaveBeenCalledWith(firstFilter);
+  });
+
+  it('emits trackEnd when the audio element ends', () => {
+    const spy = vi.fn();
+    const off = audioEvents.on('trackEnd', spy);
+    (engine as unknown as { handleEnded(): void }).handleEnded();
+    expect(spy).toHaveBeenCalledTimes(1);
+    off();
   });
 });

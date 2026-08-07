@@ -106,7 +106,8 @@ const APPEARANCE_FIELDS: Record<string, Sanitizer> = {
   audioPipMode: enumOf(['minimal', 'medium', 'max', 'wide']),
   audioPipAutoShow: bool,
   audioPipOpacity: num,
-  audioPipPosition: enumOf(['bottom-right', 'bottom-left', 'top-right', 'top-left', 'top', 'bottom'])
+  audioPipPosition: enumOf(['bottom-right', 'bottom-left', 'top-right', 'top-left']),
+  audioPipEdgePosition: enumOf(['top', 'bottom'])
 };
 
 const VISUALIZATION_FIELDS: Record<string, Sanitizer> = {

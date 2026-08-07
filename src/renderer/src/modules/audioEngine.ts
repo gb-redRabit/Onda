@@ -4,85 +4,30 @@ import { useSettingsStore } from '@renderer/stores/settings';
 import { audioEvents } from '@renderer/utils/audioEvents';
 import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
 import { logger } from '@shared/logger';
-
-const eqFrequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+import { AudioGraph } from './audioGraph';
+import { AudioSecondary } from './audioSecondary';
 
 class AudioEngine {
+  private graph = new AudioGraph();
   private audioEl: HTMLAudioElement | null = null;
-  private audioCtx: AudioContext | null = null;
-  private analyserNode: AnalyserNode | null = null;
-  private sourceNode: MediaElementAudioSourceNode | null = null;
-  private gainNode: GainNode | null = null;
-  private eqFilters: BiquadFilterNode[] = [];
-  private videoSourceNode: MediaElementAudioSourceNode | null = null;
-  private videoGainNode: GainNode | null = null;
-  private videoSourceEl: HTMLVideoElement | null = null;
+  private secondary: AudioSecondary | null = null;
   private initialized = false;
-  private eqChainBuilt = false;
-  private secondaryAudioEl: HTMLAudioElement | null = null;
-  private secondarySourceNode: MediaElementAudioSourceNode | null = null;
-  private secondaryAudioOffset = 0;
   private savedPositions = new Map<string, number>();
-  private ensureAudioContext(): void {
-    if (this.audioCtx) return;
-    this.audioCtx = new AudioContext();
-    this.analyserNode = this.audioCtx.createAnalyser();
-    this.analyserNode.fftSize = 2048;
-    this.gainNode = this.audioCtx.createGain();
-    this.eqFilters = eqFrequencies.map((freq, i) => {
-      const filter = this.audioCtx!.createBiquadFilter();
-      filter.type = i === 0 ? 'lowshelf' : i === eqFrequencies.length - 1 ? 'highshelf' : 'peaking';
-      filter.frequency.value = freq;
-      filter.Q.value = 1.4;
-      filter.gain.value = 0;
-      return filter;
-    });
+
+  get sourceNode(): MediaElementAudioSourceNode | null {
+    return this.graph.sourceNode;
   }
 
-  private ensureEqChain(): void {
-    this.ensureAudioContext();
-    if (this.eqChainBuilt) return;
-    const firstFilter = this.eqFilters[0];
-    if (firstFilter) {
-      this.sourceNode?.connect(firstFilter);
-      let eqChain: AudioNode = firstFilter;
-      for (let i = 1; i < this.eqFilters.length; i++) {
-        eqChain.connect(this.eqFilters[i]);
-        eqChain = this.eqFilters[i];
-      }
-      eqChain.connect(this.gainNode!);
-    } else {
-      this.sourceNode?.connect(this.gainNode!);
-    }
-    this.gainNode!.connect(this.analyserNode!);
-    this.analyserNode!.connect(this.audioCtx!.destination);
-    this.eqChainBuilt = true;
+  get videoSourceNode(): MediaElementAudioSourceNode | null {
+    return this.graph.videoSourceNode;
   }
 
-  private connectAudio(el: HTMLAudioElement): void {
-    this.ensureAudioContext();
-    if (!this.sourceNode) {
-      this.sourceNode = this.audioCtx!.createMediaElementSource(el);
-    } else {
-      try {
-        this.sourceNode.disconnect();
-      } catch {
-        // ok
-      }
-    }
-    
-    if (!this.eqChainBuilt) {
-      this.ensureEqChain();
-    } else {
-      const firstFilter = this.eqFilters[0];
-      if (firstFilter) {
-        this.sourceNode.connect(firstFilter);
-      } else {
-        this.sourceNode.connect(this.gainNode!);
-      }
-    }
-    this.disconnectSecondaryAudio();
-    this.disconnectVideoElement();
+  get videoGainNode(): GainNode | null {
+    return this.graph.videoGainNode;
+  }
+
+  get eqFilters(): BiquadFilterNode[] {
+    return this.graph.eqFilters;
   }
 
   private createAudioElement(): HTMLAudioElement {
@@ -118,60 +63,7 @@ class AudioEngine {
   }
 
   private handleEnded(): void {
-    let player;
-    try {
-      player = usePlayerStore();
-    } catch (e) {
-      logger.warn('audioEngine', 'handleEnded: store unavailable', e);
-      return;
-    }
-
-    if (player.repeat === 'one') {
-      if (this.audioEl) {
-        this.audioEl.currentTime = 0;
-        this.audioEl.play();
-      }
-      return;
-    }
-    player.nextTrack();
-  }
-
-  private disconnectNodes(): void {
-    try {
-      this.sourceNode?.disconnect();
-    } catch (e) {
-      logger.warn('audioEngine', 'disconnect source node failed', e);
-    }
-    try {
-      this.videoSourceNode?.disconnect();
-    } catch (e) {
-      logger.warn('audioEngine', 'disconnect video source node failed', e);
-    }
-    try {
-      this.videoGainNode?.disconnect();
-    } catch (e) {
-      logger.warn('audioEngine', 'disconnect video gain node failed', e);
-    }
-    this.videoSourceNode = null;
-    this.videoGainNode = null;
-    this.videoSourceEl = null;
-    try {
-      this.gainNode?.disconnect();
-    } catch (e) {
-      logger.warn('audioEngine', 'disconnect gain node failed', e);
-    }
-    try {
-      this.analyserNode?.disconnect();
-    } catch (e) {
-      logger.warn('audioEngine', 'disconnect analyser failed', e);
-    }
-    for (const f of this.eqFilters) {
-      try {
-        f.disconnect();
-      } catch (e) {
-        logger.warn('audioEngine', 'disconnect eq filter failed', e);
-      }
-    }
+    audioEvents.emit('trackEnd', undefined);
   }
 
   private cleanupAudioEl(el: HTMLAudioElement | null): void {
@@ -179,6 +71,12 @@ class AudioEngine {
     el.pause();
     el.removeAttribute('src');
     el.load();
+  }
+
+  private connectAudio(el: HTMLAudioElement): void {
+    this.graph.connectSource(el);
+    this.disconnectSecondaryAudio();
+    this.graph.disconnectVideoElement();
   }
 
   init(): void {
@@ -218,8 +116,8 @@ class AudioEngine {
     }
     this.audioEl!.src = toMediaServerUrl(track.path);
     this.connectAudio(this.audioEl!);
-    if (this.gainNode)
-      this.gainNode.gain.value = usePlayerStore().isMuted ? 0 : usePlayerStore().volume;
+    if (this.graph.gainNode)
+      this.graph.gainNode.gain.value = usePlayerStore().isMuted ? 0 : usePlayerStore().volume;
 
     audioEvents.emit('trackLoaded', undefined);
     if (settings.playback.rememberPosition) {
@@ -253,101 +151,57 @@ class AudioEngine {
   }
 
   setVolume(v: number): void {
-    if (this.gainNode) this.gainNode.gain.value = v;
+    if (this.graph.gainNode) this.graph.gainNode.gain.value = v;
   }
 
   get hasSecondaryAudio(): boolean {
-    return this.secondaryAudioEl !== null;
+    return this.secondary?.hasSecondaryAudio ?? false;
   }
 
   set secondaryAudioTimeOffset(offset: number) {
-    this.secondaryAudioOffset = offset;
+    if (this.secondary) this.secondary.timeOffset = offset;
   }
 
   async connectSecondaryAudio(audioPath: string, timeOffset = 0): Promise<void> {
     await this.disconnectSecondaryAudio();
 
-    this.ensureAudioContext();
+    this.graph.ensureContext();
 
-    if (this.sourceNode) {
+    if (this.graph.sourceNode) {
       try {
-        this.sourceNode.disconnect();
+        this.graph.sourceNode.disconnect();
       } catch (e) {
         logger.warn('audioEngine', 'disconnect source node failed', e);
       }
     }
 
-    const el = new Audio();
-    el.src = toMediaServerUrl(audioPath);
-    el.preload = 'auto';
-
-    await new Promise<void>((resolve, reject) => {
-      const onCanPlay = (): void => {
-        cleanup();
-        resolve();
-      };
-      const onError = (): void => {
-        cleanup();
-        reject(new Error('Failed to load secondary audio'));
-      };
-      const cleanup = (): void => {
-        el.removeEventListener('canplay', onCanPlay);
-        el.removeEventListener('error', onError);
-      };
-      el.addEventListener('canplay', onCanPlay);
-      el.addEventListener('error', onError);
-      el.load();
-    });
-
-    this.secondaryAudioEl = el;
-    this.secondarySourceNode = this.audioCtx!.createMediaElementSource(el);
-    this.secondarySourceNode.connect(this.gainNode!);
+    if (!this.secondary) {
+      this.secondary = new AudioSecondary(this.graph.audioCtx!, this.graph.gainNode!);
+    }
+    await this.secondary.connect(audioPath, timeOffset);
     try {
-      if (this.sourceNode && this.gainNode) {
-        this.sourceNode.connect(this.gainNode);
+      if (this.graph.sourceNode && this.graph.gainNode) {
+        this.graph.sourceNode.connect(this.graph.gainNode);
       }
     } catch (e) {
       logger.warn('audioEngine', 'reconnect source node failed', e);
     }
-    this.secondaryAudioOffset = timeOffset;
-    el.volume = 1;
   }
 
   disconnectSecondaryAudio(): void {
-    if (this.secondarySourceNode) {
-      try {
-        this.secondarySourceNode.disconnect();
-      } catch (e) {
-        logger.warn('audioEngine', 'disconnect secondary source failed', e);
-      }
-      this.secondarySourceNode = null;
-    }
-    if (this.secondaryAudioEl) {
-      this.secondaryAudioEl.pause();
-      this.secondaryAudioEl.removeAttribute('src');
-      this.secondaryAudioEl.load();
-      this.secondaryAudioEl = null;
-    }
+    this.secondary?.disconnect();
   }
 
   seekSecondaryAudio(videoTime: number): void {
-    if (this.secondaryAudioEl) {
-      this.secondaryAudioEl.currentTime = Math.max(0, videoTime - this.secondaryAudioOffset);
-    }
+    this.secondary?.seek(videoTime);
   }
 
   playSecondaryAudio(): void {
-    if (this.secondaryAudioEl) {
-      this.secondaryAudioEl.play().catch((e) => {
-        logger.warn('audioEngine', 'secondary audio play() rejected', e);
-      });
-    }
+    this.secondary?.play();
   }
 
   pauseSecondaryAudio(): void {
-    if (this.secondaryAudioEl) {
-      this.secondaryAudioEl.pause();
-    }
+    this.secondary?.pause();
   }
 
   setPlaybackRate(rate: number): void {
@@ -355,22 +209,19 @@ class AudioEngine {
   }
 
   setEqualizerBand(index: number, gain: number): void {
-    if (this.eqFilters[index]) this.eqFilters[index].gain.value = gain;
+    this.graph.setEqualizerBand(index, gain);
   }
 
   applyEqPreset(preset: Record<number, number>): void {
-    Object.entries(preset).forEach(([idx, gain]) => {
-      const i = parseInt(idx);
-      if (this.eqFilters[i]) this.eqFilters[i].gain.value = gain;
-    });
+    this.graph.applyEqPreset(preset);
   }
 
   getAnalyserNode(): AnalyserNode | null {
-    return this.analyserNode;
+    return this.graph.getAnalyserNode();
   }
 
   getAudioContext(): AudioContext | null {
-    return this.audioCtx;
+    return this.graph.getAudioContext();
   }
 
   getMediaElement(): HTMLAudioElement | null {
@@ -386,117 +237,40 @@ class AudioEngine {
     if (this.audioEl) {
       this.audioEl.pause();
     }
-    if (this.audioCtx && this.audioCtx.state === 'running') {
-      await this.audioCtx.suspend();
-    }
+    await this.graph.suspendContext();
   }
 
   async destroy(): Promise<void> {
     this.savePosition();
     this.disconnectSecondaryAudio();
-    this.disconnectNodes();
+    this.graph.disconnectNodes();
     this.cleanupAudioEl(this.audioEl);
     this.audioEl = null;
-    this.sourceNode = null;
-    this.eqChainBuilt = false;
-    if (this.audioCtx) {
-      await this.audioCtx.close();
-      this.audioCtx = null;
-    }
+    await this.graph.closeContext();
     this.initialized = false;
   }
 
   resumeContext(): void {
-    if (this.audioCtx && this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume();
-    }
+    this.graph.resumeContext();
   }
 
   resume(): void {
-    if (!this.audioCtx) {
-      this.ensureAudioContext();
+    if (!this.graph.audioCtx) {
+      this.graph.ensureContext();
     }
-    if (this.audioCtx && this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume();
-    }
+    this.graph.resumeContext();
   }
 
   connectVideoElement(videoEl: HTMLVideoElement): void {
-    this.ensureAudioContext();
-    if (this.audioCtx && this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume();
-    }
-    if (this.sourceNode) {
-      try {
-        this.sourceNode.disconnect();
-      } catch (e) {
-        logger.warn('audioEngine', 'connectVideoElement: source disconnect failed', e);
-      }
-    }
-
-    if (this.videoSourceNode) {
-      if (this.videoSourceEl === videoEl) return;
-      this.disconnectVideoElement();
-    }
-
-    if (!this.audioCtx) return;
-    this.videoSourceNode = this.audioCtx.createMediaElementSource(videoEl);
-    this.videoGainNode = this.audioCtx.createGain();
-    this.videoSourceEl = videoEl;
-
-    this.ensureEqChain();
-    const firstFilter = this.eqFilters[0];
-    if (firstFilter) {
-      this.videoSourceNode.connect(this.videoGainNode);
-      this.videoGainNode.connect(firstFilter);
-    } else if (this.gainNode) {
-      this.videoSourceNode.connect(this.videoGainNode);
-      this.videoGainNode.connect(this.gainNode);
-    }
-
-    const player = usePlayerStore();
-    this.videoGainNode.gain.value = player.isMuted ? 0 : player.volume;
+    this.graph.connectVideoElement(videoEl);
   }
 
   disconnectVideoElement(): void {
-    if (this.videoSourceNode) {
-      try {
-        this.videoSourceNode.disconnect();
-      } catch (e) {
-        logger.warn('audioEngine', 'disconnectVideoElement: video source disconnect failed', e);
-      }
-    }
-    if (this.videoGainNode) {
-      try {
-        this.videoGainNode.disconnect();
-      } catch (e) {
-        logger.warn('audioEngine', 'disconnectVideoElement: video gain disconnect failed', e);
-      }
-    }
-    this.videoSourceNode = null;
-    this.videoGainNode = null;
-    this.videoSourceEl = null;
-
-    if (!this.sourceNode) return;
-    const firstFilter = this.eqFilters[0];
-    try {
-      if (firstFilter) {
-        this.sourceNode.connect(firstFilter);
-      } else if (this.gainNode) {
-        this.sourceNode.connect(this.gainNode);
-      }
-    } catch (e) {
-      logger.warn('audioEngine', 'disconnectVideoElement: reconnect failed (source already disconnected)', e);
-    }
+    this.graph.disconnectVideoElement();
   }
 
   setVideoVolume(v: number): void {
-    if (this.videoGainNode) {
-      this.videoGainNode.gain.value = v;
-    }
-    if (this.videoSourceEl) {
-      this.videoSourceEl.volume = v;
-    }
+    this.graph.setVideoVolume(v);
   }
 }
 

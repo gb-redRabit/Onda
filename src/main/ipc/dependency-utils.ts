@@ -30,7 +30,8 @@ export function ytdlpDownloadUrl(
   arch: string = process.arch,
   version: string = YTDLP_PINNED_VERSION
 ): string {
-  const base = `https://github.com/yt-dlp/yt-dlp/releases/download/v${version}`;
+  // yt-dlp tags do not carry a leading "v" (e.g. "2026.07.04")
+  const base = `https://github.com/yt-dlp/yt-dlp/releases/download/${version}`;
   switch (platform) {
     case 'win32':
       return `${base}/yt-dlp.exe`;
@@ -47,7 +48,7 @@ export function ytdlpDownloadUrl(
 
 // yt-dlp publishes a single checksums manifest (SHA2-256SUMS), not per-file hashes.
 export function ytdlpShaUrl(version: string = YTDLP_PINNED_VERSION): string {
-  return `https://github.com/yt-dlp/yt-dlp/releases/download/v${version}/SHA2-256SUMS`;
+  return `https://github.com/yt-dlp/yt-dlp/releases/download/${version}/SHA2-256SUMS`;
 }
 
 export function ffmpegDownloadUrl(platform: NodeJS.Platform = process.platform): string | null {

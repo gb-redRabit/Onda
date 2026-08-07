@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { RotateCcw } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
@@ -7,6 +8,18 @@ import { EQUALIZER_PRESETS } from '@renderer/utils/constants';
 
 const player = usePlayerStore();
 const { setEqualizerBand, applyEqPreset } = useAudioPlayer();
+
+const panel = ref<HTMLElement | null>(null);
+
+function onClickOutside(e: MouseEvent) {
+  const target = e.target as Node;
+  if (panel.value && !panel.value.contains(target) && !(target as HTMLElement).closest('[data-eq-toggle]')) {
+    player.equalizerVisible = false;
+  }
+}
+
+onMounted(() => document.addEventListener('click', onClickOutside));
+onUnmounted(() => document.removeEventListener('click', onClickOutside));
 
 const presets = EQUALIZER_PRESETS;
 
@@ -56,7 +69,7 @@ function onSliderDrag(e: MouseEvent, index: number) {
 </script>
 
 <template>
-  <div class="bg-bg-elevated border border-border-default rounded-2xl p-4 w-95">
+  <div ref="panel" class="bg-bg-elevated border border-border-default rounded-2xl p-4 w-95">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-sm font-semibold">{{ $t('equalizer.title') }}</h3>
       <button

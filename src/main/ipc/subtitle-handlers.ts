@@ -247,7 +247,8 @@ export function registerSubtitleHandlers(): void {
 
           if (bin) {
             try {
-              await runCommand(bin, [filePath, 'attachments', `${i}:${outPath}`], {
+              // mkvextract numbers attachments starting from 1
+              await runCommand(bin, [filePath, 'attachments', `${i + 1}:${outPath}`], {
                 timeout: 30000
               });
               await stat(outPath);
@@ -266,7 +267,9 @@ export function registerSubtitleHandlers(): void {
             const ext = safeFontExt(s.filename);
             args.push(`-dump_attachment:${s.index}`, `att_${i}.${ext}`);
           }
-          args.push('-i', filePath, '-f', 'null', '-');
+          // attachments live in the container header; -t 0.001 stops ffmpeg right
+          // after the header is read instead of demuxing the whole file
+          args.push('-t', '0.001', '-i', filePath, '-f', 'null', '-');
           try {
             await runCommand(ffmpeg, args, { timeout: 30000, cwd: dumpDir });
           } catch (e) {

@@ -3,21 +3,9 @@ import { ref, computed, watch } from 'vue';
 import type { FileItem, ViewMode, SortBy, SortOrder, ExplorerTab } from '@renderer/types/explorer';
 import { VIEW_MODES } from '@renderer/types/explorer';
 import { useSettingsStore } from './settings';
-import { useUIStore } from './ui';
-
-function isDrivePath(p: string): boolean {
-  return /^[A-Z]:\\?$/i.test(p) || p === '';
-}
-
-function parentPath(p: string): string {
-  if (!p || isDrivePath(p)) return '';
-  const cleaned = p.replace(/[\\\/]$/, '');
-  const idx = cleaned.lastIndexOf('\\');
-  if (idx < 0) return '';
-  const parent = cleaned.substring(0, idx);
-  if (isDrivePath(parent)) return parent;
-  return parent;
-}
+import { isDrivePath, parentPath, formatTabLabel } from '@renderer/utils/explorerPath';
+import { sortFiles } from '@renderer/utils/explorerSort';
+import { createBatchLoader } from '@renderer/utils/explorerLoader';
 
 export const useExplorerStore = defineStore('explorer', () => {
   const settings = useSettingsStore();
@@ -42,7 +30,7 @@ export const useExplorerStore = defineStore('explorer', () => {
       switchTab(existing);
       return;
     }
-    const label = path ? path.split('\\').filter(Boolean).pop() || path : '';
+    const label = formatTabLabel(path);
     const id = `tab-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     tabs.value.push({ id, path, label });
     switchTab(tabs.value.length - 1);
@@ -87,28 +75,7 @@ export const useExplorerStore = defineStore('explorer', () => {
   const canGoUp = computed(() => currentPath.value !== '' && !isAtDrives.value);
   const selectedCount = computed(() => selectedFiles.value.size);
 
-  const sortedFiles = computed(() => {
-    const sorted = [...files.value].sort((a, b) => {
-      if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
-      let cmp = 0;
-      switch (sortBy.value) {
-        case 'name':
-          cmp = a.name.localeCompare(b.name);
-          break;
-        case 'size':
-          cmp = a.size - b.size;
-          break;
-        case 'modified':
-          cmp = a.modifiedAt - b.modifiedAt;
-          break;
-        case 'type':
-          cmp = (a.extension || '').localeCompare(b.extension || '');
-          break;
-      }
-      return sortOrder.value === 'asc' ? cmp : -cmp;
-    });
-    return sorted;
-  });
+  const sortedFiles = computed(() => sortFiles(files.value, sortBy.value, sortOrder.value));
 
   function navigateTo(path: string) {
     currentPath.value = path;
@@ -120,79 +87,34 @@ export const useExplorerStore = defineStore('explorer', () => {
   }
 
   function goBack() {
-    if (canGoBack.value) {
-      historyIndex.value--;
-      currentPath.value = history.value[historyIndex.value];
-      selectedFiles.value.clear();
-      loadFiles(currentPath.value);
-    }
+    if (!canGoBack.value) return;
+    historyIndex.value--;
+    currentPath.value = history.value[historyIndex.value];
+    selectedFiles.value.clear();
+    loadFiles(currentPath.value);
   }
 
   function goForward() {
-    if (canGoForward.value) {
-      historyIndex.value++;
-      currentPath.value = history.value[historyIndex.value];
-      selectedFiles.value.clear();
-      loadFiles(currentPath.value);
-    }
+    if (!canGoForward.value) return;
+    historyIndex.value++;
+    currentPath.value = history.value[historyIndex.value];
+    selectedFiles.value.clear();
+    loadFiles(currentPath.value);
   }
 
   function goUp() {
-    if (canGoUp.value) {
-      const parent = parentPath(currentPath.value);
-      navigateTo(parent);
-    }
+    if (canGoUp.value) navigateTo(parentPath(currentPath.value));
   }
 
-  let batchCleanup: (() => void) | null = null;
-  let currentLoadId = 0;
+  const batchLoader = createBatchLoader(files, isLoading);
 
   async function loadFiles(path: string) {
-    const loadId = ++currentLoadId;
-    files.value = [];
-    isLoading.value = true;
-    batchCleanup?.();
-    if (!window.api) {
-      isLoading.value = false;
-      return;
-    }
-    const stopListening = window.api.on('fs:readdir:batch', (...args: unknown[]) => {
-      if (loadId !== currentLoadId) {
-        stopListening();
-        return;
-      }
-      const data = args[0] as { done: boolean; items: FileItem[]; error?: string };
-      if (data.error) {
-        useUIStore().notify('error', 'Błąd odczytu folderu', data.error);
-      }
-      if (data.items.length > 0) {
-        files.value = [...files.value, ...data.items];
-      }
-      if (data.done) {
-        isLoading.value = false;
-        stopListening();
-        batchCleanup = null;
-      }
-    });
-    batchCleanup = stopListening;
-    try {
-      await window.api.invoke('fs:readdir', path);
-    } catch {
-      if (loadId === currentLoadId) {
-        files.value = [];
-        isLoading.value = false;
-        stopListening();
-        batchCleanup = null;
-      }
-    }
+    await batchLoader.load(path);
   }
 
   function toggleSelect(path: string) {
-    if (selectedFiles.value.has(path)) {
-      selectedFiles.value.delete(path);
-    } else {
-      selectedFiles.value.add(path);
-    }
+    if (selectedFiles.value.has(path)) selectedFiles.value.delete(path);
+    else selectedFiles.value.add(path);
   }
 
   function selectAll() {
@@ -206,13 +128,11 @@ export const useExplorerStore = defineStore('explorer', () => {
   const viewModeIndex = computed(() => VIEW_MODES.indexOf(viewMode.value));
 
   function nextViewMode() {
-    const idx = viewModeIndex.value;
-    viewMode.value = VIEW_MODES[(idx + 1) % VIEW_MODES.length];
+    viewMode.value = VIEW_MODES[(viewModeIndex.value + 1) % VIEW_MODES.length];
   }
 
   function prevViewMode() {
-    const idx = viewModeIndex.value;
-    viewMode.value = VIEW_MODES[(idx - 1 + VIEW_MODES.length) % VIEW_MODES.length];
+    viewMode.value = VIEW_MODES[(viewModeIndex.value - 1 + VIEW_MODES.length) % VIEW_MODES.length];
   }
 
   function setViewMode(mode: ViewMode) {
@@ -232,11 +152,10 @@ export const useExplorerStore = defineStore('explorer', () => {
   watch(sortBy, (val) => settings.updateExplorer({ sortBy: val }));
   watch(sortOrder, (val) => settings.updateExplorer({ sortOrder: val }));
   watch(currentPath, (path) => {
-    if (activeTabIndex.value >= 0 && tabs.value[activeTabIndex.value]) {
-      tabs.value[activeTabIndex.value].path = path;
-      tabs.value[activeTabIndex.value].label = path
-        ? path.split('\\').filter(Boolean).pop() || path
-        : '';
+    const tab = tabs.value[activeTabIndex.value];
+    if (activeTabIndex.value >= 0 && tab) {
+      tab.path = path;
+      tab.label = formatTabLabel(path);
     }
   });
 

@@ -9,7 +9,7 @@ export interface SubtitleTrack {
   label: string;
   language: string;
   format: 'ass' | 'srt' | 'vtt' | 'ssa' | 'sub';
-  source: 'embedded' | 'external';
+  source: 'embedded' | 'external' | 'custom';
   filePath?: string;
   content?: string;
   fonts?: MkvFont[];

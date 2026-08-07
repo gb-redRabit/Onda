@@ -1,6 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 import { moduleManager } from '@renderer/modules/ModuleManager';
-import { usePlayerStore } from '@renderer/stores/player';
 
 const ROUTE_MODULE_MAP: Record<string, string> = {
   home: 'home',
@@ -10,8 +9,7 @@ const ROUTE_MODULE_MAP: Record<string, string> = {
   library: 'library',
   youtube: 'youtube',
   downloads: 'youtube',
-  settings: 'settings',
-  search: 'home'
+  settings: 'settings'
 };
 
 let _isSwitching = false;
@@ -80,20 +78,6 @@ router.beforeEach(async (to) => {
   const routeName = to.name as string;
   const moduleId = ROUTE_MODULE_MAP[routeName];
   if (!moduleId) return true;
-
-  // Smart path: audio plays in background → do not deactivate player
-  const currentActive = moduleManager.getActiveId();
-  if (currentActive === 'player' && moduleId !== 'player') {
-    const player = usePlayerStore();
-    if (player.currentTrack?.type === 'audio') {
-      if (!moduleManager.has(moduleId)) return true;
-      const target = moduleManager.get(moduleId);
-      if (!target.isActive()) {
-        target.activate();
-      }
-      return true;
-    }
-  }
 
   // Prevent recursion when switchTo triggers navigation (e.g. watch in App.vue)
   if (_isSwitching) {

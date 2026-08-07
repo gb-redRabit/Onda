@@ -419,7 +419,9 @@ export default {
     title: 'Subtitles',
     disable: 'Disable subtitles',
     embedded: 'Embedded',
-    fromFolder: 'From folder'
+    fromFolder: 'From folder',
+    custom: 'Custom',
+    upload: 'Upload subtitles…'
   },
   resume: {
     title: 'Saved position detected',

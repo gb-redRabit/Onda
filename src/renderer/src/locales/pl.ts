@@ -420,7 +420,9 @@ export default {
     title: 'Napisy',
     disable: 'Wyłącz napisy',
     embedded: 'Wbudowane',
-    fromFolder: 'Z folderu'
+    fromFolder: 'Z folderu',
+    custom: 'Własne',
+    upload: 'Wgraj własne napisy…'
   },
   resume: {
     title: 'Wykryto zapisaną pozycję',

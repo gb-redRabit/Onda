@@ -9,8 +9,8 @@ import { useLibraryStore } from './stores/library';
 import { useExplorerStore } from './stores/explorer';
 import { claimTabDrag } from './utils/tabDrag';
 import { moduleManager } from './modules/ModuleManager';
-import { THEME_PALETTES } from './utils/constants';
 import { useAudioPiP } from './composables/useAudioPiP';
+import { useTheme } from './composables/useTheme';
 import AppMenu from './components/layout/AppMenu.vue';
 import Sidebar from './components/layout/Sidebar.vue';
 import PlayerBar from './components/layout/PlayerBar.vue';
@@ -34,84 +34,17 @@ const audioPip = useAudioPiP();
 
 const isExplorerWindow = computed(() => route.name === 'explorer-window');
 
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : null;
-}
-
-function applyTheme() {
-  const root = document.documentElement;
-  const theme = settings.appearance.theme;
-  const accent = settings.appearance.accentColor;
-  const fontSize = settings.appearance.fontSize;
-
-  const palette = THEME_PALETTES[theme] || THEME_PALETTES.dark;
-  root.style.setProperty('--color-bg-base', palette.bgBase);
-  root.style.setProperty('--color-bg-surface', palette.bgSurface);
-  root.style.setProperty('--color-bg-overlay', palette.bgOverlay);
-  root.style.setProperty('--color-bg-elevated', palette.bgElevated);
-  root.style.setProperty('--color-bg-hover', palette.bgHover);
-  root.style.setProperty('--color-bg-active', palette.bgActive);
-  root.style.setProperty('--color-border-default', palette.borderDefault);
-  root.style.setProperty('--color-border-subtle', palette.borderSubtle);
-  root.style.setProperty('--color-fg-base', palette.fgBase);
-  root.style.setProperty('--color-fg-muted', palette.fgMuted);
-  root.style.setProperty('--color-fg-faint', palette.fgFaint);
-
-  root.style.setProperty('--color-accent-base', accent);
-  const rgb = hexToRgb(accent);
-  if (rgb) {
-    root.style.setProperty(
-      '--color-accent-hover',
-      `rgba(${Math.min(255, rgb.r + 20)}, ${Math.min(255, rgb.g + 20)}, ${Math.min(255, rgb.b + 20)}, 1)`
-    );
-    root.style.setProperty(
-      '--color-accent-strong',
-      `rgba(${Math.max(0, rgb.r - 20)}, ${Math.max(0, rgb.g - 20)}, ${Math.max(0, rgb.b - 20)}, 1)`
-    );
-    root.style.setProperty('--color-accent-ghost', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.10)`);
-  }
-
-  root.style.setProperty('--font-size', `${fontSize}px`);
-  root.style.fontSize = `${fontSize}px`;
-
-  // push theme CSS vars to PiP windows
-  const themeVars = {
-    '--color-bg-base': palette.bgBase,
-    '--color-bg-surface': palette.bgSurface,
-    '--color-bg-overlay': palette.bgOverlay,
-    '--color-bg-elevated': palette.bgElevated,
-    '--color-bg-hover': palette.bgHover,
-    '--color-bg-active': palette.bgActive,
-    '--color-border-default': palette.borderDefault,
-    '--color-border-subtle': palette.borderSubtle,
-    '--color-fg-base': palette.fgBase,
-    '--color-fg-muted': palette.fgMuted,
-    '--color-fg-faint': palette.fgFaint,
-    '--color-accent-base': accent,
-    '--color-accent-hover': rgb
-      ? `rgba(${Math.min(255, rgb.r + 20)}, ${Math.min(255, rgb.g + 20)}, ${Math.min(255, rgb.b + 20)}, 1)`
-      : accent,
-    '--color-accent-strong': rgb
-      ? `rgba(${Math.max(0, rgb.r - 20)}, ${Math.max(0, rgb.g - 20)}, ${Math.max(0, rgb.b - 20)}, 1)`
-      : accent,
-    '--color-accent-ghost': rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.10)` : 'transparent',
-    '--font-size': `${fontSize}px`
-  };
-  window.api?.send('audio-pip:theme', themeVars);
-  window.api?.send('pip:theme', themeVars);
-  window.api?.send('pip:locale', settings.appearance.locale);
-}
+const theme = useTheme(settings.appearance);
 
 onMounted(async () => {
   document.addEventListener('keydown', onGlobalKeydown);
   document.addEventListener('mousedown', onGlobalMouseDown);
   await settings.load();
-  applyTheme();
+  theme.applyTheme();
   await loadLocaleMessages(settings.appearance.locale);
   library.loadFromDisk();
   if (!moduleManager.getActive()) {
-    moduleManager.switchTo('home');
+    await moduleManager.switchTo('home');
   }
   audioPip.mode.value = settings.appearance.audioPipMode;
   audioPip.setAutoShow(settings.appearance.audioPipAutoShow);
@@ -182,11 +115,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('mousedown', onGlobalMouseDown);
 });
 
-watch(() => settings.appearance.theme, applyTheme);
-watch(() => settings.appearance.accentColor, applyTheme);
-watch(() => settings.appearance.fontSize, applyTheme);
-watch(
-  () => settings.appearance.locale,
+watch(() => settings.appearance.locale,
   async (loc) => {
     await loadLocaleMessages(loc);
     window.api?.send('pip:locale', loc);

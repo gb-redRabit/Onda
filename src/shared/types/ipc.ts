@@ -142,6 +142,10 @@ export interface IpcChannels {
     args: [options?: OpenFileOptions];
     result: { canceled: boolean; filePaths: string[] };
   };
+  'dialog:openSubtitle': {
+    args: [];
+    result: { canceled: boolean; filePaths: string[] };
+  };
   'dialog:openFolder': { args: []; result: string[] };
   'dialog:openFolderFiles': { args: []; result: { canceled: boolean; filePaths: string[] } };
   'app:quit': { args: []; result: void };

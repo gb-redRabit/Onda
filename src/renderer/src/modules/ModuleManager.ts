@@ -1,3 +1,5 @@
+import { logger } from '@shared/logger';
+
 export interface AppModule {
   id: string;
   name: string;
@@ -33,6 +35,7 @@ export class ModuleManager {
   async switchTo(moduleId: string, context?: unknown): Promise<void> {
     const target = this.modules.get(moduleId);
     if (!target) {
+      logger.warn('ModuleManager', `switchTo: unknown module '${moduleId}'`);
       return;
     }
 

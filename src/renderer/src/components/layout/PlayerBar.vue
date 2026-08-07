@@ -211,6 +211,7 @@ function togglePlay() {
       <button
         class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
         :class="{ 'text-accent-base!': player.equalizerVisible }"
+        data-eq-toggle
         @click="player.toggleEqualizer"
       >
         <SlidersHorizontal :size="15" />

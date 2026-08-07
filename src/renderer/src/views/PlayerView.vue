@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { usePlayerStore } from '@renderer/stores/player';
@@ -11,6 +11,7 @@ import ResumePrompt from '@renderer/components/player/ResumePrompt.vue';
 import { usePiP } from '@renderer/composables/usePiP';
 import { useVideoPlayer } from '@renderer/composables/useVideoPlayer';
 import { usePlayerKeyboard } from '@renderer/composables/usePlayerKeyboard';
+import { usePlayerControls } from '@renderer/composables/usePlayerControls';
 
 const { t } = useI18n();
 const player = usePlayerStore();
@@ -19,18 +20,9 @@ const ui = useUIStore();
 const router = useRouter();
 
 const playerContainerRef = ref<HTMLDivElement | null>(null);
-const isFullscreen = ref(false);
-const showControls = ref(true);
-const controlsTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 
 const isVideo = computed(() => player.currentTrack?.type === 'video');
 const isAudio = computed(() => player.currentTrack?.type === 'audio');
-
-let resumePromptTimer: ReturnType<typeof setTimeout> | null = null;
-
-function showToast(text: string, duration = 1500) {
-  ui.notify('info', text, undefined, duration);
-}
 
 const pip = usePiP({
   onClosed(savedTime) {
@@ -61,131 +53,21 @@ const pip = usePiP({
     }
     player.isPlaying = true;
     vp.syncSubtitlesWithPiP();
-    toggleFullscreen();
+    ctl.toggleFullscreen();
   }
 });
 
-const vp = useVideoPlayer({ player, settings, pip, notify: showToast });
+const vp = useVideoPlayer({
+  player,
+  settings,
+  pip,
+  notify: (text: string, duration?: number) => ctl.showToast(text, duration)
+});
 
-function onWheel(e: WheelEvent) {
-  e.preventDefault();
-  if (!vp.videoRef.value) return;
-  const delta = e.deltaY < 0 ? 0.05 : -0.05;
-  const newVol = Math.max(0, Math.min(1, player.volume + delta));
-  player.setVolume(newVol);
-  vp.videoRef.value.volume = player.isMuted ? 0 : newVol;
-  showToast(`Glosnosc: ${Math.round(newVol * 100)}%`, 1200);
-}
-
-function onSeek(time: number) {
-  if (!vp.videoRef.value) return;
-  player.seek(time);
-  vp.videoRef.value.currentTime = time;
-}
-
-function onVolumeChange(value: number) {
-  player.setVolume(value);
-  if (vp.videoRef.value) vp.videoRef.value.volume = player.isMuted ? 0 : value;
-}
-
-function toggleFullscreen() {
-  if (!document.fullscreenElement) {
-    const target = playerContainerRef.value || document.documentElement;
-    target.requestFullscreen().catch(() => {
-      document.documentElement.requestFullscreen();
-    });
-  } else {
-    document.exitFullscreen();
-  }
-}
-
-function skip(seconds: number) {
-  if (!vp.videoRef.value) return;
-  const newTime = Math.max(
-    0,
-    Math.min(vp.videoRef.value.duration || 0, vp.videoRef.value.currentTime + seconds)
-  );
-  vp.videoRef.value.currentTime = newTime;
-  player.currentTime = newTime;
-  const sign = seconds > 0 ? '+' : '';
-  showToast(`${sign}${seconds}s`, 1000);
-}
-
-function setSpeed(speed: number) {
-  const clamped = Math.round(Math.max(0.2, Math.min(3, speed)) * 10) / 10;
-  settings.updatePlayback({ playbackSpeed: clamped });
-  if (vp.videoRef.value) vp.videoRef.value.playbackRate = clamped;
-  showToast(`${clamped}x`, 1200);
-}
-
-function onMouseMove() {
-  showControls.value = true;
-  if (settings.playback.cursorHide && isFullscreen.value && playerContainerRef.value) {
-    playerContainerRef.value.classList.remove('hide-cursor');
-  }
-  if (controlsTimeout.value) clearTimeout(controlsTimeout.value);
-  controlsTimeout.value = setTimeout(() => {
-    if (player.isPlaying) {
-      showControls.value = false;
-      if (settings.playback.cursorHide && isFullscreen.value && playerContainerRef.value) {
-        playerContainerRef.value.classList.add('hide-cursor');
-      }
-    }
-  }, settings.playback.cursorTimeout * 1000);
-}
-
-let clickTimer: ReturnType<typeof setTimeout> | null = null;
-
-function handleClick() {
-  if (clickTimer) {
-    clearTimeout(clickTimer);
-    clickTimer = null;
-    toggleFullscreen();
-    return;
-  }
-  clickTimer = setTimeout(() => {
-    if (player.pipActive) return;
-
-    player.togglePlay();
-    showToast(player.isPlaying ? t('player.playing') : t('player.paused'), 1000);
-    clickTimer = null;
-  }, 250);
-}
-
-function onResumeContinue() {
-  const prompt = player.resumePrompt;
-  if (prompt && vp.videoRef.value) {
-    vp.videoRef.value.currentTime = prompt.position;
-    player.currentTime = prompt.position;
-    vp.videoRef.value.play().catch(() => {});
-    window.api?.setPlaybackPosition(prompt.path, prompt.position);
-  }
-  player.clearResumePrompt();
-}
-
-function onResumeStart() {
-  const prompt = player.resumePrompt;
-  if (prompt) window.api?.clearPlaybackPosition(prompt.path);
-  player.clearResumePrompt();
-}
-
-watch(
-  () => player.resumePrompt,
-  (prompt) => {
-    if (resumePromptTimer) {
-      clearTimeout(resumePromptTimer);
-      resumePromptTimer = null;
-    }
-    if (prompt) {
-      resumePromptTimer = setTimeout(() => {
-        player.clearResumePrompt();
-      }, 7000);
-    }
-  }
-);
+const ctl = usePlayerControls({ player, settings, ui, t, vp, playerContainerRef });
 
 const onFullscreenChange = () => {
-  isFullscreen.value = !!document.fullscreenElement;
+  ctl.isFullscreen.value = !!document.fullscreenElement;
 };
 
 onMounted(() => {
@@ -203,26 +85,24 @@ onMounted(() => {
     player,
     settings,
     vp,
-    notify: showToast,
-    skip,
-    setSpeed,
-    toggleFullscreen
+    notify: ctl.showToast,
+    skip: ctl.skip,
+    setSpeed: ctl.setSpeed,
+    toggleFullscreen: ctl.toggleFullscreen
   });
 
   document.addEventListener('fullscreenchange', onFullscreenChange);
 
   if (player.pendingFullscreen) {
     player.pendingFullscreen = false;
-    nextTick(() => toggleFullscreen());
+    nextTick(() => ctl.toggleFullscreen());
   }
 });
 
 onUnmounted(() => {
   document.removeEventListener('fullscreenchange', onFullscreenChange);
-  if (resumePromptTimer) clearTimeout(resumePromptTimer);
+  ctl.cleanup();
   vp.destroy();
-  if (controlsTimeout.value) clearTimeout(controlsTimeout.value);
-  if (clickTimer) clearTimeout(clickTimer);
   document.body.style.cursor = 'default';
   // clear the currently played video on exit so the same file can be reopened
   if (player.currentTrack?.type === 'video' && !player.pipActive) {
@@ -236,15 +116,15 @@ onUnmounted(() => {
   <div
     ref="playerContainerRef"
     class="player-container flex flex-col h-full bg-black relative"
-    @mousemove="onMouseMove"
-    @wheel.prevent="onWheel"
+    @mousemove="ctl.onMouseMove"
+    @wheel.prevent="ctl.onWheel"
   >
     <PlayerTopBar
-      :show-controls="showControls"
+      :show-controls="ctl.showControls.value"
       :track="player.currentTrack"
       @back="router.back"
       @pip="vp.togglePiP"
-      @fullscreen="toggleFullscreen"
+      @fullscreen="ctl.toggleFullscreen"
     />
 
     <!-- video area -->
@@ -254,13 +134,13 @@ onUnmounted(() => {
         class="w-full h-full object-contain cursor-pointer"
         :style="vp.videoFilterStyle.value"
         crossorigin="anonymous"
-        @click="handleClick"
+        @click="ctl.handleClick"
       />
 
       <!-- skip left zone -->
       <div
         class="absolute left-0 top-0 bottom-0 w-[20%] z-10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
-        @click="skip(-10)"
+        @click="ctl.skip(-10)"
       >
         <div
           class="bg-black/50 rounded-full px-4 py-2 text-white text-sm font-medium pointer-events-none"
@@ -272,7 +152,7 @@ onUnmounted(() => {
       <!-- skip right zone -->
       <div
         class="absolute right-0 top-0 bottom-0 w-[20%] z-10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
-        @click="skip(10)"
+        @click="ctl.skip(10)"
       >
         <div
           class="bg-black/50 rounded-full px-4 py-2 text-white text-sm font-medium pointer-events-none"
@@ -284,8 +164,8 @@ onUnmounted(() => {
       <ResumePrompt
         v-if="player.resumePrompt"
         :position="player.resumePrompt.position"
-        @continue="onResumeContinue"
-        @start="onResumeStart"
+        @continue="ctl.onResumeContinue"
+        @start="ctl.onResumeStart"
       />
     </div>
 
@@ -313,12 +193,12 @@ onUnmounted(() => {
     </div>
 
     <PlayerControls
-      :show-controls="showControls"
+      :show-controls="ctl.showControls.value"
       :speed="settings.playback.playbackSpeed"
-      @seek="onSeek"
-      @volume-change="onVolumeChange"
-      @set-speed="setSpeed"
-      @skip="skip"
+      @seek="ctl.onSeek"
+      @volume-change="ctl.onVolumeChange"
+      @set-speed="ctl.setSpeed"
+      @skip="ctl.skip"
     />
   </div>
 </template>

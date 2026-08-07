@@ -47,7 +47,26 @@ const audioPipModes = [
   { id: 'wide' as const, labelKey: 'settings.pipWide' }
 ];
 
-const audioEdgePositions = [
+const cornerPositions = [
+  { id: 'top-left' as const, labelKey: 'settings.topLeft', row: 0, col: 0, icon: CornerUpLeft },
+  { id: 'top-right' as const, labelKey: 'settings.topRight', row: 0, col: 1, icon: CornerUpRight },
+  {
+    id: 'bottom-left' as const,
+    labelKey: 'settings.bottomLeft',
+    row: 1,
+    col: 0,
+    icon: CornerDownLeft
+  },
+  {
+    id: 'bottom-right' as const,
+    labelKey: 'settings.bottomRight',
+    row: 1,
+    col: 1,
+    icon: CornerDownRight
+  }
+];
+
+const edgePositions = [
   { id: 'top' as const, labelKey: 'settings.pipTop', icon: PanelTop },
   { id: 'bottom' as const, labelKey: 'settings.pipBottom', icon: PanelBottom }
 ];
@@ -56,9 +75,7 @@ const isAudioEdgeMode = computed(
   () => settings.appearance.audioPipMode === 'max' || settings.appearance.audioPipMode === 'wide'
 );
 
-const audioPositions = computed(() =>
-  isAudioEdgeMode.value ? audioEdgePositions : pipPositions
-);
+const audioPositions = computed(() => (isAudioEdgeMode.value ? edgePositions : cornerPositions));
 
 const pipPositionOptions = computed(() =>
   pipPositions.map((p) => ({ id: p.id, label: t(p.labelKey), icon: p.icon }))
@@ -71,22 +88,16 @@ const audioPositionOptions = computed(() =>
 const pipPreviewOpen = ref(false);
 
 function setAudioPosition(id: string): void {
-  settings.updateAppearance({
-    audioPipPosition: id as AppSettings['appearance']['audioPipPosition']
-  });
-}
-
-watch(
-  () => settings.appearance.audioPipMode,
-  (mode) => {
-    if (mode === 'max' || mode === 'wide') {
-      const pos = settings.appearance.audioPipPosition;
-      if (pos !== 'top' && pos !== 'bottom') {
-        settings.updateAppearance({ audioPipPosition: pos.startsWith('top') ? 'top' : 'bottom' });
-      }
-    }
+  if (isAudioEdgeMode.value) {
+    settings.updateAppearance({
+      audioPipEdgePosition: id as AppSettings['appearance']['audioPipEdgePosition']
+    });
+  } else {
+    settings.updateAppearance({
+      audioPipPosition: id as AppSettings['appearance']['audioPipPosition']
+    });
   }
-);
+}
 
 async function toggleSettingsPiP() {
   if (pipPreviewOpen.value) {
@@ -244,9 +255,9 @@ watch(
       <div>
         <SettingsSectionTitle :title="$t('settings.audioPipPosition')" />
         <SettingsPositionGrid
-          :model-value="settings.appearance.audioPipPosition"
+          :model-value="isAudioEdgeMode ? settings.appearance.audioPipEdgePosition : settings.appearance.audioPipPosition"
           :options="audioPositionOptions"
-          :selected-label="t(audioPositions.find((p) => p.id === settings.appearance.audioPipPosition)?.labelKey ?? '')"
+          :selected-label="t(audioPositions.find((p) => p.id === (isAudioEdgeMode ? settings.appearance.audioPipEdgePosition : settings.appearance.audioPipPosition))?.labelKey ?? '')"
           @update:model-value="setAudioPosition($event)"
         />
       </div>
