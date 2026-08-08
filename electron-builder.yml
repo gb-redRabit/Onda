@@ -13,11 +13,14 @@ asarUnpack:
   - resources/**
 win:
   executableName: onda
-  # Code-signing / update verification (Windows). `publisherName` must match the
-  # subject of the certificate used to sign the installer, otherwise
-  # electron-updater refuses the update. Set CODE_SIGN_PUBLISHER at build time.
-  publisherName: ${env.CODE_SIGN_PUBLISHER}
-  verifyUpdateCodeSignature: true
+  # Code-signing / update verification (Windows).
+  # WITHOUT a code-signing certificate you MUST keep verifyUpdateCodeSignature
+  # off (false), otherwise electron-updater refuses to install unsigned builds.
+  # Once you own a cert: set CODE_SIGN_PUBLISHER to the certificate subject and
+  # flip verifyUpdateCodeSignature to true — publisherName must match the
+  # subject used to sign the installer.
+  verifyUpdateCodeSignature: false
+  # publisherName: ${env.CODE_SIGN_PUBLISHER}
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -48,8 +51,8 @@ appImage:
 npmRebuild: false
 publish:
   provider: github
-  owner: ${env.GH_OWNER:-your-gh-username}
-  repo: onda
+  owner: ${env.GH_OWNER:-gb-redRabit}
+  repo: Onda
   # requires GH_TOKEN env var with repo scope for releases
 electronDownload:
   # mirror: https://npmmirror.com/mirrors/electron/

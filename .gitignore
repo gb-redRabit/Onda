@@ -4,7 +4,6 @@ out
 .DS_Store
 .eslintcache
 *.log*
-.github
 .git.bak
 logs/
 opencode.json

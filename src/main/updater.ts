@@ -40,12 +40,11 @@ export function initAutoUpdater(getWebContents: () => WebContents | null): void 
   mainWC = getWebContents();
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
-  // Never install a Windows update whose signature cannot be verified against
-  // the publisher configured in electron-builder.yml.
-  if (process.platform === 'win32') {
-    (autoUpdater as unknown as { verifyUpdateCodeSignature: boolean }).verifyUpdateCodeSignature =
-      true;
-  }
+  // Signature verification is driven by the embedded build config
+  // (win.verifyUpdateCodeSignature + win.publisherName in electron-builder.yml),
+  // which electron-updater reads automatically at runtime. No override needed
+  // here — leave it to the build-time config so unsigned test builds still
+  // install updates.
 
   autoUpdater.on('checking-for-update', () => {
     status = 'checking';
