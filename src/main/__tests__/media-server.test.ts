@@ -185,8 +185,12 @@ describe('media-server', () => {
   });
 
   it('returns 500 for an unreadable file', async () => {
+    const missing =
+      process.platform === 'win32'
+        ? 'C:/no-such-file-onda.mp4'
+        : '/no-such-file-onda.mp4';
     const res = await request(
-      `/${server!.token}/?path=${encodeURIComponent('C:/no-such-file-onda.mp4')}`
+      `/${server!.token}/?path=${encodeURIComponent(missing)}`
     );
     expect(res.status).toBe(500);
   });

@@ -51,7 +51,7 @@ appImage:
 npmRebuild: false
 publish:
   provider: github
-  owner: ${env.GH_OWNER:-gb-redRabit}
+  owner: gb-redRabit
   repo: Onda
   # requires GH_TOKEN env var with repo scope for releases
 electronDownload:

@@ -24,7 +24,7 @@ describe('ytdlpDownloadUrl', () => {
   const base = 'https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04';
   it('maps every platform to a pinned yt-dlp release asset', () => {
     expect(ytdlpDownloadUrl('win32')).toBe(`${base}/yt-dlp.exe`);
-    expect(ytdlpDownloadUrl('linux')).toBe(`${base}/yt-dlp`);
+    expect(ytdlpDownloadUrl('linux', 'x64')).toBe(`${base}/yt-dlp`);
     expect(ytdlpDownloadUrl('freebsd')).toBe(`${base}/yt-dlp`);
   });
 
@@ -75,12 +75,13 @@ describe('ffmpegDownloadUrl / ffmpegShaUrl', () => {
 describe('whichInPath', () => {
   it('finds executables whether the name already carries the extension or not', () => {
     const dir = mkdtempSync(join(tmpdir(), 'onda-which-'));
-    const exe = join(dir, 'ffprobe.exe');
+    const isWin = process.platform === 'win32';
+    const exe = join(dir, isWin ? 'ffprobe.exe' : 'ffprobe');
     writeFileSync(exe, 'x');
     const prevPath = process.env.PATH;
     process.env.PATH = dir;
     try {
-      expect(whichInPath('ffprobe.exe')).toBe(exe);
+      expect(whichInPath(isWin ? 'ffprobe.exe' : 'ffprobe')).toBe(exe);
       expect(whichInPath('ffprobe')).toBe(exe);
     } finally {
       process.env.PATH = prevPath;
