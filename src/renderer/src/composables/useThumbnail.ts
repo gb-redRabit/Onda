@@ -10,6 +10,26 @@ import {
 } from '@renderer/utils/thumbLoader';
 import { logger } from '@shared/logger';
 
+// Single shared IntersectionObserver for every thumbnail element — one
+// observer instead of one per row.
+const thumbVisibleCallbacks = new WeakMap<Element, () => void>();
+
+const thumbVisibilityObserver: IntersectionObserver | null =
+  typeof IntersectionObserver !== 'undefined'
+    ? new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            const cb = thumbVisibleCallbacks.get(entry.target);
+            if (entry.isIntersecting && cb) {
+              thumbVisibleCallbacks.delete(entry.target);
+              cb();
+            }
+          }
+        },
+        { rootMargin: '400px' }
+      )
+    : null;
+
 export function useThumbnail(
   path: string,
   isDirectory: boolean,
@@ -20,26 +40,22 @@ export function useThumbnail(
   const mediaThumb = ref<string | null>(null);
   const rootEl = ref<HTMLElement | null>(null);
   const visible = ref(false);
-  let observer: IntersectionObserver | null = null;
   let thumbFired = false;
 
   onMounted(() => {
-    if (rootEl.value) {
-      observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            visible.value = true;
-            observer?.disconnect();
-          }
-        },
-        { rootMargin: '400px' }
-      );
-      observer.observe(rootEl.value);
+    if (rootEl.value && thumbVisibilityObserver) {
+      thumbVisibleCallbacks.set(rootEl.value, () => {
+        visible.value = true;
+      });
+      thumbVisibilityObserver.observe(rootEl.value);
     }
   });
 
   onBeforeUnmount(() => {
-    observer?.disconnect();
+    if (rootEl.value) {
+      thumbVisibilityObserver?.unobserve(rootEl.value);
+      thumbVisibleCallbacks.delete(rootEl.value);
+    }
   });
 
   watch(visible, (isVisible) => {

@@ -21,7 +21,6 @@ export function useVideoPlayer(ctx: VideoPlayerContext) {
     subtitles.syncSubtitlesWithPiP
   );
 
-  source.registerTrackWatcher();
   subtitles.registerSubtitleWatcher();
 
   function init(track: MediaFile | null) {
@@ -53,7 +52,8 @@ export function useVideoPlayer(ctx: VideoPlayerContext) {
 
   watch(
     () => player.currentTrack,
-    (track) => {
+    (track, oldTrack) => {
+      source.onTrackChanged(track, oldTrack);
       if (!track || track.type !== 'video') return;
 
       settings.updatePlayback({ videoFilter: 'none', playbackSpeed: 1 });

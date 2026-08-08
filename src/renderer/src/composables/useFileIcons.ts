@@ -2,13 +2,12 @@ import { shallowRef, onBeforeUnmount, triggerRef } from 'vue';
 import type { Ref } from 'vue';
 import { logger } from '@shared/logger';
 import type { FileItem } from '@renderer/types/explorer';
+import { cachedIcon, setCachedIcon } from '@renderer/utils/thumbLoader';
 
-const ICON_CACHE_MAX = 500;
 const ICON_CONCURRENCY = 6;
 
 export function useFileIcons() {
   const extraSmallIcons = shallowRef<Record<string, string>>({});
-  const iconCacheOrder: string[] = [];
   const iconPendingQueue = new Set<string>();
   let iconActive = 0;
   let iconQueueTimer: ReturnType<typeof setTimeout> | null = null;
@@ -35,12 +34,7 @@ export function useFileIcons() {
         ?.invoke('shell:getFileIcon', path)
         .then((icon) => {
           if (icon) {
-            if (iconCacheOrder.length >= ICON_CACHE_MAX) {
-              const evicted = iconCacheOrder.pop()!;
-              delete pendingIcons[evicted];
-              delete extraSmallIcons.value[evicted];
-            }
-            iconCacheOrder.unshift(path);
+            setCachedIcon(path, icon as string);
             pendingIcons[path] = icon as string;
             scheduleIconRender();
           }
@@ -55,13 +49,9 @@ export function useFileIcons() {
 
   function extraSmallIcon(item: FileItem): string | null {
     if (item.isDirectory) return null;
-    if (extraSmallIcons.value[item.path]) {
-      const idx = iconCacheOrder.indexOf(item.path);
-      if (idx > 0) {
-        iconCacheOrder.splice(idx, 1);
-        iconCacheOrder.unshift(item.path);
-      }
-      return extraSmallIcons.value[item.path];
+    const cached = cachedIcon(item.path);
+    if (cached) {
+      return extraSmallIcons.value[item.path] ?? cached;
     }
     if (!iconPendingQueue.has(item.path)) {
       iconPendingQueue.add(item.path);

@@ -106,7 +106,12 @@ export function getTempDir(): string {
 export interface CachedCover {
   result: { type: 'video' | 'image' | null; data: string | null };
   mtimeMs: number;
+  checkedAt: number;
 }
+
+// Re-validate a mem-cached cover against the file mtime at most once per TTL
+// to avoid a stat() syscall on every cover hit.
+const COVER_STAT_TTL_MS = 60_000;
 
 export const coverResultCache = new Map<string, CachedCover>();
 export const durationCache = new Map<string, { duration: number; mtimeMs: number }>();
@@ -294,6 +299,19 @@ async function extractEmbeddedCover(filePath: string): Promise<string | null> {
   }
 }
 
+function waitForCoverLock(filePath: string): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const list = coverCacheLocks.get(filePath);
+    if (!list) {
+      resolve();
+      return;
+    }
+    list.push(resolve);
+    // Safety timeout so a waiter is never stuck if the owner dies.
+    setTimeout(resolve, 5000);
+  });
+}
+
 export async function extractAndCacheCover(
   filePath: string
 ): Promise<{ type: 'video' | 'image' | null; data: string | null }> {
@@ -302,19 +320,21 @@ export async function extractAndCacheCover(
     return { type: 'video', data: siblingVideo };
   }
 
-  while (coverCacheLocks.has(filePath)) {
-    await new Promise<void>((resolve) => {
-      const list = coverCacheLocks.get(filePath)!;
-      list.push(resolve);
-      setTimeout(resolve, 5000);
-    });
+  // A previous caller may already be extracting this file — wait for it and
+  // reuse the cached result (even a "no cover" result is cached).
+  if (coverCacheLocks.has(filePath)) {
+    await waitForCoverLock(filePath);
+    const waited = await getCachedCover(filePath);
+    if (waited) return waited;
   }
-  const cached = await getCachedCover(filePath);
-  if (cached) return cached;
 
+  // Acquire the lock synchronously (no await between check and set) so only
+  // one caller can ever extract a given file concurrently.
   coverCacheLocks.set(filePath, []);
 
   try {
+    const cached = await getCachedCover(filePath);
+    if (cached) return cached;
     const ext = extname(filePath).toLowerCase();
     let result: { type: 'video' | 'image' | null; data: string | null } = {
       type: null,
@@ -332,7 +352,11 @@ export async function extractAndCacheCover(
     }
 
     const statResult = await stat(filePath).catch(() => null);
-    cacheSet(coverResultCache, filePath, { result, mtimeMs: statResult?.mtimeMs ?? Date.now() });
+    cacheSet(coverResultCache, filePath, {
+      result,
+      mtimeMs: statResult?.mtimeMs ?? Date.now(),
+      checkedAt: Date.now()
+    });
 
     if (result.type === 'image' && result.data?.startsWith('data:')) {
       const match = result.data.match(/^data:image\/(\w+);base64,(.+)$/);
@@ -356,9 +380,14 @@ export async function getCachedCover(
 ): Promise<{ type: 'video' | 'image' | null; data: string | null } | null> {
   const memCached = coverResultCache.get(filePath);
   if (memCached) {
+    // Fresh enough — skip the stat() syscall.
+    if (Date.now() - memCached.checkedAt < COVER_STAT_TTL_MS) return memCached.result;
     try {
       const { mtimeMs } = await stat(filePath);
-      if (mtimeMs <= memCached.mtimeMs) return memCached.result;
+      if (mtimeMs <= memCached.mtimeMs) {
+        memCached.checkedAt = Date.now();
+        return memCached.result;
+      }
     } catch (e) {
       logger.warn('cover', `mem cache size check failed for ${filePath}`, e);
     }
@@ -368,7 +397,11 @@ export async function getCachedCover(
   const diskCached = await getPersistentCover(filePath);
   if (diskCached) {
     const s = await stat(filePath).catch(() => null);
-    cacheSet(coverResultCache, filePath, { result: diskCached, mtimeMs: s?.mtimeMs ?? Date.now() });
+    cacheSet(coverResultCache, filePath, {
+      result: diskCached,
+      mtimeMs: s?.mtimeMs ?? Date.now(),
+      checkedAt: Date.now()
+    });
     return diskCached;
   }
 

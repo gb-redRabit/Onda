@@ -1,15 +1,31 @@
 import { ref } from 'vue';
 import type { MediaFile, Playlist } from '@renderer/types/media';
 
+const SAVE_DEBOUNCE_MS = 500;
+
 export function useLibraryPlaylists() {
   const playlists = ref<Playlist[]>([]);
+  let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
   async function savePlaylists() {
+    if (saveTimer !== null) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
     try {
       await window.api?.invoke('playlist:saveAll', JSON.parse(JSON.stringify(playlists.value)));
     } catch {
       // non-fatal
     }
+  }
+
+  // Rapid mutations (drag reorder, tag edits) collapse into a single write.
+  function scheduleSave() {
+    if (saveTimer !== null) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      savePlaylists();
+    }, SAVE_DEBOUNCE_MS);
   }
 
   function createPlaylist(name: string, description?: string): Playlist {
@@ -22,7 +38,7 @@ export function useLibraryPlaylists() {
       updatedAt: Date.now()
     };
     playlists.value.push(playlist);
-    savePlaylists();
+    scheduleSave();
     return playlist;
   }
 
@@ -32,7 +48,7 @@ export function useLibraryPlaylists() {
       if (!playlist.tracks.some((t) => t.path === track.path)) {
         playlist.tracks.push(track);
         playlist.updatedAt = Date.now();
-        savePlaylists();
+        scheduleSave();
       }
     }
   }
@@ -42,7 +58,7 @@ export function useLibraryPlaylists() {
     if (playlist) {
       playlist.tracks = playlist.tracks.filter((t) => t.path !== trackPath);
       playlist.updatedAt = Date.now();
-      savePlaylists();
+      scheduleSave();
     }
   }
 
@@ -55,12 +71,12 @@ export function useLibraryPlaylists() {
     const [track] = playlist.tracks.splice(fromIdx, 1);
     playlist.tracks.splice(toIdx, 0, track);
     playlist.updatedAt = Date.now();
-    savePlaylists();
+    scheduleSave();
   }
 
   function deletePlaylist(playlistId: string) {
     playlists.value = playlists.value.filter((p) => p.id !== playlistId);
-    savePlaylists();
+    scheduleSave();
   }
 
   return {

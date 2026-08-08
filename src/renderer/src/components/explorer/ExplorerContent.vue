@@ -21,13 +21,19 @@ const showConfirm = inject<(msg: string) => Promise<boolean>>('showConfirm', asy
 
 const scrollRef = ref<HTMLDivElement | null>(null);
 
+function setScrollRef(el: unknown) {
+  scrollRef.value = el as HTMLDivElement | null;
+  contentRef.value = el as HTMLElement | null;
+}
+
 const {
-  files,
-  explorer,
-  fileClipboard,
-  hoveredFolderPath,
-  extraSmallIcon,
-  isGridMode,
+    files,
+    explorer,
+    fileClipboard,
+    contentRef,
+    hoveredFolderPath,
+    extraSmallIcon,
+    isGridMode,
   itemsPerRow,
   getRowItems,
   virtualizer,
@@ -47,7 +53,7 @@ defineExpose({ reveal });
 
 <template>
   <div
-    ref="scrollRef"
+    :ref="setScrollRef"
     class="flex-1 overflow-auto p-3"
     :class="{ 'cursor-progress': explorer.isLoading }"
     @contextmenu.prevent="emit('menu', $event, null)"

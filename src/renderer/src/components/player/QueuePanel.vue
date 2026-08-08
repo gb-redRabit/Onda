@@ -3,6 +3,7 @@ import { ref, watch } from 'vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { X, Music2, GripVertical, Trash2 } from '@lucide/vue';
 import { formatDuration } from '@renderer/utils/formatters';
+import { buildMediaFile } from '@renderer/utils/explorerMedia';
 import type { MediaFile } from '@renderer/types/media';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import TrackInfo from '@renderer/components/TrackInfo.vue';
@@ -10,6 +11,21 @@ import TrackInfo from '@renderer/components/TrackInfo.vue';
 const player = usePlayerStore();
 const dragOverIndex = ref<number | null>(null);
 const dragIndex = ref<number | null>(null);
+
+const durationPending = new Map<string, Promise<number>>();
+
+function fetchDuration(filePath: string): Promise<number> {
+  let p = durationPending.get(filePath);
+  if (!p) {
+    p = (window.api?.getDuration(filePath) ?? Promise.resolve(0))
+      .catch(() => 0)
+      .finally(() => {
+        durationPending.delete(filePath);
+      });
+    durationPending.set(filePath, p);
+  }
+  return p;
+}
 
 async function loadCovers(tracks: MediaFile[]) {
   for (const track of tracks) {
@@ -61,25 +77,11 @@ function onDrop(e: DragEvent, toIndex: number) {
     }
   } else if (data.startsWith('file:')) {
     const filePath = data.replace('file:', '');
-    const file: MediaFile = {
-      id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      path: filePath,
-      name: filePath.split(/[/\\]/).pop() || filePath,
-      type: filePath.match(/\.(mp3|flac|wav|ogg|aac|m4a|opus|aiff)$/i) ? 'audio' : 'video',
-      size: 0,
-      duration: 0,
-      extension: filePath.includes('.') ? filePath.split('.').pop() || '' : '',
-      mimeType: '',
-      addedAt: Date.now(),
-      playCount: 0
-    };
+    const file = buildMediaFile({ path: filePath, size: 0 });
     player.insertInQueue(toIndex, file);
-    window.api
-      .getDuration(filePath)
-      .then((dur) => {
-        file.duration = dur;
-      })
-      .catch(() => {});
+    fetchDuration(filePath).then((dur) => {
+      file.duration = dur;
+    });
   }
 }
 
@@ -107,25 +109,17 @@ function onFileDrop(e: DragEvent) {
     ].includes(ext);
     if (isMedia) {
       const filePath = window.api.getFilePath(file);
-      const mediaFile: MediaFile = {
-        id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      const mediaFile = buildMediaFile({
         path: filePath,
         name: file.name,
-        type: ['mp4', 'mkv', 'avi', 'webm', 'mov'].includes(ext) ? 'video' : 'audio',
-        size: file.size,
-        duration: 0,
         extension: ext,
-        mimeType: file.type || '',
-        addedAt: Date.now(),
-        playCount: 0
-      };
+        size: file.size,
+        mimeType: file.type || ''
+      });
       player.addToQueue(mediaFile);
-      window.api
-        .getDuration(filePath)
-        .then((dur) => {
-          mediaFile.duration = dur;
-        })
-        .catch(() => {});
+      fetchDuration(filePath).then((dur) => {
+        mediaFile.duration = dur;
+      });
     }
   }
 }

@@ -14,6 +14,28 @@ export interface CreateJassubParams {
   modernWasmUrlOverride?: string;
 }
 
+export interface JassubWasmDataUrls {
+  wasmDataUrl: string;
+  modernWasmDataUrl: string;
+}
+
+function uint8ToBase64(bytes: Uint8Array): string {
+  const chars = new Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) chars[i] = String.fromCharCode(bytes[i]);
+  return btoa(chars.join(''));
+}
+
+export async function loadJassubWasmDataUrls(): Promise<JassubWasmDataUrls> {
+  const [wasmData, modernWasmData] = await Promise.all([
+    fetch(wasmUrl).then((r) => r.arrayBuffer()),
+    fetch(modernWasmUrl).then((r) => r.arrayBuffer())
+  ]);
+  return {
+    wasmDataUrl: 'data:application/wasm;base64,' + uint8ToBase64(new Uint8Array(wasmData)),
+    modernWasmDataUrl: 'data:application/wasm;base64,' + uint8ToBase64(new Uint8Array(modernWasmData))
+  };
+}
+
 export async function createJassub(
   JASSUBCtor: typeof import('jassub').default,
   params: CreateJassubParams

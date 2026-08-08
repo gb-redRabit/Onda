@@ -1,30 +1,8 @@
 import { BrowserWindow, screen, ipcMain } from 'electron';
 import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
+import type { AudioPipState, PipMode, PipPosition } from '../shared/types/pip';
 import { computePipPosition } from './pip-position';
-
-type PipMode = 'minimal' | 'medium' | 'max' | 'wide';
-type PipPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'top' | 'bottom';
-
-interface AudioPipState {
-  trackName?: string;
-  artist?: string;
-  coverData?: string | null;
-  coverType?: 'image' | 'video' | null;
-  isPlaying?: boolean;
-  currentTime?: number;
-  duration?: number;
-  volume?: number;
-  isMuted?: boolean;
-  shuffle?: boolean;
-  repeat?: 'none' | 'all' | 'one';
-  equalizerBands?: number[];
-  equalizerPreset?: string;
-  vizData?: number[];
-  nextTrackName?: string;
-  nextTrackArtist?: string;
-  [key: string]: unknown;
-}
 
 export class AudioPipManager {
   private window: BrowserWindow | null = null;

@@ -1,21 +1,13 @@
 import { ref, onUnmounted } from 'vue';
 import JASSUB from 'jassub';
-import wasmUrl from 'jassub/dist/wasm/jassub-worker.wasm?url';
-import modernWasmUrl from 'jassub/dist/wasm/jassub-worker-modern.wasm?url';
 import type { MkvFont } from '@renderer/types/subtitles';
 import { logger } from '@shared/logger';
-import { createJassub } from '@renderer/utils/jassub';
+import { createJassub, loadJassubWasmDataUrls } from '@renderer/utils/jassub';
 
 export interface PipSubtitleData {
   subContent: string;
   fonts: MkvFont[];
   availableFonts: Record<string, string>;
-}
-
-function uint8ToBase64(bytes: Uint8Array): string {
-  const chars = new Array(bytes.length);
-  for (let i = 0; i < bytes.length; i++) chars[i] = String.fromCharCode(bytes[i]);
-  return btoa(chars.join(''));
 }
 
 export function usePipVideoSubtitle(videoRef: { value: HTMLVideoElement | null }) {
@@ -41,14 +33,8 @@ export function usePipVideoSubtitle(videoRef: { value: HTMLVideoElement | null }
       const v = videoRef.value;
       if (!v) return;
       const fonts = data.fonts.map((f) => new Uint8Array(f.data));
-      const [wasmData, modernWasmData] = await Promise.all([
-        fetch(wasmUrl).then((r) => r.arrayBuffer()),
-        fetch(modernWasmUrl).then((r) => r.arrayBuffer())
-      ]);
+      const { wasmDataUrl, modernWasmDataUrl } = await loadJassubWasmDataUrls();
       if (seq !== subtitleLoadSeq) return;
-      const wasmDataUrl = 'data:application/wasm;base64,' + uint8ToBase64(new Uint8Array(wasmData));
-      const modernWasmDataUrl =
-        'data:application/wasm;base64,' + uint8ToBase64(new Uint8Array(modernWasmData));
       const availableFonts: Record<string, string> = {};
       for (const [k, val] of Object.entries(data.availableFonts)) {
         try {

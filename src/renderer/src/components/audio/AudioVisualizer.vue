@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { useSettingsStore } from '@renderer/stores/settings';
 import type { VisualizationMode } from '@renderer/types/settings';
+import { getFrequencyBins } from '@renderer/utils/audioViz';
 
 const audio = useAudioPlayer();
 const settings = useSettingsStore();
@@ -59,8 +60,9 @@ function draw() {
   } else if (style.value === 'bars') {
     const barCount = 64;
     const barWidth = cw / barCount - 2;
+    const bins = getFrequencyBins(analyserNode, barCount);
     for (let i = 0; i < barCount; i++) {
-      const val = dataArray[Math.floor((i * bufferLength) / barCount)] / 255;
+      const val = bins[i] / 255;
       const barH = val * ch * sens;
       const x = i * (barWidth + 2);
       const y = ch - barH;
@@ -147,6 +149,17 @@ function draw() {
 
 const CYCLES: VisualizationMode[] = ['circle', 'bars', 'wave', 'particles', 'radial'];
 
+function onVisibilityChange() {
+  if (document.hidden) {
+    if (animFrame) {
+      cancelAnimationFrame(animFrame);
+      animFrame = null;
+    }
+  } else if (audio.isPlaying.value && !animFrame) {
+    draw();
+  }
+}
+
 function cycleStyle() {
   const idx = CYCLES.indexOf(style.value);
   style.value = CYCLES[(idx + 1) % CYCLES.length];
@@ -163,18 +176,20 @@ watch(
 );
 
 onMounted(() => {
+  document.addEventListener('visibilitychange', onVisibilityChange);
   if (audio.isPlaying.value) draw();
 });
 
 watch(
   () => audio.isPlaying.value,
   (playing) => {
-    if (playing) draw();
+    if (playing && !document.hidden) draw();
     else if (animFrame) cancelAnimationFrame(animFrame);
   }
 );
 
 onUnmounted(() => {
+  document.removeEventListener('visibilitychange', onVisibilityChange);
   if (animFrame) cancelAnimationFrame(animFrame);
 });
 

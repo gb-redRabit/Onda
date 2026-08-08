@@ -174,6 +174,43 @@ export function registerLibraryHandlers(): void {
     }
   );
 
+  ipcMain.handle(
+    'library:updateStats',
+    async (
+      _event,
+      stats: Array<{ path: string; playCount: number; lastPlayed: number }>
+    ): Promise<void> => {
+      if (!Array.isArray(stats) || stats.length === 0) return;
+      const clean = stats.filter(
+        (s) => s && typeof s.path === 'string' && s.path && typeof s.playCount === 'number'
+      );
+      if (clean.length === 0) return;
+      try {
+        const store = await getStore();
+        const data = store.get('libraryScanned', null) as {
+          files: MediaFile[];
+          folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
+        } | null;
+        if (!data || !Array.isArray(data.files)) return;
+        const byPath = new Map(clean.map((s) => [s.path, s]));
+        let changed = false;
+        for (const file of data.files) {
+          const s = byPath.get(file.path);
+          if (s) {
+            file.playCount = s.playCount;
+            if (typeof s.lastPlayed === 'number') {
+              file.lastPlayed = s.lastPlayed;
+            }
+            changed = true;
+          }
+        }
+        if (changed) store.set('libraryScanned', data);
+      } catch (err) {
+        logger.error('library', 'updateStats failed', err);
+      }
+    }
+  );
+
   function isValidPlaylistArray(v: unknown): v is Playlist[] {
     return (
       Array.isArray(v) &&

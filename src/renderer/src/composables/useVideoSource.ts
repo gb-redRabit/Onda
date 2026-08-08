@@ -1,4 +1,4 @@
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import type { usePlayerStore } from '@renderer/stores/player';
 import type { useSettingsStore } from '@renderer/stores/settings';
 import type { usePiP } from '@renderer/composables/usePiP';
@@ -174,20 +174,25 @@ export function useVideoSource(
     }
   }
 
-  function registerTrackWatcher(): void {
-    watch(
-      () => player.currentTrack,
-      (track, oldTrack) => {
-        if (oldTrack && track?.path !== oldTrack?.path) {
-          currentLoadId++;
-        }
-        if (track?.type === 'video' && track.path !== lastLoadedPath) {
-          lastLoadedPath = track.path;
-          player.loadSubtitles(track.path);
-        }
-      }
-    );
+  // Tracks a pending onVideoRef init and cancels it if the current track
+  // changes before the element is connected. Called by the single merged
+  // currentTrack watcher in useVideoPlayer.
+  function onTrackChanged(track: MediaFile | null, oldTrack: MediaFile | null): void {
+    if (oldTrack && track?.path !== oldTrack?.path) {
+      currentLoadId++;
+    }
+    if (track?.type === 'video' && track.path !== lastLoadedPath) {
+      lastLoadedPath = track.path;
+      player.loadSubtitles(track.path);
+    }
   }
 
-  return { videoRef, videoFilterStyle, onVideoRef, setupVideo, getTrackSrc, registerTrackWatcher };
+  return {
+    videoRef,
+    videoFilterStyle,
+    onVideoRef,
+    setupVideo,
+    getTrackSrc,
+    onTrackChanged
+  };
 }

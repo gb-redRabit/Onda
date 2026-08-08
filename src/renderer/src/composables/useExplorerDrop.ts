@@ -19,15 +19,21 @@ export function useExplorerDrop(
     return getDroppedFilePaths(dt);
   }
 
+  const contentRef = ref<HTMLElement | null>(null);
+
   function onContentDragOver(e: DragEvent) {
     if (e.dataTransfer) e.dataTransfer.dropEffect = e.ctrlKey || e.metaKey ? 'copy' : 'move';
-    const el = (e.target as HTMLElement)?.closest('[data-folder-path]');
+    const el = (e.target as HTMLElement | null)?.closest('[data-folder-path]');
     hoveredFolderPath.value = el ? el.getAttribute('data-folder-path') : null;
   }
 
   function onContentDragLeave(e: DragEvent) {
-    const el = (e.target as HTMLElement)?.closest('[data-folder-path]');
-    if (!el) hoveredFolderPath.value = null;
+    // dragleave bubbles on every boundary crossing between child elements, so
+    // only clear the hover when the pointer truly leaves the drop container.
+    const related = e.relatedTarget as Node | null;
+    const container = contentRef.value;
+    if (container && related && container.contains(related)) return;
+    hoveredFolderPath.value = null;
   }
 
   async function onContentDrop(e: DragEvent) {
@@ -53,6 +59,7 @@ export function useExplorerDrop(
   }
 
   return {
+    contentRef,
     hoveredFolderPath,
     onContentDragOver,
     onContentDragLeave,

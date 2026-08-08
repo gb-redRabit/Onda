@@ -183,6 +183,10 @@ export interface IpcChannels {
     ];
     result: void;
   };
+  'library:updateStats': {
+    args: [{ path: string; playCount: number; lastPlayed: number }[]];
+    result: void;
+  };
   'playlist:loadAll': { args: []; result: IpcPlaylist[] };
   'playlist:saveAll': { args: [playlists: IpcPlaylist[]]; result: void };
   'settings:get': { args: []; result: Partial<AppSettings> };
@@ -272,6 +276,10 @@ export interface IpcChannels {
   'media:getThumbnail': {
     args: [filePath: string, maxSize?: number];
     result: string | null;
+  };
+  'media:batchThumbnails': {
+    args: [files: string[], maxSize?: number];
+    result: Record<string, string>;
   };
   'app:getInfo': { args: []; result: AppInfo };
   'app:getLicenses': {

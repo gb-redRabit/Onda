@@ -4,9 +4,10 @@ import type { useExplorerStore } from '@renderer/stores/explorer';
 import type { useClipboardStore } from '@renderer/stores/clipboard';
 import type { usePlayerStore } from '@renderer/stores/player';
 import type { useUIStore } from '@renderer/stores/ui';
-import { IMAGE_EXTS, VIDEO_EXTS, AUDIO_EXTS } from '@shared/constants';
+import { IMAGE_EXTS, AUDIO_EXTS, VIDEO_EXTS } from '@shared/constants';
 import type { FileItem } from '@renderer/types/explorer';
 import type { MediaFile } from '@renderer/types/media';
+import { buildMediaFile } from '@renderer/utils/explorerMedia';
 import type { useRouter } from 'vue-router';
 
 export interface ExplorerActionsCtx {
@@ -25,23 +26,16 @@ export interface ExplorerActionsCtx {
 }
 
 const IMAGE_EXT_SET = new Set(IMAGE_EXTS);
-const VIDEO_EXT_SET = new Set(VIDEO_EXTS);
 const MEDIA_EXT_SET = new Set([...AUDIO_EXTS, ...VIDEO_EXTS, ...IMAGE_EXTS]);
 
 function toMediaFile(item: FileItem): MediaFile {
-  const isVideo = !!item.extension && VIDEO_EXT_SET.has(item.extension);
-  return {
-    id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  return buildMediaFile({
     path: item.path,
     name: item.name,
-    type: isVideo ? 'video' : 'audio',
-    size: item.size,
-    duration: 0,
     extension: item.extension || '',
-    mimeType: '',
-    addedAt: Date.now(),
-    playCount: 0
-  };
+    size: item.size,
+    mimeType: item.mimeType || ''
+  });
 }
 
 export function useExplorerActions(ctx: ExplorerActionsCtx) {

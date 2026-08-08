@@ -48,7 +48,7 @@ export function useRafFn(callback: () => void) {
   let running = false;
 
   const loop = (): void => {
-    if (!running) return;
+    if (!running || document.hidden) return;
     callback();
     if (!running) return;
     id = requestAnimationFrame(loop);
@@ -63,12 +63,21 @@ export function useRafFn(callback: () => void) {
   };
 
   const resume = (): void => {
-    if (running) return;
+    if (running || document.hidden) return;
     running = true;
     id = requestAnimationFrame(loop);
   };
 
-  onUnmounted(pause);
+  const onVisibilityChange = (): void => {
+    if (document.hidden) pause();
+    else resume();
+  };
+
+  document.addEventListener('visibilitychange', onVisibilityChange);
+  onUnmounted(() => {
+    pause();
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+  });
   return { pause, resume };
 }
 

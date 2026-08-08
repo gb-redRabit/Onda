@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { RotateCcw } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
-import { EQUALIZER_PRESETS } from '@renderer/utils/constants';
+import { EQUALIZER_PRESETS, EQUALIZER_PRESET_LABELS } from '@renderer/utils/constants';
 
 const player = usePlayerStore();
 const { setEqualizerBand, applyEqPreset } = useAudioPlayer();
@@ -26,10 +26,7 @@ const presets = EQUALIZER_PRESETS;
 const { t } = useI18n();
 
 const presetLabels: Record<string, string> = {
-  flat: 'Flat',
-  pop: 'Pop',
-  rock: 'Rock',
-  jazz: 'Jazz',
+  ...EQUALIZER_PRESET_LABELS,
   classical: t('equalizer.classical'),
   bassBoost: t('equalizer.bass'),
   trebleBoost: t('equalizer.treble'),
@@ -37,10 +34,6 @@ const presetLabels: Record<string, string> = {
 };
 
 const bandLabels = ['32', '64', '125', '250', '500', '1K', '2K', '4K', '8K', '16K'];
-
-function onBandChange(index: number, value: number) {
-  setEqualizerBand(index, value);
-}
 
 function selectPreset(name: string) {
   player.equalizerPreset = name;
@@ -53,7 +46,7 @@ function onSliderDrag(e: MouseEvent, index: number) {
   function update(ev: MouseEvent) {
     const pct = 1 - Math.max(0, Math.min(1, (ev.clientY - rect.top) / rect.height));
     const val = Math.round(pct * 24 - 12);
-    onBandChange(index, val);
+    setEqualizerBand(index, val);
   }
   update(e);
   function onMove(ev: MouseEvent) {

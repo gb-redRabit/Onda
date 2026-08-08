@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { PanelBottom } from '@lucide/vue';
 import type { FileItem } from '@renderer/types/explorer';
-import { thumbTasks, processThumbQueue, thumbTaskDone } from '@renderer/utils/thumbLoader';
 
 const props = defineProps<{
   files: FileItem[];
@@ -20,26 +19,53 @@ const emit = defineEmits<{
   (e: 'update:showThumbs', val: boolean): void;
 }>();
 
+const ITEM_W = 68; // 64px thumb + 4px gap
+const WINDOW = 30; // thumbs rendered on each side of currentIndex
+
 const stripRef = ref<HTMLElement | null>(null);
 let thumbObserver: IntersectionObserver | null = null;
+
+const windowStart = computed(() => Math.max(0, props.currentIndex - WINDOW));
+const windowEnd = computed(() => Math.min(props.files.length - 1, props.currentIndex + WINDOW));
+
+const visibleThumbs = computed(() => {
+  const out: { file: FileItem; idx: number }[] = [];
+  for (let i = windowStart.value; i <= windowEnd.value; i++) {
+    out.push({ file: props.files[i], idx: i });
+  }
+  return out;
+});
+
+const totalWidth = computed(() => props.files.length * ITEM_W);
+
+const pendingBatch = new Set<string>();
+let batchTimer: ReturnType<typeof setTimeout> | null = null;
 
 function loadThumbnail(file: FileItem) {
   if (props.thumbCache.has(file.path) || !window.api) return;
   props.thumbCache.set(file.path, '');
-  thumbTasks.push(() => {
-    window.api
-      .invoke('media:getThumbnail', file.path, 320)
-      .then((dataUrl) => {
-        if (dataUrl) props.thumbCache.set(file.path, dataUrl as string);
-      })
-      .catch(() => {
-        /* thumb fail, ignore */
-      })
-      .finally(() => {
-        thumbTaskDone();
-      });
-  });
-  processThumbQueue();
+  pendingBatch.add(file.path);
+  if (batchTimer === null) {
+    batchTimer = setTimeout(flushBatch, 40);
+  }
+}
+
+async function flushBatch() {
+  batchTimer = null;
+  if (pendingBatch.size === 0) return;
+  const paths = [...pendingBatch];
+  pendingBatch.clear();
+  try {
+    const result = (await window.api?.invoke('media:batchThumbnails', paths, 320)) as
+      | Record<string, string>
+      | undefined;
+    for (const p of paths) {
+      const dataUrl = result?.[p];
+      if (dataUrl) props.thumbCache.set(p, dataUrl);
+    }
+  } catch {
+    /* batch thumb fail, ignore */
+  }
 }
 
 function setupThumbObserver() {
@@ -63,17 +89,13 @@ function setupThumbObserver() {
 
 function scrollToCurrent() {
   if (!stripRef.value) return;
-  const el = stripRef.value.querySelector(
-    `[data-thumb-idx="${props.currentIndex}"]`
-  ) as HTMLElement | null;
-  if (!el) return;
   const strip = stripRef.value;
-  const targetLeft = el.offsetLeft - strip.offsetWidth / 2 + el.offsetWidth / 2;
-  strip.scrollTo({ left: targetLeft, behavior: 'smooth' });
+  const targetLeft = props.currentIndex * ITEM_W - strip.offsetWidth / 2 + 32;
+  strip.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
 }
 
 function preloadNearby() {
-  const half = 4;
+  const half = WINDOW + 4;
   const start = Math.max(0, props.currentIndex - half);
   const end = Math.min(props.files.length - 1, props.currentIndex + half);
   for (let i = start; i <= end; i++) {
@@ -103,7 +125,11 @@ watch(
   () => props.currentIndex,
   () => {
     preloadNearby();
-    if (props.showThumbs) nextTick(scrollToCurrent);
+    if (props.showThumbs)
+      nextTick(() => {
+        setupThumbObserver();
+        scrollToCurrent();
+      });
   }
 );
 
@@ -112,6 +138,10 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
   thumbObserver?.disconnect();
+  if (batchTimer !== null) {
+    clearTimeout(batchTimer);
+    batchTimer = null;
+  }
 });
 </script>
 
@@ -123,36 +153,42 @@ onBeforeUnmount(() => {
     <div
       v-if="files.length > 1"
       ref="stripRef"
-      class="flex items-center gap-1 px-3 py-2 bg-bg-overlay/60 border-t border-border-default/20 overflow-x-auto transition-all duration-200"
+      class="relative px-3 py-2 bg-bg-overlay/60 border-t border-border-default/20 overflow-x-auto transition-all duration-200"
       :class="showThumbs ? 'h-20' : 'h-0 py-0 overflow-hidden'"
       @click.stop
     >
-      <template v-for="(file, idx) in files" :key="file.path">
-        <div
-          :data-thumb-idx="idx"
-          class="shrink-0 rounded-md overflow-hidden border-2 transition-all cursor-pointer flex items-center justify-center"
-          :class="[
-            idx === currentIndex
-              ? 'border-accent-base ring-1 ring-accent-base/30'
-              : 'border-transparent',
-            thumbCache.get(file.path) && idx !== currentIndex
-              ? 'brightness-50 hover:brightness-75'
-              : ''
-          ]"
-          :style="{ width: '64px', height: '48px' }"
-          @click="emit('goTo', idx)"
-        >
-          <img
-            v-if="thumbCache.get(file.path)"
-            :src="thumbCache.get(file.path)!"
-            :alt="file.name"
-            class="w-full h-full object-cover"
-            draggable="false"
-            loading="lazy"
-          />
-          <span v-else class="text-[10px] text-fg-faint">{{ idx + 1 }}</span>
-        </div>
-      </template>
+      <div class="relative h-full" :style="{ width: totalWidth + 'px' }">
+        <template v-for="item in visibleThumbs" :key="item.file.path">
+          <div
+            :data-thumb-idx="item.idx"
+            class="absolute top-0 rounded-md overflow-hidden border-2 transition-all cursor-pointer flex items-center justify-center"
+            :class="[
+              item.idx === currentIndex
+                ? 'border-accent-base ring-1 ring-accent-base/30'
+                : 'border-transparent',
+              thumbCache.get(item.file.path) && item.idx !== currentIndex
+                ? 'brightness-50 hover:brightness-75'
+                : ''
+            ]"
+            :style="{
+              left: item.idx * ITEM_W + 'px',
+              width: '60px',
+              height: '48px'
+            }"
+            @click="emit('goTo', item.idx)"
+          >
+            <img
+              v-if="thumbCache.get(item.file.path)"
+              :src="thumbCache.get(item.file.path)!"
+              :alt="item.file.name"
+              class="w-full h-full object-cover"
+              draggable="false"
+              loading="lazy"
+            />
+            <span v-else class="text-[10px] text-fg-faint">{{ item.idx + 1 }}</span>
+          </div>
+        </template>
+      </div>
     </div>
 
     <div

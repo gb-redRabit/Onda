@@ -1,31 +1,14 @@
 import type { Router } from 'vue-router';
 import { usePlayerStore } from '@renderer/stores/player';
 import type { MediaFile } from '@renderer/types/media';
-import { VIDEO_EXTS } from '@shared/constants';
-
-function toMediaFile(path: string): MediaFile {
-  const name = path.split(/[/\\]/).pop() || path;
-  const ext = name.split('.').pop()?.toLowerCase() || '';
-  return {
-    id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    path,
-    name,
-    type: VIDEO_EXTS.includes(`.${ext}`) ? 'video' : 'audio',
-    size: 0,
-    duration: 0,
-    extension: ext,
-    mimeType: '',
-    addedAt: Date.now(),
-    playCount: 0
-  };
-}
+import { buildMediaFile } from '@renderer/utils/explorerMedia';
 
 export async function openMediaFiles(paths: string[], router: Router): Promise<void> {
   const player = usePlayerStore();
 
   if (!paths.length) return;
 
-  const ordered = paths.map(toMediaFile);
+  const ordered = paths.map((path) => buildMediaFile({ path }));
   const audioTracks = ordered.filter((t) => t.type === 'audio');
   const videoTracks = ordered.filter((t) => t.type === 'video');
 

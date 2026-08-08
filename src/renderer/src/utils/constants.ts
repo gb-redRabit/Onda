@@ -18,6 +18,19 @@ export const EQUALIZER_PRESETS: Record<string, Record<number, number>> = {
   vocal: { 0: -2, 1: -3, 2: -3, 3: 1, 4: 4, 5: 4, 6: 3, 7: 1, 8: 0, 9: -2 }
 };
 
+export const EQUALIZER_PRESET_LABELS: Record<string, string> = {
+  flat: 'Flat',
+  pop: 'Pop',
+  rock: 'Rock',
+  jazz: 'Jazz',
+  classical: 'Classical',
+  bassBoost: 'Bass',
+  trebleBoost: 'Treble',
+  vocal: 'Vocal'
+};
+
+export const EQUALIZER_PRESET_IDS = Object.keys(EQUALIZER_PRESETS);
+
 export const DEFAULT_NETWORK: NetworkSettings = {
   proxy: { enabled: false, type: 'http', host: '', port: 8080 },
   downloadSpeedLimit: 0,

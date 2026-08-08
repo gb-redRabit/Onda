@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { isUnderPath, useLibraryStore } from '@renderer/stores/library';
+import { useLibraryStore } from '@renderer/stores/library';
+import { isUnderPath } from '@renderer/utils/path';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { usePlayerStore } from '@renderer/stores/player';
 import type { FileItem } from '@renderer/types/explorer';
@@ -26,7 +27,7 @@ const settings = useSettingsStore();
 const player = usePlayerStore();
 
 const { query, filteredTracks, filteredVideo, filteredImages, filteredArtists, filteredAlbums } =
-  useLibraryFilters(library, player);
+  useLibraryFilters(library);
 const { editingTrack, showingMBLookup, onTagSaved, onMBApply } = useLibraryTagEditor(library, player);
 
 const tab = ref<'tracks' | 'video' | 'images' | 'folders' | 'artists' | 'albums' | 'playlists'>(

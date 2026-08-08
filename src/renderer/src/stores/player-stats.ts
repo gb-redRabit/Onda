@@ -3,21 +3,22 @@ import { useLibraryStore } from './library';
 
 export function usePlayerStats() {
   let statsSaveTimer: ReturnType<typeof setTimeout> | null = null;
+  const pendingStats = new Map<string, { playCount: number; lastPlayed: number }>();
 
   function persistStats() {
     if (statsSaveTimer) return;
     statsSaveTimer = setTimeout(() => {
       statsSaveTimer = null;
-      try {
-        const library = useLibraryStore();
-        const files = structuredClone(library.tracks);
-        const folderTypes = structuredClone(library.folderTypes);
-        window.api?.invoke('library:saveScanned', { files, folderTypes }).catch(() => {
-          /* non-fatal */
-        });
-      } catch {
-        /* serialization failed silently */
-      }
+      if (pendingStats.size === 0) return;
+      const stats = Array.from(pendingStats.entries()).map(([path, s]) => ({
+        path,
+        playCount: s.playCount,
+        lastPlayed: s.lastPlayed
+      }));
+      pendingStats.clear();
+      window.api?.invoke('library:updateStats', stats).catch(() => {
+        /* non-fatal */
+      });
     }, 1000);
   }
 
@@ -30,7 +31,13 @@ export function usePlayerStats() {
       t.lastPlayed = Date.now();
       found = true;
     });
-    if (found) persistStats();
+    if (found) {
+      const t = library.tracks.find((x) => x.path === track.path);
+      if (t) {
+        pendingStats.set(track.path, { playCount: t.playCount, lastPlayed: t.lastPlayed! });
+      }
+      persistStats();
+    }
   }
 
   return { recordPlay };

@@ -66,11 +66,13 @@ export function useExplorerContent(
 
   const { extraSmallIcon } = useFileIcons();
 
-  const { hoveredFolderPath, onContentDragOver, onContentDragLeave, onContentDrop } = useExplorerDrop(
-    explorer,
-    settings,
-    showConfirm
-  );
+  const {
+    contentRef,
+    hoveredFolderPath,
+    onContentDragOver,
+    onContentDragLeave,
+    onContentDrop
+  } = useExplorerDrop(explorer, settings, showConfirm);
 
   const { bandSelect, onBandMouseDown } = useExplorerBandSelect(scrollRef, explorer);
 
@@ -126,6 +128,7 @@ export function useExplorerContent(
     files,
     explorer,
     fileClipboard,
+    contentRef,
     hoveredFolderPath,
     extraSmallIcon,
     isListMode,

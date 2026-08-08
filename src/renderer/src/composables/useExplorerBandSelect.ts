@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { ref, onBeforeUnmount } from 'vue';
 import type { Ref } from 'vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
 
@@ -19,6 +19,10 @@ export function useExplorerBandSelect(
   let bandRects: BandRect[] = [];
   let bandRafId: number | null = null;
 
+  // Don't show a 0x0 box on a plain click — only enter selection mode once the
+  // pointer actually drags beyond a small threshold.
+  const MIN_DRAG = 3;
+
   function onBandMouseDown(e: MouseEvent) {
     const target = e.target as HTMLElement;
     if (target.tagName === 'BUTTON' || target.closest('button')) return;
@@ -26,7 +30,6 @@ export function useExplorerBandSelect(
     const rect = scrollRef.value?.getBoundingClientRect();
     if (!rect) return;
     bandOrigin.value = { clientX: e.clientX, clientY: e.clientY };
-    bandSelect.value = { left: e.clientX, top: e.clientY, width: 0, height: 0 };
     bandRects = [];
     const buttons = scrollRef.value?.querySelectorAll('button[data-file-path]');
     buttons?.forEach((btn) => {
@@ -46,6 +49,7 @@ export function useExplorerBandSelect(
     const oy = bandOrigin.value.clientY;
     const clientX = e.clientX;
     const clientY = e.clientY;
+    if (Math.abs(clientX - ox) < MIN_DRAG && Math.abs(clientY - oy) < MIN_DRAG) return;
     bandRafId = requestAnimationFrame(() => {
       bandRafId = null;
       if (!bandOrigin.value) return;
@@ -80,6 +84,18 @@ export function useExplorerBandSelect(
     document.removeEventListener('mousemove', onBandMouseMove);
     document.removeEventListener('mouseup', onBandMouseUp);
   }
+
+  onBeforeUnmount(() => {
+    if (bandRafId !== null) {
+      cancelAnimationFrame(bandRafId);
+      bandRafId = null;
+    }
+    bandRects = [];
+    bandSelect.value = null;
+    bandOrigin.value = null;
+    document.removeEventListener('mousemove', onBandMouseMove);
+    document.removeEventListener('mouseup', onBandMouseUp);
+  });
 
   return { bandSelect, onBandMouseDown };
 }

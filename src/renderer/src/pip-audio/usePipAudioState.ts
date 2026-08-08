@@ -1,6 +1,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
-import { formatDuration } from '@shared/formatDuration';
+import { formatDuration } from '@renderer/utils/formatters';
+import { EQUALIZER_PRESETS, EQUALIZER_PRESET_LABELS } from '@renderer/utils/constants';
 
 export interface PipUpdate {
   mode?: string;
@@ -28,16 +29,10 @@ export interface PipState {
   nextTrackArtist?: string;
 }
 
-export const EQ_PRESETS = [
-  { id: 'flat', label: 'Flat' },
-  { id: 'pop', label: 'Pop' },
-  { id: 'rock', label: 'Rock' },
-  { id: 'jazz', label: 'Jazz' },
-  { id: 'classical', label: 'Classical' },
-  { id: 'bassBoost', label: 'Bass' },
-  { id: 'trebleBoost', label: 'Treble' },
-  { id: 'vocal', label: 'Vocal' }
-];
+export const EQ_PRESETS = Object.keys(EQUALIZER_PRESETS).map((id) => ({
+  id,
+  label: EQUALIZER_PRESET_LABELS[id] || id
+}));
 
 export interface PipAudioHandlers {
   updateAccent: () => void;

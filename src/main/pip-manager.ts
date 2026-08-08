@@ -5,12 +5,7 @@ import { PipPreview } from './pip-preview';
 import { logger } from '../shared/logger';
 import { computePipPosition } from './pip-position';
 import { resolveMediaPath } from './path-utils';
-
-interface PipSubtitleData {
-  subContent: string;
-  fonts: Array<{ name: string; data: number[] }>;
-  availableFonts: Record<string, string>;
-}
+import type { PipSubtitleData } from '../shared/types/pip';
 
 interface PipShowOptions {
   src: string;

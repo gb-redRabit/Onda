@@ -1,6 +1,6 @@
 import { ref, reactive } from 'vue';
 import type { Ref } from 'vue';
-import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
+import { toMediaServerUrl, loadScaledImageUrl } from '@renderer/utils/imageLoader';
 import { useTimeoutFn } from './useTimers';
 import type { FileItem } from '@renderer/types/explorer';
 
@@ -23,10 +23,7 @@ export function useImageViewerImage(deps: ImageViewerImageDeps) {
 
   async function loadDisplayImage(file: FileItem, maxWidth: number = 1920): Promise<string> {
     try {
-      const resp = await fetch(`onda:///?path=${encodeURIComponent(file.path)}&w=${maxWidth}`);
-      if (!resp.ok) throw new Error(resp.statusText);
-      const blob = await resp.blob();
-      const url = URL.createObjectURL(blob);
+      const url = await loadScaledImageUrl(file.path, maxWidth);
       if (currentObjectUrl) {
         const stale = currentObjectUrl;
         setTimeout(() => URL.revokeObjectURL(stale), 1000);

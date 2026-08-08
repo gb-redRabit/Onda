@@ -6,8 +6,6 @@ import { useLibraryDerivations } from './library-derivations';
 import { useLibraryPlaylists } from './library-playlists';
 import { useLibraryLoad } from './library-load';
 
-export { isUnderPath } from '@renderer/utils/path';
-
 export const useLibraryStore = defineStore('library', () => {
   const tracks = shallowRef<MediaFile[]>([]);
   const folders = ref<string[]>([]);

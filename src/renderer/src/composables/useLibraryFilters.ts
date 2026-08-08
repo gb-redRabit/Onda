@@ -1,11 +1,7 @@
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onUnmounted } from 'vue';
 import type { useLibraryStore } from '@renderer/stores/library';
-import type { usePlayerStore } from '@renderer/stores/player';
 
-export function useLibraryFilters(
-  library: ReturnType<typeof useLibraryStore>,
-  player: ReturnType<typeof usePlayerStore>
-) {
+export function useLibraryFilters(library: ReturnType<typeof useLibraryStore>) {
   const query = ref('');
   const debouncedQuery = ref('');
   let queryTimer: ReturnType<typeof setTimeout> | null = null;
@@ -58,56 +54,13 @@ export function useLibraryFilters(
     return library.albums.filter(([name]) => !q || name.toLowerCase().includes(q));
   });
 
-  let trackCoverDebounce: ReturnType<typeof setTimeout> | null = null;
-  let videoCoverDebounce: ReturnType<typeof setTimeout> | null = null;
-
-  function debouncedPreloadCovers(
-    coverList: string[],
-    debounce: { current: ReturnType<typeof setTimeout> | null },
-    set: (v: ReturnType<typeof setTimeout> | null) => void
-  ): void {
-    if (debounce.current) clearTimeout(debounce.current);
-    debounce.current = setTimeout(() => {
-      set(null);
-      for (const path of coverList) player.loadCover(path);
-    }, 300);
-  }
-
-  function preloadTrackCovers(tracks: { path: string }[]): void {
-    debouncedPreloadCovers(
-      tracks.slice(0, 200).map((tr) => tr.path),
-      { current: trackCoverDebounce },
-      (v) => (trackCoverDebounce = v)
-    );
-  }
-
-  function preloadVideoCovers(tracks: { path: string }[]): void {
-    debouncedPreloadCovers(
-      tracks.slice(0, 100).map((tr) => tr.path),
-      { current: videoCoverDebounce },
-      (v) => (videoCoverDebounce = v)
-    );
-  }
-
-  onMounted(() => {
-    requestAnimationFrame(() => {
-      preloadTrackCovers(filteredTracks.value);
-      preloadVideoCovers(filteredVideo.value);
-    });
-  });
-
-  watch(filteredVideo, (tracks) => {
-    preloadVideoCovers(tracks);
-  });
-
-  watch(filteredTracks, (tracks) => {
-    preloadTrackCovers(tracks);
-  });
+  // Covers are loaded lazily by MediaCover's IntersectionObserver — only rows
+  // that are actually rendered (visible + overscan) trigger loadCover. No
+  // eager preload here, otherwise up to N IPC cover requests fire for rows the
+  // user never scrolls to.
 
   onUnmounted(() => {
     if (queryTimer) clearTimeout(queryTimer);
-    if (trackCoverDebounce) clearTimeout(trackCoverDebounce);
-    if (videoCoverDebounce) clearTimeout(videoCoverDebounce);
   });
 
   return {

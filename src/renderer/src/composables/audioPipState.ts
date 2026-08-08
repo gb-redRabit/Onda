@@ -2,8 +2,10 @@ import { currentTime, duration } from '@renderer/composables/useAudioPlayer';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { getFrequencyBins as collectBins } from '@renderer/utils/audioViz';
+import type { AudioPipState, PipMode } from '@shared/types/pip';
 
-export type PipMode = 'minimal' | 'medium' | 'max' | 'wide';
+export type { AudioPipState, PipMode };
 
 export function isEdgeMode(mode: PipMode): boolean {
   return mode === 'max' || mode === 'wide';
@@ -14,46 +16,8 @@ export function resolveAudioPipPosition(mode: PipMode): string {
   return isEdgeMode(mode) ? settings.appearance.audioPipEdgePosition : settings.appearance.audioPipPosition;
 }
 
-export interface AudioPipState extends Record<string, unknown> {
-  trackName: string;
-  artist: string;
-  coverData: string | null;
-  coverType: 'image' | 'video' | null;
-  isPlaying: boolean;
-  currentTime: number;
-  duration: number;
-  volume: number;
-  isMuted?: boolean;
-  shuffle?: boolean;
-  repeat?: 'none' | 'all' | 'one';
-  equalizerBands?: number[];
-  equalizerPreset?: string;
-  vizData?: number[];
-  nextTrackName?: string;
-  nextTrackArtist?: string;
-}
-
 export function getFrequencyBins(): number[] {
-  try {
-    const analyser = audioEngine.getAnalyserNode();
-    if (!analyser) return [];
-    const len = analyser.frequencyBinCount;
-    const raw = new Uint8Array(len);
-    analyser.getByteFrequencyData(raw);
-    const count = 64;
-    const bins: number[] = [];
-    const binSize = Math.floor(len / count);
-    for (let i = 0; i < count; i++) {
-      let sum = 0;
-      const start = i * binSize;
-      const end = Math.min(start + binSize, len);
-      for (let j = start; j < end; j++) sum += raw[j];
-      bins.push(Math.round(sum / (end - start)));
-    }
-    return bins;
-  } catch {
-    return [];
-  }
+  return collectBins(audioEngine.getAnalyserNode(), 64);
 }
 
 export function createEmptyAudioPipState(): AudioPipState {

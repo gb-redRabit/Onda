@@ -53,6 +53,7 @@ const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'library:loadScanned',
   'library:saveFolders',
   'library:saveScanned',
+  'library:updateStats',
   'playlist:loadAll',
   'playlist:saveAll',
   'playback:setPosition',
