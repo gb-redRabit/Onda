@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "An Electron application with Vue and TypeScript",
   "engines": {
-    "node": ">=18"
+    "node": ">=22.12"
   },
   "packageManager": "npm@11.13.0",
   "main": "./out/main/index.js",
@@ -55,7 +55,6 @@
     "eslint": "^9.39.1",
     "eslint-plugin-vue": "^10.6.2",
     "jsdom": "^26.1.0",
-    "lightningcss-win32-x64-msvc": "^1.33.0",
     "prettier": "^3.7.4",
     "tailwindcss": "^4.3.2",
     "typescript": "^5.9.3",
@@ -64,5 +63,8 @@
     "vue": "^3.5.25",
     "vue-eslint-parser": "^10.2.0",
     "vue-tsc": "^3.1.6"
+  },
+  "optionalDependencies": {
+    "lightningcss-win32-x64-msvc": "^1.33.0"
   }
 }
