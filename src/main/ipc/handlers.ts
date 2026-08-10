@@ -9,6 +9,7 @@ import { registerSubtitleHandlers } from './subtitle-handlers';
 import { registerPlaybackHandlers } from './playback-handlers';
 import { registerDependencyHandlers } from './dependency-handlers';
 import { registerYoutubeHandlers } from './youtube-handlers';
+import { registerYoutubeAuthHandlers } from './youtube-auth-handlers';
 import { registerDialogHandlers } from './dialog-handlers';
 import { registerDiagnosticsHandlers } from './diagnostics-handlers';
 import { registerUpdaterHandlers } from './updater-handlers';
@@ -24,6 +25,7 @@ export function registerIPC(): void {
   registerPlaybackHandlers();
   registerDependencyHandlers();
   registerYoutubeHandlers();
+  registerYoutubeAuthHandlers();
   registerDialogHandlers();
   registerMusicBrainzHandlers();
   registerDiagnosticsHandlers();

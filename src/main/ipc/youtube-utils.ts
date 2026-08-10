@@ -11,7 +11,141 @@ export interface YtDlpEntry {
   thumbnails?: Array<{ url?: string; width?: number }>;
 }
 
+import { existsSync } from 'fs';
+import { join } from 'path';
 import { formatDuration as formatDurationBase } from '../../shared/formatDuration';
+import type { YoutubeAuthMethod } from '../../renderer/src/types/settings';
+
+export interface YtAuthConfig {
+  method: YoutubeAuthMethod;
+  cookiesPath?: string;
+  cookiesBrowser?: string;
+}
+
+// Finds a Node.js executable that yt-dlp can use to solve YouTube's JavaScript
+// challenges (signature / n-challenge). Without one, yt-dlp reports "JS runtimes:
+// none" and playback extraction fails with "The page needs to be reloaded".
+export function detectJsRuntime(
+  env: NodeJS.ProcessEnv,
+  probe: (path: string) => boolean = existsSync,
+  platform: NodeJS.Platform = process.platform
+): string | null {
+  // npm sets this to the node binary that runs npm scripts (dev flow).
+  if (env.npm_node_execpath && probe(env.npm_node_execpath)) {
+    return env.npm_node_execpath;
+  }
+  const separator = platform === 'win32' ? ';' : ':';
+  const exe = platform === 'win32' ? 'node.exe' : 'node';
+  for (const dir of (env.PATH || '').split(separator)) {
+    if (!dir) continue;
+    const candidate = join(dir, exe);
+    if (probe(candidate)) return candidate;
+  }
+  if (platform === 'win32') {
+    const programFiles = env.ProgramFiles || 'C:\\Program Files';
+    const localAppData = env.LOCALAPPDATA;
+    const systemRoot = env.SystemRoot || 'C:\\Windows';
+    const fallbacks = [
+      join(programFiles, 'nodejs', 'node.exe'),
+      ...(localAppData ? [join(localAppData, 'Programs', 'nodejs', 'node.exe')] : []),
+      join(systemRoot, 'System32', 'node.exe')
+    ];
+    for (const candidate of fallbacks) {
+      if (probe(candidate)) return candidate;
+    }
+  }
+  return null;
+}
+
+let cachedRuntime: string | null | undefined;
+
+// Cached wrapper around detectJsRuntime for production calls. Returns null when
+// no runtime exists — yt-dlp then falls back to its own discovery.
+export function resolveJsRuntime(): string | null {
+  if (cachedRuntime === undefined) {
+    cachedRuntime = detectJsRuntime(process.env, existsSync, process.platform);
+  }
+  return cachedRuntime;
+}
+
+// Injects the authentication flags (session cookies) into a yt-dlp command.
+// Works for both the in-app Google session ("electron"), an imported cookies
+// file ("manual") and a system browser ("browser"). Also passes an explicit JS
+// runtime to yt-dlp so signature/n-challenge solving never silently fails.
+export function buildYtArgs(
+  base: string[],
+  auth?: YtAuthConfig | null,
+  jsRuntime: string | null = resolveJsRuntime()
+): string[] {
+  const args = [...base];
+  if (auth && auth.method !== 'none') {
+    if (auth.method === 'browser' && auth.cookiesBrowser) {
+      args.push('--cookies-from-browser', auth.cookiesBrowser);
+    } else if ((auth.method === 'electron' || auth.method === 'manual') && auth.cookiesPath) {
+      args.push('--cookies', auth.cookiesPath);
+    }
+  }
+  if (jsRuntime && !args.includes('--js-runtimes')) {
+    args.push('--js-runtimes', `node:${jsRuntime}`);
+  }
+  return args;
+}
+
+export interface YtCookieLike {
+  name: string;
+  value: string;
+  domain?: string;
+  hostOnly?: boolean;
+  path?: string;
+  secure?: boolean;
+  expirationDate?: number;
+}
+
+// Serializes cookies to the Netscape/Mozilla cookie file format yt-dlp accepts.
+function sanitizeField(value: string): string {
+  return value.replace(/[\t\r\n]/g, '');
+}
+
+export function serializeCookies(cookies: YtCookieLike[], eol = '\n'): string {
+  const lines: string[] = ['# Netscape HTTP Cookie File'];
+  for (const c of cookies) {
+    const rawDomain = c.domain || '';
+    const includeSubdomains = c.hostOnly ? 'FALSE' : 'TRUE';
+    const domain =
+      !c.hostOnly && rawDomain && !rawDomain.startsWith('.') ? '.' + rawDomain : rawDomain;
+    const path = c.path || '/';
+    const secure = c.secure ? 'TRUE' : 'FALSE';
+    const expiry =
+      c.expirationDate && c.expirationDate > 0 ? String(Math.floor(c.expirationDate)) : '0';
+    lines.push(
+      [
+        domain,
+        includeSubdomains,
+        path,
+        secure,
+        expiry,
+        sanitizeField(c.name),
+        sanitizeField(c.value ?? '')
+      ].join('\t')
+    );
+  }
+  return lines.join(eol);
+}
+
+// Minimal structural check for a Netscape cookie file (>= 1 data line with 7
+// tab-separated columns). The HTTP 400 on Windows is avoided by re-writing the
+// imported file with the OS-native EOL.
+export function isValidCookieFile(content: string): boolean {
+  const lines = content.split(/\r?\n/);
+  let dataLines = 0;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    if (trimmed.split('\t').length < 7) return false;
+    dataLines++;
+  }
+  return dataLines > 0;
+}
 
 export function formatDuration(seconds?: number): string | undefined {
   const formatted = formatDurationBase(seconds, '');

@@ -155,6 +155,21 @@ export default {
     filenameTemplate: 'Szablon nazwy pliku',
     available: 'Dostępne:',
     maxConcurrent: 'Maks. równoległych:',
+    googleAccount: 'Konto Google (YouTube)',
+    googleAccountDesc:
+      'Zaloguj się na konto Google, aby mieć dostęp do pobierania treści z ograniczeniami wiekowymi (18+).',
+    authDisabled: 'Wyłączone',
+    authElectron: 'Google (w aplikacji)',
+    authManual: 'Plik cookies',
+    authBrowser: 'Przeglądarka',
+    loginWithGoogle: 'Zaloguj przez Google',
+    logout: 'Wyloguj',
+    importCookies: 'Importuj cookies',
+    exportCookies: 'Eksportuj cookies',
+    authStatusLoggedIn: 'Zalogowano',
+    authStatusLoggedOut: 'Niezalogowano',
+    authLastLogin: 'Ostatnie logowanie:',
+    authBrowserHint: 'Wymaga zalogowanego konta w wybranej przeglądarce',
     networkSection: 'Sieć',
     enableProxy: 'Włącz proxy',
     apiKeysSection: 'Klucze API',
@@ -286,7 +301,9 @@ export default {
     results: 'wyników',
     items: 'elementów',
     active: 'aktywne',
-    completed: 'Ukończone'
+    completed: 'Ukończone',
+    loggedIn: 'Zalogowano',
+    notLoggedIn: 'Niezalogowano'
   },
   cmdPalette: {
     placeholder: 'Szukaj utworów, albumów, akcji...',

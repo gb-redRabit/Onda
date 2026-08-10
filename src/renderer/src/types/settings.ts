@@ -11,10 +11,20 @@ export interface AppSettings {
   shortcuts: ShortcutSettings;
   network: NetworkSettings;
   apiKeys: ApiKeySettings;
+  youtube: YoutubeAuthSettings;
   updates: UpdateSettings;
   toast: ToastSettings;
   dependencies: Record<string, DependencyStatus>;
   favorites?: string[];
+}
+
+export type YoutubeAuthMethod = 'none' | 'electron' | 'browser' | 'manual';
+
+export interface YoutubeAuthSettings {
+  method: YoutubeAuthMethod;
+  cookiesPath: string;
+  cookiesBrowser: string;
+  lastLogin: number | null;
 }
 
 export interface ExplorerSettings {

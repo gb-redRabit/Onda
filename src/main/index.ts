@@ -8,8 +8,10 @@ import icon from '../../resources/icon.png?asset';
 import { registerIPC } from './ipc/handlers';
 import { pipManager } from './pip-manager';
 import { audioPipManager } from './audio-pip-manager';
+import { closeLoginWindow } from './youtube-auth';
 import { logger } from '../shared/logger';
-import { setMediaServerUrl, registerMediaUrlHandler } from './media-url-args';import { setAllowedRoots } from './media-server';
+import { setMediaServerUrl, registerMediaUrlHandler } from './media-url-args';
+import { setAllowedRoots } from './media-server';
 import { getStore } from './ipc/cover-cache';
 import { setupFileLogging } from './log-file';
 import { initAutoUpdater } from './updater';
@@ -265,6 +267,7 @@ app.whenReady().then(async () => {
 
   app.on('will-quit', () => {
     mediaServer.close();
+    closeLoginWindow();
   });
 
   registerOndaProtocolHandler();

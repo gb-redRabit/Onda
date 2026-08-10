@@ -1,5 +1,10 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
-import type { MusicbrainzRelease, AppInfo, UpdaterState } from '../shared/types/ipc';
+import type {
+  MusicbrainzRelease,
+  AppInfo,
+  UpdaterState,
+  YoutubeAuthStatus
+} from '../shared/types/ipc';
 import { logger } from '../shared/logger';
 
 // Fetched over IPC (not CLI args) so the media-server token never shows up in
@@ -59,6 +64,11 @@ const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'playback:setPosition',
   'playback:clearPosition',
   'yt:search',
+  'yt:authStatus',
+  'yt:login',
+  'yt:logout',
+  'yt:importCookies',
+  'yt:exportCookies',
   'pip:start',
   'pip:stop',
   'pip:preload',
@@ -180,7 +190,10 @@ const api = {
   },
   removeAllListeners: (channel: string): void => {
     if (!ALLOWED_RECEIVE_CHANNELS.has(channel)) {
-      logger.warn('preload', `IPC removeAllListeners on non-allowlisted channel '${channel}' blocked`);
+      logger.warn(
+        'preload',
+        `IPC removeAllListeners on non-allowlisted channel '${channel}' blocked`
+      );
       return;
     }
     ipcRenderer.removeAllListeners(channel);
@@ -392,7 +405,16 @@ const api = {
   getUpdaterState: (): Promise<UpdaterState> => ipcRenderer.invoke('updater:getState'),
   checkForUpdates: (): Promise<{ checking: boolean }> => ipcRenderer.invoke('updater:check'),
   downloadUpdate: (): Promise<boolean> => ipcRenderer.invoke('updater:download'),
-  installUpdate: (): Promise<void> => ipcRenderer.invoke('updater:install')
+  installUpdate: (): Promise<void> => ipcRenderer.invoke('updater:install'),
+  youtubeAuthStatus: (): Promise<YoutubeAuthStatus> => ipcRenderer.invoke('yt:authStatus'),
+  youtubeLogin: (): Promise<{ success: boolean; canceled?: boolean; error?: string }> =>
+    ipcRenderer.invoke('yt:login'),
+  youtubeLogout: (): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('yt:logout'),
+  youtubeImportCookies: (): Promise<{ success: boolean; canceled?: boolean; error?: string }> =>
+    ipcRenderer.invoke('yt:importCookies'),
+  youtubeExportCookies: (): Promise<{ success: boolean; canceled?: boolean; error?: string }> =>
+    ipcRenderer.invoke('yt:exportCookies')
 };
 
 if (process.contextIsolated) {

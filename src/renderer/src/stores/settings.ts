@@ -8,6 +8,7 @@ import type {
   DownloadSettings,
   NetworkSettings,
   ApiKeySettings,
+  YoutubeAuthSettings,
   UpdateSettings,
   ToastSettings,
   DependencyStatus,
@@ -22,14 +23,11 @@ import {
   DEFAULT_SHORTCUTS,
   DEFAULT_NETWORK,
   DEFAULT_API_KEYS,
+  DEFAULT_YOUTUBE_AUTH,
   DEFAULT_UPDATES,
   DEFAULT_TOAST
 } from '@renderer/utils/constants';
-import {
-  loadSettings,
-  persistSettings,
-  mergeSettings
-} from '@renderer/utils/settingsStorage';
+import { loadSettings, persistSettings, mergeSettings } from '@renderer/utils/settingsStorage';
 
 export const useSettingsStore = defineStore('settings', () => {
   const appearance = ref<AppearanceSettings>({ ...DEFAULT_APPEARANCE });
@@ -40,6 +38,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const shortcuts = ref<Record<string, string>>({ ...DEFAULT_SHORTCUTS });
   const network = ref<NetworkSettings>({ ...DEFAULT_NETWORK });
   const apiKeys = ref<ApiKeySettings>({ ...DEFAULT_API_KEYS });
+  const youtube = ref<YoutubeAuthSettings>({ ...DEFAULT_YOUTUBE_AUTH });
   const updates = ref<UpdateSettings>({ ...DEFAULT_UPDATES });
   const toast = ref<ToastSettings>({ ...DEFAULT_TOAST });
   const dependencies = ref<Record<string, DependencyStatus>>({});
@@ -55,6 +54,7 @@ export const useSettingsStore = defineStore('settings', () => {
       shortcuts,
       network,
       apiKeys,
+      youtube,
       updates,
       toast,
       dependencies
@@ -77,6 +77,7 @@ export const useSettingsStore = defineStore('settings', () => {
         shortcuts,
         network,
         apiKeys,
+        youtube,
         updates,
         toast,
         dependencies
@@ -99,6 +100,11 @@ export const useSettingsStore = defineStore('settings', () => {
     save();
   }
 
+  function updateYoutube(partial: Partial<YoutubeAuthSettings>) {
+    Object.assign(youtube.value, partial);
+    save();
+  }
+
   function updateShortcut(action: string, key: string) {
     shortcuts.value[action] = key;
     save();
@@ -111,6 +117,7 @@ export const useSettingsStore = defineStore('settings', () => {
     shortcuts.value = { ...DEFAULT_SHORTCUTS };
     network.value = { ...DEFAULT_NETWORK };
     apiKeys.value = { ...DEFAULT_API_KEYS };
+    youtube.value = { ...DEFAULT_YOUTUBE_AUTH };
     updates.value = { ...DEFAULT_UPDATES };
     dependencies.value = {};
     toast.value = { ...DEFAULT_TOAST };
@@ -128,6 +135,7 @@ export const useSettingsStore = defineStore('settings', () => {
         shortcuts,
         network,
         apiKeys,
+        youtube,
         updates,
         toast,
         dependencies
@@ -175,6 +183,7 @@ export const useSettingsStore = defineStore('settings', () => {
     shortcuts,
     network,
     apiKeys,
+    youtube,
     updates,
     toast,
     dependencies,
@@ -186,6 +195,7 @@ export const useSettingsStore = defineStore('settings', () => {
     updateExplorer,
     updateLibrary,
     updateDownload,
+    updateYoutube,
     updateShortcut,
     resetToDefaults,
     applyImported,

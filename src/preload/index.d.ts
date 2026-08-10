@@ -1,4 +1,11 @@
-import type { IpcChannels, IpcChannel, MusicbrainzRelease, AppInfo, UpdaterState } from '@shared/types/ipc';
+import type {
+  IpcChannels,
+  IpcChannel,
+  MusicbrainzRelease,
+  AppInfo,
+  UpdaterState,
+  YoutubeAuthStatus
+} from '@shared/types/ipc';
 
 interface OndaAPI {
   mediaServerUrl: string;
@@ -169,6 +176,11 @@ interface OndaAPI {
   checkForUpdates: () => Promise<{ checking: boolean }>;
   downloadUpdate: () => Promise<boolean>;
   installUpdate: () => Promise<void>;
+  youtubeAuthStatus: () => Promise<YoutubeAuthStatus>;
+  youtubeLogin: () => Promise<{ success: boolean; canceled?: boolean; error?: string }>;
+  youtubeLogout: () => Promise<{ success: boolean; error?: string }>;
+  youtubeImportCookies: () => Promise<{ success: boolean; canceled?: boolean; error?: string }>;
+  youtubeExportCookies: () => Promise<{ success: boolean; canceled?: boolean; error?: string }>;
 }
 
 declare global {

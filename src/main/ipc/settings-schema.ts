@@ -190,6 +190,13 @@ const API_KEYS_FIELDS: Record<string, Sanitizer> = {
   keys: arrayOf(apiKeyEntry)
 };
 
+const YOUTUBE_FIELDS: Record<string, Sanitizer> = {
+  method: enumOf(['none', 'electron', 'browser', 'manual']),
+  cookiesPath: str,
+  cookiesBrowser: str,
+  lastLogin: nullable(num)
+};
+
 const UPDATES_FIELDS: Record<string, Sanitizer> = {
   autoCheck: bool,
   checkInterval: enumOf(['startup', 'hourly', 'daily', 'weekly'])
@@ -222,6 +229,7 @@ const TOP_LEVEL: Record<string, Sanitizer> = {
   shortcuts: stringRecord,
   network: obj(NETWORK_FIELDS),
   apiKeys: obj(API_KEYS_FIELDS),
+  youtube: obj(YOUTUBE_FIELDS),
   updates: obj(UPDATES_FIELDS),
   toast: obj(TOAST_FIELDS),
   dependencies: recordOf(obj(DEPENDENCY_FIELDS)),

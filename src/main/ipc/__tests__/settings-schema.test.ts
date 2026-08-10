@@ -9,7 +9,9 @@ describe('sanitizeSettings', () => {
       nonsense: 1,
       appearance: {}
     });
-    expect(droppedKeys).toEqual(expect.arrayContaining(['libraryFolders', 'coverCacheMap', 'nonsense']));
+    expect(droppedKeys).toEqual(
+      expect.arrayContaining(['libraryFolders', 'coverCacheMap', 'nonsense'])
+    );
     expect('libraryFolders' in sanitized).toBe(false);
     expect('coverCacheMap' in sanitized).toBe(false);
     expect('nonsense' in sanitized).toBe(false);
@@ -25,7 +27,12 @@ describe('sanitizeSettings', () => {
 
   it('validates types and drops invalid fields', () => {
     const { sanitized } = sanitizeSettings({
-      appearance: { theme: 'dark', sidebarPosition: 'banana', fontSize: 'big', accentColor: '#fff' },
+      appearance: {
+        theme: 'dark',
+        sidebarPosition: 'banana',
+        fontSize: 'big',
+        accentColor: '#fff'
+      },
       favorites: ['a', 1, 'b']
     });
     expect(sanitized.appearance).toEqual({ theme: 'dark', accentColor: '#fff' });
@@ -34,9 +41,18 @@ describe('sanitizeSettings', () => {
 
   it('drops unknown enum values', () => {
     const { sanitized } = sanitizeSettings({
-      playback: { defaultPlayer: 'html5', pipPosition: 'center', pipWidth: 480, playbackSpeed: 1.25 }
+      playback: {
+        defaultPlayer: 'html5',
+        pipPosition: 'center',
+        pipWidth: 480,
+        playbackSpeed: 1.25
+      }
     });
-    expect(sanitized.playback).toEqual({ defaultPlayer: 'html5', pipWidth: 480, playbackSpeed: 1.25 });
+    expect(sanitized.playback).toEqual({
+      defaultPlayer: 'html5',
+      pipWidth: 480,
+      playbackSpeed: 1.25
+    });
   });
 
   it('keeps valid appearance values', () => {
@@ -115,6 +131,27 @@ describe('sanitizeSettings', () => {
     });
   });
 
+  it('sanitizes youtube auth settings and drops invalid method values', () => {
+    const { sanitized } = sanitizeSettings({
+      youtube: {
+        method: 'electron',
+        cookiesPath: 'C:\\x\\youtube-cookies.txt',
+        cookiesBrowser: 'firefox',
+        lastLogin: 1234567890,
+        junk: true
+      }
+    });
+    expect(sanitized.youtube).toEqual({
+      method: 'electron',
+      cookiesPath: 'C:\\x\\youtube-cookies.txt',
+      cookiesBrowser: 'firefox',
+      lastLogin: 1234567890
+    });
+
+    const { sanitized: bad } = sanitizeSettings({ youtube: { method: 'hacked' } });
+    expect(bad.youtube).toEqual({});
+  });
+
   it('allows only known AppSettings top-level keys', () => {
     expect(SETTINGS_ALLOWED_KEYS).toEqual(
       expect.arrayContaining([
@@ -126,6 +163,7 @@ describe('sanitizeSettings', () => {
         'shortcuts',
         'network',
         'apiKeys',
+        'youtube',
         'updates',
         'toast',
         'dependencies',

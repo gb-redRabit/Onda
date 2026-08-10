@@ -1,18 +1,26 @@
 import { ipcMain } from 'electron';
 import { runCommand } from '../utils/exec';
 import { resolveBin } from '../binaries';
+import { getYtAuthConfig } from '../youtube-auth';
 import { logger } from '../../shared/logger';
-import { formatDuration, formatUploadDate, pickThumbnail, type YtDlpEntry } from './youtube-utils';
+import {
+  formatDuration,
+  formatUploadDate,
+  pickThumbnail,
+  buildYtArgs,
+  type YtDlpEntry
+} from './youtube-utils';
 
 export function registerYoutubeHandlers(): void {
   ipcMain.handle('yt:search', async (_event, query: string) => {
     try {
       const bin = (await resolveBin('yt-dlp')) || 'yt-dlp';
-      const stdout = await runCommand(
-        bin,
+      const auth = await getYtAuthConfig();
+      const args = buildYtArgs(
         [`ytsearch10:${query}`, '--flat-playlist', '--no-warnings', '-J'],
-        { timeout: 60000 }
+        auth
       );
+      const stdout = await runCommand(bin, args, { timeout: 60000 });
       const parsed = JSON.parse(stdout) as { entries?: YtDlpEntry[] };
       const items = (parsed.entries || [])
         .filter((e) => e.id && e.title)

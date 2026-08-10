@@ -6,6 +6,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { useLibraryStore } from '@renderer/stores/library';
 import { useExplorerStore } from '@renderer/stores/explorer';
 import { useYouTubeStore } from '@renderer/stores/youtube';
+import { useYoutubeAuth } from '@renderer/composables/useYoutubeAuth';
 
 const { t } = useI18n();
 
@@ -14,6 +15,8 @@ const player = usePlayerStore();
 const library = useLibraryStore();
 const explorer = useExplorerStore();
 const youtube = useYouTubeStore();
+const { status, ensureLoaded } = useYoutubeAuth();
+ensureLoaded();
 
 const viewInfo = computed(() => {
   switch (route.name) {
@@ -66,6 +69,13 @@ const activeDownload = computed(() => activeDownloads.value[0] || null);
     <span v-if="activeDownload" class="flex items-center gap-1.5">
       <span class="w-1.5 h-1.5 rounded-full bg-accent-base animate-pulse" />
       {{ activeDownload.title }} {{ activeDownload.progress }}%
+    </span>
+    <span class="flex items-center gap-1.5">
+      <span
+        class="w-1.5 h-1.5 rounded-full"
+        :class="status.loggedIn ? 'bg-green-base' : 'bg-border-subtle'"
+      />
+      {{ status.loggedIn ? $t('status.loggedIn') : $t('status.notLoggedIn') }}
     </span>
     <span class="text-fg-faint/60">Onda v1.0.0</span>
   </div>

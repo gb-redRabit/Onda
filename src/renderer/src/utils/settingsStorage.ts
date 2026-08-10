@@ -8,6 +8,7 @@ import type {
   ShortcutSettings,
   NetworkSettings,
   ApiKeySettings,
+  YoutubeAuthSettings,
   UpdateSettings,
   ToastSettings,
   DependencyStatus,
@@ -23,6 +24,7 @@ export interface SettingsState {
   shortcuts: Ref<ShortcutSettings>;
   network: Ref<NetworkSettings>;
   apiKeys: Ref<ApiKeySettings>;
+  youtube: Ref<YoutubeAuthSettings>;
   updates: Ref<UpdateSettings>;
   toast: Ref<ToastSettings>;
   dependencies: Ref<Record<string, DependencyStatus>>;
@@ -37,6 +39,7 @@ export function mergeSettings(target: SettingsState, data: Partial<AppSettings>)
   if (data.shortcuts) Object.assign(target.shortcuts.value, data.shortcuts);
   if (data.network) Object.assign(target.network.value, data.network);
   if (data.apiKeys) Object.assign(target.apiKeys.value, data.apiKeys);
+  if (data.youtube) Object.assign(target.youtube.value, data.youtube);
   if (data.updates) Object.assign(target.updates.value, data.updates);
   if (data.toast) Object.assign(target.toast.value, data.toast);
   if (data.dependencies) Object.assign(target.dependencies.value, data.dependencies);
@@ -66,6 +69,7 @@ export async function persistSettings(state: SettingsState): Promise<void> {
           shortcuts: state.shortcuts.value,
           network: state.network.value,
           apiKeys: state.apiKeys.value,
+          youtube: state.youtube.value,
           updates: state.updates.value,
           toast: state.toast.value,
           dependencies: state.dependencies.value

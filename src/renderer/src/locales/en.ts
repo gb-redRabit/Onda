@@ -155,6 +155,21 @@ export default {
     filenameTemplate: 'Filename template',
     available: 'Available:',
     maxConcurrent: 'Max concurrent:',
+    googleAccount: 'Google (YouTube) account',
+    googleAccountDesc:
+      'Sign in with a Google account to get access to downloading age-restricted (18+) content.',
+    authDisabled: 'Disabled',
+    authElectron: 'Google (in-app)',
+    authManual: 'Cookie file',
+    authBrowser: 'Browser',
+    loginWithGoogle: 'Sign in with Google',
+    logout: 'Sign out',
+    importCookies: 'Import cookies',
+    exportCookies: 'Export cookies',
+    authStatusLoggedIn: 'Signed in',
+    authStatusLoggedOut: 'Not signed in',
+    authLastLogin: 'Last sign-in:',
+    authBrowserHint: 'Requires a signed-in account in the selected browser',
     networkSection: 'Network',
     enableProxy: 'Enable proxy',
     apiKeysSection: 'API Keys',
@@ -285,7 +300,9 @@ export default {
     results: 'results',
     items: 'items',
     active: 'active',
-    completed: 'Completed'
+    completed: 'Completed',
+    loggedIn: 'Signed in',
+    notLoggedIn: 'Not signed in'
   },
   cmdPalette: {
     placeholder: 'Search tracks, albums, actions...',

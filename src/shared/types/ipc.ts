@@ -1,4 +1,4 @@
-import type { AppSettings } from '../../renderer/src/types/settings';
+import type { AppSettings, YoutubeAuthMethod } from '../../renderer/src/types/settings';
 
 interface IpcMediaFile {
   id: string;
@@ -76,6 +76,15 @@ interface IpcYoutubeVideo {
   publishedAt: string;
 }
 
+export interface YoutubeAuthStatus {
+  method: YoutubeAuthMethod;
+  loggedIn: boolean;
+  cookiesPath?: string;
+  browser?: string;
+  lastLogin?: number | null;
+  error?: string;
+}
+
 export interface AppInfo {
   appName: string;
   appVersion: string;
@@ -93,13 +102,7 @@ export interface AppInfo {
 
 export interface UpdaterState {
   status:
-    | 'idle'
-    | 'checking'
-    | 'available'
-    | 'not-available'
-    | 'downloading'
-    | 'downloaded'
-    | 'error';
+    'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
   current: string;
   version: string;
   progress: number;
@@ -179,7 +182,10 @@ export interface IpcChannels {
   };
   'library:saveScanned': {
     args: [
-      data: { files: IpcMediaFile[]; folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'> }
+      data: {
+        files: IpcMediaFile[];
+        folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
+      }
     ];
     result: void;
   };
@@ -234,6 +240,17 @@ export interface IpcChannels {
       nextPageToken: string | null;
       prevPageToken: string | null;
     };
+  };
+  'yt:authStatus': { args: []; result: YoutubeAuthStatus };
+  'yt:login': { args: []; result: { success: boolean; canceled?: boolean; error?: string } };
+  'yt:logout': { args: []; result: { success: boolean; error?: string } };
+  'yt:importCookies': {
+    args: [];
+    result: { success: boolean; canceled?: boolean; error?: string };
+  };
+  'yt:exportCookies': {
+    args: [];
+    result: { success: boolean; canceled?: boolean; error?: string };
   };
   'dep:checkFfmpeg': { args: []; result: { installed: boolean; version: string | null } };
   'dep:checkYtdlp': {

@@ -4,7 +4,8 @@ import type {
   LibrarySettings,
   ApiKeySettings,
   UpdateSettings,
-  ToastSettings
+  ToastSettings,
+  YoutubeAuthSettings
 } from '@renderer/types/settings';
 
 export const EQUALIZER_PRESETS: Record<string, Record<number, number>> = {
@@ -55,6 +56,13 @@ export const DEFAULT_EXPLORER: ExplorerSettings = {
 
 export const DEFAULT_API_KEYS: ApiKeySettings = {
   keys: []
+};
+
+export const DEFAULT_YOUTUBE_AUTH: YoutubeAuthSettings = {
+  method: 'none',
+  cookiesPath: '',
+  cookiesBrowser: 'chrome',
+  lastLogin: null
 };
 
 export const DEFAULT_UPDATES: UpdateSettings = {
