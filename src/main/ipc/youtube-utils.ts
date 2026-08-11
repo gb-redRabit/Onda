@@ -7,14 +7,25 @@ export interface YtDlpEntry {
   channel?: string;
   channel_id?: string;
   uploader?: string;
+  uploader_id?: string;
   upload_date?: string;
+  availability?: string;
+  is_playable?: boolean;
+  playlist?: string;
+  playlist_id?: string;
+  playlist_title?: string;
+  channel_follower_count?: number;
+  playlist_count?: number;
   thumbnails?: Array<{ url?: string; width?: number }>;
+  entries?: YtDlpEntry[];
 }
 
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { formatDuration as formatDurationBase } from '../../shared/formatDuration';
 import type { YoutubeAuthMethod } from '../../renderer/src/types/settings';
+import type { IpcYoutubeVideo } from '../../shared/types/ipc';
+import type { YouTubeResolvedItem } from '../../renderer/src/types/youtube';
 
 export interface YtAuthConfig {
   method: YoutubeAuthMethod;
@@ -147,6 +158,8 @@ export function isValidCookieFile(content: string): boolean {
   return dataLines > 0;
 }
 
+export { detectYtKind, normalizeYtUrl } from '../../shared/youtube';
+
 export function formatDuration(seconds?: number): string | undefined {
   const formatted = formatDurationBase(seconds, '');
   return formatted === '' ? undefined : formatted;
@@ -183,4 +196,56 @@ export function pickThumbnail(entry: YtDlpEntry): string {
   }
   const fallback = entry.id ? `https://i.ytimg.com/vi/${entry.id}/hqdefault.jpg` : '';
   return isSafeThumbnailUrl(fallback) ? fallback : '';
+}
+
+// Normalizes a flat yt-dlp entry (playlist/channel row or full video info)
+// into the shape the renderer consumes for the resolve preview.
+export function mapResolvedEntry(entry: YtDlpEntry): YouTubeResolvedItem {
+  return {
+    id: entry.id || '',
+    title: entry.title || '',
+    duration: formatDuration(entry.duration),
+    thumbnail: pickThumbnail(entry),
+    channelTitle: entry.channel || entry.uploader || '',
+    channelId: entry.channel_id || '',
+    isPlayable: entry.is_playable !== false
+  };
+}
+
+// Normalizes a yt-dlp entry into the video shape used by search and the
+// channel video list.
+export function mapVideoEntry(entry: YtDlpEntry): IpcYoutubeVideo {
+  return {
+    id: entry.id || '',
+    title: entry.title || '',
+    description: entry.description || '',
+    thumbnail: pickThumbnail(entry),
+    channelTitle: entry.channel || entry.uploader || '',
+    channelId: entry.channel_id || '',
+    duration: formatDuration(entry.duration),
+    viewCount: entry.view_count != null ? String(entry.view_count) : undefined,
+    publishedAt: formatUploadDate(entry.upload_date)
+  };
+}
+
+// Picks the channel avatar thumbnail. Unlike pickThumbnail there is no
+// i.ytimg.com fallback — a channel ID is not a video ID.
+export function pickChannelThumbnail(entry: YtDlpEntry): string {
+  const thumbs = (entry.thumbnails || []).filter((t) => t.url && isSafeThumbnailUrl(t.url));
+  const best = [...thumbs].sort((a, b) => (b.width || 0) - (a.width || 0))[0];
+  return best?.url || '';
+}
+
+// Maps a playlist/channel container entry to the renderer preview result.
+export function mapResolvedContainer(entry: YtDlpEntry): YouTubeResolvedItem[] {
+  const items = (entry.entries || [])
+    .filter((e) => e.id && e.title)
+    .map((e) => mapResolvedEntry(e));
+  const fallbackChannelId = entry.channel_id || entry.uploader_id || '';
+  const fallbackChannelTitle = entry.channel || entry.uploader || '';
+  return items.map((item) => ({
+    ...item,
+    channelId: item.channelId || fallbackChannelId,
+    channelTitle: item.channelTitle || fallbackChannelTitle
+  }));
 }

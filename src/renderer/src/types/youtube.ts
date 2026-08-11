@@ -18,6 +18,47 @@ export interface YouTubeSearchResult {
   totalResults?: number;
 }
 
+export type YouTubeResolveKind = 'video' | 'playlist' | 'channel';
+
+export interface YouTubeResolvedItem {
+  id: string;
+  title: string;
+  duration?: string;
+  thumbnail: string;
+  channelTitle: string;
+  channelId: string;
+  isPlayable?: boolean;
+}
+
+export interface YouTubeResolveMeta {
+  channelId?: string;
+  channelTitle?: string;
+  totalItems?: number;
+  hasMore?: boolean;
+}
+
+export interface YouTubeResolveResult {
+  kind: YouTubeResolveKind;
+  sourceUrl: string;
+  title: string;
+  meta: YouTubeResolveMeta;
+  items: YouTubeResolvedItem[];
+}
+
+export interface YouTubeChannel {
+  id: string;
+  url: string;
+  title: string;
+  thumbnail: string;
+  subscriberCount?: number;
+}
+
+export interface YouTubeChannelResult {
+  channel: YouTubeChannel;
+  items: YouTubeVideo[];
+  hasMore: boolean;
+}
+
 export interface DownloadTask {
   id: string;
   url: string;

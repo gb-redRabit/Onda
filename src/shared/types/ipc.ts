@@ -1,4 +1,8 @@
 import type { AppSettings, YoutubeAuthMethod } from '../../renderer/src/types/settings';
+import type {
+  YouTubeResolveResult,
+  YouTubeResolvedItem
+} from '../../renderer/src/types/youtube';
 
 interface IpcMediaFile {
   id: string;
@@ -64,7 +68,7 @@ export interface MusicbrainzRelease {
   }>;
 }
 
-interface IpcYoutubeVideo {
+export interface IpcYoutubeVideo {
   id: string;
   title: string;
   description: string;
@@ -74,6 +78,14 @@ interface IpcYoutubeVideo {
   duration?: string;
   viewCount?: string;
   publishedAt: string;
+}
+
+interface IpcYoutubeChannel {
+  id: string;
+  url: string;
+  title: string;
+  thumbnail: string;
+  subscriberCount?: number;
 }
 
 export interface YoutubeAuthStatus {
@@ -242,6 +254,24 @@ export interface IpcChannels {
     };
   };
   'yt:authStatus': { args: []; result: YoutubeAuthStatus };
+  'yt:resolve': {
+    args: [url: string];
+    result: { success: boolean; error?: string; result?: YouTubeResolveResult };
+  };
+  'yt:resolveMore': {
+    args: [{ url: string; start: number; end: number }];
+    result: { success: boolean; error?: string; items: YouTubeResolvedItem[]; hasMore: boolean; totalItems: number };
+  };
+  'yt:channel': {
+    args: [{ url: string; start?: number; end?: number; tab?: 'videos' | 'shorts' }];
+    result: {
+      success: boolean;
+      error?: string;
+      channel?: IpcYoutubeChannel;
+      items: IpcYoutubeVideo[];
+      hasMore: boolean;
+    };
+  };
   'yt:login': { args: []; result: { success: boolean; canceled?: boolean; error?: string } };
   'yt:logout': { args: []; result: { success: boolean; error?: string } };
   'yt:importCookies': {
