@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain, BrowserWindow, app } from 'electron';
 import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
 import type { PipManager } from './pip-manager';
@@ -152,6 +152,34 @@ export function registerWindowHandlers(context: {
     return BrowserWindow.fromWebContents(event.sender)?.isFullScreen() ?? false;
   });
 
+  ipcMain.handle('app:getAutoLaunch', (): { enabled: boolean; hidden: boolean } => {
+    try {
+      const s = app.getLoginItemSettings();
+      return { enabled: !!s.openAtLogin, hidden: process.argv.includes('--hidden') };
+    } catch {
+      return { enabled: false, hidden: false };
+    }
+  });
+
+  ipcMain.handle(
+    'app:setAutoLaunch',
+    (_event, opts: { enabled: boolean; hidden?: boolean }): boolean => {
+      try {
+        const enabled = !!opts?.enabled;
+        const hidden = !!opts?.hidden;
+        app.setLoginItemSettings({
+          openAtLogin: enabled,
+          args: hidden ? ['--hidden'] : [],
+          ...(process.platform === 'darwin' ? { openAsHidden: hidden } : {})
+        });
+        return true;
+      } catch (e) {
+        logger.warn('window', 'setAutoLaunch failed', e);
+        return false;
+      }
+    }
+  );
+
   ipcMain.handle(
     'pip:start',
     async (
@@ -280,6 +308,26 @@ export function registerWindowHandlers(context: {
     audioPipManager.hide();
     return true;
   });
+
+  ipcMain.handle(
+    'audio-pip:previewStart',
+    (_event, opts: { mode?: string; position?: string; opacity?: number }) => {
+      return audioPipManager.showPreview(opts);
+    }
+  );
+
+  ipcMain.handle('audio-pip:previewStop', () => {
+    audioPipManager.hidePreview();
+    return true;
+  });
+
+  ipcMain.handle(
+    'audio-pip:previewUpdate',
+    (_event, opts: { mode?: string; position?: string; opacity?: number }) => {
+      audioPipManager.updatePreview(opts);
+      return true;
+    }
+  );
 
   ipcMain.handle(
     'audio-pip:update',

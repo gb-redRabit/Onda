@@ -172,7 +172,22 @@ interface OndaAPI {
     opacity?: number,
     position?: string
   ) => Promise<boolean>;
+  audioPipPreviewStart: (opts: {
+    mode?: string;
+    position?: string;
+    opacity?: number;
+  }) => Promise<boolean>;
+  audioPipPreviewStop: () => Promise<boolean>;
+  audioPipPreviewUpdate: (opts: {
+    mode?: string;
+    position?: string;
+    opacity?: number;
+  }) => Promise<boolean>;
   getAppInfo: () => Promise<AppInfo>;
+  getAutoLaunch: () => Promise<{ enabled: boolean; hidden: boolean }>;
+  setAutoLaunch: (opts: { enabled: boolean; hidden?: boolean }) => Promise<boolean>;
+  cancelLibraryScan: () => Promise<boolean>;
+  grantMediaAccess: (filePath: string) => Promise<boolean>;
   getLicenses: () => Promise<Array<{ name: string; version?: string; license?: string }>>;
   readLogs: (lines?: number) => Promise<string>;
   clearLogs: () => Promise<boolean>;

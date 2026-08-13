@@ -3,6 +3,7 @@ export interface LibrarySettings {
 }
 
 export interface AppSettings {
+  general: GeneralSettings;
   appearance: AppearanceSettings;
   playback: PlaybackSettings;
   explorer: ExplorerSettings;
@@ -16,6 +17,13 @@ export interface AppSettings {
   toast: ToastSettings;
   dependencies: Record<string, DependencyStatus>;
   favorites?: string[];
+}
+
+export interface GeneralSettings {
+  autoLaunch: boolean;
+  startMinimized: boolean;
+  closeToTray: boolean;
+  restoreSession: boolean;
 }
 
 export type YoutubeAuthMethod = 'none' | 'electron' | 'browser' | 'manual';
@@ -43,7 +51,7 @@ export interface AppearanceSettings {
   sidebarCollapsed: boolean;
   showPlaylists: boolean;
   showAlbums: boolean;
-  locale: 'pl' | 'en';
+  locale: 'pl' | 'en' | 'auto';
   animations: boolean;
   transparency: number;
   customBackground?: string;
@@ -84,12 +92,27 @@ export interface PlaybackSettings {
 
 export interface DownloadSettings {
   defaultPath: string;
-  defaultAudioFormat: 'mp3' | 'flac' | 'ogg' | 'aac';
-  defaultVideoQuality: 'best' | '1080p' | '720p' | '480p';
+  defaultKind: 'audio' | 'video';
+  defaultAudioFormat: 'best' | 'mp3' | 'flac' | 'ogg' | 'aac' | 'opus' | 'm4a' | 'wav';
+  defaultAudioQuality: 'best' | 'high' | 'medium' | 'low';
+  defaultVideoQuality: 'best' | '2160p' | '1440p' | '1080p' | '720p' | '480p';
+  defaultVideoContainer: 'mp4' | 'mkv' | 'webm';
+  defaultCover: 'thumbnail' | 'none' | 'frame' | 'clip';
+  defaultCoverFrameTime: number;
+  defaultCoverClipStart: number;
+  defaultCoverClipEnd: number;
+  defaultCoverClipFormat: 'webm' | 'mp4';
   filenameTemplate: string;
   maxConcurrent: number;
   autoDownloadSubscriptions: boolean;
   hashFiles: boolean;
+  smartMode: boolean;
+  defaultSubs: boolean;
+  defaultSubsLangs: string;
+  nightScheduleEnabled: boolean;
+  nightScheduleStart: number;
+  nightScheduleEnd: number;
+  autoAddDownloadFolder: boolean;
 }
 
 export interface ShortcutSettings {
@@ -132,6 +155,7 @@ export interface ToastSettings {
   showInfo: boolean;
   showSuccess: boolean;
   showWarning: boolean;
+  showNative: boolean;
 }
 
 export interface DependencyStatus {

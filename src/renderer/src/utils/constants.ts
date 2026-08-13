@@ -5,7 +5,8 @@ import type {
   ApiKeySettings,
   UpdateSettings,
   ToastSettings,
-  YoutubeAuthSettings
+  YoutubeAuthSettings,
+  GeneralSettings
 } from '@renderer/types/settings';
 
 export const EQUALIZER_PRESETS: Record<string, Record<number, number>> = {
@@ -36,6 +37,13 @@ export const DEFAULT_NETWORK: NetworkSettings = {
   proxy: { enabled: false, type: 'http', host: '', port: 8080 },
   downloadSpeedLimit: 0,
   userAgent: ''
+};
+
+export const DEFAULT_GENERAL: GeneralSettings = {
+  autoLaunch: false,
+  startMinimized: false,
+  closeToTray: true,
+  restoreSession: false
 };
 
 export const DEFAULT_LIBRARY: LibrarySettings = {
@@ -74,7 +82,8 @@ export const DEFAULT_TOAST: ToastSettings = {
   position: 'bottom-right',
   showInfo: true,
   showSuccess: true,
-  showWarning: true
+  showWarning: true,
+  showNative: true
 };
 
 export const DEFAULT_SHORTCUTS: Record<string, string> = {
@@ -212,10 +221,34 @@ export const DEFAULT_PLAYBACK = {
 
 export const DEFAULT_DOWNLOAD = {
   defaultPath: '',
+  defaultKind: 'audio' as const,
   defaultAudioFormat: 'mp3' as const,
+  defaultAudioQuality: 'best' as const,
   defaultVideoQuality: 'best' as const,
+  defaultVideoContainer: 'mp4' as const,
+  defaultCover: 'thumbnail' as const,
+  defaultCoverFrameTime: 30,
+  defaultCoverClipStart: 0,
+  defaultCoverClipEnd: 30,
+  defaultCoverClipFormat: 'webm' as const,
   filenameTemplate: '{title} - {artist}',
   maxConcurrent: 3,
   autoDownloadSubscriptions: false,
-  hashFiles: true
+  hashFiles: true,
+  smartMode: true,
+  defaultSubs: false,
+  defaultSubsLangs: 'pl,en',
+  nightScheduleEnabled: false,
+  nightScheduleStart: 22,
+  nightScheduleEnd: 6,
+  autoAddDownloadFolder: false
 };
+
+export const FILENAME_TEMPLATE_PRESETS: string[] = [
+  '{title} - {artist}',
+  '{artist} - {title}',
+  '{title} ({year})',
+  '{title}',
+  '{artist} - {album}',
+  '{artist} - {album} - {title} ({year})'
+];

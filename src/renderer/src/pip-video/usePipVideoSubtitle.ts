@@ -12,7 +12,8 @@ export interface PipSubtitleData {
 
 export function usePipVideoSubtitle(videoRef: { value: HTMLVideoElement | null }) {
   const subsVisible = ref(true);
-  let jassub: InstanceType<typeof JASSUB> | null = null;  let lastSubtitleData: PipSubtitleData | null = null;
+  let jassub: InstanceType<typeof JASSUB> | null = null;
+  let lastSubtitleData: PipSubtitleData | null = null;
   let subtitleLoadSeq = 0;
 
   function destroyJassub(): void {

@@ -66,13 +66,8 @@ export function useExplorerContent(
 
   const { extraSmallIcon } = useFileIcons();
 
-  const {
-    contentRef,
-    hoveredFolderPath,
-    onContentDragOver,
-    onContentDragLeave,
-    onContentDrop
-  } = useExplorerDrop(explorer, settings, showConfirm);
+  const { contentRef, hoveredFolderPath, onContentDragOver, onContentDragLeave, onContentDrop } =
+    useExplorerDrop(explorer, settings, showConfirm);
 
   const { bandSelect, onBandMouseDown } = useExplorerBandSelect(scrollRef, explorer);
 

@@ -17,6 +17,8 @@ import { runCommand } from '../utils/exec';
 import { resolveBin } from '../binaries';
 import { getThumbnail, batchThumbnails } from './media-thumbnails';
 import { transcodeAudioChunk, transcodeAudio, cleanupOldTranscodes } from './media-transcode';
+import { isSafeAbsolutePath, isSafeStringArray } from '../utils/validate';
+import { addAllowedRoot } from '../media-server';
 
 export async function getDuration(filePath: string): Promise<number> {
   const cached = durationCache.get(filePath);
@@ -56,10 +58,62 @@ export async function getDuration(filePath: string): Promise<number> {
   }
 }
 
+// Shared cover writer used both by the `media:writeCover` IPC handler and by
+// the download pipeline (custom cover files / extracted frames). Embeds the
+// image into ID3 tags and invalidates the cover cache for the file.
+export async function writeCoverToAudioFile(
+  filePath: string,
+  imageSource: number[] | string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    let imageBuffer: Buffer;
+    let mime = 'image/jpeg';
+    if (typeof imageSource === 'string') {
+      imageBuffer = await readFile(imageSource);
+      const ext = extname(imageSource).toLowerCase();
+      const mimeMap: Record<string, string> = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.webp': 'image/webp',
+        '.bmp': 'image/bmp'
+      };
+      mime = mimeMap[ext] || 'image/jpeg';
+    } else {
+      imageBuffer = Buffer.from(imageSource);
+    }
+    NodeID3.update(
+      {
+        image: { mime, type: { id: 3 }, imageBuffer, description: 'Cover' }
+      },
+      filePath
+    );
+    coverResultCache.delete(filePath);
+    const store = await getStore();
+    const cacheMap = store.get(COVER_CACHE_MAP_KEY) as
+      Record<string, { cacheFile: string; mtime: number }> | undefined;
+    if (cacheMap?.[filePath]) {
+      const old = cacheMap[filePath];
+      const cachePath = join(PERSISTENT_COVER_DIR, old.cacheFile);
+      try {
+        await unlink(cachePath);
+      } catch {
+        // cached cover gone — ok to skip
+      }
+      delete cacheMap[filePath];
+      store.set(COVER_CACHE_MAP_KEY, structuredClone(cacheMap));
+    }
+    return { success: true };
+  } catch (e: unknown) {
+    return { success: false, error: errMsg(e) };
+  }
+}
+
 export function registerMediaHandlers(): void {
   ipcMain.handle(
     'media:getThumbnail',
     async (_event, filePath: string, maxSize: number = 320): Promise<string | null> => {
+      if (!isSafeAbsolutePath(filePath)) return null;
       return getThumbnail(filePath, maxSize);
     }
   );
@@ -67,6 +121,7 @@ export function registerMediaHandlers(): void {
   ipcMain.handle(
     'media:batchThumbnails',
     async (_event, files: string[], maxSize: number = 320): Promise<Record<string, string>> => {
+      if (!isSafeStringArray(files)) return {};
       return batchThumbnails(files, maxSize);
     }
   );
@@ -78,6 +133,7 @@ export function registerMediaHandlers(): void {
       filePath: string,
       tags: Record<string, string | undefined>
     ): Promise<{ success: boolean; error?: string }> => {
+      if (!isSafeAbsolutePath(filePath)) return { success: false, error: 'Invalid path' };
       try {
         const toWrite: Record<string, string> = {};
         for (const [key, val] of Object.entries(tags)) {
@@ -98,6 +154,7 @@ export function registerMediaHandlers(): void {
       oldPath: string,
       newName: string
     ): Promise<{ success: boolean; error?: string; newPath?: string }> => {
+      if (!isSafeAbsolutePath(oldPath)) return { success: false, error: 'Invalid path' };
       try {
         const safeName = newName.trim().replace(/[<>:"/\\|?*]/g, '_');
         if (!safeName) {
@@ -121,55 +178,15 @@ export function registerMediaHandlers(): void {
       filePath: string,
       imageSource: number[] | string
     ): Promise<{ success: boolean; error?: string }> => {
-      try {
-        let imageBuffer: Buffer;
-        let mime = 'image/jpeg';
-        if (typeof imageSource === 'string') {
-          imageBuffer = await readFile(imageSource);
-          const ext = extname(imageSource).toLowerCase();
-          const mimeMap: Record<string, string> = {
-            '.jpg': 'image/jpeg',
-            '.jpeg': 'image/jpeg',
-            '.png': 'image/png',
-            '.webp': 'image/webp',
-            '.bmp': 'image/bmp'
-          };
-          mime = mimeMap[ext] || 'image/jpeg';
-        } else {
-          imageBuffer = Buffer.from(imageSource);
-        }
-        NodeID3.update(
-          {
-            image: { mime, type: { id: 3 }, imageBuffer, description: 'Cover' }
-          },
-          filePath
-        );
-        coverResultCache.delete(filePath);
-        const store = await getStore();
-        const cacheMap = store.get(COVER_CACHE_MAP_KEY) as
-          | Record<string, { cacheFile: string; mtime: number }>
-          | undefined;
-        if (cacheMap?.[filePath]) {
-          const old = cacheMap[filePath];
-          const cachePath = join(PERSISTENT_COVER_DIR, old.cacheFile);
-          try {
-            await unlink(cachePath);
-          } catch {
-            // cached cover gone — ok to skip
-          }
-          delete cacheMap[filePath];
-          store.set(COVER_CACHE_MAP_KEY, structuredClone(cacheMap));
-        }
-        return { success: true };
-      } catch (e: unknown) {
-        return { success: false, error: errMsg(e) };
-      }
+      if (!isSafeAbsolutePath(filePath)) return { success: false, error: 'Invalid path' };
+      return writeCoverToAudioFile(filePath, imageSource);
     }
   );
 
   ipcMain.handle(
     'media:readCover',
     async (_event, filePath: string): Promise<{ mime?: string; data?: number[] } | null> => {
+      if (!isSafeAbsolutePath(filePath)) return null;
       try {
         const tags = NodeID3.read(filePath);
         if (tags?.image) {
@@ -192,6 +209,7 @@ export function registerMediaHandlers(): void {
   ipcMain.handle(
     'media:checkAudioCodec',
     async (_event, filePath: string): Promise<{ codec: string; supported: boolean } | null> => {
+      if (!isSafeAbsolutePath(filePath)) return null;
       try {
         const ffprobe = (await resolveBin('ffprobe')) || 'ffprobe';
         const stdout = await runCommand(
@@ -241,6 +259,7 @@ export function registerMediaHandlers(): void {
       startTime: number,
       duration: number
     ): Promise<string | null> => {
+      if (!isSafeAbsolutePath(filePath)) return null;
       return transcodeAudioChunk(filePath, startTime, duration);
     }
   );
@@ -248,6 +267,7 @@ export function registerMediaHandlers(): void {
   ipcMain.handle(
     'media:transcodeAudio',
     async (_event, filePath: string): Promise<string | null> => {
+      if (!isSafeAbsolutePath(filePath)) return null;
       return transcodeAudio(filePath);
     }
   );
@@ -255,7 +275,17 @@ export function registerMediaHandlers(): void {
   // cleanup old transcoded files on startup
   cleanupOldTranscodes();
 
+  // Grants the media server access to a file's folder (or the folder itself),
+  // called by the renderer when the user explicitly opens a media file.
+  ipcMain.handle('media:grantAccess', async (_event, filePath: unknown): Promise<boolean> => {
+    if (!isSafeAbsolutePath(filePath)) return false;
+    await addAllowedRoot(filePath);
+    await addAllowedRoot(dirname(filePath));
+    return true;
+  });
+
   ipcMain.handle('media:getDuration', async (_event, filePath: string): Promise<number> => {
+    if (!isSafeAbsolutePath(filePath)) return 0;
     try {
       return await getDuration(filePath);
     } catch (err) {

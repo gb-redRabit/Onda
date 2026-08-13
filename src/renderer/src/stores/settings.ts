@@ -12,7 +12,8 @@ import type {
   UpdateSettings,
   ToastSettings,
   DependencyStatus,
-  AppSettings
+  AppSettings,
+  GeneralSettings
 } from '@renderer/types/settings';
 import {
   DEFAULT_APPEARANCE,
@@ -25,11 +26,13 @@ import {
   DEFAULT_API_KEYS,
   DEFAULT_YOUTUBE_AUTH,
   DEFAULT_UPDATES,
-  DEFAULT_TOAST
+  DEFAULT_TOAST,
+  DEFAULT_GENERAL
 } from '@renderer/utils/constants';
 import { loadSettings, persistSettings, mergeSettings } from '@renderer/utils/settingsStorage';
 
 export const useSettingsStore = defineStore('settings', () => {
+  const general = ref<GeneralSettings>({ ...DEFAULT_GENERAL });
   const appearance = ref<AppearanceSettings>({ ...DEFAULT_APPEARANCE });
   const playback = ref<PlaybackSettings>({ ...DEFAULT_PLAYBACK });
   const explorer = ref<ExplorerSettings>({ ...DEFAULT_EXPLORER });
@@ -46,6 +49,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   async function load() {
     await loadSettings({
+      general,
       appearance,
       playback,
       explorer,
@@ -69,6 +73,7 @@ export const useSettingsStore = defineStore('settings', () => {
     saveTimer = setTimeout(() => {
       saveTimer = null;
       persistSettings({
+        general,
         appearance,
         playback,
         explorer,
@@ -110,9 +115,22 @@ export const useSettingsStore = defineStore('settings', () => {
     save();
   }
 
+  function updateNetwork(partial: Partial<NetworkSettings>) {
+    Object.assign(network.value, partial);
+    save();
+  }
+
+  function updateGeneral(partial: Partial<GeneralSettings>) {
+    Object.assign(general.value, partial);
+    save();
+  }
+
   function resetToDefaults() {
+    general.value = { ...DEFAULT_GENERAL };
     appearance.value = { ...DEFAULT_APPEARANCE };
     playback.value = { ...DEFAULT_PLAYBACK };
+    explorer.value = { ...DEFAULT_EXPLORER };
+    library.value = { ...DEFAULT_LIBRARY };
     download.value = { ...DEFAULT_DOWNLOAD };
     shortcuts.value = { ...DEFAULT_SHORTCUTS };
     network.value = { ...DEFAULT_NETWORK };
@@ -127,6 +145,7 @@ export const useSettingsStore = defineStore('settings', () => {
   function applyImported(data: Partial<AppSettings>) {
     mergeSettings(
       {
+        general,
         appearance,
         playback,
         explorer,
@@ -175,6 +194,7 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   return {
+    general,
     appearance,
     playback,
     explorer,
@@ -190,6 +210,7 @@ export const useSettingsStore = defineStore('settings', () => {
     isLoaded,
     load,
     save,
+    updateGeneral,
     updateAppearance,
     updatePlayback,
     updateExplorer,
@@ -197,6 +218,7 @@ export const useSettingsStore = defineStore('settings', () => {
     updateDownload,
     updateYoutube,
     updateShortcut,
+    updateNetwork,
     resetToDefaults,
     applyImported,
     updateDependency,

@@ -1,12 +1,38 @@
-import { ipcMain, shell, app, clipboard } from 'electron';
-import { readdir, stat, lstat, mkdir, rename, unlink, rm, copyFile, cp, realpath } from 'fs/promises';
+import { ipcMain, shell, app, clipboard, dialog, BrowserWindow } from 'electron';
+import {
+  readdir,
+  stat,
+  lstat,
+  mkdir,
+  rename,
+  unlink,
+  rm,
+  copyFile,
+  cp,
+  realpath,
+  readFile
+} from 'fs/promises';
 import { join, extname, basename } from 'path';
 import { spawn } from 'child_process';
 import { errMsg } from '../../shared/helpers';
 import { logger } from '../../shared/logger';
 import type { FileItem } from '../../renderer/src/types/explorer';
-import { addAllowedRoot } from '../media-server';
 import { getDrives, getFileItem, stripDuplicateSuffix, fileHash, uniqueDestPath } from './fs-utils';
+import { isSafeAbsolutePath, isSafeStringArray } from '../utils/validate';
+
+const EXECUTABLE_EXTS = new Set([
+  '.exe',
+  '.bat',
+  '.cmd',
+  '.com',
+  '.ps1',
+  '.msi',
+  '.vbs',
+  '.js',
+  '.jar',
+  '.scr',
+  '.reg'
+]);
 
 export function registerFsHandlers(): void {
   ipcMain.handle('fs:getDrives', async (): Promise<FileItem[]> => {
@@ -81,7 +107,6 @@ export function registerFsHandlers(): void {
       return;
     }
     const resolvedPath = /^[A-Z]:$/i.test(dirPath) ? `${dirPath}\\` : dirPath;
-    await addAllowedRoot(resolvedPath);
     let entries;
     try {
       entries = await readdir(resolvedPath, { withFileTypes: true });
@@ -113,7 +138,11 @@ export function registerFsHandlers(): void {
     event.sender.send('fs:readdir:batch', { done: true, items: [] });
   });
 
-  ipcMain.handle('fs:mkdir', async (_event, dirPath: string) => {
+  ipcMain.handle('fs:mkdir', async (_event, dirPath: unknown) => {
+    if (!isSafeAbsolutePath(dirPath)) {
+      logger.warn('fs', 'mkdir rejected invalid path');
+      return false;
+    }
     try {
       await mkdir(dirPath, { recursive: true });
       return true;
@@ -123,7 +152,11 @@ export function registerFsHandlers(): void {
     }
   });
 
-  ipcMain.handle('fs:delete', async (_event, filePath: string) => {
+  ipcMain.handle('fs:delete', async (_event, filePath: unknown) => {
+    if (!isSafeAbsolutePath(filePath)) {
+      logger.warn('fs', 'delete rejected invalid path');
+      return false;
+    }
     try {
       const s = await lstat(filePath);
       if (s.isSymbolicLink()) {
@@ -140,8 +173,13 @@ export function registerFsHandlers(): void {
     }
   });
 
-  ipcMain.handle('fs:move', async (_event, paths: string[], destination: string) => {
+  ipcMain.handle('fs:move', async (_event, paths: unknown, destination: unknown) => {
+    if (!isSafeStringArray(paths) || !isSafeAbsolutePath(destination)) {
+      logger.warn('fs', 'move rejected invalid arguments');
+      return;
+    }
     for (const src of paths) {
+      if (!isSafeAbsolutePath(src)) continue;
       try {
         const name = src.split('\\').pop() || src.split('/').pop() || '';
         const dest = await uniqueDestPath(join(destination, name));
@@ -168,8 +206,13 @@ export function registerFsHandlers(): void {
     }
   });
 
-  ipcMain.handle('fs:copy', async (_event, paths: string[], destination: string) => {
+  ipcMain.handle('fs:copy', async (_event, paths: unknown, destination: unknown) => {
+    if (!isSafeStringArray(paths) || !isSafeAbsolutePath(destination)) {
+      logger.warn('fs', 'copy rejected invalid arguments');
+      return;
+    }
     for (const src of paths) {
+      if (!isSafeAbsolutePath(src)) continue;
       try {
         const name = src.split('\\').pop() || src.split('/').pop() || '';
         const dest = await uniqueDestPath(join(destination, name));
@@ -277,12 +320,40 @@ export function registerFsHandlers(): void {
     }
   });
 
-  ipcMain.handle('shell:openWithDefault', async (_event, filePath: string) => {
+  ipcMain.handle('shell:openWithDefault', async (event, filePath: unknown) => {
+    if (!isSafeAbsolutePath(filePath)) {
+      logger.warn('fs', 'openWithDefault rejected invalid path');
+      return;
+    }
     try {
       const ext = extname(filePath).toLowerCase();
       if (ext === '.lnk' || ext === '.url') {
         logger.warn('fs', `openWithDefault blocked (shortcut file): ${filePath}`);
         return;
+      }
+      // Executable files can run arbitrary code — require explicit confirmation.
+      if (EXECUTABLE_EXTS.has(ext)) {
+        const win = BrowserWindow.fromWebContents(event.sender);
+        const { response } = win
+          ? await dialog.showMessageBox(win, {
+              type: 'warning',
+              buttons: ['Anuluj', 'Otwórz'],
+              defaultId: 0,
+              cancelId: 0,
+              title: 'Otwieranie pliku wykonywalnego',
+              message: `Czy na pewno chcesz otworzyć plik wykonywalny?\n${filePath}`,
+              detail: 'Uruchamianie nieznanych plików wykonywalnych może być niebezpieczne.'
+            })
+          : await dialog.showMessageBox({
+              type: 'warning',
+              buttons: ['Anuluj', 'Otwórz'],
+              defaultId: 0,
+              cancelId: 0,
+              title: 'Otwieranie pliku wykonywalnego',
+              message: `Czy na pewno chcesz otworzyć plik wykonywalny?\n${filePath}`,
+              detail: 'Uruchamianie nieznanych plików wykonywalnych może być niebezpieczne.'
+            });
+        if (response !== 1) return;
       }
       const real = await realpath(filePath);
       await shell.openPath(real);
@@ -305,11 +376,34 @@ export function registerFsHandlers(): void {
     clipboard.writeText(filePath);
   });
 
+  ipcMain.handle('app:readClipboard', (): string => {
+    try {
+      return clipboard.readText();
+    } catch {
+      return '';
+    }
+  });
+
   ipcMain.handle('app:getPath', (_event, name: string) => {
     // Only expose the specific system paths the renderer actually needs —
     // never the full app.getPath() surface (userData, temp, crashDumps, ...).
     const validPaths = ['desktop', 'downloads'] as const;
     const match = validPaths.find((validPath) => validPath === name);
     return match ? app.getPath(match) : '';
+  });
+
+  // Reads a small text file (used for TXT/CSV batch import). Capped in size and
+  // limited to .txt/.csv/.tsv extensions so it can't slurp arbitrary files.
+  ipcMain.handle('fs:readTextFile', async (_event, filePath: string): Promise<string | null> => {
+    if (typeof filePath !== 'string' || !filePath) return null;
+    if (!/\.(txt|csv|tsv)$/i.test(filePath)) return null;
+    try {
+      if (!(await isSafeAbsolutePath(filePath))) return null;
+      const info = await stat(filePath);
+      if (info.size > 5 * 1024 * 1024) return null;
+      return await readFile(filePath, 'utf-8');
+    } catch {
+      return null;
+    }
   });
 }

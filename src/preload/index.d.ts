@@ -4,7 +4,11 @@ import type {
   MusicbrainzRelease,
   AppInfo,
   UpdaterState,
-  YoutubeAuthStatus
+  YoutubeAuthStatus,
+  IpcSubscription,
+  IpcSubscriptionPatch,
+  IpcSubscriptionDownloadPrefs,
+  IpcSubscriptionCheckResult
 } from '@shared/types/ipc';
 
 interface OndaAPI {
@@ -167,7 +171,22 @@ interface OndaAPI {
     opacity?: number,
     position?: string
   ) => Promise<boolean>;
+  audioPipPreviewStart: (opts: {
+    mode?: string;
+    position?: string;
+    opacity?: number;
+  }) => Promise<boolean>;
+  audioPipPreviewStop: () => Promise<boolean>;
+  audioPipPreviewUpdate: (opts: {
+    mode?: string;
+    position?: string;
+    opacity?: number;
+  }) => Promise<boolean>;
   getAppInfo: () => Promise<AppInfo>;
+  getAutoLaunch: () => Promise<{ enabled: boolean; hidden: boolean }>;
+  setAutoLaunch: (opts: { enabled: boolean; hidden?: boolean }) => Promise<boolean>;
+  cancelLibraryScan: () => Promise<boolean>;
+  grantMediaAccess: (filePath: string) => Promise<boolean>;
   getLicenses: () => Promise<Array<{ name: string; version?: string; license?: string }>>;
   readLogs: (lines?: number) => Promise<string>;
   clearLogs: () => Promise<boolean>;
@@ -181,6 +200,20 @@ interface OndaAPI {
   youtubeLogout: () => Promise<{ success: boolean; error?: string }>;
   youtubeImportCookies: () => Promise<{ success: boolean; canceled?: boolean; error?: string }>;
   youtubeExportCookies: () => Promise<{ success: boolean; canceled?: boolean; error?: string }>;
+  youtubeSubscriptions: () => Promise<IpcSubscription[]>;
+  youtubeAddSubscription: (input: {
+    channelId: string;
+    channelTitle: string;
+    channelThumbnail: string;
+    downloadPrefs?: IpcSubscriptionDownloadPrefs;
+    seedBaseline?: boolean;
+  }) => Promise<IpcSubscription | null>;
+  youtubeRemoveSubscription: (channelId: string) => Promise<boolean>;
+  youtubeUpdateSubscription: (
+    channelId: string,
+    patch: IpcSubscriptionPatch
+  ) => Promise<IpcSubscription | null>;
+  youtubeCheckSubscriptions: () => Promise<IpcSubscriptionCheckResult>;
 }
 
 declare global {

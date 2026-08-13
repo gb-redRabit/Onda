@@ -8,13 +8,15 @@ describe('runCommand', () => {
   });
 
   it('rejects with stderr when the command exits non-zero', async () => {
-    await expect(runCommand(process.execPath, ['-e', 'console.error("boom"); process.exit(3)'])).rejects.toThrow(
-      /boom/
-    );
+    await expect(
+      runCommand(process.execPath, ['-e', 'console.error("boom"); process.exit(3)'])
+    ).rejects.toThrow(/boom/);
   });
 
   it('rejects when the binary does not exist', async () => {
-    await expect(runCommand('onda-no-such-binary-xyz', ['--version'], { timeout: 5000 })).rejects.toThrow();
+    await expect(
+      runCommand('onda-no-such-binary-xyz', ['--version'], { timeout: 5000 })
+    ).rejects.toThrow();
   });
 
   it('rejects when the command times out', async () => {

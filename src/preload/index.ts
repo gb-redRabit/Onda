@@ -3,7 +3,10 @@ import type {
   MusicbrainzRelease,
   AppInfo,
   UpdaterState,
-  YoutubeAuthStatus
+  YoutubeAuthStatus,
+  IpcSubscription,
+  IpcSubscriptionPatch,
+  IpcSubscriptionCheckResult
 } from '../shared/types/ipc';
 import { logger } from '../shared/logger';
 
@@ -26,9 +29,14 @@ const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'fs:move',
   'fs:mkdir',
   'fs:copyPath',
+  'fs:readTextFile',
+  'app:readClipboard',
   'fs:getProperties',
   'app:getPath',
   'app:quit',
+  'app:getAutoLaunch',
+  'app:setAutoLaunch',
+  'app:getPendingFiles',
   'window:close',
   'window:minimize',
   'window:maximize',
@@ -45,6 +53,8 @@ const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'shell:openWithDefault',
   'shell:getFileIcon',
   'media:getThumbnail',
+  'media:batchThumbnails',
+  'media:grantAccess',
   'media:renameFile',
   'explorer:create',
   'explorer:tabMoved',
@@ -54,6 +64,7 @@ const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'settings:export',
   'settings:import',
   'library:scan',
+  'library:scanCancel',
   'library:loadFolders',
   'library:loadScanned',
   'library:saveFolders',
@@ -67,11 +78,36 @@ const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'yt:resolve',
   'yt:resolveMore',
   'yt:channel',
+  'yt:channelAll',
   'yt:authStatus',
   'yt:login',
   'yt:logout',
   'yt:importCookies',
   'yt:exportCookies',
+  'yt:subs:list',
+  'yt:subs:add',
+  'yt:subs:remove',
+  'yt:subs:update',
+  'yt:subs:checkNow',
+  'yt:subs:checkChannel',
+  'yt:download:add',
+  'yt:download:cancel',
+  'yt:download:pause',
+  'yt:download:resume',
+  'yt:download:list',
+  'yt:download:clearFinished',
+  'yt:download:pauseAll',
+  'yt:download:resumeAll',
+  'yt:download:moveToFront',
+  'yt:download:move',
+  'yt:download:export',
+  'yt:download:import',
+  'yt:download:schedule',
+  'yt:download:schedule:get',
+  'yt:download:updateMetadata',
+  'profiles:list',
+  'profiles:save',
+  'profiles:delete',
   'pip:start',
   'pip:stop',
   'pip:preload',
@@ -82,7 +118,10 @@ const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'pip:previewUpdate',
   'audio-pip:show',
   'audio-pip:hide',
-  'audio-pip:update'
+  'audio-pip:update',
+  'audio-pip:previewStart',
+  'audio-pip:previewStop',
+  'audio-pip:previewUpdate'
 ]);
 
 const ALLOWED_SEND_CHANNELS = new Set<string>([
@@ -106,6 +145,9 @@ const ALLOWED_RECEIVE_CHANNELS = new Set<string>([
   'window:fullscreenChanged',
   'dep:progress',
   'updater:event',
+  'yt:downloadProgress',
+  'yt:subs:updated',
+  'yt:newVideos',
   'audio-pip:closed',
   'audio-pip:action',
   'audio-pip:progressClick',
@@ -126,6 +168,7 @@ const ALLOWED_RECEIVE_CHANNELS = new Set<string>([
   'pip:locale',
   'fs:readdir:batch',
   'library:scan:progress',
+  'library:updated',
   'media:playPause',
   'media:next',
   'media:previous',
@@ -133,6 +176,7 @@ const ALLOWED_RECEIVE_CHANNELS = new Set<string>([
   'media:volumeUp',
   'media:volumeDown',
   'media:toggleMute',
+  'open-files',
   'explorer:add-tab',
   'explorer:refresh',
   'explorer:remove-tab'
@@ -398,7 +442,34 @@ const api = {
     const r = await tryInvoke('audio-pip:update', state, mode, opacity, position);
     return !!r;
   },
+  audioPipPreviewStart: async (opts: {
+    mode?: string;
+    position?: string;
+    opacity?: number;
+  }): Promise<boolean> => {
+    const r = await tryInvoke('audio-pip:previewStart', opts);
+    return !!r;
+  },
+  audioPipPreviewStop: async (): Promise<boolean> => {
+    const r = await tryInvoke('audio-pip:previewStop');
+    return !!r;
+  },
+  audioPipPreviewUpdate: async (opts: {
+    mode?: string;
+    position?: string;
+    opacity?: number;
+  }): Promise<boolean> => {
+    const r = await tryInvoke('audio-pip:previewUpdate', opts);
+    return !!r;
+  },
   getAppInfo: (): Promise<AppInfo> => ipcRenderer.invoke('app:getInfo'),
+  getAutoLaunch: (): Promise<{ enabled: boolean; hidden: boolean }> =>
+    ipcRenderer.invoke('app:getAutoLaunch'),
+  setAutoLaunch: (opts: { enabled: boolean; hidden?: boolean }): Promise<boolean> =>
+    ipcRenderer.invoke('app:setAutoLaunch', opts),
+  cancelLibraryScan: (): Promise<boolean> => ipcRenderer.invoke('library:scanCancel'),
+  grantMediaAccess: (filePath: string): Promise<boolean> =>
+    ipcRenderer.invoke('media:grantAccess', filePath),
   getLicenses: (): Promise<Array<{ name: string; version?: string; license?: string }>> =>
     ipcRenderer.invoke('app:getLicenses'),
   readLogs: (lines?: number): Promise<string> => ipcRenderer.invoke('diagnostics:readLogs', lines),
@@ -417,7 +488,21 @@ const api = {
   youtubeImportCookies: (): Promise<{ success: boolean; canceled?: boolean; error?: string }> =>
     ipcRenderer.invoke('yt:importCookies'),
   youtubeExportCookies: (): Promise<{ success: boolean; canceled?: boolean; error?: string }> =>
-    ipcRenderer.invoke('yt:exportCookies')
+    ipcRenderer.invoke('yt:exportCookies'),
+  youtubeSubscriptions: (): Promise<IpcSubscription[]> => ipcRenderer.invoke('yt:subs:list'),
+  youtubeAddSubscription: (input: {
+    channelId: string;
+    channelTitle: string;
+    channelThumbnail: string;
+  }): Promise<IpcSubscription | null> => ipcRenderer.invoke('yt:subs:add', input),
+  youtubeRemoveSubscription: (channelId: string): Promise<boolean> =>
+    ipcRenderer.invoke('yt:subs:remove', channelId),
+  youtubeUpdateSubscription: (
+    channelId: string,
+    patch: IpcSubscriptionPatch
+  ): Promise<IpcSubscription | null> => ipcRenderer.invoke('yt:subs:update', channelId, patch),
+  youtubeCheckSubscriptions: (): Promise<IpcSubscriptionCheckResult> =>
+    ipcRenderer.invoke('yt:subs:checkNow')
 };
 
 if (process.contextIsolated) {

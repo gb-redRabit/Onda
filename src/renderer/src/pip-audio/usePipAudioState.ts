@@ -118,7 +118,8 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
       const d = args[0] as PipUpdate | undefined;
       if (!d) return;
       if (d.mode) {
-        mode.value = d.mode === 'max' ? 'x' : d.mode === 'medium' ? 'd' : d.mode === 'wide' ? 'w' : 'm';
+        mode.value =
+          d.mode === 'max' ? 'x' : d.mode === 'medium' ? 'd' : d.mode === 'wide' ? 'w' : 'm';
       }
       if (d.state) {
         const s = d.state;
@@ -173,7 +174,8 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
     shuffle,
     repeat,
     equalizerBands,
-    eqPreset,    vizData,
+    eqPreset,
+    vizData,
     nextTrackName,
     nextTrackArtist,
     mode,

@@ -1,7 +1,6 @@
-import { unlink, readFile } from 'fs/promises';
+import { unlink, readFile, rename } from 'fs/promises';
 import { join } from 'path';
 import https from 'https';
-import http from 'http';
 import { createWriteStream } from 'fs';
 import { createHash } from 'crypto';
 import type { WebContents } from 'electron';
@@ -18,7 +17,12 @@ export interface InstallResult {
 
 const activeControllers = new Map<string, AbortController>();
 
-export function emitProgress(sender: WebContents, tool: string, stage: string, percent: number): void {
+export function emitProgress(
+  sender: WebContents,
+  tool: string,
+  stage: string,
+  percent: number
+): void {
   if (sender.isDestroyed()) return;
   sender.send('dep:progress', { tool, stage, percent });
 }
@@ -38,57 +42,120 @@ export function abortTool(tool: string): void {
   activeControllers.get(tool)?.abort();
 }
 
+const MAX_REDIRECTS = 5;
+const MAX_DOWNLOAD_BYTES = 512 * 1024 * 1024;
+const DOWNLOAD_TIMEOUT_MS = 5 * 60 * 1000;
+
 export function downloadFile(
   url: string,
   dest: string,
   signal: AbortSignal,
   onProgress?: (received: number, total: number) => void
 ): Promise<void> {
+  return downloadFileInternal(url, dest, signal, onProgress, 0);
+}
+
+function downloadFileInternal(
+  url: string,
+  dest: string,
+  signal: AbortSignal,
+  onProgress: ((received: number, total: number) => void) | undefined,
+  redirectCount: number
+): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) {
       reject(new Error('cancelled'));
       return;
     }
-    const client = url.startsWith('https') ? https : http;
-    const onAbort = () => reject(new Error('cancelled'));
-    signal.addEventListener('abort', onAbort, { once: true });
+    if (redirectCount > MAX_REDIRECTS) {
+      reject(new Error('too many redirects'));
+      return;
+    }
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      reject(new Error('invalid URL'));
+      return;
+    }
+    if (parsed.protocol !== 'https:') {
+      reject(new Error('only HTTPS downloads are allowed'));
+      return;
+    }
 
-    const req = client.get(
-      url,
-      { headers: { 'User-Agent': 'Onda/1.0' } },
-      (res) => {
-        if (
-          res.statusCode &&
-          res.statusCode >= 300 &&
-          res.statusCode < 400 &&
-          res.headers.location
-        ) {
-          downloadFile(res.headers.location, dest, signal, onProgress).then(resolve).catch(reject);
-          return;
-        }
-        if (res.statusCode !== 200) {
-          reject(new Error(`HTTP ${res.statusCode}`));
-          return;
-        }
-        const total = Number(res.headers['content-length'] || 0);
-        let received = 0;
-        res.on('data', (chunk: Buffer) => {
-          received += chunk.length;
-          onProgress?.(received, total);
-        });
-        const file = createWriteStream(dest);
-        file.on('finish', () => {
-          signal.removeEventListener('abort', onAbort);
-          file.close(() => resolve());
-        });
-        file.on('error', reject);
-        res.pipe(file);
-      }
-    );
-    req.on('error', (err) => {
+    const tempDest = `${dest}.part`;
+    let settled = false;
+    const fail = (err: Error): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
       signal.removeEventListener('abort', onAbort);
+      void unlink(tempDest).catch(() => {});
       reject(err);
+    };
+    const onAbort = (): void => fail(new Error('cancelled'));
+
+    const req = https.get(url, { headers: { 'User-Agent': 'Onda/1.0' } }, (res) => {
+      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        res.resume();
+        const next = new URL(res.headers.location, url).toString();
+        clearTimeout(timeout);
+        signal.removeEventListener('abort', onAbort);
+        downloadFileInternal(next, dest, signal, onProgress, redirectCount + 1)
+          .then(resolve)
+          .catch(reject);
+        return;
+      }
+      if (res.statusCode !== 200) {
+        res.resume();
+        fail(new Error(`HTTP ${res.statusCode}`));
+        return;
+      }
+      const total = Number(res.headers['content-length'] || 0);
+      if (total > MAX_DOWNLOAD_BYTES) {
+        res.destroy();
+        fail(new Error('download exceeds size limit'));
+        return;
+      }
+
+      let received = 0;
+      const file = createWriteStream(tempDest);
+      res.on('data', (chunk: Buffer) => {
+        received += chunk.length;
+        if (received > MAX_DOWNLOAD_BYTES) {
+          res.destroy(new Error('download exceeds size limit'));
+          return;
+        }
+        onProgress?.(received, total);
+      });
+      res.on('error', (err) => {
+        file.destroy();
+        fail(err);
+      });
+      res.pipe(file);
+      file.on('finish', () => {
+        clearTimeout(timeout);
+        signal.removeEventListener('abort', onAbort);
+        file.close(async () => {
+          try {
+            await rename(tempDest, dest);
+            settled = true;
+            resolve();
+          } catch (err) {
+            settled = true;
+            reject(err instanceof Error ? err : new Error(String(err)));
+          }
+        });
+      });
+      file.on('error', (err) => fail(err));
     });
+
+    const timeout = setTimeout(() => {
+      req.destroy(new Error('download timed out'));
+    }, DOWNLOAD_TIMEOUT_MS);
+
+    signal.addEventListener('abort', onAbort, { once: true });
+    req.on('error', (err) => fail(err));
   });
 }
 

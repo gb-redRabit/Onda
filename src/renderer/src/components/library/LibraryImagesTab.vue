@@ -67,13 +67,18 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div v-if="images.length === 0" class="flex flex-col items-center justify-center h-full gap-3 text-fg-faint">
+  <div
+    v-if="images.length === 0"
+    class="flex flex-col items-center justify-center h-full gap-3 text-fg-faint"
+  >
     <Images :size="48" class="opacity-30" />
     <p class="text-sm">{{ $t('library.noImages') }}</p>
     <p class="text-xs">{{ $t('library.addFolderHint') }}</p>
   </div>
   <template v-else>
-    <div class="flex items-center justify-between px-4 py-2 border-b border-border-default shrink-0">
+    <div
+      class="flex items-center justify-between px-4 py-2 border-b border-border-default shrink-0"
+    >
       <span class="text-xs text-fg-faint">{{ images.length }} {{ $t('library.files') }}</span>
     </div>
     <div ref="imageGridRef" class="flex-1 overflow-auto p-4">

@@ -40,11 +40,7 @@ const toggles = [
 
     <SettingsCard>
       <div class="divide-y divide-border-default">
-        <SettingsRow
-          v-for="opt in toggles"
-          :key="opt.key"
-          :label="$t(opt.labelKey) ?? ''"
-        >
+        <SettingsRow v-for="opt in toggles" :key="opt.key" :label="$t(opt.labelKey) ?? ''">
           <SettingsToggle
             :model-value="settings.playback[opt.key]"
             @update:model-value="settings.updatePlayback({ [opt.key]: $event })"

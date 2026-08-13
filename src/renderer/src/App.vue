@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, watch, computed, defineAsyncComponent } from 'vue';
+import { onMounted, onBeforeUnmount, watch, computed, defineAsyncComponent, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { loadLocaleMessages } from './i18n';
 import { useSettingsStore } from './stores/settings';
@@ -8,21 +8,24 @@ import { useUIStore } from './stores/ui';
 import { useLibraryStore } from './stores/library';
 import { useExplorerStore } from './stores/explorer';
 import { claimTabDrag } from './utils/tabDrag';
+import { openMediaFiles } from './composables/useOpenMedia';
 import { moduleManager } from './modules/ModuleManager';
 import { useAudioPiP } from './composables/useAudioPiP';
 import { useTheme } from './composables/useTheme';
+import { useNewVideoNotifications } from './composables/useNewVideoNotifications';
+import { useMediaSession } from './composables/useMediaSession';
+import { useSessionPersistence } from './composables/useSessionPersistence';
 import AppMenu from './components/layout/AppMenu.vue';
 import Sidebar from './components/layout/Sidebar.vue';
 import PlayerBar from './components/layout/PlayerBar.vue';
 import StatusBar from './components/layout/StatusBar.vue';
 import ErrorBoundary from './components/ErrorBoundary.vue';
+import FirstRunWizard from './components/FirstRunWizard.vue';
 
 const QueuePanel = defineAsyncComponent(() => import('./components/player/QueuePanel.vue'));
 const Equalizer = defineAsyncComponent(() => import('./components/player/Equalizer.vue'));
 const CommandPalette = defineAsyncComponent(() => import('./components/CommandPalette.vue'));
-const ToastNotification = defineAsyncComponent(() =>
-  import('./components/ToastNotification.vue')
-);
+const ToastNotification = defineAsyncComponent(() => import('./components/ToastNotification.vue'));
 
 const settings = useSettingsStore();
 const player = usePlayerStore();
@@ -31,6 +34,10 @@ const library = useLibraryStore();
 const route = useRoute();
 const router = useRouter();
 const audioPip = useAudioPiP();
+useNewVideoNotifications();
+useMediaSession();
+const session = useSessionPersistence();
+const showFirstRun = ref(false);
 
 const isExplorerWindow = computed(() => route.name === 'explorer-window');
 
@@ -39,6 +46,7 @@ const theme = useTheme(settings.appearance);
 onMounted(async () => {
   document.addEventListener('keydown', onGlobalKeydown);
   document.addEventListener('mousedown', onGlobalMouseDown);
+  window.addEventListener('blur', onWindowBlur);
   await settings.load();
   theme.applyTheme();
   await loadLocaleMessages(settings.appearance.locale);
@@ -48,6 +56,18 @@ onMounted(async () => {
   }
   audioPip.mode.value = settings.appearance.audioPipMode;
   audioPip.setAutoShow(settings.appearance.audioPipAutoShow);
+
+  // Restore the last played track + queue (opt-in via settings).
+  if (settings.general.restoreSession) {
+    void session.restore(router);
+  }
+
+  // First-run wizard (one time).
+  try {
+    if (!localStorage.getItem('onda-first-run-done')) showFirstRun.value = true;
+  } catch {
+    /* storage unavailable */
+  }
 
   // global media keys / tray — wire to player store
   window.api?.on('media:playPause', () => player.togglePlay());
@@ -107,15 +127,36 @@ onMounted(async () => {
     }
     explorerStore.closeTab(idx);
   });
+
+  // files opened from the OS (file associations / single-instance forwarding)
+  window.api?.on('open-files', (paths: unknown) => {
+    if (Array.isArray(paths)) {
+      const files = paths.filter((p): p is string => typeof p === 'string');
+      if (files.length) void openMediaFiles(files, router);
+    }
+  });
+
+  // Pull any files queued while the app was still starting up.
+  try {
+    const pending = (await window.api?.invoke('app:getPendingFiles')) as string[] | undefined;
+    if (Array.isArray(pending) && pending.length) {
+      const files = pending.filter((p): p is string => typeof p === 'string');
+      if (files.length) void openMediaFiles(files, router);
+    }
+  } catch {
+    /* pending files unavailable */
+  }
 });
 
 onBeforeUnmount(() => {
   moduleManager.deactivateAll();
   document.removeEventListener('keydown', onGlobalKeydown);
   document.removeEventListener('mousedown', onGlobalMouseDown);
+  window.removeEventListener('blur', onWindowBlur);
 });
 
-watch(() => settings.appearance.locale,
+watch(
+  () => settings.appearance.locale,
   async (loc) => {
     await loadLocaleMessages(loc);
     window.api?.send('pip:locale', loc);
@@ -154,6 +195,12 @@ function onGlobalMouseDown(e: MouseEvent) {
     ui.hideContextMenu();
   }
 }
+
+function onWindowBlur() {
+  if (settings.playback.autoPauseOnFocusLoss && player.isPlaying) {
+    player.pause();
+  }
+}
 </script>
 
 <template>
@@ -189,6 +236,7 @@ function onGlobalMouseDown(e: MouseEvent) {
 
     <CommandPalette />
     <ToastNotification />
+    <FirstRunWizard v-if="showFirstRun" @close="showFirstRun = false" />
 
     <div
       v-if="ui.contextMenu"

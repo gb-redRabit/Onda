@@ -79,4 +79,7 @@ export function useFileIcons() {
   return { extraSmallIcons, extraSmallIcon };
 }
 
-export type FileIcons = { extraSmallIcons: Ref<Record<string, string>>; extraSmallIcon: (item: FileItem) => string | null };
+export type FileIcons = {
+  extraSmallIcons: Ref<Record<string, string>>;
+  extraSmallIcon: (item: FileItem) => string | null;
+};

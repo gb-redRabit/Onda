@@ -3,6 +3,7 @@ import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
 import type { AudioPipState, PipMode, PipPosition } from '../shared/types/pip';
 import { computePipPosition } from './pip-position';
+import { AudioPipPreview } from './audio-pip-preview';
 
 export class AudioPipManager {
   private window: BrowserWindow | null = null;
@@ -11,6 +12,7 @@ export class AudioPipManager {
   private mode: PipMode = 'minimal';
   private position: PipPosition = 'bottom-right';
   private opacity = 0.35;
+  private preview = new AudioPipPreview();
   private cssVars: Record<string, string> = {};
   private currentState: AudioPipState = {
     trackName: '',
@@ -91,6 +93,22 @@ export class AudioPipManager {
       duration: 0,
       volume: 1
     };
+  }
+
+  showPreview(opts: { mode?: string; position?: string; opacity?: number }): boolean {
+    return this.preview.show(opts);
+  }
+
+  hidePreview(): void {
+    this.preview.hide();
+  }
+
+  updatePreview(opts: { mode?: string; position?: string; opacity?: number }): void {
+    this.preview.update(opts);
+  }
+
+  isPreviewShowing(): boolean {
+    return this.preview.isShowing();
   }
 
   private ensureWindow(): BrowserWindow {
@@ -238,6 +256,7 @@ export class AudioPipManager {
     }
     this.window = null;
     this.ready = false;
+    this.preview.destroy();
     ipcMain.removeAllListeners('audio-pip:hidden');
     ipcMain.removeAllListeners('audio-pip:showMain');
     ipcMain.removeAllListeners('audio-pip:action');

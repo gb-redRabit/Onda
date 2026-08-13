@@ -1,4 +1,7 @@
-export function getFrequencyBins(analyser: AnalyserNode | null | undefined, count: number): number[] {
+export function getFrequencyBins(
+  analyser: AnalyserNode | null | undefined,
+  count: number
+): number[] {
   try {
     if (!analyser) return [];
     const len = analyser.frequencyBinCount;

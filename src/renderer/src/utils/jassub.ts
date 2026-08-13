@@ -32,7 +32,8 @@ export async function loadJassubWasmDataUrls(): Promise<JassubWasmDataUrls> {
   ]);
   return {
     wasmDataUrl: 'data:application/wasm;base64,' + uint8ToBase64(new Uint8Array(wasmData)),
-    modernWasmDataUrl: 'data:application/wasm;base64,' + uint8ToBase64(new Uint8Array(modernWasmData))
+    modernWasmDataUrl:
+      'data:application/wasm;base64,' + uint8ToBase64(new Uint8Array(modernWasmData))
   };
 }
 

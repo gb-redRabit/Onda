@@ -9,10 +9,13 @@ import {
   detectJsRuntime,
   detectYtKind,
   normalizeYtUrl,
+  extractYtVideoId,
+  parseBatchInput,
   mapResolvedEntry,
   mapResolvedContainer,
   mapVideoEntry,
-  pickChannelThumbnail
+  pickChannelThumbnail,
+  parseNetscapeCookies
 } from '../youtube-utils';
 
 describe('formatDuration', () => {
@@ -229,7 +232,6 @@ describe('normalizeYtUrl', () => {
       'https://www.youtube.com/watch?v=LpNVf8sczqU'
     );
   });
-
   it('turns a bare channel name into an @ handle URL', () => {
     expect(normalizeYtUrl('MrMoMMusic', 'channel')).toBe('https://www.youtube.com/@MrMoMMusic');
   });
@@ -245,6 +247,46 @@ describe('normalizeYtUrl', () => {
     expect(normalizeYtUrl('https://www.youtube.com/playlist?list=PL123', 'playlist')).toBe(
       'https://www.youtube.com/playlist?list=PL123'
     );
+  });
+});
+
+describe('extractYtVideoId', () => {
+  it('extracts the ID from watch / youtu.be / shorts URLs and bare IDs', () => {
+    expect(extractYtVideoId('LpNVf8sczqU')).toBe('LpNVf8sczqU');
+    expect(extractYtVideoId('https://www.youtube.com/watch?v=LpNVf8sczqU')).toBe('LpNVf8sczqU');
+    expect(extractYtVideoId('https://youtu.be/LpNVf8sczqU')).toBe('LpNVf8sczqU');
+    expect(extractYtVideoId('https://www.youtube.com/shorts/LpNVf8sczqU')).toBe('LpNVf8sczqU');
+  });
+
+  it('returns null for playlists, channels and unknown input', () => {
+    expect(extractYtVideoId('https://www.youtube.com/playlist?list=PL123')).toBeNull();
+    expect(extractYtVideoId('https://www.youtube.com/@Channel')).toBeNull();
+    expect(extractYtVideoId('not a url')).toBeNull();
+  });
+});
+
+describe('parseBatchInput', () => {
+  it('splits newlines and commas and drops unrecognized lines', () => {
+    const entries = parseBatchInput(
+      'https://youtu.be/a1111111111\nhttps://www.youtube.com/watch?v=b2222222222\nnot a url\n'
+    );
+    expect(entries.map((e) => e.videoId)).toEqual(['a1111111111', 'b2222222222']);
+  });
+
+  it('dedupes by video ID across different URL forms', () => {
+    const entries = parseBatchInput(
+      'https://youtu.be/LpNVf8sczqU, https://www.youtube.com/watch?v=LpNVf8sczqU'
+    );
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.videoId).toBe('LpNVf8sczqU');
+  });
+
+  it('keeps playlists and channels with a null videoId', () => {
+    const entries = parseBatchInput(
+      'https://www.youtube.com/playlist?list=PL123\nhttps://www.youtube.com/@Channel'
+    );
+    expect(entries.map((e) => e.kind)).toEqual(['playlist', 'channel']);
+    expect(entries.every((e) => e.videoId === null)).toBe(true);
   });
 });
 
@@ -358,6 +400,22 @@ describe('pickChannelThumbnail', () => {
     ).toBe('https://img/big');
   });
 
+  it('prefers the square avatar over wider banner images', () => {
+    expect(
+      pickChannelThumbnail({
+        thumbnails: [
+          { url: 'https://img/banner', width: 2560, height: 424 },
+          { url: 'https://img/avatar', width: 900, height: 900 },
+          { url: 'https://img/banner2', width: 2000, height: 333 }
+        ]
+      })
+    ).toBe('https://img/avatar');
+  });
+
+  it('falls back to the single thumbnail string when no list exists', () => {
+    expect(pickChannelThumbnail({ thumbnail: 'https://img/single' })).toBe('https://img/single');
+  });
+
   it('returns empty string when there are no safe thumbnails', () => {
     expect(pickChannelThumbnail({})).toBe('');
     expect(pickChannelThumbnail({ thumbnails: [{ width: 100 }] })).toBe('');
@@ -423,5 +481,87 @@ describe('isValidCookieFile', () => {
   it('rejects files with malformed rows', () => {
     expect(isValidCookieFile('# only a comment\n')).toBe(false);
     expect(isValidCookieFile('.youtube.com\tTRUE\t/')).toBe(false);
+  });
+});
+
+describe('parseNetscapeCookies', () => {
+  it('round-trips a serialized domain cookie', () => {
+    const cookie = {
+      name: 'SID',
+      value: 'abc',
+      domain: '.youtube.com',
+      hostOnly: false,
+      path: '/',
+      secure: true,
+      expirationDate: 1710000000
+    };
+    const parsed = parseNetscapeCookies(serializeCookies([cookie]));
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0]).toMatchObject({
+      name: 'SID',
+      value: 'abc',
+      url: 'https://youtube.com/',
+      domain: 'youtube.com',
+      path: '/',
+      secure: true,
+      expirationDate: 1710000000
+    });
+  });
+
+  it('keeps host-only cookies without a domain option', () => {
+    const parsed = parseNetscapeCookies(
+      'accounts.google.com\tFALSE\t/\tTRUE\t1710000000\tSID\tabc\n'
+    );
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0].domain).toBeUndefined();
+    expect(parsed[0].url).toBe('https://accounts.google.com/');
+  });
+
+  it('builds an http url for insecure cookies', () => {
+    const parsed = parseNetscapeCookies('youtube.com\tFALSE\t/\tFALSE\t0\tVISITOR\tabc\n');
+    expect(parsed[0].url).toBe('http://youtube.com/');
+    expect(parsed[0].secure).toBe(false);
+    expect(parsed[0].expirationDate).toBeUndefined();
+  });
+
+  it('uses the cookie path in the url', () => {
+    const parsed = parseNetscapeCookies('.youtube.com\tTRUE\t/foo\tTRUE\t0\tSID\tabc\n');
+    expect(parsed[0].url).toBe('https://youtube.com/foo');
+    expect(parsed[0].path).toBe('/foo');
+  });
+
+  it('skips comments and malformed lines', () => {
+    const parsed = parseNetscapeCookies(
+      '# Netscape HTTP Cookie File\nbroken line\n.youtube.com\tTRUE\t/\tTRUE\t1710000000\tSID\tabc\n'
+    );
+    expect(parsed).toHaveLength(1);
+  });
+
+  it('round-trips a full serialized export losslessly', () => {
+    const cookies = [
+      { name: 'SID', value: 'a', domain: '.youtube.com', hostOnly: false, path: '/', secure: true },
+      {
+        name: 'LOGIN_INFO',
+        value: 'b',
+        domain: 'accounts.google.com',
+        hostOnly: true,
+        path: '/',
+        secure: true,
+        expirationDate: 1720000000
+      },
+      {
+        name: 'VISITOR',
+        value: 'c',
+        domain: 'youtube.com',
+        hostOnly: true,
+        path: '/',
+        secure: false
+      }
+    ];
+    const parsed = parseNetscapeCookies(serializeCookies(cookies));
+    expect(parsed.map((c) => c.name)).toEqual(['SID', 'LOGIN_INFO', 'VISITOR']);
+    expect(parsed[0].domain).toBe('youtube.com');
+    expect(parsed[1].domain).toBeUndefined();
+    expect(parsed[2].expirationDate).toBeUndefined();
   });
 });

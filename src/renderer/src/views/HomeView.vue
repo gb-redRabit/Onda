@@ -11,16 +11,14 @@ const library = useLibraryStore();
 
 async function openFile() {
   const result = (await window.api?.invoke('dialog:openFile')) as
-    | { filePaths: string[]; canceled: boolean }
-    | undefined;
+    { filePaths: string[]; canceled: boolean } | undefined;
   if (!result || result.canceled || !result.filePaths.length) return;
   await openMediaFiles(result.filePaths, router);
 }
 
 async function openFolder() {
   const result = (await window.api?.invoke('dialog:openFolderFiles')) as
-    | { filePaths: string[]; canceled: boolean }
-    | undefined;
+    { filePaths: string[]; canceled: boolean } | undefined;
   if (!result || result.canceled || !result.filePaths.length) return;
   await openMediaFiles(result.filePaths, router);
 }

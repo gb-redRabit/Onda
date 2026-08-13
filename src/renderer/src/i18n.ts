@@ -15,6 +15,13 @@ function detectLocale(): Locale {
   return 'en';
 }
 
+// Resolves a UI locale ('auto' → system language).
+export function resolveLocale(loc: string): Locale {
+  if (loc === 'pl' || loc === 'en') return loc;
+  const sysLang = navigator.language || '';
+  return sysLang.startsWith('pl') ? 'pl' : 'en';
+}
+
 // Static map keeps the imports analyzable for Vite (code-splits each locale).
 const localeLoaders: Record<Locale, () => Promise<LocaleModule>> = {
   pl: () => import('./locales/pl'),
@@ -32,12 +39,13 @@ export const i18n = createI18n({
 });
 
 export async function loadLocaleMessages(loc: string): Promise<void> {
-  const current = i18n.global.getLocaleMessage(loc);
+  const resolved = resolveLocale(loc);
+  const current = i18n.global.getLocaleMessage(resolved);
   if (current && Object.keys(current).length) {
-    i18n.global.locale.value = loc;
+    i18n.global.locale.value = resolved;
     return;
   }
-  const mod = await localeLoaders[loc as Locale]();
-  i18n.global.setLocaleMessage(loc, mod.default);
-  i18n.global.locale.value = loc;
+  const mod = await localeLoaders[resolved]();
+  i18n.global.setLocaleMessage(resolved, mod.default);
+  i18n.global.locale.value = resolved;
 }

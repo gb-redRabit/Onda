@@ -13,7 +13,9 @@ export function isEdgeMode(mode: PipMode): boolean {
 
 export function resolveAudioPipPosition(mode: PipMode): string {
   const settings = useSettingsStore();
-  return isEdgeMode(mode) ? settings.appearance.audioPipEdgePosition : settings.appearance.audioPipPosition;
+  return isEdgeMode(mode)
+    ? settings.appearance.audioPipEdgePosition
+    : settings.appearance.audioPipPosition;
 }
 
 export function getFrequencyBins(): number[] {

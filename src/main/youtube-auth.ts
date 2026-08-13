@@ -1,8 +1,15 @@
 import { app, BrowserWindow, session } from 'electron';
 import { join } from 'path';
-import { writeFile, unlink, readFile, copyFile } from 'fs/promises';
+import { randomUUID } from 'crypto';
+import { readFile, unlink, copyFile } from 'fs/promises';
 import { getStore } from './ipc/cover-cache';
-import { serializeCookies, isValidCookieFile, type YtAuthConfig } from './ipc/youtube-utils';
+import { writeFileRestricted } from './utils/file-permissions';
+import {
+  serializeCookies,
+  isValidCookieFile,
+  parseNetscapeCookies,
+  type YtAuthConfig
+} from './ipc/youtube-utils';
 import type { YoutubeAuthSettings, YoutubeAuthMethod } from '../renderer/src/types/settings';
 import { logger } from '../shared/logger';
 
@@ -81,8 +88,16 @@ async function hasYouTubeSession(): Promise<boolean> {
 // empty list, so right after a restart the app reports "not logged in" even
 // though the session survived on disk. Loading a hidden about:blank page on the
 // auth partition forces the store to hydrate so the cookies API sees it.
+//
+// The hidden window is only created when the persisted cookie file (source of
+// truth) actually holds a session — with nothing to hydrate a window would just
+// be created and destroyed at startup, churning with the splash/main windows
+// and emitting blink.mojom.WidgetHost rejection noise. During a login the
+// visible login window itself hydrates the same partition, so the guard never
+// blocks session detection there.
 let sessionWarmPromise: Promise<void> | null = null;
 async function ensureSessionLoaded(): Promise<void> {
+  if (!(await cookieFileHasValidYouTubeSession())) return;
   if (!sessionWarmPromise) {
     sessionWarmPromise = (async () => {
       const win = new BrowserWindow({
@@ -101,29 +116,96 @@ async function ensureSessionLoaded(): Promise<void> {
   await sessionWarmPromise;
 }
 
-// Re-exports the persisted session to the Netscape cookie file yt-dlp reads.
-// Requires at least one .youtube.com session cookie — Google-wide cookies alone
-// are not enough to unlock age-restricted content.
-export async function exportSessionCookies(): Promise<boolean> {
+// Re-seeds the auth partition from the persisted cookie file. The exported file
+// is the source of truth (yt-dlp reads it) and survives restarts even when the
+// Chromium partition store does not hydrate in time — without a live session the
+// app would log "no .youtube.com session cookies" on every yt-dlp call while
+// still working through the file fallback. After a successful restore the next
+// exportSessionCookies() re-writes a fresh file from the live partition.
+export async function restorePartitionSession(): Promise<boolean> {
   try {
     await ensureSessionLoaded();
-    const cookies = await session.fromPartition(AUTH_PARTITION).cookies.get({});
-    const ytSession = hasSessionCookies(cookies, YT_COOKIE_HOST);
-    if (ytSession.length === 0) {
-      logger.warn('ytauth', 'export skipped — no .youtube.com session cookies');
-      return false;
+    const ses = session.fromPartition(AUTH_PARTITION);
+    if (hasSessionCookies(await ses.cookies.get({}), YT_COOKIE_HOST).length > 0) return true;
+    if (!(await cookieFileHasValidYouTubeSession())) return false;
+    const content = await readFile(cookiesFilePath(), 'utf-8');
+    for (const cookie of parseNetscapeCookies(content)) {
+      try {
+        await ses.cookies.set({
+          url: cookie.url,
+          name: cookie.name,
+          value: cookie.value,
+          path: cookie.path,
+          secure: cookie.secure,
+          ...(cookie.domain ? { domain: cookie.domain } : {}),
+          ...(cookie.expirationDate ? { expirationDate: cookie.expirationDate } : {})
+        });
+      } catch {
+        // Individual cookies can be rejected; the SID-family ones are what matter.
+      }
     }
-    const eol = process.platform === 'win32' ? '\r\n' : '\n';
-    await writeFile(cookiesFilePath(), serializeCookies(cookies, eol), { mode: 0o600 });
-    logger.info('ytauth', 'cookies exported', {
-      total: cookies.length,
-      ytSession: ytSession.map((c) => c.name)
-    });
+    try {
+      ses.cookies.flushStore();
+    } catch {
+      // flushStore is unavailable in older Electron — cookies still persist.
+    }
+    return hasSessionCookies(await ses.cookies.get({}), YT_COOKIE_HOST).length > 0;
+  } catch (e) {
+    logger.warn('ytauth', 'restorePartitionSession failed', e);
+    return false;
+  }
+}
+
+// Serializes the live .youtube.com session cookies from the auth partition into
+// a Netscape cookie string, or returns null when no session is present.
+async function serializedSessionCookies(): Promise<string | null> {
+  await ensureSessionLoaded();
+  const cookies = await session.fromPartition(AUTH_PARTITION).cookies.get({});
+  if (hasSessionCookies(cookies, YT_COOKIE_HOST).length === 0) {
+    logger.warn('ytauth', 'export skipped — no .youtube.com session cookies');
+    return null;
+  }
+  const eol = process.platform === 'win32' ? '\r\n' : '\n';
+  return serializeCookies(cookies, eol);
+}
+
+// Re-exports the persisted session to the Netscape cookie file that survives
+// restarts (source of truth for the auth partition hydration). Written with
+// 0600 (POSIX) / current-user-only ACL (Windows) so it is not world-readable.
+export async function exportSessionCookies(): Promise<boolean> {
+  try {
+    const content = await serializedSessionCookies();
+    if (content === null) return false;
+    await writeFileRestricted(cookiesFilePath(), content);
+    logger.info('ytauth', 'cookies exported');
     return true;
   } catch (e) {
     logger.warn('ytauth', 'exportSessionCookies failed', e);
     return false;
   }
+}
+
+// Writes the live session to a temporary file for a single yt-dlp process. The
+// caller owns the file and must delete it via cleanupYtAuthTemp() when done —
+// the session never lingers as a copyable file beyond the process lifetime.
+async function writeTempSessionCookies(): Promise<string | null> {
+  try {
+    const content = await serializedSessionCookies();
+    if (content === null) return null;
+    const tmpPath = join(app.getPath('temp'), `onda-yt-cookies-${randomUUID()}.txt`);
+    await writeFileRestricted(tmpPath, content);
+    return tmpPath;
+  } catch (e) {
+    logger.warn('ytauth', 'writeTempSessionCookies failed', e);
+    return null;
+  }
+}
+
+// Deletes a temporary cookie file created by writeTempSessionCookies. Safe to
+// call with any auth config — only files flagged as temporary are removed.
+export async function cleanupYtAuthTemp(auth?: YtAuthConfig | null): Promise<void> {
+  if (!auth || !auth.temp || !auth.cookiesPath) return;
+  await unlink(auth.cookiesPath).catch(() => {});
 }
 
 async function isValidCookieFileAt(path?: string): Promise<boolean> {
@@ -267,7 +349,7 @@ export async function importCookiesFromFile(
       return { success: false, error: 'Invalid cookies file format (Netscape expected)' };
     }
     const eol = process.platform === 'win32' ? '\r\n' : '\n';
-    await writeFile(cookiesFilePath(), content.replace(/\r?\n/g, eol), { mode: 0o600 });
+    await writeFileRestricted(cookiesFilePath(), content.replace(/\r?\n/g, eol));
     await setAuthSettings({
       method: 'manual',
       cookiesPath: cookiesFilePath(),
@@ -314,8 +396,14 @@ export async function getAuthStatus(): Promise<YoutubeAuthStatus> {
   };
   try {
     if (settings.method === 'electron') {
-      status.loggedIn =
-        (await exportSessionCookies()) || (await cookieFileHasValidYouTubeSession());
+      status.loggedIn = await exportSessionCookies();
+      if (!status.loggedIn) {
+        // Cold start / partition loss — rebuild the live session from the
+        // persisted file so the status is stable across restarts.
+        await restorePartitionSession();
+        status.loggedIn =
+          (await exportSessionCookies()) || (await cookieFileHasValidYouTubeSession());
+      }
     } else if (settings.method === 'manual') {
       status.loggedIn = await isValidCookieFileAt(settings.cookiesPath);
     } else if (settings.method === 'browser') {
@@ -328,17 +416,21 @@ export async function getAuthStatus(): Promise<YoutubeAuthStatus> {
   return status;
 }
 
-// Auth flags for every yt-dlp invocation. For the in-app session this refreshes
-// the cookie file from the partition so the file never goes stale.
+// Auth flags for every yt-dlp invocation. For the in-app session this writes a
+// fresh, temporary cookie file (deleted by the caller via cleanupYtAuthTemp)
+// so the session is never left as a copyable file on disk beyond the process.
 export async function getYtAuthConfig(): Promise<YtAuthConfig | null> {
   const settings = await getAuthSettings();
   if (settings.method === 'none') return null;
   if (settings.method === 'electron') {
-    if (await exportSessionCookies()) return { method: 'electron', cookiesPath: cookiesFilePath() };
-    if (await cookieFileHasValidYouTubeSession()) {
-      return { method: 'electron', cookiesPath: cookiesFilePath() };
+    let tmpPath = await writeTempSessionCookies();
+    if (!tmpPath) {
+      // The partition lost the live session — try to bring it back from the
+      // persisted file, then export again.
+      await restorePartitionSession();
+      tmpPath = await writeTempSessionCookies();
     }
-    return null;
+    return tmpPath ? { method: 'electron', cookiesPath: tmpPath, temp: true } : null;
   }
   if (settings.method === 'manual') {
     if (!(await isValidCookieFileAt(settings.cookiesPath))) return null;

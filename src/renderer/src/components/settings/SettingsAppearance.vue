@@ -47,7 +47,8 @@ const themes: {
   { id: 'dark', labelKey: 'settings.dark', label: 'Ciemny', bg: '#0f0f17', fg: '#e8e8f0' },
   { id: 'light', labelKey: 'settings.light', label: 'Jasny', bg: '#f8f8fa', fg: '#1a1a2e' },
   { id: 'midnight', label: 'Midnight', bg: '#0d1117', fg: '#c9d1d9' },
-  { id: 'spotify', label: 'Spotify', bg: '#121212', fg: '#b3b3b3' }
+  { id: 'spotify', label: 'Spotify', bg: '#121212', fg: '#b3b3b3' },
+  { id: 'custom', labelKey: 'settings.custom', label: 'Własny', bg: '#7c6aef', fg: '#ffffff' }
 ];
 
 const accentColors = [
@@ -90,12 +91,34 @@ const accentColors = [
         >
           <div
             class="w-full h-8 rounded-lg mb-2 flex items-center justify-center"
-            :style="{ backgroundColor: th.bg }"
+            :style="{
+              backgroundColor:
+                th.id === 'custom' ? settings.appearance.customBackground || '#7c6aef' : th.bg
+            }"
           >
             <div class="w-6 h-1 rounded-full" style="background: #7c6aef" />
           </div>
           <span class="text-xs text-fg-muted">{{ th.labelKey ? $t(th.labelKey) : th.label }}</span>
         </button>
+      </div>
+    </SettingsCard>
+
+    <SettingsCard v-if="settings.appearance.theme === 'custom'">
+      <SettingsSectionTitle :title="$t('settings.customBackground')" />
+      <div class="flex items-center gap-4">
+        <input
+          type="color"
+          class="w-12 h-10 rounded-lg bg-bg-base border border-border-default cursor-pointer"
+          :value="settings.appearance.customBackground || '#0f0f17'"
+          @input="
+            settings.updateAppearance({
+              customBackground: ($event.target as HTMLInputElement).value
+            })
+          "
+        />
+        <span class="text-sm font-mono text-fg-muted">
+          {{ settings.appearance.customBackground || '#0f0f17' }}
+        </span>
       </div>
     </SettingsCard>
 
@@ -181,7 +204,9 @@ const accentColors = [
         :model-value="settings.appearance.sidebarPosition"
         :options="sidebarPositionOptions"
         :selected-label="t(`settings.${settings.appearance.sidebarPosition}`)"
-        @update:model-value="settings.updateAppearance({ sidebarPosition: $event as 'left' | 'right' })"
+        @update:model-value="
+          settings.updateAppearance({ sidebarPosition: $event as 'left' | 'right' })
+        "
       />
     </SettingsCard>
 

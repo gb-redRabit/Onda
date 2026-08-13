@@ -1,7 +1,23 @@
-appId: com.electron.app
-productName: onda
+appId: com.onda.app
+productName: Onda
 directories:
   buildResources: build
+fileAssociations:
+  - ext:
+      - mp3
+      - flac
+      - ogg
+      - wav
+      - m4a
+      - aac
+      - mp4
+      - mkv
+      - webm
+      - mov
+      - avi
+    name: Onda Media
+    description: Play audio and video in Onda
+    role: Viewer
 files:
   - '!**/.vscode/*'
   - '!src/*'
@@ -11,6 +27,11 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 asarUnpack:
   - resources/**
+extraResources:
+  - from: resources/ffmpeg
+    to: ffmpeg
+    filter:
+      - '**/*'
 win:
   executableName: onda
   # Code-signing / update verification (Windows).
@@ -22,10 +43,15 @@ win:
   verifyUpdateCodeSignature: false
   # publisherName: ${env.CODE_SIGN_PUBLISHER}
 nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  runAfterFinish: true
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
-  createDesktopShortcut: always
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
@@ -44,7 +70,7 @@ linux:
     - AppImage
     - snap
     - deb
-  maintainer: electronjs.org
+  maintainer: gb-redRabit
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}

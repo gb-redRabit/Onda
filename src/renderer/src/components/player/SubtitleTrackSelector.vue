@@ -69,7 +69,12 @@ async function uploadSubtitles() {
           v-if="player.subtitleTracks.some((t) => t.source === 'embedded')"
           class="border-t border-border-default my-1 mx-2"
         />
-        <div v-if="player.subtitleTracks.some((t) => t.source === 'embedded')" class="px-3 py-1 text-[10px] text-fg-faint/60">{{ $t('subtitles.embedded') }}</div>
+        <div
+          v-if="player.subtitleTracks.some((t) => t.source === 'embedded')"
+          class="px-3 py-1 text-[10px] text-fg-faint/60"
+        >
+          {{ $t('subtitles.embedded') }}
+        </div>
         <button
           v-for="track in player.subtitleTracks.filter((t) => t.source === 'embedded')"
           :key="track.id"
@@ -86,7 +91,12 @@ async function uploadSubtitles() {
           v-if="player.subtitleTracks.some((t) => t.source === 'external')"
           class="border-t border-border-default my-1 mx-2"
         />
-        <div v-if="player.subtitleTracks.some((t) => t.source === 'external')" class="px-3 py-1 text-[10px] text-fg-faint/60">{{ $t('subtitles.fromFolder') }}</div>
+        <div
+          v-if="player.subtitleTracks.some((t) => t.source === 'external')"
+          class="px-3 py-1 text-[10px] text-fg-faint/60"
+        >
+          {{ $t('subtitles.fromFolder') }}
+        </div>
         <button
           v-for="track in player.subtitleTracks.filter((t) => t.source === 'external')"
           :key="track.id"
@@ -103,7 +113,12 @@ async function uploadSubtitles() {
           v-if="player.subtitleTracks.some((t) => t.source === 'custom')"
           class="border-t border-border-default my-1 mx-2"
         />
-        <div v-if="player.subtitleTracks.some((t) => t.source === 'custom')" class="px-3 py-1 text-[10px] text-fg-faint/60">{{ $t('subtitles.custom') }}</div>
+        <div
+          v-if="player.subtitleTracks.some((t) => t.source === 'custom')"
+          class="px-3 py-1 text-[10px] text-fg-faint/60"
+        >
+          {{ $t('subtitles.custom') }}
+        </div>
         <button
           v-for="track in player.subtitleTracks.filter((t) => t.source === 'custom')"
           :key="track.id"

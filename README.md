@@ -1,196 +1,173 @@
 # Onda
 
-Desktopowy odtwarzacz muzyki i wideo zbudowany na **Electron + Vue 3 + TypeScript + Tailwind CSS**.
+<div align="center">
+  <img src="https://img.shields.io/badge/Electron-43.2-47848f?style=flat&logo=electron&logoColor=white" alt="Electron" />
+  <img src="https://img.shields.io/badge/Vue.js-3.5-4FC08D?style=flat&logo=vue.js&logoColor=white" alt="Vue 3" />
+  <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-4.3-38B2AC?style=flat&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/Vitest-3.2-6E9F18?style=flat&logo=vitest&logoColor=white" alt="Vitest" />
+</div>
 
-Odtwarza lokalne pliki audio/wideo, zarządza biblioteką mediów z metadanymi ID3, eksploruje pliki, wyświetla zdjęcia (lightbox z slideshow), obsługuje napisy ASS/SRT/VTT z wyciąganiem czcionek z MKV, 10-pasmowy equalizer, wizualizację audio, kolejki odtwarzania, Picture-in-Picture oraz pełny system motywów.
+<br>
+
+**Onda** to zaawansowany, desktopowy odtwarzacz muzyki i wideo zbudowany na stosie **Electron + Vue 3 + TypeScript + Tailwind CSS**. Odtwarza lokalne pliki audio i wideo, zarządza biblioteką multimediów z metadanymi, eksploruje system plików, wyświetla obrazy, obsługuje napisy (ASS/SRT/VTT) i pobiera media z YouTube.
+
+---
 
 ## Funkcje
 
 ### Odtwarzanie
 
-- **Silnik audio** — HTML5 Audio + Web Audio API z gapless playback
-- **Equalizer** — 10 pasm + presety + custom presets + krzywa odpowiedzi
-- **Wizualizacja** — style bars / wave / radial (Canvas + AnalyserNode), 3 layouty AudioView
-- **Kolejka i historia** — z drag & drop (przeciąganie, shuffle, repeat all/one/none)
-- **Wideo** — fullscreen, Picture-in-Picture, OSD, playback rate (0.2–3.0x), filtry wideo, skip zone
-- **Audio AC3/DTS → AAC** — automatyczne transkodowanie chunk-first (~1s do pierwszego dźwięku) dla kodeków niewspieranych przez Chromium
-- **Gapless** — native HTML5 Audio z Web Audio API (brak przerw między utworami)
-- **ReplayGain** — normalizacja głośności, zapamiętywanie pozycji
+- **Silnik audio** oparty o Web Audio API, oddzielony od UI (EventBus) — audio gra w tle także przy przełączaniu widoków.
+- **10-pasmowy equalizer** z presetami, regulacja głośności, seek, kolejka odtwarzania z przeciąganiem, tasowanie i powtarzanie (all/one/none).
+- **Wizualizacje audio** (circle / bars / particles / wave / radial) renderowane na canvasie z użyciem `AnalyserNode`.
+- **Odtwarzanie wideo** — HTML5, pełny ekran, Picture-in-Picture, prędkość 0.2–3.0×, filtry, strefy pomijania (skip zones), OSD.
+- **Transkodowanie w locie** (chunk-first) kodeków niewspieranych przez Chromium (np. AC3/DTS → AAC) do osobnego toru audio.
+- **Media Session API** — metadata i sterowanie (odtwórz/pauza/następny/poprzedni/seek) z poziomu systemu i ekranu blokady.
 
-### Napisy (ASS/SRT/VTT)
+### Napisy
 
-- Renderowanie ASS przez **JASSUB** (wasm + web worker, canvas overlay)
-- Parser SRT/VTT/ASS — automatyczne wykrywanie formatu
-- Wyciąganie czcionek z załączników MKV (mkvextract)
-- Lokalne fonty Windows (19 fontów) + Google Fonts fallback (lfa-ponyfill)
-- Wiele ścieżek napisów, przełączanie w locie
+- ASS/SRT/VTT/SSA, napisy zewnętrzne i osadzone, renderowanie ASS przez **JASSUB** (Wasm + Web Worker).
+- Ekstrakcja czcionek z załączników MKV (`mkvextract`).
+- Przełączanie ścieżek napisów w locie.
+
+### Biblioteka multimediów
+
+- Skanowanie folderów z **incremental scan** (niezmienione pliki nie są parsowane ponownie) i **watcherem plików** (`chokidar` — automatyczne odświeżanie przy zmianach na dysku).
+- Metadane audio (ID3/FLAC/MP4) przez `music-metadata`, okładki (pamięć + cache na dysku, `sharp`).
+- Widoki: lista utworów, siatka wideo/albumów, drzewo folderów, artyści, playlisty, obrazy.
+- Edycja tagów ID3, wyszukiwanie/uzupełnianie metadanych z **MusicBrainz**, ulubione, statystyki odtworzeń.
 
 ### Eksplorator plików
 
-- 6 trybów widoku (extraSmall → details) z virtual scrollingiem (@tanstack/vue-virtual)
-- Breadcrumb nawigacja, streaming readdir (batch 200 plików)
-- Menu kontekstowe: rename (F2), delete, showInFolder, copyPath, openWith, new folder
-- Multi-select, Ctrl+scroll zoom, ikony plików (shell:getFileIcon z LRU cache)
-- Otwieranie obrazków w ImageViewer, mediów w Player, folderów bibliotecznych
+- Dyski, foldery, zakładki, breadcrumb, 6 trybów widoku z wirtualizacją (`@tanstack/vue-virtual`).
+- Zaznaczanie wielokrotne, kopiowanie/przenoszenie/usuwanie, zmiana nazwy, duplikaty, właściwości, terminal, otwieranie w aplikacji domyślnej.
+- **ImageViewer** (lightbox) z przejściami, zoomem, rotacją, pokazem slajdów i paskiem miniatur.
 
-### ImageViewer (lightbox)
+### YouTube i pobieranie
 
-- Przejścia: fade, slide, zoom, swirl, slideUp, slideDown, zoomOut, random
-- Zoom (0.2–5x) z debounce + GPU acceleration, rotacja, fit to screen
-- Fullscreen API, pokaz slajdów z konfigurowalnym interwałem
-- Ken Burns effect, shuffle (Fisher-Yates), progress bar
-- Pasek miniaturek z lazy cache + scroll-to-current
-- Downscale 1920px przez HTTP server, full-res przy zoom >1.5×
+- Wyszukiwanie, rozpoznawanie linków (wideo / playlista / kanał), widok kanału z zakładkami Wideo/Shorts i nieskończonym przewijaniem.
+- Subskrypcje kanałów z automatycznym sprawdzaniem nowych wideo i powiadomieniami.
+- **Pobieranie** (yt-dlp): kolejka audio/wideo, progres, prędkość, ETA, anulowanie, retry i wznowienie, okładki (miniatura / klatka / clip wideo), metadane, podfoldery kanału/playlisty.
+- Integracja z biblioteką: pobrane pliki lądują w bibliotece (jeśli folder docelowy jest folderem biblioteki).
 
-### Biblioteka mediów
+### PiP (Picture-in-Picture)
 
-- Skanowanie folderów + metadane przez music-metadata (ID3/FLAC/MP4)
-- Okładki: lazy loading, memory + disk cache (sharp-resized JPEG), batch processing
-- Widoki: Tracks (lista), Video (siatka), Foldery (drzewo), Artyści (karty), Albumy (siatka), Playlisty
-- Virtual scrolling we wszystkich widokach
-- Edycja tagów ID3 (title, artist, album, year, genre, track, cover)
-- MusicBrainz lookup — wyszukiwanie + auto-fill metadanych i okładek
-- Playlisty (tworzenie, edycja, usuwanie, dodawanie/usuwanie utworów)
-- Ulubione (favorites z persystencją w electron-store)
+- Osobne okna dla wideo i audio, pozycja, rozmiar, always-on-top, podgląd.
 
-### Ustawienia (12 paneli)
+### System i integracja
 
-- Appearance — motyw (dark/light/midnight/spotify), kolor akcentu, rozmiar czcionki
-- Playback — cursor hide, prędkość domyślna, filtry wideo
-- PiP — pozycja (4 rogi), rozmiar, podgląd na żywo
-- Download — ścieżka, jakość
-- Shortcuts — podgląd skrótów
-- Network — proxy
-- API Keys — YouTube, MusicBrainz, Last.fm
-- Updates — auto-check
-- Toast — pozycja, filtry powiadomień
-- Language — PL/EN
-- Library — zarządzanie folderami bibliotecznymi
-- Dependencies — status + instalacja FFmpeg, yt-dlp, MKVToolbox
+- **Autostart** (uruchamianie przy starcie systemu, start zminimalizowany do trayu, ukrywanie do trayu po zamknięciu).
+- **Skojarzenia plików** (mp3, flac, ogg, wav, m4a, aac, mp4, mkv, webm, mov, avi) i **single-instance** (otwieranie plików z systemu trafia do istniejącej instancji).
+- Globalne skróty (media keys), tray, command palette (Ctrl+K), aktualizacje (`electron-updater`).
+- Lokalizacja **PL/EN**, motywy (dark / light / midnight / spotify).
 
-### Inne
+### Ustawienia (14 paneli)
 
-- **i18n** — pełna internacjonalizacja PL/EN (~400 kluczy), przełączanie locale
-- **Picture-in-Picture** — osobne okno z niezależnym odtwarzaniem, napisami i synchronizacją czasu; audio PiP z 4 trybami (minimal, medium, max, wide), wizualizacją canvas 60fps, okładkami (image/video), EQ presetami i stanem przycisków
-- **Splash screen** — animowana wizualizacja dźwiękowa na canvas (standalone HTML, zero deps)
-- **Media Session API** — systemowe kontrolki multimedialne
-- **Tray icon** — Play/Pause, Next, Previous, Show, Quit
-- **Global shortcuts** — MediaPlayPause, MediaNextTrack, MediaPreviousTrack, MediaStop
-- **Command palette** — Ctrl+K, szybkie wyszukiwanie + akcje
-- **Drag & drop** — przeciąganie plików z systemu (webUtils.getPathForFile)
-- **Auto-updates** — electron-updater (szkic)
+Ogólne · Wygląd · Odtwarzanie · PiP · Pobieranie · Skróty · Powiadomienia · Sieć · Klucze API · Aktualizacje · Diagnostyka · Informacje · Biblioteka · Zależności
 
-## Architektura
-
-Aplikacja jest **modułowa** — każdy główny widok (player, explorer, library, youtube, home, settings) to niezależny moduł z własnym cyklem życia (`init` → `activate` → `deactivate` → `destroy`). Centralny **ModuleManager** steruje przełączaniem z obsługą zależności i priorytetów.
-
-**Kluczowe zasady:**
-
-- **Audio w tle** — muzyka gra dalej podczas nawigacji do innych widoków
-- **Separacja audio/wideo** — niezależny stan czasu i odtwarzania
-- **EventBus** — luźne sprzężenie między silnikiem audio a warstwą UI
-- **Lokalny HTTP server dla mediów** — `http://127.0.0.1:PORT/?path=` zamiast `file://`/`onda://` dla `<video>`/`<audio>` (omija blokadę CSP przy `webSecurity: true`)
-- **IPC podzielony na 13 plików** — fs-handlers, media-handlers, library-handlers, subtitle-handlers, cover-cache, dialog-handlers, dependency-handlers, settings-handlers, playback-handlers, youtube-handlers, musicbrainz, cover-handlers + orkiestrator
+---
 
 ## Stos technologiczny
 
-| Warstwa          | Technologia                                 |
-| ---------------- | ------------------------------------------- |
-| Runtime          | Electron 39.8                               |
-| Framework UI     | Vue 3.5 (Composition API, `<script setup>`) |
-| Język            | TypeScript 5.9                              |
-| Build            | electron-vite 5 + Vite 7.2                  |
-| CSS              | Tailwind CSS 4.3                            |
-| Stan             | Pinia 3 + pinia-plugin-persistedstate       |
-| i18n             | vue-i18n 11 (PL/EN, ~400 kluczy)            |
-| Routing          | vue-router 4 (hash history, lazy loading)   |
-| Metadane         | music-metadata, jsmediatags, node-id3       |
-| Napisy ASS       | JASSUB 2.5 (wasm + web worker)              |
-| Font fallback    | lfa-ponyfill (Font Access API)              |
-| Wirtualne listy  | @tanstack/vue-virtual                       |
-| Ikony            | @lucide/vue                                 |
-| Utilitki         | @vueuse/core                                |
-| Obróbka obrazków | sharp (libvips)                             |
-| Testy            | Vitest + jsdom                              |
-| Linting          | ESLint 9 + Prettier 3                       |
-| Packaging        | electron-builder (NSIS/DMG/AppImage)        |
+| Komponent      | Technologia                                 |
+| -------------- | ------------------------------------------- |
+| Runtime        | Electron 43.2                               |
+| Frontend       | Vue 3.5 (Composition API, `<script setup>`) |
+| Język          | TypeScript 5.9 (strict)                     |
+| Builder        | electron-vite 5 + Vite 7.2                  |
+| Style          | Tailwind CSS 4.3                            |
+| Stan           | Pinia 3                                     |
+| Lokalizacja    | vue-i18n 11 (PL/EN)                         |
+| Routing        | vue-router 4 (hash history, lazy loading)   |
+| Metadane       | music-metadata, node-id3                    |
+| Wirtualizacja  | @tanstack/vue-virtual                       |
+| Obrazy         | sharp (libvips)                             |
+| Napisy         | jassub (Wasm)                               |
+| Watcher plików | chokidar                                    |
+| Testy          | Vitest + jsdom                              |
+| Pakiety        | electron-builder (NSIS/DMG/AppImage)        |
+
+---
 
 ## Zależności zewnętrzne (nie-NPM)
 
-Niektóre funkcje wymagają narzędzi zewnętrznych (instalowanych z poziomu Ustawień → Dependencies):
+Niektóre funkcje wymagają narzędzi systemowych — status można sprawdzić i zainstalować w panelu **Ustawienia → Zależności**:
 
-- **FFmpeg / FFprobe** — transkodowanie audio (AC3/DTS → AAC), napisy, klatka z wideo, duration (`choco install ffmpeg`)
-- **MKVToolNix (mkvextract)** — wyciąganie czcionek z załączników MKV (`choco install mkvtoolnix`)
-- **yt-dlp** — pobieranie z YouTube (binary z GitHub Releases)
+- **FFmpeg / FFprobe** — transkodowanie audio w locie, ekstrakcja klatek, miniatury.
+- **yt-dlp** — pobieranie z YouTube.
+- **MKVToolNix (mkvextract)** — ekstrakcja osadzonych czcionek z `.mkv`.
+
+---
 
 ## Uruchomienie
 
-### Instalacja
+Wymagania: **Node.js ≥ 22.12**.
 
 ```bash
 npm install
-```
-
-### Development
-
-```bash
 npm run dev
 ```
 
 ### Testy
 
+Aplikacja zawiera **321 testów** (Vitest):
+
 ```bash
-npm test          # 190 testów (Vitest)
+npm test
 npm run test:watch
 ```
 
 ### Build
 
 ```bash
-# Windows (NSIS)
-npm run build:win
-
-# macOS (DMG)
-npm run build:mac
-
-# Linux (AppImage/snap/deb)
-npm run build:linux
+npm run build          # typecheck + build (main/preload/renderer)
+npm run build:win      # instalator NSIS (Windows)
+npm run build:mac      # DMG (macOS)
+npm run build:linux    # AppImage / snap / deb (Linux)
 ```
 
-## Komendy
+---
 
-| Komenda               | Cel                            |
-| --------------------- | ------------------------------ |
-| `npm run dev`         | Dev server                     |
-| `npm run build`       | Typecheck + build              |
-| `npm run typecheck`   | Typecheck node + web (vue-tsc) |
-| `npm run test`        | Testy (Vitest)                 |
-| `npm run test:watch`  | Testy — watch mode             |
-| `npm run lint`        | ESLint                         |
-| `npm run format`      | Prettier                       |
-| `npm run start`       | Preview build                  |
-| `npm run build:win`   | NSIS installer                 |
-| `npm run build:mac`   | DMG                            |
-| `npm run build:linux` | AppImage/snap/deb              |
+## Skrypty
 
-## Status
+| Polecenie              | Opis                                        |
+| ---------------------- | ------------------------------------------- |
+| `npm run dev`          | Serwer deweloperski z hot reload            |
+| `npm run build`        | Typecheck + build produkcyjny               |
+| `npm run typecheck`    | Weryfikacja typów (main/preload + renderer) |
+| `npm test`             | Testy jednostkowe                           |
+| `npm run lint`         | ESLint                                      |
+| `npm run format`       | Prettier (formatowanie)                     |
+| `npm run format:check` | Sprawdzenie formatowania                    |
+| `npm run start`        | Podgląd zbudowanej paczki                   |
+| `npm run build:win`    | Instalator Windows (NSIS)                   |
 
-| Obszar                                                                  | Status         |
-| ----------------------------------------------------------------------- | -------------- |
-| Fundament i architektura modułowa                                       | ✅             |
-| Splash screen                                                           | ✅             |
-| UI skeleton + nawigacja + system motywów                                | ✅             |
-| Odtwarzacz audio — gapless, EQ, wizualizacja, AudioView (3 layouty)     | ✅             |
-| Odtwarzacz wideo — fullscreen, PiP, napisy ASS/SRT/VTT, OSD             | ✅             |
-| Transkodowanie AC3/DTS → AAC chunk-first                                | ✅             |
-| Eksplorator plików — 6 widoków, virtual scroll, streaming, context menu | ✅             |
-| ImageViewer — lightbox, slideshow, Ken Burns, zoom, przejścia           | ✅             |
-| Biblioteka mediów — skanowanie, metadane, playlisty, ulubione           | ✅             |
-| Edycja tagów ID3 + MusicBrainz lookup                                   | ✅             |
-| Ustawienia (12 paneli)                                                  | ✅ (częściowo) |
-| i18n PL/EN                                                              | ✅             |
-| Picture-in-Picture                                                      | ✅             |
-| YouTube integration                                                     | ❌ (szkielet)  |
-| Ekran pobierania                                                        | ❌ (szkielet)  |
+---
 
+## Architektura
 
+Aplikacja ma strukturę modułową z czystym rozdziałem procesów Electrona:
+
+- **main** — cykl życia aplikacji, IPC, media server, downloader, updater, zależności, watcher biblioteki.
+- **preload** — ograniczone, typowane API wystawiane do renderera (contextIsolation + sandbox).
+- **renderer** — widoki zarządzane przez `ModuleManager` (cykl `init → activate → deactivate → destroy`).
+- **shared** — wspólne typy, stałe i helpery.
+
+Kluczowe koncepty:
+
+- **Separacja audio/wideo** — `AudioEngine` (Web Audio API) jest niezależny od `<video>` i komunikuje się z UI wyłącznie przez EventBus.
+- **Lokalny serwer mediów** — wideo i obrazy są serwowane przez lokalny HTTP z tokenem, obsługą `Range` i fail-closed whitelistą katalogów (omijanie CSP i `file://`).
+- **Bezpieczeństwo** — `sandbox`, `contextIsolation`, `nodeIntegration: false`, `webSecurity: true`, walidacja argumentów IPC po stronie main, szyfrowanie sekretów (`safeStorage`).
+
+Szczegółowe zasady dla współtwórców: [`zasady.md`](./docs/zasady.md), procedura wydania: [`RELEASE.md`](./docs/RELEASE.md).
+
+---
+
+## Współpraca
+
+Zgłoszenia i pull requesty mile widziane. Przed commitem uruchom `npm run build` i `npm test`.
+
+## Licencja
+
+[MIT](./LICENSE)

@@ -20,22 +20,20 @@ export function useAppMenu() {
 
   function onClickAway(e: MouseEvent) {
     if (!openDropdown.value) return;
-    const el = (document.querySelector('[data-app-menu]') as HTMLElement | null);
+    const el = document.querySelector('[data-app-menu]') as HTMLElement | null;
     if (!el?.contains(e.target as Node)) closeDropdown();
   }
 
   async function openFile() {
     const result = (await window.api?.invoke('dialog:openFile')) as
-      | { filePaths: string[]; canceled: boolean }
-      | undefined;
+      { filePaths: string[]; canceled: boolean } | undefined;
     if (!result || result.canceled || !result.filePaths.length) return;
     await openMediaFiles(result.filePaths, router);
   }
 
   async function openFolder() {
     const result = (await window.api?.invoke('dialog:openFolderFiles')) as
-      | { filePaths: string[]; canceled: boolean }
-      | undefined;
+      { filePaths: string[]; canceled: boolean } | undefined;
     if (!result || result.canceled || !result.filePaths.length) return;
     await openMediaFiles(result.filePaths, router);
   }

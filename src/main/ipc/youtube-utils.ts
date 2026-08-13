@@ -16,7 +16,8 @@ export interface YtDlpEntry {
   playlist_title?: string;
   channel_follower_count?: number;
   playlist_count?: number;
-  thumbnails?: Array<{ url?: string; width?: number }>;
+  thumbnail?: string;
+  thumbnails?: Array<{ url?: string; width?: number; height?: number }>;
   entries?: YtDlpEntry[];
 }
 
@@ -31,6 +32,9 @@ export interface YtAuthConfig {
   method: YoutubeAuthMethod;
   cookiesPath?: string;
   cookiesBrowser?: string;
+  // True when cookiesPath points to a temporary file that must be deleted by
+  // the caller once the yt-dlp process finishes (see cleanupYtAuthTemp).
+  temp?: boolean;
 }
 
 // Finds a Node.js executable that yt-dlp can use to solve YouTube's JavaScript
@@ -158,7 +162,53 @@ export function isValidCookieFile(content: string): boolean {
   return dataLines > 0;
 }
 
-export { detectYtKind, normalizeYtUrl } from '../../shared/youtube';
+export interface NetscapeParsedCookie {
+  name: string;
+  value: string;
+  url: string;
+  domain?: string;
+  path: string;
+  secure: boolean;
+  expirationDate?: number;
+}
+
+// The inverse of serializeCookies: parses a Netscape cookie file back into
+// cookie-set params. Used to re-seed the in-app session partition from the
+// persisted file when the Chromium cookie store loses the live session.
+export function parseNetscapeCookies(content: string): NetscapeParsedCookie[] {
+  const out: NetscapeParsedCookie[] = [];
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const parts = line.split('\t');
+    if (parts.length < 7) continue;
+    const [rawDomain, includeSubdomains, rawPath, secureFlag, rawExpiry, rawName, ...valueParts] =
+      parts;
+    const name = rawName.trim();
+    const value = valueParts.join('\t');
+    const domain = (rawDomain || '').replace(/^\./, '').toLowerCase();
+    if (!name || !value || !domain) continue;
+    const path = rawPath || '/';
+    const secure = secureFlag === 'TRUE';
+    const expiry = parseInt(rawExpiry, 10);
+    const hostOnly = includeSubdomains !== 'TRUE';
+    const cookie: NetscapeParsedCookie = {
+      name,
+      value,
+      url: `${secure ? 'https' : 'http'}://${domain}${path}`,
+      path,
+      secure,
+      ...(expiry > 0 ? { expirationDate: expiry } : {}),
+      // Host-only cookies must NOT carry a domain option (Chromium would
+      // otherwise treat them as super-domain cookies).
+      ...(hostOnly ? {} : { domain })
+    };
+    out.push(cookie);
+  }
+  return out;
+}
+
+export { detectYtKind, normalizeYtUrl, extractYtVideoId, parseBatchInput } from '../../shared/youtube';
 
 export function formatDuration(seconds?: number): string | undefined {
   const formatted = formatDurationBase(seconds, '');
@@ -228,12 +278,22 @@ export function mapVideoEntry(entry: YtDlpEntry): IpcYoutubeVideo {
   };
 }
 
-// Picks the channel avatar thumbnail. Unlike pickThumbnail there is no
-// i.ytimg.com fallback — a channel ID is not a video ID.
+// Picks the channel avatar thumbnail. Unlike a video, a channel page mixes
+// wide banner images with square avatar crops in the same `thumbnails` list,
+// so always prefer squares (width === height) and take the largest of those.
+// Falls back to the widest safe thumbnail, then to the single `thumbnail`
+// string some yt-dlp versions emit. There is no i.ytimg.com fallback — a
+// channel ID is not a video ID.
 export function pickChannelThumbnail(entry: YtDlpEntry): string {
   const thumbs = (entry.thumbnails || []).filter((t) => t.url && isSafeThumbnailUrl(t.url));
-  const best = [...thumbs].sort((a, b) => (b.width || 0) - (a.width || 0))[0];
-  return best?.url || '';
+  if (thumbs.length) {
+    const avatars = thumbs.filter((t) => t.width && t.height && t.width === t.height);
+    const pool = avatars.length ? avatars : thumbs;
+    const best = [...pool].sort((a, b) => (b.width || 0) - (a.width || 0))[0];
+    if (best?.url) return best.url;
+  }
+  if (entry.thumbnail && isSafeThumbnailUrl(entry.thumbnail)) return entry.thumbnail;
+  return '';
 }
 
 // Maps a playlist/channel container entry to the renderer preview result.

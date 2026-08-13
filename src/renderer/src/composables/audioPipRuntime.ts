@@ -1,5 +1,10 @@
 import type { AudioPipState } from './audioPipState';
-import { createEmptyAudioPipState, getFrequencyBins, resolveAudioPipPosition, type PipMode } from './audioPipState';
+import {
+  createEmptyAudioPipState,
+  getFrequencyBins,
+  resolveAudioPipPosition,
+  type PipMode
+} from './audioPipState';
 import { useSettingsStore } from '@renderer/stores/settings';
 
 export interface AudioPipRuntimeOptions {

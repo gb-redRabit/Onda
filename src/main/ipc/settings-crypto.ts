@@ -3,6 +3,7 @@ import type { ApiKeySettings } from '../../renderer/src/types/settings';
 import { logger } from '../../shared/logger';
 
 const PREFIX = 'onda-enc:v1:';
+const PLAIN_PREFIX = 'onda-plain:v1:';
 
 export function encryptSecret(plain: string): string {
   if (plain.startsWith(PREFIX)) return plain;
@@ -13,17 +14,24 @@ export function encryptSecret(plain: string): string {
   } catch (e) {
     logger.warn('settings', 'safeStorage encrypt failed, storing plaintext', e);
   }
-  return plain;
+  // Mark the value explicitly so it is never mistaken for ciphertext. Storing
+  // secrets without system encryption still requires a product decision — this
+  // marker makes the downgrade visible and auditable.
+  logger.warn('settings', 'safeStorage unavailable — storing secret as marked plaintext');
+  return PLAIN_PREFIX + plain;
 }
 
 export function decryptSecret(stored: string): string {
-  if (!stored.startsWith(PREFIX)) return stored;
-  try {
-    return safeStorage.decryptString(Buffer.from(stored.slice(PREFIX.length), 'base64'));
-  } catch (e) {
-    logger.warn('settings', 'safeStorage decrypt failed, returning raw value', e);
-    return stored;
+  if (stored.startsWith(PREFIX)) {
+    try {
+      return safeStorage.decryptString(Buffer.from(stored.slice(PREFIX.length), 'base64'));
+    } catch (e) {
+      logger.warn('settings', 'safeStorage decrypt failed, returning raw value', e);
+      return stored;
+    }
   }
+  if (stored.startsWith(PLAIN_PREFIX)) return stored.slice(PLAIN_PREFIX.length);
+  return stored;
 }
 
 export function encryptApiKeys(apiKeys: ApiKeySettings | undefined): ApiKeySettings | undefined {

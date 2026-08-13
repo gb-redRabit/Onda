@@ -96,10 +96,7 @@ function applyTags() {
   emit('apply', emitData);
 }
 
-function displayTrackNumber(
-  track: { number?: string; position?: string },
-  index: number
-): number {
+function displayTrackNumber(track: { number?: string; position?: string }, index: number): number {
   return Number(track.number) || Number(track.position) || index + 1;
 }
 </script>

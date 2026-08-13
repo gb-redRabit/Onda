@@ -111,13 +111,9 @@ const emit = defineEmits<{ select: [name: string] }>();
           max="1"
           step="0.05"
           :value="volume"
-          @input="
-            emit('select', 'volume:' + ($event.target as HTMLInputElement).value)
-          "
+          @input="emit('select', 'volume:' + ($event.target as HTMLInputElement).value)"
         />
-        <span class="text-[10px] text-fg-faint min-w-5 text-right tabular-nums">{{
-          volPct
-        }}</span>
+        <span class="text-[10px] text-fg-faint min-w-5 text-right tabular-nums">{{ volPct }}</span>
       </div>
       <div class="flex items-center gap-1">
         <button

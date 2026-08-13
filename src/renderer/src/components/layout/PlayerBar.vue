@@ -82,12 +82,14 @@ function togglePlay() {
     <div class="flex items-center gap-1">
       <button
         class="p-1.5 text-fg-muted hover:text-fg-base transition-colors"
+        :aria-label="$t('common.previous')"
         @click="player.prevTrack"
       >
         <SkipBack :size="14" fill="currentColor" />
       </button>
       <button
         class="w-8 h-8 rounded-full bg-fg-base flex items-center justify-center hover:scale-105 active:scale-95 transition-[transform,opacity]"
+        :aria-label="audio.isPlaying.value ? $t('common.pause') : $t('common.play')"
         @click="togglePlay"
       >
         <Pause v-if="audio.isPlaying.value" :size="14" class="text-bg-base" fill="currentColor" />
@@ -95,6 +97,7 @@ function togglePlay() {
       </button>
       <button
         class="p-1.5 text-fg-muted hover:text-fg-base transition-colors"
+        :aria-label="$t('common.next')"
         @click="player.nextTrack"
       >
         <SkipForward :size="14" fill="currentColor" />
@@ -106,12 +109,15 @@ function togglePlay() {
     <button
       class="p-1.5 text-fg-faint hover:text-accent-base transition-colors"
       :title="$t('common.audioView')"
+      :aria-label="$t('common.audioView')"
       @click="router.push('/audio')"
     >
       <Disc3 :size="13" />
     </button>
     <button
       class="p-1.5 text-fg-faint hover:text-fg-base transition-colors"
+      :title="$t('common.miniPlayer')"
+      :aria-label="$t('common.miniPlayer')"
       @click="isMini = false"
     >
       <Maximize2 :size="13" />
@@ -151,6 +157,11 @@ function togglePlay() {
             : 'text-fg-faint hover:text-red-base'
         "
         :disabled="!player.currentTrack"
+        :aria-label="
+          player.currentTrack && player.isFavorite(player.currentTrack.path)
+            ? $t('common.removeFav')
+            : $t('common.addFav')
+        "
         @click="player.currentTrack && player.toggleFavorite(player.currentTrack.path)"
       >
         <Heart
@@ -169,18 +180,21 @@ function togglePlay() {
         <button
           class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
           :class="{ 'text-accent-base!': player.shuffle }"
+          :aria-label="$t('common.shuffle')"
           @click="player.toggleShuffle"
         >
           <Shuffle :size="15" />
         </button>
         <button
           class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
+          :aria-label="$t('common.previous')"
           @click="player.prevTrack"
         >
           <SkipBack :size="17" fill="currentColor" />
         </button>
         <button
           class="w-10 h-10 rounded-full bg-fg-base flex items-center justify-center hover:scale-105 active:scale-95 transition-[transform,opacity] shadow-lg"
+          :aria-label="audio.isPlaying.value ? $t('common.pause') : $t('common.play')"
           @click="togglePlay"
         >
           <Pause v-if="audio.isPlaying.value" :size="18" class="text-bg-base" fill="currentColor" />
@@ -188,6 +202,7 @@ function togglePlay() {
         </button>
         <button
           class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
+          :aria-label="$t('common.next')"
           @click="player.nextTrack"
         >
           <SkipForward :size="17" fill="currentColor" />
@@ -195,6 +210,7 @@ function togglePlay() {
         <button
           class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
           :class="{ 'text-accent-base!': player.repeat !== 'none' }"
+          :aria-label="$t('common.repeat')"
           @click="player.cycleRepeat"
         >
           <component :is="player.repeat === 'one' ? Repeat1 : Repeat" :size="15" />
@@ -212,6 +228,7 @@ function togglePlay() {
         class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
         :class="{ 'text-accent-base!': player.equalizerVisible }"
         data-eq-toggle
+        :aria-label="$t('common.equalizer')"
         @click="player.toggleEqualizer"
       >
         <SlidersHorizontal :size="15" />
@@ -219,12 +236,14 @@ function togglePlay() {
       <button
         class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
         :class="{ 'text-accent-base!': player.queueVisible }"
+        :aria-label="$t('common.queue')"
         @click="player.toggleQueue"
       >
         <ListMusic :size="15" />
       </button>
       <button
         class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+        :aria-label="$t('common.mute')"
         @click="player.toggleMute"
       >
         <component
@@ -250,6 +269,7 @@ function togglePlay() {
       <button
         class="p-1.5 rounded-lg text-fg-faint hover:text-accent-base hover:bg-bg-hover transition-colors"
         :title="$t('common.audioView')"
+        :aria-label="$t('common.audioView')"
         @click="router.push('/audio')"
       >
         <Disc3 :size="15" />
@@ -257,6 +277,7 @@ function togglePlay() {
       <button
         class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
         :title="$t('common.miniPlayer')"
+        :aria-label="$t('common.miniPlayer')"
         @click="isMini = true"
       >
         <Minimize2 :size="13" />

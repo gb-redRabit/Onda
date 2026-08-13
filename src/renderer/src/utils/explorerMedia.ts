@@ -17,11 +17,15 @@ function detectType(extension: string): MediaFile['type'] {
   const ext = `.${extension.replace(/^\./, '').toLowerCase()}`;
   if (VIDEO_EXT_SET.has(ext)) return 'video';
   if (AUDIO_EXT_SET.has(ext)) return 'audio';
-  return 'video';
+  return 'unknown';
 }
 
 export function buildMediaFile(options: BuildMediaFileOptions): MediaFile {
-  const extension = (options.extension || '').replace(/^\./, '').toLowerCase();
+  // Derive the extension from the path when not provided explicitly (e.g.
+  // "Open File"/file-association callers pass only `{ path }`).
+  const dot = options.path.lastIndexOf('.');
+  const fromPath = dot > 0 ? options.path.slice(dot + 1) : '';
+  const extension = (options.extension || fromPath).replace(/^\./, '').toLowerCase();
   const name = options.name || options.path.split(/[/\\]/).pop() || options.path;
   return {
     id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,

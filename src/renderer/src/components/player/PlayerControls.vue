@@ -226,4 +226,3 @@ function cycleSpeed(direction: number) {
     </div>
   </div>
 </template>
-

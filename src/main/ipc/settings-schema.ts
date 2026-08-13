@@ -99,7 +99,7 @@ const APPEARANCE_FIELDS: Record<string, Sanitizer> = {
   sidebarCollapsed: bool,
   showPlaylists: bool,
   showAlbums: bool,
-  locale: enumOf(['pl', 'en']),
+  locale: enumOf(['pl', 'en', 'auto']),
   animations: bool,
   transparency: num,
   customBackground: str,
@@ -149,12 +149,27 @@ const LIBRARY_FIELDS: Record<string, Sanitizer> = {
 
 const DOWNLOAD_FIELDS: Record<string, Sanitizer> = {
   defaultPath: str,
-  defaultAudioFormat: enumOf(['mp3', 'flac', 'ogg', 'aac']),
-  defaultVideoQuality: enumOf(['best', '1080p', '720p', '480p']),
+  defaultKind: enumOf(['audio', 'video']),
+  defaultAudioFormat: enumOf(['best', 'mp3', 'flac', 'ogg', 'aac', 'opus', 'm4a', 'wav']),
+  defaultAudioQuality: enumOf(['best', 'high', 'medium', 'low']),
+  defaultVideoQuality: enumOf(['best', '2160p', '1440p', '1080p', '720p', '480p']),
+  defaultVideoContainer: enumOf(['mp4', 'mkv', 'webm']),
+  defaultCover: enumOf(['thumbnail', 'none', 'frame', 'clip']),
+  defaultCoverFrameTime: num,
+  defaultCoverClipStart: num,
+  defaultCoverClipEnd: num,
+  defaultCoverClipFormat: enumOf(['webm', 'mp4']),
   filenameTemplate: str,
   maxConcurrent: num,
   autoDownloadSubscriptions: bool,
-  hashFiles: bool
+  hashFiles: bool,
+  smartMode: bool,
+  defaultSubs: bool,
+  defaultSubsLangs: str,
+  nightScheduleEnabled: bool,
+  nightScheduleStart: num,
+  nightScheduleEnd: num,
+  autoAddDownloadFolder: bool
 };
 
 const PROXY_FIELDS: Record<string, Sanitizer> = {
@@ -170,6 +185,13 @@ const NETWORK_FIELDS: Record<string, Sanitizer> = {
   proxy: obj(PROXY_FIELDS),
   downloadSpeedLimit: num,
   userAgent: str
+};
+
+const GENERAL_FIELDS: Record<string, Sanitizer> = {
+  autoLaunch: bool,
+  startMinimized: bool,
+  closeToTray: bool,
+  restoreSession: bool
 };
 
 function apiKeyEntry(v: unknown): unknown | undefined {
@@ -206,7 +228,8 @@ const TOAST_FIELDS: Record<string, Sanitizer> = {
   position: enumOf(['bottom-right', 'bottom-left', 'top-right', 'top-left']),
   showInfo: bool,
   showSuccess: bool,
-  showWarning: bool
+  showWarning: bool,
+  showNative: bool
 };
 
 const DEPENDENCY_FIELDS: Record<string, Sanitizer> = {
@@ -221,6 +244,7 @@ const DEPENDENCY_FIELDS: Record<string, Sanitizer> = {
 };
 
 const TOP_LEVEL: Record<string, Sanitizer> = {
+  general: obj(GENERAL_FIELDS),
   appearance: obj(APPEARANCE_FIELDS),
   playback: obj(PLAYBACK_FIELDS),
   explorer: obj(EXPLORER_FIELDS),

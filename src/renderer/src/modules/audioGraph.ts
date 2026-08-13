@@ -177,7 +177,11 @@ export class AudioGraph {
         this.sourceNode.connect(this.gainNode);
       }
     } catch (e) {
-      logger.warn('audioEngine', 'disconnectVideoElement: reconnect failed (source already disconnected)', e);
+      logger.warn(
+        'audioEngine',
+        'disconnectVideoElement: reconnect failed (source already disconnected)',
+        e
+      );
     }
   }
 

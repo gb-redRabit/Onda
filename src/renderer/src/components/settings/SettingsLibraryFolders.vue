@@ -62,6 +62,13 @@ function folderIcon(type: string): string {
         <FolderSearch :size="16" />
         {{ library.isScanning ? $t('settings.libScanning') : $t('settings.libScanNow') }}
       </button>
+      <button
+        v-if="library.isScanning"
+        class="flex items-center gap-2 px-4 py-2 rounded-xl border border-border-default text-sm font-medium text-fg-muted hover:bg-bg-hover transition-colors"
+        @click="library.cancelScan()"
+      >
+        {{ $t('common.cancel') }}
+      </button>
     </div>
 
     <div v-if="library.folders.length === 0" class="text-sm text-fg-faint italic py-4">

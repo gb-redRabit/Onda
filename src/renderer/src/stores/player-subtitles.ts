@@ -5,14 +5,18 @@ import { logger } from '@shared/logger';
 export function usePlayerSubtitles() {
   const subtitleTracks = ref<SubtitleTrack[]>([]);
   const activeSubtitleId = ref<string | null>(null);
+  let currentLoadId = 0;
 
   async function loadSubtitles(videoPath: string): Promise<void> {
+    const loadId = ++currentLoadId;
     const prevId = activeSubtitleId.value;
     const tracks: SubtitleTrack[] = [];
 
     const external = (await window.api?.findExternalSubtitles(videoPath)) ?? [];
+    if (loadId !== currentLoadId) return;
     for (const sub of external) {
       const content = await window.api?.readSubtitleFile(sub.path);
+      if (loadId !== currentLoadId) return;
       if (content) {
         tracks.push({
           id: `ext-${sub.path}`,
@@ -27,6 +31,7 @@ export function usePlayerSubtitles() {
     }
 
     const embedded = (await window.api?.listEmbeddedSubtitles(videoPath)) ?? [];
+    if (loadId !== currentLoadId) return;
     for (const sub of embedded) {
       const label = sub.title || sub.language || `Track ${sub.index}`;
       tracks.push({
@@ -83,9 +88,14 @@ export function usePlayerSubtitles() {
     for (const filePath of filePaths) {
       const content = await window.api?.readSubtitleFile(filePath);
       if (!content) continue;
-      const name = (filePath.split(/[/\\]/).pop() || filePath).replace(/\.(srt|ass|ssa|vtt|sub)$/i, '');
+      const name = (filePath.split(/[/\\]/).pop() || filePath).replace(
+        /\.(srt|ass|ssa|vtt|sub)$/i,
+        ''
+      );
       const ext = (filePath.split('.').pop() || '').toLowerCase();
-      const format = (['ass', 'ssa', 'srt', 'vtt', 'sub'].includes(ext) ? ext : 'srt') as SubtitleTrack['format'];
+      const format = (
+        ['ass', 'ssa', 'srt', 'vtt', 'sub'].includes(ext) ? ext : 'srt'
+      ) as SubtitleTrack['format'];
       subtitleTracks.value.push({
         id: `custom-${filePath}`,
         label: name,

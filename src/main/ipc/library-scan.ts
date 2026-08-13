@@ -47,12 +47,14 @@ async function getAudioMetadata(
   format: string;
   isVideo: boolean;
   size: number;
+  replayGainTrackGain?: number;
 } | null> {
   try {
     const s = await stat(filePath).catch(() => null);
     if (!s) return null;
     const meta = await parseFile(filePath, { duration: true });
     const formatInfo = meta.format;
+    const gainDb = meta.common.replaygain_track_gain?.dB;
     return {
       title: meta.common.title || basename(filePath, ext),
       artist: meta.common.artist || '',
@@ -69,7 +71,11 @@ async function getAudioMetadata(
       channels: formatInfo?.numberOfChannels || 0,
       format: ext.slice(1),
       isVideo: false,
-      size: s.size
+      size: s.size,
+      replayGainTrackGain:
+        typeof gainDb === 'number' && Number.isFinite(gainDb)
+          ? Math.pow(10, gainDb / 20)
+          : undefined
     };
   } catch (e) {
     logger.warn('library', `getAudioMetadata failed for ${filePath}`, e);
@@ -94,6 +100,7 @@ async function getMetadata(
   format: string;
   isVideo: boolean;
   size: number;
+  replayGainTrackGain?: number;
 } | null> {
   try {
     const s = await stat(filePath).catch(() => null);
@@ -126,10 +133,15 @@ async function getMetadata(
 async function processAudioFile(
   fullPath: string,
   entryName: string,
-  ext: string
+  ext: string,
+  prev?: MediaFile
 ): Promise<{ file: MediaFile | null }> {
   const s = await stat(fullPath).catch(() => null);
   if (!s) return { file: null };
+  // Reuse the previous metadata when the file hasn't changed (size + mtime).
+  if (prev && prev.size === s.size && prev.mtime === s.mtimeMs) {
+    return { file: prev };
+  }
   const meta = await getMetadata(fullPath, ext);
   return {
     file: {
@@ -147,12 +159,14 @@ async function processAudioFile(
             album: meta.album,
             year: meta.year,
             genre: meta.genre,
-            track: meta.track
+            track: meta.track,
+            replayGainTrackGain: meta.replayGainTrackGain
           }
         : undefined,
       duration: meta?.duration || 0,
       addedAt: s.birthtimeMs ?? Date.now(),
-      playCount: 0
+      playCount: 0,
+      mtime: s.mtimeMs
     }
   };
 }
@@ -160,10 +174,14 @@ async function processAudioFile(
 async function processVideoFile(
   fullPath: string,
   entryName: string,
-  ext: string
+  ext: string,
+  prev?: MediaFile
 ): Promise<{ file: MediaFile | null }> {
   const s = await stat(fullPath).catch(() => null);
   if (!s) return { file: null };
+  if (prev && prev.size === s.size && prev.mtime === s.mtimeMs) {
+    return { file: prev };
+  }
   const duration = await getDuration(fullPath);
   return {
     file: {
@@ -176,7 +194,8 @@ async function processVideoFile(
       type: 'video',
       duration,
       addedAt: s.birthtimeMs ?? Date.now(),
-      playCount: 0
+      playCount: 0,
+      mtime: s.mtimeMs
     }
   };
 }
@@ -184,10 +203,14 @@ async function processVideoFile(
 async function processImageFile(
   fullPath: string,
   entryName: string,
-  ext: string
+  ext: string,
+  prev?: MediaFile
 ): Promise<{ file: MediaFile | null }> {
   const s = await stat(fullPath).catch(() => null);
   if (!s) return { file: null };
+  if (prev && prev.size === s.size && prev.mtime === s.mtimeMs) {
+    return { file: prev };
+  }
   return {
     file: {
       id: fullPath,
@@ -198,7 +221,8 @@ async function processImageFile(
       size: s.size,
       type: 'image',
       addedAt: s.birthtimeMs ?? Date.now(),
-      playCount: 0
+      playCount: 0,
+      mtime: s.mtimeMs
     }
   };
 }
@@ -206,18 +230,24 @@ async function processImageFile(
 export async function scanDir(
   dirPath: string,
   maxDepth = 10,
-  depth = 0
+  depth = 0,
+  signal?: AbortSignal,
+  previous?: Map<string, MediaFile>
 ): Promise<{ files: MediaFile[]; audioCount: number; videoCount: number; imageCount: number }> {
-  if (depth > maxDepth) return { files: [], audioCount: 0, videoCount: 0, imageCount: 0 };
+  if (signal?.aborted || depth > maxDepth) {
+    return { files: [], audioCount: 0, videoCount: 0, imageCount: 0 };
+  }
 
   try {
     const entries = await readdir(dirPath, { withFileTypes: true });
-    const subDirTasks: Array<() => Promise<{
-      files: MediaFile[];
-      audioCount: number;
-      videoCount: number;
-      imageCount: number;
-    }>> = [];
+    const subDirTasks: Array<
+      () => Promise<{
+        files: MediaFile[];
+        audioCount: number;
+        videoCount: number;
+        imageCount: number;
+      }>
+    > = [];
     const audioTasks: Array<() => Promise<{ file: MediaFile | null }>> = [];
     const videoTasks: Array<() => Promise<{ file: MediaFile | null }>> = [];
     const imageTasks: Array<() => Promise<{ file: MediaFile | null }>> = [];
@@ -226,20 +256,27 @@ export async function scanDir(
     let imageCount = 0;
 
     for (const entry of entries) {
+      if (signal?.aborted) break;
       const fullPath = join(dirPath, entry.name);
       if (entry.isDirectory()) {
-        subDirTasks.push(() => scanDir(fullPath, maxDepth, depth + 1));
+        subDirTasks.push(() => scanDir(fullPath, maxDepth, depth + 1, signal, previous));
       } else if (entry.isFile()) {
         const ext = extname(entry.name).toLowerCase();
         if (AUDIO_EXT_SET.has(ext)) {
           audioCount++;
-          audioTasks.push(() => processAudioFile(fullPath, entry.name, ext));
+          audioTasks.push(() =>
+            processAudioFile(fullPath, entry.name, ext, previous?.get(fullPath))
+          );
         } else if (VIDEO_EXT_SET.has(ext)) {
           videoCount++;
-          videoTasks.push(() => processVideoFile(fullPath, entry.name, ext));
+          videoTasks.push(() =>
+            processVideoFile(fullPath, entry.name, ext, previous?.get(fullPath))
+          );
         } else if (IMAGE_EXT_SET.has(ext)) {
           imageCount++;
-          imageTasks.push(() => processImageFile(fullPath, entry.name, ext));
+          imageTasks.push(() =>
+            processImageFile(fullPath, entry.name, ext, previous?.get(fullPath))
+          );
         }
       }
     }
@@ -250,6 +287,7 @@ export async function scanDir(
     let vi = 0;
     let ii = 0;
     while (ai < audioTasks.length || vi < videoTasks.length || ii < imageTasks.length) {
+      if (signal?.aborted) return { files: [], audioCount: 0, videoCount: 0, imageCount: 0 };
       const chunk: Array<() => Promise<{ file: MediaFile | null }>> = [];
       while (
         chunk.length < chunkSize &&

@@ -18,10 +18,7 @@ const { deps, refreshAll, runInstall, uninstallDependency, cancelInstall } = use
       </button>
     </template>
     <div class="space-y-6">
-      <SettingsCard
-        v-for="dep in deps"
-        :key="dep.name"
-      >
+      <SettingsCard v-for="dep in deps" :key="dep.name">
         <div class="flex items-center justify-between gap-4">
           <div class="flex items-center gap-3 min-w-0">
             <div

@@ -90,7 +90,8 @@ async function installFfmpegManaged(sender: WebContents): Promise<InstallResult>
   const signal = newSignal('ffmpeg');
   try {
     const url = ffmpegDownloadUrl();
-    if (!url) return { success: false, error: 'Managed FFmpeg nie jest dostępny na tej platformie.' };
+    if (!url)
+      return { success: false, error: 'Managed FFmpeg nie jest dostępny na tej platformie.' };
 
     const binDir = getBinDir();
     await mkdir(binDir, { recursive: true });
@@ -98,38 +99,51 @@ async function installFfmpegManaged(sender: WebContents): Promise<InstallResult>
     const extractDir = join(binDir, 'ffmpeg-extract');
 
     emitProgress(sender, 'ffmpeg', 'download', 5);
-    await downloadFile(url, zipPath, signal, (received, total) => {
-      const pct = total > 0 ? 5 + Math.round((received / total) * 80) : 5;
-      emitProgress(sender, 'ffmpeg', 'download', pct);
-    });
-
     const shaUrl = ffmpegShaUrl();
-    if (shaUrl) {
-      emitProgress(sender, 'ffmpeg', 'verify', 86);
-      try {
-        await verifyDownloadedFile(zipPath, shaUrl, basename(url), signal);
-      } catch (e) {
-        await rm(zipPath, { force: true }).catch(() => {});
-        const err = e as { message?: string };
-        if (err.message === 'cancelled' || signal.aborted) {
-          return { success: false, cancelled: true };
+    let verified = false;
+    // BtbN's `latest` tag is force-updated — it can move between the zip and
+    // the checksum download. Retry the pair once before declaring corruption.
+    for (let attempt = 1; attempt <= 2 && !verified; attempt++) {
+      await rm(zipPath, { force: true }).catch(() => {});
+      await downloadFile(url, zipPath, signal, (received, total) => {
+        const pct = total > 0 ? 5 + Math.round((received / total) * 80) : 5;
+        emitProgress(sender, 'ffmpeg', 'download', pct);
+      });
+
+      if (shaUrl) {
+        emitProgress(sender, 'ffmpeg', 'verify', 86);
+        try {
+          await verifyDownloadedFile(zipPath, shaUrl, basename(url), signal);
+          verified = true;
+        } catch (e) {
+          await rm(zipPath, { force: true }).catch(() => {});
+          const err = e as { message?: string };
+          if (err.message === 'cancelled' || signal.aborted) {
+            return { success: false, cancelled: true };
+          }
+          if (attempt === 2) {
+            return {
+              success: false,
+              error: 'Weryfikacja sumy kontrolnej nie powiodła się — pobrany plik jest uszkodzony.'
+            };
+          }
         }
-        return {
-          success: false,
-          error: 'Weryfikacja sumy kontrolnej nie powiodła się — pobrany plik jest uszkodzony.'
-        };
+      } else {
+        verified = true;
       }
     }
 
     emitProgress(sender, 'ffmpeg', 'extract', 88);
     await rm(extractDir, { recursive: true, force: true }).catch(() => {});
     await mkdir(extractDir, { recursive: true });
+    // Escape single quotes for the PowerShell single-quoted literal paths.
+    const psLiteral = (p: string): string => p.replace(/'/g, "''");
     await runCommand(
       'powershell',
       [
         '-NoProfile',
         '-Command',
-        `Expand-Archive -LiteralPath '${zipPath}' -DestinationPath '${extractDir}' -Force`
+        `Expand-Archive -LiteralPath '${psLiteral(zipPath)}' -DestinationPath '${psLiteral(extractDir)}' -Force`
       ],
       { timeout: 300000 }
     ).catch(async () => {
@@ -140,7 +154,10 @@ async function installFfmpegManaged(sender: WebContents): Promise<InstallResult>
     const ffmpegExe = await findFile(extractDir, 'ffmpeg.exe');
     const ffprobeExe = await findFile(extractDir, 'ffprobe.exe');
     if (!ffmpegExe || !ffprobeExe) {
-      return { success: false, error: 'Nie znaleziono ffmpeg.exe/ffprobe.exe w pobranym archiwum.' };
+      return {
+        success: false,
+        error: 'Nie znaleziono ffmpeg.exe/ffprobe.exe w pobranym archiwum.'
+      };
     }
 
     const ffmpegDest = join(binDir, 'ffmpeg.exe');
@@ -190,10 +207,7 @@ async function confirmPrivileged(sender: WebContents, command: string): Promise<
 }
 
 // System install through a package manager with real post-install verification.
-async function installSystem(
-  sender: WebContents,
-  tool: BinTool
-): Promise<InstallResult> {
+async function installSystem(sender: WebContents, tool: BinTool): Promise<InstallResult> {
   emitProgress(sender, tool, 'manager', 10);
   const pkgManager = (await detectPkgManagers())[0] ?? null;
   if (!pkgManager) {
@@ -254,9 +268,7 @@ async function uninstallTool(sender: WebContents, tool: BinTool): Promise<Instal
   // back to every available manager until the binary is really gone.
   const managers = await detectPkgManagers();
   const inferred = inferPkgManager(info?.path ?? null);
-  const candidates = inferred
-    ? [inferred, ...managers.filter((m) => m !== inferred)]
-    : managers;
+  const candidates = inferred ? [inferred, ...managers.filter((m) => m !== inferred)] : managers;
 
   const errors: string[] = [];
   for (const pm of candidates) {
@@ -344,7 +356,9 @@ export function registerDependencyHandlers(): void {
     return installSystem(event.sender, 'ffmpeg');
   });
 
-  ipcMain.handle('dep:installMkvextract', async (event) => installSystem(event.sender, 'mkvextract'));
+  ipcMain.handle('dep:installMkvextract', async (event) =>
+    installSystem(event.sender, 'mkvextract')
+  );
 
   ipcMain.handle('dep:installYtdlp', async (event) => installYtdlpManaged(event.sender, false));
 
@@ -352,7 +366,9 @@ export function registerDependencyHandlers(): void {
 
   ipcMain.handle('dep:removeYtdlp', async (event) => uninstallTool(event.sender, 'yt-dlp'));
   ipcMain.handle('dep:removeFfmpeg', async (event) => uninstallTool(event.sender, 'ffmpeg'));
-  ipcMain.handle('dep:removeMkvextract', async (event) => uninstallTool(event.sender, 'mkvextract'));
+  ipcMain.handle('dep:removeMkvextract', async (event) =>
+    uninstallTool(event.sender, 'mkvextract')
+  );
 }
 
 // keep re-exported for legacy callers/tests

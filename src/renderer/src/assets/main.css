@@ -97,3 +97,29 @@ input[type='range']::-webkit-slider-thumb {
   -webkit-line-clamp: 2;
   line-clamp: 2;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.settings-enter-active,
+.settings-leave-active {
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+.settings-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.settings-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}

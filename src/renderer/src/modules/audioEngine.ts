@@ -13,6 +13,8 @@ class AudioEngine {
   private secondary: AudioSecondary | null = null;
   private initialized = false;
   private savedPositions = new Map<string, number>();
+  private normalization = 1;
+  private preloadEl: HTMLAudioElement | null = null;
 
   get sourceNode(): MediaElementAudioSourceNode | null {
     return this.graph.sourceNode;
@@ -110,14 +112,25 @@ class AudioEngine {
       return;
     }
 
+    // Volume normalization / ReplayGain: apply the track's ReplayGain ratio
+    // when either setting is enabled and the metadata carries a gain value.
+    const enableNorm = settings.playback.replayGain || settings.playback.normalization;
+    const ratio = track.metadata?.replayGainTrackGain;
+    this.normalization =
+      enableNorm && typeof ratio === 'number' && Number.isFinite(ratio) && ratio > 0
+        ? Math.min(4, Math.max(0.25, ratio))
+        : 1;
+
     if (!this.audioEl) {
       const el = this.createAudioElement();
       this.setupListeners(el);
     }
     this.audioEl!.src = toMediaServerUrl(track.path);
+    logger.info('audioEngine', `loadTrack src=${toMediaServerUrl(track.path)}`);
     this.connectAudio(this.audioEl!);
     if (this.graph.gainNode)
-      this.graph.gainNode.gain.value = usePlayerStore().isMuted ? 0 : usePlayerStore().volume;
+      this.graph.gainNode.gain.value =
+        (usePlayerStore().isMuted ? 0 : usePlayerStore().volume) * this.normalization;
 
     audioEvents.emit('trackLoaded', undefined);
     if (settings.playback.rememberPosition) {
@@ -151,7 +164,19 @@ class AudioEngine {
   }
 
   setVolume(v: number): void {
-    if (this.graph.gainNode) this.graph.gainNode.gain.value = v;
+    if (this.graph.gainNode) this.graph.gainNode.gain.value = v * this.normalization;
+  }
+
+  // Warms the cache for the next track so the transition is as seamless as
+  // possible (used by the "gapless playback" setting).
+  preloadNext(track: MediaFile): void {
+    if (!this.preloadEl) {
+      this.preloadEl = new Audio();
+      this.preloadEl.preload = 'auto';
+      this.preloadEl.crossOrigin = 'anonymous';
+    }
+    this.preloadEl.src = toMediaServerUrl(track.path);
+    this.preloadEl.load();
   }
 
   get hasSecondaryAudio(): boolean {

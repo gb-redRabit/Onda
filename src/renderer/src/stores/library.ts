@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, shallowRef, computed, triggerRef } from 'vue';
-import type { MediaFile } from '@renderer/types/media';
+import type { MediaFile, Playlist } from '@renderer/types/media';
 import { isUnderPath } from '@renderer/utils/path';
 import { useLibraryDerivations } from './library-derivations';
 import { useLibraryPlaylists } from './library-playlists';
@@ -37,7 +37,7 @@ export const useLibraryStore = defineStore('library', () => {
     albums,
     invalidateDerivedCache
   } = useLibraryDerivations(tracks);
-  const { loadFromDisk, scheduleLoadTracksAsync, scanFolders } = useLibraryLoad({
+  const { loadFromDisk, scheduleLoadTracksAsync, scanFolders, cancelScan } = useLibraryLoad({
     tracks,
     folders,
     folderTypes,
@@ -49,6 +49,30 @@ export const useLibraryStore = defineStore('library', () => {
   });
 
   const totalCount = computed(() => tracks.value.length);
+
+  let subscribedToLibraryUpdates = false;
+
+  // Refresh the track list when the main process re-scanned a library folder
+  // (e.g. after a finished download landed inside a library folder).
+  function subscribeLibraryUpdates() {
+    if (subscribedToLibraryUpdates) return;
+    subscribedToLibraryUpdates = true;
+    window.api?.on('library:updated', () => {
+      if (isLoaded.value) void scheduleLoadTracksAsync();
+      void reloadPlaylists();
+    });
+  }
+
+  // Re-read playlists from disk (they can be changed by the auto channel
+  // playlist feature in the main process after a download).
+  async function reloadPlaylists() {
+    try {
+      const list = (await window.api?.invoke('playlist:loadAll')) as Playlist[] | undefined;
+      if (list) playlists.value = list;
+    } catch {
+      /* playlists unavailable */
+    }
+  }
 
   async function addFolder(folderPath: string) {
     if (folders.value.includes(folderPath)) return;
@@ -110,6 +134,8 @@ export const useLibraryStore = defineStore('library', () => {
     invalidateDerivedCache();
   }
 
+  subscribeLibraryUpdates();
+
   return {
     tracks,
     playlists,
@@ -133,6 +159,7 @@ export const useLibraryStore = defineStore('library', () => {
     loadFromDisk,
     scheduleLoadTracksAsync,
     scanFolders,
+    cancelScan,
     savePlaylists,
     addFolder,
     removeFolder,

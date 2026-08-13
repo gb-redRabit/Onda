@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue';
-import { BarChart3, Settings2 } from '@lucide/vue';
+import { BarChart3, Settings2, PictureInPicture2 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
+import { useAudioPiP } from '@renderer/composables/useAudioPiP';
 import AudioVisualizer from '@renderer/components/audio/AudioVisualizer.vue';
 import AudioControls from '@renderer/components/audio/AudioControls.vue';
 import AudioProgressBar from '@renderer/components/audio/AudioProgressBar.vue';
@@ -13,6 +14,7 @@ import AudioVizSettings from '@renderer/components/audio/AudioVizSettings.vue';
 
 const player = usePlayerStore();
 const audio = useAudioPlayer();
+const audioPip = useAudioPiP();
 
 const layoutMode = ref<'split' | 'full' | 'stacked'>('split');
 const splitRatio = ref(50);
@@ -132,6 +134,26 @@ onUnmounted(() => {
       :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }"
     >
       <AudioLayoutToggle v-model:mode="layoutMode" />
+    </div>
+
+    <!-- AUDIO PIP TOGGLE — top-right -->
+    <div
+      class="absolute top-4 right-4 z-30 transition-opacity"
+      :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }"
+    >
+      <button
+        class="p-2 rounded-lg bg-bg-overlay/80 backdrop-blur-sm transition-all"
+        :class="
+          audioPip.isActive.value
+            ? 'text-accent-base bg-accent-ghost'
+            : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+        "
+        :title="$t('audioView.pip')"
+        :aria-label="$t('audioView.pip')"
+        @click="audioPip.toggle()"
+      >
+        <PictureInPicture2 :size="15" />
+      </button>
     </div>
 
     <!-- ═══════ FULL layout — visualizer as background ═══════ -->

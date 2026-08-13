@@ -1,5 +1,15 @@
 <script setup lang="ts">
-import { X, Play, Pause, Settings2, Maximize2, ZoomIn, ZoomOut, RotateCw, Fullscreen } from '@lucide/vue';
+import {
+  X,
+  Play,
+  Pause,
+  Settings2,
+  Maximize2,
+  ZoomIn,
+  ZoomOut,
+  RotateCw,
+  Fullscreen
+} from '@lucide/vue';
 import ImageViewerSettings from './ImageViewerSettings.vue';
 
 defineProps<{
@@ -54,7 +64,9 @@ const emit = defineEmits<{
         <button
           class="p-1.5 rounded-lg transition-colors"
           :class="
-            slideshowActive ? 'text-accent-base bg-accent-ghost' : 'text-fg-muted hover:text-fg-base hover:bg-bg-hover'
+            slideshowActive
+              ? 'text-accent-base bg-accent-ghost'
+              : 'text-fg-muted hover:text-fg-base hover:bg-bg-hover'
           "
           :title="slideshowActive ? 'Stop slideshow (Space)' : 'Start slideshow (Space)'"
           @click="emit('toggleSlideshow')"
@@ -64,7 +76,11 @@ const emit = defineEmits<{
         </button>
         <button
           class="p-1 rounded-lg transition-colors block mx-auto mt-0.5"
-          :class="settingsOpen ? 'text-accent-base bg-accent-ghost' : 'text-fg-muted hover:text-fg-base hover:bg-bg-hover'"
+          :class="
+            settingsOpen
+              ? 'text-accent-base bg-accent-ghost'
+              : 'text-fg-muted hover:text-fg-base hover:bg-bg-hover'
+          "
           title="Slideshow settings"
           @click="emit('toggleSettings')"
         >
@@ -119,7 +135,11 @@ const emit = defineEmits<{
       </button>
       <button
         class="p-1.5 rounded-lg transition-colors"
-        :class="fullscreen ? 'text-accent-base bg-accent-ghost' : 'text-fg-muted hover:text-fg-base hover:bg-bg-hover'"
+        :class="
+          fullscreen
+            ? 'text-accent-base bg-accent-ghost'
+            : 'text-fg-muted hover:text-fg-base hover:bg-bg-hover'
+        "
         title="Fullscreen (F)"
         @click="emit('toggleFullscreen')"
       >

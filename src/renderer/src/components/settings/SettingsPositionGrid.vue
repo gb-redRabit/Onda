@@ -15,10 +15,7 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
     <div
       class="w-full rounded-2xl bg-bg-base border-2 border-border-default p-2 relative select-none"
     >
-      <div
-        class="grid gap-2"
-        :class="columns === 4 ? 'grid-cols-4' : 'grid-cols-2'"
-      >
+      <div class="grid gap-2" :class="columns === 4 ? 'grid-cols-4' : 'grid-cols-2'">
         <button
           v-for="opt in options"
           :key="opt.id"

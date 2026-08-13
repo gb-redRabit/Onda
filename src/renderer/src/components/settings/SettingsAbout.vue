@@ -9,10 +9,7 @@ import SettingsSectionTitle from '@renderer/components/settings/SettingsSectionT
 const info = ref<AppInfo | null>(null);
 const licenses = ref<Array<{ name: string; version?: string; license?: string }>>([]);
 
-const links = [
-  { label: 'Homepage', url: 'https://electron-vite.org' },
-  { label: 'GitHub', url: 'https://github.com' }
-];
+const links = [{ label: 'GitHub', url: 'https://github.com/gb-redRabit/Onda' }];
 
 onMounted(async () => {
   try {

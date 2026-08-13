@@ -41,7 +41,7 @@ function toMediaFile(item: FileItem): MediaFile {
 export function useExplorerActions(ctx: ExplorerActionsCtx) {
   const { explorer, fileClipboard, player, t, filteredFiles } = ctx;
 
-  function playItem(item: FileItem) {
+  async function playItem(item: FileItem) {
     if (item.isDirectory) {
       explorer.navigateTo(item.path);
     } else if (item.extension && IMAGE_EXT_SET.has(item.extension)) {
@@ -49,6 +49,11 @@ export function useExplorerActions(ctx: ExplorerActionsCtx) {
       ctx.openImageViewer(idx);
     } else if (item.extension && MEDIA_EXT_SET.has(item.extension)) {
       const track = toMediaFile(item);
+      // Video/image are served through the local media server — grant access to
+      // the file's folder before the player requests the URL.
+      if (track.type === 'video') {
+        await window.api?.grantMediaAccess(item.path);
+      }
       player.setTrack(track);
       if (track.type === 'video') ctx.router.push('/player');
     }

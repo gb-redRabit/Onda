@@ -13,7 +13,11 @@ const panel = ref<HTMLElement | null>(null);
 
 function onClickOutside(e: MouseEvent) {
   const target = e.target as Node;
-  if (panel.value && !panel.value.contains(target) && !(target as HTMLElement).closest('[data-eq-toggle]')) {
+  if (
+    panel.value &&
+    !panel.value.contains(target) &&
+    !(target as HTMLElement).closest('[data-eq-toggle]')
+  ) {
     player.equalizerVisible = false;
   }
 }

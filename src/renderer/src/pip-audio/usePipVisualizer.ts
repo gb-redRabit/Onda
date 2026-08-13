@@ -178,5 +178,9 @@ export function usePipVisualizer(vizData: Ref<number[]>) {
     stopVizLoop();
   });
 
-  return { vizCanvas, updateAccent, setCanvas: (el: unknown) => (vizCanvas.value = el as HTMLCanvasElement | null) };
+  return {
+    vizCanvas,
+    updateAccent,
+    setCanvas: (el: unknown) => (vizCanvas.value = el as HTMLCanvasElement | null)
+  };
 }

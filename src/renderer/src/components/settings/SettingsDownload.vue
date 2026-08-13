@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useYoutubeAuth } from '@renderer/composables/useYoutubeAuth';
 import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
 import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
 import SettingsSectionTitle from '@renderer/components/settings/SettingsSectionTitle.vue';
+import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
+import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
+import { FolderOpen } from '@lucide/vue';
 import type { YoutubeAuthMethod } from '@renderer/types/settings';
 
 const settings = useSettingsStore();
+const { t } = useI18n();
 const { status, refresh, ensureLoaded } = useYoutubeAuth();
 ensureLoaded();
-
-const audioFormats = ['mp3', 'flac', 'ogg', 'aac'] as const;
-const videoQualities = ['best', '1080p', '720p', '480p'] as const;
 
 const methods: Array<{ value: YoutubeAuthMethod; labelKey: string }> = [
   { value: 'none', labelKey: 'settings.authDisabled' },
@@ -85,11 +87,17 @@ async function doImport() {
 }
 
 async function doExport() {
+  if (!window.confirm(t('settings.cookiesExportWarning'))) return;
   await window.api.invoke('yt:exportCookies');
 }
 
 function onBrowserChange(e: Event) {
   settings.updateYoutube({ cookiesBrowser: (e.target as HTMLSelectElement).value });
+}
+
+async function pickDownloadPath() {
+  const paths = (await window.api.invoke('dialog:openFolder')) as string[];
+  if (paths.length > 0) settings.updateDownload({ defaultPath: paths[0] });
 }
 </script>
 
@@ -186,58 +194,31 @@ function onBrowserChange(e: Event) {
       </div>
 
       <p v-if="errorMsg" class="text-xs text-red-400">{{ errorMsg }}</p>
-    </SettingsCard>
-
-    <SettingsCard>
-      <SettingsSectionTitle :title="$t('settings.defaultAudioFormat')" />
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <button
-          v-for="f in audioFormats"
-          :key="f"
-          class="px-4 py-2 rounded-xl text-sm uppercase border transition-colors font-medium"
-          :class="
-            settings.download.defaultAudioFormat === f
-              ? 'border-accent-base bg-accent-ghost text-accent-base'
-              : 'border-border-default text-fg-muted hover:bg-bg-hover'
-          "
-          @click="settings.updateDownload({ defaultAudioFormat: f })"
-        >
-          {{ f }}
-        </button>
-      </div>
-    </SettingsCard>
-
-    <SettingsCard>
-      <SettingsSectionTitle :title="$t('settings.defaultVideoQuality')" />
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <button
-          v-for="q in videoQualities"
-          :key="q"
-          class="px-4 py-2 rounded-xl text-sm border transition-colors"
-          :class="
-            settings.download.defaultVideoQuality === q
-              ? 'border-accent-base bg-accent-ghost text-accent-base font-medium'
-              : 'border-border-default text-fg-muted hover:bg-bg-hover'
-          "
-          @click="settings.updateDownload({ defaultVideoQuality: q })"
-        >
-          {{ q }}
-        </button>
-      </div>
-    </SettingsCard>
-
-    <SettingsCard>
-      <SettingsSectionTitle :title="$t('settings.filenameTemplate')" />
-      <input
-        :value="settings.download.filenameTemplate"
-        class="w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none focus:ring-2 focus:ring-accent-base/15 transition-all"
-        @change="
-          settings.updateDownload({ filenameTemplate: ($event.target as HTMLInputElement).value })
-        "
-      />
-      <p class="text-xs text-fg-faint">
-        {{ $t('settings.available') }} {'{title}'}, {'{artist}'}, {'{album}'}, {'{year}'}
+      <p v-if="settings.youtube.method !== 'none'" class="text-[11px] text-amber-base">
+        {{ $t('settings.cookiesSecurityHint') }}
       </p>
+    </SettingsCard>
+
+    <SettingsCard>
+      <SettingsSectionTitle
+        :title="$t('settings.downloadPath')"
+        :description="$t('settings.downloadPathDesc')"
+      />
+      <div class="flex items-center gap-2">
+        <input
+          :value="settings.download.defaultPath"
+          readonly
+          class="flex-1 px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none transition-all"
+          :placeholder="$t('settings.downloadPathPlaceholder')"
+        />
+        <button
+          class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent-base text-white text-sm font-medium hover:bg-accent-hover transition-colors shrink-0"
+          @click="pickDownloadPath"
+        >
+          <FolderOpen :size="14" />
+          {{ $t('settings.chooseFolder') }}
+        </button>
+      </div>
     </SettingsCard>
 
     <SettingsCard>
@@ -256,6 +237,78 @@ function onBrowserChange(e: Event) {
           })
         "
       />
+    </SettingsCard>
+
+    <SettingsCard>
+      <SettingsRow :label="$t('settings.hashFiles')" :description="$t('settings.hashFilesDesc')">
+        <SettingsToggle
+          :model-value="settings.download.hashFiles"
+          @update:model-value="settings.updateDownload({ hashFiles: $event })"
+        />
+      </SettingsRow>
+    </SettingsCard>
+
+    <SettingsCard>
+      <SettingsRow
+        :label="$t('settings.autoDownloadSub')"
+        :description="$t('settings.autoDownloadSubDesc')"
+      >
+        <SettingsToggle
+          :model-value="settings.download.autoDownloadSubscriptions"
+          @update:model-value="settings.updateDownload({ autoDownloadSubscriptions: $event })"
+        />
+      </SettingsRow>
+    </SettingsCard>
+
+    <SettingsCard>
+      <SettingsRow
+        :label="$t('settings.nightSchedule')"
+        :description="$t('settings.nightScheduleDesc')"
+      >
+        <SettingsToggle
+          :model-value="settings.download.nightScheduleEnabled"
+          @update:model-value="settings.updateDownload({ nightScheduleEnabled: $event })"
+        />
+      </SettingsRow>
+      <div v-if="settings.download.nightScheduleEnabled" class="mt-3 flex items-center gap-2">
+        <input
+          type="number"
+          min="0"
+          max="23"
+          :value="settings.download.nightScheduleStart"
+          class="px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm w-20 focus:border-accent-base focus:outline-none"
+          @change="
+            settings.updateDownload({
+              nightScheduleStart: parseInt(($event.target as HTMLInputElement).value) || 0
+            })
+          "
+        />
+        <span class="text-xs text-fg-faint">—</span>
+        <input
+          type="number"
+          min="0"
+          max="23"
+          :value="settings.download.nightScheduleEnd"
+          class="px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm w-20 focus:border-accent-base focus:outline-none"
+          @change="
+            settings.updateDownload({
+              nightScheduleEnd: parseInt(($event.target as HTMLInputElement).value) || 0
+            })
+          "
+        />
+        <span class="text-xs text-fg-faint">{{ $t('settings.nightScheduleHours') }}</span>
+      </div>
+    </SettingsCard>
+    <SettingsCard>
+      <SettingsRow
+        :label="$t('settings.autoAddDownloadFolder')"
+        :description="$t('settings.autoAddDownloadFolderDesc')"
+      >
+        <SettingsToggle
+          :model-value="settings.download.autoAddDownloadFolder"
+          @update:model-value="settings.updateDownload({ autoAddDownloadFolder: $event })"
+        />
+      </SettingsRow>
     </SettingsCard>
   </SettingsPanel>
 </template>

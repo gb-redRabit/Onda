@@ -1,5 +1,5 @@
 import { nativeImage } from 'electron';
-import { mkdir, access, readFile, writeFile } from 'fs/promises';
+import { mkdir, access, readFile, writeFile, stat } from 'fs/promises';
 import { join, extname } from 'path';
 import { createHash } from 'crypto';
 import sharp from 'sharp';
@@ -23,6 +23,16 @@ async function readCache(cacheFile: string): Promise<string | null> {
     return `data:image/jpeg;base64,${(await readFile(cacheFile)).toString('base64')}`;
   } catch {
     return null;
+  }
+}
+
+// Include size + mtime so a replaced file never reuses a stale thumbnail.
+async function sourceStamp(filePath: string): Promise<string> {
+  try {
+    const s = await stat(filePath);
+    return `${s.size}:${s.mtimeMs}`;
+  } catch {
+    return '';
   }
 }
 
@@ -73,8 +83,9 @@ async function buildThumbnail(filePath: string, maxSize: number): Promise<Buffer
 export async function getThumbnail(filePath: string, maxSize: number): Promise<string | null> {
   try {
     maxSize = sanitizeThumbSize(maxSize);
+    const stamp = await sourceStamp(filePath);
     const hash = createHash('md5')
-      .update(filePath + maxSize)
+      .update(filePath + maxSize + stamp)
       .digest('hex');
     const cacheFile = join(cacheDir, `${hash}.jpg`);
     const cached = await readCache(cacheFile);
@@ -105,8 +116,9 @@ export async function batchThumbnails(
     const batch = files.slice(i, i + concurrency);
     const promises = batch.map(async (filePath) => {
       try {
+        const stamp = await sourceStamp(filePath);
         const hash = createHash('md5')
-          .update(filePath + maxSize)
+          .update(filePath + maxSize + stamp)
           .digest('hex');
         const cacheFile = join(cacheDir, `${hash}.jpg`);
         const cached = await readCache(cacheFile);

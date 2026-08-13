@@ -10,18 +10,22 @@ export interface VideoCodecContext {
 export function useVideoCodec(ctx: VideoCodecContext) {
   const { player, notify } = ctx;
   let audioCodecChecked = '';
+  let codecGeneration = 0;
 
   async function checkVideoAudioCodec(track: MediaFile, el: HTMLVideoElement): Promise<void> {
     if (audioCodecChecked === track.path) return;
     audioCodecChecked = track.path;
+    const generation = ++codecGeneration;
 
     const result = await window.api?.checkAudioCodec(track.path);
     if (!result || result.supported) return;
+    if (generation !== codecGeneration) return;
 
     audioEngine.setVideoVolume(0);
     const seekPos = el.currentTime || 0;
 
     const chunkPath = await window.api?.transcodeAudioChunk(track.path, seekPos, 30);
+    if (generation !== codecGeneration) return;
     if (chunkPath) {
       try {
         await audioEngine.connectSecondaryAudio(chunkPath, seekPos);
@@ -34,6 +38,7 @@ export function useVideoCodec(ctx: VideoCodecContext) {
     }
 
     const fullPath = await window.api?.transcodeAudio(track.path);
+    if (generation !== codecGeneration) return;
     if (fullPath) {
       if (fullPath === chunkPath) return;
       audioEngine.disconnectSecondaryAudio();

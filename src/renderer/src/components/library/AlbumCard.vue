@@ -60,7 +60,13 @@ function onDragStart(e: DragEvent) {
     <div
       class="w-full aspect-square bg-bg-overlay flex items-center justify-center relative overflow-hidden"
     >
-      <MediaCover :path="first?.path" :cover="cover" :size="28" :render-as-video="false" fallback="disc" />
+      <MediaCover
+        :path="first?.path"
+        :cover="cover"
+        :size="28"
+        :render-as-video="false"
+        fallback="disc"
+      />
       <div
         class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors"
       >

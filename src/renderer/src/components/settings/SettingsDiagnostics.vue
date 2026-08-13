@@ -115,8 +115,7 @@ async function onClear(): Promise<void> {
     <SettingsCard :padded="false">
       <pre
         class="h-64 overflow-auto p-4 text-[11px] leading-relaxed font-mono text-fg-muted whitespace-pre-wrap break-words"
-        >{{ logs || $t('settings.logEmpty') }}</pre
-      >
+        >{{ logs || $t('settings.logEmpty') }}</pre>
     </SettingsCard>
   </SettingsPanel>
 </template>

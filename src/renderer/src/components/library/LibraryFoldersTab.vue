@@ -101,11 +101,14 @@ function folderTypeIcon(type: string): string {
         @click="togglePath(folderPath)"
       >
         <div class="flex items-center gap-2.5 min-w-0">
-          <span class="text-lg shrink-0">{{ folderTypeIcon(library.getFolderType(folderPath)) }}</span>
+          <span class="text-lg shrink-0">{{
+            folderTypeIcon(library.getFolderType(folderPath))
+          }}</span>
           <div class="min-w-0 text-left">
             <div class="text-sm font-medium">{{ dirName(folderPath) }}</div>
             <div class="text-xs text-fg-faint truncate">
-              {{ folderPath }} · {{ folderFileCounts.get(folderPath) || 0 }} {{ $t('library.folderFiles') }}
+              {{ folderPath }} · {{ folderFileCounts.get(folderPath) || 0 }}
+              {{ $t('library.folderFiles') }}
             </div>
           </div>
         </div>

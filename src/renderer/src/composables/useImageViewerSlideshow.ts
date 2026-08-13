@@ -70,7 +70,9 @@ export function useImageViewerSlideshow(deps: SlideshowDeps) {
     }
     if (autoHideUI.value) deps.resetIdleTimer();
     if (shuffleSlideshow.value) {
-      shuffleOrder = [...Array(deps.files.length).keys()].filter((i) => i !== deps.currentIndex.value);
+      shuffleOrder = [...Array(deps.files.length).keys()].filter(
+        (i) => i !== deps.currentIndex.value
+      );
       for (let i = shuffleOrder.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffleOrder[i], shuffleOrder[j]] = [shuffleOrder[j], shuffleOrder[i]];

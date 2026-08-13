@@ -116,5 +116,13 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
     }
   }
 
-  return { loadFromDisk, scheduleLoadTracksAsync, scanFolders };
+  async function cancelScan() {
+    try {
+      await window.api?.cancelLibraryScan();
+    } catch {
+      /* cancel failed */
+    }
+  }
+
+  return { loadFromDisk, scheduleLoadTracksAsync, scanFolders, cancelScan };
 }

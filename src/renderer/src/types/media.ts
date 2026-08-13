@@ -12,6 +12,7 @@ export interface MediaFile {
   addedAt: number;
   lastPlayed?: number;
   playCount: number;
+  mtime?: number;
 }
 
 export interface MediaMetadata {
@@ -29,6 +30,7 @@ export interface MediaMetadata {
   sampleRate?: number;
   codec?: string;
   lossless?: boolean;
+  replayGainTrackGain?: number;
 }
 
 export interface MediaPicture {

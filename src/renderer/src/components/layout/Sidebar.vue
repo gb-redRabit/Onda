@@ -123,7 +123,8 @@ function playPlaylist(playlistId: string) {
         <button
           v-for="item in navItems"
           :key="item.label"
-          class="w-full flex items-center  gap-3 p-3 rounded-xl text-sm font-medium transition-all"
+          class="w-full flex items-center gap-3 p-3 rounded-xl text-sm font-medium transition-all"
+          :aria-label="item.label"
           :class="
             route.path === item.route
               ? 'bg-accent-base text-white shadow-lg shadow-accent-base/25'
@@ -166,6 +167,7 @@ function playPlaylist(playlistId: string) {
                 <span class="text-[10px] text-fg-faint/50">{{ playlist.tracks.length }}</span>
                 <button
                   class="p-0.5 rounded opacity-0 group-hover:opacity-100 text-fg-faint hover:text-red-base transition-all"
+                  :aria-label="$t('common.delete')"
                   @click.stop="library.deletePlaylist(playlist.id)"
                 >
                   <Trash2 :size="10" />
@@ -247,6 +249,7 @@ function playPlaylist(playlistId: string) {
       <div class="p-2 border-t border-border-default space-y-1">
         <button
           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
+          :aria-label="$t('nav.settings')"
           :class="
             route.path === '/settings'
               ? 'bg-accent-base text-white shadow-lg shadow-accent-base/25'
@@ -259,6 +262,7 @@ function playPlaylist(playlistId: string) {
         </button>
         <button
           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-fg-faint hover:bg-bg-hover hover:text-fg-muted transition-colors"
+          :aria-label="collapsed ? $t('nav.expand') : $t('nav.collapse')"
           @click="collapsed = !collapsed"
         >
           <ChevronRight v-if="collapsed" :size="18" class="shrink-0" />

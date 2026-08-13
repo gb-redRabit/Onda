@@ -22,18 +22,20 @@ export class PipPreview {
       show: false,
       alwaysOnTop: true,
       frame: false,
+      hasShadow: false,
       skipTaskbar: true,
       resizable: false,
-      backgroundColor: '#1a1a1a',
+      transparent: true,
+      backgroundColor: '#00000000',
       webPreferences: {
         contextIsolation: true,
         nodeIntegration: false
       }
     });
 
-    this.window.loadURL(
-      `data:text/html,<!DOCTYPE html><html><head><style>*{margin:0;padding:0}body{background:#1a1a1a;height:100vh;display:flex;align-items:center;justify-content:center;color:#555;font:13px sans-serif;border:1px dashed #333;border-radius:12px;box-sizing:border-box}</style></head><body>Podgląd PiP</body></html>`
-    );
+    const radius = ph < 120 ? '12px' : '16px';
+    const html = `<!DOCTYPE html><html><head><style>*{margin:0;padding:0}body{background:transparent;height:100vh;overflow:hidden}.box{width:100%;height:100%;box-sizing:border-box;border:1px dashed rgb(124,106,239);border-radius:${radius};background:rgba(124,106,239,0.35);display:flex;align-items:center;justify-content:center;color:rgb(255,255,255);font:13px sans-serif}</style></head><body><div class="box">Video PiP</div></body></html>`;
+    this.window.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
 
     this.window.on('closed', () => {
       this.window = null;

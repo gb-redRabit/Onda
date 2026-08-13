@@ -2,11 +2,15 @@ import type { Router } from 'vue-router';
 import { usePlayerStore } from '@renderer/stores/player';
 import type { MediaFile } from '@renderer/types/media';
 import { buildMediaFile } from '@renderer/utils/explorerMedia';
+import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
+import { logger } from '@shared/logger';
 
 export async function openMediaFiles(paths: string[], router: Router): Promise<void> {
   const player = usePlayerStore();
 
   if (!paths.length) return;
+
+  logger.info('openMedia', `openMediaFiles: ${paths.length} paths`, paths);
 
   const ordered = paths.map((path) => buildMediaFile({ path }));
   const audioTracks = ordered.filter((t) => t.type === 'audio');
@@ -21,6 +25,10 @@ export async function openMediaFiles(paths: string[], router: Router): Promise<v
 
   const [first, ...rest] = playQueue;
 
+  // Grant the media server access to the folder of the first file (belt-and-
+  // suspenders for every open path: dialog, file association, drag&drop).
+  await window.api?.grantMediaAccess(first.path);
+
   if (first.type === 'audio') {
     await window.api?.clearPlaybackPosition(first.path);
   } else {
@@ -30,6 +38,8 @@ export async function openMediaFiles(paths: string[], router: Router): Promise<v
   if (rest.length) {
     player.pendingQueue = [...rest];
   }
+
+  logger.info('openMedia', `first track type=${first.type} url=${toMediaServerUrl(first.path)}`);
 
   player.setTrack(first);
   player.enrichTrack(first);

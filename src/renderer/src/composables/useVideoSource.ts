@@ -76,8 +76,11 @@ export function useVideoSource(
     });
   }
 
-  function setupVideo(track: MediaFile | null) {
+  async function setupVideo(track: MediaFile | null) {
     if (!track || track.type !== 'video' || !videoRef.value) return;
+    // Video is served through the local media server — grant access to the
+    // track's folder before the element requests the URL.
+    await window.api?.grantMediaAccess(track.path);
     const el = videoRef.value;
     const src = getTrackSrc(track);
     if (el.getAttribute('data-src') !== src) {

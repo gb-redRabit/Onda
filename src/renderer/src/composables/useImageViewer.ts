@@ -12,10 +12,7 @@ export interface ImageViewerProps {
   initialIndex: number;
 }
 
-export function useImageViewer(
-  props: ImageViewerProps,
-  emit: { close: () => void }
-) {
+export function useImageViewer(props: ImageViewerProps, emit: { close: () => void }) {
   const files = computed(() => props.files);
   const currentIndex = ref(props.initialIndex);
 

@@ -3,7 +3,7 @@ import http from 'http';
 import fs from 'fs/promises';
 import os from 'os';
 import { join } from 'path';
-import { createMediaServer } from '../media-server';
+import { createMediaServer, setAllowedRoots } from '../media-server';
 import type { MediaServer } from '../media-server';
 
 let server: MediaServer | null = null;
@@ -37,7 +37,11 @@ function request(
         const chunks: Buffer[] = [];
         res.on('data', (c) => chunks.push(c));
         res.on('end', () =>
-          resolve({ status: res.statusCode || 0, headers: res.headers, body: Buffer.concat(chunks) })
+          resolve({
+            status: res.statusCode || 0,
+            headers: res.headers,
+            body: Buffer.concat(chunks)
+          })
         );
       }
     );
@@ -51,6 +55,7 @@ function request(
 
 beforeAll(async () => {
   server = await createMediaServer();
+  await setAllowedRoots([os.tmpdir()]);
 });
 
 afterAll(async () => {
@@ -184,14 +189,16 @@ describe('media-server', () => {
     expect(res.status).toBe(204);
   });
 
-  it('returns 500 for an unreadable file', async () => {
-    const missing =
-      process.platform === 'win32'
-        ? 'C:/no-such-file-onda.mp4'
-        : '/no-such-file-onda.mp4';
-    const res = await request(
-      `/${server!.token}/?path=${encodeURIComponent(missing)}`
-    );
+  it('returns 500 for an unreadable file inside an allowed root', async () => {
+    const missing = join(os.tmpdir(), 'no-such-file-onda.mp4');
+    const res = await request(`/${server!.token}/?path=${encodeURIComponent(missing)}`);
     expect(res.status).toBe(500);
+  });
+
+  it('rejects paths outside the allowed roots (fail-closed)', async () => {
+    const outside =
+      process.platform === 'win32' ? 'C:/Windows/System32/notepad.exe' : '/etc/hostname';
+    const res = await request(`/${server!.token}/?path=${encodeURIComponent(outside)}`);
+    expect(res.status).toBe(403);
   });
 });

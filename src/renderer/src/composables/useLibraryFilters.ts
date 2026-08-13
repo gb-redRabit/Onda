@@ -33,9 +33,7 @@ export function useLibraryFilters(library: ReturnType<typeof useLibraryStore>) {
     const q = debouncedQuery.value.toLowerCase();
     return library.videoTracks.filter(
       (tr) =>
-        !q ||
-        tr.name.toLowerCase().includes(q) ||
-        tr.metadata?.title?.toLowerCase().includes(q)
+        !q || tr.name.toLowerCase().includes(q) || tr.metadata?.title?.toLowerCase().includes(q)
     );
   });
 

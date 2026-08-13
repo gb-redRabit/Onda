@@ -61,18 +61,27 @@ onUnmounted(() => grid.destroy());
 </script>
 
 <template>
-  <div v-if="tracks.length === 0" class="flex flex-col items-center justify-center h-full gap-3 text-fg-faint">
+  <div
+    v-if="tracks.length === 0"
+    class="flex flex-col items-center justify-center h-full gap-3 text-fg-faint"
+  >
     <Music2 :size="48" class="opacity-30" />
     <p class="text-sm">{{ $t('library.noAudio') }}</p>
     <p class="text-xs">{{ $t('library.addFolderHint') }}</p>
   </div>
   <template v-else>
-    <div class="flex items-center justify-between px-4 py-2 border-b border-border-default shrink-0">
+    <div
+      class="flex items-center justify-between px-4 py-2 border-b border-border-default shrink-0"
+    >
       <span class="text-xs text-fg-faint">{{ tracks.length }} {{ $t('library.tracksCount') }}</span>
       <div class="flex items-center gap-2">
         <button
           class="p-1.5 rounded-lg transition-colors"
-          :class="viewMode === 'list' ? 'bg-accent-ghost text-accent-base' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'"
+          :class="
+            viewMode === 'list'
+              ? 'bg-accent-ghost text-accent-base'
+              : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+          "
           :title="$t('library.viewModeList')"
           @click="emit('update:viewMode', 'list')"
         >
@@ -80,7 +89,11 @@ onUnmounted(() => grid.destroy());
         </button>
         <button
           class="p-1.5 rounded-lg transition-colors"
-          :class="viewMode === 'grid' ? 'bg-accent-ghost text-accent-base' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'"
+          :class="
+            viewMode === 'grid'
+              ? 'bg-accent-ghost text-accent-base'
+              : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+          "
           :title="$t('library.viewModeGrid')"
           @click="emit('update:viewMode', 'grid')"
         >
@@ -98,7 +111,11 @@ onUnmounted(() => grid.destroy());
     <template v-if="viewMode === 'list'">
       <div ref="trackListRef" class="flex-1 overflow-auto">
         <div
-          :style="{ height: trackVirtualizer.getTotalSize() + 'px', width: '100%', position: 'relative' }"
+          :style="{
+            height: trackVirtualizer.getTotalSize() + 'px',
+            width: '100%',
+            position: 'relative'
+          }"
         >
           <div
             v-for="v in trackVirtualizer.getVirtualItems()"
@@ -112,7 +129,11 @@ onUnmounted(() => grid.destroy());
               transform: 'translateY(' + v.start + 'px)'
             }"
           >
-            <LibraryTrackRow :track="tracks[v.index]" :show-playlist="true" @edit="emit('edit', $event)" />
+            <LibraryTrackRow
+              :track="tracks[v.index]"
+              :show-playlist="true"
+              @edit="emit('edit', $event)"
+            />
           </div>
         </div>
       </div>

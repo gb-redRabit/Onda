@@ -1,5 +1,6 @@
 export type PipMode = 'minimal' | 'medium' | 'max' | 'wide';
-export type PipPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'top' | 'bottom';
+export type PipPosition =
+  'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'top' | 'bottom';
 
 export interface PipSubtitleData {
   subContent: string;

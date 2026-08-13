@@ -9,6 +9,16 @@ import { resolveBin } from '../binaries';
 
 const tempDir = join(os.tmpdir(), 'onda', 'audio-transcodes');
 
+// Include size + mtime so a replaced file never reuses a stale transcode.
+async function sourceStamp(filePath: string): Promise<string> {
+  try {
+    const s = await stat(filePath);
+    return `${s.size}:${s.mtimeMs}`;
+  } catch {
+    return '';
+  }
+}
+
 export async function transcodeAudioChunk(
   filePath: string,
   startTime: number,
@@ -18,7 +28,10 @@ export async function transcodeAudioChunk(
     return null;
   }
   await mkdir(tempDir, { recursive: true });
-  const hash = createHash('md5').update(filePath).digest('hex');
+  const stamp = await sourceStamp(filePath);
+  const hash = createHash('md5')
+    .update(filePath + stamp)
+    .digest('hex');
   const chunkKey = `${hash}_${Math.floor(startTime)}_${Math.ceil(duration)}`;
   const outPath = join(tempDir, `${chunkKey}.m4a`);
 
@@ -62,7 +75,10 @@ export async function transcodeAudioChunk(
 
 export async function transcodeAudio(filePath: string): Promise<string | null> {
   await mkdir(tempDir, { recursive: true });
-  const hash = createHash('md5').update(filePath).digest('hex');
+  const stamp = await sourceStamp(filePath);
+  const hash = createHash('md5')
+    .update(filePath + stamp)
+    .digest('hex');
   const outPath = join(tempDir, `${hash}.m4a`);
 
   try {

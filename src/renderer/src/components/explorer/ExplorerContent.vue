@@ -27,13 +27,13 @@ function setScrollRef(el: unknown) {
 }
 
 const {
-    files,
-    explorer,
-    fileClipboard,
-    contentRef,
-    hoveredFolderPath,
-    extraSmallIcon,
-    isGridMode,
+  files,
+  explorer,
+  fileClipboard,
+  contentRef,
+  hoveredFolderPath,
+  extraSmallIcon,
+  isGridMode,
   itemsPerRow,
   getRowItems,
   virtualizer,
@@ -70,11 +70,10 @@ defineExpose({ reveal });
       <p class="text-sm">{{ $t('explorer.folderEmpty') }}</p>
     </div>
 
-    <div
-      v-if="explorer.isLoading && files.length === 0"
-      class="flex justify-center py-8"
-    >
-      <div class="w-6 h-6 border-2 border-accent-base border-t-transparent rounded-full animate-spin" />
+    <div v-if="explorer.isLoading && files.length === 0" class="flex justify-center py-8">
+      <div
+        class="w-6 h-6 border-2 border-accent-base border-t-transparent rounded-full animate-spin"
+      />
     </div>
 
     <div v-if="explorer.isAtDrives && files.length > 0" class="mb-3">
@@ -139,11 +138,7 @@ defineExpose({ reveal });
             :src="extraSmallIcon(files[virtualRow.index])!"
             class="w-4 h-4 object-contain shrink-0"
           />
-          <HardDrive
-            v-else-if="explorer.isAtDrives"
-            :size="12"
-            class="text-accent-base shrink-0"
-          />
+          <HardDrive v-else-if="explorer.isAtDrives" :size="12" class="text-accent-base shrink-0" />
           <FolderOpen
             v-else-if="files[virtualRow.index].isDirectory"
             :size="12"
@@ -191,7 +186,10 @@ defineExpose({ reveal });
             :is-library-folder="!item.isDirectory ? false : isLibraryFolder(item.path)"
             :hovered-folder-path="hoveredFolderPath"
             :is-cut="fileClipboard.isCut(item.path)"
-            @select="(path: string, e: MouseEvent) => onItemClick(e, path, virtualRow.index * itemsPerRow + i)"
+            @select="
+              (path: string, e: MouseEvent) =>
+                onItemClick(e, path, virtualRow.index * itemsPerRow + i)
+            "
             @double-click="emit('open', $event)"
             @context-menu="(e: MouseEvent, item: FileItem) => emit('menu', e, item)"
           />

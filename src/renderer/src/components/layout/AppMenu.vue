@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Minus, Square, X, Search, Music2, Maximize2, FolderOpen, FileAudio } from '@lucide/vue';
+import { Minus, Square, X, Search, Maximize2, FolderOpen, FileAudio } from '@lucide/vue';
 import { useUIStore } from '@renderer/stores/ui';
 import { useAppMenu } from '@renderer/composables/useAppMenu';
+import appIcon from '@renderer/assets/icon.png';
 
 const ui = useUIStore();
 
@@ -31,11 +32,7 @@ const {
     <!-- Logo + static menus -->
     <div class="flex items-center shrink-0" style="-webkit-app-region: no-drag">
       <div class="flex items-center gap-2 px-3">
-        <div
-          class="w-5 h-5 rounded-md flex items-center justify-center bg-linear-to-br from-accent-base to-purple-400"
-        >
-          <Music2 :size="11" class="text-white" />
-        </div>
+        <img :src="appIcon" alt="Onda Logo" class="w-5 h-5 object-contain" />
       </div>
 
       <!-- File -->

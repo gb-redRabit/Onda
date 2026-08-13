@@ -66,8 +66,10 @@ describe('ffmpegDownloadUrl / ffmpegShaUrl', () => {
     expect(ffmpegDownloadUrl('linux')).toBeNull();
   });
 
-  it('points the checksum at the sibling .sha256 file of the zip', () => {
-    expect(ffmpegShaUrl('win32')).toBe(`${ffmpegDownloadUrl('win32')}.sha256`);
+  it('points the checksum at the aggregate checksums.sha256 manifest', () => {
+    expect(ffmpegShaUrl('win32')).toBe(
+      'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/checksums.sha256'
+    );
     expect(ffmpegShaUrl('linux')).toBeNull();
   });
 });

@@ -65,9 +65,7 @@ describe('htmlToAssTags', () => {
   });
 
   it('converts <strong> and <em>', () => {
-    expect(htmlToAssTags('<strong>s</strong> <em>e</em>')).toBe(
-      '{\\b1}s{\\b0} {\\i1}e{\\i0}'
-    );
+    expect(htmlToAssTags('<strong>s</strong> <em>e</em>')).toBe('{\\b1}s{\\b0} {\\i1}e{\\i0}');
   });
 
   it('converts underline', () => {
@@ -75,9 +73,7 @@ describe('htmlToAssTags', () => {
   });
 
   it('applies font color', () => {
-    expect(htmlToAssTags('<font color="#ff0000">red</font>')).toBe(
-      '{\\c&H000000ff&}red'
-    );
+    expect(htmlToAssTags('<font color="#ff0000">red</font>')).toBe('{\\c&H000000ff&}red');
   });
 
   it('keeps font content when color is invalid', () => {
@@ -97,7 +93,9 @@ describe('srtToAss (via convertToAss)', () => {
   it('converts an SRT block to a Dialogue line', () => {
     const srt = '1\n00:00:01,000 --> 00:00:03,500\nHello <i>world</i>';
     const out = convertToAss({ format: 'srt', content: srt });
-    expect(out).toContain('Dialogue: 0,00:00:01.00,00:00:03.50,Default,,0,0,0,,Hello {\\i1}world{\\i0}\n');
+    expect(out).toContain(
+      'Dialogue: 0,00:00:01.00,00:00:03.50,Default,,0,0,0,,Hello {\\i1}world{\\i0}\n'
+    );
   });
 
   it('accepts dot as milliseconds separator', () => {
@@ -120,16 +118,15 @@ describe('srtToAss (via convertToAss)', () => {
   });
 
   it('always emits the ASS header', () => {
-    expect(convertToAss({ format: 'srt', content: '1\n00:00:01.000 --> 00:00:02.000\nx' })).toContain(
-      ASS_HEADER
-    );
+    expect(
+      convertToAss({ format: 'srt', content: '1\n00:00:01.000 --> 00:00:02.000\nx' })
+    ).toContain(ASS_HEADER);
   });
 });
 
 describe('vttToAss (via convertToAss)', () => {
   it('skips WEBVTT header and Kind/Language lines', () => {
-    const vtt =
-      'WEBVTT\nKind: captions\nLanguage: en\n\n00:00:01.000 --> 00:00:02.000\nhello';
+    const vtt = 'WEBVTT\nKind: captions\nLanguage: en\n\n00:00:01.000 --> 00:00:02.000\nhello';
     const out = convertToAss({ format: 'vtt', content: vtt });
     expect(out).not.toContain('WEBVTT');
     expect(out).not.toContain('Kind');

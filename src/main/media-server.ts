@@ -40,6 +40,12 @@ export async function addAllowedRoot(root: string): Promise<void> {
 }
 
 function isWithinRoot(filePath: string, root: string): boolean {
+  if (process.platform === 'win32') {
+    const f = filePath.toLowerCase();
+    const r = root.toLowerCase();
+    if (f === r) return true;
+    return f.startsWith(r) && (f.charAt(r.length) === '\\' || f.charAt(r.length) === '/');
+  }
   if (filePath === root) return true;
   return (
     filePath.startsWith(root) &&
@@ -90,7 +96,10 @@ export function createMediaServer(): Promise<MediaServer> {
             'access-control-allow-headers',
             req.headers['access-control-request-headers'] || '*'
           );
-          res.setHeader('access-control-expose-headers', 'content-range, accept-ranges, content-length');
+          res.setHeader(
+            'access-control-expose-headers',
+            'content-range, accept-ranges, content-length'
+          );
         }
 
         if (req.method === 'OPTIONS') {
@@ -128,14 +137,14 @@ export function createMediaServer(): Promise<MediaServer> {
           // fall back to normalized path; root check below still applies
         }
 
-        if (allowedRoots.length > 0) {
-          const allowed = allowedRoots.some((root) => isWithinRoot(realPath, root));
-          if (!allowed) {
-            logger.warn('media-server', `rejected path outside allowed roots: ${realPath}`);
-            res.writeHead(403);
-            res.end('forbidden');
-            return;
-          }
+        if (!allowedRoots.some((root) => isWithinRoot(realPath, root))) {
+          logger.warn(
+            'media-server',
+            `rejected path outside allowed roots: ${realPath} (roots=${allowedRoots.length})`
+          );
+          res.writeHead(403);
+          res.end('forbidden');
+          return;
         }
 
         const stat = await fs.promises.stat(realPath);

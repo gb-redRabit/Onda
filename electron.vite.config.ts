@@ -39,9 +39,9 @@ export default defineConfig({
     base: './',
     plugins: [vue(), tailwindcss(), wasmMime()],
     resolve: {
-      alias: { 
-        '@renderer': resolve('src/renderer/src'), 
-        '@shared': resolve('src/shared') 
+      alias: {
+        '@renderer': resolve('src/renderer/src'),
+        '@shared': resolve('src/shared')
       }
     },
     worker: { format: 'es' },

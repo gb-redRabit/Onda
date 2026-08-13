@@ -4,6 +4,8 @@ import { getStore } from './cover-cache';
 import { configureAutoCheck } from '../updater-scheduler';
 import { sanitizeSettings } from './settings-schema';
 import { encryptApiKeys, decryptApiKeys } from './settings-crypto';
+import { syncSubscriptionsScheduler } from './subscriptions-handlers';
+import { setCloseToTray } from '../close-behavior';
 import type { AppSettings } from '../../renderer/src/types/settings';
 import { logger } from '../../shared/logger';
 
@@ -31,7 +33,9 @@ export function registerSettingsHandlers(): void {
       for (const [key, value] of Object.entries(sanitized)) {
         store.set(key, value);
       }
+      if (sanitized.general) setCloseToTray(sanitized.general.closeToTray !== false);
       if (sanitized.updates) void configureAutoCheck();
+      if (sanitized.download) void syncSubscriptionsScheduler();
       return true;
     } catch (e) {
       logger.warn('settings', 'settings:set failed', e);
@@ -53,8 +57,16 @@ export function registerSettingsHandlers(): void {
         if (result.canceled || !result.filePath) return { success: false, canceled: true };
         const store = await getStore();
         const { sanitized } = sanitizeSettings(store.store || {});
-        if (sanitized.apiKeys) sanitized.apiKeys = decryptApiKeys(sanitized.apiKeys);
-        await writeFile(result.filePath, JSON.stringify(sanitized, null, 2), 'utf-8');
+        const exported: Partial<AppSettings> = { ...sanitized };
+        // Never write secrets (API keys, proxy password) to an unencrypted export file.
+        delete exported.apiKeys;
+        if (exported.network?.proxy) {
+          exported.network = {
+            ...exported.network,
+            proxy: { ...exported.network.proxy, password: undefined }
+          };
+        }
+        await writeFile(result.filePath, JSON.stringify(exported, null, 2), 'utf-8');
         return { success: true };
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -68,7 +80,12 @@ export function registerSettingsHandlers(): void {
     'settings:import',
     async (
       event
-    ): Promise<{ success: boolean; canceled?: boolean; data?: Partial<AppSettings>; error?: string }> => {
+    ): Promise<{
+      success: boolean;
+      canceled?: boolean;
+      data?: Partial<AppSettings>;
+      error?: string;
+    }> => {
       try {
         const win = BrowserWindow.fromWebContents(event.sender);
         if (!win) return { success: false, error: 'No window' };
@@ -82,15 +99,23 @@ export function registerSettingsHandlers(): void {
         const parsed = JSON.parse(raw) as Partial<AppSettings>;
         const { sanitized, droppedKeys } = sanitizeSettings(parsed);
         if (droppedKeys.length > 0) {
-          logger.warn('settings', `settings:import dropped invalid keys: ${droppedKeys.join(', ')}`);
+          logger.warn(
+            'settings',
+            `settings:import dropped invalid keys: ${droppedKeys.join(', ')}`
+          );
         }
+        // Encrypt secrets before they ever reach disk.
+        const toPersist: Partial<AppSettings> = { ...sanitized };
+        if (toPersist.apiKeys) toPersist.apiKeys = encryptApiKeys(toPersist.apiKeys);
         const store = await getStore();
-        for (const [key, value] of Object.entries(sanitized)) {
+        for (const [key, value] of Object.entries(toPersist)) {
           store.set(key, value);
         }
-        if (sanitized.updates) void configureAutoCheck();
+        if (toPersist.general) setCloseToTray(toPersist.general.closeToTray !== false);
+        if (toPersist.updates) void configureAutoCheck();
+        if (toPersist.download) void syncSubscriptionsScheduler();
         // return plaintext keys so the renderer store stays consistent (no double-encrypt on save)
-        const data: Partial<AppSettings> = { ...sanitized };
+        const data: Partial<AppSettings> = { ...toPersist };
         if (data.apiKeys) data.apiKeys = decryptApiKeys(data.apiKeys);
         return { success: true, data };
       } catch (e) {

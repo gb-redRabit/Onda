@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import {ref,onMounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { usePlayerStore } from '@renderer/stores/player';
@@ -7,8 +7,22 @@ import { useLibraryStore } from '@renderer/stores/library';
 import { useExplorerStore } from '@renderer/stores/explorer';
 import { useYouTubeStore } from '@renderer/stores/youtube';
 import { useYoutubeAuth } from '@renderer/composables/useYoutubeAuth';
-
+import type { AppInfo } from '@shared/types/ipc';
+import { logger } from '@shared/logger';
 const { t } = useI18n();
+
+const info = ref<AppInfo | null>(null);
+  const licenses = ref<Array<{ name: string; version?: string; license?: string }>>([]);
+
+onMounted(async () => {
+  try {
+    const [i, l] = await Promise.all([window.api?.getAppInfo(), window.api?.getLicenses()]);
+    if (i) info.value = i;
+    if (l) licenses.value = l;
+  } catch (e) {
+    logger.warn('about', 'load failed', e);
+  }
+});
 
 const route = useRoute();
 const player = usePlayerStore();
@@ -77,6 +91,6 @@ const activeDownload = computed(() => activeDownloads.value[0] || null);
       />
       {{ status.loggedIn ? $t('status.loggedIn') : $t('status.notLoggedIn') }}
     </span>
-    <span class="text-fg-faint/60">Onda v1.0.0</span>
+    <span class="text-fg-faint/60">Onda v{{ info?.appVersion }}</span>
   </div>
 </template>

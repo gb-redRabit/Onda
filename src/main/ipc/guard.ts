@@ -1,12 +1,30 @@
-import { ipcMain } from 'electron';
+import { ipcMain, app } from 'electron';
 import type { IpcMainInvokeEvent, IpcMainEvent, WebFrameMain } from 'electron';
+import { fileURLToPath } from 'url';
+import { normalize } from 'path';
 import { logger } from '../../shared/logger';
+
+function isTrustedAppFile(url: URL): boolean {
+  let target: string;
+  try {
+    target = normalize(fileURLToPath(url));
+  } catch {
+    return false;
+  }
+  const appPath = normalize(app.getAppPath());
+  if (process.platform === 'win32') {
+    return target.toLowerCase().startsWith(appPath.toLowerCase());
+  }
+  return target.startsWith(appPath);
+}
 
 function isTrustedSenderFrame(frame: WebFrameMain | null | undefined): boolean {
   if (!frame) return false;
   try {
     const url = new URL(frame.url);
-    if (url.protocol === 'file:') return true;
+    // Only the app's own page (production build) is trusted, not any arbitrary
+    // file: URL that could be navigated to from within a compromised renderer.
+    if (url.protocol === 'file:') return isTrustedAppFile(url);
     const devUrl = process.env['ELECTRON_RENDERER_URL'];
     if (devUrl) {
       return url.origin === new URL(devUrl).origin;
@@ -26,7 +44,10 @@ export function installIpcGuards(): void {
   const originalOn = ipcMain.on.bind(ipcMain);
   const originalOnce = ipcMain.once.bind(ipcMain);
 
-  ipcMain.handle = ((channel: string, listener: (event: IpcMainInvokeEvent, ...args: any[]) => any) => {
+  ipcMain.handle = ((
+    channel: string,
+    listener: (event: IpcMainInvokeEvent, ...args: any[]) => any
+  ) => {
     originalHandle(channel, (event, ...args) => {
       if (!isTrustedSenderFrame(event.senderFrame)) {
         blockLog('invoke', channel);

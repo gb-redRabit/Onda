@@ -47,9 +47,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GH_OWNER: ${{ github.repository_owner }}
-          # No code-signing certificate secrets are defined (yet), so build
-          # unsigned. IMPORTANT: do NOT add empty CSC_LINK/CSC_KEY_PASSWORD env
-          # vars here — electron-builder treats even an empty CSC_LINK as a cert
-          # path and fails (macOS: "not a file"). Add them only once you have a
-          # cert and store the real values in GitHub secrets.
+          # Code signing is OFF until certificates are provisioned. See
+          # RELEASE.md §6 and electron-builder.yml (win.publisherName /
+          # verifyUpdateCodeSignature, mac.notarize).
+          #
+          # Do NOT add empty CSC_LINK/CSC_KEY_PASSWORD vars here — electron-builder
+          # treats even an empty CSC_LINK as a cert path and fails (macOS: "not a
+          # file"). When certs are available, add the real secrets and:
+          #   - Windows: CSC_LINK, CSC_KEY_PASSWORD (or CODE_SIGN_PUBLISHER for
+          #     publisherName + verifyUpdateCodeSignature: true).
+          #   - macOS: CSC_LINK, CSC_KEY_PASSWORD, APPLE_ID,
+          #     APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID (notarize: true).
           CSC_IDENTITY_AUTO_DISCOVERY: false

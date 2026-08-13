@@ -1,10 +1,6 @@
 import type { FileItem, SortBy, SortOrder } from '@renderer/types/explorer';
 
-export function sortFiles(
-  files: FileItem[],
-  sortBy: SortBy,
-  sortOrder: SortOrder
-): FileItem[] {
+export function sortFiles(files: FileItem[], sortBy: SortBy, sortOrder: SortOrder): FileItem[] {
   const sorted = [...files].sort((a, b) => {
     if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
     let cmp = 0;

@@ -32,15 +32,22 @@ const positionOptions = computed(() =>
       <SettingsPositionGrid
         :model-value="settings.toast.position"
         :options="positionOptions"
-        :selected-label="$t(positions.find((p) => p.id === settings.toast.position)?.labelKey ?? '')"
-        @update:model-value="settings.updateToast({ position: $event as (typeof positions)[number]['id'] })"
+        :selected-label="
+          $t(positions.find((p) => p.id === settings.toast.position)?.labelKey ?? '')
+        "
+        @update:model-value="
+          settings.updateToast({ position: $event as (typeof positions)[number]['id'] })
+        "
       />
     </SettingsCard>
 
     <SettingsCard>
       <SettingsSectionTitle :title="$t('settings.toastTypes')" />
       <div class="divide-y divide-border-default">
-        <SettingsRow :label="$t('settings.toastSuccess')" :description="$t('settings.toastSuccessHint')">
+        <SettingsRow
+          :label="$t('settings.toastSuccess')"
+          :description="$t('settings.toastSuccessHint')"
+        >
           <SettingsToggle
             :model-value="settings.toast.showSuccess"
             @update:model-value="settings.updateToast({ showSuccess: $event })"
@@ -58,8 +65,20 @@ const positionOptions = computed(() =>
             @update:model-value="settings.updateToast({ showWarning: $event })"
           />
         </SettingsRow>
-        <SettingsRow :label="$t('settings.toastErrors')" :description="$t('settings.toastErrorsHint')">
+        <SettingsRow
+          :label="$t('settings.toastErrors')"
+          :description="$t('settings.toastErrorsHint')"
+        >
           <SettingsToggle :model-value="true" disabled />
+        </SettingsRow>
+        <SettingsRow
+          :label="$t('settings.toastNative')"
+          :description="$t('settings.toastNativeHint')"
+        >
+          <SettingsToggle
+            :model-value="settings.toast.showNative"
+            @update:model-value="settings.updateToast({ showNative: $event })"
+          />
         </SettingsRow>
       </div>
     </SettingsCard>

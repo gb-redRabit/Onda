@@ -7,7 +7,11 @@ interface VirtualGrid {
   destroy: () => void;
 }
 
-export function useVirtualGrid(scrollRef: Ref<HTMLElement | null>, colWidth: number, defaultCols = 6): VirtualGrid {
+export function useVirtualGrid(
+  scrollRef: Ref<HTMLElement | null>,
+  colWidth: number,
+  defaultCols = 6
+): VirtualGrid {
   const cols = ref(defaultCols);
   let indexRowObserver: ResizeObserver | null = null;
 

@@ -33,7 +33,14 @@ const MEDIA_EXT_SET = new Set([...AUDIO_EXTS, ...VIDEO_EXTS, ...IMAGE_EXTS]);
 
 export function useExplorerContextMenu(ctx: ExplorerActionCtx) {
   const { explorer, fileClipboard, library, ui, t, filteredFiles } = ctx;
-  const { copySelectedPaths, cutSelectedPaths, pasteClipboard, createNewFolder, renameItem, deleteItem } = ctx;
+  const {
+    copySelectedPaths,
+    cutSelectedPaths,
+    pasteClipboard,
+    createNewFolder,
+    renameItem,
+    deleteItem
+  } = ctx;
 
   function pushSeparator(items: ContextMenuItem[]) {
     items.push({ separator: true, label: '' });

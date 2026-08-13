@@ -5,17 +5,25 @@ import { VIDEO_EXTS, AUDIO_EXTS } from '../../shared/constants';
 import { addAllowedRoot } from '../media-server';
 import { logger } from '../../shared/logger';
 
+function getParentWindow(): BrowserWindow | null {
+  return BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0] ?? null;
+}
+
 export function registerDialogHandlers(): void {
   ipcMain.handle(
     'dialog:openImage',
     async (_event): Promise<{ canceled: boolean; filePaths: string[] }> => {
       try {
-        const win = BrowserWindow.getFocusedWindow();
-        if (!win) return { canceled: true, filePaths: [] };
-        const result = await dialog.showOpenDialog(win, {
-          properties: ['openFile'],
-          filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'bmp'] }]
-        });
+        const win = getParentWindow();
+        const result = win
+          ? await dialog.showOpenDialog(win, {
+              properties: ['openFile'],
+              filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'bmp'] }]
+            })
+          : await dialog.showOpenDialog({
+              properties: ['openFile'],
+              filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'bmp'] }]
+            });
         return { canceled: result.canceled, filePaths: result.filePaths.slice() };
       } catch (e) {
         logger.warn('dialog', 'openImage failed', e);
@@ -28,9 +36,8 @@ export function registerDialogHandlers(): void {
     'dialog:openSubtitle',
     async (_event): Promise<{ canceled: boolean; filePaths: string[] }> => {
       try {
-        const win = BrowserWindow.getFocusedWindow();
-        if (!win) return { canceled: true, filePaths: [] };
-        const result = await dialog.showOpenDialog(win, {
+        const win = getParentWindow();
+        const options: Electron.OpenDialogOptions = {
           properties: ['openFile', 'multiSelections'],
           filters: [
             {
@@ -39,7 +46,10 @@ export function registerDialogHandlers(): void {
             },
             { name: 'All Files', extensions: ['*'] }
           ]
-        });
+        };
+        const result = win
+          ? await dialog.showOpenDialog(win, options)
+          : await dialog.showOpenDialog(options);
         return { canceled: result.canceled, filePaths: result.filePaths.slice() };
       } catch (e) {
         logger.warn('dialog', 'openSubtitle failed', e);
@@ -50,9 +60,8 @@ export function registerDialogHandlers(): void {
 
   ipcMain.handle('dialog:openFile', async (_event, options?: Electron.OpenDialogOptions) => {
     try {
-      const win = BrowserWindow.getFocusedWindow();
-      if (!win) return { canceled: true, filePaths: [] };
-      const result = await dialog.showOpenDialog(win, {
+      const win = getParentWindow();
+      const dialogOptions: Electron.OpenDialogOptions = {
         properties: ['openFile', 'multiSelections'],
         filters: [
           {
@@ -74,10 +83,18 @@ export function registerDialogHandlers(): void {
           { name: 'All Files', extensions: ['*'] }
         ],
         ...options
-      });
+      };
+      const result = win
+        ? await dialog.showOpenDialog(win, dialogOptions)
+        : await dialog.showOpenDialog(dialogOptions);
+      logger.info(
+        'dialog',
+        `openFile result: canceled=${result.canceled} paths=${result.filePaths.length}`
+      );
       if (!result.canceled) {
         for (const p of result.filePaths) {
           await addAllowedRoot(dirname(p));
+          logger.info('dialog', `openFile granted root: ${dirname(p)}`);
         }
       }
       return result;
@@ -89,11 +106,10 @@ export function registerDialogHandlers(): void {
 
   ipcMain.handle('dialog:openFolder', async (_event): Promise<string[]> => {
     try {
-      const win = BrowserWindow.getFocusedWindow();
-      if (!win) return [];
-      const result = await dialog.showOpenDialog(win, {
-        properties: ['openDirectory']
-      });
+      const win = getParentWindow();
+      const result = win
+        ? await dialog.showOpenDialog(win, { properties: ['openDirectory'] })
+        : await dialog.showOpenDialog({ properties: ['openDirectory'] });
       if (!result.canceled) {
         for (const p of result.filePaths) {
           await addAllowedRoot(p);
@@ -108,11 +124,10 @@ export function registerDialogHandlers(): void {
 
   ipcMain.handle('dialog:openFolderFiles', async (_event) => {
     try {
-      const win = BrowserWindow.getFocusedWindow();
-      if (!win) return { canceled: true, filePaths: [] };
-      const result = await dialog.showOpenDialog(win, {
-        properties: ['openDirectory']
-      });
+      const win = getParentWindow();
+      const result = win
+        ? await dialog.showOpenDialog(win, { properties: ['openDirectory'] })
+        : await dialog.showOpenDialog({ properties: ['openDirectory'] });
       if (result.canceled || !result.filePaths.length) {
         return { canceled: true, filePaths: [] as string[] };
       }

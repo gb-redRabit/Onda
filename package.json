@@ -1,14 +1,14 @@
 {
   "name": "onda",
-  "version": "1.0.0",
+  "version": "0.4.0",
   "description": "An Electron application with Vue and TypeScript",
   "engines": {
     "node": ">=22.12"
   },
   "packageManager": "npm@11.13.0",
   "main": "./out/main/index.js",
-  "author": "example.com",
-  "homepage": "https://electron-vite.org",
+  "author": "gb-redRabit",
+  "homepage": "https://github.com/gb-redRabit/Onda",
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -22,6 +22,7 @@
     "dev": "electron-vite dev",
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
+    "fetch:ffmpeg": "node scripts/fetch-ffmpeg.mjs",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "npm run build && electron-builder --mac",
@@ -31,6 +32,7 @@
     "@electron-toolkit/utils": "^4.0.0",
     "@lucide/vue": "^1.24.0",
     "@tanstack/vue-virtual": "^3.13.32",
+    "chokidar": "^5.0.0",
     "electron-store": "^11.0.2",
     "electron-updater": "^6.8.9",
     "jassub": "^2.5.7",

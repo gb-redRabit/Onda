@@ -77,7 +77,10 @@ function revealDupFile(path: string) {
   contentRef.value?.reveal(path);
 }
 
-function openImageViewer(index: number) {
+async function openImageViewer(index: number) {
+  // Images are served through the local media server — grant access to the
+  // current folder before the viewer requests the URLs.
+  if (explorer.currentPath) await window.api?.grantMediaAccess(explorer.currentPath);
   imageViewerFiles.value = filteredFiles.value.filter(
     (f) => !f.isDirectory && f.extension && IMAGE_EXT_SET.has(f.extension)
   );
@@ -202,6 +205,7 @@ onBeforeUnmount(() => {
               : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
           "
           :title="$t('explorer.alwaysOnTop')"
+          :aria-label="$t('explorer.alwaysOnTop')"
           @click="togglePin"
         >
           <Pin v-if="pinned" :size="14" class="pointer-events-none" /><PinOff
@@ -219,6 +223,7 @@ onBeforeUnmount(() => {
               : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
           "
           :title="$t('explorer.duplicates')"
+          :aria-label="$t('explorer.duplicates')"
           @click="toggleDuplicatesPanel"
         >
           <Copy :size="14" class="pointer-events-none" />
@@ -227,6 +232,7 @@ onBeforeUnmount(() => {
         <button
           class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
           :title="$t('explorer.newFolder')"
+          :aria-label="$t('explorer.newFolder')"
           @click="createNewFolder"
         >
           <Plus :size="16" class="pointer-events-none" />
@@ -235,6 +241,7 @@ onBeforeUnmount(() => {
         <button
           class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
           :title="$t('explorer.openInWindow')"
+          :aria-label="$t('explorer.openInWindow')"
           @click="openInWindow"
         >
           <Monitor :size="14" class="pointer-events-none" />

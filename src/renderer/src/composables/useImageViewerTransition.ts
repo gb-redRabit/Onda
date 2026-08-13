@@ -67,7 +67,8 @@ export function useImageViewerTransition(deps: ImageViewerTransitionDeps) {
     if (transitioning.value || newIdx === deps.currentIndex.value) return;
     direction.value = dir;
     if (transitionType.value === 'random') {
-      activeTransition.value = NON_RANDOM_TYPES[Math.floor(Math.random() * NON_RANDOM_TYPES.length)];
+      activeTransition.value =
+        NON_RANDOM_TYPES[Math.floor(Math.random() * NON_RANDOM_TYPES.length)];
     } else {
       activeTransition.value = transitionType.value;
     }
@@ -77,7 +78,11 @@ export function useImageViewerTransition(deps: ImageViewerTransitionDeps) {
     imgError.value = false;
 
     const enterStart = computeEnterStart(activeTransition.value, direction.value);
-    Object.assign(newStyle, { opacity: 0, transform: enterStart.transform, filter: enterStart.filter });
+    Object.assign(newStyle, {
+      opacity: 0,
+      transform: enterStart.transform,
+      filter: enterStart.filter
+    });
 
     const file = deps.files.value[newIdx];
     if (!file) {

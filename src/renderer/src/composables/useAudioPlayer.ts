@@ -2,6 +2,7 @@ import { ref, computed, watch, effectScope } from 'vue';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { audioEvents } from '@renderer/utils/audioEvents';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useSettingsStore } from '@renderer/stores/settings';
 
 export const currentTime = ref(0);
 export const duration = ref(0);
@@ -71,6 +72,10 @@ function ensureModule() {
           audioEngine.loadTrack(track);
           resumeAndPlay();
           player.flushPendingQueue();
+          if (useSettingsStore().playback.gaplessPlayback) {
+            const next = player.pendingQueue[0] ?? player.queue[0];
+            if (next && next.type === 'audio') audioEngine.preloadNext(next);
+          }
         }
       }
     );

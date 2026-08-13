@@ -1,6 +1,8 @@
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, globalShortcut } from 'electron';
-import { join } from 'path';
+import { join, extname, normalize, dirname } from 'path';
+import { statSync } from 'fs';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
+import { AUDIO_EXTS, VIDEO_EXTS } from '../shared/constants';
 import { createMediaServer } from './media-server';
 import { registerOndaProtocolHandler } from './protocol';
 import { registerWindowHandlers } from './window-ipc';
@@ -11,18 +13,82 @@ import { audioPipManager } from './audio-pip-manager';
 import { closeLoginWindow } from './youtube-auth';
 import { logger } from '../shared/logger';
 import { setMediaServerUrl, registerMediaUrlHandler } from './media-url-args';
-import { setAllowedRoots } from './media-server';
+import { setAllowedRoots, addAllowedRoot } from './media-server';
 import { getStore } from './ipc/cover-cache';
 import { setupFileLogging } from './log-file';
 import { initAutoUpdater } from './updater';
 import { configureAutoCheck } from './updater-scheduler';
+import { syncSubscriptionsScheduler } from './ipc/subscriptions-handlers';
+import { shouldCloseToTray, setCloseToTray } from './close-behavior';
 
 let mainWindow: BrowserWindow | null = null;
 let splashWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let mainReady = false;
 let minTimerDone = false;
+let startHidden = false;
 const preFullscreenBounds: { current: Electron.Rectangle | null } = { current: null };
+
+const MEDIA_EXTS = new Set([...AUDIO_EXTS, ...VIDEO_EXTS]);
+
+function isMediaFilePath(p: string): boolean {
+  if (!p || p.startsWith('-')) return false;
+  try {
+    if (!MEDIA_EXTS.has(extname(p).toLowerCase())) return false;
+    return statSync(p).isFile();
+  } catch {
+    return false;
+  }
+}
+
+function extractMediaPaths(argv: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const a of argv) {
+    if (!isMediaFilePath(a)) continue;
+    const norm = normalize(a);
+    if (!seen.has(norm)) {
+      seen.add(norm);
+      result.push(norm);
+    }
+  }
+  return result;
+}
+
+let pendingOpenFiles: string[] = [];
+
+function focusMainWindow(): void {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+function forwardOpenFiles(paths: string[]): void {
+  if (paths.length) {
+    // Grant the media server access to the folders of files opened from the OS.
+    for (const p of paths) void addAllowedRoot(dirname(p));
+    pendingOpenFiles.push(...paths);
+  }
+  focusMainWindow();
+  if (!paths.length || !mainWindow || mainWindow.webContents.isLoading()) return;
+  mainWindow.webContents.send('open-files', paths);
+}
+
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (_event, argv) => {
+    // Focus the existing window even when launched without a file (e.g. clicking
+    // the desktop/taskbar icon) and forward any media paths.
+    forwardOpenFiles(extractMediaPaths(argv));
+  });
+  app.on('open-file', (event, path) => {
+    event.preventDefault();
+    forwardOpenFiles(extractMediaPaths([path]));
+  });
+}
 
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -45,7 +111,7 @@ function createWindow(): BrowserWindow {
   });
 
   win.on('ready-to-show', () => {
-    if (!splashWindow) win.show();
+    if (!splashWindow && !startHidden) win.show();
   });
 
   win.on('maximize', () => {
@@ -65,7 +131,7 @@ function createWindow(): BrowserWindow {
   });
 
   win.on('close', (e) => {
-    if (tray) {
+    if (tray && shouldCloseToTray()) {
       e.preventDefault();
       win.hide();
     }
@@ -207,8 +273,10 @@ function checkAndShow(): void {
   if (mainReady && minTimerDone) {
     splashWindow?.close();
     splashWindow = null;
-    mainWindow?.show();
-    mainWindow?.focus();
+    if (!startHidden) {
+      mainWindow?.show();
+      mainWindow?.focus();
+    }
   }
 }
 
@@ -221,7 +289,7 @@ function forceCloseSplash(): void {
   if (splashWindow) {
     splashWindow.close();
     splashWindow = null;
-    if (!mainWindow?.isVisible()) {
+    if (!startHidden && !mainWindow?.isVisible()) {
       mainWindow?.show();
       mainWindow?.focus();
     }
@@ -229,6 +297,8 @@ function forceCloseSplash(): void {
 }
 
 app.whenReady().then(async () => {
+  if (!gotSingleInstanceLock) return;
+
   electronApp.setAppUserModelId('com.onda.app');
 
   setupFileLogging();
@@ -251,12 +321,33 @@ app.whenReady().then(async () => {
     if (Array.isArray(folders)) {
       await setAllowedRoots(folders);
     }
+    // Apply the persisted general settings (close-to-tray + auto-launch sync).
+    const general = store.get('general') as
+      { autoLaunch?: boolean; startMinimized?: boolean; closeToTray?: boolean } | undefined;
+    if (general?.closeToTray !== undefined) setCloseToTray(general.closeToTray !== false);
+    if (general?.autoLaunch) {
+      app.setLoginItemSettings({
+        openAtLogin: true,
+        args: general.startMinimized ? ['--hidden'] : [],
+        ...(process.platform === 'darwin' ? { openAsHidden: !!general.startMinimized } : {})
+      });
+    }
   } catch (e) {
     logger.warn('main', 'seeding media server roots from library folders failed', e);
   }
 
+  // Started at login with "start minimized" — keep the window hidden until the
+  // user opens it from the tray.
+  startHidden = process.argv.includes('--hidden');
+
   ipcMain.handle('window:id', (event) => {
     return BrowserWindow.fromWebContents(event.sender)?.id ?? 0;
+  });
+
+  ipcMain.handle('app:getPendingFiles', () => {
+    const files = pendingOpenFiles;
+    pendingOpenFiles = [];
+    return files;
   });
 
   ipcMain.handle('app:quit', () => {
@@ -276,12 +367,20 @@ app.whenReady().then(async () => {
   mainWindow.webContents.on('did-finish-load', onMainReady);
   initAutoUpdater(() => mainWindow?.webContents ?? null);
   configureAutoCheck();
+  syncSubscriptionsScheduler();
   pipManager.setMainWindow(mainWindow);
   pipManager.init();
   audioPipManager.setMainWindow(mainWindow);
   audioPipManager.init();
   setupTray();
   registerGlobalShortcuts();
+
+  // Forward media files passed on the command line (Windows/Linux) once the
+  // renderer has mounted its IPC listeners (pull-based via app:getPendingFiles).
+  const initialPaths = extractMediaPaths(process.argv.slice(1));
+  if (initialPaths.length > 0) {
+    forwardOpenFiles(initialPaths);
+  }
 
   setTimeout(() => {
     minTimerDone = true;

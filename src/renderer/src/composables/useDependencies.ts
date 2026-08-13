@@ -119,9 +119,12 @@ export function useDependencies() {
     }
     const now = Date.now();
     if (result?.success) {
-      const status = await safeCheck(() => api.check?.() ?? Promise.resolve({ ...EMPTY_DEP_STATUS }), {
-        ...EMPTY_DEP_STATUS
-      });
+      const status = await safeCheck(
+        () => api.check?.() ?? Promise.resolve({ ...EMPTY_DEP_STATUS }),
+        {
+          ...EMPTY_DEP_STATUS
+        }
+      );
       if (isStatus(status)) applyStatus(dep, status, now);
       if (dep.tool === 'ffmpeg' || dep.tool === 'ffprobe') {
         const probe = await safeCheck(() => window.api?.checkFfprobe(), { ...EMPTY_DEP_STATUS });

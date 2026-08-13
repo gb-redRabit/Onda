@@ -17,7 +17,17 @@ import TrackTagEditor from '@renderer/components/library/TrackTagEditor.vue';
 import MusicBrainzLookup from '@renderer/components/library/MusicBrainzLookup.vue';
 import ImageViewer from '@renderer/components/explorer/ImageViewer.vue';
 import { audioEngine } from '@renderer/modules/audioEngine';
-import { Music2, Film, Folder, Disc3, Mic2, ListMusic, Search, RefreshCw, Images } from '@lucide/vue';
+import {
+  Music2,
+  Film,
+  Folder,
+  Disc3,
+  Mic2,
+  ListMusic,
+  Search,
+  RefreshCw,
+  Images
+} from '@lucide/vue';
 import { useLibraryFilters } from '@renderer/composables/useLibraryFilters';
 import { useLibraryTagEditor } from '@renderer/composables/useLibraryTagEditor';
 
@@ -28,7 +38,10 @@ const player = usePlayerStore();
 
 const { query, filteredTracks, filteredVideo, filteredImages, filteredArtists, filteredAlbums } =
   useLibraryFilters(library);
-const { editingTrack, showingMBLookup, onTagSaved, onMBApply } = useLibraryTagEditor(library, player);
+const { editingTrack, showingMBLookup, onTagSaved, onMBApply } = useLibraryTagEditor(
+  library,
+  player
+);
 
 const tab = ref<'tracks' | 'video' | 'images' | 'folders' | 'artists' | 'albums' | 'playlists'>(
   'tracks'
@@ -170,7 +183,11 @@ function playFolder(folderPath: string) {
         @play="playTrack"
         @play-all="playAllVideo"
       />
-      <LibraryImagesTab v-else-if="tab === 'images'" :images="filteredImages" @open="openImageViewer" />
+      <LibraryImagesTab
+        v-else-if="tab === 'images'"
+        :images="filteredImages"
+        @open="openImageViewer"
+      />
       <LibraryFoldersTab v-else-if="tab === 'folders'" :query="query" @play-folder="playFolder" />
       <LibraryArtistsTab
         v-else-if="tab === 'artists'"

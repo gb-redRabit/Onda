@@ -6,9 +6,14 @@ import { getStore } from './cover-cache';
 import { logger } from '../../shared/logger';
 import { setAllowedRoots } from '../media-server';
 import { scanDir } from './library-scan';
+import { broadcastToAllWindows } from '../utils/broadcast';
+import { startLibraryWatcher, setLibraryWatcherScan } from './library-watcher';
 
 const MAX_SCAN_FOLDERS = 100;
 const MAX_SCANNED_FILES = 50000;
+
+let activeScanController: AbortController | null = null;
+let currentLibraryFolders: string[] = [];
 
 // Folders/paths arriving from the renderer are untrusted — keep only non-empty
 // absolute paths, dedupe and cap the count.
@@ -27,7 +32,109 @@ function sanitizeFolderPaths(input: unknown): string[] {
   return out;
 }
 
+// Adds a folder to the library (idempotent), updating the media-server roots and
+// the file watcher. Used by the auto-add-download-folder feature so a download
+// landing outside the library is still browsable/playable.
+export async function addLibraryFolder(folder: string): Promise<string[]> {
+  const store = await getStore();
+  const current = sanitizeFolderPaths(store.get('libraryFolders', []));
+  if (!current.includes(folder)) current.push(folder);
+  const clean = sanitizeFolderPaths(current);
+  store.set('libraryFolders', clean);
+  currentLibraryFolders = clean;
+  await setAllowedRoots(clean);
+  void startLibraryWatcher(clean);
+  return clean;
+}
+
+async function runLibraryScan(
+  folderPaths: string[],
+  signal: AbortSignal,
+  onProgress?: (current: number, total: number) => void,
+  broadcast = false
+): Promise<{
+  count: number;
+  folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
+}> {
+  const folderResults: Array<{
+    folderType: 'audio' | 'video' | 'image' | 'mixed';
+    files: MediaFile[];
+    folderPath: string;
+  } | null> = [];
+
+  const safePaths = sanitizeFolderPaths(folderPaths);
+  const folderTotal = safePaths.length;
+  let doneCount = 0;
+
+  // Load the previous scan so unchanged files can be reused (incremental
+  // scan) — this preserves playCount/lastPlayed and avoids re-parsing.
+  const store = await getStore();
+  const prevData = store.get('libraryScanned', null) as { files?: MediaFile[] } | null | undefined;
+  const previous = new Map<string, MediaFile>();
+  if (prevData && Array.isArray(prevData.files)) {
+    for (const f of prevData.files) {
+      if (f && typeof f.path === 'string') previous.set(f.path, f);
+    }
+  }
+
+  // Scan folders sequentially to avoid saturating the disk, emitting progress per folder.
+  for (const folderPath of safePaths) {
+    if (signal.aborted) break;
+    doneCount++;
+    onProgress?.(doneCount, folderTotal);
+    try {
+      const s = await stat(folderPath).catch(() => null);
+      if (!s || !s.isDirectory()) {
+        logger.warn('library', `scan skipped (not a directory): ${folderPath}`);
+        folderResults.push(null);
+        continue;
+      }
+      const result = await scanDir(folderPath, 8, 0, signal, previous);
+      const mediaTotal = result.audioCount + result.videoCount;
+      const folderType: 'audio' | 'video' | 'image' | 'mixed' =
+        result.imageCount > 0 && result.audioCount === 0 && result.videoCount === 0
+          ? 'image'
+          : result.audioCount > 0 && result.videoCount === 0
+            ? 'audio'
+            : result.videoCount > 0 && result.audioCount === 0
+              ? 'video'
+              : mediaTotal > 0 && result.audioCount / mediaTotal >= 0.7
+                ? 'audio'
+                : mediaTotal > 0 && result.videoCount / mediaTotal >= 0.7
+                  ? 'video'
+                  : 'mixed';
+      folderResults.push({ folderType, files: result.files, folderPath });
+    } catch (err) {
+      logger.warn('library', `scan error for ${folderPath}: ${err}`);
+      folderResults.push(null);
+    }
+  }
+
+  const allFiles: MediaFile[] = [];
+  const folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'> = {};
+  for (const r of folderResults) {
+    if (!r) continue;
+    folderTypes[r.folderPath] = r.folderType;
+    allFiles.push(...r.files);
+  }
+
+  // Hard cap so a renderer cannot flood the store with an unbounded scan.
+  if (allFiles.length > MAX_SCANNED_FILES) allFiles.length = MAX_SCANNED_FILES;
+
+  store.set('libraryScanned', structuredClone({ files: allFiles, folderTypes }));
+
+  if (broadcast) broadcastToAllWindows('library:updated');
+
+  logger.info('library', `scan completed: ${allFiles.length} files`);
+  return { count: allFiles.length, folderTypes };
+}
+
 export function registerLibraryHandlers(): void {
+  ipcMain.handle('library:scanCancel', (): boolean => {
+    activeScanController?.abort();
+    return true;
+  });
+
   ipcMain.handle(
     'library:scan',
     async (
@@ -37,71 +144,18 @@ export function registerLibraryHandlers(): void {
       count: number;
       folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
     }> => {
+      const controller = new AbortController();
+      activeScanController = controller;
       try {
-        const folderResults: Array<{
-          folderType: 'audio' | 'video' | 'image' | 'mixed';
-          files: MediaFile[];
-          folderPath: string;
-        } | null> = [];
-
-        const safePaths = sanitizeFolderPaths(folderPaths);
-        const folderTotal = safePaths.length;
-        let doneCount = 0;
-
-        // Scan folders sequentially to avoid saturating the disk, emitting progress per folder.
-        for (const folderPath of safePaths) {
-          doneCount++;
-          try {
-            event.sender.send('library:scan:progress', {
-              current: doneCount,
-              total: folderTotal
-            });
-            const s = await stat(folderPath).catch(() => null);
-            if (!s || !s.isDirectory()) {
-              logger.warn('library', `scan skipped (not a directory): ${folderPath}`);
-              folderResults.push(null);
-              continue;
-            }
-            const result = await scanDir(folderPath, 8);
-            const mediaTotal = result.audioCount + result.videoCount;
-            const folderType: 'audio' | 'video' | 'image' | 'mixed' =
-              result.imageCount > 0 && result.audioCount === 0 && result.videoCount === 0
-                ? 'image'
-                : result.audioCount > 0 && result.videoCount === 0
-                  ? 'audio'
-                  : result.videoCount > 0 && result.audioCount === 0
-                    ? 'video'
-                    : mediaTotal > 0 && result.audioCount / mediaTotal >= 0.7
-                      ? 'audio'
-                      : mediaTotal > 0 && result.videoCount / mediaTotal >= 0.7
-                        ? 'video'
-                        : 'mixed';
-            folderResults.push({ folderType, files: result.files, folderPath });
-          } catch (err) {
-            logger.warn('library', `scan error for ${folderPath}: ${err}`);
-            folderResults.push(null);
-          }
-        }
-
-        const allFiles: MediaFile[] = [];
-        const folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'> = {};
-        for (const r of folderResults) {
-          if (!r) continue;
-          folderTypes[r.folderPath] = r.folderType;
-          allFiles.push(...r.files);
-        }
-
-        // Hard cap so a renderer cannot flood the store with an unbounded scan.
-        if (allFiles.length > MAX_SCANNED_FILES) allFiles.length = MAX_SCANNED_FILES;
-
-        const store = await getStore();
-        store.set('libraryScanned', structuredClone({ files: allFiles, folderTypes }));
-
-        logger.info('library', `scan completed: ${allFiles.length} files`);
-        return { count: allFiles.length, folderTypes };
+        currentLibraryFolders = sanitizeFolderPaths(folderPaths);
+        return await runLibraryScan(currentLibraryFolders, controller.signal, (current, total) => {
+          event.sender.send('library:scan:progress', { current, total });
+        });
       } catch (err) {
         logger.error('library', 'scan handler failed', err);
         return { count: 0, folderTypes: {} };
+      } finally {
+        if (activeScanController === controller) activeScanController = null;
       }
     }
   );
@@ -111,7 +165,9 @@ export function registerLibraryHandlers(): void {
       const store = await getStore();
       const folders = store.get('libraryFolders', []);
       const result = sanitizeFolderPaths(folders);
+      currentLibraryFolders = result;
       await setAllowedRoots(result);
+      void startLibraryWatcher(result);
       return result;
     } catch (err) {
       logger.error('library', 'loadFolders failed', err);
@@ -124,7 +180,9 @@ export function registerLibraryHandlers(): void {
       const clean = sanitizeFolderPaths(folders);
       const store = await getStore();
       store.set('libraryFolders', clean);
+      currentLibraryFolders = clean;
       await setAllowedRoots(clean);
+      void startLibraryWatcher(clean);
       return clean;
     } catch (err) {
       logger.error('library', 'saveFolders failed', err);
@@ -163,7 +221,10 @@ export function registerLibraryHandlers(): void {
     'library:saveScanned',
     async (
       _event,
-      data: { files: MediaFile[]; folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'> }
+      data: {
+        files: MediaFile[];
+        folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
+      }
     ): Promise<void> => {
       try {
         const store = await getStore();
@@ -239,6 +300,18 @@ export function registerLibraryHandlers(): void {
       store.set('playlists', playlists);
     } catch (err) {
       logger.error('library', 'savePlaylists failed', err);
+    }
+  });
+
+  // File watcher: re-scan (incremental) when media files change on disk, then
+  // broadcast so the renderer refreshes.
+  setLibraryWatcherScan(async () => {
+    if (activeScanController) activeScanController.abort();
+    if (currentLibraryFolders.length === 0) return;
+    try {
+      await runLibraryScan(currentLibraryFolders, new AbortController().signal, undefined, true);
+    } catch (err) {
+      logger.error('library', 'watcher re-scan failed', err);
     }
   });
 }

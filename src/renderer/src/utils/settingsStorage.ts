@@ -12,10 +12,12 @@ import type {
   UpdateSettings,
   ToastSettings,
   DependencyStatus,
-  AppSettings
+  AppSettings,
+  GeneralSettings
 } from '@renderer/types/settings';
 
 export interface SettingsState {
+  general: Ref<GeneralSettings>;
   appearance: Ref<AppearanceSettings>;
   playback: Ref<PlaybackSettings>;
   explorer: Ref<ExplorerSettings>;
@@ -31,6 +33,7 @@ export interface SettingsState {
 }
 
 export function mergeSettings(target: SettingsState, data: Partial<AppSettings>): void {
+  if (data.general) Object.assign(target.general.value, data.general);
   if (data.appearance) Object.assign(target.appearance.value, data.appearance);
   if (data.playback) Object.assign(target.playback.value, data.playback);
   if (data.explorer) Object.assign(target.explorer.value, data.explorer);
@@ -61,6 +64,7 @@ export async function persistSettings(state: SettingsState): Promise<void> {
     if (window.api) {
       const payload = JSON.parse(
         JSON.stringify({
+          general: state.general.value,
           appearance: state.appearance.value,
           playback: state.playback.value,
           explorer: state.explorer.value,

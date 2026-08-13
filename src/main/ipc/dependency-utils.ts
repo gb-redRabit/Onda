@@ -19,6 +19,21 @@ export function managedBinPath(binDir: string, tool: BinTool): string {
   return join(binDir, toolFileName(tool));
 }
 
+// Path to a binary bundled with the app (shipped in `resources/ffmpeg/` and
+// copied into `process.resourcesPath/ffmpeg` by electron-builder). Returns null
+// when not present.
+export function bundledBinPath(tool: BinTool, resourcesPath?: string): string | null {
+  if (typeof resourcesPath !== 'string' || !resourcesPath) return null;
+  const p = join(resourcesPath, 'ffmpeg', toolFileName(tool));
+  return existsSync(p) ? p : null;
+}
+
+// electron's `process.resourcesPath` is only defined in the main process; read it
+// defensively so the dependency code also runs in plain Node (tests).
+export function currentResourcesPath(): string | undefined {
+  return (process as { resourcesPath?: string }).resourcesPath;
+}
+
 // Pinned to a concrete release tag instead of `releases/latest/download` — the
 // `latest` URL is mutable, so a compromised or mistaken release would be pulled
 // silently on the next fresh install. Bump this manually; the in-app updater
@@ -38,9 +53,7 @@ export function ytdlpDownloadUrl(
     case 'darwin':
       return arch === 'arm64' ? `${base}/yt-dlp_macos` : `${base}/yt-dlp_macos_legacy`;
     case 'linux':
-      return arch === 'arm64' || arch === 'arm'
-        ? `${base}/yt-dlp_linux_aarch64`
-        : `${base}/yt-dlp`;
+      return arch === 'arm64' || arch === 'arm' ? `${base}/yt-dlp_linux_aarch64` : `${base}/yt-dlp`;
     default:
       return `${base}/yt-dlp`;
   }
@@ -51,17 +64,28 @@ export function ytdlpShaUrl(version: string = YTDLP_PINNED_VERSION): string {
   return `https://github.com/yt-dlp/yt-dlp/releases/download/${version}/SHA2-256SUMS`;
 }
 
-export function ffmpegDownloadUrl(platform: NodeJS.Platform = process.platform): string | null {
+// BtbN force-updates its `latest` tag — pin this to a concrete `autobuild-…`
+// tag to avoid pulling a mutable release silently. See scripts/fetch-ffmpeg.mjs.
+export const FFMPEG_PINNED_VERSION = 'latest';
+
+export function ffmpegDownloadUrl(
+  platform: NodeJS.Platform = process.platform,
+  version: string = FFMPEG_PINNED_VERSION
+): string | null {
   if (platform === 'win32') {
-    return 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip';
+    return `https://github.com/BtbN/FFmpeg-Builds/releases/download/${version}/ffmpeg-master-latest-win64-gpl.zip`;
   }
   return null;
 }
 
-// BtbN publishes a `.sha256` file next to every release asset (same name + `.sha256`).
-export function ffmpegShaUrl(platform: NodeJS.Platform = process.platform): string | null {
-  const url = ffmpegDownloadUrl(platform);
-  return url ? `${url}.sha256` : null;
+// BtbN publishes one aggregate checksums.sha256 manifest per release, not a
+// per-asset `.sha256` file (the sibling `{asset}.sha256` does not exist → 404).
+export function ffmpegShaUrl(
+  platform: NodeJS.Platform = process.platform,
+  version: string = FFMPEG_PINNED_VERSION
+): string | null {
+  const url = ffmpegDownloadUrl(platform, version);
+  return url ? url.replace(/[^/]+$/, 'checksums.sha256') : null;
 }
 
 // Search the system PATH for an executable (respecting PATHEXT on Windows).
@@ -108,11 +132,13 @@ export interface ResolvedBinary {
   version: string | null;
 }
 
-// 1. userData/bin (managed) → 2. PATH (system). Returns null if not found.
-export async function resolveBinary(
-  binDir: string,
-  tool: BinTool
-): Promise<ResolvedBinary | null> {
+// 1. bundled (resources/ffmpeg) → 2. userData/bin (managed) → 3. PATH (system).
+export async function resolveBinary(binDir: string, tool: BinTool): Promise<ResolvedBinary | null> {
+  const bundled = bundledBinPath(tool, currentResourcesPath());
+  if (bundled) {
+    const version = await readVersion(bundled, tool);
+    return { path: bundled, managed: true, version };
+  }
   const managedPath = managedBinPath(binDir, tool);
   if (existsSync(managedPath)) {
     const version = await readVersion(managedPath, tool);
@@ -226,7 +252,20 @@ export function pkgInstallCommand(pkgManager: PkgManager, tool: BinTool): PkgCom
   let argv: string[];
   switch (pkgManager) {
     case 'winget':
-      argv = ['winget', 'install', '--id', wingetInstallId(tool), '-e', '--silent', '--accept-package-agreements'];
+      // --accept-source-agreements + --disable-interactivity keep winget from
+      // parking on an unseen prompt when spawned with no TTY (--silent alone
+      // only suppresses the installer UI, not agreement prompts).
+      argv = [
+        'winget',
+        'install',
+        '--id',
+        wingetInstallId(tool),
+        '-e',
+        '--silent',
+        '--accept-package-agreements',
+        '--accept-source-agreements',
+        '--disable-interactivity'
+      ];
       break;
     case 'choco':
       argv = ['choco', 'install', pkg, '-y', '--no-progress'];

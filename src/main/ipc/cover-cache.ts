@@ -153,8 +153,7 @@ export async function getPersistentCover(
   try {
     const store = await getStore();
     const cacheMap = store.get(COVER_CACHE_MAP_KEY) as
-      | Record<string, { cacheFile: string; mtime: number }>
-      | undefined;
+      Record<string, { cacheFile: string; mtime: number }> | undefined;
     const entry = cacheMap?.[filePath];
     if (!entry) return null;
 
@@ -269,7 +268,22 @@ async function extractVideoFrame(filePath: string, time = '00:00:00.5'): Promise
     const outPath = join(getTempDir(), `frame_${uniqueId()}.jpg`);
     await runCommand(
       ffmpeg,
-      ['-v', 'quiet', '-ss', time, '-i', filePath, '-vframes', '1', '-q:v', '2', '-update', '1', outPath, '-y'],
+      [
+        '-v',
+        'quiet',
+        '-ss',
+        time,
+        '-i',
+        filePath,
+        '-vframes',
+        '1',
+        '-q:v',
+        '2',
+        '-update',
+        '1',
+        outPath,
+        '-y'
+      ],
       { timeout: 15000 }
     );
     const buf = await readFile(outPath);

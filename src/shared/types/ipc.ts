@@ -1,8 +1,5 @@
 import type { AppSettings, YoutubeAuthMethod } from '../../renderer/src/types/settings';
-import type {
-  YouTubeResolveResult,
-  YouTubeResolvedItem
-} from '../../renderer/src/types/youtube';
+import type { YouTubeResolveResult, YouTubeResolvedItem } from '../../renderer/src/types/youtube';
 
 interface IpcMediaFile {
   id: string;
@@ -86,6 +83,197 @@ interface IpcYoutubeChannel {
   title: string;
   thumbnail: string;
   subscriberCount?: number;
+}
+
+export interface IpcSubscription {
+  id: string;
+  channelId: string;
+  channelTitle: string;
+  channelThumbnail: string;
+  autoDownload: boolean;
+  lastChecked?: number;
+  lastVideoId?: string;
+  baselineVideoId?: string;
+  downloadedVideoIds?: string[];
+  queuedVideoIds?: string[];
+  pendingCount?: number;
+  newArrivals?: number;
+  downloadPrefs?: IpcSubscriptionDownloadPrefs;
+  addedAt: number;
+}
+
+export interface IpcSubscriptionDownloadPrefs {
+  kind?: 'audio' | 'video';
+  format?: string;
+  quality?: string;
+  audioQuality?: string;
+  audioLanguage?: string;
+  cover?: IpcCoverSpec;
+  outputDir?: string;
+  filenameTemplate?: string;
+  subsLangs?: string;
+  subsFormat?: 'srt' | 'vtt' | 'ass';
+  subsMode?: 'manual' | 'auto' | 'best';
+  subsFolder?: boolean;
+  metaOverride?: IpcMetaOverride;
+  sponsorBlock?: 'off' | 'mark' | 'remove';
+  trimStart?: number;
+  trimEnd?: number;
+  addToLibrary?: boolean;
+}
+
+export interface IpcSubscriptionPatch {
+  autoDownload?: boolean;
+  channelTitle?: string;
+  channelThumbnail?: string;
+  lastChecked?: number;
+  lastVideoId?: string;
+  baselineVideoId?: string;
+  downloadedVideoIds?: string[];
+  queuedVideoIds?: string[];
+  pendingCount?: number;
+  newArrivals?: number;
+  downloadPrefs?: IpcSubscriptionDownloadPrefs;
+}
+
+export interface IpcSubscriptionCheckResult {
+  checked: number;
+  newVideos: number;
+  queued?: number;
+  errors: number;
+}
+
+export type IpcCoverStatus = 'none' | 'fetching' | 'embedded' | 'saved' | 'error';
+
+export interface IpcCoverSpec {
+  type: 'thumbnail' | 'custom' | 'frame' | 'clip';
+  customPath?: string;
+  frameTime?: number;
+  clipStart?: number;
+  clipEnd?: number;
+  clipFormat?: 'webm' | 'mp4';
+}
+
+export interface IpcMetaOverride {
+  artist?: string;
+  album?: string;
+  year?: string;
+}
+
+// Full download configuration — the shape of the download config dialog payload
+// and the saved download profiles.
+export interface IpcDownloadConfig {
+  kind?: 'audio' | 'video';
+  format?: string;
+  quality?: string;
+  audioQuality?: string;
+  videoContainer?: 'mp4' | 'mkv' | 'webm';
+  filenameTemplate?: string;
+  cover?: IpcCoverSpec;
+  metaOverride?: IpcMetaOverride;
+  outputDir?: string;
+  subsLangs?: string;
+  subsFormat?: 'srt' | 'vtt' | 'ass';
+  subsMode?: 'manual' | 'auto' | 'best';
+  subsFolder?: boolean;
+  audioLanguage?: string;
+  sponsorBlock?: 'off' | 'mark' | 'remove';
+  trimStart?: number;
+  trimEnd?: number;
+  addToLibrary?: boolean;
+}
+
+export interface IpcDownloadProfile {
+  id: string;
+  name: string;
+  config: IpcDownloadConfig;
+}
+
+export interface IpcDownloadJobInput {
+  url: string;
+  title: string;
+  thumbnail?: string;
+  kind: 'audio' | 'video';
+  format: string;
+  quality: string;
+  outputDir: string;
+  filenameTemplate: string;
+  videoId?: string;
+  channelId?: string;
+  channelTitle?: string;
+  playlistTitle?: string;
+  cover?: IpcCoverSpec;
+  metaOverride?: IpcMetaOverride;
+  subsLangs?: string;
+  subsFormat?: 'srt' | 'vtt' | 'ass';
+  subsMode?: 'manual' | 'auto' | 'best';
+  subsFolder?: boolean;
+  audioQuality?: string;
+  audioLanguage?: string;
+  videoContainer?: 'mp4' | 'mkv' | 'webm';
+  sponsorBlock?: 'off' | 'mark' | 'remove';
+  trimStart?: number;
+  trimEnd?: number;
+  addToLibrary?: boolean;
+}
+
+export type IpcDownloadErrorCode =
+  | 'auth-required'
+  | 'bot-block'
+  | 'private'
+  | 'not-found'
+  | 'network'
+  | 'proxy'
+  | 'dependency'
+  | 'unknown';
+
+export interface IpcDownloadTask {
+  id: string;
+  url: string;
+  title: string;
+  thumbnail?: string;
+  kind: 'audio' | 'video';
+  format: string;
+  quality: string;
+  outputDir: string;
+  filenameTemplate: string;
+  progress: number;
+  speed: string;
+  eta: string;
+  status: 'pending' | 'downloading' | 'paused' | 'completed' | 'error' | 'cancelled';
+  error?: string;
+  errorCode?: IpcDownloadErrorCode;
+  startedAt: number;
+  completedAt?: number;
+  outputPath?: string;
+  videoId?: string;
+  channelId?: string;
+  channelTitle?: string;
+  playlistTitle?: string;
+  cover?: IpcCoverSpec;
+  coverStatus: IpcCoverStatus;
+  metaOverride?: IpcMetaOverride;
+  inLibrary?: boolean;
+  fileHash?: string;
+  subsLangs?: string;
+  subsFormat?: 'srt' | 'vtt' | 'ass';
+  subsMode?: 'manual' | 'auto' | 'best';
+  subsFolder?: boolean;
+  subtitleStatus?: 'none' | 'embedded' | 'saved' | 'missing';
+  audioQuality?: string;
+  audioLanguage?: string;
+  videoContainer?: 'mp4' | 'mkv' | 'webm';
+  sponsorBlock?: 'off' | 'mark' | 'remove';
+  trimStart?: number;
+  trimEnd?: number;
+  addToLibrary?: boolean;
+}
+
+export interface IpcNewVideosEvent {
+  channelId: string;
+  channelTitle: string;
+  count: number;
+  titles: string[];
 }
 
 export interface YoutubeAuthStatus {
@@ -178,11 +366,15 @@ export interface IpcChannels {
   'shell:openTerminal': { args: [dirPath: string]; result: void };
   'shell:openWithDefault': { args: [filePath: string]; result: void };
   'fs:copyPath': { args: [filePath: string]; result: void };
+  'fs:readTextFile': { args: [filePath: string]; result: string | null };
   'app:getPath': { args: [name: string]; result: string };
+  'app:readClipboard': { args: []; result: string };
+  'app:getPendingFiles': { args: []; result: string[] };
   'library:scan': {
     args: [folderPaths: string[]];
     result: { count: number; folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'> };
   };
+  'library:scanCancel': { args: []; result: boolean };
   'library:loadFolders': { args: []; result: string[] };
   'library:saveFolders': { args: [folders: string[]]; result: string[] };
   'library:loadScanned': {
@@ -248,6 +440,7 @@ export interface IpcChannels {
     result: {
       success: boolean;
       error?: string;
+      code?: IpcDownloadErrorCode;
       items: IpcYoutubeVideo[];
       nextPageToken: string | null;
       prevPageToken: string | null;
@@ -256,20 +449,38 @@ export interface IpcChannels {
   'yt:authStatus': { args: []; result: YoutubeAuthStatus };
   'yt:resolve': {
     args: [url: string];
-    result: { success: boolean; error?: string; result?: YouTubeResolveResult };
+    result: { success: boolean; error?: string; code?: IpcDownloadErrorCode; result?: YouTubeResolveResult };
   };
   'yt:resolveMore': {
     args: [{ url: string; start: number; end: number }];
-    result: { success: boolean; error?: string; items: YouTubeResolvedItem[]; hasMore: boolean; totalItems: number };
+    result: {
+      success: boolean;
+      error?: string;
+      code?: IpcDownloadErrorCode;
+      items: YouTubeResolvedItem[];
+      hasMore: boolean;
+      totalItems: number;
+    };
   };
   'yt:channel': {
     args: [{ url: string; start?: number; end?: number; tab?: 'videos' | 'shorts' }];
     result: {
       success: boolean;
       error?: string;
+      code?: IpcDownloadErrorCode;
       channel?: IpcYoutubeChannel;
       items: IpcYoutubeVideo[];
       hasMore: boolean;
+    };
+  };
+  'yt:channelAll': {
+    args: [{ url: string; tab?: 'videos' | 'shorts' }];
+    result: {
+      success: boolean;
+      error?: string;
+      code?: IpcDownloadErrorCode;
+      channel?: IpcYoutubeChannel;
+      items: IpcYoutubeVideo[];
     };
   };
   'yt:login': { args: []; result: { success: boolean; canceled?: boolean; error?: string } };
@@ -282,6 +493,56 @@ export interface IpcChannels {
     args: [];
     result: { success: boolean; canceled?: boolean; error?: string };
   };
+  'yt:subs:list': { args: []; result: IpcSubscription[] };
+  'yt:subs:add': {
+    args: [
+      input: {
+        channelId: string;
+        channelTitle: string;
+        channelThumbnail: string;
+        downloadPrefs?: IpcSubscriptionDownloadPrefs;
+        seedBaseline?: boolean;
+      }
+    ];
+    result: IpcSubscription | null;
+  };
+  'yt:subs:remove': { args: [channelId: string]; result: boolean };
+  'yt:subs:update': {
+    args: [channelId: string, patch: IpcSubscriptionPatch];
+    result: IpcSubscription | null;
+  };
+  'yt:subs:checkNow': { args: []; result: IpcSubscriptionCheckResult };
+  'yt:subs:checkChannel': { args: [channelId: string]; result: IpcSubscriptionCheckResult };
+  'yt:download:add': { args: [jobs: IpcDownloadJobInput[]]; result: IpcDownloadTask[] };
+  'yt:download:cancel': { args: [id: string]; result: boolean };
+  'yt:download:pause': { args: [id: string]; result: boolean };
+  'yt:download:resume': { args: [id: string]; result: boolean };
+  'yt:download:list': { args: []; result: IpcDownloadTask[] };
+  'yt:download:clearFinished': { args: []; result: boolean };
+  'yt:download:pauseAll': { args: []; result: boolean };
+  'yt:download:resumeAll': { args: []; result: boolean };
+  'yt:download:moveToFront': { args: [id: string]; result: boolean };
+  'yt:download:move': { args: [id: string, direction: -1 | 1]; result: boolean };
+  'yt:download:export': {
+    args: [];
+    result: { success: boolean; canceled?: boolean; error?: string };
+  };
+  'yt:download:import': {
+    args: [];
+    result: { success: boolean; canceled?: boolean; error?: string; count?: number };
+  };
+  'yt:download:schedule': { args: [timestamp: number | null]; result: boolean };
+  'yt:download:schedule:get': { args: []; result: number | null };
+  'yt:download:updateMetadata': {
+    args: [filePath: string, meta: IpcMetaOverride];
+    result: { success: boolean; error?: string };
+  };
+  'profiles:list': { args: []; result: IpcDownloadProfile[] };
+  'profiles:save': {
+    args: [{ id?: string; name: string; config: IpcDownloadConfig }];
+    result: IpcDownloadProfile[] | null;
+  };
+  'profiles:delete': { args: [id: string]; result: IpcDownloadProfile[] };
   'dep:checkFfmpeg': { args: []; result: { installed: boolean; version: string | null } };
   'dep:checkYtdlp': {
     args: [];
@@ -328,6 +589,7 @@ export interface IpcChannels {
     args: [files: string[], maxSize?: number];
     result: Record<string, string>;
   };
+  'media:grantAccess': { args: [filePath: string]; result: boolean };
   'app:getInfo': { args: []; result: AppInfo };
   'app:getLicenses': {
     args: [];

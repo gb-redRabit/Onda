@@ -3,13 +3,7 @@ import { autoUpdater } from 'electron-updater';
 import { logger } from '../shared/logger';
 
 export type UpdaterStatus =
-  | 'idle'
-  | 'checking'
-  | 'available'
-  | 'not-available'
-  | 'downloading'
-  | 'downloaded'
-  | 'error';
+  'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
 
 export interface UpdaterState {
   status: UpdaterStatus;

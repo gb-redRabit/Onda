@@ -5,7 +5,15 @@ import eslintPluginVue from 'eslint-plugin-vue';
 import vueParser from 'vue-eslint-parser';
 
 export default defineConfig(
-  { ignores: ['**/node_modules', '**/dist', '**/out'] },
+  {
+    ignores: [
+      '**/node_modules',
+      '**/dist',
+      '**/out',
+      'generate-random-icon.js',
+      'scripts/fetch-ffmpeg.mjs'
+    ]
+  },
   tseslint.configs.recommended,
   eslintPluginVue.configs['flat/recommended'],
   {

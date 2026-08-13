@@ -6,6 +6,7 @@ import { resolveBin } from '../binaries';
 import { logger } from '../../shared/logger';
 import { runCommand } from '../utils/exec';
 import { isNonNegativeInt } from '../../shared/helpers';
+import { isSafeAbsolutePath } from '../utils/validate';
 
 function uniqueId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -26,6 +27,7 @@ export function registerSubtitleHandlers(): void {
       _event,
       filePath: string
     ): Promise<Array<{ index: number; language: string; title: string; codec: string }>> => {
+      if (!isSafeAbsolutePath(filePath)) return [];
       try {
         const ffprobe = (await resolveBin('ffprobe')) || 'ffprobe';
         const stdout = await runCommand(
@@ -65,6 +67,7 @@ export function registerSubtitleHandlers(): void {
       filePath: string,
       streamIndex: number
     ): Promise<{ content: string; format: string } | null> => {
+      if (!isSafeAbsolutePath(filePath)) return null;
       try {
         if (!isNonNegativeInt(streamIndex)) return null;
         await mkdir(getTempDir(), { recursive: true });
@@ -97,7 +100,18 @@ export function registerSubtitleHandlers(): void {
           try {
             await runCommand(
               ffmpeg,
-              ['-v', 'error', '-i', filePath, '-map', `0:${streamIndex}`, '-c:s', 'copy', '-y', outPath],
+              [
+                '-v',
+                'error',
+                '-i',
+                filePath,
+                '-map',
+                `0:${streamIndex}`,
+                '-c:s',
+                'copy',
+                '-y',
+                outPath
+              ],
               { timeout: 30000 }
             );
           } catch (e1) {
@@ -110,7 +124,18 @@ export function registerSubtitleHandlers(): void {
             const srtPath = join(getTempDir(), `sub_${uniqueId()}.srt`);
             await runCommand(
               ffmpeg,
-              ['-v', 'error', '-i', filePath, '-map', `0:${streamIndex}`, '-c:s', 'srt', '-y', srtPath],
+              [
+                '-v',
+                'error',
+                '-i',
+                filePath,
+                '-map',
+                `0:${streamIndex}`,
+                '-c:s',
+                'srt',
+                '-y',
+                srtPath
+              ],
               { timeout: 30000 }
             );
             const content = await readFile(srtPath, 'utf-8');
@@ -122,7 +147,18 @@ export function registerSubtitleHandlers(): void {
           // binary codec (pgs, dvd_subtitle, etc): transcode to srt
           await runCommand(
             ffmpeg,
-            ['-v', 'error', '-i', filePath, '-map', `0:${streamIndex}`, '-c:s', 'srt', '-y', outPath],
+            [
+              '-v',
+              'error',
+              '-i',
+              filePath,
+              '-map',
+              `0:${streamIndex}`,
+              '-c:s',
+              'srt',
+              '-y',
+              outPath
+            ],
             { timeout: 30000 }
           );
         }
@@ -143,6 +179,7 @@ export function registerSubtitleHandlers(): void {
       _event,
       videoPath: string
     ): Promise<Array<{ name: string; path: string; format: string }>> => {
+      if (!isSafeAbsolutePath(videoPath)) return [];
       try {
         const dir = dirname(videoPath);
         const videoName = basename(videoPath, extname(videoPath));
@@ -169,6 +206,7 @@ export function registerSubtitleHandlers(): void {
   );
 
   ipcMain.handle('subtitles:readFile', async (_event, filePath: string): Promise<string | null> => {
+    if (!isSafeAbsolutePath(filePath)) return null;
     try {
       const buf = await readFile(filePath);
       const utf8 = buf.toString('utf-8');
@@ -189,6 +227,7 @@ export function registerSubtitleHandlers(): void {
       _event,
       filePath: string
     ): Promise<Array<{ name: string; ext: string; data: number[] }>> => {
+      if (!isSafeAbsolutePath(filePath)) return [];
       const dumpDir = join(
         getTempDir(),
         `fonts_${Date.now()}_${Math.random().toString(36).slice(2)}`

@@ -57,8 +57,7 @@ async function flushBatch() {
   pendingBatch.clear();
   try {
     const result = (await window.api?.invoke('media:batchThumbnails', paths, 320)) as
-      | Record<string, string>
-      | undefined;
+      Record<string, string> | undefined;
     for (const p of paths) {
       const dataUrl = result?.[p];
       if (dataUrl) props.thumbCache.set(p, dataUrl);
