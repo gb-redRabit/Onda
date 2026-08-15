@@ -1,12 +1,13 @@
 node_modules
 dist
 out
+docs
 .DS_Store
 .eslintcache
 *.log*
 .git.bak
 logs/
-opencode.json
+.memory
 .opencode
 .vscode
 generate-random-icon.js

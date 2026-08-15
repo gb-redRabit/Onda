@@ -48,6 +48,7 @@ const subsMode = ref<'manual' | 'auto' | 'best'>('best');
 const subsFolder = ref(false);
 const folderMode = ref<'channel' | 'global' | 'custom'>('channel');
 const outputDir = ref('');
+const addToLibrary = ref(settings.download.autoAddDownloadFolder);
 const downloadAll = ref(false);
 
 onMounted(async () => {
@@ -87,6 +88,11 @@ function confirm() {
   }
   if (audioLanguage.value.trim()) prefs.audioLanguage = audioLanguage.value.trim();
   const cover: CoverSpec | undefined = (() => {
+    if (kind.value === 'video') {
+      // Video downloads embed the YouTube thumbnail by default; "none" is the
+      // explicit opt-out, undefined means "keep the default".
+      return coverType.value === 'none' ? { type: 'none' } : undefined;
+    }
     if (coverType.value === settings.download.defaultCover) return undefined;
     if (coverType.value === 'thumbnail') return { type: 'thumbnail' };
     if (coverType.value === 'frame')
@@ -115,6 +121,10 @@ function confirm() {
   if (folderMode.value === 'channel') prefs.outputDir = channelFolder.value;
   else if (folderMode.value === 'custom' && outputDir.value) prefs.outputDir = outputDir.value;
   if (filenameTemplate.value.trim()) prefs.filenameTemplate = filenameTemplate.value.trim();
+  if (addToLibrary.value !== settings.download.autoAddDownloadFolder) {
+    prefs.addToLibrary = addToLibrary.value;
+  }
+  if (selectedProfileId.value) prefs.profileId = selectedProfileId.value;
   emit('confirm', { prefs, downloadAll: downloadAll.value });
 }
 
@@ -144,6 +154,7 @@ function onProfileSelect(e: Event) {
     subsMode.value = c.subsMode || 'best';
     subsFolder.value = !!c.subsFolder;
   }
+  if (c.addToLibrary !== undefined) addToLibrary.value = c.addToLibrary;
 }
 
 async function pickOutputDir() {
@@ -396,7 +407,9 @@ async function pickOutputDir() {
                   <option value="vtt">VTT</option>
                   <option value="ass">ASS</option>
                 </select>
-                <label class="col-span-2 flex items-center gap-2 text-xs cursor-pointer select-none">
+                <label
+                  class="col-span-2 flex items-center gap-2 text-xs cursor-pointer select-none"
+                >
                   <input
                     v-model="subsFolder"
                     type="checkbox"
@@ -463,6 +476,23 @@ async function pickOutputDir() {
                 class="mt-1 w-full px-2 py-2 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
                 :placeholder="$t('youtube.prefOutputDirPlaceholder')"
               />
+            </div>
+
+            <div class="mt-3">
+              <label
+                class="flex items-center gap-2 text-sm cursor-pointer select-none"
+                :title="$t('youtube.addToLibraryPrefDesc')"
+              >
+                <input
+                  v-model="addToLibrary"
+                  type="checkbox"
+                  class="w-4 h-4 rounded accent-accent-base"
+                />
+                <span>{{ $t('youtube.addToLibraryPref') }}</span>
+              </label>
+              <p class="mt-1 text-[11px] text-fg-faint">
+                {{ $t('youtube.addToLibraryPrefDesc') }}
+              </p>
             </div>
 
             <div class="mt-3">

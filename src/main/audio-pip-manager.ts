@@ -4,6 +4,7 @@ import { is } from '@electron-toolkit/utils';
 import type { AudioPipState, PipMode, PipPosition } from '../shared/types/pip';
 import { computePipPosition } from './pip-position';
 import { AudioPipPreview } from './audio-pip-preview';
+import { installNavigationGuard } from './navigation-guard';
 
 export class AudioPipManager {
   private window: BrowserWindow | null = null;
@@ -146,6 +147,8 @@ export class AudioPipManager {
       this.window = null;
       this.ready = false;
     });
+
+    installNavigationGuard(this.window);
 
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
       this.window.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/audio-pip.html`);

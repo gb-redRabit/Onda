@@ -3,6 +3,7 @@ import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
 import { PipPreview } from './pip-preview';
 import { logger } from '../shared/logger';
+import { installNavigationGuard } from './navigation-guard';
 import { computePipPosition } from './pip-position';
 import { resolveMediaPath } from './path-utils';
 import type { PipSubtitleData } from '../shared/types/pip';
@@ -80,6 +81,8 @@ export class PipManager {
       this.loadedSrc = null;
       this.stopTimeTracking();
     });
+
+    installNavigationGuard(this.window);
 
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
       this.window.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/pip.html`);

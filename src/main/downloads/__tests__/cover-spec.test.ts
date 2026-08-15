@@ -70,6 +70,10 @@ describe('normalizeCoverSpec', () => {
     expect(normalizeCoverSpec({ type: 'thumbnail' })).toEqual({ type: 'thumbnail' });
   });
 
+  it('accepts the explicit none type', () => {
+    expect(normalizeCoverSpec({ type: 'none' })).toEqual({ type: 'none' });
+  });
+
   it('requires a path for custom', () => {
     expect(normalizeCoverSpec({ type: 'custom' })).toBeUndefined();
     expect(normalizeCoverSpec({ type: 'custom', customPath: '  ' })).toBeUndefined();

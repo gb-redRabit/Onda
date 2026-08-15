@@ -8,6 +8,7 @@ import {
   FolderOpen,
   Tv2,
   Download,
+  Globe,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -54,7 +55,8 @@ const navItems = computed(() => [
   { label: t('nav.library'), icon: Disc3, route: '/library' },
   { label: t('nav.explorer'), icon: FolderOpen, route: '/explorer' },
   { label: t('nav.youtube'), icon: Tv2, route: '/youtube' },
-  { label: t('nav.downloads'), icon: Download, route: '/downloads' }
+  { label: t('nav.downloads'), icon: Download, route: '/downloads' },
+  { label: t('nav.sources'), icon: Globe, route: '/sources' }
 ]);
 
 function onResizeStart(e: MouseEvent) {

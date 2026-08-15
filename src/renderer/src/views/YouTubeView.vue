@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
   Search,
@@ -25,6 +25,7 @@ import { errorCodeKey } from '@renderer/utils/errorCodes';
 import { detectYtKind, parseBatchInput } from '@shared/youtube';
 import { AUDIO_FORMATS, VIDEO_QUALITIES, VIDEO_CONTAINERS } from '@shared/constants';
 import YouTubeChannelView from '@renderer/components/youtube/YouTubeChannelView.vue';
+import YouTubeEmbedPlayer from '@renderer/components/youtube/YouTubeEmbedPlayer.vue';
 import DownloadConfigDialog from '@renderer/components/youtube/DownloadConfigDialog.vue';
 import FilenameTemplatePresets from '@renderer/components/FilenameTemplatePresets.vue';
 import type {
@@ -58,9 +59,34 @@ const batchResult = ref('');
 const batchProfileId = ref('');
 const activeSection = ref<'discover' | 'subscriptions'>('discover');
 const prefsOpen = ref<string | null>(null);
+const expandedSearchId = ref<string | null>(null);
+const expandedResolvedId = ref<string | null>(null);
 const configTarget = ref<
   { mode: 'single'; video: YouTubeVideo | YouTubeResolvedItem } | { mode: 'resolved' } | null
 >(null);
+
+function watchUrl(id: string): string {
+  return `https://www.youtube.com/watch?v=${id}`;
+}
+
+function openWatchWindow(id: string) {
+  window.open(watchUrl(id), '_blank', 'width=1100,height=700');
+}
+
+function toggleExpandSearch(id: string) {
+  expandedSearchId.value = expandedSearchId.value === id ? null : id;
+}
+
+function toggleExpandResolved(item: YouTubeResolvedItem) {
+  if (item.isPlayable === false) return;
+  expandedResolvedId.value = expandedResolvedId.value === item.id ? null : item.id;
+}
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key !== 'Escape') return;
+  if (expandedSearchId.value) expandedSearchId.value = null;
+  if (expandedResolvedId.value) expandedResolvedId.value = null;
+}
 
 const configDialogTitle = computed(() => {
   if (!configTarget.value) return '';
@@ -90,13 +116,15 @@ function onPrefsChange(sub: Subscription, patch: SubscriptionDownloadPrefs) {
 
 function changeCover(sub: Subscription, key: string) {
   const cover: CoverSpec | undefined =
-    key === 'thumbnail'
-      ? { type: 'thumbnail' }
-      : key === 'frame'
-        ? { type: 'frame', frameTime: 30 }
-        : key === 'clip'
-          ? { type: 'clip', clipStart: 0, clipEnd: 30, clipFormat: 'webm' }
-          : undefined;
+    key === 'none'
+      ? { type: 'none' }
+      : key === 'thumbnail'
+        ? { type: 'thumbnail' }
+        : key === 'frame'
+          ? { type: 'frame', frameTime: 30 }
+          : key === 'clip'
+            ? { type: 'clip', clipStart: 0, clipEnd: 30, clipFormat: 'webm' }
+            : undefined;
   onPrefsChange(sub, { cover });
 }
 
@@ -133,6 +161,41 @@ function onMetaChange(sub: Subscription, field: keyof MetaOverride, value: strin
   if (next.album) cleaned.album = next.album;
   if (next.year) cleaned.year = next.year;
   onPrefsChange(sub, { metaOverride: Object.keys(cleaned).length ? cleaned : undefined });
+}
+
+function onProfilePref(sub: Subscription, e: Event) {
+  const id = (e.target as HTMLSelectElement).value;
+  const profile = id ? profiles.value.find((p) => p.id === id) : undefined;
+  const prefs: SubscriptionDownloadPrefs = { ...(sub.downloadPrefs || {}) };
+  if (!profile) {
+    delete prefs.profileId;
+  } else {
+    const c = profile.config;
+    const next: SubscriptionDownloadPrefs = { profileId: id };
+    if (c.kind) next.kind = c.kind;
+    if (c.format) next.format = c.format;
+    if (c.quality) next.quality = c.quality;
+    if (c.audioQuality) next.audioQuality = c.audioQuality;
+    if (c.audioLanguage !== undefined) next.audioLanguage = c.audioLanguage;
+    if (c.cover && c.cover.type !== 'custom') next.cover = c.cover;
+    if (c.filenameTemplate) next.filenameTemplate = c.filenameTemplate;
+    if (c.metaOverride) next.metaOverride = c.metaOverride;
+    if (c.outputDir) next.outputDir = c.outputDir;
+    if (c.subsLangs) {
+      next.subsLangs = c.subsLangs;
+      next.subsFormat = c.subsFormat || 'srt';
+      next.subsMode = c.subsMode || 'best';
+      next.subsFolder = !!c.subsFolder;
+    }
+    if (c.addToLibrary !== undefined) next.addToLibrary = c.addToLibrary;
+    Object.assign(prefs, next);
+  }
+  void yt.setDownloadPrefs(sub.channelId, prefs);
+}
+
+function onAddToLibraryPref(sub: Subscription, value: boolean) {
+  const def = settings.download.autoAddDownloadFolder;
+  onPrefsChange(sub, { addToLibrary: value === def ? undefined : value });
 }
 
 function openSubscriptions() {
@@ -246,7 +309,15 @@ async function search() {
     const result = (await window.api.invoke('yt:search', input.value)) as {
       success?: boolean;
       error?: string;
-      code?: 'auth-required' | 'bot-block' | 'private' | 'not-found' | 'network' | 'proxy' | 'dependency' | 'unknown';
+      code?:
+        | 'auth-required'
+        | 'bot-block'
+        | 'private'
+        | 'not-found'
+        | 'network'
+        | 'proxy'
+        | 'dependency'
+        | 'unknown';
       items?: YouTubeVideo[];
       nextPageToken?: string | null;
       prevPageToken?: string | null;
@@ -259,7 +330,7 @@ async function search() {
       );
     } else {
       const key = errorCodeKey(result?.code);
-      searchError.value = key ? t(key) : (result?.error || t('youtube.searchError'));
+      searchError.value = key ? t(key) : result?.error || t('youtube.searchError');
       yt.setResults([]);
     }
   } catch {
@@ -288,7 +359,7 @@ async function resolveLink() {
       }
     } else {
       const key = errorCodeKey(res.code);
-      resolveError.value = key ? t(key) : (res.error || t('youtube.resolveError'));
+      resolveError.value = key ? t(key) : res.error || t('youtube.resolveError');
     }
   } catch {
     resolveError.value = t('youtube.resolveError');
@@ -327,7 +398,10 @@ function selectRange() {
   const start = Math.max(1, Math.min(total, Math.floor(Number(rangeStart.value) || 1)));
   const end = Math.max(start, Math.min(total, Math.floor(Number(rangeEnd.value) || total)));
   yt.selectedResolved = new Set(
-    yt.resolved.items.slice(start - 1, end).filter((i) => i.isPlayable !== false).map((i) => i.id)
+    yt.resolved.items
+      .slice(start - 1, end)
+      .filter((i) => i.isPlayable !== false)
+      .map((i) => i.id)
   );
 }
 
@@ -441,6 +515,11 @@ function itemDownloadState(videoId: string): 'queuing' | 'downloading' | 'done' 
   if (status === 'downloading' || status === 'pending' || status === 'paused') {
     return 'downloading';
   }
+  // The audio is done but the animated cover is still being prepared — keep
+  // the row busy until the cover finishes.
+  if (status === 'completed' && yt.coverStatusFor(videoId) === 'fetching') {
+    return 'downloading';
+  }
   if (status === 'completed') return 'done';
   return null;
 }
@@ -453,6 +532,7 @@ function onDrop(e: DragEvent) {
 }
 
 onMounted(async () => {
+  window.addEventListener('keydown', onKeydown);
   try {
     const text = (await window.api?.invoke('app:readClipboard')) as string | undefined;
     if (typeof text === 'string' && detectYtKind(text) && !input.value) {
@@ -462,6 +542,10 @@ onMounted(async () => {
     /* clipboard unavailable */
   }
   void ensureProfilesLoaded();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown);
 });
 </script>
 
@@ -566,7 +650,15 @@ onMounted(async () => {
                     : 'bg-green-base/15 text-green-base'
               "
             >
-              {{ $t(e.kind === 'video' ? 'youtube.kindVideo' : e.kind === 'playlist' ? 'youtube.kindPlaylist' : 'youtube.kindChannel') }}
+              {{
+                $t(
+                  e.kind === 'video'
+                    ? 'youtube.kindVideo'
+                    : e.kind === 'playlist'
+                      ? 'youtube.kindPlaylist'
+                      : 'youtube.kindChannel'
+                )
+              }}
             </span>
             <span class="truncate">{{ e.url }}</span>
           </li>
@@ -849,6 +941,17 @@ onMounted(async () => {
             <div v-if="prefsOpen === sub.channelId" class="px-3 pb-3 pt-0">
               <div class="border-t border-border-default pt-3">
                 <p class="text-[11px] text-fg-faint mb-2">{{ $t('youtube.downloadPrefsHint') }}</p>
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="text-[11px] text-fg-faint">{{ $t('youtube.profilesSection') }}</span>
+                  <select
+                    class="flex-1 min-w-0 px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    :value="sub.downloadPrefs?.profileId || ''"
+                    @change="onProfilePref(sub, $event)"
+                  >
+                    <option value="">{{ $t('youtube.profileNone') }}</option>
+                    <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
+                  </select>
+                </div>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <label class="block text-xs text-fg-faint">
                     {{ $t('youtube.prefKind') }}
@@ -887,7 +990,9 @@ onMounted(async () => {
                     {{ $t('settings.defaultAudioQuality') }}
                     <select
                       class="mt-1 w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                      :value="sub.downloadPrefs?.audioQuality || settings.download.defaultAudioQuality"
+                      :value="
+                        sub.downloadPrefs?.audioQuality || settings.download.defaultAudioQuality
+                      "
                       @change="onAudioQualityPref(sub, $event)"
                     >
                       <option
@@ -917,7 +1022,9 @@ onMounted(async () => {
                     <input
                       class="mt-1 w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
                       :value="sub.downloadPrefs?.filenameTemplate || ''"
-                      :placeholder="settings.download.filenameTemplate || $t('youtube.prefTemplatePlaceholder')"
+                      :placeholder="
+                        settings.download.filenameTemplate || $t('youtube.prefTemplatePlaceholder')
+                      "
                       @change="
                         onPrefsChange(sub, {
                           filenameTemplate: ($event.target as HTMLInputElement).value || undefined
@@ -929,6 +1036,20 @@ onMounted(async () => {
                         @preset="onPrefsChange(sub, { filenameTemplate: $event || undefined })"
                       />
                     </div>
+                  </label>
+                  <label
+                    class="flex items-center gap-2 text-xs text-fg-faint sm:col-span-2 cursor-pointer select-none"
+                    :title="$t('youtube.addToLibraryPrefDesc')"
+                  >
+                    <input
+                      type="checkbox"
+                      class="accent-accent-base"
+                      :checked="
+                        sub.downloadPrefs?.addToLibrary ?? settings.download.autoAddDownloadFolder
+                      "
+                      @change="onAddToLibraryPref(sub, ($event.target as HTMLInputElement).checked)"
+                    />
+                    <span>{{ $t('youtube.addToLibraryPref') }}</span>
                   </label>
                   <label class="block text-xs text-fg-faint sm:col-span-4">
                     {{ $t('youtube.prefSubs') }}
@@ -953,19 +1074,25 @@ onMounted(async () => {
                         class="px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
                         :value="sub.downloadPrefs?.metaOverride?.artist || ''"
                         :placeholder="$t('youtube.metaArtist')"
-                        @change="onMetaChange(sub, 'artist', ($event.target as HTMLInputElement).value)"
+                        @change="
+                          onMetaChange(sub, 'artist', ($event.target as HTMLInputElement).value)
+                        "
                       />
                       <input
                         class="px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
                         :value="sub.downloadPrefs?.metaOverride?.album || ''"
                         :placeholder="$t('youtube.metaAlbum')"
-                        @change="onMetaChange(sub, 'album', ($event.target as HTMLInputElement).value)"
+                        @change="
+                          onMetaChange(sub, 'album', ($event.target as HTMLInputElement).value)
+                        "
                       />
                       <input
                         class="px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
                         :value="sub.downloadPrefs?.metaOverride?.year || ''"
                         :placeholder="$t('youtube.metaYear')"
-                        @change="onMetaChange(sub, 'year', ($event.target as HTMLInputElement).value)"
+                        @change="
+                          onMetaChange(sub, 'year', ($event.target as HTMLInputElement).value)
+                        "
                       />
                     </div>
                   </label>
@@ -1024,7 +1151,19 @@ onMounted(async () => {
               v-for="item in yt.resolved.items"
               :key="item.id"
               class="flex gap-3 p-2 rounded-xl hover:bg-bg-hover transition-colors group items-center"
+              :class="expandedResolvedId === item.id ? 'flex-col items-stretch' : ''"
+              @click="toggleExpandResolved(item)"
             >
+              <div v-if="expandedResolvedId === item.id" class="w-full">
+                <YouTubeEmbedPlayer
+                  :video-id="item.id"
+                  :title="item.title"
+                  :channel-title="item.channelTitle"
+                  :source-url="watchUrl(item.id)"
+                  @open-window="openWatchWindow(item.id)"
+                  @close="expandedResolvedId = null"
+                />
+              </div>
               <button
                 v-if="yt.resolved.kind !== 'video'"
                 class="shrink-0 flex items-center justify-center w-5 h-5 rounded border transition-colors"
@@ -1033,12 +1172,15 @@ onMounted(async () => {
                     ? 'bg-accent-base border-accent-base text-white'
                     : 'border-border-default hover:border-accent-base'
                 "
-                @click="toggleSelect(item.id)"
+                @click.stop="toggleSelect(item.id)"
               >
                 <Check v-if="yt.selectedResolved.has(item.id)" :size="12" />
               </button>
-              <div
+              <button
                 class="w-32 aspect-video rounded-lg bg-bg-elevated overflow-hidden shrink-0 relative"
+                :title="$t('youtube.play')"
+                :disabled="item.isPlayable === false"
+                @click.stop="toggleExpandResolved(item)"
               >
                 <img
                   v-if="item.thumbnail"
@@ -1053,22 +1195,48 @@ onMounted(async () => {
                 >
                   {{ item.duration }}
                 </div>
-              </div>
+                <div
+                  v-if="yt.coverStatusFor(item.id) === 'fetching'"
+                  class="absolute top-1 left-1 flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-base text-white text-[10px] font-medium"
+                  :title="$t('downloads.coverStatusFetching')"
+                >
+                  <RefreshCw :size="10" class="animate-spin" />
+                </div>
+                <div
+                  class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors"
+                >
+                  <div
+                    v-if="item.isPlayable !== false"
+                    class="opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Play :size="28" class="text-white drop-shadow" fill="white" />
+                  </div>
+                </div>
+              </button>
               <div class="flex-1 min-w-0">
                 <h3 class="text-sm font-medium line-clamp-1 mb-0.5">{{ item.title }}</h3>
                 <button
                   v-if="item.channelId"
                   class="text-xs text-fg-faint hover:text-accent-base transition-colors"
-                  @click="yt.openChannel(`https://www.youtube.com/channel/${item.channelId}`)"
+                  @click.stop="yt.openChannel(`https://www.youtube.com/channel/${item.channelId}`)"
                 >
                   {{ item.channelTitle }}
                 </button>
                 <p v-else class="text-xs text-fg-faint">{{ item.channelTitle }}</p>
               </div>
               <button
+                v-if="item.isPlayable !== false"
+                class="p-1.5 rounded-lg border border-border-default text-fg-muted hover:bg-bg-hover hover:text-accent-base transition-colors shrink-0"
+                :title="expandedResolvedId === item.id ? $t('nav.collapse') : $t('youtube.play')"
+                @click.stop="toggleExpandResolved(item)"
+              >
+                <X v-if="expandedResolvedId === item.id" :size="12" />
+                <Play v-else :size="12" />
+              </button>
+              <button
                 class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-base text-white text-xs font-medium hover:bg-accent-hover transition-colors shrink-0 disabled:opacity-70"
                 :disabled="itemDownloadState(item.id) !== null"
-                @click="quickQueueResolved(item)"
+                @click.stop="quickQueueResolved(item)"
               >
                 <RefreshCw
                   v-if="
@@ -1094,7 +1262,7 @@ onMounted(async () => {
                 class="p-1.5 rounded-lg border border-border-default text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-colors shrink-0"
                 :title="$t('youtube.downloadOptions')"
                 :aria-label="$t('youtube.downloadOptions')"
-                @click="queueResolvedItem(item)"
+                @click.stop="queueResolvedItem(item)"
               >
                 <SlidersHorizontal :size="12" />
               </button>
@@ -1179,9 +1347,23 @@ onMounted(async () => {
             v-for="v in yt.pagedResults"
             :key="v.id"
             class="flex gap-3 p-3 rounded-xl hover:bg-bg-hover transition-colors group cursor-pointer"
+            :class="expandedSearchId === v.id ? 'flex-col items-stretch' : ''"
+            @click="toggleExpandSearch(v.id)"
           >
-            <div
+            <div v-if="expandedSearchId === v.id" class="w-full">
+              <YouTubeEmbedPlayer
+                :video-id="v.id"
+                :title="v.title"
+                :channel-title="v.channelTitle"
+                :source-url="watchUrl(v.id)"
+                @open-window="openWatchWindow(v.id)"
+                @close="expandedSearchId = null"
+              />
+            </div>
+            <button
               class="w-40 aspect-video rounded-lg bg-bg-elevated overflow-hidden shrink-0 relative"
+              :title="$t('youtube.play')"
+              @click.stop="toggleExpandSearch(v.id)"
             >
               <img
                 v-if="v.thumbnail"
@@ -1201,7 +1383,14 @@ onMounted(async () => {
               >
                 {{ v.duration }}
               </div>
-            </div>
+              <div
+                v-if="yt.coverStatusFor(v.id) === 'fetching'"
+                class="absolute top-1 left-1 flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-base text-white text-[10px] font-medium"
+                :title="$t('downloads.coverStatusFetching')"
+              >
+                <RefreshCw :size="10" class="animate-spin" />
+              </div>
+            </button>
             <div class="flex-1 min-w-0">
               <h3 class="text-sm font-medium line-clamp-2 mb-1">{{ v.title }}</h3>
               <div class="text-xs text-fg-faint">
@@ -1223,10 +1412,18 @@ onMounted(async () => {
               class="flex flex-col gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <button
-                class="p-2 rounded-lg bg-accent-base text-white hover:bg-accent-hover transition-colors disabled:opacity-70"
+                class="p-2 rounded-lg bg-accent-base text-white hover:bg-accent-hover transition-colors"
+                :title="expandedSearchId === v.id ? $t('nav.collapse') : $t('youtube.play')"
+                @click.stop="toggleExpandSearch(v.id)"
+              >
+                <X v-if="expandedSearchId === v.id" :size="14" />
+                <Play v-else :size="14" />
+              </button>
+              <button
+                class="p-2 rounded-lg bg-bg-elevated border border-border-default text-fg-muted hover:bg-bg-hover transition-colors disabled:opacity-70"
                 :title="$t('youtube.addToQueue')"
                 :disabled="itemDownloadState(v.id) !== null"
-                @click="quickQueueVideo(v)"
+                @click.stop="quickQueueVideo(v)"
               >
                 <RefreshCw
                   v-if="
@@ -1242,12 +1439,14 @@ onMounted(async () => {
               <button
                 class="p-2 rounded-lg bg-bg-elevated border border-border-default text-fg-muted hover:bg-bg-hover transition-colors"
                 :title="$t('youtube.downloadOptions')"
-                @click="queueChannelVideo(v)"
+                @click.stop="queueChannelVideo(v)"
               >
                 <SlidersHorizontal :size="14" />
               </button>
               <button
-                class="p-2 rounded-lg bg-bg-elevated border border-border-default text-fg-muted hover:bg-bg-hover transition-colors"
+                class="p-2 rounded-lg bg-bg-elevated border border-border-default text-fg-muted hover:bg-bg-hover hover:text-accent-base transition-colors"
+                :title="$t('youtube.openInWindow')"
+                @click.stop="openWatchWindow(v.id)"
               >
                 <ExternalLink :size="14" />
               </button>

@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import type { ComponentPublicInstance } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { ArrowLeft, Users, Download, LayoutGrid, Rows3, Bell, BellOff } from '@lucide/vue';
+import { ArrowLeft, Users, Download, LayoutGrid, Rows3, Bell, BellOff, Play, X, RefreshCw } from '@lucide/vue';
 import { useYouTubeStore } from '@renderer/stores/youtube';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { formatNumber } from '@renderer/utils/formatters';
@@ -14,6 +14,7 @@ import type {
   MetaOverride
 } from '@renderer/types/youtube';
 import YouTubeVideoCard from './YouTubeVideoCard.vue';
+import YouTubeEmbedPlayer from './YouTubeEmbedPlayer.vue';
 import SubscribeConfigDialog from './SubscribeConfigDialog.vue';
 import DownloadConfigDialog from './DownloadConfigDialog.vue';
 
@@ -23,6 +24,23 @@ const { t } = useI18n();
 
 const followed = computed(() => (yt.channel ? yt.isSubscribed(yt.channel.id) : false));
 const subscribeOpen = ref(false);
+const expandedId = ref<string | null>(null);
+
+function watchUrl(id: string): string {
+  return `https://www.youtube.com/watch?v=${id}`;
+}
+
+function openWatchWindow(id: string) {
+  window.open(watchUrl(id), '_blank', 'width=1100,height=700');
+}
+
+function toggleExpand(id: string) {
+  expandedId.value = expandedId.value === id ? null : id;
+}
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && expandedId.value) expandedId.value = null;
+}
 
 const channelErrorMessage = computed(() => {
   const key = errorCodeKey(yt.channelErrorCode);
@@ -156,6 +174,7 @@ function setSentinel(el: Element | ComponentPublicInstance | null) {
 
 onMounted(() => {
   if (!yt.subscriptionsLoaded) void yt.loadSubscriptions();
+  window.addEventListener('keydown', onKeydown);
   observer = new IntersectionObserver(
     (entries) => {
       if (entries[0]?.isIntersecting) maybeLoadMore();
@@ -165,6 +184,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown);
   observer?.disconnect();
   observer = null;
 });
@@ -281,7 +301,13 @@ watch(
             :key="v.id"
             :video="v"
             :downloaded="yt.isVideoDownloaded(v.id, yt.channel?.id)"
+            :cover-status="yt.coverStatusFor(v.id)"
+            :expanded="expandedId === v.id"
+            :watch-url="watchUrl(v.id)"
+            :class="expandedId === v.id ? 'col-span-full' : ''"
             @queue="queueVideo"
+            @expand="expandedId = v.id"
+            @collapse="expandedId = null"
           />
         </div>
       </div>
@@ -335,7 +361,13 @@ watch(
               :key="v.id"
               :video="v"
               :downloaded="yt.isVideoDownloaded(v.id, yt.channel?.id)"
+              :cover-status="yt.coverStatusFor(v.id)"
+              :expanded="expandedId === v.id"
+              :watch-url="watchUrl(v.id)"
+              :class="expandedId === v.id ? 'col-span-full' : ''"
               @queue="queueVideo"
+              @expand="expandedId = v.id"
+              @collapse="expandedId = null"
             />
           </div>
           <div v-else class="space-y-2">
@@ -343,9 +375,15 @@ watch(
               v-for="v in rest"
               :key="v.id"
               class="flex gap-3 p-2 rounded-xl hover:bg-bg-hover transition-colors group items-center"
+              :class="expandedId === v.id ? 'flex-col items-stretch' : ''"
             >
-              <div
+              <div v-if="expandedId === v.id" class="w-full">
+                <YouTubeEmbedPlayer :video-id="v.id" @open-window="openWatchWindow(v.id)" />
+              </div>
+              <button
                 class="w-32 aspect-video rounded-lg bg-bg-elevated overflow-hidden shrink-0 relative"
+                :title="$t('youtube.play')"
+                @click="toggleExpand(v.id)"
               >
                 <img
                   v-if="v.thumbnail"
@@ -360,7 +398,21 @@ watch(
                 >
                   {{ v.duration }}
                 </div>
-              </div>
+                <div
+                  v-if="yt.coverStatusFor(v.id) === 'fetching'"
+                  class="absolute top-1 left-1 flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-base text-white text-[10px] font-medium"
+                  :title="$t('downloads.coverStatusFetching')"
+                >
+                  <RefreshCw :size="10" class="animate-spin" />
+                </div>
+                <div
+                  class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors"
+                >
+                  <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Play :size="28" class="text-white drop-shadow" fill="white" />
+                  </div>
+                </div>
+              </button>
               <div class="flex-1 min-w-0">
                 <h3 class="text-sm font-medium line-clamp-1 mb-0.5">{{ v.title }}</h3>
                 <p class="text-xs text-fg-faint truncate">
@@ -370,6 +422,14 @@ watch(
                   <template v-if="v.publishedAt">{{ v.publishedAt }}</template>
                 </p>
               </div>
+              <button
+                class="p-2 rounded-lg border border-border-default text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-colors shrink-0"
+                :title="expandedId === v.id ? $t('nav.collapse') : $t('youtube.play')"
+                @click="toggleExpand(v.id)"
+              >
+                <X v-if="expandedId === v.id" :size="14" />
+                <Play v-else :size="14" />
+              </button>
               <button
                 class="p-2 rounded-lg bg-accent-base text-white hover:bg-accent-hover transition-colors shrink-0"
                 @click="queueVideo(v)"
@@ -400,7 +460,14 @@ watch(
             :key="v.id"
             :video="v"
             short
+            :downloaded="yt.isVideoDownloaded(v.id, yt.channel?.id)"
+            :cover-status="yt.coverStatusFor(v.id)"
+            :expanded="expandedId === v.id"
+            :watch-url="watchUrl(v.id)"
+            :class="expandedId === v.id ? 'col-span-full' : ''"
             @queue="queueVideo"
+            @expand="expandedId = v.id"
+            @collapse="expandedId = null"
           />
         </div>
         <p v-else class="text-sm text-fg-faint py-8 text-center">

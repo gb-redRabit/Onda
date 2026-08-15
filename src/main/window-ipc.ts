@@ -4,6 +4,7 @@ import { is } from '@electron-toolkit/utils';
 import type { PipManager } from './pip-manager';
 import type { AudioPipManager } from './audio-pip-manager';
 import { logger } from '../shared/logger';
+import { installNavigationGuard } from './navigation-guard';
 
 const explorerWindows = new Map<number, BrowserWindow>();
 
@@ -38,6 +39,7 @@ export function createExplorerWindow(initialPath?: string): number | null {
     win.on('leave-full-screen', () => {
       win.webContents.send('window:fullscreenChanged', false);
     });
+    installNavigationGuard(win);
     const hash = `/explorer/window/${id}${initialPath ? `?path=${encodeURIComponent(initialPath)}` : ''}`;
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
       win.loadURL(process.env['ELECTRON_RENDERER_URL'] + '#' + hash);

@@ -50,7 +50,7 @@ const trimStart = ref<number | null>(null);
 const trimEnd = ref<number | null>(null);
 const videoContainer = ref<'mp4' | 'mkv' | 'webm'>(settings.download.defaultVideoContainer);
 const filenameTemplate = ref(settings.download.filenameTemplate);
-const coverType = ref<'thumbnail' | 'custom' | 'frame' | 'clip'>('thumbnail');
+const coverType = ref<'thumbnail' | 'custom' | 'frame' | 'clip' | 'none'>('thumbnail');
 const customPath = ref('');
 const frameTime = ref(30);
 const clipStart = ref(0);
@@ -110,7 +110,12 @@ async function pickOutputDir() {
 
 function buildConfig(): IpcDownloadConfig {
   const cover: CoverSpec | undefined = (() => {
-    if (kind.value === 'video') return undefined;
+    if (kind.value === 'video') {
+      // Video downloads embed the YouTube thumbnail by default; "none" is the
+      // explicit opt-out (animated covers are an audio feature).
+      return coverType.value === 'none' ? { type: 'none' } : { type: 'thumbnail' };
+    }
+    if (coverType.value === 'none') return { type: 'none' };
     if (coverType.value === 'custom') {
       return customPath.value ? { type: 'custom', customPath: customPath.value } : undefined;
     }
@@ -416,6 +421,38 @@ function onProfileSelect(e: Event) {
                   :placeholder="$t('youtube.trimEndPlaceholder')"
                 />
               </label>
+            </div>
+          </div>
+
+          <div v-if="kind === 'video'">
+            <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
+              {{ $t('youtube.coverSection') }}
+            </p>
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                class="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors"
+                :class="
+                  coverType !== 'none'
+                    ? 'border-accent-base bg-accent-ghost text-accent-base'
+                    : 'border-border-default text-fg-muted hover:bg-bg-hover'
+                "
+                @click="coverType = 'thumbnail'"
+              >
+                <Image :size="14" />
+                {{ $t('youtube.coverThumbnail') }}
+              </button>
+              <button
+                class="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors"
+                :class="
+                  coverType === 'none'
+                    ? 'border-accent-base bg-accent-ghost text-accent-base'
+                    : 'border-border-default text-fg-muted hover:bg-bg-hover'
+                "
+                @click="coverType = 'none'"
+              >
+                <ImagePlus :size="14" />
+                {{ $t('youtube.coverNone') }}
+              </button>
             </div>
           </div>
 

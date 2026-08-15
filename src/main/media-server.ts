@@ -11,7 +11,12 @@ export interface MediaServer {
   close: () => void;
 }
 
-let allowedRoots: string[] = [];
+// Library roots are replaced wholesale on every library change; granted roots
+// (files/folders explicitly opened or download output dirs) accumulate and
+// must survive restarts, so they are tracked separately and persisted.
+const libraryRoots: string[] = [];
+const extraRoots: string[] = [];
+let rootsChanged: (() => void) | null = null;
 
 async function resolveReal(root: string): Promise<string> {
   try {
@@ -21,22 +26,48 @@ async function resolveReal(root: string): Promise<string> {
   }
 }
 
-export async function setAllowedRoots(roots: string[]): Promise<void> {
+async function resolveAll(roots: string[]): Promise<string[]> {
   const resolved: string[] = [];
   for (const r of roots) {
     if (typeof r === 'string' && r) {
       resolved.push(await resolveReal(r));
     }
   }
-  allowedRoots = resolved;
+  return resolved;
+}
+
+// Hook invoked whenever the allowed-root set changes, so the caller can persist
+// the granted roots across restarts.
+export function setRootsChangedHandler(cb: (() => void) | null): void {
+  rootsChanged = cb;
+}
+
+// The granted (extra) roots — persisted by the app so downloads remain
+// playable after a restart.
+export function getExtraRoots(): string[] {
+  return [...extraRoots];
+}
+
+export async function setAllowedRoots(roots: string[]): Promise<void> {
+  libraryRoots.length = 0;
+  libraryRoots.push(...(await resolveAll(roots)));
+  rootsChanged?.();
 }
 
 export async function addAllowedRoot(root: string): Promise<void> {
   if (typeof root !== 'string' || !root) return;
   const real = await resolveReal(root);
-  if (!allowedRoots.includes(real)) {
-    allowedRoots.push(real);
+  if (!extraRoots.includes(real)) {
+    extraRoots.push(real);
+    rootsChanged?.();
   }
+}
+
+function isWithinAnyRoot(filePath: string): boolean {
+  for (const root of [...libraryRoots, ...extraRoots]) {
+    if (isWithinRoot(filePath, root)) return true;
+  }
+  return false;
 }
 
 function isWithinRoot(filePath: string, root: string): boolean {
@@ -137,10 +168,10 @@ export function createMediaServer(): Promise<MediaServer> {
           // fall back to normalized path; root check below still applies
         }
 
-        if (!allowedRoots.some((root) => isWithinRoot(realPath, root))) {
+        if (!isWithinAnyRoot(realPath)) {
           logger.warn(
             'media-server',
-            `rejected path outside allowed roots: ${realPath} (roots=${allowedRoots.length})`
+            `rejected path outside allowed roots: ${realPath} (roots=${libraryRoots.length + extraRoots.length})`
           );
           res.writeHead(403);
           res.end('forbidden');

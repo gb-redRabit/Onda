@@ -121,7 +121,13 @@ const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'audio-pip:update',
   'audio-pip:previewStart',
   'audio-pip:previewStop',
-  'audio-pip:previewUpdate'
+  'audio-pip:previewUpdate',
+  'sources:list',
+  'sources:save',
+  'sources:delete',
+  'sources:test',
+  'sources:fetch',
+  'sources:enqueue'
 ]);
 
 const ALLOWED_SEND_CHANNELS = new Set<string>([

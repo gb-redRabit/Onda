@@ -2,8 +2,8 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import http from 'http';
 import fs from 'fs/promises';
 import os from 'os';
-import { join } from 'path';
-import { createMediaServer, setAllowedRoots } from '../media-server';
+import { join, dirname } from 'path';
+import { createMediaServer, setAllowedRoots, addAllowedRoot, getExtraRoots } from '../media-server';
 import type { MediaServer } from '../media-server';
 
 let server: MediaServer | null = null;
@@ -200,5 +200,41 @@ describe('media-server', () => {
       process.platform === 'win32' ? 'C:/Windows/System32/notepad.exe' : '/etc/hostname';
     const res = await request(`/${server!.token}/?path=${encodeURIComponent(outside)}`);
     expect(res.status).toBe(403);
+  });
+
+  it('serves a path granted via addAllowedRoot (extra roots)', async () => {
+    const parent = dirname(os.tmpdir());
+    const dir = join(parent, `onda-extra-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    await fs.mkdir(dir, { recursive: true });
+    tempFiles.push(dir);
+    const file = join(dir, 'granted.mp3');
+    await fs.writeFile(file, Buffer.alloc(64, 0x41));
+    tempFiles.push(file);
+
+    const denied = await request(`/${server!.token}/?path=${encodeURIComponent(file)}`);
+    expect(denied.status).toBe(403);
+
+    await addAllowedRoot(dir);
+
+    const granted = await request(`/${server!.token}/?path=${encodeURIComponent(file)}`);
+    expect(granted.status).toBe(200);
+    expect(granted.headers['content-type']).toBe('audio/mpeg');
+    expect(getExtraRoots()).toContain(dir);
+  });
+
+  it('keeps extra roots when library roots are replaced', async () => {
+    const parent = dirname(os.tmpdir());
+    const dir = join(parent, `onda-keep-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    await fs.mkdir(dir, { recursive: true });
+    tempFiles.push(dir);
+    const file = join(dir, 'kept.mp4');
+    await fs.writeFile(file, Buffer.alloc(64, 0x41));
+    tempFiles.push(file);
+
+    await addAllowedRoot(dir);
+    await setAllowedRoots([os.tmpdir()]);
+
+    const res = await request(`/${server!.token}/?path=${encodeURIComponent(file)}`);
+    expect(res.status).toBe(200);
   });
 });

@@ -1,10 +1,12 @@
 import { spawn, type ChildProcess } from 'child_process';
 import { randomUUID } from 'crypto';
-import { mkdir } from 'fs/promises';
-import { join } from 'path';
+import { statSync } from 'fs';
+import { mkdir, readdir } from 'fs/promises';
+import { join, extname } from 'path';
 import { app } from 'electron';
 import { logger } from '../../shared/logger';
 import type { IpcDownloadJobInput, IpcDownloadTask, IpcDownloadErrorCode } from '../../shared/types/ipc';
+import { AUDIO_EXTS } from '../../shared/constants';
 import { resolveBin } from '../binaries';
 import { getYtAuthConfig, cleanupYtAuthTemp } from '../youtube-auth';
 import { buildYtArgs, type YtAuthConfig } from '../ipc/youtube-utils';
@@ -18,7 +20,6 @@ import { classifyYtDlpError, describeError, redactSecrets } from './error-classi
 import { sha256File } from './hash-file';
 import { buildSubtitleArgs } from './subtitle-args';
 import { findSiblingSubtitleFiles, moveSubtitlesToFolder } from './subtitle-files';
-import { writeDownloadManifest } from './manifest';
 import { buildSponsorBlockArgs } from './sponsorblock';
 import { isWithinWindow } from './schedule';
 import {
@@ -29,6 +30,10 @@ import {
 } from './download-queue-store';
 import { isSafeAbsolutePath } from '../utils/validate';
 import { readProxyArgs, readSpeedLimitArgs } from '../ipc/proxy-utils';
+import { addAllowedRoot } from '../media-server';
+import { resolveFinalOutputPath, findNewestOutput } from './output-path';
+import { downloadHttpFile } from './http-downloader';
+import { resolveSourceHeaders } from '../ipc/generic-fetch';
 
 const MAX_CONCURRENT = 10;
 const MAX_STDERR_BYTES = 64 * 1024;
@@ -82,8 +87,54 @@ export function buildFormatSelector(quality: string, kind: 'audio' | 'video'): s
   return `bestvideo[height<=${height}]+bestaudio/best`;
 }
 
+function resolveOutputDir(job: Job): string {
+  return (
+    resolveFolderTokens(job.outputDir.trim(), {
+      channelTitle: job.channelTitle,
+      playlistTitle: job.playlistTitle
+    }) || app.getPath('downloads')
+  );
+}
+
+// Candidate extensions of the final media file, used to locate the real output
+// on disk when the destination parsed from yt-dlp stdout is unavailable.
+function outputExtensions(job: Job): string[] {
+  if (job.kind === 'video') return [`.${job.videoContainer || 'mp4'}`];
+  if (job.format === 'best') return [...AUDIO_EXTS, '.webm'];
+  return [`.${job.format || 'mp3'}`];
+}
+
 interface Job extends IpcDownloadTask {
   child?: ChildProcess;
+}
+
+function formatBytes(bytesPerSec: number): string {
+  if (bytesPerSec >= 1024 * 1024) return `${(bytesPerSec / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytesPerSec >= 1024) return `${Math.round(bytesPerSec / 1024)} KB`;
+  return `${Math.round(bytesPerSec)} B`;
+}
+
+function formatEta(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds));
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m`;
+  return `${Math.floor(m / 60)}h`;
+}
+
+function sanitizeFileName(name: string): string {
+  return name.replace(/\s*[\\/:*?"<>|]\s*/g, ' ').trim().slice(0, 180) || 'download';
+}
+
+function deriveHttpFileName(job: Job): string {
+  const base = sanitizeFileName(job.title || 'download');
+  try {
+    const ext = extname(new URL(job.url).pathname).toLowerCase();
+    if (ext && ext.length <= 10) return `${base}${ext}`;
+  } catch {
+    // not a URL — fall through
+  }
+  return `${base}.bin`;
 }
 
 const jobs = new Map<string, Job>();
@@ -199,7 +250,8 @@ export function snapshot(task: IpcDownloadTask): IpcDownloadTask {
     sponsorBlock: task.sponsorBlock,
     trimStart: task.trimStart,
     trimEnd: task.trimEnd,
-    addToLibrary: task.addToLibrary
+    addToLibrary: task.addToLibrary,
+    source: task.source
   };
 }
 
@@ -369,16 +421,68 @@ async function runJob(job: Job): Promise<void> {
   }
 }
 
+// Direct-URL (source) download: streams the file with progress, then falls back
+// to the shared postProcess (library sync, hash). No yt-dlp involved.
+async function runHttpAttempt(
+  job: Job
+): Promise<{ finishedOk: boolean; errorCode?: IpcDownloadErrorCode }> {
+  const dir = resolveOutputDir(job);
+  await mkdir(dir, { recursive: true });
+  // The media server only serves allowed roots — grant the output dir so the
+  // downloaded file is playable straight away.
+  void addAllowedRoot(dir);
+  const destPath = join(dir, job.source?.fileName || deriveHttpFileName(job));
+  job.outputPath = destPath;
+  persist(job);
+  const headers = await resolveSourceHeaders(job.source?.apiKeyId, job.source?.headerName);
+  const startedAt = Date.now();
+  try {
+    await downloadHttpFile({
+      url: job.url,
+      destPath,
+      headers,
+      onProgress: (p) => {
+        if (job.status !== 'downloading') return;
+        if (p.total && p.total > 0) {
+          job.progress = Math.min(100, Math.round((p.received / p.total) * 100));
+        }
+        const elapsed = (Date.now() - startedAt) / 1000;
+        if (elapsed > 0.5) {
+          const bps = p.received / elapsed;
+          job.speed = `${formatBytes(bps)}/s`;
+          if (p.total && p.total > 0) {
+            job.eta = formatEta((p.total - p.received) / Math.max(bps, 1));
+          }
+        }
+        persist(job);
+      }
+    });
+    job.status = 'completed';
+    job.progress = 100;
+    job.completedAt = Date.now();
+    persist(job);
+    return { finishedOk: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    job.status = 'error';
+    job.error = redactSecrets(msg);
+    job.errorCode = classifyYtDlpError(msg);
+    persist(job);
+    return { finishedOk: false, errorCode: job.errorCode };
+  }
+}
+
 // Builds the yt-dlp argument list (without bin/auth) for a job: output dir and
 // template, format selector, subtitles, proxy and speed limit. May mutate
 // job.cover (native audio drops thumbnail embedding) and job.coverStatus.
 async function buildBaseArgs(job: Job): Promise<string[]> {
-  const dir =
-    resolveFolderTokens(job.outputDir.trim(), {
-      channelTitle: job.channelTitle,
-      playlistTitle: job.playlistTitle
-    }) || app.getPath('downloads');
+  const dir = resolveOutputDir(job);
   await mkdir(dir, { recursive: true });
+  // The media server only knows library folders + explicitly opened files.
+  // A download into any other folder (e.g. default Downloads) would get 403 on
+  // cover/playback requests, so grant access to the output dir up front — the
+  // audio file and its animated-cover sibling land here.
+  void addAllowedRoot(dir);
   const outputTemplate = join(dir, `${mapFilenameTemplate(job.filenameTemplate)}.%(ext)s`);
   const base: string[] = [
     job.url,
@@ -420,6 +524,15 @@ async function buildBaseArgs(job: Job): Promise<string[]> {
       '--embed-metadata',
       '--embed-chapters'
     );
+    if (job.cover?.type === 'thumbnail') {
+      if (job.videoContainer === 'webm') {
+        // WebM has no attached cover-art support — drop the thumbnail request.
+        job.cover = undefined;
+      } else {
+        base.push(...buildThumbnailArgs());
+        job.coverStatus = 'fetching';
+      }
+    }
   }
   if (job.audioLanguage) {
     base.push('--audio-language', job.audioLanguage);
@@ -457,17 +570,30 @@ async function runJobAttempt(
   auth: YtAuthConfig | null,
   base: string[]
 ): Promise<{ finishedOk: boolean; errorCode?: IpcDownloadErrorCode }> {
+  if (job.source?.mode === 'http') {
+    return runHttpAttempt(job);
+  }
   const args = buildYtArgs(base, auth);
-  const child = spawn(bin, args, { windowsHide: true });
+  // On Windows yt-dlp prints "Destination:" lines to stdout in the console
+  // codepage, which would mangle non-ASCII names when decoded as UTF-8. Force
+  // UTF-8 output so the parsed paths match the real files on disk.
+  const child = spawn(bin, args, {
+    windowsHide: true,
+    env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' }
+  });
   job.child = child;
 
   let stdoutBuf = '';
   let stderrBuf = '';
   let stderrText = '';
+  const destinations: string[] = [];
   const handleLine = (line: string): void => {
     const parsed = parseYtDlpProgress(line);
     if (!parsed) return;
-    if (parsed.destination) job.outputPath = parsed.destination;
+    if (parsed.destination) {
+      destinations.push(parsed.destination);
+      job.outputPath = parsed.destination;
+    }
     if (parsed.progress != null) {
       job.progress = parsed.progress;
       if (parsed.speed) job.speed = parsed.speed;
@@ -509,7 +635,7 @@ async function runJobAttempt(
         resolve();
       }
     }, DOWNLOAD_TIMEOUT_MS);
-    child.on('close', (code, signal) => {
+    child.on('close', async (code, signal) => {
       clearTimeout(timer);
       if (timedOut) {
         resolve();
@@ -527,6 +653,7 @@ async function runJobAttempt(
         job.completedAt = Date.now();
         finishedOk = true;
         reportCompleted(job);
+        await resolveRealOutputPath(job, destinations);
       } else {
         job.status = 'error';
         const errorCode = classifyYtDlpError(stderrText);
@@ -541,6 +668,46 @@ async function runJobAttempt(
   return { finishedOk, errorCode: job.errorCode };
 }
 
+// "Destination:" lines parsed from yt-dlp stdout can be mangled for non-ASCII
+// names (Windows console codepage), while the files on disk always carry the
+// correct Unicode name. Resolve the real final path by verifying the parsed
+// destinations against the filesystem; as a last resort pick the newest
+// matching file in the output directory.
+async function resolveRealOutputPath(job: Job, destinations: string[]): Promise<void> {
+  const exists = (p: string): boolean => {
+    try {
+      return statSync(p).isFile();
+    } catch {
+      return false;
+    }
+  };
+  let real = resolveFinalOutputPath(destinations, exists);
+  if (!real) {
+    try {
+      const dir = resolveOutputDir(job);
+      const entries = await readdir(dir, { withFileTypes: true });
+      const name = findNewestOutput(
+        entries.map((e) => {
+          try {
+            return { name: e.name, mtimeMs: statSync(join(dir, e.name)).mtimeMs };
+          } catch {
+            return { name: e.name, mtimeMs: 0 };
+          }
+        }),
+        outputExtensions(job),
+        job.startedAt
+      );
+      if (name) real = join(dir, name);
+    } catch (e) {
+      logger.warn('downloads', `locating output file failed for ${job.id}`, e);
+    }
+  }
+  if (real && real !== job.outputPath) {
+    job.outputPath = real;
+    persist(job);
+  }
+}
+
 // Post-download pipeline (Faza 5/6): metadata override, cover processing and
 // library refresh. Failures are non-fatal — the file itself is already done.
 async function postProcess(job: Job): Promise<void> {
@@ -552,7 +719,13 @@ async function postProcess(job: Job): Promise<void> {
       logger.warn('downloads', `metadata override failed for ${job.id}`, e);
     }
   }
-  if (outputPath && job.kind === 'audio' && job.cover && job.cover.type !== 'thumbnail') {
+  if (
+    outputPath &&
+    job.kind === 'audio' &&
+    job.cover &&
+    job.cover.type !== 'thumbnail' &&
+    job.cover.type !== 'none'
+  ) {
     job.coverStatus = 'fetching';
     persist(job);
     const res = await processCover({
@@ -605,16 +778,6 @@ async function postProcess(job: Job): Promise<void> {
       }
       persist(job);
     }
-    // Write a provenance manifest (original URL, video id, download date) next
-    // to the file so the download is traceable back to YouTube.
-    await writeDownloadManifest(outputPath, {
-      url: job.url,
-      videoId: job.videoId,
-      title: job.title,
-      channelId: job.channelId,
-      channelTitle: job.channelTitle,
-      downloadedAt: Date.now()
-    });
   }
 }
 
@@ -629,9 +792,30 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
     }
   }
   for (const input of inputs) {
-    if (!input || !input.url || !resolveProvider(input.url)) continue;
+    if (!input || !input.url) continue;
+    const isHttpSource = input.source?.mode === 'http';
+    if (!isHttpSource && !resolveProvider(input.url)) continue;
     if (input.videoId && knownVideoIds.has(input.videoId)) continue;
     if (input.videoId) knownVideoIds.add(input.videoId);
+    const source =
+      input.source && input.source.mode === 'http'
+        ? {
+            mode: 'http' as const,
+            fileName:
+              typeof input.source.fileName === 'string' && input.source.fileName
+                ? input.source.fileName.slice(0, 200)
+                : undefined,
+            apiKeyId:
+              typeof input.source.apiKeyId === 'string' ? input.source.apiKeyId.slice(0, 200) : undefined,
+            headerName:
+              typeof input.source.headerName === 'string'
+                ? input.source.headerName.slice(0, 100)
+                : undefined
+          }
+        : undefined;
+    const cover = normalizeCoverSpec(input.cover);
+    // Direct-URL downloads have no yt-dlp thumbnail step — drop thumbnail covers.
+    const finalCover = source && cover?.type === 'thumbnail' ? undefined : cover;
     const now = Date.now();
     const job: Job = {
       id: randomUUID(),
@@ -655,7 +839,7 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
       channelId: input.channelId,
       channelTitle: input.channelTitle,
       playlistTitle: input.playlistTitle,
-      cover: normalizeCoverSpec(input.cover),
+      cover: finalCover,
       coverStatus: 'none',
       metaOverride: input.metaOverride,
       subsLangs: input.subsLangs,
@@ -674,7 +858,8 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
           : 'off',
       trimStart: typeof input.trimStart === 'number' && input.trimStart >= 0 ? input.trimStart : undefined,
       trimEnd: typeof input.trimEnd === 'number' && input.trimEnd > 0 ? input.trimEnd : undefined,
-      addToLibrary: !!input.addToLibrary
+      addToLibrary: !!input.addToLibrary,
+      source
     };
     jobs.set(job.id, job);
     if (job.status === 'pending') queueOrder.push(job.id);
@@ -820,7 +1005,9 @@ export function exportQueue(): IpcDownloadTask[] {
 export async function importQueue(tasks: IpcDownloadTask[]): Promise<number> {
   const inputs: IpcDownloadJobInput[] = [];
   for (const t of tasks) {
-    if (!t || typeof t.url !== 'string' || !resolveProvider(t.url)) continue;
+    if (!t || typeof t.url !== 'string') continue;
+    const isHttpSource = t.source?.mode === 'http';
+    if (!isHttpSource && !resolveProvider(t.url)) continue;
     if (t.status === 'completed' || t.status === 'cancelled') continue;
     inputs.push({
       url: t.url,
@@ -846,7 +1033,8 @@ export async function importQueue(tasks: IpcDownloadTask[]): Promise<number> {
       videoContainer: t.videoContainer,
       sponsorBlock: t.sponsorBlock,
       trimStart: t.trimStart,
-      trimEnd: t.trimEnd
+      trimEnd: t.trimEnd,
+      source: t.source
     });
   }
   const created = await addDownloadJobs(inputs);

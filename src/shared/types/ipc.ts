@@ -1,5 +1,6 @@
 import type { AppSettings, YoutubeAuthMethod } from '../../renderer/src/types/settings';
 import type { YouTubeResolveResult, YouTubeResolvedItem } from '../../renderer/src/types/youtube';
+import type { MediaSource, SourceEndpoint, SourceFetchResult } from '../../renderer/src/types/sources';
 
 interface IpcMediaFile {
   id: string;
@@ -120,6 +121,7 @@ export interface IpcSubscriptionDownloadPrefs {
   trimStart?: number;
   trimEnd?: number;
   addToLibrary?: boolean;
+  profileId?: string;
 }
 
 export interface IpcSubscriptionPatch {
@@ -146,7 +148,7 @@ export interface IpcSubscriptionCheckResult {
 export type IpcCoverStatus = 'none' | 'fetching' | 'embedded' | 'saved' | 'error';
 
 export interface IpcCoverSpec {
-  type: 'thumbnail' | 'custom' | 'frame' | 'clip';
+  type: 'none' | 'thumbnail' | 'custom' | 'frame' | 'clip';
   customPath?: string;
   frameTime?: number;
   clipStart?: number;
@@ -189,6 +191,19 @@ export interface IpcDownloadProfile {
   config: IpcDownloadConfig;
 }
 
+// Direct-URL (non-YouTube) download source. `mode: 'http'` streams the URL to a
+// file without yt-dlp; `mode: 'ytdlp'` is the default YouTube pipeline. Secrets
+// are never carried here — only an `apiKeyId` reference resolved in main.
+export interface IpcDownloadSource {
+  mode: 'http' | 'ytdlp';
+  /** Finalna nazwa pliku (z rozszerzeniem) dla trybu http. */
+  fileName?: string;
+  /** Ref do settings.apiKeys; nagłówki rozwiązywane w main (safeStorage). */
+  apiKeyId?: string;
+  /** Nazwa nagłówka autoryzacji dla trybu http (domyślnie X-API-Key). */
+  headerName?: string;
+}
+
 export interface IpcDownloadJobInput {
   url: string;
   title: string;
@@ -215,6 +230,7 @@ export interface IpcDownloadJobInput {
   trimStart?: number;
   trimEnd?: number;
   addToLibrary?: boolean;
+  source?: IpcDownloadSource;
 }
 
 export type IpcDownloadErrorCode =
@@ -267,6 +283,7 @@ export interface IpcDownloadTask {
   trimStart?: number;
   trimEnd?: number;
   addToLibrary?: boolean;
+  source?: IpcDownloadSource;
 }
 
 export interface IpcNewVideosEvent {
@@ -543,6 +560,21 @@ export interface IpcChannels {
     result: IpcDownloadProfile[] | null;
   };
   'profiles:delete': { args: [id: string]; result: IpcDownloadProfile[] };
+  'sources:list': { args: []; result: MediaSource[] };
+  'sources:save': {
+    args: [source: unknown];
+    result: { list: MediaSource[]; saved: MediaSource | null; error?: string };
+  };
+  'sources:delete': { args: [id: string]; result: MediaSource[] };
+  'sources:test': {
+    args: [source: unknown, endpoint?: SourceEndpoint | null];
+    result: { success: boolean; error?: string };
+  };
+  'sources:fetch': {
+    args: [source: unknown, endpoint?: SourceEndpoint | null, opts?: { query?: Record<string, string>; pageToken?: string }];
+    result: SourceFetchResult;
+  };
+  'sources:enqueue': { args: [jobs: IpcDownloadJobInput[]]; result: IpcDownloadTask[] };
   'dep:checkFfmpeg': { args: []; result: { installed: boolean; version: string | null } };
   'dep:checkYtdlp': {
     args: [];

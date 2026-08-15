@@ -16,6 +16,7 @@ import { registerDownloadProfileHandlers } from './download-profiles';
 import { registerDialogHandlers } from './dialog-handlers';
 import { registerDiagnosticsHandlers } from './diagnostics-handlers';
 import { registerUpdaterHandlers } from './updater-handlers';
+import { registerSourcesHandlers } from './sources-handlers';
 
 export function registerIPC(): void {
   installIpcGuards();
@@ -36,4 +37,5 @@ export function registerIPC(): void {
   registerMusicBrainzHandlers();
   registerDiagnosticsHandlers();
   registerUpdaterHandlers();
+  registerSourcesHandlers();
 }

@@ -11,6 +11,7 @@ import type {
   SubscriptionDownloadPrefs,
   DownloadTask,
   CoverSpec,
+  CoverStatus,
   MetaOverride
 } from '@renderer/types/youtube';
 import type { IpcDownloadJobInput, IpcDownloadTask, IpcSubscription } from '@shared/types/ipc';
@@ -79,7 +80,8 @@ function toDownloadTask(ipc: IpcDownloadTask): DownloadTask {
     sponsorBlock: ipc.sponsorBlock,
     trimStart: ipc.trimStart,
     trimEnd: ipc.trimEnd,
-    addToLibrary: ipc.addToLibrary
+    addToLibrary: ipc.addToLibrary,
+    source: ipc.source
   };
 }
 
@@ -287,8 +289,15 @@ export const useYouTubeStore = defineStore('youtube', () => {
     const audioQuality = extra?.audioQuality ?? prefs?.audioQuality ?? settings.download.defaultAudioQuality;
     const videoContainer =
       extra?.videoContainer ?? settings.download.defaultVideoContainer ?? 'mp4';
+    // Audio covers follow the global default (thumbnail/frame/clip/none); video
+    // downloads always embed the YouTube thumbnail by default. An explicit
+    // cover (including `none`) always wins over the defaults.
     const cover =
-      extra?.cover ?? prefs?.cover ?? (kind === 'audio' ? defaultCoverSpec() : undefined);
+      extra?.cover !== undefined || prefs?.cover !== undefined
+        ? extra?.cover ?? prefs?.cover
+        : kind === 'audio'
+          ? defaultCoverSpec()
+          : ({ type: 'thumbnail' } as const);
     const subsLangs =
       extra?.subsLangs ??
       prefs?.subsLangs ??
@@ -386,7 +395,8 @@ export const useYouTubeStore = defineStore('youtube', () => {
       sponsorBlock: task.sponsorBlock,
       trimStart: task.trimStart,
       trimEnd: task.trimEnd,
-      addToLibrary: task.addToLibrary
+      addToLibrary: task.addToLibrary,
+      source: task.source
     };
   }
 
@@ -437,6 +447,14 @@ export const useYouTubeStore = defineStore('youtube', () => {
     if (!videoId) return null;
     const task = downloads.value.find((d) => d.videoId === videoId);
     return task ? task.status : null;
+  }
+
+  // Cover-processing status of the task for a video (used to show that the
+  // animated cover is still being prepared after the audio download finished).
+  function coverStatusFor(videoId: string): CoverStatus | null {
+    if (!videoId) return null;
+    const task = downloads.value.find((d) => d.videoId === videoId);
+    return task?.coverStatus ?? null;
   }
 
   // Resolves and queues a batch of YouTube links (videos and playlist first-page
@@ -990,6 +1008,7 @@ export const useYouTubeStore = defineStore('youtube', () => {
     queuingId,
     queueingChannelId,
     downloadStatusFor,
+    coverStatusFor,
     downloads,
     resolved,
     isResolving,

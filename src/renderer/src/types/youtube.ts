@@ -72,7 +72,7 @@ export type DownloadErrorCode =
   | 'unknown';
 
 export interface CoverSpec {
-  type: 'thumbnail' | 'custom' | 'frame' | 'clip';
+  type: 'none' | 'thumbnail' | 'custom' | 'frame' | 'clip';
   customPath?: string;
   frameTime?: number;
   clipStart?: number;
@@ -84,6 +84,13 @@ export interface MetaOverride {
   artist?: string;
   album?: string;
   year?: string;
+}
+
+export interface DownloadSource {
+  mode: 'http' | 'ytdlp';
+  fileName?: string;
+  apiKeyId?: string;
+  headerName?: string;
 }
 
 export interface DownloadTask {
@@ -125,6 +132,7 @@ export interface DownloadTask {
   trimStart?: number;
   trimEnd?: number;
   addToLibrary?: boolean;
+  source?: DownloadSource;
 }
 
 export interface SubscriptionDownloadPrefs {
@@ -145,6 +153,7 @@ export interface SubscriptionDownloadPrefs {
   trimStart?: number;
   trimEnd?: number;
   addToLibrary?: boolean;
+  profileId?: string;
 }
 
 export interface Subscription {

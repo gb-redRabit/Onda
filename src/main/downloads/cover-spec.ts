@@ -43,6 +43,7 @@ export function normalizeCoverSpec(cover: unknown): IpcCoverSpec | undefined {
   if (!cover || typeof cover !== 'object') return undefined;
   const c = cover as Record<string, unknown>;
   const type = c.type;
+  if (type === 'none') return { type: 'none' };
   if (type === 'thumbnail') return { type: 'thumbnail' };
   if (type === 'custom') {
     const customPath = typeof c.customPath === 'string' ? c.customPath.trim() : '';

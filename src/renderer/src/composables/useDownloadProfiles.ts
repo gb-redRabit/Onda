@@ -14,11 +14,12 @@ export function useDownloadProfiles() {
     }
   }
 
-  async function save(name: string, config: IpcDownloadConfig): Promise<void> {
+  async function save(name: string, config: IpcDownloadConfig, id?: string): Promise<void> {
     try {
-      const list = (await window.api.invoke('profiles:save', { name, config })) as
-        | IpcDownloadProfile[]
-        | null;
+      const list = (await window.api.invoke(
+        'profiles:save',
+        id ? { id, name, config } : { name, config }
+      )) as IpcDownloadProfile[] | null;
       if (list) profiles.value = list;
     } catch {
       /* save failed */

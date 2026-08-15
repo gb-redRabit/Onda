@@ -1,5 +1,6 @@
 import { BrowserWindow, screen } from 'electron';
 import { computePipPosition } from './pip-position';
+import { installNavigationGuard } from './navigation-guard';
 import type { PipMode, PipPosition } from '../shared/types/pip';
 
 // A lightweight always-on-top placeholder window that visually mirrors the
@@ -51,6 +52,7 @@ export class AudioPipPreview {
     const fontSize = size.height < 60 ? '11px' : '13px';
     const html = `<!DOCTYPE html><html><head><style>html,body{margin:0;padding:0;background:transparent;height:100vh;overflow:hidden}.bar{width:100%;height:100%;box-sizing:border-box;border:1px dashed rgb(124,106,239);border-radius:${radius};background:rgba(124,106,239,${alpha});display:flex;align-items:center;justify-content:center;gap:6px;color:rgb(255,255,255);font:${fontSize} sans-serif}</style></head><body><div class="bar">Audio PiP</div></body></html>`;
     this.window.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+    installNavigationGuard(this.window, { allowData: true });
 
     this.window.on('closed', () => {
       this.window = null;

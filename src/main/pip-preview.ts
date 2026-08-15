@@ -1,5 +1,6 @@
 import { BrowserWindow } from 'electron';
 import { computePipPosition } from './pip-position';
+import { installNavigationGuard } from './navigation-guard';
 
 export class PipPreview {
   private window: BrowserWindow | null = null;
@@ -36,6 +37,7 @@ export class PipPreview {
     const radius = ph < 120 ? '12px' : '16px';
     const html = `<!DOCTYPE html><html><head><style>*{margin:0;padding:0}body{background:transparent;height:100vh;overflow:hidden}.box{width:100%;height:100%;box-sizing:border-box;border:1px dashed rgb(124,106,239);border-radius:${radius};background:rgba(124,106,239,0.35);display:flex;align-items:center;justify-content:center;color:rgb(255,255,255);font:13px sans-serif}</style></head><body><div class="box">Video PiP</div></body></html>`;
     this.window.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+    installNavigationGuard(this.window, { allowData: true });
 
     this.window.on('closed', () => {
       this.window = null;

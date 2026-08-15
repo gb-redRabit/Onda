@@ -14,6 +14,7 @@ import { LibraryModule } from './modules/LibraryModule';
 import { YouTubeModule } from './modules/YouTubeModule';
 import { HomeModule } from './modules/HomeModule';
 import { SettingsModule } from './modules/SettingsModule';
+import { SourcesModule } from './modules/SourcesModule';
 
 moduleManager.register(new PlayerModule());
 moduleManager.register(new ExplorerModule());
@@ -21,6 +22,7 @@ moduleManager.register(new LibraryModule());
 moduleManager.register(new YouTubeModule());
 moduleManager.register(new HomeModule());
 moduleManager.register(new SettingsModule());
+moduleManager.register(new SourcesModule());
 
 const app = createApp(App);
 const pinia = createPinia();

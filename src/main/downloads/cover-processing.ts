@@ -10,9 +10,9 @@ import { buildYtArgs } from '../ipc/youtube-utils';
 import { writeCoverToAudioFile } from '../ipc/media-handlers';
 import { buildSectionArgs, siblingCoverPath } from './cover-spec';
 
-// Covers are short (a single frame / a short clip), so a moderate source
-// resolution is fine — 480p keeps the cover crisp without a huge transfer.
-const COVER_VIDEO_FORMAT = 'bestvideo[height<=480]+bestaudio/best';
+// Covers are short clips, but they deserve real quality — pull the best
+// available source up to full HD (1080p).
+const COVER_VIDEO_FORMAT = 'bestvideo[height<=1080]+bestaudio/best';
 
 async function workDirFor(taskId: string): Promise<string> {
   const dir = join(tmpdir(), 'onda-cover-src', taskId);
@@ -81,7 +81,8 @@ export async function applyMetadataOverride(
   if (meta.album) tags.push('-metadata', `album=${meta.album}`);
   if (meta.year) tags.push('-metadata', `date=${meta.year}`);
   if (tags.length === 0) return;
-  const tmpOut = `${filePath}.tmp-${Date.now()}`;
+  const ext = extname(filePath);
+  const tmpOut = join(dirname(filePath), `${basename(filePath, ext)}.tmp-${Date.now()}${ext}`);
   try {
     await runCommand(await ffmpegBin(), ['-y', '-i', filePath, ...tags, '-c', 'copy', tmpOut], {
       timeout: 120000
@@ -109,7 +110,7 @@ export async function processCover(
 ): Promise<{ status: 'embedded' | 'saved' | 'error'; error?: string }> {
   const { cover } = ctx;
   try {
-    if (cover.type === 'thumbnail') return { status: 'embedded' };
+    if (cover.type === 'none' || cover.type === 'thumbnail') return { status: 'embedded' };
     if (cover.type === 'custom') {
       const res = await writeCoverToAudioFile(ctx.outputPath, cover.customPath || '');
       if (!res.success) throw new Error(res.error || 'Failed to embed cover');
@@ -134,11 +135,15 @@ export async function processCover(
         return { status: 'embedded' };
       }
       const videoPath = join(workDir, 'clip.mp4');
-      await downloadSource(
-        ctx.url,
-        videoPath,
-        buildSectionArgs(cover.clipStart ?? 0, cover.clipEnd ?? 30)
-      );
+      await downloadSource(ctx.url, videoPath, [
+        ...buildSectionArgs(cover.clipStart ?? 0, cover.clipEnd ?? 30),
+        // Pull the YouTube thumbnail too — it gets embedded into the audio
+        // tags so the file has a cover even though the animated one lives in
+        // the sibling video.
+        '--write-thumbnail',
+        '--convert-thumbnails',
+        'jpg'
+      ]);
       const target = siblingCoverPath(ctx.outputPath, cover.clipFormat === 'mp4' ? 'mp4' : 'webm');
       const args =
         cover.clipFormat === 'mp4'
@@ -149,14 +154,37 @@ export async function processCover(
               '-c:v',
               'libx264',
               '-crf',
-              '28',
+              '18',
               '-preset',
-              'veryfast',
+              'medium',
               '-an',
               target
             ]
-          : ['-y', '-i', videoPath, '-c:v', 'libvpx', '-crf', '12', '-b:v', '600k', '-an', target];
+          : [
+              '-y',
+              '-i',
+              videoPath,
+              '-c:v',
+              'libvpx',
+              '-crf',
+              '10',
+              '-b:v',
+              '2500k',
+              '-an',
+              target
+            ];
       await runCommand(await ffmpegBin(), args, { timeout: 120000 });
+      // Embed the YouTube thumbnail into the audio file (non-fatal: the
+      // animated clip is already saved, and some containers can't hold tags).
+      const thumbPath = join(workDir, 'clip.jpg');
+      try {
+        const res = await writeCoverToAudioFile(ctx.outputPath, thumbPath);
+        if (!res.success) {
+          logger.warn('downloads', `clip thumbnail embed failed for ${ctx.taskId}: ${res.error}`);
+        }
+      } catch (e) {
+        logger.warn('downloads', `clip thumbnail embed failed for ${ctx.taskId}`, e);
+      }
       return { status: 'saved' };
     } finally {
       await cleanup(workDir);

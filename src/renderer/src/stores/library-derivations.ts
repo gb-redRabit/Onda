@@ -62,6 +62,9 @@ export function useLibraryDerivations(tracks: Ref<MediaFile[]>) {
     if (ts.length === lastTracksCount && cachedArtists.length) return cachedArtists;
     const map = new Map<string, MediaFile[]>();
     for (let i = 0; i < ts.length; i++) {
+      // Only audio files carry artist metadata — videos/images must not be
+      // lumped into "Unknown Artist".
+      if (ts[i].type !== 'audio') continue;
       const artist = ts[i].metadata?.artist || 'Unknown Artist';
       if (!map.has(artist)) map.set(artist, []);
       map.get(artist)!.push(ts[i]);
@@ -77,6 +80,10 @@ export function useLibraryDerivations(tracks: Ref<MediaFile[]>) {
     if (ts.length === lastTracksCount && cachedAlbums.length) return cachedAlbums;
     const map = new Map<string, MediaFile[]>();
     for (let i = 0; i < ts.length; i++) {
+      // Only audio files can belong to an album — keep images/videos out of
+      // the albums view (they have no album tag and would end up in
+      // "Unknown Album").
+      if (ts[i].type !== 'audio') continue;
       const album = ts[i].metadata?.album || 'Unknown Album';
       if (!map.has(album)) map.set(album, []);
       map.get(album)!.push(ts[i]);

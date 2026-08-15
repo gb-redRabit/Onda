@@ -25,7 +25,8 @@ import {
   ArrowUp,
   ArrowDown,
   Upload,
-  Pencil
+  Pencil,
+  RefreshCw
 } from '@lucide/vue';
 
 const yt = useYouTubeStore();
@@ -49,6 +50,9 @@ function openLibrary() {
 
 function playDownload(t: DownloadTask) {
   if (!t.outputPath) return;
+  // The media server serves files from granted roots only — a download outside
+  // the library (e.g. default Downloads) must be granted before playback.
+  void window.api?.grantMediaAccess(t.outputPath);
   const ext = t.outputPath.slice(t.outputPath.lastIndexOf('.')).toLowerCase();
   const file: MediaFile = {
     id: `dl-${t.id}`,
@@ -409,9 +413,14 @@ const colors = {
 
             <span
               v-if="coverStatusKey(t)"
-              class="text-[11px] shrink-0"
+              class="text-[11px] shrink-0 flex items-center gap-1"
               :class="coverStatusClass(t)"
             >
+              <RefreshCw
+                v-if="t.coverStatus === 'fetching'"
+                :size="10"
+                class="animate-spin"
+              />
               {{ $t(coverStatusKey(t)) }}
             </span>
             <span v-if="subtitleStatusKey(t)" class="text-[11px] text-fg-faint shrink-0">

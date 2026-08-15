@@ -9,6 +9,7 @@ const ROUTE_MODULE_MAP: Record<string, string> = {
   library: 'library',
   youtube: 'youtube',
   downloads: 'youtube',
+  sources: 'sources',
   settings: 'settings'
 };
 
@@ -52,6 +53,12 @@ const router = createRouter({
       name: 'downloads',
       component: () => import('@renderer/views/DownloadsView.vue'),
       meta: { title: 'Downloads', icon: 'download' }
+    },
+    {
+      path: '/sources',
+      name: 'sources',
+      component: () => import('@renderer/views/SourcesView.vue'),
+      meta: { title: 'Sources', icon: 'globe' }
     },
     {
       path: '/settings',

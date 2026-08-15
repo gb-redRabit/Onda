@@ -13,13 +13,14 @@ import { audioPipManager } from './audio-pip-manager';
 import { closeLoginWindow } from './youtube-auth';
 import { logger } from '../shared/logger';
 import { setMediaServerUrl, registerMediaUrlHandler } from './media-url-args';
-import { setAllowedRoots, addAllowedRoot } from './media-server';
+import { setAllowedRoots, addAllowedRoot, setRootsChangedHandler, getExtraRoots } from './media-server';
 import { getStore } from './ipc/cover-cache';
 import { setupFileLogging } from './log-file';
 import { initAutoUpdater } from './updater';
 import { configureAutoCheck } from './updater-scheduler';
 import { syncSubscriptionsScheduler } from './ipc/subscriptions-handlers';
 import { shouldCloseToTray, setCloseToTray } from './close-behavior';
+import { installNavigationGuard } from './navigation-guard';
 
 let mainWindow: BrowserWindow | null = null;
 let splashWindow: BrowserWindow | null = null;
@@ -149,6 +150,8 @@ function createWindow(): BrowserWindow {
     return { action: 'deny' };
   });
 
+  installNavigationGuard(win);
+
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL']);
   } else {
@@ -185,6 +188,8 @@ function createChildWindow(
   child.on('ready-to-show', () => {
     child.show();
   });
+
+  installNavigationGuard(child);
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     child.loadURL(process.env['ELECTRON_RENDERER_URL'] + '#/player');
@@ -266,6 +271,7 @@ function createSplashWindow(): BrowserWindow {
   });
 
   splash.loadFile(join(__dirname, '../../resources/splash.html'));
+  installNavigationGuard(splash);
   return splash;
 }
 
@@ -320,6 +326,26 @@ app.whenReady().then(async () => {
     const folders = store.get('libraryFolders', []);
     if (Array.isArray(folders)) {
       await setAllowedRoots(folders);
+    }
+    // Persist roots granted at runtime (download output dirs, opened files)
+    // so downloaded media stays playable after a restart.
+    let rootsPersistTimer: ReturnType<typeof setTimeout> | null = null;
+    setRootsChangedHandler(() => {
+      if (rootsPersistTimer) return;
+      rootsPersistTimer = setTimeout(() => {
+        rootsPersistTimer = null;
+        void store.set('mediaRoots', getExtraRoots().slice(0, 50));
+      }, 500);
+    });
+    // Seed previously granted roots plus the default downloads dir, so fresh
+    // downloads and old ones outside the library are servable right away.
+    const storedRoots = store.get('mediaRoots', []);
+    const seedRoots = new Set<string>([
+      ...(Array.isArray(storedRoots) ? storedRoots : []),
+      app.getPath('downloads')
+    ]);
+    for (const root of seedRoots) {
+      await addAllowedRoot(root);
     }
     // Apply the persisted general settings (close-to-tray + auto-launch sync).
     const general = store.get('general') as

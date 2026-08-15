@@ -124,6 +124,18 @@ describe('artists / albums', () => {
     expect(store.albums[0][0]).toBe('Album X');
     expect(store.albums[1][0]).toBe('Album Y');
   });
+
+  it('excludes images and videos from artists/albums', () => {
+    const store = useLibraryStore();
+    const audio = makeTrack('a', { metadata: { artist: 'Artist A', album: 'Album X' } });
+    const image = makeTrack('img', { type: 'image' });
+    const video = makeTrack('vid', { type: 'video' });
+    store.tracks = [audio, image, video];
+    expect(store.artists).toHaveLength(1);
+    expect(store.artists[0][1]).toHaveLength(1);
+    expect(store.albums).toHaveLength(1);
+    expect(store.albums[0][1]).toHaveLength(1);
+  });
 });
 
 describe('addTrack / removeTrack', () => {
