@@ -538,6 +538,12 @@ async function buildBaseArgs(job: Job): Promise<string[]> {
     base.push('--audio-language', job.audioLanguage);
   }
   base.push(...buildSponsorBlockArgs(job.sponsorBlock));
+  if (job.source?.headers) {
+    for (const [name, value] of Object.entries(job.source.headers)) {
+      if (!name || !value) continue;
+      base.push('--add-header', `${name}: ${value}`);
+    }
+  }
   if (
     typeof job.trimStart === 'number' &&
     typeof job.trimEnd === 'number' &&
@@ -794,7 +800,10 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
   for (const input of inputs) {
     if (!input || !input.url) continue;
     const isHttpSource = input.source?.mode === 'http';
-    if (!isHttpSource && !resolveProvider(input.url)) continue;
+    // Źródła generyczne (mega/cda/vk/drive) jawnie żądają yt-dlp — pomijamy
+    // gate providera przeznaczony dla klasycznej ścieżki YouTube.
+    const isExplicitYtdlp = input.source?.mode === 'ytdlp';
+    if (!isHttpSource && !isExplicitYtdlp && !resolveProvider(input.url)) continue;
     if (input.videoId && knownVideoIds.has(input.videoId)) continue;
     if (input.videoId) knownVideoIds.add(input.videoId);
     const source =
@@ -812,7 +821,27 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
                 ? input.source.headerName.slice(0, 100)
                 : undefined
           }
-        : undefined;
+        : input.source && input.source.mode === 'ytdlp'
+          ? {
+              mode: 'ytdlp' as const,
+              apiKeyId:
+                typeof input.source.apiKeyId === 'string'
+                  ? input.source.apiKeyId.slice(0, 200)
+                  : undefined,
+              headerName:
+                typeof input.source.headerName === 'string'
+                  ? input.source.headerName.slice(0, 100)
+                  : undefined,
+              headers:
+                input.source.headers && typeof input.source.headers === 'object'
+                  ? Object.fromEntries(
+                      Object.entries(input.source.headers).filter(
+                        ([k, v]) => typeof k === 'string' && typeof v === 'string'
+                      )
+                    )
+                  : undefined
+            }
+          : undefined;
     const cover = normalizeCoverSpec(input.cover);
     // Direct-URL downloads have no yt-dlp thumbnail step — drop thumbnail covers.
     const finalCover = source && cover?.type === 'thumbnail' ? undefined : cover;
@@ -1007,7 +1036,8 @@ export async function importQueue(tasks: IpcDownloadTask[]): Promise<number> {
   for (const t of tasks) {
     if (!t || typeof t.url !== 'string') continue;
     const isHttpSource = t.source?.mode === 'http';
-    if (!isHttpSource && !resolveProvider(t.url)) continue;
+    const isExplicitYtdlp = t.source?.mode === 'ytdlp';
+    if (!isHttpSource && !isExplicitYtdlp && !resolveProvider(t.url)) continue;
     if (t.status === 'completed' || t.status === 'cancelled') continue;
     inputs.push({
       url: t.url,

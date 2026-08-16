@@ -19,5 +19,8 @@
   "i18n-ally.keystyle": "nested",
   "i18n-ally.sourceLanguage": "pl",
   "i18n-ally.displayLanguage": "pl",
-  "i18n-ally.localesPaths": ["src/renderer/src/locales"]
+  "i18n-ally.localesPaths": [
+    "src/renderer/src/locales"
+  ],
+  "vue-i18n.i18nPaths": "dist\\win-unpacked\\locales,src\\renderer\\src\\locales"
 }

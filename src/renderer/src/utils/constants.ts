@@ -221,6 +221,10 @@ export const DEFAULT_PLAYBACK = {
 
 export const DEFAULT_DOWNLOAD = {
   defaultPath: '',
+  /** Globalny katalog źródeł (Sources/API); pusty = defaultPath/api (albo systemowe Pobrane/api). */
+  sourcesDir: '',
+  /** Domyślna preferencja "podfolder źródła" dla nowych źródeł. */
+  sourcesFolder: true,
   defaultKind: 'audio' as const,
   defaultAudioFormat: 'mp3' as const,
   defaultAudioQuality: 'best' as const,

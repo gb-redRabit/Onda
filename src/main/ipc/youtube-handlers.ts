@@ -7,6 +7,7 @@ import { logger } from '../../shared/logger';
 import type { IpcDownloadErrorCode } from '../../shared/types/ipc';
 import {
   pickChannelThumbnail,
+  resolveChannelAvatar,
   buildYtArgs,
   detectYtKind,
   normalizeYtUrl,
@@ -75,13 +76,17 @@ export async function fetchChannelItems(opts: {
     const items = (parsed.entries || [])
       .filter((e) => e.id && e.title)
       .map((e) => mapVideoEntry(e));
+    const channelId = parsed.channel_id || parsed.uploader_id || parsed.id || '';
+    const channelThumbnail =
+      pickChannelThumbnail(parsed) ||
+      (await resolveChannelAvatar(channelId));
     return {
       success: true,
       channel: {
-        id: parsed.channel_id || parsed.uploader_id || parsed.id || '',
+        id: channelId,
         url: base,
         title: parsed.channel || parsed.uploader || parsed.title || '',
-        thumbnail: pickChannelThumbnail(parsed),
+        thumbnail: channelThumbnail,
         subscriberCount: parsed.channel_follower_count
       },
       items,
@@ -135,13 +140,17 @@ export async function fetchChannelAll(opts: { url: string; tab?: 'videos' | 'sho
     const items = (parsed.entries || [])
       .filter((e) => e.id && e.title)
       .map((e) => mapVideoEntry(e));
+    const channelId = parsed.channel_id || parsed.uploader_id || parsed.id || '';
+    const channelThumbnail =
+      pickChannelThumbnail(parsed) ||
+      (await resolveChannelAvatar(channelId));
     return {
       success: true,
       channel: {
-        id: parsed.channel_id || parsed.uploader_id || parsed.id || '',
+        id: channelId,
         url: base,
         title: parsed.channel || parsed.uploader || parsed.title || '',
-        thumbnail: pickChannelThumbnail(parsed),
+        thumbnail: channelThumbnail,
         subscriberCount: parsed.channel_follower_count
       },
       items

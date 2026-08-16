@@ -149,6 +149,8 @@ const LIBRARY_FIELDS: Record<string, Sanitizer> = {
 
 const DOWNLOAD_FIELDS: Record<string, Sanitizer> = {
   defaultPath: str,
+  sourcesDir: str,
+  sourcesFolder: bool,
   defaultKind: enumOf(['audio', 'video']),
   defaultAudioFormat: enumOf(['best', 'mp3', 'flac', 'ogg', 'aac', 'opus', 'm4a', 'wav']),
   defaultAudioQuality: enumOf(['best', 'high', 'medium', 'low']),

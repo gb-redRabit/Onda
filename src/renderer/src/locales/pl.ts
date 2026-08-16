@@ -126,23 +126,165 @@ export default {
     download: 'Pobierz',
     untitled: 'Bez tytułu',
     openInBrowser: 'Otwórz w przeglądarce',
-    endpointCount: '{count} endpointy',
     pageParam: 'Parametr strony',
-    nextFromField: 'Pole next',
-    hasMoreField: 'Pole has-more',
-    fieldTitle: 'tytuł',
-    fieldSubtitle: 'podtytuł',
-    fieldThumbnail: 'miniaturka',
-    fieldMediaUrl: 'URL multimediów',
-    fieldType: 'typ',
-    fieldDuration: 'czas trwania',
-    fieldId: 'id',
-    fieldSourceUrl: 'URL źródła',
-    testOk: 'OK — {count} endpointy, próbka zamapowana',
-    testFail: 'BŁĄD: {error}',
+    startPage: 'Strona startowa',
+    pagHint:
+      'Stronicowanie liczbowe: wypełnij „Parametr strony” (np. page) — na widoku pojawią się przyciski poprzednia/następna strona. Dla API kursorowych użyj pól tokenu / „ma więcej”.',
+    nextFromField: 'Pole tokenu następnej strony',
+    totalField: 'Pole „ma więcej”',
+    childEndpoint: 'Endpoint podrzędny (otwierany kliknięciem)',
+    noChild: '— brak —',
+    rangeCountField: 'Pole liczby elementów (dot-path)',
+    rangeCountValue: 'Stała liczba',
+    rangeStartAt: 'Numer startowy',
+    rangeTitleTemplate: 'Szablon tytułu',
+    nestHint:
+      'Zagnieżdżanie: kliknięcie elementu otwiera endpoint podrzędny. W ścieżce/parametrach używaj placeholderów {lb}a.b{rb} wypełnianych JSON-em klikniętego elementu ({lb}n{rb} = wygenerowany indeks). Range generuje pozycje 1..N zamiast fetcha (np. odcinki: pole liczby z rodzica, ścieżka jak /episodes/find/{lb}slug{rb}/{lb}n{rb}). Odpowiedź pojedynczego obiektu jest traktowana jako jeden element.',
+    back: 'Wstecz',
+    fTitle: 'tytuł',
+    fSubtitle: 'podtytuł',
+    fThumbnail: 'miniaturka',
+    fMediaUrl: 'URL mediów',
+    fPlayerUrl: 'Player (embed/iframe) — URL odtwarzacza',
+    fPlayerUrlPh: 'np. pole z https://.../embed/...',
+    fType: 'typ',
+    fDuration: 'czas trwania',
+    fId: 'id',
+    fSourceUrl: 'URL źródła',
     errNameRequired: 'Nazwa jest wymagana',
     errBaseUrl: 'Bazowy URL musi zaczynać się od http(s)://',
-    errEndpointRequired: 'Wymagany jest co najmniej jeden endpoint ze ścieżką'
+    errEndpointRequired: 'Wymagany jest co najmniej jeden endpoint ze ścieżką',
+    errSaveFailed: 'Zapis nie powiódł się',
+    testOk: 'OK — {n} endpointów, próbka zmapowana',
+    testFail: 'BŁĄD: {err}',
+    endpointCount: '{n} endpointów',
+    prevPage: 'Poprzednia strona',
+    nextPage: 'Następna strona',
+    currentPage: 'Bieżąca strona',
+    levels: 'Poziomy',
+    addLevel: 'Dodaj poziom',
+    level: 'Poziom',
+    typeList: 'Lista',
+    typePage: 'Strona',
+    availableKeys: 'Dostępne klucze',
+    display: 'Co wyświetlać (pola z odpowiedzi)',
+    downloadField: 'Pole pobierania (URL) — puste = tylko nawigacja',
+    downloadNone: '— brak pobierania —',
+    passKeys: 'Klucze przekazywane dalej',
+    addPassKey: 'Dodaj klucz',
+    keyString: 'tekst',
+    keyNumber: 'liczba',
+    openChild: 'Po kliknięciu otwiera poziom',
+    openRow: 'Po kliknięciu wiersza otwiera poziom',
+    tableEnable: 'Tabela (np. odcinki)',
+    tableSource: 'Źródło danych tabeli:',
+    tableSourceEndpoint: 'osobny endpoint',
+    tableSourceField: 'pole w odpowiedzi',
+    tableModeHint: {
+      endpoint: 'pobiera listę osobnym zapytaniem z kluczami strony',
+      field: 'tablica w JSON odpowiedzi strony (dot-path)'
+    },
+    tableEndpointPath: 'Ścieżka endpointu danych (klucze strony, np. {lb}slug{rb})',
+    tableEndpointPathPh: '/episodes/count/{lb}slug{rb}',
+    tableArrayField: 'Dot-path do tablicy w odpowiedzi strony',
+    tableArrayFieldPh: 'np. episodes — pole z listą odcinków w JSON strony',
+    tableRowTitle: 'Tytuł wiersza',
+    tableRowThumb: 'Miniaturka wiersza',
+    tableRowPlayer: 'Player wiersza (embed)',
+    tableRowPlayerPh: 'np. embed_url',
+    tableRowKey: 'Pole klucza wiersza',
+    tableRowKeys: 'Klucze wiersza przekazywane dalej',
+    testTable: 'Testuj tabelę',
+    testTableHint:
+      'Najpierw przetestuj stronę (poziom), aby pobrać tabelę z przykładowym kontekstem',
+    testTableOk: 'OK — {n} wierszy tabeli',
+    testTableFail: 'BŁĄD: brak wierszy tabeli',
+    method: 'Metoda',
+    advanced: 'Zaawansowane',
+    downloadSection: 'Pobieranie',
+    downloadOutputDir: 'Katalog pobierania (ścieżka docelowa)',
+    downloadDefaultHint: 'Puste = domyślnie: {path} (katalog „api" pod ścieżką z ustawień Pobranych)',
+    downloadFolder: 'Pobieraj do podfolderu o nazwie źródła',
+    downloadFolderHint:
+      'Włączone: pliki trafiają do podfolderu (np. {path}/nazwa-źródła). Wyłączone: pliki płasko w katalogu pobierania.',
+    chooseFolder: 'Wybierz folder',
+    downloadAll: 'Pobierz wszystkie',
+    downloadAllRows: 'Pobierz wszystkie odcinki',
+    toastQueued: 'Dodano do kolejki pobierania',
+    toastQueuedSome: 'Dodano: {q}, błędy: {f}',
+    toastFailed: 'Błąd: {err}',
+    testSourceBtn: 'Testuj połączenie źródła',
+    testSourceOk: 'Źródło działa',
+    testSourceFail: 'Błąd źródła: {err}',
+    testNotRun: 'Nie testowano jeszcze',
+    exportSources: 'Eksportuj źródła (JSON)',
+    importSources: 'Importuj źródła (JSON)',
+    exportOk: 'Zapisano plik eksportu',
+    importOk: 'Dodano {n} źródeł',
+    filterPlaceholder: 'Filtruj po tytule…',
+    sortBy: 'Sortuj',
+    sortNone: '— bez sortowania —',
+    sortTitleAsc: 'Tytuł A→Z',
+    sortTitleDesc: 'Tytuł Z→A',
+    sortType: 'Typ',
+    editSourceShortcut: 'Edytuj źródło',
+    iconSection: 'Ikona źródła',
+    iconFromPc: 'Z komputera…',
+    iconUrlPlaceholder: 'Adres URL obrazu (http/https)',
+    iconApplyUrl: 'Użyj adresu',
+    iconClear: 'Usuń ikonę',
+    iconHint:
+      'Wgraj obraz z komputera (do 2 MB) lub podaj adres web. Puste = domyślna ikona globusa.',
+    iconUrlInvalid: 'Podaj poprawny adres http(s)',
+    episodes: 'Odcinki',
+    noTableRows: 'Brak wierszy w tabeli',
+    guide: {
+      title: 'Poradnik — jak skonfigurować źródło',
+      intro:
+        'Źródło to konfiguracja dowolnego publicznego API HTTP zwracającego dane JSON — bez pisania kodu. Definiujesz poziomy: każdy poziom to jedno zapytanie, a dane z odpowiedzi możesz przekazywać do kolejnych poziomów. Poniższy przykład używa publicznego API testowego (jsonplaceholder.typicode.com), które możesz wpisać od razu, aby zobaczyć cały mechanizm w akcji.',
+      steps: [
+        {
+          title: 'Poziom 1 — Lista (katalog)',
+          body:
+            'Typ „Lista" pobiera tablicę elementów. Przykład:\nURL: https://jsonplaceholder.typicode.com/users\n„Co wyświetlać": name (tytuł), email (podtytuł)\n„Klucze przekazywane dalej": id → userId\n„Po kliknięciu otwiera poziom": wybierz poziom 2.'
+        },
+        {
+          title: 'Poziom 2 — Lista (elementy powiązane)',
+          body:
+            'W URL używasz wartości z poprzedniego poziomu w nawiasach klamrowych: https://jsonplaceholder.typicode.com/users/«userId»/albums\n„Co wyświetlać": title\nKlucze przekazywane dalej: id → albumId\n„Po kliknięciu otwiera poziom": wybierz poziom 3.'
+        },
+        {
+          title: 'Poziom 3 — Lista (liść: podgląd i pobieranie)',
+          body:
+            'https://jsonplaceholder.typicode.com/albums/«albumId»/photos\n„Co wyświetlać": title (tytuł), thumbnailUrl (miniaturka)\n„Pole pobierania": url — wtedy na kartach pojawia się przycisk Pobierz. Pole puste = tylko nawigacja, bez przycisku.'
+        },
+        {
+          title: 'Typ „Strona" (szczegóły jednego obiektu)',
+          body:
+            'Gdy zapytanie zwraca JEDEN obiekt (nie tablicę), wybierz typ „Strona". Widok pokazuje okładkę i tytuł, a jeśli skonfigurujesz tabelę — poniżej pojawi się lista wierszy (np. odcinki).'
+        },
+        {
+          title: 'Tabela (sekcja strony)',
+          body:
+            'Tabela to sekcja poziomu „Strona". Tryb „osobny endpoint": osobny URL zwracający tablicę, z kluczami strony w klamrach (np. /odcinki/«slug»). Tryb „pole w odpowiedzi": dot-path do tablicy w JSON-ie strony (np. episodes). Kliknięcie wiersza otwiera poziom dziecka z kontekstem strony + wiersza.'
+        },
+        {
+          title: 'Placeholdery i kontekst',
+          body:
+            '«nazwa» w URL jest zastępowane wartością z kontekstu — surowych pól ostatniej odpowiedzi lub kluczy przekazanych dalej. Wielkość liter ma znaczenie: «slug» ≠ «SLUG». Dostępna jest notacja kropkowa: «a.b».\nWażne: kontekst powstaje po KLIKNIĘCIU karty elementu. Wybór poziomu z listy na górze nie ma kontekstu — zapytania z placeholderami nie zostaną wtedy poprawnie pobrane.'
+        },
+        {
+          title: 'Przyciski testów',
+          body:
+            '„Testuj" pokazuje podgląd odpowiedzi API dla poziomu — jeśli odpowiedź nie jest tablicą, ustaw „Ścieżka do listy" (Zaawansowane). „Testuj tabelę" testuje sekcję tabeli na przykładowej stronie (najpierw przetestuj stronę).'
+        },
+        {
+          title: 'Paginacja (Zaawansowane)',
+          body:
+            '„Parametr strony" + „Strona startowa": stronicowanie liczbowe (page=1, 2, 3...). „Pole tokenu następnej strony": dla API kursorowych. „Zakres" (pole liczby elementów): generuje pozycje 1..N bez dodatkowych zapytań — przydatne, gdy API numeruje odcinki, ale nie udostępnia listy.'
+        }
+      ]
+    }
   },
   settings: {
     title: 'Ustawienia',
@@ -236,6 +378,12 @@ export default {
     downloadPath: 'Folder pobierania',
     downloadPathDesc: 'Gdzie domyślnie zapisywane są pobrane pliki.',
     downloadPathPlaceholder: 'Wybierz folder',
+    sourcesPath: 'Katalog źródeł (API)',
+    sourcesPathDesc: 'Gdzie pobierane są pliki ze źródeł (widok Źródła/API).',
+    sourcesPathPlaceholder: 'Puste = katalog Pobranych/api',
+    sourcesPathHint:
+      'Puste pole = domyślny katalog „api" pod ścieżką z ustawień Pobranych. Można go nadpisać per źródło w kreatorze.',
+    sourcesFolder: 'Domyślnie pobieraj źródła do podfolderu o nazwie źródła',
     chooseFolder: 'Wybierz folder',
     autoDownloadSub: 'Automatycznie pobieraj nowe wideo',
     autoDownloadSubDesc: 'Okresowo sprawdzaj subskrypcje i automatycznie pobieraj nowe filmy.',
@@ -243,9 +391,11 @@ export default {
     nightScheduleDesc: 'Rozpoczynaj pobieranie tylko w wybranych godzinach',
     nightScheduleHours: 'godz.',
     autoAddDownloadFolder: 'Automatycznie dodawaj folder pobierania do biblioteki',
-    autoAddDownloadFolderDesc: 'Po pierwszym pobraniu do folderu spoza biblioteki dodaj go automatycznie, aby plik był od razu odtwarzalny',
+    autoAddDownloadFolderDesc:
+      'Po pierwszym pobraniu do folderu spoza biblioteki dodaj go automatycznie, aby plik był od razu odtwarzalny',
     profilesSection: 'Profile pobierań',
-    profilesSectionDesc: 'Zapisuj i używaj ponownie konfiguracji pobierania (można je też wybrać dla każdej subskrypcji)',
+    profilesSectionDesc:
+      'Zapisuj i używaj ponownie konfiguracji pobierania (można je też wybrać dla każdej subskrypcji)',
     profileNew: 'Nowy profil…',
     profileSaveCreate: 'Utwórz profil',
     profileSaveUpdate: 'Zapisz zmiany',
@@ -576,7 +726,11 @@ export default {
   player: {
     nowPlaying: 'Teraz odtwarzane',
     playing: 'Odtwarzanie',
-    paused: 'Wstrzymano'
+    paused: 'Wstrzymano',
+    speedTitle: 'Prędkość odtwarzania',
+    speedCustom: 'Własna',
+    speedReset: 'Resetuj (1x)',
+    speedHint: 'Kliknij szybkość lub przesuń suwak'
   },
   explorer: {
     title: 'Eksplorator',

@@ -2,7 +2,13 @@ import { readFile, writeFile, mkdir } from 'fs/promises';
 import { dirname } from 'path';
 import { randomUUID } from 'crypto';
 import { logger } from '../../shared/logger';
-import type { MediaSource, SourceEndpoint, SourceAuth } from '../../renderer/src/types/sources';
+import type {
+  MediaSource,
+  SourceEndpoint,
+  SourceAuth,
+  SourcePassKey,
+  SourceDownloadPrefs
+} from '../../renderer/src/types/sources';
 
 const MAX_SOURCES = 50;
 const MAX_ENDPOINTS_PER_SOURCE = 20;
@@ -38,13 +44,52 @@ function sanitizeParams(v: unknown): Record<string, string> | undefined {
   return Object.keys(out).length ? out : undefined;
 }
 
+function sanitizePassKeys(v: unknown): SourcePassKey[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  const out: SourcePassKey[] = [];
+  for (const k of v.slice(0, 20)) {
+    if (!isPlainObject(k)) continue;
+    const from = str(k.from);
+    const as = str(k.as);
+    if (!from || !as) continue;
+    out.push({ from, as, type: k.type === 'number' ? 'number' : 'string' });
+  }
+  return out.length ? out : undefined;
+}
+
+function sanitizeTable(v: unknown): SourceEndpoint['table'] {
+  if (!isPlainObject(v)) return undefined;
+  const mode = v.mode === 'field' ? 'field' : 'endpoint';
+  const table: SourceEndpoint['table'] = {
+    mode,
+    arrayField: mode === 'field' ? str(v.arrayField) : undefined,
+    path: mode === 'endpoint' ? str(v.path, 1000) : undefined,
+    rowKey: str(v.rowKey),
+    title: str(v.title, 500),
+    thumbnail: str(v.thumbnail),
+    playerUrl: str(v.playerUrl),
+    passKeys: sanitizePassKeys(v.passKeys),
+    childId: typeof v.childId === 'string' && v.childId ? v.childId.slice(0, 100) : undefined
+  };
+  const hasContent =
+    table.arrayField ||
+    table.path ||
+    table.rowKey ||
+    table.title ||
+    table.thumbnail ||
+    table.playerUrl ||
+    table.childId;
+  return hasContent ? table : undefined;
+}
+
 export function sanitizeEndpoint(v: unknown, index: number): SourceEndpoint | null {
   if (!isPlainObject(v)) return null;
   const name = str(v.name) || `Endpoint ${index + 1}`;
   const path = str(v.path, 1000);
   if (!path) return null;
   const method = v.method === 'POST' ? 'POST' : 'GET';
-  const fields = isPlainObject(v.mapping) && isPlainObject(v.mapping.fields) ? v.mapping.fields : {};
+  const fields =
+    isPlainObject(v.mapping) && isPlainObject(v.mapping.fields) ? v.mapping.fields : {};
   const cleanField = (key: string): string | undefined => {
     const val = fields[key];
     return typeof val === 'string' ? val.slice(0, MAX_FIELD_LEN) : undefined;
@@ -52,7 +97,14 @@ export function sanitizeEndpoint(v: unknown, index: number): SourceEndpoint | nu
   const pagination =
     isPlainObject(v.pagination) && Object.keys(v.pagination).length
       ? {
-          pageParam: typeof v.pagination.pageParam === 'string' ? v.pagination.pageParam.slice(0, 100) : undefined,
+          pageParam:
+            typeof v.pagination.pageParam === 'string'
+              ? v.pagination.pageParam.slice(0, 100)
+              : undefined,
+          pageStart:
+            typeof v.pagination.pageStart === 'number' && Number.isFinite(v.pagination.pageStart)
+              ? Math.max(1, Math.floor(v.pagination.pageStart))
+              : undefined,
           nextFromField:
             typeof v.pagination.nextFromField === 'string'
               ? v.pagination.nextFromField.slice(0, MAX_FIELD_LEN)
@@ -63,13 +115,40 @@ export function sanitizeEndpoint(v: unknown, index: number): SourceEndpoint | nu
               : undefined
         }
       : undefined;
+  const range =
+    isPlainObject(v.range) &&
+    (typeof v.range.countField === 'string' || typeof v.range.countValue === 'number')
+      ? {
+          countField:
+            typeof v.range.countField === 'string'
+              ? v.range.countField.slice(0, MAX_FIELD_LEN)
+              : undefined,
+          countValue:
+            typeof v.range.countValue === 'number' && Number.isFinite(v.range.countValue)
+              ? Math.max(1, Math.min(10000, Math.floor(v.range.countValue)))
+              : undefined,
+          startAt:
+            typeof v.range.startAt === 'number' && Number.isFinite(v.range.startAt)
+              ? Math.max(0, Math.floor(v.range.startAt))
+              : undefined,
+          titleTemplate:
+            typeof v.range.titleTemplate === 'string'
+              ? v.range.titleTemplate.slice(0, MAX_FIELD_LEN)
+              : undefined
+        }
+      : undefined;
   return {
     id: typeof v.id === 'string' && v.id ? v.id : randomUUID(),
     name,
     method,
     path,
+    type: v.type === 'page' ? 'page' : undefined,
     params: sanitizeParams(v.params),
     pagination: pagination && Object.values(pagination).some((x) => !!x) ? pagination : undefined,
+    childId: typeof v.childId === 'string' && v.childId ? v.childId.slice(0, 100) : undefined,
+    range,
+    passKeys: sanitizePassKeys(v.passKeys),
+    table: sanitizeTable(v.table),
     mapping: {
       arrayPath:
         typeof (v.mapping as Record<string, unknown>)?.arrayPath === 'string'
@@ -81,12 +160,33 @@ export function sanitizeEndpoint(v: unknown, index: number): SourceEndpoint | nu
         subtitle: cleanField('subtitle'),
         thumbnail: cleanField('thumbnail'),
         mediaUrl: cleanField('mediaUrl'),
+        playerUrl: cleanField('playerUrl'),
         type: cleanField('type'),
         duration: cleanField('duration'),
         sourceUrl: cleanField('sourceUrl')
       }
     }
   };
+}
+
+function sanitizeDownload(v: unknown): SourceDownloadPrefs | undefined {
+  if (!isPlainObject(v)) return undefined;
+  const outputDir =
+    typeof v.outputDir === 'string' && v.outputDir.trim() && v.outputDir.length <= 1000
+      ? v.outputDir.trim()
+      : undefined;
+  const folder = typeof v.folder === 'boolean' ? v.folder : undefined;
+  return outputDir || folder !== undefined ? { outputDir, folder } : undefined;
+}
+
+function sanitizeIcon(v: unknown): string | undefined {
+  if (typeof v !== 'string') return undefined;
+  const icon = v.trim();
+  if (!icon) return undefined;
+  if (icon.length > 200_000) return undefined;
+  if (/^data:image\/(png|jpe?g|gif|webp|svg\+xml|bmp|ico);base64,/i.test(icon)) return icon;
+  if (/^https?:\/\/\S+$/i.test(icon) && icon.length <= 2000) return icon;
+  return undefined;
 }
 
 export function sanitizeSource(v: unknown): MediaSource | null {
@@ -101,12 +201,19 @@ export function sanitizeSource(v: unknown): MediaSource | null {
     .map((e, i) => sanitizeEndpoint(e, i))
     .filter((e): e is SourceEndpoint => !!e);
   if (endpoints.length === 0) return null;
+  const ids = new Set(endpoints.map((e) => e.id));
+  for (const e of endpoints) {
+    if (e.childId && !ids.has(e.childId)) e.childId = undefined;
+    if (e.table?.childId && !ids.has(e.table.childId)) e.table.childId = undefined;
+  }
   return {
     id: typeof v.id === 'string' && v.id ? v.id : randomUUID(),
     name,
+    icon: sanitizeIcon(v.icon),
     baseUrl,
     auth: sanitizeAuth(v.auth),
     endpoints,
+    download: sanitizeDownload(v.download),
     createdAt: typeof v.createdAt === 'number' ? v.createdAt : Date.now()
   };
 }
@@ -178,5 +285,17 @@ export function deleteSource(filePath: string, id: string): Promise<MediaSource[
     const next = list.filter((s) => s.id !== id);
     if (next.length !== list.length) await writeList(filePath, next);
     return next;
+  });
+}
+
+/** Zapisuje całą listę źródeł (import) z limitem MAX_SOURCES. */
+export function saveAllSources(
+  filePath: string,
+  list: MediaSource[]
+): Promise<MediaSource[]> {
+  return withWriteLock(async () => {
+    const capped = list.slice(0, MAX_SOURCES);
+    await writeList(filePath, capped);
+    return capped;
   });
 }

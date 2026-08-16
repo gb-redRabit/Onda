@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
   Search,
@@ -38,6 +38,13 @@ import type {
 } from '@renderer/types/youtube';
 
 const yt = useYouTubeStore();
+const avatarErrors = ref<Record<string, boolean>>({});
+watch(
+  () => yt.subscriptions.map((s) => s.channelThumbnail).join('|'),
+  () => {
+    avatarErrors.value = {};
+  }
+);
 const settings = useSettingsStore();
 const { profiles, ensureLoaded: ensureProfilesLoaded } = useDownloadProfiles();
 const { t } = useI18n();
@@ -834,10 +841,11 @@ onUnmounted(() => {
                 @click="openChannelFromSubscription(sub.channelId)"
               >
                 <img
-                  v-if="sub.channelThumbnail"
+                  v-if="sub.channelThumbnail && !avatarErrors[sub.channelId]"
                   :src="sub.channelThumbnail"
                   :alt="sub.channelTitle"
                   class="w-full h-full object-cover"
+                  @error="avatarErrors[sub.channelId] = true"
                 />
                 <Tv2 v-else :size="20" class="w-full h-full p-2 text-fg-faint" />
               </button>

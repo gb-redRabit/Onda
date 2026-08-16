@@ -1,6 +1,11 @@
 import type { AppSettings, YoutubeAuthMethod } from '../../renderer/src/types/settings';
 import type { YouTubeResolveResult, YouTubeResolvedItem } from '../../renderer/src/types/youtube';
-import type { MediaSource, SourceEndpoint, SourceFetchResult } from '../../renderer/src/types/sources';
+import type {
+  MediaSource,
+  SourceEndpoint,
+  SourceFetchResult,
+  SourceItem
+} from '../../renderer/src/types/sources';
 
 interface IpcMediaFile {
   id: string;
@@ -202,6 +207,8 @@ export interface IpcDownloadSource {
   apiKeyId?: string;
   /** Nazwa nagłówka autoryzacji dla trybu http (domyślnie X-API-Key). */
   headerName?: string;
+  /** Dodatkowe nagłówki dla trybu ytdlp (np. Referer strony embed przy HLS). */
+  headers?: Record<string, string>;
 }
 
 export interface IpcDownloadJobInput {
@@ -466,7 +473,12 @@ export interface IpcChannels {
   'yt:authStatus': { args: []; result: YoutubeAuthStatus };
   'yt:resolve': {
     args: [url: string];
-    result: { success: boolean; error?: string; code?: IpcDownloadErrorCode; result?: YouTubeResolveResult };
+    result: {
+      success: boolean;
+      error?: string;
+      code?: IpcDownloadErrorCode;
+      result?: YouTubeResolveResult;
+    };
   };
   'yt:resolveMore': {
     args: [{ url: string; start: number; end: number }];
@@ -561,6 +573,19 @@ export interface IpcChannels {
   };
   'profiles:delete': { args: [id: string]; result: IpcDownloadProfile[] };
   'sources:list': { args: []; result: MediaSource[] };
+  'sources:downloadDir': { args: []; result: string };
+  'sources:pickIcon': {
+    args: [];
+    result: { success: boolean; canceled?: boolean; dataUrl?: string; error?: string };
+  };
+  'sources:export': {
+    args: [];
+    result: { success: boolean; canceled?: boolean; error?: string };
+  };
+  'sources:import': {
+    args: [];
+    result: { success: boolean; canceled?: boolean; count?: number; error?: string };
+  };
   'sources:save': {
     args: [source: unknown];
     result: { list: MediaSource[]; saved: MediaSource | null; error?: string };
@@ -568,11 +593,24 @@ export interface IpcChannels {
   'sources:delete': { args: [id: string]; result: MediaSource[] };
   'sources:test': {
     args: [source: unknown, endpoint?: SourceEndpoint | null];
-    result: { success: boolean; error?: string };
+    result: { success: boolean; error?: string; sample?: SourceItem | null };
   };
   'sources:fetch': {
-    args: [source: unknown, endpoint?: SourceEndpoint | null, opts?: { query?: Record<string, string>; pageToken?: string }];
+    args: [
+      source: unknown,
+      endpoint?: SourceEndpoint | null,
+      opts?: {
+        query?: Record<string, string>;
+        pageToken?: string;
+        page?: number;
+        context?: unknown;
+      }
+    ];
     result: SourceFetchResult;
+  };
+  'sources:tableRows': {
+    args: [source: unknown, endpoint?: SourceEndpoint | null, opts?: { context?: unknown }];
+    result: SourceItem[];
   };
   'sources:enqueue': { args: [jobs: IpcDownloadJobInput[]]; result: IpcDownloadTask[] };
   'dep:checkFfmpeg': { args: []; result: { installed: boolean; version: string | null } };

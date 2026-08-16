@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { X, FolderOpen, Download, BellPlus } from '@lucide/vue';
+import { X, FolderOpen, Download, BellPlus, Tv2 } from '@lucide/vue';
 import FilenameTemplatePresets from '@renderer/components/FilenameTemplatePresets.vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
@@ -24,6 +24,7 @@ const settings = useSettingsStore();
 const { profiles, ensureLoaded } = useDownloadProfiles();
 const selectedProfileId = ref('');
 const systemDownloads = ref('');
+const avatarFailed = ref(false);
 
 // Pref values default to the current global setting; a field is only stored as
 // an override when the user changes it away from the global default.
@@ -175,14 +176,21 @@ async function pickOutputDir() {
         <div class="flex items-center justify-between px-5 py-4 border-b border-border-default">
           <div class="flex items-center gap-3 min-w-0">
             <div
-              v-if="props.channel.channelThumbnail"
+              v-if="props.channel.channelThumbnail && !avatarFailed"
               class="w-10 h-10 rounded-full overflow-hidden shrink-0 bg-bg-elevated"
             >
               <img
                 :src="props.channel.channelThumbnail"
                 :alt="props.channel.channelTitle"
                 class="w-full h-full object-cover"
+                @error="avatarFailed = true"
               />
+            </div>
+            <div
+              v-else
+              class="w-10 h-10 rounded-full bg-bg-elevated border border-border-default flex items-center justify-center shrink-0 text-fg-faint"
+            >
+              <Tv2 :size="18" />
             </div>
             <div class="min-w-0">
               <h3 class="text-sm font-semibold text-fg-base flex items-center gap-2">

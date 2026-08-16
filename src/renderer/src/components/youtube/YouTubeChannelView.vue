@@ -55,10 +55,11 @@ function closeSubscribe() {
   subscribeOpen.value = false;
 }
 
-// Reset on channel change so a previously failed avatar can retry.
+// Reset on channel/id change so a previously failed avatar can retry
+// (also when the same channel is reopened or the thumbnail gets refreshed).
 const avatarFailed = ref(false);
 watch(
-  () => yt.channel?.id,
+  () => [yt.channel?.id, yt.channel?.thumbnail],
   () => {
     avatarFailed.value = false;
   }

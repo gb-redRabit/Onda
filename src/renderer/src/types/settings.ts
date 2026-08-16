@@ -92,6 +92,8 @@ export interface PlaybackSettings {
 
 export interface DownloadSettings {
   defaultPath: string;
+  sourcesDir: string;
+  sourcesFolder: boolean;
   defaultKind: 'audio' | 'video';
   defaultAudioFormat: 'best' | 'mp3' | 'flac' | 'ogg' | 'aac' | 'opus' | 'm4a' | 'wav';
   defaultAudioQuality: 'best' | 'high' | 'medium' | 'low';

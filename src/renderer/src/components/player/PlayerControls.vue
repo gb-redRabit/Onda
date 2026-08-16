@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
 import {
   Play,
   Pause,
@@ -12,10 +12,11 @@ import {
   Repeat1,
   ListMusic,
   SlidersHorizontal,
-  Gauge,
+Gauge,
   ChevronLeft,
   ChevronRight,
-  Heart
+  Heart,
+  RotateCcw
 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { formatDuration } from '@renderer/utils/formatters';
@@ -40,7 +41,9 @@ const progressPct = computed(() =>
   player.duration > 0 ? (player.currentTime / player.duration) * 100 : 0
 );
 
-const speedSteps = [0.2, 0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3];
+const speedSteps = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3];
+const SPEED_MIN = 0.25;
+const SPEED_MAX = 3;
 
 function onSeek(e: MouseEvent) {
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -54,16 +57,51 @@ function onVolumeClick(e: MouseEvent) {
   emit('volumeChange', v);
 }
 
-function cycleSpeed(direction: number) {
-  const currentIdx = speedSteps.indexOf(props.speed);
-  if (currentIdx >= 0) {
-    const nextIdx = Math.max(0, Math.min(speedSteps.length - 1, currentIdx + direction));
-    emit('setSpeed', speedSteps[nextIdx]);
-  } else {
-    const newSpeed =
-      Math.round(Math.max(0.2, Math.min(3, props.speed + direction * 0.25)) * 10) / 10;
-    emit('setSpeed', newSpeed);
+// ---- speed menu ----
+const speedMenuOpen = ref(false);
+const speedContainer = ref<HTMLElement | null>(null);
+
+const speedLabel = computed(() => {
+  const v = props.speed;
+  return `${Number.isInteger(v) ? v : Math.round(v * 100) / 100}x`;
+});
+
+const isPresetSpeed = computed(() => speedSteps.includes(props.speed));
+
+function onSpeedOutsideClick(e: MouseEvent) {
+  const target = e.target as Node;
+  if (speedMenuOpen.value && speedContainer.value && !speedContainer.value.contains(target)) {
+    speedMenuOpen.value = false;
   }
+}
+
+function onSpeedKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') speedMenuOpen.value = false;
+}
+
+watch(speedMenuOpen, (open) => {
+  if (open) document.addEventListener('keydown', onSpeedKeydown);
+  else document.removeEventListener('keydown', onSpeedKeydown);
+});
+
+onMounted(() => document.addEventListener('mousedown', onSpeedOutsideClick));
+onUnmounted(() => {
+  document.removeEventListener('mousedown', onSpeedOutsideClick);
+  document.removeEventListener('keydown', onSpeedKeydown);
+});
+
+function setSpeedValue(v: number) {
+  const clamped = Math.max(SPEED_MIN, Math.min(SPEED_MAX, Math.round(v * 100) / 100));
+  emit('setSpeed', clamped);
+}
+
+function onSpeedSlider(e: Event) {
+  setSpeedValue(parseFloat((e.target as HTMLInputElement).value));
+}
+
+function onSpeedPreset(v: number) {
+  emit('setSpeed', v);
+  speedMenuOpen.value = false;
 }
 </script>
 
@@ -154,32 +192,85 @@ function cycleSpeed(direction: number) {
           <span>{{ formatDuration(player.duration) }}</span>
         </div>
 
-        <!-- speed pill -->
-        <div class="flex items-center">
+        <!-- speed -->
+        <div ref="speedContainer" class="relative flex items-center">
           <button
-            class="text-white/25 hover:text-white/50 transition-colors px-1"
-            @click.stop="cycleSpeed(-1)"
-          >
-            <ChevronLeft :size="10" />
-          </button>
-          <button
-            class="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-mono transition-colors"
+            class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono transition-colors cursor-pointer select-none"
             :class="
               speed !== 1
-                ? 'text-accent-base bg-accent-ghost'
+                ? 'text-accent-base bg-accent-ghost hover:bg-accent-base/20'
                 : 'text-white/40 hover:text-white/70 bg-white/6 hover:bg-white/10'
             "
-            @click.stop="cycleSpeed(1)"
+            :aria-haspopup="true"
+            :aria-expanded="speedMenuOpen"
+            :aria-label="$t('player.speedTitle') + ': ' + speedLabel"
+            :title="$t('player.speedTitle')"
+            @click.stop="speedMenuOpen = !speedMenuOpen"
           >
             <Gauge :size="11" />
-            {{ speed }}x
+            {{ speedLabel }}
           </button>
-          <button
-            class="text-white/25 hover:text-white/50 transition-colors px-1"
-            @click.stop="cycleSpeed(1)"
-          >
-            <ChevronRight :size="10" />
-          </button>
+
+          <Transition name="menu-fade">
+            <div
+              v-if="speedMenuOpen"
+              class="absolute bottom-full right-0 mb-2 w-64 bg-bg-elevated border border-border-subtle rounded-xl shadow-2xl shadow-black/50 p-3 z-50"
+            >
+              <div class="flex items-center justify-between mb-2.5">
+                <span class="text-[10px] text-fg-faint font-medium uppercase tracking-wider">
+                  {{ $t('player.speedTitle') }}
+                </span>
+                <span class="text-[11px] font-mono text-accent-base tabular-nums">{{ speedLabel }}</span>
+              </div>
+
+              <div class="grid grid-cols-3 gap-1.5 mb-3">
+                <button
+                  v-for="step in speedSteps"
+                  :key="step"
+                  class="px-2 py-1.5 rounded-lg text-[11px] font-mono transition-colors"
+                  :class="
+                    speed === step
+                      ? 'bg-accent-base text-white font-semibold'
+                      : 'bg-bg-base text-fg-muted hover:bg-bg-hover hover:text-fg-base'
+                  "
+                  @click="onSpeedPreset(step)"
+                >
+                  {{ step }}x
+                </button>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <Gauge :size="12" class="text-fg-faint shrink-0" />
+                <input
+                  type="range"
+                  min="0.25"
+                  max="3"
+                  step="0.05"
+                  :value="speed"
+                  class="flex-1 accent-accent-base cursor-pointer"
+                  :aria-label="$t('player.speedCustom')"
+                  @input="onSpeedSlider"
+                />
+              </div>
+              <div class="flex items-center justify-between text-[9px] text-fg-faint/60 font-mono mt-1 px-0.5">
+                <span>0.25x</span>
+                <span>3x</span>
+              </div>
+
+              <div class="flex items-center justify-between mt-2.5 pt-2.5 border-t border-border-default">
+                <span class="text-[10px] text-fg-faint/60">{{ $t('player.speedHint') }}</span>
+                <button
+                  class="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
+                  :class="{ 'pointer-events-none opacity-40': speed === 1 && isPresetSpeed }"
+                  :disabled="speed === 1 && isPresetSpeed"
+                  @click="onSpeedPreset(1)"
+                >
+                  <RotateCcw :size="10" />
+                  {{ $t('player.speedReset') }}
+                </button>
+              </div>
+            </div>
+          </Transition>
         </div>
 
         <!-- skip forward -->
@@ -226,3 +317,17 @@ function cycleSpeed(direction: number) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.menu-fade-enter-active,
+.menu-fade-leave-active {
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+.menu-fade-enter-from,
+.menu-fade-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
+}
+</style>

@@ -126,23 +126,164 @@ export default {
     download: 'Download',
     untitled: 'Untitled',
     openInBrowser: 'Open in browser',
-    endpointCount: '{count} endpoint(s)',
     pageParam: 'Page param',
-    nextFromField: 'Next field',
-    hasMoreField: 'Has more field',
-    fieldTitle: 'title',
-    fieldSubtitle: 'subtitle',
-    fieldThumbnail: 'thumbnail',
-    fieldMediaUrl: 'media URL',
-    fieldType: 'type',
-    fieldDuration: 'duration',
-    fieldId: 'id',
-    fieldSourceUrl: 'source URL',
-    testOk: 'OK — {count} endpoint(s), sample mapped',
-    testFail: 'FAIL: {error}',
+    startPage: 'Start page',
+    pagHint:
+      'Numeric paging: fill “Page param” (e.g. page) — the view gets prev/next buttons. For cursor APIs use the token / has-more fields.',
+    nextFromField: 'Next-page token field',
+    totalField: 'Has-more field',
+    childEndpoint: 'Child endpoint (opens on click)',
+    noChild: '— none —',
+    rangeCountField: 'Count field (dot-path)',
+    rangeCountValue: 'Fixed count',
+    rangeStartAt: 'Start at',
+    rangeTitleTemplate: 'Title template',
+    nestHint:
+      'Nesting: clicking an item opens the child endpoint. Use {lb}a.b{rb} placeholders in the path / params, filled from the clicked item’s JSON ({lb}n{rb} = generated index). A range generates items 1..N instead of fetching (e.g. episodes: count field from the parent, path like /episodes/find/{lb}slug{rb}/{lb}n{rb}). Single-object responses are treated as one item.',
+    back: 'Back',
+    fTitle: 'title',
+    fSubtitle: 'subtitle',
+    fThumbnail: 'thumbnail',
+    fMediaUrl: 'media URL',
+    fPlayerUrl: 'Player (embed/iframe) — player URL',
+    fPlayerUrlPh: 'e.g. field with https://.../embed/...',
+    fType: 'type',
+    fDuration: 'duration',
+    fId: 'id',
+    fSourceUrl: 'source URL',
     errNameRequired: 'Name is required',
     errBaseUrl: 'Base URL must start with http(s)://',
-    errEndpointRequired: 'At least one endpoint with a path is required'
+    errEndpointRequired: 'At least one endpoint with a path is required',
+    errSaveFailed: 'Save failed',
+    testOk: 'OK — {n} endpoint(s), sample mapped',
+    testFail: 'FAIL: {err}',
+    endpointCount: '{n} endpoint(s)',
+    prevPage: 'Previous page',
+    nextPage: 'Next page',
+    currentPage: 'Current page',
+    levels: 'Levels',
+    addLevel: 'Add level',
+    level: 'Level',
+    typeList: 'List',
+    typePage: 'Page',
+    availableKeys: 'Available keys',
+    display: 'What to display (fields from the response)',
+    downloadField: 'Download field (URL) — empty = navigation only',
+    downloadNone: '— no download —',
+    passKeys: 'Keys passed down',
+    addPassKey: 'Add key',
+    keyString: 'text',
+    keyNumber: 'number',
+    openChild: 'Opens level on click',
+    openRow: 'Opens level on row click',
+    tableEnable: 'Table (e.g. episodes)',
+    tableSource: 'Table data source:',
+    tableSourceEndpoint: 'separate endpoint',
+    tableSourceField: 'field in response',
+    tableModeHint: {
+      endpoint: 'fetches the list with a separate request using page keys',
+      field: 'array inside the page response JSON (dot-path)'
+    },
+    tableEndpointPath: 'Data endpoint path (page keys, e.g. {lb}slug{rb})',
+    tableEndpointPathPh: '/episodes/count/{lb}slug{rb}',
+    tableArrayField: 'Dot-path to the array in the page response',
+    tableArrayFieldPh: 'e.g. episodes — field with the episode list in the page JSON',
+    tableRowTitle: 'Row title',
+    tableRowThumb: 'Row thumbnail',
+    tableRowPlayer: 'Row player (embed)',
+    tableRowPlayerPh: 'e.g. embed_url',
+    tableRowKey: 'Row key field',
+    tableRowKeys: 'Row keys passed down',
+    testTable: 'Test table',
+    testTableHint: 'Test the page (level) first to fetch the table with sample context',
+    testTableOk: 'OK — {n} table rows',
+    testTableFail: 'FAIL: no table rows',
+    method: 'Method',
+    advanced: 'Advanced',
+    downloadSection: 'Download',
+    downloadOutputDir: 'Download directory (destination path)',
+    downloadDefaultHint: 'Empty = default: {path} (an "api" folder under the Downloads path from settings)',
+    downloadFolder: 'Download into a subfolder named after the source',
+    downloadFolderHint:
+      'On: files land in a subfolder (e.g. {path}/source-name). Off: files land flat in the download directory.',
+    chooseFolder: 'Choose folder',
+    downloadAll: 'Download all',
+    downloadAllRows: 'Download all episodes',
+    toastQueued: 'Added to the download queue',
+    toastQueuedSome: 'Queued: {q}, failed: {f}',
+    toastFailed: 'Error: {err}',
+    testSourceBtn: 'Test source connection',
+    testSourceOk: 'Source works',
+    testSourceFail: 'Source error: {err}',
+    testNotRun: 'Not tested yet',
+    exportSources: 'Export sources (JSON)',
+    importSources: 'Import sources (JSON)',
+    exportOk: 'Export file saved',
+    importOk: 'Added {n} sources',
+    filterPlaceholder: 'Filter by title…',
+    sortBy: 'Sort',
+    sortNone: '— no sorting —',
+    sortTitleAsc: 'Title A→Z',
+    sortTitleDesc: 'Title Z→A',
+    sortType: 'Type',
+    editSourceShortcut: 'Edit source',
+    iconSection: 'Source icon',
+    iconFromPc: 'From computer…',
+    iconUrlPlaceholder: 'Image URL (http/https)',
+    iconApplyUrl: 'Use URL',
+    iconClear: 'Remove icon',
+    iconHint:
+      'Upload an image from your computer (up to 2 MB) or enter a web URL. Empty = default globe icon.',
+    iconUrlInvalid: 'Enter a valid http(s) URL',
+    episodes: 'Episodes',
+    noTableRows: 'No table rows',
+    guide: {
+      title: 'Guide — how to configure a source',
+      intro:
+        'A source is a configuration of any public HTTP API returning JSON — no coding needed. You define levels: each level is one request, and data from a response can be passed on to the next levels. The example below uses a public test API (jsonplaceholder.typicode.com) that you can type in right away to see the whole mechanism in action.',
+      steps: [
+        {
+          title: 'Level 1 — List (catalog)',
+          body:
+            'The "List" type fetches an array of items. Example:\nURL: https://jsonplaceholder.typicode.com/users\n"Display fields": name (title), email (subtitle)\n"Passed keys": id → userId\n"Opens level on click": select level 2.'
+        },
+        {
+          title: 'Level 2 — List (related items)',
+          body:
+            'In the URL you use values from the previous level in curly braces: https://jsonplaceholder.typicode.com/users/«userId»/albums\n"Display fields": title\nPassed keys: id → albumId\n"Opens level on click": select level 3.'
+        },
+        {
+          title: 'Level 3 — List (leaf: preview and download)',
+          body:
+            'https://jsonplaceholder.typicode.com/albums/«albumId»/photos\n"Display fields": title (title), thumbnailUrl (thumbnail)\n"Download field (URL)": url — then the Download button appears on cards. Empty = navigation only, no button.'
+        },
+        {
+          title: 'The "Page" type (single-object details)',
+          body:
+            'When a request returns ONE object (not an array), choose the "Page" type. The view shows the cover and title, and if you configure a table — a row list appears below (e.g. episodes).'
+        },
+        {
+          title: 'Table (page section)',
+          body:
+            'A table is a section of the "Page" level. Mode "separate endpoint": a separate URL returning an array, with page keys in braces (e.g. /episodes/«slug»). Mode "field in response": dot-path to the array inside the page JSON (e.g. episodes). Clicking a row opens the child level with page + row context.'
+        },
+        {
+          title: 'Placeholders and context',
+          body:
+            '«name» in the URL is replaced by a value from the context — raw fields of the last response or passed keys. Case matters: «slug» ≠ «SLUG». Dot notation is supported: «a.b».\nImportant: context is created by CLICKING an item card. Selecting a level from the list at the top has no context — requests with placeholders will not resolve.'
+        },
+        {
+          title: 'Test buttons',
+          body:
+            '"Test" shows a preview of the API response for the level — if the response is not an array, set "Path to array" (Advanced). "Test table" tests the table section against a sample page (test the page first).'
+        },
+        {
+          title: 'Pagination (Advanced)',
+          body:
+            '"Page parameter" + "Start page": numeric pagination (page=1, 2, 3...). "Next-token field": for cursor APIs. "Range" (item count field): generates positions 1..N without extra requests — handy when an API numbers episodes but exposes no list.'
+        }
+      ]
+    }
   },
   settings: {
     title: 'Settings',
@@ -235,6 +376,12 @@ export default {
     downloadPath: 'Download folder',
     downloadPathDesc: 'Where downloaded files are saved by default.',
     downloadPathPlaceholder: 'Choose a folder',
+    sourcesPath: 'Sources directory (API)',
+    sourcesPathDesc: 'Where files from sources (the Sources/API view) are downloaded.',
+    sourcesPathPlaceholder: 'Empty = Downloads/api',
+    sourcesPathHint:
+      'Empty uses the "api" folder under the Downloads path from settings. Can be overridden per source in the editor.',
+    sourcesFolder: 'Download sources into a subfolder named after the source by default',
     chooseFolder: 'Choose folder',
     autoDownloadSub: 'Auto-download new videos',
     autoDownloadSubDesc: 'Periodically check subscriptions and download new videos automatically.',
@@ -242,9 +389,11 @@ export default {
     nightScheduleDesc: 'Only start downloads during the selected hours',
     nightScheduleHours: 'h',
     autoAddDownloadFolder: 'Auto-add download folder to library',
-    autoAddDownloadFolderDesc: 'After the first download to a folder outside the library, add it automatically so the file is playable right away',
+    autoAddDownloadFolderDesc:
+      'After the first download to a folder outside the library, add it automatically so the file is playable right away',
     profilesSection: 'Download profiles',
-    profilesSectionDesc: 'Save and reuse download configurations (also selectable per subscription)',
+    profilesSectionDesc:
+      'Save and reuse download configurations (also selectable per subscription)',
     profileNew: 'New profile…',
     profileSaveCreate: 'Create profile',
     profileSaveUpdate: 'Save changes',
@@ -574,7 +723,11 @@ export default {
   player: {
     nowPlaying: 'Now playing',
     playing: 'Playing',
-    paused: 'Paused'
+    paused: 'Paused',
+    speedTitle: 'Playback speed',
+    speedCustom: 'Custom',
+    speedReset: 'Reset (1x)',
+    speedHint: 'Click a speed or drag the slider'
   },
   explorer: {
     title: 'Explorer',

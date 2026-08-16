@@ -1,9 +1,17 @@
 <script setup lang="ts">
-import { reactive, ref, computed } from 'vue';
+import { reactive, ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { X, Plus, Trash2, FlaskConical, Loader2 } from '@lucide/vue';
+import { X, Plus, Loader2, Globe, Link2, Trash2 } from '@lucide/vue';
 import { useSourcesStore } from '@renderer/stores/sources';
 import { useSettingsStore } from '@renderer/stores/settings';
+import EndpointLevelCard from './EndpointLevelCard.vue';
+import {
+  emptyEndpoint,
+  endpointFromSource,
+  buildEndpointFromDraft,
+  collectFieldPaths,
+  randomId
+} from './endpointDraft';
 import type { MediaSource, SourceAuthType, SourceEndpoint } from '@renderer/types/sources';
 
 const { t } = useI18n();
@@ -20,96 +28,121 @@ const emit = defineEmits<{
 const sources = useSourcesStore();
 const settings = useSettingsStore();
 
-function randomId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-}
+const draft = reactive({
+  id: props.source?.id || '',
+  name: props.source?.name || '',
+  icon: props.source?.icon || '',
+  baseUrl: props.source?.baseUrl || '',
+  authType: (props.source?.auth?.type || 'none') as SourceAuthType,
+  apiKeyId: props.source?.auth?.apiKeyId || '',
+  headerName: props.source?.auth?.headerName || '',
+  queryParam: props.source?.auth?.queryParam || '',
+  downloadOutputDir: props.source?.download?.outputDir || '',
+  downloadFolder: props.source?.download?.folder ?? settings.download.sourcesFolder,
+  endpoints: (props.source?.endpoints || []).map((e) => endpointFromSource(e))
+});
 
-interface DraftField {
-  id?: string;
-  title?: string;
-  subtitle?: string;
-  thumbnail?: string;
-  mediaUrl?: string;
-  type?: string;
-  duration?: string;
-  sourceUrl?: string;
-}
-
-interface DraftEndpoint {
-  id: string;
-  name: string;
-  method: 'GET' | 'POST';
-  path: string;
-  paramsText: string;
-  pageParam: string;
-  nextFromField: string;
-  totalField: string;
-  arrayPath: string;
-  fields: DraftField;
-}
-
-function emptyEndpoint(): DraftEndpoint {
-  return {
-    id: randomId(),
-    name: '',
-    method: 'GET',
-    path: '/',
-    paramsText: '',
-    pageParam: '',
-    nextFromField: '',
-    totalField: '',
-    arrayPath: '',
-    fields: { id: '', title: '', subtitle: '', thumbnail: '', mediaUrl: '', type: '', duration: '', sourceUrl: '' }
-  };
-}
-
-function initDraft(src: MediaSource | null) {
-  return reactive({
-    id: src?.id || '',
-    name: src?.name || '',
-    baseUrl: src?.baseUrl || '',
-    authType: (src?.auth?.type || 'none') as SourceAuthType,
-    apiKeyId: src?.auth?.apiKeyId || '',
-    headerName: src?.auth?.headerName || '',
-    queryParam: src?.auth?.queryParam || '',
-    endpoints: (src?.endpoints || []).map((e) => ({
-      id: e.id,
-      name: e.name,
-      method: e.method,
-      path: e.path,
-      paramsText: Object.entries(e.params || {})
-        .map(([k, v]) => `${k}=${v}`)
-        .join('\n'),
-      pageParam: e.pagination?.pageParam || '',
-      nextFromField: e.pagination?.nextFromField || '',
-      totalField: e.pagination?.totalField || '',
-      arrayPath: e.mapping.arrayPath || '',
-      fields: { ...e.mapping.fields }
-    }))
-  });
-}
-
-const draft = initDraft(props.source);
 const saving = ref(false);
-const testing = ref(false);
 const errorMsg = ref('');
 const testMsg = ref('');
-const testOk = ref(true);
+const testPassed = ref(false);
+const testingId = ref('');
+const tableTestingId = ref('');
+const sampleFields = ref<Record<string, string[]>>({});
+const pageSamples = ref<Record<string, Record<string, unknown>>>({});
+const rowSamples = ref<Record<string, string[]>>({});
+const defaultDownloadDir = ref('');
+const iconUrl = ref('');
 
-const apiKeyOptions = computed(() =>
-  (settings.apiKeys?.keys || []).filter((k) => k.isActive).map((k) => ({ id: k.id, label: k.name || k.service || k.id }))
+const iconValid = computed(
+  () =>
+    !!draft.icon &&
+    (/^data:image\//i.test(draft.icon) || /^https?:\/\//i.test(draft.icon))
 );
 
-function parseParams(text: string): Record<string, string> | undefined {
-  const out: Record<string, string> = {};
-  for (const line of text.split('\n')) {
-    const eq = line.indexOf('=');
-    if (eq <= 0) continue;
-    const k = line.slice(0, eq).trim();
-    const v = line.slice(eq + 1).trim();
-    if (k) out[k] = v;
+onMounted(async () => {
+  defaultDownloadDir.value = (await window.api.invoke('sources:downloadDir')) as string;
+});
+
+async function pickDownloadDir() {
+  const paths = (await window.api.invoke('dialog:openFolder')) as string[];
+  if (paths[0]) draft.downloadOutputDir = paths[0];
+}
+
+async function pickIconFile() {
+  const res = (await window.api.invoke('sources:pickIcon')) as {
+    success: boolean;
+    dataUrl?: string;
+    error?: string;
+  };
+  if (res.success && res.dataUrl) {
+    draft.icon = res.dataUrl;
+    iconUrl.value = '';
+  } else if (res.error) {
+    errorMsg.value = res.error;
   }
-  return Object.keys(out).length ? out : undefined;
+}
+
+function applyIconUrl() {
+  const url = iconUrl.value.trim();
+  if (!/^https?:\/\//i.test(url)) {
+    errorMsg.value = t('sources.iconUrlInvalid');
+    return;
+  }
+  draft.icon = url;
+}
+
+function clearIcon() {
+  draft.icon = '';
+  iconUrl.value = '';
+}
+
+const apiKeyOptions = computed(() =>
+  (settings.apiKeys?.keys || [])
+    .filter((k) => k.isActive)
+    .map((k) => ({ id: k.id, label: k.name || k.service || k.id }))
+);
+
+/** Klucze (nazwy placeholderów) przekazywane przez poprzedni poziom. */
+function availableKeys(idx: number): string[] {
+  const prev = draft.endpoints[idx - 1];
+  return prev ? prev.passKeys.map((k) => k.as.trim()).filter(Boolean) : [];
+}
+
+/** Klucze, które ten poziom sam udostępnia (np. do ścieżki tabeli). */
+function selfKeys(idx: number): string[] {
+  return draft.endpoints[idx].passKeys.map((k) => k.as.trim()).filter(Boolean);
+}
+
+function levelOptions(idx: number): Array<{ id: string; label: string }> {
+  return draft.endpoints
+    .filter((_o, i) => i !== idx)
+    .map((o) => ({ id: o.id, label: o.name.trim() || o.path || o.id }));
+}
+
+function syncChain() {
+  const ids = new Set(draft.endpoints.map((e) => e.id));
+  for (let i = 0; i < draft.endpoints.length; i++) {
+    const ep = draft.endpoints[i];
+    const next = draft.endpoints[i + 1]?.id || '';
+    if (ep.type === 'page') {
+      const cur = ep.tableChildId;
+      ep.tableChildId = cur && ids.has(cur) ? cur : next;
+    } else {
+      const cur = ep.childId;
+      ep.childId = cur && ids.has(cur) ? cur : next;
+    }
+  }
+}
+
+function addLevel() {
+  draft.endpoints.push(emptyEndpoint());
+  syncChain();
+}
+
+function removeLevel(idx: number) {
+  draft.endpoints.splice(idx, 1);
+  syncChain();
 }
 
 function buildAuth() {
@@ -140,47 +173,27 @@ function buildSource(): MediaSource | null {
   }
   const endpoints: SourceEndpoint[] = [];
   for (const e of draft.endpoints) {
-    const path = e.path.trim();
-    if (!path) continue;
-    endpoints.push({
-      id: e.id || randomId(),
-      name: e.name.trim() || 'Endpoint',
-      method: e.method,
-      path,
-      params: parseParams(e.paramsText),
-      pagination:
-        e.pageParam || e.nextFromField || e.totalField
-          ? {
-              pageParam: e.pageParam.trim() || undefined,
-              nextFromField: e.nextFromField.trim() || undefined,
-              totalField: e.totalField.trim() || undefined
-            }
-          : undefined,
-      mapping: {
-        arrayPath: e.arrayPath.trim() || undefined,
-        fields: {
-          id: e.fields.id?.trim() || undefined,
-          title: e.fields.title?.trim() || undefined,
-          subtitle: e.fields.subtitle?.trim() || undefined,
-          thumbnail: e.fields.thumbnail?.trim() || undefined,
-          mediaUrl: e.fields.mediaUrl?.trim() || undefined,
-          type: e.fields.type?.trim() || undefined,
-          duration: e.fields.duration?.trim() || undefined,
-          sourceUrl: e.fields.sourceUrl?.trim() || undefined
-        }
-      }
-    });
+    const ep = buildEndpointFromDraft(e);
+    if (ep) endpoints.push(ep);
   }
   if (!endpoints.length) {
-    errorMsg.value = 'errEndpointRequired';
+    errorMsg.value = t('sources.errEndpointRequired');
     return null;
   }
   return {
     id: draft.id || randomId(),
     name,
+    icon: draft.icon.trim() || undefined,
     baseUrl,
     auth: buildAuth(),
     endpoints,
+    download:
+      draft.downloadOutputDir.trim() || !draft.downloadFolder
+        ? {
+            outputDir: draft.downloadOutputDir.trim() || undefined,
+            folder: draft.downloadFolder
+          }
+        : undefined,
     createdAt: props.source?.createdAt ?? Date.now()
   };
 }
@@ -196,7 +209,7 @@ async function onSave() {
       emit('saved');
       emit('close');
     } else {
-      errorMsg.value = res.error || 'Save failed';
+      errorMsg.value = res.error || t('sources.errSaveFailed');
     }
   } finally {
     saving.value = false;
@@ -210,22 +223,71 @@ async function onTest(idx: number) {
   if (!built) return;
   const endpoint = built.endpoints[idx];
   if (!endpoint) return;
-  testing.value = true;
+  testingId.value = draft.endpoints[idx].id;
   try {
     const res = await sources.testSource(built, endpoint);
+    testPassed.value = res.success;
     testMsg.value = res.success
-      ? `OK — ${built.endpoints.length} endpoint(s), sample mapped`
-      : `FAIL: ${res.error || 'unknown'}`;
+      ? t('sources.testOk', { n: built.endpoints.length })
+      : t('sources.testFail', { err: res.error || 'unknown' });
+    if (res.success && res.sample) {
+      sampleFields.value = {
+        ...sampleFields.value,
+        [draft.endpoints[idx].id]: collectFieldPaths(res.sample.extra)
+      };
+      if (res.sample.extra) {
+        pageSamples.value = {
+          ...pageSamples.value,
+          [draft.endpoints[idx].id]: res.sample.extra as Record<string, unknown>
+        };
+      }
+    }
   } finally {
-    testing.value = false;
+    testingId.value = '';
+  }
+}
+
+async function onTestTable(idx: number) {
+  errorMsg.value = '';
+  testMsg.value = '';
+  const built = buildSource();
+  if (!built) return;
+  const endpoint = built.endpoints[idx];
+  const context = pageSamples.value[draft.endpoints[idx].id];
+  if (!endpoint) return;
+  if (!context) {
+    testPassed.value = false;
+    testMsg.value = t('sources.testTableHint');
+    return;
+  }
+  tableTestingId.value = draft.endpoints[idx].id;
+  try {
+    const rows = await sources.tableRowsTest(built, endpoint, context);
+    testPassed.value = rows.length > 0;
+    testMsg.value = rows.length
+      ? t('sources.testTableOk', { n: rows.length })
+      : t('sources.testTableFail');
+    if (rows[0]?.extra) {
+      rowSamples.value = {
+        ...rowSamples.value,
+        [draft.endpoints[idx].id]: collectFieldPaths(rows[0].extra)
+      };
+    }
+  } finally {
+    tableTestingId.value = '';
   }
 }
 </script>
 
 <template>
   <Teleport to="body">
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6" @click.self="emit('close')">
-      <div class="w-full max-w-2xl max-h-full flex flex-col rounded-2xl bg-bg-surface border border-border-default shadow-2xl overflow-hidden">
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
+      @click.self="emit('close')"
+    >
+      <div
+        class="w-full max-w-3xl max-h-full flex flex-col rounded-2xl bg-bg-surface border border-border-default shadow-2xl overflow-hidden"
+      >
         <div class="flex items-center gap-3 px-4 py-3 border-b border-border-default">
           <h2 class="text-sm font-medium flex-1">
             {{ props.source ? $t('sources.editSource') : $t('sources.addSource') }}
@@ -242,7 +304,9 @@ async function onTest(idx: number) {
         <div class="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-5">
           <div class="grid grid-cols-1 gap-3">
             <div>
-              <label class="block text-[11px] font-medium text-fg-faint uppercase tracking-wider mb-1">
+              <label
+                class="block text-[11px] font-medium text-fg-faint uppercase tracking-wider mb-1"
+              >
                 {{ $t('sources.name') }}
               </label>
               <input
@@ -253,7 +317,9 @@ async function onTest(idx: number) {
               />
             </div>
             <div>
-              <label class="block text-[11px] font-medium text-fg-faint uppercase tracking-wider mb-1">
+              <label
+                class="block text-[11px] font-medium text-fg-faint uppercase tracking-wider mb-1"
+              >
                 {{ $t('sources.baseUrl') }}
               </label>
               <input
@@ -262,6 +328,53 @@ async function onTest(idx: number) {
                 placeholder="https://api.example.com"
                 class="w-full px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-sm font-mono focus:outline-none focus:ring-1 focus:ring-accent-base"
               />
+            </div>
+          </div>
+
+          <div class="space-y-2 rounded-xl border border-border-default bg-bg-elevated/50 p-3">
+            <label class="block text-[11px] font-medium text-fg-faint uppercase tracking-wider">
+              {{ $t('sources.iconSection') }}
+            </label>
+            <div class="flex items-start gap-3">
+              <div
+                class="w-12 h-12 shrink-0 rounded-lg bg-bg-elevated border border-border-default flex items-center justify-center overflow-hidden"
+              >
+                <img v-if="iconValid" :src="draft.icon" class="w-full h-full object-cover" />
+                <Globe v-else :size="20" class="text-fg-faint" />
+              </div>
+              <div class="flex-1 min-w-0 space-y-2">
+                <div class="flex items-center gap-2">
+                  <button
+                    class="shrink-0 px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-xs text-fg-muted hover:bg-bg-hover transition-colors"
+                    @click="pickIconFile"
+                  >
+                    {{ $t('sources.iconFromPc') }}
+                  </button>
+                  <input
+                    v-model="iconUrl"
+                    type="text"
+                    :placeholder="$t('sources.iconUrlPlaceholder')"
+                    class="flex-1 min-w-0 px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-sm font-mono focus:outline-none focus:ring-1 focus:ring-accent-base"
+                    @keyup.enter="applyIconUrl"
+                  />
+                  <button
+                    class="shrink-0 p-2 rounded-lg text-fg-muted hover:bg-bg-hover transition-colors"
+                    :title="$t('sources.iconApplyUrl')"
+                    @click="applyIconUrl"
+                  >
+                    <Link2 :size="14" />
+                  </button>
+                  <button
+                    v-if="draft.icon"
+                    class="shrink-0 p-2 rounded-lg text-fg-muted hover:bg-red-base/10 hover:text-red-base transition-colors"
+                    :title="$t('sources.iconClear')"
+                    @click="clearIcon"
+                  >
+                    <Trash2 :size="14" />
+                  </button>
+                </div>
+                <p class="text-[10px] text-fg-faint">{{ $t('sources.iconHint') }}</p>
+              </div>
             </div>
           </div>
 
@@ -284,7 +397,9 @@ async function onTest(idx: number) {
                   class="px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-sm focus:outline-none focus:ring-1 focus:ring-accent-base"
                 >
                   <option value="">{{ $t('sources.chooseKey') }}</option>
-                  <option v-for="k in apiKeyOptions" :key="k.id" :value="k.id">{{ k.label }}</option>
+                  <option v-for="k in apiKeyOptions" :key="k.id" :value="k.id">
+                    {{ k.label }}
+                  </option>
                 </select>
                 <template v-if="draft.authType === 'apikey'">
                   <input
@@ -304,174 +419,81 @@ async function onTest(idx: number) {
             </div>
           </div>
 
+          <div class="space-y-2 rounded-xl border border-border-default bg-bg-elevated/50 p-3">
+            <label class="block text-[11px] font-medium text-fg-faint uppercase tracking-wider">
+              {{ $t('sources.downloadSection') }}
+            </label>
+            <div>
+              <label
+                class="block text-[10px] text-fg-faint uppercase tracking-wider mb-1"
+              >
+                {{ $t('sources.downloadOutputDir') }}
+              </label>
+              <div class="flex items-center gap-2">
+                <input
+                  v-model="draft.downloadOutputDir"
+                  type="text"
+                  :placeholder="defaultDownloadDir"
+                  class="flex-1 min-w-0 px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-sm font-mono focus:outline-none focus:ring-1 focus:ring-accent-base"
+                />
+                <button
+                  class="shrink-0 px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-xs text-fg-muted hover:bg-bg-hover transition-colors"
+                  @click="pickDownloadDir"
+                >
+                  {{ $t('sources.chooseFolder') }}
+                </button>
+              </div>
+              <p class="text-[10px] text-fg-faint mt-1">
+                {{ $t('sources.downloadDefaultHint', { path: defaultDownloadDir }) }}
+              </p>
+            </div>
+            <label class="flex items-center gap-2 text-xs text-fg-muted select-none">
+              <input v-model="draft.downloadFolder" type="checkbox" class="accent-accent-base" />
+              {{ $t('sources.downloadFolder') }}
+            </label>
+            <p class="text-[10px] text-fg-faint">
+              {{ $t('sources.downloadFolderHint') }}
+            </p>
+          </div>
+
           <div class="space-y-3">
             <div class="flex items-center justify-between">
               <label class="text-[11px] font-medium text-fg-faint uppercase tracking-wider">
-                {{ $t('sources.endpoints') }}
+                {{ $t('sources.levels') }}
               </label>
               <button
                 class="flex items-center gap-1 px-2 py-1 rounded-lg bg-accent-base/10 text-accent-base text-xs font-medium hover:bg-accent-base/20 transition-colors"
-                @click="draft.endpoints.push(emptyEndpoint())"
+                @click="addLevel"
               >
                 <Plus :size="12" />
-                {{ $t('sources.addEndpoint') }}
+                {{ $t('sources.addLevel') }}
               </button>
             </div>
 
-            <div
+            <EndpointLevelCard
               v-for="(ep, idx) in draft.endpoints"
               :key="ep.id"
-              class="rounded-xl border border-border-default bg-bg-elevated/50 p-3 space-y-2"
-            >
-              <div class="flex items-center gap-2">
-                <input
-                  v-model="ep.name"
-                  type="text"
-                  :placeholder="$t('sources.endpointName')"
-                  class="flex-1 px-2.5 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-sm focus:outline-none focus:ring-1 focus:ring-accent-base"
-                />
-                <select
-                  v-model="ep.method"
-                  class="px-2 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-xs font-mono focus:outline-none"
-                >
-                  <option value="GET">GET</option>
-                  <option value="POST">POST</option>
-                </select>
-                <button
-                  class="p-1.5 rounded-lg text-fg-faint hover:text-red-base transition-colors"
-                  :aria-label="$t('common.delete')"
-                  @click="draft.endpoints.splice(idx, 1)"
-                >
-                  <Trash2 :size="14" />
-                </button>
-              </div>
-              <input
-                v-model="ep.path"
-                type="text"
-                placeholder="/top/anime"
-                class="w-full px-2.5 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-sm font-mono focus:outline-none focus:ring-1 focus:ring-accent-base"
-              />
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-fg-faint uppercase tracking-wider mb-0.5">
-                    {{ $t('sources.arrayPath') }}
-                  </label>
-                  <input
-                    v-model="ep.arrayPath"
-                    type="text"
-                    placeholder="data"
-                    class="w-full px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs font-mono focus:outline-none focus:ring-1 focus:ring-accent-base"
-                  />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-fg-faint uppercase tracking-wider mb-0.5">
-                    {{ $t('sources.params') }}
-                  </label>
-                  <input
-                    v-model="ep.paramsText"
-                    type="text"
-                    placeholder="rating=safe"
-                    class="w-full px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs font-mono focus:outline-none focus:ring-1 focus:ring-accent-base"
-                  />
-                </div>
-              </div>
-
-              <div class="grid grid-cols-3 gap-2">
-                <div>
-                  <label class="block text-[10px] text-fg-faint uppercase tracking-wider mb-0.5">Page param</label>
-                  <input
-                    v-model="ep.pageParam"
-                    type="text"
-                    placeholder="page"
-                    class="w-full px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs font-mono focus:outline-none focus:ring-1 focus:ring-accent-base"
-                  />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-fg-faint uppercase tracking-wider mb-0.5">Next field</label>
-                  <input
-                    v-model="ep.nextFromField"
-                    type="text"
-                    placeholder="pagination.next_token"
-                    class="w-full px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs font-mono focus:outline-none focus:ring-1 focus:ring-accent-base"
-                  />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-fg-faint uppercase tracking-wider mb-0.5">Has more field</label>
-                  <input
-                    v-model="ep.totalField"
-                    type="text"
-                    placeholder="pagination.has_next"
-                    class="w-full px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs font-mono focus:outline-none focus:ring-1 focus:ring-accent-base"
-                  />
-                </div>
-              </div>
-
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-fg-faint uppercase tracking-wider mb-0.5">title</label>
-                  <input
-v-model="ep.fields.title" type="text" placeholder="title"
-                    class="w-full px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs font-mono focus:outline-none focus:ring-1 focus:ring-accent-base" />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-fg-faint uppercase tracking-wider mb-0.5">subtitle</label>
-                  <input
-v-model="ep.fields.subtitle" type="text" placeholder="artist"
-                    class="w-full px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs font-mono focus:outline-none focus:ring-1 focus:ring-accent-base" />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-fg-faint uppercase tracking-wider mb-0.5">thumbnail</label>
-                  <input
-v-model="ep.fields.thumbnail" type="text" placeholder="images.jpg.image_url"
-                    class="w-full px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs font-mono focus:outline-none focus:ring-1 focus:ring-accent-base" />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-fg-faint uppercase tracking-wider mb-0.5">media URL</label>
-                  <input
-v-model="ep.fields.mediaUrl" type="text" placeholder="file_url"
-                    class="w-full px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs font-mono focus:outline-none focus:ring-1 focus:ring-accent-base" />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-fg-faint uppercase tracking-wider mb-0.5">type</label>
-                  <input
-v-model="ep.fields.type" type="text" placeholder="image | video | audio | file"
-                    class="w-full px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs font-mono focus:outline-none focus:ring-1 focus:ring-accent-base" />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-fg-faint uppercase tracking-wider mb-0.5">duration</label>
-                  <input
-v-model="ep.fields.duration" type="text" placeholder="duration"
-                    class="w-full px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs font-mono focus:outline-none focus:ring-1 focus:ring-accent-base" />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-fg-faint uppercase tracking-wider mb-0.5">id</label>
-                  <input
-v-model="ep.fields.id" type="text" placeholder="mal_id"
-                    class="w-full px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs font-mono focus:outline-none focus:ring-1 focus:ring-accent-base" />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-fg-faint uppercase tracking-wider mb-0.5">source URL</label>
-                  <input
-v-model="ep.fields.sourceUrl" type="text" placeholder="url"
-                    class="w-full px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs font-mono focus:outline-none focus:ring-1 focus:ring-accent-base" />
-                </div>
-              </div>
-
-              <div class="flex items-center gap-2 pt-1">
-                <button
-                  class="flex items-center gap-1 px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs text-fg-muted hover:bg-bg-hover transition-colors"
-                  :disabled="testing"
-                  @click="onTest(idx)"
-                >
-                  <Loader2 v-if="testing" :size="11" class="animate-spin" />
-                  <FlaskConical v-else :size="11" />
-                  {{ $t('sources.test') }}
-                </button>
-              </div>
-            </div>
+              v-model="draft.endpoints[idx]"
+              :index="idx"
+              :base-url="draft.baseUrl"
+              :available-keys="availableKeys(idx)"
+              :self-keys="selfKeys(idx)"
+              :field-options="sampleFields[ep.id] || []"
+              :row-options="rowSamples[ep.id] || []"
+              :level-options="levelOptions(idx)"
+              :testing="testingId === ep.id"
+              :table-testing="tableTestingId === ep.id"
+              @test="onTest(idx)"
+              @test-table="onTestTable(idx)"
+              @remove="removeLevel(idx)"
+            />
           </div>
 
-          <p v-if="testMsg" class="text-xs" :class="testMsg.startsWith('OK') ? 'text-green-base' : 'text-red-base'">
+          <p
+            v-if="testMsg"
+            class="text-xs"
+            :class="testPassed ? 'text-green-base' : 'text-red-base'"
+          >
             {{ testMsg }}
           </p>
           <p v-if="errorMsg" class="text-xs text-red-base">{{ errorMsg }}</p>

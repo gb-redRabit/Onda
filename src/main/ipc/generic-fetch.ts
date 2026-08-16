@@ -17,9 +17,43 @@ const TIMEOUT_MS = 20_000;
 const MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
 const MAX_REDIRECTS = 5;
 
-const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.svg', '.ico', '.tiff', '.tif', '.avif']);
-const VIDEO_EXTS = new Set(['.mp4', '.mkv', '.webm', '.mov', '.avi', '.m3u8', '.m3u', '.ts', '.flv', '.wmv']);
-const AUDIO_EXTS = new Set(['.mp3', '.flac', '.wav', '.ogg', '.aac', '.m4a', '.opus', '.wma', '.aiff', '.alac']);
+const IMAGE_EXTS = new Set([
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  '.gif',
+  '.bmp',
+  '.svg',
+  '.ico',
+  '.tiff',
+  '.tif',
+  '.avif'
+]);
+const VIDEO_EXTS = new Set([
+  '.mp4',
+  '.mkv',
+  '.webm',
+  '.mov',
+  '.avi',
+  '.m3u8',
+  '.m3u',
+  '.ts',
+  '.flv',
+  '.wmv'
+]);
+const AUDIO_EXTS = new Set([
+  '.mp3',
+  '.flac',
+  '.wav',
+  '.ogg',
+  '.aac',
+  '.m4a',
+  '.opus',
+  '.wma',
+  '.aiff',
+  '.alac'
+]);
 
 const KNOWN_TYPES = new Set<SourceItemType>(['image', 'video', 'audio', 'file']);
 
@@ -63,10 +97,56 @@ function asString(v: unknown): string | undefined {
   return undefined;
 }
 
+/** Zastępuje placeholdery {a.b} wartościami z kontekstu (surowy JSON rodzica); {n} = wygenerowany indeks. */
+function resolveTemplate(template: string, context: unknown): string {
+  if (!context || typeof context !== 'object') return template;
+  return template.replace(/\{([^}]+)\}/g, (raw, name: string) => {
+    const v = dotGet(context, name);
+    return v === undefined || v === null ? raw : (asString(v) ?? raw);
+  });
+}
+
+/** Zamienia placeholdery w ścieżce; wartości trafiające do segmentu ścieżki są encodeURIComponent. */
+function resolvePathTemplate(path: string, context: unknown): string {
+  if (!context || typeof context !== 'object' || !path.includes('{')) return path;
+  return path.replace(/\{([^}]+)\}/g, (raw, name: string) => {
+    const v = dotGet(context, name);
+    return v === undefined || v === null ? raw : encodeURIComponent(asString(v) ?? raw);
+  });
+}
+
+export const MAX_RANGE_ITEMS = 1000;
+
+export function generateRangeItems(endpoint: SourceEndpoint, context: unknown): SourceItem[] {
+  const range = endpoint.range;
+  if (!range || !context || typeof context !== 'object') return [];
+  let count = typeof range.countValue === 'number' ? Math.floor(range.countValue) : 0;
+  if (range.countField) {
+    const v = dotGet(context, range.countField);
+    if (typeof v === 'number' && Number.isFinite(v)) count = Math.floor(v);
+  }
+  count = Math.max(0, Math.min(count, MAX_RANGE_ITEMS));
+  const startAt = range.startAt ?? 1;
+  const titleTpl = range.titleTemplate?.trim() || '{n}';
+  const ctxRecord = context as Record<string, unknown>;
+  const items: SourceItem[] = [];
+  for (let i = 0; i < count; i++) {
+    const n = startAt + i;
+    items.push({
+      id: String(n),
+      title: resolveTemplate(titleTpl, { ...ctxRecord, n }),
+      type: 'file',
+      extra: { ...ctxRecord, n }
+    });
+  }
+  return items;
+}
+
 function mapItem(raw: unknown, fields: Record<string, string | undefined>): SourceItem | null {
   if (!raw || typeof raw !== 'object') return null;
   const get = (p: string | undefined): string | undefined => asString(dotGet(raw, p));
   const mediaUrl = get(fields.mediaUrl);
+  const playerUrl = get(fields.playerUrl);
   const sourceUrl = get(fields.sourceUrl);
   let type: SourceItemType | undefined;
   const typeCfg = fields.type;
@@ -85,6 +165,7 @@ function mapItem(raw: unknown, fields: Record<string, string | undefined>): Sour
     subtitle: get(fields.subtitle),
     thumbnail: get(fields.thumbnail),
     mediaUrl,
+    playerUrl,
     type,
     duration: get(fields.duration),
     sourceUrl,
@@ -94,9 +175,18 @@ function mapItem(raw: unknown, fields: Record<string, string | undefined>): Sour
   return item;
 }
 
-function mapResponse(data: unknown, endpoint: SourceEndpoint): SourceItem[] {
+export function mapResponse(data: unknown, endpoint: SourceEndpoint): SourceItem[] {
   const mapping = endpoint.mapping;
-  const rawArr = mapping.arrayPath ? dotGet(data, mapping.arrayPath) : data;
+  let rawArr: unknown;
+  if (mapping.arrayPath) {
+    rawArr = dotGet(data, mapping.arrayPath);
+  } else if (Array.isArray(data)) {
+    rawArr = data;
+  } else if (data && typeof data === 'object') {
+    rawArr = [data];
+  } else {
+    rawArr = undefined;
+  }
   if (!Array.isArray(rawArr)) return [];
   const fields = mapping.fields as Record<string, string | undefined>;
   const items: SourceItem[] = [];
@@ -105,6 +195,80 @@ function mapResponse(data: unknown, endpoint: SourceEndpoint): SourceItem[] {
     if (item) items.push(item);
   }
   return items;
+}
+
+/** Wyciąga tablicę wierszy tabeli: mode='field' → dotGet(json, arrayField); mode='endpoint' → korzeń JSON. */
+export function tableArrayFromData(
+  json: unknown,
+  table: NonNullable<SourceEndpoint['table']>
+): unknown {
+  if (table.mode === 'field') return table.arrayField ? dotGet(json, table.arrayField) : undefined;
+  return Array.isArray(json) ? json : undefined;
+}
+
+/** Mapuje surowe wiersze tabeli na SourceItem (czysta funkcja, testowana bez sieci). */
+export function mapTableRows(
+  rawArr: unknown,
+  table: NonNullable<SourceEndpoint['table']>
+): SourceItem[] {
+  if (!Array.isArray(rawArr)) return [];
+  const out: SourceItem[] = [];
+  for (const raw of rawArr) {
+    if (!raw || typeof raw !== 'object') continue;
+    const row = raw as Record<string, unknown>;
+    const n = table.rowKey ? dotGet(row, table.rowKey) : undefined;
+    const title = table.title ? resolveTemplate(table.title, { ...row, n }) : undefined;
+    const thumb = table.thumbnail ? asString(dotGet(row, table.thumbnail)) : undefined;
+    const playerUrl = table.playerUrl ? asString(dotGet(row, table.playerUrl)) : undefined;
+    if (!title && !thumb) continue;
+    out.push({
+      id: n === undefined || n === null ? '' : (asString(n) ?? ''),
+      title: title ?? '',
+      thumbnail: thumb,
+      playerUrl,
+      type: 'file',
+      extra: row
+    });
+  }
+  return out;
+}
+
+/** Pobiera wiersze tabeli poziomu 'page': z odpowiedzi strony (field) albo osobnym fetchem (endpoint). */
+export async function fetchTableRows(
+  source: MediaSource,
+  endpoint: SourceEndpoint,
+  opts?: { context?: unknown }
+): Promise<SourceItem[]> {
+  const table = endpoint.table;
+  if (!table) return [];
+  try {
+    let json: unknown;
+    if (table.mode === 'endpoint') {
+      const path = table.path?.trim();
+      if (!path) return [];
+      const { headers, query } = await resolveAuth(source);
+      const url = buildUrl(
+        source,
+        { ...endpoint, path, params: undefined, pagination: undefined, method: 'GET' },
+        undefined,
+        query,
+        undefined,
+        opts?.context
+      );
+      const res = await httpJsonFetch(url, { method: 'GET', headers });
+      json = res.json;
+    } else {
+      const { headers, query } = await resolveAuth(source);
+      const url = buildUrl(source, endpoint, undefined, query, undefined, opts?.context);
+      const res = await httpJsonFetch(url, { method: endpoint.method, headers });
+      json = res.json;
+    }
+    return mapTableRows(tableArrayFromData(json, table), table);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    logger.warn('sources', `table fetch failed for ${source.name}${table.path ?? ''}: ${msg}`);
+    return [];
+  }
 }
 
 function paginationMeta(
@@ -128,25 +292,33 @@ function paginationMeta(
   return { hasMore, nextFrom };
 }
 
-function buildUrl(
+export function buildUrl(
   source: MediaSource,
   endpoint: SourceEndpoint,
   pageToken?: string,
-  query?: Record<string, string>
+  query?: Record<string, string>,
+  page?: number,
+  context?: unknown
 ): string {
   const base = source.baseUrl.replace(/\/+$/, '');
-  const path = endpoint.path.trim();
-  const full = /^https?:\/\//i.test(path) ? path : base + (path.startsWith('/') ? path : `/${path}`);
+  const path = resolvePathTemplate(endpoint.path.trim(), context);
+  const full = /^https?:\/\//i.test(path)
+    ? path
+    : base + (path.startsWith('/') ? path : `/${path}`);
   if (endpoint.method === 'POST') return full;
   const usp = new URLSearchParams();
-  for (const [k, v] of Object.entries(endpoint.params || {})) usp.set(k, v);
+  for (const [k, v] of Object.entries(endpoint.params || {}))
+    usp.set(k, resolveTemplate(v, context));
   if (query) for (const [k, v] of Object.entries(query)) usp.set(k, v);
-  if (endpoint.pagination?.pageParam && pageToken) usp.set(endpoint.pagination.pageParam, pageToken);
+  if (endpoint.pagination?.pageParam) {
+    const v = page ?? pageToken;
+    if (v !== undefined) usp.set(endpoint.pagination.pageParam, String(v));
+  }
   const qs = usp.toString();
   return qs ? full + (full.includes('?') ? '&' : '?') + qs : full;
 }
 
-function httpJsonFetch(
+export function httpJsonFetch(
   url: string,
   opts: { method: 'GET' | 'POST'; headers: Record<string, string>; body?: string },
   redirectsLeft: number = MAX_REDIRECTS
@@ -256,19 +428,40 @@ async function resolveAuth(source: MediaSource): Promise<{
 export async function fetchSourceItems(
   source: MediaSource,
   endpoint: SourceEndpoint,
-  opts?: { query?: Record<string, string>; pageToken?: string }
+  opts?: { query?: Record<string, string>; pageToken?: string; page?: number; context?: unknown }
 ): Promise<SourceFetchResult> {
   try {
+    if (endpoint.range) {
+      return { items: generateRangeItems(endpoint, opts?.context), hasMore: false };
+    }
     const { headers, query } = await resolveAuth(source);
-    const url = buildUrl(source, endpoint, opts?.pageToken, { ...query, ...(opts?.query || {}) });
+    const url = buildUrl(
+      source,
+      endpoint,
+      opts?.pageToken,
+      { ...query, ...(opts?.query || {}) },
+      opts?.page,
+      opts?.context
+    );
+    const bodyParams: Record<string, string> = {};
+    for (const [k, v] of Object.entries(endpoint.params || {})) {
+      bodyParams[k] = resolveTemplate(v, opts?.context);
+    }
     const body =
       endpoint.method === 'POST'
-        ? JSON.stringify({ ...(endpoint.params || {}), ...(opts?.query || {}) })
+        ? JSON.stringify({ ...bodyParams, ...(opts?.query || {}) })
         : undefined;
     const { json } = await httpJsonFetch(url, { method: endpoint.method, headers, body });
+    const items = mapResponse(json, endpoint);
+    const meta = paginationMeta(json, endpoint);
+    const isPageMode =
+      !!endpoint.pagination?.pageParam &&
+      !endpoint.pagination.nextFromField &&
+      !endpoint.pagination.totalField;
     return {
-      items: mapResponse(json, endpoint),
-      ...paginationMeta(json, endpoint)
+      items,
+      hasMore: isPageMode ? items.length > 0 : meta.hasMore,
+      ...(meta.nextFrom ? { nextFrom: meta.nextFrom } : {})
     };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -279,15 +472,24 @@ export async function fetchSourceItems(
 
 export async function testSourceConnection(
   source: MediaSource,
-  endpoint: SourceEndpoint
+  endpoint: SourceEndpoint,
+  opts?: { context?: unknown }
 ): Promise<SourceTestResult> {
   try {
     const { headers, query } = await resolveAuth(source);
-    const url = buildUrl(source, endpoint, undefined, query);
-    const body = endpoint.method === 'POST' ? JSON.stringify(endpoint.params || {}) : undefined;
+    const url = buildUrl(source, endpoint, undefined, query, undefined, opts?.context);
+    const bodyParams: Record<string, string> = {};
+    for (const [k, v] of Object.entries(endpoint.params || {})) {
+      bodyParams[k] = resolveTemplate(v, opts?.context);
+    }
+    const body = endpoint.method === 'POST' ? JSON.stringify(bodyParams) : undefined;
     const { json, status } = await httpJsonFetch(url, { method: endpoint.method, headers, body });
     const items = mapResponse(json, endpoint);
-    return { success: true, status, sample: items[0] };
+    let sample = items[0];
+    if (!sample && json && typeof json === 'object' && !Array.isArray(json)) {
+      sample = { id: '', title: '', type: 'file', extra: json as Record<string, unknown> };
+    }
+    return { success: true, status, sample };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return { success: false, error: msg };

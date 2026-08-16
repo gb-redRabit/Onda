@@ -24,6 +24,7 @@ export interface YtDlpEntry {
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { formatDuration as formatDurationBase } from '../../shared/formatDuration';
+import { fetchPageText } from './player-scraper';
 import type { YoutubeAuthMethod } from '../../renderer/src/types/settings';
 import type { IpcYoutubeVideo } from '../../shared/types/ipc';
 import type { YouTubeResolvedItem } from '../../renderer/src/types/youtube';
@@ -294,6 +295,30 @@ export function pickChannelThumbnail(entry: YtDlpEntry): string {
   }
   if (entry.thumbnail && isSafeThumbnailUrl(entry.thumbnail)) return entry.thumbnail;
   return '';
+}
+
+// Wyciąga pierwszy URL awatara kanału z HTML-a strony kanału (ytInitialData).
+// yt-dlp z `--flat-playlist` bywa, że nie zwróci żadnej miniatury w headerze
+// kanału — wtedy używamy tej samej strony, którą i tak parsuje yt-dlp.
+export function extractAvatarUrl(html: string): string {
+  const m = html.match(/https:\/\/yt3\.(?:ggpht|googleusercontent)\.com\/[^"'\\\s<>]+/);
+  return m ? m[0] : '';
+}
+
+// Pobiera stronę kanału i wyciąga awatar jako ostatnią deskę ratunku.
+// Zwraca '' przy jakimkolwiek błędzie — awatar to tylko ozdoba, nie blokujemy.
+export async function resolveChannelAvatar(channelId: string): Promise<string> {
+  if (!channelId) return '';
+  try {
+    const html = await fetchPageText(
+      `https://www.youtube.com/channel/${encodeURIComponent(channelId)}`,
+      {}
+    );
+    const url = extractAvatarUrl(html);
+    return isSafeThumbnailUrl(url) ? url : '';
+  } catch {
+    return '';
+  }
 }
 
 // Maps a playlist/channel container entry to the renderer preview result.

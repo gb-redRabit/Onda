@@ -15,6 +15,7 @@ import {
   mapResolvedContainer,
   mapVideoEntry,
   pickChannelThumbnail,
+  extractAvatarUrl,
   parseNetscapeCookies
 } from '../youtube-utils';
 
@@ -420,6 +421,26 @@ describe('pickChannelThumbnail', () => {
     expect(pickChannelThumbnail({})).toBe('');
     expect(pickChannelThumbnail({ thumbnails: [{ width: 100 }] })).toBe('');
     expect(pickChannelThumbnail({ thumbnails: [{ url: 'http://img/x' }] })).toBe('');
+  });
+});
+
+describe('extractAvatarUrl', () => {
+  it('extracts a yt3.ggpht.com avatar from channel page HTML', () => {
+    const html =
+      '"avatar":{"thumbnails":[{"url":"https://yt3.ggpht.com/ytc/AIdro_lf9abc=s48-c-k-c0x00ffffff-no-rj","width":48,"height":48}]}';
+    expect(extractAvatarUrl(html)).toBe(
+      'https://yt3.ggpht.com/ytc/AIdro_lf9abc=s48-c-k-c0x00ffffff-no-rj'
+    );
+  });
+
+  it('extracts a yt3.googleusercontent.com avatar', () => {
+    const html = 'var ytInitialData = {"avatar":{"url":"https://yt3.googleusercontent.com/abc=s800-c-k"}}';
+    expect(extractAvatarUrl(html)).toBe('https://yt3.googleusercontent.com/abc=s800-c-k');
+  });
+
+  it('returns empty string when no avatar URL is present', () => {
+    expect(extractAvatarUrl('<html><body>no avatar here</body></html>')).toBe('');
+    expect(extractAvatarUrl('')).toBe('');
   });
 });
 

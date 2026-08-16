@@ -5,6 +5,8 @@ import type { SourceItem } from '@renderer/types/sources';
 defineProps<{
   item: SourceItem;
   downloading?: boolean;
+  /** Poziom ma skonfigurowane pole pobierania — bez tego przycisk Pobierz się nie pojawia. */
+  downloadable?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -21,7 +23,7 @@ const typeIcon = {
 </script>
 
 <template>
-  <div class="group cursor-pointer">
+  <div class="group cursor-pointer" @click="emit('preview', item)">
     <div class="relative rounded-xl overflow-hidden bg-bg-elevated">
       <div class="aspect-video w-full">
         <img
@@ -39,6 +41,7 @@ const typeIcon = {
         </div>
       </div>
       <div
+        v-if="downloadable"
         class="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/70 text-white text-[10px] font-medium uppercase"
       >
         <component :is="typeIcon[item.type]" :size="10" />
@@ -50,20 +53,18 @@ const typeIcon = {
       >
         {{ item.duration }}
       </div>
-      <button
-        v-if="item.mediaUrl"
-        class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors"
-        :title="$t('sources.preview')"
-        @click.stop="emit('preview', item)"
+      <div
+        class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors"
       >
         <div class="opacity-0 group-hover:opacity-100 transition-opacity">
           <Eye :size="28" class="text-white drop-shadow" />
         </div>
-      </button>
+      </div>
       <button
+        v-if="downloadable && (item.mediaUrl || item.playerUrl)"
         class="absolute bottom-1.5 left-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 rounded-lg bg-black/70 text-white text-[10px] hover:bg-black/90 disabled:opacity-60"
         :title="$t('sources.download')"
-        :disabled="downloading || !item.mediaUrl"
+        :disabled="downloading || (!item.mediaUrl && !item.playerUrl)"
         @click.stop="emit('download', item)"
       >
         <Download :size="11" />
