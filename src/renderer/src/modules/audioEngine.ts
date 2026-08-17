@@ -86,6 +86,12 @@ class AudioEngine {
     this.initialized = true;
   }
 
+  // Pre-create the AudioContext during idle time so the first playback click
+  // doesn't pay the (expensive) one-time context creation cost synchronously.
+  warmUp(): void {
+    this.graph.ensureContext();
+  }
+
   savePosition(): void {
     const player = usePlayerStore();
     if (this.audioEl && player.currentTrack && player.currentTrack.type === 'audio') {

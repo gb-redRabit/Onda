@@ -1,5 +1,6 @@
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, globalShortcut } from 'electron';
 import { join, extname, normalize, dirname } from 'path';
+import os from 'os';
 import { statSync } from 'fs';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { AUDIO_EXTS, VIDEO_EXTS } from '../shared/constants';
@@ -342,7 +343,11 @@ app.whenReady().then(async () => {
     const storedRoots = store.get('mediaRoots', []);
     const seedRoots = new Set<string>([
       ...(Array.isArray(storedRoots) ? storedRoots : []),
-      app.getPath('downloads')
+      app.getPath('downloads'),
+      // Transkodowane audio/wideo (fallback dla nieobsługiwanych kodeków) też
+      // są serwowane przez media-server — katalogi muszą być w allowed roots.
+      join(os.tmpdir(), 'onda', 'audio-transcodes'),
+      join(os.tmpdir(), 'onda', 'video-transcodes')
     ]);
     for (const root of seedRoots) {
       await addAllowedRoot(root);

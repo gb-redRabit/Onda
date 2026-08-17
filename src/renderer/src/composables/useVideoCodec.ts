@@ -12,6 +12,11 @@ export function useVideoCodec(ctx: VideoCodecContext) {
   let audioCodecChecked = '';
   let codecGeneration = 0;
 
+  /** Przywraca dźwięk elementu wideo (po transkodowaniu lub gdy nie udało się go podłączyć). */
+  function restoreVideoVolume(): void {
+    audioEngine.setVideoVolume(player.isMuted ? 0 : player.volume);
+  }
+
   async function checkVideoAudioCodec(track: MediaFile, el: HTMLVideoElement): Promise<void> {
     if (audioCodecChecked === track.path) return;
     audioCodecChecked = track.path;
@@ -49,9 +54,18 @@ export function useVideoCodec(ctx: VideoCodecContext) {
           audioEngine.playSecondaryAudio();
         }
       } catch {
+        restoreVideoVolume();
         notify('Audio playback failed', 3000);
       }
+      return;
     }
+
+    // Transkodowanie nie udało się (brak ffmpeg itp.) — przywróć dźwięk
+    // elementu, żeby wideo nie grało po cichu, i daj znać. Resetujemy cache,
+    // żeby następny utwór/próba mogły spróbować ponownie.
+    restoreVideoVolume();
+    audioCodecChecked = '';
+    notify('Audio codec not supported, sound may be missing', 5000);
   }
 
   return { checkVideoAudioCodec };

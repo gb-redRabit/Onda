@@ -647,6 +647,10 @@ export interface IpcChannels {
     args: [filePath: string, startTime: number, duration: number];
     result: string | null;
   };
+  'media:transcodeVideo': {
+    args: [filePath: string];
+    result: string | null;
+  };
   'shell:getFileIcon': {
     args: [filePath: string];
     result: string | null;

@@ -25,6 +25,7 @@ export class AudioSecondary {
     await this.disconnect();
 
     const el = new Audio();
+    el.crossOrigin = 'anonymous';
     el.src = toMediaServerUrl(audioPath);
     el.preload = 'auto';
 

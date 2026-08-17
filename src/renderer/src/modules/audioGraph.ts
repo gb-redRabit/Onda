@@ -126,7 +126,16 @@ export class AudioGraph {
     }
 
     if (this.videoSourceNode) {
-      if (this.videoSourceEl === videoEl) return;
+      if (this.videoSourceEl === videoEl) {
+        // Ten sam element, nowe źródło — przywróć głośność. Gain mógł zostać
+        // wyzerowany przez transkodowanie audio poprzedniego utworu i bez tego
+        // resetu kolejne wideo grałoby bez dźwięku.
+        const player = usePlayerStore();
+        if (this.videoGainNode) {
+          this.videoGainNode.gain.value = player.isMuted ? 0 : player.volume;
+        }
+        return;
+      }
       this.disconnectVideoElement();
     }
 

@@ -555,7 +555,7 @@ const isAuthError = computed(
     <Teleport to="body">
       <div
         v-if="toast"
-        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-2xl border text-sm max-w-[80vw]"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-100 flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-2xl border text-sm max-w-[80vw]"
         :class="
           toast.ok
             ? 'bg-bg-surface border-green-base/40 text-fg-base'

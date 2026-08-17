@@ -5,7 +5,7 @@ import type { MediaFile, Playlist } from '../../renderer/src/types/media';
 import { getStore } from './cover-cache';
 import { logger } from '../../shared/logger';
 import { setAllowedRoots } from '../media-server';
-import { scanDir } from './library-scan';
+import { scanDir, classifyFolderType, filterFilesForFolderType } from './library-scan';
 import { broadcastToAllWindows } from '../utils/broadcast';
 import { startLibraryWatcher, setLibraryWatcherScan } from './library-watcher';
 
@@ -90,20 +90,12 @@ async function runLibraryScan(
         continue;
       }
       const result = await scanDir(folderPath, 8, 0, signal, previous);
-      const mediaTotal = result.audioCount + result.videoCount;
-      const folderType: 'audio' | 'video' | 'image' | 'mixed' =
-        result.imageCount > 0 && result.audioCount === 0 && result.videoCount === 0
-          ? 'image'
-          : result.audioCount > 0 && result.videoCount === 0
-            ? 'audio'
-            : result.videoCount > 0 && result.audioCount === 0
-              ? 'video'
-              : mediaTotal > 0 && result.audioCount / mediaTotal >= 0.7
-                ? 'audio'
-                : mediaTotal > 0 && result.videoCount / mediaTotal >= 0.7
-                  ? 'video'
-                  : 'mixed';
-      folderResults.push({ folderType, files: result.files, folderPath });
+      const folderType = classifyFolderType(result);
+      folderResults.push({
+        folderType,
+        files: filterFilesForFolderType(result.files, folderType),
+        folderPath
+      });
     } catch (err) {
       logger.warn('library', `scan error for ${folderPath}: ${err}`);
       folderResults.push(null);

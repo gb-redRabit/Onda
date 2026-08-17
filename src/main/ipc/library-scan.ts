@@ -13,6 +13,33 @@ const IMAGE_EXT_SET = new Set(IMAGE_EXTS);
 
 const SUBDIR_CONCURRENCY = 16;
 
+export const FOLDER_TYPE_RATIO = 0.5;
+
+export function classifyFolderType(counts: {
+  audioCount: number;
+  videoCount: number;
+  imageCount: number;
+}): 'audio' | 'video' | 'image' | 'mixed' {
+  const mediaTotal = counts.audioCount + counts.videoCount;
+  if (counts.imageCount > 0 && mediaTotal === 0) return 'image';
+  if (counts.audioCount > 0 && counts.videoCount === 0) return 'audio';
+  if (counts.videoCount > 0 && counts.audioCount === 0) return 'video';
+  if (mediaTotal > 0 && counts.audioCount / mediaTotal >= FOLDER_TYPE_RATIO) return 'audio';
+  if (mediaTotal > 0 && counts.videoCount / mediaTotal >= FOLDER_TYPE_RATIO) return 'video';
+  return 'mixed';
+}
+
+// Audio folders add ONLY audio files to the library — covers (images) and
+// videos living inside an audio folder are skipped during the scan. Other
+// folder types keep all media files.
+export function filterFilesForFolderType(
+  files: MediaFile[],
+  folderType: 'audio' | 'video' | 'image' | 'mixed'
+): MediaFile[] {
+  if (folderType === 'audio') return files.filter((f) => f.type === 'audio');
+  return files;
+}
+
 async function mapLimit<T, R>(
   items: T[],
   limit: number,

@@ -70,6 +70,8 @@ const onFullscreenChange = () => {
   ctl.isFullscreen.value = !!document.fullscreenElement;
 };
 
+let wheelHandler: ((e: WheelEvent) => void) | null = null;
+
 onMounted(() => {
   if (
     !player.currentTrack ||
@@ -77,6 +79,15 @@ onMounted(() => {
   ) {
     router.replace('/');
     return;
+  }
+
+  // Imperative listener: Vue's @wheel.prevent registers non-passive wheel
+  // listeners implicitly, which triggers a Chromium console violation.
+  // An explicit { passive: false } keeps preventDefault() working silently.
+  const container = playerContainerRef.value;
+  if (container) {
+    wheelHandler = (e: WheelEvent) => ctl.onWheel(e);
+    container.addEventListener('wheel', wheelHandler, { passive: false });
   }
 
   vp.init(player.currentTrack);
@@ -101,6 +112,10 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('fullscreenchange', onFullscreenChange);
+  if (wheelHandler) {
+    playerContainerRef.value?.removeEventListener('wheel', wheelHandler);
+    wheelHandler = null;
+  }
   ctl.cleanup();
   vp.destroy();
   document.body.style.cursor = 'default';
@@ -117,7 +132,6 @@ onUnmounted(() => {
     ref="playerContainerRef"
     class="player-container flex flex-col h-full bg-black relative"
     @mousemove="ctl.onMouseMove"
-    @wheel.prevent="ctl.onWheel"
   >
     <PlayerTopBar
       :show-controls="ctl.showControls.value"

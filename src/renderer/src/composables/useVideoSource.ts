@@ -26,6 +26,7 @@ export function useVideoSource(
   const { checkVideoAudioCodec } = useVideoCodec({ player, notify });
   let lastLoadedPath = '';
   let currentLoadId = 0;
+  let videoTranscodeAttempted = '';
 
   const videoFilterStyle = computed(() => {
     const f = settings.playback.videoFilter;
@@ -35,6 +36,45 @@ export function useVideoSource(
 
   function getTrackSrc(track: { path: string }): string {
     return toMediaServerUrl(track.path);
+  }
+
+  /**
+   * Fallback dla plików, których Chromium nie potrafi zdekodować (HEVC w MKV/MP4,
+   * WMV, FLV, MPEG-4 Part 2 itd.) — bez tego wideo po prostu nie startuje.
+   * Przy błędzie dekodowania/demuxowania transkodujemy cały plik przez ffmpeg
+   * do H.264/AAC i podstawiamy w miejsce oryginału.
+   */
+  function attachTranscodeFallback(track: { path: string }, el: HTMLVideoElement) {
+    el.addEventListener(
+      'error',
+      () => {
+        if (!el.error || (el.error.code !== MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED && el.error.code !== MediaError.MEDIA_ERR_DECODE)) {
+          return;
+        }
+        if (videoTranscodeAttempted === track.path) return;
+        videoTranscodeAttempted = track.path;
+        if (player.currentTrack?.path !== track.path) return;
+        el.pause();
+        notify('Transcoding video, please wait…', 8000);
+        window.api
+          ?.transcodeVideo(track.path)
+          .then((outPath) => {
+            if (!outPath) {
+              notify('Video format not supported', 4000);
+              return;
+            }
+            if (player.currentTrack?.path !== track.path) return;
+            el.src = toMediaServerUrl(outPath);
+            el.load();
+            const resume = () => {
+              el.play().catch((e) => logger.warn('video', 'transcoded play rejected', e));
+            };
+            el.addEventListener('canplay', resume, { once: true });
+          })
+          .catch(() => notify('Video format not supported', 4000));
+      },
+      { once: true }
+    );
   }
 
   function connectVideoEvents(el: HTMLVideoElement) {
@@ -121,6 +161,7 @@ export function useVideoSource(
 
       el.load();
       checkVideoAudioCodec(track, el);
+      attachTranscodeFallback(track, el);
 
       if (settings.playback.pipPreBuffer && track && !player.pipActive) {
         if (track.type === 'video') {
@@ -183,6 +224,7 @@ export function useVideoSource(
   function onTrackChanged(track: MediaFile | null, oldTrack: MediaFile | null): void {
     if (oldTrack && track?.path !== oldTrack?.path) {
       currentLoadId++;
+      videoTranscodeAttempted = '';
     }
     if (track?.type === 'video' && track.path !== lastLoadedPath) {
       lastLoadedPath = track.path;

@@ -15,6 +15,7 @@ import { useTheme } from './composables/useTheme';
 import { useNewVideoNotifications } from './composables/useNewVideoNotifications';
 import { useMediaSession } from './composables/useMediaSession';
 import { useSessionPersistence } from './composables/useSessionPersistence';
+import { audioEngine } from './modules/audioEngine';
 import AppMenu from './components/layout/AppMenu.vue';
 import Sidebar from './components/layout/Sidebar.vue';
 import PlayerBar from './components/layout/PlayerBar.vue';
@@ -56,6 +57,14 @@ onMounted(async () => {
   }
   audioPip.mode.value = settings.appearance.audioPipMode;
   audioPip.setAutoShow(settings.appearance.audioPipAutoShow);
+
+  // Pre-create the AudioContext in idle time so the first play click isn't
+  // blocked by the one-time context creation cost.
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(() => audioEngine.warmUp(), { timeout: 2000 });
+  } else {
+    setTimeout(() => audioEngine.warmUp(), 1000);
+  }
 
   // Restore the last played track + queue (opt-in via settings).
   if (settings.general.restoreSession) {

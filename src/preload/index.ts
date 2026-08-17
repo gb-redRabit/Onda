@@ -431,6 +431,8 @@ const api = {
     duration: number
   ): Promise<string | null> =>
     ipcRenderer.invoke('media:transcodeAudioChunk', filePath, startTime, duration),
+  transcodeVideo: (filePath: string): Promise<string | null> =>
+    ipcRenderer.invoke('media:transcodeVideo', filePath),
   audioPipShow: async (
     state: Record<string, unknown>,
     mode?: string,

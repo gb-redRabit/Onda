@@ -16,7 +16,12 @@ import { logger } from '../../shared/logger';
 import { runCommand } from '../utils/exec';
 import { resolveBin } from '../binaries';
 import { getThumbnail, batchThumbnails } from './media-thumbnails';
-import { transcodeAudioChunk, transcodeAudio, cleanupOldTranscodes } from './media-transcode';
+import {
+  transcodeAudioChunk,
+  transcodeAudio,
+  transcodeVideo,
+  cleanupOldTranscodes
+} from './media-transcode';
 import { isSafeAbsolutePath, isSafeStringArray } from '../utils/validate';
 import { addAllowedRoot } from '../media-server';
 
@@ -239,10 +244,10 @@ export function registerMediaHandlers(): void {
           'pcm_s16le',
           'pcm_s16be',
           'pcm_s24le',
-          'pcm_f32le',
-          'alac',
-          'truehd'
+          'pcm_f32le'
         ].includes(codec);
+        // Uwaga: alac/truehd są celowo POZA listą — Chromium ich nie dekoduje,
+        // więc muszą iść przez transkodowanie (inaczej wideo bez dźwięku).
         return { codec, supported };
       } catch (e) {
         logger.warn('media', `checkAudioCodec failed for ${filePath}`, e);
@@ -269,6 +274,14 @@ export function registerMediaHandlers(): void {
     async (_event, filePath: string): Promise<string | null> => {
       if (!isSafeAbsolutePath(filePath)) return null;
       return transcodeAudio(filePath);
+    }
+  );
+
+  ipcMain.handle(
+    'media:transcodeVideo',
+    async (_event, filePath: string): Promise<string | null> => {
+      if (!isSafeAbsolutePath(filePath)) return null;
+      return transcodeVideo(filePath);
     }
   );
 

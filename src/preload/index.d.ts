@@ -158,6 +158,7 @@ interface OndaAPI {
     startTime: number,
     duration: number
   ) => Promise<string | null>;
+  transcodeVideo: (filePath: string) => Promise<string | null>;
   audioPipShow: (
     state: Record<string, unknown>,
     mode?: string,
