@@ -2,12 +2,22 @@
 import { ref } from 'vue';
 import { usePipVideoSubtitle } from './usePipVideoSubtitle';
 import { usePipVideoIpc } from './usePipVideoIpc';
+import { usePipVideoPreview } from './usePipVideoPreview';
 
 const videoRef = ref<HTMLVideoElement | null>(null);
 const progressRef = ref<HTMLDivElement | null>(null);
 
 const sub = usePipVideoSubtitle(videoRef);
 const pip = usePipVideoIpc(sub, { videoRef, progressRef });
+const {
+  setHiddenVideoRef,
+  previewVisible,
+  previewDataUrl,
+  previewLeft,
+  previewTimeLabel,
+  handleMouseMove,
+  handleMouseLeave
+} = usePipVideoPreview({ videoRef, progressRef });
 
 const {
   api,
@@ -47,6 +57,14 @@ const { subsVisible, toggleSubtitles } = sub;
       @loadedmetadata="onVideoMeta"
       @timeupdate="onTimeUpdate"
       @ended="onVideoEnded"
+    />
+
+    <video
+      :ref="setHiddenVideoRef"
+      class="absolute top-0 left-0 w-1 h-1 opacity-0 pointer-events-none"
+      muted
+      playsinline
+      preload="auto"
     />
 
     <!-- close + maximize + settings buttons -->
@@ -103,7 +121,7 @@ const { subsVisible, toggleSubtitles } = sub;
         </button>
       </div>
       <div class="mb-1.5">
-        <span class="text-[10px]" :style="{ color: 'var(--color-fg-faint, #6a6a84)' }"
+        <span class="text-[10px]" :style="{ color: 'var(--color-fg-faint, #7c7c9c)' }"
           >{{ t('brightness') }} {{ brightness }}%</span
         >
         <input
@@ -118,7 +136,7 @@ const { subsVisible, toggleSubtitles } = sub;
         />
       </div>
       <div>
-        <span class="text-[10px]" :style="{ color: 'var(--color-fg-faint, #6a6a84)' }"
+        <span class="text-[10px]" :style="{ color: 'var(--color-fg-faint, #7c7c9c)' }"
           >{{ t('contrast') }} {{ contrast }}%</span
         >
         <input
@@ -150,14 +168,43 @@ const { subsVisible, toggleSubtitles } = sub;
 
     <div
       ref="progressRef"
-      class="h-1 shrink-0 cursor-pointer"
+      class="relative h-1 shrink-0 cursor-pointer"
       :style="{ background: 'var(--color-bg-hover, rgba(255,255,255,0.15))' }"
       @click="onProgressClick"
+      @mousemove="handleMouseMove"
+      @mouseleave="handleMouseLeave"
     >
       <div
         class="h-full rounded-r"
-        :style="{ width: progress + '%', background: 'var(--color-accent-base, #7c6aef)' }"
+        :style="{ width: progress + '%', background: 'var(--color-accent-base, #8b7cf0)' }"
       ></div>
+
+      <div
+        v-if="previewVisible"
+        class="absolute bottom-2 flex flex-col items-center -translate-x-1/2 pointer-events-none"
+        :style="{ left: previewLeft + '%' }"
+      >
+        <div
+          class="rounded overflow-hidden shadow-lg border border-white/10 bg-black"
+          :style="{ width: '96px', height: '54px' }"
+        >
+          <img
+            v-if="previewDataUrl"
+            :src="previewDataUrl"
+            class="w-full h-full object-cover"
+            alt=""
+          />
+          <div
+            v-else
+            class="w-full h-full flex items-center justify-center text-[9px] text-white/50"
+          >
+            {{ previewTimeLabel() }}
+          </div>
+        </div>
+        <span class="mt-1 text-[10px] text-white/80 tabular-nums bg-black/60 px-1 rounded">
+          {{ previewTimeLabel() }}
+        </span>
+      </div>
     </div>
   </div>
 </template>

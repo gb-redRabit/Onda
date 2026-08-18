@@ -85,7 +85,7 @@ export function extractYtVideoId(rawInput: string): string | null {
   return null;
 }
 
-export interface BatchEntry {
+interface BatchEntry {
   url: string;
   kind: YouTubeResolveKind;
   videoId: string | null;

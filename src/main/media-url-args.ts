@@ -9,7 +9,7 @@ export function setMediaServerUrl(url: string): void {
   currentMediaServerUrl = url;
 }
 
-export function getMediaServerUrl(): string {
+function getMediaServerUrl(): string {
   return currentMediaServerUrl;
 }
 

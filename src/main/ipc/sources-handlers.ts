@@ -31,7 +31,7 @@ function mimeFromExtension(ext: string): string | null {
   return map[ext.toLowerCase()] || null;
 }
 
-export function getSourcesFile(): string {
+function getSourcesFile(): string {
   return join(app.getPath('userData'), 'sources.json');
 }
 

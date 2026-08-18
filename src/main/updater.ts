@@ -2,7 +2,7 @@ import { app, type WebContents } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { logger } from '../shared/logger';
 
-export type UpdaterStatus =
+type UpdaterStatus =
   'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
 
 export interface UpdaterState {

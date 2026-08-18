@@ -22,9 +22,28 @@ import { applyMetadataOverride } from '../downloads/cover-processing';
 import { isSafeAbsolutePath } from '../utils/validate';
 import type { IpcDownloadTask, IpcDownloadJobInput, IpcMetaOverride } from '../../shared/types/ipc';
 
+// Throttle broadcast emissions to avoid flooding all BrowserWindows with
+// per-chunk progress updates (hundreds of times/sec on fast links).
+// Coalesces by job id and only sends the most recent snapshot per tick.
+const BROADCAST_INTERVAL_MS = 200;
+const pendingBroadcasts = new Map<string, IpcDownloadTask>();
+let broadcastTimer: ReturnType<typeof setTimeout> | null = null;
+
+function flushBroadcasts(): void {
+  broadcastTimer = null;
+  const batch = [...pendingBroadcasts.values()];
+  pendingBroadcasts.clear();
+  for (const task of batch) {
+    for (const win of BrowserWindow.getAllWindows()) {
+      win.webContents.send('yt:downloadProgress', task);
+    }
+  }
+}
+
 function broadcast(task: IpcDownloadTask): void {
-  for (const win of BrowserWindow.getAllWindows()) {
-    win.webContents.send('yt:downloadProgress', task);
+  pendingBroadcasts.set(task.id, task);
+  if (!broadcastTimer) {
+    broadcastTimer = setTimeout(flushBroadcasts, BROADCAST_INTERVAL_MS);
   }
 }
 

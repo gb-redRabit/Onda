@@ -14,10 +14,12 @@ interface LibraryScannedData {
 }
 
 function isUnderPath(filePath: string, folder: string): boolean {
-  const rel = filePath.slice(folder.length);
+  const fp = filePath.toLowerCase();
+  const fo = folder.toLowerCase();
+  const rel = fp.slice(fo.length);
   return (
-    filePath === folder ||
-    (filePath.startsWith(folder) && (rel.startsWith(sep) || rel.startsWith('/')))
+    fp === fo ||
+    (fp.startsWith(fo) && (rel.startsWith(sep) || rel.startsWith('/')))
   );
 }
 

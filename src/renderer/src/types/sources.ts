@@ -12,7 +12,7 @@ export interface SourceAuth {
   queryParam?: string;
 }
 
-export interface SourcePagination {
+interface SourcePagination {
   /** Nazwa query parametru strony / tokenu (np. 'page'). */
   pageParam?: string;
   /** Numer pierwszej strony (tryb liczbowy), domyślnie 1. */
@@ -23,7 +23,7 @@ export interface SourcePagination {
   totalField?: string;
 }
 
-export interface SourceMappingFields {
+interface SourceMappingFields {
   id?: string;
   title?: string;
   subtitle?: string;
@@ -37,13 +37,13 @@ export interface SourceMappingFields {
   sourceUrl?: string;
 }
 
-export interface SourceMapping {
+interface SourceMapping {
   /** Dot-path do tablicy elementów (np. 'data' albo 'posts'). */
   arrayPath?: string;
   fields: SourceMappingFields;
 }
 
-export interface SourceRange {
+interface SourceRange {
   /** Dot-path pola w kontekście (surowy JSON rodzica) z liczbą elementów, np. 'episodes'. */
   countField?: string;
   /** Stała liczba elementów (alternatywa dla countField). */
@@ -55,7 +55,7 @@ export interface SourceRange {
 }
 
 /** Typ poziomu: 'list' = karty, 'page' = pojedynczy obiekt (strona) z opcjonalną tabelą. Brak = 'list'. */
-export type SourceEndpointType = 'list' | 'page';
+type SourceEndpointType = 'list' | 'page';
 
 export interface SourcePassKey {
   /** Dot-path pola w obiekcie, np. 'slug' albo 'anime_episode_number'. */

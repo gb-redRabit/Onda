@@ -99,7 +99,8 @@ onMounted(() => {
     notify: ctl.showToast,
     skip: ctl.skip,
     setSpeed: ctl.setSpeed,
-    toggleFullscreen: ctl.toggleFullscreen
+    toggleFullscreen: ctl.toggleFullscreen,
+    t
   });
 
   document.addEventListener('fullscreenchange', onFullscreenChange);
@@ -209,6 +210,7 @@ onUnmounted(() => {
     <PlayerControls
       :show-controls="ctl.showControls.value"
       :speed="settings.playback.playbackSpeed"
+      :video-ref="vp.videoRef"
       @seek="ctl.onSeek"
       @volume-change="ctl.onVolumeChange"
       @set-speed="ctl.setSpeed"

@@ -18,7 +18,7 @@ import type { IpcDownloadJobInput, IpcDownloadTask, IpcSubscription } from '@sha
 import { logger } from '@shared/logger';
 import { youtubeProvider } from '@shared/provider';
 
-export interface JobExtra {
+interface JobExtra {
   kind?: 'audio' | 'video';
   format?: string;
   quality?: string;
@@ -99,6 +99,8 @@ export const useYouTubeStore = defineStore('youtube', () => {
   const queuingId = ref<string | null>(null);
   const queueingChannelId = ref<string | null>(null);
   const downloads = ref<DownloadTask[]>([]);
+  // O(1) lookup by videoId — updated in upsertTask, avoids O(n) find per item per render.
+  const downloadByVideoId = new Map<string, DownloadTask>();
   const resolved = ref<YouTubeResolveResult | null>(null);
   const isResolving = ref(false);
   const resolvedLoading = ref(false);
@@ -346,6 +348,7 @@ export const useYouTubeStore = defineStore('youtube', () => {
     const becameError = task.status === 'error' && (!prev || prev.status !== 'error');
     if (idx >= 0) downloads.value[idx] = task;
     else downloads.value.push(task);
+    if (task.videoId) downloadByVideoId.set(task.videoId, task);
     if (becameCompleted && task.videoId && task.channelId) {
       markVideoDownloaded(task.videoId, task.channelId);
     }
@@ -445,7 +448,7 @@ export const useYouTubeStore = defineStore('youtube', () => {
   // downloading / done state on the quick "download" button).
   function downloadStatusFor(videoId: string): DownloadTask['status'] | null {
     if (!videoId) return null;
-    const task = downloads.value.find((d) => d.videoId === videoId);
+    const task = downloadByVideoId.get(videoId);
     return task ? task.status : null;
   }
 
@@ -453,7 +456,7 @@ export const useYouTubeStore = defineStore('youtube', () => {
   // animated cover is still being prepared after the audio download finished).
   function coverStatusFor(videoId: string): CoverStatus | null {
     if (!videoId) return null;
-    const task = downloads.value.find((d) => d.videoId === videoId);
+    const task = downloadByVideoId.get(videoId);
     return task?.coverStatus ?? null;
   }
 
@@ -836,7 +839,13 @@ export const useYouTubeStore = defineStore('youtube', () => {
   async function loadDownloads() {
     try {
       const list = (await window.api.invoke('yt:download:list')) as IpcDownloadTask[];
-      if (Array.isArray(list)) downloads.value = list.map(toDownloadTask);
+      if (Array.isArray(list)) {
+        downloads.value = list.map(toDownloadTask);
+        downloadByVideoId.clear();
+        for (const d of downloads.value) {
+          if (d.videoId) downloadByVideoId.set(d.videoId, d);
+        }
+      }
     } catch {
       /* downloads unavailable yet */
     }
@@ -982,8 +991,12 @@ export const useYouTubeStore = defineStore('youtube', () => {
     try {
       await window.api.invoke('yt:download:clearFinished');
       downloads.value = downloads.value.filter(
-        (d) => d.status === 'pending' || d.status === 'downloading'
+        (d) => d.status === 'pending' || d.status === 'downloading' || d.status === 'paused'
       );
+      downloadByVideoId.clear();
+      for (const d of downloads.value) {
+        if (d.videoId) downloadByVideoId.set(d.videoId, d);
+      }
     } catch {
       /* clear failed */
     }

@@ -25,7 +25,7 @@ function update(partial: Partial<typeof viz.value>) {
   >
     <div>
       <label class="text-[10px] font-semibold uppercase tracking-wider text-fg-faint mb-1.5 block"
-        >Mode</label
+        >{{ $t('audioView.vizModeLabel') }}</label
       >
       <div class="flex flex-wrap gap-1">
         <button
@@ -46,7 +46,7 @@ function update(partial: Partial<typeof viz.value>) {
 
     <div>
       <label class="text-[10px] font-semibold uppercase tracking-wider text-fg-faint mb-1.5 block"
-        >Primary color</label
+        >{{ $t('audioView.vizPrimaryColor') }}</label
       >
       <div class="flex items-center gap-2">
         <input
@@ -61,7 +61,7 @@ function update(partial: Partial<typeof viz.value>) {
 
     <div>
       <label class="text-[10px] font-semibold uppercase tracking-wider text-fg-faint mb-1.5 block"
-        >Secondary color</label
+        >{{ $t('audioView.vizSecondaryColor') }}</label
       >
       <div class="flex items-center gap-2">
         <input

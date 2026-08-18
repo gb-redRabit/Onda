@@ -11,7 +11,7 @@ import { addDownloadJobs } from '../downloads/download-manager';
 import { getStore } from './cover-cache';
 import { broadcastToAllWindows } from '../utils/broadcast';
 
-export const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const CHECK_TIMEOUT_MS = 10 * 60 * 1000;
 
 let timer: NodeJS.Timeout | null = null;
@@ -20,13 +20,13 @@ let timer: NodeJS.Timeout | null = null;
 // double-enqueue the same video.
 let checkRunning = false;
 
-export interface ChannelVideoSummary {
+interface ChannelVideoSummary {
   id: string;
   title: string;
   thumbnail: string;
 }
 
-export interface ChannelSnapshot {
+interface ChannelSnapshot {
   items: ChannelVideoSummary[];
   thumbnail: string;
   title: string;

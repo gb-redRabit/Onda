@@ -31,8 +31,6 @@ export const EQUALIZER_PRESET_LABELS: Record<string, string> = {
   vocal: 'Vocal'
 };
 
-export const EQUALIZER_PRESET_IDS = Object.keys(EQUALIZER_PRESETS);
-
 export const DEFAULT_NETWORK: NetworkSettings = {
   proxy: { enabled: false, type: 'http', host: '', port: 8080 },
   downloadSpeedLimit: 0,
@@ -108,7 +106,7 @@ export const DEFAULT_SHORTCUTS: Record<string, string> = {
 
 export const DEFAULT_APPEARANCE = {
   theme: 'dark' as const,
-  accentColor: '#7c6aef',
+  accentColor: '#8b7cf0',
   fontSize: 14,
   density: 'comfortable' as const,
   sidebarPosition: 'left' as const,
@@ -152,7 +150,7 @@ export const THEME_PALETTES: Record<
     borderSubtle: '#363650',
     fgBase: '#e8e8f0',
     fgMuted: '#a0a0b8',
-    fgFaint: '#6a6a84'
+    fgFaint: '#7c7c9c'
   },
   light: {
     bgBase: '#f8f8fa',
@@ -213,7 +211,7 @@ export const DEFAULT_PLAYBACK = {
   videoFilter: 'none',
   visualization: {
     mode: 'circle' as const,
-    primaryColor: '#7c6aef',
+    primaryColor: '#8b7cf0',
     secondaryColor: '#4f46e5',
     sensitivity: 0.5
   }

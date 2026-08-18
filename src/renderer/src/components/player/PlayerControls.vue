@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
+import type { Ref } from 'vue';
 import {
   Play,
   Pause,
@@ -20,12 +21,14 @@ Gauge,
 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { formatDuration } from '@renderer/utils/formatters';
+import { useVideoPreview } from '@renderer/composables/useVideoPreview';
 import SubtitleTrackSelector from './SubtitleTrackSelector.vue';
 import VideoFilterDropdown from './VideoFilterDropdown.vue';
 
 const props = defineProps<{
   showControls: boolean;
   speed: number;
+  videoRef: Ref<HTMLVideoElement | null>;
 }>();
 
 const emit = defineEmits<{
@@ -36,6 +39,17 @@ const emit = defineEmits<{
 }>();
 
 const player = usePlayerStore();
+
+const seekBarRef = ref<HTMLElement | null>(null);
+const {
+  setHiddenVideoRef,
+  previewVisible,
+  previewDataUrl,
+  previewLeft,
+  previewTimeLabel,
+  onMouseMove: previewMouseMove,
+  onMouseLeave: previewMouseLeave
+} = useVideoPreview(props.videoRef, seekBarRef);
 
 const progressPct = computed(() =>
   player.duration > 0 ? (player.currentTime / player.duration) * 100 : 0
@@ -111,9 +125,19 @@ function onSpeedPreset(v: number) {
     :class="{ 'opacity-0': !showControls }"
   >
     <!-- seek bar -->
+    <video
+      :ref="setHiddenVideoRef"
+      class="absolute top-0 left-0 w-1 h-1 opacity-0 pointer-events-none"
+      muted
+      playsinline
+      preload="auto"
+    />
     <div
-      class="w-full h-1.5 bg-white/10 rounded-full cursor-pointer hover:h-2.5 transition-[height] mb-4"
+      ref="seekBarRef"
+      class="relative w-full h-1.5 bg-white/10 rounded-full cursor-pointer hover:h-2.5 transition-[height] mb-4"
       @click="onSeek"
+      @mousemove="previewMouseMove"
+      @mouseleave="previewMouseLeave"
     >
       <div
         class="h-full bg-accent-base/80 rounded-full relative"
@@ -122,6 +146,30 @@ function onSpeedPreset(v: number) {
         <div
           class="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-white shadow-lg opacity-0 hover:opacity-100 transition-opacity"
         />
+      </div>
+
+      <div
+        v-if="previewVisible"
+        class="absolute -top-2 -translate-x-1/2 -translate-y-full flex flex-col items-center pointer-events-none"
+        :style="{ left: previewLeft + '%' }"
+      >
+        <div class="rounded-lg overflow-hidden shadow-2xl border border-white/10 bg-black" style="width: 160px; height: 90px">
+          <img
+            v-if="previewDataUrl"
+            :src="previewDataUrl"
+            class="w-full h-full object-cover"
+            alt=""
+          />
+          <div
+            v-else
+            class="w-full h-full flex items-center justify-center text-[10px] text-white/50"
+          >
+            {{ previewTimeLabel() }}
+          </div>
+        </div>
+        <span class="mt-1 px-1.5 py-0.5 rounded text-[11px] font-mono tabular-nums bg-black/70 text-white">
+          {{ previewTimeLabel() }}
+        </span>
       </div>
     </div>
 

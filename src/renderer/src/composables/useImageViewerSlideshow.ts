@@ -3,7 +3,7 @@ import type { Ref } from 'vue';
 import { useIntervalFn, useRafFn, useTimeoutFn } from './useTimers';
 import type { FileItem } from '@renderer/types/explorer';
 
-export interface SlideshowDeps {
+interface SlideshowDeps {
   files: FileItem[];
   currentIndex: Ref<number>;
   hasNext: Ref<boolean>;

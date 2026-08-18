@@ -2,7 +2,7 @@ import { audioEngine } from '@renderer/modules/audioEngine';
 import type { usePlayerStore } from '@renderer/stores/player';
 import type { MediaFile } from '@renderer/types/media';
 
-export interface VideoCodecContext {
+interface VideoCodecContext {
   player: ReturnType<typeof usePlayerStore>;
   notify: (text: string, duration?: number) => void;
 }

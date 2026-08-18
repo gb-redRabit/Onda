@@ -7,7 +7,7 @@ import type { AudioPipState, PipMode } from '@shared/types/pip';
 
 export type { AudioPipState, PipMode };
 
-export function isEdgeMode(mode: PipMode): boolean {
+function isEdgeMode(mode: PipMode): boolean {
   return mode === 'max' || mode === 'wide';
 }
 

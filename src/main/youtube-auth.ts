@@ -28,11 +28,11 @@ const YT_COOKIE_HOST = 'youtube.com';
 
 let loginWindow: BrowserWindow | null = null;
 
-export function cookiesFilePath(): string {
+function cookiesFilePath(): string {
   return join(app.getPath('userData'), COOKIES_FILE);
 }
 
-export async function getAuthSettings(): Promise<YoutubeAuthSettings> {
+async function getAuthSettings(): Promise<YoutubeAuthSettings> {
   try {
     const store = await getStore();
     const raw = store.get('youtube') as Partial<YoutubeAuthSettings> | undefined;
@@ -122,7 +122,7 @@ async function ensureSessionLoaded(): Promise<void> {
 // app would log "no .youtube.com session cookies" on every yt-dlp call while
 // still working through the file fallback. After a successful restore the next
 // exportSessionCookies() re-writes a fresh file from the live partition.
-export async function restorePartitionSession(): Promise<boolean> {
+async function restorePartitionSession(): Promise<boolean> {
   try {
     await ensureSessionLoaded();
     const ses = session.fromPartition(AUTH_PARTITION);
@@ -172,7 +172,7 @@ async function serializedSessionCookies(): Promise<string | null> {
 // Re-exports the persisted session to the Netscape cookie file that survives
 // restarts (source of truth for the auth partition hydration). Written with
 // 0600 (POSIX) / current-user-only ACL (Windows) so it is not world-readable.
-export async function exportSessionCookies(): Promise<boolean> {
+async function exportSessionCookies(): Promise<boolean> {
   try {
     const content = await serializedSessionCookies();
     if (content === null) return false;

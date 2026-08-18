@@ -94,7 +94,7 @@ export async function copyLogTo(destPath: string): Promise<void> {
   await copyFile(getLogPath(), destPath);
 }
 
-export interface EnvironmentInfo {
+interface EnvironmentInfo {
   appName: string;
   appVersion: string;
   electron: string;

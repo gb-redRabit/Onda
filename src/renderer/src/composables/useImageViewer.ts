@@ -7,7 +7,7 @@ import { useImageViewerSlideshow } from './useImageViewerSlideshow';
 import { createImageKeyHandler } from './useImageViewerKeyboard';
 import type { FileItem } from '@renderer/types/explorer';
 
-export interface ImageViewerProps {
+interface ImageViewerProps {
   files: FileItem[];
   initialIndex: number;
 }

@@ -175,6 +175,27 @@ describe('buildYtArgs', () => {
       'node:x'
     ]);
   });
+
+  it('inserts auth/runtime flags before the -- separator', () => {
+    const withSep = ['-o', 'x.%(ext)s', '--', 'https://example.com/watch?v=1'];
+    expect(
+      buildYtArgs(withSep, { method: 'manual', cookiesPath: '/tmp/c.txt' }, '/usr/bin/node')
+    ).toEqual([
+      '-o',
+      'x.%(ext)s',
+      '--cookies',
+      '/tmp/c.txt',
+      '--js-runtimes',
+      'node:/usr/bin/node',
+      '--',
+      'https://example.com/watch?v=1'
+    ]);
+  });
+
+  it('leaves a -- separator unchanged when no extras are added', () => {
+    const withSep = ['-J', '--', 'https://example.com/watch?v=1'];
+    expect(buildYtArgs(withSep, { method: 'none' }, null)).toEqual(withSep);
+  });
 });
 
 describe('detectYtKind', () => {

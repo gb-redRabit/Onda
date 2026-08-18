@@ -7,7 +7,7 @@ import {
 } from './audioPipState';
 import { useSettingsStore } from '@renderer/stores/settings';
 
-export interface AudioPipRuntimeOptions {
+interface AudioPipRuntimeOptions {
   isActive: () => boolean;
   getState: () => AudioPipState;
   getMode: () => PipMode;

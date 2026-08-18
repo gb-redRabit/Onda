@@ -111,7 +111,7 @@ function folderIcon(type: string): string {
     </SettingsCard>
 
     <div v-if="library.isScanning" class="text-xs text-fg-faint">
-      {{ library.scanProgress.current }} / {{ library.scanProgress.total }} folderów...
+      {{ library.scanProgress.current }} / {{ library.scanProgress.total }} {{ $t('settings.libProgress').toLowerCase() }}...
     </div>
 
     <div v-if="library.totalCount > 0" class="text-xs text-fg-faint">

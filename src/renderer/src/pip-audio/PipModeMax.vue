@@ -12,6 +12,7 @@ defineProps<{
   fmt: (s: number) => string;
   currentTime: number;
   duration: number;
+  progressPct: number;
   shuffle: boolean;
   repeat: 'none' | 'all' | 'one';
   isPlaying: boolean;
@@ -24,7 +25,7 @@ defineProps<{
   setCanvas: (el: unknown) => void;
 }>();
 
-const emit = defineEmits<{ select: [name: string] }>();
+const emit = defineEmits<{ select: [name: string]; seek: [e: MouseEvent] }>();
 </script>
 
 <template>
@@ -130,6 +131,15 @@ const emit = defineEmits<{ select: [name: string] }>();
           {{ p.label }}
         </button>
       </div>
+    </div>
+  </div>
+
+  <div class="absolute bottom-0 inset-x-0 z-20">
+    <div class="w-full h-1 cursor-pointer bg-bg-hover/40 group" @click="$emit('seek', $event)">
+      <div
+        class="h-full transition-[width] duration-200 bg-accent-base"
+        :style="{ width: progressPct + '%' }"
+      ></div>
     </div>
   </div>
 

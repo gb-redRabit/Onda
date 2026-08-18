@@ -49,7 +49,7 @@ interface OpenFileOptions {
   properties?: string[];
 }
 
-export interface MusicbrainzArtistCredit {
+interface MusicbrainzArtistCredit {
   name?: string;
   artist?: { name?: string };
 }
@@ -89,6 +89,9 @@ interface IpcYoutubeChannel {
   title: string;
   thumbnail: string;
   subscriberCount?: number;
+  description?: string;
+  videoCount?: number;
+  bannerUrl?: string;
 }
 
 export interface IpcSubscription {
@@ -150,7 +153,7 @@ export interface IpcSubscriptionCheckResult {
   errors: number;
 }
 
-export type IpcCoverStatus = 'none' | 'fetching' | 'embedded' | 'saved' | 'error';
+type IpcCoverStatus = 'none' | 'fetching' | 'embedded' | 'saved' | 'error';
 
 export interface IpcCoverSpec {
   type: 'none' | 'thumbnail' | 'custom' | 'frame' | 'clip';
@@ -199,7 +202,7 @@ export interface IpcDownloadProfile {
 // Direct-URL (non-YouTube) download source. `mode: 'http'` streams the URL to a
 // file without yt-dlp; `mode: 'ytdlp'` is the default YouTube pipeline. Secrets
 // are never carried here — only an `apiKeyId` reference resolved in main.
-export interface IpcDownloadSource {
+interface IpcDownloadSource {
   mode: 'http' | 'ytdlp';
   /** Finalna nazwa pliku (z rozszerzeniem) dla trybu http. */
   fileName?: string;

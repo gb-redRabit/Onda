@@ -4,7 +4,7 @@ import { toMediaServerUrl, loadScaledImageUrl } from '@renderer/utils/imageLoade
 import { useTimeoutFn } from './useTimers';
 import type { FileItem } from '@renderer/types/explorer';
 
-export interface ImageViewerImageDeps {
+interface ImageViewerImageDeps {
   files: Ref<FileItem[]>;
   currentIndex: Ref<number>;
 }

@@ -2,7 +2,7 @@ import workerUrl from 'jassub/dist/worker/worker.js?worker&url';
 import wasmUrl from 'jassub/dist/wasm/jassub-worker.wasm?url';
 import modernWasmUrl from 'jassub/dist/wasm/jassub-worker-modern.wasm?url';
 
-export interface CreateJassubParams {
+interface CreateJassubParams {
   video: HTMLVideoElement;
   subContent: string;
   fonts: Uint8Array[];
@@ -14,7 +14,7 @@ export interface CreateJassubParams {
   modernWasmUrlOverride?: string;
 }
 
-export interface JassubWasmDataUrls {
+interface JassubWasmDataUrls {
   wasmDataUrl: string;
   modernWasmDataUrl: string;
 }

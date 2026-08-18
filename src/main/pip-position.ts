@@ -1,13 +1,13 @@
 import { screen } from 'electron';
 
-export function computePipPosition(opts: { position?: string; width: number; height: number }): {
-  x: number;
-  y: number;
+export function computePipPosition(opts: {
+  position?: string;
   width: number;
   height: number;
-} {
+  workArea?: Electron.Rectangle;
+}): { x: number; y: number; width: number; height: number } {
   const pos = opts.position || 'bottom-right';
-  const workArea = screen.getPrimaryDisplay().workArea;
+  const workArea = opts.workArea || screen.getPrimaryDisplay().workArea;
   const margin = 20;
   const fullWidth = opts.width >= workArea.width;
   let x: number, y: number;
@@ -45,5 +45,10 @@ export function computePipPosition(opts: { position?: string; width: number; hei
       break;
   }
 
-  return { x, y, width: opts.width, height: opts.height };
+  return {
+    x: Math.round(x),
+    y: Math.round(y),
+    width: Math.round(opts.width),
+    height: Math.round(opts.height)
+  };
 }

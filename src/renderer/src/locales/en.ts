@@ -202,14 +202,15 @@ export default {
     advanced: 'Advanced',
     downloadSection: 'Download',
     downloadOutputDir: 'Download directory (destination path)',
-    downloadDefaultHint: 'Empty = default: {path} (an "api" folder under the Downloads path from settings)',
+    downloadDefaultHint:
+      'Empty = default: {path} (an "api" folder under the Downloads path from settings)',
     downloadFolder: 'Download into a subfolder named after the source',
     downloadFolderHint:
       'On: files land in a subfolder (e.g. {path}/source-name). Off: files land flat in the download directory.',
     chooseFolder: 'Choose folder',
     downloadAll: 'Download all',
     downloadAllRows: 'Download all episodes',
-    toastQueued: 'Added to the download queue',
+    toastQueued: 'Added to the download queue ({n})',
     toastQueuedSome: 'Queued: {q}, failed: {f}',
     toastFailed: 'Error: {err}',
     testSourceBtn: 'Test source connection',
@@ -244,43 +245,35 @@ export default {
       steps: [
         {
           title: 'Level 1 — List (catalog)',
-          body:
-            'The "List" type fetches an array of items. Example:\nURL: https://jsonplaceholder.typicode.com/users\n"Display fields": name (title), email (subtitle)\n"Passed keys": id → userId\n"Opens level on click": select level 2.'
+          body: 'The "List" type fetches an array of items. Example:\nURL: https://jsonplaceholder.typicode.com/users\n"Display fields": name (title), email (subtitle)\n"Passed keys": id → userId\n"Opens level on click": select level 2.'
         },
         {
           title: 'Level 2 — List (related items)',
-          body:
-            'In the URL you use values from the previous level in curly braces: https://jsonplaceholder.typicode.com/users/«userId»/albums\n"Display fields": title\nPassed keys: id → albumId\n"Opens level on click": select level 3.'
+          body: 'In the URL you use values from the previous level in curly braces: https://jsonplaceholder.typicode.com/users/«userId»/albums\n"Display fields": title\nPassed keys: id → albumId\n"Opens level on click": select level 3.'
         },
         {
           title: 'Level 3 — List (leaf: preview and download)',
-          body:
-            'https://jsonplaceholder.typicode.com/albums/«albumId»/photos\n"Display fields": title (title), thumbnailUrl (thumbnail)\n"Download field (URL)": url — then the Download button appears on cards. Empty = navigation only, no button.'
+          body: 'https://jsonplaceholder.typicode.com/albums/«albumId»/photos\n"Display fields": title (title), thumbnailUrl (thumbnail)\n"Download field (URL)": url — then the Download button appears on cards. Empty = navigation only, no button.'
         },
         {
           title: 'The "Page" type (single-object details)',
-          body:
-            'When a request returns ONE object (not an array), choose the "Page" type. The view shows the cover and title, and if you configure a table — a row list appears below (e.g. episodes).'
+          body: 'When a request returns ONE object (not an array), choose the "Page" type. The view shows the cover and title, and if you configure a table — a row list appears below (e.g. episodes).'
         },
         {
           title: 'Table (page section)',
-          body:
-            'A table is a section of the "Page" level. Mode "separate endpoint": a separate URL returning an array, with page keys in braces (e.g. /episodes/«slug»). Mode "field in response": dot-path to the array inside the page JSON (e.g. episodes). Clicking a row opens the child level with page + row context.'
+          body: 'A table is a section of the "Page" level. Mode "separate endpoint": a separate URL returning an array, with page keys in braces (e.g. /episodes/«slug»). Mode "field in response": dot-path to the array inside the page JSON (e.g. episodes). Clicking a row opens the child level with page + row context.'
         },
         {
           title: 'Placeholders and context',
-          body:
-            '«name» in the URL is replaced by a value from the context — raw fields of the last response or passed keys. Case matters: «slug» ≠ «SLUG». Dot notation is supported: «a.b».\nImportant: context is created by CLICKING an item card. Selecting a level from the list at the top has no context — requests with placeholders will not resolve.'
+          body: '«name» in the URL is replaced by a value from the context — raw fields of the last response or passed keys. Case matters: «slug» ≠ «SLUG». Dot notation is supported: «a.b».\nImportant: context is created by CLICKING an item card. Selecting a level from the list at the top has no context — requests with placeholders will not resolve.'
         },
         {
           title: 'Test buttons',
-          body:
-            '"Test" shows a preview of the API response for the level — if the response is not an array, set "Path to array" (Advanced). "Test table" tests the table section against a sample page (test the page first).'
+          body: '"Test" shows a preview of the API response for the level — if the response is not an array, set "Path to array" (Advanced). "Test table" tests the table section against a sample page (test the page first).'
         },
         {
           title: 'Pagination (Advanced)',
-          body:
-            '"Page parameter" + "Start page": numeric pagination (page=1, 2, 3...). "Next-token field": for cursor APIs. "Range" (item count field): generates positions 1..N without extra requests — handy when an API numbers episodes but exposes no list.'
+          body: '"Page parameter" + "Start page": numeric pagination (page=1, 2, 3...). "Next-token field": for cursor APIs. "Range" (item count field): generates positions 1..N without extra requests — handy when an API numbers episodes but exposes no list.'
         }
       ]
     }
@@ -309,6 +302,8 @@ export default {
     theme: 'Theme',
     dark: 'Dark',
     light: 'Light',
+    midnight: 'Midnight',
+    spotify: 'Spotify',
     custom: 'Custom',
     customBackground: 'Custom background color',
     accentColor: 'Accent color',
@@ -365,7 +360,8 @@ export default {
       thumbnail: 'Thumbnail',
       none: 'None',
       frame: 'Frame',
-      clip: 'Clip'
+      clip: 'Clip',
+      custom: 'Custom'
     },
     filenameTemplate: 'Filename template',
     templatePresets: 'Quick templates',
@@ -397,6 +393,7 @@ export default {
     profileNew: 'New profile…',
     profileSaveCreate: 'Create profile',
     profileSaveUpdate: 'Save changes',
+    profileDelete: 'Delete profile',
     profileNamePlaceholder: 'Profile name (e.g. MP3 music with cover)',
     smartMode: 'Smart Mode',
     smartModeDesc:
@@ -529,6 +526,7 @@ export default {
     libUnknown: 'Unknown',
     libRemove: 'Remove',
     libProgress: 'Scanning...',
+    libScanError: 'Library scan error',
     libTotal: 'Total:',
     libAddedNotif: 'Folder added to library',
     libAddError: 'Error adding folder',
@@ -563,6 +561,10 @@ export default {
     noMedia: 'No media loaded',
     tracks: 'tracks',
     playlists: 'playlists',
+    playlistsLabel: 'Playlists',
+    audioFiles: 'Audio files',
+    videoFiles: 'Video files',
+    images: 'Images',
     downloads: 'downloads',
     results: 'results',
     items: 'items',
@@ -588,6 +590,9 @@ export default {
     search: 'Search',
     discover: 'Find music, videos and more',
     searchHeading: 'Search YouTube',
+    resultsCount: '{count} results',
+    textFiles: 'Text files',
+    allFiles: 'All files',
     views: 'views',
     resolve: 'Resolve',
     resolving: 'Resolving...',
@@ -609,8 +614,11 @@ export default {
     openChannel: 'Open channel',
     loadMore: 'Load more',
     subscribers: 'subscribers',
+    videos: 'videos',
     videosTab: 'Videos',
     shortsTab: 'Shorts',
+    sortLatest: 'Latest',
+    sortOldest: 'Oldest',
     latest: 'Latest',
     allVideos: 'All videos',
     noVideos: 'No videos',
@@ -631,6 +639,7 @@ export default {
     openInWindow: 'Open in a separate window',
     subscribeChannel: 'Subscribe',
     unsubscribeChannel: 'Unsubscribe',
+    unsubscribeChannelConfirm: 'Unsubscribe? Notification preferences will be lost.',
     downloaded: 'Downloaded',
     downloading: 'Downloading…',
     queuing: 'Adding…',
@@ -669,6 +678,7 @@ export default {
     scopeAllDesc: 'Also download the entire existing back catalog now',
     prefSection: 'Download preferences',
     prefSectionHint: 'Empty fields = use the default from Settings → Download',
+    prefsSummary: 'Preference summary',
     downloadAll: 'Download all',
     downloadAllDesc: 'Also download the entire existing back catalog now',
     downloadAllTitle: 'Queue all videos from this channel',
@@ -724,6 +734,8 @@ export default {
     nowPlaying: 'Now playing',
     playing: 'Playing',
     paused: 'Paused',
+    volume: 'Volume: {n}%',
+    muted: 'Muted',
     speedTitle: 'Playback speed',
     speedCustom: 'Custom',
     speedReset: 'Reset (1x)',
@@ -733,6 +745,7 @@ export default {
     title: 'Explorer',
     thisComputer: 'This computer',
     folderEmpty: 'This folder is empty',
+    loadError: 'Failed to load folder',
     drives: 'Drives',
     name: 'Name',
     size: 'Size',
@@ -844,6 +857,7 @@ export default {
   },
   common: {
     ok: 'OK',
+    back: 'Back',
     play: 'Play',
     pause: 'Pause',
     previous: 'Previous',
@@ -863,6 +877,8 @@ export default {
     delete: 'Delete',
     edit: 'Edit',
     close: 'Close',
+    yes: 'Yes',
+    no: 'No',
     loading: 'Loading...',
     error: 'Error',
     unknown: 'Unknown',
@@ -978,7 +994,10 @@ export default {
   },
   audioView: {
     vizMode: 'Visualization mode',
-    pip: 'Audio PiP'
+    pip: 'Audio PiP',
+    vizModeLabel: 'Mode',
+    vizPrimaryColor: 'Primary color',
+    vizSecondaryColor: 'Secondary color'
   },
   playerView: {
     noVideo: 'No video to play',
@@ -986,5 +1005,9 @@ export default {
   },
   folders: {
     play: 'Play'
+  },
+  imageViewer: {
+    loadFailed: 'Failed to load image',
+    loading: 'Loading...'
   }
 };

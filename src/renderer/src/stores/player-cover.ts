@@ -9,7 +9,7 @@ export interface CoverResult {
   data: string | null;
 }
 
-export function captureVideoFrame(filePath: string): Promise<CoverResult> {
+function captureVideoFrame(filePath: string): Promise<CoverResult> {
   const ext = filePath.slice(filePath.lastIndexOf('.')).toLowerCase();
   if (!VIDEO_EXTS.includes(ext)) return Promise.resolve({ type: null, data: null });
 

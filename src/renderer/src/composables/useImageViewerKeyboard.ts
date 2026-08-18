@@ -1,6 +1,6 @@
 import type { Ref } from 'vue';
 
-export interface ImageViewerKeyCtx {
+interface ImageViewerKeyCtx {
   settingsOpen: Ref<boolean>;
   uiVisible: Ref<boolean>;
   slideshowActive: Ref<boolean>;

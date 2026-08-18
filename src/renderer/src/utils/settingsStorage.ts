@@ -16,7 +16,7 @@ import type {
   GeneralSettings
 } from '@renderer/types/settings';
 
-export interface SettingsState {
+interface SettingsState {
   general: Ref<GeneralSettings>;
   appearance: Ref<AppearanceSettings>;
   playback: Ref<PlaybackSettings>;

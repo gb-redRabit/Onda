@@ -2,7 +2,7 @@ import type { Ref } from 'vue';
 import { useUIStore } from '@renderer/stores/ui';
 import type { FileItem } from '@renderer/types/explorer';
 
-export interface BatchLoader {
+interface BatchLoader {
   load: (path: string) => Promise<void>;
   cancel: () => void;
 }

@@ -1,6 +1,6 @@
 import type { AppSettings } from '../../renderer/src/types/settings';
 
-export type Sanitizer = (value: unknown) => unknown | undefined;
+type Sanitizer = (value: unknown) => unknown | undefined;
 
 const isPlainObject = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === 'object' && !Array.isArray(v);
@@ -10,6 +10,9 @@ function str(v: unknown): unknown | undefined {
 }
 function num(v: unknown): unknown | undefined {
   return typeof v === 'number' && Number.isFinite(v) ? v : undefined;
+}
+function numClamped(min: number, max: number): Sanitizer {
+  return (v) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : undefined);
 }
 function bool(v: unknown): unknown | undefined {
   return typeof v === 'boolean' ? v : undefined;
@@ -93,7 +96,7 @@ function viewModes(v: unknown): unknown | undefined {
 const APPEARANCE_FIELDS: Record<string, Sanitizer> = {
   theme: enumOf(['dark', 'light', 'midnight', 'spotify', 'custom']),
   accentColor: str,
-  fontSize: num,
+  fontSize: numClamped(8, 48),
   density: enumOf(['compact', 'comfortable', 'spacious']),
   sidebarPosition: enumOf(['left', 'right']),
   sidebarCollapsed: bool,
@@ -101,11 +104,11 @@ const APPEARANCE_FIELDS: Record<string, Sanitizer> = {
   showAlbums: bool,
   locale: enumOf(['pl', 'en', 'auto']),
   animations: bool,
-  transparency: num,
+  transparency: numClamped(0, 1),
   customBackground: str,
   audioPipMode: enumOf(['minimal', 'medium', 'max', 'wide']),
   audioPipAutoShow: bool,
-  audioPipOpacity: num,
+  audioPipOpacity: numClamped(0, 1),
   audioPipPosition: enumOf(['bottom-right', 'bottom-left', 'top-right', 'top-left']),
   audioPipEdgePosition: enumOf(['top', 'bottom'])
 };
@@ -114,7 +117,7 @@ const VISUALIZATION_FIELDS: Record<string, Sanitizer> = {
   mode: enumOf(['circle', 'bars', 'particles', 'wave', 'radial', 'none']),
   primaryColor: str,
   secondaryColor: str,
-  sensitivity: num
+  sensitivity: numClamped(0, 1)
 };
 
 const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
@@ -123,15 +126,15 @@ const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
   replayGain: bool,
   gaplessPlayback: bool,
   autoPauseOnFocusLoss: bool,
-  defaultVolume: num,
+  defaultVolume: numClamped(0, 1),
   rememberPosition: bool,
   pipPosition: enumOf(['bottom-right', 'bottom-left', 'top-right', 'top-left']),
-  pipWidth: num,
-  pipHeight: num,
+  pipWidth: numClamped(200, 3840),
+  pipHeight: numClamped(150, 2160),
   pipPreBuffer: bool,
   cursorHide: bool,
-  cursorTimeout: num,
-  playbackSpeed: num,
+  cursorTimeout: numClamped(500, 30000),
+  playbackSpeed: numClamped(0.2, 3),
   videoFilter: str,
   visualization: obj(VISUALIZATION_FIELDS)
 };
@@ -157,20 +160,20 @@ const DOWNLOAD_FIELDS: Record<string, Sanitizer> = {
   defaultVideoQuality: enumOf(['best', '2160p', '1440p', '1080p', '720p', '480p']),
   defaultVideoContainer: enumOf(['mp4', 'mkv', 'webm']),
   defaultCover: enumOf(['thumbnail', 'none', 'frame', 'clip']),
-  defaultCoverFrameTime: num,
-  defaultCoverClipStart: num,
-  defaultCoverClipEnd: num,
+  defaultCoverFrameTime: numClamped(0, 3600),
+  defaultCoverClipStart: numClamped(0, 3600),
+  defaultCoverClipEnd: numClamped(0, 3600),
   defaultCoverClipFormat: enumOf(['webm', 'mp4']),
   filenameTemplate: str,
-  maxConcurrent: num,
+  maxConcurrent: numClamped(1, 20),
   autoDownloadSubscriptions: bool,
   hashFiles: bool,
   smartMode: bool,
   defaultSubs: bool,
   defaultSubsLangs: str,
   nightScheduleEnabled: bool,
-  nightScheduleStart: num,
-  nightScheduleEnd: num,
+  nightScheduleStart: numClamped(0, 23),
+  nightScheduleEnd: numClamped(0, 23),
   autoAddDownloadFolder: bool
 };
 
@@ -178,14 +181,14 @@ const PROXY_FIELDS: Record<string, Sanitizer> = {
   enabled: bool,
   type: enumOf(['http', 'https', 'socks5']),
   host: str,
-  port: num,
+  port: numClamped(1, 65535),
   username: str,
   password: str
 };
 
 const NETWORK_FIELDS: Record<string, Sanitizer> = {
   proxy: obj(PROXY_FIELDS),
-  downloadSpeedLimit: num,
+  downloadSpeedLimit: numClamped(0, 1000000),
   userAgent: str
 };
 
@@ -264,7 +267,7 @@ const TOP_LEVEL: Record<string, Sanitizer> = {
 
 export const SETTINGS_ALLOWED_KEYS: readonly string[] = Object.freeze(Object.keys(TOP_LEVEL));
 
-export interface SanitizedSettings {
+interface SanitizedSettings {
   sanitized: Partial<AppSettings>;
   droppedKeys: string[];
 }

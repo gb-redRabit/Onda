@@ -10,7 +10,9 @@ try {
 const ALLOWED_SEND_CHANNELS = new Set<string>([
   'audio-pip:showMain',
   'audio-pip:action',
-  'audio-pip:progressClick'
+  'audio-pip:progressClick',
+  'audio-pip:unpeek',
+  'audio-pip:peekDelay'
 ]);
 
 const ALLOWED_RECEIVE_CHANNELS = new Set<string>([

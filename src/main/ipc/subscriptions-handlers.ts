@@ -20,7 +20,7 @@ import {
 import { setDownloadCompletedHandler } from '../downloads/download-manager';
 import type { IpcSubscription, IpcSubscriptionCheckResult } from '../../shared/types/ipc';
 
-export function getSubscriptionsFile(): string {
+function getSubscriptionsFile(): string {
   return join(app.getPath('userData'), 'subscriptions.json');
 }
 

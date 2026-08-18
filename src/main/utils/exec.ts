@@ -1,6 +1,6 @@
 import { spawn } from 'child_process';
 
-export interface RunCommandOptions {
+interface RunCommandOptions {
   timeout?: number;
   cwd?: string;
 }

@@ -23,15 +23,17 @@ const {
   nextTrackName,
   nextTrackArtist,
   mode,
-  hover,
+  edge,
+  peeked,
+  pipAlpha,
   fmt,
   progressPct,
   volPct,
   volLabel,
   isVideoCover,
   videoCoverSrc,
-  pipAlpha,
   showMain,
+  onBackgroundClick,
   send,
   onProgressClick,
   onVolumeInput,
@@ -41,14 +43,15 @@ const {
 
 <template>
   <div
+    v-show="!(peeked && mode === 'w')"
     class="fixed inset-0 z-0 transition-opacity duration-300 select-none bg-bg-base"
     :style="{ opacity: pipAlpha }"
   ></div>
 
   <div
-    class="relative z-10 flex flex-col w-full h-full select-none"
-    @mouseenter="hover = true"
-    @mouseleave="hover = false"
+    v-show="!(peeked && mode === 'w')"
+    class="relative z-10 flex flex-col w-full h-full select-none pip-fade-in"
+    @click="onBackgroundClick"
     @dblclick="showMain"
   >
     <!-- Minimal -->
@@ -171,6 +174,7 @@ const {
       :fmt="fmt"
       :current-time="currentTime"
       :duration="duration"
+      :progress-pct="progressPct"
       :shuffle="shuffle"
       :repeat="repeat"
       :is-playing="isPlaying"
@@ -181,34 +185,46 @@ const {
       :send="send"
       :select-eq-preset="selectEqPreset"
       :set-canvas="viz.setCanvas"
+      @select="send"
+      @seek="onProgressClick"
     />
 
     <!-- Wide -->
-    <PipModeWide
-      v-else
-      :track-name="trackName"
-      :fmt="fmt"
-      :current-time="currentTime"
-      :duration="duration"
-      :shuffle="shuffle"
-      :repeat="repeat"
-      :is-playing="isPlaying"
-      :eq-preset="eqPreset"
-      :volume="volume"
-      :vol-pct="volPct"
-      :vol-label="volLabel"
-      :send="send"
-      :select-eq-preset="selectEqPreset"
-    />
+    <div v-else class="absolute inset-x-0 h-9">
+      <PipModeWide
+        :track-name="trackName"
+        :fmt="fmt"
+        :current-time="currentTime"
+        :duration="duration"
+        :shuffle="shuffle"
+        :repeat="repeat"
+        :is-playing="isPlaying"
+        :eq-preset="eqPreset"
+        :volume="volume"
+        :vol-pct="volPct"
+        :vol-label="volLabel"
+        :send="send"
+        :select-eq-preset="selectEqPreset"
+        @select="send"
+      />
+    </div>
   </div>
 
   <div
-    class="fixed bottom-0 left-0 right-0 h-0.75 bg-bg-hover cursor-pointer z-20 hover:h-1.5 hover:bg-bg-active transition-all duration-150"
-    @click="onProgressClick"
+    class="fixed left-0 right-0 z-20"
+    :class="edge === 'bottom' ? 'top-0' : (peeked ? 'bottom-0' : 'top-0')"
   >
     <div
-      class="h-full bg-accent-base w-0 rounded-r transition-[width]"
-      :style="{ width: progressPct + '%' }"
-    ></div>
+      class="w-full h-3 cursor-pointer flex"
+      :class="edge === 'bottom' ? 'items-start' : peeked ? 'items-end' : 'items-start'"
+      @click="onProgressClick"
+    >
+      <div class="w-full h-0.75 bg-bg-hover">
+        <div
+          class="h-full bg-accent-base rounded-r transition-[width]"
+          :style="{ width: progressPct + '%' }"
+        ></div>
+      </div>
+    </div>
   </div>
 </template>

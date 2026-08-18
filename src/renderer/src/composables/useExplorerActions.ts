@@ -10,7 +10,7 @@ import type { MediaFile } from '@renderer/types/media';
 import { buildMediaFile } from '@renderer/utils/explorerMedia';
 import type { useRouter } from 'vue-router';
 
-export interface ExplorerActionsCtx {
+interface ExplorerActionsCtx {
   explorer: ReturnType<typeof useExplorerStore>;
   fileClipboard: ReturnType<typeof useClipboardStore>;
   player: ReturnType<typeof usePlayerStore>;

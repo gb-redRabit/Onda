@@ -8,7 +8,7 @@ export function usePipVisualizer(vizData: Ref<number[]>) {
   let vizPaused = false;
   let vizSmooth: number[] = Array(10).fill(0);
   let vizPeaks: number[] = Array(10).fill(0);
-  let cachedAccent = '#7c6aef';
+  let cachedAccent = '#8b7cf0';
   let barGeom: { x: number; bw: number }[] = [];
   let cachedW = 0;
   let cachedCount = 0;
@@ -165,7 +165,7 @@ export function usePipVisualizer(vizData: Ref<number[]>) {
   function updateAccent(): void {
     cachedAccent =
       getComputedStyle(document.documentElement).getPropertyValue('--color-accent-base').trim() ||
-      '#7c6aef';
+      '#8b7cf0';
   }
 
   onMounted(() => {

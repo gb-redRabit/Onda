@@ -1,6 +1,6 @@
 import { extname } from 'path';
 
-export interface DiskEntry {
+interface DiskEntry {
   name: string;
   mtimeMs: number;
 }

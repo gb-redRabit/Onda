@@ -6,7 +6,7 @@ import type { useSettingsStore } from '@renderer/stores/settings';
 import type { useUIStore } from '@renderer/stores/ui';
 import { useVideoPlayer } from '@renderer/composables/useVideoPlayer';
 
-export interface PlayerControlsCtx {
+interface PlayerControlsCtx {
   player: ReturnType<typeof usePlayerStore>;
   settings: ReturnType<typeof useSettingsStore>;
   ui: ReturnType<typeof useUIStore>;
@@ -35,7 +35,7 @@ export function usePlayerControls(ctx: PlayerControlsCtx) {
     const newVol = Math.max(0, Math.min(1, player.volume + delta));
     player.setVolume(newVol);
     vp.videoRef.value.volume = player.isMuted ? 0 : newVol;
-    showToast(`Glosnosc: ${Math.round(newVol * 100)}%`, 1200);
+    showToast(t('player.volume', { n: Math.round(newVol * 100) }), 1200);
   }
 
   function onSeek(time: number) {

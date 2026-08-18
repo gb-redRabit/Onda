@@ -2,13 +2,13 @@ import { watch } from 'vue';
 import type { AppearanceSettings } from '@renderer/types/settings';
 import { THEME_PALETTES } from '@renderer/utils/constants';
 
-export interface Rgb {
+interface Rgb {
   r: number;
   g: number;
   b: number;
 }
 
-export function hexToRgb(hex: string): Rgb | null {
+function hexToRgb(hex: string): Rgb | null {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : null;
 }
@@ -33,7 +33,7 @@ function buildCustomPalette(hex: string) {
     borderSubtle: light ? 'rgba(0,0,0,0.22)' : 'rgba(255,255,255,0.14)',
     fgBase: light ? '#1a1a2e' : '#e8e8f0',
     fgMuted: light ? '#4a4a60' : '#a0a0b8',
-    fgFaint: light ? '#8a8aa0' : '#6a6a84'
+    fgFaint: light ? '#8a8aa0' : '#7c7c9c'
   };
 }
 

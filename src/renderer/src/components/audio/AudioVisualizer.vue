@@ -17,21 +17,38 @@ const particles = ref<
   { x: number; y: number; vx: number; vy: number; size: number; alpha: number }[]
 >([]);
 
+let lastW = 0;
+let lastH = 0;
+let lastDpr = 0;
+let dataArray: Uint8Array | null = null;
+
 function draw() {
   if (!canvasRef.value || !analyserNode) return;
   const canvas = canvasRef.value;
   const ctx = canvas.getContext('2d')!;
-  const w = (canvas.width = canvas.clientWidth * window.devicePixelRatio);
-  const h = (canvas.height = canvas.clientHeight * window.devicePixelRatio);
-  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  const dpr = window.devicePixelRatio;
+  const w = canvas.clientWidth * dpr;
+  const h = canvas.clientHeight * dpr;
+
+  // Only resize backing store when dimensions actually change.
+  if (w !== lastW || h !== lastH || dpr !== lastDpr) {
+    canvas.width = w;
+    canvas.height = h;
+    ctx.scale(dpr, dpr);
+    lastW = w;
+    lastH = h;
+    lastDpr = dpr;
+  }
 
   const bufferLength = analyserNode.frequencyBinCount;
-  const dataArray = new Uint8Array(bufferLength);
-  analyserNode.getByteFrequencyData(dataArray);
+  if (!dataArray || dataArray.length !== bufferLength) {
+    dataArray = new Uint8Array(bufferLength);
+  }
+  analyserNode.getByteFrequencyData(dataArray as Uint8Array<ArrayBuffer>);
 
   const cw = w / window.devicePixelRatio;
   const ch = h / window.devicePixelRatio;
-  const prim = settings.playback.visualization.primaryColor || '#7c6aef';
+  const prim = settings.playback.visualization.primaryColor || '#8b7cf0';
   const sec = settings.playback.visualization.secondaryColor || '#4f46e5';
   const sens = settings.playback.visualization.sensitivity || 0.5;
 
@@ -74,7 +91,7 @@ function draw() {
       ctx.fill();
     }
   } else if (style.value === 'wave') {
-    analyserNode.getByteTimeDomainData(dataArray);
+    analyserNode.getByteTimeDomainData(dataArray as Uint8Array<ArrayBuffer>);
     ctx.lineWidth = 2;
     ctx.strokeStyle = prim;
     ctx.beginPath();

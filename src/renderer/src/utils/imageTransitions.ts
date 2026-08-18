@@ -1,4 +1,4 @@
-export interface ImageTransitionStyle {
+interface ImageTransitionStyle {
   opacity: number;
   transform: string;
   filter: string;

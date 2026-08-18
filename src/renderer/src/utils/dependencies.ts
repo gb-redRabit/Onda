@@ -34,9 +34,7 @@ export const EMPTY_DEP_STATUS: DepStatus = {
   managed: false
 };
 
-export type DepTool = DepRow['tool'];
-
-export interface DepApi {
+interface DepApi {
   install: (() => Promise<{ success: boolean; error?: string; cancelled?: boolean }>) | undefined;
   check: (() => Promise<DepStatus>) | undefined;
   remove: (() => Promise<{ success: boolean; error?: string }>) | undefined;

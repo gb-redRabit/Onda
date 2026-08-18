@@ -24,8 +24,9 @@ export function usePlayerKeyboard(params: {
   skip: (seconds: number) => void;
   setSpeed: (speed: number) => void;
   toggleFullscreen: () => void;
+  t: (key: string, params?: Record<string, unknown>) => string;
 }) {
-  const { player, settings, vp, notify, skip, setSpeed, toggleFullscreen } = params;
+  const { player, settings, vp, notify, skip, setSpeed, toggleFullscreen, t } = params;
 
   function onKeydown(e: KeyboardEvent) {
     const target = e.target as HTMLElement;
@@ -38,7 +39,7 @@ export function usePlayerKeyboard(params: {
         e.preventDefault();
         if (player.pipActive) return;
         player.togglePlay();
-        notify(player.isPlaying ? 'Odtwarzanie' : 'Wstrzymano', 1000);
+        notify(player.isPlaying ? t('player.playing') : t('player.paused'), 1000);
         break;
       case 'ArrowLeft':
         e.preventDefault();
@@ -54,7 +55,7 @@ export function usePlayerKeyboard(params: {
           const newVol = Math.min(1, player.volume + 0.05);
           player.setVolume(newVol);
           audioEngine.setVideoVolume(player.isMuted ? 0 : newVol);
-          notify(`Glosnosc: ${Math.round(newVol * 100)}%`, 1200);
+          notify(t('player.volume', { n: Math.round(newVol * 100) }), 1200);
         }
         break;
       case 'ArrowDown':
@@ -63,14 +64,14 @@ export function usePlayerKeyboard(params: {
           const newVol = Math.max(0, player.volume - 0.05);
           player.setVolume(newVol);
           audioEngine.setVideoVolume(player.isMuted ? 0 : newVol);
-          notify(`Glosnosc: ${Math.round(newVol * 100)}%`, 1200);
+          notify(t('player.volume', { n: Math.round(newVol * 100) }), 1200);
         }
         break;
       case 'm':
         e.preventDefault();
         player.toggleMute();
         notify(
-          player.isMuted ? 'Wyciszono' : `Glosnosc: ${Math.round(player.volume * 100)}%`,
+          player.isMuted ? t('player.muted') : t('player.volume', { n: Math.round(player.volume * 100) }),
           1200
         );
         break;

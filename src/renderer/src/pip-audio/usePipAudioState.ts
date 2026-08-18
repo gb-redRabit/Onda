@@ -3,14 +3,16 @@ import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
 import { formatDuration } from '@renderer/utils/formatters';
 import { EQUALIZER_PRESETS, EQUALIZER_PRESET_LABELS } from '@renderer/utils/constants';
 
-export interface PipUpdate {
+interface PipUpdate {
   mode?: string;
+  edge?: 'top' | 'bottom' | null;
+  peeked?: boolean;
   state?: PipState;
   opacity?: number;
   cssVars?: Record<string, string>;
 }
 
-export interface PipState {
+interface PipState {
   trackName: string;
   artist: string;
   coverData: string | null;
@@ -34,7 +36,7 @@ export const EQ_PRESETS = Object.keys(EQUALIZER_PRESETS).map((id) => ({
   label: EQUALIZER_PRESET_LABELS[id] || id
 }));
 
-export interface PipAudioHandlers {
+interface PipAudioHandlers {
   updateAccent: () => void;
 }
 
@@ -57,8 +59,9 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
   const nextTrackName = ref('');
   const nextTrackArtist = ref('');
   const mode = ref<'m' | 'd' | 'x' | 'w'>('m');
+  const edge = ref<'top' | 'bottom' | null>(null);
+  const peeked = ref(false);
   const bgAlpha = ref(0.85);
-  const hover = ref(false);
 
   const fmt = formatDuration;
 
@@ -76,11 +79,17 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
 
   const pipAlpha = computed(() => {
     const a = bgAlpha.value;
-    return hover.value ? 0.92 : Math.min(0.85, a * 0.65);
+    return Math.min(0.85, a * 0.65);
   });
 
   function showMain() {
     api?.send('audio-pip:showMain');
+  }
+
+  function onBackgroundClick(e: MouseEvent) {
+    const t = e.target as HTMLElement;
+    if (t.closest('button, input, video, img')) return;
+    showMain();
   }
 
   function send(action: string) {
@@ -111,6 +120,8 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
   }
 
   let cleanup: (() => void) | null = null;
+  let revealTimer: ReturnType<typeof setTimeout> | null = null;
+  const HOVER_REVEAL_MS = 300;
 
   onMounted(() => {
     if (!api) return;
@@ -121,6 +132,8 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
         mode.value =
           d.mode === 'max' ? 'x' : d.mode === 'medium' ? 'd' : d.mode === 'wide' ? 'w' : 'm';
       }
+      if (d.edge !== undefined) edge.value = d.edge ?? null;
+      if (d.peeked !== undefined) peeked.value = d.peeked;
       if (d.state) {
         const s = d.state;
         trackName.value = s.trackName || '—';
@@ -150,10 +163,29 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
       applyCssVars(args[0] as Record<string, string>);
       handlers.updateAccent();
     });
+    const onMouseOver = () => {
+      if (revealTimer) clearTimeout(revealTimer);
+      revealTimer = setTimeout(() => {
+        revealTimer = null;
+        api?.send('audio-pip:unpeek');
+      }, HOVER_REVEAL_MS);
+    };
+    const onMouseOut = (e: MouseEvent) => {
+      if (revealTimer) {
+        clearTimeout(revealTimer);
+        revealTimer = null;
+      }
+      if (!e.relatedTarget) api?.send('audio-pip:peekDelay');
+    };
+    window.addEventListener('mouseover', onMouseOver);
+    window.addEventListener('mouseout', onMouseOut);
     cleanup = () => {
       cleanup1();
       cleanup2();
       cleanup3();
+      if (revealTimer) clearTimeout(revealTimer);
+      window.removeEventListener('mouseover', onMouseOver);
+      window.removeEventListener('mouseout', onMouseOut);
     };
   });
 
@@ -179,8 +211,9 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
     nextTrackName,
     nextTrackArtist,
     mode,
+    edge,
+    peeked,
     bgAlpha,
-    hover,
     fmt,
     progressPct,
     volPct,
@@ -189,6 +222,7 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
     videoCoverSrc,
     pipAlpha,
     showMain,
+    onBackgroundClick,
     send,
     onProgressClick,
     onVolumeInput,

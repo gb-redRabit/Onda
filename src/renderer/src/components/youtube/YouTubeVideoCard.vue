@@ -92,7 +92,7 @@ function openInWindow() {
         </div>
       </button>
       <button
-        class="absolute bottom-1.5 left-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 rounded-lg bg-black/70 text-white text-[10px] hover:bg-black/90 disabled:opacity-60"
+        class="absolute bottom-1.5 left-1.5 opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 rounded-lg bg-black/70 text-white text-[10px] hover:bg-black/90 disabled:opacity-60"
         :title="$t('youtube.addToQueue')"
         :disabled="state !== null"
         @click.stop="emit('queue', props.video)"

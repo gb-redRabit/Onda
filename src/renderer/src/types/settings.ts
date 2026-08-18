@@ -64,7 +64,7 @@ export interface AppearanceSettings {
 
 export type VisualizationMode = 'circle' | 'bars' | 'particles' | 'wave' | 'radial' | 'none';
 
-export interface VisualizationSettings {
+interface VisualizationSettings {
   mode: VisualizationMode;
   primaryColor: string;
   secondaryColor: string;
@@ -138,7 +138,7 @@ export interface ApiKeySettings {
   keys: ApiKeyEntry[];
 }
 
-export interface ApiKeyEntry {
+interface ApiKeyEntry {
   id: string;
   name: string;
   service: string;

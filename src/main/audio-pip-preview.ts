@@ -102,17 +102,15 @@ export class AudioPipPreview {
   }
 
   private getModeSize(): { width: number; height: number } {
+    const wa = screen.getPrimaryDisplay().workAreaSize;
+    const w = wa && Number.isFinite(wa.width) ? wa.width : 1280;
     switch (this.mode) {
       case 'medium':
         return { width: 400, height: 100 };
-      case 'max': {
-        const display = screen.getPrimaryDisplay().workAreaSize;
-        return { width: display.width, height: 100 };
-      }
-      case 'wide': {
-        const display = screen.getPrimaryDisplay().workAreaSize;
-        return { width: display.width, height: 36 };
-      }
+      case 'max':
+        return { width: w, height: 100 };
+      case 'wide':
+        return { width: w, height: 36 };
       default:
         return { width: 280, height: 36 };
     }

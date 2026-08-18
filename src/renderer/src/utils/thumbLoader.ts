@@ -1,9 +1,9 @@
 export const thumbTasks: (() => void)[] = [];
-export let thumbActive = 0;
-export const THUMB_MAX = 3;
+let thumbActive = 0;
+const THUMB_MAX = 3;
 const CACHE_MAX = 500;
 export const thumbCache = new Map<string, string>();
-export const iconCache = new Map<string, string>();
+const iconCache = new Map<string, string>();
 const thumbAccessOrder: string[] = [];
 const iconAccessOrder: string[] = [];
 

@@ -226,7 +226,13 @@ async function onExport() {
     success: boolean;
     canceled?: boolean;
   };
-  if (!res.canceled) showToast(t('sources.exportOk'), res.success);
+  if (!res.canceled) {
+    if (res.success) {
+      showToast(t('sources.exportOk'), true);
+    } else {
+      showToast(t('sources.toastFailed', { err: t('sources.importSources') }), false);
+    }
+  }
 }
 
 async function onImport() {
@@ -240,7 +246,7 @@ async function onImport() {
       await sources.loadSources();
       showToast(t('sources.importOk', { n: res.count ?? 0 }));
     } else {
-      showToast(t('sources.toastFailed', { err: 'import' }), false);
+      showToast(t('sources.toastFailed', { err: t('sources.importSources') }), false);
     }
   }
 }
@@ -429,7 +435,7 @@ const isAuthError = computed(
             class="shrink-0 p-2 rounded-lg text-fg-muted hover:bg-bg-hover transition-colors disabled:opacity-50"
             :title="$t('sources.downloadAll')"
             :disabled="sources.loading || downloadingAll"
-            @click="onDownloadAll(sources.items)"
+            @click="onDownloadAll(displayItems)"
           >
             <Loader2 v-if="downloadingAll" :size="14" class="animate-spin" />
             <Download v-else :size="14" />
@@ -507,6 +513,20 @@ const isAuthError = computed(
                 @preview="onItemClick($event)"
                 @download="onDownload"
               />
+            </div>
+            <div
+              v-else-if="sources.loading && !sources.items.length"
+              class="h-full flex flex-col items-center justify-center gap-2 text-fg-faint"
+            >
+              <Loader2 :size="32" class="animate-spin opacity-50" />
+              <p class="text-sm">{{ $t('sources.refresh') }}...</p>
+            </div>
+            <div
+              v-else-if="displayItems.length === 0 && filterText"
+              class="h-full flex flex-col items-center justify-center gap-2 text-fg-faint"
+            >
+              <Globe :size="32" class="opacity-50" />
+              <p class="text-sm">{{ $t('sources.noItems') }}</p>
             </div>
             <div
               v-else-if="!sources.loading"

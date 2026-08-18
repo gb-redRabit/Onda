@@ -113,9 +113,12 @@ async function runLibraryScan(
   // Hard cap so a renderer cannot flood the store with an unbounded scan.
   if (allFiles.length > MAX_SCANNED_FILES) allFiles.length = MAX_SCANNED_FILES;
 
-  store.set('libraryScanned', structuredClone({ files: allFiles, folderTypes }));
-
-  if (broadcast) broadcastToAllWindows('library:updated');
+  // Only persist if the scan completed (not aborted/cancelled).  Aborting
+  // mid-scan would write an incomplete list and effectively wipe the library.
+  if (!signal.aborted) {
+    store.set('libraryScanned', structuredClone({ files: allFiles, folderTypes }));
+    if (broadcast) broadcastToAllWindows('library:updated');
+  }
 
   logger.info('library', `scan completed: ${allFiles.length} files`);
   return { count: allFiles.length, folderTypes };
@@ -296,14 +299,19 @@ export function registerLibraryHandlers(): void {
   });
 
   // File watcher: re-scan (incremental) when media files change on disk, then
-  // broadcast so the renderer refreshes.
+  // broadcast so the renderer refreshes. Uses the same activeScanController so
+  // a user-initiated scan can cancel a watcher scan and vice-versa.
   setLibraryWatcherScan(async () => {
     if (activeScanController) activeScanController.abort();
     if (currentLibraryFolders.length === 0) return;
+    const controller = new AbortController();
+    activeScanController = controller;
     try {
-      await runLibraryScan(currentLibraryFolders, new AbortController().signal, undefined, true);
+      await runLibraryScan(currentLibraryFolders, controller.signal, undefined, true);
     } catch (err) {
       logger.error('library', 'watcher re-scan failed', err);
+    } finally {
+      if (activeScanController === controller) activeScanController = null;
     }
   });
 }

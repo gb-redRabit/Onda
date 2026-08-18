@@ -11,6 +11,64 @@ import { runCommand } from '../utils/exec';
 import { resolveBin } from '../binaries';
 import { logger } from '../../shared/logger';
 
+// Cover cache map is persisted to its own JSON file instead of the encrypted
+// electron-store to avoid rewriting the entire config on every cover save.
+let coverMapFile: string | null = null;
+function getCoverMapFile(): string {
+  if (!coverMapFile) {
+    try {
+      coverMapFile = join(app.getPath('userData'), 'cover-cache-map.json');
+    } catch {
+      coverMapFile = join(os.tmpdir(), 'onda', 'cover-cache-map.json');
+    }
+  }
+  return coverMapFile;
+}
+let coverMapData: Record<string, { cacheFile: string; mtime: number }> | null = null;
+let coverMapWriteLock: Promise<void> | null = null;
+
+async function readCoverMap(): Promise<Record<string, { cacheFile: string; mtime: number }>> {
+  if (coverMapData) return coverMapData;
+  try {
+    const raw = await readFile(getCoverMapFile(), 'utf-8');
+    coverMapData = JSON.parse(raw);
+  } catch {
+    coverMapData = {};
+    // Migrate from electron-store if the file doesn't exist yet
+    try {
+      const store = await getStore();
+      const legacy = store.get(COVER_CACHE_MAP_KEY) as
+        | Record<string, { cacheFile: string; mtime: number }>
+        | undefined;
+      if (legacy && Object.keys(legacy).length > 0) {
+        coverMapData = legacy;
+        await writeCoverMap(coverMapData);
+        store.set(COVER_CACHE_MAP_KEY, undefined);
+      }
+    } catch {
+      // migration failed — start fresh
+    }
+  }
+  return coverMapData!;
+}
+
+async function writeCoverMap(
+  data: Record<string, { cacheFile: string; mtime: number }>
+): Promise<void> {
+  while (coverMapWriteLock) await coverMapWriteLock;
+  let resolveLock: () => void;
+  coverMapWriteLock = new Promise((r) => {
+    resolveLock = r;
+  });
+  try {
+    await writeFile(getCoverMapFile(), JSON.stringify(data), 'utf-8');
+    coverMapData = data;
+  } finally {
+    coverMapWriteLock = null;
+    resolveLock!();
+  }
+}
+
 // The electron-store encryption key is persisted as a random per-install value
 // instead of being derived from the hostname (which is public and predictable).
 const STORE_KEY_FILE = 'onda-store-key';
@@ -103,7 +161,7 @@ export function getTempDir(): string {
   return join(os.tmpdir(), 'onda-covers');
 }
 
-export interface CachedCover {
+interface CachedCover {
   result: { type: 'video' | 'image' | null; data: string | null };
   mtimeMs: number;
   checkedAt: number;
@@ -115,7 +173,7 @@ const COVER_STAT_TTL_MS = 60_000;
 
 export const coverResultCache = new Map<string, CachedCover>();
 export const durationCache = new Map<string, { duration: number; mtimeMs: number }>();
-export const coverCacheLocks = new Map<string, Array<() => void>>();
+const coverCacheLocks = new Map<string, Array<() => void>>();
 
 const CACHE_MAX_SIZE = 5000;
 
@@ -143,26 +201,22 @@ export function cacheSet<T>(
 export const PERSISTENT_COVER_DIR = join(getTempDir(), 'persistent');
 export const COVER_CACHE_MAP_KEY = 'coverCacheMap';
 
-export function hashPath(filePath: string): string {
+function hashPath(filePath: string): string {
   return createHash('md5').update(filePath.toLowerCase()).digest('hex');
 }
 
-export async function getPersistentCover(
+async function getPersistentCover(
   filePath: string
 ): Promise<{ type: 'video' | 'image' | null; data: string | null } | null> {
   try {
-    const store = await getStore();
-    const cacheMap = store.get(COVER_CACHE_MAP_KEY) as
-      Record<string, { cacheFile: string; mtime: number }> | undefined;
-    const entry = cacheMap?.[filePath];
+    const cacheMap = await readCoverMap();
+    const entry = cacheMap[filePath];
     if (!entry) return null;
 
     const s = await stat(filePath).catch(() => null);
     if (!s || s.mtimeMs > entry.mtime) {
-      if (entry && cacheMap) {
-        delete cacheMap[filePath];
-        store.set(COVER_CACHE_MAP_KEY, cacheMap);
-      }
+      delete cacheMap[filePath];
+      await writeCoverMap(cacheMap);
       return null;
     }
 
@@ -181,9 +235,7 @@ export async function getPersistentCover(
   }
 }
 
-let saveMapLock: Promise<void> | null = null;
-
-export async function savePersistentCover(
+async function savePersistentCover(
   filePath: string,
   binary: Buffer,
   ext: string
@@ -195,25 +247,10 @@ export async function savePersistentCover(
     const cachePath = join(PERSISTENT_COVER_DIR, cacheFile);
     await writeFile(cachePath, binary);
 
-    while (saveMapLock) {
-      await saveMapLock;
-    }
-    let resolveLock: () => void;
-    saveMapLock = new Promise((r) => {
-      resolveLock = r;
-    });
-    try {
-      const s = await stat(filePath).catch(() => null);
-      const store = await getStore();
-      const cacheMap =
-        (store.get(COVER_CACHE_MAP_KEY) as Record<string, { cacheFile: string; mtime: number }>) ||
-        {};
-      cacheMap[filePath] = { cacheFile, mtime: s?.mtimeMs ?? Date.now() };
-      store.set(COVER_CACHE_MAP_KEY, structuredClone(cacheMap));
-    } finally {
-      saveMapLock = null;
-      resolveLock!();
-    }
+    const cacheMap = await readCoverMap();
+    const s = await stat(filePath).catch(() => null);
+    cacheMap[filePath] = { cacheFile, mtime: s?.mtimeMs ?? Date.now() };
+    await writeCoverMap(cacheMap);
   } catch (e) {
     logger.warn('cover', `savePersistentCover failed for ${filePath}`, e);
   }
@@ -389,7 +426,7 @@ export async function extractAndCacheCover(
   }
 }
 
-export async function getCachedCover(
+async function getCachedCover(
   filePath: string
 ): Promise<{ type: 'video' | 'image' | null; data: string | null } | null> {
   const memCached = coverResultCache.get(filePath);
@@ -426,9 +463,7 @@ export async function getCachedCover(
 (async () => {
   try {
     const { readdir, rm } = await import('fs/promises');
-    const store = await getStore();
-    const cacheMap =
-      (store.get(COVER_CACHE_MAP_KEY) as Record<string, { cacheFile: string }>) || {};
+    const cacheMap = await readCoverMap();
     const referenced = new Set(Object.values(cacheMap).map((v) => v.cacheFile));
     const entries = await readdir(PERSISTENT_COVER_DIR).catch(() => []);
     for (const entry of entries) {

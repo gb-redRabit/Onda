@@ -1,7 +1,7 @@
-export type SubtitleFormat = 'srt' | 'vtt' | 'ass';
-export type SubtitleMode = 'manual' | 'auto' | 'best';
+type SubtitleFormat = 'srt' | 'vtt' | 'ass';
+type SubtitleMode = 'manual' | 'auto' | 'best';
 
-export interface SubtitleArgsInput {
+interface SubtitleArgsInput {
   langs: string;
   format?: SubtitleFormat;
   mode?: SubtitleMode;

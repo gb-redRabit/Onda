@@ -48,7 +48,7 @@ const AUDIO_QUALITY_MAP: Record<string, string> = {
   low: '9'
 };
 
-export function mapFilenameTemplate(template: string): string {
+function mapFilenameTemplate(template: string): string {
   const tokens: Record<string, string> = {
     '{title}': '%(title)s',
     '{artist}': '%(artist,uploader,channel)s',
@@ -63,7 +63,7 @@ export function mapFilenameTemplate(template: string): string {
   return out.trim() || '%(title)s';
 }
 
-export function parseYtDlpProgress(
+function parseYtDlpProgress(
   line: string
 ): { progress?: number; speed?: string; eta?: string; destination?: string } | null {
   const dest = line.match(/\[(?:download|ExtractAudio|Merger)\] Destination: (.+)/);
@@ -80,7 +80,7 @@ export function parseYtDlpProgress(
   };
 }
 
-export function buildFormatSelector(quality: string, kind: 'audio' | 'video'): string {
+function buildFormatSelector(quality: string, kind: 'audio' | 'video'): string {
   if (kind === 'audio') return 'bestaudio/best';
   if (quality === 'best' || quality === 'bestaudio') return 'bestvideo+bestaudio/best';
   const height = quality.replace(/p$/, '');
@@ -165,6 +165,16 @@ function markQueueDirty(): void {
   }, 400);
 }
 
+// Immediately persists the queue to disk, cancelling any pending debounce.
+// Called on app quit to avoid losing the last ~0.5s of status changes.
+export function flushQueueNow(): void {
+  if (queuePersistTimer) {
+    clearTimeout(queuePersistTimer);
+    queuePersistTimer = null;
+  }
+  void persistJobs(queueFilePath(), collectPersistableJobs());
+}
+
 // Restores the queue from disk after a restart. Interrupted downloads become
 // paused (never completed) so the user can resume them via `--continue`; pending
 // jobs are re-queued and pumped again.
@@ -210,7 +220,7 @@ function reportCompleted(job: Job): void {
   }
 }
 
-export function snapshot(task: IpcDownloadTask): IpcDownloadTask {
+function snapshot(task: IpcDownloadTask): IpcDownloadTask {
   return {
     id: task.id,
     url: task.url,
@@ -256,6 +266,7 @@ export function snapshot(task: IpcDownloadTask): IpcDownloadTask {
 }
 
 const knownStatuses = new Map<string, string>();
+const jobAbortControllers = new Map<string, AbortController>();
 
 function persist(job: Job): void {
   const copy = snapshot(job);
@@ -405,6 +416,10 @@ async function runJob(job: Job): Promise<void> {
       persist(job);
       logger.info('downloads', `retrying ${job.id} (attempt ${attempt + 1}/${MAX_RETRY_ATTEMPTS})`);
       await new Promise((r) => setTimeout(r, RETRY_BASE_MS * 2 ** (attempt - 1)));
+      // Re-check status after the backoff — the user may have paused/cancelled
+      // during the sleep (job.child is undefined so pause/cancel can't kill it).
+      const postSleep = job.status as IpcDownloadTask['status'];
+      if (postSleep === 'cancelled' || postSleep === 'paused') return;
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -424,12 +439,11 @@ async function runJob(job: Job): Promise<void> {
 // Direct-URL (source) download: streams the file with progress, then falls back
 // to the shared postProcess (library sync, hash). No yt-dlp involved.
 async function runHttpAttempt(
-  job: Job
+  job: Job,
+  signal?: AbortSignal
 ): Promise<{ finishedOk: boolean; errorCode?: IpcDownloadErrorCode }> {
   const dir = resolveOutputDir(job);
   await mkdir(dir, { recursive: true });
-  // The media server only serves allowed roots — grant the output dir so the
-  // downloaded file is playable straight away.
   void addAllowedRoot(dir);
   const destPath = join(dir, job.source?.fileName || deriveHttpFileName(job));
   job.outputPath = destPath;
@@ -441,6 +455,7 @@ async function runHttpAttempt(
       url: job.url,
       destPath,
       headers,
+      signal,
       onProgress: (p) => {
         if (job.status !== 'downloading') return;
         if (p.total && p.total > 0) {
@@ -464,9 +479,14 @@ async function runHttpAttempt(
     return { finishedOk: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    job.status = 'error';
-    job.error = redactSecrets(msg);
-    job.errorCode = classifyYtDlpError(msg);
+    // If the job was paused/cancelled (via AbortController), don't overwrite
+    // the status with 'error' — the caller already set it correctly.
+    const alreadyStopped = job.status === 'paused' || job.status === 'cancelled';
+    if (!alreadyStopped) {
+      job.status = 'error';
+      job.error = redactSecrets(msg);
+      job.errorCode = classifyYtDlpError(msg);
+    }
     persist(job);
     return { finishedOk: false, errorCode: job.errorCode };
   }
@@ -484,8 +504,12 @@ async function buildBaseArgs(job: Job): Promise<string[]> {
   // audio file and its animated-cover sibling land here.
   void addAllowedRoot(dir);
   const outputTemplate = join(dir, `${mapFilenameTemplate(job.filenameTemplate)}.%(ext)s`);
+  // Guard against option injection: a URL starting with "-" would be parsed
+  // as a yt-dlp flag.  Prepend "--" to end the options list, then validate.
+  if (!job.url.startsWith('https://') && !job.url.startsWith('http://')) {
+    throw new Error(`Invalid download URL: rejected non-http(s) scheme`);
+  }
   const base: string[] = [
-    job.url,
     '--newline',
     '--no-playlist',
     '--no-warnings',
@@ -565,6 +589,7 @@ async function buildBaseArgs(job: Job): Promise<string[]> {
   }
   base.push(...(await readProxyArgs()));
   base.push(...(await readSpeedLimitArgs()));
+  base.push('--', job.url);
   return base;
 }
 
@@ -577,7 +602,13 @@ async function runJobAttempt(
   base: string[]
 ): Promise<{ finishedOk: boolean; errorCode?: IpcDownloadErrorCode }> {
   if (job.source?.mode === 'http') {
-    return runHttpAttempt(job);
+    const ac = new AbortController();
+    jobAbortControllers.set(job.id, ac);
+    try {
+      return await runHttpAttempt(job, ac.signal);
+    } finally {
+      jobAbortControllers.delete(job.id);
+    }
   }
   const args = buildYtArgs(base, auth);
   // On Windows yt-dlp prints "Destination:" lines to stdout in the console
@@ -634,6 +665,7 @@ async function runJobAttempt(
       timedOut = true;
       job.status = 'error';
       job.error = 'Download timed out';
+      job.errorCode = 'network';
       persist(job);
       try {
         child.kill();
@@ -919,6 +951,16 @@ export function cancelDownloadJob(id: string): boolean {
     job.child.kill();
     return true;
   }
+  // HTTP-mode jobs have no child process — abort via AbortController.
+  if (job.status === 'downloading' && !job.child) {
+    const ac = jobAbortControllers.get(id);
+    if (ac) {
+      job.status = 'cancelled';
+      persist(job);
+      ac.abort();
+      return true;
+    }
+  }
   return false;
 }
 
@@ -940,6 +982,16 @@ export function pauseDownloadJob(id: string): boolean {
       /* already gone */
     }
     return true;
+  }
+  // HTTP-mode jobs — abort the stream via AbortController.
+  if (job.status === 'downloading' && !job.child) {
+    const ac = jobAbortControllers.get(id);
+    if (ac) {
+      job.status = 'paused';
+      persist(job);
+      ac.abort();
+      return true;
+    }
   }
   return false;
 }

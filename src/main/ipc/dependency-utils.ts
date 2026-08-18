@@ -3,7 +3,7 @@ import { existsSync } from 'fs';
 import { runCommand } from '../utils/exec';
 
 export type BinTool = 'ffmpeg' | 'ffprobe' | 'yt-dlp' | 'mkvextract';
-export type PkgManager = 'winget' | 'choco' | 'scoop' | 'brew' | 'apt' | 'dnf' | 'pacman';
+type PkgManager = 'winget' | 'choco' | 'scoop' | 'brew' | 'apt' | 'dnf' | 'pacman';
 
 export function toolFileName(tool: BinTool): string {
   const win = process.platform === 'win32';
@@ -15,14 +15,14 @@ export function ytdlpBinaryName(): string {
   return toolFileName('yt-dlp');
 }
 
-export function managedBinPath(binDir: string, tool: BinTool): string {
+function managedBinPath(binDir: string, tool: BinTool): string {
   return join(binDir, toolFileName(tool));
 }
 
 // Path to a binary bundled with the app (shipped in `resources/ffmpeg/` and
 // copied into `process.resourcesPath/ffmpeg` by electron-builder). Returns null
 // when not present.
-export function bundledBinPath(tool: BinTool, resourcesPath?: string): string | null {
+function bundledBinPath(tool: BinTool, resourcesPath?: string): string | null {
   if (typeof resourcesPath !== 'string' || !resourcesPath) return null;
   const p = join(resourcesPath, 'ffmpeg', toolFileName(tool));
   return existsSync(p) ? p : null;
@@ -30,7 +30,7 @@ export function bundledBinPath(tool: BinTool, resourcesPath?: string): string | 
 
 // electron's `process.resourcesPath` is only defined in the main process; read it
 // defensively so the dependency code also runs in plain Node (tests).
-export function currentResourcesPath(): string | undefined {
+function currentResourcesPath(): string | undefined {
   return (process as { resourcesPath?: string }).resourcesPath;
 }
 
@@ -66,7 +66,7 @@ export function ytdlpShaUrl(version: string = YTDLP_PINNED_VERSION): string {
 
 // BtbN force-updates its `latest` tag — pin this to a concrete `autobuild-…`
 // tag to avoid pulling a mutable release silently. See scripts/fetch-ffmpeg.mjs.
-export const FFMPEG_PINNED_VERSION = 'latest';
+const FFMPEG_PINNED_VERSION = 'latest';
 
 export function ffmpegDownloadUrl(
   platform: NodeJS.Platform = process.platform,
@@ -162,7 +162,7 @@ export async function resolveBinary(binDir: string, tool: BinTool): Promise<Reso
   return null;
 }
 
-export function installPackageName(tool: BinTool): string {
+function installPackageName(tool: BinTool): string {
   switch (tool) {
     case 'ffmpeg':
     case 'ffprobe':
@@ -181,14 +181,6 @@ async function commandExists(cmd: string): Promise<boolean> {
   } catch {
     return false;
   }
-}
-
-// Detect the best available package manager for a platform (Windows: winget → choco → scoop).
-export async function detectPkgManager(
-  platform: NodeJS.Platform = process.platform
-): Promise<PkgManager | null> {
-  const all = await detectPkgManagers(platform);
-  return all[0] ?? null;
 }
 
 const PKG_MANAGER_CMDS: Record<PkgManager, string> = {
@@ -230,7 +222,7 @@ export function inferPkgManager(binPath: string | null): PkgManager | null {
   return null;
 }
 
-export interface PkgCommand {
+interface PkgCommand {
   /** Full human-readable command line (for error messages / user hints). */
   cmd: string;
   /** argv array ready for spawn — no shell, no injection surface. */
@@ -321,16 +313,6 @@ export function pkgUninstallCommand(pkgManager: PkgManager, tool: BinTool): PkgC
 /** True when the manager's commands require elevated privileges (sudo -n). */
 export function needsSudo(pkgManager: PkgManager): boolean {
   return pkgManager === 'apt' || pkgManager === 'dnf' || pkgManager === 'pacman';
-}
-
-/** @deprecated use pkgInstallCommand() for spawn-ready argv. */
-export function pkgInstallCmd(pkgManager: PkgManager, tool: BinTool): string {
-  return pkgInstallCommand(pkgManager, tool).cmd;
-}
-
-/** @deprecated use pkgUninstallCommand() for spawn-ready argv. */
-export function pkgUninstallCmd(pkgManager: PkgManager, tool: BinTool): string {
-  return pkgUninstallCommand(pkgManager, tool).cmd;
 }
 
 export function getMkvExtractCandidates(): string[] {

@@ -16,7 +16,7 @@ const NON_RANDOM_TYPES = [
 
 const REST_STYLE = { opacity: 1, transform: 'translateX(0) scale3d(1,1,1)', filter: 'blur(0px)' };
 
-export interface ImageViewerTransitionDeps {
+interface ImageViewerTransitionDeps {
   files: Ref<FileItem[]>;
   currentIndex: Ref<number>;
   displaySrc: Ref<string>;

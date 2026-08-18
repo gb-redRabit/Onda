@@ -4,7 +4,7 @@ import { formatDuration } from '@renderer/utils/formatters';
 import type { usePipVideoSubtitle } from './usePipVideoSubtitle';
 import type { PipSubtitleData } from './usePipVideoSubtitle';
 
-export interface PipVideoRefs {
+interface PipVideoRefs {
   videoRef: Ref<HTMLVideoElement | null>;
   progressRef: Ref<HTMLDivElement | null>;
 }

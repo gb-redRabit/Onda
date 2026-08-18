@@ -51,7 +51,7 @@ export async function startLibraryWatcher(folders: string[]): Promise<void> {
   }
 }
 
-export function stopLibraryWatcher(): void {
+function stopLibraryWatcher(): void {
   if (debounceTimer) {
     clearTimeout(debounceTimer);
     debounceTimer = null;

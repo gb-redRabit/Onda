@@ -11,13 +11,6 @@ export interface YouTubeVideo {
   tags?: string[];
 }
 
-export interface YouTubeSearchResult {
-  items: YouTubeVideo[];
-  nextPageToken?: string;
-  prevPageToken?: string;
-  totalResults?: number;
-}
-
 export type YouTubeResolveKind = 'video' | 'playlist' | 'channel';
 
 export interface YouTubeResolvedItem {
@@ -30,7 +23,7 @@ export interface YouTubeResolvedItem {
   isPlayable?: boolean;
 }
 
-export interface YouTubeResolveMeta {
+interface YouTubeResolveMeta {
   channelId?: string;
   channelTitle?: string;
   totalItems?: number;
@@ -51,17 +44,14 @@ export interface YouTubeChannel {
   title: string;
   thumbnail: string;
   subscriberCount?: number;
-}
-
-export interface YouTubeChannelResult {
-  channel: YouTubeChannel;
-  items: YouTubeVideo[];
-  hasMore: boolean;
+  description?: string;
+  videoCount?: number;
+  bannerUrl?: string;
 }
 
 export type CoverStatus = 'none' | 'fetching' | 'embedded' | 'saved' | 'error';
 
-export type DownloadErrorCode =
+type DownloadErrorCode =
   | 'auth-required'
   | 'bot-block'
   | 'private'

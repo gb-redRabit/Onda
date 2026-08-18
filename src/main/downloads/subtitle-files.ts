@@ -8,7 +8,7 @@ export function isSubtitleFile(name: string): boolean {
 }
 
 // yt-dlp writes sidecar subtitles next to the media file as `{base}.{lang}.{ext}`.
-export function subtitleBaseOf(mediaPath: string): string {
+function subtitleBaseOf(mediaPath: string): string {
   return basename(mediaPath, extname(mediaPath));
 }
 

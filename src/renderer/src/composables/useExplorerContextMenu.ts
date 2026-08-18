@@ -8,7 +8,7 @@ import { isLibraryFolder } from '@renderer/utils/libraryFolders';
 import { IMAGE_EXTS, VIDEO_EXTS, AUDIO_EXTS } from '@shared/constants';
 import type { FileItem } from '@renderer/types/explorer';
 
-export interface ExplorerActionCtx {
+interface ExplorerActionCtx {
   explorer: ReturnType<typeof useExplorerStore>;
   fileClipboard: ReturnType<typeof useClipboardStore>;
   library: ReturnType<typeof useLibraryStore>;

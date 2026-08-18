@@ -203,14 +203,15 @@ export default {
     advanced: 'Zaawansowane',
     downloadSection: 'Pobieranie',
     downloadOutputDir: 'Katalog pobierania (ścieżka docelowa)',
-    downloadDefaultHint: 'Puste = domyślnie: {path} (katalog „api" pod ścieżką z ustawień Pobranych)',
+    downloadDefaultHint:
+      'Puste = domyślnie: {path} (katalog „api" pod ścieżką z ustawień Pobranych)',
     downloadFolder: 'Pobieraj do podfolderu o nazwie źródła',
     downloadFolderHint:
       'Włączone: pliki trafiają do podfolderu (np. {path}/nazwa-źródła). Wyłączone: pliki płasko w katalogu pobierania.',
     chooseFolder: 'Wybierz folder',
     downloadAll: 'Pobierz wszystkie',
     downloadAllRows: 'Pobierz wszystkie odcinki',
-    toastQueued: 'Dodano do kolejki pobierania',
+    toastQueued: 'Dodano do kolejki pobierania ({n})',
     toastQueuedSome: 'Dodano: {q}, błędy: {f}',
     toastFailed: 'Błąd: {err}',
     testSourceBtn: 'Testuj połączenie źródła',
@@ -245,43 +246,35 @@ export default {
       steps: [
         {
           title: 'Poziom 1 — Lista (katalog)',
-          body:
-            'Typ „Lista" pobiera tablicę elementów. Przykład:\nURL: https://jsonplaceholder.typicode.com/users\n„Co wyświetlać": name (tytuł), email (podtytuł)\n„Klucze przekazywane dalej": id → userId\n„Po kliknięciu otwiera poziom": wybierz poziom 2.'
+          body: 'Typ „Lista" pobiera tablicę elementów. Przykład:\nURL: https://jsonplaceholder.typicode.com/users\n„Co wyświetlać": name (tytuł), email (podtytuł)\n„Klucze przekazywane dalej": id → userId\n„Po kliknięciu otwiera poziom": wybierz poziom 2.'
         },
         {
           title: 'Poziom 2 — Lista (elementy powiązane)',
-          body:
-            'W URL używasz wartości z poprzedniego poziomu w nawiasach klamrowych: https://jsonplaceholder.typicode.com/users/«userId»/albums\n„Co wyświetlać": title\nKlucze przekazywane dalej: id → albumId\n„Po kliknięciu otwiera poziom": wybierz poziom 3.'
+          body: 'W URL używasz wartości z poprzedniego poziomu w nawiasach klamrowych: https://jsonplaceholder.typicode.com/users/«userId»/albums\n„Co wyświetlać": title\nKlucze przekazywane dalej: id → albumId\n„Po kliknięciu otwiera poziom": wybierz poziom 3.'
         },
         {
           title: 'Poziom 3 — Lista (liść: podgląd i pobieranie)',
-          body:
-            'https://jsonplaceholder.typicode.com/albums/«albumId»/photos\n„Co wyświetlać": title (tytuł), thumbnailUrl (miniaturka)\n„Pole pobierania": url — wtedy na kartach pojawia się przycisk Pobierz. Pole puste = tylko nawigacja, bez przycisku.'
+          body: 'https://jsonplaceholder.typicode.com/albums/«albumId»/photos\n„Co wyświetlać": title (tytuł), thumbnailUrl (miniaturka)\n„Pole pobierania": url — wtedy na kartach pojawia się przycisk Pobierz. Pole puste = tylko nawigacja, bez przycisku.'
         },
         {
           title: 'Typ „Strona" (szczegóły jednego obiektu)',
-          body:
-            'Gdy zapytanie zwraca JEDEN obiekt (nie tablicę), wybierz typ „Strona". Widok pokazuje okładkę i tytuł, a jeśli skonfigurujesz tabelę — poniżej pojawi się lista wierszy (np. odcinki).'
+          body: 'Gdy zapytanie zwraca JEDEN obiekt (nie tablicę), wybierz typ „Strona". Widok pokazuje okładkę i tytuł, a jeśli skonfigurujesz tabelę — poniżej pojawi się lista wierszy (np. odcinki).'
         },
         {
           title: 'Tabela (sekcja strony)',
-          body:
-            'Tabela to sekcja poziomu „Strona". Tryb „osobny endpoint": osobny URL zwracający tablicę, z kluczami strony w klamrach (np. /odcinki/«slug»). Tryb „pole w odpowiedzi": dot-path do tablicy w JSON-ie strony (np. episodes). Kliknięcie wiersza otwiera poziom dziecka z kontekstem strony + wiersza.'
+          body: 'Tabela to sekcja poziomu „Strona". Tryb „osobny endpoint": osobny URL zwracający tablicę, z kluczami strony w klamrach (np. /odcinki/«slug»). Tryb „pole w odpowiedzi": dot-path do tablicy w JSON-ie strony (np. episodes). Kliknięcie wiersza otwiera poziom dziecka z kontekstem strony + wiersza.'
         },
         {
           title: 'Placeholdery i kontekst',
-          body:
-            '«nazwa» w URL jest zastępowane wartością z kontekstu — surowych pól ostatniej odpowiedzi lub kluczy przekazanych dalej. Wielkość liter ma znaczenie: «slug» ≠ «SLUG». Dostępna jest notacja kropkowa: «a.b».\nWażne: kontekst powstaje po KLIKNIĘCIU karty elementu. Wybór poziomu z listy na górze nie ma kontekstu — zapytania z placeholderami nie zostaną wtedy poprawnie pobrane.'
+          body: '«nazwa» w URL jest zastępowane wartością z kontekstu — surowych pól ostatniej odpowiedzi lub kluczy przekazanych dalej. Wielkość liter ma znaczenie: «slug» ≠ «SLUG». Dostępna jest notacja kropkowa: «a.b».\nWażne: kontekst powstaje po KLIKNIĘCIU karty elementu. Wybór poziomu z listy na górze nie ma kontekstu — zapytania z placeholderami nie zostaną wtedy poprawnie pobrane.'
         },
         {
           title: 'Przyciski testów',
-          body:
-            '„Testuj" pokazuje podgląd odpowiedzi API dla poziomu — jeśli odpowiedź nie jest tablicą, ustaw „Ścieżka do listy" (Zaawansowane). „Testuj tabelę" testuje sekcję tabeli na przykładowej stronie (najpierw przetestuj stronę).'
+          body: '„Testuj" pokazuje podgląd odpowiedzi API dla poziomu — jeśli odpowiedź nie jest tablicą, ustaw „Ścieżka do listy" (Zaawansowane). „Testuj tabelę" testuje sekcję tabeli na przykładowej stronie (najpierw przetestuj stronę).'
         },
         {
           title: 'Paginacja (Zaawansowane)',
-          body:
-            '„Parametr strony" + „Strona startowa": stronicowanie liczbowe (page=1, 2, 3...). „Pole tokenu następnej strony": dla API kursorowych. „Zakres" (pole liczby elementów): generuje pozycje 1..N bez dodatkowych zapytań — przydatne, gdy API numeruje odcinki, ale nie udostępnia listy.'
+          body: '„Parametr strony" + „Strona startowa": stronicowanie liczbowe (page=1, 2, 3...). „Pole tokenu następnej strony": dla API kursorowych. „Zakres" (pole liczby elementów): generuje pozycje 1..N bez dodatkowych zapytań — przydatne, gdy API numeruje odcinki, ale nie udostępnia listy.'
         }
       ]
     }
@@ -311,6 +304,8 @@ export default {
     theme: 'Motyw',
     dark: 'Ciemny',
     light: 'Jasny',
+    midnight: 'Midnight',
+    spotify: 'Spotify',
     custom: 'Własny',
     customBackground: 'Własny kolor tła',
     accentColor: 'Kolor akcentu',
@@ -367,7 +362,8 @@ export default {
       thumbnail: 'Miniatura',
       none: 'Brak',
       frame: 'Klatka',
-      clip: 'Klip'
+      clip: 'Klip',
+      custom: 'Własna'
     },
     filenameTemplate: 'Szablon nazwy pliku',
     templatePresets: 'Gotowe szablony',
@@ -399,6 +395,7 @@ export default {
     profileNew: 'Nowy profil…',
     profileSaveCreate: 'Utwórz profil',
     profileSaveUpdate: 'Zapisz zmiany',
+    profileDelete: 'Usuń profil',
     profileNamePlaceholder: 'Nazwa profilu (np. Muzyka MP3 z okładką)',
     smartMode: 'Smart Mode',
     smartModeDesc:
@@ -532,6 +529,7 @@ export default {
     libUnknown: 'Nieznany',
     libRemove: 'Usuń',
     libProgress: 'Skanowanie...',
+    libScanError: 'Błąd skanowania biblioteki',
     libTotal: 'Łącznie:',
     libAddedNotif: 'Dodano folder do biblioteki',
     libAddError: 'Błąd dodawania folderu',
@@ -566,6 +564,10 @@ export default {
     noMedia: 'Nie załadowano mediów',
     tracks: 'utworów',
     playlists: 'playlist',
+    playlistsLabel: 'Playlisty',
+    audioFiles: 'Pliki audio',
+    videoFiles: 'Pliki wideo',
+    images: 'Obrazy',
     downloads: 'pobrań',
     results: 'wyników',
     items: 'elementów',
@@ -591,6 +593,9 @@ export default {
     search: 'Szukaj',
     discover: 'Znajdź muzykę, filmy i więcej',
     searchHeading: 'Szukaj na YouTube',
+    resultsCount: '{count} wyników',
+    textFiles: 'Pliki tekstowe',
+    allFiles: 'Wszystkie pliki',
     views: 'wyświetleń',
     resolve: 'Rozpoznaj',
     resolving: 'Rozpoznawanie...',
@@ -612,8 +617,11 @@ export default {
     openChannel: 'Otwórz kanał',
     loadMore: 'Wczytaj więcej',
     subscribers: 'subskrybentów',
+    videos: 'filmów',
     videosTab: 'Wideo',
     shortsTab: 'Shorts',
+    sortLatest: 'Najnowsze',
+    sortOldest: 'Najstarsze',
     latest: 'Najnowsze',
     allVideos: 'Wszystkie wideo',
     noVideos: 'Brak wideo',
@@ -634,6 +642,7 @@ export default {
     openInWindow: 'Otwórz w osobnym oknie',
     subscribeChannel: 'Subskrybuj',
     unsubscribeChannel: 'Anuluj subskrypcję',
+    unsubscribeChannelConfirm: 'Anulować subskrypcję? Preferencje powiadomień zostaną utracone.',
     downloaded: 'Pobrane',
     downloading: 'Pobieranie…',
     queuing: 'Dodawanie…',
@@ -672,6 +681,7 @@ export default {
     scopeAllDesc: 'Pobierz też cały dotychczasowy katalog kanału od razu',
     prefSection: 'Preferencje pobierania',
     prefSectionHint: 'Puste pola = użyj domyślnych wartości z Ustawienia → Pobieranie',
+    prefsSummary: 'Podsumowanie preferencji',
     downloadAll: 'Pobierz całość',
     downloadAllDesc: 'Pobierz też cały dotychczasowy katalog kanału od razu',
     downloadAllTitle: 'Dodaj wszystkie wideo z tego kanału do kolejki',
@@ -727,6 +737,8 @@ export default {
     nowPlaying: 'Teraz odtwarzane',
     playing: 'Odtwarzanie',
     paused: 'Wstrzymano',
+    volume: 'Głośność: {n}%',
+    muted: 'Wyciszono',
     speedTitle: 'Prędkość odtwarzania',
     speedCustom: 'Własna',
     speedReset: 'Resetuj (1x)',
@@ -736,6 +748,7 @@ export default {
     title: 'Eksplorator',
     thisComputer: 'Ten komputer',
     folderEmpty: 'Ten folder jest pusty',
+    loadError: 'Błąd odczytu folderu',
     drives: 'Dyski',
     name: 'Nazwa',
     size: 'Rozmiar',
@@ -847,6 +860,7 @@ export default {
   },
   common: {
     ok: 'OK',
+    back: 'Wstecz',
     play: 'Odtwórz',
     pause: 'Pauza',
     previous: 'Poprzedni',
@@ -866,6 +880,8 @@ export default {
     delete: 'Usuń',
     edit: 'Edytuj',
     close: 'Zamknij',
+    yes: 'Tak',
+    no: 'Nie',
     loading: 'Ładowanie...',
     error: 'Błąd',
     unknown: 'Nieznany',
@@ -981,7 +997,10 @@ export default {
   },
   audioView: {
     vizMode: 'Tryb wizualizacji',
-    pip: 'Audio PiP'
+    pip: 'Audio PiP',
+    vizModeLabel: 'Tryb',
+    vizPrimaryColor: 'Kolor podstawowy',
+    vizSecondaryColor: 'Kolor dodatkowy'
   },
   playerView: {
     noVideo: 'Brak wideo do odtworzenia',
@@ -989,5 +1008,9 @@ export default {
   },
   folders: {
     play: 'Odtwarzaj'
+  },
+  imageViewer: {
+    loadFailed: 'Nie udało się załadować obrazu',
+    loading: 'Ładowanie...'
   }
 };

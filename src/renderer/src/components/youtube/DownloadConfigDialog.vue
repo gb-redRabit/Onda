@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { X, FolderOpen, Download, ImagePlus, Film, Scissors, Image, Save, Trash2 } from '@lucide/vue';
+import {
+  X,
+  FolderOpen,
+  Download,
+  ImagePlus,
+  Film,
+  Scissors,
+  Image,
+  Save,
+  Trash2
+} from '@lucide/vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { joinPath, sanitizeDirName } from '@renderer/utils/path';
@@ -235,428 +245,464 @@ function onProfileSelect(e: Event) {
 <template>
   <Teleport to="body">
     <div
-      class="fixed inset-0 z-9999 bg-black/50 flex items-center justify-center"
+      class="fixed inset-0 z-9999 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
       @click.self="close"
     >
       <div
-        class="bg-bg-surface border border-border-default rounded-xl w-130 max-w-[92vw] shadow-2xl overflow-hidden"
+        class="bg-bg-surface border border-border-default rounded-2xl w-full max-w-3xl max-h-[92vh] shadow-2xl overflow-hidden flex flex-col"
       >
-        <div class="flex items-center justify-between px-4 py-3 border-b border-border-default">
-          <h3 class="text-sm font-semibold text-fg-base flex items-center gap-2">
-            <Download :size="16" class="text-accent-base" />
-            {{ $t('youtube.downloadConfigTitle') }}
-          </h3>
+        <!-- Header -->
+        <div class="flex items-center gap-3 px-5 py-4 border-b border-border-default shrink-0">
+          <div
+            v-if="props.thumbnail"
+            class="w-12 h-8 rounded-lg overflow-hidden shrink-0 bg-bg-elevated"
+          >
+            <img :src="props.thumbnail" :alt="props.title" class="w-full h-full object-cover" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <h3 class="text-sm font-semibold text-fg-base truncate">{{ props.title }}</h3>
+            <p class="text-xs text-fg-faint truncate">
+              <span v-if="props.channelTitle">{{ props.channelTitle }}</span>
+              <span v-if="props.channelTitle && props.playlistTitle"> · </span>
+              <span v-if="props.playlistTitle">{{ props.playlistTitle }}</span>
+            </p>
+          </div>
           <button
-            class="p-1 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+            class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
             @click="close"
           >
             <X :size="16" />
           </button>
         </div>
 
-        <div class="px-4 py-4 space-y-4 max-h-[80vh] overflow-auto">
-          <div class="flex items-center gap-3">
-            <div
-              v-if="props.thumbnail"
-              class="w-14 h-9 rounded-md overflow-hidden shrink-0 bg-bg-elevated"
-            >
-              <img :src="props.thumbnail" :alt="props.title" class="w-full h-full object-cover" />
-            </div>
-            <div class="min-w-0">
-              <p class="text-[11px] text-fg-faint">{{ $t('youtube.downloadConfigHint') }}</p>
-              <p class="text-sm font-medium truncate">{{ props.title }}</p>
-            </div>
-          </div>
-
-          <div>
-            <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
-              {{ $t('youtube.profilesSection') }}
-            </p>
-            <div class="flex items-center gap-2">
-              <select
-                :value="selectedProfileId"
-                class="flex-1 min-w-0 px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                @change="onProfileSelect"
+        <!-- Body -->
+        <div class="flex-1 overflow-auto px-5 py-5">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <!-- Left: preview -->
+            <div class="space-y-4">
+              <div
+                class="aspect-video rounded-2xl overflow-hidden bg-bg-elevated border border-border-default"
               >
-                <option value="">{{ $t('youtube.profileNone') }}</option>
-                <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
-              </select>
-              <button
-                v-if="selectedProfileId"
-                class="p-1.5 rounded-lg border border-border-default text-fg-muted hover:text-red-base hover:bg-bg-hover transition-colors shrink-0"
-                :title="$t('youtube.profileDelete')"
-                @click="deleteProfile"
-              >
-                <Trash2 :size="14" />
-              </button>
-            </div>
-            <div class="flex items-center gap-2 mt-2">
-              <input
-                v-model="profileName"
-                class="flex-1 px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                :placeholder="$t('youtube.profileNamePlaceholder')"
-              />
-              <button
-                class="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border-default text-xs text-fg-muted hover:bg-bg-hover transition-colors shrink-0"
-                :disabled="!profileName.trim()"
-                @click="saveProfile"
-              >
-                <Save :size="13" />
-                {{ $t('youtube.profileSave') }}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
-              {{ $t('youtube.prefKind') }}
-            </p>
-            <div class="flex gap-1 bg-bg-base rounded-xl p-1 w-fit">
-              <button
-                v-for="k in ['audio', 'video'] as const"
-                :key="k"
-                class="px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                :class="
-                  kind === k
-                    ? 'bg-accent-base text-white'
-                    : 'text-fg-muted hover:text-fg-base'
-                "
-                @click="kind = k"
-              >
-                {{ k === 'audio' ? $t('youtube.prefAudio') : $t('youtube.prefVideo') }}
-              </button>
-            </div>
-            <div class="mt-3 grid grid-cols-2 gap-3">
-              <label v-if="kind === 'audio'" class="block text-xs text-fg-faint">
-                {{ $t('youtube.prefFormat') }}
-                <select
-                  v-model="format"
-                  class="mt-1 w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                >
-                  <option v-for="f in audioFormats" :key="f" :value="f">
-                    {{ f === 'best' ? $t('settings.audioNative') : f }}
-                  </option>
-                </select>
-              </label>
-              <label v-if="kind === 'audio'" class="block text-xs text-fg-faint">
-                {{ $t('settings.defaultAudioQuality') }}
-                <select
-                  v-model="audioQuality"
-                  class="mt-1 w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                >
-                  <option v-for="q in audioQualities" :key="q" :value="q">
-                    {{ $t('settings.audioQuality.' + q) }}
-                  </option>
-                </select>
-              </label>
-              <label v-if="kind === 'video'" class="block text-xs text-fg-faint">
-                {{ $t('youtube.prefQuality') }}
-                <select
-                  v-model="quality"
-                  class="mt-1 w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                >
-                  <option v-for="q in videoQualities" :key="q" :value="q">{{ q }}</option>
-                </select>
-              </label>
-              <label v-if="kind === 'video'" class="block text-xs text-fg-faint">
-                {{ $t('settings.defaultVideoContainer') }}
-                <select
-                  v-model="videoContainer"
-                  class="mt-1 w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                >
-                  <option v-for="c in videoContainers" :key="c" :value="c">{{ c }}</option>
-                </select>
-              </label>
-            </div>
-            <label v-if="kind === 'audio'" class="mt-3 block text-xs text-fg-faint">
-              {{ $t('youtube.audioLanguage') }}
-              <input
-                v-model="audioLanguage"
-                class="mt-1 w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                :placeholder="$t('youtube.audioLanguagePlaceholder')"
-              />
-            </label>
-            <label class="mt-3 block text-xs text-fg-faint">
-              {{ $t('youtube.prefTemplate') }}
-              <input
-                v-model="filenameTemplate"
-                class="mt-1 w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                :placeholder="$t('youtube.prefTemplatePlaceholder')"
-              />
-              <div class="mt-1.5">
-                <FilenameTemplatePresets @preset="(p) => (filenameTemplate = p)" />
+                <img
+                  v-if="props.thumbnail"
+                  :src="props.thumbnail"
+                  :alt="props.title"
+                  class="w-full h-full object-cover"
+                />
+                <div v-else class="w-full h-full flex items-center justify-center text-fg-faint">
+                  <Image :size="32" />
+                </div>
               </div>
-            </label>
-            <label class="mt-3 block text-xs text-fg-faint">
-              {{ $t('youtube.sponsorBlock') }}
-              <select
-                v-model="sponsorBlock"
-                class="mt-1 w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-              >
-                <option value="off">{{ $t('youtube.sponsorBlockOff') }}</option>
-                <option value="mark">{{ $t('youtube.sponsorBlockMark') }}</option>
-                <option value="remove">{{ $t('youtube.sponsorBlockRemove') }}</option>
-              </select>
-            </label>
-            <div class="mt-3 grid grid-cols-2 gap-3">
-              <label class="block text-xs text-fg-faint">
-                {{ $t('youtube.trimStart') }}
-                <input
-                  v-model.number="trimStart"
-                  type="number"
-                  min="0"
-                  step="1"
-                  class="mt-1 w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                  :placeholder="$t('youtube.trimStartPlaceholder')"
-                />
-              </label>
-              <label class="block text-xs text-fg-faint">
-                {{ $t('youtube.trimEnd') }}
-                <input
-                  v-model.number="trimEnd"
-                  type="number"
-                  min="0"
-                  step="1"
-                  class="mt-1 w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                  :placeholder="$t('youtube.trimEndPlaceholder')"
-                />
-              </label>
-            </div>
-          </div>
-
-          <div v-if="kind === 'video'">
-            <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
-              {{ $t('youtube.coverSection') }}
-            </p>
-            <div class="grid grid-cols-2 gap-2">
-              <button
-                class="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors"
-                :class="
-                  coverType !== 'none'
-                    ? 'border-accent-base bg-accent-ghost text-accent-base'
-                    : 'border-border-default text-fg-muted hover:bg-bg-hover'
-                "
-                @click="coverType = 'thumbnail'"
-              >
-                <Image :size="14" />
-                {{ $t('youtube.coverThumbnail') }}
-              </button>
-              <button
-                class="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors"
-                :class="
-                  coverType === 'none'
-                    ? 'border-accent-base bg-accent-ghost text-accent-base'
-                    : 'border-border-default text-fg-muted hover:bg-bg-hover'
-                "
-                @click="coverType = 'none'"
-              >
-                <ImagePlus :size="14" />
-                {{ $t('youtube.coverNone') }}
-              </button>
-            </div>
-          </div>
-
-          <div v-if="kind === 'audio'">
-            <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
-              {{ $t('youtube.coverSection') }}
-            </p>
-            <div class="grid grid-cols-2 gap-2">
-              <button
-                v-for="ct in coverTypes"
-                :key="ct.id"
-                class="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors"
-                :class="
-                  coverType === ct.id
-                    ? 'border-accent-base bg-accent-ghost text-accent-base'
-                    : 'border-border-default text-fg-muted hover:bg-bg-hover'
-                "
-                @click="coverType = ct.id"
-              >
-                <component :is="ct.icon" :size="14" />
-                {{ $t(ct.key) }}
-              </button>
-            </div>
-
-            <div v-if="coverType === 'custom'" class="mt-2 flex items-center gap-2">
-              <button
-                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-default text-xs text-fg-muted hover:bg-bg-hover transition-colors"
-                @click="pickCustomCover"
-              >
-                <ImagePlus :size="13" />
-                {{ $t('youtube.pickCoverFile') }}
-              </button>
-              <span class="text-xs text-fg-faint truncate flex-1">
-                {{ customPath || $t('youtube.coverCustomHint') }}
-              </span>
-            </div>
-
-            <label v-else-if="coverType === 'frame'" class="mt-2 block text-xs text-fg-faint">
-              {{ $t('youtube.frameTimeLabel') }}
-              <input
-                v-model.number="frameTime"
-                type="number"
-                min="0"
-                step="1"
-                class="mt-1 w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-              />
-            </label>
-
-            <div v-else-if="coverType === 'clip'" class="mt-2 grid grid-cols-2 gap-3">
-              <label class="block text-xs text-fg-faint">
-                {{ $t('youtube.clipStartLabel') }}
-                <input
-                  v-model.number="clipStart"
-                  type="number"
-                  min="0"
-                  step="1"
-                  class="mt-1 w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                />
-              </label>
-              <label class="block text-xs text-fg-faint">
-                {{ $t('youtube.clipEndLabel') }}
-                <input
-                  v-model.number="clipEnd"
-                  type="number"
-                  min="1"
-                  step="1"
-                  class="mt-1 w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                />
-              </label>
-              <label class="block text-xs text-fg-faint col-span-2">
-                {{ $t('youtube.clipFormatLabel') }}
-                <select
-                  v-model="clipFormat"
-                  class="mt-1 w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                >
-                  <option value="webm">.webm</option>
-                  <option value="mp4">.mp4</option>
-                </select>
-              </label>
-            </div>
-          </div>
-
-          <div>
-            <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-1">
-              {{ $t('youtube.metaSection') }}
-            </p>
-            <p class="text-[11px] text-fg-faint mb-2">{{ $t('youtube.metaHint') }}</p>
-            <div class="grid grid-cols-3 gap-3">
-              <input
-                v-model="artist"
-                class="px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                :placeholder="$t('youtube.metaArtist')"
-              />
-              <input
-                v-model="album"
-                class="px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                :placeholder="$t('youtube.metaAlbum')"
-              />
-              <input
-                v-model="year"
-                class="px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                :placeholder="$t('youtube.metaYear')"
-              />
-            </div>
-          </div>
-
-          <div>
-            <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
-              {{ $t('youtube.subsSection') }}
-            </p>
-            <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
-              <input
-                v-model="subsEnabled"
-                type="checkbox"
-                class="w-4 h-4 rounded accent-accent-base"
-              />
-              {{ $t('youtube.subsDownload') }}
-            </label>
-            <div v-if="subsEnabled" class="mt-2 space-y-2">
-              <input
-                v-model="subsLangs"
-                class="w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                :placeholder="$t('youtube.subsLangsPlaceholder')"
-              />
-              <div class="grid grid-cols-2 gap-2">
-                <select
-                  v-model="subsMode"
-                  class="px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                >
-                  <option value="best">{{ $t('youtube.subsModeBest') }}</option>
-                  <option value="manual">{{ $t('youtube.subsModeManual') }}</option>
-                  <option value="auto">{{ $t('youtube.subsModeAuto') }}</option>
-                </select>
-                <select
-                  v-model="subsFormat"
-                  class="px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-                >
-                  <option value="srt">SRT</option>
-                  <option value="vtt">VTT</option>
-                  <option value="ass">ASS</option>
-                </select>
+              <div class="p-3 rounded-xl bg-bg-elevated border border-border-default">
+                <p class="text-xs text-fg-faint">{{ $t('youtube.downloadConfigHint') }}</p>
+                <p class="text-sm font-medium text-fg-base mt-1 line-clamp-2">{{ props.title }}</p>
               </div>
-              <label class="flex items-center gap-2 text-xs cursor-pointer select-none">
-                <input
-                  v-model="subsFolder"
-                  type="checkbox"
-                  class="w-3.5 h-3.5 rounded accent-accent-base"
-                />
-                {{ $t('youtube.subsFolder') }}
-              </label>
             </div>
-          </div>
 
-          <div v-if="props.channelTitle || props.playlistTitle">
-            <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
-              {{ $t('youtube.prefOutputDir') }}
-            </p>
-            <div class="flex items-center gap-2">
-              <select
-                v-model="folderMode"
-                class="flex-1 min-w-0 px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-              >
-                <option value="global">{{ $t('youtube.prefOutputDirGlobal') }}</option>
-                <option v-if="props.channelTitle" value="channel">
-                  {{ $t('youtube.prefOutputDirChannel') }}
-                </option>
-                <option v-if="props.playlistTitle" value="playlist">
-                  {{ $t('youtube.folderModePlaylist') }}
-                </option>
-                <option value="custom">{{ $t('youtube.prefOutputDirCustom') }}</option>
-              </select>
-              <button
-                v-if="folderMode === 'custom'"
-                class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border-default text-fg-muted hover:bg-bg-hover transition-colors shrink-0"
-                @click="pickOutputDir"
-              >
-                <FolderOpen :size="13" />
-              </button>
+            <!-- Right: settings -->
+            <div class="space-y-5">
+              <!-- Profiles -->
+              <section>
+                <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
+                  {{ $t('youtube.profilesSection') }}
+                </p>
+                <div class="flex items-center gap-2">
+                  <select
+                    :value="selectedProfileId"
+                    class="flex-1 min-w-0 px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    @change="onProfileSelect"
+                  >
+                    <option value="">{{ $t('youtube.profileNone') }}</option>
+                    <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
+                  </select>
+                  <button
+                    v-if="selectedProfileId"
+                    class="p-2 rounded-xl border border-border-default text-fg-muted hover:text-red-base hover:bg-bg-hover transition-colors shrink-0"
+                    :title="$t('youtube.profileDelete')"
+                    @click="deleteProfile"
+                  >
+                    <Trash2 :size="14" />
+                  </button>
+                </div>
+                <div class="flex items-center gap-2 mt-2">
+                  <input
+                    v-model="profileName"
+                    class="flex-1 px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    :placeholder="$t('youtube.profileNamePlaceholder')"
+                  />
+                  <button
+                    class="flex items-center gap-1 px-3 py-2 rounded-xl border border-border-default text-xs text-fg-muted hover:bg-bg-hover transition-colors shrink-0"
+                    :disabled="!profileName.trim()"
+                    @click="saveProfile"
+                  >
+                    <Save :size="13" />
+                    {{ $t('youtube.profileSave') }}
+                  </button>
+                </div>
+              </section>
+
+              <!-- Format -->
+              <section>
+                <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
+                  {{ $t('youtube.prefKind') }}
+                </p>
+                <div class="flex gap-1 bg-bg-base rounded-xl p-1 w-fit">
+                  <button
+                    v-for="k in ['audio', 'video'] as const"
+                    :key="k"
+                    class="px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                    :class="
+                      kind === k ? 'bg-accent-base text-white' : 'text-fg-muted hover:text-fg-base'
+                    "
+                    @click="kind = k"
+                  >
+                    {{ k === 'audio' ? $t('youtube.prefAudio') : $t('youtube.prefVideo') }}
+                  </button>
+                </div>
+
+                <div class="mt-3 grid grid-cols-2 gap-3">
+                  <label v-if="kind === 'audio'" class="block text-xs text-fg-faint">
+                    {{ $t('youtube.prefFormat') }}
+                    <select
+                      v-model="format"
+                      class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    >
+                      <option v-for="f in audioFormats" :key="f" :value="f">
+                        {{ f === 'best' ? $t('settings.audioNative') : f }}
+                      </option>
+                    </select>
+                  </label>
+                  <label v-if="kind === 'audio'" class="block text-xs text-fg-faint">
+                    {{ $t('settings.defaultAudioQuality') }}
+                    <select
+                      v-model="audioQuality"
+                      class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    >
+                      <option v-for="q in audioQualities" :key="q" :value="q">
+                        {{ $t('settings.audioQuality.' + q) }}
+                      </option>
+                    </select>
+                  </label>
+                  <label v-if="kind === 'video'" class="block text-xs text-fg-faint">
+                    {{ $t('youtube.prefQuality') }}
+                    <select
+                      v-model="quality"
+                      class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    >
+                      <option v-for="q in videoQualities" :key="q" :value="q">{{ q }}</option>
+                    </select>
+                  </label>
+                  <label v-if="kind === 'video'" class="block text-xs text-fg-faint">
+                    {{ $t('settings.defaultVideoContainer') }}
+                    <select
+                      v-model="videoContainer"
+                      class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    >
+                      <option v-for="c in videoContainers" :key="c" :value="c">{{ c }}</option>
+                    </select>
+                  </label>
+                </div>
+
+                <label v-if="kind === 'audio'" class="mt-3 block text-xs text-fg-faint">
+                  {{ $t('youtube.audioLanguage') }}
+                  <input
+                    v-model="audioLanguage"
+                    class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    :placeholder="$t('youtube.audioLanguagePlaceholder')"
+                  />
+                </label>
+
+                <div class="mt-3 grid grid-cols-2 gap-3">
+                  <label class="block text-xs text-fg-faint">
+                    {{ $t('youtube.trimStart') }}
+                    <input
+                      v-model.number="trimStart"
+                      type="number"
+                      min="0"
+                      step="1"
+                      class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                      :placeholder="$t('youtube.trimStartPlaceholder')"
+                    />
+                  </label>
+                  <label class="block text-xs text-fg-faint">
+                    {{ $t('youtube.trimEnd') }}
+                    <input
+                      v-model.number="trimEnd"
+                      type="number"
+                      min="0"
+                      step="1"
+                      class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                      :placeholder="$t('youtube.trimEndPlaceholder')"
+                    />
+                  </label>
+                </div>
+
+                <label class="mt-3 block text-xs text-fg-faint">
+                  {{ $t('youtube.prefTemplate') }}
+                  <input
+                    v-model="filenameTemplate"
+                    class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    :placeholder="$t('youtube.prefTemplatePlaceholder')"
+                  />
+                  <div class="mt-1.5">
+                    <FilenameTemplatePresets @preset="(p) => (filenameTemplate = p)" />
+                  </div>
+                </label>
+
+                <label class="mt-3 block text-xs text-fg-faint">
+                  {{ $t('youtube.sponsorBlock') }}
+                  <select
+                    v-model="sponsorBlock"
+                    class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                  >
+                    <option value="off">{{ $t('youtube.sponsorBlockOff') }}</option>
+                    <option value="mark">{{ $t('youtube.sponsorBlockMark') }}</option>
+                    <option value="remove">{{ $t('youtube.sponsorBlockRemove') }}</option>
+                  </select>
+                </label>
+              </section>
+
+              <!-- Cover (video: thumbnail/none) -->
+              <section v-if="kind === 'video'">
+                <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
+                  {{ $t('youtube.coverSection') }}
+                </p>
+                <div class="flex gap-1 bg-bg-base rounded-xl p-1 w-fit">
+                  <button
+                    class="px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                    :class="
+                      coverType !== 'none'
+                        ? 'bg-accent-base text-white'
+                        : 'text-fg-muted hover:text-fg-base'
+                    "
+                    @click="coverType = 'thumbnail'"
+                  >
+                    {{ $t('youtube.coverThumbnail') }}
+                  </button>
+                  <button
+                    class="px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                    :class="
+                      coverType === 'none'
+                        ? 'bg-accent-base text-white'
+                        : 'text-fg-muted hover:text-fg-base'
+                    "
+                    @click="coverType = 'none'"
+                  >
+                    {{ $t('youtube.coverNone') }}
+                  </button>
+                </div>
+              </section>
+
+              <!-- Cover (audio) -->
+              <section v-if="kind === 'audio'">
+                <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
+                  {{ $t('youtube.coverSection') }}
+                </p>
+                <div class="grid grid-cols-2 gap-2">
+                  <button
+                    v-for="ct in coverTypes"
+                    :key="ct.id"
+                    class="flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-colors"
+                    :class="
+                      coverType === ct.id
+                        ? 'border-accent-base bg-accent-ghost text-accent-base'
+                        : 'border-border-default text-fg-muted hover:bg-bg-hover'
+                    "
+                    @click="coverType = ct.id"
+                  >
+                    <component :is="ct.icon" :size="14" />
+                    {{ $t(ct.key) }}
+                  </button>
+                </div>
+
+                <div v-if="coverType === 'custom'" class="mt-2 flex items-center gap-2">
+                  <button
+                    class="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default text-xs text-fg-muted hover:bg-bg-hover transition-colors"
+                    @click="pickCustomCover"
+                  >
+                    <ImagePlus :size="13" />
+                    {{ $t('youtube.pickCoverFile') }}
+                  </button>
+                  <span class="text-xs text-fg-faint truncate flex-1">
+                    {{ customPath || $t('youtube.coverCustomHint') }}
+                  </span>
+                </div>
+
+                <label v-else-if="coverType === 'frame'" class="mt-2 block text-xs text-fg-faint">
+                  {{ $t('youtube.frameTimeLabel') }}
+                  <input
+                    v-model.number="frameTime"
+                    type="number"
+                    min="0"
+                    step="1"
+                    class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                  />
+                </label>
+
+                <div v-else-if="coverType === 'clip'" class="mt-2 grid grid-cols-2 gap-3">
+                  <label class="block text-xs text-fg-faint">
+                    {{ $t('youtube.clipStartLabel') }}
+                    <input
+                      v-model.number="clipStart"
+                      type="number"
+                      min="0"
+                      step="1"
+                      class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    />
+                  </label>
+                  <label class="block text-xs text-fg-faint">
+                    {{ $t('youtube.clipEndLabel') }}
+                    <input
+                      v-model.number="clipEnd"
+                      type="number"
+                      min="1"
+                      step="1"
+                      class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    />
+                  </label>
+                  <label class="block text-xs text-fg-faint col-span-2">
+                    {{ $t('youtube.clipFormatLabel') }}
+                    <select
+                      v-model="clipFormat"
+                      class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    >
+                      <option value="webm">.webm</option>
+                      <option value="mp4">.mp4</option>
+                    </select>
+                  </label>
+                </div>
+              </section>
+
+              <!-- Metadata -->
+              <section>
+                <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-1">
+                  {{ $t('youtube.metaSection') }}
+                </p>
+                <p class="text-[11px] text-fg-faint mb-2">{{ $t('youtube.metaHint') }}</p>
+                <div class="grid grid-cols-3 gap-3">
+                  <input
+                    v-model="artist"
+                    class="px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    :placeholder="$t('youtube.metaArtist')"
+                  />
+                  <input
+                    v-model="album"
+                    class="px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    :placeholder="$t('youtube.metaAlbum')"
+                  />
+                  <input
+                    v-model="year"
+                    class="px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    :placeholder="$t('youtube.metaYear')"
+                  />
+                </div>
+              </section>
+
+              <!-- Subtitles -->
+              <section>
+                <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
+                  {{ $t('youtube.subsSection') }}
+                </p>
+                <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
+                  <input
+                    v-model="subsEnabled"
+                    type="checkbox"
+                    class="w-4 h-4 rounded accent-accent-base"
+                  />
+                  {{ $t('youtube.subsDownload') }}
+                </label>
+                <div v-if="subsEnabled" class="mt-2 space-y-2">
+                  <input
+                    v-model="subsLangs"
+                    class="w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    :placeholder="$t('youtube.subsLangsPlaceholder')"
+                  />
+                  <div class="grid grid-cols-2 gap-2">
+                    <select
+                      v-model="subsMode"
+                      class="px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    >
+                      <option value="best">{{ $t('youtube.subsModeBest') }}</option>
+                      <option value="manual">{{ $t('youtube.subsModeManual') }}</option>
+                      <option value="auto">{{ $t('youtube.subsModeAuto') }}</option>
+                    </select>
+                    <select
+                      v-model="subsFormat"
+                      class="px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    >
+                      <option value="srt">SRT</option>
+                      <option value="vtt">VTT</option>
+                      <option value="ass">ASS</option>
+                    </select>
+                  </div>
+                  <label class="flex items-center gap-2 text-xs cursor-pointer select-none">
+                    <input
+                      v-model="subsFolder"
+                      type="checkbox"
+                      class="w-3.5 h-3.5 rounded accent-accent-base"
+                    />
+                    {{ $t('youtube.subsFolder') }}
+                  </label>
+                </div>
+              </section>
+
+              <!-- Output folder -->
+              <section v-if="props.channelTitle || props.playlistTitle">
+                <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
+                  {{ $t('youtube.prefOutputDir') }}
+                </p>
+                <div class="flex items-center gap-2">
+                  <select
+                    v-model="folderMode"
+                    class="flex-1 min-w-0 px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                  >
+                    <option value="global">{{ $t('youtube.prefOutputDirGlobal') }}</option>
+                    <option v-if="props.channelTitle" value="channel">
+                      {{ $t('youtube.prefOutputDirChannel') }}
+                    </option>
+                    <option v-if="props.playlistTitle" value="playlist">
+                      {{ $t('youtube.folderModePlaylist') }}
+                    </option>
+                    <option value="custom">{{ $t('youtube.prefOutputDirCustom') }}</option>
+                  </select>
+                  <button
+                    v-if="folderMode === 'custom'"
+                    class="flex items-center gap-1 px-3 py-2 rounded-xl border border-border-default text-fg-muted hover:bg-bg-hover transition-colors shrink-0"
+                    @click="pickOutputDir"
+                  >
+                    <FolderOpen :size="14" />
+                  </button>
+                </div>
+                <p
+                  v-if="folderMode === 'channel'"
+                  class="mt-1 truncate text-[11px] text-fg-faint"
+                  :title="channelFolder"
+                >
+                  {{ $t('youtube.prefOutputDirChannelHint', { folder: channelFolder }) }}
+                </p>
+                <p
+                  v-else-if="folderMode === 'playlist'"
+                  class="mt-1 truncate text-[11px] text-fg-faint"
+                  :title="playlistFolder"
+                >
+                  {{ $t('youtube.folderModePlaylistHint', { folder: playlistFolder }) }}
+                </p>
+                <input
+                  v-else-if="folderMode === 'custom'"
+                  v-model="outputDir"
+                  readonly
+                  class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                  :placeholder="$t('youtube.prefOutputDirPlaceholder')"
+                />
+              </section>
             </div>
-            <p
-              v-if="folderMode === 'channel'"
-              class="mt-1 truncate text-[11px] text-fg-faint"
-              :title="channelFolder"
-            >
-              {{ $t('youtube.prefOutputDirChannelHint', { folder: channelFolder }) }}
-            </p>
-            <p
-              v-else-if="folderMode === 'playlist'"
-              class="mt-1 truncate text-[11px] text-fg-faint"
-              :title="playlistFolder"
-            >
-              {{ $t('youtube.folderModePlaylistHint', { folder: playlistFolder }) }}
-            </p>
-            <input
-              v-else-if="folderMode === 'custom'"
-              v-model="outputDir"
-              readonly
-              class="mt-1 w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
-              :placeholder="$t('youtube.prefOutputDirPlaceholder')"
-            />
           </div>
         </div>
 
-        <div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-border-default">
+        <!-- Footer -->
+        <div
+          class="flex items-center justify-end gap-2 px-5 py-4 border-t border-border-default shrink-0"
+        >
           <button
             class="px-4 py-2 rounded-xl border border-border-default text-sm text-fg-muted hover:bg-bg-hover transition-colors"
             @click="close"

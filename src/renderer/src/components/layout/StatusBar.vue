@@ -7,6 +7,7 @@ import { useLibraryStore } from '@renderer/stores/library';
 import { useExplorerStore } from '@renderer/stores/explorer';
 import { useYouTubeStore } from '@renderer/stores/youtube';
 import { useYoutubeAuth } from '@renderer/composables/useYoutubeAuth';
+import { getFileTypeInfo } from '@renderer/utils/fileTypes';
 import type { AppInfo } from '@shared/types/ipc';
 import { logger } from '@shared/logger';
 const { t } = useI18n();
@@ -32,20 +33,37 @@ const youtube = useYouTubeStore();
 const { status, ensureLoaded } = useYoutubeAuth();
 ensureLoaded();
 
-const viewInfo = computed(() => {
+const viewCounts = computed(() => {
   switch (route.name) {
+    case 'audio':
+      return [{ label: t('status.audioFiles'), count: library.audioCount }];
+    case 'player':
+      return [{ label: t('status.videoFiles'), count: library.videoCount }];
     case 'library':
-      return `${library.totalCount} ${t('status.tracks')}`;
-    case 'explorer':
-      return `${explorer.sortedFiles.length} ${t('status.items')}`;
-    case 'youtube':
-      return youtube.searchResults.length
-        ? `${youtube.searchResults.length} ${t('status.results')}`
-        : '';
-    case 'downloads':
-      return youtube.downloads.length ? `${youtube.downloads.length} ${t('status.downloads')}` : '';
+      return [
+        { label: t('status.audioFiles'), count: library.audioCount },
+        { label: t('status.videoFiles'), count: library.videoCount },
+        { label: t('status.images'), count: library.imageCount },
+        { label: t('status.playlistsLabel'), count: library.playlists.length }
+      ];
+    case 'explorer': {
+      const counts = { audio: 0, video: 0, image: 0, playlist: 0 };
+      for (const f of explorer.files) {
+        if (f.isDirectory || !f.extension) continue;
+        const cat = getFileTypeInfo(f.extension).category;
+        if (cat === 'audio' || cat === 'video' || cat === 'image' || cat === 'playlist') {
+          counts[cat]++;
+        }
+      }
+      return [
+        { label: t('status.audioFiles'), count: counts.audio },
+        { label: t('status.videoFiles'), count: counts.video },
+        { label: t('status.images'), count: counts.image },
+        { label: t('status.playlistsLabel'), count: counts.playlist }
+      ].filter((s) => s.count > 0);
+    }
     default:
-      return '';
+      return [];
   }
 });
 
@@ -75,10 +93,10 @@ const activeDownload = computed(() => activeDownloads.value[0] || null);
       </span>
       <span v-else>{{ $t('status.noMedia') }}</span>
     </div>
-    <div class="h-3 w-px bg-border-default" />
-    <span v-if="viewInfo">{{ viewInfo }}</span>
-    <span>{{ library.totalCount }} {{ $t('status.tracks') }}</span>
-    <span>{{ library.playlists.length }} {{ $t('status.playlists') }}</span>
+    <template v-if="viewCounts.length">
+      <div class="h-3 w-px bg-border-default" />
+      <span v-for="s in viewCounts" :key="s.label">{{ s.count }} {{ s.label }}</span>
+    </template>
     <div class="flex-1" />
     <span v-if="activeDownload" class="flex items-center gap-1.5">
       <span class="w-1.5 h-1.5 rounded-full bg-accent-base animate-pulse" />

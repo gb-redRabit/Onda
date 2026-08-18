@@ -4,7 +4,7 @@ import type { MediaFile } from '@renderer/types/media';
 const VIDEO_EXT_SET = new Set(VIDEO_EXTS);
 const AUDIO_EXT_SET = new Set(AUDIO_EXTS);
 
-export interface BuildMediaFileOptions {
+interface BuildMediaFileOptions {
   path: string;
   name?: string;
   extension?: string;

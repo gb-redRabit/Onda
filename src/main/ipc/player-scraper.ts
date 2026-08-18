@@ -1,7 +1,7 @@
 import https from 'https';
 import http from 'http';
 
-export interface PlayerScrapeResult {
+interface PlayerScrapeResult {
   url: string;
   kind: 'hls' | 'direct';
   /** Strona embed — wymagana jako Referer przy pobieraniu HLS przez yt-dlp. */

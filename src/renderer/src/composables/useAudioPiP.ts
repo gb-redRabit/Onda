@@ -65,7 +65,11 @@ function handleVisibilityChange(): void {
   ) {
     void show();
   } else if (!document.hidden && isActive.value) {
-    void hide();
+    if (mode.value === 'wide') {
+      void window.api?.audioPipAutoHide();
+    } else {
+      void hide();
+    }
   }
 }
 

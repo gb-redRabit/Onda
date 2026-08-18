@@ -166,6 +166,7 @@ interface OndaAPI {
     position?: string
   ) => Promise<boolean>;
   audioPipHide: () => Promise<boolean>;
+  audioPipAutoHide: () => Promise<boolean>;
   audioPipUpdate: (
     state: Record<string, unknown>,
     mode?: string,

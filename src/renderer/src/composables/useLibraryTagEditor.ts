@@ -4,7 +4,7 @@ import type { useLibraryStore } from '@renderer/stores/library';
 import type { usePlayerStore } from '@renderer/stores/player';
 import type { MediaFile } from '@renderer/types/media';
 
-export interface LibraryTagInput {
+interface LibraryTagInput {
   title?: string;
   artist?: string;
   album?: string;
@@ -15,7 +15,7 @@ export interface LibraryTagInput {
   path?: string;
 }
 
-export interface LibraryMbApplyData {
+interface LibraryMbApplyData {
   title?: string;
   artist?: string;
   album?: string;

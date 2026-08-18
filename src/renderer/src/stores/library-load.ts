@@ -3,7 +3,7 @@ import type { MediaFile, Playlist } from '@renderer/types/media';
 import { errMsg } from '@shared/helpers';
 import { useUIStore } from './ui';
 
-export interface LibraryLoadCtx {
+interface LibraryLoadCtx {
   tracks: Ref<MediaFile[]>;
   folders: Ref<string[]>;
   folderTypes: Ref<Record<string, 'audio' | 'video' | 'image' | 'mixed'>>;

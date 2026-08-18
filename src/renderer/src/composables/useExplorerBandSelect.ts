@@ -2,7 +2,7 @@ import { ref, onBeforeUnmount } from 'vue';
 import type { Ref } from 'vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
 
-export interface BandRect {
+interface BandRect {
   path: string;
   left: number;
   top: number;

@@ -92,7 +92,9 @@ function timingSafeEqualString(a: string, b: string): boolean {
 }
 
 function allowedOrigin(origin: string | undefined): string | null {
-  if (!origin || origin === 'null') return null;
+  // Chromium sends 'null' as the literal string for file:// pages.
+  if (!origin) return null;
+  if (origin === 'null') return origin;
   let parsed: URL;
   try {
     parsed = new URL(origin);
@@ -146,6 +148,30 @@ export function createMediaServer(): Promise<MediaServer> {
           return;
         }
 
+        // HEAD fast-path: return headers without reading the file.
+        if (req.method === 'HEAD') {
+          const rawPath = url.searchParams.get('path') || '';
+          if (!rawPath) {
+            res.writeHead(400);
+            res.end();
+            return;
+          }
+          try {
+            const realPath = await fs.promises.realpath(rawPath);
+            const stat = await fs.promises.stat(realPath);
+            res.writeHead(200, {
+              'content-type': getMimeType(realPath),
+              'content-length': String(stat.size),
+              'accept-ranges': 'bytes'
+            });
+            res.end();
+          } catch {
+            res.writeHead(404);
+            res.end();
+          }
+          return;
+        }
+
         const rawPath = url.searchParams.get('path') || '';
         if (!rawPath) {
           logger.warn('media-server', 'request missing path param');
@@ -190,7 +216,7 @@ export function createMediaServer(): Promise<MediaServer> {
           const suffixMatch = range.match(/^bytes=-(\d+)$/);
           if (suffixMatch) {
             const n = parseInt(suffixMatch[1], 10);
-            if (n <= 0) {
+            if (n <= 0 || fileSize === 0) {
               res.writeHead(416);
               res.end();
               return;
@@ -218,7 +244,7 @@ export function createMediaServer(): Promise<MediaServer> {
             return;
           }
           const start = parseInt(match[1], 10);
-          const end = match[2] ? parseInt(match[2], 10) : fileSize - 1;
+          const end = match[2] ? Math.min(parseInt(match[2], 10), fileSize - 1) : fileSize - 1;
           if (start > end || start >= fileSize) {
             res.writeHead(416);
             res.end();

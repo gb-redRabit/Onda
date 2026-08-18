@@ -45,6 +45,9 @@ export async function fetchChannelItems(opts: {
     title: string;
     thumbnail: string;
     subscriberCount?: number;
+    description?: string;
+    videoCount?: number;
+    bannerUrl?: string;
   };
   items: ReturnType<typeof mapVideoEntry>[];
   hasMore: boolean;
@@ -87,7 +90,10 @@ export async function fetchChannelItems(opts: {
         url: base,
         title: parsed.channel || parsed.uploader || parsed.title || '',
         thumbnail: channelThumbnail,
-        subscriberCount: parsed.channel_follower_count
+        subscriberCount: parsed.channel_follower_count,
+        description: parsed.description || '',
+        videoCount: parsed.playlist_count ?? items.length,
+        bannerUrl: pickChannelThumbnail(parsed) || undefined
       },
       items,
       hasMore: items.length >= end - start + 1
@@ -122,6 +128,8 @@ export async function fetchChannelAll(opts: { url: string; tab?: 'videos' | 'sho
     title: string;
     thumbnail: string;
     subscriberCount?: number;
+    description?: string;
+    videoCount?: number;
   };
   items: ReturnType<typeof mapVideoEntry>[];
 }> {
@@ -151,7 +159,9 @@ export async function fetchChannelAll(opts: { url: string; tab?: 'videos' | 'sho
         url: base,
         title: parsed.channel || parsed.uploader || parsed.title || '',
         thumbnail: channelThumbnail,
-        subscriberCount: parsed.channel_follower_count
+        subscriberCount: parsed.channel_follower_count,
+        description: parsed.description || '',
+        videoCount: parsed.playlist_count ?? items.length
       },
       items
     };
@@ -181,7 +191,7 @@ export function registerYoutubeHandlers(): void {
     try {
       const stdout = await runYtDlp(
         [
-          `ytsearch50:${query}`,
+          `ytsearch100:${query}`,
           '--flat-playlist',
           '--no-warnings',
           '-J',

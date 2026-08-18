@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
-export type ClipboardAction = 'copy' | 'cut' | null;
+type ClipboardAction = 'copy' | 'cut' | null;
 
 export const useClipboardStore = defineStore('clipboard', () => {
   const items = ref<{ path: string; name: string }[]>([]);

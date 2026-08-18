@@ -33,7 +33,7 @@ export interface MediaMetadata {
   replayGainTrackGain?: number;
 }
 
-export interface MediaPicture {
+interface MediaPicture {
   format: string;
   data: Uint8Array;
   type?: string;

@@ -11,7 +11,7 @@ import { logger } from '../../shared/logger';
 
 const cacheDir = join(os.tmpdir(), 'onda', 'thumbs');
 
-export function sanitizeThumbSize(size: number): number {
+function sanitizeThumbSize(size: number): number {
   const n = Math.floor(Number(size));
   if (!Number.isFinite(n) || n < 16) return 320;
   return Math.min(n, MAX_THUMB_SIZE);

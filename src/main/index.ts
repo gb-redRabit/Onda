@@ -16,6 +16,7 @@ import { logger } from '../shared/logger';
 import { setMediaServerUrl, registerMediaUrlHandler } from './media-url-args';
 import { setAllowedRoots, addAllowedRoot, setRootsChangedHandler, getExtraRoots } from './media-server';
 import { getStore } from './ipc/cover-cache';
+import { flushQueueNow } from './downloads/download-manager';
 import { setupFileLogging } from './log-file';
 import { initAutoUpdater } from './updater';
 import { configureAutoCheck } from './updater-scheduler';
@@ -188,6 +189,18 @@ function createChildWindow(
 
   child.on('ready-to-show', () => {
     child.show();
+  });
+
+  child.webContents.setWindowOpenHandler((details) => {
+    try {
+      const parsed = new URL(details.url);
+      if (['https:', 'http:', 'mailto:'].includes(parsed.protocol)) {
+        shell.openExternal(details.url);
+      }
+    } catch {
+      // invalid URL — ignore
+    }
+    return { action: 'deny' };
   });
 
   installNavigationGuard(child);
@@ -390,6 +403,9 @@ app.whenReady().then(async () => {
   app.on('will-quit', () => {
     mediaServer.close();
     closeLoginWindow();
+    // Flush debounced persistence so the last ~0.5s of changes aren't lost.
+    flushQueueNow();
+    void getStore().then((s) => s.set('mediaRoots', getExtraRoots().slice(0, 50)));
   });
 
   registerOndaProtocolHandler();

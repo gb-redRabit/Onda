@@ -118,6 +118,7 @@ const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'pip:previewUpdate',
   'audio-pip:show',
   'audio-pip:hide',
+  'audio-pip:autoHide',
   'audio-pip:update',
   'audio-pip:previewStart',
   'audio-pip:previewStop',
@@ -444,6 +445,10 @@ const api = {
   },
   audioPipHide: async (): Promise<boolean> => {
     const r = await tryInvoke('audio-pip:hide');
+    return !!r;
+  },
+  audioPipAutoHide: async (): Promise<boolean> => {
+    const r = await tryInvoke('audio-pip:autoHide');
     return !!r;
   },
   audioPipUpdate: async (

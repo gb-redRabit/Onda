@@ -115,7 +115,7 @@ function resolvePathTemplate(path: string, context: unknown): string {
   });
 }
 
-export const MAX_RANGE_ITEMS = 1000;
+const MAX_RANGE_ITEMS = 1000;
 
 export function generateRangeItems(endpoint: SourceEndpoint, context: unknown): SourceItem[] {
   const range = endpoint.range;
@@ -318,7 +318,7 @@ export function buildUrl(
   return qs ? full + (full.includes('?') ? '&' : '?') + qs : full;
 }
 
-export function httpJsonFetch(
+function httpJsonFetch(
   url: string,
   opts: { method: 'GET' | 'POST'; headers: Record<string, string>; body?: string },
   redirectsLeft: number = MAX_REDIRECTS

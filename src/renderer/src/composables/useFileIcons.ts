@@ -1,5 +1,4 @@
 import { shallowRef, onBeforeUnmount, triggerRef } from 'vue';
-import type { Ref } from 'vue';
 import { logger } from '@shared/logger';
 import type { FileItem } from '@renderer/types/explorer';
 import { cachedIcon, setCachedIcon } from '@renderer/utils/thumbLoader';
@@ -78,8 +77,3 @@ export function useFileIcons() {
 
   return { extraSmallIcons, extraSmallIcon };
 }
-
-export type FileIcons = {
-  extraSmallIcons: Ref<Record<string, string>>;
-  extraSmallIcon: (item: FileItem) => string | null;
-};

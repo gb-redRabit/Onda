@@ -108,12 +108,12 @@ const {
             @dblclick="fitToScreen"
           />
           <div v-if="!displaySrc && !oldSrc" class="text-fg-faint text-sm">
-            <div v-if="imgError">Failed to load image</div>
+            <div v-if="imgError">{{ $t('imageViewer.loadFailed') }}</div>
             <div v-else class="flex flex-col items-center gap-3">
               <div
                 class="w-8 h-8 border-2 border-accent-base border-t-transparent rounded-full animate-spin"
               />
-              <span class="text-xs">Loading...</span>
+              <span class="text-xs">{{ $t('imageViewer.loading') }}</span>
             </div>
           </div>
         </div>

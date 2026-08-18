@@ -1,6 +1,6 @@
 import { getStore } from './cover-cache';
 
-export interface ProxyConfig {
+interface ProxyConfig {
   enabled?: boolean;
   type?: 'http' | 'https' | 'socks5';
   host?: string;
@@ -10,7 +10,7 @@ export interface ProxyConfig {
 }
 
 // Builds yt-dlp `--proxy` args from the persisted network settings.
-export function proxyToArgs(proxy: ProxyConfig | undefined | null): string[] {
+function proxyToArgs(proxy: ProxyConfig | undefined | null): string[] {
   if (!proxy || !proxy.enabled || !proxy.host) return [];
   const scheme = proxy.type === 'socks5' ? 'socks5' : 'http';
   const auth = proxy.username

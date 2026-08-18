@@ -78,6 +78,10 @@ export function useAppMenu() {
       library: t('nav.library'),
       player: t('nav.player'),
       audio: t('nav.player'),
+      youtube: t('nav.youtube'),
+      downloads: t('nav.downloads'),
+      sources: t('sources.title'),
+      explorer: t('nav.explorer'),
       settings: t('nav.settings')
     };
     return map[route.name as string] || '';

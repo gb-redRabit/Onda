@@ -1,4 +1,4 @@
-export type SponsorBlockMode = 'off' | 'mark' | 'remove';
+type SponsorBlockMode = 'off' | 'mark' | 'remove';
 
 // yt-dlp SponsorBlock flags. "mark" keeps the media intact and records sponsor
 // segments as chapters; "remove" cuts the segments out of the downloaded file.

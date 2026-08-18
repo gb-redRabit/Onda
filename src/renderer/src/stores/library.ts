@@ -77,12 +77,24 @@ export const useLibraryStore = defineStore('library', () => {
   async function addFolder(folderPath: string) {
     if (folders.value.includes(folderPath)) return;
     folders.value.push(folderPath);
-    await window.api?.invoke('library:saveFolders', [...folders.value]);
+    try {
+      await window.api?.invoke('library:saveFolders', [...folders.value]);
+    } catch {
+      // Revert local state if persist failed
+      folders.value = folders.value.filter((f) => f !== folderPath);
+    }
   }
 
   async function removeFolder(folderPath: string) {
+    const prevFolders = [...folders.value];
     folders.value = folders.value.filter((f) => f !== folderPath);
-    await window.api?.invoke('library:saveFolders', [...folders.value]);
+    try {
+      await window.api?.invoke('library:saveFolders', [...folders.value]);
+    } catch {
+      // Revert local state if persist failed
+      folders.value = prevFolders;
+      return;
+    }
     const newTypes = { ...folderTypes.value };
     delete newTypes[folderPath];
     folderTypes.value = newTypes;

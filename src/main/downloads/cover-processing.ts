@@ -95,7 +95,7 @@ export async function applyMetadataOverride(
   }
 }
 
-export interface CoverJobContext {
+interface CoverJobContext {
   taskId: string;
   url: string;
   cover: IpcCoverSpec;

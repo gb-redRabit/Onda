@@ -77,7 +77,7 @@ let cachedRuntime: string | null | undefined;
 
 // Cached wrapper around detectJsRuntime for production calls. Returns null when
 // no runtime exists — yt-dlp then falls back to its own discovery.
-export function resolveJsRuntime(): string | null {
+function resolveJsRuntime(): string | null {
   if (cachedRuntime === undefined) {
     cachedRuntime = detectJsRuntime(process.env, existsSync, process.platform);
   }
@@ -94,20 +94,34 @@ export function buildYtArgs(
   jsRuntime: string | null = resolveJsRuntime()
 ): string[] {
   const args = [...base];
+  const extras: string[] = [];
   if (auth && auth.method !== 'none') {
     if (auth.method === 'browser' && auth.cookiesBrowser) {
-      args.push('--cookies-from-browser', auth.cookiesBrowser);
+      extras.push('--cookies-from-browser', auth.cookiesBrowser);
     } else if ((auth.method === 'electron' || auth.method === 'manual') && auth.cookiesPath) {
-      args.push('--cookies', auth.cookiesPath);
+      extras.push('--cookies', auth.cookiesPath);
     }
   }
-  if (jsRuntime && !args.includes('--js-runtimes')) {
-    args.push('--js-runtimes', `node:${jsRuntime}`);
+  if (
+    jsRuntime &&
+    !args.includes('--js-runtimes') &&
+    !extras.includes('--js-runtimes')
+  ) {
+    extras.push('--js-runtimes', `node:${jsRuntime}`);
+  }
+  // When the caller already ended the options list with '--', all injected
+  // flags must land *before* that separator; otherwise yt-dlp treats them as
+  // positional URLs.
+  const sepIndex = args.indexOf('--');
+  if (sepIndex >= 0) {
+    args.splice(sepIndex, 0, ...extras);
+  } else {
+    args.push(...extras);
   }
   return args;
 }
 
-export interface YtCookieLike {
+interface YtCookieLike {
   name: string;
   value: string;
   domain?: string;
@@ -163,7 +177,7 @@ export function isValidCookieFile(content: string): boolean {
   return dataLines > 0;
 }
 
-export interface NetscapeParsedCookie {
+interface NetscapeParsedCookie {
   name: string;
   value: string;
   url: string;

@@ -2,7 +2,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import type { MkvFont } from '@renderer/types/subtitles';
 import { getLastSubtitleData } from '@renderer/composables/useSubtitleRenderer';
 
-export interface PiPSubtitleData {
+interface PiPSubtitleData {
   subContent: string;
   fonts: MkvFont[];
   availableFonts: Record<string, string>;

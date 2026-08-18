@@ -5,7 +5,7 @@ import type { YouTubeResolveKind } from '../renderer/src/types/youtube';
 // classification, normalization and the "watch" URL builder. The first adapter
 // is YouTube; adding a service later means adding a provider here, not rewriting
 // the queue, library or download views.
-export interface MediaProvider {
+interface MediaProvider {
   id: string;
   canResolve(url: string): boolean;
   kind(url: string): YouTubeResolveKind | null;

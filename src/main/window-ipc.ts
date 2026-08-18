@@ -8,7 +8,7 @@ import { installNavigationGuard } from './navigation-guard';
 
 const explorerWindows = new Map<number, BrowserWindow>();
 
-export function createExplorerWindow(initialPath?: string): number | null {
+function createExplorerWindow(initialPath?: string): number | null {
   try {
     const win = new BrowserWindow({
       width: 1000,
@@ -53,7 +53,7 @@ export function createExplorerWindow(initialPath?: string): number | null {
   }
 }
 
-export function getExplorerWindows(): BrowserWindow[] {
+function getExplorerWindows(): BrowserWindow[] {
   return [...explorerWindows.values()];
 }
 
@@ -311,6 +311,11 @@ export function registerWindowHandlers(context: {
     return true;
   });
 
+  ipcMain.handle('audio-pip:autoHide', () => {
+    audioPipManager.autoHide();
+    return true;
+  });
+
   ipcMain.handle(
     'audio-pip:previewStart',
     (_event, opts: { mode?: string; position?: string; opacity?: number }) => {
@@ -348,13 +353,19 @@ export function registerWindowHandlers(context: {
       opacity?: number,
       position?: string
     ) => {
-      if (mode) audioPipManager.setMode(mode as 'minimal' | 'medium' | 'max' | 'wide');
+      audioPipManager.setModePosition(
+        mode as 'minimal' | 'medium' | 'max' | 'wide' | undefined,
+        position as
+          | 'bottom-right'
+          | 'bottom-left'
+          | 'top-right'
+          | 'top-left'
+          | 'top'
+          | 'bottom'
+          | undefined
+      );
       audioPipManager.update(state);
       if (opacity !== undefined) audioPipManager.setOpacity(opacity);
-      if (position)
-        audioPipManager.setPosition(
-          position as 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'top' | 'bottom'
-        );
       return true;
     }
   );

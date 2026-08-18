@@ -167,7 +167,7 @@ export function registerMediaHandlers(): void {
         }
         const dir = dirname(oldPath);
         const ext = extname(oldPath);
-        const newPath = join(dir, safeName.endsWith(ext) ? safeName : safeName + ext);
+        const newPath = join(dir, safeName.toLowerCase().endsWith(ext.toLowerCase()) ? safeName : safeName + ext);
         await rename(oldPath, newPath);
         return { success: true, newPath };
       } catch (e: unknown) {
@@ -184,6 +184,9 @@ export function registerMediaHandlers(): void {
       imageSource: number[] | string
     ): Promise<{ success: boolean; error?: string }> => {
       if (!isSafeAbsolutePath(filePath)) return { success: false, error: 'Invalid path' };
+      if (typeof imageSource === 'string' && !isSafeAbsolutePath(imageSource)) {
+        return { success: false, error: 'Invalid image path' };
+      }
       return writeCoverToAudioFile(filePath, imageSource);
     }
   );

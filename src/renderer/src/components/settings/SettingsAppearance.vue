@@ -46,13 +46,13 @@ const themes: {
 }[] = [
   { id: 'dark', labelKey: 'settings.dark', label: 'Ciemny', bg: '#0f0f17', fg: '#e8e8f0' },
   { id: 'light', labelKey: 'settings.light', label: 'Jasny', bg: '#f8f8fa', fg: '#1a1a2e' },
-  { id: 'midnight', label: 'Midnight', bg: '#0d1117', fg: '#c9d1d9' },
-  { id: 'spotify', label: 'Spotify', bg: '#121212', fg: '#b3b3b3' },
-  { id: 'custom', labelKey: 'settings.custom', label: 'Własny', bg: '#7c6aef', fg: '#ffffff' }
+  { id: 'midnight', labelKey: 'settings.midnight', label: 'Midnight', bg: '#0d1117', fg: '#c9d1d9' },
+  { id: 'spotify', labelKey: 'settings.spotify', label: 'Spotify', bg: '#121212', fg: '#b3b3b3' },
+  { id: 'custom', labelKey: 'settings.custom', label: 'Własny', bg: '#8b7cf0', fg: '#ffffff' }
 ];
 
 const accentColors = [
-  '#7c6aef',
+  '#8b7cf0',
   '#3b82f6',
   '#34d399',
   '#fbbf24',
@@ -93,10 +93,10 @@ const accentColors = [
             class="w-full h-8 rounded-lg mb-2 flex items-center justify-center"
             :style="{
               backgroundColor:
-                th.id === 'custom' ? settings.appearance.customBackground || '#7c6aef' : th.bg
+                th.id === 'custom' ? settings.appearance.customBackground || '#8b7cf0' : th.bg
             }"
           >
-            <div class="w-6 h-1 rounded-full" style="background: #7c6aef" />
+            <div class="w-6 h-1 rounded-full" style="background: #8b7cf0" />
           </div>
           <span class="text-xs text-fg-muted">{{ th.labelKey ? $t(th.labelKey) : th.label }}</span>
         </button>
