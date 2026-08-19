@@ -8,6 +8,7 @@ const ROUTE_MODULE_MAP: Record<string, string> = {
   explorer: 'explorer',
   library: 'library',
   youtube: 'youtube',
+  webcast: 'youtube',
   downloads: 'youtube',
   sources: 'sources',
   settings: 'settings'
@@ -47,6 +48,12 @@ const router = createRouter({
       name: 'youtube',
       component: () => import('@renderer/views/YouTubeView.vue'),
       meta: { title: 'YouTube', icon: 'youtube' }
+    },
+    {
+      path: '/webcast',
+      name: 'webcast',
+      component: () => import('@renderer/views/WebcastView.vue'),
+      meta: { title: 'Webcast', icon: 'radio-tower' }
     },
     {
       path: '/downloads',

@@ -8,7 +8,12 @@ import type {
   IpcSubscription,
   IpcSubscriptionPatch,
   IpcSubscriptionDownloadPrefs,
-  IpcSubscriptionCheckResult
+  IpcSubscriptionCheckResult,
+  IpcStreamResult,
+  IpcSavedData,
+  IpcSavedStream,
+  IpcSavedPlaylist,
+  IpcRadioStation
 } from '@shared/types/ipc';
 
 interface OndaAPI {
@@ -198,6 +203,14 @@ interface OndaAPI {
   downloadUpdate: () => Promise<boolean>;
   installUpdate: () => Promise<void>;
   youtubeAuthStatus: () => Promise<YoutubeAuthStatus>;
+  getStreamUrl: (url: string) => Promise<IpcStreamResult>;
+  savedLoad: () => Promise<IpcSavedData>;
+  savedSaveTrack: (track: IpcSavedStream) => Promise<boolean>;
+  savedRemoveTrack: (id: string) => Promise<boolean>;
+  savedSavePlaylist: (playlist: IpcSavedPlaylist) => Promise<boolean>;
+  savedRemovePlaylist: (id: string) => Promise<boolean>;
+  radioLoad: () => Promise<{ stations: IpcRadioStation[] }>;
+  radioSave: (stations: IpcRadioStation[]) => Promise<boolean>;
   youtubeLogin: () => Promise<{ success: boolean; canceled?: boolean; error?: string }>;
   youtubeLogout: () => Promise<{ success: boolean; error?: string }>;
   youtubeImportCookies: () => Promise<{ success: boolean; canceled?: boolean; error?: string }>;

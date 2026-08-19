@@ -60,7 +60,7 @@ function handleVisibilityChange(): void {
   if (
     document.hidden &&
     player.currentTrack &&
-    player.currentTrack.type === 'audio' &&
+    (player.currentTrack.type === 'audio' || player.currentTrack.type === 'stream') &&
     player.isPlaying
   ) {
     void show();

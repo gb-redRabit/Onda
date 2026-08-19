@@ -7,7 +7,7 @@ import {
 } from './subscriptions-store';
 import { fetchChannelItems, fetchChannelAll } from './youtube-handlers';
 import { computeChannelDiff } from './channel-diff';
-import { addDownloadJobs } from '../downloads/download-manager';
+import { addDownloadJobs, listDownloadJobs } from '../downloads/download-manager';
 import { getStore } from './cover-cache';
 import { broadcastToAllWindows } from '../utils/broadcast';
 
@@ -171,6 +171,30 @@ async function runCheck(
         queuedVideoIds: sub.queuedVideoIds || [],
         baselineVideoId: sub.baselineVideoId
       });
+      // Self-healing: videos recorded in queuedVideoIds whose job no longer
+      // exists (failed download, cleared queue, app restart) are re-queued on
+      // the next check so a failed batch is retried instead of staying
+      // "do pobrania" forever. The download manager replaces any leftover
+      // error/cancelled job for the same video.
+      const activeVideoIds = new Set(
+        listDownloadJobs()
+          .filter(
+            (j) =>
+              !!j.videoId &&
+              (j.status === 'pending' || j.status === 'downloading' || j.status === 'paused')
+          )
+          .map((j) => j.videoId)
+      );
+      const knownIds = new Set(sub.downloadedVideoIds || []);
+      const staleQueued = (sub.queuedVideoIds || []).filter(
+        (id) => !knownIds.has(id) && !activeVideoIds.has(id)
+      );
+      const toQueue = [
+        ...newArrivals,
+        ...staleQueued
+          .map((id) => all.find((i) => i.id === id))
+          .filter((i): i is ChannelVideoSummary => !!i)
+      ];
       const lastChecked = Date.now();
       const latest = all[0];
 
@@ -183,13 +207,13 @@ async function runCheck(
         channelTitle: title || sub.channelTitle
       };
 
-      const wantsDownload = newArrivals.length > 0 && sub.autoDownload && globalConfig.enabled;
+      const wantsDownload = toQueue.length > 0 && sub.autoDownload && globalConfig.enabled;
       if (wantsDownload) {
         // Public videos can be downloaded anonymously; yt-dlp reports a specific
         // error for age-restricted / private / members-only content, which the
         // download manager classifies and surfaces in the UI.
-        const enqueueIds = newArrivals.map((i) => i.id);
-        const jobs = newArrivals.map((i) => ({
+        const enqueueIds = toQueue.map((i) => i.id);
+        const jobs = toQueue.map((i) => ({
           url: `https://www.youtube.com/watch?v=${i.id}`,
           title: i.title,
           thumbnail: i.thumbnail,

@@ -236,7 +236,9 @@ function onWindowBlur() {
       v-if="
         !isExplorerWindow &&
         ui.playerBarVisible &&
-        player.currentTrack?.type === 'audio' &&
+        (player.currentTrack?.type === 'audio' ||
+          player.currentTrack?.type === 'stream' ||
+          player.streamPending?.type === 'stream') &&
         route.name !== 'player' &&
         route.name !== 'audio'
       "

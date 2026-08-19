@@ -130,6 +130,17 @@ export function usePlayerCover() {
   }
 
   async function enrichTrack(track: MediaFile): Promise<void> {
+    // Streams have no local file: no duration lookup, no file cover. The
+    // YouTube thumbnail (a remote https URL, allowed by CSP img-src) is seeded
+    // straight into the cover cache so PlayerBar/AudioView render it instantly.
+    if (track.type === 'stream') {
+      if (track.thumbnail && coverCache.value[track.path]?.data !== track.thumbnail) {
+        coverCache.value[track.path] = { type: 'image', data: track.thumbnail };
+        evictCoverCache();
+        triggerRef(coverCache);
+      }
+      return;
+    }
     if (!track.duration) {
       let dur = 0;
       try {

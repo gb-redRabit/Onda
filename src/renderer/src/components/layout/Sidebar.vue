@@ -16,6 +16,7 @@ import {
   Music2,
   Plus,
   Trash2,
+  RadioTower,
   ChevronDown,
   ChevronRight as ChevronRightSmall
 } from '@lucide/vue';
@@ -55,8 +56,9 @@ const navItems = computed(() => [
   { label: t('nav.library'), icon: Disc3, route: '/library' },
   { label: t('nav.explorer'), icon: FolderOpen, route: '/explorer' },
   { label: t('nav.youtube'), icon: Tv2, route: '/youtube' },
+  { label: t('nav.webcast'), icon: RadioTower, route: '/webcast' },
+  { label: t('nav.sources'), icon: Globe, route: '/sources' },
   { label: t('nav.downloads'), icon: Download, route: '/downloads' },
-  { label: t('nav.sources'), icon: Globe, route: '/sources' }
 ]);
 
 function onResizeStart(e: MouseEvent) {

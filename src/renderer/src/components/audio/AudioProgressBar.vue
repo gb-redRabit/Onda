@@ -1,13 +1,24 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
+import { usePlayerStore } from '@renderer/stores/player';
 import { formatDuration } from '@renderer/utils/formatters';
 
 const audio = useAudioPlayer();
+const player = usePlayerStore();
+
+const isLive = computed(
+  () =>
+    player.currentTrack?.type === 'stream' &&
+    !!player.currentTrack?.id.startsWith('radio:') &&
+    !player.currentTrack?.duration
+);
 
 const progressPct = computed(() =>
   audio.duration.value > 0 ? (audio.currentTime.value / audio.duration.value) * 100 : 0
 );
+
+const bufferedPct = computed(() => audio.buffered.value * 100);
 
 function onSeek(e: MouseEvent) {
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -35,17 +46,25 @@ function onDragSeek(e: MouseEvent) {
 </script>
 
 <template>
-  <div class="w-full flex items-center gap-3">
+  <div v-if="isLive" class="w-full flex items-center gap-3">
+    <span class="text-xs font-bold tracking-widest text-red-base">{{ $t('player.live') }}</span>
+    <div class="flex-1 h-px bg-bg-active rounded-full" />
+  </div>
+  <div v-else class="w-full flex items-center gap-3">
     <span class="text-xs text-fg-muted font-mono tabular-nums w-10 text-right shrink-0">
       {{ formatDuration(audio.currentTime.value) }}
     </span>
     <div
-      class="flex-1 h-1.5 bg-bg-active rounded-full cursor-pointer hover:h-2 transition-[height] group relative"
+      class="flex-1 h-1 bg-bg-active rounded-full cursor-pointer hover:h-1.5 transition-[height] group relative"
       @click="onSeek"
       @mousedown="onDragSeek"
     >
       <div
-        class="h-full bg-accent-base rounded-full relative"
+        class="absolute inset-y-0 left-0 bg-accent-base/50 rounded-full"
+        :style="{ width: bufferedPct + '%' }"
+      />
+      <div
+        class="absolute inset-y-0 left-0 bg-accent-base rounded-full "
         :style="{ width: progressPct + '%' }"
       >
         <div

@@ -30,12 +30,27 @@ const audio = useAudioPlayer();
 const router = useRouter();
 const isMini = ref(false);
 
+// While a YouTube stream URL resolves, the bar shows the pending track
+// immediately instead of waiting for the (1-2 s) resolution.
+const displayTrack = computed(() => player.currentTrack ?? player.streamPending);
+
 const progressPct = computed(() =>
   audio.duration.value > 0 ? (audio.currentTime.value / audio.duration.value) * 100 : 0
 );
 
+// Live radio stations are 'stream' tracks without a duration: no seek bar, no
+// time counter — just a "LIVE" badge.
+const isLive = computed(
+  () =>
+    player.currentTrack?.type === 'stream' &&
+    !!player.currentTrack?.id.startsWith('radio:') &&
+    !player.currentTrack?.duration
+);
+
+const bufferedPct = computed(() => audio.buffered.value * 100);
+
 function onSeek(e: MouseEvent) {
-  const rect = (e.target as HTMLElement).getBoundingClientRect();
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
   const time = ((e.clientX - rect.left) / rect.width) * audio.duration.value;
   audio.seek(time);
 }
@@ -61,25 +76,31 @@ function togglePlay() {
     class="h-12 bg-bg-overlay border-t border-border-default flex items-center px-3 gap-3 shrink-0 relative"
   >
     <div
-      class="absolute top-0 left-0 right-0 h-0.5 bg-border-default/50 cursor-pointer group hover:h-1 transition-[height] z-10"
+      v-if="!isLive"
+      class="absolute top-0 left-0 right-0 h-1 bg-border-default/50 cursor-pointer group hover:h-1.5 transition-[height] z-10"
       @click="onSeek"
     >
-      <div class="h-full bg-accent-base rounded-r-full" :style="{ width: progressPct + '%' }" />
+      <div
+        class="absolute inset-y-0 left-0 h-full bg-accent-base/50 rounded-r-full"
+        :style="{ width: bufferedPct + '%' }"
+      />
+      <div
+        class="absolute inset-y-0 left-0 h-full bg-accent-base rounded-r-full"
+        :style="{ width: progressPct + '%' }"
+      />
     </div>
 
-    <div
-      class="w-8 h-8 rounded-lg bg-bg-elevated flex items-center justify-center shrink-0 overflow-hidden"
-    >
-      <MediaCover :path="player.currentTrack?.path" :size="14" fallback="music" />
+    <div class="w-8 h-8 rounded-lg bg-bg-elevated flex items-center justify-center shrink-0 overflow-hidden">
+      <MediaCover :path="displayTrack?.path" :size="14" fallback="music" />
     </div>
     <TrackInfo
-      :track="player.currentTrack"
+      :track="displayTrack"
       class="min-w-0 flex-1"
       titleSize="text-xs"
       :showArtist="false"
       :showFallback="true"
     />
-    <div class="flex items-center gap-1">
+    <div class="flex items-center gap-1 ">
       <button
         class="p-1.5 text-fg-muted hover:text-fg-base transition-colors"
         :aria-label="$t('common.previous')"
@@ -103,7 +124,12 @@ function togglePlay() {
         <SkipForward :size="14" fill="currentColor" />
       </button>
     </div>
-    <span class="text-[10px] text-fg-faint font-mono tabular-nums">{{
+    <span
+      v-if="isLive"
+      class="text-[10px] font-bold tracking-widest text-red-base shrink-0"
+      >{{ $t('player.live') }}</span
+    >
+    <span v-else class="text-[10px] text-fg-faint font-mono tabular-nums">{{
       formatDuration(audio.currentTime.value)
     }}</span>
     <button
@@ -130,20 +156,28 @@ function togglePlay() {
     class="h-18 bg-bg-overlay border-t border-border-default flex items-center px-4 shrink-0 relative"
   >
     <div
-      class="absolute top-0 left-0 right-0 h-1 bg-border-default/50 cursor-pointer group hover:h-1.5 transition-[height] z-10"
+      v-if="!isLive"
+      class="absolute top-0 left-0 right-0 h-1 bg-border-default/50 cursor-pointer hover:h-1.5 group transition-[height] z-10"
       @click="onSeek"
     >
-      <div class="h-full bg-accent-base rounded-r-full" :style="{ width: progressPct + '%' }" />
+      <div
+        class="absolute inset-y-0 left-0 h-full bg-accent-base/50 rounded-r-full"
+        :style="{ width: bufferedPct + '%' }"
+      />
+      <div
+        class="absolute inset-y-0 left-0 h-full bg-accent-base rounded-r-full"
+        :style="{ width: progressPct + '%' }"
+      />
     </div>
 
     <div class="flex items-center gap-3 w-70 min-w-0">
       <div
         class="w-11 h-11 rounded-lg bg-bg-elevated border border-border-default flex items-center justify-center shrink-0 overflow-hidden"
       >
-        <MediaCover :path="player.currentTrack?.path" :size="18" fallback="music" />
+        <MediaCover :path="displayTrack?.path" :size="18" fallback="music" />
       </div>
       <TrackInfo
-        :track="player.currentTrack"
+        :track="displayTrack"
         class="min-w-0 flex-1"
         titleSize="text-sm"
         titleClass="text-fg-base"
@@ -216,14 +250,17 @@ function togglePlay() {
           <component :is="player.repeat === 'one' ? Repeat1 : Repeat" :size="15" />
         </button>
       </div>
-      <div class="flex items-center gap-2 text-[11px] text-fg-faint font-mono tabular-nums">
+      <div v-if="isLive" class="flex items-center gap-2 text-[11px] font-bold tracking-widest text-red-base">
+        <span>{{ $t('player.live') }}</span>
+      </div>
+      <div v-else class="flex items-center gap-2 text-[11px] text-fg-faint font-mono tabular-nums">
         <span>{{ formatDuration(audio.currentTime.value) }}</span>
         <span>/</span>
         <span>{{ formatDuration(audio.duration.value) }}</span>
       </div>
     </div>
 
-    <div class="flex items-center gap-1.5 w-55 justify-end">
+    <div class="flex items-center gap-1.5 w-64 justify-end">
       <button
         class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
         :class="{ 'text-accent-base!': player.equalizerVisible }"
@@ -258,7 +295,7 @@ function togglePlay() {
         />
       </button>
       <div
-        class="w-24 h-1 bg-border-default/60 rounded-full cursor-pointer hover:h-1.5 transition-[height]"
+        class="w-30 h-1 bg-border-default/60 rounded-full cursor-pointer hover:h-1.5 transition-[height]"
         @click="onVolume"
       >
         <div

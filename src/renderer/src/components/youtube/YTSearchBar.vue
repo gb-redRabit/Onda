@@ -73,7 +73,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
           <ListMusic :size="18" />
           <span
             v-if="batchCount && batchCount > 0"
-            class="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 flex items-center justify-center bg-accent-base text-white text-[9px] font-bold rounded-full"
+            class="absolute -top-1 -right-1 min-w-3.5 h-3.5 px-0.5 flex items-center justify-center bg-accent-base text-white text-[9px] font-bold rounded-full"
           >
             {{ batchCount > 9 ? '9+' : batchCount }}
           </span>

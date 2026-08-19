@@ -121,6 +121,67 @@ export function buildYtArgs(
   return args;
 }
 
+// Builds the base (pre-auth) argument list for resolving a direct audio
+// stream URL via `yt-dlp -g`. Auth flags are injected later by buildYtArgs
+// at spawn time, so this stays a pure function and is unit-testable.
+export function buildStreamGetArgs(
+  url: string,
+  proxyArgs: string[] = [],
+  options: { fallback?: boolean } = {}
+): string[] {
+  // Prefer progressive (https) formats, which <audio> can play directly:
+  // DASH (http_dash_segments) and HLS (m3u8) streams need MSE/hls.js. The
+  // trailing ba/bestaudio/b/w fallback keeps a result (possibly HLS, reported
+  // as a readable error) when no progressive format exists.
+  // --no-check-formats avoids the "Requested format is not available" failure
+  // when yt-dlp's format verification is blocked (common for -g).
+  // -4 forces IPv4: playback URLs are signed with the client IP YouTube saw,
+  // and our media-server proxy connects reliably over IPv4 — a v6-signed URL
+  // 403s whenever the ISP's IPv6 route is flaky.
+  // player_client=ios_safari,tv_embedded: as of 2026-08 YouTube's SABR
+  // experiment strips the URLs of audio-only DASH formats (itag 140/251) for
+  // the android/web clients, leaving only the combined 360p itag 18 (~50 MB
+  // per song). ios_safari (visionOS) and tv_embedded still return plain CDN
+  // audio-only URLs (itag 251 opus ≈ 2.7 MB) and resolve ~2× faster.
+  // `fallback` (android,web) is used as a second attempt when both primary
+  // clients fail (age-restricted videos etc.) — it degrades to itag 18, but
+  // keeps playback working where the primary clients can't extract at all.
+  const client = options.fallback ? 'android,web' : 'ios_safari,tv_embedded';
+  return [
+    url,
+    '--no-playlist',
+    '-f',
+    'ba[protocol^=https]/bestaudio[protocol^=https]/b[protocol^=https]/w[protocol^=https]/ba/bestaudio/b/w',
+    '-g',
+    '-4',
+    '--extractor-args',
+    `youtube:player_client=${client}`,
+    '--no-warnings',
+    '--no-check-formats',
+    ...proxyArgs
+  ];
+}
+
+export interface StreamGetOutput {
+  ok: boolean;
+  url?: string;
+  code?: 'hls' | 'invalid';
+}
+
+// Parses the single-line stdout of `yt-dlp -g` into a validated stream URL.
+// Rejects empty output, non-http(s) values and HLS playlists (Chromium
+// <audio> cannot play .m3u8 without hls.js).
+export function parseStreamGetOutput(stdout: string): StreamGetOutput {
+  const firstLine = stdout.trim().split(/\r?\n/, 1)[0]?.trim() ?? '';
+  if (!firstLine || !/^https?:\/\//i.test(firstLine)) {
+    return { ok: false, code: 'invalid' };
+  }
+  if (firstLine.toLowerCase().includes('.m3u8')) {
+    return { ok: false, code: 'hls' };
+  }
+  return { ok: true, url: firstLine };
+}
+
 interface YtCookieLike {
   name: string;
   value: string;

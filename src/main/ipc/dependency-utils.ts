@@ -34,24 +34,42 @@ function currentResourcesPath(): string | undefined {
   return (process as { resourcesPath?: string }).resourcesPath;
 }
 
+// yt-dlp release channel. `nightly` ships day-zero YouTube fixes — the stable
+// channel can lag weeks behind breaking changes (e.g. the 2026-08 SABR/403
+// wave, fixed on master 2026-08-18, still absent from stable 2026.07.04).
+export type YtdlpChannel = 'stable' | 'nightly';
+export const YTDLP_CHANNEL: YtdlpChannel = 'nightly';
+
 // Pinned to a concrete release tag instead of `releases/latest/download` — the
 // `latest` URL is mutable, so a compromised or mistaken release would be pulled
 // silently on the next fresh install. Bump this manually; the in-app updater
 // still fetches the specific latest tag when the user explicitly updates.
-export const YTDLP_PINNED_VERSION = '2026.07.04';
+// Nightly tags look like `2026.08.18.122307` (no leading "v").
+export const YTDLP_PINNED_VERSION = '2026.08.18.122307';
+
+function ytdlpRepo(channel: YtdlpChannel): string {
+  return channel === 'nightly'
+    ? 'https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download'
+    : 'https://github.com/yt-dlp/yt-dlp/releases/download';
+}
 
 export function ytdlpDownloadUrl(
   platform: NodeJS.Platform = process.platform,
   arch: string = process.arch,
-  version: string = YTDLP_PINNED_VERSION
+  version: string = YTDLP_PINNED_VERSION,
+  channel: YtdlpChannel = YTDLP_CHANNEL
 ): string {
-  // yt-dlp tags do not carry a leading "v" (e.g. "2026.07.04")
-  const base = `https://github.com/yt-dlp/yt-dlp/releases/download/${version}`;
+  // yt-dlp tags do not carry a leading "v" (e.g. "2026.07.04", "2026.08.18.122307")
+  const base = `${ytdlpRepo(channel)}/${version}`;
   switch (platform) {
     case 'win32':
       return `${base}/yt-dlp.exe`;
     case 'darwin':
-      return arch === 'arm64' ? `${base}/yt-dlp_macos` : `${base}/yt-dlp_macos_legacy`;
+      // Nightly ships a single universal `yt-dlp_macos`; stable additionally
+      // publishes `yt-dlp_macos_legacy` for Intel.
+      return channel === 'nightly' || arch === 'arm64'
+        ? `${base}/yt-dlp_macos`
+        : `${base}/yt-dlp_macos_legacy`;
     case 'linux':
       return arch === 'arm64' || arch === 'arm' ? `${base}/yt-dlp_linux_aarch64` : `${base}/yt-dlp`;
     default:
@@ -60,8 +78,11 @@ export function ytdlpDownloadUrl(
 }
 
 // yt-dlp publishes a single checksums manifest (SHA2-256SUMS), not per-file hashes.
-export function ytdlpShaUrl(version: string = YTDLP_PINNED_VERSION): string {
-  return `https://github.com/yt-dlp/yt-dlp/releases/download/${version}/SHA2-256SUMS`;
+export function ytdlpShaUrl(
+  version: string = YTDLP_PINNED_VERSION,
+  channel: YtdlpChannel = YTDLP_CHANNEL
+): string {
+  return `${ytdlpRepo(channel)}/${version}/SHA2-256SUMS`;
 }
 
 // BtbN force-updates its `latest` tag — pin this to a concrete `autobuild-…`

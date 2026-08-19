@@ -403,6 +403,68 @@ describe('cover cache', () => {
     store.invalidateCoverCache('/test.mp3');
     expect(store.getCover('/test.mp3')).toEqual({ type: null, data: null });
   });
+
+  it('enrichTrack seeds cover cache with the stream thumbnail', async () => {
+    const store = usePlayerStore();
+    const stream: MediaFile = {
+      id: 'yt:abc123',
+      name: 'Stream',
+      path: 'https://rr1.sn-abc.googlevideo.com/videoplayback?x=1',
+      extension: '',
+      mimeType: 'audio/mp4',
+      size: 0,
+      type: 'stream',
+      thumbnail: 'https://i.ytimg.com/vi/abc123/hqdefault.jpg',
+      addedAt: Date.now(),
+      playCount: 0
+    };
+    await store.enrichTrack(stream);
+    expect(store.getCover(stream.path)).toEqual({
+      type: 'image',
+      data: 'https://i.ytimg.com/vi/abc123/hqdefault.jpg'
+    });
+  });
+
+  it('addToQueueMultiple enriches every stream track', async () => {
+    const store = usePlayerStore();
+    const streams: MediaFile[] = ['a', 'b', 'c'].map((id) => ({
+      id: `yt:${id}`,
+      name: `Stream ${id}`,
+      path: `https://googlevideo.com/${id}`,
+      extension: '',
+      mimeType: 'audio/mp4',
+      size: 0,
+      type: 'stream' as const,
+      thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+      addedAt: Date.now(),
+      playCount: 0
+    }));
+    store.addToQueueMultiple(streams);
+    await Promise.resolve();
+    for (const s of streams) {
+      expect(store.getCover(s.path)).toEqual({ type: 'image', data: s.thumbnail });
+    }
+  });
+});
+
+describe('streamPending', () => {
+  it('is settable and clearable (display-only pending stream track)', () => {
+    const store = usePlayerStore();
+    const pending: MediaFile = {
+      id: 'yt:abc',
+      name: 'Pending stream',
+      path: '',
+      type: 'stream',
+      size: 0,
+      addedAt: Date.now(),
+      playCount: 0
+    };
+    store.streamPending = pending;
+    expect(store.streamPending?.id).toBe('yt:abc');
+    expect(store.currentTrack).toBeNull();
+    store.streamPending = null;
+    expect(store.streamPending).toBeNull();
+  });
 });
 
 describe('recordPlay (playCount/lastPlayed)', () => {

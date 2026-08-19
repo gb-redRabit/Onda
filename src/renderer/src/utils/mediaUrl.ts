@@ -1,3 +1,3 @@
-import { toMediaServerUrl } from './imageLoader';
+import { toMediaServerUrl, toMediaStreamUrl } from './imageLoader';
 
-export { toMediaServerUrl };
+export { toMediaServerUrl, toMediaStreamUrl };

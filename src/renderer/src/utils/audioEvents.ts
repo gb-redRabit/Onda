@@ -4,6 +4,9 @@ type AudioEvents = {
   playStateChange: boolean;
   trackEnd: void;
   trackLoaded: void;
+  bufferChange: number;
+  playable: void;
+  streamError: string;
 };
 
 type Listener<T> = (data: T) => void;

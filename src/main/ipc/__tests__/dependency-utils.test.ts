@@ -21,16 +21,22 @@ describe('ytdlpBinaryName', () => {
 });
 
 describe('ytdlpDownloadUrl', () => {
-  const base = 'https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04';
-  it('maps every platform to a pinned yt-dlp release asset', () => {
+  const base = 'https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.18.122307';
+  it('maps every platform to a pinned nightly yt-dlp release asset', () => {
     expect(ytdlpDownloadUrl('win32')).toBe(`${base}/yt-dlp.exe`);
     expect(ytdlpDownloadUrl('linux', 'x64')).toBe(`${base}/yt-dlp`);
     expect(ytdlpDownloadUrl('freebsd')).toBe(`${base}/yt-dlp`);
   });
 
-  it('picks apple-silicon assets on arm64 macOS and legacy on x64', () => {
+  it('uses the universal macos asset on nightly (no legacy build), apple-silicon on stable', () => {
     expect(ytdlpDownloadUrl('darwin', 'arm64')).toBe(`${base}/yt-dlp_macos`);
-    expect(ytdlpDownloadUrl('darwin', 'x64')).toBe(`${base}/yt-dlp_macos_legacy`);
+    expect(ytdlpDownloadUrl('darwin', 'x64')).toBe(`${base}/yt-dlp_macos`);
+    expect(ytdlpDownloadUrl('darwin', 'arm64', '2026.07.04', 'stable')).toBe(
+      'https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp_macos'
+    );
+    expect(ytdlpDownloadUrl('darwin', 'x64', '2026.07.04', 'stable')).toBe(
+      'https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp_macos_legacy'
+    );
   });
 
   it('uses the aarch64 asset on 32/64-bit ARM Linux and the generic one elsewhere', () => {
@@ -45,17 +51,20 @@ describe('ytdlpDownloadUrl', () => {
   });
 
   it('honours an explicit version (used by the in-app updater)', () => {
-    expect(ytdlpDownloadUrl('win32', 'x64', '2026.01.01')).toBe(
-      'https://github.com/yt-dlp/yt-dlp/releases/download/2026.01.01/yt-dlp.exe'
+    expect(ytdlpDownloadUrl('win32', 'x64', '2026.08.19.010203')).toBe(
+      'https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.19.010203/yt-dlp.exe'
     );
   });
 
   it('points the checksum source at the pinned SHA2-256SUMS manifest', () => {
     expect(ytdlpShaUrl()).toBe(
-      'https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/SHA2-256SUMS'
+      'https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.18.122307/SHA2-256SUMS'
     );
-    expect(ytdlpShaUrl('2026.01.01')).toBe(
-      'https://github.com/yt-dlp/yt-dlp/releases/download/2026.01.01/SHA2-256SUMS'
+    expect(ytdlpShaUrl('2026.08.19.010203')).toBe(
+      'https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.19.010203/SHA2-256SUMS'
+    );
+    expect(ytdlpShaUrl('2026.07.04', 'stable')).toBe(
+      'https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/SHA2-256SUMS'
     );
   });
 });

@@ -1,14 +1,18 @@
-import { ipcMain } from 'electron';
+import { app, ipcMain } from 'electron';
+import { dirname, join } from 'path';
+import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { runCommand } from '../utils/exec';
 import { resolveBin } from '../binaries';
 import { getYtAuthConfig, cleanupYtAuthTemp } from '../youtube-auth';
-import { classifyYtDlpError } from '../downloads/error-classifier';
+import { classifyYtDlpError, redactSecrets } from '../downloads/error-classifier';
 import { logger } from '../../shared/logger';
-import type { IpcDownloadErrorCode } from '../../shared/types/ipc';
+import type { IpcDownloadErrorCode, IpcStreamResult } from '../../shared/types/ipc';
 import {
   pickChannelThumbnail,
   resolveChannelAvatar,
   buildYtArgs,
+  buildStreamGetArgs,
+  parseStreamGetOutput,
   detectYtKind,
   normalizeYtUrl,
   mapResolvedEntry,
@@ -175,6 +179,149 @@ export async function fetchChannelAll(opts: { url: string; tab?: 'videos' | 'sho
       items: []
     };
   }
+}
+
+// Resolves a direct audio stream URL for a video via `yt-dlp -g`. Results are
+// cached (LRU, 5h TTL — googlevideo URLs stay valid ~6h) because repeated -g
+// calls are slow (~3-10s) and can trigger rate-limits. The cache is persisted
+// to userData so repeat plays stay instant across app restarts.
+interface StreamCacheEntry {
+  url: string;
+  expires: number;
+}
+const streamCache = new Map<string, StreamCacheEntry>();
+const STREAM_CACHE_TTL_MS = 5 * 60 * 60 * 1000;
+const STREAM_CACHE_MAX = 100;
+const STREAM_CACHE_FILE = join(app.getPath('userData'), 'stream-url-cache.json');
+
+let streamCacheLoaded = false;
+let streamCacheSaveTimer: NodeJS.Timeout | null = null;
+
+// Lazy, best-effort load of the persisted URL cache (first call of
+// getStreamUrl). Corrupt/missing files are ignored — the cache just starts
+// empty. Persisted entries beyond the LRU cap are dropped on the next save.
+function loadStreamCache(): void {
+  if (streamCacheLoaded) return;
+  streamCacheLoaded = true;
+  try {
+    const raw = readFileSync(STREAM_CACHE_FILE, 'utf8');
+    const entries = JSON.parse(raw) as { url: string; streamUrl: string; expires: number }[];
+    const now = Date.now();
+    for (const entry of entries) {
+      if (
+        streamCache.size >= STREAM_CACHE_MAX ||
+        !entry?.url ||
+        !entry?.streamUrl ||
+        typeof entry.expires !== 'number' ||
+        entry.expires <= now
+      ) {
+        continue;
+      }
+      streamCache.set(entry.url, { url: entry.streamUrl, expires: entry.expires });
+    }
+    if (streamCache.size > 0) {
+      logger.info('yt', `stream cache loaded entries=${streamCache.size}`);
+    }
+  } catch {
+    // first run or corrupt file — start with an empty cache
+  }
+}
+
+// Debounced write so a burst of resolves (play-all, hover prefetches) flushes
+// at most once per second instead of once per resolve.
+function scheduleStreamCacheSave(): void {
+  if (streamCacheSaveTimer) return;
+  streamCacheSaveTimer = setTimeout(() => {
+    streamCacheSaveTimer = null;
+    try {
+      const now = Date.now();
+      const entries = [...streamCache.entries()]
+        .filter(([, v]) => v.expires > now)
+        .map(([url, v]) => ({ url, streamUrl: v.url, expires: v.expires }));
+      mkdirSync(dirname(STREAM_CACHE_FILE), { recursive: true });
+      writeFileSync(STREAM_CACHE_FILE, JSON.stringify(entries));
+    } catch (e) {
+      logger.warn('yt', 'stream cache save failed', String(e));
+    }
+  }, 1000);
+}
+
+// In-flight dedupe: a hover-prefetch and the subsequent click must not spawn
+// two yt-dlp processes for the same URL — the second caller awaits the first.
+const streamPending = new Map<string, Promise<IpcStreamResult>>();
+
+export function getStreamUrl(url: string): Promise<IpcStreamResult> {
+  if (
+    typeof url !== 'string' ||
+    !url.trim() ||
+    url.length > 2048 ||
+    detectYtKind(url) !== 'video'
+  ) {
+    return Promise.resolve({ success: false, error: 'Invalid YouTube video link', code: 'invalid' });
+  }
+
+  const now = Date.now();
+  loadStreamCache();
+  const cached = streamCache.get(url);
+  if (cached && cached.expires > now) {
+    streamCache.delete(url);
+    streamCache.set(url, cached);
+    return Promise.resolve({ success: true, url: cached.url });
+  }
+  streamCache.delete(url);
+
+  const pending = streamPending.get(url);
+  if (pending) return pending;
+
+  const task = resolveStreamUrl(url).finally(() => {
+    streamPending.delete(url);
+  });
+  streamPending.set(url, task);
+  return task;
+}
+
+async function resolveStreamUrl(url: string): Promise<IpcStreamResult> {
+  const t0 = Date.now();
+  const proxyArgs = await readProxyArgs();
+  // Primary attempt uses ios_safari/tv_embedded (audio-only 251, ~3 s resolve).
+  // When both fail (e.g. age-restricted videos), retry once with the android,web
+  // client pair — it degrades to the combined itag 18, but keeps playback alive.
+  for (const fallback of [false, true]) {
+    try {
+      const stdout = await runYtDlp(
+        buildStreamGetArgs(url, proxyArgs, { fallback }),
+        30000
+      );
+      const parsed = parseStreamGetOutput(stdout);
+      logger.info('yt', `stream resolve${fallback ? ' (fallback)' : ''} ms=${Date.now() - t0} url=${url}`);
+      if (!parsed.ok || !parsed.url) {
+        const code = parsed?.code === 'hls' ? 'hls' : 'invalid';
+        if (!fallback) continue;
+        return {
+          success: false,
+          error: code === 'hls' ? 'HLS streams are not supported yet' : 'Invalid stream URL',
+          code
+        };
+      }
+      streamCache.set(url, { url: parsed.url, expires: Date.now() + STREAM_CACHE_TTL_MS });
+      if (streamCache.size > STREAM_CACHE_MAX) {
+        const oldest = streamCache.keys().next().value;
+        if (oldest) streamCache.delete(oldest);
+      }
+      scheduleStreamCacheSave();
+      return { success: true, url: parsed.url };
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      const msg = err.message || String(e);
+      if (!fallback) {
+        logger.warn('yt', `stream get failed ms=${Date.now() - t0}, retrying with fallback clients`, msg);
+        continue;
+      }
+      logger.warn('yt', `stream get failed (fallback) ms=${Date.now() - t0}`, msg);
+      return { success: false, error: redactSecrets(msg), code: classifyYtDlpError(msg) };
+    }
+  }
+  return { success: false, error: 'Unknown stream error', code: 'network' };
 }
 
 export function registerYoutubeHandlers(): void {
@@ -383,4 +530,8 @@ export function registerYoutubeHandlers(): void {
       }
     }
   );
+
+  ipcMain.handle('yt:stream:get', async (_event, url: string) => {
+    return getStreamUrl(url);
+  });
 }

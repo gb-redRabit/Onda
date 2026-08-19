@@ -134,15 +134,6 @@ const emit = defineEmits<{ select: [name: string]; seek: [e: MouseEvent] }>();
     </div>
   </div>
 
-  <div class="absolute bottom-0 inset-x-0 z-20">
-    <div class="w-full h-1 cursor-pointer bg-bg-hover/40 group" @click="$emit('seek', $event)">
-      <div
-        class="h-full transition-[width] duration-200 bg-accent-base"
-        :style="{ width: progressPct + '%' }"
-      ></div>
-    </div>
-  </div>
-
   <div class="absolute top-0.5 right-1 z-20">
     <button
       class="btn-pip w-4 h-4 text-[9px] text-fg-faint"

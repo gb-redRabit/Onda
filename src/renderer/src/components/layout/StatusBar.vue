@@ -3,6 +3,7 @@ import {ref,onMounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { useLibraryStore } from '@renderer/stores/library';
 import { useExplorerStore } from '@renderer/stores/explorer';
 import { useYouTubeStore } from '@renderer/stores/youtube';
@@ -27,6 +28,7 @@ onMounted(async () => {
 
 const route = useRoute();
 const player = usePlayerStore();
+const audio = useAudioPlayer();
 const library = useLibraryStore();
 const explorer = useExplorerStore();
 const youtube = useYouTubeStore();
@@ -78,19 +80,32 @@ const activeDownload = computed(() => activeDownloads.value[0] || null);
     class="h-6 bg-bg-surface border-t border-border-default flex items-center px-3 text-[11px] text-fg-faint shrink-0 gap-4"
   >
     <div class="flex items-center gap-1.5">
-      <div
-        class="w-1.5 h-1.5 rounded-full"
-        :class="player.isPlaying ? 'bg-green-base' : 'bg-border-subtle'"
-      />
-      <span v-if="player.currentTrack">
-        {{ player.currentTrack.extension?.toUpperCase() }}
-        <template v-if="player.currentTrack.metadata?.bitrate">
-          · {{ player.currentTrack.metadata.bitrate }}kbps</template
-        >
-        <template v-if="player.currentTrack.metadata?.sampleRate">
-          · {{ player.currentTrack.metadata.sampleRate / 1000 }}kHz</template
-        >
+      <span v-if="player.streamPending" class="flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-accent-base animate-pulse" />
+        {{ player.streamPending.name }} · {{ $t('status.connecting') }}
       </span>
+      <template v-else-if="player.currentTrack">
+        <span
+          class="w-1.5 h-1.5 rounded-full"
+          :class="player.isPlaying ? 'bg-green-base' : 'bg-border-subtle'"
+        />
+        <span v-if="player.currentTrack.type === 'stream' && audio.error.value === 'stream-failed'" class="text-red-base">
+          {{ $t('status.streamError') }}
+        </span>
+        <span v-else-if="player.currentTrack.type === 'stream' && audio.isLoading.value" class="flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-accent-base animate-pulse" />
+          {{ $t('status.buffering') }}
+        </span>
+        <span v-else>
+          {{ player.currentTrack.type === 'stream' ? 'YT' : player.currentTrack.extension?.toUpperCase() }}
+          <template v-if="player.currentTrack.metadata?.bitrate">
+            · {{ player.currentTrack.metadata.bitrate }}kbps</template
+          >
+          <template v-if="player.currentTrack.metadata?.sampleRate">
+            · {{ player.currentTrack.metadata.sampleRate / 1000 }}kHz</template
+          >
+        </span>
+      </template>
       <span v-else>{{ $t('status.noMedia') }}</span>
     </div>
     <template v-if="viewCounts.length">

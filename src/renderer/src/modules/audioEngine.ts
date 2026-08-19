@@ -2,7 +2,7 @@ import type { MediaFile } from '@renderer/types/media';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { audioEvents } from '@renderer/utils/audioEvents';
-import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
+import { toMediaServerUrl, toMediaStreamUrl } from '@renderer/utils/mediaUrl';
 import { logger } from '@shared/logger';
 import { AudioGraph } from './audioGraph';
 import { AudioSecondary } from './audioSecondary';
@@ -15,6 +15,16 @@ class AudioEngine {
   private savedPositions = new Map<string, number>();
   private normalization = 1;
   private preloadEl: HTMLAudioElement | null = null;
+  private loadStartTs = 0;
+  // Stream (YouTube online) playback state. Streams are proxied through the
+  // media server (CORS-enabled, so the WebAudio graph/EQ/visualizer keep
+  // working); googlevideo intermittently 403s and the proxy retries with
+  // backoff. If the proxy path is exhausted, the raw URL is retried once
+  // directly from the renderer (different request path) as a last resort.
+  private streamUrl: string | null = null;
+  private streamTriedDirect = false;
+  private streamFinalRetried = false;
+  private streamMode: 'proxy' | 'direct' | null = null;
 
   get sourceNode(): MediaElementAudioSourceNode | null {
     return this.graph.sourceNode;
@@ -62,6 +72,87 @@ class AudioEngine {
     el.addEventListener('loadedmetadata', () => {
       audioEvents.emit('durationChange', el.duration || 0);
     });
+    el.addEventListener('progress', () => {
+      let frac = 0;
+      try {
+        if (el.duration > 0 && el.buffered.length > 0) {
+          const end = el.buffered.end(el.buffered.length - 1);
+          frac = Math.min(1, end / el.duration);
+        }
+      } catch {
+        frac = 0;
+      }
+      audioEvents.emit('bufferChange', frac);
+    });
+    el.addEventListener('error', () => {
+      this.handleStreamError(el);
+    });
+    el.addEventListener('loadstart', () => {
+      logger.info('audioEngine', `loadstart +${Math.round(performance.now() - this.loadStartTs)}ms`);
+    });
+    el.addEventListener('loadeddata', () => {
+      logger.info('audioEngine', `loadeddata +${Math.round(performance.now() - this.loadStartTs)}ms`);
+    });
+    el.addEventListener('canplay', () => {
+      logger.info('audioEngine', `canplay +${Math.round(performance.now() - this.loadStartTs)}ms`);
+      audioEvents.emit('playable', undefined);
+      // Re-play after a late/retried load: resumeAndPlay fires play() at +50ms,
+      // which rejects while the element is still loading or errored (e.g. a
+      // stream that needed proxy retries or a direct fallback). Once the media
+      // is actually ready, re-issue play if the user still wants playback.
+      if (this.streamMode && usePlayerStore().isPlaying && this.audioEl && this.audioEl.paused) {
+        this.audioEl.play().catch(() => {});
+      }
+    });
+  }
+
+  // Stream error handling ladder:
+  //   proxy retries exhausted        -> direct retry once (different request path)
+  //   direct failed too              -> one more proxy pass (the per-IP throttle
+  //                                     window may have passed meanwhile)
+  //   that failed as well            -> streamError event (footer shows it)
+  private handleStreamError(el: HTMLAudioElement): void {
+    const err = el.error;
+    logger.warn(
+      'audioEngine',
+      `audio element error code=${err?.code} message=${err?.message} src=${(el.src || '').slice(0, 120)}`
+    );
+    if (!this.streamUrl) return;
+    if (this.streamMode === 'proxy' && !this.streamTriedDirect) {
+      // Proxy retries (403 with backoff) were exhausted — retry the raw URL
+      // once directly from the renderer as a different request path.
+      this.streamTriedDirect = true;
+      this.streamMode = 'direct';
+      logger.info('audioEngine', `stream proxy failed -> direct retry url=${this.streamUrl.slice(0, 120)}`);
+      const player = usePlayerStore();
+      el.crossOrigin = null;
+      this.graph.disconnectSourceNode();
+      this.disconnectSecondaryAudio();
+      el.volume = (player.isMuted ? 0 : player.volume) * this.normalization;
+      el.src = this.streamUrl;
+      el.load();
+      audioEvents.emit('bufferChange', 0);
+      return;
+    }
+    if (this.streamMode === 'direct' && !this.streamFinalRetried) {
+      // Direct retry failed as well — go back through the proxy one last time.
+      this.streamFinalRetried = true;
+      this.streamMode = 'proxy';
+      logger.info('audioEngine', `stream direct failed -> proxy retry url=${this.streamUrl.slice(0, 120)}`);
+      const player = usePlayerStore();
+      el.crossOrigin = 'anonymous';
+      el.volume = 1;
+      this.connectAudio(el);
+      if (this.graph.gainNode) {
+        this.graph.gainNode.gain.value =
+          (player.isMuted ? 0 : player.volume) * this.normalization;
+      }
+      el.src = toMediaStreamUrl(this.streamUrl);
+      el.load();
+      audioEvents.emit('bufferChange', 0);
+      return;
+    }
+    audioEvents.emit('streamError', 'stream-failed');
   }
 
   private handleEnded(): void {
@@ -111,6 +202,51 @@ class AudioEngine {
     window.api?.invoke('playback:clearPosition', path);
   }
 
+  private loadSource(src: string, opts?: { mode?: 'proxy' | 'direct' }): void {
+    if (!this.audioEl) {
+      const el = this.createAudioElement();
+      this.setupListeners(el);
+    }
+    const mode = opts?.mode ?? null;
+    this.streamMode = mode;
+    if (!mode) {
+      this.streamUrl = null;
+      this.streamTriedDirect = false;
+      this.streamFinalRetried = false;
+    }
+    this.loadStartTs = performance.now();
+    const player = usePlayerStore();
+    if (mode === 'direct') {
+      // CORS-less cross-origin playback: no crossorigin attribute (a CORS-mode
+      // fetch would be blocked by googlevideo, which sends no ACAO headers)
+      // and no MediaElementSource connection (a tainted element would be
+      // silent through the graph). Volume is applied on the element itself.
+      this.audioEl!.crossOrigin = null;
+      this.graph.disconnectSourceNode();
+      this.disconnectSecondaryAudio();
+      this.audioEl!.volume = (player.isMuted ? 0 : player.volume) * this.normalization;
+    } else {
+      this.audioEl!.crossOrigin = 'anonymous';
+      this.audioEl!.volume = 1;
+      this.connectAudio(this.audioEl!);
+      if (this.graph.gainNode) {
+        this.graph.gainNode.gain.value =
+          (player.isMuted ? 0 : player.volume) * this.normalization;
+      }
+    }
+    this.audioEl!.src = src;
+    // Explicit load(): without it the element does not reload when the new src
+    // equals the current one (e.g. retrying a cached stream URL after an
+    // upstream hiccup), leaving playback stuck in the previous error state.
+    this.audioEl!.load();
+    logger.info(
+      'audioEngine',
+      `loadSource${mode === 'direct' ? ' (direct)' : ''} src=${src.slice(0, 160)}`
+    );
+    audioEvents.emit('bufferChange', 0);
+    audioEvents.emit('trackLoaded', undefined);
+  }
+
   loadTrack(track: MediaFile): void {
     const settings = useSettingsStore();
 
@@ -127,18 +263,8 @@ class AudioEngine {
         ? Math.min(4, Math.max(0.25, ratio))
         : 1;
 
-    if (!this.audioEl) {
-      const el = this.createAudioElement();
-      this.setupListeners(el);
-    }
-    this.audioEl!.src = toMediaServerUrl(track.path);
-    logger.info('audioEngine', `loadTrack src=${toMediaServerUrl(track.path)}`);
-    this.connectAudio(this.audioEl!);
-    if (this.graph.gainNode)
-      this.graph.gainNode.gain.value =
-        (usePlayerStore().isMuted ? 0 : usePlayerStore().volume) * this.normalization;
+    this.loadSource(toMediaServerUrl(track.path));
 
-    audioEvents.emit('trackLoaded', undefined);
     if (settings.playback.rememberPosition) {
       const savedPos = this.savedPositions.get(track.path) || 0;
       if (savedPos > 0) {
@@ -153,6 +279,18 @@ class AudioEngine {
         );
       }
     }
+  }
+
+  // Plays a remote stream (YouTube online) through the media-server proxy. The
+  // proxy retries googlevideo's transient 403s with backoff; if that is
+  // exhausted the raw URL is retried directly from the renderer. Positions are
+  // not persisted for streams; rememberPosition does not apply.
+  loadRemote(url: string): void {
+    this.normalization = 1;
+    this.streamUrl = url;
+    this.streamTriedDirect = false;
+    logger.info('audioEngine', `loadRemote url=${url.slice(0, 160)}`);
+    this.loadSource(toMediaStreamUrl(url), { mode: 'proxy' });
   }
 
   play(): void {
@@ -170,6 +308,10 @@ class AudioEngine {
   }
 
   setVolume(v: number): void {
+    if (this.streamMode === 'direct' && this.audioEl) {
+      this.audioEl.volume = v * this.normalization;
+      return;
+    }
     if (this.graph.gainNode) this.graph.gainNode.gain.value = v * this.normalization;
   }
 

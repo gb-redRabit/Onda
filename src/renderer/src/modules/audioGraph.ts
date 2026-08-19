@@ -74,6 +74,23 @@ export class AudioGraph {
     }
   }
 
+  // Detaches all source nodes from the graph without tearing down the rest of
+  // the chain (gain/analyser/destination stay wired). Used for direct stream
+  // playback: a cross-origin, CORS-less media element routed through the graph
+  // would be tainted (silent), so it must play natively to the output.
+  disconnectSourceNode(): void {
+    try {
+      this.sourceNode?.disconnect();
+    } catch (e) {
+      logger.warn('audioEngine', 'disconnect source node failed', e);
+    }
+    try {
+      this.videoSourceNode?.disconnect();
+    } catch (e) {
+      logger.warn('audioEngine', 'disconnect video source node failed', e);
+    }
+  }
+
   disconnectNodes(): void {
     try {
       this.sourceNode?.disconnect();

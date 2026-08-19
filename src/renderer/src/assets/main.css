@@ -50,6 +50,15 @@ body,
   color: white;
 }
 
+/* Tailwind v4 preflight leaves buttons with cursor: default — restore the
+   pointer cursor for everything clickable and signal disabled state. */
+button:not(:disabled) {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

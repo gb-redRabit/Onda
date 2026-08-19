@@ -106,6 +106,19 @@ const sortedVideos = computed(() => {
 
 const queueTarget = ref<YouTubeVideo | null>(null);
 
+function itemDownloadState(videoId: string): 'queuing' | 'downloading' | 'done' | null {
+  if (yt.queuingId === videoId) return 'queuing';
+  const status = yt.downloadStatusFor(videoId);
+  if (status === 'downloading' || status === 'pending' || status === 'paused') {
+    return 'downloading';
+  }
+  if (status === 'completed' && yt.coverStatusFor(videoId) === 'fetching') {
+    return 'downloading';
+  }
+  if (status === 'completed') return 'done';
+  return null;
+}
+
 // Audio downloads open the cover/metadata config dialog first (Faza 5), unless
 // Smart Mode is on — then download immediately with defaults.
 function queueVideo(v: YouTubeVideo) {
@@ -363,12 +376,14 @@ watch(
             :expanded="expandedId === v.id"
             :downloaded="yt.isVideoDownloaded(v.id, yt.channel?.id)"
             :cover-status="yt.coverStatusFor(v.id)"
+            :state="itemDownloadState(v.id)"
             :watch-url="watchUrl(v.id)"
             :layout="yt.channelViewMode"
             show-views
             @expand="expandedId = v.id"
             @collapse="expandedId = null"
             @queue="queueVideo(v)"
+            @play="yt.playStream(v)"
             @open-window="openWatchWindow(v.id)"
           />
         </div>

@@ -110,6 +110,7 @@ interface OndaAPI {
   cancelDepInstall: (tool: string) => Promise<boolean>;
   getCover: (filePath: string) => Promise<{ type: 'video' | 'image' | null; data: string | null }>;
   getDuration: (filePath: string) => Promise<number>;
+  getStreamUrl: (url: string) => Promise<IpcStreamResult>;
   writeTags: (
     filePath: string,
     tags: Record<string, string | undefined>

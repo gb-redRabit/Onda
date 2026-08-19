@@ -137,4 +137,60 @@ describe('audioEngine video element routing', () => {
     expect(spy).toHaveBeenCalledTimes(1);
     off();
   });
+
+  it('loadRemote proxies the stream through the media server', () => {
+    (audioEngine as unknown as { loadRemote(url: string): void }).loadRemote(
+      'https://rr1.googlevideo.com/videoplayback?x=1'
+    );
+
+    const el = audioEngine.getMediaElement() as unknown as {
+      src: string;
+      crossOrigin: string | null;
+    };
+    expect(el.src).toContain('/stream?url=');
+    expect(el.src).toContain('rr1.googlevideo.com');
+    expect(el.crossOrigin).toBe('anonymous');
+    expect(engine.sourceNode).not.toBeNull();
+  });
+
+  it('setVolume drives the graph gain in proxied stream mode', () => {
+    (audioEngine as unknown as { loadRemote(url: string): void }).loadRemote(
+      'https://rr1.googlevideo.com/videoplayback?x=1'
+    );
+    (audioEngine as unknown as { setVolume(v: number): void }).setVolume(0.4);
+    const graph = (audioEngine as unknown as { graph: { gainNode: FakeNode } }).graph;
+    expect(graph.gainNode.gain.value).toBeCloseTo(0.4);
+  });
+
+  it('stream error ladder: proxy -> direct -> proxy retry -> streamError', () => {
+    const spy = vi.fn();
+    const off = audioEvents.on('streamError', spy);
+    const handle = (el: HTMLAudioElement): void =>
+      (audioEngine as unknown as { handleStreamError(el: HTMLAudioElement): void }).handleStreamError(
+        el
+      );
+
+    (audioEngine as unknown as { loadRemote(url: string): void }).loadRemote(
+      'https://rr1.googlevideo.com/videoplayback?x=1'
+    );
+    const el = audioEngine.getMediaElement() as unknown as {
+      src: string;
+      crossOrigin: string | null;
+    };
+    expect(el.src).toContain('/stream?url=');
+    expect(el.crossOrigin).toBe('anonymous');
+
+    handle(audioEngine.getMediaElement() as unknown as HTMLAudioElement);
+    expect(el.src).not.toContain('/stream?url=');
+    expect(el.crossOrigin).toBeNull();
+
+    handle(audioEngine.getMediaElement() as unknown as HTMLAudioElement);
+    expect(el.src).toContain('/stream?url=');
+    expect(el.crossOrigin).toBe('anonymous');
+
+    handle(audioEngine.getMediaElement() as unknown as HTMLAudioElement);
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledWith('stream-failed');
+    off();
+  });
 });

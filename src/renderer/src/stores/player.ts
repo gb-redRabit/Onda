@@ -19,6 +19,10 @@ export const usePlayerStore = defineStore('player', () => {
   const equalizerPreset = ref('flat');
   const pendingFullscreen = ref(false);
   const resumePrompt = ref<{ path: string; position: number } | null>(null);
+  // Display-only track shown while a YouTube stream URL is being resolved, so
+  // the player bar appears the moment the user clicks. Replaced by currentTrack
+  // once the URL is ready; never fed to the audio engine.
+  const streamPending = ref<MediaFile | null>(null);
 
   const { loadCover, getCover, invalidateCoverCache, enrichTrack } = usePlayerCover();
   const {
@@ -146,6 +150,7 @@ export const usePlayerStore = defineStore('player', () => {
     resumePrompt,
     showResumePrompt,
     clearResumePrompt,
+    streamPending,
     favorites,
     isFavorite,
     toggleFavorite

@@ -6,7 +6,11 @@ import type {
   YoutubeAuthStatus,
   IpcSubscription,
   IpcSubscriptionPatch,
-  IpcSubscriptionCheckResult
+  IpcSubscriptionCheckResult,
+  IpcStreamResult,
+  IpcSavedData,
+  IpcSavedStream,
+  IpcSavedPlaylist
 } from '../shared/types/ipc';
 import { logger } from '../shared/logger';
 
@@ -80,6 +84,12 @@ const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'yt:channel',
   'yt:channelAll',
   'yt:authStatus',
+'yt:stream:get',
+  'saved:load',
+  'saved:saveTrack',
+  'saved:removeTrack',
+  'saved:savePlaylist',
+  'saved:removePlaylist',
   'yt:login',
   'yt:logout',
   'yt:importCookies',
@@ -499,6 +509,20 @@ const api = {
   downloadUpdate: (): Promise<boolean> => ipcRenderer.invoke('updater:download'),
   installUpdate: (): Promise<void> => ipcRenderer.invoke('updater:install'),
   youtubeAuthStatus: (): Promise<YoutubeAuthStatus> => ipcRenderer.invoke('yt:authStatus'),
+  getStreamUrl: (url: string): Promise<IpcStreamResult> =>
+    ipcRenderer.invoke('yt:stream:get', url),
+  savedLoad: (): Promise<IpcSavedData> => ipcRenderer.invoke('saved:load'),
+  savedSaveTrack: (track: IpcSavedStream): Promise<boolean> =>
+    ipcRenderer.invoke('saved:saveTrack', track),
+  savedRemoveTrack: (id: string): Promise<boolean> =>
+    ipcRenderer.invoke('saved:removeTrack', id),
+  savedSavePlaylist: (playlist: IpcSavedPlaylist): Promise<boolean> =>
+    ipcRenderer.invoke('saved:savePlaylist', playlist),
+  savedRemovePlaylist: (id: string): Promise<boolean> =>
+    ipcRenderer.invoke('saved:removePlaylist', id),
+  radioLoad: (): Promise<{ stations: IpcRadioStation[] }> => ipcRenderer.invoke('radio:load'),
+  radioSave: (stations: IpcRadioStation[]): Promise<boolean> =>
+    ipcRenderer.invoke('radio:save', stations),
   youtubeLogin: (): Promise<{ success: boolean; canceled?: boolean; error?: string }> =>
     ipcRenderer.invoke('yt:login'),
   youtubeLogout: (): Promise<{ success: boolean; error?: string }> =>

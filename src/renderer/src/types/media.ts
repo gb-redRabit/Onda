@@ -6,7 +6,10 @@ export interface MediaFile {
   mimeType: string;
   size: number;
   duration?: number;
-  type: 'audio' | 'video' | 'image' | 'unknown';
+  // 'stream' marks an online (YouTube) track: path holds the source URL and
+  // there is no local file backing it. Streams are playable from the queue
+  // but are never persisted (library/playlists/stats).
+  type: 'audio' | 'video' | 'image' | 'unknown' | 'stream';
   metadata?: MediaMetadata;
   thumbnail?: string;
   addedAt: number;

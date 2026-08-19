@@ -5,7 +5,7 @@ import { createWriteStream } from 'fs';
 import { createHash } from 'crypto';
 import type { WebContents } from 'electron';
 import { getBinDir } from '../binaries';
-import type { BinTool } from './dependency-utils';
+import { YTDLP_CHANNEL, type BinTool } from './dependency-utils';
 
 export interface InstallResult {
   success: boolean;
@@ -160,9 +160,15 @@ function downloadFileInternal(
 }
 
 export async function fetchLatestYtdlpVersion(): Promise<string | null> {
+  // Track the active channel (nightly by default) so the in-app update check
+  // reports real updates instead of comparing against stale stable releases.
+  const repo =
+    YTDLP_CHANNEL === 'nightly'
+      ? 'yt-dlp/yt-dlp-nightly-builds'
+      : 'yt-dlp/yt-dlp';
   return new Promise((resolve) => {
     const req = https.get(
-      'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest',
+      `https://api.github.com/repos/${repo}/releases/latest`,
       { headers: { 'User-Agent': 'Onda/1.0', Accept: 'application/vnd.github+json' } },
       (res) => {
         let body = '';

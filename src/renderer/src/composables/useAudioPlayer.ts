@@ -3,14 +3,19 @@ import { audioEngine } from '@renderer/modules/audioEngine';
 import { audioEvents } from '@renderer/utils/audioEvents';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { logger } from '@shared/logger';
 
 export const currentTime = ref(0);
 export const duration = ref(0);
+const buffered = ref(0);
 const isPlaying = ref(false);
 const volume = ref(0.8);
 const mediaEl = ref<HTMLAudioElement | null>(null);
 const isReady = ref(false);
 const error = ref<string | null>(null);
+// True between the moment a load is issued and the element becoming playable
+// (used for the "buffering" indicator; streams also gate on this).
+const isLoading = ref(false);
 
 function resumeAndPlay() {
   audioEngine.resume();
@@ -28,7 +33,9 @@ function ensureModule() {
   });
 
   audioEvents.on('durationChange', (dur: number) => {
-    duration.value = dur;
+    // Live radio streams report Infinity — treat as "no duration" instead of
+    // poisoning progress/time rendering.
+    duration.value = Number.isFinite(dur) && dur > 0 ? dur : 0;
   });
 
   audioEvents.on('playStateChange', (playing: boolean) => {
@@ -42,6 +49,21 @@ function ensureModule() {
     mediaEl.value = audioEngine.getMediaElement();
     isReady.value = true;
     error.value = null;
+    buffered.value = 0;
+    isLoading.value = true;
+  });
+
+  audioEvents.on('playable', () => {
+    isLoading.value = false;
+  });
+
+  audioEvents.on('streamError', () => {
+    isLoading.value = false;
+    error.value = 'stream-failed';
+  });
+
+  audioEvents.on('bufferChange', (frac) => {
+    buffered.value = frac;
   });
 
   audioEvents.on('trackEnd', () => {
@@ -62,12 +84,17 @@ function ensureModule() {
       () => player.currentTrack?.path ?? null,
       (path, _oldPath) => {
         const track = player.currentTrack;
+        logger.info('audioPlayer', `currentTrack watch type=${track?.type ?? 'none'} path=${(path ?? '').slice(0, 60)}`);
         if (!track || !path) {
           audioEngine.pause();
           return;
         }
         if (track.type === 'video') {
           audioEngine.pause();
+        } else if (track.type === 'stream') {
+          audioEngine.loadRemote(track.path);
+          resumeAndPlay();
+          player.flushPendingQueue();
         } else if (track.type === 'audio') {
           audioEngine.loadTrack(track);
           resumeAndPlay();
@@ -84,7 +111,7 @@ function ensureModule() {
       () => player.isPlaying,
       (playing, _wasPlaying) => {
         const trackType = player.currentTrack?.type;
-        if (trackType !== 'audio') return;
+        if (trackType === 'video') return;
         if (playing) {
           resumeAndPlay();
         } else {
@@ -116,6 +143,12 @@ function ensureModule() {
     if (player.isPlaying) {
       resumeAndPlay();
     }
+  } else if (existingTrack?.type === 'stream') {
+    audioEngine.loadRemote(existingTrack.path);
+    if (player.isPlaying) {
+      resumeAndPlay();
+    }
+    player.flushPendingQueue();
   }
 
   volume.value = player.volume;
@@ -129,11 +162,13 @@ export function useAudioPlayer() {
   return {
     currentTime,
     duration,
+    buffered,
     isPlaying,
     volume,
     progress,
     mediaEl,
     isReady,
+    isLoading,
     error,
     analyserNode: audioEngine.getAnalyserNode(),
     play: () => resumeAndPlay(),

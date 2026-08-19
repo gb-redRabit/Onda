@@ -15,7 +15,7 @@ interface IpcMediaFile {
   mimeType: string;
   size: number;
   duration?: number;
-  type: 'audio' | 'video' | 'image' | 'unknown';
+  type: 'audio' | 'video' | 'image' | 'unknown' | 'stream';
   addedAt: number;
   lastPlayed?: number;
   playCount: number;
@@ -253,6 +253,58 @@ export type IpcDownloadErrorCode =
   | 'dependency'
   | 'unknown';
 
+export type IpcStreamErrorCode = IpcDownloadErrorCode | 'hls' | 'invalid';
+
+export interface IpcStreamResult {
+  success: boolean;
+  url?: string;
+  error?: string;
+  code?: IpcStreamErrorCode;
+}
+
+// A user-saved online stream (YT, later SoundCloud) for the "Saved" view.
+// Only metadata is stored — the stream URL is resolved live on play, so the
+// entry never goes stale.
+export interface IpcSavedStream {
+  id: string;
+  title: string;
+  thumbnail?: string;
+  channelTitle?: string;
+  channelId?: string;
+  duration?: string;
+  savedAt: number;
+}
+
+// A user-saved playlist/channel. The full item list is stored with the entry
+// so playback starts instantly from the snapshot; a background sync re-resolves
+// the source (yt-dlp) and appends new / drops removed items.
+export interface IpcSavedPlaylist {
+  id: string;
+  kind: 'playlist' | 'channel';
+  url: string;
+  title: string;
+  thumbnail?: string;
+  channelTitle?: string;
+  totalItems?: number;
+  items?: IpcSavedStream[];
+  savedAt: number;
+}
+
+export interface IpcSavedData {
+  tracks: IpcSavedStream[];
+  playlists: IpcSavedPlaylist[];
+}
+
+// An internet radio station the user added (from a .pls/.m3u/.xspf file or a
+// direct stream URL). Playback streams `url` live through the media-server
+// proxy — no duration, no seeking.
+export interface IpcRadioStation {
+  id: string;
+  name: string;
+  url: string;
+  addedAt: number;
+}
+
 export interface IpcDownloadTask {
   id: string;
   url: string;
@@ -474,6 +526,14 @@ export interface IpcChannels {
     };
   };
   'yt:authStatus': { args: []; result: YoutubeAuthStatus };
+  'yt:stream:get': { args: [url: string]; result: IpcStreamResult };
+  'saved:load': { args: []; result: IpcSavedData };
+  'saved:saveTrack': { args: [track: IpcSavedStream]; result: boolean };
+  'saved:removeTrack': { args: [id: string]; result: boolean };
+  'saved:savePlaylist': { args: [playlist: IpcSavedPlaylist]; result: boolean };
+  'saved:removePlaylist': { args: [id: string]; result: boolean };
+  'radio:load': { args: []; result: { stations: IpcRadioStation[] } };
+  'radio:save': { args: [stations: IpcRadioStation[]]; result: boolean };
   'yt:resolve': {
     args: [url: string];
     result: {

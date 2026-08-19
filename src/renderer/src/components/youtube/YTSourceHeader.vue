@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Download, X } from '@lucide/vue';
+import { Download, X, Play, Bookmark } from '@lucide/vue';
 import YTButton from './YTButton.vue';
 import YTBadge from './YTBadge.vue';
 import type { YouTubeResolveKind } from '@renderer/types/youtube';
@@ -13,10 +13,16 @@ const props = defineProps<{
   loadedCount?: number;
   loading?: boolean;
   canDownloadAll?: boolean;
+  canPlayAll?: boolean;
+  canSave?: boolean;
+  saved?: boolean;
+  saving?: boolean;
 }>();
 
 const emit = defineEmits<{
   downloadAll: [];
+  playAll: [];
+  save: [];
   clear: [];
 }>();
 
@@ -56,6 +62,31 @@ const kindMeta = computed(() => {
         {{ loadedCount }} / {{ totalItems }}
       </span>
     </div>
+    <YTButton v-if="canPlayAll" variant="secondary" size="sm" @click="emit('playAll')">
+      <Play :size="12" />
+      {{ $t('youtube.playAll') }}
+    </YTButton>
+    <YTButton
+      v-if="canSave"
+      variant="secondary"
+      size="sm"
+      :title="$t('saved.savePlaylistBtn')"
+      :disabled="saving"
+      @click="emit('save')"
+    >
+      <span
+        v-if="saving"
+        class="w-3 h-3 border-2 border-accent-base border-t-transparent rounded-full animate-spin"
+      />
+      <Bookmark v-else :size="12" :fill="saved ? 'currentColor' : 'none'" />
+      {{
+        saving
+          ? $t('saved.savingPlaylist')
+          : saved
+            ? $t('saved.removePlaylistBtn')
+            : $t('saved.savePlaylistBtn')
+      }}
+    </YTButton>
     <YTButton v-if="canDownloadAll" variant="primary" size="sm" @click="emit('downloadAll')">
       <Download :size="12" />
       {{ $t('youtube.downloadAll') }}

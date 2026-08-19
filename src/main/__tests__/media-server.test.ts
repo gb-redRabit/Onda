@@ -3,7 +3,14 @@ import http from 'http';
 import fs from 'fs/promises';
 import os from 'os';
 import { join, dirname } from 'path';
-import { createMediaServer, setAllowedRoots, addAllowedRoot, getExtraRoots } from '../media-server';
+import {
+  createMediaServer,
+  setAllowedRoots,
+  addAllowedRoot,
+  getExtraRoots,
+  isAllowedStreamHost,
+  validateStreamUrl
+} from '../media-server';
 import type { MediaServer } from '../media-server';
 
 let server: MediaServer | null = null;
@@ -236,5 +243,48 @@ describe('media-server', () => {
 
     const res = await request(`/${server!.token}/?path=${encodeURIComponent(file)}`);
     expect(res.status).toBe(200);
+  });
+});
+
+describe('media-server /stream proxy', () => {
+  it('rejects requests without a url parameter', async () => {
+    const res = await request(`/${server!.token}/stream`);
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects malformed urls', async () => {
+    const res = await request(`/${server!.token}/stream?url=${encodeURIComponent('not a url')}`);
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects non-https and non-allowlisted hosts', async () => {
+    const httpUrl = await request(
+      `/${server!.token}/stream?url=${encodeURIComponent('http://googlevideo.com/x')}`
+    );
+    expect(httpUrl.status).toBe(403);
+
+    const evil = await request(
+      `/${server!.token}/stream?url=${encodeURIComponent('https://evil.example/x')}`
+    );
+    expect(evil.status).toBe(403);
+  });
+
+  it('allowlists only YouTube media hosts', () => {
+    expect(isAllowedStreamHost('rr1.googlevideo.com')).toBe(true);
+    expect(isAllowedStreamHost('googlevideo.com')).toBe(true);
+    expect(isAllowedStreamHost('i.ytimg.com')).toBe(true);
+    expect(isAllowedStreamHost('www.youtube.com')).toBe(true);
+    expect(isAllowedStreamHost('evilgooglevideo.com')).toBe(false);
+    expect(isAllowedStreamHost('youtube.com.evil.example')).toBe(false);
+    expect(isAllowedStreamHost('example.com')).toBe(false);
+  });
+
+  it('validates only https urls on allowlisted hosts', () => {
+    expect(validateStreamUrl('https://rr1.googlevideo.com/videoplayback?ip=x')?.hostname).toBe(
+      'rr1.googlevideo.com'
+    );
+    expect(validateStreamUrl('http://rr1.googlevideo.com/x')).toBeNull();
+    expect(validateStreamUrl('https://evil.example/x')).toBeNull();
+    expect(validateStreamUrl('javascript:alert(1)')).toBeNull();
   });
 });

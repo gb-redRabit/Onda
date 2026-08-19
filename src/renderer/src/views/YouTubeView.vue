@@ -14,6 +14,7 @@ import {
 import { useYouTubeStore } from '@renderer/stores/youtube';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore } from '@renderer/stores/ui';
+import { useSavedStore } from '@renderer/stores/saved';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
 import { detectYtKind, parseBatchInput } from '@shared/youtube';
@@ -41,6 +42,8 @@ import type {
 
 const yt = useYouTubeStore();
 const ui = useUIStore();
+const saved = useSavedStore();
+void saved.ensureLoaded();
 const avatarErrors = ref<Record<string, boolean>>({});
 watch(
   () => yt.subscriptions.map((s) => s.channelThumbnail).join('|'),
@@ -55,6 +58,7 @@ const { t } = useI18n();
 const input = ref('');
 let searchSeq = 0;
 const resolveError = ref('');
+const savingPlaylist = ref(false);
 const searchError = ref('');
 const rangeStart = ref(1);
 const rangeEnd = ref(100);
@@ -280,6 +284,47 @@ function clearResolved() {
   resolveError.value = '';
   input.value = '';
 }
+
+function saveResolvedPlaylist() {
+  const r = yt.resolved;
+  if (!r || r.kind === 'video' || savingPlaylist.value) return;
+  const id = r.kind === 'channel' ? r.sourceUrl : (r.sourceUrl.match(/[?&]list=([\w-]+)/)?.[1] ?? r.sourceUrl);
+  if (saved.isPlaylistSaved(id)) {
+    void saved.removePlaylist(id);
+    return;
+  }
+  savingPlaylist.value = true;
+  void savePlaylistAsync(r).finally(() => {
+    savingPlaylist.value = false;
+  });
+}
+
+// The saved entry keeps the FULL item list (all pages), so the Saved view and
+// playback start instantly without re-resolving the playlist on every visit.
+async function savePlaylistAsync(r: NonNullable<typeof yt.resolved>) {
+  const { items, totalItems } = await yt.loadAllResolvedItems(r.sourceUrl);
+  void saved
+    .savePlaylist({
+      kind: r.kind,
+      url: r.sourceUrl,
+      title: r.title,
+      thumbnail: r.items[0]?.thumbnail,
+      channelTitle: r.meta.channelTitle,
+      totalItems: totalItems ?? r.meta.totalItems ?? undefined,
+      items: items.length > 0 ? items : r.items
+    })
+    .then((ok) => {
+      if (ok) ui.notify('success', r.title, t('saved.playlistSaved'));
+    });
+}
+
+const resolvedSaved = computed(() => {
+  const r = yt.resolved;
+  if (!r || r.kind === 'video') return false;
+  return saved.isPlaylistSaved(
+    r.kind === 'channel' ? r.sourceUrl : (r.sourceUrl.match(/[?&]list=([\w-]+)/)?.[1] ?? r.sourceUrl)
+  );
+});
 
 function toggleSelect(id: string) {
   const next = new Set(yt.selectedResolved);
@@ -639,7 +684,13 @@ onUnmounted(() => {
             :loaded-count="yt.resolved.items.length"
             :loading="yt.resolvedLoading"
             :can-download-all="yt.resolved.kind !== 'video'"
+            :can-play-all="yt.resolved.kind !== 'video'"
+            :can-save="yt.resolved.kind !== 'video'"
+            :saved="resolvedSaved"
+            :saving="savingPlaylist"
             @download-all="addSelectedToQueue"
+            @play-all="yt.playAllStreams(yt.resolved.items)"
+            @save="saveResolvedPlaylist"
             @clear="clearResolved"
           />
 
@@ -670,6 +721,7 @@ onUnmounted(() => {
                 @collapse="expandedResolvedId = null"
                 @toggle-select="toggleSelect"
                 @queue="quickQueueResolved"
+                @play="yt.playStream(item)"
                 @options="queueResolvedItem"
                 @open-window="openWatchWindow"
               />
@@ -734,6 +786,7 @@ onUnmounted(() => {
               @expand="toggleExpandSearch(v.id)"
               @collapse="expandedSearchId = null"
               @queue="quickQueueVideo(v)"
+              @play="yt.playStream(v)"
               @options="queueChannelVideo(v)"
               @open-window="openWatchWindow(v.id)"
             />

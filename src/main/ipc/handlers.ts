@@ -17,6 +17,8 @@ import { registerDialogHandlers } from './dialog-handlers';
 import { registerDiagnosticsHandlers } from './diagnostics-handlers';
 import { registerUpdaterHandlers } from './updater-handlers';
 import { registerSourcesHandlers } from './sources-handlers';
+import { registerSavedHandlers } from './saved-streams';
+import { registerRadioHandlers } from './radio-store';
 
 export function registerIPC(): void {
   installIpcGuards();
@@ -38,4 +40,6 @@ export function registerIPC(): void {
   registerDiagnosticsHandlers();
   registerUpdaterHandlers();
   registerSourcesHandlers();
+  registerSavedHandlers();
+  registerRadioHandlers();
 }

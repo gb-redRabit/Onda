@@ -821,8 +821,12 @@ async function postProcess(job: Job): Promise<void> {
 
 export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<IpcDownloadTask[]> {
   const created: IpcDownloadTask[] = [];
+  let replaced = 0;
   // Dedup by video ID against already-queued/finished jobs so the same video is
-  // not enqueued twice in one session (error/cancelled jobs can still be retried).
+  // not enqueued twice in one session. Failed/cancelled jobs do NOT block a new
+  // attempt — they are replaced below so a retry yields a single fresh job
+  // instead of piling up duplicates (which also made later retries silently
+  // skip while the duplicate was active).
   const knownVideoIds = new Set<string>();
   for (const j of jobs.values()) {
     if (j.videoId && j.status !== 'error' && j.status !== 'cancelled') {
@@ -837,7 +841,19 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
     const isExplicitYtdlp = input.source?.mode === 'ytdlp';
     if (!isHttpSource && !isExplicitYtdlp && !resolveProvider(input.url)) continue;
     if (input.videoId && knownVideoIds.has(input.videoId)) continue;
-    if (input.videoId) knownVideoIds.add(input.videoId);
+    if (input.videoId) {
+      // A re-queue is a retry of the previous attempt: drop every failed or
+      // cancelled job for the same video so the queue holds one job per video.
+      for (const [id, j] of [...jobs.entries()]) {
+        if (j.videoId !== input.videoId) continue;
+        if (j.status !== 'error' && j.status !== 'cancelled') continue;
+        const qIdx = queueOrder.indexOf(id);
+        if (qIdx >= 0) queueOrder.splice(qIdx, 1);
+        jobs.delete(id);
+        replaced++;
+      }
+      knownVideoIds.add(input.videoId);
+    }
     const source =
       input.source && input.source.mode === 'http'
         ? {
@@ -926,7 +942,7 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
     if (job.status === 'pending') queueOrder.push(job.id);
     created.push(snapshot(job));
   }
-  if (created.length) markQueueDirty();
+  if (created.length || replaced) markQueueDirty();
   void pump();
   return created;
 }

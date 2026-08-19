@@ -16,7 +16,9 @@ import {
   mapVideoEntry,
   pickChannelThumbnail,
   extractAvatarUrl,
-  parseNetscapeCookies
+  parseNetscapeCookies,
+  buildStreamGetArgs,
+  parseStreamGetOutput
 } from '../youtube-utils';
 
 describe('formatDuration', () => {
@@ -605,5 +607,62 @@ describe('parseNetscapeCookies', () => {
     expect(parsed[0].domain).toBe('youtube.com');
     expect(parsed[1].domain).toBeUndefined();
     expect(parsed[2].expirationDate).toBeUndefined();
+  });
+});
+
+describe('buildStreamGetArgs', () => {
+  it('builds a minimal -g invocation preferring progressive audio (ios_safari/tv_embedded)', () => {
+    expect(buildStreamGetArgs('https://youtube.com/watch?v=abc')).toEqual([
+      'https://youtube.com/watch?v=abc',
+      '--no-playlist',
+      '-f',
+      'ba[protocol^=https]/bestaudio[protocol^=https]/b[protocol^=https]/w[protocol^=https]/ba/bestaudio/b/w',
+      '-g',
+      '-4',
+      '--extractor-args',
+      'youtube:player_client=ios_safari,tv_embedded',
+      '--no-warnings',
+      '--no-check-formats'
+    ]);
+  });
+
+  it('falls back to the android,web client pair when requested', () => {
+    const args = buildStreamGetArgs('https://youtube.com/watch?v=abc', [], { fallback: true });
+    expect(args).toContain('youtube:player_client=android,web');
+  });
+
+  it('appends proxy args at the end', () => {
+    const args = buildStreamGetArgs('https://youtu.be/abc', ['--proxy', 'socks5://127.0.0.1:1080']);
+    expect(args.slice(-2)).toEqual(['--proxy', 'socks5://127.0.0.1:1080']);
+  });
+});
+
+describe('parseStreamGetOutput', () => {
+  it('accepts a single-line https stream url', () => {
+    const out = parseStreamGetOutput('https://rr1.googlevideo.com/videoplayback?ip=1.2.3.4\n');
+    expect(out).toEqual({ ok: true, url: 'https://rr1.googlevideo.com/videoplayback?ip=1.2.3.4' });
+  });
+
+  it('takes the first line when yt-dlp prints multiple lines', () => {
+    const out = parseStreamGetOutput('https://a.example/1.mp3\nhttps://a.example/2.mp3\n');
+    expect(out.ok).toBe(true);
+    expect(out.url).toBe('https://a.example/1.mp3');
+  });
+
+  it('rejects empty output', () => {
+    expect(parseStreamGetOutput('')).toEqual({ ok: false, code: 'invalid' });
+    expect(parseStreamGetOutput('   \n')).toEqual({ ok: false, code: 'invalid' });
+  });
+
+  it('rejects non-http output', () => {
+    expect(parseStreamGetOutput('file:///etc/passwd')).toEqual({ ok: false, code: 'invalid' });
+    expect(parseStreamGetOutput('ERROR: something failed')).toEqual({ ok: false, code: 'invalid' });
+  });
+
+  it('flags hls playlists as unsupported', () => {
+    expect(parseStreamGetOutput('https://manifest.googlevideo.com/api/manifest/hls_variant/master.m3u8')).toEqual({
+      ok: false,
+      code: 'hls'
+    });
   });
 });
