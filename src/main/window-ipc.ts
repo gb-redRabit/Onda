@@ -5,6 +5,7 @@ import type { PipManager } from './pip-manager';
 import type { AudioPipManager } from './audio-pip-manager';
 import { logger } from '../shared/logger';
 import { installNavigationGuard } from './navigation-guard';
+import { pipWindowIcon } from './pip-icon';
 
 const explorerWindows = new Map<number, BrowserWindow>();
 
@@ -19,6 +20,7 @@ function createExplorerWindow(initialPath?: string): number | null {
       frame: false,
       title: 'Explorer',
       backgroundColor: '#0f0f17',
+      icon: pipWindowIcon(),
       webPreferences: {
         preload: join(__dirname, '../preload/index.js'),
         sandbox: true,

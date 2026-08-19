@@ -1,6 +1,7 @@
 import { BrowserWindow, screen } from 'electron';
 import { computePipPosition } from './pip-position';
 import { installNavigationGuard } from './navigation-guard';
+import { pipWindowIcon } from './pip-icon';
 import type { PipMode, PipPosition } from '../shared/types/pip';
 
 // A lightweight always-on-top placeholder window that visually mirrors the
@@ -41,6 +42,7 @@ export class AudioPipPreview {
       resizable: false,
       transparent: true,
       backgroundColor: '#00000000',
+      icon: pipWindowIcon(),
       webPreferences: {
         contextIsolation: true,
         nodeIntegration: false

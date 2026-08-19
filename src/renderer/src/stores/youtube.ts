@@ -521,7 +521,7 @@ async function playStream(video: YouTubeVideo | YouTubeResolvedItem) {
     );
     return;
   }
-  if (!result?.success) {
+  if (!result?.success || !result.url) {
     player.streamPending = null;
     useUIStore().notify('error', video.title, streamErrorMessage(t, result?.code ?? 'network'));
     return;
@@ -633,7 +633,7 @@ async function playAllStreams(items: YouTubeResolvedItem[]) {
       } catch {
         result = undefined;
       }
-      if (!result?.success) {
+      if (!result?.success || !result.url) {
         failures++;
         continue;
       }
@@ -682,6 +682,10 @@ async function playAllStreams(items: YouTubeResolvedItem[]) {
   if (!started) {
     player.streamPending = null;
   }
+}
+
+function resolvedToSavedStream(i: YouTubeResolvedItem): IpcSavedStream {
+  return { ...i, savedAt: Date.now() };
 }
 
 function savedStreamToItem(s: IpcSavedStream): YouTubeResolvedItem {
@@ -751,7 +755,7 @@ async function syncSavedPlaylist(p: IpcSavedPlaylist): Promise<{
     const kept = stored.filter((s) => freshIds.has(s.id));
     const removed = stored.length - kept.length;
     const added = fresh.items.filter((i) => !stored.some((s) => s.id === i.id));
-    const updated = [...kept, ...added.map((i) => ({ ...savedStreamToItem(i), savedAt: Date.now() }))];
+    const updated = [...kept, ...added.map(resolvedToSavedStream)];
     if (removed > 0 || added.length > 0) {
       const saved = useSavedStore();
       await saved.updatePlaylistItems(p.id, updated, fresh.totalItems);
@@ -779,7 +783,7 @@ async function playSavedPlaylist(p: IpcSavedPlaylist) {
   let items = p.items ?? [];
   if (items.length === 0) {
     const fresh = await resolveAllPlaylistItems(p.url);
-    items = fresh.items.map(savedStreamToItem);
+    items = fresh.items.map(resolvedToSavedStream);
     if (items.length > 0) {
       const saved = useSavedStore();
       await saved.updatePlaylistItems(p.id, items, fresh.totalItems);
@@ -789,7 +793,7 @@ async function playSavedPlaylist(p: IpcSavedPlaylist) {
     useUIStore().notify('error', p.title, t('saved.playlistEmpty'));
     return;
   }
-  void playAllStreams(items);
+  void playAllStreams(items.map(savedStreamToItem));
   void syncSavedPlaylist(p);
 }
 

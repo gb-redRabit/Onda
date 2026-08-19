@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import type { MediaFile } from '@renderer/types/media';
 import { usePlayerFavorites } from './player-favorites';
 import { usePlayerStats } from './player-stats';
 import { usePlayerSubtitles } from './player-subtitles';

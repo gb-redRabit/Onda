@@ -10,7 +10,8 @@ import type {
   IpcStreamResult,
   IpcSavedData,
   IpcSavedStream,
-  IpcSavedPlaylist
+  IpcSavedPlaylist,
+  IpcRadioStation
 } from '../shared/types/ipc';
 import { logger } from '../shared/logger';
 

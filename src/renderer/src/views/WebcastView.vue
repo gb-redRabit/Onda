@@ -433,7 +433,7 @@ const playlistCount = computed(() => saved.playlists.length);
                     :hide-quick-actions="true"
                     layout="grid"
                     @expand="expandedPlaylistId = null"
-                    @queue="yt.queueVideo(item)"
+                    @queue="yt.queueVideo(toItem(item))"
                     @play="yt.playStream(toItem(item))"
                   />
                 </div>

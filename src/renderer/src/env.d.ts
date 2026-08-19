@@ -5,7 +5,17 @@ import type {
   IpcChannel,
   IpcChannels,
   AppInfo,
-  UpdaterState
+  UpdaterState,
+  YoutubeAuthStatus,
+  IpcSubscription,
+  IpcSubscriptionPatch,
+  IpcSubscriptionDownloadPrefs,
+  IpcSubscriptionCheckResult,
+  IpcStreamResult,
+  IpcSavedData,
+  IpcSavedStream,
+  IpcSavedPlaylist,
+  IpcRadioStation
 } from '@shared/types/ipc';
 
 interface OndaAPI {
@@ -199,6 +209,32 @@ interface OndaAPI {
   checkForUpdates: () => Promise<{ checking: boolean }>;
   downloadUpdate: () => Promise<boolean>;
   installUpdate: () => Promise<void>;
+  youtubeAuthStatus: () => Promise<YoutubeAuthStatus>;
+  savedLoad: () => Promise<IpcSavedData>;
+  savedSaveTrack: (track: IpcSavedStream) => Promise<boolean>;
+  savedRemoveTrack: (id: string) => Promise<boolean>;
+  savedSavePlaylist: (playlist: IpcSavedPlaylist) => Promise<boolean>;
+  savedRemovePlaylist: (id: string) => Promise<boolean>;
+  radioLoad: () => Promise<{ stations: IpcRadioStation[] }>;
+  radioSave: (stations: IpcRadioStation[]) => Promise<boolean>;
+  youtubeLogin: () => Promise<{ success: boolean; canceled?: boolean; error?: string }>;
+  youtubeLogout: () => Promise<{ success: boolean; error?: string }>;
+  youtubeImportCookies: () => Promise<{ success: boolean; canceled?: boolean; error?: string }>;
+  youtubeExportCookies: () => Promise<{ success: boolean; canceled?: boolean; error?: string }>;
+  youtubeSubscriptions: () => Promise<IpcSubscription[]>;
+  youtubeAddSubscription: (input: {
+    channelId: string;
+    channelTitle: string;
+    channelThumbnail: string;
+    downloadPrefs?: IpcSubscriptionDownloadPrefs;
+    seedBaseline?: boolean;
+  }) => Promise<IpcSubscription | null>;
+  youtubeRemoveSubscription: (channelId: string) => Promise<boolean>;
+  youtubeUpdateSubscription: (
+    channelId: string,
+    patch: IpcSubscriptionPatch
+  ) => Promise<IpcSubscription | null>;
+  youtubeCheckSubscriptions: () => Promise<IpcSubscriptionCheckResult>;
 }
 
 declare global {

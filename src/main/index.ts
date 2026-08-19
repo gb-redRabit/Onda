@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, Tray, Menu, globalShortcut } from 'electron';
+import { app, shell, BrowserWindow, ipcMain, Tray, Menu, globalShortcut, nativeImage } from 'electron';
 import { join, extname, normalize, dirname } from 'path';
 import os from 'os';
 import { statSync } from 'fs';
@@ -8,6 +8,7 @@ import { createMediaServer } from './media-server';
 import { registerOndaProtocolHandler } from './protocol';
 import { registerWindowHandlers } from './window-ipc';
 import icon from '../../resources/icon.png?asset';
+import winIcon from '../../build/icon.ico?asset';
 import { registerIPC } from './ipc/handlers';
 import { pipManager } from './pip-manager';
 import { audioPipManager } from './audio-pip-manager';
@@ -33,6 +34,12 @@ let startHidden = false;
 const preFullscreenBounds: { current: Electron.Rectangle | null } = { current: null };
 
 const MEDIA_EXTS = new Set([...AUDIO_EXTS, ...VIDEO_EXTS]);
+
+// BrowserWindow icon: multi-resolution .ico on Windows (PNG would be treated
+// 1:1 and look blurry), PNG elsewhere.
+function windowIcon(): string | undefined {
+  return process.platform === 'win32' ? winIcon : icon;
+}
 
 function isMediaFilePath(p: string): boolean {
   if (!p || p.startsWith('-')) return false;
@@ -103,7 +110,7 @@ function createWindow(): BrowserWindow {
     frame: false,
     titleBarStyle: 'hidden',
     backgroundColor: '#0f0f17',
-    ...(process.platform === 'linux' ? { icon } : {}),
+    icon: windowIcon(),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,
@@ -178,6 +185,7 @@ function createChildWindow(
     backgroundColor: '#00000000',
     alwaysOnTop: options.alwaysOnTop ?? true,
     skipTaskbar: true,
+    icon: windowIcon(),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,
@@ -215,8 +223,21 @@ function createChildWindow(
 }
 
 function setupTray(): void {
-  if (!icon) return;
-  tray = new Tray(icon);
+  // A tray with an empty image falls back to Electron's default icon, so pick
+  // the first candidate that resolves to a real image. On Windows prefer the
+  // multi-resolution .ico — the OS selects the size matching the current DPI.
+  const candidates = process.platform === 'win32' ? [winIcon, icon] : [icon, winIcon];
+  let trayImage: Electron.NativeImage | null = null;
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const image = nativeImage.createFromPath(candidate);
+    if (!image.isEmpty()) {
+      trayImage = image;
+      break;
+    }
+  }
+  if (!trayImage) return;
+  tray = new Tray(trayImage);
   tray.setToolTip('Onda Player');
 
   const contextMenu = Menu.buildFromTemplate([
@@ -278,7 +299,7 @@ function createSplashWindow(): BrowserWindow {
     alwaysOnTop: true,
     skipTaskbar: true,
     resizable: false,
-    ...(process.platform === 'linux' ? { icon } : {}),
+    icon: windowIcon(),
     webPreferences: {
       sandbox: true
     }

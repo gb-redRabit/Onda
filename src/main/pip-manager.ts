@@ -4,6 +4,7 @@ import { is } from '@electron-toolkit/utils';
 import { PipPreview } from './pip-preview';
 import { logger } from '../shared/logger';
 import { installNavigationGuard } from './navigation-guard';
+import { pipWindowIcon } from './pip-icon';
 import { computePipPosition } from './pip-position';
 import { resolveMediaPath } from './path-utils';
 import type { PipSubtitleData } from '../shared/types/pip';
@@ -66,6 +67,7 @@ export class PipManager {
       skipTaskbar: true,
       resizable: true,
       backgroundColor: '#000000',
+      icon: pipWindowIcon(),
       webPreferences: {
         preload: join(__dirname, '../preload/pip.js'),
         sandbox: true,

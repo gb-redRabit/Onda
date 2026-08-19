@@ -1,6 +1,7 @@
 import { BrowserWindow } from 'electron';
 import { computePipPosition } from './pip-position';
 import { installNavigationGuard } from './navigation-guard';
+import { pipWindowIcon } from './pip-icon';
 
 export class PipPreview {
   private window: BrowserWindow | null = null;
@@ -28,6 +29,7 @@ export class PipPreview {
       resizable: false,
       transparent: true,
       backgroundColor: '#00000000',
+      icon: pipWindowIcon(),
       webPreferences: {
         contextIsolation: true,
         nodeIntegration: false

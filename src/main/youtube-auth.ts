@@ -12,6 +12,7 @@ import {
 } from './ipc/youtube-utils';
 import type { YoutubeAuthSettings, YoutubeAuthMethod } from '../renderer/src/types/settings';
 import { logger } from '../shared/logger';
+import { pipWindowIcon } from './pip-icon';
 
 // Dedicated persistent partition so the Google session survives restarts and
 // stays fully isolated from the app's own session.
@@ -259,6 +260,7 @@ export async function startGoogleLogin(): Promise<{
     autoHideMenuBar: true,
     title: 'Google Sign-In',
     backgroundColor: '#ffffff',
+    icon: pipWindowIcon(),
     webPreferences: {
       partition: AUTH_PARTITION,
       sandbox: true,

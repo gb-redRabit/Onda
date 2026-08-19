@@ -454,6 +454,8 @@ describe('streamPending', () => {
       id: 'yt:abc',
       name: 'Pending stream',
       path: '',
+      extension: '',
+      mimeType: 'audio/mp4',
       type: 'stream',
       size: 0,
       addedAt: Date.now(),

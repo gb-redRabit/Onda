@@ -5,6 +5,7 @@ import type { AudioPipState, PipMode, PipPosition } from '../shared/types/pip';
 import { computePipPosition } from './pip-position';
 import { AudioPipPreview } from './audio-pip-preview';
 import { installNavigationGuard } from './navigation-guard';
+import { pipWindowIcon } from './pip-icon';
 
 export class AudioPipManager {
   private window: BrowserWindow | null = null;
@@ -276,6 +277,7 @@ export class AudioPipManager {
       resizable: false,
       transparent: true,
       backgroundColor: '#00000000',
+      icon: pipWindowIcon(),
       webPreferences: {
         preload: join(__dirname, '../preload/audio-pip.js'),
         sandbox: true,
