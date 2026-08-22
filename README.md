@@ -44,8 +44,12 @@
 - Zaznaczanie wielokrotne, kopiowanie/przenoszenie/usuwanie, zmiana nazwy, duplikaty, właściwości, terminal, otwieranie w aplikacji domyślnej.
 - **ImageViewer** (lightbox) z przejściami, zoomem, rotacją, pokazem slajdów i paskiem miniatur.
 
-### YouTube i pobieranie
+### Online (YouTube / SoundCloud) i pobieranie
 
+- Widok **/online** z przełącznikiem platform: YouTube i SoundCloud.
+- **Streaming online** — „Odtwórz" na kartach wyników gra bez pobierania (YT przez yt-dlp, SC przez wewnętrzne API z fallbackiem yt-dlp); kolejka streamów z auto-next, cache URL-i i prefetch na hover.
+- **SoundCloud**: wyszukiwanie, sety (playlisty), profile artystów; pobieranie MP3 bezpośrednio z API z tagami ID3 i okładką (fallback yt-dlp dla utworów bez progressive); subskrypcje artystów z automatycznym pobieraniem nowych utworów; zapisywanie utworów/setów i batch linków obu platform.
+- Zapisane utwory/playlisty (`/saved`) do szybkiego powrotu.
 - Wyszukiwanie, rozpoznawanie linków (wideo / playlista / kanał), widok kanału z zakładkami Wideo/Shorts i nieskończonym przewijaniem.
 - Subskrypcje kanałów z automatycznym sprawdzaniem nowych wideo i powiadomieniami.
 - **Pobieranie** (yt-dlp): kolejka audio/wideo, progres, prędkość, ETA, anulowanie, retry i wznowienie, okładki (miniatura / klatka / clip wideo), metadane, podfoldery kanału/playlisty.

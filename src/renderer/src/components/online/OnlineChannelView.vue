@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import type { ComponentPublicInstance } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { ArrowLeft, Users, LayoutGrid, Rows3, Bell } from '@lucide/vue';
-import { useYouTubeStore } from '@renderer/stores/youtube';
+import { useOnlineStore } from '@renderer/stores/online';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { formatNumber } from '@renderer/utils/formatters';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
@@ -12,29 +12,31 @@ import type {
   SubscriptionDownloadPrefs,
   CoverSpec,
   MetaOverride
-} from '@renderer/types/youtube';
+} from '@renderer/types/online';
 import SubscribeConfigDialog from './SubscribeConfigDialog.vue';
 import DownloadConfigDialog from './DownloadConfigDialog.vue';
-import YTConfirmDialog from './YTConfirmDialog.vue';
-import YTButton from './YTButton.vue';
-import YTSegmentControl from './YTSegmentControl.vue';
-import YTMediaCard from './YTMediaCard.vue';
+import OnlineConfirmDialog from './OnlineConfirmDialog.vue';
+import OnlineButton from './OnlineButton.vue';
+import OnlineSegmentControl from './OnlineSegmentControl.vue';
+import OnlineMediaCard from './OnlineMediaCard.vue';
 
-const yt = useYouTubeStore();
+const yt = useOnlineStore();
 const settings = useSettingsStore();
 const { t } = useI18n();
 
 const followed = computed(() => (yt.channel ? yt.isSubscribed(yt.channel.id) : false));
+// SoundCloud profile: no subscriptions, no shorts, different counter labels.
+const isScChannel = computed(() => yt.channelIsSc);
 const subscribeOpen = ref(false);
 const unfollowOpen = ref(false);
 const expandedId = ref<string | null>(null);
 
-function watchUrl(id: string): string {
-  return `https://www.youtube.com/watch?v=${id}`;
+function watchUrl(v: { id: string; url?: string }): string {
+  return v.url || `https://www.youtube.com/watch?v=${v.id}`;
 }
 
-function openWatchWindow(id: string) {
-  window.open(watchUrl(id), '_blank', 'width=1100,height=700');
+function openWatchWindow(v: { id: string; url?: string }) {
+  window.open(watchUrl(v), '_blank', 'width=1100,height=700');
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -74,7 +76,8 @@ async function confirmSubscribe(payload: {
     {
       channelId: yt.channel.id,
       channelTitle: yt.channel.title,
-      channelThumbnail: yt.channel.thumbnail
+      channelThumbnail: yt.channel.thumbnail,
+      platform: isScChannel.value ? 'soundcloud' : 'youtube'
     },
     payload
   );
@@ -264,10 +267,12 @@ watch(
               <h2 class="text-lg sm:text-xl font-bold truncate">{{ yt.channel.title }}</h2>
               <p class="text-xs text-fg-muted mt-0.5">
                 <span v-if="yt.channel.subscriberCount != null">
-                  {{ formatNumber(yt.channel.subscriberCount) }} {{ $t('youtube.subscribers') }}
+                  {{ formatNumber(yt.channel.subscriberCount) }}
+                  {{ $t(isScChannel ? 'youtube.followers' : 'youtube.subscribers') }}
                 </span>
                 <span v-if="yt.channel.videoCount != null">
-                  · {{ formatNumber(yt.channel.videoCount) }} {{ $t('youtube.videos') }}
+                  · {{ formatNumber(yt.channel.videoCount) }}
+                  {{ $t(isScChannel ? 'youtube.tracks' : 'youtube.videos') }}
                 </span>
               </p>
             </div>
@@ -281,16 +286,20 @@ watch(
           </p>
 
           <div class="flex items-center gap-2 mt-4 flex-wrap">
-            <YTButton :variant="followed ? 'secondary' : 'primary'" size="sm" @click="toggleFollow">
+            <OnlineButton
+              :variant="followed ? 'secondary' : 'primary'"
+              size="sm"
+              @click="toggleFollow"
+            >
               <Bell :size="14" />
               {{ followed ? $t('youtube.unsubscribeChannel') : $t('youtube.subscribeChannel') }}
-            </YTButton>
-            <YTButton variant="secondary" size="sm" @click="yt.closeChannel">
+            </OnlineButton>
+            <OnlineButton variant="secondary" size="sm" @click="yt.closeChannel">
               <ArrowLeft :size="14" />
               {{ $t('common.back') }}
-            </YTButton>
+            </OnlineButton>
             <div class="flex-1" />
-            <YTSegmentControl
+            <OnlineSegmentControl
               v-model="yt.channelViewMode"
               :options="[
                 { value: 'grid', label: $t('youtube.viewTiles'), icon: LayoutGrid },
@@ -310,11 +319,12 @@ watch(
           channelTitle: yt.channel.title,
           channelThumbnail: yt.channel.thumbnail
         }"
+        :platform="isScChannel ? 'soundcloud' : 'youtube'"
         @confirm="confirmSubscribe"
         @cancel="closeSubscribe"
       />
 
-      <YTConfirmDialog
+      <OnlineConfirmDialog
         v-if="unfollowOpen"
         :title="$t('youtube.unsubscribeChannel')"
         :message="$t('youtube.unsubscribeChannelConfirm')"
@@ -326,7 +336,8 @@ watch(
       />
 
       <div class="flex items-center gap-3">
-        <YTSegmentControl
+        <OnlineSegmentControl
+          v-if="!isScChannel"
           v-model="yt.channelTab"
           :options="[
             { value: 'videos', label: $t('youtube.videosTab') },
@@ -368,7 +379,7 @@ watch(
               : 'space-y-2'
           ]"
         >
-          <YTMediaCard
+          <OnlineMediaCard
             v-for="v in yt.channelTab === 'videos' ? sortedVideos : yt.channelShorts"
             :key="v.id"
             :video="v"
@@ -377,14 +388,14 @@ watch(
             :downloaded="yt.isVideoDownloaded(v.id, yt.channel?.id)"
             :cover-status="yt.coverStatusFor(v.id)"
             :state="itemDownloadState(v.id)"
-            :watch-url="watchUrl(v.id)"
+            :watch-url="watchUrl(v)"
             :layout="yt.channelViewMode"
             show-views
             @expand="expandedId = v.id"
             @collapse="expandedId = null"
             @queue="queueVideo(v)"
             @play="yt.playStream(v)"
-            @open-window="openWatchWindow(v.id)"
+            @open-window="openWatchWindow(v)"
           />
         </div>
       </div>

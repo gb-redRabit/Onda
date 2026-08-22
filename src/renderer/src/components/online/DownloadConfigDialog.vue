@@ -16,7 +16,7 @@ import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { joinPath, sanitizeDirName } from '@renderer/utils/path';
 import { AUDIO_FORMATS, VIDEO_QUALITIES, VIDEO_CONTAINERS } from '@shared/constants';
 import FilenameTemplatePresets from '@renderer/components/FilenameTemplatePresets.vue';
-import type { CoverSpec, MetaOverride } from '@renderer/types/youtube';
+import type { CoverSpec, MetaOverride } from '@renderer/types/online';
 import type { IpcDownloadConfig } from '@shared/types/ipc';
 
 const props = defineProps<{
@@ -24,12 +24,16 @@ const props = defineProps<{
   thumbnail?: string;
   channelTitle?: string;
   playlistTitle?: string;
+  /** SoundCloud downloads are fixed MP3s — most sections do not apply. */
+  platform?: 'youtube' | 'soundcloud';
 }>();
 
 const emit = defineEmits<{
   confirm: [payload: IpcDownloadConfig];
   cancel: [];
 }>();
+
+const isSc = computed(() => props.platform === 'soundcloud');
 
 const { profiles, save, remove, ensureLoaded } = useDownloadProfiles();
 const selectedProfileId = ref('');
@@ -177,6 +181,24 @@ function buildConfig(): IpcDownloadConfig {
 }
 
 function confirm() {
+  // SoundCloud: fixed progressive MP3 — only folder/metadata apply.
+  if (isSc.value) {
+    const metaOverride: MetaOverride = {};
+    if (artist.value.trim()) metaOverride.artist = artist.value.trim();
+    if (album.value.trim()) metaOverride.album = album.value.trim();
+    if (year.value.trim()) metaOverride.year = year.value.trim();
+    let resolvedDir: string | undefined;
+    if (folderMode.value === 'channel') resolvedDir = channelFolder.value || undefined;
+    else if (folderMode.value === 'playlist') resolvedDir = playlistFolder.value || undefined;
+    else if (folderMode.value === 'custom') resolvedDir = outputDir.value || undefined;
+    emit('confirm', {
+      kind: 'audio',
+      format: 'mp3',
+      ...(Object.keys(metaOverride).length ? { metaOverride } : {}),
+      ...(resolvedDir ? { outputDir: resolvedDir } : {})
+    });
+    return;
+  }
   emit('confirm', buildConfig());
 }
 
@@ -302,7 +324,7 @@ function onProfileSelect(e: Event) {
             <!-- Right: settings -->
             <div class="space-y-5">
               <!-- Profiles -->
-              <section>
+              <section v-if="!isSc">
                 <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
                   {{ $t('youtube.profilesSection') }}
                 </p>
@@ -342,7 +364,7 @@ function onProfileSelect(e: Event) {
               </section>
 
               <!-- Format -->
-              <section>
+              <section v-if="!isSc">
                 <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
                   {{ $t('youtube.prefKind') }}
                 </p>
@@ -463,7 +485,7 @@ function onProfileSelect(e: Event) {
               </section>
 
               <!-- Cover (video: thumbnail/none) -->
-              <section v-if="kind === 'video'">
+              <section v-if="!isSc && kind === 'video'">
                 <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
                   {{ $t('youtube.coverSection') }}
                 </p>
@@ -494,7 +516,7 @@ function onProfileSelect(e: Event) {
               </section>
 
               <!-- Cover (audio) -->
-              <section v-if="kind === 'audio'">
+              <section v-if="!isSc && kind === 'audio'">
                 <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
                   {{ $t('youtube.coverSection') }}
                 </p>
@@ -599,7 +621,7 @@ function onProfileSelect(e: Event) {
               </section>
 
               <!-- Subtitles -->
-              <section>
+              <section v-if="!isSc">
                 <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
                   {{ $t('youtube.subsSection') }}
                 </p>

@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { FileAudio, Link2, AlertCircle, CheckCircle2, Plus } from '@lucide/vue';
-import YTButton from '@renderer/components/youtube/YTButton.vue';
+import OnlineButton from '@renderer/components/online/OnlineButton.vue';
 import { useRadioStore } from '@renderer/stores/radio';
 import { useUIStore } from '@renderer/stores/ui';
 import { parseRadioFile, parseDirectUrl, type ParsedRadioStation } from '@renderer/utils/radioParser';
@@ -159,7 +159,7 @@ async function addDirect() {
         </div>
 
         <div class="flex items-center gap-2 justify-end">
-          <YTButton
+          <OnlineButton
             variant="secondary"
             size="sm"
             :disabled="fileStations.length === 0 || selected.size === 0 || adding"
@@ -167,7 +167,7 @@ async function addDirect() {
           >
             <CheckCircle2 :size="12" />
             {{ $t('radio.addSelected', { count: selected.size }) }}
-          </YTButton>
+          </OnlineButton>
         </div>
       </div>
 
@@ -198,17 +198,17 @@ async function addDirect() {
           {{ $t(directError) }}
         </div>
         <div class="flex items-center gap-2 justify-end">
-          <YTButton variant="primary" size="sm" :disabled="adding" @click="addDirect">
+          <OnlineButton variant="primary" size="sm" :disabled="adding" @click="addDirect">
             <Plus :size="12" />
             {{ $t('radio.addUrl') }}
-          </YTButton>
+          </OnlineButton>
         </div>
       </div>
 
       <div class="flex items-center justify-end">
-        <YTButton variant="ghost" size="sm" @click="emit('update:modelValue', false)">
+        <OnlineButton variant="ghost" size="sm" @click="emit('update:modelValue', false)">
           {{ $t('common.cancel') }}
-        </YTButton>
+        </OnlineButton>
       </div>
     </div>
   </div>

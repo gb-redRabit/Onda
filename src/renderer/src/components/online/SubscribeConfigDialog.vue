@@ -7,18 +7,24 @@ import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { useI18n } from 'vue-i18n';
 import { joinPath, sanitizeDirName } from '@renderer/utils/path';
 import { AUDIO_FORMATS, VIDEO_QUALITIES } from '@shared/constants';
-import type { SubscriptionDownloadPrefs, CoverSpec, MetaOverride } from '@renderer/types/youtube';
+import type { SubscriptionDownloadPrefs, CoverSpec, MetaOverride } from '@renderer/types/online';
 
 const props = withDefaults(
   defineProps<{
     channel: { channelId: string; channelTitle: string; channelThumbnail?: string };
     mode?: 'create' | 'edit';
     initialPrefs?: SubscriptionDownloadPrefs;
+    /** SoundCloud subscriptions only use folder/template/library prefs. */
+    platform?: 'youtube' | 'soundcloud';
   }>(),
   {
     mode: 'create'
   }
 );
+
+// SoundCloud downloads are progressive MP3s via the internal API — kind,
+// format, quality, covers, subtitles and sponsor-block do not apply.
+const isSc = computed(() => props.platform === 'soundcloud');
 
 const emit = defineEmits<{
   confirm: [payload: { prefs?: SubscriptionDownloadPrefs; downloadAll: boolean }];
@@ -101,6 +107,23 @@ interface SummaryItem {
 
 const prefsSummary = computed<SummaryItem[]>(() => {
   const items: SummaryItem[] = [];
+  if (isSc.value) {
+    const folder =
+      folderMode.value === 'channel'
+        ? channelFolder.value || t('youtube.prefOutputDirChannel')
+        : folderMode.value === 'custom'
+          ? outputDir.value || t('youtube.prefOutputDirCustom')
+          : t('youtube.prefOutputDirGlobal');
+    items.push({ label: 'SoundCloud MP3', value: folder });
+    if (filenameTemplate.value.trim()) {
+      items.push({ label: t('youtube.prefTemplate'), value: filenameTemplate.value.trim() });
+    }
+    items.push({
+      label: t('youtube.addToLibraryPref'),
+      value: addToLibrary.value ? t('common.yes') : t('common.no')
+    });
+    return items;
+  }
   items.push({
     label: t('youtube.prefKind'),
     value: kind.value === 'audio' ? t('youtube.prefAudio') : t('youtube.prefVideo')
@@ -169,6 +192,19 @@ function close() {
 }
 
 function confirm() {
+  // SoundCloud jobs are plain MP3 downloads — only folder/template/library
+  // prefs are meaningful.
+  if (isSc.value) {
+    const scPrefs: SubscriptionDownloadPrefs = {};
+    if (folderMode.value === 'channel') scPrefs.outputDir = channelFolder.value;
+    else if (folderMode.value === 'custom' && outputDir.value) scPrefs.outputDir = outputDir.value;
+    if (filenameTemplate.value.trim()) scPrefs.filenameTemplate = filenameTemplate.value.trim();
+    if (addToLibrary.value !== settings.download.autoAddDownloadFolder) {
+      scPrefs.addToLibrary = addToLibrary.value;
+    }
+    emit('confirm', { prefs: scPrefs, downloadAll: downloadAll.value });
+    return;
+  }
   const prefs: SubscriptionDownloadPrefs = {};
   if (kind.value !== settings.download.defaultKind) prefs.kind = kind.value;
   if (kind.value === 'audio' && format.value !== settings.download.defaultAudioFormat) {
@@ -358,7 +394,13 @@ async function pickCustomCover() {
                   {{ props.channel.channelTitle }}
                 </p>
                 <p class="text-xs text-fg-faint">
-                  {{ isEdit ? $t('youtube.prefSectionHint') : $t('youtube.subscribeConfigHint') }}
+                  {{
+                    isSc
+                      ? $t('youtube.subscribeConfigHintSc')
+                      : isEdit
+                        ? $t('youtube.prefSectionHint')
+                        : $t('youtube.subscribeConfigHint')
+                  }}
                 </p>
               </div>
             </div>
@@ -402,7 +444,7 @@ async function pickCustomCover() {
             <!-- Left column -->
             <div class="space-y-5">
               <!-- Profile -->
-              <section>
+              <section v-if="!isSc">
                 <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
                   {{ $t('youtube.profilesSection') }}
                 </p>
@@ -417,7 +459,7 @@ async function pickCustomCover() {
               </section>
 
               <!-- Format -->
-              <section>
+              <section v-if="!isSc">
                 <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
                   {{ $t('youtube.prefKind') }}
                 </p>
@@ -523,7 +565,7 @@ async function pickCustomCover() {
               </section>
 
               <!-- Cover (audio only) -->
-              <section v-if="kind !== 'video'">
+                <section v-if="!isSc && kind !== 'video'">
                 <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
                   {{ $t('youtube.coverSection') }}
                 </p>
@@ -601,7 +643,7 @@ async function pickCustomCover() {
             <!-- Right column -->
             <div class="space-y-5">
               <!-- Metadata -->
-              <section>
+              <section v-if="!isSc">
                 <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-1">
                   {{ $t('youtube.metaSection') }}
                 </p>
@@ -626,7 +668,7 @@ async function pickCustomCover() {
               </section>
 
               <!-- Subtitles -->
-              <section>
+              <section v-if="!isSc">
                 <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
                   {{ $t('youtube.subsSection') }}
                 </p>

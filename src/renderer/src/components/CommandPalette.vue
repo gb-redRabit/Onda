@@ -6,7 +6,7 @@ import type { MediaFile } from '@renderer/types/media';
 import { useUIStore } from '@renderer/stores/ui';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
-import { Search, Music2, Film, Disc3, Settings, Home, ArrowRight, Tv2, Download, Globe } from '@lucide/vue';
+import { Search, Music2, Film, Disc3, Settings, Home, ArrowRight, Radio, Download, Globe } from '@lucide/vue';
 
 const { t } = useI18n();
 
@@ -22,7 +22,7 @@ const activeIndex = ref(0);
 const actions = computed(() => [
   { label: t('nav.home'), icon: Home, action: () => router.push('/') },
   { label: t('nav.library'), icon: Disc3, action: () => router.push('/library') },
-  { label: t('nav.youtube'), icon: Tv2, action: () => router.push('/youtube') },
+  { label: t('nav.online'), icon: Radio, action: () => router.push('/online') },
   { label: t('nav.downloads'), icon: Download, action: () => router.push('/downloads') },
   { label: t('sources.title'), icon: Globe, action: () => router.push('/sources') },
   { label: t('nav.explorer'), icon: Film, action: () => router.push('/explorer') },

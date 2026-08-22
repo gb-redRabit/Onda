@@ -34,6 +34,8 @@ import { addAllowedRoot } from '../media-server';
 import { resolveFinalOutputPath, findNewestOutput } from './output-path';
 import { downloadHttpFile } from './http-downloader';
 import { resolveSourceHeaders } from '../ipc/generic-fetch';
+import { resolveScDownloadSource } from '../ipc/soundcloud-client';
+import { embedScMp3Tags } from './sc-tags';
 
 const MAX_CONCURRENT = 10;
 const MAX_STDERR_BYTES = 64 * 1024;
@@ -610,6 +612,36 @@ async function runJobAttempt(
       jobAbortControllers.delete(job.id);
     }
   }
+  if (job.source?.mode === 'soundcloud') {
+    let resolved: string | null = null;
+    try {
+      // SoundCloud CDN links are signed and time-limited: resolve a FRESH
+      // progressive-MP3 URL at the start of every attempt so retries never
+      // replay an expired signature.
+      resolved = await resolveScDownloadSource(job.url);
+    } catch (e) {
+      // No progressive transcoding (Go+ gated / HLS-only) — degrade this
+      // attempt to the yt-dlp pipeline, which handles HLS via ffmpeg and
+      // still produces a playable audio file.
+      logger.warn(
+        'downloads',
+        `sc progressive unavailable for ${job.id}, falling back to yt-dlp`,
+        String(e)
+      );
+      job.source = { ...job.source, mode: 'ytdlp' };
+    }
+    if (resolved) {
+      job.url = resolved;
+      const ac = new AbortController();
+      jobAbortControllers.set(job.id, ac);
+      try {
+        return await runHttpAttempt(job, ac.signal);
+      } finally {
+        jobAbortControllers.delete(job.id);
+      }
+    }
+    // fall through to the yt-dlp spawn path below
+  }
   const args = buildYtArgs(base, auth);
   // On Windows yt-dlp prints "Destination:" lines to stdout in the console
   // codepage, which would mangle non-ASCII names when decoded as UTF-8. Force
@@ -749,8 +781,24 @@ async function resolveRealOutputPath(job: Job, destinations: string[]): Promise<
 // Post-download pipeline (Faza 5/6): metadata override, cover processing and
 // library refresh. Failures are non-fatal — the file itself is already done.
 async function postProcess(job: Job): Promise<void> {
-  const outputPath = job.outputPath || '';
-  if (outputPath && job.metaOverride) {
+    const outputPath = job.outputPath || '';
+    // SoundCloud MP3s are raw progressive streams — embed title/artist/artwork
+    // here instead of the yt-dlp metadata/cover pipeline.
+    if (job.source?.mode === 'soundcloud' && outputPath && job.kind === 'audio') {
+      job.coverStatus = 'fetching';
+      persist(job);
+      const ok = await embedScMp3Tags(outputPath, {
+        title: job.title,
+        artist: job.metaOverride?.artist || job.channelTitle || '',
+        album: job.metaOverride?.album,
+        year: job.metaOverride?.year,
+        thumbnailUrl:
+          job.thumbnail && /^https:\/\//i.test(job.thumbnail) ? job.thumbnail : undefined
+      });
+      job.coverStatus = ok ? 'embedded' : 'none';
+      persist(job);
+    }
+    if (outputPath && job.metaOverride && job.source?.mode !== 'soundcloud') {
     try {
       await applyMetadataOverride(outputPath, job.metaOverride);
     } catch (e) {
@@ -835,7 +883,8 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
   }
   for (const input of inputs) {
     if (!input || !input.url) continue;
-    const isHttpSource = input.source?.mode === 'http';
+    const isHttpSource =
+      input.source?.mode === 'http' || input.source?.mode === 'soundcloud';
     // Źródła generyczne (mega/cda/vk/drive) jawnie żądają yt-dlp — pomijamy
     // gate providera przeznaczony dla klasycznej ścieżki YouTube.
     const isExplicitYtdlp = input.source?.mode === 'ytdlp';
@@ -869,7 +918,15 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
                 ? input.source.headerName.slice(0, 100)
                 : undefined
           }
-        : input.source && input.source.mode === 'ytdlp'
+        : input.source && input.source.mode === 'soundcloud'
+          ? {
+              mode: 'soundcloud' as const,
+              fileName:
+                typeof input.source.fileName === 'string' && input.source.fileName
+                  ? input.source.fileName.slice(0, 200)
+                  : undefined
+            }
+          : input.source && input.source.mode === 'ytdlp'
           ? {
               mode: 'ytdlp' as const,
               apiKeyId:
@@ -1103,7 +1160,8 @@ export async function importQueue(tasks: IpcDownloadTask[]): Promise<number> {
   const inputs: IpcDownloadJobInput[] = [];
   for (const t of tasks) {
     if (!t || typeof t.url !== 'string') continue;
-    const isHttpSource = t.source?.mode === 'http';
+    const isHttpSource =
+      t.source?.mode === 'http' || t.source?.mode === 'soundcloud';
     const isExplicitYtdlp = t.source?.mode === 'ytdlp';
     if (!isHttpSource && !isExplicitYtdlp && !resolveProvider(t.url)) continue;
     if (t.status === 'completed' || t.status === 'cancelled') continue;

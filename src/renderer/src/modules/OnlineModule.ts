@@ -1,9 +1,9 @@
 import type { AppModule } from './ModuleManager';
-import { useYouTubeStore } from '@renderer/stores/youtube';
+import { useOnlineStore } from '@renderer/stores/online';
 
-export class YouTubeModule implements AppModule {
-  id = 'youtube';
-  name = 'YouTube';
+export class OnlineModule implements AppModule {
+  id = 'online';
+  name = 'Online';
   private _active = false;
 
   init(): void {
@@ -16,13 +16,13 @@ export class YouTubeModule implements AppModule {
 
   async deactivate(): Promise<void> {
     this._active = false;
-    const yt = useYouTubeStore();
+    const yt = useOnlineStore();
     yt.isSearching = false;
   }
 
   async destroy(): Promise<void> {
     this._active = false;
-    const yt = useYouTubeStore();
+    const yt = useOnlineStore();
     yt.isSearching = false;
     yt.searchResults = [];
     yt.searchQuery = '';

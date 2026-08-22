@@ -15,19 +15,19 @@ import {
   ArrowUpToLine
 } from '@lucide/vue';
 import { useSavedStore } from '@renderer/stores/saved';
-import { useYouTubeStore } from '@renderer/stores/youtube';
+import { useOnlineStore } from '@renderer/stores/online';
 import { useRadioStore } from '@renderer/stores/radio';
 import { usePlayerStore } from '@renderer/stores/player';
-import YTMediaCard from '@renderer/components/youtube/YTMediaCard.vue';
-import YTButton from '@renderer/components/youtube/YTButton.vue';
+import OnlineMediaCard from '@renderer/components/online/OnlineMediaCard.vue';
+import OnlineButton from '@renderer/components/online/OnlineButton.vue';
 import RadioAddDialog from '@renderer/components/radio/RadioAddDialog.vue';
-import type { YouTubeResolvedItem } from '@renderer/types/youtube';
+import type { YouTubeResolvedItem } from '@renderer/types/online';
 import type { IpcSavedPlaylist, IpcRadioStation } from '@shared/types/ipc';
 
 type WebcastTab = 'radio' | 'saved';
 
 const saved = useSavedStore();
-const yt = useYouTubeStore();
+const yt = useOnlineStore();
 const radio = useRadioStore();
 const player = usePlayerStore();
 
@@ -68,6 +68,7 @@ function toItem(s: {
   channelTitle?: string;
   channelId?: string;
   duration?: string;
+  url?: string;
 }): YouTubeResolvedItem {
   return {
     id: s.id,
@@ -76,15 +77,30 @@ function toItem(s: {
     channelTitle: s.channelTitle ?? '',
     channelId: s.channelId ?? '',
     duration: s.duration,
-    isPlayable: true
+    isPlayable: true,
+    // SoundCloud permalink — without it a numeric SC id cannot be turned into
+    // a playable URL.
+    ...(s.url ? { url: s.url } : {})
   };
 }
 
-function playTrack(s: { id: string; title: string; duration?: string; thumbnail?: string }) {
+function playTrack(s: {
+  id: string;
+  title: string;
+  duration?: string;
+  thumbnail?: string;
+  url?: string;
+}) {
   void yt.playStream(toItem(s));
 }
 
-function queueTrack(s: { id: string; title: string; duration?: string; thumbnail?: string }) {
+function queueTrack(s: {
+  id: string;
+  title: string;
+  duration?: string;
+  thumbnail?: string;
+  url?: string;
+}) {
   void yt.queueSavedTrack(s);
 }
 
@@ -174,10 +190,10 @@ const playlistCount = computed(() => saved.playlists.length);
             <Radio :size="14" class="text-accent-base" />
             {{ $t('saved.radioTitle') }}
           </h2>
-          <YTButton variant="secondary" size="sm" @click="radioDialogOpen = true">
+          <OnlineButton variant="secondary" size="sm" @click="radioDialogOpen = true">
             <Plus :size="12" />
             {{ $t('saved.addRadio') }}
-          </YTButton>
+          </OnlineButton>
         </div>
         <div v-if="radio.stations.length === 0" class="space-y-2">
           <div
@@ -424,7 +440,7 @@ const playlistCount = computed(() => saved.playlists.length);
                   v-else
                   class="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
                 >
-                  <YTMediaCard
+                  <OnlineMediaCard
                     v-for="item in p.items"
                     :key="item.id"
                     :video="toItem(item)"

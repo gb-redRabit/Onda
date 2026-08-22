@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Download, X, Play, Bookmark } from '@lucide/vue';
-import YTButton from './YTButton.vue';
-import YTBadge from './YTBadge.vue';
-import type { YouTubeResolveKind } from '@renderer/types/youtube';
+import OnlineButton from './OnlineButton.vue';
+import OnlineBadge from './OnlineBadge.vue';
+import type { YouTubeResolveKind } from '@renderer/types/online';
 
 const props = defineProps<{
   kind: YouTubeResolveKind;
@@ -40,7 +40,7 @@ const kindMeta = computed(() => {
 
 <template>
   <div class="flex items-center gap-3 p-3 rounded-2xl bg-bg-surface border border-border-default">
-    <YTBadge :variant="kindMeta.variant" size="md">{{ $t(kindMeta.key) }}</YTBadge>
+    <OnlineBadge :variant="kindMeta.variant" size="md">{{ $t(kindMeta.key) }}</OnlineBadge>
     <div class="min-w-0 flex-1">
       <h2 class="text-sm font-semibold text-fg-base truncate">{{ title }}</h2>
       <p class="text-xs text-fg-muted truncate">
@@ -62,11 +62,11 @@ const kindMeta = computed(() => {
         {{ loadedCount }} / {{ totalItems }}
       </span>
     </div>
-    <YTButton v-if="canPlayAll" variant="secondary" size="sm" @click="emit('playAll')">
+    <OnlineButton v-if="canPlayAll" variant="secondary" size="sm" @click="emit('playAll')">
       <Play :size="12" />
       {{ $t('youtube.playAll') }}
-    </YTButton>
-    <YTButton
+    </OnlineButton>
+    <OnlineButton
       v-if="canSave"
       variant="secondary"
       size="sm"
@@ -86,14 +86,14 @@ const kindMeta = computed(() => {
             ? $t('saved.removePlaylistBtn')
             : $t('saved.savePlaylistBtn')
       }}
-    </YTButton>
-    <YTButton v-if="canDownloadAll" variant="primary" size="sm" @click="emit('downloadAll')">
+    </OnlineButton>
+    <OnlineButton v-if="canDownloadAll" variant="primary" size="sm" @click="emit('downloadAll')">
       <Download :size="12" />
       {{ $t('youtube.downloadAll') }}
-    </YTButton>
-    <YTButton variant="secondary" size="sm" @click="emit('clear')">
+    </OnlineButton>
+    <OnlineButton variant="secondary" size="sm" @click="emit('clear')">
       <X :size="12" />
       {{ $t('youtube.clear') }}
-    </YTButton>
+    </OnlineButton>
   </div>
 </template>

@@ -424,6 +424,21 @@ describe('pickChannelThumbnail', () => {
     ).toBe('https://img/big');
   });
 
+  it('skips expiring (signed) avatar URLs even when larger', () => {
+    expect(
+      pickChannelThumbnail({
+        thumbnails: [
+          {
+            url: 'https://lh3.googleusercontent.com/expiring?expire=1787350606&sig=abc',
+            width: 1920,
+            height: 1080
+          },
+          { url: 'https://yt3.ggpht.com/ytc/stable=s176', width: 176, height: 176 }
+        ]
+      })
+    ).toBe('https://yt3.ggpht.com/ytc/stable=s176');
+  });
+
   it('prefers the square avatar over wider banner images', () => {
     expect(
       pickChannelThumbnail({

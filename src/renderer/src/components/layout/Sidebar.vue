@@ -2,11 +2,11 @@
 import { ref, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
+import { useOnlineStore } from '@renderer/stores/online';
 import {
   Home,
   Disc3,
   FolderOpen,
-  Tv2,
   Download,
   Globe,
   Settings,
@@ -17,6 +17,7 @@ import {
   Plus,
   Trash2,
   RadioTower,
+  Radio,
   ChevronDown,
   ChevronRight as ChevronRightSmall
 } from '@lucide/vue';
@@ -51,14 +52,46 @@ watch(
   }
 );
 
-const navItems = computed(() => [
+// Blinks the Downloads nav icon whenever a new task joins the queue — no
+// matter which view enqueued it (Online, Sources, Saved/Webcast...). The
+// first sync (startup queue restore) is swallowed as a baseline.
+const yt = useOnlineStore();
+const downloadBlink = ref(false);
+let blinkTimer: number | undefined;
+let prevQueueLen: number | null = null;
+watch(
+  () => yt.downloads.length,
+  (len) => {
+    if (prevQueueLen === null) {
+      prevQueueLen = len;
+      return;
+    }
+    if (len > prevQueueLen) {
+      downloadBlink.value = true;
+      window.clearTimeout(blinkTimer);
+      blinkTimer = window.setTimeout(() => {
+        downloadBlink.value = false;
+      }, 1800);
+    }
+    prevQueueLen = len;
+  }
+);
+
+interface NavEntry {
+  label: string;
+  icon: unknown;
+  route: string;
+  blink?: boolean;
+}
+
+const navItems = computed<NavEntry[]>(() => [
   { label: t('nav.home'), icon: Home, route: '/' },
   { label: t('nav.library'), icon: Disc3, route: '/library' },
   { label: t('nav.explorer'), icon: FolderOpen, route: '/explorer' },
-  { label: t('nav.youtube'), icon: Tv2, route: '/youtube' },
+  { label: t('nav.online'), icon: Radio, route: '/online' },
   { label: t('nav.webcast'), icon: RadioTower, route: '/webcast' },
   { label: t('nav.sources'), icon: Globe, route: '/sources' },
-  { label: t('nav.downloads'), icon: Download, route: '/downloads' },
+  { label: t('nav.downloads'), icon: Download, route: '/downloads', blink: downloadBlink.value },
 ]);
 
 function onResizeStart(e: MouseEvent) {
@@ -136,7 +169,12 @@ function playPlaylist(playlistId: string) {
           "
           @click="router.push(item.route)"
         >
-          <component :is="item.icon" :size="18" class="shrink-0" />
+          <component
+            :is="item.icon"
+            :size="18"
+            class="shrink-0"
+            :class="{ 'animate-download-blink text-accent-base': item.blink }"
+          />
           <span v-if="!collapsed" class="truncate">{{ item.label }}</span>
         </button>
 

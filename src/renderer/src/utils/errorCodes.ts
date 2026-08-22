@@ -16,6 +16,8 @@ export function errorCodeKey(code?: string): string {
       return 'downloads.errorProxy';
     case 'dependency':
       return 'downloads.errorDependency';
+    case 'unsupported':
+      return 'downloads.errorUnsupported';
     default:
       return '';
   }

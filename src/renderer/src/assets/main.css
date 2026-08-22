@@ -30,6 +30,8 @@
   contain: layout style paint;
 }
 
+
+
 html,
 body,
 #app {
@@ -131,4 +133,21 @@ input[type='range']::-webkit-slider-thumb {
 .settings-leave-to {
   opacity: 0;
   transform: translateY(-8px);
+}
+
+@keyframes download-blink {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1.22);
+  }
+}
+
+.animate-download-blink {
+  animation: download-blink 0.9s ease-in-out infinite;
+  will-change: opacity, transform;
 }

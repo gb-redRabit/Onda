@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useYouTubeStore } from '@renderer/stores/youtube';
+import { useOnlineStore } from '@renderer/stores/online';
 import { usePlayerStore } from '@renderer/stores/player';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
-import type { DownloadTask } from '@renderer/types/youtube';
+import type { DownloadTask } from '@renderer/types/online';
 import type { MediaFile } from '@renderer/types/media';
 import {
   Download,
@@ -29,7 +29,7 @@ import {
   RefreshCw
 } from '@lucide/vue';
 
-const yt = useYouTubeStore();
+const yt = useOnlineStore();
 const router = useRouter();
 const player = usePlayerStore();
 

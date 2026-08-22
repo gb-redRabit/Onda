@@ -1,4 +1,4 @@
-import type { YouTubeResolveKind } from '../renderer/src/types/youtube';
+import type { YouTubeResolveKind } from '../renderer/src/types/online';
 
 // Classifies a user-pasted link as a single video, a playlist or a channel.
 // Accepts full URLs as well as bare keys: an 11-character video ID and a

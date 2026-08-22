@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { Tv2, Download, RefreshCw, SlidersHorizontal, X } from '@lucide/vue';
-import YTButton from './YTButton.vue';
-import YTIconButton from './YTIconButton.vue';
-import YTBadge from './YTBadge.vue';
-import type { Subscription } from '@renderer/types/youtube';
+import OnlineButton from './OnlineButton.vue';
+import OnlineIconButton from './OnlineIconButton.vue';
+import OnlineBadge from './OnlineBadge.vue';
+import type { Subscription } from '@renderer/types/online';
 
 const props = defineProps<{
   sub: Subscription;
@@ -62,12 +62,14 @@ function lastCheckedLabel(ts?: number): string {
           >
             {{ sub.channelTitle }}
           </button>
-          <YTBadge v-if="sub.pendingCount" variant="green" size="sm">
+          <OnlineBadge v-if="sub.platform === 'soundcloud'" variant="amber" size="sm">SC</OnlineBadge>
+          <OnlineBadge v-else-if="sub.platform === 'youtube'" variant="accent" size="sm">YT</OnlineBadge>
+          <OnlineBadge v-if="sub.pendingCount" variant="green" size="sm">
             {{ $t('youtube.remainingCount', { count: sub.pendingCount }) }}
-          </YTBadge>
-          <YTBadge v-if="sub.newArrivals" variant="amber" size="sm">
+          </OnlineBadge>
+          <OnlineBadge v-if="sub.newArrivals" variant="amber" size="sm">
             {{ $t('youtube.newCount', { count: sub.newArrivals }) }}
-          </YTBadge>
+          </OnlineBadge>
         </div>
         <p class="text-[11px] text-fg-faint mt-0.5">
           <template v-if="sub.lastChecked">
@@ -94,7 +96,7 @@ function lastCheckedLabel(ts?: number): string {
         <span>{{ $t('youtube.autoDownload') }}</span>
       </label>
       <div class="flex-1" />
-      <YTButton
+      <OnlineButton
         variant="primary"
         size="sm"
         :disabled="queueingChannelId === sub.channelId"
@@ -108,24 +110,24 @@ function lastCheckedLabel(ts?: number): string {
             ? $t('youtube.downloading')
             : $t('youtube.downloadAll')
         }}
-      </YTButton>
-      <YTIconButton
+      </OnlineButton>
+      <OnlineIconButton
         :disabled="loadingChannelId === sub.channelId"
         :title="$t('youtube.checkChannelNow')"
         @click="emit('checkNow', sub.channelId)"
       >
         <RefreshCw :size="14" :class="loadingChannelId === sub.channelId ? 'animate-spin' : ''" />
-      </YTIconButton>
-      <YTIconButton :title="$t('youtube.downloadPrefs')" @click="emit('openPrefs', sub)">
+      </OnlineIconButton>
+      <OnlineIconButton :title="$t('youtube.downloadPrefs')" @click="emit('openPrefs', sub)">
         <SlidersHorizontal :size="14" />
-      </YTIconButton>
-      <YTIconButton
+      </OnlineIconButton>
+      <OnlineIconButton
         variant="danger"
         :title="$t('youtube.unsubscribeChannel')"
         @click="emit('unfollow', sub.channelId)"
       >
         <X :size="14" />
-      </YTIconButton>
+      </OnlineIconButton>
     </div>
   </div>
 </template>

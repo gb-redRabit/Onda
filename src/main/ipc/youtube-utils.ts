@@ -18,6 +18,10 @@ export interface YtDlpEntry {
   playlist_count?: number;
   thumbnail?: string;
   thumbnails?: Array<{ url?: string; width?: number; height?: number }>;
+  // Canonical page URL — present on SoundCloud entries (flat search results are
+  // URL entries; the id alone cannot rebuild their permalink).
+  webpage_url?: string;
+  url?: string;
   entries?: YtDlpEntry[];
 }
 
@@ -27,7 +31,7 @@ import { formatDuration as formatDurationBase } from '../../shared/formatDuratio
 import { fetchPageText } from './player-scraper';
 import type { YoutubeAuthMethod } from '../../renderer/src/types/settings';
 import type { IpcYoutubeVideo } from '../../shared/types/ipc';
-import type { YouTubeResolvedItem } from '../../renderer/src/types/youtube';
+import type { YouTubeResolvedItem } from '../../renderer/src/types/online';
 
 export interface YtAuthConfig {
   method: YoutubeAuthMethod;
@@ -314,6 +318,29 @@ function isSafeThumbnailUrl(url: string): boolean {
   return true;
 }
 
+// Channel AVATARS get persisted for days (subscriptions store), so they must
+// NOT carry short-lived signatures. yt-dlp channel headers mix stable
+// yt3.ggpht/ytc paths with lh3.googleusercontent URLs signed by
+// ?expire=<epoch>&sig=... which die within ~a day — those are rejected here
+// so a dead link is never saved as the channel thumbnail.
+export function isStableAvatarUrl(url: string): boolean {
+  if (!isSafeThumbnailUrl(url)) return false;
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  if (
+    parsed.searchParams.has('expire') ||
+    parsed.searchParams.has('sig') ||
+    parsed.searchParams.has('signature')
+  ) {
+    return false;
+  }
+  return true;
+}
+
 export function pickThumbnail(entry: YtDlpEntry): string {
   const thumbs = (entry.thumbnails || []).filter((t) => t.url && isSafeThumbnailUrl(t.url));
   if (thumbs.length) {
@@ -358,17 +385,22 @@ export function mapVideoEntry(entry: YtDlpEntry): IpcYoutubeVideo {
 // wide banner images with square avatar crops in the same `thumbnails` list,
 // so always prefer squares (width === height) and take the largest of those.
 // Falls back to the widest safe thumbnail, then to the single `thumbnail`
-// string some yt-dlp versions emit. There is no i.ytimg.com fallback — a
-// channel ID is not a video ID.
+// string some yt-dlp versions emit. Only STABLE URLs are eligible — signed
+// expiring ones are skipped entirely (see isStableAvatarUrl).
 export function pickChannelThumbnail(entry: YtDlpEntry): string {
-  const thumbs = (entry.thumbnails || []).filter((t) => t.url && isSafeThumbnailUrl(t.url));
+  const thumbs = (entry.thumbnails || []).filter((t) => t.url && isStableAvatarUrl(t.url));
   if (thumbs.length) {
     const avatars = thumbs.filter((t) => t.width && t.height && t.width === t.height);
     const pool = avatars.length ? avatars : thumbs;
     const best = [...pool].sort((a, b) => (b.width || 0) - (a.width || 0))[0];
     if (best?.url) return best.url;
   }
-  if (entry.thumbnail && isSafeThumbnailUrl(entry.thumbnail)) return entry.thumbnail;
+  if (
+    entry.thumbnail &&
+    isStableAvatarUrl(entry.thumbnail)
+  ) {
+    return entry.thumbnail;
+  }
   return '';
 }
 
@@ -376,8 +408,12 @@ export function pickChannelThumbnail(entry: YtDlpEntry): string {
 // yt-dlp z `--flat-playlist` bywa, że nie zwróci żadnej miniatury w headerze
 // kanału — wtedy używamy tej samej strony, którą i tak parsuje yt-dlp.
 export function extractAvatarUrl(html: string): string {
-  const m = html.match(/https:\/\/yt3\.(?:ggpht|googleusercontent)\.com\/[^"'\\\s<>]+/);
-  return m ? m[0] : '';
+  const matches = html.match(/https:\/\/yt3\.(?:ggpht|googleusercontent)\.com\/[^"'\\\s<>]+/g);
+  if (!matches) return '';
+  for (const m of matches) {
+    if (isStableAvatarUrl(m)) return m;
+  }
+  return '';
 }
 
 // Pobiera stronę kanału i wyciąga awatar jako ostatnią deskę ratunku.
@@ -390,7 +426,7 @@ export async function resolveChannelAvatar(channelId: string): Promise<string> {
       {}
     );
     const url = extractAvatarUrl(html);
-    return isSafeThumbnailUrl(url) ? url : '';
+    return url;
   } catch {
     return '';
   }

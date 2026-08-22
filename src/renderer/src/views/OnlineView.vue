@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
   Download,
-  Tv2,
+  Radio,
   X,
   ChevronLeft,
   ChevronRight,
@@ -11,36 +11,36 @@ import {
   RefreshCw,
   AlertCircle
 } from '@lucide/vue';
-import { useYouTubeStore } from '@renderer/stores/youtube';
+import { useOnlineStore } from '@renderer/stores/online';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore } from '@renderer/stores/ui';
 import { useSavedStore } from '@renderer/stores/saved';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
-import { detectYtKind, parseBatchInput } from '@shared/youtube';
-import YouTubeChannelView from '@renderer/components/youtube/YouTubeChannelView.vue';
-import DownloadConfigDialog from '@renderer/components/youtube/DownloadConfigDialog.vue';
-import SubscribeConfigDialog from '@renderer/components/youtube/SubscribeConfigDialog.vue';
-import YTSearchBar from '@renderer/components/youtube/YTSearchBar.vue';
-import YTViewTabs from '@renderer/components/youtube/YTViewTabs.vue';
-import YTButton from '@renderer/components/youtube/YTButton.vue';
-import YTBadge from '@renderer/components/youtube/YTBadge.vue';
-import YTEmptyState from '@renderer/components/youtube/YTEmptyState.vue';
-import YTSubscriptionCard from '@renderer/components/youtube/YTSubscriptionCard.vue';
-import YTMediaCard from '@renderer/components/youtube/YTMediaCard.vue';
-import YTSourceHeader from '@renderer/components/youtube/YTSourceHeader.vue';
-import YTSelectionToolbar from '@renderer/components/youtube/YTSelectionToolbar.vue';
-import YTConfirmDialog from '@renderer/components/youtube/YTConfirmDialog.vue';
-import YTAuthButton from '@renderer/components/youtube/YTAuthButton.vue';
+import { detectChannelPrefix, detectPlatform, parseBatchInputAll } from '@shared/platform';
+import OnlineChannelView from '@renderer/components/online/OnlineChannelView.vue';
+import DownloadConfigDialog from '@renderer/components/online/DownloadConfigDialog.vue';
+import SubscribeConfigDialog from '@renderer/components/online/SubscribeConfigDialog.vue';
+import OnlineSearchBar from '@renderer/components/online/OnlineSearchBar.vue';
+import OnlineViewTabs from '@renderer/components/online/OnlineViewTabs.vue';
+import OnlineButton from '@renderer/components/online/OnlineButton.vue';
+import OnlineBadge from '@renderer/components/online/OnlineBadge.vue';
+import OnlineEmptyState from '@renderer/components/online/OnlineEmptyState.vue';
+import OnlineSubscriptionCard from '@renderer/components/online/OnlineSubscriptionCard.vue';
+import OnlineMediaCard from '@renderer/components/online/OnlineMediaCard.vue';
+import OnlineSourceHeader from '@renderer/components/online/OnlineSourceHeader.vue';
+import OnlineSelectionToolbar from '@renderer/components/online/OnlineSelectionToolbar.vue';
+import OnlineConfirmDialog from '@renderer/components/online/OnlineConfirmDialog.vue';
+import YtAuthButton from '@renderer/components/online/YtAuthButton.vue';
 import type {
   YouTubeVideo,
   YouTubeResolvedItem,
   Subscription,
   CoverSpec,
   MetaOverride
-} from '@renderer/types/youtube';
+} from '@renderer/types/online';
 
-const yt = useYouTubeStore();
+const yt = useOnlineStore();
 const ui = useUIStore();
 const saved = useSavedStore();
 void saved.ensureLoaded();
@@ -57,6 +57,7 @@ const { t } = useI18n();
 
 const input = ref('');
 let searchSeq = 0;
+let resolveSeq = 0;
 const resolveError = ref('');
 const savingPlaylist = ref(false);
 const searchError = ref('');
@@ -81,13 +82,25 @@ const configTarget = ref<
   { mode: 'single'; video: YouTubeVideo | YouTubeResolvedItem } | { mode: 'resolved' } | null
 >(null);
 
-function watchUrl(id: string): string {
-  return `https://www.youtube.com/watch?v=${id}`;
+function watchUrl(item: { id: string; url?: string }): string {
+  return yt.itemUrl(item);
 }
 
-function openWatchWindow(id: string) {
-  window.open(watchUrl(id), '_blank', 'width=1100,height=700');
+// Corner tag for merged search grids.
+function platformTagFor(item: { id: string; url?: string }): 'YT' | 'SC' {
+  if (!item.url && /^\d+$/.test(item.id)) return 'SC';
+  return detectPlatform(yt.itemUrl(item))?.platform === 'soundcloud' ? 'SC' : 'YT';
 }
+
+function openWatchUrl(url: string) {
+  // Legacy saved SC entries may resolve to a bare numeric id — no page URL.
+  if (!/^https:/i.test(url)) {
+    ui.notify('info', input.value || url, t('youtube.openUnavailable'));
+    return;
+  }
+  window.open(url, '_blank', 'width=1100,height=700');
+}
+
 
 function toggleExpandSearch(id: string) {
   expandedSearchId.value = expandedSearchId.value === id ? null : id;
@@ -102,6 +115,18 @@ function onKeydown(e: KeyboardEvent) {
   if (e.key !== 'Escape') return;
   if (expandedSearchId.value) expandedSearchId.value = null;
   if (expandedResolvedId.value) expandedResolvedId.value = null;
+  // Close the topmost inline dialog, newest-first.
+  if (configTarget.value) {
+    configTarget.value = null;
+    return;
+  }
+  if (prefsOpen.value) {
+    prefsOpen.value = null;
+    return;
+  }
+  if (unfollowTarget.value) {
+    unfollowTarget.value = null;
+  }
 }
 
 const configDialogTitle = computed(() => {
@@ -118,8 +143,18 @@ const configDialogChannelTitle = computed(() => {
 
 const configDialogPlaylistTitle = computed(() => {
   if (!configTarget.value) return '';
-  if (configTarget.value.mode === 'single') return '';
-  return yt.resolved?.kind === 'playlist' ? yt.resolved.title : '';
+  if (configTarget.value.mode === 'single') return configTarget.value.video.channelTitle;
+  return yt.resolved?.meta.channelTitle || '';
+});
+
+// Platform of the item(s) being configured — SC shows a reduced dialog.
+const configDialogPlatform = computed<'youtube' | 'soundcloud'>(() => {
+  const t = configTarget.value;
+  if (!t) return 'youtube';
+  const item = t.mode === 'single' ? t.video : yt.resolved?.items[0];
+  if (!item) return 'youtube';
+  if (!item.url && /^\d+$/.test(item.id)) return 'soundcloud';
+  return detectPlatform(yt.itemUrl(item))?.platform === 'soundcloud' ? 'soundcloud' : 'youtube';
 });
 
 function togglePrefs(sub: Subscription) {
@@ -132,7 +167,12 @@ function openDiscover() {
 
 function openChannelFromSubscription(channelId: string) {
   openDiscover();
-  void yt.openChannel(`https://www.youtube.com/channel/${channelId}`);
+  const sub = yt.getSubscription(channelId);
+  const url =
+    sub?.platform === 'soundcloud'
+      ? `https://soundcloud.com/${channelId}`
+      : `https://www.youtube.com/channel/${channelId}`;
+  void yt.openChannel(url);
 }
 
 function downloadSubscriptionAll(sub: Subscription) {
@@ -145,13 +185,27 @@ function downloadAllPending() {
   }
 }
 
-const isResolvable = computed(() => detectYtKind(input.value) !== null);
+// A pasted input is "resolvable" when it is a direct link of ANY supported
+// platform — it then resolves to a track/playlist/profile instead of a search.
+const isResolvable = computed(() => detectPlatform(input.value) !== null);
 
 const selectedCount = computed(() => yt.selectedResolved.size);
 
 const pageTotal = computed(() => Math.ceil(yt.searchResults.length / 20));
 
-const batchEntries = computed(() => parseBatchInput(batchText.value));
+const batchEntries = computed(() => parseBatchInputAll(batchText.value));
+
+// Lines that were dropped by the parser (channels, prefixes, junk).
+const batchSkippedCount = computed(() => {
+  const total = batchText.value
+    .split(/[\n,]+/)
+    .map((s) => s.trim())
+    .filter(Boolean).length;
+  return Math.max(0, total - batchEntries.value.length);
+});
+
+// SoundCloud links ignore download profiles — hide the selector for them.
+const batchHasSc = computed(() => batchEntries.value.some((e) => e.platform === 'soundcloud'));
 
 async function submitBatch() {
   const entries = batchEntries.value;
@@ -164,7 +218,11 @@ async function submitBatch() {
       entries.map((e) => e.url),
       profile?.config
     );
-    batchResult.value = t('youtube.batchQueued', { count: queued });
+    batchResult.value =
+      t('youtube.batchQueued', { count: queued }) +
+      (batchSkippedCount.value > 0
+        ? ' · ' + t('youtube.batchSkipped', { count: batchSkippedCount.value })
+        : '');
     if (queued > 0) batchText.value = '';
   } catch {
     batchResult.value = t('youtube.batchError');
@@ -199,6 +257,15 @@ function onUnfollowConfirm() {
 
 async function submit() {
   if (!input.value.trim()) return;
+  // @name -> YouTube channel, $name -> SoundCloud profile: open directly.
+  const prefix = detectChannelPrefix(input.value);
+  if (prefix) {
+    openDiscover();
+    yt.setResolved(null);
+    yt.closeChannel();
+    await yt.openChannelPrefix(prefix);
+    return;
+  }
   if (isResolvable.value) {
     await resolveLink();
   } else {
@@ -216,33 +283,18 @@ async function search() {
   searchError.value = '';
   const seq = ++searchSeq;
   try {
-    const result = (await window.api.invoke('yt:search', input.value)) as {
-      success?: boolean;
-      error?: string;
-      code?:
-        | 'auth-required'
-        | 'bot-block'
-        | 'private'
-        | 'not-found'
-        | 'network'
-        | 'proxy'
-        | 'dependency'
-        | 'unknown';
-      items?: YouTubeVideo[];
-      nextPageToken?: string | null;
-      prevPageToken?: string | null;
-    } | null;
+    const result = await yt.searchOnline(input.value);
     // Stale response from a superseded search — discard.
     if (seq !== searchSeq) return;
-    if (result?.success) {
+    if (result.success) {
       yt.setResults(
-        result.items || [],
+        result.items,
         result.nextPageToken ?? undefined,
         result.prevPageToken ?? undefined
       );
     } else {
-      const key = errorCodeKey(result?.code);
-      searchError.value = key ? t(key) : result?.error || t('youtube.searchError');
+      const key = errorCodeKey(result.code as never);
+      searchError.value = key ? t(key) : result.error || t('youtube.searchError');
       yt.setResults([]);
     }
   } catch {
@@ -258,8 +310,11 @@ async function resolveLink() {
   openDiscover();
   yt.isResolving = true;
   resolveError.value = '';
+  const seq = ++resolveSeq;
   try {
-    const res = await window.api.invoke('yt:resolve', url);
+    const res = await yt.resolveOnline(url);
+    // Stale response from a superseded resolve — discard.
+    if (seq !== resolveSeq) return;
     if (res.success && res.result) {
       if (res.result.kind === 'channel') {
         yt.setResolved(null);
@@ -272,12 +327,12 @@ async function resolveLink() {
       const key = errorCodeKey(res.code);
       resolveError.value = key ? t(key) : res.error || t('youtube.resolveError');
     }
-  } catch {
-    resolveError.value = t('youtube.resolveError');
-  } finally {
-    yt.isResolving = false;
+    } catch {
+      resolveError.value = t('youtube.resolveError');
+    } finally {
+      if (seq === resolveSeq) yt.isResolving = false;
+    }
   }
-}
 
 function clearResolved() {
   yt.setResolved(null);
@@ -472,7 +527,7 @@ onMounted(async () => {
   window.addEventListener('keydown', onKeydown);
   try {
     const text = (await window.api?.invoke('app:readClipboard')) as string | undefined;
-    if (typeof text === 'string' && detectYtKind(text) && !input.value) {
+    if (typeof text === 'string' && detectPlatform(text) && !input.value) {
       input.value = text.trim();
     }
   } catch {
@@ -492,13 +547,13 @@ onUnmounted(() => {
       class="sticky top-0 z-10 bg-bg-surface/95 backdrop-blur border-b border-border-default px-4 py-4"
     >
       <div class="flex items-center gap-3 mb-4">
-        <Tv2 :size="24" class="text-red-base" />
-        <h1 class="text-xl font-bold">{{ $t('youtube.title') }}</h1>
+        <Radio :size="24" class="text-accent-base" />
+        <h1 class="text-xl font-bold">{{ $t('nav.online') }}</h1>
         <div class="flex-1" />
-        <YTAuthButton />
+        <YtAuthButton />
       </div>
 
-      <YTSearchBar
+      <OnlineSearchBar
         v-model="input"
         :is-resolving="yt.isResolving"
         :is-searching="yt.isSearching"
@@ -530,19 +585,28 @@ onUnmounted(() => {
             <span class="text-xs text-fg-faint">
               {{ $t('youtube.batchDetected', { count: batchEntries.length }) }}
             </span>
+            <span v-if="batchSkippedCount > 0" class="text-xs text-fg-faint/70">
+              {{ $t('youtube.batchSkipped', { count: batchSkippedCount }) }}
+            </span>
             <select
-              v-if="profiles.length"
+              v-if="profiles.length && !batchHasSc"
               v-model="batchProfileId"
               class="px-2 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-xs text-fg-base focus:border-accent-base focus:outline-none"
             >
               <option value="">{{ $t('youtube.profileNone') }}</option>
               <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
             </select>
+            <span
+              v-else-if="profiles.length && batchHasSc"
+              class="text-[10px] text-fg-faint"
+            >
+              {{ $t('youtube.batchProfilesScHint') }}
+            </span>
             <div class="flex-1" />
-            <YTButton variant="secondary" size="sm" @click="importBatchFile">
+            <OnlineButton variant="secondary" size="sm" @click="importBatchFile">
               {{ $t('youtube.batchImport') }}
-            </YTButton>
-            <YTButton
+            </OnlineButton>
+            <OnlineButton
               variant="primary"
               size="sm"
               :disabled="!batchEntries.length || batchBusy"
@@ -550,7 +614,7 @@ onUnmounted(() => {
             >
               <Download :size="12" />
               {{ $t('youtube.batchAdd') }}
-            </YTButton>
+            </OnlineButton>
           </div>
           <p v-if="batchResult" class="text-xs text-green-base mt-2">{{ batchResult }}</p>
           <ul v-if="batchEntries.length" class="mt-2 max-h-40 overflow-auto space-y-1">
@@ -559,7 +623,7 @@ onUnmounted(() => {
               :key="e.url"
               class="flex items-center gap-2 text-xs text-fg-muted"
             >
-              <YTBadge
+              <OnlineBadge
                 :variant="e.kind === 'video' ? 'accent' : e.kind === 'playlist' ? 'amber' : 'green'"
               >
                 {{
@@ -571,20 +635,16 @@ onUnmounted(() => {
                         : 'youtube.kindChannel'
                   )
                 }}
-              </YTBadge>
+              </OnlineBadge>
               <span class="truncate">{{ e.url }}</span>
             </li>
           </ul>
         </div>
       </Transition>
 
-      <YTViewTabs
-        v-model="activeSection"
-        :subscription-count="yt.subscriptions.length"
-        class="mt-4"
-      >
+      <OnlineViewTabs v-model="activeSection" :subscription-count="yt.subscriptions.length" class="mt-4">
         <template v-if="activeSection === 'subscriptions'">
-          <YTButton
+          <OnlineButton
             variant="primary"
             size="sm"
             :disabled="yt.queueingChannelId !== null"
@@ -598,8 +658,8 @@ onUnmounted(() => {
                 ? $t('youtube.downloading')
                 : $t('youtube.downloadAllSubs')
             }}
-          </YTButton>
-          <YTButton
+          </OnlineButton>
+          <OnlineButton
             variant="secondary"
             size="sm"
             :disabled="yt.checkingSubscriptions"
@@ -608,10 +668,10 @@ onUnmounted(() => {
           >
             <RefreshCw :size="12" :class="yt.checkingSubscriptions ? 'animate-spin' : ''" />
             {{ $t('youtube.checkNow') }}
-          </YTButton>
+          </OnlineButton>
         </template>
         <template v-else>
-          <YTButton
+          <OnlineButton
             v-if="yt.resolved || yt.searchResults.length"
             variant="secondary"
             size="sm"
@@ -619,9 +679,9 @@ onUnmounted(() => {
           >
             <X :size="12" />
             {{ $t('youtube.clear') }}
-          </YTButton>
+          </OnlineButton>
         </template>
-      </YTViewTabs>
+      </OnlineViewTabs>
 
       <p v-if="resolveError" class="text-xs text-red-400 mt-3">{{ resolveError }}</p>
       <p v-if="searchError" class="text-xs text-red-400 mt-3">{{ searchError }}</p>
@@ -635,14 +695,14 @@ onUnmounted(() => {
           />
         </div>
 
-        <YTEmptyState
+        <OnlineEmptyState
           v-else-if="yt.subscriptions.length === 0"
           :icon="Bell"
           :title="$t('youtube.noSubscriptions')"
         />
 
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          <YTSubscriptionCard
+          <OnlineSubscriptionCard
             v-for="sub in yt.subscriptions"
             :key="sub.channelId"
             :sub="sub"
@@ -658,7 +718,7 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <YouTubeChannelView v-else-if="yt.channelLoading || yt.channel" />
+      <OnlineChannelView v-else-if="yt.channelLoading || yt.channel" />
 
       <div
         v-else-if="yt.channelError"
@@ -676,7 +736,7 @@ onUnmounted(() => {
 
       <template v-else>
         <div v-if="yt.resolved" class="mb-8 space-y-4">
-          <YTSourceHeader
+          <OnlineSourceHeader
             :kind="yt.resolved.kind"
             :title="yt.resolved.title"
             :channel-title="yt.resolved.meta.channelTitle"
@@ -707,7 +767,7 @@ onUnmounted(() => {
                   : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
               ]"
             >
-              <YTMediaCard
+              <OnlineMediaCard
                 v-for="item in yt.resolved.items"
                 :key="item.id"
                 :video="item"
@@ -716,18 +776,18 @@ onUnmounted(() => {
                 :selected="yt.selectedResolved.has(item.id)"
                 :state="itemDownloadState(item.id)"
                 :cover-status="yt.coverStatusFor(item.id)"
-                :watch-url="watchUrl(item.id)"
+                :watch-url="watchUrl(item)"
                 @expand="toggleExpandResolved(item)"
                 @collapse="expandedResolvedId = null"
                 @toggle-select="toggleSelect"
                 @queue="quickQueueResolved"
                 @play="yt.playStream(item)"
                 @options="queueResolvedItem"
-                @open-window="openWatchWindow"
+                @open-window="openWatchUrl"
               />
             </div>
 
-            <YTSelectionToolbar
+            <OnlineSelectionToolbar
               v-if="yt.resolved.kind !== 'video'"
               :selected-count="selectedCount"
               :total-count="yt.resolved.items.length"
@@ -741,7 +801,7 @@ onUnmounted(() => {
             />
 
             <div v-if="yt.resolvedCapped" class="flex justify-center">
-              <YTButton
+              <OnlineButton
                 variant="secondary"
                 size="sm"
                 :disabled="yt.resolvedLoading"
@@ -749,7 +809,7 @@ onUnmounted(() => {
               >
                 <RefreshCw v-if="yt.resolvedLoading" :size="12" class="animate-spin" />
                 {{ $t('youtube.loadMore') }}
-              </YTButton>
+              </OnlineButton>
             </div>
           </div>
         </div>
@@ -760,10 +820,10 @@ onUnmounted(() => {
           />
         </div>
 
-        <YTEmptyState
+        <OnlineEmptyState
           v-else-if="yt.searchResults.length === 0 && !yt.resolved"
-          :icon="Tv2"
-          :title="$t('youtube.searchHeading')"
+          :icon="Radio"
+          :title="$t('youtube.searchHeadingOnline')"
           :description="$t('youtube.discover')"
         />
 
@@ -772,14 +832,15 @@ onUnmounted(() => {
             {{ $t('youtube.resultsCount', { count: yt.searchResults.length }) }}
           </p>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <YTMediaCard
+            <OnlineMediaCard
               v-for="v in yt.pagedResults"
               :key="v.id"
               :video="v"
               :expanded="expandedSearchId === v.id"
               :state="itemDownloadState(v.id)"
               :cover-status="yt.coverStatusFor(v.id)"
-              :watch-url="watchUrl(v.id)"
+              :watch-url="watchUrl(v)"
+              :platform-tag="platformTagFor(v)"
               show-channel
               show-views
               show-description
@@ -788,30 +849,46 @@ onUnmounted(() => {
               @queue="quickQueueVideo(v)"
               @play="yt.playStream(v)"
               @options="queueChannelVideo(v)"
-              @open-window="openWatchWindow(v.id)"
+              @open-window="openWatchUrl"
             />
           </div>
 
           <div v-if="pageTotal > 1" class="flex items-center justify-center gap-3 pt-2">
-            <YTButton
+            <OnlineButton
               variant="secondary"
               size="sm"
               :disabled="!yt.hasPrevPage"
               @click="yt.prevSearchPage"
             >
               <ChevronLeft :size="16" />
-            </YTButton>
+            </OnlineButton>
             <span class="text-xs text-fg-faint">
               {{ $t('youtube.pageOf', { current: yt.searchPage + 1, total: pageTotal }) }}
             </span>
-            <YTButton
+            <OnlineButton
               variant="secondary"
               size="sm"
               :disabled="!yt.hasNextPage"
               @click="yt.nextSearchPage"
             >
               <ChevronRight :size="16" />
-            </YTButton>
+            </OnlineButton>
+          </div>
+
+          <div
+            v-if="!yt.hasNextPage && yt.hasMoreSc"
+            class="flex items-center justify-center pt-2"
+          >
+            <OnlineButton
+              variant="secondary"
+              size="sm"
+              :disabled="yt.searchLoadingMore"
+              @click="yt.loadMoreSearch"
+            >
+              <RefreshCw v-if="yt.searchLoadingMore" :size="12" class="animate-spin" />
+              <ChevronRight v-else :size="14" />
+              {{ $t('youtube.loadMore') }}
+            </OnlineButton>
           </div>
         </div>
       </template>
@@ -825,6 +902,7 @@ onUnmounted(() => {
         channelTitle: prefsOpen.channelTitle,
         channelThumbnail: prefsOpen.channelThumbnail
       }"
+      :platform="prefsOpen.platform === 'soundcloud' ? 'soundcloud' : 'youtube'"
       :initial-prefs="prefsOpen.downloadPrefs"
       @confirm="
         (payload) => {
@@ -835,7 +913,7 @@ onUnmounted(() => {
       @cancel="prefsOpen = null"
     />
 
-    <YTConfirmDialog
+    <OnlineConfirmDialog
       v-if="unfollowTarget"
       :title="$t('youtube.unsubscribeChannel')"
       :message="$t('youtube.unsubscribeChannelConfirm')"
@@ -852,6 +930,7 @@ onUnmounted(() => {
       :thumbnail="configTarget.mode === 'single' ? configTarget.video.thumbnail : undefined"
       :channel-title="configDialogChannelTitle || undefined"
       :playlist-title="configDialogPlaylistTitle || undefined"
+      :platform="configDialogPlatform"
       @confirm="confirmQueueConfig"
       @cancel="closeQueueConfig"
     />

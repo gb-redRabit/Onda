@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
-import { Music2, Play, Clock, FolderOpen, Disc3, Tv2, ArrowRight, FolderUp } from '@lucide/vue';
+import { Music2, Play, Clock, FolderOpen, Disc3, Radio, ArrowRight, FolderUp } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useLibraryStore } from '@renderer/stores/library';
 import { openMediaFiles } from '@renderer/composables/useOpenMedia';
@@ -43,10 +43,10 @@ const actions = [
     route: () => router.push('/library')
   },
   {
-    labelKey: 'youtube.title',
+    labelKey: 'nav.online',
     descKey: 'home.searchAndDownload',
-    icon: Tv2,
-    route: () => router.push('/youtube')
+    icon: Radio,
+    route: () => router.push('/online')
   }
 ];
 </script>

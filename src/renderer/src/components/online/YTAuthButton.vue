@@ -2,7 +2,7 @@
 import { onMounted } from 'vue';
 import { LogIn, User } from '@lucide/vue';
 import { useYoutubeAuth } from '@renderer/composables/useYoutubeAuth';
-import YTButton from './YTButton.vue';
+import OnlineButton from './OnlineButton.vue';
 
 const { status, refresh, ensureLoaded } = useYoutubeAuth();
 
@@ -21,7 +21,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <YTButton
+  <OnlineButton
     :variant="status.loggedIn ? 'secondary' : 'primary'"
     size="sm"
     :title="status.loggedIn ? $t('settings.authStatusLoggedIn') : $t('settings.googleAccountDesc')"
@@ -30,5 +30,5 @@ onMounted(() => {
     <User v-if="status.loggedIn" :size="14" />
     <LogIn v-else :size="14" />
     {{ status.loggedIn ? $t('settings.authStatusLoggedIn') : $t('settings.loginWithGoogle') }}
-  </YTButton>
+  </OnlineButton>
 </template>

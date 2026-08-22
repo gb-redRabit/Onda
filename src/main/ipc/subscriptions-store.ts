@@ -1,7 +1,7 @@
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { dirname } from 'path';
 import { logger } from '../../shared/logger';
-import type { Subscription } from '../../renderer/src/types/youtube';
+import type { Subscription } from '../../renderer/src/types/online';
 
 export interface SubscriptionInput {
   channelId: string;
@@ -9,6 +9,9 @@ export interface SubscriptionInput {
   channelThumbnail: string;
   downloadPrefs?: Subscription['downloadPrefs'];
   seedBaseline?: boolean;
+  // 'youtube' by default — SoundCloud subscriptions carry 'soundcloud' and use
+  // profile permalinks as channelId.
+  platform?: 'youtube' | 'soundcloud';
 }
 
 export type SubscriptionPatch = Partial<
@@ -116,6 +119,7 @@ export function addSubscription(
       channelTitle: input.channelTitle || input.channelId,
       channelThumbnail: input.channelThumbnail || '',
       autoDownload: true,
+      platform: input.platform === 'soundcloud' ? 'soundcloud' : 'youtube',
       downloadedVideoIds: [],
       downloadPrefs: input.downloadPrefs,
       addedAt: Date.now()

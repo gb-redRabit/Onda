@@ -6,7 +6,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { useLibraryStore } from '@renderer/stores/library';
 import { useExplorerStore } from '@renderer/stores/explorer';
-import { useYouTubeStore } from '@renderer/stores/youtube';
+import { useOnlineStore } from '@renderer/stores/online';
 import { useYoutubeAuth } from '@renderer/composables/useYoutubeAuth';
 import { getFileTypeInfo } from '@renderer/utils/fileTypes';
 import type { AppInfo } from '@shared/types/ipc';
@@ -31,7 +31,7 @@ const player = usePlayerStore();
 const audio = useAudioPlayer();
 const library = useLibraryStore();
 const explorer = useExplorerStore();
-const youtube = useYouTubeStore();
+const youtube = useOnlineStore();
 const { status, ensureLoaded } = useYoutubeAuth();
 ensureLoaded();
 

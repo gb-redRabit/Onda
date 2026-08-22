@@ -3,13 +3,14 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Play, Download, Check, RefreshCw, ExternalLink, SlidersHorizontal, Radio, Bookmark } from '@lucide/vue';
 import { logger } from '@shared/logger';
+import { detectPlatform } from '@shared/platform';
 import { formatNumber } from '@renderer/utils/formatters';
-import { useYouTubeStore } from '@renderer/stores/youtube';
+import { useOnlineStore } from '@renderer/stores/online';
 import { useSavedStore } from '@renderer/stores/saved';
 import { useUIStore } from '@renderer/stores/ui';
-import YouTubeEmbedPlayer from './YouTubeEmbedPlayer.vue';
-import YTIconButton from './YTIconButton.vue';
-import type { YouTubeVideo, YouTubeResolvedItem } from '@renderer/types/youtube';
+import YtEmbedPlayer from './YtEmbedPlayer.vue';
+import OnlineIconButton from './OnlineIconButton.vue';
+import type { YouTubeVideo, YouTubeResolvedItem } from '@renderer/types/online';
 
 type Media = YouTubeVideo | YouTubeResolvedItem;
 type DownloadState = 'queuing' | 'downloading' | 'done' | null;
@@ -30,6 +31,8 @@ const props = withDefaults(
     showDescription?: boolean;
     showViews?: boolean;
     hideQuickActions?: boolean;
+    /** Tiny YT/SC corner tag — used on merged (multi-platform) result grids. */
+    platformTag?: string;
   }>(),
   {
     layout: 'card',
@@ -47,15 +50,21 @@ const emit = defineEmits<{
   play: [video: Media];
   options: [video: Media];
   toggleSelect: [id: string];
-  openWindow: [id: string];
+  openWindow: [url: string];
 }>();
 
 function defaultWatchUrl(id: string): string {
   return props.watchUrl || `https://www.youtube.com/watch?v=${id}`;
 }
 
+// SoundCloud items have no YouTube embed — the bookmark (saved-streams is
+// YT-only) and the embed-expansion are hidden for them.
+const isSc = computed(
+  () => detectPlatform((props.video as YouTubeVideo).url || '')?.platform === 'soundcloud'
+);
+
 function onOpenWindow() {
-  emit('openWindow', props.video.id);
+  emit('openWindow', defaultWatchUrl(props.video.id));
 }
 
 function onQueue(e: MouseEvent) {
@@ -79,9 +88,21 @@ function onToggleSelect(e: MouseEvent) {
   emit('toggleSelect', props.video.id);
 }
 
+// Primary list action: stream playback for SC (no embed), embed-expansion for YT.
+function onListPlay(e: MouseEvent) {
+  e.stopPropagation();
+  if (isSc.value) {
+    logger.info('yt', `playStream click video=${props.video.id}`);
+    emit('play', props.video);
+    return;
+  }
+  if (!isPlayable.value) return;
+  emit('expand', props.video);
+}
+
 function onExpand(e?: MouseEvent) {
   e?.stopPropagation();
-  if (!isPlayable.value) return;
+  if (!isPlayable.value || isSc.value) return;
   emit('expand', props.video);
 }
 
@@ -115,7 +136,7 @@ onMounted(() => {
           visibilityObserver?.unobserve(entry.target);
           // Small delay so fast scrolling through a grid doesn't fire all
           // resolves at once (prefetchStream caps in-flight requests too).
-          setTimeout(() => useYouTubeStore().prefetchStream(props.video), 600);
+          setTimeout(() => useOnlineStore().prefetchStream(props.video), 600);
         }
       }
     },
@@ -130,7 +151,7 @@ onMounted(() => {
 function onMouseEnter() {
   if (!isPlayable.value) return;
   window.clearTimeout(hoverTimer);
-  hoverTimer = window.setTimeout(() => useYouTubeStore().prefetchStream(props.video), 200);
+  hoverTimer = window.setTimeout(() => useOnlineStore().prefetchStream(props.video), 200);
 }
 
 onBeforeUnmount(() => {
@@ -150,8 +171,8 @@ onBeforeUnmount(() => {
     "
     @mouseenter="onMouseEnter"
   >
-    <YouTubeEmbedPlayer
-      v-if="expanded"
+    <YtEmbedPlayer
+      v-if="expanded && !isSc"
       :video-id="video.id"
       :title="video.title"
       :channel-title="video.channelTitle"
@@ -200,6 +221,15 @@ onBeforeUnmount(() => {
           <Check :size="10" />
         </div>
 
+        <!-- Platform tag (merged multi-platform grids) -->
+        <span
+          v-if="platformTag"
+          class="absolute top-1.5 right-1.5 px-1 py-0.5 rounded bg-black/70 text-[9px] font-bold pointer-events-none"
+          :class="platformTag === 'SC' ? 'text-amber-base' : 'text-red-base'"
+        >
+          {{ platformTag }}
+        </span>
+
         <!-- Cover fetching badge -->
         <div
           v-if="coverStatus === 'fetching'"
@@ -221,7 +251,7 @@ onBeforeUnmount(() => {
           class="absolute inset-0 z-10 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors select-none pointer-events-none"
           :class="isPlayable ? '' : 'opacity-50'"
         >
-<div
+          <div
             v-if="isPlayable"
             class="opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center gap-3 pointer-events-none group-hover:pointer-events-auto"
           >
@@ -233,8 +263,9 @@ onBeforeUnmount(() => {
             >
               <Radio :size="30" />
             </button>
-            <div class="w-px h-16 bg-white py-5"></div>
+            <div v-if="!isSc" class="w-px h-16 bg-white py-5"></div>
             <button
+              v-if="!isSc"
               type="button"
               :title="$t('youtube.playOnYoutube')"
               class="flex items-center justify-center  text-fg-base hover:scale-115 active:scale-95  shadow-black/30 transition-all duration-150 cursor-pointer "
@@ -251,15 +282,15 @@ onBeforeUnmount(() => {
           v-if="layout !== 'list' && !hideQuickActions"
           class="absolute bottom-1.5 left-1.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1 pointer-events-none group-hover:pointer-events-auto"
         >
-          <YTIconButton
+          <OnlineIconButton
             :title="isSaved ? $t('saved.removeTrack') : $t('saved.saveTrack')"
             variant="default"
             size="sm"
             @click.stop="onToggleSave"
           >
             <Bookmark :size="11" :fill="isSaved ? 'currentColor' : 'none'" />
-          </YTIconButton>
-          <YTIconButton
+          </OnlineIconButton>
+          <OnlineIconButton
             :disabled="state !== null"
             :title="$t('youtube.addToQueue')"
             variant="primary"
@@ -273,7 +304,7 @@ onBeforeUnmount(() => {
             />
             <Check v-else-if="state === 'done'" :size="11" />
             <Download v-else :size="11" />
-          </YTIconButton>
+          </OnlineIconButton>
         </div>
       </div>
 
@@ -307,10 +338,10 @@ onBeforeUnmount(() => {
         v-if="layout === 'list'"
         class="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
       >
-        <YTIconButton :title="$t('youtube.play')" @click="onExpand">
+        <OnlineIconButton :title="$t('youtube.play')" @click="onListPlay">
           <Play :size="14" />
-        </YTIconButton>
-        <YTIconButton :disabled="state !== null" :title="$t('youtube.addToQueue')" @click="onQueue">
+        </OnlineIconButton>
+        <OnlineIconButton :disabled="state !== null" :title="$t('youtube.addToQueue')" @click="onQueue">
           <RefreshCw
             v-if="state === 'queuing' || state === 'downloading'"
             :size="14"
@@ -318,13 +349,13 @@ onBeforeUnmount(() => {
           />
           <Check v-else-if="state === 'done'" :size="14" />
           <Download v-else :size="14" />
-        </YTIconButton>
-        <YTIconButton :title="$t('youtube.downloadOptions')" @click="onOptions">
+        </OnlineIconButton>
+        <OnlineIconButton :title="$t('youtube.downloadOptions')" @click="onOptions">
           <SlidersHorizontal :size="14" />
-        </YTIconButton>
-        <YTIconButton :title="$t('youtube.openInWindow')" @click="onOpenWindow">
+        </OnlineIconButton>
+        <OnlineIconButton :title="$t('youtube.openInWindow')" @click="onOpenWindow">
           <ExternalLink :size="14" />
-        </YTIconButton>
+        </OnlineIconButton>
       </div>
     </template>
   </div>

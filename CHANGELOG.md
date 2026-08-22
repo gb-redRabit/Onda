@@ -27,6 +27,11 @@ Wszystkie istotne zmiany w projekcie Onda są dokumentowane w tym pliku.
 
 ### Nowe funkcje
 
+- **Streaming online YouTube**: przycisk „Odtwórz" na kartach wyników; resolve strumienia przez yt-dlp (`-g`) + proxy media-server (CORS/range/retry 403), kolejka streamów z auto-next, cache URL-i (LRU + persystencja na dysku, TTL 5 h), prefetch przy najechaniu/podglądzie karty, status „Łączenie…/Buforowanie…" w stopce.
+- **Widok „Zapisane"** (`/saved`): zapisane utwory i playlisty (bookmark na kartach), odtwarzanie playlisty live re-resolve, persystencja `saved-streams.json` (limity 500/100).
+- **SoundCloud + multi-platform** (`/online`): własny klient wewnętrznego API `api-v2.soundcloud.com` (client_id wyekstrahowany z bundli, cache 24 h, refresh na 401) z automatycznym fallbackiem na yt-dlp; search/resolve/kanały (obserwujący/utwory, banner = avatar); streaming progressive MP3 przez proxy z cache respektującym ~30-minutową ważność podpisów CDN; pobieranie MP3 jako job HTTP (świeży podpisany URL przy każdej próbie). Przełącznik platform YouTube | SoundCloud, redirect `/youtube` → `/online`.
+- **Subskrypcje SoundCloud**: obserwowanie artystów z pełnym auto-download nowych utworów (MP3 przez API), „pobierz wszystko" dla całego profilu, uproszczony dialog konfiguracji (folder/szablon/biblioteka), badge „SC" na karcie subskrypcji.
+- **SoundCloud — domknięcie**: pobrane MP3 dostają tagi ID3 (tytuł/wykonawca) i okładkę z artwork_url; „Zapisane" obsługują SC (bookmark na kartach, zapisane sety/utwory odtwarzane po permalink); batch przyjmuje linki obu platform; utwory bez progressive transcoding pobierają się przez yt-dlp (HLS/ffmpeg); fallback yt-dlp dla snapshotu całego profilu.
 - Autostart: grupa ustawień „Ogólne" (`autoLaunch`, `startMinimized`, `closeToTray`), IPC `app:getAutoLaunch`/`app:setAutoLaunch`, start zminimalizowany przez `--hidden`.
 - Single-instance + otwieranie plików z systemu (`second-instance`, `open-file`, `process.argv`) i skojarzenia plików (`fileAssociations`).
 - Anulowanie skanowania biblioteki (`library:scanCancel`) z przyciskiem w UI; incremental scan (niezmienione pliki są ponownie używane) i watcher plików (`chokidar`).
@@ -34,6 +39,7 @@ Wszystkie istotne zmiany w projekcie Onda są dokumentowane w tym pliku.
 
 ### Ulepszenia
 
+- Hardening streamingu YT: klienty `ios_safari,tv_embedded` (audio-only itag 251, ~2× szybszy resolve) z fallbackiem `android,web`, proxy 4 próby z backoffem, fallback direct w audioEngine, kanał nightly yt-dlp.
 - Pozycja odtwarzania persistowana między restartami (`electron-store`, limit 500 wpisów).
 - Timeout pojedynczego zadania pobierania (30 min), wznowienie przerwanego pobierania (`--continue`) oraz limity `maxConcurrent` (10) i bufora `stderr` (64 KB).
 - Limit czasu całego checkera subskrypcji (10 min).

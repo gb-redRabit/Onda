@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type { IpcSavedData, IpcSavedPlaylist, IpcSavedStream } from '@shared/types/ipc';
-import type { YouTubeResolveKind, YouTubeVideo, YouTubeResolvedItem } from '@renderer/types/youtube';
+import type { YouTubeResolveKind, YouTubeVideo, YouTubeResolvedItem } from '@renderer/types/online';
 
 interface SavedTrackInput {
   id: string;
@@ -10,6 +10,7 @@ interface SavedTrackInput {
   channelTitle?: string;
   channelId?: string;
   duration?: string;
+  url?: string;
 }
 
 export const useSavedStore = defineStore('saved', () => {
@@ -43,6 +44,9 @@ export const useSavedStore = defineStore('saved', () => {
       channelTitle: video.channelTitle,
       channelId: video.channelId,
       duration: video.duration,
+      // Canonical page URL — mandatory for SoundCloud items (permalinks cannot
+      // be rebuilt from the numeric id); absent for YouTube items.
+      ...(video.url ? { url: video.url } : {}),
       savedAt: Date.now()
     };
   }

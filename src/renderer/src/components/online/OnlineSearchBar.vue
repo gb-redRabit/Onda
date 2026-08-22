@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Search, ArrowRight, ListMusic, SlidersHorizontal } from '@lucide/vue';
+import { Search, ArrowRight, ListMusic, SlidersHorizontal, Globe } from '@lucide/vue';
 import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@renderer/stores/settings';
-import { detectYtKind } from '@shared/youtube';
+import { detectChannelPrefix, detectPlatform } from '@shared/platform';
 import { AUDIO_FORMATS, VIDEO_QUALITIES, VIDEO_CONTAINERS } from '@shared/constants';
-import YTButton from './YTButton.vue';
-import YTIconButton from './YTIconButton.vue';
+import OnlineButton from './OnlineButton.vue';
+import OnlineIconButton from './OnlineIconButton.vue';
 
 const props = defineProps<{
   modelValue: string;
@@ -25,7 +25,36 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const settings = useSettingsStore();
 
-const isResolvable = computed(() => detectYtKind(props.modelValue) !== null);
+// What the current input resolves to: an @/$ channel prefix or a platform
+// link. Drives the left badge inside the field.
+const detection = computed<{ label: string; kind: 'yt' | 'sc' } | null>(() => {
+  const value = props.modelValue.trim();
+  if (!value) return null;
+  const prefix = detectChannelPrefix(value);
+  if (prefix) {
+    return prefix.platform === 'youtube'
+      ? { label: `YT · ${t('youtube.kindChannel')} @`, kind: 'yt' }
+      : { label: `SC · ${t('youtube.kindProfile')} $`, kind: 'sc' };
+  }
+  const d = detectPlatform(value);
+  if (!d) return null;
+  const typeKey =
+    d.kind === 'video'
+      ? d.platform === 'soundcloud'
+        ? 'youtube.typeTrack'
+        : 'youtube.kindVideo'
+      : d.kind === 'playlist'
+        ? d.platform === 'soundcloud'
+          ? 'youtube.typeSet'
+          : 'youtube.kindPlaylist'
+        : 'youtube.kindChannel';
+  return {
+    label: `${d.platform === 'youtube' ? 'YT' : 'SC'} · ${t(typeKey)}`,
+    kind: d.platform === 'youtube' ? 'yt' : 'sc'
+  };
+});
+
+const isResolvable = computed(() => detection.value !== null);
 
 const submitLabel = computed(() => {
   if (props.isResolving) return t('youtube.resolving');
@@ -46,11 +75,25 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
   <div class="flex flex-col gap-3">
     <div class="flex items-center gap-2">
       <div class="relative flex-1 min-w-0">
-        <Search :size="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-fg-faint" />
+        <!-- Left: platform indicator — YT/SC (colored) when a link or @/$
+             prefix is recognized, globe for plain text. -->
+        <span
+          v-if="detection"
+          class="absolute left-2.5 top-1/2 -translate-y-1/2 z-10 text-xs font-bold pointer-events-none select-none"
+          :class="detection.kind === 'sc' ? 'text-amber-base' : 'text-red-base'"
+          :title="detection.label"
+        >
+          {{ detection.kind === 'sc' ? 'SC' : 'YT' }}
+        </span>
+        <Globe
+          v-else
+          :size="16"
+          class="absolute left-3 top-1/2 -translate-y-1/2 text-fg-faint"
+        />
         <input
           :value="modelValue"
           :placeholder="t('youtube.pasteOrSearch')"
-          class="w-full pl-10 pr-3 py-2.5 rounded-xl bg-bg-elevated border border-border-default text-sm text-fg-base placeholder:text-fg-faint focus:border-accent-base focus:outline-none focus:ring-1 focus:ring-accent-base/30 transition-shadow"
+          class="w-full pl-11 pr-3 py-2.5 rounded-xl bg-bg-elevated border border-border-default text-sm text-fg-base placeholder:text-fg-faint focus:border-accent-base focus:outline-none focus:ring-1 focus:ring-accent-base/30 transition-shadow"
           @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
           @keydown.enter="emit('submit')"
           @dragover.prevent
@@ -58,7 +101,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         />
       </div>
 
-      <YTButton
+      <OnlineButton
         :variant="isResolvable ? 'secondary' : 'primary'"
         :disabled="isResolving || isSearching || !modelValue.trim()"
         @click="emit('submit')"
@@ -66,9 +109,13 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <ArrowRight v-if="isResolvable" :size="16" />
         <Search v-else :size="16" />
         <span class="hidden sm:inline">{{ submitLabel }}</span>
-      </YTButton>
+      </OnlineButton>
 
-      <YTIconButton :title="t('youtube.batch')" :active="batchOpen" @click="emit('toggleBatch')">
+      <OnlineIconButton
+        :title="t('youtube.batch')"
+        :active="batchOpen"
+        @click="emit('toggleBatch')"
+      >
         <div class="relative">
           <ListMusic :size="18" />
           <span
@@ -78,15 +125,15 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
             {{ batchCount > 9 ? '9+' : batchCount }}
           </span>
         </div>
-      </YTIconButton>
+      </OnlineIconButton>
 
-      <YTIconButton
+      <OnlineIconButton
         :title="t('youtube.downloadOptions')"
         :active="quickOpen"
         @click="quickOpen = !quickOpen"
       >
         <SlidersHorizontal :size="18" />
-      </YTIconButton>
+      </OnlineIconButton>
     </div>
 
     <!-- Quick download settings popover -->

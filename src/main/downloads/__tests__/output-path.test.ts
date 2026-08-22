@@ -18,7 +18,7 @@ describe('resolveFinalOutputPath', () => {
 
   it('skips mangled destinations that do not exist on disk', () => {
     const destinations = [
-      'C:/Music/Move Your Body - �wnboss  Animated Video (NA).webm',
+      'C:/Music/Move Your Body - -wnboss  Animated Video (NA).webm',
       'C:/Music/Move Your Body - Öwnboss ｜ Animated Video (NA).mp3'
     ];
     expect(resolveFinalOutputPath(destinations, (p) => exists.has(p))).toBe(

@@ -10,6 +10,7 @@ import { computeChannelDiff } from './channel-diff';
 import { addDownloadJobs, listDownloadJobs } from '../downloads/download-manager';
 import { getStore } from './cover-cache';
 import { broadcastToAllWindows } from '../utils/broadcast';
+import { scProfileSnapshot, sanitizeFileName } from './soundcloud-client';
 
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const CHECK_TIMEOUT_MS = 10 * 60 * 1000;
@@ -24,6 +25,9 @@ interface ChannelVideoSummary {
   id: string;
   title: string;
   thumbnail: string;
+  // Canonical page URL — set for SoundCloud tracks (permalink needed for the
+  // download job; YT ids are rebuilt into watch URLs).
+  url?: string;
 }
 
 interface ChannelSnapshot {
@@ -32,10 +36,33 @@ interface ChannelSnapshot {
   title: string;
 }
 
+type SubPlatform = 'youtube' | 'soundcloud';
+
+function platformOf(sub: { platform?: SubPlatform }): SubPlatform {
+  return sub.platform === 'soundcloud' ? 'soundcloud' : 'youtube';
+}
+
 // Pobiera WSZYSTKIE wideo kanału w JEDNYM wywołaniu `--flat-playlist -J`
 // (bez stronicowania) — dzięki temu „sprawdź kanał" nie wydaje dziesiątek
-// osobnych procesów yt-dlp.
-async function fetchAllChannelVideos(channelId: string): Promise<ChannelSnapshot> {
+// osobnych procesów yt-dlp. Dla SC — jeden snapshot profilu przez api-v2
+// (paginacja do cap po stronie klienta).
+async function fetchAllChannelVideos(
+  channelId: string,
+  platform: SubPlatform
+): Promise<ChannelSnapshot> {
+  if (platform === 'soundcloud') {
+    const res = await scProfileSnapshot(`https://soundcloud.com/${channelId}`, 200);
+    return {
+      items: res.items.map((item) => ({
+        id: item.id,
+        title: item.title,
+        thumbnail: item.thumbnail || '',
+        url: item.url
+      })),
+      thumbnail: res.channel.thumbnail || '',
+      title: res.channel.title || ''
+    };
+  }
   const url = `https://www.youtube.com/channel/${channelId}`;
   const res = await fetchChannelAll({ url, tab: 'videos' });
   const out: ChannelVideoSummary[] = res.items.map((item) => ({
@@ -102,13 +129,28 @@ async function readAutoDownloadSettings(): Promise<{
   }
 }
 
-// Ustawia punkt odniesienia tuż po subskrypcji: zapamiętuje najnowszy film
-// kanału jako baselineVideoId, więc auto-pobieranie nie ściągnie całej historii
-// kanału, a jedynie filmy nowsze od tego punktu. baselineVideoId trafia do
-// OSOBNEGO pola, a NIE do downloadedVideoIds — to drugie oznacza wyłącznie
-// filmy faktycznie pobrane.
+// Ustawia punkt odniesienia tuż po subskrypcji: zapamiętuje najnowszy element
+// kanału/profilu jako baselineVideoId, więc auto-pobieranie nie ściągnie
+// całej historii, a jedynie pozycje nowsze od tego punktu. baselineVideoId
+// trafia do OSOBNEGO pola, a NIE do downloadedVideoIds — to drugie oznacza
+// wyłącznie pozycje faktycznie pobrane.
 export async function seedSubscriptionBaseline(filePath: string, channelId: string): Promise<void> {
   try {
+    const subs = await loadSubscriptions(filePath);
+    const sub = subs.find((s) => s.channelId === channelId);
+    const platform = platformOf(sub ?? {});
+    if (platform === 'soundcloud') {
+      const snapshot = await scProfileSnapshot(`https://soundcloud.com/${channelId}`, 5);
+      if (snapshot.items.length > 0) {
+        await updateSubscription(filePath, channelId, {
+          lastChecked: Date.now(),
+          lastVideoId: snapshot.items[0]!.id,
+          baselineVideoId: snapshot.items[0]!.id,
+          pendingCount: 0
+        });
+      }
+      return;
+    }
     const res = await fetchChannelItems({
       url: `https://www.youtube.com/channel/${channelId}`,
       tab: 'videos',
@@ -162,7 +204,11 @@ async function runCheck(
       break;
     }
     try {
-      const { items: all, thumbnail, title } = await fetchAllChannelVideos(sub.channelId);
+      const platform = platformOf(sub);
+      const { items: all, thumbnail, title } = await fetchAllChannelVideos(
+        sub.channelId,
+        platform
+      );
       // Separates "new" (before baseline) from "not downloaded" and "downloaded"
       // using the subscription's persisted state.
       const { newArrivals, remainingCount } = computeChannelDiff({
@@ -209,38 +255,63 @@ async function runCheck(
 
       const wantsDownload = toQueue.length > 0 && sub.autoDownload && globalConfig.enabled;
       if (wantsDownload) {
-        // Public videos can be downloaded anonymously; yt-dlp reports a specific
-        // error for age-restricted / private / members-only content, which the
-        // download manager classifies and surfaces in the UI.
+        if (platform === 'soundcloud') {
+          // SC: progressive MP3 przez api-v2 — job soundcloud rozwiązuje świeży
+          // podpisany URL przy każdej próbie. Okładki/napisy/tagi pominięte
+          // (surowe MP3 128 kbps).
+          const scJobs = toQueue.map((i) => ({
+            url: i.url || `https://soundcloud.com/${sub.channelId}`,
+            title: i.title,
+            thumbnail: i.thumbnail,
+            kind: 'audio' as const,
+            format: 'mp3',
+            quality: '',
+            outputDir: sub.downloadPrefs?.outputDir || globalConfig.defaultPath,
+            filenameTemplate: sub.downloadPrefs?.filenameTemplate || globalConfig.filenameTemplate,
+            videoId: i.id,
+            channelId: sub.channelId,
+            channelTitle: title || sub.channelTitle,
+            addToLibrary: sub.downloadPrefs?.addToLibrary,
+            source: {
+              mode: 'soundcloud' as const,
+              fileName: `${sanitizeFileName(i.title)}.mp3`
+            }
+          }));
+          queued += (await addDownloadJobs(scJobs)).length;
+        } else {
+          // Public videos can be downloaded anonymously; yt-dlp reports a specific
+          // error for age-restricted / private / members-only content, which the
+          // download manager classifies and surfaces in the UI.
+          const jobs = toQueue.map((i) => ({
+            url: `https://www.youtube.com/watch?v=${i.id}`,
+            title: i.title,
+            thumbnail: i.thumbnail,
+            kind: (sub.downloadPrefs?.kind || globalConfig.defaultKind || 'audio') as 'audio' | 'video',
+            format: sub.downloadPrefs?.format || globalConfig.defaultAudioFormat,
+            quality: sub.downloadPrefs?.quality || globalConfig.defaultVideoQuality,
+            outputDir: sub.downloadPrefs?.outputDir || globalConfig.defaultPath,
+            filenameTemplate: sub.downloadPrefs?.filenameTemplate || globalConfig.filenameTemplate,
+            videoId: i.id,
+            channelId: sub.channelId,
+            channelTitle: sub.channelTitle,
+            audioQuality: sub.downloadPrefs?.audioQuality || globalConfig.defaultAudioQuality,
+            audioLanguage: sub.downloadPrefs?.audioLanguage,
+            cover: sub.downloadPrefs?.cover,
+            subsLangs:
+              sub.downloadPrefs?.subsLangs ??
+              (globalConfig.defaultSubs ? globalConfig.defaultSubsLangs : undefined),
+            subsFormat: sub.downloadPrefs?.subsFormat,
+            subsMode: sub.downloadPrefs?.subsMode,
+            subsFolder: sub.downloadPrefs?.subsFolder,
+            metaOverride: sub.downloadPrefs?.metaOverride,
+            sponsorBlock: sub.downloadPrefs?.sponsorBlock,
+            trimStart: sub.downloadPrefs?.trimStart,
+            trimEnd: sub.downloadPrefs?.trimEnd,
+            addToLibrary: sub.downloadPrefs?.addToLibrary
+          }));
+          queued += (await addDownloadJobs(jobs)).length;
+        }
         const enqueueIds = toQueue.map((i) => i.id);
-        const jobs = toQueue.map((i) => ({
-          url: `https://www.youtube.com/watch?v=${i.id}`,
-          title: i.title,
-          thumbnail: i.thumbnail,
-          kind: (sub.downloadPrefs?.kind || globalConfig.defaultKind || 'audio') as 'audio' | 'video',
-          format: sub.downloadPrefs?.format || globalConfig.defaultAudioFormat,
-          quality: sub.downloadPrefs?.quality || globalConfig.defaultVideoQuality,
-          outputDir: sub.downloadPrefs?.outputDir || globalConfig.defaultPath,
-          filenameTemplate: sub.downloadPrefs?.filenameTemplate || globalConfig.filenameTemplate,
-          videoId: i.id,
-          channelId: sub.channelId,
-          channelTitle: sub.channelTitle,
-          audioQuality: sub.downloadPrefs?.audioQuality || globalConfig.defaultAudioQuality,
-          audioLanguage: sub.downloadPrefs?.audioLanguage,
-          cover: sub.downloadPrefs?.cover,
-          subsLangs:
-            sub.downloadPrefs?.subsLangs ??
-            (globalConfig.defaultSubs ? globalConfig.defaultSubsLangs : undefined),
-          subsFormat: sub.downloadPrefs?.subsFormat,
-          subsMode: sub.downloadPrefs?.subsMode,
-          subsFolder: sub.downloadPrefs?.subsFolder,
-          metaOverride: sub.downloadPrefs?.metaOverride,
-          sponsorBlock: sub.downloadPrefs?.sponsorBlock,
-          trimStart: sub.downloadPrefs?.trimStart,
-          trimEnd: sub.downloadPrefs?.trimEnd,
-          addToLibrary: sub.downloadPrefs?.addToLibrary
-        }));
-        queued += (await addDownloadJobs(jobs)).length;
         // Nowe wideo są w kolejce — zapamiętaj je w OSOBNYM polu queuedVideoIds,
         // żeby kolejny check nie dodawał ich ponownie (dedup) bez fałszywego
         // oznaczania jako „pobrane". downloadedVideoIds pozostaje wyłącznie dla

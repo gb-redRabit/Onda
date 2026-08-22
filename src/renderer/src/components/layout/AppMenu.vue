@@ -129,11 +129,11 @@ const {
           <button
             class="w-full px-3 py-1.5 text-left text-xs text-fg-muted hover:bg-accent-ghost hover:text-accent-base transition-colors flex items-center gap-2"
             @click="
-              navigateAndClose('/youtube');
+              navigateAndClose('/online');
               closeDropdown();
             "
           >
-            {{ $t('menu.youtube') }}
+            {{ $t('menu.online') }}
             <span class="ml-auto text-[10px] text-fg-faint font-mono">Alt+4</span>
           </button>
           <button

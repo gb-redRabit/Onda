@@ -1,5 +1,5 @@
 import type { AppSettings, YoutubeAuthMethod } from '../../renderer/src/types/settings';
-import type { YouTubeResolveResult, YouTubeResolvedItem } from '../../renderer/src/types/youtube';
+import type { YouTubeResolveResult, YouTubeResolvedItem } from '../../renderer/src/types/online';
 import type {
   MediaSource,
   SourceEndpoint,
@@ -81,6 +81,9 @@ export interface IpcYoutubeVideo {
   duration?: string;
   viewCount?: string;
   publishedAt: string;
+  // Canonical page URL — set for SoundCloud items (permalinks cannot be
+  // rebuilt from the numeric id). YouTube items may omit it.
+  url?: string;
 }
 
 interface IpcYoutubeChannel {
@@ -100,6 +103,10 @@ export interface IpcSubscription {
   channelTitle: string;
   channelThumbnail: string;
   autoDownload: boolean;
+  // Platform of the subscribed channel — 'youtube' by default (legacy entries
+  // have no field). SoundCloud subscriptions use profile permalinks as
+  // channelId and download MP3s via the internal API.
+  platform?: 'youtube' | 'soundcloud';
   lastChecked?: number;
   lastVideoId?: string;
   baselineVideoId?: string;
@@ -200,11 +207,13 @@ export interface IpcDownloadProfile {
 }
 
 // Direct-URL (non-YouTube) download source. `mode: 'http'` streams the URL to a
-// file without yt-dlp; `mode: 'ytdlp'` is the default YouTube pipeline. Secrets
+// file without yt-dlp; `mode: 'ytdlp'` is the default YouTube pipeline;
+// `mode: 'soundcloud'` resolves a fresh progressive-MP3 URL through the
+// SoundCloud API at attempt start, then streams it like http. Secrets
 // are never carried here — only an `apiKeyId` reference resolved in main.
 interface IpcDownloadSource {
-  mode: 'http' | 'ytdlp';
-  /** Finalna nazwa pliku (z rozszerzeniem) dla trybu http. */
+  mode: 'http' | 'ytdlp' | 'soundcloud';
+  /** Finalna nazwa pliku (z rozszerzeniem) dla trybu http/soundcloud. */
   fileName?: string;
   /** Ref do settings.apiKeys; nagłówki rozwiązywane w main (safeStorage). */
   apiKeyId?: string;
@@ -251,6 +260,9 @@ export type IpcDownloadErrorCode =
   | 'network'
   | 'proxy'
   | 'dependency'
+  // Resource recognized but not supported (e.g. personalized SoundCloud
+  // /discover/sets links, which the API does not serve).
+  | 'unsupported'
   | 'unknown';
 
 export type IpcStreamErrorCode = IpcDownloadErrorCode | 'hls' | 'invalid';
@@ -262,13 +274,16 @@ export interface IpcStreamResult {
   code?: IpcStreamErrorCode;
 }
 
-// A user-saved online stream (YT, later SoundCloud) for the "Saved" view.
+// A user-saved online stream (YT, SoundCloud) for the "Saved" view.
 // Only metadata is stored — the stream URL is resolved live on play, so the
 // entry never goes stale.
 export interface IpcSavedStream {
   id: string;
   title: string;
   thumbnail?: string;
+  // Canonical page URL — set for SoundCloud items (permalinks cannot be
+  // rebuilt from the numeric id). YouTube items may omit it.
+  url?: string;
   channelTitle?: string;
   channelId?: string;
   duration?: string;
@@ -605,6 +620,57 @@ export interface IpcChannels {
   };
   'yt:subs:checkNow': { args: []; result: IpcSubscriptionCheckResult };
   'yt:subs:checkChannel': { args: [channelId: string]; result: IpcSubscriptionCheckResult };
+  'sc:search': {
+    args: [query: string, offset?: number];
+    result: {
+      success: boolean;
+      error?: string;
+      code?: IpcDownloadErrorCode;
+      items: IpcYoutubeVideo[];
+    };
+  };
+  'sc:resolve': {
+    args: [url: string];
+    result: {
+      success: boolean;
+      error?: string;
+      code?: IpcDownloadErrorCode;
+      result?: YouTubeResolveResult;
+    };
+  };
+  'sc:resolveMore': {
+    args: [{ url: string; start: number; end: number }];
+    result: {
+      success: boolean;
+      error?: string;
+      code?: IpcDownloadErrorCode;
+      items: YouTubeResolvedItem[];
+      hasMore: boolean;
+      totalItems: number | null;
+    };
+  };
+  'sc:channel': {
+    args: [{ url: string; start?: number; end?: number }];
+    result: {
+      success: boolean;
+      error?: string;
+      code?: IpcDownloadErrorCode;
+      channel?: IpcYoutubeChannel;
+      items: IpcYoutubeVideo[];
+      hasMore: boolean;
+    };
+  };
+  'sc:channelAll': {
+    args: [{ url: string }];
+    result: {
+      success: boolean;
+      error?: string;
+      code?: IpcDownloadErrorCode;
+      channel?: IpcYoutubeChannel;
+      items: IpcYoutubeVideo[];
+    };
+  };
+  'sc:stream:get': { args: [url: string]; result: IpcStreamResult };
   'yt:download:add': { args: [jobs: IpcDownloadJobInput[]]; result: IpcDownloadTask[] };
   'yt:download:cancel': { args: [id: string]; result: boolean };
   'yt:download:pause': { args: [id: string]; result: boolean };

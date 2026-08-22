@@ -109,13 +109,23 @@ function allowedOrigin(origin: string | undefined): string | null {
   return isLocalDev ? origin : null;
 }
 
-// Remote stream proxying (online playback). Only YouTube media hosts plus the
-// hosts of user-added radio stations are allowed so the endpoint cannot be
-// abused as an open SSRF proxy; the renderer can only ever reach it with URLs
-// produced by `yt:stream:get` or stations persisted via `radio:save`.
+// Remote stream proxying (online playback). Only YouTube/SoundCloud media
+// hosts plus the hosts of user-added radio stations are allowed so the
+// endpoint cannot be abused as an open SSRF proxy; the renderer can only ever
+// reach it with URLs produced by `yt:stream:get` / `sc:stream:get` or stations
+// persisted via `radio:save`.
 import { isAllowedRadioHost } from './ipc/radio-store';
 
-const STREAM_ALLOWED_HOSTS = ['googlevideo.com', 'ytimg.com', 'youtube.com', 'youtu.be'];
+const STREAM_ALLOWED_HOSTS = [
+  'googlevideo.com',
+  'ytimg.com',
+  'youtube.com',
+  'youtu.be',
+  // SoundCloud progressive MP3 CDN + page hosts (short links redirect there).
+  'sndcdn.com',
+  'soundcloud.com',
+  'snd.sc'
+];
 const STREAM_MAX_REDIRECTS = 3;
 // googlevideo 403s are usually transient (per-IP throttling, flaky edge
 // routing), so give each stream up to 4 attempts with a short backoff. The

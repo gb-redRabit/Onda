@@ -9,6 +9,9 @@ export interface YouTubeVideo {
   viewCount?: string;
   publishedAt: string;
   tags?: string[];
+  // Canonical page URL — set for SoundCloud items (SC permalinks cannot be
+  // rebuilt from the numeric id). YouTube items may omit it.
+  url?: string;
 }
 
 export type YouTubeResolveKind = 'video' | 'playlist' | 'channel';
@@ -21,6 +24,8 @@ export interface YouTubeResolvedItem {
   channelTitle: string;
   channelId: string;
   isPlayable?: boolean;
+  // Canonical page URL — SoundCloud only (see YouTubeVideo.url).
+  url?: string;
 }
 
 interface YouTubeResolveMeta {
@@ -59,6 +64,7 @@ type DownloadErrorCode =
   | 'network'
   | 'proxy'
   | 'dependency'
+  | 'unsupported'
   | 'unknown';
 
 export interface CoverSpec {
@@ -77,7 +83,7 @@ export interface MetaOverride {
 }
 
 export interface DownloadSource {
-  mode: 'http' | 'ytdlp';
+  mode: 'http' | 'ytdlp' | 'soundcloud';
   fileName?: string;
   apiKeyId?: string;
   headerName?: string;
@@ -147,18 +153,22 @@ export interface SubscriptionDownloadPrefs {
 }
 
 export interface Subscription {
-  id: string;
-  channelId: string;
-  channelTitle: string;
-  channelThumbnail: string;
-  autoDownload: boolean;
-  lastChecked?: number;
-  lastVideoId?: string;
-  baselineVideoId?: string;
-  downloadedVideoIds?: string[];
-  queuedVideoIds?: string[];
-  pendingCount?: number;
-  newArrivals?: number;
-  downloadPrefs?: SubscriptionDownloadPrefs;
-  addedAt: number;
-}
+    id: string;
+    channelId: string;
+    channelTitle: string;
+    channelThumbnail: string;
+    autoDownload: boolean;
+    // Platform of the subscribed channel — 'youtube' by default (legacy
+    // entries have no field). SoundCloud subscriptions use profile permalinks
+    // as channelId and download MP3s via the internal API.
+    platform?: 'youtube' | 'soundcloud';
+    lastChecked?: number;
+    lastVideoId?: string;
+    baselineVideoId?: string;
+    downloadedVideoIds?: string[];
+    queuedVideoIds?: string[];
+    pendingCount?: number;
+    newArrivals?: number;
+    downloadPrefs?: SubscriptionDownloadPrefs;
+    addedAt: number;
+  }

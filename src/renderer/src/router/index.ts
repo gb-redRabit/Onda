@@ -7,9 +7,9 @@ const ROUTE_MODULE_MAP: Record<string, string> = {
   audio: 'player',
   explorer: 'explorer',
   library: 'library',
-  youtube: 'youtube',
-  webcast: 'youtube',
-  downloads: 'youtube',
+  online: 'online',
+  webcast: 'online',
+  downloads: 'online',
   sources: 'sources',
   settings: 'settings'
 };
@@ -44,10 +44,14 @@ const router = createRouter({
       component: () => import('@renderer/views/ExplorerWindowView.vue')
     },
     {
+      path: '/online',
+      name: 'online',
+      component: () => import('@renderer/views/OnlineView.vue'),
+      meta: { title: 'Online', icon: 'radio' }
+    },
+    {
       path: '/youtube',
-      name: 'youtube',
-      component: () => import('@renderer/views/YouTubeView.vue'),
-      meta: { title: 'YouTube', icon: 'youtube' }
+      redirect: '/online'
     },
     {
       path: '/webcast',

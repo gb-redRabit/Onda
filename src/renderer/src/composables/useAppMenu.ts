@@ -57,7 +57,7 @@ export function useAppMenu() {
       '1': '/',
       '2': '/library',
       '3': '/explorer',
-      '4': '/youtube',
+      '4': '/online',
       '5': '/downloads',
       '6': '/settings'
     };
@@ -78,7 +78,7 @@ export function useAppMenu() {
       library: t('nav.library'),
       player: t('nav.player'),
       audio: t('nav.player'),
-      youtube: t('nav.youtube'),
+      online: t('nav.online'),
       downloads: t('nav.downloads'),
       sources: t('sources.title'),
       explorer: t('nav.explorer'),

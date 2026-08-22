@@ -107,7 +107,7 @@ function createWindow(): BrowserWindow {
     minWidth: 900,
     minHeight: 600,
     show: false,
-    frame: false,
+    frame: false, 
     titleBarStyle: 'hidden',
     backgroundColor: '#0f0f17',
     icon: windowIcon(),

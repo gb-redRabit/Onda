@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { CheckSquare, Download } from '@lucide/vue';
-import YTButton from './YTButton.vue';
+import OnlineButton from './OnlineButton.vue';
 
 const props = defineProps<{
   selectedCount: number;
@@ -30,10 +30,10 @@ const allSelected = computed(
   <div
     class="flex flex-wrap items-center gap-2 p-2 rounded-xl bg-bg-surface border border-border-default"
   >
-    <YTButton variant="secondary" size="sm" @click="emit('selectAll')">
+    <OnlineButton variant="secondary" size="sm" @click="emit('selectAll')">
       <CheckSquare :size="12" />
       {{ allSelected ? $t('common.deselectAll') : $t('common.selectAll') }}
-    </YTButton>
+    </OnlineButton>
 
     <div class="flex items-center gap-1.5 text-xs text-fg-faint">
       <span>{{ t('youtube.range') }}</span>
@@ -52,14 +52,14 @@ const allSelected = computed(
         class="w-14 px-2 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-xs text-fg-base focus:border-accent-base focus:outline-none"
         @input="emit('update:rangeEnd', Number(($event.target as HTMLInputElement).value))"
       />
-      <YTButton variant="secondary" size="sm" @click="emit('selectRange')">
+      <OnlineButton variant="secondary" size="sm" @click="emit('selectRange')">
         {{ t('youtube.rangeSelect') }}
-      </YTButton>
+      </OnlineButton>
     </div>
 
     <div class="flex-1" />
 
-    <YTButton
+    <OnlineButton
       variant="primary"
       size="sm"
       :disabled="selectedCount === 0"
@@ -67,6 +67,6 @@ const allSelected = computed(
     >
       <Download :size="12" />
       {{ t('youtube.addSelected', { count: selectedCount }) }}
-    </YTButton>
+    </OnlineButton>
   </div>
 </template>

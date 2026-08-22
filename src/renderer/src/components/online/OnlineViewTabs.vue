@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Bell } from '@lucide/vue';
-import YTBadge from './YTBadge.vue';
+import OnlineBadge from './OnlineBadge.vue';
 
 defineProps<{
   modelValue: 'discover' | 'subscriptions';
@@ -38,13 +38,13 @@ const tabs = computed(() => [
       >
         <component :is="tab.icon" v-if="tab.icon" :size="14" />
         {{ tab.label }}
-        <YTBadge
+        <OnlineBadge
           v-if="tab.key === 'subscriptions' && subscriptionCount"
           variant="default"
           size="sm"
         >
           {{ subscriptionCount }}
-        </YTBadge>
+        </OnlineBadge>
       </button>
     </div>
     <div class="pb-1">

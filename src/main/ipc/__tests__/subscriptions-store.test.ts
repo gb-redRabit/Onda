@@ -37,6 +37,8 @@ describe('subscriptions-store', () => {
     expect(sub!.channelId).toBe('UC123');
     expect(sub!.autoDownload).toBe(true);
     expect(sub!.downloadedVideoIds).toEqual([]);
+    // Legacy default — no field means YouTube.
+    expect(sub!.platform).toBe('youtube');
 
     const list = await loadSubscriptions(file);
     expect(list).toHaveLength(1);
@@ -44,6 +46,18 @@ describe('subscriptions-store', () => {
 
     const onDisk = JSON.parse(await readFile(file, 'utf-8'));
     expect(onDisk).toHaveLength(1);
+  });
+
+  it('persists the soundcloud platform when given', async () => {
+    const sub = await addSubscription(file, {
+      channelId: 'some-artist',
+      channelTitle: 'Some Artist',
+      channelThumbnail: 'https://i1.sndcdn.com/a.jpg',
+      platform: 'soundcloud'
+    });
+    expect(sub!.platform).toBe('soundcloud');
+    const list = await loadSubscriptions(file);
+    expect(list[0]!.platform).toBe('soundcloud');
   });
 
   it('is idempotent for the same channel', async () => {
