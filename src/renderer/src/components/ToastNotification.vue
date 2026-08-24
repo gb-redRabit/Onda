@@ -46,7 +46,7 @@ function color(type: string) {
     case 'error':
       return 'text-red-400';
     default:
-      return 'text-accent-base';
+      return 'text-primary';
   }
 }
 </script>
@@ -59,15 +59,15 @@ function color(type: string) {
     <div
       v-for="n in filtered"
       :key="n.id"
-      class="pointer-events-auto flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-bg-elevated border border-border-default shadow-xl shadow-black/30 max-w-xs animate-in"
+      class="pointer-events-auto flex items-start gap-2.5 px-3 py-2.5 rounded-box bg-neutral border border-neutral-content/20 shadow-xl shadow-black/30 max-w-xs animate-in"
     >
       <component :is="icon(n.type)" :size="16" class="shrink-0 mt-0.5" :class="color(n.type)" />
       <div class="flex-1 min-w-0">
-        <div class="text-xs font-medium text-fg-base">{{ n.title }}</div>
-        <div v-if="n.message" class="text-[11px] text-fg-faint mt-0.5">{{ n.message }}</div>
+        <div class="text-xs font-medium text-base-content">{{ n.title }}</div>
+        <div v-if="n.message" class="text-[11px] text-base-content/50 mt-0.5">{{ n.message }}</div>
       </div>
       <button
-        class="p-0.5 shrink-0 text-fg-faint hover:text-fg-base transition-colors"
+        class="p-0.5 shrink-0 text-base-content/50 hover:text-base-content transition-colors"
         @click="ui.removeNotification(n.id)"
       >
         <X :size="12" />

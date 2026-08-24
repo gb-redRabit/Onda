@@ -152,7 +152,7 @@ onBeforeUnmount(() => {
     <div
       v-if="files.length > 1"
       ref="stripRef"
-      class="relative px-3 py-2 bg-bg-overlay/60 border-t border-border-default/20 overflow-x-auto transition-all duration-200"
+      class="relative px-3 py-2 bg-neutral border-t border-neutral-content/20 overflow-x-auto transition-all duration-200"
       :class="showThumbs ? 'h-20' : 'h-0 py-0 overflow-hidden'"
       @click.stop
     >
@@ -160,10 +160,10 @@ onBeforeUnmount(() => {
         <template v-for="item in visibleThumbs" :key="item.file.path">
           <div
             :data-thumb-idx="item.idx"
-            class="absolute top-0 rounded-md overflow-hidden border-2 transition-all cursor-pointer flex items-center justify-center"
+            class="absolute top-0 rounded-field overflow-hidden border-2 transition-all cursor-pointer flex items-center justify-center"
             :class="[
               item.idx === currentIndex
-                ? 'border-accent-base ring-1 ring-accent-base/30'
+                ? 'border-primary ring-1 ring-primary/30'
                 : 'border-transparent',
               thumbCache.get(item.file.path) && item.idx !== currentIndex
                 ? 'brightness-50 hover:brightness-75'
@@ -184,19 +184,19 @@ onBeforeUnmount(() => {
               draggable="false"
               loading="lazy"
             />
-            <span v-else class="text-[10px] text-fg-faint">{{ item.idx + 1 }}</span>
+            <span v-else class="text-[10px] text-base-content/50">{{ item.idx + 1 }}</span>
           </div>
         </template>
       </div>
     </div>
 
     <div
-      class="flex items-center justify-between px-4 py-1.5 bg-bg-elevated/60 text-xs text-fg-faint"
+      class="flex items-center justify-between px-4 py-1.5 bg-neutral text-xs text-neutral-content/50"
     >
       <div class="flex items-center gap-2">
         <button
-          class="p-1 rounded transition-colors"
-          :class="showThumbs ? 'text-accent-base' : 'text-fg-muted hover:text-fg-base'"
+          class="fx-noise p-1 fx-depth rounded-field transition-colors"
+          :class="showThumbs ? 'text-primary' : 'text-base-content/70 hover:text-base-content'"
           title="Toggle thumbnails"
           @click="emit('update:showThumbs', !showThumbs)"
         >
@@ -204,11 +204,11 @@ onBeforeUnmount(() => {
         </button>
         <div class="w-px h-3 bg-border-default/30" />
         <span>{{ currentIndex + 1 }} / {{ files.length }}</span>
-        <span v-if="currentFile" class="text-fg-muted truncate max-w-50">{{
+        <span v-if="currentFile" class="text-base-content/70 truncate max-w-50">{{
           currentFile.name
         }}</span>
       </div>
-      <div class="flex items-center gap-2 text-fg-muted">
+      <div class="flex items-center gap-2 text-base-content/70">
         <span v-if="scale !== 1">{{ Math.round(scale * 100) }}%</span>
         <span v-if="rotation !== 0">{{ rotation }}°</span>
       </div>

@@ -44,7 +44,7 @@ const {
 <template>
   <div
     v-show="!(peeked && mode === 'w')"
-    class="fixed inset-0 z-0 transition-opacity duration-300 select-none bg-bg-base"
+    class="fixed inset-0 z-0 transition-opacity duration-300 select-none bg-base-200/[var(--glass-alpha)]"
     :style="{ opacity: pipAlpha }"
   ></div>
 
@@ -57,7 +57,7 @@ const {
     <!-- Minimal -->
     <template v-if="mode === 'm'">
       <div class="flex flex-row items-center h-full px-1.5 gap-1">
-        <span class="text-[11px] font-medium truncate flex-1 min-w-0 text-fg-base">{{
+        <span class="text-[11px] font-medium truncate flex-1 min-w-0 text-base-content">{{
           trackName
         }}</span>
         <div class="flex items-center gap-0.5 shrink-0">
@@ -66,7 +66,10 @@ const {
             {{ isPlaying ? '\u23F8' : '\u25B6' }}
           </button>
           <button class="btn-pip w-5 h-5" @click="send('next')">&#x23ED;</button>
-          <button class="btn-pip w-4.5 h-4.5 text-[10px] text-fg-faint" @click="send('cycleMode')">
+          <button
+            class="btn-pip w-4.5 h-4.5 text-[10px] text-base-content/50"
+            @click="send('cycleMode')"
+          >
             &#x229E;
           </button>
         </div>
@@ -80,7 +83,7 @@ const {
           <video
             v-if="isVideoCover"
             :src="videoCoverSrc"
-            class="w-19 h-19 rounded-lg object-cover block"
+            class="w-19 h-19 rounded-field object-cover block"
             autoplay
             muted
             loop
@@ -89,20 +92,20 @@ const {
           <img
             v-else-if="coverData"
             :src="coverData"
-            class="w-19 h-19 rounded-lg object-cover block"
+            class="w-19 h-19 rounded-field object-cover block"
             alt=""
           />
-          <div v-else class="w-19 h-19 rounded-lg bg-bg-hover"></div>
+          <div v-else class="w-19 h-19 rounded-field bg-base-content/10"></div>
         </div>
         <div class="flex flex-1 justify-center min-w-0 flex-col pt-1 pl-2.5 gap-0.5">
-          <div class="text-xs font-semibold truncate text-fg-base">{{ trackName }}</div>
-          <div class="text-[10px] text-fg-faint truncate">{{ artist }}</div>
+          <div class="text-xs font-semibold truncate text-base-content">{{ trackName }}</div>
+          <div class="text-[10px] text-base-content/50 truncate">{{ artist }}</div>
           <div class="flex items-center gap-1.5 shrink-0">
-            <span class="text-[10px] text-fg-faint tabular-nums whitespace-nowrap">{{
+            <span class="text-[10px] text-base-content/50 tabular-nums whitespace-nowrap">{{
               fmt(currentTime)
             }}</span>
-            <span class="text-[10px] text-fg-faint opacity-40">/</span>
-            <span class="text-[10px] text-fg-faint tabular-nums whitespace-nowrap">{{
+            <span class="text-[10px] text-base-content/50 opacity-40">/</span>
+            <span class="text-[10px] text-base-content/50 tabular-nums whitespace-nowrap">{{
               fmt(duration)
             }}</span>
           </div>
@@ -110,7 +113,7 @@ const {
         <div class="flex flex-col items-center justify-center gap-1 shrink-0 pr-2.5 pt-5">
           <div>
             <span
-              class="text-[9px] text-fg-muted cursor-pointer px-0.5 py-0.5 rounded hover:text-fg-base hover:bg-bg-hover"
+              class="text-[9px] text-base-content/70 cursor-pointer px-0.5 py-0.5 rounded-field hover:text-base-content hover:bg-base-content/10"
               @click="send('mute')"
               >{{ volLabel }}</span
             >
@@ -123,14 +126,10 @@ const {
               :value="volume"
               @input="onVolumeInput"
             />
-            <span class="text-[10px] text-fg-faint min-w-6 text-right">{{ volPct }}</span>
+            <span class="text-[10px] text-base-content/50 min-w-6 text-right">{{ volPct }}</span>
           </div>
           <div class="flex items-center justify-center px-2.5 pb-1.5 pt-0.5 gap-0.5 shrink-0 h-8">
-            <button
-              class="btn-pip"
-              :class="{ 'text-accent-base!': shuffle }"
-              @click="send('shuffle')"
-            >
+            <button class="btn-pip" :class="{ 'text-primary!': shuffle }" @click="send('shuffle')">
               &#x21C4;
             </button>
             <button class="btn-pip" @click="send('prev')">&#x23EE;</button>
@@ -140,7 +139,7 @@ const {
             <button class="btn-pip" @click="send('next')">&#x23ED;</button>
             <button
               class="btn-pip"
-              :class="{ 'text-accent-base!': repeat !== 'none' }"
+              :class="{ 'text-primary!': repeat !== 'none' }"
               @click="send('repeat')"
             >
               <span class="relative"
@@ -155,7 +154,10 @@ const {
         </div>
       </div>
       <div class="absolute top-1 right-1 z-10">
-        <button class="btn-pip w-4.5 h-4.5 text-[10px] text-fg-faint" @click="send('cycleMode')">
+        <button
+          class="btn-pip w-4.5 h-4.5 text-[10px] text-base-content/50"
+          @click="send('cycleMode')"
+        >
           &#x229E;
         </button>
       </div>
@@ -212,16 +214,16 @@ const {
 
   <div
     class="fixed left-0 right-0 z-20"
-    :class="edge === 'bottom' ? 'top-0' : (peeked ? 'bottom-0' : 'top-0')"
+    :class="edge === 'bottom' ? 'top-0' : peeked ? 'bottom-0' : 'top-0'"
   >
     <div
       class="w-full h-3 cursor-pointer flex"
       :class="edge === 'bottom' ? 'items-start' : peeked ? 'items-end' : 'items-start'"
       @click="onProgressClick"
     >
-      <div class="w-full h-0.75 bg-bg-hover">
+      <div class="w-full h-0.75 bg-base-content/10">
         <div
-          class="h-full bg-accent-base rounded-r transition-[width]"
+          class="h-full bg-primary rounded-r transition-[width]"
           :style="{ width: progressPct + '%' }"
         ></div>
       </div>

@@ -187,20 +187,22 @@ onUnmounted(() => {
     <!-- audio area -->
     <div
       v-else-if="isAudio"
-      class="relative flex-1 flex items-center justify-center overflow-hidden bg-bg-base"
+      class="relative flex-1 flex items-center justify-center overflow-hidden bg-base-200/[var(--glass-alpha)]"
     >
       <div class="text-center">
-        <p class="text-lg text-fg-base">
+        <p class="text-lg text-base-content">
           {{ player.currentTrack?.metadata?.title || player.currentTrack?.name }}
         </p>
-        <p class="text-sm text-fg-muted">{{ player.currentTrack?.metadata?.artist || '' }}</p>
+        <p class="text-sm text-base-content/70">
+          {{ player.currentTrack?.metadata?.artist || '' }}
+        </p>
       </div>
     </div>
 
     <div v-else class="relative flex-1 flex items-center justify-center overflow-hidden">
       <p class="text-lg text-white/60">{{ $t('playerView.noVideo') }}</p>
       <button
-        class="mt-4 px-4 py-2 rounded-xl bg-accent-base text-white text-sm"
+        class="fx-noise mt-4 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm"
         @click="router.push('/explorer')"
       >
         {{ $t('playerView.browseFiles') }}

@@ -14,7 +14,6 @@ import AudioVizSettings from '@renderer/components/audio/AudioVizSettings.vue';
 const player = usePlayerStore();
 const audio = useAudioPlayer();
 
-
 const layoutMode = ref<'split' | 'full' | 'stacked'>('split');
 const splitRatio = ref(50);
 const showUI = ref(true);
@@ -126,7 +125,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="h-full w-full bg-bg-base select-none" @mousemove="onMouseMove">
+  <div class="h-full w-full bg-base-200/[var(--glass-alpha)] select-none" @mousemove="onMouseMove">
     <!-- LAYOUT TOGGLE — bottom-right, always visible -->
     <div
       class="absolute top-4 left-4 z-30 transition-opacity"
@@ -134,7 +133,6 @@ onUnmounted(() => {
     >
       <AudioLayoutToggle v-model:mode="layoutMode" />
     </div>
-
 
     <!-- ═══════ FULL layout — visualizer as background ═══════ -->
     <div v-if="layoutMode === 'full'" class="h-full w-full relative overflow-hidden">
@@ -161,7 +159,7 @@ onUnmounted(() => {
       <!-- viz controls — bottom-left -->
       <div class="absolute bottom-4 left-4 z-20 flex items-center gap-1">
         <button
-          class="p-2 rounded-lg bg-bg-overlay/80 backdrop-blur-sm text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-all"
+          class="fx-noise p-2 fx-depth rounded-field bg-base-300 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all"
           :class="{ 'opacity-60': showUI }"
           :title="$t('audioView.vizMode')"
           @click="vizRef?.cycleStyle()"
@@ -172,11 +170,11 @@ onUnmounted(() => {
           </div>
         </button>
         <button
-          class="p-2 rounded-lg bg-bg-overlay/80 backdrop-blur-sm transition-all"
+          class="fx-noise p-2 fx-depth rounded-field bg-neutral backdrop-blur-sm transition-all"
           :class="
             showVizSettings
-              ? 'text-accent-base bg-accent-ghost'
-              : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+              ? 'text-primary bg-primary/10'
+              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
           "
           :title="$t('settings.audioViz')"
           @click="showVizSettings = !showVizSettings"
@@ -218,7 +216,7 @@ onUnmounted(() => {
         <AudioVisualizer class="h-full" />
         <div class="absolute top-2 right-2 z-10 flex gap-1">
           <button
-            class="p-1.5 rounded-lg bg-bg-overlay/80 backdrop-blur-sm text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-all text-[10px]"
+            class="fx-noise p-1.5 fx-depth rounded-field bg-base-300 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all text-[10px]"
             :title="$t('audioView.vizMode')"
             @click="vizRef?.cycleStyle()"
           >
@@ -228,11 +226,11 @@ onUnmounted(() => {
             </div>
           </button>
           <button
-            class="p-1.5 rounded-lg bg-bg-overlay/80 backdrop-blur-sm transition-all"
+            class="fx-noise p-1.5 fx-depth rounded-field bg-neutral backdrop-blur-sm transition-all"
             :class="
               showVizSettings
-                ? 'text-accent-base bg-accent-ghost'
-                : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+                ? 'text-primary bg-primary/10'
+                : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
             "
             :title="$t('settings.audioViz')"
             @click="showVizSettings = !showVizSettings"
@@ -266,11 +264,11 @@ onUnmounted(() => {
           <AudioControls />
         </div>
       </div>
-      <div class="h-32 shrink-0 relative border-t border-border-default">
+      <div class="h-32 shrink-0 relative border-t border-base-300">
         <AudioVisualizer class="h-full" />
         <div class="absolute top-1 right-1 z-10 flex gap-1">
           <button
-            class="p-1 rounded-lg bg-bg-overlay/80 backdrop-blur-sm text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-all text-[9px]"
+            class="fx-noise p-1 fx-depth rounded-field bg-base-300 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all text-[9px]"
             :title="$t('audioView.vizMode')"
             @click="vizRef?.cycleStyle()"
           >
@@ -280,11 +278,11 @@ onUnmounted(() => {
             </div>
           </button>
           <button
-            class="p-1 rounded-lg bg-bg-overlay/80 backdrop-blur-sm transition-all"
+            class="fx-noise p-1 fx-depth rounded-field bg-neutral backdrop-blur-sm transition-all"
             :class="
               showVizSettings
-                ? 'text-accent-base bg-accent-ghost'
-                : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+                ? 'text-primary bg-primary/10'
+                : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
             "
             :title="$t('settings.audioViz')"
             @click="showVizSettings = !showVizSettings"

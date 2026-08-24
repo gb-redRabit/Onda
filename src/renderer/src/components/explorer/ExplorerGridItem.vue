@@ -63,11 +63,11 @@ const size = computed(() => {
     :draggable="!isAtDrives"
     :data-file-path="item.path"
     :data-folder-path="item.isDirectory ? item.path : undefined"
-    class="flex flex-col items-center rounded-xl hover:bg-bg-hover transition-colors text-center group relative w-full"
+    class="flex flex-col items-center fx-depth rounded-box fx-noise hover:bg-base-content/10 transition-colors text-center group relative w-full"
     :class="{
-      'bg-accent-ghost ring-1 ring-accent-base': isSelected,
-      'bg-accent-ghost/15 ring-1 ring-accent-base/30': isLibraryFolder && !isSelected,
-      'ring-2 ring-accent-base bg-accent-ghost/50':
+      'bg-primary/10 ring-1 ring-primary': isSelected,
+      'bg-primary/15 ring-1 ring-primary/30': isLibraryFolder && !isSelected,
+      'ring-2 ring-primary bg-primary/50':
         hoveredFolderPath && item.isDirectory && hoveredFolderPath === item.path,
       'opacity-40': isCut
     }"
@@ -87,21 +87,19 @@ const size = computed(() => {
     "
   >
     <div
-      class="rounded-lg flex items-center justify-center overflow-hidden shrink-0"
-      :class="
-        isAtDrives ? 'bg-accent-ghost' : isLibraryFolder ? 'bg-accent-ghost/30' : 'bg-bg-overlay'
-      "
+      class="rounded-field flex items-center justify-center overflow-hidden shrink-0"
+      :class="isAtDrives ? 'bg-primary/10' : isLibraryFolder ? 'bg-primary/30' : 'bg-neutral'"
       :style="{
         width: `${size.icon}px`,
         height: `${size.icon}px`,
         marginBottom: `${size.mb * 4}px`
       }"
     >
-      <HardDrive v-if="isAtDrives" :size="Math.round(size.icon * 0.55)" class="text-accent-base" />
+      <HardDrive v-if="isAtDrives" :size="Math.round(size.icon * 0.55)" class="text-primary" />
       <FolderOpen
         v-else-if="item.isDirectory"
         :size="Math.round(size.icon * 0.55)"
-        class="text-accent-base"
+        class="text-primary"
       />
       <img v-else-if="mediaThumb" :src="mediaThumb" class="w-full h-full object-cover" />
       <img
@@ -121,12 +119,14 @@ const size = computed(() => {
       />
     </div>
     <span :class="`truncate w-full leading-tight font-medium ${size.fs}`">{{ item.name }}</span>
-    <span v-if="isAtDrives && item.size > 0" :class="`text-[10px] text-fg-faint ${size.fs}`">{{
-      formatFileSize(item.size)
-    }}</span>
+    <span
+      v-if="isAtDrives && item.size > 0"
+      :class="`text-[10px] text-base-content/50 ${size.fs}`"
+      >{{ formatFileSize(item.size) }}</span
+    >
     <span
       v-if="isLibraryFolder && !isAtDrives"
-      class="absolute top-1 right-1 px-1 py-0.5 text-[8px] rounded-md bg-accent-base/20 text-accent-base font-bold border border-accent-base/40 leading-none"
+      class="absolute top-1 right-1 px-1 py-0.5 text-[8px] rounded-field bg-primary/20 text-primary font-bold border border-primary/40 leading-none"
       >LIB</span
     >
   </button>

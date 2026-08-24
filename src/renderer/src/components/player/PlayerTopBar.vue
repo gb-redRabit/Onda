@@ -20,7 +20,7 @@ const emit = defineEmits<{
     :class="{ 'opacity-0': !showControls }"
   >
     <button
-      class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+      class="fx-noise p-2 fx-depth rounded-field bg-white/10 hover:bg-white/20 text-white transition-colors"
       @click="emit('back')"
     >
       <ArrowLeft :size="20" />
@@ -32,13 +32,13 @@ const emit = defineEmits<{
       <p class="text-white/50 text-xs">{{ track?.metadata?.artist || '' }}</p>
     </div>
     <button
-      class="p-2 rounded-xl bg-white/10 mr-2 hover:bg-white/20 text-white transition-colors"
+      class="fx-noise p-2 fx-depth rounded-field bg-white/10 mr-2 hover:bg-white/20 text-white transition-colors"
       @click="emit('pip')"
     >
       <PictureInPicture :size="18" />
     </button>
     <button
-      class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+      class="fx-noise p-2 fx-depth rounded-field bg-white/10 hover:bg-white/20 text-white transition-colors"
       @click="emit('fullscreen')"
     >
       <Maximize2 :size="18" />

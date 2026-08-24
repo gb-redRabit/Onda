@@ -28,7 +28,15 @@ describe('saved store', () => {
   it('loads persisted data once', async () => {
     mockSavedLoad.mockResolvedValue({
       tracks: [{ id: 'a', title: 'A', savedAt: 1 }],
-      playlists: [{ id: 'p', kind: 'playlist', url: 'https://youtube.com/playlist?list=p', title: 'P', savedAt: 1 }]
+      playlists: [
+        {
+          id: 'p',
+          kind: 'playlist',
+          url: 'https://youtube.com/playlist?list=p',
+          title: 'P',
+          savedAt: 1
+        }
+      ]
     });
     const store = useSavedStore();
     await store.ensureLoaded();
@@ -41,7 +49,11 @@ describe('saved store', () => {
 
   it('toggles a track: save, then remove', async () => {
     const store = useSavedStore();
-    const video = { id: 'abc', title: 'Song', thumbnail: 'https://i.ytimg.com/vi/abc/hqdefault.jpg' };
+    const video = {
+      id: 'abc',
+      title: 'Song',
+      thumbnail: 'https://i.ytimg.com/vi/abc/hqdefault.jpg'
+    };
     const ok = await store.toggleTrack(video);
     expect(ok).toBe(true);
     expect(store.isTrackSaved('abc')).toBe(true);
@@ -117,7 +129,15 @@ describe('saved store', () => {
   it('removeTrack and removePlaylist update state and persist', async () => {
     mockSavedLoad.mockResolvedValue({
       tracks: [{ id: 'a', title: 'A', savedAt: 1 }],
-      playlists: [{ id: 'PL1', kind: 'playlist', url: 'https://youtube.com/playlist?list=PL1', title: 'P', savedAt: 1 }]
+      playlists: [
+        {
+          id: 'PL1',
+          kind: 'playlist',
+          url: 'https://youtube.com/playlist?list=PL1',
+          title: 'P',
+          savedAt: 1
+        }
+      ]
     });
     const store = useSavedStore();
     await store.ensureLoaded();

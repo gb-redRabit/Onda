@@ -58,25 +58,23 @@ onUnmounted(() => grid.destroy());
 <template>
   <div
     v-if="artists.length === 0"
-    class="flex flex-col items-center justify-center h-full gap-3 text-fg-faint"
+    class="flex flex-col items-center justify-center h-full gap-3 text-base-content/50"
   >
     <Mic2 :size="48" class="opacity-30" />
     <p class="text-sm">{{ $t('library.noArtists') }}</p>
   </div>
   <template v-else>
-    <div
-      class="flex items-center justify-between px-4 py-2 border-b border-border-default shrink-0"
-    >
-      <span class="text-xs text-fg-faint"
+    <div class="flex items-center justify-between px-4 py-2 border-b border-base-300 shrink-0">
+      <span class="text-xs text-base-content/50"
         >{{ artists.length }} {{ $t('library.tracksCount') }}</span
       >
       <div class="flex items-center gap-2">
         <button
-          class="p-1.5 rounded-lg transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             viewMode === 'list'
-              ? 'bg-accent-ghost text-accent-base'
-              : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+              ? 'bg-primary/10 text-primary'
+              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
           "
           :title="$t('library.viewModeList')"
           @click="emit('update:viewMode', 'list')"
@@ -84,11 +82,11 @@ onUnmounted(() => grid.destroy());
           <LayoutList :size="14" />
         </button>
         <button
-          class="p-1.5 rounded-lg transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             viewMode === 'grid'
-              ? 'bg-accent-ghost text-accent-base'
-              : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+              ? 'bg-primary/10 text-primary'
+              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
           "
           :title="$t('library.viewModeGrid')"
           @click="emit('update:viewMode', 'grid')"
@@ -120,17 +118,17 @@ onUnmounted(() => grid.destroy());
             }"
           >
             <div
-              class="flex items-center gap-3 px-4 py-2 hover:bg-bg-hover transition-colors cursor-pointer h-full"
+              class="flex items-center gap-3 px-4 py-2 hover:bg-base-content/10 transition-colors cursor-pointer h-full"
               @click="emit('playTracks', artists[v.index][1])"
             >
               <div
-                class="w-8 h-8 rounded-full bg-accent-ghost flex items-center justify-center shrink-0"
+                class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0"
               >
-                <Mic2 :size="14" class="text-accent-base" />
+                <Mic2 :size="14" class="text-primary" />
               </div>
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-medium truncate">{{ artists[v.index][0] }}</div>
-                <div class="text-xs text-fg-faint">
+                <div class="text-xs text-base-content/50">
                   {{ artists[v.index][1].length }} {{ $t('library.tracksCount') }}
                 </div>
               </div>
@@ -159,16 +157,16 @@ onUnmounted(() => grid.destroy());
             <button
               v-for="[name, tracks] in row.artists"
               :key="name"
-              class="flex-1 min-w-0 flex flex-col items-center p-4 rounded-xl bg-bg-elevated border border-border-default hover:bg-bg-hover transition-all text-center"
+              class="flex-1 min-w-0 flex flex-col items-center p-4 fx-depth rounded-box fx-noise bg-base-100 border border-base-300 hover:bg-base-content/10 transition-all text-center"
               @click="emit('playTracks', tracks)"
             >
               <div
-                class="w-16 h-16 rounded-full bg-accent-ghost flex items-center justify-center mb-2"
+                class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-2"
               >
-                <Mic2 :size="24" class="text-accent-base" />
+                <Mic2 :size="24" class="text-primary" />
               </div>
               <div class="text-sm font-medium truncate w-full">{{ name }}</div>
-              <div class="text-xs text-fg-faint mt-0.5">
+              <div class="text-xs text-base-content/50 mt-0.5">
                 {{ tracks.length }} {{ $t('library.tracksCount') }}
               </div>
             </button>

@@ -19,8 +19,12 @@ const { t } = useI18n();
 const { status, refresh, ensureLoaded } = useYoutubeAuth();
 ensureLoaded();
 
-const { profiles, ensureLoaded: ensureProfilesLoaded, save: saveProfile, remove: removeProfile } =
-  useDownloadProfiles();
+const {
+  profiles,
+  ensureLoaded: ensureProfilesLoaded,
+  save: saveProfile,
+  remove: removeProfile
+} = useDownloadProfiles();
 ensureProfilesLoaded();
 
 const selectedProfileId = ref('');
@@ -228,11 +232,11 @@ function onSourcesFolderChange(e: Event) {
         <button
           v-for="m in methods"
           :key="m.value"
-          class="px-4 py-2 rounded-xl text-sm border transition-colors"
+          class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors"
           :class="
             settings.youtube.method === m.value
-              ? 'border-accent-base bg-accent-ghost text-accent-base font-medium'
-              : 'border-border-default text-fg-muted hover:bg-bg-hover'
+              ? 'border-primary bg-primary/10 text-primary font-medium'
+              : 'border-base-300 text-base-content/70 hover:bg-base-content/10'
           "
           @click="setMethod(m.value)"
         >
@@ -241,16 +245,16 @@ function onSourcesFolderChange(e: Event) {
       </div>
 
       <div class="flex items-center gap-2">
-        <div
-          class="w-2 h-2 rounded-full"
-          :class="status.loggedIn ? 'bg-green-base' : 'bg-border-subtle'"
-        />
-        <span class="text-sm" :class="status.loggedIn ? 'text-fg-base' : 'text-fg-muted'">
+        <div class="w-2 h-2 rounded-full" :class="status.loggedIn ? 'bg-success' : 'bg-base-300'" />
+        <span
+          class="text-sm"
+          :class="status.loggedIn ? 'text-base-content' : 'text-base-content/70'"
+        >
           {{
             status.loggedIn ? $t('settings.authStatusLoggedIn') : $t('settings.authStatusLoggedOut')
           }}
         </span>
-        <span v-if="lastLoginText" class="text-xs text-fg-faint">
+        <span v-if="lastLoginText" class="text-xs text-base-content/50">
           · {{ $t('settings.authLastLogin') }} {{ lastLoginText }}
         </span>
       </div>
@@ -258,14 +262,14 @@ function onSourcesFolderChange(e: Event) {
       <div class="flex flex-wrap items-center gap-2">
         <template v-if="settings.youtube.method === 'electron'">
           <button
-            class="px-4 py-2 rounded-xl bg-accent-base text-white text-sm font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
+            class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
             :disabled="isBusy"
             @click="doLogin"
           >
             {{ $t('settings.loginWithGoogle') }}
           </button>
           <button
-            class="px-4 py-2 rounded-xl border border-border-default text-sm text-fg-muted hover:bg-bg-hover transition-colors disabled:opacity-50"
+            class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
             :disabled="isBusy || !status.loggedIn"
             @click="doLogout"
           >
@@ -275,7 +279,7 @@ function onSourcesFolderChange(e: Event) {
 
         <template v-else-if="settings.youtube.method === 'manual'">
           <button
-            class="px-4 py-2 rounded-xl bg-accent-base text-white text-sm font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
+            class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
             :disabled="isBusy"
             @click="doImport"
           >
@@ -283,13 +287,13 @@ function onSourcesFolderChange(e: Event) {
           </button>
           <button
             v-if="status.cookiesPath"
-            class="px-4 py-2 rounded-xl border border-border-default text-sm text-fg-muted hover:bg-bg-hover transition-colors"
+            class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
             @click="doExport"
           >
             {{ $t('settings.exportCookies') }}
           </button>
           <button
-            class="px-4 py-2 rounded-xl border border-border-default text-sm text-fg-muted hover:bg-bg-hover transition-colors disabled:opacity-50"
+            class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
             :disabled="isBusy || !status.loggedIn"
             @click="doLogout"
           >
@@ -299,18 +303,18 @@ function onSourcesFolderChange(e: Event) {
 
         <template v-else-if="settings.youtube.method === 'browser'">
           <select
-            class="px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none focus:ring-2 focus:ring-accent-base/15 transition-all"
+            class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
             :value="settings.youtube.cookiesBrowser"
             @change="onBrowserChange"
           >
             <option v-for="b in browsers" :key="b.value" :value="b.value">{{ b.label }}</option>
           </select>
-          <span class="text-xs text-fg-faint">{{ $t('settings.authBrowserHint') }}</span>
+          <span class="text-xs text-base-content/50">{{ $t('settings.authBrowserHint') }}</span>
         </template>
       </div>
 
       <p v-if="errorMsg" class="text-xs text-red-400">{{ errorMsg }}</p>
-      <p v-if="settings.youtube.method !== 'none'" class="text-[11px] text-amber-base">
+      <p v-if="settings.youtube.method !== 'none'" class="text-[11px] text-warning">
         {{ $t('settings.cookiesSecurityHint') }}
       </p>
     </SettingsCard>
@@ -324,11 +328,11 @@ function onSourcesFolderChange(e: Event) {
         <input
           :value="settings.download.defaultPath"
           readonly
-          class="flex-1 px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none transition-all"
+          class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none transition-all"
           :placeholder="$t('settings.downloadPathPlaceholder')"
         />
         <button
-          class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent-base text-white text-sm font-medium hover:bg-accent-hover transition-colors shrink-0"
+          class="fx-noise flex items-center gap-1.5 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors shrink-0"
           @click="pickDownloadPath"
         >
           <FolderOpen :size="14" />
@@ -346,22 +350,22 @@ function onSourcesFolderChange(e: Event) {
         <input
           :value="settings.download.sourcesDir"
           readonly
-          class="flex-1 px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none transition-all"
+          class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none transition-all"
           :placeholder="$t('settings.sourcesPathPlaceholder')"
         />
         <button
-          class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent-base text-white text-sm font-medium hover:bg-accent-hover transition-colors shrink-0"
+          class="fx-noise flex items-center gap-1.5 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors shrink-0"
           @click="pickSourcesPath"
         >
           <FolderOpen :size="14" />
           {{ $t('settings.chooseFolder') }}
         </button>
       </div>
-      <p class="text-xs text-fg-faint mt-2">{{ $t('settings.sourcesPathHint') }}</p>
+      <p class="text-xs text-base-content/50 mt-2">{{ $t('settings.sourcesPathHint') }}</p>
       <label class="flex items-center gap-2 mt-3 cursor-pointer">
         <input
           type="checkbox"
-          class="accent-accent-base"
+          class="accent-primary"
           :checked="settings.download.sourcesFolder"
           @change="onSourcesFolderChange"
         />
@@ -376,7 +380,7 @@ function onSourcesFolderChange(e: Event) {
       />
       <div class="flex items-center gap-2">
         <select
-          class="flex-1 min-w-0 px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+          class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
           :value="selectedProfileId"
           @change="onProfileSelect"
         >
@@ -384,7 +388,7 @@ function onSourcesFolderChange(e: Event) {
           <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
         </select>
         <button
-          class="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default text-sm text-fg-muted hover:bg-bg-hover transition-colors disabled:opacity-40 shrink-0"
+          class="fx-noise flex items-center gap-1.5 px-3 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-40 shrink-0"
           :disabled="!selectedProfileId"
           :title="$t('settings.profileDelete')"
           @click="doDeleteProfile"
@@ -395,67 +399,67 @@ function onSourcesFolderChange(e: Event) {
 
       <input
         v-model="profileName"
-        class="w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+        class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
         :placeholder="$t('settings.profileNamePlaceholder')"
       />
 
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <label class="block text-xs text-fg-faint">
+        <label class="block text-xs text-base-content/50">
           {{ $t('youtube.prefKind') }}
           <select
             v-model="pfKind"
-            class="mt-1 w-full px-2 py-2 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+            class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
           >
             <option v-for="k in profileKinds" :key="k.value" :value="k.value">
               {{ $t(k.labelKey) }}
             </option>
           </select>
         </label>
-        <label v-if="pfKind === 'audio'" class="block text-xs text-fg-faint">
+        <label v-if="pfKind === 'audio'" class="block text-xs text-base-content/50">
           {{ $t('youtube.prefFormat') }}
           <select
             v-model="pfFormat"
-            class="mt-1 w-full px-2 py-2 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+            class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
           >
             <option v-for="f in audioFormats" :key="f" :value="f">
               {{ f === 'best' ? $t('settings.audioNative') : f }}
             </option>
           </select>
         </label>
-        <label v-if="pfKind === 'video'" class="block text-xs text-fg-faint">
+        <label v-if="pfKind === 'video'" class="block text-xs text-base-content/50">
           {{ $t('youtube.prefQuality') }}
           <select
             v-model="pfQuality"
-            class="mt-1 w-full px-2 py-2 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+            class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
           >
             <option v-for="q in videoQualities" :key="q" :value="q">{{ q }}</option>
           </select>
         </label>
-        <label v-if="pfKind === 'video'" class="block text-xs text-fg-faint">
+        <label v-if="pfKind === 'video'" class="block text-xs text-base-content/50">
           {{ $t('youtube.prefContainer') }}
           <select
             v-model="pfContainer"
-            class="mt-1 w-full px-2 py-2 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+            class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
           >
             <option v-for="c in videoContainers" :key="c" :value="c">{{ c }}</option>
           </select>
         </label>
-        <label v-if="pfKind !== 'video'" class="block text-xs text-fg-faint">
+        <label v-if="pfKind !== 'video'" class="block text-xs text-base-content/50">
           {{ $t('settings.defaultAudioQuality') }}
           <select
             v-model="pfAudioQuality"
-            class="mt-1 w-full px-2 py-2 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+            class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
           >
             <option v-for="q in ['best', 'high', 'medium', 'low'] as const" :key="q" :value="q">
               {{ $t('settings.audioQuality.' + q) }}
             </option>
           </select>
         </label>
-        <label class="block text-xs text-fg-faint">
+        <label class="block text-xs text-base-content/50">
           {{ $t('settings.defaultCover') }}
           <select
             v-model="pfCoverType"
-            class="mt-1 w-full px-2 py-2 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+            class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
           >
             <option value="thumbnail">{{ $t('settings.cover.thumbnail') }}</option>
             <option value="none">{{ $t('settings.cover.none') }}</option>
@@ -463,39 +467,39 @@ function onSourcesFolderChange(e: Event) {
             <option value="clip">{{ $t('settings.cover.clip') }}</option>
           </select>
         </label>
-        <label v-if="pfCoverType === 'frame'" class="block text-xs text-fg-faint">
+        <label v-if="pfCoverType === 'frame'" class="block text-xs text-base-content/50">
           {{ $t('youtube.frameTimeLabel') }}
           <input
             v-model.number="pfFrameTime"
             type="number"
             min="0"
-            class="mt-1 w-full px-2 py-2 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+            class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
           />
         </label>
         <template v-if="pfCoverType === 'clip'">
-          <label class="block text-xs text-fg-faint">
+          <label class="block text-xs text-base-content/50">
             {{ $t('youtube.clipStartLabel') }}
             <input
               v-model.number="pfClipStart"
               type="number"
               min="0"
-              class="mt-1 w-full px-2 py-2 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+              class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
             />
           </label>
-          <label class="block text-xs text-fg-faint">
+          <label class="block text-xs text-base-content/50">
             {{ $t('youtube.clipEndLabel') }}
             <input
               v-model.number="pfClipEnd"
               type="number"
               min="1"
-              class="mt-1 w-full px-2 py-2 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+              class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
             />
           </label>
-          <label class="block text-xs text-fg-faint">
+          <label class="block text-xs text-base-content/50">
             {{ $t('youtube.clipFormatLabel') }}
             <select
               v-model="pfClipFormat"
-              class="mt-1 w-full px-2 py-2 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+              class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
             >
               <option value="webm">.webm</option>
               <option value="mp4">.mp4</option>
@@ -505,12 +509,14 @@ function onSourcesFolderChange(e: Event) {
       </div>
 
       <button
-        class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent-base text-white text-sm font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 w-fit"
+        class="fx-noise flex items-center gap-1.5 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 w-fit"
         :disabled="!profileName.trim()"
         @click="doSaveProfile"
       >
         <Save :size="14" />
-        {{ selectedProfileId ? $t('settings.profileSaveUpdate') : $t('settings.profileSaveCreate') }}
+        {{
+          selectedProfileId ? $t('settings.profileSaveUpdate') : $t('settings.profileSaveCreate')
+        }}
       </button>
     </SettingsCard>
 
@@ -569,27 +575,27 @@ function onSourcesFolderChange(e: Event) {
           min="0"
           max="23"
           :value="settings.download.nightScheduleStart"
-          class="px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm w-20 focus:border-accent-base focus:outline-none"
+          class="px-2 py-1.5 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm w-20 focus:border-primary focus:outline-none"
           @change="
             settings.updateDownload({
               nightScheduleStart: parseInt(($event.target as HTMLInputElement).value) || 0
             })
           "
         />
-        <span class="text-xs text-fg-faint">—</span>
+        <span class="text-xs text-base-content/50">—</span>
         <input
           type="number"
           min="0"
           max="23"
           :value="settings.download.nightScheduleEnd"
-          class="px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm w-20 focus:border-accent-base focus:outline-none"
+          class="px-2 py-1.5 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm w-20 focus:border-primary focus:outline-none"
           @change="
             settings.updateDownload({
               nightScheduleEnd: parseInt(($event.target as HTMLInputElement).value) || 0
             })
           "
         />
-        <span class="text-xs text-fg-faint">{{ $t('settings.nightScheduleHours') }}</span>
+        <span class="text-xs text-base-content/50">{{ $t('settings.nightScheduleHours') }}</span>
       </div>
     </SettingsCard>
     <SettingsCard>

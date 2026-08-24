@@ -13,17 +13,17 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
 <template>
   <div>
     <div
-      class="w-full rounded-2xl bg-bg-base border-2 border-border-default p-2 relative select-none"
+      class="w-full rounded-box bg-base-200/[var(--glass-alpha)] border-2 border-base-300 p-2 relative select-none"
     >
       <div class="grid gap-2" :class="columns === 4 ? 'grid-cols-4' : 'grid-cols-2'">
         <button
           v-for="opt in options"
           :key="opt.id"
-          class="rounded-xl text-[11px] font-medium transition-all border-2 flex flex-col items-center justify-center gap-1 min-h-16"
+          class="fx-depth rounded-box fx-noise text-[11px] font-medium transition-all border-2 flex flex-col items-center justify-center gap-1 min-h-16"
           :class="
             modelValue === opt.id
-              ? 'border-accent-base bg-accent-ghost text-accent-base shadow-sm shadow-accent-base/20'
-              : 'border-transparent text-fg-faint hover:bg-bg-hover hover:text-fg-muted'
+              ? 'border-primary bg-primary/10 text-primary shadow-sm shadow-primary/20'
+              : 'border-transparent text-base-content/50 hover:bg-base-content/10 hover:text-base-content/70'
           "
           @click="emit('update:modelValue', opt.id)"
         >
@@ -32,12 +32,12 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
         </button>
       </div>
       <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
-        <div class="w-5 h-5 rounded border-2 border-dashed border-fg-faint/20" />
+        <div class="w-5 h-5 rounded-field border-2 border-dashed border-base-content/20" />
       </div>
     </div>
-    <p v-if="selectedLabel" class="text-[11px] text-fg-faint mt-2">
+    <p v-if="selectedLabel" class="text-[11px] text-base-content/50 mt-2">
       {{ $t('settings.selected') }}
-      <span class="text-fg-base font-medium">{{ selectedLabel }}</span>
+      <span class="text-base-content font-medium">{{ selectedLabel }}</span>
     </p>
   </div>
 </template>

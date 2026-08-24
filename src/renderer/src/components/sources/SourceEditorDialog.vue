@@ -55,9 +55,7 @@ const defaultDownloadDir = ref('');
 const iconUrl = ref('');
 
 const iconValid = computed(
-  () =>
-    !!draft.icon &&
-    (/^data:image\//i.test(draft.icon) || /^https?:\/\//i.test(draft.icon))
+  () => !!draft.icon && (/^data:image\//i.test(draft.icon) || /^https?:\/\//i.test(draft.icon))
 );
 
 onMounted(async () => {
@@ -286,14 +284,14 @@ async function onTestTable(idx: number) {
       @click.self="emit('close')"
     >
       <div
-        class="w-full max-w-3xl max-h-full flex flex-col rounded-2xl bg-bg-surface border border-border-default shadow-2xl overflow-hidden"
+        class="w-full max-w-3xl max-h-full flex flex-col rounded-box bg-base-100 border border-base-300 shadow-2xl overflow-hidden"
       >
-        <div class="flex items-center gap-3 px-4 py-3 border-b border-border-default">
+        <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
           <h2 class="text-sm font-medium flex-1">
             {{ props.source ? $t('sources.editSource') : $t('sources.addSource') }}
           </h2>
           <button
-            class="p-1.5 rounded-lg text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-colors"
+            class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
             :aria-label="$t('common.close')"
             @click="emit('close')"
           >
@@ -305,7 +303,7 @@ async function onTestTable(idx: number) {
           <div class="grid grid-cols-1 gap-3">
             <div>
               <label
-                class="block text-[11px] font-medium text-fg-faint uppercase tracking-wider mb-1"
+                class="block text-[11px] font-medium text-base-content/50 uppercase tracking-wider mb-1"
               >
                 {{ $t('sources.name') }}
               </label>
@@ -313,12 +311,12 @@ async function onTestTable(idx: number) {
                 v-model="draft.name"
                 type="text"
                 :placeholder="$t('sources.namePlaceholder')"
-                class="w-full px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-sm focus:outline-none focus:ring-1 focus:ring-accent-base"
+                class="w-full px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
             <div>
               <label
-                class="block text-[11px] font-medium text-fg-faint uppercase tracking-wider mb-1"
+                class="block text-[11px] font-medium text-base-content/50 uppercase tracking-wider mb-1"
               >
                 {{ $t('sources.baseUrl') }}
               </label>
@@ -326,26 +324,28 @@ async function onTestTable(idx: number) {
                 v-model="draft.baseUrl"
                 type="text"
                 placeholder="https://api.example.com"
-                class="w-full px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-sm font-mono focus:outline-none focus:ring-1 focus:ring-accent-base"
+                class="w-full px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
 
-          <div class="space-y-2 rounded-xl border border-border-default bg-bg-elevated/50 p-3">
-            <label class="block text-[11px] font-medium text-fg-faint uppercase tracking-wider">
+          <div class="space-y-2 rounded-box border border-neutral-content/20 bg-neutral p-3">
+            <label
+              class="block text-[11px] font-medium text-base-content/50 uppercase tracking-wider"
+            >
               {{ $t('sources.iconSection') }}
             </label>
             <div class="flex items-start gap-3">
               <div
-                class="w-12 h-12 shrink-0 rounded-lg bg-bg-elevated border border-border-default flex items-center justify-center overflow-hidden"
+                class="w-12 h-12 shrink-0 rounded-field bg-base-100 border border-base-300 flex items-center justify-center overflow-hidden"
               >
                 <img v-if="iconValid" :src="draft.icon" class="w-full h-full object-cover" />
-                <Globe v-else :size="20" class="text-fg-faint" />
+                <Globe v-else :size="20" class="text-base-content/50" />
               </div>
               <div class="flex-1 min-w-0 space-y-2">
                 <div class="flex items-center gap-2">
                   <button
-                    class="shrink-0 px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-xs text-fg-muted hover:bg-bg-hover transition-colors"
+                    class="fx-noise shrink-0 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
                     @click="pickIconFile"
                   >
                     {{ $t('sources.iconFromPc') }}
@@ -354,11 +354,11 @@ async function onTestTable(idx: number) {
                     v-model="iconUrl"
                     type="text"
                     :placeholder="$t('sources.iconUrlPlaceholder')"
-                    class="flex-1 min-w-0 px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-sm font-mono focus:outline-none focus:ring-1 focus:ring-accent-base"
+                    class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
                     @keyup.enter="applyIconUrl"
                   />
                   <button
-                    class="shrink-0 p-2 rounded-lg text-fg-muted hover:bg-bg-hover transition-colors"
+                    class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors"
                     :title="$t('sources.iconApplyUrl')"
                     @click="applyIconUrl"
                   >
@@ -366,26 +366,28 @@ async function onTestTable(idx: number) {
                   </button>
                   <button
                     v-if="draft.icon"
-                    class="shrink-0 p-2 rounded-lg text-fg-muted hover:bg-red-base/10 hover:text-red-base transition-colors"
+                    class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-error/10 hover:text-error transition-colors"
                     :title="$t('sources.iconClear')"
                     @click="clearIcon"
                   >
                     <Trash2 :size="14" />
                   </button>
                 </div>
-                <p class="text-[10px] text-fg-faint">{{ $t('sources.iconHint') }}</p>
+                <p class="text-[10px] text-base-content/50">{{ $t('sources.iconHint') }}</p>
               </div>
             </div>
           </div>
 
           <div class="space-y-2">
-            <label class="block text-[11px] font-medium text-fg-faint uppercase tracking-wider">
+            <label
+              class="block text-[11px] font-medium text-base-content/50 uppercase tracking-wider"
+            >
               {{ $t('sources.auth') }}
             </label>
             <div class="flex flex-wrap gap-2">
               <select
                 v-model="draft.authType"
-                class="px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-sm focus:outline-none focus:ring-1 focus:ring-accent-base"
+                class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               >
                 <option value="none">{{ $t('sources.authNone') }}</option>
                 <option value="apikey">{{ $t('sources.authApiKey') }}</option>
@@ -394,7 +396,7 @@ async function onTestTable(idx: number) {
               <template v-if="draft.authType !== 'none'">
                 <select
                   v-model="draft.apiKeyId"
-                  class="px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-sm focus:outline-none focus:ring-1 focus:ring-accent-base"
+                  class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                   <option value="">{{ $t('sources.chooseKey') }}</option>
                   <option v-for="k in apiKeyOptions" :key="k.id" :value="k.id">
@@ -406,27 +408,27 @@ async function onTestTable(idx: number) {
                     v-model="draft.headerName"
                     type="text"
                     :placeholder="$t('sources.headerName')"
-                    class="px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-sm font-mono focus:outline-none focus:ring-1 focus:ring-accent-base"
+                    class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                   <input
                     v-model="draft.queryParam"
                     type="text"
                     :placeholder="$t('sources.queryParam')"
-                    class="px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-sm font-mono focus:outline-none focus:ring-1 focus:ring-accent-base"
+                    class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </template>
               </template>
             </div>
           </div>
 
-          <div class="space-y-2 rounded-xl border border-border-default bg-bg-elevated/50 p-3">
-            <label class="block text-[11px] font-medium text-fg-faint uppercase tracking-wider">
+          <div class="space-y-2 rounded-box border border-neutral-content/20 bg-neutral p-3">
+            <label
+              class="block text-[11px] font-medium text-base-content/50 uppercase tracking-wider"
+            >
               {{ $t('sources.downloadSection') }}
             </label>
             <div>
-              <label
-                class="block text-[10px] text-fg-faint uppercase tracking-wider mb-1"
-              >
+              <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-1">
                 {{ $t('sources.downloadOutputDir') }}
               </label>
               <div class="flex items-center gap-2">
@@ -434,35 +436,35 @@ async function onTestTable(idx: number) {
                   v-model="draft.downloadOutputDir"
                   type="text"
                   :placeholder="defaultDownloadDir"
-                  class="flex-1 min-w-0 px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-sm font-mono focus:outline-none focus:ring-1 focus:ring-accent-base"
+                  class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
                 />
                 <button
-                  class="shrink-0 px-3 py-2 rounded-lg bg-bg-elevated border border-border-default text-xs text-fg-muted hover:bg-bg-hover transition-colors"
+                  class="fx-noise shrink-0 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
                   @click="pickDownloadDir"
                 >
                   {{ $t('sources.chooseFolder') }}
                 </button>
               </div>
-              <p class="text-[10px] text-fg-faint mt-1">
+              <p class="text-[10px] text-base-content/50 mt-1">
                 {{ $t('sources.downloadDefaultHint', { path: defaultDownloadDir }) }}
               </p>
             </div>
-            <label class="flex items-center gap-2 text-xs text-fg-muted select-none">
-              <input v-model="draft.downloadFolder" type="checkbox" class="accent-accent-base" />
+            <label class="flex items-center gap-2 text-xs text-base-content/70 select-none">
+              <input v-model="draft.downloadFolder" type="checkbox" class="accent-primary" />
               {{ $t('sources.downloadFolder') }}
             </label>
-            <p class="text-[10px] text-fg-faint">
+            <p class="text-[10px] text-base-content/50">
               {{ $t('sources.downloadFolderHint') }}
             </p>
           </div>
 
           <div class="space-y-3">
             <div class="flex items-center justify-between">
-              <label class="text-[11px] font-medium text-fg-faint uppercase tracking-wider">
+              <label class="text-[11px] font-medium text-base-content/50 uppercase tracking-wider">
                 {{ $t('sources.levels') }}
               </label>
               <button
-                class="flex items-center gap-1 px-2 py-1 rounded-lg bg-accent-base/10 text-accent-base text-xs font-medium hover:bg-accent-base/20 transition-colors"
+                class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
                 @click="addLevel"
               >
                 <Plus :size="12" />
@@ -489,25 +491,21 @@ async function onTestTable(idx: number) {
             />
           </div>
 
-          <p
-            v-if="testMsg"
-            class="text-xs"
-            :class="testPassed ? 'text-green-base' : 'text-red-base'"
-          >
+          <p v-if="testMsg" class="text-xs" :class="testPassed ? 'text-success' : 'text-error'">
             {{ testMsg }}
           </p>
-          <p v-if="errorMsg" class="text-xs text-red-base">{{ errorMsg }}</p>
+          <p v-if="errorMsg" class="text-xs text-error">{{ errorMsg }}</p>
         </div>
 
-        <div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-border-default">
+        <div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-base-300">
           <button
-            class="px-3 py-1.5 rounded-lg text-sm text-fg-muted hover:bg-bg-hover transition-colors"
+            class="fx-noise px-3 py-1.5 fx-depth rounded-field text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
             @click="emit('close')"
           >
             {{ $t('common.cancel') }}
           </button>
           <button
-            class="px-3 py-1.5 rounded-lg bg-accent-base text-white text-sm font-medium hover:bg-accent-strong transition-colors flex items-center gap-1.5"
+            class="fx-noise px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-1.5"
             :disabled="saving"
             @click="onSave"
           >

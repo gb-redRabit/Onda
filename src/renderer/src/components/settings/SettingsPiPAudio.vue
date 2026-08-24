@@ -118,14 +118,14 @@ onBeforeUnmount(() => {
 <template>
   <SettingsPanel :title="$t('settings.pipAudio')" :description="$t('settings.pipAudioDesc')">
     <SettingsCard>
-      <div class="flex items-center justify-between pb-4 border-b border-border-default">
+      <div class="flex items-center justify-between pb-4 border-b border-base-300">
         <SettingsSectionTitle :title="$t('settings.audioPipSection')" class="mb-0!" />
         <button
-          class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+          class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
           :class="
             audioPreviewOpen
               ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-              : 'bg-accent-base text-white hover:bg-accent-hover'
+              : 'bg-primary text-primary-content hover:bg-primary/90'
           "
           @click="toggleAudioPreview"
         >
@@ -135,15 +135,15 @@ onBeforeUnmount(() => {
 
       <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-1">
         <span class="text-sm">{{ $t('settings.audioPipMode') }}</span>
-        <div class="flex gap-1 bg-bg-base rounded-xl p-1">
+        <div class="flex gap-1 bg-base-200/[var(--glass-alpha)] rounded-box p-1">
           <button
             v-for="m in audioPipModes"
             :key="m.id"
-            class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+            class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
             :class="
               settings.appearance.audioPipMode === m.id
-                ? 'bg-accent-base text-white'
-                : 'text-fg-muted hover:text-fg-base'
+                ? 'bg-primary text-primary-content'
+                : 'text-base-content/70 hover:text-base-content'
             "
             @click="settings.updateAppearance({ audioPipMode: m.id })"
           >

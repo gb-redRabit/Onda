@@ -9,8 +9,8 @@ defineProps<{ title?: string; description?: string }>();
       class="flex items-start justify-between gap-4"
     >
       <div class="min-w-0">
-        <h2 class="text-2xl font-bold tracking-tight text-fg-base">{{ title }}</h2>
-        <p v-if="description" class="mt-1.5 text-sm text-fg-faint">{{ description }}</p>
+        <h2 class="text-2xl font-bold tracking-tight text-base-content">{{ title }}</h2>
+        <p v-if="description" class="mt-1.5 text-sm text-base-content/50">{{ description }}</p>
       </div>
       <div v-if="$slots.actions" class="shrink-0 flex items-center gap-2">
         <slot name="actions" />

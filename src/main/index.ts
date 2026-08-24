@@ -1,4 +1,13 @@
-import { app, shell, BrowserWindow, ipcMain, Tray, Menu, globalShortcut, nativeImage } from 'electron';
+﻿import {
+  app,
+  shell,
+  BrowserWindow,
+  ipcMain,
+  Tray,
+  Menu,
+  globalShortcut,
+  nativeImage
+} from 'electron';
 import { join, extname, normalize, dirname } from 'path';
 import os from 'os';
 import { statSync } from 'fs';
@@ -15,7 +24,12 @@ import { audioPipManager } from './audio-pip-manager';
 import { closeLoginWindow } from './youtube-auth';
 import { logger } from '../shared/logger';
 import { setMediaServerUrl, registerMediaUrlHandler } from './media-url-args';
-import { setAllowedRoots, addAllowedRoot, setRootsChangedHandler, getExtraRoots } from './media-server';
+import {
+  setAllowedRoots,
+  addAllowedRoot,
+  setRootsChangedHandler,
+  getExtraRoots
+} from './media-server';
 import { getStore } from './ipc/cover-cache';
 import { flushQueueNow } from './downloads/download-manager';
 import { setupFileLogging } from './log-file';
@@ -107,9 +121,14 @@ function createWindow(): BrowserWindow {
     minWidth: 900,
     minHeight: 600,
     show: false,
-    frame: false, 
+    frame: false,
     titleBarStyle: 'hidden',
-    backgroundColor: '#0f0f17',
+    transparent: true,
+    backgroundColor: '#00000000',
+    ...(process.platform === 'win32' ? { backgroundMaterial: 'acrylic' as const } : {}),
+    ...(process.platform === 'darwin'
+      ? { vibrancy: 'sidebar' as const, visualEffectState: 'active' as const }
+      : {}),
     icon: windowIcon(),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -206,7 +225,7 @@ function createChildWindow(
         shell.openExternal(details.url);
       }
     } catch {
-      // invalid URL — ignore
+      // invalid URL â€” ignore
     }
     return { action: 'deny' };
   });
@@ -225,7 +244,7 @@ function createChildWindow(
 function setupTray(): void {
   // A tray with an empty image falls back to Electron's default icon, so pick
   // the first candidate that resolves to a real image. On Windows prefer the
-  // multi-resolution .ico — the OS selects the size matching the current DPI.
+  // multi-resolution .ico â€” the OS selects the size matching the current DPI.
   const candidates = process.platform === 'win32' ? [winIcon, icon] : [icon, winIcon];
   let trayImage: Electron.NativeImage | null = null;
   for (const candidate of candidates) {
@@ -378,8 +397,8 @@ app.whenReady().then(async () => {
     const seedRoots = new Set<string>([
       ...(Array.isArray(storedRoots) ? storedRoots : []),
       app.getPath('downloads'),
-      // Transkodowane audio/wideo (fallback dla nieobsługiwanych kodeków) też
-      // są serwowane przez media-server — katalogi muszą być w allowed roots.
+      // Transkodowane audio/wideo (fallback dla nieobsĹ‚ugiwanych kodekĂłw) teĹĽ
+      // sÄ… serwowane przez media-server â€” katalogi muszÄ… byÄ‡ w allowed roots.
       join(os.tmpdir(), 'onda', 'audio-transcodes'),
       join(os.tmpdir(), 'onda', 'video-transcodes')
     ]);
@@ -401,7 +420,7 @@ app.whenReady().then(async () => {
     logger.warn('main', 'seeding media server roots from library folders failed', e);
   }
 
-  // Started at login with "start minimized" — keep the window hidden until the
+  // Started at login with "start minimized" â€” keep the window hidden until the
   // user opens it from the tray.
   startHidden = process.argv.includes('--hidden');
 

@@ -113,18 +113,18 @@ function playAll() {
 
 <template>
   <div class="flex h-full">
-    <div class="w-56 border-r border-border-default p-3 shrink-0 flex flex-col">
+    <div class="w-56 border-r border-base-300 p-3 shrink-0 flex flex-col">
       <h2 class="text-sm font-bold mb-3">{{ $t('library.playlists') }}</h2>
 
       <div class="flex gap-2 mb-3">
         <input
           v-model="newName"
-          class="flex-1 px-2 py-1 text-xs rounded-lg bg-bg-elevated border border-border-default outline-none focus:border-accent-base"
+          class="flex-1 px-2 py-1 text-xs fx-depth rounded-field bg-base-100 border border-base-300 outline-none focus:border-primary"
           :placeholder="$t('library.playlistName')"
           @keyup.enter="createPlaylist"
         />
         <button
-          class="p-1.5 rounded-lg bg-accent-base text-white hover:bg-accent-hover transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field bg-primary text-primary-content hover:bg-primary/90 transition-colors"
           :disabled="!newName.trim()"
           @click="createPlaylist"
         >
@@ -136,13 +136,13 @@ function playAll() {
         <button
           v-for="p in library.playlists"
           :key="p.id"
-          class="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-lg transition-colors text-left"
+          class="fx-noise w-full flex items-center gap-2 px-2 py-1.5 text-xs fx-depth rounded-field transition-colors text-left"
           :class="
             selectedPlaylistId === p.id
-              ? 'bg-accent-ghost text-accent-base'
+              ? 'bg-primary/10 text-primary'
               : dragOverPlaylistId === p.id
-                ? 'ring-1 ring-accent-base/50 bg-accent-ghost'
-                : 'hover:bg-bg-hover text-fg-muted'
+                ? 'ring-1 ring-primary/50 bg-primary/10'
+                : 'hover:bg-base-content/10 text-base-content/70'
           "
           @click="selectPlaylist(p.id)"
           @dragover.prevent="dragOverPlaylistId = p.id"
@@ -150,32 +150,32 @@ function playAll() {
           @drop.prevent="onPlaylistDrop($event, p.id)"
         >
           <span class="truncate flex-1">{{ p.name }}</span>
-          <span class="text-fg-faint">{{ p.tracks.length }}</span>
+          <span class="text-base-content/50">{{ p.tracks.length }}</span>
         </button>
-        <div v-if="library.playlists.length === 0" class="text-xs text-fg-faint italic px-2">
+        <div v-if="library.playlists.length === 0" class="text-xs text-base-content/50 italic px-2">
           {{ $t('common.noPlaylists') }}
         </div>
       </div>
     </div>
 
     <div v-if="selectedPlaylist" class="flex-1 flex flex-col min-w-0">
-      <div class="flex items-center justify-between p-3 border-b border-border-default">
+      <div class="flex items-center justify-between p-3 border-b border-base-300">
         <div>
           <h2 class="text-sm font-bold">{{ selectedPlaylist.name }}</h2>
-          <p class="text-xs text-fg-faint">
+          <p class="text-xs text-base-content/50">
             {{ selectedPlaylist.tracks.length }} {{ $t('library.tracksCount') }}
           </p>
         </div>
         <div class="flex items-center gap-2">
           <button
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-base text-white text-xs font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
+            class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
             :disabled="selectedPlaylist.tracks.length === 0"
             @click="playAll"
           >
             <Play :size="12" /> {{ $t('library.playAll') }}
           </button>
           <button
-            class="p-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-bg-elevated transition-colors"
+            class="fx-noise p-1.5 fx-depth rounded-field text-red-400 hover:text-red-300 hover:bg-base-100 transition-colors"
             @click="deleteSelected"
           >
             <Trash2 :size="14" />
@@ -190,8 +190,8 @@ function playAll() {
         <div
           v-for="(track, idx) in selectedPlaylist.tracks"
           :key="track.path"
-          class="rounded-lg"
-          :class="dragOverTrackIdx === idx ? 'ring-1 ring-accent-base bg-accent-ghost' : ''"
+          class="rounded-field"
+          :class="dragOverTrackIdx === idx ? 'ring-1 ring-primary bg-primary/10' : ''"
           @dragover.prevent.stop="dragOverTrackIdx = idx"
           @dragleave.stop="dragOverTrackIdx = null"
           @drop.prevent.stop="onTrackDrop($event, idx)"
@@ -200,14 +200,14 @@ function playAll() {
         </div>
         <div
           v-if="selectedPlaylist.tracks.length === 0"
-          class="text-xs text-fg-faint italic p-4 text-center"
+          class="text-xs text-base-content/50 italic p-4 text-center"
         >
           Playlista jest pusta. Dodaj utwory z zakładki "Utwory" lub "Video".
         </div>
       </div>
     </div>
 
-    <div v-else class="flex-1 flex items-center justify-center text-sm text-fg-faint italic">
+    <div v-else class="flex-1 flex items-center justify-center text-sm text-base-content/50 italic">
       Wybierz playlistę, aby zobaczyć jej zawartość
     </div>
   </div>

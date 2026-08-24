@@ -164,8 +164,8 @@ export function usePipVisualizer(vizData: Ref<number[]>) {
 
   function updateAccent(): void {
     cachedAccent =
-      getComputedStyle(document.documentElement).getPropertyValue('--color-accent-base').trim() ||
-      '#8b7cf0';
+      getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim() ||
+      '#605dff';
   }
 
   onMounted(() => {

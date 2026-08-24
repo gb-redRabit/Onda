@@ -57,25 +57,25 @@ function finish() {
     @click.self="emit('close')"
   >
     <div
-      class="w-full max-w-md rounded-3xl bg-bg-elevated border border-border-default shadow-2xl shadow-black/50 p-8"
+      class="w-full max-w-md rounded-box bg-base-100 border border-base-300 shadow-2xl shadow-black/50 p-8"
     >
       <div
-        class="w-14 h-14 rounded-2xl bg-accent-base/15 text-accent-base flex items-center justify-center mb-5"
+        class="w-14 h-14 rounded-box bg-primary/15 text-primary flex items-center justify-center mb-5"
       >
         <Check :size="26" />
       </div>
       <h2 class="text-xl font-bold tracking-tight mb-2">{{ $t('wizard.title') }}</h2>
-      <p class="text-sm text-fg-muted mb-6">{{ $t('wizard.welcome') }}</p>
+      <p class="text-sm text-base-content/70 mb-6">{{ $t('wizard.welcome') }}</p>
 
       <div class="space-y-3 mb-6">
         <button
-          class="w-full flex items-center gap-3 p-4 rounded-2xl border border-border-default hover:border-accent-base/50 hover:bg-bg-hover transition-colors text-left"
+          class="w-full flex items-center gap-3 p-4 fx-depth rounded-box fx-noise border border-base-300 hover:border-primary/50 hover:bg-base-content/10 transition-colors text-left"
           @click="addLibraryFolder"
         >
-          <FolderPlus :size="20" class="text-accent-base shrink-0" />
+          <FolderPlus :size="20" class="text-primary shrink-0" />
           <div class="min-w-0">
             <div class="text-sm font-medium">{{ $t('wizard.addLibrary') }}</div>
-            <div class="text-xs text-fg-faint truncate">
+            <div class="text-xs text-base-content/50 truncate">
               {{
                 libraryFolders.length > 0 ? libraryFolders.join(', ') : $t('wizard.noneSelected')
               }}
@@ -84,13 +84,13 @@ function finish() {
         </button>
 
         <button
-          class="w-full flex items-center gap-3 p-4 rounded-2xl border border-border-default hover:border-accent-base/50 hover:bg-bg-hover transition-colors text-left"
+          class="w-full flex items-center gap-3 p-4 fx-depth rounded-box fx-noise border border-base-300 hover:border-primary/50 hover:bg-base-content/10 transition-colors text-left"
           @click="chooseDownloadFolder"
         >
-          <Download :size="20" class="text-accent-base shrink-0" />
+          <Download :size="20" class="text-primary shrink-0" />
           <div class="min-w-0">
             <div class="text-sm font-medium">{{ $t('wizard.chooseDownload') }}</div>
-            <div class="text-xs text-fg-faint truncate">
+            <div class="text-xs text-base-content/50 truncate">
               {{ downloadFolder || $t('wizard.noneSelected') }}
             </div>
           </div>
@@ -99,13 +99,13 @@ function finish() {
 
       <div class="flex items-center gap-3">
         <button
-          class="flex-1 py-2.5 rounded-xl bg-accent-base text-white text-sm font-medium hover:bg-accent-hover transition-colors"
+          class="fx-noise flex-1 py-2.5 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors"
           @click="finish"
         >
           {{ $t('wizard.start') }}
         </button>
         <button
-          class="py-2.5 px-4 rounded-xl border border-border-default text-sm text-fg-muted hover:bg-bg-hover transition-colors"
+          class="fx-noise py-2.5 px-4 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
           @click="emit('close')"
         >
           {{ $t('wizard.later') }}

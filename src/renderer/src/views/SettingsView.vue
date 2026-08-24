@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { logger } from '@shared/logger';
 import {
   Palette,
+  Paintbrush,
   Play,
   Download,
   Keyboard,
@@ -32,6 +33,9 @@ import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDi
 
 const SettingsAppearance = defineAsyncComponent(
   () => import('@renderer/components/settings/SettingsAppearance.vue')
+);
+const SettingsTheme = defineAsyncComponent(
+  () => import('@renderer/components/settings/SettingsTheme.vue')
 );
 const SettingsPlayback = defineAsyncComponent(
   () => import('@renderer/components/settings/SettingsPlayback.vue')
@@ -98,6 +102,7 @@ const tabs = [
   { id: 'pip-video', labelKey: 'settings.pipVideo', icon: PictureInPicture, section: 'playback' },
   { id: 'pip-audio', labelKey: 'settings.pipAudio', icon: Music2, section: 'playback' },
   // Wygląd
+  { id: 'theme', labelKey: 'settings.themeTab', icon: Paintbrush, section: 'appearance' },
   { id: 'appearance', labelKey: 'settings.appearance', icon: Palette, section: 'appearance' },
   // Sieć i usługi
   { id: 'network', labelKey: 'settings.network', icon: Globe, section: 'network' },
@@ -200,11 +205,11 @@ watch(tab, (_newTab, oldTab) => {
   <div class="flex flex-col h-full">
     <!-- header -->
     <header
-      class="shrink-0 flex items-center gap-3 px-6 py-4 border-b border-border-default bg-bg-surface/40"
+      class="shrink-0 flex items-center gap-3 px-6 py-4 border-b border-base-300 bg-base-100/[var(--glass-alpha)]"
     >
       <template v-if="!tab">
         <div
-          class="w-9 h-9 rounded-xl bg-accent-base/15 text-accent-base flex items-center justify-center ring-1 ring-accent-base/20"
+          class="w-9 h-9 rounded-box bg-primary/15 text-primary flex items-center justify-center ring-1 ring-primary/20"
         >
           <Settings :size="17" />
         </div>
@@ -212,16 +217,16 @@ watch(tab, (_newTab, oldTab) => {
         <div class="relative max-w-sm flex-1 ml-4">
           <Search
             :size="15"
-            class="absolute left-3.5 top-1/2 -translate-y-1/2 text-fg-faint pointer-events-none"
+            class="absolute left-3.5 top-1/2 -translate-y-1/2 text-base-content/50 pointer-events-none"
           />
           <input
             v-model="search"
             :placeholder="$t('settings.searchSettings')"
-            class="w-full pl-10 pr-9 py-2 rounded-full bg-bg-elevated/80 border border-border-default text-sm text-fg-base outline-none transition-all placeholder:text-fg-faint focus:border-accent-base/50 focus:ring-4 focus:ring-accent-base/10"
+            class="w-full pl-10 pr-9 h-field fx-depth rounded-field bg-base-200 border border-base-300 text-sm text-base-content outline-none transition-all placeholder:text-base-content/50 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
           />
           <button
             v-if="search"
-            class="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+            class="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
             :aria-label="$t('common.close')"
             @click="search = ''"
           >
@@ -231,7 +236,7 @@ watch(tab, (_newTab, oldTab) => {
       </template>
       <template v-else>
         <button
-          class="p-2 rounded-xl text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-colors"
+          class="fx-noise p-2 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
           :title="$t('settings.back')"
           :aria-label="$t('settings.back')"
           @click="goHome"
@@ -243,19 +248,19 @@ watch(tab, (_newTab, oldTab) => {
 
       <div class="ml-auto flex items-center gap-2">
         <button
-          class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-fg-muted bg-bg-elevated/60 border border-border-default hover:bg-bg-hover hover:text-fg-base transition-colors"
+          class="fx-noise flex items-center gap-1.5 px-3 py-2 fx-depth rounded-field text-xs font-medium text-base-content/70 bg-base-300 border border-base-300 hover:bg-base-content/10 hover:text-base-content transition-colors"
           @click="onExport"
         >
           <FileDown :size="14" />{{ $t('settings.export') }}
         </button>
         <button
-          class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-fg-muted bg-bg-elevated/60 border border-border-default hover:bg-bg-hover hover:text-fg-base transition-colors"
+          class="fx-noise flex items-center gap-1.5 px-3 py-2 fx-depth rounded-field text-xs font-medium text-base-content/70 bg-base-300 border border-base-300 hover:bg-base-content/10 hover:text-base-content transition-colors"
           @click="onImport"
         >
           <FileUp :size="14" />{{ $t('settings.import') }}
         </button>
         <button
-          class="p-2 rounded-xl text-fg-faint hover:bg-bg-hover hover:text-fg-base transition-colors"
+          class="fx-noise p-2 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors"
           :title="$t('settings.reset')"
           :aria-label="$t('settings.reset')"
           @click="onReset"
@@ -272,22 +277,24 @@ watch(tab, (_newTab, oldTab) => {
         <div v-if="!tab" key="home" class="max-w-5xl mx-auto px-6 py-8">
           <template v-for="section in visibleSections" :key="section.id">
             <section class="mb-8 last:mb-0">
-              <h2 class="mb-3 text-[11px] font-semibold uppercase tracking-wider text-fg-faint/80">
+              <h2
+                class="mb-3 text-[11px] font-semibold uppercase tracking-wider text-base-content/80"
+              >
                 {{ $t(section.labelKey) }}
               </h2>
               <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 <button
                   v-for="card in section.tabs"
                   :key="card.id"
-                  class="group flex flex-col items-start gap-3 p-4 rounded-2xl border border-border-default/70 bg-bg-elevated text-left transition-all hover:border-accent-base/50 hover:shadow-lg hover:shadow-accent-base/5 focus-visible:ring-2 focus-visible:ring-accent-base/40 focus-visible:outline-none"
+                  class="group flex flex-col items-start gap-3 p-4 fx-depth rounded-box fx-noise border border-base-300/70 bg-base-100 text-left transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
                   @click="select(card.id)"
                 >
                   <div
-                    class="w-10 h-10 rounded-xl bg-accent-ghost text-accent-base flex items-center justify-center transition-colors group-hover:bg-accent-base group-hover:text-white"
+                    class="w-10 h-10 rounded-box bg-primary/10 text-primary flex items-center justify-center transition-colors group-hover:bg-primary group-hover:text-primary-content"
                   >
                     <component :is="card.icon" :size="18" />
                   </div>
-                  <span class="text-sm font-medium text-fg-base">{{ $t(card.labelKey) }}</span>
+                  <span class="text-sm font-medium text-base-content">{{ $t(card.labelKey) }}</span>
                 </button>
               </div>
             </section>
@@ -295,7 +302,7 @@ watch(tab, (_newTab, oldTab) => {
 
           <div
             v-if="visibleSections.length === 0"
-            class="flex flex-col items-center justify-center py-20 text-fg-faint"
+            class="flex flex-col items-center justify-center py-20 text-base-content/50"
           >
             <Search :size="40" class="mb-3 opacity-20" />
             <p class="text-sm">{{ $t('settings.noResults') }}</p>
@@ -304,7 +311,8 @@ watch(tab, (_newTab, oldTab) => {
 
         <!-- panel -->
         <div v-else key="panel" class="px-6 py-8">
-          <SettingsAppearance v-if="tab === 'appearance'" />
+          <SettingsTheme v-if="tab === 'theme'" />
+          <SettingsAppearance v-else-if="tab === 'appearance'" />
           <SettingsPlayback v-else-if="tab === 'playback'" />
           <SettingsPiPVideo v-else-if="tab === 'pip-video'" />
           <SettingsPiPAudio v-else-if="tab === 'pip-audio'" />

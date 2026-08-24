@@ -51,13 +51,13 @@ function onDragStart(e: DragEvent) {
 
 <template>
   <div
-    class="group flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-bg-hover transition-colors cursor-pointer"
+    class="group flex items-center gap-3 px-3 py-2 rounded-box hover:bg-base-content/10 transition-colors cursor-pointer"
     draggable="true"
     @dblclick="playNow"
     @contextmenu.prevent="onContextMenu"
     @dragstart="onDragStart"
   >
-    <div class="relative shrink-0 w-16 h-9 rounded-lg overflow-hidden bg-bg-elevated">
+    <div class="relative shrink-0 w-16 h-9 rounded-field overflow-hidden bg-base-100">
       <MediaCover :cover="cover" :size="14" fallback="film" />
       <button
         class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 transition-colors"
@@ -67,7 +67,7 @@ function onDragStart(e: DragEvent) {
       </button>
       <div
         v-if="track.duration"
-        class="absolute bottom-0.5 right-0.5 px-1 py-0.5 rounded bg-black/60 text-white text-[9px] font-medium leading-none"
+        class="absolute bottom-0.5 right-0.5 px-1 py-0.5 rounded-field bg-black/60 text-white text-[9px] font-medium leading-none"
       >
         {{ formatDuration(track.duration, '—') }}
       </div>
@@ -75,7 +75,7 @@ function onDragStart(e: DragEvent) {
 
     <div class="flex-1 min-w-0">
       <div class="text-sm font-medium truncate">{{ track.metadata?.title || track.name }}</div>
-      <div class="text-xs text-fg-faint truncate">
+      <div class="text-xs text-base-content/50 truncate">
         {{ track.extension?.toUpperCase() || t('common.unknown') }} ·
         {{ formatDuration(track.duration, '—') }}
       </div>
@@ -85,7 +85,7 @@ function onDragStart(e: DragEvent) {
       class="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
     >
       <button
-        class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-elevated transition-colors"
+        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-100 transition-colors"
         :title="$t('common.addToQueue')"
         @click.stop="player.addToQueue(props.track)"
       >

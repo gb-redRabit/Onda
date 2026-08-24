@@ -43,18 +43,48 @@ export interface ExplorerSettings {
 }
 
 export interface AppearanceSettings {
-  theme: 'dark' | 'light' | 'midnight' | 'spotify' | 'custom';
-  accentColor: string;
+  theme:
+    | 'dark'
+    | 'light'
+    | 'midnight'
+    | 'spotify'
+    | 'luxury'
+    | 'cyberpunk'
+    | 'aqua'
+    | 'black'
+    | 'lemonade'
+    | 'abyss'
+    | 'custom';
+  customBase?:
+    | 'dark'
+    | 'light'
+    | 'midnight'
+    | 'spotify'
+    | 'luxury'
+    | 'cyberpunk'
+    | 'aqua'
+    | 'black'
+    | 'lemonade'
+    | 'abyss';
+  customColors?: Partial<Record<string, string>>;
+  geometry?: {
+    radiusBox?: number;
+    radiusField?: number;
+    radiusSelector?: number;
+    sizeField?: number;
+    sizeSelector?: number;
+    border?: number;
+    depth?: 0 | 1;
+    noise?: 0 | 1;
+  };
+  glassAlpha?: number;
   fontSize: number;
-  density: 'compact' | 'comfortable' | 'spacious';
   sidebarPosition: 'left' | 'right';
   sidebarCollapsed: boolean;
   showPlaylists: boolean;
   showAlbums: boolean;
   locale: 'pl' | 'en' | 'auto';
   animations: boolean;
-  transparency: number;
-  customBackground?: string;
   audioPipMode: 'minimal' | 'medium' | 'max' | 'wide';
   audioPipAutoShow: boolean;
   audioPipOpacity: number;

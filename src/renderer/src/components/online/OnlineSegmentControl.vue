@@ -23,16 +23,16 @@ const normalized = computed(() =>
 </script>
 
 <template>
-  <div class="inline-flex items-center gap-1 bg-bg-elevated rounded-xl p-1">
+  <div class="inline-flex items-center gap-1 bg-base-100 rounded-box p-1">
     <button
       v-for="opt in normalized"
       :key="opt.value"
       type="button"
-      class="px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-40"
+      class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-all disabled:opacity-40"
       :class="
         modelValue === opt.value
-          ? 'bg-bg-surface text-fg-base shadow-sm'
-          : 'text-fg-faint hover:text-fg-muted'
+          ? 'bg-base-100 text-base-content shadow-sm'
+          : 'text-base-content/50 hover:text-base-content/70'
       "
       :disabled="opt.disabled"
       @click="emit('update:modelValue', opt.value)"

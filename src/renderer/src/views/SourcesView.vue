@@ -57,11 +57,11 @@ const displayItems = computed(() => {
   if (f) {
     list = list.filter(
       (i) =>
-        (i.title || '').toLowerCase().includes(f) ||
-        (i.subtitle || '').toLowerCase().includes(f)
+        (i.title || '').toLowerCase().includes(f) || (i.subtitle || '').toLowerCase().includes(f)
     );
   }
-  if (sortMode.value === 'titleAsc') list = [...list].sort((a, b) => a.title.localeCompare(b.title));
+  if (sortMode.value === 'titleAsc')
+    list = [...list].sort((a, b) => a.title.localeCompare(b.title));
   else if (sortMode.value === 'titleDesc')
     list = [...list].sort((a, b) => b.title.localeCompare(a.title));
   else if (sortMode.value === 'type') list = [...list].sort((a, b) => a.type.localeCompare(b.type));
@@ -73,7 +73,8 @@ const activeEndpoint = computed(() => sources.activeEndpoint);
 const isPage = computed(() => sources.activeEndpoint?.type === 'page');
 const tableClickable = computed(() => !!sources.activeEndpoint?.table?.childId);
 const downloadable = computed(
-  () => !!sources.activeEndpoint?.mapping?.fields?.mediaUrl ||
+  () =>
+    !!sources.activeEndpoint?.mapping?.fields?.mediaUrl ||
     !!sources.activeEndpoint?.mapping?.fields?.playerUrl
 );
 
@@ -251,40 +252,42 @@ async function onImport() {
   }
 }
 
-const isAuthError = computed(
-  () => /401|403|api\s*key|unauthorized|forbidden/i.test(sources.lastError || '')
+const isAuthError = computed(() =>
+  /401|403|api\s*key|unauthorized|forbidden/i.test(sources.lastError || '')
 );
 </script>
 
 <template>
   <div class="h-full flex">
-    <div class="w-64 shrink-0 h-full flex flex-col border-r border-border-default bg-bg-overlay/40">
-      <div class="flex items-center justify-between px-3 py-2.5 border-b border-border-default">
+    <div
+      class="w-64 shrink-0 h-full flex flex-col border-r border-base-300 bg-base-200/[var(--glass-alpha)]"
+    >
+      <div class="flex items-center justify-between px-3 py-2.5 border-b border-base-300">
         <h2 class="text-sm font-semibold">{{ $t('sources.title') }}</h2>
         <div class="flex items-center gap-1">
           <button
-            class="p-1.5 rounded-lg text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-colors"
+            class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
             :title="$t('sources.exportSources')"
             @click="onExport"
           >
             <Upload :size="14" />
           </button>
           <button
-            class="p-1.5 rounded-lg text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-colors"
+            class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
             :title="$t('sources.importSources')"
             @click="onImport"
           >
             <Download :size="14" />
           </button>
           <button
-            class="p-1.5 rounded-lg text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-colors"
+            class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
             :title="$t('sources.guide.title')"
             @click="showGuide = true"
           >
             <HelpCircle :size="15" />
           </button>
           <button
-            class="p-1.5 rounded-lg text-accent-base hover:bg-accent-base/10 transition-colors"
+            class="fx-noise p-1.5 fx-depth rounded-field text-primary hover:bg-primary/10 transition-colors"
             :title="$t('sources.addSource')"
             @click="openAdd"
           >
@@ -296,11 +299,11 @@ const isAuthError = computed(
         <div
           v-for="s in sources.sources"
           :key="s.id"
-          class="group flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-colors"
+          class="group flex items-center gap-2 px-2.5 py-2 rounded-field cursor-pointer transition-colors"
           :class="
             s.id === sources.activeSourceId
-              ? 'bg-accent-base/10 text-accent-base'
-              : 'hover:bg-bg-hover'
+              ? 'bg-primary/10 text-primary'
+              : 'hover:bg-base-content/10'
           "
           @click="sources.setActive(s.id)"
         >
@@ -308,15 +311,15 @@ const isAuthError = computed(
           <img
             v-else
             :src="s.icon"
-            class="w-3.5 h-3.5 rounded object-cover shrink-0"
+            class="w-3.5 h-3.5 rounded-field object-cover shrink-0"
             alt=""
           />
           <span
             class="w-2 h-2 rounded-full shrink-0"
             :class="{
-              'bg-green-base': sources.testStatus[s.id]?.success,
-              'bg-red-base': sources.testStatus[s.id] && !sources.testStatus[s.id].success,
-              'bg-border-subtle': !sources.testStatus[s.id]
+              'bg-success': sources.testStatus[s.id]?.success,
+              'bg-error': sources.testStatus[s.id] && !sources.testStatus[s.id].success,
+              'bg-base-300': !sources.testStatus[s.id]
             }"
             :title="
               sources.testStatus[s.id]
@@ -326,20 +329,20 @@ const isAuthError = computed(
           />
           <div class="flex-1 min-w-0">
             <p class="text-sm truncate">{{ s.name }}</p>
-            <p class="text-[10px] text-fg-faint truncate">
+            <p class="text-[10px] text-base-content/50 truncate">
               {{ $t('sources.endpointCount', { n: s.endpoints.length }) }}
             </p>
           </div>
           <div class="opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
             <button
-              class="p-1 rounded text-fg-faint hover:text-fg-base"
+              class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content"
               :title="$t('common.edit')"
               @click.stop="openEdit(s)"
             >
               <Pencil :size="12" />
             </button>
             <button
-              class="p-1 rounded text-fg-faint hover:text-red-base"
+              class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-error"
               :title="$t('common.delete')"
               @click.stop="sources.deleteSource(s.id)"
             >
@@ -347,7 +350,10 @@ const isAuthError = computed(
             </button>
           </div>
         </div>
-        <p v-if="!sources.sources.length" class="text-xs text-fg-faint px-2 py-4 text-center">
+        <p
+          v-if="!sources.sources.length"
+          class="text-xs text-base-content/50 px-2 py-4 text-center"
+        >
           {{ $t('sources.emptyList') }}
         </p>
       </div>
@@ -355,12 +361,10 @@ const isAuthError = computed(
 
     <div class="flex-1 min-w-0 h-full flex flex-col">
       <div v-if="activeSource" class="flex flex-col h-full">
-        <div
-          class="flex items-center gap-2 px-4 py-2 border-b border-border-default overflow-x-auto"
-        >
+        <div class="flex items-center gap-2 px-4 py-2 border-b border-base-300 overflow-x-auto">
           <button
             v-if="sources.navStack.length"
-            class="shrink-0 p-2 rounded-lg text-fg-muted hover:bg-bg-hover transition-colors"
+            class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors"
             :title="$t('sources.back')"
             :disabled="sources.loading"
             @click="sources.goBack().then(scrollToTop)"
@@ -370,7 +374,7 @@ const isAuthError = computed(
           <select
             v-if="!sources.navStack.length"
             :value="sources.activeEndpointId"
-            class="shrink-0 px-2.5 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-xs focus:outline-none focus:ring-1 focus:ring-accent-base"
+            class="shrink-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
             @change="onEndpointChange(($event.target as HTMLSelectElement).value)"
           >
             <option v-for="e in activeSource.endpoints" :key="e.id" :value="e.id">
@@ -380,25 +384,25 @@ const isAuthError = computed(
           <div v-else class="shrink-0 flex items-center gap-1 text-xs">
             <span v-for="(entry, i) in sources.navStack" :key="i" class="flex items-center gap-1">
               <button
-                class="text-fg-faint hover:text-fg-muted transition-colors"
+                class="text-base-content/50 hover:text-base-content/70 transition-colors"
                 :disabled="sources.loading"
                 @click="sources.goBackTo(i).then(scrollToTop)"
               >
                 {{ endpointName(entry.endpointId) }}
               </button>
-              <span class="text-fg-faint">/</span>
+              <span class="text-base-content/50">/</span>
             </span>
-            <span class="text-accent-base font-medium">{{ activeEndpoint?.name }}</span>
+            <span class="text-primary font-medium">{{ activeEndpoint?.name }}</span>
           </div>
           <input
             v-model="queryText"
             type="text"
             :placeholder="$t('sources.queryParams')"
-            class="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-xs font-mono focus:outline-none focus:ring-1 focus:ring-accent-base"
+            class="flex-1 min-w-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
           />
           <div v-if="sources.paginationMode === 'page'" class="flex items-center gap-1 shrink-0">
             <button
-              class="p-1.5 rounded-lg text-fg-muted hover:bg-bg-hover transition-colors disabled:opacity-40"
+              class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-40"
               :disabled="sources.currentPage <= sources.startPage"
               :title="$t('sources.prevPage')"
               @click="pagePrev"
@@ -409,12 +413,12 @@ const isAuthError = computed(
               v-model.number="pageInput"
               type="number"
               min="1"
-              class="w-14 px-1.5 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs text-center font-mono focus:outline-none focus:ring-1 focus:ring-accent-base"
+              class="w-14 px-1.5 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-center font-mono focus:outline-none focus:ring-1 focus:ring-primary"
               :title="$t('sources.currentPage')"
               @change="goToPage"
             />
             <button
-              class="p-1.5 rounded-lg text-fg-muted hover:bg-bg-hover transition-colors disabled:opacity-40"
+              class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-40"
               :disabled="sources.loading || !sources.hasMore"
               :title="$t('sources.nextPage')"
               @click="pageNext"
@@ -423,7 +427,7 @@ const isAuthError = computed(
             </button>
           </div>
           <button
-            class="shrink-0 p-2 rounded-lg text-fg-muted hover:bg-bg-hover transition-colors"
+            class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors"
             :title="$t('sources.testSourceBtn')"
             :disabled="sources.loading"
             @click="onTestSource"
@@ -432,7 +436,7 @@ const isAuthError = computed(
           </button>
           <button
             v-if="downloadable && !isPage && sources.items.length"
-            class="shrink-0 p-2 rounded-lg text-fg-muted hover:bg-bg-hover transition-colors disabled:opacity-50"
+            class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
             :title="$t('sources.downloadAll')"
             :disabled="sources.loading || downloadingAll"
             @click="onDownloadAll(displayItems)"
@@ -441,7 +445,7 @@ const isAuthError = computed(
             <Download v-else :size="14" />
           </button>
           <button
-            class="shrink-0 p-2 rounded-lg text-fg-muted hover:bg-bg-hover transition-colors disabled:opacity-50"
+            class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
             :title="$t('sources.refresh')"
             :disabled="sources.loading"
             @click="refresh"
@@ -450,16 +454,16 @@ const isAuthError = computed(
             <RefreshCw v-else :size="14" />
           </button>
         </div>
-        <div v-if="!isPage" class="flex items-center gap-2 px-4 py-1.5 border-b border-border-default">
+        <div v-if="!isPage" class="flex items-center gap-2 px-4 py-1.5 border-b border-base-300">
           <input
             v-model="filterText"
             type="text"
             :placeholder="$t('sources.filterPlaceholder')"
-            class="flex-1 min-w-0 px-2.5 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs focus:outline-none focus:ring-1 focus:ring-accent-base"
+            class="flex-1 min-w-0 px-2.5 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
           />
           <select
             v-model="sortMode"
-            class="shrink-0 px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs focus:outline-none focus:ring-1 focus:ring-accent-base"
+            class="shrink-0 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
             :title="$t('sources.sortBy')"
           >
             <option value="none">{{ $t('sources.sortNone') }}</option>
@@ -470,19 +474,19 @@ const isAuthError = computed(
         </div>
         <p
           v-if="currentUrl"
-          class="px-4 py-1 text-[10px] font-mono text-fg-faint truncate border-b border-border-default"
+          class="px-4 py-1 text-[10px] font-mono text-base-content/50 truncate border-b border-base-300"
           :title="currentUrl"
         >
           {{ currentUrl }}
         </p>
 
         <div ref="scrollRef" class="flex-1 min-h-0 overflow-y-auto">
-          <p v-if="sources.lastError" class="text-xs text-red-base mb-3 px-4 flex items-center gap-2">
+          <p v-if="sources.lastError" class="text-xs text-error mb-3 px-4 flex items-center gap-2">
             <AlertCircle :size="12" class="shrink-0" />
             <span class="flex-1 truncate">{{ sources.lastError }}</span>
             <button
               v-if="isAuthError"
-              class="shrink-0 px-2 py-0.5 rounded border border-red-base/40 text-red-base hover:bg-red-base/10 transition-colors"
+              class="fx-noise shrink-0 px-2 py-0.5 fx-depth rounded-field border border-error/40 text-error hover:bg-error/10 transition-colors"
               @click="openEdit(activeSource)"
             >
               {{ $t('sources.editSourceShortcut') }}
@@ -516,28 +520,28 @@ const isAuthError = computed(
             </div>
             <div
               v-else-if="sources.loading && !sources.items.length"
-              class="h-full flex flex-col items-center justify-center gap-2 text-fg-faint"
+              class="h-full flex flex-col items-center justify-center gap-2 text-base-content/50"
             >
               <Loader2 :size="32" class="animate-spin opacity-50" />
               <p class="text-sm">{{ $t('sources.refresh') }}...</p>
             </div>
             <div
               v-else-if="displayItems.length === 0 && filterText"
-              class="h-full flex flex-col items-center justify-center gap-2 text-fg-faint"
+              class="h-full flex flex-col items-center justify-center gap-2 text-base-content/50"
             >
               <Globe :size="32" class="opacity-50" />
               <p class="text-sm">{{ $t('sources.noItems') }}</p>
             </div>
             <div
               v-else-if="!sources.loading"
-              class="h-full flex flex-col items-center justify-center gap-2 text-fg-faint"
+              class="h-full flex flex-col items-center justify-center gap-2 text-base-content/50"
             >
               <Globe :size="32" class="opacity-50" />
               <p class="text-sm">{{ $t('sources.noItems') }}</p>
             </div>
             <button
               v-if="sources.hasMore && sources.items.length && sources.paginationMode !== 'page'"
-              class="mt-4 mx-auto block px-4 py-2 rounded-lg bg-bg-elevated border border-border-default text-xs text-fg-muted hover:bg-bg-hover transition-colors disabled:opacity-50"
+              class="fx-noise mt-4 mx-auto block px-4 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
               :disabled="sources.loading"
               @click="sources.fetchMore()"
             >
@@ -547,11 +551,14 @@ const isAuthError = computed(
         </div>
       </div>
 
-      <div v-else class="flex-1 flex flex-col items-center justify-center gap-3 text-fg-faint">
+      <div
+        v-else
+        class="flex-1 flex flex-col items-center justify-center gap-3 text-base-content/50"
+      >
         <Globe :size="40" class="opacity-50" />
         <p class="text-sm">{{ $t('sources.emptyList') }}</p>
         <button
-          class="px-4 py-2 rounded-lg bg-accent-base text-white text-sm font-medium hover:bg-accent-strong transition-colors"
+          class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors"
           @click="openAdd"
         >
           {{ $t('sources.addFirstSource') }}
@@ -575,17 +582,20 @@ const isAuthError = computed(
     <Teleport to="body">
       <div
         v-if="toast"
-        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-100 flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-2xl border text-sm max-w-[80vw]"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-100 flex items-center gap-2 px-4 py-2.5 rounded-box shadow-2xl border text-sm max-w-[80vw]"
         :class="
           toast.ok
-            ? 'bg-bg-surface border-green-base/40 text-fg-base'
-            : 'bg-bg-surface border-red-base/40 text-fg-base'
+            ? 'bg-base-100 border-success/40 text-base-content'
+            : 'bg-base-100 border-error/40 text-base-content'
         "
       >
-        <CheckCircle2 v-if="toast.ok" :size="16" class="text-green-base shrink-0" />
-        <AlertCircle v-else :size="16" class="text-red-base shrink-0" />
+        <CheckCircle2 v-if="toast.ok" :size="16" class="text-success shrink-0" />
+        <AlertCircle v-else :size="16" class="text-error shrink-0" />
         <span class="truncate">{{ toast.msg }}</span>
-        <button class="p-0.5 rounded text-fg-faint hover:text-fg-base" @click="toast = null">
+        <button
+          class="fx-noise p-0.5 fx-depth rounded-field text-base-content/50 hover:text-base-content"
+          @click="toast = null"
+        >
           <X :size="14" />
         </button>
       </div>

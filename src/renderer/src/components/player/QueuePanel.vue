@@ -127,25 +127,25 @@ function onFileDrop(e: DragEvent) {
 
 <template>
   <div
-    class="h-full flex flex-col bg-bg-surface border-l border-border-default"
+    class="h-full flex flex-col bg-base-100 border-l border-base-300"
     @dragover.prevent
     @drop="onFileDrop"
   >
-    <div class="flex items-center justify-between px-4 py-3 border-b border-border-default">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-base-300">
       <h3 class="text-sm font-semibold flex items-center gap-2">
         <span>{{ $t('queue.title') }}</span>
-        <span class="text-[11px] text-fg-faint font-normal">({{ player.queueLength }})</span>
+        <span class="text-[11px] text-base-content/50 font-normal">({{ player.queueLength }})</span>
       </h3>
       <div class="flex items-center gap-1">
         <button
           v-if="player.displayQueue.length"
-          class="text-[11px] text-fg-faint hover:text-red-base transition-colors px-2 py-1"
+          class="text-[11px] text-base-content/50 hover:text-error transition-colors px-2 py-1"
           @click="player.clearQueue"
         >
           {{ $t('queue.clear') }}
         </button>
         <button
-          class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover hover:text-fg-base transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors"
           @click="player.toggleQueue"
         >
           <X :size="14" />
@@ -154,13 +154,13 @@ function onFileDrop(e: DragEvent) {
     </div>
 
     <!-- now playing -->
-    <div v-if="player.currentTrack" class="px-4 py-3 border-b border-border-default bg-bg-elevated">
-      <div class="text-[10px] text-accent-base font-medium uppercase tracking-wider mb-2">
+    <div v-if="player.currentTrack" class="px-4 py-3 border-b border-base-300 bg-base-100">
+      <div class="text-[10px] text-primary font-medium uppercase tracking-wider mb-2">
         {{ $t('queue.nowPlaying') }}
       </div>
       <div class="flex items-center gap-3">
         <div
-          class="w-10 h-10 rounded-lg bg-accent-ghost flex items-center justify-center shrink-0 overflow-hidden"
+          class="w-10 h-10 rounded-field bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden"
         >
           <MediaCover
             :path="player.currentTrack.path"
@@ -170,7 +170,7 @@ function onFileDrop(e: DragEvent) {
           />
         </div>
         <TrackInfo :track="player.currentTrack" class="min-w-0 flex-1" titleSize="text-sm" />
-        <span class="text-xs text-fg-faint font-mono shrink-0">{{
+        <span class="text-xs text-base-content/50 font-mono shrink-0">{{
           formatDuration(player.currentTrack.duration || 0)
         }}</span>
       </div>
@@ -179,11 +179,11 @@ function onFileDrop(e: DragEvent) {
     <!-- drop hint when empty -->
     <div
       v-if="player.displayQueue.length === 0"
-      class="flex-1 flex flex-col items-center justify-center py-12 text-fg-faint"
+      class="flex-1 flex flex-col items-center justify-center py-12 text-base-content/50"
     >
       <Music2 :size="32" class="mb-2 opacity-30" />
       <p class="text-xs">{{ $t('queue.empty') }}</p>
-      <p class="text-[10px] text-fg-faint/50 mt-1">{{ $t('queue.dropHint') }}</p>
+      <p class="text-[10px] text-base-content/50 mt-1">{{ $t('queue.dropHint') }}</p>
     </div>
 
     <!-- queue list with drag & drop -->
@@ -192,8 +192,8 @@ function onFileDrop(e: DragEvent) {
         <div
           v-for="(track, i) in player.displayQueue"
           :key="i"
-          class="flex items-center gap-2 px-4 py-2 hover:bg-bg-hover transition-colors group cursor-pointer"
-          :class="{ 'border-t-2 border-accent-base': dragOverIndex === i }"
+          class="flex items-center gap-2 px-4 py-2 hover:bg-base-content/10 transition-colors group cursor-pointer"
+          :class="{ 'border-t-2 border-primary': dragOverIndex === i }"
           draggable="true"
           @dragstart="onDragStart($event, i)"
           @dragover="onDragOver($event, i)"
@@ -203,10 +203,10 @@ function onFileDrop(e: DragEvent) {
         >
           <GripVertical
             :size="12"
-            class="text-fg-faint/40 shrink-0 opacity-0 group-hover:opacity-100 cursor-grab"
+            class="text-base-content/40 shrink-0 opacity-0 group-hover:opacity-100 cursor-grab"
           />
           <div
-            class="w-8 h-8 rounded-md bg-bg-overlay flex items-center justify-center shrink-0 overflow-hidden"
+            class="w-8 h-8 rounded-field bg-neutral flex items-center justify-center shrink-0 overflow-hidden"
           >
             <MediaCover :path="track.path" :size="12" fallback="music" />
           </div>
@@ -216,11 +216,11 @@ function onFileDrop(e: DragEvent) {
             titleSize="text-sm"
             artistSize="text-[11px]"
           />
-          <span class="text-[11px] text-fg-faint font-mono shrink-0">{{
+          <span class="text-[11px] text-base-content/50 font-mono shrink-0">{{
             formatDuration(track.duration || 0)
           }}</span>
           <button
-            class="p-1 rounded opacity-0 group-hover:opacity-100 text-fg-faint hover:text-red-base transition-all"
+            class="fx-noise p-1 fx-depth rounded-field opacity-0 group-hover:opacity-100 text-base-content/50 hover:text-error transition-all"
             @click.stop="player.removeFromQueue(i)"
           >
             <Trash2 :size="12" />
@@ -230,26 +230,25 @@ function onFileDrop(e: DragEvent) {
     </div>
 
     <!-- history -->
-    <div
-      v-if="player.history.length > 0"
-      class="border-t border-border-default max-h-40 overflow-auto"
-    >
-      <div class="px-4 py-2 text-[10px] text-fg-faint font-medium uppercase tracking-wider">
+    <div v-if="player.history.length > 0" class="border-t border-base-300 max-h-40 overflow-auto">
+      <div class="px-4 py-2 text-[10px] text-base-content/50 font-medium uppercase tracking-wider">
         {{ $t('queue.history') }}
       </div>
       <div
         v-for="(track, i) in player.history.slice(0, 10)"
         :key="i"
-        class="flex items-center gap-2 px-4 py-1.5 hover:bg-bg-hover transition-colors cursor-pointer opacity-60"
+        class="flex items-center gap-2 px-4 py-1.5 hover:bg-base-content/10 transition-colors cursor-pointer opacity-60"
         @click="player.playFromHistory(i)"
       >
         <div
-          class="w-6 h-6 rounded bg-bg-overlay flex items-center justify-center shrink-0 overflow-hidden"
+          class="w-6 h-6 rounded-field bg-neutral flex items-center justify-center shrink-0 overflow-hidden"
         >
           <MediaCover :path="track.path" :size="10" fallback="music" />
         </div>
         <span class="text-xs truncate flex-1">{{ track.metadata?.title || track.name }}</span>
-        <span class="text-[10px] text-fg-faint">{{ formatDuration(track.duration || 0) }}</span>
+        <span class="text-[10px] text-base-content/50">{{
+          formatDuration(track.duration || 0)
+        }}</span>
       </div>
     </div>
   </div>

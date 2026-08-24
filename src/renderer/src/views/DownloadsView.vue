@@ -170,12 +170,12 @@ const subtitleStatusKey = (t: { subtitleStatus?: string }): string => {
 const coverStatusClass = (t: { coverStatus?: string }): string => {
   switch (t.coverStatus) {
     case 'fetching':
-      return 'text-fg-faint';
+      return 'text-base-content/50';
     case 'embedded':
     case 'saved':
-      return 'text-green-base';
+      return 'text-success';
     case 'error':
-      return 'text-amber-base';
+      return 'text-warning';
     default:
       return '';
   }
@@ -190,9 +190,7 @@ const done = computed(() => yt.downloads.filter((d) => d.status === 'completed')
 const failed = computed(() =>
   yt.downloads.filter((d) => d.status === 'error' || d.status === 'cancelled')
 );
-const pausedCount = computed(
-  () => yt.downloads.filter((d) => d.status === 'paused').length
-);
+const pausedCount = computed(() => yt.downloads.filter((d) => d.status === 'paused').length);
 
 const visible = computed(() => {
   let list: typeof yt.downloads;
@@ -233,29 +231,29 @@ const icons = {
   paused: Pause
 } as const;
 const colors = {
-  downloading: 'text-accent-base',
-  completed: 'text-green-base',
-  error: 'text-red-base',
-  cancelled: 'text-fg-faint',
-  pending: 'text-amber-base',
-  paused: 'text-amber-base'
+  downloading: 'text-primary',
+  completed: 'text-success',
+  error: 'text-error',
+  cancelled: 'text-base-content/50',
+  pending: 'text-warning',
+  paused: 'text-warning'
 } as const;
 </script>
 
 <template>
   <div class="flex flex-col h-full">
-    <div class="p-4 border-b border-border-default flex items-center gap-3">
-      <Download :size="24" class="text-accent-base" />
+    <div class="p-4 border-b border-base-300 flex items-center gap-3">
+      <Download :size="24" class="text-primary" />
       <h1 class="text-xl font-bold">{{ $t('downloads.title') }}</h1>
       <span
         v-if="active.length"
-        class="text-xs bg-accent-ghost text-accent-base px-2 py-0.5 rounded-full font-medium"
+        class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium"
         >{{ active.length }} {{ $t('status.active') }}</span
       >
       <div class="flex-1" />
       <button
         v-if="active.length"
-        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-default text-xs text-fg-muted hover:bg-bg-hover transition-colors"
+        class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
         :title="$t('downloads.pauseAll')"
         @click="yt.pauseAll"
       >
@@ -264,7 +262,7 @@ const colors = {
       </button>
       <button
         v-if="pausedCount"
-        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-default text-xs text-fg-muted hover:bg-bg-hover transition-colors"
+        class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
         :title="$t('downloads.resumeAll')"
         @click="yt.resumeAll"
       >
@@ -272,7 +270,7 @@ const colors = {
         {{ $t('downloads.resumeAll') }}
       </button>
       <button
-        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-default text-xs text-fg-muted hover:bg-bg-hover transition-colors"
+        class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
         :title="$t('downloads.exportQueue')"
         @click="yt.exportQueue"
       >
@@ -280,7 +278,7 @@ const colors = {
         {{ $t('downloads.exportQueue') }}
       </button>
       <button
-        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-default text-xs text-fg-muted hover:bg-bg-hover transition-colors"
+        class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
         :title="$t('downloads.importQueue')"
         @click="yt.importQueue"
       >
@@ -291,11 +289,11 @@ const colors = {
         <input
           v-model="scheduleTime"
           type="time"
-          class="px-2 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-xs focus:border-accent-base focus:outline-none"
+          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none"
           :title="$t('downloads.scheduleStart')"
         />
         <button
-          class="px-2 py-1.5 rounded-lg border border-border-default text-xs text-fg-muted hover:bg-bg-hover transition-colors"
+          class="fx-noise px-2 py-1.5 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
           :disabled="!scheduleTime"
           @click="applySchedule"
         >
@@ -303,7 +301,7 @@ const colors = {
         </button>
         <button
           v-if="scheduledAt"
-          class="px-2 py-1.5 rounded-lg border border-border-default text-xs text-fg-muted hover:bg-bg-hover transition-colors"
+          class="fx-noise px-2 py-1.5 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
           :title="$t('downloads.scheduleClear')"
           @click="clearSchedule"
         >
@@ -312,7 +310,7 @@ const colors = {
       </div>
       <button
         v-if="done.length || failed.length"
-        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-default text-xs text-fg-muted hover:bg-bg-hover transition-colors"
+        class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
         @click="yt.clearFinishedDownloads"
       >
         <Trash2 :size="12" />
@@ -320,12 +318,16 @@ const colors = {
       </button>
     </div>
 
-    <div class="px-4 py-2 border-b border-border-default flex gap-1 items-center flex-wrap">
+    <div class="px-4 py-2 border-b border-base-300 flex gap-1 items-center flex-wrap">
       <button
         v-for="f in filters"
         :key="f.id"
         class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
-        :class="filter === f.id ? 'bg-accent-base text-white' : 'text-fg-muted hover:bg-bg-hover'"
+        :class="
+          filter === f.id
+            ? 'bg-primary text-primary-content'
+            : 'text-base-content/70 hover:bg-base-content/10'
+        "
         @click="filter = f.id"
       >
         {{ $t(f.labelKey) }} ({{ f.count }})
@@ -334,7 +336,7 @@ const colors = {
       <select
         v-if="channels.length"
         v-model="channelFilter"
-        class="px-2 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-xs focus:border-accent-base focus:outline-none"
+        class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none"
       >
         <option value="">{{ $t('downloads.filterAllChannels') }}</option>
         <option v-for="[id, title] in channels" :key="id" :value="id">{{ title }}</option>
@@ -346,10 +348,12 @@ const colors = {
         <div
           v-for="t in visible"
           :key="t.id"
-          class="p-3 rounded-xl bg-bg-elevated border border-border-default"
+          class="p-3 rounded-box bg-base-100 border border-base-300"
         >
           <div class="flex items-center gap-3">
-            <div class="w-20 aspect-video rounded-md bg-bg-base overflow-hidden shrink-0">
+            <div
+              class="w-20 aspect-video rounded-field bg-base-200/[var(--glass-alpha)] overflow-hidden shrink-0"
+            >
               <img
                 v-if="t.thumbnail"
                 :src="t.thumbnail"
@@ -362,7 +366,7 @@ const colors = {
                 v-else
                 :size="20"
                 class="w-full h-full p-3"
-                :class="colors[t.status] || 'text-amber-base'"
+                :class="colors[t.status] || 'text-warning'"
               />
             </div>
 
@@ -370,40 +374,43 @@ const colors = {
               <span class="text-sm flex-1 truncate block">{{ t.title }}</span>
               <span
                 v-if="t.error"
-                class="text-xs text-fg-faint line-clamp-1 block"
+                class="text-xs text-base-content/50 line-clamp-1 block"
                 :title="t.error"
               >
                 {{ errorCodeKey(t.errorCode) ? $t(errorCodeKey(t.errorCode)) : t.error }}
               </span>
               <span
                 v-else-if="t.outputPath"
-                class="text-xs text-fg-faint truncate block"
+                class="text-xs text-base-content/50 truncate block"
                 :title="t.outputPath"
               >
                 {{ t.outputPath }}
               </span>
               <span
                 v-if="t.fileHash"
-                class="text-[10px] text-fg-faint font-mono flex items-center gap-1"
+                class="text-[10px] text-base-content/50 font-mono flex items-center gap-1"
                 :title="t.fileHash"
               >
                 <span class="truncate">sha256: {{ t.fileHash.slice(0, 16) }}…</span>
                 <button
-                  class="p-0.5 rounded text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors shrink-0"
+                  class="fx-noise p-0.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors shrink-0"
                   :title="$t('downloads.copyHash')"
                   @click="copyText(t.fileHash)"
                 >
                   <Copy :size="10" />
                 </button>
               </span>
-              <span v-if="t.status === 'downloading'" class="text-xs text-fg-faint font-mono">
+              <span
+                v-if="t.status === 'downloading'"
+                class="text-xs text-base-content/50 font-mono"
+              >
                 {{ t.speed }} · {{ t.eta }}
               </span>
             </div>
 
             <button
               v-if="t.status === 'error' && t.errorCode === 'auth-required'"
-              class="flex items-center gap-1 px-2 py-1 rounded-md bg-accent-ghost text-accent-base text-[11px] font-medium hover:bg-accent-base hover:text-white transition-colors shrink-0"
+              class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-primary/10 text-primary text-[11px] font-medium hover:bg-primary hover:text-primary-content transition-colors shrink-0"
               :title="$t('downloads.loginTitle')"
               @click="login"
             >
@@ -416,22 +423,18 @@ const colors = {
               class="text-[11px] shrink-0 flex items-center gap-1"
               :class="coverStatusClass(t)"
             >
-              <RefreshCw
-                v-if="t.coverStatus === 'fetching'"
-                :size="10"
-                class="animate-spin"
-              />
+              <RefreshCw v-if="t.coverStatus === 'fetching'" :size="10" class="animate-spin" />
               {{ $t(coverStatusKey(t)) }}
             </span>
-            <span v-if="subtitleStatusKey(t)" class="text-[11px] text-fg-faint shrink-0">
+            <span v-if="subtitleStatusKey(t)" class="text-[11px] text-base-content/50 shrink-0">
               {{ $t(subtitleStatusKey(t)) }}
             </span>
-            <span class="text-xs text-fg-faint shrink-0 uppercase">{{ t.format }}</span>
+            <span class="text-xs text-base-content/50 shrink-0 uppercase">{{ t.format }}</span>
 
             <div class="flex items-center gap-1 shrink-0">
               <button
                 v-if="t.status === 'completed' && t.outputPath"
-                class="p-1.5 rounded-md text-fg-faint hover:text-accent-base hover:bg-bg-hover transition-colors"
+                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-base-content/10 transition-colors"
                 :title="$t('downloads.play')"
                 @click="playDownload(t)"
               >
@@ -439,7 +442,7 @@ const colors = {
               </button>
               <button
                 v-if="t.status === 'completed' && t.outputPath"
-                class="p-1.5 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
                 :title="$t('downloads.copyPath')"
                 @click="copyPath(t.outputPath)"
               >
@@ -447,7 +450,7 @@ const colors = {
               </button>
               <button
                 v-if="t.status === 'completed' && t.outputPath"
-                class="p-1.5 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
                 :title="$t('downloads.openFolder')"
                 @click="openFolder(t.outputPath)"
               >
@@ -455,7 +458,7 @@ const colors = {
               </button>
               <button
                 v-if="t.status === 'completed' && t.outputPath"
-                class="p-1.5 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
                 :title="$t('downloads.editMetadata')"
                 @click="openMetaEditor(t)"
               >
@@ -463,7 +466,7 @@ const colors = {
               </button>
               <button
                 v-if="t.inLibrary"
-                class="flex items-center gap-1 px-2 py-1 rounded-md bg-accent-ghost text-accent-base text-[11px] font-medium hover:bg-accent-base hover:text-white transition-colors shrink-0"
+                class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-primary/10 text-primary text-[11px] font-medium hover:bg-primary hover:text-primary-content transition-colors shrink-0"
                 :title="$t('downloads.inLibraryTitle')"
                 @click="openLibrary"
               >
@@ -472,7 +475,7 @@ const colors = {
               </button>
               <button
                 v-if="t.status === 'downloading'"
-                class="p-1.5 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
                 :title="$t('downloads.pause')"
                 @click="yt.pauseDownload(t.id)"
               >
@@ -480,7 +483,7 @@ const colors = {
               </button>
               <button
                 v-if="t.status === 'paused'"
-                class="p-1.5 rounded-md text-fg-faint hover:text-accent-base hover:bg-bg-hover transition-colors"
+                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-base-content/10 transition-colors"
                 :title="$t('downloads.resume')"
                 @click="yt.resumeDownload(t.id)"
               >
@@ -488,7 +491,7 @@ const colors = {
               </button>
               <button
                 v-if="t.status === 'pending'"
-                class="p-1.5 rounded-md text-fg-faint hover:text-accent-base hover:bg-bg-hover transition-colors"
+                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-base-content/10 transition-colors"
                 :title="$t('downloads.moveToFront')"
                 @click="yt.moveToFront(t.id)"
               >
@@ -496,7 +499,7 @@ const colors = {
               </button>
               <button
                 v-if="t.status === 'pending'"
-                class="p-1.5 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
                 :title="$t('downloads.moveUp')"
                 @click="yt.move(t.id, -1)"
               >
@@ -504,7 +507,7 @@ const colors = {
               </button>
               <button
                 v-if="t.status === 'pending'"
-                class="p-1.5 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
                 :title="$t('downloads.moveDown')"
                 @click="yt.move(t.id, 1)"
               >
@@ -512,7 +515,7 @@ const colors = {
               </button>
               <button
                 v-if="t.status === 'downloading' || t.status === 'pending'"
-                class="p-1.5 rounded-md text-fg-faint hover:text-red-base hover:bg-bg-hover transition-colors"
+                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-error hover:bg-base-content/10 transition-colors"
                 :title="$t('downloads.cancel')"
                 @click="yt.cancelDownload(t.id)"
               >
@@ -520,7 +523,7 @@ const colors = {
               </button>
               <button
                 v-if="t.status === 'paused'"
-                class="p-1.5 rounded-md text-fg-faint hover:text-red-base hover:bg-bg-hover transition-colors"
+                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-error hover:bg-base-content/10 transition-colors"
                 :title="$t('downloads.cancel')"
                 @click="yt.cancelDownload(t.id)"
               >
@@ -528,7 +531,7 @@ const colors = {
               </button>
               <button
                 v-if="t.status === 'error' || t.status === 'cancelled'"
-                class="p-1.5 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
                 :title="$t('downloads.retry')"
                 @click="yt.retryDownload(t)"
               >
@@ -539,14 +542,14 @@ const colors = {
 
           <div
             v-if="t.status === 'downloading' || t.status === 'pending'"
-            class="w-full h-1.5 bg-border-default rounded-full overflow-hidden mt-2"
+            class="w-full h-1.5 bg-base-300 rounded-full overflow-hidden mt-2"
           >
-            <div class="h-full bg-accent-base rounded-full" :style="{ width: t.progress + '%' }" />
+            <div class="h-full bg-primary rounded-full" :style="{ width: t.progress + '%' }" />
           </div>
         </div>
       </div>
 
-      <div v-else class="flex flex-col items-center justify-center py-16 text-fg-faint">
+      <div v-else class="flex flex-col items-center justify-center py-16 text-base-content/50">
         <Download :size="48" class="mb-3 opacity-30" />
         <p class="text-sm">{{ $t('downloads.empty') }}</p>
       </div>
@@ -559,12 +562,12 @@ const colors = {
         @click.self="closeMetaEditor"
       >
         <div
-          class="bg-bg-surface border border-border-default rounded-xl w-80 max-w-[92vw] shadow-2xl overflow-hidden"
+          class="bg-base-100 border border-base-300 rounded-box w-80 max-w-[92vw] shadow-2xl overflow-hidden"
         >
-          <div class="flex items-center justify-between px-4 py-3 border-b border-border-default">
+          <div class="flex items-center justify-between px-4 py-3 border-b border-base-300">
             <h3 class="text-sm font-semibold">{{ $t('downloads.editMetadata') }}</h3>
             <button
-              class="p-1 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+              class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
               @click="closeMetaEditor"
             >
               <X :size="16" />
@@ -573,29 +576,29 @@ const colors = {
           <div class="px-4 py-4 space-y-3">
             <input
               v-model="metaArtist"
-              class="w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+              class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
               :placeholder="$t('youtube.metaArtist')"
             />
             <input
               v-model="metaAlbum"
-              class="w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+              class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
               :placeholder="$t('youtube.metaAlbum')"
             />
             <input
               v-model="metaYear"
-              class="w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+              class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
               :placeholder="$t('youtube.metaYear')"
             />
           </div>
-          <div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-border-default">
+          <div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-base-300">
             <button
-              class="px-4 py-2 rounded-xl border border-border-default text-sm text-fg-muted hover:bg-bg-hover transition-colors"
+              class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
               @click="closeMetaEditor"
             >
               {{ $t('common.cancel') }}
             </button>
             <button
-              class="px-4 py-2 rounded-xl bg-accent-base text-white text-sm font-medium hover:bg-accent-hover transition-colors"
+              class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors"
               @click="saveMeta"
             >
               {{ $t('common.save') }}

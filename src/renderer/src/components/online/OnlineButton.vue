@@ -24,17 +24,17 @@ const base =
   'inline-flex items-center justify-center gap-1.5 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
 
 const variants: Record<string, string> = {
-  primary: 'bg-accent-base text-white hover:bg-accent-hover shadow-sm shadow-accent-base/20',
+  primary: 'bg-primary text-primary-content hover:bg-primary/90 shadow-sm shadow-primary/20',
   secondary:
-    'bg-bg-elevated border border-border-default text-fg-muted hover:bg-bg-hover hover:text-fg-base',
-  ghost: 'text-fg-muted hover:bg-bg-hover hover:text-fg-base',
+    'bg-base-100 border border-base-300 text-base-content/70 hover:bg-base-content/10 hover:text-base-content',
+  ghost: 'text-base-content/70 hover:bg-base-content/10 hover:text-base-content',
   danger:
-    'bg-bg-elevated border border-border-default text-fg-muted hover:bg-red-base/10 hover:text-red-base hover:border-red-base/30'
+    'bg-base-100 border border-base-300 text-base-content/70 hover:bg-error/10 hover:text-error hover:border-error/30'
 };
 
 const sizes: Record<string, string> = {
-  sm: 'px-2.5 py-1.5 rounded-lg text-xs',
-  md: 'px-3 py-2 rounded-lg text-sm'
+  sm: 'px-2.5 py-1.5 rounded-field text-xs',
+  md: 'px-3 py-2 rounded-field text-sm'
 };
 
 const cls = computed(() => `${base} ${variants[props.variant]} ${sizes[props.size]}`);

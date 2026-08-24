@@ -26,7 +26,7 @@ function openInWindow() {
 
 <template>
   <div class="w-full">
-    <div class="relative aspect-video rounded-xl overflow-hidden bg-black">
+    <div class="relative aspect-video rounded-box overflow-hidden bg-black">
       <iframe
         :src="embedUrl"
         class="absolute inset-0 w-full h-full"
@@ -39,17 +39,17 @@ function openInWindow() {
     <div v-if="title" class="flex items-center gap-2 mt-1.5 min-w-0">
       <div class="min-w-0 flex-1">
         <p class="text-sm font-medium truncate">{{ title }}</p>
-        <p v-if="channelTitle" class="text-xs text-fg-faint truncate">{{ channelTitle }}</p>
+        <p v-if="channelTitle" class="text-xs text-base-content/50 truncate">{{ channelTitle }}</p>
       </div>
       <button
-        class="p-1.5 rounded-lg border border-border-default text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-colors shrink-0"
+        class="fx-noise p-1.5 fx-depth rounded-field border border-base-300 text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors shrink-0"
         :title="$t('youtube.openInWindow')"
         @click="openInWindow"
       >
         <ExternalLink :size="13" />
       </button>
       <button
-        class="p-1.5 rounded-lg border border-border-default text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-colors shrink-0"
+        class="fx-noise p-1.5 fx-depth rounded-field border border-base-300 text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors shrink-0"
         :title="$t('nav.collapse')"
         @click="emit('close')"
       >

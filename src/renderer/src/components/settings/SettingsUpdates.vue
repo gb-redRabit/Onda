@@ -89,9 +89,9 @@ function onInstall(): void {
 
 <template>
   <SettingsPanel :title="$t('settings.updateSection')">
-    <SettingsCard v-if="!state.enabled" class="!p-4">
+    <SettingsCard v-if="!state.enabled" class="p-4!">
       <div class="text-sm font-medium">{{ $t('settings.updateDevOnly') }}</div>
-      <div class="text-xs text-fg-faint mt-1">{{ $t('settings.updateDevOnlyDesc') }}</div>
+      <div class="text-xs text-base-content/50 mt-1">{{ $t('settings.updateDevOnlyDesc') }}</div>
     </SettingsCard>
 
     <SettingsCard>
@@ -106,7 +106,7 @@ function onInstall(): void {
     <SettingsCard>
       <SettingsSectionTitle :title="$t('settings.checkInterval')" />
       <select
-        class="w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none focus:ring-2 focus:ring-accent-base/15 transition-all"
+        class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
         :value="settings.updates.checkInterval"
         @change="
           settings.updateUpdates({
@@ -124,15 +124,15 @@ function onInstall(): void {
     <SettingsCard>
       <div class="flex items-center justify-between">
         <SettingsSectionTitle :title="$t('settings.currentVersion')" />
-        <span class="text-sm font-mono text-fg-faint">v{{ state.current }}</span>
+        <span class="text-sm font-mono text-base-content/50">v{{ state.current }}</span>
       </div>
 
       <div v-if="state.status === 'available'" class="flex items-center justify-between py-1">
-        <div class="text-sm text-accent-base">
+        <div class="text-sm text-primary">
           {{ $t('settings.updateAvailable') }} v{{ state.version }}
         </div>
         <button
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-base text-white text-xs font-medium hover:bg-accent-hover transition-colors"
+          class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
           @click="onDownload"
         >
           <Download :size="14" />{{ $t('settings.downloadUpdate') }}
@@ -140,13 +140,13 @@ function onInstall(): void {
       </div>
 
       <div v-else-if="state.status === 'downloading'" class="my-2">
-        <div class="flex justify-between text-xs text-fg-faint mb-1">
+        <div class="flex justify-between text-xs text-base-content/50 mb-1">
           <span>{{ $t('settings.downloading') }}</span>
           <span class="font-mono">{{ Math.round(state.progress) }}%</span>
         </div>
-        <div class="h-1.5 rounded-full bg-bg-base overflow-hidden">
+        <div class="h-1.5 rounded-full bg-base-200/[var(--glass-alpha)] overflow-hidden">
           <div
-            class="h-full bg-accent-base transition-[width] duration-200"
+            class="h-full bg-primary transition-[width] duration-200"
             :style="{ width: state.progress + '%' }"
           />
         </div>
@@ -157,7 +157,7 @@ function onInstall(): void {
           {{ $t('settings.updateReady') }} v{{ state.version }}
         </div>
         <button
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-base text-white text-xs font-medium hover:bg-accent-hover transition-colors"
+          class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
           @click="onInstall"
         >
           <RotateCw :size="14" />{{ $t('settings.restartInstall') }}
@@ -168,16 +168,16 @@ function onInstall(): void {
         {{ $t('settings.updateUpToDate') }}
       </div>
 
-      <div v-else-if="state.status === 'checking'" class="text-sm text-fg-faint py-1">
+      <div v-else-if="state.status === 'checking'" class="text-sm text-base-content/50 py-1">
         {{ $t('settings.checking') }}…
       </div>
 
-      <div v-else-if="state.status === 'error'" class="text-xs text-red-500 py-1 break-words">
+      <div v-else-if="state.status === 'error'" class="text-xs text-red-500 py-1 wrap-break-word">
         {{ state.error }}
       </div>
 
       <button
-        class="mt-4 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent-base text-white text-sm font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
+        class="fx-noise mt-4 flex items-center gap-1.5 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
         :disabled="!state.enabled || state.status === 'checking' || state.status === 'downloading'"
         @click="onCheck"
       >

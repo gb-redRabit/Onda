@@ -63,24 +63,24 @@ onUnmounted(() => grid.destroy());
 <template>
   <div
     v-if="tracks.length === 0"
-    class="flex flex-col items-center justify-center h-full gap-3 text-fg-faint"
+    class="flex flex-col items-center justify-center h-full gap-3 text-base-content/50"
   >
     <Music2 :size="48" class="opacity-30" />
     <p class="text-sm">{{ $t('library.noAudio') }}</p>
     <p class="text-xs">{{ $t('library.addFolderHint') }}</p>
   </div>
   <template v-else>
-    <div
-      class="flex items-center justify-between px-4 py-2 border-b border-border-default shrink-0"
-    >
-      <span class="text-xs text-fg-faint">{{ tracks.length }} {{ $t('library.tracksCount') }}</span>
+    <div class="flex items-center justify-between px-4 py-2 border-b border-base-300 shrink-0">
+      <span class="text-xs text-base-content/50"
+        >{{ tracks.length }} {{ $t('library.tracksCount') }}</span
+      >
       <div class="flex items-center gap-2">
         <button
-          class="p-1.5 rounded-lg transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             viewMode === 'list'
-              ? 'bg-accent-ghost text-accent-base'
-              : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+              ? 'bg-primary/10 text-primary'
+              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
           "
           :title="$t('library.viewModeList')"
           @click="emit('update:viewMode', 'list')"
@@ -88,11 +88,11 @@ onUnmounted(() => grid.destroy());
           <LayoutList :size="14" />
         </button>
         <button
-          class="p-1.5 rounded-lg transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             viewMode === 'grid'
-              ? 'bg-accent-ghost text-accent-base'
-              : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+              ? 'bg-primary/10 text-primary'
+              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
           "
           :title="$t('library.viewModeGrid')"
           @click="emit('update:viewMode', 'grid')"
@@ -100,7 +100,7 @@ onUnmounted(() => grid.destroy());
           <LayoutGrid :size="14" />
         </button>
         <button
-          class="flex items-center gap-1 px-3 py-1 rounded-lg bg-accent-ghost text-accent-base text-xs font-medium hover:bg-accent-base hover:text-white transition-colors"
+          class="fx-noise flex items-center gap-1 px-3 py-1 fx-depth rounded-field bg-primary/10 text-primary text-xs font-medium hover:bg-primary hover:text-primary-content transition-colors"
           @click="emit('playAll')"
         >
           <Music2 :size="12" /> {{ $t('library.playAll') }}

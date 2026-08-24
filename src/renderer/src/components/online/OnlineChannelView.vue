@@ -227,30 +227,25 @@ watch(
 <template>
   <div class="space-y-4 w-full">
     <div v-if="yt.channelLoading && !yt.channel" class="flex justify-center py-16">
-      <div
-        class="w-8 h-8 border-2 border-accent-base border-t-transparent rounded-full animate-spin"
-      />
+      <div class="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
     </div>
     <template v-else-if="yt.channel">
-      <div class="relative rounded-2xl overflow-hidden bg-bg-surface border border-border-default">
+      <div class="relative rounded-box overflow-hidden bg-base-100 border border-base-300">
         <div
           v-if="yt.channel.bannerUrl"
           class="h-32 sm:h-40 w-full bg-cover bg-center relative"
           :style="{ backgroundImage: `url(${yt.channel.bannerUrl})` }"
         >
           <div
-            class="absolute inset-0 bg-gradient-to-b from-transparent via-bg-surface/30 to-bg-surface"
+            class="absolute inset-0 bg-gradient-to-b from-transparent via-bg-surface/30 to-base-100"
           />
         </div>
-        <div
-          v-else
-          class="h-24 sm:h-32 w-full bg-gradient-to-br from-accent-base/20 to-bg-elevated"
-        />
+        <div v-else class="h-24 sm:h-32 w-full bg-gradient-to-br from-primary/20 to-base-100" />
 
         <div class="relative px-4 pb-4 -mt-6 sm:-mt-8">
           <div class="flex items-end gap-4">
             <div
-              class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-4 border-bg-surface bg-bg-elevated shrink-0"
+              class="w-20 h-20 sm:w-24 sm:h-24 rounded-box overflow-hidden border-4 border-base-100 bg-base-100 shrink-0"
             >
               <img
                 v-if="yt.channel.thumbnail && !avatarFailed"
@@ -259,13 +254,16 @@ watch(
                 class="w-full h-full object-cover"
                 @error="avatarFailed = true"
               />
-              <div v-else class="w-full h-full flex items-center justify-center text-fg-faint">
+              <div
+                v-else
+                class="w-full h-full flex items-center justify-center text-base-content/50"
+              >
                 <Users :size="32" />
               </div>
             </div>
             <div class="min-w-0 flex-1 pb-1">
               <h2 class="text-lg sm:text-xl font-bold truncate">{{ yt.channel.title }}</h2>
-              <p class="text-xs text-fg-muted mt-0.5">
+              <p class="text-xs text-base-content/70 mt-0.5">
                 <span v-if="yt.channel.subscriberCount != null">
                   {{ formatNumber(yt.channel.subscriberCount) }}
                   {{ $t(isScChannel ? 'youtube.followers' : 'youtube.subscribers') }}
@@ -280,7 +278,7 @@ watch(
 
           <p
             v-if="yt.channel.description"
-            class="text-xs text-fg-muted mt-3 line-clamp-3 max-w-2xl"
+            class="text-xs text-base-content/70 mt-3 line-clamp-3 max-w-2xl"
           >
             {{ yt.channel.description }}
           </p>
@@ -352,11 +350,11 @@ watch(
               { key: 'oldest', label: $t('youtube.sortOldest') }
             ] as const"
             :key="opt.key"
-            class="px-2 py-1 rounded-lg text-[10px] font-medium transition-colors"
+            class="fx-noise px-2 py-1 fx-depth rounded-field text-[10px] font-medium transition-colors"
             :class="
               channelSort === opt.key
-                ? 'bg-accent-base text-white'
-                : 'text-fg-faint hover:text-fg-muted'
+                ? 'bg-primary text-primary-content'
+                : 'text-base-content/50 hover:text-base-content/70'
             "
             @click="channelSort = opt.key"
           >
@@ -367,7 +365,7 @@ watch(
 
       <div v-if="yt.channelLoading && !yt.channelItems.length" class="flex justify-center py-8">
         <div
-          class="w-6 h-6 border-2 border-accent-base border-t-transparent rounded-full animate-spin"
+          class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"
         />
       </div>
 
@@ -400,14 +398,14 @@ watch(
         </div>
       </div>
 
-      <p v-else class="text-sm text-fg-faint py-8 text-center">
+      <p v-else class="text-sm text-base-content/50 py-8 text-center">
         {{ $t('youtube.noVideos') }}
       </p>
 
       <div v-if="yt.channelHasMore" :ref="setSentinel" class="flex justify-center py-4">
         <div
           v-if="yt.channelLoading"
-          class="w-6 h-6 border-2 border-accent-base border-t-transparent rounded-full animate-spin"
+          class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"
         />
       </div>
     </template>

@@ -33,15 +33,15 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
 
     <SettingsCard>
       <SettingsSectionTitle :title="$t('settings.defaultKind')" />
-      <div class="flex gap-1 bg-bg-base rounded-xl p-1 w-fit">
+      <div class="flex gap-1 bg-base-200/[var(--glass-alpha)] rounded-box p-1 w-fit">
         <button
           v-for="k in ['audio', 'video'] as const"
           :key="k"
-          class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          class="fx-noise px-4 py-2 fx-depth rounded-field text-sm font-medium transition-colors"
           :class="
             settings.download.defaultKind === k
-              ? 'bg-accent-base text-white'
-              : 'text-fg-muted hover:text-fg-base'
+              ? 'bg-primary text-primary-content'
+              : 'text-base-content/70 hover:text-base-content'
           "
           @click="settings.updateDownload({ defaultKind: k })"
         >
@@ -56,11 +56,11 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
         <button
           v-for="f in audioFormats"
           :key="f"
-          class="px-4 py-2 rounded-xl text-sm uppercase border transition-colors font-medium"
+          class="fx-noise px-4 py-2 fx-depth rounded-field text-sm uppercase border transition-colors font-medium"
           :class="
             settings.download.defaultAudioFormat === f
-              ? 'border-accent-base bg-accent-ghost text-accent-base'
-              : 'border-border-default text-fg-muted hover:bg-bg-hover'
+              ? 'border-primary bg-primary/10 text-primary'
+              : 'border-base-300 text-base-content/70 hover:bg-base-content/10'
           "
           @click="settings.updateDownload({ defaultAudioFormat: f })"
         >
@@ -75,11 +75,11 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
         <button
           v-for="q in audioQualities"
           :key="q"
-          class="px-4 py-2 rounded-xl text-sm border transition-colors font-medium"
+          class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors font-medium"
           :class="
             settings.download.defaultAudioQuality === q
-              ? 'border-accent-base bg-accent-ghost text-accent-base'
-              : 'border-border-default text-fg-muted hover:bg-bg-hover'
+              ? 'border-primary bg-primary/10 text-primary'
+              : 'border-base-300 text-base-content/70 hover:bg-base-content/10'
           "
           @click="settings.updateDownload({ defaultAudioQuality: q })"
         >
@@ -94,11 +94,11 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
         <button
           v-for="q in videoQualities"
           :key="q"
-          class="px-4 py-2 rounded-xl text-sm border transition-colors"
+          class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors"
           :class="
             settings.download.defaultVideoQuality === q
-              ? 'border-accent-base bg-accent-ghost text-accent-base font-medium'
-              : 'border-border-default text-fg-muted hover:bg-bg-hover'
+              ? 'border-primary bg-primary/10 text-primary font-medium'
+              : 'border-base-300 text-base-content/70 hover:bg-base-content/10'
           "
           @click="settings.updateDownload({ defaultVideoQuality: q })"
         >
@@ -113,11 +113,11 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
         <button
           v-for="c in videoContainers"
           :key="c"
-          class="px-4 py-2 rounded-xl text-sm uppercase border transition-colors font-medium"
+          class="fx-noise px-4 py-2 fx-depth rounded-field text-sm uppercase border transition-colors font-medium"
           :class="
             settings.download.defaultVideoContainer === c
-              ? 'border-accent-base bg-accent-ghost text-accent-base'
-              : 'border-border-default text-fg-muted hover:bg-bg-hover'
+              ? 'border-primary bg-primary/10 text-primary'
+              : 'border-base-300 text-base-content/70 hover:bg-base-content/10'
           "
           @click="settings.updateDownload({ defaultVideoContainer: c })"
         >
@@ -132,11 +132,11 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
         <button
           v-for="c in coverTypes"
           :key="c"
-          class="px-4 py-2 rounded-xl text-sm border transition-colors font-medium"
+          class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors font-medium"
           :class="
             settings.download.defaultCover === c
-              ? 'border-accent-base bg-accent-ghost text-accent-base'
-              : 'border-border-default text-fg-muted hover:bg-bg-hover'
+              ? 'border-primary bg-primary/10 text-primary'
+              : 'border-base-300 text-base-content/70 hover:bg-base-content/10'
           "
           @click="settings.updateDownload({ defaultCover: c })"
         >
@@ -171,7 +171,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
             type="number"
             min="0"
             :value="settings.download.defaultCoverClipStart"
-            class="w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+            class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
             @change="
               settings.updateDownload({
                 defaultCoverClipStart: parseInt(($event.target as HTMLInputElement).value) || 0
@@ -185,7 +185,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
             type="number"
             min="1"
             :value="settings.download.defaultCoverClipEnd"
-            class="w-full px-2 py-1.5 rounded-lg bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+            class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
             @change="
               settings.updateDownload({
                 defaultCoverClipEnd: parseInt(($event.target as HTMLInputElement).value) || 30
@@ -210,7 +210,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
         <SettingsSectionTitle :title="$t('settings.defaultSubsLangs')" />
         <input
           :value="settings.download.defaultSubsLangs"
-          class="w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none focus:ring-2 focus:ring-accent-base/15 transition-all"
+          class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
           :placeholder="$t('youtube.subsLangsPlaceholder')"
           @change="
             settings.updateDownload({
@@ -226,14 +226,14 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
       <div class="flex items-center gap-2">
         <input
           :value="settings.download.filenameTemplate"
-          class="flex-1 px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none focus:ring-2 focus:ring-accent-base/15 transition-all"
+          class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
           @change="
             settings.updateDownload({ filenameTemplate: ($event.target as HTMLInputElement).value })
           "
         />
         <FilenameTemplatePresets @preset="settings.updateDownload({ filenameTemplate: $event })" />
       </div>
-      <p class="text-xs text-fg-faint">
+      <p class="text-xs text-base-content/50">
         {{ $t('settings.available') }} {'{title}'}, {'{artist}'}, {'{album}'}, {'{year}'}
       </p>
     </SettingsCard>

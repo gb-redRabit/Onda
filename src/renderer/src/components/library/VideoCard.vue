@@ -47,35 +47,33 @@ function onDragStart(e: DragEvent) {
 
 <template>
   <button
-    class="flex-1 flex flex-col rounded-xl bg-bg-elevated border border-border-default hover:bg-bg-hover transition-all overflow-hidden group text-left min-w-0"
+    class="flex-1 flex flex-col fx-depth rounded-box fx-noise bg-base-100 border border-base-300 hover:bg-base-content/10 transition-all overflow-hidden group text-left min-w-0"
     draggable="true"
     @click="emit('play', track)"
     @contextmenu.prevent="onContextMenu"
     @dragstart="onDragStart"
   >
-    <div
-      class="aspect-video bg-bg-overlay flex items-center justify-center relative overflow-hidden"
-    >
+    <div class="aspect-video bg-neutral flex items-center justify-center relative overflow-hidden">
       <MediaCover :cover="cover" :size="32" fallback="film" />
       <div
         class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors"
       >
         <div
-          class="w-10 h-10 rounded-full bg-accent-base/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          class="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
         >
           <Play :size="18" class="text-white ml-0.5" />
         </div>
       </div>
       <div
         v-if="track.duration"
-        class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/60 text-white text-[10px] font-medium"
+        class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded-field bg-black/60 text-white text-[10px] font-medium"
       >
         {{ formatDuration(track.duration, '—') }}
       </div>
     </div>
     <div class="p-2.5">
       <div class="text-xs font-medium truncate">{{ track.name }}</div>
-      <div class="text-[11px] text-fg-faint mt-0.5">
+      <div class="text-[11px] text-base-content/50 mt-0.5">
         {{ formatDuration(track.duration, '—') }}
       </div>
     </div>

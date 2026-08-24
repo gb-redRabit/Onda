@@ -20,22 +20,21 @@ function update(partial: Partial<typeof viz.value>) {
 </script>
 
 <template>
-  <div
-    class="p-3 bg-bg-surface border border-border-default rounded-xl shadow-xl min-w-55 space-y-3"
-  >
+  <div class="p-3 bg-base-100 border border-base-300 rounded-box shadow-xl min-w-55 space-y-3">
     <div>
-      <label class="text-[10px] font-semibold uppercase tracking-wider text-fg-faint mb-1.5 block"
+      <label
+        class="text-[10px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
         >{{ $t('audioView.vizModeLabel') }}</label
       >
       <div class="flex flex-wrap gap-1">
         <button
           v-for="m in modes"
           :key="m.value"
-          class="px-2 py-1 rounded-md text-[11px] font-medium transition-colors"
+          class="fx-noise px-2 py-1 fx-depth rounded-field text-[11px] font-medium transition-colors"
           :class="
             viz.mode === m.value
-              ? 'bg-accent-base text-white'
-              : 'bg-bg-elevated text-fg-muted hover:text-fg-base hover:bg-bg-hover'
+              ? 'bg-primary text-primary-content'
+              : 'bg-base-100 text-base-content/70 hover:text-base-content hover:bg-base-content/10'
           "
           @click="update({ mode: m.value })"
         >
@@ -45,37 +44,40 @@ function update(partial: Partial<typeof viz.value>) {
     </div>
 
     <div>
-      <label class="text-[10px] font-semibold uppercase tracking-wider text-fg-faint mb-1.5 block"
+      <label
+        class="text-[10px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
         >{{ $t('audioView.vizPrimaryColor') }}</label
       >
       <div class="flex items-center gap-2">
         <input
           type="color"
           :value="viz.primaryColor"
-          class="w-8 h-8 rounded cursor-pointer border-0 p-0"
+          class="w-8 h-8 fx-depth rounded-field cursor-pointer border-0 p-0"
           @input="(e: Event) => update({ primaryColor: (e.target as HTMLInputElement).value })"
         />
-        <span class="text-[11px] font-mono text-fg-muted">{{ viz.primaryColor }}</span>
+        <span class="text-[11px] font-mono text-base-content/70">{{ viz.primaryColor }}</span>
       </div>
     </div>
 
     <div>
-      <label class="text-[10px] font-semibold uppercase tracking-wider text-fg-faint mb-1.5 block"
+      <label
+        class="text-[10px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
         >{{ $t('audioView.vizSecondaryColor') }}</label
       >
       <div class="flex items-center gap-2">
         <input
           type="color"
           :value="viz.secondaryColor"
-          class="w-8 h-8 rounded cursor-pointer border-0 p-0"
+          class="w-8 h-8 fx-depth rounded-field cursor-pointer border-0 p-0"
           @input="(e: Event) => update({ secondaryColor: (e.target as HTMLInputElement).value })"
         />
-        <span class="text-[11px] font-mono text-fg-muted">{{ viz.secondaryColor }}</span>
+        <span class="text-[11px] font-mono text-base-content/70">{{ viz.secondaryColor }}</span>
       </div>
     </div>
 
     <div>
-      <label class="text-[10px] font-semibold uppercase tracking-wider text-fg-faint mb-1.5 block"
+      <label
+        class="text-[10px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
         >Sensitivity: {{ Math.round(viz.sensitivity * 100) }}%</label
       >
       <input
@@ -84,7 +86,7 @@ function update(partial: Partial<typeof viz.value>) {
         max="1.5"
         step="0.01"
         :value="viz.sensitivity"
-        class="w-full accent-accent-base"
+        class="w-full accent-primary"
         @input="
           (e: Event) => update({ sensitivity: parseFloat((e.target as HTMLInputElement).value) })
         "

@@ -49,13 +49,13 @@ function folderIcon(type: string): string {
   <SettingsPanel :title="$t('settings.libTitle')" :description="$t('settings.libDesc')">
     <div class="flex items-center gap-3">
       <button
-        class="flex items-center gap-2 px-4 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm font-medium hover:bg-bg-hover transition-colors"
+        class="flex items-center gap-2 px-4 py-2 fx-depth rounded-box fx-noise bg-base-100 border border-base-300 text-sm font-medium hover:bg-base-content/10 transition-colors"
         @click="addFolder"
       >
         <FolderPlus :size="16" />{{ $t('settings.libAddFolder') }}
       </button>
       <button
-        class="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent-base text-white text-sm font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
+        class="fx-noise flex items-center gap-2 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
         :disabled="library.isScanning || library.folders.length === 0"
         @click="scan"
       >
@@ -64,14 +64,14 @@ function folderIcon(type: string): string {
       </button>
       <button
         v-if="library.isScanning"
-        class="flex items-center gap-2 px-4 py-2 rounded-xl border border-border-default text-sm font-medium text-fg-muted hover:bg-bg-hover transition-colors"
+        class="fx-noise flex items-center gap-2 px-4 py-2 fx-depth rounded-field border border-base-300 text-sm font-medium text-base-content/70 hover:bg-base-content/10 transition-colors"
         @click="library.cancelScan()"
       >
         {{ $t('common.cancel') }}
       </button>
     </div>
 
-    <div v-if="library.folders.length === 0" class="text-sm text-fg-faint italic py-4">
+    <div v-if="library.folders.length === 0" class="text-sm text-base-content/50 italic py-4">
       {{ $t('settings.libEmpty') }}
     </div>
 
@@ -79,13 +79,13 @@ function folderIcon(type: string): string {
       <div
         v-for="entry in folderEntries"
         :key="entry.path"
-        class="flex items-center justify-between px-4 py-3 border-b border-border-default last:border-b-0"
+        class="flex items-center justify-between px-4 py-3 border-b border-base-300 last:border-b-0"
       >
         <div class="flex items-center gap-3 min-w-0">
           <span class="text-lg">{{ folderIcon(entry.type) }}</span>
           <div class="min-w-0">
             <div class="text-sm font-medium truncate">{{ entry.path }}</div>
-            <div class="text-xs text-fg-faint mt-0.5">
+            <div class="text-xs text-base-content/50 mt-0.5">
               {{ $t('settings.libType') }}
               {{
                 entry.type === 'audio'
@@ -110,11 +110,12 @@ function folderIcon(type: string): string {
       </div>
     </SettingsCard>
 
-    <div v-if="library.isScanning" class="text-xs text-fg-faint">
-      {{ library.scanProgress.current }} / {{ library.scanProgress.total }} {{ $t('settings.libProgress').toLowerCase() }}...
+    <div v-if="library.isScanning" class="text-xs text-base-content/50">
+      {{ library.scanProgress.current }} / {{ library.scanProgress.total }}
+      {{ $t('settings.libProgress').toLowerCase() }}...
     </div>
 
-    <div v-if="library.totalCount > 0" class="text-xs text-fg-faint">
+    <div v-if="library.totalCount > 0" class="text-xs text-base-content/50">
       {{ $t('settings.libTotal') }} {{ library.totalCount }} {{ $t('library.files') }} ({{
         library.audioCount
       }}

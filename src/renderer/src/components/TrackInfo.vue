@@ -49,7 +49,7 @@ const displayAlbum = computed(() =>
     <div :class="['font-medium truncate', titleSize, titleClass]">
       {{ displayTitle }}
     </div>
-    <div v-if="displayArtist" :class="['text-fg-faint truncate', artistSize, artistClass]">
+    <div v-if="displayArtist" :class="['text-base-content/50 truncate', artistSize, artistClass]">
       {{ displayArtist }}<template v-if="displayAlbum"> · {{ displayAlbum }}</template>
     </div>
   </div>

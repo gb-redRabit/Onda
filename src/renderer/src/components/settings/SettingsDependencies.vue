@@ -11,7 +11,7 @@ const { deps, refreshAll, runInstall, uninstallDependency, cancelInstall } = use
   <SettingsPanel :title="$t('settings.depTitle')" :description="$t('settings.depDesc')">
     <template #actions>
       <button
-        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-xs font-medium hover:bg-bg-hover transition-colors"
+        class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors"
         @click="refreshAll"
       >
         <RefreshCw :size="14" />{{ $t('settings.depRefresh') }}
@@ -30,25 +30,25 @@ const { deps, refreshAll, runInstall, uninstallDependency, cancelInstall } = use
                 {{ dep.name }}
                 <span
                   v-if="dep.managed && dep.installed"
-                  class="text-[10px] px-1.5 py-0.5 rounded bg-accent-base/15 text-accent-base font-medium"
+                  class="text-[10px] px-1.5 py-0.5 rounded-field bg-primary/15 text-primary font-medium"
                 >
                   {{ $t('settings.depManaged') }}
                 </span>
                 <span
                   v-else-if="dep.installed"
-                  class="text-[10px] px-1.5 py-0.5 rounded bg-bg-hover text-fg-faint font-medium"
+                  class="text-[10px] px-1.5 py-0.5 rounded-field bg-base-content/10 text-base-content/50 font-medium"
                 >
                   {{ $t('settings.depSystem') }}
                 </span>
               </div>
-              <div class="text-xs text-fg-faint truncate">{{ dep.description }}</div>
+              <div class="text-xs text-base-content/50 truncate">{{ dep.description }}</div>
             </div>
           </div>
           <div class="flex items-center gap-2 shrink-0">
             <template v-if="dep.installing">
-              <span class="text-xs text-fg-faint font-mono">{{ dep.percent }}%</span>
+              <span class="text-xs text-base-content/50 font-mono">{{ dep.percent }}%</span>
               <button
-                class="px-3 py-1.5 rounded-lg border border-border-default text-xs font-medium hover:bg-bg-hover transition-colors"
+                class="fx-noise px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors"
                 @click="cancelInstall(dep)"
               >
                 {{ $t('settings.depCancel') }}
@@ -56,7 +56,7 @@ const { deps, refreshAll, runInstall, uninstallDependency, cancelInstall } = use
             </template>
             <template v-else>
               <div class="text-right">
-                <div v-if="dep.version" class="text-xs text-fg-faint font-mono">
+                <div v-if="dep.version" class="text-xs text-base-content/50 font-mono">
                   v{{ dep.version }}
                 </div>
                 <div v-if="dep.updateAvailable" class="text-xs text-amber-500 font-medium">
@@ -75,21 +75,21 @@ const { deps, refreshAll, runInstall, uninstallDependency, cancelInstall } = use
               <div class="flex items-center gap-2">
                 <button
                   v-if="!dep.installed"
-                  class="px-3 py-1.5 rounded-lg bg-accent-base text-white text-xs font-medium hover:bg-accent-hover transition-colors"
+                  class="fx-noise px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
                   @click="runInstall(dep, false)"
                 >
                   {{ $t('settings.depInstall') }}
                 </button>
                 <button
                   v-if="dep.installed && dep.tool === 'yt-dlp' && dep.updateAvailable"
-                  class="px-3 py-1.5 rounded-lg bg-accent-base text-white text-xs font-medium hover:bg-accent-hover transition-colors"
+                  class="fx-noise px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
                   @click="runInstall(dep, true)"
                 >
                   {{ $t('settings.depUpdate') }}
                 </button>
                 <button
                   v-if="dep.installed"
-                  class="px-3 py-1.5 rounded-lg border border-red-500/40 text-red-500 text-xs font-medium hover:bg-red-500/10 transition-colors"
+                  class="fx-noise px-3 py-1.5 fx-depth rounded-field border border-red-500/40 text-red-500 text-xs font-medium hover:bg-red-500/10 transition-colors"
                   @click="uninstallDependency(dep)"
                 >
                   {{ $t('settings.depUninstall') }}
@@ -98,13 +98,13 @@ const { deps, refreshAll, runInstall, uninstallDependency, cancelInstall } = use
             </template>
           </div>
         </div>
-        <div v-if="dep.path" class="mt-2 text-[11px] text-fg-faint font-mono truncate">
+        <div v-if="dep.path" class="mt-2 text-[11px] text-base-content/50 font-mono truncate">
           {{ dep.path }}
         </div>
         <div v-if="dep.installing" class="mt-3">
-          <div class="h-1.5 rounded-full bg-bg-hover overflow-hidden">
+          <div class="h-1.5 rounded-full bg-base-content/10 overflow-hidden">
             <div
-              class="h-full bg-accent-base transition-[width] duration-200"
+              class="h-full bg-primary transition-[width] duration-200"
               :style="{ width: dep.percent + '%' }"
             />
           </div>

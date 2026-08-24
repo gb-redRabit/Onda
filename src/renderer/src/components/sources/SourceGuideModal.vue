@@ -15,7 +15,7 @@ function braces(s: string): string {
 }
 
 const steps = computed(
-  () => (tm('sources.guide.steps') as unknown) as { title: string; body: string }[]
+  () => tm('sources.guide.steps') as unknown as { title: string; body: string }[]
 );
 </script>
 
@@ -26,13 +26,13 @@ const steps = computed(
       @click.self="$emit('close')"
     >
       <div
-        class="w-full max-w-4xl max-h-full flex flex-col rounded-2xl bg-bg-surface border border-border-default shadow-2xl overflow-hidden"
+        class="w-full max-w-4xl max-h-full flex flex-col rounded-box bg-base-100 border border-base-300 shadow-2xl overflow-hidden"
       >
-        <div class="flex items-center gap-3 px-4 py-3 border-b border-border-default">
-          <BookOpen :size="16" class="text-accent-base shrink-0" />
+        <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
+          <BookOpen :size="16" class="text-primary shrink-0" />
           <h2 class="text-lg font-medium truncate flex-1">{{ t('sources.guide.title') }}</h2>
           <button
-            class="p-1.5 rounded-lg text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-colors"
+            class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
             :aria-label="t('common.close')"
             @click="$emit('close')"
           >
@@ -41,24 +41,20 @@ const steps = computed(
         </div>
 
         <div class="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-5">
-          <p class="text-sm leading-relaxed text-fg-muted">
+          <p class="text-sm leading-relaxed text-base-content/70">
             {{ t('sources.guide.intro') }}
           </p>
 
           <ol class="space-y-4">
-            <li
-              v-for="(step, i) in steps"
-              :key="i"
-              class="flex gap-3"
-            >
+            <li v-for="(step, i) in steps" :key="i" class="flex gap-3">
               <span
-                class="shrink-0 w-6 h-6 rounded-full bg-accent-base/10 text-accent-base text-sm font-semibold flex items-center justify-center mt-0.5"
+                class="shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-sm font-semibold flex items-center justify-center mt-0.5"
               >
                 {{ i + 1 }}
               </span>
               <div class="min-w-0 flex-1 space-y-1.5">
                 <h3 class="text-lg font-medium">{{ braces(step.title) }}</h3>
-                <p class="text-sm leading-relaxed text-fg-muted whitespace-pre-line">
+                <p class="text-sm leading-relaxed text-base-content/70 whitespace-pre-line">
                   {{ braces(step.body) }}
                 </p>
               </div>

@@ -66,11 +66,11 @@ function onSliderDrag(e: MouseEvent, index: number) {
 </script>
 
 <template>
-  <div ref="panel" class="bg-bg-elevated border border-border-default rounded-2xl p-4 w-95">
+  <div ref="panel" class="bg-base-100 border border-base-300 rounded-box p-4 w-95">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-sm font-semibold">{{ $t('equalizer.title') }}</h3>
       <button
-        class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover hover:text-fg-base transition-colors"
+        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors"
         title="Reset"
         @click="selectPreset('flat')"
       >
@@ -83,11 +83,11 @@ function onSliderDrag(e: MouseEvent, index: number) {
       <button
         v-for="(_, name) in presets"
         :key="name"
-        class="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors"
+        class="fx-noise px-2.5 py-1 fx-depth rounded-field text-[11px] font-medium transition-colors"
         :class="
           player.equalizerPreset === name
-            ? 'bg-accent-base text-white'
-            : 'bg-bg-overlay text-fg-muted hover:bg-bg-hover'
+            ? 'bg-primary text-primary-content'
+            : 'bg-base-300 text-base-content/70 hover:bg-base-content/10'
         "
         @click="selectPreset(name)"
       >
@@ -99,19 +99,19 @@ function onSliderDrag(e: MouseEvent, index: number) {
     <div class="flex gap-2 h-48">
       <div v-for="(label, i) in bandLabels" :key="i" class="flex-1 flex flex-col items-center">
         <span
-          class="text-[10px] text-fg-muted font-mono tabular-nums mb-1.5 h-4 leading-4 select-none"
+          class="text-[10px] text-base-content/70 font-mono tabular-nums mb-1.5 h-4 leading-4 select-none"
         >
           {{ player.equalizerBands[i] > 0 ? '+' : '' }}{{ player.equalizerBands[i] }}
         </span>
         <div class="flex-1 w-full relative cursor-pointer" @mousedown="onSliderDrag($event, i)">
           <!-- track background — wider, high contrast -->
           <div
-            class="absolute w-1.25 h-full rounded-full bg-bg-active"
+            class="absolute w-1.25 h-full rounded-full bg-base-content/20"
             style="left: 50%; transform: translateX(-50%)"
           />
           <!-- filled portion from center -->
           <div
-            class="absolute w-1.25 rounded-full bg-accent-base"
+            class="absolute w-1.25 rounded-full bg-primary"
             style="left: 50%; transform: translateX(-50%)"
             :style="
               player.equalizerBands[i] >= 0
@@ -124,12 +124,12 @@ function onSliderDrag(e: MouseEvent, index: number) {
           />
           <!-- center line -->
           <div
-            class="absolute w-3 h-0.5 rounded-full bg-fg-faint/70"
+            class="absolute w-3 h-0.5 rounded-full bg-base-content/70"
             style="left: 50%; transform: translateX(-50%); top: 50%"
           />
           <!-- thumb -->
           <div
-            class="absolute w-4 h-4 rounded-full bg-accent-base border-2 border-white shadow-md transition-all duration-75"
+            class="absolute w-4 h-4 rounded-full bg-primary border-2 border-white shadow-md transition-all duration-75"
             :style="{
               left: '50%',
               top: ((12 - player.equalizerBands[i]) / 24) * 100 + '%',
@@ -137,7 +137,9 @@ function onSliderDrag(e: MouseEvent, index: number) {
             }"
           />
         </div>
-        <span class="text-[9px] text-fg-muted mt-1.5 h-3 leading-3 select-none">{{ label }}</span>
+        <span class="text-[9px] text-base-content/70 mt-1.5 h-3 leading-3 select-none">{{
+          label
+        }}</span>
       </div>
     </div>
   </div>

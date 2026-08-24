@@ -33,13 +33,15 @@ function browserUrl(item: SourceItem): string {
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
       @click.self="emit('close')"
     >
-      <div class="w-full max-w-3xl max-h-full flex flex-col rounded-2xl bg-bg-surface border border-border-default shadow-2xl overflow-hidden">
-        <div class="flex items-center gap-3 px-4 py-3 border-b border-border-default">
+      <div
+        class="w-full max-w-3xl max-h-full flex flex-col rounded-box bg-base-100 border border-base-300 shadow-2xl overflow-hidden"
+      >
+        <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
           <h2 class="text-sm font-medium truncate flex-1">
             {{ props.item.title || $t('sources.untitled') }}
           </h2>
           <button
-            class="p-1.5 rounded-lg text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-colors"
+            class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
             :aria-label="$t('common.close')"
             @click="emit('close')"
           >
@@ -52,14 +54,14 @@ function browserUrl(item: SourceItem): string {
             v-if="props.item.type === 'image' && mediaUrl(props.item)"
             :src="mediaUrl(props.item)"
             :alt="props.item.title"
-            class="max-w-full max-h-full object-contain rounded-lg"
+            class="max-w-full max-h-full object-contain rounded-field"
           />
           <video
             v-else-if="props.item.type === 'video' && mediaUrl(props.item)"
             :src="mediaUrl(props.item)"
             controls
             autoplay
-            class="max-w-full max-h-full rounded-lg bg-black"
+            class="max-w-full max-h-full rounded-field bg-black"
           />
           <audio
             v-else-if="props.item.type === 'audio' && mediaUrl(props.item)"
@@ -71,7 +73,7 @@ function browserUrl(item: SourceItem): string {
           <div v-else-if="props.item.playerUrl" class="w-full">
             <iframe
               :src="props.item.playerUrl"
-              class="w-full aspect-video rounded-lg bg-black border-0"
+              class="w-full aspect-video rounded-field bg-black border-0"
               allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
               sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-downloads"
             />
@@ -81,15 +83,15 @@ function browserUrl(item: SourceItem): string {
             :href="browserUrl(props.item)"
             target="_blank"
             rel="noreferrer"
-            class="text-sm text-accent-base hover:underline flex items-center gap-1"
+            class="text-sm text-primary hover:underline flex items-center gap-1"
           >
             {{ $t('sources.openInBrowser') }}
             <ExternalLink :size="14" />
           </a>
         </div>
 
-        <div class="flex items-center gap-2 px-4 py-3 border-t border-border-default">
-          <span v-if="props.item.subtitle" class="text-xs text-fg-faint flex-1 truncate">
+        <div class="flex items-center gap-2 px-4 py-3 border-t border-base-300">
+          <span v-if="props.item.subtitle" class="text-xs text-base-content/50 flex-1 truncate">
             {{ props.item.subtitle }}
           </span>
           <a
@@ -97,7 +99,7 @@ function browserUrl(item: SourceItem): string {
             :href="browserUrl(props.item)"
             target="_blank"
             rel="noreferrer"
-            class="text-xs text-fg-muted hover:text-fg-base hover:underline flex items-center gap-1"
+            class="text-xs text-base-content/70 hover:text-base-content hover:underline flex items-center gap-1"
           >
             {{ $t('sources.openInBrowser') }}
             <ExternalLink :size="12" />
@@ -105,7 +107,7 @@ function browserUrl(item: SourceItem): string {
           <span v-else class="flex-1" />
           <button
             v-if="props.downloadable"
-            class="px-3 py-1.5 rounded-lg bg-accent-base text-white text-xs font-medium hover:bg-accent-strong transition-colors flex items-center gap-1.5"
+            class="fx-noise px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors flex items-center gap-1.5"
             :disabled="!hasDownloadUrl(props.item)"
             @click="emit('download', props.item)"
           >

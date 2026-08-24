@@ -51,7 +51,7 @@ const emit = defineEmits<{
     @click.stop
   >
     <button
-      class="p-1.5 rounded-lg bg-bg-overlay/80 text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
+      class="fx-noise p-1.5 fx-depth rounded-field bg-base-300 text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
       title="Close (Esc)"
       @click="emit('close')"
     >
@@ -59,14 +59,14 @@ const emit = defineEmits<{
     </button>
     <div class="flex-1" />
 
-    <div class="flex flex-col items-center gap-1 bg-bg-overlay/80 rounded-xl px-1.5 py-2">
+    <div class="flex flex-col items-center gap-1 bg-neutral rounded-box px-1.5 py-2">
       <div class="relative">
         <button
-          class="p-1.5 rounded-lg transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             slideshowActive
-              ? 'text-accent-base bg-accent-ghost'
-              : 'text-fg-muted hover:text-fg-base hover:bg-bg-hover'
+              ? 'text-primary bg-primary/10'
+              : 'text-base-content/70 hover:text-base-content hover:bg-base-content/10'
           "
           :title="slideshowActive ? 'Stop slideshow (Space)' : 'Start slideshow (Space)'"
           @click="emit('toggleSlideshow')"
@@ -75,11 +75,11 @@ const emit = defineEmits<{
           <span v-show="slideshowActive"><Pause :size="16" class="pointer-events-none" /></span>
         </button>
         <button
-          class="p-1 rounded-lg transition-colors block mx-auto mt-0.5"
+          class="fx-noise p-1 fx-depth rounded-field transition-colors block mx-auto mt-0.5"
           :class="
             settingsOpen
-              ? 'text-accent-base bg-accent-ghost'
-              : 'text-fg-muted hover:text-fg-base hover:bg-bg-hover'
+              ? 'text-primary bg-primary/10'
+              : 'text-base-content/70 hover:text-base-content hover:bg-base-content/10'
           "
           title="Slideshow settings"
           @click="emit('toggleSettings')"
@@ -106,39 +106,39 @@ const emit = defineEmits<{
       </div>
 
       <button
-        class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
+        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
         title="Fit to screen"
         @click="emit('fitToScreen')"
       >
         <Maximize2 :size="16" class="pointer-events-none" />
       </button>
       <button
-        class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
+        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
         title="Zoom In (+)"
         @click="emit('zoomIn')"
       >
         <ZoomIn :size="16" class="pointer-events-none" />
       </button>
       <button
-        class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
+        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
         title="Zoom Out (-)"
         @click="emit('zoomOut')"
       >
         <ZoomOut :size="16" class="pointer-events-none" />
       </button>
       <button
-        class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
+        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
         title="Rotate (R)"
         @click="emit('rotate')"
       >
         <RotateCw :size="16" class="pointer-events-none" />
       </button>
       <button
-        class="p-1.5 rounded-lg transition-colors"
+        class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
         :class="
           fullscreen
-            ? 'text-accent-base bg-accent-ghost'
-            : 'text-fg-muted hover:text-fg-base hover:bg-bg-hover'
+            ? 'text-primary bg-primary/10'
+            : 'text-base-content/70 hover:text-base-content hover:bg-base-content/10'
         "
         title="Fullscreen (F)"
         @click="emit('toggleFullscreen')"

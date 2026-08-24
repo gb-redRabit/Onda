@@ -39,7 +39,7 @@ async function uploadSubtitles() {
   <div ref="container" class="relative inline-flex items-center">
     <button
       class="text-white/50 hover:text-white transition-colors"
-      :class="{ 'text-accent-base!': player.activeSubtitleId }"
+      :class="{ 'text-primary!': player.activeSubtitleId }"
       @click="isOpen = !isOpen"
     >
       <Subtitles :size="16" />
@@ -48,16 +48,18 @@ async function uploadSubtitles() {
     <Transition name="menu-fade">
       <div
         v-if="isOpen"
-        class="absolute bottom-full right-0 mb-2 w-60 bg-bg-elevated border border-border-subtle rounded-xl shadow-2xl shadow-black/50 py-1.5 z-50"
+        class="absolute bottom-full right-0 mb-2 w-60 bg-base-100 border border-base-300 rounded-box shadow-2xl shadow-black/50 py-1.5 z-50"
       >
-        <div class="px-3 py-1.5 text-[10px] text-fg-faint font-medium uppercase tracking-wider">
+        <div
+          class="px-3 py-1.5 text-[10px] text-base-content/50 font-medium uppercase tracking-wider"
+        >
           {{ $t('subtitles.title') }}
         </div>
 
         <button
           v-if="player.subtitleTracks.length > 0"
-          class="w-full px-3 py-1.5 text-left text-sm hover:bg-accent-ghost hover:text-accent-base transition-colors flex items-center gap-2"
-          :class="{ 'text-accent-base': !player.activeSubtitleId }"
+          class="w-full px-3 py-1.5 text-left text-sm hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
+          :class="{ 'text-primary': !player.activeSubtitleId }"
           @click="selectTrack(null)"
         >
           <Check v-if="!player.activeSubtitleId" :size="14" class="shrink-0" />
@@ -67,19 +69,19 @@ async function uploadSubtitles() {
 
         <div
           v-if="player.subtitleTracks.some((t) => t.source === 'embedded')"
-          class="border-t border-border-default my-1 mx-2"
+          class="border-t border-base-300 my-1 mx-2"
         />
         <div
           v-if="player.subtitleTracks.some((t) => t.source === 'embedded')"
-          class="px-3 py-1 text-[10px] text-fg-faint/60"
+          class="px-3 py-1 text-[10px] text-base-content/60"
         >
           {{ $t('subtitles.embedded') }}
         </div>
         <button
           v-for="track in player.subtitleTracks.filter((t) => t.source === 'embedded')"
           :key="track.id"
-          class="w-full px-3 py-1.5 text-left text-sm hover:bg-accent-ghost hover:text-accent-base transition-colors flex items-center gap-2"
-          :class="{ 'text-accent-base': player.activeSubtitleId === track.id }"
+          class="w-full px-3 py-1.5 text-left text-sm hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
+          :class="{ 'text-primary': player.activeSubtitleId === track.id }"
           @click="selectTrack(track.id)"
         >
           <Check v-if="player.activeSubtitleId === track.id" :size="14" class="shrink-0" />
@@ -89,19 +91,19 @@ async function uploadSubtitles() {
 
         <div
           v-if="player.subtitleTracks.some((t) => t.source === 'external')"
-          class="border-t border-border-default my-1 mx-2"
+          class="border-t border-base-300 my-1 mx-2"
         />
         <div
           v-if="player.subtitleTracks.some((t) => t.source === 'external')"
-          class="px-3 py-1 text-[10px] text-fg-faint/60"
+          class="px-3 py-1 text-[10px] text-base-content/60"
         >
           {{ $t('subtitles.fromFolder') }}
         </div>
         <button
           v-for="track in player.subtitleTracks.filter((t) => t.source === 'external')"
           :key="track.id"
-          class="w-full px-3 py-1.5 text-left text-sm hover:bg-accent-ghost hover:text-accent-base transition-colors flex items-center gap-2"
-          :class="{ 'text-accent-base': player.activeSubtitleId === track.id }"
+          class="w-full px-3 py-1.5 text-left text-sm hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
+          :class="{ 'text-primary': player.activeSubtitleId === track.id }"
           @click="selectTrack(track.id)"
         >
           <Check v-if="player.activeSubtitleId === track.id" :size="14" class="shrink-0" />
@@ -111,19 +113,19 @@ async function uploadSubtitles() {
 
         <div
           v-if="player.subtitleTracks.some((t) => t.source === 'custom')"
-          class="border-t border-border-default my-1 mx-2"
+          class="border-t border-base-300 my-1 mx-2"
         />
         <div
           v-if="player.subtitleTracks.some((t) => t.source === 'custom')"
-          class="px-3 py-1 text-[10px] text-fg-faint/60"
+          class="px-3 py-1 text-[10px] text-base-content/60"
         >
           {{ $t('subtitles.custom') }}
         </div>
         <button
           v-for="track in player.subtitleTracks.filter((t) => t.source === 'custom')"
           :key="track.id"
-          class="w-full px-3 py-1.5 text-left text-sm hover:bg-accent-ghost hover:text-accent-base transition-colors flex items-center gap-2"
-          :class="{ 'text-accent-base': player.activeSubtitleId === track.id }"
+          class="w-full px-3 py-1.5 text-left text-sm hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
+          :class="{ 'text-primary': player.activeSubtitleId === track.id }"
           @click="selectTrack(track.id)"
         >
           <Check v-if="player.activeSubtitleId === track.id" :size="14" class="shrink-0" />
@@ -131,9 +133,9 @@ async function uploadSubtitles() {
           <span class="truncate">{{ track.label }}</span>
         </button>
 
-        <div class="border-t border-border-default my-1 mx-2" />
+        <div class="border-t border-base-300 my-1 mx-2" />
         <button
-          class="w-full px-3 py-1.5 text-left text-sm text-accent-base hover:bg-accent-ghost transition-colors flex items-center gap-2"
+          class="w-full px-3 py-1.5 text-left text-sm text-primary hover:bg-primary/10 transition-colors flex items-center gap-2"
           @click="uploadSubtitles"
         >
           <Upload :size="14" class="shrink-0" />

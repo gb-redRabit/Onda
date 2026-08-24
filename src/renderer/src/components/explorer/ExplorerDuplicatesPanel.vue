@@ -89,16 +89,14 @@ function revealDupFile(path: string) {
 <template>
   <div
     v-if="open"
-    class="absolute right-0 top-0 bottom-0 w-80 max-w-[85%] z-20 flex flex-col bg-bg-surface border-l border-border-default shadow-2xl"
+    class="absolute right-0 top-0 bottom-0 w-80 max-w-[85%] z-20 flex flex-col bg-base-100 border-l border-base-300 shadow-2xl"
   >
-    <div
-      class="flex items-center justify-between px-3 py-2.5 border-b border-border-default shrink-0"
-    >
-      <h3 class="text-xs font-semibold text-fg-base flex items-center gap-2">
-        <Copy :size="14" class="text-accent-base" /> {{ $t('explorer.duplicates') }}
+    <div class="flex items-center justify-between px-3 py-2.5 border-b border-base-300 shrink-0">
+      <h3 class="text-xs font-semibold text-base-content flex items-center gap-2">
+        <Copy :size="14" class="text-primary" /> {{ $t('explorer.duplicates') }}
       </h3>
       <button
-        class="p-1 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+        class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
         @click="emit('update:open', false)"
       >
         <X :size="14" />
@@ -107,7 +105,7 @@ function revealDupFile(path: string) {
 
     <div
       v-if="dupLoading"
-      class="flex flex-col items-center justify-center py-10 text-fg-faint gap-2"
+      class="flex flex-col items-center justify-center py-10 text-base-content/50 gap-2"
     >
       <RotateCw :size="20" class="animate-spin" />
       <p class="text-xs">{{ $t('explorer.duplicatesScanning') }}</p>
@@ -115,31 +113,31 @@ function revealDupFile(path: string) {
 
     <div
       v-else-if="dupGroups.length === 0"
-      class="flex flex-col items-center justify-center py-10 text-fg-faint gap-2"
+      class="flex flex-col items-center justify-center py-10 text-base-content/50 gap-2"
     >
       <Check :size="24" class="opacity-40" />
       <p class="text-xs">{{ $t('explorer.duplicatesNone') }}</p>
     </div>
 
     <div v-else class="flex-1 overflow-y-auto p-2 space-y-2">
-      <p class="text-[11px] text-fg-muted px-1">
+      <p class="text-[11px] text-base-content/70 px-1">
         {{ $t('explorer.duplicatesFound', { n: dupGroups.length }) }}
       </p>
       <div
         v-for="group in dupGroups"
         :key="group.original"
-        class="rounded-lg border border-border-default overflow-hidden"
+        class="rounded-field border border-base-300 overflow-hidden"
       >
         <div
-          class="flex items-center gap-2 px-2.5 py-1.5 bg-bg-elevated border-b border-border-default cursor-pointer hover:bg-bg-hover transition-colors"
+          class="flex items-center gap-2 px-2.5 py-1.5 bg-base-100 border-b border-base-300 cursor-pointer hover:bg-base-content/10 transition-colors"
           @click="revealDupFile(group.original)"
         >
-          <FileText :size="13" class="text-accent-base shrink-0" />
-          <span class="text-xs font-medium text-fg-base truncate flex-1">{{
+          <FileText :size="13" class="text-primary shrink-0" />
+          <span class="text-xs font-medium text-base-content truncate flex-1">{{
             basenameOf(group.original)
           }}</span>
           <span
-            class="text-[10px] px-1.5 py-0.5 rounded bg-accent-base/15 text-accent-base font-semibold shrink-0"
+            class="text-[10px] px-1.5 py-0.5 rounded-field bg-primary/15 text-primary font-semibold shrink-0"
             >{{ $t('explorer.duplicatesOriginal') }}</span
           >
         </div>
@@ -147,16 +145,16 @@ function revealDupFile(path: string) {
           <div
             v-for="(dup, di) in group.duplicates"
             :key="dup"
-            class="flex items-center gap-2 px-2.5 py-1.5 hover:bg-bg-hover transition-colors cursor-pointer"
+            class="flex items-center gap-2 px-2.5 py-1.5 hover:bg-base-content/10 transition-colors cursor-pointer"
             @click="revealDupFile(dup)"
           >
             <input
               type="checkbox"
-              class="accent-accent-base shrink-0"
+              class="accent-primary shrink-0"
               :checked="dupSelected.has(dup)"
               @click.stop="toggleDupSelection(dup)"
             />
-            <span class="text-xs text-fg-base truncate flex-1">{{ dupName(group, di) }}</span>
+            <span class="text-xs text-base-content truncate flex-1">{{ dupName(group, di) }}</span>
           </div>
         </div>
       </div>
@@ -164,16 +162,16 @@ function revealDupFile(path: string) {
 
     <div
       v-if="dupGroups.length > 0"
-      class="flex items-center gap-2 px-3 py-2.5 border-t border-border-default shrink-0"
+      class="flex items-center gap-2 px-3 py-2.5 border-t border-base-300 shrink-0"
     >
       <button
-        class="flex-1 px-2 py-1.5 rounded-lg text-[11px] text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
+        class="fx-noise flex-1 px-2 py-1.5 fx-depth rounded-field text-[11px] text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
         @click="selectAllDuplicates"
       >
         {{ $t('explorer.duplicatesSelectAll') }}
       </button>
       <button
-        class="flex-1 px-2 py-1.5 rounded-lg text-[11px] bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors flex items-center justify-center gap-1 disabled:opacity-40 disabled:pointer-events-none"
+        class="fx-noise flex-1 px-2 py-1.5 fx-depth rounded-field text-[11px] bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors flex items-center justify-center gap-1 disabled:opacity-40 disabled:pointer-events-none"
         :disabled="dupSelected.size === 0"
         @click="deleteSelectedDuplicates"
       >

@@ -37,23 +37,25 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="absolute right-full mr-2 top-0 bg-bg-elevated border border-border-default rounded-lg shadow-xl p-3 min-w-55 z-20"
+    class="absolute right-full mr-2 top-0 bg-base-100 border border-base-300 rounded-field shadow-xl p-3 min-w-55 z-20"
     @click.stop
   >
-    <div class="text-xs font-semibold text-fg-base mb-2 tracking-wide uppercase">Slideshow</div>
+    <div class="text-xs font-semibold text-base-content mb-2 tracking-wide uppercase">
+      Slideshow
+    </div>
 
-    <div class="text-[11px] text-fg-muted mb-1 flex items-center gap-1">
+    <div class="text-[11px] text-base-content/70 mb-1 flex items-center gap-1">
       <Clock :size="11" class="pointer-events-none" /> Interval
     </div>
     <div class="flex flex-wrap gap-1 mb-2">
       <button
         v-for="ms in SLIDESHOW_INTERVALS"
         :key="ms"
-        class="px-2 py-1 text-xs rounded-md transition-colors"
+        class="fx-noise px-2 py-1 text-xs fx-depth rounded-field transition-colors"
         :class="
           interval === ms
-            ? 'bg-accent-base text-white'
-            : 'bg-bg-hover text-fg-muted hover:text-fg-base'
+            ? 'bg-primary text-primary-content'
+            : 'bg-base-content/10 text-base-content/70 hover:text-base-content'
         "
         @click="emit('update:interval', ms)"
       >
@@ -61,18 +63,18 @@ const emit = defineEmits<{
       </button>
     </div>
 
-    <div class="text-[11px] text-fg-muted mb-1 flex items-center gap-1">
+    <div class="text-[11px] text-base-content/70 mb-1 flex items-center gap-1">
       <GripHorizontal :size="11" class="pointer-events-none" /> Transition
     </div>
     <div class="flex flex-wrap gap-1 mb-2">
       <button
         v-for="type in TRANSITION_TYPES"
         :key="type"
-        class="px-2 py-1 text-xs rounded-md capitalize transition-colors"
+        class="fx-noise px-2 py-1 text-xs fx-depth rounded-field capitalize transition-colors"
         :class="
           transitionType === type
-            ? 'bg-accent-base text-white'
-            : 'bg-bg-hover text-fg-muted hover:text-fg-base'
+            ? 'bg-primary text-primary-content'
+            : 'bg-base-content/10 text-base-content/70 hover:text-base-content'
         "
         @click="emit('update:transitionType', type)"
       >
@@ -80,18 +82,18 @@ const emit = defineEmits<{
       </button>
     </div>
 
-    <div class="text-[11px] text-fg-muted mb-1 flex items-center gap-1">
+    <div class="text-[11px] text-base-content/70 mb-1 flex items-center gap-1">
       <Clock :size="11" class="pointer-events-none" /> Duration
     </div>
     <div class="flex flex-wrap gap-1 mb-2">
       <button
         v-for="d in TRANSITION_DURATIONS"
         :key="d"
-        class="px-2 py-1 text-xs rounded-md transition-colors"
+        class="fx-noise px-2 py-1 text-xs fx-depth rounded-field transition-colors"
         :class="
           transitionDuration === d
-            ? 'bg-accent-base text-white'
-            : 'bg-bg-hover text-fg-muted hover:text-fg-base'
+            ? 'bg-primary text-primary-content'
+            : 'bg-base-content/10 text-base-content/70 hover:text-base-content'
         "
         @click="emit('update:transitionDuration', d)"
       >
@@ -100,12 +102,12 @@ const emit = defineEmits<{
     </div>
 
     <div class="flex items-center justify-between mb-1">
-      <div class="text-[11px] text-fg-muted flex items-center gap-1">
+      <div class="text-[11px] text-base-content/70 flex items-center gap-1">
         <Repeat :size="11" class="pointer-events-none" /> Loop
       </div>
       <button
         class="w-7 h-4 rounded-full transition-colors relative"
-        :class="loop ? 'bg-accent-base' : 'bg-bg-hover'"
+        :class="loop ? 'bg-primary' : 'bg-base-content/10'"
         @click="emit('update:loop', !loop)"
       >
         <div
@@ -116,12 +118,12 @@ const emit = defineEmits<{
     </div>
 
     <div class="flex items-center justify-between mb-1">
-      <div class="text-[11px] text-fg-muted flex items-center gap-1">
+      <div class="text-[11px] text-base-content/70 flex items-center gap-1">
         <Shuffle :size="11" class="pointer-events-none" /> Shuffle
       </div>
       <button
         class="w-7 h-4 rounded-full transition-colors relative"
-        :class="shuffle ? 'bg-accent-base' : 'bg-bg-hover'"
+        :class="shuffle ? 'bg-primary' : 'bg-base-content/10'"
         @click="emit('update:shuffle', !shuffle)"
       >
         <div
@@ -132,12 +134,12 @@ const emit = defineEmits<{
     </div>
 
     <div class="flex items-center justify-between mb-1">
-      <div class="text-[11px] text-fg-muted flex items-center gap-1">
+      <div class="text-[11px] text-base-content/70 flex items-center gap-1">
         <Maximize2 :size="11" class="pointer-events-none" /> Ken Burns
       </div>
       <button
         class="w-7 h-4 rounded-full transition-colors relative"
-        :class="kenBurns ? 'bg-accent-base' : 'bg-bg-hover'"
+        :class="kenBurns ? 'bg-primary' : 'bg-base-content/10'"
         @click="emit('update:kenBurns', !kenBurns)"
       >
         <div
@@ -147,15 +149,15 @@ const emit = defineEmits<{
       </button>
     </div>
 
-    <div class="border-t border-border-default/20 my-2" />
+    <div class="border-t border-base-300/20 my-2" />
 
     <div class="flex items-center justify-between">
-      <div class="text-[11px] text-fg-muted flex items-center gap-1">
+      <div class="text-[11px] text-base-content/70 flex items-center gap-1">
         <Maximize2 :size="11" class="pointer-events-none" /> Auto-hide
       </div>
       <button
         class="w-7 h-4 rounded-full transition-colors relative"
-        :class="autoHide ? 'bg-accent-base' : 'bg-bg-hover'"
+        :class="autoHide ? 'bg-primary' : 'bg-base-content/10'"
         @click="emit('update:autoHide', !autoHide)"
       >
         <div
@@ -165,9 +167,9 @@ const emit = defineEmits<{
       </button>
     </div>
 
-    <div class="text-[10px] text-fg-muted/60 mt-1.5 leading-relaxed">
-      <span class="text-fg-muted/80 font-semibold">H</span> toggle UI &middot;
-      <span class="text-fg-muted/80 font-semibold">Space</span> stop
+    <div class="text-[10px] text-base-content/60 mt-1.5 leading-relaxed">
+      <span class="text-base-content/80 font-semibold">H</span> toggle UI &middot;
+      <span class="text-base-content/80 font-semibold">Space</span> stop
     </div>
   </div>
 </template>

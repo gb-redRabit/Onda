@@ -45,7 +45,9 @@ export function buildSourceUrl(
 ): string {
   const base = source.baseUrl.replace(/\/+$/, '');
   const path = resolvePath(endpoint.path.trim(), opts?.context);
-  const full = /^https?:\/\//i.test(path) ? path : base + (path.startsWith('/') ? path : `/${path}`);
+  const full = /^https?:\/\//i.test(path)
+    ? path
+    : base + (path.startsWith('/') ? path : `/${path}`);
   if (endpoint.method === 'POST') return full;
   const usp = new URLSearchParams();
   for (const [k, v] of Object.entries(endpoint.params || {})) usp.set(k, v);

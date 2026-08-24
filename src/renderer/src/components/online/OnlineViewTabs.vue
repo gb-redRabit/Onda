@@ -22,7 +22,7 @@ const tabs = computed(() => [
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border-default">
+  <div class="flex flex-wrap items-center justify-between gap-3 border-b border-base-300">
     <div class="flex gap-1 -mb-px">
       <button
         v-for="tab in tabs"
@@ -31,8 +31,8 @@ const tabs = computed(() => [
         class="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors border-b-2"
         :class="
           modelValue === tab.key
-            ? 'border-accent-base text-fg-base'
-            : 'border-transparent text-fg-faint hover:text-fg-muted'
+            ? 'border-primary text-base-content'
+            : 'border-transparent text-base-content/50 hover:text-base-content/70'
         "
         @click="emit('update:modelValue', tab.key)"
       >

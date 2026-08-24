@@ -36,38 +36,13 @@ async function setLocale(loc: string) {
     /* noop */
   }
 }
-
-const themes: {
-  id: typeof settings.appearance.theme;
-  labelKey?: string;
-  label: string;
-  bg: string;
-  fg: string;
-}[] = [
-  { id: 'dark', labelKey: 'settings.dark', label: 'Ciemny', bg: '#0f0f17', fg: '#e8e8f0' },
-  { id: 'light', labelKey: 'settings.light', label: 'Jasny', bg: '#f8f8fa', fg: '#1a1a2e' },
-  { id: 'midnight', labelKey: 'settings.midnight', label: 'Midnight', bg: '#0d1117', fg: '#c9d1d9' },
-  { id: 'spotify', labelKey: 'settings.spotify', label: 'Spotify', bg: '#121212', fg: '#b3b3b3' },
-  { id: 'custom', labelKey: 'settings.custom', label: 'Własny', bg: '#8b7cf0', fg: '#ffffff' }
-];
-
-const accentColors = [
-  '#8b7cf0',
-  '#3b82f6',
-  '#34d399',
-  '#fbbf24',
-  '#f87171',
-  '#ec4899',
-  '#8b5cf6',
-  '#06b6d4'
-];
 </script>
 
 <template>
   <SettingsPanel :title="$t('settings.appearanceSection')">
     <template #actions>
       <button
-        class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover hover:text-fg-base transition-colors"
+        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors"
         :title="$t('settings.reset')"
         @click="settings.resetToDefaults"
       >
@@ -76,88 +51,25 @@ const accentColors = [
     </template>
 
     <SettingsCard>
-      <SettingsSectionTitle :title="$t('settings.theme')" />
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <button
-          v-for="th in themes"
-          :key="th.id"
-          class="p-3 rounded-xl border-2 transition-all text-center"
-          :class="
-            settings.appearance.theme === th.id
-              ? 'border-accent-base shadow-lg shadow-accent-base/20'
-              : 'border-border-default hover:border-border-subtle'
-          "
-          @click="settings.updateAppearance({ theme: th.id })"
-        >
-          <div
-            class="w-full h-8 rounded-lg mb-2 flex items-center justify-center"
-            :style="{
-              backgroundColor:
-                th.id === 'custom' ? settings.appearance.customBackground || '#8b7cf0' : th.bg
-            }"
-          >
-            <div class="w-6 h-1 rounded-full" style="background: #8b7cf0" />
-          </div>
-          <span class="text-xs text-fg-muted">{{ th.labelKey ? $t(th.labelKey) : th.label }}</span>
-        </button>
-      </div>
-    </SettingsCard>
-
-    <SettingsCard v-if="settings.appearance.theme === 'custom'">
-      <SettingsSectionTitle :title="$t('settings.customBackground')" />
-      <div class="flex items-center gap-4">
-        <input
-          type="color"
-          class="w-12 h-10 rounded-lg bg-bg-base border border-border-default cursor-pointer"
-          :value="settings.appearance.customBackground || '#0f0f17'"
-          @input="
-            settings.updateAppearance({
-              customBackground: ($event.target as HTMLInputElement).value
-            })
-          "
-        />
-        <span class="text-sm font-mono text-fg-muted">
-          {{ settings.appearance.customBackground || '#0f0f17' }}
-        </span>
-      </div>
-    </SettingsCard>
-
-    <SettingsCard>
       <SettingsSectionTitle :title="$t('settings.language')" />
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <button
           v-for="lang in languages"
           :key="lang.id"
-          class="flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left"
+          class="flex items-center gap-3 p-4 fx-depth rounded-box fx-noise border-2 transition-all text-left"
           :class="
             settings.appearance.locale === lang.id
-              ? 'border-accent-base shadow-lg shadow-accent-base/20'
-              : 'border-border-default hover:border-border-subtle'
+              ? 'border-primary shadow-lg shadow-primary/20'
+              : 'border-base-300 hover:border-base-300'
           "
           @click="setLocale(lang.id)"
         >
           <span class="text-2xl">{{ lang.flag }}</span>
           <div>
             <div class="text-sm font-medium">{{ lang.native }}</div>
-            <div class="text-xs text-fg-muted">{{ lang.label }}</div>
+            <div class="text-xs text-base-content/70">{{ lang.label }}</div>
           </div>
         </button>
-      </div>
-    </SettingsCard>
-
-    <SettingsCard>
-      <SettingsSectionTitle :title="$t('settings.accentColor')" />
-      <div class="flex flex-wrap gap-2">
-        <button
-          v-for="c in accentColors"
-          :key="c"
-          class="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110"
-          :class="
-            settings.appearance.accentColor === c ? 'border-white scale-110' : 'border-transparent'
-          "
-          :style="{ backgroundColor: c }"
-          @click="settings.updateAppearance({ accentColor: c })"
-        />
       </div>
     </SettingsCard>
 
@@ -180,25 +92,6 @@ const accentColors = [
     </SettingsCard>
 
     <SettingsCard>
-      <SettingsSectionTitle :title="$t('settings.density')" />
-      <div class="flex flex-wrap gap-2">
-        <button
-          v-for="d in ['compact', 'comfortable', 'spacious'] as const"
-          :key="d"
-          class="px-4 py-2 rounded-xl text-sm capitalize border transition-colors"
-          :class="
-            settings.appearance.density === d
-              ? 'border-accent-base bg-accent-ghost text-accent-base font-medium'
-              : 'border-border-default text-fg-muted hover:bg-bg-hover'
-          "
-          @click="settings.updateAppearance({ density: d })"
-        >
-          {{ $t('settings.' + d) }}
-        </button>
-      </div>
-    </SettingsCard>
-
-    <SettingsCard>
       <SettingsSectionTitle :title="$t('settings.sidebarPosition')" />
       <SettingsPositionGrid
         :model-value="settings.appearance.sidebarPosition"
@@ -212,12 +105,11 @@ const accentColors = [
 
     <SettingsCard>
       <SettingsSectionTitle :title="$t('settings.sidebarSections')" />
-      <div class="divide-y divide-border-default">
+      <div class="divide-y divide-base-300">
         <SettingsRow :label="$t('library.playlists')">
           <input
             type="checkbox"
             :checked="settings.appearance.showPlaylists"
-            class="w-4 h-4 rounded accent-accent-base"
             @change="
               settings.updateAppearance({
                 showPlaylists: ($event.target as HTMLInputElement).checked
@@ -229,7 +121,6 @@ const accentColors = [
           <input
             type="checkbox"
             :checked="settings.appearance.showAlbums"
-            class="w-4 h-4 rounded accent-accent-base"
             @change="
               settings.updateAppearance({ showAlbums: ($event.target as HTMLInputElement).checked })
             "
@@ -239,7 +130,6 @@ const accentColors = [
           <input
             type="checkbox"
             :checked="settings.appearance.sidebarCollapsed"
-            class="w-4 h-4 rounded accent-accent-base"
             @change="
               settings.updateAppearance({
                 sidebarCollapsed: ($event.target as HTMLInputElement).checked

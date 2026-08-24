@@ -4,7 +4,7 @@ defineProps<{ title: string; description?: string }>();
 
 <template>
   <div>
-    <h3 class="text-sm font-semibold text-fg-base">{{ title }}</h3>
-    <p v-if="description" class="mt-0.5 text-xs text-fg-faint">{{ description }}</p>
+    <h3 class="text-sm font-semibold text-base-content">{{ title }}</h3>
+    <p v-if="description" class="mt-0.5 text-xs text-base-content/50">{{ description }}</p>
   </div>
 </template>

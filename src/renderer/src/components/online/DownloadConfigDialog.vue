@@ -271,26 +271,26 @@ function onProfileSelect(e: Event) {
       @click.self="close"
     >
       <div
-        class="bg-bg-surface border border-border-default rounded-2xl w-full max-w-3xl max-h-[92vh] shadow-2xl overflow-hidden flex flex-col"
+        class="bg-base-100 border border-base-300 rounded-box w-full max-w-3xl max-h-[92vh] shadow-2xl overflow-hidden flex flex-col"
       >
         <!-- Header -->
-        <div class="flex items-center gap-3 px-5 py-4 border-b border-border-default shrink-0">
+        <div class="flex items-center gap-3 px-5 py-4 border-b border-base-300 shrink-0">
           <div
             v-if="props.thumbnail"
-            class="w-12 h-8 rounded-lg overflow-hidden shrink-0 bg-bg-elevated"
+            class="w-12 h-8 rounded-field overflow-hidden shrink-0 bg-base-100"
           >
             <img :src="props.thumbnail" :alt="props.title" class="w-full h-full object-cover" />
           </div>
           <div class="min-w-0 flex-1">
-            <h3 class="text-sm font-semibold text-fg-base truncate">{{ props.title }}</h3>
-            <p class="text-xs text-fg-faint truncate">
+            <h3 class="text-sm font-semibold text-base-content truncate">{{ props.title }}</h3>
+            <p class="text-xs text-base-content/50 truncate">
               <span v-if="props.channelTitle">{{ props.channelTitle }}</span>
               <span v-if="props.channelTitle && props.playlistTitle"> · </span>
               <span v-if="props.playlistTitle">{{ props.playlistTitle }}</span>
             </p>
           </div>
           <button
-            class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+            class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
             @click="close"
           >
             <X :size="16" />
@@ -303,7 +303,7 @@ function onProfileSelect(e: Event) {
             <!-- Left: preview -->
             <div class="space-y-4">
               <div
-                class="aspect-video rounded-2xl overflow-hidden bg-bg-elevated border border-border-default"
+                class="aspect-video rounded-box overflow-hidden bg-base-100 border border-base-300"
               >
                 <img
                   v-if="props.thumbnail"
@@ -311,13 +311,18 @@ function onProfileSelect(e: Event) {
                   :alt="props.title"
                   class="w-full h-full object-cover"
                 />
-                <div v-else class="w-full h-full flex items-center justify-center text-fg-faint">
+                <div
+                  v-else
+                  class="w-full h-full flex items-center justify-center text-base-content/50"
+                >
                   <Image :size="32" />
                 </div>
               </div>
-              <div class="p-3 rounded-xl bg-bg-elevated border border-border-default">
-                <p class="text-xs text-fg-faint">{{ $t('youtube.downloadConfigHint') }}</p>
-                <p class="text-sm font-medium text-fg-base mt-1 line-clamp-2">{{ props.title }}</p>
+              <div class="p-3 rounded-box bg-base-100 border border-base-300">
+                <p class="text-xs text-base-content/50">{{ $t('youtube.downloadConfigHint') }}</p>
+                <p class="text-sm font-medium text-base-content mt-1 line-clamp-2">
+                  {{ props.title }}
+                </p>
               </div>
             </div>
 
@@ -325,13 +330,13 @@ function onProfileSelect(e: Event) {
             <div class="space-y-5">
               <!-- Profiles -->
               <section v-if="!isSc">
-                <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
+                <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
                   {{ $t('youtube.profilesSection') }}
                 </p>
                 <div class="flex items-center gap-2">
                   <select
                     :value="selectedProfileId"
-                    class="flex-1 min-w-0 px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                     @change="onProfileSelect"
                   >
                     <option value="">{{ $t('youtube.profileNone') }}</option>
@@ -339,7 +344,7 @@ function onProfileSelect(e: Event) {
                   </select>
                   <button
                     v-if="selectedProfileId"
-                    class="p-2 rounded-xl border border-border-default text-fg-muted hover:text-red-base hover:bg-bg-hover transition-colors shrink-0"
+                    class="fx-noise p-2 fx-depth rounded-field border border-base-300 text-base-content/70 hover:text-error hover:bg-base-content/10 transition-colors shrink-0"
                     :title="$t('youtube.profileDelete')"
                     @click="deleteProfile"
                   >
@@ -349,11 +354,11 @@ function onProfileSelect(e: Event) {
                 <div class="flex items-center gap-2 mt-2">
                   <input
                     v-model="profileName"
-                    class="flex-1 px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                     :placeholder="$t('youtube.profileNamePlaceholder')"
                   />
                   <button
-                    class="flex items-center gap-1 px-3 py-2 rounded-xl border border-border-default text-xs text-fg-muted hover:bg-bg-hover transition-colors shrink-0"
+                    class="fx-noise flex items-center gap-1 px-3 py-2 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors shrink-0"
                     :disabled="!profileName.trim()"
                     @click="saveProfile"
                   >
@@ -365,16 +370,18 @@ function onProfileSelect(e: Event) {
 
               <!-- Format -->
               <section v-if="!isSc">
-                <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
+                <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
                   {{ $t('youtube.prefKind') }}
                 </p>
-                <div class="flex gap-1 bg-bg-base rounded-xl p-1 w-fit">
+                <div class="flex gap-1 bg-base-200/[var(--glass-alpha)] rounded-box p-1 w-fit">
                   <button
                     v-for="k in ['audio', 'video'] as const"
                     :key="k"
-                    class="px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                    class="fx-noise px-4 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
                     :class="
-                      kind === k ? 'bg-accent-base text-white' : 'text-fg-muted hover:text-fg-base'
+                      kind === k
+                        ? 'bg-primary text-primary-content'
+                        : 'text-base-content/70 hover:text-base-content'
                     "
                     @click="kind = k"
                   >
@@ -383,87 +390,87 @@ function onProfileSelect(e: Event) {
                 </div>
 
                 <div class="mt-3 grid grid-cols-2 gap-3">
-                  <label v-if="kind === 'audio'" class="block text-xs text-fg-faint">
+                  <label v-if="kind === 'audio'" class="block text-xs text-base-content/50">
                     {{ $t('youtube.prefFormat') }}
                     <select
                       v-model="format"
-                      class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                      class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                     >
                       <option v-for="f in audioFormats" :key="f" :value="f">
                         {{ f === 'best' ? $t('settings.audioNative') : f }}
                       </option>
                     </select>
                   </label>
-                  <label v-if="kind === 'audio'" class="block text-xs text-fg-faint">
+                  <label v-if="kind === 'audio'" class="block text-xs text-base-content/50">
                     {{ $t('settings.defaultAudioQuality') }}
                     <select
                       v-model="audioQuality"
-                      class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                      class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                     >
                       <option v-for="q in audioQualities" :key="q" :value="q">
                         {{ $t('settings.audioQuality.' + q) }}
                       </option>
                     </select>
                   </label>
-                  <label v-if="kind === 'video'" class="block text-xs text-fg-faint">
+                  <label v-if="kind === 'video'" class="block text-xs text-base-content/50">
                     {{ $t('youtube.prefQuality') }}
                     <select
                       v-model="quality"
-                      class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                      class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                     >
                       <option v-for="q in videoQualities" :key="q" :value="q">{{ q }}</option>
                     </select>
                   </label>
-                  <label v-if="kind === 'video'" class="block text-xs text-fg-faint">
+                  <label v-if="kind === 'video'" class="block text-xs text-base-content/50">
                     {{ $t('settings.defaultVideoContainer') }}
                     <select
                       v-model="videoContainer"
-                      class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                      class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                     >
                       <option v-for="c in videoContainers" :key="c" :value="c">{{ c }}</option>
                     </select>
                   </label>
                 </div>
 
-                <label v-if="kind === 'audio'" class="mt-3 block text-xs text-fg-faint">
+                <label v-if="kind === 'audio'" class="mt-3 block text-xs text-base-content/50">
                   {{ $t('youtube.audioLanguage') }}
                   <input
                     v-model="audioLanguage"
-                    class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                     :placeholder="$t('youtube.audioLanguagePlaceholder')"
                   />
                 </label>
 
                 <div class="mt-3 grid grid-cols-2 gap-3">
-                  <label class="block text-xs text-fg-faint">
+                  <label class="block text-xs text-base-content/50">
                     {{ $t('youtube.trimStart') }}
                     <input
                       v-model.number="trimStart"
                       type="number"
                       min="0"
                       step="1"
-                      class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                      class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                       :placeholder="$t('youtube.trimStartPlaceholder')"
                     />
                   </label>
-                  <label class="block text-xs text-fg-faint">
+                  <label class="block text-xs text-base-content/50">
                     {{ $t('youtube.trimEnd') }}
                     <input
                       v-model.number="trimEnd"
                       type="number"
                       min="0"
                       step="1"
-                      class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                      class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                       :placeholder="$t('youtube.trimEndPlaceholder')"
                     />
                   </label>
                 </div>
 
-                <label class="mt-3 block text-xs text-fg-faint">
+                <label class="mt-3 block text-xs text-base-content/50">
                   {{ $t('youtube.prefTemplate') }}
                   <input
                     v-model="filenameTemplate"
-                    class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                     :placeholder="$t('youtube.prefTemplatePlaceholder')"
                   />
                   <div class="mt-1.5">
@@ -471,11 +478,11 @@ function onProfileSelect(e: Event) {
                   </div>
                 </label>
 
-                <label class="mt-3 block text-xs text-fg-faint">
+                <label class="mt-3 block text-xs text-base-content/50">
                   {{ $t('youtube.sponsorBlock') }}
                   <select
                     v-model="sponsorBlock"
-                    class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                   >
                     <option value="off">{{ $t('youtube.sponsorBlockOff') }}</option>
                     <option value="mark">{{ $t('youtube.sponsorBlockMark') }}</option>
@@ -486,27 +493,27 @@ function onProfileSelect(e: Event) {
 
               <!-- Cover (video: thumbnail/none) -->
               <section v-if="!isSc && kind === 'video'">
-                <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
+                <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
                   {{ $t('youtube.coverSection') }}
                 </p>
-                <div class="flex gap-1 bg-bg-base rounded-xl p-1 w-fit">
+                <div class="flex gap-1 bg-base-200/[var(--glass-alpha)] rounded-box p-1 w-fit">
                   <button
-                    class="px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                    class="fx-noise px-4 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
                     :class="
                       coverType !== 'none'
-                        ? 'bg-accent-base text-white'
-                        : 'text-fg-muted hover:text-fg-base'
+                        ? 'bg-primary text-primary-content'
+                        : 'text-base-content/70 hover:text-base-content'
                     "
                     @click="coverType = 'thumbnail'"
                   >
                     {{ $t('youtube.coverThumbnail') }}
                   </button>
                   <button
-                    class="px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                    class="fx-noise px-4 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
                     :class="
                       coverType === 'none'
-                        ? 'bg-accent-base text-white'
-                        : 'text-fg-muted hover:text-fg-base'
+                        ? 'bg-primary text-primary-content'
+                        : 'text-base-content/70 hover:text-base-content'
                     "
                     @click="coverType = 'none'"
                   >
@@ -517,18 +524,18 @@ function onProfileSelect(e: Event) {
 
               <!-- Cover (audio) -->
               <section v-if="!isSc && kind === 'audio'">
-                <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
+                <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
                   {{ $t('youtube.coverSection') }}
                 </p>
                 <div class="grid grid-cols-2 gap-2">
                   <button
                     v-for="ct in coverTypes"
                     :key="ct.id"
-                    class="flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-colors"
+                    class="fx-noise flex items-center gap-2 px-3 py-2 fx-depth rounded-field border text-sm transition-colors"
                     :class="
                       coverType === ct.id
-                        ? 'border-accent-base bg-accent-ghost text-accent-base'
-                        : 'border-border-default text-fg-muted hover:bg-bg-hover'
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-base-300 text-base-content/70 hover:bg-base-content/10'
                     "
                     @click="coverType = ct.id"
                   >
@@ -539,54 +546,57 @@ function onProfileSelect(e: Event) {
 
                 <div v-if="coverType === 'custom'" class="mt-2 flex items-center gap-2">
                   <button
-                    class="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default text-xs text-fg-muted hover:bg-bg-hover transition-colors"
+                    class="fx-noise flex items-center gap-1.5 px-3 py-2 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
                     @click="pickCustomCover"
                   >
                     <ImagePlus :size="13" />
                     {{ $t('youtube.pickCoverFile') }}
                   </button>
-                  <span class="text-xs text-fg-faint truncate flex-1">
+                  <span class="text-xs text-base-content/50 truncate flex-1">
                     {{ customPath || $t('youtube.coverCustomHint') }}
                   </span>
                 </div>
 
-                <label v-else-if="coverType === 'frame'" class="mt-2 block text-xs text-fg-faint">
+                <label
+                  v-else-if="coverType === 'frame'"
+                  class="mt-2 block text-xs text-base-content/50"
+                >
                   {{ $t('youtube.frameTimeLabel') }}
                   <input
                     v-model.number="frameTime"
                     type="number"
                     min="0"
                     step="1"
-                    class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                   />
                 </label>
 
                 <div v-else-if="coverType === 'clip'" class="mt-2 grid grid-cols-2 gap-3">
-                  <label class="block text-xs text-fg-faint">
+                  <label class="block text-xs text-base-content/50">
                     {{ $t('youtube.clipStartLabel') }}
                     <input
                       v-model.number="clipStart"
                       type="number"
                       min="0"
                       step="1"
-                      class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                      class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                     />
                   </label>
-                  <label class="block text-xs text-fg-faint">
+                  <label class="block text-xs text-base-content/50">
                     {{ $t('youtube.clipEndLabel') }}
                     <input
                       v-model.number="clipEnd"
                       type="number"
                       min="1"
                       step="1"
-                      class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                      class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                     />
                   </label>
-                  <label class="block text-xs text-fg-faint col-span-2">
+                  <label class="block text-xs text-base-content/50 col-span-2">
                     {{ $t('youtube.clipFormatLabel') }}
                     <select
                       v-model="clipFormat"
-                      class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                      class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                     >
                       <option value="webm">.webm</option>
                       <option value="mp4">.mp4</option>
@@ -597,24 +607,24 @@ function onProfileSelect(e: Event) {
 
               <!-- Metadata -->
               <section>
-                <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-1">
+                <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-1">
                   {{ $t('youtube.metaSection') }}
                 </p>
-                <p class="text-[11px] text-fg-faint mb-2">{{ $t('youtube.metaHint') }}</p>
+                <p class="text-[11px] text-base-content/50 mb-2">{{ $t('youtube.metaHint') }}</p>
                 <div class="grid grid-cols-3 gap-3">
                   <input
                     v-model="artist"
-                    class="px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                     :placeholder="$t('youtube.metaArtist')"
                   />
                   <input
                     v-model="album"
-                    class="px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                     :placeholder="$t('youtube.metaAlbum')"
                   />
                   <input
                     v-model="year"
-                    class="px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                     :placeholder="$t('youtube.metaYear')"
                   />
                 </div>
@@ -622,27 +632,23 @@ function onProfileSelect(e: Event) {
 
               <!-- Subtitles -->
               <section v-if="!isSc">
-                <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
+                <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
                   {{ $t('youtube.subsSection') }}
                 </p>
                 <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
-                  <input
-                    v-model="subsEnabled"
-                    type="checkbox"
-                    class="w-4 h-4 rounded accent-accent-base"
-                  />
+                  <input v-model="subsEnabled" type="checkbox" />
                   {{ $t('youtube.subsDownload') }}
                 </label>
                 <div v-if="subsEnabled" class="mt-2 space-y-2">
                   <input
                     v-model="subsLangs"
-                    class="w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                     :placeholder="$t('youtube.subsLangsPlaceholder')"
                   />
                   <div class="grid grid-cols-2 gap-2">
                     <select
                       v-model="subsMode"
-                      class="px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                      class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                     >
                       <option value="best">{{ $t('youtube.subsModeBest') }}</option>
                       <option value="manual">{{ $t('youtube.subsModeManual') }}</option>
@@ -650,7 +656,7 @@ function onProfileSelect(e: Event) {
                     </select>
                     <select
                       v-model="subsFormat"
-                      class="px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                      class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                     >
                       <option value="srt">SRT</option>
                       <option value="vtt">VTT</option>
@@ -661,7 +667,7 @@ function onProfileSelect(e: Event) {
                     <input
                       v-model="subsFolder"
                       type="checkbox"
-                      class="w-3.5 h-3.5 rounded accent-accent-base"
+                      class="w-3.5 h-3.5 fx-depth rounded-field accent-primary"
                     />
                     {{ $t('youtube.subsFolder') }}
                   </label>
@@ -670,13 +676,13 @@ function onProfileSelect(e: Event) {
 
               <!-- Output folder -->
               <section v-if="props.channelTitle || props.playlistTitle">
-                <p class="text-xs text-fg-faint font-medium uppercase tracking-wider mb-2">
+                <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
                   {{ $t('youtube.prefOutputDir') }}
                 </p>
                 <div class="flex items-center gap-2">
                   <select
                     v-model="folderMode"
-                    class="flex-1 min-w-0 px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                    class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                   >
                     <option value="global">{{ $t('youtube.prefOutputDirGlobal') }}</option>
                     <option v-if="props.channelTitle" value="channel">
@@ -689,7 +695,7 @@ function onProfileSelect(e: Event) {
                   </select>
                   <button
                     v-if="folderMode === 'custom'"
-                    class="flex items-center gap-1 px-3 py-2 rounded-xl border border-border-default text-fg-muted hover:bg-bg-hover transition-colors shrink-0"
+                    class="fx-noise flex items-center gap-1 px-3 py-2 fx-depth rounded-field border border-base-300 text-base-content/70 hover:bg-base-content/10 transition-colors shrink-0"
                     @click="pickOutputDir"
                   >
                     <FolderOpen :size="14" />
@@ -697,14 +703,14 @@ function onProfileSelect(e: Event) {
                 </div>
                 <p
                   v-if="folderMode === 'channel'"
-                  class="mt-1 truncate text-[11px] text-fg-faint"
+                  class="mt-1 truncate text-[11px] text-base-content/50"
                   :title="channelFolder"
                 >
                   {{ $t('youtube.prefOutputDirChannelHint', { folder: channelFolder }) }}
                 </p>
                 <p
                   v-else-if="folderMode === 'playlist'"
-                  class="mt-1 truncate text-[11px] text-fg-faint"
+                  class="mt-1 truncate text-[11px] text-base-content/50"
                   :title="playlistFolder"
                 >
                   {{ $t('youtube.folderModePlaylistHint', { folder: playlistFolder }) }}
@@ -713,7 +719,7 @@ function onProfileSelect(e: Event) {
                   v-else-if="folderMode === 'custom'"
                   v-model="outputDir"
                   readonly
-                  class="mt-1 w-full px-3 py-2 rounded-xl bg-bg-base border border-border-default text-sm focus:border-accent-base focus:outline-none"
+                  class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
                   :placeholder="$t('youtube.prefOutputDirPlaceholder')"
                 />
               </section>
@@ -723,16 +729,16 @@ function onProfileSelect(e: Event) {
 
         <!-- Footer -->
         <div
-          class="flex items-center justify-end gap-2 px-5 py-4 border-t border-border-default shrink-0"
+          class="flex items-center justify-end gap-2 px-5 py-4 border-t border-base-300 shrink-0"
         >
           <button
-            class="px-4 py-2 rounded-xl border border-border-default text-sm text-fg-muted hover:bg-bg-hover transition-colors"
+            class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
             @click="close"
           >
             {{ $t('youtube.cancel') }}
           </button>
           <button
-            class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent-base text-white text-sm font-medium hover:bg-accent-hover transition-colors"
+            class="fx-noise flex items-center gap-1.5 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors"
             @click="confirm"
           >
             <Download :size="14" />

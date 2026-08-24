@@ -73,14 +73,14 @@ onBeforeUnmount(() => {
 <template>
   <SettingsPanel :title="$t('settings.pipVideo')" :description="$t('settings.pipVideoDesc')">
     <SettingsCard>
-      <div class="flex items-center justify-between pb-4 border-b border-border-default">
+      <div class="flex items-center justify-between pb-4 border-b border-base-300">
         <SettingsSectionTitle :title="$t('settings.videoPipSection')" class="mb-0!" />
         <button
-          class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+          class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
           :class="
             pipPreviewOpen
               ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-              : 'bg-accent-base text-white hover:bg-accent-hover'
+              : 'bg-primary text-primary-content hover:bg-primary/90'
           "
           @click="togglePreview"
         >
@@ -138,7 +138,7 @@ onBeforeUnmount(() => {
         />
       </div>
 
-      <div class="pt-4 border-t border-border-default">
+      <div class="pt-4 border-t border-base-300">
         <SettingsRow :label="$t('settings.pipPreBuffer')">
           <SettingsToggle
             :model-value="settings.playback.pipPreBuffer"

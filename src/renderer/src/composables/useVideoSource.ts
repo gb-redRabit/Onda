@@ -48,7 +48,11 @@ export function useVideoSource(
     el.addEventListener(
       'error',
       () => {
-        if (!el.error || (el.error.code !== MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED && el.error.code !== MediaError.MEDIA_ERR_DECODE)) {
+        if (
+          !el.error ||
+          (el.error.code !== MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED &&
+            el.error.code !== MediaError.MEDIA_ERR_DECODE)
+        ) {
           return;
         }
         if (videoTranscodeAttempted === track.path) return;

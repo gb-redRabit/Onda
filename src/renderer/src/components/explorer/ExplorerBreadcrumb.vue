@@ -65,21 +65,21 @@ async function onDrop(e: DragEvent, targetPath: string) {
 <template>
   <div class="flex gap-0.5">
     <button
-      class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover disabled:opacity-30 transition-colors"
+      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 disabled:opacity-30 transition-colors"
       :disabled="!explorer.canGoBack"
       @click="explorer.goBack"
     >
       <ChevronLeft :size="16" class="pointer-events-none" />
     </button>
     <button
-      class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover disabled:opacity-30 transition-colors"
+      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 disabled:opacity-30 transition-colors"
       :disabled="!explorer.canGoForward"
       @click="explorer.goForward"
     >
       <ChevronRight :size="16" class="pointer-events-none" />
     </button>
     <button
-      class="p-1.5 rounded-lg text-fg-faint hover:bg-bg-hover disabled:opacity-30 transition-colors"
+      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 disabled:opacity-30 transition-colors"
       :disabled="!explorer.canGoUp"
       @click="explorer.goUp"
     >
@@ -87,13 +87,13 @@ async function onDrop(e: DragEvent, targetPath: string) {
     </button>
   </div>
   <div
-    class="flex-1 flex items-center gap-0.5 px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-xs overflow-hidden"
+    class="flex-1 flex items-center gap-0.5 px-2 py-1 rounded-field bg-base-100 border border-base-300 text-xs overflow-hidden"
     @dragover.prevent
     @drop.prevent
   >
     <button
-      class="shrink-0 p-0.5 text-fg-faint hover:text-fg-base transition-colors"
-      :class="{ 'ring-2 ring-accent-base bg-accent-ghost/50 rounded': dropTargetIdx === -1 }"
+      class="fx-noise shrink-0 p-0.5 text-base-content/50 hover:text-base-content transition-colors"
+      :class="{ 'ring-2 ring-primary bg-primary/50 fx-depth rounded-field': dropTargetIdx === -1 }"
       @click="explorer.navigateTo('')"
       @dragover="onDragOver($event, -1)"
       @dragenter="onDragEnter($event, -1)"
@@ -104,10 +104,10 @@ async function onDrop(e: DragEvent, targetPath: string) {
     </button>
     <template v-if="explorer.currentPath">
       <template v-for="(part, idx) in explorer.currentPath.split('\\').filter(Boolean)" :key="idx">
-        <span v-if="idx > 0" class="text-fg-faint">\</span>
+        <span v-if="idx > 0" class="text-base-content/50">\</span>
         <button
-          class="px-1 py-0.5 rounded hover:bg-bg-hover text-fg-muted hover:text-fg-base transition-colors truncate max-w-30"
-          :class="{ 'ring-2 ring-accent-base bg-accent-ghost/50': dropTargetIdx === idx }"
+          class="fx-noise px-1 py-0.5 fx-depth rounded-field hover:bg-base-content/10 text-base-content/70 hover:text-base-content transition-colors truncate max-w-30"
+          :class="{ 'ring-2 ring-primary bg-primary/50': dropTargetIdx === idx }"
           @click="explorer.navigateTo(segmentPath(idx))"
           @dragover="onDragOver($event, idx)"
           @dragenter="onDragEnter($event, idx)"
@@ -118,6 +118,6 @@ async function onDrop(e: DragEvent, targetPath: string) {
         </button>
       </template>
     </template>
-    <span v-else class="text-fg-faint px-1">{{ $t('explorer.thisComputer') }}</span>
+    <span v-else class="text-base-content/50 px-1">{{ $t('explorer.thisComputer') }}</span>
   </div>
 </template>

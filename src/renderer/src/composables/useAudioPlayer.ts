@@ -84,7 +84,10 @@ function ensureModule() {
       () => player.currentTrack?.path ?? null,
       (path, _oldPath) => {
         const track = player.currentTrack;
-        logger.info('audioPlayer', `currentTrack watch type=${track?.type ?? 'none'} path=${(path ?? '').slice(0, 60)}`);
+        logger.info(
+          'audioPlayer',
+          `currentTrack watch type=${track?.type ?? 'none'} path=${(path ?? '').slice(0, 60)}`
+        );
         if (!track || !path) {
           audioEngine.pause();
           return;

@@ -24,7 +24,7 @@ const typeIcon = {
 
 <template>
   <div class="group cursor-pointer" @click="emit('preview', item)">
-    <div class="relative rounded-xl overflow-hidden bg-bg-elevated">
+    <div class="relative rounded-box overflow-hidden bg-base-100">
       <div class="aspect-video w-full">
         <img
           v-if="item.thumbnail || (item.type === 'image' && item.mediaUrl)"
@@ -33,23 +33,20 @@ const typeIcon = {
           loading="lazy"
           class="w-full h-full object-cover"
         />
-        <div
-          v-else
-          class="w-full h-full flex items-center justify-center bg-bg-overlay"
-        >
-          <component :is="typeIcon[item.type]" :size="32" class="text-fg-faint/50" />
+        <div v-else class="w-full h-full flex items-center justify-center bg-neutral">
+          <component :is="typeIcon[item.type]" :size="32" class="text-base-content/50" />
         </div>
       </div>
       <div
         v-if="downloadable"
-        class="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/70 text-white text-[10px] font-medium uppercase"
+        class="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-field bg-black/70 text-white text-[10px] font-medium uppercase"
       >
         <component :is="typeIcon[item.type]" :size="10" />
         <span>{{ item.type }}</span>
       </div>
       <div
         v-if="item.duration"
-        class="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded"
+        class="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded-field"
       >
         {{ item.duration }}
       </div>
@@ -62,7 +59,7 @@ const typeIcon = {
       </div>
       <button
         v-if="downloadable && (item.mediaUrl || item.playerUrl)"
-        class="absolute bottom-1.5 left-1.5 opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 rounded-lg bg-black/70 text-white text-[10px] hover:bg-black/90 disabled:opacity-60"
+        class="fx-noise absolute bottom-1.5 left-1.5 opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-black/70 text-white text-[10px] hover:bg-black/90 disabled:opacity-60"
         :title="$t('sources.download')"
         :disabled="downloading || (!item.mediaUrl && !item.playerUrl)"
         @click.stop="emit('download', item)"
@@ -72,7 +69,9 @@ const typeIcon = {
     </div>
     <div class="mt-2">
       <h3 class="text-sm font-medium line-clamp-2">{{ item.title || $t('sources.untitled') }}</h3>
-      <p v-if="item.subtitle" class="text-xs text-fg-faint mt-0.5 truncate">{{ item.subtitle }}</p>
+      <p v-if="item.subtitle" class="text-xs text-base-content/50 mt-0.5 truncate">
+        {{ item.subtitle }}
+      </p>
     </div>
   </div>
 </template>

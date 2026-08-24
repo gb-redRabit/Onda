@@ -20,8 +20,8 @@ const emit = defineEmits<{
 
 <template>
   <div class="h-full overflow-y-auto p-4 space-y-4">
-    <div class="flex gap-4 rounded-xl border border-border-default bg-bg-elevated/40 p-4">
-      <div class="w-56 shrink-0 rounded-lg overflow-hidden bg-bg-elevated">
+    <div class="flex gap-4 rounded-box border border-neutral-content/20 bg-neutral p-4">
+      <div class="w-56 shrink-0 rounded-field overflow-hidden bg-base-100">
         <img
           v-if="item?.thumbnail"
           :src="item.thumbnail"
@@ -29,18 +29,21 @@ const emit = defineEmits<{
           loading="lazy"
           class="w-full aspect-video object-cover"
         />
-        <div v-else class="w-full aspect-video flex items-center justify-center bg-bg-overlay" />
+        <div v-else class="w-full aspect-video flex items-center justify-center bg-neutral" />
       </div>
       <div class="flex-1 min-w-0 flex flex-col gap-2">
         <h2 class="text-base font-semibold leading-snug">
           {{ item?.title || $t('sources.untitled') }}
         </h2>
-        <p v-if="item?.subtitle" class="text-xs text-fg-faint">{{ item.subtitle }}</p>
-        <p v-if="item?.duration" class="text-xs text-fg-faint">{{ item.duration }}</p>
+        <p v-if="item?.subtitle" class="text-xs text-base-content/50">{{ item.subtitle }}</p>
+        <p v-if="item?.duration" class="text-xs text-base-content/50">{{ item.duration }}</p>
         <div class="flex-1" />
-        <div v-if="downloadable && (item?.mediaUrl || item?.playerUrl)" class="flex items-center gap-2">
+        <div
+          v-if="downloadable && (item?.mediaUrl || item?.playerUrl)"
+          class="flex items-center gap-2"
+        >
           <button
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-base text-white text-xs font-medium hover:bg-accent-strong transition-colors"
+            class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
             :title="$t('sources.download')"
             @click="emit('download', item)"
           >
@@ -53,15 +56,15 @@ const emit = defineEmits<{
 
     <div v-if="rows.length || rowLoading" class="space-y-2">
       <div class="flex items-center gap-2">
-        <ListVideo :size="14" class="text-fg-faint" />
-        <h3 class="text-xs font-medium text-fg-faint uppercase tracking-wider">
+        <ListVideo :size="14" class="text-base-content/50" />
+        <h3 class="text-xs font-medium text-base-content/50 uppercase tracking-wider">
           {{ $t('sources.episodes') }}
         </h3>
-        <Loader2 v-if="rowLoading" :size="12" class="animate-spin text-fg-faint" />
+        <Loader2 v-if="rowLoading" :size="12" class="animate-spin text-base-content/50" />
         <div class="flex-1" />
         <button
           v-if="downloadable && rows.length"
-          class="flex items-center gap-1 px-2 py-1 rounded-lg bg-bg-elevated border border-border-default text-[10px] text-fg-muted hover:bg-bg-hover transition-colors"
+          class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-[10px] text-base-content/70 hover:bg-base-content/10 transition-colors"
           :title="$t('sources.downloadAllRows')"
           @click="emit('download-all', rows)"
         >
@@ -73,12 +76,12 @@ const emit = defineEmits<{
         <button
           v-for="(row, i) in rows"
           :key="row.id || `${i}`"
-          class="group text-left rounded-xl overflow-hidden bg-bg-elevated border border-border-default hover:border-accent-base/50 transition-colors"
+          class="group text-left fx-depth rounded-box fx-noise overflow-hidden bg-base-100 border border-base-300 hover:border-primary/50 transition-colors"
           :disabled="!rowClickable"
           :title="row.title"
           @click="emit('row-click', row)"
         >
-          <div class="relative aspect-video bg-bg-overlay">
+          <div class="relative aspect-video bg-neutral">
             <img
               v-if="row.thumbnail"
               :src="row.thumbnail"
@@ -88,7 +91,7 @@ const emit = defineEmits<{
             />
             <div
               v-else
-              class="w-full h-full flex items-center justify-center bg-bg-overlay text-fg-faint/40"
+              class="w-full h-full flex items-center justify-center bg-neutral text-neutral-content/40"
             >
               <ListVideo :size="24" />
             </div>
@@ -100,12 +103,12 @@ const emit = defineEmits<{
           </div>
         </button>
       </div>
-      <p v-if="!rows.length && !rowLoading" class="text-xs text-fg-faint">
+      <p v-if="!rows.length && !rowLoading" class="text-xs text-base-content/50">
         {{ $t('sources.noTableRows') }}
       </p>
     </div>
 
-    <div v-else class="flex items-center justify-center py-8 text-xs text-fg-faint">
+    <div v-else class="flex items-center justify-center py-8 text-xs text-base-content/50">
       {{ $t('sources.noTableRows') }}
     </div>
   </div>

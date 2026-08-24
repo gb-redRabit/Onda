@@ -43,7 +43,7 @@ const positionOptions = computed(() =>
 
     <SettingsCard>
       <SettingsSectionTitle :title="$t('settings.toastTypes')" />
-      <div class="divide-y divide-border-default">
+      <div class="divide-y divide-base-300">
         <SettingsRow
           :label="$t('settings.toastSuccess')"
           :description="$t('settings.toastSuccessHint')"

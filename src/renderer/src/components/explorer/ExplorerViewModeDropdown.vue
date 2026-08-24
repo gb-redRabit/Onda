@@ -30,7 +30,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', handleClickOutsi
 <template>
   <div ref="viewModeRef" class="relative">
     <button
-      class="p-1.5 rounded-lg transition-colors text-fg-faint hover:text-fg-base hover:bg-bg-hover"
+      class="fx-noise p-1.5 fx-depth rounded-field transition-colors text-base-content/50 hover:text-base-content hover:bg-base-content/10"
       :title="$t('explorer.viewMode')"
       @click="viewModeOpen = !viewModeOpen"
     >
@@ -42,7 +42,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', handleClickOutsi
     </button>
     <div
       v-if="viewModeOpen"
-      class="absolute top-full right-0 mt-1 bg-bg-elevated border border-border-default rounded-xl shadow-2xl z-30 py-1 min-w-35"
+      class="absolute top-full right-0 mt-1 bg-neutral border border-neutral-content/20 rounded-box shadow-2xl z-30 py-1 min-w-35"
       @mouseleave="viewModeOpen = false"
     >
       <button
@@ -51,8 +51,8 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', handleClickOutsi
         class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left transition-colors whitespace-nowrap"
         :class="
           explorer.viewMode === mode.key
-            ? 'text-accent-base bg-accent-ghost'
-            : 'text-fg-muted hover:bg-bg-hover hover:text-fg-base'
+            ? 'text-primary bg-primary/10'
+            : 'text-base-content/70 hover:bg-base-content/10 hover:text-base-content'
         "
         @click="
           explorer.setViewMode(mode.key);

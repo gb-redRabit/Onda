@@ -19,7 +19,8 @@ export const useRadioStore = defineStore('radio', () => {
     if (loading) return loading;
     loading = (async () => {
       try {
-        const data = (await window.api?.radioLoad()) as { stations?: IpcRadioStation[] } | undefined;
+        const data = (await window.api?.radioLoad()) as
+          { stations?: IpcRadioStation[] } | undefined;
         stations.value = data?.stations ?? [];
       } finally {
         loaded = true;
@@ -110,9 +111,7 @@ export const useRadioStore = defineStore('radio', () => {
       : null;
   });
 
-  const isPlaying = computed(
-    () => playingStationId.value !== null && usePlayerStore().isPlaying
-  );
+  const isPlaying = computed(() => playingStationId.value !== null && usePlayerStore().isPlaying);
 
   return {
     stations,

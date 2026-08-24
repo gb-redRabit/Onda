@@ -9,8 +9,8 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
     role="switch"
     :aria-checked="modelValue"
     :disabled="disabled"
-    class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-base/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated disabled:opacity-50 disabled:cursor-not-allowed"
-    :class="modelValue ? 'bg-accent-base' : 'bg-border-subtle'"
+    class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated disabled:opacity-50 disabled:cursor-not-allowed"
+    :class="modelValue ? 'bg-primary' : 'bg-base-300'"
     @click="emit('update:modelValue', !modelValue)"
   >
     <span

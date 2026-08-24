@@ -31,7 +31,9 @@ const yt = useOnlineStore();
 const radio = useRadioStore();
 const player = usePlayerStore();
 
-const activeTab = ref<WebcastTab>((localStorage.getItem('onda.webcastTab') as WebcastTab) || 'saved');
+const activeTab = ref<WebcastTab>(
+  (localStorage.getItem('onda.webcastTab') as WebcastTab) || 'saved'
+);
 
 function selectTab(tab: WebcastTab) {
   activeTab.value = tab;
@@ -146,22 +148,20 @@ const playlistCount = computed(() => saved.playlists.length);
 
 <template>
   <div class="flex flex-col h-full">
-    <header
-      class="sticky top-0 z-10 bg-bg-surface/95 backdrop-blur border-b border-border-default px-6 py-5"
-    >
+    <header class="sticky top-0 z-10 bg-base-100 backdrop-blur border-b border-base-300 px-6 py-5">
       <div class="flex items-center gap-3">
-        <RadioTower :size="24" class="text-accent-base" />
+        <RadioTower :size="24" class="text-primary" />
         <h1 class="text-xl font-bold">{{ $t('saved.title') }}</h1>
         <div class="flex-1" />
       </div>
       <div class="flex gap-1 mt-4">
         <button
           type="button"
-          class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+          class="fx-noise px-3 py-1.5 fx-depth rounded-field text-sm font-medium transition-colors"
           :class="
             activeTab === 'radio'
-              ? 'bg-accent-base/15 text-accent-base'
-              : 'text-fg-muted hover:text-fg-base hover:bg-bg-hover'
+              ? 'bg-primary/15 text-primary'
+              : 'text-base-content/70 hover:text-base-content hover:bg-base-content/10'
           "
           @click="selectTab('radio')"
         >
@@ -169,11 +169,11 @@ const playlistCount = computed(() => saved.playlists.length);
         </button>
         <button
           type="button"
-          class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+          class="fx-noise px-3 py-1.5 fx-depth rounded-field text-sm font-medium transition-colors"
           :class="
             activeTab === 'saved'
-              ? 'bg-accent-base/15 text-accent-base'
-              : 'text-fg-muted hover:text-fg-base hover:bg-bg-hover'
+              ? 'bg-primary/15 text-primary'
+              : 'text-base-content/70 hover:text-base-content hover:bg-base-content/10'
           "
           @click="selectTab('saved')"
         >
@@ -186,8 +186,8 @@ const playlistCount = computed(() => saved.playlists.length);
       <!-- Radio tab -->
       <section v-if="activeTab === 'radio'">
         <div class="flex items-center gap-2 mb-3">
-          <h2 class="flex items-center gap-2 text-sm font-semibold text-fg-muted flex-1">
-            <Radio :size="14" class="text-accent-base" />
+          <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 flex-1">
+            <Radio :size="14" class="text-primary" />
             {{ $t('saved.radioTitle') }}
           </h2>
           <OnlineButton variant="secondary" size="sm" @click="radioDialogOpen = true">
@@ -197,7 +197,7 @@ const playlistCount = computed(() => saved.playlists.length);
         </div>
         <div v-if="radio.stations.length === 0" class="space-y-2">
           <div
-            class="rounded-2xl border border-dashed border-border-subtle p-6 text-center text-sm text-fg-faint"
+            class="rounded-box border border-dashed border-base-300 p-6 text-center text-sm text-base-content/50"
           >
             <Radio :size="24" class="mx-auto mb-2 opacity-40" />
             {{ $t('saved.radioSoon') }}
@@ -207,25 +207,25 @@ const playlistCount = computed(() => saved.playlists.length);
           <div
             v-for="s in radio.stations"
             :key="s.id"
-            class="group flex items-center gap-3 rounded-2xl bg-bg-surface border border-border-default p-3 hover:border-border-subtle transition-colors"
-            :class="{ 'border-accent-base/60': radio.playingStationId === s.id }"
+            class="group flex items-center gap-3 rounded-box bg-base-100 border border-base-300 p-3 hover:border-base-300 transition-colors"
+            :class="{ 'border-primary/60': radio.playingStationId === s.id }"
           >
             <button
               type="button"
               class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors"
               :class="
                 radio.playingStationId === s.id
-                  ? 'bg-accent-base text-white'
-                  : 'bg-bg-elevated text-fg-muted hover:text-fg-base hover:bg-bg-hover'
+                  ? 'bg-primary text-primary-content'
+                  : 'bg-base-100 text-base-content/70 hover:text-base-content hover:bg-base-content/10'
               "
               :title="$t('saved.playRadio')"
-              @click="
-                radio.playingStationId === s.id
-                  ? player.togglePlay()
-                  : radio.playStation(s)
-              "
+              @click="radio.playingStationId === s.id ? player.togglePlay() : radio.playStation(s)"
             >
-              <Pause v-if="radio.playingStationId === s.id && player.isPlaying" :size="16" fill="currentColor" />
+              <Pause
+                v-if="radio.playingStationId === s.id && player.isPlaying"
+                :size="16"
+                fill="currentColor"
+              />
               <Play v-else :size="16" fill="currentColor" />
             </button>
             <div class="min-w-0 flex-1">
@@ -233,21 +233,21 @@ const playlistCount = computed(() => saved.playlists.length);
                 <input
                   v-model="editingRadioName"
                   type="text"
-                  class="w-full bg-bg-elevated border border-border-default rounded-lg px-2 py-1 text-sm text-fg-base focus:outline-none focus:border-accent-base"
+                  class="w-full bg-base-100 border border-base-300 fx-depth rounded-field px-2 py-1 text-sm text-base-content focus:outline-none focus:border-primary"
                   @keyup.enter="commitRadioRename(s.id)"
                   @keyup.esc="editingRadioId = null"
                   @blur="commitRadioRename(s.id)"
                 />
               </template>
               <template v-else>
-                <h3 class="text-sm font-semibold text-fg-base truncate">{{ s.name }}</h3>
-                <p class="text-xs text-fg-muted truncate">{{ s.url }}</p>
+                <h3 class="text-sm font-semibold text-base-content truncate">{{ s.name }}</h3>
+                <p class="text-xs text-base-content/70 truncate">{{ s.url }}</p>
               </template>
             </div>
             <div class="flex items-center gap-1 shrink-0">
               <button
                 type="button"
-                class="p-2 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+                class="fx-noise p-2 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
                 :title="$t('saved.renameRadio')"
                 @click="startRadioRename(s)"
               >
@@ -255,7 +255,7 @@ const playlistCount = computed(() => saved.playlists.length);
               </button>
               <button
                 type="button"
-                class="p-2 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+                class="fx-noise p-2 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
                 :title="$t('saved.moveRadioTop')"
                 @click="radio.moveToTop(s.id)"
               >
@@ -263,7 +263,7 @@ const playlistCount = computed(() => saved.playlists.length);
               </button>
               <button
                 type="button"
-                class="p-2 rounded-lg text-fg-muted hover:text-red-base hover:bg-bg-hover transition-colors"
+                class="fx-noise p-2 fx-depth rounded-field text-base-content/70 hover:text-error hover:bg-base-content/10 transition-colors"
                 :title="$t('common.delete')"
                 @click="radio.removeStation(s.id)"
               >
@@ -278,15 +278,15 @@ const playlistCount = computed(() => saved.playlists.length);
       <template v-else>
         <!-- Saved tracks -->
         <section>
-          <h2 class="flex items-center gap-2 text-sm font-semibold text-fg-muted mb-3">
-            <Play :size="14" class="text-accent-base" />
+          <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 mb-3">
+            <Play :size="14" class="text-primary" />
             {{ $t('saved.tracksTitle') }}
-            <span class="text-fg-faint/60 text-xs">({{ trackCount }})</span>
+            <span class="text-base-content/60 text-xs">({{ trackCount }})</span>
           </h2>
 
           <div
             v-if="trackCount === 0"
-            class="rounded-2xl border border-dashed border-border-subtle p-8 text-center text-sm text-fg-faint"
+            class="rounded-box border border-dashed border-base-300 p-8 text-center text-sm text-base-content/50"
           >
             {{ $t('saved.emptyTracks') }}
           </div>
@@ -295,9 +295,9 @@ const playlistCount = computed(() => saved.playlists.length);
             <div
               v-for="s in saved.tracks"
               :key="s.id"
-              class="group rounded-2xl bg-bg-surface border border-border-default p-3 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:border-border-subtle"
+              class="group rounded-box bg-base-100 border border-base-300 p-3 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:border-base-300"
             >
-              <div class="relative overflow-hidden rounded-xl bg-bg-elevated aspect-video">
+              <div class="relative overflow-hidden rounded-box bg-base-100 aspect-video">
                 <img
                   v-if="s.thumbnail"
                   :src="s.thumbnail"
@@ -326,7 +326,7 @@ const playlistCount = computed(() => saved.playlists.length);
                   </button>
                   <button
                     type="button"
-                    class="p-2 rounded-full bg-red-base/60 text-white hover:bg-red-base transition-colors"
+                    class="p-2 rounded-full bg-error/60 text-error-content hover:bg-error transition-colors"
                     :title="$t('common.delete')"
                     @click="removeTrack(s.id)"
                   >
@@ -335,14 +335,14 @@ const playlistCount = computed(() => saved.playlists.length);
                 </div>
                 <span
                   v-if="s.duration"
-                  class="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded"
+                  class="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded-field"
                 >
                   {{ s.duration }}
                 </span>
               </div>
               <div class="mt-2">
-                <h3 class="text-sm font-semibold text-fg-base line-clamp-2">{{ s.title }}</h3>
-                <p class="text-xs text-fg-muted mt-0.5 truncate">{{ s.channelTitle }}</p>
+                <h3 class="text-sm font-semibold text-base-content line-clamp-2">{{ s.title }}</h3>
+                <p class="text-xs text-base-content/70 mt-0.5 truncate">{{ s.channelTitle }}</p>
               </div>
             </div>
           </div>
@@ -350,15 +350,15 @@ const playlistCount = computed(() => saved.playlists.length);
 
         <!-- Saved playlists -->
         <section>
-          <h2 class="flex items-center gap-2 text-sm font-semibold text-fg-muted mb-3">
-            <ListMusic :size="14" class="text-accent-base" />
+          <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 mb-3">
+            <ListMusic :size="14" class="text-primary" />
             {{ $t('saved.playlistsTitle') }}
-            <span class="text-fg-faint/60 text-xs">({{ playlistCount }})</span>
+            <span class="text-base-content/60 text-xs">({{ playlistCount }})</span>
           </h2>
 
           <div
             v-if="playlistCount === 0"
-            class="rounded-2xl border border-dashed border-border-subtle p-8 text-center text-sm text-fg-faint"
+            class="rounded-box border border-dashed border-base-300 p-8 text-center text-sm text-base-content/50"
           >
             {{ $t('saved.emptyPlaylists') }}
           </div>
@@ -367,19 +367,21 @@ const playlistCount = computed(() => saved.playlists.length);
             <div
               v-for="p in saved.playlists"
               :key="p.id"
-              class="group rounded-2xl bg-bg-surface border border-border-default transition-colors"
-              :class="expandedPlaylistId === p.id ? 'border-accent-base/60' : 'hover:border-border-subtle'"
+              class="group rounded-box bg-base-100 border border-base-300 transition-colors"
+              :class="expandedPlaylistId === p.id ? 'border-primary/60' : 'hover:border-base-300'"
             >
               <div class="flex items-center gap-3 p-3 cursor-pointer" @click="togglePlaylist(p)">
                 <button
                   type="button"
-                  class="shrink-0 p-1 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+                  class="fx-noise shrink-0 p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
                   :title="$t('saved.expandPlaylist')"
                 >
                   <ChevronDown v-if="expandedPlaylistId === p.id" :size="16" />
                   <ChevronRight v-else :size="16" />
                 </button>
-                <div class="w-14 h-14 rounded-xl bg-bg-elevated overflow-hidden shrink-0 flex items-center justify-center">
+                <div
+                  class="w-14 h-14 rounded-box bg-base-100 overflow-hidden shrink-0 flex items-center justify-center"
+                >
                   <img
                     v-if="p.thumbnail"
                     :src="p.thumbnail"
@@ -387,28 +389,31 @@ const playlistCount = computed(() => saved.playlists.length);
                     loading="lazy"
                     class="w-full h-full object-cover"
                   />
-                  <ListMusic v-else :size="20" class="text-fg-faint" />
+                  <ListMusic v-else :size="20" class="text-base-content/50" />
                 </div>
                 <div class="min-w-0 flex-1">
-                  <h3 class="text-sm font-semibold text-fg-base truncate">{{ p.title }}</h3>
-                  <p class="text-xs text-fg-muted truncate">
+                  <h3 class="text-sm font-semibold text-base-content truncate">{{ p.title }}</h3>
+                  <p class="text-xs text-base-content/70 truncate">
                     {{ p.channelTitle || $t('saved.kindPlaylist') }}
                     <span v-if="p.totalItems != null"> · {{ p.totalItems }}</span>
                   </p>
                 </div>
                 <button
                   type="button"
-                  class="shrink-0 p-2 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
+                  class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
                   :title="$t('youtube.playAll')"
                   :disabled="playingPlaylistId === p.id"
                   @click.stop="playPlaylist(p)"
                 >
-                  <span v-if="playingPlaylistId === p.id" class="block w-4 h-4 border-2 border-accent-base border-t-transparent rounded-full animate-spin" />
+                  <span
+                    v-if="playingPlaylistId === p.id"
+                    class="block w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"
+                  />
                   <Play v-else :size="18" />
                 </button>
                 <button
                   type="button"
-                  class="shrink-0 p-2 rounded-lg text-fg-muted hover:text-red-base hover:bg-bg-hover transition-colors"
+                  class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:text-error hover:bg-base-content/10 transition-colors"
                   :title="$t('common.delete')"
                   @click.stop="removePlaylist(p.id)"
                 >
@@ -416,7 +421,7 @@ const playlistCount = computed(() => saved.playlists.length);
                 </button>
               </div>
 
-              <div v-if="expandedPlaylistId === p.id" class="border-t border-border-default px-3 py-3">
+              <div v-if="expandedPlaylistId === p.id" class="border-t border-base-300 px-3 py-3">
                 <div
                   v-if="
                     (!p.items || p.items.length === 0) &&
@@ -426,12 +431,12 @@ const playlistCount = computed(() => saved.playlists.length);
                 >
                   <div
                     v-if="yt.syncingSavedPlaylistState.has(p.id)"
-                    class="w-6 h-6 border-2 border-accent-base border-t-transparent rounded-full animate-spin"
+                    class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"
                   />
                 </div>
                 <p
                   v-else-if="!p.items || p.items.length === 0"
-                  class="flex items-center gap-2 justify-center py-8 text-sm text-red-base"
+                  class="flex items-center gap-2 justify-center py-8 text-sm text-error"
                 >
                   <AlertCircle :size="16" />
                   {{ $t('saved.playlistLoadError') }}

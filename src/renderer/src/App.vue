@@ -11,6 +11,7 @@ import { claimTabDrag } from './utils/tabDrag';
 import { openMediaFiles } from './composables/useOpenMedia';
 import { moduleManager } from './modules/ModuleManager';
 import { useAudioPiP } from './composables/useAudioPiP';
+import { storeToRefs } from 'pinia';
 import { useTheme } from './composables/useTheme';
 import { useNewVideoNotifications } from './composables/useNewVideoNotifications';
 import { useMediaSession } from './composables/useMediaSession';
@@ -39,15 +40,22 @@ useNewVideoNotifications();
 useMediaSession();
 const session = useSessionPersistence();
 const showFirstRun = ref(false);
+const isWinMaximized = ref(false);
+let offMaximized: (() => void) | null = null;
 
 const isExplorerWindow = computed(() => route.name === 'explorer-window');
 
-const theme = useTheme(settings.appearance);
+const { appearance: appearanceRef } = storeToRefs(settings);
+const theme = useTheme(appearanceRef);
 
 onMounted(async () => {
   document.addEventListener('keydown', onGlobalKeydown);
   document.addEventListener('mousedown', onGlobalMouseDown);
   window.addEventListener('blur', onWindowBlur);
+  offMaximized =
+    window.api?.on('window:maximized', (val: unknown) => {
+      isWinMaximized.value = !!val;
+    }) ?? null;
   await settings.load();
   theme.applyTheme();
   await loadLocaleMessages(settings.appearance.locale);
@@ -162,6 +170,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', onGlobalKeydown);
   document.removeEventListener('mousedown', onGlobalMouseDown);
   window.removeEventListener('blur', onWindowBlur);
+  offMaximized?.();
 });
 
 watch(
@@ -213,7 +222,10 @@ function onWindowBlur() {
 </script>
 
 <template>
-  <div class="flex flex-col h-full w-full overflow-hidden">
+  <div
+    class="app-root flex flex-col h-full w-full overflow-hidden border border-base-300 bg-base-200/[var(--glass-alpha)]"
+    :class="{ 'is-maximized': isWinMaximized }"
+  >
     <AppMenu v-if="ui.topMenuVisible && !isExplorerWindow" />
     <div class="flex flex-1 min-h-0">
       <Sidebar v-if="!isExplorerWindow && settings.appearance.sidebarPosition === 'left'" />
@@ -252,15 +264,15 @@ function onWindowBlur() {
     <div
       v-if="ui.contextMenu"
       id="context-menu"
-      class="fixed z-50 bg-bg-elevated border border-border-subtle rounded-xl shadow-2xl shadow-black/50 py-1.5 min-w-45"
+      class="fixed z-50 bg-neutral border border-neutral-content/20 rounded-box shadow-2xl shadow-black/50 py-1.5 min-w-45"
       :style="{ left: ui.contextMenu.x + 'px', top: ui.contextMenu.y + 'px' }"
       @click.stop
     >
       <template v-for="(item, idx) in ui.contextMenu.items" :key="idx">
-        <div v-if="item.separator" class="border-t border-border-default my-1 mx-2" />
+        <div v-if="item.separator" class="border-t border-base-300 my-1 mx-2" />
         <button
           v-else
-          class="w-full flex items-center justify-between gap-4 px-3 py-1.5 text-left text-sm hover:bg-accent-ghost hover:text-accent-base transition-colors"
+          class="w-full flex items-center justify-between gap-4 px-3 py-1.5 text-left text-sm hover:bg-primary/10 hover:text-primary transition-colors"
           :class="{ 'opacity-40 pointer-events-none': item.disabled }"
           @click="
             item.action?.();
@@ -268,7 +280,7 @@ function onWindowBlur() {
           "
         >
           <span>{{ item.label }}</span>
-          <span v-if="item.shortcut" class="text-[10px] text-fg-faint/60 font-mono">{{
+          <span v-if="item.shortcut" class="text-[10px] text-base-content/60 font-mono">{{
             item.shortcut
           }}</span>
         </button>

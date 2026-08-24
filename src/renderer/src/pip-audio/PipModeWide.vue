@@ -22,13 +22,13 @@ const emit = defineEmits<{ select: [name: string] }>();
 
 <template>
   <div class="flex items-center h-full px-1.5 gap-1">
-    <span class="text-[11px] font-medium truncate flex-1 min-w-0 text-fg-base">{{
+    <span class="text-[11px] font-medium truncate flex-1 min-w-0 text-base-content">{{
       trackName
     }}</span>
     <div class="flex items-center gap-0.5 shrink-0">
       <button
         class="btn-pip w-4.5 h-4.5 text-[9px]"
-        :class="{ 'text-accent-base!': shuffle }"
+        :class="{ 'text-primary!': shuffle }"
         @click="send('shuffle')"
       >
         &#x21C4;
@@ -40,7 +40,7 @@ const emit = defineEmits<{ select: [name: string] }>();
       <button class="btn-pip w-4.5 h-4.5" @click="send('next')">&#x23ED;</button>
       <button
         class="btn-pip w-4.5 h-4.5 text-[9px]"
-        :class="{ 'text-accent-base!': repeat !== 'none' }"
+        :class="{ 'text-primary!': repeat !== 'none' }"
         @click="send('repeat')"
       >
         <span class="relative"
@@ -53,17 +53,17 @@ const emit = defineEmits<{ select: [name: string] }>();
       </button>
     </div>
     <div class="flex items-center gap-1.5 shrink-0 ml-1">
-      <span class="text-[9px] text-fg-faint tabular-nums whitespace-nowrap">{{
+      <span class="text-[9px] text-base-content/50 tabular-nums whitespace-nowrap">{{
         fmt(currentTime)
       }}</span>
-      <span class="text-[9px] text-fg-faint opacity-40">/</span>
-      <span class="text-[9px] text-fg-faint tabular-nums whitespace-nowrap">{{
+      <span class="text-[9px] text-base-content/50 opacity-40">/</span>
+      <span class="text-[9px] text-base-content/50 tabular-nums whitespace-nowrap">{{
         fmt(duration)
       }}</span>
     </div>
     <div class="flex items-center gap-1 shrink-0 ml-1">
       <span
-        class="text-[8px] text-fg-muted cursor-pointer px-0.5 py-0.5 rounded hover:text-fg-base hover:bg-bg-hover"
+        class="text-[8px] text-base-content/70 cursor-pointer px-0.5 py-0.5 rounded-field hover:text-base-content hover:bg-base-content/10"
         @click="send('mute')"
         >{{ volLabel }}</span
       >
@@ -76,17 +76,19 @@ const emit = defineEmits<{ select: [name: string] }>();
         :value="volume"
         @input="emit('select', 'volume:' + ($event.target as HTMLInputElement).value)"
       />
-      <span class="text-[9px] text-fg-faint min-w-5 text-right tabular-nums">{{ volPct }}</span>
+      <span class="text-[9px] text-base-content/50 min-w-5 text-right tabular-nums">{{
+        volPct
+      }}</span>
     </div>
     <div class="flex items-center gap-0.5 shrink-0 ml-1">
       <button
         v-for="p in EQ_PRESETS.slice(0, 4)"
         :key="p.id"
-        class="text-[8px] px-1 py-0.5 rounded transition-colors"
+        class="fx-noise text-[8px] px-1 py-0.5 fx-depth rounded-field transition-colors"
         :class="
           eqPreset === p.id
-            ? 'bg-accent-base text-white'
-            : 'text-fg-muted hover:text-fg-base hover:bg-bg-hover'
+            ? 'bg-primary text-primary-content'
+            : 'text-base-content/70 hover:text-base-content hover:bg-base-content/10'
         "
         @click="selectEqPreset(p.id)"
       >
@@ -94,7 +96,7 @@ const emit = defineEmits<{ select: [name: string] }>();
       </button>
     </div>
     <button
-      class="btn-pip w-3.5 h-3.5 text-[8px] text-fg-faint ml-0.5"
+      class="btn-pip w-3.5 h-3.5 text-[8px] text-base-content/50 ml-0.5"
       title="Cycle mode"
       @click="send('cycleMode')"
     >

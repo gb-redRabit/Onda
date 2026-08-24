@@ -41,14 +41,7 @@ export const IMAGE_EXTS = [
 // renderer. `best` for audio means "native" (no re-encode) while the rest are
 // explicit conversion targets.
 export const AUDIO_FORMATS = ['best', 'mp3', 'flac', 'ogg', 'aac', 'opus', 'm4a', 'wav'] as const;
-export const VIDEO_QUALITIES = [
-  'best',
-  '2160p',
-  '1440p',
-  '1080p',
-  '720p',
-  '480p'
-] as const;
+export const VIDEO_QUALITIES = ['best', '2160p', '1440p', '1080p', '720p', '480p'] as const;
 export const VIDEO_CONTAINERS = ['mp4', 'mkv', 'webm'] as const;
 
 // Upper bound for thumbnail / resize dimensions requested over IPC or onda://

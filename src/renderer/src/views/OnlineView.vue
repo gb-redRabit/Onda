@@ -31,7 +31,7 @@ import OnlineMediaCard from '@renderer/components/online/OnlineMediaCard.vue';
 import OnlineSourceHeader from '@renderer/components/online/OnlineSourceHeader.vue';
 import OnlineSelectionToolbar from '@renderer/components/online/OnlineSelectionToolbar.vue';
 import OnlineConfirmDialog from '@renderer/components/online/OnlineConfirmDialog.vue';
-import YtAuthButton from '@renderer/components/online/YtAuthButton.vue';
+import YTAuthButton from '@renderer/components/online/YTAuthButton.vue';
 import type {
   YouTubeVideo,
   YouTubeResolvedItem,
@@ -100,7 +100,6 @@ function openWatchUrl(url: string) {
   }
   window.open(url, '_blank', 'width=1100,height=700');
 }
-
 
 function toggleExpandSearch(id: string) {
   expandedSearchId.value = expandedSearchId.value === id ? null : id;
@@ -327,12 +326,12 @@ async function resolveLink() {
       const key = errorCodeKey(res.code);
       resolveError.value = key ? t(key) : res.error || t('youtube.resolveError');
     }
-    } catch {
-      resolveError.value = t('youtube.resolveError');
-    } finally {
-      if (seq === resolveSeq) yt.isResolving = false;
-    }
+  } catch {
+    resolveError.value = t('youtube.resolveError');
+  } finally {
+    if (seq === resolveSeq) yt.isResolving = false;
   }
+}
 
 function clearResolved() {
   yt.setResolved(null);
@@ -343,7 +342,10 @@ function clearResolved() {
 function saveResolvedPlaylist() {
   const r = yt.resolved;
   if (!r || r.kind === 'video' || savingPlaylist.value) return;
-  const id = r.kind === 'channel' ? r.sourceUrl : (r.sourceUrl.match(/[?&]list=([\w-]+)/)?.[1] ?? r.sourceUrl);
+  const id =
+    r.kind === 'channel'
+      ? r.sourceUrl
+      : (r.sourceUrl.match(/[?&]list=([\w-]+)/)?.[1] ?? r.sourceUrl);
   if (saved.isPlaylistSaved(id)) {
     void saved.removePlaylist(id);
     return;
@@ -377,7 +379,9 @@ const resolvedSaved = computed(() => {
   const r = yt.resolved;
   if (!r || r.kind === 'video') return false;
   return saved.isPlaylistSaved(
-    r.kind === 'channel' ? r.sourceUrl : (r.sourceUrl.match(/[?&]list=([\w-]+)/)?.[1] ?? r.sourceUrl)
+    r.kind === 'channel'
+      ? r.sourceUrl
+      : (r.sourceUrl.match(/[?&]list=([\w-]+)/)?.[1] ?? r.sourceUrl)
   );
 });
 
@@ -543,14 +547,12 @@ onUnmounted(() => {
 
 <template>
   <div class="flex flex-col h-full">
-    <header
-      class="sticky top-0 z-10 bg-bg-surface/95 backdrop-blur border-b border-border-default px-4 py-4"
-    >
+    <header class="sticky top-0 z-10 bg-base-100 backdrop-blur border-b border-base-300 px-4 py-4">
       <div class="flex items-center gap-3 mb-4">
-        <Radio :size="24" class="text-accent-base" />
+        <Radio :size="24" class="text-primary" />
         <h1 class="text-xl font-bold">{{ $t('nav.online') }}</h1>
         <div class="flex-1" />
-        <YtAuthButton />
+        <YTAuthButton />
       </div>
 
       <OnlineSearchBar
@@ -571,34 +573,31 @@ onUnmounted(() => {
         leave-from-class="opacity-100 translate-y-0"
         leave-to-class="opacity-0 -translate-y-1"
       >
-        <div
-          v-if="batchOpen"
-          class="mt-3 p-3 rounded-2xl bg-bg-surface border border-border-default"
-        >
+        <div v-if="batchOpen" class="mt-3 p-3 rounded-box bg-base-100 border border-base-300">
           <textarea
             v-model="batchText"
             :placeholder="$t('youtube.batchPlaceholder')"
             rows="4"
-            class="w-full px-3 py-2.5 rounded-xl bg-bg-elevated border border-border-default text-sm text-fg-base placeholder:text-fg-faint focus:border-accent-base focus:outline-none focus:ring-1 focus:ring-accent-base/30 resize-y"
+            class="w-full px-3 py-2.5 fx-depth rounded-field bg-base-100 border border-base-300 text-sm text-base-content placeholder:text-base-content/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30 resize-y"
           />
           <div class="flex items-center gap-2 mt-3 flex-wrap">
-            <span class="text-xs text-fg-faint">
+            <span class="text-xs text-base-content/50">
               {{ $t('youtube.batchDetected', { count: batchEntries.length }) }}
             </span>
-            <span v-if="batchSkippedCount > 0" class="text-xs text-fg-faint/70">
+            <span v-if="batchSkippedCount > 0" class="text-xs text-base-content/70">
               {{ $t('youtube.batchSkipped', { count: batchSkippedCount }) }}
             </span>
             <select
               v-if="profiles.length && !batchHasSc"
               v-model="batchProfileId"
-              class="px-2 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-xs text-fg-base focus:border-accent-base focus:outline-none"
+              class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-none"
             >
               <option value="">{{ $t('youtube.profileNone') }}</option>
               <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
             </select>
             <span
               v-else-if="profiles.length && batchHasSc"
-              class="text-[10px] text-fg-faint"
+              class="text-[10px] text-base-content/50"
             >
               {{ $t('youtube.batchProfilesScHint') }}
             </span>
@@ -616,12 +615,12 @@ onUnmounted(() => {
               {{ $t('youtube.batchAdd') }}
             </OnlineButton>
           </div>
-          <p v-if="batchResult" class="text-xs text-green-base mt-2">{{ batchResult }}</p>
+          <p v-if="batchResult" class="text-xs text-success mt-2">{{ batchResult }}</p>
           <ul v-if="batchEntries.length" class="mt-2 max-h-40 overflow-auto space-y-1">
             <li
               v-for="e in batchEntries"
               :key="e.url"
-              class="flex items-center gap-2 text-xs text-fg-muted"
+              class="flex items-center gap-2 text-xs text-base-content/70"
             >
               <OnlineBadge
                 :variant="e.kind === 'video' ? 'accent' : e.kind === 'playlist' ? 'amber' : 'green'"
@@ -642,7 +641,11 @@ onUnmounted(() => {
         </div>
       </Transition>
 
-      <OnlineViewTabs v-model="activeSection" :subscription-count="yt.subscriptions.length" class="mt-4">
+      <OnlineViewTabs
+        v-model="activeSection"
+        :subscription-count="yt.subscriptions.length"
+        class="mt-4"
+      >
         <template v-if="activeSection === 'subscriptions'">
           <OnlineButton
             variant="primary"
@@ -691,7 +694,7 @@ onUnmounted(() => {
       <div v-if="activeSection === 'subscriptions'" class="space-y-4">
         <div v-if="!yt.subscriptionsLoaded" class="flex justify-center py-16">
           <div
-            class="w-8 h-8 border-2 border-accent-base border-t-transparent rounded-full animate-spin"
+            class="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"
           />
         </div>
 
@@ -724,10 +727,10 @@ onUnmounted(() => {
         v-else-if="yt.channelError"
         class="flex flex-col items-center justify-center py-16 text-center"
       >
-        <AlertCircle :size="40" class="text-red-base mb-3" />
-        <p class="text-sm text-fg-muted mb-1">{{ yt.channelError }}</p>
+        <AlertCircle :size="40" class="text-error mb-3" />
+        <p class="text-sm text-base-content/70 mb-1">{{ yt.channelError }}</p>
         <button
-          class="mt-3 px-4 py-1.5 rounded-lg bg-bg-hover border border-border-default text-xs text-fg-base hover:bg-bg-elevated transition-colors"
+          class="fx-noise mt-3 px-4 py-1.5 fx-depth rounded-field bg-base-content/10 border border-base-300 text-xs text-base-content hover:bg-base-100 transition-colors"
           @click="submit"
         >
           {{ $t('youtube.search') }}
@@ -754,7 +757,10 @@ onUnmounted(() => {
             @clear="clearResolved"
           />
 
-          <div v-if="yt.resolved.items.length === 0" class="text-sm text-fg-faint py-8 text-center">
+          <div
+            v-if="yt.resolved.items.length === 0"
+            class="text-sm text-base-content/50 py-8 text-center"
+          >
             {{ $t('youtube.itemsCount', { count: 0 }) }}
           </div>
 
@@ -816,7 +822,7 @@ onUnmounted(() => {
 
         <div v-if="yt.isSearching" class="flex justify-center py-16">
           <div
-            class="w-8 h-8 border-2 border-accent-base border-t-transparent rounded-full animate-spin"
+            class="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"
           />
         </div>
 
@@ -828,7 +834,7 @@ onUnmounted(() => {
         />
 
         <div v-else-if="yt.searchResults.length" class="space-y-4">
-          <p class="text-xs text-fg-faint px-1">
+          <p class="text-xs text-base-content/50 px-1">
             {{ $t('youtube.resultsCount', { count: yt.searchResults.length }) }}
           </p>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -862,7 +868,7 @@ onUnmounted(() => {
             >
               <ChevronLeft :size="16" />
             </OnlineButton>
-            <span class="text-xs text-fg-faint">
+            <span class="text-xs text-base-content/50">
               {{ $t('youtube.pageOf', { current: yt.searchPage + 1, total: pageTotal }) }}
             </span>
             <OnlineButton
@@ -875,10 +881,7 @@ onUnmounted(() => {
             </OnlineButton>
           </div>
 
-          <div
-            v-if="!yt.hasNextPage && yt.hasMoreSc"
-            class="flex items-center justify-center pt-2"
-          >
+          <div v-if="!yt.hasNextPage && yt.hasMoreSc" class="flex items-center justify-center pt-2">
             <OnlineButton
               variant="secondary"
               size="sm"

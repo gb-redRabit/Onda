@@ -37,11 +37,11 @@ function lastCheckedLabel(ts?: number): string {
 
 <template>
   <div
-    class="flex flex-col p-4 rounded-2xl bg-bg-surface border border-border-default transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-border-subtle"
+    class="flex flex-col p-4 rounded-box bg-base-100 border border-base-300 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-base-300"
   >
     <div class="flex items-center gap-3">
       <button
-        class="shrink-0 w-12 h-12 rounded-full overflow-hidden bg-bg-elevated"
+        class="shrink-0 w-12 h-12 rounded-full overflow-hidden bg-base-100"
         :title="sub.channelTitle"
         @click="emit('openChannel', sub.channelId)"
       >
@@ -52,18 +52,22 @@ function lastCheckedLabel(ts?: number): string {
           class="w-full h-full object-cover"
           @error="avatarFailed = true"
         />
-        <Tv2 v-else :size="22" class="w-full h-full p-3 text-fg-faint" />
+        <Tv2 v-else :size="22" class="w-full h-full p-3 text-base-content/50" />
       </button>
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2 flex-wrap">
           <button
-            class="text-sm font-semibold text-fg-base truncate hover:text-accent-base transition-colors"
+            class="text-sm font-semibold text-base-content truncate hover:text-primary transition-colors"
             @click="emit('openChannel', sub.channelId)"
           >
             {{ sub.channelTitle }}
           </button>
-          <OnlineBadge v-if="sub.platform === 'soundcloud'" variant="amber" size="sm">SC</OnlineBadge>
-          <OnlineBadge v-else-if="sub.platform === 'youtube'" variant="accent" size="sm">YT</OnlineBadge>
+          <OnlineBadge v-if="sub.platform === 'soundcloud'" variant="amber" size="sm"
+            >SC</OnlineBadge
+          >
+          <OnlineBadge v-else-if="sub.platform === 'youtube'" variant="accent" size="sm"
+            >YT</OnlineBadge
+          >
           <OnlineBadge v-if="sub.pendingCount" variant="green" size="sm">
             {{ $t('youtube.remainingCount', { count: sub.pendingCount }) }}
           </OnlineBadge>
@@ -71,7 +75,7 @@ function lastCheckedLabel(ts?: number): string {
             {{ $t('youtube.newCount', { count: sub.newArrivals }) }}
           </OnlineBadge>
         </div>
-        <p class="text-[11px] text-fg-faint mt-0.5">
+        <p class="text-[11px] text-base-content/50 mt-0.5">
           <template v-if="sub.lastChecked">
             {{ $t('youtube.lastChecked') }} {{ lastCheckedLabel(sub.lastChecked) }}
           </template>
@@ -82,12 +86,12 @@ function lastCheckedLabel(ts?: number): string {
 
     <div class="mt-auto pt-3 flex items-center gap-2 flex-wrap">
       <label
-        class="flex items-center gap-1.5 text-xs text-fg-muted cursor-pointer select-none"
+        class="flex items-center gap-1.5 text-xs text-base-content/70 cursor-pointer select-none"
         :title="$t('youtube.autoDownloadTitle')"
       >
         <input
           type="checkbox"
-          class="accent-accent-base w-4 h-4 rounded"
+          class="accent-primary"
           :checked="sub.autoDownload"
           @change="
             emit('toggleAutoDownload', sub.channelId, ($event.target as HTMLInputElement).checked)

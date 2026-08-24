@@ -91,21 +91,21 @@ async function onNavDrop(e: DragEvent, path: string) {
 </script>
 
 <template>
-  <div
-    class="w-56 shrink-0 border-r border-border-default bg-bg-surface flex flex-col overflow-hidden"
-  >
+  <div class="w-56 shrink-0 border-r border-base-300 bg-base-100 flex flex-col overflow-hidden">
     <div class="flex-1 overflow-y-auto p-2 space-y-0.5">
       <!-- quick links -->
-      <div class="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-fg-faint">
+      <div
+        class="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-base-content/50"
+      >
         {{ t('explorer.quickAccess') }}
       </div>
       <button
         v-for="link in quickLinks"
         :key="link.label"
-        class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors text-left disabled:opacity-40"
+        class="fx-noise w-full flex items-center gap-2 px-2 py-1.5 fx-depth rounded-field text-sm text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors text-left disabled:opacity-40"
         :class="{
-          'bg-accent-ghost text-accent-base': isActiveLink(link),
-          'ring-2 ring-accent-base bg-accent-ghost/50': dropTargetPath === resolvePath(link)
+          'bg-primary/10 text-primary': isActiveLink(link),
+          'ring-2 ring-primary bg-primary/50': dropTargetPath === resolvePath(link)
         }"
         :disabled="link.label !== 'This PC' && !resolvePath(link)"
         @click="explorer.navigateTo(resolvePath(link))"
@@ -114,23 +114,23 @@ async function onNavDrop(e: DragEvent, path: string) {
         @dragleave="onNavDragLeave"
         @drop="onNavDrop($event, resolvePath(link))"
       >
-        <component :is="link.icon" :size="14" class="shrink-0 text-fg-faint" />
+        <component :is="link.icon" :size="14" class="shrink-0 text-base-content/50" />
         <span class="truncate">{{ t('explorer.' + link.label.replace(/\s+/g, '')) }}</span>
       </button>
 
       <!-- drives -->
       <div
-        class="mt-3 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-fg-faint"
+        class="mt-3 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-base-content/50"
       >
         {{ t('explorer.drives') }}
       </div>
       <button
         v-for="drive in drives"
         :key="drive.path"
-        class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors text-left"
+        class="fx-noise w-full flex items-center gap-2 px-2 py-1.5 fx-depth rounded-field text-sm text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors text-left"
         :class="{
-          'bg-accent-ghost text-accent-base': explorer.currentPath === drive.path,
-          'ring-2 ring-accent-base bg-accent-ghost/50': dropTargetPath === drive.path
+          'bg-primary/10 text-primary': explorer.currentPath === drive.path,
+          'ring-2 ring-primary bg-primary/50': dropTargetPath === drive.path
         }"
         @click="explorer.navigateTo(drive.path)"
         @dragover="onNavDragOver($event, drive.path)"
@@ -138,23 +138,23 @@ async function onNavDrop(e: DragEvent, path: string) {
         @dragleave="onNavDragLeave"
         @drop="onNavDrop($event, drive.path)"
       >
-        <HardDrive :size="14" class="shrink-0 text-accent-base" />
+        <HardDrive :size="14" class="shrink-0 text-primary" />
         <span class="truncate">{{ drive.name }}</span>
       </button>
 
       <!-- library folders -->
       <div
-        class="mt-3 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-fg-faint"
+        class="mt-3 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-base-content/50"
       >
         {{ t('explorer.libraryFolders') }}
       </div>
       <button
         v-for="folder in library.folders"
         :key="folder"
-        class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors text-left"
+        class="fx-noise w-full flex items-center gap-2 px-2 py-1.5 fx-depth rounded-field text-sm text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors text-left"
         :class="{
-          'bg-accent-ghost text-accent-base': explorer.currentPath === folder,
-          'ring-2 ring-accent-base bg-accent-ghost/50': dropTargetPath === folder
+          'bg-primary/10 text-primary': explorer.currentPath === folder,
+          'ring-2 ring-primary bg-primary/50': dropTargetPath === folder
         }"
         @click="explorer.navigateTo(folder)"
         @dragover="onNavDragOver($event, folder)"
@@ -162,10 +162,10 @@ async function onNavDrop(e: DragEvent, path: string) {
         @dragleave="onNavDragLeave"
         @drop="onNavDrop($event, folder)"
       >
-        <FolderOpen :size="14" class="shrink-0 text-accent-base" />
+        <FolderOpen :size="14" class="shrink-0 text-primary" />
         <span class="truncate flex-1">{{ folder.replace(/.*[\\/]/, '') || folder }}</span>
         <span
-          class="shrink-0 text-[8px] px-1 py-0.5 rounded-md bg-accent-base/20 text-accent-base font-bold border border-accent-base/40 leading-none"
+          class="shrink-0 text-[8px] px-1 py-0.5 rounded-field bg-primary/20 text-primary font-bold border border-primary/40 leading-none"
           :title="t('explorer.libraryFolder')"
         >
           LIB

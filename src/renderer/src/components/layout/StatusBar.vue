@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref,onMounted, computed } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { usePlayerStore } from '@renderer/stores/player';
@@ -14,7 +14,7 @@ import { logger } from '@shared/logger';
 const { t } = useI18n();
 
 const info = ref<AppInfo | null>(null);
-  const licenses = ref<Array<{ name: string; version?: string; license?: string }>>([]);
+const licenses = ref<Array<{ name: string; version?: string; license?: string }>>([]);
 
 onMounted(async () => {
   try {
@@ -77,27 +77,37 @@ const activeDownload = computed(() => activeDownloads.value[0] || null);
 
 <template>
   <div
-    class="h-6 bg-bg-surface border-t border-border-default flex items-center px-3 text-[11px] text-fg-faint shrink-0 gap-4"
+    class="h-6 bg-base-100/[var(--glass-alpha)] border-t border-base-300 flex items-center px-3 text-[11px] text-base-content/50 shrink-0 gap-4"
   >
     <div class="flex items-center gap-1.5">
       <span v-if="player.streamPending" class="flex items-center gap-1.5">
-        <span class="w-1.5 h-1.5 rounded-full bg-accent-base animate-pulse" />
+        <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
         {{ player.streamPending.name }} · {{ $t('status.connecting') }}
       </span>
       <template v-else-if="player.currentTrack">
         <span
           class="w-1.5 h-1.5 rounded-full"
-          :class="player.isPlaying ? 'bg-green-base' : 'bg-border-subtle'"
+          :class="player.isPlaying ? 'bg-success' : 'bg-base-300'"
         />
-        <span v-if="player.currentTrack.type === 'stream' && audio.error.value === 'stream-failed'" class="text-red-base">
+        <span
+          v-if="player.currentTrack.type === 'stream' && audio.error.value === 'stream-failed'"
+          class="text-error"
+        >
           {{ $t('status.streamError') }}
         </span>
-        <span v-else-if="player.currentTrack.type === 'stream' && audio.isLoading.value" class="flex items-center gap-1.5">
-          <span class="w-1.5 h-1.5 rounded-full bg-accent-base animate-pulse" />
+        <span
+          v-else-if="player.currentTrack.type === 'stream' && audio.isLoading.value"
+          class="flex items-center gap-1.5"
+        >
+          <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
           {{ $t('status.buffering') }}
         </span>
         <span v-else>
-          {{ player.currentTrack.type === 'stream' ? 'YT' : player.currentTrack.extension?.toUpperCase() }}
+          {{
+            player.currentTrack.type === 'stream'
+              ? 'YT'
+              : player.currentTrack.extension?.toUpperCase()
+          }}
           <template v-if="player.currentTrack.metadata?.bitrate">
             · {{ player.currentTrack.metadata.bitrate }}kbps</template
           >
@@ -109,21 +119,21 @@ const activeDownload = computed(() => activeDownloads.value[0] || null);
       <span v-else>{{ $t('status.noMedia') }}</span>
     </div>
     <template v-if="viewCounts.length">
-      <div class="h-3 w-px bg-border-default" />
+      <div class="h-3 w-px bg-base-300" />
       <span v-for="s in viewCounts" :key="s.label">{{ s.count }} {{ s.label }}</span>
     </template>
     <div class="flex-1" />
     <span v-if="activeDownload" class="flex items-center gap-1.5">
-      <span class="w-1.5 h-1.5 rounded-full bg-accent-base animate-pulse" />
+      <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
       {{ activeDownload.title }} {{ activeDownload.progress }}%
     </span>
     <span class="flex items-center gap-1.5">
       <span
         class="w-1.5 h-1.5 rounded-full"
-        :class="status.loggedIn ? 'bg-green-base' : 'bg-border-subtle'"
+        :class="status.loggedIn ? 'bg-success' : 'bg-base-300'"
       />
       {{ status.loggedIn ? $t('status.loggedIn') : $t('status.notLoggedIn') }}
     </span>
-    <span class="text-fg-faint/60">Onda v{{ info?.appVersion }}</span>
+    <span class="text-base-content/60">Onda v{{ info?.appVersion }}</span>
   </div>
 </template>

@@ -67,16 +67,16 @@ async function applyProperties() {
       @click.self="closeProperties"
     >
       <div
-        class="bg-bg-surface border border-border-default rounded-xl w-110 max-w-[92vw] shadow-2xl overflow-hidden"
+        class="bg-base-100 border border-base-300 rounded-box w-110 max-w-[92vw] shadow-2xl overflow-hidden"
       >
-        <div class="flex items-center justify-between px-4 py-3 border-b border-border-default">
-          <h3 class="text-sm font-semibold text-fg-base flex items-center gap-2">
-            <FolderOpen v-if="item.isDirectory" :size="16" class="text-accent-base" />
-            <FileText v-else :size="16" class="text-accent-base" />
+        <div class="flex items-center justify-between px-4 py-3 border-b border-base-300">
+          <h3 class="text-sm font-semibold text-base-content flex items-center gap-2">
+            <FolderOpen v-if="item.isDirectory" :size="16" class="text-primary" />
+            <FileText v-else :size="16" class="text-primary" />
             {{ $t('explorer.properties') }}
           </h3>
           <button
-            class="p-1 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+            class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
             @click="closeProperties"
           >
             <X :size="14" />
@@ -84,28 +84,30 @@ async function applyProperties() {
         </div>
         <div class="p-4 space-y-3">
           <div>
-            <label class="text-[11px] text-fg-faint uppercase tracking-wider">{{
+            <label class="text-[11px] text-base-content/50 uppercase tracking-wider">{{
               $t('explorer.name')
             }}</label>
             <input
               v-model="propertiesName"
               type="text"
-              class="w-full mt-1 px-3 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-sm text-fg-base outline-none focus:ring-1 focus:ring-accent-base"
+              class="w-full mt-1 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-sm text-base-content outline-none focus:ring-1 focus:ring-primary"
               @keydown.enter="applyProperties"
             />
           </div>
           <div class="grid grid-cols-[120px_1fr] gap-x-3 gap-y-2 text-xs">
-            <span class="text-fg-faint">{{ $t('explorer.propertiesType') }}</span>
-            <span class="text-fg-base">{{
+            <span class="text-base-content/50">{{ $t('explorer.propertiesType') }}</span>
+            <span class="text-base-content">{{
               item.isDirectory ? $t('explorer.propertiesFolder') : item.extension || '—'
             }}</span>
-            <span class="text-fg-faint">{{ $t('explorer.propertiesLocation') }}</span>
-            <span class="text-fg-base break-all font-mono">{{ item.path }}</span>
+            <span class="text-base-content/50">{{ $t('explorer.propertiesLocation') }}</span>
+            <span class="text-base-content break-all font-mono">{{ item.path }}</span>
             <template v-if="item.isDirectory && propertiesData">
-              <span class="text-fg-faint">{{ $t('explorer.propertiesSize') }}</span>
-              <span class="text-fg-base">{{ formatFileSize(propertiesData.totalSize || 0) }}</span>
-              <span class="text-fg-faint">{{ $t('explorer.propertiesContains') }}</span>
-              <span class="text-fg-base">{{
+              <span class="text-base-content/50">{{ $t('explorer.propertiesSize') }}</span>
+              <span class="text-base-content">{{
+                formatFileSize(propertiesData.totalSize || 0)
+              }}</span>
+              <span class="text-base-content/50">{{ $t('explorer.propertiesContains') }}</span>
+              <span class="text-base-content">{{
                 $t('explorer.propertiesContainsValue', {
                   n: propertiesData.itemCount || 0,
                   d: propertiesData.dirCount || 0,
@@ -114,24 +116,24 @@ async function applyProperties() {
               }}</span>
             </template>
             <template v-else>
-              <span class="text-fg-faint">{{ $t('explorer.propertiesSize') }}</span>
-              <span class="text-fg-base">{{ formatFileSize(item.size) }}</span>
+              <span class="text-base-content/50">{{ $t('explorer.propertiesSize') }}</span>
+              <span class="text-base-content">{{ formatFileSize(item.size) }}</span>
             </template>
-            <span class="text-fg-faint">{{ $t('explorer.propertiesCreated') }}</span>
-            <span class="text-fg-base">{{ new Date(item.createdAt).toLocaleString() }}</span>
-            <span class="text-fg-faint">{{ $t('explorer.propertiesModified') }}</span>
-            <span class="text-fg-base">{{ new Date(item.modifiedAt).toLocaleString() }}</span>
+            <span class="text-base-content/50">{{ $t('explorer.propertiesCreated') }}</span>
+            <span class="text-base-content">{{ new Date(item.createdAt).toLocaleString() }}</span>
+            <span class="text-base-content/50">{{ $t('explorer.propertiesModified') }}</span>
+            <span class="text-base-content">{{ new Date(item.modifiedAt).toLocaleString() }}</span>
           </div>
         </div>
-        <div class="flex justify-end gap-2 px-4 py-3 border-t border-border-default">
+        <div class="flex justify-end gap-2 px-4 py-3 border-t border-base-300">
           <button
-            class="px-4 py-1.5 rounded-lg text-xs text-fg-muted hover:bg-bg-hover transition-colors"
+            class="fx-noise px-4 py-1.5 fx-depth rounded-field text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
             @click="closeProperties"
           >
             {{ $t('common.cancel') }}
           </button>
           <button
-            class="px-4 py-1.5 rounded-lg text-xs bg-accent-base text-white hover:bg-accent-base/90 transition-colors"
+            class="fx-noise px-4 py-1.5 fx-depth rounded-field text-xs bg-primary text-primary-content hover:bg-primary/90 transition-colors"
             @click="applyProperties"
           >
             {{ $t('common.ok') }}

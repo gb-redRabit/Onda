@@ -98,20 +98,24 @@ const { subsVisible, toggleSubtitles } = sub;
     <!-- settings overlay -->
     <div
       v-if="settingsOpen"
-      class="absolute top-9 right-1.5 z-20 rounded-lg p-3 min-w-44"
+      class="absolute top-9 right-1.5 z-20 rounded-field p-3 min-w-44"
       :style="{
-        background: 'var(--color-bg-overlay, #1e1e2e)',
-        border: '1px solid var(--color-border-default, #2a2a40)'
+        background: 'var(--color-neutral)',
+        border: '1px solid var(--color-base-300)'
       }"
     >
       <div class="flex items-center justify-between mb-2">
-        <span class="text-[11px]" :style="{ color: 'var(--color-fg-base, #e8e8f0)' }">{{
+        <span class="text-[11px]" :style="{ color: 'var(--color-base-content)' }">{{
           t('subtitles')
         }}</span>
         <button
           class="w-8 h-4.5 rounded-full transition-colors relative"
-          :class="subsVisible ? 'bg-accent-base' : ''"
-          :style="!subsVisible ? { background: 'var(--color-bg-hover, #2e2e42)' } : {}"
+          :class="subsVisible ? 'bg-primary' : ''"
+          :style="
+            !subsVisible
+              ? { background: 'color-mix(in srgb, var(--color-base-content) 10%, transparent)' }
+              : {}
+          "
           @click="toggleSubtitles"
         >
           <div
@@ -121,7 +125,9 @@ const { subsVisible, toggleSubtitles } = sub;
         </button>
       </div>
       <div class="mb-1.5">
-        <span class="text-[10px]" :style="{ color: 'var(--color-fg-faint, #7c7c9c)' }"
+        <span
+          class="text-[10px]"
+          :style="{ color: 'color-mix(in srgb, var(--color-base-content) 50%, transparent)' }"
           >{{ t('brightness') }} {{ brightness }}%</span
         >
         <input
@@ -131,12 +137,14 @@ const { subsVisible, toggleSubtitles } = sub;
           step="5"
           :value="brightness"
           class="w-full h-0.75"
-          :style="{ background: 'var(--color-bg-hover, #2e2e42)' }"
+          :style="{ background: 'color-mix(in srgb, var(--color-base-content) 10%, transparent)' }"
           @input="brightness = parseInt(($event.target as HTMLInputElement).value)"
         />
       </div>
       <div>
-        <span class="text-[10px]" :style="{ color: 'var(--color-fg-faint, #7c7c9c)' }"
+        <span
+          class="text-[10px]"
+          :style="{ color: 'color-mix(in srgb, var(--color-base-content) 50%, transparent)' }"
           >{{ t('contrast') }} {{ contrast }}%</span
         >
         <input
@@ -146,7 +154,7 @@ const { subsVisible, toggleSubtitles } = sub;
           step="5"
           :value="contrast"
           class="w-full h-0.75"
-          :style="{ background: 'var(--color-bg-hover, #2e2e42)' }"
+          :style="{ background: 'color-mix(in srgb, var(--color-base-content) 10%, transparent)' }"
           @input="contrast = parseInt(($event.target as HTMLInputElement).value)"
         />
       </div>
@@ -154,14 +162,14 @@ const { subsVisible, toggleSubtitles } = sub;
 
     <div
       class="absolute bottom-2 left-2 text-[10px] font-mono pointer-events-none"
-      :style="{ color: 'var(--color-fg-faint, rgba(255,255,255,0.5))' }"
+      :style="{ color: 'color-mix(in srgb, var(--color-base-content) 50%, transparent)' }"
     >
       {{ currentTime }}
     </div>
 
     <div
       class="absolute bottom-2 right-2 text-[10px] font-mono pointer-events-none"
-      :style="{ color: 'var(--color-fg-faint, rgba(255,255,255,0.5))' }"
+      :style="{ color: 'color-mix(in srgb, var(--color-base-content) 50%, transparent)' }"
     >
       {{ duration }}
     </div>
@@ -169,14 +177,14 @@ const { subsVisible, toggleSubtitles } = sub;
     <div
       ref="progressRef"
       class="relative h-1 shrink-0 cursor-pointer"
-      :style="{ background: 'var(--color-bg-hover, rgba(255,255,255,0.15))' }"
+      :style="{ background: 'color-mix(in srgb, var(--color-base-content) 10%, transparent)' }"
       @click="onProgressClick"
       @mousemove="handleMouseMove"
       @mouseleave="handleMouseLeave"
     >
       <div
         class="h-full rounded-r"
-        :style="{ width: progress + '%', background: 'var(--color-accent-base, #8b7cf0)' }"
+        :style="{ width: progress + '%', background: 'var(--color-primary)' }"
       ></div>
 
       <div
@@ -185,7 +193,7 @@ const { subsVisible, toggleSubtitles } = sub;
         :style="{ left: previewLeft + '%' }"
       >
         <div
-          class="rounded overflow-hidden shadow-lg border border-white/10 bg-black"
+          class="rounded-field overflow-hidden shadow-lg border border-white/10 bg-black"
           :style="{ width: '96px', height: '54px' }"
         >
           <img
@@ -201,7 +209,7 @@ const { subsVisible, toggleSubtitles } = sub;
             {{ previewTimeLabel() }}
           </div>
         </div>
-        <span class="mt-1 text-[10px] text-white/80 tabular-nums bg-black/60 px-1 rounded">
+        <span class="mt-1 text-[10px] text-white/80 tabular-nums bg-black/60 px-1 rounded-field">
           {{ previewTimeLabel() }}
         </span>
       </div>

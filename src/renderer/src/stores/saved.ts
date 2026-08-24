@@ -36,7 +36,9 @@ export const useSavedStore = defineStore('saved', () => {
     return loading;
   }
 
-  function toSavedTrack(video: SavedTrackInput | YouTubeVideo | YouTubeResolvedItem): IpcSavedStream {
+  function toSavedTrack(
+    video: SavedTrackInput | YouTubeVideo | YouTubeResolvedItem
+  ): IpcSavedStream {
     return {
       id: video.id,
       title: video.title,

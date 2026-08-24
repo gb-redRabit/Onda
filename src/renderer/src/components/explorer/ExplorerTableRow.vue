@@ -48,11 +48,11 @@ function iconComponent() {
     :draggable="!isAtDrives"
     :data-file-path="item.path"
     :data-folder-path="item.isDirectory ? item.path : undefined"
-    class="w-full grid grid-cols-[1fr_120px_100px_100px] gap-2 px-3 py-2 rounded-lg hover:bg-bg-hover transition-colors text-left items-center text-sm group relative"
+    class="fx-noise w-full grid grid-cols-[1fr_120px_100px_100px] gap-2 px-3 py-2 fx-depth rounded-field hover:bg-base-content/10 transition-colors text-left items-center text-sm group relative"
     :class="{
-      'bg-accent-ghost ring-1 ring-accent-base': isSelected,
-      'bg-accent-ghost/15 ring-1 ring-accent-base/30': isLibraryFolder && !isSelected,
-      'ring-2 ring-accent-base bg-accent-ghost/50':
+      'bg-primary/10 ring-1 ring-primary': isSelected,
+      'bg-primary/15 ring-1 ring-primary/30': isLibraryFolder && !isSelected,
+      'ring-2 ring-primary bg-primary/50':
         hoveredFolderPath && item.isDirectory && hoveredFolderPath === item.path,
       'opacity-40': isCut
     }"
@@ -85,16 +85,16 @@ function iconComponent() {
         :is="iconComponent()"
         v-else
         :size="14"
-        :class="isAtDrives || item.isDirectory ? 'text-accent-base shrink-0' : 'shrink-0'"
+        :class="isAtDrives || item.isDirectory ? 'text-primary shrink-0' : 'shrink-0'"
       />
       <span class="truncate">{{ item.name }}</span>
       <span
         v-if="isLibraryFolder && !isAtDrives"
-        class="shrink-0 text-[8px] px-1 py-0.5 rounded-md bg-accent-base/20 text-accent-base font-bold border border-accent-base/40 leading-none"
+        class="shrink-0 text-[8px] px-1 py-0.5 rounded-field bg-primary/20 text-primary font-bold border border-primary/40 leading-none"
         >LIB</span
       >
     </div>
-    <span class="text-fg-faint text-xs font-mono">
+    <span class="text-base-content/50 text-xs font-mono">
       {{
         isAtDrives
           ? item.size > 0
@@ -105,10 +105,10 @@ function iconComponent() {
             : formatFileSize(item.size)
       }}
     </span>
-    <span class="text-fg-faint text-xs">{{
+    <span class="text-base-content/50 text-xs">{{
       item.extension || (isAtDrives ? $t('explorer.drive') : '—')
     }}</span>
-    <span class="text-fg-faint text-xs text-right font-mono">{{
+    <span class="text-base-content/50 text-xs text-right font-mono">{{
       new Date(item.modifiedAt).toLocaleDateString()
     }}</span>
   </button>

@@ -6,7 +6,18 @@ import type { MediaFile } from '@renderer/types/media';
 import { useUIStore } from '@renderer/stores/ui';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
-import { Search, Music2, Film, Disc3, Settings, Home, ArrowRight, Radio, Download, Globe } from '@lucide/vue';
+import {
+  Search,
+  Music2,
+  Film,
+  Disc3,
+  Settings,
+  Home,
+  ArrowRight,
+  Radio,
+  Download,
+  Globe
+} from '@lucide/vue';
 
 const { t } = useI18n();
 
@@ -100,21 +111,21 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
     @click.self="ui.toggleCommandPalette"
   >
     <div
-      class="w-120 max-w-[90vw] bg-bg-elevated border border-border-default rounded-xl shadow-2xl shadow-black/50 overflow-hidden"
+      class="w-120 max-w-[90vw] bg-neutral border border-neutral-content/20 rounded-box shadow-2xl shadow-black/50 overflow-hidden"
     >
-      <div class="flex items-center gap-2 px-3 py-2.5 border-b border-border-default">
-        <Search :size="16" class="text-fg-faint shrink-0" />
+      <div class="flex items-center gap-2 px-3 py-2.5 border-b border-base-300">
+        <Search :size="16" class="text-base-content/50 shrink-0" />
         <input
           ref="input"
           v-model="query"
           :placeholder="$t('cmdPalette.placeholder')"
-          class="flex-1 bg-transparent text-sm text-fg-base outline-none placeholder:text-fg-faint/50"
+          class="flex-1 bg-transparent text-sm text-base-content outline-none placeholder:text-base-content/50"
         />
       </div>
       <div class="max-h-80 overflow-y-auto py-1">
         <div
           v-if="results.tracks.length === 0 && !query"
-          class="px-3 py-4 text-center text-xs text-fg-faint italic"
+          class="px-3 py-4 text-center text-xs text-base-content/50 italic"
         >
           {{ $t('cmdPalette.empty') }}
         </div>
@@ -122,7 +133,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
           <div
             v-if="item.type === 'track'"
             class="flex items-center gap-2.5 px-3 py-2 cursor-pointer text-sm transition-colors"
-            :class="i === activeIndex ? 'bg-accent-ghost text-accent-base' : 'hover:bg-bg-hover'"
+            :class="i === activeIndex ? 'bg-primary/10 text-primary' : 'hover:bg-base-content/10'"
             @click="
               player.setTrack(item.track);
               player.play();
@@ -133,26 +144,26 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
             <component
               :is="item.track.type === 'video' ? Film : Music2"
               :size="14"
-              class="shrink-0 text-fg-faint"
+              class="shrink-0 text-base-content/50"
             />
             <span class="truncate flex-1">{{ item.track.metadata?.title || item.track.name }}</span>
-            <span class="text-[11px] text-fg-faint shrink-0 truncate max-w-30">{{
+            <span class="text-[11px] text-base-content/50 shrink-0 truncate max-w-30">{{
               item.track.metadata?.artist || item.track.extension
             }}</span>
           </div>
           <div
             v-else
             class="flex items-center gap-2.5 px-3 py-2 cursor-pointer text-sm transition-colors"
-            :class="i === activeIndex ? 'bg-accent-ghost text-accent-base' : 'hover:bg-bg-hover'"
+            :class="i === activeIndex ? 'bg-primary/10 text-primary' : 'hover:bg-base-content/10'"
             @click="
               item.action();
               ui.toggleCommandPalette();
             "
             @mouseenter="activeIndex = i"
           >
-            <component :is="item.icon" :size="14" class="shrink-0 text-fg-faint" />
+            <component :is="item.icon" :size="14" class="shrink-0 text-base-content/50" />
             <span>{{ item.label }}</span>
-            <ArrowRight :size="12" class="ml-auto text-fg-faint" />
+            <ArrowRight :size="12" class="ml-auto text-base-content/50" />
           </div>
         </template>
       </div>

@@ -27,13 +27,13 @@ onMounted(async () => {
     <SettingsCard>
       <div class="flex items-center gap-4">
         <div
-          class="w-16 h-16 rounded-2xl bg-accent-ghost flex items-center justify-center text-accent-base text-2xl font-black"
+          class="w-16 h-16 rounded-box bg-primary/10 flex items-center justify-center text-primary text-2xl font-black"
         >
           O
         </div>
         <div>
           <h2 class="text-xl font-bold">{{ info?.appName || 'Onda' }}</h2>
-          <div class="text-sm text-fg-faint mt-0.5">v{{ info?.appVersion }}</div>
+          <div class="text-sm text-base-content/50 mt-0.5">v{{ info?.appVersion }}</div>
         </div>
       </div>
     </SettingsCard>
@@ -41,28 +41,28 @@ onMounted(async () => {
     <SettingsCard>
       <SettingsSectionTitle :title="$t('settings.envVersions')" />
       <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
-        <div class="p-3 rounded-xl bg-bg-base border border-border-default">
-          <div class="text-[11px] text-fg-faint mb-0.5">Electron</div>
+        <div class="p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300">
+          <div class="text-[11px] text-base-content/50 mb-0.5">Electron</div>
           <div class="text-sm font-mono">{{ info?.electron }}</div>
         </div>
-        <div class="p-3 rounded-xl bg-bg-base border border-border-default">
-          <div class="text-[11px] text-fg-faint mb-0.5">Chrome</div>
+        <div class="p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300">
+          <div class="text-[11px] text-base-content/50 mb-0.5">Chrome</div>
           <div class="text-sm font-mono">{{ info?.chrome }}</div>
         </div>
-        <div class="p-3 rounded-xl bg-bg-base border border-border-default">
-          <div class="text-[11px] text-fg-faint mb-0.5">Node.js</div>
+        <div class="p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300">
+          <div class="text-[11px] text-base-content/50 mb-0.5">Node.js</div>
           <div class="text-sm font-mono">{{ info?.node }}</div>
         </div>
-        <div class="p-3 rounded-xl bg-bg-base border border-border-default">
-          <div class="text-[11px] text-fg-faint mb-0.5">V8</div>
+        <div class="p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300">
+          <div class="text-[11px] text-base-content/50 mb-0.5">V8</div>
           <div class="text-sm font-mono">{{ info?.v8 }}</div>
         </div>
-        <div class="p-3 rounded-xl bg-bg-base border border-border-default">
-          <div class="text-[11px] text-fg-faint mb-0.5">{{ $t('settings.os') }}</div>
+        <div class="p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300">
+          <div class="text-[11px] text-base-content/50 mb-0.5">{{ $t('settings.os') }}</div>
           <div class="text-sm font-mono truncate">{{ info?.os }}</div>
         </div>
-        <div class="p-3 rounded-xl bg-bg-base border border-border-default">
-          <div class="text-[11px] text-fg-faint mb-0.5">{{ $t('settings.platform') }}</div>
+        <div class="p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300">
+          <div class="text-[11px] text-base-content/50 mb-0.5">{{ $t('settings.platform') }}</div>
           <div class="text-sm font-mono">{{ info?.platform }} / {{ info?.arch }}</div>
         </div>
       </div>
@@ -70,16 +70,18 @@ onMounted(async () => {
 
     <SettingsCard>
       <SettingsSectionTitle :title="$t('settings.licenses')" />
-      <div class="divide-y divide-border-default">
+      <div class="divide-y divide-base-300">
         <div
           v-for="lic in licenses"
           :key="lic.name"
           class="flex items-center justify-between py-2 text-xs"
         >
           <span class="font-mono">{{ lic.name }}@{{ lic.version }}</span>
-          <span class="text-fg-faint">{{ lic.license || $t('settings.licenseUnknown') }}</span>
+          <span class="text-base-content/50">{{
+            lic.license || $t('settings.licenseUnknown')
+          }}</span>
         </div>
-        <div v-if="!licenses.length" class="py-2 text-xs text-fg-faint">
+        <div v-if="!licenses.length" class="py-2 text-xs text-base-content/50">
           {{ $t('settings.licenseUnknown') }}
         </div>
       </div>
@@ -92,7 +94,7 @@ onMounted(async () => {
         :href="link.url"
         target="_blank"
         rel="noopener"
-        class="px-3 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-xs font-medium hover:bg-bg-hover transition-colors"
+        class="px-3 py-1.5 rounded-field bg-base-100 border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors"
       >
         {{ link.label }}
       </a>

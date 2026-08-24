@@ -153,22 +153,22 @@ export interface SubscriptionDownloadPrefs {
 }
 
 export interface Subscription {
-    id: string;
-    channelId: string;
-    channelTitle: string;
-    channelThumbnail: string;
-    autoDownload: boolean;
-    // Platform of the subscribed channel — 'youtube' by default (legacy
-    // entries have no field). SoundCloud subscriptions use profile permalinks
-    // as channelId and download MP3s via the internal API.
-    platform?: 'youtube' | 'soundcloud';
-    lastChecked?: number;
-    lastVideoId?: string;
-    baselineVideoId?: string;
-    downloadedVideoIds?: string[];
-    queuedVideoIds?: string[];
-    pendingCount?: number;
-    newArrivals?: number;
-    downloadPrefs?: SubscriptionDownloadPrefs;
-    addedAt: number;
-  }
+  id: string;
+  channelId: string;
+  channelTitle: string;
+  channelThumbnail: string;
+  autoDownload: boolean;
+  // Platform of the subscribed channel — 'youtube' by default (legacy
+  // entries have no field). SoundCloud subscriptions use profile permalinks
+  // as channelId and download MP3s via the internal API.
+  platform?: 'youtube' | 'soundcloud';
+  lastChecked?: number;
+  lastVideoId?: string;
+  baselineVideoId?: string;
+  downloadedVideoIds?: string[];
+  queuedVideoIds?: string[];
+  pendingCount?: number;
+  newArrivals?: number;
+  downloadPrefs?: SubscriptionDownloadPrefs;
+  addedAt: number;
+}

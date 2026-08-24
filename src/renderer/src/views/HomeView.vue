@@ -52,29 +52,29 @@ const actions = [
 </script>
 
 <template>
-  <div class="p-6 max-w-5xl mx-auto">
+  <div class="p-6 max-w-7xl mx-auto">
     <div class="mb-8">
       <h1 class="text-3xl font-bold mb-1">{{ $t('home.welcome') }}</h1>
-      <p class="text-fg-muted text-sm">{{ $t('home.subtitle') }}</p>
+      <p class="text-base-content/70 text-sm">{{ $t('home.subtitle') }}</p>
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <button
         v-for="a in actions"
         :key="a.labelKey"
-        class="flex items-center gap-4 p-5 rounded-2xl bg-bg-elevated border border-border-default hover:border-border-subtle hover:bg-bg-hover transition-all group text-left"
+        class="flex items-center gap-4 p-5 fx-depth rounded-box fx-noise bg-base-100 border border-base-300 hover:border-base-300 hover:bg-base-content/10 transition-all group text-left"
         @click="a.route()"
       >
-        <div class="w-12 h-12 rounded-xl bg-accent-ghost flex items-center justify-center">
-          <component :is="a.icon" :size="22" class="text-accent-base" />
+        <div class="w-12 h-12 rounded-box bg-primary/10 flex items-center justify-center">
+          <component :is="a.icon" :size="22" class="text-primary" />
         </div>
         <div class="flex-1">
           <div class="text-sm font-semibold">{{ $t(a.labelKey) }}</div>
-          <div class="text-xs text-fg-faint mt-0.5">{{ $t(a.descKey) }}</div>
+          <div class="text-xs text-base-content/50 mt-0.5">{{ $t(a.descKey) }}</div>
         </div>
         <ArrowRight
           :size="16"
-          class="text-fg-faint group-hover:text-fg-base group-hover:translate-x-0.5 transition-all"
+          class="text-base-content/50 group-hover:text-base-content group-hover:translate-x-0.5 transition-all"
         />
       </button>
     </div>
@@ -84,26 +84,26 @@ const actions = [
         <div
           v-for="i in 5"
           :key="i"
-          class="p-4 rounded-xl bg-bg-elevated border border-border-default animate-pulse"
+          class="p-4 rounded-box bg-base-100 border border-base-300 animate-pulse"
         >
-          <div class="h-8 w-16 rounded bg-bg-hover mb-2" />
-          <div class="h-3 w-24 rounded bg-bg-hover" />
+          <div class="h-8 w-16 rounded-field bg-base-content/10 mb-2" />
+          <div class="h-3 w-24 rounded-field bg-base-content/10" />
         </div>
       </template>
       <template v-else>
         <div
           v-for="s in [
-            { v: library.totalCount, k: 'home.totalTracks', c: 'text-fg-base' },
-            { v: library.audioCount, k: 'home.audioFiles', c: 'text-accent-base' },
-            { v: library.videoCount, k: 'home.videoFiles', c: 'text-green-base' },
-            { v: library.imageCount, k: 'home.imageFiles', c: 'text-purple-base' },
-            { v: library.playlists.length, k: 'library.playlists', c: 'text-amber-base' }
+            { v: library.totalCount, k: 'home.totalTracks', c: 'text-base-content' },
+            { v: library.audioCount, k: 'home.audioFiles', c: 'text-primary' },
+            { v: library.videoCount, k: 'home.videoFiles', c: 'text-success' },
+            { v: library.imageCount, k: 'home.imageFiles', c: 'text-secondary' },
+            { v: library.playlists.length, k: 'library.playlists', c: 'text-warning' }
           ]"
           :key="s.k"
-          class="p-4 rounded-xl bg-bg-elevated border border-border-default"
+          class="p-4 rounded-box bg-base-100 border border-base-300"
         >
           <div :class="['text-3xl font-bold', s.c]">{{ s.v }}</div>
-          <div class="text-xs text-fg-faint mt-1">{{ $t(s.k) }}</div>
+          <div class="text-xs text-base-content/50 mt-1">{{ $t(s.k) }}</div>
         </div>
       </template>
     </div>
@@ -111,10 +111,10 @@ const actions = [
     <div class="mb-8">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-base font-semibold flex items-center gap-2">
-          <Clock :size="16" class="text-accent-base" /> {{ $t('home.recentlyPlayed') }}
+          <Clock :size="16" class="text-primary" /> {{ $t('home.recentlyPlayed') }}
         </h2>
         <button
-          class="text-xs text-accent-base hover:text-accent-hover font-medium transition-colors"
+          class="text-xs text-primary hover:text-primary/90 font-medium transition-colors"
           @click="router.push('/library')"
         >
           {{ $t('home.showAll') }}
@@ -122,30 +122,27 @@ const actions = [
       </div>
       <div
         v-if="!library.isLoaded || library.recentTracks.length === 0"
-        class="text-center py-14 rounded-2xl bg-bg-elevated border border-border-default"
+        class="text-center py-14 rounded-box bg-base-100 border border-base-300"
       >
-        <Music2 :size="40" class="mx-auto mb-3 text-fg-faint/40" />
-        <p class="text-sm text-fg-muted">{{ $t('home.noTracks') }}</p>
-        <p class="text-xs text-fg-faint mt-1">{{ $t('home.openFileToStart') }}</p>
+        <Music2 :size="40" class="mx-auto mb-3 text-base-content/40" />
+        <p class="text-sm text-base-content/70">{{ $t('home.noTracks') }}</p>
+        <p class="text-xs text-base-content/50 mt-1">{{ $t('home.openFileToStart') }}</p>
       </div>
       <div v-else class="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <button
           v-for="t in library.recentTracks.slice(0, 8)"
           :key="t.path"
-          class="flex items-center gap-3 p-3 rounded-xl bg-bg-elevated border border-border-default hover:bg-bg-hover transition-all text-left group"
+          class="flex items-center gap-3 p-3 fx-depth rounded-box fx-noise bg-base-100 border border-base-300 hover:bg-base-content/10 transition-all text-left group"
           @click="player.setTrack(t)"
         >
           <div
-            class="w-10 h-10 rounded-lg bg-accent-ghost flex items-center justify-center shrink-0 group-hover:bg-accent-base transition-colors"
+            class="w-10 h-10 rounded-field bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors"
           >
-            <Play
-              :size="14"
-              class="text-accent-base group-hover:text-white ml-0.5 transition-colors"
-            />
+            <Play :size="14" class="text-primary group-hover:text-white ml-0.5 transition-colors" />
           </div>
           <div class="min-w-0">
             <div class="text-sm font-medium truncate">{{ t.metadata?.title || t.name }}</div>
-            <div class="text-xs text-fg-faint truncate">
+            <div class="text-xs text-base-content/50 truncate">
               {{ t.metadata?.artist || $t('home.unknown') }}
             </div>
           </div>

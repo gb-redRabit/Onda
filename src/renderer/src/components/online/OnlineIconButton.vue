@@ -20,12 +20,12 @@ const emit = defineEmits<{
 }>();
 
 const base =
-  'inline-flex items-center justify-center rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+  'inline-flex items-center justify-center rounded-field transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
 
 const variants: Record<string, string> = {
-  default: `text-fg-muted hover:bg-bg-hover hover:text-fg-base ${props.active ? 'bg-bg-hover text-fg-base' : ''}`,
-  primary: `bg-accent-base text-white hover:bg-accent-hover ${props.active ? 'bg-accent-hover' : ''}`,
-  danger: `text-fg-muted hover:bg-red-base/10 hover:text-red-base ${props.active ? 'bg-red-base/10 text-red-base' : ''}`
+  default: `text-base-content/70 hover:bg-base-content/10 hover:text-base-content ${props.active ? 'bg-base-content/10 text-base-content' : ''}`,
+  primary: `bg-primary text-primary-content hover:bg-primary/90 ${props.active ? 'bg-primary/90' : ''}`,
+  danger: `text-base-content/70 hover:bg-error/10 hover:text-error ${props.active ? 'bg-error/10 text-error' : ''}`
 };
 
 const sizes: Record<string, string> = {

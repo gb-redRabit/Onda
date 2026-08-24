@@ -5,7 +5,11 @@ import { FileAudio, Link2, AlertCircle, CheckCircle2, Plus } from '@lucide/vue';
 import OnlineButton from '@renderer/components/online/OnlineButton.vue';
 import { useRadioStore } from '@renderer/stores/radio';
 import { useUIStore } from '@renderer/stores/ui';
-import { parseRadioFile, parseDirectUrl, type ParsedRadioStation } from '@renderer/utils/radioParser';
+import {
+  parseRadioFile,
+  parseDirectUrl,
+  type ParsedRadioStation
+} from '@renderer/utils/radioParser';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -113,17 +117,19 @@ async function addDirect() {
     @click.self="emit('update:modelValue', false)"
   >
     <div
-      class="w-[520px] max-h-[80vh] overflow-y-auto rounded-2xl bg-bg-surface border border-border-default p-5 space-y-5"
+      class="w-[520px] max-h-[80vh] overflow-y-auto rounded-box bg-base-100 border border-base-300 p-5 space-y-5"
     >
-      <h2 class="text-sm font-semibold text-fg-base">{{ $t('saved.addRadio') }}</h2>
+      <h2 class="text-sm font-semibold text-base-content">{{ $t('saved.addRadio') }}</h2>
 
       <!-- file import -->
       <div class="space-y-2">
         <div
-          class="flex items-center gap-2 rounded-xl border border-dashed border-border-subtle p-3 hover:border-accent-base/50 transition-colors"
+          class="flex items-center gap-2 rounded-box border border-dashed border-base-300 p-3 hover:border-primary/50 transition-colors"
         >
-          <FileAudio :size="16" class="text-fg-muted shrink-0" />
-          <label class="flex-1 min-w-0 cursor-pointer text-sm text-fg-muted hover:text-fg-base truncate">
+          <FileAudio :size="16" class="text-base-content/70 shrink-0" />
+          <label
+            class="flex-1 min-w-0 cursor-pointer text-sm text-base-content/70 hover:text-base-content truncate"
+          >
             <span v-if="fileName">{{ fileName }}</span>
             <span v-else>{{ $t('radio.pickFile') }}</span>
             <input
@@ -134,9 +140,9 @@ async function addDirect() {
             />
           </label>
         </div>
-        <p class="text-xs text-fg-faint">{{ $t('radio.fileHint') }}</p>
+        <p class="text-xs text-base-content/50">{{ $t('radio.fileHint') }}</p>
 
-        <div v-if="parseError" class="flex items-center gap-2 text-xs text-red-base">
+        <div v-if="parseError" class="flex items-center gap-2 text-xs text-error">
           <AlertCircle :size="14" />
           {{ $t(parseError) }}
         </div>
@@ -145,16 +151,16 @@ async function addDirect() {
           <label
             v-for="(s, i) in fileStations"
             :key="i"
-            class="flex items-center gap-2 p-2 rounded-lg hover:bg-bg-hover cursor-pointer"
+            class="flex items-center gap-2 p-2 rounded-field hover:bg-base-content/10 cursor-pointer"
           >
             <input
               type="checkbox"
-              class="accent-accent-base"
+              class="accent-primary"
               :checked="selected.has(i)"
               @change="toggleSelected(i)"
             />
-            <span class="text-sm text-fg-base truncate">{{ s.name }}</span>
-            <span class="text-xs text-fg-faint truncate flex-1 text-right">{{ s.url }}</span>
+            <span class="text-sm text-base-content truncate">{{ s.name }}</span>
+            <span class="text-xs text-base-content/50 truncate flex-1 text-right">{{ s.url }}</span>
           </label>
         </div>
 
@@ -171,11 +177,11 @@ async function addDirect() {
         </div>
       </div>
 
-      <div class="h-px bg-border-default" />
+      <div class="h-px bg-base-300" />
 
       <!-- direct URL -->
       <div class="space-y-2">
-        <div class="flex items-center gap-2 text-xs font-semibold text-fg-muted">
+        <div class="flex items-center gap-2 text-xs font-semibold text-base-content/70">
           <Link2 :size="14" />
           {{ $t('radio.directUrl') }}
         </div>
@@ -183,17 +189,17 @@ async function addDirect() {
           v-model="directUrl"
           type="text"
           :placeholder="$t('radio.urlPlaceholder')"
-          class="w-full bg-bg-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-fg-base focus:outline-none focus:border-accent-base"
+          class="w-full bg-base-100 border border-base-300 fx-depth rounded-field px-3 py-2 text-sm text-base-content focus:outline-none focus:border-primary"
           @keyup.enter="addDirect"
         />
         <input
           v-model="directName"
           type="text"
           :placeholder="$t('radio.namePlaceholder')"
-          class="w-full bg-bg-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-fg-base focus:outline-none focus:border-accent-base"
+          class="w-full bg-base-100 border border-base-300 fx-depth rounded-field px-3 py-2 text-sm text-base-content focus:outline-none focus:border-primary"
           @keyup.enter="addDirect"
         />
-        <div v-if="directError" class="flex items-center gap-2 text-xs text-red-base">
+        <div v-if="directError" class="flex items-center gap-2 text-xs text-error">
           <AlertCircle :size="14" />
           {{ $t(directError) }}
         </div>

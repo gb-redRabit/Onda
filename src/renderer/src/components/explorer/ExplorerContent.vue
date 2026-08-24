@@ -64,21 +64,19 @@ defineExpose({ reveal });
   >
     <div
       v-if="files.length === 0 && !explorer.isLoading"
-      class="flex flex-col items-center justify-center py-16 text-fg-faint"
+      class="flex flex-col items-center justify-center py-16 text-base-content/50"
     >
       <FolderOpen :size="48" class="mb-3 opacity-30" />
       <p class="text-sm">{{ $t('explorer.folderEmpty') }}</p>
     </div>
 
     <div v-if="explorer.isLoading && files.length === 0" class="flex justify-center py-8">
-      <div
-        class="w-6 h-6 border-2 border-accent-base border-t-transparent rounded-full animate-spin"
-      />
+      <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
     </div>
 
     <div v-if="explorer.isAtDrives && files.length > 0" class="mb-3">
       <h3
-        class="text-xs font-medium text-fg-faint uppercase tracking-wider flex items-center gap-2 px-1"
+        class="text-xs font-medium text-base-content/50 uppercase tracking-wider flex items-center gap-2 px-1"
       >
         <HardDrive :size="12" /> {{ $t('explorer.drives') }}
       </h3>
@@ -106,16 +104,16 @@ defineExpose({ reveal });
           :data-folder-path="
             files[virtualRow.index].isDirectory ? files[virtualRow.index].path : undefined
           "
-          class="w-full flex items-center gap-2 px-2 py-1 rounded-md hover:bg-bg-hover transition-colors text-left text-xs group relative h-full"
+          class="fx-noise w-full flex items-center gap-2 px-2 py-1 fx-depth rounded-field hover:bg-base-content/10 transition-colors text-left text-xs group relative h-full"
           :class="{
-            'bg-accent-ghost ring-1 ring-accent-base': explorer.selectedFiles.has(
+            'bg-primary/10 ring-1 ring-primary': explorer.selectedFiles.has(
               files[virtualRow.index].path
             ),
-            'bg-accent-ghost/15 ring-1 ring-accent-base/30': !files[virtualRow.index].isDirectory
+            'bg-primary/15 ring-1 ring-primary/30': !files[virtualRow.index].isDirectory
               ? false
               : isLibraryFolder(files[virtualRow.index].path) &&
                 !explorer.selectedFiles.has(files[virtualRow.index].path),
-            'ring-2 ring-accent-base bg-accent-ghost/50':
+            'ring-2 ring-primary bg-primary/50':
               hoveredFolderPath && hoveredFolderPath === files[virtualRow.index].path,
             'opacity-40': fileClipboard.isCut(files[virtualRow.index].path)
           }"
@@ -138,16 +136,16 @@ defineExpose({ reveal });
             :src="extraSmallIcon(files[virtualRow.index])!"
             class="w-4 h-4 object-contain shrink-0"
           />
-          <HardDrive v-else-if="explorer.isAtDrives" :size="12" class="text-accent-base shrink-0" />
+          <HardDrive v-else-if="explorer.isAtDrives" :size="12" class="text-primary shrink-0" />
           <FolderOpen
             v-else-if="files[virtualRow.index].isDirectory"
             :size="12"
-            class="text-accent-base shrink-0"
+            class="text-primary shrink-0"
           />
           <span class="truncate flex-1">{{ files[virtualRow.index].name }}</span>
           <span
             v-if="isLibraryFolder(files[virtualRow.index].path) && !explorer.isAtDrives"
-            class="text-[8px] px-1 rounded bg-accent-base/20 text-accent-base font-bold border border-accent-base/40"
+            class="text-[8px] px-1 rounded-field bg-primary/20 text-primary font-bold border border-primary/40"
             >LIB</span
           >
         </button>
@@ -200,10 +198,10 @@ defineExpose({ reveal });
     <!-- details: virtualized table -->
     <div v-else-if="explorer.viewMode === 'details' && files.length > 0">
       <div
-        class="grid grid-cols-[1fr_120px_100px_100px] gap-2 px-3 py-2 text-[11px] text-fg-faint font-medium uppercase tracking-wider border-b border-border-default mb-1 sticky top-0 bg-bg-base z-10"
+        class="grid grid-cols-[1fr_120px_100px_100px] gap-2 px-3 py-2 text-[11px] text-base-content/50 font-medium uppercase tracking-wider border-b border-base-300 mb-1 sticky top-0 bg-base-200/[var(--glass-alpha)] z-10"
       >
         <button
-          class="text-left flex items-center gap-1 hover:text-fg-base"
+          class="text-left flex items-center gap-1 hover:text-base-content"
           @click="explorer.toggleSort('name')"
         >
           {{ $t('explorer.name')
@@ -216,7 +214,7 @@ defineExpose({ reveal });
           />
         </button>
         <button
-          class="text-left flex items-center gap-1 hover:text-fg-base"
+          class="text-left flex items-center gap-1 hover:text-base-content"
           @click="explorer.toggleSort('size')"
         >
           {{ $t('explorer.size')
@@ -229,7 +227,7 @@ defineExpose({ reveal });
           />
         </button>
         <button
-          class="text-left flex items-center gap-1 hover:text-fg-base"
+          class="text-left flex items-center gap-1 hover:text-base-content"
           @click="explorer.toggleSort('type')"
         >
           {{ $t('explorer.type')
@@ -242,7 +240,7 @@ defineExpose({ reveal });
           />
         </button>
         <button
-          class="text-right flex items-center gap-1 justify-end hover:text-fg-base"
+          class="text-right flex items-center gap-1 justify-end hover:text-base-content"
           @click="explorer.toggleSort('modified')"
         >
           {{ $t('explorer.modified')
@@ -289,7 +287,7 @@ defineExpose({ reveal });
     <!-- band select overlay -->
     <div
       v-if="bandSelect"
-      class="fixed pointer-events-none z-40 rounded border"
+      class="fixed pointer-events-none z-40 rounded-field border"
       :style="{
         left: bandSelect.left + 'px',
         top: bandSelect.top + 'px',

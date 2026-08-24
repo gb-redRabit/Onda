@@ -27,21 +27,19 @@ const allSelected = computed(
 </script>
 
 <template>
-  <div
-    class="flex flex-wrap items-center gap-2 p-2 rounded-xl bg-bg-surface border border-border-default"
-  >
+  <div class="flex flex-wrap items-center gap-2 p-2 rounded-box bg-base-100 border border-base-300">
     <OnlineButton variant="secondary" size="sm" @click="emit('selectAll')">
       <CheckSquare :size="12" />
       {{ allSelected ? $t('common.deselectAll') : $t('common.selectAll') }}
     </OnlineButton>
 
-    <div class="flex items-center gap-1.5 text-xs text-fg-faint">
+    <div class="flex items-center gap-1.5 text-xs text-base-content/50">
       <span>{{ t('youtube.range') }}</span>
       <input
         :value="rangeStart"
         type="number"
         min="1"
-        class="w-14 px-2 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-xs text-fg-base focus:border-accent-base focus:outline-none"
+        class="w-14 px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-none"
         @input="emit('update:rangeStart', Number(($event.target as HTMLInputElement).value))"
       />
       <span>-</span>
@@ -49,7 +47,7 @@ const allSelected = computed(
         :value="rangeEnd"
         type="number"
         min="1"
-        class="w-14 px-2 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-xs text-fg-base focus:border-accent-base focus:outline-none"
+        class="w-14 px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-none"
         @input="emit('update:rangeEnd', Number(($event.target as HTMLInputElement).value))"
       />
       <OnlineButton variant="secondary" size="sm" @click="emit('selectRange')">

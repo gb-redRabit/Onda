@@ -61,7 +61,7 @@ const {
 
 <template>
   <div
-    class="fixed inset-0 z-50 flex flex-col bg-bg-base/95 select-none"
+    class="fixed inset-0 z-50 flex flex-col bg-base-200/95 select-none"
     :class="slideshowActive && !uiVisible ? 'cursor-none' : ''"
     @click.self="handleClose"
   >
@@ -72,7 +72,7 @@ const {
       >
         <button
           v-if="hasPrev && !slideshowActive"
-          class="absolute left-3 z-10 p-2 rounded-full bg-bg-overlay/60 text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-all"
+          class="absolute left-3 z-10 p-2 rounded-full bg-base-300 text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-all"
           @click="prev"
         >
           <ChevronLeft :size="28" class="pointer-events-none" />
@@ -107,11 +107,11 @@ const {
             @error="onImageError"
             @dblclick="fitToScreen"
           />
-          <div v-if="!displaySrc && !oldSrc" class="text-fg-faint text-sm">
+          <div v-if="!displaySrc && !oldSrc" class="text-base-content/50 text-sm">
             <div v-if="imgError">{{ $t('imageViewer.loadFailed') }}</div>
             <div v-else class="flex flex-col items-center gap-3">
               <div
-                class="w-8 h-8 border-2 border-accent-base border-t-transparent rounded-full animate-spin"
+                class="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"
               />
               <span class="text-xs">{{ $t('imageViewer.loading') }}</span>
             </div>
@@ -120,7 +120,7 @@ const {
 
         <button
           v-if="hasNext && !slideshowActive"
-          class="absolute right-3 z-10 p-2 rounded-full mr-12 bg-bg-overlay/60 text-fg-muted hover:bg-bg-hover hover:text-fg-base transition-all"
+          class="absolute right-3 z-10 p-2 rounded-full mr-12 bg-base-300 text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-all"
           @click="next"
         >
           <ChevronRight :size="28" class="pointer-events-none" />
@@ -132,7 +132,7 @@ const {
           :class="uiVisible ? 'opacity-100' : 'opacity-0'"
         >
           <div
-            class="h-full bg-accent-base transition-all duration-150 ease-linear"
+            class="h-full bg-primary transition-all duration-150 ease-linear"
             :style="{ width: slideshowProgress + '%' }"
           />
         </div>

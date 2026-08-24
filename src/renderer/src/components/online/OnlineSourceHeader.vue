@@ -39,11 +39,11 @@ const kindMeta = computed(() => {
 </script>
 
 <template>
-  <div class="flex items-center gap-3 p-3 rounded-2xl bg-bg-surface border border-border-default">
+  <div class="flex items-center gap-3 p-3 rounded-box bg-base-100 border border-base-300">
     <OnlineBadge :variant="kindMeta.variant" size="md">{{ $t(kindMeta.key) }}</OnlineBadge>
     <div class="min-w-0 flex-1">
-      <h2 class="text-sm font-semibold text-fg-base truncate">{{ title }}</h2>
-      <p class="text-xs text-fg-muted truncate">
+      <h2 class="text-sm font-semibold text-base-content truncate">{{ title }}</h2>
+      <p class="text-xs text-base-content/70 truncate">
         <span v-if="channelTitle">{{ channelTitle }}</span>
         <span v-if="channelTitle && totalItems != null"> · </span>
         <span v-if="totalItems != null">
@@ -55,10 +55,8 @@ const kindMeta = computed(() => {
       </p>
     </div>
     <div v-if="loading" class="flex items-center gap-2 shrink-0">
-      <div
-        class="w-4 h-4 border-2 border-accent-base border-t-transparent rounded-full animate-spin"
-      />
-      <span v-if="totalItems != null" class="text-xs text-fg-faint">
+      <div class="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <span v-if="totalItems != null" class="text-xs text-base-content/50">
         {{ loadedCount }} / {{ totalItems }}
       </span>
     </div>
@@ -76,7 +74,7 @@ const kindMeta = computed(() => {
     >
       <span
         v-if="saving"
-        class="w-3 h-3 border-2 border-accent-base border-t-transparent rounded-full animate-spin"
+        class="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin"
       />
       <Bookmark v-else :size="12" :fill="saved ? 'currentColor' : 'none'" />
       {{

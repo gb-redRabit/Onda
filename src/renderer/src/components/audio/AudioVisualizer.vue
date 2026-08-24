@@ -215,7 +215,7 @@ defineExpose({ style, cycleStyle });
 
 <template>
   <div
-    class="relative w-full h-full bg-bg-overlay overflow-hidden cursor-pointer group"
+    class="relative w-full h-full bg-neutral overflow-hidden cursor-pointer group"
     @click="cycleStyle"
   >
     <canvas ref="canvasRef" class="w-full h-full" />
@@ -223,7 +223,7 @@ defineExpose({ style, cycleStyle });
       v-if="!audio.isPlaying.value"
       class="absolute inset-0 flex items-center justify-center bg-black/20"
     >
-      <span class="text-fg-faint text-xs">{{ $t('audioView.vizMode') }}</span>
+      <span class="text-base-content/50 text-xs">{{ $t('audioView.vizMode') }}</span>
     </div>
   </div>
 </template>

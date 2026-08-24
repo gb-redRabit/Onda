@@ -115,13 +115,13 @@ function playFolder(folderPath: string) {
 
 <template>
   <div class="flex flex-col h-full">
-    <div class="p-4 border-b border-border-default">
+    <div class="p-4 border-b border-base-300">
       <div class="flex items-center justify-between mb-3">
         <h1 class="text-xl font-bold">{{ $t('library.title') }}</h1>
-        <div class="flex items-center gap-2 text-xs text-fg-faint">
+        <div class="flex items-center gap-2 text-xs text-base-content/50">
           <span>{{ library.totalCount }} {{ $t('library.files') }}</span>
           <button
-            class="p-1.5 rounded-lg hover:bg-bg-hover transition-colors"
+            class="fx-noise p-1.5 fx-depth rounded-field hover:bg-base-content/10 transition-colors"
             :title="$t('library.rescan')"
             @click="library.scanFolders()"
           >
@@ -134,9 +134,11 @@ function playFolder(folderPath: string) {
         <button
           v-for="tabItem in tabs"
           :key="tabItem.id"
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors"
+          class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field text-xs font-medium whitespace-nowrap transition-colors"
           :class="
-            tab === tabItem.id ? 'bg-accent-base text-white' : 'text-fg-muted hover:bg-bg-hover'
+            tab === tabItem.id
+              ? 'bg-primary text-primary-content'
+              : 'text-base-content/70 hover:bg-base-content/10'
           "
           @click="tab = tabItem.id"
         >
@@ -147,16 +149,19 @@ function playFolder(folderPath: string) {
 
       <div v-if="tab !== 'playlists'" class="flex gap-2">
         <div class="relative flex-1">
-          <Search :size="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-fg-faint" />
+          <Search
+            :size="14"
+            class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50"
+          />
           <input
             v-model="query"
             :placeholder="$t('library.search')"
-            class="w-full pl-9 pr-3 py-2 rounded-xl bg-bg-elevated border border-border-default text-sm focus:border-accent-base focus:outline-none placeholder:text-fg-faint"
+            class="w-full pl-9 pr-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none placeholder:text-base-content/50"
           />
         </div>
         <button
           v-if="tab === 'tracks'"
-          class="px-3 py-2 rounded-xl bg-accent-ghost text-accent-base text-xs font-medium hover:bg-accent-base hover:text-white transition-colors flex items-center gap-1.5 shrink-0"
+          class="fx-noise px-3 py-2 fx-depth rounded-field bg-primary/10 text-primary text-xs font-medium hover:bg-primary hover:text-primary-content transition-colors flex items-center gap-1.5 shrink-0"
           :title="$t('library.searchInMusicBrainz')"
           @click="showingMBLookup = true"
         >

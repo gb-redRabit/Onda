@@ -9,7 +9,7 @@ const player = usePlayerStore();
 
 <template>
   <div
-    class="rounded-2xl bg-bg-overlay flex items-center justify-center overflow-hidden shrink-0"
+    class="rounded-box bg-neutral flex items-center justify-center overflow-hidden shrink-0"
     :class="size || 'w-96 h-96'"
   >
     <MediaCover

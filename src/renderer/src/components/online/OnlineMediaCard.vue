@@ -1,7 +1,16 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Play, Download, Check, RefreshCw, ExternalLink, SlidersHorizontal, Radio, Bookmark } from '@lucide/vue';
+import {
+  Play,
+  Download,
+  Check,
+  RefreshCw,
+  ExternalLink,
+  SlidersHorizontal,
+  Radio,
+  Bookmark
+} from '@lucide/vue';
 import { logger } from '@shared/logger';
 import { detectPlatform } from '@shared/platform';
 import { formatNumber } from '@renderer/utils/formatters';
@@ -166,8 +175,8 @@ onBeforeUnmount(() => {
     class="group"
     :class="
       layout === 'list'
-        ? 'flex gap-3 items-center p-2 rounded-xl hover:bg-bg-hover transition-colors'
-        : 'rounded-2xl bg-bg-surface border border-border-default p-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-border-subtle'
+        ? 'flex gap-3 items-center p-2 rounded-box hover:bg-base-content/10 transition-colors'
+        : 'rounded-box bg-base-100 border border-base-300 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-base-300'
     "
     @mouseenter="onMouseEnter"
   >
@@ -186,11 +195,11 @@ onBeforeUnmount(() => {
       <button
         v-if="selectable"
         type="button"
-        class="shrink-0 flex items-center justify-center w-5 h-5 rounded border transition-colors"
+        class="fx-noise shrink-0 flex items-center justify-center w-5 h-5 fx-depth rounded-field border transition-colors"
         :class="
           selected
-            ? 'bg-accent-base border-accent-base text-white'
-            : 'border-border-default hover:border-accent-base'
+            ? 'bg-primary border-primary text-primary-content'
+            : 'border-base-300 hover:border-primary'
         "
         @click.stop="onToggleSelect"
       >
@@ -199,9 +208,9 @@ onBeforeUnmount(() => {
 
       <!-- Thumbnail -->
       <div
-        class="relative overflow-hidden bg-bg-elevated shrink-0"
+        class="relative overflow-hidden bg-base-100 shrink-0"
         :class="[
-          layout === 'list' ? 'rounded-lg w-40' : 'rounded-xl w-full',
+          layout === 'list' ? 'rounded-field w-40' : 'rounded-box w-full',
           short ? 'aspect-9/16' : 'aspect-video'
         ]"
       >
@@ -216,7 +225,7 @@ onBeforeUnmount(() => {
         <!-- Downloaded badge -->
         <div
           v-if="downloaded && coverStatus !== 'fetching'"
-          class="absolute top-1.5 left-1.5 flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-green-base text-white text-[10px] font-medium"
+          class="absolute top-1.5 left-1.5 flex items-center gap-0.5 px-1.5 py-0.5 rounded-field bg-success text-success-content text-[10px] font-medium"
         >
           <Check :size="10" />
         </div>
@@ -224,8 +233,8 @@ onBeforeUnmount(() => {
         <!-- Platform tag (merged multi-platform grids) -->
         <span
           v-if="platformTag"
-          class="absolute top-1.5 right-1.5 px-1 py-0.5 rounded bg-black/70 text-[9px] font-bold pointer-events-none"
-          :class="platformTag === 'SC' ? 'text-amber-base' : 'text-red-base'"
+          class="absolute top-1.5 right-1.5 px-1 py-0.5 rounded-field bg-black/70 text-[9px] font-bold pointer-events-none"
+          :class="platformTag === 'SC' ? 'text-warning' : 'text-error'"
         >
           {{ platformTag }}
         </span>
@@ -233,7 +242,7 @@ onBeforeUnmount(() => {
         <!-- Cover fetching badge -->
         <div
           v-if="coverStatus === 'fetching'"
-          class="absolute top-1.5 left-1.5 flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-base text-white text-[10px] font-medium"
+          class="absolute top-1.5 left-1.5 flex items-center gap-0.5 px-1.5 py-0.5 rounded-field bg-warning text-warning-content text-[10px] font-medium"
         >
           <RefreshCw :size="10" class="animate-spin" />
         </div>
@@ -241,12 +250,12 @@ onBeforeUnmount(() => {
         <!-- Duration badge -->
         <div
           v-if="video.duration"
-          class="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded"
+          class="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded-field"
         >
           {{ video.duration }}
         </div>
 
-<!-- Center actions: stream and embed-on-YouTube side by side -->
+        <!-- Center actions: stream and embed-on-YouTube side by side -->
         <div
           class="absolute inset-0 z-10 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors select-none pointer-events-none"
           :class="isPlayable ? '' : 'opacity-50'"
@@ -258,7 +267,7 @@ onBeforeUnmount(() => {
             <button
               type="button"
               :title="$t('youtube.playStream')"
-              class="flex items-center justify-center  text-fg-base hover:scale-115 active:scale-95  shadow-black/30 transition-all duration-150 cursor-pointer"
+              class="flex items-center justify-center text-base-content hover:scale-115 active:scale-95 shadow-black/30 transition-all duration-150 cursor-pointer"
               @click.stop="onPlay"
             >
               <Radio :size="30" />
@@ -268,10 +277,10 @@ onBeforeUnmount(() => {
               v-if="!isSc"
               type="button"
               :title="$t('youtube.playOnYoutube')"
-              class="flex items-center justify-center  text-fg-base hover:scale-115 active:scale-95  shadow-black/30 transition-all duration-150 cursor-pointer "
+              class="flex items-center justify-center text-base-content hover:scale-115 active:scale-95 shadow-black/30 transition-all duration-150 cursor-pointer"
               @click.stop="onExpand"
             >
-              <Play :size="30" fill="currentColor"  />
+              <Play :size="30" fill="currentColor" />
             </button>
           </div>
         </div>
@@ -310,11 +319,11 @@ onBeforeUnmount(() => {
 
       <!-- Info -->
       <div :class="layout === 'list' ? 'flex-1 min-w-0' : 'mt-2'">
-        <h3 class="text-sm font-semibold text-fg-base line-clamp-2">{{ video.title }}</h3>
-        <div class="text-xs text-fg-muted mt-0.5">
+        <h3 class="text-sm font-semibold text-base-content line-clamp-2">{{ video.title }}</h3>
+        <div class="text-xs text-base-content/70 mt-0.5">
           <button
             v-if="showChannel && (video as YouTubeVideo).channelId"
-            class="hover:text-accent-base transition-colors"
+            class="hover:text-primary transition-colors"
             @click.stop="$emit('openWindow', defaultWatchUrl(video.id))"
           >
             {{ video.channelTitle }}
@@ -327,7 +336,7 @@ onBeforeUnmount(() => {
         </div>
         <p
           v-if="showDescription && (video as YouTubeVideo).description"
-          class="text-xs text-fg-faint mt-1 line-clamp-2"
+          class="text-xs text-base-content/50 mt-1 line-clamp-2"
         >
           {{ (video as YouTubeVideo).description }}
         </p>
@@ -341,7 +350,11 @@ onBeforeUnmount(() => {
         <OnlineIconButton :title="$t('youtube.play')" @click="onListPlay">
           <Play :size="14" />
         </OnlineIconButton>
-        <OnlineIconButton :disabled="state !== null" :title="$t('youtube.addToQueue')" @click="onQueue">
+        <OnlineIconButton
+          :disabled="state !== null"
+          :title="$t('youtube.addToQueue')"
+          @click="onQueue"
+        >
           <RefreshCw
             v-if="state === 'queuing' || state === 'downloading'"
             :size="14"

@@ -39,7 +39,7 @@ const emit = defineEmits<{ select: [name: string]; seek: [e: MouseEvent] }>();
       <video
         v-if="isVideoCover"
         :src="videoCoverSrc"
-        class="w-17 h-17 rounded-lg object-cover block shrink-0"
+        class="w-17 h-17 rounded-field object-cover block shrink-0"
         autoplay
         muted
         loop
@@ -48,16 +48,16 @@ const emit = defineEmits<{ select: [name: string]; seek: [e: MouseEvent] }>();
       <img
         v-else-if="coverData"
         :src="coverData"
-        class="w-17 h-17 rounded-lg object-cover block shrink-0"
+        class="w-17 h-17 rounded-field object-cover block shrink-0"
         alt=""
       />
-      <div v-else class="w-17 h-17 rounded-lg bg-bg-hover shrink-0"></div>
+      <div v-else class="w-17 h-17 rounded-field bg-base-content/10 shrink-0"></div>
       <div class="flex flex-col min-w-0 gap-0.5">
-        <div class="text-[14px] font-semibold truncate text-fg-base max-w-44">
+        <div class="text-[14px] font-semibold truncate text-base-content max-w-44">
           {{ trackName }}
         </div>
-        <div class="text-[11px] text-fg-faint truncate max-w-44">{{ artist }}</div>
-        <div v-if="nextTrackName" class="text-[10px] text-fg-faint truncate max-w-44">
+        <div class="text-[11px] text-base-content/50 truncate max-w-44">{{ artist }}</div>
+        <div v-if="nextTrackName" class="text-[10px] text-base-content/50 truncate max-w-44">
           &#x21B3; {{ nextTrackName }}{{ nextTrackArtist ? ' \u2014 ' + nextTrackArtist : '' }}
         </div>
       </div>
@@ -67,18 +67,18 @@ const emit = defineEmits<{ select: [name: string]; seek: [e: MouseEvent] }>();
       class="absolute inset-x-0 top-0 bottom-0 flex flex-col items-center justify-center gap-0.5 pointer-events-none"
     >
       <div class="flex items-center gap-1.5 pointer-events-auto">
-        <span class="text-[10px] text-fg-faint tabular-nums whitespace-nowrap">{{
+        <span class="text-[10px] text-base-content/50 tabular-nums whitespace-nowrap">{{
           fmt(currentTime)
         }}</span>
-        <span class="text-[10px] text-fg-faint opacity-40">/</span>
-        <span class="text-[10px] text-fg-faint tabular-nums whitespace-nowrap">{{
+        <span class="text-[10px] text-base-content/50 opacity-40">/</span>
+        <span class="text-[10px] text-base-content/50 tabular-nums whitespace-nowrap">{{
           fmt(duration)
         }}</span>
       </div>
       <div class="flex items-center gap-1 pointer-events-auto">
         <button
           class="btn-pip w-5.5 h-5.5"
-          :class="{ 'text-accent-base!': shuffle }"
+          :class="{ 'text-primary!': shuffle }"
           @click="send('shuffle')"
         >
           &#x21C4;
@@ -90,7 +90,7 @@ const emit = defineEmits<{ select: [name: string]; seek: [e: MouseEvent] }>();
         <button class="btn-pip w-5.5 h-5.5" @click="send('next')">&#x23ED;</button>
         <button
           class="btn-pip w-5.5 h-5.5"
-          :class="{ 'text-accent-base!': repeat !== 'none' }"
+          :class="{ 'text-primary!': repeat !== 'none' }"
           @click="send('repeat')"
         >
           &#x21BB;<span v-if="repeat === 'one'" class="text-[8px] -ml-px">1</span>
@@ -101,7 +101,7 @@ const emit = defineEmits<{ select: [name: string]; seek: [e: MouseEvent] }>();
     <div class="flex flex-col items-end justify-center gap-1 pr-3 ml-auto shrink-0">
       <div class="flex items-center gap-1.5">
         <span
-          class="text-[9px] text-fg-muted cursor-pointer px-0.5 py-0.5 rounded hover:text-fg-base hover:bg-bg-hover"
+          class="text-[9px] text-base-content/70 cursor-pointer px-0.5 py-0.5 rounded-field hover:text-base-content hover:bg-base-content/10"
           @click="send('mute')"
           >{{ volLabel }}</span
         >
@@ -114,17 +114,19 @@ const emit = defineEmits<{ select: [name: string]; seek: [e: MouseEvent] }>();
           :value="volume"
           @input="emit('select', 'volume:' + ($event.target as HTMLInputElement).value)"
         />
-        <span class="text-[10px] text-fg-faint min-w-5 text-right tabular-nums">{{ volPct }}</span>
+        <span class="text-[10px] text-base-content/50 min-w-5 text-right tabular-nums">{{
+          volPct
+        }}</span>
       </div>
       <div class="flex items-center gap-1">
         <button
           v-for="p in EQ_PRESETS"
           :key="p.id"
-          class="text-[9px] px-1.5 py-0.5 rounded transition-colors"
+          class="fx-noise text-[9px] px-1.5 py-0.5 fx-depth rounded-field transition-colors"
           :class="
             eqPreset === p.id
-              ? 'bg-accent-base text-white'
-              : 'text-fg-muted hover:text-fg-base hover:bg-bg-hover'
+              ? 'bg-primary text-primary-content'
+              : 'text-base-content/70 hover:text-base-content hover:bg-base-content/10'
           "
           @click="selectEqPreset(p.id)"
         >
@@ -136,7 +138,7 @@ const emit = defineEmits<{ select: [name: string]; seek: [e: MouseEvent] }>();
 
   <div class="absolute top-0.5 right-1 z-20">
     <button
-      class="btn-pip w-4 h-4 text-[9px] text-fg-faint"
+      class="btn-pip w-4 h-4 text-[9px] text-base-content/50"
       title="Cycle mode"
       @click="send('cycleMode')"
     >

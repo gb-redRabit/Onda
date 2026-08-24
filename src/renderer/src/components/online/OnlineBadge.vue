@@ -13,16 +13,16 @@ const props = withDefaults(
 );
 
 const variants: Record<string, string> = {
-  default: 'bg-bg-elevated text-fg-muted border border-border-default',
-  accent: 'bg-accent-ghost text-accent-base',
-  green: 'bg-green-base/15 text-green-base',
-  amber: 'bg-amber-base/15 text-amber-base',
-  red: 'bg-red-base/15 text-red-base'
+  default: 'bg-base-100 text-base-content/70 border border-base-300',
+  accent: 'bg-primary/10 text-primary',
+  green: 'bg-success/15 text-success',
+  amber: 'bg-warning/15 text-warning',
+  red: 'bg-error/15 text-error'
 };
 
 const sizes: Record<string, string> = {
-  sm: 'px-1.5 py-0.5 text-[10px]',
-  md: 'px-2 py-0.5 text-xs'
+  sm: 'px-1.5 h-[calc(var(--size-selector)+4px)] text-[10px]',
+  md: 'px-2 h-[calc(var(--size-selector)+6px)] text-xs'
 };
 
 const cls = computed(

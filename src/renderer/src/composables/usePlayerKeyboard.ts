@@ -71,7 +71,9 @@ export function usePlayerKeyboard(params: {
         e.preventDefault();
         player.toggleMute();
         notify(
-          player.isMuted ? t('player.muted') : t('player.volume', { n: Math.round(player.volume * 100) }),
+          player.isMuted
+            ? t('player.muted')
+            : t('player.volume', { n: Math.round(player.volume * 100) }),
           1200
         );
         break;

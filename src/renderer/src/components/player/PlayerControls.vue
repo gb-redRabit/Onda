@@ -13,7 +13,7 @@ import {
   Repeat1,
   ListMusic,
   SlidersHorizontal,
-Gauge,
+  Gauge,
   ChevronLeft,
   ChevronRight,
   Heart,
@@ -139,10 +139,7 @@ function onSpeedPreset(v: number) {
       @mousemove="previewMouseMove"
       @mouseleave="previewMouseLeave"
     >
-      <div
-        class="h-full bg-accent-base/80 rounded-full relative"
-        :style="{ width: progressPct + '%' }"
-      >
+      <div class="h-full bg-primary/80 rounded-full relative" :style="{ width: progressPct + '%' }">
         <div
           class="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-white shadow-lg opacity-0 hover:opacity-100 transition-opacity"
         />
@@ -153,7 +150,10 @@ function onSpeedPreset(v: number) {
         class="absolute -top-2 -translate-x-1/2 -translate-y-full flex flex-col items-center pointer-events-none"
         :style="{ left: previewLeft + '%' }"
       >
-        <div class="rounded-lg overflow-hidden shadow-2xl border border-white/10 bg-black" style="width: 160px; height: 90px">
+        <div
+          class="rounded-field overflow-hidden shadow-2xl border border-white/10 bg-black"
+          style="width: 160px; height: 90px"
+        >
           <img
             v-if="previewDataUrl"
             :src="previewDataUrl"
@@ -167,7 +167,9 @@ function onSpeedPreset(v: number) {
             {{ previewTimeLabel() }}
           </div>
         </div>
-        <span class="mt-1 px-1.5 py-0.5 rounded text-[11px] font-mono tabular-nums bg-black/70 text-white">
+        <span
+          class="mt-1 px-1.5 py-0.5 rounded-field text-[11px] font-mono tabular-nums bg-black/70 text-white"
+        >
           {{ previewTimeLabel() }}
         </span>
       </div>
@@ -178,14 +180,14 @@ function onSpeedPreset(v: number) {
       <div class="flex items-center gap-3">
         <button
           class="text-white/40 hover:text-white/80 transition-colors"
-          :class="{ 'text-accent-base!': player.shuffle }"
+          :class="{ 'text-primary!': player.shuffle }"
           @click="player.toggleShuffle"
         >
           <Shuffle :size="16" />
         </button>
         <button
           class="text-white/40 hover:text-white/80 transition-colors"
-          :class="{ 'text-red-base!': player.isFavorite(player.currentTrack?.path || '') }"
+          :class="{ 'text-error!': player.isFavorite(player.currentTrack?.path || '') }"
           :title="
             player.isFavorite(player.currentTrack?.path || '')
               ? $t('common.removeFav')
@@ -219,7 +221,7 @@ function onSpeedPreset(v: number) {
         </button>
         <button
           class="text-white/40 hover:text-white/80 transition-colors"
-          :class="{ 'text-accent-base!': player.repeat !== 'none' }"
+          :class="{ 'text-primary!': player.repeat !== 'none' }"
           @click="player.cycleRepeat"
         >
           <component :is="player.repeat === 'one' ? Repeat1 : Repeat" :size="16" />
@@ -246,7 +248,7 @@ function onSpeedPreset(v: number) {
             class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono transition-colors cursor-pointer select-none"
             :class="
               speed !== 1
-                ? 'text-accent-base bg-accent-ghost hover:bg-accent-base/20'
+                ? 'text-primary bg-primary/10 hover:bg-primary/20'
                 : 'text-white/40 hover:text-white/70 bg-white/6 hover:bg-white/10'
             "
             :aria-haspopup="true"
@@ -262,24 +264,26 @@ function onSpeedPreset(v: number) {
           <Transition name="menu-fade">
             <div
               v-if="speedMenuOpen"
-              class="absolute bottom-full right-0 mb-2 w-64 bg-bg-elevated border border-border-subtle rounded-xl shadow-2xl shadow-black/50 p-3 z-50"
+              class="absolute bottom-full right-0 mb-2 w-64 bg-base-100 border border-base-300 rounded-box shadow-2xl shadow-black/50 p-3 z-50"
             >
               <div class="flex items-center justify-between mb-2.5">
-                <span class="text-[10px] text-fg-faint font-medium uppercase tracking-wider">
+                <span class="text-[10px] text-base-content/50 font-medium uppercase tracking-wider">
                   {{ $t('player.speedTitle') }}
                 </span>
-                <span class="text-[11px] font-mono text-accent-base tabular-nums">{{ speedLabel }}</span>
+                <span class="text-[11px] font-mono text-primary tabular-nums">{{
+                  speedLabel
+                }}</span>
               </div>
 
               <div class="grid grid-cols-3 gap-1.5 mb-3">
                 <button
                   v-for="step in speedSteps"
                   :key="step"
-                  class="px-2 py-1.5 rounded-lg text-[11px] font-mono transition-colors"
+                  class="fx-noise px-2 py-1.5 fx-depth rounded-field text-[11px] font-mono transition-colors"
                   :class="
                     speed === step
-                      ? 'bg-accent-base text-white font-semibold'
-                      : 'bg-bg-base text-fg-muted hover:bg-bg-hover hover:text-fg-base'
+                      ? 'bg-primary text-primary-content font-semibold'
+                      : 'bg-base-200/[var(--glass-alpha)] text-base-content/70 hover:bg-base-content/10 hover:text-base-content'
                   "
                   @click="onSpeedPreset(step)"
                 >
@@ -288,27 +292,29 @@ function onSpeedPreset(v: number) {
               </div>
 
               <div class="flex items-center gap-2">
-                <Gauge :size="12" class="text-fg-faint shrink-0" />
+                <Gauge :size="12" class="text-base-content/50 shrink-0" />
                 <input
                   type="range"
                   min="0.25"
                   max="3"
                   step="0.05"
                   :value="speed"
-                  class="flex-1 accent-accent-base cursor-pointer"
+                  class="flex-1 accent-primary cursor-pointer"
                   :aria-label="$t('player.speedCustom')"
                   @input="onSpeedSlider"
                 />
               </div>
-              <div class="flex items-center justify-between text-[9px] text-fg-faint/60 font-mono mt-1 px-0.5">
+              <div
+                class="flex items-center justify-between text-[9px] text-base-content/60 font-mono mt-1 px-0.5"
+              >
                 <span>0.25x</span>
                 <span>3x</span>
               </div>
 
-              <div class="flex items-center justify-between mt-2.5 pt-2.5 border-t border-border-default">
-                <span class="text-[10px] text-fg-faint/60">{{ $t('player.speedHint') }}</span>
+              <div class="flex items-center justify-between mt-2.5 pt-2.5 border-t border-base-300">
+                <span class="text-[10px] text-base-content/60">{{ $t('player.speedHint') }}</span>
                 <button
-                  class="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
+                  class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field text-[10px] text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
                   :class="{ 'pointer-events-none opacity-40': speed === 1 && isPresetSpeed }"
                   :disabled="speed === 1 && isPresetSpeed"
                   @click="onSpeedPreset(1)"
@@ -332,7 +338,7 @@ function onSpeedPreset(v: number) {
         <VideoFilterDropdown />
         <button
           class="text-white/40 hover:text-white/80 transition-colors"
-          :class="{ 'text-accent-base!': player.equalizerVisible }"
+          :class="{ 'text-primary!': player.equalizerVisible }"
           data-eq-toggle
           @click="player.toggleEqualizer"
         >
@@ -340,7 +346,7 @@ function onSpeedPreset(v: number) {
         </button>
         <button
           class="text-white/40 hover:text-white/80 transition-colors"
-          :class="{ 'text-accent-base!': player.queueVisible }"
+          :class="{ 'text-primary!': player.queueVisible }"
           @click="player.toggleQueue"
         >
           <ListMusic :size="16" />
@@ -357,7 +363,7 @@ function onSpeedPreset(v: number) {
           @click="onVolumeClick"
         >
           <div
-            class="h-full bg-accent-base/70 rounded-full transition-colors"
+            class="h-full bg-primary/70 rounded-full transition-colors"
             :style="{ width: (player.isMuted ? 0 : player.volume * 100) + '%' }"
           />
         </div>

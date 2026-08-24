@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow, app } from 'electron';
+﻿import { ipcMain, BrowserWindow, app } from 'electron';
 import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
 import type { PipManager } from './pip-manager';
@@ -18,8 +18,14 @@ function createExplorerWindow(initialPath?: string): number | null {
       minHeight: 400,
       show: false,
       frame: false,
+      titleBarStyle: 'hidden',
       title: 'Explorer',
-      backgroundColor: '#0f0f17',
+      transparent: true,
+      backgroundColor: '#00000000',
+      ...(process.platform === 'win32' ? { backgroundMaterial: 'acrylic' as const } : {}),
+      ...(process.platform === 'darwin'
+        ? { vibrancy: 'sidebar' as const, visualEffectState: 'active' as const }
+        : {}),
       icon: pipWindowIcon(),
       webPreferences: {
         preload: join(__dirname, '../preload/index.js'),
@@ -34,6 +40,12 @@ function createExplorerWindow(initialPath?: string): number | null {
     win.on('ready-to-show', () => win.show());
     win.on('closed', () => {
       explorerWindows.delete(id);
+    });
+    win.on('maximize', () => {
+      win.webContents.send('window:maximized', true);
+    });
+    win.on('unmaximize', () => {
+      win.webContents.send('window:maximized', false);
     });
     win.on('enter-full-screen', () => {
       win.webContents.send('window:fullscreenChanged', true);
@@ -358,13 +370,7 @@ export function registerWindowHandlers(context: {
       audioPipManager.setModePosition(
         mode as 'minimal' | 'medium' | 'max' | 'wide' | undefined,
         position as
-          | 'bottom-right'
-          | 'bottom-left'
-          | 'top-right'
-          | 'top-left'
-          | 'top'
-          | 'bottom'
-          | undefined
+          'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'top' | 'bottom' | undefined
       );
       audioPipManager.update(state);
       if (opacity !== undefined) audioPipManager.setOpacity(opacity);

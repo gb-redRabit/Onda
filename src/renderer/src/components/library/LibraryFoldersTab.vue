@@ -84,7 +84,7 @@ function folderTypeIcon(type: string): string {
 <template>
   <div
     v-if="allFolderTracks.length === 0"
-    class="flex flex-col items-center justify-center h-full gap-3 text-fg-faint"
+    class="flex flex-col items-center justify-center h-full gap-3 text-base-content/50"
   >
     <Folder :size="48" class="opacity-30" />
     <p class="text-sm">{{ $t('library.noFolders') }}</p>
@@ -94,10 +94,10 @@ function folderTypeIcon(type: string): string {
     <div
       v-for="folderPath in library.folders"
       :key="folderPath"
-      class="rounded-xl bg-bg-elevated border border-border-default overflow-hidden"
+      class="rounded-box bg-base-100 border border-base-300 overflow-hidden"
     >
       <button
-        class="w-full flex items-center justify-between px-4 py-3 hover:bg-bg-hover transition-colors"
+        class="w-full flex items-center justify-between px-4 py-3 hover:bg-base-content/10 transition-colors"
         @click="togglePath(folderPath)"
       >
         <div class="flex items-center gap-2.5 min-w-0">
@@ -106,7 +106,7 @@ function folderTypeIcon(type: string): string {
           }}</span>
           <div class="min-w-0 text-left">
             <div class="text-sm font-medium">{{ dirName(folderPath) }}</div>
-            <div class="text-xs text-fg-faint truncate">
+            <div class="text-xs text-base-content/50 truncate">
               {{ folderPath }} · {{ folderFileCounts.get(folderPath) || 0 }}
               {{ $t('library.folderFiles') }}
             </div>
@@ -114,19 +114,19 @@ function folderTypeIcon(type: string): string {
         </div>
         <div class="flex items-center gap-2 shrink-0">
           <button
-            class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent-ghost text-accent-base text-xs font-medium hover:bg-accent-base hover:text-white transition-colors"
+            class="fx-noise flex items-center gap-1 px-3 py-1.5 fx-depth rounded-field bg-primary/10 text-primary text-xs font-medium hover:bg-primary hover:text-primary-content transition-colors"
             @click.stop="emit('playFolder', folderPath)"
           >
             <Music2 :size="12" /> {{ $t('folders.play') }}
           </button>
           <ChevronDown
             :size="16"
-            class="text-fg-faint transition-transform duration-200"
+            class="text-base-content/50 transition-transform duration-200"
             :class="expandedPaths.has(folderPath) ? '' : '-rotate-90'"
           />
         </div>
       </button>
-      <div v-if="expandedPaths.has(folderPath)" class="border-t border-border-default">
+      <div v-if="expandedPaths.has(folderPath)" class="border-t border-base-300">
         <DirNode
           :dir="folderPath"
           :depth="0"

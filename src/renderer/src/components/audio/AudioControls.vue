@@ -38,7 +38,9 @@ function onVolume(e: MouseEvent) {
     <button
       class="p-2 rounded-full transition-colors"
       :class="
-        player.shuffle ? 'text-accent-base' : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+        player.shuffle
+          ? 'text-primary'
+          : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
       "
       @click="player.toggleShuffle"
     >
@@ -47,7 +49,7 @@ function onVolume(e: MouseEvent) {
 
     <!-- prev -->
     <button
-      class="p-2 rounded-full text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
+      class="p-2 rounded-full text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
       @click="player.prevTrack"
     >
       <SkipBack :size="18" fill="currentColor" />
@@ -57,25 +59,20 @@ function onVolume(e: MouseEvent) {
     <div class="relative">
       <div
         v-if="audio.isPlaying.value"
-        class="absolute inset-0 rounded-full bg-accent-base/15 blur-xl"
+        class="absolute inset-0 rounded-full bg-primary/15 blur-xl"
       />
       <button
-        class="relative w-12 h-12 rounded-full bg-accent-base/15 backdrop-blur-xl border border-accent-base/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
+        class="relative w-12 h-12 rounded-full bg-primary/15 backdrop-blur-xl border border-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
         @click="togglePlay"
       >
-        <Pause
-          v-if="audio.isPlaying.value"
-          :size="22"
-          class="text-accent-base"
-          fill="currentColor"
-        />
-        <Play v-else :size="22" class="text-accent-base ml-0.5" fill="currentColor" />
+        <Pause v-if="audio.isPlaying.value" :size="22" class="text-primary" fill="currentColor" />
+        <Play v-else :size="22" class="text-primary ml-0.5" fill="currentColor" />
       </button>
     </div>
 
     <!-- next -->
     <button
-      class="p-2 rounded-full text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
+      class="p-2 rounded-full text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
       @click="player.nextTrack"
     >
       <SkipForward :size="18" fill="currentColor" />
@@ -86,8 +83,8 @@ function onVolume(e: MouseEvent) {
       class="p-2 rounded-full transition-colors"
       :class="
         player.repeat !== 'none'
-          ? 'text-accent-base'
-          : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+          ? 'text-primary'
+          : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
       "
       @click="player.cycleRepeat"
     >
@@ -97,16 +94,19 @@ function onVolume(e: MouseEvent) {
 
   <!-- volume row -->
   <div class="flex items-center justify-center gap-2 mt-3">
-    <button class="text-fg-faint hover:text-fg-base transition-colors" @click="player.toggleMute">
+    <button
+      class="text-base-content/50 hover:text-base-content transition-colors"
+      @click="player.toggleMute"
+    >
       <VolumeX v-if="player.isMuted" :size="14" />
       <Volume2 v-else :size="14" />
     </button>
     <div
-      class="w-24 h-1 bg-bg-active rounded-full cursor-pointer hover:h-1.5 transition-[height]"
+      class="w-24 h-1 bg-base-content/20 rounded-full cursor-pointer hover:h-1.5 transition-[height]"
       @click="onVolume"
     >
       <div
-        class="h-full bg-accent-base/60 rounded-full"
+        class="h-full bg-primary/60 rounded-full"
         :style="{ width: (player.isMuted ? 0 : player.volume * 100) + '%' }"
       />
     </div>
@@ -115,11 +115,11 @@ function onVolume(e: MouseEvent) {
   <!-- EQ + Queue toggles -->
   <div class="flex items-center justify-center gap-2 mt-2">
     <button
-      class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors"
+      class="fx-noise flex items-center gap-1.5 px-2.5 py-1 fx-depth rounded-field text-[11px] font-medium transition-colors"
       :class="
         player.equalizerVisible
-          ? 'bg-accent-ghost text-accent-base'
-          : 'text-fg-faint hover:text-fg-muted hover:bg-bg-hover'
+          ? 'bg-primary/10 text-primary'
+          : 'text-base-content/50 hover:text-base-content/70 hover:bg-base-content/10'
       "
       data-eq-toggle
       @click="player.toggleEqualizer"
@@ -128,11 +128,11 @@ function onVolume(e: MouseEvent) {
       EQ
     </button>
     <button
-      class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors"
+      class="fx-noise flex items-center gap-1.5 px-2.5 py-1 fx-depth rounded-field text-[11px] font-medium transition-colors"
       :class="
         player.queueVisible
-          ? 'bg-accent-ghost text-accent-base'
-          : 'text-fg-faint hover:text-fg-muted hover:bg-bg-hover'
+          ? 'bg-primary/10 text-primary'
+          : 'text-base-content/50 hover:text-base-content/70 hover:bg-base-content/10'
       "
       @click="player.toggleQueue"
     >

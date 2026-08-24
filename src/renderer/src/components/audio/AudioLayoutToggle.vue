@@ -17,15 +17,15 @@ const modes = [
 </script>
 
 <template>
-  <div class="flex items-center gap-1 bg-bg-overlay rounded-lg p-0.5">
+  <div class="flex items-center gap-1 bg-neutral rounded-field p-0.5">
     <button
       v-for="m in modes"
       :key="m.id"
-      class="p-1.5 rounded-md transition-colors"
+      class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
       :class="
         mode === m.id
-          ? 'bg-accent-base text-white'
-          : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+          ? 'bg-primary text-primary-content'
+          : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
       "
       :title="m.tip"
       @click="emit('update:mode', m.id)"

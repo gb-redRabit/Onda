@@ -54,10 +54,10 @@ function playDir(fp: string) {
 </script>
 
 <template>
-  <div class="divide-y divide-border-default">
+  <div class="divide-y divide-base-300">
     <div v-for="sub in getChildDirs(dir)" :key="sub">
       <button
-        class="w-full flex items-center gap-2 px-4 py-2 text-xs text-fg-muted hover:bg-bg-hover transition-colors"
+        class="w-full flex items-center gap-2 px-4 py-2 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
         :style="{ paddingLeft: 16 + depth * 20 + 'px' }"
         @click="emit('toggle', dir + '\\' + sub)"
       >
@@ -68,10 +68,12 @@ function playDir(fp: string) {
         />
         <Folder :size="12" class="shrink-0" />
         <span>{{ sub }}</span>
-        <span class="text-fg-faint ml-auto">{{ getTracksInDir(dir + '\\' + sub).length }}</span>
-        <span class="text-[10px] text-fg-faint/40 ml-0.5">{{ $t('library.files') }}</span>
+        <span class="text-base-content/50 ml-auto">{{
+          getTracksInDir(dir + '\\' + sub).length
+        }}</span>
+        <span class="text-[10px] text-base-content/40 ml-0.5">{{ $t('library.files') }}</span>
         <span
-          class="ml-1 p-0.5 rounded text-fg-faint/50 hover:text-accent-base transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+          class="ml-1 p-0.5 rounded-field text-base-content/50 hover:text-primary transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
           :title="$t('folders.play')"
           @click.stop="playDir(dir + '\\' + sub)"
         >
@@ -87,7 +89,7 @@ function playDir(fp: string) {
           :expanded-paths="expandedPaths"
           @toggle="emit('toggle', $event)"
         />
-        <div class="divide-y divide-border-default">
+        <div class="divide-y divide-base-300">
           <LibraryTrackRow
             v-for="t in getDirectTracksInDir(dir + '\\' + sub)"
             :key="t.path"
@@ -97,7 +99,7 @@ function playDir(fp: string) {
         </div>
       </div>
     </div>
-    <div v-if="getDirectTracksInDir(dir).length > 0" class="divide-y divide-border-default">
+    <div v-if="getDirectTracksInDir(dir).length > 0" class="divide-y divide-base-300">
       <LibraryTrackRow
         v-for="t in getDirectTracksInDir(dir)"
         :key="t.path"

@@ -250,10 +250,7 @@ export const useOnlineStore = defineStore('online', () => {
       } | null;
       if (res?.success && res.items?.length) {
         const seen = new Set(searchResults.value.map((i) => i.id));
-        searchResults.value = [
-          ...searchResults.value,
-          ...res.items.filter((i) => !seen.has(i.id))
-        ];
+        searchResults.value = [...searchResults.value, ...res.items.filter((i) => !seen.has(i.id))];
         searchScOffset.value += res.items.length;
         hasMoreSc.value = res.items.length >= 100;
       } else {
@@ -456,10 +453,11 @@ export const useOnlineStore = defineStore('online', () => {
     const kind = extra?.kind ?? prefs?.kind ?? settings.download.defaultKind ?? 'audio';
     const format =
       kind === 'video'
-        ? extra?.format ?? prefs?.format ?? 'best'
-        : extra?.format ?? prefs?.format ?? settings.download.defaultAudioFormat;
+        ? (extra?.format ?? prefs?.format ?? 'best')
+        : (extra?.format ?? prefs?.format ?? settings.download.defaultAudioFormat);
     const quality = extra?.quality ?? prefs?.quality ?? settings.download.defaultVideoQuality;
-    const audioQuality = extra?.audioQuality ?? prefs?.audioQuality ?? settings.download.defaultAudioQuality;
+    const audioQuality =
+      extra?.audioQuality ?? prefs?.audioQuality ?? settings.download.defaultAudioQuality;
     const videoContainer =
       extra?.videoContainer ?? settings.download.defaultVideoContainer ?? 'mp4';
     // Canonical page URL: SC items carry their permalink (ids cannot be
@@ -499,7 +497,7 @@ export const useOnlineStore = defineStore('online', () => {
     // cover (including `none`) always wins over the defaults.
     const cover =
       extra?.cover !== undefined || prefs?.cover !== undefined
-        ? extra?.cover ?? prefs?.cover
+        ? (extra?.cover ?? prefs?.cover)
         : kind === 'audio'
           ? defaultCoverSpec()
           : ({ type: 'thumbnail' } as const);
@@ -648,367 +646,380 @@ export const useOnlineStore = defineStore('online', () => {
   }
 
   function buildStreamTrack(
-  video: { id: string; title: string; duration?: string; thumbnail?: string; url?: string },
-  path: string,
-  order: number
-): MediaFile {
-  const isSc = isSoundcloudItem(video);
-  return {
-    id: `${isSc ? 'sc' : 'yt'}:${video.id}`,
-    name: video.title,
-    path,
-    extension: '',
-    mimeType: isSc ? 'audio/mpeg' : 'audio/mp4',
-    size: 0,
-    type: 'stream',
-    duration: parseDurationText(video.duration),
-    thumbnail: video.thumbnail,
-    addedAt: Date.now() + order,
-    playCount: 0
-  };
-}
-
-// Plays a video online: resolves the direct stream URL (cached in main) and
-// sets it as an unpersisted 'stream' track. Failures (HLS, auth, bot-block)
-// surface as a notification instead of failing silently.
-function parseDurationText(text?: string): number | undefined {
-  if (!text) return undefined;
-  const parts = text.split(':').map((p) => parseInt(p, 10));
-  if (parts.some((p) => Number.isNaN(p))) return undefined;
-  let secs = 0;
-  for (const p of parts) secs = secs * 60 + p;
-  return secs;
-}
-
-async function playStream(video: YouTubeVideo | YouTubeResolvedItem) {
-  const player = usePlayerStore();
-  const url = streamTargetFor(video);
-  // Optimistic UI: the player bar (and its thumbnail) appears instantly, while
-  // the URL resolves in the background. streamPending is display-only — it is
-  // never fed to the audio engine. The placeholder path is a non-empty key the
-  // cover cache can seed (MediaCover ignores empty paths).
-  const pending = buildStreamTrack(video, `${url}`, 0);
-  player.streamPending = pending;
-  player.enrichTrack(pending);
-  const t0 = performance.now();
-  logger.info('yt', `playStream start url=${url}`);
-  let result;
-  try {
-    result = (await window.api?.invoke(streamChannelFor(url), url)) as
-      | IpcStreamResult
-      | undefined;
-  } catch (e) {
-    logger.warn('yt', 'playStream invoke rejected', String(e));
-    result = undefined;
+    video: { id: string; title: string; duration?: string; thumbnail?: string; url?: string },
+    path: string,
+    order: number
+  ): MediaFile {
+    const isSc = isSoundcloudItem(video);
+    return {
+      id: `${isSc ? 'sc' : 'yt'}:${video.id}`,
+      name: video.title,
+      path,
+      extension: '',
+      mimeType: isSc ? 'audio/mpeg' : 'audio/mp4',
+      size: 0,
+      type: 'stream',
+      duration: parseDurationText(video.duration),
+      thumbnail: video.thumbnail,
+      addedAt: Date.now() + order,
+      playCount: 0
+    };
   }
-  logger.info('yt', `playStream resolve ms=${Math.round(performance.now() - t0)}`, result);
-  // A newer intent may have replaced this pending track. A click for the SAME
-  // video (e.g. playAllStreams claiming the same first item) must not cancel
-  // the resolved URL — only a different video takes over.
-  const superseding = player.streamPending;
-  if (superseding && superseding.id !== pending.id) {
-    logger.warn(
-      'yt',
-      'playStream pending superseded — dropping resolved URL',
-      `clicked=${pending.id} pending=${superseding.id}`
-    );
-    return;
-  }
-  if (!result?.success || !result.url) {
-    player.streamPending = null;
-    useUIStore().notify('error', video.title, streamErrorMessage(t, result?.code ?? 'network'));
-    return;
-  }
-  player.streamPending = null;
-  const track = buildStreamTrack(video, result.url, 0);
-  logger.info('yt', 'playStream promoting to currentTrack', track.id);
-  player.setTrack(track);
-  logger.info('yt', 'playStream track set', player.currentTrack?.type, player.currentTrack?.id);
-  player.enrichTrack(track);
-}
 
-const prefetchedStreams = new Set<string>();
-let prefetchInFlight = 0;
-// High enough to cover a grid row + one click ahead; low enough to not hammer
-// YouTube with parallel yt-dlp spawns (they amplify transient 403 windows).
-const PREFETCH_MAX_IN_FLIGHT = 5;
+  // Plays a video online: resolves the direct stream URL (cached in main) and
+  // sets it as an unpersisted 'stream' track. Failures (HLS, auth, bot-block)
+  // surface as a notification instead of failing silently.
+  function parseDurationText(text?: string): number | undefined {
+    if (!text) return undefined;
+    const parts = text.split(':').map((p) => parseInt(p, 10));
+    if (parts.some((p) => Number.isNaN(p))) return undefined;
+    let secs = 0;
+    for (const p of parts) secs = secs * 60 + p;
+    return secs;
+  }
 
-// Resolves the stream URL ahead of the click (card visibility) so playback
-// starts instantly: the main process LRU cache then serves the click without
-// waiting on the resolver. Best-effort — real errors surface through playStream.
-async function prefetchStream(video: { id: string; url?: string }): Promise<void> {
-  if (prefetchedStreams.has(video.id) || prefetchInFlight >= PREFETCH_MAX_IN_FLIGHT) return;
-  if (prefetchedStreams.size > 1000) prefetchedStreams.clear();
-  prefetchedStreams.add(video.id);
-  prefetchInFlight++;
-  const url = streamTargetFor(video);
-  try {
-    const res = (await window.api?.invoke(streamChannelFor(url), url)) as
-      | IpcStreamResult
-      | undefined;
-    if (res?.success && res.url) {
-      // Warm the CDN connection right away through the media-server
-      // proxy (it retries transient 403s with backoff). By the time the user
-      // clicks, the URL has already passed its rate-limit window, so the click
-      // loads in a single attempt instead of paying 403s + retry delays.
-      try {
-        await fetch(toMediaStreamUrl(res.url), { headers: { Range: 'bytes=0-1' } });
-      } catch {
-        // best-effort probe — playback does not depend on it
-      }
+  async function playStream(video: YouTubeVideo | YouTubeResolvedItem) {
+    const player = usePlayerStore();
+    const url = streamTargetFor(video);
+    // Optimistic UI: the player bar (and its thumbnail) appears instantly, while
+    // the URL resolves in the background. streamPending is display-only — it is
+    // never fed to the audio engine. The placeholder path is a non-empty key the
+    // cover cache can seed (MediaCover ignores empty paths).
+    const pending = buildStreamTrack(video, `${url}`, 0);
+    player.streamPending = pending;
+    player.enrichTrack(pending);
+    const t0 = performance.now();
+    logger.info('yt', `playStream start url=${url}`);
+    let result;
+    try {
+      result = (await window.api?.invoke(streamChannelFor(url), url)) as
+        IpcStreamResult | undefined;
+    } catch (e) {
+      logger.warn('yt', 'playStream invoke rejected', String(e));
+      result = undefined;
     }
-  } catch {
-    // ignore: prefetch is best-effort
-  } finally {
-    prefetchInFlight--;
+    logger.info('yt', `playStream resolve ms=${Math.round(performance.now() - t0)}`, result);
+    // A newer intent may have replaced this pending track. A click for the SAME
+    // video (e.g. playAllStreams claiming the same first item) must not cancel
+    // the resolved URL — only a different video takes over.
+    const superseding = player.streamPending;
+    if (superseding && superseding.id !== pending.id) {
+      logger.warn(
+        'yt',
+        'playStream pending superseded — dropping resolved URL',
+        `clicked=${pending.id} pending=${superseding.id}`
+      );
+      return;
+    }
+    if (!result?.success || !result.url) {
+      player.streamPending = null;
+      useUIStore().notify('error', video.title, streamErrorMessage(t, result?.code ?? 'network'));
+      return;
+    }
+    player.streamPending = null;
+    const track = buildStreamTrack(video, result.url, 0);
+    logger.info('yt', 'playStream promoting to currentTrack', track.id);
+    player.setTrack(track);
+    logger.info('yt', 'playStream track set', player.currentTrack?.type, player.currentTrack?.id);
+    player.enrichTrack(track);
   }
-}
 
-function streamErrorMessage(t: (k: string) => string, code: string): string {
-  switch (code) {
-    case 'hls':
-      return t('youtube.streamErrorHls');
-    case 'auth-required':
-      return t('youtube.streamErrorAuth');
-    case 'bot-block':
-      return t('youtube.streamErrorBot');
-    case 'invalid':
-      return t('youtube.streamErrorInvalid');
-    case 'dependency':
-      return t('youtube.streamErrorDependency');
-    case 'not-found':
-      return t('youtube.streamErrorNotFound');
-    default:
-      return t('youtube.streamErrorNetwork');
-  }
-}
+  const prefetchedStreams = new Set<string>();
+  let prefetchInFlight = 0;
+  // High enough to cover a grid row + one click ahead; low enough to not hammer
+  // YouTube with parallel yt-dlp spawns (they amplify transient 403 windows).
+  const PREFETCH_MAX_IN_FLIGHT = 5;
 
-// Streams every item of a playlist/channel: resolves URLs in the background
-// (the main process caches them, so a repeated play-through is fast), plays the
-// first resolved item immediately and queues the rest in their original order.
-// Queues a single saved track (platform-dispatched via the stored page URL).
-async function queueSavedTrack(
-  video: { id: string; title: string; duration?: string; thumbnail?: string; url?: string }
-) {
-  const player = usePlayerStore();
-  const url = streamTargetFor(video);
-  const result = (await window.api?.invoke(streamChannelFor(url), url)) as
-    | IpcStreamResult
-    | undefined;
-  if (!result?.success || !result.url) {
-    useUIStore().notify('error', video.title, streamErrorMessage(t, result?.code ?? 'network'));
-    return;
-  }
-  const track = buildStreamTrack(video, result.url, player.queueLength);
-  player.enrichTrack(track);
-  player.addToQueueMultiple([track]);
-  useUIStore().notify('success', t('saved.addedToQueue'));
-}
-
-async function playAllStreams(items: YouTubeResolvedItem[]) {
-  if (items.length === 0) return;
-  const player = usePlayerStore();
-  logger.info('yt', `playAllStreams start items=${items.length} first=${items[0]!.id}`);
-  // The player bar appears instantly with the first item while it resolves.
-  player.streamPending = buildStreamTrack(items[0]!, `yt:${items[0]!.id}`, 0);
-  player.enrichTrack(player.streamPending);
-  // Resolve with a small concurrency cap: parallel yt-dlp spawns hammer
-  // YouTube and amplify the transient 403 rate-limit windows. The first item
-  // plays immediately from its cached/prefetched URL; the rest can resolve in
-  // the background while it plays.
-  const ordered: (MediaFile | null)[] = items.map(() => null);
-  let failures = 0;
-  let started = false;
-  const MAX_CONCURRENT = 4;
-  let nextIndex = 0;
-  const worker = async () => {
-    while (nextIndex < items.length) {
-      const idx = nextIndex++;
-      const item = items[idx]!;
-      const url = streamTargetFor(item);
-      let result: IpcStreamResult | undefined;
-      try {
-        result = (await window.api?.invoke(streamChannelFor(url), url)) as
-          | IpcStreamResult
-          | undefined;
-      } catch {
-        result = undefined;
-      }
-      if (!result?.success || !result.url) {
-        failures++;
-        continue;
-      }
-      const track = buildStreamTrack(item, result.url, idx);
-      ordered[idx] = track;
-      if (!started) {
-        started = true;
-        // If the user clicked a specific video while play-all was resolving,
-        // respect the click: its pending stays, the first item goes to the
-        // queue and everything follows in order. Same-video clicks already
-        // promote through playStream — do not replay a current track.
-        const current = player.currentTrack;
-        if (current && current.id === track.id) {
-          if (player.streamPending?.id === track.id) player.streamPending = null;
-        } else if (player.streamPending && player.streamPending.id !== track.id) {
-          // fall through: queue items[0] too, in original order
-        } else {
-          player.streamPending = null;
-          player.setTrack(track);
-          player.enrichTrack(track);
+  // Resolves the stream URL ahead of the click (card visibility) so playback
+  // starts instantly: the main process LRU cache then serves the click without
+  // waiting on the resolver. Best-effort — real errors surface through playStream.
+  async function prefetchStream(video: { id: string; url?: string }): Promise<void> {
+    if (prefetchedStreams.has(video.id) || prefetchInFlight >= PREFETCH_MAX_IN_FLIGHT) return;
+    if (prefetchedStreams.size > 1000) prefetchedStreams.clear();
+    prefetchedStreams.add(video.id);
+    prefetchInFlight++;
+    const url = streamTargetFor(video);
+    try {
+      const res = (await window.api?.invoke(streamChannelFor(url), url)) as
+        IpcStreamResult | undefined;
+      if (res?.success && res.url) {
+        // Warm the CDN connection right away through the media-server
+        // proxy (it retries transient 403s with backoff). By the time the user
+        // clicks, the URL has already passed its rate-limit window, so the click
+        // loads in a single attempt instead of paying 403s + retry delays.
+        try {
+          await fetch(toMediaStreamUrl(res.url), { headers: { Range: 'bytes=0-1' } });
+        } catch {
+          // best-effort probe — playback does not depend on it
         }
       }
-      // Rebuild the queue in the original order, dropping tracks that already
-      // played (history) or are currently playing.
-      const consumed = new Set(player.history.map((h) => h.path));
-      const current = player.currentTrack;
-      const queued = ordered
-        .map((t, i) => ({ t, i }))
-        .filter(({ t }) => t !== null && (!current || t.id !== current.id) && !consumed.has(t.path))
-        .sort((a, b) => a.i - b.i)
-        .map(({ t }) => t!);
-      player.clearQueue();
-      player.addToQueueMultiple(queued);
+    } catch {
+      // ignore: prefetch is best-effort
+    } finally {
+      prefetchInFlight--;
     }
-  };
-  await Promise.all(
-    Array.from({ length: Math.min(MAX_CONCURRENT, items.length) }, () => worker())
-  );
-  if (failures > 0) {
-    useUIStore().notify(
-      'warning',
-      t('youtube.playAll'),
-      t('youtube.playAllFailures', { count: failures })
+  }
+
+  function streamErrorMessage(t: (k: string) => string, code: string): string {
+    switch (code) {
+      case 'hls':
+        return t('youtube.streamErrorHls');
+      case 'auth-required':
+        return t('youtube.streamErrorAuth');
+      case 'bot-block':
+        return t('youtube.streamErrorBot');
+      case 'invalid':
+        return t('youtube.streamErrorInvalid');
+      case 'dependency':
+        return t('youtube.streamErrorDependency');
+      case 'not-found':
+        return t('youtube.streamErrorNotFound');
+      default:
+        return t('youtube.streamErrorNetwork');
+    }
+  }
+
+  // Streams every item of a playlist/channel: resolves URLs in the background
+  // (the main process caches them, so a repeated play-through is fast), plays the
+  // first resolved item immediately and queues the rest in their original order.
+  // Queues a single saved track (platform-dispatched via the stored page URL).
+  async function queueSavedTrack(video: {
+    id: string;
+    title: string;
+    duration?: string;
+    thumbnail?: string;
+    url?: string;
+  }) {
+    const player = usePlayerStore();
+    const url = streamTargetFor(video);
+    const result = (await window.api?.invoke(streamChannelFor(url), url)) as
+      IpcStreamResult | undefined;
+    if (!result?.success || !result.url) {
+      useUIStore().notify('error', video.title, streamErrorMessage(t, result?.code ?? 'network'));
+      return;
+    }
+    const track = buildStreamTrack(video, result.url, player.queueLength);
+    player.enrichTrack(track);
+    player.addToQueueMultiple([track]);
+    useUIStore().notify('success', t('saved.addedToQueue'));
+  }
+
+  async function playAllStreams(items: YouTubeResolvedItem[]) {
+    if (items.length === 0) return;
+    const player = usePlayerStore();
+    logger.info('yt', `playAllStreams start items=${items.length} first=${items[0]!.id}`);
+    // The player bar appears instantly with the first item while it resolves.
+    player.streamPending = buildStreamTrack(items[0]!, `yt:${items[0]!.id}`, 0);
+    player.enrichTrack(player.streamPending);
+    // Resolve with a small concurrency cap: parallel yt-dlp spawns hammer
+    // YouTube and amplify the transient 403 rate-limit windows. The first item
+    // plays immediately from its cached/prefetched URL; the rest can resolve in
+    // the background while it plays.
+    const ordered: (MediaFile | null)[] = items.map(() => null);
+    let failures = 0;
+    let started = false;
+    const MAX_CONCURRENT = 4;
+    let nextIndex = 0;
+    const worker = async () => {
+      while (nextIndex < items.length) {
+        const idx = nextIndex++;
+        const item = items[idx]!;
+        const url = streamTargetFor(item);
+        let result: IpcStreamResult | undefined;
+        try {
+          result = (await window.api?.invoke(streamChannelFor(url), url)) as
+            IpcStreamResult | undefined;
+        } catch {
+          result = undefined;
+        }
+        if (!result?.success || !result.url) {
+          failures++;
+          continue;
+        }
+        const track = buildStreamTrack(item, result.url, idx);
+        ordered[idx] = track;
+        if (!started) {
+          started = true;
+          // If the user clicked a specific video while play-all was resolving,
+          // respect the click: its pending stays, the first item goes to the
+          // queue and everything follows in order. Same-video clicks already
+          // promote through playStream — do not replay a current track.
+          const current = player.currentTrack;
+          if (current && current.id === track.id) {
+            if (player.streamPending?.id === track.id) player.streamPending = null;
+          } else if (player.streamPending && player.streamPending.id !== track.id) {
+            // fall through: queue items[0] too, in original order
+          } else {
+            player.streamPending = null;
+            player.setTrack(track);
+            player.enrichTrack(track);
+          }
+        }
+        // Rebuild the queue in the original order, dropping tracks that already
+        // played (history) or are currently playing.
+        const consumed = new Set(player.history.map((h) => h.path));
+        const current = player.currentTrack;
+        const queued = ordered
+          .map((t, i) => ({ t, i }))
+          .filter(
+            ({ t }) => t !== null && (!current || t.id !== current.id) && !consumed.has(t.path)
+          )
+          .sort((a, b) => a.i - b.i)
+          .map(({ t }) => t!);
+        player.clearQueue();
+        player.addToQueueMultiple(queued);
+      }
+    };
+    await Promise.all(
+      Array.from({ length: Math.min(MAX_CONCURRENT, items.length) }, () => worker())
     );
-  }
-  if (!started) {
-    player.streamPending = null;
-  }
-}
-
-function resolvedToSavedStream(i: YouTubeResolvedItem): IpcSavedStream {
-  return { ...i, savedAt: Date.now() };
-}
-
-function savedStreamToItem(s: IpcSavedStream): YouTubeResolvedItem {
-  return {
-    id: s.id,
-    title: s.title,
-    thumbnail: s.thumbnail ?? '',
-    channelTitle: s.channelTitle ?? '',
-    channelId: s.channelId ?? '',
-    duration: s.duration,
-    isPlayable: true,
-    ...(s.url ? { url: s.url } : {})
-  };
-}
-
-// Loads every item of the currently relevant playlist (platform-dispatched:
-// YT playlists via yt:resolve, SoundCloud sets via sc:resolve).
-async function resolveAllPlaylistItems(
-  url: string,
-  cap = RESOLVED_AUTO_CAP
-): Promise<{ items: YouTubeResolvedItem[]; totalItems: number | null }> {
-  const isSc = detectPlatform(url)?.platform === 'soundcloud';
-  const resolveChannel = isSc ? 'sc:resolve' : 'yt:resolve';
-  const moreChannel = isSc ? 'sc:resolveMore' : 'yt:resolveMore';
-  const items: YouTubeResolvedItem[] = [];
-  let totalItems: number | null = null;
-  let hasMore = false;
-  const first = (await window.api?.invoke(resolveChannel, url)) as
-    | { success?: boolean; result?: { items: YouTubeResolvedItem[]; meta: { hasMore?: boolean; totalItems?: number | null } } }
-    | undefined;
-  if (!first?.success || !first.result) return { items, totalItems };
-  items.push(...first.result.items);
-  totalItems = first.result.meta.totalItems ?? null;
-  hasMore = !!first.result.meta.hasMore;
-  while (hasMore && items.length < cap) {
-    const end = Math.min(items.length + 200, cap);
-    const res = (await window.api?.invoke(moreChannel, {
-      url,
-      start: items.length + 1,
-      end
-    })) as
-      | { success?: boolean; items?: YouTubeResolvedItem[]; hasMore?: boolean; totalItems?: number | null }
-      | undefined;
-    if (!res?.success || !res.items || res.items.length === 0) break;
-    const seen = new Set(items.map((i) => i.id));
-    items.push(...res.items.filter((i) => !seen.has(i.id)));
-    if (res.totalItems != null) totalItems = res.totalItems;
-    hasMore = !!res.hasMore && items.length < cap;
-  }
-  return { items, totalItems };
-}
-
-const syncingSavedPlaylists = new Set<string>();
-const syncingSavedPlaylistState = ref(new Set<string>());
-
-// Re-checks a saved playlist against YouTube in the background: new items are
-// appended at the end, removed ones are dropped, and the stored snapshot is
-// updated. Never blocks playback — results only surface through a toast.
-async function syncSavedPlaylist(p: IpcSavedPlaylist): Promise<{
-  added: number;
-  removed: number;
-  total: number;
-} | null> {
-  if (syncingSavedPlaylists.has(p.id)) return null;
-  syncingSavedPlaylists.add(p.id);
-  syncingSavedPlaylistState.value = new Set(syncingSavedPlaylists);
-  try {
-    const fresh = await resolveAllPlaylistItems(p.url);
-    const stored = p.items ?? [];
-    const freshIds = new Set(fresh.items.map((i) => i.id));
-    const kept = stored.filter((s) => freshIds.has(s.id));
-    const removed = stored.length - kept.length;
-    const added = fresh.items.filter((i) => !stored.some((s) => s.id === i.id));
-    const updated = [...kept, ...added.map(resolvedToSavedStream)];
-    if (removed > 0 || added.length > 0) {
-      const saved = useSavedStore();
-      await saved.updatePlaylistItems(p.id, updated, fresh.totalItems);
-    }
-    if (removed > 0 || added.length > 0) {
+    if (failures > 0) {
       useUIStore().notify(
-        'info',
-        p.title,
-        t('saved.syncChanged', { added: added.length, removed })
+        'warning',
+        t('youtube.playAll'),
+        t('youtube.playAllFailures', { count: failures })
       );
     }
-    return { added: added.length, removed, total: updated.length };
-  } catch {
-    return null;
-  } finally {
-    syncingSavedPlaylists.delete(p.id);
-    syncingSavedPlaylistState.value = new Set(syncingSavedPlaylists);
-  }
-}
-
-// Plays a saved playlist instantly from its stored snapshot (no network wait)
-// and re-checks the source in the background. Entries saved before the item
-// snapshot existed fall back to a full resolve first.
-async function playSavedPlaylist(p: IpcSavedPlaylist) {
-  let items = p.items ?? [];
-  if (items.length === 0) {
-    const fresh = await resolveAllPlaylistItems(p.url);
-    items = fresh.items.map(resolvedToSavedStream);
-    if (items.length > 0) {
-      const saved = useSavedStore();
-      await saved.updatePlaylistItems(p.id, items, fresh.totalItems);
+    if (!started) {
+      player.streamPending = null;
     }
   }
-  if (items.length === 0) {
-    useUIStore().notify('error', p.title, t('saved.playlistEmpty'));
-    return;
+
+  function resolvedToSavedStream(i: YouTubeResolvedItem): IpcSavedStream {
+    return { ...i, savedAt: Date.now() };
   }
-  void playAllStreams(items.map(savedStreamToItem));
-  void syncSavedPlaylist(p);
-}
 
-// Loads every page of the currently relevant playlist (used when the user
-// saves it) so the snapshot contains the full list, not just the first page.
-async function loadAllResolvedItems(url: string) {
-  return resolveAllPlaylistItems(url);
-}
+  function savedStreamToItem(s: IpcSavedStream): YouTubeResolvedItem {
+    return {
+      id: s.id,
+      title: s.title,
+      thumbnail: s.thumbnail ?? '',
+      channelTitle: s.channelTitle ?? '',
+      channelId: s.channelId ?? '',
+      duration: s.duration,
+      isPlayable: true,
+      ...(s.url ? { url: s.url } : {})
+    };
+  }
 
-// Status of the download task for a given video id (used to show a loading /
+  // Loads every item of the currently relevant playlist (platform-dispatched:
+  // YT playlists via yt:resolve, SoundCloud sets via sc:resolve).
+  async function resolveAllPlaylistItems(
+    url: string,
+    cap = RESOLVED_AUTO_CAP
+  ): Promise<{ items: YouTubeResolvedItem[]; totalItems: number | null }> {
+    const isSc = detectPlatform(url)?.platform === 'soundcloud';
+    const resolveChannel = isSc ? 'sc:resolve' : 'yt:resolve';
+    const moreChannel = isSc ? 'sc:resolveMore' : 'yt:resolveMore';
+    const items: YouTubeResolvedItem[] = [];
+    let totalItems: number | null = null;
+    let hasMore = false;
+    const first = (await window.api?.invoke(resolveChannel, url)) as
+      | {
+          success?: boolean;
+          result?: {
+            items: YouTubeResolvedItem[];
+            meta: { hasMore?: boolean; totalItems?: number | null };
+          };
+        }
+      | undefined;
+    if (!first?.success || !first.result) return { items, totalItems };
+    items.push(...first.result.items);
+    totalItems = first.result.meta.totalItems ?? null;
+    hasMore = !!first.result.meta.hasMore;
+    while (hasMore && items.length < cap) {
+      const end = Math.min(items.length + 200, cap);
+      const res = (await window.api?.invoke(moreChannel, {
+        url,
+        start: items.length + 1,
+        end
+      })) as
+        | {
+            success?: boolean;
+            items?: YouTubeResolvedItem[];
+            hasMore?: boolean;
+            totalItems?: number | null;
+          }
+        | undefined;
+      if (!res?.success || !res.items || res.items.length === 0) break;
+      const seen = new Set(items.map((i) => i.id));
+      items.push(...res.items.filter((i) => !seen.has(i.id)));
+      if (res.totalItems != null) totalItems = res.totalItems;
+      hasMore = !!res.hasMore && items.length < cap;
+    }
+    return { items, totalItems };
+  }
+
+  const syncingSavedPlaylists = new Set<string>();
+  const syncingSavedPlaylistState = ref(new Set<string>());
+
+  // Re-checks a saved playlist against YouTube in the background: new items are
+  // appended at the end, removed ones are dropped, and the stored snapshot is
+  // updated. Never blocks playback — results only surface through a toast.
+  async function syncSavedPlaylist(p: IpcSavedPlaylist): Promise<{
+    added: number;
+    removed: number;
+    total: number;
+  } | null> {
+    if (syncingSavedPlaylists.has(p.id)) return null;
+    syncingSavedPlaylists.add(p.id);
+    syncingSavedPlaylistState.value = new Set(syncingSavedPlaylists);
+    try {
+      const fresh = await resolveAllPlaylistItems(p.url);
+      const stored = p.items ?? [];
+      const freshIds = new Set(fresh.items.map((i) => i.id));
+      const kept = stored.filter((s) => freshIds.has(s.id));
+      const removed = stored.length - kept.length;
+      const added = fresh.items.filter((i) => !stored.some((s) => s.id === i.id));
+      const updated = [...kept, ...added.map(resolvedToSavedStream)];
+      if (removed > 0 || added.length > 0) {
+        const saved = useSavedStore();
+        await saved.updatePlaylistItems(p.id, updated, fresh.totalItems);
+      }
+      if (removed > 0 || added.length > 0) {
+        useUIStore().notify(
+          'info',
+          p.title,
+          t('saved.syncChanged', { added: added.length, removed })
+        );
+      }
+      return { added: added.length, removed, total: updated.length };
+    } catch {
+      return null;
+    } finally {
+      syncingSavedPlaylists.delete(p.id);
+      syncingSavedPlaylistState.value = new Set(syncingSavedPlaylists);
+    }
+  }
+
+  // Plays a saved playlist instantly from its stored snapshot (no network wait)
+  // and re-checks the source in the background. Entries saved before the item
+  // snapshot existed fall back to a full resolve first.
+  async function playSavedPlaylist(p: IpcSavedPlaylist) {
+    let items = p.items ?? [];
+    if (items.length === 0) {
+      const fresh = await resolveAllPlaylistItems(p.url);
+      items = fresh.items.map(resolvedToSavedStream);
+      if (items.length > 0) {
+        const saved = useSavedStore();
+        await saved.updatePlaylistItems(p.id, items, fresh.totalItems);
+      }
+    }
+    if (items.length === 0) {
+      useUIStore().notify('error', p.title, t('saved.playlistEmpty'));
+      return;
+    }
+    void playAllStreams(items.map(savedStreamToItem));
+    void syncSavedPlaylist(p);
+  }
+
+  // Loads every page of the currently relevant playlist (used when the user
+  // saves it) so the snapshot contains the full list, not just the first page.
+  async function loadAllResolvedItems(url: string) {
+    return resolveAllPlaylistItems(url);
+  }
+
+  // Status of the download task for a given video id (used to show a loading /
   // downloading / done state on the quick "download" button).
   function downloadStatusFor(videoId: string): DownloadTask['status'] | null {
     if (!videoId) return null;
@@ -1340,7 +1351,8 @@ async function loadAllResolvedItems(url: string) {
     try {
       const input = {
         ...channel,
-        platform: channel.platform === 'soundcloud' ? ('soundcloud' as const) : ('youtube' as const),
+        platform:
+          channel.platform === 'soundcloud' ? ('soundcloud' as const) : ('youtube' as const),
         downloadPrefs: setup.prefs,
         seedBaseline: !setup.downloadAll
       };
@@ -1497,23 +1509,23 @@ async function loadAllResolvedItems(url: string) {
     }
   }
 
-async function retryDownload(task: DownloadTask) {
-  const created = await submitJobs([buildTaskInput(task)]);
-  if (!created) {
-    // The main process replaced the failed job with a fresh one only when no
-    // active job with the same video id existed. If it was skipped, tell the
-    // user instead of failing silently.
-    useUIStore().notify('info', t('downloads.retry'), t('youtube.retryAlreadyActive'));
-    return;
+  async function retryDownload(task: DownloadTask) {
+    const created = await submitJobs([buildTaskInput(task)]);
+    if (!created) {
+      // The main process replaced the failed job with a fresh one only when no
+      // active job with the same video id existed. If it was skipped, tell the
+      // user instead of failing silently.
+      useUIStore().notify('info', t('downloads.retry'), t('youtube.retryAlreadyActive'));
+      return;
+    }
+    // A retry creates a brand-new job — drop the old failed row so the same
+    // video is not listed twice (once as error, once as pending).
+    const idx = downloads.value.findIndex((d) => d.id === task.id);
+    if (idx >= 0) downloads.value.splice(idx, 1);
+    if (task.videoId && downloadByVideoId.get(task.videoId)?.id === task.id) {
+      downloadByVideoId.delete(task.videoId);
+    }
   }
-  // A retry creates a brand-new job — drop the old failed row so the same
-  // video is not listed twice (once as error, once as pending).
-  const idx = downloads.value.findIndex((d) => d.id === task.id);
-  if (idx >= 0) downloads.value.splice(idx, 1);
-  if (task.videoId && downloadByVideoId.get(task.videoId)?.id === task.id) {
-    downloadByVideoId.delete(task.videoId);
-  }
-}
 
   async function pauseAll() {
     try {

@@ -12,7 +12,8 @@ function num(v: unknown): unknown | undefined {
   return typeof v === 'number' && Number.isFinite(v) ? v : undefined;
 }
 function numClamped(min: number, max: number): Sanitizer {
-  return (v) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : undefined);
+  return (v) =>
+    typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : undefined;
 }
 function bool(v: unknown): unknown | undefined {
   return typeof v === 'boolean' ? v : undefined;
@@ -93,19 +94,83 @@ function viewModes(v: unknown): unknown | undefined {
   return out;
 }
 
+function hexStr(v: unknown): unknown | undefined {
+  if (typeof v !== 'string') return undefined;
+  const s = v.trim().toLowerCase();
+  return /^#(?:[0-9a-f]{6}|[0-9a-f]{3})$/.test(s) ? s : undefined;
+}
+
+function zeroOne(v: unknown): unknown | undefined {
+  return v === 0 || v === 1 ? v : undefined;
+}
+
+function sizeMultiplier(v: unknown): unknown | undefined {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return undefined;
+  const n = v > 5 ? Math.round(v / 2) : Math.round(v);
+  return Math.min(5, Math.max(1, n));
+}
+
+const GEOMETRY_FIELDS: Record<string, Sanitizer> = {
+  radiusBox: numClamped(0, 32),
+  radiusField: numClamped(0, 32),
+  radiusSelector: numClamped(0, 32),
+  sizeField: sizeMultiplier,
+  sizeSelector: sizeMultiplier,
+  border: numClamped(0, 4),
+  depth: zeroOne,
+  noise: zeroOne
+};
+
+function migrateAppearance(v: unknown): unknown {
+  if (!isPlainObject(v)) return v;
+  const acc = v['accentColor'];
+  const cc = v['customColors'];
+  if (
+    typeof acc === 'string' &&
+    /^#[0-9a-fA-F]{6}$/.test(acc) &&
+    !(isPlainObject(cc) && typeof cc['primary'] === 'string')
+  ) {
+    return { ...v, customColors: { ...(isPlainObject(cc) ? cc : {}), primary: acc } };
+  }
+  return v;
+}
+
 const APPEARANCE_FIELDS: Record<string, Sanitizer> = {
-  theme: enumOf(['dark', 'light', 'midnight', 'spotify', 'custom']),
-  accentColor: str,
+  theme: enumOf([
+    'dark',
+    'light',
+    'midnight',
+    'spotify',
+    'luxury',
+    'cyberpunk',
+    'aqua',
+    'black',
+    'lemonade',
+    'abyss',
+    'custom'
+  ]),
+  customBase: enumOf([
+    'dark',
+    'light',
+    'midnight',
+    'spotify',
+    'luxury',
+    'cyberpunk',
+    'aqua',
+    'black',
+    'lemonade',
+    'abyss'
+  ]),
+  customColors: recordOf(hexStr),
+  geometry: obj(GEOMETRY_FIELDS),
+  glassAlpha: numClamped(0, 100),
   fontSize: numClamped(8, 48),
-  density: enumOf(['compact', 'comfortable', 'spacious']),
   sidebarPosition: enumOf(['left', 'right']),
   sidebarCollapsed: bool,
   showPlaylists: bool,
   showAlbums: bool,
   locale: enumOf(['pl', 'en', 'auto']),
   animations: bool,
-  transparency: numClamped(0, 1),
-  customBackground: str,
   audioPipMode: enumOf(['minimal', 'medium', 'max', 'wide']),
   audioPipAutoShow: bool,
   audioPipOpacity: numClamped(0, 1),
@@ -250,7 +315,7 @@ const DEPENDENCY_FIELDS: Record<string, Sanitizer> = {
 
 const TOP_LEVEL: Record<string, Sanitizer> = {
   general: obj(GENERAL_FIELDS),
-  appearance: obj(APPEARANCE_FIELDS),
+  appearance: (v) => obj(APPEARANCE_FIELDS)(migrateAppearance(v)),
   playback: obj(PLAYBACK_FIELDS),
   explorer: obj(EXPLORER_FIELDS),
   library: obj(LIBRARY_FIELDS),

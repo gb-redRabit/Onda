@@ -73,7 +73,7 @@ function togglePlay() {
   <!-- mini player -->
   <div
     v-if="isMini"
-    class="h-12 bg-bg-overlay border-t border-border-default flex items-center px-3 gap-3 shrink-0 relative"
+    class="h-12 bg-base-200/[var(--glass-alpha)] border-t border-base-content/20 flex items-center px-3 gap-3 shrink-0 relative"
   >
     <div
       v-if="!isLive"
@@ -81,16 +81,18 @@ function togglePlay() {
       @click="onSeek"
     >
       <div
-        class="absolute inset-y-0 left-0 h-full bg-accent-base/50 rounded-r-full"
+        class="absolute inset-y-0 left-0 h-full bg-primary/50 rounded-r-full"
         :style="{ width: bufferedPct + '%' }"
       />
       <div
-        class="absolute inset-y-0 left-0 h-full bg-accent-base rounded-r-full"
+        class="absolute inset-y-0 left-0 h-full bg-primary rounded-r-full"
         :style="{ width: progressPct + '%' }"
       />
     </div>
 
-    <div class="w-8 h-8 rounded-lg bg-bg-elevated flex items-center justify-center shrink-0 overflow-hidden">
+    <div
+      class="w-8 h-8 rounded-field bg-base-100 flex items-center justify-center shrink-0 overflow-hidden"
+    >
       <MediaCover :path="displayTrack?.path" :size="14" fallback="music" />
     </div>
     <TrackInfo
@@ -100,40 +102,38 @@ function togglePlay() {
       :showArtist="false"
       :showFallback="true"
     />
-    <div class="flex items-center gap-1 ">
+    <div class="flex items-center gap-1">
       <button
-        class="p-1.5 text-fg-muted hover:text-fg-base transition-colors"
+        class="p-1.5 text-base-content/70 hover:text-base-content transition-colors"
         :aria-label="$t('common.previous')"
         @click="player.prevTrack"
       >
         <SkipBack :size="14" fill="currentColor" />
       </button>
       <button
-        class="w-8 h-8 rounded-full bg-fg-base flex items-center justify-center hover:scale-105 active:scale-95 transition-[transform,opacity]"
+        class="w-8 h-8 rounded-full bg-base-content flex items-center justify-center hover:scale-105 active:scale-95 transition-[transform,opacity]"
         :aria-label="audio.isPlaying.value ? $t('common.pause') : $t('common.play')"
         @click="togglePlay"
       >
-        <Pause v-if="audio.isPlaying.value" :size="14" class="text-bg-base" fill="currentColor" />
-        <Play v-else :size="14" class="text-bg-base ml-0.5" fill="currentColor" />
+        <Pause v-if="audio.isPlaying.value" :size="14" class="text-base-200" fill="currentColor" />
+        <Play v-else :size="14" class="text-base-200 ml-0.5" fill="currentColor" />
       </button>
       <button
-        class="p-1.5 text-fg-muted hover:text-fg-base transition-colors"
+        class="p-1.5 text-base-content/70 hover:text-base-content transition-colors"
         :aria-label="$t('common.next')"
         @click="player.nextTrack"
       >
         <SkipForward :size="14" fill="currentColor" />
       </button>
     </div>
-    <span
-      v-if="isLive"
-      class="text-[10px] font-bold tracking-widest text-red-base shrink-0"
-      >{{ $t('player.live') }}</span
-    >
-    <span v-else class="text-[10px] text-fg-faint font-mono tabular-nums">{{
+    <span v-if="isLive" class="text-[10px] font-bold tracking-widest text-error shrink-0">{{
+      $t('player.live')
+    }}</span>
+    <span v-else class="text-[10px] text-base-content/50 font-mono tabular-nums">{{
       formatDuration(audio.currentTime.value)
     }}</span>
     <button
-      class="p-1.5 text-fg-faint hover:text-accent-base transition-colors"
+      class="p-1.5 text-base-content/50 hover:text-primary transition-colors"
       :title="$t('common.audioView')"
       :aria-label="$t('common.audioView')"
       @click="router.push('/audio')"
@@ -141,7 +141,7 @@ function togglePlay() {
       <Disc3 :size="13" />
     </button>
     <button
-      class="p-1.5 text-fg-faint hover:text-fg-base transition-colors"
+      class="p-1.5 text-base-content/50 hover:text-base-content transition-colors"
       :title="$t('common.miniPlayer')"
       :aria-label="$t('common.miniPlayer')"
       @click="isMini = false"
@@ -153,7 +153,7 @@ function togglePlay() {
   <!-- full player -->
   <div
     v-else
-    class="h-18 bg-bg-overlay border-t border-border-default flex items-center px-4 shrink-0 relative"
+    class="h-18 bg-base-200/[var(--glass-alpha)] border-t border-base-content/20 flex items-center px-4 shrink-0 relative"
   >
     <div
       v-if="!isLive"
@@ -161,18 +161,18 @@ function togglePlay() {
       @click="onSeek"
     >
       <div
-        class="absolute inset-y-0 left-0 h-full bg-accent-base/50 rounded-r-full"
+        class="absolute inset-y-0 left-0 h-full bg-primary/50 rounded-r-full"
         :style="{ width: bufferedPct + '%' }"
       />
       <div
-        class="absolute inset-y-0 left-0 h-full bg-accent-base rounded-r-full"
+        class="absolute inset-y-0 left-0 h-full bg-primary rounded-r-full"
         :style="{ width: progressPct + '%' }"
       />
     </div>
 
     <div class="flex items-center gap-3 w-70 min-w-0">
       <div
-        class="w-11 h-11 rounded-lg bg-bg-elevated border border-border-default flex items-center justify-center shrink-0 overflow-hidden"
+        class="w-11 h-11 rounded-field bg-base-100 border border-base-300 flex items-center justify-center shrink-0 overflow-hidden"
       >
         <MediaCover :path="displayTrack?.path" :size="18" fallback="music" />
       </div>
@@ -180,15 +180,15 @@ function togglePlay() {
         :track="displayTrack"
         class="min-w-0 flex-1"
         titleSize="text-sm"
-        titleClass="text-fg-base"
+        titleClass="text-base-content"
         :showFallback="true"
       />
       <button
         class="shrink-0 p-1.5 transition-colors"
         :class="
           player.currentTrack && player.isFavorite(player.currentTrack.path)
-            ? 'text-red-base'
-            : 'text-fg-faint hover:text-red-base'
+            ? 'text-error'
+            : 'text-base-content/50 hover:text-error'
         "
         :disabled="!player.currentTrack"
         :aria-label="
@@ -212,48 +212,59 @@ function togglePlay() {
     <div class="flex-1 flex flex-col items-center gap-0.5">
       <div class="flex items-center gap-3">
         <button
-          class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
-          :class="{ 'text-accent-base!': player.shuffle }"
+          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
+          :class="{ 'text-primary!': player.shuffle }"
           :aria-label="$t('common.shuffle')"
           @click="player.toggleShuffle"
         >
           <Shuffle :size="15" />
         </button>
         <button
-          class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
           :aria-label="$t('common.previous')"
           @click="player.prevTrack"
         >
           <SkipBack :size="17" fill="currentColor" />
         </button>
         <button
-          class="w-10 h-10 rounded-full bg-fg-base flex items-center justify-center hover:scale-105 active:scale-95 transition-[transform,opacity] shadow-lg"
+          class="w-10 h-10 rounded-full bg-base-content flex items-center justify-center hover:scale-105 active:scale-95 transition-[transform,opacity] shadow-lg"
           :aria-label="audio.isPlaying.value ? $t('common.pause') : $t('common.play')"
           @click="togglePlay"
         >
-          <Pause v-if="audio.isPlaying.value" :size="18" class="text-bg-base" fill="currentColor" />
-          <Play v-else :size="18" class="text-bg-base ml-0.5" fill="currentColor" />
+          <Pause
+            v-if="audio.isPlaying.value"
+            :size="18"
+            class="text-base-200"
+            fill="currentColor"
+          />
+          <Play v-else :size="18" class="text-base-200 ml-0.5" fill="currentColor" />
         </button>
         <button
-          class="p-1.5 rounded-lg text-fg-muted hover:text-fg-base hover:bg-bg-hover transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
           :aria-label="$t('common.next')"
           @click="player.nextTrack"
         >
           <SkipForward :size="17" fill="currentColor" />
         </button>
         <button
-          class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
-          :class="{ 'text-accent-base!': player.repeat !== 'none' }"
+          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
+          :class="{ 'text-primary!': player.repeat !== 'none' }"
           :aria-label="$t('common.repeat')"
           @click="player.cycleRepeat"
         >
           <component :is="player.repeat === 'one' ? Repeat1 : Repeat" :size="15" />
         </button>
       </div>
-      <div v-if="isLive" class="flex items-center gap-2 text-[11px] font-bold tracking-widest text-red-base">
+      <div
+        v-if="isLive"
+        class="flex items-center gap-2 text-[11px] font-bold tracking-widest text-error"
+      >
         <span>{{ $t('player.live') }}</span>
       </div>
-      <div v-else class="flex items-center gap-2 text-[11px] text-fg-faint font-mono tabular-nums">
+      <div
+        v-else
+        class="flex items-center gap-2 text-[11px] text-base-content/50 font-mono tabular-nums"
+      >
         <span>{{ formatDuration(audio.currentTime.value) }}</span>
         <span>/</span>
         <span>{{ formatDuration(audio.duration.value) }}</span>
@@ -262,8 +273,8 @@ function togglePlay() {
 
     <div class="flex items-center gap-1.5 w-64 justify-end">
       <button
-        class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
-        :class="{ 'text-accent-base!': player.equalizerVisible }"
+        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
+        :class="{ 'text-primary!': player.equalizerVisible }"
         data-eq-toggle
         :aria-label="$t('common.equalizer')"
         @click="player.toggleEqualizer"
@@ -271,15 +282,15 @@ function togglePlay() {
         <SlidersHorizontal :size="15" />
       </button>
       <button
-        class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
-        :class="{ 'text-accent-base!': player.queueVisible }"
+        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
+        :class="{ 'text-primary!': player.queueVisible }"
         :aria-label="$t('common.queue')"
         @click="player.toggleQueue"
       >
         <ListMusic :size="15" />
       </button>
       <button
-        class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
         :aria-label="$t('common.mute')"
         @click="player.toggleMute"
       >
@@ -299,12 +310,12 @@ function togglePlay() {
         @click="onVolume"
       >
         <div
-          class="h-full bg-fg-base rounded-full"
+          class="h-full bg-base-content rounded-full"
           :style="{ width: (player.isMuted ? 0 : player.volume * 100) + '%' }"
         />
       </div>
       <button
-        class="p-1.5 rounded-lg text-fg-faint hover:text-accent-base hover:bg-bg-hover transition-colors"
+        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-base-content/10 transition-colors"
         :title="$t('common.audioView')"
         :aria-label="$t('common.audioView')"
         @click="router.push('/audio')"
@@ -312,7 +323,7 @@ function togglePlay() {
         <Disc3 :size="15" />
       </button>
       <button
-        class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
         :title="$t('common.miniPlayer')"
         :aria-label="$t('common.miniPlayer')"
         @click="isMini = true"

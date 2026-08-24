@@ -166,9 +166,9 @@ describe('audioEngine video element routing', () => {
     const spy = vi.fn();
     const off = audioEvents.on('streamError', spy);
     const handle = (el: HTMLAudioElement): void =>
-      (audioEngine as unknown as { handleStreamError(el: HTMLAudioElement): void }).handleStreamError(
-        el
-      );
+      (
+        audioEngine as unknown as { handleStreamError(el: HTMLAudioElement): void }
+      ).handleStreamError(el);
 
     (audioEngine as unknown as { loadRemote(url: string): void }).loadRemote(
       'https://rr1.googlevideo.com/videoplayback?x=1'

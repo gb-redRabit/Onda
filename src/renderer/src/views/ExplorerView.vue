@@ -190,7 +190,9 @@ onBeforeUnmount(() => {
     <div class="flex flex-col flex-1 min-w-0 relative" @dragover.prevent @drop.prevent>
       <ExplorerTabs />
 
-      <div class="flex items-center gap-2 px-3 py-2 border-b border-border-default bg-bg-base">
+      <div
+        class="flex items-center gap-2 px-3 py-2 border-b border-base-300 bg-base-200/[var(--glass-alpha)]"
+      >
         <ExplorerBreadcrumb />
 
         <ExplorerToolbar @search="searchQuery = $event" />
@@ -198,11 +200,11 @@ onBeforeUnmount(() => {
         <ExplorerViewModeDropdown />
 
         <button
-          class="p-1.5 rounded-lg transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             pinned
-              ? 'text-accent-base bg-accent-ghost'
-              : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+              ? 'text-primary bg-primary/10'
+              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
           "
           :title="$t('explorer.alwaysOnTop')"
           :aria-label="$t('explorer.alwaysOnTop')"
@@ -216,11 +218,11 @@ onBeforeUnmount(() => {
         </button>
 
         <button
-          class="p-1.5 rounded-lg transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             dupPanelOpen
-              ? 'text-accent-base bg-accent-ghost'
-              : 'text-fg-faint hover:text-fg-base hover:bg-bg-hover'
+              ? 'text-primary bg-primary/10'
+              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
           "
           :title="$t('explorer.duplicates')"
           :aria-label="$t('explorer.duplicates')"
@@ -230,7 +232,7 @@ onBeforeUnmount(() => {
         </button>
 
         <button
-          class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
           :title="$t('explorer.newFolder')"
           :aria-label="$t('explorer.newFolder')"
           @click="createNewFolder"
@@ -239,7 +241,7 @@ onBeforeUnmount(() => {
         </button>
 
         <button
-          class="p-1.5 rounded-lg text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
           :title="$t('explorer.openInWindow')"
           :aria-label="$t('explorer.openInWindow')"
           @click="openInWindow"
@@ -249,7 +251,7 @@ onBeforeUnmount(() => {
 
         <span
           v-if="explorer.selectedCount > 0"
-          class="text-[11px] text-fg-muted whitespace-nowrap"
+          class="text-[11px] text-base-content/70 whitespace-nowrap"
           >{{ t('explorer.nItems', { n: explorer.selectedCount }) }}</span
         >
       </div>

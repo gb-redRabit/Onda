@@ -47,32 +47,32 @@ function onDragSeek(e: MouseEvent) {
 
 <template>
   <div v-if="isLive" class="w-full flex items-center gap-3">
-    <span class="text-xs font-bold tracking-widest text-red-base">{{ $t('player.live') }}</span>
-    <div class="flex-1 h-px bg-bg-active rounded-full" />
+    <span class="text-xs font-bold tracking-widest text-error">{{ $t('player.live') }}</span>
+    <div class="flex-1 h-px bg-base-content/20 rounded-full" />
   </div>
   <div v-else class="w-full flex items-center gap-3">
-    <span class="text-xs text-fg-muted font-mono tabular-nums w-10 text-right shrink-0">
+    <span class="text-xs text-base-content/70 font-mono tabular-nums w-10 text-right shrink-0">
       {{ formatDuration(audio.currentTime.value) }}
     </span>
     <div
-      class="flex-1 h-1 bg-bg-active rounded-full cursor-pointer hover:h-1.5 transition-[height] group relative"
+      class="flex-1 h-1 bg-base-content/20 rounded-full cursor-pointer hover:h-1.5 transition-[height] group relative"
       @click="onSeek"
       @mousedown="onDragSeek"
     >
       <div
-        class="absolute inset-y-0 left-0 bg-accent-base/50 rounded-full"
+        class="absolute inset-y-0 left-0 bg-primary/50 rounded-full"
         :style="{ width: bufferedPct + '%' }"
       />
       <div
-        class="absolute inset-y-0 left-0 bg-accent-base rounded-full "
+        class="absolute inset-y-0 left-0 bg-primary rounded-full"
         :style="{ width: progressPct + '%' }"
       >
         <div
-          class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-accent-base shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+          class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
         />
       </div>
     </div>
-    <span class="text-xs text-fg-faint font-mono tabular-nums w-10 shrink-0">
+    <span class="text-xs text-base-content/50 font-mono tabular-nums w-10 shrink-0">
       {{ formatDuration(audio.duration.value) }}
     </span>
   </div>

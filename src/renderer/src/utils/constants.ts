@@ -106,91 +106,20 @@ export const DEFAULT_SHORTCUTS: Record<string, string> = {
 
 export const DEFAULT_APPEARANCE = {
   theme: 'dark' as const,
-  accentColor: '#8b7cf0',
+  customBase: 'dark' as const,
+  glassAlpha: 100,
   fontSize: 14,
-  density: 'comfortable' as const,
   sidebarPosition: 'left' as const,
   sidebarCollapsed: false,
   showPlaylists: true,
   showAlbums: true,
   locale: 'pl' as const,
   animations: true,
-  transparency: 1,
   audioPipMode: 'minimal' as const,
   audioPipAutoShow: true,
   audioPipOpacity: 0.35,
   audioPipPosition: 'bottom-right' as const,
   audioPipEdgePosition: 'top' as const
-};
-
-export const THEME_PALETTES: Record<
-  string,
-  {
-    bgBase: string;
-    bgSurface: string;
-    bgOverlay: string;
-    bgElevated: string;
-    bgHover: string;
-    bgActive: string;
-    borderDefault: string;
-    borderSubtle: string;
-    fgBase: string;
-    fgMuted: string;
-    fgFaint: string;
-  }
-> = {
-  dark: {
-    bgBase: '#0f0f17',
-    bgSurface: '#181825',
-    bgOverlay: '#1e1e2e',
-    bgElevated: '#252536',
-    bgHover: '#2e2e42',
-    bgActive: '#3a3a52',
-    borderDefault: '#2a2a40',
-    borderSubtle: '#363650',
-    fgBase: '#e8e8f0',
-    fgMuted: '#a0a0b8',
-    fgFaint: '#7c7c9c'
-  },
-  light: {
-    bgBase: '#f8f8fa',
-    bgSurface: '#f0f0f4',
-    bgOverlay: '#e8e8ee',
-    bgElevated: '#ffffff',
-    bgHover: '#e0e0e8',
-    bgActive: '#d0d0da',
-    borderDefault: '#d0d0da',
-    borderSubtle: '#c0c0cc',
-    fgBase: '#1a1a2e',
-    fgMuted: '#4a4a60',
-    fgFaint: '#8a8aa0'
-  },
-  midnight: {
-    bgBase: '#0d1117',
-    bgSurface: '#161b22',
-    bgOverlay: '#1c2128',
-    bgElevated: '#21262d',
-    bgHover: '#292e36',
-    bgActive: '#333942',
-    borderDefault: '#21262d',
-    borderSubtle: '#30363d',
-    fgBase: '#c9d1d9',
-    fgMuted: '#8b949e',
-    fgFaint: '#6e7681'
-  },
-  spotify: {
-    bgBase: '#121212',
-    bgSurface: '#181818',
-    bgOverlay: '#1e1e1e',
-    bgElevated: '#282828',
-    bgHover: '#333333',
-    bgActive: '#3e3e3e',
-    borderDefault: '#282828',
-    borderSubtle: '#333333',
-    fgBase: '#b3b3b3',
-    fgMuted: '#808080',
-    fgFaint: '#535353'
-  }
 };
 
 export const DEFAULT_PLAYBACK = {

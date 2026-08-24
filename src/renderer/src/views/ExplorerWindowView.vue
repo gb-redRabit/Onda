@@ -58,39 +58,39 @@ function titleText(): string {
 </script>
 
 <template>
-  <div class="flex flex-col h-full w-full bg-bg-base">
+  <div class="flex flex-col h-full w-full bg-base-200/[var(--glass-alpha)]">
     <div
-      class="flex items-center justify-between gap-3 pl-3 pr-1 h-9 shrink-0 border-b border-border-default select-none"
+      class="flex items-center justify-between gap-3 pl-3 pr-1 h-9 shrink-0 border-b border-base-300 select-none"
       style="-webkit-app-region: drag"
     >
-      <div class="flex items-center gap-2 text-xs text-fg-muted min-w-0">
-        <FolderOpen :size="14" class="text-accent-base shrink-0" />
+      <div class="flex items-center gap-2 text-xs text-base-content/70 min-w-0">
+        <FolderOpen :size="14" class="text-primary shrink-0" />
         <span class="truncate font-medium">{{ titleText() }}</span>
       </div>
       <div class="flex items-center gap-0.5 shrink-0" style="-webkit-app-region: no-drag">
         <button
-          class="p-1.5 rounded-md text-fg-faint hover:text-accent-base hover:bg-accent-ghost transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-primary/10 transition-colors"
           :title="$t('explorer.pinAsTab')"
           @click="pinAsTab"
         >
           <Pin :size="13" />
         </button>
         <button
-          class="p-1.5 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
           :title="$t('window.minimize')"
           @click="minimize"
         >
           <Minus :size="14" />
         </button>
         <button
-          class="p-1.5 rounded-md text-fg-faint hover:text-fg-base hover:bg-bg-hover transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
           :title="$t('window.maximize')"
           @click="maximize"
         >
           <Square :size="12" />
         </button>
         <button
-          class="p-1.5 rounded-md text-fg-faint hover:text-white hover:bg-red-500/80 transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-white hover:bg-red-500/80 transition-colors"
           :title="$t('window.close')"
           @click="close"
         >

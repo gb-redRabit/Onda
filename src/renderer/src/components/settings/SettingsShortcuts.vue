@@ -76,15 +76,15 @@ function displayKey(key: string): string {
       <div
         v-for="(key, action) in settings.shortcuts"
         :key="action"
-        class="flex items-center justify-between gap-4 px-4 py-2.5 border-b border-border-default last:border-b-0"
+        class="flex items-center justify-between gap-4 px-4 py-2.5 border-b border-base-300 last:border-b-0"
       >
         <span class="text-sm capitalize">{{ String(action).replace(/-/g, ' ') }}</span>
         <button
-          class="px-3 py-1 rounded-lg border text-xs font-mono transition-colors min-w-15 text-center"
+          class="fx-noise px-3 py-1 fx-depth rounded-field border text-xs font-mono transition-colors min-w-15 text-center"
           :class="
             recording === action
-              ? 'border-accent-base bg-accent-ghost text-accent-base animate-pulse'
-              : 'border-border-default bg-bg-base text-fg-muted hover:border-accent-base hover:text-fg-base'
+              ? 'border-primary bg-primary/10 text-primary animate-pulse'
+              : 'border-base-300 bg-base-200/[var(--glass-alpha)] text-base-content/70 hover:border-primary hover:text-base-content'
           "
           @click="startRecording(String(action))"
         >

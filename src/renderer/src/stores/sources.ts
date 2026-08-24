@@ -62,7 +62,14 @@ export const useSourcesStore = defineStore('sources', () => {
   const navStack = ref<Array<{ endpointId: string; context: unknown }>>([]);
   /** Pamięć nawigacji per źródło (przełączenie nie kasuje ścieżki). */
   const navBySource = ref<
-    Record<string, { stack: Array<{ endpointId: string; context: unknown }>; endpointId: string; context: unknown }>
+    Record<
+      string,
+      {
+        stack: Array<{ endpointId: string; context: unknown }>;
+        endpointId: string;
+        context: unknown;
+      }
+    >
   >({});
   /** Wynik ostatniego testu połączenia per źródło (sesja). */
   const testStatus = ref<Record<string, { success: boolean; error?: string }>>({});

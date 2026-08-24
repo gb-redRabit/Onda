@@ -88,10 +88,16 @@ class AudioEngine {
       this.handleStreamError(el);
     });
     el.addEventListener('loadstart', () => {
-      logger.info('audioEngine', `loadstart +${Math.round(performance.now() - this.loadStartTs)}ms`);
+      logger.info(
+        'audioEngine',
+        `loadstart +${Math.round(performance.now() - this.loadStartTs)}ms`
+      );
     });
     el.addEventListener('loadeddata', () => {
-      logger.info('audioEngine', `loadeddata +${Math.round(performance.now() - this.loadStartTs)}ms`);
+      logger.info(
+        'audioEngine',
+        `loadeddata +${Math.round(performance.now() - this.loadStartTs)}ms`
+      );
     });
     el.addEventListener('canplay', () => {
       logger.info('audioEngine', `canplay +${Math.round(performance.now() - this.loadStartTs)}ms`);
@@ -123,7 +129,10 @@ class AudioEngine {
       // once directly from the renderer as a different request path.
       this.streamTriedDirect = true;
       this.streamMode = 'direct';
-      logger.info('audioEngine', `stream proxy failed -> direct retry url=${this.streamUrl.slice(0, 120)}`);
+      logger.info(
+        'audioEngine',
+        `stream proxy failed -> direct retry url=${this.streamUrl.slice(0, 120)}`
+      );
       const player = usePlayerStore();
       el.crossOrigin = null;
       this.graph.disconnectSourceNode();
@@ -138,14 +147,16 @@ class AudioEngine {
       // Direct retry failed as well — go back through the proxy one last time.
       this.streamFinalRetried = true;
       this.streamMode = 'proxy';
-      logger.info('audioEngine', `stream direct failed -> proxy retry url=${this.streamUrl.slice(0, 120)}`);
+      logger.info(
+        'audioEngine',
+        `stream direct failed -> proxy retry url=${this.streamUrl.slice(0, 120)}`
+      );
       const player = usePlayerStore();
       el.crossOrigin = 'anonymous';
       el.volume = 1;
       this.connectAudio(el);
       if (this.graph.gainNode) {
-        this.graph.gainNode.gain.value =
-          (player.isMuted ? 0 : player.volume) * this.normalization;
+        this.graph.gainNode.gain.value = (player.isMuted ? 0 : player.volume) * this.normalization;
       }
       el.src = toMediaStreamUrl(this.streamUrl);
       el.load();
@@ -230,8 +241,7 @@ class AudioEngine {
       this.audioEl!.volume = 1;
       this.connectAudio(this.audioEl!);
       if (this.graph.gainNode) {
-        this.graph.gainNode.gain.value =
-          (player.isMuted ? 0 : player.volume) * this.normalization;
+        this.graph.gainNode.gain.value = (player.isMuted ? 0 : player.volume) * this.normalization;
       }
     }
     this.audioEl!.src = src;

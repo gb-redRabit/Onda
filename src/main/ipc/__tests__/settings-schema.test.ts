@@ -31,12 +31,57 @@ describe('sanitizeSettings', () => {
         theme: 'dark',
         sidebarPosition: 'banana',
         fontSize: 'big',
-        accentColor: '#fff'
+        glassAlpha: 60
       },
       favorites: ['a', 1, 'b']
     });
-    expect(sanitized.appearance).toEqual({ theme: 'dark', accentColor: '#fff' });
+    expect(sanitized.appearance).toEqual({ theme: 'dark', glassAlpha: 60 });
     expect(sanitized.favorites).toEqual(['a', 'b']);
+  });
+
+  it('migrates legacy accentColor to customColors.primary and drops old fields', () => {
+    const { sanitized } = sanitizeSettings({
+      appearance: {
+        theme: 'custom',
+        accentColor: '#8b7cf0',
+        transparency: 0.5,
+        customBackground: '#0f0f17'
+      }
+    });
+    expect(sanitized.appearance).toEqual({
+      theme: 'custom',
+      customColors: { primary: '#8b7cf0' }
+    });
+  });
+
+  it('does not overwrite existing customColors.primary during migration', () => {
+    const { sanitized } = sanitizeSettings({
+      appearance: {
+        accentColor: '#8b7cf0',
+        customColors: { primary: '#ff0000', base200: 'nope' }
+      }
+    });
+    expect(sanitized.appearance).toEqual({
+      customColors: { primary: '#ff0000' }
+    });
+  });
+
+  it('sanitizes geometry clamps and drops out-of-range values', () => {
+    const { sanitized } = sanitizeSettings({
+      appearance: {
+        geometry: { radiusBox: 99, radiusField: -3, border: 2, depth: 1, noise: 5, sizeField: 4 }
+      }
+    });
+    expect(sanitized.appearance).toEqual({
+      geometry: { radiusBox: 32, radiusField: 0, border: 2, depth: 1, sizeField: 4 }
+    });
+  });
+
+  it('drops invalid hex values from customColors', () => {
+    const { sanitized } = sanitizeSettings({
+      appearance: { customColors: { primary: '#GG0000', accent: 'red', info: '#0af' } }
+    });
+    expect(sanitized.appearance).toEqual({ customColors: { info: '#0af' } });
   });
 
   it('drops unknown enum values', () => {
@@ -63,8 +108,7 @@ describe('sanitizeSettings', () => {
         sidebarPosition: 'right',
         audioPipMode: 'wide',
         audioPipPosition: 'bottom-right',
-        audioPipEdgePosition: 'bottom',
-        transparency: 0.2
+        audioPipEdgePosition: 'bottom'
       }
     });
     expect(sanitized.appearance).toEqual({
@@ -73,8 +117,7 @@ describe('sanitizeSettings', () => {
       sidebarPosition: 'right',
       audioPipMode: 'wide',
       audioPipPosition: 'bottom-right',
-      audioPipEdgePosition: 'bottom',
-      transparency: 0.2
+      audioPipEdgePosition: 'bottom'
     });
   });
 

@@ -69,17 +69,17 @@ onUnmounted(() => {
 <template>
   <div
     v-if="images.length === 0"
-    class="flex flex-col items-center justify-center h-full gap-3 text-fg-faint"
+    class="flex flex-col items-center justify-center h-full gap-3 text-base-content/50"
   >
     <Images :size="48" class="opacity-30" />
     <p class="text-sm">{{ $t('library.noImages') }}</p>
     <p class="text-xs">{{ $t('library.addFolderHint') }}</p>
   </div>
   <template v-else>
-    <div
-      class="flex items-center justify-between px-4 py-2 border-b border-border-default shrink-0"
-    >
-      <span class="text-xs text-fg-faint">{{ images.length }} {{ $t('library.files') }}</span>
+    <div class="flex items-center justify-between px-4 py-2 border-b border-base-300 shrink-0">
+      <span class="text-xs text-base-content/50"
+        >{{ images.length }} {{ $t('library.files') }}</span
+      >
     </div>
     <div ref="imageGridRef" class="flex-1 overflow-auto p-4">
       <div :style="{ height: imageRowVirtualizer.getTotalSize() + 'px', position: 'relative' }">
@@ -99,12 +99,14 @@ onUnmounted(() => {
           <button
             v-for="item in row.items"
             :key="item.img.path"
-            class="group rounded-xl overflow-hidden bg-bg-elevated border border-border-default hover:border-accent-base transition-colors text-left flex flex-col shrink-0"
+            class="group fx-depth rounded-box fx-noise overflow-hidden bg-base-100 border border-base-300 hover:border-primary transition-colors text-left flex flex-col shrink-0"
             :style="{ width: imageCellSize + 'px' }"
             :title="item.img.name"
             @click="emit('open', item.index)"
           >
-            <div class="aspect-square bg-bg-base overflow-hidden flex items-center justify-center">
+            <div
+              class="aspect-square bg-base-200/[var(--glass-alpha)] overflow-hidden flex items-center justify-center"
+            >
               <img
                 :src="toMediaServerUrl(item.img.path)"
                 :alt="item.img.name"

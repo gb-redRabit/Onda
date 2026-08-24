@@ -59,7 +59,9 @@ http://radio.example/live
 
 # another
 `;
-      expect(parseM3u(m3u)).toEqual([{ name: 'http://radio.example/live', url: 'http://radio.example/live' }]);
+      expect(parseM3u(m3u)).toEqual([
+        { name: 'http://radio.example/live', url: 'http://radio.example/live' }
+      ]);
     });
   });
 
@@ -103,9 +105,16 @@ http://radio.example/live
 
   describe('parseRadioFile', () => {
     it('sniffs content when the extension is unknown', () => {
-      expect(parseRadioFile('stations.txt', '[playlist]\nFile1=http://r.example/live\nTitle1=A')[0]?.name).toBe('A');
+      expect(
+        parseRadioFile('stations.txt', '[playlist]\nFile1=http://r.example/live\nTitle1=A')[0]?.name
+      ).toBe('A');
       expect(parseRadioFile('stations.txt', '#EXTM3U\nhttp://r.example/live')).toHaveLength(1);
-      expect(parseRadioFile('stations.txt', '<playlist><trackList><track><title>T</title><location>http://r.example/live</location></track></trackList></playlist>')[0]?.name).toBe('T');
+      expect(
+        parseRadioFile(
+          'stations.txt',
+          '<playlist><trackList><track><title>T</title><location>http://r.example/live</location></track></trackList></playlist>'
+        )[0]?.name
+      ).toBe('T');
     });
 
     it('uses the extension first', () => {

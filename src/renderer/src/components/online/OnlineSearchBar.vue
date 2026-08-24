@@ -80,7 +80,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <span
           v-if="detection"
           class="absolute left-2.5 top-1/2 -translate-y-1/2 z-10 text-xs font-bold pointer-events-none select-none"
-          :class="detection.kind === 'sc' ? 'text-amber-base' : 'text-red-base'"
+          :class="detection.kind === 'sc' ? 'text-warning' : 'text-error'"
           :title="detection.label"
         >
           {{ detection.kind === 'sc' ? 'SC' : 'YT' }}
@@ -88,12 +88,12 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <Globe
           v-else
           :size="16"
-          class="absolute left-3 top-1/2 -translate-y-1/2 text-fg-faint"
+          class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50"
         />
         <input
           :value="modelValue"
           :placeholder="t('youtube.pasteOrSearch')"
-          class="w-full pl-11 pr-3 py-2.5 rounded-xl bg-bg-elevated border border-border-default text-sm text-fg-base placeholder:text-fg-faint focus:border-accent-base focus:outline-none focus:ring-1 focus:ring-accent-base/30 transition-shadow"
+          class="w-full pl-11 pr-3 h-field-lg fx-depth rounded-field bg-base-100 border border-base-300 text-sm text-base-content placeholder:text-base-content/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30 transition-shadow"
           @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
           @keydown.enter="emit('submit')"
           @dragover.prevent
@@ -120,7 +120,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
           <ListMusic :size="18" />
           <span
             v-if="batchCount && batchCount > 0"
-            class="absolute -top-1 -right-1 min-w-3.5 h-3.5 px-0.5 flex items-center justify-center bg-accent-base text-white text-[9px] font-bold rounded-full"
+            class="absolute -top-1 -right-1 min-w-3.5 h-3.5 px-0.5 flex items-center justify-center bg-primary text-primary-content text-[9px] font-bold rounded-full"
           >
             {{ batchCount > 9 ? '9+' : batchCount }}
           </span>
@@ -147,19 +147,19 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
     >
       <div
         v-if="quickOpen"
-        class="flex flex-wrap items-center gap-3 p-3 rounded-xl bg-bg-surface border border-border-default"
+        class="flex flex-wrap items-center gap-3 p-3 rounded-box bg-base-100 border border-base-300"
       >
-        <span class="text-xs text-fg-faint">{{ t('youtube.quickDownload') }}</span>
-        <div class="flex gap-1 bg-bg-elevated rounded-xl p-1">
+        <span class="text-xs text-base-content/50">{{ t('youtube.quickDownload') }}</span>
+        <div class="flex gap-1 bg-base-100 rounded-box p-1">
           <button
             v-for="k in ['audio', 'video'] as const"
             :key="k"
             type="button"
-            class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+            class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
             :class="
               settings.download.defaultKind === k
-                ? 'bg-bg-surface text-fg-base shadow-sm'
-                : 'text-fg-faint hover:text-fg-muted'
+                ? 'bg-base-100 text-base-content shadow-sm'
+                : 'text-base-content/50 hover:text-base-content/70'
             "
             @click="settings.updateDownload({ defaultKind: k })"
           >
@@ -170,7 +170,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <select
           v-if="settings.download.defaultKind === 'audio'"
           :value="settings.download.defaultAudioFormat"
-          class="px-2 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-xs text-fg-base focus:border-accent-base focus:outline-none"
+          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-none"
           @change="
             settings.updateDownload({
               defaultAudioFormat: ($event.target as HTMLSelectElement).value as any
@@ -185,7 +185,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <select
           v-else
           :value="settings.download.defaultVideoQuality"
-          class="px-2 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-xs text-fg-base focus:border-accent-base focus:outline-none"
+          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-none"
           @change="
             settings.updateDownload({
               defaultVideoQuality: ($event.target as HTMLSelectElement).value as any
@@ -198,7 +198,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <select
           v-if="settings.download.defaultKind === 'video'"
           :value="settings.download.defaultVideoContainer"
-          class="px-2 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-xs text-fg-base focus:border-accent-base focus:outline-none"
+          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-none"
           @change="
             settings.updateDownload({
               defaultVideoContainer: ($event.target as HTMLSelectElement).value as any
@@ -211,7 +211,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <select
           v-if="settings.download.defaultKind === 'audio'"
           :value="settings.download.defaultAudioQuality"
-          class="px-2 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-xs text-fg-base focus:border-accent-base focus:outline-none"
+          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-none"
           @change="
             settings.updateDownload({
               defaultAudioQuality: ($event.target as HTMLSelectElement).value as any
