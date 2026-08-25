@@ -77,7 +77,7 @@ const activeDownload = computed(() => activeDownloads.value[0] || null);
 
 <template>
   <div
-    class="h-6 bg-base-100/[var(--glass-alpha)] border-t border-base-300 flex items-center px-3 text-[11px] text-base-content/50 shrink-0 gap-4"
+    class="h-6 bg-base-100/(--glass-alpha) border border-t border-base-300 flex items-center px-3 text-[11px] text-base-content/50 shrink-0 gap-4"
   >
     <div class="flex items-center gap-1.5">
       <span v-if="player.streamPending" class="flex items-center gap-1.5">

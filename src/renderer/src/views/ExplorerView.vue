@@ -20,7 +20,6 @@ import ExplorerTabs from '@renderer/components/explorer/ExplorerTabs.vue';
 import ExplorerDuplicatesPanel from '@renderer/components/explorer/ExplorerDuplicatesPanel.vue';
 import ExplorerPropertiesDialog from '@renderer/components/explorer/ExplorerPropertiesDialog.vue';
 import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
-import ImageViewer from '@renderer/components/explorer/ImageViewer.vue';
 import { useExplorerActions } from '@renderer/composables/useExplorerActions';
 import { useExplorerContextMenu } from '@renderer/composables/useExplorerContextMenu';
 import type { FileItem } from '@renderer/types/explorer';
@@ -48,8 +47,6 @@ provide('showConfirm', showConfirm);
 
 const pinned = ref(false);
 const searchQuery = ref('');
-const imageViewerIndex = ref<number | null>(null);
-const imageViewerFiles = ref<FileItem[]>([]);
 const dupPanelOpen = ref(false);
 const propertiesItem = ref<FileItem | null>(null);
 const contentRef = ref<InstanceType<typeof ExplorerContent> | null>(null);
@@ -81,18 +78,12 @@ async function openImageViewer(index: number) {
   // Images are served through the local media server — grant access to the
   // current folder before the viewer requests the URLs.
   if (explorer.currentPath) await window.api?.grantMediaAccess(explorer.currentPath);
-  imageViewerFiles.value = filteredFiles.value.filter(
+  const files = filteredFiles.value.filter(
     (f) => !f.isDirectory && f.extension && IMAGE_EXT_SET.has(f.extension)
   );
-  const actualIndex = imageViewerFiles.value.findIndex(
-    (f) => f.path === filteredFiles.value[index].path
-  );
-  imageViewerIndex.value = actualIndex >= 0 ? actualIndex : 0;
-}
-
-function closeImageViewer() {
-  imageViewerIndex.value = null;
-  imageViewerFiles.value = [];
+  const actualIndex = files.findIndex((f) => f.path === filteredFiles.value[index].path);
+  const plain = JSON.parse(JSON.stringify(files));
+  window.api?.invoke('imageViewer:open', plain, actualIndex >= 0 ? actualIndex : 0);
 }
 
 function openProperties(item: FileItem) {
@@ -279,13 +270,6 @@ onBeforeUnmount(() => {
         :item="propertiesItem"
         @close="propertiesItem = null"
         @renamed="onPropertiesRenamed"
-      />
-
-      <ImageViewer
-        v-if="imageViewerIndex !== null"
-        :files="imageViewerFiles"
-        :initial-index="imageViewerIndex ?? 0"
-        @close="closeImageViewer"
       />
     </div>
   </div>

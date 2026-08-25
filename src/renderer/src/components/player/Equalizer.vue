@@ -129,7 +129,7 @@ function onSliderDrag(e: MouseEvent, index: number) {
           />
           <!-- thumb -->
           <div
-            class="absolute w-4 h-4 rounded-full bg-primary border-2 border-white shadow-md transition-all duration-75"
+            class="absolute w-4 h-4 rounded-full bg-primary border border-white shadow-md transition-all duration-75"
             :style="{
               left: '50%',
               top: ((12 - player.equalizerBands[i]) / 24) * 100 + '%',

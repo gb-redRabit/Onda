@@ -44,6 +44,11 @@ const router = createRouter({
       component: () => import('@renderer/views/ExplorerWindowView.vue')
     },
     {
+      path: '/image-viewer',
+      name: 'image-viewer',
+      component: () => import('@renderer/views/ImageViewerWindowView.vue')
+    },
+    {
       path: '/online',
       name: 'online',
       component: () => import('@renderer/views/OnlineView.vue'),

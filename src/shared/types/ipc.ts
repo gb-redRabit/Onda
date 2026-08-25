@@ -452,6 +452,15 @@ export interface IpcChannels {
   'explorer:create': { args: [path?: string]; result: number | null };
   'explorer:tabMoved': { args: [sourceWindowId: number, path: string]; result: void };
   'explorer:sendTabToMain': { args: [path: string]; result: void };
+  'imageViewer:open': {
+    args: [files: unknown[], index: number];
+    result: number | null;
+  };
+  'imageViewer:getData': {
+    args: [];
+    result: { files: unknown[]; index: number } | undefined;
+  };
+  'imageViewer:close': { args: []; result: void };
   'window:setAlwaysOnTop': { args: [flag: boolean]; result: void };
   'window:toggleFullscreen': { args: []; result: boolean };
   'window:exitFullscreen': { args: []; result: void };

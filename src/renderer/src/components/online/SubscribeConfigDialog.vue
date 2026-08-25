@@ -413,7 +413,7 @@ async function pickCustomCover() {
             </p>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button
-                class="fx-noise p-3 fx-depth rounded-field border-2 text-left transition-all"
+                class="fx-noise p-3 fx-depth rounded-field border text-left transition-all"
                 :class="
                   !downloadAll
                     ? 'border-primary bg-primary/10'
@@ -425,7 +425,7 @@ async function pickCustomCover() {
                 <p class="text-xs text-base-content/50">{{ $t('youtube.scopeNewDesc') }}</p>
               </button>
               <button
-                class="fx-noise p-3 fx-depth rounded-field border-2 text-left transition-all"
+                class="fx-noise p-3 fx-depth rounded-field border text-left transition-all"
                 :class="
                   downloadAll
                     ? 'border-primary bg-primary/10'

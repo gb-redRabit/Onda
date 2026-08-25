@@ -49,6 +49,7 @@ body,
   height: 100%;
   width: 100%;
   overflow: hidden;
+
   font-family:
     'Segoe UI',
     system-ui,
@@ -59,6 +60,7 @@ body,
 html,
 body {
   background: transparent !important;
+  border-radius: var(--radius-box) !important;
 }
 
 body {
@@ -134,8 +136,8 @@ input[type='checkbox'] {
   border-width: var(--border);
 }
 
-[class*='bg-base-200/[var(--glass-alpha)'],
-[class*='bg-base-100/[var(--glass-alpha]'] {
+[class*='bg-base-200/[var(--glass-alpha]']:not(.app-root),
+[class*='bg-base-100/[var(--glass-alpha]']:not(.app-root) {
   backdrop-filter: blur(var(--glass-blur));
 }
 .app-root {

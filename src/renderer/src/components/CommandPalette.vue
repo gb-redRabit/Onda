@@ -113,7 +113,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
     <div
       class="w-120 max-w-[90vw] bg-neutral border border-neutral-content/20 rounded-box shadow-2xl shadow-black/50 overflow-hidden"
     >
-      <div class="flex items-center gap-2 px-3 py-2.5 border-b border-base-300">
+      <div class="flex items-center gap-2 px-3 py-2.5 border border-b border-base-300">
         <Search :size="16" class="text-base-content/50 shrink-0" />
         <input
           ref="input"

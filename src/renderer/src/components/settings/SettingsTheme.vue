@@ -27,6 +27,7 @@ const engine = getThemeEngine(settingsAppearanceRef);
 
 const isCustom = computed(() => settings.appearance.theme === 'custom');
 const resolved = computed(() => resolveThemeAppearance(settings.appearance));
+const glassActive = computed(() => (settings.appearance.glassAlpha ?? 100) < 100);
 
 const BASE_TOKENS: ColorTokenId[] = ['base200', 'base100', 'base300', 'baseContent'];
 const BRAND_TOKENS: ColorTokenId[] = [
@@ -144,7 +145,7 @@ async function pasteThemeJson() {
         <button
           v-for="name in BUILTIN_THEME_NAMES"
           :key="name"
-          class="fx-noise p-3 fx-depth rounded-field border-2 transition-all flex items-center gap-4 text-left shrink-0 xl:w-full hover:shadow-md"
+          class="fx-noise p-3 fx-depth rounded-field border transition-all flex items-center gap-4 text-left shrink-0 xl:w-full hover:shadow-md"
           :class="
             settings.appearance.theme === name
               ? 'border-primary bg-primary/5'
@@ -168,7 +169,7 @@ async function pasteThemeJson() {
           <span class="text-sm font-medium whitespace-nowrap">{{ $t(`settings.${name}`) }}</span>
         </button>
         <button
-          class="fx-noise p-3 fx-depth rounded-field border-2 transition-all flex items-center gap-4 text-left shrink-0 xl:w-full hover:shadow-md"
+          class="fx-noise p-3 fx-depth rounded-field border transition-all flex items-center gap-4 text-left shrink-0 xl:w-full hover:shadow-md"
           :class="
             isCustom ? 'border-primary bg-primary/5' : 'border-base-300 hover:border-primary/40'
           "
@@ -293,14 +294,23 @@ async function pasteThemeJson() {
             >
               <div class="flex justify-between text-xs text-base-content/60 mb-1.5">
                 <span>{{ $t(`creator.${slider}`) }}</span>
-                <span>{{ geomValue(slider as keyof ThemeGeometry) }}px</span>
+                <span v-if="slider === 'radiusBox' && glassActive" class="text-warning">{{
+                  $t('creator.glassLocked')
+                }}</span>
+                <span v-else>{{ geomValue(slider as keyof ThemeGeometry) }}px</span>
               </div>
               <input
                 type="range"
                 min="0"
                 max="32"
-                :value="geomValue(slider as keyof ThemeGeometry)"
+                :disabled="slider === 'radiusBox' && glassActive"
+                :value="
+                  slider === 'radiusBox' && glassActive
+                    ? 0
+                    : geomValue(slider as keyof ThemeGeometry)
+                "
                 class="w-full"
+                :class="{ 'opacity-40 pointer-events-none': slider === 'radiusBox' && glassActive }"
                 @input="
                   updateGeometry(
                     slider as keyof ThemeGeometry,

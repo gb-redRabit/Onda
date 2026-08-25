@@ -55,7 +55,7 @@ const kindMeta = computed(() => {
       </p>
     </div>
     <div v-if="loading" class="flex items-center gap-2 shrink-0">
-      <div class="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div class="w-4 h-4 border border-primary border-t-transparent rounded-full animate-spin" />
       <span v-if="totalItems != null" class="text-xs text-base-content/50">
         {{ loadedCount }} / {{ totalItems }}
       </span>
@@ -74,7 +74,7 @@ const kindMeta = computed(() => {
     >
       <span
         v-if="saving"
-        class="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin"
+        class="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin"
       />
       <Bookmark v-else :size="12" :fill="saved ? 'currentColor' : 'none'" />
       {{

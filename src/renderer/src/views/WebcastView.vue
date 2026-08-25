@@ -148,7 +148,7 @@ const playlistCount = computed(() => saved.playlists.length);
 
 <template>
   <div class="flex flex-col h-full">
-    <header class="sticky top-0 z-10 bg-base-100 backdrop-blur border-b border-base-300 px-6 py-5">
+    <header class="sticky top-0 z-10 bg-base-100/(--glass-alpha) backdrop-blur border border-b border-base-300 px-6 py-5">
       <div class="flex items-center gap-3">
         <RadioTower :size="24" class="text-primary" />
         <h1 class="text-xl font-bold">{{ $t('saved.title') }}</h1>
@@ -407,7 +407,7 @@ const playlistCount = computed(() => saved.playlists.length);
                 >
                   <span
                     v-if="playingPlaylistId === p.id"
-                    class="block w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"
+                    class="block w-4 h-4 border border-primary border-t-transparent rounded-full animate-spin"
                   />
                   <Play v-else :size="18" />
                 </button>
@@ -431,7 +431,7 @@ const playlistCount = computed(() => saved.playlists.length);
                 >
                   <div
                     v-if="yt.syncingSavedPlaylistState.has(p.id)"
-                    class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"
+                    class="w-6 h-6 border border-primary border-t-transparent rounded-full animate-spin"
                   />
                 </div>
                 <p

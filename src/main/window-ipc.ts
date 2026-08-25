@@ -8,6 +8,8 @@ import { installNavigationGuard } from './navigation-guard';
 import { pipWindowIcon } from './pip-icon';
 
 const explorerWindows = new Map<number, BrowserWindow>();
+let imageViewerWindow: BrowserWindow | null = null;
+let imageViewerData: { files: unknown[]; index: number } | null = null;
 
 function createExplorerWindow(initialPath?: string): number | null {
   try {
@@ -20,6 +22,7 @@ function createExplorerWindow(initialPath?: string): number | null {
       frame: false,
       titleBarStyle: 'hidden',
       title: 'Explorer',
+      hasShadow: false,
       transparent: true,
       backgroundColor: '#00000000',
       ...(process.platform === 'win32' ? { backgroundMaterial: 'acrylic' as const } : {}),
@@ -83,6 +86,62 @@ export function registerWindowHandlers(context: {
 }): void {
   const { getMainWindow, preFullscreenBounds, pipManager, audioPipManager } = context;
 
+  ipcMain.handle('imageViewer:open', (_event, files: unknown[], index: number) => {
+    imageViewerData = { files, index };
+    if (imageViewerWindow && !imageViewerWindow.isDestroyed()) {
+      imageViewerWindow.webContents.send('imageViewer:files', imageViewerData);
+      imageViewerWindow.focus();
+      return imageViewerWindow.id;
+    }
+    imageViewerWindow = new BrowserWindow({
+      width: 1200,
+      height: 800,
+      minWidth: 600,
+      minHeight: 400,
+      show: false,
+      frame: false,
+      titleBarStyle: 'hidden',
+      title: 'Image Viewer',
+      backgroundColor: '#0f0f17',
+      fullscreen: true,
+      fullscreenable: true,
+      icon: pipWindowIcon(),
+      webPreferences: {
+        preload: join(__dirname, '../preload/index.js'),
+        sandbox: true,
+        contextIsolation: true,
+        nodeIntegration: false,
+        webSecurity: true
+      }
+    });
+    imageViewerWindow.setMenuBarVisibility(false);
+    imageViewerWindow.on('ready-to-show', () => {
+      imageViewerWindow?.show();
+      imageViewerWindow?.setFullScreen(true);
+    });
+    imageViewerWindow.on('closed', () => {
+      imageViewerWindow = null;
+    });
+    installNavigationGuard(imageViewerWindow);
+    const hash = '/image-viewer';
+    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+      void imageViewerWindow.loadURL(process.env['ELECTRON_RENDERER_URL'] + '#' + hash);
+    } else {
+      void imageViewerWindow.loadFile(join(__dirname, '../renderer/index.html'), { hash });
+    }
+    return imageViewerWindow.id;
+  });
+
+  ipcMain.handle('imageViewer:getData', () => {
+    return imageViewerData;
+  });
+
+  ipcMain.handle('imageViewer:close', () => {
+    if (imageViewerWindow && !imageViewerWindow.isDestroyed()) {
+      imageViewerWindow.close();
+    }
+  });
+
   ipcMain.handle('explorer:create', (_event, path?: string) => {
     return createExplorerWindow(typeof path === 'string' ? path : undefined);
   });
@@ -129,21 +188,40 @@ export function registerWindowHandlers(context: {
     BrowserWindow.fromWebContents(event.sender)?.setAlwaysOnTop(flag);
   });
 
+  function restoreBounds(win: BrowserWindow) {
+    if (!preFullscreenBounds.current) return;
+    const bounds = preFullscreenBounds.current;
+    preFullscreenBounds.current = null;
+    const wasMaximized = (bounds as unknown as { wasMaximized?: boolean }).wasMaximized;
+    if (wasMaximized) {
+      win.maximize();
+    } else {
+      win.setBounds(bounds as Electron.Rectangle);
+    }
+    win.setResizable(false);
+    win.setResizable(true);
+  }
+
   ipcMain.handle('window:toggleFullscreen', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender) ?? getMainWindow();
     if (!win) return false;
-    const isFull = win.isFullScreen();
-    if (isFull) {
+    if (win.isFullScreen()) {
       win.setFullScreen(false);
-      if (preFullscreenBounds.current) {
-        win.setBounds(preFullscreenBounds.current);
-        preFullscreenBounds.current = null;
-      }
-      win.setResizable(false);
-      win.setResizable(true);
+      let fired = false;
+      const doRestore = () => {
+        if (fired) return;
+        fired = true;
+        restoreBounds(win);
+      };
+      win.once('leave-full-screen', doRestore);
+      setTimeout(doRestore, 400);
       return false;
     } else {
-      preFullscreenBounds.current = win.getBounds();
+      if (!preFullscreenBounds.current) {
+        const b = win.getBounds();
+        (b as unknown as { wasMaximized?: boolean }).wasMaximized = win.isMaximized();
+        preFullscreenBounds.current = b;
+      }
       win.setFullScreen(true);
       return true;
     }
@@ -151,17 +229,16 @@ export function registerWindowHandlers(context: {
 
   ipcMain.handle('window:exitFullscreen', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender) ?? getMainWindow();
-    if (!win) return;
-    const isFull = win.isFullScreen();
-    if (isFull) {
-      win.setFullScreen(false);
-      if (preFullscreenBounds.current) {
-        win.setBounds(preFullscreenBounds.current);
-        preFullscreenBounds.current = null;
-      }
-      win.setResizable(false);
-      win.setResizable(true);
-    }
+    if (!win || !win.isFullScreen()) return;
+    win.setFullScreen(false);
+    let fired = false;
+    const doRestore = () => {
+      if (fired) return;
+      fired = true;
+      restoreBounds(win);
+    };
+    win.once('leave-full-screen', doRestore);
+    setTimeout(doRestore, 400);
   });
 
   ipcMain.handle('window:isFullscreen', (event) => {

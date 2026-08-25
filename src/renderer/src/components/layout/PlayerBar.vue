@@ -73,7 +73,7 @@ function togglePlay() {
   <!-- mini player -->
   <div
     v-if="isMini"
-    class="h-12 bg-base-200/[var(--glass-alpha)] border-t border-base-content/20 flex items-center px-3 gap-3 shrink-0 relative"
+    class="h-12 bg-base-200/(--glass-alpha) border-t border-base-content/20 flex items-center px-3 gap-3 shrink-0 relative"
   >
     <div
       v-if="!isLive"
@@ -153,7 +153,7 @@ function togglePlay() {
   <!-- full player -->
   <div
     v-else
-    class="h-18 bg-base-200/[var(--glass-alpha)] border-t border-base-content/20 flex items-center px-4 shrink-0 relative"
+    class="h-18 bg-base-200/(--glass-alpha) border border-t border-base-content/20 flex items-center px-4 shrink-0 relative"
   >
     <div
       v-if="!isLive"

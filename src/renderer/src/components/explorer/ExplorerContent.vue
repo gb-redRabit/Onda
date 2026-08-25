@@ -71,7 +71,7 @@ defineExpose({ reveal });
     </div>
 
     <div v-if="explorer.isLoading && files.length === 0" class="flex justify-center py-8">
-      <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div class="w-6 h-6 border border-primary border-t-transparent rounded-full animate-spin" />
     </div>
 
     <div v-if="explorer.isAtDrives && files.length > 0" class="mb-3">

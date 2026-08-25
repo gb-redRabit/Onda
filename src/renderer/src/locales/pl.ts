@@ -1106,6 +1106,7 @@ export default {
     copy: 'Kopiuj JSON',
     paste: 'Wklej JSON',
     glassHint: 'Otwarte DevTools wymuszają kryte tło — testuj przy zamkniętych.',
+    glassLocked: 'szkło',
     radiusBox: 'Radius kart i modali',
     radiusField: 'Radius pól (button, input)',
     radiusSelector: 'Radius selektorów (checkbox, badge)',

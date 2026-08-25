@@ -42,6 +42,9 @@ const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'app:getAutoLaunch',
   'app:setAutoLaunch',
   'app:getPendingFiles',
+  'imageViewer:open',
+  'imageViewer:getData',
+  'imageViewer:close',
   'window:close',
   'window:minimize',
   'window:maximize',
@@ -208,7 +211,8 @@ const ALLOWED_RECEIVE_CHANNELS = new Set<string>([
   'open-files',
   'explorer:add-tab',
   'explorer:refresh',
-  'explorer:remove-tab'
+  'explorer:remove-tab',
+  'imageViewer:files'
 ]);
 
 function trySend(channel: string, ...args: unknown[]): void {
@@ -516,13 +520,11 @@ const api = {
   downloadUpdate: (): Promise<boolean> => ipcRenderer.invoke('updater:download'),
   installUpdate: (): Promise<void> => ipcRenderer.invoke('updater:install'),
   youtubeAuthStatus: (): Promise<YoutubeAuthStatus> => ipcRenderer.invoke('yt:authStatus'),
-  getStreamUrl: (url: string): Promise<IpcStreamResult> =>
-    ipcRenderer.invoke('yt:stream:get', url),
+  getStreamUrl: (url: string): Promise<IpcStreamResult> => ipcRenderer.invoke('yt:stream:get', url),
   savedLoad: (): Promise<IpcSavedData> => ipcRenderer.invoke('saved:load'),
   savedSaveTrack: (track: IpcSavedStream): Promise<boolean> =>
     ipcRenderer.invoke('saved:saveTrack', track),
-  savedRemoveTrack: (id: string): Promise<boolean> =>
-    ipcRenderer.invoke('saved:removeTrack', id),
+  savedRemoveTrack: (id: string): Promise<boolean> => ipcRenderer.invoke('saved:removeTrack', id),
   savedSavePlaylist: (playlist: IpcSavedPlaylist): Promise<boolean> =>
     ipcRenderer.invoke('saved:savePlaylist', playlist),
   savedRemovePlaylist: (id: string): Promise<boolean> =>

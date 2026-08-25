@@ -547,7 +547,7 @@ onUnmounted(() => {
 
 <template>
   <div class="flex flex-col h-full">
-    <header class="sticky top-0 z-10 bg-base-100 backdrop-blur border-b border-base-300 px-4 py-4">
+    <header class="sticky top-0 z-10 bg-base-100/(--glass-alpha) backdrop-blur border border-b border-base-300 px-4 py-4">
       <div class="flex items-center gap-3 mb-4">
         <Radio :size="24" class="text-primary" />
         <h1 class="text-xl font-bold">{{ $t('nav.online') }}</h1>
@@ -694,7 +694,7 @@ onUnmounted(() => {
       <div v-if="activeSection === 'subscriptions'" class="space-y-4">
         <div v-if="!yt.subscriptionsLoaded" class="flex justify-center py-16">
           <div
-            class="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"
+            class="w-8 h-8 border border-primary border-t-transparent rounded-full animate-spin"
           />
         </div>
 
@@ -822,7 +822,7 @@ onUnmounted(() => {
 
         <div v-if="yt.isSearching" class="flex justify-center py-16">
           <div
-            class="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"
+            class="w-8 h-8 border border-primary border-t-transparent rounded-full animate-spin"
           />
         </div>
 

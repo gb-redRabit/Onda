@@ -106,7 +106,7 @@ function onInstall(): void {
     <SettingsCard>
       <SettingsSectionTitle :title="$t('settings.checkInterval')" />
       <select
-        class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
+        class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
         :value="settings.updates.checkInterval"
         @change="
           settings.updateUpdates({
@@ -144,7 +144,7 @@ function onInstall(): void {
           <span>{{ $t('settings.downloading') }}</span>
           <span class="font-mono">{{ Math.round(state.progress) }}%</span>
         </div>
-        <div class="h-1.5 rounded-full bg-base-200/[var(--glass-alpha)] overflow-hidden">
+        <div class="h-1.5 rounded-full bg-base-200/(--glass-alpha) overflow-hidden">
           <div
             class="h-full bg-primary transition-[width] duration-200"
             :style="{ width: state.progress + '%' }"

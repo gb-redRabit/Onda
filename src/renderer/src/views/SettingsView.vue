@@ -205,7 +205,7 @@ watch(tab, (_newTab, oldTab) => {
   <div class="flex flex-col h-full">
     <!-- header -->
     <header
-      class="shrink-0 flex items-center gap-3 px-6 py-4 border-b border-base-300 bg-base-100/[var(--glass-alpha)]"
+      class="shrink-0 flex items-center gap-3 px-6 py-4 border border-b border-base-300 bg-base-100/(--glass-alpha)"
     >
       <template v-if="!tab">
         <div

@@ -227,7 +227,7 @@ watch(
 <template>
   <div class="space-y-4 w-full">
     <div v-if="yt.channelLoading && !yt.channel" class="flex justify-center py-16">
-      <div class="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div class="w-8 h-8 border border-primary border-t-transparent rounded-full animate-spin" />
     </div>
     <template v-else-if="yt.channel">
       <div class="relative rounded-box overflow-hidden bg-base-100 border border-base-300">
@@ -237,15 +237,15 @@ watch(
           :style="{ backgroundImage: `url(${yt.channel.bannerUrl})` }"
         >
           <div
-            class="absolute inset-0 bg-gradient-to-b from-transparent via-bg-surface/30 to-base-100"
+            class="absolute inset-0 bg-linear-to-b from-transparent via-bg-surface/30 to-base-100"
           />
         </div>
-        <div v-else class="h-24 sm:h-32 w-full bg-gradient-to-br from-primary/20 to-base-100" />
+        <div v-else class="h-24 sm:h-32 w-full bg-linear-to-br from-primary/20 to-base-100" />
 
         <div class="relative px-4 pb-4 -mt-6 sm:-mt-8">
           <div class="flex items-end gap-4">
             <div
-              class="w-20 h-20 sm:w-24 sm:h-24 rounded-box overflow-hidden border-4 border-base-100 bg-base-100 shrink-0"
+              class="w-20 h-20 sm:w-24 sm:h-24 rounded-box overflow-hidden border border-base-100 bg-base-100 shrink-0"
             >
               <img
                 v-if="yt.channel.thumbnail && !avatarFailed"
@@ -365,7 +365,7 @@ watch(
 
       <div v-if="yt.channelLoading && !yt.channelItems.length" class="flex justify-center py-8">
         <div
-          class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"
+          class="w-6 h-6 border border-primary border-t-transparent rounded-full animate-spin"
         />
       </div>
 
@@ -405,7 +405,7 @@ watch(
       <div v-if="yt.channelHasMore" :ref="setSentinel" class="flex justify-center py-4">
         <div
           v-if="yt.channelLoading"
-          class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"
+          class="w-6 h-6 border border-primary border-t-transparent rounded-full animate-spin"
         />
       </div>
     </template>

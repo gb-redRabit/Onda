@@ -160,7 +160,7 @@ onBeforeUnmount(() => {
         <template v-for="item in visibleThumbs" :key="item.file.path">
           <div
             :data-thumb-idx="item.idx"
-            class="absolute top-0 rounded-field overflow-hidden border-2 transition-all cursor-pointer flex items-center justify-center"
+            class="absolute top-0 rounded-field overflow-hidden border transition-all cursor-pointer flex items-center justify-center"
             :class="[
               item.idx === currentIndex
                 ? 'border-primary ring-1 ring-primary/30'

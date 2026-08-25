@@ -15,7 +15,7 @@ function onSelect(e: Event) {
 <template>
   <select
     :value="selected"
-    class="px-2 py-1.5 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm text-base-content/70 focus:border-primary focus:outline-none"
+    class="px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm text-base-content/70 focus:border-primary focus:outline-none"
     @change="onSelect"
   >
     <option value="">{{ $t('settings.templatePresets') }}</option>

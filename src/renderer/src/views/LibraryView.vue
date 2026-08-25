@@ -5,7 +5,6 @@ import { useLibraryStore } from '@renderer/stores/library';
 import { isUnderPath } from '@renderer/utils/path';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { usePlayerStore } from '@renderer/stores/player';
-import type { FileItem } from '@renderer/types/explorer';
 import LibraryTracksTab from '@renderer/components/library/LibraryTracksTab.vue';
 import LibraryVideoTab from '@renderer/components/library/LibraryVideoTab.vue';
 import LibraryImagesTab from '@renderer/components/library/LibraryImagesTab.vue';
@@ -15,7 +14,6 @@ import LibraryAlbumsTab from '@renderer/components/library/LibraryAlbumsTab.vue'
 import LibraryPlaylistManager from '@renderer/components/library/LibraryPlaylistManager.vue';
 import TrackTagEditor from '@renderer/components/library/TrackTagEditor.vue';
 import MusicBrainzLookup from '@renderer/components/library/MusicBrainzLookup.vue';
-import ImageViewer from '@renderer/components/explorer/ImageViewer.vue';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import {
   Music2,
@@ -67,23 +65,22 @@ const tabs = computed(
     ] as const
 );
 
-const imageViewerIndex = ref<number | null>(null);
-
-const imageFileItems = computed<FileItem[]>(() =>
-  filteredImages.value.map((tr) => ({
-    name: tr.name,
-    path: tr.path,
-    isDirectory: false,
-    size: tr.size,
-    modifiedAt: tr.addedAt,
-    createdAt: tr.addedAt,
-    extension: tr.extension,
-    mimeType: tr.mimeType
-  }))
-);
-
 function openImageViewer(index: number) {
-  imageViewerIndex.value = index;
+  const files = JSON.parse(
+    JSON.stringify(
+      filteredImages.value.map((tr) => ({
+        name: tr.name,
+        path: tr.path,
+        isDirectory: false,
+        size: tr.size,
+        modifiedAt: tr.addedAt,
+        createdAt: tr.addedAt,
+        extension: tr.extension,
+        mimeType: tr.mimeType
+      }))
+    )
+  );
+  window.api?.invoke('imageViewer:open', files, index);
 }
 
 function playTracks(tracks: typeof library.tracks) {
@@ -215,10 +212,4 @@ function playFolder(folderPath: string) {
   </div>
   <TrackTagEditor :track="editingTrack" @close="editingTrack = null" @saved="onTagSaved" />
   <MusicBrainzLookup v-if="showingMBLookup" @close="showingMBLookup = false" @apply="onMBApply" />
-  <ImageViewer
-    v-if="imageViewerIndex !== null"
-    :files="imageFileItems"
-    :initial-index="imageViewerIndex"
-    @close="imageViewerIndex = null"
-  />
 </template>

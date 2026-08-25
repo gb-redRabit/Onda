@@ -1102,6 +1102,7 @@ export default {
     copy: 'Copy JSON',
     paste: 'Paste JSON',
     glassHint: 'Open DevTools force an opaque background — test with them closed.',
+    glassLocked: 'glass',
     radiusBox: 'Card/modal radius',
     radiusField: 'Field radius (button, input)',
     radiusSelector: 'Selector radius (checkbox, badge)',

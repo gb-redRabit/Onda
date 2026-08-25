@@ -102,7 +102,7 @@ onUnmounted(() => {
             class="group fx-depth rounded-box fx-noise overflow-hidden bg-base-100 border border-base-300 hover:border-primary transition-colors text-left flex flex-col shrink-0"
             :style="{ width: imageCellSize + 'px' }"
             :title="item.img.name"
-            @click="emit('open', item.index)"
+            @dblclick="emit('open', item.index)"
           >
             <div
               class="aspect-square bg-base-200/[var(--glass-alpha)] overflow-hidden flex items-center justify-center"

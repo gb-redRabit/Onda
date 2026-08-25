@@ -42,7 +42,7 @@ const { subsVisible, toggleSubtitles } = sub;
 
 <template>
   <div
-    class="relative w-full h-full flex flex-col bg-black select-none"
+    class="relative w-full h-full flex flex-col bg-base-200 select-none"
     @mouseenter="showOverlay = true"
     @mouseleave="
       showOverlay = false;

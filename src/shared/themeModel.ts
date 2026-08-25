@@ -151,7 +151,8 @@ export function buildEngineVars(t: SemanticTheme, fontSize: number): Record<stri
   for (const id of COLOR_TOKEN_IDS) {
     vars[tokenToCssVar(id)] = t.colors[id];
   }
-  vars['--radius-box'] = `${t.geometry.radiusBox}px`;
+  const glassOn = t.glassAlpha < 100;
+  vars['--radius-box'] = glassOn ? '0px' : `${t.geometry.radiusBox}px`;
   vars['--radius-field'] = `${t.geometry.radiusField}px`;
   vars['--radius-selector'] = `${t.geometry.radiusSelector}px`;
   vars['--size-field'] = FIELD_SIZE_PRESETS[t.geometry.sizeField - 1];

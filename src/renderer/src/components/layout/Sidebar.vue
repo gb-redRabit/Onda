@@ -153,7 +153,7 @@ function playPlaylist(playlistId: string) {
 <template>
   <div class="relative shrink-0 h-full self-stretch">
     <aside
-      class="bg-base-100/[var(--glass-alpha)] border-r border-base-300 flex flex-col overflow-hidden transition-[width] duration-150 h-full"
+      class="bg-base-100/(--glass-alpha) border border-r border-base-300 flex flex-col overflow-hidden transition-[width] duration-150 h-full"
       :style="{ width: (collapsed ? 54 : width) + 'px' }"
     >
       <nav class="flex-1 p-2 space-y-1 overflow-y-auto">
@@ -288,7 +288,7 @@ function playPlaylist(playlistId: string) {
         </div>
       </div>
 
-      <div class="p-2 border-t border-base-300 space-y-1">
+      <div class="p-2 border border-t border-base-300 space-y-1">
         <button
           class="fx-noise w-full flex items-center gap-3 px-3 py-2.5 fx-depth rounded-field text-sm font-medium transition-all"
           :aria-label="$t('nav.settings')"

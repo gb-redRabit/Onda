@@ -64,12 +64,10 @@ const {
     class="fixed inset-0 z-50 flex flex-col bg-base-200/95 select-none"
     :class="slideshowActive && !uiVisible ? 'cursor-none' : ''"
     @click.self="handleClose"
+    @wheel.passive="onWheel"
   >
     <div class="flex-1 flex flex-row min-h-0 relative">
-      <div
-        class="absolute inset-0 flex items-center justify-center overflow-hidden contain-layout"
-        @wheel.prevent="onWheel"
-      >
+      <div class="absolute inset-0 flex items-center justify-center overflow-hidden contain-layout">
         <button
           v-if="hasPrev && !slideshowActive"
           class="absolute left-3 z-10 p-2 rounded-full bg-base-300 text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-all"
@@ -111,7 +109,7 @@ const {
             <div v-if="imgError">{{ $t('imageViewer.loadFailed') }}</div>
             <div v-else class="flex flex-col items-center gap-3">
               <div
-                class="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"
+                class="w-8 h-8 border border-primary border-t-transparent rounded-full animate-spin"
               />
               <span class="text-xs">{{ $t('imageViewer.loading') }}</span>
             </div>

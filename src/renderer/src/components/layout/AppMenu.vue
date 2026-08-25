@@ -26,7 +26,7 @@ const {
 <template>
   <div
     data-app-menu
-    class="flex h-9 bg-base-100/[var(--glass-alpha)] border-b border-base-300 shrink-0 select-none"
+    class="flex h-9 bg-base-100/(--glass-alpha) border border-b border-base-300 shrink-0 select-none"
     style="-webkit-app-region: drag"
   >
     <!-- Logo + static menus -->

@@ -56,7 +56,7 @@ async function setLocale(loc: string) {
         <button
           v-for="lang in languages"
           :key="lang.id"
-          class="flex items-center gap-3 p-4 fx-depth rounded-box fx-noise border-2 transition-all text-left"
+          class="flex items-center gap-3 p-4 fx-depth rounded-box fx-noise border transition-all text-left"
           :class="
             settings.appearance.locale === lang.id
               ? 'border-primary shadow-lg shadow-primary/20'
