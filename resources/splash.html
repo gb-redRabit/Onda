@@ -50,6 +50,20 @@
         font-size: 11px;
         animation: fadeIn 0.4s ease 0.3s both;
       }
+      .progress-wrap {
+        width: 180px;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      .progress-bar {
+        height: 100%;
+        width: 0%;
+        background: #7c6aef;
+        border-radius: 2px;
+        transition: width 0.4s ease;
+      }
       @keyframes fadeIn {
         from {
           opacity: 0;
@@ -66,9 +80,19 @@
     <div class="container">
       <canvas id="viz" width="120" height="120"></canvas>
       <div class="title">Onda</div>
-      <div class="status" id="status">Ładowanie biblioteki...</div>
+      <div class="progress-wrap">
+        <div class="progress-bar" id="bar"></div>
+      </div>
+      <div class="status" id="status">Inicjalizacja...</div>
     </div>
     <script>
+      window.splash?.onStatus((data) => {
+        const el = document.getElementById('status');
+        const bar = document.getElementById('bar');
+        if (el) el.textContent = data.label;
+        if (bar) bar.style.width = Math.round(data.progress) + '%';
+      });
+
       const canvas = document.getElementById('viz');
       const ctx = canvas.getContext('2d');
       const dpr = window.devicePixelRatio || 1;

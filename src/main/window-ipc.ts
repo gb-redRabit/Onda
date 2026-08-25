@@ -6,12 +6,13 @@ import type { AudioPipManager } from './audio-pip-manager';
 import { logger } from '../shared/logger';
 import { installNavigationGuard } from './navigation-guard';
 import { pipWindowIcon } from './pip-icon';
+import { getStore } from './ipc/cover-cache';
 
 const explorerWindows = new Map<number, BrowserWindow>();
 let imageViewerWindow: BrowserWindow | null = null;
 let imageViewerData: { files: unknown[]; index: number } | null = null;
 
-function createExplorerWindow(initialPath?: string): number | null {
+function createExplorerWindow(initialPath?: string, useAcrylic = false): number | null {
   try {
     const win = new BrowserWindow({
       width: 1000,
@@ -23,9 +24,12 @@ function createExplorerWindow(initialPath?: string): number | null {
       titleBarStyle: 'hidden',
       title: 'Explorer',
       hasShadow: false,
-      transparent: true,
-      backgroundColor: '#00000000',
-      ...(process.platform === 'win32' ? { backgroundMaterial: 'acrylic' as const } : {}),
+      ...(useAcrylic && process.platform === 'win32'
+        ? { backgroundMaterial: 'acrylic' as const }
+        : {
+            transparent: true,
+            backgroundColor: '#00000000'
+          }),
       ...(process.platform === 'darwin'
         ? { vibrancy: 'sidebar' as const, visualEffectState: 'active' as const }
         : {}),
@@ -142,8 +146,16 @@ export function registerWindowHandlers(context: {
     }
   });
 
-  ipcMain.handle('explorer:create', (_event, path?: string) => {
-    return createExplorerWindow(typeof path === 'string' ? path : undefined);
+  ipcMain.handle('explorer:create', async (_event, path?: string) => {
+    let useAcrylic = false;
+    try {
+      const store = await getStore();
+      const appearance = store.get('appearance') as { glassAlpha?: number } | undefined;
+      useAcrylic = (appearance?.glassAlpha ?? 100) < 100 && process.platform === 'win32';
+    } catch {
+      /* ignore */
+    }
+    return createExplorerWindow(typeof path === 'string' ? path : undefined, useAcrylic);
   });
 
   ipcMain.handle('explorer:tabMoved', (_event, sourceWindowId: number, path: string) => {
@@ -168,6 +180,22 @@ export function registerWindowHandlers(context: {
     for (const w of getExplorerWindows()) {
       if (!w.isDestroyed()) w.webContents.send('explorer:refresh');
     }
+  });
+
+  ipcMain.handle('app:setBackgroundMaterial', (_event, material: string) => {
+    if (process.platform !== 'win32') return false;
+    const valid = ['auto', 'none', 'mica', 'acrylic', 'tabbed'];
+    if (!valid.includes(material)) return false;
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed()) {
+        try {
+          win.setBackgroundMaterial(material as 'acrylic' | 'none');
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    return true;
   });
 
   ipcMain.handle('window:minimize', (event) => {

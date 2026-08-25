@@ -87,6 +87,10 @@ function setScheme(seed: BuiltinThemeName) {
   settings.updateAppearance({ customBase: seed });
 }
 
+function toggleAcrylic(enabled: boolean) {
+  window.api?.invoke('app:setBackgroundMaterial', enabled ? 'acrylic' : 'auto');
+}
+
 function updateGeometry<K extends keyof ThemeGeometry>(key: K, value: ThemeGeometry[K]) {
   settings.updateAppearance({
     geometry: { ...(settings.appearance.geometry ?? {}), [key]: value }
@@ -394,7 +398,8 @@ async function pasteThemeJson() {
             @input="
               settings.updateAppearance({
                 glassAlpha: parseInt(($event.target as HTMLInputElement).value)
-              })
+              });
+              toggleAcrylic(parseInt(($event.target as HTMLInputElement).value) < 100);
             "
           />
           <p class="mt-2 text-xs text-base-content/50">{{ $t('creator.glassHint') }}</p>

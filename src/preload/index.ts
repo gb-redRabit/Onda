@@ -52,6 +52,8 @@ const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'window:isFullscreen',
   'window:toggleFullscreen',
   'window:setAlwaysOnTop',
+  'app:setBackgroundMaterial',
+  'app:rendererReady',
   'dialog:openFile',
   'dialog:openSubtitle',
   'dialog:openFolder',
@@ -212,7 +214,9 @@ const ALLOWED_RECEIVE_CHANNELS = new Set<string>([
   'explorer:add-tab',
   'explorer:refresh',
   'explorer:remove-tab',
-  'imageViewer:files'
+  'imageViewer:files',
+  'app:rendererReady',
+  'app:setBackgroundMaterial'
 ]);
 
 function trySend(channel: string, ...args: unknown[]): void {

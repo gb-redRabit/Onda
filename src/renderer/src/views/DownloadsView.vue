@@ -352,7 +352,7 @@ const colors = {
         >
           <div class="flex items-center gap-3">
             <div
-              class="w-20 aspect-video rounded-field bg-base-200/[var(--glass-alpha)] overflow-hidden shrink-0"
+              class="w-20 aspect-video rounded-field bg-base-200/(--glass-alpha) overflow-hidden shrink-0"
             >
               <img
                 v-if="t.thumbnail"
@@ -576,17 +576,17 @@ const colors = {
           <div class="px-4 py-4 space-y-3">
             <input
               v-model="metaArtist"
-              class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
+              class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
               :placeholder="$t('youtube.metaArtist')"
             />
             <input
               v-model="metaAlbum"
-              class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
+              class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
               :placeholder="$t('youtube.metaAlbum')"
             />
             <input
               v-model="metaYear"
-              class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
+              class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
               :placeholder="$t('youtube.metaYear')"
             />
           </div>

@@ -44,7 +44,15 @@ let splashWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let mainReady = false;
 let minTimerDone = false;
+let rendererReady = false;
 let startHidden = false;
+let bootMark = 0;
+
+function perf(label: string) {
+  const ms = Math.round(performance.now() - bootMark);
+  logger.info('boot', `${label} — ${ms}ms`);
+}
+
 const preFullscreenBounds: { current: Electron.Rectangle | null } = { current: null };
 
 const MEDIA_EXTS = new Set([...AUDIO_EXTS, ...VIDEO_EXTS]);
@@ -114,7 +122,7 @@ if (!gotSingleInstanceLock) {
   });
 }
 
-function createWindow(): BrowserWindow {
+function createWindow(useAcrylic = false): BrowserWindow {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -124,9 +132,12 @@ function createWindow(): BrowserWindow {
     frame: false,
     titleBarStyle: 'hidden',
     hasShadow: false,
-    transparent: true,
-    backgroundColor: '#00000000',
-    ...(process.platform === 'win32' ? { backgroundMaterial: 'acrylic' as const } : {}),
+    ...(useAcrylic && process.platform === 'win32'
+      ? { backgroundMaterial: 'acrylic' as const }
+      : {
+          transparent: true,
+          backgroundColor: '#00000000'
+        }),
     ...(process.platform === 'darwin'
       ? { vibrancy: 'sidebar' as const, visualEffectState: 'active' as const }
       : {}),
@@ -321,7 +332,8 @@ function createSplashWindow(): BrowserWindow {
     resizable: false,
     icon: windowIcon(),
     webPreferences: {
-      sandbox: true
+      sandbox: true,
+      preload: join(__dirname, '../preload/splash.js')
     }
   });
 
@@ -331,7 +343,13 @@ function createSplashWindow(): BrowserWindow {
 }
 
 function checkAndShow(): void {
-  if (mainReady && minTimerDone) {
+  if (mainReady && minTimerDone && rendererReady) {
+    const total = Math.round(performance.now() - bootMark);
+    logger.info(
+      'boot',
+      `SHOW WINDOW — ${total}ms (mainReady=${mainReady} minTimer=${minTimerDone} renderer=${rendererReady})`
+    );
+    sendSplash('Gotowe', 100);
     splashWindow?.close();
     splashWindow = null;
     if (!startHidden) {
@@ -357,7 +375,13 @@ function forceCloseSplash(): void {
   }
 }
 
+function sendSplash(label: string, progress: number) {
+  splashWindow?.webContents.send('splash:status', { label, progress });
+}
+
 app.whenReady().then(async () => {
+  bootMark = performance.now();
+  perf('boot start');
   if (!gotSingleInstanceLock) return;
 
   electronApp.setAppUserModelId('com.onda.app');
@@ -370,15 +394,30 @@ app.whenReady().then(async () => {
 
   splashWindow = createSplashWindow();
 
+  sendSplash('Inicjalizowanie serwera mediów…', 10);
+
   registerIPC();
   registerMediaUrlHandler();
 
   const mediaServer = await createMediaServer();
   setMediaServerUrl(`http://127.0.0.1:${mediaServer.port}/${mediaServer.token}`);
+  logger.info(
+    'boot',
+    `media server port=${mediaServer.port} ${Math.round(performance.now() - bootMark)}ms`
+  );
+
+  sendSplash('Przywracanie ustawień…', 25);
+
+  let bootFolders = 0;
+  let bootRoots = 0;
+  let initialUseAcrylic = false;
 
   try {
     const store = await getStore();
+    const appearance = store.get('appearance') as { glassAlpha?: number } | undefined;
+    initialUseAcrylic = (appearance?.glassAlpha ?? 100) < 100 && process.platform === 'win32';
     const folders = store.get('libraryFolders', []);
+    bootFolders = Array.isArray(folders) ? folders.length : 0;
     if (Array.isArray(folders)) {
       await setAllowedRoots(folders);
     }
@@ -395,17 +434,22 @@ app.whenReady().then(async () => {
     // Seed previously granted roots plus the default downloads dir, so fresh
     // downloads and old ones outside the library are servable right away.
     const storedRoots = store.get('mediaRoots', []);
+    bootRoots = Array.isArray(storedRoots) ? storedRoots.length : 0;
     const seedRoots = new Set<string>([
       ...(Array.isArray(storedRoots) ? storedRoots : []),
       app.getPath('downloads'),
-      // Transkodowane audio/wideo (fallback dla nieobsĹ‚ugiwanych kodekĂłw) teĹĽ
-      // sÄ… serwowane przez media-server â€” katalogi muszÄ… byÄ‡ w allowed roots.
+      // Transkodowane audio/wideo (fallback dla nieobsługiwanych kodeków) też
+      // są serwowane przez media-server — katalogi muszą być w allowed roots.
       join(os.tmpdir(), 'onda', 'audio-transcodes'),
       join(os.tmpdir(), 'onda', 'video-transcodes')
     ]);
     for (const root of seedRoots) {
       await addAllowedRoot(root);
     }
+    logger.info(
+      'boot',
+      `settings: folders=${bootFolders} roots=${bootRoots} — ${Math.round(performance.now() - bootMark)}ms`
+    );
     // Apply the persisted general settings (close-to-tray + auto-launch sync).
     const general = store.get('general') as
       { autoLaunch?: boolean; startMinimized?: boolean; closeToTray?: boolean } | undefined;
@@ -424,6 +468,14 @@ app.whenReady().then(async () => {
   // Started at login with "start minimized" â€” keep the window hidden until the
   // user opens it from the tray.
   startHidden = process.argv.includes('--hidden');
+  perf(`settings ready (${bootFolders} folders, ${bootRoots} roots)`);
+
+  sendSplash('Uruchamianie interfejsu…', 50);
+
+  ipcMain.handle('app:rendererReady', () => {
+    rendererReady = true;
+    checkAndShow();
+  });
 
   ipcMain.handle('window:id', (event) => {
     return BrowserWindow.fromWebContents(event.sender)?.id ?? 0;
@@ -451,7 +503,8 @@ app.whenReady().then(async () => {
 
   registerOndaProtocolHandler();
 
-  mainWindow = createWindow();
+  mainWindow = createWindow(initialUseAcrylic);
+  perf(`window created acrylic=${initialUseAcrylic}`);
   mainWindow.webContents.on('did-finish-load', onMainReady);
   initAutoUpdater(() => mainWindow?.webContents ?? null);
   configureAutoCheck();

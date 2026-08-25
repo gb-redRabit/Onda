@@ -446,6 +446,7 @@ export interface IpcChannels {
   'dialog:openFolder': { args: []; result: string[] };
   'dialog:openFolderFiles': { args: []; result: { canceled: boolean; filePaths: string[] } };
   'app:quit': { args: []; result: void };
+  'app:rendererReady': { args: []; result: void };
   'window:minimize': { args: []; result: void };
   'window:maximize': { args: []; result: void };
   'window:close': { args: []; result: void };
@@ -461,6 +462,7 @@ export interface IpcChannels {
     result: { files: unknown[]; index: number } | undefined;
   };
   'imageViewer:close': { args: []; result: void };
+  'app:setBackgroundMaterial': { args: [material: string]; result: boolean };
   'window:setAlwaysOnTop': { args: [flag: boolean]; result: void };
   'window:toggleFullscreen': { args: []; result: boolean };
   'window:exitFullscreen': { args: []; result: void };

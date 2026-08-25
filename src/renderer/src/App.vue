@@ -79,6 +79,10 @@ onMounted(async () => {
     void session.restore(router);
   }
 
+  // Signal to main that the app is fully mounted and theme applied —
+  // main will close the splash and show the window.
+  window.api?.invoke('app:rendererReady');
+
   // First-run wizard (one time).
   try {
     if (!localStorage.getItem('onda-first-run-done')) showFirstRun.value = true;

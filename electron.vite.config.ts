@@ -30,7 +30,8 @@ export default defineConfig({
         input: {
           index: resolve('src/preload/index.ts'),
           pip: resolve('src/preload/pip.ts'),
-          'audio-pip': resolve('src/preload/audio-pip.ts')
+          'audio-pip': resolve('src/preload/audio-pip.ts'),
+          splash: resolve('src/preload/splash.ts')
         }
       }
     }
