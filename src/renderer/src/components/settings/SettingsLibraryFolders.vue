@@ -2,14 +2,27 @@
 import { computed } from 'vue';
 import { useLibraryStore } from '@renderer/stores/library';
 import { useUIStore } from '@renderer/stores/ui';
+import { useSettingsStore } from '@renderer/stores/settings';
 import { useI18n } from 'vue-i18n';
-import { FolderPlus, FolderSearch } from '@lucide/vue';
+import { FolderPlus, FolderSearch, Trash2 } from '@lucide/vue';
 import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
 import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
+import SettingsSectionTitle from '@renderer/components/settings/SettingsSectionTitle.vue';
 
 const library = useLibraryStore();
 const ui = useUIStore();
+const settings = useSettingsStore();
 const { t } = useI18n();
+
+async function clearCoverCache() {
+  try {
+    const res = await window.api?.invoke('coverCache:clear');
+    if (res?.success) ui.notify('success', t('settings.coverCacheCleared'));
+    else ui.notify('error', t('settings.coverCacheClearError'), res?.error);
+  } catch (e) {
+    ui.notify('error', t('settings.coverCacheClearError'), String(e));
+  }
+}
 
 async function addFolder() {
   try {
@@ -122,5 +135,35 @@ function folderIcon(type: string): string {
       {{ $t('settings.libAudio').toLowerCase() }}, {{ library.videoCount }}
       {{ $t('settings.libVideo').toLowerCase() }})
     </div>
+
+    <SettingsCard>
+      <SettingsSectionTitle
+        :title="`${$t('settings.coverCache')} — ${settings.library.coverCacheMaxEntries ?? 2000}`"
+        :description="$t('settings.coverCacheDesc')"
+      />
+      <input
+        type="range"
+        min="500"
+        max="10000"
+        step="500"
+        :value="settings.library.coverCacheMaxEntries ?? 2000"
+        class="w-full"
+        @input="
+          settings.updateLibrary({
+            coverCacheMaxEntries: parseInt(($event.target as HTMLInputElement).value) || 2000
+          })
+        "
+      />
+      <div class="flex justify-between text-[10px] text-base-content/40 mt-1">
+        <span>500</span><span>10 000</span>
+      </div>
+      <p class="text-[11px] text-base-content/50 mt-2">{{ $t('settings.coverCacheHint') }}</p>
+      <button
+        class="fx-noise mt-3 flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs font-medium text-base-content/70 hover:bg-base-content/10 transition-colors"
+        @click="clearCoverCache"
+      >
+        <Trash2 :size="14" />{{ $t('settings.coverCacheClear') }}
+      </button>
+    </SettingsCard>
   </SettingsPanel>
 </template>

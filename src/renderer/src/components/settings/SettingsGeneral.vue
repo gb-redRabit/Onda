@@ -11,7 +11,7 @@ const settings = useSettingsStore();
 onMounted(async () => {
   try {
     const s = await window.api?.getAutoLaunch();
-    if (s) settings.updateGeneral({ autoLaunch: s.enabled });
+    if (s) settings.updateGeneral({ autoLaunch: s.enabled, startMinimized: s.hidden });
   } catch {
     /* auto-launch status unavailable */
   }
@@ -19,18 +19,26 @@ onMounted(async () => {
 
 async function setAutoLaunch(enabled: boolean): Promise<void> {
   settings.updateGeneral({ autoLaunch: enabled });
+  settings.saveImmediate();
   await window.api?.setAutoLaunch({ enabled, hidden: settings.general.startMinimized });
 }
 
 function setStartMinimized(value: boolean): void {
   settings.updateGeneral({ startMinimized: value });
+  settings.saveImmediate();
   if (settings.general.autoLaunch) {
     void window.api?.setAutoLaunch({ enabled: true, hidden: value });
   }
 }
 
-function setCloseToTray(value: boolean): void {
+async function setCloseToTray(value: boolean): Promise<void> {
   settings.updateGeneral({ closeToTray: value });
+  settings.saveImmediate();
+  try {
+    await window.api?.invoke('app:setCloseToTray', value);
+  } catch {
+    /* main sync failed — debounced persist will sync */
+  }
 }
 </script>
 
@@ -49,6 +57,7 @@ function setCloseToTray(value: boolean): void {
       >
         <SettingsToggle
           :model-value="settings.general.startMinimized"
+          :disabled="!settings.general.autoLaunch"
           @update:model-value="setStartMinimized"
         />
       </SettingsRow>

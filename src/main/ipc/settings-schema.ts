@@ -135,6 +135,25 @@ function migrateAppearance(v: unknown): unknown {
   return v;
 }
 
+const AUDIO_LAYOUT_ELEMENT_FIELDS: Record<string, Sanitizer> = {
+  id: enumOf(['visualization', 'cover', 'progress', 'trackInfo', 'controls']),
+  x: numClamped(0, 100),
+  y: numClamped(0, 100),
+  width: numClamped(1, 100),
+  height: numClamped(1, 100),
+  opacity: numClamped(0, 100),
+  layer: numClamped(1, 5),
+  visible: bool
+};
+
+const AUDIO_LAYOUT_FIELDS: Record<string, Sanitizer> = {
+  elements: arrayOf(obj(AUDIO_LAYOUT_ELEMENT_FIELDS)),
+  preset: enumOf(['compact', 'stacked', 'split', 'full', 'immersive']),
+  autoHideDelay: numClamped(0, 10000),
+  hudOpacity: numClamped(0, 100),
+  vizQuality: enumOf(['low', 'medium', 'high'])
+};
+
 const APPEARANCE_FIELDS: Record<string, Sanitizer> = {
   theme: enumOf([
     'dark',
@@ -175,14 +194,17 @@ const APPEARANCE_FIELDS: Record<string, Sanitizer> = {
   audioPipAutoShow: bool,
   audioPipOpacity: numClamped(0, 1),
   audioPipPosition: enumOf(['bottom-right', 'bottom-left', 'top-right', 'top-left']),
-  audioPipEdgePosition: enumOf(['top', 'bottom'])
+  audioPipEdgePosition: enumOf(['top', 'bottom']),
+  audioLayout: obj(AUDIO_LAYOUT_FIELDS)
 };
 
 const VISUALIZATION_FIELDS: Record<string, Sanitizer> = {
-  mode: enumOf(['circle', 'bars', 'particles', 'wave', 'radial', 'none']),
-  primaryColor: str,
-  secondaryColor: str,
-  sensitivity: numClamped(0, 1)
+  mode: enumOf(['circle', 'bars', 'particles', 'wave', 'radial', 'spectrum', 'rings', 'none']),
+  primaryColor: hexStr,
+  secondaryColor: hexStr,
+  sensitivity: numClamped(0, 1),
+  smoothing: numClamped(0, 1),
+  fpsCap: numClamped(15, 120)
 };
 
 const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
@@ -201,7 +223,12 @@ const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
   cursorTimeout: numClamped(500, 30000),
   playbackSpeed: numClamped(0.2, 3),
   videoFilter: str,
-  visualization: obj(VISUALIZATION_FIELDS)
+  visualization: obj(VISUALIZATION_FIELDS),
+  crossfadeSeconds: numClamped(0, 12),
+  streamPreloadSeconds: numClamped(0, 60),
+  perSourceVolume: bool,
+  autoResume: bool,
+  sleepTimerMinutes: numClamped(0, 240)
 };
 
 const EXPLORER_FIELDS: Record<string, Sanitizer> = {
@@ -212,7 +239,8 @@ const EXPLORER_FIELDS: Record<string, Sanitizer> = {
 };
 
 const LIBRARY_FIELDS: Record<string, Sanitizer> = {
-  viewModes
+  viewModes,
+  coverCacheMaxEntries: numClamped(500, 10000)
 };
 
 const DOWNLOAD_FIELDS: Record<string, Sanitizer> = {
@@ -230,7 +258,10 @@ const DOWNLOAD_FIELDS: Record<string, Sanitizer> = {
   defaultCoverClipEnd: numClamped(0, 3600),
   defaultCoverClipFormat: enumOf(['webm', 'mp4']),
   filenameTemplate: str,
-  maxConcurrent: numClamped(1, 20),
+  maxConcurrent: numClamped(1, 8),
+  retryAttempts: numClamped(0, 5),
+  retryBaseMs: numClamped(500, 10000),
+  tempDir: str,
   autoDownloadSubscriptions: bool,
   hashFiles: bool,
   smartMode: bool,
@@ -253,6 +284,12 @@ const PROXY_FIELDS: Record<string, Sanitizer> = {
 
 const NETWORK_FIELDS: Record<string, Sanitizer> = {
   proxy: obj(PROXY_FIELDS),
+  proxyPerPlatform: bool,
+  proxyYoutube: obj(PROXY_FIELDS),
+  proxySoundcloud: obj(PROXY_FIELDS),
+  defaultQualityPerPlatform: bool,
+  youtubeQuality: str,
+  soundcloudQuality: str,
   downloadSpeedLimit: numClamped(0, 1000000),
   userAgent: str
 };
@@ -261,7 +298,10 @@ const GENERAL_FIELDS: Record<string, Sanitizer> = {
   autoLaunch: bool,
   startMinimized: bool,
   closeToTray: bool,
-  restoreSession: bool
+  restoreSession: bool,
+  logLevel: enumOf(['debug', 'info', 'warn', 'error']),
+  logMaxSizeMB: numClamped(1, 100),
+  experimentalEnabled: bool
 };
 
 function apiKeyEntry(v: unknown): unknown | undefined {

@@ -459,6 +459,25 @@ async function getCachedCover(
   return null;
 }
 
+export async function clearCoverCache(): Promise<{ removed: number }> {
+  try {
+    coverResultCache.clear();
+    durationCache.clear();
+    const { readdir, rm } = await import('fs/promises');
+    const entries = await readdir(PERSISTENT_COVER_DIR).catch(() => [] as string[]);
+    let removed = 0;
+    for (const e of entries) {
+      await rm(join(PERSISTENT_COVER_DIR, e), { force: true }).catch(() => {});
+      removed++;
+    }
+    await writeCoverMap({});
+    return { removed };
+  } catch (e) {
+    logger.warn('cover', 'clearCoverCache failed', e);
+    return { removed: 0 };
+  }
+}
+
 // startup — clean up orphaned cover files not referenced in cache map
 (async () => {
   try {

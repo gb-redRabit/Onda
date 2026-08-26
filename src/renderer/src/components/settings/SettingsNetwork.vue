@@ -84,13 +84,18 @@ function updateProxy(patch: Partial<typeof settings.network.proxy>) {
 
     <SettingsCard>
       <SettingsSectionTitle
-        :title="`${$t('settings.downloadSpeedLimit')}: ${settings.network.downloadSpeedLimit || '∞'} KB/s`"
+        :title="
+          settings.network.downloadSpeedLimit === 0
+            ? `${$t('settings.downloadSpeedLimit')}: ${$t('settings.speedUnlimited')}`
+            : `${$t('settings.downloadSpeedLimit')}: ${(settings.network.downloadSpeedLimit / 1024).toFixed(1)} MB/s`
+        "
+        :description="$t('settings.speedLimitDesc')"
       />
       <input
         type="range"
         min="0"
-        max="50000"
-        step="500"
+        max="51200"
+        step="1024"
         :value="settings.network.downloadSpeedLimit"
         class="w-full"
         @input="
@@ -98,6 +103,19 @@ function updateProxy(patch: Partial<typeof settings.network.proxy>) {
             downloadSpeedLimit: parseInt(($event.target as HTMLInputElement).value)
           })
         "
+      />
+      <div class="flex justify-between text-[10px] text-base-content/40 mt-1">
+        <span>{{ $t('settings.speedUnlimited') }}</span><span>50 MB/s</span>
+      </div>
+    </SettingsCard>
+
+    <SettingsCard>
+      <SettingsSectionTitle :title="$t('settings.userAgent')" :description="$t('settings.userAgentDesc')" />
+      <input
+        :value="settings.network.userAgent"
+        placeholder="Mozilla/5.0 ..."
+        class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
+        @input="settings.updateNetwork({ userAgent: ($event.target as HTMLInputElement).value })"
       />
     </SettingsCard>
   </SettingsPanel>

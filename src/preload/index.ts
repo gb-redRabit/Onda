@@ -54,6 +54,7 @@ const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'window:setAlwaysOnTop',
   'app:setBackgroundMaterial',
   'app:rendererReady',
+  'app:setCloseToTray',
   'dialog:openFile',
   'dialog:openSubtitle',
   'dialog:openFolder',
@@ -155,7 +156,8 @@ const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'sources:test',
   'sources:fetch',
   'sources:tableRows',
-  'sources:enqueue'
+  'sources:enqueue',
+  'coverCache:clear'
 ]);
 
 const ALLOWED_SEND_CHANNELS = new Set<string>([

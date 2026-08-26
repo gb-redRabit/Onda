@@ -68,6 +68,26 @@ export const useSettingsStore = defineStore('settings', () => {
 
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
+  const saveImmediate = () => {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = null;
+    persistSettings({
+      general,
+      appearance,
+      playback,
+      explorer,
+      library,
+      download,
+      shortcuts,
+      network,
+      apiKeys,
+      youtube,
+      updates,
+      toast,
+      dependencies
+    });
+  };
+
   const save = () => {
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
@@ -210,6 +230,7 @@ export const useSettingsStore = defineStore('settings', () => {
     isLoaded,
     load,
     save,
+    saveImmediate,
     updateGeneral,
     updateAppearance,
     updatePlayback,

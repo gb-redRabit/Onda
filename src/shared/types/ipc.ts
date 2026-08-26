@@ -447,6 +447,7 @@ export interface IpcChannels {
   'dialog:openFolderFiles': { args: []; result: { canceled: boolean; filePaths: string[] } };
   'app:quit': { args: []; result: void };
   'app:rendererReady': { args: []; result: void };
+  'app:setCloseToTray': { args: [value: boolean]; result: boolean };
   'window:minimize': { args: []; result: void };
   'window:maximize': { args: []; result: void };
   'window:close': { args: []; result: void };
@@ -819,6 +820,7 @@ export interface IpcChannels {
   'updater:check': { args: []; result: { checking: boolean } };
   'updater:download': { args: []; result: boolean };
   'updater:install': { args: []; result: void };
+  'coverCache:clear': { args: []; result: { success: boolean; removed?: number; error?: string } };
 }
 
 export type IpcChannel = keyof IpcChannels;

@@ -7,6 +7,7 @@ import { logger } from '../shared/logger';
 import { installNavigationGuard } from './navigation-guard';
 import { pipWindowIcon } from './pip-icon';
 import { getStore } from './ipc/cover-cache';
+import { setCloseToTray } from './close-behavior';
 
 const explorerWindows = new Map<number, BrowserWindow>();
 let imageViewerWindow: BrowserWindow | null = null;
@@ -275,8 +276,13 @@ export function registerWindowHandlers(context: {
 
   ipcMain.handle('app:getAutoLaunch', (): { enabled: boolean; hidden: boolean } => {
     try {
-      const s = app.getLoginItemSettings();
-      return { enabled: !!s.openAtLogin, hidden: process.argv.includes('--hidden') };
+      const s = app.getLoginItemSettings() as unknown as {
+        openAtLogin: boolean;
+        args?: string[];
+        launchArgs?: string[];
+      };
+      const args = s.args ?? s.launchArgs ?? [];
+      return { enabled: !!s.openAtLogin, hidden: args.includes('--hidden') };
     } catch {
       return { enabled: false, hidden: false };
     }
@@ -300,6 +306,11 @@ export function registerWindowHandlers(context: {
       }
     }
   );
+
+  ipcMain.handle('app:setCloseToTray', (_event, value: boolean) => {
+    setCloseToTray(!!value);
+    return true;
+  });
 
   ipcMain.handle(
     'pip:start',

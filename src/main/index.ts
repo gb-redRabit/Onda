@@ -272,22 +272,45 @@ function setupTray(): void {
   tray.setToolTip('Onda Player');
 
   const contextMenu = Menu.buildFromTemplate([
-    { label: 'Play / Pause', click: () => mainWindow?.webContents.send('media:playPause') },
-    { label: 'Next', click: () => mainWindow?.webContents.send('media:next') },
-    { label: 'Previous', click: () => mainWindow?.webContents.send('media:previous') },
+    {
+      label: 'Play / Pause',
+      click: () => {
+        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('media:playPause');
+      }
+    },
+    {
+      label: 'Next',
+      click: () => {
+        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('media:next');
+      }
+    },
+    {
+      label: 'Previous',
+      click: () => {
+        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('media:previous');
+      }
+    },
     { type: 'separator' },
     {
       label: 'Show Onda',
       click: () => {
-        mainWindow?.show();
-        mainWindow?.focus();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          if (mainWindow.isMinimized()) mainWindow.restore();
+          mainWindow.show();
+          mainWindow.focus();
+        }
       }
     },
     { type: 'separator' },
     {
       label: 'Quit',
       click: () => {
-        tray?.destroy();
+        try {
+          if (tray && !tray.isDestroyed()) tray.destroy();
+        } catch {
+          /* already destroyed */
+        }
+        tray = null;
         app.quit();
       }
     }
@@ -296,20 +319,28 @@ function setupTray(): void {
   tray.setContextMenu(contextMenu);
 
   tray.on('double-click', () => {
-    mainWindow?.show();
-    mainWindow?.focus();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
   });
 }
 
 function registerGlobalShortcuts(): void {
+  const sendIfAlive = (channel: string) => {
+    if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.webContents.isDestroyed()) {
+      mainWindow.webContents.send(channel);
+    }
+  };
   const shortcuts: Record<string, () => void> = {
-    MediaPlayPause: () => mainWindow?.webContents.send('media:playPause'),
-    MediaNextTrack: () => mainWindow?.webContents.send('media:next'),
-    MediaPreviousTrack: () => mainWindow?.webContents.send('media:previous'),
-    MediaStop: () => mainWindow?.webContents.send('media:stop'),
-    VolumeUp: () => mainWindow?.webContents.send('media:volumeUp'),
-    VolumeDown: () => mainWindow?.webContents.send('media:volumeDown'),
-    VolumeMute: () => mainWindow?.webContents.send('media:toggleMute')
+    MediaPlayPause: () => sendIfAlive('media:playPause'),
+    MediaNextTrack: () => sendIfAlive('media:next'),
+    MediaPreviousTrack: () => sendIfAlive('media:previous'),
+    MediaStop: () => sendIfAlive('media:stop'),
+    VolumeUp: () => sendIfAlive('media:volumeUp'),
+    VolumeDown: () => sendIfAlive('media:volumeDown'),
+    VolumeMute: () => sendIfAlive('media:toggleMute')
   };
 
   for (const [accelerator, handler] of Object.entries(shortcuts)) {
@@ -460,6 +491,8 @@ app.whenReady().then(async () => {
         args: general.startMinimized ? ['--hidden'] : [],
         ...(process.platform === 'darwin' ? { openAsHidden: !!general.startMinimized } : {})
       });
+    } else if (general?.autoLaunch === false) {
+      app.setLoginItemSettings({ openAtLogin: false });
     }
   } catch (e) {
     logger.warn('main', 'seeding media server roots from library folders failed', e);
@@ -488,7 +521,11 @@ app.whenReady().then(async () => {
   });
 
   ipcMain.handle('app:quit', () => {
-    tray?.destroy();
+    try {
+      if (tray && !tray.isDestroyed()) tray.destroy();
+    } catch {
+      /* already destroyed */
+    }
     tray = null;
     app.quit();
   });
@@ -503,9 +540,12 @@ app.whenReady().then(async () => {
 
   registerOndaProtocolHandler();
 
+  sendSplash('Tworzenie okna…', 60);
   mainWindow = createWindow(initialUseAcrylic);
   perf(`window created acrylic=${initialUseAcrylic}`);
   mainWindow.webContents.on('did-finish-load', onMainReady);
+
+  sendSplash('Inicjalizacja PiP i tray…', 75);
   initAutoUpdater(() => mainWindow?.webContents ?? null);
   configureAutoCheck();
   syncSubscriptionsScheduler();
@@ -515,6 +555,7 @@ app.whenReady().then(async () => {
   audioPipManager.init();
   setupTray();
   registerGlobalShortcuts();
+  perf('PiP/tray/shortcuts ready');
 
   // Forward media files passed on the command line (Windows/Linux) once the
   // renderer has mounted its IPC listeners (pull-based via app:getPendingFiles).
@@ -548,9 +589,17 @@ app.whenReady().then(async () => {
 
 app.on('window-all-closed', () => {
   globalShortcut.unregisterAll();
-  tray?.destroy();
+  try {
+    if (tray && !tray.isDestroyed()) tray.destroy();
+  } catch {
+    /* already destroyed */
+  }
   tray = null;
-  splashWindow?.destroy();
+  try {
+    if (splashWindow && !splashWindow.isDestroyed()) splashWindow.destroy();
+  } catch {
+    /* already destroyed */
+  }
   splashWindow = null;
   pipManager.destroy();
   audioPipManager.destroy();

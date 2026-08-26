@@ -9,7 +9,8 @@ import {
   durationCache,
   cacheSet,
   COVER_CACHE_MAP_KEY,
-  PERSISTENT_COVER_DIR
+  PERSISTENT_COVER_DIR,
+  clearCoverCache
 } from './cover-cache';
 import { errMsg } from '../../shared/helpers';
 import { logger } from '../../shared/logger';
@@ -309,6 +310,15 @@ export function registerMediaHandlers(): void {
     } catch (err) {
       logger.warn('media', `media:getDuration failed for ${filePath}: ${err}`);
       return 0;
+    }
+  });
+
+  ipcMain.handle('coverCache:clear', async () => {
+    try {
+      const r = await clearCoverCache();
+      return { success: true, removed: r.removed };
+    } catch (e) {
+      return { success: false, error: errMsg(e) };
     }
   });
 }

@@ -42,6 +42,40 @@ const src = computed(() => {
   return result.value.data;
 });
 
+const pingPong = ref(true);
+const videoEl = ref<HTMLVideoElement | null>(null);
+let reverseRaf: number | null = null;
+
+function startReverse(video: HTMLVideoElement) {
+  if (reverseRaf) cancelAnimationFrame(reverseRaf);
+  const step = () => {
+    if (!pingPong.value || !video || video.ended) return;
+    video.currentTime = Math.max(0, video.currentTime - 0.035);
+    if (video.currentTime <= 0) {
+      reverseRaf = null;
+      video.playbackRate = 1;
+      video.currentTime = 0;
+      video.play();
+      return;
+    }
+    reverseRaf = requestAnimationFrame(step);
+  };
+  reverseRaf = requestAnimationFrame(step);
+}
+
+function onVideoEnded(e: Event) {
+  if (!pingPong.value) return;
+  const video = e.target as HTMLVideoElement;
+  if (video.playbackRate > 0) {
+    video.playbackRate = 1;
+    startReverse(video);
+  } else {
+    video.playbackRate = 1;
+    video.currentTime = 0;
+    video.play();
+  }
+}
+
 const iconComponent = computed(() => {
   if (props.fallback === 'play') return Play;
   if (props.fallback === 'disc') return Disc3;
@@ -75,6 +109,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   observer?.disconnect();
+  if (reverseRaf) cancelAnimationFrame(reverseRaf);
 });
 </script>
 
@@ -82,13 +117,14 @@ onUnmounted(() => {
   <div ref="el" class="w-full h-full overflow-hidden flex items-center justify-center">
     <video
       v-if="isVideo"
+      ref="videoEl"
       :src="src"
       class="w-full h-full object-cover"
       :autoplay="autoplay"
       muted
-      loop
       preload="auto"
       playsinline
+      @ended="onVideoEnded"
     />
     <img v-else-if="result.data" :src="src" class="w-full h-full object-cover" />
     <component :is="iconComponent" v-else :size="iconSize" />

@@ -1,36 +1,122 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue';
-import { BarChart3, Settings2 } from '@lucide/vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { BarChart3, Settings2, LayoutGrid, Maximize2, Minimize2, Music2 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
+import { useSettingsStore } from '@renderer/stores/settings';
 import AudioVisualizer from '@renderer/components/audio/AudioVisualizer.vue';
 import AudioControls from '@renderer/components/audio/AudioControls.vue';
 import AudioProgressBar from '@renderer/components/audio/AudioProgressBar.vue';
-import AudioLayoutToggle from '@renderer/components/audio/AudioLayoutToggle.vue';
 import AudioCover from '@renderer/components/audio/AudioCover.vue';
 import AudioTrackInfo from '@renderer/components/audio/AudioTrackInfo.vue';
 import AudioVizSettings from '@renderer/components/audio/AudioVizSettings.vue';
+import AudioLayoutEditor from '@renderer/components/audio/AudioLayoutEditor.vue';
+import AudioLayoutSwitcher from '@renderer/components/audio/AudioLayoutSwitcher.vue';
+import type { AudioLayoutElement } from '@renderer/types/settings';
 
 const player = usePlayerStore();
 const audio = useAudioPlayer();
+const settings = useSettingsStore();
 
-const layoutMode = ref<'split' | 'full' | 'stacked'>('split');
-const splitRatio = ref(50);
+const viewEl = ref<HTMLElement | null>(null);
 const showUI = ref(true);
 const uiTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
-const vizRef = ref<InstanceType<typeof AudioVisualizer> | null>(null);
+const vizRef = ref<InstanceType<typeof AudioVisualizer>[]>([]);
 const showVizSettings = ref(false);
+const showLayoutEditor = ref(false);
+const isFullscreen = ref(false);
+
+// Drag state
+const dragging = ref<{ id: string; startX: number; startY: number; elX: number; elY: number } | null>(null);
+
+const elements = computed(() => settings.appearance.audioLayout?.elements ?? []);
+const autoHideDelay = computed(() => settings.appearance.audioLayout?.autoHideDelay ?? 3000);
+const hudOpacity = computed(() => (settings.appearance.audioLayout?.hudOpacity ?? 100) / 100);
+
+function getElementStyle(el: AudioLayoutElement) {
+  return {
+    left: el.x + '%',
+    top: el.y + '%',
+    width: el.width + '%',
+    height: el.height + '%',
+    opacity: (el.opacity ?? 100) / 100,
+    zIndex: el.layer * 10
+  };
+}
+
+function onElementMouseDown(e: MouseEvent, el: AudioLayoutElement) {
+  if (!isFullscreen.value || el.id === 'visualization') return;
+  e.preventDefault();
+  e.stopPropagation();
+  dragging.value = {
+    id: el.id,
+    startX: e.clientX,
+    startY: e.clientY,
+    elX: el.x,
+    elY: el.y
+  };
+}
+
+function onDragMouseMove(e: MouseEvent) {
+  if (!dragging.value) return;
+  const canvas = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  const dx = ((e.clientX - dragging.value.startX) / canvas.width) * 100;
+  const dy = ((e.clientY - dragging.value.startY) / canvas.height) * 100;
+  const newX = Math.max(0, Math.min(100 - 5, dragging.value.elX + dx));
+  const newY = Math.max(0, Math.min(100 - 5, dragging.value.elY + dy));
+
+  const currentElements = settings.appearance.audioLayout?.elements ?? [];
+  const updated = currentElements.map((el) =>
+    el.id === dragging.value!.id ? { ...el, x: Math.round(newX), y: Math.round(newY) } : el
+  );
+  settings.updateAppearance({
+    audioLayout: { ...settings.appearance.audioLayout, elements: updated }
+  });
+}
+
+function onDragMouseUp() {
+  dragging.value = null;
+}
 
 function hideUIAfterDelay() {
   if (uiTimeout.value) clearTimeout(uiTimeout.value);
   uiTimeout.value = setTimeout(() => {
     if (audio.isPlaying.value) showUI.value = false;
-  }, 3000);
+  }, autoHideDelay.value);
 }
 
-function onMouseMove() {
+function onMouseMove(e: MouseEvent) {
+  if (dragging.value) onDragMouseMove(e);
+  if (isFullscreen.value) {
+    showUI.value = true;
+    hideUIAfterDelay();
+    return;
+  }
   showUI.value = true;
   hideUIAfterDelay();
+}
+
+function toggleFullscreen() {
+  if (!viewEl.value) return;
+  if (!isFullscreen.value) {
+    viewEl.value.requestFullscreen().then(() => {
+      isFullscreen.value = true;
+      showUI.value = false;
+      hideUIAfterDelay();
+    }).catch(() => {});
+  } else {
+    document.exitFullscreen().then(() => {
+      isFullscreen.value = false;
+      showUI.value = true;
+    }).catch(() => {});
+  }
+}
+
+function onFullscreenChange() {
+  if (!document.fullscreenElement && isFullscreen.value) {
+    isFullscreen.value = false;
+    showUI.value = true;
+  }
 }
 
 watch(
@@ -87,213 +173,187 @@ function onKeydown(e: KeyboardEvent) {
       e.preventDefault();
       if (player.currentTrack) player.toggleFavorite(player.currentTrack.path);
       break;
+    case 'F11':
+    case 'Escape':
+      if (isFullscreen.value) {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+      break;
   }
-}
-
-function onSplitDividerMouseDown(e: MouseEvent) {
-  const target = e.target as HTMLElement;
-  if (!target.classList.contains('split-divider')) return;
-  e.preventDefault();
-  const startX = e.clientX;
-  const startRatio = splitRatio.value;
-  const parent = target.parentElement;
-  if (!parent) return;
-  const rect = parent.getBoundingClientRect();
-  function onMove(ev: MouseEvent) {
-    splitRatio.value = Math.max(
-      20,
-      Math.min(80, startRatio + ((ev.clientX - startX) / rect.width) * 100)
-    );
-  }
-  function onUp() {
-    document.removeEventListener('mousemove', onMove);
-    document.removeEventListener('mouseup', onUp);
-  }
-  document.addEventListener('mousemove', onMove);
-  document.addEventListener('mouseup', onUp);
 }
 
 onMounted(() => {
   document.addEventListener('keydown', onKeydown);
+  document.addEventListener('fullscreenchange', onFullscreenChange);
   hideUIAfterDelay();
 });
 
 onUnmounted(() => {
   document.removeEventListener('keydown', onKeydown);
+  document.removeEventListener('fullscreenchange', onFullscreenChange);
   if (uiTimeout.value) clearTimeout(uiTimeout.value);
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
 });
 </script>
 
 <template>
-  <div class="h-full w-full bg-base-200/[var(--glass-alpha)] select-none" @mousemove="onMouseMove">
-    <!-- LAYOUT TOGGLE — bottom-right, always visible -->
+  <div ref="viewEl" class="h-full w-full bg-base-200/(--glass-alpha) select-none" @mousemove="onMouseMove" @mouseup="onDragMouseUp">
+    <!-- ─── Empty State (no track) ─── -->
     <div
-      class="absolute top-4 left-4 z-30 transition-opacity"
-      :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }"
+      v-if="!player.currentTrack"
+      class="absolute inset-0 z-95 flex flex-col items-center justify-center gap-3 pointer-events-none"
     >
-      <AudioLayoutToggle v-model:mode="layoutMode" />
+      <Music2 :size="48" class="text-base-content/15" />
+      <div class="text-center">
+        <p class="text-base-content/50 text-sm font-medium">{{ $t('audioView.noTrackTitle') }}</p>
+        <p class="text-base-content/30 text-[11px]">{{ $t('audioView.noTrackHint') }}</p>
+      </div>
     </div>
 
-    <!-- ═══════ FULL layout — visualizer as background ═══════ -->
-    <div v-if="layoutMode === 'full'" class="h-full w-full relative overflow-hidden">
-      <div class="absolute inset-0 opacity-60">
-        <AudioVisualizer ref="vizRef" />
+    <!-- ─── Layout Editor (overlay) ─── -->
+    <div
+      v-if="showLayoutEditor"
+      class="absolute inset-0 z-90 bg-base-100/95 backdrop-blur-sm p-6 flex flex-col"
+    >
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-base font-bold">{{ $t('audioView.layoutEditor') }}</h2>
+        <button
+          class="px-3 py-1.5 rounded-field text-xs font-medium bg-primary text-primary-content hover:bg-primary/90 transition-colors"
+          @click="showLayoutEditor = false"
+        >
+          {{ $t('audioView.layoutDone') }}
+        </button>
       </div>
-      <div class="absolute inset-0 bg-linear-to-t from-bg-base/90 via-bg-base/40 to-bg-base/60" />
-      <div class="absolute inset-0 flex flex-col items-center justify-center z-10 px-8">
-        <AudioCover size="w-96 h-96" class="mb-6" />
-        <div class="text-center mb-6 max-w-md">
-          <AudioTrackInfo title-size="text-xl" />
+      <div class="flex-1 min-h-0">
+        <AudioLayoutEditor />
+      </div>
+    </div>
+
+    <!-- ─── Free Canvas ─── -->
+    <div
+      v-for="el in elements"
+      v-show="el.visible"
+      :key="el.id"
+      class="absolute overflow-hidden"
+      :style="getElementStyle(el)"
+    >
+      <!-- Visualization (with built-in toolbar) -->
+      <template v-if="el.id === 'visualization'">
+        <div class="relative w-full h-full">
+          <AudioVisualizer ref="vizRef" class="w-full h-full" />
         </div>
+      </template>
+
+      <!-- Cover -->
+      <template v-else-if="el.id === 'cover'">
         <div
-          class="w-full max-w-md mb-3 transition-opacity"
-          :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }"
+          class="w-full h-full flex items-center justify-center p-2"
+          @mousedown="onElementMouseDown($event, el)"
+        >
+          <AudioCover size="w-full h-full" />
+        </div>
+      </template>
+
+      <!-- Track Info -->
+      <template v-else-if="el.id === 'trackInfo'">
+        <div
+          class="w-full h-full flex items-center justify-center px-4 transition-opacity"
+          :class="{ 'opacity-0 pointer-events-none': isFullscreen && !showUI }"
+          @mousedown="onElementMouseDown($event, el)"
+        >
+          <AudioTrackInfo />
+        </div>
+      </template>
+
+      <!-- Progress -->
+      <template v-else-if="el.id === 'progress'">
+        <div
+          class="w-full h-full flex items-center px-4 transition-opacity"
+          :class="{
+            'opacity-0 pointer-events-none': !showUI || (isFullscreen && !showUI)
+          }"
+          @mousedown="onElementMouseDown($event, el)"
         >
           <AudioProgressBar />
         </div>
-        <div class="transition-opacity" :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }">
+      </template>
+
+      <!-- Controls -->
+      <template v-else-if="el.id === 'controls'">
+        <div
+          class="w-full h-full flex items-center justify-center transition-opacity"
+          :class="{
+            'opacity-0 pointer-events-none': !showUI || (isFullscreen && !showUI)
+          }"
+          @mousedown="onElementMouseDown($event, el)"
+        >
           <AudioControls />
         </div>
+      </template>
+    </div>
+
+    <!-- ─── Viz Overlay Toolbar (Teleported out of viz stacking context) ─── -->
+    <div
+      v-show="!showLayoutEditor"
+      class="absolute top-2 left-2 right-2 z-70 flex items-center justify-between pointer-events-none transition-opacity"
+      :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }"
+      :style="{ opacity: showUI ? hudOpacity : 0 }"
+    >
+      <div class="flex items-center gap-1 pointer-events-auto">
+        <button
+          class="pointer-events-auto fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all"
+          :title="$t('audioView.layoutEditor')"
+          @click.stop="showLayoutEditor = !showLayoutEditor"
+        >
+          <LayoutGrid :size="13" />
+        </button>
+        <AudioLayoutSwitcher />
       </div>
 
-      <!-- viz controls — bottom-left -->
-      <div class="absolute bottom-4 left-4 z-20 flex items-center gap-1">
+      <div class="flex items-center gap-1 pointer-events-auto">
         <button
-          class="fx-noise p-2 fx-depth rounded-field bg-base-300 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all"
-          :class="{ 'opacity-60': showUI }"
+          class="fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all"
           :title="$t('audioView.vizMode')"
-          @click="vizRef?.cycleStyle()"
+          @click.stop="vizRef?.[0]?.cycleStyle()"
         >
-          <div class="flex items-center gap-1.5">
-            <BarChart3 :size="14" />
-            <span class="text-[10px] uppercase font-medium">{{ vizRef?.style ?? 'bars' }}</span>
+          <div class="flex items-center gap-1">
+            <BarChart3 :size="12" />
+            <span class="text-[9px] uppercase font-medium">{{ vizRef?.[0]?.style ?? 'bars' }}</span>
           </div>
         </button>
         <button
-          class="fx-noise p-2 fx-depth rounded-field bg-neutral backdrop-blur-sm transition-all"
+          class="fx-noise p-1.5 fx-depth rounded-field backdrop-blur-sm transition-all"
           :class="
             showVizSettings
               ? 'text-primary bg-primary/10'
-              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
+              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10 bg-base-300/80'
           "
           :title="$t('settings.audioViz')"
-          @click="showVizSettings = !showVizSettings"
+          @click.stop="showVizSettings = !showVizSettings"
         >
-          <Settings2 :size="14" />
+          <Settings2 :size="12" />
+        </button>
+        <button
+          class="fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all"
+          :title="isFullscreen ? 'Exit fullscreen' : 'Fullscreen'"
+          @click.stop="toggleFullscreen"
+        >
+          <Minimize2 v-if="isFullscreen" :size="12" />
+          <Maximize2 v-else :size="12" />
         </button>
       </div>
-      <div v-if="showVizSettings" class="absolute bottom-16 left-4 z-20">
+    </div>
+
+    <!-- ─── Viz Settings Panel (Teleported out of viz stacking context) ─── -->
+    <Teleport to="body">
+      <div
+        v-if="showVizSettings && !showLayoutEditor"
+        class="fixed top-12 right-4 z-80 transition-opacity"
+        :class="{ 'opacity-0 pointer-events-none': !showUI, 'opacity-100': showUI }"
+      >
         <AudioVizSettings />
       </div>
-    </div>
-
-    <!-- ═══════ SPLIT layout — cover left, visualizer right ═══════ -->
-    <div
-      v-else-if="layoutMode === 'split'"
-      class="h-full w-full flex overflow-hidden"
-      @mousedown="onSplitDividerMouseDown"
-    >
-      <div
-        class="flex flex-col items-center justify-center px-8 min-w-0 overflow-auto"
-        :style="{ width: splitRatio + '%' }"
-      >
-        <AudioCover size="w-96 h-96 shadow-xl shadow-black/30" class="mb-6" />
-        <div class="text-center mb-4 max-w-sm w-full">
-          <AudioTrackInfo />
-        </div>
-        <div
-          class="w-full max-w-sm mb-5 transition-opacity"
-          :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }"
-        >
-          <AudioProgressBar />
-        </div>
-        <div class="transition-opacity" :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }">
-          <AudioControls />
-        </div>
-      </div>
-      <div class="split-divider w-1 shrink-0 cursor-col-resize" />
-      <div class="h-full p-4 pl-0 relative" :style="{ width: 100 - splitRatio + '%' }">
-        <AudioVisualizer class="h-full" />
-        <div class="absolute top-2 right-2 z-10 flex gap-1">
-          <button
-            class="fx-noise p-1.5 fx-depth rounded-field bg-base-300 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all text-[10px]"
-            :title="$t('audioView.vizMode')"
-            @click="vizRef?.cycleStyle()"
-          >
-            <div class="flex items-center gap-1">
-              <BarChart3 :size="12" />
-              <span class="uppercase font-medium">{{ vizRef?.style ?? 'bars' }}</span>
-            </div>
-          </button>
-          <button
-            class="fx-noise p-1.5 fx-depth rounded-field bg-neutral backdrop-blur-sm transition-all"
-            :class="
-              showVizSettings
-                ? 'text-primary bg-primary/10'
-                : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
-            "
-            :title="$t('settings.audioViz')"
-            @click="showVizSettings = !showVizSettings"
-          >
-            <Settings2 :size="12" />
-          </button>
-        </div>
-        <div v-if="showVizSettings" class="absolute top-10 right-2 z-10">
-          <AudioVizSettings />
-        </div>
-      </div>
-    </div>
-
-    <!-- ═══════ STACKED layout — compact vertical stack ═══════ -->
-    <div v-else class="h-full w-full flex flex-col overflow-hidden">
-      <div class="flex-1 flex flex-col items-center justify-center px-6 py-4 overflow-auto">
-        <AudioCover size="w-48 h-48 shadow-xl shadow-black/30" class="mb-3 shrink-0" />
-        <div class="text-center mb-2 max-w-xs">
-          <AudioTrackInfo title-size="text-base" />
-        </div>
-        <div
-          class="w-full max-w-xs mb-2 transition-opacity shrink-0"
-          :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }"
-        >
-          <AudioProgressBar />
-        </div>
-        <div
-          class="transition-opacity shrink-0"
-          :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }"
-        >
-          <AudioControls />
-        </div>
-      </div>
-      <div class="h-32 shrink-0 relative border-t border-base-300">
-        <AudioVisualizer class="h-full" />
-        <div class="absolute top-1 right-1 z-10 flex gap-1">
-          <button
-            class="fx-noise p-1 fx-depth rounded-field bg-base-300 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all text-[9px]"
-            :title="$t('audioView.vizMode')"
-            @click="vizRef?.cycleStyle()"
-          >
-            <div class="flex items-center gap-1">
-              <BarChart3 :size="10" />
-              <span class="uppercase font-medium">{{ vizRef?.style ?? 'bars' }}</span>
-            </div>
-          </button>
-          <button
-            class="fx-noise p-1 fx-depth rounded-field bg-neutral backdrop-blur-sm transition-all"
-            :class="
-              showVizSettings
-                ? 'text-primary bg-primary/10'
-                : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
-            "
-            :title="$t('settings.audioViz')"
-            @click="showVizSettings = !showVizSettings"
-          >
-            <Settings2 :size="10" />
-          </button>
-        </div>
-        <div v-if="showVizSettings" class="absolute bottom-10 right-1 z-10">
-          <AudioVizSettings />
-        </div>
-      </div>
-    </div>
+    </Teleport>
   </div>
 </template>

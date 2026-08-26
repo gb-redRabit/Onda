@@ -37,11 +37,11 @@ import { resolveSourceHeaders } from '../ipc/generic-fetch';
 import { resolveScDownloadSource } from '../ipc/soundcloud-client';
 import { embedScMp3Tags } from './sc-tags';
 
-const MAX_CONCURRENT = 10;
+const MAX_CONCURRENT = 8;
 const MAX_STDERR_BYTES = 64 * 1024;
 const DOWNLOAD_TIMEOUT_MS = 30 * 60 * 1000;
-const MAX_RETRY_ATTEMPTS = 3;
-const RETRY_BASE_MS = 1500;
+const DEFAULT_RETRY_ATTEMPTS = 3;
+const DEFAULT_RETRY_BASE_MS = 1500;
 
 const AUDIO_QUALITY_MAP: Record<string, string> = {
   best: '0',
@@ -289,9 +289,24 @@ async function readMaxConcurrent(): Promise<number> {
     const download = store.get('download') as { maxConcurrent?: number } | undefined;
     const value = download?.maxConcurrent;
     if (value && value > 0) return Math.min(value, MAX_CONCURRENT);
-    return 3;
+    return 1;
   } catch {
-    return 3;
+    return 1;
+  }
+}
+
+async function readRetryConfig(): Promise<{ attempts: number; baseMs: number }> {
+  try {
+    const store = await getStore();
+    const d = store.get('download') as
+      | { retryAttempts?: number; retryBaseMs?: number }
+      | undefined;
+    return {
+      attempts: typeof d?.retryAttempts === 'number' ? d.retryAttempts : DEFAULT_RETRY_ATTEMPTS,
+      baseMs: typeof d?.retryBaseMs === 'number' ? d.retryBaseMs : DEFAULT_RETRY_BASE_MS
+    };
+  } catch {
+    return { attempts: DEFAULT_RETRY_ATTEMPTS, baseMs: DEFAULT_RETRY_BASE_MS };
   }
 }
 
@@ -396,7 +411,8 @@ async function runJob(job: Job): Promise<void> {
     // a specific error for age-restricted / private / members-only content.
     auth = await getYtAuthConfig();
     const base = await buildBaseArgs(job);
-    for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
+    const retryCfg = await readRetryConfig();
+    for (let attempt = 1; attempt <= Math.max(1, retryCfg.attempts); attempt++) {
       const result = await runJobAttempt(job, bin, auth, base);
       if (result.finishedOk) {
         await postProcess(job);
@@ -405,7 +421,7 @@ async function runJob(job: Job): Promise<void> {
       const retryable = result.errorCode === 'network' || result.errorCode === 'bot-block';
       const status = job.status as IpcDownloadTask['status'];
       const stopped = status === 'cancelled' || status === 'paused';
-      if (!retryable || stopped || attempt >= MAX_RETRY_ATTEMPTS) return;
+      if (!retryable || stopped || attempt >= retryCfg.attempts) return;
       // Reset transient state and retry after an exponential backoff. Privacy,
       // access-rights and not-found errors are never retried.
       job.status = 'downloading';
@@ -416,8 +432,8 @@ async function runJob(job: Job): Promise<void> {
       job.errorCode = undefined;
       if (job.coverStatus === 'error') job.coverStatus = 'none';
       persist(job);
-      logger.info('downloads', `retrying ${job.id} (attempt ${attempt + 1}/${MAX_RETRY_ATTEMPTS})`);
-      await new Promise((r) => setTimeout(r, RETRY_BASE_MS * 2 ** (attempt - 1)));
+      logger.info('downloads', `retrying ${job.id} (attempt ${attempt + 1}/${retryCfg.attempts})`);
+      await new Promise((r) => setTimeout(r, retryCfg.baseMs * 2 ** (attempt - 1)));
       // Re-check status after the backoff — the user may have paused/cancelled
       // during the sleep (job.child is undefined so pause/cancel can't kill it).
       const postSleep = job.status as IpcDownloadTask['status'];

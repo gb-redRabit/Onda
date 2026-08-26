@@ -194,6 +194,21 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
           />
         </div>
       </div>
+      <div class="mt-3">
+        <SettingsSectionTitle :title="$t('settings.clipFormat')" />
+        <select
+          :value="settings.download.defaultCoverClipFormat"
+          class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
+          @change="
+            settings.updateDownload({
+              defaultCoverClipFormat: ($event.target as HTMLSelectElement).value as 'webm' | 'mp4'
+            })
+          "
+        >
+          <option value="webm">WebM</option>
+          <option value="mp4">MP4</option>
+        </select>
+      </div>
     </SettingsCard>
 
     <SettingsCard>

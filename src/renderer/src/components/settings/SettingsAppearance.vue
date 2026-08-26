@@ -137,6 +137,18 @@ async function setLocale(loc: string) {
             "
           />
         </SettingsRow>
+        <SettingsRow :label="$t('settings.animations')" :description="$t('settings.animationsDesc')">
+          <input
+            type="checkbox"
+            :checked="settings.appearance.animations"
+            class="w-4 h-4 rounded accent-accent-base"
+            @change="
+              settings.updateAppearance({
+                animations: ($event.target as HTMLInputElement).checked
+              })
+            "
+          />
+        </SettingsRow>
       </div>
     </SettingsCard>
   </SettingsPanel>

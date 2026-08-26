@@ -41,27 +41,27 @@ onMounted(async () => {
     <SettingsCard>
       <SettingsSectionTitle :title="$t('settings.envVersions')" />
       <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
-        <div class="p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
           <div class="text-[11px] text-base-content/50 mb-0.5">Electron</div>
           <div class="text-sm font-mono">{{ info?.electron }}</div>
         </div>
-        <div class="p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
           <div class="text-[11px] text-base-content/50 mb-0.5">Chrome</div>
           <div class="text-sm font-mono">{{ info?.chrome }}</div>
         </div>
-        <div class="p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
           <div class="text-[11px] text-base-content/50 mb-0.5">Node.js</div>
           <div class="text-sm font-mono">{{ info?.node }}</div>
         </div>
-        <div class="p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
           <div class="text-[11px] text-base-content/50 mb-0.5">V8</div>
           <div class="text-sm font-mono">{{ info?.v8 }}</div>
         </div>
-        <div class="p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
           <div class="text-[11px] text-base-content/50 mb-0.5">{{ $t('settings.os') }}</div>
           <div class="text-sm font-mono truncate">{{ info?.os }}</div>
         </div>
-        <div class="p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
           <div class="text-[11px] text-base-content/50 mb-0.5">{{ $t('settings.platform') }}</div>
           <div class="text-sm font-mono">{{ info?.platform }} / {{ info?.arch }}</div>
         </div>

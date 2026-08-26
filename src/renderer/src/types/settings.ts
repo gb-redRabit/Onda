@@ -1,5 +1,6 @@
 export interface LibrarySettings {
   viewModes: Record<string, 'list' | 'grid'>;
+  coverCacheMaxEntries?: number;
 }
 
 export interface AppSettings {
@@ -24,6 +25,9 @@ export interface GeneralSettings {
   startMinimized: boolean;
   closeToTray: boolean;
   restoreSession: boolean;
+  logLevel: 'debug' | 'info' | 'warn' | 'error';
+  logMaxSizeMB: number;
+  experimentalEnabled: boolean;
 }
 
 export type YoutubeAuthMethod = 'none' | 'electron' | 'browser' | 'manual';
@@ -90,15 +94,43 @@ export interface AppearanceSettings {
   audioPipOpacity: number;
   audioPipPosition: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
   audioPipEdgePosition: 'top' | 'bottom';
+  audioLayout: AudioLayoutSettings;
 }
 
-export type VisualizationMode = 'circle' | 'bars' | 'particles' | 'wave' | 'radial' | 'none';
+export type AudioLayoutElementId = 'visualization' | 'cover' | 'progress' | 'trackInfo' | 'controls';
+
+export type AudioLayoutPreset = 'compact' | 'stacked' | 'split' | 'full' | 'immersive';
+
+export type VizQuality = 'low' | 'medium' | 'high';
+
+export interface AudioLayoutElement {
+  id: AudioLayoutElementId;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  opacity: number;
+  layer: number;
+  visible: boolean;
+}
+
+export interface AudioLayoutSettings {
+  elements: AudioLayoutElement[];
+  preset?: AudioLayoutPreset;
+  autoHideDelay?: number;
+  hudOpacity?: number;
+  vizQuality?: VizQuality;
+}
+
+export type VisualizationMode = 'circle' | 'bars' | 'particles' | 'wave' | 'radial' | 'spectrum' | 'rings' | 'none';
 
 interface VisualizationSettings {
   mode: VisualizationMode;
   primaryColor: string;
   secondaryColor: string;
   sensitivity: number;
+  smoothing: number;
+  fpsCap: number;
 }
 
 export interface PlaybackSettings {
@@ -118,6 +150,11 @@ export interface PlaybackSettings {
   playbackSpeed: number;
   videoFilter: string;
   visualization: VisualizationSettings;
+  crossfadeSeconds: number;
+  streamPreloadSeconds: number;
+  perSourceVolume: boolean;
+  autoResume: boolean;
+  sleepTimerMinutes: number;
 }
 
 export interface DownloadSettings {
@@ -136,6 +173,9 @@ export interface DownloadSettings {
   defaultCoverClipFormat: 'webm' | 'mp4';
   filenameTemplate: string;
   maxConcurrent: number;
+  retryAttempts: number;
+  retryBaseMs: number;
+  tempDir: string;
   autoDownloadSubscriptions: boolean;
   hashFiles: boolean;
   smartMode: boolean;
@@ -160,6 +200,26 @@ export interface NetworkSettings {
     username?: string;
     password?: string;
   };
+  proxyPerPlatform: boolean;
+  proxyYoutube: {
+    enabled: boolean;
+    type: 'http' | 'https' | 'socks5';
+    host: string;
+    port: number;
+    username?: string;
+    password?: string;
+  };
+  proxySoundcloud: {
+    enabled: boolean;
+    type: 'http' | 'https' | 'socks5';
+    host: string;
+    port: number;
+    username?: string;
+    password?: string;
+  };
+  defaultQualityPerPlatform: boolean;
+  youtubeQuality: string;
+  soundcloudQuality: string;
   downloadSpeedLimit: number;
   userAgent: string;
 }
