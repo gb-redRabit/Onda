@@ -16,7 +16,8 @@ import {
   ArrowRight,
   Radio,
   Download,
-  Globe
+  Globe,
+  Wand2
 } from '@lucide/vue';
 
 const { t } = useI18n();
@@ -37,7 +38,12 @@ const actions = computed(() => [
   { label: t('nav.downloads'), icon: Download, action: () => router.push('/downloads') },
   { label: t('sources.title'), icon: Globe, action: () => router.push('/sources') },
   { label: t('nav.explorer'), icon: Film, action: () => router.push('/explorer') },
-  { label: t('nav.settings'), icon: Settings, action: () => router.push('/settings') }
+  { label: t('nav.settings'), icon: Settings, action: () => router.push('/settings') },
+  {
+    label: t('wizard.title'),
+    icon: Wand2,
+    action: () => ui.openSetupWizard()
+  }
 ]);
 
 const results = computed(() => {

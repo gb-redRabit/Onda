@@ -1,52 +1,76 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, type Component } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { FolderPlus, Download, Check } from '@lucide/vue';
+import { X, ArrowLeft, ArrowRight, Check } from '@lucide/vue';
 import { useLibraryStore } from '@renderer/stores/library';
-import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore } from '@renderer/stores/ui';
+import WizardWelcome from './wizard/WizardWelcome.vue';
+import WizardLibrary from './wizard/WizardLibrary.vue';
+import WizardDownload from './wizard/WizardDownload.vue';
+import WizardOnline from './wizard/WizardOnline.vue';
+import WizardAppearance from './wizard/WizardAppearance.vue';
+import WizardAudio from './wizard/WizardAudio.vue';
+import WizardPip from './wizard/WizardPip.vue';
+import WizardDependencies from './wizard/WizardDependencies.vue';
+import WizardSummary from './wizard/WizardSummary.vue';
 
 const emit = defineEmits<{ close: [] }>();
 
 const { t } = useI18n();
 const library = useLibraryStore();
-const settings = useSettingsStore();
 const ui = useUIStore();
 
-const libraryFolders = ref<string[]>([]);
-const downloadFolder = ref('');
+const steps: Component[] = [
+  WizardWelcome,
+  WizardLibrary,
+  WizardDownload,
+  WizardOnline,
+  WizardAppearance,
+  WizardAudio,
+  WizardPip,
+  WizardDependencies,
+  WizardSummary
+];
+const total = steps.length;
+const current = ref(0);
+const scanNow = ref(true);
 
-async function addLibraryFolder() {
+const progress = computed(() => Math.round(((current.value + 1) / total) * 100));
+const isLast = computed(() => current.value === total - 1);
+const isFirst = computed(() => current.value === 0);
+const stepProps = computed(() =>
+  current.value === 1 || isLast.value ? { scanNow: scanNow.value } : {}
+);
+
+function markDone() {
   try {
-    const paths = (await window.api?.invoke('dialog:openFolder')) as string[] | undefined;
-    if (!paths || paths.length === 0) return;
-    for (const p of paths) {
-      if (!libraryFolders.value.includes(p)) libraryFolders.value.push(p);
-    }
+    localStorage.setItem('onda-first-run-done', '1');
   } catch {
-    /* cancelled */
+    /* storage unavailable */
   }
 }
 
-async function chooseDownloadFolder() {
-  try {
-    const paths = (await window.api?.invoke('dialog:openFolder')) as string[] | undefined;
-    if (paths && paths.length > 0) downloadFolder.value = paths[0];
-  } catch {
-    /* cancelled */
+function next() {
+  if (isLast.value) {
+    finish();
+  } else {
+    current.value += 1;
   }
+}
+
+function back() {
+  if (current.value > 0) current.value -= 1;
 }
 
 function finish() {
-  try {
-    for (const p of libraryFolders.value) void library.addFolder(p);
-    if (downloadFolder.value) settings.updateDownload({ defaultPath: downloadFolder.value });
-    if (libraryFolders.value.length > 0) void library.scanFolders();
-  } catch {
-    /* ignore */
-  }
-  localStorage.setItem('onda-first-run-done', '1');
+  markDone();
+  if (scanNow.value && library.folders.length > 0) void library.scanFolders();
   ui.notify('success', t('wizard.done'));
+  emit('close');
+}
+
+function skipAll() {
+  markDone();
   emit('close');
 }
 </script>
@@ -54,63 +78,72 @@ function finish() {
 <template>
   <div
     class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
-    @click.self="emit('close')"
+    @click.self="skipAll"
   >
     <div
-      class="w-full max-w-md rounded-box bg-base-100 border border-base-300 shadow-2xl shadow-black/50 p-8"
+      class="w-full max-w-xl rounded-box bg-base-100 border border-base-300 shadow-2xl shadow-black/50 flex flex-col max-h-[86vh]"
     >
-      <div
-        class="w-14 h-14 rounded-box bg-primary/15 text-primary flex items-center justify-center mb-5"
-      >
-        <Check :size="26" />
-      </div>
-      <h2 class="text-xl font-bold tracking-tight mb-2">{{ $t('wizard.title') }}</h2>
-      <p class="text-sm text-base-content/70 mb-6">{{ $t('wizard.welcome') }}</p>
-
-      <div class="space-y-3 mb-6">
-        <button
-          class="w-full flex items-center gap-3 p-4 fx-depth rounded-box fx-noise border border-base-300 hover:border-primary/50 hover:bg-base-content/10 transition-colors text-left"
-          @click="addLibraryFolder"
-        >
-          <FolderPlus :size="20" class="text-primary shrink-0" />
-          <div class="min-w-0">
-            <div class="text-sm font-medium">{{ $t('wizard.addLibrary') }}</div>
-            <div class="text-xs text-base-content/50 truncate">
-              {{
-                libraryFolders.length > 0 ? libraryFolders.join(', ') : $t('wizard.noneSelected')
-              }}
-            </div>
+      <header class="px-6 pt-5 pb-4 border-b border-base-300">
+        <div class="flex items-center justify-between gap-4">
+          <div class="text-xs font-medium text-base-content/50">
+            {{ t('wizard.title') }}
           </div>
+          <button
+            class="p-1.5 rounded hover:bg-base-content/10 text-base-content/50 hover:text-base-content transition-colors"
+            :title="t('wizard.later')"
+            @click="skipAll"
+          >
+            <X :size="16" />
+          </button>
+        </div>
+        <div class="mt-2 h-1.5 rounded-full bg-base-300 overflow-hidden">
+          <div
+            class="h-full rounded-full bg-primary transition-all duration-300"
+            :style="{ width: progress + '%' }"
+          />
+        </div>
+        <div class="mt-1.5 text-[11px] text-base-content/40">
+          {{ t('wizard.step', { current: current + 1, total }) }}
+        </div>
+      </header>
+
+      <main class="px-6 py-5 overflow-y-auto">
+        <component :is="steps[current]" v-bind="stepProps" @update:scan-now="scanNow = $event" />
+      </main>
+
+      <footer class="px-6 pb-5 pt-4 border-t border-base-300 flex items-center gap-3">
+        <button
+          class="px-3 py-2 rounded-field text-sm text-base-content/60 hover:text-base-content hover:bg-base-content/10 transition-colors"
+          @click="skipAll"
+        >
+          {{ t('wizard.skipAll') }}
+        </button>
+
+        <div class="flex-1" />
+
+        <button
+          class="fx-noise px-3.5 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5"
+          :disabled="isFirst"
+          @click="back"
+        >
+          <ArrowLeft :size="15" />
+          {{ t('wizard.back') }}
         </button>
 
         <button
-          class="w-full flex items-center gap-3 p-4 fx-depth rounded-box fx-noise border border-base-300 hover:border-primary/50 hover:bg-base-content/10 transition-colors text-left"
-          @click="chooseDownloadFolder"
+          class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-1.5"
+          @click="next"
         >
-          <Download :size="20" class="text-primary shrink-0" />
-          <div class="min-w-0">
-            <div class="text-sm font-medium">{{ $t('wizard.chooseDownload') }}</div>
-            <div class="text-xs text-base-content/50 truncate">
-              {{ downloadFolder || $t('wizard.noneSelected') }}
-            </div>
-          </div>
+          <template v-if="isLast">
+            <Check :size="15" />
+            {{ t('wizard.start') }}
+          </template>
+          <template v-else>
+            {{ t('wizard.next') }}
+            <ArrowRight :size="15" />
+          </template>
         </button>
-      </div>
-
-      <div class="flex items-center gap-3">
-        <button
-          class="fx-noise flex-1 py-2.5 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors"
-          @click="finish"
-        >
-          {{ $t('wizard.start') }}
-        </button>
-        <button
-          class="fx-noise py-2.5 px-4 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
-          @click="emit('close')"
-        >
-          {{ $t('wizard.later') }}
-        </button>
-      </div>
+      </footer>
     </div>
   </div>
 </template>

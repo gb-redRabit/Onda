@@ -149,6 +149,11 @@ input[type='checkbox'] {
   border-width: 0;
 }
 
+.app-root.app-root-glass {
+  border-radius: 0;
+  border-width: 0;
+}
+
 .fx-depth {
   box-shadow:
     0 calc(var(--depth) * 1px) calc(var(--depth) * 2px) rgb(0 0 0 / calc(var(--depth) * 0.18)),

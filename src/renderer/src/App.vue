@@ -39,8 +39,8 @@ const audioPip = useAudioPiP();
 useNewVideoNotifications();
 useMediaSession();
 const session = useSessionPersistence();
-const showFirstRun = ref(false);
 const isWinMaximized = ref(false);
+const glassOn = computed(() => (settings.appearance.glassAlpha ?? 100) < 100);
 let offMaximized: (() => void) | null = null;
 
 const isExplorerWindow = computed(() => route.name === 'explorer-window');
@@ -83,9 +83,9 @@ onMounted(async () => {
   // main will close the splash and show the window.
   window.api?.invoke('app:rendererReady');
 
-  // First-run wizard (one time).
+  // First-run wizard (one time). Re-runnable from Settings / CommandPalette.
   try {
-    if (!localStorage.getItem('onda-first-run-done')) showFirstRun.value = true;
+    if (!localStorage.getItem('onda-first-run-done')) ui.openSetupWizard();
   } catch {
     /* storage unavailable */
   }
@@ -228,7 +228,7 @@ function onWindowBlur() {
 <template>
   <div
     class="app-root flex flex-col h-full w-full overflow-hidden border border-base-300 bg-base-200/[var(--glass-alpha)]"
-    :class="{ 'is-maximized': isWinMaximized }"
+    :class="{ 'is-maximized': isWinMaximized, 'app-root-glass': glassOn }"
   >
     <AppMenu v-if="ui.topMenuVisible && !isExplorerWindow" />
     <div class="flex flex-1 min-h-0">
@@ -263,7 +263,7 @@ function onWindowBlur() {
 
     <CommandPalette />
     <ToastNotification />
-    <FirstRunWizard v-if="showFirstRun" @close="showFirstRun = false" />
+    <FirstRunWizard v-if="ui.setupWizardVisible" @close="ui.closeSetupWizard()" />
 
     <div
       v-if="ui.contextMenu"

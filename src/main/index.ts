@@ -122,7 +122,7 @@ if (!gotSingleInstanceLock) {
   });
 }
 
-function createWindow(useAcrylic = false): BrowserWindow {
+function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -132,12 +132,9 @@ function createWindow(useAcrylic = false): BrowserWindow {
     frame: false,
     titleBarStyle: 'hidden',
     hasShadow: false,
-    ...(useAcrylic && process.platform === 'win32'
-      ? { backgroundMaterial: 'acrylic' as const }
-      : {
-          transparent: true,
-          backgroundColor: '#00000000'
-        }),
+    transparent: true,
+    backgroundColor: '#00000000',
+    ...(process.platform === 'win32' ? { backgroundMaterial: 'acrylic' as const } : {}),
     ...(process.platform === 'darwin'
       ? { vibrancy: 'sidebar' as const, visualEffectState: 'active' as const }
       : {}),
@@ -441,12 +438,9 @@ app.whenReady().then(async () => {
 
   let bootFolders = 0;
   let bootRoots = 0;
-  let initialUseAcrylic = false;
 
   try {
     const store = await getStore();
-    const appearance = store.get('appearance') as { glassAlpha?: number } | undefined;
-    initialUseAcrylic = (appearance?.glassAlpha ?? 100) < 100 && process.platform === 'win32';
     const folders = store.get('libraryFolders', []);
     bootFolders = Array.isArray(folders) ? folders.length : 0;
     if (Array.isArray(folders)) {
@@ -541,8 +535,8 @@ app.whenReady().then(async () => {
   registerOndaProtocolHandler();
 
   sendSplash('Tworzenie okna…', 60);
-  mainWindow = createWindow(initialUseAcrylic);
-  perf(`window created acrylic=${initialUseAcrylic}`);
+  mainWindow = createWindow();
+  perf('window created');
   mainWindow.webContents.on('did-finish-load', onMainReady);
 
   sendSplash('Inicjalizacja PiP i tray…', 75);

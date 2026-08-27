@@ -43,7 +43,6 @@ const src = computed(() => {
 });
 
 const pingPong = ref(true);
-const videoEl = ref<HTMLVideoElement | null>(null);
 let reverseRaf: number | null = null;
 
 function startReverse(video: HTMLVideoElement) {
@@ -117,7 +116,6 @@ onUnmounted(() => {
   <div ref="el" class="w-full h-full overflow-hidden flex items-center justify-center">
     <video
       v-if="isVideo"
-      ref="videoEl"
       :src="src"
       class="w-full h-full object-cover"
       :autoplay="autoplay"

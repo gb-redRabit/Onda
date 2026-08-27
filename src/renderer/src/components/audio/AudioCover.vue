@@ -11,7 +11,7 @@ const audio = useAudioPlayer();
 
 const pulseScale = ref(1);
 let animFrame: number | null = null;
-let dataArray: Uint8Array | null = null;
+let dataArray: Uint8Array<ArrayBuffer> | null = null;
 
 function measurePulse() {
   if (!audio.analyserNode || !audio.isPlaying.value) {

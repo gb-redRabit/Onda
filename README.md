@@ -10,7 +10,7 @@
 
 <br>
 
-**Onda** to zaawansowany, desktopowy odtwarzacz muzyki i wideo zbudowany na stosie **Electron + Vue 3 + TypeScript + Tailwind CSS**. Odtwarza lokalne pliki audio i wideo, zarządza biblioteką multimediów z metadanymi, eksploruje system plików, wyświetla obrazy, obsługuje napisy (ASS/SRT/VTT) i pobiera media z YouTube.
+**Onda** to zaawansowany, desktopowy odtwarzacz muzyki i wideo zbudowany na stosie **Electron + Vue 3 + TypeScript + Tailwind CSS**. Odtwarza lokalne pliki audio i wideo, zarządza biblioteką multimediów z metadanymi, eksploruje system plików, wyświetla obrazy, obsługuje napisy (ASS/SRT/VTT), streamuje z YouTube i SoundCloud, pobiera media i oferuje w pełni konfigurowalne motywy z Kreatorze.
 
 ---
 
@@ -20,7 +20,13 @@
 
 - **Silnik audio** oparty o Web Audio API, oddzielony od UI (EventBus) — audio gra w tle także przy przełączaniu widoków.
 - **10-pasmowy equalizer** z presetami, regulacja głośności, seek, kolejka odtwarzania z przeciąganiem, tasowanie i powtarzanie (all/one/none).
-- **Wizualizacje audio** (circle / bars / particles / wave / radial) renderowane na canvasie z użyciem `AnalyserNode`.
+- **Wizualizacje audio** — 8 trybów renderowanych na canvasie z użyciem `AnalyserNode`: bars, spectrum, wave, radial, rings, circle, particles, none. Crossfade między trybami, konfigurowalne kolory (primary/secondary), czułość (sensitivity), wygładzanie (smoothing), limit FPS i jakość renderowania (low/medium/high — DPR cap + liczba elementów).
+- **Widok Audio (free canvas)** — pełna swoboda rozmieszczania 5 elementów (wizualizacja, okładka, info utworu, progress, kontrolki) na canvasie z pozycjonowaniem procentowym, warstwami (layer 1–5), przezroczystością i widocznością. 5 presetów layoutu (compact/stacked/split/full/immersive) z natychmiastowym przełączaniem.
+- **Edytor layoutu audio** — split-view z mini podglądem (480×320), siatką 1%, drag-and-drop na canvasie, suwaki X/Y/width/height/opacity/layer, show/hide per element, przycisk reset.
+- **Fullscreen audio** — prawdziwy Fullscreen API (Escape/F11), auto-hide HUD z konfigurowalnym opóźnieniem (0–10s), przezroczystość HUD (10–100%).
+- **Pulse okładki** — subtelna animacja scale(1.0–1.06) zsynchronizowana z basem z `AnalyserNode`.
+- **Video cover ping-pong** — okładki wideo grają normalnie do końca, potem cofają się do początku (odtyganie przez `requestAnimationFrame`).
+- **Marquee tytułu** — długie tytuły i artyści przesuwają się animacją CSS z obliczanym offsetem.
 - **Odtwarzanie wideo** — HTML5, pełny ekran, Picture-in-Picture, prędkość 0.2–3.0×, filtry, strefy pomijania (skip zones), OSD.
 - **Transkodowanie w locie** (chunk-first) kodeków niewspieranych przez Chromium (np. AC3/DTS → AAC) do osobnego toru audio.
 - **Media Session API** — metadata i sterowanie (odtwórz/pauza/następny/poprzedni/seek) z poziomu systemu i ekranu blokady.
@@ -47,17 +53,19 @@
 ### Online (YouTube / SoundCloud) i pobieranie
 
 - Widok **/online** z przełącznikiem platform: YouTube i SoundCloud.
-- **Streaming online** — „Odtwórz" na kartach wyników gra bez pobierania (YT przez yt-dlp, SC przez wewnętrzne API z fallbackiem yt-dlp); kolejka streamów z auto-next, cache URL-i i prefetch na hover.
-- **SoundCloud**: wyszukiwanie, sety (playlisty), profile artystów; pobieranie MP3 bezpośrednio z API z tagami ID3 i okładką (fallback yt-dlp dla utworów bez progressive); subskrypcje artystów z automatycznym pobieraniem nowych utworów; zapisywanie utworów/setów i batch linków obu platform.
-- Zapisane utwory/playlisty (`/saved`) do szybkiego powrotu.
-- Wyszukiwanie, rozpoznawanie linków (wideo / playlista / kanał), widok kanału z zakładkami Wideo/Shorts i nieskończonym przewijaniem.
-- Subskrypcje kanałów z automatycznym sprawdzaniem nowych wideo i powiadomieniami.
-- **Pobieranie** (yt-dlp): kolejka audio/wideo, progres, prędkość, ETA, anulowanie, retry i wznowienie, okładki (miniatura / klatka / clip wideo), metadane, podfoldery kanału/playlisty.
-- Integracja z biblioteką: pobrane pliki lądują w bibliotece (jeśli folder docelowy jest folderem biblioteki).
+- **Streaming online** — „Odtwórz" na kartach wyników gra bez pobierania (YT przez yt-dlp, SC przez wewnętrzne API z fallbackiem yt-dlp); kolejka streamów z auto-next, cache URL-i (LRU, TTL 2h) i prefetch na hover.
+- **Hardening streamów** — retry 403 z backoffem ×4, fallback direct (bez CORS) przy błędzie proxy, re-play w `canplay`, prefetch + warm probe (IntersectionObserver, 300px/600ms), cap współbieżności (4).
+- **SoundCloud** — własny klient api-v2 (wewnętrzne API web-aplikacji SC) z automatyczną ekstrakcją `client_id` z bundli, fallback yt-dlp. Wyszukiwanie, sety (playlisty), profile artystów; pobieranie MP3 z tagami ID3 i okładką (fallback yt-dlp dla utworów bez progressive); subskrypcje z auto-download nowych utworów; zapisywanie utworów/setów i batch linków obu platform.
+- **Zapisane** (`/saved`) — osobny widok zapisanych utworów/playlist (YT/SC) do szybkiego powrotu, radio online (placeholder „Wkrótce").
+- **Wyszukiwanie i nawigacja** — rozpoznawanie linków (wideo / playlista / kanał), widok kanału z zakładkami Wideo/Shorts i nieskończonym przewijaniem, nieskończony scroll w wynikach.
+- **Subskrypcje kanałów** — automatyczne sprawdzanie nowych wideo (co 6h), powiadomienia, auto-download.
+- **Pobieranie** (yt-dlp) — kolejka audio/wideo, progres, prędkość, ETA, anulowanie, retry/backoff, okładki (miniatura / klatka / clip wideo), metadane, podfoldery kanału/playlisty. Post-process: tagi, okładki, sync z biblioteką, SHA-256 (opcjonalny), napisy. Persystencja kolejki, restore po restarcie (interrupted→paused, pending→re-queued).
+- **Integracja z biblioteką** — pobrane pliki lądują w bibliotece (jeśli folder docelowy jest folderem biblioteki).
 
 ### PiP (Picture-in-Picture)
 
 - Osobne okna dla wideo i audio, pozycja, rozmiar, always-on-top, podgląd.
+- Synchronizacja motywu między głównym oknem a oknami PiP przez IPC (`audio-pip:theme`/`pip:theme`).
 
 ### System i integracja
 
@@ -66,9 +74,23 @@
 - Globalne skróty (media keys), tray, command palette (Ctrl+K), aktualizacje (`electron-updater`).
 - Lokalizacja **PL/EN**, motywy (dark / light / midnight / spotify).
 
-### Ustawienia (14 paneli)
+### Motywy i wygląd
 
-Ogólne · Wygląd · Odtwarzanie · PiP · Pobieranie · Skróty · Powiadomienia · Sieć · Klucze API · Aktualizacje · Diagnostyka · Informacje · Biblioteka · Zależności
+- **29 zmiennych semantycznych** zgodnych z daisyUI Theme Generator (kolory 20 + radiusy 3 + rozmiary 2 + border 1 + efekty 2 + szkło 1).
+- **4 motywy wbudowane** (dark/light/midnight/spotify) + **Kreator Motywów** (Własny) z live-preview: Baza, Marka (primary/secondary/accent/neutral), Statusy, Geometria (radius/border/size), Szkło (glassAlpha 0–100%), Kopiuj/Wklej JSON.
+- **Przezroczyste okno** — `transparent: true` + `--glass-alpha` steruje kryciem; backdrop-filter blur na tłach.
+- **Migracja 111 plików** — legacy klasy (`bg-bg-*`, `border-border-*`, `text-fg-*`, `accent-*`) → tokeny semantyczne (`bg-base-*`, `border-base-300`, `text-base-content`, `primary`); 2700 podmian, zero resztek.
+- **Radiusy** — `rounded-box` (karty/modale), `rounded-field` (kontrolki), `rounded-selector` (checkboxy/toggle); suwaki geometrii sterują całym UI.
+- **Depth/noise** — klasy `.fx-depth`/`.fx-noise` na polach/kartach, przełączniki w Kreatorze.
+
+### Ustawienia (9 grup w 6 sekcjach)
+
+Odtwarzanie · Wygląd · Motyw · Biblioteka · Sieć · System · Zaawansowane (Eksplorator, Klucze API, SystemInfo)
+
+- **Reorganizacja** — 16 zakładek → 9 grup w 6 sekcjach z ikonami i opisami.
+- **Wyszukiwarka ustawień** — filtruje po kluczach PL/EN (jak CommandPalette).
+- **Eksport/import** — JSON (sekrety przez safeStorage, nigdy plaintext).
+- **Zaawansowane ustawienia** — cache okładek (500–10000), max pobierania (1–8), limit prędkości, retry/backoff, crossfade (0–12s), preload strumieni, głośność per źródło, sleep timer, jakość per platforma (YT/SC), proxy per platforma, log level, telemetria OFF.
 
 ---
 
@@ -80,17 +102,18 @@ Ogólne · Wygląd · Odtwarzanie · PiP · Pobieranie · Skróty · Powiadomien
 | Frontend       | Vue 3.5 (Composition API, `<script setup>`) |
 | Język          | TypeScript 5.9 (strict)                     |
 | Builder        | electron-vite 5 + Vite 7.2                  |
-| Style          | Tailwind CSS 4.3                            |
+| Style          | Tailwind CSS 4.3 + daisyUI (theme values)   |
 | Stan           | Pinia 3                                     |
-| Lokalizacja    | vue-i18n 11 (PL/EN)                         |
+| Lokalizacja    | vue-i18n 11 (PL/EN, 942 kluczy)            |
 | Routing        | vue-router 4 (hash history, lazy loading)   |
 | Metadane       | music-metadata, node-id3                    |
 | Wirtualizacja  | @tanstack/vue-virtual                       |
 | Obrazy         | sharp (libvips)                             |
 | Napisy         | jassub (Wasm)                               |
 | Watcher plików | chokidar                                    |
-| Testy          | Vitest + jsdom                              |
+| Testy          | Vitest 3 + jsdom                            |
 | Pakiety        | electron-builder (NSIS/DMG/AppImage)        |
+| Streaming      | yt-dlp (nightly), SoundCloud api-v2         |
 
 ---
 
@@ -99,7 +122,7 @@ Ogólne · Wygląd · Odtwarzanie · PiP · Pobieranie · Skróty · Powiadomien
 Niektóre funkcje wymagają narzędzi systemowych — status można sprawdzić i zainstalować w panelu **Ustawienia → Zależności**:
 
 - **FFmpeg / FFprobe** — transkodowanie audio w locie, ekstrakcja klatek, miniatury.
-- **yt-dlp** — pobieranie z YouTube.
+- **yt-dlp** — pobieranie z YouTube i SoundCloud (fallback dla API), nightly builds.
 - **MKVToolNix (mkvextract)** — ekstrakcja osadzonych czcionek z `.mkv`.
 
 ---
@@ -115,7 +138,7 @@ npm run dev
 
 ### Testy
 
-Aplikacja zawiera **321 testów** (Vitest):
+Aplikacja zawiera **571 testów** (Vitest):
 
 ```bash
 npm test
@@ -156,15 +179,17 @@ Aplikacja ma strukturę modułową z czystym rozdziałem procesów Electrona:
 - **main** — cykl życia aplikacji, IPC, media server, downloader, updater, zależności, watcher biblioteki.
 - **preload** — ograniczone, typowane API wystawiane do renderera (contextIsolation + sandbox).
 - **renderer** — widoki zarządzane przez `ModuleManager` (cykl `init → activate → deactivate → destroy`).
-- **shared** — wspólne typy, stałe i helpery.
+- **shared** — wspólne typy, stałe i helpery (themeModel, builtin-themes, platform, youtube, soundcloud).
 
 Kluczowe koncepty:
 
-- **Separacja audio/wideo** — `AudioEngine` (Web Audio API) jest niezależny od `<video>` i komunikuje się z UI wyłącznie przez EventBus.
-- **Lokalny serwer mediów** — wideo i obrazy są serwowane przez lokalny HTTP z tokenem, obsługą `Range` i fail-closed whitelistą katalogów (omijanie CSP i `file://`).
-- **Bezpieczeństwo** — `sandbox`, `contextIsolation`, `nodeIntegration: false`, `webSecurity: true`, walidacja argumentów IPC po stronie main, szyfrowanie sekretów (`safeStorage`).
+- **Separacja audio/wideo** — `AudioEngine` (Web Audio API) jest niezależny od `<video>` i komunikuje się z UI wyłącznie przez EventBus. `AudioEventBus` jedyny kanał engine→renderer.
+- **Widok Audio (free canvas)** — jeden silnik layoutu zamiast 3 zduplikowanych szablonów. 5 elementów na canvasie z procentowym pozycjonowaniem, warstwami i presetami. Stan persystowany w `settings.appearance.audioLayout`.
+- **Lokalny serwer mediów** — wideo i obrazy są serwowane przez lokalny HTTP z tokenem, obsługą `Range` i fail-closed whitelistą katalogów (omijanie CSP i `file://`). Dwa zestawy rootów: `libraryRoots` (nadpisywane) + `extraRoots` (narastające).
+- **Bezpieczeństwo** — `sandbox`, `contextIsolation`, `nodeIntegration: false`, `webSecurity: true`, walidacja argumentów IPC po stronie main, szyfrowanie sekretów (`safeStorage`), allowlisty IPC, media-server token+origins+roots+realpath, redakcja sekretów w logach.
+- **Multi-platform streaming** — wspólny rejestr providerów (`platform.ts`), hybrydowy klient SC (api-v2 + fallback yt-dlp), cache URL-i (LRU TTL 2h, hardened z retry 403/backoff), proxy CORS-clean przez media-server.
+- **Persystencja** — electron-store (settings, mediaRoots), JSON atomiczny (download-queue, subscriptions, saved-streams), localStorage (biblioteka, settings renderera).
 
-Szczegółowe zasady dla współtwórców: [`zasady.md`](./docs/zasady.md), procedura wydania: [`RELEASE.md`](./docs/RELEASE.md).
 
 ---
 

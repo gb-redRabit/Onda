@@ -28,6 +28,7 @@ export const useUIStore = defineStore('ui', () => {
   const currentView = ref('home');
   const isFullscreen = ref(false);
   const commandPaletteVisible = ref(false);
+  const setupWizardVisible = ref(false);
   const contextMenu = ref<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const notifications = ref<Notification[]>([]);
 
@@ -42,6 +43,14 @@ export const useUIStore = defineStore('ui', () => {
   }
   function toggleCommandPalette() {
     commandPaletteVisible.value = !commandPaletteVisible.value;
+  }
+
+  function openSetupWizard() {
+    setupWizardVisible.value = true;
+  }
+
+  function closeSetupWizard() {
+    setupWizardVisible.value = false;
   }
 
   function setView(view: string) {
@@ -83,12 +92,15 @@ export const useUIStore = defineStore('ui', () => {
     currentView,
     isFullscreen,
     commandPaletteVisible,
+    setupWizardVisible,
     contextMenu,
     notifications,
     toggleTopMenu,
     toggleStatusBar,
     toggleSearch,
     toggleCommandPalette,
+    openSetupWizard,
+    closeSetupWizard,
     setView,
     showContextMenu,
     hideContextMenu,
