@@ -306,11 +306,11 @@ const playlistCount = computed(() => saved.playlists.length);
                   class="absolute inset-0 w-full h-full object-cover"
                 />
                 <div
-                  class="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 bg-black/30 transition-opacity"
+                  class="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 bg-neutral/30 transition-opacity"
                 >
                   <button
                     type="button"
-                    class="p-2 rounded-full bg-white/20 text-white hover:bg-white/35 transition-colors"
+                    class="p-2 rounded-full bg-neutral-content/20 text-neutral-content hover:bg-neutral-content/35 transition-colors"
                     :title="$t('youtube.playStream')"
                     @click="playTrack(s)"
                   >
@@ -318,7 +318,7 @@ const playlistCount = computed(() => saved.playlists.length);
                   </button>
                   <button
                     type="button"
-                    class="p-2 rounded-full bg-white/20 text-white hover:bg-white/35 transition-colors"
+                    class="p-2 rounded-full bg-neutral-content/20 text-neutral-content hover:bg-neutral-content/35 transition-colors"
                     :title="$t('saved.addToQueue')"
                     @click="queueTrack(s)"
                   >
@@ -335,7 +335,7 @@ const playlistCount = computed(() => saved.playlists.length);
                 </div>
                 <span
                   v-if="s.duration"
-                  class="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded-field"
+                  class="absolute bottom-1.5 right-1.5 bg-neutral/80 text-neutral-content text-[10px] px-1.5 py-0.5 rounded-field"
                 >
                   {{ s.duration }}
                 </span>

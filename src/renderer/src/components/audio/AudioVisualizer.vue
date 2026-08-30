@@ -459,7 +459,7 @@ defineExpose({ style, cycleStyle });
     <canvas ref="canvasRef" class="w-full h-full" />
     <div
       v-if="!audio.isPlaying.value && style !== 'none'"
-      class="absolute inset-0 flex flex-col items-center justify-center bg-black/20 gap-2"
+      class="absolute inset-0 flex flex-col items-center justify-center bg-neutral/20 gap-2"
     >
       <span class="text-base-content/70 text-sm font-medium">{{
         $t('audioView.noTrackTitle')

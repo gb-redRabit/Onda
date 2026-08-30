@@ -131,7 +131,7 @@ onUnmounted(() => {
 <template>
   <div
     ref="playerContainerRef"
-    class="player-container flex flex-col h-full bg-black relative"
+    class="player-container flex flex-col h-full bg-neutral relative"
     @mousemove="ctl.onMouseMove"
   >
     <PlayerTopBar
@@ -158,7 +158,7 @@ onUnmounted(() => {
         @click="ctl.skip(-10)"
       >
         <div
-          class="bg-black/50 rounded-full px-4 py-2 text-white text-sm font-medium pointer-events-none"
+          class="bg-neutral/50 rounded-full px-4 py-2 text-neutral-content text-sm font-medium pointer-events-none"
         >
           -10s
         </div>
@@ -170,7 +170,7 @@ onUnmounted(() => {
         @click="ctl.skip(10)"
       >
         <div
-          class="bg-black/50 rounded-full px-4 py-2 text-white text-sm font-medium pointer-events-none"
+          class="bg-neutral/50 rounded-full px-4 py-2 text-neutral-content text-sm font-medium pointer-events-none"
         >
           +10s
         </div>
@@ -200,7 +200,7 @@ onUnmounted(() => {
     </div>
 
     <div v-else class="relative flex-1 flex items-center justify-center overflow-hidden">
-      <p class="text-lg text-white/60">{{ $t('playerView.noVideo') }}</p>
+      <p class="text-lg text-neutral-content/60">{{ $t('playerView.noVideo') }}</p>
       <button
         class="fx-noise mt-4 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm"
         @click="router.push('/explorer')"

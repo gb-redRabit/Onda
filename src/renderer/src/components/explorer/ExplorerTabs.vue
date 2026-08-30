@@ -200,11 +200,11 @@ async function onTabDrop(e: DragEvent, idx: number) {
         :is="tabIcon(tab)"
         :size="12"
         class="shrink-0"
-        :class="explorer.activeTabIndex === idx ? 'text-white/80' : 'text-primary'"
+        :class="explorer.activeTabIndex === idx ? 'text-neutral-content/80' : 'text-primary'"
       />
       <span class="truncate flex-1">{{ tab.label || $t('explorer.thisComputer') }}</span>
       <span
-        class="shrink-0 p-0.5 rounded-field cursor-pointer hover:bg-black/20 transition-opacity"
+        class="shrink-0 p-0.5 rounded-field cursor-pointer hover:bg-neutral/20 transition-opacity"
         :class="
           explorer.activeTabIndex === idx
             ? 'text-primary-content/80 hover:text-primary-content opacity-100'

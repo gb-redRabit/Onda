@@ -103,7 +103,7 @@ const themeSwatches = computed(() => {
           @click.stop="settings.updateNetwork({ proxy: { ...settings.network.proxy, enabled: !settings.network.proxy.enabled } })"
         >
           <span
-            class="inline-block h-3 w-3 transform rounded-full bg-white shadow-sm transition-transform duration-200"
+            class="inline-block h-3 w-3 transform rounded-full bg-neutral-content shadow-sm transition-transform duration-200"
             :class="settings.network.proxy.enabled ? 'translate-x-[16px]' : 'translate-x-[3px]'"
           />
         </button>
@@ -123,7 +123,7 @@ const themeSwatches = computed(() => {
           @click.stop="settings.updateGeneral({ autoLaunch: !settings.general.autoLaunch })"
         >
           <span
-            class="inline-block h-3 w-3 transform rounded-full bg-white shadow-sm transition-transform duration-200"
+            class="inline-block h-3 w-3 transform rounded-full bg-neutral-content shadow-sm transition-transform duration-200"
             :class="settings.general.autoLaunch ? 'translate-x-[16px]' : 'translate-x-[3px]'"
           />
         </button>
@@ -139,7 +139,7 @@ const themeSwatches = computed(() => {
           @click.stop="settings.updateGeneral({ closeToTray: !settings.general.closeToTray })"
         >
           <span
-            class="inline-block h-3 w-3 transform rounded-full bg-white shadow-sm transition-transform duration-200"
+            class="inline-block h-3 w-3 transform rounded-full bg-neutral-content shadow-sm transition-transform duration-200"
             :class="settings.general.closeToTray ? 'translate-x-[16px]' : 'translate-x-[3px]'"
           />
         </button>

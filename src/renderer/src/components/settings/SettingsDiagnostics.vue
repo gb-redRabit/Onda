@@ -111,7 +111,7 @@ async function onClear(): Promise<void> {
         <Download :size="14" />{{ $t('settings.downloadLog') }}
       </button>
       <button
-        class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-red-500/40 text-red-500 text-xs font-medium hover:bg-red-500/10 transition-colors"
+        class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-red-500/40 text-error text-xs font-medium hover:bg-error/10 transition-colors"
         @click="onClear"
       >
         <Trash2 :size="14" />{{ $t('settings.clearLog') }}

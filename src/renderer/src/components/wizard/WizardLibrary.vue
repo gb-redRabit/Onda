@@ -68,7 +68,7 @@ function removeFolder(path: string) {
           @click="emit('update:scanNow', !scanNow)"
         >
           <span
-            class="inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-200 ease-out"
+            class="inline-block h-5 w-5 transform rounded-full bg-neutral-content shadow-md transition-transform duration-200 ease-out"
             :class="scanNow ? 'translate-x-6' : 'translate-x-1'"
           />
         </button>

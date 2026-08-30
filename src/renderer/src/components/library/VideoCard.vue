@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useI18n } from 'vue-i18n';
+import { computed, watch } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
+import { useI18n } from 'vue-i18n';
 import { usePlayerStore } from '@renderer/stores/player';
-import { useUIStore } from '@renderer/stores/ui';
 import { Play } from '@lucide/vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import { formatDuration } from '@renderer/utils/formatters';
-
-const { t } = useI18n();
+import { useLibraryContextMenu } from '@renderer/composables/useLibraryContextMenu';
+import { useThumbnails } from '@renderer/composables/useThumbnails';
 
 const props = defineProps<{
   track: MediaFile;
@@ -18,25 +17,27 @@ const emit = defineEmits<{
   play: [track: MediaFile];
 }>();
 
+const { t } = useI18n();
 const player = usePlayerStore();
-const ui = useUIStore();
+const { showTrackMenu } = useLibraryContextMenu();
+void t;
+const { request, getThumb } = useThumbnails(320);
+watch(
+  () => props.track.path,
+  (p) => p && request([p]),
+  { immediate: true }
+);
 
 const cover = computed(() => {
+  const thumb = getThumb(props.track.path);
+  if (thumb) return { type: 'image', data: thumb } as const;
   const cached = player.getCover(props.track.path);
   if (cached.data) return cached;
   return { type: 'video', data: props.track.path.replace(/\\/g, '/') };
 });
 
 function onContextMenu(e: MouseEvent) {
-  e.preventDefault();
-  ui.showContextMenu(e.clientX, e.clientY, [
-    { label: t('common.play'), action: () => emit('play', props.track) },
-    { label: t('common.addToQueue'), action: () => player.addToQueue(props.track) },
-    {
-      label: t('common.showInFolder'),
-      action: () => window.api?.invoke('shell:showItemInFolder', props.track.path)
-    }
-  ]);
+  showTrackMenu(e, props.track);
 }
 
 function onDragStart(e: DragEvent) {
@@ -56,17 +57,17 @@ function onDragStart(e: DragEvent) {
     <div class="aspect-video bg-neutral flex items-center justify-center relative overflow-hidden">
       <MediaCover :cover="cover" :size="32" fallback="film" />
       <div
-        class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors"
+        class="absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/30 transition-colors"
       >
         <div
           class="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
         >
-          <Play :size="18" class="text-white ml-0.5" />
+          <Play :size="18" class="text-neutral-content ml-0.5" />
         </div>
       </div>
       <div
         v-if="track.duration"
-        class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded-field bg-black/60 text-white text-[10px] font-medium"
+        class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded-field bg-neutral/60 text-neutral-content text-[10px] font-medium"
       >
         {{ formatDuration(track.duration, '—') }}
       </div>

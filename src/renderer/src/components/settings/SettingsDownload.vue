@@ -187,7 +187,7 @@ function onBrowserChange(e: Event) {
         </template>
       </div>
 
-      <p v-if="errorMsg" class="text-xs text-red-400">{{ errorMsg }}</p>
+      <p v-if="errorMsg" class="text-xs text-error">{{ errorMsg }}</p>
       <p v-if="settings.youtube.method !== 'none'" class="text-[11px] text-warning">
         {{ $t('settings.cookiesSecurityHint') }}
       </p>

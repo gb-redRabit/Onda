@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Search, Disc3, Music2, Album, Hash, Calendar, Check, Loader2, X } from '@lucide/vue';
 import type { MusicbrainzRelease } from '@shared/types/ipc';
@@ -27,13 +27,21 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-const query = ref('');
+const props = withDefaults(defineProps<{ initialQuery?: string }>(), { initialQuery: '' });
+const query = ref(props.initialQuery);
 const releases = ref<MusicbrainzRelease[]>([]);
 const loading = ref(false);
 const selectedId = ref<string | null>(null);
 const lookingUp = ref<string | null>(null);
 const error = ref('');
 const lookupResult = ref<LookupResult | null>(null);
+const status = ref('');
+const coverThumbs = ref<Record<string, string>>({});
+
+// 8.9 — stepper status
+function setStatus(s: string) {
+  status.value = s;
+}
 
 async function search() {
   if (!query.value.trim()) return;
@@ -42,11 +50,31 @@ async function search() {
   releases.value = [];
   selectedId.value = null;
   lookupResult.value = null;
+  setStatus('Wyszukiwanie…');
   const r = await window.api?.musicbrainzSearchRelease(query.value.trim());
   if (r?.success && r.releases?.length) {
     releases.value = r.releases;
+    setStatus(`Znaleziono ${r.releases.length}`);
+    // pobierz mini okładki dla wyników (lazy, z throttlingiem main 1 req/s)
+    for (const rel of r.releases.slice(0, 6)) {
+      (window.api as unknown as { musicbrainzGetCoverData: (id: string) => Promise<{ success: boolean; data?: number[]; mime?: string }> })?.musicbrainzGetCoverData(rel.id).then((cr) => {
+        if (cr?.success && cr.data) {
+          try {
+            const bytes = new Uint8Array(cr.data);
+            let binary = '';
+            const chunk = 8192;
+            for (let i = 0; i < bytes.length; i += chunk) {
+              binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+            }
+            const b64 = btoa(binary);
+            coverThumbs.value = { ...coverThumbs.value, [rel.id]: `data:${cr.mime || 'image/jpeg'};base64,${b64}` };
+          } catch {}
+        }
+      });
+    }
   } else {
     error.value = r?.error || t('musicbrainz.noResults');
+    setStatus('');
   }
   loading.value = false;
 }
@@ -56,17 +84,23 @@ async function selectRelease(release: MusicbrainzRelease) {
   lookingUp.value = release.id;
   error.value = '';
   lookupResult.value = null;
+  setStatus('Pobieranie szczegółów…');
   const r = await window.api?.musicbrainzLookupRelease(release.id);
   if (r?.success && r.release) {
     const result: LookupResult = { ...r.release };
-    const coverR = await window.api?.musicbrainzGetCoverData(release.id);
+    setStatus('Pobieranie okładki…');
+    const coverR = await (window.api as unknown as { musicbrainzGetCoverData: (id: string) => Promise<{ success: boolean; data?: number[]; mime?: string; error?: string; rateLimited?: boolean }> })?.musicbrainzGetCoverData(release.id);
     if (coverR?.success && coverR.data) {
       result._coverData = coverR.data;
       result._coverMime = coverR.mime;
+    } else if ((coverR as unknown as { rateLimited?: boolean })?.rateLimited) {
+      setStatus('Serwer obciążony, ponawiam…');
     }
     lookupResult.value = result;
+    setStatus('');
   } else {
     error.value = r?.error || t('musicbrainz.fetchError');
+    setStatus('');
   }
   lookingUp.value = null;
 }
@@ -99,16 +133,29 @@ function applyTags() {
 function displayTrackNumber(track: { number?: string; position?: string }, index: number): number {
   return Number(track.number) || Number(track.position) || index + 1;
 }
+
+watch(
+  () => props.initialQuery,
+  (v) => {
+    if (v) {
+      query.value = v;
+      search();
+    }
+  }
+);
+onMounted(() => {
+  if (props.initialQuery) search();
+});
 </script>
 
 <template>
   <Teleport to="body">
     <div
-      class="fixed inset-0 z-60 flex items-center justify-center bg-black/40"
+      class="fixed inset-0 z-60 flex items-center justify-center bg-neutral/40"
       @click.self="emit('close')"
     >
       <div
-        class="w-full max-w-xl mx-4 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300 shadow-xl overflow-hidden max-h-[80vh] flex flex-col"
+        class="w-full max-w-xl mx-4 rounded-box bg-neutral border border-base-300 shadow-2xl overflow-hidden max-h-[80vh] flex flex-col backdrop-blur-xl"
       >
         <div class="flex items-center justify-between px-5 py-4 border-b border-base-300 shrink-0">
           <h2 class="text-base font-bold flex items-center gap-2">
@@ -141,6 +188,7 @@ function displayTrackNumber(track: { number?: string; position?: string }, index
         </div>
 
         <div class="flex-1 overflow-y-auto p-4 space-y-3">
+          <div v-if="status" class="text-xs text-primary bg-primary/10 px-3 py-1.5 rounded-field text-center">{{ status }}</div>
           <div
             v-if="loading"
             class="flex items-center justify-center py-8 text-base-content/70 gap-2"
@@ -148,7 +196,7 @@ function displayTrackNumber(track: { number?: string; position?: string }, index
             <Loader2 :size="18" class="animate-spin" /> {{ $t('musicbrainz.searching') }}
           </div>
 
-          <div v-else-if="error" class="text-sm text-red-500 bg-red-500/10 px-3 py-2 rounded-field">
+          <div v-else-if="error" class="text-sm text-error bg-error/10 px-3 py-2 rounded-field">
             {{ error }}
           </div>
 
@@ -166,7 +214,8 @@ function displayTrackNumber(track: { number?: string; position?: string }, index
                 <div
                   class="w-10 h-10 rounded-field bg-base-100 flex items-center justify-center shrink-0 overflow-hidden"
                 >
-                  <Music2 :size="18" class="text-base-content/40" />
+                  <img v-if="coverThumbs[rel.id]" :src="coverThumbs[rel.id]" class="w-full h-full object-cover" />
+                  <Music2 v-else :size="18" class="text-base-content/40" />
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="text-sm font-medium truncate">{{ rel.title }}</div>

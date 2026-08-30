@@ -26,7 +26,7 @@ function openInWindow() {
 
 <template>
   <div class="w-full">
-    <div class="relative aspect-video rounded-box overflow-hidden bg-black">
+    <div class="relative aspect-video rounded-box overflow-hidden bg-neutral">
       <iframe
         :src="embedUrl"
         class="absolute inset-0 w-full h-full"

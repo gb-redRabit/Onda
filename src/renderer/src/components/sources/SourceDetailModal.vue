@@ -30,7 +30,7 @@ function browserUrl(item: SourceItem): string {
   <Teleport to="body">
     <div
       v-if="props.item"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-neutral/70 p-6"
       @click.self="emit('close')"
     >
       <div
@@ -49,7 +49,7 @@ function browserUrl(item: SourceItem): string {
           </button>
         </div>
 
-        <div class="flex-1 min-h-0 flex items-center justify-center bg-black/40 p-4 overflow-auto">
+        <div class="flex-1 min-h-0 flex items-center justify-center bg-neutral/40 p-4 overflow-auto">
           <img
             v-if="props.item.type === 'image' && mediaUrl(props.item)"
             :src="mediaUrl(props.item)"
@@ -61,7 +61,7 @@ function browserUrl(item: SourceItem): string {
             :src="mediaUrl(props.item)"
             controls
             autoplay
-            class="max-w-full max-h-full rounded-field bg-black"
+            class="max-w-full max-h-full rounded-field bg-neutral"
           />
           <audio
             v-else-if="props.item.type === 'audio' && mediaUrl(props.item)"
@@ -73,7 +73,7 @@ function browserUrl(item: SourceItem): string {
           <div v-else-if="props.item.playerUrl" class="w-full">
             <iframe
               :src="props.item.playerUrl"
-              class="w-full aspect-video rounded-field bg-black border-0"
+              class="w-full aspect-video rounded-field bg-neutral border-0"
               allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
               sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-downloads"
             />

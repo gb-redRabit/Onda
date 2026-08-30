@@ -63,7 +63,7 @@ async function applyProperties() {
 <template>
   <Teleport to="body">
     <div
-      class="fixed inset-0 z-9999 bg-black/50 flex items-center justify-center"
+      class="fixed inset-0 z-9999 bg-neutral/50 flex items-center justify-center"
       @click.self="closeProperties"
     >
       <div

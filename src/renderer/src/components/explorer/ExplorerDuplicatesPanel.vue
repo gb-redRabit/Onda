@@ -171,7 +171,7 @@ function revealDupFile(path: string) {
         {{ $t('explorer.duplicatesSelectAll') }}
       </button>
       <button
-        class="fx-noise flex-1 px-2 py-1.5 fx-depth rounded-field text-[11px] bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors flex items-center justify-center gap-1 disabled:opacity-40 disabled:pointer-events-none"
+        class="fx-noise flex-1 px-2 py-1.5 fx-depth rounded-field text-[11px] bg-error/15 text-error hover:bg-error/25 transition-colors flex items-center justify-center gap-1 disabled:opacity-40 disabled:pointer-events-none"
         :disabled="dupSelected.size === 0"
         @click="deleteSelectedDuplicates"
       >

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useVirtualizer } from '@tanstack/vue-virtual';
 import { Images } from '@lucide/vue';
-import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
 import type { MediaFile } from '@renderer/types/media';
+import { useLibraryContextMenu } from '@renderer/composables/useLibraryContextMenu';
+import { useThumbnails } from '@renderer/composables/useThumbnails';
 
 const props = defineProps<{
   images: MediaFile[];
@@ -11,6 +12,15 @@ const props = defineProps<{
 const emit = defineEmits<{
   open: [index: number];
 }>();
+
+const { showImageMenu } = useLibraryContextMenu();
+const { request, getThumb } = useThumbnails(320);
+
+function onImageContext(e: MouseEvent, img: MediaFile) {
+  // znajdź index w oryginalnej liście dla viewera
+  const idx = props.images.findIndex((x) => x.path === img.path);
+  showImageMenu(e, img, () => emit('open', idx >= 0 ? idx : 0));
+}
 
 const imageGridRef = ref<HTMLElement | null>(null);
 const imageCols = ref(6);
@@ -52,6 +62,20 @@ const visibleImages = computed(() => {
   }
   return result;
 });
+
+watch(
+  () => visibleImages.value,
+  (rows) => {
+    if (!rows || !Array.isArray(rows)) return;
+    const paths: string[] = [];
+    for (const r of rows) {
+      if (!r || !Array.isArray(r.items)) continue;
+      for (const it of r.items) paths.push(it.img.path);
+    }
+    if (paths.length) request(paths);
+  },
+  { immediate: true }
+);
 
 onMounted(() => {
   updateImageCols();
@@ -103,16 +127,21 @@ onUnmounted(() => {
             :style="{ width: imageCellSize + 'px' }"
             :title="item.img.name"
             @dblclick="emit('open', item.index)"
+            @contextmenu.prevent="onImageContext($event, item.img)"
           >
             <div
               class="aspect-square bg-base-200/[var(--glass-alpha)] overflow-hidden flex items-center justify-center"
             >
               <img
-                :src="toMediaServerUrl(item.img.path)"
+                v-if="getThumb(item.img.path)"
+                :src="getThumb(item.img.path)"
                 :alt="item.img.name"
-                class="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                class="w-full h-full object-cover transition-transform duration-200 hover:scale-105 group-hover:scale-105"
                 loading="lazy"
               />
+              <div v-else class="w-full h-full flex items-center justify-center bg-base-200">
+                <Images :size="20" class="text-base-content/30" />
+              </div>
             </div>
             <div class="px-2.5 py-2 min-w-0">
               <div class="text-xs font-medium truncate">{{ item.img.name }}</div>

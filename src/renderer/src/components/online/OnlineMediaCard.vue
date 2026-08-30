@@ -233,7 +233,7 @@ onBeforeUnmount(() => {
         <!-- Platform tag (merged multi-platform grids) -->
         <span
           v-if="platformTag"
-          class="absolute top-1.5 right-1.5 px-1 py-0.5 rounded-field bg-black/70 text-[9px] font-bold pointer-events-none"
+          class="absolute top-1.5 right-1.5 px-1 py-0.5 rounded-field bg-neutral/70 text-[9px] font-bold pointer-events-none"
           :class="platformTag === 'SC' ? 'text-warning' : 'text-error'"
         >
           {{ platformTag }}
@@ -250,14 +250,14 @@ onBeforeUnmount(() => {
         <!-- Duration badge -->
         <div
           v-if="video.duration"
-          class="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded-field"
+          class="absolute bottom-1.5 right-1.5 bg-neutral/80 text-neutral-content text-[10px] px-1.5 py-0.5 rounded-field"
         >
           {{ video.duration }}
         </div>
 
         <!-- Center actions: stream and embed-on-YouTube side by side -->
         <div
-          class="absolute inset-0 z-10 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors select-none pointer-events-none"
+          class="absolute inset-0 z-10 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/30 transition-colors select-none pointer-events-none"
           :class="isPlayable ? '' : 'opacity-50'"
         >
           <div
@@ -272,7 +272,7 @@ onBeforeUnmount(() => {
             >
               <Radio :size="30" />
             </button>
-            <div v-if="!isSc" class="w-px h-16 bg-white py-5"></div>
+            <div v-if="!isSc" class="w-px h-16 bg-neutral-content py-5"></div>
             <button
               v-if="!isSc"
               type="button"

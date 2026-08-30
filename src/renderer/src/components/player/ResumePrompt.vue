@@ -13,16 +13,16 @@ defineEmits<{
 
 <template>
   <div
-    class="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 bg-black/80 border border-white/15 rounded-box px-5 py-4 flex items-center gap-4 shadow-2xl shadow-black/50"
+    class="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 bg-neutral/80 border border-white/15 rounded-box px-5 py-4 flex items-center gap-4 shadow-2xl shadow-black/50"
   >
-    <div class="text-white text-sm">
+    <div class="text-neutral-content text-sm">
       <div class="font-semibold">{{ $t('resume.title') }}</div>
-      <div class="text-white/60 text-xs mt-0.5">
+      <div class="text-neutral-content/60 text-xs mt-0.5">
         {{ formatDuration(position) }} {{ $t('resume.question') }}
       </div>
     </div>
     <button
-      class="fx-noise px-3 py-1.5 fx-depth rounded-field bg-white/15 hover:bg-white/25 text-white text-xs font-medium transition-colors"
+      class="fx-noise px-3 py-1.5 fx-depth rounded-field bg-neutral-content/15 hover:bg-neutral-content/25 text-neutral-content text-xs font-medium transition-colors"
       @click="$emit('continue')"
     >
       {{ $t('resume.continue') }}

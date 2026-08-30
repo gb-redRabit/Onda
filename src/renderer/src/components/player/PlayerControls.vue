@@ -121,7 +121,7 @@ function onSpeedPreset(v: number) {
 
 <template>
   <div
-    class="absolute bottom-0 left-0 right-0 z-20 bg-linear-to-t from-black/80 via-black/30 to-transparent pt-12 pb-6 px-6 transition-opacity"
+    class="absolute bottom-0 left-0 right-0 z-20 bg-linear-to-t from-neutral/80 via-neutral/30 to-transparent pt-12 pb-6 px-6 transition-opacity"
     :class="{ 'opacity-0': !showControls }"
   >
     <!-- seek bar -->
@@ -134,14 +134,14 @@ function onSpeedPreset(v: number) {
     />
     <div
       ref="seekBarRef"
-      class="relative w-full h-1.5 bg-white/10 rounded-full cursor-pointer hover:h-2.5 transition-[height] mb-4"
+      class="relative w-full h-1.5 bg-neutral-content/10 rounded-full cursor-pointer hover:h-2.5 transition-[height] mb-4"
       @click="onSeek"
       @mousemove="previewMouseMove"
       @mouseleave="previewMouseLeave"
     >
       <div class="h-full bg-primary/80 rounded-full relative" :style="{ width: progressPct + '%' }">
         <div
-          class="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-white shadow-lg opacity-0 hover:opacity-100 transition-opacity"
+          class="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-neutral-content shadow-lg opacity-0 hover:opacity-100 transition-opacity"
         />
       </div>
 
@@ -151,7 +151,7 @@ function onSpeedPreset(v: number) {
         :style="{ left: previewLeft + '%' }"
       >
         <div
-          class="rounded-field overflow-hidden shadow-2xl border border-white/10 bg-black"
+          class="rounded-field overflow-hidden shadow-2xl border border-white/10 bg-neutral"
           style="width: 160px; height: 90px"
         >
           <img
@@ -162,13 +162,13 @@ function onSpeedPreset(v: number) {
           />
           <div
             v-else
-            class="w-full h-full flex items-center justify-center text-[10px] text-white/50"
+            class="w-full h-full flex items-center justify-center text-[10px] text-neutral-content/50"
           >
             {{ previewTimeLabel() }}
           </div>
         </div>
         <span
-          class="mt-1 px-1.5 py-0.5 rounded-field text-[11px] font-mono tabular-nums bg-black/70 text-white"
+          class="mt-1 px-1.5 py-0.5 rounded-field text-[11px] font-mono tabular-nums bg-neutral/70 text-neutral-content"
         >
           {{ previewTimeLabel() }}
         </span>
@@ -179,14 +179,14 @@ function onSpeedPreset(v: number) {
       <!-- left: playback buttons -->
       <div class="flex items-center gap-3">
         <button
-          class="text-white/40 hover:text-white/80 transition-colors"
+          class="text-neutral-content/40 hover:text-neutral-content/80 transition-colors"
           :class="{ 'text-primary!': player.shuffle }"
           @click="player.toggleShuffle"
         >
           <Shuffle :size="16" />
         </button>
         <button
-          class="text-white/40 hover:text-white/80 transition-colors"
+          class="text-neutral-content/40 hover:text-neutral-content/80 transition-colors"
           :class="{ 'text-error!': player.isFavorite(player.currentTrack?.path || '') }"
           :title="
             player.isFavorite(player.currentTrack?.path || '')
@@ -200,27 +200,27 @@ function onSpeedPreset(v: number) {
             :fill="player.isFavorite(player.currentTrack?.path || '') ? 'currentColor' : 'none'"
           />
         </button>
-        <button class="text-white/60 hover:text-white transition-colors" @click="player.prevTrack">
+        <button class="text-neutral-content/60 hover:text-neutral-content transition-colors" @click="player.prevTrack">
           <SkipBack :size="18" fill="currentColor" />
         </button>
 
         <!-- play button — glassmorphism -->
         <div class="relative">
-          <div v-if="player.isPlaying" class="absolute inset-0 rounded-full bg-white/10 blur-lg" />
+          <div v-if="player.isPlaying" class="absolute inset-0 rounded-full bg-neutral-content/10 blur-lg" />
           <button
-            class="relative w-12 h-12 rounded-full bg-white/15 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/5"
+            class="relative w-12 h-12 rounded-full bg-neutral-content/15 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/5"
             @click="player.togglePlay"
           >
-            <Pause v-if="player.isPlaying" :size="22" class="text-white" fill="currentColor" />
-            <Play v-else :size="22" class="text-white ml-0.5" fill="currentColor" />
+            <Pause v-if="player.isPlaying" :size="22" class="text-neutral-content" fill="currentColor" />
+            <Play v-else :size="22" class="text-neutral-content ml-0.5" fill="currentColor" />
           </button>
         </div>
 
-        <button class="text-white/60 hover:text-white transition-colors" @click="player.nextTrack">
+        <button class="text-neutral-content/60 hover:text-neutral-content transition-colors" @click="player.nextTrack">
           <SkipForward :size="18" fill="currentColor" />
         </button>
         <button
-          class="text-white/40 hover:text-white/80 transition-colors"
+          class="text-neutral-content/40 hover:text-neutral-content/80 transition-colors"
           :class="{ 'text-primary!': player.repeat !== 'none' }"
           @click="player.cycleRepeat"
         >
@@ -231,14 +231,14 @@ function onSpeedPreset(v: number) {
       <!-- center: skip — time — speed -->
       <div class="flex items-center gap-4">
         <!-- skip back -->
-        <button class="text-white/40 hover:text-white transition-colors" @click="emit('skip', -10)">
+        <button class="text-neutral-content/40 hover:text-neutral-content transition-colors" @click="emit('skip', -10)">
           <ChevronLeft :size="18" />
         </button>
 
         <!-- time -->
-        <div class="flex items-center gap-2 text-white/50 text-xs font-mono tabular-nums">
+        <div class="flex items-center gap-2 text-neutral-content/50 text-xs font-mono tabular-nums">
           <span>{{ formatDuration(player.currentTime) }}</span>
-          <span class="text-white/20">/</span>
+          <span class="text-neutral-content/20">/</span>
           <span>{{ formatDuration(player.duration) }}</span>
         </div>
 
@@ -249,7 +249,7 @@ function onSpeedPreset(v: number) {
             :class="
               speed !== 1
                 ? 'text-primary bg-primary/10 hover:bg-primary/20'
-                : 'text-white/40 hover:text-white/70 bg-white/6 hover:bg-white/10'
+                : 'text-neutral-content/40 hover:text-neutral-content/70 bg-neutral-content/6 hover:bg-neutral-content/10'
             "
             :aria-haspopup="true"
             :aria-expanded="speedMenuOpen"
@@ -328,7 +328,7 @@ function onSpeedPreset(v: number) {
         </div>
 
         <!-- skip forward -->
-        <button class="text-white/40 hover:text-white transition-colors" @click="emit('skip', 10)">
+        <button class="text-neutral-content/40 hover:text-neutral-content transition-colors" @click="emit('skip', 10)">
           <ChevronRight :size="18" />
         </button>
       </div>
@@ -337,7 +337,7 @@ function onSpeedPreset(v: number) {
       <div class="flex items-center gap-2.5">
         <VideoFilterDropdown />
         <button
-          class="text-white/40 hover:text-white/80 transition-colors"
+          class="text-neutral-content/40 hover:text-neutral-content/80 transition-colors"
           :class="{ 'text-primary!': player.equalizerVisible }"
           data-eq-toggle
           @click="player.toggleEqualizer"
@@ -345,21 +345,21 @@ function onSpeedPreset(v: number) {
           <SlidersHorizontal :size="16" />
         </button>
         <button
-          class="text-white/40 hover:text-white/80 transition-colors"
+          class="text-neutral-content/40 hover:text-neutral-content/80 transition-colors"
           :class="{ 'text-primary!': player.queueVisible }"
           @click="player.toggleQueue"
         >
           <ListMusic :size="16" />
         </button>
         <SubtitleTrackSelector />
-        <button class="text-white/50 hover:text-white transition-colors" @click="player.toggleMute">
+        <button class="text-neutral-content/50 hover:text-neutral-content transition-colors" @click="player.toggleMute">
           <VolumeX v-if="player.isMuted" :size="16" />
           <Volume2 v-else :size="16" />
         </button>
 
         <!-- volume bar — accent -->
         <div
-          class="w-20 h-1 bg-white/10 rounded-full cursor-pointer hover:h-1.5 transition-[height]"
+          class="w-20 h-1 bg-neutral-content/10 rounded-full cursor-pointer hover:h-1.5 transition-[height]"
           @click="onVolumeClick"
         >
           <div

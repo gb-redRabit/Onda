@@ -90,7 +90,7 @@ function titleText(): string {
           <Square :size="12" />
         </button>
         <button
-          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-white hover:bg-red-500/80 transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-neutral-content hover:bg-error/80 transition-colors"
           :title="$t('window.close')"
           @click="close"
         >

@@ -79,7 +79,7 @@ onBeforeUnmount(() => {
           class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
           :class="
             pipPreviewOpen
-              ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+              ? 'bg-error/20 text-error hover:bg-error/30'
               : 'bg-primary text-primary-content hover:bg-primary/90'
           "
           @click="togglePreview"

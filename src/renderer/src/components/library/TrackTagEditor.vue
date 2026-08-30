@@ -158,11 +158,11 @@ async function save() {
   <Teleport to="body">
     <div
       v-if="track"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-neutral/40"
       @click.self="emit('close')"
     >
       <div
-        class="w-full max-w-lg mx-4 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300 shadow-xl overflow-hidden"
+        class="w-full max-w-lg mx-4 rounded-box bg-neutral border border-base-300 shadow-2xl overflow-hidden backdrop-blur-xl"
       >
         <div class="flex items-center justify-between px-5 py-4 border-b border-base-300">
           <h2 class="text-base font-bold">{{ $t('tags.title') }}</h2>

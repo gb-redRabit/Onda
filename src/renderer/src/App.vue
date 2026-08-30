@@ -223,6 +223,19 @@ function onWindowBlur() {
     player.pause();
   }
 }
+
+const contextMenuStyle = computed(() => {
+  const m = ui.contextMenu;
+  if (!m) return {};
+  const MENU_W = 220;
+  const ITEM_H = 32;
+  const estimatedH = m.items.length * ITEM_H + 16;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const x = Math.min(m.x, vw - MENU_W - 8);
+  const y = Math.min(m.y, vh - estimatedH - 8);
+  return { left: Math.max(8, x) + 'px', top: Math.max(8, y) + 'px', maxHeight: vh - 16 + 'px' };
+});
 </script>
 
 <template>
@@ -268,8 +281,8 @@ function onWindowBlur() {
     <div
       v-if="ui.contextMenu"
       id="context-menu"
-      class="fixed z-50 bg-neutral border border-neutral-content/20 rounded-box shadow-2xl shadow-black/50 py-1.5 min-w-45"
-      :style="{ left: ui.contextMenu.x + 'px', top: ui.contextMenu.y + 'px' }"
+      class="fixed z-50 bg-neutral border border-neutral-content/20 rounded-box shadow-2xl shadow-black/50 py-1.5 min-w-45 max-h-[80vh] overflow-y-auto"
+      :style="contextMenuStyle"
       @click.stop
     >
       <template v-for="(item, idx) in ui.contextMenu.items" :key="idx">

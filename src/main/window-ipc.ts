@@ -41,7 +41,14 @@ function createExplorerWindow(initialPath?: string): number | null {
     });
     const id = win.id;
     explorerWindows.set(id, win);
-    win.on('ready-to-show', () => win.show());
+    win.on('ready-to-show', () => {
+      win.show();
+      win.focus();
+      win.moveTop();
+      // upewnij się, że okno jest nad główną aplikacją
+      win.setAlwaysOnTop(true);
+      setTimeout(() => win.setAlwaysOnTop(false), 100);
+    });
     win.on('closed', () => {
       explorerWindows.delete(id);
     });
@@ -118,7 +125,11 @@ export function registerWindowHandlers(context: {
     imageViewerWindow.setMenuBarVisibility(false);
     imageViewerWindow.on('ready-to-show', () => {
       imageViewerWindow?.show();
+      imageViewerWindow?.focus();
+      imageViewerWindow?.moveTop();
       imageViewerWindow?.setFullScreen(true);
+      imageViewerWindow?.setAlwaysOnTop(true);
+      setTimeout(() => imageViewerWindow?.setAlwaysOnTop(false), 100);
     });
     imageViewerWindow.on('closed', () => {
       imageViewerWindow = null;

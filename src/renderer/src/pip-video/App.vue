@@ -51,7 +51,7 @@ const { subsVisible, toggleSubtitles } = sub;
   >
     <video
       ref="videoRef"
-      class="flex-1 w-full object-contain bg-black"
+      class="flex-1 w-full object-contain bg-neutral"
       :style="videoFilter !== 'none' ? { filter: videoFilter } : {}"
       preload="auto"
       @loadedmetadata="onVideoMeta"
@@ -119,7 +119,7 @@ const { subsVisible, toggleSubtitles } = sub;
           @click="toggleSubtitles"
         >
           <div
-            class="w-3 h-3 rounded-full bg-white absolute top-0.5 transition-all"
+            class="w-3 h-3 rounded-full bg-neutral-content absolute top-0.5 transition-all"
             :class="subsVisible ? 'left-4' : 'left-0.5'"
           />
         </button>
@@ -193,7 +193,7 @@ const { subsVisible, toggleSubtitles } = sub;
         :style="{ left: previewLeft + '%' }"
       >
         <div
-          class="rounded-field overflow-hidden shadow-lg border border-white/10 bg-black"
+          class="rounded-field overflow-hidden shadow-lg border border-white/10 bg-neutral"
           :style="{ width: '96px', height: '54px' }"
         >
           <img
@@ -204,12 +204,12 @@ const { subsVisible, toggleSubtitles } = sub;
           />
           <div
             v-else
-            class="w-full h-full flex items-center justify-center text-[9px] text-white/50"
+            class="w-full h-full flex items-center justify-center text-[9px] text-neutral-content/50"
           >
             {{ previewTimeLabel() }}
           </div>
         </div>
-        <span class="mt-1 text-[10px] text-white/80 tabular-nums bg-black/60 px-1 rounded-field">
+        <span class="mt-1 text-[10px] text-neutral-content/80 tabular-nums bg-neutral/60 px-1 rounded-field">
           {{ previewTimeLabel() }}
         </span>
       </div>

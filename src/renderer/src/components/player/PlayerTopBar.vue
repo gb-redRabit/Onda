@@ -16,29 +16,29 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-linear-to-b from-black/80 to-transparent transition-opacity"
+    class="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-linear-to-b from-neutral/80 to-transparent transition-opacity"
     :class="{ 'opacity-0': !showControls }"
   >
     <button
-      class="fx-noise p-2 fx-depth rounded-field bg-white/10 hover:bg-white/20 text-white transition-colors"
+      class="fx-noise p-2 fx-depth rounded-field bg-neutral-content/10 hover:bg-neutral-content/20 text-neutral-content transition-colors"
       @click="emit('back')"
     >
       <ArrowLeft :size="20" />
     </button>
     <div class="text-center flex-1">
-      <p class="text-white text-sm font-medium truncate">
+      <p class="text-neutral-content text-sm font-medium truncate">
         {{ track?.metadata?.title || track?.name || $t('playerView.noVideo') }}
       </p>
-      <p class="text-white/50 text-xs">{{ track?.metadata?.artist || '' }}</p>
+      <p class="text-neutral-content/50 text-xs">{{ track?.metadata?.artist || '' }}</p>
     </div>
     <button
-      class="fx-noise p-2 fx-depth rounded-field bg-white/10 mr-2 hover:bg-white/20 text-white transition-colors"
+      class="fx-noise p-2 fx-depth rounded-field bg-neutral-content/10 mr-2 hover:bg-neutral-content/20 text-neutral-content transition-colors"
       @click="emit('pip')"
     >
       <PictureInPicture :size="18" />
     </button>
     <button
-      class="fx-noise p-2 fx-depth rounded-field bg-white/10 hover:bg-white/20 text-white transition-colors"
+      class="fx-noise p-2 fx-depth rounded-field bg-neutral-content/10 hover:bg-neutral-content/20 text-neutral-content transition-colors"
       @click="emit('fullscreen')"
     >
       <Maximize2 :size="18" />

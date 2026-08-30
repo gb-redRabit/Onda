@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useI18n } from 'vue-i18n';
 import type { MediaFile } from '@renderer/types/media';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
-import { useUIStore } from '@renderer/stores/ui';
 import { Plus, Play, Trash2, ListMusic, Edit3, Heart } from '@lucide/vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
+import { formatDuration } from '@renderer/utils/formatters';
+import { useLibraryContextMenu } from '@renderer/composables/useLibraryContextMenu';
 
-const { t } = useI18n();
+const { showTrackMenu } = useLibraryContextMenu();
 
 const props = defineProps<{
   track: MediaFile;
@@ -22,7 +22,6 @@ const emit = defineEmits<{
 
 const library = useLibraryStore();
 const player = usePlayerStore();
-const ui = useUIStore();
 const showPlaylistMenu = ref(false);
 const playlistBtn = ref<HTMLElement | null>(null);
 
@@ -64,30 +63,7 @@ function togglePlaylist(e: MouseEvent) {
 }
 
 function onContextMenu(e: MouseEvent) {
-  e.preventDefault();
-  ui.showContextMenu(e.clientX, e.clientY, [
-    { label: t('common.play'), action: () => playNow() },
-    { label: t('common.addToQueue'), action: () => player.addToQueue(props.track) },
-    { label: t('common.editTags'), action: () => emit('edit', props.track) },
-    {
-      label: t('common.showInFolder'),
-      action: () => window.api?.invoke('shell:showItemInFolder', props.track.path)
-    },
-    ...(library.playlists.length > 0 ? [{ label: '—', separator: true } as const] : []),
-    ...library.playlists.map((p) => {
-      const inPlaylist = p.tracks.some((t) => t.path === props.track.path);
-      return {
-        label: `${inPlaylist ? '−' : '+'} ${p.name}`,
-        action: () => {
-          if (inPlaylist) {
-            library.removeFromPlaylist(p.id, props.track.path);
-          } else {
-            library.addToPlaylist(p.id, props.track);
-          }
-        }
-      };
-    })
-  ]);
+  showTrackMenu(e, props.track, { onEdit: () => emit('edit', props.track) });
 }
 
 function onDragStart(e: DragEvent) {
@@ -105,49 +81,51 @@ function onDragStart(e: DragEvent) {
 
 <template>
   <div
-    class="group flex items-center gap-3 px-3 py-2 rounded-box hover:bg-base-content/10 transition-colors cursor-pointer"
+    class="group flex items-center gap-3 px-3 py-2.5 rounded-field hover:bg-base-100 border border-transparent hover:border-base-300 hover:shadow-sm transition-all duration-150 cursor-pointer"
     draggable="true"
     @dblclick="playNow"
     @contextmenu.prevent="onContextMenu"
     @dragstart="onDragStart"
   >
-    <div class="relative shrink-0 w-9 h-9 rounded-field overflow-hidden bg-base-100">
+    <div class="relative shrink-0 w-10 h-10 rounded-field overflow-hidden bg-base-200 border border-base-300">
       <MediaCover :path="props.track.path" :size="14" :autoplay="true" fallback="play" />
       <button
-        class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 transition-colors"
+        class="absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/50 transition-colors"
         @click="playNow"
       >
-        <Play :size="16" class="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+        <Play :size="15" class="text-neutral-content opacity-0 group-hover:opacity-100 transition-opacity ml-0.5 fill-neutral-content" />
       </button>
     </div>
 
     <div class="flex-1 min-w-0">
-      <div class="text-sm font-medium truncate">{{ track.metadata?.title || track.name }}</div>
-      <div class="text-xs text-base-content/50 truncate">
-        {{
-          track.metadata?.artist || track.metadata?.album
-            ? `${track.metadata?.artist || $t('common.unknown')} · ${track.metadata?.album || ''}`
-            : track.extension
-        }}
+      <div class="text-sm font-medium truncate leading-none">{{ track.metadata?.title || track.name }}</div>
+      <div class="text-xs text-base-content/50 truncate mt-1 flex items-center gap-1">
+        <span class="truncate">{{ track.metadata?.artist || $t('common.unknown') }}</span>
+        <span v-if="track.metadata?.album" class="opacity-40">·</span>
+        <span v-if="track.metadata?.album" class="truncate opacity-80">{{ track.metadata.album }}</span>
+        <span v-if="!track.metadata?.artist && !track.metadata?.album" class="opacity-60">{{ track.extension }}</span>
       </div>
     </div>
 
-    <div
-      class="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-    >
+    <div class="hidden sm:block text-xs font-mono text-base-content/40 tabular-nums shrink-0 w-12 text-right">
+      {{ formatDuration(track.duration, '—') }}
+    </div>
+
+    <div class="shrink-0 flex items-center gap-1">
+
       <button
         class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
         :class="
           player.isFavorite(track.path)
-            ? 'text-error hover:text-error/90'
-            : 'text-base-content/50 hover:text-base-content hover:bg-base-100'
+            ? 'text-error opacity-100 hover:text-error/90'
+            : 'text-base-content/50 opacity-0 group-hover:opacity-100 hover:text-base-content hover:bg-base-100'
         "
         :title="player.isFavorite(track.path) ? $t('common.removeFav') : $t('common.addFav')"
         @click.stop="player.toggleFavorite(track.path)"
       >
         <Heart :size="14" :fill="player.isFavorite(track.path) ? 'currentColor' : 'none'" />
       </button>
-      <div v-if="showPlaylist" ref="playlistBtn" class="relative">
+      <div v-if="showPlaylist" ref="playlistBtn" class="relative opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-100 transition-colors"
           @click="togglePlaylist"
@@ -180,7 +158,7 @@ function onDragStart(e: DragEvent) {
       </div>
 
       <button
-        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-100 transition-colors"
+        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-100 transition-colors opacity-0 group-hover:opacity-100"
         :title="$t('common.editTags')"
         @click="emit('edit', track)"
       >
@@ -189,7 +167,7 @@ function onDragStart(e: DragEvent) {
 
       <button
         v-if="playlistId"
-        class="fx-noise p-1.5 fx-depth rounded-field text-red-400 hover:text-red-300 hover:bg-base-100 transition-colors"
+        class="fx-noise p-1.5 fx-depth rounded-field text-error hover:text-error/80 hover:bg-base-100 transition-colors"
         @click="removeFromPlaylist"
       >
         <Trash2 :size="14" />

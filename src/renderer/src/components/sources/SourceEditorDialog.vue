@@ -280,7 +280,7 @@ async function onTestTable(idx: number) {
 <template>
   <Teleport to="body">
     <div
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-neutral/70 p-6"
       @click.self="emit('close')"
     >
       <div

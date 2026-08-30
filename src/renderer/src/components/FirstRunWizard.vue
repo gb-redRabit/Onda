@@ -77,7 +77,7 @@ function skipAll() {
 
 <template>
   <div
-    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+    class="fixed inset-0 z-50 bg-neutral/60 backdrop-blur-sm flex items-center justify-center p-6"
     @click.self="skipAll"
   >
     <div

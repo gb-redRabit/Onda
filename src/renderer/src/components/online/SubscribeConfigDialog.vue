@@ -329,7 +329,7 @@ async function pickCustomCover() {
 <template>
   <Teleport to="body">
     <div
-      class="fixed inset-0 z-9999 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      class="fixed inset-0 z-9999 bg-neutral/60 backdrop-blur-sm flex items-center justify-center p-4"
       @click.self="close"
     >
       <div

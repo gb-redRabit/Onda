@@ -412,8 +412,14 @@ const api = {
     ipcRenderer.invoke('musicbrainz:lookupRelease', releaseId),
   musicbrainzGetCoverData: (
     releaseId: string
-  ): Promise<{ success: boolean; data?: number[]; mime?: string; error?: string }> =>
+  ): Promise<{ success: boolean; data?: number[]; mime?: string; error?: string; rateLimited?: boolean }> =>
     ipcRenderer.invoke('musicbrainz:getCoverData', releaseId),
+  musicbrainzAutodetect: (
+    query: string
+  ): Promise<{ success: boolean; match: 'certain' | 'ambiguous' | 'none'; releases: MusicbrainzRelease[]; error?: string }> =>
+    ipcRenderer.invoke('musicbrainz:autodetect', query),
+  musicbrainzBatchApply: (payload: unknown): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('musicbrainz:batchApply', payload),
   getFilePath: (file: File): string => webUtils.getPathForFile(file),
   listEmbeddedSubtitles: (
     filePath: string

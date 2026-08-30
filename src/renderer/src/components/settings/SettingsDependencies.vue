@@ -23,7 +23,7 @@ const { deps, refreshAll, runInstall, uninstallDependency, cancelInstall } = use
           <div class="flex items-center gap-3 min-w-0">
             <div
               class="w-2 h-2 rounded-full shrink-0"
-              :class="dep.installed ? 'bg-green-500' : 'bg-red-500'"
+              :class="dep.installed ? 'bg-success' : 'bg-error'"
             />
             <div class="min-w-0">
               <div class="text-sm font-medium flex items-center gap-2">
@@ -64,11 +64,11 @@ const { deps, refreshAll, runInstall, uninstallDependency, cancelInstall } = use
                 </div>
                 <div
                   v-else-if="dep.installed && dep.tool === 'yt-dlp'"
-                  class="text-xs text-green-500"
+                  class="text-xs text-success"
                 >
                   {{ $t('settings.depUpToDate') }}
                 </div>
-                <div v-else-if="!dep.installed" class="text-xs text-red-500">
+                <div v-else-if="!dep.installed" class="text-xs text-error">
                   {{ $t('settings.depMissing') }}
                 </div>
               </div>
@@ -89,7 +89,7 @@ const { deps, refreshAll, runInstall, uninstallDependency, cancelInstall } = use
                 </button>
                 <button
                   v-if="dep.installed"
-                  class="fx-noise px-3 py-1.5 fx-depth rounded-field border border-red-500/40 text-red-500 text-xs font-medium hover:bg-red-500/10 transition-colors"
+                  class="fx-noise px-3 py-1.5 fx-depth rounded-field border border-red-500/40 text-error text-xs font-medium hover:bg-error/10 transition-colors"
                   @click="uninstallDependency(dep)"
                 >
                   {{ $t('settings.depUninstall') }}
@@ -109,7 +109,7 @@ const { deps, refreshAll, runInstall, uninstallDependency, cancelInstall } = use
             />
           </div>
         </div>
-        <div v-if="dep.error" class="mt-2 text-xs text-red-500 break-words">{{ dep.error }}</div>
+        <div v-if="dep.error" class="mt-2 text-xs text-error break-words">{{ dep.error }}</div>
       </SettingsCard>
     </div>
   </SettingsPanel>

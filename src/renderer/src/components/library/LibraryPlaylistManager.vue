@@ -175,7 +175,7 @@ function playAll() {
             <Play :size="12" /> {{ $t('library.playAll') }}
           </button>
           <button
-            class="fx-noise p-1.5 fx-depth rounded-field text-red-400 hover:text-red-300 hover:bg-base-100 transition-colors"
+            class="fx-noise p-1.5 fx-depth rounded-field text-error hover:text-error/80 hover:bg-base-100 transition-colors"
             @click="deleteSelected"
           >
             <Trash2 :size="14" />

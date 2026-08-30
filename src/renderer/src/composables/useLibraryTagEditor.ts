@@ -28,10 +28,18 @@ interface LibraryMbApplyData {
 
 function persistScanned(library: ReturnType<typeof useLibraryStore>) {
   try {
-    const files = structuredClone(library.tracks);
-    const folderTypes = structuredClone(library.folderTypes);
-    window.api
-      ?.invoke('library:saveScanned', { files, folderTypes })
+    // używaj JSON jako fallback dla proxy / Uint8Array które structuredClone czasem odrzuca w rendererze
+    let files: unknown = null;
+    let folderTypes: unknown = null;
+    try {
+      files = structuredClone(library.tracks as unknown as object);
+      folderTypes = structuredClone(library.folderTypes as unknown as object);
+    } catch {
+      files = JSON.parse(JSON.stringify(library.tracks));
+      folderTypes = JSON.parse(JSON.stringify(library.folderTypes));
+    }
+    (window.api as unknown as { invoke: (ch: string, data: unknown) => Promise<unknown> })
+      ?.invoke('library:saveScanned', { files, folderTypes } as unknown as object)
       .catch((err) => logger.error('Library', 'saveScanned', err));
   } catch (_e) {
     /* serialization failed silently */
@@ -78,21 +86,40 @@ export function useLibraryTagEditor(
 
   function onMBApply(data: LibraryMbApplyData) {
     if (!editingTrack.value) return;
-    editingTrack.value.metadata = {
-      ...(editingTrack.value.metadata || {}),
-      title: data.title || editingTrack.value.metadata?.title,
-      artist: data.artist || editingTrack.value.metadata?.artist,
-      album: data.album || editingTrack.value.metadata?.album,
-      year: data.year || editingTrack.value.metadata?.year,
-      genre: data.genre || editingTrack.value.metadata?.genre,
-      track: data.track || editingTrack.value.metadata?.track
-    };
+    const targetPath = editingTrack.value.path;
+    // użyj updateTrack żeby triggerRef i cache invalidation zadziałały poprawnie
+    library.updateTrack(
+      targetPath,
+      (track) => {
+        track.metadata = {
+          ...(track.metadata || {}),
+          title: data.title || track.metadata?.title,
+          artist: data.artist || track.metadata?.artist,
+          album: data.album || track.metadata?.album,
+          year: data.year || track.metadata?.year,
+          genre: data.genre || track.metadata?.genre,
+          track: data.track || track.metadata?.track
+        };
+      },
+      true
+    );
     if (data.coverData) {
-      window.api?.writeCover(editingTrack.value.path, data.coverData);
-      player.invalidateCoverCache(editingTrack.value.path);
+      try {
+        // wyślij jako Uint8Array (wydajniejsze niż number[] dla structuredClone)
+        const buf = new Uint8Array(data.coverData);
+        // @ts-ignore — preload akceptuje number[]|string, Uint8Array też przejdzie jako cloneable
+        window.api?.writeCover(targetPath, Array.from(buf) as unknown as number[]);
+      } catch (e) {
+        logger.warn('Library', 'writeCover failed', e);
+      }
+      try {
+        player.invalidateCoverCache(targetPath);
+      } catch {}
     }
-    library.refreshDerived();
-    persistScanned(library);
+    // updateTrack już zrobił refreshDerived, ale dla pewności
+    try {
+      persistScanned(library);
+    } catch {}
     showingMBLookup.value = false;
     editingTrack.value = null;
   }

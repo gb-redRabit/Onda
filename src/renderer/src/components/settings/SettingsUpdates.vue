@@ -153,7 +153,7 @@ function onInstall(): void {
       </div>
 
       <div v-else-if="state.status === 'downloaded'" class="flex items-center justify-between py-1">
-        <div class="text-sm text-green-500">
+        <div class="text-sm text-success">
           {{ $t('settings.updateReady') }} v{{ state.version }}
         </div>
         <button
@@ -164,7 +164,7 @@ function onInstall(): void {
         </button>
       </div>
 
-      <div v-else-if="state.status === 'not-available'" class="text-sm text-green-500 py-1">
+      <div v-else-if="state.status === 'not-available'" class="text-sm text-success py-1">
         {{ $t('settings.updateUpToDate') }}
       </div>
 
@@ -172,7 +172,7 @@ function onInstall(): void {
         {{ $t('settings.checking') }}…
       </div>
 
-      <div v-else-if="state.status === 'error'" class="text-xs text-red-500 py-1 wrap-break-word">
+      <div v-else-if="state.status === 'error'" class="text-xs text-error py-1 wrap-break-word">
         {{ state.error }}
       </div>
 

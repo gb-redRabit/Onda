@@ -40,11 +40,11 @@ function icon(type: string) {
 function color(type: string) {
   switch (type) {
     case 'success':
-      return 'text-green-400';
+      return 'text-success';
     case 'warning':
       return 'text-yellow-400';
     case 'error':
-      return 'text-red-400';
+      return 'text-error';
     default:
       return 'text-primary';
   }

@@ -111,7 +111,7 @@ const emit = defineEmits<{
         @click="emit('update:loop', !loop)"
       >
         <div
-          class="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform"
+          class="absolute top-0.5 w-3 h-3 rounded-full bg-neutral-content transition-transform"
           :class="loop ? 'translate-x-3.5' : 'translate-x-0.5'"
         />
       </button>
@@ -127,7 +127,7 @@ const emit = defineEmits<{
         @click="emit('update:shuffle', !shuffle)"
       >
         <div
-          class="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform"
+          class="absolute top-0.5 w-3 h-3 rounded-full bg-neutral-content transition-transform"
           :class="shuffle ? 'translate-x-3.5' : 'translate-x-0.5'"
         />
       </button>
@@ -143,7 +143,7 @@ const emit = defineEmits<{
         @click="emit('update:kenBurns', !kenBurns)"
       >
         <div
-          class="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform"
+          class="absolute top-0.5 w-3 h-3 rounded-full bg-neutral-content transition-transform"
           :class="kenBurns ? 'translate-x-3.5' : 'translate-x-0.5'"
         />
       </button>
@@ -161,7 +161,7 @@ const emit = defineEmits<{
         @click="emit('update:autoHide', !autoHide)"
       >
         <div
-          class="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform"
+          class="absolute top-0.5 w-3 h-3 rounded-full bg-neutral-content transition-transform"
           :class="autoHide ? 'translate-x-3.5' : 'translate-x-0.5'"
         />
       </button>

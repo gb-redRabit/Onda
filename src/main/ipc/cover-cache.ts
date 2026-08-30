@@ -368,7 +368,28 @@ export async function extractAndCacheCover(
 ): Promise<{ type: 'video' | 'image' | null; data: string | null }> {
   const siblingVideo = findSiblingVideo(filePath);
   if (siblingVideo) {
-    return { type: 'video', data: siblingVideo };
+    // Audio bez okładki + obok .mp4 o tej samej nazwie → wyciągnij klatkę JPEG (nie ścieżkę video)
+    const cachedSibling = await getCachedCover(siblingVideo);
+    if (cachedSibling) return cachedSibling;
+    const frame = await extractVideoFrame(siblingVideo);
+    if (frame) {
+      const s = await stat(siblingVideo).catch(() => null);
+      cacheSet(coverResultCache, siblingVideo, {
+        result: { type: 'image', data: frame },
+        mtimeMs: s?.mtimeMs ?? Date.now(),
+        checkedAt: Date.now()
+      });
+      const match = frame.match(/^data:image\/(\w+);base64,(.+)$/);
+      if (match) {
+        const imgExt = match[1] === 'jpeg' ? 'jpg' : match[1];
+        const buf = Buffer.from(match[2], 'base64');
+        savePersistentCover(siblingVideo, buf, imgExt);
+      }
+      // zwróć kadr jako okładkę audio, ale cache siblinga już gotowy
+      return { type: 'image', data: frame };
+    }
+    // fallback — brak kadru, nie zwracaj ścieżki video (psuła <img src="*.mp4">)
+    return { type: null, data: null };
   }
 
   // A previous caller may already be extracting this file — wait for it and

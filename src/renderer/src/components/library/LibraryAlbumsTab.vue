@@ -5,6 +5,7 @@ import { Disc3, LayoutList, LayoutGrid } from '@lucide/vue';
 import type { MediaFile } from '@renderer/types/media';
 import { useVirtualGrid } from '@renderer/composables/useVirtualGrid';
 import AlbumCard from '@renderer/components/library/AlbumCard.vue';
+import MediaCover from '@renderer/components/MediaCover.vue';
 
 const props = defineProps<{
   albums: Array<[string, MediaFile[]]>;
@@ -21,7 +22,7 @@ const albumListVirtualizer = useVirtualizer({
     return props.albums.length;
   },
   getScrollElement: () => albumListRef.value,
-  estimateSize: () => 48,
+  estimateSize: () => 56,
   overscan: 10
 });
 
@@ -33,7 +34,7 @@ const albumRowVirtualizer = useVirtualizer({
     return Math.ceil(props.albums.length / grid.cols.value);
   },
   getScrollElement: () => albumGridRef.value,
-  estimateSize: () => 210,
+  estimateSize: () => 256,
   overscan: 3
 });
 
@@ -119,18 +120,16 @@ onUnmounted(() => grid.destroy());
             }"
           >
             <div
-              class="flex items-center gap-3 px-4 py-2 hover:bg-base-content/10 transition-colors cursor-pointer h-full"
+              class="flex items-center gap-3 px-4 py-2 hover:bg-base-100 border border-transparent hover:border-base-300 hover:shadow-sm rounded-field transition-all cursor-pointer h-full mx-2"
               @click="emit('playTracks', albums[v.index][1])"
             >
-              <div
-                class="w-8 h-8 rounded-field bg-primary/10 flex items-center justify-center shrink-0"
-              >
-                <Disc3 :size="14" class="text-primary" />
+              <div class="w-10 h-10 rounded-field overflow-hidden bg-base-200 border border-base-300 shrink-0 flex items-center justify-center">
+                <MediaCover :path="albums[v.index][1][0]?.path" :size="16" :render-as-video="false" fallback="disc" />
               </div>
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-medium truncate">{{ albums[v.index][0] }}</div>
-                <div class="text-xs text-base-content/50">
-                  {{ albums[v.index][1].length }} {{ $t('library.tracksCount') }}
+                <div class="text-xs text-base-content/50 truncate">
+                  {{ albums[v.index][1][0]?.metadata?.artist || $t('common.unknown') }} · {{ albums[v.index][1].length }} {{ $t('library.tracksCount') }}
                 </div>
               </div>
             </div>

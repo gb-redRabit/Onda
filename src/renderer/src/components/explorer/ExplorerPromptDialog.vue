@@ -38,7 +38,7 @@ function onKeydown(e: KeyboardEvent) {
   <Teleport to="body">
     <div
       v-if="visible"
-      class="fixed inset-0 z-9999 bg-black/50 flex items-center justify-center"
+      class="fixed inset-0 z-9999 bg-neutral/50 flex items-center justify-center"
       @click.self="emit('cancel')"
     >
       <div class="bg-base-100 border border-base-300 rounded-box p-5 min-w-75 shadow-2xl">

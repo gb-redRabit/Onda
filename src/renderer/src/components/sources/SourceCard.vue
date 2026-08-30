@@ -39,27 +39,27 @@ const typeIcon = {
       </div>
       <div
         v-if="downloadable"
-        class="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-field bg-black/70 text-white text-[10px] font-medium uppercase"
+        class="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-field bg-neutral/70 text-neutral-content text-[10px] font-medium uppercase"
       >
         <component :is="typeIcon[item.type]" :size="10" />
         <span>{{ item.type }}</span>
       </div>
       <div
         v-if="item.duration"
-        class="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded-field"
+        class="absolute bottom-1.5 right-1.5 bg-neutral/80 text-neutral-content text-[10px] px-1.5 py-0.5 rounded-field"
       >
         {{ item.duration }}
       </div>
       <div
-        class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors"
+        class="pointer-events-none absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/30 transition-colors"
       >
         <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-          <Eye :size="28" class="text-white drop-shadow" />
+          <Eye :size="28" class="text-neutral-content drop-shadow" />
         </div>
       </div>
       <button
         v-if="downloadable && (item.mediaUrl || item.playerUrl)"
-        class="fx-noise absolute bottom-1.5 left-1.5 opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-black/70 text-white text-[10px] hover:bg-black/90 disabled:opacity-60"
+        class="fx-noise absolute bottom-1.5 left-1.5 opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-neutral/70 text-neutral-content text-[10px] hover:bg-neutral/90 disabled:opacity-60"
         :title="$t('sources.download')"
         :disabled="downloading || (!item.mediaUrl && !item.playerUrl)"
         @click.stop="emit('download', item)"

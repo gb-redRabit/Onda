@@ -1,10 +1,18 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { Music2, Folder, ChevronDown } from '@lucide/vue';
+import { computed, ref, watch } from 'vue';
+import { Folder, ChevronDown, Shuffle, Play, ExternalLink } from '@lucide/vue';
 import { useLibraryStore } from '@renderer/stores/library';
+import { usePlayerStore } from '@renderer/stores/player';
+import { canonicalPath, basename, isUnderPath } from '@renderer/utils/path';
+import { useLibraryContextMenu } from '@renderer/composables/useLibraryContextMenu';
+import { formatDuration } from '@renderer/utils/formatters';
+import { getAllTracksIndexed } from '@renderer/utils/libraryIndex';
 import DirNode from '@renderer/components/library/DirNode.vue';
+import LibraryFolderTile from '@renderer/components/library/LibraryFolderTile.vue';
 
 const library = useLibraryStore();
+const player = usePlayerStore();
+const { showFolderMenu } = useLibraryContextMenu();
 
 const props = defineProps<{
   query: string;
@@ -13,65 +21,83 @@ const emit = defineEmits<{
   playFolder: [folderPath: string];
 }>();
 
-const expandedPaths = ref(new Set<string>());
+// persystencja rozwinięć
+const STORAGE_KEY = 'onda.libraryExpanded';
+function loadExpanded(): Set<string> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return new Set(JSON.parse(raw));
+  } catch {}
+  return new Set<string>();
+}
+const expandedPaths = ref<Set<string>>(loadExpanded());
+watch(
+  () => [...expandedPaths.value].sort().join('|'),
+  () => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...expandedPaths.value]));
+    } catch {}
+  }
+);
 
 function togglePath(fp: string) {
   const s = new Set(expandedPaths.value);
-  if (s.has(fp)) s.delete(fp);
-  else s.add(fp);
+  const key = canonicalPath(fp);
+  // keep original paths but compare canonical
+  const has = [...s].some((v) => canonicalPath(v) === key);
+  if (has) {
+    for (const v of [...s]) if (canonicalPath(v) === key) s.delete(v);
+  } else s.add(fp);
   expandedPaths.value = s;
 }
-
-let folderCountsSig = '';
-let folderCountsCache: Map<string, number> | null = null;
-
-const folderFileCounts = computed(() => {
-  const folders = library.folders;
-  if (folders.length === 0) return new Map<string, number>();
-
-  let h = 0x811c9dc5;
-  for (const track of library.tracks) {
-    const p = track.path;
-    for (let j = 0; j < p.length; j++) {
-      h ^= p.charCodeAt(j);
-      h = (h * 0x01000193) >>> 0;
-    }
-    h = (h ^ (h >>> 16)) >>> 0;
-  }
-  const sig = `f:${folders.join('\u0000')}|h:${h}`;
-  if (folderCountsSig === sig && folderCountsCache) return folderCountsCache;
-
-  const counts = new Map<string, number>();
-  const normalizedToOriginal = new Map<string, string>();
-  for (const fp of folders) normalizedToOriginal.set(fp.replace(/\\/g, '/'), fp);
-  for (const track of library.tracks) {
-    const normPath = track.path.replace(/\\/g, '/');
-    let seenKey: string | null = null;
-    for (let idx = normPath.lastIndexOf('/'); idx > 0; idx = normPath.lastIndexOf('/', idx - 1)) {
-      const ancestor = normPath.slice(0, idx);
-      const originalKey = normalizedToOriginal.get(ancestor);
-      if (originalKey && originalKey !== seenKey) {
-        counts.set(originalKey, (counts.get(originalKey) || 0) + 1);
-        seenKey = originalKey;
-      }
-    }
-  }
-
-  folderCountsSig = sig;
-  folderCountsCache = counts;
-  return counts;
-});
-
-const allFolderTracks = computed(() => {
-  const q = props.query.toLowerCase();
-  return library.tracks.filter(
-    (track) => !q || track.name.toLowerCase().includes(q) || track.path.toLowerCase().includes(q)
-  );
-});
-
-function dirName(fp: string): string {
-  return fp.split('\\').pop() || fp;
+function isExpanded(fp: string) {
+  const key = canonicalPath(fp);
+  return [...expandedPaths.value].some((v) => canonicalPath(v) === key);
 }
+
+function shuffleFolder(fp: string) {
+  const tracks = getAllTracksIndexed(fp, library.tracks, library.folders).filter((t) => t.type !== 'image');
+  if (tracks.length === 0) return;
+  const shuffled = [...tracks];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  player.clearQueue();
+  if (shuffled.length > 1) player.addToQueueMultiple(shuffled.slice(1));
+  player.setTrack(shuffled[0]);
+  player.play();
+}
+
+function showInExplorer(fp: string) {
+  window.api?.invoke('shell:showItemInFolder', fp);
+}
+
+interface FolderMeta {
+  path: string;
+  name: string;
+  type: string;
+  count: number;
+  duration: number;
+  mosaicTracks: typeof library.tracks;
+  matchesQuery: boolean;
+}
+
+const folderMetas = computed<FolderMeta[]>(() => {
+  const q = props.query.toLowerCase().trim();
+  return library.folders.map((fp) => {
+    const all = getAllTracksIndexed(fp, library.tracks, library.folders);
+    const count = all.length;
+    const duration = all.reduce((s, t) => s + (t.duration || 0), 0);
+    // mozaika = po prostu pierwsze 4 pliki z listy (audio lub img) — Tile sam wybierze MediaCover vs <img>
+    const mosaicTracks = all.slice(0, 4);
+    const filtered = q
+      ? all.filter((t) => t.name.toLowerCase().includes(q) || t.path.toLowerCase().includes(q))
+      : all;
+    const matchesQuery = !q || filtered.length > 0;
+    return { path: fp, name: basename(fp), type: library.getFolderType(fp), count, duration, mosaicTracks, matchesQuery };
+  }).filter((m) => m.matchesQuery);
+});
 
 function folderTypeIcon(type: string): string {
   if (type === 'audio') return '🎵';
@@ -79,59 +105,96 @@ function folderTypeIcon(type: string): string {
   if (type === 'image') return '🖼️';
   return '📁';
 }
+
+const noMatch = computed(() => library.folders.length > 0 && folderMetas.value.length === 0 && props.query.trim().length > 0);
 </script>
 
 <template>
   <div
-    v-if="allFolderTracks.length === 0"
-    class="flex flex-col items-center justify-center h-full gap-3 text-base-content/50"
+    v-if="library.folders.length === 0"
+    class="flex flex-col items-center justify-center h-full gap-4 p-8 text-base-content/50"
   >
-    <Folder :size="48" class="opacity-30" />
-    <p class="text-sm">{{ $t('library.noFolders') }}</p>
-    <p class="text-xs">{{ $t('library.addFolderHint') }}</p>
+    <div class="w-20 h-20 rounded-full bg-base-100 border border-base-300 flex items-center justify-center">
+      <Folder :size="28" class="opacity-40" />
+    </div>
+    <div class="text-center">
+      <p class="text-sm font-medium">{{ $t('library.noFolders') }}</p>
+      <p class="text-xs mt-1 opacity-70">{{ $t('library.addFolderHint') }}</p>
+    </div>
   </div>
-  <div v-else class="p-3 space-y-3">
+
+  <div v-else-if="noMatch" class="flex flex-col items-center justify-center h-64 gap-3 text-base-content/50">
+    <Folder :size="28" class="opacity-30" />
+    <p class="text-sm">Brak wyników dla "{{ query }}"</p>
+  </div>
+
+  <div v-else class="p-3 sm:p-4 space-y-3">
     <div
-      v-for="folderPath in library.folders"
-      :key="folderPath"
-      class="rounded-box bg-base-100 border border-base-300 overflow-hidden"
+      v-for="meta in folderMetas"
+      :key="meta.path"
+      class="group rounded-box bg-base-100 border border-base-300 overflow-hidden hover:border-primary/20 hover:shadow-sm transition-all duration-150"
     >
-      <button
-        class="w-full flex items-center justify-between px-4 py-3 hover:bg-base-content/10 transition-colors"
-        @click="togglePath(folderPath)"
-      >
-        <div class="flex items-center gap-2.5 min-w-0">
-          <span class="text-lg shrink-0">{{
-            folderTypeIcon(library.getFolderType(folderPath))
-          }}</span>
-          <div class="min-w-0 text-left">
-            <div class="text-sm font-medium">{{ dirName(folderPath) }}</div>
-            <div class="text-xs text-base-content/50 truncate">
-              {{ folderPath }} · {{ folderFileCounts.get(folderPath) || 0 }}
-              {{ $t('library.folderFiles') }}
-            </div>
+      <!-- Glass header z mozaiką -->
+      <div class="flex items-center gap-3 px-4 py-3 hover:bg-base-200/50 transition-colors" @contextmenu.prevent="showFolderMenu($event, meta.path, library.tracks.filter((t) => isUnderPath(t.path, meta.path)))">
+        <LibraryFolderTile :tracks="meta.mosaicTracks" />
+
+        <div class="flex-1 min-w-0 text-left">
+          <div class="flex items-center gap-2">
+            <span class="text-[11px]">{{ folderTypeIcon(meta.type) }}</span>
+            <span class="text-sm font-semibold truncate">{{ meta.name }}</span>
+            <span class="hidden sm:inline text-[11px] px-1.5 py-0.5 rounded-full bg-base-200 border border-base-300 text-base-content/60">{{ meta.count }} {{ $t('library.folderFiles') }}</span>
+            <span v-if="meta.duration > 0" class="hidden md:inline text-[11px] text-base-content/40">{{ formatDuration(meta.duration, '') }}</span>
           </div>
+          <div class="text-xs text-base-content/50 truncate hidden sm:block">{{ meta.path }}</div>
+          <div class="text-xs text-base-content/50 sm:hidden">{{ meta.count }} plików<span v-if="meta.duration"> · {{ formatDuration(meta.duration, '') }}</span></div>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
+
+        <div class="flex items-center gap-1 shrink-0">
           <button
-            class="fx-noise flex items-center gap-1 px-3 py-1.5 fx-depth rounded-field bg-primary/10 text-primary text-xs font-medium hover:bg-primary hover:text-primary-content transition-colors"
-            @click.stop="emit('playFolder', folderPath)"
+            class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center hover:bg-primary/90 transition-colors shadow-sm"
+            :title="$t('library.folderPlay')"
+            @click.stop="emit('playFolder', meta.path)"
           >
-            <Music2 :size="12" /> {{ $t('folders.play') }}
+            <Play :size="14" class="ml-0.5 fill-current" />
           </button>
-          <ChevronDown
-            :size="16"
-            class="text-base-content/50 transition-transform duration-200"
-            :class="expandedPaths.has(folderPath) ? '' : '-rotate-90'"
-          />
+          <button
+            class="hidden sm:flex w-8 h-8 rounded-full bg-base-200 border border-base-300 text-base-content/60 hover:text-primary hover:border-primary/30 items-center justify-center transition-colors"
+            :title="$t('library.folderShuffle')"
+            @click.stop="shuffleFolder(meta.path)"
+          >
+            <Shuffle :size="12" />
+          </button>
+          <button
+            class="hidden sm:flex w-8 h-8 rounded-full bg-base-200 border border-base-300 text-base-content/60 hover:text-base-content items-center justify-center transition-colors"
+            :title="$t('library.folderShowInExplorer')"
+            @click.stop="showInExplorer(meta.path)"
+          >
+            <ExternalLink :size="12" />
+          </button>
+          <button
+            class="w-8 h-8 rounded-full bg-base-200 border border-base-300 flex items-center justify-center hover:bg-base-300 transition-colors ml-1"
+            @click="togglePath(meta.path)"
+          >
+            <ChevronDown
+              :size="14"
+              class="text-base-content/60 transition-transform duration-200"
+              :class="isExpanded(meta.path) ? '' : '-rotate-90'"
+            />
+          </button>
         </div>
-      </button>
-      <div v-if="expandedPaths.has(folderPath)" class="border-t border-base-300">
+      </div>
+
+      <div
+        v-if="isExpanded(meta.path)"
+        class="border-t border-base-300 bg-base-200/30 backdrop-blur-sm"
+      >
         <DirNode
-          :dir="folderPath"
+          :dir="meta.path"
           :depth="0"
           :expanded-paths="expandedPaths"
+          :query="query"
           @toggle="togglePath"
+          @play-folder="(p) => emit('playFolder', p)"
         />
       </div>
     </div>

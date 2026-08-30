@@ -115,7 +115,7 @@ function folderIcon(type: string): string {
           </div>
         </div>
         <button
-          class="px-2 py-1 text-xs text-red-400 hover:text-red-300 transition-colors shrink-0"
+          class="px-2 py-1 text-xs text-error hover:text-error/80 transition-colors shrink-0"
           @click="library.removeFolder(entry.path)"
         >
           {{ $t('settings.libRemove') }}

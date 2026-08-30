@@ -113,7 +113,7 @@ async function addDirect() {
 <template>
   <div
     v-if="modelValue"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-neutral/60"
     @click.self="emit('update:modelValue', false)"
   >
     <div

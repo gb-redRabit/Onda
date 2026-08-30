@@ -33,7 +33,7 @@ const { deps, refreshAll, runInstall, cancelInstall } = useDependencies();
           <div class="flex items-center gap-2.5 min-w-0">
             <span
               class="w-2 h-2 rounded-full shrink-0"
-              :class="dep.installed ? 'bg-green-500' : 'bg-red-500'"
+              :class="dep.installed ? 'bg-success' : 'bg-error'"
             />
             <div class="min-w-0">
               <div class="text-sm font-medium">{{ dep.name }}</div>
@@ -51,7 +51,7 @@ const { deps, refreshAll, runInstall, cancelInstall } = useDependencies();
               </button>
             </template>
             <template v-else>
-              <span v-if="dep.installed" class="text-xs font-medium text-green-500">
+              <span v-if="dep.installed" class="text-xs font-medium text-success">
                 {{ dep.version ? `v${dep.version}` : $t('settings.depInstalled') }}
               </span>
               <button
@@ -72,7 +72,7 @@ const { deps, refreshAll, runInstall, cancelInstall } = useDependencies();
             />
           </div>
         </div>
-        <div v-if="dep.error" class="mt-2 text-xs text-red-500 break-words">{{ dep.error }}</div>
+        <div v-if="dep.error" class="mt-2 text-xs text-error break-words">{{ dep.error }}</div>
       </div>
     </div>
 

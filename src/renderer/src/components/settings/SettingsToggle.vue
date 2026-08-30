@@ -14,7 +14,7 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
     @click="emit('update:modelValue', !modelValue)"
   >
     <span
-      class="inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-200 ease-out"
+      class="inline-block h-5 w-5 transform rounded-full bg-neutral-content shadow-md transition-transform duration-200 ease-out"
       :class="modelValue ? 'translate-x-6' : 'translate-x-1'"
     />
   </button>

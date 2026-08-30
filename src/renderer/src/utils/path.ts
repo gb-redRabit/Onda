@@ -1,5 +1,24 @@
+export function canonicalPath(p: string): string {
+  return p.replace(/\\/g, '/').replace(/\/+$/g, '') || '/';
+}
+
+export function dirname(p: string): string {
+  const c = canonicalPath(p);
+  const idx = c.lastIndexOf('/');
+  if (idx <= 0) return c.slice(0, idx + 1) || '/';
+  return c.slice(0, idx);
+}
+
+export function basename(p: string): string {
+  const c = canonicalPath(p);
+  const idx = c.lastIndexOf('/');
+  return idx >= 0 ? c.slice(idx + 1) : c;
+}
+
 export function isUnderPath(p: string, folder: string): boolean {
-  return p === folder || p.startsWith(folder + '/') || p.startsWith(folder + '\\');
+  const cp = canonicalPath(p);
+  const cf = canonicalPath(folder);
+  return cp === cf || cp.startsWith(cf + '/');
 }
 
 const INVALID_DIR_CHARS = /[\\/:*?"<>|]/g;

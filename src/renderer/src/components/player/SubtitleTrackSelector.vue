@@ -38,7 +38,7 @@ async function uploadSubtitles() {
 <template>
   <div ref="container" class="relative inline-flex items-center">
     <button
-      class="text-white/50 hover:text-white transition-colors"
+      class="text-neutral-content/50 hover:text-neutral-content transition-colors"
       :class="{ 'text-primary!': player.activeSubtitleId }"
       @click="isOpen = !isOpen"
     >

@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { MediaFile } from '@renderer/types/media';
 import { usePlayerStore } from '@renderer/stores/player';
-import { useUIStore } from '@renderer/stores/ui';
 import { Music2 } from '@lucide/vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
+import { useLibraryContextMenu } from '@renderer/composables/useLibraryContextMenu';
 
 const { t } = useI18n();
 
@@ -19,28 +19,35 @@ const emit = defineEmits<{
 }>();
 
 const player = usePlayerStore();
-const ui = useUIStore();
+const { showAlbumMenu } = useLibraryContextMenu();
 
-const first = computed(() => props.tracks[0]);
-const cover = computed(() => player.getCover(first.value?.path || ''));
-const artist = computed(() => first.value?.metadata?.artist || t('common.unknown'));
-const year = computed(() => first.value?.metadata?.year);
+// okładka albumu = pierwszy plik audio z którego da się wyciągnąć okładkę
+const firstAudio = computed(() => props.tracks.find((t) => t.type === 'audio') ?? props.tracks[0]);
+const cover = computed(() => player.getCover(firstAudio.value?.path || ''));
+const artist = computed(() => firstAudio.value?.metadata?.artist || props.tracks[0]?.metadata?.artist || t('common.unknown'));
+const year = computed(() => firstAudio.value?.metadata?.year ?? props.tracks[0]?.metadata?.year);
 const count = computed(() => props.tracks.length);
 
+function ensureCover() {
+  // ładuj okładki dla pierwszych kilku utworów, wybierz pierwszą dostępną
+  for (const tr of props.tracks.slice(0, 5)) {
+    if (!player.getCover(tr.path).data) player.loadCover(tr.path);
+  }
+}
+onMounted(ensureCover);
+watch(() => props.tracks.map((t) => t.path).join('|'), ensureCover);
+
+const displayPath = computed(() => {
+  for (const tr of props.tracks) {
+    const c = player.getCover(tr.path);
+    if (c.data && c.type === 'image') return tr.path;
+  }
+  return firstAudio.value?.path || props.tracks[0]?.path;
+});
+const displayCover = computed(() => player.getCover(displayPath.value || ''));
+
 function onContextMenu(e: MouseEvent) {
-  e.preventDefault();
-  ui.showContextMenu(e.clientX, e.clientY, [
-    {
-      label: t('common.playAlbum') + ' (' + count.value + ' ' + t('common.tracks') + ')',
-      action: () => emit('play', props.tracks)
-    },
-    {
-      label: t('common.addAllToQueue'),
-      action: () => {
-        props.tracks.forEach((t) => player.addToQueue(t));
-      }
-    }
-  ]);
+  showAlbumMenu(e, props.name, props.tracks);
 }
 
 function onDragStart(e: DragEvent) {
@@ -61,19 +68,19 @@ function onDragStart(e: DragEvent) {
       class="w-full aspect-square bg-neutral flex items-center justify-center relative overflow-hidden"
     >
       <MediaCover
-        :path="first?.path"
-        :cover="cover"
+        :path="displayPath"
+        :cover="displayCover.data ? displayCover : cover"
         :size="28"
         :render-as-video="false"
         fallback="disc"
       />
       <div
-        class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors"
+        class="absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/20 transition-colors"
       >
         <div
           class="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
         >
-          <Music2 :size="18" class="text-white ml-0.5" />
+          <Music2 :size="18" class="text-primary-content ml-0.5" />
         </div>
       </div>
     </div>

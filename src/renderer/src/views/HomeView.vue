@@ -138,7 +138,7 @@ const actions = [
           <div
             class="w-10 h-10 rounded-field bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors"
           >
-            <Play :size="14" class="text-primary group-hover:text-white ml-0.5 transition-colors" />
+            <Play :size="14" class="text-primary group-hover:text-neutral-content ml-0.5 transition-colors" />
           </div>
           <div class="min-w-0">
             <div class="text-sm font-medium truncate">{{ t.metadata?.title || t.name }}</div>

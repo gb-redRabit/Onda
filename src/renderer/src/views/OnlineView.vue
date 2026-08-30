@@ -686,8 +686,8 @@ onUnmounted(() => {
         </template>
       </OnlineViewTabs>
 
-      <p v-if="resolveError" class="text-xs text-red-400 mt-3">{{ resolveError }}</p>
-      <p v-if="searchError" class="text-xs text-red-400 mt-3">{{ searchError }}</p>
+      <p v-if="resolveError" class="text-xs text-error mt-3">{{ resolveError }}</p>
+      <p v-if="searchError" class="text-xs text-error mt-3">{{ searchError }}</p>
     </header>
 
     <div class="flex-1 overflow-auto p-4">

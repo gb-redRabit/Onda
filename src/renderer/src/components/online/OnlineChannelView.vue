@@ -308,7 +308,7 @@ watch(
         </div>
       </div>
 
-      <p v-if="yt.channelError" class="text-xs text-red-400">{{ channelErrorMessage }}</p>
+      <p v-if="yt.channelError" class="text-xs text-error">{{ channelErrorMessage }}</p>
 
       <SubscribeConfigDialog
         v-if="subscribeOpen && yt.channel"

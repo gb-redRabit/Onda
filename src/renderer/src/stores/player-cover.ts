@@ -66,7 +66,7 @@ export function usePlayerCover() {
   const coverQueue: string[] = [];
   let coverFlushScheduled = false;
   let coverProcessing = false;
-  const COVER_CACHE_MAX = 100;
+  const COVER_CACHE_MAX = 500;
 
   async function processCoverBatch(): Promise<void> {
     coverProcessing = true;

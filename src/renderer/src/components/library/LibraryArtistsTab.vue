@@ -20,7 +20,7 @@ const artistListVirtualizer = useVirtualizer({
     return props.artists.length;
   },
   getScrollElement: () => artistListRef.value,
-  estimateSize: () => 48,
+  estimateSize: () => 56,
   overscan: 10
 });
 
@@ -32,7 +32,7 @@ const artistRowVirtualizer = useVirtualizer({
     return Math.ceil(props.artists.length / grid.cols.value);
   },
   getScrollElement: () => artistGridRef.value,
-  estimateSize: () => 150,
+  estimateSize: () => 180,
   overscan: 3
 });
 

@@ -774,7 +774,15 @@ export interface IpcChannels {
   };
   'musicbrainz:getCoverData': {
     args: [releaseId: string];
-    result: { success: boolean; data?: number[]; mime?: string; error?: string };
+    result: { success: boolean; data?: number[]; mime?: string; error?: string; rateLimited?: boolean };
+  };
+  'musicbrainz:autodetect': {
+    args: [query: string];
+    result: { success: boolean; match: 'certain' | 'ambiguous' | 'none'; releases: MusicbrainzRelease[]; error?: string };
+  };
+  'musicbrainz:batchApply': {
+    args: [payload: unknown];
+    result: { success: boolean; error?: string };
   };
   'media:checkAudioCodec': {
     args: [filePath: string];
