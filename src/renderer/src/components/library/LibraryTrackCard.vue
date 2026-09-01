@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { MediaFile } from '@renderer/types/media';
 import { useLibraryStore } from '@renderer/stores/library';
@@ -15,11 +15,13 @@ const props = defineProps<{
   track: MediaFile;
   showPlaylist?: boolean;
   playlistId?: string;
+  selected?: boolean;
 }>();
 
 const emit = defineEmits<{
   play: [track: MediaFile];
   edit: [track: MediaFile];
+  select: [e: MouseEvent];
 }>();
 
 const library = useLibraryStore();
@@ -27,6 +29,16 @@ const player = usePlayerStore();
 const ui = useUIStore();
 const showPlaylistMenu = ref(false);
 const playlistBtn = ref<HTMLElement | null>(null);
+const playlistPopupStyle = computed(() => {
+  const el = playlistBtn.value;
+  if (!el) return {};
+  const r = el.getBoundingClientRect();
+  const w = 192;
+  const left = Math.min(r.right - w, window.innerWidth - w - 8);
+  const top = r.bottom + 6;
+  const maxTop = window.innerHeight - 200 - 8;
+  return { left: Math.max(8, left) + 'px', top: Math.min(top, maxTop) + 'px' };
+});
 
 function playNow() {
   emit('play', props.track);
@@ -99,9 +111,11 @@ function onDragStart(e: DragEvent) {
 
 <template>
   <button
-    class="flex-1 flex flex-col fx-depth rounded-box fx-noise bg-base-100 border border-base-300 hover:bg-base-content/10 hover:border-primary/30 transition-all overflow-hidden group text-left min-w-0"
+    class="flex-1 flex flex-col fx-depth rounded-box fx-noise border transition-all overflow-hidden group text-left min-w-0"
+    :class="selected ? 'bg-primary/10 border-primary/50' : 'bg-base-100 border-base-300 hover:bg-base-content/10 hover:border-primary/30'"
     draggable="true"
-    @click="playNow"
+    @click="emit('select', $event as unknown as MouseEvent)"
+    @dblclick="playNow"
     @contextmenu.prevent="onContextMenu"
     @dragstart="onDragStart"
   >
@@ -111,6 +125,7 @@ function onDragStart(e: DragEvent) {
       <MediaCover :path="props.track.path" :size="40" fallback="play" />
       <div
         class="absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/20 transition-colors"
+        @click.stop="playNow"
       >
         <div
           class="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
@@ -143,11 +158,13 @@ function onDragStart(e: DragEvent) {
           >
             <Plus :size="15" />
           </button>
-          <div
-            v-if="showPlaylistMenu"
-            class="playlist-popup absolute right-0 top-full mt-1.5 w-48 bg-base-100 border border-base-300 rounded-box shadow-xl py-1 z-50"
-            @click.stop
-          >
+          <Teleport to="body">
+            <div
+              v-if="showPlaylistMenu"
+              class="playlist-popup fixed w-48 bg-base-100 border border-base-300 rounded-box shadow-xl py-1 z-50"
+              :style="playlistPopupStyle"
+              @click.stop
+            >
             <button
               v-for="p in library.playlists"
               :key="p.id"
@@ -166,6 +183,7 @@ function onDragStart(e: DragEvent) {
               {{ $t('common.noPlaylists') }}
             </div>
           </div>
+          </Teleport>
         </div>
         <button
           class="fx-noise p-1.5 fx-depth rounded-field bg-neutral/40 backdrop-blur-sm text-neutral-content/80 hover:text-neutral-content hover:bg-neutral/60 transition-colors"

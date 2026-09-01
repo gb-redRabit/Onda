@@ -293,6 +293,12 @@ async function extractAudioCover(filePath: string): Promise<string | null> {
       return `data:image/jpeg;base64,${buf.toString('base64')}`;
     }
   } catch (e) {
+    if (isEnoent(e)) {
+      missingCache.set(filePath, Date.now());
+      notifyMissing(filePath);
+      logger.info('cover', `file missing, skip cover for ${filePath}`);
+      return null;
+    }
     logger.warn('cover', `no cover in metadata for ${filePath}`, e);
   }
   return extractEmbeddedCover(filePath);
@@ -363,9 +369,36 @@ function waitForCoverLock(filePath: string): Promise<void> {
   });
 }
 
+const missingCache = new Map<string, number>();
+const MISSING_TTL = 5 * 60 * 1000;
+
+function isEnoent(e: unknown): boolean {
+  return Boolean(e && typeof e === 'object' && 'code' in e && (e as { code?: string }).code === 'ENOENT');
+}
+function notifyMissing(filePath: string) {
+  try {
+    const { BrowserWindow } = require('electron') as typeof import('electron');
+    for (const w of BrowserWindow.getAllWindows()) {
+      if (!w.isDestroyed()) w.webContents.send('library:fileMissing', filePath);
+    }
+  } catch {}
+}
+
 export async function extractAndCacheCover(
   filePath: string
 ): Promise<{ type: 'video' | 'image' | null; data: string | null }> {
+  const miss = missingCache.get(filePath);
+  if (miss && Date.now() - miss < MISSING_TTL) return { type: null, data: null };
+  try {
+    await stat(filePath);
+  } catch (e) {
+    if (isEnoent(e)) {
+      missingCache.set(filePath, Date.now());
+      notifyMissing(filePath);
+      logger.info('cover', `file missing, skip cover for ${filePath}`);
+      return { type: null, data: null };
+    }
+  }
   const siblingVideo = findSiblingVideo(filePath);
   if (siblingVideo) {
     // Audio bez okładki + obok .mp4 o tej samej nazwie → wyciągnij klatkę JPEG (nie ścieżkę video)

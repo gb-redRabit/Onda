@@ -202,13 +202,13 @@ function playAll() {
           v-if="selectedPlaylist.tracks.length === 0"
           class="text-xs text-base-content/50 italic p-4 text-center"
         >
-          Playlista jest pusta. Dodaj utwory z zakładki "Utwory" lub "Video".
+          {{ $t('library.playlistEmptyHint') }}
         </div>
       </div>
     </div>
 
     <div v-else class="flex-1 flex items-center justify-center text-sm text-base-content/50 italic">
-      Wybierz playlistę, aby zobaczyć jej zawartość
+      {{ $t('library.selectPlaylistHint') }}
     </div>
   </div>
 </template>

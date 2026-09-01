@@ -100,6 +100,9 @@ export default {
     tracksCount: 'utworów',
     searchInMusicBrainz: 'Szukaj w MusicBrainz',
     folderFiles: 'plików',
+    playlistEmptyHint: 'Playlista jest pusta. Dodaj utwory z zakładki "Utwory" lub "Video".',
+    selectPlaylistHint: 'Wybierz playlistę, aby zobaczyć jej zawartość',
+    emptyFolder: '— pusto —',
     overviewHint: 'Szybki dostęp do ostatnio słuchanych i ulubionych',
     recentlyPlayed: 'Ostatnio odtwarzane',
     mostPlayed: 'Najczęściej odtwarzane',
@@ -1067,7 +1070,9 @@ export default {
     deselectAll: 'Odznacz wszystko',
     copy: 'Kopiuj',
     cut: 'Wytnij',
-    paste: 'Wklej'
+    paste: 'Wklej',
+    clickAgainToClose: 'Kliknij ponownie poza oknem aby zamknąć',
+    unsavedChangesClickAgain: 'Masz niezapisane zmiany — kliknij ponownie poza oknem aby zamknąć, lub użyj Anuluj/Zapisz'
   },
   wizard: {
     title: 'Witaj w Onda',

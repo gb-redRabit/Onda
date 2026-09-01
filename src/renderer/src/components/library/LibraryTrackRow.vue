@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
@@ -15,15 +15,40 @@ const props = defineProps<{
   showPlaylist?: boolean;
   playlistId?: string;
   dragIndex?: number;
+  selected?: boolean;
+  query?: string;
 }>();
 const emit = defineEmits<{
   edit: [track: MediaFile];
+  select: [e: MouseEvent];
 }>();
+
+function highlight(text: string, q?: string): string {
+  if (!q) return text;
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx < 0) return text;
+  const before = text.slice(0, idx);
+  const match = text.slice(idx, idx + q.length);
+  const after = text.slice(idx + q.length);
+  return `${before}<mark class="bg-primary/20 text-primary px-0.5 rounded">${match}</mark>${after}`;
+}
 
 const library = useLibraryStore();
 const player = usePlayerStore();
 const showPlaylistMenu = ref(false);
 const playlistBtn = ref<HTMLElement | null>(null);
+const playlistPopupStyle = computed(() => {
+  const el = playlistBtn.value;
+  if (!el) return {};
+  const r = el.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const w = 192; // w-48 = 12rem = 192px
+  const left = Math.min(r.right - w, vw - w - 8);
+  const top = r.bottom + 6;
+  const maxTop = vh - 200 - 8;
+  return { left: Math.max(8, left) + 'px', top: Math.min(top, maxTop) + 'px' };
+});
 
 function playNow() {
   player.setTrack(props.track);
@@ -81,28 +106,36 @@ function onDragStart(e: DragEvent) {
 
 <template>
   <div
-    class="group flex items-center gap-3 px-3 py-2.5 rounded-field hover:bg-base-100 border border-transparent hover:border-base-300 hover:shadow-sm transition-all duration-150 cursor-pointer"
+    class="group flex items-center gap-3 px-3 py-2.5 rounded-field hover:bg-base-100 border transition-all duration-150 cursor-pointer"
+    :class="selected ? 'bg-primary/10 border-primary/30' : 'border-transparent hover:border-base-300 hover:shadow-sm'"
     draggable="true"
+    @click="emit('select', $event as unknown as MouseEvent)"
     @dblclick="playNow"
     @contextmenu.prevent="onContextMenu"
     @dragstart="onDragStart"
   >
+    <input
+      type="checkbox"
+      :checked="selected"
+      class="checkbox checkbox-xs shrink-0"
+      @click.stop="emit('select', $event as unknown as MouseEvent)"
+    />
     <div class="relative shrink-0 w-10 h-10 rounded-field overflow-hidden bg-base-200 border border-base-300">
       <MediaCover :path="props.track.path" :size="14" :autoplay="true" fallback="play" />
       <button
         class="absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/50 transition-colors"
-        @click="playNow"
+        @click.stop="playNow"
       >
         <Play :size="15" class="text-neutral-content opacity-0 group-hover:opacity-100 transition-opacity ml-0.5 fill-neutral-content" />
       </button>
     </div>
 
     <div class="flex-1 min-w-0">
-      <div class="text-sm font-medium truncate leading-none">{{ track.metadata?.title || track.name }}</div>
+      <div class="text-sm font-medium truncate leading-none" v-html="highlight(track.metadata?.title || track.name, query)"></div>
       <div class="text-xs text-base-content/50 truncate mt-1 flex items-center gap-1">
-        <span class="truncate">{{ track.metadata?.artist || $t('common.unknown') }}</span>
+        <span class="truncate" v-html="highlight(track.metadata?.artist || $t('common.unknown'), query)"></span>
         <span v-if="track.metadata?.album" class="opacity-40">·</span>
-        <span v-if="track.metadata?.album" class="truncate opacity-80">{{ track.metadata.album }}</span>
+        <span v-if="track.metadata?.album" class="truncate opacity-80" v-html="highlight(track.metadata.album, query)"></span>
         <span v-if="!track.metadata?.artist && !track.metadata?.album" class="opacity-60">{{ track.extension }}</span>
       </div>
     </div>
@@ -111,54 +144,56 @@ function onDragStart(e: DragEvent) {
       {{ formatDuration(track.duration, '—') }}
     </div>
 
-    <div class="shrink-0 flex items-center gap-1">
-
+    <div class="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
       <button
-        class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
+        class="fx-noise p-1.5 fx-depth rounded-field transition-colors duration-150"
         :class="
           player.isFavorite(track.path)
-            ? 'text-error opacity-100 hover:text-error/90'
-            : 'text-base-content/50 opacity-0 group-hover:opacity-100 hover:text-base-content hover:bg-base-100'
+            ? 'text-error hover:text-error/90'
+            : 'text-base-content/50 hover:text-base-content hover:bg-base-100'
         "
         :title="player.isFavorite(track.path) ? $t('common.removeFav') : $t('common.addFav')"
         @click.stop="player.toggleFavorite(track.path)"
       >
         <Heart :size="14" :fill="player.isFavorite(track.path) ? 'currentColor' : 'none'" />
       </button>
-      <div v-if="showPlaylist" ref="playlistBtn" class="relative opacity-0 group-hover:opacity-100 transition-opacity">
+      <div v-if="showPlaylist" ref="playlistBtn" class="relative">
         <button
-          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-100 transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-100 transition-colors duration-150"
           @click="togglePlaylist"
         >
           <Plus :size="14" />
         </button>
-        <div
-          v-if="showPlaylistMenu"
-          class="playlist-popup absolute right-0 top-full mt-1.5 w-48 bg-base-100 border border-base-300 rounded-box shadow-xl py-1 z-50"
-          @click.stop
-        >
-          <button
-            v-for="p in library.playlists"
-            :key="p.id"
-            class="fx-noise w-full text-left px-3 py-1.5 text-xs fx-depth rounded-field hover:bg-base-content/10 transition-colors truncate flex items-center gap-2"
-            :class="{ 'text-primary': p.tracks.some((t) => t.path === props.track.path) }"
-            @click="toggleTrackInPlaylist(p.id)"
-          >
-            <ListMusic :size="12" class="shrink-0" />{{
-              p.tracks.some((t) => t.path === props.track.path) ? '✓ ' : '+ '
-            }}{{ p.name }}
-          </button>
+        <Teleport to="body">
           <div
-            v-if="library.playlists.length === 0"
-            class="px-3 py-1.5 text-xs text-base-content/50 italic"
+            v-if="showPlaylistMenu"
+            class="playlist-popup fixed w-48 bg-base-100 border border-base-300 rounded-box shadow-xl py-1 z-50"
+            :style="playlistPopupStyle"
+            @click.stop
           >
-            {{ $t('common.noPlaylists') }}
+            <button
+              v-for="p in library.playlists"
+              :key="p.id"
+              class="fx-noise w-full text-left px-3 py-1.5 text-xs fx-depth rounded-field hover:bg-base-content/10 transition-colors truncate flex items-center gap-2"
+              :class="{ 'text-primary': p.tracks.some((t) => t.path === props.track.path) }"
+              @click="toggleTrackInPlaylist(p.id)"
+            >
+              <ListMusic :size="12" class="shrink-0" />{{
+                p.tracks.some((t) => t.path === props.track.path) ? '✓ ' : '+ '
+              }}{{ p.name }}
+            </button>
+            <div
+              v-if="library.playlists.length === 0"
+              class="px-3 py-1.5 text-xs text-base-content/50 italic"
+            >
+              {{ $t('common.noPlaylists') }}
+            </div>
           </div>
-        </div>
+        </Teleport>
       </div>
 
       <button
-        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-100 transition-colors opacity-0 group-hover:opacity-100"
+        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-100 transition-colors duration-150"
         :title="$t('common.editTags')"
         @click="emit('edit', track)"
       >
@@ -167,7 +202,7 @@ function onDragStart(e: DragEvent) {
 
       <button
         v-if="playlistId"
-        class="fx-noise p-1.5 fx-depth rounded-field text-error hover:text-error/80 hover:bg-base-100 transition-colors"
+        class="fx-noise p-1.5 fx-depth rounded-field text-error hover:text-error/80 hover:bg-base-100 transition-colors duration-150"
         @click="removeFromPlaylist"
       >
         <Trash2 :size="14" />

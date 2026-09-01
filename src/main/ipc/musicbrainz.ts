@@ -67,7 +67,7 @@ function mbFetch(url: string): Promise<Record<string, unknown> | string> {
       }
     );
     req.on('error', (e) => reject(Object.assign(e, { errorKind: 'network' })));
-    req.setTimeout(15000, () => {
+    req.setTimeout(20000, () => {
       req.destroy();
       reject(Object.assign(new Error('Timeout'), { errorKind: 'timeout' }));
     });

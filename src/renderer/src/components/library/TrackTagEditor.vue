@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { MediaFile } from '@renderer/types/media';
@@ -42,8 +42,37 @@ const saving = ref(false);
 const uploadingCover = ref(false);
 const coverUrl = ref<string | null>(null);
 let closeTimer: ReturnType<typeof setTimeout> | null = null;
+const overlayClicks = ref(0);
+let overlayTimer: ReturnType<typeof setTimeout> | null = null;
+function onOverlayClick() {
+  // nie zamykaj od razu — chroń przed przypadkowym kliknięciem poza
+  const isDirty =
+    title.value !== (props.track?.metadata?.title || '') ||
+    artist.value !== (props.track?.metadata?.artist || '') ||
+    album.value !== (props.track?.metadata?.album || '') ||
+    year.value !== (props.track?.metadata?.year?.toString() || '') ||
+    genre.value !== (props.track?.metadata?.genre || '') ||
+    trackNumber.value !== (props.track?.metadata?.track?.no?.toString() || '') ||
+    name.value !== (props.track?.name.replace(/\.[^.]+$/, '') || '');
+  if (isDirty) {
+    // przy brudnych danych wymagaj 2 klików + hint
+    overlayClicks.value++;
+    ui.notify('warning', t('common.unsavedChangesClickAgain'));
+    if (overlayClicks.value >= 2) emit('close');
+    if (overlayTimer) clearTimeout(overlayTimer);
+    overlayTimer = setTimeout(() => (overlayClicks.value = 0), 2500);
+    return;
+  }
+  // bez zmian — też 2 kliknięcia chronią przed przypadkiem
+  overlayClicks.value++;
+  if (overlayClicks.value >= 2) emit('close');
+  else ui.notify('info', t('common.clickAgainToClose'));
+  if (overlayTimer) clearTimeout(overlayTimer);
+  overlayTimer = setTimeout(() => (overlayClicks.value = 0), 2000);
+}
 onBeforeUnmount(() => {
   if (closeTimer) clearTimeout(closeTimer);
+  if (overlayTimer) clearTimeout(overlayTimer);
 });
 const coverObj = computed<{ type: string | null; data: string | null } | undefined>(() => {
   if (!coverUrl.value) return undefined;
@@ -159,7 +188,7 @@ async function save() {
     <div
       v-if="track"
       class="fixed inset-0 z-50 flex items-center justify-center bg-neutral/40"
-      @click.self="emit('close')"
+      @click.self="onOverlayClick"
     >
       <div
         class="w-full max-w-lg mx-4 rounded-box bg-neutral border border-base-300 shadow-2xl overflow-hidden backdrop-blur-xl"

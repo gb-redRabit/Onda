@@ -205,6 +205,7 @@ const ALLOWED_RECEIVE_CHANNELS = new Set<string>([
   'fs:readdir:batch',
   'library:scan:progress',
   'library:updated',
+  'library:fileMissing',
   'media:playPause',
   'media:next',
   'media:previous',

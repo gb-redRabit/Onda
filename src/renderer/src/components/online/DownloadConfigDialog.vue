@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import {
   X,
@@ -11,6 +11,8 @@ import {
   Save,
   Trash2
 } from '@lucide/vue';
+import { useI18n } from 'vue-i18n';
+import { useUIStore } from '@renderer/stores/ui';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { joinPath, sanitizeDirName } from '@renderer/utils/path';
@@ -105,6 +107,17 @@ const playlistFolder = computed(() => {
   return joinPath(baseDir.value, sanitizeDirName(props.playlistTitle));
 });
 
+const { t } = useI18n();
+const ui = useUIStore();
+let overlayClicks = 0;
+let overlayTimer: ReturnType<typeof setTimeout> | null = null;
+function onOverlayClick() {
+  overlayClicks++;
+  ui.notify('info', t('common.clickAgainToClose'));
+  if (overlayClicks >= 2) emit('cancel');
+  if (overlayTimer) clearTimeout(overlayTimer);
+  overlayTimer = setTimeout(() => (overlayClicks = 0), 2000);
+}
 function close() {
   emit('cancel');
 }
@@ -268,7 +281,7 @@ function onProfileSelect(e: Event) {
   <Teleport to="body">
     <div
       class="fixed inset-0 z-9999 bg-neutral/60 backdrop-blur-sm flex items-center justify-center p-4"
-      @click.self="close"
+      @click.self="onOverlayClick"
     >
       <div
         class="bg-base-100 border border-base-300 rounded-box w-full max-w-3xl max-h-[92vh] shadow-2xl overflow-hidden flex flex-col"

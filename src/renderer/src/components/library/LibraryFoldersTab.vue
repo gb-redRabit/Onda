@@ -17,8 +17,10 @@ const { showFolderMenu } = useLibraryContextMenu();
 const props = defineProps<{
   query: string;
 }>();
+import type { MediaFile } from '@renderer/types/media';
 const emit = defineEmits<{
   playFolder: [folderPath: string];
+  edit: [track: MediaFile];
 }>();
 
 // persystencja rozwinięć
@@ -71,6 +73,11 @@ function shuffleFolder(fp: string) {
 
 function showInExplorer(fp: string) {
   window.api?.invoke('shell:showItemInFolder', fp);
+}
+function onFolderDrag(e: DragEvent, folderPath: string) {
+  const tracks = getAllTracksIndexed(folderPath, library.tracks, library.folders).filter((t) => t.type !== 'image');
+  e.dataTransfer?.setData('text/plain', JSON.stringify({ paths: tracks.map((t) => t.path) }));
+  e.dataTransfer!.effectAllowed = 'move';
 }
 
 interface FolderMeta {
@@ -135,7 +142,7 @@ const noMatch = computed(() => library.folders.length > 0 && folderMetas.value.l
       class="group rounded-box bg-base-100 border border-base-300 overflow-hidden hover:border-primary/20 hover:shadow-sm transition-all duration-150"
     >
       <!-- Glass header z mozaiką -->
-      <div class="flex items-center gap-3 px-4 py-3 hover:bg-base-200/50 transition-colors" @contextmenu.prevent="showFolderMenu($event, meta.path, library.tracks.filter((t) => isUnderPath(t.path, meta.path)))">
+      <div class="flex items-center gap-3 px-4 py-3 hover:bg-base-200/50 transition-colors" draggable="true" @dragstart="onFolderDrag($event, meta.path)" @contextmenu.prevent="showFolderMenu($event, meta.path, library.tracks.filter((t) => isUnderPath(t.path, meta.path)))">
         <LibraryFolderTile :tracks="meta.mosaicTracks" />
 
         <div class="flex-1 min-w-0 text-left">
@@ -195,6 +202,7 @@ const noMatch = computed(() => library.folders.length > 0 && folderMetas.value.l
           :query="query"
           @toggle="togglePath"
           @play-folder="(p) => emit('playFolder', p)"
+          @edit="emit('edit', $event)"
         />
       </div>
     </div>

@@ -64,6 +64,7 @@ export function useLibraryContextMenu() {
     ui.showContextMenu(e.clientX, e.clientY, [
       { label: t('common.playAlbum') + ` (${tracks.length})`, action: () => { if (tracks.length) { player.clearQueue(); if (tracks.length > 1) player.addToQueueMultiple(tracks.slice(1)); player.setTrack(tracks[0]); player.play(); } } },
       { label: t('common.addAllToQueue'), action: () => tracks.forEach((t) => player.addToQueue(t)) },
+      { label: 'MusicBrainz — batch album', action: () => window.dispatchEvent(new CustomEvent('onda:openMusicbrainz', { detail: { query: name, batchTracks: tracks } })) },
       { label: 'Pokaż w Eksploratorze (Onda)', action: () => tracks[0] && revealInExplorer(tracks[0].path) },
       { label: 'Kopiuj nazwę albumu', action: () => navigator.clipboard?.writeText(name) },
     ]);
@@ -79,6 +80,7 @@ export function useLibraryContextMenu() {
             { label: `Odtwórz folder (${count})`, action: () => { const filtered = tracks.filter((t) => t.type !== 'image'); if (filtered.length) { player.clearQueue(); if (filtered.length > 1) player.addToQueueMultiple(filtered.slice(1)); player.setTrack(filtered[0]); player.play(); } } },
             { label: 'Odtwórz losowo', action: () => { const f = tracks.filter((t) => t.type !== 'image'); if (f.length) { const s = [...f].sort(() => Math.random() - 0.5); player.clearQueue(); if (s.length > 1) player.addToQueueMultiple(s.slice(1)); player.setTrack(s[0]); player.play(); } } },
             { label: t('common.addAllToQueue'), action: () => tracks.filter((t) => t.type !== 'image').forEach((t) => player.addToQueue(t)) },
+            { label: 'MusicBrainz — batch folder', action: () => window.dispatchEvent(new CustomEvent('onda:openMusicbrainz', { detail: { query: folderPath.split(/[\\/]/).pop() || '', batchTracks: tracks.filter((t) => t.type === 'audio') } })) },
           ]
         : []),
       { label: 'Pokaż w Eksploratorze (Onda)', action: () => revealInExplorer(folderPath) },

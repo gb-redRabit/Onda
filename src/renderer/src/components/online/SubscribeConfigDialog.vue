@@ -1,7 +1,8 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { X, FolderOpen, Download, Tv2 } from '@lucide/vue';
 import FilenameTemplatePresets from '@renderer/components/FilenameTemplatePresets.vue';
+import { useUIStore } from '@renderer/stores/ui';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { useI18n } from 'vue-i18n';
@@ -187,6 +188,16 @@ const prefsSummary = computed<SummaryItem[]>(() => {
   return items;
 });
 
+const uiSub = useUIStore();
+let overlayClicksSub = 0;
+let overlayTimerSub: ReturnType<typeof setTimeout> | null = null;
+function onOverlayClickSub() {
+  overlayClicksSub++;
+  uiSub.notify('info', t('common.clickAgainToClose'));
+  if (overlayClicksSub >= 2) emit('cancel');
+  if (overlayTimerSub) clearTimeout(overlayTimerSub);
+  overlayTimerSub = setTimeout(() => (overlayClicksSub = 0), 2000);
+}
 function close() {
   emit('cancel');
 }
@@ -330,7 +341,7 @@ async function pickCustomCover() {
   <Teleport to="body">
     <div
       class="fixed inset-0 z-9999 bg-neutral/60 backdrop-blur-sm flex items-center justify-center p-4"
-      @click.self="close"
+      @click.self="onOverlayClickSub"
     >
       <div
         class="bg-base-100 border border-base-300 rounded-box w-full max-w-3xl max-h-[92vh] shadow-2xl overflow-hidden flex flex-col"

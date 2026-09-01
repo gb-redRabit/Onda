@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useVirtualizer } from '@tanstack/vue-virtual';
-import { Music2, LayoutList, LayoutGrid } from '@lucide/vue';
+import { Music2, LayoutList, LayoutGrid, X, ListMusic, Play } from '@lucide/vue';
 import type { MediaFile } from '@renderer/types/media';
 import { useVirtualGrid } from '@renderer/composables/useVirtualGrid';
+import { useLibraryStore } from '@renderer/stores/library';
+import { usePlayerStore } from '@renderer/stores/player';
 import LibraryTrackRow from '@renderer/components/library/LibraryTrackRow.vue';
 import LibraryTrackCard from '@renderer/components/library/LibraryTrackCard.vue';
 
@@ -12,8 +14,9 @@ const props = withDefaults(
     tracks: MediaFile[];
     viewMode: 'list' | 'grid';
     chip?: string;
+    query?: string;
   }>(),
-  { chip: 'all' }
+  { chip: 'all', query: '' }
 );
 const emit = defineEmits<{
   'update:viewMode': [mode: 'list' | 'grid'];
@@ -23,6 +26,74 @@ const emit = defineEmits<{
   edit: [track: MediaFile];
   navigateFolder: [path: string];
 }>();
+
+const library = useLibraryStore();
+const player = usePlayerStore();
+const selected = ref<Set<string>>(new Set());
+const lastIndex = ref<number | null>(null);
+const selectedCount = computed(() => selected.value.size);
+const selectedTracks = computed(() => props.tracks.filter((t) => selected.value.has(t.path)));
+const showBulkPlaylist = ref(false);
+function playSelected() {
+  if (selectedTracks.value.length === 0) return;
+  const t = selectedTracks.value;
+  player.clearQueue();
+  if (t.length > 1) player.addToQueueMultiple(t.slice(1));
+  player.setTrack(t[0]);
+  player.play();
+  clearSelection();
+}
+function queueSelected() {
+  selectedTracks.value.forEach((tr) => player.addToQueue(tr));
+  clearSelection();
+}
+function addSelectedToPlaylist(pid: string) {
+  for (const tr of selectedTracks.value) library.addToPlaylist(pid, tr);
+  showBulkPlaylist.value = false;
+  clearSelection();
+}
+
+function isSelected(path: string) {
+  return selected.value.has(path);
+}
+function toggleSelect(index: number, e?: MouseEvent) {
+  const track = props.tracks[index];
+  if (!track) return;
+  const isCtrl = e?.ctrlKey || e?.metaKey;
+  const isShift = e?.shiftKey;
+  if (isShift && lastIndex.value !== null) {
+    const start = Math.min(lastIndex.value, index);
+    const end = Math.max(lastIndex.value, index);
+    const ns = new Set(selected.value);
+    for (let i = start; i <= end; i++) ns.add(props.tracks[i].path);
+    selected.value = ns;
+  } else if (isCtrl) {
+    const ns = new Set(selected.value);
+    if (ns.has(track.path)) ns.delete(track.path);
+    else ns.add(track.path);
+    selected.value = ns;
+    lastIndex.value = index;
+  } else {
+    if (selected.value.size === 1 && selected.value.has(track.path)) {
+      selected.value = new Set();
+      lastIndex.value = null;
+      return;
+    }
+    selected.value = new Set([track.path]);
+    lastIndex.value = index;
+  }
+}
+function clearSelection() {
+  selected.value = new Set();
+  lastIndex.value = null;
+}
+function handleEsc(e: KeyboardEvent) {
+  if (e.key === 'Escape' && selectedCount.value > 0) {
+    e.preventDefault();
+    clearSelection();
+  }
+}
+watch(() => props.tracks.length, clearSelection);
 
 const trackListRef = ref<HTMLElement | null>(null);
 
@@ -50,20 +121,27 @@ const trackRowVirtualizer = useVirtualizer({
 const visibleTracksGrid = computed(() => {
   const items = trackRowVirtualizer.value.getVirtualItems();
   const cols = grid.cols.value;
-  const result: Array<{ top: number; tracks: MediaFile[] }> = [];
+  const result: Array<{ top: number; index: number; tracks: MediaFile[] }> = [];
   for (const row of items) {
     const start = row.index * cols;
     const end = Math.min(start + cols, props.tracks.length);
     result.push({
       top: row.start,
+      index: row.index,
       tracks: props.tracks.slice(start, end)
     });
   }
   return result;
 });
 
-onMounted(() => grid.observe());
-onUnmounted(() => grid.destroy());
+onMounted(() => {
+  grid.observe();
+  window.addEventListener('keydown', handleEsc);
+});
+onUnmounted(() => {
+  grid.destroy();
+  window.removeEventListener('keydown', handleEsc);
+});
 </script>
 
 <template>
@@ -125,6 +203,22 @@ onUnmounted(() => grid.destroy());
         </button>
       </div>
     </div>
+    <!-- Bulk bar -->
+    <div v-if="selectedCount > 0" class="flex items-center gap-2 px-4 py-2 bg-primary/10 border-b border-primary/20 text-xs shrink-0">
+      <span class="font-medium text-primary">{{ selectedCount }} {{ $t('common.selected') }}</span>
+      <div class="flex items-center gap-1 ml-auto">
+        <button class="px-2.5 py-1 rounded-field bg-primary text-primary-content hover:bg-primary/90 flex items-center gap-1" @click="playSelected"><Play :size="12" /> Play</button>
+        <button class="px-2.5 py-1 rounded-field bg-base-100 border border-base-300 hover:bg-base-200" @click="queueSelected"><ListMusic :size="12" class="inline mr-1" />{{ $t('common.addToQueue') }}</button>
+        <div class="relative">
+          <button class="px-2.5 py-1 rounded-field bg-base-100 border border-base-300 hover:bg-base-200" @click="showBulkPlaylist = !showBulkPlaylist">{{ $t('common.addToPlaylist') }}</button>
+          <div v-if="showBulkPlaylist" class="absolute right-0 top-full mt-1 w-48 bg-base-100 border border-base-300 rounded-box shadow-xl py-1 z-20 max-h-48 overflow-auto">
+            <button v-for="p in library.playlists" :key="p.id" class="w-full text-left px-3 py-1.5 text-xs hover:bg-base-content/10 truncate" @click="addSelectedToPlaylist(p.id)">{{ p.name }}</button>
+            <div v-if="library.playlists.length===0" class="px-3 py-1.5 text-xs text-base-content/50 italic">{{ $t('common.noPlaylists') }}</div>
+          </div>
+        </div>
+        <button class="p-1 rounded-field hover:bg-base-300 text-base-content/60" @click="clearSelection"><X :size="12" /></button>
+      </div>
+    </div>
 
     <template v-if="viewMode === 'list'">
       <div ref="trackListRef" class="flex-1 overflow-auto">
@@ -150,7 +244,10 @@ onUnmounted(() => grid.destroy());
             <LibraryTrackRow
               :track="tracks[v.index]"
               :show-playlist="true"
+              :selected="isSelected(tracks[v.index].path)"
+              :query="query"
               @edit="emit('edit', $event)"
+              @select="toggleSelect(v.index, $event)"
             />
           </div>
         </div>
@@ -174,12 +271,14 @@ onUnmounted(() => grid.destroy());
             }"
           >
             <LibraryTrackCard
-              v-for="card in row.tracks"
+              v-for="(card, cIdx) in row.tracks"
               :key="card.path"
               :track="card"
               :show-playlist="true"
+              :selected="isSelected(card.path)"
               @play="emit('play', $event)"
               @edit="emit('edit', $event)"
+              @select="toggleSelect(row.index * grid.cols.value + cIdx, $event)"
             />
           </div>
         </div>

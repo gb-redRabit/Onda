@@ -16,10 +16,19 @@ const emit = defineEmits<{
   playTracks: [tracks: MediaFile[]];
 }>();
 
+const sortKey = ref<'name' | 'count' | 'year'>('name');
+const sortedAlbums = computed(() => {
+  const list = [...props.albums];
+  if (sortKey.value === 'count') list.sort((a, b) => b[1].length - a[1].length);
+  else if (sortKey.value === 'year') list.sort((a, b) => (b[1][0]?.metadata?.year || 0) - (a[1][0]?.metadata?.year || 0));
+  else list.sort((a, b) => a[0].localeCompare(b[0]));
+  return list;
+});
+
 const albumListRef = ref<HTMLElement | null>(null);
 const albumListVirtualizer = useVirtualizer({
   get count() {
-    return props.albums.length;
+    return sortedAlbums.value.length;
   },
   getScrollElement: () => albumListRef.value,
   estimateSize: () => 56,
@@ -31,7 +40,7 @@ const grid = useVirtualGrid(albumGridRef, 200, 5);
 
 const albumRowVirtualizer = useVirtualizer({
   get count() {
-    return Math.ceil(props.albums.length / grid.cols.value);
+    return Math.ceil(sortedAlbums.value.length / grid.cols.value);
   },
   getScrollElement: () => albumGridRef.value,
   estimateSize: () => 256,
@@ -44,10 +53,10 @@ const visibleAlbums = computed(() => {
   const result: Array<{ top: number; albums: Array<[string, MediaFile[]]> }> = [];
   for (const row of items) {
     const start = row.index * cols;
-    const end = Math.min(start + cols, props.albums.length);
+    const end = Math.min(start + cols, sortedAlbums.value.length);
     result.push({
       top: row.start,
-      albums: props.albums.slice(start, end)
+      albums: sortedAlbums.value.slice(start, end)
     });
   }
   return result;
@@ -66,17 +75,22 @@ onUnmounted(() => grid.destroy());
     <p class="text-sm">{{ $t('library.noAlbums') }}</p>
   </div>
   <template v-else>
-    <div class="flex items-center justify-between px-4 py-2 border-b border-base-300 shrink-0">
-      <span class="text-xs text-base-content/50"
+    <div class="flex items-center justify-between px-4 py-2 border-b border-base-300 bg-base-100/50 backdrop-blur shrink-0 sticky top-0 z-[1]">
+      <span class="text-xs font-medium text-base-content/60"
         >{{ albums.length }} {{ $t('library.tracksCount') }}</span
       >
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5">
+        <select v-model="sortKey" class="px-2 py-1 rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none">
+          <option value="name">Nazwa A→Z</option>
+          <option value="count">Liczba utworów</option>
+          <option value="year">Rok</option>
+        </select>
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             viewMode === 'list'
-              ? 'bg-primary/10 text-primary'
-              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
+              ? 'bg-primary text-primary-content'
+              : 'bg-base-100 border border-base-300 text-base-content/50 hover:text-base-content hover:border-primary/30'
           "
           :title="$t('library.viewModeList')"
           @click="emit('update:viewMode', 'list')"
@@ -87,8 +101,8 @@ onUnmounted(() => grid.destroy());
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             viewMode === 'grid'
-              ? 'bg-primary/10 text-primary'
-              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
+              ? 'bg-primary text-primary-content'
+              : 'bg-base-100 border border-base-300 text-base-content/50 hover:text-base-content hover:border-primary/30'
           "
           :title="$t('library.viewModeGrid')"
           @click="emit('update:viewMode', 'grid')"
@@ -121,15 +135,15 @@ onUnmounted(() => grid.destroy());
           >
             <div
               class="flex items-center gap-3 px-4 py-2 hover:bg-base-100 border border-transparent hover:border-base-300 hover:shadow-sm rounded-field transition-all cursor-pointer h-full mx-2"
-              @click="emit('playTracks', albums[v.index][1])"
+              @click="emit('playTracks', sortedAlbums[v.index][1])"
             >
               <div class="w-10 h-10 rounded-field overflow-hidden bg-base-200 border border-base-300 shrink-0 flex items-center justify-center">
-                <MediaCover :path="albums[v.index][1][0]?.path" :size="16" :render-as-video="false" fallback="disc" />
+                <MediaCover :path="sortedAlbums[v.index][1][0]?.path" :size="16" :render-as-video="false" fallback="disc" />
               </div>
               <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium truncate">{{ albums[v.index][0] }}</div>
+                <div class="text-sm font-medium truncate">{{ sortedAlbums[v.index][0] }}</div>
                 <div class="text-xs text-base-content/50 truncate">
-                  {{ albums[v.index][1][0]?.metadata?.artist || $t('common.unknown') }} · {{ albums[v.index][1].length }} {{ $t('library.tracksCount') }}
+                  {{ sortedAlbums[v.index][1][0]?.metadata?.artist || $t('common.unknown') }} · {{ sortedAlbums[v.index][1].length }} {{ $t('library.tracksCount') }}
                 </div>
               </div>
             </div>

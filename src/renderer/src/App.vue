@@ -240,7 +240,7 @@ const contextMenuStyle = computed(() => {
 
 <template>
   <div
-    class="app-root flex flex-col h-full w-full overflow-hidden border border-base-300 bg-base-200/[var(--glass-alpha)]"
+    class="app-root flex flex-col h-full w-full overflow-hidden border border-base-300 bg-base-200/(--glass-alpha)"
     :class="{ 'is-maximized': isWinMaximized, 'app-root-glass': glassOn }"
   >
     <AppMenu v-if="ui.topMenuVisible && !isExplorerWindow" />

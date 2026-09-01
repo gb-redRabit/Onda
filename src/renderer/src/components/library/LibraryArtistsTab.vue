@@ -14,10 +14,18 @@ const emit = defineEmits<{
   playTracks: [tracks: MediaFile[]];
 }>();
 
+const sortKey = ref<'name' | 'count'>('name');
+const sortedArtists = computed(() => {
+  const list = [...props.artists];
+  if (sortKey.value === 'count') list.sort((a, b) => b[1].length - a[1].length);
+  else list.sort((a, b) => a[0].localeCompare(b[0]));
+  return list;
+});
+
 const artistListRef = ref<HTMLElement | null>(null);
 const artistListVirtualizer = useVirtualizer({
   get count() {
-    return props.artists.length;
+    return sortedArtists.value.length;
   },
   getScrollElement: () => artistListRef.value,
   estimateSize: () => 56,
@@ -29,7 +37,7 @@ const grid = useVirtualGrid(artistGridRef, 180, 5);
 
 const artistRowVirtualizer = useVirtualizer({
   get count() {
-    return Math.ceil(props.artists.length / grid.cols.value);
+    return Math.ceil(sortedArtists.value.length / grid.cols.value);
   },
   getScrollElement: () => artistGridRef.value,
   estimateSize: () => 180,
@@ -42,10 +50,10 @@ const visibleArtists = computed(() => {
   const result: Array<{ top: number; artists: Array<[string, MediaFile[]]> }> = [];
   for (const row of items) {
     const start = row.index * cols;
-    const end = Math.min(start + cols, props.artists.length);
+    const end = Math.min(start + cols, sortedArtists.value.length);
     result.push({
       top: row.start,
-      artists: props.artists.slice(start, end)
+      artists: sortedArtists.value.slice(start, end)
     });
   }
   return result;
@@ -64,17 +72,21 @@ onUnmounted(() => grid.destroy());
     <p class="text-sm">{{ $t('library.noArtists') }}</p>
   </div>
   <template v-else>
-    <div class="flex items-center justify-between px-4 py-2 border-b border-base-300 shrink-0">
-      <span class="text-xs text-base-content/50"
+    <div class="flex items-center justify-between px-4 py-2 border-b border-base-300 bg-base-100/50 backdrop-blur shrink-0 sticky top-0 z-[1]">
+      <span class="text-xs font-medium text-base-content/60"
         >{{ artists.length }} {{ $t('library.tracksCount') }}</span
       >
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5">
+        <select v-model="sortKey" class="px-2 py-1 rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none">
+          <option value="name">{{ $t('library.sortArtist') }} A→Z</option>
+          <option value="count">Liczba utworów</option>
+        </select>
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             viewMode === 'list'
-              ? 'bg-primary/10 text-primary'
-              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
+              ? 'bg-primary text-primary-content'
+              : 'bg-base-100 border border-base-300 text-base-content/50 hover:text-base-content hover:border-primary/30'
           "
           :title="$t('library.viewModeList')"
           @click="emit('update:viewMode', 'list')"
@@ -85,8 +97,8 @@ onUnmounted(() => grid.destroy());
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             viewMode === 'grid'
-              ? 'bg-primary/10 text-primary'
-              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
+              ? 'bg-primary text-primary-content'
+              : 'bg-base-100 border border-base-300 text-base-content/50 hover:text-base-content hover:border-primary/30'
           "
           :title="$t('library.viewModeGrid')"
           @click="emit('update:viewMode', 'grid')"
@@ -119,7 +131,7 @@ onUnmounted(() => grid.destroy());
           >
             <div
               class="flex items-center gap-3 px-4 py-2 hover:bg-base-content/10 transition-colors cursor-pointer h-full"
-              @click="emit('playTracks', artists[v.index][1])"
+              @click="emit('playTracks', sortedArtists[v.index][1])"
             >
               <div
                 class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0"
@@ -127,9 +139,9 @@ onUnmounted(() => grid.destroy());
                 <Mic2 :size="14" class="text-primary" />
               </div>
               <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium truncate">{{ artists[v.index][0] }}</div>
+                <div class="text-sm font-medium truncate">{{ sortedArtists[v.index][0] }}</div>
                 <div class="text-xs text-base-content/50">
-                  {{ artists[v.index][1].length }} {{ $t('library.tracksCount') }}
+                  {{ sortedArtists[v.index][1].length }} {{ $t('library.tracksCount') }}
                 </div>
               </div>
             </div>

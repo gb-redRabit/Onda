@@ -61,6 +61,21 @@ export const useLibraryStore = defineStore('library', () => {
       if (isLoaded.value) void scheduleLoadTracksAsync();
       void reloadPlaylists();
     });
+    window.api?.on('library:fileMissing', (...args: unknown[]) => {
+      const p = args[0] as string | undefined;
+      if (typeof p === 'string' && p) {
+        const before = tracks.value.length;
+        tracks.value = tracks.value.filter((t) => t.path !== p);
+        if (tracks.value.length !== before) {
+          invalidateDerivedCache();
+          // zapisz od razu żeby nie wracał po restarcie
+          try {
+            const files = JSON.parse(JSON.stringify(tracks.value));
+            window.api?.invoke('library:saveScanned', { files, folderTypes: folderTypes.value });
+          } catch {}
+        }
+      }
+    });
   }
 
   // Re-read playlists from disk (they can be changed by the auto channel

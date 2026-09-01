@@ -1,7 +1,8 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { reactive, ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { X, Plus, Loader2, Globe, Link2, Trash2 } from '@lucide/vue';
+import { useUIStore } from '@renderer/stores/ui';
 import { useSourcesStore } from '@renderer/stores/sources';
 import { useSettingsStore } from '@renderer/stores/settings';
 import EndpointLevelCard from './EndpointLevelCard.vue';
@@ -25,8 +26,20 @@ const emit = defineEmits<{
   saved: [];
 }>();
 
+const ui = useUIStore();
 const sources = useSourcesStore();
 const settings = useSettingsStore();
+let overlayClicks = 0;
+let overlayTimer: ReturnType<typeof setTimeout> | null = null;
+function onOverlayClick() {
+  const isDirty = draft.name.trim() !== (props.source?.name || '') || draft.baseUrl.trim() !== (props.source?.baseUrl || '') || draft.endpoints.length !== (props.source?.endpoints?.length || 0);
+  overlayClicks++;
+  if (isDirty) ui.notify('warning', t('common.unsavedChangesClickAgain'));
+  else ui.notify('info', t('common.clickAgainToClose'));
+  if (overlayClicks >= 2) emit('close');
+  if (overlayTimer) clearTimeout(overlayTimer);
+  overlayTimer = setTimeout(() => (overlayClicks = 0), 2000);
+}
 
 const draft = reactive({
   id: props.source?.id || '',
@@ -281,7 +294,7 @@ async function onTestTable(idx: number) {
   <Teleport to="body">
     <div
       class="fixed inset-0 z-50 flex items-center justify-center bg-neutral/70 p-6"
-      @click.self="emit('close')"
+      @click.self="onOverlayClick"
     >
       <div
         class="w-full max-w-3xl max-h-full flex flex-col rounded-box bg-base-100 border border-base-300 shadow-2xl overflow-hidden"

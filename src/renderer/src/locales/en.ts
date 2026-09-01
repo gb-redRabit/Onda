@@ -100,6 +100,9 @@ export default {
     tracksCount: 'tracks',
     searchInMusicBrainz: 'Search in MusicBrainz',
     folderFiles: 'files',
+    playlistEmptyHint: 'Playlist is empty. Add tracks from "Tracks" or "Video" tab.',
+    selectPlaylistHint: 'Select a playlist to view its contents',
+    emptyFolder: '— empty —',
     overviewHint: 'Quick access to recent and favorites',
     recentlyPlayed: 'Recently played',
     mostPlayed: 'Most played',
@@ -1064,7 +1067,9 @@ export default {
     deselectAll: 'Deselect all',
     copy: 'Copy',
     cut: 'Cut',
-    paste: 'Paste'
+    paste: 'Paste',
+    clickAgainToClose: 'Click again outside to close',
+    unsavedChangesClickAgain: 'You have unsaved changes — click again outside to close, or use Cancel/Save'
   },
   wizard: {
     title: 'Welcome to Onda',

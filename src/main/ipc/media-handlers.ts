@@ -211,7 +211,9 @@ export function registerMediaHandlers(): void {
         }
         return null;
       } catch (e) {
-        logger.warn('media', `readCover failed for ${filePath}`, e);
+        const isEnoent = Boolean(e && typeof e === 'object' && 'code' in e && (e as { code?: string }).code === 'ENOENT');
+        if (isEnoent) logger.info('media', `readCover file missing ${filePath}`);
+        else logger.warn('media', `readCover failed for ${filePath}`, e);
         return null;
       }
     }

@@ -1,9 +1,11 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { FolderOpen, FileText, X } from '@lucide/vue';
 import { logger } from '@shared/logger';
 import { formatFileSize } from '@renderer/utils/formatters';
 import type { FileItem } from '@renderer/types/explorer';
+import { useUIStore } from '@renderer/stores/ui';
 
 interface PropertiesData {
   name: string;
@@ -46,6 +48,19 @@ watch(
   { immediate: true }
 );
 
+const ui = useUIStore();
+let overlayClicks = 0;
+let overlayTimer: ReturnType<typeof setTimeout> | null = null;
+function onOverlayClick() {
+  overlayClicks++;
+  const isDirty = propertiesName.value.trim() !== props.item.name;
+  if (isDirty) ui.notify('warning', t('common.unsavedChangesClickAgain'));
+  else ui.notify('info', t('common.clickAgainToClose'));
+  if (overlayClicks >= 2) emit('close');
+  if (overlayTimer) clearTimeout(overlayTimer);
+  overlayTimer = setTimeout(() => (overlayClicks = 0), 2000);
+}
+const { t } = useI18n();
 function closeProperties() {
   emit('close');
 }
@@ -64,7 +79,7 @@ async function applyProperties() {
   <Teleport to="body">
     <div
       class="fixed inset-0 z-9999 bg-neutral/50 flex items-center justify-center"
-      @click.self="closeProperties"
+      @click.self="onOverlayClick"
     >
       <div
         class="bg-base-100 border border-base-300 rounded-box w-110 max-w-[92vw] shadow-2xl overflow-hidden"

@@ -46,11 +46,14 @@ const { editingTrack, showingMBLookup, onTagSaved, onMBApply } = useLibraryTagEd
   player
 );
 const mbInitialQuery = ref('');
+const mbBatchTracks = ref<typeof library.tracks | undefined>(undefined);
 // 8.9 — odbierz query z menu kontekstowego (track → MusicBrainz)
 function onMbEvent(e: Event) {
-  const ce = e as CustomEvent<{ query?: string; track?: typeof library.tracks[0] }>;
+  const ce = e as CustomEvent<{ query?: string; track?: typeof library.tracks[0]; batchTracks?: typeof library.tracks }>;
   mbInitialQuery.value = ce.detail?.query || '';
+  mbBatchTracks.value = ce.detail?.batchTracks as unknown as typeof library.tracks | undefined;
   if (ce.detail?.track) editingTrack.value = ce.detail.track as unknown as typeof editingTrack.value;
+  else if (ce.detail?.batchTracks?.[0]) editingTrack.value = ce.detail.batchTracks[0] as unknown as typeof editingTrack.value;
   showingMBLookup.value = true;
 }
 onMounted(() => window.addEventListener('onda:openMusicbrainz', onMbEvent as unknown as never));
@@ -295,11 +298,14 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
         </div>
 
         <!-- Tab bar — jedna linia, reaguje na szerokość: flex-1 + napisy chowane -->
-        <div class="relative -mx-1">
+        <div class="relative -mx-1" role="tablist" aria-label="Biblioteka">
           <div class="flex gap-1 sm:gap-1.5 px-1 pb-1 overflow-hidden">
             <button
               v-for="tabItem in tabs"
               :key="tabItem.id"
+              role="tab"
+              :aria-selected="tab === tabItem.id"
+              :aria-label="tabItem.label"
               class="group flex flex-1 min-w-0 items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 rounded-field text-xs font-medium transition-all duration-150 border fx-depth truncate hover:border-primary/30"
               :class="
                 tab === tabItem.id
@@ -393,7 +399,10 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
     </div>
 
     <!-- Content -->
-    <div class="flex-1 flex flex-col min-h-0">
+    <div v-if="library.isLoading && !library.isLoaded" class="flex-1 p-4 space-y-3">
+      <div v-for="i in 6" :key="i" class="h-12 rounded-box bg-base-100 border border-base-300 animate-pulse"></div>
+    </div>
+    <div v-else class="flex-1 flex flex-col min-h-0">
       <LibraryOverviewTab
         v-if="tab === 'overview'"
         :query="query"
@@ -408,6 +417,7 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
         :tracks="sortedFilteredTracks"
         :view-mode="viewMode"
         :chip="chip"
+        :query="debouncedQuery"
         @update:view-mode="setViewMode"
         @play="playTrack"
         @play-all="playAllTracks"
@@ -428,7 +438,7 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
         :images="filteredImages"
         @open="openImageViewer"
       />
-      <LibraryFoldersTab v-else-if="tab === 'folders'" :query="query" @play-folder="playFolder" />
+      <LibraryFoldersTab v-else-if="tab === 'folders'" :query="query" @play-folder="playFolder" @edit="onTrackEdit" />
       <LibraryArtistsTab
         v-else-if="tab === 'artists'"
         :artists="filteredArtists"
@@ -449,5 +459,5 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
     </div>
   </div>
   <TrackTagEditor :track="editingTrack" @close="editingTrack = null" @saved="onTagSaved" />
-  <MusicBrainzLookup v-if="showingMBLookup" :initial-query="mbInitialQuery" @close="showingMBLookup = false" @apply="onMBApply" />
+  <MusicBrainzLookup v-if="showingMBLookup" :initial-query="mbInitialQuery" :track="editingTrack" :batch-tracks="mbBatchTracks" @close="showingMBLookup = false; mbBatchTracks = undefined" @apply="onMBApply" />
 </template>
