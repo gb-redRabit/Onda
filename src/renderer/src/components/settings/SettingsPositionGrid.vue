@@ -22,7 +22,7 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
           class="fx-depth rounded-box fx-noise text-[11px] font-medium transition-all border flex flex-col items-center justify-center gap-1 min-h-16"
           :class="
             modelValue === opt.id
-              ? 'border-primary bg-primary/10 text-primary shadow-sm shadow-primary/20'
+              ? 'border-primary bg-primary/10 text-primary shadow-primary/20'
               : 'border-transparent text-base-content/50 hover:bg-base-content/10 hover:text-base-content/70'
           "
           @click="emit('update:modelValue', opt.id)"

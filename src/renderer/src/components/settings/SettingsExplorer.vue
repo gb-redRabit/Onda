@@ -20,7 +20,7 @@ const settings = useSettingsStore();
         <button
           v-for="mode in ['extraSmall', 'small', 'medium', 'large', 'extraLarge', 'details'] as const"
           :key="mode"
-          class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors"
+          class="px-3 py-1.5 rounded-field text-xs font-medium border transition-colors"
           :class="
             settings.explorer.viewMode === mode
               ? 'bg-primary text-primary-content border-primary'
@@ -40,7 +40,7 @@ const settings = useSettingsStore();
           <span class="text-xs text-base-content/70">{{ $t('settings.sortBy') }}</span>
           <select
             :value="settings.explorer.sortBy"
-            class="px-3 py-2 rounded-lg bg-base-100 border border-base-300 text-sm"
+            class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
             @change="settings.updateExplorer({ sortBy: ($event.target as HTMLSelectElement).value as any })"
           >
             <option value="name">{{ $t('settings.sortByName') }}</option>
@@ -53,7 +53,7 @@ const settings = useSettingsStore();
           <span class="text-xs text-base-content/70">{{ $t('settings.sortOrder') }}</span>
           <select
             :value="settings.explorer.sortOrder"
-            class="px-3 py-2 rounded-lg bg-base-100 border border-base-300 text-sm"
+            class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
             @change="settings.updateExplorer({ sortOrder: ($event.target as HTMLSelectElement).value as any })"
           >
             <option value="asc">{{ $t('settings.sortAsc') }}</option>

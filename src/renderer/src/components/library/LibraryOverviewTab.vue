@@ -139,7 +139,7 @@ const sections = computed(() => [
 
     <!-- Liked hero when has likes -->
     <div v-if="likedTracks.length > 0" class="mx-4 mb-4 p-4 rounded-box bg-base-100 border border-base-300 flex items-center gap-4">
-      <div class="w-14 h-14 rounded-box bg-primary flex items-center justify-center shrink-0 shadow">
+      <div class="w-14 h-14 rounded-box bg-primary flex items-center justify-center shrink-0 fx-depth">
         <Heart :size="22" class="text-primary-content fill-primary-content" />
       </div>
       <div class="flex-1 min-w-0">
@@ -148,7 +148,7 @@ const sections = computed(() => [
       </div>
       <div class="flex items-center gap-2">
         <button
-          class="w-10 h-10 rounded-full bg-primary text-primary-content flex items-center justify-center hover:bg-primary/90 transition-colors shadow"
+          class="w-10 h-10 rounded-full bg-primary text-primary-content flex items-center justify-center hover:bg-primary/90 transition-colors fx-depth fx-noise"
           @click="playAll(likedTracks)"
         >
           <Play :size="16" class="ml-0.5 fill-current" />

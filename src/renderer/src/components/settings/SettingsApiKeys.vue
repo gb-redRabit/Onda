@@ -57,7 +57,7 @@ function toggleActive(id: string, active: boolean) {
             <div class="text-xs text-base-content/50 truncate">{{ k.service }} · {{ k.key.slice(0, 4) }}…</div>
           </div>
           <SettingsToggle :model-value="!!k.isActive" @update:model-value="toggleActive(k.id, $event)" />
-          <button class="px-2 py-1 rounded-lg text-xs border border-base-300 hover:bg-base-200" @click="removeKey(k.id)">
+          <button class="px-2 py-1 rounded-field text-xs border border-base-300 hover:bg-base-200" @click="removeKey(k.id)">
             {{ $t('common.delete') }}
           </button>
         </div>
@@ -65,14 +65,14 @@ function toggleActive(id: string, active: boolean) {
       <div class="mt-4 flex gap-2">
         <button
           v-if="!showAdd"
-          class="px-3 py-1.5 rounded-lg bg-primary text-primary-content text-sm"
+          class="px-3 py-1.5 rounded-field bg-primary text-primary-content text-sm fx-depth fx-noise"
           @click="showAdd = true"
         >
           {{ $t('settings.addApiKey') }}
         </button>
-        <div v-else class="flex-1 flex flex-col gap-2 p-3 rounded-lg border border-base-300 bg-base-200/50">
-          <input v-model="newName" :placeholder="$t('settings.apiKeyName')" class="px-3 py-2 rounded-lg bg-base-100 border border-base-300 text-sm" />
-          <select v-model="newService" class="px-3 py-2 rounded-lg bg-base-100 border border-base-300 text-sm">
+        <div v-else class="flex-1 flex flex-col gap-2 p-3 rounded-field border border-base-300 bg-base-200/50">
+          <input v-model="newName" :placeholder="$t('settings.apiKeyName')" class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm" />
+          <select v-model="newService" class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm">
             <option value="generic">Generic</option>
             <option value="youtube">YouTube</option>
             <option value="soundcloud">SoundCloud</option>
@@ -82,13 +82,13 @@ function toggleActive(id: string, active: boolean) {
             v-model="newKey"
             type="password"
             :placeholder="$t('settings.apiKeyValue')"
-            class="px-3 py-2 rounded-lg bg-base-100 border border-base-300 text-sm"
+            class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
           />
           <div class="flex gap-2">
-            <button class="px-3 py-1.5 rounded-lg bg-primary text-primary-content text-sm" @click="addKey">
+            <button class="px-3 py-1.5 rounded-field bg-primary text-primary-content text-sm fx-depth fx-noise" @click="addKey">
               {{ $t('common.save') }}
             </button>
-            <button class="px-3 py-1.5 rounded-lg border border-base-300 text-sm" @click="showAdd = false">
+            <button class="px-3 py-1.5 rounded-field border border-base-300 text-sm" @click="showAdd = false">
               {{ $t('common.cancel') }}
             </button>
           </div>

@@ -189,7 +189,7 @@ onUnmounted(() => {
         </button>
         <div class="w-px h-6 bg-base-300 mx-1"></div>
         <button
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors shadow-sm"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors fx-depth fx-noise"
           @click="emit('playAll')"
         >
           <Music2 :size="12" /> <span class="hidden sm:inline">{{ $t('library.playAll') }}</span><span class="sm:hidden">Play</span>
@@ -207,7 +207,7 @@ onUnmounted(() => {
     <div v-if="selectedCount > 0" class="flex items-center gap-2 px-4 py-2 bg-primary/10 border-b border-primary/20 text-xs shrink-0">
       <span class="font-medium text-primary">{{ selectedCount }} {{ $t('common.selected') }}</span>
       <div class="flex items-center gap-1 ml-auto">
-        <button class="px-2.5 py-1 rounded-field bg-primary text-primary-content hover:bg-primary/90 flex items-center gap-1" @click="playSelected"><Play :size="12" /> Play</button>
+        <button class="px-2.5 py-1 rounded-field bg-primary text-primary-content hover:bg-primary/90 flex items-center gap-1 fx-depth fx-noise" @click="playSelected"><Play :size="12" /> Play</button>
         <button class="px-2.5 py-1 rounded-field bg-base-100 border border-base-300 hover:bg-base-200" @click="queueSelected"><ListMusic :size="12" class="inline mr-1" />{{ $t('common.addToQueue') }}</button>
         <div class="relative">
           <button class="px-2.5 py-1 rounded-field bg-base-100 border border-base-300 hover:bg-base-200" @click="showBulkPlaylist = !showBulkPlaylist">{{ $t('common.addToPlaylist') }}</button>

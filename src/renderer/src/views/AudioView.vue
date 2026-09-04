@@ -219,7 +219,7 @@ onUnmounted(() => {
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-base font-bold">{{ $t('audioView.layoutEditor') }}</h2>
         <button
-          class="px-3 py-1.5 rounded-field text-xs font-medium bg-primary text-primary-content hover:bg-primary/90 transition-colors"
+          class="px-3 py-1.5 rounded-field text-xs font-medium bg-primary text-primary-content hover:bg-primary/90 transition-colors fx-depth fx-noise"
           @click="showLayoutEditor = false"
         >
           {{ $t('audioView.layoutDone') }}

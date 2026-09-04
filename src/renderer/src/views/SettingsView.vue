@@ -299,7 +299,7 @@ watch(activeTab, (_newTab, oldTab) => {
         class="flex items-center gap-2 px-3 h-8 rounded-field text-xs font-medium whitespace-nowrap transition-all"
         :class="
           activeSection === section.id
-            ? 'bg-primary text-primary-content shadow-sm shadow-primary/20'
+            ? 'bg-primary text-primary-content fx-depth shadow-primary/20'
             : 'text-base-content/60 hover:text-base-content hover:bg-base-content/10'
         "
         @click="selectSection(section.id)"

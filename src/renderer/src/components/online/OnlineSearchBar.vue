@@ -158,7 +158,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
             class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
             :class="
               settings.download.defaultKind === k
-                ? 'bg-base-100 text-base-content shadow-sm'
+                ? 'bg-base-100 text-base-content'
                 : 'text-base-content/50 hover:text-base-content/70'
             "
             @click="settings.updateDownload({ defaultKind: k })"

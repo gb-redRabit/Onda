@@ -158,7 +158,7 @@ const noMatch = computed(() => library.folders.length > 0 && folderMetas.value.l
 
         <div class="flex items-center gap-1 shrink-0">
           <button
-            class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center hover:bg-primary/90 transition-colors shadow-sm"
+            class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center hover:bg-primary/90 transition-colors fx-depth fx-noise"
             :title="$t('library.folderPlay')"
             @click.stop="emit('playFolder', meta.path)"
           >

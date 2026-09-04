@@ -24,7 +24,7 @@ const base =
   'inline-flex items-center justify-center gap-1.5 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
 
 const variants: Record<string, string> = {
-  primary: 'bg-primary text-primary-content hover:bg-primary/90 shadow-sm shadow-primary/20',
+  primary: 'bg-primary text-primary-content hover:bg-primary/90 fx-depth fx-noise shadow-primary/20',
   secondary:
     'bg-base-100 border border-base-300 text-base-content/70 hover:bg-base-content/10 hover:text-base-content',
   ghost: 'text-base-content/70 hover:bg-base-content/10 hover:text-base-content',

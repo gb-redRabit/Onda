@@ -326,7 +326,7 @@ const playlistCount = computed(() => saved.playlists.length);
                   </button>
                   <button
                     type="button"
-                    class="p-2 rounded-full bg-error/60 text-error-content hover:bg-error transition-colors"
+                    class="p-2 rounded-full bg-error/60 text-error-content hover:bg-error transition-colors fx-depth"
                     :title="$t('common.delete')"
                     @click="removeTrack(s.id)"
                   >

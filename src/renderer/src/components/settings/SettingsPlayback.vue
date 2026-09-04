@@ -93,7 +93,7 @@ const toggles = [
         <button
           v-for="p in ['html5', 'vlc'] as const"
           :key="p"
-          class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors"
+          class="px-3 py-1.5 rounded-field text-xs font-medium border transition-colors"
           :class="
             settings.playback.defaultPlayer === p
               ? 'bg-primary text-primary-content border-primary'
@@ -110,7 +110,7 @@ const toggles = [
       <SettingsSectionTitle :title="$t('settings.videoFilter')" />
       <select
         :value="settings.playback.videoFilter"
-        class="w-full px-3 py-2 rounded-lg bg-base-100 border border-base-300 text-sm"
+        class="w-full px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
         @change="
           settings.updatePlayback({ videoFilter: ($event.target as HTMLSelectElement).value })
         "
@@ -130,7 +130,7 @@ const toggles = [
           <span class="text-xs text-base-content/70">{{ $t('settings.vizMode') }}</span>
           <select
             :value="settings.playback.visualization.mode"
-            class="px-3 py-2 rounded-lg bg-base-100 border border-base-300 text-sm"
+            class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
             @change="
               settings.updatePlayback({
                 visualization: {
@@ -154,7 +154,7 @@ const toggles = [
             <input
               type="color"
               :value="settings.playback.visualization.primaryColor"
-              class="h-9 w-full rounded-lg border border-base-300 p-1"
+              class="h-9 w-full rounded-field border border-base-300 p-1"
               @input="
                 settings.updatePlayback({
                   visualization: {
@@ -170,7 +170,7 @@ const toggles = [
             <input
               type="color"
               :value="settings.playback.visualization.secondaryColor"
-              class="h-9 w-full rounded-lg border border-base-300 p-1"
+              class="h-9 w-full rounded-field border border-base-300 p-1"
               @input="
                 settings.updatePlayback({
                   visualization: {

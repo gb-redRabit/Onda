@@ -309,7 +309,7 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
               class="group flex flex-1 min-w-0 items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 rounded-field text-xs font-medium transition-all duration-150 border fx-depth truncate hover:border-primary/30"
               :class="
                 tab === tabItem.id
-                  ? 'bg-primary text-primary-content border-primary shadow-sm shadow-primary/20 flex-[1.2] backdrop-blur-sm'
+                  ? 'bg-primary text-primary-content border-primary fx-depth shadow-primary/20 flex-[1.2] backdrop-blur-sm'
                   : 'bg-base-100/(--glass-alpha) text-base-content/70 border-base-300 hover:bg-base-100/(--glass-alpha) hover:text-base-content backdrop-blur-sm'
               "
               :title="tabItem.label + ' (' + tabItem.count + ')'"
@@ -374,7 +374,7 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
 
           <button
             v-if="tab === 'tracks'"
-            class="hidden md:flex items-center gap-1.5 px-3 py-2.5 rounded-field bg-primary/10 text-primary text-xs font-medium hover:bg-primary hover:text-primary-content transition-colors shrink-0 border border-primary/20"
+            class="hidden md:flex items-center gap-1.5 px-3 py-2.5 rounded-field bg-primary/10 text-primary text-xs font-medium hover:bg-primary hover:text-primary-content transition-colors shrink-0 border border-primary/20 fx-depth"
             :title="$t('library.searchInMusicBrainz')"
             @click="showingMBLookup = true"
           >

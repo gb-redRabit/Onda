@@ -31,7 +31,7 @@ const normalized = computed(() =>
       class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-all disabled:opacity-40"
       :class="
         modelValue === opt.value
-          ? 'bg-base-100 text-base-content shadow-sm'
+          ? 'bg-base-100 text-base-content'
           : 'text-base-content/50 hover:text-base-content/70'
       "
       :disabled="opt.disabled"

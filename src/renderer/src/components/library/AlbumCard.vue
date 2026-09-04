@@ -116,7 +116,7 @@ function onDragStart(e: DragEvent) {
         <div class="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity" @click.stop>
           <div ref="playlistBtn" class="relative">
             <button
-              class="w-7 h-7 rounded-full bg-neutral/60 backdrop-blur-sm text-neutral-content hover:bg-neutral/80 flex items-center justify-center"
+              class="w-7 h-7 rounded-full bg-neutral/60 backdrop-blur-sm text-neutral-content hover:bg-neutral/80 flex items-center justify-center fx-depth"
               @click="togglePlaylist"
             >
               <Plus :size="14" />
