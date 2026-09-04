@@ -35,44 +35,27 @@ const result = computed(() => {
   return { type: null, data: null };
 });
 
-const isVideo = computed(() => result.value.type === 'video' && props.renderAsVideo);
+const isVideoFile = computed(() => {
+  if (!result.value.data) return false;
+  const d = result.value.data;
+  return /^[A-Z]:\\/i.test(d) || d.startsWith('/');
+});
+const isVideo = computed(
+  () => (result.value.type === 'video' || isVideoFile.value) && props.renderAsVideo
+);
 const src = computed(() => {
   if (!result.value.data) return '';
-  if (result.value.type === 'video') return toMediaServerUrl(result.value.data);
+  if (result.value.type === 'video' || isVideoFile.value) return toMediaServerUrl(result.value.data);
   return result.value.data;
 });
 
-const pingPong = ref(true);
+const pingPong = ref(false);
 let reverseRaf: number | null = null;
 
-function startReverse(video: HTMLVideoElement) {
-  if (reverseRaf) cancelAnimationFrame(reverseRaf);
-  const step = () => {
-    if (!pingPong.value || !video || video.ended) return;
-    video.currentTime = Math.max(0, video.currentTime - 0.035);
-    if (video.currentTime <= 0) {
-      reverseRaf = null;
-      video.playbackRate = 1;
-      video.currentTime = 0;
-      video.play();
-      return;
-    }
-    reverseRaf = requestAnimationFrame(step);
-  };
-  reverseRaf = requestAnimationFrame(step);
-}
-
 function onVideoEnded(e: Event) {
-  if (!pingPong.value) return;
   const video = e.target as HTMLVideoElement;
-  if (video.playbackRate > 0) {
-    video.playbackRate = 1;
-    startReverse(video);
-  } else {
-    video.playbackRate = 1;
-    video.currentTime = 0;
-    video.play();
-  }
+  video.currentTime = 0;
+  video.play();
 }
 
 const iconComponent = computed(() => {

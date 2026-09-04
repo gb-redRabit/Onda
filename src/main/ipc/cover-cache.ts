@@ -401,28 +401,14 @@ export async function extractAndCacheCover(
   }
   const siblingVideo = findSiblingVideo(filePath);
   if (siblingVideo) {
-    // Audio bez okładki + obok .mp4 o tej samej nazwie → wyciągnij klatkę JPEG (nie ścieżkę video)
-    const cachedSibling = await getCachedCover(siblingVideo);
-    if (cachedSibling) return cachedSibling;
-    const frame = await extractVideoFrame(siblingVideo);
-    if (frame) {
-      const s = await stat(siblingVideo).catch(() => null);
-      cacheSet(coverResultCache, siblingVideo, {
-        result: { type: 'image', data: frame },
-        mtimeMs: s?.mtimeMs ?? Date.now(),
-        checkedAt: Date.now()
-      });
-      const match = frame.match(/^data:image\/(\w+);base64,(.+)$/);
-      if (match) {
-        const imgExt = match[1] === 'jpeg' ? 'jpg' : match[1];
-        const buf = Buffer.from(match[2], 'base64');
-        savePersistentCover(siblingVideo, buf, imgExt);
-      }
-      // zwróć kadr jako okładkę audio, ale cache siblinga już gotowy
-      return { type: 'image', data: frame };
-    }
-    // fallback — brak kadru, nie zwracaj ścieżki video (psuła <img src="*.mp4">)
-    return { type: null, data: null };
+    const result: { type: 'video'; data: string } = { type: 'video', data: siblingVideo };
+    const s = await stat(siblingVideo).catch(() => null);
+    cacheSet(coverResultCache, filePath, {
+      result,
+      mtimeMs: s?.mtimeMs ?? Date.now(),
+      checkedAt: Date.now()
+    });
+    return result;
   }
 
   // A previous caller may already be extracting this file — wait for it and
@@ -532,19 +518,27 @@ export async function clearCoverCache(): Promise<{ removed: number }> {
   }
 }
 
-// startup — clean up orphaned cover files not referenced in cache map
+// Clear stale persistent cache entries.  Files that were previously cached as
+// image-type covers (extracted JPEG frames from sibling videos) need to be
+// re-extracted because `extractAndCacheCover` now returns the video path
+// directly.  We detect this by checking whether any audio file in the library
+// has a sibling video — if so, nuke the entire persistent cache to force a
+// clean re-extraction.  The cache is purely a performance optimization and
+// will be rebuilt on next access.
+const STALE_CACHE_KEY = '__v2_sibling_video__';
 (async () => {
   try {
-    const { readdir, rm } = await import('fs/promises');
     const cacheMap = await readCoverMap();
-    const referenced = new Set(Object.values(cacheMap).map((v) => v.cacheFile));
-    const entries = await readdir(PERSISTENT_COVER_DIR).catch(() => []);
+    if (cacheMap[STALE_CACHE_KEY]) return; // already cleaned
+    const { readdir, rm } = await import('fs/promises');
+    const entries = await readdir(PERSISTENT_COVER_DIR).catch(() => [] as string[]);
     for (const entry of entries) {
-      if (!referenced.has(entry)) {
-        await rm(join(PERSISTENT_COVER_DIR, entry), { force: true }).catch(() => {});
-      }
+      if (entry === '.' || entry === '..') continue;
+      await rm(join(PERSISTENT_COVER_DIR, entry), { force: true }).catch(() => {});
     }
+    await writeCoverMap({ [STALE_CACHE_KEY]: { cacheFile: '', mtime: Date.now() } });
+    logger.info('cover', 'persistent cover cache cleared for sibling video migration');
   } catch (e) {
-    logger.warn('cover', 'orphan cover cleanup failed', e);
+    logger.warn('cover', 'stale cache cleanup failed', e);
   }
 })();

@@ -267,7 +267,7 @@ function playPlaylist(playlistId: string) {
 
       <div
         v-if="!collapsed && player.queueLength > 0"
-        class="mx-2 mb-1 p-3 rounded-box fx-noise bg-neutral border border-neutral-content/20"
+        class="mx-2 mb-1 p-3 rounded-box fx-noise bg-base-200 border border-base-content/20"
       >
         <div
           class="flex items-center gap-2 text-[11px] text-base-content/50 mb-2 font-medium uppercase tracking-wider"
