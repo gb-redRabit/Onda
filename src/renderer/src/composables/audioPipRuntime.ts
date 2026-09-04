@@ -29,9 +29,10 @@ export function createAudioPipRuntime(opts: AudioPipRuntimeOptions) {
   function vizEnabled(): boolean {
     try {
       const o = resolveAudioPipLayoutOpts();
-      const active = o.dock === 'top' || o.dock === 'bottom' || o.dock === 'left' || o.dock === 'right'
-        ? o.edgeElements
-        : o.cornerElements;
+      const active =
+        o.dock === 'top' || o.dock === 'bottom' || o.dock === 'left' || o.dock === 'right'
+          ? o.edgeElements
+          : o.cornerElements;
       return active.includes('viz');
     } catch {
       return false;
@@ -83,16 +84,23 @@ export function createAudioPipRuntime(opts: AudioPipRuntimeOptions) {
 
   function startCoverRetry() {
     stopCoverRetry();
-    // Jednorazowy retry zamiast pollingu 10x200ms — cover zwykle wpada z trackLoaded.
-    coverRetryTimer = setTimeout(() => {
+    // Cover zwykle wpada z trackLoaded, ale przy wolnym dysku/dużym pliku może
+    // zająć dłużej. Próbujemy kilka razy z rosnącym odstępem zamiast jednorazowo.
+    let attempt = 0;
+    const tryFetch = () => {
       coverRetryTimer = null;
       if (!isActive()) return;
       const state = getState();
       if (state.coverData && state.coverData !== lastState.coverData) {
         lastState = { ...state };
         sendUpdate(state);
+        return;
       }
-    }, 800);
+      attempt++;
+      if (attempt >= 3) return;
+      coverRetryTimer = setTimeout(tryFetch, 800 * attempt);
+    };
+    coverRetryTimer = setTimeout(tryFetch, 800);
   }
 
   function stopCoverRetry() {

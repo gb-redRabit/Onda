@@ -3,6 +3,7 @@ import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { Music2, Play, Disc3, Film } from '@lucide/vue';
 import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
+import { VIDEO_EXTS } from '@shared/constants';
 
 const props = withDefaults(
   defineProps<{
@@ -38,19 +39,19 @@ const result = computed(() => {
 const isVideoFile = computed(() => {
   if (!result.value.data) return false;
   const d = result.value.data;
-  return /^[A-Z]:\\/i.test(d) || d.startsWith('/');
+  if (!/^[A-Z]:\\/i.test(d) && !d.startsWith('/')) return false;
+  const ext = '.' + d.slice(d.lastIndexOf('.') + 1, d.length).toLowerCase();
+  return VIDEO_EXTS.includes(ext);
 });
 const isVideo = computed(
   () => (result.value.type === 'video' || isVideoFile.value) && props.renderAsVideo
 );
 const src = computed(() => {
   if (!result.value.data) return '';
-  if (result.value.type === 'video' || isVideoFile.value) return toMediaServerUrl(result.value.data);
+  if (result.value.type === 'video' || isVideoFile.value)
+    return toMediaServerUrl(result.value.data);
   return result.value.data;
 });
-
-const pingPong = ref(false);
-let reverseRaf: number | null = null;
 
 function onVideoEnded(e: Event) {
   const video = e.target as HTMLVideoElement;
@@ -91,7 +92,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   observer?.disconnect();
-  if (reverseRaf) cancelAnimationFrame(reverseRaf);
 });
 </script>
 

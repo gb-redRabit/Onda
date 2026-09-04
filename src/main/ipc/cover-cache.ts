@@ -38,8 +38,7 @@ async function readCoverMap(): Promise<Record<string, { cacheFile: string; mtime
     try {
       const store = await getStore();
       const legacy = store.get(COVER_CACHE_MAP_KEY) as
-        | Record<string, { cacheFile: string; mtime: number }>
-        | undefined;
+        Record<string, { cacheFile: string; mtime: number }> | undefined;
       if (legacy && Object.keys(legacy).length > 0) {
         coverMapData = legacy;
         await writeCoverMap(coverMapData);
@@ -235,11 +234,7 @@ async function getPersistentCover(
   }
 }
 
-async function savePersistentCover(
-  filePath: string,
-  binary: Buffer,
-  ext: string
-): Promise<void> {
+async function savePersistentCover(filePath: string, binary: Buffer, ext: string): Promise<void> {
   try {
     await mkdir(PERSISTENT_COVER_DIR, { recursive: true });
     const hash = hashPath(filePath);
@@ -373,7 +368,9 @@ const missingCache = new Map<string, number>();
 const MISSING_TTL = 5 * 60 * 1000;
 
 function isEnoent(e: unknown): boolean {
-  return Boolean(e && typeof e === 'object' && 'code' in e && (e as { code?: string }).code === 'ENOENT');
+  return Boolean(
+    e && typeof e === 'object' && 'code' in e && (e as { code?: string }).code === 'ENOENT'
+  );
 }
 function notifyMissing(filePath: string) {
   try {

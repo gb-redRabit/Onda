@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { usePipVisualizer } from './usePipVisualizer';
 import { usePipAudioState, EQ_PRESETS } from './usePipAudioState';
 
@@ -40,6 +40,22 @@ const {
   onVolumeInput,
   selectEqPreset
 } = state;
+
+const videoEl = ref<HTMLVideoElement | null>(null);
+
+watch(isPlaying, (playing) => {
+  const v = videoEl.value;
+  if (!v) return;
+  if (playing && v.paused && !v.ended) {
+    v.play().catch(() => {});
+  } else if (!playing && !v.paused) {
+    v.pause();
+  }
+});
+
+function onCoverVideoError(e: Event) {
+  (e.target as HTMLVideoElement).style.display = 'none';
+}
 
 function onRootDblClick(e: MouseEvent) {
   const t = e.target as HTMLElement;
@@ -112,9 +128,7 @@ const peekTrackGeom = computed(() =>
 const PEEK_FILL =
   'bg-[var(--color-primary)] transition-all duration-200 group-hover:brightness-125';
 const peekFillGeom = computed(() =>
-  edge.value === 'left' || edge.value === 'right'
-    ? 'absolute bottom-0 left-0 w-full'
-    : 'h-full'
+  edge.value === 'left' || edge.value === 'right' ? 'absolute bottom-0 left-0 w-full' : 'h-full'
 );
 const peekFillState = computed(() =>
   isPlaying.value
@@ -140,7 +154,12 @@ const EDGE_PROGRESS_FILL_V =
   >
     <!-- ===== ZWINIĘTY (krawędź + auto-hide): sam pasek postępu na wystającej krawędzi ===== -->
     <div v-if="peeked && edge" class="flex h-full w-full" :class="peekAlign">
-      <div class="group" :class="[PEEK_TRACK, peekTrackGeom]" @click="onProgressClick" @dblclick.stop>
+      <div
+        class="group"
+        :class="[PEEK_TRACK, peekTrackGeom]"
+        @click="onProgressClick"
+        @dblclick.stop
+      >
         <div
           :class="[PEEK_FILL, peekFillGeom, peekFillState]"
           :style="
@@ -168,12 +187,14 @@ const EDGE_PROGRESS_FILL_V =
         <div v-if="has('cover')" class="flex shrink-0 items-center">
           <video
             v-if="isVideoCover"
+            ref="videoEl"
             :src="videoCoverSrc"
             class="block h-13 w-13 rounded-(--radius-field) object-cover"
             autoplay
             muted
             loop
             playsinline
+            @error="onCoverVideoError"
           />
           <img
             v-else-if="coverData"
@@ -186,8 +207,12 @@ const EDGE_PROGRESS_FILL_V =
 
         <div class="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
           <template v-if="has('trackInfo')">
-            <div class="truncate text-xs font-semibold leading-tight text-base-content">{{ trackName }}</div>
-            <div v-if="artist" class="truncate text-[10px] leading-tight text-base-content/50">{{ artist }}</div>
+            <div class="truncate text-xs font-semibold leading-tight text-base-content">
+              {{ trackName }}
+            </div>
+            <div v-if="artist" class="truncate text-[10px] leading-tight text-base-content/50">
+              {{ artist }}
+            </div>
             <div
               v-if="has('nextTrack') && nextTrackName"
               class="truncate text-[10px] leading-tight text-base-content/40"
@@ -222,7 +247,10 @@ const EDGE_PROGRESS_FILL_V =
               {{ isPlaying ? '⏸' : '▶' }}
             </button>
             <button :class="BTN" @click.stop="send('next')">&#x23ED;</button>
-            <button :class="[BTN, repeat !== 'none' ? BTN_ACTIVE : '']" @click.stop="send('repeat')">
+            <button
+              :class="[BTN, repeat !== 'none' ? BTN_ACTIVE : '']"
+              @click.stop="send('repeat')"
+            >
               &#x21BB;<span v-if="repeat === 'one'" class="-ml-px text-[8px]">1</span>
             </button>
           </div>
@@ -263,7 +291,10 @@ const EDGE_PROGRESS_FILL_V =
       </div>
 
       <!-- ===== PASEK POZIOMY (top/bottom, pełna szerokość) ===== -->
-      <div v-else-if="layoutKind === 'bar-h'" class="relative z-10 flex h-full w-full select-none flex-col">
+      <div
+        v-else-if="layoutKind === 'bar-h'"
+        class="relative z-10 flex h-full w-full select-none flex-col"
+      >
         <!-- pasek postępu zawsze na krawędzi ekranu (dół okna dla doku top, góra dla bottom) -->
         <div
           v-if="has('progress')"
@@ -278,89 +309,99 @@ const EDGE_PROGRESS_FILL_V =
           class="flex min-h-0 flex-1 items-center gap-2 px-3"
           :class="dock === 'top' ? 'order-1' : 'order-2'"
         >
-        <div v-if="has('cover')" class="flex shrink-0 items-center">
-          <video
-            v-if="isVideoCover"
-            :src="videoCoverSrc"
-            class="block h-8.5 w-8.5 rounded-(--radius-field) object-cover"
-            autoplay
-            muted
-            loop
-            playsinline
-          />
-          <img
-            v-else-if="coverData"
-            :src="coverData"
-            class="block h-8.5 w-8.5 rounded-(--radius-field) object-cover"
-            alt=""
-          />
-          <div v-else class="h-8.5 w-8.5 rounded-(--radius-field) bg-base-content/10"></div>
-        </div>
+          <div v-if="has('cover')" class="flex shrink-0 items-center">
+            <video
+              v-if="isVideoCover"
+              ref="videoEl"
+              :src="videoCoverSrc"
+              class="block h-24 w-24 rounded-(--radius-field) object-cover"
+              autoplay
+              muted
+              loop
+              playsinline
+              @error="onCoverVideoError"
+            />
+            <img
+              v-else-if="coverData"
+              :src="coverData"
+              class="block h-24 w-24 rounded-(--radius-field) object-cover"
+              alt=""
+            />
+            <div v-else class="h-24 w-24 rounded-(--radius-field) bg-base-content/10"></div>
+          </div>
 
-        <div
-          v-if="has('trackInfo') || (has('nextTrack') && nextTrackName)"
-          class="flex min-w-0 max-w-[30%] shrink-0 flex-col justify-center leading-tight"
-        >
-          <template v-if="has('trackInfo')">
-            <span class="truncate text-[12px] font-semibold text-base-content">{{ trackName }}</span>
-            <span v-if="artist" class="truncate text-[10px] text-base-content/50">{{ artist }}</span>
-          </template>
-          <span
-            v-if="has('nextTrack') && nextTrackName"
-            class="truncate text-[10px] text-base-content/40"
+          <div
+            v-if="has('trackInfo') || (has('nextTrack') && nextTrackName)"
+            class="flex min-w-0 max-w-[30%] shrink-0 flex-col justify-center leading-tight"
           >
-            &#x21B3; {{ nextTrackName }}{{ nextTrackArtist ? ' — ' + nextTrackArtist : '' }}
-          </span>
-        </div>
+            <template v-if="has('trackInfo')">
+              <span class="truncate text-[12px] font-semibold text-base-content">{{
+                trackName
+              }}</span>
+              <span v-if="artist" class="truncate text-[10px] text-base-content/50">{{
+                artist
+              }}</span>
+            </template>
+            <span
+              v-if="has('nextTrack') && nextTrackName"
+              class="truncate text-[10px] text-base-content/40"
+            >
+              &#x21B3; {{ nextTrackName }}{{ nextTrackArtist ? ' — ' + nextTrackArtist : '' }}
+            </span>
+          </div>
 
-        <div v-if="has('controls')" class="mx-auto flex shrink-0 items-center gap-1" @dblclick.stop>
-          <button :class="[BTN_EDGE, shuffle ? BTN_ACTIVE : '']" @click.stop="send('shuffle')">
-            &#x21C4;
-          </button>
-          <button :class="BTN_EDGE" @click.stop="send('prev')">&#x23EE;</button>
-          <button :class="BTN_PLAY_EDGE" @click.stop="send('playPause')">
-            {{ isPlaying ? '⏸' : '▶' }}
-          </button>
-          <button :class="BTN_EDGE" @click.stop="send('next')">&#x23ED;</button>
-          <button
-            :class="[BTN_EDGE, repeat !== 'none' ? BTN_ACTIVE : '']"
-            @click.stop="send('repeat')"
+          <div
+            v-if="has('controls')"
+            class="mx-auto flex shrink-0 items-center gap-1"
+            @dblclick.stop
           >
-            &#x21BB;
-          </button>
-        </div>
+            <button :class="[BTN_EDGE, shuffle ? BTN_ACTIVE : '']" @click.stop="send('shuffle')">
+              &#x21C4;
+            </button>
+            <button :class="BTN_EDGE" @click.stop="send('prev')">&#x23EE;</button>
+            <button :class="BTN_PLAY_EDGE" @click.stop="send('playPause')">
+              {{ isPlaying ? '⏸' : '▶' }}
+            </button>
+            <button :class="BTN_EDGE" @click.stop="send('next')">&#x23ED;</button>
+            <button
+              :class="[BTN_EDGE, repeat !== 'none' ? BTN_ACTIVE : '']"
+              @click.stop="send('repeat')"
+            >
+              &#x21BB;
+            </button>
+          </div>
 
-        <div
-          v-if="has('progress')"
-          class="shrink-0 whitespace-nowrap tabular-nums text-[10px] text-base-content/50"
-        >
-          {{ fmt(currentTime) }} / {{ fmt(duration) }}
-        </div>
-
-        <div v-if="has('volume')" class="flex shrink-0 items-center gap-1" @dblclick.stop>
-          <span :class="VOL_LABEL" @click.stop="send('mute')">{{ volLabel }}</span>
-          <input
-            type="range"
-            class="w-16"
-            min="0"
-            max="1"
-            step="0.05"
-            :value="volume"
-            @input="onVolumeInput"
-            @click.stop
-          />
-        </div>
-
-        <div v-if="has('eq')" class="hidden shrink-0 items-center gap-0.5 lg:flex" @dblclick.stop>
-          <button
-            v-for="p in EQ_PRESETS.slice(0, 4)"
-            :key="p.id"
-            :class="[EQ_BTN, eqPreset === p.id ? EQ_BTN_ON : '']"
-            @click.stop="selectEqPreset(p.id)"
+          <div
+            v-if="has('progress')"
+            class="shrink-0 whitespace-nowrap tabular-nums text-[10px] text-base-content/50"
           >
-            {{ p.label }}
-          </button>
-        </div>
+            {{ fmt(currentTime) }} / {{ fmt(duration) }}
+          </div>
+
+          <div v-if="has('volume')" class="flex shrink-0 items-center gap-1" @dblclick.stop>
+            <span :class="VOL_LABEL" @click.stop="send('mute')">{{ volLabel }}</span>
+            <input
+              type="range"
+              class="w-16"
+              min="0"
+              max="1"
+              step="0.05"
+              :value="volume"
+              @input="onVolumeInput"
+              @click.stop
+            />
+          </div>
+
+          <div v-if="has('eq')" class="hidden shrink-0 items-center gap-0.5 lg:flex" @dblclick.stop>
+            <button
+              v-for="p in EQ_PRESETS.slice(0, 4)"
+              :key="p.id"
+              :class="[EQ_BTN, eqPreset === p.id ? EQ_BTN_ON : '']"
+              @click.stop="selectEqPreset(p.id)"
+            >
+              {{ p.label }}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -380,73 +421,90 @@ const EDGE_PROGRESS_FILL_V =
           class="flex min-w-0 flex-1 flex-col items-center gap-1.5 py-3"
           :class="dock === 'left' ? 'order-1' : 'order-2'"
         >
-        <div v-if="has('cover')" class="shrink-0">
-          <video
-            v-if="isVideoCover"
-            :src="videoCoverSrc"
-            class="block h-11 w-11 rounded-(--radius-field) object-cover"
-            autoplay
-            muted
-            loop
-            playsinline
-          />
-          <img
-            v-else-if="coverData"
-            :src="coverData"
-            class="block h-11 w-11 rounded-(--radius-field) object-cover"
-            alt=""
-          />
-          <div v-else class="h-11 w-11 rounded-(--radius-field) bg-base-content/10"></div>
-        </div>
+          <div v-if="has('cover')" class="shrink-0">
+            <video
+              v-if="isVideoCover"
+              ref="videoEl"
+              :src="videoCoverSrc"
+              class="block h-24 w-24 rounded-(--radius-field) object-cover"
+              autoplay
+              muted
+              loop
+              playsinline
+              @error="onCoverVideoError"
+            />
+            <img
+              v-else-if="coverData"
+              :src="coverData"
+              class="block h-24 w-24 rounded-(--radius-field) object-cover"
+              alt=""
+            />
+            <div v-else class="h-24 w-24 rounded-(--radius-field) bg-base-content/10"></div>
+          </div>
 
-        <div v-if="has('trackInfo')" class="max-h-[26%] px-1 text-center [writing-mode:vertical-rl]">
-          <span class="truncate text-[11px] font-semibold text-base-content">{{ trackName }}</span>
-        </div>
-        <div
-          v-if="has('nextTrack') && nextTrackName"
-          class="max-h-[18%] px-1 text-center [writing-mode:vertical-rl]"
-        >
-          <span class="truncate text-[9px] text-base-content/40">&#x21B3; {{ nextTrackName }}</span>
-        </div>
-
-        <div v-if="has('controls')" class="flex shrink-0 flex-col items-center gap-1" @dblclick.stop>
-          <button :class="BTN_PLAY_EDGE" @click.stop="send('playPause')">
-            {{ isPlaying ? '⏸' : '▶' }}
-          </button>
-          <button :class="BTN_EDGE" @click.stop="send('prev')">&#x23EE;</button>
-          <button :class="BTN_EDGE" @click.stop="send('next')">&#x23ED;</button>
-          <button :class="[BTN_EDGE, shuffle ? BTN_ACTIVE : '']" @click.stop="send('shuffle')">
-            &#x21C4;
-          </button>
-          <button
-            :class="[BTN_EDGE, repeat !== 'none' ? BTN_ACTIVE : '']"
-            @click.stop="send('repeat')"
+          <div
+            v-if="has('trackInfo')"
+            class="max-h-[26%] px-1 text-center [writing-mode:vertical-rl]"
           >
-            &#x21BB;
-          </button>
-        </div>
+            <span class="truncate text-[11px] font-semibold text-base-content">{{
+              trackName
+            }}</span>
+          </div>
+          <div
+            v-if="has('nextTrack') && nextTrackName"
+            class="max-h-[18%] px-1 text-center [writing-mode:vertical-rl]"
+          >
+            <span class="truncate text-[9px] text-base-content/40"
+              >&#x21B3; {{ nextTrackName }}</span
+            >
+          </div>
 
-        <div class="min-h-1 flex-1"></div>
-        <div v-if="has('progress')" class="shrink-0 tabular-nums text-[9px] text-base-content/50">
-          {{ fmt(currentTime) }} / {{ fmt(duration) }}
-        </div>
+          <div
+            v-if="has('controls')"
+            class="flex shrink-0 flex-col items-center gap-1"
+            @dblclick.stop
+          >
+            <button :class="BTN_PLAY_EDGE" @click.stop="send('playPause')">
+              {{ isPlaying ? '⏸' : '▶' }}
+            </button>
+            <button :class="BTN_EDGE" @click.stop="send('prev')">&#x23EE;</button>
+            <button :class="BTN_EDGE" @click.stop="send('next')">&#x23ED;</button>
+            <button :class="[BTN_EDGE, shuffle ? BTN_ACTIVE : '']" @click.stop="send('shuffle')">
+              &#x21C4;
+            </button>
+            <button
+              :class="[BTN_EDGE, repeat !== 'none' ? BTN_ACTIVE : '']"
+              @click.stop="send('repeat')"
+            >
+              &#x21BB;
+            </button>
+          </div>
 
-        <div v-if="has('volume')" class="flex shrink-0 flex-col items-center gap-1" @dblclick.stop>
-          <span :class="VOL_LABEL" @click.stop="send('mute')">{{ volLabel }}</span>
-          <input
-            type="range"
-            class="my-5.5 w-14 -rotate-90"
-            min="0"
-            max="1"
-            step="0.05"
-            :value="volume"
-            @input="onVolumeInput"
-            @click.stop
-          />
-          <span class="tabular-nums text-[9px] text-base-content/50">{{ volPct }}</span>
-        </div>
+          <div class="min-h-1 flex-1"></div>
+          <div v-if="has('progress')" class="shrink-0 tabular-nums text-[9px] text-base-content/50">
+            {{ fmt(currentTime) }} / {{ fmt(duration) }}
+          </div>
 
-        <div v-if="isVertical && elements.length === 0" class="hidden"></div>
+          <div
+            v-if="has('volume')"
+            class="flex shrink-0 flex-col items-center gap-1"
+            @dblclick.stop
+          >
+            <span :class="VOL_LABEL" @click.stop="send('mute')">{{ volLabel }}</span>
+            <input
+              type="range"
+              class="my-5.5 w-14 -rotate-90"
+              min="0"
+              max="1"
+              step="0.05"
+              :value="volume"
+              @input="onVolumeInput"
+              @click.stop
+            />
+            <span class="tabular-nums text-[9px] text-base-content/50">{{ volPct }}</span>
+          </div>
+
+          <div v-if="isVertical && elements.length === 0" class="hidden"></div>
         </div>
       </div>
     </template>
