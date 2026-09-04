@@ -2,13 +2,16 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
 import { formatDuration } from '@renderer/utils/formatters';
 import { EQUALIZER_PRESETS, EQUALIZER_PRESET_LABELS } from '@renderer/utils/constants';
+import type { AudioPipDock, AudioPipElementId, AudioPipLayoutKind } from '@shared/types/pip';
 
 interface PipUpdate {
-  mode?: string;
-  edge?: 'top' | 'bottom' | null;
+  dock?: AudioPipDock;
+  layoutKind?: AudioPipLayoutKind;
+  elements?: AudioPipElementId[];
+  edge?: 'top' | 'bottom' | 'left' | 'right' | null;
   peeked?: boolean;
+  isPreview?: boolean;
   state?: PipState;
-  opacity?: number;
   cssVars?: Record<string, string>;
 }
 
@@ -58,10 +61,12 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
   const vizData = ref<number[]>([]);
   const nextTrackName = ref('');
   const nextTrackArtist = ref('');
-  const mode = ref<'m' | 'd' | 'x' | 'w'>('m');
-  const edge = ref<'top' | 'bottom' | null>(null);
+  const dock = ref<AudioPipDock>('bottom-right');
+  const layoutKind = ref<AudioPipLayoutKind>('card');
+  const elements = ref<AudioPipElementId[]>(['cover', 'trackInfo', 'controls', 'progress', 'volume']);
+  const edge = ref<'top' | 'bottom' | 'left' | 'right' | null>(null);
   const peeked = ref(false);
-  const bgAlpha = ref(0.85);
+  const isPreview = ref(false);
 
   const fmt = formatDuration;
 
@@ -77,19 +82,12 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
     coverType.value === 'video' && coverData.value ? toMediaServerUrl(coverData.value) : ''
   );
 
-  const pipAlpha = computed(() => {
-    const a = bgAlpha.value;
-    return Math.min(0.85, a * 0.65);
-  });
+  const has = (id: AudioPipElementId): boolean => elements.value.includes(id);
+  const isVertical = computed(() => layoutKind.value === 'bar-v');
+  const isBar = computed(() => layoutKind.value !== 'card');
 
   function showMain() {
     api?.send('audio-pip:showMain');
-  }
-
-  function onBackgroundClick(e: MouseEvent) {
-    const t = e.target as HTMLElement;
-    if (t.closest('button, input, video, img')) return;
-    showMain();
   }
 
   function send(action: string) {
@@ -99,7 +97,10 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
   function onProgressClick(e: MouseEvent) {
     const bar = e.currentTarget as HTMLElement;
     const r = bar.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    const horizontal = layoutKind.value !== 'bar-v';
+    const pct = horizontal
+      ? Math.max(0, Math.min(1, (e.clientX - r.left) / r.width))
+      : Math.max(0, Math.min(1, 1 - (e.clientY - r.top) / r.height));
     api?.send('audio-pip:progressClick', pct);
   }
 
@@ -121,19 +122,22 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
 
   let cleanup: (() => void) | null = null;
   let revealTimer: ReturnType<typeof setTimeout> | null = null;
-  const HOVER_REVEAL_MS = 300;
+  const HOVER_REVEAL_MS = 250;
 
   onMounted(() => {
     if (!api) return;
     const cleanup1 = api.on('audio-pip:update', (...args: unknown[]) => {
       const d = args[0] as PipUpdate | undefined;
       if (!d) return;
-      if (d.mode) {
-        mode.value =
-          d.mode === 'max' ? 'x' : d.mode === 'medium' ? 'd' : d.mode === 'wide' ? 'w' : 'm';
+      if (d.dock) dock.value = d.dock;
+      if (d.layoutKind) layoutKind.value = d.layoutKind;
+      else if (d.dock) {
+        layoutKind.value = d.dock === 'left' || d.dock === 'right' ? 'bar-v' : d.dock === 'top' || d.dock === 'bottom' ? 'bar-h' : 'card';
       }
+      if (d.elements) elements.value = [...d.elements];
       if (d.edge !== undefined) edge.value = d.edge ?? null;
       if (d.peeked !== undefined) peeked.value = d.peeked;
+      if (d.isPreview !== undefined) isPreview.value = !!d.isPreview;
       if (d.state) {
         const s = d.state;
         trackName.value = s.trackName || '—';
@@ -152,10 +156,10 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
         nextTrackName.value = s.nextTrackName || '';
         nextTrackArtist.value = s.nextTrackArtist || '';
       }
-      if (typeof d.opacity === 'number') bgAlpha.value = d.opacity;
       if (d.cssVars) applyCssVars(d.cssVars);
     });
     const cleanup2 = api.on('audio-pip:vizData', (...args: unknown[]) => {
+      if (!elements.value.includes('viz')) return;
       const d = args[0] as number[];
       if (d && d.length > 0) vizData.value = d;
     });
@@ -210,19 +214,22 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
     vizData,
     nextTrackName,
     nextTrackArtist,
-    mode,
+    dock,
+    layoutKind,
+    elements,
     edge,
     peeked,
-    bgAlpha,
+    isPreview,
     fmt,
     progressPct,
     volPct,
     volLabel,
     isVideoCover,
     videoCoverSrc,
-    pipAlpha,
+    has,
+    isVertical,
+    isBar,
     showMain,
-    onBackgroundClick,
     send,
     onProgressClick,
     onVolumeInput,

@@ -166,28 +166,27 @@ interface OndaAPI {
   transcodeVideo: (filePath: string) => Promise<string | null>;
   audioPipShow: (
     state: Record<string, unknown>,
-    mode?: string,
-    opacity?: number,
-    position?: string
+    opts?: { dock?: string; cornerElements?: string[]; edgeElements?: string[]; autoHide?: boolean }
   ) => Promise<boolean>;
+  audioPipPrewarm: () => Promise<boolean>;
   audioPipHide: () => Promise<boolean>;
   audioPipAutoHide: () => Promise<boolean>;
   audioPipUpdate: (
     state: Record<string, unknown>,
-    mode?: string,
-    opacity?: number,
-    position?: string
+    opts?: { dock?: string; cornerElements?: string[]; edgeElements?: string[]; autoHide?: boolean }
   ) => Promise<boolean>;
   audioPipPreviewStart: (opts: {
-    mode?: string;
-    position?: string;
-    opacity?: number;
+    dock?: string;
+    cornerElements?: string[];
+    edgeElements?: string[];
+    autoHide?: boolean;
   }) => Promise<boolean>;
   audioPipPreviewStop: () => Promise<boolean>;
   audioPipPreviewUpdate: (opts: {
-    mode?: string;
-    position?: string;
-    opacity?: number;
+    dock?: string;
+    cornerElements?: string[];
+    edgeElements?: string[];
+    autoHide?: boolean;
   }) => Promise<boolean>;
   getAppInfo: () => Promise<AppInfo>;
   getAutoLaunch: () => Promise<{ enabled: boolean; hidden: boolean }>;

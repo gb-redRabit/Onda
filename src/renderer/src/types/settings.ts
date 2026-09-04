@@ -1,3 +1,5 @@
+import type { AudioPipDock, AudioPipElementId } from '../../../shared/types/pip';
+
 export interface LibrarySettings {
   viewModes: Record<string, 'list' | 'grid'>;
   coverCacheMaxEntries?: number;
@@ -89,11 +91,19 @@ export interface AppearanceSettings {
   showAlbums: boolean;
   locale: 'pl' | 'en' | 'auto';
   animations: boolean;
-  audioPipMode: 'minimal' | 'medium' | 'max' | 'wide';
+  audioPipDock: AudioPipDock;
   audioPipAutoShow: boolean;
-  audioPipOpacity: number;
-  audioPipPosition: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
-  audioPipEdgePosition: 'top' | 'bottom';
+  audioPipAutoHide: boolean;
+  audioPipCornerElements: AudioPipElementId[];
+  audioPipEdgeElements: AudioPipElementId[];
+  /** @deprecated Migracja ze starego modelu. */
+  audioPipMode?: 'minimal' | 'medium' | 'max' | 'wide';
+  /** @deprecated Migracja ze starego modelu. */
+  audioPipOpacity?: number;
+  /** @deprecated Migracja ze starego modelu. */
+  audioPipPosition?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  /** @deprecated Migracja ze starego modelu. */
+  audioPipEdgePosition?: 'top' | 'bottom';
   audioLayout: AudioLayoutSettings;
 }
 

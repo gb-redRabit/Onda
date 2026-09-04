@@ -63,7 +63,7 @@ onMounted(async () => {
   if (!moduleManager.getActive()) {
     await moduleManager.switchTo('home');
   }
-  audioPip.mode.value = settings.appearance.audioPipMode;
+  audioPip.dock.value = settings.appearance.audioPipDock;
   audioPip.setAutoShow(settings.appearance.audioPipAutoShow);
 
   // Pre-create the AudioContext in idle time so the first play click isn't

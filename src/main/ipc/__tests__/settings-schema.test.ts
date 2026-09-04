@@ -106,26 +106,35 @@ describe('sanitizeSettings', () => {
         theme: 'midnight',
         locale: 'pl',
         sidebarPosition: 'right',
-        audioPipMode: 'wide',
-        audioPipPosition: 'bottom-right',
-        audioPipEdgePosition: 'bottom'
+        audioPipDock: 'bottom',
+        audioPipCornerElements: ['cover', 'controls'],
+        audioPipEdgeElements: ['cover', 'controls', 'viz'],
+        audioPipAutoHide: false
       }
     });
     expect(sanitized.appearance).toEqual({
       theme: 'midnight',
       locale: 'pl',
       sidebarPosition: 'right',
-      audioPipMode: 'wide',
-      audioPipPosition: 'bottom-right',
-      audioPipEdgePosition: 'bottom'
+      audioPipDock: 'bottom',
+      audioPipCornerElements: ['cover', 'controls'],
+      audioPipEdgeElements: ['cover', 'controls', 'viz'],
+      audioPipAutoHide: false
     });
+  });
+
+  it('migrates legacy pip mode to dock', () => {
+    const { sanitized } = sanitizeSettings({
+      appearance: { audioPipMode: 'wide', audioPipEdgePosition: 'bottom' }
+    });
+    expect(sanitized.appearance).toMatchObject({ audioPipDock: 'bottom' });
   });
 
   it('drops corner-only audioPipPosition values that are not corners', () => {
     const { sanitized } = sanitizeSettings({
       appearance: { audioPipPosition: 'top', audioPipEdgePosition: 'top' }
     });
-    expect(sanitized.appearance).toEqual({ audioPipEdgePosition: 'top' });
+    expect(sanitized.appearance).toMatchObject({ audioPipEdgePosition: 'top' });
   });
 
   it('sanitizes apiKeys structure without encrypting', () => {

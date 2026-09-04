@@ -8,6 +8,7 @@ import type {
   YoutubeAuthSettings,
   GeneralSettings
 } from '@renderer/types/settings';
+import type { AudioPipDock, AudioPipElementId } from '@shared/types/pip';
 
 export const EQUALIZER_PRESETS: Record<string, Record<number, number>> = {
   flat: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 },
@@ -125,11 +126,11 @@ export const DEFAULT_APPEARANCE = {
   showAlbums: true,
   locale: 'pl' as const,
   animations: true,
-  audioPipMode: 'minimal' as const,
+  audioPipDock: 'bottom-right' as AudioPipDock,
   audioPipAutoShow: true,
-  audioPipOpacity: 0.35,
-  audioPipPosition: 'bottom-right' as const,
-  audioPipEdgePosition: 'top' as const,
+  audioPipAutoHide: true,
+  audioPipCornerElements: ['cover', 'trackInfo', 'controls', 'progress', 'volume'] as AudioPipElementId[],
+  audioPipEdgeElements: ['cover', 'trackInfo', 'controls', 'progress', 'volume', 'viz'] as AudioPipElementId[],
   audioLayout: {
     elements: [
       { id: 'visualization' as const, x: 0, y: 0, width: 100, height: 100, opacity: 100, layer: 1, visible: true },

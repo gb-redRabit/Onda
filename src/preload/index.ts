@@ -142,6 +142,7 @@ const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'audio-pip:show',
   'audio-pip:hide',
   'audio-pip:autoHide',
+  'audio-pip:prewarm',
   'audio-pip:update',
   'audio-pip:previewStart',
   'audio-pip:previewStop',
@@ -470,11 +471,13 @@ const api = {
     ipcRenderer.invoke('media:transcodeVideo', filePath),
   audioPipShow: async (
     state: Record<string, unknown>,
-    mode?: string,
-    opacity?: number,
-    position?: string
+    opts?: { dock?: string; cornerElements?: string[]; edgeElements?: string[]; autoHide?: boolean }
   ): Promise<boolean> => {
-    const r = await tryInvoke('audio-pip:show', state, mode, opacity, position);
+    const r = await tryInvoke('audio-pip:show', state, opts);
+    return !!r;
+  },
+  audioPipPrewarm: async (): Promise<boolean> => {
+    const r = await tryInvoke('audio-pip:prewarm');
     return !!r;
   },
   audioPipHide: async (): Promise<boolean> => {
@@ -487,17 +490,16 @@ const api = {
   },
   audioPipUpdate: async (
     state: Record<string, unknown>,
-    mode?: string,
-    opacity?: number,
-    position?: string
+    opts?: { dock?: string; cornerElements?: string[]; edgeElements?: string[]; autoHide?: boolean }
   ): Promise<boolean> => {
-    const r = await tryInvoke('audio-pip:update', state, mode, opacity, position);
+    const r = await tryInvoke('audio-pip:update', state, opts);
     return !!r;
   },
   audioPipPreviewStart: async (opts: {
-    mode?: string;
-    position?: string;
-    opacity?: number;
+    dock?: string;
+    cornerElements?: string[];
+    edgeElements?: string[];
+    autoHide?: boolean;
   }): Promise<boolean> => {
     const r = await tryInvoke('audio-pip:previewStart', opts);
     return !!r;
@@ -507,9 +509,10 @@ const api = {
     return !!r;
   },
   audioPipPreviewUpdate: async (opts: {
-    mode?: string;
-    position?: string;
-    opacity?: number;
+    dock?: string;
+    cornerElements?: string[];
+    edgeElements?: string[];
+    autoHide?: boolean;
   }): Promise<boolean> => {
     const r = await tryInvoke('audio-pip:previewUpdate', opts);
     return !!r;

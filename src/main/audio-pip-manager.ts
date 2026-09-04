@@ -1,27 +1,74 @@
 import { BrowserWindow, screen, ipcMain } from 'electron';
 import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
-import type { AudioPipState, PipMode, PipPosition } from '../shared/types/pip';
+import type { AudioPipState } from '../shared/types/pip';
+import {
+  type AudioPipDock,
+  type AudioPipElementId,
+  type AudioPipLayoutKind,
+  audioPipLayoutKind,
+  getAudioPipSize,
+  isAudioPipEdgeDock
+} from '../shared/types/pip';
 import { computePipPosition } from './pip-position';
-import { AudioPipPreview } from './audio-pip-preview';
 import { installNavigationGuard } from './navigation-guard';
 import { pipWindowIcon } from './pip-icon';
+
+export interface AudioPipLayoutOpts {
+  dock?: AudioPipDock;
+  cornerElements?: AudioPipElementId[];
+  edgeElements?: AudioPipElementId[];
+  autoHide?: boolean;
+}
+
+const DEFAULT_CORNER_ELEMENTS: AudioPipElementId[] = [
+  'cover',
+  'trackInfo',
+  'controls',
+  'progress',
+  'volume'
+];
+const DEFAULT_EDGE_ELEMENTS: AudioPipElementId[] = [
+  'cover',
+  'trackInfo',
+  'controls',
+  'progress',
+  'volume',
+  'viz'
+];
+
+const PREVIEW_STATE: AudioPipState = {
+  trackName: 'Podgląd — przykładowy utwór',
+  artist: 'Onda',
+  coverData: null,
+  coverType: null,
+  isPlaying: true,
+  currentTime: 42,
+  duration: 214,
+  volume: 0.8,
+  isMuted: false,
+  shuffle: false,
+  repeat: 'none',
+  nextTrackName: 'Następny — podgląd',
+  nextTrackArtist: 'Onda'
+};
 
 export class AudioPipManager {
   private window: BrowserWindow | null = null;
   private ready = false;
   private mainWindow: BrowserWindow | null = null;
-  private mode: PipMode = 'minimal';
-  private position: PipPosition = 'bottom-right';
-  private opacity = 0.35;
-  private preview = new AudioPipPreview();
-  private pipFocusedAt = 0;
-  private peeked = false;
-  private readonly sliver = 2;
-  private mouseInside = false;
-  private peekDelayTimer: ReturnType<typeof setTimeout> | null = null;
+  private dock: AudioPipDock = 'bottom-right';
+  private cornerElements: AudioPipElementId[] = [...DEFAULT_CORNER_ELEMENTS];
+  private edgeElements: AudioPipElementId[] = [...DEFAULT_EDGE_ELEMENTS];
+  private autoHide = true;
+  private isPreview = false;
+  private previewTimer: ReturnType<typeof setTimeout> | null = null;
   private cssVars: Record<string, string> = {};
   private displayBoundsCache = new Map<number, { x: number; y: number; width: number; height: number }>();
+  private peeked = false;
+  private readonly sliver = 5;
+  private mouseInside = false;
+  private peekDelayTimer: ReturnType<typeof setTimeout> | null = null;
   private currentState: AudioPipState = {
     trackName: '',
     artist: '',
@@ -45,12 +92,7 @@ export class AudioPipManager {
       ) {
         return;
       }
-      this.displayBoundsCache.set(display.id, {
-        x: b.x,
-        y: b.y,
-        width: b.width,
-        height: b.height
-      });
+      this.displayBoundsCache.set(display.id, { x: b.x, y: b.y, width: b.width, height: b.height });
     }
     this.repositionForDisplayChange();
   };
@@ -65,7 +107,8 @@ export class AudioPipManager {
   setMainWindow(win: BrowserWindow): void {
     this.mainWindow = win;
     win.on('focus', () => {
-      if (Date.now() - this.pipFocusedAt > 2000) this.autoHide();
+      if (this.isPreview) return;
+      this.autoHideNow();
     });
   }
 
@@ -74,51 +117,72 @@ export class AudioPipManager {
     screen.on('display-metrics-changed', this.onDisplayMetricsChanged);
     screen.on('display-added', this.repositionForDisplayChange);
     screen.on('display-removed', this.repositionForDisplayChange);
+    // Prewarm: okno ładowane raz w tle, show() jest potem natychmiastowy.
+    setImmediate(() => {
+      try {
+        this.ensureWindow();
+      } catch {
+        /* lazy fallback w show() */
+      }
+    });
   }
 
-  setMode(mode: PipMode): void {
-    this.setModePosition(mode, undefined);
+  /** Jawny prewarm z IPC (np. po starcie apki). */
+  prewarm(): void {
+    try {
+      this.ensureWindow();
+    } catch {
+      /* noop */
+    }
   }
 
-  setPosition(pos: PipPosition): void {
-    this.setModePosition(undefined, pos);
-  }
-
-  setModePosition(mode?: PipMode, position?: PipPosition): void {
-    const modeChanged = mode !== undefined && mode !== this.mode;
-    const posChanged = position !== undefined && position !== this.position;
-    if (modeChanged) {
-      this.mode = mode;
+  setLayout(opts: AudioPipLayoutOpts): void {
+    let changed = false;
+    if (opts.dock && opts.dock !== this.dock) {
+      this.dock = opts.dock;
+      this.peeked = false;
+      this.cancelPeekTimers();
+      changed = true;
+    }
+    if (opts.cornerElements) {
+      this.cornerElements = [...opts.cornerElements];
+      changed = true;
+    }
+    if (opts.edgeElements) {
+      this.edgeElements = [...opts.edgeElements];
+      changed = true;
+    }
+    if (typeof opts.autoHide === 'boolean' && opts.autoHide !== this.autoHide) {
+      this.autoHide = opts.autoHide;
       this.cancelPeekTimers();
       this.peeked = false;
+      changed = true;
     }
-    if (posChanged) this.position = position;
-    if (!modeChanged && !posChanged) return;
-    if (this.window && !this.window.isDestroyed() && this.window.isVisible()) {
+    if (changed && this.window && !this.window.isDestroyed() && this.window.isVisible()) {
       this.positionWindow();
       this.updateUi(false);
     }
   }
 
+  setDock(dock: AudioPipDock): void {
+    this.setLayout({ dock });
+  }
+
   setTheme(vars: Record<string, string>): void {
     this.cssVars = vars;
-    if (this.window && !this.window.isDestroyed() && this.window.isVisible() && this.ready) {
+    if (this.window && !this.window.isDestroyed() && this.ready) {
       this.window.webContents.send('audio-pip:theme', vars);
     }
   }
 
-  setOpacity(val: number): void {
-    this.opacity = val;
-    if (this.window && !this.window.isDestroyed() && this.window.isVisible() && this.ready) {
-      this.window.webContents.send('audio-pip:update', { opacity: val });
-    }
-  }
-
-  show(state: AudioPipState, mode?: PipMode, opacity?: number, position?: PipPosition): void {
-    if (mode && mode !== this.mode) this.mode = mode;
-    if (opacity !== undefined) this.opacity = opacity;
-    if (position && position !== this.position) this.position = position;
+  show(state: AudioPipState, opts?: AudioPipLayoutOpts): void {
+    if (opts) this.setLayout(opts);
     Object.assign(this.currentState, state);
+    this.isPreview = false;
+    if (this.previewTimer) {
+      clearTimeout(this.previewTimer);
+      this.previewTimer = null;
+    }
     this.cancelPeekTimers();
     this.peeked = false;
     this.mouseInside = false;
@@ -134,41 +198,51 @@ export class AudioPipManager {
 
   hide(): void {
     this.mouseInside = false;
+    this.isPreview = false;
+    if (this.previewTimer) {
+      clearTimeout(this.previewTimer);
+      this.previewTimer = null;
+    }
     if (this.window && !this.window.isDestroyed()) {
       this.window.hide();
     }
   }
 
-  autoHide(): void {
+  autoHideNow(): void {
+    if (this.isPreview) return;
     this.hide();
   }
 
   peek(): void {
-    if (this.mode !== 'wide' || this.peeked || this.mouseInside) return;
+    if (!this.shouldAutoHide() || this.peeked || this.mouseInside) return;
     const win = this.window;
     if (!win || win.isDestroyed() || !win.isVisible()) return;
     this.peeked = true;
     this.cancelPeekDelay();
-    this.setWindowY(this.getWideY(true));
+    this.applyPeekBounds();
     this.updateUi(false);
   }
 
   unpeek(): void {
-    if (this.mode !== 'wide' || !this.peeked) return;
+    if (!this.shouldAutoHide() || !this.peeked) return;
     const win = this.window;
     if (!win || win.isDestroyed() || !win.isVisible()) return;
     this.peeked = false;
     this.cancelPeekDelay();
-    this.setWindowY(this.getWideY(false));
+    this.applyPeekBounds();
     this.updateUi(false);
   }
 
+  private shouldAutoHide(): boolean {
+    return this.autoHide && isAudioPipEdgeDock(this.dock) && !this.isPreview;
+  }
+
   private schedulePeek(): void {
-    if (this.peekDelayTimer || this.mode !== 'wide' || this.peeked) return;
+    if (this.peekDelayTimer || !this.shouldAutoHide() || this.peeked) return;
     this.peekDelayTimer = setTimeout(() => {
       this.peekDelayTimer = null;
       this.peek();
-    }, 700);
+    }, 900);
   }
 
   private cancelPeekDelay(): void {
@@ -182,39 +256,46 @@ export class AudioPipManager {
     this.cancelPeekDelay();
   }
 
-  private setWindowY(targetY: number): void {
+  private activeElements(): AudioPipElementId[] {
+    return isAudioPipEdgeDock(this.dock) ? this.edgeElements : this.cornerElements;
+  }
+
+  private layoutKind(): AudioPipLayoutKind {
+    return audioPipLayoutKind(this.dock);
+  }
+
+  private applyPeekBounds(): void {
     const win = this.window;
     if (!win || win.isDestroyed()) return;
     try {
-      const size = this.getModeSize();
-      const [x] = win.getPosition();
-      win.setBounds({
-        x: Math.round(x),
-        y: Math.round(targetY),
-        width: size.width,
-        height: size.height
-      });
+      const size = this.getDockSize();
+      const workArea = this.getDisplay().workArea;
+      const b = win.getBounds();
+      let x = b.x;
+      let y = b.y;
+      if (this.dock === 'top') {
+        x = workArea.x;
+        y = this.peeked ? Math.round(workArea.y - (size.height - this.sliver)) : Math.round(workArea.y);
+      } else if (this.dock === 'bottom') {
+        x = workArea.x;
+        y = this.peeked
+          ? Math.round(workArea.y + workArea.height - this.sliver)
+          : Math.round(workArea.y + workArea.height - size.height);
+      } else if (this.dock === 'left') {
+        y = workArea.y;
+        x = this.peeked ? Math.round(workArea.x - (size.width - this.sliver)) : Math.round(workArea.x);
+      } else if (this.dock === 'right') {
+        y = workArea.y;
+        x = this.peeked
+          ? Math.round(workArea.x + workArea.width - this.sliver)
+          : Math.round(workArea.x + workArea.width - size.width);
+      } else {
+        return;
+      }
+      win.setBounds({ x: Math.round(x), y: Math.round(y), width: size.width, height: size.height });
     } catch (e) {
       console.error('audio-pip reposition failed', e);
     }
-  }
-
-  private getWideY(peeked: boolean): number {
-    const workArea = this.getDisplay().workArea;
-    if (!workArea || !Number.isFinite(workArea.y) || !Number.isFinite(workArea.height)) {
-      return workArea?.y ?? 0;
-    }
-    const h =
-      this.window && !this.window.isDestroyed()
-        ? this.window.getBounds().height
-        : this.getModeSize().height;
-    const isTop = this.position.startsWith('top');
-    if (isTop) {
-      return peeked ? Math.round(workArea.y - (h - this.sliver)) : Math.round(workArea.y);
-    }
-    return peeked
-      ? Math.round(workArea.y + workArea.height - this.sliver)
-      : Math.round(workArea.y + workArea.height - h);
   }
 
   update(state: Partial<AudioPipState>): void {
@@ -239,20 +320,41 @@ export class AudioPipManager {
     };
   }
 
-  showPreview(opts: { mode?: string; position?: string; opacity?: number }): boolean {
-    return this.preview.show(opts);
+  showPreview(opts: AudioPipLayoutOpts): boolean {
+    if (opts) this.setLayout(opts);
+    this.isPreview = true;
+    this.cancelPeekTimers();
+    this.peeked = false;
+    this.mouseInside = false;
+    Object.assign(this.currentState, PREVIEW_STATE);
+    this.ensureWindow();
+    this.positionWindow();
+    this.window?.showInactive();
+    this.window?.setAlwaysOnTop(true, 'screen-saver');
+    this.updateUi();
+    return true;
   }
 
   hidePreview(): void {
-    this.preview.hide();
+    if (!this.isPreview) return;
+    this.isPreview = false;
+    if (this.window && !this.window.isDestroyed()) {
+      this.window.hide();
+    }
   }
 
-  updatePreview(opts: { mode?: string; position?: string; opacity?: number }): void {
-    this.preview.update(opts);
+  updatePreview(opts: AudioPipLayoutOpts): void {
+    if (!this.isPreview) return;
+    this.setLayout(opts);
+    Object.assign(this.currentState, PREVIEW_STATE);
+    if (this.window && !this.window.isDestroyed() && this.window.isVisible()) {
+      this.positionWindow();
+      this.updateUi();
+    }
   }
 
   isPreviewShowing(): boolean {
-    return this.preview.isShowing();
+    return this.isPreview && !!this.window && !this.window.isDestroyed() && this.window.isVisible();
   }
 
   private ensureWindow(): BrowserWindow {
@@ -264,7 +366,7 @@ export class AudioPipManager {
   }
 
   private createWindow(): void {
-    const winSize = this.getModeSize();
+    const winSize = this.getDockSize();
 
     this.window = new BrowserWindow({
       width: winSize.width,
@@ -277,6 +379,12 @@ export class AudioPipManager {
       resizable: false,
       transparent: true,
       backgroundColor: '#00000000',
+      // Systemowy blur tła jak w oknie głównym — sam CSS backdrop-filter
+      // w przezroczystym oknie nie ma czego blurrować.
+      ...(process.platform === 'win32' ? { backgroundMaterial: 'acrylic' as const } : {}),
+      ...(process.platform === 'darwin'
+        ? { vibrancy: 'sidebar' as const, visualEffectState: 'active' as const }
+        : {}),
       icon: pipWindowIcon(),
       webPreferences: {
         preload: join(__dirname, '../preload/audio-pip.js'),
@@ -294,19 +402,21 @@ export class AudioPipManager {
       this.ready = false;
       this.cancelPeekTimers();
       this.peeked = false;
+      this.isPreview = false;
       this.mainWindow?.webContents.send('audio-pip:closed');
     });
 
     installNavigationGuard(this.window);
 
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      this.window.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/audio-pip.html`);
+      void this.window.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/audio-pip.html`);
     } else {
-      this.window.loadFile(join(__dirname, '../renderer/audio-pip.html'));
+      void this.window.loadFile(join(__dirname, '../renderer/audio-pip.html'));
     }
 
     this.window.webContents.on('did-finish-load', () => {
       this.ready = true;
+      // Natychmiast dopychamy theme żeby pierwsze klatki miały kolory apki.
       this.updateUi();
     });
   }
@@ -325,50 +435,49 @@ export class AudioPipManager {
     return screen.getPrimaryDisplay();
   }
 
-  private getModeSize(): { width: number; height: number } {
-    const wa = this.getDisplay().workAreaSize;
-    const w = wa && Number.isFinite(wa.width) && wa.width > 0 ? wa.width : 1280;
-    switch (this.mode) {
-      case 'medium':
-        return { width: 400, height: 100 };
-      case 'max':
-        return { width: w, height: 100 };
-      case 'wide':
-        return { width: w, height: 36 };
-      default:
-        return { width: 280, height: 36 };
-    }
+  private getDockSize(): { width: number; height: number } {
+    const d = this.getDisplay();
+    const wa = d.workArea;
+    return getAudioPipSize(this.dock, this.activeElements(), {
+      width: wa.width,
+      height: wa.height
+    });
   }
 
-  private getEdge(): 'top' | 'bottom' | null {
-    if (this.mode !== 'max' && this.mode !== 'wide') return null;
-    return this.position.startsWith('top') ? 'top' : 'bottom';
+  private getEdge(): 'top' | 'bottom' | 'left' | 'right' | null {
+    if (!isAudioPipEdgeDock(this.dock)) return null;
+    return this.dock as 'top' | 'bottom' | 'left' | 'right';
   }
 
   private positionWindow(): void {
     if (!this.window || this.window.isDestroyed()) return;
-
-    const winSize = this.getModeSize();
+    const winSize = this.getDockSize();
     const workArea = this.getDisplay().workArea;
-
-    if (this.mode === 'wide') {
-      if (workArea && Number.isFinite(workArea.x) && Number.isFinite(workArea.y)) {
-        this.window.setBounds({
-          x: Math.round(workArea.x),
-          y: this.getWideY(this.peeked),
-          width: winSize.width,
-          height: winSize.height
-        });
+    if (isAudioPipEdgeDock(this.dock)) {
+      let x = workArea.x;
+      let y = workArea.y;
+      if (this.dock === 'top') {
+        x = workArea.x;
+        y = this.peeked ? Math.round(workArea.y - (winSize.height - this.sliver)) : Math.round(workArea.y);
+      } else if (this.dock === 'bottom') {
+        x = workArea.x;
+        y = this.peeked
+          ? Math.round(workArea.y + workArea.height - this.sliver)
+          : Math.round(workArea.y + workArea.height - winSize.height);
+      } else if (this.dock === 'left') {
+        x = this.peeked ? Math.round(workArea.x - (winSize.width - this.sliver)) : Math.round(workArea.x);
+        y = workArea.y;
+      } else {
+        x = this.peeked
+          ? Math.round(workArea.x + workArea.width - this.sliver)
+          : Math.round(workArea.x + workArea.width - winSize.width);
+        y = workArea.y;
       }
+      this.window.setBounds({ x, y, width: winSize.width, height: winSize.height });
       return;
     }
-
-    let pos: PipPosition = this.position;
-    if (this.mode === 'max') {
-      if (pos.includes('-')) pos = pos.startsWith('top') ? 'top' : 'bottom';
-    }
     this.window.setBounds(
-      computePipPosition({ position: pos, ...winSize, workArea })
+      computePipPosition({ position: this.dock, ...winSize, workArea })
     );
   }
 
@@ -377,17 +486,21 @@ export class AudioPipManager {
       return;
     }
     const payload: {
-      mode: PipMode;
-      edge: 'top' | 'bottom' | null;
+      dock: AudioPipDock;
+      layoutKind: AudioPipLayoutKind;
+      elements: AudioPipElementId[];
+      edge: 'top' | 'bottom' | 'left' | 'right' | null;
       peeked: boolean;
+      isPreview: boolean;
       state?: AudioPipState;
-      opacity: number;
       cssVars: Record<string, string>;
     } = {
-      mode: this.mode,
+      dock: this.dock,
+      layoutKind: this.layoutKind(),
+      elements: this.activeElements(),
       edge: this.getEdge(),
       peeked: this.peeked,
-      opacity: this.opacity,
+      isPreview: this.isPreview,
       cssVars: this.cssVars
     };
     if (includeState) payload.state = this.currentState;
@@ -405,12 +518,12 @@ export class AudioPipManager {
     });
 
     ipcMain.on('audio-pip:action', (_event, action: string) => {
-      this.pipFocusedAt = Date.now();
+      if (this.isPreview) return;
       this.mainWindow?.webContents.send('audio-pip:action', action);
     });
 
     ipcMain.on('audio-pip:progressClick', (_event, percent: number) => {
-      this.pipFocusedAt = Date.now();
+      if (this.isPreview) return;
       this.mainWindow?.webContents.send('audio-pip:progressClick', percent);
     });
 
@@ -429,20 +542,25 @@ export class AudioPipManager {
     });
 
     ipcMain.on('audio-pip:timeUpdate', (_event, state: AudioPipState) => {
+      if (this.isPreview) return;
       Object.assign(this.currentState, state);
       if (this.window && !this.window.isDestroyed() && this.window.isVisible() && this.ready) {
         this.window.webContents.send('audio-pip:update', {
-          mode: this.mode,
+          dock: this.dock,
+          layoutKind: this.layoutKind(),
+          elements: this.activeElements(),
           edge: this.getEdge(),
           peeked: this.peeked,
+          isPreview: false,
           state: this.currentState,
-          opacity: this.opacity,
           cssVars: this.cssVars
         });
       }
     });
 
     ipcMain.on('audio-pip:vizData', (_event, data: number[]) => {
+      if (this.isPreview) return;
+      if (!this.activeElements().includes('viz')) return;
       if (this.window && !this.window.isDestroyed() && this.window.isVisible() && this.ready) {
         this.window.webContents.send('audio-pip:vizData', data);
       }
@@ -455,12 +573,15 @@ export class AudioPipManager {
 
   destroy(): void {
     this.cancelPeekTimers();
+    if (this.previewTimer) {
+      clearTimeout(this.previewTimer);
+      this.previewTimer = null;
+    }
     if (this.window && !this.window.isDestroyed()) {
       this.window.destroy();
     }
     this.window = null;
     this.ready = false;
-    this.preview.destroy();
     screen.removeListener('display-metrics-changed', this.onDisplayMetricsChanged);
     screen.removeListener('display-added', this.repositionForDisplayChange);
     screen.removeListener('display-removed', this.repositionForDisplayChange);

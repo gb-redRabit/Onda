@@ -3,6 +3,7 @@ import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
 import type { PipManager } from './pip-manager';
 import type { AudioPipManager } from './audio-pip-manager';
+import type { AudioPipDock, AudioPipElementId } from '../shared/types/pip';
 import { logger } from '../shared/logger';
 import { installNavigationGuard } from './navigation-guard';
 import { pipWindowIcon } from './pip-icon';
@@ -411,26 +412,16 @@ export function registerWindowHandlers(context: {
   ipcMain.handle(
     'audio-pip:show',
     (
-      _event,
-      state: {
-        trackName: string;
-        artist: string;
-        coverData: string | null;
-        isPlaying: boolean;
-        currentTime: number;
-        duration: number;
-        volume: number;
-      },
-      mode?: string,
-      opacity?: number,
-      position?: string
+      _event: unknown,
+      state: Record<string, unknown>,
+      opts?: { dock?: string; cornerElements?: string[]; edgeElements?: string[]; autoHide?: boolean }
     ) => {
-      audioPipManager.show(
-        state,
-        mode as 'minimal' | 'medium' | 'max' | 'wide',
-        opacity,
-        position as 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'top' | 'bottom'
-      );
+      audioPipManager.show(state, {
+        dock: opts?.dock as AudioPipDock | undefined,
+        cornerElements: opts?.cornerElements as AudioPipElementId[] | undefined,
+        edgeElements: opts?.edgeElements as AudioPipElementId[] | undefined,
+        autoHide: opts?.autoHide
+      });
       return true;
     }
   );
@@ -441,14 +432,24 @@ export function registerWindowHandlers(context: {
   });
 
   ipcMain.handle('audio-pip:autoHide', () => {
-    audioPipManager.autoHide();
+    audioPipManager.autoHideNow();
+    return true;
+  });
+
+  ipcMain.handle('audio-pip:prewarm', () => {
+    audioPipManager.prewarm();
     return true;
   });
 
   ipcMain.handle(
     'audio-pip:previewStart',
-    (_event, opts: { mode?: string; position?: string; opacity?: number }) => {
-      return audioPipManager.showPreview(opts);
+    (_event: unknown, opts?: { dock?: string; cornerElements?: string[]; edgeElements?: string[]; autoHide?: boolean }) => {
+      return audioPipManager.showPreview({
+        dock: opts?.dock as AudioPipDock | undefined,
+        cornerElements: opts?.cornerElements as AudioPipElementId[] | undefined,
+        edgeElements: opts?.edgeElements as AudioPipElementId[] | undefined,
+        autoHide: opts?.autoHide
+      });
     }
   );
 
@@ -459,8 +460,13 @@ export function registerWindowHandlers(context: {
 
   ipcMain.handle(
     'audio-pip:previewUpdate',
-    (_event, opts: { mode?: string; position?: string; opacity?: number }) => {
-      audioPipManager.updatePreview(opts);
+    (_event: unknown, opts?: { dock?: string; cornerElements?: string[]; edgeElements?: string[]; autoHide?: boolean }) => {
+      audioPipManager.updatePreview({
+        dock: opts?.dock as AudioPipDock | undefined,
+        cornerElements: opts?.cornerElements as AudioPipElementId[] | undefined,
+        edgeElements: opts?.edgeElements as AudioPipElementId[] | undefined,
+        autoHide: opts?.autoHide
+      });
       return true;
     }
   );
@@ -468,28 +474,21 @@ export function registerWindowHandlers(context: {
   ipcMain.handle(
     'audio-pip:update',
     (
-      _event,
-      state: {
-        trackName: string;
-        artist: string;
-        coverData: string | null;
-        isPlaying: boolean;
-        currentTime: number;
-        duration: number;
-        volume: number;
-      },
-      mode?: string,
-      opacity?: number,
-      position?: string
+      _event: unknown,
+      state: Record<string, unknown>,
+      opts?: { dock?: string; cornerElements?: string[]; edgeElements?: string[]; autoHide?: boolean }
     ) => {
-      audioPipManager.setModePosition(
-        mode as 'minimal' | 'medium' | 'max' | 'wide' | undefined,
-        position as
-          'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'top' | 'bottom' | undefined
-      );
+      if (opts && (opts.dock || opts.cornerElements || opts.edgeElements || opts.autoHide !== undefined)) {
+        audioPipManager.setLayout({
+          dock: opts.dock as AudioPipDock | undefined,
+          cornerElements: opts.cornerElements as AudioPipElementId[] | undefined,
+          edgeElements: opts.edgeElements as AudioPipElementId[] | undefined,
+          autoHide: opts.autoHide
+        });
+      }
       audioPipManager.update(state);
-      if (opacity !== undefined) audioPipManager.setOpacity(opacity);
       return true;
     }
   );
+
 }

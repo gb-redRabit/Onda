@@ -1,113 +1,140 @@
 <script setup lang="ts">
 import { ref, watch, computed, onBeforeUnmount } from 'vue';
-import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@renderer/stores/settings';
-import type { AppSettings } from '@renderer/types/settings';
+import type { AudioPipDock, AudioPipElementId } from '@shared/types/pip';
+import { getAudioPipSize, isAudioPipEdgeDock } from '@shared/types/pip';
 import {
   CornerUpRight,
   CornerUpLeft,
   CornerDownRight,
   CornerDownLeft,
   PanelTop,
-  PanelBottom
+  PanelBottom,
+  PanelLeft,
+  PanelRight
 } from '@lucide/vue';
 import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
 import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
 import SettingsSectionTitle from '@renderer/components/settings/SettingsSectionTitle.vue';
 import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
 import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
-import SettingsPositionGrid from '@renderer/components/settings/SettingsPositionGrid.vue';
 
 const settings = useSettingsStore();
-const { t } = useI18n();
 
-const audioPipModes = [
-  { id: 'minimal' as const, labelKey: 'settings.pipMinimal' },
-  { id: 'medium' as const, labelKey: 'settings.pipMedium' },
-  { id: 'max' as const, labelKey: 'settings.pipMax' },
-  { id: 'wide' as const, labelKey: 'settings.pipWide' }
+const ELEMENTS: AudioPipElementId[] = [
+  'cover',
+  'trackInfo',
+  'controls',
+  'progress',
+  'volume',
+  'viz',
+  'nextTrack',
+  'eq'
 ];
 
-const cornerPositions = [
-  { id: 'top-left' as const, labelKey: 'settings.topLeft', row: 0, col: 0, icon: CornerUpLeft },
-  { id: 'top-right' as const, labelKey: 'settings.topRight', row: 0, col: 1, icon: CornerUpRight },
-  {
-    id: 'bottom-left' as const,
-    labelKey: 'settings.bottomLeft',
-    row: 1,
-    col: 0,
-    icon: CornerDownLeft
-  },
-  {
-    id: 'bottom-right' as const,
-    labelKey: 'settings.bottomRight',
-    row: 1,
-    col: 1,
-    icon: CornerDownRight
+const DOCKS: Array<{ id: AudioPipDock; gridRow: number; gridCol: number }> = [
+  { id: 'top-left', gridRow: 1, gridCol: 1 },
+  { id: 'top', gridRow: 1, gridCol: 2 },
+  { id: 'top-right', gridRow: 1, gridCol: 3 },
+  { id: 'left', gridRow: 2, gridCol: 1 },
+  { id: 'right', gridRow: 2, gridCol: 3 },
+  { id: 'bottom-left', gridRow: 3, gridCol: 1 },
+  { id: 'bottom', gridRow: 3, gridCol: 2 },
+  { id: 'bottom-right', gridRow: 3, gridCol: 3 }
+];
+
+function dockIcon(id: AudioPipDock) {
+  switch (id) {
+    case 'top-left': return CornerUpLeft;
+    case 'top-right': return CornerUpRight;
+    case 'bottom-left': return CornerDownLeft;
+    case 'bottom-right': return CornerDownRight;
+    case 'top': return PanelTop;
+    case 'bottom': return PanelBottom;
+    case 'left': return PanelLeft;
+    case 'right': return PanelRight;
   }
-];
+}
 
-const edgePositions = [
-  { id: 'top' as const, labelKey: 'settings.pipTop', icon: PanelTop },
-  { id: 'bottom' as const, labelKey: 'settings.pipBottom', icon: PanelBottom }
-];
+function dockLabel(id: AudioPipDock): string {
+  if (id === 'top' || id === 'bottom' || id === 'left' || id === 'right') return id;
+  return id;
+}
 
-const isAudioEdgeMode = computed(
-  () => settings.appearance.audioPipMode === 'max' || settings.appearance.audioPipMode === 'wide'
+const isEdge = computed(() => isAudioPipEdgeDock(settings.appearance.audioPipDock));
+
+const activeElements = computed<AudioPipElementId[]>(() =>
+  isEdge.value
+    ? settings.appearance.audioPipEdgeElements
+    : settings.appearance.audioPipCornerElements
 );
 
-const audioPositions = computed(() => (isAudioEdgeMode.value ? edgePositions : cornerPositions));
+const sizeHint = computed(() => {
+  const s = getAudioPipSize(settings.appearance.audioPipDock, activeElements.value);
+  const d = settings.appearance.audioPipDock;
+  if (d === 'top' || d === 'bottom') return `100% × ${s.height}px`;
+  if (d === 'left' || d === 'right') return `${s.width}px × 100%`;
+  return `${s.width} × ${s.height}px`;
+});
 
-const audioPositionOptions = computed(() =>
-  audioPositions.value.map((p) => ({ id: p.id, label: t(p.labelKey), icon: p.icon }))
-);
+function setDock(id: AudioPipDock): void {
+  settings.updateAppearance({ audioPipDock: id });
+}
+
+function toggleElement(id: AudioPipElementId): void {
+  if (isEdge.value) {
+    const cur = [...settings.appearance.audioPipEdgeElements];
+    const i = cur.indexOf(id);
+    if (i >= 0) cur.splice(i, 1);
+    else cur.push(id);
+    settings.updateAppearance({ audioPipEdgeElements: cur });
+  } else {
+    const cur = [...settings.appearance.audioPipCornerElements];
+    const i = cur.indexOf(id);
+    if (i >= 0) cur.splice(i, 1);
+    else cur.push(id);
+    settings.updateAppearance({ audioPipCornerElements: cur });
+  }
+}
+
+function isChecked(id: AudioPipElementId): boolean {
+  return activeElements.value.includes(id);
+}
 
 const audioPreviewOpen = ref(false);
 
-function setAudioPosition(id: string): void {
-  if (isAudioEdgeMode.value) {
-    settings.updateAppearance({
-      audioPipEdgePosition: id as AppSettings['appearance']['audioPipEdgePosition']
-    });
-  } else {
-    settings.updateAppearance({
-      audioPipPosition: id as AppSettings['appearance']['audioPipPosition']
-    });
-  }
-}
-
-function audioPreviewOptions() {
+function previewOpts() {
   return {
-    mode: settings.appearance.audioPipMode,
-    position: isAudioEdgeMode.value
-      ? settings.appearance.audioPipEdgePosition
-      : settings.appearance.audioPipPosition,
-    opacity: settings.appearance.audioPipOpacity
+    dock: settings.appearance.audioPipDock,
+    cornerElements: [...settings.appearance.audioPipCornerElements],
+    edgeElements: [...settings.appearance.audioPipEdgeElements],
+    autoHide: settings.appearance.audioPipAutoHide
   };
 }
 
-async function toggleAudioPreview() {
+async function togglePreview() {
   if (audioPreviewOpen.value) {
     await window.api?.audioPipPreviewStop();
     audioPreviewOpen.value = false;
     return;
   }
-  const started = await window.api?.audioPipPreviewStart(audioPreviewOptions());
+  const started = await window.api?.audioPipPreviewStart(previewOpts());
   if (started) audioPreviewOpen.value = true;
 }
 
 watch(
   () => [
-    settings.appearance.audioPipMode,
-    settings.appearance.audioPipEdgePosition,
-    settings.appearance.audioPipPosition,
-    settings.appearance.audioPipOpacity
+    settings.appearance.audioPipDock,
+    settings.appearance.audioPipCornerElements,
+    settings.appearance.audioPipEdgeElements,
+    settings.appearance.audioPipAutoHide
   ],
   () => {
     if (audioPreviewOpen.value) {
-      window.api?.audioPipPreviewUpdate(audioPreviewOptions());
+      window.api?.audioPipPreviewUpdate(previewOpts());
     }
-  }
+  },
+  { deep: true }
 );
 
 onBeforeUnmount(() => {
@@ -127,81 +154,103 @@ onBeforeUnmount(() => {
               ? 'bg-error/20 text-error hover:bg-error/30'
               : 'bg-primary text-primary-content hover:bg-primary/90'
           "
-          @click="toggleAudioPreview"
+          @click="togglePreview"
         >
           {{ audioPreviewOpen ? $t('settings.closePreview') : $t('settings.showPreview') }}
         </button>
       </div>
 
-      <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-1">
-        <span class="text-sm">{{ $t('settings.audioPipMode') }}</span>
-        <div class="flex gap-1 bg-base-200/[var(--glass-alpha)] rounded-box p-1">
-          <button
-            v-for="m in audioPipModes"
-            :key="m.id"
-            class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
-            :class="
-              settings.appearance.audioPipMode === m.id
-                ? 'bg-primary text-primary-content'
-                : 'text-base-content/70 hover:text-base-content'
-            "
-            @click="settings.updateAppearance({ audioPipMode: m.id })"
-          >
-            {{ $t(m.labelKey) }}
-          </button>
+      <div class="grid gap-5 md:grid-cols-[auto_1fr] md:items-start pt-3">
+        <div>
+          <SettingsSectionTitle :title="$t('settings.audioPipDock')" />
+          <div class="grid grid-cols-3 gap-1.5 w-max">
+            <template v-for="row in [1, 2, 3]" :key="row">
+              <template v-for="col in [1, 2, 3]" :key="col">
+                <button
+                  v-if="DOCKS.find((d) => d.gridRow === row && d.gridCol === col)"
+                  :key="DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id"
+                  class="w-11 h-11 rounded-field border flex items-center justify-center transition-colors"
+                  :class="
+                    settings.appearance.audioPipDock ===
+                    DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-base-300 text-base-content/60 hover:bg-base-content/5'
+                  "
+                  :title="dockLabel(DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id)"
+                  @click="setDock(DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id)"
+                >
+                  <component
+                    :is="dockIcon(DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id)"
+                    :size="17"
+                  />
+                </button>
+                <div v-else class="w-11 h-11 rounded-field bg-base-content/5 flex items-center justify-center">
+                  <span class="text-[10px] text-base-content/40 text-center leading-tight">
+                    {{ sizeHint }}
+                  </span>
+                </div>
+              </template>
+            </template>
+          </div>
+          <p class="mt-2 text-xs text-base-content/50 max-w-44">
+            {{
+              isEdge
+                ? $t('settings.audioPipDock_edge') + ' · ' + $t('settings.audioPipAutoHideDesc')
+                : $t('settings.audioPipDock_corner')
+            }}
+          </p>
         </div>
-      </div>
 
-      <div>
-        <SettingsSectionTitle
-          :title="`${$t('settings.audioPipOpacity')}: ${Math.round(settings.appearance.audioPipOpacity * 100)}%`"
-        />
-        <input
-          type="range"
-          min="0.1"
-          max="1"
-          step="0.05"
-          :value="settings.appearance.audioPipOpacity"
-          class="w-full"
-          @input="
-            settings.updateAppearance({
-              audioPipOpacity: parseFloat(($event.target as HTMLInputElement).value)
-            })
-          "
-        />
-      </div>
+        <div class="min-w-0 space-y-4">
+          <div>
+            <SettingsSectionTitle
+              :title="
+                (isEdge ? $t('settings.audioPipEdgeContent') : $t('settings.audioPipCornerContent')) +
+                ' · ' +
+                $t('settings.audioPipSizeHint') +
+                ': ' +
+                sizeHint
+              "
+            />
+            <div class="flex flex-wrap gap-1.5">
+              <button
+                v-for="id in ELEMENTS"
+                :key="id"
+                class="fx-noise px-2.5 py-1.5 fx-depth rounded-field text-xs font-medium border transition-colors"
+                :class="
+                  isChecked(id)
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-base-300 text-base-content/60 hover:bg-base-content/5'
+                "
+                @click="toggleElement(id)"
+              >
+                {{ $t('settings.audioPipEl_' + id) }}
+              </button>
+            </div>
+          </div>
 
-      <div class="pt-2">
-        <SettingsRow :label="$t('settings.audioPipAutoShow')">
-          <SettingsToggle
-            :model-value="settings.appearance.audioPipAutoShow"
-            @update:model-value="settings.updateAppearance({ audioPipAutoShow: $event })"
-          />
-        </SettingsRow>
-      </div>
+          <div class="space-y-1">
+            <SettingsRow :label="$t('settings.audioPipAutoShow')">
+              <SettingsToggle
+                :model-value="settings.appearance.audioPipAutoShow"
+                @update:model-value="settings.updateAppearance({ audioPipAutoShow: $event })"
+              />
+            </SettingsRow>
+            <SettingsRow
+              :label="$t('settings.audioPipAutoHide')"
+            >
+              <SettingsToggle
+                :model-value="settings.appearance.audioPipAutoHide"
+                :disabled="!isEdge"
+                @update:model-value="settings.updateAppearance({ audioPipAutoHide: $event })"
+              />
+            </SettingsRow>
+          </div>
 
-      <div>
-        <SettingsSectionTitle :title="$t('settings.audioPipPosition')" />
-        <SettingsPositionGrid
-          :model-value="
-            isAudioEdgeMode
-              ? settings.appearance.audioPipEdgePosition
-              : settings.appearance.audioPipPosition
-          "
-          :options="audioPositionOptions"
-          :selected-label="
-            t(
-              audioPositions.find(
-                (p) =>
-                  p.id ===
-                  (isAudioEdgeMode
-                    ? settings.appearance.audioPipEdgePosition
-                    : settings.appearance.audioPipPosition)
-              )?.labelKey ?? ''
-            )
-          "
-          @update:model-value="setAudioPosition($event)"
-        />
+          <p class="text-xs text-base-content/50 leading-relaxed">
+            {{ $t('settings.audioPipDblClickHint') }} · glass-alpha + blur z motywu aplikacji.
+          </p>
+        </div>
       </div>
     </SettingsCard>
   </SettingsPanel>

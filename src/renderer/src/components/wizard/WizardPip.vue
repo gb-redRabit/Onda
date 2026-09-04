@@ -5,11 +5,10 @@ import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
 
 const settings = useSettingsStore();
 
-const modes = [
-  { id: 'minimal' as const, labelKey: 'settings.pipMinimal' },
-  { id: 'medium' as const, labelKey: 'settings.pipMedium' },
-  { id: 'max' as const, labelKey: 'settings.pipMax' },
-  { id: 'wide' as const, labelKey: 'settings.pipWide' }
+const docks = [
+  { id: 'bottom-right' as const },
+  { id: 'bottom' as const },
+  { id: 'right' as const }
 ];
 </script>
 
@@ -59,20 +58,20 @@ const modes = [
       </div>
 
       <div class="p-1">
-        <div class="text-sm mb-2">{{ $t('settings.audioPipMode') }}</div>
+        <div class="text-sm mb-2">{{ $t('settings.audioPipDock') }}</div>
         <div class="flex flex-wrap gap-2">
           <button
-            v-for="m in modes"
+            v-for="m in docks"
             :key="m.id"
             class="px-3.5 py-2 fx-depth rounded-field text-sm font-medium border transition-colors"
             :class="
-              settings.appearance.audioPipMode === m.id
+              settings.appearance.audioPipDock === m.id
                 ? 'border-primary bg-primary/10 text-primary'
                 : 'border-base-300 text-base-content/70 hover:bg-base-content/5'
             "
-            @click="settings.updateAppearance({ audioPipMode: m.id })"
+            @click="settings.updateAppearance({ audioPipDock: m.id })"
           >
-            {{ $t(m.labelKey) }}
+            {{ m.id }}
           </button>
         </div>
       </div>

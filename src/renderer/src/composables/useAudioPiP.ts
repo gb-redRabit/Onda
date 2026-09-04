@@ -4,23 +4,20 @@ import { audioEngine } from '@renderer/modules/audioEngine';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { duration } from '@renderer/composables/useAudioPlayer';
-import { buildAudioPipState, type PipMode } from './audioPipState';
-import { resolveAudioPipPosition } from './audioPipState';
+import { buildAudioPipState, resolveAudioPipLayoutOpts, type AudioPipDock } from './audioPipState';
 import { createAudioPipRuntime } from './audioPipRuntime';
 import { dispatchAudioPipAction } from './audioPipActions';
 
 // Singleton so the audio PiP state is shared across the whole app (App.vue
-// owns the lifecycle, views toggle show/hide). This makes a manual toggle
-// button in the audio player consistent with the auto-show logic.
+// owns the lifecycle, views toggle show/hide).
 const isActive = ref(false);
-const mode = ref<PipMode>('minimal');
+const dock = ref<AudioPipDock>('bottom-right');
 let autoShowEnabled = true;
 const cleanups: (() => void)[] = [];
 
 const runtime = createAudioPipRuntime({
   isActive: () => isActive.value,
-  getState: () => buildAudioPipState(),
-  getMode: () => mode.value
+  getState: () => buildAudioPipState()
 });
 
 async function show(): Promise<void> {
@@ -28,13 +25,7 @@ async function show(): Promise<void> {
   if (!state.trackName) return;
   runtime.setLastState(state);
   isActive.value = true;
-  const settings = useSettingsStore();
-  await window.api?.audioPipShow(
-    state,
-    mode.value,
-    settings.appearance.audioPipOpacity,
-    resolveAudioPipPosition(mode.value)
-  );
+  await window.api?.audioPipShow(state, resolveAudioPipLayoutOpts());
   runtime.startCoverRetry();
   runtime.startTimeTracking();
   runtime.startVizTracking();
@@ -65,22 +56,12 @@ function handleVisibilityChange(): void {
   ) {
     void show();
   } else if (!document.hidden && isActive.value) {
-    if (mode.value === 'wide') {
-      void window.api?.audioPipAutoHide();
-    } else {
-      void hide();
-    }
+    void hide();
   }
 }
 
 function handleAction(action: string): void {
-  dispatchAudioPipAction(
-    action,
-    () => mode.value,
-    (m) => {
-      mode.value = m;
-    }
-  );
+  dispatchAudioPipAction(action);
 }
 
 function handleProgressClick(percent: number): void {
@@ -95,6 +76,8 @@ export function useAudioPiP() {
 
     onMounted(() => {
       if (!window.api) return;
+      // Prewarm okna PiP żeby show() był natychmiastowy.
+      void window.api?.audioPipPrewarm?.();
 
       const removeClosed = window.api.on('audio-pip:closed', () => {
         isActive.value = false;
@@ -152,19 +135,21 @@ export function useAudioPiP() {
       });
 
       const settings = useSettingsStore();
+      dock.value = settings.appearance.audioPipDock;
       const stopSettingsWatch = watch(
         [
-          () => settings.appearance.audioPipMode,
-          () => settings.appearance.audioPipOpacity,
-          () => settings.appearance.audioPipPosition,
-          () => settings.appearance.audioPipEdgePosition
+          () => settings.appearance.audioPipDock,
+          () => settings.appearance.audioPipCornerElements,
+          () => settings.appearance.audioPipEdgeElements,
+          () => settings.appearance.audioPipAutoHide
         ],
         () => {
-          mode.value = settings.appearance.audioPipMode;
+          dock.value = settings.appearance.audioPipDock;
           if (isActive.value) {
             runtime.sendUpdate(buildAudioPipState());
           }
-        }
+        },
+        { deep: true }
       );
       cleanups.push(stopSettingsWatch);
     });
@@ -179,15 +164,15 @@ export function useAudioPiP() {
 
   return {
     isActive,
-    mode,
+    dock,
     show,
     hide,
     toggle,
     setAutoShow: (v: boolean) => {
       autoShowEnabled = v;
     },
-    setMode: (m: PipMode) => {
-      mode.value = m;
+    setDock: (d: AudioPipDock) => {
+      dock.value = d;
     }
   };
 }

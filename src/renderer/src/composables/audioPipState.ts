@@ -3,23 +3,43 @@ import { audioEngine } from '@renderer/modules/audioEngine';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { getFrequencyBins as collectBins } from '@renderer/utils/audioViz';
-import type { AudioPipState, PipMode } from '@shared/types/pip';
+import type { AudioPipDock, AudioPipElementId, AudioPipState } from '@shared/types/pip';
+import { isAudioPipEdgeDock } from '@shared/types/pip';
 
-export type { AudioPipState, PipMode };
+export type { AudioPipState, AudioPipDock, AudioPipElementId };
 
-function isEdgeMode(mode: PipMode): boolean {
-  return mode === 'max' || mode === 'wide';
+export interface AudioPipLayoutOpts {
+  dock: AudioPipDock;
+  cornerElements: AudioPipElementId[];
+  edgeElements: AudioPipElementId[];
+  autoHide: boolean;
 }
 
-export function resolveAudioPipPosition(mode: PipMode): string {
+export function resolveAudioPipDock(): AudioPipDock {
   const settings = useSettingsStore();
-  return isEdgeMode(mode)
-    ? settings.appearance.audioPipEdgePosition
-    : settings.appearance.audioPipPosition;
+  return settings.appearance.audioPipDock;
+}
+
+export function resolveAudioPipElements(dock?: AudioPipDock): AudioPipElementId[] {
+  const settings = useSettingsStore();
+  const d = dock ?? settings.appearance.audioPipDock;
+  return isAudioPipEdgeDock(d)
+    ? [...settings.appearance.audioPipEdgeElements]
+    : [...settings.appearance.audioPipCornerElements];
+}
+
+export function resolveAudioPipLayoutOpts(): AudioPipLayoutOpts {
+  const settings = useSettingsStore();
+  return {
+    dock: settings.appearance.audioPipDock,
+    cornerElements: [...settings.appearance.audioPipCornerElements],
+    edgeElements: [...settings.appearance.audioPipEdgeElements],
+    autoHide: settings.appearance.audioPipAutoHide
+  };
 }
 
 export function getFrequencyBins(): number[] {
-  return collectBins(audioEngine.getAnalyserNode(), 64);
+  return collectBins(audioEngine.getAnalyserNode(), 48);
 }
 
 export function createEmptyAudioPipState(): AudioPipState {
@@ -40,7 +60,7 @@ export function buildAudioPipState(): AudioPipState {
   const track = player.currentTrack;
   const path = track?.path || '';
   const cached = player.getCover(path);
-  if (path && !cached.data) player.loadCover(path);
+  if (path && !cached.data) void player.loadCover(path);
   const nextTrack = player.displayQueue[0];
   return {
     trackName: '' + (track?.name || ''),
@@ -56,7 +76,7 @@ export function buildAudioPipState(): AudioPipState {
     isMuted: !!player.isMuted,
     equalizerBands: (player.equalizerBands || []).slice(),
     equalizerPreset: player.equalizerPreset || 'flat',
-    vizData: getFrequencyBins(),
+    vizData: [],
     nextTrackName: '' + (nextTrack?.name || ''),
     nextTrackArtist: '' + (nextTrack?.metadata?.artist || '')
   };

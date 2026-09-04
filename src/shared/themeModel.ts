@@ -161,6 +161,8 @@ export function buildEngineVars(t: SemanticTheme, fontSize: number): Record<stri
   vars['--depth'] = String(t.geometry.depth);
   vars['--noise'] = String(t.geometry.noise);
   vars['--glass-alpha'] = `${t.glassAlpha}%`;
+  // Pojedyncze źródło blura dla apki i PiP (pełny sync przezroczystości).
+  vars['--glass-blur'] = '14px';
   vars['--font-size'] = `${fontSize}px`;
   return vars;
 }

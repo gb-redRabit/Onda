@@ -1,7 +1,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import type { Ref } from 'vue';
 
-export function usePipVisualizer(vizData: Ref<number[]>) {
+export function usePipVisualizer(vizData: Ref<number[]>, isVertical?: Ref<boolean>) {
   const vizCanvas = ref<HTMLCanvasElement | null>(null);
   let vizAnimId = 0;
   let vizIdleTimer: ReturnType<typeof setTimeout> | null = null;
@@ -57,10 +57,15 @@ export function usePipVisualizer(vizData: Ref<number[]>) {
       return;
     }
 
+    // Na bocznych krawędziach rysujemy w układzie obróconym o 90° (W/H zamienione).
+    const vertical = !!isVertical?.value;
+    const W = vertical ? h : w;
+    const H = vertical ? w : h;
+
     const accent = cachedAccent;
-    const count = 192;
-    ensureGeom(w, count);
-    const cx = h / 2;
+    const count = 96;
+    ensureGeom(W, count);
+    const cx = H / 2;
 
     if (vizSmooth.length !== count) {
       vizSmooth = Array(count).fill(0);
@@ -94,7 +99,12 @@ export function usePipVisualizer(vizData: Ref<number[]>) {
       }
     }
 
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, w, h);
+    if (vertical) {
+      ctx.translate(w, 0);
+      ctx.rotate(Math.PI / 2);
+    }
 
     ctx.globalAlpha = 0.15;
     for (let i = 0; i < count; i++) {
