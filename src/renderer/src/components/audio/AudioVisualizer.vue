@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, reactive, onMounted, onUnmounted, watch } from 'vue';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { usePlayerStore } from '@renderer/stores/player';
 import type { VisualizationMode } from '@renderer/types/settings';
-import { getFrequencyBins } from '@renderer/utils/audioViz';
 
 const audio = useAudioPlayer();
 const settings = useSettingsStore();
+const player = usePlayerStore();
 const { analyserNode } = audio;
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -20,13 +21,29 @@ const particles = ref<
 let lastW = 0;
 let lastH = 0;
 let lastDpr = 0;
-let dataArray: Uint8Array | null = null;
 let lastFrameTime = 0;
+let nonePainted = false;
+
+// Analyser scratch buffers (no per-frame allocation)
+let freqData: Uint8Array | null = null;
+let smoothPrev: Uint8Array | null = null;
+let smoothOut: Uint8Array | null = null;
+let waveBuf: Uint8Array | null = null;
+let binScratch: number[] = [];
+
+// Gradient cache
+let barGrad: CanvasGradient | null = null;
+let barGradH = 0;
+let barGradPrim = '';
+let barGradSec = '';
+let spectGrad: CanvasGradient | null = null;
+let spectGradW = 0;
+let spectGradPrim = '';
+let spectGradSec = '';
 
 // Crossfade state
 let fadeAlpha = 1;
 let prevStyle: VisualizationMode | null = null;
-let fadeFrame: Uint8Array | null = null;
 
 const CYCLES: VisualizationMode[] = [
   'bars',
@@ -50,13 +67,64 @@ function getQuality() {
   return QUALITY_PRESETS[q];
 }
 
+// Cached viz settings (avoid touching the Pinia proxy every frame)
+const vizCfg = reactive({
+  fpsCap: (settings.playback.visualization.fpsCap as number) || 60,
+  primaryColor: settings.playback.visualization.primaryColor || '#8b7cf0',
+  secondaryColor: settings.playback.visualization.secondaryColor || '#4f46e5',
+  sensitivity: settings.playback.visualization.sensitivity || 0.5,
+  smoothing: settings.playback.visualization.smoothing ?? 0.8
+});
+
+const quality = ref(getQuality());
+
+watch(
+  () => settings.playback.visualization,
+  (v) => {
+    vizCfg.fpsCap = v.fpsCap || 60;
+    vizCfg.primaryColor = v.primaryColor || '#8b7cf0';
+    vizCfg.secondaryColor = v.secondaryColor || '#4f46e5';
+    vizCfg.sensitivity = v.sensitivity || 0.5;
+    vizCfg.smoothing = v.smoothing ?? 0.8;
+  },
+  { deep: true }
+);
+
+watch(
+  () => settings.appearance.audioLayout?.vizQuality,
+  () => {
+    quality.value = getQuality();
+  }
+);
+
+function binFreq(data: Uint8Array, count: number): number[] {
+  const len = analyserNode!.frequencyBinCount;
+  const binSize = Math.floor(len / count);
+  if (binScratch.length !== count) binScratch = new Array<number>(count).fill(0);
+  for (let i = 0; i < count; i++) {
+    let sum = 0;
+    const start = i * binSize;
+    const end = Math.min(start + binSize, len);
+    for (let j = start; j < end; j++) sum += data[j];
+    binScratch[i] = Math.round(sum / (end - start));
+  }
+  return binScratch;
+}
+
 function draw(timestamp: number) {
   if (!canvasRef.value || !analyserNode) return;
   const canvas = canvasRef.value;
+
+  const frameInterval = 1000 / (vizCfg.fpsCap || 60);
+  if (timestamp - lastFrameTime < frameInterval) {
+    animFrame = requestAnimationFrame(draw);
+    return;
+  }
+  lastFrameTime = timestamp;
+
   const ctx = canvas.getContext('2d')!;
-  const quality = getQuality();
   const rawDpr = window.devicePixelRatio;
-  const dpr = Math.min(rawDpr, quality.dprCap);
+  const dpr = Math.min(rawDpr, quality.value.dprCap);
   const w = canvas.clientWidth * dpr;
   const h = canvas.clientHeight * dpr;
 
@@ -67,40 +135,45 @@ function draw(timestamp: number) {
     lastW = w;
     lastH = h;
     lastDpr = dpr;
+    barGrad = null;
+    spectGrad = null;
   }
 
-  const bufferLength = analyserNode.frequencyBinCount;
-  if (!dataArray || dataArray.length !== bufferLength) {
-    dataArray = new Uint8Array(bufferLength);
-  }
-  analyserNode.getByteFrequencyData(dataArray as Uint8Array<ArrayBuffer>);
+  const cw = w / rawDpr;
+  const ch = h / rawDpr;
 
-  const fpsCap = settings.playback.visualization.fpsCap || 60;
-  const frameInterval = 1000 / fpsCap;
-  if (timestamp - lastFrameTime < frameInterval) {
-    animFrame = requestAnimationFrame(draw);
+  if (style.value === 'none') {
+    if (!nonePainted) {
+      ctx.clearRect(0, 0, cw, ch);
+      nonePainted = true;
+    }
+    animFrame = null;
     return;
   }
-  lastFrameTime = timestamp;
+  nonePainted = false;
 
-  const cw = w / window.devicePixelRatio;
-  const ch = h / window.devicePixelRatio;
-  const prim = settings.playback.visualization.primaryColor || '#8b7cf0';
-  const sec = settings.playback.visualization.secondaryColor || '#4f46e5';
-  const sens = settings.playback.visualization.sensitivity || 0.5;
+  const bufferLength = analyserNode.frequencyBinCount;
+  if (!freqData || freqData.length !== bufferLength) freqData = new Uint8Array(bufferLength);
+  analyserNode.getByteFrequencyData(freqData);
 
-  // Smoothing: apply decay to dataArray
-  const smoothing = settings.playback.visualization.smoothing ?? 0.8;
-  if (fadeFrame && fadeFrame.length === bufferLength && smoothing > 0) {
+  let drawData = freqData;
+  if (vizCfg.smoothing > 0) {
+    if (!smoothPrev || smoothPrev.length !== bufferLength) smoothPrev = new Uint8Array(bufferLength);
+    if (!smoothOut || smoothOut.length !== bufferLength) smoothOut = new Uint8Array(bufferLength);
+    const prev = smoothPrev;
+    const out = smoothOut;
     for (let i = 0; i < bufferLength; i++) {
-      fadeFrame[i] = Math.max(
-        dataArray[i],
-        Math.round(fadeFrame[i] * smoothing)
-      );
+      out[i] = Math.max(freqData[i], Math.round(prev[i] * vizCfg.smoothing));
     }
-    dataArray = new Uint8Array(fadeFrame);
+    drawData = out;
+    // ping-pong: the just-computed buffer becomes the baseline for the next frame
+    smoothPrev = out;
+    smoothOut = prev;
   }
-  fadeFrame = new Uint8Array(dataArray);
+
+  const prim = vizCfg.primaryColor;
+  const sec = vizCfg.secondaryColor;
+  const sens = vizCfg.sensitivity;
 
   ctx.clearRect(0, 0, cw, ch);
 
@@ -117,19 +190,19 @@ function draw(timestamp: number) {
   ctx.globalAlpha = alpha;
 
   if (style.value === 'bars') {
-    drawBars(ctx, cw, ch, prim, sec, sens, dataArray, bufferLength, quality);
+    drawBars(ctx, cw, ch, prim, sec, sens, drawData, quality.value);
   } else if (style.value === 'spectrum') {
-    drawSpectrum(ctx, cw, ch, prim, sec, sens, dataArray, bufferLength, quality);
+    drawSpectrum(ctx, cw, ch, prim, sec, sens, drawData, quality.value);
   } else if (style.value === 'wave') {
-    drawWave(ctx, cw, ch, prim, sens, dataArray, bufferLength);
+    drawWave(ctx, cw, ch, prim, bufferLength);
   } else if (style.value === 'radial') {
-    drawRadial(ctx, cw, ch, prim, sens, dataArray, bufferLength, quality);
+    drawRadial(ctx, cw, ch, prim, sens, drawData, bufferLength, quality.value);
   } else if (style.value === 'circle') {
-    drawCircle(ctx, cw, ch, prim, sec, sens, dataArray, bufferLength, quality);
+    drawCircle(ctx, cw, ch, prim, sens, drawData, bufferLength, quality.value);
   } else if (style.value === 'rings') {
-    drawRings(ctx, cw, ch, prim, sec, sens, dataArray, bufferLength);
+    drawRings(ctx, cw, ch, prim, sec, sens, drawData, bufferLength);
   } else if (style.value === 'particles') {
-    drawParticles(ctx, cw, ch, prim, sec, sens, dataArray, bufferLength, quality);
+    drawParticles(ctx, cw, ch, prim, sens, drawData, bufferLength, quality.value);
   }
 
   ctx.globalAlpha = 1;
@@ -144,18 +217,22 @@ function drawBars(
   prim: string,
   sec: string,
   sens: number,
-  _data: Uint8Array,
-  _bufferLength: number,
+  data: Uint8Array,
   quality: { barCount: number }
 ) {
   const barCount = quality.barCount;
   const gap = 2;
   const barWidth = cw / barCount - gap;
-  const bins = getFrequencyBins(analyserNode, barCount);
-  const gradient = ctx.createLinearGradient(0, 0, 0, ch);
-  gradient.addColorStop(0, prim);
-  gradient.addColorStop(1, sec);
-  ctx.fillStyle = gradient;
+  const bins = binFreq(data, barCount);
+  if (!barGrad || barGradH !== ch || barGradPrim !== prim || barGradSec !== sec) {
+    barGrad = ctx.createLinearGradient(0, 0, 0, ch);
+    barGrad.addColorStop(0, prim);
+    barGrad.addColorStop(1, sec);
+    barGradH = ch;
+    barGradPrim = prim;
+    barGradSec = sec;
+  }
+  ctx.fillStyle = barGrad;
   for (let i = 0; i < barCount; i++) {
     const val = bins[i] / 255;
     const barH = val * ch * sens;
@@ -170,19 +247,23 @@ function drawSpectrum(
   prim: string,
   sec: string,
   sens: number,
-  _data: Uint8Array,
-  _bufferLength: number,
+  data: Uint8Array,
   quality: { barCount: number }
 ) {
   const barCount = quality.barCount;
   const gap = 2;
   const barWidth = cw / barCount - gap;
-  const bins = getFrequencyBins(analyserNode, barCount);
-  const gradient = ctx.createLinearGradient(0, 0, cw, 0);
-  gradient.addColorStop(0, sec);
-  gradient.addColorStop(0.5, prim);
-  gradient.addColorStop(1, sec);
-  ctx.fillStyle = gradient;
+  const bins = binFreq(data, barCount);
+  if (!spectGrad || spectGradW !== cw || spectGradPrim !== prim || spectGradSec !== sec) {
+    spectGrad = ctx.createLinearGradient(0, 0, cw, 0);
+    spectGrad.addColorStop(0, sec);
+    spectGrad.addColorStop(0.5, prim);
+    spectGrad.addColorStop(1, sec);
+    spectGradW = cw;
+    spectGradPrim = prim;
+    spectGradSec = sec;
+  }
+  ctx.fillStyle = spectGrad;
   const centerY = ch / 2;
   for (let i = 0; i < barCount; i++) {
     const val = bins[i] / 255;
@@ -198,18 +279,17 @@ function drawWave(
   cw: number,
   ch: number,
   prim: string,
-  _sens: number,
-  data: Uint8Array,
   bufferLength: number
 ) {
-  analyserNode!.getByteTimeDomainData(data as Uint8Array<ArrayBuffer>);
+  if (!waveBuf || waveBuf.length !== bufferLength) waveBuf = new Uint8Array(bufferLength);
+  analyserNode!.getByteTimeDomainData(waveBuf);
   ctx.lineWidth = 2;
   ctx.strokeStyle = prim;
   ctx.beginPath();
   const sliceWidth = cw / bufferLength;
   let x = 0;
   for (let i = 0; i < bufferLength; i++) {
-    const v = data[i] / 128.0;
+    const v = waveBuf[i] / 128.0;
     const y = (v * ch) / 2;
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
@@ -256,7 +336,6 @@ function drawCircle(
   cw: number,
   ch: number,
   prim: string,
-  _sec: string,
   sens: number,
   data: Uint8Array,
   bufferLength: number,
@@ -324,7 +403,6 @@ function drawParticles(
   cw: number,
   ch: number,
   prim: string,
-  _sec: string,
   sens: number,
   data: Uint8Array,
   bufferLength: number,
@@ -384,7 +462,7 @@ function onVisibilityChange() {
       cancelAnimationFrame(animFrame);
       animFrame = null;
     }
-  } else if (audio.isPlaying.value && !animFrame) {
+  } else if (audio.isPlaying.value && !animFrame && style.value !== 'none') {
     lastFrameTime = 0;
     animFrame = requestAnimationFrame(draw);
   }
@@ -411,6 +489,16 @@ watch(
   }
 );
 
+watch(
+  () => style.value,
+  (m, prev) => {
+    if (m !== 'none' && prev === 'none' && audio.isPlaying.value && !document.hidden && !animFrame) {
+      lastFrameTime = 0;
+      animFrame = requestAnimationFrame(draw);
+    }
+  }
+);
+
 // Apply smoothing to AnalyserNode
 watch(
   () => settings.playback.visualization.smoothing,
@@ -425,7 +513,7 @@ onMounted(() => {
     analyserNode.smoothingTimeConstant = settings.playback.visualization.smoothing ?? 0.8;
   }
   document.addEventListener('visibilitychange', onVisibilityChange);
-  if (audio.isPlaying.value) {
+  if (audio.isPlaying.value && style.value !== 'none') {
     animFrame = requestAnimationFrame(draw);
   }
 });
@@ -433,10 +521,10 @@ onMounted(() => {
 watch(
   () => audio.isPlaying.value,
   (playing) => {
-    if (playing && !document.hidden) {
+    if (playing && !document.hidden && !animFrame && style.value !== 'none') {
       lastFrameTime = 0;
       animFrame = requestAnimationFrame(draw);
-    } else if (animFrame) {
+    } else if (!playing && animFrame) {
       cancelAnimationFrame(animFrame);
       animFrame = null;
     }
@@ -458,7 +546,7 @@ defineExpose({ style, cycleStyle });
   >
     <canvas ref="canvasRef" class="w-full h-full" />
     <div
-      v-if="!audio.isPlaying.value && style !== 'none'"
+      v-if="!player.currentTrack && !audio.isPlaying.value && style !== 'none'"
       class="absolute inset-0 flex flex-col items-center justify-center bg-neutral/20 gap-2"
     >
       <span class="text-base-content/70 text-sm font-medium">{{

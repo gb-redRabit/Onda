@@ -1,23 +1,39 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import MediaCover from '@renderer/components/MediaCover.vue';
 
-defineProps<{ size?: string }>();
+const props = defineProps<{ size?: string; variant?: string }>();
 
 const player = usePlayerStore();
 const audio = useAudioPlayer();
 
 const pulseScale = ref(1);
 let animFrame: number | null = null;
+let frame = 0;
 let dataArray: Uint8Array<ArrayBuffer> | null = null;
+
+const coverClass = computed(() => {
+  switch (props.variant) {
+    case 'rounded':
+      return 'rounded-2xl bg-neutral border border-base-content/15';
+    case 'glass':
+      return 'rounded-2xl bg-neutral';
+    default:
+      return 'rounded-box bg-neutral';
+  }
+});
 
 function measurePulse() {
   if (!audio.analyserNode || !audio.isPlaying.value) {
     animFrame = requestAnimationFrame(measurePulse);
     return;
   }
+
+  // Sample bass at ~30fps (skip every other frame); audio juice does not change faster
+  frame++;
+  if ((frame & 1) === 1) pulseScale.value = 1;
 
   const analyser = audio.analyserNode;
   const bufferLength = analyser.frequencyBinCount;
@@ -61,17 +77,68 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="rounded-box bg-neutral flex items-center justify-center overflow-hidden shrink-0 transition-transform duration-75"
-    :class="size || 'w-96 h-96'"
+    v-if="variant === 'ring'"
+    class="relative flex items-center justify-center shrink-0 transition-transform duration-75"
+    :class="[size || 'w-96 h-96']"
     :style="{ transform: `scale(${pulseScale})` }"
   >
-    <MediaCover
-      v-if="player.currentTrack"
-      :path="player.currentTrack.path"
-      :size="48"
-      :autoplay="true"
-      fallback="music"
+    <div class="absolute rounded-full ring-2 ring-primary/30 h-[96%] aspect-square pointer-events-none" />
+    <div class="relative h-[88%] aspect-square rounded-full overflow-hidden shadow-lg bg-neutral">
+      <MediaCover
+        v-if="player.currentTrack"
+        :path="player.currentTrack.path"
+        :size="48"
+        :autoplay="true"
+        fallback="music"
+      />
+      <MediaCover v-else :size="48" fallback="music" />
+      <div class="absolute inset-0 rounded-full ring-2 ring-primary/60 pointer-events-none" />
+    </div>
+  </div>
+
+  <div
+    v-else
+    class="relative flex items-center justify-center overflow-hidden shrink-0 transition-transform duration-75"
+    :class="[size || 'w-96 h-96', coverClass]"
+    :style="{ transform: `scale(${pulseScale})` }"
+  >
+    <div v-if="variant === 'rounded'" class="w-full h-full p-1.5">
+      <div class="w-full h-full overflow-hidden rounded-xl ring-1 ring-inset ring-base-content/20">
+        <MediaCover
+          v-if="player.currentTrack"
+          :path="player.currentTrack.path"
+          :size="48"
+          :autoplay="true"
+          fallback="music"
+        />
+        <MediaCover v-else :size="48" fallback="music" />
+      </div>
+    </div>
+    <template v-else>
+      <div v-if="variant === 'glass'" class="w-full h-full opacity-85 saturate-75 blur-[1px]">
+        <MediaCover
+          v-if="player.currentTrack"
+          :path="player.currentTrack.path"
+          :size="48"
+          :autoplay="true"
+          fallback="music"
+        />
+        <MediaCover v-else :size="48" fallback="music" />
+      </div>
+      <template v-else>
+        <MediaCover
+          v-if="player.currentTrack"
+          :path="player.currentTrack.path"
+          :size="48"
+          :autoplay="true"
+          fallback="music"
+        />
+        <MediaCover v-else :size="48" fallback="music" />
+      </template>
+    </template>
+    <div
+      v-if="variant === 'glass'"
+      class="absolute inset-0 pointer-events-none bg-white/20 backdrop-blur-[3px] border border-white/30 shadow-[inset_0_0_24px_rgba(255,255,255,0.15),inset_0_-12px_24px_rgba(0,0,0,0.3)]"
     />
-    <MediaCover v-else :size="48" fallback="music" />
   </div>
 </template>

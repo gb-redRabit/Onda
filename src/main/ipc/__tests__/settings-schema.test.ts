@@ -218,6 +218,61 @@ describe('sanitizeSettings', () => {
     expect(bad.youtube).toEqual({});
   });
 
+  it('sanitizes audioLayout element bg fields, accepts known variant and drops junk', () => {
+    const { sanitized } = sanitizeSettings({
+      appearance: {
+        audioLayout: {
+          elements: [
+            {
+              id: 'cover',
+              x: 1,
+              y: 1,
+              width: 2,
+              height: 2,
+              opacity: 50,
+              layer: 2,
+              visible: true,
+              bg: true,
+              bgOpacity: 40,
+              variant: 'rounded',
+              junk: 1
+            },
+            { id: 'progress', x: 0, y: 0, width: 50, height: 5, opacity: 100, layer: 3, visible: true, variant: 'hacked' }
+          ],
+          autoHideDelay: 3000
+        }
+      }
+    });
+    expect(sanitized.appearance?.audioLayout).toEqual({
+      elements: [
+        {
+          id: 'cover',
+          x: 1,
+          y: 1,
+          width: 2,
+          height: 2,
+          opacity: 50,
+          layer: 2,
+          visible: true,
+          bg: true,
+          bgOpacity: 40,
+          variant: 'rounded'
+        },
+        { id: 'progress', x: 0, y: 0, width: 50, height: 5, opacity: 100, layer: 3, visible: true }
+      ]
+    });
+  });
+
+  it('clamps legacy cursorTimeout to the seconds range and keeps valid seconds value', () => {
+    const { sanitized: clamps } = sanitizeSettings({ playback: { cursorTimeout: 500 } });
+    expect(clamps.playback).toEqual({ cursorTimeout: 30 });
+
+    const { sanitized: ok } = sanitizeSettings({
+      playback: { cursorTimeout: 3, cursorHide: true }
+    });
+    expect(ok.playback).toEqual({ cursorTimeout: 3, cursorHide: true });
+  });
+
   it('allows only known AppSettings top-level keys', () => {
     expect(SETTINGS_ALLOWED_KEYS).toEqual(
       expect.arrayContaining([

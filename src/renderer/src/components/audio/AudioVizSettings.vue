@@ -1,14 +1,23 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import type { VisualizationMode } from '@renderer/types/settings';
 
 const settings = useSettingsStore();
 const viz = computed(() => settings.playback.visualization);
 const audioLayout = computed(() => settings.appearance.audioLayout);
-const autoHideDelay = computed(() => audioLayout.value?.autoHideDelay ?? 3000);
-const hudOpacity = computed(() => audioLayout.value?.hudOpacity ?? 100);
 const vizQuality = computed(() => audioLayout.value?.vizQuality ?? 'high');
+
+// Local preview for hudOpacity (commit on change — no store write per mousemove)
+const hudOpacityInput = ref(audioLayout.value?.hudOpacity ?? 100);
+
+watch(audioLayout, (l) => {
+  hudOpacityInput.value = l?.hudOpacity ?? 100;
+});
+
+function commitHudOpacity() {
+  updateLayout({ hudOpacity: hudOpacityInput.value });
+}
 
 const modes: { value: VisualizationMode; label: string }[] = [
   { value: 'bars', label: 'Bars' },
@@ -146,32 +155,16 @@ function updateLayout(partial: Record<string, unknown>) {
       <div>
         <label
           class="text-[10px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
-          >{{ $t('audioView.autoHideDelay') }}: {{ autoHideDelay }}ms</label
+          >{{ $t('audioView.hudOpacity') }}: {{ hudOpacityInput }}%</label
         >
         <input
-          type="range"
-          min="0"
-          max="10000"
-          step="500"
-          :value="autoHideDelay"
-          class="w-full accent-primary"
-          @input="(e: Event) => updateLayout({ autoHideDelay: parseInt((e.target as HTMLInputElement).value) })"
-        />
-      </div>
-
-      <div>
-        <label
-          class="text-[10px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
-          >{{ $t('audioView.hudOpacity') }}: {{ hudOpacity }}%</label
-        >
-        <input
+          v-model.number="hudOpacityInput"
           type="range"
           min="10"
           max="100"
           step="1"
-          :value="hudOpacity"
           class="w-full accent-primary"
-          @input="(e: Event) => updateLayout({ hudOpacity: parseInt((e.target as HTMLInputElement).value) })"
+          @change="commitHudOpacity"
         />
       </div>
 

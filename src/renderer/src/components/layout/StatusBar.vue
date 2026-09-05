@@ -136,26 +136,28 @@ const progressPct = computed(() => {
   return Math.min(100, Math.max(0, (player.currentTime / player.duration) * 100));
 });
 
-const showProgress = computed(() => !!player.currentTrack && player.duration > 60);
+const showProgress = computed(
+  () => !!player.currentTrack && player.currentTrack.type !== 'video' && player.duration > 60
+);
 
 const viewContext = computed<string[]>(() => {
   switch (route.name) {
     case 'audio': {
       const layout = settings.appearance.audioLayout.preset ?? 'custom';
       const viz = settings.playback.visualization.mode;
-      return [`${layout} · ${viz}`];
-    }
-    case 'player': {
-      if (!player.currentTrack) return [];
+      if (!player.currentTrack) return [`${layout} · ${viz}`];
       const meta = player.currentTrack.metadata;
       const parts: string[] = [];
-      const fmt = meta?.format?.toUpperCase() || player.currentTrack.extension?.toUpperCase();
+      const fmt =
+        meta?.format?.toUpperCase() || player.currentTrack.extension?.toUpperCase();
       if (fmt) parts.push(fmt);
       if (meta?.codec) parts.push(meta.codec);
       if (meta?.bitrate) parts.push(`${meta.bitrate}kbps`);
-      if (player.subtitleTracks.length) parts.push(t('status.subs') + ': ' + (player.activeSubtitleId ? t('status.on') : t('status.off')));
-      return [parts.join(' · ')];
+      if (meta?.sampleRate) parts.push(`${Math.round(meta.sampleRate / 1000)}kHz`);
+      return [parts.join(' · '), `${layout} · ${viz}`];
     }
+    case 'player':
+      return [];
     case 'explorer': {
       const sel = explorer.selectedCount;
       return sel > 0 ? [`${sel} ${t('status.selected')}`] : [];

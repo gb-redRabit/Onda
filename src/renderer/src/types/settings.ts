@@ -138,14 +138,26 @@ export interface AudioLayoutElement {
   opacity: number;
   layer: number;
   visible: boolean;
+  /** Tło elementu w kolorze base-300 z regulowaną przezroczystością. */
+  bg?: boolean;
+  /** Przezroczystość tła 0–100. */
+  bgOpacity?: number;
+  /**
+   * Wariant wyglądu elementu (presety per typ):
+   * cover: default|rounded|ring|glass; trackInfo: classic|minimal|large;
+   * progress: classic|thin|neon; controls: standard|compact; visualization: default.
+   * Nieznane/niedozwolone wartości renderują się jako default dla danego typu.
+   */
+  variant?: string;
 }
 
 export interface AudioLayoutSettings {
   elements: AudioLayoutElement[];
   preset?: AudioLayoutPreset;
-  autoHideDelay?: number;
   hudOpacity?: number;
   vizQuality?: VizQuality;
+  /** Custom layouts per named preset, persisted so switching back preserves the user's edits. */
+  customLayouts?: Partial<Record<AudioLayoutPreset, AudioLayoutElement[]>>;
 }
 
 export type VisualizationMode = 'circle' | 'bars' | 'particles' | 'wave' | 'radial' | 'spectrum' | 'rings' | 'none';
@@ -172,6 +184,7 @@ export interface PlaybackSettings {
   pipHeight: number;
   pipPreBuffer: boolean;
   cursorHide: boolean;
+  /** Czas (w sekundach) po którym kursor i HUD chowają się podczas odtwarzania. */
   cursorTimeout: number;
   playbackSpeed: number;
   videoFilter: string;

@@ -23,15 +23,7 @@ const icons: Record<AudioLayoutPreset, typeof LayoutPanelLeft> = {
 };
 
 function apply(preset: AudioLayoutPreset) {
-  const p = AUDIO_LAYOUT_PRESETS[preset];
-  if (!p) return;
-  settings.updateAppearance({
-    audioLayout: {
-      ...settings.appearance.audioLayout,
-      preset,
-      elements: p.elements.map((el) => ({ ...el }))
-    }
-  });
+  settings.applyAudioLayoutPreset(preset);
 }
 </script>
 

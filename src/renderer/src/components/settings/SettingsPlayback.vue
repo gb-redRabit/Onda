@@ -66,6 +66,7 @@ const toggles = [
           })
         "
       />
+      <p class="text-[11px] text-base-content/50 mt-2">{{ $t('settings.cursorHideHint') }}</p>
     </SettingsCard>
 
     <SettingsCard>

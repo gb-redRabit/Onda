@@ -32,6 +32,7 @@ export interface MediaMetadata {
   bitrate?: number;
   sampleRate?: number;
   codec?: string;
+  format?: string;
   lossless?: boolean;
   replayGainTrackGain?: number;
 }

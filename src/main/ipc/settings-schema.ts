@@ -191,15 +191,36 @@ const AUDIO_LAYOUT_ELEMENT_FIELDS: Record<string, Sanitizer> = {
   height: numClamped(1, 100),
   opacity: numClamped(0, 100),
   layer: numClamped(1, 5),
-  visible: bool
+  visible: bool,
+  bg: bool,
+  bgOpacity: numClamped(0, 100),
+  variant: enumOf([
+    'default',
+    'rounded',
+    'ring',
+    'glass',
+    'classic',
+    'minimal',
+    'large',
+    'thin',
+    'neon',
+    'standard',
+    'compact'
+  ])
 };
 
 const AUDIO_LAYOUT_FIELDS: Record<string, Sanitizer> = {
   elements: arrayOf(obj(AUDIO_LAYOUT_ELEMENT_FIELDS)),
   preset: enumOf(['compact', 'stacked', 'split', 'full', 'immersive']),
-  autoHideDelay: numClamped(0, 10000),
   hudOpacity: numClamped(0, 100),
-  vizQuality: enumOf(['low', 'medium', 'high'])
+  vizQuality: enumOf(['low', 'medium', 'high']),
+  customLayouts: obj({
+    compact: arrayOf(obj(AUDIO_LAYOUT_ELEMENT_FIELDS)),
+    stacked: arrayOf(obj(AUDIO_LAYOUT_ELEMENT_FIELDS)),
+    split: arrayOf(obj(AUDIO_LAYOUT_ELEMENT_FIELDS)),
+    full: arrayOf(obj(AUDIO_LAYOUT_ELEMENT_FIELDS)),
+    immersive: arrayOf(obj(AUDIO_LAYOUT_ELEMENT_FIELDS))
+  })
 };
 
 const APPEARANCE_FIELDS: Record<string, Sanitizer> = {
@@ -272,7 +293,8 @@ const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
   pipHeight: numClamped(150, 2160),
   pipPreBuffer: bool,
   cursorHide: bool,
-  cursorTimeout: numClamped(500, 30000),
+  // cursorTimeout jest w SEKUNDACH (renderer używa czas * 1000; slider 1–10 s)
+  cursorTimeout: numClamped(1, 30),
   playbackSpeed: numClamped(0.2, 3),
   videoFilter: str,
   visualization: obj(VISUALIZATION_FIELDS),

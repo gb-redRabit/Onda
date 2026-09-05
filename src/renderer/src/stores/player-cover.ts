@@ -198,7 +198,11 @@ export function usePlayerCover() {
         });
       }
     }
-    loadCover(track.path);
+    // NOTE: no loadCover() here — enqueueing (e.g. "play all" on a folder)
+    // would otherwise flood the cover loader with one IPC round-trip per
+    // queued track, even for hundreds the user has never seen. Covers are
+    // fetched on demand by MediaCover through its IntersectionObserver when a
+    // thumbnail actually renders.
   }
 
   return { loadCover, getCover, invalidateCoverCache, enrichTrack };

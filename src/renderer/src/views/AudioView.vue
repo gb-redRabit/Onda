@@ -21,27 +21,40 @@ const settings = useSettingsStore();
 const viewEl = ref<HTMLElement | null>(null);
 const showUI = ref(true);
 const uiTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
-const vizRef = ref<InstanceType<typeof AudioVisualizer>[]>([]);
+const uiFireAt = ref(0);
+const vizRef = ref<InstanceType<typeof AudioVisualizer> | null>(null);
 const showVizSettings = ref(false);
 const showLayoutEditor = ref(false);
 const isFullscreen = ref(false);
 
 // Drag state
 const dragging = ref<{ id: string; startX: number; startY: number; elX: number; elY: number } | null>(null);
+const dragPos = ref<{ id: string; x: number; y: number } | null>(null);
 
 const elements = computed(() => settings.appearance.audioLayout?.elements ?? []);
-const autoHideDelay = computed(() => settings.appearance.audioLayout?.autoHideDelay ?? 3000);
+const cursorHideTimeout = computed(() => (settings.playback.cursorTimeout ?? 3) * 1000);
 const hudOpacity = computed(() => (settings.appearance.audioLayout?.hudOpacity ?? 100) / 100);
 
 function getElementStyle(el: AudioLayoutElement) {
-  return {
-    left: el.x + '%',
-    top: el.y + '%',
+  let { x, y } = el;
+  if (dragPos.value?.id === el.id) {
+    x = dragPos.value.x;
+    y = dragPos.value.y;
+  }
+  const style: Record<string, string> = {
+    left: x + '%',
+    top: y + '%',
     width: el.width + '%',
     height: el.height + '%',
-    opacity: (el.opacity ?? 100) / 100,
-    zIndex: el.layer * 10
+    opacity: String((el.opacity ?? 100) / 100),
+    zIndex: String(el.layer * 10)
   };
+  const bgOpacity = el.bgOpacity ?? 40;
+  if (el.bg && bgOpacity > 0) {
+    style.backgroundColor = `color-mix(in srgb, var(--color-base-300) ${bgOpacity}%, transparent)`;
+    style.borderRadius = '0.5rem';
+  }
+  return style;
 }
 
 function onElementMouseDown(e: MouseEvent, el: AudioLayoutElement) {
@@ -62,37 +75,52 @@ function onDragMouseMove(e: MouseEvent) {
   const canvas = (e.currentTarget as HTMLElement).getBoundingClientRect();
   const dx = ((e.clientX - dragging.value.startX) / canvas.width) * 100;
   const dy = ((e.clientY - dragging.value.startY) / canvas.height) * 100;
-  const newX = Math.max(0, Math.min(100 - 5, dragging.value.elX + dx));
-  const newY = Math.max(0, Math.min(100 - 5, dragging.value.elY + dy));
-
-  const currentElements = settings.appearance.audioLayout?.elements ?? [];
-  const updated = currentElements.map((el) =>
-    el.id === dragging.value!.id ? { ...el, x: Math.round(newX), y: Math.round(newY) } : el
-  );
-  settings.updateAppearance({
-    audioLayout: { ...settings.appearance.audioLayout, elements: updated }
-  });
+  const newX = Math.max(0, Math.min(100 - 5, Math.round(dragging.value.elX + dx)));
+  const newY = Math.max(0, Math.min(100 - 5, Math.round(dragging.value.elY + dy)));
+  dragPos.value = { id: dragging.value.id, x: newX, y: newY };
 }
 
 function onDragMouseUp() {
+  if (dragging.value && dragPos.value) {
+    const currentElements = settings.appearance.audioLayout?.elements ?? [];
+    const updated = currentElements.map((el) =>
+      el.id === dragPos.value!.id ? { ...el, x: dragPos.value!.x, y: dragPos.value!.y } : el
+    );
+    settings.updateAppearance({
+      audioLayout: { ...settings.appearance.audioLayout, elements: updated }
+    });
+  }
   dragging.value = null;
+  dragPos.value = null;
+}
+
+// Cursor + HUD hide together — the delay comes from Odtwarzanie (playback) settings.
+function setCursorVisible(visible: boolean) {
+  if (!viewEl.value) return;
+  viewEl.value.classList.toggle('hide-cursor', !visible);
 }
 
 function hideUIAfterDelay() {
-  if (uiTimeout.value) clearTimeout(uiTimeout.value);
+  const now = Date.now();
+  const delay = cursorHideTimeout.value;
+  if (uiTimeout.value) {
+    if (uiFireAt.value - now > delay / 3) return;
+    clearTimeout(uiTimeout.value);
+  }
+  uiFireAt.value = now + delay;
   uiTimeout.value = setTimeout(() => {
-    if (audio.isPlaying.value) showUI.value = false;
-  }, autoHideDelay.value);
+    uiTimeout.value = null;
+    if (audio.isPlaying.value && settings.playback.cursorHide) {
+      showUI.value = false;
+      setCursorVisible(false);
+    }
+  }, delay);
 }
 
 function onMouseMove(e: MouseEvent) {
   if (dragging.value) onDragMouseMove(e);
-  if (isFullscreen.value) {
-    showUI.value = true;
-    hideUIAfterDelay();
-    return;
-  }
   showUI.value = true;
+  setCursorVisible(true);
   hideUIAfterDelay();
 }
 
@@ -101,6 +129,7 @@ function toggleFullscreen() {
   if (!isFullscreen.value) {
     viewEl.value.requestFullscreen().then(() => {
       isFullscreen.value = true;
+      setCursorVisible(true);
       showUI.value = false;
       hideUIAfterDelay();
     }).catch(() => {});
@@ -108,6 +137,7 @@ function toggleFullscreen() {
     document.exitFullscreen().then(() => {
       isFullscreen.value = false;
       showUI.value = true;
+      setCursorVisible(true);
     }).catch(() => {});
   }
 }
@@ -116,15 +146,18 @@ function onFullscreenChange() {
   if (!document.fullscreenElement && isFullscreen.value) {
     isFullscreen.value = false;
     showUI.value = true;
+    setCursorVisible(true);
   }
 }
 
 watch(
   () => audio.isPlaying.value,
   (playing) => {
-    if (playing) hideUIAfterDelay();
-    else {
+    if (playing) {
+      hideUIAfterDelay();
+    } else {
       showUI.value = true;
+      setCursorVisible(true);
       if (uiTimeout.value) clearTimeout(uiTimeout.value);
     }
   }
@@ -137,8 +170,15 @@ function skip(seconds: number) {
 
 function onKeydown(e: KeyboardEvent) {
   const target = e.target as HTMLElement;
-  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+  if (
+    target.closest('button') ||
+    target.tagName === 'INPUT' ||
+    target.tagName === 'TEXTAREA' ||
+    target.isContentEditable
+  )
     return;
+  // Edytor layoutu przejmuje klawisze strzałek.
+  if (showLayoutEditor.value) return;
   switch (e.key) {
     case ' ':
     case 'k':
@@ -251,7 +291,7 @@ onUnmounted(() => {
           class="w-full h-full flex items-center justify-center p-2"
           @mousedown="onElementMouseDown($event, el)"
         >
-          <AudioCover size="w-full h-full" />
+          <AudioCover size="w-full h-full" :variant="el.variant ?? 'default'" />
         </div>
       </template>
 
@@ -262,7 +302,7 @@ onUnmounted(() => {
           :class="{ 'opacity-0 pointer-events-none': isFullscreen && !showUI }"
           @mousedown="onElementMouseDown($event, el)"
         >
-          <AudioTrackInfo />
+          <AudioTrackInfo :variant="el.variant ?? 'classic'" />
         </div>
       </template>
 
@@ -275,7 +315,7 @@ onUnmounted(() => {
           }"
           @mousedown="onElementMouseDown($event, el)"
         >
-          <AudioProgressBar />
+          <AudioProgressBar :variant="el.variant ?? 'classic'" />
         </div>
       </template>
 
@@ -288,7 +328,7 @@ onUnmounted(() => {
           }"
           @mousedown="onElementMouseDown($event, el)"
         >
-          <AudioControls />
+          <AudioControls :variant="el.variant ?? 'standard'" />
         </div>
       </template>
     </div>
@@ -297,7 +337,6 @@ onUnmounted(() => {
     <div
       v-show="!showLayoutEditor"
       class="absolute top-2 left-2 right-2 z-70 flex items-center justify-between pointer-events-none transition-opacity"
-      :class="{ 'opacity-0': !showUI, 'opacity-100': showUI }"
       :style="{ opacity: showUI ? hudOpacity : 0 }"
     >
       <div class="flex items-center gap-1 pointer-events-auto">
@@ -315,11 +354,11 @@ onUnmounted(() => {
         <button
           class="fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all"
           :title="$t('audioView.vizMode')"
-          @click.stop="vizRef?.[0]?.cycleStyle()"
+          @click.stop="vizRef?.cycleStyle()"
         >
           <div class="flex items-center gap-1">
             <BarChart3 :size="12" />
-            <span class="text-[9px] uppercase font-medium">{{ vizRef?.[0]?.style ?? 'bars' }}</span>
+            <span class="text-[9px] uppercase font-medium">{{ vizRef?.style ?? 'bars' }}</span>
           </div>
         </button>
         <button
@@ -357,3 +396,10 @@ onUnmounted(() => {
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+.hide-cursor,
+.hide-cursor * {
+  cursor: none !important;
+}
+</style>

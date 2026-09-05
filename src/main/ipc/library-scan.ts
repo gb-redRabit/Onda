@@ -99,6 +99,7 @@ async function getAudioMetadata(
   sampleRate: number;
   channels: number;
   format: string;
+  codec?: string;
   isVideo: boolean;
   size: number;
   replayGainTrackGain?: number;
@@ -123,7 +124,8 @@ async function getAudioMetadata(
       bitrate: formatInfo?.bitrate || 0,
       sampleRate: formatInfo?.sampleRate || 0,
       channels: formatInfo?.numberOfChannels || 0,
-      format: ext.slice(1),
+      format: formatInfo?.formatName || ext.slice(1),
+      codec: formatInfo?.codec || undefined,
       isVideo: false,
       size: s.size,
       replayGainTrackGain:
@@ -214,6 +216,10 @@ async function processAudioFile(
             year: meta.year,
             genre: meta.genre,
             track: meta.track,
+            bitrate: meta.bitrate || undefined,
+            sampleRate: meta.sampleRate || undefined,
+            format: meta.format,
+            codec: meta.codec,
             replayGainTrackGain: meta.replayGainTrackGain
           }
         : undefined,
