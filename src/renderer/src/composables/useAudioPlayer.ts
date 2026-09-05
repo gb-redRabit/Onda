@@ -62,6 +62,27 @@ function ensureModule() {
     error.value = 'stream-failed';
   });
 
+  // Local file load failed (missing/unreadable file, media server error).
+  // Auto-skip while playing; a 2s throttle caps skip storms (e.g. a folder of
+  // stale entries or repeat-one on a broken file) — then pause instead.
+  let lastTrackErrorAt = 0;
+  audioEvents.on('trackError', () => {
+    isLoading.value = false;
+    error.value = 'track-failed';
+    const p = usePlayerStore();
+    if (!p.isPlaying) return;
+    const now = performance.now();
+    if (now - lastTrackErrorAt < 2000) {
+      p.pause();
+      return;
+    }
+    lastTrackErrorAt = now;
+    const next = p.nextTrack();
+    if (!next || next.path === p.currentTrack?.path) {
+      p.pause();
+    }
+  });
+
   audioEvents.on('bufferChange', (frac) => {
     buffered.value = frac;
   });

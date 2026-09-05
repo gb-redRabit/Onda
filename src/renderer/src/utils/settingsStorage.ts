@@ -13,7 +13,8 @@ import type {
   ToastSettings,
   DependencyStatus,
   AppSettings,
-  GeneralSettings
+  GeneralSettings,
+  StatusBarSettings
 } from '@renderer/types/settings';
 
 interface SettingsState {
@@ -30,6 +31,7 @@ interface SettingsState {
   updates: Ref<UpdateSettings>;
   toast: Ref<ToastSettings>;
   dependencies: Ref<Record<string, DependencyStatus>>;
+  statusBar: Ref<StatusBarSettings>;
 }
 
 export function mergeSettings(target: SettingsState, data: Partial<AppSettings>): void {
@@ -46,6 +48,7 @@ export function mergeSettings(target: SettingsState, data: Partial<AppSettings>)
   if (data.updates) Object.assign(target.updates.value, data.updates);
   if (data.toast) Object.assign(target.toast.value, data.toast);
   if (data.dependencies) Object.assign(target.dependencies.value, data.dependencies);
+  if (data.statusBar) Object.assign(target.statusBar.value, data.statusBar);
 }
 
 export async function loadSettings(target: SettingsState): Promise<void> {
@@ -76,7 +79,8 @@ export async function persistSettings(state: SettingsState): Promise<void> {
           youtube: state.youtube.value,
           updates: state.updates.value,
           toast: state.toast.value,
-          dependencies: state.dependencies.value
+          dependencies: state.dependencies.value,
+          statusBar: state.statusBar.value
         })
       );
       await window.api.invoke('settings:set', payload);

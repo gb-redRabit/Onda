@@ -95,6 +95,13 @@ export const DEFAULT_TOAST: ToastSettings = {
   showNative: true
 };
 
+import type { StatusBarSettings } from '@renderer/types/settings';
+
+export const DEFAULT_STATUS_BAR: StatusBarSettings = {
+  visible: true,
+  sections: ['playing', 'separator', 'viewCounts', 'downloads', 'youtube', 'dependencies', 'version', 'clock']
+};
+
 export const DEFAULT_SHORTCUTS: Record<string, string> = {
   'play-pause': 'Space',
   'skip-forward': 'ArrowRight',
@@ -109,6 +116,7 @@ export const DEFAULT_SHORTCUTS: Record<string, string> = {
   'next-track': 'MediaTrackNext',
   'prev-track': 'MediaTrackPrevious',
   search: 'Ctrl+K',
+  'view-search': 'Ctrl+F',
   settings: 'Ctrl+,',
   explorer: 'Ctrl+E',
   library: 'Ctrl+L',

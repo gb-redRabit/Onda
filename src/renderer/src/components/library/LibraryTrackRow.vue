@@ -49,6 +49,7 @@ const playlistPopupStyle = computed(() => {
   const maxTop = vh - 200 - 8;
   return { left: Math.max(8, left) + 'px', top: Math.min(top, maxTop) + 'px' };
 });
+const hovered = ref(false);
 
 function playNow() {
   player.setTrack(props.track);
@@ -91,6 +92,15 @@ function onContextMenu(e: MouseEvent) {
   showTrackMenu(e, props.track, { onEdit: () => emit('edit', props.track) });
 }
 
+function onHoverCover() {
+  hovered.value = true;
+  player.loadCover(props.track.path);
+}
+
+function onHoverLeave() {
+  hovered.value = false;
+}
+
 function onDragStart(e: DragEvent) {
   const payload: { paths: string[]; playlistId?: string; dragIndex?: number } = {
     paths: [props.track.path]
@@ -113,6 +123,8 @@ function onDragStart(e: DragEvent) {
     @dblclick="playNow"
     @contextmenu.prevent="onContextMenu"
     @dragstart="onDragStart"
+    @mouseenter="onHoverCover"
+    @mouseleave="onHoverLeave"
   >
     <input
       type="checkbox"
@@ -121,7 +133,7 @@ function onDragStart(e: DragEvent) {
       @click.stop="emit('select', $event as unknown as MouseEvent)"
     />
     <div class="relative shrink-0 w-10 h-10 rounded-field overflow-hidden bg-base-200 border border-base-300">
-      <MediaCover :path="props.track.path" :size="14" :autoplay="true" fallback="play" />
+      <MediaCover :path="props.track.path" :size="14" :autoplay="hovered" fallback="play" />
       <button
         class="absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/50 transition-colors"
         @click.stop="playNow"

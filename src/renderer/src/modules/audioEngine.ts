@@ -123,7 +123,12 @@ class AudioEngine {
       'audioEngine',
       `audio element error code=${err?.code} message=${err?.message} src=${(el.src || '').slice(0, 120)}`
     );
-    if (!this.streamUrl) return;
+    if (!this.streamUrl) {
+      // Local file playback (no stream URL): the file is missing, unreadable
+      // or the media server rejected it. Emit so the UI can skip gracefully.
+      audioEvents.emit('trackError', err ? String(err.code) : 'unknown');
+      return;
+    }
     if (this.streamMode === 'proxy' && !this.streamTriedDirect) {
       // Proxy retries (403 with backoff) were exhausted — retry the raw URL
       // once directly from the renderer as a different request path.

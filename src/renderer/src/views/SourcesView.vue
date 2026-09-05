@@ -260,7 +260,7 @@ const isAuthError = computed(() =>
 <template>
   <div class="h-full flex">
     <div
-      class="w-64 shrink-0 h-full flex flex-col border-r border-base-300 bg-base-200/[var(--glass-alpha)]"
+      class="w-64 shrink-0 h-full flex flex-col border-r border-base-300 bg-base-200/(--glass-alpha)"
     >
       <div class="flex items-center justify-between px-3 py-2.5 border-b border-base-300">
         <h2 class="text-sm font-semibold">{{ $t('sources.title') }}</h2>

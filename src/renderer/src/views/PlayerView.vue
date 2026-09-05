@@ -187,7 +187,7 @@ onUnmounted(() => {
     <!-- audio area -->
     <div
       v-else-if="isAudio"
-      class="relative flex-1 flex items-center justify-center overflow-hidden bg-base-200/[var(--glass-alpha)]"
+      class="relative flex-1 flex items-center justify-center overflow-hidden bg-base-200/(--glass-alpha)"
     >
       <div class="text-center">
         <p class="text-lg text-base-content">

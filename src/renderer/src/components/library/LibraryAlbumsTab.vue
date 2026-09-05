@@ -6,6 +6,7 @@ import type { MediaFile } from '@renderer/types/media';
 import { useVirtualGrid } from '@renderer/composables/useVirtualGrid';
 import AlbumCard from '@renderer/components/library/AlbumCard.vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
+import { usePlayerStore } from '@renderer/stores/player';
 
 const props = defineProps<{
   albums: Array<[string, MediaFile[]]>;
@@ -15,6 +16,12 @@ const emit = defineEmits<{
   'update:viewMode': [mode: 'list' | 'grid'];
   playTracks: [tracks: MediaFile[]];
 }>();
+
+const player = usePlayerStore();
+
+function onAlbumHover(path: string) {
+  if (path) player.loadCover(path);
+}
 
 const sortKey = ref<'name' | 'count' | 'year'>('name');
 const sortedAlbums = computed(() => {
@@ -136,9 +143,15 @@ onUnmounted(() => grid.destroy());
             <div
               class="flex items-center gap-3 px-4 py-2 hover:bg-base-100 border border-transparent hover:border-base-300 hover:shadow-sm rounded-field transition-all cursor-pointer h-full mx-2"
               @click="emit('playTracks', sortedAlbums[v.index][1])"
+              @mouseenter="onAlbumHover(sortedAlbums[v.index][1][0]?.path || '')"
             >
               <div class="w-10 h-10 rounded-field overflow-hidden bg-base-200 border border-base-300 shrink-0 flex items-center justify-center">
-                <MediaCover :path="sortedAlbums[v.index][1][0]?.path" :size="16" :render-as-video="false" fallback="disc" />
+                <MediaCover
+              :path="sortedAlbums[v.index][1][0]?.path"
+              :size="16"
+              :render-as-video="false"
+              fallback="disc"
+            />
               </div>
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-medium truncate">{{ sortedAlbums[v.index][0] }}</div>

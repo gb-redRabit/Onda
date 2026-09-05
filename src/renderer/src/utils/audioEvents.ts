@@ -7,6 +7,7 @@ type AudioEvents = {
   bufferChange: number;
   playable: void;
   streamError: string;
+  trackError: string;
 };
 
 type Listener<T> = (data: T) => void;

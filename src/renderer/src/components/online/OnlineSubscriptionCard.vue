@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { Tv2, Download, RefreshCw, SlidersHorizontal, X } from '@lucide/vue';
 import OnlineButton from './OnlineButton.vue';
 import OnlineIconButton from './OnlineIconButton.vue';
 import OnlineBadge from './OnlineBadge.vue';
+import { useContextMenu, type ContextMenuAction } from '@renderer/composables/useContextMenu';
 import type { Subscription } from '@renderer/types/online';
 
 const props = defineProps<{
@@ -20,6 +22,57 @@ const emit = defineEmits<{
   openPrefs: [sub: Subscription];
   unfollow: [channelId: string];
 }>();
+
+const { t } = useI18n();
+const { open } = useContextMenu();
+
+const channelUrl = computed(() =>
+  props.sub.platform === 'soundcloud'
+    ? `https://soundcloud.com/${props.sub.channelId}`
+    : `https://www.youtube.com/channel/${props.sub.channelId}`
+);
+
+function copyChannelUrl() {
+  void window.api?.invoke('fs:copyPath', channelUrl.value);
+}
+
+function openMenu(e: MouseEvent) {
+  const defs: ContextMenuAction<Subscription>[] = [
+    {
+      label: t('ctx.online.openChannel'),
+      action: (s) => emit('openChannel', s.channelId)
+    },
+    {
+      label: t('ctx.online.copyChannelUrl'),
+      action: () => copyChannelUrl()
+    },
+    { separator: true, label: '' },
+    {
+      label: t('ctx.online.checkNow'),
+      disabledWhen: (s) => props.loadingChannelId === s.channelId,
+      action: (s) => emit('checkNow', s.channelId)
+    },
+    {
+      label: t('ctx.online.downloadAll'),
+      disabledWhen: (s) => props.queueingChannelId === s.channelId,
+      action: (s) => emit('downloadAll', s)
+    },
+    {
+      label: `${props.sub.autoDownload ? '✓ ' : ''}${t('youtube.autoDownload')}`,
+      action: (s) => emit('toggleAutoDownload', s.channelId, !s.autoDownload)
+    },
+    {
+      label: t('ctx.online.prefs'),
+      action: (s) => emit('openPrefs', s)
+    },
+    { separator: true, label: '' },
+    {
+      label: t('ctx.online.unfollow'),
+      action: (s) => emit('unfollow', s.channelId)
+    }
+  ];
+  open(e, defs, props.sub);
+}
 
 const avatarFailed = ref(false);
 
@@ -38,6 +91,7 @@ function lastCheckedLabel(ts?: number): string {
 <template>
   <div
     class="flex flex-col p-4 rounded-box bg-base-100 border border-base-300 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-base-300"
+    @contextmenu="openMenu"
   >
     <div class="flex items-center gap-3">
       <button

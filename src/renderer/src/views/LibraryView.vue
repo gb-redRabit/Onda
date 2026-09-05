@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLibraryStore } from '@renderer/stores/library';
 import { getAllTracksIndexed } from '@renderer/utils/libraryIndex';
@@ -33,6 +33,7 @@ import {
 } from '@lucide/vue';
 import { useLibraryFilters } from '@renderer/composables/useLibraryFilters';
 import { useLibraryTagEditor } from '@renderer/composables/useLibraryTagEditor';
+import { useViewSearch } from '@renderer/composables/useViewSearch';
 
 const { t } = useI18n();
 const library = useLibraryStore();
@@ -41,6 +42,7 @@ const player = usePlayerStore();
 
 const { query, debouncedQuery, filteredTracks, filteredVideo, filteredImages, filteredArtists, filteredAlbums } =
   useLibraryFilters(library);
+useViewSearch(query);
 const { editingTrack, showingMBLookup, onTagSaved, onMBApply } = useLibraryTagEditor(
   library,
   player
@@ -91,6 +93,56 @@ const tabs = computed(
       { id: 'playlists', label: t('library.playlists'), icon: ListMusic, count: library.playlists.length }
     ] as const
 );
+
+// Dynamic tab collapse — instead of letting labels get cut off (ellipsis) when
+// the window is too narrow, the tabs shrink gracefully: full label + count →
+// icon + count → icon only. Measured against the actual available width, so it
+// adapts to any window size, count lengths and translated labels.
+const tabRow = ref<HTMLDivElement>();
+type TabMode = 'full' | 'compact' | 'icon';
+const tabMode = ref<TabMode>('full');
+
+function measureTabMode() {
+  const row = tabRow.value;
+  if (!row) return;
+  const width = row.clientWidth;
+  if (width <= 0) return;
+  const buttons = Array.from(row.querySelectorAll<HTMLElement>('[data-tab]'));
+  const labels = row.querySelectorAll<HTMLElement>('[data-tab-label]');
+  const badges = row.querySelectorAll<HTMLElement>('[data-tab-count]');
+  if (buttons.length !== tabs.value.length || labels.length !== tabs.value.length || badges.length !== tabs.value.length)
+    return;
+
+  // Natural (un-truncated) widths of the current layout, so paddings and the
+  // actual inter-tab gap come straight from the applied CSS.
+  const contentW = buttons.map((b) => b.scrollWidth);
+  const labelW = Array.from(labels, (l) => l.scrollWidth);
+  const badgeW = Array.from(badges, (b) => b.offsetWidth);
+  const gapPx = parseFloat(getComputedStyle(row).gap) || 4;
+  const extras = gapPx * (tabs.value.length - 1) + 8; // inter-tab gaps + row px-1 padding
+  const weight = tabs.value.map((t) => (t.id === tab.value ? 1.2 : 1));
+  const fullNeed = tabs.value.reduce((acc, _t, i) => acc + weight[i] * contentW[i], 0) + extras;
+  const compactNeed = fullNeed - tabs.value.reduce((acc, _t, i) => acc + weight[i] * labelW[i], 0);
+  const iconNeed = compactNeed - tabs.value.reduce((acc, _t, i) => acc + weight[i] * badgeW[i], 0);
+
+  let nextMode: TabMode = tabMode.value;
+  if (width < iconNeed) nextMode = 'icon';
+  else if (width < compactNeed) nextMode = 'compact';
+  else if (width >= fullNeed * 1.05) nextMode = 'full';
+  if (nextMode !== tabMode.value) tabMode.value = nextMode;
+}
+
+let tabResizeObserver: ResizeObserver | null = null;
+onMounted(() => {
+  measureTabMode();
+  if (typeof ResizeObserver !== 'undefined' && tabRow.value) {
+    tabResizeObserver = new ResizeObserver(() => measureTabMode());
+    tabResizeObserver.observe(tabRow.value);
+  }
+  document.fonts?.ready?.then(() => measureTabMode());
+});
+watch(tabs, () => nextTick(measureTabMode));
+onUnmounted(() => tabResizeObserver?.disconnect());
 
 const chips = computed(() => [
   { id: 'all' as const, label: t('library.chipAll') },
@@ -299,14 +351,19 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
 
         <!-- Tab bar — jedna linia, reaguje na szerokość: flex-1 + napisy chowane -->
         <div class="relative -mx-1" role="tablist" aria-label="Biblioteka">
-          <div class="flex gap-1 sm:gap-1.5 px-1 pb-1 overflow-hidden">
+          <div
+            ref="tabRow"
+            class="flex gap-1 sm:gap-1.5 px-1 pb-1 overflow-hidden"
+            :data-mode="tabMode"
+          >
             <button
               v-for="tabItem in tabs"
               :key="tabItem.id"
               role="tab"
+              data-tab
               :aria-selected="tab === tabItem.id"
               :aria-label="tabItem.label"
-              class="group flex flex-1 min-w-0 items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 rounded-field text-xs font-medium transition-all duration-150 border fx-depth truncate hover:border-primary/30"
+              class="group flex flex-1 min-w-0 items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 rounded-field text-xs font-medium transition-all duration-150 border fx-depth hover:border-primary/30"
               :class="
                 tab === tabItem.id
                   ? 'bg-primary text-primary-content border-primary fx-depth shadow-primary/20 flex-[1.2] backdrop-blur-sm'
@@ -316,9 +373,9 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
               @click="tab = tabItem.id as TabId"
             >
               <component :is="tabItem.icon" :size="14" class="shrink-0" :class="tab === tabItem.id ? 'opacity-90' : 'opacity-60 group-hover:opacity-100'" />
-              <span class="hidden sm:inline truncate">{{ tabItem.label }}</span>
-              <span class="sm:hidden truncate text-[11px]">{{ tabItem.label.slice(0,3) }}</span>
+              <span data-tab-label class="truncate">{{ tabItem.label }}</span>
               <span
+                data-tab-count
                 class="ml-0.5 px-1 sm:px-1.5 py-0.5 rounded-selector text-[10px] font-bold leading-none shrink-0 border"
                 :class="tab === tabItem.id ? 'bg-primary-content/20 text-primary-content border-primary-content/20' : 'bg-base-300 text-base-content/60 border-base-300'"
               >{{ tabItem.count }}</span>
@@ -461,3 +518,15 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
   <TrackTagEditor :track="editingTrack" @close="editingTrack = null" @saved="onTagSaved" />
   <MusicBrainzLookup v-if="showingMBLookup" :initial-query="mbInitialQuery" :track="editingTrack" :batch-tracks="mbBatchTracks" @close="showingMBLookup = false; mbBatchTracks = undefined" @apply="onMBApply" />
 </template>
+
+<style scoped>
+/* Tab collapse: 'compact' hides the text label, 'icon' hides the count too.
+   Labels are never ellipsis-cut — they are removed when tight. Visibility is
+   used (not display) so the layout stays stable and the width measurement
+   never oscillates. */
+[data-mode='compact'] [data-tab-label],
+[data-mode='icon'] [data-tab-label],
+[data-mode='icon'] [data-tab-count] {
+  visibility: hidden;
+}
+</style>

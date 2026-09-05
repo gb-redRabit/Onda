@@ -3,6 +3,8 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useOnlineStore } from '@renderer/stores/online';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useViewSearch } from '@renderer/composables/useViewSearch';
+import { useDownloadsContextMenu, type DownloadCtx } from '@renderer/composables/useDownloadsContextMenu';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
 import type { DownloadTask } from '@renderer/types/online';
 import type { MediaFile } from '@renderer/types/media';
@@ -35,6 +37,8 @@ const player = usePlayerStore();
 
 const filter = ref<'all' | 'active' | 'completed' | 'failed'>('all');
 const channelFilter = ref('');
+const searchQuery = ref('');
+useViewSearch(searchQuery);
 
 const channels = computed(() => {
   const map = new Map<string, string>();
@@ -139,6 +143,17 @@ function openFolder(path?: string) {
   if (path) void window.api?.invoke('shell:showItemInFolder', path);
 }
 
+const { openMenu } = useDownloadsContextMenu();
+
+function downloadCtx(t: DownloadTask): DownloadCtx {
+  return {
+    task: t,
+    onPlay: playDownload,
+    onOpenFolder: openFolder,
+    onCopyText: copyText
+  };
+}
+
 const coverStatusKey = (t: { coverStatus?: string }): string => {
   switch (t.coverStatus) {
     case 'fetching':
@@ -210,6 +225,8 @@ const visible = computed(() => {
   if (channelFilter.value) {
     list = list.filter((d) => d.channelId === channelFilter.value);
   }
+  const q = searchQuery.value.toLowerCase().trim();
+  if (q) list = list.filter((d) => (d.title || '').toLowerCase().includes(q));
   return list;
 });
 
@@ -348,7 +365,8 @@ const colors = {
         <div
           v-for="t in visible"
           :key="t.id"
-          class="p-3 rounded-box bg-base-100 border border-base-300"
+          class="p-3 rounded-box bg-base-100 border border-base-300 group/row"
+          @contextmenu="openMenu($event, downloadCtx(t))"
         >
           <div class="flex items-center gap-3">
             <div

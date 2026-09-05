@@ -1,12 +1,13 @@
-import type { ComputedRef } from 'vue';
+﻿import type { ComputedRef } from 'vue';
 import type { useI18n } from 'vue-i18n';
 import type { useExplorerStore } from '@renderer/stores/explorer';
 import type { useClipboardStore } from '@renderer/stores/clipboard';
 import type { useLibraryStore } from '@renderer/stores/library';
-import type { useUIStore, ContextMenuItem } from '@renderer/stores/ui';
+import type { useUIStore } from '@renderer/stores/ui';
 import { isLibraryFolder } from '@renderer/utils/libraryFolders';
 import { IMAGE_EXTS, VIDEO_EXTS, AUDIO_EXTS } from '@shared/constants';
 import type { FileItem } from '@renderer/types/explorer';
+import { useContextMenu, type ContextMenuAction } from './useContextMenu';
 
 interface ExplorerActionCtx {
   explorer: ReturnType<typeof useExplorerStore>;
@@ -28,97 +29,59 @@ interface ExplorerActionCtx {
   deleteItem: (item: FileItem) => void;
 }
 
+interface MenuCtx {
+  item: FileItem | null;
+  explorer: ExplorerActionCtx['explorer'];
+  fileClipboard: ExplorerActionCtx['fileClipboard'];
+  library: ExplorerActionCtx['library'];
+  t: ExplorerActionCtx['t'];
+  filteredFiles: ExplorerActionCtx['filteredFiles'];
+  openImageViewer: ExplorerActionCtx['openImageViewer'];
+  openProperties: ExplorerActionCtx['openProperties'];
+  playItem: ExplorerActionCtx['playItem'];
+  addToQueueItem: ExplorerActionCtx['addToQueueItem'];
+  navigateTo: ExplorerActionCtx['navigateTo'];
+  copySelectedPaths: ExplorerActionCtx['copySelectedPaths'];
+  cutSelectedPaths: ExplorerActionCtx['cutSelectedPaths'];
+  pasteClipboard: ExplorerActionCtx['pasteClipboard'];
+  createNewFolder: ExplorerActionCtx['createNewFolder'];
+  renameItem: ExplorerActionCtx['renameItem'];
+  deleteItem: ExplorerActionCtx['deleteItem'];
+}
+
 const IMAGE_EXT_SET = new Set(IMAGE_EXTS);
 const MEDIA_EXT_SET = new Set([...AUDIO_EXTS, ...VIDEO_EXTS, ...IMAGE_EXTS]);
 
 export function useExplorerContextMenu(ctx: ExplorerActionCtx) {
-  const { explorer, fileClipboard, library, ui, t, filteredFiles } = ctx;
-  const {
-    copySelectedPaths,
-    cutSelectedPaths,
-    pasteClipboard,
-    createNewFolder,
-    renameItem,
-    deleteItem
-  } = ctx;
-
-  function pushSeparator(items: ContextMenuItem[]) {
-    items.push({ separator: true, label: '' });
-  }
-
-  function pushClipboardItems(items: ContextMenuItem[]) {
-    if (explorer.selectedCount > 0) {
-      items.push({ label: t('common.copy'), action: copySelectedPaths, shortcut: 'Ctrl+C' });
-      items.push({ label: t('common.cut'), action: cutSelectedPaths, shortcut: 'Ctrl+X' });
-    }
-    if (fileClipboard.items.length > 0) {
-      items.push({ label: t('common.paste'), action: pasteClipboard, shortcut: 'Ctrl+V' });
-    }
-  }
-
-  function pushSelectAll(items: ContextMenuItem[]) {
-    items.push({
-      label: t('common.selectAll'),
-      action: () => {
-        explorer.clearSelection();
-        filteredFiles.value.forEach((f) => explorer.selectedFiles.add(f.path));
-      },
-      shortcut: 'Ctrl+A'
-    });
-  }
-
-  function pushRenameDelete(items: ContextMenuItem[], item: FileItem, disabled = false) {
-    items.push({ label: t('explorer.rename'), action: () => renameItem(item), shortcut: 'F2' });
-    items.push({
-      label: t('common.delete'),
-      disabled,
-      action: () => deleteItem(item),
-      shortcut: 'Del'
-    });
-  }
-
-  function pushShowInFolder(items: ContextMenuItem[], path: string) {
-    items.push({
-      label: t('common.showInFolder'),
-      action: () => window.api?.invoke('shell:showItemInFolder', path)
-    });
-  }
-
-  function pushFileCommon(items: ContextMenuItem[], path: string) {
-    items.push({
-      label: t('explorer.openWithDefaultApp'),
-      action: () => window.api?.invoke('shell:openWithDefault', path)
-    });
-    items.push({
-      label: t('explorer.copyPath'),
-      action: () => window.api?.invoke('fs:copyPath', path),
-      shortcut: 'Ctrl+C'
-    });
-    pushShowInFolder(items, path);
-  }
+  const { explorer, fileClipboard, library, t, filteredFiles } = ctx;
+  const { open } = useContextMenu();
 
   function handleEmptyContextMenu(event: MouseEvent) {
-    const items: ContextMenuItem[] = [];
     explorer.clearSelection();
-    pushClipboardItems(items);
-    if (items.length > 0) pushSeparator(items);
-    items.push({ label: t('explorer.newFolder'), action: () => createNewFolder() });
-    items.push({
-      label: t('explorer.openInTerminal'),
-      action: () => window.api?.invoke('shell:openTerminal', explorer.currentPath)
-    });
-    pushSeparator(items);
-    items.push({
-      label: t('explorer.openWithDefaultApp'),
-      action: () => window.api?.invoke('shell:openWithDefault', explorer.currentPath)
-    });
-    items.push({
-      label: t('common.showInFolder'),
-      action: () => window.api?.invoke('shell:showItemInFolder', explorer.currentPath)
-    });
-    pushSeparator(items);
-    pushSelectAll(items);
-    ui.showContextMenu(event.clientX, event.clientY, items);
+    const items: ContextMenuAction<MenuCtx>[] = [
+      ...clipboardDefs(),
+      { separator: true, label: '', when: hasClipboard },
+      {
+        label: t('explorer.newFolder'),
+        action: () => ctx.createNewFolder()
+      },
+      {
+        label: t('explorer.openInTerminal'),
+        action: () => window.api?.invoke('shell:openTerminal', explorer.currentPath)
+      },
+      { separator: true, label: '', when: () => true },
+      {
+        label: t('explorer.openWithDefaultApp'),
+        action: () => window.api?.invoke('shell:openWithDefault', explorer.currentPath)
+      },
+      {
+        label: t('common.showInFolder'),
+        action: () => window.api?.invoke('shell:showItemInFolder', explorer.currentPath)
+      },
+      { separator: true, label: '', when: () => true },
+      ...selectAllDefs()
+    ];
+    open(event, items, makeCtx(null));
   }
 
   function handleContextMenu(event: MouseEvent, item: FileItem) {
@@ -126,75 +89,173 @@ export function useExplorerContextMenu(ctx: ExplorerActionCtx) {
       explorer.clearSelection();
       explorer.selectedFiles.add(item.path);
     }
-    const items: ContextMenuItem[] = [];
-    pushClipboardItems(items);
-    if (items.length > 0) pushSeparator(items);
+    const items: ContextMenuAction<MenuCtx>[] = [
+      ...clipboardDefs(),
+      { separator: true, label: '', when: hasClipboard },
+      ...itemDefs(),
+      { separator: true, label: '' },
+      {
+        label: t('explorer.properties'),
+        shortcut: 'Alt+Enter',
+        action: (c) => c.item != null && ctx.openProperties(c.item)
+      },
+      { separator: true, label: '' },
+      ...selectAllDefs()
+    ];
+    open(event, items, makeCtx(item));
+  }
 
-    if (item.isDirectory) {
-      items.push({
-        label: t('explorer.open'),
-        action: () => ctx.navigateTo(item.path),
-        shortcut: 'Enter'
-      });
-      pushSeparator(items);
-      const alreadyInLibrary = isLibraryFolder(item.path);
-      items.push({
-        label: alreadyInLibrary ? t('explorer.removeFromLibrary') : t('explorer.addToLibrary'),
-        action: () => {
-          if (alreadyInLibrary) library.removeFolder(item.path);
-          else library.addFolder(item.path);
+  function makeCtx(item: FileItem | null): MenuCtx {
+    return {
+      item,
+      explorer,
+      fileClipboard,
+      library,
+      t,
+      filteredFiles,
+      openImageViewer: ctx.openImageViewer,
+      openProperties: ctx.openProperties,
+      playItem: ctx.playItem,
+      addToQueueItem: ctx.addToQueueItem,
+      navigateTo: ctx.navigateTo,
+      copySelectedPaths: ctx.copySelectedPaths,
+      cutSelectedPaths: ctx.cutSelectedPaths,
+      pasteClipboard: ctx.pasteClipboard,
+      createNewFolder: ctx.createNewFolder,
+      renameItem: ctx.renameItem,
+      deleteItem: ctx.deleteItem
+    };
+  }
+
+  function hasClipboard(c: MenuCtx): boolean {
+    return c.explorer.selectedCount > 0 || c.fileClipboard.items.length > 0;
+  }
+
+  function clipboardDefs(): ContextMenuAction<MenuCtx>[] {
+    return [
+      {
+        label: t('common.copy'),
+        shortcut: 'Ctrl+C',
+        when: (c) => c.explorer.selectedCount > 0,
+        action: () => ctx.copySelectedPaths()
+      },
+      {
+        label: t('common.cut'),
+        shortcut: 'Ctrl+X',
+        when: (c) => c.explorer.selectedCount > 0,
+        action: () => ctx.cutSelectedPaths()
+      },
+      {
+        label: t('common.paste'),
+        shortcut: 'Ctrl+V',
+        when: (c) => c.fileClipboard.items.length > 0,
+        action: () => ctx.pasteClipboard()
+      }
+    ];
+  }
+
+  function selectAllDefs(): ContextMenuAction<MenuCtx>[] {
+    return [
+      {
+        label: t('common.selectAll'),
+        shortcut: 'Ctrl+A',
+        action: (c) => {
+          c.explorer.clearSelection();
+          c.filteredFiles.value.forEach((f) => c.explorer.selectedFiles.add(f.path));
         }
-      });
-      items.push({
-        label: t('explorer.openInTerminal'),
-        action: () => window.api?.invoke('shell:openTerminal', item.path)
-      });
-      pushFileCommon(items, item.path);
-      pushSeparator(items);
-      pushRenameDelete(items, item, isLibraryFolder(item.path));
-    } else if (item.extension && IMAGE_EXT_SET.has(item.extension)) {
-      items.push({
-        label: t('explorer.openImage'),
-        action: () => {
-          const idx = filteredFiles.value.findIndex((f) => f.path === item.path);
-          ctx.openImageViewer(idx);
-        },
-        shortcut: 'Enter'
-      });
-      pushSeparator(items);
-      pushFileCommon(items, item.path);
-      pushSeparator(items);
-      pushRenameDelete(items, item);
-    } else if (item.extension && MEDIA_EXT_SET.has(item.extension)) {
-      items.push({
-        label: t('common.play'),
-        action: () => ctx.playItem(item),
-        shortcut: 'Enter'
-      });
-      items.push({
-        label: t('common.addToQueue'),
-        action: () => ctx.addToQueueItem(item)
-      });
-      pushSeparator(items);
-      pushFileCommon(items, item.path);
-      pushSeparator(items);
-      pushRenameDelete(items, item);
-    } else {
-      pushFileCommon(items, item.path);
-      pushSeparator(items);
-      pushRenameDelete(items, item);
-      pushSeparator(items);
-    }
+      }
+    ];
+  }
 
-    pushSeparator(items);
-    items.push({
-      label: t('explorer.properties'),
-      action: () => ctx.openProperties(item),
-      shortcut: 'Alt+Enter'
-    });
-    pushSeparator(items);
-    pushSelectAll(items);
-    ui.showContextMenu(event.clientX, event.clientY, items);
+  function fileCommonDefs(): ContextMenuAction<MenuCtx>[] {
+    return [
+      {
+        label: t('explorer.openWithDefaultApp'),
+        action: (c) => c.item && window.api?.invoke('shell:openWithDefault', c.item.path)
+      },
+      {
+        label: t('explorer.copyPath'),
+        shortcut: 'Ctrl+C',
+        action: (c) => c.item && window.api?.invoke('fs:copyPath', c.item.path)
+      },
+      {
+        label: t('common.showInFolder'),
+        action: (c) => c.item && window.api?.invoke('shell:showItemInFolder', c.item.path)
+      }
+    ];
+  }
+
+  function renameDeleteDefs(): ContextMenuAction<MenuCtx>[] {
+    return [
+      {
+        label: t('explorer.rename'),
+        shortcut: 'F2',
+        action: (c) => c.item != null && ctx.renameItem(c.item)
+      },
+      {
+        label: t('common.delete'),
+        shortcut: 'Del',
+        disabledWhen: (c) => isLibraryFolder(c.item?.path ?? ''),
+        action: (c) => c.item != null && ctx.deleteItem(c.item)
+      }
+    ];
+  }
+
+  function itemDefs(): ContextMenuAction<MenuCtx>[] {
+    return [
+      {
+        label: t('explorer.open'),
+        shortcut: 'Enter',
+        when: (c) => !!c.item?.isDirectory,
+        action: (c) => c.item != null && ctx.navigateTo(c.item.path)
+      },
+      {
+        label: t('common.play'),
+        shortcut: 'Enter',
+        when: (c) => isMedia(c.item),
+        action: (c) => c.item != null && ctx.playItem(c.item)
+      },
+      {
+        label: t('common.addToQueue'),
+        when: (c) => isMedia(c.item),
+        action: (c) => c.item != null && ctx.addToQueueItem(c.item)
+      },
+      {
+        label: t('explorer.openImage'),
+        shortcut: 'Enter',
+        when: (c) => isImage(c.item),
+        action: (c) => {
+          if (!c.item) return;
+          const idx = c.filteredFiles.value.findIndex((f) => f.path === c.item!.path);
+          if (idx >= 0) ctx.openImageViewer(idx);
+        }
+      },
+      {
+        label: t('explorer.addToLibrary'),
+        when: (c) => !!c.item?.isDirectory && !isLibraryFolder(c.item.path),
+        action: (c) => c.item != null && library.addFolder(c.item.path)
+      },
+      {
+        label: t('explorer.removeFromLibrary'),
+        when: (c) => !!c.item?.isDirectory && isLibraryFolder(c.item.path),
+        action: (c) => c.item != null && library.removeFolder(c.item.path)
+      },
+      {
+        label: t('explorer.openInTerminal'),
+        when: (c) => !!c.item?.isDirectory,
+        action: (c) => c.item && window.api?.invoke('shell:openTerminal', c.item.path)
+      },
+      ...fileCommonDefs(),
+      { separator: true, label: '', when: (c) => c.item != null },
+      ...renameDeleteDefs()
+    ];
+  }
+
+  function isImage(item: FileItem | null): boolean {
+    return !!item?.extension && IMAGE_EXT_SET.has(item.extension);
+  }
+  function isMedia(item: FileItem | null): boolean {
+    return !!item?.extension && MEDIA_EXT_SET.has(item.extension);
   }
 
   return { handleContextMenu, handleEmptyContextMenu };

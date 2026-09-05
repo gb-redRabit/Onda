@@ -27,7 +27,7 @@ const { deps, refreshAll, runInstall, cancelInstall } = useDependencies();
       <div
         v-for="dep in deps"
         :key="dep.name"
-        class="p-3.5 fx-depth rounded-box border border-base-300 bg-base-200/[var(--glass-alpha)]"
+        class="p-3.5 fx-depth rounded-box border border-base-300 bg-base-200/(--glass-alpha)"
       >
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-2.5 min-w-0">
@@ -72,7 +72,7 @@ const { deps, refreshAll, runInstall, cancelInstall } = useDependencies();
             />
           </div>
         </div>
-        <div v-if="dep.error" class="mt-2 text-xs text-error break-words">{{ dep.error }}</div>
+        <div v-if="dep.error" class="mt-2 text-xs text-error wrap-break-word">{{ dep.error }}</div>
       </div>
     </div>
 

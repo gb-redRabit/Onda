@@ -405,6 +405,22 @@ const DEPENDENCY_FIELDS: Record<string, Sanitizer> = {
   updateAvailable: bool
 };
 
+const STATUS_BAR_SECTIONS = [
+  'playing',
+  'separator',
+  'viewCounts',
+  'downloads',
+  'youtube',
+  'dependencies',
+  'version',
+  'clock'
+] as const;
+
+const STATUS_BAR_FIELDS: Record<string, Sanitizer> = {
+  visible: bool,
+  sections: arrayOf(enumOf(STATUS_BAR_SECTIONS))
+};
+
 const TOP_LEVEL: Record<string, Sanitizer> = {
   general: obj(GENERAL_FIELDS),
   appearance: (v) => obj(APPEARANCE_FIELDS)(migrateAppearance(v)),
@@ -419,6 +435,7 @@ const TOP_LEVEL: Record<string, Sanitizer> = {
   updates: obj(UPDATES_FIELDS),
   toast: obj(TOAST_FIELDS),
   dependencies: recordOf(obj(DEPENDENCY_FIELDS)),
+  statusBar: obj(STATUS_BAR_FIELDS),
   favorites: stringArray
 };
 

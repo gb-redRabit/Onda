@@ -58,7 +58,7 @@ function titleText(): string {
 </script>
 
 <template>
-  <div class="flex flex-col h-full w-full bg-base-200/[var(--glass-alpha)]">
+  <div class="flex flex-col h-full w-full bg-base-200/(--glass-alpha)">
     <div
       class="flex items-center justify-between gap-3 pl-3 pr-1 h-9 shrink-0 border-b border-base-300 select-none"
       style="-webkit-app-region: drag"

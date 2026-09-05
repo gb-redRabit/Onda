@@ -45,10 +45,16 @@ export default {
     prevTrack: 'Previous Track',
     shuffle: 'Shuffle',
     repeat: 'Repeat',
+    stop: 'Stop',
+    eq: 'Equalizer',
+    picInPic: 'Picture-in-Picture',
+    viewSearch: 'Search in view',
+    statusBar: 'Status bar',
     help: 'Help',
     documentation: 'Documentation',
     about: 'About Onda',
-    search: 'Search'
+    search: 'Search',
+    viewPlaylists: 'Playlists'
   },
   home: {
     welcome: 'Welcome back',
@@ -731,11 +737,46 @@ export default {
     notLoggedIn: 'Not signed in',
     connecting: 'Connecting…',
     buffering: 'Buffering…',
-    streamError: 'Stream error — try again'
+    streamError: 'Stream error — try again',
+    trackError: 'File unavailable — skipping track',
+    streamLabel: 'Stream',
+    playlistHint: 'Go to player',
+    openDownloads: 'Open downloads',
+    openOnline: 'Open YouTube',
+    openDependencies: 'Dependencies (yt-dlp, ffmpeg)',
+    openAbout: 'About',
+    clockHint: 'Clock',
+    hideStatusBar: 'Hide status bar',
+    shuffle: 'Shuffle',
+    repeat: 'Repeat',
+    repeatOne: 'Repeat one',
+    eq: 'Equalizer',
+    progress: 'Playback progress',
+    queuePos: '{cur}/{total} tracks',
+    subs: 'Subtitles',
+    on: 'on',
+    off: 'off',
+    selected: 'selected',
+    subscriptions: 'subscriptions',
+    activeDownloads: 'downloads',
+    sections: {
+      playing: 'Playing',
+      separator: 'Separator',
+      viewCounts: 'View counts',
+      downloads: 'Downloads',
+      youtube: 'YouTube',
+      dependencies: 'Dependencies',
+      version: 'Version',
+      clock: 'Clock'
+    }
   },
   cmdPalette: {
     placeholder: 'Search tracks, albums, actions...',
-    empty: 'Type to search...'
+    empty: 'Type to search...',
+    tracks: 'Tracks',
+    playlists: 'Playlists',
+    views: 'Views',
+    viewsCommands: 'Views & Commands'
   },
   youtube: {
     title: 'YouTube',
@@ -1391,6 +1432,33 @@ export default {
       warningContent: 'Text on warning',
       error: 'Error',
       errorContent: 'Text on error'
+    }
+  },
+  ctx: {
+    playNext: 'Play next',
+    musicBrainzSearch: 'MusicBrainz — search',
+    showInExplorer: 'Show in Explorer (Onda)',
+    playFolder: 'Play folder ({count})',
+    playShuffle: 'Play shuffle',
+    musicBrainzAlbum: 'MusicBrainz — batch album',
+    musicBrainzFolder: 'MusicBrainz — batch folder',
+    downloads: {
+      play: 'Play',
+      resume: 'Resume',
+      cancel: 'Cancel',
+      retry: 'Retry',
+      moveToFront: 'Move to front',
+      showInFolder: 'Show in folder',
+      copyTitle: 'Copy title',
+      copyPath: 'Copy path'
+    },
+    online: {
+      openChannel: 'Open channel',
+      copyChannelUrl: 'Copy channel URL',
+      checkNow: 'Check now',
+      downloadAll: 'Download all',
+      prefs: 'Subscription settings',
+      unfollow: 'Unfollow'
     }
   }
 };

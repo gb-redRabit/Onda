@@ -45,10 +45,16 @@ export default {
     prevTrack: 'Poprzedni utwór',
     shuffle: 'Losowo',
     repeat: 'Powtarzanie',
+    stop: 'Zatrzymaj',
+    eq: 'Korektor',
+    picInPic: 'Obraz w obrazie',
+    viewSearch: 'Szukaj w widoku',
+    statusBar: 'Pasek statusu',
     help: 'Pomoc',
     documentation: 'Dokumentacja',
     about: 'O Onda',
-    search: 'Szukaj'
+    search: 'Szukaj',
+    viewPlaylists: 'Listy odtwarzania'
   },
   home: {
     welcome: 'Witaj ponownie',
@@ -734,11 +740,46 @@ export default {
     notLoggedIn: 'Niezalogowano',
     connecting: 'Łączenie…',
     buffering: 'Buforowanie…',
-    streamError: 'Błąd strumienia — spróbuj ponownie'
+    streamError: 'Błąd strumienia — spróbuj ponownie',
+    trackError: 'Plik niedostępny — pomijanie utworu',
+    streamLabel: 'Stream',
+    playlistHint: 'Przejdź do odtwarzacza',
+    openDownloads: 'Otwórz pobrania',
+    openOnline: 'Otwórz YouTube',
+    openDependencies: 'Zależności (yt-dlp, ffmpeg)',
+    openAbout: 'O aplikacji',
+    clockHint: 'Zegar',
+    hideStatusBar: 'Ukryj pasek statusu',
+    shuffle: 'Losowe',
+    repeat: 'Powtarzanie',
+    repeatOne: 'Powtarzaj pojedynczy utwór',
+    eq: 'Korektor',
+    progress: 'Postęp odtwarzania',
+    queuePos: '{cur}/{total} utworów',
+    subs: 'Napisy',
+    on: 'wł.',
+    off: 'wył.',
+    selected: 'zaznaczonych',
+    subscriptions: 'subskrypcji',
+    activeDownloads: 'pobierania',
+    sections: {
+      playing: 'Odtwarzanie',
+      separator: 'Separator',
+      viewCounts: 'Liczniki widoku',
+      downloads: 'Pobrania',
+      youtube: 'YouTube',
+      dependencies: 'Zależności',
+      version: 'Wersja',
+      clock: 'Zegar'
+    }
   },
   cmdPalette: {
     placeholder: 'Szukaj utworów, albumów, akcji...',
-    empty: 'Wpisz szukaną frazę...'
+    empty: 'Wpisz szukaną frazę...',
+    tracks: 'Utwory',
+    playlists: 'Listy odtwarzania',
+    views: 'Widoki',
+    viewsCommands: 'Widoki i polecenia'
   },
   youtube: {
     title: 'YouTube',
@@ -1395,6 +1436,33 @@ export default {
       warningContent: 'Napisy na warning',
       error: 'Błąd',
       errorContent: 'Napisy na error'
+    }
+  },
+  ctx: {
+    playNext: 'Odtwórz jako następny',
+    musicBrainzSearch: 'MusicBrainz — szukaj',
+    showInExplorer: 'Pokaż w Eksploratorze (Onda)',
+    playFolder: 'Odtwórz folder ({count})',
+    playShuffle: 'Odtwórz losowo',
+    musicBrainzAlbum: 'MusicBrainz — batch album',
+    musicBrainzFolder: 'MusicBrainz — batch folder',
+    downloads: {
+      play: 'Odtwórz',
+      resume: 'Wznów',
+      cancel: 'Anuluj',
+      retry: 'Spróbuj ponownie',
+      moveToFront: 'Przenieś na początek',
+      showInFolder: 'Pokaż w folderze',
+      copyTitle: 'Kopiuj tytuł',
+      copyPath: 'Kopiuj ścieżkę'
+    },
+    online: {
+      openChannel: 'Otwórz kanał',
+      copyChannelUrl: 'Kopiuj URL kanału',
+      checkNow: 'Sprawdź teraz',
+      downloadAll: 'Pobierz wszystkie',
+      prefs: 'Ustawienia subskrypcji',
+      unfollow: 'Usuń subskrypcję'
     }
   }
 };

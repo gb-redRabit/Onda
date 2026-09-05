@@ -23,6 +23,10 @@ export function useMediaSession(): void {
   }
 
   async function updateArtwork(path: string): Promise<void> {
+    // Stream/radio tracks use remote http(s) URLs as their path — main rejects
+    // them on media:getCover ("unsafe path"). Their artwork is already set via
+    // track.thumbnail in MediaMetadata, so skip the IPC round-trip entirely.
+    if (/^https?:\/\//i.test(path) || path.startsWith('//')) return;
     try {
       const cover = await window.api?.getCover(path);
       if (cover?.type === 'image' && cover.data && navigator.mediaSession.metadata) {

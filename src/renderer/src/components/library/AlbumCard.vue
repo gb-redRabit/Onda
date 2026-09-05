@@ -64,6 +64,10 @@ function ensureCover() {
     if (!player.getCover(tr.path).data) player.loadCover(tr.path);
   }
 }
+
+function onHover() {
+  ensureCover();
+}
 onMounted(ensureCover);
 watch(() => props.tracks.map((t) => t.path).join('|'), ensureCover);
 
@@ -93,6 +97,7 @@ function onDragStart(e: DragEvent) {
     @click="emit('play', tracks)"
     @contextmenu.prevent="onContextMenu"
     @dragstart="onDragStart"
+    @mouseenter="onHover"
   >
       <div
         class="w-full aspect-square bg-neutral flex items-center justify-center relative overflow-hidden"

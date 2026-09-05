@@ -93,7 +93,7 @@ function togglePlay() {
     <div
       class="w-8 h-8 rounded-field bg-base-100 flex items-center justify-center shrink-0 overflow-hidden"
     >
-      <MediaCover :path="displayTrack?.path" :size="14" fallback="music" />
+      <MediaCover :path="displayTrack?.path" :size="14" :autoplay="true" fallback="music" />
     </div>
     <TrackInfo
       :track="displayTrack"
@@ -174,7 +174,7 @@ function togglePlay() {
       <div
         class="w-11 h-11 rounded-field bg-base-100 border border-base-300 flex items-center justify-center shrink-0 overflow-hidden"
       >
-        <MediaCover :path="displayTrack?.path" :size="18" fallback="music" />
+        <MediaCover :path="displayTrack?.path" :size="18" :autoplay="true" fallback="music" />
       </div>
       <TrackInfo
         :track="displayTrack"

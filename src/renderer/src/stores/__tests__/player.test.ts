@@ -313,18 +313,18 @@ describe('favorites', () => {
     expect(store.isFavorite('/other.mp3')).toBe(false);
   });
 
-  it('toggleFavorite adds and removes paths', () => {
+  it('toggleFavorite adds and removes paths', async () => {
     const store = usePlayerStore();
     const path = '/music/test.mp3';
-    store.toggleFavorite(path);
+    await store.toggleFavorite(path);
     expect(store.favorites).toContain(path);
-    store.toggleFavorite(path);
+    await store.toggleFavorite(path);
     expect(store.favorites).not.toContain(path);
   });
 
-  it('toggleFavorite persists via saveFavorites (invokes settings:set)', () => {
+  it('toggleFavorite persists via saveFavorites (invokes settings:set)', async () => {
     const store = usePlayerStore();
-    store.toggleFavorite('/x.mp3');
+    await store.toggleFavorite('/x.mp3');
     expect((window as any).api.invoke).toHaveBeenCalledWith('settings:set', {
       favorites: ['/x.mp3']
     });

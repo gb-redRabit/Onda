@@ -9,6 +9,7 @@ import { useLibraryStore } from './stores/library';
 import { useExplorerStore } from './stores/explorer';
 import { claimTabDrag } from './utils/tabDrag';
 import { openMediaFiles } from './composables/useOpenMedia';
+import { matchesShortcut } from './utils/shortcuts';
 import { moduleManager } from './modules/ModuleManager';
 import { useAudioPiP } from './composables/useAudioPiP';
 import { storeToRefs } from 'pinia';
@@ -26,8 +27,9 @@ import FirstRunWizard from './components/FirstRunWizard.vue';
 
 const QueuePanel = defineAsyncComponent(() => import('./components/player/QueuePanel.vue'));
 const Equalizer = defineAsyncComponent(() => import('./components/player/Equalizer.vue'));
-const CommandPalette = defineAsyncComponent(() => import('./components/CommandPalette.vue'));
+const AppSearch = defineAsyncComponent(() => import('./components/layout/AppSearch.vue'));
 const ToastNotification = defineAsyncComponent(() => import('./components/ToastNotification.vue'));
+const ContextMenu = defineAsyncComponent(() => import('./components/ContextMenu.vue'));
 
 const settings = useSettingsStore();
 const player = usePlayerStore();
@@ -83,7 +85,7 @@ onMounted(async () => {
   // main will close the splash and show the window.
   window.api?.invoke('app:rendererReady');
 
-  // First-run wizard (one time). Re-runnable from Settings / CommandPalette.
+  // First-run wizard (one time). Re-runnable from Settings / search.
   try {
     if (!localStorage.getItem('onda-first-run-done')) ui.openSetupWizard();
   } catch {
@@ -200,14 +202,32 @@ watch(
 );
 
 function onGlobalKeydown(e: KeyboardEvent) {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+  const searchShortcut = settings.shortcuts['search'];
+  const viewSearchShortcut = settings.shortcuts['view-search'];
+  if (searchShortcut && matchesShortcut(searchShortcut, e)) {
     e.preventDefault();
     if (!document.querySelector('input:focus, textarea:focus')) {
-      ui.toggleCommandPalette();
+      ui.toggleGlobalSearch();
     }
+    return;
+  }
+  if (viewSearchShortcut && matchesShortcut(viewSearchShortcut, e)) {
+    const activeEl = document.activeElement as HTMLElement | null;
+    const inInput = !!document.querySelector('input:focus, textarea:focus');
+    if (!inInput) {
+      e.preventDefault();
+      if (['library', 'explorer', 'downloads'].includes(route.name as string)) {
+        ui.toggleViewSearch();
+      }
+    } else if (activeEl?.tagName === 'INPUT' && activeEl.closest('[data-app-search]')) {
+      e.preventDefault();
+      ui.openSearch('view');
+    }
+    return;
   }
   if (e.key === 'Escape') {
     ui.hideContextMenu();
+    ui.closeSearch();
   }
 }
 
@@ -223,19 +243,6 @@ function onWindowBlur() {
     player.pause();
   }
 }
-
-const contextMenuStyle = computed(() => {
-  const m = ui.contextMenu;
-  if (!m) return {};
-  const MENU_W = 220;
-  const ITEM_H = 32;
-  const estimatedH = m.items.length * ITEM_H + 16;
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const x = Math.min(m.x, vw - MENU_W - 8);
-  const y = Math.min(m.y, vh - estimatedH - 8);
-  return { left: Math.max(8, x) + 'px', top: Math.max(8, y) + 'px', maxHeight: vh - 16 + 'px' };
-});
 </script>
 
 <template>
@@ -274,35 +281,10 @@ const contextMenuStyle = computed(() => {
     />
     <StatusBar v-if="ui.statusBarVisible && !isExplorerWindow" />
 
-    <CommandPalette />
+    <AppSearch />
+    <ContextMenu />
     <ToastNotification />
     <FirstRunWizard v-if="ui.setupWizardVisible" @close="ui.closeSetupWizard()" />
-
-    <div
-      v-if="ui.contextMenu"
-      id="context-menu"
-      class="fixed z-50 bg-neutral border border-neutral-content/20 rounded-box shadow-2xl shadow-black/50 py-1.5 min-w-45 max-h-[80vh] overflow-y-auto"
-      :style="contextMenuStyle"
-      @click.stop
-    >
-      <template v-for="(item, idx) in ui.contextMenu.items" :key="idx">
-        <div v-if="item.separator" class="border-t border-base-300 my-1 mx-2" />
-        <button
-          v-else
-          class="w-full flex items-center justify-between gap-4 px-3 py-1.5 text-left text-sm hover:bg-primary/10 hover:text-primary transition-colors"
-          :class="{ 'opacity-40 pointer-events-none': item.disabled }"
-          @click="
-            item.action?.();
-            ui.hideContextMenu();
-          "
-        >
-          <span>{{ item.label }}</span>
-          <span v-if="item.shortcut" class="text-[10px] text-base-content/60 font-mono">{{
-            item.shortcut
-          }}</span>
-        </button>
-      </template>
-    </div>
   </div>
 </template>
 

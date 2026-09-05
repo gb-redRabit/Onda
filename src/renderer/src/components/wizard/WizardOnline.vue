@@ -17,7 +17,7 @@ onMounted(() => {
     <p class="text-sm text-base-content/70">{{ $t('wizard.onlineDesc') }}</p>
 
     <div
-      class="mt-5 flex items-center gap-4 p-4 fx-depth rounded-box border border-base-300 bg-base-200/[var(--glass-alpha)]"
+      class="mt-5 flex items-center gap-4 p-4 fx-depth rounded-box border border-base-300 bg-base-200/(--glass-alpha)"
     >
       <span
         class="w-11 h-11 shrink-0 rounded-field flex items-center justify-center"

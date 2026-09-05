@@ -39,6 +39,20 @@ describe('sanitizeSettings', () => {
     expect(sanitized.favorites).toEqual(['a', 'b']);
   });
 
+  it('sanitizes statusBar and drops unknown section ids', () => {
+    const { sanitized } = sanitizeSettings({
+      statusBar: {
+        visible: true,
+        sections: ['playing', 'bogus', 'clock', 42, 'separator'],
+        extra: 1
+      }
+    });
+    expect(sanitized.statusBar).toEqual({
+      visible: true,
+      sections: ['playing', 'clock', 'separator']
+    });
+  });
+
   it('migrates legacy accentColor to customColors.primary and drops old fields', () => {
     const { sanitized } = sanitizeSettings({
       appearance: {

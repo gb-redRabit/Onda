@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { Minus, Square, X, Search, Maximize2, FolderOpen, FileAudio } from '@lucide/vue';
 import { useUIStore } from '@renderer/stores/ui';
+import { useSettingsStore } from '@renderer/stores/settings';
 import { useAppMenu } from '@renderer/composables/useAppMenu';
 import appIcon from '@renderer/assets/icon.png';
 
 const ui = useUIStore();
+const settings = useSettingsStore();
 
 const {
   isMaximized,
   openDropdown,
   viewLabel,
   showViewActions,
+  viewSearchable,
   openFile,
   openFolder,
   toggleDropdown,
@@ -19,7 +22,12 @@ const {
   maximize,
   closeWin,
   quitApp,
-  navigateAndClose
+  navigateAndClose,
+  toggleViewSearch,
+  navigateSettingsTab,
+  actionClose,
+  t,
+  player
 } = useAppMenu();
 </script>
 
@@ -157,6 +165,104 @@ const {
             {{ $t('menu.settings') }}
             <span class="ml-auto text-[10px] text-base-content/50 font-mono">Alt+6</span>
           </button>
+          <div class="border-t border-base-300 my-1 mx-2" />
+          <button
+            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
+            @click="
+              settings.updateStatusBar({ visible: !settings.statusBar.visible });
+              closeDropdown();
+            "
+          >
+            {{ $t('menu.statusBar') }}
+            <span v-if="settings.statusBar.visible" class="ml-auto text-primary">✓</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Playback -->
+      <div v-if="player.currentTrack" class="relative">
+        <button
+          class="h-9 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
+          :class="{ 'bg-primary/10 text-primary': openDropdown === 'playback' }"
+          @click="toggleDropdown('playback')"
+          @mouseenter="openDropdown && (openDropdown = 'playback')"
+        >
+          {{ $t('menu.playback') }}
+        </button>
+        <div
+          v-if="openDropdown === 'playback'"
+          class="absolute top-full left-0 mt-0.5 bg-base-100 border border-base-300 rounded-box shadow-2xl shadow-black/40 py-1.5 min-w-52 z-50"
+        >
+          <button
+            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
+            @click="actionClose(player.togglePlay)"
+          >
+            {{ t('menu.playPause') }}
+            <span class="ml-auto text-[10px] text-base-content/50 font-mono">{{ player.isPlaying ? 'Pause' : 'Play' }}</span>
+          </button>
+          <button
+            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors"
+            @click="actionClose(player.nextTrack)"
+          >
+            {{ t('menu.nextTrack') }}
+          </button>
+          <button
+            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors"
+            @click="actionClose(player.prevTrack)"
+          >
+            {{ t('menu.prevTrack') }}
+          </button>
+          <div class="border-t border-base-300 my-1 mx-2" />
+          <button
+            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
+            @click="actionClose(player.toggleShuffle)"
+          >
+            {{ t('menu.shuffle') }}
+            <span class="ml-auto text-[10px] text-base-content/50 font-mono">{{ player.shuffle ? 'On' : 'Off' }}</span>
+          </button>
+          <button
+            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
+            @click="actionClose(player.cycleRepeat)"
+          >
+            {{ t('menu.repeat') }}
+            <span class="ml-auto text-[10px] text-base-content/50 font-mono">{{ player.repeat }}</span>
+          </button>
+          <div class="border-t border-base-300 my-1 mx-2" />
+          <button
+            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors"
+            @click="actionClose(player.toggleEqualizer)"
+          >
+            {{ t('menu.eq') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Help -->
+      <div class="relative">
+        <button
+          class="h-9 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
+          :class="{ 'bg-primary/10 text-primary': openDropdown === 'help' }"
+          @click="toggleDropdown('help')"
+          @mouseenter="openDropdown && (openDropdown = 'help')"
+        >
+          {{ $t('menu.help') }}
+        </button>
+        <div
+          v-if="openDropdown === 'help'"
+          class="absolute top-full left-0 mt-0.5 bg-base-100 border border-base-300 rounded-box shadow-2xl shadow-black/40 py-1.5 min-w-48 z-50"
+        >
+          <button
+            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors"
+            @click="navigateSettingsTab('about')"
+          >
+            {{ t('menu.about') }}
+          </button>
+          <button
+            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors"
+            @click="navigateSettingsTab('shortcuts')"
+          >
+            {{ t('menu.documentation') }}
+          </button>
         </div>
       </div>
     </div>
@@ -181,6 +287,15 @@ const {
           <FolderOpen :size="12" /> {{ $t('home.openFolder') }}
         </button>
       </template>
+      <button
+        v-if="viewSearchable"
+        class="h-9 px-2 flex items-center hover:bg-base-content/10 transition-colors text-base-content/60 hover:text-base-content"
+        style="-webkit-app-region: no-drag"
+        :title="t('menu.viewSearch')"
+        @click="toggleViewSearch"
+      >
+        <Search :size="12" />
+      </button>
     </div>
 
     <!-- Right side: search + window controls -->
@@ -188,7 +303,7 @@ const {
       <button
         class="h-9 px-3 flex items-center hover:bg-base-content/10 transition-colors text-base-content/70 hover:text-base-content"
         :title="$t('menu.search')"
-        @click="ui.toggleCommandPalette()"
+        @click="ui.toggleGlobalSearch()"
       >
         <Search :size="14" />
       </button>

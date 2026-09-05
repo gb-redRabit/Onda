@@ -22,6 +22,7 @@ import ExplorerPropertiesDialog from '@renderer/components/explorer/ExplorerProp
 import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 import { useExplorerActions } from '@renderer/composables/useExplorerActions';
 import { useExplorerContextMenu } from '@renderer/composables/useExplorerContextMenu';
+import { useViewSearch } from '@renderer/composables/useViewSearch';
 import type { FileItem } from '@renderer/types/explorer';
 
 const explorer = useExplorerStore();
@@ -47,6 +48,7 @@ provide('showConfirm', showConfirm);
 
 const pinned = ref(false);
 const searchQuery = ref('');
+useViewSearch(searchQuery);
 const dupPanelOpen = ref(false);
 const propertiesItem = ref<FileItem | null>(null);
 const contentRef = ref<InstanceType<typeof ExplorerContent> | null>(null);
@@ -182,7 +184,7 @@ onBeforeUnmount(() => {
       <ExplorerTabs />
 
       <div
-        class="flex items-center gap-2 px-3 py-2 border-b border-base-300 bg-base-200/[var(--glass-alpha)]"
+        class="flex items-center gap-2 px-3 py-2 border-b border-base-300 bg-base-200/(--glass-alpha)"
       >
         <ExplorerBreadcrumb />
 

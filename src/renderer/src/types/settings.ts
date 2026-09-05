@@ -19,7 +19,23 @@ export interface AppSettings {
   updates: UpdateSettings;
   toast: ToastSettings;
   dependencies: Record<string, DependencyStatus>;
+  statusBar: StatusBarSettings;
   favorites?: string[];
+}
+
+export type StatusBarSectionId =
+  | 'playing'
+  | 'separator'
+  | 'viewCounts'
+  | 'downloads'
+  | 'youtube'
+  | 'dependencies'
+  | 'version'
+  | 'clock';
+
+export interface StatusBarSettings {
+  visible: boolean;
+  sections: StatusBarSectionId[];
 }
 
 export interface GeneralSettings {

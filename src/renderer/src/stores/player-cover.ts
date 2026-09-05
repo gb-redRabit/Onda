@@ -9,6 +9,14 @@ export interface CoverResult {
   data: string | null;
 }
 
+// Stream tracks (YouTube/SoundCloud/radio) use remote http(s) URLs as their
+// path — main rejects them with "unsafe path" on media:getCover, and they only
+// ever get a real cover through enrichTrack's thumbnail seeding. Never enqueue
+// or IPC them; a cache miss degrades to the fallback icon.
+function isRemoteUrl(filePath: string): boolean {
+  return /^https?:\/\//i.test(filePath) || filePath.startsWith('//');
+}
+
 function captureVideoFrame(filePath: string): Promise<CoverResult> {
   const ext = filePath.slice(filePath.lastIndexOf('.')).toLowerCase();
   if (!VIDEO_EXTS.includes(ext)) return Promise.resolve({ type: null, data: null });
@@ -64,18 +72,26 @@ function captureVideoFrame(filePath: string): Promise<CoverResult> {
 export function usePlayerCover() {
   const coverCache = shallowRef<Record<string, CoverResult>>({});
   const coverQueue: string[] = [];
+  const coverSealedAt = new Map<string, number>();
   let coverFlushScheduled = false;
   let coverProcessing = false;
   const COVER_CACHE_MAX = 500;
+  // A "no cover" result is cached briefly (cheap — main returns instantly from
+  // its mem cache) and re-probed afterwards, so a transient IPC failure or a
+  // file that was missing for a moment can never leave the cache poisoned.
+  const NULL_COVER_TTL_MS = 30_000;
 
   async function processCoverBatch(): Promise<void> {
     coverProcessing = true;
-    while (coverQueue.length > 0) {
-      const batch = coverQueue.splice(0, 5);
-      await Promise.all(batch.map((p) => doLoadCover(p)));
-      if (coverQueue.length > 0) await new Promise<void>((r) => queueMicrotask(() => r()));
+    try {
+      while (coverQueue.length > 0) {
+        const batch = coverQueue.splice(0, 5);
+        await Promise.all(batch.map((p) => doLoadCover(p).catch(() => {})));
+        if (coverQueue.length > 0) await new Promise<void>((r) => queueMicrotask(() => r()));
+      }
+    } finally {
+      coverProcessing = false;
     }
-    coverProcessing = false;
   }
 
   function scheduleCoverFlush(): void {
@@ -92,31 +108,59 @@ export function usePlayerCover() {
     if (keys.length <= COVER_CACHE_MAX) return;
     const excess = keys.length - COVER_CACHE_MAX;
     for (let i = 0; i < excess; i++) {
-      delete coverCache.value[keys[i]];
+      const path = keys[i];
+      delete coverCache.value[path];
+      coverSealedAt.delete(path);
     }
   }
 
   async function doLoadCover(filePath: string): Promise<void> {
-    if (filePath in coverCache.value) return;
-    coverCache.value[filePath] = { type: null, data: null };
-    const cover = (await window.api?.getCover(filePath)) ?? { type: null, data: null };
-    if (cover.data) {
-      coverCache.value[filePath] = cover;
-      evictCoverCache();
+    const cached = coverCache.value[filePath];
+    if (cached && cached.data) return;
+    // Remote URLs (streams/radio) have no local file to probe — never round-trip
+    // through IPC for them, just seal a null cover.
+    if (isRemoteUrl(filePath)) {
+      coverCache.value[filePath] = { type: null, data: null };
+      coverSealedAt.set(filePath, Date.now());
       triggerRef(coverCache);
       return;
     }
-    const frame = await captureVideoFrame(filePath);
-    coverCache.value[filePath] = frame;
+    // Fresh "no cover" result — skip the round-trip until the TTL expires.
+    const sealedAt = coverSealedAt.get(filePath);
+    if (sealedAt && Date.now() - sealedAt < NULL_COVER_TTL_MS) return;
+    if (cached) {
+      delete coverCache.value[filePath];
+      coverSealedAt.delete(filePath);
+    }
+    coverCache.value[filePath] = { type: null, data: null };
+    try {
+      const cover = (await window.api?.getCover(filePath)) ?? { type: null, data: null };
+      if (cover.data) {
+        coverCache.value[filePath] = cover;
+      } else {
+        const frame = await captureVideoFrame(filePath);
+        coverCache.value[filePath] = frame;
+        if (!frame.data) coverSealedAt.set(filePath, Date.now());
+      }
+    } catch {
+      delete coverCache.value[filePath];
+      coverSealedAt.delete(filePath);
+    }
     evictCoverCache();
     triggerRef(coverCache);
   }
 
   async function loadCover(filePath: string): Promise<CoverResult> {
-    if (filePath in coverCache.value) return coverCache.value[filePath]!;
-    coverQueue.push(filePath);
+    const cached = coverCache.value[filePath];
+    if (cached) {
+      const sealedAt = coverSealedAt.get(filePath) ?? 0;
+      if (cached.data || Date.now() - sealedAt < NULL_COVER_TTL_MS) {
+        return cached;
+      }
+    }
+    if (!coverQueue.includes(filePath) && !isRemoteUrl(filePath)) coverQueue.push(filePath);
     scheduleCoverFlush();
-    return { type: null, data: null };
+    return cached ?? { type: null, data: null };
   }
 
   function getCover(filePath: string): CoverResult {

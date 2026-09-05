@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import type { MediaFile } from '@renderer/types/media';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
-import { useUIStore } from '@renderer/stores/ui';
+import { useLibraryContextMenu } from '@renderer/composables/useLibraryContextMenu';
 import { Play, Plus, Heart, Edit3, ListMusic, Trash2 } from '@lucide/vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import { formatDuration } from '@renderer/utils/formatters';
@@ -26,9 +26,10 @@ const emit = defineEmits<{
 
 const library = useLibraryStore();
 const player = usePlayerStore();
-const ui = useUIStore();
+const { showTrackMenu } = useLibraryContextMenu();
 const showPlaylistMenu = ref(false);
 const playlistBtn = ref<HTMLElement | null>(null);
+const hovered = ref(false);
 const playlistPopupStyle = computed(() => {
   const el = playlistBtn.value;
   if (!el) return {};
@@ -77,35 +78,21 @@ function togglePlaylist(e: MouseEvent) {
 }
 
 function onContextMenu(e: MouseEvent) {
-  e.preventDefault();
-  ui.showContextMenu(e.clientX, e.clientY, [
-    { label: t('common.play'), action: () => playNow() },
-    { label: t('common.addToQueue'), action: () => player.addToQueue(props.track) },
-    { label: t('common.editTags'), action: () => emit('edit', props.track) },
-    {
-      label: t('common.showInFolder'),
-      action: () => window.api?.invoke('shell:showItemInFolder', props.track.path)
-    },
-    ...(library.playlists.length > 0 ? [{ label: '—', separator: true } as const] : []),
-    ...library.playlists.map((p) => {
-      const inPlaylist = p.tracks.some((t) => t.path === props.track.path);
-      return {
-        label: `${inPlaylist ? '−' : '+'} ${p.name}`,
-        action: () => {
-          if (inPlaylist) {
-            library.removeFromPlaylist(p.id, props.track.path);
-          } else {
-            library.addToPlaylist(p.id, props.track);
-          }
-        }
-      };
-    })
-  ]);
+  showTrackMenu(e, props.track, { onEdit: () => emit('edit', props.track) });
 }
 
 function onDragStart(e: DragEvent) {
   e.dataTransfer?.setData('text/plain', JSON.stringify({ paths: [props.track.path] }));
   e.dataTransfer!.effectAllowed = 'move';
+}
+
+function onHover() {
+  hovered.value = true;
+  player.loadCover(props.track.path);
+}
+
+function onHoverLeave() {
+  hovered.value = false;
 }
 </script>
 
@@ -118,11 +105,13 @@ function onDragStart(e: DragEvent) {
     @dblclick="playNow"
     @contextmenu.prevent="onContextMenu"
     @dragstart="onDragStart"
+    @mouseenter="onHover"
+    @mouseleave="onHoverLeave"
   >
     <div
       class="w-full aspect-4/3 bg-neutral flex items-center justify-center relative overflow-hidden"
     >
-      <MediaCover :path="props.track.path" :size="40" fallback="play" />
+      <MediaCover :path="props.track.path" :size="40" :autoplay="hovered" fallback="play" />
       <div
         class="absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/20 transition-colors"
         @click.stop="playNow"

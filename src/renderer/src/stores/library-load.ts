@@ -95,6 +95,7 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
       const result = (await window.api?.invoke('library:scan', [...ctx.folders.value])) as {
         count: number;
         folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
+        aborted?: boolean;
       };
       if (result) {
         ctx.folderTypes.value = result.folderTypes;
@@ -102,7 +103,17 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
           current: ctx.folders.value.length,
           total: ctx.folders.value.length
         };
-        scheduleLoadTracks();
+        if (result.aborted) {
+          // The scan was cancelled (or superseded) — reloading now would bring
+          // back stale data, so skip it and tell the user instead.
+          try {
+            useUIStore().notify('error', 'Skanowanie przerwane', 'Spróbuj ponownie.');
+          } catch {
+            // store not available
+          }
+        } else {
+          scheduleLoadTracks();
+        }
       }
     } catch (err) {
       try {

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed } from 'vue';
 import { usePipVisualizer } from './usePipVisualizer';
 import { usePipAudioState, EQ_PRESETS } from './usePipAudioState';
+import PipCover from './PipCover.vue';
 
 const handlers = { updateAccent: () => {} };
 const state = usePipAudioState(handlers);
@@ -23,11 +24,9 @@ const {
   nextTrackArtist,
   dock,
   layoutKind,
-  elements,
   edge,
   peeked,
   has,
-  isVertical,
   fmt,
   progressPct,
   volPct,
@@ -40,22 +39,6 @@ const {
   onVolumeInput,
   selectEqPreset
 } = state;
-
-const videoEl = ref<HTMLVideoElement | null>(null);
-
-watch(isPlaying, (playing) => {
-  const v = videoEl.value;
-  if (!v) return;
-  if (playing && v.paused && !v.ended) {
-    v.play().catch(() => {});
-  } else if (!playing && !v.paused) {
-    v.pause();
-  }
-});
-
-function onCoverVideoError(e: Event) {
-  (e.target as HTMLVideoElement).style.display = 'none';
-}
 
 function onRootDblClick(e: MouseEvent) {
   const t = e.target as HTMLElement;
@@ -185,24 +168,13 @@ const EDGE_PROGRESS_FILL_V =
         class="relative z-10 flex h-full w-full select-none items-stretch gap-2 px-2.5 py-1.5"
       >
         <div v-if="has('cover')" class="flex shrink-0 items-center">
-          <video
-            v-if="isVideoCover"
-            ref="videoEl"
-            :src="videoCoverSrc"
-            class="block h-13 w-13 rounded-(--radius-field) object-cover"
-            autoplay
-            muted
-            loop
-            playsinline
-            @error="onCoverVideoError"
+          <PipCover
+            :is-video="isVideoCover"
+            :video-src="videoCoverSrc"
+            :img-src="coverData"
+            :playing="isPlaying"
+            size="sm"
           />
-          <img
-            v-else-if="coverData"
-            :src="coverData"
-            class="block h-13 w-13 rounded-(--radius-field) object-cover"
-            alt=""
-          />
-          <div v-else class="h-13 w-13 rounded-(--radius-field) bg-base-content/10"></div>
         </div>
 
         <div class="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
@@ -310,24 +282,12 @@ const EDGE_PROGRESS_FILL_V =
           :class="dock === 'top' ? 'order-1' : 'order-2'"
         >
           <div v-if="has('cover')" class="flex shrink-0 items-center">
-            <video
-              v-if="isVideoCover"
-              ref="videoEl"
-              :src="videoCoverSrc"
-              class="block h-24 w-24 rounded-(--radius-field) object-cover"
-              autoplay
-              muted
-              loop
-              playsinline
-              @error="onCoverVideoError"
+            <PipCover
+              :is-video="isVideoCover"
+              :video-src="videoCoverSrc"
+              :img-src="coverData"
+              :playing="isPlaying"
             />
-            <img
-              v-else-if="coverData"
-              :src="coverData"
-              class="block h-24 w-24 rounded-(--radius-field) object-cover"
-              alt=""
-            />
-            <div v-else class="h-24 w-24 rounded-(--radius-field) bg-base-content/10"></div>
           </div>
 
           <div
@@ -422,24 +382,12 @@ const EDGE_PROGRESS_FILL_V =
           :class="dock === 'left' ? 'order-1' : 'order-2'"
         >
           <div v-if="has('cover')" class="shrink-0">
-            <video
-              v-if="isVideoCover"
-              ref="videoEl"
-              :src="videoCoverSrc"
-              class="block h-24 w-24 rounded-(--radius-field) object-cover"
-              autoplay
-              muted
-              loop
-              playsinline
-              @error="onCoverVideoError"
+            <PipCover
+              :is-video="isVideoCover"
+              :video-src="videoCoverSrc"
+              :img-src="coverData"
+              :playing="isPlaying"
             />
-            <img
-              v-else-if="coverData"
-              :src="coverData"
-              class="block h-24 w-24 rounded-(--radius-field) object-cover"
-              alt=""
-            />
-            <div v-else class="h-24 w-24 rounded-(--radius-field) bg-base-content/10"></div>
           </div>
 
           <div
@@ -503,100 +451,8 @@ const EDGE_PROGRESS_FILL_V =
             />
             <span class="tabular-nums text-[9px] text-base-content/50">{{ volPct }}</span>
           </div>
-
-          <div v-if="isVertical && elements.length === 0" class="hidden"></div>
         </div>
       </div>
     </template>
   </div>
 </template>
-
-<style>
-@import 'tailwindcss';
-
-@theme {
-  --color-base-100: #1d232a;
-  --color-base-200: #191e24;
-  --color-base-300: #15191e;
-  --color-base-content: #ecf9ff;
-
-  --color-primary: #605dff;
-  --color-primary-content: #edf1fe;
-  --color-secondary: #f43098;
-  --color-secondary-content: #f9e4f0;
-  --color-accent: #00d3bb;
-  --color-accent-content: #084d49;
-  --color-neutral: #09090b;
-  --color-neutral-content: #e4e4e7;
-
-  --color-info: #00bafe;
-  --color-info-content: #042e49;
-  --color-success: #00d390;
-  --color-success-content: #004c39;
-  --color-warning: #fcb700;
-  --color-warning-content: #793205;
-  --color-error: #ff627d;
-  --color-error-content: #4d0218;
-
-  --radius-box: 0.5rem;
-  --radius-field: 0.25rem;
-  --radius-selector: 0.5rem;
-  --size-field: 0.25rem;
-  --size-selector: 0.25rem;
-}
-
-:root {
-  --border: 1px;
-  --depth: 1;
-  --noise: 0;
-  --glass-alpha: 100%;
-  --glass-blur: 14px;
-  --font-size: 14px;
-}
-
-html,
-body,
-#app {
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-  background: transparent;
-  margin: 0;
-  padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: var(--font-size);
-}
-
-/* Wejście paska (zastępuje starą klasę .pip-fade-in). */
-.pip-fade-in {
-  animation: pip-fade-in 0.15s ease-out;
-}
-@keyframes pip-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* Suwak głośności — tor i gałka (pseudo-elementów nie da się klasami Tailwind). */
-input[type='range'] {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 4px;
-  background: color-mix(in srgb, var(--color-base-content) 14%, transparent);
-  border-radius: 2px;
-  outline: none;
-  cursor: pointer;
-}
-input[type='range']::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 10px;
-  height: 10px;
-  background: var(--color-base-content);
-  border-radius: 50%;
-  cursor: pointer;
-  border: 2px solid var(--color-primary);
-}
-</style>

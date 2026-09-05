@@ -28,7 +28,9 @@ function fetchDuration(filePath: string): Promise<number> {
 }
 
 async function loadCovers(tracks: MediaFile[]) {
-  for (const track of tracks) {
+  // Pre-warm only the nearest chunk — covers for the rest are fetched lazily
+  // by each MediaCover's own visibility observer when the row scrolls in.
+  for (const track of tracks.slice(0, 120)) {
     player.loadCover(track.path);
   }
 }

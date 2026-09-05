@@ -2,11 +2,15 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { openMediaFiles } from '@renderer/composables/useOpenMedia';
+import { usePlayerStore } from '@renderer/stores/player';
+import { useUIStore } from '@renderer/stores/ui';
 
 export function useAppMenu() {
   const route = useRoute();
   const router = useRouter();
   const { t } = useI18n();
+  const player = usePlayerStore();
+  const ui = useUIStore();
   const isMaximized = ref(false);
   const openDropdown = ref<string | null>(null);
 
@@ -87,13 +91,37 @@ export function useAppMenu() {
     return map[route.name as string] || '';
   });
 
-  const showViewActions = computed(() =>
-    ['home', 'library', 'player', 'audio', 'settings'].includes(route.name as string)
-  );
+const showViewActions = computed(() =>
+  ['home', 'library', 'player', 'audio', 'settings', 'explorer', 'downloads'].includes(
+    route.name as string
+  )
+);
+
+const viewSearchable = computed(() =>
+  ['library', 'explorer', 'downloads'].includes(route.name as string)
+);
 
   function navigateAndClose(path: string) {
     router.push(path);
     closeDropdown();
+  }
+
+  function toggleViewSearch() {
+    closeDropdown();
+    if (!viewSearchable.value) return;
+    ui.toggleViewSearch();
+  }
+
+  function navigateSettingsTab(tab: string) {
+    router.push({ path: '/settings', query: { tab } });
+    closeDropdown();
+  }
+
+  function actionClose(action: () => void) {
+    return () => {
+      action();
+      closeDropdown();
+    };
   }
 
   let offMaximized: (() => void) | null = null;
@@ -113,6 +141,7 @@ export function useAppMenu() {
     openDropdown,
     viewLabel,
     showViewActions,
+    viewSearchable,
     openFile,
     openFolder,
     toggleDropdown,
@@ -121,6 +150,12 @@ export function useAppMenu() {
     maximize,
     closeWin,
     quitApp,
-    navigateAndClose
+    navigateAndClose,
+    toggleViewSearch,
+    navigateSettingsTab,
+    actionClose,
+    t,
+    player,
+    ui
   };
 }

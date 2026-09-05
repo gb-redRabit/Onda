@@ -324,6 +324,46 @@ describe('scanFolders', () => {
 
     expect(store.folderTypes['/music']).toBe('audio');
   });
+
+  it('reloads fresh data after a completed scan', async () => {
+    const store = useLibraryStore();
+    store.folders = ['/music'];
+    const api = (window as any).api;
+    api.invoke.mockImplementation((channel: string) => {
+      if (channel === 'library:scan') return Promise.resolve({ count: 1, folderTypes: {} });
+      if (channel === 'library:loadScanned')
+        return Promise.resolve({ files: [makeTrack('only')], folderTypes: {} });
+      return Promise.resolve(undefined);
+    });
+
+    await store.scanFolders();
+    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(store.tracks.some((t) => t.id === 'only')).toBe(true);
+  });
+
+  it('does NOT reload stale data when the scan was aborted', async () => {
+    const store = useLibraryStore();
+    store.folders = ['/music'];
+    const api = (window as any).api;
+    let loadScannedCalls = 0;
+    api.invoke.mockImplementation((channel: string) => {
+      if (channel === 'library:scan')
+        return Promise.resolve({ count: 0, folderTypes: {}, aborted: true });
+      if (channel === 'library:loadScanned') {
+        loadScannedCalls++;
+        return Promise.resolve({ files: [makeTrack('stale')], folderTypes: {} });
+      }
+      return Promise.resolve(undefined);
+    });
+
+    const before = store.tracks.length;
+    await store.scanFolders();
+
+    expect(loadScannedCalls).toBe(0);
+    expect(store.tracks.length).toBe(before);
+  });
 });
 
 describe('savePlaylists', () => {

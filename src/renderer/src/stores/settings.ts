@@ -13,7 +13,8 @@ import type {
   ToastSettings,
   DependencyStatus,
   AppSettings,
-  GeneralSettings
+  GeneralSettings,
+  StatusBarSettings
 } from '@renderer/types/settings';
 import {
   DEFAULT_APPEARANCE,
@@ -27,7 +28,8 @@ import {
   DEFAULT_YOUTUBE_AUTH,
   DEFAULT_UPDATES,
   DEFAULT_TOAST,
-  DEFAULT_GENERAL
+  DEFAULT_GENERAL,
+  DEFAULT_STATUS_BAR
 } from '@renderer/utils/constants';
 import { loadSettings, persistSettings, mergeSettings } from '@renderer/utils/settingsStorage';
 
@@ -45,6 +47,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const updates = ref<UpdateSettings>({ ...DEFAULT_UPDATES });
   const toast = ref<ToastSettings>({ ...DEFAULT_TOAST });
   const dependencies = ref<Record<string, DependencyStatus>>({});
+  const statusBar = ref<StatusBarSettings>({ ...DEFAULT_STATUS_BAR });
   const isLoaded = ref(false);
 
   async function load() {
@@ -61,7 +64,8 @@ export const useSettingsStore = defineStore('settings', () => {
       youtube,
       updates,
       toast,
-      dependencies
+      dependencies,
+      statusBar
     });
     isLoaded.value = true;
   }
@@ -84,7 +88,8 @@ export const useSettingsStore = defineStore('settings', () => {
       youtube,
       updates,
       toast,
-      dependencies
+      dependencies,
+      statusBar
     });
   };
 
@@ -105,7 +110,8 @@ export const useSettingsStore = defineStore('settings', () => {
         youtube,
         updates,
         toast,
-        dependencies
+        dependencies,
+        statusBar
       });
     }, 300);
   };
@@ -159,6 +165,7 @@ export const useSettingsStore = defineStore('settings', () => {
     updates.value = { ...DEFAULT_UPDATES };
     dependencies.value = {};
     toast.value = { ...DEFAULT_TOAST };
+    statusBar.value = { ...DEFAULT_STATUS_BAR };
     save();
   }
 
@@ -203,6 +210,11 @@ export const useSettingsStore = defineStore('settings', () => {
     save();
   }
 
+  function updateStatusBar(partial: Partial<StatusBarSettings>) {
+    Object.assign(statusBar.value, partial);
+    save();
+  }
+
   function updateLibrary(partial: Partial<LibrarySettings>) {
     Object.assign(library.value, partial);
     save();
@@ -227,6 +239,7 @@ export const useSettingsStore = defineStore('settings', () => {
     updates,
     toast,
     dependencies,
+    statusBar,
     isLoaded,
     load,
     save,
@@ -240,6 +253,7 @@ export const useSettingsStore = defineStore('settings', () => {
     updateYoutube,
     updateShortcut,
     updateNetwork,
+    updateStatusBar,
     resetToDefaults,
     applyImported,
     updateDependency,

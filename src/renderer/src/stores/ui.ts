@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, type Component } from 'vue';
 
 export interface ContextMenuItem {
   label: string;
-  icon?: string;
+  icon?: Component;
   action?: () => void;
   separator?: boolean;
   disabled?: boolean;
@@ -23,11 +23,11 @@ export const useUIStore = defineStore('ui', () => {
   const topMenuVisible = ref(true);
   const statusBarVisible = ref(true);
   const playerBarVisible = ref(true);
-  const searchVisible = ref(false);
   const settingsVisible = ref(false);
   const currentView = ref('home');
   const isFullscreen = ref(false);
-  const commandPaletteVisible = ref(false);
+  const searchMode = ref<'closed' | 'view' | 'global'>('closed');
+  const searchQuery = ref('');
   const setupWizardVisible = ref(false);
   const contextMenu = ref<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const notifications = ref<Notification[]>([]);
@@ -38,11 +38,25 @@ export const useUIStore = defineStore('ui', () => {
   function toggleStatusBar() {
     statusBarVisible.value = !statusBarVisible.value;
   }
-  function toggleSearch() {
-    searchVisible.value = !searchVisible.value;
+
+  function toggleGlobalSearch() {
+    searchMode.value = searchMode.value === 'global' ? 'closed' : 'global';
   }
-  function toggleCommandPalette() {
-    commandPaletteVisible.value = !commandPaletteVisible.value;
+
+  function toggleViewSearch() {
+    searchMode.value = searchMode.value === 'view' ? 'closed' : 'view';
+  }
+
+  function openSearch(mode: 'view' | 'global') {
+    searchMode.value = mode;
+  }
+
+  function closeSearch() {
+    searchMode.value = 'closed';
+  }
+
+  function setSearchQuery(q: string) {
+    searchQuery.value = q;
   }
 
   function openSetupWizard() {
@@ -87,18 +101,21 @@ export const useUIStore = defineStore('ui', () => {
     topMenuVisible,
     statusBarVisible,
     playerBarVisible,
-    searchVisible,
     settingsVisible,
     currentView,
     isFullscreen,
-    commandPaletteVisible,
+    searchMode,
+    searchQuery,
     setupWizardVisible,
     contextMenu,
     notifications,
     toggleTopMenu,
     toggleStatusBar,
-    toggleSearch,
-    toggleCommandPalette,
+    toggleGlobalSearch,
+    toggleViewSearch,
+    openSearch,
+    closeSearch,
+    setSearchQuery,
     openSetupWizard,
     closeSetupWizard,
     setView,

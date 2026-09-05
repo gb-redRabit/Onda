@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, defineAsyncComponent } from 'vue';
+import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { logger } from '@shared/logger';
 import {
@@ -122,6 +123,10 @@ const {
 const activeSection = ref<string | null>(null);
 const activeTab = ref<string | null>(null);
 const search = ref('');
+
+const route = useRoute();
+if (typeof route.query.tab === 'string') activeTab.value = route.query.tab;
+if (typeof route.query.section === 'string') activeSection.value = route.query.section;
 
 const sections = [
   { id: 'appearance', labelKey: 'settings.sectionAppearance', icon: Palette },

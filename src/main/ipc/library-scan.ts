@@ -40,6 +40,33 @@ export function filterFilesForFolderType(
   return files;
 }
 
+// A video file that is the animated cover for a same-directory audio file
+// (e.g. "Swørn - Butterfly.mp3" ↔ "Swørn - Butterfly.mp4", or the "…_rev.mp4"
+// reverse variant used by some ffmpeg covers) must never land in the library
+// as a separate video track — the audio track already exists, and MediaCover
+// serves the video as its cover.
+export function filterCoverSiblingVideos(files: MediaFile[]): MediaFile[] {
+  const audioStemSet = new Set<string>();
+  for (const f of files) {
+    if (f.type === 'audio') {
+      const ext = extname(f.name).toLowerCase();
+      // Case-insensitive stem: strip the extension by length, not by
+      // path.basename(name, ext) which compares extension case-sensitively.
+      audioStemSet.add(f.name.slice(0, f.name.length - ext.length).toLowerCase());
+    }
+  }
+  return files.filter((f) => !isCoverVideo(f, audioStemSet));
+}
+
+function isCoverVideo(file: MediaFile, audioStemSet: Set<string>): boolean {
+  if (file.type !== 'video') return false;
+  const ext = extname(file.name).toLowerCase();
+  if (!VIDEO_EXT_SET.has(ext)) return false;
+  const stem = file.name.slice(0, file.name.length - ext.length).toLowerCase();
+  if (audioStemSet.has(stem)) return true;
+  return stem.endsWith('_rev') && audioStemSet.has(stem.slice(0, -4));
+}
+
 async function mapLimit<T, R>(
   items: T[],
   limit: number,
@@ -350,9 +377,13 @@ export async function scanDir(
       totalImage += r.imageCount;
     }
 
-    for (const r of fileResults) {
-      if (r.file) files.push(r.file);
-    }
+    // Files of THIS directory only (subdirs were already filtered by the
+    // recursive call above): drop animated-cover videos that duplicate an
+    // audio track in the same folder.
+    const localFiles = fileResults
+      .map((r) => r.file)
+      .filter((f): f is MediaFile => f !== null);
+    for (const f of filterCoverSiblingVideos(localFiles)) files.push(f);
     totalAudio += audioCount;
     totalVideo += videoCount;
     totalImage += imageCount;

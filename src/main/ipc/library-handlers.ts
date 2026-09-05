@@ -47,15 +47,18 @@ export async function addLibraryFolder(folder: string): Promise<string[]> {
   return clean;
 }
 
+export type LibraryScanResult = {
+  count: number;
+  folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
+  aborted: boolean;
+};
+
 async function runLibraryScan(
   folderPaths: string[],
   signal: AbortSignal,
   onProgress?: (current: number, total: number) => void,
   broadcast = false
-): Promise<{
-  count: number;
-  folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
-}> {
+): Promise<LibraryScanResult> {
   const folderResults: Array<{
     folderType: 'audio' | 'video' | 'image' | 'mixed';
     files: MediaFile[];
@@ -121,7 +124,7 @@ async function runLibraryScan(
   }
 
   logger.info('library', `scan completed: ${allFiles.length} files`);
-  return { count: allFiles.length, folderTypes };
+  return { count: allFiles.length, folderTypes, aborted: signal.aborted };
 }
 
 export function registerLibraryHandlers(): void {
@@ -132,13 +135,7 @@ export function registerLibraryHandlers(): void {
 
   ipcMain.handle(
     'library:scan',
-    async (
-      event,
-      folderPaths: string[]
-    ): Promise<{
-      count: number;
-      folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
-    }> => {
+    async (event, folderPaths: string[]): Promise<LibraryScanResult> => {
       const controller = new AbortController();
       activeScanController = controller;
       try {
@@ -148,9 +145,9 @@ export function registerLibraryHandlers(): void {
         });
       } catch (err) {
         logger.error('library', 'scan handler failed', err);
-        return { count: 0, folderTypes: {} };
+        return { count: 0, folderTypes: {}, aborted: false };
       } finally {
-        if (activeScanController === controller) activeScanController = null;
+        releaseScanController(controller);
       }
     }
   );
@@ -299,10 +296,23 @@ export function registerLibraryHandlers(): void {
   });
 
   // File watcher: re-scan (incremental) when media files change on disk, then
-  // broadcast so the renderer refreshes. Uses the same activeScanController so
-  // a user-initiated scan can cancel a watcher scan and vice-versa.
-  setLibraryWatcherScan(async () => {
-    if (activeScanController) activeScanController.abort();
+  // broadcast so the renderer refreshes. The watcher must NOT abort a running
+  // user-initiated scan — otherwise a refresh clicked during a download would
+  // be silently cancelled and the renderer would reload stale data (deleted or
+  // new files never showing up). Instead, the watcher defers until the active
+  // scan finishes.
+  let watcherRescanRequested = false;
+
+  function releaseScanController(controller: AbortController): void {
+    if (activeScanController !== controller) return;
+    activeScanController = null;
+    if (watcherRescanRequested && currentLibraryFolders.length > 0) {
+      watcherRescanRequested = false;
+      void runWatcherRescan();
+    }
+  }
+
+  async function runWatcherRescan(): Promise<void> {
     if (currentLibraryFolders.length === 0) return;
     const controller = new AbortController();
     activeScanController = controller;
@@ -311,7 +321,15 @@ export function registerLibraryHandlers(): void {
     } catch (err) {
       logger.error('library', 'watcher re-scan failed', err);
     } finally {
-      if (activeScanController === controller) activeScanController = null;
+      releaseScanController(controller);
     }
+  }
+
+  setLibraryWatcherScan(() => {
+    if (activeScanController) {
+      watcherRescanRequested = true;
+      return Promise.resolve();
+    }
+    return runWatcherRescan();
   });
 }
