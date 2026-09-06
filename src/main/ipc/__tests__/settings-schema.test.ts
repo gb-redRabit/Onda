@@ -273,6 +273,14 @@ describe('sanitizeSettings', () => {
     expect(ok.playback).toEqual({ cursorTimeout: 3, cursorHide: true });
   });
 
+  it('keeps resumePromptTimeout in seconds and clamps to the allowed range', () => {
+    const { sanitized: ok } = sanitizeSettings({ playback: { resumePromptTimeout: 9 } });
+    expect(ok.playback).toEqual({ resumePromptTimeout: 9 });
+
+    const { sanitized: clamped } = sanitizeSettings({ playback: { resumePromptTimeout: 999 } });
+    expect(clamped.playback).toEqual({ resumePromptTimeout: 60 });
+  });
+
   it('allows only known AppSettings top-level keys', () => {
     expect(SETTINGS_ALLOWED_KEYS).toEqual(
       expect.arrayContaining([

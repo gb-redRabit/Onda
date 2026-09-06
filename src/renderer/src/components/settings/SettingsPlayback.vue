@@ -69,6 +69,26 @@ const toggles = [
       <p class="text-[11px] text-base-content/50 mt-2">{{ $t('settings.cursorHideHint') }}</p>
     </SettingsCard>
 
+    <SettingsCard v-if="settings.playback.rememberPosition">
+      <SettingsSectionTitle
+        :title="`${$t('settings.resumePromptTimeout')} ${settings.playback.resumePromptTimeout}s`"
+      />
+      <input
+        type="range"
+        min="1"
+        max="15"
+        step="1"
+        :value="settings.playback.resumePromptTimeout"
+        class="w-full"
+        @input="
+          settings.updatePlayback({
+            resumePromptTimeout: parseInt(($event.target as HTMLInputElement).value)
+          })
+        "
+      />
+      <p class="text-[11px] text-base-content/50 mt-2">{{ $t('settings.resumePromptHint') }}</p>
+    </SettingsCard>
+
     <SettingsCard>
       <SettingsSectionTitle
         :title="`${$t('settings.defaultSpeed')} ${settings.playback.playbackSpeed}x`"

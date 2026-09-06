@@ -1,9 +1,8 @@
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed } from 'vue';
 import type { usePlayerStore } from '@renderer/stores/player';
 import type { useSettingsStore } from '@renderer/stores/settings';
 import type { usePiP } from '@renderer/composables/usePiP';
 import type { MediaFile } from '@renderer/types/media';
-import { preparePiPSubtitleData } from '@renderer/composables/useSubtitleRenderer';
 import { useVideoCodec } from '@renderer/composables/useVideoCodec';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { logger } from '@shared/logger';
@@ -20,7 +19,7 @@ export function useVideoSource(
   ctx: VideoPlayerContext,
   onVideoReady: (video: HTMLVideoElement) => void
 ) {
-  const { player, settings, pip, notify } = ctx;
+  const { player, settings, notify } = ctx;
   const videoRef = ref<HTMLVideoElement | null>(null);
   const videoEventsConnected = ref(false);
   const { checkVideoAudioCodec } = useVideoCodec({ player, notify });
@@ -85,8 +84,15 @@ export function useVideoSource(
     if (videoEventsConnected.value) return;
     videoEventsConnected.value = true;
     let lastSaved = 0;
+    let lastSecondarySyncTime = -1;
     el.addEventListener('timeupdate', () => {
       player.currentTime = el.currentTime;
+      if (audioEngine.hasSecondaryAudio) {
+        if (lastSecondarySyncTime < 0 || Math.abs(el.currentTime - lastSecondarySyncTime) > 0.5) {
+          audioEngine.seekSecondaryAudio(el.currentTime);
+          lastSecondarySyncTime = el.currentTime;
+        }
+      }
       if (player.currentTrack && el.currentTime - lastSaved > 3) {
         lastSaved = el.currentTime;
         window.api?.setPlaybackPosition(player.currentTrack.path, el.currentTime);
@@ -166,16 +172,6 @@ export function useVideoSource(
       el.load();
       checkVideoAudioCodec(track, el);
       attachTranscodeFallback(track, el);
-
-      if (settings.playback.pipPreBuffer && track && !player.pipActive) {
-        if (track.type === 'video') {
-          preparePiPSubtitleData(track.path).then((subtitleData) => {
-            pip.preload(src, subtitleData);
-          });
-        } else {
-          pip.preload(src, null);
-        }
-      }
     } else {
       audioEngine.setVideoVolume(player.isMuted ? 0 : player.volume);
       el.playbackRate = settings.playback.playbackSpeed;
@@ -184,43 +180,48 @@ export function useVideoSource(
     }
   }
 
-  function onVideoRef(el: unknown) {
-    videoRef.value = el as HTMLVideoElement;
-    if (el && player.currentTrack?.type === 'video') {
-      const loadId = ++currentLoadId;
-      setupVideo(player.currentTrack);
-      const video = el as HTMLVideoElement;
-      let connectAttempts = 0;
-      const tryInit = () => {
-        if (loadId !== currentLoadId) return;
-        if (!video.isConnected) {
-          if (++connectAttempts <= 50) {
-            nextTick(tryInit);
-          }
-          return;
-        }
-        if (player.currentTrack && player.currentTrack.path !== lastLoadedPath) {
-          if (video.readyState >= 1 || video.videoWidth > 0) {
-            lastLoadedPath = player.currentTrack.path;
-            onVideoReady(video);
-          } else {
-            video.addEventListener(
-              'loadedmetadata',
-              () => {
-                if (loadId !== currentLoadId) return;
-                if (player.currentTrack && player.currentTrack.path !== lastLoadedPath) {
-                  lastLoadedPath = player.currentTrack.path;
-                  onVideoReady(video);
-                }
-              },
-              { once: true }
-            );
-          }
-        }
-      };
-      tryInit();
-    }
+function onVideoRef(el: unknown) {
+  if (el && videoRef.value !== el) {
+    videoEventsConnected.value = false;
   }
+  videoRef.value = el as HTMLVideoElement;
+  if (el && player.currentTrack?.type === 'video') {
+    const loadId = ++currentLoadId;
+    setupVideo(player.currentTrack);
+    const video = el as HTMLVideoElement;
+    let connectAttempts = 0;
+    // Waits for the element to be attached to the DOM, then primes subtitles
+    // once. rAF throttles naturally with the tab, cost is bounded (~2s).
+    const tryInit = () => {
+      if (loadId !== currentLoadId) return;
+      if (!video.isConnected) {
+        if (++connectAttempts <= 120) {
+          requestAnimationFrame(tryInit);
+        }
+        return;
+      }
+      if (player.currentTrack && player.currentTrack.path !== lastLoadedPath) {
+        if (video.readyState >= 1 || video.videoWidth > 0) {
+          lastLoadedPath = player.currentTrack.path;
+          onVideoReady(video);
+        } else {
+          video.addEventListener(
+            'loadedmetadata',
+            () => {
+              if (loadId !== currentLoadId) return;
+              if (player.currentTrack && player.currentTrack.path !== lastLoadedPath) {
+                lastLoadedPath = player.currentTrack.path;
+                onVideoReady(video);
+              }
+            },
+            { once: true }
+          );
+        }
+      }
+    };
+    tryInit();
+  }
+}
 
   // Tracks a pending onVideoRef init and cancels it if the current track
   // changes before the element is connected. Called by the single merged

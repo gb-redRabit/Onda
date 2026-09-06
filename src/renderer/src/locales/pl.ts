@@ -393,6 +393,8 @@ export default {
     defaultVolume: 'Domyślna głośność:',
     defaultSpeed: 'Domyślna prędkość:',
     cursorHideTimeout: 'Czas ukrycia kursora:',
+    resumePromptTimeout: 'Czas trwania przypomnienia (wznawianie):',
+    resumePromptHint: 'Przypomnienie zamyka się samo po tym czasie lub po pierwszym sterowaniu odtwarzaniem.',
     downloadSection: 'Pobieranie',
     defaultAudioFormat: 'Domyślny format audio',
     audioNative: 'natywny (bez konwersji)',

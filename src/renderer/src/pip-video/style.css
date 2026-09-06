@@ -23,6 +23,12 @@
   --color-warning-content: #793205;
   --color-error: #ff627d;
   --color-error-content: #4d0218;
+
+  --radius-box: 0.5rem;
+  --radius-field: 0.25rem;
+  --radius-selector: 0.5rem;
+  --size-field: 0.25rem;
+  --size-selector: 0.25rem;
 }
 
 :root {
@@ -30,6 +36,20 @@
   --depth: 1;
   --noise: 0;
   --glass-alpha: 100%;
+  --glass-blur: 14px;
+}
+
+/* Ramka okna jak w głównej aplikacji: szerokość z suwaka (var --border),
+   rogi z suwaka promienia (--radius-box), bez przezroczystości. */
+.pip-root {
+  border-radius: min(var(--radius-box), 12px);
+}
+.pip-root.is-maximized {
+  border-radius: 0;
+  border-width: 0;
+}
+.border {
+  border-width: var(--border);
 }
 
 html,
@@ -38,7 +58,7 @@ body,
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background: #000;
+  background: transparent;
   margin: 0;
   padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;

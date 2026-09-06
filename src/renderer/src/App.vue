@@ -10,6 +10,7 @@ import { useExplorerStore } from './stores/explorer';
 import { claimTabDrag } from './utils/tabDrag';
 import { openMediaFiles } from './composables/useOpenMedia';
 import { matchesShortcut } from './utils/shortcuts';
+import { handlePlayerShortcutKeydown } from './composables/playerShortcutHandler';
 import { moduleManager } from './modules/ModuleManager';
 import { useAudioPiP } from './composables/useAudioPiP';
 import { storeToRefs } from 'pinia';
@@ -225,10 +226,36 @@ function onGlobalKeydown(e: KeyboardEvent) {
     }
     return;
   }
+  // Navigation shortcuts (settings / explorer / library / home) — bound to
+  // their editable entries in Settings → Shortcuts.
+  if (!document.body.dataset.shortcutRecording) {
+    const navActions: Record<string, string> = {
+      settings: '/settings',
+      explorer: '/explorer',
+      library: '/library',
+      home: '/'
+    };
+    for (const [action, path] of Object.entries(navActions)) {
+      const shortcut = settings.shortcuts[action];
+      if (shortcut && matchesShortcut(shortcut, e)) {
+        if (!document.querySelector('input:focus, textarea:focus')) {
+          e.preventDefault();
+          router.push(path);
+        }
+        return;
+      }
+    }
+  }
+
   if (e.key === 'Escape') {
     ui.hideContextMenu();
     ui.closeSearch();
   }
+
+  // Playback shortcuts (/player view). The listener lives here — app-level,
+  // registered once — so keys work regardless of view mount/unmount churn;
+  // PlayerView only donates its action context via setPlayerShortcutCtx().
+  handlePlayerShortcutKeydown(e);
 }
 
 function onGlobalMouseDown(e: MouseEvent) {

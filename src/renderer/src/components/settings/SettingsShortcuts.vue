@@ -10,6 +10,7 @@ const recording = ref<string | null>(null);
 
 function startRecording(action: string) {
   recording.value = action;
+  document.body.dataset.shortcutRecording = action;
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -27,6 +28,7 @@ function onKeydown(e: KeyboardEvent) {
 
   if (key === 'Escape') {
     recording.value = null;
+    document.body.dataset.shortcutRecording = '';
     return;
   }
 
@@ -51,12 +53,14 @@ function onKeydown(e: KeyboardEvent) {
 
   settings.updateShortcut(recording.value, parts.join('+'));
   recording.value = null;
+  document.body.dataset.shortcutRecording = '';
 }
 
 window.addEventListener('keydown', onKeydown);
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown);
+  document.body.dataset.shortcutRecording = '';
 });
 
 function displayKey(key: string): string {

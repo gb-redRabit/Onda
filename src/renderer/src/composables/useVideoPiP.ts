@@ -24,6 +24,10 @@ export function useVideoPiP(
     }
     if (!src) return;
 
+    if (settings.playback.pipPreBuffer) {
+      pip.preload(src, null);
+    }
+
     const startTime = videoRef?.currentTime || player.currentTime;
 
     const started = await pip.start(src, {

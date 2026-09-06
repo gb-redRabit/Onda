@@ -220,6 +220,7 @@ export const DEFAULT_PLAYBACK = {
   pipPreBuffer: false,
   cursorHide: true,
   cursorTimeout: 3,
+  resumePromptTimeout: 7,
   playbackSpeed: 1,
   videoFilter: 'none',
   visualization: {

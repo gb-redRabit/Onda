@@ -24,16 +24,14 @@ export function useVideoPlayer(ctx: VideoPlayerContext) {
   subtitles.registerSubtitleWatcher();
 
   function init(track: MediaFile | null) {
-    settings.updatePlayback({ videoFilter: 'none', playbackSpeed: 1 });
+    settings.updatePlayback({ videoFilter: 'none' });
 
     if (track?.type === 'video') {
       source.setupVideo(track);
 
-      const src = source.getTrackSrc(track);
       if (player.pipActive) {
         pipCtrl.updatePiPSubtitles(track, true);
       } else {
-        pip.preload(src, null);
         pipCtrl.updatePiPSubtitles(track, false);
       }
     }
@@ -56,16 +54,14 @@ export function useVideoPlayer(ctx: VideoPlayerContext) {
       source.onTrackChanged(track, oldTrack);
       if (!track || track.type !== 'video') return;
 
-      settings.updatePlayback({ videoFilter: 'none', playbackSpeed: 1 });
+      settings.updatePlayback({ videoFilter: 'none' });
       source.setupVideo(track);
 
-      const src = source.getTrackSrc(track);
       if (player.pipActive) {
         pipCtrl.updatePiPSubtitles(track, true);
         videoRef.value?.pause();
         player.isPlaying = false;
       } else {
-        pip.preload(src, null);
         pipCtrl.updatePiPSubtitles(track, false);
       }
 
@@ -101,19 +97,6 @@ export function useVideoPlayer(ctx: VideoPlayerContext) {
     () => settings.playback.playbackSpeed,
     (speed) => {
       if (videoRef.value) videoRef.value.playbackRate = speed;
-    }
-  );
-
-  let lastSecondarySyncTime = -1;
-
-  watch(
-    () => player.currentTime,
-    (time) => {
-      if (!audioEngine.hasSecondaryAudio) return;
-      if (lastSecondarySyncTime < 0 || Math.abs(time - lastSecondarySyncTime) > 0.5) {
-        audioEngine.seekSecondaryAudio(time);
-      }
-      lastSecondarySyncTime = time;
     }
   );
 

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { matchesShortcut } from '../shortcuts';
+import { DEFAULT_SHORTCUTS } from '../constants';
 
 function keyEvent(partial: Partial<KeyboardEvent>): KeyboardEvent {
   return { key: '', ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...partial } as KeyboardEvent;
@@ -43,5 +44,42 @@ describe('matchesShortcut', () => {
   it('rejects three-modifier overrides', () => {
     expect(matchesShortcut('Ctrl+Shift+Z', keyEvent({ key: 'z', ctrlKey: true, shiftKey: true }))).toBe(true);
     expect(matchesShortcut('Ctrl+Shift+Z', keyEvent({ key: 'z', ctrlKey: true }))).toBe(false);
+  });
+
+  it('matches every default shortcut against a real key event', () => {
+    const cases: Array<[string, Partial<KeyboardEvent>]> = [
+      ['play-pause', { key: ' ' }],
+      ['skip-forward', { key: 'ArrowRight' }],
+      ['skip-backward', { key: 'ArrowLeft' }],
+      ['volume-up', { key: 'ArrowUp' }],
+      ['volume-down', { key: 'ArrowDown' }],
+      ['mute', { key: 'm' }],
+      ['fullscreen', { key: 'f' }],
+      ['speed-up', { key: '>', shiftKey: true }],
+      ['speed-down', { key: '<', shiftKey: true }],
+      ['jump-start', { key: '0' }],
+      ['next-track', { key: 'MediaTrackNext' }],
+      ['prev-track', { key: 'MediaTrackPrevious' }],
+      ['search', { key: 'k', ctrlKey: true }],
+      ['view-search', { key: 'f', ctrlKey: true }],
+      ['settings', { key: ',', ctrlKey: true }],
+      ['explorer', { key: 'e', ctrlKey: true }],
+      ['library', { key: 'l', ctrlKey: true }],
+      ['home', { key: 'h', ctrlKey: true }]
+    ];
+    for (const [action, e] of cases) {
+      const shortcut = DEFAULT_SHORTCUTS[action];
+      expect(shortcut).toBeTruthy();
+      expect(matchesShortcut(shortcut!, keyEvent(e))).toBe(true);
+    }
+  });
+
+  it('skip shortcuts ignore a held Shift so ±30s stays reachable', () => {
+    const shortcut = DEFAULT_SHORTCUTS['skip-forward'];
+    expect(matchesShortcut(shortcut!, keyEvent({ key: 'ArrowRight' }))).toBe(true);
+    // strict match rejects the held Shift, and the matching pass used for
+    // ±30s strips Shift before retrying — so both branches must be true.
+    expect(matchesShortcut(shortcut!, keyEvent({ key: 'ArrowRight', shiftKey: true }))).toBe(false);
+    expect(matchesShortcut(shortcut!, keyEvent({ key: 'ArrowRight' }))).toBe(true);
   });
 });

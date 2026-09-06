@@ -11,7 +11,16 @@ export function matchesShortcut(shortcut: string, e: KeyboardEvent): boolean {
   if (ctrl !== (e.ctrlKey || false)) return false;
   if (meta !== (e.metaKey || false)) return false;
   if (alt !== (e.altKey || false)) return false;
-  if (shift !== (e.shiftKey || false)) return false;
+
+  // Support raw shifted symbols (e.g. '>' / '<' are stored without an
+  // explicit Shift modifier, but can only be typed with Shift held). Letters
+  // and digits stay strict so Ctrl+K ≠ Ctrl+Shift+K.
+  const needsShift = keyPart.length === 1 && /[^0-9a-zA-Z ]/.test(keyPart);
+  if (shift) {
+    if (!e.shiftKey) return false;
+  } else if (!needsShift && (e.shiftKey || false)) {
+    return false;
+  }
 
   const key = keyPart;
   if (key === 'Space') return e.key === ' ';

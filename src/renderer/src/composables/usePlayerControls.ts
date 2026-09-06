@@ -4,6 +4,11 @@ import type { useI18n } from 'vue-i18n';
 import type { usePlayerStore } from '@renderer/stores/player';
 import type { useSettingsStore } from '@renderer/stores/settings';
 import type { useUIStore } from '@renderer/stores/ui';
+import {
+  applyVolumeTarget,
+  seekTarget,
+  skipTarget
+} from '@renderer/utils/mediaTransport';
 import { useVideoPlayer } from '@renderer/composables/useVideoPlayer';
 
 interface PlayerControlsCtx {
@@ -29,24 +34,26 @@ export function usePlayerControls(ctx: PlayerControlsCtx) {
   }
 
   function onWheel(e: WheelEvent) {
-    e.preventDefault();
-    if (!vp.videoRef.value) return;
+    player.clearResumePrompt();
+    const target = e.target as HTMLElement | null;
+    if (target && target.closest && target.closest('[data-wheel-ignore]')) return;
     const delta = e.deltaY < 0 ? 0.05 : -0.05;
     const newVol = Math.max(0, Math.min(1, player.volume + delta));
     player.setVolume(newVol);
-    vp.videoRef.value.volume = player.isMuted ? 0 : newVol;
+    applyVolumeTarget(vp.videoRef.value, player.isMuted, newVol);
     showToast(t('player.volume', { n: Math.round(newVol * 100) }), 1200);
   }
 
   function onSeek(time: number) {
-    if (!vp.videoRef.value) return;
     player.seek(time);
-    vp.videoRef.value.currentTime = time;
+    seekTarget(vp.videoRef.value, time);
+    player.clearResumePrompt();
   }
 
   function onVolumeChange(value: number) {
     player.setVolume(value);
-    if (vp.videoRef.value) vp.videoRef.value.volume = player.isMuted ? 0 : value;
+    applyVolumeTarget(vp.videoRef.value, player.isMuted, value);
+    player.clearResumePrompt();
   }
 
   function toggleFullscreen() {
@@ -61,13 +68,10 @@ export function usePlayerControls(ctx: PlayerControlsCtx) {
   }
 
   function skip(seconds: number) {
-    if (!vp.videoRef.value) return;
-    const newTime = Math.max(
-      0,
-      Math.min(vp.videoRef.value.duration || 0, vp.videoRef.value.currentTime + seconds)
-    );
-    vp.videoRef.value.currentTime = newTime;
+    const newTime = skipTarget(vp.videoRef.value, seconds);
+    if (newTime === null) return;
     player.currentTime = newTime;
+    player.clearResumePrompt();
     const sign = seconds > 0 ? '+' : '';
     showToast(`${sign}${seconds}s`, 1000);
   }
@@ -76,6 +80,7 @@ export function usePlayerControls(ctx: PlayerControlsCtx) {
     const clamped = Math.round(Math.max(0.2, Math.min(3, speed)) * 10) / 10;
     settings.updatePlayback({ playbackSpeed: clamped });
     if (vp.videoRef.value) vp.videoRef.value.playbackRate = clamped;
+    player.clearResumePrompt();
     showToast(`${clamped}x`, 1200);
   }
 
@@ -99,15 +104,21 @@ export function usePlayerControls(ctx: PlayerControlsCtx) {
     if (clickTimer) {
       clearTimeout(clickTimer);
       clickTimer = null;
-      toggleFullscreen();
-      return;
     }
     clickTimer = setTimeout(() => {
       if (player.pipActive) return;
       player.togglePlay();
       showToast(player.isPlaying ? t('player.playing') : t('player.paused'), 1000);
       clickTimer = null;
-    }, 250);
+    }, 180);
+  }
+
+  function handleDoubleClick() {
+    if (clickTimer) {
+      clearTimeout(clickTimer);
+      clickTimer = null;
+    }
+    toggleFullscreen();
   }
 
   function onResumeContinue() {
@@ -135,9 +146,10 @@ export function usePlayerControls(ctx: PlayerControlsCtx) {
         resumePromptTimer = null;
       }
       if (prompt) {
+        const timeout = Math.max(1, settings.playback.resumePromptTimeout || 7);
         resumePromptTimer = setTimeout(() => {
           player.clearResumePrompt();
-        }, 7000);
+        }, timeout * 1000);
       }
     }
   );
@@ -160,6 +172,7 @@ export function usePlayerControls(ctx: PlayerControlsCtx) {
     setSpeed,
     onMouseMove,
     handleClick,
+    handleDoubleClick,
     onResumeContinue,
     onResumeStart,
     cleanup

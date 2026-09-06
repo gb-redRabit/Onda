@@ -295,6 +295,7 @@ const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
   cursorHide: bool,
   // cursorTimeout jest w SEKUNDACH (renderer używa czas * 1000; slider 1–10 s)
   cursorTimeout: numClamped(1, 30),
+  resumePromptTimeout: numClamped(1, 60),
   playbackSpeed: numClamped(0.2, 3),
   videoFilter: str,
   visualization: obj(VISUALIZATION_FIELDS),

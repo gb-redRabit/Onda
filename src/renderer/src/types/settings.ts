@@ -186,6 +186,8 @@ export interface PlaybackSettings {
   cursorHide: boolean;
   /** Czas (w sekundach) po którym kursor i HUD chowają się podczas odtwarzania. */
   cursorTimeout: number;
+  /** Czas (w sekundach) po którym przypomnienie o wznowieniu zamyka się samoczynnie. */
+  resumePromptTimeout: number;
   playbackSpeed: number;
   videoFilter: string;
   visualization: VisualizationSettings;

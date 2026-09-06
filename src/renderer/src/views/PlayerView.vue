@@ -8,9 +8,11 @@ import { useUIStore } from '@renderer/stores/ui';
 import PlayerTopBar from '@renderer/components/player/PlayerTopBar.vue';
 import PlayerControls from '@renderer/components/player/PlayerControls.vue';
 import ResumePrompt from '@renderer/components/player/ResumePrompt.vue';
+import AudioCover from '@renderer/components/audio/AudioCover.vue';
+import AudioVisualizer from '@renderer/components/audio/AudioVisualizer.vue';
 import { usePiP } from '@renderer/composables/usePiP';
 import { useVideoPlayer } from '@renderer/composables/useVideoPlayer';
-import { usePlayerKeyboard } from '@renderer/composables/usePlayerKeyboard';
+import { setPlayerShortcutCtx } from '@renderer/composables/playerShortcutHandler';
 import { usePlayerControls } from '@renderer/composables/usePlayerControls';
 
 const { t } = useI18n();
@@ -81,25 +83,27 @@ onMounted(() => {
     return;
   }
 
-  // Imperative listener: Vue's @wheel.prevent registers non-passive wheel
-  // listeners implicitly, which triggers a Chromium console violation.
-  // An explicit { passive: false } keeps preventDefault() working silently.
+  // Imperative listener: fixed Vue @wheel bindings register non-passive
+  // listeners implicitly. A passive listener only observes — the handler
+  // skips areas flagged with [data-wheel-ignore] instead of preventDefault().
   const container = playerContainerRef.value;
   if (container) {
     wheelHandler = (e: WheelEvent) => ctl.onWheel(e);
-    container.addEventListener('wheel', wheelHandler, { passive: false });
+    container.addEventListener('wheel', wheelHandler, { passive: true });
   }
 
   vp.init(player.currentTrack);
 
-  usePlayerKeyboard({
+  // The app-level keydown handler (App.vue) stays installed forever; here we
+  // only (de)register the action context it dispatches to.
+  setPlayerShortcutCtx({
     player,
     settings,
-    vp,
-    notify: ctl.showToast,
+    getVideoRef: () => vp.videoRef.value,
     skip: ctl.skip,
     setSpeed: ctl.setSpeed,
     toggleFullscreen: ctl.toggleFullscreen,
+    notify: ctl.showToast,
     t
   });
 
@@ -112,6 +116,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  setPlayerShortcutCtx(null);
   document.removeEventListener('fullscreenchange', onFullscreenChange);
   if (wheelHandler) {
     playerContainerRef.value?.removeEventListener('wheel', wheelHandler);
@@ -150,6 +155,7 @@ onUnmounted(() => {
         :style="vp.videoFilterStyle.value"
         crossorigin="anonymous"
         @click="ctl.handleClick"
+        @dblclick="ctl.handleDoubleClick"
       />
 
       <!-- skip left zone -->
@@ -187,15 +193,19 @@ onUnmounted(() => {
     <!-- audio area -->
     <div
       v-else-if="isAudio"
-      class="relative flex-1 flex items-center justify-center overflow-hidden bg-base-200/(--glass-alpha)"
+      class="relative flex-1 flex flex-col items-center justify-center gap-6 overflow-hidden bg-base-200/(--glass-alpha)"
     >
-      <div class="text-center">
+      <AudioCover size="w-72 h-72" variant="rounded" />
+      <div class="text-center pointer-events-none">
         <p class="text-lg text-base-content">
           {{ player.currentTrack?.metadata?.title || player.currentTrack?.name }}
         </p>
         <p class="text-sm text-base-content/70">
           {{ player.currentTrack?.metadata?.artist || '' }}
         </p>
+      </div>
+      <div class="w-full max-w-2xl px-8">
+        <AudioVisualizer class="w-full h-24 rounded-box overflow-hidden" />
       </div>
     </div>
 

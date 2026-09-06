@@ -391,6 +391,8 @@ export default {
     defaultVolume: 'Default volume:',
     defaultSpeed: 'Default speed:',
     cursorHideTimeout: 'Cursor hide timeout:',
+    resumePromptTimeout: 'Resume prompt timeout:',
+    resumePromptHint: 'The prompt auto-dismisses after this time, or as soon as you control playback.',
     downloadSection: 'Download',
     defaultAudioFormat: 'Default audio format',
     audioNative: 'native (no conversion)',

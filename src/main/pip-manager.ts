@@ -66,7 +66,8 @@ export class PipManager {
       frame: false,
       skipTaskbar: true,
       resizable: true,
-      backgroundColor: '#000000',
+      transparent: true,
+      backgroundColor: '#00000000',
       icon: pipWindowIcon(),
       webPreferences: {
         preload: join(__dirname, '../preload/pip.js'),

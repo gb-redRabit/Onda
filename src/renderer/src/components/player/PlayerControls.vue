@@ -121,6 +121,7 @@ function onSpeedPreset(v: number) {
 
 <template>
   <div
+    data-wheel-ignore
     class="absolute bottom-0 left-0 right-0 z-20 bg-linear-to-t from-neutral/80 via-neutral/30 to-transparent pt-12 pb-6 px-6 transition-opacity"
     :class="{ 'opacity-0': !showControls }"
   >
