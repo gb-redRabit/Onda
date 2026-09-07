@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Minus, Square, X, Search, Maximize2, FolderOpen, FileAudio } from '@lucide/vue';
+import { Minus, Square, X, Search, Maximize2, FolderOpen, FileAudio, PictureInPicture } from '@lucide/vue';
 import { useUIStore } from '@renderer/stores/ui';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useAppMenu } from '@renderer/composables/useAppMenu';
+import { getPlayerPiPHandler } from '@renderer/composables/playerPiPHandler';
 import appIcon from '@renderer/assets/icon.png';
 
 const ui = useUIStore();
@@ -211,6 +212,16 @@ const {
             @click="actionClose(player.prevTrack)"
           >
             {{ t('menu.prevTrack') }}
+          </button>
+          <button
+            v-if="player.currentTrack.type === 'video' && !player.pipActive && getPlayerPiPHandler()"
+            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
+            @click="
+              getPlayerPiPHandler()?.();
+              closeDropdown();
+            "
+          >
+            <PictureInPicture :size="13" /> {{ t('menu.picInPic') }}
           </button>
           <div class="border-t border-base-300 my-1 mx-2" />
           <button

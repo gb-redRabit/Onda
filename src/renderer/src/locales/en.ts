@@ -73,7 +73,9 @@ export default {
     showAll: 'Show all',
     noTracks: 'No tracks playing',
     openFileToStart: 'Open a file to start',
-    unknown: 'Unknown'
+    unknown: 'Unknown',
+    removeFromRecent: 'Remove from recent',
+    removedFromRecent: 'Removed from recently played'
   },
   library: {
     title: 'Library',
@@ -324,6 +326,7 @@ export default {
   settings: {
     title: 'Settings',
     back: 'Back',
+    openSection: 'Open section',
     appearance: 'Appearance',
     themeTab: 'Theme',
     playback: 'Playback',
@@ -659,6 +662,7 @@ export default {
     apiKeyValue: 'Key value',
     apiKeysEncrypted: 'Encrypted storage',
     apiKeysEncryptedDesc: 'Keys are never stored as plain text.',
+    plugins: 'Plugins',
     systemInfo: 'System Information',
     systemInfoDesc: 'Versions, paths and logs',
     sectionAdvanced: 'Advanced',
@@ -780,7 +784,283 @@ export default {
     tracks: 'Tracks',
     playlists: 'Playlists',
     views: 'Views',
-    viewsCommands: 'Views & Commands'
+    viewsCommands: 'Views & Commands',
+    plugins: 'Plugins'
+  },
+  plugins: {
+    title: 'Onda Plugins',
+    description: 'Sandboxed extensions running in a dedicated worker. Data and network access are controlled by the manifest.',
+    empty: 'No plugins installed.',
+    installFromFolder: 'Install from folder',
+    refresh: 'Refresh',
+    uninstall: 'Uninstall',
+    enabled: 'Enabled',
+    logs: 'Logs',
+    noLogs: 'No entries.',
+    commands: 'Commands',
+    settings: 'Configuration',
+    guide: {
+      title: 'Plugin guide',
+      intro:
+        'Plugins let you extend Onda with small JavaScript programs. They run in a safe, sandboxed worker, so the only way they can talk to the app is through the api object. Everything below describes what a plugin can do, how to install one and how to write your own.',
+      sections: [
+        {
+          heading: 'What is a plugin?',
+          body:
+            'A plugin is a JavaScript extension of Onda that runs in a separate, sandboxed web worker. It has no access to the application window or the DOM: the api object is the only channel to talk to the app. Permissions (data, network, player, notifications, appearance) are declared in the manifest, and every network request is additionally filtered by the main process.'
+        },
+        {
+          heading: 'Plugin structure',
+          body: 'Every plugin lives in its own directory. The directory name becomes the plugin id.',
+          list: [
+            'manifest.json - metadata and permissions (described below)',
+            'index.js - plugin code; the path is taken from the entry field',
+            'Allowed id characters: lowercase letters, digits and - _ . (for example hello, triangle); other folder names are rejected'
+          ]
+        },
+        {
+          heading: 'Installation and management',
+          body: 'Plugins are managed in the application settings.',
+          list: [
+            'Settings → Plugins → Install from folder - pick the plugin directory. Files are copied to the app data folder and the plugin starts automatically.',
+            'The power icon enables/disables a plugin (the worker restarts).',
+            'The trash icon uninstalls a plugin and removes its storage and configuration.',
+            'Refresh reloads all plugins - use it after editing plugin files.',
+            'Plugins that declare settings in the manifest get a configuration form on their card.'
+          ]
+        },
+        {
+          heading: 'Manifest (manifest.json)',
+          body: 'Example manifest.json:',
+          code: `«{
+  "name": "Example plugin",
+  "version": "1.0.0",
+  "description": "A demo plugin",
+  "author": "Someone",
+  "entry": "index.js",
+  "apiVersion": "1",
+  "permissions": {
+    "storage": true,
+    "notifications": true
+  },
+  "hooks": ["app:start", "track:play"]
+}»`,
+          list: [
+            'name - display name; version, description, author - metadata',
+            'entry - entry file (default index.js)',
+            'apiVersion - plugin API version (currently 1)',
+            'permissions - storage, network.allow (array of URL patterns), notifications, player, visual',
+            'hooks - hooks the plugin wants to receive',
+            'settings - optional list of configuration fields (key, label, type: text|boolean|number, default; min/max for number)',
+            'layoutElements - optional list of custom layout variants (element, variant, label); requires the visual permission (described below)',
+            'The id field in the manifest is ignored: the plugin id is the directory name'
+          ]
+        },
+        {
+          heading: 'Hooks',
+          body: 'Subscribe with api.on(name, handler). The same name must be listed in the hooks array of the manifest.',
+          list: [
+            'app:start - the application started; the payload contains the app version',
+            'track:play - the current track changed; payload: title, artist, album, duration, path',
+            'track:queued - a track was added to the queue; payload like track:play',
+            'library:scan - library scan finished; payload: count'
+          ]
+        },
+        {
+          heading: 'API',
+          body: 'api is a global object available inside the worker:',
+          list: [
+            'on(name, fn) / off(name) - hook subscription',
+            'query(name, args) - query the application (returns a Promise)',
+            'action(name, args) - state-changing action (returns a Promise)',
+            'notify(opts) - UI notification',
+            'storage.keys() / get(key) / set(key, value) / remove(key) - plugin data',
+            'settings.get(key) / set(key, value) - plugin configuration (shared with the card form); set is only allowed for keys declared in the manifest settings',
+            'fetch(url, opts) - network through the main-process proxy',
+            'registerCommand(cmd) - palette command (returns an unregister function)',
+            'visual(key, payload) - audio view element decoration (returns a Promise)',
+            'log.info / warn / error(message) - entries in the Logs tab'
+          ]
+        },
+        {
+          heading: 'Queries',
+          body: 'query() calls:',
+          list: [
+            'player:status - player state (currentTrack, isPlaying, volume, shuffle, repeat, queueLength)',
+            'library:count - number of tracks, audio items and playlists',
+            'library:search - results for «query» (optionally capped by «limit»)'
+          ]
+        },
+        {
+          heading: 'Actions',
+          body: 'action() calls. Player actions require the player permission (except notify):',
+          list: [
+            'player:play / player:pause / player:toggle - playback control',
+            'player:next / player:previous - change track',
+            'player:setVolume - «volume» from 0 to 1',
+            'player:seek - «seconds»: jump to the given second',
+            'player:enqueue - «tracks»: array of library track paths added to the queue',
+            'notify - «type»: info, success, warning, error; «title»; «message»',
+            'track:toggleFavorite - «path»: toggles the track in favorites (player permission)'
+          ]
+        },
+        {
+          heading: 'Storage',
+          body: 'Every plugin has a private, persistent storage that survives restarts. Keys: letters, digits and - _ . , up to 64 characters; up to 100 keys and 256 KiB of data.',
+          list: [
+            'api.storage.keys() - list of keys',
+            'api.storage.get(key) - value or null',
+            'api.storage.set(key, value) - save (the value must be JSON-serializable)',
+            'api.storage.remove(key) - delete a key'
+          ]
+        },
+        {
+          heading: 'Configuration (settings)',
+          body: 'Fields declared in the manifest settings appear as a form on the plugin card. Values are persistent, and api.settings is used to read/write them. Setting keys are the manifest fields - an undeclared key cannot be saved.',
+          code: `«"settings": [
+  { "key": "shape", "label": "Default shape", "type": "text", "default": "triangle" },
+  { "key": "volume", "label": "Volume", "type": "number", "min": 0, "max": 100 },
+  { "key": "notify", "label": "Notifications", "type": "boolean", "default": true }
+]»`,
+          list: [
+            'type - text, boolean or number; number supports min/max',
+            'default - default value also visible through api.settings.get(key)',
+            'api.settings.get(key) - value or null',
+            'api.settings.set(key, value) - save a new value (must be JSON-serializable)'
+          ]
+        },
+        {
+          heading: 'Network',
+          body: 'api.fetch(url, opts) runs through the main-process proxy. The URL must match a pattern in permissions.network.allow.',
+          code: `«{
+  "permissions": {
+    "network": { "allow": ["https://httpbin.org/*"] }
+  }
+}»`,
+          list: [
+            'Options: «method», «headers», «body», «timeoutMs», «responseType»: "json" or "text"',
+            'At most 5 redirects; URL patterns support the «*» wildcard'
+          ]
+        },
+        {
+          heading: 'Command palette',
+          body: 'registerCommand({ id, label, icon, location, shortcut, action }):',
+          list: [
+            'id - unique command id (prefix with the plugin name, e.g. hello:greet)',
+            'label - shown on the card and in the palette',
+            'icon - optional icon name used by the app (e.g. Triangle, Circle)',
+            'location - optional place in the app UI where a button is added; currently audio-view (toolbar of the audio view)',
+            'shortcut - optional global keyboard shortcut like "Ctrl+Shift+K" or "Alt+F5"; requires at least one modifier (Ctrl/Meta/Alt/Shift)',
+            'Invalid or colliding shortcuts are rejected with a warning in Logs; the shortcut runs the command globally unless a text field is focused',
+            'action - called when the command runs (inside the worker); may return a Promise',
+            'Commands appear in the command palette (Ctrl+K), as buttons on the plugin card, and as toolbar buttons when location is set'
+          ]
+        },
+        {
+          heading: 'Track context menu',
+          body: 'A command with location "track-menu" appears in the track context menu (right-click a track in the library). Invoked with the track context:',
+          list: [
+            'registerCommand({ id, label, location: "track-menu", action }) - action receives an object { id, path, title, artist?, album?, duration?, isOnline } describing the track',
+            'The track context menu shows the standard actions (play, favorite, add to queue, etc.) plus, at the end, plugin entries with location: "track-menu"',
+            'The context is a snapshot of the track - it reflects the state at the moment the menu was opened',
+            'Example: api.registerCommand({ id: "hygge:rate", label: "Rate 5/5", location: "track-menu", action: function (ctx) { ... } })'
+          ]
+        },
+        {
+          heading: 'Appearance (visual)',
+          body: 'Requires the visual permission. Applies decorations to audio view elements (key element.decoration):',
+          list: [
+            'cover - triangle, circle, diamond, hexagon, none',
+            'visualization - outline, glow, glass, none',
+            'progress - glow, neon, none',
+            'trackInfo - badge, glass, glow, none',
+            'controls - glass, glow, none',
+            'Example: api.visual("element.decoration", { element: "cover", value: "triangle" }) - the cover is clipped to a triangle',
+            'The cover decoration also applies outside the audio view: on the Now Playing screen and in the player bar / other cover surfaces in the UI',
+            'Decorations set by a plugin apply globally in the audio view; the layout editor choice is used when no plugin overrides it'
+          ]
+        },
+        {
+          heading: 'Custom layout variants (layoutElements)',
+          body:
+            'A plugin can add new decoration options for existing layout elements. Declare them in the manifest (requires permissions.visual). Each entry is an object { element, variant, label? }:',
+          code: `«{
+  "name": "My plugin",
+  "version": "1.0.0",
+  "permissions": { "visual": true },
+  "layoutElements": [
+    { "element": "cover", "variant": "flip-x", "label": "Flip horizontally" }
+  ]
+}»`,
+          list: [
+            'element - one of the audio view elements: cover, visualization, progress, trackInfo, controls',
+            'variant - identifier matching ^[a-z][a-z0-9-]{0,40}$ (lowercase letters, digits, hyphens)',
+            'label - optional display name shown in the layout editor instead of the variant id',
+            'The variant appears in the editor (audio view → layout editor → Decoration tab) only while the plugin is active; it is labeled with the plugin name',
+            'A variant must be implemented by the host to change the rendering - variants the app does not know are listed but render with no style (safe fallback)',
+            'To apply a variant from code use the full value: api.visual("element.decoration", { element: "cover", value: "plugin:cover:flip-x" }) - the value always has the form plugin:<element>:<variant>',
+            'The variant must be declared in this plugin manifest and implemented by the host - other plugin values raise "unknown-decoration"',
+            'The value is stored in the element decoration, the same way as a built-in one; it also appears in the layout editor when selected'
+          ]
+        },
+        {
+          heading: 'Debugging',
+          body: 'Every plugin card has a Logs section.',
+          list: [
+            'The Logs section shows api.log.* entries and worker errors.',
+            'Status: New → Loading → Loaded; startup failures are marked as Error.',
+            'After editing plugin files click Refresh to load the new version.'
+          ]
+        },
+        {
+          heading: 'Minimal plugin step by step',
+          body: 'Create a folder named hello with two files. manifest.json:',
+          code: `«{
+  "name": "Hello",
+  "version": "1.0.0",
+  "description": "My first plugin",
+  "author": "Me",
+  "entry": "index.js",
+  "permissions": {
+    "notifications": true
+  }
+}»`,
+          code2: `api.log.info('hello loaded');
+
+api.on('app:start', function () {
+  api.log.info('app started');
+});
+
+api.registerCommand({
+  id: 'hello:greet',
+  label: 'Say hello',
+  action: function () {
+    return api.notify({ type: 'success', title: 'Hi!', message: 'It works.' });
+  }
+});`,
+          list: [
+            'Go to Settings → Plugins → Install from folder and select the hello directory.',
+            'Enable the plugin, then check the Logs section and the command button on its card.'
+          ]
+        },
+        {
+          heading: 'Limits and safety',
+          list: [
+            'Plugins have no access to the DOM, Node modules or the application window - only the API above.',
+            'Every network request goes through the proxy and is filtered by permissions.network.',
+            'Storage is separate for each plugin (per folder).',
+            'A missing permission raises permission-denied; unknown operations raise an error.',
+            'Disabling or uninstalling a plugin reverts its UI changes (e.g. cover decorations).'
+          ]
+        }
+      ]
+    },
+    status: {
+      new: 'New',
+      loading: 'Loading...',
+      loaded: 'Loaded',
+      error: 'Error'
+    }
   },
   youtube: {
     title: 'YouTube',
@@ -969,7 +1249,12 @@ export default {
     speedCustom: 'Custom',
     speedReset: 'Reset (1x)',
     speedHint: 'Click a speed or drag the slider',
-    live: 'LIVE'
+    live: 'LIVE',
+    unmute: 'Unmute',
+    subtitles: 'Subtitles',
+    subtitlesOff: 'Turn subtitles off',
+    speed: 'Speed',
+    pipVideo: 'Picture-in-Picture'
   },
   explorer: {
     title: 'Explorer',
@@ -1388,6 +1673,27 @@ export default {
     variant_cover_rounded: 'Rounded',
     variant_cover_ring: 'Ring',
     variant_cover_glass: 'Glass',
+    decorationLabel: 'Decoration',
+    decorationHint: 'Decorations can also be set from a plugin — then they apply globally in the audio view.',
+    decoration_cover_none: 'None',
+    decoration_cover_triangle: 'Triangle',
+    decoration_cover_circle: 'Circle',
+    decoration_cover_diamond: 'Diamond',
+    decoration_cover_hexagon: 'Hexagon',
+    decoration_visualization_none: 'None',
+    decoration_visualization_outline: 'Outline',
+    decoration_visualization_glow: 'Glow',
+    decoration_visualization_glass: 'Glass',
+    decoration_progress_none: 'None',
+    decoration_progress_glow: 'Glow',
+    decoration_progress_neon: 'Neon',
+    decoration_trackInfo_none: 'None',
+    decoration_trackInfo_badge: 'Badge',
+    decoration_trackInfo_glass: 'Glass',
+    decoration_trackInfo_glow: 'Glow',
+    decoration_controls_none: 'None',
+    decoration_controls_glass: 'Glass',
+    decoration_controls_glow: 'Glow',
     variant_trackInfo_classic: 'Classic',
     variant_trackInfo_minimal: 'Minimal',
     variant_trackInfo_large: 'Large',
@@ -1465,6 +1771,9 @@ export default {
     playShuffle: 'Play shuffle',
     musicBrainzAlbum: 'MusicBrainz — batch album',
     musicBrainzFolder: 'MusicBrainz — batch folder',
+    playlistRename: 'Rename',
+    playlistExport: 'Export (M3U)',
+    playlistDelete: 'Delete playlist',
     downloads: {
       play: 'Play',
       resume: 'Resume',

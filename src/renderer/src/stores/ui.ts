@@ -8,6 +8,7 @@ export interface ContextMenuItem {
   separator?: boolean;
   disabled?: boolean;
   shortcut?: string;
+  checked?: boolean;
   children?: ContextMenuItem[];
 }
 

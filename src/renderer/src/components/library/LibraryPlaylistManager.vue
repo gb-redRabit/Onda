@@ -4,14 +4,19 @@ import { useI18n } from 'vue-i18n';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useUIStore } from '@renderer/stores/ui';
+import { useLibraryContextMenu } from '@renderer/composables/useLibraryContextMenu';
+import { usePromptDialog } from '@renderer/composables/usePromptDialog';
 import { Plus, Play, Trash2 } from '@lucide/vue';
 import LibraryTrackRow from './LibraryTrackRow.vue';
+import ExplorerPromptDialog from '../explorer/ExplorerPromptDialog.vue';
 
 const { t } = useI18n();
 
 const library = useLibraryStore();
 const player = usePlayerStore();
 const ui = useUIStore();
+const contextMenu = useLibraryContextMenu();
+const prompt = usePromptDialog();
 
 const selectedPlaylistId = ref<string | null>(null);
 const newName = ref('');
@@ -109,6 +114,25 @@ function playAll() {
   player.setTrack(tracks[0]);
   player.play();
 }
+
+function renameSelected() {
+  const pl = selectedPlaylist.value;
+  if (!pl) return;
+  void prompt.showPrompt(t('ctx.playlistRename'), pl.name).then((name) => {
+    if (name) {
+      library.renamePlaylist(pl.id, name);
+    }
+  });
+}
+
+function onPlaylistContextMenu(e: MouseEvent, playlistId: string) {
+  const pl = library.playlists.find((p) => p.id === playlistId);
+  if (!pl) return;
+  contextMenu.showPlaylistMenu(e, pl, () => {
+    selectedPlaylistId.value = pl.id;
+    renameSelected();
+  });
+}
 </script>
 
 <template>
@@ -145,6 +169,7 @@ function playAll() {
                 : 'hover:bg-base-content/10 text-base-content/70'
           "
           @click="selectPlaylist(p.id)"
+          @contextmenu.prevent="onPlaylistContextMenu($event, p.id)"
           @dragover.prevent="dragOverPlaylistId = p.id"
           @dragleave="dragOverPlaylistId = null"
           @drop.prevent="onPlaylistDrop($event, p.id)"
@@ -210,5 +235,15 @@ function playAll() {
     <div v-else class="flex-1 flex items-center justify-center text-sm text-base-content/50 italic">
       {{ $t('library.selectPlaylistHint') }}
     </div>
+
+    <ExplorerPromptDialog
+      :visible="prompt.promptVisible.value"
+      :is-confirm="prompt.promptIsConfirm.value"
+      :message="prompt.promptMessage.value"
+      :value="prompt.promptValue.value"
+      @update:value="prompt.promptValue.value = $event"
+      @confirm="prompt.promptConfirm()"
+      @cancel="prompt.promptCancel()"
+    />
   </div>
 </template>

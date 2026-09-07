@@ -74,6 +74,17 @@ export function useLibraryPlaylists() {
     scheduleSave();
   }
 
+  function renamePlaylist(playlistId: string, name: string): void {
+    const cleaned = name.trim();
+    if (!cleaned) return;
+    const playlist = playlists.value.find((p) => p.id === playlistId);
+    if (playlist && playlist.name !== cleaned) {
+      playlist.name = cleaned;
+      playlist.updatedAt = Date.now();
+      scheduleSave();
+    }
+  }
+
   function deletePlaylist(playlistId: string) {
     playlists.value = playlists.value.filter((p) => p.id !== playlistId);
     scheduleSave();
@@ -86,6 +97,7 @@ export function useLibraryPlaylists() {
     addToPlaylist,
     removeFromPlaylist,
     reorderPlaylistTrack,
+    renamePlaylist,
     deletePlaylist
   };
 }

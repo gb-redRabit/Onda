@@ -26,13 +26,15 @@ import {
   Music2,
   Key,
   Wand,
-  ArrowLeft
+  ArrowLeft,
+  Puzzle
 } from '@lucide/vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore } from '@renderer/stores/ui';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
 import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 import SettingsOverviewCard from '@renderer/components/settings/SettingsOverviewCard.vue';
+import { useSettingsContextMenu } from '@renderer/composables/useSettingsContextMenu';
 
 const SettingsAppearance = defineAsyncComponent(
   () => import('@renderer/components/settings/SettingsAppearance.vue')
@@ -91,6 +93,9 @@ const SettingsAbout = defineAsyncComponent(
 const SettingsGeneral = defineAsyncComponent(
   () => import('@renderer/components/settings/SettingsGeneral.vue')
 );
+const SettingsPlugins = defineAsyncComponent(
+  () => import('@renderer/components/settings/SettingsPlugins.vue')
+);
 const SettingsDownloadPaths = defineAsyncComponent(
   () => import('@renderer/components/settings/SettingsDownloadPaths.vue')
 );
@@ -110,6 +115,7 @@ const SettingsSystemLogs = defineAsyncComponent(
 const settings = useSettingsStore();
 const ui = useUIStore();
 const { t } = useI18n();
+const settingsMenu = useSettingsContextMenu();
 const {
   promptVisible,
   promptIsConfirm,
@@ -159,7 +165,8 @@ const tabs = [
   { id: 'updates', labelKey: 'settings.updates', icon: RefreshCw, section: 'system', description: 'Aktualizacje' },
   { id: 'dependencies', labelKey: 'settings.dependencies', icon: Box, section: 'system', description: 'yt-dlp, ffmpeg, mkvextract' },
   { id: 'systemInfo', labelKey: 'settings.systemInfo', icon: Info, section: 'system', description: 'Wersje i ścieżki' },
-  { id: 'apiKeys', labelKey: 'settings.apiKeys', icon: Key, section: 'advanced', description: 'Klucze API' }
+  { id: 'apiKeys', labelKey: 'settings.apiKeys', icon: Key, section: 'advanced', description: 'Klucze API' },
+  { id: 'plugins', labelKey: 'settings.plugins', icon: Puzzle, section: 'advanced', description: 'Rozszerzenia Onda' }
 ] as const;
 
 const query = computed(() => search.value.trim().toLowerCase());
@@ -325,6 +332,13 @@ watch(activeTab, (_newTab, oldTab) => {
               :key="section.id"
               class="group flex flex-col items-center gap-3 p-5 rounded-box border border-base-300/70 bg-base-100 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all text-center"
               @click="selectSection(section.id)"
+              @contextmenu="
+                settingsMenu.showSettingsMenu(
+                  $event,
+                  { onOpenSection: (id) => selectSection(id), onExport, onImport, onReset },
+                  section.id
+                )
+              "
             >
               <div class="w-12 h-12 rounded-box bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-content transition-colors">
                 <component :is="section.icon" :size="22" />
@@ -404,6 +418,7 @@ watch(activeTab, (_newTab, oldTab) => {
           <SettingsDiagnostics v-else-if="activeTab === 'diagnostics'" />
           <SettingsAbout v-else-if="activeTab === 'about'" />
           <SettingsApiKeys v-else-if="activeTab === 'apiKeys'" />
+          <SettingsPlugins v-else-if="activeTab === 'plugins'" />
         </div>
       </Transition>
     </div>

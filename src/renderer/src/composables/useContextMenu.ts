@@ -11,6 +11,7 @@ export interface ContextMenuAction<T> {
   disabledWhen?: (ctx: T) => boolean;
   when?: (ctx: T) => boolean;
   action?: (ctx: T) => void;
+  checked?: boolean;
   children?: ContextMenuAction<T>[];
 }
 
@@ -35,6 +36,7 @@ export function useContextMenu() {
       ...(def.icon ? { icon: markRaw(def.icon) } : {}),
       ...(def.shortcut ? { shortcut: def.shortcut } : {}),
       ...(def.disabled || (def.disabledWhen && def.disabledWhen(ctx)) ? { disabled: true } : {}),
+      ...(def.checked ? { checked: true } : {}),
       ...(def.action ? { action: () => def.action!(ctx) } : {}),
       ...(children?.length ? { children } : {})
     };

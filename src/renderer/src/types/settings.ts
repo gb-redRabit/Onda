@@ -149,6 +149,11 @@ export interface AudioLayoutElement {
    * Nieznane/niedozwolone wartości renderują się jako default dla danego typu.
    */
   variant?: string;
+  /**
+   * Dekoracja wyglądu nadana przez wtyczkę (wartość z listy hosta, np. triangle/glow/glass).
+   * Gdy aktywna wtyczka nie nadpisuje dekoracji, w użyciu jest wartość zapisana w layoutcie.
+   */
+  decoration?: string;
 }
 
 export interface AudioLayoutSettings {

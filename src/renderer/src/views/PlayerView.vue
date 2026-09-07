@@ -12,14 +12,21 @@ import AudioCover from '@renderer/components/audio/AudioCover.vue';
 import AudioVisualizer from '@renderer/components/audio/AudioVisualizer.vue';
 import { usePiP } from '@renderer/composables/usePiP';
 import { useVideoPlayer } from '@renderer/composables/useVideoPlayer';
+import { usePluginsStore } from '@renderer/stores/plugins';
 import { setPlayerShortcutCtx } from '@renderer/composables/playerShortcutHandler';
+import { setPlayerPiPHandler } from '@renderer/composables/playerPiPHandler';
 import { usePlayerControls } from '@renderer/composables/usePlayerControls';
+import { usePlayerContextMenu } from '@renderer/composables/usePlayerContextMenu';
 
 const { t } = useI18n();
 const player = usePlayerStore();
 const settings = useSettingsStore();
 const ui = useUIStore();
 const router = useRouter();
+const pluginsStore = usePluginsStore();
+const playerContextMenu = usePlayerContextMenu();
+
+const coverDecoration = computed(() => pluginsStore.decorations.cover);
 
 const playerContainerRef = ref<HTMLDivElement | null>(null);
 
@@ -106,6 +113,7 @@ onMounted(() => {
     notify: ctl.showToast,
     t
   });
+  setPlayerPiPHandler(vp.togglePiP);
 
   document.addEventListener('fullscreenchange', onFullscreenChange);
 
@@ -117,6 +125,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   setPlayerShortcutCtx(null);
+  setPlayerPiPHandler(null);
   document.removeEventListener('fullscreenchange', onFullscreenChange);
   if (wheelHandler) {
     playerContainerRef.value?.removeEventListener('wheel', wheelHandler);
@@ -156,6 +165,9 @@ onUnmounted(() => {
         crossorigin="anonymous"
         @click="ctl.handleClick"
         @dblclick="ctl.handleDoubleClick"
+        @contextmenu="
+          playerContextMenu.showVideoMenu($event, { vp, setSpeed: ctl.setSpeed, currentSpeed: settings.playback.playbackSpeed })
+        "
       />
 
       <!-- skip left zone -->
@@ -194,8 +206,11 @@ onUnmounted(() => {
     <div
       v-else-if="isAudio"
       class="relative flex-1 flex flex-col items-center justify-center gap-6 overflow-hidden bg-base-200/(--glass-alpha)"
+      @contextmenu="
+        playerContextMenu.showAudioMenu($event, { setSpeed: ctl.setSpeed, currentSpeed: settings.playback.playbackSpeed })
+      "
     >
-      <AudioCover size="w-72 h-72" variant="rounded" />
+      <AudioCover size="w-72 h-72" variant="rounded" :decoration="coverDecoration" />
       <div class="text-center pointer-events-none">
         <p class="text-lg text-base-content">
           {{ player.currentTrack?.metadata?.title || player.currentTrack?.name }}

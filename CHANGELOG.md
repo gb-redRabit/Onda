@@ -27,6 +27,13 @@ Wszystkie istotne zmiany w projekcie Onda są dokumentowane w tym pliku.
 
 ### Nowe funkcje
 
+- **System wtyczek**: instalacja z folderu, lista/aktywacja/dezaktywacja/odinstalowanie, worker na wtyczkę (sandbox), karta wtyczki w Ustawieniach z Logami i statusem, manifest (uprawnienia: storage/notifications/player/visual) oraz poradnik PL/EN w Ustawieniach.
+  - **Hooki i akcje**: `library:scan`, `track:queued` (hooki) oraz `player:seek`, `player:enqueue`, `track:toggleFavorite` (akcje) przez `api.on`/`api.action`.
+  - **Komendy** — `api.registerCommand({ id, label, icon, action })` dostępne w palecie poleceń, na karcie wtyczki i (przy `location`) w UI.
+  - **Konfiguracja** — pole `settings` w manifeście + formularz na karcie; `api.settings.get/set` (IPC `plugins:settings:*`, plik `settings.json` per wtyczka, walidacja kluczy/typów/min-max).
+  - **Dekoracje** — `api.visual('element.decoration', { element, value })` nadaje dekoracje elementom widoku audio (cover/visualization/progress/trackInfo/controls), obejmuje też „Teraz odtwarzane" i mini-pasek.
+  - **Skróty klawiszowe** — `api.registerCommand({ ..., shortcut })` z walidacją i odrzucaniem kolizji (ostrzeżenie w Logach); globalne działanie poza polami tekstowymi.
+  - **Menu kontekstowe utworu** — komenda z `location: 'track-menu'` pojawia się w menu kontekstowym utworu w bibliotece, a `action` dostaje snapshot utworu `{ id, path, title, artist?, album?, duration?, isOnline }`.
 - **Streaming online YouTube**: przycisk „Odtwórz" na kartach wyników; resolve strumienia przez yt-dlp (`-g`) + proxy media-server (CORS/range/retry 403), kolejka streamów z auto-next, cache URL-i (LRU + persystencja na dysku, TTL 5 h), prefetch przy najechaniu/podglądzie karty, status „Łączenie…/Buforowanie…" w stopce.
 - **Widok „Zapisane"** (`/saved`): zapisane utwory i playlisty (bookmark na kartach), odtwarzanie playlisty live re-resolve, persystencja `saved-streams.json` (limity 500/100).
 - **SoundCloud + multi-platform** (`/online`): własny klient wewnętrznego API `api-v2.soundcloud.com` (client_id wyekstrahowany z bundli, cache 24 h, refresh na 401) z automatycznym fallbackiem na yt-dlp; search/resolve/kanały (obserwujący/utwory, banner = avatar); streaming progressive MP3 przez proxy z cache respektującym ~30-minutową ważność podpisów CDN; pobieranie MP3 jako job HTTP (świeży podpisany URL przy każdej próbie). Przełącznik platform YouTube | SoundCloud, redirect `/youtube` → `/online`.
@@ -39,6 +46,8 @@ Wszystkie istotne zmiany w projekcie Onda są dokumentowane w tym pliku.
 
 ### Ulepszenia
 
+- Optymalizacja systemu wtyczek: `logPush` bez przebudowy całej mapy logów przy każdym wpisie (mutacja w miejscu), równoległe ładowanie ustawień per-wtyczka (`Promise.all`), `dispatchCommand` trasuje bezpośrednio do workera właściciela (bez iteracji po wszystkich workerach).
+- Naprawa rozwijanego panelu Logi na karcie wtyczki (niereaktywny `Set` → `ref<Set>`; wcześniej nie rozwijał się po kliknięciu).
 - Hardening streamingu YT: klienty `ios_safari,tv_embedded` (audio-only itag 251, ~2× szybszy resolve) z fallbackiem `android,web`, proxy 4 próby z backoffem, fallback direct w audioEngine, kanał nightly yt-dlp.
 - Pozycja odtwarzania persistowana między restartami (`electron-store`, limit 500 wpisów).
 - Timeout pojedynczego zadania pobierania (30 min), wznowienie przerwanego pobierania (`--continue`) oraz limity `maxConcurrent` (10) i bufora `stderr` (64 KB).
@@ -49,6 +58,6 @@ Wszystkie istotne zmiany w projekcie Onda są dokumentowane w tym pliku.
 
 ### Dokumentacja
 
-- `README.md` zaktualizowane (Electron 43.2, liczba testów, usunięte nieistniejące zależności i Media Session API, opis serwera z tokenem).
+- `README.md` zaktualizowane (licznik testów — 703, sekcja systemu wtyczek).
 - `LICENSE`: właściciel „Onda Contributors"; `SettingsAbout.vue` linkuje do realnego repozytorium.
 - `RELEASE.md` z procedurą wydania; konfiguracja podpisywania przygotowana w `electron-builder.yml`/`build.yml` (aktywacja po dostarczeniu certyfikatów).

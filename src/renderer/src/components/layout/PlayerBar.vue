@@ -24,11 +24,25 @@ import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { formatDuration } from '@renderer/utils/formatters';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import TrackInfo from '@renderer/components/TrackInfo.vue';
+import { usePluginsStore } from '@renderer/stores/plugins';
 
 const player = usePlayerStore();
 const audio = useAudioPlayer();
 const router = useRouter();
+const pluginsStore = usePluginsStore();
 const isMini = ref(false);
+
+const COVER_SHAPE_CLIP: Record<string, string> = {
+  circle: 'circle(50%)',
+  triangle: 'polygon(50% 0%, 0% 100%, 100% 100%)',
+  diamond: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+  hexagon: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)'
+};
+
+const coverClip = computed(() => {
+  const dec = pluginsStore.decorations.cover;
+  return dec && dec !== 'none' ? COVER_SHAPE_CLIP[dec] : undefined;
+});
 
 // While a YouTube stream URL resolves, the bar shows the pending track
 // immediately instead of waiting for the (1-2 s) resolution.
@@ -92,6 +106,7 @@ function togglePlay() {
 
     <div
       class="w-8 h-8 rounded-field bg-base-100 flex items-center justify-center shrink-0 overflow-hidden"
+      :style="coverClip ? { clipPath: coverClip } : undefined"
     >
       <MediaCover :path="displayTrack?.path" :size="14" :autoplay="true" fallback="music" />
     </div>
@@ -173,6 +188,7 @@ function togglePlay() {
     <div class="flex items-center gap-3 w-70 min-w-0">
       <div
         class="w-11 h-11 rounded-field bg-base-100 border border-base-300 flex items-center justify-center shrink-0 overflow-hidden"
+        :style="coverClip ? { clipPath: coverClip } : undefined"
       >
         <MediaCover :path="displayTrack?.path" :size="18" :autoplay="true" fallback="music" />
       </div>

@@ -9,11 +9,12 @@ import { useLibraryStore } from './stores/library';
 import { useExplorerStore } from './stores/explorer';
 import { claimTabDrag } from './utils/tabDrag';
 import { openMediaFiles } from './composables/useOpenMedia';
-import { matchesShortcut } from './utils/shortcuts';
+import { matchesShortcut, matchesPluginShortcut } from './utils/shortcuts';
 import { handlePlayerShortcutKeydown } from './composables/playerShortcutHandler';
 import { moduleManager } from './modules/ModuleManager';
 import { useAudioPiP } from './composables/useAudioPiP';
 import { storeToRefs } from 'pinia';
+import { usePluginsStore } from './stores/plugins';
 import { useTheme } from './composables/useTheme';
 import { useNewVideoNotifications } from './composables/useNewVideoNotifications';
 import { useMediaSession } from './composables/useMediaSession';
@@ -36,6 +37,7 @@ const settings = useSettingsStore();
 const player = usePlayerStore();
 const ui = useUIStore();
 const library = useLibraryStore();
+const pluginsStore = usePluginsStore();
 const route = useRoute();
 const router = useRouter();
 const audioPip = useAudioPiP();
@@ -250,6 +252,15 @@ function onGlobalKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
     ui.hideContextMenu();
     ui.closeSearch();
+  }
+
+  // Plugin command shortcuts (registerCommand({ shortcut })).
+  if (!document.querySelector('input:focus, textarea:focus')) {
+    const normalized = matchesPluginShortcut(e);
+    if (normalized && pluginsStore.dispatchShortcut(normalized)) {
+      e.preventDefault();
+      return;
+    }
   }
 
   // Playback shortcuts (/player view). The listener lives here — app-level,

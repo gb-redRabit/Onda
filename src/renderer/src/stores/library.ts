@@ -22,6 +22,7 @@ export const useLibraryStore = defineStore('library', () => {
     addToPlaylist,
     removeFromPlaylist,
     reorderPlaylistTrack,
+    renamePlaylist,
     deletePlaylist
   } = useLibraryPlaylists();
   const {
@@ -161,6 +162,18 @@ export const useLibraryStore = defineStore('library', () => {
     invalidateDerivedCache();
   }
 
+  function clearRecent(path: string): void {
+    updateTrack(path, (t) => {
+      t.lastPlayed = undefined;
+    });
+    const t = tracks.value.find((x) => x.path === path);
+    if (t) {
+      window.api?.invoke('library:updateStats', [
+        { path, playCount: t.playCount, lastPlayed: 0 }
+      ]);
+    }
+  }
+
   subscribeLibraryUpdates();
 
   return {
@@ -198,8 +211,10 @@ export const useLibraryStore = defineStore('library', () => {
     addToPlaylist,
     removeFromPlaylist,
     reorderPlaylistTrack,
+    renamePlaylist,
     deletePlaylist,
     search,
-    refreshDerived
+    refreshDerived,
+    clearRecent
   };
 });

@@ -69,6 +69,11 @@
 
 ### System i integracja
 
+- **Wtyczki** — instalacja z folderu, worker na wtyczkę (sandbox), manifest z uprawnieniami (`storage`, `notifications`, `player`, `visual`), karta wtyczki w Ustawieniach z Logami i statusem oraz poradnik PL/EN.
+  - **API** — `api.on` (hooki: `library:scan`, `track:queued`), `api.action` (`player:seek`, `player:enqueue`, `track:toggleFavorite`), `api.storage` (keys/get/set/remove), `api.settings` (get/set), `api.fetch`, `api.notify`, `api.visual` (dekoracje elementów widoku audio), `api.log`.
+  - **Komendy** — `api.registerCommand({ id, label, icon, location, shortcut, action })`: dostępne w palecie poleceń, na karcie wtyczki, w pasku widoku audio (`location: 'audio-view'`) i w menu kontekstowym utworu (`location: 'track-menu'`, akcja otrzymuje snapshot utworu).
+  - **Konfiguracja** — pole `settings` w manifeście renderowane jako formularz na karcie wtyczki.
+  - **Skróty** — globalne skróty klawiszowe komend z walidacją i wykrywaniem kolizji.
 - **Autostart** (uruchamianie przy starcie systemu, start zminimalizowany do trayu, ukrywanie do trayu po zamknięciu).
 - **Skojarzenia plików** (mp3, flac, ogg, wav, m4a, aac, mp4, mkv, webm, mov, avi) i **single-instance** (otwieranie plików z systemu trafia do istniejącej instancji).
 - Globalne skróty (media keys), tray, command palette (Ctrl+K), aktualizacje (`electron-updater`).
@@ -138,7 +143,7 @@ npm run dev
 
 ### Testy
 
-Aplikacja zawiera **571 testów** (Vitest):
+Aplikacja zawiera **703 testy** (Vitest):
 
 ```bash
 npm test

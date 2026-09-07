@@ -18,10 +18,24 @@ import {
   Orbit
 } from '@lucide/vue';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { usePluginsStore, ELEMENT_DECORATIONS } from '@renderer/stores/plugins';
 import type { AudioLayoutElement, AudioLayoutElementId, AudioLayoutPreset } from '@renderer/types/settings';
 
 const { t } = useI18n();
 const settings = useSettingsStore();
+const pluginsStore = usePluginsStore();
+
+function pluginDecorationOptions(
+  elementId: AudioLayoutElementId
+): { value: string; label: string; plugin?: string }[] {
+  const builtin = (ELEMENT_DECORATIONS[elementId] || []).map((value) => ({ value, label: t('audioView.decoration_' + elementId + '_' + value) }));
+  const plugin = (pluginsStore.layoutVariants[elementId] || []).map((v) => ({
+    value: v.value,
+    label: v.label,
+    plugin: v.plugin
+  }));
+  return [...builtin, ...plugin];
+}
 
 const PREVIEW_W = 480;
 const PREVIEW_H = 320;
@@ -496,6 +510,31 @@ const hasLockedAspect = computed(
         <p v-if="selected.id === 'visualization'" class="text-[10px] text-base-content/40 leading-relaxed">
           {{ t('audioView.variantVizHint') }}
         </p>
+
+        <!-- Dekoracje (nadawane przez wtyczki / wybór w hostingu) -->
+        <div class="mt-3 pt-3 border-t border-base-300/60">
+          <div class="text-[11px] font-semibold text-base-content/70 uppercase tracking-wider mb-2">
+            {{ t('audioView.decorationLabel') }}
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            <button
+              v-for="opt in pluginDecorationOptions(selected.id)"
+              :key="opt.value"
+              class="px-2.5 py-1.5 rounded-field text-[11px] font-medium border transition-colors"
+              :class="
+                (selected.decoration ?? 'none') === opt.value
+                  ? 'bg-primary/15 text-primary border-primary/40'
+                  : 'bg-base-300/60 text-base-content/60 border-transparent hover:bg-base-content/10 hover:text-base-content'
+              "
+              @click="updateElement(selected.id, { decoration: opt.value })"
+            >
+              {{ opt.label }}<template v-if="opt.plugin"> · {{ opt.plugin }}</template>
+            </button>
+          </div>
+          <p class="text-[10px] text-base-content/40 leading-relaxed">
+            {{ t('audioView.decorationHint') }}
+          </p>
+        </div>
       </div>
 
       <!-- Layout tab -->

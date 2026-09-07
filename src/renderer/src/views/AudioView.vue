@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { BarChart3, Settings2, LayoutGrid, Maximize2, Minimize2, Music2 } from '@lucide/vue';
+import { ref, computed, onMounted, onUnmounted, watch, markRaw } from 'vue';
+import type { Component } from 'vue';
+import { BarChart3, Settings2, LayoutGrid, Maximize2, Minimize2, Music2, Triangle, Puzzle, Circle, Square } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { usePluginsStore } from '@renderer/stores/plugins';
 import AudioVisualizer from '@renderer/components/audio/AudioVisualizer.vue';
 import AudioControls from '@renderer/components/audio/AudioControls.vue';
 import AudioProgressBar from '@renderer/components/audio/AudioProgressBar.vue';
@@ -17,6 +19,51 @@ import type { AudioLayoutElement } from '@renderer/types/settings';
 const player = usePlayerStore();
 const audio = useAudioPlayer();
 const settings = useSettingsStore();
+const pluginsStore = usePluginsStore();
+
+const DECORATION_CLASS: Record<string, Record<string, string>> = {
+  visualization: {
+    outline: 'ring-1 ring-inset ring-primary/40 bg-base-300/10',
+    glow: 'shadow-[0_0_24px_rgba(255,255,255,0.12)] bg-base-300/10',
+    glass: 'bg-base-300/20 backdrop-blur-md'
+  },
+  trackInfo: {
+    badge: 'rounded-full px-4 py-1.5 bg-base-300/60 ring-1 ring-base-content/15',
+    glass: 'rounded-field bg-base-300/30 backdrop-blur-md ring-1 ring-base-content/10',
+    glow: 'drop-shadow-[0_0_8px_rgba(255,255,255,0.25)]'
+  },
+  progress: {
+    glow: 'shadow-[0_0_14px_rgba(255,255,255,0.15)]',
+    neon: 'shadow-[0_0_18px_rgba(148,163,255,0.55)]'
+  },
+  controls: {
+    glass: 'rounded-field bg-base-300/40 backdrop-blur-md ring-1 ring-base-content/10',
+    glow: 'shadow-[0_0_18px_rgba(255,255,255,0.15)]'
+  }
+};
+
+function elementDecoration(el: AudioLayoutElement): string | undefined {
+  const live = pluginsStore.decorations[el.id];
+  return live ?? el.decoration;
+}
+
+function decorationClasses(el: AudioLayoutElement): string | undefined {
+  const dec = elementDecoration(el);
+  return dec && dec !== 'none' ? DECORATION_CLASS[el.id]?.[dec] : undefined;
+}
+
+const PLUGIN_TOOLBAR_ICONS: Record<string, Component> = {
+  Triangle: markRaw(Triangle),
+  Puzzle: markRaw(Puzzle),
+  Circle: markRaw(Circle),
+  Square: markRaw(Square)
+};
+
+function pluginIcon(name?: string): Component {
+  return (name && PLUGIN_TOOLBAR_ICONS[name]) || Puzzle;
+}
+
+const pluginCommands = computed(() => pluginsStore.commandsIn('audio-view'));
 
 const viewEl = ref<HTMLElement | null>(null);
 const showUI = ref(true);
@@ -280,7 +327,7 @@ onUnmounted(() => {
     >
       <!-- Visualization (with built-in toolbar) -->
       <template v-if="el.id === 'visualization'">
-        <div class="relative w-full h-full">
+        <div class="relative w-full h-full" :class="decorationClasses(el)">
           <AudioVisualizer ref="vizRef" class="w-full h-full" />
         </div>
       </template>
@@ -291,7 +338,11 @@ onUnmounted(() => {
           class="w-full h-full flex items-center justify-center p-2"
           @mousedown="onElementMouseDown($event, el)"
         >
-          <AudioCover size="w-full h-full" :variant="el.variant ?? 'default'" />
+          <AudioCover
+            size="w-full h-full"
+            :variant="el.variant ?? 'default'"
+            :decoration="elementDecoration(el)"
+          />
         </div>
       </template>
 
@@ -299,7 +350,7 @@ onUnmounted(() => {
       <template v-else-if="el.id === 'trackInfo'">
         <div
           class="w-full h-full flex items-center justify-center px-4 transition-opacity"
-          :class="{ 'opacity-0 pointer-events-none': isFullscreen && !showUI }"
+          :class="[{ 'opacity-0 pointer-events-none': isFullscreen && !showUI }, decorationClasses(el)]"
           @mousedown="onElementMouseDown($event, el)"
         >
           <AudioTrackInfo :variant="el.variant ?? 'classic'" />
@@ -310,9 +361,7 @@ onUnmounted(() => {
       <template v-else-if="el.id === 'progress'">
         <div
           class="w-full h-full flex items-center px-4 transition-opacity"
-          :class="{
-            'opacity-0 pointer-events-none': !showUI || (isFullscreen && !showUI)
-          }"
+          :class="[{ 'opacity-0 pointer-events-none': !showUI || (isFullscreen && !showUI) }, decorationClasses(el)]"
           @mousedown="onElementMouseDown($event, el)"
         >
           <AudioProgressBar :variant="el.variant ?? 'classic'" />
@@ -323,9 +372,7 @@ onUnmounted(() => {
       <template v-else-if="el.id === 'controls'">
         <div
           class="w-full h-full flex items-center justify-center transition-opacity"
-          :class="{
-            'opacity-0 pointer-events-none': !showUI || (isFullscreen && !showUI)
-          }"
+          :class="[{ 'opacity-0 pointer-events-none': !showUI || (isFullscreen && !showUI) }, decorationClasses(el)]"
           @mousedown="onElementMouseDown($event, el)"
         >
           <AudioControls :variant="el.variant ?? 'standard'" />
@@ -348,6 +395,19 @@ onUnmounted(() => {
           <LayoutGrid :size="13" />
         </button>
         <AudioLayoutSwitcher />
+      </div>
+
+      <!-- Plugin toolbar buttons -->
+      <div v-if="pluginCommands.length" class="flex items-center gap-1 pointer-events-auto">
+        <button
+          v-for="cmd in pluginCommands"
+          :key="cmd.id"
+          class="fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-all"
+          :title="cmd.label"
+          @click.stop="pluginsStore.dispatchCommand(cmd.id)"
+        >
+          <component :is="pluginIcon(cmd.icon)" :size="13" />
+        </button>
       </div>
 
       <div class="flex items-center gap-1 pointer-events-auto">

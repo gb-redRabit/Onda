@@ -11,7 +11,8 @@ export default defineConfig(
       '**/dist',
       '**/out',
       'generate-random-icon.js',
-      'scripts/fetch-ffmpeg.mjs'
+      'scripts/fetch-ffmpeg.mjs',
+      'tests/fixtures/**'
     ]
   },
   tseslint.configs.recommended,

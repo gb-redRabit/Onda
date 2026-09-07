@@ -191,6 +191,7 @@ function setRef(i: number) {
               <component :is="item.icon" :size="14" />
             </span>
             <span class="flex-1 truncate">{{ item.label }}</span>
+            <span v-if="item.checked" class="shrink-0 text-primary">✓</span>
             <span
               v-if="item.children?.length"
               class="shrink-0 text-base-content/50"
@@ -226,6 +227,7 @@ function setRef(i: number) {
                     <component :is="child.icon" :size="14" />
                   </span>
                   <span class="flex-1 truncate">{{ child.label }}</span>
+                  <span v-if="child.checked" class="shrink-0 text-primary">✓</span>
                   <span v-if="child.shortcut" class="text-[10px] text-base-content/60 font-mono">{{
                     child.shortcut
                   }}</span>

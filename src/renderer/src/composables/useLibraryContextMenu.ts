@@ -1,7 +1,11 @@
 import { useI18n } from 'vue-i18n';
 import type { MediaFile } from '@renderer/types/media';
+import type { Playlist } from '@renderer/types/media';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
+import { usePluginsStore } from '@renderer/stores/plugins';
+import { snapshotTrack } from '@renderer/stores/plugins';
+import type { PluginHookPayload } from '@renderer/modules/plugins/plugin-shim';
 import { dirname } from '@renderer/utils/path';
 import { useContextMenu, type ContextMenuAction } from './useContextMenu';
 
@@ -21,11 +25,16 @@ interface ImageCtx {
   file: MediaFile;
   onOpen?: () => void;
 }
+interface PlaylistCtx {
+  playlist: Playlist;
+  onRename: (playlist: Playlist) => void;
+}
 
 export function useLibraryContextMenu() {
   const { t } = useI18n();
   const library = useLibraryStore();
   const player = usePlayerStore();
+  const plugins = usePluginsStore();
   const { open } = useContextMenu();
 
   function revealInExplorer(filePath: string) {
@@ -63,6 +72,21 @@ export function useLibraryContextMenu() {
           }
         };
       })
+    ];
+  }
+
+  function pluginTrackMenu(track: MediaFile): ContextMenuAction<TrackCtx>[] {
+    const cmds = plugins.commandsIn('track-menu');
+    if (!cmds.length) return [];
+    const snap = snapshotTrack(track) as unknown as PluginHookPayload;
+    return [
+      { separator: true, label: '' },
+      ...cmds.map((cmd) => ({
+        label: cmd.label,
+        action: () => {
+          plugins.invokeCommandWithContext(cmd.id, snap);
+        }
+      }))
     ];
   }
 
@@ -112,7 +136,8 @@ export function useLibraryContextMenu() {
         label: t('explorer.copyPath'),
         action: (c) => navigator.clipboard?.writeText(c.track.path)
       },
-      ...playlistDefs(track)
+      ...playlistDefs(track),
+      ...pluginTrackMenu(track)
     ];
     open(e, defs, { track, onEdit: opts?.onEdit });
   }
@@ -217,5 +242,48 @@ export function useLibraryContextMenu() {
     open(e, defs, { file, onOpen });
   }
 
-  return { revealInExplorer, showTrackMenu, showAlbumMenu, showFolderMenu, showImageMenu };
+  function showPlaylistMenu(e: MouseEvent, playlist: Playlist, onRename: (p: Playlist) => void) {
+    const defs: ContextMenuAction<PlaylistCtx>[] = [
+      {
+        label: t('common.play'),
+        when: (c) => c.playlist.tracks.length > 0,
+        action: (c) => playFirst(c.playlist.tracks)
+      },
+      {
+        label: t('common.addAllToQueue'),
+        when: (c) => c.playlist.tracks.length > 0,
+        action: (c) => c.playlist.tracks.forEach((tr) => player.addToQueue(tr))
+      },
+      { separator: true, label: '' },
+      {
+        label: t('ctx.playlistRename'),
+        action: (c) => c.onRename(c.playlist)
+      },
+      {
+        label: t('ctx.playlistExport'),
+        action: (c) => {
+          window.api?.invoke('playlist:export', {
+            id: c.playlist.id,
+            name: c.playlist.name,
+            tracks: c.playlist.tracks.map((tr) => tr.path)
+          });
+        }
+      },
+      { separator: true, label: '' },
+      {
+        label: t('ctx.playlistDelete'),
+        action: (c) => library.deletePlaylist(c.playlist.id)
+      }
+    ];
+    open(e, defs, { playlist, onRename });
+  }
+
+  return {
+    revealInExplorer,
+    showTrackMenu,
+    showAlbumMenu,
+    showFolderMenu,
+    showImageMenu,
+    showPlaylistMenu
+  };
 }

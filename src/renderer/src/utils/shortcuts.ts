@@ -1,5 +1,4 @@
-export function matchesShortcut(shortcut: string, e: KeyboardEvent): boolean {
-  const parts = shortcut.split('+').map((p) => p.trim());
+export function matchesShortcut(shortcut: string, e: KeyboardEvent): boolean {  const parts = shortcut.split('+').map((p) => p.trim());
   const keyPart = parts[parts.length - 1];
   const modifiers = parts.slice(0, -1);
 
@@ -36,4 +35,22 @@ export function matchesShortcut(shortcut: string, e: KeyboardEvent): boolean {
   }
 
   return false;
+}
+
+// Normalize a KeyboardEvent to the canonical shortcut string used by plugin
+// command shortcuts, e.g. "Ctrl+Shift+K" or "Alt+F5". Returns null for events
+// without a modifier or for non-shortcut keys.
+export function matchesPluginShortcut(e: KeyboardEvent): string | null {
+  const mods: string[] = [];
+  if (e.ctrlKey) mods.push('Ctrl');
+  if (e.metaKey) mods.push('Meta');
+  if (e.altKey) mods.push('Alt');
+  if (e.shiftKey) mods.push('Shift');
+  if (mods.length === 0) return null;
+
+  const key = e.key?.length === 1 ? e.key.toUpperCase() : e.key;
+  if (!key || key === 'Shift' || key === 'Control' || key === 'Alt' || key === 'Meta') return null;
+  if (!/^[A-Z0-9]|^(F\d{1,2}|Media\w+)$/.test(key)) return null;
+
+  return [...new Set(mods)].join('+') + '+' + key;
 }

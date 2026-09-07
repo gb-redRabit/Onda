@@ -20,6 +20,7 @@ import { registerUpdaterHandlers } from './updater-handlers';
 import { registerSourcesHandlers } from './sources-handlers';
 import { registerSavedHandlers } from './saved-streams';
 import { registerRadioHandlers } from './radio-store';
+import { registerPluginsHandlers } from './plugins-handlers';
 
 export function registerIPC(): void {
   installIpcGuards();
@@ -44,4 +45,5 @@ export function registerIPC(): void {
   registerSourcesHandlers();
   registerSavedHandlers();
   registerRadioHandlers();
+  registerPluginsHandlers();
 }

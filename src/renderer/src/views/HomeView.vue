@@ -4,10 +4,12 @@ import { Music2, Play, Clock, FolderOpen, Disc3, Radio, ArrowRight, FolderUp } f
 import { usePlayerStore } from '@renderer/stores/player';
 import { useLibraryStore } from '@renderer/stores/library';
 import { openMediaFiles } from '@renderer/composables/useOpenMedia';
+import { useHomeContextMenu } from '@renderer/composables/useHomeContextMenu';
 
 const router = useRouter();
 const player = usePlayerStore();
 const library = useLibraryStore();
+const homeContextMenu = useHomeContextMenu();
 
 async function openFile() {
   const result = (await window.api?.invoke('dialog:openFile')) as
@@ -134,6 +136,7 @@ const actions = [
           :key="t.path"
           class="flex items-center gap-3 p-3 fx-depth rounded-box fx-noise bg-base-100 border border-base-300 hover:bg-base-content/10 transition-all text-left group"
           @click="player.setTrack(t)"
+          @contextmenu="homeContextMenu.showRecentMenu($event, t)"
         >
           <div
             class="w-10 h-10 rounded-field bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors"

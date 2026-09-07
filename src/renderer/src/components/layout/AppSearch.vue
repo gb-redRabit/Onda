@@ -6,6 +6,7 @@ import type { MediaFile } from '@renderer/types/media';
 import { useUIStore } from '@renderer/stores/ui';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
+import { usePluginsStore } from '@renderer/stores/plugins';
 import {
   Search,
   Music2,
@@ -20,7 +21,8 @@ import {
   Wand2,
   ListMusic,
   X,
-  FolderSearch
+  FolderSearch,
+  Puzzle
 } from '@lucide/vue';
 
 const { t } = useI18n();
@@ -28,6 +30,7 @@ const { t } = useI18n();
 const ui = useUIStore();
 const library = useLibraryStore();
 const player = usePlayerStore();
+const pluginsStore = usePluginsStore();
 const router = useRouter();
 
 const input = ref<HTMLInputElement | null>(null);
@@ -94,7 +97,9 @@ const groups = computed<Group[]>(() => {
       sub: p.tracks.length,
       action: () => playPlaylist(p.tracks)
     }));
-  const matchedActions = actions.value.filter((a) => include(q, a.label));
+  const matchedActions = actions.value
+    .filter((a) => include(q, a.label))
+    .map((a) => ({ type: 'action' as const, label: a.label, icon: a.icon, action: a.action }));
   const result: Group[] = [];
   if (tracks.length)
     result.push({ key: 'tracks', label: t('cmdPalette.tracks'), items: tracks });
@@ -109,6 +114,24 @@ const groups = computed<Group[]>(() => {
       key: 'views',
       label: q ? t('cmdPalette.viewsCommands') : t('cmdPalette.views'),
       items: matchedActions
+    });
+  const pluginCmds = pluginsStore.commands
+    .filter((c) => include(q, c.label))
+    .slice(0, 10)
+    .map((c) => ({
+      type: 'action' as const,
+      label: c.label,
+      icon: Puzzle,
+      action: () => {
+        pluginsStore.dispatchCommand(c.id);
+        ui.closeSearch();
+      }
+    }));
+  if (pluginCmds.length)
+    result.push({
+      key: 'plugins',
+      label: t('cmdPalette.plugins'),
+      items: pluginCmds
     });
   return result;
 });
@@ -168,8 +191,10 @@ function onKeydown(e: KeyboardEvent) {
       e.preventDefault();
       const item = flatItems.value[activeIndex.value];
       if (!item) return;
-      item.action();
-      ui.closeSearch();
+      if ('action' in item) {
+        item.action();
+        ui.closeSearch();
+      }
     }
   } else if (['Escape'].includes(e.key)) {
     if (e.key === 'Escape') close();

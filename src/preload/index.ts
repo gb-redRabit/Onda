@@ -11,7 +11,13 @@ import type {
   IpcSavedData,
   IpcSavedStream,
   IpcSavedPlaylist,
-  IpcRadioStation
+  IpcRadioStation,
+  PluginInfo,
+  PluginFetchOptions,
+  PluginFetchResult,
+  IpcPluginGetResult,
+  IpcPluginUninstallResult,
+  IpcPluginInstallResult
 } from '../shared/types/ipc';
 import { logger } from '../shared/logger';
 
@@ -83,6 +89,7 @@ const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'library:updateStats',
   'playlist:loadAll',
   'playlist:saveAll',
+  'playlist:export',
   'playback:setPosition',
   'playback:clearPosition',
   'yt:search',
@@ -158,7 +165,19 @@ const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'sources:fetch',
   'sources:tableRows',
   'sources:enqueue',
-  'coverCache:clear'
+  'coverCache:clear',
+  'plugins:list',
+  'plugins:get',
+  'plugins:toggle',
+  'plugins:uninstall',
+  'plugins:installFromFolder',
+  'plugins:storage:keys',
+  'plugins:storage:get',
+  'plugins:storage:set',
+  'plugins:storage:remove',
+  'plugins:settings:get',
+  'plugins:settings:set',
+  'plugins:fetch'
 ]);
 
 const ALLOWED_SEND_CHANNELS = new Set<string>([
@@ -569,7 +588,28 @@ const api = {
     patch: IpcSubscriptionPatch
   ): Promise<IpcSubscription | null> => ipcRenderer.invoke('yt:subs:update', channelId, patch),
   youtubeCheckSubscriptions: (): Promise<IpcSubscriptionCheckResult> =>
-    ipcRenderer.invoke('yt:subs:checkNow')
+    ipcRenderer.invoke('yt:subs:checkNow'),
+  pluginsList: (): Promise<PluginInfo[]> => ipcRenderer.invoke('plugins:list'),
+  pluginsGet: (id: string): Promise<IpcPluginGetResult> => ipcRenderer.invoke('plugins:get', id),
+  pluginsToggle: (id: string, enabled: boolean): Promise<boolean> =>
+    ipcRenderer.invoke('plugins:toggle', id, enabled),
+  pluginsUninstall: (id: string): Promise<IpcPluginUninstallResult> =>
+    ipcRenderer.invoke('plugins:uninstall', id),
+  pluginsInstallFromFolder: (): Promise<IpcPluginInstallResult> =>
+    ipcRenderer.invoke('plugins:installFromFolder'),
+  pluginsStorageKeys: (id: string): Promise<string[]> => ipcRenderer.invoke('plugins:storage:keys', id),
+  pluginsStorageGet: (id: string, key: string): Promise<unknown> =>
+    ipcRenderer.invoke('plugins:storage:get', id, key),
+  pluginsStorageSet: (id: string, key: string, value: unknown): Promise<boolean> =>
+    ipcRenderer.invoke('plugins:storage:set', id, key, value),
+  pluginsStorageRemove: (id: string, key: string): Promise<boolean> =>
+    ipcRenderer.invoke('plugins:storage:remove', id, key),
+  pluginsSettingsGet: (id: string): Promise<Record<string, unknown>> =>
+    ipcRenderer.invoke('plugins:settings:get', id),
+  pluginsSettingsSet: (id: string, key: string, value: unknown): Promise<boolean> =>
+    ipcRenderer.invoke('plugins:settings:set', id, key, value),
+  pluginsFetch: (id: string, url: string, opts: PluginFetchOptions): Promise<PluginFetchResult> =>
+    ipcRenderer.invoke('plugins:fetch', id, url, opts)
 };
 
 if (process.contextIsolated) {

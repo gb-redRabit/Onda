@@ -1,0 +1,27 @@
+{
+  "name": "Trójkątna okładka",
+  "version": "1.0.0",
+  "description": "Zmienia okładkę w widoku audio w trójkąt (przez klip w kształt).",
+  "author": "Onda",
+  "entry": "index.js",
+  "apiVersion": "1",
+  "permissions": {
+    "visual": true,
+    "notifications": true
+  },
+  "hooks": ["app:start", "track:play"],
+  "settings": [
+    {
+      "key": "shape",
+      "label": "Domyślny kształt",
+      "type": "text",
+      "default": "triangle"
+    },
+    {
+      "key": "notifyOnChange",
+      "label": "Powiadamiaj o zmianie kształtu",
+      "type": "boolean",
+      "default": true
+    }
+  ]
+}

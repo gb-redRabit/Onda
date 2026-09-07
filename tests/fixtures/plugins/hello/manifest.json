@@ -1,0 +1,16 @@
+{
+  "name": "Hello Plugin",
+  "version": "1.0.0",
+  "description": "Przykładowa wtyczka: powiadomienia, status odtwarzacza, licznik w storage i test sieci (httpbin).",
+  "author": "Onda Community",
+  "entry": "index.js",
+  "apiVersion": "1",
+  "permissions": {
+    "storage": true,
+    "network": {
+      "allow": ["https://httpbin.org/*"]
+    },
+    "notifications": true
+  },
+  "hooks": ["app:start", "track:play"]
+}

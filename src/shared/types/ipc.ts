@@ -370,6 +370,99 @@ export interface IpcNewVideosEvent {
   titles: string[];
 }
 
+// ---------------------------------------------------------------------------
+// Plugin system (section 8.4). Plugins are sandboxed Web Workers in the
+// renderer; main only handles listing/reading/installing plugins and the
+// data paths a sandboxed worker cannot touch (per-plugin storage, proxied
+// network with a manifest allowlist).
+// ---------------------------------------------------------------------------
+
+export interface PluginPermissions {
+  storage?: boolean;
+  network?: { allow: string[] };
+  notifications?: boolean;
+  player?: boolean;
+  visual?: boolean;
+}
+
+export interface PluginSettingField {
+  key: string;
+  label: string;
+  type: 'text' | 'boolean' | 'number';
+  default?: unknown;
+  min?: number;
+  max?: number;
+}
+
+export interface PluginLayoutElement {
+  element: string;
+  variant: string;
+  label?: string;
+}
+
+export interface PluginManifest {
+  id: string;
+  name: string;
+  version: string;
+  description?: string;
+  author?: string;
+  entry: string;
+  apiVersion?: string;
+  permissions: PluginPermissions;
+  hooks?: string[];
+  settings?: PluginSettingField[];
+  layoutElements?: PluginLayoutElement[];
+}
+
+export interface PluginInfo {
+  id: string;
+  name: string;
+  version: string;
+  description?: string;
+  author?: string;
+  enabled: boolean;
+  permissions: PluginPermissions;
+}
+
+// Renderer-side status layered on top of PluginInfo.
+export type PluginLoadStatus = 'new' | 'loading' | 'loaded' | 'error';
+
+export interface IpcPluginGetResult {
+  success: boolean;
+  manifest?: PluginManifest;
+  code?: string;
+  error?: string;
+}
+
+export interface IpcPluginUninstallResult {
+  success: boolean;
+  error?: string;
+}
+
+export interface IpcPluginInstallResult {
+  success: boolean;
+  installed?: PluginInfo;
+  error?: string;
+}
+
+export interface PluginFetchOptions {
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  headers?: Record<string, string>;
+  body?: unknown;
+  responseType?: 'text' | 'json';
+  timeoutMs?: number;
+}
+
+export interface PluginFetchResult {
+  success: boolean;
+  status?: number;
+  statusText?: string;
+  headers?: Record<string, string>;
+  data?: string | unknown;
+  error?: string;
+  code?: 'forbidden' | 'invalid-url' | 'network' | 'timeout' | 'too-large' | 'redirect-loop' | 'unknown';
+}
+
 export interface YoutubeAuthStatus {
   method: YoutubeAuthMethod;
   loggedIn: boolean;
@@ -505,6 +598,10 @@ export interface IpcChannels {
   };
   'playlist:loadAll': { args: []; result: IpcPlaylist[] };
   'playlist:saveAll': { args: [playlists: IpcPlaylist[]]; result: void };
+  'playlist:export': {
+    args: [{ id: string; name: string; tracks: string[] }];
+    result: { success: boolean; canceled?: boolean; error?: string };
+  };
   'settings:get': { args: []; result: Partial<AppSettings> };
   'settings:set': { args: [data: Partial<AppSettings>]; result: boolean };
   'settings:export': { args: []; result: { success: boolean; canceled?: boolean; error?: string } };
@@ -829,6 +926,16 @@ export interface IpcChannels {
   'updater:download': { args: []; result: boolean };
   'updater:install': { args: []; result: void };
   'coverCache:clear': { args: []; result: { success: boolean; removed?: number; error?: string } };
+  'plugins:list': { args: []; result: PluginInfo[] };
+  'plugins:get': { args: [id: string]; result: IpcPluginGetResult };
+  'plugins:toggle': { args: [id: string, enabled: boolean]; result: boolean };
+  'plugins:uninstall': { args: [id: string]; result: IpcPluginUninstallResult };
+  'plugins:installFromFolder': { args: []; result: IpcPluginInstallResult };
+  'plugins:storage:keys': { args: [id: string]; result: string[] };
+  'plugins:storage:get': { args: [id: string, key: string]; result: unknown };
+  'plugins:storage:set': { args: [id: string, key: string, value: unknown]; result: boolean };
+  'plugins:storage:remove': { args: [id: string, key: string]; result: boolean };
+  'plugins:fetch': { args: [id: string, url: string, opts: PluginFetchOptions]; result: PluginFetchResult };
 }
 
 export type IpcChannel = keyof IpcChannels;

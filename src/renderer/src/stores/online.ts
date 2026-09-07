@@ -28,6 +28,7 @@ import type {
 } from '@shared/types/ipc';
 import { logger } from '@shared/logger';
 import { youtubeProvider } from '@shared/provider';
+import { pluginHookBus } from '@renderer/utils/pluginHooks';
 import { detectPlatform } from '@shared/platform';
 import { toMediaStreamUrl } from '@renderer/utils/mediaUrl';
 
@@ -547,6 +548,7 @@ export const useOnlineStore = defineStore('online', () => {
     const prev = idx >= 0 ? downloads.value[idx] : undefined;
     const becameCompleted = task.status === 'completed' && prev?.status !== 'completed';
     const becameError = task.status === 'error' && (!prev || prev.status !== 'error');
+    const becameDownloading = task.status === 'downloading' && prev?.status !== 'downloading';
     if (idx >= 0) downloads.value[idx] = task;
     else downloads.value.push(task);
     if (task.videoId) downloadByVideoId.set(task.videoId, task);
@@ -559,6 +561,37 @@ export const useOnlineStore = defineStore('online', () => {
       } catch {
         // ui store unavailable
       }
+    }
+    try {
+      if (becameDownloading) {
+        pluginHookBus.emit('download:start', {
+          id: task.id,
+          url: task.url,
+          title: task.title,
+          platform: task.source ? String(task.source) : undefined,
+          format: task.format,
+          quality: task.quality
+        });
+      }
+      if (becameCompleted) {
+        pluginHookBus.emit('download:complete', {
+          id: task.id,
+          title: task.title,
+          url: task.url,
+          outputPath: task.outputPath
+        });
+      }
+      if (becameError) {
+        pluginHookBus.emit('download:error', {
+          id: task.id,
+          title: task.title,
+          url: task.url,
+          error: task.error,
+          errorCode: task.errorCode
+        });
+      }
+    } catch {
+      // plugins unavailable
     }
   }
 

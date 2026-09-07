@@ -1,6 +1,6 @@
-import { ipcMain } from 'electron';
-import { stat } from 'fs/promises';
-import { isAbsolute } from 'path';
+import { ipcMain, dialog, BrowserWindow } from 'electron';
+import { stat, writeFile } from 'fs/promises';
+import { isAbsolute, basename } from 'path';
 import type { MediaFile, Playlist } from '../../renderer/src/types/media';
 import { getStore } from './cover-cache';
 import { logger } from '../../shared/logger';
@@ -294,6 +294,48 @@ export function registerLibraryHandlers(): void {
       logger.error('library', 'savePlaylists failed', err);
     }
   });
+
+  // Export a library playlist as an M3U file. Throws no secrets across IPC —
+  // track entries are plain file paths resolved by the main process.
+  ipcMain.handle(
+    'playlist:export',
+    async (
+      event,
+      input: { id: string; name: string; tracks: string[] }
+    ): Promise<{ success: boolean; canceled?: boolean; error?: string }> => {
+      try {
+        const win = BrowserWindow.fromWebContents(event.sender);
+        if (!win) return { success: false, error: 'No window' };
+        if (!input || typeof input.name !== 'string' || !Array.isArray(input.tracks)) {
+          return { success: false, error: 'Invalid playlist payload' };
+        }
+        const sanitizedTracks = input.tracks
+          .filter((t): t is string => typeof t === 'string' && t.length > 0)
+          .slice(0, 10000);
+        const safeName = (input.name || 'playlist').replace(/[<>:"/\\|?*]/g, '_').trim() || 'playlist';
+        const result = await dialog.showSaveDialog(win, {
+          title: 'Export playlist',
+          defaultPath: `${safeName}.m3u`,
+          filters: [
+            { name: 'M3U Playlist', extensions: ['m3u'] },
+            { name: 'M3U8 Playlist', extensions: ['m3u8'] }
+          ]
+        });
+        if (result.canceled || !result.filePath) return { success: false, canceled: true };
+        const header = ['#EXTM3U'];
+        for (const p of sanitizedTracks) {
+          header.push(`#EXTINF:-1,${basename(p)}`);
+          header.push(p);
+        }
+        await writeFile(result.filePath, header.join('\r\n') + '\r\n', 'utf-8');
+        return { success: true };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        logger.error('library', 'playlist:export failed', e);
+        return { success: false, error: msg };
+      }
+    }
+  );
 
   // File watcher: re-scan (incremental) when media files change on disk, then
   // broadcast so the renderer refreshes. The watcher must NOT abort a running

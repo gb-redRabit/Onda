@@ -15,7 +15,13 @@ import type {
   IpcSavedData,
   IpcSavedStream,
   IpcSavedPlaylist,
-  IpcRadioStation
+  IpcRadioStation,
+  PluginInfo,
+  IpcPluginGetResult,
+  IpcPluginUninstallResult,
+  IpcPluginInstallResult,
+  PluginFetchOptions,
+  PluginFetchResult
 } from '@shared/types/ipc';
 
 interface OndaAPI {
@@ -234,6 +240,18 @@ interface OndaAPI {
     patch: IpcSubscriptionPatch
   ) => Promise<IpcSubscription | null>;
   youtubeCheckSubscriptions: () => Promise<IpcSubscriptionCheckResult>;
+  pluginsList: () => Promise<PluginInfo[]>;
+  pluginsGet: (id: string) => Promise<IpcPluginGetResult>;
+  pluginsToggle: (id: string, enabled: boolean) => Promise<boolean>;
+  pluginsUninstall: (id: string) => Promise<IpcPluginUninstallResult>;
+  pluginsInstallFromFolder: () => Promise<IpcPluginInstallResult>;
+  pluginsStorageKeys: (id: string) => Promise<string[]>;
+  pluginsStorageGet: (id: string, key: string) => Promise<unknown>;
+  pluginsStorageSet: (id: string, key: string, value: unknown) => Promise<boolean>;
+  pluginsStorageRemove: (id: string, key: string) => Promise<boolean>;
+  pluginsSettingsGet: (id: string) => Promise<Record<string, unknown>>;
+  pluginsSettingsSet: (id: string, key: string, value: unknown) => Promise<boolean>;
+  pluginsFetch: (id: string, url: string, opts: PluginFetchOptions) => Promise<PluginFetchResult>;
 }
 
 declare global {

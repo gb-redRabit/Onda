@@ -73,7 +73,9 @@ export default {
     showAll: 'Pokaż wszystko',
     noTracks: 'Brak odtwarzanych utworów',
     openFileToStart: 'Otwórz plik aby rozpocząć',
-    unknown: 'Nieznany'
+    unknown: 'Nieznany',
+    removeFromRecent: 'Usuń z ostatnich',
+    removedFromRecent: 'Usunięto z ostatnio odtwarzanych'
   },
   library: {
     title: 'Biblioteka',
@@ -325,6 +327,7 @@ export default {
   settings: {
     title: 'Ustawienia',
     back: 'Wstecz',
+    openSection: 'Otwórz sekcję',
     appearance: 'Wygląd',
     themeTab: 'Motyw',
     playback: 'Odtwarzanie',
@@ -662,6 +665,7 @@ export default {
     apiKeyValue: 'Wartość klucza',
     apiKeysEncrypted: 'Szyfrowane przechowywanie',
     apiKeysEncryptedDesc: 'Klucze nigdy nie są zapisywane jako zwykły tekst.',
+    plugins: 'Wtyczki',
     systemInfo: 'Informacje o systemie',
     systemInfoDesc: 'Wersje, ścieżki i logi',
     sectionAdvanced: 'Zaawansowane',
@@ -783,7 +787,283 @@ export default {
     tracks: 'Utwory',
     playlists: 'Listy odtwarzania',
     views: 'Widoki',
-    viewsCommands: 'Widoki i polecenia'
+    viewsCommands: 'Widoki i polecenia',
+    plugins: 'Wtyczki'
+  },
+  plugins: {
+    title: 'Wtyczki Onda',
+    description: 'Rozszerzenia sandboksowane w osobnym workerze. Dane i dostęp sieciowy kontroluje manifest.',
+    empty: 'Brak zainstalowanych wtyczek.',
+    installFromFolder: 'Instaluj z folderu',
+    refresh: 'Odśwież',
+    uninstall: 'Odinstaluj',
+    enabled: 'Włączona',
+    logs: 'Logi',
+    noLogs: 'Brak wpisów.',
+    commands: 'Komendy',
+    settings: 'Konfiguracja',
+    guide: {
+      title: 'Poradnik wtyczek',
+      intro:
+        'Wtyczki pozwalają rozszerzyć Onda małymi programami w JavaScripcie. Działają w bezpiecznym, sandboksowanym workerze, więc jedynym kanałem komunikacji z aplikacją jest obiekt api. Poniżej znajdziesz opis, co wtyczka może robić, jak ją zainstalować i jak napisać własną.',
+      sections: [
+        {
+          heading: 'Czym jest wtyczka?',
+          body:
+            'Wtyczka to rozszerzenie Onda napisane w JavaScripcie, wykonywane w osobnym, sandboksowanym workerze. Nie ma dostępu do okna aplikacji ani do DOM — jedynym kanałem komunikacji jest obiekt api. Uprawnienia (dane, sieć, odtwarzacz, powiadomienia, wygląd) są deklarowane w manifeście, a każde żądanie sieciowe jest dodatkowo filtrowane przez proces główny.'
+        },
+        {
+          heading: 'Struktura wtyczki',
+          body: 'Każda wtyczka zajmuje własny katalog. Nazwa katalogu staje się identyfikatorem wtyczki.',
+          list: [
+            'manifest.json — metadane i uprawnienia (opis poniżej)',
+            'index.js — kod wtyczki; ścieżka względna podana w polu entry',
+            'Dozwolone znaki w identyfikatorze: małe litery, cyfry oraz - _ i . (np. hello, triangle); inne nazwy katalogów zostaną odrzucone'
+          ]
+        },
+        {
+          heading: 'Instalacja i zarządzanie',
+          body: 'Wtyczkami zarządza się w ustawieniach aplikacji.',
+          list: [
+            'Ustawienia → Wtyczki → Instaluj z folderu — wybierz katalog wtyczki. Pliki są kopiowane do katalogu danych aplikacji, a wtyczka startuje automatycznie.',
+            'Ikona zasilania włącza/wyłącza wtyczkę (worker startuje od nowa).',
+            'Ikona kosza odinstalowuje wtyczkę i usuwa jej storage oraz konfigurację.',
+            'Odśwież ładuje ponownie wszystkie wtyczki — użyj go po edycji plików wtyczki.',
+            'Wtyczki z polem settings w manifeście mają na karcie formularz konfiguracji.'
+          ]
+        },
+        {
+          heading: 'Manifest (manifest.json)',
+          body: 'Przykładowy manifest.json:',
+          code: `«{
+  "name": "Wtyczka przykładowa",
+  "version": "1.0.0",
+  "description": "Wtyczka demonstracyjna",
+  "author": "Autor",
+  "entry": "index.js",
+  "apiVersion": "1",
+  "permissions": {
+    "storage": true,
+    "notifications": true
+  },
+  "hooks": ["app:start", "track:play"]
+}»`,
+          list: [
+            'name — nazwa wyświetlana; version, description, author — metadane',
+            'entry — plik startowy (domyślnie index.js)',
+            'apiVersion — wersja API wtyczek (obecnie 1)',
+            'permissions — storage, network.allow (tablica wzorców URL), notifications, player, visual',
+            'hooks — hooki, na które wtyczka subskrybuje',
+            'settings — opcjonalna lista pól konfiguracji (key, label, type: text|boolean|number, default; dla number też min/max)',
+            'layoutElements — opcjonalna lista własnych wariantów layoutu (element, variant, label); wymaga uprawnienia visual (opis poniżej)',
+            'Pole id w manifeście jest ignorowane — identyfikatorem wtyczki jest nazwa katalogu'
+          ]
+        },
+        {
+          heading: 'Hooki',
+          body: 'Subskrypcję ustawia się przez api.on(nazwa, handler). Ta sama nazwa musi być wymieniona w hooks w manifeście.',
+          list: [
+            'app:start — aplikacja wystartowała; payload zawiera wersję aplikacji',
+            'track:play — zmieniono utwór; payload: title, artist, album, duration, path',
+            'track:queued — dodano utwór do kolejki; payload jak track:play',
+            'library:scan — zakończono skanowanie biblioteki; payload: count'
+          ]
+        },
+        {
+          heading: 'API',
+          body: 'Obiekt api jest globalny wewnątrz workera i zawiera:',
+          list: [
+            'on(nazwa, fn) / off(nazwa) — subskrypcja hooków',
+            'query(nazwa, args) — zapytanie do aplikacji (zwraca Promise)',
+            'action(nazwa, args) — akcja zmieniająca stan (zwraca Promise)',
+            'notify(opts) — powiadomienie w UI',
+            'storage.keys() / get(klucz) / set(klucz, wartość) / remove(klucz) — dane wtyczki',
+            'settings.get(klucz) / set(klucz, wartość) — konfiguracja wtyczki (wspólna z formularzem na karcie wtyczki); set nie jest dozwolone dla wtyczek bez pola settings w manifeście',
+            'fetch(url, opts) — sieć przez proxy procesu głównego',
+            'registerCommand(cmd) — komenda w palecie (zwraca funkcję odrejestrującą)',
+            'visual(klucz, pole) — dekoracja elementu widoku audio (zwraca Promise)',
+            'log.info / warn / error(wiadomość) — wpisy w zakładce Logi'
+          ]
+        },
+        {
+          heading: 'Zapytania',
+          body: 'Wywołania query():',
+          list: [
+            'player:status — stan odtwarzacza (currentTrack, isPlaying, volume, shuffle, repeat, queueLength)',
+            'library:count — liczba utworów, plików audio i playlist',
+            'library:search — wyniki dla «query» (opcjonalnie ograniczone przez «limit»)'
+          ]
+        },
+        {
+          heading: 'Akcje',
+          body: 'Wywołania action(). Akcje odtwarzacza wymagają uprawnienia player (poza notify):',
+          list: [
+            'player:play / player:pause / player:toggle — sterowanie odtwarzaniem',
+            'player:next / player:previous — zmiana utworu',
+            'player:setVolume — «volume» od 0 do 1',
+            'player:seek — «seconds»: przeskok do wskazanej sekundy',
+            'player:enqueue — «tracks»: tablica ścieżek utworów z biblioteki dodawana do kolejki',
+            'notify — «type»: info, success, warning, error; «title»; «message»',
+            'track:toggleFavorite — «path»: przełącza utwór w ulubionych (uprawnienie player)'
+          ]
+        },
+        {
+          heading: 'Pamięć (storage)',
+          body: 'Każda wtyczka ma prywatny, trwały storage (przetrwa restart). Klucze: litery, cyfry oraz - _ . , maksymalnie 64 znaki; do 100 kluczy i 256 KiB danych.',
+          list: [
+            'api.storage.keys() — lista kluczy',
+            'api.storage.get(klucz) — wartość lub null',
+            'api.storage.set(klucz, wartość) — zapis (wartość musi dać się zserializować do JSON)',
+            'api.storage.remove(klucz) — usunięcie klucza'
+          ]
+        },
+        {
+          heading: 'Konfiguracja (settings)',
+          body: 'Pola zdefiniowane w settings w manifeście pojawiają się jako formularz na karcie wtyczki. Wartości są trwałe, a do odczytu/zapisu służy api.settings. Klucze ustawień to pola w manifeście — niezadeklarowany klucz nie może być zapisany.',
+          code: `«"settings": [
+  { "key": "shape", "label": "Domyślny kształt", "type": "text", "default": "triangle" },
+  { "key": "volume", "label": "Głośność", "type": "number", "min": 0, "max": 100 },
+  { "key": "notify", "label": "Powiadomienia", "type": "boolean", "default": true }
+]»`,
+          list: [
+            'type — text, boolean albo number; dla number dostępne min/max',
+            'default — wartość domyślna widoczna też przez api.settings.get(klucz)',
+            'api.settings.get(klucz) — wartość lub null',
+            'api.settings.set(klucz, wartość) — zapis nowej wartości (musi być zserializowalna do JSON)'
+          ]
+        },
+        {
+          heading: 'Sieć',
+          body: 'api.fetch(url, opts) działa przez proxy w procesie głównym. Adres musi pasować do wzorca w permissions.network.allow.',
+          code: `«{
+  "permissions": {
+    "network": { "allow": ["https://httpbin.org/*"] }
+  }
+}»`,
+          list: [
+            'Opcje: «method», «headers», «body», «timeoutMs», «responseType»: "json" lub "text"',
+            'Maksymalnie 5 przekierowań; wzorce URL obsługują znak «*»'
+          ]
+        },
+        {
+          heading: 'Paleta poleceń',
+          body: 'registerCommand({ id, label, icon, location, shortcut, action }):',
+          list: [
+            'id — unikalny identyfikator komendy (zalecany prefiks nazwą wtyczki, np. hello:greet)',
+            'label — etykieta pokazywana na karcie i w palecie',
+            'icon — opcjonalna nazwa ikony rozumiana przez aplikację (np. Triangle, Circle)',
+            'location — opcjonalne miejsce w UI aplikacji, w którym dodać przycisk; obecnie audio-view (pasek narzędzi widoku audio)',
+            'shortcut — opcjonalny globalny skrót klawiszowy w formacie "Ctrl+Shift+K", "Alt+F5" itp.; wymaga co najmniej jednego modyfikatora (Ctrl/Meta/Alt/Shift)',
+            'Nieprawidłowe lub kolidujące skróty są odrzucane z ostrzeżeniem w Logach; skrót uruchamia komendę globalnie, gdy nie jest edytowany tekst',
+            'action — funkcja wywołana po uruchomieniu komendy (wykonywana w workerze); może zwracać Promise',
+            'Komendy są dostępne w palecie poleceń (Ctrl+K), jako przyciski na karcie wtyczki, a przy ustawionym location także jako przycisk w pasku aplikacji'
+          ]
+        },
+        {
+          heading: 'Menu kontekstowe utworu',
+          body: 'Komenda z location "track-menu" pojawia się w menu kontekstowym utworu (prawy przycisk myszy w bibliotece). Inwokowana z kontekstem utworu:',
+          list: [
+            'registerCommand({ id, label, location: "track-menu", action }) — action otrzymuje obiekt { id, path, title, artist?, album?, duration?, isOnline } opisujący utwór',
+            'Menu kontekstowe utworu zawiera standardowe akcje (odtwórz, ulubione, do kolejki itd.) oraz na końcu pozycje dodane przez wtyczki z location: "track-menu"',
+            'Kontekst jest migawką (snapshot) utworu — odzwierciedla stan w momencie otwarcia menu',
+            'Przykład: api.registerCommand({ id: "hygge:rate", label: "Oceń 5/5", location: "track-menu", action: function (ctx) { ... } })'
+          ]
+        },
+        {
+          heading: 'Wygląd (visual)',
+          body: 'Wymaga uprawnienia visual. Nadaje dekoracje elementom widoku audio (klucz element.decoration):',
+          list: [
+            'cover — triangle, circle, diamond, hexagon, none',
+            'visualization — outline, glow, glass, none',
+            'progress — glow, neon, none',
+            'trackInfo — badge, glass, glow, none',
+            'controls — glass, glow, none',
+            'Przykład: api.visual("element.decoration", { element: "cover", value: "triangle" }) — okładka zostaje przycięta do trójkąta',
+            'Dekoracja okładki (cover) działa też poza widokiem audio: na ekranie „Teraz odtwarzane" oraz w pasku odtwarzacza/okładkach w innych elementach UI',
+            'Dekoracje ustawione przez wtyczkę działają globalnie w widoku audio; wybór w edytorze layoutu zapisuje preferencję na czas gdy wtyczka nie nadpisuje'
+          ]
+        },
+        {
+          heading: 'Własne warianty layoutu (layoutElements)',
+          body:
+            'Wtyczka może dodać nowe opcje dekoracji dla istniejących elementów layoutu. Deklaruje się je w manifeście (wymaga uprawnienia permissions.visual). Każdy wpis to obiekt { element, variant, label? }:',
+          code: `«{
+  "name": "Moja wtyczka",
+  "version": "1.0.0",
+  "permissions": { "visual": true },
+  "layoutElements": [
+    { "element": "cover", "variant": "flip-x", "label": "Odwróć w poziomie" }
+  ]
+}»`,
+          list: [
+            'element — jeden z elementów widoku audio: cover, visualization, progress, trackInfo, controls',
+            'variant — identyfikator zgodny z ^[a-z][a-z0-9-]{0,40}$ (małe litery, cyfry, myślniki)',
+            'label — opcjonalna nazwa wyświetlana w edytorze layoutu zamiast identyfikatora',
+            'Wariant pojawia się w edytorze (widok audio → edytor layoutu → zakładka Dekoracja) tylko gdy wtyczka jest aktywna; jest opisany nazwą wtyczki',
+            'Wariant musi być zaimplementowany przez host — warianty nieznane aplikacji nie zmieniają wyglądu (bezpieczny fallback) i nie można ich ustawić z kodu',
+            'Ustawienie wariantu z kodu: api.visual("element.decoration", { element: "cover", value: "plugin:cover:flip-x" }) — wartość ma zawsze postać plugin:<element>:<variant>',
+            'Wariant musi być zadeklarowany w manifeście tej wtyczki i zaimplementowany przez host — inne wartości kończą się błędem „unknown-decoration"',
+            'Wartość zapisuje się jak wbudowaną dekorację; wybór jest też widoczny w edytorze layoutu'
+          ]
+        },
+        {
+          heading: 'Debugowanie',
+          body: 'Każda karta wtyczki ma sekcję Logi.',
+          list: [
+            'Sekcja Logi pokazuje wpisy z api.log.* oraz błędy workera.',
+            'Status: Nowa → Ładowanie → Załadowana; błędy uruchamiania są oznaczane jako Błąd.',
+            'Po zmianie plików wtyczki kliknij Odśwież, aby załadować nową wersję.'
+          ]
+        },
+        {
+          heading: 'Minimalna wtyczka krok po kroku',
+          body: 'Utwórz katalog hello, a w nim dwa pliki. manifest.json:',
+          code: `«{
+  "name": "Hello",
+  "version": "1.0.0",
+  "description": "Moja pierwsza wtyczka",
+  "author": "Ja",
+  "entry": "index.js",
+  "permissions": {
+    "notifications": true
+  }
+}»`,
+          code2: `api.log.info('hello załadowany');
+
+api.on('app:start', function () {
+  api.log.info('start aplikacji');
+});
+
+api.registerCommand({
+  id: 'hello:greet',
+  label: 'Przywitaj się',
+  action: function () {
+    return api.notify({ type: 'success', title: 'Cześć!', message: 'To działa.' });
+  }
+});`,
+          list: [
+            'Wróć do Ustawień → Wtyczki → Instaluj z folderu i wskaż katalog hello.',
+            'Włącz wtyczkę, a następnie sprawdź sekcję Logi oraz przycisk komendy na jej karcie.'
+          ]
+        },
+        {
+          heading: 'Ograniczenia i bezpieczeństwo',
+          list: [
+            'Wtyczka nie ma dostępu do DOM, modułów Node ani do okna aplikacji — obowiązuje wyłącznie powyższe API.',
+            'Każde żądanie sieciowe przechodzi przez proxy i jest filtrowane przez permissions.network.',
+            'Storage jest oddzielny dla każdej wtyczki (per katalog).',
+            'Brak uprawnienia zwraca błąd permission-denied; nieznane operacje kończą się błędem.',
+            'Wyłączenie lub odinstalowanie wtyczki cofa jej zmiany w UI (np. dekoracje okładki).'
+          ]
+        }
+      ]
+    },
+    status: {
+      new: 'Nowa',
+      loading: 'Ładowanie...',
+      loaded: 'Załadowana',
+      error: 'Błąd'
+    }
   },
   youtube: {
     title: 'YouTube',
@@ -972,7 +1252,12 @@ export default {
     speedCustom: 'Własna',
     speedReset: 'Resetuj (1x)',
     speedHint: 'Kliknij szybkość lub przesuń suwak',
-    live: 'NA ŻYWO'
+    live: 'NA ŻYWO',
+    unmute: 'Włącz dźwięk',
+    subtitles: 'Napisy',
+    subtitlesOff: 'Wyłącz napisy',
+    speed: 'Prędkość',
+    pipVideo: 'Obraz w obrazie'
   },
   explorer: {
     title: 'Eksplorator',
@@ -1391,6 +1676,27 @@ export default {
     variant_cover_rounded: 'Zaokrąglone',
     variant_cover_ring: 'Pierścień',
     variant_cover_glass: 'Szkło',
+    decorationLabel: 'Dekoracja',
+    decorationHint: 'Możesz też ustawić dekoracje z poziomu wtyczki — wtedy działają globalnie w widoku audio.',
+    decoration_cover_none: 'Brak',
+    decoration_cover_triangle: 'Trójkąt',
+    decoration_cover_circle: 'Koło',
+    decoration_cover_diamond: 'Romb',
+    decoration_cover_hexagon: 'Sześciokąt',
+    decoration_visualization_none: 'Brak',
+    decoration_visualization_outline: 'Kontur',
+    decoration_visualization_glow: 'Poświata',
+    decoration_visualization_glass: 'Szkło',
+    decoration_progress_none: 'Brak',
+    decoration_progress_glow: 'Poświata',
+    decoration_progress_neon: 'Neon',
+    decoration_trackInfo_none: 'Brak',
+    decoration_trackInfo_badge: 'Plakietka',
+    decoration_trackInfo_glass: 'Szkło',
+    decoration_trackInfo_glow: 'Poświata',
+    decoration_controls_none: 'Brak',
+    decoration_controls_glass: 'Szkło',
+    decoration_controls_glow: 'Poświata',
     variant_trackInfo_classic: 'Klasyk',
     variant_trackInfo_minimal: 'Minimal',
     variant_trackInfo_large: 'Duży',
@@ -1469,6 +1775,9 @@ export default {
     playShuffle: 'Odtwórz losowo',
     musicBrainzAlbum: 'MusicBrainz — batch album',
     musicBrainzFolder: 'MusicBrainz — batch folder',
+    playlistRename: 'Zmień nazwę',
+    playlistExport: 'Eksportuj (M3U)',
+    playlistDelete: 'Usuń playlistę',
     downloads: {
       play: 'Odtwórz',
       resume: 'Wznów',

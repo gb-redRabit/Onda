@@ -1,10 +1,12 @@
 import { createApp } from 'vue';
-import { createPinia } from 'pinia';
+import { createPinia, setActivePinia } from 'pinia';
 import router from './router';
 import App from './App.vue';
 import './assets/main.css';
 import { i18n } from './i18n';
 import { useUIStore } from './stores/ui';
+import { usePluginsStore } from './stores/plugins';
+import { usePluginsHooks } from './composables/usePluginsHooks';
 import { logger } from '@shared/logger';
 
 import { moduleManager } from './modules/ModuleManager';
@@ -26,6 +28,7 @@ moduleManager.register(new SourcesModule());
 
 const app = createApp(App);
 const pinia = createPinia();
+setActivePinia(pinia);
 
 app.use(pinia);
 app.use(router);
@@ -43,4 +46,6 @@ app.config.errorHandler = (err, _instance, info) => {
 
 moduleManager.initAll().then(() => {
   app.mount('#app');
+  usePluginsHooks();
+  void usePluginsStore().load();
 });
