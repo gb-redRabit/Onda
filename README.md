@@ -15,7 +15,7 @@
 
 ---
 
-**[Pobierz najnowszą wersję](https://github.com/gb-redRabit/Onda/releases)** · bieżąca wersja: **0.4.1**
+**[Pobierz najnowszą wersję](https://github.com/gb-redRabit/Onda/releases)**
 
 ## Funkcje
 
