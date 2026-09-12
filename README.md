@@ -6,13 +6,16 @@
   <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-4.3-38B2AC?style=flat&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
   <img src="https://img.shields.io/badge/Vitest-3.2-6E9F18?style=flat&logo=vitest&logoColor=white" alt="Vitest" />
+  <img src="https://img.shields.io/github/v/release/gb-redRabit/Onda?style=flat&label=version&color=605dff" alt="Wersja" />
 </div>
 
 <br>
 
-**Onda** to zaawansowany, desktopowy odtwarzacz muzyki i wideo zbudowany na stosie **Electron + Vue 3 + TypeScript + Tailwind CSS**. Odtwarza lokalne pliki audio i wideo, zarządza biblioteką multimediów z metadanymi, eksploruje system plików, wyświetla obrazy, obsługuje napisy (ASS/SRT/VTT), streamuje z YouTube i SoundCloud, pobiera media i oferuje w pełni konfigurowalne motywy z Kreatorze.
+**Onda** to zaawansowany, desktopowy odtwarzacz muzyki i wideo zbudowany na stosie **Electron + Vue 3 + TypeScript + Tailwind CSS**. Odtwarza lokalne pliki audio i wideo, zarządza biblioteką multimediów z metadanymi, eksploruje system plików, wyświetla obrazy, obsługuje napisy (ASS/SRT/VTT), streamuje z YouTube i SoundCloud, pobiera media i oferuje w pełni konfigurowalne motywy w Kreatorze Motywów.
 
 ---
+
+**[Pobierz najnowszą wersję](https://github.com/gb-redRabit/Onda/releases)** · bieżąca wersja: **0.4.1**
 
 ## Funkcje
 
@@ -25,7 +28,7 @@
 - **Edytor layoutu audio** — split-view z mini podglądem (480×320), siatką 1%, drag-and-drop na canvasie, suwaki X/Y/width/height/opacity/layer, show/hide per element, przycisk reset.
 - **Fullscreen audio** — prawdziwy Fullscreen API (Escape/F11), auto-hide HUD z konfigurowalnym opóźnieniem (0–10s), przezroczystość HUD (10–100%).
 - **Pulse okładki** — subtelna animacja scale(1.0–1.06) zsynchronizowana z basem z `AnalyserNode`.
-- **Video cover ping-pong** — okładki wideo grają normalnie do końca, potem cofają się do początku (odtyganie przez `requestAnimationFrame`).
+- **Video cover loop** — okładki wideo (rodzeństwo mp4 przy audio) grają w pętli do przodu (`onended` → `currentTime = 0; play()`); ping-pong odrzucony, bo `playbackRate = -1` nie jest wspierany w Electronie.
 - **Marquee tytułu** — długie tytuły i artyści przesuwają się animacją CSS z obliczanym offsetem.
 - **Odtwarzanie wideo** — HTML5, pełny ekran, Picture-in-Picture, prędkość 0.2–3.0×, filtry, strefy pomijania (skip zones), OSD.
 - **Transkodowanie w locie** (chunk-first) kodeków niewspieranych przez Chromium (np. AC3/DTS → AAC) do osobnego toru audio.
@@ -101,24 +104,24 @@ Odtwarzanie · Wygląd · Motyw · Biblioteka · Sieć · System · Zaawansowane
 
 ## Stos technologiczny
 
-| Komponent      | Technologia                                 |
-| -------------- | ------------------------------------------- |
-| Runtime        | Electron 43.2                               |
-| Frontend       | Vue 3.5 (Composition API, `<script setup>`) |
-| Język          | TypeScript 5.9 (strict)                     |
-| Builder        | electron-vite 5 + Vite 7.2                  |
-| Style          | Tailwind CSS 4.3 + daisyUI (theme values)   |
-| Stan           | Pinia 3                                     |
-| Lokalizacja    | vue-i18n 11 (PL/EN, 942 kluczy)             |
-| Routing        | vue-router 4 (hash history, lazy loading)   |
-| Metadane       | music-metadata, node-id3                    |
-| Wirtualizacja  | @tanstack/vue-virtual                       |
-| Obrazy         | sharp (libvips)                             |
-| Napisy         | jassub (Wasm)                               |
-| Watcher plików | chokidar                                    |
-| Testy          | Vitest 3 + jsdom                            |
-| Pakiety        | electron-builder (NSIS/DMG/AppImage)        |
-| Streaming      | yt-dlp (nightly), SoundCloud api-v2         |
+| Komponent      | Technologia                                  |
+| -------------- | -------------------------------------------- |
+| Runtime        | Electron 43.2                                |
+| Frontend       | Vue 3.5 (Composition API, `<script setup>`)  |
+| Język          | TypeScript 5.9 (strict)                      |
+| Builder        | electron-vite 5 + Vite 7.2                   |
+| Style          | Tailwind CSS 4.3 + daisyUI (theme values)    |
+| Stan           | Pinia 3                                      |
+| Lokalizacja    | vue-i18n 11 (PL/EN, 942 kluczy)              |
+| Routing        | vue-router 4 (hash history, lazy loading)    |
+| Metadane       | music-metadata, node-id3                     |
+| Wirtualizacja  | @tanstack/vue-virtual                        |
+| Obrazy         | sharp (libvips)                              |
+| Napisy         | jassub (Wasm)                                |
+| Watcher plików | chokidar                                     |
+| Testy          | Vitest 3 + jsdom                             |
+| Pakiety        | electron-builder (NSIS/DMG/AppImage/deb/rpm) |
+| Streaming      | yt-dlp (nightly), SoundCloud api-v2          |
 
 ---
 
@@ -143,7 +146,7 @@ npm run dev
 
 ### Testy
 
-Aplikacja zawiera **703 testy** (Vitest):
+Aplikacja zawiera **708 testów** (Vitest, 56 plików):
 
 ```bash
 npm test
@@ -156,7 +159,7 @@ npm run test:watch
 npm run build          # typecheck + build (main/preload/renderer)
 npm run build:win      # instalator NSIS (Windows)
 npm run build:mac      # DMG (macOS)
-npm run build:linux    # AppImage / deb / rpm / tar.gz (Linux)
+npm run build:linux    # AppImage / deb / rpm (Linux)
 ```
 
 ### Podpisywanie instalatorów
