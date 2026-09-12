@@ -2,6 +2,8 @@ name: Build & Publish
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -109,7 +111,11 @@ jobs:
           fi
 
       - name: Build & Publish
-        run: npx electron-builder ${{ matrix.args }} --publish always
+        # Publish only for tags (the release-please flow) or an explicit manual
+        # run; ordinary pushes to main still build + smoke-test but do not touch
+        # the GitHub release, so a push never re-uploads the current version's
+        # assets. Drop the condition if you want every push to publish too.
+        run: npx electron-builder ${{ matrix.args }} --publish "${{ (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') && 'always' || 'never' }}"
         env:
           # electron-builder's github publisher requires this (see
           # electron-builder.yml `publish`); release.yml already uses the same
