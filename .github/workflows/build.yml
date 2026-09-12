@@ -16,7 +16,9 @@ jobs:
           - os: windows-latest
             args: --win
           - os: ubuntu-latest
-            args: --linux AppImage deb rpm tar.gz
+            # Installers only: AppImage + deb + rpm. `tar.gz` (a plain archive,
+            # not an installer) is left out; Linux auto-update uses AppImage.
+            args: --linux AppImage deb rpm
           - os: macos-latest
             args: --mac --universal
     runs-on: ${{ matrix.os }}

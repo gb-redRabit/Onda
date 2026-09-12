@@ -39,12 +39,22 @@ extraResources:
     to: ffmpeg
     filter:
       - '**/*'
+# sharp dlopen()s its libvips shared library at runtime. electron-builder only
+# auto-unpacks names ending in .dll/.exe/.dylib/.so/.node, but the Linux build
+# ships `libvips-cpp.so.<version>` (the version suffix comes AFTER `.so`), so it
+# is not detected, stays inside app.asar, and dlopen fails with "cannot open
+# shared object file". Force sharp's native packages out of the asar on every
+# platform (harmless where they were already unpacked, e.g. macOS .dylib).
+asarUnpack:
+  - '**/node_modules/@img/**'
+  - '**/node_modules/sharp/**'
 win:
   executableName: onda
   icon: build/icon.ico
   target:
     - nsis
-    - portable
+    # `portable` deliberately not built: only installer artifacts are published.
+    # (Windows auto-update uses the nsis target + latest.yml, so nothing is lost.)
   # Code-signing / update verification (Windows).
   # WITHOUT a code-signing certificate you MUST keep verifyUpdateCodeSignature
   # off (false), otherwise electron-updater refuses to install unsigned builds.
