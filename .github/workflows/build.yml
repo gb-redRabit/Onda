@@ -43,6 +43,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Format check
+        run: npm run format:check
+
       - name: Build
         run: npm run build
 
@@ -127,8 +130,19 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          $v = & "${{ github.workspace }}\dist\win-unpacked\onda.exe" --version
-          echo "version: $v"
+          # The packaged app is a GUI app with no `--version` and no self-exit,
+          # so `& onda.exe --version` can hang. Bound the run and assert it
+          # reached the boot milestone instead.
+          $out = "$env:RUNNER_TEMP\onda-smoke.log"
+          $err = "$env:RUNNER_TEMP\onda-smoke.err"
+          $p = Start-Process -FilePath "${{ github.workspace }}\dist\win-unpacked\onda.exe" `
+            -ArgumentList "--no-sandbox" -RedirectStandardOutput $out -RedirectStandardError $err -PassThru
+          Start-Sleep -Seconds 20
+          if (-not $p.HasExited) { $p.Kill() }
+          Get-Content $out, $err -ErrorAction SilentlyContinue
+          if (-not (Select-String -Path $out, $err -Pattern '\[Onda/boot\] window created' -Quiet)) {
+            throw "packaged app did not reach the 'window created' boot milestone"
+          }
 
       - name: Smoke test unpacked app (Linux)
         if: matrix.os == 'ubuntu-latest'
