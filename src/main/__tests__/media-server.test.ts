@@ -215,7 +215,9 @@ describe('media-server', () => {
     // exercises root canonicalization (8.3 short names, /var symlink), but on
     // Linux dirname(/tmp) is '/' which CI users cannot write to — use homedir.
     const parent =
-      process.platform === 'win32' || process.platform === 'darwin' ? dirname(os.tmpdir()) : os.homedir();
+      process.platform === 'win32' || process.platform === 'darwin'
+        ? dirname(os.tmpdir())
+        : os.homedir();
     const dir = join(parent, `onda-extra-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     await fs.mkdir(dir, { recursive: true });
     tempFiles.push(dir);
@@ -241,7 +243,9 @@ describe('media-server', () => {
     // Same platform-aware parent as above: writable everywhere, and it keeps the
     // canonicalization exercise on win32/darwin (see the extra-roots test).
     const parent =
-      process.platform === 'win32' || process.platform === 'darwin' ? dirname(os.tmpdir()) : os.homedir();
+      process.platform === 'win32' || process.platform === 'darwin'
+        ? dirname(os.tmpdir())
+        : os.homedir();
     const dir = join(parent, `onda-keep-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     await fs.mkdir(dir, { recursive: true });
     tempFiles.push(dir);

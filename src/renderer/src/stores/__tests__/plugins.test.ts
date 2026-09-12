@@ -406,17 +406,15 @@ describe('plugin settings (api.settings)', () => {
 
 describe('ui:set visual capability', () => {
   function loadVisualPlugin(_store: ReturnType<typeof usePluginsStore>): void {
-    (window as any).api.pluginsList = vi
-      .fn()
-      .mockResolvedValue([
-        {
-          id: 'triangle',
-          name: 'Triangle',
-          version: '1',
-          enabled: true,
-          permissions: { visual: true }
-        }
-      ]);
+    (window as any).api.pluginsList = vi.fn().mockResolvedValue([
+      {
+        id: 'triangle',
+        name: 'Triangle',
+        version: '1',
+        enabled: true,
+        permissions: { visual: true }
+      }
+    ]);
     (window as any).api.pluginsGet = vi.fn().mockResolvedValue({
       success: true,
       manifest: {
