@@ -301,7 +301,7 @@ function onSpeedPreset(v: number) {
                   :class="
                     speed === step
                       ? 'bg-primary text-primary-content font-semibold'
-                      : 'bg-base-200/[var(--glass-alpha)] text-base-content/70 hover:bg-base-content/10 hover:text-base-content'
+                      : 'bg-base-200/(--glass-alpha) text-base-content/70 hover:bg-base-content/10 hover:text-base-content'
                   "
                   @click="onSpeedPreset(step)"
                 >
