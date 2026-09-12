@@ -22,10 +22,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -43,7 +43,7 @@ jobs:
         run: npm run build
 
       - name: Fetch ffmpeg
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: ffmpeg-cache
         with:
           path: resources/ffmpeg
@@ -62,6 +62,21 @@ jobs:
       - name: Download x64 ffmpeg for universal mac
         if: runner.os == 'macOS' && steps.ffmpeg-cache.outputs.cache-hit != 'true'
         run: npm run fetch:ffmpeg -- --platform darwin --arch x64
+
+      # Universal mac packs x64 + arm64 from the SAME node_modules, which only
+      # holds the host-arch sharp binary — the merge then fails on the
+      # identical Mach-O (see electron-builder.yml x64ArchFiles), and worse,
+      # Intel Macs would ship the arm64 binary. Stage the x64 sharp package
+      # directly (self-contained, no deps); `npm install --cpu=x64` would
+      # reify and prune the arm64 twin. Version follows sharp's own
+      # optionalDependencies so it never rots on dependabot bumps.
+      - name: Stage x64 sharp for universal mac
+        if: runner.os == 'macOS'
+        run: |
+          SHARP_X64_VER=$(node -p "require('./node_modules/sharp/package.json').optionalDependencies['@img/sharp-darwin-x64']")
+          npm pack "@img/sharp-darwin-x64@$SHARP_X64_VER" --pack-destination "$RUNNER_TEMP"
+          mkdir -p node_modules/@img/sharp-darwin-x64
+          tar -xzf "$RUNNER_TEMP"/img-sharp-darwin-x64-*.tgz -C node_modules/@img/sharp-darwin-x64 --strip-components=1
 
       - name: Build & Publish
         run: npx electron-builder ${{ matrix.args }} --publish always

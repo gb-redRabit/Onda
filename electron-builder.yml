@@ -83,6 +83,12 @@ mac:
   target:
     - dmg
     - zip
+  # Universal (--universal) merges the x64 + arm64 builds with lipo. sharp's
+  # prebuilt Mach-O binaries are arch-specific yet byte-identical in both temp
+  # builds (both pack from a single node_modules), so lipo refuses them — keep
+  # both copies instead; sharp loads the matching @img/sharp-darwin-* package
+  # at runtime. Requires the x64 sharp package staged in CI (see build.yml).
+  x64ArchFiles: '**/sharp-darwin-*.node'
   # Universal (arm64+x64) is built with `-- --universal` (see CI build.yml);
   # "universal" is NOT a valid MacOsTargetName. ZIP is mandatory for
   # electron-updater on macOS. Notarization/signing require Apple credentials:

@@ -27,6 +27,14 @@ const FFMPEG_VERSION = '7.1';
 
 // Stable, versioned download sources per platform. Bump the version together
 // with the URLs below. (BtbN `latest` is deliberately avoided — it is mutable.)
+// Linux comes from BtbN (immutable GitHub release assets): johnvansickle
+// prunes versioned files (7.1 already 404s there), so linux is pinned to the
+// exact BtbN 7.1.5 build below — the asset names embed the full build id and
+// can never silently move. BtbN ships no .sha256 manifests, so hashes are
+// pinned inline like the win32 entries.
+const BTBN_TAG = 'autobuild-2026-07-31-14-10';
+const BTBN_BUILD = 'n7.1.5-12-g1fdbca85aa';
+const BTBN_BASE = `https://github.com/BtbN/FFmpeg-Builds/releases/download/${BTBN_TAG}/ffmpeg-${BTBN_BUILD}`;
 const SOURCES = {
   'win32-x64': {
     url: `https://github.com/GyanD/codexffmpeg/releases/download/${FFMPEG_VERSION}/ffmpeg-${FFMPEG_VERSION}-essentials_build.zip`,
@@ -67,15 +75,18 @@ const SOURCES = {
     ffprobe: null
   },
   'linux-x64': {
-    url: `https://johnvansickle.com/ffmpeg/releases/ffmpeg-${FFMPEG_VERSION}-amd64-static.tar.xz`,
-    shaUrl: `https://johnvansickle.com/ffmpeg/releases/ffmpeg-${FFMPEG_VERSION}-amd64-static.tar.xz.sha256`,
+    url: `${BTBN_BASE}-linux64-gpl-7.1.tar.xz`,
+    // Pinned hash of the BtbN 7.1.5 asset (size 119007364). Bump alongside
+    // BTBN_TAG/BTBN_BUILD above.
+    sha256: 'c1e6caf48923dd8e6bc5e54d51ba70c321175b8162ae9c414c392990e72f0e79',
     kind: 'tar.xz',
     ffmpeg: 'ffmpeg',
     ffprobe: 'ffprobe'
   },
   'linux-arm64': {
-    url: `https://johnvansickle.com/ffmpeg/releases/ffmpeg-${FFMPEG_VERSION}-arm64-static.tar.xz`,
-    shaUrl: `https://johnvansickle.com/ffmpeg/releases/ffmpeg-${FFMPEG_VERSION}-arm64-static.tar.xz.sha256`,
+    url: `${BTBN_BASE}-linuxarm64-gpl-7.1.tar.xz`,
+    // Pinned hash of the BtbN 7.1.5 asset (size 101894512).
+    sha256: 'a9a50c5782ef5e45306d58d1a9a819015b472d8da30ab6a77f15f571c861a71b',
     kind: 'tar.xz',
     ffmpeg: 'ffmpeg',
     ffprobe: 'ffprobe'

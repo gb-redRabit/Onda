@@ -178,9 +178,7 @@ async function selectRelease(release: MusicbrainzRelease) {
     setStatus('Pobieranie okładki…');
     const coverR = await (
       window.api as unknown as {
-        musicbrainzGetCoverData: (
-          id: string
-        ) => Promise<{
+        musicbrainzGetCoverData: (id: string) => Promise<{
           success: boolean;
           data?: number[];
           mime?: string;
@@ -555,14 +553,14 @@ onMounted(() => {
                   class="space-y-1 max-h-32 overflow-y-auto"
                 >
                   <div
-                    v-for="(track, ti) in lookupResult.media[0].tracks.slice(0, 30)"
-                    :key="track.id"
+                    v-for="(mediumTrack, ti) in lookupResult.media[0].tracks.slice(0, 30)"
+                    :key="mediumTrack.id"
                     class="flex items-center gap-2 text-xs text-base-content/70"
                   >
                     <span class="w-5 text-right shrink-0 text-base-content/50">{{
-                      displayTrackNumber(track, ti as number)
+                      displayTrackNumber(mediumTrack, ti as number)
                     }}</span>
-                    <span class="truncate">{{ track.title }}</span>
+                    <span class="truncate">{{ mediumTrack.title }}</span>
                   </div>
                   <div
                     v-if="lookupResult.media[0].tracks.length > 30"
@@ -585,12 +583,12 @@ onMounted(() => {
                     <input
                       type="checkbox"
                       :checked="includeFields[row.key as keyof typeof includeFields]"
+                      class="checkbox checkbox-xs"
                       @change="
                         (includeFields as unknown as Record<string, boolean>)[row.key] = (
                           $event.target as HTMLInputElement
                         ).checked
                       "
-                      class="checkbox checkbox-xs"
                     />
                     <span class="w-14 shrink-0">{{ row.label }}</span>
                     <span class="flex-1 truncate text-base-content/50 line-through">{{

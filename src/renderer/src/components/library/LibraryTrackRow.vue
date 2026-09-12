@@ -23,13 +23,34 @@ const emit = defineEmits<{
   select: [e: MouseEvent];
 }>();
 
+// Escapes the 5 HTML-significant chars. Track metadata comes from media
+// files (untrusted input), so highlight() must never emit it raw — the
+// template renders the result via v-html (see the eslint-disable notes there).
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => {
+    switch (c) {
+      case '&':
+        return '&amp;';
+      case '<':
+        return '&lt;';
+      case '>':
+        return '&gt;';
+      case '"':
+        return '&quot;';
+      default:
+        return '&#39;';
+    }
+  });
+}
+
 function highlight(text: string, q?: string): string {
-  if (!q) return text;
+  const safe = escapeHtml(text);
+  if (!q) return safe;
   const idx = text.toLowerCase().indexOf(q.toLowerCase());
-  if (idx < 0) return text;
-  const before = text.slice(0, idx);
-  const match = text.slice(idx, idx + q.length);
-  const after = text.slice(idx + q.length);
+  if (idx < 0) return safe;
+  const before = escapeHtml(text.slice(0, idx));
+  const match = escapeHtml(text.slice(idx, idx + q.length));
+  const after = escapeHtml(text.slice(idx + q.length));
   return `${before}<mark class="bg-primary/20 text-primary px-0.5 rounded">${match}</mark>${after}`;
 }
 
@@ -151,6 +172,7 @@ function onDragStart(e: DragEvent) {
       </button>
     </div>
 
+    <!-- eslint-disable vue/no-v-html -- highlight() HTML-escapes untrusted file metadata; only the <mark> wrapper is raw -->
     <div class="flex-1 min-w-0">
       <div
         class="text-sm font-medium truncate leading-none"
@@ -172,6 +194,7 @@ function onDragStart(e: DragEvent) {
         }}</span>
       </div>
     </div>
+    <!-- eslint-enable vue/no-v-html -->
 
     <div
       class="hidden sm:block text-xs font-mono text-base-content/40 tabular-nums shrink-0 w-12 text-right"
