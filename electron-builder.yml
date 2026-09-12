@@ -32,8 +32,18 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
   # ffmpeg ships via extraResources (below) at process.resourcesPath/ffmpeg/…,
   # see scripts/fetch-ffmpeg.mjs + src/main/ipc/dependency-utils.ts bundledBinPath.
-  # Excluding it from `files` avoids an accidental second copy inside app.asar.
-  - '!resources/**'
+  # Exclude ONLY resources/ffmpeg from the asar (avoids an accidental second
+  # copy). Do NOT exclude all of resources/: resources/splash.html is loaded at
+  # runtime from app.asar/resources/splash.html (src/main/index.ts) and was
+  # ERR_FILE_NOT_FOUND when the whole dir was excluded.
+  - '!resources/ffmpeg/**'
+  # Dev-only artifacts that must NOT ship inside app.asar (basic-memory notes,
+  # planning docs, tests, build tooling). electron-builder does not read
+  # .gitignore, so they must be excluded explicitly or they get bundled.
+  - '!{.memory,.opencode,.github,.vscode}'
+  - '!{docs,tests,scripts}'
+  - '!**/*.tsbuildinfo'
+  - '!{.markdownlint.json,.nvmrc,vitest.config.ts,generate-random-icon.js}'
 extraResources:
   - from: resources/ffmpeg
     to: ffmpeg
