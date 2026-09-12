@@ -65,6 +65,11 @@ jobs:
 
       - name: Build & Publish
         run: npx electron-builder ${{ matrix.args }} --publish always
+        env:
+          # electron-builder's github publisher requires this (see
+          # electron-builder.yml `publish`); release.yml already uses the same
+          # repo-scoped secret for tags/PRs.
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Smoke test installer (Windows)
         if: matrix.os == 'windows-latest'

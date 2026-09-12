@@ -47,15 +47,21 @@ const SOURCES = {
     ffprobe: 'ffprobe.exe'
   },
   'darwin-arm64': {
-    url: `https://evermeet.cx/ffmpeg/getrelease/${FFMPEG_VERSION}/zip`,
-    shaUrl: `https://evermeet.cx/ffmpeg/getrelease/${FFMPEG_VERSION}/zip/sha256`,
+    // Evermeet has no versioned `getrelease/<version>` path (it 404s); the
+    // pinned release file is `ffmpeg-<version>.zip` (see /ffmpeg/info API).
+    url: `https://evermeet.cx/ffmpeg/ffmpeg-${FFMPEG_VERSION}.zip`,
+    // Evermeet publishes no .sha256 manifest (only gpg .sig), so the hash is
+    // pinned here (computed from the 7.1 zip, size 25438013). Bump alongside
+    // the version/URL above.
+    sha256: '5a1303c7babaffff3c32c141ff49c7f44bd3b3b3e7dcea992fd7d04b6558ef43',
     kind: 'zip',
     ffmpeg: 'ffmpeg',
     ffprobe: null // fetched separately below
   },
   'darwin-x64': {
-    url: `https://evermeet.cx/ffmpeg/getrelease/${FFMPEG_VERSION}/zip`,
-    shaUrl: `https://evermeet.cx/ffmpeg/getrelease/${FFMPEG_VERSION}/zip/sha256`,
+    // Same pinned evermeet release file as darwin-arm64 (see note above).
+    url: `https://evermeet.cx/ffmpeg/ffmpeg-${FFMPEG_VERSION}.zip`,
+    sha256: '5a1303c7babaffff3c32c141ff49c7f44bd3b3b3e7dcea992fd7d04b6558ef43',
     kind: 'zip',
     ffmpeg: 'ffmpeg',
     ffprobe: null
@@ -77,12 +83,14 @@ const SOURCES = {
 };
 
 const PROBE_URLS = {
-  'darwin-arm64': `https://evermeet.cx/ffprobe/getrelease/${FFMPEG_VERSION}/zip`,
-  'darwin-x64': `https://evermeet.cx/ffprobe/getrelease/${FFMPEG_VERSION}/zip`
+  'darwin-arm64': `https://evermeet.cx/ffmpeg/ffprobe-${FFMPEG_VERSION}.zip`,
+  'darwin-x64': `https://evermeet.cx/ffmpeg/ffprobe-${FFMPEG_VERSION}.zip`
 };
-const PROBE_SHA_URLS = {
-  'darwin-arm64': `https://evermeet.cx/ffprobe/getrelease/${FFMPEG_VERSION}/zip/sha256`,
-  'darwin-x64': `https://evermeet.cx/ffprobe/getrelease/${FFMPEG_VERSION}/zip/sha256`
+// Pinned SHA-256 of the ffprobe 7.1 zip (size 25376985); evermeet offers no
+// .sha256 manifest, same as the ffmpeg entries above.
+const PROBE_SHA256 = {
+  'darwin-arm64': 'fc289c963346d7dc0891cbaed02ba270e8abec54df9259e22d59559018b25709',
+  'darwin-x64': 'fc289c963346d7dc0891cbaed02ba270e8abec54df9259e22d59559018b25709'
 };
 
 function download(url, dest) {
@@ -211,7 +219,7 @@ async function fetchFor(key) {
     const probeArchive = join(work, `${key}-probe.zip`);
     await rm(probeArchive, { force: true }).catch(() => {});
     await download(PROBE_URLS[key], probeArchive);
-    await verify(null, PROBE_SHA_URLS[key], probeArchive);
+    await verify(PROBE_SHA256[key] || null, null, probeArchive);
     await extract(probeArchive, extractDir, 'zip');
     const ffprobe = await findFile(extractDir, 'ffprobe');
     if (ffprobe) await copyFile(ffprobe, join(destDir, 'ffprobe'));
