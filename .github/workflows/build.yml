@@ -125,7 +125,11 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           chmod +x "${{ github.workspace }}/dist/linux-unpacked/onda"
-          "${{ github.workspace }}/dist/linux-unpacked/onda" --version
+          # Headless CI has neither a root-owned, mode-4755 chrome-sandbox
+          # (Chromium's SUID sandbox aborts at startup: exit 133) nor an X
+          # display. Run under Xvfb with the sandbox disabled for the launch
+          # smoke test.
+          xvfb-run -a "${{ github.workspace }}/dist/linux-unpacked/onda" --no-sandbox --version
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GH_OWNER: ${{ github.repository_owner }}
