@@ -1,7 +1,7 @@
 {
   "name": "onda",
   "desktopName": "onda",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "An Electron application with Vue and TypeScript",
   "engines": {
     "node": ">=22.12"
