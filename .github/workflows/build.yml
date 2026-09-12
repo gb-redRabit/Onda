@@ -64,19 +64,47 @@ jobs:
         run: npm run fetch:ffmpeg -- --platform darwin --arch x64
 
       # Universal mac packs x64 + arm64 from the SAME node_modules, which only
-      # holds the host-arch sharp binary — the merge then fails on the
+      # holds the host-arch (arm64) sharp binaries — the merge then fails on the
       # identical Mach-O (see electron-builder.yml x64ArchFiles), and worse,
-      # Intel Macs would ship the arm64 binary. Stage the x64 sharp package
-      # directly (self-contained, no deps); `npm install --cpu=x64` would
-      # reify and prune the arm64 twin. Version follows sharp's own
-      # optionalDependencies so it never rots on dependabot bumps.
+      # Intel Macs would ship arm64 binaries. Stage the x64 sharp + libvips
+      # packages directly (self-contained, no deps); `npm install --cpu=x64`
+      # would reify and prune the arm64 twins. Versions follow sharp's own
+      # optionalDependencies so they never rot on dependabot bumps.
       - name: Stage x64 sharp for universal mac
         if: runner.os == 'macOS'
+        shell: bash
         run: |
-          SHARP_X64_VER=$(node -p "require('./node_modules/sharp/package.json').optionalDependencies['@img/sharp-darwin-x64']")
-          npm pack "@img/sharp-darwin-x64@$SHARP_X64_VER" --pack-destination "$RUNNER_TEMP"
-          mkdir -p node_modules/@img/sharp-darwin-x64
+          set -euo pipefail
+          sharp_ver=$(node -p "require('./node_modules/sharp/package.json').optionalDependencies['@img/sharp-darwin-x64']")
+          vips_ver=$(node -p "require('./node_modules/sharp/package.json').optionalDependencies['@img/sharp-libvips-darwin-x64']")
+          npm pack "@img/sharp-darwin-x64@$sharp_ver" --pack-destination "$RUNNER_TEMP"
+          npm pack "@img/sharp-libvips-darwin-x64@$vips_ver" --pack-destination "$RUNNER_TEMP"
+          mkdir -p node_modules/@img/sharp-darwin-x64 node_modules/@img/sharp-libvips-darwin-x64
           tar -xzf "$RUNNER_TEMP"/img-sharp-darwin-x64-*.tgz -C node_modules/@img/sharp-darwin-x64 --strip-components=1
+          tar -xzf "$RUNNER_TEMP"/img-sharp-libvips-darwin-x64-*.tgz -C node_modules/@img/sharp-libvips-darwin-x64 --strip-components=1
+
+      # electron-builder#10026: while publishing one build, its concurrent
+      # artifact uploads each create their own GitHub release when none exists
+      # yet, and an upload can then 404 against a superseded release (observed
+      # on the Linux .rpm). Create the release once here so every upload — and
+      # every matrix job — targets the same id. release-please (release.yml)
+      # normally creates it already, in which case this is a no-op.
+      - name: Ensure GitHub release exists
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          set -euo pipefail
+          list_releases() {
+            gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[].tag_name'
+          }
+          if list_releases | grep -qxF "$GITHUB_REF_NAME"; then
+            echo "Release $GITHUB_REF_NAME already exists"
+          else
+            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+              --title "$GITHUB_REF_NAME" --notes "" \
+              || list_releases | grep -qxF "$GITHUB_REF_NAME"
+          fi
 
       - name: Build & Publish
         run: npx electron-builder ${{ matrix.args }} --publish always

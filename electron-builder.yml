@@ -84,11 +84,14 @@ mac:
     - dmg
     - zip
   # Universal (--universal) merges the x64 + arm64 builds with lipo. sharp's
-  # prebuilt Mach-O binaries are arch-specific yet byte-identical in both temp
-  # builds (both pack from a single node_modules), so lipo refuses them — keep
-  # both copies instead; sharp loads the matching @img/sharp-darwin-* package
-  # at runtime. Requires the x64 sharp package staged in CI (see build.yml).
-  x64ArchFiles: '**/sharp-darwin-*.node'
+  # prebuilt Mach-O files (the .node addon + its libvips .dylib) and the bundled
+  # ffmpeg/ffprobe are arch-specific yet byte-identical in both temp builds
+  # (both pack the same node_modules / resources tree), so lipo refuses them.
+  # x64ArchFiles makes the merge keep each copy as-is; sharp and the runtime
+  # then pick the matching arch. Requires the x64 sharp packages staged in CI
+  # (see build.yml). Files that genuinely differ per arch (Electron itself) are
+  # still lipo'd — this rule only matches the identical ones.
+  x64ArchFiles: '**/{@img/**,*.node,*.dylib,ffmpeg/**}'
   # Universal (arm64+x64) is built with `-- --universal` (see CI build.yml);
   # "universal" is NOT a valid MacOsTargetName. ZIP is mandatory for
   # electron-updater on macOS. Notarization/signing require Apple credentials:
@@ -151,6 +154,14 @@ publish:
   provider: github
   owner: gb-redRabit
   repo: Onda
+  # release-please (release.yml) owns the published release for the tag; upload
+  # into it rather than letting electron-builder create a second one. With the
+  # default "draft" releaseType electron-builder ignores an existing published
+  # release, and electron-builder#10026 makes concurrent artifact uploads each
+  # create a *separate* release when none is found — one asset then 404s (seen
+  # on the Linux .rpm). The "Ensure GitHub release exists" step in build.yml
+  # guarantees the release is present before any upload starts.
+  releaseType: release
   # requires GH_TOKEN env var with repo scope for releases
   # Beta channel: stable releases go to the default "latest". For a beta
   # stream either pass --config.publish.channel=beta on the electron-builder
