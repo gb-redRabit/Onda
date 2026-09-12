@@ -95,6 +95,7 @@ jobs:
       # normally creates it already, in which case this is a no-op.
       - name: Ensure GitHub release exists
         if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
