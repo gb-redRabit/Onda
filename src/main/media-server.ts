@@ -2,7 +2,7 @@ import http from 'http';
 import https from 'https';
 import fs from 'fs';
 import crypto from 'crypto';
-import { normalize, isAbsolute, sep } from 'path';
+import { normalize, isAbsolute, sep, dirname, basename, join } from 'path';
 import { logger } from '../shared/logger';
 import { getMimeType } from '../shared/mime';
 
@@ -427,7 +427,17 @@ export function createMediaServer(): Promise<MediaServer> {
         try {
           realPath = await fs.promises.realpath(normalized);
         } catch {
-          // fall back to normalized path; root check below still applies
+          // realpath fails for a missing (or unreadable) file. Canonicalize the
+          // parent directory instead and re-attach the basename, so an 8.3
+          // short name (Windows CI: RUNNER~1) or a /var -> /private/var symlink
+          // resolves inside the realpath'd allowed roots. The root check below
+          // still applies to the rebuilt path, so paths genuinely outside every
+          // root remain 403 (fail-closed).
+          try {
+            realPath = join(await fs.promises.realpath(dirname(normalized)), basename(normalized));
+          } catch {
+            // fall back to normalized path; root check below still applies
+          }
         }
 
         if (!isWithinAnyRoot(realPath)) {

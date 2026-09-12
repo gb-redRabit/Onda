@@ -1,4 +1,4 @@
-import { isAbsolute } from 'path';
+import { isAbsolute, win32 as win32Path } from 'path';
 
 const MAX_PATH_LENGTH = 4096;
 
@@ -9,7 +9,10 @@ export function isSafeAbsolutePath(value: unknown): value is string {
   if (typeof value !== 'string') return false;
   if (!value || value.length > MAX_PATH_LENGTH) return false;
   if (value.includes('\0')) return false;
-  return isAbsolute(value);
+  // Accept an absolute path in either gramatyka — win32 (C:/... or C:\...) or
+  // posix (/...). IPC callers are tested on all platforms, and a path is only
+  // "safe-absolute" if it is unambiguously absolute in at least one grammar.
+  return isAbsolute(value) || win32Path.isAbsolute(value);
 }
 
 export function isSafeStringArray(value: unknown): value is string[] {

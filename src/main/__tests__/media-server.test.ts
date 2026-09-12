@@ -226,7 +226,10 @@ describe('media-server', () => {
     const granted = await request(`/${server!.token}/?path=${encodeURIComponent(file)}`);
     expect(granted.status).toBe(200);
     expect(granted.headers['content-type']).toBe('audio/mpeg');
-    expect(getExtraRoots()).toContain(dir);
+    // The server canonicalizes allowed roots (fs.realpath) before storing them
+    // (see media-server.ts), so compare against the canonical form to be
+    // portable across hosts (8.3 short names on Windows CI, /var symlinks).
+    expect(getExtraRoots()).toContain(await fs.realpath(dir));
   });
 
   it('keeps extra roots when library roots are replaced', async () => {

@@ -26,7 +26,7 @@ export interface YtDlpEntry {
 }
 
 import { existsSync } from 'fs';
-import { join } from 'path';
+import { win32 as winPath, posix as posixPath } from 'path';
 import { formatDuration as formatDurationBase } from '../../shared/formatDuration';
 import { fetchPageText } from './player-scraper';
 import type { YoutubeAuthMethod } from '../../renderer/src/types/settings';
@@ -56,9 +56,14 @@ export function detectJsRuntime(
   }
   const separator = platform === 'win32' ? ';' : ':';
   const exe = platform === 'win32' ? 'node.exe' : 'node';
+  // Build candidate paths with the platform's own grammar. IPC tests run on
+  // every CI platform, so a win32 lookup must produce win32 separators even
+  // when the host is posix (and vice versa); host join() alone would mix
+  // separators (C:\foo + /bar) and never match a real executable.
+  const pjoin = platform === 'win32' ? winPath : posixPath;
   for (const dir of (env.PATH || '').split(separator)) {
     if (!dir) continue;
-    const candidate = join(dir, exe);
+    const candidate = pjoin.join(dir, exe);
     if (probe(candidate)) return candidate;
   }
   if (platform === 'win32') {
@@ -66,9 +71,9 @@ export function detectJsRuntime(
     const localAppData = env.LOCALAPPDATA;
     const systemRoot = env.SystemRoot || 'C:\\Windows';
     const fallbacks = [
-      join(programFiles, 'nodejs', 'node.exe'),
-      ...(localAppData ? [join(localAppData, 'Programs', 'nodejs', 'node.exe')] : []),
-      join(systemRoot, 'System32', 'node.exe')
+      pjoin.join(programFiles, 'nodejs', 'node.exe'),
+      ...(localAppData ? [pjoin.join(localAppData, 'Programs', 'nodejs', 'node.exe')] : []),
+      pjoin.join(systemRoot, 'System32', 'node.exe')
     ];
     for (const candidate of fallbacks) {
       if (probe(candidate)) return candidate;
