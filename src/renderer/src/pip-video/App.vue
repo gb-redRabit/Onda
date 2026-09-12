@@ -209,7 +209,9 @@ const { subsVisible, toggleSubtitles } = sub;
             {{ previewTimeLabel() }}
           </div>
         </div>
-        <span class="mt-1 text-[10px] text-neutral-content/80 tabular-nums bg-neutral/60 px-1 rounded-field">
+        <span
+          class="mt-1 text-[10px] text-neutral-content/80 tabular-nums bg-neutral/60 px-1 rounded-field"
+        >
           {{ previewTimeLabel() }}
         </span>
       </div>

@@ -1,7 +1,17 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Power, RefreshCw, FolderOpen, Trash2, ChevronDown, Puzzle, Loader2, Check, BookOpen } from '@lucide/vue';
+import {
+  Power,
+  RefreshCw,
+  FolderOpen,
+  Trash2,
+  ChevronDown,
+  Puzzle,
+  Loader2,
+  Check,
+  BookOpen
+} from '@lucide/vue';
 import { usePluginsStore } from '@renderer/stores/plugins';
 import type { PluginSettingField } from '@shared/types/ipc';
 import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
@@ -91,10 +101,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
 <template>
   <SettingsPanel :title="t('settings.plugins')">
     <SettingsCard>
-      <SettingsSectionTitle
-        :title="t('plugins.title')"
-        :description="t('plugins.description')"
-      />
+      <SettingsSectionTitle :title="t('plugins.title')" :description="t('plugins.description')" />
       <div class="flex items-center gap-2 pt-2">
         <button
           class="flex items-center gap-1.5 px-3 h-8 rounded-field text-xs font-medium bg-primary text-primary-content fx-depth"
@@ -124,7 +131,10 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
 
     <PluginsGuide v-if="guideOpen" @close="guideOpen = false" />
 
-    <div v-if="store.plugins.length === 0 && !loading" class="py-10 text-center text-sm text-base-content/50">
+    <div
+      v-if="store.plugins.length === 0 && !loading"
+      class="py-10 text-center text-sm text-base-content/50"
+    >
       <Puzzle :size="36" class="mx-auto mb-3 opacity-20" />
       {{ t('plugins.empty') }}
     </div>
@@ -133,7 +143,9 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
       <SettingsCard v-for="p in store.plugins" :key="p.id" class="!p-0">
         <div class="p-4">
           <div class="flex items-start gap-3">
-            <div class="w-9 h-9 rounded-box bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <div
+              class="w-9 h-9 rounded-box bg-primary/10 text-primary flex items-center justify-center shrink-0"
+            >
               <Puzzle :size="16" />
             </div>
             <div class="flex-1 min-w-0">
@@ -148,12 +160,18 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
                 <span class="badge badge-sm" :class="statusClass(p.status)">
                   {{ statusLabel(p.status) }}
                 </span>
-                <span v-if="p.status === 'loaded' || p.enabled" class="flex items-center gap-1 text-xs text-success">
+                <span
+                  v-if="p.status === 'loaded' || p.enabled"
+                  class="flex items-center gap-1 text-xs text-success"
+                >
                   <Check :size="11" />
                   {{ t('plugins.enabled') }}
                 </span>
               </div>
-              <div v-if="p.status === 'error' && p.error" class="text-xs text-error mt-1 break-words">
+              <div
+                v-if="p.status === 'error' && p.error"
+                class="text-xs text-error mt-1 break-words"
+              >
                 {{ p.error }}
               </div>
             </div>
@@ -172,11 +190,18 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
             </div>
           </div>
 
-          <div v-if="commandsFor.filter((c) => (c as { pluginId?: string }).pluginId === p.id).length" class="mt-3 pt-3 border-t border-base-300/60">
-            <div class="text-xs font-medium text-base-content/70 mb-1.5">{{ t('plugins.commands') }}</div>
+          <div
+            v-if="commandsFor.filter((c) => (c as { pluginId?: string }).pluginId === p.id).length"
+            class="mt-3 pt-3 border-t border-base-300/60"
+          >
+            <div class="text-xs font-medium text-base-content/70 mb-1.5">
+              {{ t('plugins.commands') }}
+            </div>
             <div class="flex flex-wrap gap-1.5">
               <button
-                v-for="cmd in commandsFor.filter((c) => (c as { pluginId?: string }).pluginId === p.id)"
+                v-for="cmd in commandsFor.filter(
+                  (c) => (c as { pluginId?: string }).pluginId === p.id
+                )"
                 :key="cmd.id"
                 class="flex items-center gap-1 px-2 h-7 rounded-field text-xs border border-base-300 hover:bg-base-200"
                 @click="testCommand(cmd.id)"
@@ -186,14 +211,21 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
             </div>
           </div>
 
-          <div v-if="store.settingFields(p.id).length" class="mt-3 pt-3 border-t border-base-300/60">
-            <div class="text-xs font-medium text-base-content/70 mb-1.5">{{ t('plugins.settings') }}</div>
+          <div
+            v-if="store.settingFields(p.id).length"
+            class="mt-3 pt-3 border-t border-base-300/60"
+          >
+            <div class="text-xs font-medium text-base-content/70 mb-1.5">
+              {{ t('plugins.settings') }}
+            </div>
             <div
               v-for="field in store.settingFields(p.id)"
               :key="field.key"
               class="flex items-center justify-between gap-3 py-1"
             >
-              <label class="text-xs text-base-content/60 min-w-0 flex-1 truncate">{{ field.label }}</label>
+              <label class="text-xs text-base-content/60 min-w-0 flex-1 truncate">{{
+                field.label
+              }}</label>
               <input
                 v-if="field.type === 'text'"
                 type="text"
@@ -211,7 +243,11 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
                 :max="field.max"
                 :value="Number(settingsValue(p.id, field))"
                 @change="
-                  onSettingChange(p.id, field.key, Number(($event.target as HTMLInputElement).value))
+                  onSettingChange(
+                    p.id,
+                    field.key,
+                    Number(($event.target as HTMLInputElement).value)
+                  )
                 "
               />
               <input
@@ -236,7 +272,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
           <pre
             v-if="openLogs.has(p.id)"
             class="mt-2 p-2 rounded-field bg-base-200 text-[11px] leading-relaxed text-base-content/70 overflow-auto max-h-48 whitespace-pre-wrap break-all"
-          >{{ logsFor(p.id).join('\n') || t('plugins.noLogs') }}</pre>
+            >{{ logsFor(p.id).join('\n') || t('plugins.noLogs') }}</pre>
         </div>
       </SettingsCard>
     </div>

@@ -149,7 +149,10 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   function factoryElements(preset: AudioLayoutPreset): AudioLayoutElement[] {
-    return AUDIO_LAYOUT_PRESETS[preset]?.elements.map((el) => ({ ...el })) ?? AUDIO_LAYOUT_PRESETS.full.elements.map((el) => ({ ...el }));
+    return (
+      AUDIO_LAYOUT_PRESETS[preset]?.elements.map((el) => ({ ...el })) ??
+      AUDIO_LAYOUT_PRESETS.full.elements.map((el) => ({ ...el }))
+    );
   }
 
   function isStockLayout(elements: AudioLayoutElement[]): boolean {
@@ -274,6 +277,7 @@ export const useSettingsStore = defineStore('settings', () => {
         youtube,
         updates,
         toast,
+        statusBar,
         dependencies
       },
       data

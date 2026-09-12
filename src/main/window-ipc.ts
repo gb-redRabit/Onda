@@ -414,7 +414,12 @@ export function registerWindowHandlers(context: {
     (
       _event: unknown,
       state: Record<string, unknown>,
-      opts?: { dock?: string; cornerElements?: string[]; edgeElements?: string[]; autoHide?: boolean }
+      opts?: {
+        dock?: string;
+        cornerElements?: string[];
+        edgeElements?: string[];
+        autoHide?: boolean;
+      }
     ) => {
       audioPipManager.show(state, {
         dock: opts?.dock as AudioPipDock | undefined,
@@ -443,7 +448,15 @@ export function registerWindowHandlers(context: {
 
   ipcMain.handle(
     'audio-pip:previewStart',
-    (_event: unknown, opts?: { dock?: string; cornerElements?: string[]; edgeElements?: string[]; autoHide?: boolean }) => {
+    (
+      _event: unknown,
+      opts?: {
+        dock?: string;
+        cornerElements?: string[];
+        edgeElements?: string[];
+        autoHide?: boolean;
+      }
+    ) => {
       return audioPipManager.showPreview({
         dock: opts?.dock as AudioPipDock | undefined,
         cornerElements: opts?.cornerElements as AudioPipElementId[] | undefined,
@@ -460,7 +473,15 @@ export function registerWindowHandlers(context: {
 
   ipcMain.handle(
     'audio-pip:previewUpdate',
-    (_event: unknown, opts?: { dock?: string; cornerElements?: string[]; edgeElements?: string[]; autoHide?: boolean }) => {
+    (
+      _event: unknown,
+      opts?: {
+        dock?: string;
+        cornerElements?: string[];
+        edgeElements?: string[];
+        autoHide?: boolean;
+      }
+    ) => {
       audioPipManager.updatePreview({
         dock: opts?.dock as AudioPipDock | undefined,
         cornerElements: opts?.cornerElements as AudioPipElementId[] | undefined,
@@ -476,9 +497,17 @@ export function registerWindowHandlers(context: {
     (
       _event: unknown,
       state: Record<string, unknown>,
-      opts?: { dock?: string; cornerElements?: string[]; edgeElements?: string[]; autoHide?: boolean }
+      opts?: {
+        dock?: string;
+        cornerElements?: string[];
+        edgeElements?: string[];
+        autoHide?: boolean;
+      }
     ) => {
-      if (opts && (opts.dock || opts.cornerElements || opts.edgeElements || opts.autoHide !== undefined)) {
+      if (
+        opts &&
+        (opts.dock || opts.cornerElements || opts.edgeElements || opts.autoHide !== undefined)
+      ) {
         audioPipManager.setLayout({
           dock: opts.dock as AudioPipDock | undefined,
           cornerElements: opts.cornerElements as AudioPipElementId[] | undefined,
@@ -490,5 +519,4 @@ export function registerWindowHandlers(context: {
       return true;
     }
   );
-
 }

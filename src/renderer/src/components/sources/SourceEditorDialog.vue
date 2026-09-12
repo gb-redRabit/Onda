@@ -32,7 +32,10 @@ const settings = useSettingsStore();
 let overlayClicks = 0;
 let overlayTimer: ReturnType<typeof setTimeout> | null = null;
 function onOverlayClick() {
-  const isDirty = draft.name.trim() !== (props.source?.name || '') || draft.baseUrl.trim() !== (props.source?.baseUrl || '') || draft.endpoints.length !== (props.source?.endpoints?.length || 0);
+  const isDirty =
+    draft.name.trim() !== (props.source?.name || '') ||
+    draft.baseUrl.trim() !== (props.source?.baseUrl || '') ||
+    draft.endpoints.length !== (props.source?.endpoints?.length || 0);
   overlayClicks++;
   if (isDirty) ui.notify('warning', t('common.unsavedChangesClickAgain'));
   else ui.notify('info', t('common.clickAgainToClose'));

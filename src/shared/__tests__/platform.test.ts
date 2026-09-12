@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  detectPlatform,
-  normalizePlatformUrl,
-  parseBatchInputAll
-} from '../platform';
+import { detectPlatform, normalizePlatformUrl, parseBatchInputAll } from '../platform';
 import { resolveProvider, soundcloudProvider } from '../provider';
 
 describe('detectPlatform', () => {

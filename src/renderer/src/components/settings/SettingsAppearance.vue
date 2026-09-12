@@ -137,7 +137,10 @@ async function setLocale(loc: string) {
             "
           />
         </SettingsRow>
-        <SettingsRow :label="$t('settings.animations')" :description="$t('settings.animationsDesc')">
+        <SettingsRow
+          :label="$t('settings.animations')"
+          :description="$t('settings.animationsDesc')"
+        >
           <input
             type="checkbox"
             :checked="settings.appearance.animations"

@@ -22,14 +22,28 @@ watch(
 </script>
 
 <template>
-  <div class="w-12 h-12 rounded-field overflow-hidden bg-base-200 border border-base-300 shrink-0 grid grid-cols-2 grid-rows-2 gap-px">
+  <div
+    class="w-12 h-12 rounded-field overflow-hidden bg-base-200 border border-base-300 shrink-0 grid grid-cols-2 grid-rows-2 gap-px"
+  >
     <div
       v-for="tr in displayTracks()"
       :key="tr.path"
       class="bg-base-300 overflow-hidden flex items-center justify-center"
     >
-      <img v-if="tr.type === 'image' || tr.type === 'video'" :src="getThumb(tr.path) || ''" class="w-full h-full object-cover" loading="lazy" />
-      <MediaCover v-else :path="tr.path" :size="20" :autoplay="false" :render-as-video="false" fallback="music" />
+      <img
+        v-if="tr.type === 'image' || tr.type === 'video'"
+        :src="getThumb(tr.path) || ''"
+        class="w-full h-full object-cover"
+        loading="lazy"
+      />
+      <MediaCover
+        v-else
+        :path="tr.path"
+        :size="20"
+        :autoplay="false"
+        :render-as-video="false"
+        fallback="music"
+      />
     </div>
     <div
       v-for="n in Math.max(0, 4 - displayTracks().length)"

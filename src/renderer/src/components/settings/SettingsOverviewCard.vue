@@ -43,7 +43,9 @@ const themeSwatches = computed(() => {
       <span class="text-sm font-medium text-base-content leading-tight block">
         {{ t(props.labelKey) }}
       </span>
-      <span class="text-[11px] leading-snug text-base-content/50 line-clamp-2 min-h-[2.2em] mt-0.5 block">
+      <span
+        class="text-[11px] leading-snug text-base-content/50 line-clamp-2 min-h-[2.2em] mt-0.5 block"
+      >
         {{ props.description }}
       </span>
     </div>
@@ -68,7 +70,11 @@ const themeSwatches = computed(() => {
           :value="Math.round(settings.playback.defaultVolume * 100)"
           class="absolute inset-0 w-full opacity-0 cursor-pointer"
           @click.stop
-          @input="settings.updatePlayback({ defaultVolume: parseInt(($event.target as HTMLInputElement).value) / 100 })"
+          @input="
+            settings.updatePlayback({
+              defaultVolume: parseInt(($event.target as HTMLInputElement).value) / 100
+            })
+          "
         />
       </div>
     </div>
@@ -100,7 +106,11 @@ const themeSwatches = computed(() => {
           :aria-checked="settings.network.proxy.enabled"
           class="relative inline-flex h-[18px] w-[32px] shrink-0 items-center rounded-full transition-colors duration-200"
           :class="settings.network.proxy.enabled ? 'bg-primary' : 'bg-base-300'"
-          @click.stop="settings.updateNetwork({ proxy: { ...settings.network.proxy, enabled: !settings.network.proxy.enabled } })"
+          @click.stop="
+            settings.updateNetwork({
+              proxy: { ...settings.network.proxy, enabled: !settings.network.proxy.enabled }
+            })
+          "
         >
           <span
             class="inline-block h-3 w-3 transform rounded-full bg-neutral-content shadow-sm transition-transform duration-200"
@@ -111,9 +121,14 @@ const themeSwatches = computed(() => {
     </div>
 
     <!-- Mini-preview: General — auto-launch + close to tray -->
-    <div v-else-if="props.id === 'general'" class="w-full mt-auto pt-3 border-t border-base-300/60 space-y-2">
+    <div
+      v-else-if="props.id === 'general'"
+      class="w-full mt-auto pt-3 border-t border-base-300/60 space-y-2"
+    >
       <div class="flex items-center justify-between">
-        <span class="text-[10px] text-base-content/50 truncate flex-1 mr-2">{{ t('settings.autoLaunch') }}</span>
+        <span class="text-[10px] text-base-content/50 truncate flex-1 mr-2">{{
+          t('settings.autoLaunch')
+        }}</span>
         <button
           type="button"
           role="switch"
@@ -129,7 +144,9 @@ const themeSwatches = computed(() => {
         </button>
       </div>
       <div class="flex items-center justify-between">
-        <span class="text-[10px] text-base-content/50 truncate flex-1 mr-2">{{ t('settings.closeToTray') }}</span>
+        <span class="text-[10px] text-base-content/50 truncate flex-1 mr-2">{{
+          t('settings.closeToTray')
+        }}</span>
         <button
           type="button"
           role="switch"
@@ -147,7 +164,10 @@ const themeSwatches = computed(() => {
     </div>
 
     <!-- Mini-preview: Appearance — font size -->
-    <div v-else-if="props.id === 'appearance'" class="w-full mt-auto pt-3 border-t border-base-300/60">
+    <div
+      v-else-if="props.id === 'appearance'"
+      class="w-full mt-auto pt-3 border-t border-base-300/60"
+    >
       <div class="flex items-center justify-between mb-1.5">
         <span class="text-[10px] text-base-content/50">{{ t('settings.fontSize') }}</span>
         <span class="text-[10px] font-mono text-primary font-semibold tabular-nums">
@@ -166,7 +186,11 @@ const themeSwatches = computed(() => {
           :value="settings.appearance.fontSize"
           class="absolute inset-0 w-full opacity-0 cursor-pointer"
           @click.stop
-          @input="settings.updateAppearance({ fontSize: parseInt(($event.target as HTMLInputElement).value) })"
+          @input="
+            settings.updateAppearance({
+              fontSize: parseInt(($event.target as HTMLInputElement).value)
+            })
+          "
         />
       </div>
     </div>

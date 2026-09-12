@@ -76,8 +76,7 @@ export function registerDownloadHandlers(): void {
   );
   ipcMain.handle(
     'yt:download:move',
-    async (_event, id: string, direction: -1 | 1): Promise<boolean> =>
-      moveDownload(id, direction)
+    async (_event, id: string, direction: -1 | 1): Promise<boolean> => moveDownload(id, direction)
   );
   ipcMain.handle('yt:download:export', async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
@@ -122,8 +121,10 @@ export function registerDownloadHandlers(): void {
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
   });
-  ipcMain.handle('yt:download:schedule', async (_event, timestamp: number | null): Promise<boolean> =>
-    scheduleDownloadStart(typeof timestamp === 'number' ? timestamp : null)
+  ipcMain.handle(
+    'yt:download:schedule',
+    async (_event, timestamp: number | null): Promise<boolean> =>
+      scheduleDownloadStart(typeof timestamp === 'number' ? timestamp : null)
   );
   ipcMain.handle('yt:download:schedule:get', async (): Promise<number | null> =>
     getScheduledStart()

@@ -94,7 +94,10 @@ function applyAutoplay(on: boolean) {
   }
 }
 
-watch(() => props.autoplay, (on) => applyAutoplay(on));
+watch(
+  () => props.autoplay,
+  (on) => applyAutoplay(on)
+);
 watch(isVideo, (v) => {
   if (v && props.autoplay) {
     nextTick(() => applyAutoplay(true));

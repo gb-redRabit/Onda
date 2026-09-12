@@ -64,7 +64,10 @@ function onDragStart(e: DragEvent) {
         class="absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/40 transition-colors"
         @click="playNow"
       >
-        <Play :size="14" class="text-neutral-content opacity-0 group-hover:opacity-100 transition-opacity" />
+        <Play
+          :size="14"
+          class="text-neutral-content opacity-0 group-hover:opacity-100 transition-opacity"
+        />
       </button>
       <div
         v-if="track.duration"

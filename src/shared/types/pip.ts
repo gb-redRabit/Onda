@@ -2,36 +2,15 @@
 export type PipMode = 'minimal' | 'medium' | 'max' | 'wide';
 /** @deprecated Używane tylko do migracji starych ustawień. */
 export type PipPosition =
-  | 'bottom-right'
-  | 'bottom-left'
-  | 'top-right'
-  | 'top-left'
-  | 'top'
-  | 'bottom'
-  | 'left'
-  | 'right';
+  'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'top' | 'bottom' | 'left' | 'right';
 
 /** Dokowanie adaptacyjnego PiP audio: 4 rogi + 4 krawędzie (pełna długość). */
 export type AudioPipDock =
-  | 'top'
-  | 'bottom'
-  | 'left'
-  | 'right'
-  | 'top-left'
-  | 'top-right'
-  | 'bottom-left'
-  | 'bottom-right';
+  'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
 /** Pojedynczy element zawartości PiP. Rozmiar okna wynika z liczby elementów. */
 export type AudioPipElementId =
-  | 'cover'
-  | 'trackInfo'
-  | 'controls'
-  | 'progress'
-  | 'volume'
-  | 'viz'
-  | 'nextTrack'
-  | 'eq';
+  'cover' | 'trackInfo' | 'controls' | 'progress' | 'volume' | 'viz' | 'nextTrack' | 'eq';
 
 export type AudioPipLayoutKind = 'card' | 'bar-h' | 'bar-v';
 
@@ -67,7 +46,10 @@ export function getAudioPipSize(
     if (has('cover')) ww += 10;
     if (has('volume')) ww += 8;
     if (has('viz') || has('eq') || has('nextTrack')) ww += 14;
-    return { width: Math.min(132, ww), height: workArea && workArea.height > 0 ? Math.round(workArea.height) : 720 };
+    return {
+      width: Math.min(132, ww),
+      height: workArea && workArea.height > 0 ? Math.round(workArea.height) : 720
+    };
   }
   let cw = 300;
   let ch = 68;

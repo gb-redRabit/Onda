@@ -106,7 +106,9 @@ const sections = computed(() => [
   <!-- Search results mode -->
   <div v-if="hasQuery" class="flex-1 flex flex-col min-h-0">
     <div class="flex items-center justify-between px-4 py-3 border-b border-base-300 shrink-0">
-      <span class="text-xs text-base-content/50">{{ filteredAll.length }} {{ $t('library.tracksCount') }}</span>
+      <span class="text-xs text-base-content/50"
+        >{{ filteredAll.length }} {{ $t('library.tracksCount') }}</span
+      >
       <button
         v-if="filteredAll.length > 0"
         class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
@@ -115,11 +117,18 @@ const sections = computed(() => [
         <Play :size="12" /> {{ $t('library.playAll') }}
       </button>
     </div>
-    <div v-if="filteredAll.length === 0" class="flex flex-col items-center justify-center h-64 gap-3 text-base-content/50">
+    <div
+      v-if="filteredAll.length === 0"
+      class="flex flex-col items-center justify-center h-64 gap-3 text-base-content/50"
+    >
       <Sparkles :size="32" class="opacity-30" />
       <p class="text-sm">{{ $t('common.noPlaylists') }} — {{ query }}</p>
     </div>
-    <div v-else class="flex-1 overflow-auto p-4 grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); align-content: start">
+    <div
+      v-else
+      class="flex-1 overflow-auto p-4 grid gap-3"
+      style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); align-content: start"
+    >
       <LibraryTrackCard
         v-for="tr in filteredAll.slice(0, 48)"
         :key="tr.path"
@@ -138,13 +147,20 @@ const sections = computed(() => [
     </div>
 
     <!-- Liked hero when has likes -->
-    <div v-if="likedTracks.length > 0" class="mx-4 mb-4 p-4 rounded-box bg-base-100 border border-base-300 flex items-center gap-4">
-      <div class="w-14 h-14 rounded-box bg-primary flex items-center justify-center shrink-0 fx-depth">
+    <div
+      v-if="likedTracks.length > 0"
+      class="mx-4 mb-4 p-4 rounded-box bg-base-100 border border-base-300 flex items-center gap-4"
+    >
+      <div
+        class="w-14 h-14 rounded-box bg-primary flex items-center justify-center shrink-0 fx-depth"
+      >
         <Heart :size="22" class="text-primary-content fill-primary-content" />
       </div>
       <div class="flex-1 min-w-0">
         <div class="text-sm font-bold">{{ $t('library.likedSongs') }}</div>
-        <div class="text-xs text-base-content/60">{{ likedTracks.length }} {{ $t('common.tracks') }}</div>
+        <div class="text-xs text-base-content/60">
+          {{ likedTracks.length }} {{ $t('common.tracks') }}
+        </div>
       </div>
       <div class="flex items-center gap-2">
         <button
@@ -188,12 +204,19 @@ const sections = computed(() => [
           </div>
         </div>
 
-        <div v-if="sec.tracks.length === 0" class="py-8 flex flex-col items-center gap-2 text-base-content/40 border border-dashed border-base-300 rounded-box bg-base-100/50">
+        <div
+          v-if="sec.tracks.length === 0"
+          class="py-8 flex flex-col items-center gap-2 text-base-content/40 border border-dashed border-base-300 rounded-box bg-base-100/50"
+        >
           <component :is="sec.icon" :size="20" class="opacity-30" />
           <p class="text-xs">{{ sec.empty }}</p>
         </div>
 
-        <div v-else class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">
+        <div
+          v-else
+          class="grid gap-3"
+          style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))"
+        >
           <LibraryTrackCard
             v-for="tr in sec.tracks"
             :key="sec.id + tr.path"
@@ -206,12 +229,17 @@ const sections = computed(() => [
       </section>
 
       <!-- Stats footer minimal -->
-      <div class="flex items-center gap-2 text-[11px] text-base-content/40 pt-4 border-t border-base-300">
+      <div
+        class="flex items-center gap-2 text-[11px] text-base-content/40 pt-4 border-t border-base-300"
+      >
         <span>{{ library.totalCount }} {{ $t('common.files') }}</span>
         <span>·</span>
         <span>{{ library.audioCount }} audio</span>
         <span>·</span>
-        <span>{{ library.playlists.length }} {{ $t('common.noPlaylists') === 'Brak playlist' ? 'playlist' : 'playlists' }}</span>
+        <span
+          >{{ library.playlists.length }}
+          {{ $t('common.noPlaylists') === 'Brak playlist' ? 'playlist' : 'playlists' }}</span
+        >
       </div>
     </div>
   </div>

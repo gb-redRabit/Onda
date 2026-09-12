@@ -205,7 +205,8 @@ const toggles = [
         </div>
         <label class="flex flex-col gap-1">
           <span class="text-xs text-base-content/70"
-            >{{ $t('settings.vizSensitivity') }} {{ settings.playback.visualization.sensitivity }}</span
+            >{{ $t('settings.vizSensitivity') }}
+            {{ settings.playback.visualization.sensitivity }}</span
           >
           <input
             type="range"
@@ -226,6 +227,5 @@ const toggles = [
         </label>
       </div>
     </SettingsCard>
-
   </SettingsPanel>
 </template>

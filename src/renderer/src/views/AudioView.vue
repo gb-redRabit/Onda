@@ -1,7 +1,18 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, markRaw } from 'vue';
 import type { Component } from 'vue';
-import { BarChart3, Settings2, LayoutGrid, Maximize2, Minimize2, Music2, Triangle, Puzzle, Circle, Square } from '@lucide/vue';
+import {
+  BarChart3,
+  Settings2,
+  LayoutGrid,
+  Maximize2,
+  Minimize2,
+  Music2,
+  Triangle,
+  Puzzle,
+  Circle,
+  Square
+} from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -75,7 +86,13 @@ const showLayoutEditor = ref(false);
 const isFullscreen = ref(false);
 
 // Drag state
-const dragging = ref<{ id: string; startX: number; startY: number; elX: number; elY: number } | null>(null);
+const dragging = ref<{
+  id: string;
+  startX: number;
+  startY: number;
+  elX: number;
+  elY: number;
+} | null>(null);
 const dragPos = ref<{ id: string; x: number; y: number } | null>(null);
 
 const elements = computed(() => settings.appearance.audioLayout?.elements ?? []);
@@ -174,18 +191,24 @@ function onMouseMove(e: MouseEvent) {
 function toggleFullscreen() {
   if (!viewEl.value) return;
   if (!isFullscreen.value) {
-    viewEl.value.requestFullscreen().then(() => {
-      isFullscreen.value = true;
-      setCursorVisible(true);
-      showUI.value = false;
-      hideUIAfterDelay();
-    }).catch(() => {});
+    viewEl.value
+      .requestFullscreen()
+      .then(() => {
+        isFullscreen.value = true;
+        setCursorVisible(true);
+        showUI.value = false;
+        hideUIAfterDelay();
+      })
+      .catch(() => {});
   } else {
-    document.exitFullscreen().then(() => {
-      isFullscreen.value = false;
-      showUI.value = true;
-      setCursorVisible(true);
-    }).catch(() => {});
+    document
+      .exitFullscreen()
+      .then(() => {
+        isFullscreen.value = false;
+        showUI.value = true;
+        setCursorVisible(true);
+      })
+      .catch(() => {});
   }
 }
 
@@ -285,7 +308,12 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="viewEl" class="h-full w-full bg-base-200/(--glass-alpha) select-none" @mousemove="onMouseMove" @mouseup="onDragMouseUp">
+  <div
+    ref="viewEl"
+    class="h-full w-full bg-base-200/(--glass-alpha) select-none"
+    @mousemove="onMouseMove"
+    @mouseup="onDragMouseUp"
+  >
     <!-- ─── Empty State (no track) ─── -->
     <div
       v-if="!player.currentTrack"
@@ -350,7 +378,10 @@ onUnmounted(() => {
       <template v-else-if="el.id === 'trackInfo'">
         <div
           class="w-full h-full flex items-center justify-center px-4 transition-opacity"
-          :class="[{ 'opacity-0 pointer-events-none': isFullscreen && !showUI }, decorationClasses(el)]"
+          :class="[
+            { 'opacity-0 pointer-events-none': isFullscreen && !showUI },
+            decorationClasses(el)
+          ]"
           @mousedown="onElementMouseDown($event, el)"
         >
           <AudioTrackInfo :variant="el.variant ?? 'classic'" />
@@ -361,7 +392,10 @@ onUnmounted(() => {
       <template v-else-if="el.id === 'progress'">
         <div
           class="w-full h-full flex items-center px-4 transition-opacity"
-          :class="[{ 'opacity-0 pointer-events-none': !showUI || (isFullscreen && !showUI) }, decorationClasses(el)]"
+          :class="[
+            { 'opacity-0 pointer-events-none': !showUI || (isFullscreen && !showUI) },
+            decorationClasses(el)
+          ]"
           @mousedown="onElementMouseDown($event, el)"
         >
           <AudioProgressBar :variant="el.variant ?? 'classic'" />
@@ -372,7 +406,10 @@ onUnmounted(() => {
       <template v-else-if="el.id === 'controls'">
         <div
           class="w-full h-full flex items-center justify-center transition-opacity"
-          :class="[{ 'opacity-0 pointer-events-none': !showUI || (isFullscreen && !showUI) }, decorationClasses(el)]"
+          :class="[
+            { 'opacity-0 pointer-events-none': !showUI || (isFullscreen && !showUI) },
+            decorationClasses(el)
+          ]"
           @mousedown="onElementMouseDown($event, el)"
         >
           <AudioControls :variant="el.variant ?? 'standard'" />

@@ -47,7 +47,9 @@ export function computePipPosition(opts: {
         : workArea.y + Math.max(margin, Math.round((workArea.height - opts.height) / 2));
       break;
     case 'right':
-      x = fullWidth ? workArea.x + workArea.width - opts.width : workArea.x + workArea.width - opts.width;
+      x = fullWidth
+        ? workArea.x + workArea.width - opts.width
+        : workArea.x + workArea.width - opts.width;
       y = fullHeight
         ? workArea.y
         : workArea.y + Math.max(margin, Math.round((workArea.height - opts.height) / 2));

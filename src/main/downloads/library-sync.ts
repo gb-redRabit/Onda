@@ -17,10 +17,7 @@ function isUnderPath(filePath: string, folder: string): boolean {
   const fp = filePath.toLowerCase();
   const fo = folder.toLowerCase();
   const rel = fp.slice(fo.length);
-  return (
-    fp === fo ||
-    (fp.startsWith(fo) && (rel.startsWith(sep) || rel.startsWith('/')))
-  );
+  return fp === fo || (fp.startsWith(fo) && (rel.startsWith(sep) || rel.startsWith('/')));
 }
 
 async function loadLibraryFolders(): Promise<string[]> {

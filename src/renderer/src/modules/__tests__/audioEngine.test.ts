@@ -198,12 +198,15 @@ describe('audioEngine video element routing', () => {
     const spy = vi.fn();
     const off = audioEvents.on('trackError', spy);
     const el = new FakeAudio() as unknown as HTMLAudioElement;
-    el.error = { code: 4, message: 'MEDIA_ELEMENT_ERROR: Format error' };
+    Object.defineProperty(el, 'error', {
+      value: { code: 4, message: 'MEDIA_ELEMENT_ERROR: Format error' },
+      configurable: true
+    });
     // Simulate a local (non-stream) load: no stream URL is set.
     (audioEngine as unknown as { streamUrl: string | null }).streamUrl = null;
-    (
-      audioEngine as unknown as { handleStreamError(el: HTMLAudioElement): void }
-    ).handleStreamError(el);
+    (audioEngine as unknown as { handleStreamError(el: HTMLAudioElement): void }).handleStreamError(
+      el
+    );
     expect(spy).toHaveBeenCalledTimes(1);
     expect(spy).toHaveBeenCalledWith('4');
     off();

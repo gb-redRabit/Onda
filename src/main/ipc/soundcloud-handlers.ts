@@ -5,7 +5,11 @@
 import { ipcMain } from 'electron';
 import { logger } from '../../shared/logger';
 import { detectScKind, normalizeScUrl } from '../../shared/soundcloud';
-import type { IpcDownloadErrorCode, IpcStreamResult, IpcYoutubeVideo } from '../../shared/types/ipc';
+import type {
+  IpcDownloadErrorCode,
+  IpcStreamResult,
+  IpcYoutubeVideo
+} from '../../shared/types/ipc';
 import { classifyYtDlpError, redactSecrets } from '../downloads/error-classifier';
 import { readProxyArgs } from './proxy-utils';
 import { formatDuration as formatDurationBase } from '../../shared/formatDuration';
@@ -146,7 +150,10 @@ function streamCacheExpiry(cdnUrl: string): number {
   const now = Date.now();
   const epoch = extractSignedUrlExpiryMs(cdnUrl);
   if (epoch == null) return now + STREAM_CACHE_FALLBACK_TTL_MS;
-  return Math.min(now + STREAM_CACHE_FALLBACK_TTL_MS, Math.max(now + 5000, epoch - STREAM_EXPIRY_SAFETY_MS));
+  return Math.min(
+    now + STREAM_CACHE_FALLBACK_TTL_MS,
+    Math.max(now + 5000, epoch - STREAM_EXPIRY_SAFETY_MS)
+  );
 }
 
 export async function getScStreamUrl(rawUrl: string): Promise<IpcStreamResult> {
@@ -413,7 +420,10 @@ export function registerSoundcloudHandlers(): void {
         };
       }
       const start = Math.max(1, Math.floor(Number(opts.start) || 1));
-      const end = Math.max(start, Math.min(start + 199, Math.floor(Number(opts.end) || start + 29)));
+      const end = Math.max(
+        start,
+        Math.min(start + 199, Math.floor(Number(opts.end) || start + 29))
+      );
       const limit = end - start + 1;
       try {
         const resource = await scResolve(normalizeScUrl(opts.url));
@@ -434,7 +444,8 @@ export function registerSoundcloudHandlers(): void {
             isPlayable: true,
             url: v.url || ''
           })),
-          hasMore: page.items.length >= limit && (count == null || start - 1 + page.items.length < count),
+          hasMore:
+            page.items.length >= limit && (count == null || start - 1 + page.items.length < count),
           totalItems: count ?? null
         };
       } catch (e: unknown) {
@@ -454,8 +465,7 @@ export function registerSoundcloudHandlers(): void {
           return {
             success: true,
             items,
-            hasMore:
-              items.length >= limit && (count == null || start - 1 + items.length < count),
+            hasMore: items.length >= limit && (count == null || start - 1 + items.length < count),
             totalItems: count ?? null
           };
         } catch (e2: unknown) {
@@ -487,7 +497,10 @@ export function registerSoundcloudHandlers(): void {
       }
       const target = normalizeScUrl(opts.url);
       const start = Math.max(1, Math.floor(Number(opts.start) || 1));
-      const end = Math.max(start, Math.min(start + 199, Math.floor(Number(opts.end) || start + 29)));
+      const end = Math.max(
+        start,
+        Math.min(start + 199, Math.floor(Number(opts.end) || start + 29))
+      );
       const limit = end - start + 1;
       try {
         const resource = await scResolve(target);
@@ -496,9 +509,7 @@ export function registerSoundcloudHandlers(): void {
         if (user.id == null) throw new ScApiError('Profile without id');
         const page = await scUserTracks(user.id, limit, start - 1);
         const avatar = upgradeArtworkUrl(user.avatar_url);
-        const permalink = user.permalink
-          ? `https://soundcloud.com/${user.permalink}`
-          : target;
+        const permalink = user.permalink ? `https://soundcloud.com/${user.permalink}` : target;
         const count = user.track_count;
         return {
           success: true,

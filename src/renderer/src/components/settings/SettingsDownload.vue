@@ -91,8 +91,6 @@ async function doExport() {
 function onBrowserChange(e: Event) {
   settings.updateYoutube({ cookiesBrowser: (e.target as HTMLSelectElement).value });
 }
-
-
 </script>
 
 <template>

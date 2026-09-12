@@ -117,7 +117,11 @@ function onDragStart(e: DragEvent) {
 <template>
   <div
     class="group flex items-center gap-3 px-3 py-2.5 rounded-field hover:bg-base-100 border transition-all duration-150 cursor-pointer"
-    :class="selected ? 'bg-primary/10 border-primary/30' : 'border-transparent hover:border-base-300 hover:shadow-sm'"
+    :class="
+      selected
+        ? 'bg-primary/10 border-primary/30'
+        : 'border-transparent hover:border-base-300 hover:shadow-sm'
+    "
     draggable="true"
     @click="emit('select', $event as unknown as MouseEvent)"
     @dblclick="playNow"
@@ -132,31 +136,52 @@ function onDragStart(e: DragEvent) {
       class="checkbox checkbox-xs shrink-0"
       @click.stop="emit('select', $event as unknown as MouseEvent)"
     />
-    <div class="relative shrink-0 w-10 h-10 rounded-field overflow-hidden bg-base-200 border border-base-300">
+    <div
+      class="relative shrink-0 w-10 h-10 rounded-field overflow-hidden bg-base-200 border border-base-300"
+    >
       <MediaCover :path="props.track.path" :size="14" :autoplay="hovered" fallback="play" />
       <button
         class="absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/50 transition-colors"
         @click.stop="playNow"
       >
-        <Play :size="15" class="text-neutral-content opacity-0 group-hover:opacity-100 transition-opacity ml-0.5 fill-neutral-content" />
+        <Play
+          :size="15"
+          class="text-neutral-content opacity-0 group-hover:opacity-100 transition-opacity ml-0.5 fill-neutral-content"
+        />
       </button>
     </div>
 
     <div class="flex-1 min-w-0">
-      <div class="text-sm font-medium truncate leading-none" v-html="highlight(track.metadata?.title || track.name, query)"></div>
+      <div
+        class="text-sm font-medium truncate leading-none"
+        v-html="highlight(track.metadata?.title || track.name, query)"
+      ></div>
       <div class="text-xs text-base-content/50 truncate mt-1 flex items-center gap-1">
-        <span class="truncate" v-html="highlight(track.metadata?.artist || $t('common.unknown'), query)"></span>
+        <span
+          class="truncate"
+          v-html="highlight(track.metadata?.artist || $t('common.unknown'), query)"
+        ></span>
         <span v-if="track.metadata?.album" class="opacity-40">·</span>
-        <span v-if="track.metadata?.album" class="truncate opacity-80" v-html="highlight(track.metadata.album, query)"></span>
-        <span v-if="!track.metadata?.artist && !track.metadata?.album" class="opacity-60">{{ track.extension }}</span>
+        <span
+          v-if="track.metadata?.album"
+          class="truncate opacity-80"
+          v-html="highlight(track.metadata.album, query)"
+        ></span>
+        <span v-if="!track.metadata?.artist && !track.metadata?.album" class="opacity-60">{{
+          track.extension
+        }}</span>
       </div>
     </div>
 
-    <div class="hidden sm:block text-xs font-mono text-base-content/40 tabular-nums shrink-0 w-12 text-right">
+    <div
+      class="hidden sm:block text-xs font-mono text-base-content/40 tabular-nums shrink-0 w-12 text-right"
+    >
       {{ formatDuration(track.duration, '—') }}
     </div>
 
-    <div class="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+    <div
+      class="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+    >
       <button
         class="fx-noise p-1.5 fx-depth rounded-field transition-colors duration-150"
         :class="

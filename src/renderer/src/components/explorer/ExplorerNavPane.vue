@@ -91,7 +91,9 @@ async function onNavDrop(e: DragEvent, path: string) {
 </script>
 
 <template>
-  <div class="w-56 shrink-0 border border-r border-base-300 bg-base-100/(--glass-alpha) flex flex-col overflow-hidden">
+  <div
+    class="w-56 shrink-0 border border-r border-base-300 bg-base-100/(--glass-alpha) flex flex-col overflow-hidden"
+  >
     <div class="flex-1 overflow-y-auto p-2 space-y-0.5">
       <!-- quick links -->
       <div

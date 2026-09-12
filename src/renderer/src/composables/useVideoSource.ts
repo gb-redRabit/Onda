@@ -180,48 +180,48 @@ export function useVideoSource(
     }
   }
 
-function onVideoRef(el: unknown) {
-  if (el && videoRef.value !== el) {
-    videoEventsConnected.value = false;
-  }
-  videoRef.value = el as HTMLVideoElement;
-  if (el && player.currentTrack?.type === 'video') {
-    const loadId = ++currentLoadId;
-    setupVideo(player.currentTrack);
-    const video = el as HTMLVideoElement;
-    let connectAttempts = 0;
-    // Waits for the element to be attached to the DOM, then primes subtitles
-    // once. rAF throttles naturally with the tab, cost is bounded (~2s).
-    const tryInit = () => {
-      if (loadId !== currentLoadId) return;
-      if (!video.isConnected) {
-        if (++connectAttempts <= 120) {
-          requestAnimationFrame(tryInit);
+  function onVideoRef(el: unknown) {
+    if (el && videoRef.value !== el) {
+      videoEventsConnected.value = false;
+    }
+    videoRef.value = el as HTMLVideoElement;
+    if (el && player.currentTrack?.type === 'video') {
+      const loadId = ++currentLoadId;
+      setupVideo(player.currentTrack);
+      const video = el as HTMLVideoElement;
+      let connectAttempts = 0;
+      // Waits for the element to be attached to the DOM, then primes subtitles
+      // once. rAF throttles naturally with the tab, cost is bounded (~2s).
+      const tryInit = () => {
+        if (loadId !== currentLoadId) return;
+        if (!video.isConnected) {
+          if (++connectAttempts <= 120) {
+            requestAnimationFrame(tryInit);
+          }
+          return;
         }
-        return;
-      }
-      if (player.currentTrack && player.currentTrack.path !== lastLoadedPath) {
-        if (video.readyState >= 1 || video.videoWidth > 0) {
-          lastLoadedPath = player.currentTrack.path;
-          onVideoReady(video);
-        } else {
-          video.addEventListener(
-            'loadedmetadata',
-            () => {
-              if (loadId !== currentLoadId) return;
-              if (player.currentTrack && player.currentTrack.path !== lastLoadedPath) {
-                lastLoadedPath = player.currentTrack.path;
-                onVideoReady(video);
-              }
-            },
-            { once: true }
-          );
+        if (player.currentTrack && player.currentTrack.path !== lastLoadedPath) {
+          if (video.readyState >= 1 || video.videoWidth > 0) {
+            lastLoadedPath = player.currentTrack.path;
+            onVideoReady(video);
+          } else {
+            video.addEventListener(
+              'loadedmetadata',
+              () => {
+                if (loadId !== currentLoadId) return;
+                if (player.currentTrack && player.currentTrack.path !== lastLoadedPath) {
+                  lastLoadedPath = player.currentTrack.path;
+                  onVideoReady(video);
+                }
+              },
+              { once: true }
+            );
+          }
         }
-      }
-    };
-    tryInit();
+      };
+      tryInit();
+    }
   }
-}
 
   // Tracks a pending onVideoRef init and cancels it if the current track
   // changes before the element is connected. Called by the single merged

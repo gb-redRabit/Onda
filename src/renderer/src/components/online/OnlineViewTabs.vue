@@ -22,7 +22,7 @@ const tabs = computed(() => [
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center justify-between gap-3  border border-b border-base-300">
+  <div class="flex flex-wrap items-center justify-between gap-3 border border-b border-base-300">
     <div class="flex gap-1 -mb-px">
       <button
         v-for="tab in tabs"

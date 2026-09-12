@@ -6,14 +6,15 @@ const BASE = {
   name: 'Test',
   baseUrl: 'https://api.example.com',
   auth: { type: 'none' },
-  endpoints: [
-    { id: 'e1', name: 'Lista', method: 'GET', path: '/items', mapping: { fields: {} } }
-  ]
+  endpoints: [{ id: 'e1', name: 'Lista', method: 'GET', path: '/items', mapping: { fields: {} } }]
 };
 
 describe('sanitizeSource — download prefs', () => {
   it('passes outputDir and folder through', () => {
-    const src = sanitizeSource({ ...BASE, download: { outputDir: 'C:\\Media\\api', folder: false } });
+    const src = sanitizeSource({
+      ...BASE,
+      download: { outputDir: 'C:\\Media\\api', folder: false }
+    });
     expect(src?.download).toEqual({ outputDir: 'C:\\Media\\api', folder: false });
   });
 
@@ -84,7 +85,13 @@ describe('sanitizeEndpoint — playerUrl fields', () => {
       {
         path: '/items',
         mapping: { fields: { mediaUrl: 'url', playerUrl: 'embed' } },
-        table: { mode: 'endpoint', rowKey: 'n', title: 'EP {n}', thumbnail: 'bg', playerUrl: 'embed_url' }
+        table: {
+          mode: 'endpoint',
+          rowKey: 'n',
+          title: 'EP {n}',
+          thumbnail: 'bg',
+          playerUrl: 'embed_url'
+        }
       },
       0
     );

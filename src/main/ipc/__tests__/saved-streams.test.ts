@@ -67,13 +67,7 @@ describe('saved-streams store', () => {
   it('drops malformed rows', async () => {
     const broken = {
       version: 1,
-      tracks: [
-        { id: 'no-title' },
-        { title: 'no-id' },
-        { id: 'ok', title: 'Fine' },
-        null,
-        'junk'
-      ],
+      tracks: [{ id: 'no-title' }, { title: 'no-id' }, { id: 'ok', title: 'Fine' }, null, 'junk'],
       playlists: [
         { id: 'a', url: 'https://youtube.com/playlist?list=a' },
         { id: 'b', url: 'https://youtube.com/playlist?list=b', kind: 'video', title: 'Bad kind' },

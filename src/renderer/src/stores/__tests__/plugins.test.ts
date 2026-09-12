@@ -39,7 +39,10 @@ let fakeWorkers: FakeWorker[];
 beforeEach(() => {
   setActivePinia(createPinia());
   fakeWorkers = [];
-  const URLStub = URL as unknown as { createObjectURL: (b: Blob) => string; revokeObjectURL: (u: string) => void };
+  const URLStub = URL as unknown as {
+    createObjectURL: (b: Blob) => string;
+    revokeObjectURL: (u: string) => void;
+  };
   URLStub.createObjectURL = vi.fn(() => 'blob:fake');
   URLStub.revokeObjectURL = vi.fn();
   vi.stubGlobal(
@@ -123,18 +126,28 @@ describe('purely local API dispatch', () => {
   it('unknown query throws unknown-query', async () => {
     apiMock();
     const store = usePluginsStore();
-    await expect(store.dispatchApi('query', ['nope', {}], 'hello')).rejects.toThrow('unknown-query');
+    await expect(store.dispatchApi('query', ['nope', {}], 'hello')).rejects.toThrow(
+      'unknown-query'
+    );
   });
 });
 
 describe('player extension actions', () => {
   function loadPlayerPlugin() {
-    (window as any).api.pluginsList = vi.fn().mockResolvedValue([
-      { id: 'ctrl', name: 'Ctrl', version: '1', enabled: true, permissions: { player: true } }
-    ]);
+    (window as any).api.pluginsList = vi
+      .fn()
+      .mockResolvedValue([
+        { id: 'ctrl', name: 'Ctrl', version: '1', enabled: true, permissions: { player: true } }
+      ]);
     (window as any).api.pluginsGet = vi.fn().mockResolvedValue({
       success: true,
-      manifest: { id: 'ctrl', name: 'Ctrl', version: '1', entry: 'i.js', permissions: { player: true } },
+      manifest: {
+        id: 'ctrl',
+        name: 'Ctrl',
+        version: '1',
+        entry: 'i.js',
+        permissions: { player: true }
+      },
       code: '// plugin'
     });
   }
@@ -142,9 +155,9 @@ describe('player extension actions', () => {
   it('player:seek needs player permission', async () => {
     apiMock();
     const store = usePluginsStore();
-    await expect(store.dispatchApi('action', ['player:seek', { seconds: 12 }], 'no-perms')).rejects.toThrow(
-      'permission-denied:player'
-    );
+    await expect(
+      store.dispatchApi('action', ['player:seek', { seconds: 12 }], 'no-perms')
+    ).rejects.toThrow('permission-denied:player');
   });
 
   it('player:enqueue matches library tracks by path', async () => {
@@ -184,19 +197,27 @@ describe('permission gating', () => {
   it('player action without player permission is rejected', async () => {
     apiMock();
     const store = usePluginsStore();
-    await expect(
-      store.dispatchApi('action', ['player:play', {}], 'no-perms')
-    ).rejects.toThrow('permission-denied:player');
+    await expect(store.dispatchApi('action', ['player:play', {}], 'no-perms')).rejects.toThrow(
+      'permission-denied:player'
+    );
   });
 
   it('player action with permission runs', async () => {
     apiMock();
-    (window as any).api.pluginsList = vi.fn().mockResolvedValue([
-      { id: 'ctrl', name: 'Ctrl', version: '1', enabled: true, permissions: { player: true } }
-    ]);
+    (window as any).api.pluginsList = vi
+      .fn()
+      .mockResolvedValue([
+        { id: 'ctrl', name: 'Ctrl', version: '1', enabled: true, permissions: { player: true } }
+      ]);
     (window as any).api.pluginsGet = vi.fn().mockResolvedValue({
       success: true,
-      manifest: { id: 'ctrl', name: 'Ctrl', version: '1', entry: 'i.js', permissions: { player: true } },
+      manifest: {
+        id: 'ctrl',
+        name: 'Ctrl',
+        version: '1',
+        entry: 'i.js',
+        permissions: { player: true }
+      },
       code: '// plugin'
     });
     const store = usePluginsStore();
@@ -216,7 +237,7 @@ describe('permission gating', () => {
     });
     await vi.waitFor(() => {
       const resp = worker.posts.find(
-        (p) => ((p as { __onda?: { type?: string } }).__onda?.type) === 'api-response'
+        (p) => (p as { __onda?: { type?: string } }).__onda?.type === 'api-response'
       ) as { __onda: { type: string; ok: boolean; data: unknown } } | undefined;
       expect(resp).toBeDefined();
       expect(resp?.__onda.ok).toBe(true);
@@ -233,9 +254,11 @@ describe('permission gating', () => {
 
   it('notify with permission adds a UI notification', async () => {
     apiMock();
-    (window as any).api.pluginsList = vi.fn().mockResolvedValue([
-      { id: 'p', name: 'P', version: '1', enabled: true, permissions: { notifications: true } }
-    ]);
+    (window as any).api.pluginsList = vi
+      .fn()
+      .mockResolvedValue([
+        { id: 'p', name: 'P', version: '1', enabled: true, permissions: { notifications: true } }
+      ]);
     (window as any).api.pluginsGet = vi.fn().mockResolvedValue({
       success: true,
       manifest: {
@@ -274,7 +297,11 @@ describe('IPC forwarding', () => {
   it('fetch maps success result to {ok,status,...}', async () => {
     apiMock();
     const store = usePluginsStore();
-    const res = (await store.dispatchApi('fetch', ['https://x/y', { responseType: 'json' }], 'p')) as {
+    const res = (await store.dispatchApi(
+      'fetch',
+      ['https://x/y', { responseType: 'json' }],
+      'p'
+    )) as {
       ok: boolean;
       status: number;
       data: unknown;
@@ -286,7 +313,9 @@ describe('IPC forwarding', () => {
 
   it('fetch throws on failure result', async () => {
     apiMock();
-    (window as any).api.pluginsFetch = vi.fn().mockResolvedValue({ success: false, error: 'forbidden', code: 'forbidden' });
+    (window as any).api.pluginsFetch = vi
+      .fn()
+      .mockResolvedValue({ success: false, error: 'forbidden', code: 'forbidden' });
     const store = usePluginsStore();
     await expect(store.dispatchApi('fetch', ['https://x/y', {}], 'p')).rejects.toThrow('forbidden');
   });
@@ -300,9 +329,11 @@ describe('IPC forwarding', () => {
 
 describe('plugin settings (api.settings)', () => {
   function loadConfiguredPlugin(): void {
-    (window as any).api.pluginsList = vi.fn().mockResolvedValue([
-      { id: 'cfg', name: 'Cfg', version: '1', enabled: true, permissions: {} }
-    ]);
+    (window as any).api.pluginsList = vi
+      .fn()
+      .mockResolvedValue([
+        { id: 'cfg', name: 'Cfg', version: '1', enabled: true, permissions: {} }
+      ]);
     (window as any).api.pluginsGet = vi.fn().mockResolvedValue({
       success: true,
       manifest: {
@@ -327,9 +358,9 @@ describe('plugin settings (api.settings)', () => {
       { id: 'a', name: 'A', version: '1', enabled: false, permissions: {} },
       { id: 'b', name: 'B', version: '1', enabled: false, permissions: {} }
     ]);
-    (window as any).api.pluginsSettingsGet = vi.fn().mockImplementation(async (id: string) =>
-      id === 'a' ? { volume: 10 } : {}
-    );
+    (window as any).api.pluginsSettingsGet = vi
+      .fn()
+      .mockImplementation(async (id: string) => (id === 'a' ? { volume: 10 } : {}));
     const store = usePluginsStore();
     await store.load();
     expect(store.pluginSettings.a).toEqual({ volume: 10 });
@@ -352,7 +383,9 @@ describe('plugin settings (api.settings)', () => {
     loadConfiguredPlugin();
     const store = usePluginsStore();
     await store.load();
-    await expect(store.dispatchApi('settings:set', ['shape', 'hexagon'], 'cfg')).resolves.toBe(true);
+    await expect(store.dispatchApi('settings:set', ['shape', 'hexagon'], 'cfg')).resolves.toBe(
+      true
+    );
     expect((window as any).api.pluginsSettingsSet).toHaveBeenCalledWith('cfg', 'shape', 'hexagon');
     expect(store.settingsOf('cfg').shape).toBe('hexagon');
   });
@@ -362,16 +395,28 @@ describe('plugin settings (api.settings)', () => {
     loadConfiguredPlugin();
     const store = usePluginsStore();
     await store.load();
-    expect(store.settingFields('cfg').map((f) => f.key)).toEqual(['shape', 'notifyOnChange', 'volume']);
+    expect(store.settingFields('cfg').map((f) => f.key)).toEqual([
+      'shape',
+      'notifyOnChange',
+      'volume'
+    ]);
     expect(store.settingFields('cfg')[2].min).toBe(0);
   });
 });
 
 describe('ui:set visual capability', () => {
   function loadVisualPlugin(_store: ReturnType<typeof usePluginsStore>): void {
-    (window as any).api.pluginsList = vi.fn().mockResolvedValue([
-      { id: 'triangle', name: 'Triangle', version: '1', enabled: true, permissions: { visual: true } }
-    ]);
+    (window as any).api.pluginsList = vi
+      .fn()
+      .mockResolvedValue([
+        {
+          id: 'triangle',
+          name: 'Triangle',
+          version: '1',
+          enabled: true,
+          permissions: { visual: true }
+        }
+      ]);
     (window as any).api.pluginsGet = vi.fn().mockResolvedValue({
       success: true,
       manifest: {
@@ -389,7 +434,11 @@ describe('ui:set visual capability', () => {
     apiMock();
     const store = usePluginsStore();
     await expect(
-      store.dispatchApi('ui:set', ['element.decoration', { element: 'cover', value: 'triangle' }], 'no-perms')
+      store.dispatchApi(
+        'ui:set',
+        ['element.decoration', { element: 'cover', value: 'triangle' }],
+        'no-perms'
+      )
     ).rejects.toThrow('permission-denied:visual');
   });
 
@@ -398,9 +447,17 @@ describe('ui:set visual capability', () => {
     loadVisualPlugin(usePluginsStore());
     const store = usePluginsStore();
     await store.load();
-    await store.dispatchApi('ui:set', ['element.decoration', { element: 'cover', value: 'triangle' }], 'triangle');
+    await store.dispatchApi(
+      'ui:set',
+      ['element.decoration', { element: 'cover', value: 'triangle' }],
+      'triangle'
+    );
     expect(store.decorations.cover).toBe('triangle');
-    await store.dispatchApi('ui:set', ['element.decoration', { element: 'cover', value: 'none' }], 'triangle');
+    await store.dispatchApi(
+      'ui:set',
+      ['element.decoration', { element: 'cover', value: 'none' }],
+      'triangle'
+    );
     expect(store.decorations.cover).toBeUndefined();
   });
 
@@ -409,8 +466,16 @@ describe('ui:set visual capability', () => {
     loadVisualPlugin(usePluginsStore());
     const store = usePluginsStore();
     await store.load();
-    await store.dispatchApi('ui:set', ['element.decoration', { element: 'cover', value: 'diamond' }], 'triangle');
-    await store.dispatchApi('ui:set', ['element.decoration', { element: 'visualization', value: 'glow' }], 'triangle');
+    await store.dispatchApi(
+      'ui:set',
+      ['element.decoration', { element: 'cover', value: 'diamond' }],
+      'triangle'
+    );
+    await store.dispatchApi(
+      'ui:set',
+      ['element.decoration', { element: 'visualization', value: 'glow' }],
+      'triangle'
+    );
     expect(store.decorations.cover).toBe('diamond');
     expect(store.decorations.visualization).toBe('glow');
     expect(store.decorations.progress).toBeUndefined();
@@ -422,13 +487,25 @@ describe('ui:set visual capability', () => {
     const store = usePluginsStore();
     await store.load();
     await expect(
-      store.dispatchApi('ui:set', ['element.decoration', { element: 'cover', value: 'donut' }], 'triangle')
+      store.dispatchApi(
+        'ui:set',
+        ['element.decoration', { element: 'cover', value: 'donut' }],
+        'triangle'
+      )
     ).rejects.toThrow('unknown-decoration');
     await expect(
-      store.dispatchApi('ui:set', ['element.decoration', { element: 'navbar', value: 'glow' }], 'triangle')
+      store.dispatchApi(
+        'ui:set',
+        ['element.decoration', { element: 'navbar', value: 'glow' }],
+        'triangle'
+      )
     ).rejects.toThrow('unknown-visual-element');
     await expect(
-      store.dispatchApi('ui:set', ['navbar-width', { element: 'cover', value: 'triangle' }], 'triangle')
+      store.dispatchApi(
+        'ui:set',
+        ['navbar-width', { element: 'cover', value: 'triangle' }],
+        'triangle'
+      )
     ).rejects.toThrow('unknown-visual-key');
   });
 
@@ -437,7 +514,11 @@ describe('ui:set visual capability', () => {
     loadVisualPlugin(usePluginsStore());
     const store = usePluginsStore();
     await store.load();
-    await store.dispatchApi('ui:set', ['element.decoration', { element: 'cover', value: 'diamond' }], 'triangle');
+    await store.dispatchApi(
+      'ui:set',
+      ['element.decoration', { element: 'cover', value: 'diamond' }],
+      'triangle'
+    );
     expect(store.decorations.cover).toBe('diamond');
     await store.toggle('triangle');
     expect(store.decorations.cover).toBeUndefined();
@@ -445,9 +526,11 @@ describe('ui:set visual capability', () => {
 
   it('lists host-known plugin layout variants only', async () => {
     apiMock();
-    (window as any).api.pluginsList = vi.fn().mockResolvedValue([
-      { id: 'viz', name: 'Viz', version: '1', enabled: true, permissions: { visual: true } }
-    ]);
+    (window as any).api.pluginsList = vi
+      .fn()
+      .mockResolvedValue([
+        { id: 'viz', name: 'Viz', version: '1', enabled: true, permissions: { visual: true } }
+      ]);
     (window as any).api.pluginsGet = vi.fn().mockResolvedValue({
       success: true,
       manifest: {
@@ -465,15 +548,19 @@ describe('ui:set visual capability', () => {
     });
     const store = usePluginsStore();
     await store.load();
-    expect(store.layoutVariants.cover).toEqual([{ value: 'plugin:cover:flip-x', label: 'Flip', plugin: 'Viz' }]);
+    expect(store.layoutVariants.cover).toEqual([
+      { value: 'plugin:cover:flip-x', label: 'Flip', plugin: 'Viz' }
+    ]);
     expect(store.layoutVariants.progress).toBeUndefined();
   });
 
   it('rejects a plugin decoration not declared in the manifest or not host-known', async () => {
     apiMock();
-    (window as any).api.pluginsList = vi.fn().mockResolvedValue([
-      { id: 'viz', name: 'Viz', version: '1', enabled: true, permissions: { visual: true } }
-    ]);
+    (window as any).api.pluginsList = vi
+      .fn()
+      .mockResolvedValue([
+        { id: 'viz', name: 'Viz', version: '1', enabled: true, permissions: { visual: true } }
+      ]);
     (window as any).api.pluginsGet = vi.fn().mockResolvedValue({
       success: true,
       manifest: {
@@ -489,11 +576,19 @@ describe('ui:set visual capability', () => {
     const store = usePluginsStore();
     await store.load();
     await expect(
-      store.dispatchApi('ui:set', ['element.decoration', { element: 'cover', value: 'plugin:cover:flip-x' }], 'viz')
+      store.dispatchApi(
+        'ui:set',
+        ['element.decoration', { element: 'cover', value: 'plugin:cover:flip-x' }],
+        'viz'
+      )
     ).resolves.toBe(true);
     expect(store.decorations.cover).toBe('plugin:cover:flip-x');
     await expect(
-      store.dispatchApi('ui:set', ['element.decoration', { element: 'cover', value: 'plugin:cover:evil' }], 'viz')
+      store.dispatchApi(
+        'ui:set',
+        ['element.decoration', { element: 'cover', value: 'plugin:cover:evil' }],
+        'viz'
+      )
     ).rejects.toThrow('unknown-decoration');
   });
 });
@@ -501,9 +596,11 @@ describe('ui:set visual capability', () => {
 describe('commandsIn (toolbar locations)', () => {
   it('returns only commands registered for the given location', async () => {
     apiMock();
-    (window as any).api.pluginsList = vi.fn().mockResolvedValue([
-      { id: 'triangle', name: 'Triangle', version: '1', enabled: true, permissions: {} }
-    ]);
+    (window as any).api.pluginsList = vi
+      .fn()
+      .mockResolvedValue([
+        { id: 'triangle', name: 'Triangle', version: '1', enabled: true, permissions: {} }
+      ]);
     (window as any).api.pluginsGet = vi.fn().mockResolvedValue({
       success: true,
       manifest: { id: 'triangle', name: 'Triangle', version: '1', entry: 'i.js', permissions: {} },
@@ -515,10 +612,16 @@ describe('commandsIn (toolbar locations)', () => {
     if (!worker) throw new Error('no worker');
 
     await worker.onmessage?.({
-      data: wrapIntoWorker({ type: 'register-command', command: { id: 'triangle:cycle', label: 'Kształt', location: 'audio-view' } })
+      data: wrapIntoWorker({
+        type: 'register-command',
+        command: { id: 'triangle:cycle', label: 'Kształt', location: 'audio-view' }
+      })
     });
     await worker.onmessage?.({
-      data: wrapIntoWorker({ type: 'register-command', command: { id: 'triangle:shape-none', label: 'Oryginał' } })
+      data: wrapIntoWorker({
+        type: 'register-command',
+        command: { id: 'triangle:shape-none', label: 'Oryginał' }
+      })
     });
 
     expect(store.commandsIn('audio-view').map((c) => c.id)).toEqual(['triangle:cycle']);
@@ -530,9 +633,11 @@ describe('commandsIn (toolbar locations)', () => {
 describe('track-menu context commands', () => {
   it('lists commands for the track-menu location', async () => {
     apiMock();
-    (window as any).api.pluginsList = vi.fn().mockResolvedValue([
-      { id: 'hygge', name: 'Hygge', version: '1', enabled: true, permissions: {} }
-    ]);
+    (window as any).api.pluginsList = vi
+      .fn()
+      .mockResolvedValue([
+        { id: 'hygge', name: 'Hygge', version: '1', enabled: true, permissions: {} }
+      ]);
     (window as any).api.pluginsGet = vi.fn().mockResolvedValue({
       success: true,
       manifest: { id: 'hygge', name: 'Hygge', version: '1', entry: 'i.js', permissions: {} },
@@ -552,7 +657,10 @@ describe('track-menu context commands', () => {
       })
     });
     await worker.onmessage?.({
-      data: wrapIntoWorker({ type: 'register-command', command: { id: 'hygge:other', label: 'Coś' } })
+      data: wrapIntoWorker({
+        type: 'register-command',
+        command: { id: 'hygge:other', label: 'Coś' }
+      })
     });
 
     expect(store.commandsIn('track-menu').map((c) => c.id)).toEqual(['hygge:rate']);
@@ -560,9 +668,11 @@ describe('track-menu context commands', () => {
 
   it('invokes the command worker with the track context payload', async () => {
     apiMock();
-    (window as any).api.pluginsList = vi.fn().mockResolvedValue([
-      { id: 'hygge', name: 'Hygge', version: '1', enabled: true, permissions: {} }
-    ]);
+    (window as any).api.pluginsList = vi
+      .fn()
+      .mockResolvedValue([
+        { id: 'hygge', name: 'Hygge', version: '1', enabled: true, permissions: {} }
+      ]);
     (window as any).api.pluginsGet = vi.fn().mockResolvedValue({
       success: true,
       manifest: { id: 'hygge', name: 'Hygge', version: '1', entry: 'i.js', permissions: {} },
@@ -583,7 +693,9 @@ describe('track-menu context commands', () => {
 
     const ctx = { id: 't1', path: '/a/b.mp3', title: 'Utwór', artist: 'Artysta', isOnline: false };
     store.invokeCommandWithContext('hygge:rate', ctx as never);
-    const msg = worker.posts.at(-1) as { __onda: { type: string; commandId: string; payload: unknown } };
+    const msg = worker.posts.at(-1) as {
+      __onda: { type: string; commandId: string; payload: unknown };
+    };
     expect(msg.__onda.type).toBe('invoke-command');
     expect(msg.__onda.commandId).toBe('hygge:rate');
     expect(msg.__onda.payload).toEqual(ctx);
@@ -596,9 +708,9 @@ describe('command shortcuts', () => {
     worker: FakeWorker;
   }> {
     apiMock();
-    (window as any).api.pluginsList = vi.fn().mockResolvedValue([
-      { id: 'sc', name: 'Sc', version: '1', enabled: true, permissions: {} }
-    ]);
+    (window as any).api.pluginsList = vi
+      .fn()
+      .mockResolvedValue([{ id: 'sc', name: 'Sc', version: '1', enabled: true, permissions: {} }]);
     (window as any).api.pluginsGet = vi.fn().mockResolvedValue({
       success: true,
       manifest: { id: 'sc', name: 'Sc', version: '1', entry: 'i.js', permissions: {} },
@@ -610,7 +722,9 @@ describe('command shortcuts', () => {
     if (!worker) throw new Error('no worker');
     await worker.onmessage?.({ data: wrapIntoWorker({ type: 'ready' }) });
     for (const c of commands) {
-      await worker.onmessage?.({ data: wrapIntoWorker({ type: 'register-command', command: c as never }) });
+      await worker.onmessage?.({
+        data: wrapIntoWorker({ type: 'register-command', command: c as never })
+      });
     }
     return { store, worker };
   }
@@ -638,12 +752,10 @@ describe('command shortcuts', () => {
   });
 
   it('dispatchShortcut invokes the matching command and returns false on miss', async () => {
-    const { store, worker } = await loadWithCommands([
-      { id: 'run', shortcut: 'Ctrl+R' }
-    ]);
+    const { store, worker } = await loadWithCommands([{ id: 'run', shortcut: 'Ctrl+R' }]);
     expect(store.dispatchShortcut('Ctrl+R')).toBe(true);
     const invoke = worker.posts.find(
-      (p) => ((p as { __onda?: { type?: string } }).__onda?.type) === 'invoke-command'
+      (p) => (p as { __onda?: { type?: string } }).__onda?.type === 'invoke-command'
     ) as { __onda: { type: string; commandId: string } } | undefined;
     expect(invoke?.__onda.commandId).toBe('run');
     const before = worker.posts.length;
@@ -668,7 +780,13 @@ describe('worker lifecycle', () => {
     ]);
     (window as any).api.pluginsGet = vi.fn().mockResolvedValue({
       success: true,
-      manifest: { id: 'hello', name: 'Hello', version: '1.0.0', entry: 'i.js', permissions: { notifications: true } },
+      manifest: {
+        id: 'hello',
+        name: 'Hello',
+        version: '1.0.0',
+        entry: 'i.js',
+        permissions: { notifications: true }
+      },
       code: '// plugin'
     });
     const store = usePluginsStore();
@@ -681,7 +799,7 @@ describe('worker lifecycle', () => {
 
     store.emitHook('track:play', { title: 'X' });
     const hookMsg = worker.posts.find(
-      (p) => ((p as { __onda?: { type?: string } }).__onda?.type) === 'hook'
+      (p) => (p as { __onda?: { type?: string } }).__onda?.type === 'hook'
     ) as { __onda: { type: string; name: string } };
     expect(hookMsg.__onda).toMatchObject({ type: 'hook', name: 'track:play' });
 
@@ -691,7 +809,7 @@ describe('worker lifecycle', () => {
     });
     await vi.waitFor(() => {
       const resp = worker.posts.find(
-        (p) => ((p as { __onda?: { type?: string } }).__onda?.type) === 'api-response'
+        (p) => (p as { __onda?: { type?: string } }).__onda?.type === 'api-response'
       ) as { __onda: { type: string; id: number; ok: boolean; data: unknown } } | undefined;
       expect(resp).toBeDefined();
       expect(resp?.__onda.id).toBe(7);
@@ -702,9 +820,11 @@ describe('worker lifecycle', () => {
 
   it('disabled plugins are not spawned', async () => {
     apiMock();
-    (window as any).api.pluginsList = vi.fn().mockResolvedValue([
-      { id: 'off', name: 'Off', version: '1', enabled: false, permissions: {} }
-    ]);
+    (window as any).api.pluginsList = vi
+      .fn()
+      .mockResolvedValue([
+        { id: 'off', name: 'Off', version: '1', enabled: false, permissions: {} }
+      ]);
     const store = usePluginsStore();
     await store.load();
     expect(fakeWorkers.length).toBe(0);

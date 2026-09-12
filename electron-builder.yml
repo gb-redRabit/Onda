@@ -10,6 +10,9 @@ fileAssociations:
       - wav
       - m4a
       - aac
+      - m3u
+      - m3u8
+      - opus
       - mp4
       - mkv
       - webm
@@ -18,6 +21,8 @@ fileAssociations:
     name: Onda Media
     description: Play audio and video in Onda
     role: Viewer
+    rank: Owner
+    icon: build/icon.ico
 files:
   - '!**/.vscode/*'
   - '!src/*'
@@ -25,8 +30,10 @@ files:
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
-asarUnpack:
-  - resources/**
+  # ffmpeg ships via extraResources (below) at process.resourcesPath/ffmpeg/…,
+  # see scripts/fetch-ffmpeg.mjs + src/main/ipc/dependency-utils.ts bundledBinPath.
+  # Excluding it from `files` avoids an accidental second copy inside app.asar.
+  - '!resources/**'
 extraResources:
   - from: resources/ffmpeg
     to: ffmpeg
@@ -34,6 +41,10 @@ extraResources:
       - '**/*'
 win:
   executableName: onda
+  icon: build/icon.ico
+  target:
+    - nsis
+    - portable
   # Code-signing / update verification (Windows).
   # WITHOUT a code-signing certificate you MUST keep verifyUpdateCodeSignature
   # off (false), otherwise electron-updater refuses to install unsigned builds.
@@ -45,14 +56,38 @@ win:
 nsis:
   oneClick: false
   perMachine: false
+  # Per-machine install (perMachine: true) needs allowElevation + a signed
+  # installer (UAC prompt with an unknown publisher hurts UX more than it
+  # helps). Without a certificate keep per-user only.
+  # allowElevation: true
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
   runAfterFinish: true
+  # NSIS MUI2 installer language selection page. en_US is the fallback,
+  # pl_PL is offered alongside it.
+  installerLanguages:
+    - en_US
+    - pl_PL
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  include: build/installer.nsh
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
+portable:
+  artifactName: ${name}-${version}-portable.${ext}
 mac:
+  icon: build/icon.icns
+  target:
+    - dmg
+    - zip
+  # Universal (arm64+x64) is built with `-- --universal` (see CI build.yml);
+  # "universal" is NOT a valid MacOsTargetName. ZIP is mandatory for
+  # electron-updater on macOS. Notarization/signing require Apple credentials:
+  #   - electron-builder needs to run on macOS (it does - CI macos job)
+  #   - enable mac.notarize + APPLE_* secrets, then dmg sign/staple
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
     - NSCameraUsageDescription: Application requests access to the device's camera.
@@ -65,13 +100,44 @@ mac:
   #   2. set env vars: APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID
 dmg:
   artifactName: ${name}-${version}.${ext}
+  # Custom background requires a PNG asset (see 10.2 - optional).
+  # background: build/dmg-background.png
+  title: Onda ${version}
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 130
+      y: 180
+    - x: 400
+      y: 180
 linux:
   target:
     - AppImage
-    - snap
     - deb
+    - rpm
+    - tar.gz
+  # snap removed on purpose (see plan 10.3): strict confinement can't see
+  # system ffmpeg and stage-packages would duplicate the bundled binary.
+  # CI never built snap either (explicit `--linux AppImage deb`), so keeping
+  # it only in the config risked accidental `build:linux` snap builds.
+  icon: icon.png
   maintainer: gb-redRabit
-  category: Utility
+  category: AudioVideo
+  # Aligns the generated .desktop filename with Electron's app_id / WM_CLASS
+  # (desktopName in package.json) so GNOME links windows to the .desktop entry.
+  syncDesktopName: true
+  synopsis: Fast, privacy-friendly cross-platform media player
+  description: Onda streams audio and video from online sources, manages your
+    local library and downloads media through yt-dlp and plugins.
+deb:
+  # Debian Section. `sound` is a valid archive section matching a media
+  # player better than the default derived from category.
+  packageCategory: sound
+  priority: optional
+  # depends keeps electron-builder defaults (libgtk-3-0, libnss3, ...).
+  # No system ffmpeg dependency: ffmpeg ships bundled via extraResources
+  # once resources/ffmpeg is populated by `npm run fetch:ffmpeg` (plan 10.4).
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
@@ -80,5 +146,10 @@ publish:
   owner: gb-redRabit
   repo: Onda
   # requires GH_TOKEN env var with repo scope for releases
+  # Beta channel: stable releases go to the default "latest". For a beta
+  # stream either pass --config.publish.channel=beta on the electron-builder
+  # CLI (electron-updater then ships beta in app-update.yml) or mark the GH
+  # release as prerelease (channel="beta" for prereleases). Choose when the
+  # per-platform channel story is settled; single stable channel for now.
 electronDownload:
   # mirror: https://npmmirror.com/mirrors/electron/

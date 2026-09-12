@@ -64,7 +64,10 @@ export class AudioPipManager {
   private isPreview = false;
   private previewTimer: ReturnType<typeof setTimeout> | null = null;
   private cssVars: Record<string, string> = {};
-  private displayBoundsCache = new Map<number, { x: number; y: number; width: number; height: number }>();
+  private displayBoundsCache = new Map<
+    number,
+    { x: number; y: number; width: number; height: number }
+  >();
   private peeked = false;
   private readonly sliver = 5;
   private mouseInside = false;
@@ -275,7 +278,9 @@ export class AudioPipManager {
       let y = b.y;
       if (this.dock === 'top') {
         x = workArea.x;
-        y = this.peeked ? Math.round(workArea.y - (size.height - this.sliver)) : Math.round(workArea.y);
+        y = this.peeked
+          ? Math.round(workArea.y - (size.height - this.sliver))
+          : Math.round(workArea.y);
       } else if (this.dock === 'bottom') {
         x = workArea.x;
         y = this.peeked
@@ -283,7 +288,9 @@ export class AudioPipManager {
           : Math.round(workArea.y + workArea.height - size.height);
       } else if (this.dock === 'left') {
         y = workArea.y;
-        x = this.peeked ? Math.round(workArea.x - (size.width - this.sliver)) : Math.round(workArea.x);
+        x = this.peeked
+          ? Math.round(workArea.x - (size.width - this.sliver))
+          : Math.round(workArea.x);
       } else if (this.dock === 'right') {
         y = workArea.y;
         x = this.peeked
@@ -458,14 +465,18 @@ export class AudioPipManager {
       let y = workArea.y;
       if (this.dock === 'top') {
         x = workArea.x;
-        y = this.peeked ? Math.round(workArea.y - (winSize.height - this.sliver)) : Math.round(workArea.y);
+        y = this.peeked
+          ? Math.round(workArea.y - (winSize.height - this.sliver))
+          : Math.round(workArea.y);
       } else if (this.dock === 'bottom') {
         x = workArea.x;
         y = this.peeked
           ? Math.round(workArea.y + workArea.height - this.sliver)
           : Math.round(workArea.y + workArea.height - winSize.height);
       } else if (this.dock === 'left') {
-        x = this.peeked ? Math.round(workArea.x - (winSize.width - this.sliver)) : Math.round(workArea.x);
+        x = this.peeked
+          ? Math.round(workArea.x - (winSize.width - this.sliver))
+          : Math.round(workArea.x);
         y = workArea.y;
       } else {
         x = this.peeked
@@ -476,9 +487,7 @@ export class AudioPipManager {
       this.window.setBounds({ x, y, width: winSize.width, height: winSize.height });
       return;
     }
-    this.window.setBounds(
-      computePipPosition({ position: this.dock, ...winSize, workArea })
-    );
+    this.window.setBounds(computePipPosition({ position: this.dock, ...winSize, workArea }));
   }
 
   private updateUi(includeState = true): void {

@@ -2,9 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { resolveFinalOutputPath, findNewestOutput } from '../output-path';
 
 describe('resolveFinalOutputPath', () => {
-  const exists = new Set([
-    'C:/Music/Move Your Body - Öwnboss ｜ Animated Video (NA).mp3'
-  ]);
+  const exists = new Set(['C:/Music/Move Your Body - Öwnboss ｜ Animated Video (NA).mp3']);
 
   it('returns the last destination that exists on disk', () => {
     const destinations = [
@@ -33,9 +31,9 @@ describe('resolveFinalOutputPath', () => {
   });
 
   it('ignores empty destination strings', () => {
-    expect(resolveFinalOutputPath(['', 'C:/Music/real.mp3'], (p) => p === 'C:/Music/real.mp3')).toBe(
-      'C:/Music/real.mp3'
-    );
+    expect(
+      resolveFinalOutputPath(['', 'C:/Music/real.mp3'], (p) => p === 'C:/Music/real.mp3')
+    ).toBe('C:/Music/real.mp3');
   });
 });
 

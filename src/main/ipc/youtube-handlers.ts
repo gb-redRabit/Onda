@@ -38,10 +38,7 @@ export async function runYtDlp(args: string[], timeout: number): Promise<string>
 // Spawns yt-dlp for one target and parses its `-J` JSON output. Shared by the
 // YouTube handlers and the SoundCloud yt-dlp fallback (the engine is yt-dlp,
 // so the spawn/mapping layer is reused; only the platform logic differs).
-export async function fetchEntryJson(
-  target: string,
-  mode: 'full' | 'page30'
-): Promise<YtDlpEntry> {
+export async function fetchEntryJson(target: string, mode: 'full' | 'page30'): Promise<YtDlpEntry> {
   const proxyArgs = await readProxyArgs();
   const args =
     mode === 'full'
@@ -135,8 +132,7 @@ export async function fetchChannelItems(opts: {
       .map((e) => mapVideoEntry(e));
     const channelId = parsed.channel_id || parsed.uploader_id || parsed.id || '';
     const channelThumbnail =
-      pickChannelThumbnail(parsed) ||
-      (await resolveChannelAvatar(channelId));
+      pickChannelThumbnail(parsed) || (await resolveChannelAvatar(channelId));
     return {
       success: true,
       channel: {
@@ -204,8 +200,7 @@ export async function fetchChannelAll(opts: { url: string; tab?: 'videos' | 'sho
       .map((e) => mapVideoEntry(e));
     const channelId = parsed.channel_id || parsed.uploader_id || parsed.id || '';
     const channelThumbnail =
-      pickChannelThumbnail(parsed) ||
-      (await resolveChannelAvatar(channelId));
+      pickChannelThumbnail(parsed) || (await resolveChannelAvatar(channelId));
     return {
       success: true,
       channel: {
@@ -307,7 +302,11 @@ export function getStreamUrl(url: string): Promise<IpcStreamResult> {
     url.length > 2048 ||
     detectYtKind(url) !== 'video'
   ) {
-    return Promise.resolve({ success: false, error: 'Invalid YouTube video link', code: 'invalid' });
+    return Promise.resolve({
+      success: false,
+      error: 'Invalid YouTube video link',
+      code: 'invalid'
+    });
   }
 
   const now = Date.now();
@@ -338,12 +337,12 @@ async function resolveStreamUrl(url: string): Promise<IpcStreamResult> {
   // client pair — it degrades to the combined itag 18, but keeps playback alive.
   for (const fallback of [false, true]) {
     try {
-      const stdout = await runYtDlp(
-        buildStreamGetArgs(url, proxyArgs, { fallback }),
-        30000
-      );
+      const stdout = await runYtDlp(buildStreamGetArgs(url, proxyArgs, { fallback }), 30000);
       const parsed = parseStreamGetOutput(stdout);
-      logger.info('yt', `stream resolve${fallback ? ' (fallback)' : ''} ms=${Date.now() - t0} url=${url}`);
+      logger.info(
+        'yt',
+        `stream resolve${fallback ? ' (fallback)' : ''} ms=${Date.now() - t0} url=${url}`
+      );
       if (!parsed.ok || !parsed.url) {
         const code = parsed?.code === 'hls' ? 'hls' : 'invalid';
         if (!fallback) continue;
@@ -364,7 +363,11 @@ async function resolveStreamUrl(url: string): Promise<IpcStreamResult> {
       const err = e as { message?: string };
       const msg = err.message || String(e);
       if (!fallback) {
-        logger.warn('yt', `stream get failed ms=${Date.now() - t0}, retrying with fallback clients`, msg);
+        logger.warn(
+          'yt',
+          `stream get failed ms=${Date.now() - t0}, retrying with fallback clients`,
+          msg
+        );
         continue;
       }
       logger.warn('yt', `stream get failed (fallback) ms=${Date.now() - t0}`, msg);

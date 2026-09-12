@@ -1,13 +1,6 @@
 import { app, ipcMain, dialog, BrowserWindow } from 'electron';
 import { join, sep, resolve } from 'path';
-import {
-  readdir,
-  readFile,
-  mkdir,
-  stat,
-  cp,
-  rm
-} from 'fs/promises';
+import { readdir, readFile, mkdir, stat, cp, rm } from 'fs/promises';
 import { request as httpRequest } from 'http';
 import { request as httpsRequest } from 'https';
 import type {
@@ -236,7 +229,11 @@ async function runPluginFetch(
   const info = plugins.find((p) => p.id === id);
   const allow = info?.permissions.network?.allow || [];
   if (!info || allow.length === 0) {
-    return { success: false, error: 'Network access not permitted for this plugin', code: 'forbidden' };
+    return {
+      success: false,
+      error: 'Network access not permitted for this plugin',
+      code: 'forbidden'
+    };
   }
   const method = (options.method || 'GET').toUpperCase();
   if (!['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
@@ -245,9 +242,10 @@ async function runPluginFetch(
   if (!urlAllowed(url, allow)) {
     return { success: false, error: 'URL not permitted by plugin allowlist', code: 'forbidden' };
   }
-  const requestedTimeout = typeof options.timeoutMs === 'number' && options.timeoutMs > 0
-    ? options.timeoutMs
-    : DEFAULT_FETCH_TIMEOUT_MS;
+  const requestedTimeout =
+    typeof options.timeoutMs === 'number' && options.timeoutMs > 0
+      ? options.timeoutMs
+      : DEFAULT_FETCH_TIMEOUT_MS;
   const timeoutMs = Math.min(requestedTimeout, MAX_FETCH_TIMEOUT_MS);
   try {
     const result = await fetchRequest(
@@ -291,12 +289,18 @@ async function runPluginFetch(
 async function installFromFolder(): Promise<IpcPluginInstallResult> {
   const win = getParentWindow();
   const options: Electron.OpenDialogOptions = { properties: ['openDirectory'] };
-  const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options);
+  const result = win
+    ? await dialog.showOpenDialog(win, options)
+    : await dialog.showOpenDialog(options);
   if (result.canceled || !result.filePaths[0]) {
     return { success: false, error: 'cancelled' };
   }
   const source = result.filePaths[0];
-  const sourceId = source.replace(/[\\/]+$/, '').split(/[\\/]/).pop() || '';
+  const sourceId =
+    source
+      .replace(/[\\/]+$/, '')
+      .split(/[\\/]/)
+      .pop() || '';
   const base = getPluginsDir();
   await mkdir(base, { recursive: true });
   const { manifest, error } = parseManifest(
@@ -304,9 +308,13 @@ async function installFromFolder(): Promise<IpcPluginInstallResult> {
     sourceId
   );
   if (error || !manifest.id) {
-    return { success: false, error: error === 'manifest:not-object' ? 'Invalid manifest' : error || 'Invalid manifest' };
+    return {
+      success: false,
+      error: error === 'manifest:not-object' ? 'Invalid manifest' : error || 'Invalid manifest'
+    };
   }
-  if (!validatePluginId(manifest.id)) return { success: false, error: 'Invalid plugin id (folder name must match [a-z0-9._-]+)' };
+  if (!validatePluginId(manifest.id))
+    return { success: false, error: 'Invalid plugin id (folder name must match [a-z0-9._-]+)' };
   const entryPath = resolve(source, manifest.entry);
   if (!isWithin(source, entryPath)) return { success: false, error: 'Entry outside plugin folder' };
   let entryExists = false;
@@ -320,7 +328,8 @@ async function installFromFolder(): Promise<IpcPluginInstallResult> {
   await rm(dest, { recursive: true, force: true });
   await cp(source, dest, {
     recursive: true,
-    filter: (src) => !src.includes(`${sep}node_modules${sep}`) && !src.endsWith(`${sep}node_modules`)
+    filter: (src) =>
+      !src.includes(`${sep}node_modules${sep}`) && !src.endsWith(`${sep}node_modules`)
   });
   await setEnabled(manifest.id, true);
   const info = await readManifestSafe(dest);
@@ -420,7 +429,10 @@ export function registerPluginsHandlers(): void {
       try {
         if (!validatePluginId(id) || !validStorageKey(key)) return false;
         const current = await storageData(id);
-        if (!Object.prototype.hasOwnProperty.call(current, key) && Object.keys(current).length >= MAX_STORAGE_KEYS) {
+        if (
+          !Object.prototype.hasOwnProperty.call(current, key) &&
+          Object.keys(current).length >= MAX_STORAGE_KEYS
+        ) {
           return false;
         }
         const next: Record<string, unknown> = { ...current, [key]: value };
@@ -434,30 +446,36 @@ export function registerPluginsHandlers(): void {
     }
   );
 
-  ipcMain.handle('plugins:storage:remove', async (_e, id: string, key: string): Promise<boolean> => {
-    try {
-      if (!validatePluginId(id) || !validStorageKey(key)) return false;
-      const current = await storageData(id);
-      if (!Object.prototype.hasOwnProperty.call(current, key)) return true;
-      const next = { ...current };
-      delete next[key];
-      await writeStorageFile(pluginStorageFile(id), next);
-      return true;
-    } catch (e) {
-      logger.warn('plugins', 'plugins:storage:remove failed', e);
-      return false;
+  ipcMain.handle(
+    'plugins:storage:remove',
+    async (_e, id: string, key: string): Promise<boolean> => {
+      try {
+        if (!validatePluginId(id) || !validStorageKey(key)) return false;
+        const current = await storageData(id);
+        if (!Object.prototype.hasOwnProperty.call(current, key)) return true;
+        const next = { ...current };
+        delete next[key];
+        await writeStorageFile(pluginStorageFile(id), next);
+        return true;
+      } catch (e) {
+        logger.warn('plugins', 'plugins:storage:remove failed', e);
+        return false;
+      }
     }
-  });
+  );
 
-  ipcMain.handle('plugins:settings:get', async (_e, id: string): Promise<Record<string, unknown>> => {
-    try {
-      if (!validatePluginId(id)) return {};
-      return await settingsData(id);
-    } catch (e) {
-      logger.warn('plugins', 'plugins:settings:get failed', e);
-      return {};
+  ipcMain.handle(
+    'plugins:settings:get',
+    async (_e, id: string): Promise<Record<string, unknown>> => {
+      try {
+        if (!validatePluginId(id)) return {};
+        return await settingsData(id);
+      } catch (e) {
+        logger.warn('plugins', 'plugins:settings:get failed', e);
+        return {};
+      }
     }
-  });
+  );
 
   ipcMain.handle(
     'plugins:settings:set',
@@ -477,7 +495,12 @@ export function registerPluginsHandlers(): void {
 
   ipcMain.handle(
     'plugins:fetch',
-    async (_e, id: string, url: string, options: PluginFetchOptions): Promise<PluginFetchResult> => {
+    async (
+      _e,
+      id: string,
+      url: string,
+      options: PluginFetchOptions
+    ): Promise<PluginFetchResult> => {
       try {
         return await runPluginFetch(id, url, options);
       } catch (e) {

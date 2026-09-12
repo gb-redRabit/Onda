@@ -14,7 +14,8 @@ export function usePlayerFavorites() {
         return;
       }
       try {
-        const data = (await window.api.invoke('settings:get')) as { favorites?: unknown } | undefined;
+        const data = (await window.api.invoke('settings:get')) as
+          { favorites?: unknown } | undefined;
         const list = (data as { favorites?: unknown })?.favorites;
         if (Array.isArray(list)) {
           if (favorites.value.length === 0) {

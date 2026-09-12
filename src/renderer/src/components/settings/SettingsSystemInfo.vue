@@ -24,9 +24,9 @@ async function loadAll(): Promise<void> {
     const [i, l, lic] = await Promise.all([
       window.api?.getAppInfo() as Promise<AppInfo | undefined>,
       window.api?.readLogs() as Promise<string | undefined>,
-      (window as unknown as { api?: { getLicenses?: () => Promise<LicenseEntry[]> } }).api?.getLicenses?.() as
-        | Promise<LicenseEntry[]>
-        | undefined
+      (
+        window as unknown as { api?: { getLicenses?: () => Promise<LicenseEntry[]> } }
+      ).api?.getLicenses?.() as Promise<LicenseEntry[]> | undefined
     ]);
     if (i) info.value = i;
     if (l !== undefined) logs.value = l ?? '';
@@ -91,7 +91,9 @@ async function onClear(): Promise<void> {
           </div>
         </template>
         <div class="col-span-2 p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
-          <div class="text-[11px] text-base-content/50 mb-0.5">{{ $t('settings.userDataPath') }}</div>
+          <div class="text-[11px] text-base-content/50 mb-0.5">
+            {{ $t('settings.userDataPath') }}
+          </div>
           <div class="text-xs font-mono break-all">{{ info?.userDataPath }}</div>
         </div>
         <div class="col-span-2 p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
@@ -103,8 +105,14 @@ async function onClear(): Promise<void> {
 
     <SettingsCard v-if="licenses.length > 0">
       <div class="text-[11px] text-base-content/50 mb-2">{{ $t('settings.licenses') }}</div>
-      <div class="max-h-48 overflow-auto divide-y divide-base-300 rounded-box border border-base-300">
-        <div v-for="lic in licenses" :key="lic.name" class="flex items-center justify-between px-3 py-1.5 text-xs">
+      <div
+        class="max-h-48 overflow-auto divide-y divide-base-300 rounded-box border border-base-300"
+      >
+        <div
+          v-for="lic in licenses"
+          :key="lic.name"
+          class="flex items-center justify-between px-3 py-1.5 text-xs"
+        >
           <span class="font-medium truncate">{{ lic.name }}@{{ lic.version }}</span>
           <span class="text-base-content/50 shrink-0 ml-2">{{ lic.license }}</span>
         </div>
@@ -136,8 +144,7 @@ async function onClear(): Promise<void> {
     <SettingsCard :padded="false">
       <pre
         class="h-64 overflow-auto p-4 text-[11px] leading-relaxed font-mono text-base-content/70 whitespace-pre-wrap wrap-break-word"
-        >{{ logs || $t('settings.logEmpty') }}</pre
-      >
+        >{{ logs || $t('settings.logEmpty') }}</pre>
     </SettingsCard>
   </SettingsPanel>
 </template>

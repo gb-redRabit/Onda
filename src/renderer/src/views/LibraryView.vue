@@ -40,8 +40,15 @@ const library = useLibraryStore();
 const settings = useSettingsStore();
 const player = usePlayerStore();
 
-const { query, debouncedQuery, filteredTracks, filteredVideo, filteredImages, filteredArtists, filteredAlbums } =
-  useLibraryFilters(library);
+const {
+  query,
+  debouncedQuery,
+  filteredTracks,
+  filteredVideo,
+  filteredImages,
+  filteredArtists,
+  filteredAlbums
+} = useLibraryFilters(library);
 useViewSearch(query);
 const { editingTrack, showingMBLookup, onTagSaved, onMBApply } = useLibraryTagEditor(
   library,
@@ -51,18 +58,27 @@ const mbInitialQuery = ref('');
 const mbBatchTracks = ref<typeof library.tracks | undefined>(undefined);
 // 8.9 — odbierz query z menu kontekstowego (track → MusicBrainz)
 function onMbEvent(e: Event) {
-  const ce = e as CustomEvent<{ query?: string; track?: typeof library.tracks[0]; batchTracks?: typeof library.tracks }>;
+  const ce = e as CustomEvent<{
+    query?: string;
+    track?: (typeof library.tracks)[0];
+    batchTracks?: typeof library.tracks;
+  }>;
   mbInitialQuery.value = ce.detail?.query || '';
   mbBatchTracks.value = ce.detail?.batchTracks as unknown as typeof library.tracks | undefined;
-  if (ce.detail?.track) editingTrack.value = ce.detail.track as unknown as typeof editingTrack.value;
-  else if (ce.detail?.batchTracks?.[0]) editingTrack.value = ce.detail.batchTracks[0] as unknown as typeof editingTrack.value;
+  if (ce.detail?.track)
+    editingTrack.value = ce.detail.track as unknown as typeof editingTrack.value;
+  else if (ce.detail?.batchTracks?.[0])
+    editingTrack.value = ce.detail.batchTracks[0] as unknown as typeof editingTrack.value;
   showingMBLookup.value = true;
 }
 onMounted(() => window.addEventListener('onda:openMusicbrainz', onMbEvent as unknown as never));
-onUnmounted(() => window.removeEventListener('onda:openMusicbrainz', onMbEvent as unknown as never));
+onUnmounted(() =>
+  window.removeEventListener('onda:openMusicbrainz', onMbEvent as unknown as never)
+);
 
 // Tabs — overview default (Minimal Spotify)
-type TabId = 'overview' | 'tracks' | 'video' | 'images' | 'folders' | 'artists' | 'albums' | 'playlists';
+type TabId =
+  'overview' | 'tracks' | 'video' | 'images' | 'folders' | 'artists' | 'albums' | 'playlists';
 const storedTab = (localStorage.getItem('onda.libraryTab') as TabId) || 'overview';
 const tab = ref<TabId>(storedTab as TabId);
 watch(tab, (v) => localStorage.setItem('onda.libraryTab', v));
@@ -83,14 +99,24 @@ const sortDir = ref<'asc' | 'desc'>('desc');
 const tabs = computed(
   () =>
     [
-      { id: 'overview', label: t('library.overview'), icon: LayoutDashboard, count: library.totalCount },
+      {
+        id: 'overview',
+        label: t('library.overview'),
+        icon: LayoutDashboard,
+        count: library.totalCount
+      },
       { id: 'tracks', label: t('library.tracks'), icon: Music2, count: library.audioCount },
       { id: 'video', label: t('library.video'), icon: Film, count: library.videoCount },
       { id: 'images', label: t('library.images'), icon: Images, count: library.imageCount },
       { id: 'folders', label: t('library.folders'), icon: Folder, count: library.folders.length },
       { id: 'artists', label: t('library.artists'), icon: Mic2, count: library.artists.length },
       { id: 'albums', label: t('library.albums'), icon: Disc3, count: library.albums.length },
-      { id: 'playlists', label: t('library.playlists'), icon: ListMusic, count: library.playlists.length }
+      {
+        id: 'playlists',
+        label: t('library.playlists'),
+        icon: ListMusic,
+        count: library.playlists.length
+      }
     ] as const
 );
 
@@ -110,7 +136,11 @@ function measureTabMode() {
   const buttons = Array.from(row.querySelectorAll<HTMLElement>('[data-tab]'));
   const labels = row.querySelectorAll<HTMLElement>('[data-tab-label]');
   const badges = row.querySelectorAll<HTMLElement>('[data-tab-count]');
-  if (buttons.length !== tabs.value.length || labels.length !== tabs.value.length || badges.length !== tabs.value.length)
+  if (
+    buttons.length !== tabs.value.length ||
+    labels.length !== tabs.value.length ||
+    badges.length !== tabs.value.length
+  )
     return;
 
   // Natural (un-truncated) widths of the current layout, so paddings and the
@@ -287,7 +317,9 @@ function playAllVideo() {
 }
 
 function playFolder(folderPath: string) {
-  const folderTracks = getAllTracksIndexed(folderPath, library.tracks, library.folders).filter((tr) => tr.type !== 'image');
+  const folderTracks = getAllTracksIndexed(folderPath, library.tracks, library.folders).filter(
+    (tr) => tr.type !== 'image'
+  );
   playTracks(folderTracks);
 }
 
@@ -319,13 +351,18 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
 <template>
   <div class="flex flex-col h-full">
     <!-- Sticky glass header — Minimal Spotify -->
-    <div class="sticky top-0 z-10  backdrop-blur  border-b border-base-300 shrink-0">
+    <div class="sticky top-0 z-10 backdrop-blur border-b border-base-300 shrink-0">
       <div class="px-4 pt-4 pb-3">
         <div class="flex items-center justify-between gap-3 mb-3">
           <div class="flex items-center gap-3 min-w-0">
             <h1 class="text-xl font-bold tracking-tight shrink-0">{{ $t('library.title') }}</h1>
-            <span class="hidden sm:inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-base-100 border border-base-300 text-base-content/60">
-              <span v-if="library.isScanning" class="w-2 h-2 rounded-full bg-success animate-pulse"></span>
+            <span
+              class="hidden sm:inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-base-100 border border-base-300 text-base-content/60"
+            >
+              <span
+                v-if="library.isScanning"
+                class="w-2 h-2 rounded-full bg-success animate-pulse"
+              ></span>
               <span v-else class="w-2 h-2 rounded-full bg-base-300"></span>
               {{ library.totalCount }} {{ $t('library.files') }}
             </span>
@@ -337,7 +374,8 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
               :title="$t('library.shuffleAll')"
               @click="shuffleAllTracks"
             >
-              <Shuffle :size="12" /> <span class="hidden lg:inline">{{ $t('library.shuffle') }}</span>
+              <Shuffle :size="12" />
+              <span class="hidden lg:inline">{{ $t('library.shuffle') }}</span>
             </button>
             <button
               class="p-2 rounded-full bg-base-100/(--glass-alpha) border border-base-300 hover:border-primary/30 hover:text-primary transition-colors"
@@ -372,13 +410,23 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
               :title="tabItem.label + ' (' + tabItem.count + ')'"
               @click="tab = tabItem.id as TabId"
             >
-              <component :is="tabItem.icon" :size="14" class="shrink-0" :class="tab === tabItem.id ? 'opacity-90' : 'opacity-60 group-hover:opacity-100'" />
+              <component
+                :is="tabItem.icon"
+                :size="14"
+                class="shrink-0"
+                :class="tab === tabItem.id ? 'opacity-90' : 'opacity-60 group-hover:opacity-100'"
+              />
               <span data-tab-label class="truncate">{{ tabItem.label }}</span>
               <span
                 data-tab-count
                 class="ml-0.5 px-1 sm:px-1.5 py-0.5 rounded-selector text-[10px] font-bold leading-none shrink-0 border"
-                :class="tab === tabItem.id ? 'bg-primary-content/20 text-primary-content border-primary-content/20' : 'bg-base-300 text-base-content/60 border-base-300'"
-              >{{ tabItem.count }}</span>
+                :class="
+                  tab === tabItem.id
+                    ? 'bg-primary-content/20 text-primary-content border-primary-content/20'
+                    : 'bg-base-300 text-base-content/60 border-base-300'
+                "
+                >{{ tabItem.count }}</span
+              >
             </button>
           </div>
         </div>
@@ -392,7 +440,9 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
             />
             <input
               v-model="query"
-              :placeholder="tab === 'overview' ? $t('library.searchPlaceholder') : $t('library.search')"
+              :placeholder="
+                tab === 'overview' ? $t('library.searchPlaceholder') : $t('library.search')
+              "
               class="w-full pl-9 pr-8 py-2.5 rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-base-content/40 transition-all"
             />
             <button
@@ -418,14 +468,21 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
                 <option value="duration">{{ $t('library.sortDuration') }}</option>
                 <option value="plays">{{ $t('library.sortPlays') }}</option>
               </select>
-              <ChevronDown :size="12" class="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-base-content/40" />
+              <ChevronDown
+                :size="12"
+                class="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-base-content/40"
+              />
             </div>
             <button
               class="p-2.5 rounded-selector bg-base-100 border border-base-300 hover:border-primary/30 text-base-content/60 hover:text-primary transition-colors"
               :title="sortDir === 'asc' ? '↑' : '↓'"
               @click="sortDir = sortDir === 'asc' ? 'desc' : 'asc'"
             >
-              <ArrowUpDown :size="14" :class="sortDir === 'desc' ? 'rotate-180' : ''" class="transition-transform" />
+              <ArrowUpDown
+                :size="14"
+                :class="sortDir === 'desc' ? 'rotate-180' : ''"
+                class="transition-transform"
+              />
             </button>
           </div>
 
@@ -440,24 +497,38 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
         </div>
 
         <!-- Quick filter chips — Spotify-like -->
-        <div v-if="tab === 'tracks'" class="flex gap-1.5 mt-2.5 overflow-x-auto scrollbar-none pb-1" style="scrollbar-width:none">
+        <div
+          v-if="tab === 'tracks'"
+          class="flex gap-1.5 mt-2.5 overflow-x-auto scrollbar-none pb-1"
+          style="scrollbar-width: none"
+        >
           <button
             v-for="c in chips"
             :key="c.id"
             class="px-3 py-1.5 rounded-selector text-xs font-medium whitespace-nowrap border transition-all duration-150"
-            :class="chip === c.id ? 'bg-base-content text-base-100 border-base-content' : 'bg-base-100 text-base-content/70 border-base-300 hover:border-base-content/20 hover:text-base-content'"
+            :class="
+              chip === c.id
+                ? 'bg-base-content text-base-100 border-base-content'
+                : 'bg-base-100 text-base-content/70 border-base-300 hover:border-base-content/20 hover:text-base-content'
+            "
             @click="chip = c.id as ChipId"
           >
             {{ c.label }}
           </button>
-          <span class="ml-auto text-[11px] text-base-content/40 self-center hidden sm:inline">{{ sortedFilteredTracks.length }} {{ $t('library.tracksCount') }}</span>
+          <span class="ml-auto text-[11px] text-base-content/40 self-center hidden sm:inline"
+            >{{ sortedFilteredTracks.length }} {{ $t('library.tracksCount') }}</span
+          >
         </div>
       </div>
     </div>
 
     <!-- Content -->
     <div v-if="library.isLoading && !library.isLoaded" class="flex-1 p-4 space-y-3">
-      <div v-for="i in 6" :key="i" class="h-12 rounded-box bg-base-100 border border-base-300 animate-pulse"></div>
+      <div
+        v-for="i in 6"
+        :key="i"
+        class="h-12 rounded-box bg-base-100 border border-base-300 animate-pulse"
+      ></div>
     </div>
     <div v-else class="flex-1 flex flex-col min-h-0">
       <LibraryOverviewTab
@@ -495,7 +566,12 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
         :images="filteredImages"
         @open="openImageViewer"
       />
-      <LibraryFoldersTab v-else-if="tab === 'folders'" :query="query" @play-folder="playFolder" @edit="onTrackEdit" />
+      <LibraryFoldersTab
+        v-else-if="tab === 'folders'"
+        :query="query"
+        @play-folder="playFolder"
+        @edit="onTrackEdit"
+      />
       <LibraryArtistsTab
         v-else-if="tab === 'artists'"
         :artists="filteredArtists"
@@ -516,7 +592,17 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
     </div>
   </div>
   <TrackTagEditor :track="editingTrack" @close="editingTrack = null" @saved="onTagSaved" />
-  <MusicBrainzLookup v-if="showingMBLookup" :initial-query="mbInitialQuery" :track="editingTrack" :batch-tracks="mbBatchTracks" @close="showingMBLookup = false; mbBatchTracks = undefined" @apply="onMBApply" />
+  <MusicBrainzLookup
+    v-if="showingMBLookup"
+    :initial-query="mbInitialQuery"
+    :track="editingTrack"
+    :batch-tracks="mbBatchTracks"
+    @close="
+      showingMBLookup = false;
+      mbBatchTracks = undefined;
+    "
+    @apply="onMBApply"
+  />
 </template>
 
 <style scoped>

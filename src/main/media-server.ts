@@ -234,7 +234,10 @@ async function handleStreamProxy(
     res.end('invalid url');
     return;
   }
-  logger.info('media-server', `stream proxy ${req.method} host=${current.hostname} range=${req.headers.range ?? 'none'}`);
+  logger.info(
+    'media-server',
+    `stream proxy ${req.method} host=${current.hostname} range=${req.headers.range ?? 'none'}`
+  );
 
   for (let hop = 0; hop <= STREAM_MAX_REDIRECTS; hop++) {
     const validated = validateStreamUrl(current.toString());

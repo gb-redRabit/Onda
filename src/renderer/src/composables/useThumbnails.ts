@@ -23,7 +23,8 @@ export function useThumbnails(size = 180) {
       return;
     }
     try {
-      const result = (await window.api?.invoke('media:batchThumbnails', toFetch, size)) as Record<string, string> | undefined;
+      const result = (await window.api?.invoke('media:batchThumbnails', toFetch, size)) as
+        Record<string, string> | undefined;
       if (result) {
         for (const [k, v] of Object.entries(result)) {
           globalCache.set(k, v);

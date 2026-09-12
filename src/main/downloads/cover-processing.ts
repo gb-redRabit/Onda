@@ -160,19 +160,7 @@ export async function processCover(
               '-an',
               target
             ]
-          : [
-              '-y',
-              '-i',
-              videoPath,
-              '-c:v',
-              'libvpx',
-              '-crf',
-              '10',
-              '-b:v',
-              '2500k',
-              '-an',
-              target
-            ];
+          : ['-y', '-i', videoPath, '-c:v', 'libvpx', '-crf', '10', '-b:v', '2500k', '-an', target];
       await runCommand(await ffmpegBin(), args, { timeout: 120000 });
       // Embed the YouTube thumbnail into the audio file (non-fatal: the
       // animated clip is already saved, and some containers can't hold tags).

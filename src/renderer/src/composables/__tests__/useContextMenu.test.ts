@@ -44,10 +44,7 @@ describe('useContextMenu.build', () => {
 
   it('keeps separators and plain items', () => {
     const { build } = useContextMenu();
-    const defs: ContextMenuAction<Ctx>[] = [
-      { separator: true, label: '' },
-      { label: 'Item' }
-    ];
+    const defs: ContextMenuAction<Ctx>[] = [{ separator: true, label: '' }, { label: 'Item' }];
     const items = build(defs, { kind: 'file', count: 1 });
     expect(items).toHaveLength(2);
     expect(items[0].separator).toBe(true);
@@ -73,9 +70,7 @@ describe('useContextMenu.build', () => {
   it('wraps action so it receives the provided ctx', () => {
     const { build } = useContextMenu();
     const received: Ctx[] = [];
-    const defs: ContextMenuAction<Ctx>[] = [
-      { label: 'Run', action: (c) => received.push(c) }
-    ];
+    const defs: ContextMenuAction<Ctx>[] = [{ label: 'Run', action: (c) => received.push(c) }];
     const items = build(defs, { kind: 'file', count: 7 });
     items[0].action?.();
     expect(received).toHaveLength(1);

@@ -109,7 +109,7 @@ Odtwarzanie · Wygląd · Motyw · Biblioteka · Sieć · System · Zaawansowane
 | Builder        | electron-vite 5 + Vite 7.2                  |
 | Style          | Tailwind CSS 4.3 + daisyUI (theme values)   |
 | Stan           | Pinia 3                                     |
-| Lokalizacja    | vue-i18n 11 (PL/EN, 942 kluczy)            |
+| Lokalizacja    | vue-i18n 11 (PL/EN, 942 kluczy)             |
 | Routing        | vue-router 4 (hash history, lazy loading)   |
 | Metadane       | music-metadata, node-id3                    |
 | Wirtualizacja  | @tanstack/vue-virtual                       |
@@ -156,8 +156,17 @@ npm run test:watch
 npm run build          # typecheck + build (main/preload/renderer)
 npm run build:win      # instalator NSIS (Windows)
 npm run build:mac      # DMG (macOS)
-npm run build:linux    # AppImage / snap / deb (Linux)
+npm run build:linux    # AppImage / deb / rpm / tar.gz (Linux)
 ```
+
+### Podpisywanie instalatorów
+
+Buildy publikowane z CI są **niespodpisywane** (Windows SmartScreen pokaże
+„Unknown publisher", macOS Gatekeeper wymusi otwarcie przez prawy przycisk →
+Open): podpisywanie wymaga certyfikatu Authenticode (Windows) i Apple
+Developer ID (macOS), patrz sekcja signing w `electron-builder.yml`. Do czasu
+ich dodania nie włączaj `verifyUpdateCodeSignature: true` — inaczej
+electron-updater odrzuca własne, niespodpisane aktualizacje.
 
 ---
 
@@ -194,7 +203,6 @@ Kluczowe koncepty:
 - **Bezpieczeństwo** — `sandbox`, `contextIsolation`, `nodeIntegration: false`, `webSecurity: true`, walidacja argumentów IPC po stronie main, szyfrowanie sekretów (`safeStorage`), allowlisty IPC, media-server token+origins+roots+realpath, redakcja sekretów w logach.
 - **Multi-platform streaming** — wspólny rejestr providerów (`platform.ts`), hybrydowy klient SC (api-v2 + fallback yt-dlp), cache URL-i (LRU TTL 2h, hardened z retry 403/backoff), proxy CORS-clean przez media-server.
 - **Persystencja** — electron-store (settings, mediaRoots), JSON atomiczny (download-queue, subscriptions, saved-streams), localStorage (biblioteka, settings renderera).
-
 
 ---
 

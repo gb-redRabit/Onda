@@ -45,14 +45,22 @@ const DOCKS: Array<{ id: AudioPipDock; gridRow: number; gridCol: number }> = [
 
 function dockIcon(id: AudioPipDock) {
   switch (id) {
-    case 'top-left': return CornerUpLeft;
-    case 'top-right': return CornerUpRight;
-    case 'bottom-left': return CornerDownLeft;
-    case 'bottom-right': return CornerDownRight;
-    case 'top': return PanelTop;
-    case 'bottom': return PanelBottom;
-    case 'left': return PanelLeft;
-    case 'right': return PanelRight;
+    case 'top-left':
+      return CornerUpLeft;
+    case 'top-right':
+      return CornerUpRight;
+    case 'bottom-left':
+      return CornerDownLeft;
+    case 'bottom-right':
+      return CornerDownRight;
+    case 'top':
+      return PanelTop;
+    case 'bottom':
+      return PanelBottom;
+    case 'left':
+      return PanelLeft;
+    case 'right':
+      return PanelRight;
   }
 }
 
@@ -184,7 +192,10 @@ onBeforeUnmount(() => {
                     :size="17"
                   />
                 </button>
-                <div v-else class="w-11 h-11 rounded-field bg-base-content/5 flex items-center justify-center">
+                <div
+                  v-else
+                  class="w-11 h-11 rounded-field bg-base-content/5 flex items-center justify-center"
+                >
                   <span class="text-[10px] text-base-content/40 text-center leading-tight">
                     {{ sizeHint }}
                   </span>
@@ -205,7 +216,9 @@ onBeforeUnmount(() => {
           <div>
             <SettingsSectionTitle
               :title="
-                (isEdge ? $t('settings.audioPipEdgeContent') : $t('settings.audioPipCornerContent')) +
+                (isEdge
+                  ? $t('settings.audioPipEdgeContent')
+                  : $t('settings.audioPipCornerContent')) +
                 ' · ' +
                 $t('settings.audioPipSizeHint') +
                 ': ' +
@@ -236,9 +249,7 @@ onBeforeUnmount(() => {
                 @update:model-value="settings.updateAppearance({ audioPipAutoShow: $event })"
               />
             </SettingsRow>
-            <SettingsRow
-              :label="$t('settings.audioPipAutoHide')"
-            >
+            <SettingsRow :label="$t('settings.audioPipAutoHide')">
               <SettingsToggle
                 :model-value="settings.appearance.audioPipAutoHide"
                 :disabled="!isEdge"

@@ -67,29 +67,29 @@ export async function getDuration(filePath: string): Promise<number> {
 // Shared cover writer used both by the `media:writeCover` IPC handler and by
 // the download pipeline (custom cover files / extracted frames). Embeds the
 // image into ID3 tags and invalidates the cover cache for the file.
-  export async function writeCoverToAudioFile(
-    filePath: string,
-    imageSource: number[] | string,
-    mimeOverride?: string
-  ): Promise<{ success: boolean; error?: string }> {
-    try {
-      let imageBuffer: Buffer;
-      let mime = 'image/jpeg';
-      if (typeof imageSource === 'string') {
-        imageBuffer = await readFile(imageSource);
-        const ext = extname(imageSource).toLowerCase();
-        const mimeMap: Record<string, string> = {
-          '.jpg': 'image/jpeg',
-          '.jpeg': 'image/jpeg',
-          '.png': 'image/png',
-          '.webp': 'image/webp',
-          '.bmp': 'image/bmp'
-        };
-        mime = mimeMap[ext] || 'image/jpeg';
-      } else {
-        imageBuffer = Buffer.from(imageSource);
-        if (mimeOverride) mime = mimeOverride;
-      }
+export async function writeCoverToAudioFile(
+  filePath: string,
+  imageSource: number[] | string,
+  mimeOverride?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    let imageBuffer: Buffer;
+    let mime = 'image/jpeg';
+    if (typeof imageSource === 'string') {
+      imageBuffer = await readFile(imageSource);
+      const ext = extname(imageSource).toLowerCase();
+      const mimeMap: Record<string, string> = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.webp': 'image/webp',
+        '.bmp': 'image/bmp'
+      };
+      mime = mimeMap[ext] || 'image/jpeg';
+    } else {
+      imageBuffer = Buffer.from(imageSource);
+      if (mimeOverride) mime = mimeOverride;
+    }
     NodeID3.update(
       {
         image: { mime, type: { id: 3 }, imageBuffer, description: 'Cover' }
@@ -170,7 +170,10 @@ export function registerMediaHandlers(): void {
         }
         const dir = dirname(oldPath);
         const ext = extname(oldPath);
-        const newPath = join(dir, safeName.toLowerCase().endsWith(ext.toLowerCase()) ? safeName : safeName + ext);
+        const newPath = join(
+          dir,
+          safeName.toLowerCase().endsWith(ext.toLowerCase()) ? safeName : safeName + ext
+        );
         await rename(oldPath, newPath);
         return { success: true, newPath };
       } catch (e: unknown) {
@@ -211,7 +214,9 @@ export function registerMediaHandlers(): void {
         }
         return null;
       } catch (e) {
-        const isEnoent = Boolean(e && typeof e === 'object' && 'code' in e && (e as { code?: string }).code === 'ENOENT');
+        const isEnoent = Boolean(
+          e && typeof e === 'object' && 'code' in e && (e as { code?: string }).code === 'ENOENT'
+        );
         if (isEnoent) logger.info('media', `readCover file missing ${filePath}`);
         else logger.warn('media', `readCover failed for ${filePath}`, e);
         return null;

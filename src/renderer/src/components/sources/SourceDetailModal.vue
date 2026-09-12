@@ -49,7 +49,9 @@ function browserUrl(item: SourceItem): string {
           </button>
         </div>
 
-        <div class="flex-1 min-h-0 flex items-center justify-center bg-neutral/40 p-4 overflow-auto">
+        <div
+          class="flex-1 min-h-0 flex items-center justify-center bg-neutral/40 p-4 overflow-auto"
+        >
           <img
             v-if="props.item.type === 'image' && mediaUrl(props.item)"
             :src="mediaUrl(props.item)"

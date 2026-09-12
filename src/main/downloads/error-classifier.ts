@@ -10,7 +10,11 @@ export function classifyYtDlpError(stderr: string): IpcDownloadErrorCode {
   if (/(this video is private|video is private|private video)/.test(s)) {
     return 'private';
   }
-  if (/(bot|recaptcha|captcha|http error 429|too many requests|automated traffic|unusual traffic)/.test(s)) {
+  if (
+    /(bot|recaptcha|captcha|http error 429|too many requests|automated traffic|unusual traffic)/.test(
+      s
+    )
+  ) {
     return 'bot-block';
   }
   if (
@@ -30,9 +34,7 @@ export function classifyYtDlpError(stderr: string): IpcDownloadErrorCode {
   if (/(ffmpeg|ffprobe|avconv|avprobe)/.test(s)) {
     return 'dependency';
   }
-  if (
-    /(proxy)/.test(s)
-  ) {
+  if (/(proxy)/.test(s)) {
     return 'proxy';
   }
   if (

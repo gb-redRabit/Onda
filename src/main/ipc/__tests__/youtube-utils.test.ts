@@ -472,7 +472,8 @@ describe('extractAvatarUrl', () => {
   });
 
   it('extracts a yt3.googleusercontent.com avatar', () => {
-    const html = 'var ytInitialData = {"avatar":{"url":"https://yt3.googleusercontent.com/abc=s800-c-k"}}';
+    const html =
+      'var ytInitialData = {"avatar":{"url":"https://yt3.googleusercontent.com/abc=s800-c-k"}}';
     expect(extractAvatarUrl(html)).toBe('https://yt3.googleusercontent.com/abc=s800-c-k');
   });
 
@@ -675,7 +676,9 @@ describe('parseStreamGetOutput', () => {
   });
 
   it('flags hls playlists as unsupported', () => {
-    expect(parseStreamGetOutput('https://manifest.googlevideo.com/api/manifest/hls_variant/master.m3u8')).toEqual({
+    expect(
+      parseStreamGetOutput('https://manifest.googlevideo.com/api/manifest/hls_variant/master.m3u8')
+    ).toEqual({
       ok: false,
       code: 'hls'
     });

@@ -3,7 +3,14 @@ import { matchesShortcut } from '../shortcuts';
 import { DEFAULT_SHORTCUTS } from '../constants';
 
 function keyEvent(partial: Partial<KeyboardEvent>): KeyboardEvent {
-  return { key: '', ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...partial } as KeyboardEvent;
+  return {
+    key: '',
+    ctrlKey: false,
+    metaKey: false,
+    altKey: false,
+    shiftKey: false,
+    ...partial
+  } as KeyboardEvent;
 }
 
 describe('matchesShortcut', () => {
@@ -11,7 +18,9 @@ describe('matchesShortcut', () => {
     expect(matchesShortcut('Ctrl+K', keyEvent({ key: 'k', ctrlKey: true }))).toBe(true);
     expect(matchesShortcut('Ctrl+K', keyEvent({ key: 'K', ctrlKey: true }))).toBe(true);
     expect(matchesShortcut('Ctrl+K', keyEvent({ key: 'k' }))).toBe(false);
-    expect(matchesShortcut('Ctrl+K', keyEvent({ key: 'k', shiftKey: true, ctrlKey: true }))).toBe(false);
+    expect(matchesShortcut('Ctrl+K', keyEvent({ key: 'k', shiftKey: true, ctrlKey: true }))).toBe(
+      false
+    );
   });
 
   it('matches Alt+1', () => {
@@ -42,7 +51,9 @@ describe('matchesShortcut', () => {
   });
 
   it('rejects three-modifier overrides', () => {
-    expect(matchesShortcut('Ctrl+Shift+Z', keyEvent({ key: 'z', ctrlKey: true, shiftKey: true }))).toBe(true);
+    expect(
+      matchesShortcut('Ctrl+Shift+Z', keyEvent({ key: 'z', ctrlKey: true, shiftKey: true }))
+    ).toBe(true);
     expect(matchesShortcut('Ctrl+Shift+Z', keyEvent({ key: 'z', ctrlKey: true }))).toBe(false);
   });
 

@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { audioEngine } from '@renderer/modules/audioEngine';
-import { applyVolumeTarget, seekTarget, skipTarget, getTargetPosition } from '@renderer/utils/mediaTransport';
+import {
+  applyVolumeTarget,
+  seekTarget,
+  skipTarget,
+  getTargetPosition
+} from '@renderer/utils/mediaTransport';
 
 const stubVideo = () => ({ currentTime: 30, duration: 120 }) as HTMLVideoElement;
 

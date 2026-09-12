@@ -11,7 +11,9 @@ import {
 describe('plugin protocol helpers', () => {
   it('wrapIntoWorker/readWorkerMsg round-trip', () => {
     expect(readWorkerMsg(wrapIntoWorker({ type: 'ready' }))).toEqual({ type: 'ready' });
-    expect(readWorkerMsg(wrapIntoWorker({ type: 'api-request', id: 3, op: 'query', args: ['x'] }))).toEqual({
+    expect(
+      readWorkerMsg(wrapIntoWorker({ type: 'api-request', id: 3, op: 'query', args: ['x'] }))
+    ).toEqual({
       type: 'api-request',
       id: 3,
       op: 'query',
@@ -24,7 +26,9 @@ describe('plugin protocol helpers', () => {
     expect(readWorkerMsg({ __onda: { nope: 1 } })).toBeNull();
   });
   it('readMainMsg decodes api-response', () => {
-    expect(readMainMsg(wrapIntoWorker({ type: 'api-response', id: 5, ok: true, data: 42 }))).toEqual({
+    expect(
+      readMainMsg(wrapIntoWorker({ type: 'api-response', id: 5, ok: true, data: 42 }))
+    ).toEqual({
       type: 'api-response',
       id: 5,
       ok: true,
@@ -42,7 +46,7 @@ describe('PLUGIN_API_SHIM', () => {
   it('exposes the sandboxed api surface', () => {
     for (const needle of [
       'self.api = api',
-      'post(\'ready\', {})',
+      "post('ready', {})",
       'registerCommand',
       'storage:get',
       'storage:set',
@@ -85,7 +89,13 @@ describe('PLUGIN_API_SHIM runtime', () => {
     const { api, messages } = runShim();
     const register = api.registerCommand as (cmd: unknown) => () => void;
     register({ id: 'hello:greet', label: 'Hello' });
-    register({ id: 'hello:bye', label: 'Bye', icon: 'X', location: 'audio-view', shortcut: 'Ctrl+Alt+T' });
+    register({
+      id: 'hello:bye',
+      label: 'Bye',
+      icon: 'X',
+      location: 'audio-view',
+      shortcut: 'Ctrl+Alt+T'
+    });
 
     expect(readWorkerMsg(messages[0])).toEqual({ type: 'ready' });
     expect(readWorkerMsg(messages[1])).toEqual({
@@ -94,7 +104,13 @@ describe('PLUGIN_API_SHIM runtime', () => {
     });
     expect(readWorkerMsg(messages[2])).toEqual({
       type: 'register-command',
-      command: { id: 'hello:bye', label: 'Bye', icon: 'X', location: 'audio-view', shortcut: 'Ctrl+Alt+T' }
+      command: {
+        id: 'hello:bye',
+        label: 'Bye',
+        icon: 'X',
+        location: 'audio-view',
+        shortcut: 'Ctrl+Alt+T'
+      }
     });
   });
 
@@ -125,9 +141,15 @@ describe('PLUGIN_API_SHIM runtime', () => {
 
   it('api.settings posts settings ops through the envelope', () => {
     const { api, messages } = runShim();
-    const settings = api.settings as { get: (k: string) => Promise<unknown>; set: (k: string, v: unknown) => Promise<unknown> };
+    const settings = api.settings as {
+      get: (k: string) => Promise<unknown>;
+      set: (k: string, v: unknown) => Promise<unknown>;
+    };
     void settings.get('shape');
-    expect(readWorkerMsg(messages[messages.length - 1])).toMatchObject({ op: 'settings:get', args: ['shape'] });
+    expect(readWorkerMsg(messages[messages.length - 1])).toMatchObject({
+      op: 'settings:get',
+      args: ['shape']
+    });
     void settings.set('shape', 'hexagon');
     expect(readWorkerMsg(messages[messages.length - 1])).toMatchObject({
       op: 'settings:set',

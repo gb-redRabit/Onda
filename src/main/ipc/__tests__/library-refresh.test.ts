@@ -106,8 +106,16 @@ describe('scanDir incremental refresh', () => {
 
   it('filterCoverSiblingVideos drops twins and _rev variants, keeps standalone videos', () => {
     const f = (name: string, type: 'audio' | 'video'): MediaFile => ({
-      id: name, name, path: `D:\\${name}`, extension: `.${type === 'audio' ? 'mp3' : 'mp4'}`,
-      mimeType: '', size: 1, type, addedAt: 0, playCount: 0, mtime: 0
+      id: name,
+      name,
+      path: `D:\\${name}`,
+      extension: `.${type === 'audio' ? 'mp3' : 'mp4'}`,
+      mimeType: '',
+      size: 1,
+      type,
+      addedAt: 0,
+      playCount: 0,
+      mtime: 0
     });
     const audio = f('Song.MP3', 'audio');
     const exactTwin = f('Song.mp4', 'video');

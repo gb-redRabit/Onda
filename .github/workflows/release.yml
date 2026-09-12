@@ -1,0 +1,36 @@
+name: Release
+
+# Automatyczna publikacja bez zatwierdzania (plan 11.1):
+#   push na main → release-please tworzy PR wydania (bump wersji + wpis w
+#   CHANGELOG.md) → po merge PR-a tworzy tag vX.Y.Z + release na GitHubie →
+#   tag odpala istniejący build.yml (`on: push: tags: v*`) → instalatory
+#   budowane i publikowane z nową wersją.
+#   Wersja wyliczana z commitów Conventional Commits:
+#     feat:               → minor
+#     fix:                → patch
+#     BREAKING CHANGE:    → major
+#   Wykorzystuje GH_TOKEN (repo scope) — te same uprawnienia do tagów i PR-ów
+#   które build.yml już używa do publish. Release publikowany od razu
+#   (bez draft/review), zgodnie z planem 11.1.
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          release-type: node
+          package-name: onda

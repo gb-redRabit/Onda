@@ -364,9 +364,7 @@ watch(
       </div>
 
       <div v-if="yt.channelLoading && !yt.channelItems.length" class="flex justify-center py-8">
-        <div
-          class="w-6 h-6 border border-primary border-t-transparent rounded-full animate-spin"
-        />
+        <div class="w-6 h-6 border border-primary border-t-transparent rounded-full animate-spin" />
       </div>
 
       <div v-else-if="yt.channelItems.length" class="space-y-4">

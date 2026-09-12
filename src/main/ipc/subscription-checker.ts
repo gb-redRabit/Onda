@@ -205,10 +205,7 @@ async function runCheck(
     }
     try {
       const platform = platformOf(sub);
-      const { items: all, thumbnail, title } = await fetchAllChannelVideos(
-        sub.channelId,
-        platform
-      );
+      const { items: all, thumbnail, title } = await fetchAllChannelVideos(sub.channelId, platform);
       // Separates "new" (before baseline) from "not downloaded" and "downloaded"
       // using the subscription's persisted state.
       const { newArrivals, remainingCount } = computeChannelDiff({
@@ -286,7 +283,8 @@ async function runCheck(
             url: `https://www.youtube.com/watch?v=${i.id}`,
             title: i.title,
             thumbnail: i.thumbnail,
-            kind: (sub.downloadPrefs?.kind || globalConfig.defaultKind || 'audio') as 'audio' | 'video',
+            kind: (sub.downloadPrefs?.kind || globalConfig.defaultKind || 'audio') as
+              'audio' | 'video',
             format: sub.downloadPrefs?.format || globalConfig.defaultAudioFormat,
             quality: sub.downloadPrefs?.quality || globalConfig.defaultVideoQuality,
             outputDir: sub.downloadPrefs?.outputDir || globalConfig.defaultPath,

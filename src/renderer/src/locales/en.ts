@@ -388,14 +388,14 @@ export default {
     autoPause: 'Auto-pause on focus loss',
     rememberPos: 'Remember playback position',
     hideCursor: 'Hide cursor',
-    cursorHideHint:
-      'Also applies to the audio view — the HUD hides together with the cursor.',
+    cursorHideHint: 'Also applies to the audio view — the HUD hides together with the cursor.',
     playbackSection: 'Playback',
     defaultVolume: 'Default volume:',
     defaultSpeed: 'Default speed:',
     cursorHideTimeout: 'Cursor hide timeout:',
     resumePromptTimeout: 'Resume prompt timeout:',
-    resumePromptHint: 'The prompt auto-dismisses after this time, or as soon as you control playback.',
+    resumePromptHint:
+      'The prompt auto-dismisses after this time, or as soon as you control playback.',
     downloadSection: 'Download',
     defaultAudioFormat: 'Default audio format',
     audioNative: 'native (no conversion)',
@@ -789,7 +789,8 @@ export default {
   },
   plugins: {
     title: 'Onda Plugins',
-    description: 'Sandboxed extensions running in a dedicated worker. Data and network access are controlled by the manifest.',
+    description:
+      'Sandboxed extensions running in a dedicated worker. Data and network access are controlled by the manifest.',
     empty: 'No plugins installed.',
     installFromFolder: 'Install from folder',
     refresh: 'Refresh',
@@ -806,8 +807,7 @@ export default {
       sections: [
         {
           heading: 'What is a plugin?',
-          body:
-            'A plugin is a JavaScript extension of Onda that runs in a separate, sandboxed web worker. It has no access to the application window or the DOM: the api object is the only channel to talk to the app. Permissions (data, network, player, notifications, appearance) are declared in the manifest, and every network request is additionally filtered by the main process.'
+          body: 'A plugin is a JavaScript extension of Onda that runs in a separate, sandboxed web worker. It has no access to the application window or the DOM: the api object is the only channel to talk to the app. Permissions (data, network, player, notifications, appearance) are declared in the manifest, and every network request is additionally filtered by the main process.'
         },
         {
           heading: 'Plugin structure',
@@ -982,8 +982,7 @@ export default {
         },
         {
           heading: 'Custom layout variants (layoutElements)',
-          body:
-            'A plugin can add new decoration options for existing layout elements. Declare them in the manifest (requires permissions.visual). Each entry is an object { element, variant, label? }:',
+          body: 'A plugin can add new decoration options for existing layout elements. Declare them in the manifest (requires permissions.visual). Each entry is an object { element, variant, label? }:',
           code: `«{
   "name": "My plugin",
   "version": "1.0.0",
@@ -1419,7 +1418,8 @@ api.registerCommand({
     cut: 'Cut',
     paste: 'Paste',
     clickAgainToClose: 'Click again outside to close',
-    unsavedChangesClickAgain: 'You have unsaved changes — click again outside to close, or use Cancel/Save'
+    unsavedChangesClickAgain:
+      'You have unsaved changes — click again outside to close, or use Cancel/Save'
   },
   wizard: {
     title: 'Welcome to Onda',
@@ -1674,7 +1674,8 @@ api.registerCommand({
     variant_cover_ring: 'Ring',
     variant_cover_glass: 'Glass',
     decorationLabel: 'Decoration',
-    decorationHint: 'Decorations can also be set from a plugin — then they apply globally in the audio view.',
+    decorationHint:
+      'Decorations can also be set from a plugin — then they apply globally in the audio view.',
     decoration_cover_none: 'None',
     decoration_cover_triangle: 'Triangle',
     decoration_cover_circle: 'Circle',

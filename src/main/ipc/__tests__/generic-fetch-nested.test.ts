@@ -57,10 +57,17 @@ describe('buildUrl — placeholders ({field} / {n})', () => {
   });
 
   it('resolves {slug} and {n} together (episode path)', () => {
-    const url = buildUrl(SOURCE, endpoint({ path: '/episodes/find/{slug}/{n}' }), undefined, undefined, undefined, {
-      slug: 'dragon',
-      n: 7
-    });
+    const url = buildUrl(
+      SOURCE,
+      endpoint({ path: '/episodes/find/{slug}/{n}' }),
+      undefined,
+      undefined,
+      undefined,
+      {
+        slug: 'dragon',
+        n: 7
+      }
+    );
     expect(url).toBe('https://api.docchi.pl/v1/episodes/find/dragon/7');
   });
 
@@ -70,16 +77,30 @@ describe('buildUrl — placeholders ({field} / {n})', () => {
   });
 
   it('keeps unresolved placeholders raw when the field is absent', () => {
-    const url = buildUrl(SOURCE, endpoint({ path: '/series/find/{slug}' }), undefined, undefined, undefined, {
-      name: 'no slug here'
-    });
+    const url = buildUrl(
+      SOURCE,
+      endpoint({ path: '/series/find/{slug}' }),
+      undefined,
+      undefined,
+      undefined,
+      {
+        name: 'no slug here'
+      }
+    );
     expect(url).toBe('https://api.docchi.pl/v1/series/find/{slug}');
   });
 
   it('encodes path placeholder values', () => {
-    const url = buildUrl(SOURCE, endpoint({ path: '/series/find/{slug}' }), undefined, undefined, undefined, {
-      slug: 'a b/c'
-    });
+    const url = buildUrl(
+      SOURCE,
+      endpoint({ path: '/series/find/{slug}' }),
+      undefined,
+      undefined,
+      undefined,
+      {
+        slug: 'a b/c'
+      }
+    );
     expect(url).toBe('https://api.docchi.pl/v1/series/find/a%20b%2Fc');
   });
 
@@ -98,7 +119,10 @@ describe('buildUrl — placeholders ({field} / {n})', () => {
 
 describe('mapResponse — single-object wrapping', () => {
   it('maps an array at the root', () => {
-    const items = mapResponse([{ id: 1, title: 'A' }], endpoint({ mapping: { fields: { id: 'id', title: 'title' } } }));
+    const items = mapResponse(
+      [{ id: 1, title: 'A' }],
+      endpoint({ mapping: { fields: { id: 'id', title: 'title' } } })
+    );
     expect(items).toHaveLength(1);
     expect(items[0]).toMatchObject({ id: '1', title: 'A' });
   });
@@ -144,7 +168,9 @@ describe('mapResponse — single-object wrapping', () => {
   });
 
   it('returns [] when arrayPath points to a non-array', () => {
-    expect(mapResponse({ data: { id: 1 } }, endpoint({ mapping: { arrayPath: 'data', fields: {} } }))).toEqual([]);
+    expect(
+      mapResponse({ data: { id: 1 } }, endpoint({ mapping: { arrayPath: 'data', fields: {} } }))
+    ).toEqual([]);
   });
 });
 
@@ -158,7 +184,11 @@ describe('generateRangeItems — episodes 1..N from parent context', () => {
       { slug: 'dragon', episodes: 3 }
     );
     expect(items).toHaveLength(3);
-    expect(items[0]).toMatchObject({ id: '1', title: 'Odcinek 1', extra: { slug: 'dragon', n: 1 } });
+    expect(items[0]).toMatchObject({
+      id: '1',
+      title: 'Odcinek 1',
+      extra: { slug: 'dragon', n: 1 }
+    });
     expect(items[2]).toMatchObject({ id: '3', title: 'Odcinek 3', extra: { n: 3, episodes: 3 } });
   });
 
@@ -185,10 +215,14 @@ describe('generateRangeItems — episodes 1..N from parent context', () => {
   });
 
   it('returns [] for range mode without context', () => {
-    expect(generateRangeItems(ep({ range: { countField: 'episodes', startAt: 1 } }), undefined)).toEqual([]);
+    expect(
+      generateRangeItems(ep({ range: { countField: 'episodes', startAt: 1 } }), undefined)
+    ).toEqual([]);
   });
 
   it('returns [] when the count field is missing', () => {
-    expect(generateRangeItems(ep({ range: { countField: 'episodes', startAt: 1 } }), { slug: 'x' })).toEqual([]);
+    expect(
+      generateRangeItems(ep({ range: { countField: 'episodes', startAt: 1 } }), { slug: 'x' })
+    ).toEqual([]);
   });
 });

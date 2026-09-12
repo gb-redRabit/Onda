@@ -41,7 +41,8 @@ function togglePlaylist(e: MouseEvent) {
   if (showPlaylistMenu.value) {
     const onClickOutside = (ev: MouseEvent) => {
       const t = ev.target as HTMLElement;
-      if (!playlistBtn.value?.contains(t) && !t.closest('.playlist-popup')) showPlaylistMenu.value = false;
+      if (!playlistBtn.value?.contains(t) && !t.closest('.playlist-popup'))
+        showPlaylistMenu.value = false;
     };
     document.addEventListener('click', onClickOutside, { once: true });
   }
@@ -54,7 +55,10 @@ function addAlbumToPlaylist(pid: string) {
 // okładka albumu = pierwszy plik audio z którego da się wyciągnąć okładkę
 const firstAudio = computed(() => props.tracks.find((t) => t.type === 'audio') ?? props.tracks[0]);
 const cover = computed(() => player.getCover(firstAudio.value?.path || ''));
-const artist = computed(() => firstAudio.value?.metadata?.artist || props.tracks[0]?.metadata?.artist || t('common.unknown'));
+const artist = computed(
+  () =>
+    firstAudio.value?.metadata?.artist || props.tracks[0]?.metadata?.artist || t('common.unknown')
+);
 const year = computed(() => firstAudio.value?.metadata?.year ?? props.tracks[0]?.metadata?.year);
 const count = computed(() => props.tracks.length);
 
@@ -99,49 +103,62 @@ function onDragStart(e: DragEvent) {
     @dragstart="onDragStart"
     @mouseenter="onHover"
   >
+    <div
+      class="w-full aspect-square bg-neutral flex items-center justify-center relative overflow-hidden"
+    >
+      <MediaCover
+        :path="displayPath"
+        :cover="displayCover.data ? displayCover : cover"
+        :size="28"
+        :render-as-video="false"
+        fallback="disc"
+      />
       <div
-        class="w-full aspect-square bg-neutral flex items-center justify-center relative overflow-hidden"
+        class="absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/20 transition-colors"
       >
-        <MediaCover
-          :path="displayPath"
-          :cover="displayCover.data ? displayCover : cover"
-          :size="28"
-          :render-as-video="false"
-          fallback="disc"
-        />
         <div
-          class="absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/20 transition-colors"
+          class="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
         >
-          <div
-            class="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <Music2 :size="18" class="text-primary-content ml-0.5" />
-          </div>
-        </div>
-        <div class="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity" @click.stop>
-          <div ref="playlistBtn" class="relative">
-            <button
-              class="w-7 h-7 rounded-full bg-neutral/60 backdrop-blur-sm text-neutral-content hover:bg-neutral/80 flex items-center justify-center fx-depth"
-              @click="togglePlaylist"
-            >
-              <Plus :size="14" />
-            </button>
-            <Teleport to="body">
-              <div v-if="showPlaylistMenu" class="playlist-popup fixed w-48 bg-base-100 border border-base-300 rounded-box shadow-xl py-1 z-50" :style="playlistPopupStyle" @click.stop>
-                <button
-                  v-for="p in library.playlists"
-                  :key="p.id"
-                  class="w-full text-left px-3 py-1.5 text-xs hover:bg-base-content/10 truncate"
-                  @click="addAlbumToPlaylist(p.id)"
-                >
-                  <ListMusic :size="12" class="inline mr-1" />{{ p.name }}
-                </button>
-                <div v-if="library.playlists.length === 0" class="px-3 py-1.5 text-xs text-base-content/50 italic">{{ $t('common.noPlaylists') }}</div>
-              </div>
-            </Teleport>
-          </div>
+          <Music2 :size="18" class="text-primary-content ml-0.5" />
         </div>
       </div>
+      <div
+        class="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+        @click.stop
+      >
+        <div ref="playlistBtn" class="relative">
+          <button
+            class="w-7 h-7 rounded-full bg-neutral/60 backdrop-blur-sm text-neutral-content hover:bg-neutral/80 flex items-center justify-center fx-depth"
+            @click="togglePlaylist"
+          >
+            <Plus :size="14" />
+          </button>
+          <Teleport to="body">
+            <div
+              v-if="showPlaylistMenu"
+              class="playlist-popup fixed w-48 bg-base-100 border border-base-300 rounded-box shadow-xl py-1 z-50"
+              :style="playlistPopupStyle"
+              @click.stop
+            >
+              <button
+                v-for="p in library.playlists"
+                :key="p.id"
+                class="w-full text-left px-3 py-1.5 text-xs hover:bg-base-content/10 truncate"
+                @click="addAlbumToPlaylist(p.id)"
+              >
+                <ListMusic :size="12" class="inline mr-1" />{{ p.name }}
+              </button>
+              <div
+                v-if="library.playlists.length === 0"
+                class="px-3 py-1.5 text-xs text-base-content/50 italic"
+              >
+                {{ $t('common.noPlaylists') }}
+              </div>
+            </div>
+          </Teleport>
+        </div>
+      </div>
+    </div>
     <div class="p-2.5">
       <div class="text-sm font-medium truncate">{{ name }}</div>
       <div class="text-xs text-base-content/50 mt-0.5 truncate">

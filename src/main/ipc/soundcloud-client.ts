@@ -278,9 +278,7 @@ export async function scSearchTracks(
     limit,
     offset
   });
-  return (res.collection || [])
-    .filter((t) => t.id != null && t.title)
-    .map((t) => mapScTrack(t));
+  return (res.collection || []).filter((t) => t.id != null && t.title).map((t) => mapScTrack(t));
 }
 
 export type ScResolved =
@@ -333,10 +331,7 @@ export interface ScProfileSnapshot {
 // Loads a profile's metadata and up to `cap` newest tracks in 200-item pages.
 // Used by "browse whole profile" and the subscription checker (one logical
 // call instead of many paginated ones).
-export async function scProfileSnapshot(
-  profileUrl: string,
-  cap = 300
-): Promise<ScProfileSnapshot> {
+export async function scProfileSnapshot(profileUrl: string, cap = 300): Promise<ScProfileSnapshot> {
   const resource = await scResolve(profileUrl);
   if (resource.kind !== 'user') throw new ScApiError('Not a SoundCloud profile');
   const user = resource.user;

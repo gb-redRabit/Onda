@@ -16,9 +16,9 @@ jobs:
           - os: windows-latest
             args: --win
           - os: ubuntu-latest
-            args: --linux AppImage deb
+            args: --linux AppImage deb rpm tar.gz
           - os: macos-latest
-            args: --mac
+            args: --mac --universal
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -42,8 +42,42 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Fetch ffmpeg
+        uses: actions/cache@v4
+        id: ffmpeg-cache
+        with:
+          path: resources/ffmpeg
+          key: ffmpeg-7.1-${{ runner.os }}-${{ runner.arch }}
+
+      - name: Download ffmpeg if not cached
+        if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
+        run: npm run fetch:ffmpeg
+
+      # Universal mac (--universal) needs BOTH FFmpeg arches bundled: the
+      # process.arch differs at runtime on Intel (x64) vs Apple Silicon
+      # (arm64). The arm64 macos runner cached darwin-arm64 above; pull the
+      # x64 build too. Gated to macOS — Win/Linux runners would otherwise
+      # waste ~120MB downloading a binary they never ship, and each run only
+      # writes its own <platform>-<arch> subdir so this never clobbers arm64.
+      - name: Download x64 ffmpeg for universal mac
+        if: runner.os == 'macOS' && steps.ffmpeg-cache.outputs.cache-hit != 'true'
+        run: npm run fetch:ffmpeg -- --platform darwin --arch x64
+
       - name: Build & Publish
         run: npx electron-builder ${{ matrix.args }} --publish always
+
+      - name: Smoke test installer (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $v = & "${{ github.workspace }}\dist\win-unpacked\onda.exe" --version
+          echo "version: $v"
+
+      - name: Smoke test unpacked app (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          chmod +x "${{ github.workspace }}/dist/linux-unpacked/onda"
+          "${{ github.workspace }}/dist/linux-unpacked/onda" --version
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GH_OWNER: ${{ github.repository_owner }}

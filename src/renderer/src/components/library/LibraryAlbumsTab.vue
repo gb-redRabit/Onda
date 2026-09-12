@@ -27,7 +27,8 @@ const sortKey = ref<'name' | 'count' | 'year'>('name');
 const sortedAlbums = computed(() => {
   const list = [...props.albums];
   if (sortKey.value === 'count') list.sort((a, b) => b[1].length - a[1].length);
-  else if (sortKey.value === 'year') list.sort((a, b) => (b[1][0]?.metadata?.year || 0) - (a[1][0]?.metadata?.year || 0));
+  else if (sortKey.value === 'year')
+    list.sort((a, b) => (b[1][0]?.metadata?.year || 0) - (a[1][0]?.metadata?.year || 0));
   else list.sort((a, b) => a[0].localeCompare(b[0]));
   return list;
 });
@@ -82,12 +83,17 @@ onUnmounted(() => grid.destroy());
     <p class="text-sm">{{ $t('library.noAlbums') }}</p>
   </div>
   <template v-else>
-    <div class="flex items-center justify-between px-4 py-2 border-b border-base-300 bg-base-100/50 backdrop-blur shrink-0 sticky top-0 z-[1]">
+    <div
+      class="flex items-center justify-between px-4 py-2 border-b border-base-300 bg-base-100/50 backdrop-blur shrink-0 sticky top-0 z-[1]"
+    >
       <span class="text-xs font-medium text-base-content/60"
         >{{ albums.length }} {{ $t('library.tracksCount') }}</span
       >
       <div class="flex items-center gap-1.5">
-        <select v-model="sortKey" class="px-2 py-1 rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none">
+        <select
+          v-model="sortKey"
+          class="px-2 py-1 rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none"
+        >
           <option value="name">Nazwa A→Z</option>
           <option value="count">Liczba utworów</option>
           <option value="year">Rok</option>
@@ -145,18 +151,21 @@ onUnmounted(() => grid.destroy());
               @click="emit('playTracks', sortedAlbums[v.index][1])"
               @mouseenter="onAlbumHover(sortedAlbums[v.index][1][0]?.path || '')"
             >
-              <div class="w-10 h-10 rounded-field overflow-hidden bg-base-200 border border-base-300 shrink-0 flex items-center justify-center">
+              <div
+                class="w-10 h-10 rounded-field overflow-hidden bg-base-200 border border-base-300 shrink-0 flex items-center justify-center"
+              >
                 <MediaCover
-              :path="sortedAlbums[v.index][1][0]?.path"
-              :size="16"
-              :render-as-video="false"
-              fallback="disc"
-            />
+                  :path="sortedAlbums[v.index][1][0]?.path"
+                  :size="16"
+                  :render-as-video="false"
+                  fallback="disc"
+                />
               </div>
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-medium truncate">{{ sortedAlbums[v.index][0] }}</div>
                 <div class="text-xs text-base-content/50 truncate">
-                  {{ sortedAlbums[v.index][1][0]?.metadata?.artist || $t('common.unknown') }} · {{ sortedAlbums[v.index][1].length }} {{ $t('library.tracksCount') }}
+                  {{ sortedAlbums[v.index][1][0]?.metadata?.artist || $t('common.unknown') }} ·
+                  {{ sortedAlbums[v.index][1].length }} {{ $t('library.tracksCount') }}
                 </div>
               </div>
             </div>

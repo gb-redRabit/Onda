@@ -2,11 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtemp, writeFile, readdir, rm } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import {
-  isSubtitleFile,
-  findSiblingSubtitleFiles,
-  moveSubtitlesToFolder
-} from '../subtitle-files';
+import { isSubtitleFile, findSiblingSubtitleFiles, moveSubtitlesToFolder } from '../subtitle-files';
 
 describe('isSubtitleFile', () => {
   it('recognizes srt/vtt/ass extensions', () => {

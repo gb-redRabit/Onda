@@ -121,8 +121,26 @@ const GEOMETRY_FIELDS: Record<string, Sanitizer> = {
   noise: zeroOne
 };
 
-const AUDIO_PIP_DOCKS = ['top', 'bottom', 'left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'] as const;
-const AUDIO_PIP_ELEMENTS = ['cover', 'trackInfo', 'controls', 'progress', 'volume', 'viz', 'nextTrack', 'eq'] as const;
+const AUDIO_PIP_DOCKS = [
+  'top',
+  'bottom',
+  'left',
+  'right',
+  'top-left',
+  'top-right',
+  'bottom-left',
+  'bottom-right'
+] as const;
+const AUDIO_PIP_ELEMENTS = [
+  'cover',
+  'trackInfo',
+  'controls',
+  'progress',
+  'volume',
+  'viz',
+  'nextTrack',
+  'eq'
+] as const;
 
 function pipElementArray(v: unknown): unknown | undefined {
   if (!Array.isArray(v)) return undefined;
@@ -259,7 +277,16 @@ const APPEARANCE_FIELDS: Record<string, Sanitizer> = {
   showAlbums: bool,
   locale: enumOf(['pl', 'en', 'auto']),
   animations: bool,
-  audioPipDock: enumOf(['top', 'bottom', 'left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right']),
+  audioPipDock: enumOf([
+    'top',
+    'bottom',
+    'left',
+    'right',
+    'top-left',
+    'top-right',
+    'bottom-left',
+    'bottom-right'
+  ]),
   audioPipAutoShow: bool,
   audioPipAutoHide: bool,
   audioPipCornerElements: pipElementArray,

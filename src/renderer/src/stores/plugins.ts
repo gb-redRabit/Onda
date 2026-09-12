@@ -13,7 +13,10 @@ import { useUIStore } from './ui';
 import type { PluginCommandEntry, PluginHookPayload } from '@renderer/modules/plugins/plugin-shim';
 import type { AudioLayoutElementId } from '@renderer/types/settings';
 import { isKnownHook } from '@renderer/utils/pluginHooks';
-import { createPluginWorker, type PluginWorkerHandle } from '@renderer/modules/plugins/pluginWorker';
+import {
+  createPluginWorker,
+  type PluginWorkerHandle
+} from '@renderer/modules/plugins/pluginWorker';
 import { logger } from '@shared/logger';
 
 export type PluginUiStatus = 'new' | 'loading' | 'loaded' | 'error';
@@ -101,7 +104,9 @@ export const usePluginsStore = defineStore('plugins', () => {
     return out;
   });
 
-  const layoutVariants = computed<Record<string, { value: string; label: string; plugin: string }[]>>(() => {
+  const layoutVariants = computed<
+    Record<string, { value: string; label: string; plugin: string }[]>
+  >(() => {
     const out: Record<string, { value: string; label: string; plugin: string }[]> = {};
     for (const p of plugins.value) {
       if (!p.enabled) continue;
@@ -152,7 +157,10 @@ export const usePluginsStore = defineStore('plugins', () => {
   async function saveSetting(id: string, key: string, value: unknown): Promise<boolean> {
     const ok = await window.api.pluginsSettingsSet(id, key, value);
     if (ok) {
-      pluginSettings.value = { ...pluginSettings.value, [id]: { ...(pluginSettings.value[id] || {}), [key]: value } };
+      pluginSettings.value = {
+        ...pluginSettings.value,
+        [id]: { ...(pluginSettings.value[id] || {}), [key]: value }
+      };
     }
     return ok;
   }
@@ -161,7 +169,10 @@ export const usePluginsStore = defineStore('plugins', () => {
     return manifestOf(id)?.settings || [];
   }
 
-  function hasPermission(id: string, perm: 'storage' | 'notifications' | 'player' | 'visual'): boolean {
+  function hasPermission(
+    id: string,
+    perm: 'storage' | 'notifications' | 'player' | 'visual'
+  ): boolean {
     return manifestOf(id)?.permissions[perm] === true;
   }
 
@@ -255,20 +266,32 @@ export const usePluginsStore = defineStore('plugins', () => {
       },
       onCommand(command) {
         if (!command || typeof command.id !== 'string') return;
-        if (!commands.value.some((c) => c.id === command.id && (c as { pluginId?: string }).pluginId === pluginId)) {
+        if (
+          !commands.value.some(
+            (c) => c.id === command.id && (c as { pluginId?: string }).pluginId === pluginId
+          )
+        ) {
           let next = { ...command, pluginId } as PluginCommandEntry & { pluginId: string };
           if (command.shortcut && !validateShortcut(command.shortcut)) {
-            logPush(pluginId, `[warn] shortcut '${command.shortcut}' odrzucony (nieprawidłowy format)`);
+            logPush(
+              pluginId,
+              `[warn] shortcut '${command.shortcut}' odrzucony (nieprawidłowy format)`
+            );
             next = { ...next, shortcut: undefined };
           } else if (command.shortcut && shortcutTakenBy(command.shortcut)) {
-            logPush(pluginId, `[warn] shortcut '${command.shortcut}' pominięty (konflikt z inną komendą)`);
+            logPush(
+              pluginId,
+              `[warn] shortcut '${command.shortcut}' pominięty (konflikt z inną komendą)`
+            );
             next = { ...next, shortcut: undefined };
           }
           commands.value.push(next);
         }
       },
       onCommandRemoved(commandId) {
-        commands.value = commands.value.filter((c) => !(c.id === commandId && (c as { pluginId?: string }).pluginId === pluginId));
+        commands.value = commands.value.filter(
+          (c) => !(c.id === commandId && (c as { pluginId?: string }).pluginId === pluginId)
+        );
       },
       onLog(level, message) {
         logPush(pluginId, `[${level}] ${message}`);
@@ -290,11 +313,15 @@ export const usePluginsStore = defineStore('plugins', () => {
     const ok = await window.api.pluginsToggle(id, enabled);
     if (!ok) return;
     if (enabled) {
-      plugins.value = plugins.value.map((p) => (p.id === id ? { ...p, enabled: true, status: 'new' } : p));
+      plugins.value = plugins.value.map((p) =>
+        p.id === id ? { ...p, enabled: true, status: 'new' } : p
+      );
       await spawnPlugin(id);
     } else {
       terminatePlugin(id, false);
-      plugins.value = plugins.value.map((p) => (p.id === id ? { ...p, enabled: false, status: 'new' } : p));
+      plugins.value = plugins.value.map((p) =>
+        p.id === id ? { ...p, enabled: false, status: 'new' } : p
+      );
     }
   }
 
@@ -357,12 +384,12 @@ export const usePluginsStore = defineStore('plugins', () => {
   }
 
   function commandsIn(location: string): PluginCommandEntry[] {
-    return commands.value.filter(
-      (c) => (c as { location?: string }).location === location
-    );
+    return commands.value.filter((c) => (c as { location?: string }).location === location);
   }
 
-  function findCommandByShortcut(shortcut: string): (PluginCommandEntry & { pluginId?: string }) | undefined {
+  function findCommandByShortcut(
+    shortcut: string
+  ): (PluginCommandEntry & { pluginId?: string }) | undefined {
     return commands.value.find((c) => c.shortcut === shortcut);
   }
 
@@ -375,15 +402,17 @@ export const usePluginsStore = defineStore('plugins', () => {
 
   function dispatchCommand(commandId: string, payload?: PluginHookPayload): void {
     const cmd = commands.value.find((c) => c.id === commandId) as
-      | (PluginCommandEntry & { pluginId?: string })
-      | undefined;
+      (PluginCommandEntry & { pluginId?: string }) | undefined;
     if (!cmd || !cmd.pluginId) return;
     const handle = workers.value[cmd.pluginId];
     if (!handle || !readyWorkers.has(cmd.pluginId)) return;
     try {
       handle.postInvokeCommand(commandId, payload);
     } catch (e) {
-      logPush(cmd.pluginId, `[error] invoke-command failed: ${e instanceof Error ? e.message : String(e)}`);
+      logPush(
+        cmd.pluginId,
+        `[error] invoke-command failed: ${e instanceof Error ? e.message : String(e)}`
+      );
     }
   }
 
@@ -409,7 +438,8 @@ export const usePluginsStore = defineStore('plugins', () => {
         return settingsOf(pluginId)[String(args[0] ?? '')] ?? null;
       case 'settings:set': {
         const key = String(args[0] ?? '');
-        if (!manifestOf(pluginId)?.settings?.some((f) => f.key === key)) throw new Error('setting-unknown');
+        if (!manifestOf(pluginId)?.settings?.some((f) => f.key === key))
+          throw new Error('setting-unknown');
         return saveSetting(pluginId, key, args[1]);
       }
       case 'fetch':
@@ -423,7 +453,8 @@ export const usePluginsStore = defineStore('plugins', () => {
 
   function dispatchQuery(args: unknown[], _pluginId: string): Promise<unknown> | unknown {
     const name = String(args[0] ?? '');
-    const qargs = (args[1] && typeof args[1] === 'object' ? (args[1] as Record<string, unknown>) : {});
+    const qargs =
+      args[1] && typeof args[1] === 'object' ? (args[1] as Record<string, unknown>) : {};
     switch (name) {
       case 'player:status':
         return playerStatus();
@@ -450,20 +481,28 @@ export const usePluginsStore = defineStore('plugins', () => {
 
   function libraryCount(): unknown {
     const library = useLibraryStore();
-    return { tracks: library.tracks.length, audio: library.audioCount, playlists: library.playlists.length };
+    return {
+      tracks: library.tracks.length,
+      audio: library.audioCount,
+      playlists: library.playlists.length
+    };
   }
 
   function librarySearch(query: string, limit: number): unknown {
     const library = useLibraryStore();
     const cap = Math.max(1, Math.min(30, Math.floor(limit) || 30));
-    const results = query
-      ? library.search(query)
-      : library.tracks.slice(0, cap);
+    const results = query ? library.search(query) : library.tracks.slice(0, cap);
     return {
       tracks: results.slice(0, cap).map((t) => {
         const snap = snapshotTrack(t);
         return snap
-          ? { path: snap.path, title: snap.title, artist: snap.artist, album: snap.album, duration: snap.duration }
+          ? {
+              path: snap.path,
+              title: snap.title,
+              artist: snap.artist,
+              album: snap.album,
+              duration: snap.duration
+            }
           : null;
       })
     };
@@ -471,7 +510,8 @@ export const usePluginsStore = defineStore('plugins', () => {
 
   function dispatchAction(args: unknown[], pluginId: string): Promise<unknown> | unknown {
     const name = String(args[0] ?? '');
-    const aargs = (args[1] && typeof args[1] === 'object' ? (args[1] as Record<string, unknown>) : {});
+    const aargs =
+      args[1] && typeof args[1] === 'object' ? (args[1] as Record<string, unknown>) : {};
     const player = usePlayerStore();
     if (name.startsWith('player:')) {
       if (!hasPermission(pluginId, 'player')) throw new Error('permission-denied:player');
@@ -521,7 +561,8 @@ export const usePluginsStore = defineStore('plugins', () => {
       return player.toggleFavorite(path).then(() => true);
     }
     if (name === 'notify') {
-      if (!hasPermission(pluginId, 'notifications')) throw new Error('permission-denied:notifications');
+      if (!hasPermission(pluginId, 'notifications'))
+        throw new Error('permission-denied:notifications');
       const type = NOTIFY_TYPES.includes(aargs.type as (typeof NOTIFY_TYPES)[number])
         ? (aargs.type as (typeof NOTIFY_TYPES)[number])
         : 'info';
@@ -538,7 +579,8 @@ export const usePluginsStore = defineStore('plugins', () => {
     if (!hasPermission(pluginId, 'visual')) throw new Error('permission-denied:visual');
     const key = String(args[0] ?? '');
     if (key !== PLUGIN_VISUAL_KEY) throw new Error('unknown-visual-key');
-    const payload = args[1] && typeof args[1] === 'object' ? (args[1] as Record<string, unknown>) : {};
+    const payload =
+      args[1] && typeof args[1] === 'object' ? (args[1] as Record<string, unknown>) : {};
     const element = String(payload.element ?? '');
     const value = String(payload.value ?? '');
     const options = ELEMENT_DECORATIONS[element];
@@ -554,7 +596,8 @@ export const usePluginsStore = defineStore('plugins', () => {
       const declared =
         manifest?.permissions.visual === true &&
         manifest.layoutElements?.some((le) => le.element === element && le.variant === variant);
-      if (!declared || !PLUGIN_HOST_VARIANTS[element]?.[variant]) throw new Error('unknown-decoration');
+      if (!declared || !PLUGIN_HOST_VARIANTS[element]?.[variant])
+        throw new Error('unknown-decoration');
     }
     const next = { ...(visuals.value[pluginId] || {}) };
     if (value === 'none') delete next[element];

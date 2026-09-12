@@ -101,8 +101,7 @@ const groups = computed<Group[]>(() => {
     .filter((a) => include(q, a.label))
     .map((a) => ({ type: 'action' as const, label: a.label, icon: a.icon, action: a.action }));
   const result: Group[] = [];
-  if (tracks.length)
-    result.push({ key: 'tracks', label: t('cmdPalette.tracks'), items: tracks });
+  if (tracks.length) result.push({ key: 'tracks', label: t('cmdPalette.tracks'), items: tracks });
   if (playlists.length)
     result.push({
       key: 'playlists',
@@ -229,9 +228,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
           data-app-search
           class="flex-1 bg-transparent text-sm text-base-content outline-none placeholder:text-base-content/50"
           :placeholder="
-            ui.searchMode === 'view'
-              ? $t('menu.viewSearch')
-              : $t('cmdPalette.placeholder')
+            ui.searchMode === 'view' ? $t('menu.viewSearch') : $t('cmdPalette.placeholder')
           "
         />
         <button

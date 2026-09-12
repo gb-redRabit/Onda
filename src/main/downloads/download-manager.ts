@@ -5,14 +5,23 @@ import { mkdir, readdir } from 'fs/promises';
 import { join, extname } from 'path';
 import { app } from 'electron';
 import { logger } from '../../shared/logger';
-import type { IpcDownloadJobInput, IpcDownloadTask, IpcDownloadErrorCode } from '../../shared/types/ipc';
+import type {
+  IpcDownloadJobInput,
+  IpcDownloadTask,
+  IpcDownloadErrorCode
+} from '../../shared/types/ipc';
 import { AUDIO_EXTS } from '../../shared/constants';
 import { resolveBin } from '../binaries';
 import { getYtAuthConfig, cleanupYtAuthTemp } from '../youtube-auth';
 import { buildYtArgs, type YtAuthConfig } from '../ipc/youtube-utils';
 import { resolveProvider } from '../../shared/provider';
 import { getStore } from '../ipc/cover-cache';
-import { normalizeCoverSpec, resolveFolderTokens, buildThumbnailArgs, buildSectionArgs } from './cover-spec';
+import {
+  normalizeCoverSpec,
+  resolveFolderTokens,
+  buildThumbnailArgs,
+  buildSectionArgs
+} from './cover-spec';
 import { processCover, applyMetadataOverride, removeThumbnailFiles } from './cover-processing';
 import { syncDownloadToLibrary } from './library-sync';
 import { addToChannelPlaylist } from './channel-playlist';
@@ -125,7 +134,12 @@ function formatEta(seconds: number): string {
 }
 
 function sanitizeFileName(name: string): string {
-  return name.replace(/\s*[\\/:*?"<>|]\s*/g, ' ').trim().slice(0, 180) || 'download';
+  return (
+    name
+      .replace(/\s*[\\/:*?"<>|]\s*/g, ' ')
+      .trim()
+      .slice(0, 180) || 'download'
+  );
 }
 
 function deriveHttpFileName(job: Job): string {
@@ -298,9 +312,7 @@ async function readMaxConcurrent(): Promise<number> {
 async function readRetryConfig(): Promise<{ attempts: number; baseMs: number }> {
   try {
     const store = await getStore();
-    const d = store.get('download') as
-      | { retryAttempts?: number; retryBaseMs?: number }
-      | undefined;
+    const d = store.get('download') as { retryAttempts?: number; retryBaseMs?: number } | undefined;
     return {
       attempts: typeof d?.retryAttempts === 'number' ? d.retryAttempts : DEFAULT_RETRY_ATTEMPTS,
       baseMs: typeof d?.retryBaseMs === 'number' ? d.retryBaseMs : DEFAULT_RETRY_BASE_MS
@@ -329,11 +341,13 @@ interface NightSchedule {
 async function readNightSchedule(): Promise<NightSchedule> {
   try {
     const store = await getStore();
-    const download = store.get('download') as {
-      nightScheduleEnabled?: boolean;
-      nightScheduleStart?: number;
-      nightScheduleEnd?: number;
-    } | undefined;
+    const download = store.get('download') as
+      | {
+          nightScheduleEnabled?: boolean;
+          nightScheduleStart?: number;
+          nightScheduleEnd?: number;
+        }
+      | undefined;
     return {
       enabled: !!download?.nightScheduleEnabled,
       start: download?.nightScheduleStart ?? 22,
@@ -797,24 +811,23 @@ async function resolveRealOutputPath(job: Job, destinations: string[]): Promise<
 // Post-download pipeline (Faza 5/6): metadata override, cover processing and
 // library refresh. Failures are non-fatal — the file itself is already done.
 async function postProcess(job: Job): Promise<void> {
-    const outputPath = job.outputPath || '';
-    // SoundCloud MP3s are raw progressive streams — embed title/artist/artwork
-    // here instead of the yt-dlp metadata/cover pipeline.
-    if (job.source?.mode === 'soundcloud' && outputPath && job.kind === 'audio') {
-      job.coverStatus = 'fetching';
-      persist(job);
-      const ok = await embedScMp3Tags(outputPath, {
-        title: job.title,
-        artist: job.metaOverride?.artist || job.channelTitle || '',
-        album: job.metaOverride?.album,
-        year: job.metaOverride?.year,
-        thumbnailUrl:
-          job.thumbnail && /^https:\/\//i.test(job.thumbnail) ? job.thumbnail : undefined
-      });
-      job.coverStatus = ok ? 'embedded' : 'none';
-      persist(job);
-    }
-    if (outputPath && job.metaOverride && job.source?.mode !== 'soundcloud') {
+  const outputPath = job.outputPath || '';
+  // SoundCloud MP3s are raw progressive streams — embed title/artist/artwork
+  // here instead of the yt-dlp metadata/cover pipeline.
+  if (job.source?.mode === 'soundcloud' && outputPath && job.kind === 'audio') {
+    job.coverStatus = 'fetching';
+    persist(job);
+    const ok = await embedScMp3Tags(outputPath, {
+      title: job.title,
+      artist: job.metaOverride?.artist || job.channelTitle || '',
+      album: job.metaOverride?.album,
+      year: job.metaOverride?.year,
+      thumbnailUrl: job.thumbnail && /^https:\/\//i.test(job.thumbnail) ? job.thumbnail : undefined
+    });
+    job.coverStatus = ok ? 'embedded' : 'none';
+    persist(job);
+  }
+  if (outputPath && job.metaOverride && job.source?.mode !== 'soundcloud') {
     try {
       await applyMetadataOverride(outputPath, job.metaOverride);
     } catch (e) {
@@ -899,8 +912,7 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
   }
   for (const input of inputs) {
     if (!input || !input.url) continue;
-    const isHttpSource =
-      input.source?.mode === 'http' || input.source?.mode === 'soundcloud';
+    const isHttpSource = input.source?.mode === 'http' || input.source?.mode === 'soundcloud';
     // Źródła generyczne (mega/cda/vk/drive) jawnie żądają yt-dlp — pomijamy
     // gate providera przeznaczony dla klasycznej ścieżki YouTube.
     const isExplicitYtdlp = input.source?.mode === 'ytdlp';
@@ -928,7 +940,9 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
                 ? input.source.fileName.slice(0, 200)
                 : undefined,
             apiKeyId:
-              typeof input.source.apiKeyId === 'string' ? input.source.apiKeyId.slice(0, 200) : undefined,
+              typeof input.source.apiKeyId === 'string'
+                ? input.source.apiKeyId.slice(0, 200)
+                : undefined,
             headerName:
               typeof input.source.headerName === 'string'
                 ? input.source.headerName.slice(0, 100)
@@ -943,26 +957,26 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
                   : undefined
             }
           : input.source && input.source.mode === 'ytdlp'
-          ? {
-              mode: 'ytdlp' as const,
-              apiKeyId:
-                typeof input.source.apiKeyId === 'string'
-                  ? input.source.apiKeyId.slice(0, 200)
-                  : undefined,
-              headerName:
-                typeof input.source.headerName === 'string'
-                  ? input.source.headerName.slice(0, 100)
-                  : undefined,
-              headers:
-                input.source.headers && typeof input.source.headers === 'object'
-                  ? Object.fromEntries(
-                      Object.entries(input.source.headers).filter(
-                        ([k, v]) => typeof k === 'string' && typeof v === 'string'
+            ? {
+                mode: 'ytdlp' as const,
+                apiKeyId:
+                  typeof input.source.apiKeyId === 'string'
+                    ? input.source.apiKeyId.slice(0, 200)
+                    : undefined,
+                headerName:
+                  typeof input.source.headerName === 'string'
+                    ? input.source.headerName.slice(0, 100)
+                    : undefined,
+                headers:
+                  input.source.headers && typeof input.source.headers === 'object'
+                    ? Object.fromEntries(
+                        Object.entries(input.source.headers).filter(
+                          ([k, v]) => typeof k === 'string' && typeof v === 'string'
+                        )
                       )
-                    )
-                  : undefined
-            }
-          : undefined;
+                    : undefined
+              }
+            : undefined;
     const cover = normalizeCoverSpec(input.cover);
     // Direct-URL downloads have no yt-dlp thumbnail step — drop thumbnail covers.
     const finalCover = source && cover?.type === 'thumbnail' ? undefined : cover;
@@ -993,20 +1007,23 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
       coverStatus: 'none',
       metaOverride: input.metaOverride,
       subsLangs: input.subsLangs,
-      subsFormat: input.subsFormat === 'vtt' || input.subsFormat === 'ass' ? input.subsFormat : 'srt',
+      subsFormat:
+        input.subsFormat === 'vtt' || input.subsFormat === 'ass' ? input.subsFormat : 'srt',
       subsMode: input.subsMode === 'manual' || input.subsMode === 'auto' ? input.subsMode : 'best',
       subsFolder: !!input.subsFolder,
       subtitleStatus: 'none',
       audioQuality: input.audioQuality,
       audioLanguage: typeof input.audioLanguage === 'string' ? input.audioLanguage : undefined,
-      videoContainer: input.videoContainer === 'mkv' || input.videoContainer === 'webm'
-        ? input.videoContainer
-        : 'mp4',
+      videoContainer:
+        input.videoContainer === 'mkv' || input.videoContainer === 'webm'
+          ? input.videoContainer
+          : 'mp4',
       sponsorBlock:
         input.sponsorBlock === 'mark' || input.sponsorBlock === 'remove'
           ? input.sponsorBlock
           : 'off',
-      trimStart: typeof input.trimStart === 'number' && input.trimStart >= 0 ? input.trimStart : undefined,
+      trimStart:
+        typeof input.trimStart === 'number' && input.trimStart >= 0 ? input.trimStart : undefined,
       trimEnd: typeof input.trimEnd === 'number' && input.trimEnd > 0 ? input.trimEnd : undefined,
       addToLibrary: !!input.addToLibrary,
       source
@@ -1176,8 +1193,7 @@ export async function importQueue(tasks: IpcDownloadTask[]): Promise<number> {
   const inputs: IpcDownloadJobInput[] = [];
   for (const t of tasks) {
     if (!t || typeof t.url !== 'string') continue;
-    const isHttpSource =
-      t.source?.mode === 'http' || t.source?.mode === 'soundcloud';
+    const isHttpSource = t.source?.mode === 'http' || t.source?.mode === 'soundcloud';
     const isExplicitYtdlp = t.source?.mode === 'ytdlp';
     if (!isHttpSource && !isExplicitYtdlp && !resolveProvider(t.url)) continue;
     if (t.status === 'completed' || t.status === 'cancelled') continue;

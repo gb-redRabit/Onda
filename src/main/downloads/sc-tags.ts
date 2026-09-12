@@ -51,7 +51,8 @@ export async function embedScMp3Tags(filePath: string, meta: ScTagMeta): Promise
     if (image) {
       const mime = sniffImageMime(Buffer.from(image));
       const res = await writeCoverToAudioFile(filePath, image, mime);
-      if (!res.success) logger.warn('downloads', `sc cover embed failed for ${filePath}`, res.error);
+      if (!res.success)
+        logger.warn('downloads', `sc cover embed failed for ${filePath}`, res.error);
     }
     return true;
   } catch (e) {

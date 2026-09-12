@@ -43,9 +43,7 @@ export function useContextMenu() {
   }
 
   function build<T>(defs: ContextMenuAction<T>[], ctx: T): ContextMenuItem[] {
-    return defs
-      .map((d) => toItem(d, ctx))
-      .filter((i): i is ContextMenuItem => i !== null);
+    return defs.map((d) => toItem(d, ctx)).filter((i): i is ContextMenuItem => i !== null);
   }
 
   function open<T>(e: MouseEvent, defs: ContextMenuAction<T>[], ctx: T) {

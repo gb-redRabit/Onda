@@ -289,10 +289,7 @@ export function deleteSource(filePath: string, id: string): Promise<MediaSource[
 }
 
 /** Zapisuje całą listę źródeł (import) z limitem MAX_SOURCES. */
-export function saveAllSources(
-  filePath: string,
-  list: MediaSource[]
-): Promise<MediaSource[]> {
+export function saveAllSources(filePath: string, list: MediaSource[]): Promise<MediaSource[]> {
   return withWriteLock(async () => {
     const capped = list.slice(0, MAX_SOURCES);
     await writeList(filePath, capped);

@@ -34,9 +34,7 @@ export function computeChannelDiff<T extends ChannelVideoRef>(
     : -1;
   const newArrivals = input.items.filter(
     (item, idx) =>
-      !known.has(item.id) &&
-      !queued.has(item.id) &&
-      (baselineIndex === -1 || idx < baselineIndex)
+      !known.has(item.id) && !queued.has(item.id) && (baselineIndex === -1 || idx < baselineIndex)
   );
   const remainingCount = input.items.filter((item) => !known.has(item.id)).length;
   return { newArrivals, remainingCount, reachedBaseline: baselineIndex !== -1 };

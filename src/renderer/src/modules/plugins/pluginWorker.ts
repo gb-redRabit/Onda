@@ -73,7 +73,11 @@ export function createPluginWorker(opts: PluginWorkerOptions): PluginWorkerHandl
       }
     },
     postInvokeCommand(commandId: string, payload?: PluginHookPayload): void {
-      const msg: PluginMainMsg = { type: 'invoke-command', commandId, ...(payload ? { payload } : {}) };
+      const msg: PluginMainMsg = {
+        type: 'invoke-command',
+        commandId,
+        ...(payload ? { payload } : {})
+      };
       try {
         worker.postMessage(wrapIntoWorker(msg));
       } catch (e) {

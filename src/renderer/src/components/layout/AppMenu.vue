@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { Minus, Square, X, Search, Maximize2, FolderOpen, FileAudio, PictureInPicture } from '@lucide/vue';
+import {
+  Minus,
+  Square,
+  X,
+  Search,
+  Maximize2,
+  FolderOpen,
+  FileAudio,
+  PictureInPicture
+} from '@lucide/vue';
 import { useUIStore } from '@renderer/stores/ui';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useAppMenu } from '@renderer/composables/useAppMenu';
@@ -199,7 +208,9 @@ const {
             @click="actionClose(player.togglePlay)"
           >
             {{ t('menu.playPause') }}
-            <span class="ml-auto text-[10px] text-base-content/50 font-mono">{{ player.isPlaying ? 'Pause' : 'Play' }}</span>
+            <span class="ml-auto text-[10px] text-base-content/50 font-mono">{{
+              player.isPlaying ? 'Pause' : 'Play'
+            }}</span>
           </button>
           <button
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors"
@@ -214,7 +225,9 @@ const {
             {{ t('menu.prevTrack') }}
           </button>
           <button
-            v-if="player.currentTrack.type === 'video' && !player.pipActive && getPlayerPiPHandler()"
+            v-if="
+              player.currentTrack.type === 'video' && !player.pipActive && getPlayerPiPHandler()
+            "
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
             @click="
               getPlayerPiPHandler()?.();
@@ -229,14 +242,18 @@ const {
             @click="actionClose(player.toggleShuffle)"
           >
             {{ t('menu.shuffle') }}
-            <span class="ml-auto text-[10px] text-base-content/50 font-mono">{{ player.shuffle ? 'On' : 'Off' }}</span>
+            <span class="ml-auto text-[10px] text-base-content/50 font-mono">{{
+              player.shuffle ? 'On' : 'Off'
+            }}</span>
           </button>
           <button
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
             @click="actionClose(player.cycleRepeat)"
           >
             {{ t('menu.repeat') }}
-            <span class="ml-auto text-[10px] text-base-content/50 font-mono">{{ player.repeat }}</span>
+            <span class="ml-auto text-[10px] text-base-content/50 font-mono">{{
+              player.repeat
+            }}</span>
           </button>
           <div class="border-t border-base-300 my-1 mx-2" />
           <button

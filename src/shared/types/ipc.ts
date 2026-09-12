@@ -460,7 +460,8 @@ export interface PluginFetchResult {
   headers?: Record<string, string>;
   data?: string | unknown;
   error?: string;
-  code?: 'forbidden' | 'invalid-url' | 'network' | 'timeout' | 'too-large' | 'redirect-loop' | 'unknown';
+  code?:
+    'forbidden' | 'invalid-url' | 'network' | 'timeout' | 'too-large' | 'redirect-loop' | 'unknown';
 }
 
 export interface YoutubeAuthStatus {
@@ -871,11 +872,22 @@ export interface IpcChannels {
   };
   'musicbrainz:getCoverData': {
     args: [releaseId: string];
-    result: { success: boolean; data?: number[]; mime?: string; error?: string; rateLimited?: boolean };
+    result: {
+      success: boolean;
+      data?: number[];
+      mime?: string;
+      error?: string;
+      rateLimited?: boolean;
+    };
   };
   'musicbrainz:autodetect': {
     args: [query: string];
-    result: { success: boolean; match: 'certain' | 'ambiguous' | 'none'; releases: MusicbrainzRelease[]; error?: string };
+    result: {
+      success: boolean;
+      match: 'certain' | 'ambiguous' | 'none';
+      releases: MusicbrainzRelease[];
+      error?: string;
+    };
   };
   'musicbrainz:batchApply': {
     args: [payload: unknown];
@@ -935,7 +947,10 @@ export interface IpcChannels {
   'plugins:storage:get': { args: [id: string, key: string]; result: unknown };
   'plugins:storage:set': { args: [id: string, key: string, value: unknown]; result: boolean };
   'plugins:storage:remove': { args: [id: string, key: string]; result: boolean };
-  'plugins:fetch': { args: [id: string, url: string, opts: PluginFetchOptions]; result: PluginFetchResult };
+  'plugins:fetch': {
+    args: [id: string, url: string, opts: PluginFetchOptions];
+    result: PluginFetchResult;
+  };
 }
 
 export type IpcChannel = keyof IpcChannels;

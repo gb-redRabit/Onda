@@ -433,12 +433,21 @@ const api = {
     ipcRenderer.invoke('musicbrainz:lookupRelease', releaseId),
   musicbrainzGetCoverData: (
     releaseId: string
-  ): Promise<{ success: boolean; data?: number[]; mime?: string; error?: string; rateLimited?: boolean }> =>
-    ipcRenderer.invoke('musicbrainz:getCoverData', releaseId),
+  ): Promise<{
+    success: boolean;
+    data?: number[];
+    mime?: string;
+    error?: string;
+    rateLimited?: boolean;
+  }> => ipcRenderer.invoke('musicbrainz:getCoverData', releaseId),
   musicbrainzAutodetect: (
     query: string
-  ): Promise<{ success: boolean; match: 'certain' | 'ambiguous' | 'none'; releases: MusicbrainzRelease[]; error?: string }> =>
-    ipcRenderer.invoke('musicbrainz:autodetect', query),
+  ): Promise<{
+    success: boolean;
+    match: 'certain' | 'ambiguous' | 'none';
+    releases: MusicbrainzRelease[];
+    error?: string;
+  }> => ipcRenderer.invoke('musicbrainz:autodetect', query),
   musicbrainzBatchApply: (payload: unknown): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke('musicbrainz:batchApply', payload),
   getFilePath: (file: File): string => webUtils.getPathForFile(file),
@@ -597,7 +606,8 @@ const api = {
     ipcRenderer.invoke('plugins:uninstall', id),
   pluginsInstallFromFolder: (): Promise<IpcPluginInstallResult> =>
     ipcRenderer.invoke('plugins:installFromFolder'),
-  pluginsStorageKeys: (id: string): Promise<string[]> => ipcRenderer.invoke('plugins:storage:keys', id),
+  pluginsStorageKeys: (id: string): Promise<string[]> =>
+    ipcRenderer.invoke('plugins:storage:keys', id),
   pluginsStorageGet: (id: string, key: string): Promise<unknown> =>
     ipcRenderer.invoke('plugins:storage:get', id, key),
   pluginsStorageSet: (id: string, key: string, value: unknown): Promise<boolean> =>

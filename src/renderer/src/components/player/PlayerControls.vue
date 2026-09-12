@@ -201,23 +201,37 @@ function onSpeedPreset(v: number) {
             :fill="player.isFavorite(player.currentTrack?.path || '') ? 'currentColor' : 'none'"
           />
         </button>
-        <button class="text-neutral-content/60 hover:text-neutral-content transition-colors" @click="player.prevTrack">
+        <button
+          class="text-neutral-content/60 hover:text-neutral-content transition-colors"
+          @click="player.prevTrack"
+        >
           <SkipBack :size="18" fill="currentColor" />
         </button>
 
         <!-- play button — glassmorphism -->
         <div class="relative">
-          <div v-if="player.isPlaying" class="absolute inset-0 rounded-full bg-neutral-content/10 blur-lg" />
+          <div
+            v-if="player.isPlaying"
+            class="absolute inset-0 rounded-full bg-neutral-content/10 blur-lg"
+          />
           <button
             class="relative w-12 h-12 rounded-full bg-neutral-content/15 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/5"
             @click="player.togglePlay"
           >
-            <Pause v-if="player.isPlaying" :size="22" class="text-neutral-content" fill="currentColor" />
+            <Pause
+              v-if="player.isPlaying"
+              :size="22"
+              class="text-neutral-content"
+              fill="currentColor"
+            />
             <Play v-else :size="22" class="text-neutral-content ml-0.5" fill="currentColor" />
           </button>
         </div>
 
-        <button class="text-neutral-content/60 hover:text-neutral-content transition-colors" @click="player.nextTrack">
+        <button
+          class="text-neutral-content/60 hover:text-neutral-content transition-colors"
+          @click="player.nextTrack"
+        >
           <SkipForward :size="18" fill="currentColor" />
         </button>
         <button
@@ -232,7 +246,10 @@ function onSpeedPreset(v: number) {
       <!-- center: skip — time — speed -->
       <div class="flex items-center gap-4">
         <!-- skip back -->
-        <button class="text-neutral-content/40 hover:text-neutral-content transition-colors" @click="emit('skip', -10)">
+        <button
+          class="text-neutral-content/40 hover:text-neutral-content transition-colors"
+          @click="emit('skip', -10)"
+        >
           <ChevronLeft :size="18" />
         </button>
 
@@ -329,7 +346,10 @@ function onSpeedPreset(v: number) {
         </div>
 
         <!-- skip forward -->
-        <button class="text-neutral-content/40 hover:text-neutral-content transition-colors" @click="emit('skip', 10)">
+        <button
+          class="text-neutral-content/40 hover:text-neutral-content transition-colors"
+          @click="emit('skip', 10)"
+        >
           <ChevronRight :size="18" />
         </button>
       </div>
@@ -353,7 +373,10 @@ function onSpeedPreset(v: number) {
           <ListMusic :size="16" />
         </button>
         <SubtitleTrackSelector />
-        <button class="text-neutral-content/50 hover:text-neutral-content transition-colors" @click="player.toggleMute">
+        <button
+          class="text-neutral-content/50 hover:text-neutral-content transition-colors"
+          @click="player.toggleMute"
+        >
           <VolumeX v-if="player.isMuted" :size="16" />
           <Volume2 v-else :size="16" />
         </button>

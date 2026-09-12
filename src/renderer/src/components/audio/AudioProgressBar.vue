@@ -60,9 +60,7 @@ const bufferedClass = computed(() =>
     : 'absolute inset-y-0 left-0 bg-primary/50 rounded-full'
 );
 
-const timeClass = computed(() =>
-  isThin.value ? 'text-[10px]' : 'text-xs'
-);
+const timeClass = computed(() => (isThin.value ? 'text-[10px]' : 'text-xs'));
 
 function onDragSeek(e: MouseEvent) {
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -89,29 +87,30 @@ function onDragSeek(e: MouseEvent) {
     <div class="flex-1 h-px bg-base-content/20 rounded-full" />
   </div>
   <div v-else ref="rootEl" class="w-full flex items-center gap-3">
-    <span v-if="!tooShort" :class="['text-base-content/70 font-mono tabular-nums w-10 text-right shrink-0', timeClass]">
+    <span
+      v-if="!tooShort"
+      :class="['text-base-content/70 font-mono tabular-nums w-10 text-right shrink-0', timeClass]"
+    >
       {{ formatDuration(audio.currentTime.value) }}
     </span>
-    <div
-      :class="trackClass"
-      @mousedown="onDragSeek"
-    >
+    <div :class="trackClass" @mousedown="onDragSeek">
+      <div :class="bufferedClass" :style="{ width: bufferedPct + '%' }" />
       <div
-        :class="bufferedClass"
-        :style="{ width: bufferedPct + '%' }"
-      />
-      <div v-if="isNeon" class="absolute inset-y-0 left-0 rounded-full bg-primary/40 blur-sm" :style="{ width: progressPct + '%' }" />
-      <div
-        :class="fillClass"
+        v-if="isNeon"
+        class="absolute inset-y-0 left-0 rounded-full bg-primary/40 blur-sm"
         :style="{ width: progressPct + '%' }"
-      >
+      />
+      <div :class="fillClass" :style="{ width: progressPct + '%' }">
         <div
           v-if="!isThin"
           class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
         />
       </div>
     </div>
-    <span v-if="!tooShort" :class="['text-base-content/50 font-mono tabular-nums w-10 shrink-0', timeClass]">
+    <span
+      v-if="!tooShort"
+      :class="['text-base-content/50 font-mono tabular-nums w-10 shrink-0', timeClass]"
+    >
       {{ formatDuration(audio.duration.value) }}
     </span>
   </div>

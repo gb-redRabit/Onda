@@ -24,7 +24,9 @@ const allowedRadioHosts = new Set<string>();
 function isValidStationUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return (parsed.protocol === 'http:' || parsed.protocol === 'https:') && parsed.hostname.length > 0;
+    return (
+      (parsed.protocol === 'http:' || parsed.protocol === 'https:') && parsed.hostname.length > 0
+    );
   } catch {
     return false;
   }
@@ -52,7 +54,10 @@ function sanitizeStations(input: unknown): IpcRadioStation[] {
       id: (s as IpcRadioStation).id.slice(0, 128),
       name: (s as IpcRadioStation).name.trim().slice(0, 200),
       url: (s as IpcRadioStation).url.slice(0, 2048),
-      addedAt: typeof (s as IpcRadioStation).addedAt === 'number' ? (s as IpcRadioStation).addedAt : Date.now()
+      addedAt:
+        typeof (s as IpcRadioStation).addedAt === 'number'
+          ? (s as IpcRadioStation).addedAt
+          : Date.now()
     });
   }
   return out.slice(0, MAX_STATIONS);

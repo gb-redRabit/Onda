@@ -105,12 +105,16 @@ function updateProxy(patch: Partial<typeof settings.network.proxy>) {
         "
       />
       <div class="flex justify-between text-[10px] text-base-content/40 mt-1">
-        <span>{{ $t('settings.speedUnlimited') }}</span><span>50 MB/s</span>
+        <span>{{ $t('settings.speedUnlimited') }}</span
+        ><span>50 MB/s</span>
       </div>
     </SettingsCard>
 
     <SettingsCard>
-      <SettingsSectionTitle :title="$t('settings.userAgent')" :description="$t('settings.userAgentDesc')" />
+      <SettingsSectionTitle
+        :title="$t('settings.userAgent')"
+        :description="$t('settings.userAgentDesc')"
+      />
       <input
         :value="settings.network.userAgent"
         placeholder="Mozilla/5.0 ..."

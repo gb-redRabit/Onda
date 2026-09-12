@@ -194,9 +194,10 @@ export async function loadStateFile(filePath: string): Promise<PluginStateFile> 
     const out: PluginStateFile = {};
     for (const [id, value] of Object.entries(parsed as Record<string, unknown>)) {
       if (!validatePluginId(id)) continue;
-      const v = value && typeof value === 'object' && !Array.isArray(value)
-        ? (value as Record<string, unknown>)
-        : {};
+      const v =
+        value && typeof value === 'object' && !Array.isArray(value)
+          ? (value as Record<string, unknown>)
+          : {};
       out[id] = { enabled: v.enabled === true };
     }
     return out;
@@ -221,7 +222,10 @@ export async function readStorageFile(filePath: string): Promise<Record<string, 
   }
 }
 
-export async function writeStorageFile(filePath: string, data: Record<string, unknown>): Promise<void> {
+export async function writeStorageFile(
+  filePath: string,
+  data: Record<string, unknown>
+): Promise<void> {
   const sanitized = sanitizeStoredObject(data);
   if (Object.keys(sanitized).length > MAX_STORAGE_KEYS) {
     throw new Error('storage:too-many-keys');
@@ -246,9 +250,7 @@ export function compileNetworkPattern(pattern: string): RegExp | null {
   }
   if (protocol !== 'http:' && protocol !== 'https:') return null;
   const parts = pattern.split('*');
-  const escaped = parts
-    .map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-    .join('.*');
+  const escaped = parts.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*');
   try {
     return new RegExp(`^${escaped}`);
   } catch {

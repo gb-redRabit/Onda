@@ -4,11 +4,7 @@ import type { useI18n } from 'vue-i18n';
 import type { usePlayerStore } from '@renderer/stores/player';
 import type { useSettingsStore } from '@renderer/stores/settings';
 import type { useUIStore } from '@renderer/stores/ui';
-import {
-  applyVolumeTarget,
-  seekTarget,
-  skipTarget
-} from '@renderer/utils/mediaTransport';
+import { applyVolumeTarget, seekTarget, skipTarget } from '@renderer/utils/mediaTransport';
 import { useVideoPlayer } from '@renderer/composables/useVideoPlayer';
 
 interface PlayerControlsCtx {

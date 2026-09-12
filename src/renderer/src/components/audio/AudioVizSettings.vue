@@ -145,9 +145,7 @@ function updateLayout(partial: Record<string, unknown>) {
         step="1"
         :value="viz.fpsCap"
         class="w-full accent-primary"
-        @input="
-          (e: Event) => update({ fpsCap: parseInt((e.target as HTMLInputElement).value) })
-        "
+        @input="(e: Event) => update({ fpsCap: parseInt((e.target as HTMLInputElement).value) })"
       />
     </div>
 
@@ -175,10 +173,14 @@ function updateLayout(partial: Record<string, unknown>) {
         >
         <div class="flex gap-1">
           <button
-            v-for="q in (['low', 'medium', 'high'] as const)"
+            v-for="q in ['low', 'medium', 'high'] as const"
             :key="q"
             class="fx-noise px-2 py-1 fx-depth rounded-field text-[11px] font-medium transition-colors"
-            :class="vizQuality === q ? 'bg-primary text-primary-content' : 'bg-base-100 text-base-content/70 hover:text-base-content hover:bg-base-content/10'"
+            :class="
+              vizQuality === q
+                ? 'bg-primary text-primary-content'
+                : 'bg-base-100 text-base-content/70 hover:text-base-content hover:bg-base-content/10'
+            "
             @click="updateLayout({ vizQuality: q })"
           >
             {{ q }}

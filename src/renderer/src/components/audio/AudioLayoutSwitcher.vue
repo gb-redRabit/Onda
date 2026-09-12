@@ -3,13 +3,7 @@ import { computed } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { AUDIO_LAYOUT_PRESETS } from '@renderer/utils/constants';
 import type { AudioLayoutPreset } from '@renderer/types/settings';
-import {
-  LayoutPanelLeft,
-  AlignVerticalSpaceAround,
-  Columns2,
-  Maximize,
-  Orbit
-} from '@lucide/vue';
+import { LayoutPanelLeft, AlignVerticalSpaceAround, Columns2, Maximize, Orbit } from '@lucide/vue';
 
 const settings = useSettingsStore();
 const current = computed(() => settings.appearance.audioLayout?.preset ?? 'full');

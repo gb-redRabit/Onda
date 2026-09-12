@@ -149,16 +149,22 @@ onUnmounted(() => {
     v-if="tracks.length === 0"
     class="flex flex-col items-center justify-center h-full gap-4 text-base-content/50 p-8"
   >
-    <div class="w-20 h-20 rounded-full bg-base-100 border border-base-300 flex items-center justify-center">
+    <div
+      class="w-20 h-20 rounded-full bg-base-100 border border-base-300 flex items-center justify-center"
+    >
       <Music2 :size="28" class="opacity-40" />
     </div>
     <div class="text-center">
-      <p class="text-sm font-medium">{{ chip === 'liked' ? $t('library.likedEmpty') : $t('library.noAudio') }}</p>
+      <p class="text-sm font-medium">
+        {{ chip === 'liked' ? $t('library.likedEmpty') : $t('library.noAudio') }}
+      </p>
       <p class="text-xs mt-1 opacity-70">{{ $t('library.addFolderHint') }}</p>
     </div>
   </div>
   <template v-else>
-    <div class="flex items-center justify-between px-4 py-2.5 bg-base-100/50 backdrop-blur border-b border-base-300 shrink-0 sticky top-0 z-[1]">
+    <div
+      class="flex items-center justify-between px-4 py-2.5 bg-base-100/50 backdrop-blur border-b border-base-300 shrink-0 sticky top-0 z-[1]"
+    >
       <span class="text-xs font-medium text-base-content/60"
         >{{ tracks.length }} {{ $t('library.tracksCount') }}</span
       >
@@ -192,31 +198,85 @@ onUnmounted(() => {
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors fx-depth fx-noise"
           @click="emit('playAll')"
         >
-          <Music2 :size="12" /> <span class="hidden sm:inline">{{ $t('library.playAll') }}</span><span class="sm:hidden">Play</span>
+          <Music2 :size="12" /> <span class="hidden sm:inline">{{ $t('library.playAll') }}</span
+          ><span class="sm:hidden">Play</span>
         </button>
         <button
           class="p-2 rounded-full bg-base-100 border border-base-300 text-base-content/60 hover:text-primary hover:border-primary/30 transition-colors"
           :title="$t('library.shuffle')"
           @click="emit('shuffleAll')"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="9" y2="9"/><line x1="4" y1="4" x2="9" y2="9"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="20" x2="9" y2="15"/></svg>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polyline points="16 3 21 3 21 8" />
+            <line x1="4" y1="20" x2="21" y2="3" />
+            <polyline points="21 16 21 21 16 21" />
+            <line x1="15" y1="15" x2="9" y2="9" />
+            <line x1="4" y1="4" x2="9" y2="9" />
+            <line x1="15" y1="15" x2="21" y2="21" />
+            <line x1="4" y1="20" x2="9" y2="15" />
+          </svg>
         </button>
       </div>
     </div>
     <!-- Bulk bar -->
-    <div v-if="selectedCount > 0" class="flex items-center gap-2 px-4 py-2 bg-primary/10 border-b border-primary/20 text-xs shrink-0">
+    <div
+      v-if="selectedCount > 0"
+      class="flex items-center gap-2 px-4 py-2 bg-primary/10 border-b border-primary/20 text-xs shrink-0"
+    >
       <span class="font-medium text-primary">{{ selectedCount }} {{ $t('common.selected') }}</span>
       <div class="flex items-center gap-1 ml-auto">
-        <button class="px-2.5 py-1 rounded-field bg-primary text-primary-content hover:bg-primary/90 flex items-center gap-1 fx-depth fx-noise" @click="playSelected"><Play :size="12" /> Play</button>
-        <button class="px-2.5 py-1 rounded-field bg-base-100 border border-base-300 hover:bg-base-200" @click="queueSelected"><ListMusic :size="12" class="inline mr-1" />{{ $t('common.addToQueue') }}</button>
+        <button
+          class="px-2.5 py-1 rounded-field bg-primary text-primary-content hover:bg-primary/90 flex items-center gap-1 fx-depth fx-noise"
+          @click="playSelected"
+        >
+          <Play :size="12" /> Play
+        </button>
+        <button
+          class="px-2.5 py-1 rounded-field bg-base-100 border border-base-300 hover:bg-base-200"
+          @click="queueSelected"
+        >
+          <ListMusic :size="12" class="inline mr-1" />{{ $t('common.addToQueue') }}
+        </button>
         <div class="relative">
-          <button class="px-2.5 py-1 rounded-field bg-base-100 border border-base-300 hover:bg-base-200" @click="showBulkPlaylist = !showBulkPlaylist">{{ $t('common.addToPlaylist') }}</button>
-          <div v-if="showBulkPlaylist" class="absolute right-0 top-full mt-1 w-48 bg-base-100 border border-base-300 rounded-box shadow-xl py-1 z-20 max-h-48 overflow-auto">
-            <button v-for="p in library.playlists" :key="p.id" class="w-full text-left px-3 py-1.5 text-xs hover:bg-base-content/10 truncate" @click="addSelectedToPlaylist(p.id)">{{ p.name }}</button>
-            <div v-if="library.playlists.length===0" class="px-3 py-1.5 text-xs text-base-content/50 italic">{{ $t('common.noPlaylists') }}</div>
+          <button
+            class="px-2.5 py-1 rounded-field bg-base-100 border border-base-300 hover:bg-base-200"
+            @click="showBulkPlaylist = !showBulkPlaylist"
+          >
+            {{ $t('common.addToPlaylist') }}
+          </button>
+          <div
+            v-if="showBulkPlaylist"
+            class="absolute right-0 top-full mt-1 w-48 bg-base-100 border border-base-300 rounded-box shadow-xl py-1 z-20 max-h-48 overflow-auto"
+          >
+            <button
+              v-for="p in library.playlists"
+              :key="p.id"
+              class="w-full text-left px-3 py-1.5 text-xs hover:bg-base-content/10 truncate"
+              @click="addSelectedToPlaylist(p.id)"
+            >
+              {{ p.name }}
+            </button>
+            <div
+              v-if="library.playlists.length === 0"
+              class="px-3 py-1.5 text-xs text-base-content/50 italic"
+            >
+              {{ $t('common.noPlaylists') }}
+            </div>
           </div>
         </div>
-        <button class="p-1 rounded-field hover:bg-base-300 text-base-content/60" @click="clearSelection"><X :size="12" /></button>
+        <button
+          class="p-1 rounded-field hover:bg-base-300 text-base-content/60"
+          @click="clearSelection"
+        >
+          <X :size="12" />
+        </button>
       </div>
     </div>
 

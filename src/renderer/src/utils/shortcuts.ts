@@ -1,4 +1,5 @@
-export function matchesShortcut(shortcut: string, e: KeyboardEvent): boolean {  const parts = shortcut.split('+').map((p) => p.trim());
+export function matchesShortcut(shortcut: string, e: KeyboardEvent): boolean {
+  const parts = shortcut.split('+').map((p) => p.trim());
   const keyPart = parts[parts.length - 1];
   const modifiers = parts.slice(0, -1);
 

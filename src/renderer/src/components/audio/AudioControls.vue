@@ -84,11 +84,18 @@ function onVolume(e: MouseEvent) {
 <template>
   <div ref="rootEl" class="w-full h-full overflow-hidden">
     <!-- ═══ WIDE (≥280 × ≥120) ═══ -->
-    <div v-if="mode === 'wide'" class="flex flex-col items-center justify-center gap-2 w-full h-full px-3 py-2">
+    <div
+      v-if="mode === 'wide'"
+      class="flex flex-col items-center justify-center gap-2 w-full h-full px-3 py-2"
+    >
       <div class="flex items-center justify-center gap-4">
         <button
           class="p-2 rounded-full transition-colors"
-          :class="player.shuffle ? 'text-primary' : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'"
+          :class="
+            player.shuffle
+              ? 'text-primary'
+              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
+          "
           @click="player.toggleShuffle"
         >
           <Shuffle :size="ICON_SM.wide" />
@@ -100,13 +107,21 @@ function onVolume(e: MouseEvent) {
           <SkipBack :size="ICON.wide" fill="currentColor" />
         </button>
         <div class="relative">
-          <div v-if="audio.isPlaying.value" class="absolute inset-0 rounded-full bg-primary/15 blur-xl" />
+          <div
+            v-if="audio.isPlaying.value"
+            class="absolute inset-0 rounded-full bg-primary/15 blur-xl"
+          />
           <button
             :class="PLAY_BOX.wide"
             class="relative rounded-full bg-primary/15 backdrop-blur-xl border border-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
             @click="togglePlay"
           >
-            <Pause v-if="audio.isPlaying.value" :size="PLAY_SIZE.wide" class="text-primary" fill="currentColor" />
+            <Pause
+              v-if="audio.isPlaying.value"
+              :size="PLAY_SIZE.wide"
+              class="text-primary"
+              fill="currentColor"
+            />
             <Play v-else :size="PLAY_SIZE.wide" class="text-primary ml-0.5" fill="currentColor" />
           </button>
         </div>
@@ -118,25 +133,42 @@ function onVolume(e: MouseEvent) {
         </button>
         <button
           class="p-2 rounded-full transition-colors"
-          :class="player.repeat !== 'none' ? 'text-primary' : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'"
+          :class="
+            player.repeat !== 'none'
+              ? 'text-primary'
+              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
+          "
           @click="player.cycleRepeat"
         >
           <component :is="player.repeat === 'one' ? Repeat1 : Repeat" :size="ICON_SM.wide" />
         </button>
       </div>
       <div v-if="!compact" class="flex items-center justify-center gap-2 w-full max-w-[220px]">
-        <button class="text-base-content/50 hover:text-base-content transition-colors shrink-0" @click="player.toggleMute">
+        <button
+          class="text-base-content/50 hover:text-base-content transition-colors shrink-0"
+          @click="player.toggleMute"
+        >
           <VolumeX v-if="player.isMuted" :size="ICON_SM.wide" />
           <Volume2 v-else :size="ICON_SM.wide" />
         </button>
-        <div class="flex-1 min-w-0 h-1.5 bg-base-content/20 rounded-full cursor-pointer hover:h-2 transition-[height]" @click="onVolume">
-          <div class="h-full bg-primary/60 rounded-full" :style="{ width: (player.isMuted ? 0 : player.volume * 100) + '%' }" />
+        <div
+          class="flex-1 min-w-0 h-1.5 bg-base-content/20 rounded-full cursor-pointer hover:h-2 transition-[height]"
+          @click="onVolume"
+        >
+          <div
+            class="h-full bg-primary/60 rounded-full"
+            :style="{ width: (player.isMuted ? 0 : player.volume * 100) + '%' }"
+          />
         </div>
       </div>
       <div v-if="!compact" class="flex items-center justify-center gap-2">
         <button
           class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
-          :class="player.equalizerVisible ? 'bg-primary/10 text-primary' : 'text-base-content/50 hover:text-base-content/70 hover:bg-base-content/10'"
+          :class="
+            player.equalizerVisible
+              ? 'bg-primary/10 text-primary'
+              : 'text-base-content/50 hover:text-base-content/70 hover:bg-base-content/10'
+          "
           data-eq-toggle
           @click="player.toggleEqualizer"
         >
@@ -145,7 +177,11 @@ function onVolume(e: MouseEvent) {
         </button>
         <button
           class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
-          :class="player.queueVisible ? 'bg-primary/10 text-primary' : 'text-base-content/50 hover:text-base-content/70 hover:bg-base-content/10'"
+          :class="
+            player.queueVisible
+              ? 'bg-primary/10 text-primary'
+              : 'text-base-content/50 hover:text-base-content/70 hover:bg-base-content/10'
+          "
           @click="player.toggleQueue"
         >
           <ListMusic :size="ICON_SM.wide" />
@@ -155,11 +191,18 @@ function onVolume(e: MouseEvent) {
     </div>
 
     <!-- ═══ COMPACT (≥180 × ≥100) ═══ -->
-    <div v-else-if="mode === 'compact'" class="flex flex-col items-center justify-center gap-1.5 w-full h-full px-2 py-1">
+    <div
+      v-else-if="mode === 'compact'"
+      class="flex flex-col items-center justify-center gap-1.5 w-full h-full px-2 py-1"
+    >
       <div class="flex items-center justify-center gap-2">
         <button
           class="p-1.5 rounded-full transition-colors"
-          :class="player.shuffle ? 'text-primary' : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'"
+          :class="
+            player.shuffle
+              ? 'text-primary'
+              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
+          "
           @click="player.toggleShuffle"
         >
           <Shuffle :size="ICON_SM.compact" />
@@ -171,14 +214,27 @@ function onVolume(e: MouseEvent) {
           <SkipBack :size="ICON.compact" fill="currentColor" />
         </button>
         <div class="relative">
-          <div v-if="audio.isPlaying.value" class="absolute inset-0 rounded-full bg-primary/15 blur-lg" />
+          <div
+            v-if="audio.isPlaying.value"
+            class="absolute inset-0 rounded-full bg-primary/15 blur-lg"
+          />
           <button
             :class="PLAY_BOX.compact"
             class="relative rounded-full bg-primary/15 backdrop-blur-xl border border-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
             @click="togglePlay"
           >
-            <Pause v-if="audio.isPlaying.value" :size="PLAY_SIZE.compact" class="text-primary" fill="currentColor" />
-            <Play v-else :size="PLAY_SIZE.compact" class="text-primary ml-0.5" fill="currentColor" />
+            <Pause
+              v-if="audio.isPlaying.value"
+              :size="PLAY_SIZE.compact"
+              class="text-primary"
+              fill="currentColor"
+            />
+            <Play
+              v-else
+              :size="PLAY_SIZE.compact"
+              class="text-primary ml-0.5"
+              fill="currentColor"
+            />
           </button>
         </div>
         <button
@@ -189,25 +245,42 @@ function onVolume(e: MouseEvent) {
         </button>
         <button
           class="p-1.5 rounded-full transition-colors"
-          :class="player.repeat !== 'none' ? 'text-primary' : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'"
+          :class="
+            player.repeat !== 'none'
+              ? 'text-primary'
+              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
+          "
           @click="player.cycleRepeat"
         >
           <component :is="player.repeat === 'one' ? Repeat1 : Repeat" :size="ICON_SM.compact" />
         </button>
       </div>
       <div v-if="!compact" class="flex items-center justify-center gap-1.5 w-full max-w-[160px]">
-        <button class="text-base-content/50 hover:text-base-content transition-colors shrink-0" @click="player.toggleMute">
+        <button
+          class="text-base-content/50 hover:text-base-content transition-colors shrink-0"
+          @click="player.toggleMute"
+        >
           <VolumeX v-if="player.isMuted" :size="ICON_SM.compact" />
           <Volume2 v-else :size="ICON_SM.compact" />
         </button>
-        <div class="flex-1 min-w-0 h-1 bg-base-content/20 rounded-full cursor-pointer hover:h-1.5 transition-[height]" @click="onVolume">
-          <div class="h-full bg-primary/60 rounded-full" :style="{ width: (player.isMuted ? 0 : player.volume * 100) + '%' }" />
+        <div
+          class="flex-1 min-w-0 h-1 bg-base-content/20 rounded-full cursor-pointer hover:h-1.5 transition-[height]"
+          @click="onVolume"
+        >
+          <div
+            class="h-full bg-primary/60 rounded-full"
+            :style="{ width: (player.isMuted ? 0 : player.volume * 100) + '%' }"
+          />
         </div>
       </div>
       <div v-if="!compact" class="flex items-center justify-center gap-1">
         <button
           class="fx-noise flex items-center gap-1 px-2 py-0.5 fx-depth rounded-field text-[10px] font-medium transition-colors"
-          :class="player.equalizerVisible ? 'bg-primary/10 text-primary' : 'text-base-content/50 hover:text-base-content/70 hover:bg-base-content/10'"
+          :class="
+            player.equalizerVisible
+              ? 'bg-primary/10 text-primary'
+              : 'text-base-content/50 hover:text-base-content/70 hover:bg-base-content/10'
+          "
           data-eq-toggle
           @click="player.toggleEqualizer"
         >
@@ -215,7 +288,11 @@ function onVolume(e: MouseEvent) {
         </button>
         <button
           class="fx-noise flex items-center gap-1 px-2 py-0.5 fx-depth rounded-field text-[10px] font-medium transition-colors"
-          :class="player.queueVisible ? 'bg-primary/10 text-primary' : 'text-base-content/50 hover:text-base-content/70 hover:bg-base-content/10'"
+          :class="
+            player.queueVisible
+              ? 'bg-primary/10 text-primary'
+              : 'text-base-content/50 hover:text-base-content/70 hover:bg-base-content/10'
+          "
           @click="player.toggleQueue"
         >
           <ListMusic :size="ICON_SM.compact" />
@@ -224,10 +301,17 @@ function onVolume(e: MouseEvent) {
     </div>
 
     <!-- ═══ TALL (<180 × ≥140) ═══ -->
-    <div v-else-if="mode === 'tall'" class="flex flex-col items-center justify-center gap-2.5 w-full h-full px-1 py-2">
+    <div
+      v-else-if="mode === 'tall'"
+      class="flex flex-col items-center justify-center gap-2.5 w-full h-full px-1 py-2"
+    >
       <button
         class="p-1.5 rounded-full transition-colors"
-        :class="player.shuffle ? 'text-primary' : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'"
+        :class="
+          player.shuffle
+            ? 'text-primary'
+            : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
+        "
         @click="player.toggleShuffle"
       >
         <Shuffle :size="ICON_SM.tall" />
@@ -239,13 +323,21 @@ function onVolume(e: MouseEvent) {
         <SkipBack :size="ICON.tall" fill="currentColor" />
       </button>
       <div class="relative">
-        <div v-if="audio.isPlaying.value" class="absolute inset-0 rounded-full bg-primary/15 blur-xl" />
+        <div
+          v-if="audio.isPlaying.value"
+          class="absolute inset-0 rounded-full bg-primary/15 blur-xl"
+        />
         <button
           :class="PLAY_BOX.tall"
           class="relative rounded-full bg-primary/15 backdrop-blur-xl border border-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
           @click="togglePlay"
         >
-          <Pause v-if="audio.isPlaying.value" :size="PLAY_SIZE.tall" class="text-primary" fill="currentColor" />
+          <Pause
+            v-if="audio.isPlaying.value"
+            :size="PLAY_SIZE.tall"
+            class="text-primary"
+            fill="currentColor"
+          />
           <Play v-else :size="PLAY_SIZE.tall" class="text-primary ml-0.5" fill="currentColor" />
         </button>
       </div>
@@ -257,24 +349,41 @@ function onVolume(e: MouseEvent) {
       </button>
       <button
         class="p-1.5 rounded-full transition-colors"
-        :class="player.repeat !== 'none' ? 'text-primary' : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'"
+        :class="
+          player.repeat !== 'none'
+            ? 'text-primary'
+            : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
+        "
         @click="player.cycleRepeat"
       >
         <component :is="player.repeat === 'one' ? Repeat1 : Repeat" :size="ICON_SM.tall" />
       </button>
       <div v-if="!compact" class="flex items-center gap-1.5 w-full max-w-[140px]">
-        <button class="text-base-content/50 hover:text-base-content transition-colors shrink-0" @click="player.toggleMute">
+        <button
+          class="text-base-content/50 hover:text-base-content transition-colors shrink-0"
+          @click="player.toggleMute"
+        >
           <VolumeX v-if="player.isMuted" :size="ICON_SM.tall" />
           <Volume2 v-else :size="ICON_SM.tall" />
         </button>
-        <div class="flex-1 min-w-0 h-1 bg-base-content/20 rounded-full cursor-pointer hover:h-1.5 transition-[height]" @click="onVolume">
-          <div class="h-full bg-primary/60 rounded-full" :style="{ width: (player.isMuted ? 0 : player.volume * 100) + '%' }" />
+        <div
+          class="flex-1 min-w-0 h-1 bg-base-content/20 rounded-full cursor-pointer hover:h-1.5 transition-[height]"
+          @click="onVolume"
+        >
+          <div
+            class="h-full bg-primary/60 rounded-full"
+            :style="{ width: (player.isMuted ? 0 : player.volume * 100) + '%' }"
+          />
         </div>
       </div>
       <div v-if="!compact" class="flex items-center gap-1">
         <button
           class="fx-noise flex items-center gap-1 px-2 py-0.5 fx-depth rounded-field text-[10px] font-medium transition-colors"
-          :class="player.equalizerVisible ? 'bg-primary/10 text-primary' : 'text-base-content/50 hover:text-base-content/70 hover:bg-base-content/10'"
+          :class="
+            player.equalizerVisible
+              ? 'bg-primary/10 text-primary'
+              : 'text-base-content/50 hover:text-base-content/70 hover:bg-base-content/10'
+          "
           data-eq-toggle
           @click="player.toggleEqualizer"
         >
@@ -283,7 +392,11 @@ function onVolume(e: MouseEvent) {
         </button>
         <button
           class="fx-noise flex items-center gap-1 px-2 py-0.5 fx-depth rounded-field text-[10px] font-medium transition-colors"
-          :class="player.queueVisible ? 'bg-primary/10 text-primary' : 'text-base-content/50 hover:text-base-content/70 hover:bg-base-content/10'"
+          :class="
+            player.queueVisible
+              ? 'bg-primary/10 text-primary'
+              : 'text-base-content/50 hover:text-base-content/70 hover:bg-base-content/10'
+          "
           @click="player.toggleQueue"
         >
           <ListMusic :size="ICON_SM.tall" />
@@ -293,11 +406,18 @@ function onVolume(e: MouseEvent) {
     </div>
 
     <!-- ═══ MINIMAL (<180 × <140, ≥28px tall) ═══ -->
-    <div v-else-if="mode === 'minimal'" class="flex flex-col items-center justify-center gap-0.5 w-full h-full overflow-hidden">
+    <div
+      v-else-if="mode === 'minimal'"
+      class="flex flex-col items-center justify-center gap-0.5 w-full h-full overflow-hidden"
+    >
       <div v-if="widthSufficient" class="flex items-center justify-center gap-1.5 shrink-0">
         <button
           class="p-1 rounded-full transition-colors"
-          :class="player.shuffle ? 'text-primary' : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'"
+          :class="
+            player.shuffle
+              ? 'text-primary'
+              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
+          "
           @click="player.toggleShuffle"
         >
           <Shuffle :size="ICON_SM.minimal" />
@@ -309,14 +429,27 @@ function onVolume(e: MouseEvent) {
           <SkipBack :size="ICON.minimal" fill="currentColor" />
         </button>
         <div class="relative">
-          <div v-if="audio.isPlaying.value" class="absolute inset-0 rounded-full bg-primary/15 blur-md" />
+          <div
+            v-if="audio.isPlaying.value"
+            class="absolute inset-0 rounded-full bg-primary/15 blur-md"
+          />
           <button
             :class="PLAY_BOX.minimal"
             class="relative rounded-full bg-primary/15 backdrop-blur-xl border border-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
             @click="togglePlay"
           >
-            <Pause v-if="audio.isPlaying.value" :size="PLAY_SIZE.minimal" class="text-primary" fill="currentColor" />
-            <Play v-else :size="PLAY_SIZE.minimal" class="text-primary ml-0.5" fill="currentColor" />
+            <Pause
+              v-if="audio.isPlaying.value"
+              :size="PLAY_SIZE.minimal"
+              class="text-primary"
+              fill="currentColor"
+            />
+            <Play
+              v-else
+              :size="PLAY_SIZE.minimal"
+              class="text-primary ml-0.5"
+              fill="currentColor"
+            />
           </button>
         </div>
         <button
@@ -327,7 +460,11 @@ function onVolume(e: MouseEvent) {
         </button>
         <button
           class="p-1 rounded-full transition-colors"
-          :class="player.repeat !== 'none' ? 'text-primary' : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'"
+          :class="
+            player.repeat !== 'none'
+              ? 'text-primary'
+              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
+          "
           @click="player.cycleRepeat"
         >
           <component :is="player.repeat === 'one' ? Repeat1 : Repeat" :size="ICON_SM.minimal" />
@@ -339,16 +476,33 @@ function onVolume(e: MouseEvent) {
         class="relative rounded-full bg-primary/15 backdrop-blur-xl border border-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shrink-0"
         @click="togglePlay"
       >
-        <Pause v-if="audio.isPlaying.value" :size="PLAY_SIZE.minimal" class="text-primary" fill="currentColor" />
+        <Pause
+          v-if="audio.isPlaying.value"
+          :size="PLAY_SIZE.minimal"
+          class="text-primary"
+          fill="currentColor"
+        />
         <Play v-else :size="PLAY_SIZE.minimal" class="text-primary ml-0.5" fill="currentColor" />
       </button>
-      <div v-if="!compact && !widthSufficient && volumeFit" class="flex items-center gap-1 w-full max-w-[90px] px-1 justify-center shrink-0">
-        <button class="text-base-content/50 hover:text-base-content transition-colors shrink-0" @click="player.toggleMute">
+      <div
+        v-if="!compact && !widthSufficient && volumeFit"
+        class="flex items-center gap-1 w-full max-w-[90px] px-1 justify-center shrink-0"
+      >
+        <button
+          class="text-base-content/50 hover:text-base-content transition-colors shrink-0"
+          @click="player.toggleMute"
+        >
           <VolumeX v-if="player.isMuted" :size="ICON_SM.minimal" />
           <Volume2 v-else :size="ICON_SM.minimal" />
         </button>
-        <div class="flex-1 min-w-0 h-0.5 bg-base-content/20 rounded-full cursor-pointer hover:h-1 transition-[height]" @click="onVolume">
-          <div class="h-full bg-primary/60 rounded-full" :style="{ width: (player.isMuted ? 0 : player.volume * 100) + '%' }" />
+        <div
+          class="flex-1 min-w-0 h-0.5 bg-base-content/20 rounded-full cursor-pointer hover:h-1 transition-[height]"
+          @click="onVolume"
+        >
+          <div
+            class="h-full bg-primary/60 rounded-full"
+            :style="{ width: (player.isMuted ? 0 : player.volume * 100) + '%' }"
+          />
         </div>
       </div>
     </div>
@@ -360,7 +514,12 @@ function onVolume(e: MouseEvent) {
         class="relative rounded-full bg-primary/15 backdrop-blur-xl border border-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shrink-0"
         @click="togglePlay"
       >
-        <Pause v-if="audio.isPlaying.value" :size="PLAY_SIZE.micro" class="text-primary" fill="currentColor" />
+        <Pause
+          v-if="audio.isPlaying.value"
+          :size="PLAY_SIZE.micro"
+          class="text-primary"
+          fill="currentColor"
+        />
         <Play v-else :size="PLAY_SIZE.micro" class="text-primary ml-0.5" fill="currentColor" />
       </button>
     </div>

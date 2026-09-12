@@ -99,7 +99,11 @@ function onHoverLeave() {
 <template>
   <button
     class="flex-1 flex flex-col fx-depth rounded-box fx-noise border transition-all overflow-hidden group text-left min-w-0"
-    :class="selected ? 'bg-primary/10 border-primary/50' : 'bg-base-100 border-base-300 hover:bg-base-content/10 hover:border-primary/30'"
+    :class="
+      selected
+        ? 'bg-primary/10 border-primary/50'
+        : 'bg-base-100 border-base-300 hover:bg-base-content/10 hover:border-primary/30'
+    "
     draggable="true"
     @click="emit('select', $event as unknown as MouseEvent)"
     @dblclick="playNow"
@@ -154,24 +158,24 @@ function onHoverLeave() {
               :style="playlistPopupStyle"
               @click.stop
             >
-            <button
-              v-for="p in library.playlists"
-              :key="p.id"
-              class="fx-noise w-full text-left px-3 py-1.5 text-xs fx-depth rounded-field hover:bg-base-content/10 transition-colors truncate flex items-center gap-2"
-              :class="{ 'text-primary': p.tracks.some((t) => t.path === props.track.path) }"
-              @click="toggleTrackInPlaylist(p.id)"
-            >
-              <ListMusic :size="12" class="shrink-0" />{{
-                p.tracks.some((t) => t.path === props.track.path) ? '✓ ' : '+ '
-              }}{{ p.name }}
-            </button>
-            <div
-              v-if="library.playlists.length === 0"
-              class="px-3 py-1.5 text-xs text-base-content/50 italic"
-            >
-              {{ $t('common.noPlaylists') }}
+              <button
+                v-for="p in library.playlists"
+                :key="p.id"
+                class="fx-noise w-full text-left px-3 py-1.5 text-xs fx-depth rounded-field hover:bg-base-content/10 transition-colors truncate flex items-center gap-2"
+                :class="{ 'text-primary': p.tracks.some((t) => t.path === props.track.path) }"
+                @click="toggleTrackInPlaylist(p.id)"
+              >
+                <ListMusic :size="12" class="shrink-0" />{{
+                  p.tracks.some((t) => t.path === props.track.path) ? '✓ ' : '+ '
+                }}{{ p.name }}
+              </button>
+              <div
+                v-if="library.playlists.length === 0"
+                class="px-3 py-1.5 text-xs text-base-content/50 italic"
+              >
+                {{ $t('common.noPlaylists') }}
+              </div>
             </div>
-          </div>
           </Teleport>
         </div>
         <button

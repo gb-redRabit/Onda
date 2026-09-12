@@ -18,7 +18,14 @@ const settings = useSettingsStore();
       />
       <div class="flex flex-wrap gap-2">
         <button
-          v-for="mode in ['extraSmall', 'small', 'medium', 'large', 'extraLarge', 'details'] as const"
+          v-for="mode in [
+            'extraSmall',
+            'small',
+            'medium',
+            'large',
+            'extraLarge',
+            'details'
+          ] as const"
           :key="mode"
           class="px-3 py-1.5 rounded-field text-xs font-medium border transition-colors"
           :class="
@@ -41,7 +48,9 @@ const settings = useSettingsStore();
           <select
             :value="settings.explorer.sortBy"
             class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
-            @change="settings.updateExplorer({ sortBy: ($event.target as HTMLSelectElement).value as any })"
+            @change="
+              settings.updateExplorer({ sortBy: ($event.target as HTMLSelectElement).value as any })
+            "
           >
             <option value="name">{{ $t('settings.sortByName') }}</option>
             <option value="size">{{ $t('settings.sortBySize') }}</option>
@@ -54,7 +63,11 @@ const settings = useSettingsStore();
           <select
             :value="settings.explorer.sortOrder"
             class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
-            @change="settings.updateExplorer({ sortOrder: ($event.target as HTMLSelectElement).value as any })"
+            @change="
+              settings.updateExplorer({
+                sortOrder: ($event.target as HTMLSelectElement).value as any
+              })
+            "
           >
             <option value="asc">{{ $t('settings.sortAsc') }}</option>
             <option value="desc">{{ $t('settings.sortDesc') }}</option>
@@ -64,7 +77,10 @@ const settings = useSettingsStore();
     </SettingsCard>
 
     <SettingsCard>
-      <SettingsRow :label="$t('settings.confirmBeforeMove')" :description="$t('settings.confirmBeforeMoveDesc')">
+      <SettingsRow
+        :label="$t('settings.confirmBeforeMove')"
+        :description="$t('settings.confirmBeforeMoveDesc')"
+      >
         <SettingsToggle
           :model-value="settings.explorer.confirmBeforeMove"
           @update:model-value="settings.updateExplorer({ confirmBeforeMove: $event })"

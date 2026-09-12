@@ -4,7 +4,10 @@ import { useRouter } from 'vue-router';
 import { useOnlineStore } from '@renderer/stores/online';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useViewSearch } from '@renderer/composables/useViewSearch';
-import { useDownloadsContextMenu, type DownloadCtx } from '@renderer/composables/useDownloadsContextMenu';
+import {
+  useDownloadsContextMenu,
+  type DownloadCtx
+} from '@renderer/composables/useDownloadsContextMenu';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
 import type { DownloadTask } from '@renderer/types/online';
 import type { MediaFile } from '@renderer/types/media';

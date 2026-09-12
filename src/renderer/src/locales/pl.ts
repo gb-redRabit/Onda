@@ -390,14 +390,14 @@ export default {
     autoPause: 'Auto-pauza przy utracie fokusa',
     rememberPos: 'Zapamiętuj pozycję odtwarzania',
     hideCursor: 'Ukrywanie kursora',
-    cursorHideHint:
-      'Dotyczy też widoku audio — HUD chowa się w tym samym momencie co kursor.',
+    cursorHideHint: 'Dotyczy też widoku audio — HUD chowa się w tym samym momencie co kursor.',
     playbackSection: 'Odtwarzanie',
     defaultVolume: 'Domyślna głośność:',
     defaultSpeed: 'Domyślna prędkość:',
     cursorHideTimeout: 'Czas ukrycia kursora:',
     resumePromptTimeout: 'Czas trwania przypomnienia (wznawianie):',
-    resumePromptHint: 'Przypomnienie zamyka się samo po tym czasie lub po pierwszym sterowaniu odtwarzaniem.',
+    resumePromptHint:
+      'Przypomnienie zamyka się samo po tym czasie lub po pierwszym sterowaniu odtwarzaniem.',
     downloadSection: 'Pobieranie',
     defaultAudioFormat: 'Domyślny format audio',
     audioNative: 'natywny (bez konwersji)',
@@ -792,7 +792,8 @@ export default {
   },
   plugins: {
     title: 'Wtyczki Onda',
-    description: 'Rozszerzenia sandboksowane w osobnym workerze. Dane i dostęp sieciowy kontroluje manifest.',
+    description:
+      'Rozszerzenia sandboksowane w osobnym workerze. Dane i dostęp sieciowy kontroluje manifest.',
     empty: 'Brak zainstalowanych wtyczek.',
     installFromFolder: 'Instaluj z folderu',
     refresh: 'Odśwież',
@@ -809,8 +810,7 @@ export default {
       sections: [
         {
           heading: 'Czym jest wtyczka?',
-          body:
-            'Wtyczka to rozszerzenie Onda napisane w JavaScripcie, wykonywane w osobnym, sandboksowanym workerze. Nie ma dostępu do okna aplikacji ani do DOM — jedynym kanałem komunikacji jest obiekt api. Uprawnienia (dane, sieć, odtwarzacz, powiadomienia, wygląd) są deklarowane w manifeście, a każde żądanie sieciowe jest dodatkowo filtrowane przez proces główny.'
+          body: 'Wtyczka to rozszerzenie Onda napisane w JavaScripcie, wykonywane w osobnym, sandboksowanym workerze. Nie ma dostępu do okna aplikacji ani do DOM — jedynym kanałem komunikacji jest obiekt api. Uprawnienia (dane, sieć, odtwarzacz, powiadomienia, wygląd) są deklarowane w manifeście, a każde żądanie sieciowe jest dodatkowo filtrowane przez proces główny.'
         },
         {
           heading: 'Struktura wtyczki',
@@ -985,8 +985,7 @@ export default {
         },
         {
           heading: 'Własne warianty layoutu (layoutElements)',
-          body:
-            'Wtyczka może dodać nowe opcje dekoracji dla istniejących elementów layoutu. Deklaruje się je w manifeście (wymaga uprawnienia permissions.visual). Każdy wpis to obiekt { element, variant, label? }:',
+          body: 'Wtyczka może dodać nowe opcje dekoracji dla istniejących elementów layoutu. Deklaruje się je w manifeście (wymaga uprawnienia permissions.visual). Każdy wpis to obiekt { element, variant, label? }:',
           code: `«{
   "name": "Moja wtyczka",
   "version": "1.0.0",
@@ -1422,7 +1421,8 @@ api.registerCommand({
     cut: 'Wytnij',
     paste: 'Wklej',
     clickAgainToClose: 'Kliknij ponownie poza oknem aby zamknąć',
-    unsavedChangesClickAgain: 'Masz niezapisane zmiany — kliknij ponownie poza oknem aby zamknąć, lub użyj Anuluj/Zapisz'
+    unsavedChangesClickAgain:
+      'Masz niezapisane zmiany — kliknij ponownie poza oknem aby zamknąć, lub użyj Anuluj/Zapisz'
   },
   wizard: {
     title: 'Witaj w Onda',
@@ -1677,7 +1677,8 @@ api.registerCommand({
     variant_cover_ring: 'Pierścień',
     variant_cover_glass: 'Szkło',
     decorationLabel: 'Dekoracja',
-    decorationHint: 'Możesz też ustawić dekoracje z poziomu wtyczki — wtedy działają globalnie w widoku audio.',
+    decorationHint:
+      'Możesz też ustawić dekoracje z poziomu wtyczki — wtedy działają globalnie w widoku audio.',
     decoration_cover_none: 'Brak',
     decoration_cover_triangle: 'Trójkąt',
     decoration_cover_circle: 'Koło',

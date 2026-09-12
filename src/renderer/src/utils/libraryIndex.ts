@@ -74,12 +74,20 @@ export function getChildDirsIndexed(dir: string, tracks: MediaFile[], folders: s
   return [...set].sort((a, b) => a.localeCompare(b));
 }
 
-export function getDirectTracksIndexed(dir: string, tracks: MediaFile[], folders: string[]): MediaFile[] {
+export function getDirectTracksIndexed(
+  dir: string,
+  tracks: MediaFile[],
+  folders: string[]
+): MediaFile[] {
   const idx = getLibraryIndex(tracks, folders);
   return idx.directMap.get(canonicalPath(dir)) ?? [];
 }
 
-export function getAllTracksIndexed(dir: string, tracks: MediaFile[], folders: string[]): MediaFile[] {
+export function getAllTracksIndexed(
+  dir: string,
+  tracks: MediaFile[],
+  folders: string[]
+): MediaFile[] {
   const idx = getLibraryIndex(tracks, folders);
   return idx.allMap.get(canonicalPath(dir)) ?? [];
 }

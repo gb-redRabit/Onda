@@ -5,7 +5,9 @@ api.log.info('Hello Plugin załadowany');
 
 // Hook: aplikacja wystartowała
 api.on('app:start', function (payload) {
-  api.log.info('Hook app:start' + (payload && payload.version ? ' (v' + payload.version + ')' : ''));
+  api.log.info(
+    'Hook app:start' + (payload && payload.version ? ' (v' + payload.version + ')' : '')
+  );
 });
 
 // Hook: zmiana utworu
@@ -16,7 +18,11 @@ api.on('track:play', function (payload) {
 });
 
 function notify(type, title, message) {
-  return api.notify({ type: type || 'info', title: title || 'Hello Plugin', message: message || '' });
+  return api.notify({
+    type: type || 'info',
+    title: title || 'Hello Plugin',
+    message: message || ''
+  });
 }
 
 // Komenda: powitanie

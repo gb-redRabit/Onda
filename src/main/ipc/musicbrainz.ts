@@ -27,50 +27,66 @@ function mbFetch(url: string): Promise<Record<string, unknown> | string> {
     () =>
       new Promise<Record<string, unknown> | string>((resolve, reject) => {
         const protocol = url.startsWith('https') ? https : http;
-    let total = 0;
-    const MAX_JSON = 2 * 1024 * 1024; // 2 MB
-    const req = protocol.get(
-      url,
-      { headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' } },
-      (res) => {
-        // rate-limit 503 z Retry-After
-        if (res.statusCode === 503) {
-          const retryAfter = Number(res.headers['retry-after'] || '2');
-          setTimeout(() => mbFetch(url).then(resolve, reject), Math.min(retryAfter * 1000, 5000));
-          return;
-        }
-        let data = '';
-        res.on('data', (chunk: string) => {
-          total += chunk.length;
-          if (total > MAX_JSON) {
-            req.destroy();
-            reject(new Error('Response too large'));
-            return;
-          }
-          data += chunk;
-        });
-        res.on('end', () => {
-          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-            try {
-              resolve(JSON.parse(data) as Record<string, unknown>);
-            } catch (e) {
-              logger.warn('musicbrainz', 'non-JSON response', url, e);
-              resolve(data);
+        let total = 0;
+        const MAX_JSON = 2 * 1024 * 1024; // 2 MB
+        const req = protocol.get(
+          url,
+          { headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' } },
+          (res) => {
+            // rate-limit 503 z Retry-After
+            if (res.statusCode === 503) {
+              const retryAfter = Number(res.headers['retry-after'] || '2');
+              setTimeout(
+                () => mbFetch(url).then(resolve, reject),
+                Math.min(retryAfter * 1000, 5000)
+              );
+              return;
             }
-          } else if (res.statusCode === 429 || res.statusCode === 503) {
-            reject(Object.assign(new Error(`Rate limited HTTP ${res.statusCode}`), { rateLimited: true }));
-          } else {
-            const kind = res.statusCode === 404 ? 'not-found' : res.statusCode === 503 ? 'rate-limit' : 'http';
-            reject(Object.assign(new Error(`HTTP ${res.statusCode}: ${data.slice(0, 200)}`), { errorKind: kind }));
+            let data = '';
+            res.on('data', (chunk: string) => {
+              total += chunk.length;
+              if (total > MAX_JSON) {
+                req.destroy();
+                reject(new Error('Response too large'));
+                return;
+              }
+              data += chunk;
+            });
+            res.on('end', () => {
+              if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+                try {
+                  resolve(JSON.parse(data) as Record<string, unknown>);
+                } catch (e) {
+                  logger.warn('musicbrainz', 'non-JSON response', url, e);
+                  resolve(data);
+                }
+              } else if (res.statusCode === 429 || res.statusCode === 503) {
+                reject(
+                  Object.assign(new Error(`Rate limited HTTP ${res.statusCode}`), {
+                    rateLimited: true
+                  })
+                );
+              } else {
+                const kind =
+                  res.statusCode === 404
+                    ? 'not-found'
+                    : res.statusCode === 503
+                      ? 'rate-limit'
+                      : 'http';
+                reject(
+                  Object.assign(new Error(`HTTP ${res.statusCode}: ${data.slice(0, 200)}`), {
+                    errorKind: kind
+                  })
+                );
+              }
+            });
           }
+        );
+        req.on('error', (e) => reject(Object.assign(e, { errorKind: 'network' })));
+        req.setTimeout(20000, () => {
+          req.destroy();
+          reject(Object.assign(new Error('Timeout'), { errorKind: 'timeout' }));
         });
-      }
-    );
-    req.on('error', (e) => reject(Object.assign(e, { errorKind: 'network' })));
-    req.setTimeout(20000, () => {
-      req.destroy();
-      reject(Object.assign(new Error('Timeout'), { errorKind: 'timeout' }));
-    });
       })
   );
 }
@@ -80,7 +96,12 @@ function fetchCoverWithRedirect(url: string, redirects = 0): Promise<Buffer> {
     if (redirects > 3) return reject(new Error('Too many redirects'));
     https
       .get(url, { headers: { 'User-Agent': USER_AGENT } }, (res) => {
-        if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        if (
+          res.statusCode &&
+          res.statusCode >= 300 &&
+          res.statusCode < 400 &&
+          res.headers.location
+        ) {
           const next = res.headers.location.startsWith('http')
             ? res.headers.location
             : new URL(res.headers.location, url).toString();
@@ -145,7 +166,13 @@ export function registerMusicBrainzHandlers() {
     async (
       _event,
       releaseId: string
-    ): Promise<{ success: boolean; data?: number[]; mime?: string; error?: string; rateLimited?: boolean }> => {
+    ): Promise<{
+      success: boolean;
+      data?: number[];
+      mime?: string;
+      error?: string;
+      rateLimited?: boolean;
+    }> => {
       try {
         const buf = await fetchCoverWithRedirect(`${CA_URL}/release/${releaseId}/front`);
         return { success: true, data: Array.from(buf), mime: 'image/jpeg' };
@@ -169,7 +196,12 @@ export function registerMusicBrainzHandlers() {
       const top = releases[0] as unknown as { score?: string };
       const score = Number(top.score || 0);
       const secondScore = Number((releases[1] as unknown as { score?: string })?.score || 0);
-      const match = score >= 90 && score - secondScore > 20 ? 'certain' : releases.length === 1 ? 'certain' : 'ambiguous';
+      const match =
+        score >= 90 && score - secondScore > 20
+          ? 'certain'
+          : releases.length === 1
+            ? 'certain'
+            : 'ambiguous';
       return { success: true, match, releases };
     } catch (e) {
       return { success: false, error: String(e), match: 'none', releases: [] };

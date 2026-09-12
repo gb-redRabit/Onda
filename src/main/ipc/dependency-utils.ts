@@ -21,11 +21,23 @@ function managedBinPath(binDir: string, tool: BinTool): string {
 
 // Path to a binary bundled with the app (shipped in `resources/ffmpeg/` and
 // copied into `process.resourcesPath/ffmpeg` by electron-builder). Returns null
-// when not present.
-function bundledBinPath(tool: BinTool, resourcesPath?: string): string | null {
+// when not present. Binaries live under a `<platform>-<arch>` subdir (see
+// scripts/fetch-ffmpeg.mjs); accept the flat layout as a legacy fallback.
+function bundledBinPath(
+  tool: BinTool,
+  resourcesPath?: string,
+  platform: NodeJS.Platform = process.platform,
+  arch: string = process.arch
+): string | null {
   if (typeof resourcesPath !== 'string' || !resourcesPath) return null;
-  const p = join(resourcesPath, 'ffmpeg', toolFileName(tool));
-  return existsSync(p) ? p : null;
+  for (const rel of [
+    join('ffmpeg', `${platform}-${arch}`, toolFileName(tool)),
+    join('ffmpeg', toolFileName(tool))
+  ]) {
+    const p = join(resourcesPath, rel);
+    if (existsSync(p)) return p;
+  }
+  return null;
 }
 
 // electron's `process.resourcesPath` is only defined in the main process; read it

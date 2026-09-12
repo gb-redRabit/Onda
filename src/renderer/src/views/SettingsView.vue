@@ -144,29 +144,167 @@ const sections = [
 ] as const;
 
 const tabs = [
-  { id: 'playback', labelKey: 'settings.playback', icon: Play, section: 'playback', description: 'Głośność, crossfade, bufor' },
-  { id: 'playback-buffer', labelKey: 'settings.playbackBuffer', icon: Music2, section: 'playback', description: 'Preload, sleep timer, per-source' },
-  { id: 'pip-video', labelKey: 'settings.pipVideo', icon: PictureInPicture, section: 'playback', description: 'Tryb PiP wideo' },
-  { id: 'pip-audio', labelKey: 'settings.pipAudio', icon: Music2, section: 'playback', description: 'Tryb PiP audio' },
-  { id: 'theme', labelKey: 'settings.themeTab', icon: Paintbrush, section: 'appearance', description: 'Motywy i kolory' },
-  { id: 'appearance', labelKey: 'settings.appearance', icon: Palette, section: 'appearance', description: 'Czcionka, sidebar, animacje' },
-  { id: 'network', labelKey: 'settings.network', icon: Globe, section: 'network', description: 'Proxy globalne, prędkość' },
-  { id: 'network-platform', labelKey: 'settings.networkPlatform', icon: Globe, section: 'network', description: 'Jakość i proxy YT/SC' },
-  { id: 'download', labelKey: 'settings.download', icon: Download, section: 'network', description: 'Konto Google i cookies' },
-  { id: 'download-paths', labelKey: 'settings.downloadPaths', icon: Folder, section: 'network', description: 'Foldery docelowe i profile' },
-  { id: 'download-queue', labelKey: 'settings.downloadQueue', icon: Download, section: 'network', description: 'Kolejka, retry, hash' },
-  { id: 'smart-mode', labelKey: 'settings.smartModeTab', icon: Wand, section: 'network', description: 'Tryb inteligentny' },
-  { id: 'library', labelKey: 'settings.library', icon: Folder, section: 'library', description: 'Foldery biblioteki i skan' },
-  { id: 'explorer', labelKey: 'settings.explorer', icon: Folder, section: 'library', description: 'Widok i sortowanie plików' },
-  { id: 'general', labelKey: 'settings.general', icon: Power, section: 'system', description: 'Autostart, tray, sesja' },
-  { id: 'system-logs', labelKey: 'settings.systemLogs', icon: Info, section: 'system', description: 'Logi, rozmiar, eksperymenty' },
-  { id: 'shortcuts', labelKey: 'settings.shortcuts', icon: Keyboard, section: 'system', description: 'Skróty klawiszowe' },
-  { id: 'toast', labelKey: 'settings.notifications', icon: Bell, section: 'system', description: 'Powiadomienia' },
-  { id: 'updates', labelKey: 'settings.updates', icon: RefreshCw, section: 'system', description: 'Aktualizacje' },
-  { id: 'dependencies', labelKey: 'settings.dependencies', icon: Box, section: 'system', description: 'yt-dlp, ffmpeg, mkvextract' },
-  { id: 'systemInfo', labelKey: 'settings.systemInfo', icon: Info, section: 'system', description: 'Wersje i ścieżki' },
-  { id: 'apiKeys', labelKey: 'settings.apiKeys', icon: Key, section: 'advanced', description: 'Klucze API' },
-  { id: 'plugins', labelKey: 'settings.plugins', icon: Puzzle, section: 'advanced', description: 'Rozszerzenia Onda' }
+  {
+    id: 'playback',
+    labelKey: 'settings.playback',
+    icon: Play,
+    section: 'playback',
+    description: 'Głośność, crossfade, bufor'
+  },
+  {
+    id: 'playback-buffer',
+    labelKey: 'settings.playbackBuffer',
+    icon: Music2,
+    section: 'playback',
+    description: 'Preload, sleep timer, per-source'
+  },
+  {
+    id: 'pip-video',
+    labelKey: 'settings.pipVideo',
+    icon: PictureInPicture,
+    section: 'playback',
+    description: 'Tryb PiP wideo'
+  },
+  {
+    id: 'pip-audio',
+    labelKey: 'settings.pipAudio',
+    icon: Music2,
+    section: 'playback',
+    description: 'Tryb PiP audio'
+  },
+  {
+    id: 'theme',
+    labelKey: 'settings.themeTab',
+    icon: Paintbrush,
+    section: 'appearance',
+    description: 'Motywy i kolory'
+  },
+  {
+    id: 'appearance',
+    labelKey: 'settings.appearance',
+    icon: Palette,
+    section: 'appearance',
+    description: 'Czcionka, sidebar, animacje'
+  },
+  {
+    id: 'network',
+    labelKey: 'settings.network',
+    icon: Globe,
+    section: 'network',
+    description: 'Proxy globalne, prędkość'
+  },
+  {
+    id: 'network-platform',
+    labelKey: 'settings.networkPlatform',
+    icon: Globe,
+    section: 'network',
+    description: 'Jakość i proxy YT/SC'
+  },
+  {
+    id: 'download',
+    labelKey: 'settings.download',
+    icon: Download,
+    section: 'network',
+    description: 'Konto Google i cookies'
+  },
+  {
+    id: 'download-paths',
+    labelKey: 'settings.downloadPaths',
+    icon: Folder,
+    section: 'network',
+    description: 'Foldery docelowe i profile'
+  },
+  {
+    id: 'download-queue',
+    labelKey: 'settings.downloadQueue',
+    icon: Download,
+    section: 'network',
+    description: 'Kolejka, retry, hash'
+  },
+  {
+    id: 'smart-mode',
+    labelKey: 'settings.smartModeTab',
+    icon: Wand,
+    section: 'network',
+    description: 'Tryb inteligentny'
+  },
+  {
+    id: 'library',
+    labelKey: 'settings.library',
+    icon: Folder,
+    section: 'library',
+    description: 'Foldery biblioteki i skan'
+  },
+  {
+    id: 'explorer',
+    labelKey: 'settings.explorer',
+    icon: Folder,
+    section: 'library',
+    description: 'Widok i sortowanie plików'
+  },
+  {
+    id: 'general',
+    labelKey: 'settings.general',
+    icon: Power,
+    section: 'system',
+    description: 'Autostart, tray, sesja'
+  },
+  {
+    id: 'system-logs',
+    labelKey: 'settings.systemLogs',
+    icon: Info,
+    section: 'system',
+    description: 'Logi, rozmiar, eksperymenty'
+  },
+  {
+    id: 'shortcuts',
+    labelKey: 'settings.shortcuts',
+    icon: Keyboard,
+    section: 'system',
+    description: 'Skróty klawiszowe'
+  },
+  {
+    id: 'toast',
+    labelKey: 'settings.notifications',
+    icon: Bell,
+    section: 'system',
+    description: 'Powiadomienia'
+  },
+  {
+    id: 'updates',
+    labelKey: 'settings.updates',
+    icon: RefreshCw,
+    section: 'system',
+    description: 'Aktualizacje'
+  },
+  {
+    id: 'dependencies',
+    labelKey: 'settings.dependencies',
+    icon: Box,
+    section: 'system',
+    description: 'yt-dlp, ffmpeg, mkvextract'
+  },
+  {
+    id: 'systemInfo',
+    labelKey: 'settings.systemInfo',
+    icon: Info,
+    section: 'system',
+    description: 'Wersje i ścieżki'
+  },
+  {
+    id: 'apiKeys',
+    labelKey: 'settings.apiKeys',
+    icon: Key,
+    section: 'advanced',
+    description: 'Klucze API'
+  },
+  {
+    id: 'plugins',
+    labelKey: 'settings.plugins',
+    icon: Puzzle,
+    section: 'advanced',
+    description: 'Rozszerzenia Onda'
+  }
 ] as const;
 
 const query = computed(() => search.value.trim().toLowerCase());
@@ -252,16 +390,23 @@ watch(activeTab, (_newTab, oldTab) => {
 <template>
   <div class="flex flex-col h-full">
     <!-- ─── Header ─── -->
-    <header class="shrink-0 flex items-center gap-3 px-6 h-14 border-b border-base-300 bg-base-100/(--glass-alpha)">
+    <header
+      class="shrink-0 flex items-center gap-3 px-6 h-14 border-b border-base-300 bg-base-100/(--glass-alpha)"
+    >
       <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-box bg-primary/15 text-primary flex items-center justify-center ring-1 ring-primary/20">
+        <div
+          class="w-8 h-8 rounded-box bg-primary/15 text-primary flex items-center justify-center ring-1 ring-primary/20"
+        >
           <Settings :size="15" />
         </div>
         <h1 class="text-[15px] font-bold tracking-tight">{{ t('settings.title') }}</h1>
       </div>
 
       <div class="relative max-w-xs flex-1 ml-6">
-        <Search :size="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50 pointer-events-none" />
+        <Search
+          :size="14"
+          class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50 pointer-events-none"
+        />
         <input
           v-model="search"
           :placeholder="t('settings.searchSettings')"
@@ -304,7 +449,9 @@ watch(activeTab, (_newTab, oldTab) => {
     </header>
 
     <!-- ─── Section tabs ─── -->
-    <nav class="shrink-0 flex items-center gap-1 px-6 h-11 border-b border-base-300 bg-base-100/(--glass-alpha) overflow-x-auto">
+    <nav
+      class="shrink-0 flex items-center gap-1 px-6 h-11 border-b border-base-300 bg-base-100/(--glass-alpha) overflow-x-auto"
+    >
       <button
         v-for="section in sections"
         :key="section.id"
@@ -340,7 +487,9 @@ watch(activeTab, (_newTab, oldTab) => {
                 )
               "
             >
-              <div class="w-12 h-12 rounded-box bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-content transition-colors">
+              <div
+                class="w-12 h-12 rounded-box bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-content transition-colors"
+              >
                 <component :is="section.icon" :size="22" />
               </div>
               <span class="text-sm font-medium text-base-content">{{ t(section.labelKey) }}</span>
@@ -349,14 +498,18 @@ watch(activeTab, (_newTab, oldTab) => {
         </div>
 
         <!-- Section: sub-tabs grid -->
-        <div v-else-if="!activeTab" :key="'section-' + activeSection" class="px-6 py-8 mx-auto w-full max-w-5xl">
+        <div
+          v-else-if="!activeTab"
+          :key="'section-' + activeSection"
+          class="px-6 py-8 mx-auto w-full max-w-5xl"
+        >
           <div class="flex items-center gap-2 mb-6">
             <button
               class="flex items-center gap-1.5 text-xs text-base-content/50 hover:text-base-content transition-colors"
               @click="goHome"
             >
-              <component :is="sections.find(s => s.id === activeSection)?.icon" :size="14" />
-              {{ t(sections.find(s => s.id === activeSection)?.labelKey ?? '') }}
+              <component :is="sections.find((s) => s.id === activeSection)?.icon" :size="14" />
+              {{ t(sections.find((s) => s.id === activeSection)?.labelKey ?? '') }}
             </button>
           </div>
 
@@ -390,7 +543,7 @@ watch(activeTab, (_newTab, oldTab) => {
               @click="goBackToSection"
             >
               <ArrowLeft :size="14" />
-              {{ t(sections.find(s => s.id === activeSection)?.labelKey ?? '') }}
+              {{ t(sections.find((s) => s.id === activeSection)?.labelKey ?? '') }}
             </button>
           </div>
 

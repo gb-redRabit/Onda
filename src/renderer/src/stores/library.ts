@@ -168,9 +168,7 @@ export const useLibraryStore = defineStore('library', () => {
     });
     const t = tracks.value.find((x) => x.path === path);
     if (t) {
-      window.api?.invoke('library:updateStats', [
-        { path, playCount: t.playCount, lastPlayed: 0 }
-      ]);
+      window.api?.invoke('library:updateStats', [{ path, playCount: t.playCount, lastPlayed: 0 }]);
     }
   }
 

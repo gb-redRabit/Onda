@@ -21,7 +21,8 @@ describe('ytdlpBinaryName', () => {
 });
 
 describe('ytdlpDownloadUrl', () => {
-  const base = 'https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.18.122307';
+  const base =
+    'https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.18.122307';
   it('maps every platform to a pinned nightly yt-dlp release asset', () => {
     expect(ytdlpDownloadUrl('win32')).toBe(`${base}/yt-dlp.exe`);
     expect(ytdlpDownloadUrl('linux', 'x64')).toBe(`${base}/yt-dlp`);

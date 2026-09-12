@@ -123,7 +123,8 @@ export interface AppearanceSettings {
   audioLayout: AudioLayoutSettings;
 }
 
-export type AudioLayoutElementId = 'visualization' | 'cover' | 'progress' | 'trackInfo' | 'controls';
+export type AudioLayoutElementId =
+  'visualization' | 'cover' | 'progress' | 'trackInfo' | 'controls';
 
 export type AudioLayoutPreset = 'compact' | 'stacked' | 'split' | 'full' | 'immersive';
 
@@ -165,7 +166,8 @@ export interface AudioLayoutSettings {
   customLayouts?: Partial<Record<AudioLayoutPreset, AudioLayoutElement[]>>;
 }
 
-export type VisualizationMode = 'circle' | 'bars' | 'particles' | 'wave' | 'radial' | 'spectrum' | 'rings' | 'none';
+export type VisualizationMode =
+  'circle' | 'bars' | 'particles' | 'wave' | 'radial' | 'spectrum' | 'rings' | 'none';
 
 interface VisualizationSettings {
   mode: VisualizationMode;

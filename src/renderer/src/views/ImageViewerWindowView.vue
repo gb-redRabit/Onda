@@ -11,8 +11,7 @@ let cleanupFiles: (() => void) | null = null;
 
 onMounted(async () => {
   const data = (await window.api?.invoke('imageViewer:getData')) as
-    | { files: FileItem[]; index: number }
-    | undefined;
+    { files: FileItem[]; index: number } | undefined;
   if (data && Array.isArray(data.files)) {
     files.value = data.files;
     initialIndex.value = data.index;
@@ -40,10 +39,5 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <ImageViewer
-    v-if="ready"
-    :files="files"
-    :initial-index="initialIndex"
-    @close="close"
-  />
+  <ImageViewer v-if="ready" :files="files" :initial-index="initialIndex" @close="close" />
 </template>

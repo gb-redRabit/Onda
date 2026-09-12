@@ -30,14 +30,18 @@ const FFMPEG_VERSION = '7.1';
 const SOURCES = {
   'win32-x64': {
     url: `https://github.com/GyanD/codexffmpeg/releases/download/${FFMPEG_VERSION}/ffmpeg-${FFMPEG_VERSION}-essentials_build.zip`,
-    shaUrl: `https://github.com/GyanD/codexffmpeg/releases/download/${FFMPEG_VERSION}/ffmpeg-${FFMPEG_VERSION}-essentials_build.zip.sha256`,
+    // GyanD publishes no .sha256 assets, so the hash is pinned here instead
+    // (computed from the 7.1 release asset, size 92100272). Bump alongside
+    // the version/URL above; never point at a mutable `latest` redirect.
+    sha256: 'fa7d4d7e795db0e2503f49f105f46ed5852386f0cfdd819899be3b65ebde24fc',
     kind: 'zip',
     ffmpeg: 'ffmpeg.exe',
     ffprobe: 'ffprobe.exe'
   },
   'win32-arm64': {
     url: `https://github.com/GyanD/codexffmpeg/releases/download/${FFMPEG_VERSION}/ffmpeg-${FFMPEG_VERSION}-essentials_build.zip`,
-    shaUrl: `https://github.com/GyanD/codexffmpeg/releases/download/${FFMPEG_VERSION}/ffmpeg-${FFMPEG_VERSION}-essentials_build.zip.sha256`,
+    // Same archive as win32-x64 until an upstream arm64 (win) build exists.
+    sha256: 'fa7d4d7e795db0e2503f49f105f46ed5852386f0cfdd819899be3b65ebde24fc',
     kind: 'zip',
     ffmpeg: 'ffmpeg.exe',
     ffprobe: 'ffprobe.exe'
@@ -109,10 +113,21 @@ async function sha256(file) {
   return createHash('sha256').update(data).digest('hex');
 }
 
-async function verify(url, file) {
+async function verify(expectedSha, shaUrl, file) {
+  if (expectedSha) {
+    const actual = await sha256(file);
+    if (expectedSha.toLowerCase() !== actual) {
+      throw new Error(`checksum mismatch for ${basename(file)}`);
+    }
+    return;
+  }
+  if (!shaUrl) {
+    console.warn(`no SHA-256 source for ${basename(file)} — trusting pinned immutable URL`);
+    return;
+  }
   const shaDest = join(OUT, `verify-${Date.now()}.sha256`);
   try {
-    await download(url, shaDest);
+    await download(shaUrl, shaDest);
     const manifest = await readFile(shaDest, 'utf-8');
     const expected = (manifest.match(/([0-9a-fA-F]{64})/) || [])[1];
     const actual = await sha256(file);
@@ -131,7 +146,11 @@ async function extract(archive, dest, kind) {
       const psLiteral = (p) => p.replace(/'/g, "''");
       const r = spawnSync(
         'powershell',
-        ['-NoProfile', '-Command', `Expand-Archive -LiteralPath '${psLiteral(archive)}' -DestinationPath '${psLiteral(dest)}' -Force`],
+        [
+          '-NoProfile',
+          '-Command',
+          `Expand-Archive -LiteralPath '${psLiteral(archive)}' -DestinationPath '${psLiteral(dest)}' -Force`
+        ],
         { stdio: 'inherit' }
       );
       if (r.status !== 0) throw new Error('Expand-Archive failed');
@@ -172,9 +191,7 @@ async function fetchFor(key) {
   console.log(`fetch ${key}: ${src.url}`);
   await rm(archive, { force: true }).catch(() => {});
   await download(src.url, archive);
-  if (src.shaUrl) {
-    await verify(src.shaUrl, archive);
-  }
+  await verify(src.sha256, src.shaUrl, archive);
   const extractDir = join(work, key);
   await rm(extractDir, { recursive: true, force: true }).catch(() => {});
   await extract(archive, extractDir, src.kind);
@@ -194,7 +211,7 @@ async function fetchFor(key) {
     const probeArchive = join(work, `${key}-probe.zip`);
     await rm(probeArchive, { force: true }).catch(() => {});
     await download(PROBE_URLS[key], probeArchive);
-    if (PROBE_SHA_URLS[key]) await verify(PROBE_SHA_URLS[key], probeArchive);
+    await verify(null, PROBE_SHA_URLS[key], probeArchive);
     await extract(probeArchive, extractDir, 'zip');
     const ffprobe = await findFile(extractDir, 'ffprobe');
     if (ffprobe) await copyFile(ffprobe, join(destDir, 'ffprobe'));

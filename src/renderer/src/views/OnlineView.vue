@@ -547,7 +547,9 @@ onUnmounted(() => {
 
 <template>
   <div class="flex flex-col h-full">
-    <header class="sticky top-0 z-10 bg-base-100/(--glass-alpha) backdrop-blur border border-b border-base-300 px-4 py-4">
+    <header
+      class="sticky top-0 z-10 bg-base-100/(--glass-alpha) backdrop-blur border border-b border-base-300 px-4 py-4"
+    >
       <div class="flex items-center gap-3 mb-4">
         <Radio :size="24" class="text-primary" />
         <h1 class="text-xl font-bold">{{ $t('nav.online') }}</h1>

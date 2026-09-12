@@ -312,7 +312,8 @@ export function registerLibraryHandlers(): void {
         const sanitizedTracks = input.tracks
           .filter((t): t is string => typeof t === 'string' && t.length > 0)
           .slice(0, 10000);
-        const safeName = (input.name || 'playlist').replace(/[<>:"/\\|?*]/g, '_').trim() || 'playlist';
+        const safeName =
+          (input.name || 'playlist').replace(/[<>:"/\\|?*]/g, '_').trim() || 'playlist';
         const result = await dialog.showSaveDialog(win, {
           title: 'Export playlist',
           defaultPath: `${safeName}.m3u`,

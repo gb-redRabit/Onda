@@ -38,8 +38,10 @@ const coverClass = computed(() => {
 
 const coverClip = computed(() => {
   if (props.variant === 'ring') return undefined;
-  if (props.decoration && COVER_SHAPE_CLIP[props.decoration]) return COVER_SHAPE_CLIP[props.decoration];
-  if (props.decoration && COVER_PLUGIN_CLIP[props.decoration]) return COVER_PLUGIN_CLIP[props.decoration];
+  if (props.decoration && COVER_SHAPE_CLIP[props.decoration])
+    return COVER_SHAPE_CLIP[props.decoration];
+  if (props.decoration && COVER_PLUGIN_CLIP[props.decoration])
+    return COVER_PLUGIN_CLIP[props.decoration];
   return undefined;
 });
 
@@ -100,7 +102,9 @@ onUnmounted(() => {
     :class="[size || 'w-96 h-96']"
     :style="{ transform: `scale(${pulseScale})`, clipPath: coverClip }"
   >
-    <div class="absolute rounded-full ring-2 ring-primary/30 h-[96%] aspect-square pointer-events-none" />
+    <div
+      class="absolute rounded-full ring-2 ring-primary/30 h-[96%] aspect-square pointer-events-none"
+    />
     <div class="relative h-[88%] aspect-square rounded-full overflow-hidden shadow-lg bg-neutral">
       <MediaCover
         v-if="player.currentTrack"

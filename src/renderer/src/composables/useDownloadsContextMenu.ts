@@ -58,7 +58,7 @@ export function useDownloadsContextMenu() {
       {
         label: t('ctx.downloads.copyPath'),
         when: (c) => !!c.task.outputPath && !!c.onCopyText,
-        action: (c) => c.onCopyText?.(c.task.outputPath)
+        action: (c) => c.onCopyText?.(c.task.outputPath ?? '')
       }
     ];
   }

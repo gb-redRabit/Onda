@@ -28,8 +28,14 @@ const SC_TRACK = {
   },
   media: {
     transcodings: [
-      { url: 'https://api-v2.soundcloud.com/media/transcode/x', format: { protocol: 'progressive', mime_type: 'audio/mpeg' } },
-      { url: 'https://api-v2.soundcloud.com/media/transcode/y', format: { protocol: 'hls', mime_type: 'audio/mpeg' } }
+      {
+        url: 'https://api-v2.soundcloud.com/media/transcode/x',
+        format: { protocol: 'progressive', mime_type: 'audio/mpeg' }
+      },
+      {
+        url: 'https://api-v2.soundcloud.com/media/transcode/y',
+        format: { protocol: 'hls', mime_type: 'audio/mpeg' }
+      }
     ]
   }
 };
@@ -165,10 +171,7 @@ describe('scSearchTracks with client_id rotation', () => {
         // The first bundle has no id; the second carries the fresh one.
         return {
           status: 200,
-          body:
-            url.includes('49-a')
-              ? 'window.__sc = {}'
-              : 'config={client_id:"fresh1234567890ab"}'
+          body: url.includes('49-a') ? 'window.__sc = {}' : 'config={client_id:"fresh1234567890ab"}'
         };
       }
       return { status: 404 };

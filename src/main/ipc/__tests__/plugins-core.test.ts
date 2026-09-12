@@ -68,7 +68,11 @@ describe('parseManifest', () => {
       author: 'Me',
       entry: 'src/index.js',
       apiVersion: '1',
-      permissions: { storage: true, notifications: true, network: { allow: ['https://api.site/*'] } },
+      permissions: {
+        storage: true,
+        notifications: true,
+        network: { allow: ['https://api.site/*'] }
+      },
       hooks: ['track:play', 'app:start']
     };
     const { manifest, error } = parseManifest(raw, 'scrobble');
@@ -84,15 +88,23 @@ describe('parseManifest', () => {
     expect(manifest?.permissions.network?.allow).toEqual(['https://api.site/*']);
   });
   it('rejects missing name', () => {
-    expect(parseManifest({ version: '1.0.0', entry: 'a.js' }, 'x').error).toBe('manifest:missing-name');
+    expect(parseManifest({ version: '1.0.0', entry: 'a.js' }, 'x').error).toBe(
+      'manifest:missing-name'
+    );
   });
   it('rejects missing version', () => {
     expect(parseManifest({ name: 'X', entry: 'a.js' }, 'x').error).toBe('manifest:missing-version');
   });
   it('rejects bad entry', () => {
-    expect(parseManifest({ name: 'X', version: '1', entry: '../evil.js' }, 'x').error).toBe('manifest:bad-entry');
-    expect(parseManifest({ name: 'X', version: '1', entry: 'evil.py' }, 'x').error).toBe('manifest:bad-entry');
-    expect(parseManifest({ name: 'X', version: '1', entry: '' }, 'x').error).toBe('manifest:bad-entry');
+    expect(parseManifest({ name: 'X', version: '1', entry: '../evil.js' }, 'x').error).toBe(
+      'manifest:bad-entry'
+    );
+    expect(parseManifest({ name: 'X', version: '1', entry: 'evil.py' }, 'x').error).toBe(
+      'manifest:bad-entry'
+    );
+    expect(parseManifest({ name: 'X', version: '1', entry: '' }, 'x').error).toBe(
+      'manifest:bad-entry'
+    );
   });
   it('rejects non-object', () => {
     expect(parseManifest(null, 'x').error).toBe('manifest:not-object');
@@ -120,7 +132,11 @@ describe('parseManifest', () => {
       'cfg'
     );
     expect(manifest?.settings).toHaveLength(3);
-    expect(manifest?.settings?.[0]).toMatchObject({ key: 'shape', type: 'text', default: 'triangle' });
+    expect(manifest?.settings?.[0]).toMatchObject({
+      key: 'shape',
+      type: 'text',
+      default: 'triangle'
+    });
     expect(manifest?.settings?.[1].min).toBe(0);
     expect(manifest?.settings?.[2].type).toBe('boolean');
   });
@@ -211,7 +227,9 @@ describe('sanitizePermissions', () => {
   it('keeps only true booleans and valid network allow', () => {
     expect(sanitizePermissions(undefined)).toEqual({});
     expect(sanitizePermissions({ storage: 1, notifications: 'yes' })).toEqual({});
-    expect(sanitizePermissions({ storage: true, player: true, network: { allow: ['https://a/*', 42] } })).toEqual({
+    expect(
+      sanitizePermissions({ storage: true, player: true, network: { allow: ['https://a/*', 42] } })
+    ).toEqual({
       storage: true,
       player: true,
       network: { allow: ['https://a/*'] }

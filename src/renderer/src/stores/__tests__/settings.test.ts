@@ -7,12 +7,16 @@ import type { AudioLayoutPreset } from '@renderer/types/settings';
 const PRESETS: AudioLayoutPreset[] = ['compact', 'stacked', 'split', 'full', 'immersive'];
 
 function factoryOf(preset: AudioLayoutPreset) {
-  return (AUDIO_LAYOUT_PRESETS[preset]?.elements ?? AUDIO_LAYOUT_PRESETS.full.elements).map((el) => ({
-    ...el
-  }));
+  return (AUDIO_LAYOUT_PRESETS[preset]?.elements ?? AUDIO_LAYOUT_PRESETS.full.elements).map(
+    (el) => ({
+      ...el
+    })
+  );
 }
 
-function layoutKey(elements: { id: string; x: number; y: number; width: number; height: number }[]) {
+function layoutKey(
+  elements: { id: string; x: number; y: number; width: number; height: number }[]
+) {
   return elements.map((el) => `${el.id}:${el.x}:${el.y}:${el.width}:${el.height}`).join('|');
 }
 
@@ -68,8 +72,8 @@ describe('applyAudioLayoutPreset', () => {
       expect(elements).toEqual(factoryOf(preset));
       seen.add(layoutKey(elements));
       for (const key of PRESETS) {
-        if (customLayouts[key] !== undefined) {
-          expect(customLayouts[key]).not.toEqual(factoryOf('full'));
+        if (customLayouts?.[key] !== undefined) {
+          expect(customLayouts?.[key]).not.toEqual(factoryOf('full'));
         }
       }
     }

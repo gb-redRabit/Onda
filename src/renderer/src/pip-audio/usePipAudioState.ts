@@ -63,7 +63,13 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
   const nextTrackArtist = ref('');
   const dock = ref<AudioPipDock>('bottom-right');
   const layoutKind = ref<AudioPipLayoutKind>('card');
-  const elements = ref<AudioPipElementId[]>(['cover', 'trackInfo', 'controls', 'progress', 'volume']);
+  const elements = ref<AudioPipElementId[]>([
+    'cover',
+    'trackInfo',
+    'controls',
+    'progress',
+    'volume'
+  ]);
   const edge = ref<'top' | 'bottom' | 'left' | 'right' | null>(null);
   const peeked = ref(false);
   const isPreview = ref(false);
@@ -132,7 +138,12 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
       if (d.dock) dock.value = d.dock;
       if (d.layoutKind) layoutKind.value = d.layoutKind;
       else if (d.dock) {
-        layoutKind.value = d.dock === 'left' || d.dock === 'right' ? 'bar-v' : d.dock === 'top' || d.dock === 'bottom' ? 'bar-h' : 'card';
+        layoutKind.value =
+          d.dock === 'left' || d.dock === 'right'
+            ? 'bar-v'
+            : d.dock === 'top' || d.dock === 'bottom'
+              ? 'bar-h'
+              : 'card';
       }
       if (d.elements) elements.value = [...d.elements];
       if (d.edge !== undefined) edge.value = d.edge ?? null;

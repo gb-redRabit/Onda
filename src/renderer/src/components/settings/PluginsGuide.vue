@@ -22,9 +22,7 @@ function braces(s: string): string {
   return s.replaceAll('«', '{').replaceAll('»', '}');
 }
 
-const sections = computed(
-  () => (tm('plugins.guide.sections') as unknown as GuideSection[]) ?? []
-);
+const sections = computed(() => (tm('plugins.guide.sections') as unknown as GuideSection[]) ?? []);
 </script>
 
 <template>
@@ -61,7 +59,10 @@ const sections = computed(
             </span>
             <div class="min-w-0 flex-1 space-y-2">
               <h3 class="text-base font-semibold">{{ braces(section.heading) }}</h3>
-              <p v-if="section.body" class="text-sm leading-relaxed text-base-content/70 whitespace-pre-line">
+              <p
+                v-if="section.body"
+                class="text-sm leading-relaxed text-base-content/70 whitespace-pre-line"
+              >
                 {{ braces(section.body) }}
               </p>
               <ul v-if="section.list && section.list.length" class="space-y-1">

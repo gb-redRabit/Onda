@@ -51,7 +51,9 @@ function setFilter(filter: (typeof videoFilters)[0]) {
         v-if="showFilters"
         class="absolute bottom-full right-0 mb-3 w-44 bg-neutral/60 backdrop-blur-xl border border-white/10 rounded-box shadow-2xl shadow-black/60 py-1.5 z-50"
       >
-        <div class="px-3 py-1.5 text-[10px] text-neutral-content/30 font-medium uppercase tracking-wider">
+        <div
+          class="px-3 py-1.5 text-[10px] text-neutral-content/30 font-medium uppercase tracking-wider"
+        >
           {{ $t('videoFilters.title') }}
         </div>
         <button

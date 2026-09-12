@@ -106,11 +106,7 @@ export function buildYtArgs(
       extras.push('--cookies', auth.cookiesPath);
     }
   }
-  if (
-    jsRuntime &&
-    !args.includes('--js-runtimes') &&
-    !extras.includes('--js-runtimes')
-  ) {
+  if (jsRuntime && !args.includes('--js-runtimes') && !extras.includes('--js-runtimes')) {
     extras.push('--js-runtimes', `node:${jsRuntime}`);
   }
   // When the caller already ended the options list with '--', all injected
@@ -288,7 +284,12 @@ export function parseNetscapeCookies(content: string): NetscapeParsedCookie[] {
   return out;
 }
 
-export { detectYtKind, normalizeYtUrl, extractYtVideoId, parseBatchInput } from '../../shared/youtube';
+export {
+  detectYtKind,
+  normalizeYtUrl,
+  extractYtVideoId,
+  parseBatchInput
+} from '../../shared/youtube';
 
 export function formatDuration(seconds?: number): string | undefined {
   const formatted = formatDurationBase(seconds, '');
@@ -395,10 +396,7 @@ export function pickChannelThumbnail(entry: YtDlpEntry): string {
     const best = [...pool].sort((a, b) => (b.width || 0) - (a.width || 0))[0];
     if (best?.url) return best.url;
   }
-  if (
-    entry.thumbnail &&
-    isStableAvatarUrl(entry.thumbnail)
-  ) {
+  if (entry.thumbnail && isStableAvatarUrl(entry.thumbnail)) {
     return entry.thumbnail;
   }
   return '';

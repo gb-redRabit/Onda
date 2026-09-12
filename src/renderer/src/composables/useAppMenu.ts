@@ -91,15 +91,15 @@ export function useAppMenu() {
     return map[route.name as string] || '';
   });
 
-const showViewActions = computed(() =>
-  ['home', 'library', 'player', 'audio', 'settings', 'explorer', 'downloads'].includes(
-    route.name as string
-  )
-);
+  const showViewActions = computed(() =>
+    ['home', 'library', 'player', 'audio', 'settings', 'explorer', 'downloads'].includes(
+      route.name as string
+    )
+  );
 
-const viewSearchable = computed(() =>
-  ['library', 'explorer', 'downloads'].includes(route.name as string)
-);
+  const viewSearchable = computed(() =>
+    ['library', 'explorer', 'downloads'].includes(route.name as string)
+  );
 
   function navigateAndClose(path: string) {
     router.push(path);

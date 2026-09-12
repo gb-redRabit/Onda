@@ -237,7 +237,17 @@ describe('sanitizeSettings', () => {
               variant: 'rounded',
               junk: 1
             },
-            { id: 'progress', x: 0, y: 0, width: 50, height: 5, opacity: 100, layer: 3, visible: true, variant: 'hacked' }
+            {
+              id: 'progress',
+              x: 0,
+              y: 0,
+              width: 50,
+              height: 5,
+              opacity: 100,
+              layer: 3,
+              visible: true,
+              variant: 'hacked'
+            }
           ],
           autoHideDelay: 3000
         }

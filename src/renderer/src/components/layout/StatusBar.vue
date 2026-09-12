@@ -148,8 +148,7 @@ const viewContext = computed<string[]>(() => {
       if (!player.currentTrack) return [`${layout} · ${viz}`];
       const meta = player.currentTrack.metadata;
       const parts: string[] = [];
-      const fmt =
-        meta?.format?.toUpperCase() || player.currentTrack.extension?.toUpperCase();
+      const fmt = meta?.format?.toUpperCase() || player.currentTrack.extension?.toUpperCase();
       if (fmt) parts.push(fmt);
       if (meta?.codec) parts.push(meta.codec);
       if (meta?.bitrate) parts.push(`${meta.bitrate}kbps`);

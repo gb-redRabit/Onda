@@ -10,7 +10,10 @@ function keyPress(partial: Record<string, unknown> & { key?: string }): Keyboard
   });
 }
 
-function fire(partial: Record<string, unknown> & { key?: string }, target?: HTMLElement): KeyboardEvent {
+function fire(
+  partial: Record<string, unknown> & { key?: string },
+  target?: HTMLElement
+): KeyboardEvent {
   const e = keyPress(partial);
   (target ?? document.body).dispatchEvent(e);
   handlePlayerShortcutKeydown(e);

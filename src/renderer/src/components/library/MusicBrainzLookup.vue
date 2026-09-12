@@ -29,7 +29,14 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-const props = withDefaults(defineProps<{ initialQuery?: string; track?: import('@renderer/types/media').MediaFile | null; batchTracks?: import('@renderer/types/media').MediaFile[] }>(), { initialQuery: '', track: null, batchTracks: undefined });
+const props = withDefaults(
+  defineProps<{
+    initialQuery?: string;
+    track?: import('@renderer/types/media').MediaFile | null;
+    batchTracks?: import('@renderer/types/media').MediaFile[];
+  }>(),
+  { initialQuery: '', track: null, batchTracks: undefined }
+);
 const queryArtist = ref('');
 const queryTitle = ref('');
 const queryAlbum = ref('');
@@ -75,7 +82,15 @@ const lookupResult = ref<LookupResult | null>(null);
 const status = ref('');
 const coverThumbs = ref<Record<string, string>>({});
 // 8.9.2 — preview checkboxes + wynik per pole
-const includeFields = ref({ title: true, artist: true, album: true, year: true, genre: false, track: true, cover: true });
+const includeFields = ref({
+  title: true,
+  artist: true,
+  album: true,
+  year: true,
+  genre: false,
+  track: true,
+  cover: true
+});
 const applyResult = ref<Record<string, boolean | string> | null>(null);
 const overlayClicks = ref(0);
 let overlayTimer: ReturnType<typeof setTimeout> | null = null;
@@ -118,20 +133,31 @@ async function search() {
     setStatus(`Znaleziono ${r.releases.length}`);
     // pobierz mini okładki dla wyników (lazy, z throttlingiem main 1 req/s)
     for (const rel of r.releases.slice(0, 6)) {
-      (window.api as unknown as { musicbrainzGetCoverData: (id: string) => Promise<{ success: boolean; data?: number[]; mime?: string }> })?.musicbrainzGetCoverData(rel.id).then((cr) => {
-        if (cr?.success && cr.data) {
-          try {
-            const bytes = new Uint8Array(cr.data);
-            let binary = '';
-            const chunk = 8192;
-            for (let i = 0; i < bytes.length; i += chunk) {
-              binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-            }
-            const b64 = btoa(binary);
-            coverThumbs.value = { ...coverThumbs.value, [rel.id]: `data:${cr.mime || 'image/jpeg'};base64,${b64}` };
-          } catch {}
+      (
+        window.api as unknown as {
+          musicbrainzGetCoverData: (
+            id: string
+          ) => Promise<{ success: boolean; data?: number[]; mime?: string }>;
         }
-      });
+      )
+        ?.musicbrainzGetCoverData(rel.id)
+        .then((cr) => {
+          if (cr?.success && cr.data) {
+            try {
+              const bytes = new Uint8Array(cr.data);
+              let binary = '';
+              const chunk = 8192;
+              for (let i = 0; i < bytes.length; i += chunk) {
+                binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+              }
+              const b64 = btoa(binary);
+              coverThumbs.value = {
+                ...coverThumbs.value,
+                [rel.id]: `data:${cr.mime || 'image/jpeg'};base64,${b64}`
+              };
+            } catch {}
+          }
+        });
     }
   } else {
     error.value = r?.error || t('musicbrainz.noResults');
@@ -150,7 +176,19 @@ async function selectRelease(release: MusicbrainzRelease) {
   if (r?.success && r.release) {
     const result: LookupResult = { ...r.release };
     setStatus('Pobieranie okładki…');
-    const coverR = await (window.api as unknown as { musicbrainzGetCoverData: (id: string) => Promise<{ success: boolean; data?: number[]; mime?: string; error?: string; rateLimited?: boolean }> })?.musicbrainzGetCoverData(release.id);
+    const coverR = await (
+      window.api as unknown as {
+        musicbrainzGetCoverData: (
+          id: string
+        ) => Promise<{
+          success: boolean;
+          data?: number[];
+          mime?: string;
+          error?: string;
+          rateLimited?: boolean;
+        }>;
+      }
+    )?.musicbrainzGetCoverData(release.id);
     if (coverR?.success && coverR.data) {
       result._coverData = coverR.data;
       result._coverMime = coverR.mime;
@@ -182,9 +220,11 @@ function applyTags() {
   } = {};
   if (f.album) emitData.album = rel.title;
   if (f.year) emitData.year = rel.date ? parseInt(rel.date.slice(0, 4)) : undefined;
-  if (f.artist) emitData.artist = rel['artist-credit']?.[0]?.name || rel['artist-credit']?.[0]?.artist?.name;
+  if (f.artist)
+    emitData.artist = rel['artist-credit']?.[0]?.name || rel['artist-credit']?.[0]?.artist?.name;
   if (f.title && rel.media?.[0]?.tracks?.[0]?.title) emitData.title = rel.media[0].tracks[0].title;
-  if (f.genre && (rel as unknown as { genres?: { name: string }[] })?.genres?.[0]?.name) emitData.genre = (rel as unknown as { genres: { name: string }[] }).genres[0].name;
+  if (f.genre && (rel as unknown as { genres?: { name: string }[] })?.genres?.[0]?.name)
+    emitData.genre = (rel as unknown as { genres: { name: string }[] }).genres[0].name;
   if (f.track) emitData.track = { no: 1 };
   if (f.cover && rel._coverData) {
     emitData.coverData = rel._coverData;
@@ -231,7 +271,15 @@ const previewRows = computed(() => {
     track: '1',
     cover: rel._coverData ? 'okładka' : '—'
   };
-  const labels: Record<string, string> = { title: 'Tytuł', artist: 'Artysta', album: 'Album', year: 'Rok', genre: 'Gatunek', track: 'Nr', cover: 'Okładka' };
+  const labels: Record<string, string> = {
+    title: 'Tytuł',
+    artist: 'Artysta',
+    album: 'Album',
+    year: 'Rok',
+    genre: 'Gatunek',
+    track: 'Nr',
+    cover: 'Okładka'
+  };
   return (Object.keys(labels) as Array<keyof typeof labels>).map((k) => ({
     key: k,
     label: labels[k],
@@ -243,7 +291,9 @@ const previewRows = computed(() => {
 
 // 8.9.3 — batch
 const batchProgress = ref(0);
-const batchResults = ref<Array<{ path: string; name: string; status: 'pending' | 'ok' | 'error'; msg?: string }>>([]);
+const batchResults = ref<
+  Array<{ path: string; name: string; status: 'pending' | 'ok' | 'error'; msg?: string }>
+>([]);
 const batchRunning = ref(false);
 const batchCancelled = ref(false);
 
@@ -254,7 +304,11 @@ function startBatch() {
   batchRunning.value = true;
   batchCancelled.value = false;
   batchProgress.value = 0;
-  batchResults.value = list.map((t) => ({ path: t.path, name: t.name, status: 'pending' as const }));
+  batchResults.value = list.map((t) => ({
+    path: t.path,
+    name: t.name,
+    status: 'pending' as const
+  }));
   let idx = 0;
   const next = async () => {
     if (batchCancelled.value || idx >= list.length) {
@@ -266,19 +320,29 @@ function startBatch() {
     try {
       const payload: Record<string, unknown> = {};
       if (includeFields.value.album) payload.album = rel.title;
-      if (includeFields.value.artist) payload.artist = rel['artist-credit']?.[0]?.name || rel['artist-credit']?.[0]?.artist?.name;
+      if (includeFields.value.artist)
+        payload.artist = rel['artist-credit']?.[0]?.name || rel['artist-credit']?.[0]?.artist?.name;
       if (includeFields.value.year && rel.date) payload.year = rel.date.slice(0, 4);
       if (includeFields.value.title && mbTrack?.title) payload.title = mbTrack.title;
       if (includeFields.value.track) payload.track = String(idx + 1);
       // write tags
-      const tagRes = await window.api?.invoke('media:writeTags', tr.path, payload as Record<string, string>);
-      if ((tagRes as { success?: boolean })?.success === false) throw new Error((tagRes as { error?: string })?.error || 'writeTags failed');
+      const tagRes = await window.api?.invoke(
+        'media:writeTags',
+        tr.path,
+        payload as Record<string, string>
+      );
+      if ((tagRes as { success?: boolean })?.success === false)
+        throw new Error((tagRes as { error?: string })?.error || 'writeTags failed');
       if (includeFields.value.cover && rel._coverData) {
         await window.api?.invoke('media:writeCover', tr.path, rel._coverData);
       }
       batchResults.value[idx] = { ...batchResults.value[idx], status: 'ok' };
     } catch (e) {
-      batchResults.value[idx] = { ...batchResults.value[idx], status: 'error', msg: String(e).slice(0, 80) };
+      batchResults.value[idx] = {
+        ...batchResults.value[idx],
+        status: 'error',
+        msg: String(e).slice(0, 80)
+      };
     }
     batchProgress.value = idx + 1;
     idx++;
@@ -352,23 +416,45 @@ onMounted(() => {
           <div class="grid grid-cols-2 gap-2">
             <label class="flex flex-col gap-1">
               <span class="text-[11px] text-base-content/60">Wykonawca / Artysta</span>
-              <input v-model="queryArtist" placeholder="np. Skillet" class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none" @keydown.enter="search" />
+              <input
+                v-model="queryArtist"
+                placeholder="np. Skillet"
+                class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+                @keydown.enter="search"
+              />
             </label>
             <label class="flex flex-col gap-1">
               <span class="text-[11px] text-base-content/60">Tytuł</span>
-              <input v-model="queryTitle" placeholder="np. Monster" class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none" @keydown.enter="search" />
+              <input
+                v-model="queryTitle"
+                placeholder="np. Monster"
+                class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+                @keydown.enter="search"
+              />
             </label>
             <label class="flex flex-col gap-1">
               <span class="text-[11px] text-base-content/60">Album / Wydanie</span>
-              <input v-model="queryAlbum" placeholder="np. Awake" class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none" @keydown.enter="search" />
+              <input
+                v-model="queryAlbum"
+                placeholder="np. Awake"
+                class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+                @keydown.enter="search"
+              />
             </label>
             <label class="flex flex-col gap-1">
               <span class="text-[11px] text-base-content/60">Rok</span>
-              <input v-model="queryYear" placeholder="np. 2009" class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none" @keydown.enter="search" />
+              <input
+                v-model="queryYear"
+                placeholder="np. 2009"
+                class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+                @keydown.enter="search"
+              />
             </label>
           </div>
           <div class="flex gap-2">
-            <div class="flex-1 text-[11px] text-base-content/40 self-center truncate">Puste pola pomijane • np. Artysta + Album</div>
+            <div class="flex-1 text-[11px] text-base-content/40 self-center truncate">
+              Puste pola pomijane • np. Artysta + Album
+            </div>
             <button
               class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1.5 shrink-0"
               :disabled="loading || !query.trim()"
@@ -380,7 +466,12 @@ onMounted(() => {
         </div>
 
         <div class="flex-1 overflow-y-auto p-4 space-y-3">
-          <div v-if="status" class="text-xs text-primary bg-primary/10 px-3 py-1.5 rounded-field text-center">{{ status }}</div>
+          <div
+            v-if="status"
+            class="text-xs text-primary bg-primary/10 px-3 py-1.5 rounded-field text-center"
+          >
+            {{ status }}
+          </div>
           <div
             v-if="loading"
             class="flex items-center justify-center py-8 text-base-content/70 gap-2"
@@ -406,7 +497,11 @@ onMounted(() => {
                 <div
                   class="w-10 h-10 rounded-field bg-base-100 flex items-center justify-center shrink-0 overflow-hidden"
                 >
-                  <img v-if="coverThumbs[rel.id]" :src="coverThumbs[rel.id]" class="w-full h-full object-cover" />
+                  <img
+                    v-if="coverThumbs[rel.id]"
+                    :src="coverThumbs[rel.id]"
+                    class="w-full h-full object-cover"
+                  />
                   <Music2 v-else :size="18" class="text-base-content/40" />
                 </div>
                 <div class="flex-1 min-w-0">
@@ -477,35 +572,108 @@ onMounted(() => {
                   </div>
                 </div>
 
-                <div v-if="props.track" class="border border-base-300 rounded-field overflow-hidden">
+                <div
+                  v-if="props.track"
+                  class="border border-base-300 rounded-field overflow-hidden"
+                >
                   <div class="bg-base-300/50 px-2 py-1 text-[11px] font-medium">Podgląd zmian</div>
-                  <div v-for="row in previewRows" :key="row.key" class="flex items-center gap-2 px-2 py-1.5 text-xs border-t border-base-300/30">
-                    <input type="checkbox" :checked="includeFields[row.key as keyof typeof includeFields]" @change="(includeFields as unknown as Record<string, boolean>)[row.key] = ($event.target as HTMLInputElement).checked" class="checkbox checkbox-xs" />
+                  <div
+                    v-for="row in previewRows"
+                    :key="row.key"
+                    class="flex items-center gap-2 px-2 py-1.5 text-xs border-t border-base-300/30"
+                  >
+                    <input
+                      type="checkbox"
+                      :checked="includeFields[row.key as keyof typeof includeFields]"
+                      @change="
+                        (includeFields as unknown as Record<string, boolean>)[row.key] = (
+                          $event.target as HTMLInputElement
+                        ).checked
+                      "
+                      class="checkbox checkbox-xs"
+                    />
                     <span class="w-14 shrink-0">{{ row.label }}</span>
-                    <span class="flex-1 truncate text-base-content/50 line-through">{{ row.old }}</span>
+                    <span class="flex-1 truncate text-base-content/50 line-through">{{
+                      row.old
+                    }}</span>
                     <span class="text-primary">→</span>
                     <span class="flex-1 truncate font-medium">{{ row.now }}</span>
-                    <span v-if="applyResult" class="text-[11px] shrink-0" :class="applyResult[row.key]===true ? 'text-success' : applyResult[row.key]===false ? 'text-error' : 'text-base-content/40'">{{ applyResult[row.key]===true ? '✓' : applyResult[row.key]===false ? '✗' : String(applyResult[row.key]||'') }}</span>
+                    <span
+                      v-if="applyResult"
+                      class="text-[11px] shrink-0"
+                      :class="
+                        applyResult[row.key] === true
+                          ? 'text-success'
+                          : applyResult[row.key] === false
+                            ? 'text-error'
+                            : 'text-base-content/40'
+                      "
+                      >{{
+                        applyResult[row.key] === true
+                          ? '✓'
+                          : applyResult[row.key] === false
+                            ? '✗'
+                            : String(applyResult[row.key] || '')
+                      }}</span
+                    >
                   </div>
                 </div>
 
-                <div v-if="props.batchTracks && props.batchTracks.length" class="border border-base-300 rounded-field p-2 space-y-2">
-                  <div class="text-xs font-medium">Batch: {{ props.batchTracks.length }} utworów — {{ batchProgress }}/{{ props.batchTracks.length }}</div>
+                <div
+                  v-if="props.batchTracks && props.batchTracks.length"
+                  class="border border-base-300 rounded-field p-2 space-y-2"
+                >
+                  <div class="text-xs font-medium">
+                    Batch: {{ props.batchTracks.length }} utworów — {{ batchProgress }}/{{
+                      props.batchTracks.length
+                    }}
+                  </div>
                   <div class="w-full bg-base-300 rounded-full h-2 overflow-hidden">
-                    <div class="bg-primary h-2 transition-all" :style="{ width: (props.batchTracks.length ? (batchProgress / props.batchTracks.length * 100) : 0) + '%' }"></div>
+                    <div
+                      class="bg-primary h-2 transition-all"
+                      :style="{
+                        width:
+                          (props.batchTracks.length
+                            ? (batchProgress / props.batchTracks.length) * 100
+                            : 0) + '%'
+                      }"
+                    ></div>
                   </div>
                   <div class="max-h-32 overflow-y-auto space-y-1">
-                    <div v-for="r in batchResults" :key="r.path" class="flex items-center gap-2 text-xs">
-                      <span :class="r.status==='ok' ? 'text-success' : r.status==='error' ? 'text-error' : 'text-base-content/40'">{{ r.status==='ok' ? '✓' : r.status==='error' ? '✗' : '…' }}</span>
+                    <div
+                      v-for="r in batchResults"
+                      :key="r.path"
+                      class="flex items-center gap-2 text-xs"
+                    >
+                      <span
+                        :class="
+                          r.status === 'ok'
+                            ? 'text-success'
+                            : r.status === 'error'
+                              ? 'text-error'
+                              : 'text-base-content/40'
+                        "
+                        >{{ r.status === 'ok' ? '✓' : r.status === 'error' ? '✗' : '…' }}</span
+                      >
                       <span class="truncate flex-1">{{ r.name }}</span>
-                      <span class="text-base-content/50 truncate text-[11px]">{{ r.msg || '' }}</span>
+                      <span class="text-base-content/50 truncate text-[11px]">{{
+                        r.msg || ''
+                      }}</span>
                     </div>
                   </div>
                   <div class="flex gap-2">
-                    <button v-if="!batchRunning" class="fx-noise flex-1 px-3 py-2 fx-depth rounded-field text-sm font-medium bg-primary text-primary-content hover:bg-primary/90 transition-colors" @click="startBatch">
+                    <button
+                      v-if="!batchRunning"
+                      class="fx-noise flex-1 px-3 py-2 fx-depth rounded-field text-sm font-medium bg-primary text-primary-content hover:bg-primary/90 transition-colors"
+                      @click="startBatch"
+                    >
                       Zastosuj dla wszystkich ({{ props.batchTracks.length }})
                     </button>
-                    <button v-else class="fx-noise flex-1 px-3 py-2 fx-depth rounded-field text-sm font-medium bg-error text-error-content hover:bg-error/90 transition-colors" @click="cancelBatch">
+                    <button
+                      v-else
+                      class="fx-noise flex-1 px-3 py-2 fx-depth rounded-field text-sm font-medium bg-error text-error-content hover:bg-error/90 transition-colors"
+                      @click="cancelBatch"
+                    >
                       Anuluj ({{ batchProgress }}/{{ props.batchTracks.length }})
                     </button>
                   </div>

@@ -58,7 +58,9 @@ function isExpanded(fp: string) {
 }
 
 function shuffleFolder(fp: string) {
-  const tracks = getAllTracksIndexed(fp, library.tracks, library.folders).filter((t) => t.type !== 'image');
+  const tracks = getAllTracksIndexed(fp, library.tracks, library.folders).filter(
+    (t) => t.type !== 'image'
+  );
   if (tracks.length === 0) return;
   const shuffled = [...tracks];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -75,7 +77,9 @@ function showInExplorer(fp: string) {
   window.api?.invoke('shell:showItemInFolder', fp);
 }
 function onFolderDrag(e: DragEvent, folderPath: string) {
-  const tracks = getAllTracksIndexed(folderPath, library.tracks, library.folders).filter((t) => t.type !== 'image');
+  const tracks = getAllTracksIndexed(folderPath, library.tracks, library.folders).filter(
+    (t) => t.type !== 'image'
+  );
   e.dataTransfer?.setData('text/plain', JSON.stringify({ paths: tracks.map((t) => t.path) }));
   e.dataTransfer!.effectAllowed = 'move';
 }
@@ -92,18 +96,28 @@ interface FolderMeta {
 
 const folderMetas = computed<FolderMeta[]>(() => {
   const q = props.query.toLowerCase().trim();
-  return library.folders.map((fp) => {
-    const all = getAllTracksIndexed(fp, library.tracks, library.folders);
-    const count = all.length;
-    const duration = all.reduce((s, t) => s + (t.duration || 0), 0);
-    // mozaika = po prostu pierwsze 4 pliki z listy (audio lub img) — Tile sam wybierze MediaCover vs <img>
-    const mosaicTracks = all.slice(0, 4);
-    const filtered = q
-      ? all.filter((t) => t.name.toLowerCase().includes(q) || t.path.toLowerCase().includes(q))
-      : all;
-    const matchesQuery = !q || filtered.length > 0;
-    return { path: fp, name: basename(fp), type: library.getFolderType(fp), count, duration, mosaicTracks, matchesQuery };
-  }).filter((m) => m.matchesQuery);
+  return library.folders
+    .map((fp) => {
+      const all = getAllTracksIndexed(fp, library.tracks, library.folders);
+      const count = all.length;
+      const duration = all.reduce((s, t) => s + (t.duration || 0), 0);
+      // mozaika = po prostu pierwsze 4 pliki z listy (audio lub img) — Tile sam wybierze MediaCover vs <img>
+      const mosaicTracks = all.slice(0, 4);
+      const filtered = q
+        ? all.filter((t) => t.name.toLowerCase().includes(q) || t.path.toLowerCase().includes(q))
+        : all;
+      const matchesQuery = !q || filtered.length > 0;
+      return {
+        path: fp,
+        name: basename(fp),
+        type: library.getFolderType(fp),
+        count,
+        duration,
+        mosaicTracks,
+        matchesQuery
+      };
+    })
+    .filter((m) => m.matchesQuery);
 });
 
 function folderTypeIcon(type: string): string {
@@ -113,7 +127,10 @@ function folderTypeIcon(type: string): string {
   return '📁';
 }
 
-const noMatch = computed(() => library.folders.length > 0 && folderMetas.value.length === 0 && props.query.trim().length > 0);
+const noMatch = computed(
+  () =>
+    library.folders.length > 0 && folderMetas.value.length === 0 && props.query.trim().length > 0
+);
 </script>
 
 <template>
@@ -121,7 +138,9 @@ const noMatch = computed(() => library.folders.length > 0 && folderMetas.value.l
     v-if="library.folders.length === 0"
     class="flex flex-col items-center justify-center h-full gap-4 p-8 text-base-content/50"
   >
-    <div class="w-20 h-20 rounded-full bg-base-100 border border-base-300 flex items-center justify-center">
+    <div
+      class="w-20 h-20 rounded-full bg-base-100 border border-base-300 flex items-center justify-center"
+    >
       <Folder :size="28" class="opacity-40" />
     </div>
     <div class="text-center">
@@ -130,7 +149,10 @@ const noMatch = computed(() => library.folders.length > 0 && folderMetas.value.l
     </div>
   </div>
 
-  <div v-else-if="noMatch" class="flex flex-col items-center justify-center h-64 gap-3 text-base-content/50">
+  <div
+    v-else-if="noMatch"
+    class="flex flex-col items-center justify-center h-64 gap-3 text-base-content/50"
+  >
     <Folder :size="28" class="opacity-30" />
     <p class="text-sm">Brak wyników dla "{{ query }}"</p>
   </div>
@@ -142,18 +164,40 @@ const noMatch = computed(() => library.folders.length > 0 && folderMetas.value.l
       class="group rounded-box bg-base-100 border border-base-300 overflow-hidden hover:border-primary/20 hover:shadow-sm transition-all duration-150"
     >
       <!-- Glass header z mozaiką -->
-      <div class="flex items-center gap-3 px-4 py-3 hover:bg-base-200/50 transition-colors" draggable="true" @dragstart="onFolderDrag($event, meta.path)" @contextmenu.prevent="showFolderMenu($event, meta.path, library.tracks.filter((t) => isUnderPath(t.path, meta.path)))">
+      <div
+        class="flex items-center gap-3 px-4 py-3 hover:bg-base-200/50 transition-colors"
+        draggable="true"
+        @dragstart="onFolderDrag($event, meta.path)"
+        @contextmenu.prevent="
+          showFolderMenu(
+            $event,
+            meta.path,
+            library.tracks.filter((t) => isUnderPath(t.path, meta.path))
+          )
+        "
+      >
         <LibraryFolderTile :tracks="meta.mosaicTracks" />
 
         <div class="flex-1 min-w-0 text-left">
           <div class="flex items-center gap-2">
             <span class="text-[11px]">{{ folderTypeIcon(meta.type) }}</span>
             <span class="text-sm font-semibold truncate">{{ meta.name }}</span>
-            <span class="hidden sm:inline text-[11px] px-1.5 py-0.5 rounded-full bg-base-200 border border-base-300 text-base-content/60">{{ meta.count }} {{ $t('library.folderFiles') }}</span>
-            <span v-if="meta.duration > 0" class="hidden md:inline text-[11px] text-base-content/40">{{ formatDuration(meta.duration, '') }}</span>
+            <span
+              class="hidden sm:inline text-[11px] px-1.5 py-0.5 rounded-full bg-base-200 border border-base-300 text-base-content/60"
+              >{{ meta.count }} {{ $t('library.folderFiles') }}</span
+            >
+            <span
+              v-if="meta.duration > 0"
+              class="hidden md:inline text-[11px] text-base-content/40"
+              >{{ formatDuration(meta.duration, '') }}</span
+            >
           </div>
           <div class="text-xs text-base-content/50 truncate hidden sm:block">{{ meta.path }}</div>
-          <div class="text-xs text-base-content/50 sm:hidden">{{ meta.count }} plików<span v-if="meta.duration"> · {{ formatDuration(meta.duration, '') }}</span></div>
+          <div class="text-xs text-base-content/50 sm:hidden">
+            {{ meta.count }} plików<span v-if="meta.duration">
+              · {{ formatDuration(meta.duration, '') }}</span
+            >
+          </div>
         </div>
 
         <div class="flex items-center gap-1 shrink-0">

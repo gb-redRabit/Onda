@@ -10,7 +10,12 @@ import {
   sanitizeEndpoint
 } from './sources-store';
 import { getStore } from './cover-cache';
-import { fetchSourceItems, testSourceConnection, fetchTableRows, resolveSourceHeaders } from './generic-fetch';
+import {
+  fetchSourceItems,
+  testSourceConnection,
+  fetchTableRows,
+  resolveSourceHeaders
+} from './generic-fetch';
 import { scrapePlayerUrl } from './player-scraper';
 import { addDownloadJobs } from '../downloads/download-manager';
 import type { IpcDownloadJobInput } from '../../shared/types/ipc';
@@ -42,24 +47,29 @@ export function registerSourcesHandlers(): void {
   ipcMain.handle(
     'sources:export',
     async (event): Promise<{ success: boolean; canceled?: boolean; error?: string }> => {
-    const win = BrowserWindow.fromWebContents(event.sender);
-    const options = {
-      title: 'Eksportuj źródła',
-      defaultPath: 'onda-sources.json',
-      filters: [{ name: 'JSON', extensions: ['json'] }]
-    };
-    const result = win
-      ? await dialog.showSaveDialog(win, options)
-      : await dialog.showSaveDialog(options);
-    if (result.canceled || !result.filePath) return { success: false, canceled: true };
-    try {
-      const list = loadSources(getSourcesFile());
-      await writeFile(result.filePath, JSON.stringify({ version: 1, sources: list }, null, 2), 'utf-8');
-      return { success: true };
-    } catch (e) {
-      return { success: false, error: e instanceof Error ? e.message : String(e) };
+      const win = BrowserWindow.fromWebContents(event.sender);
+      const options = {
+        title: 'Eksportuj źródła',
+        defaultPath: 'onda-sources.json',
+        filters: [{ name: 'JSON', extensions: ['json'] }]
+      };
+      const result = win
+        ? await dialog.showSaveDialog(win, options)
+        : await dialog.showSaveDialog(options);
+      if (result.canceled || !result.filePath) return { success: false, canceled: true };
+      try {
+        const list = loadSources(getSourcesFile());
+        await writeFile(
+          result.filePath,
+          JSON.stringify({ version: 1, sources: list }, null, 2),
+          'utf-8'
+        );
+        return { success: true };
+      } catch (e) {
+        return { success: false, error: e instanceof Error ? e.message : String(e) };
+      }
     }
-  });
+  );
 
   /** Import źródeł z pliku JSON (natywny dialog otwarcia); każdy wpis sanityzowany. */
   ipcMain.handle(
@@ -67,40 +77,39 @@ export function registerSourcesHandlers(): void {
     async (
       event
     ): Promise<{ success: boolean; canceled?: boolean; count?: number; error?: string }> => {
-    const win = BrowserWindow.fromWebContents(event.sender);
-    const options = {
-      title: 'Importuj źródła',
-      filters: [{ name: 'JSON', extensions: ['json'] }],
-      properties: ['openFile' as const]
-    };
-    const result = win
-      ? await dialog.showOpenDialog(win, options)
-      : await dialog.showOpenDialog(options);
-    if (result.canceled || !result.filePaths[0]) return { success: false, canceled: true };
-    try {
-      const raw = await readFile(result.filePaths[0], 'utf-8');
-      const parsed = JSON.parse(raw) as { version?: number; sources?: unknown } | unknown[];
-      const arr = Array.isArray(parsed)
-        ? parsed
-        : (parsed as { sources?: unknown[] }).sources;
-      if (!Array.isArray(arr)) return { success: false, error: 'Invalid file' };
-      const existing = await loadSources(getSourcesFile());
-      const seen = new Set(existing.map((s) => s.id));
-      let count = 0;
-      for (const v of arr) {
-        const clean = sanitizeSource(v);
-        if (!clean) continue;
-        clean.id = seen.has(clean.id) ? `import-${Date.now().toString(36)}-${count}` : clean.id;
-        seen.add(clean.id);
-        existing.push(clean);
-        count++;
+      const win = BrowserWindow.fromWebContents(event.sender);
+      const options = {
+        title: 'Importuj źródła',
+        filters: [{ name: 'JSON', extensions: ['json'] }],
+        properties: ['openFile' as const]
+      };
+      const result = win
+        ? await dialog.showOpenDialog(win, options)
+        : await dialog.showOpenDialog(options);
+      if (result.canceled || !result.filePaths[0]) return { success: false, canceled: true };
+      try {
+        const raw = await readFile(result.filePaths[0], 'utf-8');
+        const parsed = JSON.parse(raw) as { version?: number; sources?: unknown } | unknown[];
+        const arr = Array.isArray(parsed) ? parsed : (parsed as { sources?: unknown[] }).sources;
+        if (!Array.isArray(arr)) return { success: false, error: 'Invalid file' };
+        const existing = await loadSources(getSourcesFile());
+        const seen = new Set(existing.map((s) => s.id));
+        let count = 0;
+        for (const v of arr) {
+          const clean = sanitizeSource(v);
+          if (!clean) continue;
+          clean.id = seen.has(clean.id) ? `import-${Date.now().toString(36)}-${count}` : clean.id;
+          seen.add(clean.id);
+          existing.push(clean);
+          count++;
+        }
+        await saveAllSources(getSourcesFile(), existing);
+        return { success: true, count };
+      } catch (e) {
+        return { success: false, error: e instanceof Error ? e.message : String(e) };
       }
-      await saveAllSources(getSourcesFile(), existing);
-      return { success: true, count };
-    } catch (e) {
-      return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
-  });
+  );
 
   /** Domyślny katalog pobierania źródeł: ustawienie sourcesDir, inaczej
    *  <ścieżka z ustawień Pobranych>/api, inaczej systemowe Pobrane/api. */
@@ -108,10 +117,9 @@ export function registerSourcesHandlers(): void {
     let dir = '';
     try {
       const store = await getStore();
-      const dl = store.get('download') as
-        | { defaultPath?: string; sourcesDir?: string }
-        | undefined;
-      dir = dl?.sourcesDir?.trim() || (dl?.defaultPath?.trim() ? `${dl.defaultPath.trim()}/api` : '');
+      const dl = store.get('download') as { defaultPath?: string; sourcesDir?: string } | undefined;
+      dir =
+        dl?.sourcesDir?.trim() || (dl?.defaultPath?.trim() ? `${dl.defaultPath.trim()}/api` : '');
     } catch {
       dir = '';
     }
@@ -128,7 +136,9 @@ export function registerSourcesHandlers(): void {
       const win = BrowserWindow.fromWebContents(event.sender);
       const options = {
         title: 'Wybierz ikonę źródła',
-        filters: [{ name: 'Obrazy', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'ico', 'svg'] }],
+        filters: [
+          { name: 'Obrazy', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'ico', 'svg'] }
+        ],
         properties: ['openFile' as const]
       };
       const result = win
@@ -176,7 +186,12 @@ export function registerSourcesHandlers(): void {
       _event,
       sourceRaw: unknown,
       endpointRaw: unknown,
-      opts?: { query?: Record<string, string>; pageToken?: string; page?: number; context?: unknown }
+      opts?: {
+        query?: Record<string, string>;
+        pageToken?: string;
+        page?: number;
+        context?: unknown;
+      }
     ) => {
       const source = sanitizeSource(sourceRaw);
       const endpoint: SourceEndpoint | null = source

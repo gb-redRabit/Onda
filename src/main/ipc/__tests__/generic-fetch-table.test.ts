@@ -76,7 +76,13 @@ describe('mapTableRows', () => {
   it('maps playerUrl from row fields (embed/player links)', () => {
     const items = mapTableRows(
       [{ n: 1, embed_url: 'https://mega.nz/embed/abc', bg: 'https://x/1.jpg' }],
-      table({ mode: 'endpoint', rowKey: 'n', title: 'EP {n}', thumbnail: 'bg', playerUrl: 'embed_url' })
+      table({
+        mode: 'endpoint',
+        rowKey: 'n',
+        title: 'EP {n}',
+        thumbnail: 'bg',
+        playerUrl: 'embed_url'
+      })
     );
     expect(items[0]).toMatchObject({
       playerUrl: 'https://mega.nz/embed/abc',

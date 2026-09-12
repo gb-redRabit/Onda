@@ -35,7 +35,9 @@ function removeKey(id: string) {
 }
 
 function toggleActive(id: string, active: boolean) {
-  settings.apiKeys.keys = settings.apiKeys.keys.map((k) => (k.id === id ? { ...k, isActive: active } : k));
+  settings.apiKeys.keys = settings.apiKeys.keys.map((k) =>
+    k.id === id ? { ...k, isActive: active } : k
+  );
   settings.saveImmediate?.();
 }
 </script>
@@ -47,17 +49,28 @@ function toggleActive(id: string, active: boolean) {
         :title="$t('settings.apiKeysTitle')"
         :description="$t('settings.apiKeysDesc')"
       />
-      <div v-if="settings.apiKeys.keys.length === 0" class="py-4 text-center text-sm text-base-content/50">
+      <div
+        v-if="settings.apiKeys.keys.length === 0"
+        class="py-4 text-center text-sm text-base-content/50"
+      >
         {{ $t('settings.noApiKeys') }}
       </div>
       <div v-else class="divide-y divide-base-300">
         <div v-for="k in settings.apiKeys.keys" :key="k.id" class="flex items-center gap-3 py-3">
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium truncate">{{ k.name }}</div>
-            <div class="text-xs text-base-content/50 truncate">{{ k.service }} · {{ k.key.slice(0, 4) }}…</div>
+            <div class="text-xs text-base-content/50 truncate">
+              {{ k.service }} · {{ k.key.slice(0, 4) }}…
+            </div>
           </div>
-          <SettingsToggle :model-value="!!k.isActive" @update:model-value="toggleActive(k.id, $event)" />
-          <button class="px-2 py-1 rounded-field text-xs border border-base-300 hover:bg-base-200" @click="removeKey(k.id)">
+          <SettingsToggle
+            :model-value="!!k.isActive"
+            @update:model-value="toggleActive(k.id, $event)"
+          />
+          <button
+            class="px-2 py-1 rounded-field text-xs border border-base-300 hover:bg-base-200"
+            @click="removeKey(k.id)"
+          >
             {{ $t('common.delete') }}
           </button>
         </div>
@@ -70,9 +83,19 @@ function toggleActive(id: string, active: boolean) {
         >
           {{ $t('settings.addApiKey') }}
         </button>
-        <div v-else class="flex-1 flex flex-col gap-2 p-3 rounded-field border border-base-300 bg-base-200/50">
-          <input v-model="newName" :placeholder="$t('settings.apiKeyName')" class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm" />
-          <select v-model="newService" class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm">
+        <div
+          v-else
+          class="flex-1 flex flex-col gap-2 p-3 rounded-field border border-base-300 bg-base-200/50"
+        >
+          <input
+            v-model="newName"
+            :placeholder="$t('settings.apiKeyName')"
+            class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
+          />
+          <select
+            v-model="newService"
+            class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
+          >
             <option value="generic">Generic</option>
             <option value="youtube">YouTube</option>
             <option value="soundcloud">SoundCloud</option>
@@ -85,10 +108,16 @@ function toggleActive(id: string, active: boolean) {
             class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
           />
           <div class="flex gap-2">
-            <button class="px-3 py-1.5 rounded-field bg-primary text-primary-content text-sm fx-depth fx-noise" @click="addKey">
+            <button
+              class="px-3 py-1.5 rounded-field bg-primary text-primary-content text-sm fx-depth fx-noise"
+              @click="addKey"
+            >
               {{ $t('common.save') }}
             </button>
-            <button class="px-3 py-1.5 rounded-field border border-base-300 text-sm" @click="showAdd = false">
+            <button
+              class="px-3 py-1.5 rounded-field border border-base-300 text-sm"
+              @click="showAdd = false"
+            >
               {{ $t('common.cancel') }}
             </button>
           </div>
@@ -96,7 +125,10 @@ function toggleActive(id: string, active: boolean) {
       </div>
     </SettingsCard>
     <SettingsCard>
-      <SettingsRow :label="$t('settings.apiKeysEncrypted')" :description="$t('settings.apiKeysEncryptedDesc')" />
+      <SettingsRow
+        :label="$t('settings.apiKeysEncrypted')"
+        :description="$t('settings.apiKeysEncryptedDesc')"
+      />
     </SettingsCard>
   </SettingsPanel>
 </template>

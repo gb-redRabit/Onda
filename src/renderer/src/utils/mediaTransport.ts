@@ -5,7 +5,11 @@ import { audioEngine } from '@renderer/modules/audioEngine';
  * and the audio engine (no <video> on screen, e.g. an audio track in /player).
  */
 
-export function applyVolumeTarget(video: HTMLVideoElement | null, muted: boolean, volume: number): void {
+export function applyVolumeTarget(
+  video: HTMLVideoElement | null,
+  muted: boolean,
+  volume: number
+): void {
   const target = muted ? 0 : volume;
   if (video) {
     audioEngine.setVideoVolume(target);

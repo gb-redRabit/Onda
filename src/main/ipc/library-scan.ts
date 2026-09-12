@@ -124,7 +124,7 @@ async function getAudioMetadata(
       bitrate: formatInfo?.bitrate || 0,
       sampleRate: formatInfo?.sampleRate || 0,
       channels: formatInfo?.numberOfChannels || 0,
-      format: formatInfo?.formatName || ext.slice(1),
+      format: formatInfo?.container || ext.slice(1),
       codec: formatInfo?.codec || undefined,
       isVideo: false,
       size: s.size,
@@ -154,6 +154,7 @@ async function getMetadata(
   sampleRate: number;
   channels: number;
   format: string;
+  codec?: string;
   isVideo: boolean;
   size: number;
   replayGainTrackGain?: number;
@@ -386,9 +387,7 @@ export async function scanDir(
     // Files of THIS directory only (subdirs were already filtered by the
     // recursive call above): drop animated-cover videos that duplicate an
     // audio track in the same folder.
-    const localFiles = fileResults
-      .map((r) => r.file)
-      .filter((f): f is MediaFile => f !== null);
+    const localFiles = fileResults.map((r) => r.file).filter((f): f is MediaFile => f !== null);
     for (const f of filterCoverSiblingVideos(localFiles)) files.push(f);
     totalAudio += audioCount;
     totalVideo += videoCount;

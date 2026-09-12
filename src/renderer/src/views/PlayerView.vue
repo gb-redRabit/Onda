@@ -166,7 +166,11 @@ onUnmounted(() => {
         @click="ctl.handleClick"
         @dblclick="ctl.handleDoubleClick"
         @contextmenu="
-          playerContextMenu.showVideoMenu($event, { vp, setSpeed: ctl.setSpeed, currentSpeed: settings.playback.playbackSpeed })
+          playerContextMenu.showVideoMenu($event, {
+            vp,
+            setSpeed: ctl.setSpeed,
+            currentSpeed: settings.playback.playbackSpeed
+          })
         "
       />
 
@@ -207,7 +211,10 @@ onUnmounted(() => {
       v-else-if="isAudio"
       class="relative flex-1 flex flex-col items-center justify-center gap-6 overflow-hidden bg-base-200/(--glass-alpha)"
       @contextmenu="
-        playerContextMenu.showAudioMenu($event, { setSpeed: ctl.setSpeed, currentSpeed: settings.playback.playbackSpeed })
+        playerContextMenu.showAudioMenu($event, {
+          setSpeed: ctl.setSpeed,
+          currentSpeed: settings.playback.playbackSpeed
+        })
       "
     >
       <AudioCover size="w-72 h-72" variant="rounded" :decoration="coverDecoration" />

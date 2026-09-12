@@ -95,7 +95,12 @@ export function handlePlayerShortcutKeydown(e: KeyboardEvent): void {
   if (document.body.dataset.shortcutRecording) return;
 
   const target = e.target as HTMLElement | null;
-  if (!target || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+  if (
+    !target ||
+    target.tagName === 'INPUT' ||
+    target.tagName === 'TEXTAREA' ||
+    target.isContentEditable
+  )
     return;
 
   if (matches('play-pause', e)) {

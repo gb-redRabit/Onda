@@ -162,10 +162,7 @@ function downloadFileInternal(
 export async function fetchLatestYtdlpVersion(): Promise<string | null> {
   // Track the active channel (nightly by default) so the in-app update check
   // reports real updates instead of comparing against stale stable releases.
-  const repo =
-    YTDLP_CHANNEL === 'nightly'
-      ? 'yt-dlp/yt-dlp-nightly-builds'
-      : 'yt-dlp/yt-dlp';
+  const repo = YTDLP_CHANNEL === 'nightly' ? 'yt-dlp/yt-dlp-nightly-builds' : 'yt-dlp/yt-dlp';
   return new Promise((resolve) => {
     const req = https.get(
       `https://api.github.com/repos/${repo}/releases/latest`,
