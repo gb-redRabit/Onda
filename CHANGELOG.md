@@ -2,6 +2,15 @@
 
 Wszystkie istotne zmiany w projekcie Onda są dokumentowane w tym pliku.
 
+## [0.4.1](https://github.com/gb-redRabit/Onda/compare/v0.4.0...v0.4.1) (2026-09-12)
+
+
+### Bug Fixes
+
+* **build:** unpack sharp native libs, publish installers only ([ac60ea0](https://github.com/gb-redRabit/Onda/commit/ac60ea0e7e6b2c4182c86a08b22f12237f2eb8aa))
+* **ci:** bound linux smoke test, assert window-created milestone ([529efd6](https://github.com/gb-redRabit/Onda/commit/529efd6e31a23dd2161f3e65c072ba7b3b7c1a63))
+* **ci:** run linux smoke test headless (xvfb + no-sandbox) ([2865fdc](https://github.com/gb-redRabit/Onda/commit/2865fdc06af2824b307654efbdcecc67d499d970))
+
 ## [Nieopublikowane]
 
 ### Naprawy bezpieczeństwa
