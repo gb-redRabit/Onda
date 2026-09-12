@@ -2,6 +2,13 @@
 
 Wszystkie istotne zmiany w projekcie Onda są dokumentowane w tym pliku.
 
+## [0.4.2](https://github.com/gb-redRabit/Onda/compare/v0.4.1...v0.4.2) (2026-09-12)
+
+
+### Bug Fixes
+
+* **ci:** run ensure-release step under bash (fixes pwsh parser error on windows) ([30f4955](https://github.com/gb-redRabit/Onda/commit/30f4955efc4313b665fa97ad6a6fac2d00ba5734))
+
 ## [0.4.1](https://github.com/gb-redRabit/Onda/compare/v0.4.0...v0.4.1) (2026-09-12)
 
 
