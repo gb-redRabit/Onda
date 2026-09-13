@@ -32,6 +32,13 @@ import {
 import { useLibraryFilters } from '@renderer/composables/useLibraryFilters';
 import { useLibraryTagEditor } from '@renderer/composables/useLibraryTagEditor';
 import { useViewSearch } from '@renderer/composables/useViewSearch';
+import {
+  applyLibraryChip,
+  filterLibrarySearch,
+  sortLibraryTracks,
+  type ChipId,
+  type SortKey
+} from '@renderer/utils/libraryView';
 
 // Modals only mounted on demand — lazy so the Library chunk stays lean (3.5).
 const TrackTagEditor = defineAsyncComponent(
@@ -96,9 +103,7 @@ function setViewMode(mode: 'list' | 'grid') {
 }
 
 // Spotify-like quick filters + sort (for tracks tab)
-type ChipId = 'all' | 'liked' | 'recent' | 'most';
 const chip = ref<ChipId>('all');
-type SortKey = 'title' | 'artist' | 'album' | 'duration' | 'added' | 'plays';
 const sortKey = ref<SortKey>('added');
 const sortDir = ref<'asc' | 'desc'>('desc');
 
@@ -187,72 +192,15 @@ const chips = computed(() => [
   { id: 'most' as const, label: t('library.chipMost') }
 ]);
 
-const filteredAll = computed(() => {
-  const q = debouncedQuery.value.toLowerCase().trim();
-  if (!q) return [] as typeof library.tracks;
-  return library.tracks.filter(
-    (tr) =>
-      tr.type !== 'image' &&
-      (tr.name.toLowerCase().includes(q) ||
-        tr.metadata?.title?.toLowerCase().includes(q) ||
-        tr.metadata?.artist?.toLowerCase().includes(q) ||
-        tr.metadata?.album?.toLowerCase().includes(q) ||
-        tr.path.toLowerCase().includes(q))
-  );
-});
+const filteredAll = computed(() => filterLibrarySearch(library.tracks, debouncedQuery.value));
 
-const sortedFilteredTracks = computed(() => {
-  let list = [...filteredTracks.value];
-  // chip filter
-  if (chip.value === 'liked') {
-    const fav = new Set(player.favorites);
-    list = list.filter((tr) => fav.has(tr.path));
-  } else if (chip.value === 'recent') {
-    const cutoff = Date.now() - 30 * 24 * 3600 * 1000;
-    const recent = list.filter((tr) => tr.addedAt > cutoff);
-    list = recent.length >= 3 ? recent : list;
-    // force sort by added desc for this chip
-    if (chip.value === 'recent' && sortKey.value !== 'added') {
-      // keep user sort but default to added desc if not set
-    }
-  } else if (chip.value === 'most') {
-    list = list.filter((tr) => tr.playCount > 0);
-  }
-  // sort
-  const dir = sortDir.value === 'asc' ? 1 : -1;
-  list.sort((a, b) => {
-    let va: string | number = '';
-    let vb: string | number = '';
-    switch (sortKey.value) {
-      case 'title':
-        va = (a.metadata?.title || a.name).toLowerCase();
-        vb = (b.metadata?.title || b.name).toLowerCase();
-        return va.localeCompare(vb as string) * dir;
-      case 'artist':
-        va = (a.metadata?.artist || '').toLowerCase();
-        vb = (b.metadata?.artist || '').toLowerCase();
-        return (va as string).localeCompare(vb as string) * dir;
-      case 'album':
-        va = (a.metadata?.album || '').toLowerCase();
-        vb = (b.metadata?.album || '').toLowerCase();
-        return (va as string).localeCompare(vb as string) * dir;
-      case 'duration':
-        va = a.duration || 0;
-        vb = b.duration || 0;
-        return ((va as number) - (vb as number)) * dir;
-      case 'added':
-        va = a.addedAt || 0;
-        vb = b.addedAt || 0;
-        return ((va as number) - (vb as number)) * dir;
-      case 'plays':
-        va = a.playCount || 0;
-        vb = b.playCount || 0;
-        return ((va as number) - (vb as number)) * dir;
-    }
-    return 0;
-  });
-  return list;
-});
+const sortedFilteredTracks = computed(() =>
+  sortLibraryTracks(
+    applyLibraryChip(filteredTracks.value, chip.value, player.favorites),
+    sortKey.value,
+    sortDir.value
+  )
+);
 
 function handleOverviewShowAll(section: string) {
   if (section === 'liked') chip.value = 'liked';

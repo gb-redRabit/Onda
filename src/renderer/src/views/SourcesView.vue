@@ -21,6 +21,7 @@ import {
 } from '@lucide/vue';
 import { useSourcesStore } from '@renderer/stores/sources';
 import { buildSourceUrl } from '@renderer/utils/sourceUrl';
+import { filterAndSortSourceItems, parseQueryLines } from '@renderer/utils/sourcesView';
 import type { MediaSource, SourceItem } from '@renderer/types/sources';
 import SourceCard from '@renderer/components/sources/SourceCard.vue';
 import SourcePageView from '@renderer/components/sources/SourcePageView.vue';
@@ -59,22 +60,9 @@ function showToast(msg: string, ok = true) {
   toastTimer = setTimeout(() => (toast.value = null), 3500);
 }
 
-const displayItems = computed(() => {
-  let list = sources.items;
-  const f = filterText.value.trim().toLowerCase();
-  if (f) {
-    list = list.filter(
-      (i) =>
-        (i.title || '').toLowerCase().includes(f) || (i.subtitle || '').toLowerCase().includes(f)
-    );
-  }
-  if (sortMode.value === 'titleAsc')
-    list = [...list].sort((a, b) => a.title.localeCompare(b.title));
-  else if (sortMode.value === 'titleDesc')
-    list = [...list].sort((a, b) => b.title.localeCompare(a.title));
-  else if (sortMode.value === 'type') list = [...list].sort((a, b) => a.type.localeCompare(b.type));
-  return list;
-});
+const displayItems = computed(() =>
+  filterAndSortSourceItems(sources.items, filterText.value, sortMode.value)
+);
 
 const activeSource = computed(() => sources.activeSource);
 const activeEndpoint = computed(() => sources.activeEndpoint);
@@ -101,15 +89,7 @@ const currentUrl = computed(() => {
   });
 });
 
-const queryParams = computed(() => {
-  const out: Record<string, string> = {};
-  for (const line of queryText.value.split('\n')) {
-    const eq = line.indexOf('=');
-    if (eq <= 0) continue;
-    out[line.slice(0, eq).trim()] = line.slice(eq + 1).trim();
-  }
-  return out;
-});
+const queryParams = computed(() => parseQueryLines(queryText.value));
 
 watch(
   () => sources.currentPage,
