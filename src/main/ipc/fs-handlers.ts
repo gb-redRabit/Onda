@@ -364,7 +364,8 @@ export function registerFsHandlers(): void {
 
   ipcMain.handle('shell:getFileIcon', async (_event, filePath: string) => {
     try {
-      const icon = await app.getFileIcon(filePath, { size: 'small' });
+      const icon = await app.getFileIcon(filePath, { size: 'normal' });
+      if (icon.isEmpty()) return null;
       return icon.toDataURL();
     } catch (e) {
       logger.warn('fs', `getFileIcon failed for ${filePath}`, e);

@@ -1,4 +1,4 @@
-import { nativeImage } from 'electron';
+import { app, nativeImage } from 'electron';
 import { mkdir, access, readFile, writeFile, stat } from 'fs/promises';
 import { join, extname } from 'path';
 import { createHash } from 'crypto';
@@ -50,8 +50,9 @@ async function buildThumbnail(filePath: string, maxSize: number): Promise<Buffer
       if (!thumb.isEmpty()) {
         buf = thumb.toJPEG(85);
       }
-    } catch (e) {
-      logger.info('media', `native thumbnail failed for ${filePath}`, e);
+    } catch {
+      // No OS thumbnail (shortcuts, office docs, …) — the shell-icon fallback
+      // below supplies an icon instead, so this is not worth logging.
     }
   }
 
@@ -74,6 +75,17 @@ async function buildThumbnail(filePath: string, maxSize: number): Promise<Buffer
           logger.warn('media', `cover downscale failed for ${filePath}`, e);
         }
       }
+    }
+  }
+
+  // Last resort for non-media files (e.g. .lnk, .docx, .pdf): use the shell's
+  // associated file icon so the explorer never shows a bare/empty row.
+  if (!buf && !AUDIO_EXTS.includes(ext) && !VIDEO_EXTS.includes(ext)) {
+    try {
+      const icon = await app.getFileIcon(filePath, { size: 'normal' });
+      if (!icon.isEmpty()) buf = icon.toJPEG(85);
+    } catch {
+      // No associated icon (or shell unavailable) — leave the thumbnail empty.
     }
   }
 

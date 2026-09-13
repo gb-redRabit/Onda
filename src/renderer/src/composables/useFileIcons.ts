@@ -1,7 +1,7 @@
 import { shallowRef, onBeforeUnmount, triggerRef } from 'vue';
 import { logger } from '@shared/logger';
 import type { FileItem } from '@renderer/types/explorer';
-import { cachedIcon, setCachedIcon } from '@renderer/utils/thumbLoader';
+import { cachedIcon, setCachedIcon, isUsableImageDataUrl } from '@renderer/utils/thumbLoader';
 
 const ICON_CONCURRENCY = 6;
 
@@ -32,7 +32,7 @@ export function useFileIcons() {
       window.api
         ?.invoke('shell:getFileIcon', path)
         .then((icon) => {
-          if (icon) {
+          if (isUsableImageDataUrl(icon)) {
             setCachedIcon(path, icon as string);
             pendingIcons[path] = icon as string;
             scheduleIconRender();

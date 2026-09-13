@@ -5,6 +5,7 @@ import {
   setCachedThumb,
   cachedIcon,
   setCachedIcon,
+  isUsableImageDataUrl,
   processThumbQueue,
   thumbTaskDone
 } from '@renderer/utils/thumbLoader';
@@ -75,19 +76,19 @@ export function useThumbnail(
       }
       thumbReq
         .then((dataUrl) => {
-          if (dataUrl) {
+          if (isUsableImageDataUrl(dataUrl)) {
             setCachedThumb(path, dataUrl as string);
             mediaThumb.value = dataUrl as string;
           } else {
             const icon = cachedIcon(path);
-            if (icon) {
+            if (isUsableImageDataUrl(icon)) {
               systemIcon.value = icon;
             } else {
               const iconReq = window.api?.invoke('shell:getFileIcon', path);
               if (iconReq) {
                 iconReq
                   .then((icon) => {
-                    if (icon) {
+                    if (isUsableImageDataUrl(icon)) {
                       setCachedIcon(path, icon as string);
                       systemIcon.value = icon as string;
                     }
@@ -100,14 +101,14 @@ export function useThumbnail(
         .catch((err) => {
           logger.error('Thumbnail', 'getThumbnail', err);
           const icon = cachedIcon(path);
-          if (icon) {
+          if (isUsableImageDataUrl(icon)) {
             systemIcon.value = icon;
           } else {
             const iconReq = window.api?.invoke('shell:getFileIcon', path);
             if (iconReq) {
               iconReq
                 .then((icon) => {
-                  if (icon) {
+                  if (isUsableImageDataUrl(icon)) {
                     setCachedIcon(path, icon as string);
                     systemIcon.value = icon as string;
                   }
