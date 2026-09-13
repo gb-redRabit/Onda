@@ -15,13 +15,13 @@ import {
 import { useSettingsStore } from '@renderer/stores/settings';
 import { usePluginsStore, ELEMENT_DECORATIONS } from '@renderer/stores/plugins';
 import {
-  CONSTRAINTS,
   PREVIEW_H,
   PREVIEW_W,
   sanitizeElement,
   snapToGrid,
   snapWithGuides
 } from '@renderer/utils/audioLayout';
+import AudioLayoutPositionTab from './AudioLayoutPositionTab.vue';
 import type {
   AudioLayoutElement,
   AudioLayoutElementId,
@@ -84,6 +84,10 @@ function layoutStyle(el: AudioLayoutElement) {
     style.backgroundColor = `color-mix(in srgb, var(--color-base-300) ${bgOpacity}%, transparent)`;
   }
   return style;
+}
+
+function onPositionUpdate(patch: Partial<AudioLayoutElement>) {
+  if (selected.value) updateElement(selected.value.id, patch);
 }
 
 function updateElement(id: AudioLayoutElementId, patch: Partial<AudioLayoutElement>) {
@@ -183,10 +187,6 @@ const readout = computed(() => {
   const y = dragPreview.value?.y ?? el.y;
   return `${Math.round(x)}%, ${Math.round(y)}% · ${el.width}×${el.height} · L${el.layer}`;
 });
-
-const hasLockedAspect = computed(
-  () => typeof CONSTRAINTS[selected.value?.id ?? 'visualization']?.aspect === 'number'
-);
 </script>
 
 <template>
@@ -410,191 +410,11 @@ const hasLockedAspect = computed(
         </div>
 
         <!-- Layout tab -->
-        <div
-          v-else-if="rightTab === 'layout' && selected"
-          class="flex flex-col gap-3 pt-2 border-t border-base-300"
-        >
-          <div class="text-[11px] font-semibold text-base-content/70 uppercase tracking-wider">
-            {{ t(ELEMENT_META[selected.id].labelKey) }}
-          </div>
-
-          <!-- X -->
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-[11px] text-base-content/50">X</label>
-              <span class="text-[11px] font-mono text-primary tabular-nums">{{ selected.x }}%</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              :max="100 - selected.width"
-              :value="selected.x"
-              class="w-full"
-              @input="
-                updateElement(selected.id, { x: Number(($event.target as HTMLInputElement).value) })
-              "
-            />
-          </div>
-
-          <!-- Y -->
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-[11px] text-base-content/50">Y</label>
-              <span class="text-[11px] font-mono text-primary tabular-nums">{{ selected.y }}%</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              :max="100 - selected.height"
-              :value="selected.y"
-              class="w-full"
-              @input="
-                updateElement(selected.id, { y: Number(($event.target as HTMLInputElement).value) })
-              "
-            />
-          </div>
-
-          <!-- Width -->
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-[11px] text-base-content/50">{{ t('audioView.width') }}</label>
-              <span class="text-[11px] font-mono text-primary tabular-nums"
-                >{{ selected.width }}%</span
-              >
-            </div>
-            <input
-              type="range"
-              :min="CONSTRAINTS[selected.id]?.minW ?? 1"
-              :max="100 - selected.x"
-              :value="selected.width"
-              class="w-full"
-              @input="
-                updateElement(selected.id, {
-                  width: Number(($event.target as HTMLInputElement).value)
-                })
-              "
-            />
-          </div>
-
-          <!-- Height -->
-          <div v-if="!hasLockedAspect">
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-[11px] text-base-content/50">{{ t('audioView.height') }}</label>
-              <span class="text-[11px] font-mono text-primary tabular-nums"
-                >{{ selected.height }}%</span
-              >
-            </div>
-            <input
-              type="range"
-              :min="CONSTRAINTS[selected.id]?.minH ?? 1"
-              :max="100 - selected.y"
-              :value="selected.height"
-              class="w-full"
-              @input="
-                updateElement(selected.id, {
-                  height: Number(($event.target as HTMLInputElement).value)
-                })
-              "
-            />
-          </div>
-          <!-- Height poz. aspekt zablokowany (16:9) -->
-          <div v-else>
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-[11px] text-base-content/50">{{ t('audioView.height') }}</label>
-              <span class="text-[11px] font-mono text-primary tabular-nums">
-                {{ selected.height }}% · 16:9
-              </span>
-            </div>
-            <p class="text-[10px] text-base-content/40">{{ t('audioView.coverAspectLocked') }}</p>
-          </div>
-
-          <!-- Opacity -->
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-[11px] text-base-content/50">{{ t('audioView.opacity') }}</label>
-              <span class="text-[11px] font-mono text-primary tabular-nums"
-                >{{ selected.opacity ?? 100 }}%</span
-              >
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              :value="selected.opacity ?? 100"
-              class="w-full"
-              @input="
-                updateElement(selected.id, {
-                  opacity: Number(($event.target as HTMLInputElement).value)
-                })
-              "
-            />
-          </div>
-
-          <!-- Layer -->
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-[11px] text-base-content/50">{{ t('audioView.layer') }}</label>
-              <span class="text-[11px] font-mono text-primary tabular-nums">{{
-                selected.layer
-              }}</span>
-            </div>
-            <input
-              type="range"
-              min="1"
-              max="5"
-              :value="selected.layer"
-              class="w-full"
-              @input="
-                updateElement(selected.id, {
-                  layer: Number(($event.target as HTMLInputElement).value)
-                })
-              "
-            />
-          </div>
-
-          <!-- Background -->
-          <div class="flex items-center justify-between pt-1">
-            <span class="text-[11px] text-base-content/50">{{ t('audioView.elementBg') }}</span>
-            <button
-              class="relative w-9 h-5 rounded-full border transition-colors"
-              :class="
-                selected.bg
-                  ? 'bg-primary border-primary/50'
-                  : 'bg-base-content/10 border-base-content/30'
-              "
-              :title="selected.bg ? t('audioView.showElement') : t('audioView.hideElement')"
-              @click="updateElement(selected.id, { bg: !selected.bg })"
-            >
-              <span
-                class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-all shadow"
-                :class="selected.bg ? 'translate-x-4 bg-white' : 'bg-base-content/60'"
-              />
-            </button>
-          </div>
-          <div v-if="selected.bg">
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-[11px] text-base-content/50">{{
-                t('audioView.elementBgOpacity')
-              }}</label>
-              <span class="text-[11px] font-mono text-primary tabular-nums">
-                {{ selected.bgOpacity ?? 40 }}%
-              </span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="1"
-              :value="selected.bgOpacity ?? 40"
-              class="w-full"
-              @input="
-                updateElement(selected.id, {
-                  bgOpacity: Number(($event.target as HTMLInputElement).value)
-                })
-              "
-            />
-          </div>
-        </div>
+        <AudioLayoutPositionTab
+          v-else-if="rightTab === 'layout'"
+          :element="selected"
+          @update="onPositionUpdate"
+        />
       </div>
     </div>
   </div>

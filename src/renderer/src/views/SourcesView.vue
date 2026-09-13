@@ -23,8 +23,7 @@ import { useSourcesStore } from '@renderer/stores/sources';
 import { buildSourceUrl } from '@renderer/utils/sourceUrl';
 import { filterAndSortSourceItems, parseQueryLines } from '@renderer/utils/sourcesView';
 import type { MediaSource, SourceItem } from '@renderer/types/sources';
-import SourceCard from '@renderer/components/sources/SourceCard.vue';
-import SourcePageView from '@renderer/components/sources/SourcePageView.vue';
+import SourcesContent from '@renderer/components/sources/SourcesContent.vue';
 
 // Modals are lazy — only mounted on demand (plan 3.5).
 const SourceGuideModal = defineAsyncComponent(
@@ -469,73 +468,29 @@ const isAuthError = computed(() =>
         </p>
 
         <div ref="scrollRef" class="flex-1 min-h-0 overflow-y-auto">
-          <p v-if="sources.lastError" class="text-xs text-error mb-3 px-4 flex items-center gap-2">
-            <AlertCircle :size="12" class="shrink-0" />
-            <span class="flex-1 truncate">{{ sources.lastError }}</span>
-            <button
-              v-if="isAuthError"
-              class="fx-noise shrink-0 px-2 py-0.5 fx-depth rounded-field border border-error/40 text-error hover:bg-error/10 transition-colors"
-              @click="openEdit(activeSource)"
-            >
-              {{ $t('sources.editSourceShortcut') }}
-            </button>
-          </p>
-          <SourcePageView
-            v-if="isPage && sources.items[0]"
-            :item="sources.items[0]"
+          <SourcesContent
+            :error="sources.lastError"
+            :is-auth-error="isAuthError"
+            :is-page="isPage"
+            :page-item="sources.items[0]"
             :rows="sources.tableRows"
             :row-loading="sources.tableLoading"
             :row-clickable="tableClickable"
             :downloadable="downloadable"
+            :items="sources.items"
+            :display-items="displayItems"
+            :loading="sources.loading"
+            :filter-text="filterText"
+            :has-more="sources.hasMore"
+            :pagination-mode="sources.paginationMode"
+            :downloading-item="downloadingItem"
             @row-click="onRowClick"
             @download="onDownload"
             @download-all="onDownloadAll"
+            @preview="onItemClick"
+            @fetch-more="sources.fetchMore()"
+            @edit-source="openEdit(activeSource)"
           />
-          <div v-else class="p-4">
-            <div
-              v-if="sources.items.length"
-              class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4"
-            >
-              <SourceCard
-                v-for="(item, i) in displayItems"
-                :key="item.id || `${sources.activeEndpointId}-${i}`"
-                :item="item"
-                :downloading="downloadingItem === item"
-                :downloadable="downloadable"
-                @preview="onItemClick($event)"
-                @download="onDownload"
-              />
-            </div>
-            <div
-              v-else-if="sources.loading && !sources.items.length"
-              class="h-full flex flex-col items-center justify-center gap-2 text-base-content/50"
-            >
-              <Loader2 :size="32" class="animate-spin opacity-50" />
-              <p class="text-sm">{{ $t('sources.refresh') }}...</p>
-            </div>
-            <div
-              v-else-if="displayItems.length === 0 && filterText"
-              class="h-full flex flex-col items-center justify-center gap-2 text-base-content/50"
-            >
-              <Globe :size="32" class="opacity-50" />
-              <p class="text-sm">{{ $t('sources.noItems') }}</p>
-            </div>
-            <div
-              v-else-if="!sources.loading"
-              class="h-full flex flex-col items-center justify-center gap-2 text-base-content/50"
-            >
-              <Globe :size="32" class="opacity-50" />
-              <p class="text-sm">{{ $t('sources.noItems') }}</p>
-            </div>
-            <button
-              v-if="sources.hasMore && sources.items.length && sources.paginationMode !== 'page'"
-              class="fx-noise mt-4 mx-auto block px-4 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
-              :disabled="sources.loading"
-              @click="sources.fetchMore()"
-            >
-              {{ $t('sources.loadMore') }}
-            </button>
-          </div>
         </div>
       </div>
 
