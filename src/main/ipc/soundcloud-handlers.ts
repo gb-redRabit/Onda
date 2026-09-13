@@ -5,120 +5,23 @@
 import { ipcMain } from 'electron';
 import { logger } from '../../shared/logger';
 import { detectScKind, normalizeScUrl } from '../../shared/soundcloud';
-import type { IpcDownloadErrorCode, IpcStreamResult } from '../../shared/types/ipc';
-import { classifyYtDlpError, redactSecrets } from '../downloads/error-classifier';
 import { readProxyArgs } from './proxy-utils';
-import {
-  mapResolvedContainer,
-  pickChannelThumbnail,
-  parseStreamGetOutput,
-  type YtDlpEntry
-} from './youtube-utils';
+import { mapResolvedContainer, pickChannelThumbnail, type YtDlpEntry } from './youtube-utils';
 import { runYtDlp, fetchRangeJson } from './youtube-handlers';
 import {
   scSearchTracks,
   scResolve,
   scPlaylistTracks,
   scUserTracks,
-  scTrackStreamUrl,
   scProfileSnapshot,
   upgradeArtworkUrl,
   ScApiError
 } from './soundcloud-client';
 import { durMs, scThumbFromEntry, entryUrl, scVideoFromEntry } from './soundcloud-entries';
 export { scVideoFromEntry } from './soundcloud-entries';
-import { STREAM_CACHE_MAX, streamCacheExpiry, type ScStreamCacheEntry } from './soundcloud-stream';
+import { getScStreamUrl } from './soundcloud-stream';
+import { errorCodeOf } from './soundcloud-error';
 import { fallbackResolvePage, fallbackSearch } from './soundcloud-fallback';
-
-function errorCodeOf(e: unknown): IpcDownloadErrorCode {
-  if (e instanceof ScApiError) return 'network';
-  return classifyYtDlpError(e instanceof Error ? e.message : String(e));
-}
-
-// ---------------------------------------------------------------------------
-// Stream URL resolution — progressive MP3 through the API, LRU-cached.
-
-const streamCache = new Map<string, ScStreamCacheEntry>();
-const streamPending = new Map<string, Promise<IpcStreamResult>>();
-
-export async function getScStreamUrl(rawUrl: string): Promise<IpcStreamResult> {
-  // Legacy saved SoundCloud entries carry a bare numeric track id instead of
-  // a permalink — the client resolves those via /tracks/{id}.
-  const isNumericId = typeof rawUrl === 'string' && /^\d+$/.test(rawUrl.trim());
-  const kind = typeof rawUrl === 'string' && !isNumericId ? detectScKind(rawUrl) : 'video';
-  if (typeof rawUrl !== 'string' || !rawUrl.trim() || rawUrl.length > 2048 || kind === null) {
-    return { success: false, error: 'Invalid SoundCloud track link', code: 'invalid' };
-  }
-  if (kind === 'channel') {
-    return { success: false, error: 'Profiles have no stream — open a track', code: 'invalid' };
-  }
-  const url = normalizeScUrl(rawUrl);
-
-  const now = Date.now();
-  const cached = streamCache.get(url);
-  if (cached && cached.expires > now) {
-    streamCache.delete(url);
-    streamCache.set(url, cached);
-    return { success: true, url: cached.url };
-  }
-  streamCache.delete(url);
-
-  const pending = streamPending.get(url);
-  if (pending) return pending;
-
-  const task = resolveStream(url).finally(() => streamPending.delete(url));
-  streamPending.set(url, task);
-  return task;
-}
-
-async function resolveStream(url: string): Promise<IpcStreamResult> {
-  // Primary: internal API progressive MP3 (~300 ms).
-  try {
-    const stream = await scTrackStreamUrl(url);
-    if (stream?.url) {
-      streamCache.set(url, { url: stream.url, expires: streamCacheExpiry(stream.url) });
-      if (streamCache.size > STREAM_CACHE_MAX) {
-        const oldest = streamCache.keys().next().value;
-        if (oldest) streamCache.delete(oldest);
-      }
-      return { success: true, url: stream.url };
-    }
-    logger.warn('sc', `no progressive transcoding, falling back to yt-dlp url=${url}`);
-  } catch (e) {
-    logger.warn('sc', `api stream failed, falling back to yt-dlp url=${url}`, String(e));
-  }
-
-  // Fallback: yt-dlp -g (rejects HLS via parseStreamGetOutput → readable error).
-  try {
-    const stdout = await runYtDlp(
-      [
-        url,
-        '--no-playlist',
-        '-f',
-        'ba[protocol^=https]/bestaudio[protocol^=https]/b[protocol^=https]/w',
-        '-g',
-        '-4',
-        '--no-warnings',
-        ...(await readProxyArgs())
-      ],
-      30000
-    );
-    const parsed = parseStreamGetOutput(stdout);
-    if (!parsed.ok || !parsed.url) {
-      return {
-        success: false,
-        error: parsed.code === 'hls' ? 'HLS streams are not supported yet' : 'Invalid stream URL',
-        code: parsed.code ?? 'invalid'
-      };
-    }
-    streamCache.set(url, { url: parsed.url, expires: streamCacheExpiry(parsed.url) });
-    return { success: true, url: parsed.url };
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e);
-    logger.warn('sc', `stream fallback failed url=${url}`, redactSecrets(msg));
-    return { success: false, error: redactSecrets(msg), code: errorCodeOf(e) };
-  }
-}
 
 // ---------------------------------------------------------------------------
 // IPC registration

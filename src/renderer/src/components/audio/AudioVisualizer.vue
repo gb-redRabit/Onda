@@ -4,6 +4,7 @@ import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { usePlayerStore } from '@renderer/stores/player';
 import type { VisualizationMode } from '@renderer/types/settings';
+import { VIZ_CYCLES, qualityPreset } from '@renderer/utils/audioVisualizer';
 
 const audio = useAudioPlayer();
 const settings = useSettingsStore();
@@ -45,26 +46,10 @@ let spectGradSec = '';
 let fadeAlpha = 1;
 let prevStyle: VisualizationMode | null = null;
 
-const CYCLES: VisualizationMode[] = [
-  'bars',
-  'spectrum',
-  'wave',
-  'radial',
-  'rings',
-  'circle',
-  'particles',
-  'none'
-];
-
-const QUALITY_PRESETS = {
-  low: { dprCap: 1, barCount: 32, radialCount: 64, circleCount: 90, particleCount: 30 },
-  medium: { dprCap: 1.5, barCount: 48, radialCount: 96, circleCount: 135, particleCount: 55 },
-  high: { dprCap: 2, barCount: 64, radialCount: 128, circleCount: 180, particleCount: 80 }
-} as const;
+const CYCLES: VisualizationMode[] = VIZ_CYCLES;
 
 function getQuality() {
-  const q = settings.appearance.audioLayout?.vizQuality ?? 'high';
-  return QUALITY_PRESETS[q];
+  return qualityPreset(settings.appearance.audioLayout?.vizQuality);
 }
 
 // Cached viz settings (avoid touching the Pinia proxy every frame)
