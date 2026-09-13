@@ -17,6 +17,7 @@ import { useUIStore } from '@renderer/stores/ui';
 import { useSavedStore } from '@renderer/stores/saved';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
+import LoaderSpinner from '@renderer/components/LoaderSpinner.vue';
 import { detectChannelPrefix, detectPlatform, parseBatchInputAll } from '@shared/platform';
 import {
   buildChannelUrl,
@@ -45,9 +46,11 @@ import type {
 
 // Heavy dialogs/views are lazy-loaded so they don't bloat the Online chunk
 // (plan 3.5).
-const OnlineChannelView = defineAsyncComponent(
-  () => import('@renderer/components/online/OnlineChannelView.vue')
-);
+const OnlineChannelView = defineAsyncComponent({
+  loader: () => import('@renderer/components/online/OnlineChannelView.vue'),
+  loadingComponent: LoaderSpinner,
+  delay: 120
+});
 const DownloadConfigDialog = defineAsyncComponent(
   () => import('@renderer/components/online/DownloadConfigDialog.vue')
 );

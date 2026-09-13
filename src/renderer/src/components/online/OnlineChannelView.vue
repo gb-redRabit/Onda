@@ -20,6 +20,7 @@ import OnlineConfirmDialog from './OnlineConfirmDialog.vue';
 import OnlineButton from './OnlineButton.vue';
 import OnlineSegmentControl from './OnlineSegmentControl.vue';
 import OnlineMediaCard from './OnlineMediaCard.vue';
+import LoaderSpinner from '@renderer/components/LoaderSpinner.vue';
 
 const yt = useOnlineStore();
 const settings = useSettingsStore();
@@ -229,9 +230,7 @@ watch(
 
 <template>
   <div class="space-y-4 w-full">
-    <div v-if="yt.channelLoading && !yt.channel" class="flex justify-center py-16">
-      <div class="w-8 h-8 border border-primary border-t-transparent rounded-full animate-spin" />
-    </div>
+    <LoaderSpinner v-if="yt.channelLoading && !yt.channel" />
     <template v-else-if="yt.channel">
       <div class="relative rounded-box overflow-hidden bg-base-100 border border-base-300">
         <div

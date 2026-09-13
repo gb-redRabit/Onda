@@ -1,6 +1,6 @@
 ﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { X, FolderOpen, Download, Save, Trash2 } from '@lucide/vue';
+import { X, Download } from '@lucide/vue';
 import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@renderer/stores/ui';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -13,6 +13,9 @@ import DownloadPreviewCard from './DownloadPreviewCard.vue';
 import MetadataFieldsSection from './MetadataFieldsSection.vue';
 import DownloadFormatSection from './DownloadFormatSection.vue';
 import DownloadCoverSection from './DownloadCoverSection.vue';
+import DownloadProfilesSection from './DownloadProfilesSection.vue';
+import DownloadOutputSection from './DownloadOutputSection.vue';
+import SubscribeSubtitlesSection from './SubscribeSubtitlesSection.vue';
 
 const props = defineProps<{
   title: string;
@@ -101,11 +104,6 @@ function onOverlayClick() {
 }
 function close() {
   emit('cancel');
-}
-
-async function pickOutputDir() {
-  const paths = (await window.api.invoke('dialog:openFolder')) as string[];
-  if (paths.length > 0) outputDir.value = paths[0];
 }
 
 function buildConfig(): IpcDownloadConfig {
@@ -218,8 +216,7 @@ async function deleteProfile() {
   selectedProfileId.value = '';
 }
 
-function onProfileSelect(e: Event) {
-  const id = (e.target as HTMLSelectElement).value;
+function onProfileSelect(id: string) {
   selectedProfileId.value = id;
   if (id) applyProfile(id);
 }
@@ -267,44 +264,15 @@ function onProfileSelect(e: Event) {
             <!-- Right: settings -->
             <div class="space-y-5">
               <!-- Profiles -->
-              <section v-if="!isSc">
-                <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
-                  {{ $t('youtube.profilesSection') }}
-                </p>
-                <div class="flex items-center gap-2">
-                  <select
-                    :value="selectedProfileId"
-                    class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    @change="onProfileSelect"
-                  >
-                    <option value="">{{ $t('youtube.profileNone') }}</option>
-                    <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
-                  </select>
-                  <button
-                    v-if="selectedProfileId"
-                    class="fx-noise p-2 fx-depth rounded-field border border-base-300 text-base-content/70 hover:text-error hover:bg-base-content/10 transition-colors shrink-0"
-                    :title="$t('youtube.profileDelete')"
-                    @click="deleteProfile"
-                  >
-                    <Trash2 :size="14" />
-                  </button>
-                </div>
-                <div class="flex items-center gap-2 mt-2">
-                  <input
-                    v-model="profileName"
-                    class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    :placeholder="$t('youtube.profileNamePlaceholder')"
-                  />
-                  <button
-                    class="fx-noise flex items-center gap-1 px-3 py-2 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors shrink-0"
-                    :disabled="!profileName.trim()"
-                    @click="saveProfile"
-                  >
-                    <Save :size="13" />
-                    {{ $t('youtube.profileSave') }}
-                  </button>
-                </div>
-              </section>
+              <DownloadProfilesSection
+                v-model:profile-name="profileName"
+                :is-sc="isSc"
+                :profiles="profiles"
+                :selected-id="selectedProfileId"
+                @select="onProfileSelect"
+                @save="saveProfile"
+                @delete="deleteProfile"
+              />
 
               <!-- Format -->
               <DownloadFormatSection
@@ -341,98 +309,24 @@ function onProfileSelect(e: Event) {
               />
 
               <!-- Subtitles -->
-              <section v-if="!isSc">
-                <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
-                  {{ $t('youtube.subsSection') }}
-                </p>
-                <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
-                  <input v-model="subsEnabled" type="checkbox" />
-                  {{ $t('youtube.subsDownload') }}
-                </label>
-                <div v-if="subsEnabled" class="mt-2 space-y-2">
-                  <input
-                    v-model="subsLangs"
-                    class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    :placeholder="$t('youtube.subsLangsPlaceholder')"
-                  />
-                  <div class="grid grid-cols-2 gap-2">
-                    <select
-                      v-model="subsMode"
-                      class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    >
-                      <option value="best">{{ $t('youtube.subsModeBest') }}</option>
-                      <option value="manual">{{ $t('youtube.subsModeManual') }}</option>
-                      <option value="auto">{{ $t('youtube.subsModeAuto') }}</option>
-                    </select>
-                    <select
-                      v-model="subsFormat"
-                      class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    >
-                      <option value="srt">SRT</option>
-                      <option value="vtt">VTT</option>
-                      <option value="ass">ASS</option>
-                    </select>
-                  </div>
-                  <label class="flex items-center gap-2 text-xs cursor-pointer select-none">
-                    <input
-                      v-model="subsFolder"
-                      type="checkbox"
-                      class="w-3.5 h-3.5 fx-depth rounded-field accent-primary"
-                    />
-                    {{ $t('youtube.subsFolder') }}
-                  </label>
-                </div>
-              </section>
+              <SubscribeSubtitlesSection
+                v-model:subs-enabled="subsEnabled"
+                v-model:subs-langs="subsLangs"
+                v-model:subs-mode="subsMode"
+                v-model:subs-format="subsFormat"
+                v-model:subs-folder="subsFolder"
+                :is-sc="isSc"
+              />
 
               <!-- Output folder -->
-              <section v-if="props.channelTitle || props.playlistTitle">
-                <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
-                  {{ $t('youtube.prefOutputDir') }}
-                </p>
-                <div class="flex items-center gap-2">
-                  <select
-                    v-model="folderMode"
-                    class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                  >
-                    <option value="global">{{ $t('youtube.prefOutputDirGlobal') }}</option>
-                    <option v-if="props.channelTitle" value="channel">
-                      {{ $t('youtube.prefOutputDirChannel') }}
-                    </option>
-                    <option v-if="props.playlistTitle" value="playlist">
-                      {{ $t('youtube.folderModePlaylist') }}
-                    </option>
-                    <option value="custom">{{ $t('youtube.prefOutputDirCustom') }}</option>
-                  </select>
-                  <button
-                    v-if="folderMode === 'custom'"
-                    class="fx-noise flex items-center gap-1 px-3 py-2 fx-depth rounded-field border border-base-300 text-base-content/70 hover:bg-base-content/10 transition-colors shrink-0"
-                    @click="pickOutputDir"
-                  >
-                    <FolderOpen :size="14" />
-                  </button>
-                </div>
-                <p
-                  v-if="folderMode === 'channel'"
-                  class="mt-1 truncate text-[11px] text-base-content/50"
-                  :title="channelFolder"
-                >
-                  {{ $t('youtube.prefOutputDirChannelHint', { folder: channelFolder }) }}
-                </p>
-                <p
-                  v-else-if="folderMode === 'playlist'"
-                  class="mt-1 truncate text-[11px] text-base-content/50"
-                  :title="playlistFolder"
-                >
-                  {{ $t('youtube.folderModePlaylistHint', { folder: playlistFolder }) }}
-                </p>
-                <input
-                  v-else-if="folderMode === 'custom'"
-                  v-model="outputDir"
-                  readonly
-                  class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                  :placeholder="$t('youtube.prefOutputDirPlaceholder')"
-                />
-              </section>
+              <DownloadOutputSection
+                v-model:folder-mode="folderMode"
+                v-model:output-dir="outputDir"
+                :channel-title="props.channelTitle"
+                :playlist-title="props.playlistTitle"
+                :channel-folder="channelFolder"
+                :playlist-folder="playlistFolder"
+              />
             </div>
           </div>
         </div>
