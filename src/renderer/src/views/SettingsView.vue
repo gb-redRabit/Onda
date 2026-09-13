@@ -321,6 +321,8 @@ const sectionTabs = computed(() => {
 
 const isOverview = computed(() => !activeSection.value && !activeTab.value);
 
+const activeSectionItem = computed(() => sections.find((s) => s.id === activeSection.value));
+
 function selectSection(id: string) {
   activeSection.value = id;
   activeTab.value = null;
@@ -508,8 +510,8 @@ watch(activeTab, (_newTab, oldTab) => {
               class="flex items-center gap-1.5 text-xs text-base-content/50 hover:text-base-content transition-colors"
               @click="goHome"
             >
-              <component :is="sections.find((s) => s.id === activeSection)?.icon" :size="14" />
-              {{ t(sections.find((s) => s.id === activeSection)?.labelKey ?? '') }}
+              <component :is="activeSectionItem?.icon" :size="14" />
+              {{ activeSectionItem ? t(activeSectionItem.labelKey) : '' }}
             </button>
           </div>
 
@@ -543,7 +545,7 @@ watch(activeTab, (_newTab, oldTab) => {
               @click="goBackToSection"
             >
               <ArrowLeft :size="14" />
-              {{ t(sections.find((s) => s.id === activeSection)?.labelKey ?? '') }}
+              {{ activeSectionItem ? t(activeSectionItem.labelKey) : '' }}
             </button>
           </div>
 
