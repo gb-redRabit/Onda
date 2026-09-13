@@ -1,7 +1,7 @@
 ﻿<script setup lang="ts">
 import { reactive, ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { X, Plus, Loader2, Globe, Link2, Trash2 } from '@lucide/vue';
+import { X, Plus, Loader2 } from '@lucide/vue';
 import { useUIStore } from '@renderer/stores/ui';
 import { useSourcesStore } from '@renderer/stores/sources';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -15,6 +15,8 @@ import {
 } from './endpointDraft';
 import type { MediaSource, SourceAuthType, SourceEndpoint } from '@renderer/types/sources';
 import { buildSourceAuth, syncEndpointChain } from '@renderer/utils/sourceEditor';
+import SourceIconSection from './SourceIconSection.vue';
+import SourceDownloadSection from './SourceDownloadSection.vue';
 
 const { t } = useI18n();
 
@@ -69,48 +71,10 @@ const sampleFields = ref<Record<string, string[]>>({});
 const pageSamples = ref<Record<string, Record<string, unknown>>>({});
 const rowSamples = ref<Record<string, string[]>>({});
 const defaultDownloadDir = ref('');
-const iconUrl = ref('');
-
-const iconValid = computed(
-  () => !!draft.icon && (/^data:image\//i.test(draft.icon) || /^https?:\/\//i.test(draft.icon))
-);
 
 onMounted(async () => {
   defaultDownloadDir.value = (await window.api.invoke('sources:downloadDir')) as string;
 });
-
-async function pickDownloadDir() {
-  const paths = (await window.api.invoke('dialog:openFolder')) as string[];
-  if (paths[0]) draft.downloadOutputDir = paths[0];
-}
-
-async function pickIconFile() {
-  const res = (await window.api.invoke('sources:pickIcon')) as {
-    success: boolean;
-    dataUrl?: string;
-    error?: string;
-  };
-  if (res.success && res.dataUrl) {
-    draft.icon = res.dataUrl;
-    iconUrl.value = '';
-  } else if (res.error) {
-    errorMsg.value = res.error;
-  }
-}
-
-function applyIconUrl() {
-  const url = iconUrl.value.trim();
-  if (!/^https?:\/\//i.test(url)) {
-    errorMsg.value = t('sources.iconUrlInvalid');
-    return;
-  }
-  draft.icon = url;
-}
-
-function clearIcon() {
-  draft.icon = '';
-  iconUrl.value = '';
-}
 
 const apiKeyOptions = computed(() =>
   (settings.apiKeys?.keys || [])
@@ -324,54 +288,7 @@ async function onTestTable(idx: number) {
             </div>
           </div>
 
-          <div class="space-y-2 rounded-box border border-neutral-content/20 bg-neutral p-3">
-            <label
-              class="block text-[11px] font-medium text-base-content/50 uppercase tracking-wider"
-            >
-              {{ $t('sources.iconSection') }}
-            </label>
-            <div class="flex items-start gap-3">
-              <div
-                class="w-12 h-12 shrink-0 rounded-field bg-base-100 border border-base-300 flex items-center justify-center overflow-hidden"
-              >
-                <img v-if="iconValid" :src="draft.icon" class="w-full h-full object-cover" />
-                <Globe v-else :size="20" class="text-base-content/50" />
-              </div>
-              <div class="flex-1 min-w-0 space-y-2">
-                <div class="flex items-center gap-2">
-                  <button
-                    class="fx-noise shrink-0 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
-                    @click="pickIconFile"
-                  >
-                    {{ $t('sources.iconFromPc') }}
-                  </button>
-                  <input
-                    v-model="iconUrl"
-                    type="text"
-                    :placeholder="$t('sources.iconUrlPlaceholder')"
-                    class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-                    @keyup.enter="applyIconUrl"
-                  />
-                  <button
-                    class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors"
-                    :title="$t('sources.iconApplyUrl')"
-                    @click="applyIconUrl"
-                  >
-                    <Link2 :size="14" />
-                  </button>
-                  <button
-                    v-if="draft.icon"
-                    class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-error/10 hover:text-error transition-colors"
-                    :title="$t('sources.iconClear')"
-                    @click="clearIcon"
-                  >
-                    <Trash2 :size="14" />
-                  </button>
-                </div>
-                <p class="text-[10px] text-base-content/50">{{ $t('sources.iconHint') }}</p>
-              </div>
-            </div>
-          </div>
+          <SourceIconSection v-model:icon="draft.icon" @error="errorMsg = $event" />
 
           <div class="space-y-2">
             <label
@@ -416,42 +333,11 @@ async function onTestTable(idx: number) {
             </div>
           </div>
 
-          <div class="space-y-2 rounded-box border border-neutral-content/20 bg-neutral p-3">
-            <label
-              class="block text-[11px] font-medium text-base-content/50 uppercase tracking-wider"
-            >
-              {{ $t('sources.downloadSection') }}
-            </label>
-            <div>
-              <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-1">
-                {{ $t('sources.downloadOutputDir') }}
-              </label>
-              <div class="flex items-center gap-2">
-                <input
-                  v-model="draft.downloadOutputDir"
-                  type="text"
-                  :placeholder="defaultDownloadDir"
-                  class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-                <button
-                  class="fx-noise shrink-0 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
-                  @click="pickDownloadDir"
-                >
-                  {{ $t('sources.chooseFolder') }}
-                </button>
-              </div>
-              <p class="text-[10px] text-base-content/50 mt-1">
-                {{ $t('sources.downloadDefaultHint', { path: defaultDownloadDir }) }}
-              </p>
-            </div>
-            <label class="flex items-center gap-2 text-xs text-base-content/70 select-none">
-              <input v-model="draft.downloadFolder" type="checkbox" class="accent-primary" />
-              {{ $t('sources.downloadFolder') }}
-            </label>
-            <p class="text-[10px] text-base-content/50">
-              {{ $t('sources.downloadFolderHint') }}
-            </p>
-          </div>
+          <SourceDownloadSection
+            v-model:output-dir="draft.downloadOutputDir"
+            v-model:folder="draft.downloadFolder"
+            :default-dir="defaultDownloadDir"
+          />
 
           <div class="space-y-3">
             <div class="flex items-center justify-between">

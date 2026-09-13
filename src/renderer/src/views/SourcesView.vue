@@ -24,6 +24,7 @@ import { buildSourceUrl } from '@renderer/utils/sourceUrl';
 import { filterAndSortSourceItems, parseQueryLines } from '@renderer/utils/sourcesView';
 import type { MediaSource, SourceItem } from '@renderer/types/sources';
 import SourcesContent from '@renderer/components/sources/SourcesContent.vue';
+import SourcesFilterBar from '@renderer/components/sources/SourcesFilterBar.vue';
 
 // Modals are lazy — only mounted on demand (plan 3.5).
 const SourceGuideModal = defineAsyncComponent(
@@ -441,24 +442,11 @@ const isAuthError = computed(() =>
             <RefreshCw v-else :size="14" />
           </button>
         </div>
-        <div v-if="!isPage" class="flex items-center gap-2 px-4 py-1.5 border-b border-base-300">
-          <input
-            v-model="filterText"
-            type="text"
-            :placeholder="$t('sources.filterPlaceholder')"
-            class="flex-1 min-w-0 px-2.5 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-          />
-          <select
-            v-model="sortMode"
-            class="shrink-0 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-            :title="$t('sources.sortBy')"
-          >
-            <option value="none">{{ $t('sources.sortNone') }}</option>
-            <option value="titleAsc">{{ $t('sources.sortTitleAsc') }}</option>
-            <option value="titleDesc">{{ $t('sources.sortTitleDesc') }}</option>
-            <option value="type">{{ $t('sources.sortType') }}</option>
-          </select>
-        </div>
+        <SourcesFilterBar
+          v-if="!isPage"
+          v-model:filter-text="filterText"
+          v-model:sort-mode="sortMode"
+        />
         <p
           v-if="currentUrl"
           class="px-4 py-1 text-[10px] font-mono text-base-content/50 truncate border-b border-base-300"

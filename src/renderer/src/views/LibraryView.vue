@@ -8,6 +8,7 @@ import { useSettingsStore } from '@renderer/stores/settings';
 import { usePlayerStore } from '@renderer/stores/player';
 import LibraryTracksTab from '@renderer/components/library/LibraryTracksTab.vue';
 import LibraryToolbar from '@renderer/components/library/LibraryToolbar.vue';
+import LibraryHeader from '@renderer/components/library/LibraryHeader.vue';
 import LibraryVideoTab from '@renderer/components/library/LibraryVideoTab.vue';
 import LibraryImagesTab from '@renderer/components/library/LibraryImagesTab.vue';
 import LibraryFoldersTab from '@renderer/components/library/LibraryFoldersTab.vue';
@@ -16,18 +17,7 @@ import LibraryAlbumsTab from '@renderer/components/library/LibraryAlbumsTab.vue'
 import LibraryPlaylistManager from '@renderer/components/library/LibraryPlaylistManager.vue';
 import LibraryOverviewTab from '@renderer/components/library/LibraryOverviewTab.vue';
 import { audioEngine } from '@renderer/modules/audioEngine';
-import {
-  Music2,
-  Film,
-  Folder,
-  Disc3,
-  Mic2,
-  ListMusic,
-  RefreshCw,
-  Images,
-  LayoutDashboard,
-  Shuffle
-} from '@lucide/vue';
+import { Music2, Film, Folder, Disc3, Mic2, ListMusic, Images, LayoutDashboard } from '@lucide/vue';
 import { useLibraryFilters } from '@renderer/composables/useLibraryFilters';
 import { useLibraryTagEditor } from '@renderer/composables/useLibraryTagEditor';
 import { useViewSearch } from '@renderer/composables/useViewSearch';
@@ -329,39 +319,13 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
     <!-- Sticky glass header — Minimal Spotify -->
     <div class="sticky top-0 z-10 backdrop-blur border-b border-base-300 shrink-0">
       <div class="px-4 pt-4 pb-3">
-        <div class="flex items-center justify-between gap-3 mb-3">
-          <div class="flex items-center gap-3 min-w-0">
-            <h1 class="text-xl font-bold tracking-tight shrink-0">{{ $t('library.title') }}</h1>
-            <span
-              class="hidden sm:inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-base-100 border border-base-300 text-base-content/60"
-            >
-              <span
-                v-if="library.isScanning"
-                class="w-2 h-2 rounded-full bg-success animate-pulse"
-              ></span>
-              <span v-else class="w-2 h-2 rounded-full bg-base-300"></span>
-              {{ library.totalCount }} {{ $t('library.files') }}
-            </span>
-          </div>
-          <div class="flex items-center gap-1.5 shrink-0">
-            <button
-              v-if="tab === 'tracks'"
-              class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-base-100/(--glass-alpha) border border-base-300 text-xs hover:border-primary/50 hover:text-primary transition-colors"
-              :title="$t('library.shuffleAll')"
-              @click="shuffleAllTracks"
-            >
-              <Shuffle :size="12" />
-              <span class="hidden lg:inline">{{ $t('library.shuffle') }}</span>
-            </button>
-            <button
-              class="p-2 rounded-full bg-base-100/(--glass-alpha) border border-base-300 hover:border-primary/30 hover:text-primary transition-colors"
-              :title="$t('library.rescan')"
-              @click="library.scanFolders()"
-            >
-              <RefreshCw :size="14" :class="{ 'animate-spin': library.isScanning }" />
-            </button>
-          </div>
-        </div>
+        <LibraryHeader
+          :total-count="library.totalCount"
+          :is-scanning="library.isScanning"
+          :show-shuffle="tab === 'tracks'"
+          @shuffle="shuffleAllTracks"
+          @rescan="library.scanFolders()"
+        />
 
         <!-- Tab bar — jedna linia, reaguje na szerokość: flex-1 + napisy chowane -->
         <div class="relative -mx-1" role="tablist" aria-label="Biblioteka">
