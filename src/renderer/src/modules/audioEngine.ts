@@ -6,6 +6,11 @@ import { toMediaServerUrl, toMediaStreamUrl } from '@renderer/utils/mediaUrl';
 import { logger } from '@shared/logger';
 import { AudioGraph } from './audioGraph';
 import { AudioSecondary } from './audioSecondary';
+import {
+  attachMediaElementListeners,
+  cleanupAudioElement,
+  computeTrackNormalization
+} from './audioEngineHelpers';
 
 class AudioEngine {
   private graph = new AudioGraph();
@@ -54,62 +59,22 @@ class AudioEngine {
   }
 
   private setupListeners(el: HTMLAudioElement): void {
-    el.addEventListener('durationchange', () => {
-      audioEvents.emit('durationChange', el.duration || 0);
+    attachMediaElementListeners(el, {
+      onEnded: () => this.handleEnded(),
+      onError: (element) => this.handleStreamError(element),
+      loadStartTs: () => this.loadStartTs,
+      onCanplay: (element) => this.replayIfDesired(element)
     });
-    el.addEventListener('ended', () => {
-      this.handleEnded();
-    });
-    el.addEventListener('play', () => {
-      audioEvents.emit('playStateChange', true);
-    });
-    el.addEventListener('pause', () => {
-      audioEvents.emit('playStateChange', false);
-    });
-    el.addEventListener('timeupdate', () => {
-      audioEvents.emit('timeUpdate', el.currentTime);
-    });
-    el.addEventListener('loadedmetadata', () => {
-      audioEvents.emit('durationChange', el.duration || 0);
-    });
-    el.addEventListener('progress', () => {
-      let frac = 0;
-      try {
-        if (el.duration > 0 && el.buffered.length > 0) {
-          const end = el.buffered.end(el.buffered.length - 1);
-          frac = Math.min(1, end / el.duration);
-        }
-      } catch {
-        frac = 0;
-      }
-      audioEvents.emit('bufferChange', frac);
-    });
-    el.addEventListener('error', () => {
-      this.handleStreamError(el);
-    });
-    el.addEventListener('loadstart', () => {
-      logger.info(
-        'audioEngine',
-        `loadstart +${Math.round(performance.now() - this.loadStartTs)}ms`
-      );
-    });
-    el.addEventListener('loadeddata', () => {
-      logger.info(
-        'audioEngine',
-        `loadeddata +${Math.round(performance.now() - this.loadStartTs)}ms`
-      );
-    });
-    el.addEventListener('canplay', () => {
-      logger.info('audioEngine', `canplay +${Math.round(performance.now() - this.loadStartTs)}ms`);
-      audioEvents.emit('playable', undefined);
-      // Re-play after a late/retried load: resumeAndPlay fires play() at +50ms,
-      // which rejects while the element is still loading or errored (e.g. a
-      // stream that needed proxy retries or a direct fallback). Once the media
-      // is actually ready, re-issue play if the user still wants playback.
-      if (this.streamMode && usePlayerStore().isPlaying && this.audioEl && this.audioEl.paused) {
-        this.audioEl.play().catch(() => {});
-      }
-    });
+  }
+
+  private replayIfDesired(el: HTMLAudioElement): void {
+    // Re-play after a late/retried load: resumeAndPlay fires play() at +50ms,
+    // which rejects while the element is still loading or errored (e.g. a
+    // stream that needed proxy retries or a direct fallback). Once the media
+    // is actually ready, re-issue play if the user still wants playback.
+    if (this.streamMode && usePlayerStore().isPlaying && this.audioEl && this.audioEl.paused) {
+      el.play().catch(() => {});
+    }
   }
 
   // Stream error handling ladder:
@@ -173,13 +138,6 @@ class AudioEngine {
 
   private handleEnded(): void {
     audioEvents.emit('trackEnd', undefined);
-  }
-
-  private cleanupAudioEl(el: HTMLAudioElement | null): void {
-    if (!el) return;
-    el.pause();
-    el.removeAttribute('src');
-    el.load();
   }
 
   private connectAudio(el: HTMLAudioElement): void {
@@ -272,11 +230,7 @@ class AudioEngine {
     // Volume normalization / ReplayGain: apply the track's ReplayGain ratio
     // when either setting is enabled and the metadata carries a gain value.
     const enableNorm = settings.playback.replayGain || settings.playback.normalization;
-    const ratio = track.metadata?.replayGainTrackGain;
-    this.normalization =
-      enableNorm && typeof ratio === 'number' && Number.isFinite(ratio) && ratio > 0
-        ? Math.min(4, Math.max(0.25, ratio))
-        : 1;
+    this.normalization = computeTrackNormalization(enableNorm, track.metadata?.replayGainTrackGain);
 
     this.loadSource(toMediaServerUrl(track.path));
 
@@ -432,7 +386,7 @@ class AudioEngine {
     this.savePosition();
     this.disconnectSecondaryAudio();
     this.graph.disconnectNodes();
-    this.cleanupAudioEl(this.audioEl);
+    cleanupAudioElement(this.audioEl);
     this.audioEl = null;
     await this.graph.closeContext();
     this.initialized = false;
