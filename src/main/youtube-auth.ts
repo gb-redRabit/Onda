@@ -2,7 +2,6 @@ import { app, BrowserWindow, session } from 'electron';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 import { readFile, unlink, copyFile } from 'fs/promises';
-import { getStore } from './ipc/cover-cache';
 import { writeFileRestricted } from './utils/file-permissions';
 import {
   serializeCookies,
@@ -10,9 +9,10 @@ import {
   parseNetscapeCookies,
   type YtAuthConfig
 } from './ipc/youtube-utils';
-import type { YoutubeAuthSettings, YoutubeAuthMethod } from '../renderer/src/types/settings';
+import type { YoutubeAuthMethod } from '../renderer/src/types/settings';
 import { logger } from '../shared/logger';
 import { pipWindowIcon } from './pip-icon';
+import { getAuthSettings, setAuthSettings } from './youtube-auth-settings';
 
 // Dedicated persistent partition so the Google session survives restarts and
 // stays fully isolated from the app's own session.
@@ -31,36 +31,6 @@ let loginWindow: BrowserWindow | null = null;
 
 function cookiesFilePath(): string {
   return join(app.getPath('userData'), COOKIES_FILE);
-}
-
-async function getAuthSettings(): Promise<YoutubeAuthSettings> {
-  try {
-    const store = await getStore();
-    const raw = store.get('youtube') as Partial<YoutubeAuthSettings> | undefined;
-    const method: YoutubeAuthMethod =
-      raw?.method === 'electron' || raw?.method === 'browser' || raw?.method === 'manual'
-        ? raw.method
-        : 'none';
-    return {
-      method,
-      cookiesPath: typeof raw?.cookiesPath === 'string' ? raw.cookiesPath : '',
-      cookiesBrowser: typeof raw?.cookiesBrowser === 'string' ? raw.cookiesBrowser : 'chrome',
-      lastLogin: typeof raw?.lastLogin === 'number' ? raw.lastLogin : null
-    };
-  } catch (e) {
-    logger.warn('ytauth', 'getAuthSettings failed', e);
-    return { method: 'none', cookiesPath: '', cookiesBrowser: 'chrome', lastLogin: null };
-  }
-}
-
-async function setAuthSettings(partial: Partial<YoutubeAuthSettings>): Promise<void> {
-  try {
-    const store = await getStore();
-    const current = await getAuthSettings();
-    store.set('youtube', { ...current, ...partial });
-  } catch (e) {
-    logger.warn('ytauth', 'setAuthSettings failed', e);
-  }
 }
 
 function cookieOnDomain(cookieDomain: string, host: string): boolean {
