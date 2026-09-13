@@ -15,6 +15,7 @@ import MusicBrainzReleaseCard from './MusicBrainzReleaseCard.vue';
 import MusicBrainzTrackList from './MusicBrainzTrackList.vue';
 import MusicBrainzPreviewTable from './MusicBrainzPreviewTable.vue';
 import { useUIStore } from '@renderer/stores/ui';
+import { useMusicBrainzBatch } from '@renderer/composables/useMusicBrainzBatch';
 
 const { t } = useI18n();
 const ui = useUIStore();
@@ -218,70 +219,11 @@ const previewRows = computed(() =>
 );
 
 // 8.9.3 — batch
-const batchProgress = ref(0);
-const batchResults = ref<
-  Array<{ path: string; name: string; status: 'pending' | 'ok' | 'error'; msg?: string }>
->([]);
-const batchRunning = ref(false);
-const batchCancelled = ref(false);
-
-function startBatch() {
-  const rel = lookupResult.value;
-  const list = props.batchTracks;
-  if (!rel || !list || list.length === 0) return;
-  batchRunning.value = true;
-  batchCancelled.value = false;
-  batchProgress.value = 0;
-  batchResults.value = list.map((t) => ({
-    path: t.path,
-    name: t.name,
-    status: 'pending' as const
-  }));
-  let idx = 0;
-  const next = async () => {
-    if (batchCancelled.value || idx >= list.length) {
-      batchRunning.value = false;
-      return;
-    }
-    const tr = list[idx];
-    const mbTrack = rel.media?.[0]?.tracks?.[idx] || rel.media?.[0]?.tracks?.[0];
-    try {
-      const payload: Record<string, unknown> = {};
-      if (includeFields.value.album) payload.album = rel.title;
-      if (includeFields.value.artist)
-        payload.artist = rel['artist-credit']?.[0]?.name || rel['artist-credit']?.[0]?.artist?.name;
-      if (includeFields.value.year && rel.date) payload.year = rel.date.slice(0, 4);
-      if (includeFields.value.title && mbTrack?.title) payload.title = mbTrack.title;
-      if (includeFields.value.track) payload.track = String(idx + 1);
-      // write tags
-      const tagRes = await window.api?.invoke(
-        'media:writeTags',
-        tr.path,
-        payload as Record<string, string>
-      );
-      if ((tagRes as { success?: boolean })?.success === false)
-        throw new Error((tagRes as { error?: string })?.error || 'writeTags failed');
-      if (includeFields.value.cover && rel._coverData) {
-        await window.api?.invoke('media:writeCover', tr.path, rel._coverData);
-      }
-      batchResults.value[idx] = { ...batchResults.value[idx], status: 'ok' };
-    } catch (e) {
-      batchResults.value[idx] = {
-        ...batchResults.value[idx],
-        status: 'error',
-        msg: String(e).slice(0, 80)
-      };
-    }
-    batchProgress.value = idx + 1;
-    idx++;
-    setTimeout(next, 1100); // 1 req/s throttle
-  };
-  next();
-}
-function cancelBatch() {
-  batchCancelled.value = true;
-  batchRunning.value = false;
-}
+const { batchProgress, batchResults, batchRunning, startBatch, cancelBatch } = useMusicBrainzBatch(
+  () => lookupResult.value,
+  () => includeFields.value,
+  () => props.batchTracks
+);
 
 watch(
   () => props.initialQuery,
