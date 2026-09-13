@@ -38,6 +38,11 @@ import {
 import { buildJob, buildTaskInput, type JobExtra } from '@renderer/utils/onlineJob';
 import { toDownloadTask } from '@renderer/utils/onlineDownloadTask';
 import { channelUrlForPrefix } from '@renderer/utils/onlineChannel';
+import {
+  normalizeResolvedTotal,
+  mergeResolvedPage,
+  type ResolveMoreResponse
+} from '@renderer/utils/onlineResolved';
 
 export const useOnlineStore = defineStore('online', () => {
   const { t } = useI18n();
@@ -234,14 +239,7 @@ export const useOnlineStore = defineStore('online', () => {
     resolvedCapped.value = false;
     // A playlist that fits on the first page and reports no count is already
     // fully loaded — the items length is its exact total.
-    if (
-      result &&
-      result.kind === 'playlist' &&
-      !result.meta.hasMore &&
-      result.meta.totalItems == null
-    ) {
-      result = { ...result, meta: { ...result.meta, totalItems: result.items.length } };
-    }
+    result = normalizeResolvedTotal(result);
     resolved.value = result;
     resolvedLoading.value = false;
     selectedResolved.value = new Set(
@@ -265,24 +263,10 @@ export const useOnlineStore = defineStore('online', () => {
       url: r.sourceUrl,
       start: nextStart,
       end: nextStart + 29
-    })) as {
-      success?: boolean;
-      items?: YouTubeResolvedItem[];
-      hasMore?: boolean;
-      totalItems?: number | null;
-    };
+    })) as ResolveMoreResponse;
     if (!res || !res.success || !res.items || res.items.length === 0) return false;
-    const seen = new Set(r.items.map((i) => i.id));
-    const fresh = res.items.filter((i) => !seen.has(i.id));
-    resolved.value = {
-      ...r,
-      items: [...r.items, ...fresh],
-      meta: {
-        ...r.meta,
-        hasMore: res.hasMore,
-        totalItems: res.totalItems || r.meta.totalItems
-      }
-    };
+    const { resolved: merged, fresh } = mergeResolvedPage(r, res);
+    resolved.value = merged;
     const sel = new Set(selectedResolved.value);
     for (const it of fresh) {
       if (it.isPlayable !== false) sel.add(it.id);
