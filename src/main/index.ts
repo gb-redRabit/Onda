@@ -38,15 +38,18 @@ import { configureAutoCheck } from './updater-scheduler';
 import { syncSubscriptionsScheduler } from './ipc/subscriptions-handlers';
 import { shouldCloseToTray, setCloseToTray } from './close-behavior';
 import { installNavigationGuard } from './navigation-guard';
+import { SplashController } from './splash';
 
 let mainWindow: BrowserWindow | null = null;
-let splashWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
-let mainReady = false;
-let minTimerDone = false;
-let rendererReady = false;
 let startHidden = false;
 let bootMark = 0;
+
+const splash = new SplashController({
+  windowIcon,
+  getMainWindow: () => mainWindow,
+  isStartHidden: () => startHidden
+});
 
 function perf(label: string) {
   const ms = Math.round(performance.now() - bootMark);
@@ -123,7 +126,7 @@ function createWindow(): BrowserWindow {
   });
 
   win.on('ready-to-show', () => {
-    if (!splashWindow && !startHidden) win.show();
+    if (!splash.isActive() && !startHidden) win.show();
   });
 
   win.on('maximize', () => {
@@ -323,64 +326,6 @@ function registerGlobalShortcuts(): void {
   }
 }
 
-function createSplashWindow(): BrowserWindow {
-  const splash = new BrowserWindow({
-    width: 400,
-    height: 300,
-    frame: false,
-    transparent: true,
-    alwaysOnTop: true,
-    skipTaskbar: true,
-    resizable: false,
-    icon: windowIcon(),
-    webPreferences: {
-      sandbox: true,
-      preload: join(__dirname, '../preload/splash.js')
-    }
-  });
-
-  splash.loadFile(join(__dirname, '../../resources/splash.html'));
-  installNavigationGuard(splash);
-  return splash;
-}
-
-function checkAndShow(): void {
-  if (mainReady && minTimerDone && rendererReady) {
-    const total = Math.round(performance.now() - bootMark);
-    logger.info(
-      'boot',
-      `SHOW WINDOW — ${total}ms (mainReady=${mainReady} minTimer=${minTimerDone} renderer=${rendererReady})`
-    );
-    sendSplash('Gotowe', 100);
-    splashWindow?.close();
-    splashWindow = null;
-    if (!startHidden) {
-      mainWindow?.show();
-      mainWindow?.focus();
-    }
-  }
-}
-
-function onMainReady(): void {
-  mainReady = true;
-  checkAndShow();
-}
-
-function forceCloseSplash(): void {
-  if (splashWindow) {
-    splashWindow.close();
-    splashWindow = null;
-    if (!startHidden && !mainWindow?.isVisible()) {
-      mainWindow?.show();
-      mainWindow?.focus();
-    }
-  }
-}
-
-function sendSplash(label: string, progress: number) {
-  splashWindow?.webContents.send('splash:status', { label, progress });
-}
-
 app.whenReady().then(async () => {
   bootMark = performance.now();
   perf('boot start');
@@ -394,9 +339,9 @@ app.whenReady().then(async () => {
     optimizer.watchWindowShortcuts(window);
   });
 
-  splashWindow = createSplashWindow();
+  splash.start();
 
-  sendSplash('Inicjalizowanie serwera mediów…', 10);
+  splash.send('Inicjalizowanie serwera mediów…', 10);
 
   registerIPC();
   registerMediaUrlHandler();
@@ -408,7 +353,7 @@ app.whenReady().then(async () => {
     `media server port=${mediaServer.port} ${Math.round(performance.now() - bootMark)}ms`
   );
 
-  sendSplash('Przywracanie ustawień…', 25);
+  splash.send('Przywracanie ustawień…', 25);
 
   let bootFolders = 0;
   let bootRoots = 0;
@@ -471,11 +416,10 @@ app.whenReady().then(async () => {
   startHidden = process.argv.includes('--hidden');
   perf(`settings ready (${bootFolders} folders, ${bootRoots} roots)`);
 
-  sendSplash('Uruchamianie interfejsu…', 50);
+  splash.send('Uruchamianie interfejsu…', 50);
 
   ipcMain.handle('app:rendererReady', () => {
-    rendererReady = true;
-    checkAndShow();
+    splash.onRendererReady();
   });
 
   ipcMain.handle('window:id', (event) => {
@@ -509,12 +453,12 @@ app.whenReady().then(async () => {
 
   registerOndaProtocolHandler();
 
-  sendSplash('Tworzenie okna…', 60);
+  splash.send('Tworzenie okna…', 60);
   mainWindow = createWindow();
   perf('window created');
-  mainWindow.webContents.on('did-finish-load', onMainReady);
+  mainWindow.webContents.on('did-finish-load', () => splash.onMainReady());
 
-  sendSplash('Inicjalizacja PiP i tray…', 75);
+  splash.send('Inicjalizacja PiP i tray…', 75);
   initAutoUpdater(() => mainWindow?.webContents ?? null);
   configureAutoCheck();
   syncSubscriptionsScheduler();
@@ -534,11 +478,10 @@ app.whenReady().then(async () => {
   }
 
   setTimeout(() => {
-    minTimerDone = true;
-    checkAndShow();
+    splash.onMinTimerDone();
   }, 1000);
 
-  setTimeout(forceCloseSplash, 15000);
+  setTimeout(() => splash.forceClose(), 15000);
 
   registerWindowHandlers({
     getMainWindow: () => mainWindow,
@@ -551,7 +494,7 @@ app.whenReady().then(async () => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       mainWindow = createWindow();
-      mainWindow.webContents.on('did-finish-load', onMainReady);
+      mainWindow.webContents.on('did-finish-load', () => splash.onMainReady());
     }
   });
 });
@@ -564,12 +507,7 @@ app.on('window-all-closed', () => {
     /* already destroyed */
   }
   tray = null;
-  try {
-    if (splashWindow && !splashWindow.isDestroyed()) splashWindow.destroy();
-  } catch {
-    /* already destroyed */
-  }
-  splashWindow = null;
+  splash.destroy();
   pipManager.destroy();
   audioPipManager.destroy();
   if (process.platform !== 'darwin') {

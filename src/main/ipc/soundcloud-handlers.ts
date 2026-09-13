@@ -5,11 +5,7 @@
 import { ipcMain } from 'electron';
 import { logger } from '../../shared/logger';
 import { detectScKind, normalizeScUrl } from '../../shared/soundcloud';
-import type {
-  IpcDownloadErrorCode,
-  IpcStreamResult,
-  IpcYoutubeVideo
-} from '../../shared/types/ipc';
+import type { IpcDownloadErrorCode, IpcStreamResult } from '../../shared/types/ipc';
 import { classifyYtDlpError, redactSecrets } from '../downloads/error-classifier';
 import { readProxyArgs } from './proxy-utils';
 import {
@@ -18,7 +14,7 @@ import {
   parseStreamGetOutput,
   type YtDlpEntry
 } from './youtube-utils';
-import { runYtDlp, fetchEntryJson, fetchRangeJson } from './youtube-handlers';
+import { runYtDlp, fetchRangeJson } from './youtube-handlers';
 import {
   scSearchTracks,
   scResolve,
@@ -32,55 +28,11 @@ import {
 import { durMs, scThumbFromEntry, entryUrl, scVideoFromEntry } from './soundcloud-entries';
 export { scVideoFromEntry } from './soundcloud-entries';
 import { STREAM_CACHE_MAX, streamCacheExpiry, type ScStreamCacheEntry } from './soundcloud-stream';
+import { fallbackResolvePage, fallbackSearch } from './soundcloud-fallback';
 
 function errorCodeOf(e: unknown): IpcDownloadErrorCode {
   if (e instanceof ScApiError) return 'network';
   return classifyYtDlpError(e instanceof Error ? e.message : String(e));
-}
-
-// ---------------------------------------------------------------------------
-// yt-dlp fallbacks
-
-async function fallbackSearch(query: string): Promise<IpcYoutubeVideo[]> {
-  const stdout = await runYtDlp(
-    [`scsearch100:${query}`, '--flat-playlist', '--no-warnings', '-J', ...(await readProxyArgs())],
-    60000
-  );
-  const parsed = JSON.parse(stdout) as { entries?: YtDlpEntry[] };
-  return (parsed.entries || [])
-    .filter((e) => e.title && (e.id || entryUrl(e)))
-    .map((e) => scVideoFromEntry(e));
-}
-
-async function fallbackResolvePage(
-  target: string,
-  mode: 'full' | 'page30'
-): Promise<{
-  title: string;
-  items: IpcYoutubeVideo[];
-  resolvedItems: ReturnType<typeof mapResolvedContainer>;
-  totalItems: number | null;
-  hasMore: boolean;
-}> {
-  const parsed = await fetchEntryJson(target, mode);
-  const valid = (parsed.entries || []).filter((e) => e.title && (e.id || entryUrl(e)));
-  const items = valid.map((e) => scVideoFromEntry(e));
-  const resolvedItems = valid.map((e) => {
-    const base = mapResolvedContainer({ entries: [e] })[0];
-    return {
-      ...base,
-      thumbnail: scThumbFromEntry(e),
-      url: entryUrl(e) || (/^https:\/\//i.test(base.id) ? base.id : undefined)
-    };
-  });
-  const count = parsed.playlist_count;
-  return {
-    title: parsed.title || parsed.playlist_title || parsed.channel || parsed.uploader || '',
-    items,
-    resolvedItems,
-    totalItems: count ?? null,
-    hasMore: items.length >= 30 && (count == null || items.length < count)
-  };
 }
 
 // ---------------------------------------------------------------------------
