@@ -1,0 +1,46 @@
+import type { DownloadTask } from '@renderer/types/online';
+import type { IpcDownloadTask } from '@shared/types/ipc';
+
+export function toDownloadTask(ipc: IpcDownloadTask): DownloadTask {
+  return {
+    id: ipc.id,
+    url: ipc.url,
+    title: ipc.title,
+    thumbnail: ipc.thumbnail,
+    kind: ipc.kind,
+    format: ipc.format,
+    quality: ipc.quality,
+    outputPath: ipc.outputPath,
+    outputDir: ipc.outputDir,
+    progress: ipc.progress,
+    speed: ipc.speed,
+    eta: ipc.eta,
+    status: ipc.status,
+    error: ipc.error,
+    errorCode: ipc.errorCode,
+    startedAt: ipc.startedAt,
+    completedAt: ipc.completedAt,
+    videoId: ipc.videoId,
+    channelId: ipc.channelId,
+    channelTitle: ipc.channelTitle,
+    playlistTitle: ipc.playlistTitle,
+    cover: ipc.cover,
+    coverStatus: ipc.coverStatus,
+    metaOverride: ipc.metaOverride,
+    inLibrary: ipc.inLibrary,
+    fileHash: ipc.fileHash,
+    subsLangs: ipc.subsLangs,
+    subsFormat: ipc.subsFormat,
+    subsMode: ipc.subsMode,
+    subsFolder: ipc.subsFolder,
+    subtitleStatus: ipc.subtitleStatus,
+    audioQuality: ipc.audioQuality,
+    audioLanguage: ipc.audioLanguage,
+    videoContainer: ipc.videoContainer,
+    sponsorBlock: ipc.sponsorBlock,
+    trimStart: ipc.trimStart,
+    trimEnd: ipc.trimEnd,
+    addToLibrary: ipc.addToLibrary,
+    source: ipc.source
+  };
+}
