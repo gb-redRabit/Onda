@@ -14,6 +14,9 @@ import {
   groupDownloads,
   visibleDownloads
 } from '@renderer/utils/downloadsView';
+import DownloadMetaDialog from '@renderer/components/downloads/DownloadMetaDialog.vue';
+import DownloadRowActions from '@renderer/components/downloads/DownloadRowActions.vue';
+import DownloadFiltersBar from '@renderer/components/downloads/DownloadFiltersBar.vue';
 import type { DownloadTask } from '@renderer/types/online';
 import type { MediaFile } from '@renderer/types/media';
 import {
@@ -23,19 +26,12 @@ import {
   XCircle,
   Clock,
   X,
-  RotateCcw,
   Trash2,
-  Library,
-  FolderOpen,
   Copy,
   Pause,
   Play,
   LogIn,
-  ArrowUpToLine,
-  ArrowUp,
-  ArrowDown,
   Upload,
-  Pencil,
   RefreshCw
 } from '@lucide/vue';
 
@@ -320,30 +316,12 @@ const colors = {
       </button>
     </div>
 
-    <div class="px-4 py-2 border-b border-base-300 flex gap-1 items-center flex-wrap">
-      <button
-        v-for="f in filters"
-        :key="f.id"
-        class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
-        :class="
-          filter === f.id
-            ? 'bg-primary text-primary-content'
-            : 'text-base-content/70 hover:bg-base-content/10'
-        "
-        @click="filter = f.id"
-      >
-        {{ $t(f.labelKey) }} ({{ f.count }})
-      </button>
-      <div class="flex-1" />
-      <select
-        v-if="channels.length"
-        v-model="channelFilter"
-        class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none"
-      >
-        <option value="">{{ $t('downloads.filterAllChannels') }}</option>
-        <option v-for="[id, title] in channels" :key="id" :value="id">{{ title }}</option>
-      </select>
-    </div>
+    <DownloadFiltersBar
+      v-model:filter="filter"
+      v-model:channel-filter="channelFilter"
+      :filters="filters"
+      :channels="channels"
+    />
 
     <div class="flex-1 overflow-auto p-4">
       <div v-if="visible.length" class="space-y-2">
@@ -434,113 +412,14 @@ const colors = {
             </span>
             <span class="text-xs text-base-content/50 shrink-0 uppercase">{{ t.format }}</span>
 
-            <div class="flex items-center gap-1 shrink-0">
-              <button
-                v-if="t.status === 'completed' && t.outputPath"
-                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-base-content/10 transition-colors"
-                :title="$t('downloads.play')"
-                @click="playDownload(t)"
-              >
-                <Play :size="14" />
-              </button>
-              <button
-                v-if="t.status === 'completed' && t.outputPath"
-                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-                :title="$t('downloads.copyPath')"
-                @click="copyPath(t.outputPath)"
-              >
-                <Copy :size="14" />
-              </button>
-              <button
-                v-if="t.status === 'completed' && t.outputPath"
-                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-                :title="$t('downloads.openFolder')"
-                @click="openFolder(t.outputPath)"
-              >
-                <FolderOpen :size="14" />
-              </button>
-              <button
-                v-if="t.status === 'completed' && t.outputPath"
-                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-                :title="$t('downloads.editMetadata')"
-                @click="openMetaEditor(t)"
-              >
-                <Pencil :size="14" />
-              </button>
-              <button
-                v-if="t.inLibrary"
-                class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-primary/10 text-primary text-[11px] font-medium hover:bg-primary hover:text-primary-content transition-colors shrink-0"
-                :title="$t('downloads.inLibraryTitle')"
-                @click="openLibrary(t)"
-              >
-                <Library :size="11" />
-                {{ $t('downloads.inLibrary') }}
-              </button>
-              <button
-                v-if="t.status === 'downloading'"
-                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-                :title="$t('downloads.pause')"
-                @click="yt.pauseDownload(t.id)"
-              >
-                <Pause :size="14" />
-              </button>
-              <button
-                v-if="t.status === 'paused'"
-                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-base-content/10 transition-colors"
-                :title="$t('downloads.resume')"
-                @click="yt.resumeDownload(t.id)"
-              >
-                <Play :size="14" />
-              </button>
-              <button
-                v-if="t.status === 'pending'"
-                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-base-content/10 transition-colors"
-                :title="$t('downloads.moveToFront')"
-                @click="yt.moveToFront(t.id)"
-              >
-                <ArrowUpToLine :size="14" />
-              </button>
-              <button
-                v-if="t.status === 'pending'"
-                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-                :title="$t('downloads.moveUp')"
-                @click="yt.move(t.id, -1)"
-              >
-                <ArrowUp :size="14" />
-              </button>
-              <button
-                v-if="t.status === 'pending'"
-                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-                :title="$t('downloads.moveDown')"
-                @click="yt.move(t.id, 1)"
-              >
-                <ArrowDown :size="14" />
-              </button>
-              <button
-                v-if="t.status === 'downloading' || t.status === 'pending'"
-                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-error hover:bg-base-content/10 transition-colors"
-                :title="$t('downloads.cancel')"
-                @click="yt.cancelDownload(t.id)"
-              >
-                <X :size="14" />
-              </button>
-              <button
-                v-if="t.status === 'paused'"
-                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-error hover:bg-base-content/10 transition-colors"
-                :title="$t('downloads.cancel')"
-                @click="yt.cancelDownload(t.id)"
-              >
-                <X :size="14" />
-              </button>
-              <button
-                v-if="t.status === 'error' || t.status === 'cancelled'"
-                class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-                :title="$t('downloads.retry')"
-                @click="yt.retryDownload(t)"
-              >
-                <RotateCcw :size="14" />
-              </button>
-            </div>
+            <DownloadRowActions
+              :task="t"
+              @play="playDownload(t)"
+              @copy-path="copyPath(t.outputPath)"
+              @open-folder="openFolder(t.outputPath)"
+              @edit-meta="openMetaEditor(t)"
+              @open-library="openLibrary(t)"
+            />
           </div>
 
           <div
@@ -558,57 +437,13 @@ const colors = {
       </div>
     </div>
 
-    <Teleport to="body">
-      <div
-        v-if="metaTarget"
-        class="fixed inset-0 z-9999 bg-neutral/50 flex items-center justify-center"
-        @click.self="closeMetaEditor"
-      >
-        <div
-          class="bg-base-100 border border-base-300 rounded-box w-80 max-w-[92vw] shadow-2xl overflow-hidden"
-        >
-          <div class="flex items-center justify-between px-4 py-3 border-b border-base-300">
-            <h3 class="text-sm font-semibold">{{ $t('downloads.editMetadata') }}</h3>
-            <button
-              class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-              @click="closeMetaEditor"
-            >
-              <X :size="16" />
-            </button>
-          </div>
-          <div class="px-4 py-4 space-y-3">
-            <input
-              v-model="metaArtist"
-              class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
-              :placeholder="$t('youtube.metaArtist')"
-            />
-            <input
-              v-model="metaAlbum"
-              class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
-              :placeholder="$t('youtube.metaAlbum')"
-            />
-            <input
-              v-model="metaYear"
-              class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
-              :placeholder="$t('youtube.metaYear')"
-            />
-          </div>
-          <div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-base-300">
-            <button
-              class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
-              @click="closeMetaEditor"
-            >
-              {{ $t('common.cancel') }}
-            </button>
-            <button
-              class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors"
-              @click="saveMeta"
-            >
-              {{ $t('common.save') }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <DownloadMetaDialog
+      v-model:artist="metaArtist"
+      v-model:album="metaAlbum"
+      v-model:year="metaYear"
+      :open="!!metaTarget"
+      @close="closeMetaEditor"
+      @save="saveMeta"
+    />
   </div>
 </template>
