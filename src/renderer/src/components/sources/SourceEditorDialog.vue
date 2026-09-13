@@ -14,6 +14,7 @@ import {
   randomId
 } from './endpointDraft';
 import type { MediaSource, SourceAuthType, SourceEndpoint } from '@renderer/types/sources';
+import { buildSourceAuth, syncEndpointChain } from '@renderer/utils/sourceEditor';
 
 const { t } = useI18n();
 
@@ -135,18 +136,7 @@ function levelOptions(idx: number): Array<{ id: string; label: string }> {
 }
 
 function syncChain() {
-  const ids = new Set(draft.endpoints.map((e) => e.id));
-  for (let i = 0; i < draft.endpoints.length; i++) {
-    const ep = draft.endpoints[i];
-    const next = draft.endpoints[i + 1]?.id || '';
-    if (ep.type === 'page') {
-      const cur = ep.tableChildId;
-      ep.tableChildId = cur && ids.has(cur) ? cur : next;
-    } else {
-      const cur = ep.childId;
-      ep.childId = cur && ids.has(cur) ? cur : next;
-    }
-  }
+  syncEndpointChain(draft.endpoints);
 }
 
 function addLevel() {
@@ -160,18 +150,7 @@ function removeLevel(idx: number) {
 }
 
 function buildAuth() {
-  if (draft.authType === 'none') return { type: 'none' as const };
-  const base = { type: draft.authType, apiKeyId: draft.apiKeyId || undefined } as {
-    type: SourceAuthType;
-    apiKeyId?: string;
-    headerName?: string;
-    queryParam?: string;
-  };
-  if (draft.authType === 'apikey') {
-    base.headerName = draft.headerName.trim() || undefined;
-    base.queryParam = draft.queryParam.trim() || undefined;
-  }
-  return base;
+  return buildSourceAuth(draft);
 }
 
 function buildSource(): MediaSource | null {

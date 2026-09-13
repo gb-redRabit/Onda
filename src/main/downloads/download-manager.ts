@@ -14,12 +14,10 @@ import { getYtAuthConfig, cleanupYtAuthTemp } from '../youtube-auth';
 import { buildYtArgs, type YtAuthConfig } from '../ipc/youtube-utils';
 import { resolveProvider } from '../../shared/provider';
 import { getStore } from '../ipc/cover-cache';
-import { normalizeCoverSpec, buildThumbnailArgs, buildSectionArgs } from './cover-spec';
+import { normalizeCoverSpec } from './cover-spec';
 import {
   type Job,
-  mapFilenameTemplate,
   parseYtDlpProgress,
-  buildFormatSelector,
   resolveOutputDir,
   outputExtensions,
   formatBytes,
@@ -31,9 +29,9 @@ import { syncDownloadToLibrary } from './library-sync';
 import { addToChannelPlaylist } from './channel-playlist';
 import { classifyYtDlpError, describeError, redactSecrets } from './error-classifier';
 import { sha256File } from './hash-file';
-import { buildSubtitleArgs } from './subtitle-args';
 import { findSiblingSubtitleFiles, moveSubtitlesToFolder } from './subtitle-files';
-import { buildSponsorBlockArgs } from './sponsorblock';
+import { buildBaseArgs } from './download-args';
+import { snapshotDownloadTask } from './download-snapshot';
 import { isWithinWindow } from './schedule';
 import {
   loadPersistedJobs,
@@ -42,7 +40,6 @@ import {
   queueFilePath
 } from './download-queue-store';
 import { isSafeAbsolutePath } from '../utils/validate';
-import { readProxyArgs, readSpeedLimitArgs } from '../ipc/proxy-utils';
 import { addAllowedRoot } from '../media-server';
 import { resolveFinalOutputPath, findNewestOutput } from './output-path';
 import { downloadHttpFile } from './http-downloader';
@@ -55,13 +52,6 @@ const MAX_STDERR_BYTES = 64 * 1024;
 const DOWNLOAD_TIMEOUT_MS = 30 * 60 * 1000;
 const DEFAULT_RETRY_ATTEMPTS = 3;
 const DEFAULT_RETRY_BASE_MS = 1500;
-
-const AUDIO_QUALITY_MAP: Record<string, string> = {
-  best: '0',
-  high: '2',
-  medium: '5',
-  low: '9'
-};
 
 const jobs = new Map<string, Job>();
 const queueOrder: string[] = [];
@@ -79,7 +69,7 @@ const PERSISTABLE_STATUSES = new Set(['pending', 'paused', 'downloading', 'error
 
 function collectPersistableJobs(): IpcDownloadTask[] {
   return capPersistedJobs(
-    [...jobs.values()].map(snapshot).filter((j) => PERSISTABLE_STATUSES.has(j.status))
+    [...jobs.values()].map(snapshotDownloadTask).filter((j) => PERSISTABLE_STATUSES.has(j.status))
   );
 }
 
@@ -146,56 +136,11 @@ function reportCompleted(job: Job): void {
   }
 }
 
-function snapshot(task: IpcDownloadTask): IpcDownloadTask {
-  return {
-    id: task.id,
-    url: task.url,
-    title: task.title,
-    thumbnail: task.thumbnail,
-    kind: task.kind,
-    format: task.format,
-    quality: task.quality,
-    outputDir: task.outputDir,
-    filenameTemplate: task.filenameTemplate,
-    progress: task.progress,
-    speed: task.speed,
-    eta: task.eta,
-    status: task.status,
-    error: task.error,
-    errorCode: task.errorCode,
-    startedAt: task.startedAt,
-    completedAt: task.completedAt,
-    outputPath: task.outputPath,
-    videoId: task.videoId,
-    channelId: task.channelId,
-    channelTitle: task.channelTitle,
-    playlistTitle: task.playlistTitle,
-    cover: task.cover,
-    coverStatus: task.coverStatus,
-    metaOverride: task.metaOverride,
-    inLibrary: task.inLibrary,
-    fileHash: task.fileHash,
-    subsLangs: task.subsLangs,
-    subsFormat: task.subsFormat,
-    subsMode: task.subsMode,
-    subsFolder: task.subsFolder,
-    subtitleStatus: task.subtitleStatus,
-    audioQuality: task.audioQuality,
-    audioLanguage: task.audioLanguage,
-    videoContainer: task.videoContainer,
-    sponsorBlock: task.sponsorBlock,
-    trimStart: task.trimStart,
-    trimEnd: task.trimEnd,
-    addToLibrary: task.addToLibrary,
-    source: task.source
-  };
-}
-
 const knownStatuses = new Map<string, string>();
 const jobAbortControllers = new Map<string, AbortController>();
 
 function persist(job: Job): void {
-  const copy = snapshot(job);
+  const copy = snapshotDownloadTask(job);
   const prev = knownStatuses.get(job.id);
   jobs.set(job.id, { ...job, ...copy });
   // Persist to disk only on status transitions (progress ticks do not change
@@ -437,104 +382,6 @@ async function runHttpAttempt(
 // Builds the yt-dlp argument list (without bin/auth) for a job: output dir and
 // template, format selector, subtitles, proxy and speed limit. May mutate
 // job.cover (native audio drops thumbnail embedding) and job.coverStatus.
-async function buildBaseArgs(job: Job): Promise<string[]> {
-  const dir = resolveOutputDir(job);
-  await mkdir(dir, { recursive: true });
-  // The media server only knows library folders + explicitly opened files.
-  // A download into any other folder (e.g. default Downloads) would get 403 on
-  // cover/playback requests, so grant access to the output dir up front — the
-  // audio file and its animated-cover sibling land here.
-  void addAllowedRoot(dir);
-  const outputTemplate = join(dir, `${mapFilenameTemplate(job.filenameTemplate)}.%(ext)s`);
-  // Guard against option injection: a URL starting with "-" would be parsed
-  // as a yt-dlp flag.  Prepend "--" to end the options list, then validate.
-  if (!job.url.startsWith('https://') && !job.url.startsWith('http://')) {
-    throw new Error(`Invalid download URL: rejected non-http(s) scheme`);
-  }
-  const base: string[] = [
-    '--newline',
-    '--no-playlist',
-    '--no-warnings',
-    '--continue',
-    '-o',
-    outputTemplate
-  ];
-  if (job.kind === 'audio') {
-    if (job.format === 'best') {
-      // Native: keep the best available audio stream without re-encoding.
-      base.push('-f', buildFormatSelector(job.quality, 'audio'));
-      // Thumbnail embedding requires a container conversion; skip it for
-      // native audio (frame/clip covers are still processed afterwards).
-      if (job.cover?.type === 'thumbnail') job.cover = undefined;
-    } else {
-      base.push(
-        '--extract-audio',
-        '--audio-format',
-        job.format,
-        '--audio-quality',
-        AUDIO_QUALITY_MAP[job.audioQuality || 'best'] || '0',
-        '--embed-metadata',
-        '--embed-chapters'
-      );
-      if (job.cover?.type === 'thumbnail') {
-        base.push(...buildThumbnailArgs());
-        job.coverStatus = 'fetching';
-      }
-    }
-  } else {
-    base.push(
-      '-f',
-      buildFormatSelector(job.quality, 'video'),
-      '--merge-output-format',
-      job.videoContainer || 'mp4',
-      '--embed-metadata',
-      '--embed-chapters'
-    );
-    if (job.cover?.type === 'thumbnail') {
-      if (job.videoContainer === 'webm') {
-        // WebM has no attached cover-art support — drop the thumbnail request.
-        job.cover = undefined;
-      } else {
-        base.push(...buildThumbnailArgs());
-        job.coverStatus = 'fetching';
-      }
-    }
-  }
-  if (job.audioLanguage) {
-    base.push('--audio-language', job.audioLanguage);
-  }
-  base.push(...buildSponsorBlockArgs(job.sponsorBlock));
-  if (job.source?.headers) {
-    for (const [name, value] of Object.entries(job.source.headers)) {
-      if (!name || !value) continue;
-      base.push('--add-header', `${name}: ${value}`);
-    }
-  }
-  if (
-    typeof job.trimStart === 'number' &&
-    typeof job.trimEnd === 'number' &&
-    job.trimEnd > job.trimStart
-  ) {
-    base.push(...buildSectionArgs(job.trimStart, job.trimEnd));
-  }
-  if (job.subsLangs) {
-    logger.info('downloads', `subtitle download enabled for ${job.id} (langs=${job.subsLangs})`);
-    base.push(
-      ...buildSubtitleArgs({
-        langs: job.subsLangs,
-        format: job.subsFormat,
-        mode: job.subsMode,
-        kind: job.kind,
-        embed: job.kind === 'video'
-      })
-    );
-  }
-  base.push(...(await readProxyArgs()));
-  base.push(...(await readSpeedLimitArgs()));
-  base.push('--', job.url);
-  return base;
-}
-
 // Runs a single yt-dlp process for the job. Resolves with whether the download
 // finished successfully and (on failure) the classified error code.
 async function runJobAttempt(
@@ -940,7 +787,7 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
     };
     jobs.set(job.id, job);
     if (job.status === 'pending') queueOrder.push(job.id);
-    created.push(snapshot(job));
+    created.push(snapshotDownloadTask(job));
   }
   if (created.length || replaced) markQueueDirty();
   void pump();
@@ -1089,7 +936,7 @@ export function moveDownload(id: string, direction: -1 | 1): boolean {
 }
 
 export function listDownloadJobs(): IpcDownloadTask[] {
-  return [...jobs.values()].map(snapshot);
+  return [...jobs.values()].map(snapshotDownloadTask);
 }
 
 // Snapshots the persistable jobs (pending/paused/downloading/error) for export.
