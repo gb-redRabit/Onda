@@ -1,17 +1,11 @@
 ﻿import { ipcMain, BrowserWindow, app } from 'electron';
-import { join } from 'path';
-import { is } from '@electron-toolkit/utils';
 import type { PipManager } from './pip-manager';
 import type { AudioPipManager } from './audio-pip-manager';
 import type { AudioPipDock, AudioPipElementId } from '../shared/types/pip';
 import { logger } from '../shared/logger';
-import { installNavigationGuard } from './navigation-guard';
-import { pipWindowIcon } from './pip-icon';
 import { setCloseToTray } from './close-behavior';
 import { createExplorerWindow, getExplorerWindows } from './explorer-windows';
-
-let imageViewerWindow: BrowserWindow | null = null;
-let imageViewerData: { files: unknown[]; index: number } | null = null;
+import { closeImageViewer, getImageViewerData, openImageViewer } from './image-viewer-window';
 
 export function registerWindowHandlers(context: {
   getMainWindow: () => BrowserWindow | null;
@@ -26,63 +20,15 @@ export function registerWindowHandlers(context: {
   const { getMainWindow, preFullscreenBounds, pipManager, audioPipManager } = context;
 
   ipcMain.handle('imageViewer:open', (_event, files: unknown[], index: number) => {
-    imageViewerData = { files, index };
-    if (imageViewerWindow && !imageViewerWindow.isDestroyed()) {
-      imageViewerWindow.webContents.send('imageViewer:files', imageViewerData);
-      imageViewerWindow.focus();
-      return imageViewerWindow.id;
-    }
-    imageViewerWindow = new BrowserWindow({
-      width: 1200,
-      height: 800,
-      minWidth: 600,
-      minHeight: 400,
-      show: false,
-      frame: false,
-      titleBarStyle: 'hidden',
-      title: 'Image Viewer',
-      backgroundColor: '#0f0f17',
-      fullscreen: true,
-      fullscreenable: true,
-      icon: pipWindowIcon(),
-      webPreferences: {
-        preload: join(__dirname, '../preload/index.js'),
-        sandbox: true,
-        contextIsolation: true,
-        nodeIntegration: false,
-        webSecurity: true
-      }
-    });
-    imageViewerWindow.setMenuBarVisibility(false);
-    imageViewerWindow.on('ready-to-show', () => {
-      imageViewerWindow?.show();
-      imageViewerWindow?.focus();
-      imageViewerWindow?.moveTop();
-      imageViewerWindow?.setFullScreen(true);
-      imageViewerWindow?.setAlwaysOnTop(true);
-      setTimeout(() => imageViewerWindow?.setAlwaysOnTop(false), 100);
-    });
-    imageViewerWindow.on('closed', () => {
-      imageViewerWindow = null;
-    });
-    installNavigationGuard(imageViewerWindow);
-    const hash = '/image-viewer';
-    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      void imageViewerWindow.loadURL(process.env['ELECTRON_RENDERER_URL'] + '#' + hash);
-    } else {
-      void imageViewerWindow.loadFile(join(__dirname, '../renderer/index.html'), { hash });
-    }
-    return imageViewerWindow.id;
+    return openImageViewer(files, index);
   });
 
   ipcMain.handle('imageViewer:getData', () => {
-    return imageViewerData;
+    return getImageViewerData();
   });
 
   ipcMain.handle('imageViewer:close', () => {
-    if (imageViewerWindow && !imageViewerWindow.isDestroyed()) {
-      imageViewerWindow.close();
-    }
+    closeImageViewer();
   });
 
   ipcMain.handle('explorer:create', async (_event, path?: string) => {
