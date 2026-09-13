@@ -181,12 +181,15 @@ const viewContext = computed<string[]>(() => {
 });
 
 const depsText = computed(() => {
-  const installed = Object.values(settings.dependencies).filter((d) => d.installed && d.version);
-  if (!installed.length) return '';
-  return installed
+  const outdated = Object.values(settings.dependencies).filter(
+    (d) => d.installed && d.updateAvailable
+  );
+  if (!outdated.length) return '';
+  const list = outdated
     .sort((a, b) => a.name.localeCompare(b.name))
-    .map((d) => `${d.name} ${d.version}`)
+    .map((d) => `${d.name} ${d.latestVersion || ''}`.trim())
     .join(', ');
+  return `↑ ${list}`;
 });
 
 function toggleSection(id: StatusBarSectionId) {

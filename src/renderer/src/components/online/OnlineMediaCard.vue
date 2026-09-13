@@ -17,6 +17,7 @@ import { formatNumber } from '@renderer/utils/formatters';
 import { useOnlineStore } from '@renderer/stores/online';
 import { useSavedStore } from '@renderer/stores/saved';
 import { useUIStore } from '@renderer/stores/ui';
+import { observeIntersection } from '@renderer/utils/sharedIntersection';
 import YtEmbedPlayer from './YtEmbedPlayer.vue';
 import OnlineIconButton from './OnlineIconButton.vue';
 import type { YouTubeVideo, YouTubeResolvedItem } from '@renderer/types/online';
@@ -130,28 +131,26 @@ function onToggleSave() {
 }
 
 const rootEl = ref<HTMLElement | null>(null);
-let visibilityObserver: IntersectionObserver | null = null;
+let stopObserve: (() => void) | null = null;
 let hoverTimer: number | undefined;
 
 // Prefetch the stream URL (yt-dlp resolve + proxy warm-up) as soon as the card
-// is about to become visible, so a click uses the cached URL instantly instead
-// of waiting ~6s for yt-dlp.
+// is about to become visible. Uses the app-wide shared observer — a playlist of
+// hundreds of cards would otherwise create one IntersectionObserver per card.
 onMounted(() => {
-  if (!isPlayable.value) return;
-  visibilityObserver = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        if (entry.isIntersecting) {
-          visibilityObserver?.unobserve(entry.target);
-          // Small delay so fast scrolling through a grid doesn't fire all
-          // resolves at once (prefetchStream caps in-flight requests too).
-          setTimeout(() => useOnlineStore().prefetchStream(props.video), 600);
-        }
-      }
+  if (!isPlayable.value || !rootEl.value) return;
+  stopObserve = observeIntersection(
+    rootEl.value,
+    (isIntersecting) => {
+      if (!isIntersecting) return;
+      stopObserve?.();
+      stopObserve = null;
+      // Small delay so fast scrolling through a grid doesn't fire all resolves
+      // at once (prefetchStream caps in-flight requests too).
+      setTimeout(() => useOnlineStore().prefetchStream(props.video), 600);
     },
-    { rootMargin: '300px' }
+    '300px'
   );
-  if (rootEl.value) visibilityObserver.observe(rootEl.value);
 });
 
 // Hover = intent: prefetch with a short debounce so a quick mouse pass-over
@@ -165,7 +164,7 @@ function onMouseEnter() {
 
 onBeforeUnmount(() => {
   window.clearTimeout(hoverTimer);
-  visibilityObserver?.disconnect();
+  stopObserve?.();
 });
 </script>
 

@@ -75,7 +75,12 @@ export const useExplorerStore = defineStore('explorer', () => {
   const canGoUp = computed(() => currentPath.value !== '' && !isAtDrives.value);
   const selectedCount = computed(() => selectedFiles.value.size);
 
-  const sortedFiles = computed(() => sortFiles(files.value, sortBy.value, sortOrder.value));
+  // During a batched load don't re-sort on every batch (O(n² log n) for large
+  // dirs). Show the raw order while loading and sort once when it finishes (or
+  // whenever the sort order changes outside a load) — plan 1.5.
+  const sortedFiles = computed(() =>
+    isLoading.value ? files.value : sortFiles(files.value, sortBy.value, sortOrder.value)
+  );
 
   function navigateTo(path: string) {
     currentPath.value = path;

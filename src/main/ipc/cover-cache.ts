@@ -1,12 +1,12 @@
 import { stat, readFile, writeFile, mkdir, unlink } from 'fs/promises';
-import { join, extname, basename, dirname } from 'path';
+import { join, extname } from 'path';
 import { createHash, randomBytes, createCipheriv, createDecipheriv, pbkdf2Sync } from 'crypto';
-import { statSync } from 'fs';
 import { parseFile } from 'music-metadata';
 import sharp from 'sharp';
 import os from 'os';
 import { app } from 'electron';
 import { AUDIO_EXTS, VIDEO_EXTS } from '../../shared/constants';
+import { evictCache, hashPath, uniqueId, findSiblingVideo, isEnoent } from './cover-cache-helpers';
 import { runCommand } from '../utils/exec';
 import { resolveBin } from '../binaries';
 import { logger } from '../../shared/logger';
@@ -176,17 +176,6 @@ const coverCacheLocks = new Map<string, Array<() => void>>();
 
 const CACHE_MAX_SIZE = 5000;
 
-function evictCache(map: Map<string, unknown>, maxSize: number): void {
-  if (map.size <= maxSize) return;
-  const toDelete = map.size - maxSize;
-  let i = 0;
-  for (const key of map.keys()) {
-    if (i >= toDelete) break;
-    map.delete(key);
-    i++;
-  }
-}
-
 export function cacheSet<T>(
   map: Map<string, T>,
   key: string,
@@ -199,10 +188,6 @@ export function cacheSet<T>(
 
 export const PERSISTENT_COVER_DIR = join(getTempDir(), 'persistent');
 export const COVER_CACHE_MAP_KEY = 'coverCacheMap';
-
-function hashPath(filePath: string): string {
-  return createHash('md5').update(filePath.toLowerCase()).digest('hex');
-}
 
 async function getPersistentCover(
   filePath: string
@@ -249,23 +234,6 @@ async function savePersistentCover(filePath: string, binary: Buffer, ext: string
   } catch (e) {
     logger.warn('cover', `savePersistentCover failed for ${filePath}`, e);
   }
-}
-
-function uniqueId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-}
-
-function findSiblingVideo(filePath: string): string | null {
-  const ext = extname(filePath).toLowerCase();
-  if (!AUDIO_EXTS.includes(ext)) return null;
-  const dir = dirname(filePath);
-  const name = basename(filePath, ext);
-  for (const vExt of VIDEO_EXTS) {
-    const videoPath = join(dir, name + vExt);
-    const stats = statSync(videoPath, { throwIfNoEntry: false });
-    if (stats) return videoPath;
-  }
-  return null;
 }
 
 async function extractAudioCover(filePath: string): Promise<string | null> {
@@ -367,11 +335,6 @@ function waitForCoverLock(filePath: string): Promise<void> {
 const missingCache = new Map<string, number>();
 const MISSING_TTL = 5 * 60 * 1000;
 
-function isEnoent(e: unknown): boolean {
-  return Boolean(
-    e && typeof e === 'object' && 'code' in e && (e as { code?: string }).code === 'ENOENT'
-  );
-}
 function notifyMissing(filePath: string) {
   try {
     const { BrowserWindow } = require('electron') as typeof import('electron');

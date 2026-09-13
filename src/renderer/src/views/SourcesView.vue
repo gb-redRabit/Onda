@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, nextTick, defineAsyncComponent } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
   Plus,
@@ -21,12 +21,20 @@ import {
 } from '@lucide/vue';
 import { useSourcesStore } from '@renderer/stores/sources';
 import { buildSourceUrl } from '@renderer/utils/sourceUrl';
-import SourceGuideModal from '@renderer/components/sources/SourceGuideModal.vue';
 import type { MediaSource, SourceItem } from '@renderer/types/sources';
 import SourceCard from '@renderer/components/sources/SourceCard.vue';
 import SourcePageView from '@renderer/components/sources/SourcePageView.vue';
-import SourceEditorDialog from '@renderer/components/sources/SourceEditorDialog.vue';
-import SourceDetailModal from '@renderer/components/sources/SourceDetailModal.vue';
+
+// Modals are lazy — only mounted on demand (plan 3.5).
+const SourceGuideModal = defineAsyncComponent(
+  () => import('@renderer/components/sources/SourceGuideModal.vue')
+);
+const SourceEditorDialog = defineAsyncComponent(
+  () => import('@renderer/components/sources/SourceEditorDialog.vue')
+);
+const SourceDetailModal = defineAsyncComponent(
+  () => import('@renderer/components/sources/SourceDetailModal.vue')
+);
 
 const sources = useSourcesStore();
 const { t } = useI18n();

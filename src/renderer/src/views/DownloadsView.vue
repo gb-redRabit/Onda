@@ -199,16 +199,29 @@ const coverStatusClass = (t: { coverStatus?: string }): string => {
   }
 };
 
-const active = computed(() =>
-  yt.downloads.filter(
-    (d) => d.status === 'downloading' || d.status === 'pending' || d.status === 'paused'
-  )
-);
-const done = computed(() => yt.downloads.filter((d) => d.status === 'completed'));
-const failed = computed(() =>
-  yt.downloads.filter((d) => d.status === 'error' || d.status === 'cancelled')
-);
-const pausedCount = computed(() => yt.downloads.filter((d) => d.status === 'paused').length);
+// Single pass over the list instead of four separate filters on every progress
+// event (plan 1.6).
+const grouped = computed(() => {
+  const active: typeof yt.downloads = [];
+  const completed: typeof yt.downloads = [];
+  const failed: typeof yt.downloads = [];
+  let pausedCount = 0;
+  for (const d of yt.downloads) {
+    if (d.status === 'downloading' || d.status === 'pending' || d.status === 'paused') {
+      active.push(d);
+    } else if (d.status === 'completed') {
+      completed.push(d);
+    } else if (d.status === 'error' || d.status === 'cancelled') {
+      failed.push(d);
+    }
+    if (d.status === 'paused') pausedCount++;
+  }
+  return { active, completed, failed, pausedCount };
+});
+const active = computed(() => grouped.value.active);
+const done = computed(() => grouped.value.completed);
+const failed = computed(() => grouped.value.failed);
+const pausedCount = computed(() => grouped.value.pausedCount);
 
 const visible = computed(() => {
   let list: typeof yt.downloads;

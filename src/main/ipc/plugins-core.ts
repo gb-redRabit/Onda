@@ -6,17 +6,35 @@ import type {
   PluginPermissions,
   PluginSettingField
 } from '../../shared/types/ipc';
+import {
+  STORAGE_KEY_RE,
+  MAX_STRING_VALUE_BYTES,
+  validStorageKey,
+  storageSizeBytes,
+  sanitizeStoredObject,
+  compileNetworkPattern,
+  urlAllowed,
+  resolveRedirectUrl
+} from './plugins-guards';
+export {
+  STORAGE_KEY_RE,
+  MAX_STRING_VALUE_BYTES,
+  validStorageKey,
+  storageSizeBytes,
+  sanitizeStoredObject,
+  compileNetworkPattern,
+  urlAllowed,
+  resolveRedirectUrl
+};
 
 export const PLUGIN_ID_RE = /^[a-z0-9\-_.]+$/i;
 export const PLUGIN_ENTRY_RE = /^[a-zA-Z0-9_\-./ ]{1,200}\.js$/;
-export const STORAGE_KEY_RE = /^[a-zA-Z0-9_.\-]{1,64}$/;
 
 export const MAX_MANIFEST_BYTES = 64 * 1024;
 export const MAX_ENTRY_BYTES = 1024 * 1024;
 export const MAX_PLUGINS = 20;
 export const MAX_STORAGE_BYTES = 256 * 1024;
 export const MAX_STORAGE_KEYS = 100;
-export const MAX_STRING_VALUE_BYTES = 4096;
 export const MAX_FETCH_BYTES = 10 * 1024 * 1024;
 export const MAX_FETCH_TEXT_BYTES = 1024 * 1024;
 export const MAX_FETCH_REDIRECTS = 5;
@@ -159,29 +177,6 @@ function sanitizeSettings(value: unknown): PluginSettingField[] | undefined {
   return fields.length > 0 ? fields : undefined;
 }
 
-export function validStorageKey(key: unknown): key is string {
-  return typeof key === 'string' && STORAGE_KEY_RE.test(key);
-}
-
-export function storageSizeBytes(value: unknown): number {
-  try {
-    return Buffer.byteLength(JSON.stringify(value), 'utf-8');
-  } catch {
-    return Number.POSITIVE_INFINITY;
-  }
-}
-
-export function sanitizeStoredObject(raw: unknown): Record<string, unknown> {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
-  const out: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
-    if (!validStorageKey(key)) continue;
-    if (storageSizeBytes(value) > MAX_STRING_VALUE_BYTES) continue;
-    out[key] = value;
-  }
-  return out;
-}
-
 export interface PluginStateFile {
   [id: string]: { enabled?: boolean };
 }
@@ -238,46 +233,4 @@ export async function writeStorageFile(
   const tmp = `${filePath}.tmp`;
   await writeFile(tmp, json, 'utf-8');
   await rename(tmp, filePath).catch(() => writeFile(filePath, json, 'utf-8'));
-}
-
-export function compileNetworkPattern(pattern: string): RegExp | null {
-  if (typeof pattern !== 'string' || pattern.length === 0 || pattern.length > 500) return null;
-  let protocol: string;
-  try {
-    protocol = new URL(pattern).protocol;
-  } catch {
-    return null;
-  }
-  if (protocol !== 'http:' && protocol !== 'https:') return null;
-  const parts = pattern.split('*');
-  const escaped = parts.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*');
-  try {
-    return new RegExp(`^${escaped}`);
-  } catch {
-    return null;
-  }
-}
-
-export function urlAllowed(url: string, patterns: string[]): boolean {
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return false;
-  }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
-  return patterns.some((p) => {
-    const re = compileNetworkPattern(p);
-    return re ? re.test(url) : false;
-  });
-}
-
-export function resolveRedirectUrl(baseUrl: string, location: string): string | null {
-  try {
-    const u = new URL(location, baseUrl);
-    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
-    return u.href;
-  } catch {
-    return null;
-  }
 }

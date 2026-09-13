@@ -1,17 +1,13 @@
 import { dirname, resolve, sep } from 'path';
 import type { MediaFile } from '../../renderer/src/types/media';
 import { getStore } from '../ipc/cover-cache';
+import { loadLibraryScanned, setLibraryScanned } from '../ipc/library-store';
 import { scanDir, classifyFolderType, filterFilesForFolderType } from '../ipc/library-scan';
 import { addLibraryFolder } from '../ipc/library-handlers';
 import { logger } from '../../shared/logger';
 import { broadcastToAllWindows } from '../utils/broadcast';
 
 const MAX_SCANNED_FILES = 50000;
-
-interface LibraryScannedData {
-  files: MediaFile[];
-  folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
-}
 
 function isUnderPath(filePath: string, folder: string): boolean {
   const fp = filePath.toLowerCase();
@@ -72,22 +68,26 @@ export async function syncDownloadToLibrary(
     }
     if (!folder) return { inLibrary: false };
 
-    const result = await scanDir(folder, 8);
-    const folderType = classifyFolderType(result);
-    const filesInLibrary = filterFilesForFolderType(result.files, folderType);
-    const store = await getStore();
-    const data = store.get('libraryScanned', null) as LibraryScannedData | null;
+    // Scan ONLY the folder the download landed in (non-recursive). Rescanning
+    // the whole tree (depth 8) + rewriting the persisted library on every
+    // finished download was the biggest write amplification (plan 1.3).
+    const result = await scanDir(targetDir, 0);
+    const data = await loadLibraryScanned();
     const existing = data && Array.isArray(data.files) ? data.files : [];
     const byPath = new Map(existing.map((f) => [f.path, f]));
-    const fresh = filesInLibrary.filter((f) => !byPath.has(f.path));
-    const files = [...existing, ...fresh];
-    if (files.length > MAX_SCANNED_FILES) files.length = MAX_SCANNED_FILES;
     const folderTypes = { ...(data?.folderTypes || {}) };
-    folderTypes[folder] = folderType;
-    store.set('libraryScanned', structuredClone({ files, folderTypes }));
-    logger.info('library', `post-download scan: +${fresh.length} files in ${folder}`);
-    broadcastToAllWindows('library:updated', { folder, added: fresh.length });
-    const file = filesInLibrary.find((f) => resolve(f.path) === resolve(outputPath));
+    const folderType = folderTypes[folder] ?? classifyFolderType(result);
+    const filesInDir = filterFilesForFolderType(result.files, folderType);
+    const fresh = filesInDir.filter((f) => !byPath.has(f.path));
+    if (fresh.length > 0) {
+      const files = [...existing, ...fresh];
+      if (files.length > MAX_SCANNED_FILES) files.length = MAX_SCANNED_FILES;
+      folderTypes[folder] = folderType;
+      setLibraryScanned({ files, folderTypes });
+      logger.info('library', `post-download scan: +${fresh.length} files in ${folder}`);
+      broadcastToAllWindows('library:updated', { folder, added: fresh.length });
+    }
+    const file = filesInDir.find((f) => resolve(f.path) === resolve(outputPath));
     return { inLibrary: true, folder, file };
   } catch (e) {
     logger.warn('library', 'post-download library sync failed', e);

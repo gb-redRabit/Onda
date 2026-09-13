@@ -8,6 +8,7 @@ import { setAllowedRoots } from '../media-server';
 import { scanDir, classifyFolderType, filterFilesForFolderType } from './library-scan';
 import { broadcastToAllWindows } from '../utils/broadcast';
 import { startLibraryWatcher, setLibraryWatcherScan } from './library-watcher';
+import { loadLibraryScanned, setLibraryScanned, scheduleLibraryScannedSave } from './library-store';
 
 const MAX_SCAN_FOLDERS = 100;
 const MAX_SCANNED_FILES = 50000;
@@ -71,8 +72,7 @@ async function runLibraryScan(
 
   // Load the previous scan so unchanged files can be reused (incremental
   // scan) — this preserves playCount/lastPlayed and avoids re-parsing.
-  const store = await getStore();
-  const prevData = store.get('libraryScanned', null) as { files?: MediaFile[] } | null | undefined;
+  const prevData = await loadLibraryScanned();
   const previous = new Map<string, MediaFile>();
   if (prevData && Array.isArray(prevData.files)) {
     for (const f of prevData.files) {
@@ -119,7 +119,7 @@ async function runLibraryScan(
   // Only persist if the scan completed (not aborted/cancelled).  Aborting
   // mid-scan would write an incomplete list and effectively wipe the library.
   if (!signal.aborted) {
-    store.set('libraryScanned', structuredClone({ files: allFiles, folderTypes }));
+    setLibraryScanned({ files: allFiles, folderTypes });
     if (broadcast) broadcastToAllWindows('library:updated');
   }
 
@@ -189,19 +189,7 @@ export function registerLibraryHandlers(): void {
       folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
     } | null> => {
       try {
-        const store = await getStore();
-        const data = store.get('libraryScanned', null) as {
-          files: MediaFile[];
-          folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
-        } | null;
-        if (
-          data &&
-          typeof data === 'object' &&
-          Array.isArray((data as { files?: unknown }).files)
-        ) {
-          return data;
-        }
-        return null;
+        return await loadLibraryScanned();
       } catch (err) {
         logger.error('library', 'loadScanned failed', err);
         return null;
@@ -219,8 +207,7 @@ export function registerLibraryHandlers(): void {
       }
     ): Promise<void> => {
       try {
-        const store = await getStore();
-        store.set('libraryScanned', data);
+        setLibraryScanned(data);
       } catch (err) {
         logger.error('library', 'saveScanned failed', err);
       }
@@ -239,11 +226,7 @@ export function registerLibraryHandlers(): void {
       );
       if (clean.length === 0) return;
       try {
-        const store = await getStore();
-        const data = store.get('libraryScanned', null) as {
-          files: MediaFile[];
-          folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
-        } | null;
+        const data = await loadLibraryScanned();
         if (!data || !Array.isArray(data.files)) return;
         const byPath = new Map(clean.map((s) => [s.path, s]));
         let changed = false;
@@ -257,7 +240,7 @@ export function registerLibraryHandlers(): void {
             changed = true;
           }
         }
-        if (changed) store.set('libraryScanned', data);
+        if (changed) scheduleLibraryScannedSave();
       } catch (err) {
         logger.error('library', 'updateStats failed', err);
       }

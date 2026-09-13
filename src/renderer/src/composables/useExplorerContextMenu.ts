@@ -8,6 +8,12 @@ import { isLibraryFolder } from '@renderer/utils/libraryFolders';
 import { IMAGE_EXTS, VIDEO_EXTS, AUDIO_EXTS } from '@shared/constants';
 import type { FileItem } from '@renderer/types/explorer';
 import { useContextMenu, type ContextMenuAction } from './useContextMenu';
+import {
+  revealInFolder,
+  openWithDefaultApp,
+  openInTerminal,
+  copyPathViaMain
+} from '@renderer/utils/menuActions';
 
 interface ExplorerActionCtx {
   explorer: ReturnType<typeof useExplorerStore>;
@@ -67,16 +73,16 @@ export function useExplorerContextMenu(ctx: ExplorerActionCtx) {
       },
       {
         label: t('explorer.openInTerminal'),
-        action: () => window.api?.invoke('shell:openTerminal', explorer.currentPath)
+        action: () => openInTerminal(explorer.currentPath)
       },
       { separator: true, label: '', when: () => true },
       {
         label: t('explorer.openWithDefaultApp'),
-        action: () => window.api?.invoke('shell:openWithDefault', explorer.currentPath)
+        action: () => openWithDefaultApp(explorer.currentPath)
       },
       {
         label: t('common.showInFolder'),
-        action: () => window.api?.invoke('shell:showItemInFolder', explorer.currentPath)
+        action: () => revealInFolder(explorer.currentPath)
       },
       { separator: true, label: '', when: () => true },
       ...selectAllDefs()
@@ -171,16 +177,22 @@ export function useExplorerContextMenu(ctx: ExplorerActionCtx) {
     return [
       {
         label: t('explorer.openWithDefaultApp'),
-        action: (c) => c.item && window.api?.invoke('shell:openWithDefault', c.item.path)
+        action: (c) => {
+          if (c.item) openWithDefaultApp(c.item.path);
+        }
       },
       {
         label: t('explorer.copyPath'),
         shortcut: 'Ctrl+C',
-        action: (c) => c.item && window.api?.invoke('fs:copyPath', c.item.path)
+        action: (c) => {
+          if (c.item) copyPathViaMain(c.item.path);
+        }
       },
       {
         label: t('common.showInFolder'),
-        action: (c) => c.item && window.api?.invoke('shell:showItemInFolder', c.item.path)
+        action: (c) => {
+          if (c.item) revealInFolder(c.item.path);
+        }
       }
     ];
   }
@@ -243,7 +255,9 @@ export function useExplorerContextMenu(ctx: ExplorerActionCtx) {
       {
         label: t('explorer.openInTerminal'),
         when: (c) => !!c.item?.isDirectory,
-        action: (c) => c.item && window.api?.invoke('shell:openTerminal', c.item.path)
+        action: (c) => {
+          if (c.item) openInTerminal(c.item.path);
+        }
       },
       ...fileCommonDefs(),
       { separator: true, label: '', when: (c) => c.item != null },

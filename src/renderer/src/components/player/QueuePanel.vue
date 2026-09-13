@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { useVirtualizer } from '@tanstack/vue-virtual';
 import { usePlayerStore } from '@renderer/stores/player';
 import { X, Music2, GripVertical, Trash2 } from '@lucide/vue';
 import { formatDuration } from '@renderer/utils/formatters';
@@ -30,10 +31,22 @@ function fetchDuration(filePath: string): Promise<number> {
 async function loadCovers(tracks: MediaFile[]) {
   // Pre-warm only the nearest chunk — covers for the rest are fetched lazily
   // by each MediaCover's own visibility observer when the row scrolls in.
-  for (const track of tracks.slice(0, 120)) {
+  for (const track of tracks.slice(0, 24)) {
     player.loadCover(track.path);
   }
 }
+
+// Virtualize the queue list — "play all" on a folder can put thousands of rows
+// in here (plan 1.6).
+const queueListRef = ref<HTMLElement | null>(null);
+const queueVirtualizer = useVirtualizer({
+  get count() {
+    return player.displayQueue.length;
+  },
+  getScrollElement: () => queueListRef.value,
+  estimateSize: () => 52,
+  overscan: 8
+});
 
 watch(
   () => player.displayQueue,
@@ -188,45 +201,59 @@ function onFileDrop(e: DragEvent) {
       <p class="text-[10px] text-base-content/50 mt-1">{{ $t('queue.dropHint') }}</p>
     </div>
 
-    <!-- queue list with drag & drop -->
-    <div v-else class="flex-1 overflow-auto">
-      <div class="py-1">
+    <!-- queue list with drag & drop (virtualized) -->
+    <div v-else ref="queueListRef" class="flex-1 overflow-auto">
+      <div
+        class="py-1"
+        :style="{ height: queueVirtualizer.getTotalSize() + 'px', position: 'relative' }"
+      >
         <div
-          v-for="(track, i) in player.displayQueue"
-          :key="i"
-          class="flex items-center gap-2 px-4 py-2 hover:bg-base-content/10 transition-colors group cursor-pointer"
-          :class="{ 'border-t-2 border-primary': dragOverIndex === i }"
-          draggable="true"
-          @dragstart="onDragStart($event, i)"
-          @dragover="onDragOver($event, i)"
-          @dragleave="onDragLeave"
-          @drop="onDrop($event, i)"
-          @click="player.setTrack(track)"
+          v-for="v in queueVirtualizer.getVirtualItems()"
+          :key="'q-' + v.key"
+          :style="{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: v.size + 'px',
+            transform: 'translateY(' + v.start + 'px)'
+          }"
         >
-          <GripVertical
-            :size="12"
-            class="text-base-content/40 shrink-0 opacity-0 group-hover:opacity-100 cursor-grab"
-          />
           <div
-            class="w-8 h-8 rounded-field bg-neutral flex items-center justify-center shrink-0 overflow-hidden"
+            class="flex items-center gap-2 px-4 py-2 hover:bg-base-content/10 transition-colors group cursor-pointer"
+            :class="{ 'border-t-2 border-primary': dragOverIndex === v.index }"
+            draggable="true"
+            @dragstart="onDragStart($event, v.index)"
+            @dragover="onDragOver($event, v.index)"
+            @dragleave="onDragLeave"
+            @drop="onDrop($event, v.index)"
+            @click="player.setTrack(player.displayQueue[v.index])"
           >
-            <MediaCover :path="track.path" :size="12" fallback="music" />
+            <GripVertical
+              :size="12"
+              class="text-base-content/40 shrink-0 opacity-0 group-hover:opacity-100 cursor-grab"
+            />
+            <div
+              class="w-8 h-8 rounded-field bg-neutral flex items-center justify-center shrink-0 overflow-hidden"
+            >
+              <MediaCover :path="player.displayQueue[v.index].path" :size="12" fallback="music" />
+            </div>
+            <TrackInfo
+              :track="player.displayQueue[v.index]"
+              class="min-w-0 flex-1"
+              titleSize="text-sm"
+              artistSize="text-[11px]"
+            />
+            <span class="text-[11px] text-base-content/50 font-mono shrink-0">{{
+              formatDuration(player.displayQueue[v.index].duration || 0)
+            }}</span>
+            <button
+              class="fx-noise p-1 fx-depth rounded-field opacity-0 group-hover:opacity-100 text-base-content/50 hover:text-error transition-all"
+              @click.stop="player.removeFromQueue(v.index)"
+            >
+              <Trash2 :size="12" />
+            </button>
           </div>
-          <TrackInfo
-            :track="track"
-            class="min-w-0 flex-1"
-            titleSize="text-sm"
-            artistSize="text-[11px]"
-          />
-          <span class="text-[11px] text-base-content/50 font-mono shrink-0">{{
-            formatDuration(track.duration || 0)
-          }}</span>
-          <button
-            class="fx-noise p-1 fx-depth rounded-field opacity-0 group-hover:opacity-100 text-base-content/50 hover:text-error transition-all"
-            @click.stop="player.removeFromQueue(i)"
-          >
-            <Trash2 :size="12" />
-          </button>
         </div>
       </div>
     </div>

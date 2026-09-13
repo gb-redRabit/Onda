@@ -32,16 +32,31 @@ const likedTracks = computed(() => {
 
 const recentTracks = computed(() => library.recentTracks.slice(0, 6) as MediaFile[]);
 const mostPlayed = computed(() => library.mostPlayed.slice(0, 6) as MediaFile[]);
-const newest = computed(() =>
-  [...library.audioTracks].sort((a, b) => b.addedAt - a.addedAt).slice(0, 6)
-);
-const randomTracks = computed(() => {
-  const arr = [...library.audioTracks];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+// Partial selection of the 6 newest + reservoir sampling — avoids sorting /
+// copying the whole library on every change (plan 1.8).
+const OVERVIEW_N = 6;
+const newest = computed(() => {
+  const arr = library.audioTracks;
+  const top: MediaFile[] = [];
+  for (const tr of arr) {
+    let i = 0;
+    while (i < top.length && top[i].addedAt >= tr.addedAt) i++;
+    if (i < OVERVIEW_N) {
+      top.splice(i, 0, tr);
+      if (top.length > OVERVIEW_N) top.pop();
+    }
   }
-  return arr.slice(0, 6);
+  return top;
+});
+const randomTracks = computed(() => {
+  const arr = library.audioTracks;
+  if (arr.length <= OVERVIEW_N) return [...arr];
+  const res: MediaFile[] = arr.slice(0, OVERVIEW_N);
+  for (let i = OVERVIEW_N; i < arr.length; i++) {
+    const j = Math.floor(Math.random() * (i + 1));
+    if (j < OVERVIEW_N) res[j] = arr[i];
+  }
+  return res;
 });
 
 function playAll(tracks: MediaFile[]) {

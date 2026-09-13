@@ -8,6 +8,7 @@ import { snapshotTrack } from '@renderer/stores/plugins';
 import type { PluginHookPayload } from '@renderer/modules/plugins/plugin-shim';
 import { dirname } from '@renderer/utils/path';
 import { useContextMenu, type ContextMenuAction } from './useContextMenu';
+import { revealInFolder, copyPathToClipboard } from '@renderer/utils/menuActions';
 
 interface TrackCtx {
   track: MediaFile;
@@ -126,7 +127,7 @@ export function useLibraryContextMenu() {
       },
       {
         label: t('common.showInFolder'),
-        action: (c) => window.api?.invoke('shell:showItemInFolder', c.track.path)
+        action: (c) => revealInFolder(c.track.path)
       },
       {
         label: t('ctx.showInExplorer'),
@@ -134,7 +135,7 @@ export function useLibraryContextMenu() {
       },
       {
         label: t('explorer.copyPath'),
-        action: (c) => navigator.clipboard?.writeText(c.track.path)
+        action: (c) => copyPathToClipboard(c.track.path)
       },
       ...playlistDefs(track),
       ...pluginTrackMenu(track)
@@ -210,11 +211,11 @@ export function useLibraryContextMenu() {
       },
       {
         label: t('common.showInFolder'),
-        action: () => window.api?.invoke('shell:showItemInFolder', folderPath)
+        action: () => revealInFolder(folderPath)
       },
       {
         label: t('explorer.copyPath'),
-        action: () => navigator.clipboard?.writeText(folderPath)
+        action: () => copyPathToClipboard(folderPath)
       }
     ];
     open(e, defs, { folderPath, tracks });
@@ -232,11 +233,11 @@ export function useLibraryContextMenu() {
       },
       {
         label: t('common.showInFolder'),
-        action: (c) => window.api?.invoke('shell:showItemInFolder', c.file.path)
+        action: (c) => revealInFolder(c.file.path)
       },
       {
         label: t('explorer.copyPath'),
-        action: (c) => navigator.clipboard?.writeText(c.file.path)
+        action: (c) => copyPathToClipboard(c.file.path)
       }
     ];
     open(e, defs, { file, onOpen });

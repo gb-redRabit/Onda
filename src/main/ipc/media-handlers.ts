@@ -320,6 +320,33 @@ export function registerMediaHandlers(): void {
     }
   });
 
+  // Batched duration lookup (plan 1.7): bulk queueing used to fire one IPC call
+  // per track. Bounded concurrency keeps the main process from spawning hundreds
+  // of parses at once.
+  ipcMain.handle(
+    'media:batchDurations',
+    async (_event, paths: string[]): Promise<Record<string, number>> => {
+      const out: Record<string, number> = {};
+      if (!Array.isArray(paths)) return out;
+      const safe = paths
+        .filter((p): p is string => typeof p === 'string' && isSafeAbsolutePath(p))
+        .slice(0, 2000);
+      let cursor = 0;
+      const workers = Array.from({ length: Math.min(8, safe.length) }, async () => {
+        while (cursor < safe.length) {
+          const p = safe[cursor++];
+          try {
+            out[p] = await getDuration(p);
+          } catch {
+            out[p] = 0;
+          }
+        }
+      });
+      await Promise.all(workers);
+      return out;
+    }
+  );
+
   ipcMain.handle('coverCache:clear', async () => {
     try {
       const r = await clearCoverCache();

@@ -65,15 +65,56 @@ function directTracksInDir(dir: string) {
   if (!q) return all;
   return all.filter((t) => t.name.toLowerCase().includes(q) || t.path.toLowerCase().includes(q));
 }
-function directTracksForChild(name: string) {
-  return directTracksInDir(childOriginal(name));
-}
 const directHere = computed(() => directTracksInDir(props.dir));
 const directAudioHere = computed(() => directHere.value.filter((t) => t.type !== 'image'));
 const directImagesHere = computed(() => directHere.value.filter((t) => t.type === 'image'));
 
 const audioDisplayLimit = ref(50);
 const imageDisplayLimit = ref(24);
+
+// Everything the row/template needs for a child folder, computed once per child
+// instead of filtering/reducing the subtree 3–5× per render (see plan 1.1).
+interface DirChildMeta {
+  subtree: MediaFile[];
+  audio: MediaFile[];
+  audioCount: number;
+  duration: number;
+  directAll: MediaFile[];
+  directAudio: MediaFile[];
+  directImages: MediaFile[];
+}
+const EMPTY_CHILD_META: DirChildMeta = {
+  subtree: [],
+  audio: [],
+  audioCount: 0,
+  duration: 0,
+  directAll: [],
+  directAudio: [],
+  directImages: []
+};
+const childMeta = computed(() => {
+  const map: Record<string, DirChildMeta> = {};
+  for (const name of childDirNames.value) {
+    const subtree = tracksInChild(name);
+    const audio = subtree.filter((t) => t.type !== 'image');
+    let duration = 0;
+    for (const t of audio) duration += t.duration || 0;
+    const directAll = directTracksInDir(childOriginal(name));
+    map[name] = {
+      subtree,
+      audio,
+      audioCount: audio.length,
+      duration,
+      directAll,
+      directAudio: directAll.filter((t) => t.type !== 'image'),
+      directImages: directAll.filter((t) => t.type === 'image')
+    };
+  }
+  return map;
+});
+function metaFor(name: string): DirChildMeta {
+  return childMeta.value[name] ?? EMPTY_CHILD_META;
+}
 watch(
   () => props.query + '|' + directHere.value.length,
   () => {
@@ -114,9 +155,7 @@ watch(
 );
 
 function folderTracksFor(name: string) {
-  return tracksInChild(name)
-    .filter((t) => t.type !== 'image')
-    .slice(0, 4);
+  return metaFor(name).audio.slice(0, 4);
 }
 function onFolderDrag(e: DragEvent, folderPath: string) {
   const tracks = getAllTracksIndexed(folderPath, library.tracks, library.folders).filter(
@@ -189,9 +228,7 @@ function openImageViewerForChild(childName: string, imagePath: string) {
     >
       <LibraryFolderTile :tracks="folderTracksFor(sub)" />
       <span class="text-xs font-medium truncate w-full">{{ sub }}</span>
-      <span class="text-[11px] text-base-content/50"
-        >{{ tracksInChild(sub).filter((t) => t.type !== 'image').length }} plików</span
-      >
+      <span class="text-[11px] text-base-content/50">{{ metaFor(sub).audioCount }} plików</span>
     </button>
     <button
       v-for="tr in previewFiles"
@@ -234,7 +271,7 @@ function openImageViewerForChild(childName: string, imagePath: string) {
         <button
           class="flex items-center gap-2 flex-1 min-w-0 text-left"
           @click="emit('toggle', childOriginal(sub))"
-          @contextmenu.prevent="showFolderMenu($event, childOriginal(sub), tracksInChild(sub))"
+          @contextmenu.prevent="showFolderMenu($event, childOriginal(sub), metaFor(sub).subtree)"
         >
           <ChevronDown
             :size="12"
@@ -253,18 +290,13 @@ function openImageViewerForChild(childName: string, imagePath: string) {
           <span
             class="ml-auto text-[11px] px-1.5 py-0.5 rounded-full bg-base-100 border border-base-300 text-base-content/60 shrink-0"
           >
-            {{ tracksInChild(sub).filter((t) => t.type !== 'image').length }}
+            {{ metaFor(sub).audioCount }}
           </span>
           <span
-            v-if="tracksInChild(sub).reduce((s, t) => s + (t.duration || 0), 0) > 0"
+            v-if="metaFor(sub).duration > 0"
             class="text-[11px] text-base-content/40 hidden sm:inline"
           >
-            {{
-              formatDuration(
-                tracksInChild(sub).reduce((s, t) => s + (t.duration || 0), 0),
-                ''
-              )
-            }}
+            {{ formatDuration(metaFor(sub).duration, '') }}
           </span>
         </button>
 
@@ -294,15 +326,10 @@ function openImageViewerForChild(childName: string, imagePath: string) {
           @play-folder="emit('playFolder', $event)"
           @edit="emit('edit', $event)"
         />
-        <div v-if="directTracksForChild(sub).length > 0">
-          <div
-            v-if="directTracksForChild(sub).some((t) => t.type === 'image')"
-            class="grid grid-cols-4 gap-2 p-3"
-          >
+        <div v-if="metaFor(sub).directAll.length > 0">
+          <div v-if="metaFor(sub).directImages.length > 0" class="grid grid-cols-4 gap-2 p-3">
             <button
-              v-for="img in directTracksForChild(sub)
-                .filter((t) => t.type === 'image')
-                .slice(0, 24)"
+              v-for="img in metaFor(sub).directImages.slice(0, 24)"
               :key="img.path"
               class="aspect-square rounded-field overflow-hidden bg-base-200 border border-base-300 hover:border-primary/30 transition-colors"
               @click="openImageViewerForChild(sub, img.path)"
@@ -317,27 +344,20 @@ function openImageViewerForChild(childName: string, imagePath: string) {
               />
             </button>
           </div>
-          <div
-            v-if="directTracksForChild(sub).some((t) => t.type !== 'image')"
-            class="divide-y divide-base-300/30"
-          >
+          <div v-if="metaFor(sub).directAudio.length > 0" class="divide-y divide-base-300/30">
             <LibraryTrackRow
-              v-for="t in directTracksForChild(sub)
-                .filter((t) => t.type !== 'image')
-                .slice(0, 50)"
+              v-for="t in metaFor(sub).directAudio.slice(0, 50)"
               :key="t.path"
               :track="t"
               :show-playlist="true"
               @edit="emit('edit', $event)"
             />
             <button
-              v-if="directTracksForChild(sub).filter((t) => t.type !== 'image').length > 50"
+              v-if="metaFor(sub).directAudio.length > 50"
               class="w-full py-2 text-xs text-primary hover:bg-primary/10 transition-colors"
               @click="() => {}"
             >
-              Pokazano 50 z
-              {{ directTracksForChild(sub).filter((t) => t.type !== 'image').length }} — użyj
-              wyszukiwarki aby zawęzić
+              Pokazano 50 z {{ metaFor(sub).directAudio.length }} — użyj wyszukiwarki aby zawęzić
             </button>
           </div>
         </div>

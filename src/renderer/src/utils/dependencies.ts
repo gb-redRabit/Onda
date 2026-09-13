@@ -55,9 +55,16 @@ export function toolApi(dep: DepRow): DepApi {
       remove: window.api?.removeYtdlp
     };
   }
+  if (dep.tool === 'ffprobe') {
+    return {
+      install: window.api?.installFfmpeg,
+      check: window.api?.checkFfprobe,
+      remove: window.api?.removeFfprobe
+    };
+  }
   return {
     install: window.api?.installFfmpeg,
-    check: dep.tool === 'ffprobe' ? window.api?.checkFfprobe : window.api?.checkFfmpeg,
+    check: window.api?.checkFfmpeg,
     remove: window.api?.removeFfmpeg
   };
 }

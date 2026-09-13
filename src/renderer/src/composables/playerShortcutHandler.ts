@@ -41,10 +41,6 @@ export function setPlayerShortcutCtx(next: PlayerShortcutCtx | null): void {
   ctx = next;
 }
 
-export function hasPlayerShortcutCtx(): boolean {
-  return ctx !== null;
-}
-
 function matches(action: string, e: KeyboardEvent): boolean {
   const c = ctx;
   if (!c) return false;

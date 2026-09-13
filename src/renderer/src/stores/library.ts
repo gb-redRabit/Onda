@@ -50,8 +50,15 @@ export const useLibraryStore = defineStore('library', () => {
   });
 
   const totalCount = computed(() => tracks.value.length);
+  // O(1) membership test for isLibraryFolder (was folders.some() + per-call
+  // regex replace in every explorer row — plan 1.10).
+  const normalizedFolders = computed(
+    () => new Set(folders.value.map((f) => f.replace(/[\\/]$/, '')))
+  );
 
   let subscribedToLibraryUpdates = false;
+  let pendingMissing = new Set<string>();
+  let missingTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Refresh the track list when the main process re-scanned a library folder
   // (e.g. after a finished download landed inside a library folder).
@@ -62,11 +69,20 @@ export const useLibraryStore = defineStore('library', () => {
       if (isLoaded.value) void scheduleLoadTracksAsync();
       void reloadPlaylists();
     });
+    // Batch missing-file events: the main process reports one event per file, and
+    // each used to trigger a full array filter + clone + save (O(n²) when a whole
+    // drive disappears — plan 1.4).
     window.api?.on('library:fileMissing', (...args: unknown[]) => {
       const p = args[0] as string | undefined;
-      if (typeof p === 'string' && p) {
+      if (typeof p !== 'string' || !p) return;
+      pendingMissing.add(p);
+      if (missingTimer) return;
+      missingTimer = setTimeout(() => {
+        missingTimer = null;
+        const toRemove = pendingMissing;
+        pendingMissing = new Set();
         const before = tracks.value.length;
-        tracks.value = tracks.value.filter((t) => t.path !== p);
+        tracks.value = tracks.value.filter((t) => !toRemove.has(t.path));
         if (tracks.value.length !== before) {
           invalidateDerivedCache();
           // zapisz od razu żeby nie wracał po restarcie
@@ -75,7 +91,7 @@ export const useLibraryStore = defineStore('library', () => {
             window.api?.invoke('library:saveScanned', { files, folderTypes: folderTypes.value });
           } catch {}
         }
-      }
+      }, 300);
     });
   }
 
@@ -184,6 +200,7 @@ export const useLibraryStore = defineStore('library', () => {
     isLoaded,
     isLoading,
     totalCount,
+    normalizedFolders,
     audioCount,
     videoCount,
     imageCount,

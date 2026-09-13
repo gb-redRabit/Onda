@@ -36,6 +36,25 @@ const router = useRouter();
 const input = ref<HTMLInputElement | null>(null);
 const activeIndex = ref(0);
 
+// Debounce the (potentially huge) library filter so typing in the command
+// palette doesn't re-scan every track on each keystroke (plan 1.8).
+const debouncedQuery = ref(ui.searchQuery);
+let queryTimer: ReturnType<typeof setTimeout> | null = null;
+watch(
+  () => ui.searchQuery,
+  (q) => {
+    if (debouncedQuery.value === q) return;
+    if (queryTimer) clearTimeout(queryTimer);
+    queryTimer = setTimeout(() => {
+      queryTimer = null;
+      debouncedQuery.value = q;
+    }, 150);
+  }
+);
+onBeforeUnmount(() => {
+  if (queryTimer) clearTimeout(queryTimer);
+});
+
 const actions = computed(() => [
   { label: t('nav.home'), icon: Home, action: () => router.push('/') },
   { label: t('nav.library'), icon: Disc3, action: () => router.push('/library') },
@@ -76,7 +95,7 @@ function include(q: string, ...parts: string[]): boolean {
 }
 
 const groups = computed<Group[]>(() => {
-  const q = ui.searchQuery.toLowerCase().trim();
+  const q = debouncedQuery.value.toLowerCase().trim();
   const tracks = library.tracks
     .filter((t) =>
       include(q, t.metadata?.title || t.name, t.metadata?.artist || '', t.metadata?.album || '')

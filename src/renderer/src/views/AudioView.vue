@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, markRaw } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, markRaw, defineAsyncComponent } from 'vue';
 import type { Component } from 'vue';
 import {
   BarChart3,
@@ -23,9 +23,13 @@ import AudioProgressBar from '@renderer/components/audio/AudioProgressBar.vue';
 import AudioCover from '@renderer/components/audio/AudioCover.vue';
 import AudioTrackInfo from '@renderer/components/audio/AudioTrackInfo.vue';
 import AudioVizSettings from '@renderer/components/audio/AudioVizSettings.vue';
-import AudioLayoutEditor from '@renderer/components/audio/AudioLayoutEditor.vue';
 import AudioLayoutSwitcher from '@renderer/components/audio/AudioLayoutSwitcher.vue';
 import type { AudioLayoutElement } from '@renderer/types/settings';
+
+// The layout editor (750+ lines) only renders when the user opens it — lazy.
+const AudioLayoutEditor = defineAsyncComponent(
+  () => import('@renderer/components/audio/AudioLayoutEditor.vue')
+);
 
 const player = usePlayerStore();
 const audio = useAudioPlayer();

@@ -1,14 +1,7 @@
 import { ipcMain, dialog, BrowserWindow, app } from 'electron';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import {
-  getLogDir,
-  getLogPath,
-  readLogTail,
-  clearLogFile,
-  copyLogTo,
-  getEnvironmentInfo
-} from '../log-file';
+import { readLogTail, clearLogFile, copyLogTo, getEnvironmentInfo } from '../log-file';
 import { logger } from '../../shared/logger';
 
 export function registerDiagnosticsHandlers(): void {
@@ -76,6 +69,3 @@ export function registerDiagnosticsHandlers(): void {
     }
   );
 }
-
-// re-exported for convenience in other handlers
-export { getLogDir, getLogPath };

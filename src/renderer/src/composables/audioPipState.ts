@@ -4,7 +4,6 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { getFrequencyBins as collectBins } from '@renderer/utils/audioViz';
 import type { AudioPipDock, AudioPipElementId, AudioPipState } from '@shared/types/pip';
-import { isAudioPipEdgeDock } from '@shared/types/pip';
 
 export type { AudioPipState, AudioPipDock, AudioPipElementId };
 
@@ -13,19 +12,6 @@ export interface AudioPipLayoutOpts {
   cornerElements: AudioPipElementId[];
   edgeElements: AudioPipElementId[];
   autoHide: boolean;
-}
-
-export function resolveAudioPipDock(): AudioPipDock {
-  const settings = useSettingsStore();
-  return settings.appearance.audioPipDock;
-}
-
-export function resolveAudioPipElements(dock?: AudioPipDock): AudioPipElementId[] {
-  const settings = useSettingsStore();
-  const d = dock ?? settings.appearance.audioPipDock;
-  return isAudioPipEdgeDock(d)
-    ? [...settings.appearance.audioPipEdgeElements]
-    : [...settings.appearance.audioPipCornerElements];
 }
 
 export function resolveAudioPipLayoutOpts(): AudioPipLayoutOpts {

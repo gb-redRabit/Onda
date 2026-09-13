@@ -14,7 +14,6 @@ import {
   pkgUninstallCommand,
   needsSudo,
   YTDLP_PINNED_VERSION,
-  toolFileName,
   type BinTool
 } from './dependency-utils';
 import { getBinDir, resolveBin, resolveBinInfo, invalidateBinaries } from '../binaries';
@@ -39,11 +38,10 @@ async function installYtdlpManaged(
     const binDir = getBinDir();
     await mkdir(binDir, { recursive: true });
     const dest = join(binDir, ytdlpBinaryName());
-    // Fresh installs use the pinned release; updates fetch the specific latest
-    // tag (never the mutable `latest` redirect).
-    const version = reinstall
-      ? ((await fetchLatestYtdlpVersion()) ?? YTDLP_PINNED_VERSION)
-      : YTDLP_PINNED_VERSION;
+    // Always resolve the newest release from the active channel (the GitHub
+    // *tag* is immutable, unlike the mutable `latest` redirect); the pinned tag
+    // is only a fallback when the GitHub API is unreachable.
+    const version = (await fetchLatestYtdlpVersion()) ?? YTDLP_PINNED_VERSION;
     const url = ytdlpDownloadUrl(process.platform, process.arch, version);
     const shaUrl = ytdlpShaUrl(version);
 
@@ -253,6 +251,14 @@ async function installSystem(sender: WebContents, tool: BinTool): Promise<Instal
 async function uninstallTool(sender: WebContents, tool: BinTool): Promise<InstallResult> {
   const info = await resolveBinInfo(tool);
   if (info?.managed) {
+    // Only files in userData/bin are ours to delete. `managed` also covers the
+    // binary bundled inside the app (resources/ffmpeg) — never unlink that.
+    if (!info.path.startsWith(getBinDir())) {
+      return {
+        success: false,
+        error: 'Ta binarka jest dołączona do aplikacji — nie można jej odinstalować.'
+      };
+    }
     try {
       await unlink(info.path);
       invalidateBinaries();
@@ -366,10 +372,11 @@ export function registerDependencyHandlers(): void {
 
   ipcMain.handle('dep:removeYtdlp', async (event) => uninstallTool(event.sender, 'yt-dlp'));
   ipcMain.handle('dep:removeFfmpeg', async (event) => uninstallTool(event.sender, 'ffmpeg'));
+  ipcMain.handle('dep:removeFfprobe', async (event) => uninstallTool(event.sender, 'ffprobe'));
   ipcMain.handle('dep:removeMkvextract', async (event) =>
     uninstallTool(event.sender, 'mkvextract')
   );
 }
 
 // keep re-exported for legacy callers/tests
-export { toolFileName, resolveBin };
+export { resolveBin };

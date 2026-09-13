@@ -25,8 +25,8 @@ import Sidebar from './components/layout/Sidebar.vue';
 import PlayerBar from './components/layout/PlayerBar.vue';
 import StatusBar from './components/layout/StatusBar.vue';
 import ErrorBoundary from './components/ErrorBoundary.vue';
-import FirstRunWizard from './components/FirstRunWizard.vue';
 
+const FirstRunWizard = defineAsyncComponent(() => import('./components/FirstRunWizard.vue'));
 const QueuePanel = defineAsyncComponent(() => import('./components/player/QueuePanel.vue'));
 const Equalizer = defineAsyncComponent(() => import('./components/player/Equalizer.vue'));
 const AppSearch = defineAsyncComponent(() => import('./components/layout/AppSearch.vue'));

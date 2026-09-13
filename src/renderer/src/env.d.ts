@@ -122,10 +122,12 @@ interface OndaAPI {
   updateYtdlp: () => Promise<{ success: boolean; error?: string; cancelled?: boolean }>;
   removeYtdlp: () => Promise<{ success: boolean; error?: string }>;
   removeFfmpeg: () => Promise<{ success: boolean; error?: string }>;
+  removeFfprobe: () => Promise<{ success: boolean; error?: string }>;
   removeMkvextract: () => Promise<{ success: boolean; error?: string }>;
   cancelDepInstall: (tool: string) => Promise<boolean>;
   getCover: (filePath: string) => Promise<{ type: 'video' | 'image' | null; data: string | null }>;
   getDuration: (filePath: string) => Promise<number>;
+  getDurations: (paths: string[]) => Promise<Record<string, number>>;
   getStreamUrl: (url: string) => Promise<IpcStreamResult>;
   writeTags: (
     filePath: string,

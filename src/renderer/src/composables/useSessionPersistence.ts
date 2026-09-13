@@ -4,6 +4,9 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { openMediaFiles } from './useOpenMedia';
 
 const SESSION_KEY = 'onda-session';
+// A session only needs a bounded tail of the queue — persisting every path of a
+// 50k library serialises several MB synchronously on each change (plan 1.9).
+const MAX_PERSISTED_QUEUE = 500;
 
 // Persists the last played track + queue to localStorage and restores them on
 // startup (when "restore last session" is enabled).
@@ -21,7 +24,7 @@ export function useSessionPersistence() {
         SESSION_KEY,
         JSON.stringify({
           currentPath: player.currentTrack.path,
-          queue: player.queue.map((t) => t.path)
+          queue: player.queue.slice(0, MAX_PERSISTED_QUEUE).map((t) => t.path)
         })
       );
     } catch {

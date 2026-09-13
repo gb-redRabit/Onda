@@ -11,16 +11,23 @@ interface LibraryIndex {
 let cached: LibraryIndex | null = null;
 let lastSig = '';
 
-function buildSig(tracks: MediaFile[], folders: string[]): string {
-  let h = 0x811c9dc5;
-  for (const t of tracks) {
-    const p = t.path;
-    for (let i = 0; i < p.length; i++) {
-      h ^= p.charCodeAt(i);
-      h = (h * 0x01000193) >>> 0;
-    }
+// Cheap change signature. The old version re-hashed every track path on each
+// call (O(N) per index read — and DirNode calls it many times per rendered
+// row). The array identity catches every replacement (load/scan/filter) and the
+// length catches in-place pushes (addTrack); folders are joined (tiny).
+const arrIds = new WeakMap<object, number>();
+let nextArrId = 1;
+function arrayId(a: object): number {
+  let id = arrIds.get(a);
+  if (id === undefined) {
+    id = nextArrId++;
+    arrIds.set(a, id);
   }
-  return `t:${tracks.length}|h:${h}|f:${folders.join('|')}`;
+  return id;
+}
+
+function buildSig(tracks: MediaFile[], folders: string[]): string {
+  return `a:${arrayId(tracks)}|n:${tracks.length}|f:${folders.join('|')}`;
 }
 
 export function getLibraryIndex(tracks: MediaFile[], folders: string[]): LibraryIndex {

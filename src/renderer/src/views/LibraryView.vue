@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, onUnmounted, defineAsyncComponent } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLibraryStore } from '@renderer/stores/library';
 import { getAllTracksIndexed } from '@renderer/utils/libraryIndex';
@@ -13,8 +13,6 @@ import LibraryArtistsTab from '@renderer/components/library/LibraryArtistsTab.vu
 import LibraryAlbumsTab from '@renderer/components/library/LibraryAlbumsTab.vue';
 import LibraryPlaylistManager from '@renderer/components/library/LibraryPlaylistManager.vue';
 import LibraryOverviewTab from '@renderer/components/library/LibraryOverviewTab.vue';
-import TrackTagEditor from '@renderer/components/library/TrackTagEditor.vue';
-import MusicBrainzLookup from '@renderer/components/library/MusicBrainzLookup.vue';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import {
   Music2,
@@ -34,6 +32,14 @@ import {
 import { useLibraryFilters } from '@renderer/composables/useLibraryFilters';
 import { useLibraryTagEditor } from '@renderer/composables/useLibraryTagEditor';
 import { useViewSearch } from '@renderer/composables/useViewSearch';
+
+// Modals only mounted on demand — lazy so the Library chunk stays lean (3.5).
+const TrackTagEditor = defineAsyncComponent(
+  () => import('@renderer/components/library/TrackTagEditor.vue')
+);
+const MusicBrainzLookup = defineAsyncComponent(
+  () => import('@renderer/components/library/MusicBrainzLookup.vue')
+);
 
 const { t } = useI18n();
 const library = useLibraryStore();

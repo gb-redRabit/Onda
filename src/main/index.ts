@@ -32,6 +32,7 @@ import {
 } from './media-server';
 import { getStore } from './ipc/cover-cache';
 import { flushQueueNow } from './downloads/download-manager';
+import { flushLibraryScanned } from './ipc/library-store';
 import { setupFileLogging } from './log-file';
 import { initAutoUpdater } from './updater';
 import { configureAutoCheck } from './updater-scheduler';
@@ -529,6 +530,7 @@ app.whenReady().then(async () => {
     closeLoginWindow();
     // Flush debounced persistence so the last ~0.5s of changes aren't lost.
     flushQueueNow();
+    void flushLibraryScanned();
     void getStore().then((s) => s.set('mediaRoots', getExtraRoots().slice(0, 50)));
   });
 

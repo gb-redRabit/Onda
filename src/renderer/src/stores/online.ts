@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore } from '@renderer/stores/ui';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSavedStore } from '@renderer/stores/saved';
@@ -14,7 +13,6 @@ import type {
   Subscription,
   SubscriptionDownloadPrefs,
   DownloadTask,
-  CoverSpec,
   CoverStatus,
   MetaOverride
 } from '@renderer/types/online';
@@ -22,38 +20,22 @@ import type {
   IpcDownloadJobInput,
   IpcDownloadTask,
   IpcSavedPlaylist,
-  IpcSavedStream,
   IpcStreamResult,
   IpcSubscription
 } from '@shared/types/ipc';
 import { logger } from '@shared/logger';
-import { youtubeProvider } from '@shared/provider';
 import { pluginHookBus } from '@renderer/utils/pluginHooks';
 import { detectPlatform } from '@shared/platform';
 import { toMediaStreamUrl } from '@renderer/utils/mediaUrl';
-
-interface JobExtra {
-  kind?: 'audio' | 'video';
-  format?: string;
-  quality?: string;
-  audioQuality?: string;
-  videoContainer?: 'mp4' | 'mkv' | 'webm';
-  filenameTemplate?: string;
-  cover?: CoverSpec;
-  metaOverride?: MetaOverride;
-  channelTitle?: string;
-  playlistTitle?: string;
-  outputDir?: string;
-  subsLangs?: string;
-  subsFormat?: 'srt' | 'vtt' | 'ass';
-  subsMode?: 'manual' | 'auto' | 'best';
-  subsFolder?: boolean;
-  audioLanguage?: string;
-  sponsorBlock?: 'off' | 'mark' | 'remove';
-  trimStart?: number;
-  trimEnd?: number;
-  addToLibrary?: boolean;
-}
+import {
+  streamTargetFor,
+  streamChannelFor,
+  streamErrorMessage,
+  buildStreamTrack,
+  resolvedToSavedStream,
+  savedStreamToItem
+} from '@renderer/utils/onlineHelpers';
+import { buildJob, buildTaskInput, type JobExtra } from '@renderer/utils/onlineJob';
 
 function toDownloadTask(ipc: IpcDownloadTask): DownloadTask {
   return {
@@ -140,7 +122,6 @@ export const useOnlineStore = defineStore('online', () => {
   const channelVideosOffset = ref(0);
   const channelVideosLoaded = ref(false);
   const channelShorts = ref<YouTubeVideo[]>([]);
-  const settings = useSettingsStore();
   const channelShortsHasMore = ref(false);
   const channelShortsOffset = ref(0);
   const channelShortsLoaded = ref(false);
@@ -158,26 +139,6 @@ export const useOnlineStore = defineStore('online', () => {
 
   const SEARCH_PAGE_SIZE = 20;
   const searchPage = ref(0);
-
-  // Canonical page URL of an online item — SC items carry their permalink,
-  // YT items are rebuilt from the video id. Legacy saved SC entries have a
-  // bare numeric id (no permalink); sc:stream:get resolves those directly.
-  function streamTargetFor(item: { id: string; url?: string }): string {
-    if (item.url) return item.url;
-    if (/^\d+$/.test(item.id)) return item.id;
-    return youtubeProvider.buildWatchUrl(item.id);
-  }
-
-  function isSoundcloudItem(item: { id: string; url?: string }): boolean {
-    if (!item.url && /^\d+$/.test(item.id)) return true;
-    return detectPlatform(streamTargetFor(item))?.platform === 'soundcloud';
-  }
-
-  // IPC channel resolving the direct stream URL for a given target.
-  function streamChannelFor(target: string): 'yt:stream:get' | 'sc:stream:get' {
-    if (/^\d+$/.test(target)) return 'sc:stream:get';
-    return detectPlatform(target)?.platform === 'soundcloud' ? 'sc:stream:get' : 'yt:stream:get';
-  }
 
   // Opens the channel/profile view for an @/$ prefixed query.
   async function openChannelPrefix(prefix: { platform: 'youtube' | 'soundcloud'; name: string }) {
@@ -414,135 +375,6 @@ export const useOnlineStore = defineStore('online', () => {
     }
   }
 
-  type VideoSource = YouTubeVideo | YouTubeResolvedItem;
-
-  function defaultCoverSpec(): CoverSpec | undefined {
-    const d = settings.download;
-    switch (d.defaultCover) {
-      case 'thumbnail':
-        return { type: 'thumbnail' };
-      case 'frame':
-        return { type: 'frame', frameTime: d.defaultCoverFrameTime };
-      case 'clip':
-        return {
-          type: 'clip',
-          clipStart: d.defaultCoverClipStart,
-          clipEnd: d.defaultCoverClipEnd,
-          clipFormat: d.defaultCoverClipFormat
-        };
-      default:
-        return undefined;
-    }
-  }
-
-  // Strips filesystem-hostile characters and caps the length for a download
-  // file name (http/soundcloud jobs write the bytes directly under this name).
-  function sanitizeFileName(title: string): string {
-    const cleaned = title
-      // eslint-disable-next-line no-control-regex -- control chars are invalid in file names
-      .replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_')
-      .trim()
-      .replace(/[.\s]+$/, '');
-    return (cleaned || 'track').slice(0, 120);
-  }
-
-  function buildJob(
-    video: VideoSource,
-    prefs?: SubscriptionDownloadPrefs,
-    extra?: JobExtra
-  ): IpcDownloadJobInput {
-    const kind = extra?.kind ?? prefs?.kind ?? settings.download.defaultKind ?? 'audio';
-    const format =
-      kind === 'video'
-        ? (extra?.format ?? prefs?.format ?? 'best')
-        : (extra?.format ?? prefs?.format ?? settings.download.defaultAudioFormat);
-    const quality = extra?.quality ?? prefs?.quality ?? settings.download.defaultVideoQuality;
-    const audioQuality =
-      extra?.audioQuality ?? prefs?.audioQuality ?? settings.download.defaultAudioQuality;
-    const videoContainer =
-      extra?.videoContainer ?? settings.download.defaultVideoContainer ?? 'mp4';
-    // Canonical page URL: SC items carry their permalink (ids cannot be
-    // rebuilt into a URL); YT falls back to the classic watch URL.
-    const jobUrl = streamTargetFor(video);
-    const scJob = isSoundcloudItem(video);
-    // SoundCloud downloads bypass yt-dlp entirely: the manager resolves a
-    // fresh progressive-MP3 URL at attempt start. No covers/subs/tag pipeline.
-    if (scJob) {
-      return {
-        url: jobUrl,
-        title: video.title,
-        thumbnail: video.thumbnail,
-        kind,
-        format,
-        quality,
-        audioQuality,
-        outputDir: extra?.outputDir ?? prefs?.outputDir ?? settings.download.defaultPath ?? '',
-        filenameTemplate:
-          extra?.filenameTemplate ??
-          prefs?.filenameTemplate ??
-          settings.download.filenameTemplate ??
-          '{title} - {artist}',
-        videoId: video.id,
-        channelId: video.channelId,
-        channelTitle: extra?.channelTitle || video.channelTitle,
-        playlistTitle: extra?.playlistTitle,
-        cover: extra?.cover !== undefined ? extra.cover : undefined,
-        source: {
-          mode: 'soundcloud',
-          fileName: `${sanitizeFileName(video.title)}.mp3`
-        }
-      };
-    }
-    // Audio covers follow the global default (thumbnail/frame/clip/none); video
-    // downloads always embed the YouTube thumbnail by default. An explicit
-    // cover (including `none`) always wins over the defaults.
-    const cover =
-      extra?.cover !== undefined || prefs?.cover !== undefined
-        ? (extra?.cover ?? prefs?.cover)
-        : kind === 'audio'
-          ? defaultCoverSpec()
-          : ({ type: 'thumbnail' } as const);
-    const subsLangs =
-      extra?.subsLangs ??
-      prefs?.subsLangs ??
-      (settings.download.defaultSubs ? settings.download.defaultSubsLangs : undefined);
-    logger.info(
-      'yt',
-      `buildJob kind=${kind} defaultSubs=${settings.download.defaultSubs} subsLangs=${subsLangs || 'none'}`
-    );
-    return {
-      url: jobUrl,
-      title: video.title,
-      thumbnail: video.thumbnail,
-      kind,
-      format,
-      quality,
-      audioQuality,
-      outputDir: extra?.outputDir ?? prefs?.outputDir ?? settings.download.defaultPath ?? '',
-      filenameTemplate:
-        extra?.filenameTemplate ??
-        prefs?.filenameTemplate ??
-        settings.download.filenameTemplate ??
-        '{title} - {artist}',
-      videoId: video.id,
-      channelId: video.channelId,
-      channelTitle: extra?.channelTitle || video.channelTitle,
-      playlistTitle: extra?.playlistTitle,
-      cover,
-      metaOverride: extra?.metaOverride ?? prefs?.metaOverride,
-      subsLangs,
-      subsFormat: extra?.subsFormat,
-      subsMode: extra?.subsMode,
-      subsFolder: extra?.subsFolder,
-      audioLanguage: extra?.audioLanguage ?? prefs?.audioLanguage,
-      videoContainer,
-      sponsorBlock: extra?.sponsorBlock ?? prefs?.sponsorBlock ?? 'off',
-      trimStart: extra?.trimStart ?? prefs?.trimStart,
-      trimEnd: extra?.trimEnd ?? prefs?.trimEnd,
-      addToLibrary: extra?.addToLibrary ?? prefs?.addToLibrary
-    };
-  }
-
   function upsertTask(task: DownloadTask) {
     const idx = downloads.value.findIndex((d) => d.id === task.id);
     const prev = idx >= 0 ? downloads.value[idx] : undefined;
@@ -606,37 +438,6 @@ export const useOnlineStore = defineStore('online', () => {
     }
   }
 
-  function buildTaskInput(task: DownloadTask): IpcDownloadJobInput {
-    return {
-      url: task.url,
-      title: task.title,
-      thumbnail: task.thumbnail,
-      kind: task.kind,
-      format: task.format || settings.download.defaultAudioFormat,
-      quality: task.quality || settings.download.defaultVideoQuality,
-      outputDir: task.outputDir || settings.download.defaultPath || '',
-      filenameTemplate: settings.download.filenameTemplate || '{title} - {artist}',
-      videoId: task.videoId,
-      channelId: task.channelId,
-      channelTitle: task.channelTitle,
-      playlistTitle: task.playlistTitle,
-      cover: task.cover,
-      metaOverride: task.metaOverride,
-      subsLangs: task.subsLangs,
-      subsFormat: task.subsFormat,
-      subsMode: task.subsMode,
-      subsFolder: task.subsFolder,
-      audioQuality: task.audioQuality,
-      audioLanguage: task.audioLanguage,
-      videoContainer: task.videoContainer || settings.download.defaultVideoContainer,
-      sponsorBlock: task.sponsorBlock,
-      trimStart: task.trimStart,
-      trimEnd: task.trimEnd,
-      addToLibrary: task.addToLibrary,
-      source: task.source
-    };
-  }
-
   async function queueFromResolved(
     ids: string[],
     prefs?: SubscriptionDownloadPrefs,
@@ -678,39 +479,9 @@ export const useOnlineStore = defineStore('online', () => {
     }
   }
 
-  function buildStreamTrack(
-    video: { id: string; title: string; duration?: string; thumbnail?: string; url?: string },
-    path: string,
-    order: number
-  ): MediaFile {
-    const isSc = isSoundcloudItem(video);
-    return {
-      id: `${isSc ? 'sc' : 'yt'}:${video.id}`,
-      name: video.title,
-      path,
-      extension: '',
-      mimeType: isSc ? 'audio/mpeg' : 'audio/mp4',
-      size: 0,
-      type: 'stream',
-      duration: parseDurationText(video.duration),
-      thumbnail: video.thumbnail,
-      addedAt: Date.now() + order,
-      playCount: 0
-    };
-  }
-
   // Plays a video online: resolves the direct stream URL (cached in main) and
   // sets it as an unpersisted 'stream' track. Failures (HLS, auth, bot-block)
   // surface as a notification instead of failing silently.
-  function parseDurationText(text?: string): number | undefined {
-    if (!text) return undefined;
-    const parts = text.split(':').map((p) => parseInt(p, 10));
-    if (parts.some((p) => Number.isNaN(p))) return undefined;
-    let secs = 0;
-    for (const p of parts) secs = secs * 60 + p;
-    return secs;
-  }
-
   async function playStream(video: YouTubeVideo | YouTubeResolvedItem) {
     const player = usePlayerStore();
     const url = streamTargetFor(video);
@@ -790,25 +561,6 @@ export const useOnlineStore = defineStore('online', () => {
       // ignore: prefetch is best-effort
     } finally {
       prefetchInFlight--;
-    }
-  }
-
-  function streamErrorMessage(t: (k: string) => string, code: string): string {
-    switch (code) {
-      case 'hls':
-        return t('youtube.streamErrorHls');
-      case 'auth-required':
-        return t('youtube.streamErrorAuth');
-      case 'bot-block':
-        return t('youtube.streamErrorBot');
-      case 'invalid':
-        return t('youtube.streamErrorInvalid');
-      case 'dependency':
-        return t('youtube.streamErrorDependency');
-      case 'not-found':
-        return t('youtube.streamErrorNotFound');
-      default:
-        return t('youtube.streamErrorNetwork');
     }
   }
 
@@ -916,23 +668,6 @@ export const useOnlineStore = defineStore('online', () => {
     if (!started) {
       player.streamPending = null;
     }
-  }
-
-  function resolvedToSavedStream(i: YouTubeResolvedItem): IpcSavedStream {
-    return { ...i, savedAt: Date.now() };
-  }
-
-  function savedStreamToItem(s: IpcSavedStream): YouTubeResolvedItem {
-    return {
-      id: s.id,
-      title: s.title,
-      thumbnail: s.thumbnail ?? '',
-      channelTitle: s.channelTitle ?? '',
-      channelId: s.channelId ?? '',
-      duration: s.duration,
-      isPlayable: true,
-      ...(s.url ? { url: s.url } : {})
-    };
   }
 
   // Loads every item of the currently relevant playlist (platform-dispatched:

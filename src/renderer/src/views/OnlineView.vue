@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, defineAsyncComponent } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
   Download,
@@ -18,9 +18,6 @@ import { useSavedStore } from '@renderer/stores/saved';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
 import { detectChannelPrefix, detectPlatform, parseBatchInputAll } from '@shared/platform';
-import OnlineChannelView from '@renderer/components/online/OnlineChannelView.vue';
-import DownloadConfigDialog from '@renderer/components/online/DownloadConfigDialog.vue';
-import SubscribeConfigDialog from '@renderer/components/online/SubscribeConfigDialog.vue';
 import OnlineSearchBar from '@renderer/components/online/OnlineSearchBar.vue';
 import OnlineViewTabs from '@renderer/components/online/OnlineViewTabs.vue';
 import OnlineButton from '@renderer/components/online/OnlineButton.vue';
@@ -39,6 +36,18 @@ import type {
   CoverSpec,
   MetaOverride
 } from '@renderer/types/online';
+
+// Heavy dialogs/views are lazy-loaded so they don't bloat the Online chunk
+// (plan 3.5).
+const OnlineChannelView = defineAsyncComponent(
+  () => import('@renderer/components/online/OnlineChannelView.vue')
+);
+const DownloadConfigDialog = defineAsyncComponent(
+  () => import('@renderer/components/online/DownloadConfigDialog.vue')
+);
+const SubscribeConfigDialog = defineAsyncComponent(
+  () => import('@renderer/components/online/SubscribeConfigDialog.vue')
+);
 
 const yt = useOnlineStore();
 const ui = useUIStore();

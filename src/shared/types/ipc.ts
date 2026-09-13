@@ -424,9 +424,6 @@ export interface PluginInfo {
   permissions: PluginPermissions;
 }
 
-// Renderer-side status layered on top of PluginInfo.
-export type PluginLoadStatus = 'new' | 'loading' | 'loaded' | 'error';
-
 export interface IpcPluginGetResult {
   success: boolean;
   manifest?: PluginManifest;
@@ -620,6 +617,7 @@ export interface IpcChannels {
     result: { type: 'video' | 'image' | null; data: string | null };
   };
   'media:getDuration': { args: [filePath: string]; result: number };
+  'media:batchDurations': { args: [paths: string[]]; result: Record<string, number> };
   'media:writeTags': {
     args: [filePath: string, tags: Record<string, string | undefined>];
     result: { success: boolean; error?: string };
@@ -862,6 +860,7 @@ export interface IpcChannels {
   'dep:installYtdlp': { args: []; result: { success: boolean; error?: string } };
   'dep:checkMkvextract': { args: []; result: { installed: boolean; version: string | null } };
   'dep:installMkvextract': { args: []; result: { success: boolean; error?: string } };
+  'dep:removeFfprobe': { args: []; result: { success: boolean; error?: string } };
   'musicbrainz:searchRelease': {
     args: [query: string];
     result: { success: boolean; releases: MusicbrainzRelease[]; error?: string };

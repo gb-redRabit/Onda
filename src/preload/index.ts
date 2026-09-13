@@ -394,6 +394,8 @@ const api = {
     ipcRenderer.invoke('dep:removeYtdlp'),
   removeFfmpeg: (): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke('dep:removeFfmpeg'),
+  removeFfprobe: (): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('dep:removeFfprobe'),
   removeMkvextract: (): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke('dep:removeMkvextract'),
   cancelDepInstall: (tool: string): Promise<boolean> =>
@@ -402,6 +404,8 @@ const api = {
     ipcRenderer.invoke('media:getCover', filePath),
   getDuration: (filePath: string): Promise<number> =>
     ipcRenderer.invoke('media:getDuration', filePath),
+  getDurations: (paths: string[]): Promise<Record<string, number>> =>
+    ipcRenderer.invoke('media:batchDurations', paths),
   writeTags: (
     filePath: string,
     tags: Record<string, string | undefined>

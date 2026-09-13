@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
-import { Plus, Play, Trash2, ListMusic, Edit3, Heart } from '@lucide/vue';
+import { Play, Trash2, Edit3, Heart } from '@lucide/vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
+import PlaylistAddMenu from './PlaylistAddMenu.vue';
 import { formatDuration } from '@renderer/utils/formatters';
 import { useLibraryContextMenu } from '@renderer/composables/useLibraryContextMenu';
 
@@ -56,20 +57,6 @@ function highlight(text: string, q?: string): string {
 
 const library = useLibraryStore();
 const player = usePlayerStore();
-const showPlaylistMenu = ref(false);
-const playlistBtn = ref<HTMLElement | null>(null);
-const playlistPopupStyle = computed(() => {
-  const el = playlistBtn.value;
-  if (!el) return {};
-  const r = el.getBoundingClientRect();
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const w = 192; // w-48 = 12rem = 192px
-  const left = Math.min(r.right - w, vw - w - 8);
-  const top = r.bottom + 6;
-  const maxTop = vh - 200 - 8;
-  return { left: Math.max(8, left) + 'px', top: Math.min(top, maxTop) + 'px' };
-});
 const hovered = ref(false);
 
 function playNow() {
@@ -80,32 +67,6 @@ function playNow() {
 function removeFromPlaylist() {
   if (props.playlistId) {
     library.removeFromPlaylist(props.playlistId, props.track.path);
-  }
-}
-
-function toggleTrackInPlaylist(playlistId: string) {
-  const p = library.playlists.find((pl) => pl.id === playlistId);
-  if (!p) return;
-  if (p.tracks.some((t) => t.path === props.track.path)) {
-    library.removeFromPlaylist(playlistId, props.track.path);
-  } else {
-    library.addToPlaylist(playlistId, props.track);
-  }
-  showPlaylistMenu.value = false;
-}
-
-function onClickOutside(e: MouseEvent) {
-  const target = e.target as HTMLElement;
-  if (!playlistBtn.value?.contains(target) && !target.closest('.playlist-popup')) {
-    showPlaylistMenu.value = false;
-  }
-}
-
-function togglePlaylist(e: MouseEvent) {
-  e.stopPropagation();
-  showPlaylistMenu.value = !showPlaylistMenu.value;
-  if (showPlaylistMenu.value) {
-    document.addEventListener('click', onClickOutside, { once: true });
   }
 }
 
@@ -217,40 +178,11 @@ function onDragStart(e: DragEvent) {
       >
         <Heart :size="14" :fill="player.isFavorite(track.path) ? 'currentColor' : 'none'" />
       </button>
-      <div v-if="showPlaylist" ref="playlistBtn" class="relative">
-        <button
-          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-100 transition-colors duration-150"
-          @click="togglePlaylist"
-        >
-          <Plus :size="14" />
-        </button>
-        <Teleport to="body">
-          <div
-            v-if="showPlaylistMenu"
-            class="playlist-popup fixed w-48 bg-base-100 border border-base-300 rounded-box shadow-xl py-1 z-50"
-            :style="playlistPopupStyle"
-            @click.stop
-          >
-            <button
-              v-for="p in library.playlists"
-              :key="p.id"
-              class="fx-noise w-full text-left px-3 py-1.5 text-xs fx-depth rounded-field hover:bg-base-content/10 transition-colors truncate flex items-center gap-2"
-              :class="{ 'text-primary': p.tracks.some((t) => t.path === props.track.path) }"
-              @click="toggleTrackInPlaylist(p.id)"
-            >
-              <ListMusic :size="12" class="shrink-0" />{{
-                p.tracks.some((t) => t.path === props.track.path) ? '✓ ' : '+ '
-              }}{{ p.name }}
-            </button>
-            <div
-              v-if="library.playlists.length === 0"
-              class="px-3 py-1.5 text-xs text-base-content/50 italic"
-            >
-              {{ $t('common.noPlaylists') }}
-            </div>
-          </div>
-        </Teleport>
-      </div>
+      <PlaylistAddMenu
+        v-if="showPlaylist"
+        :tracks="[track]"
+        button-class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-100 transition-colors duration-150"
+      />
 
       <button
         class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-100 transition-colors duration-150"

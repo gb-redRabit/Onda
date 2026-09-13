@@ -36,7 +36,9 @@ export function createBatchLoader(files: Ref<FileItem[]>, isLoading: Ref<boolean
         useUIStore().notify('error', 'Błąd odczytu folderu', data.error);
       }
       if (data.items.length > 0) {
-        files.value = [...files.value, ...data.items];
+        // Push (reactive deep ref) instead of copying the whole array per batch
+        // — the copy was O(n) per batch and forced a full re-sort each time.
+        files.value.push(...data.items);
       }
       if (data.done) {
         isLoading.value = false;

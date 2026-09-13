@@ -173,6 +173,48 @@ export function usePlayerCover() {
     loadCover(filePath);
   }
 
+  // Micro-batch duration lookups: bulk queueing used to fire one IPC call per
+  // track. Collect paths for ~50ms and resolve them with a single
+  // `media:batchDurations` call (falls back to getDuration when unavailable) —
+  // plan 1.7.
+  const pendingDuration = new Map<string, { track: MediaFile; resolve: () => void }>();
+  let durationTimer: ReturnType<typeof setTimeout> | null = null;
+  async function flushDurations(): Promise<void> {
+    durationTimer = null;
+    const batch = [...pendingDuration.values()];
+    pendingDuration.clear();
+    const paths = batch.map((b) => b.track.path);
+    const results: Record<string, number> = {};
+    try {
+      const api = window.api as unknown as
+        { getDurations?: (p: string[]) => Promise<Record<string, number>> } | undefined;
+      if (api?.getDurations) {
+        Object.assign(results, (await api.getDurations(paths)) || {});
+      } else {
+        await Promise.all(
+          paths.map(async (p) => {
+            try {
+              results[p] = (await window.api?.getDuration(p)) || 0;
+            } catch {
+              results[p] = 0;
+            }
+          })
+        );
+      }
+    } catch {
+      /* leave zeros */
+    }
+    for (const b of batch) {
+      const dur = results[b.track.path] ?? 0;
+      if (dur > 0) {
+        useLibraryStore().updateTrack(b.track.path, (t) => {
+          t.duration = dur;
+        });
+      }
+      b.resolve();
+    }
+  }
+
   async function enrichTrack(track: MediaFile): Promise<void> {
     // Streams have no local file: no duration lookup, no file cover. The
     // YouTube thumbnail (a remote https URL, allowed by CSP img-src) is seeded
@@ -185,18 +227,15 @@ export function usePlayerCover() {
       }
       return;
     }
-    if (!track.duration) {
-      let dur = 0;
-      try {
-        dur = (await window.api?.getDuration(track.path)) || 0;
-      } catch {
-        dur = 0;
-      }
-      if (dur > 0) {
-        useLibraryStore().updateTrack(track.path, (t) => {
-          t.duration = dur;
-        });
-      }
+    if (!track.duration && !pendingDuration.has(track.path)) {
+      await new Promise<void>((resolve) => {
+        pendingDuration.set(track.path, { track, resolve });
+        if (!durationTimer) {
+          durationTimer = setTimeout(() => {
+            void flushDurations();
+          }, 50);
+        }
+      });
     }
     // NOTE: no loadCover() here — enqueueing (e.g. "play all" on a folder)
     // would otherwise flood the cover loader with one IPC round-trip per

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useVirtualizer } from '@tanstack/vue-virtual';
 import { useI18n } from 'vue-i18n';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
@@ -133,6 +134,18 @@ function onPlaylistContextMenu(e: MouseEvent, playlistId: string) {
     renameSelected();
   });
 }
+
+// Virtualize the playlist track list — playlists can hold thousands of tracks
+// (plan 1.6).
+const playlistListRef = ref<HTMLElement | null>(null);
+const playlistVirtualizer = useVirtualizer({
+  get count() {
+    return selectedPlaylist.value?.tracks.length ?? 0;
+  },
+  getScrollElement: () => playlistListRef.value,
+  estimateSize: () => 56,
+  overscan: 8
+});
 </script>
 
 <template>
@@ -208,20 +221,35 @@ function onPlaylistContextMenu(e: MouseEvent, playlistId: string) {
         </div>
       </div>
       <div
+        ref="playlistListRef"
         class="flex-1 overflow-auto p-2"
         @dragover.prevent
         @drop.prevent="selectedPlaylistId && onPlaylistDrop($event, selectedPlaylistId)"
       >
-        <div
-          v-for="(track, idx) in selectedPlaylist.tracks"
-          :key="track.path"
-          class="rounded-field"
-          :class="dragOverTrackIdx === idx ? 'ring-1 ring-primary bg-primary/10' : ''"
-          @dragover.prevent.stop="dragOverTrackIdx = idx"
-          @dragleave.stop="dragOverTrackIdx = null"
-          @drop.prevent.stop="onTrackDrop($event, idx)"
-        >
-          <LibraryTrackRow :track="track" :playlist-id="selectedPlaylist.id" :drag-index="idx" />
+        <div :style="{ height: playlistVirtualizer.getTotalSize() + 'px', position: 'relative' }">
+          <div
+            v-for="v in playlistVirtualizer.getVirtualItems()"
+            :key="'pl-' + v.key"
+            class="rounded-field"
+            :class="dragOverTrackIdx === v.index ? 'ring-1 ring-primary bg-primary/10' : ''"
+            :style="{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: v.size + 'px',
+              transform: 'translateY(' + v.start + 'px)'
+            }"
+            @dragover.prevent.stop="dragOverTrackIdx = v.index"
+            @dragleave.stop="dragOverTrackIdx = null"
+            @drop.prevent.stop="onTrackDrop($event, v.index)"
+          >
+            <LibraryTrackRow
+              :track="selectedPlaylist.tracks[v.index]"
+              :playlist-id="selectedPlaylist.id"
+              :drag-index="v.index"
+            />
+          </div>
         </div>
         <div
           v-if="selectedPlaylist.tracks.length === 0"
