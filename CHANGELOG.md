@@ -2,19 +2,6 @@
 
 Wszystkie istotne zmiany w projekcie Onda są dokumentowane w tym pliku.
 
-## [0.4.3](https://github.com/gb-redRabit/Onda/compare/v0.4.2...v0.4.3) (2026-09-13)
-
-
-### Bug Fixes
-
-* **deps:** allow uninstalling ffprobe, install latest yt-dlp, status bar lists only dependencies with an available update; drop pointless dynamic import of cover-cache. ([3eb2218](https://github.com/gb-redRabit/Onda/commit/3eb221839d91fc8488ae60afa8f97a411ac756d1))
-* **settings:** avoid empty i18n key in section header ([df33165](https://github.com/gb-redRabit/Onda/commit/df33165415b4ff0af75ca2a06d05f6e25bd55d52))
-
-
-### Performance Improvements
-
-* **library:** plain-JSON library store (atomic writes + debounce), batched fileMissing/duration IPC, virtualized explorer and playlist views, lighter app search and overview. ([3eb2218](https://github.com/gb-redRabit/Onda/commit/3eb221839d91fc8488ae60afa8f97a411ac756d1))
-
 ## [0.4.2](https://github.com/gb-redRabit/Onda/compare/v0.4.2...v0.4.2) (2026-09-12)
 
 
