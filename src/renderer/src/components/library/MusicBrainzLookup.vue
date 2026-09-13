@@ -9,6 +9,7 @@ import {
   displayTrackNumber,
   splitInitialQuery
 } from '@renderer/utils/musicbrainz';
+import MusicBrainzBatchPanel from './MusicBrainzBatchPanel.vue';
 import { useUIStore } from '@renderer/stores/ui';
 
 const { t } = useI18n();
@@ -567,65 +568,15 @@ onMounted(() => {
                   </div>
                 </div>
 
-                <div
+                <MusicBrainzBatchPanel
                   v-if="props.batchTracks && props.batchTracks.length"
-                  class="border border-base-300 rounded-field p-2 space-y-2"
-                >
-                  <div class="text-xs font-medium">
-                    Batch: {{ props.batchTracks.length }} utworów — {{ batchProgress }}/{{
-                      props.batchTracks.length
-                    }}
-                  </div>
-                  <div class="w-full bg-base-300 rounded-full h-2 overflow-hidden">
-                    <div
-                      class="bg-primary h-2 transition-all"
-                      :style="{
-                        width:
-                          (props.batchTracks.length
-                            ? (batchProgress / props.batchTracks.length) * 100
-                            : 0) + '%'
-                      }"
-                    ></div>
-                  </div>
-                  <div class="max-h-32 overflow-y-auto space-y-1">
-                    <div
-                      v-for="r in batchResults"
-                      :key="r.path"
-                      class="flex items-center gap-2 text-xs"
-                    >
-                      <span
-                        :class="
-                          r.status === 'ok'
-                            ? 'text-success'
-                            : r.status === 'error'
-                              ? 'text-error'
-                              : 'text-base-content/40'
-                        "
-                        >{{ r.status === 'ok' ? '✓' : r.status === 'error' ? '✗' : '…' }}</span
-                      >
-                      <span class="truncate flex-1">{{ r.name }}</span>
-                      <span class="text-base-content/50 truncate text-[11px]">{{
-                        r.msg || ''
-                      }}</span>
-                    </div>
-                  </div>
-                  <div class="flex gap-2">
-                    <button
-                      v-if="!batchRunning"
-                      class="fx-noise flex-1 px-3 py-2 fx-depth rounded-field text-sm font-medium bg-primary text-primary-content hover:bg-primary/90 transition-colors"
-                      @click="startBatch"
-                    >
-                      Zastosuj dla wszystkich ({{ props.batchTracks.length }})
-                    </button>
-                    <button
-                      v-else
-                      class="fx-noise flex-1 px-3 py-2 fx-depth rounded-field text-sm font-medium bg-error text-error-content hover:bg-error/90 transition-colors"
-                      @click="cancelBatch"
-                    >
-                      Anuluj ({{ batchProgress }}/{{ props.batchTracks.length }})
-                    </button>
-                  </div>
-                </div>
+                  :total="props.batchTracks.length"
+                  :progress="batchProgress"
+                  :results="batchResults"
+                  :running="batchRunning"
+                  @start="startBatch"
+                  @cancel="cancelBatch"
+                />
 
                 <div v-else class="flex gap-2">
                   <button

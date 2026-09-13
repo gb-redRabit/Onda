@@ -1,16 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, defineAsyncComponent } from 'vue';
 import { useI18n } from 'vue-i18n';
-import {
-  Download,
-  Radio,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Bell,
-  RefreshCw,
-  AlertCircle
-} from '@lucide/vue';
+import { Download, Radio, X, RefreshCw, AlertCircle } from '@lucide/vue';
 import { useOnlineStore } from '@renderer/stores/online';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore } from '@renderer/stores/ui';
@@ -19,21 +10,14 @@ import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
 import LoaderSpinner from '@renderer/components/LoaderSpinner.vue';
 import { detectChannelPrefix, detectPlatform, parseBatchInputAll } from '@shared/platform';
-import {
-  buildChannelUrl,
-  countSkippedBatchLines,
-  isScItem,
-  pageTotalFromCount
-} from '@renderer/utils/onlineView';
+import { buildChannelUrl, countSkippedBatchLines, isScItem } from '@renderer/utils/onlineView';
 import OnlineSearchBar from '@renderer/components/online/OnlineSearchBar.vue';
 import OnlineViewTabs from '@renderer/components/online/OnlineViewTabs.vue';
 import OnlineButton from '@renderer/components/online/OnlineButton.vue';
-import OnlineBadge from '@renderer/components/online/OnlineBadge.vue';
-import OnlineEmptyState from '@renderer/components/online/OnlineEmptyState.vue';
-import OnlineSubscriptionCard from '@renderer/components/online/OnlineSubscriptionCard.vue';
-import OnlineMediaCard from '@renderer/components/online/OnlineMediaCard.vue';
-import OnlineSourceHeader from '@renderer/components/online/OnlineSourceHeader.vue';
-import OnlineSelectionToolbar from '@renderer/components/online/OnlineSelectionToolbar.vue';
+import OnlineSubscriptionsPanel from '@renderer/components/online/OnlineSubscriptionsPanel.vue';
+import OnlineBatchPanel from '@renderer/components/online/OnlineBatchPanel.vue';
+import OnlineSearchResultsPanel from '@renderer/components/online/OnlineSearchResultsPanel.vue';
+import OnlineResolvedPanel from '@renderer/components/online/OnlineResolvedPanel.vue';
 import OnlineConfirmDialog from '@renderer/components/online/OnlineConfirmDialog.vue';
 import YTAuthButton from '@renderer/components/online/YTAuthButton.vue';
 import type {
@@ -100,15 +84,6 @@ const configTarget = ref<
   { mode: 'single'; video: YouTubeVideo | YouTubeResolvedItem } | { mode: 'resolved' } | null
 >(null);
 
-function watchUrl(item: { id: string; url?: string }): string {
-  return yt.itemUrl(item);
-}
-
-// Corner tag for merged search grids.
-function platformTagFor(item: { id: string; url?: string }): 'YT' | 'SC' {
-  return isScItem(item, yt.itemUrl(item)) ? 'SC' : 'YT';
-}
-
 function openWatchUrl(url: string) {
   // Legacy saved SC entries may resolve to a bare numeric id — no page URL.
   if (!/^https:/i.test(url)) {
@@ -116,15 +91,6 @@ function openWatchUrl(url: string) {
     return;
   }
   window.open(url, '_blank', 'width=1100,height=700');
-}
-
-function toggleExpandSearch(id: string) {
-  expandedSearchId.value = expandedSearchId.value === id ? null : id;
-}
-
-function toggleExpandResolved(item: YouTubeResolvedItem) {
-  if (item.isPlayable === false) return;
-  expandedResolvedId.value = expandedResolvedId.value === item.id ? null : item.id;
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -201,8 +167,6 @@ function downloadAllPending() {
 const isResolvable = computed(() => detectPlatform(input.value) !== null);
 
 const selectedCount = computed(() => yt.selectedResolved.size);
-
-const pageTotal = computed(() => pageTotalFromCount(yt.searchResults.length));
 
 const batchEntries = computed(() => parseBatchInputAll(batchText.value));
 
@@ -520,21 +484,6 @@ function toastAdded() {
   ui.notify('success', t('youtube.added'), undefined, 2000);
 }
 
-function itemDownloadState(videoId: string): 'queuing' | 'downloading' | 'done' | null {
-  if (yt.queuingId === videoId) return 'queuing';
-  const status = yt.downloadStatusFor(videoId);
-  if (status === 'downloading' || status === 'pending' || status === 'paused') {
-    return 'downloading';
-  }
-  // The audio is done but the animated cover is still being prepared — keep
-  // the row busy until the cover finishes.
-  if (status === 'completed' && yt.coverStatusFor(videoId) === 'fetching') {
-    return 'downloading';
-  }
-  if (status === 'completed') return 'done';
-  return null;
-}
-
 onMounted(async () => {
   window.addEventListener('keydown', onKeydown);
   try {
@@ -575,81 +524,19 @@ onUnmounted(() => {
         @toggle-batch="batchOpen = !batchOpen"
       />
 
-      <Transition
-        enter-active-class="transition-all duration-200 ease-out"
-        enter-from-class="opacity-0 -translate-y-1"
-        enter-to-class="opacity-100 translate-y-0"
-        leave-active-class="transition-all duration-150 ease-in"
-        leave-from-class="opacity-100 translate-y-0"
-        leave-to-class="opacity-0 -translate-y-1"
-      >
-        <div v-if="batchOpen" class="mt-3 p-3 rounded-box bg-base-100 border border-base-300">
-          <textarea
-            v-model="batchText"
-            :placeholder="$t('youtube.batchPlaceholder')"
-            rows="4"
-            class="w-full px-3 py-2.5 fx-depth rounded-field bg-base-100 border border-base-300 text-sm text-base-content placeholder:text-base-content/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30 resize-y"
-          />
-          <div class="flex items-center gap-2 mt-3 flex-wrap">
-            <span class="text-xs text-base-content/50">
-              {{ $t('youtube.batchDetected', { count: batchEntries.length }) }}
-            </span>
-            <span v-if="batchSkippedCount > 0" class="text-xs text-base-content/70">
-              {{ $t('youtube.batchSkipped', { count: batchSkippedCount }) }}
-            </span>
-            <select
-              v-if="profiles.length && !batchHasSc"
-              v-model="batchProfileId"
-              class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-none"
-            >
-              <option value="">{{ $t('youtube.profileNone') }}</option>
-              <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
-            </select>
-            <span
-              v-else-if="profiles.length && batchHasSc"
-              class="text-[10px] text-base-content/50"
-            >
-              {{ $t('youtube.batchProfilesScHint') }}
-            </span>
-            <div class="flex-1" />
-            <OnlineButton variant="secondary" size="sm" @click="importBatchFile">
-              {{ $t('youtube.batchImport') }}
-            </OnlineButton>
-            <OnlineButton
-              variant="primary"
-              size="sm"
-              :disabled="!batchEntries.length || batchBusy"
-              @click="submitBatch"
-            >
-              <Download :size="12" />
-              {{ $t('youtube.batchAdd') }}
-            </OnlineButton>
-          </div>
-          <p v-if="batchResult" class="text-xs text-success mt-2">{{ batchResult }}</p>
-          <ul v-if="batchEntries.length" class="mt-2 max-h-40 overflow-auto space-y-1">
-            <li
-              v-for="e in batchEntries"
-              :key="e.url"
-              class="flex items-center gap-2 text-xs text-base-content/70"
-            >
-              <OnlineBadge
-                :variant="e.kind === 'video' ? 'accent' : e.kind === 'playlist' ? 'amber' : 'green'"
-              >
-                {{
-                  $t(
-                    e.kind === 'video'
-                      ? 'youtube.kindVideo'
-                      : e.kind === 'playlist'
-                        ? 'youtube.kindPlaylist'
-                        : 'youtube.kindChannel'
-                  )
-                }}
-              </OnlineBadge>
-              <span class="truncate">{{ e.url }}</span>
-            </li>
-          </ul>
-        </div>
-      </Transition>
+      <OnlineBatchPanel
+        v-model:text="batchText"
+        v-model:profile-id="batchProfileId"
+        :open="batchOpen"
+        :entries="batchEntries"
+        :skipped-count="batchSkippedCount"
+        :has-sc="batchHasSc"
+        :profiles="profiles"
+        :busy="batchBusy"
+        :result="batchResult"
+        @import-file="importBatchFile"
+        @submit="submitBatch"
+      />
 
       <OnlineViewTabs
         v-model="activeSection"
@@ -701,35 +588,19 @@ onUnmounted(() => {
     </header>
 
     <div class="flex-1 overflow-auto p-4">
-      <div v-if="activeSection === 'subscriptions'" class="space-y-4">
-        <div v-if="!yt.subscriptionsLoaded" class="flex justify-center py-16">
-          <div
-            class="w-8 h-8 border border-primary border-t-transparent rounded-full animate-spin"
-          />
-        </div>
-
-        <OnlineEmptyState
-          v-else-if="yt.subscriptions.length === 0"
-          :icon="Bell"
-          :title="$t('youtube.noSubscriptions')"
-        />
-
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          <OnlineSubscriptionCard
-            v-for="sub in yt.subscriptions"
-            :key="sub.channelId"
-            :sub="sub"
-            :loading-channel-id="yt.checkingChannelId"
-            :queueing-channel-id="yt.queueingChannelId"
-            @open-channel="openChannelFromSubscription"
-            @download-all="downloadSubscriptionAll"
-            @check-now="yt.checkChannelNow"
-            @toggle-auto-download="yt.setAutoDownload"
-            @open-prefs="togglePrefs"
-            @unfollow="confirmUnfollow"
-          />
-        </div>
-      </div>
+      <OnlineSubscriptionsPanel
+        v-if="activeSection === 'subscriptions'"
+        :subscriptions="yt.subscriptions"
+        :loaded="yt.subscriptionsLoaded"
+        :checking-channel-id="yt.checkingChannelId"
+        :queueing-channel-id="yt.queueingChannelId"
+        @open-channel="openChannelFromSubscription"
+        @download-all="downloadSubscriptionAll"
+        @check-now="yt.checkChannelNow"
+        @toggle-auto-download="yt.setAutoDownload"
+        @open-prefs="togglePrefs"
+        @unfollow="confirmUnfollow"
+      />
 
       <OnlineChannelView v-else-if="yt.channelLoading || yt.channel" />
 
@@ -748,162 +619,35 @@ onUnmounted(() => {
       </div>
 
       <template v-else>
-        <div v-if="yt.resolved" class="mb-8 space-y-4">
-          <OnlineSourceHeader
-            :kind="yt.resolved.kind"
-            :title="yt.resolved.title"
-            :channel-title="yt.resolved.meta.channelTitle"
-            :total-items="yt.resolved.meta.totalItems"
-            :loaded-count="yt.resolved.items.length"
-            :loading="yt.resolvedLoading"
-            :can-download-all="yt.resolved.kind !== 'video'"
-            :can-play-all="yt.resolved.kind !== 'video'"
-            :can-save="yt.resolved.kind !== 'video'"
-            :saved="resolvedSaved"
-            :saving="savingPlaylist"
-            @download-all="addSelectedToQueue"
-            @play-all="yt.playAllStreams(yt.resolved.items)"
-            @save="saveResolvedPlaylist"
-            @clear="clearResolved"
-          />
-
-          <div
-            v-if="yt.resolved.items.length === 0"
-            class="text-sm text-base-content/50 py-8 text-center"
-          >
-            {{ $t('youtube.itemsCount', { count: 0 }) }}
-          </div>
-
-          <div v-else class="space-y-4">
-            <div
-              class="grid gap-4"
-              :class="[
-                yt.resolved.kind === 'video'
-                  ? 'grid-cols-1'
-                  : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-              ]"
-            >
-              <OnlineMediaCard
-                v-for="item in yt.resolved.items"
-                :key="item.id"
-                :video="item"
-                :expanded="expandedResolvedId === item.id"
-                :selectable="yt.resolved.kind !== 'video'"
-                :selected="yt.selectedResolved.has(item.id)"
-                :state="itemDownloadState(item.id)"
-                :cover-status="yt.coverStatusFor(item.id)"
-                :watch-url="watchUrl(item)"
-                @expand="toggleExpandResolved(item)"
-                @collapse="expandedResolvedId = null"
-                @toggle-select="toggleSelect"
-                @queue="quickQueueResolved"
-                @play="yt.playStream(item)"
-                @options="queueResolvedItem"
-                @open-window="openWatchUrl"
-              />
-            </div>
-
-            <OnlineSelectionToolbar
-              v-if="yt.resolved.kind !== 'video'"
-              :selected-count="selectedCount"
-              :total-count="yt.resolved.items.length"
-              :range-start="rangeStart"
-              :range-end="rangeEnd"
-              @update:range-start="rangeStart = $event"
-              @update:range-end="rangeEnd = $event"
-              @select-all="toggleSelectAll"
-              @select-range="selectRange"
-              @add-selected="addSelectedToQueue"
-            />
-
-            <div v-if="yt.resolvedCapped" class="flex justify-center">
-              <OnlineButton
-                variant="secondary"
-                size="sm"
-                :disabled="yt.resolvedLoading"
-                @click="yt.loadMoreResolved"
-              >
-                <RefreshCw v-if="yt.resolvedLoading" :size="12" class="animate-spin" />
-                {{ $t('youtube.loadMore') }}
-              </OnlineButton>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="yt.isSearching" class="flex justify-center py-16">
-          <div
-            class="w-8 h-8 border border-primary border-t-transparent rounded-full animate-spin"
-          />
-        </div>
-
-        <OnlineEmptyState
-          v-else-if="yt.searchResults.length === 0 && !yt.resolved"
-          :icon="Radio"
-          :title="$t('youtube.searchHeadingOnline')"
-          :description="$t('youtube.discover')"
+        <OnlineResolvedPanel
+          v-model:expanded-id="expandedResolvedId"
+          v-model:range-start="rangeStart"
+          v-model:range-end="rangeEnd"
+          :resolved-loading="yt.resolvedLoading"
+          :resolved-capped="yt.resolvedCapped"
+          :selected-count="selectedCount"
+          :saved="resolvedSaved"
+          :saving="savingPlaylist"
+          @toggle-select="toggleSelect"
+          @quick-queue="quickQueueResolved"
+          @options="queueResolvedItem"
+          @open-window="openWatchUrl"
+          @download-all="addSelectedToQueue"
+          @play-all="yt.playAllStreams(yt.resolved?.items ?? [])"
+          @save="saveResolvedPlaylist"
+          @clear="clearResolved"
+          @select-all="toggleSelectAll"
+          @select-range="selectRange"
+          @add-selected="addSelectedToQueue"
+          @load-more="yt.loadMoreResolved"
         />
 
-        <div v-else-if="yt.searchResults.length" class="space-y-4">
-          <p class="text-xs text-base-content/50 px-1">
-            {{ $t('youtube.resultsCount', { count: yt.searchResults.length }) }}
-          </p>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <OnlineMediaCard
-              v-for="v in yt.pagedResults"
-              :key="v.id"
-              :video="v"
-              :expanded="expandedSearchId === v.id"
-              :state="itemDownloadState(v.id)"
-              :cover-status="yt.coverStatusFor(v.id)"
-              :watch-url="watchUrl(v)"
-              :platform-tag="platformTagFor(v)"
-              show-channel
-              show-views
-              show-description
-              @expand="toggleExpandSearch(v.id)"
-              @collapse="expandedSearchId = null"
-              @queue="quickQueueVideo(v)"
-              @play="yt.playStream(v)"
-              @options="queueChannelVideo(v)"
-              @open-window="openWatchUrl"
-            />
-          </div>
-
-          <div v-if="pageTotal > 1" class="flex items-center justify-center gap-3 pt-2">
-            <OnlineButton
-              variant="secondary"
-              size="sm"
-              :disabled="!yt.hasPrevPage"
-              @click="yt.prevSearchPage"
-            >
-              <ChevronLeft :size="16" />
-            </OnlineButton>
-            <span class="text-xs text-base-content/50">
-              {{ $t('youtube.pageOf', { current: yt.searchPage + 1, total: pageTotal }) }}
-            </span>
-            <OnlineButton
-              variant="secondary"
-              size="sm"
-              :disabled="!yt.hasNextPage"
-              @click="yt.nextSearchPage"
-            >
-              <ChevronRight :size="16" />
-            </OnlineButton>
-          </div>
-
-          <div v-if="!yt.hasNextPage && yt.hasMoreSc" class="flex items-center justify-center pt-2">
-            <OnlineButton
-              variant="secondary"
-              size="sm"
-              :disabled="yt.searchLoadingMore"
-              @click="yt.loadMoreSearch"
-            >
-              <RefreshCw v-if="yt.searchLoadingMore" :size="12" class="animate-spin" />
-              <ChevronRight v-else :size="14" />
-              {{ $t('youtube.loadMore') }}
-            </OnlineButton>
-          </div>
-        </div>
+        <OnlineSearchResultsPanel
+          v-model:expanded-id="expandedSearchId"
+          @quick-queue="quickQueueVideo"
+          @options="queueChannelVideo"
+          @open-window="openWatchUrl"
+        />
       </template>
     </div>
 
