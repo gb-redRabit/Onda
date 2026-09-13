@@ -15,6 +15,8 @@ import SubscribeSubtitlesSection from './SubscribeSubtitlesSection.vue';
 import MetadataFieldsSection from './MetadataFieldsSection.vue';
 import SubscribeOutputSection from './SubscribeOutputSection.vue';
 import SubscribeFormatSection from './SubscribeFormatSection.vue';
+import SubscribeProfileSection from './SubscribeProfileSection.vue';
+import SubscribeCoverSection from './SubscribeCoverSection.vue';
 import { useRemoteImage } from '@renderer/composables/useRemoteImage';
 import type { SubscriptionDownloadPrefs } from '@renderer/types/online';
 
@@ -194,8 +196,7 @@ function confirm() {
   emit('confirm', { prefs, downloadAll: downloadAll.value });
 }
 
-function onProfileSelect(e: Event) {
-  const id = (e.target as HTMLSelectElement).value;
+function onProfileSelect(id: string) {
   selectedProfileId.value = id;
   if (!id) return;
   const profile = profiles.value.find((p) => p.id === id);
@@ -237,14 +238,6 @@ function onProfileSelect(e: Event) {
   if (c.sponsorBlock) sponsorBlock.value = c.sponsorBlock;
   if (c.trimStart != null) trimStart.value = c.trimStart;
   if (c.trimEnd != null) trimEnd.value = c.trimEnd;
-}
-
-async function pickCustomCover() {
-  const res = (await window.api?.openImageDialog()) as
-    { canceled?: boolean; filePaths?: string[] } | undefined;
-  if (res && !res.canceled && res.filePaths && res.filePaths.length > 0) {
-    customCoverPath.value = res.filePaths[0];
-  }
 }
 </script>
 
@@ -302,19 +295,12 @@ async function pickCustomCover() {
             <!-- Left column -->
             <div class="space-y-5">
               <!-- Profile -->
-              <section v-if="!isSc">
-                <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
-                  {{ $t('youtube.profilesSection') }}
-                </p>
-                <select
-                  :value="selectedProfileId"
-                  class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                  @change="onProfileSelect"
-                >
-                  <option value="">{{ $t('youtube.profileNone') }}</option>
-                  <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
-                </select>
-              </section>
+              <SubscribeProfileSection
+                :is-sc="isSc"
+                :profiles="profiles"
+                :selected-id="selectedProfileId"
+                @select="onProfileSelect"
+              />
 
               <!-- Format -->
               <SubscribeFormatSection
@@ -330,81 +316,16 @@ async function pickCustomCover() {
               />
 
               <!-- Cover (audio only) -->
-              <section v-if="!isSc && kind !== 'video'">
-                <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
-                  {{ $t('youtube.coverSection') }}
-                </p>
-                <div
-                  class="flex gap-1 bg-base-200/[var(--glass-alpha)] rounded-box p-1 w-fit flex-wrap"
-                >
-                  <button
-                    v-for="c in ['thumbnail', 'none', 'frame', 'clip', 'custom'] as const"
-                    :key="c"
-                    class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
-                    :class="
-                      coverType === c
-                        ? 'bg-primary text-primary-content'
-                        : 'text-base-content/70 hover:text-base-content'
-                    "
-                    @click="coverType = c"
-                  >
-                    {{ $t('settings.cover.' + c) }}
-                  </button>
-                </div>
-                <div v-if="coverType === 'frame'" class="mt-2 grid grid-cols-1 gap-2">
-                  <label class="block text-xs text-base-content/50">
-                    {{ $t('youtube.frameTimeLabel') }}
-                    <input
-                      v-model.number="coverFrameTime"
-                      type="number"
-                      min="0"
-                      class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    />
-                  </label>
-                </div>
-                <div v-else-if="coverType === 'clip'" class="mt-2 grid grid-cols-3 gap-2">
-                  <label class="block text-xs text-base-content/50">
-                    {{ $t('youtube.clipStartLabel') }}
-                    <input
-                      v-model.number="coverClipStart"
-                      type="number"
-                      min="0"
-                      class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    />
-                  </label>
-                  <label class="block text-xs text-base-content/50">
-                    {{ $t('youtube.clipEndLabel') }}
-                    <input
-                      v-model.number="coverClipEnd"
-                      type="number"
-                      min="1"
-                      class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    />
-                  </label>
-                  <label class="block text-xs text-base-content/50">
-                    {{ $t('youtube.clipFormatLabel') }}
-                    <select
-                      v-model="coverClipFormat"
-                      class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    >
-                      <option value="webm">.webm</option>
-                      <option value="mp4">.mp4</option>
-                    </select>
-                  </label>
-                </div>
-                <div v-else-if="coverType === 'custom'" class="mt-2 flex items-center gap-2">
-                  <button
-                    type="button"
-                    class="fx-noise px-3 py-2 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
-                    @click="pickCustomCover"
-                  >
-                    {{ $t('youtube.pickCoverFile') }}
-                  </button>
-                  <span class="text-xs text-base-content/50 truncate flex-1">
-                    {{ customCoverPath || $t('youtube.coverCustomHint') }}
-                  </span>
-                </div>
-              </section>
+              <SubscribeCoverSection
+                v-model:cover-type="coverType"
+                v-model:cover-frame-time="coverFrameTime"
+                v-model:cover-clip-start="coverClipStart"
+                v-model:cover-clip-end="coverClipEnd"
+                v-model:cover-clip-format="coverClipFormat"
+                v-model:custom-cover-path="customCoverPath"
+                :is-sc="isSc"
+                :kind="kind"
+              />
             </div>
 
             <!-- Right column -->
