@@ -1,7 +1,6 @@
 ﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { X, FolderOpen, Download, Tv2 } from '@lucide/vue';
-import FilenameTemplatePresets from '@renderer/components/FilenameTemplatePresets.vue';
+import { X, Download, Tv2 } from '@lucide/vue';
 import { useUIStore } from '@renderer/stores/ui';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
@@ -10,8 +9,13 @@ import { joinPath, sanitizeDirName } from '@renderer/utils/path';
 import { buildSubscribeSummary, type SummaryItem } from '@renderer/utils/subscribeSummary';
 import { buildSubscribePrefs } from '@renderer/utils/subscribePrefs';
 import SubscribePrefsSummary from './SubscribePrefsSummary.vue';
+import SubscribeScopeSelector from './SubscribeScopeSelector.vue';
+import SubscribeChannelCard from './SubscribeChannelCard.vue';
+import SubscribeSubtitlesSection from './SubscribeSubtitlesSection.vue';
+import MetadataFieldsSection from './MetadataFieldsSection.vue';
+import SubscribeOutputSection from './SubscribeOutputSection.vue';
+import SubscribeFormatSection from './SubscribeFormatSection.vue';
 import { useRemoteImage } from '@renderer/composables/useRemoteImage';
-import { AUDIO_FORMATS, VIDEO_QUALITIES } from '@shared/constants';
 import type { SubscriptionDownloadPrefs } from '@renderer/types/online';
 
 const props = withDefaults(
@@ -37,9 +41,6 @@ const emit = defineEmits<{
 }>();
 
 const isEdit = computed(() => props.mode === 'edit');
-
-const audioFormats = AUDIO_FORMATS;
-const videoQualities = VIDEO_QUALITIES;
 
 const settings = useSettingsStore();
 const { t } = useI18n();
@@ -238,11 +239,6 @@ function onProfileSelect(e: Event) {
   if (c.trimEnd != null) trimEnd.value = c.trimEnd;
 }
 
-async function pickOutputDir() {
-  const paths = (await window.api.invoke('dialog:openFolder')) as string[];
-  if (paths.length > 0) outputDir.value = paths[0];
-}
-
 async function pickCustomCover() {
   const res = (await window.api?.openImageDialog()) as
     { canceled?: boolean; filePaths?: string[] } | undefined;
@@ -296,74 +292,10 @@ async function pickCustomCover() {
         <!-- Body -->
         <div class="flex-1 overflow-auto px-5 py-5 space-y-5">
           <!-- Channel card -->
-          <div class="p-5 rounded-box bg-base-100 border border-base-300">
-            <div class="flex items-center gap-4">
-              <div
-                v-if="avatarSrc && !avatarFailed"
-                class="w-16 h-16 rounded-full overflow-hidden shrink-0 bg-base-200/[var(--glass-alpha)]"
-              >
-                <img
-                  :src="avatarSrc"
-                  :alt="props.channel.channelTitle"
-                  class="w-full h-full object-cover"
-                  @error="avatarFailed = true"
-                />
-              </div>
-              <div
-                v-else
-                class="w-16 h-16 rounded-full bg-base-200/[var(--glass-alpha)] border border-base-300 flex items-center justify-center shrink-0 text-base-content/50"
-              >
-                <Tv2 :size="28" />
-              </div>
-              <div class="min-w-0">
-                <p class="text-base font-semibold text-base-content truncate">
-                  {{ props.channel.channelTitle }}
-                </p>
-                <p class="text-xs text-base-content/50">
-                  {{
-                    isSc
-                      ? $t('youtube.subscribeConfigHintSc')
-                      : isEdit
-                        ? $t('youtube.prefSectionHint')
-                        : $t('youtube.subscribeConfigHint')
-                  }}
-                </p>
-              </div>
-            </div>
-          </div>
+          <SubscribeChannelCard :channel="props.channel" :is-sc="isSc" :is-edit="isEdit" />
 
           <!-- Scope (create only) -->
-          <div v-if="!isEdit">
-            <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
-              {{ $t('youtube.subscribeScope') }}
-            </p>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <button
-                class="fx-noise p-3 fx-depth rounded-field border text-left transition-all"
-                :class="
-                  !downloadAll
-                    ? 'border-primary bg-primary/10'
-                    : 'border-base-300 hover:border-base-300'
-                "
-                @click="downloadAll = false"
-              >
-                <p class="text-sm font-medium text-base-content">{{ $t('youtube.scopeNew') }}</p>
-                <p class="text-xs text-base-content/50">{{ $t('youtube.scopeNewDesc') }}</p>
-              </button>
-              <button
-                class="fx-noise p-3 fx-depth rounded-field border text-left transition-all"
-                :class="
-                  downloadAll
-                    ? 'border-primary bg-primary/10'
-                    : 'border-base-300 hover:border-base-300'
-                "
-                @click="downloadAll = true"
-              >
-                <p class="text-sm font-medium text-base-content">{{ $t('youtube.scopeAll') }}</p>
-                <p class="text-xs text-base-content/50">{{ $t('youtube.scopeAllDesc') }}</p>
-              </button>
-            </div>
-          </div>
+          <SubscribeScopeSelector v-model="downloadAll" :is-edit="isEdit" />
 
           <!-- Preferences grid -->
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -385,112 +317,17 @@ async function pickCustomCover() {
               </section>
 
               <!-- Format -->
-              <section v-if="!isSc">
-                <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
-                  {{ $t('youtube.prefKind') }}
-                </p>
-                <div class="flex gap-1 bg-base-200/[var(--glass-alpha)] rounded-box p-1 w-fit">
-                  <button
-                    v-for="k in ['audio', 'video'] as const"
-                    :key="k"
-                    class="fx-noise px-4 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
-                    :class="
-                      kind === k
-                        ? 'bg-primary text-primary-content'
-                        : 'text-base-content/70 hover:text-base-content'
-                    "
-                    @click="kind = k"
-                  >
-                    {{ k === 'audio' ? $t('youtube.prefAudio') : $t('youtube.prefVideo') }}
-                  </button>
-                </div>
-
-                <div class="mt-3 grid grid-cols-2 gap-3">
-                  <label v-if="kind === 'audio'" class="block text-xs text-base-content/50">
-                    {{ $t('youtube.prefFormat') }}
-                    <select
-                      v-model="format"
-                      class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    >
-                      <option v-for="f in audioFormats" :key="f" :value="f">
-                        {{ f === 'best' ? $t('settings.audioNative') : f }}
-                      </option>
-                    </select>
-                  </label>
-
-                  <label v-if="kind === 'video'" class="block text-xs text-base-content/50">
-                    {{ $t('youtube.prefQuality') }}
-                    <select
-                      v-model="quality"
-                      class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    >
-                      <option v-for="q in videoQualities" :key="q" :value="q">{{ q }}</option>
-                    </select>
-                  </label>
-
-                  <label v-if="kind !== 'video'" class="block text-xs text-base-content/50">
-                    {{ $t('settings.defaultAudioQuality') }}
-                    <select
-                      v-model="audioQuality"
-                      class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    >
-                      <option
-                        v-for="q in ['best', 'high', 'medium', 'low'] as const"
-                        :key="q"
-                        :value="q"
-                      >
-                        {{ $t('settings.audioQuality.' + q) }}
-                      </option>
-                    </select>
-                  </label>
-
-                  <label v-if="kind === 'audio'" class="block text-xs text-base-content/50">
-                    {{ $t('youtube.audioLanguage') }}
-                    <input
-                      v-model="audioLanguage"
-                      class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                      :placeholder="$t('youtube.audioLanguagePlaceholder')"
-                    />
-                  </label>
-                </div>
-
-                <div class="mt-3 grid grid-cols-2 gap-3">
-                  <label class="block text-xs text-base-content/50">
-                    {{ $t('youtube.trimStart') }}
-                    <input
-                      v-model.number="trimStart"
-                      type="number"
-                      min="0"
-                      step="1"
-                      class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                      :placeholder="$t('youtube.trimStartPlaceholder')"
-                    />
-                  </label>
-                  <label class="block text-xs text-base-content/50">
-                    {{ $t('youtube.trimEnd') }}
-                    <input
-                      v-model.number="trimEnd"
-                      type="number"
-                      min="0"
-                      step="1"
-                      class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                      :placeholder="$t('youtube.trimEndPlaceholder')"
-                    />
-                  </label>
-                </div>
-
-                <label class="mt-3 block text-xs text-base-content/50">
-                  {{ $t('youtube.sponsorBlock') }}
-                  <select
-                    v-model="sponsorBlock"
-                    class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                  >
-                    <option value="off">{{ $t('youtube.sponsorBlockOff') }}</option>
-                    <option value="mark">{{ $t('youtube.sponsorBlockMark') }}</option>
-                    <option value="remove">{{ $t('youtube.sponsorBlockRemove') }}</option>
-                  </select>
-                </label>
-              </section>
+              <SubscribeFormatSection
+                v-model:kind="kind"
+                v-model:format="format"
+                v-model:quality="quality"
+                v-model:audio-quality="audioQuality"
+                v-model:audio-language="audioLanguage"
+                v-model:trim-start="trimStart"
+                v-model:trim-end="trimEnd"
+                v-model:sponsor-block="sponsorBlock"
+                :is-sc="isSc"
+              />
 
               <!-- Cover (audio only) -->
               <section v-if="!isSc && kind !== 'video'">
@@ -573,140 +410,32 @@ async function pickCustomCover() {
             <!-- Right column -->
             <div class="space-y-5">
               <!-- Metadata -->
-              <section v-if="!isSc">
-                <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-1">
-                  {{ $t('youtube.metaSection') }}
-                </p>
-                <p class="text-[11px] text-base-content/50 mb-2">{{ $t('youtube.metaHint') }}</p>
-                <div class="grid grid-cols-3 gap-2">
-                  <input
-                    v-model="artist"
-                    class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    :placeholder="$t('youtube.metaArtist')"
-                  />
-                  <input
-                    v-model="album"
-                    class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    :placeholder="$t('youtube.metaAlbum')"
-                  />
-                  <input
-                    v-model="year"
-                    class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    :placeholder="$t('youtube.metaYear')"
-                  />
-                </div>
-              </section>
+              <MetadataFieldsSection
+                v-if="!isSc"
+                v-model:artist="artist"
+                v-model:album="album"
+                v-model:year="year"
+                grid-class="grid-cols-3 gap-2"
+              />
 
               <!-- Subtitles -->
-              <section v-if="!isSc">
-                <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
-                  {{ $t('youtube.subsSection') }}
-                </p>
-                <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
-                  <input v-model="subsEnabled" type="checkbox" />
-                  {{ $t('youtube.subsDownload') }}
-                </label>
-                <div v-if="subsEnabled" class="mt-2 space-y-2">
-                  <input
-                    v-model="subsLangs"
-                    class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    :placeholder="$t('youtube.subsLangsPlaceholder')"
-                  />
-                  <div class="grid grid-cols-2 gap-2">
-                    <select
-                      v-model="subsMode"
-                      class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    >
-                      <option value="best">{{ $t('youtube.subsModeBest') }}</option>
-                      <option value="manual">{{ $t('youtube.subsModeManual') }}</option>
-                      <option value="auto">{{ $t('youtube.subsModeAuto') }}</option>
-                    </select>
-                    <select
-                      v-model="subsFormat"
-                      class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    >
-                      <option value="srt">SRT</option>
-                      <option value="vtt">VTT</option>
-                      <option value="ass">ASS</option>
-                    </select>
-                  </div>
-                  <label class="flex items-center gap-2 text-xs cursor-pointer select-none">
-                    <input
-                      v-model="subsFolder"
-                      type="checkbox"
-                      class="w-3.5 h-3.5 fx-depth rounded-field accent-primary"
-                    />
-                    {{ $t('youtube.subsFolder') }}
-                  </label>
-                </div>
-              </section>
+              <SubscribeSubtitlesSection
+                v-model:subs-enabled="subsEnabled"
+                v-model:subs-langs="subsLangs"
+                v-model:subs-mode="subsMode"
+                v-model:subs-format="subsFormat"
+                v-model:subs-folder="subsFolder"
+                :is-sc="isSc"
+              />
 
               <!-- Output folder -->
-              <section>
-                <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
-                  {{ $t('youtube.prefOutputDir') }}
-                </p>
-                <div class="flex items-center gap-2">
-                  <select
-                    v-model="folderMode"
-                    class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                  >
-                    <option value="channel">{{ $t('youtube.prefOutputDirChannel') }}</option>
-                    <option value="global">{{ $t('youtube.prefOutputDirGlobal') }}</option>
-                    <option value="custom">{{ $t('youtube.prefOutputDirCustom') }}</option>
-                  </select>
-                  <button
-                    v-if="folderMode === 'custom'"
-                    class="fx-noise flex items-center gap-1 px-3 py-2 fx-depth rounded-field border border-base-300 text-base-content/70 hover:bg-base-content/10 transition-colors shrink-0"
-                    @click="pickOutputDir"
-                  >
-                    <FolderOpen :size="14" />
-                  </button>
-                </div>
-                <p
-                  v-if="folderMode === 'channel'"
-                  class="mt-1 truncate text-[11px] text-base-content/50"
-                  :title="channelFolder"
-                >
-                  {{ $t('youtube.prefOutputDirChannelHint', { folder: channelFolder }) }}
-                </p>
-                <input
-                  v-else-if="folderMode === 'custom'"
-                  v-model="outputDir"
-                  readonly
-                  class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                  :placeholder="$t('youtube.prefOutputDirPlaceholder')"
-                />
-              </section>
-
-              <!-- Filename template -->
-              <section>
-                <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-1">
-                  {{ $t('youtube.prefTemplate') }}
-                </p>
-                <input
-                  v-model="filenameTemplate"
-                  class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                  :placeholder="$t('youtube.prefTemplatePlaceholder')"
-                />
-                <div class="mt-1.5">
-                  <FilenameTemplatePresets @preset="(p) => (filenameTemplate = p)" />
-                </div>
-              </section>
-
-              <!-- Add to library -->
-              <section>
-                <label
-                  class="flex items-center gap-2 text-sm cursor-pointer select-none"
-                  :title="$t('youtube.addToLibraryPrefDesc')"
-                >
-                  <input v-model="addToLibrary" type="checkbox" />
-                  <span>{{ $t('youtube.addToLibraryPref') }}</span>
-                </label>
-                <p class="mt-1 text-[11px] text-base-content/50">
-                  {{ $t('youtube.addToLibraryPrefDesc') }}
-                </p>
-              </section>
+              <SubscribeOutputSection
+                v-model:folder-mode="folderMode"
+                v-model:output-dir="outputDir"
+                v-model:filename-template="filenameTemplate"
+                v-model:add-to-library="addToLibrary"
+                :channel-folder="channelFolder"
+              />
             </div>
           </div>
 

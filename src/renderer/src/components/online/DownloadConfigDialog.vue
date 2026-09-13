@@ -12,6 +12,7 @@ import type { MetaOverride } from '@renderer/types/online';
 import type { IpcDownloadConfig } from '@shared/types/ipc';
 import { buildDownloadConfig } from '@renderer/utils/downloadConfig';
 import DownloadPreviewCard from './DownloadPreviewCard.vue';
+import MetadataFieldsSection from './MetadataFieldsSection.vue';
 import { AUDIO_QUALITIES, DOWNLOAD_COVER_TYPES } from '@renderer/utils/downloadConfigMeta';
 
 const props = defineProps<{
@@ -559,29 +560,11 @@ function onProfileSelect(e: Event) {
               </section>
 
               <!-- Metadata -->
-              <section>
-                <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-1">
-                  {{ $t('youtube.metaSection') }}
-                </p>
-                <p class="text-[11px] text-base-content/50 mb-2">{{ $t('youtube.metaHint') }}</p>
-                <div class="grid grid-cols-3 gap-3">
-                  <input
-                    v-model="artist"
-                    class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    :placeholder="$t('youtube.metaArtist')"
-                  />
-                  <input
-                    v-model="album"
-                    class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    :placeholder="$t('youtube.metaAlbum')"
-                  />
-                  <input
-                    v-model="year"
-                    class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
-                    :placeholder="$t('youtube.metaYear')"
-                  />
-                </div>
-              </section>
+              <MetadataFieldsSection
+                v-model:artist="artist"
+                v-model:album="album"
+                v-model:year="year"
+              />
 
               <!-- Subtitles -->
               <section v-if="!isSc">
