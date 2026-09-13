@@ -1,18 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, markRaw, defineAsyncComponent } from 'vue';
-import type { Component } from 'vue';
-import {
-  BarChart3,
-  Settings2,
-  LayoutGrid,
-  Maximize2,
-  Minimize2,
-  Music2,
-  Triangle,
-  Puzzle,
-  Circle,
-  Square
-} from '@lucide/vue';
+import { ref, computed, onMounted, onUnmounted, watch, defineAsyncComponent } from 'vue';
+import { BarChart3, Settings2, LayoutGrid, Maximize2, Minimize2, Music2 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -25,6 +13,11 @@ import AudioTrackInfo from '@renderer/components/audio/AudioTrackInfo.vue';
 import AudioVizSettings from '@renderer/components/audio/AudioVizSettings.vue';
 import AudioLayoutSwitcher from '@renderer/components/audio/AudioLayoutSwitcher.vue';
 import type { AudioLayoutElement } from '@renderer/types/settings';
+import {
+  pluginIcon,
+  resolveDecorationClasses,
+  resolveElementDecoration
+} from '@renderer/utils/audioView';
 
 // The layout editor (750+ lines) only renders when the user opens it — lazy.
 const AudioLayoutEditor = defineAsyncComponent(
@@ -36,46 +29,12 @@ const audio = useAudioPlayer();
 const settings = useSettingsStore();
 const pluginsStore = usePluginsStore();
 
-const DECORATION_CLASS: Record<string, Record<string, string>> = {
-  visualization: {
-    outline: 'ring-1 ring-inset ring-primary/40 bg-base-300/10',
-    glow: 'shadow-[0_0_24px_rgba(255,255,255,0.12)] bg-base-300/10',
-    glass: 'bg-base-300/20 backdrop-blur-md'
-  },
-  trackInfo: {
-    badge: 'rounded-full px-4 py-1.5 bg-base-300/60 ring-1 ring-base-content/15',
-    glass: 'rounded-field bg-base-300/30 backdrop-blur-md ring-1 ring-base-content/10',
-    glow: 'drop-shadow-[0_0_8px_rgba(255,255,255,0.25)]'
-  },
-  progress: {
-    glow: 'shadow-[0_0_14px_rgba(255,255,255,0.15)]',
-    neon: 'shadow-[0_0_18px_rgba(148,163,255,0.55)]'
-  },
-  controls: {
-    glass: 'rounded-field bg-base-300/40 backdrop-blur-md ring-1 ring-base-content/10',
-    glow: 'shadow-[0_0_18px_rgba(255,255,255,0.15)]'
-  }
-};
-
 function elementDecoration(el: AudioLayoutElement): string | undefined {
-  const live = pluginsStore.decorations[el.id];
-  return live ?? el.decoration;
+  return resolveElementDecoration(el, pluginsStore.decorations);
 }
 
 function decorationClasses(el: AudioLayoutElement): string | undefined {
-  const dec = elementDecoration(el);
-  return dec && dec !== 'none' ? DECORATION_CLASS[el.id]?.[dec] : undefined;
-}
-
-const PLUGIN_TOOLBAR_ICONS: Record<string, Component> = {
-  Triangle: markRaw(Triangle),
-  Puzzle: markRaw(Puzzle),
-  Circle: markRaw(Circle),
-  Square: markRaw(Square)
-};
-
-function pluginIcon(name?: string): Component {
-  return (name && PLUGIN_TOOLBAR_ICONS[name]) || Puzzle;
+  return resolveDecorationClasses(el, pluginsStore.decorations);
 }
 
 const pluginCommands = computed(() => pluginsStore.commandsIn('audio-view'));

@@ -9,6 +9,11 @@ import {
   type DownloadCtx
 } from '@renderer/composables/useDownloadsContextMenu';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
+import {
+  buildDownloadFilters,
+  groupDownloads,
+  visibleDownloads
+} from '@renderer/utils/downloadsView';
 import type { DownloadTask } from '@renderer/types/online';
 import type { MediaFile } from '@renderer/types/media';
 import {
@@ -199,61 +204,23 @@ const coverStatusClass = (t: { coverStatus?: string }): string => {
   }
 };
 
-// Single pass over the list instead of four separate filters on every progress
-// event (plan 1.6).
-const grouped = computed(() => {
-  const active: typeof yt.downloads = [];
-  const completed: typeof yt.downloads = [];
-  const failed: typeof yt.downloads = [];
-  let pausedCount = 0;
-  for (const d of yt.downloads) {
-    if (d.status === 'downloading' || d.status === 'pending' || d.status === 'paused') {
-      active.push(d);
-    } else if (d.status === 'completed') {
-      completed.push(d);
-    } else if (d.status === 'error' || d.status === 'cancelled') {
-      failed.push(d);
-    }
-    if (d.status === 'paused') pausedCount++;
-  }
-  return { active, completed, failed, pausedCount };
-});
+const grouped = computed(() => groupDownloads(yt.downloads));
 const active = computed(() => grouped.value.active);
 const done = computed(() => grouped.value.completed);
 const failed = computed(() => grouped.value.failed);
 const pausedCount = computed(() => grouped.value.pausedCount);
 
-const visible = computed(() => {
-  let list: typeof yt.downloads;
-  switch (filter.value) {
-    case 'active':
-      list = active.value;
-      break;
-    case 'completed':
-      list = done.value;
-      break;
-    case 'failed':
-      list = failed.value;
-      break;
-    default:
-      list = yt.downloads;
-  }
-  if (channelFilter.value) {
-    list = list.filter((d) => d.channelId === channelFilter.value);
-  }
-  const q = searchQuery.value.toLowerCase().trim();
-  if (q) list = list.filter((d) => (d.title || '').toLowerCase().includes(q));
-  return list;
-});
+const visible = computed(() =>
+  visibleDownloads(
+    yt.downloads,
+    grouped.value,
+    filter.value,
+    channelFilter.value,
+    searchQuery.value
+  )
+);
 
-const filters = computed<
-  Array<{ id: 'all' | 'active' | 'completed' | 'failed'; labelKey: string; count: number }>
->(() => [
-  { id: 'all', labelKey: 'downloads.filterAll', count: yt.downloads.length },
-  { id: 'active', labelKey: 'downloads.filterActive', count: active.value.length },
-  { id: 'completed', labelKey: 'downloads.filterCompleted', count: done.value.length },
-  { id: 'failed', labelKey: 'downloads.filterFailed', count: failed.value.length }
-]);
+const filters = computed(() => buildDownloadFilters(yt.downloads, grouped.value));
 
 const icons = {
   downloading: Download,
