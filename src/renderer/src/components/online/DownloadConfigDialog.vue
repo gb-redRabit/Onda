@@ -1,6 +1,6 @@
 ﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { X, FolderOpen, Download, ImagePlus, Image, Save, Trash2 } from '@lucide/vue';
+import { X, FolderOpen, Download, ImagePlus, Save, Trash2 } from '@lucide/vue';
 import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@renderer/stores/ui';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -11,6 +11,7 @@ import FilenameTemplatePresets from '@renderer/components/FilenameTemplatePreset
 import type { MetaOverride } from '@renderer/types/online';
 import type { IpcDownloadConfig } from '@shared/types/ipc';
 import { buildDownloadConfig } from '@renderer/utils/downloadConfig';
+import DownloadPreviewCard from './DownloadPreviewCard.vue';
 import { AUDIO_QUALITIES, DOWNLOAD_COVER_TYPES } from '@renderer/utils/downloadConfigMeta';
 
 const props = defineProps<{
@@ -276,30 +277,7 @@ function onProfileSelect(e: Event) {
         <div class="flex-1 overflow-auto px-5 py-5">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <!-- Left: preview -->
-            <div class="space-y-4">
-              <div
-                class="aspect-video rounded-box overflow-hidden bg-base-100 border border-base-300"
-              >
-                <img
-                  v-if="props.thumbnail"
-                  :src="props.thumbnail"
-                  :alt="props.title"
-                  class="w-full h-full object-cover"
-                />
-                <div
-                  v-else
-                  class="w-full h-full flex items-center justify-center text-base-content/50"
-                >
-                  <Image :size="32" />
-                </div>
-              </div>
-              <div class="p-3 rounded-box bg-base-100 border border-base-300">
-                <p class="text-xs text-base-content/50">{{ $t('youtube.downloadConfigHint') }}</p>
-                <p class="text-sm font-medium text-base-content mt-1 line-clamp-2">
-                  {{ props.title }}
-                </p>
-              </div>
-            </div>
+            <DownloadPreviewCard :thumbnail="props.thumbnail" :title="props.title" />
 
             <!-- Right: settings -->
             <div class="space-y-5">
