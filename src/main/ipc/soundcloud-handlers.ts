@@ -27,11 +27,11 @@ import {
   scTrackStreamUrl,
   scProfileSnapshot,
   upgradeArtworkUrl,
-  extractSignedUrlExpiryMs,
   ScApiError
 } from './soundcloud-client';
 import { durMs, scThumbFromEntry, entryUrl, scVideoFromEntry } from './soundcloud-entries';
 export { scVideoFromEntry } from './soundcloud-entries';
+import { STREAM_CACHE_MAX, streamCacheExpiry, type ScStreamCacheEntry } from './soundcloud-stream';
 
 function errorCodeOf(e: unknown): IpcDownloadErrorCode {
   if (e instanceof ScApiError) return 'network';
@@ -86,31 +86,8 @@ async function fallbackResolvePage(
 // ---------------------------------------------------------------------------
 // Stream URL resolution — progressive MP3 through the API, LRU-cached.
 
-interface ScStreamCacheEntry {
-  url: string;
-  expires: number;
-}
 const streamCache = new Map<string, ScStreamCacheEntry>();
-// Fallback for URLs without a parseable signature; signed SC CDN URLs
-// (~30 min lifetime) always use their own embedded expiry minus a safety
-// margin — see streamCacheExpiry below.
-const STREAM_CACHE_FALLBACK_TTL_MS = 10 * 60 * 1000;
-// Serve the URL at most until this long BEFORE its real expiry.
-const STREAM_EXPIRY_SAFETY_MS = 60 * 1000;
-const STREAM_CACHE_MAX = 50;
 const streamPending = new Map<string, Promise<IpcStreamResult>>();
-
-// Cache lifetime for a resolved CDN URL: the signature's own expiry (parsed
-// from the Policy blob) minus a safety margin, capped by the fallback TTL.
-function streamCacheExpiry(cdnUrl: string): number {
-  const now = Date.now();
-  const epoch = extractSignedUrlExpiryMs(cdnUrl);
-  if (epoch == null) return now + STREAM_CACHE_FALLBACK_TTL_MS;
-  return Math.min(
-    now + STREAM_CACHE_FALLBACK_TTL_MS,
-    Math.max(now + 5000, epoch - STREAM_EXPIRY_SAFETY_MS)
-  );
-}
 
 export async function getScStreamUrl(rawUrl: string): Promise<IpcStreamResult> {
   // Legacy saved SoundCloud entries carry a bare numeric track id instead of
