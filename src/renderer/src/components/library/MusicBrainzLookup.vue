@@ -1,15 +1,18 @@
 ﻿<script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Search, Disc3, Music2, Album, Hash, Calendar, Check, Loader2, X } from '@lucide/vue';
+import { Disc3, Check, Loader2, X } from '@lucide/vue';
 import type { MusicbrainzRelease } from '@shared/types/ipc';
 import {
   buildMusicbrainzQuery,
   buildPreviewRows,
-  displayTrackNumber,
   splitInitialQuery
 } from '@renderer/utils/musicbrainz';
 import MusicBrainzBatchPanel from './MusicBrainzBatchPanel.vue';
+import MusicBrainzSearchForm from './MusicBrainzSearchForm.vue';
+import MusicBrainzReleaseCard from './MusicBrainzReleaseCard.vue';
+import MusicBrainzTrackList from './MusicBrainzTrackList.vue';
+import MusicBrainzPreviewTable from './MusicBrainzPreviewTable.vue';
 import { useUIStore } from '@renderer/stores/ui';
 
 const { t } = useI18n();
@@ -361,58 +364,14 @@ onMounted(() => {
           </button>
         </div>
 
-        <div class="p-4 border-b border-base-300 shrink-0 space-y-2">
-          <div class="grid grid-cols-2 gap-2">
-            <label class="flex flex-col gap-1">
-              <span class="text-[11px] text-base-content/60">Wykonawca / Artysta</span>
-              <input
-                v-model="queryArtist"
-                placeholder="np. Skillet"
-                class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
-                @keydown.enter="search"
-              />
-            </label>
-            <label class="flex flex-col gap-1">
-              <span class="text-[11px] text-base-content/60">Tytuł</span>
-              <input
-                v-model="queryTitle"
-                placeholder="np. Monster"
-                class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
-                @keydown.enter="search"
-              />
-            </label>
-            <label class="flex flex-col gap-1">
-              <span class="text-[11px] text-base-content/60">Album / Wydanie</span>
-              <input
-                v-model="queryAlbum"
-                placeholder="np. Awake"
-                class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
-                @keydown.enter="search"
-              />
-            </label>
-            <label class="flex flex-col gap-1">
-              <span class="text-[11px] text-base-content/60">Rok</span>
-              <input
-                v-model="queryYear"
-                placeholder="np. 2009"
-                class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
-                @keydown.enter="search"
-              />
-            </label>
-          </div>
-          <div class="flex gap-2">
-            <div class="flex-1 text-[11px] text-base-content/40 self-center truncate">
-              Puste pola pomijane • np. Artysta + Album
-            </div>
-            <button
-              class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1.5 shrink-0"
-              :disabled="loading || !query.trim()"
-              @click="search"
-            >
-              <Search :size="14" /> {{ $t('musicbrainz.search') }}
-            </button>
-          </div>
-        </div>
+        <MusicBrainzSearchForm
+          v-model:artist="queryArtist"
+          v-model:title="queryTitle"
+          v-model:album="queryAlbum"
+          v-model:year="queryYear"
+          :loading="loading"
+          @search="search"
+        />
 
         <div class="flex-1 overflow-y-auto p-4 space-y-3">
           <div
@@ -438,53 +397,13 @@ onMounted(() => {
 
           <template v-for="rel in releases" :key="rel.id">
             <div class="rounded-box border border-base-300 overflow-hidden">
-              <button
-                class="w-full flex items-start gap-3 p-3 hover:bg-base-content/10 transition-colors text-left"
-                :class="{ 'bg-primary/10': selectedId === rel.id }"
-                @click="selectRelease(rel)"
-              >
-                <div
-                  class="w-10 h-10 rounded-field bg-base-100 flex items-center justify-center shrink-0 overflow-hidden"
-                >
-                  <img
-                    v-if="coverThumbs[rel.id]"
-                    :src="coverThumbs[rel.id]"
-                    class="w-full h-full object-cover"
-                  />
-                  <Music2 v-else :size="18" class="text-base-content/40" />
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="text-sm font-medium truncate">{{ rel.title }}</div>
-                  <div class="text-xs text-base-content/70 truncate">
-                    {{
-                      rel['artist-credit']?.[0]?.name ||
-                      rel['artist-credit']?.[0]?.artist?.name ||
-                      '?'
-                    }}
-                  </div>
-                  <div class="flex gap-3 mt-1 text-[11px] text-base-content/50">
-                    <span class="flex items-center gap-1"
-                      ><Calendar :size="10" />{{ rel.date || '?' }}</span
-                    >
-                    <span class="flex items-center gap-1"
-                      ><Hash :size="10" />{{ rel['track-count'] || '?' }}</span
-                    >
-                    <span class="flex items-center gap-1"
-                      ><Album :size="10" />{{ rel.country || '?' }}</span
-                    >
-                  </div>
-                </div>
-                <Check
-                  v-if="selectedId === rel.id && !lookingUp"
-                  :size="16"
-                  class="text-primary shrink-0 mt-1"
-                />
-                <Loader2
-                  v-else-if="lookingUp === rel.id"
-                  :size="14"
-                  class="animate-spin text-base-content/70 shrink-0 mt-1"
-                />
-              </button>
+              <MusicBrainzReleaseCard
+                :rel="rel"
+                :selected="selectedId === rel.id"
+                :looking-up="lookingUp === rel.id"
+                :thumb="coverThumbs[rel.id]"
+                @select="selectRelease(rel)"
+              />
 
               <div
                 v-if="lookupResult && selectedId === rel.id"
@@ -499,74 +418,14 @@ onMounted(() => {
                   — {{ lookupResult['artist-credit']?.[0]?.name || '?' }}
                 </div>
 
-                <div
-                  v-if="lookupResult.media?.[0]?.tracks"
-                  class="space-y-1 max-h-32 overflow-y-auto"
-                >
-                  <div
-                    v-for="(mediumTrack, ti) in lookupResult.media[0].tracks.slice(0, 30)"
-                    :key="mediumTrack.id"
-                    class="flex items-center gap-2 text-xs text-base-content/70"
-                  >
-                    <span class="w-5 text-right shrink-0 text-base-content/50">{{
-                      displayTrackNumber(mediumTrack, ti as number)
-                    }}</span>
-                    <span class="truncate">{{ mediumTrack.title }}</span>
-                  </div>
-                  <div
-                    v-if="lookupResult.media[0].tracks.length > 30"
-                    class="text-xs text-base-content/50 text-center pt-1"
-                  >
-                    + {{ lookupResult.media[0].tracks.length - 30 }} {{ $t('musicbrainz.more') }}
-                  </div>
-                </div>
+                <MusicBrainzTrackList :tracks="lookupResult.media?.[0]?.tracks ?? []" />
 
-                <div
+                <MusicBrainzPreviewTable
                   v-if="props.track"
-                  class="border border-base-300 rounded-field overflow-hidden"
-                >
-                  <div class="bg-base-300/50 px-2 py-1 text-[11px] font-medium">Podgląd zmian</div>
-                  <div
-                    v-for="row in previewRows"
-                    :key="row.key"
-                    class="flex items-center gap-2 px-2 py-1.5 text-xs border-t border-base-300/30"
-                  >
-                    <input
-                      type="checkbox"
-                      :checked="includeFields[row.key as keyof typeof includeFields]"
-                      class="checkbox checkbox-xs"
-                      @change="
-                        (includeFields as unknown as Record<string, boolean>)[row.key] = (
-                          $event.target as HTMLInputElement
-                        ).checked
-                      "
-                    />
-                    <span class="w-14 shrink-0">{{ row.label }}</span>
-                    <span class="flex-1 truncate text-base-content/50 line-through">{{
-                      row.old
-                    }}</span>
-                    <span class="text-primary">→</span>
-                    <span class="flex-1 truncate font-medium">{{ row.now }}</span>
-                    <span
-                      v-if="applyResult"
-                      class="text-[11px] shrink-0"
-                      :class="
-                        applyResult[row.key] === true
-                          ? 'text-success'
-                          : applyResult[row.key] === false
-                            ? 'text-error'
-                            : 'text-base-content/40'
-                      "
-                      >{{
-                        applyResult[row.key] === true
-                          ? '✓'
-                          : applyResult[row.key] === false
-                            ? '✗'
-                            : String(applyResult[row.key] || '')
-                      }}</span
-                    >
-                  </div>
-                </div>
+                  v-model:include-fields="includeFields"
+                  :rows="previewRows"
+                  :apply-result="applyResult"
+                />
 
                 <MusicBrainzBatchPanel
                   v-if="props.batchTracks && props.batchTracks.length"

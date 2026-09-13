@@ -15,6 +15,7 @@ import {
 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
+import AudioControlsMicro from './AudioControlsMicro.vue';
 import {
   ICON,
   ICON_SM,
@@ -496,20 +497,6 @@ function onVolume(e: MouseEvent) {
     </div>
 
     <!-- ═══ MICRO (<28px tall) — only the play button ═══ -->
-    <div v-else class="flex items-center justify-center w-full h-full p-0.5 overflow-hidden">
-      <button
-        :class="PLAY_BOX.micro"
-        class="relative rounded-full bg-primary/15 backdrop-blur-xl border border-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shrink-0"
-        @click="togglePlay"
-      >
-        <Pause
-          v-if="audio.isPlaying.value"
-          :size="PLAY_SIZE.micro"
-          class="text-primary"
-          fill="currentColor"
-        />
-        <Play v-else :size="PLAY_SIZE.micro" class="text-primary ml-0.5" fill="currentColor" />
-      </button>
-    </div>
+    <AudioControlsMicro v-else />
   </div>
 </template>
