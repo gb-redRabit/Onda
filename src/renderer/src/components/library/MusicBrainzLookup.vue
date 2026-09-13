@@ -8,6 +8,7 @@ import {
   buildPreviewRows,
   splitInitialQuery
 } from '@renderer/utils/musicbrainz';
+import { coverBytesToDataUrl, getMusicbrainzCover } from '@renderer/utils/musicbrainzCover';
 import MusicBrainzBatchPanel from './MusicBrainzBatchPanel.vue';
 import MusicBrainzSearchForm from './MusicBrainzSearchForm.vue';
 import MusicBrainzReleaseCard from './MusicBrainzReleaseCard.vue';
@@ -127,31 +128,16 @@ async function search() {
     setStatus(`Znaleziono ${r.releases.length}`);
     // pobierz mini okładki dla wyników (lazy, z throttlingiem main 1 req/s)
     for (const rel of r.releases.slice(0, 6)) {
-      (
-        window.api as unknown as {
-          musicbrainzGetCoverData: (
-            id: string
-          ) => Promise<{ success: boolean; data?: number[]; mime?: string }>;
+      getMusicbrainzCover(rel.id).then((cr) => {
+        if (cr?.success && cr.data) {
+          try {
+            coverThumbs.value = {
+              ...coverThumbs.value,
+              [rel.id]: coverBytesToDataUrl(cr.data, cr.mime)
+            };
+          } catch {}
         }
-      )
-        ?.musicbrainzGetCoverData(rel.id)
-        .then((cr) => {
-          if (cr?.success && cr.data) {
-            try {
-              const bytes = new Uint8Array(cr.data);
-              let binary = '';
-              const chunk = 8192;
-              for (let i = 0; i < bytes.length; i += chunk) {
-                binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-              }
-              const b64 = btoa(binary);
-              coverThumbs.value = {
-                ...coverThumbs.value,
-                [rel.id]: `data:${cr.mime || 'image/jpeg'};base64,${b64}`
-              };
-            } catch {}
-          }
-        });
+      });
     }
   } else {
     error.value = r?.error || t('musicbrainz.noResults');
@@ -170,17 +156,7 @@ async function selectRelease(release: MusicbrainzRelease) {
   if (r?.success && r.release) {
     const result: LookupResult = { ...r.release };
     setStatus('Pobieranie okładki…');
-    const coverR = await (
-      window.api as unknown as {
-        musicbrainzGetCoverData: (id: string) => Promise<{
-          success: boolean;
-          data?: number[];
-          mime?: string;
-          error?: string;
-          rateLimited?: boolean;
-        }>;
-      }
-    )?.musicbrainzGetCoverData(release.id);
+    const coverR = await getMusicbrainzCover(release.id);
     if (coverR?.success && coverR.data) {
       result._coverData = coverR.data;
       result._coverMime = coverR.mime;
