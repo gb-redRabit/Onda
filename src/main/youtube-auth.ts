@@ -12,6 +12,13 @@ import {
 import type { YoutubeAuthMethod } from '../renderer/src/types/settings';
 import { logger } from '../shared/logger';
 import { pipWindowIcon } from './pip-icon';
+import {
+  SESSION_COOKIE_NAMES,
+  YT_COOKIE_HOST,
+  cookieOnDomain,
+  hasSessionCookies,
+  isValidCookieFileAt
+} from './youtube-auth-cookies';
 import { getAuthSettings, setAuthSettings } from './youtube-auth-settings';
 
 // Dedicated persistent partition so the Google session survives restarts and
@@ -20,30 +27,15 @@ const AUTH_PARTITION = 'persist:youtube-auth';
 const COOKIES_FILE = 'youtube-cookies.txt';
 const LOGIN_POLL_MS = 1000;
 const LOGIN_TIMEOUT_MS = 10 * 60 * 1000;
-const SESSION_COOKIE_NAMES = ['SID', 'HSID', '__Secure-1PSID'];
 // Starting on youtube.com makes Google redirect to sign-in when needed and then
 // back to youtube.com after login — so the .youtube.com session cookies that
 // yt-dlp actually needs are always present before we export.
 const LOGIN_START_URL = 'https://www.youtube.com/';
-const YT_COOKIE_HOST = 'youtube.com';
 
 let loginWindow: BrowserWindow | null = null;
 
 function cookiesFilePath(): string {
   return join(app.getPath('userData'), COOKIES_FILE);
-}
-
-function cookieOnDomain(cookieDomain: string, host: string): boolean {
-  return cookieDomain === host || cookieDomain === '.' + host || cookieDomain.endsWith('.' + host);
-}
-
-function hasSessionCookies(cookies: Electron.Cookie[], host?: string): Electron.Cookie[] {
-  return cookies.filter(
-    (c) =>
-      !!c.value &&
-      (!host || cookieOnDomain(c.domain || '', host)) &&
-      SESSION_COOKIE_NAMES.includes(c.name)
-  );
 }
 
 // A signed-in YouTube session is present when .youtube.com carries one of the
@@ -177,16 +169,6 @@ async function writeTempSessionCookies(): Promise<string | null> {
 export async function cleanupYtAuthTemp(auth?: YtAuthConfig | null): Promise<void> {
   if (!auth || !auth.temp || !auth.cookiesPath) return;
   await unlink(auth.cookiesPath).catch(() => {});
-}
-
-async function isValidCookieFileAt(path?: string): Promise<boolean> {
-  if (!path) return false;
-  try {
-    const content = await readFile(path, 'utf-8');
-    return isValidCookieFile(content);
-  } catch {
-    return false;
-  }
 }
 
 // Fallback for the "electron" method: if the partition's cookie store is not
