@@ -37,6 +37,7 @@ import {
 } from '@renderer/utils/onlineHelpers';
 import { buildJob, buildTaskInput, type JobExtra } from '@renderer/utils/onlineJob';
 import { toDownloadTask } from '@renderer/utils/onlineDownloadTask';
+import { channelUrlForPrefix } from '@renderer/utils/onlineChannel';
 
 export const useOnlineStore = defineStore('online', () => {
   const { t } = useI18n();
@@ -99,11 +100,7 @@ export const useOnlineStore = defineStore('online', () => {
 
   // Opens the channel/profile view for an @/$ prefixed query.
   async function openChannelPrefix(prefix: { platform: 'youtube' | 'soundcloud'; name: string }) {
-    const url =
-      prefix.platform === 'youtube'
-        ? `https://www.youtube.com/@${prefix.name}`
-        : `https://soundcloud.com/${prefix.name}`;
-    await openChannel(url);
+    await openChannel(channelUrlForPrefix(prefix));
   }
 
   const searchScOffset = ref(0);
