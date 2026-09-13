@@ -18,6 +18,12 @@ import { useSavedStore } from '@renderer/stores/saved';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
 import { detectChannelPrefix, detectPlatform, parseBatchInputAll } from '@shared/platform';
+import {
+  buildChannelUrl,
+  countSkippedBatchLines,
+  isScItem,
+  pageTotalFromCount
+} from '@renderer/utils/onlineView';
 import OnlineSearchBar from '@renderer/components/online/OnlineSearchBar.vue';
 import OnlineViewTabs from '@renderer/components/online/OnlineViewTabs.vue';
 import OnlineButton from '@renderer/components/online/OnlineButton.vue';
@@ -97,8 +103,7 @@ function watchUrl(item: { id: string; url?: string }): string {
 
 // Corner tag for merged search grids.
 function platformTagFor(item: { id: string; url?: string }): 'YT' | 'SC' {
-  if (!item.url && /^\d+$/.test(item.id)) return 'SC';
-  return detectPlatform(yt.itemUrl(item))?.platform === 'soundcloud' ? 'SC' : 'YT';
+  return isScItem(item, yt.itemUrl(item)) ? 'SC' : 'YT';
 }
 
 function openWatchUrl(url: string) {
@@ -161,8 +166,7 @@ const configDialogPlatform = computed<'youtube' | 'soundcloud'>(() => {
   if (!t) return 'youtube';
   const item = t.mode === 'single' ? t.video : yt.resolved?.items[0];
   if (!item) return 'youtube';
-  if (!item.url && /^\d+$/.test(item.id)) return 'soundcloud';
-  return detectPlatform(yt.itemUrl(item))?.platform === 'soundcloud' ? 'soundcloud' : 'youtube';
+  return isScItem(item, yt.itemUrl(item)) ? 'soundcloud' : 'youtube';
 });
 
 function togglePrefs(sub: Subscription) {
@@ -176,11 +180,7 @@ function openDiscover() {
 function openChannelFromSubscription(channelId: string) {
   openDiscover();
   const sub = yt.getSubscription(channelId);
-  const url =
-    sub?.platform === 'soundcloud'
-      ? `https://soundcloud.com/${channelId}`
-      : `https://www.youtube.com/channel/${channelId}`;
-  void yt.openChannel(url);
+  void yt.openChannel(buildChannelUrl(channelId, sub?.platform));
 }
 
 function downloadSubscriptionAll(sub: Subscription) {
@@ -199,18 +199,14 @@ const isResolvable = computed(() => detectPlatform(input.value) !== null);
 
 const selectedCount = computed(() => yt.selectedResolved.size);
 
-const pageTotal = computed(() => Math.ceil(yt.searchResults.length / 20));
+const pageTotal = computed(() => pageTotalFromCount(yt.searchResults.length));
 
 const batchEntries = computed(() => parseBatchInputAll(batchText.value));
 
 // Lines that were dropped by the parser (channels, prefixes, junk).
-const batchSkippedCount = computed(() => {
-  const total = batchText.value
-    .split(/[\n,]+/)
-    .map((s) => s.trim())
-    .filter(Boolean).length;
-  return Math.max(0, total - batchEntries.value.length);
-});
+const batchSkippedCount = computed(() =>
+  countSkippedBatchLines(batchText.value, batchEntries.value.length)
+);
 
 // SoundCloud links ignore download profiles — hide the selector for them.
 const batchHasSc = computed(() => batchEntries.value.some((e) => e.platform === 'soundcloud'));

@@ -7,6 +7,7 @@ import { useSettingsStore } from '@renderer/stores/settings';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { useI18n } from 'vue-i18n';
 import { joinPath, sanitizeDirName } from '@renderer/utils/path';
+import { buildSubscribeSummary, type SummaryItem } from '@renderer/utils/subscribeSummary';
 import { AUDIO_FORMATS, VIDEO_QUALITIES } from '@shared/constants';
 import type { SubscriptionDownloadPrefs, CoverSpec, MetaOverride } from '@renderer/types/online';
 
@@ -101,92 +102,33 @@ const channelFolder = computed(() => {
   return baseDir.value ? joinPath(baseDir.value, name) : name;
 });
 
-interface SummaryItem {
-  label: string;
-  value: string;
-}
-
-const prefsSummary = computed<SummaryItem[]>(() => {
-  const items: SummaryItem[] = [];
-  if (isSc.value) {
-    const folder =
-      folderMode.value === 'channel'
-        ? channelFolder.value || t('youtube.prefOutputDirChannel')
-        : folderMode.value === 'custom'
-          ? outputDir.value || t('youtube.prefOutputDirCustom')
-          : t('youtube.prefOutputDirGlobal');
-    items.push({ label: 'SoundCloud MP3', value: folder });
-    if (filenameTemplate.value.trim()) {
-      items.push({ label: t('youtube.prefTemplate'), value: filenameTemplate.value.trim() });
-    }
-    items.push({
-      label: t('youtube.addToLibraryPref'),
-      value: addToLibrary.value ? t('common.yes') : t('common.no')
-    });
-    return items;
-  }
-  items.push({
-    label: t('youtube.prefKind'),
-    value: kind.value === 'audio' ? t('youtube.prefAudio') : t('youtube.prefVideo')
-  });
-  if (kind.value === 'audio') {
-    items.push({ label: t('youtube.prefFormat'), value: format.value });
-  }
-  if (kind.value === 'video') {
-    items.push({ label: t('youtube.prefQuality'), value: quality.value });
-  }
-  if (kind.value !== 'video') {
-    items.push({
-      label: t('settings.defaultAudioQuality'),
-      value: t('settings.audioQuality.' + audioQuality.value)
-    });
-  }
-  if (audioLanguage.value.trim()) {
-    items.push({ label: t('youtube.audioLanguage'), value: audioLanguage.value.trim() });
-  }
-  if (kind.value !== 'video') {
-    items.push({ label: t('youtube.coverSection'), value: t('settings.cover.' + coverType.value) });
-  }
-  if (sponsorBlock.value !== 'off') {
-    items.push({
-      label: t('youtube.sponsorBlock'),
-      value:
-        sponsorBlock.value === 'mark'
-          ? t('youtube.sponsorBlockMark')
-          : t('youtube.sponsorBlockRemove')
-    });
-  }
-  if (trimStart.value != null && trimEnd.value != null) {
-    items.push({
-      label: t('youtube.trimStart') + ' / ' + t('youtube.trimEnd'),
-      value: `${trimStart.value}s – ${trimEnd.value}s`
-    });
-  }
-  if (subsEnabled.value && subsLangs.value.trim()) {
-    items.push({ label: t('youtube.subsSection'), value: subsLangs.value.trim() });
-  }
-  const folder =
-    folderMode.value === 'channel'
-      ? channelFolder.value || t('youtube.prefOutputDirChannel')
-      : folderMode.value === 'custom'
-        ? outputDir.value || t('youtube.prefOutputDirCustom')
-        : t('youtube.prefOutputDirGlobal');
-  items.push({ label: t('youtube.prefOutputDir'), value: folder });
-  if (filenameTemplate.value.trim()) {
-    items.push({ label: t('youtube.prefTemplate'), value: filenameTemplate.value.trim() });
-  }
-  if (artist.value.trim() || album.value.trim() || year.value.trim()) {
-    items.push({
-      label: t('youtube.metaSection'),
-      value: [artist.value, album.value, year.value].filter(Boolean).join(' / ')
-    });
-  }
-  items.push({
-    label: t('youtube.addToLibraryPref'),
-    value: addToLibrary.value ? t('common.yes') : t('common.no')
-  });
-  return items;
-});
+const prefsSummary = computed<SummaryItem[]>(() =>
+  buildSubscribeSummary(
+    {
+      isSc: isSc.value,
+      folderMode: folderMode.value,
+      channelFolder: channelFolder.value,
+      outputDir: outputDir.value,
+      filenameTemplate: filenameTemplate.value,
+      addToLibrary: addToLibrary.value,
+      kind: kind.value,
+      format: format.value,
+      quality: quality.value,
+      audioQuality: audioQuality.value,
+      audioLanguage: audioLanguage.value,
+      coverType: coverType.value,
+      sponsorBlock: sponsorBlock.value,
+      trimStart: trimStart.value,
+      trimEnd: trimEnd.value,
+      subsEnabled: subsEnabled.value,
+      subsLangs: subsLangs.value,
+      artist: artist.value,
+      album: album.value,
+      year: year.value
+    },
+    (k) => t(k)
+  )
+);
 
 const uiSub = useUIStore();
 let overlayClicksSub = 0;

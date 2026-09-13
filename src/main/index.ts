@@ -8,11 +8,9 @@
   globalShortcut,
   nativeImage
 } from 'electron';
-import { join, extname, normalize, dirname } from 'path';
+import { join, dirname } from 'path';
 import os from 'os';
-import { statSync } from 'fs';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import { AUDIO_EXTS, VIDEO_EXTS } from '../shared/constants';
 import { createMediaServer } from './media-server';
 import { registerOndaProtocolHandler } from './protocol';
 import { registerWindowHandlers } from './window-ipc';
@@ -23,6 +21,7 @@ import { pipManager } from './pip-manager';
 import { audioPipManager } from './audio-pip-manager';
 import { closeLoginWindow } from './youtube-auth';
 import { logger } from '../shared/logger';
+import { extractMediaPaths } from './media-paths';
 import { setMediaServerUrl, registerMediaUrlHandler } from './media-url-args';
 import {
   setAllowedRoots,
@@ -56,36 +55,10 @@ function perf(label: string) {
 
 const preFullscreenBounds: { current: Electron.Rectangle | null } = { current: null };
 
-const MEDIA_EXTS = new Set([...AUDIO_EXTS, ...VIDEO_EXTS]);
-
 // BrowserWindow icon: multi-resolution .ico on Windows (PNG would be treated
 // 1:1 and look blurry), PNG elsewhere.
 function windowIcon(): string | undefined {
   return process.platform === 'win32' ? winIcon : icon;
-}
-
-function isMediaFilePath(p: string): boolean {
-  if (!p || p.startsWith('-')) return false;
-  try {
-    if (!MEDIA_EXTS.has(extname(p).toLowerCase())) return false;
-    return statSync(p).isFile();
-  } catch {
-    return false;
-  }
-}
-
-function extractMediaPaths(argv: string[]): string[] {
-  const seen = new Set<string>();
-  const result: string[] = [];
-  for (const a of argv) {
-    if (!isMediaFilePath(a)) continue;
-    const norm = normalize(a);
-    if (!seen.has(norm)) {
-      seen.add(norm);
-      result.push(norm);
-    }
-  }
-  return result;
 }
 
 let pendingOpenFiles: string[] = [];

@@ -3,6 +3,11 @@ import { ref, watch, onMounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Search, Disc3, Music2, Album, Hash, Calendar, Check, Loader2, X } from '@lucide/vue';
 import type { MusicbrainzRelease } from '@shared/types/ipc';
+import {
+  buildMusicbrainzQuery,
+  buildPreviewRows,
+  displayTrackNumber
+} from '@renderer/utils/musicbrainz';
 import { useUIStore } from '@renderer/stores/ui';
 
 const { t } = useI18n();
@@ -42,20 +47,14 @@ const queryTitle = ref('');
 const queryAlbum = ref('');
 const queryYear = ref('');
 // zachowaj stare query dla kompatybilności, budowane z pól
-const query = computed(() => buildQuery());
-function buildQuery(): string {
-  const parts: string[] = [];
-  const a = queryArtist.value.trim();
-  const t = queryTitle.value.trim();
-  const al = queryAlbum.value.trim();
-  const y = queryYear.value.trim();
-  if (a) parts.push(`artist:"${a.replace(/"/g, '\\"')}"`);
-  if (al) parts.push(`release:"${al.replace(/"/g, '\\"')}"`);
-  if (t) parts.push(`"${t.replace(/"/g, '\\"')}"`);
-  if (y) parts.push(`date:${y}`);
-  if (parts.length === 0) return '';
-  return parts.join(' AND ');
-}
+const query = computed(() =>
+  buildMusicbrainzQuery({
+    artist: queryArtist.value,
+    title: queryTitle.value,
+    album: queryAlbum.value,
+    year: queryYear.value
+  })
+);
 // parsuj initialQuery jeśli przyszedł jako prosty string "Skillet Awake" → rozdziel na pola
 function parseInitial(q: string) {
   if (!q) return;
@@ -243,49 +242,9 @@ function applyTags() {
   }, 3000);
 }
 
-function displayTrackNumber(track: { number?: string; position?: string }, index: number): number {
-  return Number(track.number) || Number(track.position) || index + 1;
-}
-
-const previewRows = computed(() => {
-  const rel = lookupResult.value;
-  const tr = props.track;
-  if (!rel) return [];
-  const old = {
-    title: tr?.metadata?.title || tr?.name || '',
-    artist: tr?.metadata?.artist || '',
-    album: tr?.metadata?.album || '',
-    year: tr?.metadata?.year?.toString() || '',
-    genre: tr?.metadata?.genre || '',
-    track: tr?.metadata?.track?.no?.toString() || '',
-    cover: tr ? '—' : ''
-  };
-  const now: Record<string, string> = {
-    title: rel.media?.[0]?.tracks?.[0]?.title || '',
-    artist: rel['artist-credit']?.[0]?.name || rel['artist-credit']?.[0]?.artist?.name || '',
-    album: rel.title || '',
-    year: rel.date ? rel.date.slice(0, 4) : '',
-    genre: (rel as unknown as { genres?: { name: string }[] }).genres?.[0]?.name || '',
-    track: '1',
-    cover: rel._coverData ? 'okładka' : '—'
-  };
-  const labels: Record<string, string> = {
-    title: 'Tytuł',
-    artist: 'Artysta',
-    album: 'Album',
-    year: 'Rok',
-    genre: 'Gatunek',
-    track: 'Nr',
-    cover: 'Okładka'
-  };
-  return (Object.keys(labels) as Array<keyof typeof labels>).map((k) => ({
-    key: k,
-    label: labels[k],
-    old: (old as unknown as Record<string, string>)[k] || '—',
-    now: (now as unknown as Record<string, string>)[k] || '—',
-    checked: (includeFields.value as unknown as Record<string, boolean>)[k]
-  }));
-});
+const previewRows = computed(() =>
+  buildPreviewRows(lookupResult.value, props.track, includeFields.value)
+);
 
 // 8.9.3 — batch
 const batchProgress = ref(0);

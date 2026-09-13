@@ -18,8 +18,9 @@ import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { joinPath, sanitizeDirName } from '@renderer/utils/path';
 import { AUDIO_FORMATS, VIDEO_QUALITIES, VIDEO_CONTAINERS } from '@shared/constants';
 import FilenameTemplatePresets from '@renderer/components/FilenameTemplatePresets.vue';
-import type { CoverSpec, MetaOverride } from '@renderer/types/online';
+import type { MetaOverride } from '@renderer/types/online';
 import type { IpcDownloadConfig } from '@shared/types/ipc';
+import { buildDownloadConfig } from '@renderer/utils/downloadConfig';
 
 const props = defineProps<{
   title: string;
@@ -136,61 +137,36 @@ async function pickOutputDir() {
 }
 
 function buildConfig(): IpcDownloadConfig {
-  const cover: CoverSpec | undefined = (() => {
-    if (kind.value === 'video') {
-      // Video downloads embed the YouTube thumbnail by default; "none" is the
-      // explicit opt-out (animated covers are an audio feature).
-      return coverType.value === 'none' ? { type: 'none' } : { type: 'thumbnail' };
-    }
-    if (coverType.value === 'none') return { type: 'none' };
-    if (coverType.value === 'custom') {
-      return customPath.value ? { type: 'custom', customPath: customPath.value } : undefined;
-    }
-    if (coverType.value === 'frame') {
-      return { type: 'frame', frameTime: Number(frameTime.value) || 0 };
-    }
-    if (coverType.value === 'clip') {
-      return {
-        type: 'clip',
-        clipStart: Number(clipStart.value) || 0,
-        clipEnd: Number(clipEnd.value) || 0,
-        clipFormat: clipFormat.value
-      };
-    }
-    return { type: 'thumbnail' };
-  })();
-  const metaOverride: MetaOverride = {};
-  if (artist.value.trim()) metaOverride.artist = artist.value.trim();
-  if (album.value.trim()) metaOverride.album = album.value.trim();
-  if (year.value.trim()) metaOverride.year = year.value.trim();
-  let resolvedDir: string | undefined;
-  if (folderMode.value === 'channel') resolvedDir = channelFolder.value || undefined;
-  else if (folderMode.value === 'playlist') resolvedDir = playlistFolder.value || undefined;
-  else if (folderMode.value === 'custom') resolvedDir = outputDir.value || undefined;
-  return {
+  return buildDownloadConfig({
     kind: kind.value,
-    ...(kind.value === 'audio' ? { format: format.value } : {}),
-    ...(kind.value === 'audio' ? { audioQuality: audioQuality.value } : {}),
-    ...(kind.value === 'video' ? { quality: quality.value } : {}),
-    ...(kind.value === 'video' ? { videoContainer: videoContainer.value } : {}),
-    ...(audioLanguage.value.trim() ? { audioLanguage: audioLanguage.value.trim() } : {}),
-    filenameTemplate: filenameTemplate.value.trim() || undefined,
+    format: format.value,
+    audioQuality: audioQuality.value,
+    quality: quality.value,
+    videoContainer: videoContainer.value,
+    audioLanguage: audioLanguage.value,
+    filenameTemplate: filenameTemplate.value,
     sponsorBlock: sponsorBlock.value,
-    ...(trimStart.value != null && trimEnd.value != null && trimEnd.value > trimStart.value
-      ? { trimStart: trimStart.value, trimEnd: trimEnd.value }
-      : {}),
-    ...(cover ? { cover } : {}),
-    ...(Object.keys(metaOverride).length ? { metaOverride } : {}),
-    ...(resolvedDir ? { outputDir: resolvedDir } : {}),
-    ...(subsEnabled.value && subsLangs.value.trim()
-      ? {
-          subsLangs: subsLangs.value.trim(),
-          subsFormat: subsFormat.value,
-          subsMode: subsMode.value,
-          subsFolder: subsFolder.value
-        }
-      : {})
-  };
+    trimStart: trimStart.value,
+    trimEnd: trimEnd.value,
+    coverType: coverType.value,
+    customPath: customPath.value,
+    frameTime: frameTime.value,
+    clipStart: clipStart.value,
+    clipEnd: clipEnd.value,
+    clipFormat: clipFormat.value,
+    artist: artist.value,
+    album: album.value,
+    year: year.value,
+    folderMode: folderMode.value,
+    channelFolder: channelFolder.value,
+    playlistFolder: playlistFolder.value,
+    outputDir: outputDir.value,
+    subsEnabled: subsEnabled.value,
+    subsLangs: subsLangs.value,
+    subsFormat: subsFormat.value,
+    subsMode: subsMode.value,
+    subsFolder: subsFolder.value
+  });
 }
 
 function confirm() {
