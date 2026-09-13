@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted, defineAsyncComponent } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 import { useLibraryStore } from '@renderer/stores/library';
 import { getAllTracksIndexed } from '@renderer/utils/libraryIndex';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -92,9 +93,32 @@ onUnmounted(() =>
 // Tabs — overview default (Minimal Spotify)
 type TabId =
   'overview' | 'tracks' | 'video' | 'images' | 'folders' | 'artists' | 'albums' | 'playlists';
-const storedTab = (localStorage.getItem('onda.libraryTab') as TabId) || 'overview';
-const tab = ref<TabId>(storedTab as TabId);
+const VALID_TABS: TabId[] = [
+  'overview',
+  'tracks',
+  'video',
+  'images',
+  'folders',
+  'artists',
+  'albums',
+  'playlists'
+];
+function isTabId(v: unknown): v is TabId {
+  return typeof v === 'string' && (VALID_TABS as string[]).includes(v);
+}
+const route = useRoute();
+const storedTab = isTabId(route.query.tab)
+  ? route.query.tab
+  : (localStorage.getItem('onda.libraryTab') as TabId) || 'overview';
+const tab = ref<TabId>(storedTab);
 watch(tab, (v) => localStorage.setItem('onda.libraryTab', v));
+// Navigation from other views (e.g. Downloads "in library") passes ?tab=… .
+watch(
+  () => route.query.tab,
+  (q) => {
+    if (isTabId(q)) tab.value = q;
+  }
+);
 
 const viewMode = computed(() => settings.library.viewModes[tab.value] ?? 'list');
 function setViewMode(mode: 'list' | 'grid') {

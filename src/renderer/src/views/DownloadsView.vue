@@ -56,8 +56,10 @@ const channels = computed(() => {
   return Array.from(map.entries());
 });
 
-function openLibrary() {
-  void router.push({ name: 'library' });
+function openLibrary(t: DownloadTask) {
+  const tab = t.kind === 'video' ? 'video' : 'tracks';
+  localStorage.setItem('onda.libraryTab', tab);
+  void router.push({ name: 'library', query: { tab } });
 }
 
 function playDownload(t: DownloadTask) {
@@ -469,7 +471,7 @@ const colors = {
                 v-if="t.inLibrary"
                 class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-primary/10 text-primary text-[11px] font-medium hover:bg-primary hover:text-primary-content transition-colors shrink-0"
                 :title="$t('downloads.inLibraryTitle')"
-                @click="openLibrary"
+                @click="openLibrary(t)"
               >
                 <Library :size="11" />
                 {{ $t('downloads.inLibrary') }}

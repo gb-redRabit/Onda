@@ -131,15 +131,6 @@ const queuePosition = computed(() => {
   return idx >= 0 ? idx + 1 : 0;
 });
 
-const progressPct = computed(() => {
-  if (!Number.isFinite(player.duration) || player.duration <= 0) return 0;
-  return Math.min(100, Math.max(0, (player.currentTime / player.duration) * 100));
-});
-
-const showProgress = computed(
-  () => !!player.currentTrack && player.currentTrack.type !== 'video' && player.duration > 60
-);
-
 const viewContext = computed<string[]>(() => {
   switch (route.name) {
     case 'audio': {
@@ -151,7 +142,6 @@ const viewContext = computed<string[]>(() => {
       const fmt = meta?.format?.toUpperCase() || player.currentTrack.extension?.toUpperCase();
       if (fmt) parts.push(fmt);
       if (meta?.codec) parts.push(meta.codec);
-      if (meta?.bitrate) parts.push(`${meta.bitrate}kbps`);
       if (meta?.sampleRate) parts.push(`${Math.round(meta.sampleRate / 1000)}kHz`);
       return [parts.join(' · '), `${layout} · ${viz}`];
     }
@@ -265,9 +255,6 @@ function openContextMenu(e: MouseEvent) {
                 ? $t('status.streamLabel')
                 : player.currentTrack.extension?.toUpperCase()
             }}
-            <template v-if="player.currentTrack.metadata?.bitrate">
-              · {{ player.currentTrack.metadata.bitrate }}kbps</template
-            >
             <template v-if="player.currentTrack.metadata?.sampleRate">
               · {{ player.currentTrack.metadata.sampleRate / 1000 }}kHz</template
             >
@@ -296,16 +283,6 @@ function openContextMenu(e: MouseEvent) {
           </span>
           <span v-if="queuePosition" class="font-mono">
             {{ t('status.queuePos', { cur: queuePosition, total: player.queueLength }) }}
-          </span>
-          <span
-            v-if="showProgress"
-            class="w-10 h-1 rounded-full bg-base-300 overflow-hidden"
-            :title="$t('status.progress')"
-          >
-            <span
-              class="block h-full rounded-full bg-primary transition-[width] duration-500"
-              :style="{ width: progressPct + '%' }"
-            />
           </span>
         </template>
         <span v-else>{{ $t('status.noMedia') }}</span>
