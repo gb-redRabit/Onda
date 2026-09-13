@@ -30,6 +30,22 @@ export function displayTrackNumber(
   return Number(track.number) || Number(track.position) || index + 1;
 }
 
+// Splits a loose initial query into fields: pasted "Artist - Title" or a raw
+// search expression ("field:value" / "x AND y" → album as-is).
+export function splitInitialQuery(q: string): {
+  artist?: string;
+  title?: string;
+  album?: string;
+} {
+  if (!q) return {};
+  if (q.includes(':') || q.includes(' AND ')) return { album: q };
+  const byDash = q.split(' - ');
+  if (byDash.length >= 2) {
+    return { artist: byDash[0].trim(), title: byDash.slice(1).join(' - ').trim() };
+  }
+  return { album: q.trim() };
+}
+
 export interface MusicbrainzPreviewRow {
   key: string;
   label: string;

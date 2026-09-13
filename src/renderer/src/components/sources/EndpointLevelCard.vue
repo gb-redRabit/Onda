@@ -2,9 +2,8 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Plus, Trash2, FlaskConical, Loader2, Layers } from '@lucide/vue';
-import { buildSourceUrl } from '@renderer/utils/sourceUrl';
-import { buildEndpointFromDraft, type DraftEndpoint, type DraftPassKey } from './endpointDraft';
-import type { MediaSource } from '@renderer/types/sources';
+import { type DraftEndpoint, type DraftPassKey } from './endpointDraft';
+import { buildEndpointPreview } from '@renderer/utils/endpointCard';
 
 const { t } = useI18n();
 
@@ -43,20 +42,7 @@ function fieldId(suffix: string): string {
 }
 
 function buildPreview(): string {
-  const endpoint = buildEndpointFromDraft(model.value);
-  if (!endpoint || !props.baseUrl.trim()) return '';
-  const source: MediaSource = {
-    id: 'preview',
-    name: model.value.name.trim() || 'preview',
-    baseUrl: props.baseUrl.trim(),
-    auth: { type: 'none' },
-    endpoints: [],
-    createdAt: 0
-  };
-  const pageMode = !!endpoint.pagination?.pageParam && !endpoint.pagination.nextFromField;
-  return buildSourceUrl(source, endpoint, {
-    page: pageMode ? (endpoint.pagination?.pageStart ?? 1) : undefined
-  });
+  return buildEndpointPreview(model.value, props.baseUrl);
 }
 </script>
 

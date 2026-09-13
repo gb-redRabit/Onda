@@ -1,16 +1,6 @@
 ﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import {
-  X,
-  FolderOpen,
-  Download,
-  ImagePlus,
-  Film,
-  Scissors,
-  Image,
-  Save,
-  Trash2
-} from '@lucide/vue';
+import { X, FolderOpen, Download, ImagePlus, Image, Save, Trash2 } from '@lucide/vue';
 import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@renderer/stores/ui';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -21,6 +11,7 @@ import FilenameTemplatePresets from '@renderer/components/FilenameTemplatePreset
 import type { MetaOverride } from '@renderer/types/online';
 import type { IpcDownloadConfig } from '@shared/types/ipc';
 import { buildDownloadConfig } from '@renderer/utils/downloadConfig';
+import { AUDIO_QUALITIES, DOWNLOAD_COVER_TYPES } from '@renderer/utils/downloadConfigMeta';
 
 const props = defineProps<{
   title: string;
@@ -42,12 +33,7 @@ const { profiles, save, remove, ensureLoaded } = useDownloadProfiles();
 const selectedProfileId = ref('');
 const profileName = ref('');
 
-const coverTypes = [
-  { id: 'thumbnail', icon: Image, key: 'youtube.coverThumbnail' },
-  { id: 'custom', icon: ImagePlus, key: 'youtube.coverCustom' },
-  { id: 'frame', icon: Film, key: 'youtube.coverFrame' },
-  { id: 'clip', icon: Scissors, key: 'youtube.coverClip' }
-] as const;
+const coverTypes = DOWNLOAD_COVER_TYPES;
 
 const settings = useSettingsStore();
 const systemDownloads = ref('');
@@ -55,7 +41,7 @@ const systemDownloads = ref('');
 const audioFormats = AUDIO_FORMATS;
 const videoQualities = VIDEO_QUALITIES;
 const videoContainers = VIDEO_CONTAINERS;
-const audioQualities = ['best', 'high', 'medium', 'low'] as const;
+const audioQualities = AUDIO_QUALITIES;
 
 const kind = ref<'audio' | 'video'>(settings.download.defaultKind);
 const format = ref<string>(settings.download.defaultAudioFormat);

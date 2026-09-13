@@ -6,7 +6,8 @@ import type { MusicbrainzRelease } from '@shared/types/ipc';
 import {
   buildMusicbrainzQuery,
   buildPreviewRows,
-  displayTrackNumber
+  displayTrackNumber,
+  splitInitialQuery
 } from '@renderer/utils/musicbrainz';
 import { useUIStore } from '@renderer/stores/ui';
 
@@ -57,20 +58,10 @@ const query = computed(() =>
 );
 // parsuj initialQuery jeśli przyszedł jako prosty string "Skillet Awake" → rozdziel na pola
 function parseInitial(q: string) {
-  if (!q) return;
-  // jeśli zawiera " AND " lub field: — zostaw jako album
-  if (q.includes(':') || q.includes(' AND ')) {
-    queryAlbum.value = q;
-    return;
-  }
-  // spróbuj rozbić "Artist - Title" lub "Artist Title"
-  const byDash = q.split(' - ');
-  if (byDash.length >= 2) {
-    queryArtist.value = byDash[0].trim();
-    queryTitle.value = byDash.slice(1).join(' - ').trim();
-  } else {
-    queryAlbum.value = q.trim();
-  }
+  const p = splitInitialQuery(q);
+  if (p.artist !== undefined) queryArtist.value = p.artist;
+  if (p.title !== undefined) queryTitle.value = p.title;
+  if (p.album !== undefined) queryAlbum.value = p.album;
 }
 const releases = ref<MusicbrainzRelease[]>([]);
 const loading = ref(false);
