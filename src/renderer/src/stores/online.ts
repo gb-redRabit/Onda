@@ -26,7 +26,6 @@ import type {
 import { logger } from '@shared/logger';
 import { pluginHookBus } from '@renderer/utils/pluginHooks';
 import { detectPlatform } from '@shared/platform';
-import { toMediaStreamUrl } from '@renderer/utils/mediaUrl';
 import {
   streamTargetFor,
   streamChannelFor,
@@ -43,6 +42,7 @@ import {
   mergeResolvedPage,
   type ResolveMoreResponse
 } from '@renderer/utils/onlineResolved';
+import { createStreamPrefetcher } from '@renderer/utils/streamPrefetch';
 
 export const useOnlineStore = defineStore('online', () => {
   const { t } = useI18n();
@@ -466,41 +466,10 @@ export const useOnlineStore = defineStore('online', () => {
     player.enrichTrack(track);
   }
 
-  const prefetchedStreams = new Set<string>();
-  let prefetchInFlight = 0;
-  // High enough to cover a grid row + one click ahead; low enough to not hammer
-  // YouTube with parallel yt-dlp spawns (they amplify transient 403 windows).
-  const PREFETCH_MAX_IN_FLIGHT = 5;
-
   // Resolves the stream URL ahead of the click (card visibility) so playback
   // starts instantly: the main process LRU cache then serves the click without
   // waiting on the resolver. Best-effort — real errors surface through playStream.
-  async function prefetchStream(video: { id: string; url?: string }): Promise<void> {
-    if (prefetchedStreams.has(video.id) || prefetchInFlight >= PREFETCH_MAX_IN_FLIGHT) return;
-    if (prefetchedStreams.size > 1000) prefetchedStreams.clear();
-    prefetchedStreams.add(video.id);
-    prefetchInFlight++;
-    const url = streamTargetFor(video);
-    try {
-      const res = (await window.api?.invoke(streamChannelFor(url), url)) as
-        IpcStreamResult | undefined;
-      if (res?.success && res.url) {
-        // Warm the CDN connection right away through the media-server
-        // proxy (it retries transient 403s with backoff). By the time the user
-        // clicks, the URL has already passed its rate-limit window, so the click
-        // loads in a single attempt instead of paying 403s + retry delays.
-        try {
-          await fetch(toMediaStreamUrl(res.url), { headers: { Range: 'bytes=0-1' } });
-        } catch {
-          // best-effort probe — playback does not depend on it
-        }
-      }
-    } catch {
-      // ignore: prefetch is best-effort
-    } finally {
-      prefetchInFlight--;
-    }
-  }
+  const { prefetch: prefetchStream } = createStreamPrefetcher();
 
   // Streams every item of a playlist/channel: resolves URLs in the background
   // (the main process caches them, so a repeated play-through is fast), plays the
