@@ -1,21 +1,10 @@
-﻿import {
-  app,
-  shell,
-  BrowserWindow,
-  ipcMain,
-  Tray,
-  Menu,
-  globalShortcut,
-  nativeImage
-} from 'electron';
+﻿import { app, BrowserWindow, ipcMain, globalShortcut, shell } from 'electron';
 import { join, dirname } from 'path';
 import os from 'os';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { createMediaServer } from './media-server';
 import { registerOndaProtocolHandler } from './protocol';
 import { registerWindowHandlers } from './window-ipc';
-import icon from '../../resources/icon.png?asset';
-import winIcon from '../../build/icon.ico?asset';
 import { registerIPC } from './ipc/handlers';
 import { pipManager } from './pip-manager';
 import { audioPipManager } from './audio-pip-manager';
@@ -38,10 +27,12 @@ import { configureAutoCheck } from './updater-scheduler';
 import { syncSubscriptionsScheduler } from './ipc/subscriptions-handlers';
 import { shouldCloseToTray, setCloseToTray } from './close-behavior';
 import { installNavigationGuard } from './navigation-guard';
+import { windowIcon } from './window-icon';
+import { createChildWindow } from './child-window';
+import { destroyTray, hasTray, setupTray } from './tray';
 import { SplashController } from './splash';
 
 let mainWindow: BrowserWindow | null = null;
-let tray: Tray | null = null;
 let startHidden = false;
 let bootMark = 0;
 
@@ -57,12 +48,6 @@ function perf(label: string) {
 }
 
 const preFullscreenBounds: { current: Electron.Rectangle | null } = { current: null };
-
-// BrowserWindow icon: multi-resolution .ico on Windows (PNG would be treated
-// 1:1 and look blurry), PNG elsewhere.
-function windowIcon(): string | undefined {
-  return process.platform === 'win32' ? winIcon : icon;
-}
 
 let pendingOpenFiles: string[] = [];
 
@@ -146,7 +131,7 @@ function createWindow(): BrowserWindow {
   });
 
   win.on('close', (e) => {
-    if (tray && shouldCloseToTray()) {
+    if (hasTray() && shouldCloseToTray()) {
       e.preventDefault();
       win.hide();
     }
@@ -173,132 +158,6 @@ function createWindow(): BrowserWindow {
   }
 
   return win;
-}
-
-function createChildWindow(
-  parent: BrowserWindow,
-  options: { title: string; width: number; height: number; alwaysOnTop?: boolean }
-): BrowserWindow {
-  const child = new BrowserWindow({
-    parent,
-    width: options.width,
-    height: options.height,
-    show: false,
-    frame: false,
-    transparent: true,
-    backgroundColor: '#00000000',
-    hasShadow: false,
-    alwaysOnTop: options.alwaysOnTop ?? true,
-    skipTaskbar: true,
-    icon: windowIcon(),
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: true,
-      contextIsolation: true,
-      nodeIntegration: false,
-      webSecurity: true
-    }
-  });
-
-  child.on('ready-to-show', () => {
-    child.show();
-  });
-
-  child.webContents.setWindowOpenHandler((details) => {
-    try {
-      const parsed = new URL(details.url);
-      if (['https:', 'http:', 'mailto:'].includes(parsed.protocol)) {
-        shell.openExternal(details.url);
-      }
-    } catch {
-      // invalid URL â€” ignore
-    }
-    return { action: 'deny' };
-  });
-
-  installNavigationGuard(child);
-
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    child.loadURL(process.env['ELECTRON_RENDERER_URL'] + '#/player');
-  } else {
-    child.loadFile(join(__dirname, '../renderer/index.html'), { hash: '/player' });
-  }
-
-  return child;
-}
-
-function setupTray(): void {
-  // A tray with an empty image falls back to Electron's default icon, so pick
-  // the first candidate that resolves to a real image. On Windows prefer the
-  // multi-resolution .ico â€” the OS selects the size matching the current DPI.
-  const candidates = process.platform === 'win32' ? [winIcon, icon] : [icon, winIcon];
-  let trayImage: Electron.NativeImage | null = null;
-  for (const candidate of candidates) {
-    if (!candidate) continue;
-    const image = nativeImage.createFromPath(candidate);
-    if (!image.isEmpty()) {
-      trayImage = image;
-      break;
-    }
-  }
-  if (!trayImage) return;
-  tray = new Tray(trayImage);
-  tray.setToolTip('Onda Player');
-
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: 'Play / Pause',
-      click: () => {
-        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('media:playPause');
-      }
-    },
-    {
-      label: 'Next',
-      click: () => {
-        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('media:next');
-      }
-    },
-    {
-      label: 'Previous',
-      click: () => {
-        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('media:previous');
-      }
-    },
-    { type: 'separator' },
-    {
-      label: 'Show Onda',
-      click: () => {
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          if (mainWindow.isMinimized()) mainWindow.restore();
-          mainWindow.show();
-          mainWindow.focus();
-        }
-      }
-    },
-    { type: 'separator' },
-    {
-      label: 'Quit',
-      click: () => {
-        try {
-          if (tray && !tray.isDestroyed()) tray.destroy();
-        } catch {
-          /* already destroyed */
-        }
-        tray = null;
-        app.quit();
-      }
-    }
-  ]);
-
-  tray.setContextMenu(contextMenu);
-
-  tray.on('double-click', () => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.show();
-      mainWindow.focus();
-    }
-  });
 }
 
 function registerGlobalShortcuts(): void {
@@ -433,12 +292,7 @@ app.whenReady().then(async () => {
   });
 
   ipcMain.handle('app:quit', () => {
-    try {
-      if (tray && !tray.isDestroyed()) tray.destroy();
-    } catch {
-      /* already destroyed */
-    }
-    tray = null;
+    destroyTray();
     app.quit();
   });
 
@@ -466,7 +320,7 @@ app.whenReady().then(async () => {
   pipManager.init();
   audioPipManager.setMainWindow(mainWindow);
   audioPipManager.init();
-  setupTray();
+  setupTray(() => mainWindow);
   registerGlobalShortcuts();
   perf('PiP/tray/shortcuts ready');
 
@@ -501,13 +355,7 @@ app.whenReady().then(async () => {
 
 app.on('window-all-closed', () => {
   globalShortcut.unregisterAll();
-  try {
-    if (tray && !tray.isDestroyed()) tray.destroy();
-  } catch {
-    /* already destroyed */
-  }
-  tray = null;
-  splash.destroy();
+  destroyTray();
   pipManager.destroy();
   audioPipManager.destroy();
   if (process.platform !== 'darwin') {
