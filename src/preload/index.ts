@@ -71,6 +71,7 @@ const ALLOWED_INVOKE_CHANNELS = new Set<string>([
   'shell:getFileIcon',
   'media:getThumbnail',
   'media:batchThumbnails',
+  'media:remoteImage',
   'media:grantAccess',
   'media:renameFile',
   'explorer:create',

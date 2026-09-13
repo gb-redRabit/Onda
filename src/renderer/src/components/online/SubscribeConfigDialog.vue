@@ -8,8 +8,10 @@ import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { useI18n } from 'vue-i18n';
 import { joinPath, sanitizeDirName } from '@renderer/utils/path';
 import { buildSubscribeSummary, type SummaryItem } from '@renderer/utils/subscribeSummary';
+import { buildSubscribePrefs } from '@renderer/utils/subscribePrefs';
+import { useRemoteImage } from '@renderer/composables/useRemoteImage';
 import { AUDIO_FORMATS, VIDEO_QUALITIES } from '@shared/constants';
-import type { SubscriptionDownloadPrefs, CoverSpec, MetaOverride } from '@renderer/types/online';
+import type { SubscriptionDownloadPrefs } from '@renderer/types/online';
 
 const props = withDefaults(
   defineProps<{
@@ -44,6 +46,7 @@ const { profiles, ensureLoaded } = useDownloadProfiles();
 const selectedProfileId = ref('');
 const systemDownloads = ref('');
 const avatarFailed = ref(false);
+const avatarSrc = useRemoteImage(computed(() => props.channel.channelThumbnail));
 
 const initial = computed(() => props.initialPrefs);
 
@@ -145,78 +148,47 @@ function close() {
 }
 
 function confirm() {
-  // SoundCloud jobs are plain MP3 downloads — only folder/template/library
-  // prefs are meaningful.
-  if (isSc.value) {
-    const scPrefs: SubscriptionDownloadPrefs = {};
-    if (folderMode.value === 'channel') scPrefs.outputDir = channelFolder.value;
-    else if (folderMode.value === 'custom' && outputDir.value) scPrefs.outputDir = outputDir.value;
-    if (filenameTemplate.value.trim()) scPrefs.filenameTemplate = filenameTemplate.value.trim();
-    if (addToLibrary.value !== settings.download.autoAddDownloadFolder) {
-      scPrefs.addToLibrary = addToLibrary.value;
+  const prefs = buildSubscribePrefs(
+    {
+      isSc: isSc.value,
+      folderMode: folderMode.value,
+      channelFolder: channelFolder.value,
+      outputDir: outputDir.value,
+      filenameTemplate: filenameTemplate.value,
+      addToLibrary: addToLibrary.value,
+      kind: kind.value,
+      format: format.value,
+      quality: quality.value,
+      audioQuality: audioQuality.value,
+      audioLanguage: audioLanguage.value,
+      coverType: coverType.value,
+      customCoverPath: customCoverPath.value,
+      coverFrameTime: coverFrameTime.value,
+      coverClipStart: coverClipStart.value,
+      coverClipEnd: coverClipEnd.value,
+      coverClipFormat: coverClipFormat.value,
+      artist: artist.value,
+      album: album.value,
+      year: year.value,
+      subsEnabled: subsEnabled.value,
+      subsLangs: subsLangs.value,
+      subsFormat: subsFormat.value,
+      subsMode: subsMode.value,
+      subsFolder: subsFolder.value,
+      sponsorBlock: sponsorBlock.value,
+      trimStart: trimStart.value,
+      trimEnd: trimEnd.value,
+      selectedProfileId: selectedProfileId.value
+    },
+    {
+      kind: settings.download.defaultKind,
+      audioFormat: settings.download.defaultAudioFormat,
+      videoQuality: settings.download.defaultVideoQuality,
+      audioQuality: settings.download.defaultAudioQuality,
+      cover: settings.download.defaultCover,
+      autoAddDownloadFolder: settings.download.autoAddDownloadFolder
     }
-    emit('confirm', { prefs: scPrefs, downloadAll: downloadAll.value });
-    return;
-  }
-  const prefs: SubscriptionDownloadPrefs = {};
-  if (kind.value !== settings.download.defaultKind) prefs.kind = kind.value;
-  if (kind.value === 'audio' && format.value !== settings.download.defaultAudioFormat) {
-    prefs.format = format.value;
-  }
-  if (kind.value === 'video' && quality.value !== settings.download.defaultVideoQuality) {
-    prefs.quality = quality.value;
-  }
-  if (audioQuality.value !== settings.download.defaultAudioQuality) {
-    prefs.audioQuality = audioQuality.value;
-  }
-  if (audioLanguage.value.trim()) prefs.audioLanguage = audioLanguage.value.trim();
-  const cover: CoverSpec | undefined = (() => {
-    if (kind.value === 'video') {
-      // Video downloads embed the YouTube thumbnail by default; "none" is the
-      // explicit opt-out, undefined means "keep the default".
-      return coverType.value === 'none' ? { type: 'none' } : undefined;
-    }
-    if (coverType.value === settings.download.defaultCover) return undefined;
-    if (coverType.value === 'thumbnail') return { type: 'thumbnail' };
-    if (coverType.value === 'custom')
-      return customCoverPath.value
-        ? { type: 'custom', customPath: customCoverPath.value }
-        : undefined;
-    if (coverType.value === 'frame')
-      return { type: 'frame', frameTime: Number(coverFrameTime.value) || 0 };
-    if (coverType.value === 'clip')
-      return {
-        type: 'clip',
-        clipStart: Number(coverClipStart.value) || 0,
-        clipEnd: Number(coverClipEnd.value) || 0,
-        clipFormat: coverClipFormat.value
-      };
-    return undefined;
-  })();
-  if (cover) prefs.cover = cover;
-  const meta: MetaOverride = {};
-  if (artist.value.trim()) meta.artist = artist.value.trim();
-  if (album.value.trim()) meta.album = album.value.trim();
-  if (year.value.trim()) meta.year = year.value.trim();
-  if (Object.keys(meta).length) prefs.metaOverride = meta;
-  if (subsEnabled.value && subsLangs.value.trim()) {
-    prefs.subsLangs = subsLangs.value.trim();
-    prefs.subsFormat = subsFormat.value;
-    prefs.subsMode = subsMode.value;
-    prefs.subsFolder = subsFolder.value;
-  }
-  if (folderMode.value === 'channel') prefs.outputDir = channelFolder.value;
-  else if (folderMode.value === 'custom' && outputDir.value) prefs.outputDir = outputDir.value;
-  if (filenameTemplate.value.trim()) prefs.filenameTemplate = filenameTemplate.value.trim();
-  if (addToLibrary.value !== settings.download.autoAddDownloadFolder) {
-    prefs.addToLibrary = addToLibrary.value;
-  }
-  if (sponsorBlock.value !== 'off') prefs.sponsorBlock = sponsorBlock.value;
-  if (trimStart.value != null && trimEnd.value != null && trimEnd.value > trimStart.value) {
-    prefs.trimStart = trimStart.value;
-    prefs.trimEnd = trimEnd.value;
-  }
-  if (selectedProfileId.value) prefs.profileId = selectedProfileId.value;
+  );
   emit('confirm', { prefs, downloadAll: downloadAll.value });
 }
 
@@ -291,11 +263,11 @@ async function pickCustomCover() {
         <!-- Header -->
         <div class="flex items-center gap-3 px-5 py-4 border-b border-base-300 shrink-0">
           <div
-            v-if="props.channel.channelThumbnail && !avatarFailed"
+            v-if="avatarSrc && !avatarFailed"
             class="w-10 h-10 rounded-full overflow-hidden shrink-0 bg-base-100"
           >
             <img
-              :src="props.channel.channelThumbnail"
+              :src="avatarSrc"
               :alt="props.channel.channelTitle"
               class="w-full h-full object-cover"
               @error="avatarFailed = true"
@@ -326,11 +298,11 @@ async function pickCustomCover() {
           <div class="p-5 rounded-box bg-base-100 border border-base-300">
             <div class="flex items-center gap-4">
               <div
-                v-if="props.channel.channelThumbnail && !avatarFailed"
+                v-if="avatarSrc && !avatarFailed"
                 class="w-16 h-16 rounded-full overflow-hidden shrink-0 bg-base-200/[var(--glass-alpha)]"
               >
                 <img
-                  :src="props.channel.channelThumbnail"
+                  :src="avatarSrc"
                   :alt="props.channel.channelTitle"
                   class="w-full h-full object-cover"
                   @error="avatarFailed = true"

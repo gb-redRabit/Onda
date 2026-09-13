@@ -21,6 +21,7 @@ import { registerSourcesHandlers } from './sources-handlers';
 import { registerSavedHandlers } from './saved-streams';
 import { registerRadioHandlers } from './radio-store';
 import { registerPluginsHandlers } from './plugins-handlers';
+import { registerRemoteImageHandler } from './remote-image';
 
 export function registerIPC(): void {
   installIpcGuards();
@@ -46,4 +47,5 @@ export function registerIPC(): void {
   registerSavedHandlers();
   registerRadioHandlers();
   registerPluginsHandlers();
+  registerRemoteImageHandler();
 }

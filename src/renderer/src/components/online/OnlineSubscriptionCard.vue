@@ -6,6 +6,7 @@ import OnlineButton from './OnlineButton.vue';
 import OnlineIconButton from './OnlineIconButton.vue';
 import OnlineBadge from './OnlineBadge.vue';
 import { useContextMenu, type ContextMenuAction } from '@renderer/composables/useContextMenu';
+import { useRemoteImage } from '@renderer/composables/useRemoteImage';
 import type { Subscription } from '@renderer/types/online';
 
 const props = defineProps<{
@@ -75,9 +76,10 @@ function openMenu(e: MouseEvent) {
 }
 
 const avatarFailed = ref(false);
+const avatarSrc = useRemoteImage(computed(() => props.sub.channelThumbnail));
 
 watch(
-  () => [props.sub.channelId, props.sub.channelThumbnail],
+  () => props.sub.channelId,
   () => {
     avatarFailed.value = false;
   }
@@ -100,8 +102,8 @@ function lastCheckedLabel(ts?: number): string {
         @click="emit('openChannel', sub.channelId)"
       >
         <img
-          v-if="sub.channelThumbnail && !avatarFailed"
-          :src="sub.channelThumbnail"
+          v-if="avatarSrc && !avatarFailed"
+          :src="avatarSrc"
           :alt="sub.channelTitle"
           class="w-full h-full object-cover"
           @error="avatarFailed = true"

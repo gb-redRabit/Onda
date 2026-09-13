@@ -7,6 +7,7 @@ import { useOnlineStore } from '@renderer/stores/online';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { formatNumber } from '@renderer/utils/formatters';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
+import { useRemoteImage } from '@renderer/composables/useRemoteImage';
 import type {
   YouTubeVideo,
   SubscriptionDownloadPrefs,
@@ -59,6 +60,8 @@ function closeSubscribe() {
 // Reset on channel/id change so a previously failed avatar can retry
 // (also when the same channel is reopened or the thumbnail gets refreshed).
 const avatarFailed = ref(false);
+const avatarSrc = useRemoteImage(computed(() => yt.channel?.thumbnail));
+const bannerSrc = useRemoteImage(computed(() => yt.channel?.bannerUrl));
 watch(
   () => [yt.channel?.id, yt.channel?.thumbnail],
   () => {
@@ -232,9 +235,9 @@ watch(
     <template v-else-if="yt.channel">
       <div class="relative rounded-box overflow-hidden bg-base-100 border border-base-300">
         <div
-          v-if="yt.channel.bannerUrl"
+          v-if="bannerSrc"
           class="h-32 sm:h-40 w-full bg-cover bg-center relative"
-          :style="{ backgroundImage: `url(${yt.channel.bannerUrl})` }"
+          :style="{ backgroundImage: `url(${bannerSrc})` }"
         >
           <div
             class="absolute inset-0 bg-linear-to-b from-transparent via-bg-surface/30 to-base-100"
@@ -248,8 +251,8 @@ watch(
               class="w-20 h-20 sm:w-24 sm:h-24 rounded-box overflow-hidden border border-base-100 bg-base-100 shrink-0"
             >
               <img
-                v-if="yt.channel.thumbnail && !avatarFailed"
-                :src="yt.channel.thumbnail"
+                v-if="avatarSrc && !avatarFailed"
+                :src="avatarSrc"
                 :alt="yt.channel.title"
                 class="w-full h-full object-cover"
                 @error="avatarFailed = true"

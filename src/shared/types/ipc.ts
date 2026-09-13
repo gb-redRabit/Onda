@@ -920,6 +920,10 @@ export interface IpcChannels {
     args: [files: string[], maxSize?: number];
     result: Record<string, string>;
   };
+  'media:remoteImage': {
+    args: [url: string];
+    result: string | null;
+  };
   'media:grantAccess': { args: [filePath: string]; result: boolean };
   'app:getInfo': { args: []; result: AppInfo };
   'app:getLicenses': {
