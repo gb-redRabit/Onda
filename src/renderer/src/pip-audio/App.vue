@@ -4,8 +4,6 @@ import { usePipVisualizer } from './usePipVisualizer';
 import { usePipAudioState, EQ_PRESETS } from './usePipAudioState';
 import PipCover from './PipCover.vue';
 import {
-  ROOT_BG,
-  EDGE_BORDER,
   BTN,
   BTN_PLAY,
   BTN_ACTIVE,
@@ -19,7 +17,12 @@ import {
   EDGE_PROGRESS_TRACK_H,
   EDGE_PROGRESS_TRACK_V,
   EDGE_PROGRESS_FILL_H,
-  EDGE_PROGRESS_FILL_V
+  EDGE_PROGRESS_FILL_V,
+  pipPeekAlign,
+  pipPeekFillGeom,
+  pipPeekFillState,
+  pipPeekTrackGeom,
+  pipRootClass
 } from './pipTheme';
 
 const handlers = { updateAccent: () => {} };
@@ -64,53 +67,11 @@ function onRootDblClick(e: MouseEvent) {
   showMain();
 }
 
-const rootClass = computed(() => {
-  if (peeked.value && edge.value) return 'border-0 bg-transparent';
-  const inner = (() => {
-    switch (dock.value) {
-      case 'top':
-        return 'rounded-none border-x-0 border-t-0 border-b-[length:var(--border)]';
-      case 'bottom':
-        return 'rounded-none border-x-0 border-b-0 border-t-[length:var(--border)]';
-      case 'left':
-        return 'rounded-none border-y-0 border-l-0 border-r-[length:var(--border)]';
-      case 'right':
-        return 'rounded-none border-y-0 border-r-0 border-l-[length:var(--border)]';
-      default:
-        return 'rounded-[var(--radius-box)] border-[length:var(--border)]';
-    }
-  })();
-  return `${ROOT_BG} ${EDGE_BORDER} ${inner}`;
-});
-
-/* ---------- Zwinięty pasek na krawędzi ---------- */
-const peekAlign = computed(() => {
-  switch (edge.value) {
-    case 'top':
-      return 'items-end';
-    case 'bottom':
-      return 'items-start';
-    case 'left':
-      return 'justify-end';
-    case 'right':
-      return 'justify-start';
-    default:
-      return '';
-  }
-});
-const peekTrackGeom = computed(() =>
-  edge.value === 'left' || edge.value === 'right' ? 'h-full w-[5px]' : 'h-[5px] w-full'
-);
-const peekFillGeom = computed(() =>
-  edge.value === 'left' || edge.value === 'right' ? 'absolute bottom-0 left-0 w-full' : 'h-full'
-);
-const peekFillState = computed(() =>
-  isPlaying.value
-    ? 'shadow-[0_0_8px_color-mix(in_srgb,var(--color-primary)_85%,transparent)]'
-    : 'opacity-45'
-);
-
-/* ---------- Pasek postępu na krawędzi w trybie rozwiniętym (jak w schowanym) ---------- */
+const rootClass = computed(() => pipRootClass(dock.value, peeked.value, edge.value));
+const peekAlign = computed(() => pipPeekAlign(edge.value));
+const peekTrackGeom = computed(() => pipPeekTrackGeom(edge.value));
+const peekFillGeom = computed(() => pipPeekFillGeom(edge.value));
+const peekFillState = computed(() => pipPeekFillState(isPlaying.value));
 </script>
 
 <template>

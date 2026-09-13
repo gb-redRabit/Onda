@@ -33,3 +33,51 @@ export const EDGE_PROGRESS_FILL_H =
   'h-full bg-primary transition-[width] group-hover:brightness-125';
 export const EDGE_PROGRESS_FILL_V =
   'absolute bottom-0 left-0 w-full bg-primary transition-[height] group-hover:brightness-125';
+
+export function pipRootClass(dock: string | null, peeked: boolean, edge: string | null): string {
+  if (peeked && edge) return 'border-0 bg-transparent';
+  const inner = (() => {
+    switch (dock) {
+      case 'top':
+        return 'rounded-none border-x-0 border-t-0 border-b-[length:var(--border)]';
+      case 'bottom':
+        return 'rounded-none border-x-0 border-b-0 border-t-[length:var(--border)]';
+      case 'left':
+        return 'rounded-none border-y-0 border-l-0 border-r-[length:var(--border)]';
+      case 'right':
+        return 'rounded-none border-y-0 border-r-0 border-l-[length:var(--border)]';
+      default:
+        return 'rounded-[var(--radius-box)] border-[length:var(--border)]';
+    }
+  })();
+  return `${ROOT_BG} ${EDGE_BORDER} ${inner}`;
+}
+
+export function pipPeekAlign(edge: string | null): string {
+  switch (edge) {
+    case 'top':
+      return 'items-end';
+    case 'bottom':
+      return 'items-start';
+    case 'left':
+      return 'justify-end';
+    case 'right':
+      return 'justify-start';
+    default:
+      return '';
+  }
+}
+
+export function pipPeekTrackGeom(edge: string | null): string {
+  return edge === 'left' || edge === 'right' ? 'h-full w-[5px]' : 'h-[5px] w-full';
+}
+
+export function pipPeekFillGeom(edge: string | null): string {
+  return edge === 'left' || edge === 'right' ? 'absolute bottom-0 left-0 w-full' : 'h-full';
+}
+
+export function pipPeekFillState(isPlaying: boolean): string {
+  return isPlaying
+    ? 'shadow-[0_0_8px_color-mix(in_srgb,var(--color-primary)_85%,transparent)]'
+    : 'opacity-45';
+}
