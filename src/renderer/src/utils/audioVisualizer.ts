@@ -25,3 +25,10 @@ export type VizQuality = keyof typeof QUALITY_PRESETS;
 export function qualityPreset(q: string | undefined): (typeof QUALITY_PRESETS)[VizQuality] {
   return QUALITY_PRESETS[(q as VizQuality) ?? 'high'] ?? QUALITY_PRESETS.high;
 }
+
+export type VizMode = VisualizationMode;
+
+export function nextVizMode(current: string | undefined): VizMode {
+  const idx = VIZ_CYCLES.indexOf(current as VizMode);
+  return VIZ_CYCLES[(idx + 1) % VIZ_CYCLES.length];
+}

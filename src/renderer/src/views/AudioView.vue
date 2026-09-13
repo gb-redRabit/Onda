@@ -18,6 +18,7 @@ import {
   resolveDecorationClasses,
   resolveElementDecoration
 } from '@renderer/utils/audioView';
+import { nextVizMode } from '@renderer/utils/audioVisualizer';
 
 // The layout editor (750+ lines) only renders when the user opens it — lazy.
 const AudioLayoutEditor = defineAsyncComponent(
@@ -37,13 +38,21 @@ function decorationClasses(el: AudioLayoutElement): string | undefined {
   return resolveDecorationClasses(el, pluginsStore.decorations);
 }
 
+function cycleViz() {
+  settings.updatePlayback({
+    visualization: {
+      ...settings.playback.visualization,
+      mode: nextVizMode(settings.playback.visualization.mode)
+    }
+  });
+}
+
 const pluginCommands = computed(() => pluginsStore.commandsIn('audio-view'));
 
 const viewEl = ref<HTMLElement | null>(null);
 const showUI = ref(true);
 const uiTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 const uiFireAt = ref(0);
-const vizRef = ref<InstanceType<typeof AudioVisualizer> | null>(null);
 const showVizSettings = ref(false);
 const showLayoutEditor = ref(false);
 const isFullscreen = ref(false);
@@ -319,7 +328,7 @@ onUnmounted(() => {
       <!-- Visualization (with built-in toolbar) -->
       <template v-if="el.id === 'visualization'">
         <div class="relative w-full h-full" :class="decorationClasses(el)">
-          <AudioVisualizer ref="vizRef" class="w-full h-full" />
+          <AudioVisualizer class="w-full h-full" />
         </div>
       </template>
 
@@ -414,11 +423,13 @@ onUnmounted(() => {
         <button
           class="fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all"
           :title="$t('audioView.vizMode')"
-          @click.stop="vizRef?.cycleStyle()"
+          @click.stop="cycleViz()"
         >
           <div class="flex items-center gap-1">
             <BarChart3 :size="12" />
-            <span class="text-[9px] uppercase font-medium">{{ vizRef?.style ?? 'bars' }}</span>
+            <span class="text-[9px] uppercase font-medium">{{
+              settings.playback.visualization.mode || 'bars'
+            }}</span>
           </div>
         </button>
         <button
