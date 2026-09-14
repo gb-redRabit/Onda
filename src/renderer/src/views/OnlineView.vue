@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, defineAsyncComponent } from 'vue';
+import { ref, computed, defineAsyncComponent } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Download, Radio, X, RefreshCw, AlertCircle } from '@lucide/vue';
 import { useOnlineStore } from '@renderer/stores/online';
@@ -11,8 +11,8 @@ import { useOnlineSubscriptions } from '@renderer/composables/useOnlineSubscript
 import { useOnlineBatch } from '@renderer/composables/useOnlineBatch';
 import { useOnlineDialogs } from '@renderer/composables/useOnlineDialogs';
 import { useOnlineQueueing } from '@renderer/composables/useOnlineQueueing';
+import { useOnlineViewSetup } from '@renderer/composables/useOnlineViewSetup';
 import LoaderSpinner from '@renderer/components/LoaderSpinner.vue';
-import { detectPlatform } from '@shared/platform';
 import {
   configDialogTitle as resolveConfigDialogTitle,
   configDialogChannelTitle as resolveConfigDialogChannelTitle,
@@ -46,14 +46,7 @@ const SubscribeConfigDialog = defineAsyncComponent(
 const yt = useOnlineStore();
 const saved = useSavedStore();
 void saved.ensureLoaded();
-const avatarErrors = ref<Record<string, boolean>>({});
-watch(
-  () => yt.subscriptions.map((s) => s.channelThumbnail).join('|'),
-  () => {
-    avatarErrors.value = {};
-  }
-);
-const { profiles, ensureLoaded: ensureProfilesLoaded } = useDownloadProfiles();
+const { profiles } = useDownloadProfiles();
 const { t } = useI18n();
 
 const input = ref('');
@@ -86,6 +79,7 @@ const {
   closeQueueConfig,
   confirmQueueConfig
 } = useOnlineQueueing(configTarget, rangeStart, rangeEnd, toastAdded);
+useOnlineViewSetup(input, onKeydown);
 const { savingPlaylist, saveResolvedPlaylist, resolvedSaved } = useOnlineSavedPlaylist();
 const {
   batchOpen,
@@ -123,23 +117,6 @@ function clearResolved() {
   resolveError.value = '';
   input.value = '';
 }
-
-onMounted(async () => {
-  window.addEventListener('keydown', onKeydown);
-  try {
-    const text = (await window.api?.invoke('app:readClipboard')) as string | undefined;
-    if (typeof text === 'string' && detectPlatform(text) && !input.value) {
-      input.value = text.trim();
-    }
-  } catch {
-    /* clipboard unavailable */
-  }
-  void ensureProfilesLoaded();
-});
-
-onUnmounted(() => {
-  window.removeEventListener('keydown', onKeydown);
-});
 </script>
 
 <template>
