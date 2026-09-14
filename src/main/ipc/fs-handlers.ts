@@ -18,6 +18,7 @@ import { errMsg } from '../../shared/helpers';
 import { logger } from '../../shared/logger';
 import type { FileItem } from '../../renderer/src/types/explorer';
 import { getDrives, getFileItem, stripDuplicateSuffix, fileHash, uniqueDestPath } from './fs-utils';
+import { getFileProperties } from './fs-properties';
 import { isSafeAbsolutePath, isSafeStringArray } from '../utils/validate';
 
 const EXECUTABLE_EXTS = new Set([
@@ -40,65 +41,7 @@ export function registerFsHandlers(): void {
   });
 
   ipcMain.handle('fs:getProperties', async (_event, filePath: string) => {
-    let s;
-    try {
-      s = await stat(filePath);
-    } catch (e) {
-      logger.warn('fs', `getProperties stat failed for ${filePath}`, e);
-      return null;
-    }
-    const base = {
-      name: basename(filePath),
-      path: filePath,
-      isDirectory: s.isDirectory(),
-      size: s.size,
-      createdAt: s.birthtimeMs,
-      modifiedAt: s.mtimeMs
-    };
-    if (!s.isDirectory()) return base;
-    let itemCount = 0;
-    let dirCount = 0;
-    let fileCount = 0;
-    let totalSize = 0;
-    let processed = 0;
-    const MAX = 100000;
-    async function walk(dir: string) {
-      if (processed >= MAX) return;
-      let entries;
-      try {
-        entries = await readdir(dir, { withFileTypes: true });
-      } catch (e) {
-        logger.warn('fs', `getProperties walk failed for ${dir}`, e);
-        return;
-      }
-      for (const e of entries) {
-        if (processed >= MAX) return;
-        processed++;
-        if (e.isDirectory()) {
-          dirCount++;
-          itemCount++;
-          await walk(join(dir, e.name));
-        } else if (e.isFile()) {
-          fileCount++;
-          itemCount++;
-          try {
-            const st = await stat(join(dir, e.name));
-            totalSize += st.size;
-          } catch (err) {
-            logger.warn('fs', `getProperties stat failed for ${join(dir, e.name)}`, err);
-          }
-        }
-      }
-    }
-    await walk(filePath);
-    return {
-      ...base,
-      itemCount,
-      dirCount,
-      fileCount,
-      totalSize,
-      truncated: processed >= MAX
-    };
+    return getFileProperties(filePath);
   });
 
   ipcMain.handle('fs:readdir', async (event, dirPath: string): Promise<void> => {
