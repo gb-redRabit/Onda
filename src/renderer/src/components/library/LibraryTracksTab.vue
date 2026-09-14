@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useVirtualizer } from '@tanstack/vue-virtual';
-import { Music2, LayoutList, LayoutGrid, X, ListMusic, Play } from '@lucide/vue';
+import { Music2, LayoutList, LayoutGrid } from '@lucide/vue';
 import type { MediaFile } from '@renderer/types/media';
 import { useVirtualGrid } from '@renderer/composables/useVirtualGrid';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
 import LibraryTrackRow from '@renderer/components/library/LibraryTrackRow.vue';
 import LibraryTrackCard from '@renderer/components/library/LibraryTrackCard.vue';
+import LibraryTracksBulkBar from '@renderer/components/library/LibraryTracksBulkBar.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -33,7 +34,6 @@ const selected = ref<Set<string>>(new Set());
 const lastIndex = ref<number | null>(null);
 const selectedCount = computed(() => selected.value.size);
 const selectedTracks = computed(() => props.tracks.filter((t) => selected.value.has(t.path)));
-const showBulkPlaylist = ref(false);
 function playSelected() {
   if (selectedTracks.value.length === 0) return;
   const t = selectedTracks.value;
@@ -49,7 +49,6 @@ function queueSelected() {
 }
 function addSelectedToPlaylist(pid: string) {
   for (const tr of selectedTracks.value) library.addToPlaylist(pid, tr);
-  showBulkPlaylist.value = false;
   clearSelection();
 }
 
@@ -226,59 +225,15 @@ onUnmounted(() => {
       </div>
     </div>
     <!-- Bulk bar -->
-    <div
+    <LibraryTracksBulkBar
       v-if="selectedCount > 0"
-      class="flex items-center gap-2 px-4 py-2 bg-primary/10 border-b border-primary/20 text-xs shrink-0"
-    >
-      <span class="font-medium text-primary">{{ selectedCount }} {{ $t('common.selected') }}</span>
-      <div class="flex items-center gap-1 ml-auto">
-        <button
-          class="px-2.5 py-1 rounded-field bg-primary text-primary-content hover:bg-primary/90 flex items-center gap-1 fx-depth fx-noise"
-          @click="playSelected"
-        >
-          <Play :size="12" /> Play
-        </button>
-        <button
-          class="px-2.5 py-1 rounded-field bg-base-100 border border-base-300 hover:bg-base-200"
-          @click="queueSelected"
-        >
-          <ListMusic :size="12" class="inline mr-1" />{{ $t('common.addToQueue') }}
-        </button>
-        <div class="relative">
-          <button
-            class="px-2.5 py-1 rounded-field bg-base-100 border border-base-300 hover:bg-base-200"
-            @click="showBulkPlaylist = !showBulkPlaylist"
-          >
-            {{ $t('common.addToPlaylist') }}
-          </button>
-          <div
-            v-if="showBulkPlaylist"
-            class="absolute right-0 top-full mt-1 w-48 bg-base-100 border border-base-300 rounded-box shadow-xl py-1 z-20 max-h-48 overflow-auto"
-          >
-            <button
-              v-for="p in library.playlists"
-              :key="p.id"
-              class="w-full text-left px-3 py-1.5 text-xs hover:bg-base-content/10 truncate"
-              @click="addSelectedToPlaylist(p.id)"
-            >
-              {{ p.name }}
-            </button>
-            <div
-              v-if="library.playlists.length === 0"
-              class="px-3 py-1.5 text-xs text-base-content/50 italic"
-            >
-              {{ $t('common.noPlaylists') }}
-            </div>
-          </div>
-        </div>
-        <button
-          class="p-1 rounded-field hover:bg-base-300 text-base-content/60"
-          @click="clearSelection"
-        >
-          <X :size="12" />
-        </button>
-      </div>
-    </div>
+      :count="selectedCount"
+      :playlists="library.playlists"
+      @play="playSelected"
+      @queue="queueSelected"
+      @add-to-playlist="addSelectedToPlaylist"
+      @clear="clearSelection"
+    />
 
     <template v-if="viewMode === 'list'">
       <div ref="trackListRef" class="flex-1 overflow-auto">
