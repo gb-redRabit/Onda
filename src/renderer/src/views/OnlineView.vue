@@ -8,6 +8,7 @@ import { useUIStore } from '@renderer/stores/ui';
 import { useSavedStore } from '@renderer/stores/saved';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { useOnlineSearch } from '@renderer/composables/useOnlineSearch';
+import { useOnlineSavedPlaylist } from '@renderer/composables/useOnlineSavedPlaylist';
 import LoaderSpinner from '@renderer/components/LoaderSpinner.vue';
 import { detectPlatform, parseBatchInputAll } from '@shared/platform';
 import { buildChannelUrl, countSkippedBatchLines } from '@renderer/utils/onlineView';
@@ -19,7 +20,6 @@ import {
   type OnlineConfigTarget
 } from '@renderer/utils/onlineConfigDialog';
 import { pickTextFile, batchResultMessage } from '@renderer/utils/onlineBatch';
-import { savedPlaylistId } from '@renderer/utils/onlineSavedPlaylist';
 import OnlineSearchBar from '@renderer/components/online/OnlineSearchBar.vue';
 import OnlineViewTabs from '@renderer/components/online/OnlineViewTabs.vue';
 import OnlineButton from '@renderer/components/online/OnlineButton.vue';
@@ -67,8 +67,8 @@ const { profiles, ensureLoaded: ensureProfilesLoaded } = useDownloadProfiles();
 const { t } = useI18n();
 
 const input = ref('');
-const savingPlaylist = ref(false);
 const { searchError, resolveError, submit } = useOnlineSearch(input, t, openDiscover);
+const { savingPlaylist, saveResolvedPlaylist, resolvedSaved } = useOnlineSavedPlaylist();
 const rangeStart = ref(1);
 const rangeEnd = ref(100);
 const batchOpen = ref(false);
@@ -208,45 +208,6 @@ function clearResolved() {
   resolveError.value = '';
   input.value = '';
 }
-
-function saveResolvedPlaylist() {
-  const r = yt.resolved;
-  if (!r || r.kind === 'video' || savingPlaylist.value) return;
-  const id = savedPlaylistId(r);
-  if (saved.isPlaylistSaved(id)) {
-    void saved.removePlaylist(id);
-    return;
-  }
-  savingPlaylist.value = true;
-  void savePlaylistAsync(r).finally(() => {
-    savingPlaylist.value = false;
-  });
-}
-
-// The saved entry keeps the FULL item list (all pages), so the Saved view and
-// playback start instantly without re-resolving the playlist on every visit.
-async function savePlaylistAsync(r: NonNullable<typeof yt.resolved>) {
-  const { items, totalItems } = await yt.loadAllResolvedItems(r.sourceUrl);
-  void saved
-    .savePlaylist({
-      kind: r.kind,
-      url: r.sourceUrl,
-      title: r.title,
-      thumbnail: r.items[0]?.thumbnail,
-      channelTitle: r.meta.channelTitle,
-      totalItems: totalItems ?? r.meta.totalItems ?? undefined,
-      items: items.length > 0 ? items : r.items
-    })
-    .then((ok) => {
-      if (ok) ui.notify('success', r.title, t('saved.playlistSaved'));
-    });
-}
-
-const resolvedSaved = computed(() => {
-  const r = yt.resolved;
-  if (!r || r.kind === 'video') return false;
-  return saved.isPlaylistSaved(savedPlaylistId(r));
-});
 
 function toggleSelect(id: string) {
   const next = new Set(yt.selectedResolved);
