@@ -1,6 +1,6 @@
 import { ref } from 'vue';
 import { useUIStore } from '@renderer/stores/ui';
-import type { DownloadTask } from '@renderer/types/online';
+import type { CoverStatus, DownloadTask } from '@renderer/types/online';
 import type { IpcDownloadJobInput, IpcDownloadTask } from '@shared/types/ipc';
 import { pluginHookBus } from '@renderer/utils/pluginHooks';
 import { toDownloadTask } from '@renderer/utils/onlineDownloadTask';
@@ -79,5 +79,28 @@ export function createOnlineDownloads(
     }
   }
 
-  return { downloads, downloadByVideoId, upsertTask, submitJobs };
+  // Status of the download task for a given video id (used to show a loading /
+  // downloading / done state on the quick "download" button).
+  function downloadStatusFor(videoId: string): DownloadTask['status'] | null {
+    if (!videoId) return null;
+    const task = downloadByVideoId.get(videoId);
+    return task ? task.status : null;
+  }
+
+  // Cover-processing status of the task for a video (used to show that the
+  // animated cover is still being prepared after the audio download finished).
+  function coverStatusFor(videoId: string): CoverStatus | null {
+    if (!videoId) return null;
+    const task = downloadByVideoId.get(videoId);
+    return task?.coverStatus ?? null;
+  }
+
+  return {
+    downloads,
+    downloadByVideoId,
+    upsertTask,
+    submitJobs,
+    downloadStatusFor,
+    coverStatusFor
+  };
 }

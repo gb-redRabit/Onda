@@ -9,7 +9,6 @@ import type {
   Subscription,
   SubscriptionDownloadPrefs,
   DownloadTask,
-  CoverStatus,
   MetaOverride
 } from '@renderer/types/online';
 import type {
@@ -76,8 +75,14 @@ export const useOnlineStore = defineStore('online', () => {
   const checkingChannelId = ref<string | null>(null);
   const queuingId = ref<string | null>(null);
   const queueingChannelId = ref<string | null>(null);
-  const { downloads, downloadByVideoId, upsertTask, submitJobs } =
-    createOnlineDownloads(markVideoDownloaded);
+  const {
+    downloads,
+    downloadByVideoId,
+    upsertTask,
+    submitJobs,
+    downloadStatusFor,
+    coverStatusFor
+  } = createOnlineDownloads(markVideoDownloaded);
   const {
     resolved,
     isResolving,
@@ -226,22 +231,6 @@ export const useOnlineStore = defineStore('online', () => {
   // saves it) so the snapshot contains the full list, not just the first page.
   async function loadAllResolvedItems(url: string) {
     return resolveAllPlaylistItems(url);
-  }
-
-  // Status of the download task for a given video id (used to show a loading /
-  // downloading / done state on the quick "download" button).
-  function downloadStatusFor(videoId: string): DownloadTask['status'] | null {
-    if (!videoId) return null;
-    const task = downloadByVideoId.get(videoId);
-    return task ? task.status : null;
-  }
-
-  // Cover-processing status of the task for a video (used to show that the
-  // animated cover is still being prepared after the audio download finished).
-  function coverStatusFor(videoId: string): CoverStatus | null {
-    if (!videoId) return null;
-    const task = downloadByVideoId.get(videoId);
-    return task?.coverStatus ?? null;
   }
 
   // Resolves and queues a batch of links (videos and playlist first-page
