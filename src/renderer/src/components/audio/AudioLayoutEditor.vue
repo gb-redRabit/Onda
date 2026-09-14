@@ -13,7 +13,7 @@ import {
   type RightTab
 } from '@renderer/utils/audioLayoutEditorMeta';
 import { useSettingsStore } from '@renderer/stores/settings';
-import { usePluginsStore, ELEMENT_DECORATIONS } from '@renderer/stores/plugins';
+import { usePluginsStore } from '@renderer/stores/plugins';
 import {
   PREVIEW_H,
   PREVIEW_W,
@@ -22,6 +22,7 @@ import {
   snapWithGuides
 } from '@renderer/utils/audioLayout';
 import { layoutEditorStyle } from '@renderer/utils/audioLayoutElementStyle';
+import { decorationOptionsFor } from '@renderer/utils/audioLayoutDecorations';
 import AudioLayoutPositionTab from './AudioLayoutPositionTab.vue';
 import type {
   AudioLayoutElement,
@@ -36,16 +37,7 @@ const pluginsStore = usePluginsStore();
 function pluginDecorationOptions(
   elementId: AudioLayoutElementId
 ): { value: string; label: string; plugin?: string }[] {
-  const builtin = (ELEMENT_DECORATIONS[elementId] || []).map((value) => ({
-    value,
-    label: t('audioView.decoration_' + elementId + '_' + value)
-  }));
-  const plugin = (pluginsStore.layoutVariants[elementId] || []).map((v) => ({
-    value: v.value,
-    label: v.label,
-    plugin: v.plugin
-  }));
-  return [...builtin, ...plugin];
+  return decorationOptionsFor(elementId, pluginsStore.layoutVariants, t);
 }
 
 const selectedId = ref<AudioLayoutElementId>('cover');
