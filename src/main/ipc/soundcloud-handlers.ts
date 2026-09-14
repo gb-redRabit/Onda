@@ -22,6 +22,7 @@ export { scVideoFromEntry } from './soundcloud-entries';
 import { getScStreamUrl } from './soundcloud-stream';
 import { errorCodeOf } from './soundcloud-error';
 import { fallbackResolvePage, fallbackSearch } from './soundcloud-fallback';
+import { normalizeScOffset } from './soundcloud-offset';
 
 // ---------------------------------------------------------------------------
 // IPC registration
@@ -31,7 +32,7 @@ export function registerSoundcloudHandlers(): void {
     if (typeof query !== 'string' || !query.trim() || query.length > 200) {
       return { success: false, error: 'Invalid search query', items: [] };
     }
-    const pageOffset = Math.max(0, Math.min(900, Math.floor(Number(offset) || 0)));
+    const pageOffset = normalizeScOffset(offset);
     try {
       const items = await scSearchTracks(query.trim(), 100, pageOffset);
       return { success: true, items };
