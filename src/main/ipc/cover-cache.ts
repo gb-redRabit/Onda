@@ -1,108 +1,17 @@
 import { stat, readFile, writeFile, mkdir, unlink } from 'fs/promises';
 import { join, extname } from 'path';
-import { randomBytes } from 'crypto';
 import { parseFile } from 'music-metadata';
 import sharp from 'sharp';
 import os from 'os';
-import { app } from 'electron';
 import { AUDIO_EXTS, VIDEO_EXTS } from '../../shared/constants';
 import { evictCache, hashPath, uniqueId, findSiblingVideo, isEnoent } from './cover-cache-helpers';
-import { migrateLegacyStore } from './store-crypto';
 import { runCommand } from '../utils/exec';
 import { resolveBin } from '../binaries';
 import { logger } from '../../shared/logger';
+import { readCoverMap, writeCoverMap } from './cover-map';
 
-// Cover cache map is persisted to its own JSON file instead of the encrypted
-// electron-store to avoid rewriting the entire config on every cover save.
-let coverMapFile: string | null = null;
-function getCoverMapFile(): string {
-  if (!coverMapFile) {
-    try {
-      coverMapFile = join(app.getPath('userData'), 'cover-cache-map.json');
-    } catch {
-      coverMapFile = join(os.tmpdir(), 'onda', 'cover-cache-map.json');
-    }
-  }
-  return coverMapFile;
-}
-let coverMapData: Record<string, { cacheFile: string; mtime: number }> | null = null;
-let coverMapWriteLock: Promise<void> | null = null;
-
-async function readCoverMap(): Promise<Record<string, { cacheFile: string; mtime: number }>> {
-  if (coverMapData) return coverMapData;
-  try {
-    const raw = await readFile(getCoverMapFile(), 'utf-8');
-    coverMapData = JSON.parse(raw);
-  } catch {
-    coverMapData = {};
-    // Migrate from electron-store if the file doesn't exist yet
-    try {
-      const store = await getStore();
-      const legacy = store.get(COVER_CACHE_MAP_KEY) as
-        Record<string, { cacheFile: string; mtime: number }> | undefined;
-      if (legacy && Object.keys(legacy).length > 0) {
-        coverMapData = legacy;
-        await writeCoverMap(coverMapData);
-        store.set(COVER_CACHE_MAP_KEY, undefined);
-      }
-    } catch {
-      // migration failed — start fresh
-    }
-  }
-  return coverMapData!;
-}
-
-async function writeCoverMap(
-  data: Record<string, { cacheFile: string; mtime: number }>
-): Promise<void> {
-  while (coverMapWriteLock) await coverMapWriteLock;
-  let resolveLock: () => void;
-  coverMapWriteLock = new Promise((r) => {
-    resolveLock = r;
-  });
-  try {
-    await writeFile(getCoverMapFile(), JSON.stringify(data), 'utf-8');
-    coverMapData = data;
-  } finally {
-    coverMapWriteLock = null;
-    resolveLock!();
-  }
-}
-
-// The electron-store encryption key is persisted as a random per-install value
-// instead of being derived from the hostname (which is public and predictable).
-const STORE_KEY_FILE = 'onda-store-key';
-
-type Store = InstanceType<typeof import('electron-store').default>;
-
-let _storePromise: Promise<Store> | null = null;
-
-async function getOrCreateStoreKey(): Promise<string> {
-  const keyPath = join(app.getPath('userData'), STORE_KEY_FILE);
-  try {
-    const existing = (await readFile(keyPath, 'utf-8')).trim();
-    if (/^[0-9a-f]{64}$/.test(existing)) return existing;
-  } catch {
-    // first run
-  }
-  const migrated = await migrateLegacyStore(keyPath);
-  if (migrated) return migrated;
-  const fresh = randomBytes(32).toString('hex');
-  await mkdir(app.getPath('userData'), { recursive: true });
-  await writeFile(keyPath, fresh, { mode: 0o600 });
-  return fresh;
-}
-
-export function getStore(): Promise<Store> {
-  if (!_storePromise) {
-    _storePromise = (async () => {
-      const { default: Store } = await import('electron-store');
-      const key = await getOrCreateStoreKey();
-      return new Store({ encryptionKey: key });
-    })();
-  }
-  return _storePromise;
-}
+export { getStore } from './cover-store';
+export { COVER_CACHE_MAP_KEY } from './cover-map';
 
 export function getTempDir(): string {
   return join(os.tmpdir(), 'onda-covers');
@@ -135,7 +44,6 @@ export function cacheSet<T>(
 }
 
 export const PERSISTENT_COVER_DIR = join(getTempDir(), 'persistent');
-export const COVER_CACHE_MAP_KEY = 'coverCacheMap';
 
 async function getPersistentCover(
   filePath: string
