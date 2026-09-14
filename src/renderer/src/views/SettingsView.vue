@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import { ref, computed, watch, defineAsyncComponent } from 'vue';
-import { useRoute } from 'vue-router';
+import { watch, defineAsyncComponent } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { logger } from '@shared/logger';
 import { Search, RotateCcw, FileDown, FileUp, X, Settings, ArrowLeft } from '@lucide/vue';
-import { SETTINGS_SECTIONS as sections, SETTINGS_TABS as tabs } from '@renderer/utils/settingsNav';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore } from '@renderer/stores/ui';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
 import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 import SettingsOverviewCard from '@renderer/components/settings/SettingsOverviewCard.vue';
 import { useSettingsContextMenu } from '@renderer/composables/useSettingsContextMenu';
+import { useSettingsNav } from '@renderer/composables/useSettingsNav';
 
 const SettingsAppearance = defineAsyncComponent(
   () => import('@renderer/components/settings/SettingsAppearance.vue')
@@ -102,47 +101,19 @@ const {
   promptCancel
 } = usePromptDialog();
 
-const activeSection = ref<string | null>(null);
-const activeTab = ref<string | null>(null);
-const search = ref('');
-
-const route = useRoute();
-if (typeof route.query.tab === 'string') activeTab.value = route.query.tab;
-if (typeof route.query.section === 'string') activeSection.value = route.query.section;
-
-const query = computed(() => search.value.trim().toLowerCase());
-
-const sectionTabs = computed(() => {
-  if (!activeSection.value) return [];
-  const q = query.value;
-  return tabs.filter((item) => {
-    if (item.section !== activeSection.value) return false;
-    if (!q) return true;
-    return t(item.labelKey).toLowerCase().includes(q);
-  });
-});
-
-const isOverview = computed(() => !activeSection.value && !activeTab.value);
-
-const activeSectionItem = computed(() => sections.find((s) => s.id === activeSection.value));
-
-function selectSection(id: string) {
-  activeSection.value = id;
-  activeTab.value = null;
-}
-
-function selectTab(id: string) {
-  activeTab.value = id;
-}
-
-function goBackToSection() {
-  activeTab.value = null;
-}
-
-function goHome() {
-  activeSection.value = null;
-  activeTab.value = null;
-}
+const {
+  sections,
+  activeSection,
+  activeTab,
+  search,
+  sectionTabs,
+  isOverview,
+  activeSectionItem,
+  selectSection,
+  selectTab,
+  goBackToSection,
+  goHome
+} = useSettingsNav();
 
 async function onReset() {
   const ok = await showConfirm(t('settings.resetConfirm'));
