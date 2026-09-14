@@ -5,7 +5,7 @@ import type { useLibraryStore } from '@renderer/stores/library';
 import type { usePluginsStore } from '@renderer/stores/plugins';
 import { snapshotTrack } from '@renderer/stores/plugins';
 import type { PluginHookPayload } from '@renderer/modules/plugins/plugin-shim';
-import type { ContextMenuAction } from './useContextMenu';
+import type { ContextMenuAction } from '@renderer/composables/useContextMenu';
 import { revealInFolder, copyPathToClipboard } from '@renderer/utils/menuActions';
 
 export interface TrackCtx {

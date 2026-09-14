@@ -1,8 +1,8 @@
 ﻿import type { FileItem } from '@renderer/types/explorer';
 import { useContextMenu } from './useContextMenu';
-import { createExplorerMenuDefs, type ExplorerActionCtx } from './explorerMenuDefs';
+import { createExplorerMenuDefs, type ExplorerActionCtx } from '@renderer/utils/explorerMenuDefs';
 
-export type { ExplorerActionCtx } from './explorerMenuDefs';
+export type { ExplorerActionCtx } from '@renderer/utils/explorerMenuDefs';
 
 export function useExplorerContextMenu(ctx: ExplorerActionCtx) {
   const { open } = useContextMenu();

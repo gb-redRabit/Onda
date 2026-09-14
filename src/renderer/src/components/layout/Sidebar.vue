@@ -12,35 +12,25 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  ListMusic,
-  Music2,
-  Plus,
-  Trash2,
   RadioTower,
   Radio,
   ChevronDown,
   ChevronRight as ChevronRightSmall
 } from '@lucide/vue';
-import { usePlayerStore } from '@renderer/stores/player';
 import { useLibraryStore } from '@renderer/stores/library';
-import { useUIStore } from '@renderer/stores/ui';
 import { useSettingsStore } from '@renderer/stores/settings';
+import SidebarPlaylists from './SidebarPlaylists.vue';
+import SidebarQueuePreview from './SidebarQueuePreview.vue';
 
 const router = useRouter();
 const route = useRoute();
 const { t } = useI18n();
-const player = usePlayerStore();
 const library = useLibraryStore();
-const ui = useUIStore();
 const settings = useSettingsStore();
 const collapsed = ref(settings.appearance.sidebarCollapsed);
 const width = ref(220);
 const isResizing = ref(false);
-const playlistsExpanded = ref(true);
 const albumsExpanded = ref(true);
-const newPlaylistName = ref('');
-const isCreatingPlaylist = ref(false);
-const dragOverPlaylistId = ref<string | null>(null);
 
 watch(collapsed, (val) => {
   settings.updateAppearance({ sidebarCollapsed: val });
@@ -111,43 +101,6 @@ function onResizeStart(e: MouseEvent) {
   document.addEventListener('mousemove', onMove);
   document.addEventListener('mouseup', onUp);
 }
-
-function createPlaylist() {
-  const name = newPlaylistName.value.trim();
-  if (!name) return;
-  library.createPlaylist(name);
-  newPlaylistName.value = '';
-  isCreatingPlaylist.value = false;
-}
-
-function onPlaylistDrop(e: DragEvent, playlistId: string) {
-  const raw = e.dataTransfer?.getData('text/plain');
-  if (!raw) return;
-  try {
-    const { paths } = JSON.parse(raw);
-    if (!Array.isArray(paths)) return;
-    const playlist = library.playlists.find((p) => p.id === playlistId);
-    if (!playlist) return;
-    paths.forEach((path: string) => {
-      const track = library.tracks.find((t) => t.path === path);
-      if (track) library.addToPlaylist(playlistId, track);
-    });
-    dragOverPlaylistId.value = null;
-    ui.notify('success', t('common.addToPlaylist'));
-  } catch {
-    // not our data format
-  }
-}
-
-function playPlaylist(playlistId: string) {
-  const playlist = library.playlists.find((p) => p.id === playlistId);
-  if (playlist && playlist.tracks.length > 0) {
-    player.clearQueue();
-    if (playlist.tracks.length > 1) player.addToQueueMultiple(playlist.tracks.slice(1));
-    player.setTrack(playlist.tracks[0]);
-    player.play();
-  }
-}
 </script>
 
 <template>
@@ -180,63 +133,7 @@ function playPlaylist(playlistId: string) {
 
         <!-- playlists section -->
         <template v-if="!collapsed">
-          <div v-if="settings.appearance.showPlaylists" class="pt-3">
-            <button
-              class="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] font-medium text-base-content/50 uppercase tracking-wider hover:text-base-content/70 transition-colors"
-              @click="playlistsExpanded = !playlistsExpanded"
-            >
-              <ChevronDown v-if="playlistsExpanded" :size="12" />
-              <ChevronRightSmall v-else :size="12" />
-              <span>{{ $t('library.playlists') }}</span>
-              <span class="ml-auto text-base-content/60">{{ library.playlists.length }}</span>
-            </button>
-
-            <div v-if="playlistsExpanded" class="mt-1 space-y-0.5">
-              <div
-                v-for="playlist in library.playlists"
-                :key="playlist.id"
-                class="group flex items-center gap-2 px-3 py-2 rounded-field text-xs text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors cursor-pointer"
-                :class="{
-                  'ring-1 ring-primary/50 bg-primary/10': dragOverPlaylistId === playlist.id
-                }"
-                @click="playPlaylist(playlist.id)"
-                @dragover.prevent="dragOverPlaylistId = playlist.id"
-                @dragleave="dragOverPlaylistId = null"
-                @drop.prevent="onPlaylistDrop($event, playlist.id)"
-              >
-                <ListMusic :size="13" class="shrink-0 text-primary/70" />
-                <span class="truncate flex-1">{{ playlist.name }}</span>
-                <span class="text-[10px] text-base-content/50">{{ playlist.tracks.length }}</span>
-                <button
-                  class="fx-noise p-0.5 fx-depth rounded-field opacity-0 group-hover:opacity-100 text-base-content/50 hover:text-error transition-all"
-                  :aria-label="$t('common.delete')"
-                  @click.stop="library.deletePlaylist(playlist.id)"
-                >
-                  <Trash2 :size="10" />
-                </button>
-              </div>
-
-              <!-- create playlist -->
-              <div v-if="isCreatingPlaylist" class="px-2 py-1">
-                <input
-                  v-model="newPlaylistName"
-                  :placeholder="$t('library.playlistName')"
-                  class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content placeholder:text-base-content/50 focus:outline-none focus:ring-1 focus:ring-primary"
-                  autofocus
-                  @keydown.enter="createPlaylist"
-                  @keydown.escape="isCreatingPlaylist = false"
-                />
-              </div>
-              <button
-                v-else
-                class="fx-noise w-full flex items-center gap-2 px-3 py-2 fx-depth rounded-field text-xs text-base-content/50 hover:bg-base-content/10 hover:text-base-content/70 transition-colors"
-                @click="isCreatingPlaylist = true"
-              >
-                <Plus :size="13" class="shrink-0" />
-                <span>{{ $t('library.newPlaylist') }}</span>
-              </button>
-            </div>
-          </div>
+          <SidebarPlaylists v-if="settings.appearance.showPlaylists" />
 
           <!-- albums section -->
           <div v-if="settings.appearance.showAlbums" class="pt-1">
@@ -265,28 +162,7 @@ function playPlaylist(playlistId: string) {
         </template>
       </nav>
 
-      <div
-        v-if="!collapsed && player.queueLength > 0"
-        class="mx-2 mb-1 p-3 rounded-box fx-noise bg-base-200 border border-base-content/20"
-      >
-        <div
-          class="flex items-center gap-2 text-[11px] text-base-content/50 mb-2 font-medium uppercase tracking-wider"
-        >
-          <ListMusic :size="12" />
-          <span>{{ $t('nav.queue') }}</span>
-          <span class="ml-auto text-base-content/70">{{ player.queueLength }}</span>
-        </div>
-        <div class="space-y-0.5 max-h-28 overflow-auto">
-          <div
-            v-for="(track, i) in player.displayQueue.slice(0, 5)"
-            :key="i"
-            class="flex items-center gap-2 text-xs text-base-content/70 truncate px-2 py-1.5 rounded-field hover:bg-base-content/10 hover:text-base-content transition-colors"
-          >
-            <Music2 :size="11" class="shrink-0 text-primary" />
-            <span class="truncate">{{ track.metadata?.title || track.name }}</span>
-          </div>
-        </div>
-      </div>
+      <SidebarQueuePreview v-if="!collapsed" />
 
       <div class="p-2 border border-t border-base-300 space-y-1">
         <button

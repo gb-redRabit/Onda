@@ -5,7 +5,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { usePluginsStore } from '@renderer/stores/plugins';
 import { dirname } from '@renderer/utils/path';
 import { useContextMenu } from './useContextMenu';
-import { createLibraryMenuDefs } from './libraryMenuDefs';
+import { createLibraryMenuDefs } from '@renderer/utils/libraryMenuDefs';
 
 export function useLibraryContextMenu() {
   const { t } = useI18n();

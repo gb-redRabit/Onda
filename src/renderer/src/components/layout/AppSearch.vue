@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onBeforeUnmount, type Component } from 'vue';
+import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import type { MediaFile } from '@renderer/types/media';
@@ -7,19 +7,18 @@ import { useUIStore } from '@renderer/stores/ui';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
 import { usePluginsStore } from '@renderer/stores/plugins';
+import { include, type FlatItem, type SearchGroup } from '@renderer/utils/appSearch';
+import AppSearchResults from './AppSearchResults.vue';
 import {
   Search,
-  Music2,
   Film,
   Disc3,
   Settings,
   Home,
-  ArrowRight,
   Radio,
   Download,
   Globe,
   Wand2,
-  ListMusic,
   X,
   FolderSearch,
   Puzzle
@@ -79,22 +78,7 @@ function playPlaylist(p: MediaFile[]) {
   ui.closeSearch();
 }
 
-type FlatItem =
-  | { type: 'track'; track: MediaFile; label: string; sub: string }
-  | { type: 'playlist'; label: string; sub: number; action: () => void }
-  | { type: 'action'; label: string; icon: Component; action: () => void };
-
-interface Group {
-  key: string;
-  label: string;
-  items: FlatItem[];
-}
-
-function include(q: string, ...parts: string[]): boolean {
-  return !q || parts.some((p) => p.toLowerCase().includes(q));
-}
-
-const groups = computed<Group[]>(() => {
+const groups = computed<SearchGroup[]>(() => {
   const q = debouncedQuery.value.toLowerCase().trim();
   const tracks = library.tracks
     .filter((t) =>
@@ -119,7 +103,7 @@ const groups = computed<Group[]>(() => {
   const matchedActions = actions.value
     .filter((a) => include(q, a.label))
     .map((a) => ({ type: 'action' as const, label: a.label, icon: a.icon, action: a.action }));
-  const result: Group[] = [];
+  const result: SearchGroup[] = [];
   if (tracks.length) result.push({ key: 'tracks', label: t('cmdPalette.tracks'), items: tracks });
   if (playlists.length)
     result.push({
@@ -160,16 +144,14 @@ const flatItems = computed(() => {
   return items;
 });
 
-function indexOf(item: FlatItem): number {
-  return flatItems.value.indexOf(item);
-}
-
-function isActive(item: FlatItem): boolean {
-  return indexOf(item) === activeIndex.value;
-}
-
-function setActive(item: FlatItem) {
-  activeIndex.value = indexOf(item);
+function runItem(item: FlatItem) {
+  if (item.type === 'track') {
+    player.setTrack(item.track);
+    player.play();
+  } else {
+    item.action();
+  }
+  ui.closeSearch();
 }
 
 watch(
@@ -259,67 +241,14 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
         </button>
       </div>
 
-      <div v-if="ui.searchMode === 'global'" class="max-h-80 overflow-y-auto py-1">
-        <template v-for="group in groups" :key="group.key">
-          <div
-            class="px-3 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-base-content/40"
-          >
-            {{ group.label }}
-          </div>
-          <template v-for="item in group.items" :key="item.label">
-            <div
-              v-if="item.type === 'track'"
-              class="flex items-center gap-2.5 px-3 py-2 cursor-pointer text-sm transition-colors"
-              :class="isActive(item) ? 'bg-primary/10 text-primary' : 'hover:bg-base-content/10'"
-              @click="
-                player.setTrack(item.track);
-                player.play();
-                ui.closeSearch();
-              "
-              @mouseenter="setActive(item)"
-            >
-              <component
-                :is="item.track.type === 'video' ? Film : Music2"
-                :size="14"
-                class="shrink-0 text-base-content/50"
-              />
-              <span class="truncate flex-1">{{ item.label }}</span>
-              <span class="text-[11px] text-base-content/50 shrink-0 truncate max-w-30">{{
-                item.sub
-              }}</span>
-            </div>
-            <div
-              v-else
-              class="flex items-center gap-2.5 px-3 py-2 cursor-pointer text-sm transition-colors"
-              :class="isActive(item) ? 'bg-primary/10 text-primary' : 'hover:bg-base-content/10'"
-              @click="
-                item.action();
-                ui.closeSearch();
-              "
-              @mouseenter="setActive(item)"
-            >
-              <component
-                :is="item.type === 'playlist' ? ListMusic : item.icon"
-                :size="14"
-                class="shrink-0 text-base-content/50"
-              />
-              <span>{{ item.label }}</span>
-              <span
-                v-if="item.type === 'playlist'"
-                class="text-[11px] text-base-content/50 shrink-0"
-                >{{ item.sub }}</span
-              >
-              <ArrowRight :size="12" class="ml-auto text-base-content/50" />
-            </div>
-          </template>
-        </template>
-        <div
-          v-if="flatItems.length === 0"
-          class="px-3 py-4 text-center text-xs text-base-content/50 italic"
-        >
-          {{ $t('cmdPalette.empty') }}
-        </div>
-      </div>
+      <AppSearchResults
+        v-if="ui.searchMode === 'global'"
+        :groups="groups"
+        :flat-items="flatItems"
+        :active-index="activeIndex"
+        @activate="activeIndex = $event"
+        @run="runItem"
+      />
     </div>
   </div>
 </template>

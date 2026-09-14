@@ -7,13 +7,8 @@ import type { useUIStore } from '@renderer/stores/ui';
 import { isLibraryFolder } from '@renderer/utils/libraryFolders';
 import { IMAGE_EXTS, VIDEO_EXTS, AUDIO_EXTS } from '@shared/constants';
 import type { FileItem } from '@renderer/types/explorer';
-import type { ContextMenuAction } from './useContextMenu';
-import {
-  revealInFolder,
-  openWithDefaultApp,
-  openInTerminal,
-  copyPathViaMain
-} from '@renderer/utils/menuActions';
+import type { ContextMenuAction } from '@renderer/composables/useContextMenu';
+import { revealInFolder, openWithDefaultApp, openInTerminal, copyPathViaMain } from './menuActions';
 
 export interface ExplorerActionCtx {
   explorer: ReturnType<typeof useExplorerStore>;
