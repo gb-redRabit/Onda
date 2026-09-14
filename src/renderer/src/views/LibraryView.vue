@@ -17,7 +17,6 @@ import LibraryAlbumsTab from '@renderer/components/library/LibraryAlbumsTab.vue'
 import LibraryPlaylistManager from '@renderer/components/library/LibraryPlaylistManager.vue';
 import LibraryOverviewTab from '@renderer/components/library/LibraryOverviewTab.vue';
 import { audioEngine } from '@renderer/modules/audioEngine';
-import { Music2, Film, Folder, Disc3, Mic2, ListMusic, Images, LayoutDashboard } from '@lucide/vue';
 import { useLibraryFilters } from '@renderer/composables/useLibraryFilters';
 import { useLibraryTagEditor } from '@renderer/composables/useLibraryTagEditor';
 import { useViewSearch } from '@renderer/composables/useViewSearch';
@@ -28,6 +27,7 @@ import {
   type ChipId,
   type SortKey
 } from '@renderer/utils/libraryView';
+import { isTabId, buildLibraryTabs, type TabId } from '@renderer/utils/libraryTabs';
 
 // Modals only mounted on demand — lazy so the Library chunk stays lean (3.5).
 const TrackTagEditor = defineAsyncComponent(
@@ -79,21 +79,6 @@ onUnmounted(() =>
 );
 
 // Tabs — overview default (Minimal Spotify)
-type TabId =
-  'overview' | 'tracks' | 'video' | 'images' | 'folders' | 'artists' | 'albums' | 'playlists';
-const VALID_TABS: TabId[] = [
-  'overview',
-  'tracks',
-  'video',
-  'images',
-  'folders',
-  'artists',
-  'albums',
-  'playlists'
-];
-function isTabId(v: unknown): v is TabId {
-  return typeof v === 'string' && (VALID_TABS as string[]).includes(v);
-}
 const route = useRoute();
 const storedTab = isTabId(route.query.tab)
   ? route.query.tab
@@ -119,28 +104,17 @@ const chip = ref<ChipId>('all');
 const sortKey = ref<SortKey>('added');
 const sortDir = ref<'asc' | 'desc'>('desc');
 
-const tabs = computed(
-  () =>
-    [
-      {
-        id: 'overview',
-        label: t('library.overview'),
-        icon: LayoutDashboard,
-        count: library.totalCount
-      },
-      { id: 'tracks', label: t('library.tracks'), icon: Music2, count: library.audioCount },
-      { id: 'video', label: t('library.video'), icon: Film, count: library.videoCount },
-      { id: 'images', label: t('library.images'), icon: Images, count: library.imageCount },
-      { id: 'folders', label: t('library.folders'), icon: Folder, count: library.folders.length },
-      { id: 'artists', label: t('library.artists'), icon: Mic2, count: library.artists.length },
-      { id: 'albums', label: t('library.albums'), icon: Disc3, count: library.albums.length },
-      {
-        id: 'playlists',
-        label: t('library.playlists'),
-        icon: ListMusic,
-        count: library.playlists.length
-      }
-    ] as const
+const tabs = computed(() =>
+  buildLibraryTabs(t, {
+    total: library.totalCount,
+    audio: library.audioCount,
+    video: library.videoCount,
+    images: library.imageCount,
+    folders: library.folders.length,
+    artists: library.artists.length,
+    albums: library.albums.length,
+    playlists: library.playlists.length
+  })
 );
 
 // Dynamic tab collapse — instead of letting labels get cut off (ellipsis) when
