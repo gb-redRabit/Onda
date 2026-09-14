@@ -19,6 +19,7 @@ import {
   type OnlineConfigTarget
 } from '@renderer/utils/onlineConfigDialog';
 import { pickTextFile, batchResultMessage } from '@renderer/utils/onlineBatch';
+import { savedPlaylistId } from '@renderer/utils/onlineSavedPlaylist';
 import OnlineSearchBar from '@renderer/components/online/OnlineSearchBar.vue';
 import OnlineViewTabs from '@renderer/components/online/OnlineViewTabs.vue';
 import OnlineButton from '@renderer/components/online/OnlineButton.vue';
@@ -297,10 +298,7 @@ function clearResolved() {
 function saveResolvedPlaylist() {
   const r = yt.resolved;
   if (!r || r.kind === 'video' || savingPlaylist.value) return;
-  const id =
-    r.kind === 'channel'
-      ? r.sourceUrl
-      : (r.sourceUrl.match(/[?&]list=([\w-]+)/)?.[1] ?? r.sourceUrl);
+  const id = savedPlaylistId(r);
   if (saved.isPlaylistSaved(id)) {
     void saved.removePlaylist(id);
     return;
@@ -333,11 +331,7 @@ async function savePlaylistAsync(r: NonNullable<typeof yt.resolved>) {
 const resolvedSaved = computed(() => {
   const r = yt.resolved;
   if (!r || r.kind === 'video') return false;
-  return saved.isPlaylistSaved(
-    r.kind === 'channel'
-      ? r.sourceUrl
-      : (r.sourceUrl.match(/[?&]list=([\w-]+)/)?.[1] ?? r.sourceUrl)
-  );
+  return saved.isPlaylistSaved(savedPlaylistId(r));
 });
 
 function toggleSelect(id: string) {
