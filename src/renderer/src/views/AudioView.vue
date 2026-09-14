@@ -19,6 +19,7 @@ import {
   resolveElementDecoration
 } from '@renderer/utils/audioView';
 import { nextVizMode } from '@renderer/utils/audioVisualizer';
+import { elementStyle } from '@renderer/utils/audioElementStyle';
 
 // The layout editor (750+ lines) only renders when the user opens it — lazy.
 const AudioLayoutEditor = defineAsyncComponent(
@@ -72,25 +73,7 @@ const cursorHideTimeout = computed(() => (settings.playback.cursorTimeout ?? 3) 
 const hudOpacity = computed(() => (settings.appearance.audioLayout?.hudOpacity ?? 100) / 100);
 
 function getElementStyle(el: AudioLayoutElement) {
-  let { x, y } = el;
-  if (dragPos.value?.id === el.id) {
-    x = dragPos.value.x;
-    y = dragPos.value.y;
-  }
-  const style: Record<string, string> = {
-    left: x + '%',
-    top: y + '%',
-    width: el.width + '%',
-    height: el.height + '%',
-    opacity: String((el.opacity ?? 100) / 100),
-    zIndex: String(el.layer * 10)
-  };
-  const bgOpacity = el.bgOpacity ?? 40;
-  if (el.bg && bgOpacity > 0) {
-    style.backgroundColor = `color-mix(in srgb, var(--color-base-300) ${bgOpacity}%, transparent)`;
-    style.borderRadius = '0.5rem';
-  }
-  return style;
+  return elementStyle(el, dragPos.value);
 }
 
 function onElementMouseDown(e: MouseEvent, el: AudioLayoutElement) {
