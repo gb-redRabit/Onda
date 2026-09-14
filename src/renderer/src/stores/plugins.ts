@@ -42,6 +42,12 @@ export interface PluginUiInfo extends PluginInfo {
 const NOTIFY_TYPES = ['info', 'success', 'warning', 'error'] as const;
 const MAX_LOG_LINES = 50;
 
+function omitKey<T>(record: Record<string, T>, key: string): Record<string, T> {
+  const next = { ...record };
+  delete next[key];
+  return next;
+}
+
 export const usePluginsStore = defineStore('plugins', () => {
   const plugins = ref<PluginUiInfo[]>([]);
   const commands = ref<PluginCommandEntry[]>([]);
@@ -244,24 +250,14 @@ export const usePluginsStore = defineStore('plugins', () => {
     const handle = workers.value[id];
     if (handle) {
       handle.terminate();
-      const next = { ...workers.value };
-      delete next[id];
-      workers.value = next;
+      workers.value = omitKey(workers.value, id);
     }
     readyWorkers.delete(id);
     if (removeCommands) {
       commands.value = commands.value.filter((c) => (c as { pluginId?: string }).pluginId !== id);
     }
-    if (visuals.value[id]) {
-      const next = { ...visuals.value };
-      delete next[id];
-      visuals.value = next;
-    }
-    if (pluginSettings.value[id]) {
-      const next = { ...pluginSettings.value };
-      delete next[id];
-      pluginSettings.value = next;
-    }
+    if (visuals.value[id]) visuals.value = omitKey(visuals.value, id);
+    if (pluginSettings.value[id]) pluginSettings.value = omitKey(pluginSettings.value, id);
   }
 
   async function uninstall(id: string): Promise<void> {
