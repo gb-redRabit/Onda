@@ -9,9 +9,10 @@ import { useSavedStore } from '@renderer/stores/saved';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { useOnlineSearch } from '@renderer/composables/useOnlineSearch';
 import { useOnlineSavedPlaylist } from '@renderer/composables/useOnlineSavedPlaylist';
+import { useOnlineSubscriptions } from '@renderer/composables/useOnlineSubscriptions';
 import LoaderSpinner from '@renderer/components/LoaderSpinner.vue';
 import { detectPlatform, parseBatchInputAll } from '@shared/platform';
-import { buildChannelUrl, countSkippedBatchLines } from '@renderer/utils/onlineView';
+import { countSkippedBatchLines } from '@renderer/utils/onlineView';
 import {
   configDialogTitle as resolveConfigDialogTitle,
   configDialogChannelTitle as resolveConfigDialogChannelTitle,
@@ -32,7 +33,6 @@ import YTAuthButton from '@renderer/components/online/YTAuthButton.vue';
 import type {
   YouTubeVideo,
   YouTubeResolvedItem,
-  Subscription,
   CoverSpec,
   MetaOverride
 } from '@renderer/types/online';
@@ -67,6 +67,16 @@ const { profiles, ensureLoaded: ensureProfilesLoaded } = useDownloadProfiles();
 const { t } = useI18n();
 
 const input = ref('');
+const {
+  activeSection,
+  prefsOpen,
+  unfollowTarget,
+  openDiscover,
+  togglePrefs,
+  openChannelFromSubscription,
+  downloadSubscriptionAll,
+  downloadAllPending
+} = useOnlineSubscriptions();
 const { searchError, resolveError, submit } = useOnlineSearch(input, t, openDiscover);
 const { savingPlaylist, saveResolvedPlaylist, resolvedSaved } = useOnlineSavedPlaylist();
 const rangeStart = ref(1);
@@ -76,14 +86,6 @@ const batchText = ref('');
 const batchBusy = ref(false);
 const batchResult = ref('');
 const batchProfileId = ref('');
-const activeSection = ref<'discover' | 'subscriptions'>('discover');
-watch(activeSection, (section) => {
-  if (section === 'subscriptions' && !yt.subscriptionsLoaded) {
-    void yt.loadSubscriptions();
-  }
-});
-const prefsOpen = ref<Subscription | null>(null);
-const unfollowTarget = ref<string | null>(null);
 const expandedSearchId = ref<string | null>(null);
 const expandedResolvedId = ref<string | null>(null);
 const configTarget = ref<OnlineConfigTarget>(null);
@@ -130,30 +132,6 @@ const configDialogPlaylistTitle = computed(() =>
 const configDialogPlatform = computed(() =>
   resolveConfigDialogPlatform(configTarget.value, yt.resolved, yt.itemUrl)
 );
-
-function togglePrefs(sub: Subscription) {
-  prefsOpen.value = prefsOpen.value?.channelId === sub.channelId ? null : sub;
-}
-
-function openDiscover() {
-  activeSection.value = 'discover';
-}
-
-function openChannelFromSubscription(channelId: string) {
-  openDiscover();
-  const sub = yt.getSubscription(channelId);
-  void yt.openChannel(buildChannelUrl(channelId, sub?.platform));
-}
-
-function downloadSubscriptionAll(sub: Subscription) {
-  void yt.queueChannelVideos(sub.channelId, sub.downloadPrefs);
-}
-
-function downloadAllPending() {
-  for (const sub of yt.subscriptions) {
-    void yt.queueChannelVideos(sub.channelId, sub.downloadPrefs);
-  }
-}
 
 const selectedCount = computed(() => yt.selectedResolved.size);
 
