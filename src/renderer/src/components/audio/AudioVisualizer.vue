@@ -6,6 +6,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import type { VisualizationMode } from '@renderer/types/settings';
 import { VIZ_CYCLES } from '@renderer/utils/audioVisualizer';
 import { drawRadial, drawCircle } from '@renderer/utils/visualizerDraw';
+import { binFreq } from '@renderer/utils/visualizerBins';
 import { useVizConfig } from '@renderer/composables/useVizConfig';
 
 const audio = useAudioPlayer();
@@ -32,7 +33,6 @@ let freqData: Uint8Array<ArrayBuffer> | null = null;
 let smoothPrev: Uint8Array<ArrayBuffer> | null = null;
 let smoothOut: Uint8Array<ArrayBuffer> | null = null;
 let waveBuf: Uint8Array<ArrayBuffer> | null = null;
-let binScratch: number[] = [];
 
 // Gradient cache
 let barGrad: CanvasGradient | null = null;
@@ -51,20 +51,6 @@ let prevStyle: VisualizationMode | null = null;
 const CYCLES: VisualizationMode[] = VIZ_CYCLES;
 
 const { vizCfg, quality } = useVizConfig();
-
-function binFreq(data: Uint8Array, count: number): number[] {
-  const len = analyserNode!.frequencyBinCount;
-  const binSize = Math.floor(len / count);
-  if (binScratch.length !== count) binScratch = new Array<number>(count).fill(0);
-  for (let i = 0; i < count; i++) {
-    let sum = 0;
-    const start = i * binSize;
-    const end = Math.min(start + binSize, len);
-    for (let j = start; j < end; j++) sum += data[j];
-    binScratch[i] = Math.round(sum / (end - start));
-  }
-  return binScratch;
-}
 
 function draw(timestamp: number) {
   if (!canvasRef.value || !analyserNode) return;
@@ -179,7 +165,7 @@ function drawBars(
   const barCount = quality.barCount;
   const gap = 2;
   const barWidth = cw / barCount - gap;
-  const bins = binFreq(data, barCount);
+  const bins = binFreq(analyserNode!.frequencyBinCount, data, barCount);
   if (!barGrad || barGradH !== ch || barGradPrim !== prim || barGradSec !== sec) {
     barGrad = ctx.createLinearGradient(0, 0, 0, ch);
     barGrad.addColorStop(0, prim);
@@ -209,7 +195,7 @@ function drawSpectrum(
   const barCount = quality.barCount;
   const gap = 2;
   const barWidth = cw / barCount - gap;
-  const bins = binFreq(data, barCount);
+  const bins = binFreq(analyserNode!.frequencyBinCount, data, barCount);
   if (!spectGrad || spectGradW !== cw || spectGradPrim !== prim || spectGradSec !== sec) {
     spectGrad = ctx.createLinearGradient(0, 0, cw, 0);
     spectGrad.addColorStop(0, sec);
