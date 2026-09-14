@@ -21,6 +21,7 @@ import {
   snapToGrid,
   snapWithGuides
 } from '@renderer/utils/audioLayout';
+import { layoutEditorStyle } from '@renderer/utils/audioLayoutElementStyle';
 import AudioLayoutPositionTab from './AudioLayoutPositionTab.vue';
 import type {
   AudioLayoutElement,
@@ -69,21 +70,8 @@ function applyPreset(preset: AudioLayoutPreset) {
 }
 
 function layoutStyle(el: AudioLayoutElement) {
-  const isDragging = draggingId.value === el.id && dragPreview.value;
-  const x = isDragging ? dragPreview.value!.x : el.x;
-  const y = isDragging ? dragPreview.value!.y : el.y;
-  const style: Record<string, string> = {
-    left: x + '%',
-    top: y + '%',
-    width: el.width + '%',
-    height: el.height + '%',
-    opacity: String((el.opacity ?? 100) / 100)
-  };
-  const bgOpacity = el.bgOpacity ?? 40;
-  if (el.bg && bgOpacity > 0) {
-    style.backgroundColor = `color-mix(in srgb, var(--color-base-300) ${bgOpacity}%, transparent)`;
-  }
-  return style;
+  const isDragging = draggingId.value === el.id && !!dragPreview.value;
+  return layoutEditorStyle(el, isDragging, dragPreview.value);
 }
 
 function onPositionUpdate(patch: Partial<AudioLayoutElement>) {
