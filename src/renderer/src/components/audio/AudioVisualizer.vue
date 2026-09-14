@@ -8,6 +8,7 @@ import { VIZ_CYCLES } from '@renderer/utils/audioVisualizer';
 import { drawRadial, drawCircle } from '@renderer/utils/visualizerDraw';
 import { binFreq } from '@renderer/utils/visualizerBins';
 import { barGradient, spectrumGradient, resetGradients } from '@renderer/utils/visualizerGradients';
+import { getFreqData, smoothData, getWaveData } from '@renderer/utils/visualizerBuffers';
 import { useVizConfig } from '@renderer/composables/useVizConfig';
 
 const audio = useAudioPlayer();
@@ -28,12 +29,6 @@ let lastH = 0;
 let lastDpr = 0;
 let lastFrameTime = 0;
 let nonePainted = false;
-
-// Analyser scratch buffers (no per-frame allocation)
-let freqData: Uint8Array<ArrayBuffer> | null = null;
-let smoothPrev: Uint8Array<ArrayBuffer> | null = null;
-let smoothOut: Uint8Array<ArrayBuffer> | null = null;
-let waveBuf: Uint8Array<ArrayBuffer> | null = null;
 
 // Crossfade state
 let fadeAlpha = 1;
@@ -84,24 +79,11 @@ function draw(timestamp: number) {
   nonePainted = false;
 
   const bufferLength = analyserNode.frequencyBinCount;
-  if (!freqData || freqData.length !== bufferLength) freqData = new Uint8Array(bufferLength);
-  analyserNode.getByteFrequencyData(freqData);
-
-  let drawData = freqData;
-  if (vizCfg.smoothing > 0) {
-    if (!smoothPrev || smoothPrev.length !== bufferLength)
-      smoothPrev = new Uint8Array(bufferLength);
-    if (!smoothOut || smoothOut.length !== bufferLength) smoothOut = new Uint8Array(bufferLength);
-    const prev = smoothPrev;
-    const out = smoothOut;
-    for (let i = 0; i < bufferLength; i++) {
-      out[i] = Math.max(freqData[i], Math.round(prev[i] * vizCfg.smoothing));
-    }
-    drawData = out;
-    // ping-pong: the just-computed buffer becomes the baseline for the next frame
-    smoothPrev = out;
-    smoothOut = prev;
-  }
+  const drawData = smoothData(
+    getFreqData(analyserNode, bufferLength),
+    vizCfg.smoothing,
+    bufferLength
+  );
 
   const prim = vizCfg.primaryColor;
   const sec = vizCfg.secondaryColor;
@@ -196,15 +178,14 @@ function drawWave(
   prim: string,
   bufferLength: number
 ) {
-  if (!waveBuf || waveBuf.length !== bufferLength) waveBuf = new Uint8Array(bufferLength);
-  analyserNode!.getByteTimeDomainData(waveBuf);
+  const wave = getWaveData(analyserNode!, bufferLength);
   ctx.lineWidth = 2;
   ctx.strokeStyle = prim;
   ctx.beginPath();
   const sliceWidth = cw / bufferLength;
   let x = 0;
   for (let i = 0; i < bufferLength; i++) {
-    const v = waveBuf[i] / 128.0;
+    const v = wave[i] / 128.0;
     const y = (v * ch) / 2;
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
