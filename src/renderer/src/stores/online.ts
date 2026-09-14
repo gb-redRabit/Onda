@@ -3,18 +3,8 @@ import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@renderer/stores/ui';
 import { usePlayerStore } from '@renderer/stores/player';
-import type {
-  YouTubeVideo,
-  YouTubeResolvedItem,
-  Subscription,
-  SubscriptionDownloadPrefs
-} from '@renderer/types/online';
-import type {
-  IpcDownloadJobInput,
-  IpcDownloadTask,
-  IpcStreamResult,
-  IpcSubscription
-} from '@shared/types/ipc';
+import type { YouTubeVideo, YouTubeResolvedItem, Subscription } from '@renderer/types/online';
+import type { IpcDownloadTask, IpcStreamResult, IpcSubscription } from '@shared/types/ipc';
 import { logger } from '@shared/logger';
 import {
   streamTargetFor,
@@ -22,20 +12,18 @@ import {
   streamErrorMessage,
   buildStreamTrack
 } from '@renderer/utils/onlineHelpers';
-import { buildJob, type JobExtra } from '@renderer/utils/onlineJob';
 import { toDownloadTask } from '@renderer/utils/onlineDownloadTask';
 import { channelUrlForPrefix } from '@renderer/utils/onlineChannel';
-import { resolveAllPlaylistItems } from '@renderer/utils/onlineResolveAll';
-import { buildChannelJobs } from '@renderer/utils/onlineChannelJobs';
 import { createStreamPrefetcher } from '@renderer/utils/streamPrefetch';
 import { createOnlineChannel } from './online/channel';
 import { createOnlineSubscriptions } from './online/subscriptions';
+import { createOnlineSubscriptionActions } from './online/subscriptionActions';
+import { createOnlineQueue } from './online/queue';
 import { createOnlineDownloads } from './online/downloads';
 import { createOnlineSearch } from './online/search';
 import { createOnlineSaved } from './online/saved';
 import { createOnlineStreams } from './online/streams';
 import { createOnlineResolved } from './online/resolved';
-import { resolveOnlineUrl, type OnlineResolveResponse } from '@renderer/utils/onlineResolve';
 
 export const useOnlineStore = defineStore('online', () => {
   const { t } = useI18n();
@@ -69,10 +57,6 @@ export const useOnlineStore = defineStore('online', () => {
     markVideoDownloaded,
     loadSubscriptions
   } = createOnlineSubscriptions();
-  const checkingSubscriptions = ref(false);
-  const checkingChannelId = ref<string | null>(null);
-  const queuingId = ref<string | null>(null);
-  const queueingChannelId = ref<string | null>(null);
   const {
     downloads,
     upsertTask,
@@ -126,56 +110,45 @@ export const useOnlineStore = defineStore('online', () => {
     closeChannel
   } = createOnlineChannel();
 
+  const {
+    queuingId,
+    queueingChannelId,
+    resolveOnline,
+    queueFromResolved,
+    queueVideo,
+    queueChannelVideos,
+    queueBatch,
+    loadAllResolvedItems
+  } = createOnlineQueue({
+    t,
+    channel,
+    resolved,
+    downloads,
+    getSubscription,
+    addSubscription,
+    submitJobs
+  });
+
+  const {
+    checkingSubscriptions,
+    checkingChannelId,
+    followChannel,
+    followChannelWithSetup,
+    unfollowChannel,
+    setAutoDownload,
+    setDownloadPrefs,
+    checkSubscriptionsNow,
+    checkChannelNow
+  } = createOnlineSubscriptionActions({
+    addSubscription,
+    removeSubscription,
+    loadSubscriptions,
+    queueChannelVideos
+  });
+
   // Opens the channel/profile view for an @/$ prefixed query.
   async function openChannelPrefix(prefix: { platform: 'youtube' | 'soundcloud'; name: string }) {
     await openChannel(channelUrlForPrefix(prefix));
-  }
-
-  // Platform-dispatched link resolution (detects the platform from the link
-  // itself, not from the active UI tab).
-  async function resolveOnline(url: string): Promise<OnlineResolveResponse> {
-    return resolveOnlineUrl(url);
-  }
-
-  async function queueFromResolved(
-    ids: string[],
-    prefs?: SubscriptionDownloadPrefs,
-    extra?: JobExtra
-  ) {
-    const result = resolved.value;
-    if (!result || ids.length === 0) return;
-    const byId = new Map(result.items.map((i) => [i.id, i]));
-    const playlistTitle = result.kind === 'playlist' ? result.title : undefined;
-    const channelTitle = result.meta.channelTitle;
-    const jobs: IpcDownloadJobInput[] = ids
-      .map((id) => byId.get(id))
-      .filter((item): item is YouTubeResolvedItem => !!item)
-      .map((item) =>
-        buildJob(item, prefs, {
-          ...extra,
-          playlistTitle: extra?.playlistTitle || playlistTitle,
-          channelTitle: extra?.channelTitle || channelTitle || item.channelTitle
-        })
-      );
-    await submitJobs(jobs);
-  }
-
-  async function queueVideo(
-    video: YouTubeVideo | YouTubeResolvedItem,
-    prefs?: SubscriptionDownloadPrefs,
-    extra?: JobExtra
-  ) {
-    const job = buildJob(video, prefs, extra);
-    // Channel listings come from a flat playlist without channel_id per entry,
-    // so stamp the job with the channel currently being browsed.
-    if (!job.channelId && channel.value?.id) job.channelId = channel.value.id;
-    if (!job.channelTitle && channel.value?.title) job.channelTitle = channel.value.title;
-    queuingId.value = video.id;
-    try {
-      await submitJobs([job]);
-    } finally {
-      queuingId.value = null;
-    }
   }
 
   // Plays a video online: resolves the direct stream URL (cached in main) and
@@ -239,212 +212,6 @@ export const useOnlineStore = defineStore('online', () => {
 
   const { syncingSavedPlaylistState, syncSavedPlaylist, playSavedPlaylist } =
     createOnlineSaved(playAllStreams);
-
-  // Loads every page of the currently relevant playlist (used when the user
-  // saves it) so the snapshot contains the full list, not just the first page.
-  async function loadAllResolvedItems(url: string) {
-    return resolveAllPlaylistItems(url);
-  }
-
-  // Resolves and queues a batch of links (videos and playlist first-page
-  // items; channels are skipped) across platforms. Returns how many downloads
-  // were enqueued.
-  async function queueBatch(urls: string[], extra?: JobExtra): Promise<number> {
-    let queued = 0;
-    for (const url of urls) {
-      try {
-        const res = await resolveOnline(url);
-        if (!res?.success || !res.result) continue;
-        if (res.result.kind === 'video') {
-          const item = res.result.items[0];
-          if (item) {
-            await queueVideo(item, undefined, extra);
-            queued++;
-          }
-        } else if (res.result.kind === 'playlist') {
-          for (const item of res.result.items) {
-            await queueVideo(item, undefined, extra);
-            queued++;
-          }
-        }
-      } catch {
-        /* skip unresolvable entry */
-      }
-    }
-    return queued;
-  }
-
-  async function recordQueuedVideos(channelId: string, videoIds: string[]) {
-    const ids = videoIds.filter((id): id is string => !!id);
-    if (!ids.length) return;
-    const sub = getSubscription(channelId);
-    const merged = Array.from(new Set([...(sub?.queuedVideoIds || []), ...ids]));
-    if (sub) {
-      addSubscription({ ...sub, queuedVideoIds: merged, pendingCount: merged.length });
-    }
-    try {
-      const updated = (await window.api.invoke('yt:subs:update', channelId, {
-        queuedVideoIds: merged,
-        pendingCount: merged.length
-      })) as Subscription | null;
-      if (updated) addSubscription(updated);
-    } catch {
-      /* failed to record queued ids */
-    }
-  }
-
-  async function queueChannelVideos(
-    channelId: string,
-    prefs?: SubscriptionDownloadPrefs,
-    includeDownloaded = false
-  ) {
-    const subscription = getSubscription(channelId);
-    const isSc = subscription?.platform === 'soundcloud';
-    const downloadedIds = includeDownloaded
-      ? new Set<string>()
-      : new Set(subscription?.downloadedVideoIds || []);
-    // Only active or finished jobs block a re-queue — a failed/cancelled attempt
-    // must be re-queueable or "download all" silently skips it forever.
-    const existingIds = new Set(
-      downloads.value
-        .filter((d) => d.status !== 'error' && d.status !== 'cancelled')
-        .map((d) => d.videoId)
-    );
-    const jobs: IpcDownloadJobInput[] = [];
-    queueingChannelId.value = channelId;
-    try {
-      const res = isSc
-        ? ((await window.api.invoke('sc:channelAll', {
-            url: `https://soundcloud.com/${channelId}`
-          })) as { success?: boolean; items?: YouTubeVideo[] })
-        : ((await window.api.invoke('yt:channelAll', {
-            url: `https://www.youtube.com/channel/${channelId}`,
-            tab: 'videos'
-          })) as { success?: boolean; items?: YouTubeVideo[] });
-      if (res?.success && res.items) {
-        jobs.push(
-          ...buildChannelJobs(
-            res.items,
-            channelId,
-            channel.value?.title,
-            prefs,
-            existingIds,
-            downloadedIds
-          )
-        );
-      } else {
-        useUIStore().notify('warning', t('youtube.downloadAll'), t('youtube.channelQueueFailed'));
-      }
-      if (res?.success && jobs.length === 0) {
-        useUIStore().notify('info', t('youtube.downloadAll'), t('youtube.nothingToQueue'));
-      }
-      await submitJobs(jobs);
-      await recordQueuedVideos(
-        channelId,
-        jobs.map((j) => j.videoId || '')
-      );
-    } finally {
-      queueingChannelId.value = null;
-    }
-  }
-
-  async function followChannel(channel: {
-    channelId: string;
-    channelTitle: string;
-    channelThumbnail: string;
-    platform?: 'youtube' | 'soundcloud';
-  }) {
-    try {
-      const sub = (await window.api.invoke('yt:subs:add', channel)) as Subscription | null;
-      if (sub) addSubscription(sub);
-    } catch {
-      /* failed to follow */
-    }
-  }
-
-  async function followChannelWithSetup(
-    channel: {
-      channelId: string;
-      channelTitle: string;
-      channelThumbnail: string;
-      platform?: 'youtube' | 'soundcloud';
-    },
-    setup: { prefs?: SubscriptionDownloadPrefs; downloadAll: boolean }
-  ) {
-    try {
-      const input = {
-        ...channel,
-        platform:
-          channel.platform === 'soundcloud' ? ('soundcloud' as const) : ('youtube' as const),
-        downloadPrefs: setup.prefs,
-        seedBaseline: !setup.downloadAll
-      };
-      const sub = (await window.api.invoke('yt:subs:add', input)) as Subscription | null;
-      if (sub) addSubscription(sub);
-      if (sub && setup.downloadAll) {
-        await queueChannelVideos(sub.channelId, setup.prefs || sub.downloadPrefs, true);
-      }
-    } catch {
-      /* failed to follow */
-    }
-  }
-
-  async function unfollowChannel(channelId: string) {
-    try {
-      await window.api.invoke('yt:subs:remove', channelId);
-      removeSubscription(channelId);
-    } catch {
-      /* failed to unfollow */
-    }
-  }
-
-  async function setAutoDownload(channelId: string, enabled: boolean) {
-    try {
-      const sub = (await window.api.invoke('yt:subs:update', channelId, {
-        autoDownload: enabled
-      })) as Subscription | null;
-      if (sub) addSubscription(sub);
-    } catch {
-      /* failed to update */
-    }
-  }
-
-  async function setDownloadPrefs(channelId: string, prefs: SubscriptionDownloadPrefs) {
-    try {
-      const sub = (await window.api.invoke('yt:subs:update', channelId, {
-        downloadPrefs: prefs
-      })) as Subscription | null;
-      if (sub) addSubscription(sub);
-    } catch {
-      /* failed to update prefs */
-    }
-  }
-
-  async function checkSubscriptionsNow() {
-    if (checkingSubscriptions.value) return;
-    checkingSubscriptions.value = true;
-    try {
-      await window.api.invoke('yt:subs:checkNow');
-      await loadSubscriptions();
-    } catch {
-      /* check failed */
-    } finally {
-      checkingSubscriptions.value = false;
-    }
-  }
-
-  async function checkChannelNow(channelId: string) {
-    if (checkingChannelId.value) return;
-    checkingChannelId.value = channelId;
-    try {
-      await window.api.invoke('yt:subs:checkChannel', channelId);
-      await loadSubscriptions();
-    } catch {
-      /* check failed */
-    } finally {
-      checkingChannelId.value = null;
-    }
-  }
 
   let subscribedToDownloads = false;
 

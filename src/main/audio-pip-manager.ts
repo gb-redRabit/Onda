@@ -11,6 +11,7 @@ import {
   isAudioPipEdgeDock
 } from '../shared/types/pip';
 import { computePipPosition } from './pip-position';
+import { computeEdgePeekBounds } from './pip-edge-position';
 import { installNavigationGuard } from './navigation-guard';
 import { pipWindowIcon } from './pip-icon';
 import { DEFAULT_CORNER_ELEMENTS, DEFAULT_EDGE_ELEMENTS, PREVIEW_STATE } from './pip-defaults';
@@ -239,36 +240,20 @@ export class AudioPipManager {
   private applyPeekBounds(): void {
     const win = this.window;
     if (!win || win.isDestroyed()) return;
+    const edge = this.getEdge();
+    if (!edge) return;
     try {
       const size = this.getDockSize();
       const workArea = this.getDisplay().workArea;
-      const b = win.getBounds();
-      let x = b.x;
-      let y = b.y;
-      if (this.dock === 'top') {
-        x = workArea.x;
-        y = this.peeked
-          ? Math.round(workArea.y - (size.height - this.sliver))
-          : Math.round(workArea.y);
-      } else if (this.dock === 'bottom') {
-        x = workArea.x;
-        y = this.peeked
-          ? Math.round(workArea.y + workArea.height - this.sliver)
-          : Math.round(workArea.y + workArea.height - size.height);
-      } else if (this.dock === 'left') {
-        y = workArea.y;
-        x = this.peeked
-          ? Math.round(workArea.x - (size.width - this.sliver))
-          : Math.round(workArea.x);
-      } else if (this.dock === 'right') {
-        y = workArea.y;
-        x = this.peeked
-          ? Math.round(workArea.x + workArea.width - this.sliver)
-          : Math.round(workArea.x + workArea.width - size.width);
-      } else {
-        return;
-      }
-      win.setBounds({ x: Math.round(x), y: Math.round(y), width: size.width, height: size.height });
+      win.setBounds(
+        computeEdgePeekBounds({
+          dock: edge,
+          peeked: this.peeked,
+          sliver: this.sliver,
+          workArea,
+          size
+        })
+      );
     } catch (e) {
       console.error('audio-pip reposition failed', e);
     }
@@ -429,31 +414,17 @@ export class AudioPipManager {
     if (!this.window || this.window.isDestroyed()) return;
     const winSize = this.getDockSize();
     const workArea = this.getDisplay().workArea;
-    if (isAudioPipEdgeDock(this.dock)) {
-      let x = workArea.x;
-      let y = workArea.y;
-      if (this.dock === 'top') {
-        x = workArea.x;
-        y = this.peeked
-          ? Math.round(workArea.y - (winSize.height - this.sliver))
-          : Math.round(workArea.y);
-      } else if (this.dock === 'bottom') {
-        x = workArea.x;
-        y = this.peeked
-          ? Math.round(workArea.y + workArea.height - this.sliver)
-          : Math.round(workArea.y + workArea.height - winSize.height);
-      } else if (this.dock === 'left') {
-        x = this.peeked
-          ? Math.round(workArea.x - (winSize.width - this.sliver))
-          : Math.round(workArea.x);
-        y = workArea.y;
-      } else {
-        x = this.peeked
-          ? Math.round(workArea.x + workArea.width - this.sliver)
-          : Math.round(workArea.x + workArea.width - winSize.width);
-        y = workArea.y;
-      }
-      this.window.setBounds({ x, y, width: winSize.width, height: winSize.height });
+    const edge = this.getEdge();
+    if (edge) {
+      this.window.setBounds(
+        computeEdgePeekBounds({
+          dock: edge,
+          peeked: this.peeked,
+          sliver: this.sliver,
+          workArea,
+          size: winSize
+        })
+      );
       return;
     }
     this.window.setBounds(computePipPosition({ position: this.dock, ...winSize, workArea }));

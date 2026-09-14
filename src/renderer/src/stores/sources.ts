@@ -7,9 +7,9 @@ import type {
   SourceItem,
   SourceFetchResult
 } from '@renderer/types/sources';
-import type { IpcDownloadJobInput } from '@shared/types/ipc';
 import { logger } from '@shared/logger';
-import { deriveFileName, sanitizeName, toPlain } from '@renderer/utils/sources-helpers';
+import { computePaginationMode, toPlain } from '@renderer/utils/sources-helpers';
+import { buildSourceDownloadInput } from '@renderer/utils/sourceDownload';
 import { itemPassContext, tableRowPassContext } from '@renderer/utils/sourcesNav';
 
 export const useSourcesStore = defineStore('sources', () => {
@@ -50,12 +50,7 @@ export const useSourcesStore = defineStore('sources', () => {
     () => activeSource.value?.endpoints.find((e) => e.id === activeEndpointId.value) || null
   );
   const paginationMode = computed<'page' | 'cursor' | 'none'>(() =>
-    activeEndpoint.value?.pagination?.pageParam && !activeEndpoint.value?.pagination?.nextFromField
-      ? 'page'
-      : activeEndpoint.value?.pagination?.nextFromField ||
-          activeEndpoint.value?.pagination?.totalField
-        ? 'cursor'
-        : 'none'
+    computePaginationMode(activeEndpoint.value)
   );
   const startPage = computed(() => activeEndpoint.value?.pagination?.pageStart ?? 1);
 
@@ -383,38 +378,19 @@ export const useSourcesStore = defineStore('sources', () => {
     opts?: { outputDir?: string; addToLibrary?: boolean }
   ): Promise<{ ok: boolean; error?: string }> {
     const source = activeSource.value;
-    // Player (embed) ma pierwszeństwo — pobieranie przez yt-dlp (mega/cda/vk/drive).
-    // mediaUrl to bezpośredni plik → tryb http (stream). sourceUrl tylko jako ostateczność.
     const url = item.playerUrl || item.mediaUrl || item.sourceUrl;
-    const useYtdlp = !!item.playerUrl || (!item.mediaUrl && !!item.sourceUrl);
     if (!url || !source) return { ok: false, error: 'No URL' };
-    const auth = source.auth;
-    // Katalog docelowy: per-źródło (edycja w kreatorze), domyślnie <katalog Pobranych>/api.
-    const prefs = source.download;
     const baseDir =
-      prefs?.outputDir?.trim() || ((await window.api.invoke('sources:downloadDir')) as string);
-    const outDir =
-      prefs?.folder !== false && baseDir ? `${baseDir}/${sanitizeName(source.name)}` : baseDir;
-    const input: IpcDownloadJobInput = {
-      url,
-      title: item.title || url,
-      thumbnail: item.thumbnail,
-      // yt-dlp: zawsze bestvideo+bestaudio/best — wideo zostaje wideo, samo-audio
-      // i tak złapie selektor /best; bez re-encodingu. http (bezpośredni plik):
-      // kind wyłącznie do nazwy pliku.
-      kind: useYtdlp ? 'video' : item.type === 'video' ? 'video' : 'audio',
-      format: 'best',
-      quality: 'best',
-      outputDir: opts?.outputDir ?? outDir,
-      filenameTemplate: '{title}',
-      addToLibrary: opts?.addToLibrary ?? settings.download.autoAddDownloadFolder,
-      source: {
-        mode: useYtdlp ? 'ytdlp' : 'http',
-        fileName: useYtdlp ? undefined : deriveFileName(item),
-        apiKeyId: auth && auth.type !== 'none' ? auth.apiKeyId : undefined,
-        headerName: auth && auth.type === 'apikey' ? auth.headerName : undefined
-      }
-    };
+      source.download?.outputDir?.trim() ||
+      ((await window.api.invoke('sources:downloadDir')) as string);
+    const input = buildSourceDownloadInput({
+      item,
+      source,
+      baseDir,
+      outputDir: opts?.outputDir,
+      addToLibrary: opts?.addToLibrary,
+      autoAddToLibrary: settings.download.autoAddDownloadFolder
+    });
     try {
       const created = (await window.api.invoke('sources:enqueue', [input])) as Array<{
         id: string;

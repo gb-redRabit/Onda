@@ -1,6 +1,14 @@
-import type { SourceItem } from '@renderer/types/sources';
+import type { SourceEndpoint, SourceItem } from '@renderer/types/sources';
 
 // Pure source-download helpers extracted from `stores/sources.ts` (plan 2.8).
+
+export function computePaginationMode(
+  endpoint: SourceEndpoint | null | undefined
+): 'page' | 'cursor' | 'none' {
+  if (endpoint?.pagination?.pageParam && !endpoint?.pagination?.nextFromField) return 'page';
+  if (endpoint?.pagination?.nextFromField || endpoint?.pagination?.totalField) return 'cursor';
+  return 'none';
+}
 
 export function sanitizeName(name: string): string {
   return (

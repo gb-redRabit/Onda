@@ -6,47 +6,33 @@ import type {
   PluginSettingField,
   IpcPluginInstallResult
 } from '@shared/types/ipc';
-import type { MediaFile } from '@renderer/types/media';
-import { usePlayerStore } from './player';
-import { useLibraryStore } from './library';
-import { useUIStore } from './ui';
 import type { PluginCommandEntry, PluginHookPayload } from '@renderer/modules/plugins/plugin-shim';
 import { isKnownHook } from '@renderer/utils/pluginHooks';
-import {
-  createPluginWorker,
-  type PluginWorkerHandle
-} from '@renderer/modules/plugins/pluginWorker';
+import type { PluginWorkerHandle } from '@renderer/modules/plugins/pluginWorker';
+import { createPluginSpawner, type PluginUiStatus } from '@renderer/modules/plugins/pluginSpawner';
+import { createPluginApi } from '@renderer/modules/plugins/pluginApi';
 import { logger } from '@shared/logger';
 import {
   ELEMENT_DECORATIONS,
   PLUGIN_HOST_VARIANTS,
-  PLUGIN_VISUAL_KEY,
-  snapshotTrack,
-  validateShortcut
+  omitKey,
+  snapshotTrack
 } from '@renderer/utils/plugins-helpers';
 export { ELEMENT_DECORATIONS, PLUGIN_HOST_VARIANTS, snapshotTrack };
 export type { TrackSnapshot } from '@renderer/utils/plugins-helpers';
+export type { PluginUiStatus };
 import {
   computeDecorations,
   computeLayoutVariants,
   mergeSettingDefaults
 } from '@renderer/utils/plugins-derive';
 
-export type PluginUiStatus = 'new' | 'loading' | 'loaded' | 'error';
-
 export interface PluginUiInfo extends PluginInfo {
   status: PluginUiStatus;
   error?: string;
 }
 
-const NOTIFY_TYPES = ['info', 'success', 'warning', 'error'] as const;
 const MAX_LOG_LINES = 50;
-
-function omitKey<T>(record: Record<string, T>, key: string): Record<string, T> {
-  const next = { ...record };
-  delete next[key];
-  return next;
-}
 
 export const usePluginsStore = defineStore('plugins', () => {
   const plugins = ref<PluginUiInfo[]>([]);
@@ -103,12 +89,31 @@ export const usePluginsStore = defineStore('plugins', () => {
     return manifestOf(id)?.settings || [];
   }
 
-  function hasPermission(
-    id: string,
-    perm: 'storage' | 'notifications' | 'player' | 'visual'
-  ): boolean {
-    return manifestOf(id)?.permissions[perm] === true;
+  function clearPluginState(id: string): void {
+    if (visuals.value[id]) visuals.value = omitKey(visuals.value, id);
+    if (pluginSettings.value[id]) pluginSettings.value = omitKey(pluginSettings.value, id);
   }
+
+  const dispatchApi = createPluginApi({
+    getManifest: manifestOf,
+    getSettings: settingsOf,
+    saveSetting,
+    visuals
+  });
+
+  const spawner = createPluginSpawner({
+    commands,
+    workers,
+    readyWorkers,
+    logPush,
+    setStatus,
+    getManifest: manifestOf,
+    setManifest(id, manifest) {
+      manifests.value = { ...manifests.value, [id]: manifest };
+    },
+    clearPluginState,
+    dispatchApi
+  });
 
   async function load(): Promise<void> {
     loading.value = true;
@@ -139,7 +144,7 @@ export const usePluginsStore = defineStore('plugins', () => {
       }
       for (const plugin of list) {
         if (plugin.enabled) {
-          await spawnPlugin(plugin.id);
+          await spawner.spawnPlugin(plugin.id);
         }
       }
       readyWorkers.forEach(() => undefined);
@@ -151,83 +156,6 @@ export const usePluginsStore = defineStore('plugins', () => {
     }
   }
 
-  async function spawnPlugin(id: string): Promise<void> {
-    const manifest = manifests.value[id];
-    if (!manifest) {
-      const result = await window.api.pluginsGet(id);
-      if (!result.success || !result.manifest || !result.code) {
-        setStatus(id, 'error', result.error || 'manifest-missing');
-        return;
-      }
-      manifests.value = { ...manifests.value, [id]: result.manifest };
-      return spawnPluginWithCode(id, result.code, result.manifest);
-    }
-    const result = await window.api.pluginsGet(id);
-    if (!result.success || !result.code) {
-      setStatus(id, 'error', result.error || 'entry-missing');
-      return;
-    }
-    spawnPluginWithCode(id, result.code, manifest);
-  }
-
-  function shortcutTakenBy(shortcut: string): string | null {
-    return commands.value.find((c) => c.shortcut === shortcut)?.id ?? null;
-  }
-
-  function spawnPluginWithCode(id: string, code: string, _manifest: PluginManifest): void {
-    if (workers.value[id]) return;
-    setStatus(id, 'loading');
-    const pluginId = id;
-    const handle = createPluginWorker({
-      id,
-      code,
-      onReady() {
-        readyWorkers.add(pluginId);
-        setStatus(pluginId, 'loaded');
-      },
-      onCommand(command) {
-        if (!command || typeof command.id !== 'string') return;
-        if (
-          !commands.value.some(
-            (c) => c.id === command.id && (c as { pluginId?: string }).pluginId === pluginId
-          )
-        ) {
-          let next = { ...command, pluginId } as PluginCommandEntry & { pluginId: string };
-          if (command.shortcut && !validateShortcut(command.shortcut)) {
-            logPush(
-              pluginId,
-              `[warn] shortcut '${command.shortcut}' odrzucony (nieprawidłowy format)`
-            );
-            next = { ...next, shortcut: undefined };
-          } else if (command.shortcut && shortcutTakenBy(command.shortcut)) {
-            logPush(
-              pluginId,
-              `[warn] shortcut '${command.shortcut}' pominięty (konflikt z inną komendą)`
-            );
-            next = { ...next, shortcut: undefined };
-          }
-          commands.value.push(next);
-        }
-      },
-      onCommandRemoved(commandId) {
-        commands.value = commands.value.filter(
-          (c) => !(c.id === commandId && (c as { pluginId?: string }).pluginId === pluginId)
-        );
-      },
-      onLog(level, message) {
-        logPush(pluginId, `[${level}] ${message}`);
-      },
-      onError(message) {
-        logPush(pluginId, `[error] ${message}`);
-        setStatus(pluginId, 'error', message);
-      },
-      async apiDispatch(op, args) {
-        return dispatchApi(op, args, pluginId);
-      }
-    });
-    workers.value = { ...workers.value, [id]: handle };
-  }
-
   async function toggle(id: string): Promise<void> {
     const info = plugins.value.find((p) => p.id === id);
     const enabled = info ? !info.enabled : false;
@@ -237,35 +165,20 @@ export const usePluginsStore = defineStore('plugins', () => {
       plugins.value = plugins.value.map((p) =>
         p.id === id ? { ...p, enabled: true, status: 'new' } : p
       );
-      await spawnPlugin(id);
+      await spawner.spawnPlugin(id);
     } else {
-      terminatePlugin(id, false);
+      spawner.terminatePlugin(id, false);
       plugins.value = plugins.value.map((p) =>
         p.id === id ? { ...p, enabled: false, status: 'new' } : p
       );
     }
   }
 
-  function terminatePlugin(id: string, removeCommands: boolean): void {
-    const handle = workers.value[id];
-    if (handle) {
-      handle.terminate();
-      workers.value = omitKey(workers.value, id);
-    }
-    readyWorkers.delete(id);
-    if (removeCommands) {
-      commands.value = commands.value.filter((c) => (c as { pluginId?: string }).pluginId !== id);
-    }
-    if (visuals.value[id]) visuals.value = omitKey(visuals.value, id);
-    if (pluginSettings.value[id]) pluginSettings.value = omitKey(pluginSettings.value, id);
-  }
-
   async function uninstall(id: string): Promise<void> {
     const result = await window.api.pluginsUninstall(id);
     if (!result.success) return;
-    terminatePlugin(id, true);
+    spawner.terminatePlugin(id, true);
     plugins.value = plugins.value.filter((p) => p.id !== id);
-    readyWorkers.delete(id);
   }
 
   async function installFromFolder(): Promise<IpcPluginInstallResult> {
@@ -277,7 +190,7 @@ export const usePluginsStore = defineStore('plugins', () => {
   }
 
   async function refresh(): Promise<void> {
-    for (const id of Object.keys(workers.value)) terminatePlugin(id, true);
+    for (const id of Object.keys(workers.value)) spawner.terminatePlugin(id, true);
     await load();
   }
 
@@ -331,227 +244,8 @@ export const usePluginsStore = defineStore('plugins', () => {
     dispatchCommand(commandId, payload);
   }
 
-  async function dispatchApi(op: string, args: unknown[], pluginId: string): Promise<unknown> {
-    switch (op) {
-      case 'query':
-        return dispatchQuery(args, pluginId);
-      case 'action':
-        return dispatchAction(args, pluginId);
-      case 'storage:keys':
-        return window.api.pluginsStorageKeys(pluginId);
-      case 'storage:get':
-        return window.api.pluginsStorageGet(pluginId, String(args[0] ?? ''));
-      case 'storage:set':
-        return window.api.pluginsStorageSet(pluginId, String(args[0] ?? ''), args[1]);
-      case 'storage:remove':
-        return window.api.pluginsStorageRemove(pluginId, String(args[0] ?? ''));
-      case 'settings:get':
-        return settingsOf(pluginId)[String(args[0] ?? '')] ?? null;
-      case 'settings:set': {
-        const key = String(args[0] ?? '');
-        if (!manifestOf(pluginId)?.settings?.some((f) => f.key === key))
-          throw new Error('setting-unknown');
-        return saveSetting(pluginId, key, args[1]);
-      }
-      case 'fetch':
-        return dispatchFetch(pluginId, args);
-      case 'ui:set':
-        return dispatchVisual(args, pluginId);
-      default:
-        throw new Error('unknown-op');
-    }
-  }
-
-  function dispatchQuery(args: unknown[], _pluginId: string): Promise<unknown> | unknown {
-    const name = String(args[0] ?? '');
-    const qargs =
-      args[1] && typeof args[1] === 'object' ? (args[1] as Record<string, unknown>) : {};
-    switch (name) {
-      case 'player:status':
-        return playerStatus();
-      case 'library:count':
-        return libraryCount();
-      case 'library:search':
-        return librarySearch(String(qargs.query ?? ''), Number(qargs.limit) || 30);
-      default:
-        throw new Error('unknown-query');
-    }
-  }
-
-  function playerStatus(): unknown {
-    const player = usePlayerStore();
-    return {
-      currentTrack: snapshotTrack(player.currentTrack),
-      isPlaying: player.isPlaying,
-      volume: player.volume,
-      shuffle: player.shuffle,
-      repeat: player.repeat,
-      queueLength: player.queueLength
-    };
-  }
-
-  function libraryCount(): unknown {
-    const library = useLibraryStore();
-    return {
-      tracks: library.tracks.length,
-      audio: library.audioCount,
-      playlists: library.playlists.length
-    };
-  }
-
-  function librarySearch(query: string, limit: number): unknown {
-    const library = useLibraryStore();
-    const cap = Math.max(1, Math.min(30, Math.floor(limit) || 30));
-    const results = query ? library.search(query) : library.tracks.slice(0, cap);
-    return {
-      tracks: results.slice(0, cap).map((t) => {
-        const snap = snapshotTrack(t);
-        return snap
-          ? {
-              path: snap.path,
-              title: snap.title,
-              artist: snap.artist,
-              album: snap.album,
-              duration: snap.duration
-            }
-          : null;
-      })
-    };
-  }
-
-  function dispatchAction(args: unknown[], pluginId: string): Promise<unknown> | unknown {
-    const name = String(args[0] ?? '');
-    const aargs =
-      args[1] && typeof args[1] === 'object' ? (args[1] as Record<string, unknown>) : {};
-    const player = usePlayerStore();
-    if (name.startsWith('player:')) {
-      if (!hasPermission(pluginId, 'player')) throw new Error('permission-denied:player');
-      switch (name) {
-        case 'player:play':
-          player.play();
-          return true;
-        case 'player:pause':
-          player.pause();
-          return true;
-        case 'player:toggle':
-          player.togglePlay();
-          return true;
-        case 'player:next':
-          player.nextTrack();
-          return true;
-        case 'player:previous':
-          player.prevTrack();
-          return true;
-        case 'player:setVolume': {
-          const v = Number(aargs.volume);
-          if (Number.isFinite(v)) player.setVolume(Math.max(0, Math.min(1, v)));
-          return true;
-        }
-        case 'player:seek': {
-          const s = Number(aargs.seconds);
-          if (Number.isFinite(s) && s >= 0) player.seek(s);
-          return true;
-        }
-        case 'player:enqueue': {
-          const list = Array.isArray(aargs.tracks) ? aargs.tracks.map(String) : [];
-          const library = useLibraryStore();
-          const found = list
-            .map((p) => library.tracks.find((t) => t.path === p))
-            .filter((t): t is MediaFile => !!t);
-          if (found.length) player.addToQueueMultiple(found);
-          return found.length;
-        }
-        default:
-          throw new Error('unknown-action');
-      }
-    }
-    if (name === 'track:toggleFavorite') {
-      if (!hasPermission(pluginId, 'player')) throw new Error('permission-denied:player');
-      const path = String(aargs.path ?? '');
-      if (!path) throw new Error('track:path-required');
-      return player.toggleFavorite(path).then(() => true);
-    }
-    if (name === 'notify') {
-      if (!hasPermission(pluginId, 'notifications'))
-        throw new Error('permission-denied:notifications');
-      const type = NOTIFY_TYPES.includes(aargs.type as (typeof NOTIFY_TYPES)[number])
-        ? (aargs.type as (typeof NOTIFY_TYPES)[number])
-        : 'info';
-      const title = String(aargs.title ?? '');
-      if (!title) throw new Error('notify:missing-title');
-      const message = typeof aargs.message === 'string' ? aargs.message : undefined;
-      useUIStore().notify(type, title, message);
-      return true;
-    }
-    throw new Error('unknown-action');
-  }
-
-  function dispatchVisual(args: unknown[], pluginId: string): boolean {
-    if (!hasPermission(pluginId, 'visual')) throw new Error('permission-denied:visual');
-    const key = String(args[0] ?? '');
-    if (key !== PLUGIN_VISUAL_KEY) throw new Error('unknown-visual-key');
-    const payload =
-      args[1] && typeof args[1] === 'object' ? (args[1] as Record<string, unknown>) : {};
-    const element = String(payload.element ?? '');
-    const value = String(payload.value ?? '');
-    const options = ELEMENT_DECORATIONS[element];
-    const pluginVariant = value.startsWith('plugin:');
-    if (!options && !pluginVariant) throw new Error('unknown-visual-element');
-    if (!pluginVariant && !options.includes(value)) throw new Error('unknown-decoration');
-    if (pluginVariant) {
-      const parts = value.split(':');
-      if (parts.length !== 3 || parts[0] !== 'plugin') throw new Error('unknown-decoration');
-      const [_, rawElement, variant] = parts;
-      if (rawElement !== element) throw new Error('unknown-decoration');
-      const manifest = manifests.value[pluginId];
-      const declared =
-        manifest?.permissions.visual === true &&
-        manifest.layoutElements?.some((le) => le.element === element && le.variant === variant);
-      if (!declared || !PLUGIN_HOST_VARIANTS[element]?.[variant])
-        throw new Error('unknown-decoration');
-    }
-    const next = { ...(visuals.value[pluginId] || {}) };
-    if (value === 'none') delete next[element];
-    else next[element] = value;
-    visuals.value = { ...visuals.value, [pluginId]: next };
-    return true;
-  }
-
-  async function dispatchFetch(pluginId: string, args: unknown[]): Promise<unknown> {
-    const url = String(args[0] ?? '');
-    const opts = args[1] && typeof args[1] === 'object' ? (args[1] as Record<string, unknown>) : {};
-    const result = await window.api.pluginsFetch(pluginId, url, {
-      method: opts.method as 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | undefined,
-      headers: opts.headers as Record<string, string> | undefined,
-      body: opts.body,
-      responseType: opts.responseType === 'json' ? 'json' : 'text',
-      timeoutMs: typeof opts.timeoutMs === 'number' ? opts.timeoutMs : undefined
-    });
-    if (!result.success) {
-      const err = new Error(result.error || 'fetch-failed');
-      (err as { code?: string }).code = result.code;
-      throw err;
-    }
-    return {
-      ok: result.status !== undefined && result.status >= 200 && result.status < 300,
-      status: result.status,
-      statusText: result.statusText,
-      headers: result.headers,
-      data: result.data
-    };
-  }
-
   if (typeof window !== 'undefined') {
-    window.addEventListener('beforeunload', () => {
-      for (const handle of Object.values(workers.value)) {
-        try {
-          handle.terminate();
-        } catch {
-          /* ignore */
-        }
-      }
-      workers.value = {};
-    });
+    window.addEventListener('beforeunload', () => spawner.terminateAll());
   }
 
   return {

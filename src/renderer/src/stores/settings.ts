@@ -29,11 +29,11 @@ import {
   DEFAULT_UPDATES,
   DEFAULT_TOAST,
   DEFAULT_GENERAL,
-  DEFAULT_STATUS_BAR,
-  AUDIO_LAYOUT_PRESETS
+  DEFAULT_STATUS_BAR
 } from '@renderer/utils/constants';
 import type { AudioLayoutElement, AudioLayoutPreset } from '@renderer/types/settings';
 import { loadSettings, persistSettings, mergeSettings } from '@renderer/utils/settingsStorage';
+import { computePresetLayout, computeResetLayout } from '@renderer/utils/audioLayoutPresets';
 
 export const useSettingsStore = defineStore('settings', () => {
   const general = ref<GeneralSettings>({ ...DEFAULT_GENERAL });
@@ -128,90 +128,12 @@ export const useSettingsStore = defineStore('settings', () => {
     updateAppearance({ audioLayout: { ...layout, elements } });
   }
 
-  function audioLayoutsEqual(a: AudioLayoutElement[], b: AudioLayoutElement[]): boolean {
-    if (a.length !== b.length) return false;
-    for (const elA of a) {
-      const elB = b.find((el) => el.id === elA.id);
-      if (
-        !elB ||
-        elA.x !== elB.x ||
-        elA.y !== elB.y ||
-        elA.width !== elB.width ||
-        elA.height !== elB.height ||
-        (elA.layer ?? 0) !== (elB.layer ?? 0) ||
-        (elA.visible ?? true) !== (elB.visible ?? true) ||
-        (elA.variant ?? '') !== (elB.variant ?? '')
-      ) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  function factoryElements(preset: AudioLayoutPreset): AudioLayoutElement[] {
-    return (
-      AUDIO_LAYOUT_PRESETS[preset]?.elements.map((el) => ({ ...el })) ??
-      AUDIO_LAYOUT_PRESETS.full.elements.map((el) => ({ ...el }))
-    );
-  }
-
-  function isStockLayout(elements: AudioLayoutElement[]): boolean {
-    for (const key of Object.keys(AUDIO_LAYOUT_PRESETS)) {
-      if (audioLayoutsEqual(elements, factoryElements(key as AudioLayoutPreset))) return true;
-    }
-    return false;
-  }
-
   function applyAudioLayoutPreset(preset: AudioLayoutPreset) {
-    const layout = appearance.value.audioLayout;
-    const currentPreset = layout.preset ?? 'full';
-    const customLayouts = layout.customLayouts ?? {};
-
-    // Drop corrupt/no-op snapshots (e.g. from older builds that stored stock layouts
-    // under every preset key) so presets never appear to be "the same one".
-    const nextCustom: Record<string, AudioLayoutElement[]> = {};
-    for (const [key, value] of Object.entries(customLayouts)) {
-      if (!(key in AUDIO_LAYOUT_PRESETS)) continue;
-      if (value && !isStockLayout(value)) {
-        nextCustom[key] = value.map((el) => ({ ...el }));
-      }
-    }
-
-    // 1. Keep a snapshot of the current (possibly edited) elements for the preset we are
-    //    leaving, but only if it is a genuine custom layout.
-    if (!isStockLayout(layout.elements)) {
-      nextCustom[currentPreset] = layout.elements.map((el) => ({ ...el }));
-    }
-
-    // 2. Restore the target preset's saved custom layout if it exists, else the preset defaults.
-    const presetElements = AUDIO_LAYOUT_PRESETS[preset];
-    const elements =
-      nextCustom[preset]?.map((el) => ({ ...el })) ??
-      presetElements?.elements.map((el) => ({ ...el })) ??
-      layout.elements;
-
-    updateAppearance({
-      audioLayout: {
-        ...layout,
-        preset,
-        customLayouts: nextCustom,
-        elements
-      }
-    });
+    updateAppearance({ audioLayout: computePresetLayout(appearance.value.audioLayout, preset) });
   }
 
   function resetAudioLayoutPreset() {
-    const layout = appearance.value.audioLayout;
-    const currentPreset = layout.preset ?? 'full';
-    const customLayouts = { ...(layout.customLayouts ?? {}) };
-
-    // Reset always restores the current preset's own standard layout and discards
-    // that preset's saved custom layout.
-    delete customLayouts[currentPreset];
-
-    updateAppearance({
-      audioLayout: { ...layout, elements: factoryElements(currentPreset), customLayouts }
-    });
+    updateAppearance({ audioLayout: computeResetLayout(appearance.value.audioLayout) });
   }
 
   function updatePlayback(partial: Partial<PlaybackSettings>) {

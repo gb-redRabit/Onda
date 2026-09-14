@@ -26,6 +26,12 @@ export const PLUGIN_HOST_VARIANTS: Record<string, Record<string, string>> = {
 
 export const PLUGIN_VISUAL_KEY = 'element.decoration';
 
+export function omitKey<T>(record: Record<string, T>, key: string): Record<string, T> {
+  const next = { ...record };
+  delete next[key];
+  return next;
+}
+
 export interface TrackSnapshot {
   id: string;
   path: string;
