@@ -45,5 +45,16 @@ export function useOnlineDialogs(
     }
   }
 
-  return { expandedSearchId, expandedResolvedId, configTarget, openWatchUrl, onKeydown };
+  function toastAdded() {
+    ui.notify('success', t('youtube.added'), undefined, 2000);
+  }
+
+  return {
+    expandedSearchId,
+    expandedResolvedId,
+    configTarget,
+    openWatchUrl,
+    onKeydown,
+    toastAdded
+  };
 }

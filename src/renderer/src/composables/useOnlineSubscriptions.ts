@@ -40,6 +40,17 @@ export function useOnlineSubscriptions() {
     }
   }
 
+  function confirmUnfollow(channelId: string) {
+    unfollowTarget.value = channelId;
+  }
+
+  function onUnfollowConfirm() {
+    if (unfollowTarget.value) {
+      yt.unfollowChannel(unfollowTarget.value);
+    }
+    unfollowTarget.value = null;
+  }
+
   return {
     activeSection,
     prefsOpen,
@@ -48,6 +59,8 @@ export function useOnlineSubscriptions() {
     togglePrefs,
     openChannelFromSubscription,
     downloadSubscriptionAll,
-    downloadAllPending
+    downloadAllPending,
+    confirmUnfollow,
+    onUnfollowConfirm
   };
 }

@@ -3,7 +3,6 @@ import { ref, computed, onMounted, onUnmounted, watch, defineAsyncComponent } fr
 import { useI18n } from 'vue-i18n';
 import { Download, Radio, X, RefreshCw, AlertCircle } from '@lucide/vue';
 import { useOnlineStore } from '@renderer/stores/online';
-import { useUIStore } from '@renderer/stores/ui';
 import { useSavedStore } from '@renderer/stores/saved';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { useOnlineSearch } from '@renderer/composables/useOnlineSearch';
@@ -12,7 +11,6 @@ import { useOnlineSubscriptions } from '@renderer/composables/useOnlineSubscript
 import { useOnlineBatch } from '@renderer/composables/useOnlineBatch';
 import { useOnlineDialogs } from '@renderer/composables/useOnlineDialogs';
 import { useOnlineQueueing } from '@renderer/composables/useOnlineQueueing';
-import { buildQueueExtra, type QueueConfigPayload } from '@renderer/utils/onlineQueueExtra';
 import LoaderSpinner from '@renderer/components/LoaderSpinner.vue';
 import { detectPlatform } from '@shared/platform';
 import {
@@ -46,7 +44,6 @@ const SubscribeConfigDialog = defineAsyncComponent(
 );
 
 const yt = useOnlineStore();
-const ui = useUIStore();
 const saved = useSavedStore();
 void saved.ensureLoaded();
 const avatarErrors = ref<Record<string, boolean>>({});
@@ -68,10 +65,12 @@ const {
   togglePrefs,
   openChannelFromSubscription,
   downloadSubscriptionAll,
-  downloadAllPending
+  downloadAllPending,
+  confirmUnfollow,
+  onUnfollowConfirm
 } = useOnlineSubscriptions();
 const { searchError, resolveError, submit } = useOnlineSearch(input, t, openDiscover);
-const { expandedSearchId, expandedResolvedId, configTarget, openWatchUrl, onKeydown } =
+const { expandedSearchId, expandedResolvedId, configTarget, openWatchUrl, onKeydown, toastAdded } =
   useOnlineDialogs(input, prefsOpen, unfollowTarget);
 const rangeStart = ref(1);
 const rangeEnd = ref(100);
@@ -83,7 +82,9 @@ const {
   queueResolvedItem,
   queueChannelVideo,
   quickQueueResolved,
-  quickQueueVideo
+  quickQueueVideo,
+  closeQueueConfig,
+  confirmQueueConfig
 } = useOnlineQueueing(configTarget, rangeStart, rangeEnd, toastAdded);
 const { savingPlaylist, saveResolvedPlaylist, resolvedSaved } = useOnlineSavedPlaylist();
 const {
@@ -117,40 +118,10 @@ const configDialogPlatform = computed(() =>
 
 const selectedCount = computed(() => yt.selectedResolved.size);
 
-function confirmUnfollow(channelId: string) {
-  unfollowTarget.value = channelId;
-}
-
-function onUnfollowConfirm() {
-  if (unfollowTarget.value) {
-    yt.unfollowChannel(unfollowTarget.value);
-  }
-  unfollowTarget.value = null;
-}
-
 function clearResolved() {
   yt.setResolved(null);
   resolveError.value = '';
   input.value = '';
-}
-
-function confirmQueueConfig(payload: QueueConfigPayload) {
-  const extra = buildQueueExtra(payload);
-  if (configTarget.value?.mode === 'resolved') {
-    void yt.queueFromResolved([...yt.selectedResolved], undefined, extra);
-  } else if (configTarget.value?.mode === 'single') {
-    void yt.queueVideo(configTarget.value.video, undefined, extra);
-  }
-  configTarget.value = null;
-  toastAdded();
-}
-
-function closeQueueConfig() {
-  configTarget.value = null;
-}
-
-function toastAdded() {
-  ui.notify('success', t('youtube.added'), undefined, 2000);
 }
 
 onMounted(async () => {

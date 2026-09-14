@@ -2,6 +2,7 @@ import type { Ref } from 'vue';
 import { useOnlineStore } from '@renderer/stores/online';
 import { useSettingsStore } from '@renderer/stores/settings';
 import type { OnlineConfigTarget } from '@renderer/utils/onlineConfigDialog';
+import { buildQueueExtra, type QueueConfigPayload } from '@renderer/utils/onlineQueueExtra';
 import type { YouTubeResolvedItem, YouTubeVideo } from '@renderer/types/online';
 
 // Resolved-list selection + queueing actions. `toastAdded` is injected from the
@@ -84,6 +85,21 @@ export function useOnlineQueueing(
     }
   }
 
+  function closeQueueConfig() {
+    configTarget.value = null;
+  }
+
+  function confirmQueueConfig(payload: QueueConfigPayload) {
+    const extra = buildQueueExtra(payload);
+    if (configTarget.value?.mode === 'resolved') {
+      void yt.queueFromResolved([...yt.selectedResolved], undefined, extra);
+    } else if (configTarget.value?.mode === 'single') {
+      void yt.queueVideo(configTarget.value.video, undefined, extra);
+    }
+    configTarget.value = null;
+    toastAdded();
+  }
+
   return {
     toggleSelect,
     toggleSelectAll,
@@ -92,6 +108,8 @@ export function useOnlineQueueing(
     queueResolvedItem,
     queueChannelVideo,
     quickQueueResolved,
-    quickQueueVideo
+    quickQueueVideo,
+    closeQueueConfig,
+    confirmQueueConfig
   };
 }
