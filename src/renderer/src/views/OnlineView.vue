@@ -8,9 +8,8 @@ import { useUIStore } from '@renderer/stores/ui';
 import { useSavedStore } from '@renderer/stores/saved';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { useOnlineSearch } from '@renderer/composables/useOnlineSearch';
-import { errorCodeKey } from '@renderer/utils/errorCodes';
 import LoaderSpinner from '@renderer/components/LoaderSpinner.vue';
-import { detectChannelPrefix, detectPlatform, parseBatchInputAll } from '@shared/platform';
+import { detectPlatform, parseBatchInputAll } from '@shared/platform';
 import { buildChannelUrl, countSkippedBatchLines } from '@renderer/utils/onlineView';
 import {
   configDialogTitle as resolveConfigDialogTitle,
@@ -68,10 +67,8 @@ const { profiles, ensureLoaded: ensureProfilesLoaded } = useDownloadProfiles();
 const { t } = useI18n();
 
 const input = ref('');
-let resolveSeq = 0;
-const resolveError = ref('');
 const savingPlaylist = ref(false);
-const { searchError, search } = useOnlineSearch(input, t, openDiscover);
+const { searchError, resolveError, submit } = useOnlineSearch(input, t, openDiscover);
 const rangeStart = ref(1);
 const rangeEnd = ref(100);
 const batchOpen = ref(false);
@@ -158,10 +155,6 @@ function downloadAllPending() {
   }
 }
 
-// A pasted input is "resolvable" when it is a direct link of ANY supported
-// platform — it then resolves to a track/playlist/profile instead of a search.
-const isResolvable = computed(() => detectPlatform(input.value) !== null);
-
 const selectedCount = computed(() => yt.selectedResolved.size);
 
 const batchEntries = computed(() => parseBatchInputAll(batchText.value));
@@ -208,54 +201,6 @@ function onUnfollowConfirm() {
     yt.unfollowChannel(unfollowTarget.value);
   }
   unfollowTarget.value = null;
-}
-
-async function submit() {
-  if (!input.value.trim()) return;
-  // @name -> YouTube channel, $name -> SoundCloud profile: open directly.
-  const prefix = detectChannelPrefix(input.value);
-  if (prefix) {
-    openDiscover();
-    yt.setResolved(null);
-    yt.closeChannel();
-    await yt.openChannelPrefix(prefix);
-    return;
-  }
-  if (isResolvable.value) {
-    await resolveLink();
-  } else {
-    await search();
-  }
-}
-
-async function resolveLink() {
-  const url = input.value.trim();
-  if (!url) return;
-  openDiscover();
-  yt.isResolving = true;
-  resolveError.value = '';
-  const seq = ++resolveSeq;
-  try {
-    const res = await yt.resolveOnline(url);
-    // Stale response from a superseded resolve — discard.
-    if (seq !== resolveSeq) return;
-    if (res.success && res.result) {
-      if (res.result.kind === 'channel') {
-        yt.setResolved(null);
-        await yt.openChannel(res.result.sourceUrl);
-      } else {
-        yt.setResults([]);
-        yt.setResolved(res.result);
-      }
-    } else {
-      const key = errorCodeKey(res.code);
-      resolveError.value = key ? t(key) : res.error || t('youtube.resolveError');
-    }
-  } catch {
-    resolveError.value = t('youtube.resolveError');
-  } finally {
-    if (seq === resolveSeq) yt.isResolving = false;
-  }
 }
 
 function clearResolved() {
