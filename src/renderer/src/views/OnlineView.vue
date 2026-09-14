@@ -12,6 +12,7 @@ import { useOnlineSavedPlaylist } from '@renderer/composables/useOnlineSavedPlay
 import { useOnlineSubscriptions } from '@renderer/composables/useOnlineSubscriptions';
 import { useOnlineBatch } from '@renderer/composables/useOnlineBatch';
 import { useOnlineDialogs } from '@renderer/composables/useOnlineDialogs';
+import { buildQueueExtra, type QueueConfigPayload } from '@renderer/utils/onlineQueueExtra';
 import LoaderSpinner from '@renderer/components/LoaderSpinner.vue';
 import { detectPlatform } from '@shared/platform';
 import {
@@ -29,12 +30,7 @@ import OnlineSearchResultsPanel from '@renderer/components/online/OnlineSearchRe
 import OnlineResolvedPanel from '@renderer/components/online/OnlineResolvedPanel.vue';
 import OnlineConfirmDialog from '@renderer/components/online/OnlineConfirmDialog.vue';
 import YTAuthButton from '@renderer/components/online/YTAuthButton.vue';
-import type {
-  YouTubeVideo,
-  YouTubeResolvedItem,
-  CoverSpec,
-  MetaOverride
-} from '@renderer/types/online';
+import type { YouTubeVideo, YouTubeResolvedItem } from '@renderer/types/online';
 
 // Heavy dialogs/views are lazy-loaded so they don't bloat the Online chunk
 // (plan 3.5).
@@ -199,47 +195,8 @@ function quickQueueVideo(v: YouTubeVideo) {
   }
 }
 
-function confirmQueueConfig(payload: {
-  kind?: 'audio' | 'video';
-  format?: string;
-  quality?: string;
-  audioQuality?: string;
-  videoContainer?: 'mp4' | 'mkv' | 'webm';
-  filenameTemplate?: string;
-  cover?: CoverSpec;
-  metaOverride?: MetaOverride;
-  outputDir?: string;
-  subsLangs?: string;
-  subsFormat?: 'srt' | 'vtt' | 'ass';
-  subsMode?: 'manual' | 'auto' | 'best';
-  subsFolder?: boolean;
-  audioLanguage?: string;
-  sponsorBlock?: 'off' | 'mark' | 'remove';
-  trimStart?: number;
-  trimEnd?: number;
-}) {
-  const extra = {
-    ...(payload.kind ? { kind: payload.kind } : {}),
-    ...(payload.format ? { format: payload.format } : {}),
-    ...(payload.quality ? { quality: payload.quality } : {}),
-    ...(payload.audioQuality ? { audioQuality: payload.audioQuality } : {}),
-    ...(payload.videoContainer ? { videoContainer: payload.videoContainer } : {}),
-    ...(payload.filenameTemplate ? { filenameTemplate: payload.filenameTemplate } : {}),
-    ...(payload.cover ? { cover: payload.cover } : {}),
-    ...(payload.metaOverride ? { metaOverride: payload.metaOverride } : {}),
-    ...(payload.outputDir ? { outputDir: payload.outputDir } : {}),
-    ...(payload.subsLangs ? { subsLangs: payload.subsLangs } : {}),
-    ...(payload.subsFormat ? { subsFormat: payload.subsFormat } : {}),
-    ...(payload.subsMode ? { subsMode: payload.subsMode } : {}),
-    ...(payload.subsFolder ? { subsFolder: payload.subsFolder } : {}),
-    ...(payload.audioLanguage ? { audioLanguage: payload.audioLanguage } : {}),
-    ...(payload.sponsorBlock && payload.sponsorBlock !== 'off'
-      ? { sponsorBlock: payload.sponsorBlock }
-      : {}),
-    ...(payload.trimStart != null && payload.trimEnd != null
-      ? { trimStart: payload.trimStart, trimEnd: payload.trimEnd }
-      : {})
-  };
+function confirmQueueConfig(payload: QueueConfigPayload) {
+  const extra = buildQueueExtra(payload);
   if (configTarget.value?.mode === 'resolved') {
     void yt.queueFromResolved([...yt.selectedResolved], undefined, extra);
   } else if (configTarget.value?.mode === 'single') {
