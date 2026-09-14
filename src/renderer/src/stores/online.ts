@@ -46,6 +46,7 @@ import { buildChannelJobs } from '@renderer/utils/onlineChannelJobs';
 import { createOnlineChannel } from './online/channel';
 import { createOnlineSubscriptions } from './online/subscriptions';
 import { createOnlineDownloads } from './online/downloads';
+import { resolveOnlineUrl, type OnlineResolveResponse } from '@renderer/utils/onlineResolve';
 
 export const useOnlineStore = defineStore('online', () => {
   const { t } = useI18n();
@@ -185,28 +186,8 @@ export const useOnlineStore = defineStore('online', () => {
 
   // Platform-dispatched link resolution (detects the platform from the link
   // itself, not from the active UI tab).
-  async function resolveOnline(url: string): Promise<{
-    success: boolean;
-    error?: string;
-    code?: string;
-    result?: YouTubeResolveResult;
-  }> {
-    const detected = detectPlatform(url);
-    if (!detected) return { success: false, error: 'Unsupported or invalid link' };
-    if (detected.platform === 'soundcloud') {
-      return (await window.api.invoke('sc:resolve', url)) as {
-        success: boolean;
-        error?: string;
-        code?: string;
-        result?: YouTubeResolveResult;
-      };
-    }
-    return (await window.api.invoke('yt:resolve', url)) as {
-      success: boolean;
-      error?: string;
-      code?: string;
-      result?: YouTubeResolveResult;
-    };
+  async function resolveOnline(url: string): Promise<OnlineResolveResponse> {
+    return resolveOnlineUrl(url);
   }
 
   const pagedResults = computed(() => {
