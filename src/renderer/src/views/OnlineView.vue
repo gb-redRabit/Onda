@@ -3,7 +3,6 @@ import { ref, computed, onMounted, onUnmounted, watch, defineAsyncComponent } fr
 import { useI18n } from 'vue-i18n';
 import { Download, Radio, X, RefreshCw, AlertCircle } from '@lucide/vue';
 import { useOnlineStore } from '@renderer/stores/online';
-import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore } from '@renderer/stores/ui';
 import { useSavedStore } from '@renderer/stores/saved';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
@@ -12,6 +11,7 @@ import { useOnlineSavedPlaylist } from '@renderer/composables/useOnlineSavedPlay
 import { useOnlineSubscriptions } from '@renderer/composables/useOnlineSubscriptions';
 import { useOnlineBatch } from '@renderer/composables/useOnlineBatch';
 import { useOnlineDialogs } from '@renderer/composables/useOnlineDialogs';
+import { useOnlineQueueing } from '@renderer/composables/useOnlineQueueing';
 import { buildQueueExtra, type QueueConfigPayload } from '@renderer/utils/onlineQueueExtra';
 import LoaderSpinner from '@renderer/components/LoaderSpinner.vue';
 import { detectPlatform } from '@shared/platform';
@@ -30,7 +30,6 @@ import OnlineSearchResultsPanel from '@renderer/components/online/OnlineSearchRe
 import OnlineResolvedPanel from '@renderer/components/online/OnlineResolvedPanel.vue';
 import OnlineConfirmDialog from '@renderer/components/online/OnlineConfirmDialog.vue';
 import YTAuthButton from '@renderer/components/online/YTAuthButton.vue';
-import type { YouTubeVideo, YouTubeResolvedItem } from '@renderer/types/online';
 
 // Heavy dialogs/views are lazy-loaded so they don't bloat the Online chunk
 // (plan 3.5).
@@ -57,7 +56,6 @@ watch(
     avatarErrors.value = {};
   }
 );
-const settings = useSettingsStore();
 const { profiles, ensureLoaded: ensureProfilesLoaded } = useDownloadProfiles();
 const { t } = useI18n();
 
@@ -75,9 +73,19 @@ const {
 const { searchError, resolveError, submit } = useOnlineSearch(input, t, openDiscover);
 const { expandedSearchId, expandedResolvedId, configTarget, openWatchUrl, onKeydown } =
   useOnlineDialogs(input, prefsOpen, unfollowTarget);
-const { savingPlaylist, saveResolvedPlaylist, resolvedSaved } = useOnlineSavedPlaylist();
 const rangeStart = ref(1);
 const rangeEnd = ref(100);
+const {
+  toggleSelect,
+  toggleSelectAll,
+  selectRange,
+  addSelectedToQueue,
+  queueResolvedItem,
+  queueChannelVideo,
+  quickQueueResolved,
+  quickQueueVideo
+} = useOnlineQueueing(configTarget, rangeStart, rangeEnd, toastAdded);
+const { savingPlaylist, saveResolvedPlaylist, resolvedSaved } = useOnlineSavedPlaylist();
 const {
   batchOpen,
   batchText,
@@ -124,75 +132,6 @@ function clearResolved() {
   yt.setResolved(null);
   resolveError.value = '';
   input.value = '';
-}
-
-function toggleSelect(id: string) {
-  const next = new Set(yt.selectedResolved);
-  if (next.has(id)) {
-    next.delete(id);
-  } else {
-    next.add(id);
-  }
-  yt.selectedResolved = next;
-}
-
-function toggleSelectAll() {
-  if (!yt.resolved) return;
-  const all = yt.resolved.items.map((i) => i.id);
-  const allSelected = all.length > 0 && all.every((id) => yt.selectedResolved.has(id));
-  yt.selectedResolved = allSelected ? new Set() : new Set(all);
-}
-
-// Selects a 1-based inclusive range of resolved items (e.g. 1-100, 101-200).
-function selectRange() {
-  if (!yt.resolved) return;
-  const total = yt.resolved.items.length;
-  const start = Math.max(1, Math.min(total, Math.floor(Number(rangeStart.value) || 1)));
-  const end = Math.max(start, Math.min(total, Math.floor(Number(rangeEnd.value) || total)));
-  yt.selectedResolved = new Set(
-    yt.resolved.items
-      .slice(start - 1, end)
-      .filter((i) => i.isPlayable !== false)
-      .map((i) => i.id)
-  );
-}
-
-function addSelectedToQueue() {
-  if (!yt.resolved || yt.selectedResolved.size === 0) return;
-  // Smart Mode: download immediately with defaults; otherwise open the dialog.
-  if (settings.download.smartMode) {
-    void yt.queueFromResolved([...yt.selectedResolved]);
-    toastAdded();
-  } else {
-    configTarget.value = { mode: 'resolved' };
-  }
-}
-
-function queueResolvedItem(item: YouTubeResolvedItem) {
-  configTarget.value = { mode: 'single', video: item };
-}
-
-function queueChannelVideo(v: YouTubeVideo) {
-  configTarget.value = { mode: 'single', video: v };
-}
-
-// Quick download (Smart Mode): queue with defaults without the dialog.
-function quickQueueResolved(item: YouTubeResolvedItem) {
-  if (settings.download.smartMode) {
-    void yt.queueVideo(item);
-    toastAdded();
-  } else {
-    configTarget.value = { mode: 'single', video: item };
-  }
-}
-
-function quickQueueVideo(v: YouTubeVideo) {
-  if (settings.download.smartMode) {
-    void yt.queueVideo(v);
-    toastAdded();
-  } else {
-    configTarget.value = { mode: 'single', video: v };
-  }
 }
 
 function confirmQueueConfig(payload: QueueConfigPayload) {
