@@ -6,11 +6,13 @@ import { ChevronDown, Folder, Play, ExternalLink } from '@lucide/vue';
 import { canonicalPath, isUnderPath, dirname } from '@renderer/utils/path';
 import { formatDuration } from '@renderer/utils/formatters';
 import type { MediaFile } from '@renderer/types/media';
+import { getChildDirsIndexed, getAllTracksIndexed } from '@renderer/utils/libraryIndex';
 import {
-  getChildDirsIndexed,
-  getDirectTracksIndexed,
-  getAllTracksIndexed
-} from '@renderer/utils/libraryIndex';
+  buildChildMeta,
+  directTracksInDir,
+  EMPTY_CHILD_META,
+  type DirChildMeta
+} from '@renderer/utils/dirNode';
 import LibraryTrackRow from './LibraryTrackRow.vue';
 import LibraryFolderTile from './LibraryFolderTile.vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
@@ -55,63 +57,18 @@ function childOriginal(name: string) {
   return childCanonical(name);
 }
 
-function tracksInChild(name: string) {
-  const child = childCanonical(name);
-  return getAllTracksIndexed(child, library.tracks, library.folders);
-}
-function directTracksInDir(dir: string) {
-  const q = props.query.toLowerCase().trim();
-  const all = getDirectTracksIndexed(dir, library.tracks, library.folders);
-  if (!q) return all;
-  return all.filter((t) => t.name.toLowerCase().includes(q) || t.path.toLowerCase().includes(q));
-}
-const directHere = computed(() => directTracksInDir(props.dir));
+const directHere = computed(() =>
+  directTracksInDir(props.dir, library.tracks, library.folders, props.query)
+);
 const directAudioHere = computed(() => directHere.value.filter((t) => t.type !== 'image'));
 const directImagesHere = computed(() => directHere.value.filter((t) => t.type === 'image'));
 
 const audioDisplayLimit = ref(50);
 const imageDisplayLimit = ref(24);
 
-// Everything the row/template needs for a child folder, computed once per child
-// instead of filtering/reducing the subtree 3–5× per render (see plan 1.1).
-interface DirChildMeta {
-  subtree: MediaFile[];
-  audio: MediaFile[];
-  audioCount: number;
-  duration: number;
-  directAll: MediaFile[];
-  directAudio: MediaFile[];
-  directImages: MediaFile[];
-}
-const EMPTY_CHILD_META: DirChildMeta = {
-  subtree: [],
-  audio: [],
-  audioCount: 0,
-  duration: 0,
-  directAll: [],
-  directAudio: [],
-  directImages: []
-};
-const childMeta = computed(() => {
-  const map: Record<string, DirChildMeta> = {};
-  for (const name of childDirNames.value) {
-    const subtree = tracksInChild(name);
-    const audio = subtree.filter((t) => t.type !== 'image');
-    let duration = 0;
-    for (const t of audio) duration += t.duration || 0;
-    const directAll = directTracksInDir(childOriginal(name));
-    map[name] = {
-      subtree,
-      audio,
-      audioCount: audio.length,
-      duration,
-      directAll,
-      directAudio: directAll.filter((t) => t.type !== 'image'),
-      directImages: directAll.filter((t) => t.type === 'image')
-    };
-  }
-  return map;
-});
+const childMeta = computed(() =>
+  buildChildMeta(props.dir, childDirNames.value, library.tracks, library.folders, props.query)
+);
 function metaFor(name: string): DirChildMeta {
   return childMeta.value[name] ?? EMPTY_CHILD_META;
 }
