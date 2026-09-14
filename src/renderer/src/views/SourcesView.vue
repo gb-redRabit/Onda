@@ -20,8 +20,8 @@ import {
   X
 } from '@lucide/vue';
 import { useSourcesStore } from '@renderer/stores/sources';
-import { buildSourceUrl } from '@renderer/utils/sourceUrl';
 import { filterAndSortSourceItems, parseQueryLines } from '@renderer/utils/sourcesView';
+import { endpointNameOf, currentSourceUrl } from '@renderer/utils/sourceViewLogic';
 import type { MediaSource, SourceItem } from '@renderer/types/sources';
 import SourcesContent from '@renderer/components/sources/SourcesContent.vue';
 import SourcesFilterBar from '@renderer/components/sources/SourcesFilterBar.vue';
@@ -75,14 +75,11 @@ const downloadable = computed(
 );
 
 function endpointName(id: string): string {
-  return sources.activeSource?.endpoints.find((e) => e.id === id)?.name || id;
+  return endpointNameOf(sources.activeSource, id);
 }
 
 const currentUrl = computed(() => {
-  const s = sources.activeSource;
-  const e = sources.activeEndpoint;
-  if (!s || !e) return '';
-  return buildSourceUrl(s, e, {
+  return currentSourceUrl(sources.activeSource, sources.activeEndpoint, {
     query: Object.keys(queryParams.value).length ? queryParams.value : undefined,
     page: sources.paginationMode === 'page' ? sources.currentPage : undefined,
     context: sources.context ?? undefined
