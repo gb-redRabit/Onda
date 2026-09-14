@@ -18,6 +18,7 @@ import {
   configDialogPlatform as resolveConfigDialogPlatform,
   type OnlineConfigTarget
 } from '@renderer/utils/onlineConfigDialog';
+import { pickTextFile, batchResultMessage } from '@renderer/utils/onlineBatch';
 import OnlineSearchBar from '@renderer/components/online/OnlineSearchBar.vue';
 import OnlineViewTabs from '@renderer/components/online/OnlineViewTabs.vue';
 import OnlineButton from '@renderer/components/online/OnlineButton.vue';
@@ -183,11 +184,7 @@ async function submitBatch() {
       entries.map((e) => e.url),
       profile?.config
     );
-    batchResult.value =
-      t('youtube.batchQueued', { count: queued }) +
-      (batchSkippedCount.value > 0
-        ? ' · ' + t('youtube.batchSkipped', { count: batchSkippedCount.value })
-        : '');
+    batchResult.value = batchResultMessage(t, queued, batchSkippedCount.value);
     if (queued > 0) batchText.value = '';
   } catch {
     batchResult.value = t('youtube.batchError');
@@ -197,15 +194,7 @@ async function submitBatch() {
 }
 
 async function importBatchFile() {
-  const res = (await window.api.invoke('dialog:openFile', {
-    filters: [
-      { name: t('youtube.textFiles'), extensions: ['txt', 'csv', 'tsv'] },
-      { name: t('youtube.allFiles'), extensions: ['*'] }
-    ]
-  })) as { canceled?: boolean; filePaths?: string[] } | undefined;
-  const path = res && !res.canceled ? res.filePaths?.[0] : undefined;
-  if (!path) return;
-  const content = (await window.api.invoke('fs:readTextFile', path)) as string | null;
+  const content = await pickTextFile(t);
   if (content) batchText.value = content;
 }
 
