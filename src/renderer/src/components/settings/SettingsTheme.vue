@@ -6,19 +6,13 @@ import { storeToRefs } from 'pinia';
 import { getThemeEngine } from '@renderer/composables/useTheme';
 import {
   resolveThemeAppearance,
-  BUILTIN_THEMES,
   BUILTIN_THEME_NAMES,
   type BuiltinThemeName
 } from '@shared/builtin-themes';
-import {
-  COLOR_TOKEN_IDS,
-  DEFAULT_GEOMETRY,
-  tokenToCssVar,
-  sanitizeHex,
-  type ColorTokenId,
-  type ThemeGeometry
-} from '@shared/themeModel';
+import { COLOR_TOKEN_IDS, tokenToCssVar, sanitizeHex, type ColorTokenId } from '@shared/themeModel';
 import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
+import SettingsThemePicker from '@renderer/components/settings/SettingsThemePicker.vue';
+import SettingsThemeGeometry from '@renderer/components/settings/SettingsThemeGeometry.vue';
 import {
   BASE_TOKENS,
   BRAND_TOKENS,
@@ -33,7 +27,6 @@ const engine = getThemeEngine(settingsAppearanceRef);
 
 const isCustom = computed(() => settings.appearance.theme === 'custom');
 const resolved = computed(() => resolveThemeAppearance(settings.appearance));
-const glassActive = computed(() => (settings.appearance.glassAlpha ?? 100) < 100);
 
 function tokenLabel(id: ColorTokenId): string {
   return t(`creator.tokens.${id}`);
@@ -58,16 +51,6 @@ function setScheme(seed: BuiltinThemeName) {
 
 function toggleAcrylic(enabled: boolean) {
   window.api?.invoke('app:setBackgroundMaterial', enabled ? 'acrylic' : 'auto');
-}
-
-function updateGeometry<K extends keyof ThemeGeometry>(key: K, value: ThemeGeometry[K]) {
-  settings.updateAppearance({
-    geometry: { ...(settings.appearance.geometry ?? {}), [key]: value }
-  });
-}
-
-function geomValue(key: keyof ThemeGeometry): number {
-  return settings.appearance.geometry?.[key] ?? DEFAULT_GEOMETRY[key];
 }
 
 function resetCustom(seed: 'dark' | 'light') {
@@ -114,56 +97,7 @@ async function pasteThemeJson() {
 <template>
   <SettingsPanel :title="$t('settings.themeTab')">
     <div class="flex flex-col xl:flex-row gap-8">
-      <div class="xl:w-64 shrink-0 flex xl:flex-col gap-2.5 overflow-x-auto pb-1">
-        <button
-          v-for="name in BUILTIN_THEME_NAMES"
-          :key="name"
-          class="fx-noise p-3 fx-depth rounded-field border transition-all flex items-center gap-4 text-left shrink-0 xl:w-full hover:shadow-md"
-          :class="
-            settings.appearance.theme === name
-              ? 'border-primary bg-primary/5'
-              : 'border-base-300 hover:border-primary/40'
-          "
-          @click="settings.updateAppearance({ theme: name })"
-        >
-          <span
-            class="w-16 h-10 rounded-field shrink-0 flex items-center justify-center gap-2 px-2"
-            :style="{ backgroundColor: BUILTIN_THEMES[name].colors.base200 }"
-          >
-            <span
-              class="w-7 h-4 rounded-field"
-              :style="{ backgroundColor: BUILTIN_THEMES[name].colors.base100 }"
-            />
-            <span
-              class="w-3.5 h-3.5 rounded-full shrink-0"
-              :style="{ backgroundColor: BUILTIN_THEMES[name].colors.primary }"
-            />
-          </span>
-          <span class="text-sm font-medium whitespace-nowrap">{{ $t(`settings.${name}`) }}</span>
-        </button>
-        <button
-          class="fx-noise p-3 fx-depth rounded-field border transition-all flex items-center gap-4 text-left shrink-0 xl:w-full hover:shadow-md"
-          :class="
-            isCustom ? 'border-primary bg-primary/5' : 'border-base-300 hover:border-primary/40'
-          "
-          @click="settings.updateAppearance({ theme: 'custom' })"
-        >
-          <span
-            class="w-16 h-10 rounded-field shrink-0 flex items-center justify-center gap-2 px-2"
-            :style="{ backgroundColor: resolved.colors.base200 }"
-          >
-            <span
-              class="w-7 h-4 rounded-field"
-              :style="{ backgroundColor: resolved.colors.base100 }"
-            />
-            <span
-              class="w-3.5 h-3.5 rounded-full shrink-0"
-              :style="{ backgroundColor: resolved.colors.primary }"
-            />
-          </span>
-          <span class="text-sm font-medium whitespace-nowrap">{{ $t('settings.custom') }}</span>
-        </button>
-      </div>
+      <SettingsThemePicker />
 
       <div class="flex-1 min-w-0 flex flex-col gap-8">
         <div
@@ -258,100 +192,7 @@ async function pasteThemeJson() {
           {{ $t('creator.builtinHint') }}
         </p>
 
-        <section>
-          <h3 class="text-sm font-semibold mb-4">{{ $t('creator.geometry') }}</h3>
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-5">
-            <div
-              v-for="slider in ['radiusBox', 'radiusField', 'radiusSelector'] as const"
-              :key="slider"
-            >
-              <div class="flex justify-between text-xs text-base-content/60 mb-1.5">
-                <span>{{ $t(`creator.${slider}`) }}</span>
-                <span v-if="slider === 'radiusBox' && glassActive" class="text-warning">{{
-                  $t('creator.glassLocked')
-                }}</span>
-                <span v-else>{{ geomValue(slider as keyof ThemeGeometry) }}px</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="32"
-                :disabled="slider === 'radiusBox' && glassActive"
-                :value="
-                  slider === 'radiusBox' && glassActive
-                    ? 0
-                    : geomValue(slider as keyof ThemeGeometry)
-                "
-                class="w-full"
-                :class="{ 'opacity-40 pointer-events-none': slider === 'radiusBox' && glassActive }"
-                @input="
-                  updateGeometry(
-                    slider as keyof ThemeGeometry,
-                    parseInt(($event.target as HTMLInputElement).value)
-                  )
-                "
-              />
-            </div>
-            <div v-for="sz in ['sizeField', 'sizeSelector'] as const" :key="sz">
-              <div class="flex justify-between text-xs text-base-content/60 mb-1.5">
-                <span>{{ $t(`creator.${sz}`) }}</span>
-                <span>×{{ geomValue(sz as keyof ThemeGeometry) }}</span>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="5"
-                step="1"
-                :value="geomValue(sz as keyof ThemeGeometry)"
-                class="w-full"
-                @input="
-                  updateGeometry(
-                    sz as keyof ThemeGeometry,
-                    parseInt(($event.target as HTMLInputElement).value)
-                  )
-                "
-              />
-            </div>
-            <div>
-              <div class="flex justify-between text-xs text-base-content/60 mb-1.5">
-                <span>{{ $t('creator.borderWidth') }}</span>
-                <span>{{ geomValue('border') }}px</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="4"
-                :value="geomValue('border')"
-                class="w-full"
-                @input="
-                  updateGeometry('border', parseInt(($event.target as HTMLInputElement).value))
-                "
-              />
-            </div>
-            <div class="flex items-center gap-6 pt-1">
-              <label class="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  :checked="geomValue('depth') === 1"
-                  @change="
-                    updateGeometry('depth', ($event.target as HTMLInputElement).checked ? 1 : 0)
-                  "
-                />
-                {{ $t('creator.depth') }}
-              </label>
-              <label class="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  :checked="geomValue('noise') === 1"
-                  @change="
-                    updateGeometry('noise', ($event.target as HTMLInputElement).checked ? 1 : 0)
-                  "
-                />
-                {{ $t('creator.noise') }}
-              </label>
-            </div>
-          </div>
-        </section>
+        <SettingsThemeGeometry />
 
         <section>
           <h3 class="text-sm font-semibold mb-3">{{ $t('creator.glass') }}</h3>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch, defineAsyncComponent } from 'vue';
+import { watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { logger } from '@shared/logger';
 import { Search, RotateCcw, FileDown, FileUp, X, Settings, ArrowLeft } from '@lucide/vue';
@@ -10,82 +10,7 @@ import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDi
 import SettingsOverviewCard from '@renderer/components/settings/SettingsOverviewCard.vue';
 import { useSettingsContextMenu } from '@renderer/composables/useSettingsContextMenu';
 import { useSettingsNav } from '@renderer/composables/useSettingsNav';
-
-const SettingsAppearance = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsAppearance.vue')
-);
-const SettingsTheme = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsTheme.vue')
-);
-const SettingsPlayback = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsPlayback.vue')
-);
-const SettingsPiPVideo = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsPiPVideo.vue')
-);
-const SettingsPiPAudio = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsPiPAudio.vue')
-);
-const SettingsDownload = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsDownload.vue')
-);
-const SettingsSmartMode = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsSmartMode.vue')
-);
-const SettingsShortcuts = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsShortcuts.vue')
-);
-const SettingsNetwork = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsNetwork.vue')
-);
-const SettingsUpdates = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsUpdates.vue')
-);
-const SettingsDependencies = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsDependencies.vue')
-);
-const SettingsLibraryFolders = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsLibraryFolders.vue')
-);
-const SettingsExplorer = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsExplorer.vue')
-);
-const SettingsApiKeys = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsApiKeys.vue')
-);
-const SettingsSystemInfo = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsSystemInfo.vue')
-);
-const SettingsToast = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsToast.vue')
-);
-const SettingsDiagnostics = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsDiagnostics.vue')
-);
-const SettingsAbout = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsAbout.vue')
-);
-const SettingsGeneral = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsGeneral.vue')
-);
-const SettingsPlugins = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsPlugins.vue')
-);
-const SettingsDownloadPaths = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsDownloadPaths.vue')
-);
-const SettingsDownloadQueue = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsDownloadQueue.vue')
-);
-const SettingsNetworkPlatform = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsNetworkPlatform.vue')
-);
-const SettingsPlaybackBuffer = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsPlaybackBuffer.vue')
-);
-const SettingsSystemLogs = defineAsyncComponent(
-  () => import('@renderer/components/settings/SettingsSystemLogs.vue')
-);
+import { SETTINGS_TAB_COMPONENTS } from '@renderer/components/settings/lazySettingsTabs';
 
 const settings = useSettingsStore();
 const ui = useUIStore();
@@ -323,31 +248,7 @@ watch(activeTab, (_newTab, oldTab) => {
             </button>
           </div>
 
-          <SettingsTheme v-if="activeTab === 'theme'" />
-          <SettingsAppearance v-else-if="activeTab === 'appearance'" />
-          <SettingsPlayback v-else-if="activeTab === 'playback'" />
-          <SettingsPlaybackBuffer v-else-if="activeTab === 'playback-buffer'" />
-          <SettingsPiPVideo v-else-if="activeTab === 'pip-video'" />
-          <SettingsPiPAudio v-else-if="activeTab === 'pip-audio'" />
-          <SettingsDownload v-else-if="activeTab === 'download'" />
-          <SettingsDownloadPaths v-else-if="activeTab === 'download-paths'" />
-          <SettingsDownloadQueue v-else-if="activeTab === 'download-queue'" />
-          <SettingsSmartMode v-else-if="activeTab === 'smart-mode'" />
-          <SettingsShortcuts v-else-if="activeTab === 'shortcuts'" />
-          <SettingsNetwork v-else-if="activeTab === 'network'" />
-          <SettingsNetworkPlatform v-else-if="activeTab === 'network-platform'" />
-          <SettingsUpdates v-else-if="activeTab === 'updates'" />
-          <SettingsGeneral v-else-if="activeTab === 'general'" />
-          <SettingsSystemLogs v-else-if="activeTab === 'system-logs'" />
-          <SettingsToast v-else-if="activeTab === 'toast'" />
-          <SettingsLibraryFolders v-else-if="activeTab === 'library'" />
-          <SettingsExplorer v-else-if="activeTab === 'explorer'" />
-          <SettingsDependencies v-else-if="activeTab === 'dependencies'" />
-          <SettingsSystemInfo v-else-if="activeTab === 'systemInfo'" />
-          <SettingsDiagnostics v-else-if="activeTab === 'diagnostics'" />
-          <SettingsAbout v-else-if="activeTab === 'about'" />
-          <SettingsApiKeys v-else-if="activeTab === 'apiKeys'" />
-          <SettingsPlugins v-else-if="activeTab === 'plugins'" />
+          <component :is="SETTINGS_TAB_COMPONENTS[activeTab ?? '']" />
         </div>
       </Transition>
     </div>
