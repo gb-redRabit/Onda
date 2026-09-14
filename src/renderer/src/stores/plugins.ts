@@ -11,7 +11,6 @@ import { usePlayerStore } from './player';
 import { useLibraryStore } from './library';
 import { useUIStore } from './ui';
 import type { PluginCommandEntry, PluginHookPayload } from '@renderer/modules/plugins/plugin-shim';
-import type { AudioLayoutElementId } from '@renderer/types/settings';
 import { isKnownHook } from '@renderer/utils/pluginHooks';
 import {
   createPluginWorker,
@@ -27,6 +26,11 @@ import {
 } from '@renderer/utils/plugins-helpers';
 export { ELEMENT_DECORATIONS, PLUGIN_HOST_VARIANTS, snapshotTrack };
 export type { TrackSnapshot } from '@renderer/utils/plugins-helpers';
+import {
+  computeDecorations,
+  computeLayoutVariants,
+  mergeSettingDefaults
+} from '@renderer/utils/plugins-derive';
 
 export type PluginUiStatus = 'new' | 'loading' | 'loaded' | 'error';
 
@@ -50,40 +54,9 @@ export const usePluginsStore = defineStore('plugins', () => {
   const workers = shallowRef<Record<string, PluginWorkerHandle>>({});
   const readyWorkers = new Set<string>();
 
-  const decorations = computed<Partial<Record<AudioLayoutElementId, string>>>(() => {
-    const out: Partial<Record<AudioLayoutElementId, string>> = {};
-    for (const elementId of Object.keys(ELEMENT_DECORATIONS)) {
-      for (const p of plugins.value) {
-        if (!p.enabled) continue;
-        const value = visuals.value[p.id]?.[elementId];
-        if (value && value !== 'none') {
-          out[elementId as AudioLayoutElementId] = value;
-          break;
-        }
-      }
-    }
-    return out;
-  });
+  const decorations = computed(() => computeDecorations(plugins.value, visuals.value));
 
-  const layoutVariants = computed<
-    Record<string, { value: string; label: string; plugin: string }[]>
-  >(() => {
-    const out: Record<string, { value: string; label: string; plugin: string }[]> = {};
-    for (const p of plugins.value) {
-      if (!p.enabled) continue;
-      const manifest = manifests.value[p.id];
-      if (!manifest || manifest.permissions.visual !== true || !manifest.layoutElements) continue;
-      for (const le of manifest.layoutElements) {
-        if (!PLUGIN_HOST_VARIANTS[le.element]?.[le.variant]) continue;
-        const key = `plugin:${le.element}:${le.variant}`;
-        const list = out[le.element] || (out[le.element] = []);
-        if (!list.some((v) => v.value === key)) {
-          list.push({ value: key, label: le.label || le.variant, plugin: p.name });
-        }
-      }
-    }
-    return out;
-  });
+  const layoutVariants = computed(() => computeLayoutVariants(plugins.value, manifests.value));
 
   function logPush(id: string, line: string): void {
     let list = logs.value[id];
@@ -106,13 +79,7 @@ export const usePluginsStore = defineStore('plugins', () => {
   function settingsOf(id: string): Record<string, unknown> {
     const stored = pluginSettings.value[id] || {};
     const fields = manifestOf(id)?.settings || [];
-    const out: Record<string, unknown> = { ...stored };
-    for (const field of fields) {
-      if (field.default !== undefined && out[field.key] === undefined) {
-        out[field.key] = field.default;
-      }
-    }
-    return out;
+    return mergeSettingDefaults(stored, fields);
   }
 
   async function saveSetting(id: string, key: string, value: unknown): Promise<boolean> {
