@@ -7,9 +7,7 @@ import type {
   YouTubeVideo,
   YouTubeResolvedItem,
   Subscription,
-  SubscriptionDownloadPrefs,
-  DownloadTask,
-  MetaOverride
+  SubscriptionDownloadPrefs
 } from '@renderer/types/online';
 import type {
   IpcDownloadJobInput,
@@ -24,7 +22,7 @@ import {
   streamErrorMessage,
   buildStreamTrack
 } from '@renderer/utils/onlineHelpers';
-import { buildJob, buildTaskInput, type JobExtra } from '@renderer/utils/onlineJob';
+import { buildJob, type JobExtra } from '@renderer/utils/onlineJob';
 import { toDownloadTask } from '@renderer/utils/onlineDownloadTask';
 import { channelUrlForPrefix } from '@renderer/utils/onlineChannel';
 import { resolveAllPlaylistItems } from '@renderer/utils/onlineResolveAll';
@@ -77,11 +75,26 @@ export const useOnlineStore = defineStore('online', () => {
   const queueingChannelId = ref<string | null>(null);
   const {
     downloads,
-    downloadByVideoId,
     upsertTask,
     submitJobs,
     downloadStatusFor,
-    coverStatusFor
+    coverStatusFor,
+    loadDownloads,
+    addTask,
+    cancelDownload,
+    pauseDownload,
+    resumeDownload,
+    retryDownload,
+    pauseAll,
+    resumeAll,
+    moveToFront,
+    move,
+    exportQueue,
+    importQueue,
+    scheduleStart,
+    getScheduledStart,
+    updateMetadata,
+    clearFinishedDownloads
   } = createOnlineDownloads(markVideoDownloaded);
   const {
     resolved,
@@ -453,186 +466,6 @@ export const useOnlineStore = defineStore('online', () => {
       const sub = updated as IpcSubscription;
       if (sub && typeof sub.channelId === 'string') addSubscription(sub as Subscription);
     });
-  }
-
-  async function loadDownloads() {
-    try {
-      const list = (await window.api.invoke('yt:download:list')) as IpcDownloadTask[];
-      if (Array.isArray(list)) {
-        downloads.value = list.map(toDownloadTask);
-        downloadByVideoId.clear();
-        for (const d of downloads.value) {
-          if (d.videoId) downloadByVideoId.set(d.videoId, d);
-        }
-      }
-    } catch {
-      /* downloads unavailable yet */
-    }
-  }
-
-  async function addTask(task: DownloadTask) {
-    await submitJobs([buildTaskInput(task)]);
-  }
-
-  async function cancelDownload(id: string) {
-    try {
-      const ok = (await window.api.invoke('yt:download:cancel', id)) as boolean;
-      if (ok) {
-        const idx = downloads.value.findIndex((d) => d.id === id);
-        if (idx >= 0) {
-          const prev = downloads.value[idx];
-          downloads.value[idx] = { ...prev, status: 'cancelled' };
-        }
-      }
-    } catch {
-      /* cancel failed */
-    }
-  }
-
-  async function pauseDownload(id: string) {
-    try {
-      const ok = (await window.api.invoke('yt:download:pause', id)) as boolean;
-      if (ok) {
-        const idx = downloads.value.findIndex((d) => d.id === id);
-        if (idx >= 0) {
-          const prev = downloads.value[idx];
-          downloads.value[idx] = { ...prev, status: 'paused' };
-        }
-      }
-    } catch {
-      /* pause failed */
-    }
-  }
-
-  async function resumeDownload(id: string) {
-    try {
-      const ok = (await window.api.invoke('yt:download:resume', id)) as boolean;
-      if (ok) {
-        const idx = downloads.value.findIndex((d) => d.id === id);
-        if (idx >= 0) {
-          const prev = downloads.value[idx];
-          downloads.value[idx] = { ...prev, status: 'pending' };
-        }
-      }
-    } catch {
-      /* resume failed */
-    }
-  }
-
-  async function retryDownload(task: DownloadTask) {
-    const created = await submitJobs([buildTaskInput(task)]);
-    if (!created) {
-      // The main process replaced the failed job with a fresh one only when no
-      // active job with the same video id existed. If it was skipped, tell the
-      // user instead of failing silently.
-      useUIStore().notify('info', t('downloads.retry'), t('youtube.retryAlreadyActive'));
-      return;
-    }
-    // A retry creates a brand-new job — drop the old failed row so the same
-    // video is not listed twice (once as error, once as pending).
-    const idx = downloads.value.findIndex((d) => d.id === task.id);
-    if (idx >= 0) downloads.value.splice(idx, 1);
-    if (task.videoId && downloadByVideoId.get(task.videoId)?.id === task.id) {
-      downloadByVideoId.delete(task.videoId);
-    }
-  }
-
-  async function pauseAll() {
-    try {
-      await window.api.invoke('yt:download:pauseAll');
-    } catch {
-      /* pause all failed */
-    }
-  }
-
-  async function resumeAll() {
-    try {
-      await window.api.invoke('yt:download:resumeAll');
-    } catch {
-      /* resume all failed */
-    }
-  }
-
-  async function moveToFront(id: string) {
-    try {
-      await window.api.invoke('yt:download:moveToFront', id);
-    } catch {
-      /* move to front failed */
-    }
-  }
-
-  async function move(id: string, direction: -1 | 1) {
-    try {
-      await window.api.invoke('yt:download:move', id, direction);
-    } catch {
-      /* move failed */
-    }
-  }
-
-  async function exportQueue() {
-    try {
-      return (await window.api.invoke('yt:download:export')) as {
-        success: boolean;
-        error?: string;
-      };
-    } catch {
-      return { success: false };
-    }
-  }
-
-  async function importQueue() {
-    try {
-      const res = (await window.api.invoke('yt:download:import')) as {
-        success: boolean;
-        count?: number;
-      };
-      if (res?.success) await loadDownloads();
-      return res ?? { success: false };
-    } catch {
-      return { success: false };
-    }
-  }
-
-  async function scheduleStart(timestamp: number | null) {
-    try {
-      await window.api.invoke('yt:download:schedule', timestamp);
-    } catch {
-      /* schedule failed */
-    }
-  }
-
-  async function getScheduledStart(): Promise<number | null> {
-    try {
-      return (await window.api.invoke('yt:download:schedule:get')) as number | null;
-    } catch {
-      return null;
-    }
-  }
-
-  async function updateMetadata(filePath: string, meta: MetaOverride): Promise<boolean> {
-    try {
-      const res = (await window.api.invoke('yt:download:updateMetadata', filePath, meta)) as {
-        success: boolean;
-      };
-      return !!res?.success;
-    } catch {
-      return false;
-    }
-  }
-
-  async function clearFinishedDownloads() {
-    try {
-      await window.api.invoke('yt:download:clearFinished');
-      downloads.value = downloads.value.filter(
-        (d) => d.status === 'pending' || d.status === 'downloading' || d.status === 'paused'
-      );
-      downloadByVideoId.clear();
-      for (const d of downloads.value) {
-        if (d.videoId) downloadByVideoId.set(d.videoId, d);
-      }
-    } catch {
-      /* clear failed */
-    }
   }
 
   subscribeDownloads();
