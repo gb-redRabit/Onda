@@ -7,6 +7,7 @@ import type { VisualizationMode } from '@renderer/types/settings';
 import { VIZ_CYCLES } from '@renderer/utils/audioVisualizer';
 import { drawRadial, drawCircle } from '@renderer/utils/visualizerDraw';
 import { binFreq } from '@renderer/utils/visualizerBins';
+import { barGradient, spectrumGradient, resetGradients } from '@renderer/utils/visualizerGradients';
 import { useVizConfig } from '@renderer/composables/useVizConfig';
 
 const audio = useAudioPlayer();
@@ -33,16 +34,6 @@ let freqData: Uint8Array<ArrayBuffer> | null = null;
 let smoothPrev: Uint8Array<ArrayBuffer> | null = null;
 let smoothOut: Uint8Array<ArrayBuffer> | null = null;
 let waveBuf: Uint8Array<ArrayBuffer> | null = null;
-
-// Gradient cache
-let barGrad: CanvasGradient | null = null;
-let barGradH = 0;
-let barGradPrim = '';
-let barGradSec = '';
-let spectGrad: CanvasGradient | null = null;
-let spectGradW = 0;
-let spectGradPrim = '';
-let spectGradSec = '';
 
 // Crossfade state
 let fadeAlpha = 1;
@@ -76,8 +67,7 @@ function draw(timestamp: number) {
     lastW = w;
     lastH = h;
     lastDpr = dpr;
-    barGrad = null;
-    spectGrad = null;
+    resetGradients();
   }
 
   const cw = w / rawDpr;
@@ -166,15 +156,7 @@ function drawBars(
   const gap = 2;
   const barWidth = cw / barCount - gap;
   const bins = binFreq(analyserNode!.frequencyBinCount, data, barCount);
-  if (!barGrad || barGradH !== ch || barGradPrim !== prim || barGradSec !== sec) {
-    barGrad = ctx.createLinearGradient(0, 0, 0, ch);
-    barGrad.addColorStop(0, prim);
-    barGrad.addColorStop(1, sec);
-    barGradH = ch;
-    barGradPrim = prim;
-    barGradSec = sec;
-  }
-  ctx.fillStyle = barGrad;
+  ctx.fillStyle = barGradient(ctx, ch, prim, sec);
   for (let i = 0; i < barCount; i++) {
     const val = bins[i] / 255;
     const barH = val * ch * sens;
@@ -196,16 +178,7 @@ function drawSpectrum(
   const gap = 2;
   const barWidth = cw / barCount - gap;
   const bins = binFreq(analyserNode!.frequencyBinCount, data, barCount);
-  if (!spectGrad || spectGradW !== cw || spectGradPrim !== prim || spectGradSec !== sec) {
-    spectGrad = ctx.createLinearGradient(0, 0, cw, 0);
-    spectGrad.addColorStop(0, sec);
-    spectGrad.addColorStop(0.5, prim);
-    spectGrad.addColorStop(1, sec);
-    spectGradW = cw;
-    spectGradPrim = prim;
-    spectGradSec = sec;
-  }
-  ctx.fillStyle = spectGrad;
+  ctx.fillStyle = spectrumGradient(ctx, cw, prim, sec);
   const centerY = ch / 2;
   for (let i = 0; i < barCount; i++) {
     const val = bins[i] / 255;
