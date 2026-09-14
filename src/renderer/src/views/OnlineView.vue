@@ -10,7 +10,14 @@ import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
 import LoaderSpinner from '@renderer/components/LoaderSpinner.vue';
 import { detectChannelPrefix, detectPlatform, parseBatchInputAll } from '@shared/platform';
-import { buildChannelUrl, countSkippedBatchLines, isScItem } from '@renderer/utils/onlineView';
+import { buildChannelUrl, countSkippedBatchLines } from '@renderer/utils/onlineView';
+import {
+  configDialogTitle as resolveConfigDialogTitle,
+  configDialogChannelTitle as resolveConfigDialogChannelTitle,
+  configDialogPlaylistTitle as resolveConfigDialogPlaylistTitle,
+  configDialogPlatform as resolveConfigDialogPlatform,
+  type OnlineConfigTarget
+} from '@renderer/utils/onlineConfigDialog';
 import OnlineSearchBar from '@renderer/components/online/OnlineSearchBar.vue';
 import OnlineViewTabs from '@renderer/components/online/OnlineViewTabs.vue';
 import OnlineButton from '@renderer/components/online/OnlineButton.vue';
@@ -80,9 +87,7 @@ const prefsOpen = ref<Subscription | null>(null);
 const unfollowTarget = ref<string | null>(null);
 const expandedSearchId = ref<string | null>(null);
 const expandedResolvedId = ref<string | null>(null);
-const configTarget = ref<
-  { mode: 'single'; video: YouTubeVideo | YouTubeResolvedItem } | { mode: 'resolved' } | null
->(null);
+const configTarget = ref<OnlineConfigTarget>(null);
 
 function openWatchUrl(url: string) {
   // Legacy saved SC entries may resolve to a bare numeric id — no page URL.
@@ -111,32 +116,21 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
-const configDialogTitle = computed(() => {
-  if (!configTarget.value) return '';
-  if (configTarget.value.mode === 'single') return configTarget.value.video.title;
-  return t('youtube.itemsCount', { count: yt.selectedResolved.size });
-});
+const configDialogTitle = computed(() =>
+  resolveConfigDialogTitle(configTarget.value, yt.selectedResolved.size, t)
+);
 
-const configDialogChannelTitle = computed(() => {
-  if (!configTarget.value) return '';
-  if (configTarget.value.mode === 'single') return configTarget.value.video.channelTitle;
-  return yt.resolved?.meta.channelTitle || '';
-});
+const configDialogChannelTitle = computed(() =>
+  resolveConfigDialogChannelTitle(configTarget.value, yt.resolved)
+);
 
-const configDialogPlaylistTitle = computed(() => {
-  if (!configTarget.value) return '';
-  if (configTarget.value.mode === 'single') return configTarget.value.video.channelTitle;
-  return yt.resolved?.meta.channelTitle || '';
-});
+const configDialogPlaylistTitle = computed(() =>
+  resolveConfigDialogPlaylistTitle(configTarget.value, yt.resolved)
+);
 
-// Platform of the item(s) being configured — SC shows a reduced dialog.
-const configDialogPlatform = computed<'youtube' | 'soundcloud'>(() => {
-  const t = configTarget.value;
-  if (!t) return 'youtube';
-  const item = t.mode === 'single' ? t.video : yt.resolved?.items[0];
-  if (!item) return 'youtube';
-  return isScItem(item, yt.itemUrl(item)) ? 'soundcloud' : 'youtube';
-});
+const configDialogPlatform = computed(() =>
+  resolveConfigDialogPlatform(configTarget.value, yt.resolved, yt.itemUrl)
+);
 
 function togglePrefs(sub: Subscription) {
   prefsOpen.value = prefsOpen.value?.channelId === sub.channelId ? null : sub;
