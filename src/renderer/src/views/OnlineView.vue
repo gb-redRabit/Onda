@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, defineAsyncComponent } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Download, Radio, X, RefreshCw, AlertCircle } from '@lucide/vue';
+import { Download, Radio, X, RefreshCw } from '@lucide/vue';
 import { useOnlineStore } from '@renderer/stores/online';
 import { useSavedStore } from '@renderer/stores/saved';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
@@ -27,6 +27,7 @@ import OnlineBatchPanel from '@renderer/components/online/OnlineBatchPanel.vue';
 import OnlineSearchResultsPanel from '@renderer/components/online/OnlineSearchResultsPanel.vue';
 import OnlineResolvedPanel from '@renderer/components/online/OnlineResolvedPanel.vue';
 import OnlineConfirmDialog from '@renderer/components/online/OnlineConfirmDialog.vue';
+import OnlineChannelError from '@renderer/components/online/OnlineChannelError.vue';
 import YTAuthButton from '@renderer/components/online/YTAuthButton.vue';
 
 // Heavy dialogs/views are lazy-loaded so they don't bloat the Online chunk
@@ -42,7 +43,6 @@ const DownloadConfigDialog = defineAsyncComponent(
 const SubscribeConfigDialog = defineAsyncComponent(
   () => import('@renderer/components/online/SubscribeConfigDialog.vue')
 );
-
 const yt = useOnlineStore();
 const saved = useSavedStore();
 void saved.ensureLoaded();
@@ -110,12 +110,17 @@ const configDialogPlatform = computed(() =>
   resolveConfigDialogPlatform(configTarget.value, yt.resolved, yt.itemUrl)
 );
 
-const selectedCount = computed(() => yt.selectedResolved.size);
-
 function clearResolved() {
   yt.setResolved(null);
   resolveError.value = '';
   input.value = '';
+}
+
+function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs>[1] }) {
+  const target = prefsOpen.value;
+  if (!target) return;
+  void yt.setDownloadPrefs(target.channelId, payload.prefs || {});
+  prefsOpen.value = null;
 }
 </script>
 
@@ -221,19 +226,7 @@ function clearResolved() {
 
       <OnlineChannelView v-else-if="yt.channelLoading || yt.channel" />
 
-      <div
-        v-else-if="yt.channelError"
-        class="flex flex-col items-center justify-center py-16 text-center"
-      >
-        <AlertCircle :size="40" class="text-error mb-3" />
-        <p class="text-sm text-base-content/70 mb-1">{{ yt.channelError }}</p>
-        <button
-          class="fx-noise mt-3 px-4 py-1.5 fx-depth rounded-field bg-base-content/10 border border-base-300 text-xs text-base-content hover:bg-base-100 transition-colors"
-          @click="submit"
-        >
-          {{ $t('youtube.search') }}
-        </button>
-      </div>
+      <OnlineChannelError v-else-if="yt.channelError" :message="yt.channelError" @retry="submit" />
 
       <template v-else>
         <OnlineResolvedPanel
@@ -242,7 +235,7 @@ function clearResolved() {
           v-model:range-end="rangeEnd"
           :resolved-loading="yt.resolvedLoading"
           :resolved-capped="yt.resolvedCapped"
-          :selected-count="selectedCount"
+          :selected-count="yt.selectedResolved.size"
           :saved="resolvedSaved"
           :saving="savingPlaylist"
           @toggle-select="toggleSelect"
@@ -278,12 +271,7 @@ function clearResolved() {
       }"
       :platform="prefsOpen.platform === 'soundcloud' ? 'soundcloud' : 'youtube'"
       :initial-prefs="prefsOpen.downloadPrefs"
-      @confirm="
-        (payload) => {
-          void yt.setDownloadPrefs(prefsOpen!.channelId, payload.prefs || {});
-          prefsOpen = null;
-        }
-      "
+      @confirm="onPrefsConfirm"
       @cancel="prefsOpen = null"
     />
 

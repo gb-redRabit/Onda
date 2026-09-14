@@ -1,21 +1,13 @@
 <script setup lang="ts">
-import {
-  Minus,
-  Square,
-  X,
-  Search,
-  Maximize2,
-  FolderOpen,
-  FileAudio,
-  PictureInPicture
-} from '@lucide/vue';
-import { useUIStore } from '@renderer/stores/ui';
+import { FolderOpen, FileAudio, PictureInPicture } from '@lucide/vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useAppMenu } from '@renderer/composables/useAppMenu';
 import { getPlayerPiPHandler } from '@renderer/composables/playerPiPHandler';
+import AppMenuWindowControls from './AppMenuWindowControls.vue';
+import AppMenuViewActions from './AppMenuViewActions.vue';
+import AppMenuHelpDropdown from './AppMenuHelpDropdown.vue';
 import appIcon from '@renderer/assets/icon.png';
 
-const ui = useUIStore();
 const settings = useSettingsStore();
 
 const {
@@ -275,85 +267,30 @@ const {
         >
           {{ $t('menu.help') }}
         </button>
-        <div
+        <AppMenuHelpDropdown
           v-if="openDropdown === 'help'"
-          class="absolute top-full left-0 mt-0.5 bg-base-100 border border-base-300 rounded-box shadow-2xl shadow-black/40 py-1.5 min-w-48 z-50"
-        >
-          <button
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors"
-            @click="navigateSettingsTab('about')"
-          >
-            {{ t('menu.about') }}
-          </button>
-          <button
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors"
-            @click="navigateSettingsTab('shortcuts')"
-          >
-            {{ t('menu.documentation') }}
-          </button>
-        </div>
+          @about="navigateSettingsTab('about')"
+          @shortcuts="navigateSettingsTab('shortcuts')"
+        />
       </div>
     </div>
 
     <!-- View-specific actions (middle area stays draggable; only buttons opt out) -->
-    <div v-if="showViewActions" class="flex items-center gap-1 px-2 flex-1 min-w-0">
-      <span class="text-xs font-medium text-base-content mr-2 truncate">{{ viewLabel }}</span>
-
-      <template v-if="$route.name === 'home'">
-        <button
-          class="fx-noise h-7 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 fx-depth rounded-field transition-colors flex items-center gap-1.5"
-          style="-webkit-app-region: no-drag"
-          @click="openFile"
-        >
-          <FileAudio :size="12" /> {{ $t('home.openFile') }}
-        </button>
-        <button
-          class="fx-noise h-7 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 fx-depth rounded-field transition-colors flex items-center gap-1.5"
-          style="-webkit-app-region: no-drag"
-          @click="openFolder"
-        >
-          <FolderOpen :size="12" /> {{ $t('home.openFolder') }}
-        </button>
-      </template>
-      <button
-        v-if="viewSearchable"
-        class="h-9 px-2 flex items-center hover:bg-base-content/10 transition-colors text-base-content/60 hover:text-base-content"
-        style="-webkit-app-region: no-drag"
-        :title="t('menu.viewSearch')"
-        @click="toggleViewSearch"
-      >
-        <Search :size="12" />
-      </button>
-    </div>
+    <AppMenuViewActions
+      :show="showViewActions"
+      :label="viewLabel"
+      :searchable="viewSearchable"
+      @open-file="openFile"
+      @open-folder="openFolder"
+      @search="toggleViewSearch"
+    />
 
     <!-- Right side: search + window controls -->
-    <div class="flex items-center shrink-0 ml-auto" style="-webkit-app-region: no-drag">
-      <button
-        class="h-9 px-3 flex items-center hover:bg-base-content/10 transition-colors text-base-content/70 hover:text-base-content"
-        :title="$t('menu.search')"
-        @click="ui.toggleGlobalSearch()"
-      >
-        <Search :size="14" />
-      </button>
-      <button
-        class="h-9 w-11 flex items-center justify-center hover:bg-base-content/10 transition-colors text-base-content/70 hover:text-base-content"
-        @click="minimize"
-      >
-        <Minus :size="14" />
-      </button>
-      <button
-        class="h-9 w-11 flex items-center justify-center hover:bg-base-content/10 transition-colors text-base-content/70 hover:text-base-content"
-        @click="maximize"
-      >
-        <Maximize2 v-if="!isMaximized" :size="12" />
-        <Square v-else :size="10" />
-      </button>
-      <button
-        class="h-9 w-11 flex items-center justify-center hover:bg-error/80 transition-colors text-base-content/70 hover:text-error-content"
-        @click="closeWin"
-      >
-        <X :size="14" />
-      </button>
-    </div>
+    <AppMenuWindowControls
+      :is-maximized="isMaximized"
+      @minimize="minimize"
+      @maximize="maximize"
+      @close="closeWin"
+    />
   </div>
 </template>
