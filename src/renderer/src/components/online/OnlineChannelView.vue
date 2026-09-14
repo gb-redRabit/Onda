@@ -8,6 +8,10 @@ import { useSettingsStore } from '@renderer/stores/settings';
 import { formatNumber } from '@renderer/utils/formatters';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
 import { useRemoteImage } from '@renderer/composables/useRemoteImage';
+import {
+  resolveDownloadState,
+  type OnlineItemDownloadState
+} from '@renderer/utils/onlineItemState';
 import type {
   YouTubeVideo,
   SubscriptionDownloadPrefs,
@@ -113,17 +117,13 @@ const sortedVideos = computed(() => {
 
 const queueTarget = ref<YouTubeVideo | null>(null);
 
-function itemDownloadState(videoId: string): 'queuing' | 'downloading' | 'done' | null {
-  if (yt.queuingId === videoId) return 'queuing';
-  const status = yt.downloadStatusFor(videoId);
-  if (status === 'downloading' || status === 'pending' || status === 'paused') {
-    return 'downloading';
-  }
-  if (status === 'completed' && yt.coverStatusFor(videoId) === 'fetching') {
-    return 'downloading';
-  }
-  if (status === 'completed') return 'done';
-  return null;
+function itemDownloadState(videoId: string): OnlineItemDownloadState {
+  return resolveDownloadState(
+    videoId,
+    yt.queuingId,
+    yt.downloadStatusFor(videoId),
+    yt.coverStatusFor(videoId)
+  );
 }
 
 // Audio downloads open the cover/metadata config dialog first (Faza 5), unless
