@@ -11,14 +11,14 @@ import { useOnlineSearch } from '@renderer/composables/useOnlineSearch';
 import { useOnlineSavedPlaylist } from '@renderer/composables/useOnlineSavedPlaylist';
 import { useOnlineSubscriptions } from '@renderer/composables/useOnlineSubscriptions';
 import { useOnlineBatch } from '@renderer/composables/useOnlineBatch';
+import { useOnlineDialogs } from '@renderer/composables/useOnlineDialogs';
 import LoaderSpinner from '@renderer/components/LoaderSpinner.vue';
 import { detectPlatform } from '@shared/platform';
 import {
   configDialogTitle as resolveConfigDialogTitle,
   configDialogChannelTitle as resolveConfigDialogChannelTitle,
   configDialogPlaylistTitle as resolveConfigDialogPlaylistTitle,
-  configDialogPlatform as resolveConfigDialogPlatform,
-  type OnlineConfigTarget
+  configDialogPlatform as resolveConfigDialogPlatform
 } from '@renderer/utils/onlineConfigDialog';
 import OnlineSearchBar from '@renderer/components/online/OnlineSearchBar.vue';
 import OnlineViewTabs from '@renderer/components/online/OnlineViewTabs.vue';
@@ -77,6 +77,8 @@ const {
   downloadAllPending
 } = useOnlineSubscriptions();
 const { searchError, resolveError, submit } = useOnlineSearch(input, t, openDiscover);
+const { expandedSearchId, expandedResolvedId, configTarget, openWatchUrl, onKeydown } =
+  useOnlineDialogs(input, prefsOpen, unfollowTarget);
 const { savingPlaylist, saveResolvedPlaylist, resolvedSaved } = useOnlineSavedPlaylist();
 const rangeStart = ref(1);
 const rangeEnd = ref(100);
@@ -92,36 +94,6 @@ const {
   submitBatch,
   importBatchFile
 } = useOnlineBatch();
-const expandedSearchId = ref<string | null>(null);
-const expandedResolvedId = ref<string | null>(null);
-const configTarget = ref<OnlineConfigTarget>(null);
-
-function openWatchUrl(url: string) {
-  // Legacy saved SC entries may resolve to a bare numeric id — no page URL.
-  if (!/^https:/i.test(url)) {
-    ui.notify('info', input.value || url, t('youtube.openUnavailable'));
-    return;
-  }
-  window.open(url, '_blank', 'width=1100,height=700');
-}
-
-function onKeydown(e: KeyboardEvent) {
-  if (e.key !== 'Escape') return;
-  if (expandedSearchId.value) expandedSearchId.value = null;
-  if (expandedResolvedId.value) expandedResolvedId.value = null;
-  // Close the topmost inline dialog, newest-first.
-  if (configTarget.value) {
-    configTarget.value = null;
-    return;
-  }
-  if (prefsOpen.value) {
-    prefsOpen.value = null;
-    return;
-  }
-  if (unfollowTarget.value) {
-    unfollowTarget.value = null;
-  }
-}
 
 const configDialogTitle = computed(() =>
   resolveConfigDialogTitle(configTarget.value, yt.selectedResolved.size, t)
