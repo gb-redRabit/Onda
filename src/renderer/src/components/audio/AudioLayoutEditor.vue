@@ -23,6 +23,7 @@ import {
 } from '@renderer/utils/audioLayout';
 import { layoutEditorStyle } from '@renderer/utils/audioLayoutElementStyle';
 import { decorationOptionsFor } from '@renderer/utils/audioLayoutDecorations';
+import { mousePctInRect, clampDragTarget } from '@renderer/utils/audioLayoutDrag';
 import AudioLayoutPositionTab from './AudioLayoutPositionTab.vue';
 import type {
   AudioLayoutElement,
@@ -86,9 +87,8 @@ function onDragStart(id: AudioLayoutElementId, e: MouseEvent) {
   const container = document.getElementById('audio-layout-preview');
   if (!container) return;
   const rect = container.getBoundingClientRect();
-  const mouseInPctX = ((e.clientX - rect.left) / rect.width) * 100;
-  const mouseInPctY = ((e.clientY - rect.top) / rect.height) * 100;
-  grabOffsetPct.value = { x: mouseInPctX - el.x, y: mouseInPctY - el.y };
+  const m = mousePctInRect(e, rect);
+  grabOffsetPct.value = { x: m.x - el.x, y: m.y - el.y };
   document.addEventListener('mousemove', onDragMove);
   document.addEventListener('mouseup', onDragEnd);
 }
@@ -98,12 +98,13 @@ function onDragMove(e: MouseEvent) {
   const container = document.getElementById('audio-layout-preview');
   if (!container) return;
   const rect = container.getBoundingClientRect();
-  const mouseInPctX = ((e.clientX - rect.left) / rect.width) * 100;
-  const mouseInPctY = ((e.clientY - rect.top) / rect.height) * 100;
   const el = elements.value.find((el) => el.id === draggingId.value);
   if (!el) return;
-  const clampedX = Math.max(0, Math.min(100 - el.width, mouseInPctX - grabOffsetPct.value.x));
-  const clampedY = Math.max(0, Math.min(100 - el.height, mouseInPctY - grabOffsetPct.value.y));
+  const { x: clampedX, y: clampedY } = clampDragTarget(
+    mousePctInRect(e, rect),
+    el,
+    grabOffsetPct.value
+  );
   const gridX = snapToGrid(clampedX, e);
   const gridY = snapToGrid(clampedY, e);
   const snapped = snapWithGuides(gridX, gridY, el, e, elements.value);
