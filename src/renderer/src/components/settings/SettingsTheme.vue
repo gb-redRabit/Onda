@@ -19,6 +19,12 @@ import {
   type ThemeGeometry
 } from '@shared/themeModel';
 import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
+import {
+  BASE_TOKENS,
+  BRAND_TOKENS,
+  STATUS_TOKENS,
+  PREVIEW_TOKENS
+} from '@renderer/utils/themeTokens';
 
 const settings = useSettingsStore();
 const { appearance: settingsAppearanceRef } = storeToRefs(settings);
@@ -28,43 +34,6 @@ const engine = getThemeEngine(settingsAppearanceRef);
 const isCustom = computed(() => settings.appearance.theme === 'custom');
 const resolved = computed(() => resolveThemeAppearance(settings.appearance));
 const glassActive = computed(() => (settings.appearance.glassAlpha ?? 100) < 100);
-
-const BASE_TOKENS: ColorTokenId[] = ['base200', 'base100', 'base300', 'baseContent'];
-const BRAND_TOKENS: ColorTokenId[] = [
-  'primary',
-  'primaryContent',
-  'secondary',
-  'secondaryContent',
-  'accent',
-  'accentContent',
-  'neutral',
-  'neutralContent'
-];
-const STATUS_TOKENS: ColorTokenId[] = [
-  'info',
-  'infoContent',
-  'success',
-  'successContent',
-  'warning',
-  'warningContent',
-  'error',
-  'errorContent'
-];
-const PREVIEW_TOKENS: ColorTokenId[] = [
-  'base200',
-  'base100',
-  'base300',
-  'baseContent',
-  'primary',
-  'primaryContent',
-  'secondary',
-  'accent',
-  'neutral',
-  'info',
-  'success',
-  'warning',
-  'error'
-];
 
 function tokenLabel(id: ColorTokenId): string {
   return t(`creator.tokens.${id}`);
