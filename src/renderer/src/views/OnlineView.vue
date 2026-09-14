@@ -7,6 +7,7 @@ import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore } from '@renderer/stores/ui';
 import { useSavedStore } from '@renderer/stores/saved';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
+import { useOnlineSearch } from '@renderer/composables/useOnlineSearch';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
 import LoaderSpinner from '@renderer/components/LoaderSpinner.vue';
 import { detectChannelPrefix, detectPlatform, parseBatchInputAll } from '@shared/platform';
@@ -67,11 +68,10 @@ const { profiles, ensureLoaded: ensureProfilesLoaded } = useDownloadProfiles();
 const { t } = useI18n();
 
 const input = ref('');
-let searchSeq = 0;
 let resolveSeq = 0;
 const resolveError = ref('');
 const savingPlaylist = ref(false);
-const searchError = ref('');
+const { searchError, search } = useOnlineSearch(input, t, openDiscover);
 const rangeStart = ref(1);
 const rangeEnd = ref(100);
 const batchOpen = ref(false);
@@ -226,37 +226,6 @@ async function submit() {
   } else {
     await search();
   }
-}
-
-async function search() {
-  if (!input.value.trim()) return;
-  openDiscover();
-  yt.setResolved(null);
-  yt.closeChannel();
-  yt.isSearching = true;
-  yt.searchQuery = input.value;
-  searchError.value = '';
-  const seq = ++searchSeq;
-  try {
-    const result = await yt.searchOnline(input.value);
-    // Stale response from a superseded search — discard.
-    if (seq !== searchSeq) return;
-    if (result.success) {
-      yt.setResults(
-        result.items,
-        result.nextPageToken ?? undefined,
-        result.prevPageToken ?? undefined
-      );
-    } else {
-      const key = errorCodeKey(result.code as never);
-      searchError.value = key ? t(key) : result.error || t('youtube.searchError');
-      yt.setResults([]);
-    }
-  } catch {
-    searchError.value = t('youtube.searchError');
-    yt.setResults([]);
-  }
-  if (seq === searchSeq) yt.isSearching = false;
 }
 
 async function resolveLink() {
