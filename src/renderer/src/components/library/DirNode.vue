@@ -13,9 +13,10 @@ import {
   EMPTY_CHILD_META,
   type DirChildMeta
 } from '@renderer/utils/dirNode';
-import LibraryTrackRow from './LibraryTrackRow.vue';
 import LibraryFolderTile from './LibraryFolderTile.vue';
-import MediaCover from '@renderer/components/MediaCover.vue';
+import DirMixedPreview from './DirMixedPreview.vue';
+import DirChildFiles from './DirChildFiles.vue';
+import DirDirectFiles from './DirDirectFiles.vue';
 import { useLibraryContextMenu } from '@renderer/composables/useLibraryContextMenu';
 import { useThumbnails } from '@renderer/composables/useThumbnails';
 
@@ -37,7 +38,7 @@ const emit = defineEmits<{
 
 const library = useLibraryStore();
 const player = usePlayerStore();
-const { showFolderMenu, showImageMenu, showTrackMenu } = useLibraryContextMenu();
+const { showFolderMenu } = useLibraryContextMenu();
 const { request: requestThumb, getThumb } = useThumbnails(180);
 
 function isExpanded(p: string) {
@@ -79,9 +80,6 @@ watch(
     imageDisplayLimit.value = 24;
   }
 );
-const displayedAudio = computed(() => directAudioHere.value.slice(0, audioDisplayLimit.value));
-const displayedImages = computed(() => directImagesHere.value.slice(0, imageDisplayLimit.value));
-
 // mieszany widok: foldery + okładki (max 3 foldery gdy są też pliki, bo 4 foldery = brak miejsca na okładki)
 const isMixed = computed(() => childDirNames.value.length > 0 && directHere.value.length > 0);
 const previewFolders = computed(() => {
@@ -96,9 +94,14 @@ const previewFiles = computed(() => {
 });
 
 watch(
-  () => displayedImages.value.map((p) => p.path).join('|'),
+  () =>
+    directImagesHere.value
+      .slice(0, imageDisplayLimit.value)
+      .map((p) => p.path)
+      .join('|'),
   () => {
-    if (displayedImages.value.length) requestThumb(displayedImages.value.map((p) => p.path));
+    const shown = directImagesHere.value.slice(0, imageDisplayLimit.value);
+    if (shown.length) requestThumb(shown.map((p) => p.path));
   },
   { immediate: true }
 );
@@ -113,6 +116,12 @@ watch(
 
 function folderTracksFor(name: string) {
   return metaFor(name).audio.slice(0, 4);
+}
+function previewToggle(sub: string) {
+  emit('toggle', childOriginal(sub));
+}
+function previewEdit(track: MediaFile) {
+  emit('edit', track);
 }
 function onFolderDrag(e: DragEvent, folderPath: string) {
   const tracks = getAllTracksIndexed(folderPath, library.tracks, library.folders).filter(
@@ -176,46 +185,17 @@ function openImageViewerForChild(childName: string, imagePath: string) {
 
 <template>
   <!-- mieszany podgląd: foldery + okładki (max 3 foldery) -->
-  <div v-if="isMixed" class="p-3 grid grid-cols-4 gap-3 bg-base-100/40 border-b border-base-300/30">
-    <button
-      v-for="sub in previewFolders"
-      :key="'prev-f-' + sub"
-      class="flex flex-col items-center gap-2 p-3 rounded-box bg-base-100 border border-base-300 hover:border-primary/30 hover:bg-base-200/50 transition-colors text-center"
-      @click="emit('toggle', childOriginal(sub))"
-    >
-      <LibraryFolderTile :tracks="folderTracksFor(sub)" />
-      <span class="text-xs font-medium truncate w-full">{{ sub }}</span>
-      <span class="text-[11px] text-base-content/50">{{ metaFor(sub).audioCount }} plików</span>
-    </button>
-    <button
-      v-for="tr in previewFiles"
-      :key="'prev-t-' + tr.path"
-      class="rounded-box overflow-hidden bg-base-100 border border-base-300 hover:border-primary/30 hover:shadow-sm transition-all group text-left"
-      @click="tr.type === 'image' ? openImageViewer(tr.path) : playDir(tr.path)"
-      @dblclick="tr.type === 'image' ? openImageViewer(tr.path) : playDir(tr.path)"
-      @contextmenu.prevent="
-        tr.type === 'image'
-          ? showImageMenu($event, tr, () => openImageViewer(tr.path))
-          : showTrackMenu($event, tr, { onEdit: () => emit('edit', tr) })
-      "
-    >
-      <div class="aspect-square bg-base-200 overflow-hidden flex items-center justify-center">
-        <img
-          v-if="tr.type === 'image' || tr.type === 'video'"
-          :src="getThumb(tr.path) || ''"
-          class="w-full h-full object-cover"
-          loading="lazy"
-        />
-        <MediaCover v-else :path="tr.path" :size="80" :autoplay="false" fallback="music" />
-      </div>
-      <div class="p-2">
-        <div class="text-xs font-medium truncate">{{ tr.metadata?.title || tr.name }}</div>
-        <div class="text-[11px] text-base-content/50 truncate">
-          {{ tr.type === 'image' ? tr.extension : tr.metadata?.artist || '' }}
-        </div>
-      </div>
-    </button>
-  </div>
+  <DirMixedPreview
+    v-if="isMixed"
+    :folders="previewFolders"
+    :files="previewFiles"
+    :meta="childMeta"
+    :get-thumb="getThumb"
+    @toggle="previewToggle"
+    @play="playDir"
+    @open-image="openImageViewer"
+    @edit="previewEdit"
+  />
 
   <div class="divide-y divide-base-300/50">
     <div v-for="sub in childDirNames" :key="sub">
@@ -283,43 +263,19 @@ function openImageViewerForChild(childName: string, imagePath: string) {
           @play-folder="emit('playFolder', $event)"
           @edit="emit('edit', $event)"
         />
-        <div v-if="metaFor(sub).directAll.length > 0">
-          <div v-if="metaFor(sub).directImages.length > 0" class="grid grid-cols-4 gap-2 p-3">
-            <button
-              v-for="img in metaFor(sub).directImages.slice(0, 24)"
-              :key="img.path"
-              class="aspect-square rounded-field overflow-hidden bg-base-200 border border-base-300 hover:border-primary/30 transition-colors"
-              @click="openImageViewerForChild(sub, img.path)"
-              @contextmenu.prevent="
-                showImageMenu($event, img, () => openImageViewerForChild(sub, img.path))
-              "
-            >
-              <img
-                :src="getThumb(img.path) || ''"
-                class="w-full h-full object-cover"
-                loading="lazy"
-              />
-            </button>
-          </div>
-          <div v-if="metaFor(sub).directAudio.length > 0" class="divide-y divide-base-300/30">
-            <LibraryTrackRow
-              v-for="t in metaFor(sub).directAudio.slice(0, 50)"
-              :key="t.path"
-              :track="t"
-              :show-playlist="true"
-              @edit="emit('edit', $event)"
-            />
-            <button
-              v-if="metaFor(sub).directAudio.length > 50"
-              class="w-full py-2 text-xs text-primary hover:bg-primary/10 transition-colors"
-              @click="() => {}"
-            >
-              Pokazano 50 z {{ metaFor(sub).directAudio.length }} — użyj wyszukiwarki aby zawęzić
-            </button>
-          </div>
-        </div>
+        <DirChildFiles
+          :meta="metaFor(sub)"
+          :child-name="sub"
+          :get-thumb="getThumb"
+          @open-image="openImageViewerForChild"
+          @edit="previewEdit"
+        />
         <div
-          v-else-if="childDirNames.length === 0 && directHere.length === 0"
+          v-if="
+            metaFor(sub).directAll.length === 0 &&
+            childDirNames.length === 0 &&
+            directHere.length === 0
+          "
           class="px-4 py-2 text-xs text-base-content/40 italic"
           :style="{ paddingLeft: 16 + (depth + 1) * 16 + 'px' }"
         >
@@ -328,45 +284,16 @@ function openImageViewerForChild(childName: string, imagePath: string) {
       </div>
     </div>
 
-    <div v-if="directAudioHere.length > 0" class="divide-y divide-base-300/30">
-      <LibraryTrackRow
-        v-for="t in displayedAudio"
-        :key="t.path"
-        :track="t"
-        :show-playlist="true"
-        @edit="emit('edit', $event)"
-      />
-      <button
-        v-if="directAudioHere.length > displayedAudio.length"
-        class="w-full py-2 text-xs text-primary hover:bg-primary/10 transition-colors border-t border-base-300/30"
-        @click="audioDisplayLimit += 50"
-      >
-        Pokaż więcej ({{ directAudioHere.length - displayedAudio.length }} z
-        {{ directAudioHere.length }})
-      </button>
-    </div>
-    <div v-if="directImagesHere.length > 0" class="grid grid-cols-4 sm:grid-cols-6 gap-2 p-3">
-      <button
-        v-for="img in displayedImages"
-        :key="img.path"
-        class="aspect-square rounded-field overflow-hidden bg-base-200 border border-base-300 hover:border-primary/30 transition-colors group"
-        @click="openImageViewer(img.path)"
-        @contextmenu.prevent="showImageMenu($event, img, () => openImageViewer(img.path))"
-      >
-        <img
-          :src="getThumb(img.path) || ''"
-          :alt="img.name"
-          class="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
-          loading="lazy"
-        />
-      </button>
-      <button
-        v-if="directImagesHere.length > displayedImages.length"
-        class="col-span-full py-2 text-xs text-primary hover:bg-primary/10 rounded-field transition-colors"
-        @click="imageDisplayLimit += 24"
-      >
-        Pokaż więcej obrazów ({{ directImagesHere.length - displayedImages.length }})
-      </button>
-    </div>
+    <DirDirectFiles
+      :audio="directAudioHere"
+      :images="directImagesHere"
+      :audio-limit="audioDisplayLimit"
+      :image-limit="imageDisplayLimit"
+      :get-thumb="getThumb"
+      @open-image="openImageViewer"
+      @edit="previewEdit"
+      @more-audio="audioDisplayLimit += 50"
+      @more-images="imageDisplayLimit += 24"
+    />
   </div>
 </template>
