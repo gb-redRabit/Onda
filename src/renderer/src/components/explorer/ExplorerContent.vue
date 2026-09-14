@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { inject, ref } from 'vue';
-import { ChevronUp, ChevronDown, HardDrive, FolderOpen } from '@lucide/vue';
+import { HardDrive, FolderOpen } from '@lucide/vue';
 import { isLibraryFolder } from '@renderer/utils/libraryFolders';
 import { beginFileDrag } from '@renderer/utils/fileDrag';
 import { useExplorerContent } from '@renderer/composables/useExplorerContent';
 import ExplorerGridItem from '@renderer/components/explorer/ExplorerGridItem.vue';
 import ExplorerTableRow from '@renderer/components/explorer/ExplorerTableRow.vue';
+import ExplorerDetailsHeader from '@renderer/components/explorer/ExplorerDetailsHeader.vue';
 import type { FileItem } from '@renderer/types/explorer';
 
 const props = defineProps<{
@@ -197,62 +198,11 @@ defineExpose({ reveal });
 
     <!-- details: virtualized table -->
     <div v-else-if="explorer.viewMode === 'details' && files.length > 0">
-      <div
-        class="grid grid-cols-[1fr_120px_100px_100px] gap-2 px-3 py-2 text-[11px] text-base-content/50 font-medium uppercase tracking-wider border-b border-base-300 mb-1 sticky top-0 bg-base-200/[var(--glass-alpha)] z-10"
-      >
-        <button
-          class="text-left flex items-center gap-1 hover:text-base-content"
-          @click="explorer.toggleSort('name')"
-        >
-          {{ $t('explorer.name')
-          }}<ChevronUp
-            v-if="explorer.sortBy === 'name' && explorer.sortOrder === 'asc'"
-            :size="10"
-          /><ChevronDown
-            v-if="explorer.sortBy === 'name' && explorer.sortOrder === 'desc'"
-            :size="10"
-          />
-        </button>
-        <button
-          class="text-left flex items-center gap-1 hover:text-base-content"
-          @click="explorer.toggleSort('size')"
-        >
-          {{ $t('explorer.size')
-          }}<ChevronUp
-            v-if="explorer.sortBy === 'size' && explorer.sortOrder === 'asc'"
-            :size="10"
-          /><ChevronDown
-            v-if="explorer.sortBy === 'size' && explorer.sortOrder === 'desc'"
-            :size="10"
-          />
-        </button>
-        <button
-          class="text-left flex items-center gap-1 hover:text-base-content"
-          @click="explorer.toggleSort('type')"
-        >
-          {{ $t('explorer.type')
-          }}<ChevronUp
-            v-if="explorer.sortBy === 'type' && explorer.sortOrder === 'asc'"
-            :size="10"
-          /><ChevronDown
-            v-if="explorer.sortBy === 'type' && explorer.sortOrder === 'desc'"
-            :size="10"
-          />
-        </button>
-        <button
-          class="text-right flex items-center gap-1 justify-end hover:text-base-content"
-          @click="explorer.toggleSort('modified')"
-        >
-          {{ $t('explorer.modified')
-          }}<ChevronUp
-            v-if="explorer.sortBy === 'modified' && explorer.sortOrder === 'asc'"
-            :size="10"
-          /><ChevronDown
-            v-if="explorer.sortBy === 'modified' && explorer.sortOrder === 'desc'"
-            :size="10"
-          />
-        </button>
-      </div>
+      <ExplorerDetailsHeader
+        :sort-by="explorer.sortBy"
+        :sort-order="explorer.sortOrder"
+        @sort="explorer.toggleSort"
+      />
       <div :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
         <div
           v-for="virtualRow in virtualizer.getVirtualItems()"

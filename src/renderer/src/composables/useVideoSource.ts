@@ -7,6 +7,11 @@ import { useVideoCodec } from '@renderer/composables/useVideoCodec';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { logger } from '@shared/logger';
 import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
+import {
+  attachVideoTranscodeFallback,
+  connectVideoEvents,
+  type VideoTranscodeState
+} from '@renderer/utils/videoElementHandlers';
 
 export interface VideoPlayerContext {
   player: ReturnType<typeof usePlayerStore>;
@@ -25,7 +30,7 @@ export function useVideoSource(
   const { checkVideoAudioCodec } = useVideoCodec({ player, notify });
   let lastLoadedPath = '';
   let currentLoadId = 0;
-  let videoTranscodeAttempted = '';
+  const transcodeState: VideoTranscodeState = { attempted: '' };
 
   const videoFilterStyle = computed(() => {
     const f = settings.playback.videoFilter;
@@ -37,93 +42,10 @@ export function useVideoSource(
     return toMediaServerUrl(track.path);
   }
 
-  /**
-   * Fallback dla plików, których Chromium nie potrafi zdekodować (HEVC w MKV/MP4,
-   * WMV, FLV, MPEG-4 Part 2 itd.) — bez tego wideo po prostu nie startuje.
-   * Przy błędzie dekodowania/demuxowania transkodujemy cały plik przez ffmpeg
-   * do H.264/AAC i podstawiamy w miejsce oryginału.
-   */
-  function attachTranscodeFallback(track: { path: string }, el: HTMLVideoElement) {
-    el.addEventListener(
-      'error',
-      () => {
-        if (
-          !el.error ||
-          (el.error.code !== MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED &&
-            el.error.code !== MediaError.MEDIA_ERR_DECODE)
-        ) {
-          return;
-        }
-        if (videoTranscodeAttempted === track.path) return;
-        videoTranscodeAttempted = track.path;
-        if (player.currentTrack?.path !== track.path) return;
-        el.pause();
-        notify('Transcoding video, please wait…', 8000);
-        window.api
-          ?.transcodeVideo(track.path)
-          .then((outPath) => {
-            if (!outPath) {
-              notify('Video format not supported', 4000);
-              return;
-            }
-            if (player.currentTrack?.path !== track.path) return;
-            el.src = toMediaServerUrl(outPath);
-            el.load();
-            const resume = () => {
-              el.play().catch((e) => logger.warn('video', 'transcoded play rejected', e));
-            };
-            el.addEventListener('canplay', resume, { once: true });
-          })
-          .catch(() => notify('Video format not supported', 4000));
-      },
-      { once: true }
-    );
-  }
-
-  function connectVideoEvents(el: HTMLVideoElement) {
+  function connectEventsOnce(el: HTMLVideoElement) {
     if (videoEventsConnected.value) return;
     videoEventsConnected.value = true;
-    let lastSaved = 0;
-    let lastSecondarySyncTime = -1;
-    el.addEventListener('timeupdate', () => {
-      player.currentTime = el.currentTime;
-      if (audioEngine.hasSecondaryAudio) {
-        if (lastSecondarySyncTime < 0 || Math.abs(el.currentTime - lastSecondarySyncTime) > 0.5) {
-          audioEngine.seekSecondaryAudio(el.currentTime);
-          lastSecondarySyncTime = el.currentTime;
-        }
-      }
-      if (player.currentTrack && el.currentTime - lastSaved > 3) {
-        lastSaved = el.currentTime;
-        window.api?.setPlaybackPosition(player.currentTrack.path, el.currentTime);
-      }
-    });
-    el.addEventListener('durationchange', () => {
-      player.duration = el.duration || 0;
-      if (player.currentTrack) player.currentTrack.duration = el.duration || 0;
-    });
-    el.addEventListener('loadedmetadata', () => {
-      player.duration = el.duration || 0;
-      if (player.currentTrack) player.currentTrack.duration = el.duration || 0;
-    });
-    el.addEventListener('pause', () => {
-      if (player.currentTrack && player.currentTrack.type === 'video') {
-        window.api?.setPlaybackPosition(player.currentTrack.path, el.currentTime);
-      }
-    });
-    el.addEventListener('ended', () => {
-      if (player.currentTrack && player.currentTrack.type === 'video') {
-        window.api?.clearPlaybackPosition(player.currentTrack.path);
-      }
-      if (player.pipActive) return;
-      if (player.repeat === 'one') {
-        el.currentTime = 0;
-        el.play().catch((e) => logger.warn('video', 'repeat play rejected', e));
-        return;
-      }
-      player.isPlaying = false;
-      player.nextTrack();
-    });
+    connectVideoEvents(el, player);
   }
 
   async function setupVideo(track: MediaFile | null) {
@@ -139,7 +61,7 @@ export function useVideoSource(
       if (player.pipTime > 0) player.pipTime = 0;
       el.setAttribute('data-src', src);
       audioEngine.connectVideoElement(el);
-      connectVideoEvents(el);
+      connectEventsOnce(el);
       el.src = src;
 
       el.addEventListener(
@@ -171,7 +93,7 @@ export function useVideoSource(
 
       el.load();
       checkVideoAudioCodec(track, el);
-      attachTranscodeFallback(track, el);
+      attachVideoTranscodeFallback(el, track, player, notify, transcodeState);
     } else {
       audioEngine.setVideoVolume(player.isMuted ? 0 : player.volume);
       el.playbackRate = settings.playback.playbackSpeed;
@@ -229,7 +151,7 @@ export function useVideoSource(
   function onTrackChanged(track: MediaFile | null, oldTrack: MediaFile | null): void {
     if (oldTrack && track?.path !== oldTrack?.path) {
       currentLoadId++;
-      videoTranscodeAttempted = '';
+      transcodeState.attempted = '';
     }
     if (track?.type === 'video' && track.path !== lastLoadedPath) {
       lastLoadedPath = track.path;

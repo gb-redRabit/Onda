@@ -1,9 +1,9 @@
 import { ref, computed, watch, effectScope } from 'vue';
 import { audioEngine } from '@renderer/modules/audioEngine';
-import { audioEvents } from '@renderer/utils/audioEvents';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { logger } from '@shared/logger';
+import { wireAudioEvents } from './audioPlayerEvents';
 
 export const currentTime = ref(0);
 export const duration = ref(0);
@@ -28,73 +28,15 @@ function ensureModule() {
   if (moduleInitialized) return;
   moduleInitialized = true;
 
-  audioEvents.on('timeUpdate', (time: number) => {
-    currentTime.value = time;
-  });
-
-  audioEvents.on('durationChange', (dur: number) => {
-    // Live radio streams report Infinity — treat as "no duration" instead of
-    // poisoning progress/time rendering.
-    duration.value = Number.isFinite(dur) && dur > 0 ? dur : 0;
-  });
-
-  audioEvents.on('playStateChange', (playing: boolean) => {
-    isPlaying.value = playing;
-    if (player.currentTrack?.type === 'audio') {
-      player.isPlaying = playing;
-    }
-  });
-
-  audioEvents.on('trackLoaded', () => {
-    mediaEl.value = audioEngine.getMediaElement();
-    isReady.value = true;
-    error.value = null;
-    buffered.value = 0;
-    isLoading.value = true;
-  });
-
-  audioEvents.on('playable', () => {
-    isLoading.value = false;
-  });
-
-  audioEvents.on('streamError', () => {
-    isLoading.value = false;
-    error.value = 'stream-failed';
-  });
-
-  // Local file load failed (missing/unreadable file, media server error).
-  // Auto-skip while playing; a 2s throttle caps skip storms (e.g. a folder of
-  // stale entries or repeat-one on a broken file) — then pause instead.
-  let lastTrackErrorAt = 0;
-  audioEvents.on('trackError', () => {
-    isLoading.value = false;
-    error.value = 'track-failed';
-    const p = usePlayerStore();
-    if (!p.isPlaying) return;
-    const now = performance.now();
-    if (now - lastTrackErrorAt < 2000) {
-      p.pause();
-      return;
-    }
-    lastTrackErrorAt = now;
-    const next = p.nextTrack();
-    if (!next || next.path === p.currentTrack?.path) {
-      p.pause();
-    }
-  });
-
-  audioEvents.on('bufferChange', (frac) => {
-    buffered.value = frac;
-  });
-
-  audioEvents.on('trackEnd', () => {
-    const p = usePlayerStore();
-    if (p.repeat === 'one' && p.currentTrack?.type === 'audio') {
-      audioEngine.seek(0);
-      audioEngine.play();
-    } else {
-      p.nextTrack();
-    }
+  wireAudioEvents({
+    currentTime,
+    duration,
+    isPlaying,
+    mediaEl,
+    isReady,
+    error,
+    isLoading,
+    buffered
   });
 
   const player = usePlayerStore();

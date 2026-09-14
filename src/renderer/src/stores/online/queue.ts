@@ -32,7 +32,6 @@ export function createOnlineQueue(deps: OnlineQueueDeps) {
   const { t, channel, resolved, downloads, getSubscription, addSubscription, submitJobs } = deps;
   const queuingId = ref<string | null>(null);
   const queueingChannelId = ref<string | null>(null);
-
   // Platform-dispatched link resolution (detects the platform from the link
   // itself, not from the active UI tab).
   async function resolveOnline(url: string): Promise<OnlineResolveResponse> {

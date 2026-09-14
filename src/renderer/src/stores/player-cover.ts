@@ -1,13 +1,9 @@
 import { shallowRef, triggerRef } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
-import { VIDEO_EXTS } from '@shared/constants';
-import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
+import { captureVideoFrame, type CoverResult } from '@renderer/utils/videoFrameCapture';
 import { useLibraryStore } from './library';
 
-export interface CoverResult {
-  type: 'video' | 'image' | null;
-  data: string | null;
-}
+export type { CoverResult };
 
 // Stream tracks (YouTube/SoundCloud/radio) use remote http(s) URLs as their
 // path — main rejects them with "unsafe path" on media:getCover, and they only
@@ -15,58 +11,6 @@ export interface CoverResult {
 // or IPC them; a cache miss degrades to the fallback icon.
 function isRemoteUrl(filePath: string): boolean {
   return /^https?:\/\//i.test(filePath) || filePath.startsWith('//');
-}
-
-function captureVideoFrame(filePath: string): Promise<CoverResult> {
-  const ext = filePath.slice(filePath.lastIndexOf('.')).toLowerCase();
-  if (!VIDEO_EXTS.includes(ext)) return Promise.resolve({ type: null, data: null });
-
-  return new Promise((resolve) => {
-    const video = document.createElement('video');
-    video.muted = true;
-    video.playsInline = true;
-    video.src = toMediaServerUrl(filePath);
-
-    let resolved = false;
-    function done(result: CoverResult) {
-      if (resolved) return;
-      resolved = true;
-      video.remove();
-      resolve(result);
-    }
-
-    const timer = setTimeout(() => done({ type: null, data: null }), 15000);
-
-    video.onloadedmetadata = () => {
-      const t = Math.min(1, video.duration || 1);
-      video.currentTime = t > 0 ? t : 0.5;
-    };
-
-    video.onseeked = () => {
-      clearTimeout(timer);
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return done({ type: null, data: null });
-        ctx.drawImage(video, 0, 0);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-        done({ type: 'image', data: dataUrl });
-      } catch {
-        done({ type: null, data: null });
-      }
-    };
-
-    video.onerror = () => {
-      clearTimeout(timer);
-      done({ type: null, data: null });
-    };
-    video.onabort = () => {
-      clearTimeout(timer);
-      done({ type: null, data: null });
-    };
-  });
 }
 
 export function usePlayerCover() {
