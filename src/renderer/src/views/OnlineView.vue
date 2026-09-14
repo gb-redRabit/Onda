@@ -10,9 +10,9 @@ import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { useOnlineSearch } from '@renderer/composables/useOnlineSearch';
 import { useOnlineSavedPlaylist } from '@renderer/composables/useOnlineSavedPlaylist';
 import { useOnlineSubscriptions } from '@renderer/composables/useOnlineSubscriptions';
+import { useOnlineBatch } from '@renderer/composables/useOnlineBatch';
 import LoaderSpinner from '@renderer/components/LoaderSpinner.vue';
-import { detectPlatform, parseBatchInputAll } from '@shared/platform';
-import { countSkippedBatchLines } from '@renderer/utils/onlineView';
+import { detectPlatform } from '@shared/platform';
 import {
   configDialogTitle as resolveConfigDialogTitle,
   configDialogChannelTitle as resolveConfigDialogChannelTitle,
@@ -20,7 +20,6 @@ import {
   configDialogPlatform as resolveConfigDialogPlatform,
   type OnlineConfigTarget
 } from '@renderer/utils/onlineConfigDialog';
-import { pickTextFile, batchResultMessage } from '@renderer/utils/onlineBatch';
 import OnlineSearchBar from '@renderer/components/online/OnlineSearchBar.vue';
 import OnlineViewTabs from '@renderer/components/online/OnlineViewTabs.vue';
 import OnlineButton from '@renderer/components/online/OnlineButton.vue';
@@ -81,11 +80,18 @@ const { searchError, resolveError, submit } = useOnlineSearch(input, t, openDisc
 const { savingPlaylist, saveResolvedPlaylist, resolvedSaved } = useOnlineSavedPlaylist();
 const rangeStart = ref(1);
 const rangeEnd = ref(100);
-const batchOpen = ref(false);
-const batchText = ref('');
-const batchBusy = ref(false);
-const batchResult = ref('');
-const batchProfileId = ref('');
+const {
+  batchOpen,
+  batchText,
+  batchBusy,
+  batchResult,
+  batchProfileId,
+  batchEntries,
+  batchSkippedCount,
+  batchHasSc,
+  submitBatch,
+  importBatchFile
+} = useOnlineBatch();
 const expandedSearchId = ref<string | null>(null);
 const expandedResolvedId = ref<string | null>(null);
 const configTarget = ref<OnlineConfigTarget>(null);
@@ -134,41 +140,6 @@ const configDialogPlatform = computed(() =>
 );
 
 const selectedCount = computed(() => yt.selectedResolved.size);
-
-const batchEntries = computed(() => parseBatchInputAll(batchText.value));
-
-// Lines that were dropped by the parser (channels, prefixes, junk).
-const batchSkippedCount = computed(() =>
-  countSkippedBatchLines(batchText.value, batchEntries.value.length)
-);
-
-// SoundCloud links ignore download profiles — hide the selector for them.
-const batchHasSc = computed(() => batchEntries.value.some((e) => e.platform === 'soundcloud'));
-
-async function submitBatch() {
-  const entries = batchEntries.value;
-  if (!entries.length) return;
-  batchBusy.value = true;
-  batchResult.value = '';
-  try {
-    const profile = profiles.value.find((p) => p.id === batchProfileId.value);
-    const queued = await yt.queueBatch(
-      entries.map((e) => e.url),
-      profile?.config
-    );
-    batchResult.value = batchResultMessage(t, queued, batchSkippedCount.value);
-    if (queued > 0) batchText.value = '';
-  } catch {
-    batchResult.value = t('youtube.batchError');
-  } finally {
-    batchBusy.value = false;
-  }
-}
-
-async function importBatchFile() {
-  const content = await pickTextFile(t);
-  if (content) batchText.value = content;
-}
 
 function confirmUnfollow(channelId: string) {
   unfollowTarget.value = channelId;
