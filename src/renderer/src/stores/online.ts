@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@renderer/stores/ui';
 import { usePlayerStore } from '@renderer/stores/player';
@@ -46,15 +46,29 @@ import { buildChannelJobs } from '@renderer/utils/onlineChannelJobs';
 import { createOnlineChannel } from './online/channel';
 import { createOnlineSubscriptions } from './online/subscriptions';
 import { createOnlineDownloads } from './online/downloads';
+import { createOnlineSearch } from './online/search';
 import { resolveOnlineUrl, type OnlineResolveResponse } from '@renderer/utils/onlineResolve';
 
 export const useOnlineStore = defineStore('online', () => {
   const { t } = useI18n();
-  const searchResults = ref<YouTubeVideo[]>([]);
-  const searchQuery = ref('');
-  const isSearching = ref(false);
-  const nextToken = ref<string | null>(null);
-  const prevToken = ref<string | null>(null);
+  const {
+    searchResults,
+    searchQuery,
+    isSearching,
+    nextToken,
+    prevToken,
+    searchPage,
+    hasMoreSc,
+    searchLoadingMore,
+    pagedResults,
+    hasNextPage,
+    hasPrevPage,
+    searchOnline,
+    loadMoreSearch,
+    setResults,
+    nextSearchPage,
+    prevSearchPage
+  } = createOnlineSearch();
   const currentVideo = ref<YouTubeVideo | null>(null);
   const {
     subscriptions,
@@ -100,118 +114,15 @@ export const useOnlineStore = defineStore('online', () => {
     closeChannel
   } = createOnlineChannel();
 
-  const SEARCH_PAGE_SIZE = 20;
-  const searchPage = ref(0);
-
   // Opens the channel/profile view for an @/$ prefixed query.
   async function openChannelPrefix(prefix: { platform: 'youtube' | 'soundcloud'; name: string }) {
     await openChannel(channelUrlForPrefix(prefix));
-  }
-
-  const searchScOffset = ref(0);
-  const hasMoreSc = ref(false);
-  const searchLoadingMore = ref(false);
-
-  // Unified search across platforms: a plain phrase runs on BOTH YouTube and
-  // SoundCloud in parallel (YT results first, SC appended). Links and @/$
-  // channel prefixes are handled elsewhere (resolveOnline / openChannel).
-  async function searchOnline(query: string): Promise<{
-    success?: boolean;
-    error?: string;
-    code?: string;
-    items: YouTubeVideo[];
-    nextPageToken?: string | null;
-    prevPageToken?: string | null;
-  }> {
-    const [ytRes, scRes] = await Promise.allSettled([
-      window.api.invoke('yt:search', query) as Promise<{
-        success?: boolean;
-        error?: string;
-        code?: string;
-        items?: YouTubeVideo[];
-      }>,
-      window.api.invoke('sc:search', query) as Promise<{
-        success?: boolean;
-        error?: string;
-        code?: string;
-        items?: YouTubeVideo[];
-      }>
-    ]);
-    const ytItems =
-      ytRes.status === 'fulfilled' && ytRes.value?.success ? ytRes.value.items || [] : [];
-    const scItems =
-      scRes.status === 'fulfilled' && scRes.value?.success ? scRes.value.items || [] : [];
-    const anySuccess =
-      (ytRes.status === 'fulfilled' && !!ytRes.value?.success) ||
-      (scRes.status === 'fulfilled' && !!scRes.value?.success);
-    if (anySuccess) {
-      // Track SC pagination: a full page means deeper offsets exist.
-      searchScOffset.value = scItems.length;
-      hasMoreSc.value = scItems.length >= 100;
-      return { success: true, items: [...ytItems, ...scItems] };
-    }
-    const ytError = ytRes.status === 'fulfilled' ? ytRes.value : undefined;
-    return {
-      success: false,
-      error: ytError?.error || 'Search failed',
-      code: ytError?.code,
-      items: []
-    };
-  }
-
-  // Appends the next SoundCloud result page (YT caps at its first batch).
-  async function loadMoreSearch(): Promise<void> {
-    const q = searchQuery.value.trim();
-    if (!q || searchLoadingMore.value || !hasMoreSc.value) return;
-    searchLoadingMore.value = true;
-    try {
-      const res = (await window.api.invoke('sc:search', q, searchScOffset.value)) as {
-        success?: boolean;
-        items?: YouTubeVideo[];
-      } | null;
-      if (res?.success && res.items?.length) {
-        const seen = new Set(searchResults.value.map((i) => i.id));
-        searchResults.value = [...searchResults.value, ...res.items.filter((i) => !seen.has(i.id))];
-        searchScOffset.value += res.items.length;
-        hasMoreSc.value = res.items.length >= 100;
-      } else {
-        hasMoreSc.value = false;
-      }
-    } catch {
-      hasMoreSc.value = false;
-    } finally {
-      searchLoadingMore.value = false;
-    }
   }
 
   // Platform-dispatched link resolution (detects the platform from the link
   // itself, not from the active UI tab).
   async function resolveOnline(url: string): Promise<OnlineResolveResponse> {
     return resolveOnlineUrl(url);
-  }
-
-  const pagedResults = computed(() => {
-    const start = searchPage.value * SEARCH_PAGE_SIZE;
-    return searchResults.value.slice(start, start + SEARCH_PAGE_SIZE);
-  });
-  const hasNextPage = computed(
-    () => (searchPage.value + 1) * SEARCH_PAGE_SIZE < searchResults.value.length
-  );
-  const hasPrevPage = computed(() => searchPage.value > 0);
-
-  function setResults(results: YouTubeVideo[], nextPage?: string, prevPage?: string) {
-    searchResults.value = results;
-    searchPage.value = 0;
-    nextToken.value = nextPage || null;
-    prevToken.value = prevPage || null;
-  }
-
-  function nextSearchPage() {
-    if (hasNextPage.value) searchPage.value++;
-  }
-
-  function prevSearchPage() {
-    if (hasPrevPage.value) searchPage.value--;
   }
 
   function setResolved(result: YouTubeResolveResult | null) {
