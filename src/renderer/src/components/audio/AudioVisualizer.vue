@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { usePlayerStore } from '@renderer/stores/player';
 import type { VisualizationMode } from '@renderer/types/settings';
-import { VIZ_CYCLES, qualityPreset } from '@renderer/utils/audioVisualizer';
+import { VIZ_CYCLES } from '@renderer/utils/audioVisualizer';
+import { useVizConfig } from '@renderer/composables/useVizConfig';
 
 const audio = useAudioPlayer();
 const settings = useSettingsStore();
@@ -48,39 +49,7 @@ let prevStyle: VisualizationMode | null = null;
 
 const CYCLES: VisualizationMode[] = VIZ_CYCLES;
 
-function getQuality() {
-  return qualityPreset(settings.appearance.audioLayout?.vizQuality);
-}
-
-// Cached viz settings (avoid touching the Pinia proxy every frame)
-const vizCfg = reactive({
-  fpsCap: (settings.playback.visualization.fpsCap as number) || 60,
-  primaryColor: settings.playback.visualization.primaryColor || '#8b7cf0',
-  secondaryColor: settings.playback.visualization.secondaryColor || '#4f46e5',
-  sensitivity: settings.playback.visualization.sensitivity || 0.5,
-  smoothing: settings.playback.visualization.smoothing ?? 0.8
-});
-
-const quality = ref(getQuality());
-
-watch(
-  () => settings.playback.visualization,
-  (v) => {
-    vizCfg.fpsCap = v.fpsCap || 60;
-    vizCfg.primaryColor = v.primaryColor || '#8b7cf0';
-    vizCfg.secondaryColor = v.secondaryColor || '#4f46e5';
-    vizCfg.sensitivity = v.sensitivity || 0.5;
-    vizCfg.smoothing = v.smoothing ?? 0.8;
-  },
-  { deep: true }
-);
-
-watch(
-  () => settings.appearance.audioLayout?.vizQuality,
-  () => {
-    quality.value = getQuality();
-  }
-);
+const { vizCfg, quality } = useVizConfig();
 
 function binFreq(data: Uint8Array, count: number): number[] {
   const len = analyserNode!.frequencyBinCount;
