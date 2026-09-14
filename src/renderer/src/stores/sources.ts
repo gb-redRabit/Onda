@@ -9,8 +9,8 @@ import type {
 } from '@renderer/types/sources';
 import type { IpcDownloadJobInput } from '@shared/types/ipc';
 import { logger } from '@shared/logger';
-import { applyPassKeys } from '@renderer/utils/sourceUrl';
 import { deriveFileName, sanitizeName, toPlain } from '@renderer/utils/sources-helpers';
+import { itemPassContext, tableRowPassContext } from '@renderer/utils/sourcesNav';
 
 export const useSourcesStore = defineStore('sources', () => {
   const settings = useSettingsStore();
@@ -111,7 +111,7 @@ export const useSourcesStore = defineStore('sources', () => {
     if (!endpoint?.childId) return;
     navStack.value.push({ endpointId: endpoint.id, context: context.value });
     activeEndpointId.value = endpoint.childId;
-    context.value = applyPassKeys((item.extra ?? {}) as Record<string, unknown>, endpoint.passKeys);
+    context.value = itemPassContext(item, endpoint);
     items.value = [];
     hasMore.value = false;
     nextFrom.value = null;
@@ -127,12 +127,9 @@ export const useSourcesStore = defineStore('sources', () => {
     const endpoint = activeEndpoint.value;
     const table = endpoint?.table;
     if (!table?.childId || !endpoint) return;
-    const pageCtx = (context.value ?? {}) as Record<string, unknown>;
-    const rowCtx = (row.extra ?? {}) as Record<string, unknown>;
-    const merged = { ...pageCtx, ...rowCtx };
     navStack.value.push({ endpointId: endpoint.id, context: context.value });
     activeEndpointId.value = table.childId;
-    context.value = applyPassKeys(applyPassKeys(merged, endpoint.passKeys), table.passKeys);
+    context.value = tableRowPassContext(context.value, row, endpoint, table);
     items.value = [];
     hasMore.value = false;
     nextFrom.value = null;
