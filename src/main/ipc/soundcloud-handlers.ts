@@ -17,12 +17,13 @@ import {
   upgradeArtworkUrl,
   ScApiError
 } from './soundcloud-client';
-import { durMs, scThumbFromEntry, entryUrl, scVideoFromEntry } from './soundcloud-entries';
+import { scThumbFromEntry, entryUrl, scVideoFromEntry } from './soundcloud-entries';
 export { scVideoFromEntry } from './soundcloud-entries';
 import { getScStreamUrl } from './soundcloud-stream';
 import { errorCodeOf } from './soundcloud-error';
 import { fallbackResolvePage, fallbackSearch } from './soundcloud-fallback';
 import { normalizeScOffset } from './soundcloud-offset';
+import { mapScTrackItem } from './soundcloud-resolve-map';
 
 // ---------------------------------------------------------------------------
 // IPC registration
@@ -96,20 +97,7 @@ export function registerSoundcloudHandlers(): void {
               channelId: user.permalink || '',
               channelTitle: user.username || ''
             },
-            items: [
-              {
-                id: t.id != null ? String(t.id) : target,
-                title: t.title || '',
-                duration: durMs(t.duration),
-                // No avatar fallback — a missing artwork shows the card
-                // placeholder instead of repeating the profile image.
-                thumbnail: upgradeArtworkUrl(t.artwork_url),
-                channelTitle: user.username || '',
-                channelId: user.permalink || '',
-                isPlayable: true,
-                url: t.permalink_url || target
-              }
-            ]
+            items: [mapScTrackItem(t, target)]
           }
         };
       }
