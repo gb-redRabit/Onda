@@ -44,6 +44,7 @@ import {
 } from '@renderer/utils/onlineResolved';
 import { createStreamPrefetcher } from '@renderer/utils/streamPrefetch';
 import { RESOLVED_AUTO_CAP, resolveAllPlaylistItems } from '@renderer/utils/onlineResolveAll';
+import { buildChannelJobs } from '@renderer/utils/onlineChannelJobs';
 
 export const useOnlineStore = defineStore('online', () => {
   const { t } = useI18n();
@@ -735,16 +736,16 @@ export const useOnlineStore = defineStore('online', () => {
             tab: 'videos'
           })) as { success?: boolean; items?: YouTubeVideo[] });
       if (res?.success && res.items) {
-        for (const item of res.items) {
-          if (!item.id || existingIds.has(item.id) || downloadedIds.has(item.id)) continue;
-          const job = buildJob(item, prefs);
-          // Flat listings carry no channel_id per entry — always attribute to
-          // the channel being downloaded so finished jobs are recorded correctly.
-          if (!job.channelId) job.channelId = channelId;
-          if (!job.channelTitle && channel.value?.title) job.channelTitle = channel.value.title;
-          jobs.push(job);
-          existingIds.add(item.id);
-        }
+        jobs.push(
+          ...buildChannelJobs(
+            res.items,
+            channelId,
+            channel.value?.title,
+            prefs,
+            existingIds,
+            downloadedIds
+          )
+        );
       } else {
         useUIStore().notify('warning', t('youtube.downloadAll'), t('youtube.channelQueueFailed'));
       }
