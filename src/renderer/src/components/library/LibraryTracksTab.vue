@@ -9,6 +9,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import LibraryTrackRow from '@renderer/components/library/LibraryTrackRow.vue';
 import LibraryTrackCard from '@renderer/components/library/LibraryTrackCard.vue';
 import LibraryTracksBulkBar from '@renderer/components/library/LibraryTracksBulkBar.vue';
+import LibraryTracksEmpty from '@renderer/components/library/LibraryTracksEmpty.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -144,22 +145,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div
-    v-if="tracks.length === 0"
-    class="flex flex-col items-center justify-center h-full gap-4 text-base-content/50 p-8"
-  >
-    <div
-      class="w-20 h-20 rounded-full bg-base-100 border border-base-300 flex items-center justify-center"
-    >
-      <Music2 :size="28" class="opacity-40" />
-    </div>
-    <div class="text-center">
-      <p class="text-sm font-medium">
-        {{ chip === 'liked' ? $t('library.likedEmpty') : $t('library.noAudio') }}
-      </p>
-      <p class="text-xs mt-1 opacity-70">{{ $t('library.addFolderHint') }}</p>
-    </div>
-  </div>
+  <LibraryTracksEmpty v-if="tracks.length === 0" :liked="chip === 'liked'" />
   <template v-else>
     <div
       class="flex items-center justify-between px-4 py-2.5 bg-base-100/50 backdrop-blur border-b border-base-300 shrink-0 sticky top-0 z-[1]"
