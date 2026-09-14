@@ -5,7 +5,6 @@ import { useUIStore } from '@renderer/stores/ui';
 import { usePlayerStore } from '@renderer/stores/player';
 import type {
   YouTubeVideo,
-  YouTubeResolveResult,
   YouTubeResolvedItem,
   Subscription,
   SubscriptionDownloadPrefs,
@@ -20,7 +19,6 @@ import type {
   IpcSubscription
 } from '@shared/types/ipc';
 import { logger } from '@shared/logger';
-import { detectPlatform } from '@shared/platform';
 import {
   streamTargetFor,
   streamChannelFor,
@@ -30,20 +28,16 @@ import {
 import { buildJob, buildTaskInput, type JobExtra } from '@renderer/utils/onlineJob';
 import { toDownloadTask } from '@renderer/utils/onlineDownloadTask';
 import { channelUrlForPrefix } from '@renderer/utils/onlineChannel';
-import {
-  normalizeResolvedTotal,
-  mergeResolvedPage,
-  type ResolveMoreResponse
-} from '@renderer/utils/onlineResolved';
-import { createStreamPrefetcher } from '@renderer/utils/streamPrefetch';
-import { RESOLVED_AUTO_CAP, resolveAllPlaylistItems } from '@renderer/utils/onlineResolveAll';
+import { resolveAllPlaylistItems } from '@renderer/utils/onlineResolveAll';
 import { buildChannelJobs } from '@renderer/utils/onlineChannelJobs';
+import { createStreamPrefetcher } from '@renderer/utils/streamPrefetch';
 import { createOnlineChannel } from './online/channel';
 import { createOnlineSubscriptions } from './online/subscriptions';
 import { createOnlineDownloads } from './online/downloads';
 import { createOnlineSearch } from './online/search';
 import { createOnlineSaved } from './online/saved';
 import { createOnlineStreams } from './online/streams';
+import { createOnlineResolved } from './online/resolved';
 import { resolveOnlineUrl, type OnlineResolveResponse } from '@renderer/utils/onlineResolve';
 
 export const useOnlineStore = defineStore('online', () => {
@@ -84,12 +78,15 @@ export const useOnlineStore = defineStore('online', () => {
   const queueingChannelId = ref<string | null>(null);
   const { downloads, downloadByVideoId, upsertTask, submitJobs } =
     createOnlineDownloads(markVideoDownloaded);
-  const resolved = ref<YouTubeResolveResult | null>(null);
-  const isResolving = ref(false);
-  const resolvedLoading = ref(false);
-  const resolvedCapped = ref(false);
-  const selectedResolved = ref<Set<string>>(new Set());
-  let resolveLoadId = 0;
+  const {
+    resolved,
+    isResolving,
+    resolvedLoading,
+    resolvedCapped,
+    selectedResolved,
+    setResolved,
+    loadMoreResolved
+  } = createOnlineResolved();
 
   const {
     channel,
@@ -120,85 +117,6 @@ export const useOnlineStore = defineStore('online', () => {
   // itself, not from the active UI tab).
   async function resolveOnline(url: string): Promise<OnlineResolveResponse> {
     return resolveOnlineUrl(url);
-  }
-
-  function setResolved(result: YouTubeResolveResult | null) {
-    resolveLoadId++;
-    resolvedCapped.value = false;
-    // A playlist that fits on the first page and reports no count is already
-    // fully loaded — the items length is its exact total.
-    result = normalizeResolvedTotal(result);
-    resolved.value = result;
-    resolvedLoading.value = false;
-    selectedResolved.value = new Set(
-      result ? result.items.filter((i) => i.isPlayable !== false).map((i) => i.id) : []
-    );
-    if (result && result.kind === 'playlist' && result.meta.hasMore) {
-      void autoLoadResolved();
-    }
-  }
-
-  // Loads one more page (30 items) of a resolved playlist. Shared by the
-  // automatic loader and the manual "load more" button.
-  async function loadResolvedPage(): Promise<boolean> {
-    const r = resolved.value;
-    if (!r || r.kind !== 'playlist' || !r.meta.hasMore) return false;
-    // Platform dispatch — SC sets paginate via sc:resolveMore.
-    const moreChannel =
-      detectPlatform(r.sourceUrl)?.platform === 'soundcloud' ? 'sc:resolveMore' : 'yt:resolveMore';
-    const nextStart = r.items.length + 1;
-    const res = (await window.api.invoke(moreChannel, {
-      url: r.sourceUrl,
-      start: nextStart,
-      end: nextStart + 29
-    })) as ResolveMoreResponse;
-    if (!res || !res.success || !res.items || res.items.length === 0) return false;
-    const { resolved: merged, fresh } = mergeResolvedPage(r, res);
-    resolved.value = merged;
-    const sel = new Set(selectedResolved.value);
-    for (const it of fresh) {
-      if (it.isPlayable !== false) sel.add(it.id);
-    }
-    selectedResolved.value = sel;
-    return !!res.hasMore;
-  }
-
-  async function autoLoadResolved() {
-    const loadId = resolveLoadId;
-    resolvedLoading.value = true;
-    try {
-      while (resolved.value && resolved.value.kind === 'playlist' && resolved.value.meta.hasMore) {
-        if (loadId !== resolveLoadId) return;
-        if (resolved.value.items.length >= RESOLVED_AUTO_CAP) {
-          resolvedCapped.value = true;
-          break;
-        }
-        const hasMore = await loadResolvedPage();
-        if (loadId !== resolveLoadId) return;
-        if (!hasMore) break;
-      }
-      // All items are loaded now, so the exact total is finally known.
-      if (loadId === resolveLoadId && resolved.value && resolved.value.meta.totalItems == null) {
-        const r = resolved.value;
-        resolved.value = {
-          ...r,
-          meta: { ...r.meta, totalItems: r.items.length }
-        };
-      }
-    } finally {
-      if (loadId === resolveLoadId) resolvedLoading.value = false;
-    }
-  }
-
-  async function loadMoreResolved() {
-    if (resolvedLoading.value) return;
-    resolvedLoading.value = true;
-    try {
-      const hasMore = await loadResolvedPage();
-      resolvedCapped.value = hasMore;
-    } finally {
-      resolvedLoading.value = false;
-    }
   }
 
   async function queueFromResolved(
