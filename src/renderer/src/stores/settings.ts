@@ -12,7 +12,6 @@ import type {
   UpdateSettings,
   ToastSettings,
   DependencyStatus,
-  AppSettings,
   GeneralSettings,
   StatusBarSettings
 } from '@renderer/types/settings';
@@ -32,8 +31,8 @@ import {
   DEFAULT_STATUS_BAR
 } from '@renderer/utils/constants';
 import type { AudioLayoutElement, AudioLayoutPreset } from '@renderer/types/settings';
-import { loadSettings, persistSettings, mergeSettings } from '@renderer/utils/settingsStorage';
 import { computePresetLayout, computeResetLayout } from '@renderer/utils/audioLayoutPresets';
+import { createSettingsPersistence } from './settings-persist';
 
 export const useSettingsStore = defineStore('settings', () => {
   const general = ref<GeneralSettings>({ ...DEFAULT_GENERAL });
@@ -52,71 +51,23 @@ export const useSettingsStore = defineStore('settings', () => {
   const statusBar = ref<StatusBarSettings>({ ...DEFAULT_STATUS_BAR });
   const isLoaded = ref(false);
 
-  async function load() {
-    await loadSettings({
-      general,
-      appearance,
-      playback,
-      explorer,
-      library,
-      download,
-      shortcuts,
-      network,
-      apiKeys,
-      youtube,
-      updates,
-      toast,
-      dependencies,
-      statusBar
-    });
-    isLoaded.value = true;
-  }
-
-  let saveTimer: ReturnType<typeof setTimeout> | null = null;
-
-  const saveImmediate = () => {
-    if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = null;
-    persistSettings({
-      general,
-      appearance,
-      playback,
-      explorer,
-      library,
-      download,
-      shortcuts,
-      network,
-      apiKeys,
-      youtube,
-      updates,
-      toast,
-      dependencies,
-      statusBar
-    });
-  };
-
-  const save = () => {
-    if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      saveTimer = null;
-      persistSettings({
-        general,
-        appearance,
-        playback,
-        explorer,
-        library,
-        download,
-        shortcuts,
-        network,
-        apiKeys,
-        youtube,
-        updates,
-        toast,
-        dependencies,
-        statusBar
-      });
-    }, 300);
-  };
+  const { load, save, saveImmediate, resetToDefaults, applyImported } = createSettingsPersistence({
+    general,
+    appearance,
+    playback,
+    explorer,
+    library,
+    download,
+    shortcuts,
+    network,
+    apiKeys,
+    youtube,
+    updates,
+    toast,
+    dependencies,
+    statusBar,
+    isLoaded
+  });
 
   function updateAppearance(partial: Partial<AppearanceSettings>) {
     Object.assign(appearance.value, partial);
@@ -163,47 +114,6 @@ export const useSettingsStore = defineStore('settings', () => {
 
   function updateGeneral(partial: Partial<GeneralSettings>) {
     Object.assign(general.value, partial);
-    save();
-  }
-
-  function resetToDefaults() {
-    general.value = { ...DEFAULT_GENERAL };
-    appearance.value = { ...DEFAULT_APPEARANCE };
-    playback.value = { ...DEFAULT_PLAYBACK };
-    explorer.value = { ...DEFAULT_EXPLORER };
-    library.value = { ...DEFAULT_LIBRARY };
-    download.value = { ...DEFAULT_DOWNLOAD };
-    shortcuts.value = { ...DEFAULT_SHORTCUTS };
-    network.value = { ...DEFAULT_NETWORK };
-    apiKeys.value = { ...DEFAULT_API_KEYS };
-    youtube.value = { ...DEFAULT_YOUTUBE_AUTH };
-    updates.value = { ...DEFAULT_UPDATES };
-    dependencies.value = {};
-    toast.value = { ...DEFAULT_TOAST };
-    statusBar.value = { ...DEFAULT_STATUS_BAR };
-    save();
-  }
-
-  function applyImported(data: Partial<AppSettings>) {
-    mergeSettings(
-      {
-        general,
-        appearance,
-        playback,
-        explorer,
-        library,
-        download,
-        shortcuts,
-        network,
-        apiKeys,
-        youtube,
-        updates,
-        toast,
-        statusBar,
-        dependencies
-      },
-      data
-    );
     save();
   }
 

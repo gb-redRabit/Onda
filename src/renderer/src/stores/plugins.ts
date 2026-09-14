@@ -1,16 +1,13 @@
 import { defineStore } from 'pinia';
 import { ref, computed, shallowRef } from 'vue';
-import type {
-  PluginInfo,
-  PluginManifest,
-  PluginSettingField,
-  IpcPluginInstallResult
-} from '@shared/types/ipc';
-import type { PluginCommandEntry, PluginHookPayload } from '@renderer/modules/plugins/plugin-shim';
-import { isKnownHook } from '@renderer/utils/pluginHooks';
+import type { PluginInfo, PluginManifest, IpcPluginInstallResult } from '@shared/types/ipc';
+import type { PluginCommandEntry } from '@renderer/modules/plugins/plugin-shim';
 import type { PluginWorkerHandle } from '@renderer/modules/plugins/pluginWorker';
 import { createPluginSpawner, type PluginUiStatus } from '@renderer/modules/plugins/pluginSpawner';
 import { createPluginApi } from '@renderer/modules/plugins/pluginApi';
+import { createPluginCommands } from '@renderer/modules/plugins/pluginCommands';
+import { createPluginSettings } from '@renderer/modules/plugins/pluginSettings';
+import { createPluginLogs } from '@renderer/modules/plugins/pluginLogs';
 import { logger } from '@shared/logger';
 import {
   ELEMENT_DECORATIONS,
@@ -21,18 +18,12 @@ import {
 export { ELEMENT_DECORATIONS, PLUGIN_HOST_VARIANTS, snapshotTrack };
 export type { TrackSnapshot } from '@renderer/utils/plugins-helpers';
 export type { PluginUiStatus };
-import {
-  computeDecorations,
-  computeLayoutVariants,
-  mergeSettingDefaults
-} from '@renderer/utils/plugins-derive';
+import { computeDecorations, computeLayoutVariants } from '@renderer/utils/plugins-derive';
 
 export interface PluginUiInfo extends PluginInfo {
   status: PluginUiStatus;
   error?: string;
 }
-
-const MAX_LOG_LINES = 50;
 
 export const usePluginsStore = defineStore('plugins', () => {
   const plugins = ref<PluginUiInfo[]>([]);
@@ -50,15 +41,7 @@ export const usePluginsStore = defineStore('plugins', () => {
 
   const layoutVariants = computed(() => computeLayoutVariants(plugins.value, manifests.value));
 
-  function logPush(id: string, line: string): void {
-    let list = logs.value[id];
-    if (!list) {
-      list = [];
-      logs.value = { ...logs.value, [id]: list };
-    }
-    list.push(line);
-    if (list.length > MAX_LOG_LINES) list.splice(0, list.length - MAX_LOG_LINES);
-  }
+  const { logPush } = createPluginLogs(logs);
 
   function setStatus(id: string, status: PluginUiStatus, error?: string): void {
     plugins.value = plugins.value.map((p) => (p.id === id ? { ...p, status, error } : p));
@@ -68,26 +51,10 @@ export const usePluginsStore = defineStore('plugins', () => {
     return manifests.value[id];
   }
 
-  function settingsOf(id: string): Record<string, unknown> {
-    const stored = pluginSettings.value[id] || {};
-    const fields = manifestOf(id)?.settings || [];
-    return mergeSettingDefaults(stored, fields);
-  }
-
-  async function saveSetting(id: string, key: string, value: unknown): Promise<boolean> {
-    const ok = await window.api.pluginsSettingsSet(id, key, value);
-    if (ok) {
-      pluginSettings.value = {
-        ...pluginSettings.value,
-        [id]: { ...(pluginSettings.value[id] || {}), [key]: value }
-      };
-    }
-    return ok;
-  }
-
-  function settingFields(id: string): PluginSettingField[] {
-    return manifestOf(id)?.settings || [];
-  }
+  const { settingsOf, saveSetting, settingFields } = createPluginSettings({
+    pluginSettings,
+    getManifest: manifestOf
+  });
 
   function clearPluginState(id: string): void {
     if (visuals.value[id]) visuals.value = omitKey(visuals.value, id);
@@ -194,55 +161,8 @@ export const usePluginsStore = defineStore('plugins', () => {
     await load();
   }
 
-  function emitHook(name: string, payload: PluginHookPayload): void {
-    if (!isKnownHook(name)) return;
-    const list = Object.entries(workers.value);
-    for (const [id, handle] of list) {
-      if (!readyWorkers.has(id)) continue;
-      try {
-        handle.postHook(name, payload);
-      } catch (e) {
-        logPush(id, `[error] hook ${name} failed: ${e instanceof Error ? e.message : String(e)}`);
-      }
-    }
-  }
-
-  function commandsIn(location: string): PluginCommandEntry[] {
-    return commands.value.filter((c) => (c as { location?: string }).location === location);
-  }
-
-  function findCommandByShortcut(
-    shortcut: string
-  ): (PluginCommandEntry & { pluginId?: string }) | undefined {
-    return commands.value.find((c) => c.shortcut === shortcut);
-  }
-
-  function dispatchShortcut(shortcut: string): boolean {
-    const cmd = findCommandByShortcut(shortcut);
-    if (!cmd) return false;
-    dispatchCommand(cmd.id);
-    return true;
-  }
-
-  function dispatchCommand(commandId: string, payload?: PluginHookPayload): void {
-    const cmd = commands.value.find((c) => c.id === commandId) as
-      (PluginCommandEntry & { pluginId?: string }) | undefined;
-    if (!cmd || !cmd.pluginId) return;
-    const handle = workers.value[cmd.pluginId];
-    if (!handle || !readyWorkers.has(cmd.pluginId)) return;
-    try {
-      handle.postInvokeCommand(commandId, payload);
-    } catch (e) {
-      logPush(
-        cmd.pluginId,
-        `[error] invoke-command failed: ${e instanceof Error ? e.message : String(e)}`
-      );
-    }
-  }
-
-  function invokeCommandWithContext(commandId: string, payload: PluginHookPayload): void {
-    dispatchCommand(commandId, payload);
-  }
+  const { emitHook, commandsIn, dispatchShortcut, dispatchCommand, invokeCommandWithContext } =
+    createPluginCommands({ commands, workers, readyWorkers, logPush });
 
   if (typeof window !== 'undefined') {
     window.addEventListener('beforeunload', () => spawner.terminateAll());
