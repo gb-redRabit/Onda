@@ -31,7 +31,9 @@ export function useThumbnails(size = 180) {
         }
         thumbs.value = { ...thumbs.value, ...result };
       }
-    } catch {}
+    } catch {
+      /* best-effort: intentionally ignored (non-fatal) */
+    }
   }
 
   function request(paths: string[]) {

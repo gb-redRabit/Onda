@@ -46,6 +46,9 @@ jobs:
       - name: Format check
         run: npm run format:check
 
+      - name: Check empty catch blocks
+        run: npm run check:catch
+
       - name: Build
         run: npm run build
 

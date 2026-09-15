@@ -29,7 +29,9 @@ function loadExpanded(): Set<string> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return new Set(JSON.parse(raw));
-  } catch {}
+  } catch {
+    /* best-effort: intentionally ignored (non-fatal) */
+  }
   return new Set<string>();
 }
 const expandedPaths = ref<Set<string>>(loadExpanded());
@@ -38,7 +40,9 @@ watch(
   () => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify([...expandedPaths.value]));
-    } catch {}
+    } catch {
+      /* best-effort: intentionally ignored (non-fatal) */
+    }
   }
 );
 

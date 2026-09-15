@@ -65,7 +65,9 @@ export function createLibraryWatch(deps: LibraryWatchDeps) {
           try {
             const files = JSON.parse(JSON.stringify(tracks.value));
             window.api?.invoke('library:saveScanned', { files, folderTypes: folderTypes.value });
-          } catch {}
+          } catch {
+            /* best-effort: intentionally ignored (non-fatal) */
+          }
         }
       }, 300);
     });

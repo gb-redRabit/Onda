@@ -114,12 +114,16 @@ export function useLibraryTagEditor(
       }
       try {
         player.invalidateCoverCache(targetPath);
-      } catch {}
+      } catch {
+        /* best-effort: intentionally ignored (non-fatal) */
+      }
     }
     // updateTrack już zrobił refreshDerived, ale dla pewności
     try {
       persistScanned(library);
-    } catch {}
+    } catch {
+      /* best-effort: intentionally ignored (non-fatal) */
+    }
     showingMBLookup.value = false;
     editingTrack.value = null;
   }

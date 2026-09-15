@@ -98,7 +98,9 @@ export function useMusicBrainzLookup(options: { onApply: (data: LookupApplyData)
                 ...coverThumbs.value,
                 [rel.id]: coverBytesToDataUrl(cr.data, cr.mime)
               };
-            } catch {}
+            } catch {
+              /* best-effort: intentionally ignored (non-fatal) */
+            }
           }
         });
       }

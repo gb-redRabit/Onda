@@ -280,7 +280,9 @@ function navigateToFolder(path: string) {
       set.add(cur);
     }
     localStorage.setItem(key, JSON.stringify([...set]));
-  } catch {}
+  } catch {
+    /* best-effort: intentionally ignored (non-fatal) */
+  }
 }
 
 function onTrackEdit(tr: (typeof library.tracks)[0]) {
