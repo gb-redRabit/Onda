@@ -19,6 +19,7 @@ import {
   resolveElementDecoration
 } from '@renderer/utils/audioView';
 import { nextVizMode } from '@renderer/utils/audioVisualizer';
+import { useAudioElementDrag } from '@renderer/composables/useAudioElementDrag';
 import { elementStyle } from '@renderer/utils/audioElementStyle';
 
 // The layout editor (750+ lines) only renders when the user opens it — lazy.
@@ -59,14 +60,8 @@ const showLayoutEditor = ref(false);
 const isFullscreen = ref(false);
 
 // Drag state
-const dragging = ref<{
-  id: string;
-  startX: number;
-  startY: number;
-  elX: number;
-  elY: number;
-} | null>(null);
-const dragPos = ref<{ id: string; x: number; y: number } | null>(null);
+const { dragging, dragPos, onElementMouseDown, onDragMouseMove, onDragMouseUp } =
+  useAudioElementDrag(isFullscreen);
 
 const elements = computed(() => settings.appearance.audioLayout?.elements ?? []);
 const cursorHideTimeout = computed(() => (settings.playback.cursorTimeout ?? 3) * 1000);
@@ -74,43 +69,6 @@ const hudOpacity = computed(() => (settings.appearance.audioLayout?.hudOpacity ?
 
 function getElementStyle(el: AudioLayoutElement) {
   return elementStyle(el, dragPos.value);
-}
-
-function onElementMouseDown(e: MouseEvent, el: AudioLayoutElement) {
-  if (!isFullscreen.value || el.id === 'visualization') return;
-  e.preventDefault();
-  e.stopPropagation();
-  dragging.value = {
-    id: el.id,
-    startX: e.clientX,
-    startY: e.clientY,
-    elX: el.x,
-    elY: el.y
-  };
-}
-
-function onDragMouseMove(e: MouseEvent) {
-  if (!dragging.value) return;
-  const canvas = (e.currentTarget as HTMLElement).getBoundingClientRect();
-  const dx = ((e.clientX - dragging.value.startX) / canvas.width) * 100;
-  const dy = ((e.clientY - dragging.value.startY) / canvas.height) * 100;
-  const newX = Math.max(0, Math.min(100 - 5, Math.round(dragging.value.elX + dx)));
-  const newY = Math.max(0, Math.min(100 - 5, Math.round(dragging.value.elY + dy)));
-  dragPos.value = { id: dragging.value.id, x: newX, y: newY };
-}
-
-function onDragMouseUp() {
-  if (dragging.value && dragPos.value) {
-    const currentElements = settings.appearance.audioLayout?.elements ?? [];
-    const updated = currentElements.map((el) =>
-      el.id === dragPos.value!.id ? { ...el, x: dragPos.value!.x, y: dragPos.value!.y } : el
-    );
-    settings.updateAppearance({
-      audioLayout: { ...settings.appearance.audioLayout, elements: updated }
-    });
-  }
-  dragging.value = null;
-  dragPos.value = null;
 }
 
 // Cursor + HUD hide together — the delay comes from Odtwarzanie (playback) settings.
