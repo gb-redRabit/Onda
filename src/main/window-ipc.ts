@@ -67,8 +67,8 @@ export function registerWindowHandlers(context: {
       if (!win.isDestroyed()) {
         try {
           win.setBackgroundMaterial(material as 'acrylic' | 'none');
-        } catch {
-          /* ignore */
+        } catch (e) {
+          logger.warn('window', 'setBackgroundMaterial failed for a window (non-fatal)', e);
         }
       }
     }

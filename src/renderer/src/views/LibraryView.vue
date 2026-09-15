@@ -2,6 +2,7 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted, defineAsyncComponent } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
+import { logger } from '@shared/logger';
 import { useLibraryStore } from '@renderer/stores/library';
 import { getAllTracksIndexed } from '@renderer/utils/libraryIndex';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -280,8 +281,8 @@ function navigateToFolder(path: string) {
       set.add(cur);
     }
     localStorage.setItem(key, JSON.stringify([...set]));
-  } catch {
-    /* best-effort: intentionally ignored (non-fatal) */
+  } catch (e) {
+    logger.warn('library', 'failed to persist expanded folders in localStorage', e);
   }
 }
 

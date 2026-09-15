@@ -8,8 +8,8 @@ let appVersion = '0.4.0';
 try {
   const pkg = require('../../../package.json') as { version?: string };
   if (pkg.version) appVersion = pkg.version;
-} catch {
-  /* best-effort: intentionally ignored (non-fatal) */
+} catch (e) {
+  logger.warn('musicbrainz', 'could not read the app version from package.json', e);
 }
 const USER_AGENT = `Onda/${appVersion} (onda-player.app; contact: onda-player.app)`;
 const MB_URL = 'https://musicbrainz.org/ws/2';

@@ -1,4 +1,5 @@
 import type { Ref, ShallowRef } from 'vue';
+import { logger } from '@shared/logger';
 import type { MediaFile, Playlist } from '@renderer/types/media';
 
 export interface LibraryWatchDeps {
@@ -65,8 +66,8 @@ export function createLibraryWatch(deps: LibraryWatchDeps) {
           try {
             const files = JSON.parse(JSON.stringify(tracks.value));
             window.api?.invoke('library:saveScanned', { files, folderTypes: folderTypes.value });
-          } catch {
-            /* best-effort: intentionally ignored (non-fatal) */
+          } catch (e) {
+            logger.warn('library', 'failed to persist scanned library after missing files', e);
           }
         }
       }, 300);

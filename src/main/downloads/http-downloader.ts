@@ -48,8 +48,9 @@ function doDownload(opts: HttpDownloadOptions, redirectsLeft: number): Promise<v
     const cleanup = (): void => {
       try {
         fs.rmSync(partPath, { force: true });
-      } catch {
-        // ignore
+      } catch (e) {
+        // A stale .part file would make the next attempt resume from wrong bytes.
+        logger.warn('download', `failed to remove partial file ${partPath}`, e);
       }
     };
 

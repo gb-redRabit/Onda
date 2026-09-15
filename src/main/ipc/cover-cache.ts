@@ -197,8 +197,8 @@ function notifyMissing(filePath: string) {
     for (const w of BrowserWindow.getAllWindows()) {
       if (!w.isDestroyed()) w.webContents.send('library:fileMissing', filePath);
     }
-  } catch {
-    /* best-effort: intentionally ignored (non-fatal) */
+  } catch (e) {
+    logger.warn('cover', `notifyMissing failed for ${filePath}`, e);
   }
 }
 

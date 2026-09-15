@@ -114,15 +114,15 @@ export function useLibraryTagEditor(
       }
       try {
         player.invalidateCoverCache(targetPath);
-      } catch {
-        /* best-effort: intentionally ignored (non-fatal) */
+      } catch (e) {
+        logger.warn('Library', 'invalidateCoverCache failed', e);
       }
     }
     // updateTrack już zrobił refreshDerived, ale dla pewności
     try {
       persistScanned(library);
-    } catch {
-      /* best-effort: intentionally ignored (non-fatal) */
+    } catch (e) {
+      logger.warn('Library', 'persistScanned after tag edit failed', e);
     }
     showingMBLookup.value = false;
     editingTrack.value = null;

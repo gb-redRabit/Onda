@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n';
 import type { MusicbrainzRelease } from '@shared/types/ipc';
 import { buildMusicbrainzQuery, splitInitialQuery } from '@renderer/utils/musicbrainz';
 import { coverBytesToDataUrl, getMusicbrainzCover } from '@renderer/utils/musicbrainzCover';
+import { logger } from '@shared/logger';
 
 export type LookupResult = MusicbrainzRelease & {
   _coverData?: number[];
@@ -98,8 +99,8 @@ export function useMusicBrainzLookup(options: { onApply: (data: LookupApplyData)
                 ...coverThumbs.value,
                 [rel.id]: coverBytesToDataUrl(cr.data, cr.mime)
               };
-            } catch {
-              /* best-effort: intentionally ignored (non-fatal) */
+            } catch (e) {
+              logger.warn('musicbrainz', `cover thumbnail conversion failed for ${rel.id}`, e);
             }
           }
         });

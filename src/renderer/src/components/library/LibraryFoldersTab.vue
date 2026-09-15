@@ -4,6 +4,7 @@ import { Folder, ChevronDown, Shuffle, Play, ExternalLink } from '@lucide/vue';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
 import { canonicalPath, basename, isUnderPath } from '@renderer/utils/path';
+import { logger } from '@shared/logger';
 import { useLibraryContextMenu } from '@renderer/composables/useLibraryContextMenu';
 import { formatDuration } from '@renderer/utils/formatters';
 import { getAllTracksIndexed } from '@renderer/utils/libraryIndex';
@@ -29,8 +30,8 @@ function loadExpanded(): Set<string> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return new Set(JSON.parse(raw));
-  } catch {
-    /* best-effort: intentionally ignored (non-fatal) */
+  } catch (e) {
+    logger.warn('library', 'failed to read expanded folders from localStorage', e);
   }
   return new Set<string>();
 }
@@ -40,8 +41,8 @@ watch(
   () => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify([...expandedPaths.value]));
-    } catch {
-      /* best-effort: intentionally ignored (non-fatal) */
+    } catch (e) {
+      logger.warn('library', 'failed to persist expanded folders in localStorage', e);
     }
   }
 );

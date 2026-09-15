@@ -1,4 +1,5 @@
 import { ref } from 'vue';
+import { logger } from '@shared/logger';
 
 const globalCache = new Map<string, string>();
 
@@ -31,8 +32,8 @@ export function useThumbnails(size = 180) {
         }
         thumbs.value = { ...thumbs.value, ...result };
       }
-    } catch {
-      /* best-effort: intentionally ignored (non-fatal) */
+    } catch (e) {
+      logger.warn('thumbnails', 'media:batchThumbnails failed', e);
     }
   }
 
