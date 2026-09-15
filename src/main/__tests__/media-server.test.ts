@@ -11,6 +11,7 @@ import {
   isAllowedStreamHost,
   validateStreamUrl
 } from '../media-server';
+import { isWithinRoot } from '../media-server-guards';
 import type { MediaServer } from '../media-server';
 
 let server: MediaServer | null = null;
@@ -302,4 +303,59 @@ describe('media-server /stream proxy', () => {
     expect(validateStreamUrl('https://evil.example/x')).toBeNull();
     expect(validateStreamUrl('javascript:alert(1)')).toBeNull();
   });
+});
+
+describe('media-server path guard (plan 7.4)', () => {
+  it('accepts children of a root but not prefix siblings', () => {
+    const root = process.platform === 'win32' ? 'C:\\media' : '/media';
+    const sibling = process.platform === 'win32' ? 'C:\\media2\\a.mp4' : '/media2/a.mp4';
+    expect(isWithinRoot(join(root, 'a.mp4'), root)).toBe(true);
+    expect(isWithinRoot(sibling, root)).toBe(false);
+    expect(isWithinRoot(root, root)).toBe(true);
+  });
+
+  it.skipIf(process.platform !== 'win32')('matches Windows paths case-insensitively', () => {
+    expect(isWithinRoot('C:\\Media\\Clip.mp4', 'c:\\media')).toBe(true);
+    expect(isWithinRoot('c:\\media', 'C:\\MEDIA')).toBe(true);
+  });
+
+  it('rejects a symlink inside an allowed root that points outside it', async (ctx) => {
+    const outside =
+      process.platform === 'win32' ? 'C:/Windows/System32/notepad.exe' : '/etc/hostname';
+    const linkDir = await fs.mkdtemp(join(os.tmpdir(), 'onda-ms-link-'));
+    const linkPath = join(linkDir, 'escape.mp4');
+    try {
+      await fs.symlink(outside, linkPath, 'file');
+    } catch {
+      // Windows without developer mode / symlink privileges.
+      ctx.skip();
+      return;
+    }
+    try {
+      const res = await request(`/${server!.token}/?path=${encodeURIComponent(linkPath)}`);
+      expect(res.status).toBe(403);
+    } finally {
+      await fs.rm(linkDir, { recursive: true, force: true });
+    }
+  });
+
+  it.skipIf(process.platform !== 'win32')(
+    'rejects verbatim UNC paths pointing outside the roots',
+    async () => {
+      const outside = '\\\\?\\C:\\Windows\\System32\\notepad.exe';
+      const res = await request(`/${server!.token}/?path=${encodeURIComponent(outside)}`);
+      expect(res.status).toBe(403);
+    }
+  );
+
+  it.skipIf(process.platform !== 'win32')(
+    'serves an allowed file requested with different path casing',
+    async () => {
+      const file = await makeTempFile(32);
+      const upper = file.toUpperCase();
+      const res = await request(`/${server!.token}/?path=${encodeURIComponent(upper)}`);
+      expect(res.status).toBe(200);
+      expect(res.body.length).toBe(32);
+    }
+  );
 });
