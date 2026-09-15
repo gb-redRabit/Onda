@@ -61,6 +61,10 @@ export function installIpcGuards(): void {
     originalOn(channel, (event, ...args) => {
       if (!isTrustedSenderFrame(event.senderFrame)) {
         blockLog('event', channel);
+        // `ipcRenderer.sendSync` waits for `event.returnValue`; without this a
+        // blocked sync bootstrap (e.g. media:getServerUrl from the initial
+        // about:blank preload) would hang the renderer forever.
+        event.returnValue = undefined;
         return;
       }
       listener(event, ...args);
@@ -71,6 +75,7 @@ export function installIpcGuards(): void {
     originalOnce(channel, (event, ...args) => {
       if (!isTrustedSenderFrame(event.senderFrame)) {
         blockLog('once event', channel);
+        event.returnValue = undefined;
         return;
       }
       listener(event, ...args);

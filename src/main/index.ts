@@ -69,6 +69,13 @@ function forwardOpenFiles(paths: string[]): void {
   mainWindow.webContents.send('open-files', paths);
 }
 
+// E2E/portable override: point the whole profile (settings, logs, tokens) at a
+// throw-away directory before anything reads it. Must run before the
+// single-instance lock, which is keyed off userData.
+if (process.env.ONDA_USER_DATA_DIR) {
+  app.setPath('userData', process.env.ONDA_USER_DATA_DIR);
+}
+
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) {
   app.quit();
@@ -147,6 +154,18 @@ function createWindow(): BrowserWindow {
       logger.warn('main', 'setWindowOpenHandler: invalid URL', details.url, e);
     }
     return { action: 'deny' };
+  });
+
+  // Boot diagnostics: a renderer that never finishes loading otherwise looks
+  // like a silent hang (no window is ever shown).
+  win.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    logger.error('main', `did-fail-load ${errorCode} ${errorDescription} ${validatedURL}`);
+  });
+  win.webContents.on('preload-error', (_event, preloadPath, error) => {
+    logger.error('main', `preload-error ${preloadPath}`, error);
+  });
+  win.webContents.on('render-process-gone', (_event, details) => {
+    logger.error('main', 'render-process-gone', details);
   });
 
   installNavigationGuard(win);

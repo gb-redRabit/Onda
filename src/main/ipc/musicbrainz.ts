@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { app, ipcMain } from 'electron';
 import https from 'https';
 import http from 'http';
 import type { MusicbrainzRelease } from '../../shared/types/ipc';
@@ -6,10 +6,11 @@ import { logger } from '../../shared/logger';
 
 let appVersion = '0.4.0';
 try {
-  const pkg = require('../../../package.json') as { version?: string };
-  if (pkg.version) appVersion = pkg.version;
+  // `app.getVersion()` works in dev and packaged builds; a relative
+  // require('../../package.json') breaks once main is bundled into out/main.
+  appVersion = app.getVersion();
 } catch (e) {
-  logger.warn('musicbrainz', 'could not read the app version from package.json', e);
+  logger.warn('musicbrainz', 'could not read the app version via app.getVersion()', e);
 }
 const USER_AGENT = `Onda/${appVersion} (onda-player.app; contact: onda-player.app)`;
 const MB_URL = 'https://musicbrainz.org/ws/2';
