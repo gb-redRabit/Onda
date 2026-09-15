@@ -64,15 +64,12 @@ export function useMusicBrainzBatch(
         if (fields.title && mbTrack?.title) payload.title = mbTrack.title;
         if (fields.track) payload.track = String(idx + 1);
         // write tags
-        const tagRes = await window.api?.invoke(
-          'media:writeTags',
-          tr.path,
-          payload as Record<string, string>
-        );
-        if ((tagRes as { success?: boolean })?.success === false)
-          throw new Error((tagRes as { error?: string })?.error || 'writeTags failed');
+        const tagRes = await window.api?.writeTags(tr.path, payload as Record<string, string>);
+        if (tagRes && tagRes.success === false) {
+          throw new Error(tagRes.error || 'writeTags failed');
+        }
         if (fields.cover && rel._coverData) {
-          await window.api?.invoke('media:writeCover', tr.path, rel._coverData);
+          await window.api?.writeCover(tr.path, rel._coverData);
         }
         batchResults.value[idx] = { ...batchResults.value[idx], status: 'ok' };
       } catch (e) {
