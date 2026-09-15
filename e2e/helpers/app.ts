@@ -98,10 +98,48 @@ export async function launchOnda(options: LaunchOptions = {}): Promise<OndaApp> 
   }
 }
 
-/** First run on a fresh profile shows the onboarding wizard; dismiss it. */
+const WIZARD_WAIT_MS = 8_000;
+const WIZARD_CLICK_TIMEOUT_MS = 5_000;
+
+/**
+ * First run on a fresh profile shows the onboarding wizard. It mounts
+ * asynchronously (settings + locale load first) and its full-screen overlay
+ * swallows pointer events, so wait for it, dismiss it and confirm the node is
+ * gone before the test interacts with the UI.
+ */
 export async function dismissWizard(page: Page): Promise<void> {
   const skip = page.getByTestId('wizard-skip');
-  if (await skip.isVisible().catch(() => false)) {
-    await skip.click();
+
+  // After a dismissal the flag survives reloads, so the wizard will not mount
+  // again — don't sit through the full appearance timeout.
+  const done = await page
+    .evaluate(() => {
+      try {
+        return localStorage.getItem('onda-first-run-done') === '1';
+      } catch {
+        return false;
+      }
+    })
+    .catch(() => false);
+  if (done) {
+    await skip.waitFor({ state: 'detached', timeout: 3_000 }).catch(() => {});
+    return;
   }
+
+  const appeared = await skip.waitFor({ state: 'visible', timeout: WIZARD_WAIT_MS }).then(
+    () => true,
+    () => false
+  );
+  if (!appeared) return;
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if ((await skip.count()) === 0) return;
+    await skip.click({ timeout: WIZARD_CLICK_TIMEOUT_MS }).catch(() => {});
+    const gone = await skip.waitFor({ state: 'detached', timeout: 3_000 }).then(
+      () => true,
+      () => false
+    );
+    if (gone) return;
+  }
+  throw new Error('onboarding wizard did not close after 3 attempts');
 }
