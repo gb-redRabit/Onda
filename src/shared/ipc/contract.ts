@@ -100,6 +100,7 @@ export const INVOKE_CHANNELS = [
   'dep:cancelInstall',
   'diagnostics:readLogs',
   'diagnostics:clearLogs',
+  'diagnostics:getWarnings',
   'diagnostics:downloadLog',
   'updater:getState',
   'updater:check',

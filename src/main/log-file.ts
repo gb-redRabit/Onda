@@ -3,6 +3,7 @@ import { appendFile, mkdir, readFile, truncate, copyFile, stat } from 'fs/promis
 import { join } from 'path';
 import os from 'os';
 import { logger } from '../shared/logger';
+import { recordWarning, clearWarnings } from './warnings';
 
 const LOG_LINES = 2000;
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
@@ -38,7 +39,9 @@ let writeQueue: Promise<void> = Promise.resolve();
 function writeLine(level: string, args: unknown[]): void {
   const dir = getLogDir();
   const file = getLogPath();
-  const line = `[${ts()}] [${level}] ${formatArgs(args)}\n`;
+  const text = formatArgs(args);
+  if (level === 'WARN') recordWarning(text);
+  const line = `[${ts()}] [${level}] ${text}\n`;
   writeQueue = writeQueue
     .then(async () => {
       await mkdir(dir, { recursive: true });
@@ -83,6 +86,7 @@ export async function readLogTail(lines: number = LOG_LINES): Promise<string> {
 export async function clearLogFile(): Promise<boolean> {
   try {
     await truncate(getLogPath(), 0);
+    clearWarnings();
     return true;
   } catch (e) {
     logger.warn('logfile', 'clear failed', e);

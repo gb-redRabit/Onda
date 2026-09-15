@@ -41,6 +41,7 @@ export interface OndaAPI {
   cancelDepInstall: BoundIpcMethod<'dep:cancelInstall'>;
   readLogs: BoundIpcMethod<'diagnostics:readLogs'>;
   clearLogs: BoundIpcMethod<'diagnostics:clearLogs'>;
+  getRecentWarnings: BoundIpcMethod<'diagnostics:getWarnings'>;
   downloadLog: BoundIpcMethod<'diagnostics:downloadLog'>;
   getUpdaterState: BoundIpcMethod<'updater:getState'>;
   checkForUpdates: BoundIpcMethod<'updater:check'>;

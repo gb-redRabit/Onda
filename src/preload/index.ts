@@ -350,6 +350,7 @@ const api: OndaAPI = {
     tryInvoke('app:getLicenses'),
   readLogs: (lines?: number): Promise<string> => tryInvoke('diagnostics:readLogs', lines),
   clearLogs: (): Promise<boolean> => tryInvoke('diagnostics:clearLogs'),
+  getRecentWarnings: () => tryInvoke('diagnostics:getWarnings'),
   downloadLog: (): Promise<{ success: boolean; canceled?: boolean; error?: string }> =>
     tryInvoke('diagnostics:downloadLog'),
   getUpdaterState: (): Promise<UpdaterState> => tryInvoke('updater:getState'),

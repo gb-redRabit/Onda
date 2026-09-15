@@ -85,6 +85,7 @@ export const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set([
   'dep:cancelInstall',
   'diagnostics:readLogs',
   'diagnostics:clearLogs',
+  'diagnostics:getWarnings',
   'diagnostics:downloadLog',
   'updater:getState',
   'updater:check',

@@ -39,5 +39,10 @@ export type {
   PluginFetchResult
 } from './ipc/plugins';
 export type { YoutubeAuthStatus, AppInfo, UpdaterState } from './ipc/app';
-export type { DepSource, DepToolStatus, DepToolPaths } from './ipc/channels-system';
+export type {
+  DepSource,
+  DepToolStatus,
+  DepToolPaths,
+  IpcWarningEntry
+} from './ipc/channels-system';
 export type { IpcChannels, IpcChannel } from './ipc/channels';

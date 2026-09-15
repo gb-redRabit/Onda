@@ -85,6 +85,7 @@ export type IpcInvokeChannel =
   | 'dep:cancelInstall'
   | 'diagnostics:readLogs'
   | 'diagnostics:clearLogs'
+  | 'diagnostics:getWarnings'
   | 'diagnostics:downloadLog'
   | 'updater:getState'
   | 'updater:check'

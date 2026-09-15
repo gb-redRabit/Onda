@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import type { AppInfo, DepSource, DepToolPaths } from '@shared/types/ipc';
+import type { AppInfo, DepSource, DepToolPaths, IpcWarningEntry } from '@shared/types/ipc';
 import { logger } from '@shared/logger';
 import { Download, RefreshCw, Trash2 } from '@lucide/vue';
 import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
@@ -11,23 +11,30 @@ const { t } = useI18n();
 const info = ref<AppInfo | null>(null);
 const logs = ref('');
 const resolver = ref<DepToolPaths>([]);
+const warnings = ref<IpcWarningEntry[]>([]);
 const busy = ref(false);
 
 onMounted(() => loadAll());
 
 async function loadAll(): Promise<void> {
   try {
-    const [i, l, r] = await Promise.all([
+    const [i, l, r, w] = await Promise.all([
       window.api?.getAppInfo(),
       window.api?.readLogs(),
-      window.api?.getDependencyPaths()
+      window.api?.getDependencyPaths(),
+      window.api?.getRecentWarnings()
     ]);
     if (i) info.value = i;
     if (l !== undefined) logs.value = l;
     if (r) resolver.value = r;
+    if (w) warnings.value = w;
   } catch (e) {
     logger.warn('diagnostics', 'load failed', e);
   }
+}
+
+function formatTime(at: number): string {
+  return new Date(at).toLocaleTimeString();
 }
 
 function sourceLabel(source: DepSource | null): string {
@@ -160,6 +167,28 @@ async function onClear(): Promise<void> {
         </div>
       </div>
       <div v-else class="text-xs text-base-content/50">{{ $t('settings.resolverEmpty') }}</div>
+    </SettingsCard>
+
+    <SettingsCard>
+      <div class="flex items-baseline justify-between gap-3 mb-3">
+        <div class="text-sm font-medium">{{ $t('settings.warningsTitle') }}</div>
+        <div class="text-[11px] text-base-content/50">{{ $t('settings.warningsDesc') }}</div>
+      </div>
+      <div v-if="warnings.length" class="space-y-1">
+        <div v-for="(w, i) in warnings" :key="i" class="flex items-start gap-2 text-xs">
+          <span class="font-mono text-[10px] text-base-content/40 shrink-0 pt-0.5">
+            {{ formatTime(w.at) }}
+          </span>
+          <span class="text-base-content/70 break-words min-w-0">{{ w.text }}</span>
+          <span
+            v-if="w.count > 1"
+            class="text-[10px] px-1.5 py-0.5 rounded-field bg-amber-500/15 text-amber-500 font-medium shrink-0"
+          >
+            ×{{ w.count }}
+          </span>
+        </div>
+      </div>
+      <div v-else class="text-xs text-base-content/50">{{ $t('settings.warningsEmpty') }}</div>
     </SettingsCard>
 
     <div class="flex items-center gap-2">

@@ -2,6 +2,7 @@ import { ipcMain, dialog, BrowserWindow, app } from 'electron';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { readLogTail, clearLogFile, copyLogTo, getEnvironmentInfo } from '../log-file';
+import { getRecentWarnings } from '../warnings';
 import { logger } from '../../shared/logger';
 
 export function registerDiagnosticsHandlers(): void {
@@ -46,6 +47,8 @@ export function registerDiagnosticsHandlers(): void {
   });
 
   ipcMain.handle('diagnostics:clearLogs', () => clearLogFile());
+
+  ipcMain.handle('diagnostics:getWarnings', () => getRecentWarnings());
 
   ipcMain.handle(
     'diagnostics:downloadLog',

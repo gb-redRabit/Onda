@@ -12,6 +12,12 @@ import type {
 
 export type DepSource = 'bundled' | 'managed' | 'system';
 
+export interface IpcWarningEntry {
+  at: number;
+  text: string;
+  count: number;
+}
+
 export interface DepToolStatus {
   installed: boolean;
   version: string | null;
@@ -217,6 +223,7 @@ export interface SystemChannels {
   };
   'diagnostics:readLogs': { args: [lines?: number]; result: string };
   'diagnostics:clearLogs': { args: []; result: boolean };
+  'diagnostics:getWarnings': { args: []; result: IpcWarningEntry[] };
   'diagnostics:downloadLog': {
     args: [];
     result: { success: boolean; canceled?: boolean; error?: string };
