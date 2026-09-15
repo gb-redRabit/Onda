@@ -106,6 +106,7 @@ const colors = {
 
 <template>
   <div
+    data-testid="download-row"
     class="p-3 rounded-box bg-base-100 border border-base-300 group/row"
     @contextmenu="openMenu($event, downloadCtx(task))"
   >

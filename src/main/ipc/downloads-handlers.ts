@@ -20,6 +20,12 @@ import {
 } from '../downloads/download-manager';
 import { applyMetadataOverride } from '../downloads/cover-processing';
 import { isSafeAbsolutePath } from '../utils/validate';
+import {
+  e2eAddDownloadTasks,
+  e2eClearFinishedDownloadTasks,
+  e2eFixturesEnabled,
+  e2eListDownloadTasks
+} from '../e2e-fixtures';
 import type { IpcDownloadTask, IpcDownloadJobInput, IpcMetaOverride } from '../../shared/types/ipc';
 
 // Throttle broadcast emissions to avoid flooding all BrowserWindows with
@@ -54,7 +60,8 @@ export function registerDownloadHandlers(): void {
   void restoreDownloadQueue();
   ipcMain.handle(
     'yt:download:add',
-    async (_event, jobs: IpcDownloadJobInput[]): Promise<IpcDownloadTask[]> => addDownloadJobs(jobs)
+    async (_event, jobs: IpcDownloadJobInput[]): Promise<IpcDownloadTask[]> =>
+      e2eFixturesEnabled() ? e2eAddDownloadTasks(jobs, broadcast) : addDownloadJobs(jobs)
   );
   ipcMain.handle('yt:download:cancel', async (_event, id: string): Promise<boolean> =>
     cancelDownloadJob(id)
@@ -65,9 +72,11 @@ export function registerDownloadHandlers(): void {
   ipcMain.handle('yt:download:resume', async (_event, id: string): Promise<boolean> =>
     resumeDownloadJob(id)
   );
-  ipcMain.handle('yt:download:list', async (): Promise<IpcDownloadTask[]> => listDownloadJobs());
+  ipcMain.handle('yt:download:list', async (): Promise<IpcDownloadTask[]> =>
+    e2eFixturesEnabled() ? e2eListDownloadTasks() : listDownloadJobs()
+  );
   ipcMain.handle('yt:download:clearFinished', async (): Promise<boolean> =>
-    clearFinishedDownloads()
+    e2eFixturesEnabled() ? e2eClearFinishedDownloadTasks() : clearFinishedDownloads()
   );
   ipcMain.handle('yt:download:pauseAll', async (): Promise<boolean> => pauseAllDownloads());
   ipcMain.handle('yt:download:resumeAll', async (): Promise<boolean> => resumeAllDownloads());

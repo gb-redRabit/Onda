@@ -24,6 +24,7 @@ import { errorCodeOf } from './soundcloud-error';
 import { fallbackResolvePage, fallbackSearch } from './soundcloud-fallback';
 import { normalizeScOffset } from './soundcloud-offset';
 import { mapScTrackItem } from './soundcloud-resolve-map';
+import { e2eFixturesEnabled } from '../e2e-fixtures';
 
 // ---------------------------------------------------------------------------
 // IPC registration
@@ -32,6 +33,9 @@ export function registerSoundcloudHandlers(): void {
   ipcMain.handle('sc:search', async (_event, query: string, offset?: number) => {
     if (typeof query !== 'string' || !query.trim() || query.length > 200) {
       return { success: false, error: 'Invalid search query', items: [] };
+    }
+    if (e2eFixturesEnabled()) {
+      return { success: true, items: [] };
     }
     const pageOffset = normalizeScOffset(offset);
     try {

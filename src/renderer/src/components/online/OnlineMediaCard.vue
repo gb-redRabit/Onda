@@ -136,6 +136,7 @@ onBeforeUnmount(() => {
 <template>
   <div
     ref="rootEl"
+    data-testid="online-media-card"
     class="group"
     :class="
       layout === 'list'

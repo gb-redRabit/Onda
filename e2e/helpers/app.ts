@@ -19,6 +19,8 @@ export interface LaunchOptions {
   profileSetup?: (userDataDir: string) => void;
   /** Reuses an existing profile (e.g. seeded by a previous run) instead of a fresh one. */
   userDataDir?: string;
+  /** Extra environment for the Electron process (e.g. ONDA_E2E_FIXTURES=1). */
+  env?: Record<string, string>;
 }
 
 const MAIN_WINDOW_TIMEOUT_MS = 30_000;
@@ -55,7 +57,11 @@ export async function launchOnda(options: LaunchOptions = {}): Promise<OndaApp> 
 
   // main/index.ts applies this before the single-instance lock, so every run
   // gets a fresh profile and parallel instances do not fight over the lock.
-  const env = { ...process.env, ONDA_USER_DATA_DIR: userDataDir } as Record<string, string>;
+  const env = {
+    ...process.env,
+    ONDA_USER_DATA_DIR: userDataDir,
+    ...options.env
+  } as Record<string, string>;
 
   const app = await electron.launch({ args, env });
   const proc = app.process();

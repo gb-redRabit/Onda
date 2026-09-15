@@ -91,6 +91,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
           class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50"
         />
         <input
+          data-testid="online-search-input"
           :value="modelValue"
           :placeholder="t('youtube.pasteOrSearch')"
           class="w-full pl-11 pr-3 h-field-lg fx-depth rounded-field bg-base-100 border border-base-300 text-sm text-base-content placeholder:text-base-content/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30 transition-shadow"

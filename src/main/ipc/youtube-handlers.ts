@@ -16,6 +16,7 @@ import { readProxyArgs } from './proxy-utils';
 
 import { runYtDlp, fetchEntryJson, fetchRangeJson } from './youtube-fetch';
 import { getStreamUrl } from './youtube-stream';
+import { e2eFixturesEnabled, e2eSearchItems } from '../e2e-fixtures';
 export { runYtDlp, fetchEntryJson, fetchRangeJson } from './youtube-fetch';
 export { getStreamUrl };
 
@@ -175,6 +176,14 @@ export function registerYoutubeHandlers(): void {
         prevPageToken: null
       };
     }
+    if (e2eFixturesEnabled()) {
+      return {
+        success: true,
+        items: e2eSearchItems(query),
+        nextPageToken: null,
+        prevPageToken: null
+      };
+    }
     try {
       const stdout = await runYtDlp(
         [
@@ -223,6 +232,10 @@ export function registerYoutubeHandlers(): void {
   );
 
   ipcMain.handle('yt:resolve', async (_event, url: string) => {
+    if (e2eFixturesEnabled()) {
+      // Keep the E2E prefetch path away from yt-dlp entirely.
+      return { success: false, error: 'e2e fixtures: resolve disabled' };
+    }
     const kind = detectYtKind(url);
     if (!kind) {
       return { success: false, error: 'Unsupported or invalid YouTube link' };
