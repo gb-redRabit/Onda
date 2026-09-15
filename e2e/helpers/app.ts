@@ -10,12 +10,15 @@ export interface OndaApp {
   app: ElectronApplication;
   page: Page;
   pageErrors: string[];
+  userDataDir: string;
   dispose: () => Promise<void>;
 }
 
 export interface LaunchOptions {
   /** Runs against the fresh profile directory before Electron starts. */
   profileSetup?: (userDataDir: string) => void;
+  /** Reuses an existing profile (e.g. seeded by a previous run) instead of a fresh one. */
+  userDataDir?: string;
 }
 
 const MAIN_WINDOW_TIMEOUT_MS = 30_000;
@@ -44,7 +47,7 @@ async function waitForMainWindow(app: ElectronApplication): Promise<Page> {
 }
 
 export async function launchOnda(options: LaunchOptions = {}): Promise<OndaApp> {
-  const userDataDir = mkdtempSync(join(tmpdir(), 'onda-e2e-'));
+  const userDataDir = options.userDataDir ?? mkdtempSync(join(tmpdir(), 'onda-e2e-'));
   options.profileSetup?.(userDataDir);
   const args = ['.'];
   // CI Linux runs as root without a usable chrome-sandbox.
@@ -66,6 +69,7 @@ export async function launchOnda(options: LaunchOptions = {}): Promise<OndaApp> 
       app,
       page,
       pageErrors,
+      userDataDir,
       dispose: async () => {
         // Onda hides to tray instead of closing (close-to-tray), so destroy the
         // windows first; then give Playwright a bounded chance to reap the app.
