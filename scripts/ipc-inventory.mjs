@@ -47,12 +47,14 @@ for (const file of await walk(join(ROOT, 'src/main'))) {
   }
 }
 
-const preload = await readFile(join(ROOT, 'src/preload/index.ts'), 'utf-8');
+const preload = await readFile(join(ROOT, 'src/preload/generated.ts'), 'utf-8');
 const allowInvoke = extractSet(preload, 'const ALLOWED_INVOKE_CHANNELS');
 const allowSend = extractSet(preload, 'const ALLOWED_SEND_CHANNELS');
 const allowReceive = extractSet(preload, 'const ALLOWED_RECEIVE_CHANNELS');
 
-const all = [...new Set([...handlers.keys(), ...senders.keys(), ...allowInvoke, ...allowSend, ...allowReceive])].sort();
+const all = [
+  ...new Set([...handlers.keys(), ...senders.keys(), ...allowInvoke, ...allowSend, ...allowReceive])
+].sort();
 
 const yes = (v) => (v ? '✓' : '');
 const rows = all

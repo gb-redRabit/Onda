@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 // Guards IPC drift without touching the contract itself yet: every channel the
 // renderer invokes literally must be present in the preload invoke allowlist,
 // otherwise the call is blocked at runtime with only a console warning.
+// The allowlist is generated from the contract (`npm run ipc:gen`).
 const ROOT = process.cwd();
 
 const IGNORED_DIRS = new Set(['node_modules', 'dist', 'out', 'release']);
@@ -41,7 +42,7 @@ function extractInvokedChannels(source: string): string[] {
 
 describe('IPC invoke allowlist parity', () => {
   it('every literally-invoked renderer channel is allowlisted in the preload', async () => {
-    const preloadSource = await readFile(join(ROOT, 'src/preload/index.ts'), 'utf-8');
+    const preloadSource = await readFile(join(ROOT, 'src/preload/generated.ts'), 'utf-8');
     const allowlist = extractInvokeAllowlist(preloadSource);
 
     const rendererFiles = await walk(join(ROOT, 'src/renderer'));

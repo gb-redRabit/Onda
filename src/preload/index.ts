@@ -6,6 +6,7 @@ import type {
   YoutubeAuthStatus,
   IpcSubscription,
   IpcSubscriptionPatch,
+  IpcSubscriptionDownloadPrefs,
   IpcSubscriptionCheckResult,
   IpcStreamResult,
   IpcSavedData,
@@ -19,6 +20,13 @@ import type {
   IpcPluginUninstallResult,
   IpcPluginInstallResult
 } from '../shared/types/ipc';
+import type { IpcArgs, IpcChannel, IpcResult } from '../shared/ipc/contract';
+import type { OndaAPI } from '../shared/ipc/api';
+import {
+  ALLOWED_INVOKE_CHANNELS,
+  ALLOWED_RECEIVE_CHANNELS,
+  ALLOWED_SEND_CHANNELS
+} from './generated';
 import { logger } from '../shared/logger';
 
 // Fetched over IPC (not CLI args) so the media-server token never shows up in
@@ -30,218 +38,6 @@ try {
 } catch {
   mediaServerUrl = '';
 }
-
-const ALLOWED_INVOKE_CHANNELS = new Set<string>([
-  'fs:readdir',
-  'fs:getDrives',
-  'fs:findDuplicates',
-  'fs:delete',
-  'fs:copy',
-  'fs:move',
-  'fs:mkdir',
-  'fs:copyPath',
-  'fs:readTextFile',
-  'app:readClipboard',
-  'fs:getProperties',
-  'app:getPath',
-  'app:quit',
-  'app:getAutoLaunch',
-  'app:setAutoLaunch',
-  'app:getPendingFiles',
-  'imageViewer:open',
-  'imageViewer:getData',
-  'imageViewer:close',
-  'window:close',
-  'window:minimize',
-  'window:maximize',
-  'window:exitFullscreen',
-  'window:isFullscreen',
-  'window:toggleFullscreen',
-  'window:setAlwaysOnTop',
-  'app:setBackgroundMaterial',
-  'app:rendererReady',
-  'app:setCloseToTray',
-  'dialog:openFile',
-  'dialog:openSubtitle',
-  'dialog:openFolder',
-  'dialog:openFolderFiles',
-  'shell:showItemInFolder',
-  'shell:openTerminal',
-  'shell:openWithDefault',
-  'shell:getFileIcon',
-  'media:getThumbnail',
-  'media:batchThumbnails',
-  'media:remoteImage',
-  'media:grantAccess',
-  'media:renameFile',
-  'explorer:create',
-  'explorer:tabMoved',
-  'explorer:sendTabToMain',
-  'settings:get',
-  'settings:set',
-  'settings:export',
-  'settings:import',
-  'library:scan',
-  'library:scanCancel',
-  'library:loadFolders',
-  'library:loadScanned',
-  'library:saveFolders',
-  'library:saveScanned',
-  'library:updateStats',
-  'playlist:loadAll',
-  'playlist:saveAll',
-  'playlist:export',
-  'playback:setPosition',
-  'playback:clearPosition',
-  'yt:search',
-  'yt:resolve',
-  'yt:resolveMore',
-  'yt:channel',
-  'yt:channelAll',
-  'yt:authStatus',
-  'yt:stream:get',
-  'sc:search',
-  'sc:resolve',
-  'sc:resolveMore',
-  'sc:channel',
-  'sc:channelAll',
-  'sc:stream:get',
-  'saved:load',
-  'saved:saveTrack',
-  'saved:removeTrack',
-  'saved:savePlaylist',
-  'saved:removePlaylist',
-  'yt:login',
-  'yt:logout',
-  'yt:importCookies',
-  'yt:exportCookies',
-  'yt:subs:list',
-  'yt:subs:add',
-  'yt:subs:remove',
-  'yt:subs:update',
-  'yt:subs:checkNow',
-  'yt:subs:checkChannel',
-  'yt:download:add',
-  'yt:download:cancel',
-  'yt:download:pause',
-  'yt:download:resume',
-  'yt:download:list',
-  'yt:download:clearFinished',
-  'yt:download:pauseAll',
-  'yt:download:resumeAll',
-  'yt:download:moveToFront',
-  'yt:download:move',
-  'yt:download:export',
-  'yt:download:import',
-  'yt:download:schedule',
-  'yt:download:schedule:get',
-  'yt:download:updateMetadata',
-  'profiles:list',
-  'profiles:save',
-  'profiles:delete',
-  'pip:start',
-  'pip:stop',
-  'pip:preload',
-  'pip:loadtrack',
-  'pip:updateSubtitle',
-  'pip:previewStart',
-  'pip:previewStop',
-  'pip:previewUpdate',
-  'audio-pip:show',
-  'audio-pip:hide',
-  'audio-pip:autoHide',
-  'audio-pip:prewarm',
-  'audio-pip:update',
-  'audio-pip:previewStart',
-  'audio-pip:previewStop',
-  'audio-pip:previewUpdate',
-  'sources:list',
-  'sources:downloadDir',
-  'sources:pickIcon',
-  'sources:export',
-  'sources:import',
-  'sources:save',
-  'sources:delete',
-  'sources:test',
-  'sources:fetch',
-  'sources:tableRows',
-  'sources:enqueue',
-  'coverCache:clear',
-  'plugins:list',
-  'plugins:get',
-  'plugins:toggle',
-  'plugins:uninstall',
-  'plugins:installFromFolder',
-  'plugins:storage:keys',
-  'plugins:storage:get',
-  'plugins:storage:set',
-  'plugins:storage:remove',
-  'plugins:settings:get',
-  'plugins:settings:set',
-  'plugins:fetch'
-]);
-
-const ALLOWED_SEND_CHANNELS = new Set<string>([
-  'explorer:refreshAll',
-  'audio-pip:vizData',
-  'audio-pip:timeUpdate',
-  'audio-pip:theme',
-  'audio-pip:showMain',
-  'audio-pip:action',
-  'audio-pip:progressClick',
-  'pip:theme',
-  'pip:locale',
-  'pip:ended',
-  'pip:maximize',
-  'pip:timeUpdate',
-  'pip:hidden'
-]);
-
-const ALLOWED_RECEIVE_CHANNELS = new Set<string>([
-  'window:maximized',
-  'window:fullscreenChanged',
-  'dep:progress',
-  'updater:event',
-  'yt:downloadProgress',
-  'yt:subs:updated',
-  'yt:newVideos',
-  'audio-pip:closed',
-  'audio-pip:action',
-  'audio-pip:progressClick',
-  'audio-pip:update',
-  'audio-pip:vizData',
-  'audio-pip:theme',
-  'pip:closed',
-  'pip:ended',
-  'pip:maximize',
-  'pip:videoSrc',
-  'pip:play',
-  'pip:requestTime',
-  'pip:pause',
-  'pip:clear',
-  'pip:subtitle',
-  'pip:clearSubtitle',
-  'pip:theme',
-  'pip:locale',
-  'fs:readdir:batch',
-  'library:scan:progress',
-  'library:updated',
-  'library:fileMissing',
-  'media:playPause',
-  'media:next',
-  'media:previous',
-  'media:stop',
-  'media:volumeUp',
-  'media:volumeDown',
-  'media:toggleMute',
-  'open-files',
-  'explorer:add-tab',
-  'explorer:refresh',
-  'explorer:remove-tab',
-  'imageViewer:files',
-  'app:rendererReady',
-  'app:setBackgroundMaterial'
-]);
 
 function trySend(channel: string, ...args: unknown[]): void {
   if (!ALLOWED_SEND_CHANNELS.has(channel)) {
@@ -255,6 +51,10 @@ function trySend(channel: string, ...args: unknown[]): void {
   }
 }
 
+// Every invoke goes through this guard — the generated allowlist is the single
+// source of truth, so typed wrappers cannot silently bypass it.
+function tryInvoke<C extends IpcChannel>(channel: C, ...args: IpcArgs<C>): Promise<IpcResult<C>>;
+function tryInvoke(channel: string, ...args: unknown[]): Promise<unknown>;
 function tryInvoke(channel: string, ...args: unknown[]): Promise<unknown> {
   if (!ALLOWED_INVOKE_CHANNELS.has(channel)) {
     logger.warn('preload', `IPC invoke on non-allowlisted channel '${channel}' blocked`);
@@ -272,10 +72,10 @@ function tryInvoke(channel: string, ...args: unknown[]): Promise<unknown> {
   }
 }
 
-const api = {
+const api: OndaAPI = {
   mediaServerUrl,
   invoke: tryInvoke,
-  getWindowId: (): Promise<number> => ipcRenderer.invoke('window:id'),
+  getWindowId: (): Promise<number> => tryInvoke('window:id'),
   send: trySend,
   on: (channel: string, callback: (...args: unknown[]) => void): (() => void) => {
     if (!ALLOWED_RECEIVE_CHANNELS.has(channel)) {
@@ -367,75 +167,65 @@ const api = {
   ): Promise<void> => {
     await tryInvoke('pip:loadtrack', videoSrc, subtitleData);
   },
-  checkFfmpeg: (): Promise<{ installed: boolean; version: string | null }> =>
-    ipcRenderer.invoke('dep:checkFfmpeg'),
-  checkFfprobe: (): Promise<{ installed: boolean; version: string | null }> =>
-    ipcRenderer.invoke('dep:checkFfprobe'),
-  checkYtdlp: (): Promise<{ installed: boolean; version: string | null; path: string | null }> =>
-    ipcRenderer.invoke('dep:checkYtdlp'),
+  checkFfmpeg: () => tryInvoke('dep:checkFfmpeg'),
+  checkFfprobe: () => tryInvoke('dep:checkFfprobe'),
+  checkYtdlp: () => tryInvoke('dep:checkYtdlp'),
   installFfmpeg: (): Promise<{ success: boolean; error?: string }> =>
-    ipcRenderer.invoke('dep:installFfmpeg'),
-  installYtdlp: (): Promise<{ success: boolean; error?: string }> =>
-    ipcRenderer.invoke('dep:installYtdlp'),
-  checkMkvextract: (): Promise<{ installed: boolean; version: string | null }> =>
-    ipcRenderer.invoke('dep:checkMkvextract'),
+    tryInvoke('dep:installFfmpeg'),
+  installYtdlp: (): Promise<{ success: boolean; error?: string }> => tryInvoke('dep:installYtdlp'),
+  checkMkvextract: () => tryInvoke('dep:checkMkvextract'),
   installMkvextract: (): Promise<{ success: boolean; error?: string }> =>
-    ipcRenderer.invoke('dep:installMkvextract'),
+    tryInvoke('dep:installMkvextract'),
   getDependencyPaths: (): Promise<
     Array<{ tool: string; path: string | null; managed: boolean; version: string | null }>
-  > => ipcRenderer.invoke('dep:getPaths'),
+  > => tryInvoke('dep:getPaths'),
   checkUpdateYtdlp: (): Promise<{
     updateAvailable: boolean;
     current: string | null;
     latest: string | null;
-  }> => ipcRenderer.invoke('dep:checkUpdateYtdlp'),
+  }> => tryInvoke('dep:checkUpdateYtdlp'),
   updateYtdlp: (): Promise<{ success: boolean; error?: string; cancelled?: boolean }> =>
-    ipcRenderer.invoke('dep:updateYtdlp'),
-  removeYtdlp: (): Promise<{ success: boolean; error?: string }> =>
-    ipcRenderer.invoke('dep:removeYtdlp'),
-  removeFfmpeg: (): Promise<{ success: boolean; error?: string }> =>
-    ipcRenderer.invoke('dep:removeFfmpeg'),
+    tryInvoke('dep:updateYtdlp'),
+  removeYtdlp: (): Promise<{ success: boolean; error?: string }> => tryInvoke('dep:removeYtdlp'),
+  removeFfmpeg: (): Promise<{ success: boolean; error?: string }> => tryInvoke('dep:removeFfmpeg'),
   removeFfprobe: (): Promise<{ success: boolean; error?: string }> =>
-    ipcRenderer.invoke('dep:removeFfprobe'),
+    tryInvoke('dep:removeFfprobe'),
   removeMkvextract: (): Promise<{ success: boolean; error?: string }> =>
-    ipcRenderer.invoke('dep:removeMkvextract'),
-  cancelDepInstall: (tool: string): Promise<boolean> =>
-    ipcRenderer.invoke('dep:cancelInstall', tool),
+    tryInvoke('dep:removeMkvextract'),
+  cancelDepInstall: (tool: string): Promise<boolean> => tryInvoke('dep:cancelInstall', tool),
   getCover: (filePath: string): Promise<{ type: 'video' | 'image' | null; data: string | null }> =>
-    ipcRenderer.invoke('media:getCover', filePath),
-  getDuration: (filePath: string): Promise<number> =>
-    ipcRenderer.invoke('media:getDuration', filePath),
+    tryInvoke('media:getCover', filePath),
+  getDuration: (filePath: string): Promise<number> => tryInvoke('media:getDuration', filePath),
   getDurations: (paths: string[]): Promise<Record<string, number>> =>
-    ipcRenderer.invoke('media:batchDurations', paths),
+    tryInvoke('media:batchDurations', paths),
   writeTags: (
     filePath: string,
     tags: Record<string, string | undefined>
-  ): Promise<{ success: boolean; error?: string }> =>
-    ipcRenderer.invoke('media:writeTags', filePath, tags),
+  ): Promise<{ success: boolean; error?: string }> => tryInvoke('media:writeTags', filePath, tags),
   renameFile: (
     oldPath: string,
     newName: string
   ): Promise<{ success: boolean; error?: string; newPath?: string }> =>
-    ipcRenderer.invoke('media:renameFile', oldPath, newName),
+    tryInvoke('media:renameFile', oldPath, newName),
   writeCover: (
     filePath: string,
     imageSource: number[] | string
   ): Promise<{ success: boolean; error?: string }> =>
-    ipcRenderer.invoke('media:writeCover', filePath, imageSource),
+    tryInvoke('media:writeCover', filePath, imageSource),
   readCover: (filePath: string): Promise<{ mime?: string; data?: number[] } | null> =>
-    ipcRenderer.invoke('media:readCover', filePath),
+    tryInvoke('media:readCover', filePath),
   openImageDialog: (): Promise<{ canceled: boolean; filePaths: string[] }> =>
-    ipcRenderer.invoke('dialog:openImage'),
+    tryInvoke('dialog:openImage'),
   openSubtitleDialog: (): Promise<{ canceled: boolean; filePaths: string[] }> =>
-    ipcRenderer.invoke('dialog:openSubtitle'),
+    tryInvoke('dialog:openSubtitle'),
   musicbrainzSearchRelease: (
     query: string
   ): Promise<{ success: boolean; releases: MusicbrainzRelease[]; error?: string }> =>
-    ipcRenderer.invoke('musicbrainz:searchRelease', query),
+    tryInvoke('musicbrainz:searchRelease', query),
   musicbrainzLookupRelease: (
     releaseId: string
   ): Promise<{ success: boolean; release?: MusicbrainzRelease; error?: string }> =>
-    ipcRenderer.invoke('musicbrainz:lookupRelease', releaseId),
+    tryInvoke('musicbrainz:lookupRelease', releaseId),
   musicbrainzGetCoverData: (
     releaseId: string
   ): Promise<{
@@ -444,7 +234,7 @@ const api = {
     mime?: string;
     error?: string;
     rateLimited?: boolean;
-  }> => ipcRenderer.invoke('musicbrainz:getCoverData', releaseId),
+  }> => tryInvoke('musicbrainz:getCoverData', releaseId),
   musicbrainzAutodetect: (
     query: string
   ): Promise<{
@@ -452,35 +242,35 @@ const api = {
     match: 'certain' | 'ambiguous' | 'none';
     releases: MusicbrainzRelease[];
     error?: string;
-  }> => ipcRenderer.invoke('musicbrainz:autodetect', query),
+  }> => tryInvoke('musicbrainz:autodetect', query),
   musicbrainzBatchApply: (payload: unknown): Promise<{ success: boolean; error?: string }> =>
-    ipcRenderer.invoke('musicbrainz:batchApply', payload),
+    tryInvoke('musicbrainz:batchApply', payload),
   getFilePath: (file: File): string => webUtils.getPathForFile(file),
   listEmbeddedSubtitles: (
     filePath: string
   ): Promise<Array<{ index: number; language: string; title: string; codec: string }>> =>
-    ipcRenderer.invoke('subtitles:listEmbedded', filePath),
+    tryInvoke('subtitles:listEmbedded', filePath),
   extractEmbeddedSubtitle: (
     filePath: string,
     streamIndex: number
   ): Promise<{ content: string; format: string } | null> =>
-    ipcRenderer.invoke('subtitles:extractEmbedded', filePath, streamIndex),
+    tryInvoke('subtitles:extractEmbedded', filePath, streamIndex),
   findExternalSubtitles: (
     videoPath: string
   ): Promise<Array<{ name: string; path: string; format: string }>> =>
-    ipcRenderer.invoke('subtitles:findExternal', videoPath),
+    tryInvoke('subtitles:findExternal', videoPath),
   readSubtitleFile: (filePath: string): Promise<string | null> =>
-    ipcRenderer.invoke('subtitles:readFile', filePath),
+    tryInvoke('subtitles:readFile', filePath),
   extractSubtitleFonts: (
     filePath: string
   ): Promise<Array<{ name: string; ext: string; data: number[] }>> =>
-    ipcRenderer.invoke('subtitles:extractAttachments', filePath),
+    tryInvoke('subtitles:extractAttachments', filePath),
   getPlaybackPosition: (filePath: string): Promise<number> =>
-    ipcRenderer.invoke('playback:getPosition', filePath),
+    tryInvoke('playback:getPosition', filePath),
   setPlaybackPosition: (filePath: string, position: number): Promise<void> =>
-    ipcRenderer.invoke('playback:setPosition', filePath, position),
+    tryInvoke('playback:setPosition', filePath, position),
   clearPlaybackPosition: (filePath: string): Promise<void> =>
-    ipcRenderer.invoke('playback:clearPosition', filePath),
+    tryInvoke('playback:clearPosition', filePath),
   pipUpdateSubtitle: async (
     data: {
       subContent: string;
@@ -491,17 +281,17 @@ const api = {
     await tryInvoke('pip:updateSubtitle', data);
   },
   checkAudioCodec: (filePath: string): Promise<{ codec: string; supported: boolean } | null> =>
-    ipcRenderer.invoke('media:checkAudioCodec', filePath),
+    tryInvoke('media:checkAudioCodec', filePath),
   transcodeAudio: (filePath: string): Promise<string | null> =>
-    ipcRenderer.invoke('media:transcodeAudio', filePath),
+    tryInvoke('media:transcodeAudio', filePath),
   transcodeAudioChunk: (
     filePath: string,
     startTime: number,
     duration: number
   ): Promise<string | null> =>
-    ipcRenderer.invoke('media:transcodeAudioChunk', filePath, startTime, duration),
+    tryInvoke('media:transcodeAudioChunk', filePath, startTime, duration),
   transcodeVideo: (filePath: string): Promise<string | null> =>
-    ipcRenderer.invoke('media:transcodeVideo', filePath),
+    tryInvoke('media:transcodeVideo', filePath),
   audioPipShow: async (
     state: Record<string, unknown>,
     opts?: { dock?: string; cornerElements?: string[]; edgeElements?: string[]; autoHide?: boolean }
@@ -528,7 +318,7 @@ const api = {
     const r = await tryInvoke('audio-pip:update', state, opts);
     return !!r;
   },
-  audioPipPreviewStart: async (opts: {
+  audioPipPreviewStart: async (opts?: {
     dock?: string;
     cornerElements?: string[];
     edgeElements?: string[];
@@ -541,7 +331,7 @@ const api = {
     const r = await tryInvoke('audio-pip:previewStop');
     return !!r;
   },
-  audioPipPreviewUpdate: async (opts: {
+  audioPipPreviewUpdate: async (opts?: {
     dock?: string;
     cornerElements?: string[];
     edgeElements?: string[];
@@ -550,81 +340,78 @@ const api = {
     const r = await tryInvoke('audio-pip:previewUpdate', opts);
     return !!r;
   },
-  getAppInfo: (): Promise<AppInfo> => ipcRenderer.invoke('app:getInfo'),
+  getAppInfo: (): Promise<AppInfo> => tryInvoke('app:getInfo'),
   getAutoLaunch: (): Promise<{ enabled: boolean; hidden: boolean }> =>
-    ipcRenderer.invoke('app:getAutoLaunch'),
+    tryInvoke('app:getAutoLaunch'),
   setAutoLaunch: (opts: { enabled: boolean; hidden?: boolean }): Promise<boolean> =>
-    ipcRenderer.invoke('app:setAutoLaunch', opts),
-  cancelLibraryScan: (): Promise<boolean> => ipcRenderer.invoke('library:scanCancel'),
+    tryInvoke('app:setAutoLaunch', opts),
+  cancelLibraryScan: (): Promise<boolean> => tryInvoke('library:scanCancel'),
   grantMediaAccess: (filePath: string): Promise<boolean> =>
-    ipcRenderer.invoke('media:grantAccess', filePath),
+    tryInvoke('media:grantAccess', filePath),
   getLicenses: (): Promise<Array<{ name: string; version?: string; license?: string }>> =>
-    ipcRenderer.invoke('app:getLicenses'),
-  readLogs: (lines?: number): Promise<string> => ipcRenderer.invoke('diagnostics:readLogs', lines),
-  clearLogs: (): Promise<boolean> => ipcRenderer.invoke('diagnostics:clearLogs'),
+    tryInvoke('app:getLicenses'),
+  readLogs: (lines?: number): Promise<string> => tryInvoke('diagnostics:readLogs', lines),
+  clearLogs: (): Promise<boolean> => tryInvoke('diagnostics:clearLogs'),
   downloadLog: (): Promise<{ success: boolean; canceled?: boolean; error?: string }> =>
-    ipcRenderer.invoke('diagnostics:downloadLog'),
-  getUpdaterState: (): Promise<UpdaterState> => ipcRenderer.invoke('updater:getState'),
-  checkForUpdates: (): Promise<{ checking: boolean }> => ipcRenderer.invoke('updater:check'),
-  downloadUpdate: (): Promise<boolean> => ipcRenderer.invoke('updater:download'),
-  installUpdate: (): Promise<void> => ipcRenderer.invoke('updater:install'),
-  youtubeAuthStatus: (): Promise<YoutubeAuthStatus> => ipcRenderer.invoke('yt:authStatus'),
-  getStreamUrl: (url: string): Promise<IpcStreamResult> => ipcRenderer.invoke('yt:stream:get', url),
-  savedLoad: (): Promise<IpcSavedData> => ipcRenderer.invoke('saved:load'),
-  savedSaveTrack: (track: IpcSavedStream): Promise<boolean> =>
-    ipcRenderer.invoke('saved:saveTrack', track),
-  savedRemoveTrack: (id: string): Promise<boolean> => ipcRenderer.invoke('saved:removeTrack', id),
+    tryInvoke('diagnostics:downloadLog'),
+  getUpdaterState: (): Promise<UpdaterState> => tryInvoke('updater:getState'),
+  checkForUpdates: (): Promise<{ checking: boolean }> => tryInvoke('updater:check'),
+  downloadUpdate: (): Promise<boolean> => tryInvoke('updater:download'),
+  installUpdate: (): Promise<void> => tryInvoke('updater:install'),
+  youtubeAuthStatus: (): Promise<YoutubeAuthStatus> => tryInvoke('yt:authStatus'),
+  getStreamUrl: (url: string): Promise<IpcStreamResult> => tryInvoke('yt:stream:get', url),
+  savedLoad: (): Promise<IpcSavedData> => tryInvoke('saved:load'),
+  savedSaveTrack: (track: IpcSavedStream): Promise<boolean> => tryInvoke('saved:saveTrack', track),
+  savedRemoveTrack: (id: string): Promise<boolean> => tryInvoke('saved:removeTrack', id),
   savedSavePlaylist: (playlist: IpcSavedPlaylist): Promise<boolean> =>
-    ipcRenderer.invoke('saved:savePlaylist', playlist),
-  savedRemovePlaylist: (id: string): Promise<boolean> =>
-    ipcRenderer.invoke('saved:removePlaylist', id),
-  radioLoad: (): Promise<{ stations: IpcRadioStation[] }> => ipcRenderer.invoke('radio:load'),
-  radioSave: (stations: IpcRadioStation[]): Promise<boolean> =>
-    ipcRenderer.invoke('radio:save', stations),
+    tryInvoke('saved:savePlaylist', playlist),
+  savedRemovePlaylist: (id: string): Promise<boolean> => tryInvoke('saved:removePlaylist', id),
+  radioLoad: (): Promise<{ stations: IpcRadioStation[] }> => tryInvoke('radio:load'),
+  radioSave: (stations: IpcRadioStation[]): Promise<boolean> => tryInvoke('radio:save', stations),
   youtubeLogin: (): Promise<{ success: boolean; canceled?: boolean; error?: string }> =>
-    ipcRenderer.invoke('yt:login'),
-  youtubeLogout: (): Promise<{ success: boolean; error?: string }> =>
-    ipcRenderer.invoke('yt:logout'),
+    tryInvoke('yt:login'),
+  youtubeLogout: (): Promise<{ success: boolean; error?: string }> => tryInvoke('yt:logout'),
   youtubeImportCookies: (): Promise<{ success: boolean; canceled?: boolean; error?: string }> =>
-    ipcRenderer.invoke('yt:importCookies'),
+    tryInvoke('yt:importCookies'),
   youtubeExportCookies: (): Promise<{ success: boolean; canceled?: boolean; error?: string }> =>
-    ipcRenderer.invoke('yt:exportCookies'),
-  youtubeSubscriptions: (): Promise<IpcSubscription[]> => ipcRenderer.invoke('yt:subs:list'),
+    tryInvoke('yt:exportCookies'),
+  youtubeSubscriptions: (): Promise<IpcSubscription[]> => tryInvoke('yt:subs:list'),
   youtubeAddSubscription: (input: {
     channelId: string;
     channelTitle: string;
     channelThumbnail: string;
-  }): Promise<IpcSubscription | null> => ipcRenderer.invoke('yt:subs:add', input),
+    downloadPrefs?: IpcSubscriptionDownloadPrefs;
+    seedBaseline?: boolean;
+  }): Promise<IpcSubscription | null> => tryInvoke('yt:subs:add', input),
   youtubeRemoveSubscription: (channelId: string): Promise<boolean> =>
-    ipcRenderer.invoke('yt:subs:remove', channelId),
+    tryInvoke('yt:subs:remove', channelId),
   youtubeUpdateSubscription: (
     channelId: string,
     patch: IpcSubscriptionPatch
-  ): Promise<IpcSubscription | null> => ipcRenderer.invoke('yt:subs:update', channelId, patch),
+  ): Promise<IpcSubscription | null> => tryInvoke('yt:subs:update', channelId, patch),
   youtubeCheckSubscriptions: (): Promise<IpcSubscriptionCheckResult> =>
-    ipcRenderer.invoke('yt:subs:checkNow'),
-  pluginsList: (): Promise<PluginInfo[]> => ipcRenderer.invoke('plugins:list'),
-  pluginsGet: (id: string): Promise<IpcPluginGetResult> => ipcRenderer.invoke('plugins:get', id),
+    tryInvoke('yt:subs:checkNow'),
+  pluginsList: (): Promise<PluginInfo[]> => tryInvoke('plugins:list'),
+  pluginsGet: (id: string): Promise<IpcPluginGetResult> => tryInvoke('plugins:get', id),
   pluginsToggle: (id: string, enabled: boolean): Promise<boolean> =>
-    ipcRenderer.invoke('plugins:toggle', id, enabled),
+    tryInvoke('plugins:toggle', id, enabled),
   pluginsUninstall: (id: string): Promise<IpcPluginUninstallResult> =>
-    ipcRenderer.invoke('plugins:uninstall', id),
+    tryInvoke('plugins:uninstall', id),
   pluginsInstallFromFolder: (): Promise<IpcPluginInstallResult> =>
-    ipcRenderer.invoke('plugins:installFromFolder'),
-  pluginsStorageKeys: (id: string): Promise<string[]> =>
-    ipcRenderer.invoke('plugins:storage:keys', id),
+    tryInvoke('plugins:installFromFolder'),
+  pluginsStorageKeys: (id: string): Promise<string[]> => tryInvoke('plugins:storage:keys', id),
   pluginsStorageGet: (id: string, key: string): Promise<unknown> =>
-    ipcRenderer.invoke('plugins:storage:get', id, key),
+    tryInvoke('plugins:storage:get', id, key),
   pluginsStorageSet: (id: string, key: string, value: unknown): Promise<boolean> =>
-    ipcRenderer.invoke('plugins:storage:set', id, key, value),
+    tryInvoke('plugins:storage:set', id, key, value),
   pluginsStorageRemove: (id: string, key: string): Promise<boolean> =>
-    ipcRenderer.invoke('plugins:storage:remove', id, key),
+    tryInvoke('plugins:storage:remove', id, key),
   pluginsSettingsGet: (id: string): Promise<Record<string, unknown>> =>
-    ipcRenderer.invoke('plugins:settings:get', id),
+    tryInvoke('plugins:settings:get', id),
   pluginsSettingsSet: (id: string, key: string, value: unknown): Promise<boolean> =>
-    ipcRenderer.invoke('plugins:settings:set', id, key, value),
+    tryInvoke('plugins:settings:set', id, key, value),
   pluginsFetch: (id: string, url: string, opts: PluginFetchOptions): Promise<PluginFetchResult> =>
-    ipcRenderer.invoke('plugins:fetch', id, url, opts)
+    tryInvoke('plugins:fetch', id, url, opts)
 };
 
 if (process.contextIsolated) {

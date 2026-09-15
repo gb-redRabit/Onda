@@ -49,6 +49,9 @@ jobs:
       - name: Check empty catch blocks
         run: npm run check:catch
 
+      - name: Check generated IPC files are up to date
+        run: npm run ipc:gen:check
+
       - name: Build
         run: npm run build
 
