@@ -60,7 +60,7 @@ export function buildPreviewRows(
   includeFields: Record<string, boolean>
 ): MusicbrainzPreviewRow[] {
   if (!rel) return [];
-  const old = {
+  const old: Record<string, string> = {
     title: track?.metadata?.title || track?.name || '',
     artist: track?.metadata?.artist || '',
     album: track?.metadata?.album || '',
@@ -90,7 +90,7 @@ export function buildPreviewRows(
   return (Object.keys(labels) as Array<keyof typeof labels>).map((k) => ({
     key: k,
     label: labels[k],
-    old: (old as unknown as Record<string, string>)[k] || '—',
+    old: old[k] || '—',
     now: now[k] || '—',
     checked: includeFields[k]
   }));

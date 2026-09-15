@@ -142,7 +142,7 @@ export function useMusicBrainzLookup(options: { onApply: (data: LookupApplyData)
     const rel = lookupResult.value;
     if (!rel) return;
     const f = includeFields.value;
-    const emitData: LookupApplyData = {};
+    const emitData: LookupApplyData & Record<string, unknown> = {};
     if (f.album) emitData.album = rel.title;
     if (f.year) emitData.year = rel.date ? parseInt(rel.date.slice(0, 4)) : undefined;
     if (f.artist)
@@ -160,7 +160,7 @@ export function useMusicBrainzLookup(options: { onApply: (data: LookupApplyData)
     for (const k of Object.keys(f) as Array<keyof typeof f>) {
       if (!f[k]) res[k] = 'pominięte';
       else if (k === 'cover' && !rel._coverData) res[k] = 'brak okładki';
-      else if ((emitData as unknown as Record<string, unknown>)[k] !== undefined) res[k] = true;
+      else if (emitData[k] !== undefined) res[k] = true;
       else res[k] = false;
     }
     applyResult.value = res;
