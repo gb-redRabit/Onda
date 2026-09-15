@@ -9,7 +9,8 @@ import { AudioSecondary } from './audioSecondary';
 import {
   attachMediaElementListeners,
   cleanupAudioElement,
-  computeTrackNormalization
+  computeTrackNormalization,
+  handleStreamSourceError
 } from './audioEngineHelpers';
 
 class AudioEngine {
@@ -77,63 +78,31 @@ class AudioEngine {
     }
   }
 
-  // Stream error handling ladder:
-  //   proxy retries exhausted        -> direct retry once (different request path)
-  //   direct failed too              -> one more proxy pass (the per-IP throttle
-  //                                     window may have passed meanwhile)
-  //   that failed as well            -> streamError event (footer shows it)
   private handleStreamError(el: HTMLAudioElement): void {
-    const err = el.error;
-    logger.warn(
-      'audioEngine',
-      `audio element error code=${err?.code} message=${err?.message} src=${(el.src || '').slice(0, 120)}`
-    );
-    if (!this.streamUrl) {
-      // Local file playback (no stream URL): the file is missing, unreadable
-      // or the media server rejected it. Emit so the UI can skip gracefully.
-      audioEvents.emit('trackError', err ? String(err.code) : 'unknown');
-      return;
-    }
-    if (this.streamMode === 'proxy' && !this.streamTriedDirect) {
-      // Proxy retries (403 with backoff) were exhausted — retry the raw URL
-      // once directly from the renderer as a different request path.
-      this.streamTriedDirect = true;
-      this.streamMode = 'direct';
-      logger.info(
-        'audioEngine',
-        `stream proxy failed -> direct retry url=${this.streamUrl.slice(0, 120)}`
-      );
-      const player = usePlayerStore();
-      el.crossOrigin = null;
-      this.graph.disconnectSourceNode();
-      this.disconnectSecondaryAudio();
-      el.volume = (player.isMuted ? 0 : player.volume) * this.normalization;
-      el.src = this.streamUrl;
-      el.load();
-      audioEvents.emit('bufferChange', 0);
-      return;
-    }
-    if (this.streamMode === 'direct' && !this.streamFinalRetried) {
-      // Direct retry failed as well — go back through the proxy one last time.
-      this.streamFinalRetried = true;
-      this.streamMode = 'proxy';
-      logger.info(
-        'audioEngine',
-        `stream direct failed -> proxy retry url=${this.streamUrl.slice(0, 120)}`
-      );
-      const player = usePlayerStore();
-      el.crossOrigin = 'anonymous';
-      el.volume = 1;
-      this.connectAudio(el);
-      if (this.graph.gainNode) {
-        this.graph.gainNode.gain.value = (player.isMuted ? 0 : player.volume) * this.normalization;
+    handleStreamSourceError(el, {
+      getStreamUrl: () => this.streamUrl,
+      getMode: () => this.streamMode,
+      getTriedDirect: () => this.streamTriedDirect,
+      getFinalRetried: () => this.streamFinalRetried,
+      setMode: (mode) => {
+        this.streamMode = mode;
+      },
+      setTriedDirect: (value) => {
+        this.streamTriedDirect = value;
+      },
+      setFinalRetried: (value) => {
+        this.streamFinalRetried = value;
+      },
+      normalization: () => this.normalization,
+      isMuted: () => usePlayerStore().isMuted,
+      volume: () => usePlayerStore().volume,
+      disconnectSourceNode: () => this.graph.disconnectSourceNode(),
+      disconnectSecondary: () => this.disconnectSecondaryAudio(),
+      connectAudio: (element) => this.connectAudio(element),
+      setGain: (value) => {
+        if (this.graph.gainNode) this.graph.gainNode.gain.value = value;
       }
-      el.src = toMediaStreamUrl(this.streamUrl);
-      el.load();
-      audioEvents.emit('bufferChange', 0);
-      return;
-    }
-    audioEvents.emit('streamError', 'stream-failed');
+    });
   }
 
   private handleEnded(): void {

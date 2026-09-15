@@ -5,9 +5,8 @@
 import { ipcMain } from 'electron';
 import { logger } from '../../shared/logger';
 import { detectScKind, normalizeScUrl } from '../../shared/soundcloud';
-import { readProxyArgs } from './proxy-utils';
-import { mapResolvedContainer, pickChannelThumbnail, type YtDlpEntry } from './youtube-utils';
-import { runYtDlp, fetchRangeJson } from './youtube-handlers';
+import { mapResolvedContainer } from './youtube-utils';
+import { fetchRangeJson } from './youtube-handlers';
 import {
   scSearchTracks,
   scResolve,
@@ -17,8 +16,9 @@ import {
   upgradeArtworkUrl,
   ScApiError
 } from './soundcloud-client';
-import { scThumbFromEntry, entryUrl, scVideoFromEntry } from './soundcloud-entries';
+import { scThumbFromEntry, entryUrl } from './soundcloud-entries';
 export { scVideoFromEntry } from './soundcloud-entries';
+import { fallbackChannelPage, fallbackChannelAll } from './soundcloud-channel-fallback';
 import { getScStreamUrl } from './soundcloud-stream';
 import { errorCodeOf } from './soundcloud-error';
 import { fallbackResolvePage, fallbackSearch } from './soundcloud-fallback';
@@ -309,39 +309,7 @@ export function registerSoundcloudHandlers(): void {
       } catch (e: unknown) {
         logger.warn('sc', 'api channel failed, falling back to yt-dlp', String(e));
         try {
-          const stdout = await runYtDlp(
-            [
-              target,
-              '--flat-playlist',
-              '--playlist-start',
-              String(start),
-              '--playlist-end',
-              String(end),
-              '--no-warnings',
-              '-J',
-              ...(await readProxyArgs())
-            ],
-            60000
-          );
-          const parsed = JSON.parse(stdout) as YtDlpEntry;
-          const items = (parsed.entries || [])
-            .filter((en) => en.title && (en.id || entryUrl(en)))
-            .map((en) => scVideoFromEntry(en));
-          return {
-            success: true,
-            channel: {
-              id: parsed.uploader_id || parsed.uploader || target,
-              url: target,
-              title: parsed.channel || parsed.uploader || parsed.title || '',
-              thumbnail: pickChannelThumbnail(parsed),
-              bannerUrl: pickChannelThumbnail(parsed) || undefined,
-              subscriberCount: parsed.channel_follower_count,
-              description: parsed.description || '',
-              videoCount: parsed.playlist_count ?? items.length
-            },
-            items,
-            hasMore: items.length >= limit
-          };
+          return { success: true, ...(await fallbackChannelPage(target, start, end, limit)) };
         } catch (e2: unknown) {
           const err = e2 as { message?: string };
           logger.warn('sc', 'channel failed', err.message || String(e2));
@@ -385,27 +353,7 @@ export function registerSoundcloudHandlers(): void {
     } catch (e: unknown) {
       logger.warn('sc', 'channelAll api failed, falling back to yt-dlp', String(e));
       try {
-        const stdout = await runYtDlp(
-          [target, '--flat-playlist', '--no-warnings', '-J', ...(await readProxyArgs())],
-          120000
-        );
-        const parsed = JSON.parse(stdout) as YtDlpEntry;
-        const valid = (parsed.entries || []).filter((en) => en.title && (en.id || entryUrl(en)));
-        const items = valid.slice(0, 500).map((en) => scVideoFromEntry(en));
-        return {
-          success: true,
-          channel: {
-            id: parsed.uploader_id || parsed.uploader || target,
-            url: target,
-            title: parsed.channel || parsed.uploader || parsed.title || '',
-            thumbnail: pickChannelThumbnail(parsed),
-            bannerUrl: pickChannelThumbnail(parsed) || undefined,
-            subscriberCount: parsed.channel_follower_count,
-            description: parsed.description || '',
-            videoCount: parsed.playlist_count ?? items.length
-          },
-          items
-        };
+        return { success: true, ...(await fallbackChannelAll(target)) };
       } catch (e2: unknown) {
         const err = e2 as { message?: string };
         logger.warn('sc', 'channelAll failed', err.message || String(e2));
