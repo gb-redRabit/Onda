@@ -15,6 +15,7 @@
     "format:check": "prettier --check .",
     "lint": "eslint --cache .",
     "check:catch": "node scripts/check-catch.mjs",
+    "ipc:inventory": "node scripts/ipc-inventory.mjs",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "vue-tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
