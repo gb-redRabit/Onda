@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, defineAsyncComponent } from 'vue';
+import { ref, computed, defineAsyncComponent } from 'vue';
 import { Music2 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
-import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { usePluginsStore } from '@renderer/stores/plugins';
 import AudioCanvasElements from '@renderer/components/audio/AudioCanvasElements.vue';
@@ -10,6 +9,7 @@ import AudioHudToolbar from '@renderer/components/audio/AudioHudToolbar.vue';
 import AudioVizSettings from '@renderer/components/audio/AudioVizSettings.vue';
 import { nextVizMode } from '@renderer/utils/audioVisualizer';
 import { useAudioElementDrag } from '@renderer/composables/useAudioElementDrag';
+import { useAudioImmersive } from '@renderer/composables/useAudioImmersive';
 
 // The layout editor (750+ lines) only renders when the user opens it — lazy.
 const AudioLayoutEditor = defineAsyncComponent(
@@ -17,7 +17,6 @@ const AudioLayoutEditor = defineAsyncComponent(
 );
 
 const player = usePlayerStore();
-const audio = useAudioPlayer();
 const settings = useSettingsStore();
 const pluginsStore = usePluginsStore();
 
@@ -32,174 +31,27 @@ function cycleViz() {
 
 const pluginCommands = computed(() => pluginsStore.commandsIn('audio-view'));
 
-const viewEl = ref<HTMLElement | null>(null);
-const showUI = ref(true);
-const uiTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
-const uiFireAt = ref(0);
 const showVizSettings = ref(false);
 const showLayoutEditor = ref(false);
-const isFullscreen = ref(false);
+const { setViewEl, showUI, isFullscreen, onMouseMove, toggleFullscreen } = useAudioImmersive({
+  isDragging: () => !!dragging.value,
+  onDragMove: (e) => onDragMouseMove(e),
+  showLayoutEditor
+});
 
 // Drag state
 const { dragging, dragPos, onElementMouseDown, onDragMouseMove, onDragMouseUp } =
   useAudioElementDrag(isFullscreen);
 
 const elements = computed(() => settings.appearance.audioLayout?.elements ?? []);
-const cursorHideTimeout = computed(() => (settings.playback.cursorTimeout ?? 3) * 1000);
 const hudOpacity = computed(() => (settings.appearance.audioLayout?.hudOpacity ?? 100) / 100);
 
 // Cursor + HUD hide together — the delay comes from Odtwarzanie (playback) settings.
-function setCursorVisible(visible: boolean) {
-  if (!viewEl.value) return;
-  viewEl.value.classList.toggle('hide-cursor', !visible);
-}
-
-function hideUIAfterDelay() {
-  const now = Date.now();
-  const delay = cursorHideTimeout.value;
-  if (uiTimeout.value) {
-    if (uiFireAt.value - now > delay / 3) return;
-    clearTimeout(uiTimeout.value);
-  }
-  uiFireAt.value = now + delay;
-  uiTimeout.value = setTimeout(() => {
-    uiTimeout.value = null;
-    if (audio.isPlaying.value && settings.playback.cursorHide) {
-      showUI.value = false;
-      setCursorVisible(false);
-    }
-  }, delay);
-}
-
-function onMouseMove(e: MouseEvent) {
-  if (dragging.value) onDragMouseMove(e);
-  showUI.value = true;
-  setCursorVisible(true);
-  hideUIAfterDelay();
-}
-
-function toggleFullscreen() {
-  if (!viewEl.value) return;
-  if (!isFullscreen.value) {
-    viewEl.value
-      .requestFullscreen()
-      .then(() => {
-        isFullscreen.value = true;
-        setCursorVisible(true);
-        showUI.value = false;
-        hideUIAfterDelay();
-      })
-      .catch(() => {});
-  } else {
-    document
-      .exitFullscreen()
-      .then(() => {
-        isFullscreen.value = false;
-        showUI.value = true;
-        setCursorVisible(true);
-      })
-      .catch(() => {});
-  }
-}
-
-function onFullscreenChange() {
-  if (!document.fullscreenElement && isFullscreen.value) {
-    isFullscreen.value = false;
-    showUI.value = true;
-    setCursorVisible(true);
-  }
-}
-
-watch(
-  () => audio.isPlaying.value,
-  (playing) => {
-    if (playing) {
-      hideUIAfterDelay();
-    } else {
-      showUI.value = true;
-      setCursorVisible(true);
-      if (uiTimeout.value) clearTimeout(uiTimeout.value);
-    }
-  }
-);
-
-function skip(seconds: number) {
-  const newTime = Math.max(0, Math.min(audio.duration.value, audio.currentTime.value + seconds));
-  audio.seek(newTime);
-}
-
-function onKeydown(e: KeyboardEvent) {
-  const target = e.target as HTMLElement;
-  if (
-    target.closest('button') ||
-    target.tagName === 'INPUT' ||
-    target.tagName === 'TEXTAREA' ||
-    target.isContentEditable
-  )
-    return;
-  // Edytor layoutu przejmuje klawisze strzałek.
-  if (showLayoutEditor.value) return;
-  switch (e.key) {
-    case ' ':
-    case 'k':
-      e.preventDefault();
-      audio.isPlaying.value ? audio.pause() : audio.play();
-      break;
-    case 'ArrowLeft':
-      e.preventDefault();
-      skip(e.shiftKey ? -30 : -10);
-      break;
-    case 'ArrowRight':
-      e.preventDefault();
-      skip(e.shiftKey ? 30 : 10);
-      break;
-    case 'ArrowUp':
-      e.preventDefault();
-      audio.setVolume(Math.min(1, audio.volume.value + 0.05));
-      break;
-    case 'ArrowDown':
-      e.preventDefault();
-      audio.setVolume(Math.max(0, audio.volume.value - 0.05));
-      break;
-    case 'm':
-      e.preventDefault();
-      player.toggleMute();
-      break;
-    case '0':
-      e.preventDefault();
-      audio.seek(0);
-      break;
-    case 'f':
-      e.preventDefault();
-      if (player.currentTrack) player.toggleFavorite(player.currentTrack.path);
-      break;
-    case 'F11':
-    case 'Escape':
-      if (isFullscreen.value) {
-        e.preventDefault();
-        toggleFullscreen();
-      }
-      break;
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('keydown', onKeydown);
-  document.addEventListener('fullscreenchange', onFullscreenChange);
-  hideUIAfterDelay();
-});
-
-onUnmounted(() => {
-  document.removeEventListener('keydown', onKeydown);
-  document.removeEventListener('fullscreenchange', onFullscreenChange);
-  if (uiTimeout.value) clearTimeout(uiTimeout.value);
-  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-});
 </script>
 
 <template>
   <div
-    ref="viewEl"
+    :ref="setViewEl"
     class="h-full w-full bg-base-200/(--glass-alpha) select-none"
     @mousemove="onMouseMove"
     @mouseup="onDragMouseUp"
