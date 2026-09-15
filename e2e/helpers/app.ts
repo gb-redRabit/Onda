@@ -13,6 +13,11 @@ export interface OndaApp {
   dispose: () => Promise<void>;
 }
 
+export interface LaunchOptions {
+  /** Runs against the fresh profile directory before Electron starts. */
+  profileSetup?: (userDataDir: string) => void;
+}
+
 const MAIN_WINDOW_TIMEOUT_MS = 30_000;
 const CLOSE_TIMEOUT_MS = 5_000;
 
@@ -20,20 +25,27 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function isMainWindowUrl(url: string): boolean {
+  if (!url || url.includes('splash.html')) return false;
+  if (url.includes('/renderer/index.html') || url.includes('\\renderer\\index.html')) return true;
+  const devUrl = process.env['ELECTRON_RENDERER_URL'];
+  return !!devUrl && url.startsWith(devUrl);
+}
+
 async function waitForMainWindow(app: ElectronApplication): Promise<Page> {
   const deadline = Date.now() + MAIN_WINDOW_TIMEOUT_MS;
   while (Date.now() < deadline) {
     for (const page of app.windows()) {
-      const url = page.url();
-      if (url && !url.includes('splash.html')) return page;
+      if (isMainWindowUrl(page.url())) return page;
     }
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
   throw new Error(`Onda main window did not appear within ${MAIN_WINDOW_TIMEOUT_MS}ms`);
 }
 
-export async function launchOnda(): Promise<OndaApp> {
+export async function launchOnda(options: LaunchOptions = {}): Promise<OndaApp> {
   const userDataDir = mkdtempSync(join(tmpdir(), 'onda-e2e-'));
+  options.profileSetup?.(userDataDir);
   const args = ['.'];
   // CI Linux runs as root without a usable chrome-sandbox.
   if (process.platform === 'linux') args.push('--no-sandbox');
@@ -73,5 +85,13 @@ export async function launchOnda(): Promise<OndaApp> {
     if (!proc.killed) proc.kill('SIGKILL');
     rmSync(userDataDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
     throw error;
+  }
+}
+
+/** First run on a fresh profile shows the onboarding wizard; dismiss it. */
+export async function dismissWizard(page: Page): Promise<void> {
+  const skip = page.getByTestId('wizard-skip');
+  if (await skip.isVisible().catch(() => false)) {
+    await skip.click();
   }
 }

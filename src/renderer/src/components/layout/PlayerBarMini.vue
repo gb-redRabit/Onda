@@ -28,6 +28,8 @@ const audio = useAudioPlayer();
 
 <template>
   <div
+    data-testid="player-bar"
+    :data-playing="audio.isPlaying.value ? 'true' : 'false'"
     class="h-12 bg-base-200/(--glass-alpha) border-t border-base-content/20 flex items-center px-3 gap-3 shrink-0 relative"
   >
     <div

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { launchOnda } from './helpers/app';
+import { launchOnda, dismissWizard } from './helpers/app';
 
 test.describe('app smoke', () => {
   test('boots the renderer with a working IPC bridge and closes cleanly', async () => {
@@ -9,10 +9,7 @@ test.describe('app smoke', () => {
       await expect(onda.page).toHaveTitle('Onda');
 
       // First run on a fresh profile: dismiss the onboarding wizard.
-      const skip = onda.page.getByTestId('wizard-skip');
-      if (await skip.isVisible().catch(() => false)) {
-        await skip.click();
-      }
+      await dismissWizard(onda.page);
       await expect(onda.page.getByTestId('wizard-skip')).toHaveCount(0);
 
       const bridge = await onda.page.evaluate(() => {

@@ -98,6 +98,7 @@ function onDragStart(e: DragEvent) {
 
 <template>
   <div
+    data-testid="library-track"
     class="group flex items-center gap-3 px-3 py-2.5 rounded-field hover:bg-base-100 border transition-all duration-150 cursor-pointer"
     :class="
       selected
@@ -123,6 +124,7 @@ function onDragStart(e: DragEvent) {
     >
       <MediaCover :path="props.track.path" :size="14" :autoplay="hovered" fallback="play" />
       <button
+        data-testid="library-track-play"
         class="absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/50 transition-colors"
         @click.stop="playNow"
       >

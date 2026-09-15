@@ -101,6 +101,8 @@ function togglePlay() {
   <!-- full player -->
   <div
     v-else
+    data-testid="player-bar"
+    :data-playing="audio.isPlaying.value ? 'true' : 'false'"
     class="h-18 bg-base-200/(--glass-alpha) border border-t border-base-content/20 flex items-center px-4 shrink-0 relative"
   >
     <div
