@@ -68,11 +68,9 @@ function onMbEvent(e: Event) {
     batchTracks?: typeof library.tracks;
   }>;
   mbInitialQuery.value = ce.detail?.query || '';
-  mbBatchTracks.value = ce.detail?.batchTracks as unknown as typeof library.tracks | undefined;
-  if (ce.detail?.track)
-    editingTrack.value = ce.detail.track as unknown as typeof editingTrack.value;
-  else if (ce.detail?.batchTracks?.[0])
-    editingTrack.value = ce.detail.batchTracks[0] as unknown as typeof editingTrack.value;
+  mbBatchTracks.value = ce.detail?.batchTracks;
+  if (ce.detail?.track) editingTrack.value = ce.detail.track;
+  else if (ce.detail?.batchTracks?.[0]) editingTrack.value = ce.detail.batchTracks[0];
   showingMBLookup.value = true;
 }
 onMounted(() => window.addEventListener('onda:openMusicbrainz', onMbEvent));
