@@ -1,14 +1,11 @@
 ﻿<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import { X, Download } from '@lucide/vue';
 import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@renderer/stores/ui';
 import { useSettingsStore } from '@renderer/stores/settings';
-import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
-import { joinPath, sanitizeDirName } from '@renderer/utils/path';
-import type { MetaOverride } from '@renderer/types/online';
+import { useDownloadConfigForm } from '@renderer/composables/useDownloadConfigForm';
 import type { IpcDownloadConfig } from '@shared/types/ipc';
-import { buildDownloadConfig } from '@renderer/utils/downloadConfig';
 import DownloadPreviewCard from './DownloadPreviewCard.vue';
 import MetadataFieldsSection from './MetadataFieldsSection.vue';
 import DownloadFormatSection from './DownloadFormatSection.vue';
@@ -31,68 +28,80 @@ const emit = defineEmits<{
   cancel: [];
 }>();
 
-const isSc = computed(() => props.platform === 'soundcloud');
+const { t } = useI18n();
+const ui = useUIStore();
 
-const { profiles, save, remove, ensureLoaded } = useDownloadProfiles();
+const form = useDownloadConfigForm({
+  getChannelTitle: () => props.channelTitle,
+  getPlaylistTitle: () => props.playlistTitle,
+  getPlatform: () => props.platform
+});
+const {
+  isSc,
+  profiles,
+  systemDownloads,
+  kind,
+  format,
+  quality,
+  audioQuality,
+  videoContainer,
+  audioLanguage,
+  sponsorBlock,
+  trimStart,
+  trimEnd,
+  filenameTemplate,
+  coverType,
+  customPath,
+  frameTime,
+  clipStart,
+  clipEnd,
+  clipFormat,
+  artist,
+  album,
+  year,
+  folderMode,
+  outputDir,
+  subsEnabled,
+  subsLangs,
+  subsFormat,
+  subsMode,
+  subsFolder,
+  channelFolder,
+  playlistFolder,
+  confirmConfig
+} = form;
+
 const selectedProfileId = ref('');
 const profileName = ref('');
 
-const settings = useSettingsStore();
-const systemDownloads = ref('');
-
-const kind = ref<'audio' | 'video'>(settings.download.defaultKind);
-const format = ref<string>(settings.download.defaultAudioFormat);
-const quality = ref<string>(settings.download.defaultVideoQuality);
-const audioQuality = ref<string>(settings.download.defaultAudioQuality);
-const audioLanguage = ref('');
-const sponsorBlock = ref<'off' | 'mark' | 'remove'>('off');
-const trimStart = ref<number | null>(null);
-const trimEnd = ref<number | null>(null);
-const videoContainer = ref<'mp4' | 'mkv' | 'webm'>(settings.download.defaultVideoContainer);
-const filenameTemplate = ref(settings.download.filenameTemplate);
-const coverType = ref<'thumbnail' | 'custom' | 'frame' | 'clip' | 'none'>('thumbnail');
-const customPath = ref('');
-const frameTime = ref(30);
-const clipStart = ref(0);
-const clipEnd = ref(30);
-const clipFormat = ref<'webm' | 'mp4'>('webm');
-const artist = ref('');
-const album = ref('');
-const year = ref('');
-const folderMode = ref<'global' | 'channel' | 'playlist' | 'custom'>('global');
-const outputDir = ref('');
-const subsEnabled = ref(false);
-const subsLangs = ref('pl,en');
-const subsFormat = ref<'srt' | 'vtt' | 'ass'>('srt');
-const subsMode = ref<'manual' | 'auto' | 'best'>('best');
-const subsFolder = ref(false);
+function onProfileSelect(id: string) {
+  selectedProfileId.value = id;
+  if (id) form.applyProfile(id);
+}
+async function saveProfile() {
+  const name = profileName.value.trim();
+  if (!name) return;
+  await form.save(name, form.buildConfig());
+  profileName.value = '';
+}
+async function deleteProfile() {
+  if (!selectedProfileId.value) return;
+  await form.remove(selectedProfileId.value);
+  selectedProfileId.value = '';
+}
 
 onMounted(async () => {
-  if (!settings.download.defaultPath) {
+  if (!useSettingsStore().download.defaultPath) {
     try {
-      const p = (await window.api.invoke('app:getPath', 'downloads')) as string;
-      systemDownloads.value = p || '';
+      systemDownloads.value =
+        ((await window.api.invoke('app:getPath', 'downloads')) as string) || '';
     } catch {
       systemDownloads.value = '';
     }
   }
-  void ensureLoaded();
+  void form.ensureLoaded();
 });
 
-const baseDir = computed(() => settings.download.defaultPath || systemDownloads.value);
-
-const channelFolder = computed(() => {
-  if (!props.channelTitle || !baseDir.value) return '';
-  return joinPath(baseDir.value, sanitizeDirName(props.channelTitle));
-});
-
-const playlistFolder = computed(() => {
-  if (!props.playlistTitle || !baseDir.value) return '';
-  return joinPath(baseDir.value, sanitizeDirName(props.playlistTitle));
-});
-
-const { t } = useI18n();
-const ui = useUIStore();
 let overlayClicks = 0;
 let overlayTimer: ReturnType<typeof setTimeout> | null = null;
 function onOverlayClick() {
@@ -106,119 +115,8 @@ function close() {
   emit('cancel');
 }
 
-function buildConfig(): IpcDownloadConfig {
-  return buildDownloadConfig({
-    kind: kind.value,
-    format: format.value,
-    audioQuality: audioQuality.value,
-    quality: quality.value,
-    videoContainer: videoContainer.value,
-    audioLanguage: audioLanguage.value,
-    filenameTemplate: filenameTemplate.value,
-    sponsorBlock: sponsorBlock.value,
-    trimStart: trimStart.value,
-    trimEnd: trimEnd.value,
-    coverType: coverType.value,
-    customPath: customPath.value,
-    frameTime: frameTime.value,
-    clipStart: clipStart.value,
-    clipEnd: clipEnd.value,
-    clipFormat: clipFormat.value,
-    artist: artist.value,
-    album: album.value,
-    year: year.value,
-    folderMode: folderMode.value,
-    channelFolder: channelFolder.value,
-    playlistFolder: playlistFolder.value,
-    outputDir: outputDir.value,
-    subsEnabled: subsEnabled.value,
-    subsLangs: subsLangs.value,
-    subsFormat: subsFormat.value,
-    subsMode: subsMode.value,
-    subsFolder: subsFolder.value
-  });
-}
-
 function confirm() {
-  // SoundCloud: fixed progressive MP3 — only folder/metadata apply.
-  if (isSc.value) {
-    const metaOverride: MetaOverride = {};
-    if (artist.value.trim()) metaOverride.artist = artist.value.trim();
-    if (album.value.trim()) metaOverride.album = album.value.trim();
-    if (year.value.trim()) metaOverride.year = year.value.trim();
-    let resolvedDir: string | undefined;
-    if (folderMode.value === 'channel') resolvedDir = channelFolder.value || undefined;
-    else if (folderMode.value === 'playlist') resolvedDir = playlistFolder.value || undefined;
-    else if (folderMode.value === 'custom') resolvedDir = outputDir.value || undefined;
-    emit('confirm', {
-      kind: 'audio',
-      format: 'mp3',
-      ...(Object.keys(metaOverride).length ? { metaOverride } : {}),
-      ...(resolvedDir ? { outputDir: resolvedDir } : {})
-    });
-    return;
-  }
-  emit('confirm', buildConfig());
-}
-
-function applyProfile(id: string) {
-  const profile = profiles.value.find((p) => p.id === id);
-  if (!profile) return;
-  const c = profile.config;
-  if (c.kind) kind.value = c.kind;
-  if (c.format) format.value = c.format;
-  if (c.quality) quality.value = c.quality;
-  if (c.audioQuality) audioQuality.value = c.audioQuality;
-  if (c.videoContainer) videoContainer.value = c.videoContainer;
-  if (c.audioLanguage !== undefined) audioLanguage.value = c.audioLanguage;
-  if (c.sponsorBlock) sponsorBlock.value = c.sponsorBlock;
-  if (c.trimStart != null) trimStart.value = c.trimStart;
-  if (c.trimEnd != null) trimEnd.value = c.trimEnd;
-  if (c.filenameTemplate) filenameTemplate.value = c.filenameTemplate;
-  if (c.cover) {
-    coverType.value = c.cover.type;
-    if (c.cover.type === 'custom') customPath.value = c.cover.customPath || '';
-    if (c.cover.type === 'frame') frameTime.value = c.cover.frameTime ?? 30;
-    if (c.cover.type === 'clip') {
-      clipStart.value = c.cover.clipStart ?? 0;
-      clipEnd.value = c.cover.clipEnd ?? 30;
-      clipFormat.value = c.cover.clipFormat ?? 'webm';
-    }
-  }
-  if (c.metaOverride) {
-    artist.value = c.metaOverride.artist || '';
-    album.value = c.metaOverride.album || '';
-    year.value = c.metaOverride.year || '';
-  }
-  if (c.outputDir) {
-    folderMode.value = 'custom';
-    outputDir.value = c.outputDir;
-  }
-  if (c.subsLangs) {
-    subsEnabled.value = true;
-    subsLangs.value = c.subsLangs;
-    subsFormat.value = c.subsFormat || 'srt';
-    subsMode.value = c.subsMode || 'best';
-    subsFolder.value = !!c.subsFolder;
-  }
-}
-
-async function saveProfile() {
-  const name = profileName.value.trim();
-  if (!name) return;
-  await save(name, buildConfig());
-  profileName.value = '';
-}
-
-async function deleteProfile() {
-  if (!selectedProfileId.value) return;
-  await remove(selectedProfileId.value);
-  selectedProfileId.value = '';
-}
-
-function onProfileSelect(id: string) {
-  selectedProfileId.value = id;
-  if (id) applyProfile(id);
+  emit('confirm', confirmConfig());
 }
 </script>
 

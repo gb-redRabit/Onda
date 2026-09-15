@@ -5,6 +5,7 @@ export interface DownloadProfileForm {
   format?: string;
   quality?: string;
   audioQuality?: string;
+  videoContainer?: 'mp4' | 'mkv' | 'webm';
   audioLanguage?: string;
   coverType?: 'thumbnail' | 'none' | 'frame' | 'clip' | 'custom';
   customCoverPath?: string;
@@ -36,6 +37,7 @@ export function downloadProfileToForm(c: IpcDownloadConfig): DownloadProfileForm
   if (c.format) f.format = c.format;
   if (c.quality) f.quality = c.quality;
   if (c.audioQuality) f.audioQuality = c.audioQuality;
+  if (c.videoContainer) f.videoContainer = c.videoContainer;
   if (c.audioLanguage !== undefined) f.audioLanguage = c.audioLanguage;
   if (c.cover) {
     f.coverType = c.cover.type;

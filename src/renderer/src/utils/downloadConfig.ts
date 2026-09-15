@@ -92,3 +92,33 @@ export function buildDownloadConfig(input: DownloadConfigInput): IpcDownloadConf
       : {})
   };
 }
+
+export interface SoundcloudDownloadInput {
+  artist: string;
+  album: string;
+  year: string;
+  folderMode: 'global' | 'channel' | 'playlist' | 'custom';
+  channelFolder: string;
+  playlistFolder: string;
+  outputDir: string;
+}
+
+// SoundCloud is a fixed progressive MP3 — only folder + metadata overrides
+// apply (no cover/subtitles/format). Split out of
+// `useDownloadConfigForm.ts` (plan 2.8).
+export function buildSoundcloudDownloadConfig(input: SoundcloudDownloadInput): IpcDownloadConfig {
+  const metaOverride: MetaOverride = {};
+  if (input.artist.trim()) metaOverride.artist = input.artist.trim();
+  if (input.album.trim()) metaOverride.album = input.album.trim();
+  if (input.year.trim()) metaOverride.year = input.year.trim();
+  let resolvedDir: string | undefined;
+  if (input.folderMode === 'channel') resolvedDir = input.channelFolder || undefined;
+  else if (input.folderMode === 'playlist') resolvedDir = input.playlistFolder || undefined;
+  else if (input.folderMode === 'custom') resolvedDir = input.outputDir || undefined;
+  return {
+    kind: 'audio',
+    format: 'mp3',
+    ...(Object.keys(metaOverride).length ? { metaOverride } : {}),
+    ...(resolvedDir ? { outputDir: resolvedDir } : {})
+  };
+}
