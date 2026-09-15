@@ -130,10 +130,8 @@ export function usePlayerCover() {
     const paths = batch.map((b) => b.track.path);
     const results: Record<string, number> = {};
     try {
-      const api = window.api as unknown as
-        { getDurations?: (p: string[]) => Promise<Record<string, number>> } | undefined;
-      if (api?.getDurations) {
-        Object.assign(results, (await api.getDurations(paths)) || {});
+      if (window.api?.getDurations) {
+        Object.assign(results, (await window.api.getDurations(paths)) || {});
       } else {
         await Promise.all(
           paths.map(async (p) => {
