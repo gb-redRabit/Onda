@@ -74,7 +74,7 @@ export function buildPreviewRows(
     artist: rel['artist-credit']?.[0]?.name || rel['artist-credit']?.[0]?.artist?.name || '',
     album: rel.title || '',
     year: rel.date ? rel.date.slice(0, 4) : '',
-    genre: (rel as unknown as { genres?: { name: string }[] }).genres?.[0]?.name || '',
+    genre: rel.genres?.[0]?.name || '',
     track: '1',
     cover: rel._coverData ? 'okładka' : '—'
   };

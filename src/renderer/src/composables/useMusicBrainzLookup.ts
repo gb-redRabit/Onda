@@ -149,8 +149,7 @@ export function useMusicBrainzLookup(options: { onApply: (data: LookupApplyData)
       emitData.artist = rel['artist-credit']?.[0]?.name || rel['artist-credit']?.[0]?.artist?.name;
     if (f.title && rel.media?.[0]?.tracks?.[0]?.title)
       emitData.title = rel.media[0].tracks[0].title;
-    if (f.genre && (rel as unknown as { genres?: { name: string }[] })?.genres?.[0]?.name)
-      emitData.genre = (rel as unknown as { genres: { name: string }[] }).genres[0].name;
+    if (f.genre && rel.genres?.[0]?.name) emitData.genre = rel.genres[0].name;
     if (f.track) emitData.track = { no: 1 };
     if (f.cover && rel._coverData) {
       emitData.coverData = rel._coverData;

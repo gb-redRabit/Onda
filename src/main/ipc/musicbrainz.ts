@@ -143,7 +143,7 @@ export function registerMusicBrainzHandlers() {
       const q = encodeURIComponent(query);
       const res = await mbFetch(`${MB_URL}/release/?query=${q}&fmt=json&limit=10`);
       const data = typeof res === 'string' ? { releases: [] } : res;
-      const releases = (data.releases as ScoredRelease[] | undefined) || [];
+      const releases = (data.releases as MusicbrainzRelease[] | undefined) || [];
       return { success: true, releases };
     } catch (e) {
       return { success: false, error: String(e), releases: [] };
@@ -188,16 +188,13 @@ export function registerMusicBrainzHandlers() {
   );
 
   // 8.9 — autodetect + batch
-  // The search/autodetect endpoints include an extra relevance `score`.
-
-  type ScoredRelease = MusicbrainzRelease & { score?: string };
 
   ipcMain.handle('musicbrainz:autodetect', async (_event, query: string) => {
     try {
       const q = encodeURIComponent(query);
       const res = await mbFetch(`${MB_URL}/release/?query=${q}&fmt=json&limit=5`);
       const data = typeof res === 'string' ? { releases: [] } : res;
-      const releases = (data.releases as ScoredRelease[] | undefined) || [];
+      const releases = (data.releases as MusicbrainzRelease[] | undefined) || [];
       if (releases.length === 0) return { success: true, match: 'none', releases };
       // pewność: score 100 lub 1 wynik znacznie wyższy
       const score = Number(releases[0]?.score || 0);

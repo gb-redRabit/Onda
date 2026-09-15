@@ -9,6 +9,9 @@ export interface MusicbrainzRelease {
   date?: string;
   country?: string;
   'track-count'?: number;
+  /** Relevance score returned by the search/autodetect endpoints. */
+  score?: string;
+  genres?: Array<{ name: string }>;
   'artist-credit'?: MusicbrainzArtistCredit[];
   media?: Array<{
     tracks: Array<{
