@@ -12,6 +12,7 @@ import {
 } from '../shared/types/pip';
 import { computePipPosition } from './pip-position';
 import { computeEdgePeekBounds } from './pip-edge-position';
+import { PeekController } from './peek-controller';
 import { installNavigationGuard } from './navigation-guard';
 import { pipWindowIcon } from './pip-icon';
 import { DEFAULT_CORNER_ELEMENTS, DEFAULT_EDGE_ELEMENTS, PREVIEW_STATE } from './pip-defaults';
@@ -38,10 +39,16 @@ export class AudioPipManager {
     number,
     { x: number; y: number; width: number; height: number }
   >();
-  private peeked = false;
   private readonly sliver = 5;
-  private mouseInside = false;
-  private peekDelayTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly peek = new PeekController({
+    canPeek: () => this.shouldAutoHide(),
+    isWindowVisible: () => {
+      const win = this.window;
+      return !!win && !win.isDestroyed() && win.isVisible();
+    },
+    applyPeeked: () => this.applyPeekBounds(),
+    onChanged: () => this.updateUi(false)
+  });
   private currentState: AudioPipState = {
     trackName: '',
     artist: '',
@@ -72,7 +79,7 @@ export class AudioPipManager {
 
   private repositionForDisplayChange = (): void => {
     if (this.window && !this.window.isDestroyed() && this.window.isVisible()) {
-      this.cancelPeekTimers();
+      this.peek.cancelDelay();
       this.positionWindow();
     }
   };
@@ -113,8 +120,7 @@ export class AudioPipManager {
     let changed = false;
     if (opts.dock && opts.dock !== this.dock) {
       this.dock = opts.dock;
-      this.peeked = false;
-      this.cancelPeekTimers();
+      this.peek.reset();
       changed = true;
     }
     if (opts.cornerElements) {
@@ -127,8 +133,7 @@ export class AudioPipManager {
     }
     if (typeof opts.autoHide === 'boolean' && opts.autoHide !== this.autoHide) {
       this.autoHide = opts.autoHide;
-      this.cancelPeekTimers();
-      this.peeked = false;
+      this.peek.reset();
       changed = true;
     }
     if (changed && this.window && !this.window.isDestroyed() && this.window.isVisible()) {
@@ -156,21 +161,20 @@ export class AudioPipManager {
       clearTimeout(this.previewTimer);
       this.previewTimer = null;
     }
-    this.cancelPeekTimers();
-    this.peeked = false;
-    this.mouseInside = false;
+    this.peek.reset();
+    this.peek.setMouseInside(false);
     this.ensureWindow();
     if (!(this.window?.isVisible() ?? false)) {
       this.positionWindow();
     }
     this.window?.showInactive();
     this.window?.setAlwaysOnTop(true, 'screen-saver');
-    this.schedulePeek();
+    this.peek.schedule();
     this.updateUi();
   }
 
   hide(): void {
-    this.mouseInside = false;
+    this.peek.setMouseInside(false);
     this.isPreview = false;
     if (this.previewTimer) {
       clearTimeout(this.previewTimer);
@@ -186,46 +190,8 @@ export class AudioPipManager {
     this.hide();
   }
 
-  peek(): void {
-    if (this.mouseInside) return;
-    this.setPeeked(true);
-  }
-
-  unpeek(): void {
-    this.setPeeked(false);
-  }
-
-  private setPeeked(next: boolean): void {
-    if (!this.shouldAutoHide() || this.peeked === next) return;
-    const win = this.window;
-    if (!win || win.isDestroyed() || !win.isVisible()) return;
-    this.peeked = next;
-    this.cancelPeekDelay();
-    this.applyPeekBounds();
-    this.updateUi(false);
-  }
-
   private shouldAutoHide(): boolean {
     return this.autoHide && isAudioPipEdgeDock(this.dock) && !this.isPreview;
-  }
-
-  private schedulePeek(): void {
-    if (this.peekDelayTimer || !this.shouldAutoHide() || this.peeked) return;
-    this.peekDelayTimer = setTimeout(() => {
-      this.peekDelayTimer = null;
-      this.peek();
-    }, 900);
-  }
-
-  private cancelPeekDelay(): void {
-    if (this.peekDelayTimer) {
-      clearTimeout(this.peekDelayTimer);
-      this.peekDelayTimer = null;
-    }
-  }
-
-  private cancelPeekTimers(): void {
-    this.cancelPeekDelay();
   }
 
   private activeElements(): AudioPipElementId[] {
@@ -247,7 +213,7 @@ export class AudioPipManager {
       win.setBounds(
         computeEdgePeekBounds({
           dock: edge,
-          peeked: this.peeked,
+          peeked: this.peek.peeked,
           sliver: this.sliver,
           workArea,
           size
@@ -267,8 +233,7 @@ export class AudioPipManager {
 
   stop(): void {
     this.hide();
-    this.cancelPeekTimers();
-    this.peeked = false;
+    this.peek.reset();
     this.currentState = {
       trackName: '',
       artist: '',
@@ -283,9 +248,8 @@ export class AudioPipManager {
   showPreview(opts: AudioPipLayoutOpts): boolean {
     if (opts) this.setLayout(opts);
     this.isPreview = true;
-    this.cancelPeekTimers();
-    this.peeked = false;
-    this.mouseInside = false;
+    this.peek.reset();
+    this.peek.setMouseInside(false);
     Object.assign(this.currentState, PREVIEW_STATE);
     this.ensureWindow();
     this.positionWindow();
@@ -360,8 +324,7 @@ export class AudioPipManager {
     this.window.on('closed', () => {
       this.window = null;
       this.ready = false;
-      this.cancelPeekTimers();
-      this.peeked = false;
+      this.peek.reset();
       this.isPreview = false;
       this.mainWindow?.webContents.send('audio-pip:closed');
     });
@@ -418,7 +381,7 @@ export class AudioPipManager {
       this.window.setBounds(
         computeEdgePeekBounds({
           dock: edge,
-          peeked: this.peeked,
+          peeked: this.peek.peeked,
           sliver: this.sliver,
           workArea,
           size: winSize
@@ -447,7 +410,7 @@ export class AudioPipManager {
       layoutKind: this.layoutKind(),
       elements: this.activeElements(),
       edge: this.getEdge(),
-      peeked: this.peeked,
+      peeked: this.peek.peeked,
       isPreview: this.isPreview,
       cssVars: this.cssVars
     };
@@ -476,13 +439,13 @@ export class AudioPipManager {
     });
 
     ipcMain.on('audio-pip:unpeek', () => {
-      this.mouseInside = true;
-      this.unpeek();
+      this.peek.setMouseInside(true);
+      this.peek.unpeek();
     });
 
     ipcMain.on('audio-pip:peekDelay', () => {
-      this.mouseInside = false;
-      this.schedulePeek();
+      this.peek.setMouseInside(false);
+      this.peek.schedule();
     });
 
     ipcMain.on('audio-pip:theme', (_event, vars: Record<string, string>) => {
@@ -498,7 +461,7 @@ export class AudioPipManager {
           layoutKind: this.layoutKind(),
           elements: this.activeElements(),
           edge: this.getEdge(),
-          peeked: this.peeked,
+          peeked: this.peek.peeked,
           isPreview: false,
           state: this.currentState,
           cssVars: this.cssVars
@@ -520,7 +483,7 @@ export class AudioPipManager {
   }
 
   destroy(): void {
-    this.cancelPeekTimers();
+    this.peek.cancelDelay();
     if (this.previewTimer) {
       clearTimeout(this.previewTimer);
       this.previewTimer = null;
