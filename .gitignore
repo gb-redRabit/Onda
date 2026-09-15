@@ -1,6 +1,9 @@
 node_modules
 dist
 out
+test-results
+playwright-report
+blob-report
 docs
 resources
 .DS_Store

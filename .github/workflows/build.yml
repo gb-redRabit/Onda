@@ -55,6 +55,14 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: E2E (Electron, Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run e2e
+
+      - name: E2E (Electron)
+        if: runner.os != 'Linux'
+        run: npm run e2e
+
       - name: Fetch ffmpeg
         uses: actions/cache@v5
         id: ffmpeg-cache

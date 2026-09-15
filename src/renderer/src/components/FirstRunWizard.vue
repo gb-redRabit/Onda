@@ -113,6 +113,7 @@ function skipAll() {
 
       <footer class="px-6 pb-5 pt-4 border-t border-base-300 flex items-center gap-3">
         <button
+          data-testid="wizard-skip"
           class="px-3 py-2 rounded-field text-sm text-base-content/60 hover:text-base-content hover:bg-base-content/10 transition-colors"
           @click="skipAll"
         >
