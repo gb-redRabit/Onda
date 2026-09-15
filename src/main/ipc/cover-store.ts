@@ -2,7 +2,7 @@ import { readFile, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { randomBytes } from 'crypto';
 import { app } from 'electron';
-import { migrateLegacyStore } from './store-crypto';
+import { runFileMigrations, runStoreMigrations } from '../state-migrations';
 
 // Encrypted electron-store bootstrap, split out of `cover-cache.ts` (plan 2.8).
 
@@ -22,7 +22,7 @@ async function getOrCreateStoreKey(): Promise<string> {
   } catch {
     // first run
   }
-  const migrated = await migrateLegacyStore(keyPath);
+  const migrated = await runFileMigrations(keyPath);
   if (migrated) return migrated;
   const fresh = randomBytes(32).toString('hex');
   await mkdir(app.getPath('userData'), { recursive: true });
@@ -35,7 +35,9 @@ export function getStore(): Promise<Store> {
     _storePromise = (async () => {
       const { default: Store } = await import('electron-store');
       const key = await getOrCreateStoreKey();
-      return new Store({ encryptionKey: key });
+      const store = new Store({ encryptionKey: key });
+      await runStoreMigrations(store);
+      return store;
     })();
   }
   return _storePromise;
