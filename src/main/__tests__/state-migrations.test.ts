@@ -1,4 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterAll } from 'vitest';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
 vi.mock('electron', () => ({ app: { getPath: () => '' } }));
 
@@ -6,6 +9,8 @@ import {
   CURRENT_STORE_VERSION,
   STORE_MIGRATIONS,
   STORE_VERSION_KEY,
+  ensureStoreBackup,
+  pendingStoreMigrations,
   runFileMigrations,
   runStoreMigrations
 } from '../state-migrations';
@@ -115,5 +120,53 @@ describe('runFileMigrations', () => {
       { name: 'noop', run: async () => null }
     ]);
     expect(key).toBeNull();
+  });
+});
+
+describe('pendingStoreMigrations', () => {
+  it('returns only migrations above the stored version, in ascending order', () => {
+    const store = fakeStore({ [STORE_VERSION_KEY]: 1 });
+
+    const pending = pendingStoreMigrations(store, [
+      { version: 3, name: 'three', migrate: () => {} },
+      { version: 1, name: 'one', migrate: () => {} },
+      { version: 2, name: 'two', migrate: () => {} }
+    ]);
+
+    expect(pending.map((migration) => migration.version)).toEqual([2, 3]);
+  });
+});
+
+describe('ensureStoreBackup', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'onda-backup-'));
+  const configPath = join(dir, 'config.json');
+
+  afterAll(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('is a no-op for a fresh profile without a config file', async () => {
+    expect(await ensureStoreBackup(configPath)).toBe(true);
+    expect(existsSync(`${configPath}.bak.1`)).toBe(false);
+  });
+
+  it('keeps rolling copies, newest first, up to the backup limit', async () => {
+    writeFileSync(configPath, 'v1');
+    await ensureStoreBackup(configPath);
+    expect(readFileSync(`${configPath}.bak.1`, 'utf-8')).toBe('v1');
+
+    writeFileSync(configPath, 'v2');
+    await ensureStoreBackup(configPath);
+    expect(readFileSync(`${configPath}.bak.1`, 'utf-8')).toBe('v2');
+    expect(readFileSync(`${configPath}.bak.2`, 'utf-8')).toBe('v1');
+
+    writeFileSync(configPath, 'v3');
+    await ensureStoreBackup(configPath);
+    expect(readFileSync(`${configPath}.bak.3`, 'utf-8')).toBe('v1');
+
+    writeFileSync(configPath, 'v4');
+    await ensureStoreBackup(configPath);
+    expect(readFileSync(`${configPath}.bak.1`, 'utf-8')).toBe('v4');
+    expect(readFileSync(`${configPath}.bak.3`, 'utf-8')).toBe('v2');
   });
 });

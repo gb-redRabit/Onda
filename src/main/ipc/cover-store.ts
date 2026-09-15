@@ -2,7 +2,13 @@ import { readFile, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { randomBytes } from 'crypto';
 import { app } from 'electron';
-import { runFileMigrations, runStoreMigrations } from '../state-migrations';
+import { logger } from '../../shared/logger';
+import {
+  ensureStoreBackup,
+  pendingStoreMigrations,
+  runFileMigrations,
+  runStoreMigrations
+} from '../state-migrations';
 
 // Encrypted electron-store bootstrap, split out of `cover-cache.ts` (plan 2.8).
 
@@ -36,7 +42,15 @@ export function getStore(): Promise<Store> {
       const { default: Store } = await import('electron-store');
       const key = await getOrCreateStoreKey();
       const store = new Store({ encryptionKey: key });
-      await runStoreMigrations(store);
+      if (pendingStoreMigrations(store).length > 0) {
+        const configPath = join(app.getPath('userData'), 'config.json');
+        const backedUp = await ensureStoreBackup(configPath);
+        if (backedUp) {
+          await runStoreMigrations(store);
+        } else {
+          logger.warn('state', 'store backup failed — skipping migrations (retried next boot)');
+        }
+      }
       return store;
     })();
   }

@@ -1,3 +1,6 @@
+import { copyFile, mkdir, rm } from 'fs/promises';
+import { existsSync } from 'fs';
+import { dirname } from 'path';
 import { logger } from '../shared/logger';
 import { migrateAppearance } from './ipc/settings-migrations';
 import { migrateLegacyStore } from './ipc/store-crypto';
@@ -15,6 +18,9 @@ import type { Store } from './ipc/cover-store';
 
 export const STORE_VERSION_KEY = 'schemaVersion';
 export const CURRENT_STORE_VERSION = 1;
+
+// Rolling `.bak` copies kept before a migration rewrites config.json.
+export const MAX_STORE_BACKUPS = 3;
 
 export interface StoreMigration {
   /** Target version; migrations run in ascending order above the stored one. */
@@ -36,20 +42,49 @@ export const STORE_MIGRATIONS: StoreMigration[] = [
   }
 ];
 
+export function pendingStoreMigrations(
+  store: Store,
+  migrations: readonly StoreMigration[] = STORE_MIGRATIONS
+): StoreMigration[] {
+  const raw = Number(store.get(STORE_VERSION_KEY) ?? 0);
+  const from = Number.isFinite(raw) && raw > 0 ? raw : 0;
+  return migrations
+    .filter((migration) => migration.version > from)
+    .sort((a, b) => a.version - b.version);
+}
+
 export async function runStoreMigrations(
   store: Store,
   migrations: readonly StoreMigration[] = STORE_MIGRATIONS
 ): Promise<void> {
-  const raw = Number(store.get(STORE_VERSION_KEY) ?? 0);
-  const from = Number.isFinite(raw) && raw > 0 ? raw : 0;
-  const pending = migrations
-    .filter((migration) => migration.version > from)
-    .sort((a, b) => a.version - b.version);
-
-  for (const migration of pending) {
+  for (const migration of pendingStoreMigrations(store, migrations)) {
     migration.migrate(store);
     store.set(STORE_VERSION_KEY, migration.version);
     logger.info('state', `store migration ${migration.version} (${migration.name}) applied`);
+  }
+}
+
+// Creates `config.json.bak.1` (rotating older copies up to `maxBackups`) before
+// a migration rewrites the store. Returns false when the backup failed — the
+// caller must then SKIP migrations (plan 4.4: no backup, no migration).
+export async function ensureStoreBackup(
+  configPath: string,
+  maxBackups = MAX_STORE_BACKUPS
+): Promise<boolean> {
+  if (!existsSync(configPath)) return true; // fresh store — nothing to protect
+  try {
+    await mkdir(dirname(configPath), { recursive: true });
+    for (let i = maxBackups; i >= 1; i--) {
+      const source = i === 1 ? configPath : `${configPath}.bak.${i - 1}`;
+      if (!existsSync(source)) continue;
+      const dest = `${configPath}.bak.${i}`;
+      await rm(dest, { force: true });
+      await copyFile(source, dest);
+    }
+    return true;
+  } catch (e) {
+    logger.warn('state', `store backup failed (${configPath})`, e);
+    return false;
   }
 }
 
