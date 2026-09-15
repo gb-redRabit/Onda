@@ -320,8 +320,9 @@ describe('media-server path guard (plan 7.4)', () => {
   });
 
   it('rejects a symlink inside an allowed root that points outside it', async (ctx) => {
-    const outside =
-      process.platform === 'win32' ? 'C:/Windows/System32/notepad.exe' : '/etc/hostname';
+    // Target must exist on every platform: /etc/hostname exists on Linux but
+    // NOT on macOS (the symlink would dangle and the server answers 500).
+    const outside = process.platform === 'win32' ? 'C:/Windows/System32/notepad.exe' : '/etc/hosts';
     const linkDir = await fs.mkdtemp(join(os.tmpdir(), 'onda-ms-link-'));
     const linkPath = join(linkDir, 'escape.mp4');
     try {
