@@ -3,6 +3,7 @@ import { appendFile, mkdir, readFile, truncate, copyFile, stat } from 'fs/promis
 import { join } from 'path';
 import os from 'os';
 import { logger } from '../shared/logger';
+import { redactSecrets } from '../shared/redact';
 import { recordWarning, clearWarnings } from './warnings';
 
 const LOG_LINES = 2000;
@@ -39,7 +40,7 @@ let writeQueue: Promise<void> = Promise.resolve();
 function writeLine(level: string, args: unknown[]): void {
   const dir = getLogDir();
   const file = getLogPath();
-  const text = formatArgs(args);
+  const text = redactSecrets(formatArgs(args));
   if (level === 'WARN') recordWarning(text);
   const line = `[${ts()}] [${level}] ${text}\n`;
   writeQueue = writeQueue
