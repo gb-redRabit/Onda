@@ -1,9 +1,6 @@
-export interface DepStatus {
-  installed: boolean;
-  version: string | null;
-  path: string | null;
-  managed: boolean;
-}
+import type { DepSource, DepToolStatus } from '@shared/types/ipc';
+
+export type DepStatus = DepToolStatus;
 
 export interface DepRow {
   name: string;
@@ -14,6 +11,9 @@ export interface DepRow {
   version: string | null;
   path: string | null;
   managed: boolean;
+  source: DepSource | null;
+  broken: boolean;
+  probeError: string | null;
   updateAvailable: boolean;
   installing: boolean;
   percent: number;
@@ -31,7 +31,10 @@ export const EMPTY_DEP_STATUS: DepStatus = {
   installed: false,
   version: null,
   path: null,
-  managed: false
+  managed: false,
+  source: null,
+  broken: false,
+  error: null
 };
 
 interface DepApi {

@@ -23,13 +23,19 @@ const { deps, refreshAll, runInstall, uninstallDependency, cancelInstall } = use
           <div class="flex items-center gap-3 min-w-0">
             <div
               class="w-2 h-2 rounded-full shrink-0"
-              :class="dep.installed ? 'bg-success' : 'bg-error'"
+              :class="dep.broken ? 'bg-amber-500' : dep.installed ? 'bg-success' : 'bg-error'"
             />
             <div class="min-w-0">
               <div class="text-sm font-medium flex items-center gap-2">
                 {{ dep.name }}
                 <span
-                  v-if="dep.managed && dep.installed"
+                  v-if="dep.source === 'bundled' && dep.installed"
+                  class="text-[10px] px-1.5 py-0.5 rounded-field bg-primary/15 text-primary font-medium"
+                >
+                  {{ $t('settings.depBundled') }}
+                </span>
+                <span
+                  v-else-if="dep.source === 'managed' && dep.installed"
                   class="text-[10px] px-1.5 py-0.5 rounded-field bg-primary/15 text-primary font-medium"
                 >
                   {{ $t('settings.depManaged') }}
@@ -56,14 +62,17 @@ const { deps, refreshAll, runInstall, uninstallDependency, cancelInstall } = use
             </template>
             <template v-else>
               <div class="text-right">
-                <div v-if="dep.version" class="text-xs text-base-content/50 font-mono">
+                <div v-if="dep.broken" class="text-xs text-amber-500 font-medium">
+                  {{ $t('settings.depBroken') }}
+                </div>
+                <div v-else-if="dep.version" class="text-xs text-base-content/50 font-mono">
                   v{{ dep.version }}
                 </div>
                 <div v-if="dep.updateAvailable" class="text-xs text-amber-500 font-medium">
                   {{ $t('settings.depUpdateAvailable') }}
                 </div>
                 <div
-                  v-else-if="dep.installed && dep.tool === 'yt-dlp'"
+                  v-else-if="dep.installed && !dep.broken && dep.tool === 'yt-dlp'"
                   class="text-xs text-success"
                 >
                   {{ $t('settings.depUpToDate') }}
@@ -74,11 +83,11 @@ const { deps, refreshAll, runInstall, uninstallDependency, cancelInstall } = use
               </div>
               <div class="flex items-center gap-2">
                 <button
-                  v-if="!dep.installed"
+                  v-if="!dep.installed || dep.broken"
                   class="fx-noise px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
                   @click="runInstall(dep, false)"
                 >
-                  {{ $t('settings.depInstall') }}
+                  {{ dep.broken ? $t('settings.depRepair') : $t('settings.depInstall') }}
                 </button>
                 <button
                   v-if="dep.installed && dep.tool === 'yt-dlp' && dep.updateAvailable"
@@ -109,7 +118,9 @@ const { deps, refreshAll, runInstall, uninstallDependency, cancelInstall } = use
             />
           </div>
         </div>
-        <div v-if="dep.error" class="mt-2 text-xs text-error break-words">{{ dep.error }}</div>
+        <div v-if="dep.error || dep.probeError" class="mt-2 text-xs text-error break-words">
+          {{ dep.error || dep.probeError }}
+        </div>
       </SettingsCard>
     </div>
   </SettingsPanel>

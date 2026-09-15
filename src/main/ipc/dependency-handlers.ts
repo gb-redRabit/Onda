@@ -301,14 +301,30 @@ async function checkTool(tool: BinTool): Promise<{
   version: string | null;
   path: string | null;
   managed: boolean;
+  source: 'bundled' | 'managed' | 'system' | null;
+  broken: boolean;
+  error: string | null;
 }> {
   const info = await resolveBinInfo(tool);
-  if (!info) return { installed: false, version: null, path: null, managed: false };
+  if (!info) {
+    return {
+      installed: false,
+      version: null,
+      path: null,
+      managed: false,
+      source: null,
+      broken: false,
+      error: null
+    };
+  }
   return {
     installed: true,
     version: info.version,
     path: info.path,
-    managed: info.managed
+    managed: info.managed,
+    source: info.source,
+    broken: info.broken,
+    error: info.error
   };
 }
 
@@ -321,16 +337,30 @@ export function registerDependencyHandlers(): void {
   ipcMain.handle(
     'dep:getPaths',
     async (): Promise<
-      Array<{ tool: BinTool; path: string | null; managed: boolean; version: string | null }>
+      Array<{
+        tool: BinTool;
+        path: string | null;
+        managed: boolean;
+        version: string | null;
+        source: 'bundled' | 'managed' | 'system' | null;
+        broken: boolean;
+        error: string | null;
+      }>
     > => {
       const tools: BinTool[] = ['ffmpeg', 'ffprobe', 'yt-dlp', 'mkvextract'];
       const results = await Promise.all(tools.map((t) => resolveBinInfo(t)));
-      return tools.map((tool, i) => ({
-        tool,
-        path: results[i]?.path ?? null,
-        managed: results[i]?.managed ?? false,
-        version: results[i]?.version ?? null
-      }));
+      return tools.map((tool, i) => {
+        const info = results[i];
+        return {
+          tool,
+          path: info?.path ?? null,
+          managed: info?.managed ?? false,
+          version: info?.version ?? null,
+          source: info?.source ?? null,
+          broken: info?.broken ?? false,
+          error: info?.error ?? null
+        };
+      });
     }
   );
 

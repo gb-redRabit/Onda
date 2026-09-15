@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { mkdtempSync, writeFileSync, rmSync } from 'fs';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import {
@@ -10,9 +10,22 @@ import {
   ffmpegSha256,
   whichInPath,
   inferPkgManager,
-  getMkvExtractCandidates
+  getMkvExtractCandidates,
+  resolveBinary,
+  toolFileName
 } from '../dependency-utils';
 import binaries from '../../../../binaries.json';
+
+// Version probes are mocked: paths registered in `brokenPaths` fail the probe,
+// every other candidate reports a working version.
+const probeState = vi.hoisted(() => ({ brokenPaths: new Set<string>() }));
+
+vi.mock('../../utils/exec', () => ({
+  runCommand: vi.fn(async (bin: string) => {
+    if (probeState.brokenPaths.has(bin)) throw new Error('spawn EACCES');
+    return '2026.09.01';
+  })
+}));
 
 describe('ytdlpBinaryName', () => {
   it('returns the right file name for the current platform', () => {
@@ -179,5 +192,116 @@ describe('getMkvExtractCandidates', () => {
       expect(candidates).toContain('/usr/bin/mkvextract');
       expect(candidates).toContain('/opt/homebrew/bin/mkvextract');
     }
+  });
+});
+
+describe('resolveBinary', () => {
+  let binDir: string;
+  let pathDir: string;
+  let resourcesDir: string;
+  let prevPath: string | undefined;
+  let prevResources: string | undefined;
+
+  function setResources(): void {
+    (process as { resourcesPath?: string }).resourcesPath = resourcesDir;
+  }
+
+  beforeEach(() => {
+    binDir = mkdtempSync(join(tmpdir(), 'onda-bin-'));
+    pathDir = mkdtempSync(join(tmpdir(), 'onda-path-'));
+    resourcesDir = mkdtempSync(join(tmpdir(), 'onda-res-'));
+    prevPath = process.env.PATH;
+    process.env.PATH = pathDir;
+    prevResources = (process as { resourcesPath?: string }).resourcesPath;
+    delete (process as { resourcesPath?: string }).resourcesPath;
+    probeState.brokenPaths.clear();
+  });
+
+  afterEach(() => {
+    process.env.PATH = prevPath;
+    if (prevResources === undefined) {
+      delete (process as { resourcesPath?: string }).resourcesPath;
+    } else {
+      (process as { resourcesPath?: string }).resourcesPath = prevResources;
+    }
+    for (const dir of [binDir, pathDir, resourcesDir]) {
+      rmSync(dir, { recursive: true, force: true });
+    }
+    probeState.brokenPaths.clear();
+  });
+
+  it('falls back to a working system binary when the managed one is broken', async () => {
+    const brokenManaged = join(binDir, toolFileName('yt-dlp'));
+    writeFileSync(brokenManaged, 'x');
+    probeState.brokenPaths.add(brokenManaged);
+    writeFileSync(join(pathDir, toolFileName('yt-dlp')), 'x');
+
+    const resolved = await resolveBinary(binDir, 'yt-dlp');
+
+    expect(resolved).toMatchObject({
+      source: 'system',
+      broken: false,
+      managed: false,
+      version: '2026.09.01'
+    });
+  });
+
+  it('returns the first broken candidate with the probe error when nothing works', async () => {
+    const brokenManaged = join(binDir, toolFileName('yt-dlp'));
+    writeFileSync(brokenManaged, 'x');
+    probeState.brokenPaths.add(brokenManaged);
+
+    const resolved = await resolveBinary(binDir, 'yt-dlp');
+
+    expect(resolved).toMatchObject({
+      path: brokenManaged,
+      source: 'managed',
+      broken: true,
+      version: null,
+      error: 'spawn EACCES'
+    });
+  });
+
+  it('prefers the bundled binary and reports its source', async () => {
+    const bundled = join(
+      resourcesDir,
+      'ffmpeg',
+      `${process.platform}-${process.arch}`,
+      toolFileName('ffmpeg')
+    );
+    mkdirSync(join(resourcesDir, 'ffmpeg', `${process.platform}-${process.arch}`), {
+      recursive: true
+    });
+    writeFileSync(bundled, 'x');
+    setResources();
+
+    const resolved = await resolveBinary(binDir, 'ffmpeg');
+
+    expect(resolved).toMatchObject({ path: bundled, source: 'bundled', broken: false });
+  });
+
+  it('falls back to a managed install when the bundled binary is broken', async () => {
+    const bundled = join(
+      resourcesDir,
+      'ffmpeg',
+      `${process.platform}-${process.arch}`,
+      toolFileName('ffmpeg')
+    );
+    mkdirSync(join(resourcesDir, 'ffmpeg', `${process.platform}-${process.arch}`), {
+      recursive: true
+    });
+    writeFileSync(bundled, 'x');
+    probeState.brokenPaths.add(bundled);
+    const managed = join(binDir, toolFileName('ffmpeg'));
+    writeFileSync(managed, 'x');
+    setResources();
+
+    const resolved = await resolveBinary(binDir, 'ffmpeg');
+
+    expect(resolved).toMatchObject({ path: managed, source: 'managed', broken: false });
+  });
+
+  it('returns null when no candidate exists', async () => {
+    expect(await resolveBinary(binDir, 'ffprobe')).toBeNull();
   });
 });

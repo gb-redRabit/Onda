@@ -176,9 +176,7 @@ const api: OndaAPI = {
   checkMkvextract: () => tryInvoke('dep:checkMkvextract'),
   installMkvextract: (): Promise<{ success: boolean; error?: string }> =>
     tryInvoke('dep:installMkvextract'),
-  getDependencyPaths: (): Promise<
-    Array<{ tool: string; path: string | null; managed: boolean; version: string | null }>
-  > => tryInvoke('dep:getPaths'),
+  getDependencyPaths: () => tryInvoke('dep:getPaths'),
   checkUpdateYtdlp: (): Promise<{
     updateAvailable: boolean;
     current: string | null;

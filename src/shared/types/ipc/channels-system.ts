@@ -10,11 +10,16 @@ import type {
   PluginInfo
 } from './plugins';
 
+export type DepSource = 'bundled' | 'managed' | 'system';
+
 export interface DepToolStatus {
   installed: boolean;
   version: string | null;
   path: string | null;
   managed: boolean;
+  source: DepSource | null;
+  broken: boolean;
+  error: string | null;
 }
 
 export type DepToolPaths = Array<{
@@ -22,6 +27,9 @@ export type DepToolPaths = Array<{
   path: string | null;
   managed: boolean;
   version: string | null;
+  source: DepSource | null;
+  broken: boolean;
+  error: string | null;
 }>;
 
 export interface DepOperationResult {

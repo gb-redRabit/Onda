@@ -25,6 +25,9 @@ export function useDependencies() {
         version: st?.version ?? null,
         path: st?.path ?? null,
         managed: st?.managed ?? false,
+        source: null,
+        broken: false,
+        probeError: null,
         updateAvailable: false,
         installing: false,
         percent: 0,
@@ -51,6 +54,9 @@ export function useDependencies() {
     dep.version = s.version;
     dep.path = s.path;
     dep.managed = s.managed;
+    dep.source = s.source;
+    dep.broken = s.broken;
+    dep.probeError = s.error;
     settings.updateDependency(dep.name, {
       installed: s.installed,
       version: s.version,

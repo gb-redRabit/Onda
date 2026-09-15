@@ -1,6 +1,8 @@
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { runCommand } from '../utils/exec';
+import { logger } from '../../shared/logger';
+import type { DepSource } from '../../shared/types/ipc/channels-system';
 import binaries from '../../../binaries.json';
 
 export type BinTool = 'ffmpeg' | 'ffprobe' | 'yt-dlp' | 'mkvextract';
@@ -146,21 +148,31 @@ export function whichInPath(binName: string): string | null {
   return null;
 }
 
-async function readVersion(bin: string, tool: BinTool): Promise<string | null> {
+interface VersionProbe {
+  version: string | null;
+  error: string | null;
+}
+
+function describeError(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
+async function probeVersion(bin: string, tool: BinTool): Promise<VersionProbe> {
   try {
     if (tool === 'yt-dlp') {
-      return (await runCommand(bin, ['--version'], { timeout: 10000 })).trim();
+      const version = (await runCommand(bin, ['--version'], { timeout: 10000 })).trim();
+      return { version, error: null };
     }
     if (tool === 'mkvextract') {
       const stdout = await runCommand(bin, ['--version'], { timeout: 10000 });
       const m = stdout.match(/mkvextract v([\d.]+)/);
-      return m ? m[1] : 'unknown';
+      return { version: m ? m[1] : 'unknown', error: null };
     }
     const stdout = await runCommand(bin, ['-version'], { timeout: 10000 });
     const m = stdout.match(/(?:ffmpeg|ffprobe) version (\S+)/);
-    return m ? m[1] : 'unknown';
-  } catch {
-    return null;
+    return { version: m ? m[1] : 'unknown', error: null };
+  } catch (e) {
+    return { version: null, error: describeError(e) };
   }
 }
 
@@ -168,36 +180,57 @@ export interface ResolvedBinary {
   path: string;
   managed: boolean;
   version: string | null;
+  source: DepSource;
+  broken: boolean;
+  error: string | null;
 }
 
-// 1. bundled (resources/ffmpeg) → 2. userData/bin (managed) → 3. PATH (system).
+interface BinaryCandidate {
+  path: string;
+  source: DepSource;
+}
+
+// 1. bundled (resources/ffmpeg) → 2. userData/bin (managed) → 3. PATH (system),
+// plus known mkvextract locations. A candidate that exists but fails its
+// `--version` probe is marked `broken` and skipped so the next source can
+// self-heal the tool (e.g. a corrupted bundled build falls back to a managed
+// install). When nothing works the first broken candidate is returned so the
+// UI can offer a reinstall.
 export async function resolveBinary(binDir: string, tool: BinTool): Promise<ResolvedBinary | null> {
+  const candidates: BinaryCandidate[] = [];
   const bundled = bundledBinPath(tool, currentResourcesPath());
-  if (bundled) {
-    const version = await readVersion(bundled, tool);
-    return { path: bundled, managed: true, version };
-  }
+  if (bundled) candidates.push({ path: bundled, source: 'bundled' });
   const managedPath = managedBinPath(binDir, tool);
-  if (existsSync(managedPath)) {
-    const version = await readVersion(managedPath, tool);
-    return { path: managedPath, managed: true, version };
-  }
+  if (existsSync(managedPath)) candidates.push({ path: managedPath, source: 'managed' });
   const pathBin = whichInPath(toolFileName(tool));
-  if (pathBin) {
-    const version = await readVersion(pathBin, tool);
-    return { path: pathBin, managed: false, version };
-  }
+  if (pathBin) candidates.push({ path: pathBin, source: 'system' });
   // mkvextract is often installed to a fixed path without being added to PATH
   // (e.g. C:\Program Files\MKVToolNix) — try those known locations too.
   if (tool === 'mkvextract') {
     for (const candidate of getMkvExtractCandidates().slice(1)) {
-      if (existsSync(candidate)) {
-        const version = await readVersion(candidate, tool);
-        return { path: candidate, managed: false, version };
-      }
+      if (existsSync(candidate)) candidates.push({ path: candidate, source: 'system' });
     }
   }
-  return null;
+
+  let firstBroken: ResolvedBinary | null = null;
+  for (const candidate of candidates) {
+    const probe = await probeVersion(candidate.path, tool);
+    const resolved: ResolvedBinary = {
+      path: candidate.path,
+      managed: candidate.source !== 'system',
+      version: probe.version,
+      source: candidate.source,
+      broken: probe.version === null,
+      error: probe.error
+    };
+    if (!resolved.broken) return resolved;
+    logger.warn(
+      'deps',
+      `${tool}: ${candidate.source} binary failed the version probe (${candidate.path}): ${probe.error}`
+    );
+    if (!firstBroken) firstBroken = resolved;
+  }
+  return firstBroken;
 }
 
 function installPackageName(tool: BinTool): string {
