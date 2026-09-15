@@ -21,12 +21,25 @@ export function cookiesFilePath(): string {
   return join(app.getPath('userData'), COOKIES_FILE);
 }
 
-// A signed-in YouTube session is present when .youtube.com carries one of the
-// SID-family cookies. This is the exact condition yt-dlp needs to pass age gates.
-export async function hasYouTubeSession(): Promise<boolean> {
+// Snapshot of the auth partition's cookies. The unfiltered `get({})` is the
+// primary source; a URL-scoped query is merged in as a safety net (it also
+// keeps the cookie store hydrated for the login poll).
+export async function getSessionCookies(): Promise<Electron.Cookie[]> {
   await ensureSessionLoaded();
-  const cookies = await session.fromPartition(AUTH_PARTITION).cookies.get({});
-  return hasSessionCookies(cookies, YT_COOKIE_HOST).length > 0;
+  const ses = session.fromPartition(AUTH_PARTITION);
+  const [all, youtube] = await Promise.all([
+    ses.cookies.get({}),
+    ses.cookies.get({ url: 'https://www.youtube.com' })
+  ]);
+  const seen = new Set<string>();
+  const merged: Electron.Cookie[] = [];
+  for (const cookie of [...all, ...youtube]) {
+    const key = `${cookie.name}|${cookie.domain ?? ''}|${cookie.path ?? ''}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(cookie);
+  }
+  return merged;
 }
 
 // Electron only opens the persistent partition's cookie store once a webContents
@@ -105,8 +118,7 @@ export async function restorePartitionSession(): Promise<boolean> {
 // Serializes the live .youtube.com session cookies from the auth partition into
 // a Netscape cookie string, or returns null when no session is present.
 async function serializedSessionCookies(): Promise<string | null> {
-  await ensureSessionLoaded();
-  const cookies = await session.fromPartition(AUTH_PARTITION).cookies.get({});
+  const cookies = await getSessionCookies();
   if (hasSessionCookies(cookies, YT_COOKIE_HOST).length === 0) {
     logger.warn('ytauth', 'export skipped — no .youtube.com session cookies');
     return null;

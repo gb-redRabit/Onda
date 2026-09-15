@@ -20,6 +20,7 @@ import {
 } from '../downloads/download-manager';
 import { applyMetadataOverride } from '../downloads/cover-processing';
 import { isSafeAbsolutePath } from '../utils/validate';
+import { broadcastToAllWindows } from '../utils/broadcast';
 import {
   e2eAddDownloadTasks,
   e2eClearFinishedDownloadTasks,
@@ -40,9 +41,7 @@ function flushBroadcasts(): void {
   const batch = [...pendingBroadcasts.values()];
   pendingBroadcasts.clear();
   for (const task of batch) {
-    for (const win of BrowserWindow.getAllWindows()) {
-      win.webContents.send('yt:downloadProgress', task);
-    }
+    broadcastToAllWindows('yt:downloadProgress', task);
   }
 }
 

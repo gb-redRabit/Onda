@@ -5,7 +5,7 @@ import AudioTrackInfo from './AudioTrackInfo.vue';
 import AudioProgressBar from './AudioProgressBar.vue';
 import AudioControls from './AudioControls.vue';
 import { usePluginsStore } from '@renderer/stores/plugins';
-import { resolveDecorationClasses, resolveElementDecoration } from '@renderer/utils/audioView';
+import { resolveElementDecoration } from '@renderer/utils/audioView';
 import { elementStyle } from '@renderer/utils/audioElementStyle';
 import type { AudioLayoutElement } from '@renderer/types/settings';
 
@@ -30,10 +30,6 @@ function elementDecoration(el: AudioLayoutElement): string | undefined {
   return resolveElementDecoration(el, pluginsStore.decorations);
 }
 
-function decorationClasses(el: AudioLayoutElement): string | undefined {
-  return resolveDecorationClasses(el, pluginsStore.decorations);
-}
-
 function styleFor(el: AudioLayoutElement) {
   return elementStyle(el, props.dragPos);
 }
@@ -49,7 +45,7 @@ function styleFor(el: AudioLayoutElement) {
   >
     <!-- Visualization (with built-in toolbar) -->
     <template v-if="el.id === 'visualization'">
-      <div class="relative w-full h-full" :class="decorationClasses(el)">
+      <div class="relative w-full h-full">
         <AudioVisualizer class="w-full h-full" />
       </div>
     </template>
@@ -72,10 +68,7 @@ function styleFor(el: AudioLayoutElement) {
     <template v-else-if="el.id === 'trackInfo'">
       <div
         class="w-full h-full flex items-center justify-center px-4 transition-opacity"
-        :class="[
-          { 'opacity-0 pointer-events-none': props.isFullscreen && !props.uiVisible },
-          decorationClasses(el)
-        ]"
+        :class="{ 'opacity-0 pointer-events-none': props.isFullscreen && !props.uiVisible }"
         @mousedown="emit('element-mousedown', $event, el)"
       >
         <AudioTrackInfo :variant="el.variant ?? 'classic'" />
@@ -86,13 +79,10 @@ function styleFor(el: AudioLayoutElement) {
     <template v-else-if="el.id === 'progress'">
       <div
         class="w-full h-full flex items-center px-4 transition-opacity"
-        :class="[
-          {
-            'opacity-0 pointer-events-none':
-              !props.uiVisible || (props.isFullscreen && !props.uiVisible)
-          },
-          decorationClasses(el)
-        ]"
+        :class="{
+          'opacity-0 pointer-events-none':
+            !props.uiVisible || (props.isFullscreen && !props.uiVisible)
+        }"
         @mousedown="emit('element-mousedown', $event, el)"
       >
         <AudioProgressBar :variant="el.variant ?? 'classic'" />
@@ -103,13 +93,10 @@ function styleFor(el: AudioLayoutElement) {
     <template v-else-if="el.id === 'controls'">
       <div
         class="w-full h-full flex items-center justify-center transition-opacity"
-        :class="[
-          {
-            'opacity-0 pointer-events-none':
-              !props.uiVisible || (props.isFullscreen && !props.uiVisible)
-          },
-          decorationClasses(el)
-        ]"
+        :class="{
+          'opacity-0 pointer-events-none':
+            !props.uiVisible || (props.isFullscreen && !props.uiVisible)
+        }"
         @mousedown="emit('element-mousedown', $event, el)"
       >
         <AudioControls :variant="el.variant ?? 'standard'" />

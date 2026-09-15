@@ -1,4 +1,6 @@
-// Onda plugin: triangle (widok audio — przycisk w pasku narzędzi + kształt okładki)
+// Onda plugin: triangle (widok audio — przycisk w pasku narzędzi + kształt okładki).
+// Dekoracje pochodzą wyłącznie z wtyczek: wartość ma postać plugin:cover:<wariant>,
+// musi być zadeklarowana w manifeście (layoutElements) i zaimplementowana przez host.
 // registerCommand z polami icon i location: 'audio-view' tworzy przycisk w pasku widoku audio.
 
 api.log.info('Trójkątna okładka załadowany');
@@ -11,6 +13,10 @@ var SHAPES = [
   { key: 'none', label: 'Bez kształtu' }
 ];
 
+function decorationValue(shape) {
+  return shape === 'none' ? 'none' : 'plugin:cover:' + shape;
+}
+
 function notify(message) {
   return api.notify({ type: 'info', title: 'Okładka', message: message });
 }
@@ -21,9 +27,11 @@ api.on('app:start', function () {
     .get('shape')
     .then(function (shape) {
       var value = typeof shape === 'string' && shape.length ? shape : 'triangle';
-      return api.visual('element.decoration', { element: 'cover', value: value }).then(function () {
-        api.log.info('Okładka: ' + value);
-      });
+      return api
+        .visual('element.decoration', { element: 'cover', value: decorationValue(value) })
+        .then(function () {
+          api.log.info('Okładka: ' + value);
+        });
     })
     .catch(function (err) {
       api.log.error('nie ustawiono kształtu: ' + String(err && err.message));
@@ -43,7 +51,7 @@ api.registerCommand({
       return api.storage.set('index', next).then(function () {
         var shape = SHAPES[next];
         return api
-          .visual('element.decoration', { element: 'cover', value: shape.key })
+          .visual('element.decoration', { element: 'cover', value: decorationValue(shape.key) })
           .then(function () {
             return api.settings.get('notifyOnChange').then(function (notifyEnabled) {
               if (notifyEnabled !== false) notify('Okładka: ' + shape.label);
@@ -62,7 +70,7 @@ api.registerCommand({
   icon: 'Triangle',
   action: function () {
     return api
-      .visual('element.decoration', { element: 'cover', value: 'triangle' })
+      .visual('element.decoration', { element: 'cover', value: 'plugin:cover:triangle' })
       .then(function () {
         notify('Okładka: Trójkąt');
       });

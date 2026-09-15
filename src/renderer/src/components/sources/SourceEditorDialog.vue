@@ -243,7 +243,7 @@ async function onTestTable(idx: number) {
       @click.self="onOverlayClick"
     >
       <div
-        class="w-full max-w-3xl max-h-full flex flex-col rounded-box bg-base-100 border border-base-300 shadow-2xl overflow-hidden"
+        class="w-full max-w-3xl max-h-full flex flex-col rounded-box bg-base-200 border border-base-300 shadow-2xl overflow-hidden"
       >
         <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
           <h2 class="text-sm font-medium flex-1">

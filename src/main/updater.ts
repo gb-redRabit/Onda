@@ -1,6 +1,7 @@
 import { app, type WebContents } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { logger } from '../shared/logger';
+import type { IpcUpdaterEvent, UpdaterEventName } from '../shared/types/ipc';
 
 type UpdaterStatus =
   'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
@@ -14,16 +15,34 @@ export interface UpdaterState {
   enabled: boolean;
 }
 
-let mainWC: WebContents | null = null;
+let getMainWC: () => WebContents | null = () => null;
 let status: UpdaterStatus = 'idle';
 let version = '';
 let progress = 0;
 let error = '';
+let lastEvent: IpcUpdaterEvent | null = null;
 
-function send(event: string, data: Record<string, unknown> = {}): void {
-  if (mainWC && !mainWC.isDestroyed()) {
-    mainWC.send('updater:event', { event, ...data });
+function send(
+  event: UpdaterEventName,
+  data: Omit<IpcUpdaterEvent, 'event'> = {},
+  target?: WebContents
+): void {
+  lastEvent = { event, ...data };
+  const wc = target ?? getMainWC();
+  if (wc && !wc.isDestroyed()) {
+    wc.send('updater:event', lastEvent);
   }
+}
+
+/**
+ * Replays the most recent `updater:event` to a renderer that just became ready.
+ * Events are one-shot broadcasts, so a window that mounts late (startup check,
+ * reload, macOS re-activate) would otherwise miss the update notification.
+ */
+export function replayUpdaterEvent(target?: WebContents): void {
+  const wc = target ?? getMainWC();
+  if (!lastEvent || !wc || wc.isDestroyed()) return;
+  wc.send('updater:event', lastEvent);
 }
 
 export function initAutoUpdater(getWebContents: () => WebContents | null): void {
@@ -31,7 +50,7 @@ export function initAutoUpdater(getWebContents: () => WebContents | null): void 
     logger.info('updater', 'auto-update disabled in dev mode');
     return;
   }
-  mainWC = getWebContents();
+  getMainWC = getWebContents;
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
   // Signature verification is driven by the embedded build config

@@ -5,14 +5,14 @@ import { isValidCookieFile, type YtAuthConfig } from './ipc/youtube-utils';
 import type { YoutubeAuthMethod } from '../renderer/src/types/settings';
 import { logger } from '../shared/logger';
 import { pipWindowIcon } from './pip-icon';
-import { isValidCookieFileAt } from './youtube-auth-cookies';
+import { isValidCookieFileAt, hasSessionCookies, YT_COOKIE_HOST } from './youtube-auth-cookies';
 import { getAuthSettings, setAuthSettings } from './youtube-auth-settings';
 import {
   AUTH_PARTITION,
   cookiesFilePath,
   cookieFileHasValidYouTubeSession,
   exportSessionCookies,
-  hasYouTubeSession,
+  getSessionCookies,
   restorePartitionSession,
   writeTempSessionCookies
 } from './youtube-auth-session';
@@ -21,6 +21,7 @@ export { cleanupYtAuthTemp } from './youtube-auth-session';
 
 const LOGIN_POLL_MS = 1000;
 const LOGIN_TIMEOUT_MS = 10 * 60 * 1000;
+const LOGIN_DIAGNOSTIC_MS = 10 * 1000;
 // Starting on youtube.com makes Google redirect to sign-in when needed and then
 // back to youtube.com after login — so the .youtube.com session cookies that
 // yt-dlp actually needs are always present before we export.
@@ -70,32 +71,43 @@ export async function startGoogleLogin(): Promise<{
   // occasionally open popups to their own origin, which aborts the current load).
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 
+  // Flow diagnostics: log which pages the login window visits (origin + path
+  // only — Google URLs carry tokens in the query string).
+  const logUrl = (event: string, url: string): void => {
+    try {
+      const u = new URL(url);
+      logger.info('ytauth', `login nav [${event}] ${u.origin}${u.pathname}`);
+    } catch {
+      // about:blank / data: URLs are not interesting
+    }
+  };
+  win.webContents.on('did-navigate', (_e, url) => logUrl('navigate', url));
+  win.webContents.on('did-fail-load', (_e, code, desc, url) => logUrl(`fail ${code} ${desc}`, url));
+
   // Google rejects Electron's default user agent, so strip it to a plain
   // Chromium UA. Set it on the webContents (not per-load) to avoid a renderer
   // crash on Windows and keep it across all navigations.
   const ua = session.defaultSession.getUserAgent().replace(/Electron\/\S+\s*/, '');
   win.webContents.setUserAgent(ua);
 
-  // Loading youtube.com redirects to Google sign-in when the session is not
-  // authenticated and returns here after login — so the .youtube.com session
-  // cookies are set by the time we detect them.
-  try {
-    await win.loadURL(LOGIN_START_URL);
-  } catch (e) {
+  // Start the poll loop without waiting for the initial navigation: the
+  // youtube.com → accounts.google.com chain rejects with ERR_ABORTED and, in
+  // rare cases, `loadURL` never settles — the loop must run regardless.
+  void win.loadURL(LOGIN_START_URL).catch((e: unknown) => {
     const msg = e instanceof Error ? e.message : String(e);
-    // ERR_ABORTED fires on redirects (youtube.com -> accounts.google.com and
-    // back) and is not fatal — the polling loop still detects the login.
     if (!msg.includes('ERR_ABORTED')) {
       logger.warn('ytauth', 'login window load failed', msg);
     }
-  }
+  });
 
   const startedAt = Date.now();
   let stableCount = 0;
+  let lastDiagnosticAt = 0;
   while (loginWindow === win && !win.isDestroyed()) {
     // Only .youtube.com session cookies count — Google-wide cookies are not
     // enough for yt-dlp to unlock age-restricted content.
-    if (await hasYouTubeSession()) {
+    const cookies = await getSessionCookies();
+    if (hasSessionCookies(cookies, YT_COOKIE_HOST).length > 0) {
       stableCount++;
       if (stableCount >= 2 && (await exportSessionCookies())) {
         await setAuthSettings({
@@ -109,6 +121,23 @@ export async function startGoogleLogin(): Promise<{
     } else {
       stableCount = 0;
     }
+
+    // One diagnostic line every 10 s while waiting: where the flow is and which
+    // SID-family cookies exist (names/domains only — never values).
+    if (Date.now() - lastDiagnosticAt > LOGIN_DIAGNOSTIC_MS) {
+      lastDiagnosticAt = Date.now();
+      const hint =
+        cookies
+          .filter((c) => /SID|APISID/i.test(c.name))
+          .map((c) => `${c.name}@${c.domain ?? '?'}`)
+          .slice(0, 8)
+          .join(', ') || 'none';
+      logger.info(
+        'ytauth',
+        `login poll url=${currentUrl(win)} cookies=${cookies.length} session=[${hint}]`
+      );
+    }
+
     if (Date.now() - startedAt > LOGIN_TIMEOUT_MS) {
       win.close();
       return { success: false, error: 'Login timed out' };
@@ -117,6 +146,15 @@ export async function startGoogleLogin(): Promise<{
   }
 
   return { success: false, canceled: true };
+}
+
+function currentUrl(win: BrowserWindow): string {
+  try {
+    const u = new URL(win.webContents.getURL());
+    return `${u.origin}${u.pathname}`;
+  } catch {
+    return win.webContents.getURL() || '?';
+  }
 }
 
 export async function logout(): Promise<void> {

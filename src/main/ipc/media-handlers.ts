@@ -350,7 +350,7 @@ export function registerMediaHandlers(): void {
   ipcMain.handle('coverCache:clear', async () => {
     try {
       const r = await clearCoverCache();
-      return { success: true, removed: r.removed };
+      return { success: true, removed: r.removed, bytesFreed: r.bytesFreed };
     } catch (e) {
       return { success: false, error: errMsg(e) };
     }

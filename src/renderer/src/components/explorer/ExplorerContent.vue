@@ -3,10 +3,12 @@ import { inject, ref } from 'vue';
 import { HardDrive, FolderOpen } from '@lucide/vue';
 import { isLibraryFolder } from '@renderer/utils/libraryFolders';
 import { beginFileDrag } from '@renderer/utils/fileDrag';
+import { fileTypeIcon } from '@renderer/utils/fileTypeIcons';
 import { useExplorerContent } from '@renderer/composables/useExplorerContent';
 import ExplorerGridItem from '@renderer/components/explorer/ExplorerGridItem.vue';
 import ExplorerTableRow from '@renderer/components/explorer/ExplorerTableRow.vue';
 import ExplorerDetailsHeader from '@renderer/components/explorer/ExplorerDetailsHeader.vue';
+import Loader from '@renderer/components/layout/Loader.vue';
 import type { FileItem } from '@renderer/types/explorer';
 
 const props = defineProps<{
@@ -72,7 +74,7 @@ defineExpose({ reveal });
     </div>
 
     <div v-if="explorer.isLoading && files.length === 0" class="flex justify-center py-8">
-      <div class="w-6 h-6 border border-primary border-t-transparent rounded-full animate-spin" />
+      <Loader :size="56" :label="$t('common.loading')" />
     </div>
 
     <div v-if="explorer.isAtDrives && files.length > 0" class="mb-3">
@@ -142,6 +144,12 @@ defineExpose({ reveal });
             v-else-if="files[virtualRow.index].isDirectory"
             :size="12"
             class="text-primary shrink-0"
+          />
+          <component
+            :is="fileTypeIcon(files[virtualRow.index].extension)"
+            v-else
+            :size="12"
+            class="text-base-content/50 shrink-0"
           />
           <span class="truncate flex-1">{{ files[virtualRow.index].name }}</span>
           <span

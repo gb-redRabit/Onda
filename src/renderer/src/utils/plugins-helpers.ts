@@ -3,25 +3,24 @@ import type { MediaFile } from '@renderer/types/media';
 // Pure plugin UI helpers extracted from `stores/plugins.ts` (plan 2.8). The
 // store re-exports them so components and composables stay unchanged.
 
-export const ELEMENT_DECORATIONS: Record<string, string[]> = {
-  cover: ['none', 'triangle', 'circle', 'diamond', 'hexagon'],
-  visualization: ['none', 'outline', 'glow', 'glass'],
-  progress: ['none', 'glow', 'neon'],
-  trackInfo: ['none', 'badge', 'glass', 'glow'],
-  controls: ['none', 'glass', 'glow']
-};
+// Audio-view layout elements a plugin may decorate (`element.decoration`).
+export const LAYOUT_ELEMENT_IDS = [
+  'cover',
+  'visualization',
+  'progress',
+  'trackInfo',
+  'controls'
+] as const;
 
 /**
- * Host-renderowane warianty deklarowane przez wtyczki (rozszerzenie dekoracji).
- * Wartość w dekoracji zapisuje się jako `plugin:<element>:<variant>`. Host zna tylko
- * te warianty, więc pluginowy wariant spoza tej mapy w edytorze się pokaże, ale nie
- * nada żadnego stylu (bezpieczny fallback). Pierwszy wpis = wariant hosta, który łączy
- * się z elementem za pomocą klasy/clip-path.
+ * Host-renderowane warianty deklarowane przez wtyczki. Wartość dekoracji
+ * zapisuje się jako `plugin:<element>:<variant>`. Host zna tylko te warianty —
+ * pluginowy wariant spoza tej mapy nie nada stylu (bezpieczny fallback).
+ * Renderowanie wariantu żyje przy elemencie (dla `cover` — clip-path w
+ * `AudioCover.vue`); dodanie wariantu wymaga wpisu tutaj ORAZ implementacji.
  */
-export const PLUGIN_HOST_VARIANTS: Record<string, Record<string, string>> = {
-  cover: {
-    'flip-x': 'plugin-cover-flip-x'
-  }
+export const PLUGIN_HOST_VARIANTS: Record<string, readonly string[]> = {
+  cover: ['triangle', 'circle', 'diamond', 'hexagon', 'flip-x']
 };
 
 export const PLUGIN_VISUAL_KEY = 'element.decoration';

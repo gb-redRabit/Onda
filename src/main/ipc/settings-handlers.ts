@@ -1,6 +1,7 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron';
 import { writeFile, readFile } from 'fs/promises';
 import { getStore } from './cover-cache';
+import { isResetting } from './factory-reset';
 import { configureAutoCheck } from '../updater-scheduler';
 import { sanitizeSettings } from './settings-schema';
 import { encryptApiKeys, decryptApiKeys } from './settings-crypto';
@@ -23,6 +24,9 @@ export function registerSettingsHandlers(): void {
   });
 
   ipcMain.handle('settings:set', async (_event, data: Partial<AppSettings>): Promise<boolean> => {
+    // A factory reset already cleared the store; late debounced saves from the
+    // renderer must not resurrect the old settings before the restart.
+    if (isResetting()) return false;
     try {
       const { sanitized, droppedKeys } = sanitizeSettings(data);
       if (droppedKeys.length > 0) {

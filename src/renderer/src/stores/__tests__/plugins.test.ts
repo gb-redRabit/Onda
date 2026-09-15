@@ -422,7 +422,11 @@ describe('ui:set visual capability', () => {
         name: 'Triangle',
         version: '1',
         entry: 'i.js',
-        permissions: { visual: true }
+        permissions: { visual: true },
+        layoutElements: [
+          { element: 'cover', variant: 'triangle', label: 'Trójkąt' },
+          { element: 'cover', variant: 'diamond', label: 'Romb' }
+        ]
       },
       code: '// plugin'
     });
@@ -447,10 +451,10 @@ describe('ui:set visual capability', () => {
     await store.load();
     await store.dispatchApi(
       'ui:set',
-      ['element.decoration', { element: 'cover', value: 'triangle' }],
+      ['element.decoration', { element: 'cover', value: 'plugin:cover:triangle' }],
       'triangle'
     );
-    expect(store.decorations.cover).toBe('triangle');
+    expect(store.decorations.cover).toBe('plugin:cover:triangle');
     await store.dispatchApi(
       'ui:set',
       ['element.decoration', { element: 'cover', value: 'none' }],
@@ -459,23 +463,26 @@ describe('ui:set visual capability', () => {
     expect(store.decorations.cover).toBeUndefined();
   });
 
-  it('applies decorations per element independently', async () => {
+  it('applies a decoration only for host-implemented variants', async () => {
     apiMock();
     loadVisualPlugin(usePluginsStore());
     const store = usePluginsStore();
     await store.load();
     await store.dispatchApi(
       'ui:set',
-      ['element.decoration', { element: 'cover', value: 'diamond' }],
+      ['element.decoration', { element: 'cover', value: 'plugin:cover:diamond' }],
       'triangle'
     );
-    await store.dispatchApi(
-      'ui:set',
-      ['element.decoration', { element: 'visualization', value: 'glow' }],
-      'triangle'
-    );
-    expect(store.decorations.cover).toBe('diamond');
-    expect(store.decorations.visualization).toBe('glow');
+    expect(store.decorations.cover).toBe('plugin:cover:diamond');
+    // `visualization` has no host variant — plugin values are rejected there.
+    await expect(
+      store.dispatchApi(
+        'ui:set',
+        ['element.decoration', { element: 'visualization', value: 'plugin:visualization:glow' }],
+        'triangle'
+      )
+    ).rejects.toThrow('unknown-decoration');
+    expect(store.decorations.visualization).toBeUndefined();
     expect(store.decorations.progress).toBeUndefined();
   });
 
@@ -491,6 +498,14 @@ describe('ui:set visual capability', () => {
         'triangle'
       )
     ).rejects.toThrow('unknown-decoration');
+    // Built-in decorations were removed: a bare variant name is not accepted.
+    await expect(
+      store.dispatchApi(
+        'ui:set',
+        ['element.decoration', { element: 'cover', value: 'triangle' }],
+        'triangle'
+      )
+    ).rejects.toThrow('unknown-decoration');
     await expect(
       store.dispatchApi(
         'ui:set',
@@ -501,7 +516,7 @@ describe('ui:set visual capability', () => {
     await expect(
       store.dispatchApi(
         'ui:set',
-        ['navbar-width', { element: 'cover', value: 'triangle' }],
+        ['navbar-width', { element: 'cover', value: 'plugin:cover:triangle' }],
         'triangle'
       )
     ).rejects.toThrow('unknown-visual-key');
@@ -514,10 +529,10 @@ describe('ui:set visual capability', () => {
     await store.load();
     await store.dispatchApi(
       'ui:set',
-      ['element.decoration', { element: 'cover', value: 'diamond' }],
+      ['element.decoration', { element: 'cover', value: 'plugin:cover:diamond' }],
       'triangle'
     );
-    expect(store.decorations.cover).toBe('diamond');
+    expect(store.decorations.cover).toBe('plugin:cover:diamond');
     await store.toggle('triangle');
     expect(store.decorations.cover).toBeUndefined();
   });

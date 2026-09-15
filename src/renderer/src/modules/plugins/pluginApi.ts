@@ -5,7 +5,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { useLibraryStore } from '@renderer/stores/library';
 import { useUIStore } from '@renderer/stores/ui';
 import {
-  ELEMENT_DECORATIONS,
+  LAYOUT_ELEMENT_IDS,
   PLUGIN_HOST_VARIANTS,
   PLUGIN_VISUAL_KEY,
   snapshotTrack
@@ -169,21 +169,24 @@ export function createPluginApi(deps: PluginApiDeps): PluginApiDispatch {
       args[1] && typeof args[1] === 'object' ? (args[1] as Record<string, unknown>) : {};
     const element = String(payload.element ?? '');
     const value = String(payload.value ?? '');
-    const options = ELEMENT_DECORATIONS[element];
-    const pluginVariant = value.startsWith('plugin:');
-    if (!options && !pluginVariant) throw new Error('unknown-visual-element');
-    if (!pluginVariant && !options.includes(value)) throw new Error('unknown-decoration');
-    if (pluginVariant) {
+    if (!(LAYOUT_ELEMENT_IDS as readonly string[]).includes(element)) {
+      throw new Error('unknown-visual-element');
+    }
+    // Decorations come only from plugins: `none` clears, anything else must be a
+    // host-implemented variant declared in this plugin's manifest.
+    if (value !== 'none') {
       const parts = value.split(':');
-      if (parts.length !== 3 || parts[0] !== 'plugin') throw new Error('unknown-decoration');
-      const [_, rawElement, variant] = parts;
-      if (rawElement !== element) throw new Error('unknown-decoration');
+      if (parts.length !== 3 || parts[0] !== 'plugin' || parts[1] !== element) {
+        throw new Error('unknown-decoration');
+      }
+      const variant = parts[2];
       const manifest = getManifest(pluginId);
       const declared =
         manifest?.permissions.visual === true &&
         manifest.layoutElements?.some((le) => le.element === element && le.variant === variant);
-      if (!declared || !PLUGIN_HOST_VARIANTS[element]?.[variant])
+      if (!declared || !PLUGIN_HOST_VARIANTS[element]?.includes(variant)) {
         throw new Error('unknown-decoration');
+      }
     }
     const next = { ...(visuals.value[pluginId] || {}) };
     if (value === 'none') delete next[element];

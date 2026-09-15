@@ -1,8 +1,9 @@
 import { app, ipcMain, dialog, BrowserWindow } from 'electron';
 import { join, sep, resolve } from 'path';
-import { readdir, readFile, mkdir, stat, cp, rm } from 'fs/promises';
+import { readdir, readFile, mkdir, rm } from 'fs/promises';
 import type {
   PluginInfo,
+  PluginExample,
   PluginManifest,
   IpcPluginGetResult,
   IpcPluginUninstallResult,
@@ -29,6 +30,7 @@ import {
 import type { PluginStateFile } from './plugins-core';
 import { runPluginFetch } from './plugins-fetch';
 import { settingWriteAllowed, storagePermissionGranted } from './plugins-guards';
+import { installPluginFromDir, listPluginExamples } from './plugins-examples';
 
 let pluginsDir: string | null = null;
 let pluginsDataDir: string | null = null;
@@ -36,6 +38,12 @@ let pluginsDataDir: string | null = null;
 function getPluginsDir(): string {
   if (!pluginsDir) pluginsDir = join(app.getPath('userData'), 'plugins');
   return pluginsDir;
+}
+
+// Bundled examples ship inside the app bundle: dev `out/main` → repo
+// `resources/`, packaged `app.asar/out/main` → `app.asar/resources/`.
+function getExamplesDir(): string {
+  return join(__dirname, '../../resources/plugins-examples');
 }
 
 function getPluginsDataDir(): string {
@@ -166,41 +174,11 @@ async function installFromFolder(): Promise<IpcPluginInstallResult> {
       .replace(/[\\/]+$/, '')
       .split(/[\\/]/)
       .pop() || '';
-  const base = getPluginsDir();
-  await mkdir(base, { recursive: true });
-  const { manifest, error } = parseManifest(
-    JSON.parse(await readFile(join(source, 'manifest.json'), 'utf-8')),
-    sourceId
-  );
-  if (error || !manifest.id) {
-    return {
-      success: false,
-      error: error === 'manifest:not-object' ? 'Invalid manifest' : error || 'Invalid manifest'
-    };
-  }
-  if (!validatePluginId(manifest.id))
-    return { success: false, error: 'Invalid plugin id (folder name must match [a-z0-9._-]+)' };
-  const entryPath = resolve(source, manifest.entry);
-  if (!isWithin(source, entryPath)) return { success: false, error: 'Entry outside plugin folder' };
-  let entryExists = false;
-  try {
-    entryExists = (await stat(entryPath)).isFile();
-  } catch {
-    entryExists = false;
-  }
-  if (!entryExists) return { success: false, error: 'Entry file missing' };
-  const dest = join(base, manifest.id);
-  await rm(dest, { recursive: true, force: true });
-  await cp(source, dest, {
-    recursive: true,
-    filter: (src) =>
-      !src.includes(`${sep}node_modules${sep}`) && !src.endsWith(`${sep}node_modules`)
-  });
-  await setEnabled(manifest.id, true);
-  const info = await readManifestSafe(dest);
-  if (!info) return { success: false, error: 'Installed plugin invalid' };
+  const result2 = await installPluginFromDir(source, getPluginsDir(), sourceId);
+  if (!result2.success || !result2.installed) return result2;
+  await setEnabled(result2.installed.id, true);
   const enabled = await loadEnabledState();
-  return { success: true, installed: mergeInfos([info], enabled)[0] };
+  return { success: true, installed: mergeInfos([result2.installed], enabled)[0] };
 }
 
 export function registerPluginsHandlers(): void {
@@ -213,6 +191,36 @@ export function registerPluginsHandlers(): void {
       return [];
     }
   });
+
+  ipcMain.handle('plugins:listExamples', async (): Promise<PluginExample[]> => {
+    try {
+      return await listPluginExamples(getExamplesDir());
+    } catch (e) {
+      logger.warn('plugins', 'plugins:listExamples failed', e);
+      return [];
+    }
+  });
+
+  ipcMain.handle(
+    'plugins:installExample',
+    async (_e, id: string): Promise<IpcPluginInstallResult> => {
+      try {
+        if (!validatePluginId(id)) return { success: false, error: 'Invalid plugin id' };
+        const examples = await listPluginExamples(getExamplesDir());
+        if (!examples.some((example) => example.id === id)) {
+          return { success: false, error: 'Unknown example' };
+        }
+        const result = await installPluginFromDir(join(getExamplesDir(), id), getPluginsDir(), id);
+        if (!result.success || !result.installed) return result;
+        await setEnabled(id, true);
+        const enabled = await loadEnabledState();
+        return { success: true, installed: mergeInfos([result.installed], enabled)[0] };
+      } catch (e) {
+        logger.warn('plugins', 'plugins:installExample failed', e);
+        return { success: false, error: pickError(e) };
+      }
+    }
+  );
 
   ipcMain.handle('plugins:get', async (_e, id: string): Promise<IpcPluginGetResult> => {
     try {

@@ -8,6 +8,9 @@ const ICON_CONCURRENCY = 6;
 export function useFileIcons() {
   const extraSmallIcons = shallowRef<Record<string, string>>({});
   const iconPendingQueue = new Set<string>();
+  // Paths whose shell icon came back empty/broken — never re-request them
+  // (the caller renders a category fallback instead of an endless retry loop).
+  const failedIcons = new Set<string>();
   let iconActive = 0;
   let iconQueueTimer: ReturnType<typeof setTimeout> | null = null;
   let iconRenderTimer: ReturnType<typeof setTimeout> | null = null;
@@ -36,9 +39,14 @@ export function useFileIcons() {
             setCachedIcon(path, icon as string);
             pendingIcons[path] = icon as string;
             scheduleIconRender();
+          } else {
+            failedIcons.add(path);
           }
         })
-        .catch((err) => logger.error('Explorer', 'getFileIcon', err))
+        .catch((err) => {
+          failedIcons.add(path);
+          logger.error('Explorer', 'getFileIcon', err);
+        })
         .finally(() => {
           iconActive--;
           pumpIcons();
@@ -52,6 +60,7 @@ export function useFileIcons() {
     if (cached) {
       return extraSmallIcons.value[item.path] ?? cached;
     }
+    if (failedIcons.has(item.path)) return null;
     if (!iconPendingQueue.has(item.path)) {
       iconPendingQueue.add(item.path);
       if (iconQueueTimer === null) {

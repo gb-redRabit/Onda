@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useExplorerStore } from '@renderer/stores/explorer';
-import { HardDrive, FolderOpen, Music2, Film, Image } from '@lucide/vue';
+import { HardDrive, FolderOpen } from '@lucide/vue';
 import { formatFileSize } from '@renderer/utils/formatters';
-import { getFileTypeInfo } from '@renderer/utils/fileTypes';
+import { fileTypeIcon } from '@renderer/utils/fileTypeIcons';
 import { beginFileDrag } from '@renderer/utils/fileDrag';
 import type { FileItem } from '@renderer/types/explorer';
 import { useThumbnail } from '@renderer/composables/useThumbnail';
@@ -35,10 +35,7 @@ if (import.meta.env.DEV) {
 function iconComponent() {
   if (props.isAtDrives) return HardDrive;
   if (props.item.isDirectory) return FolderOpen;
-  const cat = getFileTypeInfo(props.item.extension || '').category;
-  if (cat === 'video') return Film;
-  if (cat === 'audio') return Music2;
-  return Image;
+  return fileTypeIcon(props.item.extension);
 }
 </script>
 

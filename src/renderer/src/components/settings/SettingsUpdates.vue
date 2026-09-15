@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useI18n } from 'vue-i18n';
-import type { UpdaterState } from '@shared/types/ipc';
+import type { IpcUpdaterEvent, UpdaterState } from '@shared/types/ipc';
 import { logger } from '@shared/logger';
 import { Download, RefreshCw, RotateCw } from '@lucide/vue';
 import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
@@ -27,7 +27,7 @@ let cleanup: (() => void) | null = null;
 
 onMounted(async () => {
   cleanup = window.api?.on('updater:event', (payload) => {
-    const p = payload as { event: string; version?: string; percent?: number; error?: string };
+    const p = payload as IpcUpdaterEvent;
     switch (p.event) {
       case 'checking-for-update':
         state.value.status = 'checking';

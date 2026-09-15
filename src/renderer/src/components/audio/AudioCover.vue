@@ -6,14 +6,14 @@ import MediaCover from '@renderer/components/MediaCover.vue';
 
 const props = defineProps<{ size?: string; variant?: string; decoration?: string }>();
 
-const COVER_SHAPE_CLIP: Record<string, string> = {
-  circle: 'circle(50%)',
-  triangle: 'polygon(50% 0%, 0% 100%, 100% 100%)',
-  diamond: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-  hexagon: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)'
-};
-
+// Cover decorations come only from plugins (`plugin:cover:<variant>`); the
+// variants below are the host implementations registered in
+// `PLUGIN_HOST_VARIANTS` (utils/plugins-helpers.ts).
 const COVER_PLUGIN_CLIP: Record<string, string> = {
+  'plugin:cover:triangle': 'polygon(50% 0%, 0% 100%, 100% 100%)',
+  'plugin:cover:circle': 'circle(50% at 50% 50%)',
+  'plugin:cover:diamond': 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+  'plugin:cover:hexagon': 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)',
   'plugin:cover:flip-x': 'polygon(50% 0%, 100% 0%, 50% 100%, 0% 100%)'
 };
 
@@ -38,11 +38,7 @@ const coverClass = computed(() => {
 
 const coverClip = computed(() => {
   if (props.variant === 'ring') return undefined;
-  if (props.decoration && COVER_SHAPE_CLIP[props.decoration])
-    return COVER_SHAPE_CLIP[props.decoration];
-  if (props.decoration && COVER_PLUGIN_CLIP[props.decoration])
-    return COVER_PLUGIN_CLIP[props.decoration];
-  return undefined;
+  return props.decoration ? COVER_PLUGIN_CLIP[props.decoration] : undefined;
 });
 
 function measurePulse() {

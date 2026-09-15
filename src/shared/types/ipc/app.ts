@@ -33,3 +33,20 @@ export interface UpdaterState {
   error: string;
   enabled: boolean;
 }
+
+export type UpdaterEventName =
+  | 'checking-for-update'
+  | 'update-available'
+  | 'update-not-available'
+  | 'download-progress'
+  | 'update-downloaded'
+  | 'error';
+
+/** Payload of the main → renderer `updater:event` broadcast. */
+export interface IpcUpdaterEvent {
+  event: UpdaterEventName;
+  version?: string;
+  percent?: number;
+  bytesPerSecond?: number;
+  error?: string;
+}

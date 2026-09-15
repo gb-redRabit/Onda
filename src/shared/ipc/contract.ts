@@ -107,6 +107,8 @@ export const INVOKE_CHANNELS = [
   'updater:download',
   'updater:install',
   'coverCache:clear',
+  'cache:clear',
+  'app:factoryReset',
   // library
   'settings:get',
   'settings:set',
@@ -207,6 +209,8 @@ export const INVOKE_CHANNELS = [
   'audio-pip:previewUpdate',
   // plugins
   'plugins:list',
+  'plugins:listExamples',
+  'plugins:installExample',
   'plugins:get',
   'plugins:toggle',
   'plugins:uninstall',

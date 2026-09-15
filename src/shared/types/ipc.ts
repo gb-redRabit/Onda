@@ -32,17 +32,26 @@ export type {
   PluginLayoutElement,
   PluginManifest,
   PluginInfo,
+  PluginExample,
   IpcPluginGetResult,
   IpcPluginUninstallResult,
   IpcPluginInstallResult,
   PluginFetchOptions,
   PluginFetchResult
 } from './ipc/plugins';
-export type { YoutubeAuthStatus, AppInfo, UpdaterState } from './ipc/app';
+export type {
+  YoutubeAuthStatus,
+  AppInfo,
+  UpdaterState,
+  UpdaterEventName,
+  IpcUpdaterEvent
+} from './ipc/app';
 export type {
   DepSource,
   DepToolStatus,
   DepToolPaths,
-  IpcWarningEntry
+  IpcWarningEntry,
+  AppCacheClearResult,
+  AppFactoryResetResult
 } from './ipc/channels-system';
 export type { IpcChannels, IpcChannel } from './ipc/channels';

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Eye, EyeOff, GripVertical } from '@lucide/vue';
 import { usePluginsStore } from '@renderer/stores/plugins';
@@ -38,11 +38,11 @@ const { t } = useI18n();
 const pluginsStore = usePluginsStore();
 const rightTab = ref<RightTab>('elements');
 
-function pluginDecorationOptions(
-  elementId: AudioLayoutElementId
-): { value: string; label: string; plugin?: string }[] {
-  return decorationOptionsFor(elementId, pluginsStore.layoutVariants, t);
-}
+// Plugin-only decorations for the selected element (empty when no active plugin
+// declares variants — the section is then hidden).
+const decorationOptions = computed(() =>
+  props.selected ? decorationOptionsFor(props.selected.id, pluginsStore.layoutVariants, t) : []
+);
 </script>
 
 <template>
@@ -145,14 +145,14 @@ function pluginDecorationOptions(
           {{ t('audioView.variantVizHint') }}
         </p>
 
-        <!-- Dekoracje (nadawane przez wtyczki / wybór w hostingu) -->
-        <div class="mt-3 pt-3 border-t border-base-300/60">
+        <!-- Dekoracje (tylko z wtyczek) -->
+        <div v-if="decorationOptions.length" class="mt-3 pt-3 border-t border-base-300/60">
           <div class="text-[11px] font-semibold text-base-content/70 uppercase tracking-wider mb-2">
             {{ t('audioView.decorationLabel') }}
           </div>
           <div class="flex flex-wrap gap-1.5">
             <button
-              v-for="opt in pluginDecorationOptions(props.selected.id)"
+              v-for="opt in decorationOptions"
               :key="opt.value"
               class="px-2.5 py-1.5 rounded-field text-[11px] font-medium border transition-colors"
               :class="

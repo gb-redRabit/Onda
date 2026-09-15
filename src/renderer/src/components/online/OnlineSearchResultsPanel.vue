@@ -7,7 +7,7 @@ import { isScItem } from '@renderer/utils/onlineView';
 import OnlineButton from './OnlineButton.vue';
 import OnlineEmptyState from './OnlineEmptyState.vue';
 import OnlineMediaCard from './OnlineMediaCard.vue';
-import LoaderSpinner from '@renderer/components/LoaderSpinner.vue';
+import Loader from '@renderer/components/layout/Loader.vue';
 import type { YouTubeVideo } from '@renderer/types/online';
 
 const expandedId = defineModel<string | null>('expandedId', { required: true });
@@ -45,7 +45,7 @@ function itemDownloadState(videoId: string): 'queuing' | 'downloading' | 'done' 
 </script>
 
 <template>
-  <LoaderSpinner v-if="yt.isSearching" />
+  <Loader v-if="yt.isSearching" overlay :label="$t('common.loading')" />
 
   <OnlineEmptyState
     v-else-if="yt.searchResults.length === 0 && !yt.resolved"

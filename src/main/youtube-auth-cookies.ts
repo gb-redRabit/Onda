@@ -1,7 +1,18 @@
 import { readFile } from 'fs/promises';
 import { isValidCookieFile } from './ipc/youtube-utils';
 
-export const SESSION_COOKIE_NAMES = ['SID', 'HSID', '__Secure-1PSID'];
+// Cookies that mark a signed-in YouTube session. Google's login flow moves the
+// SID-family around: a modern sign-in can leave `SID`/`HSID`/`__Secure-1PSID` on
+// `.google.com` and set `__Secure-3PSID` (+ `LOGIN_INFO`) on `.youtube.com`.
+// Accepting both variants (and `LOGIN_INFO`) avoids false "not logged in" states
+// that keep the login window open forever.
+export const SESSION_COOKIE_NAMES = [
+  'SID',
+  'HSID',
+  '__Secure-1PSID',
+  '__Secure-3PSID',
+  'LOGIN_INFO'
+];
 export const YT_COOKIE_HOST = 'youtube.com';
 
 export function cookieOnDomain(cookieDomain: string, host: string): boolean {

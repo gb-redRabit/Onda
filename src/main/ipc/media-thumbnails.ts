@@ -7,9 +7,18 @@ import os from 'os';
 import { AUDIO_EXTS, VIDEO_EXTS, MAX_THUMB_SIZE } from '../../shared/constants';
 import { extractAndCacheCover } from './cover-cache';
 import { SharpService } from '../utils/sharp';
+import { clearDirContents } from '../utils/clear-dir';
 import { logger } from '../../shared/logger';
 
 const cacheDir = join(os.tmpdir(), 'onda', 'thumbs');
+
+/** Removes every cached thumbnail (shared with `SharpService`). */
+export async function clearThumbnailCache(): Promise<{
+  removed: number;
+  bytesFreed: number;
+}> {
+  return clearDirContents(cacheDir);
+}
 
 function sanitizeThumbSize(size: number): number {
   const n = Math.floor(Number(size));

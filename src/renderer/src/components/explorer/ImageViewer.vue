@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from '@lucide/vue';
 import type { FileItem } from '@renderer/types/explorer';
 import ImageViewerThumbnails from './ImageViewerThumbnails.vue';
 import ImageViewerToolbar from './ImageViewerToolbar.vue';
+import Loader from '@renderer/components/layout/Loader.vue';
 import { useImageViewer } from '@renderer/composables/useImageViewer';
 
 const props = defineProps<{
@@ -107,10 +108,8 @@ const {
           />
           <div v-if="!displaySrc && !oldSrc" class="text-base-content/50 text-sm">
             <div v-if="imgError">{{ $t('imageViewer.loadFailed') }}</div>
-            <div v-else class="flex flex-col items-center gap-3">
-              <div
-                class="w-8 h-8 border border-primary border-t-transparent rounded-full animate-spin"
-              />
+            <div v-else class="flex flex-col items-center gap-1">
+              <Loader :size="48" />
               <span class="text-xs">{{ $t('imageViewer.loading') }}</span>
             </div>
           </div>

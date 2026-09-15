@@ -1,4 +1,4 @@
-import { readFileSync, mkdirSync, writeFileSync } from 'fs';
+import { readFileSync, mkdirSync, writeFileSync, rmSync, statSync } from 'fs';
 import { dirname, join } from 'path';
 import { app } from 'electron';
 import { logger } from '../../shared/logger';
@@ -91,4 +91,31 @@ export function cacheStream(url: string, streamUrl: string): void {
     if (oldest) streamCache.delete(oldest);
   }
   scheduleStreamCacheSave();
+}
+
+/**
+ * Drops the in-memory URL cache and the persisted JSON file. Returns the number
+ * of live entries dropped plus the removed file count and its size in bytes.
+ */
+export function clearStreamCache(): {
+  entries: number;
+  removed: number;
+  bytesFreed: number;
+} {
+  const entries = streamCache.size;
+  streamCache.clear();
+  if (streamCacheSaveTimer) {
+    clearTimeout(streamCacheSaveTimer);
+    streamCacheSaveTimer = null;
+  }
+  let removed = 0;
+  let bytesFreed = 0;
+  try {
+    bytesFreed = statSync(STREAM_CACHE_FILE).size;
+    rmSync(STREAM_CACHE_FILE, { force: true });
+    removed = 1;
+  } catch {
+    // no persisted cache file — nothing to remove
+  }
+  return { entries, removed, bytesFreed };
 }

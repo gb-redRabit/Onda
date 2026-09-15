@@ -7,6 +7,7 @@ import { installNavigationGuard } from './navigation-guard';
 import { pipWindowIcon } from './pip-icon';
 import { computePipPosition } from './pip-position';
 import { resolveMediaPath } from './path-utils';
+import { sendToWindow } from './utils/broadcast';
 import type { PipSubtitleData } from '../shared/types/pip';
 
 interface PipShowOptions {
@@ -122,7 +123,7 @@ export class PipManager {
     ipcMain.on('pip:ended', () => {
       this.stopTimeTracking();
       this.loadedSrc = null;
-      this.mainWindow?.webContents.send('pip:ended');
+      sendToWindow(this.mainWindow, 'pip:ended');
     });
 
     ipcMain.on('pip:theme', (_event, vars: Record<string, string>) => {
@@ -133,7 +134,7 @@ export class PipManager {
     ipcMain.on('pip:maximize', (_event, time: number) => {
       this.lastTime = time || 0;
       this.stop();
-      this.mainWindow?.webContents.send('pip:maximize', this.lastTime);
+      sendToWindow(this.mainWindow, 'pip:maximize', this.lastTime);
     });
 
     ipcMain.on('pip:locale', (_event, locale: string) => {
@@ -143,10 +144,7 @@ export class PipManager {
   }
 
   private sendToRenderer(channel: string, ...args: unknown[]): void {
-    if (!this.window || this.window.isDestroyed()) {
-      return;
-    }
-    this.window.webContents.send(channel, ...args);
+    sendToWindow(this.window, channel, ...args);
   }
 
   private sendPlay(startTime: number): void {
@@ -155,7 +153,7 @@ export class PipManager {
 
   private notifyClosed(): void {
     const time = this.lastTime;
-    this.mainWindow?.webContents.send('pip:closed', time);
+    sendToWindow(this.mainWindow, 'pip:closed', time);
   }
 
   private startTimeTracking(): void {

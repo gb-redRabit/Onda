@@ -43,6 +43,8 @@ export interface OndaAPI {
   clearLogs: BoundIpcMethod<'diagnostics:clearLogs'>;
   getRecentWarnings: BoundIpcMethod<'diagnostics:getWarnings'>;
   downloadLog: BoundIpcMethod<'diagnostics:downloadLog'>;
+  clearCache: BoundIpcMethod<'cache:clear'>;
+  factoryReset: BoundIpcMethod<'app:factoryReset'>;
   getUpdaterState: BoundIpcMethod<'updater:getState'>;
   checkForUpdates: BoundIpcMethod<'updater:check'>;
   downloadUpdate: BoundIpcMethod<'updater:download'>;
@@ -116,6 +118,8 @@ export interface OndaAPI {
 
   // plugins
   pluginsList: BoundIpcMethod<'plugins:list'>;
+  pluginsListExamples: BoundIpcMethod<'plugins:listExamples'>;
+  pluginsInstallExample: BoundIpcMethod<'plugins:installExample'>;
   pluginsGet: BoundIpcMethod<'plugins:get'>;
   pluginsToggle: BoundIpcMethod<'plugins:toggle'>;
   pluginsUninstall: BoundIpcMethod<'plugins:uninstall'>;

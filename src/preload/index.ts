@@ -14,11 +14,14 @@ import type {
   IpcSavedPlaylist,
   IpcRadioStation,
   PluginInfo,
+  PluginExample,
   PluginFetchOptions,
   PluginFetchResult,
   IpcPluginGetResult,
   IpcPluginUninstallResult,
-  IpcPluginInstallResult
+  IpcPluginInstallResult,
+  AppCacheClearResult,
+  AppFactoryResetResult
 } from '../shared/types/ipc';
 import type { IpcArgs, IpcChannel, IpcResult } from '../shared/ipc/contract';
 import type { OndaAPI } from '../shared/ipc/api';
@@ -353,6 +356,8 @@ const api: OndaAPI = {
   getRecentWarnings: () => tryInvoke('diagnostics:getWarnings'),
   downloadLog: (): Promise<{ success: boolean; canceled?: boolean; error?: string }> =>
     tryInvoke('diagnostics:downloadLog'),
+  clearCache: (): Promise<AppCacheClearResult> => tryInvoke('cache:clear'),
+  factoryReset: (): Promise<AppFactoryResetResult> => tryInvoke('app:factoryReset'),
   getUpdaterState: (): Promise<UpdaterState> => tryInvoke('updater:getState'),
   checkForUpdates: (): Promise<{ checking: boolean }> => tryInvoke('updater:check'),
   downloadUpdate: (): Promise<boolean> => tryInvoke('updater:download'),
@@ -391,6 +396,9 @@ const api: OndaAPI = {
   youtubeCheckSubscriptions: (): Promise<IpcSubscriptionCheckResult> =>
     tryInvoke('yt:subs:checkNow'),
   pluginsList: (): Promise<PluginInfo[]> => tryInvoke('plugins:list'),
+  pluginsListExamples: (): Promise<PluginExample[]> => tryInvoke('plugins:listExamples'),
+  pluginsInstallExample: (id: string): Promise<IpcPluginInstallResult> =>
+    tryInvoke('plugins:installExample', id),
   pluginsGet: (id: string): Promise<IpcPluginGetResult> => tryInvoke('plugins:get', id),
   pluginsToggle: (id: string, enabled: boolean): Promise<boolean> =>
     tryInvoke('plugins:toggle', id, enabled),

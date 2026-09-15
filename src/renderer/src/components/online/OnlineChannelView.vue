@@ -21,7 +21,7 @@ import OnlineSegmentControl from './OnlineSegmentControl.vue';
 import OnlineMediaCard from './OnlineMediaCard.vue';
 import OnlineChannelHeader from './OnlineChannelHeader.vue';
 import { useChannelInfiniteScroll } from '@renderer/composables/useChannelInfiniteScroll';
-import LoaderSpinner from '@renderer/components/LoaderSpinner.vue';
+import Loader from '@renderer/components/layout/Loader.vue';
 
 const yt = useOnlineStore();
 const settings = useSettingsStore();
@@ -181,7 +181,7 @@ onUnmounted(() => {
 
 <template>
   <div class="space-y-4 w-full">
-    <LoaderSpinner v-if="yt.channelLoading && !yt.channel" />
+    <Loader v-if="yt.channelLoading && !yt.channel" overlay :label="$t('common.loading')" />
     <template v-else-if="yt.channel">
       <OnlineChannelHeader @toggle-follow="toggleFollow" />
 
@@ -241,7 +241,7 @@ onUnmounted(() => {
       </div>
 
       <div v-if="yt.channelLoading && !yt.channelItems.length" class="flex justify-center py-8">
-        <div class="w-6 h-6 border border-primary border-t-transparent rounded-full animate-spin" />
+        <Loader :size="56" :label="$t('common.loading')" />
       </div>
 
       <div v-else-if="yt.channelItems.length" class="space-y-4">
@@ -278,10 +278,7 @@ onUnmounted(() => {
       </p>
 
       <div v-if="yt.channelHasMore" :ref="setSentinel" class="flex justify-center py-4">
-        <div
-          v-if="yt.channelLoading"
-          class="w-6 h-6 border border-primary border-t-transparent rounded-full animate-spin"
-        />
+        <Loader v-if="yt.channelLoading" :size="40" />
       </div>
     </template>
 

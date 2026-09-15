@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import { AlertCircle, Globe, Loader2 } from '@lucide/vue';
+import { AlertCircle, Globe } from '@lucide/vue';
 import SourceCard from './SourceCard.vue';
 import SourcePageView from './SourcePageView.vue';
+import Loader from '@renderer/components/layout/Loader.vue';
 import type { SourceItem } from '@renderer/types/sources';
 
 defineProps<{
@@ -76,7 +77,7 @@ const { t } = useI18n();
       v-else-if="loading"
       class="h-full flex flex-col items-center justify-center gap-2 text-base-content/50"
     >
-      <Loader2 :size="32" class="animate-spin opacity-50" />
+      <Loader :size="56" />
       <p class="text-sm">{{ t('sources.refresh') }}...</p>
     </div>
     <div

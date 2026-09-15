@@ -1,4 +1,4 @@
-import { app, ipcMain, BrowserWindow } from 'electron';
+import { app, ipcMain } from 'electron';
 import { join } from 'path';
 import { getStore } from './cover-cache';
 import {
@@ -18,6 +18,7 @@ import {
   stopSubscriptionChecker
 } from './subscription-checker';
 import { setDownloadCompletedHandler } from '../downloads/download-manager';
+import { broadcastToAllWindows } from '../utils/broadcast';
 import type { IpcSubscription, IpcSubscriptionCheckResult } from '../../shared/types/ipc';
 
 function getSubscriptionsFile(): string {
@@ -25,9 +26,7 @@ function getSubscriptionsFile(): string {
 }
 
 function broadcastSubscriptionUpdated(sub: IpcSubscription): void {
-  for (const win of BrowserWindow.getAllWindows()) {
-    win.webContents.send('yt:subs:updated', sub);
-  }
+  broadcastToAllWindows('yt:subs:updated', sub);
 }
 
 export function registerSubscriptionHandlers(): void {

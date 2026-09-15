@@ -81,3 +81,10 @@ export async function getRemoteImage(rawUrl: string): Promise<string | null> {
 export function registerRemoteImageHandler(): void {
   ipcMain.handle('media:remoteImage', (_event, url: string) => getRemoteImage(url));
 }
+
+/** Drops every cached remote image (in-memory LRU). Returns the entry count. */
+export function clearRemoteImageCache(): number {
+  const entries = cache.size;
+  cache.clear();
+  return entries;
+}

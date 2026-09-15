@@ -5,6 +5,7 @@ import type {
   IpcPluginGetResult,
   IpcPluginInstallResult,
   IpcPluginUninstallResult,
+  PluginExample,
   PluginFetchOptions,
   PluginFetchResult,
   PluginInfo
@@ -42,6 +43,18 @@ export interface DepOperationResult {
   success: boolean;
   error?: string;
   cancelled?: boolean;
+}
+
+export interface AppCacheClearResult {
+  success: boolean;
+  filesRemoved: number;
+  bytesFreed: number;
+  error?: string;
+}
+
+export interface AppFactoryResetResult {
+  success: boolean;
+  error?: string;
 }
 
 export interface SystemChannels {
@@ -232,8 +245,15 @@ export interface SystemChannels {
   'updater:check': { args: []; result: { checking: boolean } };
   'updater:download': { args: []; result: boolean };
   'updater:install': { args: []; result: void };
-  'coverCache:clear': { args: []; result: { success: boolean; removed?: number; error?: string } };
+  'coverCache:clear': {
+    args: [];
+    result: { success: boolean; removed?: number; bytesFreed?: number; error?: string };
+  };
+  'cache:clear': { args: []; result: AppCacheClearResult };
+  'app:factoryReset': { args: []; result: AppFactoryResetResult };
   'plugins:list': { args: []; result: PluginInfo[] };
+  'plugins:listExamples': { args: []; result: PluginExample[] };
+  'plugins:installExample': { args: [id: string]; result: IpcPluginInstallResult };
   'plugins:get': { args: [id: string]; result: IpcPluginGetResult };
   'plugins:toggle': { args: [id: string, enabled: boolean]; result: boolean };
   'plugins:uninstall': { args: [id: string]; result: IpcPluginUninstallResult };

@@ -5,6 +5,7 @@ import sharp from 'sharp';
 import os from 'os';
 import { AUDIO_EXTS, VIDEO_EXTS } from '../../shared/constants';
 import { evictCache, hashPath, uniqueId, findSiblingVideo, isEnoent } from './cover-cache-helpers';
+import { clearDirContents } from '../utils/clear-dir';
 import { runCommand } from '../utils/exec';
 import { resolveBin } from '../binaries';
 import { logger } from '../../shared/logger';
@@ -317,22 +318,16 @@ async function getCachedCover(
   return null;
 }
 
-export async function clearCoverCache(): Promise<{ removed: number }> {
+export async function clearCoverCache(): Promise<{ removed: number; bytesFreed: number }> {
   try {
     coverResultCache.clear();
     durationCache.clear();
-    const { readdir, rm } = await import('fs/promises');
-    const entries = await readdir(PERSISTENT_COVER_DIR).catch(() => [] as string[]);
-    let removed = 0;
-    for (const e of entries) {
-      await rm(join(PERSISTENT_COVER_DIR, e), { force: true }).catch(() => {});
-      removed++;
-    }
+    const { removed, bytesFreed } = await clearDirContents(PERSISTENT_COVER_DIR);
     await writeCoverMap({});
-    return { removed };
+    return { removed, bytesFreed };
   } catch (e) {
     logger.warn('cover', 'clearCoverCache failed', e);
-    return { removed: 0 };
+    return { removed: 0, bytesFreed: 0 };
   }
 }
 

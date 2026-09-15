@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n';
 import { Bell } from '@lucide/vue';
 import OnlineEmptyState from './OnlineEmptyState.vue';
 import OnlineSubscriptionCard from './OnlineSubscriptionCard.vue';
-import LoaderSpinner from '@renderer/components/LoaderSpinner.vue';
+import Loader from '@renderer/components/layout/Loader.vue';
 import type { Subscription } from '@renderer/types/online';
 
 defineProps<{
@@ -26,7 +26,7 @@ const { t } = useI18n();
 
 <template>
   <div class="space-y-4">
-    <LoaderSpinner v-if="!loaded" />
+    <Loader v-if="!loaded" overlay :label="$t('common.loading')" />
 
     <OnlineEmptyState
       v-else-if="subscriptions.length === 0"

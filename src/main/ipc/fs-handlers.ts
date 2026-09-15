@@ -13,6 +13,7 @@ import {
   readFile
 } from 'fs/promises';
 import { join, extname, basename } from 'path';
+import { iconSourcePath } from '../utils/file-icon';
 import { spawn } from 'child_process';
 import { errMsg } from '../../shared/helpers';
 import { logger } from '../../shared/logger';
@@ -307,7 +308,7 @@ export function registerFsHandlers(): void {
 
   ipcMain.handle('shell:getFileIcon', async (_event, filePath: string) => {
     try {
-      const icon = await app.getFileIcon(filePath, { size: 'normal' });
+      const icon = await app.getFileIcon(iconSourcePath(filePath), { size: 'large' });
       if (icon.isEmpty()) return null;
       return icon.toDataURL();
     } catch (e) {

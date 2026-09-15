@@ -1,18 +1,41 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import type { AppInfo, DepSource, DepToolPaths, IpcWarningEntry } from '@shared/types/ipc';
+import type {
+  AppCacheClearResult,
+  AppInfo,
+  DepSource,
+  DepToolPaths,
+  IpcWarningEntry
+} from '@shared/types/ipc';
 import { logger } from '@shared/logger';
-import { Download, RefreshCw, Trash2 } from '@lucide/vue';
+import { useUIStore } from '@renderer/stores/ui';
+import { usePromptDialog } from '@renderer/composables/usePromptDialog';
+import { Download, RefreshCw, RotateCcw, Trash2 } from '@lucide/vue';
 import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
 import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
+import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 
 const { t } = useI18n();
+const ui = useUIStore();
+const {
+  promptVisible,
+  promptIsConfirm,
+  promptMessage,
+  promptValue,
+  showConfirm,
+  promptConfirm,
+  promptCancel
+} = usePromptDialog();
 const info = ref<AppInfo | null>(null);
 const logs = ref('');
 const resolver = ref<DepToolPaths>([]);
 const warnings = ref<IpcWarningEntry[]>([]);
 const busy = ref(false);
+const cacheBusy = ref(false);
+const lastClear = ref<AppCacheClearResult | null>(null);
+const resetBusy = ref(false);
+const resetting = ref(false);
 
 onMounted(() => loadAll());
 
@@ -57,6 +80,60 @@ async function onDownload(): Promise<void> {
 async function onClear(): Promise<void> {
   const ok = await window.api?.clearLogs();
   if (ok) logs.value = '';
+}
+
+function formatSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${bytes} B`;
+}
+
+function cacheDetail(result: AppCacheClearResult): string {
+  return t('settings.cacheClearedDetail', {
+    files: result.filesRemoved,
+    size: formatSize(result.bytesFreed)
+  });
+}
+
+async function onClearCache(): Promise<void> {
+  if (cacheBusy.value) return;
+  cacheBusy.value = true;
+  try {
+    const res = await window.api?.clearCache();
+    if (res?.success) {
+      lastClear.value = res;
+      ui.notify('success', t('settings.cacheCleared'), cacheDetail(res));
+    } else {
+      ui.notify('error', t('settings.cacheClearError'), res?.error);
+    }
+  } catch (e) {
+    logger.warn('diagnostics', 'clear cache failed', e);
+    ui.notify('error', t('settings.cacheClearError'), String(e));
+  } finally {
+    cacheBusy.value = false;
+  }
+}
+
+async function onFactoryReset(): Promise<void> {
+  const ok = await showConfirm(t('settings.resetFactoryConfirm'));
+  if (!ok) return;
+  resetBusy.value = true;
+  try {
+    const res = await window.api?.factoryReset();
+    if (res?.success) {
+      // Main restarts the app in a moment — keep the card in the "restarting"
+      // state instead of pretending the operation is done.
+      resetting.value = true;
+      ui.notify('success', t('settings.resetFactoryRestarting'));
+    } else {
+      resetBusy.value = false;
+      ui.notify('error', t('settings.resetFactoryError'), res?.error);
+    }
+  } catch (e) {
+    resetBusy.value = false;
+    logger.warn('diagnostics', 'factory reset failed', e);
+    ui.notify('error', t('settings.resetFactoryError'), String(e));
+  }
 }
 </script>
 
@@ -191,6 +268,48 @@ async function onClear(): Promise<void> {
       <div v-else class="text-xs text-base-content/50">{{ $t('settings.warningsEmpty') }}</div>
     </SettingsCard>
 
+    <SettingsCard>
+      <div class="flex items-baseline justify-between gap-3 mb-3">
+        <div class="text-sm font-medium">{{ $t('settings.cacheTitle') }}</div>
+        <div class="text-[11px] text-base-content/50 text-right">
+          {{ $t('settings.cacheDesc') }}
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <button
+          class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-red-500/40 text-error text-xs font-medium hover:bg-error/10 transition-colors disabled:opacity-50"
+          :disabled="cacheBusy"
+          @click="onClearCache"
+        >
+          <Trash2 :size="14" />{{ $t('settings.cacheClear') }}
+        </button>
+        <span v-if="lastClear" class="text-[11px] text-base-content/50">
+          {{ cacheDetail(lastClear) }}
+        </span>
+      </div>
+    </SettingsCard>
+
+    <SettingsCard>
+      <div class="flex items-baseline justify-between gap-3 mb-3">
+        <div class="text-sm font-medium text-error">{{ $t('settings.resetFactoryTitle') }}</div>
+        <div class="text-[11px] text-base-content/50 text-right">
+          {{ $t('settings.resetFactoryDesc') }}
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <button
+          class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-error text-error-content text-xs font-medium hover:bg-error/90 transition-colors disabled:opacity-50"
+          :disabled="resetBusy || resetting"
+          @click="onFactoryReset"
+        >
+          <RotateCcw :size="14" />{{ $t('settings.resetFactoryButton') }}
+        </button>
+        <span v-if="resetting" class="text-[11px] text-error font-medium">
+          {{ $t('settings.resetFactoryRestarting') }}
+        </span>
+      </div>
+    </SettingsCard>
+
     <div class="flex items-center gap-2">
       <button
         class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors"
@@ -218,5 +337,15 @@ async function onClear(): Promise<void> {
         class="h-64 overflow-auto p-4 text-[11px] leading-relaxed font-mono text-base-content/70 whitespace-pre-wrap break-words"
         >{{ logs || $t('settings.logEmpty') }}</pre>
     </SettingsCard>
+
+    <ExplorerPromptDialog
+      :visible="promptVisible"
+      :is-confirm="promptIsConfirm"
+      :message="promptMessage"
+      :value="promptValue"
+      @update:value="promptValue = $event"
+      @confirm="promptConfirm"
+      @cancel="promptCancel"
+    />
   </SettingsPanel>
 </template>

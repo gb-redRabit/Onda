@@ -15,7 +15,8 @@ import {
   Music2,
   Key,
   Wand,
-  Puzzle
+  Puzzle,
+  Activity
 } from '@lucide/vue';
 
 // Settings navigation data extracted from `views/SettingsView.vue` (plan 2.8).
@@ -176,6 +177,13 @@ export const SETTINGS_TABS = [
     icon: Info,
     section: 'system',
     description: 'Wersje i ścieżki'
+  },
+  {
+    id: 'diagnostics',
+    labelKey: 'settings.diagnostics',
+    icon: Activity,
+    section: 'system',
+    description: 'Resolver, ostrzeżenia, cache, reset'
   },
   {
     id: 'apiKeys',

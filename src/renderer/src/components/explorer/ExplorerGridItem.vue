@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
-import { HardDrive, FolderOpen, Image, Film, Music2 } from '@lucide/vue';
+import { HardDrive, FolderOpen } from '@lucide/vue';
 import { getFileTypeInfo } from '@renderer/utils/fileTypes';
+import { fileTypeIcon as categoryIcon } from '@renderer/utils/fileTypeIcons';
 import { formatFileSize } from '@renderer/utils/formatters';
 import { beginFileDrag } from '@renderer/utils/fileDrag';
 import type { FileItem } from '@renderer/types/explorer';
@@ -34,12 +35,7 @@ if (import.meta.env.DEV) {
   void rootEl;
 }
 
-const fileTypeIcon = computed(() => {
-  const cat = getFileTypeInfo(props.item.extension || '').category;
-  if (cat === 'video') return Film;
-  if (cat === 'audio') return Music2;
-  return Image;
-});
+const typeIcon = computed(() => categoryIcon(props.item.extension));
 
 const size = computed(() => {
   switch (props.viewMode) {
@@ -112,7 +108,7 @@ const size = computed(() => {
         class="object-contain"
       />
       <component
-        :is="fileTypeIcon"
+        :is="typeIcon"
         v-else
         :size="Math.round(size.icon * 0.45)"
         :style="{ color: getFileTypeInfo(item.extension || '').color }"

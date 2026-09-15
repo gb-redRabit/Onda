@@ -15,6 +15,7 @@ import { computeEdgePeekBounds } from './pip-edge-position';
 import { PeekController } from './peek-controller';
 import { installNavigationGuard } from './navigation-guard';
 import { logger } from '../shared/logger';
+import { sendToWindow } from './utils/broadcast';
 import { pipWindowIcon } from './pip-icon';
 import { DEFAULT_CORNER_ELEMENTS, DEFAULT_EDGE_ELEMENTS, PREVIEW_STATE } from './pip-defaults';
 
@@ -327,7 +328,9 @@ export class AudioPipManager {
       this.ready = false;
       this.peek.reset();
       this.isPreview = false;
-      this.mainWindow?.webContents.send('audio-pip:closed');
+      // The main window may already be destroyed (quit / factory reset) — a
+      // raw `webContents.send` here would crash the main process.
+      sendToWindow(this.mainWindow, 'audio-pip:closed');
     });
 
     installNavigationGuard(this.window);
@@ -431,12 +434,12 @@ export class AudioPipManager {
 
     ipcMain.on('audio-pip:action', (_event, action: string) => {
       if (this.isPreview) return;
-      this.mainWindow?.webContents.send('audio-pip:action', action);
+      sendToWindow(this.mainWindow, 'audio-pip:action', action);
     });
 
     ipcMain.on('audio-pip:progressClick', (_event, percent: number) => {
       if (this.isPreview) return;
-      this.mainWindow?.webContents.send('audio-pip:progressClick', percent);
+      sendToWindow(this.mainWindow, 'audio-pip:progressClick', percent);
     });
 
     ipcMain.on('audio-pip:unpeek', () => {

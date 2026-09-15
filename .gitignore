@@ -5,7 +5,12 @@ test-results
 playwright-report
 blob-report
 docs
-resources
+# Bundle assets are force-shipped: ignore the generated/downloaded bits
+# (resources/ffmpeg, …) but track the icon, splash and bundled plugin examples.
+resources/*
+!resources/icon.png
+!resources/splash.html
+!resources/plugins-examples/
 .DS_Store
 .eslintcache
 *.log*

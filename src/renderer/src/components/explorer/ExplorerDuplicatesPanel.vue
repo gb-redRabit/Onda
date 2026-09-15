@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, watch, inject } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Copy, X, RotateCw, Check, Trash2, FileText } from '@lucide/vue';
+import { Copy, X, Check, Trash2, FileText } from '@lucide/vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
+import Loader from '@renderer/components/layout/Loader.vue';
 
 interface DupGroup {
   original: string;
@@ -107,7 +108,7 @@ function revealDupFile(path: string) {
       v-if="dupLoading"
       class="flex flex-col items-center justify-center py-10 text-base-content/50 gap-2"
     >
-      <RotateCw :size="20" class="animate-spin" />
+      <Loader :size="48" />
       <p class="text-xs">{{ $t('explorer.duplicatesScanning') }}</p>
     </div>
 

@@ -1,6 +1,11 @@
 import { defineStore } from 'pinia';
 import { ref, computed, shallowRef } from 'vue';
-import type { PluginInfo, PluginManifest, IpcPluginInstallResult } from '@shared/types/ipc';
+import type {
+  PluginInfo,
+  PluginExample,
+  PluginManifest,
+  IpcPluginInstallResult
+} from '@shared/types/ipc';
 import type { PluginCommandEntry } from '@renderer/modules/plugins/plugin-shim';
 import type { PluginWorkerHandle } from '@renderer/modules/plugins/pluginWorker';
 import { createPluginSpawner, type PluginUiStatus } from '@renderer/modules/plugins/pluginSpawner';
@@ -10,12 +15,12 @@ import { createPluginSettings } from '@renderer/modules/plugins/pluginSettings';
 import { createPluginLogs } from '@renderer/modules/plugins/pluginLogs';
 import { logger } from '@shared/logger';
 import {
-  ELEMENT_DECORATIONS,
+  LAYOUT_ELEMENT_IDS,
   PLUGIN_HOST_VARIANTS,
   omitKey,
   snapshotTrack
 } from '@renderer/utils/plugins-helpers';
-export { ELEMENT_DECORATIONS, PLUGIN_HOST_VARIANTS, snapshotTrack };
+export { LAYOUT_ELEMENT_IDS, PLUGIN_HOST_VARIANTS, snapshotTrack };
 export type { TrackSnapshot } from '@renderer/utils/plugins-helpers';
 export type { PluginUiStatus };
 import { computeDecorations, computeLayoutVariants } from '@renderer/utils/plugins-derive';
@@ -27,6 +32,7 @@ export interface PluginUiInfo extends PluginInfo {
 
 export const usePluginsStore = defineStore('plugins', () => {
   const plugins = ref<PluginUiInfo[]>([]);
+  const examples = ref<PluginExample[]>([]);
   const commands = ref<PluginCommandEntry[]>([]);
   const logs = ref<Record<string, string[]>>({});
   const loading = ref(false);
@@ -82,9 +88,18 @@ export const usePluginsStore = defineStore('plugins', () => {
     dispatchApi
   });
 
+  async function loadExamples(): Promise<void> {
+    try {
+      examples.value = (await window.api.pluginsListExamples()) || [];
+    } catch (e) {
+      logger.warn('plugins', 'plugins.loadExamples failed', e);
+    }
+  }
+
   async function load(): Promise<void> {
     loading.value = true;
     try {
+      await loadExamples();
       const list = (await window.api.pluginsList()) || [];
       manifests.value = {};
       workers.value = {};
@@ -156,6 +171,14 @@ export const usePluginsStore = defineStore('plugins', () => {
     return result;
   }
 
+  async function installExample(id: string): Promise<IpcPluginInstallResult> {
+    const result = await window.api.pluginsInstallExample(id);
+    if (result.success && result.installed) {
+      await load();
+    }
+    return result;
+  }
+
   async function refresh(): Promise<void> {
     for (const id of Object.keys(workers.value)) spawner.terminatePlugin(id, true);
     await load();
@@ -170,6 +193,7 @@ export const usePluginsStore = defineStore('plugins', () => {
 
   return {
     plugins,
+    examples,
     commands,
     logs,
     visuals,
@@ -178,9 +202,11 @@ export const usePluginsStore = defineStore('plugins', () => {
     pluginSettings,
     loading,
     load,
+    loadExamples,
     toggle,
     uninstall,
     installFromFolder,
+    installExample,
     refresh,
     emitHook,
     dispatchCommand,

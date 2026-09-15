@@ -12,7 +12,7 @@ import { useOnlineBatch } from '@renderer/composables/useOnlineBatch';
 import { useOnlineDialogs } from '@renderer/composables/useOnlineDialogs';
 import { useOnlineQueueing } from '@renderer/composables/useOnlineQueueing';
 import { useOnlineViewSetup } from '@renderer/composables/useOnlineViewSetup';
-import LoaderSpinner from '@renderer/components/LoaderSpinner.vue';
+import Loader from '@renderer/components/layout/Loader.vue';
 import {
   configDialogTitle as resolveConfigDialogTitle,
   configDialogChannelTitle as resolveConfigDialogChannelTitle,
@@ -34,7 +34,7 @@ import YTAuthButton from '@renderer/components/online/YTAuthButton.vue';
 // (plan 3.5).
 const OnlineChannelView = defineAsyncComponent({
   loader: () => import('@renderer/components/online/OnlineChannelView.vue'),
-  loadingComponent: LoaderSpinner,
+  loadingComponent: Loader,
   delay: 120
 });
 const DownloadConfigDialog = defineAsyncComponent(

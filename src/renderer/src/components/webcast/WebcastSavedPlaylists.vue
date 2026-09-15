@@ -5,6 +5,7 @@ import { AlertCircle, ChevronDown, ChevronRight, ListMusic, Play, Trash2 } from 
 import { useSavedStore } from '@renderer/stores/saved';
 import { useOnlineStore } from '@renderer/stores/online';
 import OnlineMediaCard from '@renderer/components/online/OnlineMediaCard.vue';
+import Loader from '@renderer/components/layout/Loader.vue';
 import { toResolvedItem } from '@renderer/utils/savedItem';
 import type { IpcSavedPlaylist } from '@shared/types/ipc';
 
@@ -132,10 +133,7 @@ function removePlaylist(id: string) {
             "
             class="flex items-center justify-center py-8"
           >
-            <div
-              v-if="yt.syncingSavedPlaylistState.has(p.id)"
-              class="w-6 h-6 border border-primary border-t-transparent rounded-full animate-spin"
-            />
+            <Loader v-if="yt.syncingSavedPlaylistState.has(p.id)" :size="40" />
           </div>
           <p
             v-else-if="!p.items || p.items.length === 0"

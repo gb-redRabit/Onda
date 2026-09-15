@@ -1,13 +1,13 @@
 import type { PluginManifest, PluginSettingField } from '@shared/types/ipc';
 import type { AudioLayoutElementId } from '@renderer/types/settings';
-import { ELEMENT_DECORATIONS, PLUGIN_HOST_VARIANTS } from '@renderer/utils/plugins-helpers';
+import { LAYOUT_ELEMENT_IDS, PLUGIN_HOST_VARIANTS } from '@renderer/utils/plugins-helpers';
 
 export function computeDecorations(
   plugins: ReadonlyArray<{ id: string; enabled: boolean }>,
   visuals: Record<string, Record<string, string>>
 ): Partial<Record<AudioLayoutElementId, string>> {
   const out: Partial<Record<AudioLayoutElementId, string>> = {};
-  for (const elementId of Object.keys(ELEMENT_DECORATIONS)) {
+  for (const elementId of LAYOUT_ELEMENT_IDS) {
     for (const p of plugins) {
       if (!p.enabled) continue;
       const value = visuals[p.id]?.[elementId];
@@ -30,7 +30,7 @@ export function computeLayoutVariants(
     const manifest = manifests[p.id];
     if (!manifest || manifest.permissions.visual !== true || !manifest.layoutElements) continue;
     for (const le of manifest.layoutElements) {
-      if (!PLUGIN_HOST_VARIANTS[le.element]?.[le.variant]) continue;
+      if (!PLUGIN_HOST_VARIANTS[le.element]?.includes(le.variant)) continue;
       const key = `plugin:${le.element}:${le.variant}`;
       const list = out[le.element] || (out[le.element] = []);
       if (!list.some((v) => v.value === key)) {

@@ -22,7 +22,7 @@ import { getStore } from './ipc/cover-cache';
 import { flushQueueNow } from './downloads/download-manager';
 import { flushLibraryScanned } from './ipc/library-store';
 import { setupFileLogging } from './log-file';
-import { initAutoUpdater } from './updater';
+import { initAutoUpdater, replayUpdaterEvent } from './updater';
 import { configureAutoCheck } from './updater-scheduler';
 import { syncSubscriptionsScheduler } from './ipc/subscriptions-handlers';
 import { shouldCloseToTray, setCloseToTray } from './close-behavior';
@@ -296,8 +296,12 @@ app.whenReady().then(async () => {
 
   splash.send('Uruchamianie interfejsu…', 50);
 
-  ipcMain.handle('app:rendererReady', () => {
+  ipcMain.handle('app:rendererReady', (event) => {
     splash.onRendererReady();
+    // The renderer may mount after an update event already fired (startup
+    // check, reload, macOS re-activate) — replay the last one so the global
+    // notification isn't lost.
+    replayUpdaterEvent(event.sender);
   });
 
   ipcMain.handle('window:id', (event) => {

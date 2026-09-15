@@ -10,9 +10,11 @@ import {
   Puzzle,
   Loader2,
   Check,
-  BookOpen
+  BookOpen,
+  Download
 } from '@lucide/vue';
 import { usePluginsStore } from '@renderer/stores/plugins';
+import { useUIStore } from '@renderer/stores/ui';
 import type { PluginSettingField } from '@shared/types/ipc';
 import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
 import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
@@ -21,6 +23,7 @@ import PluginsGuide from '@renderer/components/settings/PluginsGuide.vue';
 
 const { t } = useI18n();
 const store = usePluginsStore();
+const ui = useUIStore();
 
 const guideOpen = ref(false);
 
@@ -61,6 +64,16 @@ async function onToggle(id: string): Promise<void> {
 
 async function onInstall(): Promise<void> {
   await store.installFromFolder();
+}
+
+function isInstalled(id: string): boolean {
+  return store.plugins.some((p) => p.id === id);
+}
+
+async function onInstallExample(id: string): Promise<void> {
+  const res = await store.installExample(id);
+  if (res.success) ui.notify('success', t('plugins.examplesInstalled'));
+  else ui.notify('error', t('plugins.examplesError'), res.error);
 }
 
 async function onRefresh(): Promise<void> {
@@ -130,6 +143,47 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
     </SettingsCard>
 
     <PluginsGuide v-if="guideOpen" @close="guideOpen = false" />
+
+    <SettingsCard v-if="store.examples.length">
+      <SettingsSectionTitle
+        :title="t('plugins.examplesTitle')"
+        :description="t('plugins.examplesDesc')"
+      />
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2">
+        <div
+          v-for="ex in store.examples"
+          :key="ex.id"
+          class="flex items-start gap-3 p-3 rounded-field border border-base-300/70 bg-base-100"
+        >
+          <div
+            class="w-8 h-8 rounded-box bg-primary/10 text-primary flex items-center justify-center shrink-0"
+          >
+            <Puzzle :size="14" />
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-medium truncate">{{ ex.name }}</span>
+              <span class="text-[11px] text-base-content/50 shrink-0">{{ ex.version }}</span>
+            </div>
+            <div class="text-xs text-base-content/50 mt-0.5">
+              {{ ex.author ? `${ex.author} · ` : '' }}{{ ex.description || ex.id }}
+            </div>
+          </div>
+          <button
+            v-if="!isInstalled(ex.id)"
+            class="flex items-center gap-1.5 px-2.5 h-7 rounded-field text-xs font-medium bg-primary text-primary-content fx-depth shrink-0"
+            @click="onInstallExample(ex.id)"
+          >
+            <Download :size="12" />
+            {{ t('plugins.examplesInstall') }}
+          </button>
+          <span v-else class="flex items-center gap-1 text-xs text-success shrink-0 px-1.5 h-7">
+            <Check :size="12" />
+            {{ t('plugins.examplesInstalled') }}
+          </span>
+        </div>
+      </div>
+    </SettingsCard>
 
     <div
       v-if="store.plugins.length === 0 && !loading"

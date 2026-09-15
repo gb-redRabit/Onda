@@ -45,6 +45,15 @@ export interface PluginInfo {
   permissions: PluginPermissions;
 }
 
+/** A plugin bundled with the app and installable from Settings → Plugins. */
+export interface PluginExample {
+  id: string;
+  name: string;
+  version: string;
+  description?: string;
+  author?: string;
+}
+
 export interface IpcPluginGetResult {
   success: boolean;
   manifest?: PluginManifest;

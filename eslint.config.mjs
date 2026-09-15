@@ -12,7 +12,8 @@ export default defineConfig(
       '**/out',
       'generate-random-icon.js',
       'scripts/fetch-ffmpeg.mjs',
-      'tests/fixtures/**'
+      // Bundled plugin examples run in the plugin sandbox (global `api`).
+      'resources/plugins-examples/**'
     ]
   },
   tseslint.configs.recommended,
