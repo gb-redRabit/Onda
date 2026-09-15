@@ -19,6 +19,7 @@ import {
   resolveRedirectUrl,
   MAX_STORAGE_KEYS
 } from '../plugins-core';
+import { settingWriteAllowed, storagePermissionGranted } from '../plugins-guards';
 
 let dir: string;
 
@@ -316,5 +317,23 @@ describe('network allowlist', () => {
     expect(resolveRedirectUrl('https://a.com/x', 'https://b.com/z')).toBe('https://b.com/z');
     expect(resolveRedirectUrl('https://a.com/x', 'file:///etc/passwd')).toBeNull();
     expect(resolveRedirectUrl('https://a.com/x', 'javascript:alert(1)')).toBeNull();
+  });
+});
+
+describe('plugin permission guards (plan 7.1)', () => {
+  it('storagePermissionGranted only allows an explicit storage:true', () => {
+    expect(storagePermissionGranted({})).toBe(false);
+    expect(storagePermissionGranted({ network: { allow: ['https://x/'] } })).toBe(false);
+    expect(storagePermissionGranted({ storage: true })).toBe(true);
+  });
+
+  it('settingWriteAllowed lets storage plugins write anything', () => {
+    expect(settingWriteAllowed({ storage: true }, [], 'anything')).toBe(true);
+  });
+
+  it('settingWriteAllowed limits storage-less plugins to declared settings', () => {
+    expect(settingWriteAllowed({}, ['shape'], 'shape')).toBe(true);
+    expect(settingWriteAllowed({}, ['shape'], 'sneaky')).toBe(false);
+    expect(settingWriteAllowed({}, undefined, 'shape')).toBe(false);
   });
 });

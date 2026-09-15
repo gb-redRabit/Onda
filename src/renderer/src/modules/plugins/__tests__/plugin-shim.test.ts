@@ -52,7 +52,10 @@ describe('PLUGIN_API_SHIM', () => {
       'storage:set',
       'api-request',
       'api-response',
-      'invoke-command'
+      'invoke-command',
+      'BLOCKED_GLOBALS',
+      'MAX_ARGS_BYTES',
+      'MAX_LOG_CHARS'
     ]) {
       expect(PLUGIN_API_SHIM).toContain(needle);
     }
@@ -70,20 +73,52 @@ describe('PLUGIN_API_SHIM', () => {
 });
 
 describe('PLUGIN_API_SHIM runtime', () => {
-  function runShim(): { api: Record<string, unknown>; messages: unknown[] } {
+  type SandboxSelf = { api?: unknown; postMessage: (m: unknown) => void };
+
+  function runShim(): {
+    api: Record<string, unknown>;
+    messages: unknown[];
+    sandboxSelf: SandboxSelf;
+  } {
     const messages: unknown[] = [];
-    const sandboxSelf: { api?: unknown; postMessage: (m: unknown) => void } = {
-      api: undefined,
-      postMessage: (m: unknown) => messages.push(m)
-    };
+    // Null-prototype on purpose: the shim hardens `Object.getPrototypeOf(self)`,
+    // and a normal object would resolve to the HOST Object.prototype inside a vm.
+    const sandboxSelf = Object.create(null) as SandboxSelf;
+    sandboxSelf.postMessage = (m: unknown) => messages.push(m);
     const sandbox: Record<string, unknown> = {
       self: sandboxSelf,
       setTimeout: (fn: () => void) => fn()
     };
     vm.createContext(sandbox);
     vm.runInContext(PLUGIN_API_SHIM, sandbox);
-    return { api: (sandboxSelf.api as Record<string, unknown>) || {}, messages };
+    return { api: (sandboxSelf.api as Record<string, unknown>) || {}, messages, sandboxSelf };
   }
+
+  it('blocks direct network globals that bypass the permission bridge', () => {
+    const { sandboxSelf } = runShim();
+    for (const name of ['fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'importScripts']) {
+      expect((sandboxSelf as unknown as Record<string, unknown>)[name]).toBeUndefined();
+    }
+  });
+
+  it('truncates plugin log lines to MAX_LOG_CHARS', () => {
+    const { api, messages } = runShim();
+    const log = api.log as { info: (m: string) => void };
+    log.info('x'.repeat(5000));
+    const msg = readWorkerMsg(messages[messages.length - 1]);
+    expect(msg).toMatchObject({ type: 'log', level: 'info' });
+    expect((msg as { message: string }).message).toHaveLength(2000);
+  });
+
+  it('rejects oversized api request payloads', async () => {
+    const { api, messages } = runShim();
+    const before = messages.length;
+    const query = api.query as (name: string, args: unknown) => Promise<unknown>;
+    await expect(query('x', { blob: 'y'.repeat(200_000) })).rejects.toThrow(
+      'plugin-op-args-too-large'
+    );
+    expect(messages.length).toBe(before);
+  });
 
   it('keeps payloads inside the __onda envelope (worker -> main)', () => {
     const { api, messages } = runShim();

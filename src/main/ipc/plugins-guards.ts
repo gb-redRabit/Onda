@@ -1,9 +1,29 @@
 // Pure plugin-storage / network guard helpers extracted from `plugins-core.ts`
 // (plan 2.8). `plugins-core` re-exports them so importers and tests stay
 // unchanged.
+import type { PluginPermissions } from '../../shared/types/ipc';
 
 export const STORAGE_KEY_RE = /^[a-zA-Z0-9_.\-]{1,64}$/;
 export const MAX_STRING_VALUE_BYTES = 4096;
+
+// Permission checks (plan 7.1): the manifest decides which bridge operations a
+// plugin may use. Fetch checks the network allowlist in the handler; storage and
+// settings go through these helpers.
+export function storagePermissionGranted(permissions: PluginPermissions): boolean {
+  return permissions.storage === true;
+}
+
+// A plugin without the storage permission may only write settings it explicitly
+// declared in the manifest — otherwise settings would be an unbounded side door
+// around the storage quota and the storage permission itself.
+export function settingWriteAllowed(
+  permissions: PluginPermissions,
+  declaredKeys: readonly string[] | undefined,
+  key: string
+): boolean {
+  if (permissions.storage === true) return true;
+  return (declaredKeys ?? []).includes(key);
+}
 
 export function validStorageKey(key: unknown): key is string {
   return typeof key === 'string' && STORAGE_KEY_RE.test(key);

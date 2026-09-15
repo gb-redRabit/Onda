@@ -28,6 +28,7 @@ import {
 } from './plugins-core';
 import type { PluginStateFile } from './plugins-core';
 import { runPluginFetch } from './plugins-fetch';
+import { settingWriteAllowed, storagePermissionGranted } from './plugins-guards';
 
 let pluginsDir: string | null = null;
 let pluginsDataDir: string | null = null;
@@ -104,6 +105,11 @@ async function listInstalledPlugins(): Promise<PluginInfo[]> {
     if (found.length >= MAX_PLUGINS) break;
   }
   return found.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+async function readManifestById(id: string): Promise<PluginManifest | null> {
+  if (!validatePluginId(id)) return null;
+  return readManifest(join(getPluginsDir(), id), id);
 }
 
 function loadEnabledState(): Promise<PluginStateFile> {
@@ -263,7 +269,8 @@ export function registerPluginsHandlers(): void {
 
   ipcMain.handle('plugins:storage:keys', async (_e, id: string): Promise<string[]> => {
     try {
-      if (!validatePluginId(id)) return [];
+      const manifest = await readManifestById(id);
+      if (!manifest || !storagePermissionGranted(manifest.permissions)) return [];
       return Object.keys(await storageData(id));
     } catch (e) {
       logger.warn('plugins', 'plugins:storage:keys failed', e);
@@ -273,7 +280,10 @@ export function registerPluginsHandlers(): void {
 
   ipcMain.handle('plugins:storage:get', async (_e, id: string, key: string): Promise<unknown> => {
     try {
-      if (!validatePluginId(id) || !validStorageKey(key)) return null;
+      const manifest = await readManifestById(id);
+      if (!manifest || !storagePermissionGranted(manifest.permissions) || !validStorageKey(key)) {
+        return null;
+      }
       const data = await storageData(id);
       return Object.prototype.hasOwnProperty.call(data, key) ? data[key] : null;
     } catch (e) {
@@ -286,7 +296,9 @@ export function registerPluginsHandlers(): void {
     'plugins:storage:set',
     async (_e, id: string, key: string, value: unknown): Promise<boolean> => {
       try {
-        if (!validatePluginId(id) || !validStorageKey(key)) return false;
+        const manifest = await readManifestById(id);
+        if (!manifest || !storagePermissionGranted(manifest.permissions)) return false;
+        if (!validStorageKey(key)) return false;
         const current = await storageData(id);
         if (
           !Object.prototype.hasOwnProperty.call(current, key) &&
@@ -309,7 +321,9 @@ export function registerPluginsHandlers(): void {
     'plugins:storage:remove',
     async (_e, id: string, key: string): Promise<boolean> => {
       try {
-        if (!validatePluginId(id) || !validStorageKey(key)) return false;
+        const manifest = await readManifestById(id);
+        if (!manifest || !storagePermissionGranted(manifest.permissions)) return false;
+        if (!validStorageKey(key)) return false;
         const current = await storageData(id);
         if (!Object.prototype.hasOwnProperty.call(current, key)) return true;
         const next = { ...current };
@@ -340,7 +354,10 @@ export function registerPluginsHandlers(): void {
     'plugins:settings:set',
     async (_e, id: string, key: string, value: unknown): Promise<boolean> => {
       try {
-        if (!validatePluginId(id) || !validStorageKey(key)) return false;
+        const manifest = await readManifestById(id);
+        if (!manifest || !validStorageKey(key)) return false;
+        const declared = manifest.settings?.map((field) => field.key);
+        if (!settingWriteAllowed(manifest.permissions, declared, key)) return false;
         const next: Record<string, unknown> = { ...(await settingsData(id)), [key]: value };
         if (sanitizeStoredObject(next)[key] === undefined) return false;
         await writeStorageFile(pluginSettingsFile(id), next);
