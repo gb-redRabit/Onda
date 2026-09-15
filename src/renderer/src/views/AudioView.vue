@@ -1,26 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, defineAsyncComponent } from 'vue';
-import { BarChart3, Settings2, LayoutGrid, Maximize2, Minimize2, Music2 } from '@lucide/vue';
+import { Music2 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { usePluginsStore } from '@renderer/stores/plugins';
-import AudioVisualizer from '@renderer/components/audio/AudioVisualizer.vue';
-import AudioControls from '@renderer/components/audio/AudioControls.vue';
-import AudioProgressBar from '@renderer/components/audio/AudioProgressBar.vue';
-import AudioCover from '@renderer/components/audio/AudioCover.vue';
-import AudioTrackInfo from '@renderer/components/audio/AudioTrackInfo.vue';
+import AudioCanvasElements from '@renderer/components/audio/AudioCanvasElements.vue';
+import AudioHudToolbar from '@renderer/components/audio/AudioHudToolbar.vue';
 import AudioVizSettings from '@renderer/components/audio/AudioVizSettings.vue';
-import AudioLayoutSwitcher from '@renderer/components/audio/AudioLayoutSwitcher.vue';
-import type { AudioLayoutElement } from '@renderer/types/settings';
-import {
-  pluginIcon,
-  resolveDecorationClasses,
-  resolveElementDecoration
-} from '@renderer/utils/audioView';
 import { nextVizMode } from '@renderer/utils/audioVisualizer';
 import { useAudioElementDrag } from '@renderer/composables/useAudioElementDrag';
-import { elementStyle } from '@renderer/utils/audioElementStyle';
 
 // The layout editor (750+ lines) only renders when the user opens it — lazy.
 const AudioLayoutEditor = defineAsyncComponent(
@@ -31,14 +20,6 @@ const player = usePlayerStore();
 const audio = useAudioPlayer();
 const settings = useSettingsStore();
 const pluginsStore = usePluginsStore();
-
-function elementDecoration(el: AudioLayoutElement): string | undefined {
-  return resolveElementDecoration(el, pluginsStore.decorations);
-}
-
-function decorationClasses(el: AudioLayoutElement): string | undefined {
-  return resolveDecorationClasses(el, pluginsStore.decorations);
-}
 
 function cycleViz() {
   settings.updatePlayback({
@@ -66,10 +47,6 @@ const { dragging, dragPos, onElementMouseDown, onDragMouseMove, onDragMouseUp } 
 const elements = computed(() => settings.appearance.audioLayout?.elements ?? []);
 const cursorHideTimeout = computed(() => (settings.playback.cursorTimeout ?? 3) * 1000);
 const hudOpacity = computed(() => (settings.appearance.audioLayout?.hudOpacity ?? 100) / 100);
-
-function getElementStyle(el: AudioLayoutElement) {
-  return elementStyle(el, dragPos.value);
-}
 
 // Cursor + HUD hide together — the delay comes from Odtwarzanie (playback) settings.
 function setCursorVisible(visible: boolean) {
@@ -259,142 +236,27 @@ onUnmounted(() => {
     </div>
 
     <!-- ─── Free Canvas ─── -->
-    <div
-      v-for="el in elements"
-      v-show="el.visible"
-      :key="el.id"
-      class="absolute overflow-hidden"
-      :style="getElementStyle(el)"
-    >
-      <!-- Visualization (with built-in toolbar) -->
-      <template v-if="el.id === 'visualization'">
-        <div class="relative w-full h-full" :class="decorationClasses(el)">
-          <AudioVisualizer class="w-full h-full" />
-        </div>
-      </template>
-
-      <!-- Cover -->
-      <template v-else-if="el.id === 'cover'">
-        <div
-          class="w-full h-full flex items-center justify-center p-2"
-          @mousedown="onElementMouseDown($event, el)"
-        >
-          <AudioCover
-            size="w-full h-full"
-            :variant="el.variant ?? 'default'"
-            :decoration="elementDecoration(el)"
-          />
-        </div>
-      </template>
-
-      <!-- Track Info -->
-      <template v-else-if="el.id === 'trackInfo'">
-        <div
-          class="w-full h-full flex items-center justify-center px-4 transition-opacity"
-          :class="[
-            { 'opacity-0 pointer-events-none': isFullscreen && !showUI },
-            decorationClasses(el)
-          ]"
-          @mousedown="onElementMouseDown($event, el)"
-        >
-          <AudioTrackInfo :variant="el.variant ?? 'classic'" />
-        </div>
-      </template>
-
-      <!-- Progress -->
-      <template v-else-if="el.id === 'progress'">
-        <div
-          class="w-full h-full flex items-center px-4 transition-opacity"
-          :class="[
-            { 'opacity-0 pointer-events-none': !showUI || (isFullscreen && !showUI) },
-            decorationClasses(el)
-          ]"
-          @mousedown="onElementMouseDown($event, el)"
-        >
-          <AudioProgressBar :variant="el.variant ?? 'classic'" />
-        </div>
-      </template>
-
-      <!-- Controls -->
-      <template v-else-if="el.id === 'controls'">
-        <div
-          class="w-full h-full flex items-center justify-center transition-opacity"
-          :class="[
-            { 'opacity-0 pointer-events-none': !showUI || (isFullscreen && !showUI) },
-            decorationClasses(el)
-          ]"
-          @mousedown="onElementMouseDown($event, el)"
-        >
-          <AudioControls :variant="el.variant ?? 'standard'" />
-        </div>
-      </template>
-    </div>
+    <AudioCanvasElements
+      :elements="elements"
+      :drag-pos="dragPos"
+      :is-fullscreen="isFullscreen"
+      :ui-visible="showUI"
+      @element-mousedown="onElementMouseDown"
+    />
 
     <!-- ─── Viz Overlay Toolbar (Teleported out of viz stacking context) ─── -->
-    <div
-      v-show="!showLayoutEditor"
-      class="absolute top-2 left-2 right-2 z-70 flex items-center justify-between pointer-events-none transition-opacity"
-      :style="{ opacity: showUI ? hudOpacity : 0 }"
-    >
-      <div class="flex items-center gap-1 pointer-events-auto">
-        <button
-          class="pointer-events-auto fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all"
-          :title="$t('audioView.layoutEditor')"
-          @click.stop="showLayoutEditor = !showLayoutEditor"
-        >
-          <LayoutGrid :size="13" />
-        </button>
-        <AudioLayoutSwitcher />
-      </div>
-
-      <!-- Plugin toolbar buttons -->
-      <div v-if="pluginCommands.length" class="flex items-center gap-1 pointer-events-auto">
-        <button
-          v-for="cmd in pluginCommands"
-          :key="cmd.id"
-          class="fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-all"
-          :title="cmd.label"
-          @click.stop="pluginsStore.dispatchCommand(cmd.id)"
-        >
-          <component :is="pluginIcon(cmd.icon)" :size="13" />
-        </button>
-      </div>
-
-      <div class="flex items-center gap-1 pointer-events-auto">
-        <button
-          class="fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all"
-          :title="$t('audioView.vizMode')"
-          @click.stop="cycleViz()"
-        >
-          <div class="flex items-center gap-1">
-            <BarChart3 :size="12" />
-            <span class="text-[9px] uppercase font-medium">{{
-              settings.playback.visualization.mode || 'bars'
-            }}</span>
-          </div>
-        </button>
-        <button
-          class="fx-noise p-1.5 fx-depth rounded-field backdrop-blur-sm transition-all"
-          :class="
-            showVizSettings
-              ? 'text-primary bg-primary/10'
-              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10 bg-base-300/80'
-          "
-          :title="$t('settings.audioViz')"
-          @click.stop="showVizSettings = !showVizSettings"
-        >
-          <Settings2 :size="12" />
-        </button>
-        <button
-          class="fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all"
-          :title="isFullscreen ? 'Exit fullscreen' : 'Fullscreen'"
-          @click.stop="toggleFullscreen"
-        >
-          <Minimize2 v-if="isFullscreen" :size="12" />
-          <Maximize2 v-else :size="12" />
-        </button>
-      </div>
-    </div>
+    <AudioHudToolbar
+      v-model:layout-editor-open="showLayoutEditor"
+      v-model:viz-settings-open="showVizSettings"
+      :visible="showUI"
+      :hud-opacity="hudOpacity"
+      :is-fullscreen="isFullscreen"
+      :viz-mode="settings.playback.visualization.mode"
+      :commands="pluginCommands"
+      @cycle-viz="cycleViz"
+      @toggle-fullscreen="toggleFullscreen"
+      @run-command="pluginsStore.dispatchCommand($event)"
+    />
 
     <!-- ─── Viz Settings Panel (Teleported out of viz stacking context) ─── -->
     <Teleport to="body">
