@@ -12,7 +12,6 @@ const EMPTY_CATCH = /catch\s*(\([^)]*\))?\s*\{\s*\}/g;
 /** @type {{ file: string, line: number }[]} */
 const offenders = [];
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 async function walk(dir) {
   const entries = await readdir(dir, { withFileTypes: true });
   for (const entry of entries) {

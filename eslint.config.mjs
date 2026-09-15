@@ -70,5 +70,12 @@ export default defineConfig(
     rules: {
       '@typescript-eslint/no-explicit-any': 'off'
     }
+  },
+  {
+    // Plain Node tooling scripts: return types are not part of the style.
+    files: ['scripts/**/*.mjs'],
+    rules: {
+      '@typescript-eslint/explicit-function-return-type': 'off'
+    }
   }
 );
