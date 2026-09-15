@@ -26,20 +26,22 @@ interface LibraryMbApplyData {
   coverMime?: string;
 }
 
+// structuredClone can reject reactive proxies / Uint8Array in the renderer �
+// fall back to a JSON round-trip in that case.
+function cloneOrJson<T>(value: T): T {
+  try {
+    return structuredClone(value);
+  } catch {
+    return JSON.parse(JSON.stringify(value)) as T;
+  }
+}
 function persistScanned(library: ReturnType<typeof useLibraryStore>) {
   try {
     // używaj JSON jako fallback dla proxy / Uint8Array które structuredClone czasem odrzuca w rendererze
-    let files: unknown = null;
-    let folderTypes: unknown = null;
-    try {
-      files = structuredClone(library.tracks as unknown as object);
-      folderTypes = structuredClone(library.folderTypes as unknown as object);
-    } catch {
-      files = JSON.parse(JSON.stringify(library.tracks));
-      folderTypes = JSON.parse(JSON.stringify(library.folderTypes));
-    }
-    (window.api as unknown as { invoke: (ch: string, data: unknown) => Promise<unknown> })
-      ?.invoke('library:saveScanned', { files, folderTypes } as unknown as object)
+    const files = cloneOrJson(library.tracks);
+    const folderTypes = cloneOrJson(library.folderTypes);
+    window.api
+      ?.invoke('library:saveScanned', { files, folderTypes })
       .catch((err) => logger.error('Library', 'saveScanned', err));
   } catch (_e) {
     /* serialization failed silently */
