@@ -8,8 +8,8 @@ import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
 
 interface LicenseEntry {
   name: string;
-  version: string;
-  license: string;
+  version?: string;
+  license?: string;
 }
 
 const info = ref<AppInfo | null>(null);
@@ -24,9 +24,7 @@ async function loadAll(): Promise<void> {
     const [i, l, lic] = await Promise.all([
       window.api?.getAppInfo() as Promise<AppInfo | undefined>,
       window.api?.readLogs() as Promise<string | undefined>,
-      (
-        window as unknown as { api?: { getLicenses?: () => Promise<LicenseEntry[]> } }
-      ).api?.getLicenses?.() as Promise<LicenseEntry[]> | undefined
+      window.api?.getLicenses()
     ]);
     if (i) info.value = i;
     if (l !== undefined) logs.value = l ?? '';

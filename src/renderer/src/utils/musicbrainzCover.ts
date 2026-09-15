@@ -1,17 +1,9 @@
-export interface CoverDataResult {
-  success: boolean;
-  data?: number[];
-  mime?: string;
-  error?: string;
-  rateLimited?: boolean;
-}
+import type { IpcResult } from '@shared/ipc/contract';
+
+export type CoverDataResult = IpcResult<'musicbrainz:getCoverData'>;
 
 export function getMusicbrainzCover(id: string): Promise<CoverDataResult | undefined> {
-  return (
-    window.api as unknown as {
-      musicbrainzGetCoverData: (id: string) => Promise<CoverDataResult>;
-    }
-  )?.musicbrainzGetCoverData(id);
+  return window.api?.musicbrainzGetCoverData(id);
 }
 
 export function coverBytesToDataUrl(bytes: number[], mime?: string): string {
