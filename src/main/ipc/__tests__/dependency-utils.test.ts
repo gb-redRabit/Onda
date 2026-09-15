@@ -7,11 +7,12 @@ import {
   ytdlpDownloadUrl,
   ytdlpShaUrl,
   ffmpegDownloadUrl,
-  ffmpegShaUrl,
+  ffmpegSha256,
   whichInPath,
   inferPkgManager,
   getMkvExtractCandidates
 } from '../dependency-utils';
+import binaries from '../../../../binaries.json';
 
 describe('ytdlpBinaryName', () => {
   it('returns the right file name for the current platform', () => {
@@ -70,17 +71,66 @@ describe('ytdlpDownloadUrl', () => {
   });
 });
 
-describe('ffmpegDownloadUrl / ffmpegShaUrl', () => {
-  it('serves a Windows zip and null on other platforms', () => {
-    expect(ffmpegDownloadUrl('win32')).toContain('ffmpeg-master-latest-win64-gpl.zip');
+describe('ffmpegDownloadUrl / ffmpegSha256', () => {
+  const pinned =
+    'https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-07-31-14-10/ffmpeg-n7.1.5-12-g1fdbca85aa-win64-gpl-7.1.zip';
+
+  it('serves the pinned Windows zip and null on other platforms', () => {
+    expect(ffmpegDownloadUrl('win32', 'x64')).toBe(pinned);
     expect(ffmpegDownloadUrl('linux')).toBeNull();
+    expect(ffmpegSha256('linux')).toBeNull();
   });
 
-  it('points the checksum at the aggregate checksums.sha256 manifest', () => {
-    expect(ffmpegShaUrl('win32')).toBe(
-      'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/checksums.sha256'
-    );
-    expect(ffmpegShaUrl('linux')).toBeNull();
+  it('never uses the mutable latest redirect', () => {
+    expect(ffmpegDownloadUrl('win32', 'x64')).not.toContain('/latest');
+  });
+
+  it('pins the exact SHA-256 from the manifest', () => {
+    const managed = binaries.ffmpeg.managed as Record<string, { sha256: string }>;
+    expect(ffmpegSha256('win32', 'x64')).toBe(managed['win32-x64'].sha256);
+    expect(ffmpegSha256('win32', 'x64')).toMatch(/^[0-9a-f]{64}$/);
+  });
+});
+
+describe('binaries.json manifest', () => {
+  const bundled = Object.entries(binaries.ffmpeg.bundled) as Array<
+    [string, Record<string, unknown>]
+  >;
+
+  it('pins every bundled source with a 64-hex SHA-256 and an immutable URL', () => {
+    expect(bundled.length).toBeGreaterThan(0);
+    for (const [key, src] of bundled) {
+      expect(src.sha256, key).toMatch(/^[0-9a-f]{64}$/);
+      expect(String(src.url), key).not.toContain('/latest');
+      expect(typeof src.ffmpeg, key).toBe('string');
+    }
+  });
+
+  it('pins the macOS ffprobe archives separately', () => {
+    for (const key of ['darwin-arm64', 'darwin-x64']) {
+      const src = binaries.ffmpeg.bundled[key as keyof typeof binaries.ffmpeg.bundled] as {
+        probeUrl?: string;
+        probeSha256?: string;
+      };
+      expect(src.probeUrl, key).toContain('ffprobe');
+      expect(src.probeSha256, key).toMatch(/^[0-9a-f]{64}$/);
+    }
+  });
+
+  it('pins managed FFmpeg to an immutable tag with exact hashes', () => {
+    const managed = Object.values(binaries.ffmpeg.managed);
+    expect(managed.length).toBeGreaterThan(0);
+    for (const src of managed) {
+      expect(src.url).toContain('/autobuild-');
+      expect(src.url).not.toContain('/latest');
+      expect(src.sha256).toMatch(/^[0-9a-f]{64}$/);
+    }
+  });
+
+  it('pins a concrete yt-dlp release on a known channel', () => {
+    expect(['stable', 'nightly']).toContain(binaries.ytdlp.channel);
+    expect(binaries.ytdlp.pinnedVersion).toMatch(/^\d{4}\.\d{2}\.\d{2}/);
+    expect(binaries.ytdlp.shaManifest).toBe('SHA2-256SUMS');
   });
 });
 

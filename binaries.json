@@ -1,0 +1,73 @@
+{
+  "$comment": "Pinned third-party binaries (plan 3.1/3.2). Bump versions and hashes ONLY via a PR — no mutable `latest` URLs. Read by scripts/fetch-ffmpeg.mjs (bundled builds, copied to process.resourcesPath/ffmpeg) and src/main/ipc/dependency-utils.ts (managed in-app installs into userData/bin). yt-dlp hosts a per-release SHA2-256SUMS manifest instead of per-file hashes; its release tag is immutable, so the manifest is equivalent to a pinned hash.",
+  "ffmpeg": {
+    "version": "7.1",
+    "bundled": {
+      "win32-x64": {
+        "url": "https://github.com/GyanD/codexffmpeg/releases/download/7.1/ffmpeg-7.1-essentials_build.zip",
+        "sha256": "fa7d4d7e795db0e2503f49f105f46ed5852386f0cfdd819899be3b65ebde24fc",
+        "kind": "zip",
+        "ffmpeg": "ffmpeg.exe",
+        "ffprobe": "ffprobe.exe"
+      },
+      "win32-arm64": {
+        "url": "https://github.com/GyanD/codexffmpeg/releases/download/7.1/ffmpeg-7.1-essentials_build.zip",
+        "sha256": "fa7d4d7e795db0e2503f49f105f46ed5852386f0cfdd819899be3b65ebde24fc",
+        "kind": "zip",
+        "ffmpeg": "ffmpeg.exe",
+        "ffprobe": "ffprobe.exe"
+      },
+      "darwin-arm64": {
+        "url": "https://evermeet.cx/ffmpeg/ffmpeg-7.1.zip",
+        "sha256": "5a1303c7babaffff3c32c141ff49c7f44bd3b3b3e7dcea992fd7d04b6558ef43",
+        "kind": "zip",
+        "ffmpeg": "ffmpeg",
+        "ffprobe": null,
+        "probeUrl": "https://evermeet.cx/ffmpeg/ffprobe-7.1.zip",
+        "probeSha256": "fc289c963346d7dc0891cbaed02ba270e8abec54df9259e22d59559018b25709"
+      },
+      "darwin-x64": {
+        "url": "https://evermeet.cx/ffmpeg/ffmpeg-7.1.zip",
+        "sha256": "5a1303c7babaffff3c32c141ff49c7f44bd3b3b3e7dcea992fd7d04b6558ef43",
+        "kind": "zip",
+        "ffmpeg": "ffmpeg",
+        "ffprobe": null,
+        "probeUrl": "https://evermeet.cx/ffmpeg/ffprobe-7.1.zip",
+        "probeSha256": "fc289c963346d7dc0891cbaed02ba270e8abec54df9259e22d59559018b25709"
+      },
+      "linux-x64": {
+        "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-07-31-14-10/ffmpeg-n7.1.5-12-g1fdbca85aa-linux64-gpl-7.1.tar.xz",
+        "sha256": "c1e6caf48923dd8e6bc5e54d51ba70c321175b8162ae9c414c392990e72f0e79",
+        "kind": "tar.xz",
+        "ffmpeg": "ffmpeg",
+        "ffprobe": "ffprobe"
+      },
+      "linux-arm64": {
+        "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-07-31-14-10/ffmpeg-n7.1.5-12-g1fdbca85aa-linuxarm64-gpl-7.1.tar.xz",
+        "sha256": "a9a50c5782ef5e45306d58d1a9a819015b472d8da30ab6a77f15f571c861a71b",
+        "kind": "tar.xz",
+        "ffmpeg": "ffmpeg",
+        "ffprobe": "ffprobe"
+      }
+    },
+    "managed": {
+      "win32-x64": {
+        "version": "autobuild-2026-07-31-14-10",
+        "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-07-31-14-10/ffmpeg-n7.1.5-12-g1fdbca85aa-win64-gpl-7.1.zip",
+        "sha256": "c067a1ca58f4fc4449f4bab0890fbcd65cbb3e5f46e066cf9c768e06c0c1d4d9",
+        "kind": "zip"
+      },
+      "win32-arm64": {
+        "version": "autobuild-2026-07-31-14-10",
+        "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-07-31-14-10/ffmpeg-n7.1.5-12-g1fdbca85aa-winarm64-gpl-7.1.zip",
+        "sha256": "94e2b89465ac6a653246cb8314fae33734e1c3c2b42306e274d7d3087b8b26dd",
+        "kind": "zip"
+      }
+    }
+  },
+  "ytdlp": {
+    "channel": "nightly",
+    "pinnedVersion": "2026.08.18.122307",
+    "shaManifest": "SHA2-256SUMS"
+  }
+}

@@ -1,5 +1,5 @@
 import { unlink, readFile, rename } from 'fs/promises';
-import { join } from 'path';
+import { basename, join } from 'path';
 import https from 'https';
 import { createWriteStream } from 'fs';
 import { createHash } from 'crypto';
@@ -191,6 +191,21 @@ export async function fetchLatestYtdlpVersion(): Promise<string | null> {
 async function sha256OfFile(filePath: string): Promise<string> {
   const data = await readFile(filePath);
   return createHash('sha256').update(data).digest('hex');
+}
+
+// Verifies a downloaded file against an inline SHA-256 pin (used by managed
+// FFmpeg, whose binaries.json entry carries the exact asset hash). Fail-closed:
+// throws on mismatch so the caller never keeps an unverified binary.
+export async function verifyFileSha256(
+  filePath: string,
+  expectedSha256: string,
+  signal: AbortSignal
+): Promise<void> {
+  if (signal.aborted) throw new Error('cancelled');
+  const actual = await sha256OfFile(filePath);
+  if (actual.toLowerCase() !== expectedSha256.toLowerCase()) {
+    throw new Error(`Checksum mismatch for ${basename(filePath)}`);
+  }
 }
 
 // Fail-closed checksum verification: downloads a SHA manifest, finds the entry for

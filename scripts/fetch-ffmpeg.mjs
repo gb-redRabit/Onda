@@ -2,14 +2,18 @@
 // for bundling into the packaged app (electron-builder `extraResources` copies the
 // whole `resources/ffmpeg` folder into `process.resourcesPath/ffmpeg`).
 //
+// Versions, URLs and SHA-256 hashes live in `binaries.json` (single source, PR-only
+// updates — never a mutable `latest` redirect). Keep them in sync with the runtime
+// managed-FFmpeg entries in the same file (src/main/ipc/dependency-utils.ts).
+//
 // Usage:
 //   node scripts/fetch-ffmpeg.mjs                    # current platform
 //   node scripts/fetch-ffmpeg.mjs --platform win32
 //   node scripts/fetch-ffmpeg.mjs --platform darwin --arch arm64
 //   node scripts/fetch-ffmpeg.mjs --all              # every platform/arch
+//   node scripts/fetch-ffmpeg.mjs --all --dry-run    # print resolved sources only
 //
-// Every download is verified against the upstream SHA-256 before it is extracted.
-// Keep the versions below pinned; never point at a mutable `latest` redirect.
+// Every download is verified against the pinned SHA-256 before it is extracted.
 
 import { createWriteStream, mkdirSync, readdirSync, statSync } from 'fs';
 import { mkdir, rm, readFile, copyFile } from 'fs/promises';
@@ -23,86 +27,23 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const OUT = join(ROOT, 'resources', 'ffmpeg');
 
-const FFMPEG_VERSION = '7.1';
+const DRY_RUN = process.argv.includes('--dry-run');
 
-// Stable, versioned download sources per platform. Bump the version together
-// with the URLs below. (BtbN `latest` is deliberately avoided — it is mutable.)
-// Linux comes from BtbN (immutable GitHub release assets): johnvansickle
-// prunes versioned files (7.1 already 404s there), so linux is pinned to the
-// exact BtbN 7.1.5 build below — the asset names embed the full build id and
-// can never silently move. BtbN ships no .sha256 manifests, so hashes are
-// pinned inline like the win32 entries.
-const BTBN_TAG = 'autobuild-2026-07-31-14-10';
-const BTBN_BUILD = 'n7.1.5-12-g1fdbca85aa';
-const BTBN_BASE = `https://github.com/BtbN/FFmpeg-Builds/releases/download/${BTBN_TAG}/ffmpeg-${BTBN_BUILD}`;
-const SOURCES = {
-  'win32-x64': {
-    url: `https://github.com/GyanD/codexffmpeg/releases/download/${FFMPEG_VERSION}/ffmpeg-${FFMPEG_VERSION}-essentials_build.zip`,
-    // GyanD publishes no .sha256 assets, so the hash is pinned here instead
-    // (computed from the 7.1 release asset, size 92100272). Bump alongside
-    // the version/URL above; never point at a mutable `latest` redirect.
-    sha256: 'fa7d4d7e795db0e2503f49f105f46ed5852386f0cfdd819899be3b65ebde24fc',
-    kind: 'zip',
-    ffmpeg: 'ffmpeg.exe',
-    ffprobe: 'ffprobe.exe'
-  },
-  'win32-arm64': {
-    url: `https://github.com/GyanD/codexffmpeg/releases/download/${FFMPEG_VERSION}/ffmpeg-${FFMPEG_VERSION}-essentials_build.zip`,
-    // Same archive as win32-x64 until an upstream arm64 (win) build exists.
-    sha256: 'fa7d4d7e795db0e2503f49f105f46ed5852386f0cfdd819899be3b65ebde24fc',
-    kind: 'zip',
-    ffmpeg: 'ffmpeg.exe',
-    ffprobe: 'ffprobe.exe'
-  },
-  'darwin-arm64': {
-    // Evermeet has no versioned `getrelease/<version>` path (it 404s); the
-    // pinned release file is `ffmpeg-<version>.zip` (see /ffmpeg/info API).
-    url: `https://evermeet.cx/ffmpeg/ffmpeg-${FFMPEG_VERSION}.zip`,
-    // Evermeet publishes no .sha256 manifest (only gpg .sig), so the hash is
-    // pinned here (computed from the 7.1 zip, size 25438013). Bump alongside
-    // the version/URL above.
-    sha256: '5a1303c7babaffff3c32c141ff49c7f44bd3b3b3e7dcea992fd7d04b6558ef43',
-    kind: 'zip',
-    ffmpeg: 'ffmpeg',
-    ffprobe: null // fetched separately below
-  },
-  'darwin-x64': {
-    // Same pinned evermeet release file as darwin-arm64 (see note above).
-    url: `https://evermeet.cx/ffmpeg/ffmpeg-${FFMPEG_VERSION}.zip`,
-    sha256: '5a1303c7babaffff3c32c141ff49c7f44bd3b3b3e7dcea992fd7d04b6558ef43',
-    kind: 'zip',
-    ffmpeg: 'ffmpeg',
-    ffprobe: null
-  },
-  'linux-x64': {
-    url: `${BTBN_BASE}-linux64-gpl-7.1.tar.xz`,
-    // Pinned hash of the BtbN 7.1.5 asset (size 119007364). Bump alongside
-    // BTBN_TAG/BTBN_BUILD above.
-    sha256: 'c1e6caf48923dd8e6bc5e54d51ba70c321175b8162ae9c414c392990e72f0e79',
-    kind: 'tar.xz',
-    ffmpeg: 'ffmpeg',
-    ffprobe: 'ffprobe'
-  },
-  'linux-arm64': {
-    url: `${BTBN_BASE}-linuxarm64-gpl-7.1.tar.xz`,
-    // Pinned hash of the BtbN 7.1.5 asset (size 101894512).
-    sha256: 'a9a50c5782ef5e45306d58d1a9a819015b472d8da30ab6a77f15f571c861a71b',
-    kind: 'tar.xz',
-    ffmpeg: 'ffmpeg',
-    ffprobe: 'ffprobe'
+const MANIFEST = JSON.parse(await readFile(join(ROOT, 'binaries.json'), 'utf-8'));
+
+// Bundled sources keyed by `<platform>-<arch>` (BtbN assets are pinned to a
+// concrete `autobuild-…` tag in binaries.json; there is no mutable tag here).
+const SOURCES = MANIFEST.ffmpeg.bundled;
+
+// macOS ships ffprobe as a separate evermeet archive.
+const PROBE_URLS = {};
+const PROBE_SHA256 = {};
+for (const [key, src] of Object.entries(SOURCES)) {
+  if (src.probeUrl) {
+    PROBE_URLS[key] = src.probeUrl;
+    PROBE_SHA256[key] = src.probeSha256 ?? null;
   }
-};
-
-const PROBE_URLS = {
-  'darwin-arm64': `https://evermeet.cx/ffmpeg/ffprobe-${FFMPEG_VERSION}.zip`,
-  'darwin-x64': `https://evermeet.cx/ffmpeg/ffprobe-${FFMPEG_VERSION}.zip`
-};
-// Pinned SHA-256 of the ffprobe 7.1 zip (size 25376985); evermeet offers no
-// .sha256 manifest, same as the ffmpeg entries above.
-const PROBE_SHA256 = {
-  'darwin-arm64': 'fc289c963346d7dc0891cbaed02ba270e8abec54df9259e22d59559018b25709',
-  'darwin-x64': 'fc289c963346d7dc0891cbaed02ba270e8abec54df9259e22d59559018b25709'
-};
+}
 
 function download(url, dest) {
   return new Promise((resolve, reject) => {
@@ -201,6 +142,11 @@ async function fetchFor(key) {
   const src = SOURCES[key];
   if (!src) {
     console.warn(`skip ${key}: no source configured`);
+    return;
+  }
+  if (DRY_RUN) {
+    console.log(`[dry-run] ${key}: ${src.url} sha256=${src.sha256 ?? '(none)'}`);
+    if (PROBE_URLS[key]) console.log(`[dry-run] ${key}: probe ${PROBE_URLS[key]}`);
     return;
   }
   const destDir = join(OUT, key);

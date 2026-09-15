@@ -7,7 +7,7 @@ import {
   ytdlpDownloadUrl,
   ytdlpShaUrl,
   ffmpegDownloadUrl,
-  ffmpegShaUrl,
+  ffmpegSha256,
   detectPkgManagers,
   inferPkgManager,
   pkgInstallCommand,
@@ -25,6 +25,7 @@ import {
   downloadFile,
   fetchLatestYtdlpVersion,
   verifyDownloadedFile,
+  verifyFileSha256,
   type InstallResult
 } from './dependency-download';
 
@@ -90,6 +91,10 @@ async function installFfmpegManaged(sender: WebContents): Promise<InstallResult>
     const url = ffmpegDownloadUrl();
     if (!url)
       return { success: false, error: 'Managed FFmpeg nie jest dostępny na tej platformie.' };
+    const sha256 = ffmpegSha256();
+    if (!sha256) {
+      return { success: false, error: 'Brak przypiętej sumy SHA-256 dla tej platformy.' };
+    }
 
     const binDir = getBinDir();
     await mkdir(binDir, { recursive: true });
@@ -97,38 +102,25 @@ async function installFfmpegManaged(sender: WebContents): Promise<InstallResult>
     const extractDir = join(binDir, 'ffmpeg-extract');
 
     emitProgress(sender, 'ffmpeg', 'download', 5);
-    const shaUrl = ffmpegShaUrl();
-    let verified = false;
-    // BtbN's `latest` tag is force-updated — it can move between the zip and
-    // the checksum download. Retry the pair once before declaring corruption.
-    for (let attempt = 1; attempt <= 2 && !verified; attempt++) {
-      await rm(zipPath, { force: true }).catch(() => {});
-      await downloadFile(url, zipPath, signal, (received, total) => {
-        const pct = total > 0 ? 5 + Math.round((received / total) * 80) : 5;
-        emitProgress(sender, 'ffmpeg', 'download', pct);
-      });
+    await rm(zipPath, { force: true }).catch(() => {});
+    await downloadFile(url, zipPath, signal, (received, total) => {
+      const pct = total > 0 ? 5 + Math.round((received / total) * 80) : 5;
+      emitProgress(sender, 'ffmpeg', 'download', pct);
+    });
 
-      if (shaUrl) {
-        emitProgress(sender, 'ffmpeg', 'verify', 86);
-        try {
-          await verifyDownloadedFile(zipPath, shaUrl, basename(url), signal);
-          verified = true;
-        } catch (e) {
-          await rm(zipPath, { force: true }).catch(() => {});
-          const err = e as { message?: string };
-          if (err.message === 'cancelled' || signal.aborted) {
-            return { success: false, cancelled: true };
-          }
-          if (attempt === 2) {
-            return {
-              success: false,
-              error: 'Weryfikacja sumy kontrolnej nie powiodła się — pobrany plik jest uszkodzony.'
-            };
-          }
-        }
-      } else {
-        verified = true;
+    emitProgress(sender, 'ffmpeg', 'verify', 86);
+    try {
+      await verifyFileSha256(zipPath, sha256, signal);
+    } catch (e) {
+      await rm(zipPath, { force: true }).catch(() => {});
+      const err = e as { message?: string };
+      if (err.message === 'cancelled' || signal.aborted) {
+        return { success: false, cancelled: true };
       }
+      return {
+        success: false,
+        error: 'Weryfikacja sumy kontrolnej nie powiodła się — pobrany plik jest uszkodzony.'
+      };
     }
 
     emitProgress(sender, 'ffmpeg', 'extract', 88);

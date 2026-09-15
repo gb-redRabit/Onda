@@ -1,6 +1,7 @@
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { runCommand } from '../utils/exec';
+import binaries from '../../../binaries.json';
 
 export type BinTool = 'ffmpeg' | 'ffprobe' | 'yt-dlp' | 'mkvextract';
 type PkgManager = 'winget' | 'choco' | 'scoop' | 'brew' | 'apt' | 'dnf' | 'pacman';
@@ -46,18 +47,19 @@ function currentResourcesPath(): string | undefined {
   return (process as { resourcesPath?: string }).resourcesPath;
 }
 
-// yt-dlp release channel. `nightly` ships day-zero YouTube fixes — the stable
-// channel can lag weeks behind breaking changes (e.g. the 2026-08 SABR/403
-// wave, fixed on master 2026-08-18, still absent from stable 2026.07.04).
+// yt-dlp release channel and fallback pin come from binaries.json (PR-only
+// updates). `nightly` ships day-zero YouTube fixes — the stable channel can lag
+// weeks behind breaking changes (e.g. the 2026-08 SABR/403 wave, fixed on
+// master 2026-08-18, still absent from stable 2026.07.04).
 export type YtdlpChannel = 'stable' | 'nightly';
-export const YTDLP_CHANNEL: YtdlpChannel = 'nightly';
+export const YTDLP_CHANNEL = binaries.ytdlp.channel as YtdlpChannel;
 
 // Pinned to a concrete release tag instead of `releases/latest/download` — the
 // `latest` URL is mutable, so a compromised or mistaken release would be pulled
 // silently on the next fresh install. Bump this manually; the in-app updater
 // still fetches the specific latest tag when the user explicitly updates.
 // Nightly tags look like `2026.08.18.122307` (no leading "v").
-export const YTDLP_PINNED_VERSION = '2026.08.18.122307';
+export const YTDLP_PINNED_VERSION: string = binaries.ytdlp.pinnedVersion;
 
 function ytdlpRepo(channel: YtdlpChannel): string {
   return channel === 'nightly'
@@ -89,36 +91,39 @@ export function ytdlpDownloadUrl(
   }
 }
 
-// yt-dlp publishes a single checksums manifest (SHA2-256SUMS), not per-file hashes.
+// yt-dlp publishes a single checksums manifest (SHA2-256SUMS), not per-file
+// hashes; the release tag is immutable so the manifest is equivalent to a pin.
 export function ytdlpShaUrl(
   version: string = YTDLP_PINNED_VERSION,
   channel: YtdlpChannel = YTDLP_CHANNEL
 ): string {
-  return `${ytdlpRepo(channel)}/${version}/SHA2-256SUMS`;
+  return `${ytdlpRepo(channel)}/${version}/${binaries.ytdlp.shaManifest}`;
 }
 
-// BtbN force-updates its `latest` tag — pin this to a concrete `autobuild-…`
-// tag to avoid pulling a mutable release silently. See scripts/fetch-ffmpeg.mjs.
-const FFMPEG_PINNED_VERSION = 'latest';
+interface ManagedFfmpegSource {
+  version: string;
+  url: string;
+  sha256: string;
+  kind: string;
+}
 
+const MANAGED_FFMPEG = binaries.ffmpeg.managed as Record<string, ManagedFfmpegSource>;
+
+// Managed (in-app) FFmpeg builds are Windows-only. They are pinned in
+// binaries.json to an immutable BtbN `autobuild-…` tag AND the exact asset
+// SHA-256, so the download is verified without a mutable checksum manifest.
 export function ffmpegDownloadUrl(
   platform: NodeJS.Platform = process.platform,
-  version: string = FFMPEG_PINNED_VERSION
+  arch: string = process.arch
 ): string | null {
-  if (platform === 'win32') {
-    return `https://github.com/BtbN/FFmpeg-Builds/releases/download/${version}/ffmpeg-master-latest-win64-gpl.zip`;
-  }
-  return null;
+  return MANAGED_FFMPEG[`${platform}-${arch}`]?.url ?? null;
 }
 
-// BtbN publishes one aggregate checksums.sha256 manifest per release, not a
-// per-asset `.sha256` file (the sibling `{asset}.sha256` does not exist → 404).
-export function ffmpegShaUrl(
+export function ffmpegSha256(
   platform: NodeJS.Platform = process.platform,
-  version: string = FFMPEG_PINNED_VERSION
+  arch: string = process.arch
 ): string | null {
-  const url = ffmpegDownloadUrl(platform, version);
-  return url ? url.replace(/[^/]+$/, 'checksums.sha256') : null;
+  return MANAGED_FFMPEG[`${platform}-${arch}`]?.sha256 ?? null;
 }
 
 // Search the system PATH for an executable (respecting PATHEXT on Windows).
