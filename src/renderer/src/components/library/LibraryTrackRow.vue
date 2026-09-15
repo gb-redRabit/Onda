@@ -106,7 +106,7 @@ function onDragStart(e: DragEvent) {
         : 'border-transparent hover:border-base-300 hover:shadow-sm'
     "
     draggable="true"
-    @click="emit('select', $event as unknown as MouseEvent)"
+    @click="emit('select', $event)"
     @dblclick="playNow"
     @contextmenu.prevent="onContextMenu"
     @dragstart="onDragStart"
@@ -117,7 +117,7 @@ function onDragStart(e: DragEvent) {
       type="checkbox"
       :checked="selected"
       class="checkbox checkbox-xs shrink-0"
-      @click.stop="emit('select', $event as unknown as MouseEvent)"
+      @click.stop="emit('select', $event)"
     />
     <div
       class="relative shrink-0 w-10 h-10 rounded-field overflow-hidden bg-base-200 border border-base-300"

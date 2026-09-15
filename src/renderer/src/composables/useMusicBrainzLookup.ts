@@ -126,7 +126,7 @@ export function useMusicBrainzLookup(options: { onApply: (data: LookupApplyData)
       if (coverR?.success && coverR.data) {
         result._coverData = coverR.data;
         result._coverMime = coverR.mime;
-      } else if ((coverR as unknown as { rateLimited?: boolean })?.rateLimited) {
+      } else if (coverR?.rateLimited) {
         setStatus('Serwer obciążony, ponawiam…');
       }
       lookupResult.value = result;

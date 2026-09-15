@@ -68,7 +68,7 @@ function onHoverLeave() {
         : 'bg-base-100 border-base-300 hover:bg-base-content/10 hover:border-primary/30'
     "
     draggable="true"
-    @click="emit('select', $event as unknown as MouseEvent)"
+    @click="emit('select', $event)"
     @dblclick="playNow"
     @contextmenu.prevent="onContextMenu"
     @dragstart="onDragStart"

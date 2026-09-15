@@ -75,10 +75,8 @@ function onMbEvent(e: Event) {
     editingTrack.value = ce.detail.batchTracks[0] as unknown as typeof editingTrack.value;
   showingMBLookup.value = true;
 }
-onMounted(() => window.addEventListener('onda:openMusicbrainz', onMbEvent as unknown as never));
-onUnmounted(() =>
-  window.removeEventListener('onda:openMusicbrainz', onMbEvent as unknown as never)
-);
+onMounted(() => window.addEventListener('onda:openMusicbrainz', onMbEvent));
+onUnmounted(() => window.removeEventListener('onda:openMusicbrainz', onMbEvent));
 
 // Tabs — overview default (Minimal Spotify)
 const route = useRoute();
