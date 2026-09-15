@@ -49,6 +49,5 @@ if (process.contextIsolated) {
     /* noop */
   }
 } else {
-  // @ts-ignore (define in dts)
-  window.api = api;
+  Object.assign(window, { api });
 }

@@ -107,8 +107,7 @@ export function useLibraryTagEditor(
       try {
         // wyślij jako Uint8Array (wydajniejsze niż number[] dla structuredClone)
         const buf = new Uint8Array(data.coverData);
-        // @ts-ignore — preload akceptuje number[]|string, Uint8Array też przejdzie jako cloneable
-        window.api?.writeCover(targetPath, Array.from(buf) as unknown as number[]);
+        window.api?.writeCover(targetPath, Array.from(buf));
       } catch (e) {
         logger.warn('Library', 'writeCover failed', e);
       }

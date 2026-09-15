@@ -420,6 +420,5 @@ if (process.contextIsolated) {
     logger.error('preload', 'exposeInMainWorld failed', error);
   }
 } else {
-  // @ts-ignore (define in dts)
-  window.api = api;
+  Object.assign(window, { api });
 }

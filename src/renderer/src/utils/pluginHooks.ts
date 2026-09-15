@@ -1,3 +1,4 @@
+import { logger } from '@shared/logger';
 import type { PluginHookPayload } from '@renderer/modules/plugins/plugin-shim';
 
 export type PluginHookName =
@@ -40,7 +41,7 @@ class PluginHookBus {
       try {
         fn(payload);
       } catch (e) {
-        console.warn('[Onda/plugins] hook listener threw', name, e);
+        logger.warn('plugins', 'hook listener threw', name, e);
       }
     });
   }

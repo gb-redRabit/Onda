@@ -14,6 +14,7 @@ import { computePipPosition } from './pip-position';
 import { computeEdgePeekBounds } from './pip-edge-position';
 import { PeekController } from './peek-controller';
 import { installNavigationGuard } from './navigation-guard';
+import { logger } from '../shared/logger';
 import { pipWindowIcon } from './pip-icon';
 import { DEFAULT_CORNER_ELEMENTS, DEFAULT_EDGE_ELEMENTS, PREVIEW_STATE } from './pip-defaults';
 
@@ -220,7 +221,7 @@ export class AudioPipManager {
         })
       );
     } catch (e) {
-      console.error('audio-pip reposition failed', e);
+      logger.warn('audio-pip', 'reposition failed', e);
     }
   }
 
