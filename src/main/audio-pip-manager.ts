@@ -187,20 +187,19 @@ export class AudioPipManager {
   }
 
   peek(): void {
-    if (!this.shouldAutoHide() || this.peeked || this.mouseInside) return;
-    const win = this.window;
-    if (!win || win.isDestroyed() || !win.isVisible()) return;
-    this.peeked = true;
-    this.cancelPeekDelay();
-    this.applyPeekBounds();
-    this.updateUi(false);
+    if (this.mouseInside) return;
+    this.setPeeked(true);
   }
 
   unpeek(): void {
-    if (!this.shouldAutoHide() || !this.peeked) return;
+    this.setPeeked(false);
+  }
+
+  private setPeeked(next: boolean): void {
+    if (!this.shouldAutoHide() || this.peeked === next) return;
     const win = this.window;
     if (!win || win.isDestroyed() || !win.isVisible()) return;
-    this.peeked = false;
+    this.peeked = next;
     this.cancelPeekDelay();
     this.applyPeekBounds();
     this.updateUi(false);
