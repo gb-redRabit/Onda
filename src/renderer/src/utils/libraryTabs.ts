@@ -41,3 +41,5 @@ export function buildLibraryTabs(t: (key: string) => string, c: LibraryTabCounts
     { id: 'playlists', label: t('library.playlists'), icon: ListMusic, count: c.playlists }
   ] as const;
 }
+
+export type LibraryTab = ReturnType<typeof buildLibraryTabs>[number];
