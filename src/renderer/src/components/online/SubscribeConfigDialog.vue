@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { X, Download, Tv2 } from '@lucide/vue';
 import { useUIStore } from '@renderer/stores/ui';
+import { useSettingsStore } from '@renderer/stores/settings';
 import { useI18n } from 'vue-i18n';
 import { useSubscribePrefsForm } from '@renderer/composables/useSubscribePrefsForm';
 import SubscribePrefsSummary from './SubscribePrefsSummary.vue';
@@ -46,6 +47,7 @@ const form = useSubscribePrefsForm({
 const {
   isSc,
   profiles,
+  systemDownloads,
   selectedProfileId,
   kind,
   format,
@@ -80,8 +82,16 @@ const {
   onProfileSelect
 } = form;
 
-onMounted(() => {
-  void form.init();
+onMounted(async () => {
+  if (!useSettingsStore().download.defaultPath) {
+    try {
+      systemDownloads.value =
+        ((await window.api.invoke('app:getPath', 'downloads')) as string) || '';
+    } catch {
+      systemDownloads.value = '';
+    }
+  }
+  void form.ensureLoaded();
 });
 
 const avatarFailed = ref(false);

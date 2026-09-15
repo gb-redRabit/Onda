@@ -5,6 +5,7 @@ import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { joinPath, sanitizeDirName } from '@renderer/utils/path';
 import { buildSubscribeSummary, type SummaryItem } from '@renderer/utils/subscribeSummary';
 import { buildSubscribePrefs } from '@renderer/utils/subscribePrefs';
+import { downloadProfileToForm } from '@renderer/utils/downloadProfile';
 import type { SubscriptionDownloadPrefs } from '@renderer/types/online';
 
 export interface SubscribePrefsFormOptions {
@@ -62,94 +63,59 @@ export function useSubscribePrefsForm(options: SubscribePrefsFormOptions) {
   const trimEnd = ref<number | null>(initial.value?.trimEnd ?? null);
   const downloadAll = ref(false);
 
-  async function init() {
-    if (!settings.download.defaultPath) {
-      try {
-        const p = (await window.api.invoke('app:getPath', 'downloads')) as string;
-        systemDownloads.value = p || '';
-      } catch {
-        systemDownloads.value = '';
-      }
-    }
-    void ensureLoaded();
-  }
-
   const baseDir = computed(() => settings.download.defaultPath || systemDownloads.value);
   const channelFolder = computed(() => {
     const name = sanitizeDirName(options.getChannelTitle());
     return baseDir.value ? joinPath(baseDir.value, name) : name;
   });
 
+  // Single source for both the summary and the confirm payload — avoids
+  // repeating the 25-field mapping twice.
+  const formValues = computed(() => ({
+    isSc: isSc.value,
+    folderMode: folderMode.value,
+    channelFolder: channelFolder.value,
+    outputDir: outputDir.value,
+    filenameTemplate: filenameTemplate.value,
+    addToLibrary: addToLibrary.value,
+    kind: kind.value,
+    format: format.value,
+    quality: quality.value,
+    audioQuality: audioQuality.value,
+    audioLanguage: audioLanguage.value,
+    coverType: coverType.value,
+    customCoverPath: customCoverPath.value,
+    coverFrameTime: coverFrameTime.value,
+    coverClipStart: coverClipStart.value,
+    coverClipEnd: coverClipEnd.value,
+    coverClipFormat: coverClipFormat.value,
+    artist: artist.value,
+    album: album.value,
+    year: year.value,
+    subsEnabled: subsEnabled.value,
+    subsLangs: subsLangs.value,
+    subsFormat: subsFormat.value,
+    subsMode: subsMode.value,
+    subsFolder: subsFolder.value,
+    sponsorBlock: sponsorBlock.value,
+    trimStart: trimStart.value,
+    trimEnd: trimEnd.value,
+    selectedProfileId: selectedProfileId.value
+  }));
+
   const prefsSummary = computed<SummaryItem[]>(() =>
-    buildSubscribeSummary(
-      {
-        isSc: isSc.value,
-        folderMode: folderMode.value,
-        channelFolder: channelFolder.value,
-        outputDir: outputDir.value,
-        filenameTemplate: filenameTemplate.value,
-        addToLibrary: addToLibrary.value,
-        kind: kind.value,
-        format: format.value,
-        quality: quality.value,
-        audioQuality: audioQuality.value,
-        audioLanguage: audioLanguage.value,
-        coverType: coverType.value,
-        sponsorBlock: sponsorBlock.value,
-        trimStart: trimStart.value,
-        trimEnd: trimEnd.value,
-        subsEnabled: subsEnabled.value,
-        subsLangs: subsLangs.value,
-        artist: artist.value,
-        album: album.value,
-        year: year.value
-      },
-      (k) => t(k)
-    )
+    buildSubscribeSummary(formValues.value, (k) => t(k))
   );
 
   function confirmPrefs(): SubscriptionDownloadPrefs {
-    return buildSubscribePrefs(
-      {
-        isSc: isSc.value,
-        folderMode: folderMode.value,
-        channelFolder: channelFolder.value,
-        outputDir: outputDir.value,
-        filenameTemplate: filenameTemplate.value,
-        addToLibrary: addToLibrary.value,
-        kind: kind.value,
-        format: format.value,
-        quality: quality.value,
-        audioQuality: audioQuality.value,
-        audioLanguage: audioLanguage.value,
-        coverType: coverType.value,
-        customCoverPath: customCoverPath.value,
-        coverFrameTime: coverFrameTime.value,
-        coverClipStart: coverClipStart.value,
-        coverClipEnd: coverClipEnd.value,
-        coverClipFormat: coverClipFormat.value,
-        artist: artist.value,
-        album: album.value,
-        year: year.value,
-        subsEnabled: subsEnabled.value,
-        subsLangs: subsLangs.value,
-        subsFormat: subsFormat.value,
-        subsMode: subsMode.value,
-        subsFolder: subsFolder.value,
-        sponsorBlock: sponsorBlock.value,
-        trimStart: trimStart.value,
-        trimEnd: trimEnd.value,
-        selectedProfileId: selectedProfileId.value
-      },
-      {
-        kind: settings.download.defaultKind,
-        audioFormat: settings.download.defaultAudioFormat,
-        videoQuality: settings.download.defaultVideoQuality,
-        audioQuality: settings.download.defaultAudioQuality,
-        cover: settings.download.defaultCover,
-        autoAddDownloadFolder: settings.download.autoAddDownloadFolder
-      }
-    );
+    return buildSubscribePrefs(formValues.value, {
+      kind: settings.download.defaultKind,
+      audioFormat: settings.download.defaultAudioFormat,
+      videoQuality: settings.download.defaultVideoQuality,
+      audioQuality: settings.download.defaultAudioQuality,
+      cover: settings.download.defaultCover,
+      autoAddDownloadFolder: settings.download.autoAddDownloadFolder
+    });
   }
 
   function onProfileSelect(id: string) {
@@ -157,50 +123,46 @@ export function useSubscribePrefsForm(options: SubscribePrefsFormOptions) {
     if (!id) return;
     const profile = profiles.value.find((p) => p.id === id);
     if (!profile) return;
-    const c = profile.config;
-    if (c.kind) kind.value = c.kind;
-    if (c.format) format.value = c.format;
-    if (c.quality) quality.value = c.quality;
-    if (c.audioQuality) audioQuality.value = c.audioQuality;
-    if (c.audioLanguage !== undefined) audioLanguage.value = c.audioLanguage;
-    if (c.cover) {
-      coverType.value = c.cover.type;
-      if (c.cover.type === 'custom') customCoverPath.value = c.cover.customPath || '';
-      if (c.cover.type === 'frame') coverFrameTime.value = c.cover.frameTime ?? 30;
-      if (c.cover.type === 'clip') {
-        coverClipStart.value = c.cover.clipStart ?? 0;
-        coverClipEnd.value = c.cover.clipEnd ?? 30;
-        coverClipFormat.value = c.cover.clipFormat ?? 'webm';
-      }
+    const f = downloadProfileToForm(profile.config);
+    if (f.kind) kind.value = f.kind;
+    if (f.format) format.value = f.format;
+    if (f.quality) quality.value = f.quality;
+    if (f.audioQuality) audioQuality.value = f.audioQuality;
+    if (f.audioLanguage !== undefined) audioLanguage.value = f.audioLanguage;
+    if (f.coverType) {
+      coverType.value = f.coverType;
+      if (f.customCoverPath !== undefined) customCoverPath.value = f.customCoverPath;
+      if (f.coverFrameTime !== undefined) coverFrameTime.value = f.coverFrameTime;
+      if (f.coverClipStart !== undefined) coverClipStart.value = f.coverClipStart;
+      if (f.coverClipEnd !== undefined) coverClipEnd.value = f.coverClipEnd;
+      if (f.coverClipFormat !== undefined) coverClipFormat.value = f.coverClipFormat;
     }
-    if (c.filenameTemplate) filenameTemplate.value = c.filenameTemplate;
-    if (c.metaOverride) {
-      artist.value = c.metaOverride.artist || '';
-      album.value = c.metaOverride.album || '';
-      year.value = c.metaOverride.year || '';
-    }
-    if (c.outputDir) {
+    if (f.filenameTemplate) filenameTemplate.value = f.filenameTemplate;
+    if (f.artist !== undefined) artist.value = f.artist;
+    if (f.album !== undefined) album.value = f.album;
+    if (f.year !== undefined) year.value = f.year;
+    if (f.outputDir) {
       folderMode.value = 'custom';
-      outputDir.value = c.outputDir;
+      outputDir.value = f.outputDir;
     }
-    if (c.subsLangs) {
+    if (f.subsEnabled) {
       subsEnabled.value = true;
-      subsLangs.value = c.subsLangs;
-      subsFormat.value = c.subsFormat || 'srt';
-      subsMode.value = c.subsMode || 'best';
-      subsFolder.value = !!c.subsFolder;
+      subsLangs.value = f.subsLangs ?? subsLangs.value;
+      subsFormat.value = f.subsFormat ?? subsFormat.value;
+      subsMode.value = f.subsMode ?? subsMode.value;
+      subsFolder.value = f.subsFolder ?? false;
     }
-    if (c.addToLibrary !== undefined) addToLibrary.value = c.addToLibrary;
-    if (c.sponsorBlock) sponsorBlock.value = c.sponsorBlock;
-    if (c.trimStart != null) trimStart.value = c.trimStart;
-    if (c.trimEnd != null) trimEnd.value = c.trimEnd;
+    if (f.addToLibrary !== undefined) addToLibrary.value = f.addToLibrary;
+    if (f.sponsorBlock) sponsorBlock.value = f.sponsorBlock;
+    if (f.trimStart != null) trimStart.value = f.trimStart;
+    if (f.trimEnd != null) trimEnd.value = f.trimEnd;
   }
 
   return {
     isSc,
     profiles,
     ensureLoaded,
-    init,
+    systemDownloads,
     selectedProfileId,
     kind,
     format,
