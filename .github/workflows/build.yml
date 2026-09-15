@@ -150,6 +150,12 @@ jobs:
           # electron-builder.yml `publish`); release.yml already uses the same
           # repo-scoped secret for tags/PRs.
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          # release-please owns the published release for a tag. electron-builder
+          # otherwise refuses to upload into a published release older than two
+          # hours (electron-builder#1183), which makes re-runs/manual publishes
+          # silently attach nothing. Ignore the age check so the installers
+          # always land on the release-please release.
+          EP_GH_IGNORE_TIME: '1'
 
       - name: Smoke test installer (Windows)
         if: matrix.os == 'windows-latest'
