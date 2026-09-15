@@ -1,4 +1,4 @@
-﻿import { ipcMain, BrowserWindow, app } from 'electron';
+import { ipcMain, BrowserWindow, app } from 'electron';
 import type { PipManager } from './pip-manager';
 import type { AudioPipManager } from './audio-pip-manager';
 import type { AudioPipDock, AudioPipElementId } from '../shared/types/pip';
@@ -6,6 +6,9 @@ import { logger } from '../shared/logger';
 import { setCloseToTray } from './close-behavior';
 import { createExplorerWindow, getExplorerWindows } from './explorer-windows';
 import { closeImageViewer, getImageViewerData, openImageViewer } from './image-viewer-window';
+
+// Bounds carry an extra restore flag that Electron does not type.
+type BoundsWithFlag = Electron.Rectangle & { wasMaximized?: boolean };
 
 export function registerWindowHandlers(context: {
   getMainWindow: () => BrowserWindow | null;
@@ -97,7 +100,7 @@ export function registerWindowHandlers(context: {
     if (!preFullscreenBounds.current) return;
     const bounds = preFullscreenBounds.current;
     preFullscreenBounds.current = null;
-    const wasMaximized = (bounds as unknown as { wasMaximized?: boolean }).wasMaximized;
+    const wasMaximized = (bounds as BoundsWithFlag).wasMaximized;
     if (wasMaximized) {
       win.maximize();
     } else {
@@ -124,7 +127,7 @@ export function registerWindowHandlers(context: {
     } else {
       if (!preFullscreenBounds.current) {
         const b = win.getBounds();
-        (b as unknown as { wasMaximized?: boolean }).wasMaximized = win.isMaximized();
+        (b as BoundsWithFlag).wasMaximized = win.isMaximized();
         preFullscreenBounds.current = b;
       }
       win.setFullScreen(true);
@@ -152,7 +155,7 @@ export function registerWindowHandlers(context: {
 
   ipcMain.handle('app:getAutoLaunch', (): { enabled: boolean; hidden: boolean } => {
     try {
-      const s = app.getLoginItemSettings() as unknown as {
+      const s = app.getLoginItemSettings() as {
         openAtLogin: boolean;
         args?: string[];
         launchArgs?: string[];
