@@ -22,6 +22,7 @@
     "typecheck:web": "vue-tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "test": "vitest run",
+    "test:network": "node scripts/run-network-test.mjs",
     "test:watch": "vitest",
     "e2e": "playwright test",
     "start": "electron-vite preview",

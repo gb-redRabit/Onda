@@ -30,11 +30,11 @@ files:
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
-  # ffmpeg ships via extraResources (below) at process.resourcesPath/ffmpeg/…,
-  # see scripts/fetch-ffmpeg.mjs + src/main/ipc/dependency-utils.ts bundledBinPath.
-  # Exclude ONLY resources/ffmpeg from the asar (avoids an accidental second
-  # copy). Do NOT exclude all of resources/: resources/splash.html is loaded at
-  # runtime from app.asar/resources/splash.html (src/main/index.ts) and was
+  # Keep a local resources/ffmpeg layout OUT of the package: FFmpeg is not
+  # bundled anymore (users install the pinned build at runtime). Exclude only
+  # resources/ffmpeg from the asar (avoids an accidental copy of a dev/offline
+  # layout). Do NOT exclude all of resources/: resources/splash.html is loaded
+  # at runtime from app.asar/resources/splash.html (src/main/index.ts) and was
   # ERR_FILE_NOT_FOUND when the whole dir was excluded.
   - '!resources/ffmpeg/**'
   # Dev-only artifacts that must NOT ship inside app.asar (basic-memory notes,
@@ -44,11 +44,13 @@ files:
   - '!{docs,tests,scripts}'
   - '!**/*.tsbuildinfo'
   - '!{.markdownlint.json,.nvmrc,vitest.config.ts,generate-random-icon.js}'
-extraResources:
-  - from: resources/ffmpeg
-    to: ffmpeg
-    filter:
-      - '**/*'
+# FFmpeg/ffprobe are NOT bundled: the app downloads the pinned, SHA-256
+# verified build into the user's profile (userData/bin) on demand, from
+# Settings → Dependencies or the first-run wizard (see src/main/ipc/
+# dependency-handlers.ts + binaries.json). This keeps installers small and
+# avoids redistributing GPL/LGPL binaries. `resources/ffmpeg` is only a local
+# development/offline layout (scripts/fetch-ffmpeg.mjs) and must stay out of
+# the package.
 # sharp dlopen()s its libvips shared library at runtime. electron-builder only
 # auto-unpacks names ending in .dll/.exe/.dylib/.so/.node, but the Linux build
 # ships `libvips-cpp.so.<version>` (the version suffix comes AFTER `.so`), so it
@@ -165,8 +167,8 @@ deb:
   packageCategory: sound
   priority: optional
   # depends keeps electron-builder defaults (libgtk-3-0, libnss3, ...).
-  # No system ffmpeg dependency: ffmpeg ships bundled via extraResources
-  # once resources/ffmpeg is populated by `npm run fetch:ffmpeg` (plan 10.4).
+  # No ffmpeg dependency either way: the app never bundles it and installs the
+  # pinned build into the user's profile on demand.
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false

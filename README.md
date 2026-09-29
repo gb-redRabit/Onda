@@ -72,10 +72,11 @@
 
 ### System i integracja
 
-- **Wtyczki** — instalacja z folderu, worker na wtyczkę (sandbox), manifest z uprawnieniami (`storage`, `notifications`, `player`, `visual`), karta wtyczki w Ustawieniach z Logami i statusem oraz poradnik PL/EN.
-  - **API** — `api.on` (hooki: `library:scan`, `track:queued`), `api.action` (`player:seek`, `player:enqueue`, `track:toggleFavorite`), `api.storage` (keys/get/set/remove), `api.settings` (get/set), `api.fetch`, `api.notify`, `api.visual` (dekoracje elementów widoku audio), `api.log`.
+- **Wtyczki** — instalacja z folderu pozostawia wtyczkę wyłączoną; przed aktywacją użytkownik przegląda uprawnienia, allowlistę sieciową i hooki. Każdy worker działa w sandboxie. Zgoda jest wiązana z SHA‑256 pliku `entry` i z zestawem zadeklarowanych możliwości, więc zmiana kodu lub manifestu wymaga ponownego zatwierdzenia; wtyczka z nieaktualną zgodą jest wyłączana przy starcie.
+  - **API** — `api.on` (hooki `app:start`, `track:play`, `track:timeupdate`, `track:end`, `track:queued`, `library:scan`, `download:start`, `download:complete`, `download:error`; hook musi być zadeklarowany w `manifest.hooks`), `api.query` (status odtwarzacza, `player:progress`, `player:spectrum`, wyszukiwanie biblioteki), `api.action` (`player:seek`, `player:enqueue`, `track:toggleFavorite`), `api.storage` (keys/get/set/remove), `api.settings` (typy i zakresy z manifestu są walidowane), `api.fetch` (allowlista `permissions.network.allow`, blokada private IP i walidacja redirectów), `api.notify`, `api.visual` (hostowane dekoracje elementów widoku audio), `api.ui.set/clear` (hostowo renderowane sloty tekstowe, `manifest.uiSlots`, wymaga `visual`), `api.log`.
   - **Komendy** — `api.registerCommand({ id, label, icon, location, shortcut, action })`: dostępne w palecie poleceń, na karcie wtyczki, w pasku widoku audio (`location: 'audio-view'`) i w menu kontekstowym utworu (`location: 'track-menu'`, akcja otrzymuje snapshot utworu).
   - **Konfiguracja** — pole `settings` w manifeście renderowane jako formularz na karcie wtyczki.
+  - **Przykłady** — 12 wtyczek w `resources/plugins-examples` (hello, triangle, progress-slot, sleep-timer, auto-fade, vu-meter, focus-mode, smart-queue, listen-history, track-actions, metadata-lookup, note-readout) instaluje się jednym kliknięciem; każda zostaje wyłączona do zatwierdzenia uprawnień.
   - **Skróty** — globalne skróty klawiszowe komend z walidacją i wykrywaniem kolizji.
 - **Autostart** (uruchamianie przy starcie systemu, start zminimalizowany do trayu, ukrywanie do trayu po zamknięciu).
 - **Skojarzenia plików** (mp3, flac, ogg, wav, m4a, aac, mp4, mkv, webm, mov, avi) i **single-instance** (otwieranie plików z systemu trafia do istniejącej instancji).
@@ -127,7 +128,11 @@ Odtwarzanie · Wygląd · Motyw · Biblioteka · Sieć · System · Zaawansowane
 
 ## Zależności zewnętrzne (nie-NPM)
 
-Niektóre funkcje wymagają narzędzi systemowych — status można sprawdzić i zainstalować w panelu **Ustawienia → Zależności**:
+Aplikacja **nie dołącza** żadnych binarek — instalator zawiera wyłącznie Onda i Electron.
+FFmpeg/FFprobe oraz yt-dlp są pobierane na żądanie do profilu użytkownika i weryfikowane
+SHA-256 (wersje przypięte w `binaries.json`, aktualizowane przez PR); jeśli narzędzie jest
+już w systemie (PATH), Onda użyje go bez pobierania. Status pokazuje i instaluje panel
+**Ustawienia → Zależności** (oraz krok zależności w kreatorze pierwszego uruchomienia):
 
 - **FFmpeg / FFprobe** — transkodowanie audio w locie, ekstrakcja klatek, miniatury.
 - **yt-dlp** — pobieranie z YouTube i SoundCloud (fallback dla API), nightly builds.
@@ -170,6 +175,13 @@ Open): podpisywanie wymaga certyfikatu Authenticode (Windows) i Apple
 Developer ID (macOS), patrz sekcja signing w `electron-builder.yml`. Do czasu
 ich dodania nie włączaj `verifyUpdateCodeSignature: true` — inaczej
 electron-updater odrzuca własne, niespodpisane aktualizacje.
+
+Konsekwencja dla supply-chain: dopóki instalatory nie są podpisane,
+electron-updater przyjmie aktualizację bez weryfikacji podpisu
+(`verifyUpdateCodeSignature: false`), więc jedynym zabezpieczeniem jest kanał
+dystrybucji (GitHub Releases + `GH_TOKEN` w CI). Po dodaniu certyfikatów:
+ustaw `CODE_SIGN_PUBLISHER`, włącz `verifyUpdateCodeSignature: true`
+i `mac.notarize: true`.
 
 ---
 

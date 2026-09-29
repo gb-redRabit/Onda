@@ -48,7 +48,12 @@ export default defineConfig({
     worker: { format: 'es' },
     css: { devSourcemap: false },
     build: {
-      sourcemap: 'hidden',
+      // Sourcemaps are generated as hidden (no `sourceMappingURL` comment) so
+      // they are not loaded at runtime, but they still ship inside app.asar and
+      // roughly double the packaged renderer size. Off by default for release
+      // installers; enable with ONDA_SOURCEMAP=1 when a debuggable build is
+      // needed (CI artifacts, local investigation).
+      sourcemap: process.env.ONDA_SOURCEMAP === '1' ? 'hidden' : false,
       rollupOptions: {
         input: {
           index: resolve('src/renderer/index.html'),
