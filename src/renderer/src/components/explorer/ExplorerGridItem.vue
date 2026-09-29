@@ -58,6 +58,7 @@ const size = computed(() => {
     ref="rootEl"
     :draggable="!isAtDrives"
     :data-file-path="item.path"
+    :data-testid="`explorer-item-${item.name}`"
     :data-folder-path="item.isDirectory ? item.path : undefined"
     class="flex flex-col items-center fx-depth rounded-box fx-noise hover:bg-base-content/10 transition-colors text-center group relative w-full"
     :class="{

@@ -184,7 +184,7 @@ onBeforeUnmount(() => {
       <ExplorerTabs />
 
       <div
-        class="flex items-center gap-2 px-3 py-2 border-b border-base-300 bg-base-200/(--glass-alpha)"
+        class="ui-page-toolbar flex items-center gap-2 px-3 py-2 border-b border-base-300 bg-base-200/(--glass-alpha)"
       >
         <ExplorerBreadcrumb />
 

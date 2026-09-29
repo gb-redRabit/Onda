@@ -71,7 +71,9 @@ const {
       <div class="absolute inset-0 flex items-center justify-center overflow-hidden contain-layout">
         <button
           v-if="hasPrev && !slideshowActive"
-          class="absolute left-3 z-10 p-2 rounded-full bg-base-300 text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-all"
+          class="ui-icon-button absolute left-3 z-10 rounded-full bg-base-300 p-2"
+          :title="$t('imageViewer.previous')"
+          :aria-label="$t('imageViewer.previous')"
           @click="prev"
         >
           <ChevronLeft :size="28" class="pointer-events-none" />
@@ -117,7 +119,9 @@ const {
 
         <button
           v-if="hasNext && !slideshowActive"
-          class="absolute right-3 z-10 p-2 rounded-full mr-12 bg-base-300 text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-all"
+          class="ui-icon-button absolute right-3 z-10 mr-12 rounded-full bg-base-300 p-2"
+          :title="$t('imageViewer.next')"
+          :aria-label="$t('imageViewer.next')"
           @click="next"
         >
           <ChevronRight :size="28" class="pointer-events-none" />

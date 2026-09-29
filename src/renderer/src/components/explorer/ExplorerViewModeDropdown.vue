@@ -32,6 +32,9 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', handleClickOutsi
     <button
       class="fx-noise p-1.5 fx-depth rounded-field transition-colors text-base-content/50 hover:text-base-content hover:bg-base-content/10"
       :title="$t('explorer.viewMode')"
+      :aria-label="$t('explorer.viewMode')"
+      :aria-expanded="viewModeOpen"
+      data-testid="explorer-view-mode"
       @click="viewModeOpen = !viewModeOpen"
     >
       <component
@@ -54,6 +57,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', handleClickOutsi
             ? 'text-primary bg-primary/10'
             : 'text-base-content/70 hover:bg-base-content/10 hover:text-base-content'
         "
+        :data-testid="`explorer-view-${mode.key}`"
         @click="
           explorer.setViewMode(mode.key);
           viewModeOpen = false;

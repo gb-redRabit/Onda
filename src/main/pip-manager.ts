@@ -52,6 +52,7 @@ export class PipManager {
   }
 
   init(): void {
+    this.preview.setClosedHandler(() => sendToWindow(this.mainWindow, 'pip:previewClosed'));
     this.createWindow();
     this.registerIpc();
   }
@@ -111,7 +112,11 @@ export class PipManager {
   }
 
   private registerIpc(): void {
-    ipcMain.on('pip:hidden', () => {
+    ipcMain.on('pip:hidden', (event) => {
+      if (this.preview.owns(event.sender)) {
+        this.hidePreview();
+        return;
+      }
       this.hide();
       this.notifyClosed();
     });
@@ -129,6 +134,7 @@ export class PipManager {
     ipcMain.on('pip:theme', (_event, vars: Record<string, string>) => {
       this.cssVars = vars;
       this.sendToRenderer('pip:theme', vars);
+      this.preview.updateTheme(vars);
     });
 
     ipcMain.on('pip:maximize', (_event, time: number) => {
@@ -140,6 +146,7 @@ export class PipManager {
     ipcMain.on('pip:locale', (_event, locale: string) => {
       this.pipLocale = locale || 'en';
       this.sendToRenderer('pip:locale', this.pipLocale);
+      this.preview.updateLocale(this.pipLocale);
     });
   }
 
@@ -305,7 +312,7 @@ export class PipManager {
   }
 
   showPreview(opts: { position?: string; width?: number; height?: number }): boolean {
-    return this.preview.show(opts);
+    return this.preview.show(opts, { theme: this.cssVars, locale: this.pipLocale });
   }
 
   hidePreview(): void {

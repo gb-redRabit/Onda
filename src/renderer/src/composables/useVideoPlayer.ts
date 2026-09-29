@@ -24,8 +24,6 @@ export function useVideoPlayer(ctx: VideoPlayerContext) {
   subtitles.registerSubtitleWatcher();
 
   function init(track: MediaFile | null) {
-    settings.updatePlayback({ videoFilter: 'none' });
-
     if (track?.type === 'video') {
       source.setupVideo(track);
 
@@ -54,7 +52,6 @@ export function useVideoPlayer(ctx: VideoPlayerContext) {
       source.onTrackChanged(track, oldTrack);
       if (!track || track.type !== 'video') return;
 
-      settings.updatePlayback({ videoFilter: 'none' });
       source.setupVideo(track);
 
       if (player.pipActive) {

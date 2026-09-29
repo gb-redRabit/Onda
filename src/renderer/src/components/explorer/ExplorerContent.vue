@@ -120,6 +120,7 @@ defineExpose({ reveal });
               hoveredFolderPath && hoveredFolderPath === files[virtualRow.index].path,
             'opacity-40': fileClipboard.isCut(files[virtualRow.index].path)
           }"
+          :data-testid="`explorer-item-${files[virtualRow.index].name}`"
           @click="onItemClick($event, files[virtualRow.index].path, virtualRow.index)"
           @dblclick="emit('open', files[virtualRow.index])"
           @contextmenu.stop.prevent="emit('menu', $event, files[virtualRow.index])"

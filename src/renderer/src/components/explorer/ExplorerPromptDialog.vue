@@ -41,7 +41,10 @@ function onKeydown(e: KeyboardEvent) {
       class="fixed inset-0 z-9999 bg-neutral/50 flex items-center justify-center"
       @click.self="emit('cancel')"
     >
-      <div class="bg-base-100 border border-base-300 rounded-box p-5 min-w-75 shadow-2xl">
+      <div
+        class="bg-base-100 border border-base-300 rounded-box p-5 min-w-75 shadow-2xl"
+        data-testid="explorer-prompt-dialog"
+      >
         <p class="text-sm text-base-content mb-3 whitespace-pre-wrap">{{ message }}</p>
         <input
           v-if="!isConfirm"

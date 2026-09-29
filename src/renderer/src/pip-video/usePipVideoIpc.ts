@@ -26,7 +26,9 @@ export function usePipVideoIpc(sub: ReturnType<typeof usePipVideoSubtitle>, refs
     brightness: { en: 'Brightness', pl: 'Jasność' },
     contrast: { en: 'Contrast', pl: 'Kontrast' },
     close: { en: 'Close', pl: 'Zamknij' },
-    maximize: { en: 'Maximize', pl: 'Maksymalizuj' }
+    maximize: { en: 'Maximize', pl: 'Maksymalizuj' },
+    previewTitle: { en: 'Pine ridge at sunset', pl: 'Grzbiet sosen o zachodzie' },
+    previewDescription: { en: 'Previewing the video PiP layout', pl: 'Podgląd układu PiP wideo' }
   };
   const currentLocale = ref(navigator.language.startsWith('pl') ? 'pl' : 'en');
   function t(key: string): string {

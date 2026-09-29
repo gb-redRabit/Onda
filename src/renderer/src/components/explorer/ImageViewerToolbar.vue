@@ -51,8 +51,9 @@ const emit = defineEmits<{
     @click.stop
   >
     <button
-      class="fx-noise p-1.5 fx-depth rounded-field bg-base-300 text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
-      title="Close (Esc)"
+      class="ui-icon-button fx-noise fx-depth bg-base-300"
+      :title="$t('imageViewer.close')"
+      :aria-label="$t('imageViewer.close')"
       @click="emit('close')"
     >
       <X :size="16" class="pointer-events-none" />
@@ -62,26 +63,32 @@ const emit = defineEmits<{
     <div class="flex flex-col items-center gap-1 bg-neutral rounded-box px-1.5 py-2">
       <div class="relative">
         <button
-          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
+          class="ui-icon-button fx-noise fx-depth"
           :class="
             slideshowActive
               ? 'text-primary bg-primary/10'
               : 'text-base-content/70 hover:text-base-content hover:bg-base-content/10'
           "
-          :title="slideshowActive ? 'Stop slideshow (Space)' : 'Start slideshow (Space)'"
+          :title="
+            slideshowActive ? $t('imageViewer.stopSlideshow') : $t('imageViewer.startSlideshow')
+          "
+          :aria-label="
+            slideshowActive ? $t('imageViewer.stopSlideshow') : $t('imageViewer.startSlideshow')
+          "
           @click="emit('toggleSlideshow')"
         >
           <span v-show="!slideshowActive"><Play :size="16" class="pointer-events-none" /></span>
           <span v-show="slideshowActive"><Pause :size="16" class="pointer-events-none" /></span>
         </button>
         <button
-          class="fx-noise p-1 fx-depth rounded-field transition-colors block mx-auto mt-0.5"
+          class="ui-icon-button fx-noise fx-depth block mx-auto mt-0.5"
           :class="
             settingsOpen
               ? 'text-primary bg-primary/10'
               : 'text-base-content/70 hover:text-base-content hover:bg-base-content/10'
           "
-          title="Slideshow settings"
+          :title="$t('imageViewer.slideshowSettings')"
+          :aria-label="$t('imageViewer.slideshowSettings')"
           @click="emit('toggleSettings')"
         >
           <Settings2 :size="12" class="pointer-events-none" />
@@ -106,41 +113,46 @@ const emit = defineEmits<{
       </div>
 
       <button
-        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
-        title="Fit to screen"
+        class="ui-icon-button fx-noise fx-depth"
+        :title="$t('imageViewer.fitToScreen')"
+        :aria-label="$t('imageViewer.fitToScreen')"
         @click="emit('fitToScreen')"
       >
         <Maximize2 :size="16" class="pointer-events-none" />
       </button>
       <button
-        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
-        title="Zoom In (+)"
+        class="ui-icon-button fx-noise fx-depth"
+        :title="$t('imageViewer.zoomIn')"
+        :aria-label="$t('imageViewer.zoomIn')"
         @click="emit('zoomIn')"
       >
         <ZoomIn :size="16" class="pointer-events-none" />
       </button>
       <button
-        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
-        title="Zoom Out (-)"
+        class="ui-icon-button fx-noise fx-depth"
+        :title="$t('imageViewer.zoomOut')"
+        :aria-label="$t('imageViewer.zoomOut')"
         @click="emit('zoomOut')"
       >
         <ZoomOut :size="16" class="pointer-events-none" />
       </button>
       <button
-        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
-        title="Rotate (R)"
+        class="ui-icon-button fx-noise fx-depth"
+        :title="$t('imageViewer.rotate')"
+        :aria-label="$t('imageViewer.rotate')"
         @click="emit('rotate')"
       >
         <RotateCw :size="16" class="pointer-events-none" />
       </button>
       <button
-        class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
+        class="ui-icon-button fx-noise fx-depth"
         :class="
           fullscreen
             ? 'text-primary bg-primary/10'
             : 'text-base-content/70 hover:text-base-content hover:bg-base-content/10'
         "
-        title="Fullscreen (F)"
+        :title="$t('imageViewer.fullscreen')"
+        :aria-label="$t('imageViewer.fullscreen')"
         @click="emit('toggleFullscreen')"
       >
         <Fullscreen :size="16" class="pointer-events-none" />

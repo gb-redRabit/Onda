@@ -9,6 +9,51 @@ import { closeImageViewer, getImageViewerData, openImageViewer } from './image-v
 
 // Bounds carry an extra restore flag that Electron does not type.
 type BoundsWithFlag = Electron.Rectangle & { wasMaximized?: boolean };
+type WindowBackgroundMaterial = 'auto' | 'none' | 'mica' | 'acrylic' | 'tabbed';
+
+const desiredWindowMaterials = new WeakMap<BrowserWindow, WindowBackgroundMaterial>();
+const materialListenersInstalled = new WeakSet<BrowserWindow>();
+const materialReapplyTimers = new WeakMap<BrowserWindow, ReturnType<typeof setTimeout>>();
+
+function applyWindowMaterial(win: BrowserWindow, material: WindowBackgroundMaterial): boolean {
+  if (process.platform !== 'win32' || win.isDestroyed()) return false;
+  try {
+    win.setBackgroundMaterial(material);
+    return true;
+  } catch (e) {
+    logger.warn('window', 'setBackgroundMaterial failed (non-fatal)', e);
+    return false;
+  }
+}
+
+function rememberWindowMaterial(win: BrowserWindow, material: WindowBackgroundMaterial): void {
+  desiredWindowMaterials.set(win, material);
+  if (materialListenersInstalled.has(win)) return;
+  materialListenersInstalled.add(win);
+
+  const scheduleReapply = (): void => {
+    const previous = materialReapplyTimers.get(win);
+    if (previous) clearTimeout(previous);
+    const timer = setTimeout(() => {
+      materialReapplyTimers.delete(win);
+      const desired = desiredWindowMaterials.get(win);
+      if (desired) applyWindowMaterial(win, desired);
+    }, 80);
+    materialReapplyTimers.set(win, timer);
+  };
+
+  win.on('focus', scheduleReapply);
+  win.on('show', scheduleReapply);
+  win.on('restore', scheduleReapply);
+  win.on('maximize', scheduleReapply);
+  win.on('unmaximize', scheduleReapply);
+  win.on('closed', () => {
+    const timer = materialReapplyTimers.get(win);
+    if (timer) clearTimeout(timer);
+    materialReapplyTimers.delete(win);
+    desiredWindowMaterials.delete(win);
+  });
+}
 
 export function registerWindowHandlers(context: {
   getMainWindow: () => BrowserWindow | null;
@@ -62,20 +107,21 @@ export function registerWindowHandlers(context: {
     }
   });
 
-  ipcMain.handle('app:setBackgroundMaterial', (_event, material: string) => {
+  ipcMain.handle('app:setBackgroundMaterial', (event, material: string) => {
     if (process.platform !== 'win32') return false;
-    const valid = ['auto', 'none', 'mica', 'acrylic', 'tabbed'];
-    if (!valid.includes(material)) return false;
-    for (const win of BrowserWindow.getAllWindows()) {
-      if (!win.isDestroyed()) {
-        try {
-          win.setBackgroundMaterial(material as 'acrylic' | 'none');
-        } catch (e) {
-          logger.warn('window', 'setBackgroundMaterial failed for a window (non-fatal)', e);
-        }
-      }
-    }
-    return true;
+    const valid: WindowBackgroundMaterial[] = ['auto', 'none', 'mica', 'acrylic', 'tabbed'];
+    if (!(valid as string[]).includes(material)) return false;
+    // Only the window that asked: the renderer's theme engine calls this in every
+    // window it runs in (main, explorer), and PiP windows manage their own
+    // surface. Applying it to all windows used to leave acrylic behind windows
+    // whose appearance had no transparency.
+    const win = BrowserWindow.fromWebContents(event.sender) ?? getMainWindow();
+    if (!win || win.isDestroyed()) return false;
+    const mode = material as WindowBackgroundMaterial;
+    rememberWindowMaterial(win, mode);
+    const applied = applyWindowMaterial(win, mode);
+    if (applied) logger.info('window', `background material=${mode}`);
+    return applied;
   });
 
   ipcMain.handle('window:minimize', (event) => {

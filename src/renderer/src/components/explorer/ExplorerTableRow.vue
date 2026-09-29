@@ -44,6 +44,7 @@ function iconComponent() {
     ref="rootEl"
     :draggable="!isAtDrives"
     :data-file-path="item.path"
+    :data-testid="`explorer-item-${item.name}`"
     :data-folder-path="item.isDirectory ? item.path : undefined"
     class="fx-noise w-full grid grid-cols-[1fr_120px_100px_100px] gap-2 px-3 py-2 fx-depth rounded-field hover:bg-base-content/10 transition-colors text-left items-center text-sm group relative"
     :class="{

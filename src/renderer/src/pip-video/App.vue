@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { usePipVideoSubtitle } from './usePipVideoSubtitle';
 import { usePipVideoIpc } from './usePipVideoIpc';
 import { usePipVideoPreview } from './usePipVideoPreview';
+
+const props = withDefaults(defineProps<{ preview?: boolean }>(), { preview: false });
 
 const videoRef = ref<HTMLVideoElement | null>(null);
 const progressRef = ref<HTMLDivElement | null>(null);
@@ -38,6 +40,10 @@ const {
 } = pip;
 
 const { subsVisible, toggleSubtitles } = sub;
+
+onMounted(() => {
+  if (props.preview) showOverlay.value = true;
+});
 </script>
 
 <template>
@@ -50,6 +56,7 @@ const { subsVisible, toggleSubtitles } = sub;
     "
   >
     <video
+      v-if="!preview"
       ref="videoRef"
       class="flex-1 w-full object-contain bg-neutral"
       :style="videoFilter !== 'none' ? { filter: videoFilter } : {}"
@@ -59,7 +66,47 @@ const { subsVisible, toggleSubtitles } = sub;
       @ended="onVideoEnded"
     />
 
+    <div
+      v-else
+      data-testid="pip-video-preview"
+      class="pip-preview-scene relative flex-1 w-full overflow-hidden"
+      :aria-label="t('previewTitle')"
+    >
+      <div class="absolute inset-0 bg-linear-to-b from-sky-300 via-indigo-400 to-slate-900" />
+      <div
+        class="absolute -top-1/3 right-1/5 h-2/3 aspect-square rounded-full bg-amber-100/70 blur-xl"
+      />
+      <div
+        class="absolute inset-x-0 bottom-0 h-3/5 bg-linear-to-br from-emerald-900 via-teal-800 to-slate-900"
+        style="
+          clip-path: polygon(
+            0 58%,
+            20% 25%,
+            37% 56%,
+            61% 10%,
+            78% 46%,
+            100% 20%,
+            100% 100%,
+            0 100%
+          );
+        "
+      />
+      <div
+        class="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/75 to-transparent"
+      />
+      <div class="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
+        <div class="min-w-0">
+          <p class="text-sm font-semibold text-white drop-shadow">{{ t('previewTitle') }}</p>
+          <p class="mt-0.5 text-[11px] text-white/70">{{ t('previewDescription') }}</p>
+        </div>
+        <span class="shrink-0 rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-mono text-white">
+          1080p
+        </span>
+      </div>
+    </div>
+
     <video
+      v-if="!preview"
       :ref="setHiddenVideoRef"
       class="absolute top-0 left-0 w-1 h-1 opacity-0 pointer-events-none"
       muted
@@ -80,6 +127,7 @@ const { subsVisible, toggleSubtitles } = sub;
         &#x2699;
       </button>
       <button
+        v-if="!preview"
         class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[10px] top-btn"
         :title="t('maximize')"
         @click="sendMaximize"
@@ -87,6 +135,17 @@ const { subsVisible, toggleSubtitles } = sub;
         &#x26F6;
       </button>
       <button
+        v-if="preview"
+        data-testid="pip-video-preview-close"
+        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[11px] close-btn"
+        :title="t('close')"
+        :aria-label="t('close')"
+        @click="api?.send('pip:hidden')"
+      >
+        &#x2715;
+      </button>
+      <button
+        v-else
         class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[11px] close-btn"
         :title="t('close')"
         @click="api?.send('pip:hidden')"
@@ -164,14 +223,14 @@ const { subsVisible, toggleSubtitles } = sub;
       class="absolute bottom-2 left-2 text-[10px] font-mono pointer-events-none"
       :style="{ color: 'color-mix(in srgb, var(--color-base-content) 50%, transparent)' }"
     >
-      {{ currentTime }}
+      {{ preview ? '0:42' : currentTime }}
     </div>
 
     <div
       class="absolute bottom-2 right-2 text-[10px] font-mono pointer-events-none"
       :style="{ color: 'color-mix(in srgb, var(--color-base-content) 50%, transparent)' }"
     >
-      {{ duration }}
+      {{ preview ? '12:08' : duration }}
     </div>
 
     <div
@@ -184,7 +243,7 @@ const { subsVisible, toggleSubtitles } = sub;
     >
       <div
         class="h-full rounded-r"
-        :style="{ width: progress + '%', background: 'var(--color-primary)' }"
+        :style="{ width: (preview ? 34 : progress) + '%', background: 'var(--color-primary)' }"
       ></div>
 
       <div

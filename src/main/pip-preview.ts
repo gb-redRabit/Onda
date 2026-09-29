@@ -1,17 +1,27 @@
 import { BrowserWindow } from 'electron';
+import { join } from 'path';
+import { is } from '@electron-toolkit/utils';
 import { computePipPosition } from './pip-position';
 import { installNavigationGuard } from './navigation-guard';
 import { pipWindowIcon } from './pip-icon';
 
 export class PipPreview {
   private window: BrowserWindow | null = null;
+  private theme: Record<string, string> = {};
+  private locale = 'en';
+  private onClosed: (() => void) | null = null;
 
-  show(opts: { position?: string; width?: number; height?: number }): boolean {
-    if (this.window && !this.window.isDestroyed()) {
-      this.window.destroy();
-    }
-    this.window = null;
+  setClosedHandler(handler: (() => void) | null): void {
+    this.onClosed = handler;
+  }
 
+  show(
+    opts: { position?: string; width?: number; height?: number },
+    initial: { theme?: Record<string, string>; locale?: string } = {}
+  ): boolean {
+    this.hide();
+    if (initial.theme) this.theme = initial.theme;
+    if (initial.locale) this.locale = initial.locale;
     const pw = opts.width || 480;
     const ph = opts.height || 290;
     const bounds = computePipPosition({ position: opts.position, width: pw, height: ph });
@@ -26,26 +36,39 @@ export class PipPreview {
       frame: false,
       hasShadow: false,
       skipTaskbar: true,
-      resizable: false,
+      resizable: true,
       transparent: true,
       backgroundColor: '#00000000',
       icon: pipWindowIcon(),
       webPreferences: {
+        preload: join(__dirname, '../preload/pip.js'),
+        sandbox: true,
         contextIsolation: true,
         nodeIntegration: false
       }
     });
 
-    const radius = ph < 120 ? '12px' : '16px';
-    const html = `<!DOCTYPE html><html><head><style>*{margin:0;padding:0}body{background:transparent;height:100vh;overflow:hidden}.box{width:100%;height:100%;box-sizing:border-box;border:1px dashed rgb(124,106,239);border-radius:${radius};background:rgba(124,106,239,0.35);display:flex;align-items:center;justify-content:center;color:rgb(255,255,255);font:13px sans-serif}</style></head><body><div class="box">Video PiP</div></body></html>`;
-    this.window.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
-    installNavigationGuard(this.window, { allowData: true });
+    this.window.setMenuBarVisibility(false);
+    installNavigationGuard(this.window);
+
+    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+      void this.window.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/pip.html#preview`);
+    } else {
+      void this.window.loadFile(join(__dirname, '../renderer/pip.html'), { hash: 'preview' });
+    }
+
+    this.window.webContents.on('did-finish-load', () => {
+      if (!this.window || this.window.isDestroyed()) return;
+      this.window.webContents.send('pip:theme', this.theme);
+      this.window.webContents.send('pip:locale', this.locale);
+    });
+    this.window.on('ready-to-show', () => this.window?.show());
 
     this.window.on('closed', () => {
       this.window = null;
+      this.onClosed?.();
     });
 
-    this.window.show();
     return true;
   }
 
@@ -63,6 +86,24 @@ export class PipPreview {
     const pw = opts.width ?? size[0] ?? 400;
     const ph = opts.height ?? size[1] ?? 300;
     this.window.setBounds(computePipPosition({ position: opts.position, width: pw, height: ph }));
+  }
+
+  updateTheme(vars: Record<string, string>): void {
+    this.theme = vars;
+    if (this.window && !this.window.isDestroyed()) {
+      this.window.webContents.send('pip:theme', vars);
+    }
+  }
+
+  updateLocale(locale: string): void {
+    this.locale = locale || 'en';
+    if (this.window && !this.window.isDestroyed()) {
+      this.window.webContents.send('pip:locale', this.locale);
+    }
+  }
+
+  owns(sender: Electron.WebContents): boolean {
+    return !!this.window && !this.window.isDestroyed() && this.window.webContents.id === sender.id;
   }
 
   destroy(): void {
