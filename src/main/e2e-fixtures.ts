@@ -14,7 +14,7 @@ export function e2eSearchItems(query: string): IpcYoutubeVideo[] {
     description: `Fixture result for "${query}"`,
     thumbnail: '',
     channelTitle: 'E2E Channel',
-    channelId: 'e2e-channel',
+    channelId: 'UCabcdefghijABCDEFGHIJ1234',
     duration: '1:00',
     viewCount: '1234',
     publishedAt: '2026-01-01T00:00:00.000Z'

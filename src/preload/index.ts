@@ -15,6 +15,7 @@ import type {
   IpcRadioStation,
   PluginInfo,
   PluginExample,
+  IpcPerfSnapshot,
   PluginFetchOptions,
   PluginFetchResult,
   IpcPluginGetResult,
@@ -354,6 +355,7 @@ const api: OndaAPI = {
   readLogs: (lines?: number): Promise<string> => tryInvoke('diagnostics:readLogs', lines),
   clearLogs: (): Promise<boolean> => tryInvoke('diagnostics:clearLogs'),
   getRecentWarnings: () => tryInvoke('diagnostics:getWarnings'),
+  getPerfSnapshot: (): Promise<IpcPerfSnapshot> => tryInvoke('diagnostics:getPerf'),
   downloadLog: (): Promise<{ success: boolean; canceled?: boolean; error?: string }> =>
     tryInvoke('diagnostics:downloadLog'),
   clearCache: (): Promise<AppCacheClearResult> => tryInvoke('cache:clear'),
@@ -400,8 +402,8 @@ const api: OndaAPI = {
   pluginsInstallExample: (id: string): Promise<IpcPluginInstallResult> =>
     tryInvoke('plugins:installExample', id),
   pluginsGet: (id: string): Promise<IpcPluginGetResult> => tryInvoke('plugins:get', id),
-  pluginsToggle: (id: string, enabled: boolean): Promise<boolean> =>
-    tryInvoke('plugins:toggle', id, enabled),
+  pluginsToggle: (id: string, enabled: boolean, approvedConsent?: string): Promise<boolean> =>
+    tryInvoke('plugins:toggle', id, enabled, approvedConsent),
   pluginsUninstall: (id: string): Promise<IpcPluginUninstallResult> =>
     tryInvoke('plugins:uninstall', id),
   pluginsInstallFromFolder: (): Promise<IpcPluginInstallResult> =>

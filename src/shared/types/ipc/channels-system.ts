@@ -19,6 +19,23 @@ export interface IpcWarningEntry {
   count: number;
 }
 
+export interface IpcPerfPhase {
+  label: string;
+  ms: number;
+}
+
+export interface IpcPerfProcess {
+  type: string;
+  workingSetMb: number;
+  cpuPercent: number;
+}
+
+export interface IpcPerfSnapshot {
+  phases: IpcPerfPhase[];
+  mainRssMb: number;
+  processes: IpcPerfProcess[];
+}
+
 export interface DepToolStatus {
   installed: boolean;
   version: string | null;
@@ -134,6 +151,7 @@ export interface SystemChannels {
   'dep:checkYtdlp': { args: []; result: DepToolStatus };
   'dep:checkFfprobe': { args: []; result: DepToolStatus };
   'dep:checkMkvextract': { args: []; result: DepToolStatus };
+  'dep:recheck': { args: []; result: boolean };
   'dep:getPaths': { args: []; result: DepToolPaths };
   'dep:checkUpdateYtdlp': {
     args: [];
@@ -237,6 +255,7 @@ export interface SystemChannels {
   'diagnostics:readLogs': { args: [lines?: number]; result: string };
   'diagnostics:clearLogs': { args: []; result: boolean };
   'diagnostics:getWarnings': { args: []; result: IpcWarningEntry[] };
+  'diagnostics:getPerf': { args: []; result: IpcPerfSnapshot };
   'diagnostics:downloadLog': {
     args: [];
     result: { success: boolean; canceled?: boolean; error?: string };
@@ -255,7 +274,10 @@ export interface SystemChannels {
   'plugins:listExamples': { args: []; result: PluginExample[] };
   'plugins:installExample': { args: [id: string]; result: IpcPluginInstallResult };
   'plugins:get': { args: [id: string]; result: IpcPluginGetResult };
-  'plugins:toggle': { args: [id: string, enabled: boolean]; result: boolean };
+  'plugins:toggle': {
+    args: [id: string, enabled: boolean, approvedConsent?: string];
+    result: boolean;
+  };
   'plugins:uninstall': { args: [id: string]; result: IpcPluginUninstallResult };
   'plugins:installFromFolder': { args: []; result: IpcPluginInstallResult };
   'plugins:storage:keys': { args: [id: string]; result: string[] };

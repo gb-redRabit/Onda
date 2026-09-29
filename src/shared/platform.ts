@@ -13,6 +13,21 @@ export interface DetectedPlatform {
   kind: PlatformKind;
 }
 
+/** Accepts ordinary web URLs for the generic yt-dlp extractor path. */
+export function isHttpUrl(input: string): boolean {
+  try {
+    const url = new URL(input.trim());
+    return (
+      (url.protocol === 'http:' || url.protocol === 'https:') &&
+      !!url.hostname &&
+      !url.username &&
+      !url.password
+    );
+  } catch {
+    return false;
+  }
+}
+
 // Classifies a user-pasted link across every supported platform. Returns null
 // for anything unrecognizable.
 export function detectPlatform(input: string): DetectedPlatform | null {
@@ -28,12 +43,6 @@ export function detectPlatform(input: string): DetectedPlatform | null {
 export function normalizePlatformUrl(input: string, detected: DetectedPlatform): string {
   if (detected.platform === 'youtube') return normalizeYtUrl(input, detected.kind);
   return normalizeScUrl(input);
-}
-
-export interface BatchEntryPlatform {
-  url: string;
-  kind: PlatformKind;
-  platform: MediaPlatform;
 }
 
 // Query-prefix convention: "@name" targets a YouTube channel handle, "$name"
@@ -53,14 +62,12 @@ export function detectChannelPrefix(input: string): ChannelPrefixQuery | null {
 
 export interface BatchEntryPlatform {
   url: string;
-  kind: PlatformKind;
-  platform: MediaPlatform;
+  kind: PlatformKind | 'video';
+  platform: MediaPlatform | 'generic';
 }
 
-// Splits pasted text (newlines or commas) into links of ANY supported
-// platform. Channels are skipped (they open in the profile view, not the
-// download flow). Dedupe: by video id for YouTube, by normalized permalink
-// for SoundCloud.
+// Splits pasted text (newlines or commas) into YT, SC and ordinary HTTP(S)
+// URLs. Channels are skipped (they open in the profile view, not download).
 export function parseBatchInputAll(text: string): BatchEntryPlatform[] {
   const lines = text
     .split(/[\n,]+/)
@@ -70,14 +77,25 @@ export function parseBatchInputAll(text: string): BatchEntryPlatform[] {
   const out: BatchEntryPlatform[] = [];
   for (const line of lines) {
     const detected = detectPlatform(line);
-    if (!detected || detected.kind === 'channel') continue;
-    const key =
-      detected.platform === 'youtube'
-        ? extractYtVideoId(line) || line.toLowerCase()
-        : line.toLowerCase().replace(/\/+$/, '');
+    if (detected?.kind === 'channel') continue;
+    if (!detected && !isHttpUrl(line)) continue;
+    let key: string;
+    if (!detected) key = normalizeGenericUrl(line);
+    else if (detected.platform === 'youtube') key = extractYtVideoId(line) || line.toLowerCase();
+    else key = line.toLowerCase().replace(/\/+$/, '');
     if (!key || seen.has(key)) continue;
     seen.add(key);
-    out.push({ url: line, kind: detected.kind, platform: detected.platform });
+    out.push({
+      url: line,
+      kind: detected?.kind ?? 'video',
+      platform: detected?.platform ?? 'generic'
+    });
   }
   return out;
+}
+
+function normalizeGenericUrl(input: string): string {
+  const url = new URL(input);
+  url.hash = '';
+  return url.href.replace(/\/$/, '');
 }

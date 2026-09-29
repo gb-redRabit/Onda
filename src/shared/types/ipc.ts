@@ -52,6 +52,9 @@ export type {
   DepToolPaths,
   IpcWarningEntry,
   AppCacheClearResult,
-  AppFactoryResetResult
+  AppFactoryResetResult,
+  IpcPerfPhase,
+  IpcPerfProcess,
+  IpcPerfSnapshot
 } from './ipc/channels-system';
 export type { IpcChannels, IpcChannel } from './ipc/channels';

@@ -42,6 +42,7 @@ export interface OndaAPI {
   readLogs: BoundIpcMethod<'diagnostics:readLogs'>;
   clearLogs: BoundIpcMethod<'diagnostics:clearLogs'>;
   getRecentWarnings: BoundIpcMethod<'diagnostics:getWarnings'>;
+  getPerfSnapshot: BoundIpcMethod<'diagnostics:getPerf'>;
   downloadLog: BoundIpcMethod<'diagnostics:downloadLog'>;
   clearCache: BoundIpcMethod<'cache:clear'>;
   factoryReset: BoundIpcMethod<'app:factoryReset'>;

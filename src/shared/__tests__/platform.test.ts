@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { detectPlatform, normalizePlatformUrl, parseBatchInputAll } from '../platform';
+import { detectPlatform, isHttpUrl, normalizePlatformUrl, parseBatchInputAll } from '../platform';
 import { resolveProvider, soundcloudProvider } from '../provider';
 
 describe('detectPlatform', () => {
@@ -39,6 +39,13 @@ describe('detectPlatform', () => {
     expect(detectPlatform('https://example.com/a')).toBeNull();
     // A bare YT-like id is still a YouTube video.
     expect(detectPlatform('LpNVf8sczqU')).toEqual({ platform: 'youtube', kind: 'video' });
+  });
+
+  it('recognizes generic web URLs separately from YT and SoundCloud platforms', () => {
+    expect(isHttpUrl('https://vimeo.com/123')).toBe(true);
+    expect(isHttpUrl('http://media.example.org/file.mp4')).toBe(true);
+    expect(isHttpUrl('file:///C:/video.mp4')).toBe(false);
+    expect(isHttpUrl('https://user:secret@example.org/video')).toBe(false);
   });
 });
 
@@ -82,8 +89,11 @@ describe('parseBatchInputAll', () => {
     expect(entries.map((e) => e.platform).sort()).toEqual(['soundcloud', 'youtube']);
   });
 
-  it('ignores junk lines', () => {
-    expect(parseBatchInputAll('hello\n\nhttps://example.com/a')).toEqual([]);
+  it('accepts generic HTTP(S) links and ignores non-URL junk', () => {
+    expect(parseBatchInputAll('hello\n\nftp://example.com/a')).toEqual([]);
+    expect(parseBatchInputAll('https://example.com/a\nhttps://example.com/a#section')).toEqual([
+      { url: 'https://example.com/a', kind: 'video', platform: 'generic' }
+    ]);
   });
 });
 

@@ -51,6 +51,8 @@ export interface IpcDownloadProfile {
 // are never carried here — only an `apiKeyId` reference resolved in main.
 export interface IpcDownloadSource {
   mode: 'http' | 'ytdlp' | 'soundcloud';
+  /** ID of the user-configured media source that created this job. */
+  sourceId?: string;
   /** Finalna nazwa pliku (z rozszerzeniem) dla trybu http/soundcloud. */
   fileName?: string;
   /** Ref do settings.apiKeys; nagłówki rozwiązywane w main (safeStorage). */
@@ -59,6 +61,8 @@ export interface IpcDownloadSource {
   headerName?: string;
   /** Dodatkowe nagłówki dla trybu ytdlp (np. Referer strony embed przy HLS). */
   headers?: Record<string, string>;
+  /** Per-source opt-in for direct downloads from a private/local network. */
+  allowPrivateNetwork?: boolean;
 }
 
 export interface IpcDownloadJobInput {
