@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { useI18n } from 'vue-i18n';
+import { i18n } from '@renderer/i18n';
 import { useUIStore } from '@renderer/stores/ui';
 import { usePlayerStore } from '@renderer/stores/player';
 import type { YouTubeVideo, YouTubeResolvedItem, Subscription } from '@renderer/types/online';
@@ -26,7 +26,12 @@ import { createOnlineStreams } from './online/streams';
 import { createOnlineResolved } from './online/resolved';
 
 export const useOnlineStore = defineStore('online', () => {
-  const { t } = useI18n();
+  // The global composer, not useI18n(): a Pinia store is not a component, so
+  // there is no active instance for useI18n() to read a local scope from. It
+  // only worked because every current call site happened to run inside a
+  // component's setup — a store constructed from an IPC event or a test would
+  // have thrown.
+  const t = i18n.global.t;
   const {
     searchResults,
     searchQuery,

@@ -5,10 +5,19 @@ import { DEFAULT_APPEARANCE } from '@renderer/utils/constants';
 import type { AppearanceSettings } from '@renderer/types/settings';
 
 const originalInvoke = window.api.invoke;
+const originalSend = window.api.send;
+
+// Appearance changes go through reapplyTheme(), which coalesces them into a
+// single rAF so a theme import that touches several fields repaints once.
+async function flushThemeFrame(): Promise<void> {
+  await nextTick();
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+}
 
 describe('useTheme window material', () => {
   afterEach(() => {
     window.api.invoke = originalInvoke;
+    window.api.send = originalSend;
     vi.clearAllMocks();
   });
 
@@ -23,12 +32,46 @@ describe('useTheme window material', () => {
     const initialCalls = invoke.mock.calls.length;
 
     appearance.value.glassAlpha = 35;
-    await nextTick();
+    await flushThemeFrame();
     expect(invoke).toHaveBeenCalledTimes(initialCalls);
 
     appearance.value.glassAlpha = 100;
-    await nextTick();
+    await flushThemeFrame();
     expect(invoke).toHaveBeenLastCalledWith('app:setBackgroundMaterial', 'auto');
     expect(invoke).toHaveBeenCalledTimes(initialCalls + 1);
+  });
+
+  it('repaints once when a theme import changes several fields at once', async () => {
+    const appearance = ref<AppearanceSettings>({
+      ...DEFAULT_APPEARANCE,
+      theme: 'midnight',
+      customBase: 'dark',
+      customColors: { accent: '#ff0000' } as never,
+      glassAlpha: 60
+    });
+    const invoke = vi.fn().mockResolvedValue(true);
+    // pushToPip uses send(), applyWindowMode uses invoke() — both are per-repaint
+    // side effects, so both have to be counted.
+    const send = vi.fn();
+    window.api.invoke = invoke as typeof window.api.invoke;
+    window.api.send = send as typeof window.api.send;
+    const theme = useTheme(appearance);
+
+    theme.applyTheme();
+    const sendBaseline = send.mock.calls.length;
+
+    // A single import touches every watched field; the old per-field watchers
+    // called applyTheme() once per field, so this repainted four times and sent
+    // four rounds of pip messages in the same tick.
+    appearance.value.customBase = 'light';
+    appearance.value.fontSize = 15;
+    appearance.value.glassAlpha = 90;
+    await flushThemeFrame();
+
+    const pipThemeSends = send.mock.calls
+      .slice(sendBaseline)
+      .filter((c) => c[0] === 'audio-pip:theme' || c[0] === 'pip:theme');
+    expect(pipThemeSends).toHaveLength(2); // audio-pip + pip, one paint each
+    expect(send.mock.calls.length - sendBaseline).toBe(3); // + one locale
   });
 });

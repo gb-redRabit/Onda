@@ -37,7 +37,8 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
   }
 
   let loadTracksScheduled = false;
-  let loadTracksResolve: (() => void)[] = [];
+  let loadTracksResolve: Array<() => void> = [];
+  const LOAD_TRACKS_TIMEOUT_MS = 5000;
 
   function scheduleLoadTracks(): void {
     if (loadTracksScheduled) return;
@@ -70,11 +71,24 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
     }
   }
 
+  /**
+   * Resolves once the queued load finishes, or after a ceiling so a caller can
+   * never hang. The timer is cleared when the load resolves first — otherwise
+   * every call left a 5 s timer behind, and a caller that awaited it kept a
+   * promise alive for five seconds after the library was already loaded.
+   */
   function scheduleLoadTracksAsync(): Promise<void> {
     return new Promise((resolve) => {
       if (!loadTracksScheduled) scheduleLoadTracks();
-      loadTracksResolve.push(resolve);
-      setTimeout(resolve, 5000);
+      const timer = setTimeout(done, LOAD_TRACKS_TIMEOUT_MS);
+      function done(): void {
+        clearTimeout(timer);
+        const index = loadTracksResolve.indexOf(settled);
+        if (index >= 0) loadTracksResolve.splice(index, 1);
+        resolve();
+      }
+      const settled = (): void => done();
+      loadTracksResolve.push(settled);
     });
   }
 

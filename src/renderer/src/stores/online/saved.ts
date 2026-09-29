@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { useI18n } from 'vue-i18n';
+import { i18n } from '@renderer/i18n';
 import { useUIStore } from '@renderer/stores/ui';
 import { useSavedStore } from '@renderer/stores/saved';
 import type { IpcSavedPlaylist } from '@shared/types/ipc';
@@ -11,7 +11,7 @@ import { resolveAllPlaylistItems } from '@renderer/utils/onlineResolveAll';
 // store (it owns the player queue wiring) so this module does not import the
 // store. The store destructures the returned actions back into the same names.
 export function createOnlineSaved(playAllStreams: (items: YouTubeResolvedItem[]) => Promise<void>) {
-  const { t } = useI18n();
+  const t = i18n.global.t;
   const syncingSavedPlaylists = new Set<string>();
   const syncingSavedPlaylistState = ref(new Set<string>());
 

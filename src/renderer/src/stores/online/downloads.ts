@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { useI18n } from 'vue-i18n';
+import { i18n } from '@renderer/i18n';
 import { useUIStore } from '@renderer/stores/ui';
 import type { CoverStatus, DownloadTask, MetaOverride } from '@renderer/types/online';
 import type { IpcDownloadJobInput, IpcDownloadTask } from '@shared/types/ipc';
@@ -14,7 +14,7 @@ import { buildTaskInput } from '@renderer/utils/onlineJob';
 export function createOnlineDownloads(
   markVideoDownloaded: (videoId: string, channelId: string) => void
 ) {
-  const { t } = useI18n();
+  const t = i18n.global.t;
   const downloads = ref<DownloadTask[]>([]);
   // O(1) lookup by videoId - updated in upsertTask, avoids O(n) find per item per render.
   const downloadByVideoId = new Map<string, DownloadTask>();

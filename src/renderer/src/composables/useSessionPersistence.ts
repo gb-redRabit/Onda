@@ -1,4 +1,4 @@
-import { watch } from 'vue';
+import { onScopeDispose, watch } from 'vue';
 import type { Router } from 'vue-router';
 import { usePlayerStore } from '@renderer/stores/player';
 import { openMediaFiles } from './useOpenMedia';
@@ -44,6 +44,15 @@ export function useSessionPersistence() {
     () => [player.currentTrack?.path, player.queueLength],
     () => scheduleSave()
   );
+
+  // A pending debounce is a 1 s timer that would write to localStorage after
+  // the owning scope is gone.
+  onScopeDispose(() => {
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
+  });
 
   async function restore(router: Router): Promise<boolean> {
     let data: { currentPath?: string; queue?: unknown } | null = null;

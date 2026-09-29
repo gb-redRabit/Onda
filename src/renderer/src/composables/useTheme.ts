@@ -76,13 +76,26 @@ export function useTheme(appearanceRef: Ref<AppearanceSettings>) {
     });
   }
 
-  watch(() => get().theme, applyTheme);
-  watch(() => get().customBase, applyTheme);
-  watch(() => get().customColors, applyTheme, { deep: true });
-  watch(() => get().geometry, applyTheme, { deep: true });
-  watch(() => get().glassAlpha, applyTheme);
-  watch(() => get().fontSize, applyTheme);
-  watch(() => get().animations, applyTheme);
+  // One watcher instead of seven. Each of them called applyTheme() directly, so
+  // importing a theme — which sets theme, customBase, customColors and geometry
+  // together — rebuilt every CSS variable and sent three IPC messages four times
+  // in the same tick. reapplyTheme() coalesces that into a single rAF.
+  watch(
+    () => {
+      const a = get();
+      return [
+        a.theme,
+        a.customBase,
+        a.customColors,
+        a.geometry,
+        a.glassAlpha,
+        a.fontSize,
+        a.animations
+      ];
+    },
+    reapplyTheme,
+    { deep: true }
+  );
 
   return { applyTheme, applyPreviewVars, reapplyTheme };
 }

@@ -22,8 +22,12 @@ export function usePlayerControls(ctx: PlayerControlsCtx) {
   const isFullscreen = ref(false);
   const showControls = ref(true);
   let controlsTimeout: ReturnType<typeof setTimeout> | null = null;
+  let controlsDeadline = 0;
   let resumePromptTimer: ReturnType<typeof setTimeout> | null = null;
   let clickTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Minimum change in the hide deadline that justifies rescheduling the timer. */
+  const CONTROLS_RESCHEDULE_GRACE_MS = 250;
 
   function showToast(text: string, duration = 1500) {
     ui.notify('info', text, undefined, duration);
@@ -85,8 +89,18 @@ export function usePlayerControls(ctx: PlayerControlsCtx) {
     if (settings.playback.cursorHide && isFullscreen.value && playerContainerRef.value) {
       playerContainerRef.value.classList.remove('hide-cursor');
     }
+    // mousemove fires well over 100x/s while the pointer is moving. Clearing and
+    // recreating the hide timer on every one of those events was pure churn and
+    // starved the event loop during playback. Rescheduling is skipped while the
+    // pending deadline is still close enough to the new one — the controls hide
+    // at the configured timeout after the last *significant* move, which is
+    // imperceptibly different and no longer scales with pointer speed.
+    const deadline = performance.now() + settings.playback.cursorTimeout * 1000;
+    if (controlsTimeout && deadline - controlsDeadline < CONTROLS_RESCHEDULE_GRACE_MS) return;
+    controlsDeadline = deadline;
     if (controlsTimeout) clearTimeout(controlsTimeout);
     controlsTimeout = setTimeout(() => {
+      controlsTimeout = null;
       if (player.isPlaying) {
         showControls.value = false;
         if (settings.playback.cursorHide && isFullscreen.value && playerContainerRef.value) {

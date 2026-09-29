@@ -1,4 +1,4 @@
-import { useI18n } from 'vue-i18n';
+import { i18n } from '@renderer/i18n';
 import { useUIStore } from '@renderer/stores/ui';
 import { usePlayerStore } from '@renderer/stores/player';
 import type { MediaFile } from '@renderer/types/media';
@@ -16,7 +16,7 @@ import {
 // playlist/channel. Uses the player + UI stores directly; the store
 // destructures the returned actions back into the same names.
 export function createOnlineStreams() {
-  const { t } = useI18n();
+  const t = i18n.global.t;
 
   // Queues a single saved track (platform-dispatched via the stored page URL).
   async function queueSavedTrack(video: {
