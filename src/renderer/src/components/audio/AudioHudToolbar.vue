@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { BarChart3, Settings2, LayoutGrid, Maximize2, Minimize2 } from '@lucide/vue';
 import AudioLayoutSwitcher from './AudioLayoutSwitcher.vue';
 import { pluginIcon } from '@renderer/utils/audioView';
@@ -30,6 +32,22 @@ const emit = defineEmits<{
   'toggle-fullscreen': [];
   'run-command': [id: string];
 }>();
+
+const { t } = useI18n();
+
+// The toolbar rendered the raw mode id ("bars", "particles", "waveform") to the
+// user. A plugin may register a mode with any id, so unknown ids fall back to
+// the id itself rather than to an empty label.
+const VIZ_MODE_LABEL_KEYS: Record<string, string> = {
+  bars: 'audioView.vizModeBars',
+  particles: 'audioView.vizModeParticles',
+  waveform: 'audioView.vizModeWaveform'
+};
+const vizModeLabel = computed(() => {
+  const mode = props.vizMode || 'bars';
+  const key = VIZ_MODE_LABEL_KEYS[mode];
+  return key ? t(key) : mode;
+});
 </script>
 
 <template>
@@ -66,11 +84,12 @@ const emit = defineEmits<{
       <button
         class="fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all"
         :title="$t('audioView.vizMode')"
+        :aria-label="vizModeLabel"
         @click.stop="emit('cycle-viz')"
       >
         <div class="flex items-center gap-1">
           <BarChart3 :size="12" />
-          <span class="text-[9px] uppercase font-medium">{{ props.vizMode || 'bars' }}</span>
+          <span class="text-[9px] uppercase font-medium">{{ vizModeLabel }}</span>
         </div>
       </button>
       <button
@@ -87,7 +106,10 @@ const emit = defineEmits<{
       </button>
       <button
         class="fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all"
-        :title="props.isFullscreen ? 'Exit fullscreen' : 'Fullscreen'"
+        :title="props.isFullscreen ? $t('audioView.exitFullscreen') : $t('audioView.fullscreen')"
+        :aria-label="
+          props.isFullscreen ? $t('audioView.exitFullscreen') : $t('audioView.fullscreen')
+        "
         @click.stop="emit('toggle-fullscreen')"
       >
         <Minimize2 v-if="props.isFullscreen" :size="12" />

@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import { Pause, Play } from '@lucide/vue';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { PLAY_BOX, PLAY_SIZE } from '@renderer/utils/audioControls';
 
 const audio = useAudioPlayer();
+const { t } = useI18n();
 
 function togglePlay() {
   if (audio.isPlaying.value) {
@@ -19,6 +21,7 @@ function togglePlay() {
     <button
       :class="PLAY_BOX.micro"
       class="relative rounded-full bg-primary/15 backdrop-blur-xl border border-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shrink-0"
+      :aria-label="audio.isPlaying.value ? t('common.pause') : t('common.play')"
       @click="togglePlay"
     >
       <Pause

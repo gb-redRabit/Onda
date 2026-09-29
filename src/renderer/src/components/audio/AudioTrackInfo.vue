@@ -58,6 +58,9 @@ const title = computed(
 );
 const artist = computed(() => player.currentTrack?.metadata?.artist || '');
 const album = computed(() => player.currentTrack?.metadata?.album || '');
+const isFavorite = computed(
+  () => !!player.currentTrack && player.isFavorite(player.currentTrack.path)
+);
 
 function checkOverflow() {
   nextTick(() => {
@@ -120,6 +123,8 @@ onMounted(checkOverflow);
           ? 'text-error'
           : 'text-base-content/50 hover:text-error'
       "
+      :aria-pressed="isFavorite"
+      :aria-label="isFavorite ? t('common.removeFav') : t('common.addFav')"
       :disabled="!player.currentTrack"
       @click="player.currentTrack && player.toggleFavorite(player.currentTrack.path)"
     >

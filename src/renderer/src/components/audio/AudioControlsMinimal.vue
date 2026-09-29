@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import {
   Pause,
   Play,
@@ -18,6 +20,18 @@ defineProps<{ compact: boolean; widthSufficient: boolean; volumeFit: boolean }>(
 
 const player = usePlayerStore();
 const audio = useAudioPlayer();
+const { t } = useI18n();
+
+// Tri-state (off / all / one) has no boolean equivalent, so the label names the
+// current mode rather than exposing aria-pressed.
+const repeatLabel = computed(() => {
+  const mode = player.repeat;
+  return mode === 'one'
+    ? t('player.repeatOne')
+    : mode === 'all'
+      ? t('player.repeatAll')
+      : t('player.repeatNone');
+});
 
 function togglePlay() {
   if (audio.isPlaying.value) {
@@ -31,6 +45,23 @@ function onVolume(e: MouseEvent) {
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
   audio.setVolume(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)));
 }
+
+// The volume bar was a click-only div: reachable by neither keyboard nor
+// assistive tech, so volume could not be changed without a mouse.
+const VOLUME_STEP = 0.05;
+function onVolumeKey(e: KeyboardEvent) {
+  const current = player.isMuted ? 0 : player.volume;
+  let next: number | null = null;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowUp') next = current + VOLUME_STEP;
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') next = current - VOLUME_STEP;
+  else if (e.key === 'Home') next = 0;
+  else if (e.key === 'End') next = 1;
+  else if (e.key === 'PageUp') next = current + VOLUME_STEP * 2;
+  else if (e.key === 'PageDown') next = current - VOLUME_STEP * 2;
+  if (next === null) return;
+  e.preventDefault();
+  audio.setVolume(Math.max(0, Math.min(1, next)));
+}
 </script>
 
 <template>
@@ -43,12 +74,15 @@ function onVolume(e: MouseEvent) {
             ? 'text-primary'
             : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
         "
+        :aria-label="t('common.shuffle')"
+        :aria-pressed="player.shuffle"
         @click="player.toggleShuffle"
       >
         <Shuffle :size="ICON_SM.minimal" />
       </button>
       <button
         class="p-1 rounded-full text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
+        :aria-label="t('common.previous')"
         @click="player.prevTrack"
       >
         <SkipBack :size="ICON.minimal" fill="currentColor" />
@@ -61,6 +95,7 @@ function onVolume(e: MouseEvent) {
         <button
           :class="PLAY_BOX.minimal"
           class="relative rounded-full bg-primary/15 backdrop-blur-xl border border-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
+          :aria-label="audio.isPlaying.value ? t('common.pause') : t('common.play')"
           @click="togglePlay"
         >
           <Pause
@@ -74,6 +109,7 @@ function onVolume(e: MouseEvent) {
       </div>
       <button
         class="p-1 rounded-full text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
+        :aria-label="t('common.next')"
         @click="player.nextTrack"
       >
         <SkipForward :size="ICON.minimal" fill="currentColor" />
@@ -85,6 +121,7 @@ function onVolume(e: MouseEvent) {
             ? 'text-primary'
             : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
         "
+        :aria-label="repeatLabel"
         @click="player.cycleRepeat"
       >
         <component :is="player.repeat === 'one' ? Repeat1 : Repeat" :size="ICON_SM.minimal" />
@@ -94,6 +131,7 @@ function onVolume(e: MouseEvent) {
       v-else
       :class="PLAY_BOX.minimal"
       class="relative rounded-full bg-primary/15 backdrop-blur-xl border border-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shrink-0"
+      :aria-label="audio.isPlaying.value ? t('common.pause') : t('common.play')"
       @click="togglePlay"
     >
       <Pause
@@ -110,6 +148,7 @@ function onVolume(e: MouseEvent) {
     >
       <button
         class="text-base-content/50 hover:text-base-content transition-colors shrink-0"
+        :aria-label="player.isMuted ? t('player.unmute') : t('common.mute')"
         @click="player.toggleMute"
       >
         <VolumeX v-if="player.isMuted" :size="ICON_SM.minimal" />
@@ -117,7 +156,15 @@ function onVolume(e: MouseEvent) {
       </button>
       <div
         class="flex-1 min-w-0 h-0.5 bg-base-content/20 rounded-full cursor-pointer hover:h-1 transition-[height]"
+        role="slider"
+        tabindex="0"
+        :aria-label="t('player.volumeSlider')"
+        :aria-valuemin="0"
+        :aria-valuemax="100"
+        :aria-valuenow="player.isMuted ? 0 : Math.round(player.volume * 100)"
+        :aria-valuetext="player.isMuted ? t('player.muted') : undefined"
         @click="onVolume"
+        @keydown="onVolumeKey"
       >
         <div
           class="h-full bg-primary/60 rounded-full"
