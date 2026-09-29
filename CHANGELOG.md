@@ -9,6 +9,38 @@ na `main` wersję ostatnio opublikowanego release'a; wersję podnosi wyłącznie
 jest błędem — pilnują tego `npm run version:check` i `npm run check:artifacts` w CI
 (patrz `RELEASE.md`).
 
+## [0.5.0](https://github.com/gb-redRabit/Onda/compare/v0.4.3...v0.5.0) (2026-09-29)
+
+
+### Features
+
+* **deps:** missing-dependency banner and pinned binary resolver ([c5fb556](https://github.com/gb-redRabit/Onda/commit/c5fb556ae53c0778048c60c05669d114624ef685))
+* **diagnostics:** factory reset, cache clear and typed settings schema ([a192c8b](https://github.com/gb-redRabit/Onda/commit/a192c8b094795aef588f659b803d28a0767f65f3))
+* **home:** continue shelf, configurable sections and shared UI primitives ([ec3c14d](https://github.com/gb-redRabit/Onda/commit/ec3c14d6701247eded6dc3a5739cda7a62091a5c))
+* **i18n:** enforce locale parity and drop dead keys in tests ([9afeace](https://github.com/gb-redRabit/Onda/commit/9afeacee611bb82d8ef10161ea0a22aec4644c46))
+* **ipc:** generate the preload allowlist from the channel contract ([c0c9b54](https://github.com/gb-redRabit/Onda/commit/c0c9b54f6efbdd3a78b6ab22970d12ff23f3b16f))
+* **online:** harden streaming and split SoundCloud from YouTube ([bfa2c79](https://github.com/gb-redRabit/Onda/commit/bfa2c79ba2bee18c183668478888e0e753d7faf5))
+* **plugins:** gate activation behind a capability review ([3d1b768](https://github.com/gb-redRabit/Onda/commit/3d1b768ad4bbafd6f27c690d541fd2745ec511e4))
+
+
+### Bug Fixes
+
+* **ci:** stop a test from writing a file into the repository ([0d1faa3](https://github.com/gb-redRabit/Onda/commit/0d1faa35e3d5e0d72ce8b7834306daf3898d1312))
+* **ci:** stop three policy tests from depending on where the temp dir is ([38f5ed6](https://github.com/gb-redRabit/Onda/commit/38f5ed6e0572fbb61e52f8dd32b62beda4b767cc))
+* **downloads:** a cancel during host resolution is a cancel, and no .part survives it ([550dcda](https://github.com/gb-redRabit/Onda/commit/550dcda86039b2f112aabf40697292a78574273c))
+* **downloads:** bound an HTTP download and close both of its file descriptors ([936e002](https://github.com/gb-redRabit/Onda/commit/936e0027a7d3a6971ae5f17837f744c1dee9ccc2))
+* **explorer:** an absent path means "show drives", not "invalid path" ([3a1182a](https://github.com/gb-redRabit/Onda/commit/3a1182a42d61227fd10ed44f4b057a23456ea9aa))
+* **pip:** correct bounds typing and route video PiP through its own entry ([633c2e8](https://github.com/gb-redRabit/Onda/commit/633c2e8bc8762cf0bf0cc7172dbdbfe367c1261d))
+* **quality:** stop retrying a rate-limited download, repair mangled comments ([c64b16d](https://github.com/gb-redRabit/Onda/commit/c64b16d8ff123748498dbf09de7ddc543eb87301))
+* **security:** close six P0 holes found in the 0.4.4 audit ([401cd20](https://github.com/gb-redRabit/Onda/commit/401cd20cf8ecb3f2e31ee9ac3f6bb846559ae83a))
+* **security:** pin DNS for all outbound fetches and guard IPC senders ([03b9faa](https://github.com/gb-redRabit/Onda/commit/03b9faa5ae5ee4393f8a749c5657b2f3a859e8a4))
+
+
+### Performance Improvements
+
+* **assets:** drop 19 bundled system fonts and tighten the CSP ([4509ce6](https://github.com/gb-redRabit/Onda/commit/4509ce618ad6883ab82524445219b814ab7f4a75))
+* **frontend:** stop three repaint storms and a store that only worked inside a component ([1fcf7e7](https://github.com/gb-redRabit/Onda/commit/1fcf7e724865e6e82d5c56a4cdd2c17621ade138))
+
 ## [0.4.3](https://github.com/gb-redRabit/Onda/compare/v0.4.3...v0.4.3) (2026-09-15)
 
 
