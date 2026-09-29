@@ -7,8 +7,10 @@ import {
   EMPTY_DEP_STATUS,
   toolApi,
   safeCheck,
-  isStatus
+  isStatus,
+  recheckDependencies
 } from '@renderer/utils/dependencies';
+import { depEvents } from '@renderer/utils/depEvents';
 import type { DepRow, DepStatus } from '@renderer/utils/dependencies';
 
 export function useDependencies() {
@@ -37,6 +39,8 @@ export function useDependencies() {
   );
 
   let progressCleanup: (() => void) | null = null;
+  let depEventCleanup: (() => void) | null = null;
+  const refreshing = ref(false);
 
   onMounted(() => {
     progressCleanup = window.api?.on('dep:progress', (payload) => {
@@ -44,10 +48,17 @@ export function useDependencies() {
       const dep = deps.value.find((d) => d.tool === p.tool);
       if (dep) dep.percent = p.percent;
     });
+    // Every instance keeps its own copy of the status (settings page, first-run
+    // wizard), so an install/uninstall made in one place has to refresh the
+    // others — otherwise the second view kept showing "installed" until restart.
+    depEventCleanup = depEvents.on('changed', () => void refreshAll());
     refreshAll();
   });
 
-  onUnmounted(() => progressCleanup?.());
+  onUnmounted(() => {
+    progressCleanup?.();
+    depEventCleanup?.();
+  });
 
   function applyStatus(dep: DepRow, s: DepStatus, now: number): void {
     dep.installed = s.installed;
@@ -89,11 +100,15 @@ export function useDependencies() {
   }
 
   async function refreshAll(): Promise<void> {
+    refreshing.value = true;
     for (const dep of deps.value) {
       dep.installing = false;
       dep.percent = 0;
       dep.error = null;
     }
+    // Manual "refresh status" (and every mount) must reflect the real system, not
+    // the cached probe verdict.
+    await recheckDependencies();
     try {
       const [ffmpeg, ffprobe, ytdlp, mkv] = await Promise.all([
         safeCheck(() => window.api?.checkFfmpeg(), { ...EMPTY_DEP_STATUS }),
@@ -108,6 +123,8 @@ export function useDependencies() {
       await checkYtdlpUpdate();
     } catch (e) {
       logger.warn('deps', 'status check failed', e);
+    } finally {
+      refreshing.value = false;
     }
   }
 
@@ -116,7 +133,7 @@ export function useDependencies() {
     dep.error = null;
     dep.percent = 0;
     const api = toolApi(dep);
-    let result: { success?: boolean; error?: string } | undefined;
+    let result: { success?: boolean; error?: string; cancelled?: boolean } | undefined;
     try {
       result = update ? await window.api?.updateYtdlp() : await api.install?.();
     } catch (e) {
@@ -137,6 +154,12 @@ export function useDependencies() {
         if (isStatus(probe)) applyStatus(deps.value[1], probe, now);
       }
       await checkYtdlpUpdate();
+      // Let other views holding their own status copy (the missing-dependencies
+      // banner, the wizard) refresh right away instead of waiting for the next
+      // window focus.
+      depEvents.emit('changed');
+    } else if (result?.cancelled) {
+      // Elevation prompt dismissed — nothing changed, so no error either.
     } else {
       dep.error = result?.error ?? t('settings.depInstallFailed');
     }
@@ -148,7 +171,7 @@ export function useDependencies() {
     const api = toolApi(dep);
     dep.installing = true;
     dep.error = null;
-    let result: { success?: boolean; error?: string } | undefined;
+    let result: { success?: boolean; error?: string; cancelled?: boolean } | undefined;
     try {
       result = await api.remove?.();
     } catch (e) {
@@ -163,6 +186,9 @@ export function useDependencies() {
         if (isStatus(probe)) applyStatus(deps.value[1], probe, now);
       }
       await checkYtdlpUpdate();
+      depEvents.emit('changed');
+    } else if (result?.cancelled) {
+      // Elevation prompt dismissed — nothing changed, so no error either.
     } else {
       dep.error = result?.error ?? t('settings.depInstallFailed');
     }
@@ -177,6 +203,7 @@ export function useDependencies() {
 
   return {
     deps,
+    refreshing,
     refreshAll,
     runInstall,
     uninstallDependency,

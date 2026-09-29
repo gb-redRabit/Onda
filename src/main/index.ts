@@ -1,4 +1,4 @@
-﻿import { app, BrowserWindow, ipcMain, globalShortcut, shell } from 'electron';
+﻿import { app, BrowserWindow, ipcMain, globalShortcut, shell, dialog } from 'electron';
 import { join, dirname } from 'path';
 import os from 'os';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
@@ -21,8 +21,10 @@ import {
 import { getStore } from './ipc/cover-cache';
 import { flushQueueNow } from './downloads/download-manager';
 import { flushLibraryScanned } from './ipc/library-store';
-import { setupFileLogging } from './log-file';
+import { setupFileLogging, applyLogSettings } from './log-file';
+import { applyCoverCacheSettings } from './ipc/cover-cache';
 import { initAutoUpdater, replayUpdaterEvent } from './updater';
+import { markBootPhase, markBootStart } from './boot-timeline';
 import { configureAutoCheck } from './updater-scheduler';
 import { syncSubscriptionsScheduler } from './ipc/subscriptions-handlers';
 import { shouldCloseToTray, setCloseToTray } from './close-behavior';
@@ -34,7 +36,6 @@ import { SplashController } from './splash';
 
 let mainWindow: BrowserWindow | null = null;
 let startHidden = false;
-let bootMark = 0;
 
 const splash = new SplashController({
   windowIcon,
@@ -42,9 +43,11 @@ const splash = new SplashController({
   isStartHidden: () => startHidden
 });
 
-function perf(label: string) {
-  const ms = Math.round(performance.now() - bootMark);
+// Records the phase in the boot timeline (Diagnostics → Performance) and logs it.
+function perf(label: string): number {
+  const ms = markBootPhase(label);
   logger.info('boot', `${label} — ${ms}ms`);
+  return ms;
 }
 
 const preFullscreenBounds: { current: Electron.Rectangle | null } = { current: null };
@@ -157,15 +160,36 @@ function createWindow(): BrowserWindow {
   });
 
   // Boot diagnostics: a renderer that never finishes loading otherwise looks
-  // like a silent hang (no window is ever shown).
-  win.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
-    logger.error('main', `did-fail-load ${errorCode} ${errorDescription} ${validatedURL}`);
-  });
+  // like a silent hang (no window is ever shown). A real renderer failure also
+  // surfaces the window right away (with the error logged) instead of leaving
+  // the user staring at the splash.
+  win.webContents.on(
+    'did-fail-load',
+    (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+      // -3 (ERR_ABORTED) is a normal navigation/reload artefact, not a failure.
+      if (errorCode === -3) return;
+      logger.error('main', `did-fail-load ${errorCode} ${errorDescription} ${validatedURL}`);
+      if (!isMainFrame) return;
+      // A main-frame failure leaves the app with no UI at all: explain it
+      // instead of showing an empty (white/acrylic) window. In dev the usual
+      // cause is the Vite dev server not being up.
+      const hint = is.dev
+        ? '\n\nKompilacja dev: upewnij się, że działa dev server (npm run dev).'
+        : '';
+      dialog.showErrorBox(
+        'Onda',
+        `Nie udało się załadować interfejsu (${errorCode} ${errorDescription}).${hint}`
+      );
+      splash.forceClose();
+    }
+  );
   win.webContents.on('preload-error', (_event, preloadPath, error) => {
     logger.error('main', `preload-error ${preloadPath}`, error);
+    splash.forceClose();
   });
   win.webContents.on('render-process-gone', (_event, details) => {
     logger.error('main', 'render-process-gone', details);
+    splash.forceClose();
   });
 
   installNavigationGuard(win);
@@ -205,7 +229,7 @@ function registerGlobalShortcuts(): void {
 }
 
 app.whenReady().then(async () => {
-  bootMark = performance.now();
+  markBootStart();
   perf('boot start');
   if (!gotSingleInstanceLock) return;
 
@@ -228,7 +252,7 @@ app.whenReady().then(async () => {
   setMediaServerUrl(`http://127.0.0.1:${mediaServer.port}/${mediaServer.token}`);
   logger.info(
     'boot',
-    `media server port=${mediaServer.port} ${Math.round(performance.now() - bootMark)}ms`
+    `media server port=${mediaServer.port} ${markBootPhase('media server ready')}ms`
   );
 
   splash.send('Przywracanie ustawień…', 25);
@@ -238,6 +262,9 @@ app.whenReady().then(async () => {
 
   try {
     const store = await getStore();
+    // Cover cache size from Settings → Library.
+    const library = store.get('library') as { coverCacheMaxEntries?: number } | undefined;
+    applyCoverCacheSettings(library?.coverCacheMaxEntries);
     const folders = store.get('libraryFolders', []);
     bootFolders = Array.isArray(folders) ? folders.length : 0;
     if (Array.isArray(folders)) {
@@ -268,13 +295,19 @@ app.whenReady().then(async () => {
     for (const root of seedRoots) {
       await addAllowedRoot(root);
     }
-    logger.info(
-      'boot',
-      `settings: folders=${bootFolders} roots=${bootRoots} — ${Math.round(performance.now() - bootMark)}ms`
-    );
-    // Apply the persisted general settings (close-to-tray + auto-launch sync).
+    logger.info('boot', `settings: folders=${bootFolders} roots=${bootRoots}`);
+    // Apply the persisted general settings (close-to-tray + auto-launch sync +
+    // log level/file cap from Settings → System → Logs).
     const general = store.get('general') as
-      { autoLaunch?: boolean; startMinimized?: boolean; closeToTray?: boolean } | undefined;
+      | {
+          autoLaunch?: boolean;
+          startMinimized?: boolean;
+          closeToTray?: boolean;
+          logLevel?: string;
+          logMaxSizeMB?: number;
+        }
+      | undefined;
+    applyLogSettings(general?.logLevel, general?.logMaxSizeMB);
     if (general?.closeToTray !== undefined) setCloseToTray(general.closeToTray !== false);
     if (general?.autoLaunch) {
       app.setLoginItemSettings({
@@ -297,6 +330,7 @@ app.whenReady().then(async () => {
   splash.send('Uruchamianie interfejsu…', 50);
 
   ipcMain.handle('app:rendererReady', (event) => {
+    perf('renderer ready');
     splash.onRendererReady();
     // The renderer may mount after an update event already fired (startup
     // check, reload, macOS re-activate) — replay the last one so the global
@@ -333,7 +367,10 @@ app.whenReady().then(async () => {
   splash.send('Tworzenie okna…', 60);
   mainWindow = createWindow();
   perf('window created');
-  mainWindow.webContents.on('did-finish-load', () => splash.onMainReady());
+  mainWindow.webContents.on('did-finish-load', () => {
+    perf('did-finish-load');
+    splash.onMainReady();
+  });
 
   splash.send('Inicjalizacja PiP i tray…', 75);
   initAutoUpdater(() => mainWindow?.webContents ?? null);
@@ -354,11 +391,36 @@ app.whenReady().then(async () => {
     forwardOpenFiles(initialPaths);
   }
 
+  // Minimum splash display is only an anti-flicker floor: the window is shown as
+  // soon as BOTH the main process finished loading AND the renderer signalled
+  // app:rendererReady. Keeping this short (~300ms) avoids adding artificial delay
+  // to a boot that is already ready in well under a second (see `perf` logs).
   setTimeout(() => {
     splash.onMinTimerDone();
-  }, 1000);
+  }, 300);
 
-  setTimeout(() => splash.forceClose(), 15000);
+  // Watchdog: never hide a broken renderer behind the splash forever, but also
+  // never flash an unpainted (white) window just because the renderer is slow
+  // (cold dev server, first run after a cache clear, slow disk). Warn every few
+  // seconds and only force the window at the deadline — real failures (crash,
+  // fail-load, preload error) call `forceClose()` immediately.
+  const BOOT_WATCHDOG_INTERVAL_MS = 5000;
+  const BOOT_WATCHDOG_DEADLINE_MS = 30000;
+  const bootWatchdogStart = Date.now();
+  const bootWatchdog = setInterval(() => {
+    if (splash.isRendererReady()) {
+      clearInterval(bootWatchdog);
+      return;
+    }
+    const elapsed = Date.now() - bootWatchdogStart;
+    if (elapsed >= BOOT_WATCHDOG_DEADLINE_MS) {
+      clearInterval(bootWatchdog);
+      logger.warn('boot', `renderer not ready after ${elapsed}ms — showing the window anyway`);
+      splash.forceClose();
+      return;
+    }
+    logger.warn('boot', `renderer still booting (${elapsed}ms) — splash kept visible`);
+  }, BOOT_WATCHDOG_INTERVAL_MS);
 
   registerWindowHandlers({
     getMainWindow: () => mainWindow,

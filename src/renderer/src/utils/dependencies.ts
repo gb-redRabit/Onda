@@ -81,6 +81,18 @@ export async function safeCheck<T>(fn: (() => Promise<T>) | undefined, fallback:
   }
 }
 
+// Drops the main-process probe cache so the following checks re-run the binaries.
+// The resolver caches its verdict per process (cleared only by installs/uninstalls
+// made in the app), so without this a tool removed elsewhere — or a manual
+// "refresh status" click — kept showing the stale result until a restart.
+export async function recheckDependencies(): Promise<void> {
+  try {
+    await window.api?.invoke('dep:recheck');
+  } catch {
+    /* older builds / no bridge: fall back to the cached check */
+  }
+}
+
 export function isStatus(s: unknown): s is DepStatus {
   return typeof s === 'object' && s !== null && 'installed' in s;
 }

@@ -28,6 +28,11 @@ export class SplashController {
     return this.win !== null;
   }
 
+  /** True once the renderer signalled `app:rendererReady`. */
+  isRendererReady(): boolean {
+    return this.rendererReady;
+  }
+
   start(): void {
     this.startTs = performance.now();
     const splash = new BrowserWindow({

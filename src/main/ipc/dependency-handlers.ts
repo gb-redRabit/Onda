@@ -8,6 +8,8 @@ import {
   ytdlpShaUrl,
   ffmpegDownloadUrl,
   ffmpegSha256,
+  ffmpegProbeUrl,
+  ffmpegProbeSha256,
   detectPkgManagers,
   inferPkgManager,
   pkgInstallCommand,
@@ -84,35 +86,78 @@ async function installYtdlpManaged(
   }
 }
 
-// Downloads a managed FFmpeg build (Windows only) and extracts ffmpeg.exe + ffprobe.exe.
+// Extracts a zip (Windows/macOS) or tar.xz (Linux) archive. macOS bsdtar and
+// `unzip` both handle zip; GNU tar on Linux does not, but Linux builds are
+// tar.xz, so each platform only hits the extractor it supports.
+async function extractArchive(archive: string, dest: string): Promise<void> {
+  if (process.platform === 'win32') {
+    // Escape single quotes for the PowerShell single-quoted literal paths.
+    const psLiteral = (p: string): string => p.replace(/'/g, "''");
+    await runCommand(
+      'powershell',
+      [
+        '-NoProfile',
+        '-Command',
+        `Expand-Archive -LiteralPath '${psLiteral(archive)}' -DestinationPath '${psLiteral(dest)}' -Force`
+      ],
+      { timeout: 300000 }
+    ).catch(() => runCommand('tar', ['-xf', archive, '-C', dest], { timeout: 300000 }));
+    return;
+  }
+  if (archive.endsWith('.tar.xz')) {
+    await runCommand('tar', ['-xf', archive, '-C', dest], { timeout: 300000 });
+    return;
+  }
+  await runCommand('unzip', ['-o', archive, '-d', dest], { timeout: 300000 }).catch(() =>
+    runCommand('tar', ['-xf', archive, '-C', dest], { timeout: 300000 })
+  );
+}
+
+// Copies a downloaded binary into place and restores the exec bit on POSIX.
+async function installBinary(src: string, dest: string): Promise<void> {
+  const { copyFile } = await import('fs/promises');
+  await copyFile(src, dest);
+  if (process.platform !== 'win32') {
+    await chmod(dest, 0o755);
+  }
+}
+
+// Downloads the pinned managed FFmpeg build into userData/bin and verifies its
+// SHA-256. Windows/Linux archives contain both tools; macOS ships ffmpeg and
+// ffprobe as separate archives (the probe is pinned via probeUrl/probeSha256).
 async function installFfmpegManaged(sender: WebContents): Promise<InstallResult> {
   const signal = newSignal('ffmpeg');
+  const exe = process.platform === 'win32' ? '.exe' : '';
+  const cleanup: string[] = [];
   try {
     const url = ffmpegDownloadUrl();
-    if (!url)
-      return { success: false, error: 'Managed FFmpeg nie jest dostępny na tej platformie.' };
     const sha256 = ffmpegSha256();
-    if (!sha256) {
-      return { success: false, error: 'Brak przypiętej sumy SHA-256 dla tej platformy.' };
+    if (!url || !sha256) {
+      return { success: false, error: 'Brak przypiętego FFmpeg dla tej platformy.' };
     }
 
     const binDir = getBinDir();
     await mkdir(binDir, { recursive: true });
-    const zipPath = join(binDir, 'ffmpeg-download.zip');
+    const archive = join(binDir, `ffmpeg-download${url.endsWith('.tar.xz') ? '.tar.xz' : '.zip'}`);
     const extractDir = join(binDir, 'ffmpeg-extract');
+    const probeArchive = join(binDir, 'ffprobe-download.zip');
+    const probeExtractDir = join(binDir, 'ffprobe-extract');
+    const ffmpegDest = join(binDir, `ffmpeg${exe}`);
+    const ffprobeDest = join(binDir, `ffprobe${exe}`);
+    cleanup.push(archive, extractDir, probeArchive, probeExtractDir);
 
     emitProgress(sender, 'ffmpeg', 'download', 5);
-    await rm(zipPath, { force: true }).catch(() => {});
-    await downloadFile(url, zipPath, signal, (received, total) => {
-      const pct = total > 0 ? 5 + Math.round((received / total) * 80) : 5;
+    await rm(archive, { force: true }).catch(() => {});
+    await downloadFile(url, archive, signal, (received, total) => {
+      const pct = total > 0 ? 5 + Math.round((received / total) * 75) : 5;
       emitProgress(sender, 'ffmpeg', 'download', pct);
     });
 
-    emitProgress(sender, 'ffmpeg', 'verify', 86);
+    emitProgress(sender, 'ffmpeg', 'verify', 82);
     try {
-      await verifyFileSha256(zipPath, sha256, signal);
+      await verifyFileSha256(archive, sha256, signal);
     } catch (e) {
-      await rm(zipPath, { force: true }).catch(() => {});
+      await rm(archive, { force: true }).catch(() => {});
       const err = e as { message?: string };
       if (err.message === 'cancelled' || signal.aborted) {
         return { success: false, cancelled: true };
@@ -123,40 +168,36 @@ async function installFfmpegManaged(sender: WebContents): Promise<InstallResult>
       };
     }
 
-    emitProgress(sender, 'ffmpeg', 'extract', 88);
+    emitProgress(sender, 'ffmpeg', 'extract', 86);
     await rm(extractDir, { recursive: true, force: true }).catch(() => {});
     await mkdir(extractDir, { recursive: true });
-    // Escape single quotes for the PowerShell single-quoted literal paths.
-    const psLiteral = (p: string): string => p.replace(/'/g, "''");
-    await runCommand(
-      'powershell',
-      [
-        '-NoProfile',
-        '-Command',
-        `Expand-Archive -LiteralPath '${psLiteral(zipPath)}' -DestinationPath '${psLiteral(extractDir)}' -Force`
-      ],
-      { timeout: 300000 }
-    ).catch(async () => {
-      await runCommand('tar', ['-xf', zipPath, '-C', extractDir], { timeout: 300000 });
-    });
+    await extractArchive(archive, extractDir);
 
     const { findFile } = await import('./zip-utils');
-    const ffmpegExe = await findFile(extractDir, 'ffmpeg.exe');
-    const ffprobeExe = await findFile(extractDir, 'ffprobe.exe');
-    if (!ffmpegExe || !ffprobeExe) {
-      return {
-        success: false,
-        error: 'Nie znaleziono ffmpeg.exe/ffprobe.exe w pobranym archiwum.'
-      };
+    const ffmpegFile = await findFile(extractDir, `ffmpeg${exe}`);
+    if (!ffmpegFile) {
+      return { success: false, error: `Nie znaleziono ffmpeg${exe} w pobranym archiwum.` };
     }
+    await installBinary(ffmpegFile, ffmpegDest);
 
-    const ffmpegDest = join(binDir, 'ffmpeg.exe');
-    const ffprobeDest = join(binDir, 'ffprobe.exe');
-    await import('fs/promises').then(({ copyFile }) =>
-      Promise.all([copyFile(ffmpegExe, ffmpegDest), copyFile(ffprobeExe, ffprobeDest)])
-    );
-    await rm(zipPath, { force: true }).catch(() => {});
-    await rm(extractDir, { recursive: true, force: true }).catch(() => {});
+    // ffprobe: usually in the same archive; macOS publishes it separately.
+    let probeFile = await findFile(extractDir, `ffprobe${exe}`);
+    const probeUrl = ffmpegProbeUrl();
+    const probeSha256 = ffmpegProbeSha256();
+    if (!probeFile && probeUrl && probeSha256) {
+      emitProgress(sender, 'ffmpeg', 'download', 92);
+      await rm(probeArchive, { force: true }).catch(() => {});
+      await downloadFile(probeUrl, probeArchive, signal, () => {});
+      await verifyFileSha256(probeArchive, probeSha256, signal);
+      await rm(probeExtractDir, { recursive: true, force: true }).catch(() => {});
+      await mkdir(probeExtractDir, { recursive: true });
+      await extractArchive(probeArchive, probeExtractDir);
+      probeFile = await findFile(probeExtractDir, `ffprobe${exe}`);
+    }
+    if (!probeFile) {
+      return { success: false, error: `Nie znaleziono ffprobe${exe} w pobranym archiwum.` };
+    }
+    await installBinary(probeFile, ffprobeDest);
 
     invalidateBinaries();
     emitProgress(sender, 'ffmpeg', 'done', 100);
@@ -168,6 +209,9 @@ async function installFfmpegManaged(sender: WebContents): Promise<InstallResult>
     }
     return { success: false, error: err.message || 'Nie udało się zainstalować FFmpeg' };
   } finally {
+    for (const path of cleanup) {
+      await rm(path, { recursive: true, force: true }).catch(() => {});
+    }
     clearSignal('ffmpeg');
   }
 }
@@ -276,10 +320,13 @@ async function uninstallTool(sender: WebContents, tool: BinTool): Promise<Instal
     }
     try {
       const output = await runShell(argv);
-      invalidateBinaries();
-      const stillThere = await resolveBinInfo(tool);
-      if (!stillThere) return { success: true };
-      errors.push(`${cmd} — binarka nadal istnieje\n${output}`);
+      // Package managers remove the files asynchronously and often leave a shim
+      // behind for a moment, so give it a beat and treat "found but no longer
+      // runnable" as removed — otherwise a successful winget uninstall was
+      // reported as a failure ("binarka nadal istnieje").
+      const gone = await waitUntilRemoved(tool);
+      if (gone) return { success: true };
+      errors.push(`${cmd} — narzędzie nadal działa\n${output}`);
     } catch (e) {
       const err = e as { stderr?: string; stdout?: string; message?: string };
       errors.push(`${cmd} — ${err.stderr || err.stdout || err.message || 'nieznany błąd'}`);
@@ -289,11 +336,25 @@ async function uninstallTool(sender: WebContents, tool: BinTool): Promise<Instal
   return {
     success: false,
     error:
-      'Odinstalowanie nie powiodło się. Skopiuj i uruchom ręcznie:\n' +
+      'Odinstalowanie nie powiodło się — narzędzie nadal działa (może być zainstalowane\n' +
+      'z innego źródła). Skopiuj i uruchom ręcznie:\n' +
       candidates.map((pm) => pkgUninstallCommand(pm, tool).cmd).join('\n') +
       '\n\n' +
       errors.join('\n')
   };
+}
+
+// Re-probes a few times after an uninstall: a leftover shim pointing at the
+// removed files (or a half-finished removal) is reported by the resolver as
+// `broken`, which for "did the uninstall work?" means gone.
+async function waitUntilRemoved(tool: BinTool): Promise<boolean> {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    invalidateBinaries();
+    const info = await resolveBinInfo(tool);
+    if (!info || info.broken) return true;
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  }
+  return false;
 }
 
 async function checkTool(tool: BinTool): Promise<{
@@ -334,6 +395,15 @@ export function registerDependencyHandlers(): void {
   ipcMain.handle('dep:checkMkvextract', async () => checkTool('mkvextract'));
   ipcMain.handle('dep:checkYtdlp', async () => checkTool('yt-dlp'));
 
+  // Drops the per-process probe cache so the next `dep:check*` really re-runs the
+  // binaries. Without it a tool removed outside the app (manually, another package
+  // manager) kept reporting as installed until a restart — the resolver only
+  // invalidates after an install/uninstall driven from here.
+  ipcMain.handle('dep:recheck', () => {
+    invalidateBinaries();
+    return true;
+  });
+
   ipcMain.handle(
     'dep:getPaths',
     async (): Promise<
@@ -347,6 +417,8 @@ export function registerDependencyHandlers(): void {
         error: string | null;
       }>
     > => {
+      // The diagnostics report must show the current system, not the cached probe.
+      invalidateBinaries();
       const tools: BinTool[] = ['ffmpeg', 'ffprobe', 'yt-dlp', 'mkvextract'];
       const results = await Promise.all(tools.map((t) => resolveBinInfo(t)));
       return tools.map((tool, i) => {
@@ -378,7 +450,11 @@ export function registerDependencyHandlers(): void {
   });
 
   ipcMain.handle('dep:installFfmpeg', async (event) => {
-    if (process.platform === 'win32') {
+    // Managed download (pinned + SHA-256 verified, no sudo) is the default on
+    // every platform the manifest pins a build for. The packaged app no longer
+    // bundles FFmpeg, so this is the primary install path; system package
+    // managers remain the fallback where no build is pinned.
+    if (ffmpegDownloadUrl()) {
       return installFfmpegManaged(event.sender);
     }
     return installSystem(event.sender, 'ffmpeg');

@@ -7,7 +7,23 @@ import { redactSecrets } from '../shared/redact';
 import { recordWarning, clearWarnings } from './warnings';
 
 const LOG_LINES = 2000;
-const MAX_FILE_BYTES = 5 * 1024 * 1024;
+
+// `general.logLevel` / `general.logMaxSizeMB` (Settings → System → Logs). Applied
+// at boot and whenever the settings change, so the level/cap are honoured instead
+// of being decorative controls.
+const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
+type LogLevel = (typeof LOG_LEVELS)[number];
+const LEVEL_WEIGHT: Record<LogLevel, number> = { debug: 0, info: 1, warn: 2, error: 3 };
+
+let minLevel: LogLevel = 'info';
+let maxFileBytes = 10 * 1024 * 1024;
+
+export function applyLogSettings(level?: string, maxSizeMB?: number): void {
+  if (level && (LOG_LEVELS as readonly string[]).includes(level)) minLevel = level as LogLevel;
+  if (typeof maxSizeMB === 'number' && maxSizeMB > 0) {
+    maxFileBytes = Math.round(maxSizeMB * 1024 * 1024);
+  }
+}
 
 export function getLogDir(): string {
   return join(app.getPath('userData'), 'logs');
@@ -37,7 +53,8 @@ function ts(): string {
 
 let writeQueue: Promise<void> = Promise.resolve();
 
-function writeLine(level: string, args: unknown[]): void {
+function writeLine(level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR', args: unknown[]): void {
+  if (LEVEL_WEIGHT[level.toLowerCase() as LogLevel] < LEVEL_WEIGHT[minLevel]) return;
   const dir = getLogDir();
   const file = getLogPath();
   const text = redactSecrets(formatArgs(args));
@@ -47,7 +64,7 @@ function writeLine(level: string, args: unknown[]): void {
     .then(async () => {
       await mkdir(dir, { recursive: true });
       const s = await stat(file).catch(() => null);
-      if (s && s.size > MAX_FILE_BYTES) {
+      if (s && s.size > maxFileBytes) {
         await truncate(file, 0);
       }
       await appendFile(file, line, 'utf-8');
@@ -59,9 +76,20 @@ function writeLine(level: string, args: unknown[]): void {
 
 // Patch console in the main process so every logger call also lands on disk.
 export function setupFileLogging(): void {
-  const original = { log: console.log, error: console.error, warn: console.warn };
+  const original = {
+    log: console.log,
+    info: console.info,
+    error: console.error,
+    warn: console.warn,
+    debug: console.debug
+  };
   console.log = (...args: unknown[]) => {
     original.log(...args);
+    writeLine('INFO', args);
+  };
+  // `console.info` is its own reference in Node, so patching `log` is not enough.
+  console.info = (...args: unknown[]) => {
+    original.info(...args);
     writeLine('INFO', args);
   };
   console.error = (...args: unknown[]) => {
@@ -71,6 +99,11 @@ export function setupFileLogging(): void {
   console.warn = (...args: unknown[]) => {
     original.warn(...args);
     writeLine('WARN', args);
+  };
+  // `debug` only reaches the file when `logLevel` is 'debug'.
+  console.debug = (...args: unknown[]) => {
+    original.debug(...args);
+    writeLine('DEBUG', args);
   };
 }
 

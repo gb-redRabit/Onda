@@ -86,12 +86,14 @@ describe('ytdlpDownloadUrl', () => {
 
 describe('ffmpegDownloadUrl / ffmpegSha256', () => {
   const pinned =
-    'https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-07-31-14-10/ffmpeg-n7.1.5-12-g1fdbca85aa-win64-gpl-7.1.zip';
+    'https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-07-31-14-10/ffmpeg-n7.1.5-12-g1fdbca85aa-win64-lgpl-7.1.zip';
 
-  it('serves the pinned Windows zip and null on other platforms', () => {
+  it('serves a pinned build for every supported platform/arch', () => {
     expect(ffmpegDownloadUrl('win32', 'x64')).toBe(pinned);
-    expect(ffmpegDownloadUrl('linux')).toBeNull();
-    expect(ffmpegSha256('linux')).toBeNull();
+    expect(ffmpegDownloadUrl('linux', 'x64')).toContain('linux64-lgpl');
+    expect(ffmpegDownloadUrl('darwin', 'arm64')).toContain('evermeet.cx');
+    expect(ffmpegSha256('linux', 'x64')).toMatch(/^[0-9a-f]{64}$/);
+    expect(ffmpegDownloadUrl('win32', 'mips')).toBeNull();
   });
 
   it('never uses the mutable latest redirect', () => {
@@ -130,13 +132,26 @@ describe('binaries.json manifest', () => {
     }
   });
 
-  it('pins managed FFmpeg to an immutable tag with exact hashes', () => {
-    const managed = Object.values(binaries.ffmpeg.managed);
-    expect(managed.length).toBeGreaterThan(0);
-    for (const src of managed) {
-      expect(src.url).toContain('/autobuild-');
-      expect(src.url).not.toContain('/latest');
-      expect(src.sha256).toMatch(/^[0-9a-f]{64}$/);
+  it('pins managed FFmpeg to immutable assets with exact hashes', () => {
+    const managed = Object.entries(binaries.ffmpeg.managed) as Array<
+      [string, Record<string, unknown>]
+    >;
+    expect(managed.length).toBeGreaterThanOrEqual(6);
+    for (const [key, src] of managed) {
+      expect(String(src.url), key).toMatch(/^https:\/\//);
+      expect(String(src.url), key).not.toContain('/latest');
+      expect(String(src.sha256), key).toMatch(/^[0-9a-f]{64}$/);
+      if (src.probeUrl) {
+        expect(String(src.probeUrl), key).toContain('ffprobe');
+        expect(String(src.probeSha256), key).toMatch(/^[0-9a-f]{64}$/);
+      }
+    }
+  });
+
+  it('prefers the LGPL builds where the upstream provides them', () => {
+    const managed = binaries.ffmpeg.managed as Record<string, { url: string }>;
+    for (const key of ['win32-x64', 'win32-arm64', 'linux-x64', 'linux-arm64']) {
+      expect(managed[key].url, key).toContain('-lgpl');
     }
   });
 

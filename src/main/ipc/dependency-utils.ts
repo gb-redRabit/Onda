@@ -22,10 +22,10 @@ function managedBinPath(binDir: string, tool: BinTool): string {
   return join(binDir, toolFileName(tool));
 }
 
-// Path to a binary bundled with the app (shipped in `resources/ffmpeg/` and
-// copied into `process.resourcesPath/ffmpeg` by electron-builder). Returns null
-// when not present. Binaries live under a `<platform>-<arch>` subdir (see
-// scripts/fetch-ffmpeg.mjs); accept the flat layout as a legacy fallback.
+// Path to a binary bundled with the app. The packaged app no longer ships
+// FFmpeg (users install it into userData/bin), so this only matches a local
+// `resources/ffmpeg/<platform>-<arch>` layout created for development/offline
+// experiments (scripts/fetch-ffmpeg.mjs). Returns null when not present.
 function bundledBinPath(
   tool: BinTool,
   resourcesPath?: string,
@@ -107,13 +107,18 @@ interface ManagedFfmpegSource {
   url: string;
   sha256: string;
   kind: string;
+  /** macOS ships ffprobe as a separate archive. */
+  probeUrl?: string;
+  probeSha256?: string;
 }
 
 const MANAGED_FFMPEG = binaries.ffmpeg.managed as Record<string, ManagedFfmpegSource>;
 
-// Managed (in-app) FFmpeg builds are Windows-only. They are pinned in
-// binaries.json to an immutable BtbN `autobuild-…` tag AND the exact asset
-// SHA-256, so the download is verified without a mutable checksum manifest.
+// Managed (in-app) FFmpeg builds are available for every platform we ship on.
+// They are pinned in binaries.json to an immutable release tag/asset AND the
+// exact SHA-256, so the download is verified without a mutable checksum
+// manifest. Windows/Linux use the LGPL builds (no GPL redistribution), macOS
+// uses evermeet (pinned hash; the app downloads it, never bundles it).
 export function ffmpegDownloadUrl(
   platform: NodeJS.Platform = process.platform,
   arch: string = process.arch
@@ -126,6 +131,29 @@ export function ffmpegSha256(
   arch: string = process.arch
 ): string | null {
   return MANAGED_FFMPEG[`${platform}-${arch}`]?.sha256 ?? null;
+}
+
+/** Separate ffprobe archive (macOS only) — null when the main archive has it. */
+export function ffmpegProbeUrl(
+  platform: NodeJS.Platform = process.platform,
+  arch: string = process.arch
+): string | null {
+  return MANAGED_FFMPEG[`${platform}-${arch}`]?.probeUrl ?? null;
+}
+
+export function ffmpegProbeSha256(
+  platform: NodeJS.Platform = process.platform,
+  arch: string = process.arch
+): string | null {
+  return MANAGED_FFMPEG[`${platform}-${arch}`]?.probeSha256 ?? null;
+}
+
+/** Release tag/version the pinned managed build comes from (for diagnostics). */
+export function ffmpegManagedVersion(
+  platform: NodeJS.Platform = process.platform,
+  arch: string = process.arch
+): string | null {
+  return MANAGED_FFMPEG[`${platform}-${arch}`]?.version ?? null;
 }
 
 // Search the system PATH for an executable (respecting PATHEXT on Windows).

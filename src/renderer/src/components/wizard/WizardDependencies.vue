@@ -2,7 +2,7 @@
 import { RefreshCw } from '@lucide/vue';
 import { useDependencies } from '@renderer/composables/useDependencies';
 
-const { deps, refreshAll, runInstall, cancelInstall } = useDependencies();
+const { deps, refreshing, refreshAll, runInstall, cancelInstall } = useDependencies();
 </script>
 
 <template>
@@ -15,10 +15,11 @@ const { deps, refreshAll, runInstall, cancelInstall } = useDependencies();
         <p class="text-sm text-base-content/70">{{ $t('wizard.dependenciesDesc') }}</p>
       </div>
       <button
-        class="fx-noise shrink-0 flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors"
+        class="fx-noise shrink-0 flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors disabled:opacity-60"
+        :disabled="refreshing"
         @click="refreshAll"
       >
-        <RefreshCw :size="14" />
+        <RefreshCw :size="14" :class="{ 'animate-spin': refreshing }" />
         {{ $t('settings.depRefresh') }}
       </button>
     </div>
