@@ -136,8 +136,14 @@ export function registerLibraryHandlers(): void {
   ipcMain.handle(
     'library:scan',
     async (event, folderPaths: string[]): Promise<LibraryScanResult> => {
+      // A new scan supersedes the running one. Overwriting the controller
+      // without aborting left the previous scan walking the whole library in
+      // parallel — two full directory traversals, doubled memory, and the
+      // slower one deciding what the library finally contains.
       const controller = new AbortController();
+      const previous = activeScanController;
       activeScanController = controller;
+      previous?.abort();
       try {
         currentLibraryFolders = sanitizeFolderPaths(folderPaths);
         return await runLibraryScan(currentLibraryFolders, controller.signal, (current, total) => {

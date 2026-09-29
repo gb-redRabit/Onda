@@ -11,6 +11,16 @@ import {
 const MAX_REDIRECTS = 5;
 const DOWNLOAD_TIMEOUT_MS = 30 * 60 * 1000;
 
+/**
+ * Upper bound for a single HTTP download.
+ *
+ * The stream is a user-configured media source, so the length is whatever the
+ * server claims — and a source that never stops sending would fill the disk.
+ * The cap is deliberately far above any plausible single file, so it only fires
+ * on a broken or hostile response; `onTooLarge` lets the caller surface it.
+ */
+const MAX_DOWNLOAD_BYTES = 20 * 1024 * 1024 * 1024;
+
 interface HttpDownloadProgress {
   received: number;
   total: number | null;
@@ -23,6 +33,8 @@ interface HttpDownloadOptions {
   allowPrivateNetwork?: boolean;
   timeoutMs?: number;
   signal?: AbortSignal;
+  /** Overrides MAX_DOWNLOAD_BYTES; the total including a resumed prefix. */
+  maxBytes?: number;
   onProgress?: (p: HttpDownloadProgress) => void;
 }
 
@@ -42,6 +54,7 @@ async function doDownload(
 
   return new Promise((resolve, reject) => {
     const transport = target.url.protocol === 'https:' ? https : http;
+    const maxBytes = opts.maxBytes ?? MAX_DOWNLOAD_BYTES;
     let received = 0;
     let total: number | null = null;
     const partPath = `${opts.destPath}.part`;
@@ -74,6 +87,19 @@ async function doDownload(
     if (startByte > 0) {
       requestHeaders['Range'] = `bytes=${startByte}-`;
     }
+
+    /**
+     * Set once the response body is being written, so an abort or a timeout can
+     * tear down the write stream as well as the request. Leaving it open leaks a
+     * file descriptor on every cancelled download.
+     */
+    let abortStreams: ((err: Error) => void) | null = null;
+    const teardown = (err: Error): void => {
+      cleanup();
+      req.destroy();
+      abortStreams?.(err);
+      reject(err);
+    };
 
     const req = transport.get(
       target.url,
@@ -115,13 +141,44 @@ async function doDownload(
           const len = parseInt(contentLength, 10) || 0;
           total = isResuming ? startByte + len : len;
         }
+        // Reject an oversized body from the header before writing a byte, then
+        // again while streaming for a response that sends no length at all.
+        if (total !== null && total > maxBytes) {
+          res.resume();
+          cleanup();
+          reject(new Error(`Download too large (${total} bytes > ${maxBytes})`));
+          return;
+        }
+
         const out = fs.createWriteStream(partPath, { flags: isResuming ? 'a' : 'w' });
+
+        // Every failure goes through here: the response and the write stream are
+        // separate file descriptors, and abandoning the write stream leaks one
+        // per aborted download. `settled` keeps the first failure authoritative.
+        let settled = false;
+        const fail = (err: Error): void => {
+          if (settled) return;
+          settled = true;
+          res.unpipe(out);
+          out.destroy();
+          res.destroy();
+          cleanup();
+          reject(err);
+        };
+        abortStreams = fail;
+
         res.on('data', (c: Buffer) => {
           received += c.length;
+          if (received > maxBytes) {
+            fail(new Error(`Download too large (over ${maxBytes} bytes)`));
+            return;
+          }
           opts.onProgress?.({ received, total });
         });
         res.pipe(out);
         out.on('finish', () => {
+          if (settled) return;
+          settled = true;
           out.close(() => {
             try {
               fs.renameSync(partPath, opts.destPath);
@@ -139,33 +196,18 @@ async function doDownload(
             resolve();
           });
         });
-        out.on('error', (err) => {
-          cleanup();
-          reject(err);
-        });
-        res.on('error', (err) => {
-          cleanup();
-          reject(err);
-        });
+        out.on('error', fail);
+        res.on('error', fail);
       }
     );
 
-    const onAbort = (): void => {
-      cleanup();
-      req.destroy();
-      reject(new Error('Aborted'));
-    };
-    opts.signal?.addEventListener('abort', onAbort, { once: true });
+    const onAbortListener = (): void => teardown(new Error('Aborted'));
+    opts.signal?.addEventListener('abort', onAbortListener, { once: true });
 
-    req.setTimeout(opts.timeoutMs ?? DOWNLOAD_TIMEOUT_MS, () => {
-      cleanup();
-      req.destroy();
-      reject(new Error('Timeout'));
-    });
+    req.setTimeout(opts.timeoutMs ?? DOWNLOAD_TIMEOUT_MS, () => teardown(new Error('Timeout')));
     req.on('error', (err) => {
-      opts.signal?.removeEventListener('abort', onAbort);
-      cleanup();
-      reject(err);
+      opts.signal?.removeEventListener('abort', onAbortListener);
+      teardown(err);
     });
   });
 }

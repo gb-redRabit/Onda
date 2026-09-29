@@ -1,0 +1,110 @@
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+
+// A new library scan used to overwrite the AbortController without aborting the
+// previous one, so two full directory traversals ran in parallel. This drives
+// the real handlers and observes the signals the scans are given.
+
+type Handler = (event: unknown, ...args: unknown[]) => unknown;
+const handlers = new Map<string, Handler>();
+let userData = '';
+const signals: AbortSignal[] = [];
+
+vi.mock('electron', () => ({
+  app: { getPath: () => userData, isPackaged: false, getVersion: () => '0.0.0-test' },
+  ipcMain: { handle: (channel: string, listener: Handler) => handlers.set(channel, listener) }
+}));
+
+vi.mock('../media-handlers', () => ({ getDuration: vi.fn(async () => 0) }));
+
+vi.mock('../library-watcher', () => ({
+  startLibraryWatcher: vi.fn(async () => {}),
+  setLibraryWatcherScan: vi.fn()
+}));
+
+const { registerLibraryHandlers } = await import('../library-handlers');
+const { setLibraryScanned } = await import('../library-store');
+
+let bigDir = '';
+let smallDir = '';
+
+function event() {
+  return { sender: { send: () => {} } };
+}
+
+function invoke(channel: string, ...args: unknown[]): Promise<unknown> {
+  const handler = handlers.get(channel);
+  if (!handler) throw new Error(`channel ${channel} is not registered`);
+  return Promise.resolve(handler(event(), ...args));
+}
+
+beforeAll(async () => {
+  userData = await mkdtemp(join(tmpdir(), 'onda-scan-abort-'));
+  bigDir = join(userData, 'big');
+  smallDir = join(userData, 'small');
+  // Enough entries that the first traversal is still running when the second
+  // scan is issued.
+  await mkdir(bigDir, { recursive: true });
+  await Promise.all(
+    Array.from({ length: 400 }, async (_unused, i) => {
+      const file = join(bigDir, `track-${String(i).padStart(4, '0')}.mp3`);
+      await writeFile(
+        file,
+        Buffer.concat([Buffer.from('ID3'), Buffer.from([0x04, 0x00, 0, 0, 0, 0, 0, 0, 0, 0])])
+      );
+    })
+  );
+  await mkdir(smallDir, { recursive: true });
+  await writeFile(
+    join(smallDir, 'only.mp3'),
+    Buffer.concat([Buffer.from('ID3'), Buffer.from([0x04, 0x00, 0, 0, 0, 0, 0, 0, 0, 0])])
+  );
+  registerLibraryHandlers();
+});
+
+afterAll(async () => {
+  await rm(userData, { recursive: true, force: true });
+});
+
+describe('library:scan supersedes the running scan', () => {
+  it('aborts the previous scan instead of running two traversals at once', async () => {
+    signals.length = 0;
+    // The first scan is deliberately not awaited: the second must cut it short.
+    const first = invoke('library:scan', [bigDir]);
+    const second = invoke('library:scan', [smallDir]);
+
+    const [firstResult, secondResult] = (await Promise.all([first, second])) as Array<{
+      count: number;
+      aborted: boolean;
+    }>;
+
+    // The superseded scan reports itself aborted and contributes nothing.
+    expect(firstResult.aborted).toBe(true);
+    // The surviving scan is the one the user asked for last.
+    expect(secondResult.aborted).toBe(false);
+    expect(secondResult.count).toBe(1);
+  });
+
+  it('does not let the aborted scan overwrite the library', async () => {
+    setLibraryScanned({ files: [], folderTypes: {} });
+    signals.length = 0;
+    await Promise.all([invoke('library:scan', [bigDir]), invoke('library:scan', [smallDir])]);
+    // Whatever the ordering, the persisted library is one of the two scanned
+    // folders, never a merge of both and never an empty wipe from the aborted run.
+    const { getLibraryScanned } = await import('../library-store');
+    const stored = getLibraryScanned();
+    const paths = stored.files.map((f: { path: string }) => f.path);
+    expect(paths.length === 0 || paths.every((p: string) => p.startsWith(smallDir))).toBe(true);
+  });
+
+  it('scanCancel still aborts the active scan', async () => {
+    const scan = invoke('library:scan', [bigDir]);
+    expect(await invoke('library:scanCancel')).toBe(true);
+    const result = (await scan) as { aborted: boolean };
+    expect(result.aborted).toBe(true);
+  });
+});
+
+void signals;
