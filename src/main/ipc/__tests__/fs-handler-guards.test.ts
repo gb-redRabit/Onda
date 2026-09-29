@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { realpath } from 'node:fs/promises';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+import { makeGrantableScratch } from '../../__tests__/scratch-dirs';
 
 // The exploratory fs channels took renderer arguments unchecked. `fs:readdir`
 // and `fs:getProperties` were happy to walk any path, and `shell:openTerminal`
@@ -94,10 +94,15 @@ function batchedItems(): { batches: number; items: Array<{ name: string }> } {
 }
 
 let mediaDir = '';
+// os.tmpdir() is not an ordinary folder everywhere — on macOS it is under
+// /var, and on a Windows runner with TEMP/TMP unset it is C:\WINDOWS\temp — so
+// the fixture lives under the home directory instead. See scratch-dirs.ts.
+let scratch: Awaited<ReturnType<typeof makeGrantableScratch>> | null = null;
 
 beforeAll(async () => {
-  userData = await mkdtemp(join(tmpdir(), 'onda-fs-guards-'));
-  mediaDir = join(userData, 'Music', 'Album');
+  scratch = await makeGrantableScratch('fs-guards');
+  userData = await mkdtemp(join(scratch.dir, 'userdata-'));
+  mediaDir = join(scratch.dir, 'Music', 'Album');
   await mkdir(mediaDir, { recursive: true });
   await writeFile(join(mediaDir, 'track.mp3'), 'x');
   registerFsHandlers();
@@ -106,6 +111,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await rm(userData, { recursive: true, force: true });
+  await scratch?.cleanup();
 });
 
 beforeEach(() => {

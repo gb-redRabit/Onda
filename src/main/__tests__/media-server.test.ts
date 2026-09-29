@@ -2,7 +2,8 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import http from 'http';
 import fs from 'fs/promises';
 import os from 'os';
-import { join, dirname } from 'path';
+import { join } from 'path';
+import { makeGrantableScratch } from './scratch-dirs';
 import {
   createMediaServer,
   setAllowedRoots,
@@ -245,17 +246,15 @@ describe('media-server', () => {
   });
 
   it('serves a path granted via addAllowedRoot (extra roots)', async () => {
-    // The granted dir must live OUTSIDE os.tmpdir() (an always-allowed root).
-    // On win32/darwin dirname(os.tmpdir()) is a writable per-user path that also
-    // exercises root canonicalization (8.3 short names, /var symlink), but on
-    // Linux dirname(/tmp) is '/' which CI users cannot write to — use homedir.
-    const parent =
-      process.platform === 'win32' || process.platform === 'darwin'
-        ? dirname(os.tmpdir())
-        : os.homedir();
-    const dir = join(parent, `onda-extra-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    await fs.mkdir(dir, { recursive: true });
-    tempFiles.push(dir);
+    // The granted dir must live OUTSIDE os.tmpdir() (an always-allowed root), and
+    // in a place path-policy accepts. dirname(os.tmpdir()) is not that: on macOS
+    // it is still under /var, and on a Windows runner with TEMP/TMP unset it is
+    // C:\WINDOWS — both protected, so the server correctly refuses them and the
+    // test fails for a reason unrelated to what it checks. homedir is the one
+    // location that is an ordinary writable folder on all three platforms, and it
+    // is outside tmpdir on all three, which is what this needs.
+    const scratch = await makeGrantableScratch('ms-extra');
+    const dir = scratch.dir;
     const file = join(dir, 'granted.mp3');
     await fs.writeFile(file, Buffer.alloc(64, 0x41));
     tempFiles.push(file);
@@ -275,15 +274,9 @@ describe('media-server', () => {
   });
 
   it('keeps extra roots when library roots are replaced', async () => {
-    // Same platform-aware parent as above: writable everywhere, and it keeps the
-    // canonicalization exercise on win32/darwin (see the extra-roots test).
-    const parent =
-      process.platform === 'win32' || process.platform === 'darwin'
-        ? dirname(os.tmpdir())
-        : os.homedir();
-    const dir = join(parent, `onda-keep-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    await fs.mkdir(dir, { recursive: true });
-    tempFiles.push(dir);
+    // Same reasoning as the extra-roots test above.
+    const scratch = await makeGrantableScratch('ms-keep');
+    const dir = scratch.dir;
     const file = join(dir, 'kept.mp4');
     await fs.writeFile(file, Buffer.alloc(64, 0x41));
     tempFiles.push(file);
