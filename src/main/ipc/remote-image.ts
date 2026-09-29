@@ -1,5 +1,8 @@
 import { ipcMain } from 'electron';
+import https from 'node:https';
+import { isIP } from 'node:net';
 import { logger } from '../../shared/logger';
+import { createPinnedLookup, isNonPublicAddress, resolveNetworkTarget } from './network-target';
 
 // Fetches remote images (channel avatars / banners) in the main process and
 // returns them as `data:` URLs. The renderer can fail to load certain external
@@ -10,11 +13,21 @@ const MAX_BYTES = 4 * 1024 * 1024;
 const TIMEOUT_MS = 15_000;
 const CACHE_MAX = 200;
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const MAX_REDIRECTS = 3;
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
 
 const cache = new Map<string, { data: string; at: number }>();
 const inflight = new Map<string, Promise<string | null>>();
+
+export interface RemoteImageResponse {
+  status: number;
+  headers: Record<string, string | undefined>;
+  body: AsyncIterable<Uint8Array>;
+  cancel: () => void;
+}
+
+type RemoteImageRequest = (url: string, signal: AbortSignal) => Promise<RemoteImageResponse>;
 
 function isAllowedRemoteUrl(rawUrl: string): boolean {
   let parsed: URL;
@@ -25,11 +38,42 @@ function isAllowedRemoteUrl(rawUrl: string): boolean {
   }
   if (parsed.protocol !== 'https:') return false;
   const host = parsed.hostname.toLowerCase();
-  if (host === 'localhost' || host === '::1' || host.endsWith('.localhost')) return false;
-  if (/^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host)) return false;
-  if (/^169\.254\./.test(host)) return false;
-  if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return false;
+  if (parsed.username || parsed.password || host === 'localhost' || host.endsWith('.localhost')) {
+    return false;
+  }
+  const literalHost = host.replace(/^\[|\]$/g, '');
+  if (isIP(literalHost) && isNonPublicAddress(literalHost)) return false;
   return true;
+}
+
+async function requestRemoteImage(url: string, signal: AbortSignal): Promise<RemoteImageResponse> {
+  const target = await resolveNetworkTarget(url);
+  if (target.url.protocol !== 'https:') throw new Error('Remote images require HTTPS');
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      target.url,
+      {
+        signal,
+        lookup: createPinnedLookup(target.addresses),
+        headers: { 'User-Agent': USER_AGENT, Accept: 'image/avif,image/webp,image/*,*/*;q=0.8' }
+      },
+      (res) => {
+        resolve({
+          status: res.statusCode ?? 0,
+          headers: res.headers as Record<string, string | undefined>,
+          body: res,
+          cancel: () => res.destroy()
+        });
+      }
+    );
+    req.on('error', reject);
+    req.end();
+  });
+}
+
+function responseHeader(res: RemoteImageResponse, name: string): string | undefined {
+  const value = res.headers[name.toLowerCase()];
+  return Array.isArray(value) ? value[0] : value;
 }
 
 function remember(url: string, data: string): void {
@@ -40,7 +84,58 @@ function remember(url: string, data: string): void {
   cache.set(url, { data, at: Date.now() });
 }
 
-export async function getRemoteImage(rawUrl: string): Promise<string | null> {
+// Follows redirects manually so EVERY hop is validated: with `redirect: 'follow'`
+// a public URL could bounce the request to localhost / a private range / a cloud
+// metadata endpoint, bypassing the SSRF check applied to the initial URL.
+// Exported for tests.
+export async function followImageRedirects(
+  rawUrl: string,
+  signal: AbortSignal,
+  request: RemoteImageRequest = requestRemoteImage
+): Promise<RemoteImageResponse | null> {
+  let current = rawUrl;
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    if (!isAllowedRemoteUrl(current)) return null;
+    const res = await request(current, signal);
+    if (res.status < 300 || res.status >= 400) return res;
+    const location = responseHeader(res, 'location');
+    res.cancel();
+    if (!location) return null;
+    try {
+      current = new URL(location, current).toString();
+    } catch {
+      return null;
+    }
+  }
+  logger.warn('media', `remote image redirect limit reached for ${rawUrl}`);
+  return null;
+}
+
+/** Read an image body without ever buffering more than the configured cap. */
+export async function readRemoteImageBody(res: RemoteImageResponse): Promise<Buffer | null> {
+  const contentLength = responseHeader(res, 'content-length');
+  if (contentLength && /^\d+$/.test(contentLength) && Number(contentLength) > MAX_BYTES) {
+    res.cancel();
+    return null;
+  }
+
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const value of res.body) {
+    size += value.byteLength;
+    if (size > MAX_BYTES) {
+      res.cancel();
+      return null;
+    }
+    chunks.push(Buffer.from(value));
+  }
+  return size > 0 ? Buffer.concat(chunks, size) : null;
+}
+
+export async function getRemoteImage(
+  rawUrl: string,
+  request: RemoteImageRequest = requestRemoteImage
+): Promise<string | null> {
   if (typeof rawUrl !== 'string' || rawUrl.length === 0 || rawUrl.length > 4096) return null;
   if (!isAllowedRemoteUrl(rawUrl)) return null;
 
@@ -53,16 +148,19 @@ export async function getRemoteImage(rawUrl: string): Promise<string | null> {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
     try {
-      const res = await fetch(rawUrl, {
-        signal: ctrl.signal,
-        redirect: 'follow',
-        headers: { 'User-Agent': USER_AGENT, Accept: 'image/avif,image/webp,image/*,*/*;q=0.8' }
-      });
-      if (!res.ok) return null;
-      const type = (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
-      if (!type.startsWith('image/')) return null;
-      const buf = Buffer.from(await res.arrayBuffer());
-      if (buf.length === 0 || buf.length > MAX_BYTES) return null;
+      const res = await followImageRedirects(rawUrl, ctrl.signal, request);
+      if (!res) return null;
+      if (res.status < 200 || res.status >= 300) {
+        res.cancel();
+        return null;
+      }
+      const type = (responseHeader(res, 'content-type') || '').split(';')[0].trim().toLowerCase();
+      if (!type.startsWith('image/')) {
+        res.cancel();
+        return null;
+      }
+      const buf = await readRemoteImageBody(res);
+      if (!buf) return null;
       const data = `data:${type};base64,${buf.toString('base64')}`;
       remember(rawUrl, data);
       return data;

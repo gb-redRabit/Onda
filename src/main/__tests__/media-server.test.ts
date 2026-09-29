@@ -107,6 +107,40 @@ describe('media-server', () => {
     expect(res.status).toBe(400);
   });
 
+  it('HEAD leaks no metadata for files outside the allowed roots', async () => {
+    // Regression: the HEAD fast-path skipped the root check, so the token alone
+    // revealed existence/size/type of any local file.
+    const outside = join(os.homedir(), 'onda-head-outside-test.txt');
+    const res = await request(`/${server!.token}/?path=${encodeURIComponent(outside)}`, {
+      method: 'HEAD'
+    });
+
+    expect(res.status).toBe(403);
+    expect(res.headers['content-length']).toBeUndefined();
+  });
+
+  it('HEAD returns headers for a file inside the allowed roots', async () => {
+    const file = await makeTempFile(2048);
+    const res = await request(`/${server!.token}/?path=${encodeURIComponent(file)}`, {
+      method: 'HEAD'
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toBe('video/mp4');
+    expect(res.headers['content-length']).toBe('2048');
+    expect(res.headers['accept-ranges']).toBe('bytes');
+    expect(res.body).toHaveLength(0);
+  });
+
+  it('HEAD returns 404 for a missing file inside the allowed roots', async () => {
+    const missing = join(os.tmpdir(), `onda-head-missing-${Date.now()}.mp4`);
+    const res = await request(`/${server!.token}/?path=${encodeURIComponent(missing)}`, {
+      method: 'HEAD'
+    });
+
+    expect(res.status).toBe(404);
+  });
+
   it('serves the full file with correct content-type and length', async () => {
     const file = await makeTempFile(1024);
     const res = await request(`/${server!.token}/?path=${encodeURIComponent(file)}`);

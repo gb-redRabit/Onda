@@ -1,5 +1,6 @@
 import { request as httpRequest } from 'http';
 import { request as httpsRequest } from 'https';
+import { createPinnedLookup, resolveNetworkTarget } from './network-target';
 import { urlAllowed, resolveRedirectUrl } from './plugins-guards';
 import {
   MAX_FETCH_BYTES,
@@ -14,7 +15,7 @@ import type { PluginFetchOptions, PluginFetchResult } from '../../shared/types/i
 // permission lookup stays in the handler: callers pass the plugin's resolved
 // network allowlist so this module is pure orchestration + HTTP transport.
 
-function fetchRequest(
+async function fetchRequest(
   url: string,
   opts: {
     method: string;
@@ -25,13 +26,25 @@ function fetchRequest(
   onRedirect: (next: string) => boolean,
   redirectsLeft = MAX_FETCH_REDIRECTS
 ): Promise<{ status: number; statusText: string; headers: Record<string, string>; text: string }> {
+  let target: Awaited<ReturnType<typeof resolveNetworkTarget>>;
+  try {
+    target = await resolveNetworkTarget(url);
+  } catch (e) {
+    const err = e as { message?: string };
+    const message = err.message || String(e);
+    throw {
+      code: message.includes('Private network') ? 'forbidden' : 'network',
+      message
+    };
+  }
   return new Promise((resolvePromise, reject) => {
-    const transport = url.startsWith('https:') ? httpsRequest : httpRequest;
+    const transport = target.url.protocol === 'https:' ? httpsRequest : httpRequest;
     const req = transport(
-      url,
+      target.url,
       {
         method: opts.method,
-        headers: { 'User-Agent': 'Onda-plugin/1.0', ...opts.headers }
+        headers: { 'User-Agent': 'Onda-plugin/1.0', ...opts.headers },
+        lookup: createPinnedLookup(target.addresses)
       },
       (res) => {
         const status = res.statusCode ?? 0;
@@ -46,7 +59,13 @@ function fetchRequest(
             reject({ code: 'redirect-loop', message: 'Redirect not allowed' });
             return;
           }
-          fetchRequest(next, opts, onRedirect, redirectsLeft - 1).then(resolvePromise, reject);
+          const sameOrigin = new URL(next).origin === target.url.origin;
+          if (!sameOrigin && opts.method !== 'GET') {
+            reject({ code: 'redirect-loop', message: 'Cross-origin redirect refused' });
+            return;
+          }
+          const nextOpts = sameOrigin ? opts : { ...opts, headers: {}, body: undefined };
+          fetchRequest(next, nextOpts, onRedirect, redirectsLeft - 1).then(resolvePromise, reject);
           return;
         }
         let size = 0;

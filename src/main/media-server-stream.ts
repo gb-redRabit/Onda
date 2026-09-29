@@ -1,6 +1,8 @@
 import http from 'http';
 import https from 'https';
 import { logger } from '../shared/logger';
+import { createPinnedLookup, resolveNetworkTarget } from './ipc/network-target';
+import { isRegisteredGenericStreamUrl } from './media-server-stream-registry';
 import {
   validateStreamUrl,
   STREAM_MAX_REDIRECTS,
@@ -15,7 +17,8 @@ function streamProxyRequest(
   method: string,
   upstreamUrl: URL,
   range?: string,
-  attempt = 0
+  attempt = 0,
+  lookup?: https.RequestOptions['lookup']
 ): Promise<http.IncomingMessage> {
   return new Promise((resolve, reject) => {
     const mod = upstreamUrl.protocol === 'https:' ? https : http;
@@ -36,6 +39,7 @@ function streamProxyRequest(
       headers,
       method: method === 'HEAD' ? 'HEAD' : 'GET'
     };
+    if (lookup) opts.lookup = lookup;
     if (signedFamily) {
       opts.family = attempt === 0 ? signedFamily : signedFamily === 6 ? 4 : 6;
     }
@@ -68,24 +72,49 @@ export async function handleStreamProxy(
     res.end('invalid url');
     return;
   }
+  const generic = isRegisteredGenericStreamUrl(current.href);
+  let originalProtocol = current.protocol;
+  if (!generic && !validateStreamUrl(current.toString())) {
+    res.writeHead(403);
+    res.end('forbidden');
+    return;
+  }
   logger.info(
     'media-server',
     `stream proxy ${req.method} host=${current.hostname} range=${req.headers.range ?? 'none'}`
   );
 
   for (let hop = 0; hop <= STREAM_MAX_REDIRECTS; hop++) {
-    const validated = validateStreamUrl(current.toString());
-    if (!validated) {
-      res.writeHead(403);
-      res.end('forbidden');
-      return;
+    let lookup: https.RequestOptions['lookup'];
+    if (generic) {
+      try {
+        const target = await resolveNetworkTarget(current.toString());
+        lookup = createPinnedLookup(target.addresses);
+      } catch {
+        res.writeHead(403);
+        res.end('forbidden');
+        return;
+      }
+    } else {
+      const validated = validateStreamUrl(current.toString());
+      if (!validated) {
+        res.writeHead(403);
+        res.end('forbidden');
+        return;
+      }
+      current = validated;
     }
-    current = validated;
 
     for (let attempt = 0; attempt < STREAM_MAX_ATTEMPTS; attempt++) {
       let upRes: http.IncomingMessage;
       try {
-        upRes = await streamProxyRequest(req.method || 'GET', current, req.headers.range, attempt);
+        upRes = await streamProxyRequest(
+          req.method || 'GET',
+          current,
+          req.headers.range,
+          attempt,
+          lookup
+        );
       } catch (e) {
         const err = e as { message?: string };
         logger.warn(
@@ -109,7 +138,14 @@ export async function handleStreamProxy(
       if (status >= 300 && status < 400 && upRes.headers.location) {
         upRes.destroy();
         try {
-          current = new URL(upRes.headers.location, current);
+          const redirected = new URL(upRes.headers.location, current);
+          if (generic && originalProtocol === 'https:' && redirected.protocol !== 'https:') {
+            res.writeHead(403);
+            res.end('forbidden');
+            return;
+          }
+          current = redirected;
+          originalProtocol = current.protocol;
         } catch {
           res.writeHead(502);
           res.end('bad redirect');

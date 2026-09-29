@@ -1,12 +1,27 @@
 import { describe, it, expect } from 'vitest';
-import { isAllowedNavigationUrl } from '../navigation-policy';
+import { join } from 'path';
+import { pathToFileURL } from 'url';
+import { APP_PATH, isAllowedNavigationUrl } from '../navigation-policy';
 
 const DEV_URL = 'http://localhost:5173';
 
 describe('isAllowedNavigationUrl', () => {
-  it('allows file: URLs', () => {
-    expect(isAllowedNavigationUrl('file:///C:/app/renderer/index.html', undefined)).toBe(true);
-    expect(isAllowedNavigationUrl('file:///app/index.html#/player', undefined)).toBe(true);
+  it('allows file: URLs inside the app directory', () => {
+    const inside = pathToFileURL(join(APP_PATH, 'renderer', 'index.html')).toString();
+    expect(isAllowedNavigationUrl(inside, undefined)).toBe(true);
+    expect(isAllowedNavigationUrl(`${inside}#/player`, undefined)).toBe(true);
+  });
+
+  it('blocks file: URLs outside the app directory', () => {
+    // Regression: every file: URL used to be allowed (local file read primitive).
+    expect(isAllowedNavigationUrl('file:///etc/passwd', undefined)).toBe(false);
+    expect(isAllowedNavigationUrl('file:///C:/Windows/System32/cmd.exe', undefined)).toBe(false);
+    expect(isAllowedNavigationUrl('file:///tmp/evil.html', DEV_URL)).toBe(false);
+  });
+
+  it('blocks a sibling path that only shares the app path prefix', () => {
+    const sibling = pathToFileURL(`${APP_PATH}-malicious/index.html`).toString();
+    expect(isAllowedNavigationUrl(sibling, undefined)).toBe(false);
   });
 
   it('allows onda: protocol URLs', () => {
@@ -37,7 +52,6 @@ describe('isAllowedNavigationUrl', () => {
   it('blocks other localhost ports and schemes', () => {
     expect(isAllowedNavigationUrl('http://localhost:9999/', DEV_URL)).toBe(false);
     expect(isAllowedNavigationUrl('javascript:alert(1)', DEV_URL)).toBe(false);
-    expect(isAllowedNavigationUrl('file:///etc/passwd', undefined)).toBe(true);
     expect(isAllowedNavigationUrl('smb://server/share', DEV_URL)).toBe(false);
   });
 

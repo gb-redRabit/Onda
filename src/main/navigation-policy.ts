@@ -1,6 +1,9 @@
-import { join, resolve } from 'path';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
+import { isPathInside } from './path-security';
 
-const appPath = join(__dirname, '..');
+// Exported for tests: the directory the app's own files live in.
+export const APP_PATH = join(__dirname, '..');
 
 export interface NavigationPolicyOptions {
   // Allow data: URLs (used by the PiP preview placeholder windows).
@@ -16,12 +19,17 @@ export function isAllowedNavigationUrl(
     const parsed = new URL(url);
     if (options.allowData && parsed.protocol === 'data:') return true;
     if (parsed.protocol === 'file:') {
-      // Allow only files under the app path or explicitly granted media paths.
-      const filePath = decodeURIComponent(parsed.pathname);
-      const normalized = resolve(filePath);
-      if (normalized.startsWith(appPath)) return true;
-      // Allow media server paths (covers, thumbnails, etc.)
-      return true;
+      // Only files shipped with the app. Media is served over http by the media
+      // server and consumed as <img>/<audio>/<video> sources — never as a
+      // navigation target — so nothing else may be navigated to. (Previously
+      // every file: URL was allowed, which is a local-file-read primitive.)
+      // `fileURLToPath` (not path.resolve on the pathname) handles Windows drive
+      // letters and percent-encoding correctly.
+      try {
+        return isPathInside(APP_PATH, fileURLToPath(parsed));
+      } catch {
+        return false;
+      }
     }
     if (parsed.protocol === 'onda:') return true;
     if (devUrl) {

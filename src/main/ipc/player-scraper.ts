@@ -1,5 +1,10 @@
 import https from 'https';
 import http from 'http';
+import {
+  createPinnedLookup,
+  privateNetworkAllowedForTarget,
+  resolveNetworkTarget
+} from './network-target';
 
 interface PlayerScrapeResult {
   url: string;
@@ -32,13 +37,23 @@ export function extractMediaUrls(html: string): { hls: string[]; direct: string[
   return { hls, direct };
 }
 
-export function fetchPageText(url: string, headers: Record<string, string>): Promise<string> {
+export async function fetchPageText(
+  url: string,
+  headers: Record<string, string>,
+  redirectsLeft = MAX_REDIRECTS,
+  allowPrivateNetwork = false,
+  trustedOrigin?: string
+): Promise<string> {
+  const origin = trustedOrigin ?? new URL(url).origin;
+  const allowPrivate = privateNetworkAllowedForTarget(url, origin, allowPrivateNetwork);
+  const target = await resolveNetworkTarget(url, { allowPrivateNetwork: allowPrivate });
   return new Promise((resolve, reject) => {
-    const transport = url.startsWith('https:') ? https : http;
+    const transport = target.url.protocol === 'https:' ? https : http;
     const req = transport.request(
-      url,
+      target.url,
       {
         method: 'GET',
+        lookup: createPinnedLookup(target.addresses),
         headers: {
           'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
@@ -50,14 +65,18 @@ export function fetchPageText(url: string, headers: Record<string, string>): Pro
       (res) => {
         const status = res.statusCode ?? 0;
         if (status >= 300 && status < 400 && res.headers.location) {
-          if (MAX_REDIRECTS <= 0) {
+          if (redirectsLeft <= 0) {
             res.resume();
             reject(new Error('Too many redirects'));
             return;
           }
           res.resume();
-          const next = new URL(res.headers.location, url).toString();
-          fetchPageText(next, headers).then(resolve, reject);
+          const next = new URL(res.headers.location, target.url).toString();
+          const nextHeaders = new URL(next).origin === target.url.origin ? headers : {};
+          fetchPageText(next, nextHeaders, redirectsLeft - 1, allowPrivateNetwork, origin).then(
+            resolve,
+            reject
+          );
           return;
         }
         if (status < 200 || status >= 300) {
@@ -95,16 +114,36 @@ export function fetchPageText(url: string, headers: Record<string, string>): Pro
  */
 export async function scrapePlayerUrl(
   embedUrl: string,
-  headers: Record<string, string>
+  headers: Record<string, string>,
+  allowPrivateNetwork = false
 ): Promise<PlayerScrapeResult | null> {
   if (!/^https:\/\//i.test(embedUrl)) return null;
   try {
-    const html = await fetchPageText(embedUrl, headers);
+    const html = await fetchPageText(embedUrl, headers, MAX_REDIRECTS, allowPrivateNetwork);
     const { hls, direct } = extractMediaUrls(html);
-    if (hls.length) return { url: hls[0]!, kind: 'hls', referer: embedUrl };
-    if (direct.length) return { url: direct[0]!, kind: 'direct', referer: embedUrl };
+    if (hls.length) {
+      await validateExtractedUrl(hls[0]!, embedUrl, allowPrivateNetwork);
+      return { url: hls[0]!, kind: 'hls', referer: embedUrl };
+    }
+    if (direct.length) {
+      await validateExtractedUrl(direct[0]!, embedUrl, allowPrivateNetwork);
+      return { url: direct[0]!, kind: 'direct', referer: embedUrl };
+    }
     return null;
   } catch {
     return null;
   }
+}
+
+async function validateExtractedUrl(
+  url: string,
+  embedUrl: string,
+  allowPrivateNetwork: boolean
+): Promise<void> {
+  const allowPrivate = privateNetworkAllowedForTarget(
+    url,
+    new URL(embedUrl).origin,
+    allowPrivateNetwork
+  );
+  await resolveNetworkTarget(url, { allowPrivateNetwork: allowPrivate });
 }

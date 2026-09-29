@@ -1,21 +1,17 @@
 import { ipcMain, app } from 'electron';
 import type { IpcMainInvokeEvent, IpcMainEvent, WebFrameMain } from 'electron';
 import { fileURLToPath } from 'url';
-import { normalize } from 'path';
 import { logger } from '../../shared/logger';
+import { isPathInside } from '../path-security';
 
 function isTrustedAppFile(url: URL): boolean {
   let target: string;
   try {
-    target = normalize(fileURLToPath(url));
+    target = fileURLToPath(url);
   } catch {
     return false;
   }
-  const appPath = normalize(app.getAppPath());
-  if (process.platform === 'win32') {
-    return target.toLowerCase().startsWith(appPath.toLowerCase());
-  }
-  return target.startsWith(appPath);
+  return isPathInside(app.getAppPath(), target);
 }
 
 function isTrustedSenderFrame(frame: WebFrameMain | null | undefined): boolean {

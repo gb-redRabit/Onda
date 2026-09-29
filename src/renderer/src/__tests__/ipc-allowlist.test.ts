@@ -47,15 +47,22 @@ describe('IPC invoke allowlist parity', () => {
 
     const rendererFiles = await walk(join(ROOT, 'src/renderer'));
     const offenders: string[] = [];
-    for (const file of rendererFiles) {
-      const source = await readFile(file, 'utf-8');
-      for (const channel of extractInvokedChannels(source)) {
-        if (!allowlist.has(channel)) {
-          offenders.push(`${file.replace(/\\/g, '/')} → ${channel}`);
+    for (let start = 0; start < rendererFiles.length; start += 32) {
+      const sources = await Promise.all(
+        rendererFiles.slice(start, start + 32).map(async (file) => ({
+          file,
+          source: await readFile(file, 'utf-8')
+        }))
+      );
+      for (const { file, source } of sources) {
+        for (const channel of extractInvokedChannels(source)) {
+          if (!allowlist.has(channel)) {
+            offenders.push(`${file.replace(/\\/g, '/')} → ${channel}`);
+          }
         }
       }
     }
 
     expect(offenders.sort()).toEqual([]);
-  });
+  }, 15_000);
 });

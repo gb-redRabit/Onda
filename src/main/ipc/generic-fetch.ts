@@ -1,6 +1,11 @@
 import http from 'http';
 import https from 'https';
 import { extname } from 'path';
+import {
+  createPinnedLookup,
+  privateNetworkAllowedForTarget,
+  resolveNetworkTarget
+} from './network-target';
 import { getStore } from './cover-cache';
 import { decryptApiKeys } from './settings-crypto';
 import { logger } from '../../shared/logger';
@@ -192,12 +197,20 @@ export async function fetchTableRows(
         undefined,
         opts?.context
       );
-      const res = await httpJsonFetch(url, { method: 'GET', headers });
+      const res = await httpJsonFetch(url, {
+        method: 'GET',
+        headers,
+        allowPrivateNetwork: source.allowPrivateNetwork
+      });
       json = res.json;
     } else {
       const { headers, query } = await resolveAuth(source);
       const url = buildUrl(source, endpoint, undefined, query, undefined, opts?.context);
-      const res = await httpJsonFetch(url, { method: endpoint.method, headers });
+      const res = await httpJsonFetch(url, {
+        method: endpoint.method,
+        headers,
+        allowPrivateNetwork: source.allowPrivateNetwork
+      });
       json = res.json;
     }
     return mapTableRows(tableArrayFromData(json, table), table);
@@ -208,18 +221,37 @@ export async function fetchTableRows(
   }
 }
 
-function httpJsonFetch(
+// Exported for tests: redirect handling (credential stripping) is security
+// relevant and easier to cover directly than through a source configuration.
+export interface HttpJsonFetchOptions {
+  method: 'GET' | 'POST';
+  headers: Record<string, string>;
+  body?: string;
+  allowPrivateNetwork?: boolean;
+}
+
+export async function httpJsonFetch(
   url: string,
-  opts: { method: 'GET' | 'POST'; headers: Record<string, string>; body?: string },
-  redirectsLeft: number = MAX_REDIRECTS
+  opts: HttpJsonFetchOptions,
+  redirectsLeft: number = MAX_REDIRECTS,
+  trustedOrigin?: string
 ): Promise<{ json: unknown; status: number }> {
+  const origin = trustedOrigin ?? new URL(url).origin;
+  const requestUrl = new URL(url);
+  const allowPrivateNetwork = privateNetworkAllowedForTarget(
+    requestUrl.href,
+    origin,
+    opts.allowPrivateNetwork === true
+  );
+  const target = await resolveNetworkTarget(url, { allowPrivateNetwork });
   return new Promise((resolve, reject) => {
-    const transport = url.startsWith('https:') ? https : http;
+    const transport = target.url.protocol === 'https:' ? https : http;
     const req = transport.request(
-      url,
+      target.url,
       {
         method: opts.method,
-        headers: { Accept: 'application/json', 'User-Agent': 'Onda/1.0', ...opts.headers }
+        headers: { Accept: 'application/json', 'User-Agent': 'Onda/1.0', ...opts.headers },
+        lookup: createPinnedLookup(target.addresses)
       },
       (res) => {
         const status = res.statusCode ?? 0;
@@ -231,7 +263,18 @@ function httpJsonFetch(
           }
           res.resume();
           const next = new URL(res.headers.location, url).toString();
-          httpJsonFetch(next, opts, redirectsLeft - 1).then(resolve, reject);
+          // A redirect to another origin must not carry the resolved credentials:
+          // the API key would otherwise leak to whatever host the (possibly
+          // compromised) endpoint points at. Same-origin hops keep everything;
+          // cross-origin hops keep only the safe defaults, and a cross-origin
+          // redirect of a POST is refused outright (no body replay).
+          const sameOrigin = new URL(next).origin === new URL(url).origin;
+          if (!sameOrigin && opts.method !== 'GET') {
+            reject(new Error('Cross-origin redirect refused'));
+            return;
+          }
+          const nextOpts = sameOrigin ? opts : { method: opts.method, headers: {} };
+          httpJsonFetch(next, nextOpts, redirectsLeft - 1, origin).then(resolve, reject);
           return;
         }
         if (status < 200 || status >= 300) {
@@ -341,7 +384,12 @@ export async function fetchSourceItems(
       endpoint.method === 'POST'
         ? JSON.stringify({ ...bodyParams, ...(opts?.query || {}) })
         : undefined;
-    const { json } = await httpJsonFetch(url, { method: endpoint.method, headers, body });
+    const { json } = await httpJsonFetch(url, {
+      method: endpoint.method,
+      headers,
+      body,
+      allowPrivateNetwork: source.allowPrivateNetwork
+    });
     const items = mapResponse(json, endpoint);
     const meta = paginationMeta(json, endpoint);
     const isPageMode =
@@ -373,7 +421,12 @@ export async function testSourceConnection(
       bodyParams[k] = resolveTemplate(v, opts?.context);
     }
     const body = endpoint.method === 'POST' ? JSON.stringify(bodyParams) : undefined;
-    const { json, status } = await httpJsonFetch(url, { method: endpoint.method, headers, body });
+    const { json, status } = await httpJsonFetch(url, {
+      method: endpoint.method,
+      headers,
+      body,
+      allowPrivateNetwork: source.allowPrivateNetwork
+    });
     const items = mapResponse(json, endpoint);
     let sample = items[0];
     if (!sample && json && typeof json === 'object' && !Array.isArray(json)) {

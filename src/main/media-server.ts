@@ -79,6 +79,37 @@ function isWithinAnyRoot(filePath: string): boolean {
   return false;
 }
 
+// Canonicalizes a `?path=` target and enforces the allowed-root whitelist.
+// Shared by GET and HEAD so neither method can read (or leak metadata about)
+// files outside the granted roots.
+type MediaPathResolution =
+  { ok: true; path: string } | { ok: false; reason: 'invalid' | 'forbidden' };
+
+async function resolveAllowedMediaPath(rawPath: string): Promise<MediaPathResolution> {
+  const normalized = normalize(rawPath);
+  if (!isAbsolute(normalized)) return { ok: false, reason: 'invalid' };
+
+  let realPath = normalized;
+  try {
+    realPath = await fs.promises.realpath(normalized);
+  } catch {
+    // realpath fails for a missing (or unreadable) file. Canonicalize the parent
+    // directory instead and re-attach the basename, so an 8.3 short name
+    // (Windows CI: RUNNER~1) or a /var -> /private/var symlink resolves inside
+    // the realpath'd allowed roots. The root check below still applies to the
+    // rebuilt path, so paths genuinely outside every root remain 403.
+    try {
+      realPath = join(await fs.promises.realpath(dirname(normalized)), basename(normalized));
+    } catch {
+      // fall back to the normalized path; the root check below still applies
+    }
+  }
+
+  return isWithinAnyRoot(realPath)
+    ? { ok: true, path: realPath }
+    : { ok: false, reason: 'forbidden' };
+}
+
 export function createMediaServer(): Promise<MediaServer> {
   return new Promise((resolve, reject) => {
     const token = crypto.randomUUID();
@@ -125,19 +156,20 @@ export function createMediaServer(): Promise<MediaServer> {
           return;
         }
 
-        // HEAD fast-path: return headers without reading the file.
+        // HEAD fast-path: return headers without reading the file. It MUST run the
+        // same root check as GET — otherwise the metadata (existence, size, type)
+        // of any local file was readable with the token alone.
         if (req.method === 'HEAD') {
-          const rawPath = url.searchParams.get('path') || '';
-          if (!rawPath) {
-            res.writeHead(400);
-            res.end();
+          const resolved = await resolveAllowedMediaPath(url.searchParams.get('path') || '');
+          if (!resolved.ok) {
+            res.writeHead(resolved.reason === 'invalid' ? 400 : 403);
+            res.end(resolved.reason === 'invalid' ? 'invalid path' : 'forbidden');
             return;
           }
           try {
-            const realPath = await fs.promises.realpath(rawPath);
-            const stat = await fs.promises.stat(realPath);
+            const stat = await fs.promises.stat(resolved.path);
             res.writeHead(200, {
-              'content-type': getMimeType(realPath),
+              'content-type': getMimeType(resolved.path),
               'content-length': String(stat.size),
               'accept-ranges': 'bytes'
             });
@@ -156,40 +188,24 @@ export function createMediaServer(): Promise<MediaServer> {
           res.end('missing path');
           return;
         }
-        const normalized = normalize(rawPath);
-        if (!isAbsolute(normalized)) {
-          logger.warn('media-server', `rejected non-absolute path: ${rawPath}`);
-          res.writeHead(400);
-          res.end('invalid path');
-          return;
-        }
 
-        let realPath = normalized;
-        try {
-          realPath = await fs.promises.realpath(normalized);
-        } catch {
-          // realpath fails for a missing (or unreadable) file. Canonicalize the
-          // parent directory instead and re-attach the basename, so an 8.3
-          // short name (Windows CI: RUNNER~1) or a /var -> /private/var symlink
-          // resolves inside the realpath'd allowed roots. The root check below
-          // still applies to the rebuilt path, so paths genuinely outside every
-          // root remain 403 (fail-closed).
-          try {
-            realPath = join(await fs.promises.realpath(dirname(normalized)), basename(normalized));
-          } catch {
-            // fall back to normalized path; root check below still applies
+        const resolved = await resolveAllowedMediaPath(rawPath);
+        if (!resolved.ok) {
+          if (resolved.reason === 'invalid') {
+            logger.warn('media-server', `rejected non-absolute path: ${rawPath}`);
+            res.writeHead(400);
+            res.end('invalid path');
+            return;
           }
-        }
-
-        if (!isWithinAnyRoot(realPath)) {
           logger.warn(
             'media-server',
-            `rejected path outside allowed roots: ${realPath} (roots=${libraryRoots.length + extraRoots.length})`
+            `rejected path outside allowed roots: ${rawPath} (roots=${libraryRoots.length + extraRoots.length})`
           );
           res.writeHead(403);
           res.end('forbidden');
           return;
         }
+        const realPath = resolved.path;
 
         const stat = await fs.promises.stat(realPath);
         const fileSize = stat.size;

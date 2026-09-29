@@ -2,9 +2,11 @@
 // (plan 2.8). `plugins-core` re-exports them so importers and tests stay
 // unchanged.
 import type { PluginPermissions } from '../../shared/types/ipc';
+import { MAX_PLUGIN_SETTING_TEXT_BYTES } from '../../shared/plugin-settings';
+export { pluginSettingValueValid } from '../../shared/plugin-settings';
 
 export const STORAGE_KEY_RE = /^[a-zA-Z0-9_.\-]{1,64}$/;
-export const MAX_STRING_VALUE_BYTES = 4096;
+export const MAX_STRING_VALUE_BYTES = MAX_PLUGIN_SETTING_TEXT_BYTES;
 
 // Permission checks (plan 7.1): the manifest decides which bridge operations a
 // plugin may use. Fetch checks the network allowlist in the handler; storage and
@@ -59,8 +61,12 @@ export function compileNetworkPattern(pattern: string): RegExp | null {
   if (protocol !== 'http:' && protocol !== 'https:') return null;
   const parts = pattern.split('*');
   const escaped = parts.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*');
+  // Without a boundary a pattern like `https://api.example.com` also matched
+  // `https://api.example.com.evil` (host-confusion). A pattern that ends with an
+  // explicit `*` keeps its intentional prefix behaviour.
+  const boundary = pattern.endsWith('*') ? '' : '(?=[/:?#]|$)';
   try {
-    return new RegExp(`^${escaped}`);
+    return new RegExp(`^${escaped}${boundary}`);
   } catch {
     return null;
   }
