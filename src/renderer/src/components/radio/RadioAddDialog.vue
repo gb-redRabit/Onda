@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useDialogFocus } from '@renderer/composables/useDialogFocus';
 import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { FileAudio, Link2, AlertCircle, CheckCircle2, Plus } from '@lucide/vue';
@@ -108,6 +109,11 @@ async function addDirect() {
     adding.value = false;
   }
 }
+const panelRef = ref<HTMLElement | null>(null);
+useDialogFocus(panelRef, {
+  closeOnEscape: true,
+  onEscape: () => emit('update:modelValue', false)
+});
 </script>
 
 <template>
@@ -117,9 +123,16 @@ async function addDirect() {
     @click.self="emit('update:modelValue', false)"
   >
     <div
+      ref="panelRef"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="radio-add-dialog-title"
+      tabindex="-1"
       class="w-[520px] max-h-[80vh] overflow-y-auto rounded-box bg-base-100 border border-base-300 p-5 space-y-5"
     >
-      <h2 class="text-sm font-semibold text-base-content">{{ $t('saved.addRadio') }}</h2>
+      <h2 id="radio-add-dialog-title" class="text-sm font-semibold text-base-content">
+        {{ $t('saved.addRadio') }}
+      </h2>
 
       <!-- file import -->
       <div class="space-y-2">

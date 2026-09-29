@@ -1,5 +1,6 @@
-﻿<script setup lang="ts">
-import { reactive, ref, computed, onMounted } from 'vue';
+<script setup lang="ts">
+import { useDialogFocus } from '@renderer/composables/useDialogFocus';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { X, Plus, Loader2 } from '@lucide/vue';
 import { useUIStore } from '@renderer/stores/ui';
@@ -237,6 +238,10 @@ async function onTestTable(idx: number) {
     tableTestingId.value = '';
   }
 }
+const panelRef = ref<HTMLElement | null>(null);
+// Focus enters the dialog on open, cycles inside it, and returns to the opener
+// on close; Escape is handled here so every dialog dismisses the same way.
+useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => emit('close') });
 </script>
 
 <template>
@@ -246,11 +251,16 @@ async function onTestTable(idx: number) {
       @click.self="onOverlayClick"
     >
       <div
+        ref="panelRef"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="source-editor-dialog-title"
+        tabindex="-1"
         class="w-full max-w-3xl max-h-full flex flex-col rounded-box bg-base-200 border border-base-300 shadow-2xl overflow-hidden"
         data-testid="source-editor-dialog"
       >
         <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
-          <h2 class="text-sm font-medium flex-1">
+          <h2 id="source-editor-dialog-title" class="text-sm font-medium flex-1">
             {{ props.source ? $t('sources.editSource') : $t('sources.addSource') }}
           </h2>
           <button

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+import { useDialogFocus } from '@renderer/composables/useDialogFocus';
 import { X, Download, ExternalLink } from '@lucide/vue';
 import type { SourceItem } from '@renderer/types/sources';
 
@@ -24,6 +26,10 @@ function hasDownloadUrl(item: SourceItem): boolean {
 function browserUrl(item: SourceItem): string {
   return item.playerUrl || item.sourceUrl || item.mediaUrl || '';
 }
+const panelRef = ref<HTMLElement | null>(null);
+// Focus enters the dialog on open, cycles inside it, and returns to the opener
+// on close; Escape is handled here so every dialog dismisses the same way.
+useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => emit('close') });
 </script>
 
 <template>
@@ -34,10 +40,15 @@ function browserUrl(item: SourceItem): string {
       @click.self="emit('close')"
     >
       <div
+        ref="panelRef"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="source-detail-modal-title"
+        tabindex="-1"
         class="w-full max-w-3xl max-h-full flex flex-col rounded-box bg-base-100 border border-base-300 shadow-2xl overflow-hidden"
       >
         <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
-          <h2 class="text-sm font-medium truncate flex-1">
+          <h2 id="source-detail-modal-title" class="text-sm font-medium truncate flex-1">
             {{ props.item.title || $t('sources.untitled') }}
           </h2>
           <button

@@ -1,15 +1,19 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useDialogFocus } from '@renderer/composables/useDialogFocus';
 import type { PluginInfo } from '@shared/types/ipc';
 
 const props = defineProps<{ plugin: PluginInfo }>();
-defineEmits<{
+const emit = defineEmits<{
   cancel: [];
   confirm: [];
 }>();
 
 const { t } = useI18n();
+
+const panelRef = ref<HTMLElement | null>(null);
+useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => emit('cancel') });
 
 const permissions = computed(() => props.plugin.permissions || {});
 const grantedCapabilities = computed(() => {
@@ -31,6 +35,7 @@ const grantedCapabilities = computed(() => {
       @keydown.esc="$emit('cancel')"
     >
       <section
+        ref="panelRef"
         role="dialog"
         aria-modal="true"
         aria-labelledby="plugin-permission-title"

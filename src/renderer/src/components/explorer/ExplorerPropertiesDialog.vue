@@ -1,4 +1,5 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
+import { useDialogFocus } from '@renderer/composables/useDialogFocus';
 import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { FolderOpen, FileText, X } from '@lucide/vue';
@@ -73,6 +74,10 @@ async function applyProperties() {
   }
   closeProperties();
 }
+const panelRef = ref<HTMLElement | null>(null);
+// Focus enters the dialog on open, cycles inside it, and returns to the opener
+// on close; Escape is handled here so every dialog dismisses the same way.
+useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => emit('close') });
 </script>
 
 <template>
@@ -82,10 +87,18 @@ async function applyProperties() {
       @click.self="onOverlayClick"
     >
       <div
+        ref="panelRef"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="explorer-properties-dialog-title"
+        tabindex="-1"
         class="bg-base-100 border border-base-300 rounded-box w-110 max-w-[92vw] shadow-2xl overflow-hidden"
       >
         <div class="flex items-center justify-between px-4 py-3 border-b border-base-300">
-          <h3 class="text-sm font-semibold text-base-content flex items-center gap-2">
+          <h3
+            id="explorer-properties-dialog-title"
+            class="text-sm font-semibold text-base-content flex items-center gap-2"
+          >
             <FolderOpen v-if="item.isDirectory" :size="16" class="text-primary" />
             <FileText v-else :size="16" class="text-primary" />
             {{ $t('explorer.properties') }}

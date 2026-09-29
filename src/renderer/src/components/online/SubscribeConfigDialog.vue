@@ -1,4 +1,5 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
+import { useDialogFocus } from '@renderer/composables/useDialogFocus';
 import { ref, computed, onMounted } from 'vue';
 import { X, Download, Tv2 } from '@lucide/vue';
 import { useUIStore } from '@renderer/stores/ui';
@@ -114,6 +115,10 @@ function close() {
 function confirm() {
   emit('confirm', { prefs: confirmPrefs(), downloadAll: downloadAll.value });
 }
+const panelRef = ref<HTMLElement | null>(null);
+// Focus enters the dialog on open, cycles inside it, and returns to the opener
+// on close; Escape is handled here so every dialog dismisses the same way.
+useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => emit('cancel') });
 </script>
 
 <template>
@@ -123,6 +128,11 @@ function confirm() {
       @click.self="onOverlayClickSub"
     >
       <div
+        ref="panelRef"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="subscribe-config-dialog-title"
+        tabindex="-1"
         class="bg-base-100 border border-base-300 rounded-box w-full max-w-3xl max-h-[92vh] shadow-2xl overflow-hidden flex flex-col"
       >
         <!-- Header -->
@@ -145,7 +155,7 @@ function confirm() {
             <Tv2 :size="18" />
           </div>
           <div class="min-w-0 flex-1">
-            <h3 class="text-sm font-semibold text-base-content">
+            <h3 id="subscribe-config-dialog-title" class="text-sm font-semibold text-base-content">
               {{ isEdit ? $t('youtube.downloadPrefs') : $t('youtube.subscribeConfigTitle') }}
             </h3>
             <p class="text-xs text-base-content/50 truncate">{{ props.channel.channelTitle }}</p>

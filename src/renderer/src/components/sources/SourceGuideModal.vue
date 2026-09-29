@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { useDialogFocus } from '@renderer/composables/useDialogFocus';
 import { X, BookOpen } from '@lucide/vue';
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t, tm } = useI18n();
 
-defineEmits<{
+const emit = defineEmits<{
   close: [];
 }>();
 
@@ -17,6 +18,10 @@ function braces(s: string): string {
 const steps = computed(
   () => tm('sources.guide.steps') as unknown as { title: string; body: string }[]
 );
+const panelRef = ref<HTMLElement | null>(null);
+// Focus enters the dialog on open, cycles inside it, and returns to the opener
+// on close; Escape is handled here so every dialog dismisses the same way.
+useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => emit('close') });
 </script>
 
 <template>
@@ -26,11 +31,18 @@ const steps = computed(
       @click.self="$emit('close')"
     >
       <div
+        ref="panelRef"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="source-guide-modal-title"
+        tabindex="-1"
         class="w-full max-w-4xl max-h-full flex flex-col rounded-box bg-base-100 border border-base-300 shadow-2xl overflow-hidden"
       >
         <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
           <BookOpen :size="16" class="text-primary shrink-0" />
-          <h2 class="text-lg font-medium truncate flex-1">{{ t('sources.guide.title') }}</h2>
+          <h2 id="source-guide-modal-title" class="text-lg font-medium truncate flex-1">
+            {{ t('sources.guide.title') }}
+          </h2>
           <button
             class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
             :aria-label="t('common.close')"

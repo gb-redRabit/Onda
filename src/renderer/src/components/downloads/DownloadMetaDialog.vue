@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+import { useDialogFocus } from '@renderer/composables/useDialogFocus';
 import { useI18n } from 'vue-i18n';
 import { X } from '@lucide/vue';
 
@@ -9,6 +11,8 @@ const album = defineModel<string>('album', { required: true });
 const year = defineModel<string>('year', { required: true });
 
 const { t } = useI18n();
+const panelRef = ref<HTMLElement | null>(null);
+useDialogFocus(panelRef);
 </script>
 
 <template>
@@ -19,10 +23,17 @@ const { t } = useI18n();
       @click.self="emit('close')"
     >
       <div
+        ref="panelRef"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="download-meta-dialog-title"
+        tabindex="-1"
         class="bg-base-100 border border-base-300 rounded-box w-80 max-w-[92vw] shadow-2xl overflow-hidden"
       >
         <div class="flex items-center justify-between px-4 py-3 border-b border-base-300">
-          <h3 class="text-sm font-semibold">{{ t('downloads.editMetadata') }}</h3>
+          <h3 id="download-meta-dialog-title" class="text-sm font-semibold">
+            {{ t('downloads.editMetadata') }}
+          </h3>
           <button
             class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
             @click="emit('close')"

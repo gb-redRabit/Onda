@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+import { useDialogFocus } from '@renderer/composables/useDialogFocus';
 import { AlertTriangle, X } from '@lucide/vue';
 
 withDefaults(
@@ -22,6 +24,10 @@ const emit = defineEmits<{
 function close() {
   emit('cancel');
 }
+const panelRef = ref<HTMLElement | null>(null);
+// Focus enters the dialog on open, cycles inside it, and returns to the opener
+// on close; Escape is handled here so every dialog dismisses the same way.
+useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => emit('cancel') });
 </script>
 
 <template>
@@ -31,6 +37,11 @@ function close() {
       @click.self="close"
     >
       <div
+        ref="panelRef"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="online-confirm-dialog-title"
+        tabindex="-1"
         class="bg-base-100 border border-base-300 rounded-box w-full max-w-sm shadow-2xl overflow-hidden"
       >
         <div class="flex items-start gap-3 p-5">
@@ -41,7 +52,9 @@ function close() {
             <AlertTriangle :size="18" />
           </div>
           <div class="min-w-0 flex-1">
-            <h3 class="text-sm font-semibold text-base-content">{{ title }}</h3>
+            <h3 id="online-confirm-dialog-title" class="text-sm font-semibold text-base-content">
+              {{ title }}
+            </h3>
             <p v-if="message" class="text-xs text-base-content/70 mt-1">{{ message }}</p>
           </div>
           <button

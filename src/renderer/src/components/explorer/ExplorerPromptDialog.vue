@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useDialogFocus } from '@renderer/composables/useDialogFocus';
 import { ref, watch, nextTick } from 'vue';
 
 const props = defineProps<{
@@ -32,6 +33,8 @@ function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Enter') emit('confirm');
   if (e.key === 'Escape') emit('cancel');
 }
+const panelRef = ref<HTMLElement | null>(null);
+useDialogFocus(panelRef);
 </script>
 
 <template>
@@ -42,10 +45,21 @@ function onKeydown(e: KeyboardEvent) {
       @click.self="emit('cancel')"
     >
       <div
+        ref="panelRef"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="explorer-prompt-dialog-title"
+        tabindex="-1"
         class="bg-base-100 border border-base-300 rounded-box p-5 min-w-75 shadow-2xl"
         data-testid="explorer-prompt-dialog"
       >
-        <p class="text-sm text-base-content mb-3 whitespace-pre-wrap">{{ message }}</p>
+        <!-- The prompt text is the dialog's only label; there is no heading. -->
+        <p
+          id="explorer-prompt-dialog-title"
+          class="text-sm text-base-content mb-3 whitespace-pre-wrap"
+        >
+          {{ message }}
+        </p>
         <input
           v-if="!isConfirm"
           ref="inputRef"
