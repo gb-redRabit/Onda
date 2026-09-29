@@ -105,24 +105,24 @@ Odtwarzanie · Wygląd · Motyw · Biblioteka · Sieć · System · Zaawansowane
 
 ## Stos technologiczny
 
-| Komponent      | Technologia                                  |
-| -------------- | -------------------------------------------- |
-| Runtime        | Electron 43.2                                |
-| Frontend       | Vue 3.5 (Composition API, `<script setup>`)  |
-| Język          | TypeScript 5.9 (strict)                      |
-| Builder        | electron-vite 5 + Vite 7.2                   |
-| Style          | Tailwind CSS 4.3 + daisyUI (theme values)    |
-| Stan           | Pinia 3                                      |
-| Lokalizacja    | vue-i18n 11 (PL/EN, 942 kluczy)              |
-| Routing        | vue-router 4 (hash history, lazy loading)    |
-| Metadane       | music-metadata, node-id3                     |
-| Wirtualizacja  | @tanstack/vue-virtual                        |
-| Obrazy         | sharp (libvips)                              |
-| Napisy         | jassub (Wasm)                                |
-| Watcher plików | chokidar                                     |
-| Testy          | Vitest 3 + jsdom                             |
-| Pakiety        | electron-builder (NSIS/DMG/AppImage/deb/rpm) |
-| Streaming      | yt-dlp (nightly), SoundCloud api-v2          |
+| Komponent      | Technologia                                    |
+| -------------- | ---------------------------------------------- |
+| Runtime        | Electron 43.2                                  |
+| Frontend       | Vue 3.5 (Composition API, `<script setup>`)    |
+| Język          | TypeScript 5.9 (strict)                        |
+| Builder        | electron-vite 5 + Vite 7.2                     |
+| Style          | Tailwind CSS 4.3 + daisyUI (theme values)      |
+| Stan           | Pinia 3                                        |
+| Lokalizacja    | vue-i18n 11 (PL/EN, parytety wymuszane testem) |
+| Routing        | vue-router 4 (hash history, lazy loading)      |
+| Metadane       | music-metadata, node-id3                       |
+| Wirtualizacja  | @tanstack/vue-virtual                          |
+| Obrazy         | sharp (libvips)                                |
+| Napisy         | jassub (Wasm)                                  |
+| Watcher plików | chokidar                                       |
+| Testy          | Vitest 3 + jsdom                               |
+| Pakiety        | electron-builder (NSIS/DMG/AppImage/deb/rpm)   |
+| Streaming      | yt-dlp (nightly), SoundCloud api-v2            |
 
 ---
 
@@ -151,7 +151,7 @@ npm run dev
 
 ### Testy
 
-Aplikacja zawiera **708 testów** (Vitest, 56 plików):
+Aplikacja zawiera **977 testów** (Vitest, 107 plików) oraz 9 scenariuszy E2E (Playwright + Electron):
 
 ```bash
 npm test
