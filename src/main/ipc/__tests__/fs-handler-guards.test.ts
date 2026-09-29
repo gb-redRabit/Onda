@@ -124,8 +124,6 @@ beforeEach(() => {
 describe('exploratory fs channels validate their arguments', () => {
   it.each([
     ['fs:readdir', ['relative/dir']],
-    ['fs:readdir', [null]],
-    ['fs:readdir', ['']],
     ['fs:getProperties', ['relative/dir']],
     ['fs:getProperties', [42]],
     ['fs:findDuplicates', ['relative/dir']],
@@ -142,15 +140,39 @@ describe('exploratory fs channels validate their arguments', () => {
     expect(batchedItems()).toEqual({ batches: 1, items: [] });
   });
 
+  it('fs:readdir reads an absent path as the drives view, not as invalid', async () => {
+    // The explorer's nav pane and breadcrumb call navigateTo(''), which arrives
+    // here as an empty string. Validating the argument before handling that made
+    // the drives view come back empty: no error anywhere, just a permanently
+    // blank list, and nothing that looked like a bug.
+    for (const empty of ['', null, undefined]) {
+      // Each invoke() creates its own sender, so batchedItems() sees this call only.
+      await invoke('fs:readdir', empty);
+      expect(batchedItems().batches, JSON.stringify(empty)).toBe(1);
+      expect(batchedItems().items.length, JSON.stringify(empty)).toBeGreaterThan(0);
+    }
+  });
+
   it('fs:readdir still lists the current directory', async () => {
     await invoke('fs:readdir', mediaDir);
     expect(batchedItems().items.map((i) => i.name)).toContain('track.mp3');
   });
 
-  it('fs:readdir still lists drives for the root', async () => {
-    await invoke('fs:readdir', '/');
-    expect(batchedItems().batches).toBe(1);
-  });
+  // Enumerating every drive is real I/O. Locally that is milliseconds, but on a
+  // cold Windows CI runner, or one with a network-mapped drive, it overruns the
+  // default 5 s budget, so the test failed on the runner while passing on every
+  // developer machine. 30 s leaves ample headroom without hiding a real hang,
+  // since a hang never completes.
+  const DRIVE_ENUMERATION_TIMEOUT_MS = 30_000;
+
+  it(
+    'fs:readdir still lists drives for the root',
+    async () => {
+      await invoke('fs:readdir', '/');
+      expect(batchedItems().batches).toBe(1);
+    },
+    DRIVE_ENUMERATION_TIMEOUT_MS
+  );
 
   it('fs:getProperties returns null for an invalid path', async () => {
     expect(await invoke('fs:getProperties', '../escape')).toBeNull();

@@ -82,12 +82,20 @@ export function registerFsHandlers(): void {
   });
 
   ipcMain.handle('fs:readdir', async (event, dirPath: unknown): Promise<void> => {
+    // An absent path is the drives view, not an invalid one — the explorer's
+    // nav pane and breadcrumb call navigateTo('') to mean "show me drives". The
+    // check has to come before validation, or the drives view silently comes back
+    // empty instead of listing them.
+    if (dirPath === '' || dirPath === undefined || dirPath === null || dirPath === '/') {
+      event.sender.send('fs:readdir:batch', { done: true, items: await getDrives() });
+      return;
+    }
     if (!isSafeAbsolutePath(dirPath)) {
       logger.warn('fs', 'readdir rejected invalid path');
       event.sender.send('fs:readdir:batch', { done: true, items: [] });
       return;
     }
-    if (dirPath === '/' || /^[A-Z]:$/i.test(dirPath)) {
+    if (/^[A-Z]:$/i.test(dirPath)) {
       event.sender.send('fs:readdir:batch', { done: true, items: await getDrives() });
       return;
     }
