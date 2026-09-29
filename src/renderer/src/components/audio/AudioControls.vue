@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
-import AudioControlsCompact from './AudioControlsCompact.vue';
+import AudioControlsCore from './AudioControlsCore.vue';
 import AudioControlsMicro from './AudioControlsMicro.vue';
-import AudioControlsMinimal from './AudioControlsMinimal.vue';
-import AudioControlsTall from './AudioControlsTall.vue';
-import AudioControlsWide from './AudioControlsWide.vue';
 
 import { calcMode, type LayoutMode } from '@renderer/utils/audioControls';
 
@@ -39,23 +36,23 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="rootEl" class="w-full h-full overflow-hidden">
-    <!-- ═══ WIDE (≥280 × ≥120) ═══ -->
-    <AudioControlsWide v-if="mode === 'wide'" :compact="compact" />
+    <!-- ═══ MICRO (<28px tall) — only the play button ═══ -->
+    <AudioControlsMicro v-if="mode === 'micro'" />
 
-    <AudioControlsCompact v-else-if="mode === 'compact'" :compact="compact" />
-
-    <!-- ═══ TALL (<180 × ≥140) ═══ -->
-    <AudioControlsTall v-else-if="mode === 'tall'" :compact="compact" />
-
-    <!-- ═══ MINIMAL (<180 × <140, ≥28px tall) ═══ -->
-    <AudioControlsMinimal
-      v-else-if="mode === 'minimal'"
+    <!--
+      ═══ WIDE (≥280 × ≥120) ═══
+      ═══ COMPACT (≥180 × ≥100) ═══
+      ═══ TALL (<180 × ≥140) ═══
+      ═══ MINIMAL (<180 × <140, ≥28px tall) ═══
+      One component; the differences are presentation only, and they live in
+      DENSITY (utils/audioControls.ts).
+    -->
+    <AudioControlsCore
+      v-else
+      :variant="mode"
       :compact="compact"
       :width-sufficient="widthSufficient"
       :volume-fit="volumeFit"
     />
-
-    <!-- ═══ MICRO (<28px tall) — only the play button ═══ -->
-    <AudioControlsMicro v-else />
   </div>
 </template>

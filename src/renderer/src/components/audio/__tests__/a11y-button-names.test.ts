@@ -50,7 +50,7 @@ describe('audio view controls are named', () => {
   const files = readdirSync(AUDIO_DIR).filter((f) => f.endsWith('.vue'));
 
   it('finds the component files it is meant to check', () => {
-    expect(files).toContain('AudioControlsCompact.vue');
+    expect(files).toContain('AudioControlsCore.vue');
     expect(files).toContain('AudioHudToolbar.vue');
   });
 
