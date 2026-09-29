@@ -11,6 +11,7 @@ import type {
   NetworkSettings,
   PlaybackSettings,
   StatusBarSettings,
+  HomeSettings,
   ToastSettings,
   UpdateSettings,
   YoutubeAuthSettings
@@ -28,7 +29,8 @@ import {
   DEFAULT_UPDATES,
   DEFAULT_TOAST,
   DEFAULT_GENERAL,
-  DEFAULT_STATUS_BAR
+  DEFAULT_STATUS_BAR,
+  DEFAULT_HOME
 } from '@renderer/utils/constants';
 import { loadSettings, persistSettings, mergeSettings } from '@renderer/utils/settingsStorage';
 
@@ -47,6 +49,7 @@ export interface SettingsState {
   toast: Ref<ToastSettings>;
   dependencies: Ref<Record<string, DependencyStatus>>;
   statusBar: Ref<StatusBarSettings>;
+  home: Ref<HomeSettings>;
   isLoaded: Ref<boolean>;
 }
 
@@ -67,6 +70,7 @@ export function createSettingsPersistence(state: SettingsState) {
     toast,
     dependencies,
     statusBar,
+    home,
     isLoaded
   } = state;
 
@@ -84,7 +88,8 @@ export function createSettingsPersistence(state: SettingsState) {
     updates,
     toast,
     dependencies,
-    statusBar
+    statusBar,
+    home
   });
 
   async function load() {
@@ -123,6 +128,7 @@ export function createSettingsPersistence(state: SettingsState) {
     dependencies.value = {};
     toast.value = { ...DEFAULT_TOAST };
     statusBar.value = { ...DEFAULT_STATUS_BAR };
+    home.value = { ...DEFAULT_HOME };
     save();
   }
 

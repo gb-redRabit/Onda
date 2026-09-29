@@ -1,21 +1,35 @@
 <script setup lang="ts">
-import { watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import {
+  Search,
+  X,
+  Settings,
+  MoreHorizontal,
+  RotateCcw,
+  FileDown,
+  FileUp,
+  CornerDownLeft
+} from '@lucide/vue';
 import { logger } from '@shared/logger';
-import { Search, RotateCcw, FileDown, FileUp, X, Settings, ArrowLeft } from '@lucide/vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore } from '@renderer/stores/ui';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
 import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
-import SettingsOverviewCard from '@renderer/components/settings/SettingsOverviewCard.vue';
-import { useSettingsContextMenu } from '@renderer/composables/useSettingsContextMenu';
-import { useSettingsNav } from '@renderer/composables/useSettingsNav';
+import SettingsRail from '@renderer/components/settings/SettingsRail.vue';
 import { SETTINGS_TAB_COMPONENTS } from '@renderer/components/settings/lazySettingsTabs';
+import { SETTINGS_SECTIONS, SETTINGS_TABS } from '@renderer/utils/settingsNav';
+import { SETTINGS_CATALOG, type SettingsCatalogEntry } from '@renderer/utils/settingsCatalog';
+import { bindSettingsStore } from '@renderer/utils/settingsDefaults';
+import { useSettingsNav } from '@renderer/composables/useSettingsNav';
+import PageHeader from '@renderer/components/ui/PageHeader.vue';
+import EmptyState from '@renderer/components/ui/EmptyState.vue';
 
 const settings = useSettingsStore();
 const ui = useUIStore();
 const { t } = useI18n();
-const settingsMenu = useSettingsContextMenu();
+bindSettingsStore(settings);
+
 const {
   promptVisible,
   promptIsConfirm,
@@ -26,20 +40,83 @@ const {
   promptCancel
 } = usePromptDialog();
 
-const {
-  sections,
-  activeSection,
-  activeTab,
-  search,
-  sectionTabs,
-  isOverview,
-  activeSectionItem,
-  selectSection,
-  selectTab,
-  goBackToSection,
-  goHome
-} = useSettingsNav();
+const { activeSection, activeTab, search, selectTab } = useSettingsNav();
 
+const searchInput = ref<HTMLInputElement | null>(null);
+const menuOpen = ref(false);
+const highlightedId = ref<string | null>(null);
+
+// ---- Search ------------------------------------------------------------------
+// Matches the tab labels/descriptions and the field catalog (label + keywords),
+// so "proxy" or "głośność" jumps straight to the field instead of a card.
+interface SearchHit {
+  kind: 'tab' | 'field';
+  id: string;
+  label: string;
+  tab: string;
+  description?: string;
+}
+
+const query = computed(() => search.value.trim().toLowerCase());
+
+const hits = computed<SearchHit[]>(() => {
+  const q = query.value;
+  if (!q) return [];
+  const tabLabel = (id: string) => {
+    const tab = SETTINGS_TABS.find((item) => item.id === id);
+    return tab ? t(tab.labelKey) : id;
+  };
+  const tabHits: SearchHit[] = SETTINGS_TABS.filter((tab) =>
+    t(tab.labelKey).toLowerCase().includes(q)
+  ).map((tab) => ({ kind: 'tab', id: tab.id, label: t(tab.labelKey), tab: tab.id }));
+
+  const fieldHits: SearchHit[] = SETTINGS_CATALOG.filter((entry: SettingsCatalogEntry) => {
+    const haystack =
+      `${t(entry.labelKey)} ${entry.keywords.join(' ')} ${tabLabel(entry.tab)}`.toLowerCase();
+    return haystack.includes(q);
+  }).map((entry) => ({
+    kind: 'field',
+    id: entry.id,
+    label: t(entry.labelKey),
+    tab: entry.tab,
+    description: tabLabel(entry.tab)
+  }));
+
+  return [...fieldHits.slice(0, 24), ...tabHits.slice(0, 8)];
+});
+
+async function openHit(hit: SearchHit): Promise<void> {
+  search.value = '';
+  await openTab(hit.tab);
+  if (hit.kind === 'field') {
+    await nextTick();
+    const el = document.getElementById(hit.id);
+    el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    highlightedId.value = hit.id;
+    window.setTimeout(() => {
+      if (highlightedId.value === hit.id) highlightedId.value = null;
+    }, 1600);
+  }
+}
+
+async function openTab(tabId: string): Promise<void> {
+  const tab = SETTINGS_TABS.find((item) => item.id === tabId);
+  if (tab) activeSection.value = tab.section;
+  selectTab(tabId);
+}
+
+function onSearchKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Escape') {
+    search.value = '';
+    searchInput.value?.blur();
+    return;
+  }
+  if (event.key === 'Enter' && hits.value.length) {
+    void openHit(hits.value[0]);
+  }
+}
+
+// ---- Header actions ----------------------------------------------------------
 async function onReset() {
   const ok = await showConfirm(t('settings.resetConfirm'));
   if (!ok) return;
@@ -76,6 +153,19 @@ async function onImport() {
   }
 }
 
+function onMenuAction(action: 'export' | 'import' | 'reset'): void {
+  menuOpen.value = false;
+  if (action === 'export') void onExport();
+  else if (action === 'import') void onImport();
+  else void onReset();
+}
+
+// ---- Misc --------------------------------------------------------------------
+const activeTabLabel = computed(() => {
+  const tab = SETTINGS_TABS.find((item) => item.id === activeTab.value);
+  return tab ? t(tab.labelKey) : '';
+});
+
 watch(activeTab, (_newTab, oldTab) => {
   if (oldTab === 'pip-video') {
     window.api?.pipPreviewStop().catch((err) => logger.error('Settings', 'pipPreviewStop', err));
@@ -86,201 +176,156 @@ watch(activeTab, (_newTab, oldTab) => {
       .catch((err) => logger.error('Settings', 'audioPipPreviewStop', err));
   }
 });
+
+onMounted(() => {
+  if (!activeTab.value) {
+    const first = SETTINGS_TABS.find(
+      (tab) => tab.section === (activeSection.value ?? 'appearance')
+    );
+    if (first) activeSection.value = first.section;
+    if (!activeTab.value && first) selectTab(first.id);
+  }
+});
 </script>
 
 <template>
   <div class="flex flex-col h-full">
-    <!-- ─── Header ─── -->
-    <header
-      class="shrink-0 flex items-center gap-3 px-6 h-14 border-b border-base-300 bg-base-100/(--glass-alpha)"
-    >
-      <div class="flex items-center gap-2.5">
-        <div
-          class="w-8 h-8 rounded-box bg-primary/15 text-primary flex items-center justify-center ring-1 ring-primary/20"
-        >
-          <Settings :size="15" />
-        </div>
-        <h1 class="text-[15px] font-bold tracking-tight">{{ t('settings.title') }}</h1>
-      </div>
-
-      <div class="relative max-w-xs flex-1 ml-6">
-        <Search
-          :size="14"
-          class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50 pointer-events-none"
-        />
-        <input
-          v-model="search"
-          :placeholder="t('settings.searchSettings')"
-          class="w-full pl-9 pr-8 h-9 rounded-field bg-base-200 border border-base-300 text-[13px] text-base-content outline-none transition-all placeholder:text-base-content/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
-        />
-        <button
-          v-if="search"
-          class="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-          :aria-label="t('common.close')"
-          @click="search = ''"
-        >
-          <X :size="13" />
-        </button>
-      </div>
-
-      <div class="ml-auto flex items-center gap-1.5">
-        <button
-          class="fx-noise flex items-center gap-1.5 px-3 h-9 fx-depth rounded-field text-xs font-medium text-base-content/70 bg-base-300 border border-base-300 hover:bg-base-content/10 hover:text-base-content transition-colors"
-          @click="onExport"
-        >
-          <FileDown :size="13" />
-          {{ t('settings.export') }}
-        </button>
-        <button
-          class="fx-noise flex items-center gap-1.5 px-3 h-9 fx-depth rounded-field text-xs font-medium text-base-content/70 bg-base-300 border border-base-300 hover:bg-base-content/10 hover:text-base-content transition-colors"
-          @click="onImport"
-        >
-          <FileUp :size="13" />
-          {{ t('settings.import') }}
-        </button>
-        <button
-          class="fx-noise p-2 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors"
-          :title="t('settings.reset')"
-          :aria-label="t('settings.reset')"
-          @click="onReset"
-        >
-          <RotateCcw :size="14" />
-        </button>
-      </div>
-    </header>
-
-    <!-- ─── Section tabs ─── -->
-    <nav
-      class="shrink-0 flex items-center gap-1 px-6 h-11 border-b border-base-300 bg-base-100/(--glass-alpha) overflow-x-auto"
-    >
-      <button
-        v-for="section in sections"
-        :key="section.id"
-        class="flex items-center gap-2 px-3 h-8 rounded-field text-xs font-medium whitespace-nowrap transition-all"
-        :class="
-          activeSection === section.id
-            ? 'bg-primary text-primary-content fx-depth shadow-primary/20'
-            : 'text-base-content/60 hover:text-base-content hover:bg-base-content/10'
-        "
-        @click="selectSection(section.id)"
-      >
-        <component :is="section.icon" :size="14" />
-        {{ t(section.labelKey) }}
-      </button>
-    </nav>
-
-    <!-- ─── Content ─── -->
-    <div class="flex-1 overflow-auto">
-      <Transition name="settings-content" mode="out-in">
-        <!-- Overview: section grid -->
-        <div v-if="isOverview" key="overview" class="px-6 py-8 mx-auto w-full max-w-5xl">
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-            <button
-              v-for="section in sections"
-              :key="section.id"
-              class="group flex flex-col items-center gap-3 p-5 rounded-box border border-base-300/70 bg-base-100 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all text-center"
-              @click="selectSection(section.id)"
-              @contextmenu="
-                settingsMenu.showSettingsMenu(
-                  $event,
-                  { onOpenSection: (id) => selectSection(id), onExport, onImport, onReset },
-                  section.id
-                )
-              "
-            >
-              <div
-                class="w-12 h-12 rounded-box bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-content transition-colors"
-              >
-                <component :is="section.icon" :size="22" />
-              </div>
-              <span class="text-sm font-medium text-base-content">{{ t(section.labelKey) }}</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Section: sub-tabs grid -->
-        <div
-          v-else-if="!activeTab"
-          :key="'section-' + activeSection"
-          class="px-6 py-8 mx-auto w-full max-w-5xl"
-        >
-          <div class="flex items-center gap-2 mb-6">
-            <button
-              class="flex items-center gap-1.5 text-xs text-base-content/50 hover:text-base-content transition-colors"
-              @click="goHome"
-            >
-              <component :is="activeSectionItem?.icon" :size="14" />
-              {{ activeSectionItem ? t(activeSectionItem.labelKey) : '' }}
-            </button>
-          </div>
-
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            <SettingsOverviewCard
-              v-for="card in sectionTabs"
-              :id="card.id"
-              :key="card.id"
-              :icon="card.icon"
-              :label-key="card.labelKey"
-              :description="(card as any).description"
-              :section="card.section"
-              @select="selectTab"
-            />
-          </div>
-
-          <div
-            v-if="sectionTabs.length === 0"
-            class="flex flex-col items-center justify-center py-20 text-base-content/50"
+    <!-- Header: title + search + rare actions under ⋯ -->
+    <PageHeader :title="t('settings.title')" :icon="Settings" compact class="shrink-0">
+      <template #actions>
+        <div class="relative ml-2 w-[min(42vw,24rem)]">
+          <Search
+            :size="14"
+            class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50 pointer-events-none"
+          />
+          <input
+            ref="searchInput"
+            v-model="search"
+            :placeholder="t('settings.searchSettings')"
+            class="w-full pl-9 pr-8 h-9 rounded-field bg-base-200 border border-base-300 text-[13px] text-base-content outline-none transition-all placeholder:text-base-content/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
+            data-testid="settings-search"
+            @keydown="onSearchKeydown"
+          />
+          <button
+            v-if="search"
+            class="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
+            :aria-label="t('common.close')"
+            @click="search = ''"
           >
-            <Search :size="40" class="mb-3 opacity-20" />
-            <p class="text-sm">{{ t('settings.noResults') }}</p>
-          </div>
+            <X :size="13" />
+          </button>
         </div>
 
-        <!-- Detail panel -->
-        <div v-else :key="'tab-' + activeTab" class="px-6 py-8">
-          <div class="flex items-center gap-2 mb-6">
-            <button
-              class="flex items-center gap-1.5 text-xs text-base-content/50 hover:text-base-content transition-colors"
-              @click="goBackToSection"
-            >
-              <ArrowLeft :size="14" />
-              {{ activeSectionItem ? t(activeSectionItem.labelKey) : '' }}
-            </button>
-          </div>
-
-          <component :is="SETTINGS_TAB_COMPONENTS[activeTab ?? '']" />
+        <div class="ml-auto flex items-center gap-1.5 shrink-0">
+          <button
+            class="ui-icon-button fx-noise fx-depth"
+            :title="t('settings.more')"
+            :aria-label="t('settings.more')"
+            :aria-expanded="menuOpen"
+            data-testid="settings-more"
+            @click="menuOpen = !menuOpen"
+          >
+            <MoreHorizontal :size="16" />
+          </button>
         </div>
-      </Transition>
+      </template>
+
+      <!-- Rare actions: export / import / reset -->
+      <template #overlay>
+        <div
+          v-if="menuOpen"
+          class="absolute right-6 top-full z-30 mt-1 w-56 rounded-box border border-base-300 bg-base-100 fx-depth p-1.5 text-[13px]"
+          data-testid="settings-menu"
+        >
+          <button
+            class="flex items-center gap-2 w-full px-2.5 h-8 rounded-field text-left hover:bg-base-content/10 transition-colors"
+            data-testid="settings-export"
+            @click="onMenuAction('export')"
+          >
+            <FileDown :size="14" />{{ t('settings.export') }}
+          </button>
+          <button
+            class="flex items-center gap-2 w-full px-2.5 h-8 rounded-field text-left hover:bg-base-content/10 transition-colors"
+            data-testid="settings-import"
+            @click="onMenuAction('import')"
+          >
+            <FileUp :size="14" />{{ t('settings.import') }}
+          </button>
+          <div class="my-1 h-px bg-base-300" />
+          <button
+            class="flex items-center gap-2 w-full px-2.5 h-8 rounded-field text-left text-error hover:bg-error/10 transition-colors"
+            data-testid="settings-reset-menu"
+            @click="onMenuAction('reset')"
+          >
+            <RotateCcw :size="14" />{{ t('settings.reset') }}
+          </button>
+        </div>
+      </template>
+    </PageHeader>
+
+    <div class="flex flex-1 min-h-0">
+      <SettingsRail
+        :sections="SETTINGS_SECTIONS"
+        :tabs="SETTINGS_TABS"
+        :active-section="activeSection"
+        :active-tab="activeTab"
+        @select-section="
+          (id) => {
+            const first = SETTINGS_TABS.find((tab) => tab.section === id);
+            if (first) openTab(first.id);
+          }
+        "
+        @select-tab="openTab"
+        @reset="onReset"
+      />
+
+      <main class="flex-1 min-w-0 overflow-auto">
+        <!-- Search results -->
+        <div v-if="query" class="px-6 py-5">
+          <EmptyState v-if="!hits.length" :title="t('settings.noResults')" :icon="Search" />
+          <ul v-else class="space-y-0.5">
+            <li v-for="hit in hits" :key="hit.id" data-testid="settings-search-hit">
+              <button
+                class="flex items-center gap-3 w-full px-3 py-2 rounded-field text-left hover:bg-base-content/5 transition-colors"
+                @click="openHit(hit)"
+              >
+                <span class="min-w-0 flex-1">
+                  <span class="block text-[13px] text-base-content truncate">{{ hit.label }}</span>
+                  <span
+                    v-if="hit.description"
+                    class="block text-[11px] text-base-content/45 truncate"
+                  >
+                    {{ hit.description }}
+                  </span>
+                </span>
+                <span
+                  v-if="hit.kind === 'field'"
+                  class="shrink-0 text-[10px] uppercase tracking-wider text-base-content/35"
+                >
+                  {{ t('settings.searchField') }}
+                </span>
+                <CornerDownLeft :size="13" class="shrink-0 text-base-content/30" />
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Active tab -->
+        <div v-else :key="'tab-' + activeTab" class="px-6 py-4">
+          <h2 class="text-lg font-bold tracking-tight mb-1">{{ activeTabLabel }}</h2>
+          <component :is="SETTINGS_TAB_COMPONENTS[activeTab ?? '']" :highlight="highlightedId" />
+        </div>
+      </main>
     </div>
 
     <ExplorerPromptDialog
+      v-if="promptVisible"
       :visible="promptVisible"
       :is-confirm="promptIsConfirm"
       :message="promptMessage"
       :value="promptValue"
-      @update:value="promptValue = $event"
       @confirm="promptConfirm"
       @cancel="promptCancel"
     />
   </div>
 </template>
-
-<style scoped>
-.settings-content-enter-active {
-  transition:
-    opacity 180ms ease,
-    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.settings-content-leave-active {
-  transition:
-    opacity 120ms ease,
-    transform 120ms ease;
-}
-.settings-content-enter-from {
-  opacity: 0;
-  transform: translateY(8px);
-}
-.settings-content-leave-to {
-  opacity: 0;
-}
-</style>

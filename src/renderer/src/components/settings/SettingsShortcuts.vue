@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
-import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
-import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
+import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
 
 const settings = useSettingsStore();
 
@@ -75,27 +74,25 @@ function displayKey(key: string): string {
 </script>
 
 <template>
-  <SettingsPanel :title="$t('settings.shortcutsSection')">
-    <SettingsCard :padded="false">
-      <div
-        v-for="(key, action) in settings.shortcuts"
-        :key="action"
-        class="flex items-center justify-between gap-4 px-4 py-2.5 border-b border-base-300 last:border-b-0"
+  <SettingsGroup :padded="false">
+    <div
+      v-for="(key, action) in settings.shortcuts"
+      :key="action"
+      class="flex items-center justify-between gap-4 px-4 py-2.5 border-b border-base-300 last:border-b-0"
+    >
+      <span class="text-sm capitalize">{{ String(action).replace(/-/g, ' ') }}</span>
+      <button
+        class="fx-noise px-3 py-1 fx-depth rounded-field border text-xs font-mono transition-colors min-w-15 text-center"
+        :class="
+          recording === action
+            ? 'border-primary bg-primary/10 text-primary animate-pulse'
+            : 'border-base-300 bg-base-200/[var(--glass-alpha)] text-base-content/70 hover:border-primary hover:text-base-content'
+        "
+        @click="startRecording(String(action))"
       >
-        <span class="text-sm capitalize">{{ String(action).replace(/-/g, ' ') }}</span>
-        <button
-          class="fx-noise px-3 py-1 fx-depth rounded-field border text-xs font-mono transition-colors min-w-15 text-center"
-          :class="
-            recording === action
-              ? 'border-primary bg-primary/10 text-primary animate-pulse'
-              : 'border-base-300 bg-base-200/[var(--glass-alpha)] text-base-content/70 hover:border-primary hover:text-base-content'
-          "
-          @click="startRecording(String(action))"
-        >
-          <template v-if="recording === action">...</template>
-          <template v-else>{{ displayKey(key) }}</template>
-        </button>
-      </div>
-    </SettingsCard>
-  </SettingsPanel>
+        <template v-if="recording === action">...</template>
+        <template v-else>{{ displayKey(key) }}</template>
+      </button>
+    </div>
+  </SettingsGroup>
 </template>

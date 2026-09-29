@@ -17,4 +17,9 @@ describe('settings navigation', () => {
     expect(tab?.section).toBe('system');
     expect(tab?.labelKey).toBe('settings.diagnostics');
   });
+
+  it('merges system information into diagnostics instead of exposing a duplicate tab', () => {
+    expect(SETTINGS_TABS.map((item) => String(item.id))).not.toContain('systemInfo');
+    expect('systemInfo' in SETTINGS_TAB_COMPONENTS).toBe(false);
+  });
 });

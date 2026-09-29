@@ -13,11 +13,10 @@ import {
   PanelLeft,
   PanelRight
 } from '@lucide/vue';
-import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
-import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
 import SettingsSectionTitle from '@renderer/components/settings/SettingsSectionTitle.vue';
 import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
 import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
+import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
 
 const settings = useSettingsStore();
 
@@ -151,118 +150,114 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <SettingsPanel :title="$t('settings.pipAudio')" :description="$t('settings.pipAudioDesc')">
-    <SettingsCard>
-      <div class="flex items-center justify-between pb-4 border-b border-base-300">
-        <SettingsSectionTitle :title="$t('settings.audioPipSection')" class="mb-0!" />
-        <button
-          class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
-          :class="
-            audioPreviewOpen
-              ? 'bg-error/20 text-error hover:bg-error/30'
-              : 'bg-primary text-primary-content hover:bg-primary/90'
-          "
-          @click="togglePreview"
-        >
-          {{ audioPreviewOpen ? $t('settings.closePreview') : $t('settings.showPreview') }}
-        </button>
-      </div>
+  <SettingsGroup>
+    <div class="flex items-center justify-between pb-4 border-b border-base-300">
+      <SettingsSectionTitle :title="$t('settings.audioPipSection')" class="mb-0!" />
+      <button
+        class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
+        :class="
+          audioPreviewOpen
+            ? 'bg-error/20 text-error hover:bg-error/30'
+            : 'bg-primary text-primary-content hover:bg-primary/90'
+        "
+        @click="togglePreview"
+      >
+        {{ audioPreviewOpen ? $t('settings.closePreview') : $t('settings.showPreview') }}
+      </button>
+    </div>
 
-      <div class="grid gap-5 md:grid-cols-[auto_1fr] md:items-start pt-3">
-        <div>
-          <SettingsSectionTitle :title="$t('settings.audioPipDock')" />
-          <div class="grid grid-cols-3 gap-1.5 w-max">
-            <template v-for="row in [1, 2, 3]" :key="row">
-              <template v-for="col in [1, 2, 3]" :key="col">
-                <button
-                  v-if="DOCKS.find((d) => d.gridRow === row && d.gridCol === col)"
-                  :key="DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id"
-                  class="w-11 h-11 rounded-field border flex items-center justify-center transition-colors"
-                  :class="
-                    settings.appearance.audioPipDock ===
-                    DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-base-300 text-base-content/60 hover:bg-base-content/5'
-                  "
-                  :title="dockLabel(DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id)"
-                  @click="setDock(DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id)"
-                >
-                  <component
-                    :is="dockIcon(DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id)"
-                    :size="17"
-                  />
-                </button>
-                <div
-                  v-else
-                  class="w-11 h-11 rounded-field bg-base-content/5 flex items-center justify-center"
-                >
-                  <span class="text-[10px] text-base-content/40 text-center leading-tight">
-                    {{ sizeHint }}
-                  </span>
-                </div>
-              </template>
-            </template>
-          </div>
-          <p class="mt-2 text-xs text-base-content/50 max-w-44">
-            {{
-              isEdge
-                ? $t('settings.audioPipDock_edge') + ' · ' + $t('settings.audioPipAutoHideDesc')
-                : $t('settings.audioPipDock_corner')
-            }}
-          </p>
-        </div>
-
-        <div class="min-w-0 space-y-4">
-          <div>
-            <SettingsSectionTitle
-              :title="
-                (isEdge
-                  ? $t('settings.audioPipEdgeContent')
-                  : $t('settings.audioPipCornerContent')) +
-                ' · ' +
-                $t('settings.audioPipSizeHint') +
-                ': ' +
-                sizeHint
-              "
-            />
-            <div class="flex flex-wrap gap-1.5">
+    <div class="grid gap-5 md:grid-cols-[auto_1fr] md:items-start pt-3">
+      <div>
+        <SettingsSectionTitle :title="$t('settings.audioPipDock')" />
+        <div class="grid grid-cols-3 gap-1.5 w-max">
+          <template v-for="row in [1, 2, 3]" :key="row">
+            <template v-for="col in [1, 2, 3]" :key="col">
               <button
-                v-for="id in ELEMENTS"
-                :key="id"
-                class="fx-noise px-2.5 py-1.5 fx-depth rounded-field text-xs font-medium border transition-colors"
+                v-if="DOCKS.find((d) => d.gridRow === row && d.gridCol === col)"
+                :key="DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id"
+                class="w-11 h-11 rounded-field border flex items-center justify-center transition-colors"
                 :class="
-                  isChecked(id)
+                  settings.appearance.audioPipDock ===
+                  DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-base-300 text-base-content/60 hover:bg-base-content/5'
                 "
-                @click="toggleElement(id)"
+                :title="dockLabel(DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id)"
+                @click="setDock(DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id)"
               >
-                {{ $t('settings.audioPipEl_' + id) }}
+                <component
+                  :is="dockIcon(DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id)"
+                  :size="17"
+                />
               </button>
-            </div>
-          </div>
-
-          <div class="space-y-1">
-            <SettingsRow :label="$t('settings.audioPipAutoShow')">
-              <SettingsToggle
-                :model-value="settings.appearance.audioPipAutoShow"
-                @update:model-value="settings.updateAppearance({ audioPipAutoShow: $event })"
-              />
-            </SettingsRow>
-            <SettingsRow :label="$t('settings.audioPipAutoHide')">
-              <SettingsToggle
-                :model-value="settings.appearance.audioPipAutoHide"
-                :disabled="!isEdge"
-                @update:model-value="settings.updateAppearance({ audioPipAutoHide: $event })"
-              />
-            </SettingsRow>
-          </div>
-
-          <p class="text-xs text-base-content/50 leading-relaxed">
-            {{ $t('settings.audioPipDblClickHint') }} · glass-alpha + blur z motywu aplikacji.
-          </p>
+              <div
+                v-else
+                class="w-11 h-11 rounded-field bg-base-content/5 flex items-center justify-center"
+              >
+                <span class="text-[10px] text-base-content/40 text-center leading-tight">
+                  {{ sizeHint }}
+                </span>
+              </div>
+            </template>
+          </template>
         </div>
+        <p class="mt-2 text-xs text-base-content/50 max-w-44">
+          {{
+            isEdge
+              ? $t('settings.audioPipDock_edge') + ' · ' + $t('settings.audioPipAutoHideDesc')
+              : $t('settings.audioPipDock_corner')
+          }}
+        </p>
       </div>
-    </SettingsCard>
-  </SettingsPanel>
+
+      <div class="min-w-0 space-y-4">
+        <div>
+          <SettingsSectionTitle
+            :title="
+              (isEdge ? $t('settings.audioPipEdgeContent') : $t('settings.audioPipCornerContent')) +
+              ' · ' +
+              $t('settings.audioPipSizeHint') +
+              ': ' +
+              sizeHint
+            "
+          />
+          <div class="flex flex-wrap gap-1.5">
+            <button
+              v-for="id in ELEMENTS"
+              :key="id"
+              class="fx-noise px-2.5 py-1.5 fx-depth rounded-field text-xs font-medium border transition-colors"
+              :class="
+                isChecked(id)
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-base-300 text-base-content/60 hover:bg-base-content/5'
+              "
+              @click="toggleElement(id)"
+            >
+              {{ $t('settings.audioPipEl_' + id) }}
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <SettingsRow :label="$t('settings.audioPipAutoShow')">
+            <SettingsToggle
+              :model-value="settings.appearance.audioPipAutoShow"
+              @update:model-value="settings.updateAppearance({ audioPipAutoShow: $event })"
+            />
+          </SettingsRow>
+          <SettingsRow :label="$t('settings.audioPipAutoHide')">
+            <SettingsToggle
+              :model-value="settings.appearance.audioPipAutoHide"
+              :disabled="!isEdge"
+              @update:model-value="settings.updateAppearance({ audioPipAutoHide: $event })"
+            />
+          </SettingsRow>
+        </div>
+
+        <p class="text-xs text-base-content/50 leading-relaxed">
+          {{ $t('settings.audioPipDblClickHint') }} · glass-alpha + blur z motywu aplikacji.
+        </p>
+      </div>
+    </div>
+  </SettingsGroup>
 </template>

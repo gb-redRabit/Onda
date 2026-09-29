@@ -2,9 +2,7 @@
 import { ref, onMounted } from 'vue';
 import type { AppInfo } from '@shared/types/ipc';
 import { logger } from '@shared/logger';
-import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
-import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
-import SettingsSectionTitle from '@renderer/components/settings/SettingsSectionTitle.vue';
+import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
 
 const info = ref<AppInfo | null>(null);
 const licenses = ref<Array<{ name: string; version?: string; license?: string }>>([]);
@@ -23,81 +21,46 @@ onMounted(async () => {
 </script>
 
 <template>
-  <SettingsPanel>
-    <SettingsCard>
-      <div class="flex items-center gap-4">
-        <div
-          class="w-16 h-16 rounded-box bg-primary/10 flex items-center justify-center text-primary text-2xl font-black"
-        >
-          O
-        </div>
-        <div>
-          <h2 class="text-xl font-bold">{{ info?.appName || 'Onda' }}</h2>
-          <div class="text-sm text-base-content/50 mt-0.5">v{{ info?.appVersion }}</div>
-        </div>
-      </div>
-    </SettingsCard>
-
-    <SettingsCard>
-      <SettingsSectionTitle :title="$t('settings.envVersions')" />
-      <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
-        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
-          <div class="text-[11px] text-base-content/50 mb-0.5">Electron</div>
-          <div class="text-sm font-mono">{{ info?.electron }}</div>
-        </div>
-        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
-          <div class="text-[11px] text-base-content/50 mb-0.5">Chrome</div>
-          <div class="text-sm font-mono">{{ info?.chrome }}</div>
-        </div>
-        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
-          <div class="text-[11px] text-base-content/50 mb-0.5">Node.js</div>
-          <div class="text-sm font-mono">{{ info?.node }}</div>
-        </div>
-        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
-          <div class="text-[11px] text-base-content/50 mb-0.5">V8</div>
-          <div class="text-sm font-mono">{{ info?.v8 }}</div>
-        </div>
-        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
-          <div class="text-[11px] text-base-content/50 mb-0.5">{{ $t('settings.os') }}</div>
-          <div class="text-sm font-mono truncate">{{ info?.os }}</div>
-        </div>
-        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
-          <div class="text-[11px] text-base-content/50 mb-0.5">{{ $t('settings.platform') }}</div>
-          <div class="text-sm font-mono">{{ info?.platform }} / {{ info?.arch }}</div>
-        </div>
-      </div>
-    </SettingsCard>
-
-    <SettingsCard>
-      <SettingsSectionTitle :title="$t('settings.licenses')" />
-      <div class="divide-y divide-base-300">
-        <div
-          v-for="lic in licenses"
-          :key="lic.name"
-          class="flex items-center justify-between py-2 text-xs"
-        >
-          <span class="font-mono">{{ lic.name }}@{{ lic.version }}</span>
-          <span class="text-base-content/50">{{
-            lic.license || $t('settings.licenseUnknown')
-          }}</span>
-        </div>
-        <div v-if="!licenses.length" class="py-2 text-xs text-base-content/50">
-          {{ $t('settings.licenseUnknown') }}
-        </div>
-      </div>
-    </SettingsCard>
-
-    <div class="flex gap-3">
-      <a
-        v-for="link in links"
-        :key="link.url"
-        :href="link.url"
-        target="_blank"
-        rel="noopener"
-        class="px-3 py-1.5 rounded-field bg-base-100 border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors"
+  <SettingsGroup>
+    <div class="flex items-center gap-4">
+      <div
+        class="w-16 h-16 rounded-box bg-primary/10 flex items-center justify-center text-primary text-2xl font-black"
       >
-        {{ link.label }}
-      </a>
+        O
+      </div>
+      <div>
+        <h2 class="text-xl font-bold">{{ info?.appName || 'Onda' }}</h2>
+        <div class="text-sm text-base-content/50 mt-0.5">v{{ info?.appVersion }}</div>
+      </div>
     </div>
-  </SettingsPanel>
+  </SettingsGroup>
+
+  <SettingsGroup :title="$t('settings.licenses')">
+    <div class="divide-y divide-base-300">
+      <div
+        v-for="lic in licenses"
+        :key="lic.name"
+        class="flex items-center justify-between py-2 text-xs"
+      >
+        <span class="font-mono">{{ lic.name }}@{{ lic.version }}</span>
+        <span class="text-base-content/50">{{ lic.license || $t('settings.licenseUnknown') }}</span>
+      </div>
+      <div v-if="!licenses.length" class="py-2 text-xs text-base-content/50">
+        {{ $t('settings.licenseUnknown') }}
+      </div>
+    </div>
+  </SettingsGroup>
+
+  <div class="flex gap-3">
+    <a
+      v-for="link in links"
+      :key="link.url"
+      :href="link.url"
+      target="_blank"
+      rel="noopener"
+      class="px-3 py-1.5 rounded-field bg-base-100 border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors"
+    >
+      {{ link.label }}
+    </a>
+  </div>
 </template>

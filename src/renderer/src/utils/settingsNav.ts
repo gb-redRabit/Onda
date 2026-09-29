@@ -35,168 +35,132 @@ export const SETTINGS_TABS = [
     id: 'playback',
     labelKey: 'settings.playback',
     icon: Play,
-    section: 'playback',
-    description: 'Głośność, crossfade, bufor'
-  },
-  {
-    id: 'playback-buffer',
-    labelKey: 'settings.playbackBuffer',
-    icon: Music2,
-    section: 'playback',
-    description: 'Preload, sleep timer, per-source'
+    section: 'playback'
   },
   {
     id: 'pip-video',
     labelKey: 'settings.pipVideo',
     icon: PictureInPicture,
-    section: 'playback',
-    description: 'Tryb PiP wideo'
+    section: 'playback'
   },
   {
     id: 'pip-audio',
     labelKey: 'settings.pipAudio',
     icon: Music2,
-    section: 'playback',
-    description: 'Tryb PiP audio'
+    section: 'playback'
   },
   {
     id: 'theme',
     labelKey: 'settings.themeTab',
     icon: Paintbrush,
-    section: 'appearance',
-    description: 'Motywy i kolory'
+    section: 'appearance'
   },
   {
     id: 'appearance',
     labelKey: 'settings.appearance',
     icon: Palette,
-    section: 'appearance',
-    description: 'Czcionka, sidebar, animacje'
+    section: 'appearance'
   },
   {
     id: 'network',
     labelKey: 'settings.network',
     icon: Globe,
-    section: 'network',
-    description: 'Proxy globalne, prędkość'
+    section: 'network'
   },
   {
     id: 'network-platform',
     labelKey: 'settings.networkPlatform',
     icon: Globe,
-    section: 'network',
-    description: 'Jakość i proxy YT/SC'
+    section: 'network'
   },
   {
     id: 'download',
     labelKey: 'settings.download',
     icon: Download,
-    section: 'network',
-    description: 'Konto Google i cookies'
+    section: 'network'
   },
   {
     id: 'download-paths',
     labelKey: 'settings.downloadPaths',
     icon: Folder,
-    section: 'network',
-    description: 'Foldery docelowe i profile'
+    section: 'network'
   },
   {
     id: 'download-queue',
     labelKey: 'settings.downloadQueue',
     icon: Download,
-    section: 'network',
-    description: 'Kolejka, retry, hash'
+    section: 'network'
   },
   {
     id: 'smart-mode',
     labelKey: 'settings.smartModeTab',
     icon: Wand,
-    section: 'network',
-    description: 'Tryb inteligentny'
+    section: 'network'
   },
   {
     id: 'library',
     labelKey: 'settings.library',
     icon: Folder,
-    section: 'library',
-    description: 'Foldery biblioteki i skan'
+    section: 'library'
   },
   {
     id: 'explorer',
     labelKey: 'settings.explorer',
     icon: Folder,
-    section: 'library',
-    description: 'Widok i sortowanie plików'
+    section: 'library'
   },
   {
     id: 'general',
     labelKey: 'settings.general',
     icon: Power,
-    section: 'system',
-    description: 'Autostart, tray, sesja'
+    section: 'system'
   },
   {
     id: 'system-logs',
     labelKey: 'settings.systemLogs',
     icon: Info,
-    section: 'system',
-    description: 'Logi, rozmiar, eksperymenty'
+    section: 'system'
   },
   {
     id: 'shortcuts',
     labelKey: 'settings.shortcuts',
     icon: Keyboard,
-    section: 'system',
-    description: 'Skróty klawiszowe'
+    section: 'system'
   },
   {
     id: 'toast',
     labelKey: 'settings.notifications',
     icon: Bell,
-    section: 'system',
-    description: 'Powiadomienia'
+    section: 'system'
   },
   {
     id: 'updates',
     labelKey: 'settings.updates',
     icon: RefreshCw,
-    section: 'system',
-    description: 'Aktualizacje'
+    section: 'system'
   },
   {
     id: 'dependencies',
     labelKey: 'settings.dependencies',
     icon: Box,
-    section: 'system',
-    description: 'yt-dlp, ffmpeg, mkvextract'
-  },
-  {
-    id: 'systemInfo',
-    labelKey: 'settings.systemInfo',
-    icon: Info,
-    section: 'system',
-    description: 'Wersje i ścieżki'
+    section: 'system'
   },
   {
     id: 'diagnostics',
     labelKey: 'settings.diagnostics',
     icon: Activity,
-    section: 'system',
-    description: 'Resolver, ostrzeżenia, cache, reset'
+    section: 'system'
   },
   {
     id: 'apiKeys',
     labelKey: 'settings.apiKeys',
     icon: Key,
-    section: 'advanced',
-    description: 'Klucze API'
+    section: 'advanced'
   },
   {
     id: 'plugins',
     labelKey: 'settings.plugins',
     icon: Puzzle,
-    section: 'advanced',
-    description: 'Rozszerzenia Onda'
+    section: 'advanced'
   }
 ] as const;

@@ -20,7 +20,15 @@ export interface AppSettings {
   toast: ToastSettings;
   dependencies: Record<string, DependencyStatus>;
   statusBar: StatusBarSettings;
+  home: HomeSettings;
   favorites?: string[];
+}
+
+export type HomeSectionId =
+  'continue' | 'recent' | 'mostPlayed' | 'favorites' | 'playlists' | 'albums' | 'artists';
+
+export interface HomeSettings {
+  sections: HomeSectionId[];
 }
 
 export type StatusBarSectionId =
@@ -45,7 +53,6 @@ export interface GeneralSettings {
   restoreSession: boolean;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   logMaxSizeMB: number;
-  experimentalEnabled: boolean;
 }
 
 export type YoutubeAuthMethod = 'none' | 'electron' | 'browser' | 'manual';
@@ -179,7 +186,6 @@ interface VisualizationSettings {
 }
 
 export interface PlaybackSettings {
-  defaultPlayer: 'html5' | 'vlc';
   normalization: boolean;
   replayGain: boolean;
   gaplessPlayback: boolean;
@@ -198,11 +204,6 @@ export interface PlaybackSettings {
   playbackSpeed: number;
   videoFilter: string;
   visualization: VisualizationSettings;
-  crossfadeSeconds: number;
-  streamPreloadSeconds: number;
-  perSourceVolume: boolean;
-  autoResume: boolean;
-  sleepTimerMinutes: number;
 }
 
 export interface DownloadSettings {

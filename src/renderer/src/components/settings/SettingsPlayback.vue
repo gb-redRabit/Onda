@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { useSettingsStore } from '@renderer/stores/settings';
-import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
-import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
-import SettingsSectionTitle from '@renderer/components/settings/SettingsSectionTitle.vue';
 import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
 import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
+import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
 
 const settings = useSettingsStore();
 
@@ -19,11 +17,14 @@ const toggles = [
 </script>
 
 <template>
-  <SettingsPanel :title="$t('settings.playbackSection')">
-    <SettingsCard>
-      <SettingsSectionTitle
-        :title="`${$t('settings.defaultVolume')} ${Math.round(settings.playback.defaultVolume * 100)}%`"
-      />
+  <SettingsGroup>
+    <SettingsRow
+      :label="$t('settings.defaultVolume')"
+      :description="`${Math.round(settings.playback.defaultVolume * 100)}%`"
+      path="playback.defaultVolume"
+      anchor="setting-default-volume"
+      wide
+    >
       <input
         type="range"
         min="0"
@@ -36,63 +37,68 @@ const toggles = [
           })
         "
       />
-    </SettingsCard>
+    </SettingsRow>
+  </SettingsGroup>
 
-    <SettingsCard>
-      <div class="divide-y divide-base-300">
-        <SettingsRow v-for="opt in toggles" :key="opt.key" :label="$t(opt.labelKey) ?? ''">
-          <SettingsToggle
-            :model-value="settings.playback[opt.key]"
-            @update:model-value="settings.updatePlayback({ [opt.key]: $event })"
-          />
-        </SettingsRow>
-      </div>
-    </SettingsCard>
+  <SettingsGroup>
+    <div class="divide-y divide-base-300">
+      <SettingsRow v-for="opt in toggles" :key="opt.key" :label="$t(opt.labelKey) ?? ''">
+        <SettingsToggle
+          :model-value="settings.playback[opt.key]"
+          @update:model-value="settings.updatePlayback({ [opt.key]: $event })"
+        />
+      </SettingsRow>
+    </div>
+  </SettingsGroup>
 
-    <SettingsCard v-if="settings.playback.cursorHide">
-      <SettingsSectionTitle
-        :title="`${$t('settings.cursorHideTimeout')} ${settings.playback.cursorTimeout}s`"
-      />
-      <input
-        type="range"
-        min="1"
-        max="10"
-        step="1"
-        :value="settings.playback.cursorTimeout"
-        class="w-full"
-        @input="
-          settings.updatePlayback({
-            cursorTimeout: parseInt(($event.target as HTMLInputElement).value)
-          })
-        "
-      />
-      <p class="text-[11px] text-base-content/50 mt-2">{{ $t('settings.cursorHideHint') }}</p>
-    </SettingsCard>
+  <SettingsGroup
+    v-if="settings.playback.cursorHide"
+    :title="`${$t('settings.cursorHideTimeout')} ${settings.playback.cursorTimeout}s`"
+  >
+    <input
+      type="range"
+      min="1"
+      max="10"
+      step="1"
+      :value="settings.playback.cursorTimeout"
+      class="w-full"
+      @input="
+        settings.updatePlayback({
+          cursorTimeout: parseInt(($event.target as HTMLInputElement).value)
+        })
+      "
+    />
+    <p class="text-[11px] text-base-content/50 mt-2">{{ $t('settings.cursorHideHint') }}</p>
+  </SettingsGroup>
 
-    <SettingsCard v-if="settings.playback.rememberPosition">
-      <SettingsSectionTitle
-        :title="`${$t('settings.resumePromptTimeout')} ${settings.playback.resumePromptTimeout}s`"
-      />
-      <input
-        type="range"
-        min="1"
-        max="15"
-        step="1"
-        :value="settings.playback.resumePromptTimeout"
-        class="w-full"
-        @input="
-          settings.updatePlayback({
-            resumePromptTimeout: parseInt(($event.target as HTMLInputElement).value)
-          })
-        "
-      />
-      <p class="text-[11px] text-base-content/50 mt-2">{{ $t('settings.resumePromptHint') }}</p>
-    </SettingsCard>
+  <SettingsGroup
+    v-if="settings.playback.rememberPosition"
+    :title="`${$t('settings.resumePromptTimeout')} ${settings.playback.resumePromptTimeout}s`"
+  >
+    <input
+      type="range"
+      min="1"
+      max="15"
+      step="1"
+      :value="settings.playback.resumePromptTimeout"
+      class="w-full"
+      @input="
+        settings.updatePlayback({
+          resumePromptTimeout: parseInt(($event.target as HTMLInputElement).value)
+        })
+      "
+    />
+    <p class="text-[11px] text-base-content/50 mt-2">{{ $t('settings.resumePromptHint') }}</p>
+  </SettingsGroup>
 
-    <SettingsCard>
-      <SettingsSectionTitle
-        :title="`${$t('settings.defaultSpeed')} ${settings.playback.playbackSpeed}x`"
-      />
+  <SettingsGroup>
+    <SettingsRow
+      :label="$t('settings.defaultSpeed')"
+      :description="`${settings.playback.playbackSpeed}x`"
+      path="playback.playbackSpeed"
+      anchor="setting-playback-speed"
+      wide
+    >
       <input
         type="range"
         min="0.2"
@@ -106,29 +112,15 @@ const toggles = [
           })
         "
       />
-    </SettingsCard>
+    </SettingsRow>
+  </SettingsGroup>
 
-    <SettingsCard>
-      <SettingsSectionTitle :title="$t('settings.defaultPlayer')" />
-      <div class="flex gap-2">
-        <button
-          v-for="p in ['html5', 'vlc'] as const"
-          :key="p"
-          class="px-3 py-1.5 rounded-field text-xs font-medium border transition-colors"
-          :class="
-            settings.playback.defaultPlayer === p
-              ? 'bg-primary text-primary-content border-primary'
-              : 'bg-base-100 border-base-300 hover:bg-base-200'
-          "
-          @click="settings.updatePlayback({ defaultPlayer: p })"
-        >
-          {{ p.toUpperCase() }}
-        </button>
-      </div>
-    </SettingsCard>
-
-    <SettingsCard>
-      <SettingsSectionTitle :title="$t('settings.videoFilter')" />
+  <SettingsGroup :title="$t('settings.videoFilter')">
+    <SettingsRow
+      :label="$t('settings.videoFilter')"
+      path="playback.videoFilter"
+      anchor="setting-video-filter"
+    >
       <select
         :value="settings.playback.videoFilter"
         class="w-full px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
@@ -136,96 +128,99 @@ const toggles = [
           settings.updatePlayback({ videoFilter: ($event.target as HTMLSelectElement).value })
         "
       >
-        <option value="none">None</option>
-        <option value="grayscale(100%)">Grayscale</option>
-        <option value="sepia(100%)">Sepia</option>
-        <option value="invert(100%)">Invert</option>
-        <option value="contrast(150%)">High Contrast</option>
+        <option value="none">{{ $t('videoFilters.none') }}</option>
+        <option value="grayscale(100%)">{{ $t('videoFilters.grayscale') }}</option>
+        <option value="sepia(80%)">{{ $t('videoFilters.sepia') }}</option>
+        <option value="contrast(150%)">{{ $t('videoFilters.highContrast') }}</option>
+        <option value="brightness(150%)">{{ $t('videoFilters.brightness') }}</option>
+        <option value="saturate(200%)">{{ $t('videoFilters.saturation') }}</option>
+        <option value="invert(100%)">{{ $t('videoFilters.invert') }}</option>
+        <option value="blur(2px)">{{ $t('videoFilters.blur') }}</option>
+        <option value="hue-rotate(90deg)">{{ $t('videoFilters.hueRotate') }}</option>
       </select>
-    </SettingsCard>
+    </SettingsRow>
+  </SettingsGroup>
 
-    <SettingsCard>
-      <SettingsSectionTitle :title="$t('settings.visualization')" />
-      <div class="flex flex-col gap-3">
+  <SettingsGroup :title="$t('settings.visualization')">
+    <div class="flex flex-col gap-3">
+      <label class="flex flex-col gap-1">
+        <span class="text-xs text-base-content/70">{{ $t('settings.vizMode') }}</span>
+        <select
+          :value="settings.playback.visualization.mode"
+          class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
+          @change="
+            settings.updatePlayback({
+              visualization: {
+                ...settings.playback.visualization,
+                mode: ($event.target as HTMLSelectElement).value as any
+              }
+            })
+          "
+        >
+          <option value="none">None</option>
+          <option value="circle">Circle</option>
+          <option value="bars">Bars</option>
+          <option value="particles">Particles</option>
+          <option value="wave">Wave</option>
+          <option value="radial">Radial</option>
+        </select>
+      </label>
+      <div class="grid grid-cols-2 gap-3">
         <label class="flex flex-col gap-1">
-          <span class="text-xs text-base-content/70">{{ $t('settings.vizMode') }}</span>
-          <select
-            :value="settings.playback.visualization.mode"
-            class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
-            @change="
-              settings.updatePlayback({
-                visualization: {
-                  ...settings.playback.visualization,
-                  mode: ($event.target as HTMLSelectElement).value as any
-                }
-              })
-            "
-          >
-            <option value="none">None</option>
-            <option value="circle">Circle</option>
-            <option value="bars">Bars</option>
-            <option value="particles">Particles</option>
-            <option value="wave">Wave</option>
-            <option value="radial">Radial</option>
-          </select>
-        </label>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="flex flex-col gap-1">
-            <span class="text-xs text-base-content/70">{{ $t('settings.vizPrimary') }}</span>
-            <input
-              type="color"
-              :value="settings.playback.visualization.primaryColor"
-              class="h-9 w-full rounded-field border border-base-300 p-1"
-              @input="
-                settings.updatePlayback({
-                  visualization: {
-                    ...settings.playback.visualization,
-                    primaryColor: ($event.target as HTMLInputElement).value
-                  }
-                })
-              "
-            />
-          </label>
-          <label class="flex flex-col gap-1">
-            <span class="text-xs text-base-content/70">{{ $t('settings.vizSecondary') }}</span>
-            <input
-              type="color"
-              :value="settings.playback.visualization.secondaryColor"
-              class="h-9 w-full rounded-field border border-base-300 p-1"
-              @input="
-                settings.updatePlayback({
-                  visualization: {
-                    ...settings.playback.visualization,
-                    secondaryColor: ($event.target as HTMLInputElement).value
-                  }
-                })
-              "
-            />
-          </label>
-        </div>
-        <label class="flex flex-col gap-1">
-          <span class="text-xs text-base-content/70"
-            >{{ $t('settings.vizSensitivity') }}
-            {{ settings.playback.visualization.sensitivity }}</span
-          >
+          <span class="text-xs text-base-content/70">{{ $t('settings.vizPrimary') }}</span>
           <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.1"
-            :value="settings.playback.visualization.sensitivity"
-            class="w-full"
+            type="color"
+            :value="settings.playback.visualization.primaryColor"
+            class="h-9 w-full rounded-field border border-base-300 p-1"
             @input="
               settings.updatePlayback({
                 visualization: {
                   ...settings.playback.visualization,
-                  sensitivity: parseFloat(($event.target as HTMLInputElement).value)
+                  primaryColor: ($event.target as HTMLInputElement).value
+                }
+              })
+            "
+          />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-xs text-base-content/70">{{ $t('settings.vizSecondary') }}</span>
+          <input
+            type="color"
+            :value="settings.playback.visualization.secondaryColor"
+            class="h-9 w-full rounded-field border border-base-300 p-1"
+            @input="
+              settings.updatePlayback({
+                visualization: {
+                  ...settings.playback.visualization,
+                  secondaryColor: ($event.target as HTMLInputElement).value
                 }
               })
             "
           />
         </label>
       </div>
-    </SettingsCard>
-  </SettingsPanel>
+      <label class="flex flex-col gap-1">
+        <span class="text-xs text-base-content/70"
+          >{{ $t('settings.vizSensitivity') }}
+          {{ settings.playback.visualization.sensitivity }}</span
+        >
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.1"
+          :value="settings.playback.visualization.sensitivity"
+          class="w-full"
+          @input="
+            settings.updatePlayback({
+              visualization: {
+                ...settings.playback.visualization,
+                sensitivity: parseFloat(($event.target as HTMLInputElement).value)
+              }
+            })
+          "
+        />
+      </label>
+    </div>
+  </SettingsGroup>
 </template>

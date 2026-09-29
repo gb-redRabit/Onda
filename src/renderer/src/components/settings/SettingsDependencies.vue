@@ -1,127 +1,128 @@
 <script setup lang="ts">
 import { RefreshCw } from '@lucide/vue';
-import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
-import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
 import { useDependencies } from '@renderer/composables/useDependencies';
+import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
 
-const { deps, refreshAll, runInstall, uninstallDependency, cancelInstall } = useDependencies();
+const { deps, refreshing, refreshAll, runInstall, uninstallDependency, cancelInstall } =
+  useDependencies();
 </script>
 
 <template>
-  <SettingsPanel :title="$t('settings.depTitle')" :description="$t('settings.depDesc')">
-    <template #actions>
-      <button
-        class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors"
-        @click="refreshAll"
-      >
-        <RefreshCw :size="14" />{{ $t('settings.depRefresh') }}
-      </button>
-    </template>
-    <div class="space-y-6">
-      <SettingsCard v-for="dep in deps" :key="dep.name">
-        <div class="flex items-center justify-between gap-4">
-          <div class="flex items-center gap-3 min-w-0">
-            <div
-              class="w-2 h-2 rounded-full shrink-0"
-              :class="dep.broken ? 'bg-amber-500' : dep.installed ? 'bg-success' : 'bg-error'"
-            />
-            <div class="min-w-0">
-              <div class="text-sm font-medium flex items-center gap-2">
-                {{ dep.name }}
-                <span
-                  v-if="dep.source === 'bundled' && dep.installed"
-                  class="text-[10px] px-1.5 py-0.5 rounded-field bg-primary/15 text-primary font-medium"
-                >
-                  {{ $t('settings.depBundled') }}
-                </span>
-                <span
-                  v-else-if="dep.source === 'managed' && dep.installed"
-                  class="text-[10px] px-1.5 py-0.5 rounded-field bg-primary/15 text-primary font-medium"
-                >
-                  {{ $t('settings.depManaged') }}
-                </span>
-                <span
-                  v-else-if="dep.installed"
-                  class="text-[10px] px-1.5 py-0.5 rounded-field bg-base-content/10 text-base-content/50 font-medium"
-                >
-                  {{ $t('settings.depSystem') }}
-                </span>
-              </div>
-              <div class="text-xs text-base-content/50 truncate">{{ dep.description }}</div>
-            </div>
-          </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <template v-if="dep.installing">
-              <span class="text-xs text-base-content/50 font-mono">{{ dep.percent }}%</span>
-              <button
-                class="fx-noise px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors"
-                @click="cancelInstall(dep)"
+  <div class="flex items-center justify-end pb-2">
+    <button
+      class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors disabled:opacity-60"
+      :disabled="refreshing"
+      @click="refreshAll"
+    >
+      <RefreshCw :size="14" :class="{ 'animate-spin': refreshing }" />{{
+        $t('settings.depRefresh')
+      }}
+    </button>
+  </div>
+  <div class="space-y-2">
+    <SettingsGroup v-for="dep in deps" :key="dep.name">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3 min-w-0">
+          <div
+            class="w-2 h-2 rounded-full shrink-0"
+            :class="dep.broken ? 'bg-amber-500' : dep.installed ? 'bg-success' : 'bg-error'"
+          />
+          <div class="min-w-0">
+            <div class="text-sm font-medium flex items-center gap-2">
+              {{ dep.name }}
+              <span
+                v-if="dep.source === 'bundled' && dep.installed"
+                class="text-[10px] px-1.5 py-0.5 rounded-field bg-primary/15 text-primary font-medium"
               >
-                {{ $t('settings.depCancel') }}
+                {{ $t('settings.depBundled') }}
+              </span>
+              <span
+                v-else-if="dep.source === 'managed' && dep.installed"
+                class="text-[10px] px-1.5 py-0.5 rounded-field bg-primary/15 text-primary font-medium"
+              >
+                {{ $t('settings.depManaged') }}
+              </span>
+              <span
+                v-else-if="dep.installed"
+                class="text-[10px] px-1.5 py-0.5 rounded-field bg-base-content/10 text-base-content/50 font-medium"
+              >
+                {{ $t('settings.depSystem') }}
+              </span>
+            </div>
+            <div class="text-xs text-base-content/50 truncate">{{ dep.description }}</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <template v-if="dep.installing">
+            <span class="text-xs text-base-content/50 font-mono">{{ dep.percent }}%</span>
+            <button
+              class="fx-noise px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors"
+              @click="cancelInstall(dep)"
+            >
+              {{ $t('settings.depCancel') }}
+            </button>
+          </template>
+          <template v-else>
+            <div class="text-right">
+              <div v-if="dep.broken" class="text-xs text-amber-500 font-medium">
+                {{ $t('settings.depBroken') }}
+              </div>
+              <div v-else-if="dep.version" class="text-xs text-base-content/50 font-mono">
+                v{{ dep.version }}
+              </div>
+              <div v-if="dep.updateAvailable" class="text-xs text-amber-500 font-medium">
+                {{ $t('settings.depUpdateAvailable') }}
+              </div>
+              <div
+                v-else-if="dep.installed && !dep.broken && dep.tool === 'yt-dlp'"
+                class="text-xs text-success"
+              >
+                {{ $t('settings.depUpToDate') }}
+              </div>
+              <div v-else-if="!dep.installed" class="text-xs text-error">
+                {{ $t('settings.depMissing') }}
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                v-if="!dep.installed || dep.broken"
+                class="fx-noise px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
+                @click="runInstall(dep, false)"
+              >
+                {{ dep.broken ? $t('settings.depRepair') : $t('settings.depInstall') }}
               </button>
-            </template>
-            <template v-else>
-              <div class="text-right">
-                <div v-if="dep.broken" class="text-xs text-amber-500 font-medium">
-                  {{ $t('settings.depBroken') }}
-                </div>
-                <div v-else-if="dep.version" class="text-xs text-base-content/50 font-mono">
-                  v{{ dep.version }}
-                </div>
-                <div v-if="dep.updateAvailable" class="text-xs text-amber-500 font-medium">
-                  {{ $t('settings.depUpdateAvailable') }}
-                </div>
-                <div
-                  v-else-if="dep.installed && !dep.broken && dep.tool === 'yt-dlp'"
-                  class="text-xs text-success"
-                >
-                  {{ $t('settings.depUpToDate') }}
-                </div>
-                <div v-else-if="!dep.installed" class="text-xs text-error">
-                  {{ $t('settings.depMissing') }}
-                </div>
-              </div>
-              <div class="flex items-center gap-2">
-                <button
-                  v-if="!dep.installed || dep.broken"
-                  class="fx-noise px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
-                  @click="runInstall(dep, false)"
-                >
-                  {{ dep.broken ? $t('settings.depRepair') : $t('settings.depInstall') }}
-                </button>
-                <button
-                  v-if="dep.installed && dep.tool === 'yt-dlp' && dep.updateAvailable"
-                  class="fx-noise px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
-                  @click="runInstall(dep, true)"
-                >
-                  {{ $t('settings.depUpdate') }}
-                </button>
-                <button
-                  v-if="dep.installed"
-                  class="fx-noise px-3 py-1.5 fx-depth rounded-field border border-red-500/40 text-error text-xs font-medium hover:bg-error/10 transition-colors"
-                  @click="uninstallDependency(dep)"
-                >
-                  {{ $t('settings.depUninstall') }}
-                </button>
-              </div>
-            </template>
-          </div>
+              <button
+                v-if="dep.installed && dep.tool === 'yt-dlp' && dep.updateAvailable"
+                class="fx-noise px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
+                @click="runInstall(dep, true)"
+              >
+                {{ $t('settings.depUpdate') }}
+              </button>
+              <button
+                v-if="dep.installed"
+                class="fx-noise px-3 py-1.5 fx-depth rounded-field border border-red-500/40 text-error text-xs font-medium hover:bg-error/10 transition-colors"
+                @click="uninstallDependency(dep)"
+              >
+                {{ $t('settings.depUninstall') }}
+              </button>
+            </div>
+          </template>
         </div>
-        <div v-if="dep.path" class="mt-2 text-[11px] text-base-content/50 font-mono truncate">
-          {{ dep.path }}
+      </div>
+      <div v-if="dep.path" class="mt-2 text-[11px] text-base-content/50 font-mono truncate">
+        {{ dep.path }}
+      </div>
+      <div v-if="dep.installing" class="mt-3">
+        <div class="h-1.5 rounded-full bg-base-content/10 overflow-hidden">
+          <div
+            class="h-full bg-primary transition-[width] duration-200"
+            :style="{ width: dep.percent + '%' }"
+          />
         </div>
-        <div v-if="dep.installing" class="mt-3">
-          <div class="h-1.5 rounded-full bg-base-content/10 overflow-hidden">
-            <div
-              class="h-full bg-primary transition-[width] duration-200"
-              :style="{ width: dep.percent + '%' }"
-            />
-          </div>
-        </div>
-        <div v-if="dep.error || dep.probeError" class="mt-2 text-xs text-error break-words">
-          {{ dep.error || dep.probeError }}
-        </div>
-      </SettingsCard>
-    </div>
-  </SettingsPanel>
+      </div>
+      <div v-if="dep.error || dep.probeError" class="mt-2 text-xs text-error break-words">
+        {{ dep.error || dep.probeError }}
+      </div>
+    </SettingsGroup>
+  </div>
 </template>

@@ -3,10 +3,8 @@ import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useYoutubeAuth } from '@renderer/composables/useYoutubeAuth';
-import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
-import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
-import SettingsSectionTitle from '@renderer/components/settings/SettingsSectionTitle.vue';
 import type { YoutubeAuthMethod } from '@renderer/types/settings';
+import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
 
 const settings = useSettingsStore();
 const { t } = useI18n();
@@ -94,101 +92,95 @@ function onBrowserChange(e: Event) {
 </script>
 
 <template>
-  <SettingsPanel :title="$t('settings.downloadSection')">
-    <SettingsCard>
-      <SettingsSectionTitle
-        :title="$t('settings.googleAccount')"
-        :description="$t('settings.googleAccountDesc')"
-      />
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+  <SettingsGroup
+    :title="$t('settings.googleAccount')"
+    :description="$t('settings.googleAccountDesc')"
+  >
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <button
+        v-for="m in methods"
+        :key="m.value"
+        class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors"
+        :class="
+          settings.youtube.method === m.value
+            ? 'border-primary bg-primary/10 text-primary font-medium'
+            : 'border-base-300 text-base-content/70 hover:bg-base-content/10'
+        "
+        @click="setMethod(m.value)"
+      >
+        {{ $t(m.labelKey) }}
+      </button>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full" :class="status.loggedIn ? 'bg-success' : 'bg-base-300'" />
+      <span class="text-sm" :class="status.loggedIn ? 'text-base-content' : 'text-base-content/70'">
+        {{
+          status.loggedIn ? $t('settings.authStatusLoggedIn') : $t('settings.authStatusLoggedOut')
+        }}
+      </span>
+      <span v-if="lastLoginText" class="text-xs text-base-content/50">
+        · {{ $t('settings.authLastLogin') }} {{ lastLoginText }}
+      </span>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <template v-if="settings.youtube.method === 'electron'">
         <button
-          v-for="m in methods"
-          :key="m.value"
-          class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors"
-          :class="
-            settings.youtube.method === m.value
-              ? 'border-primary bg-primary/10 text-primary font-medium'
-              : 'border-base-300 text-base-content/70 hover:bg-base-content/10'
-          "
-          @click="setMethod(m.value)"
+          class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+          :disabled="isBusy"
+          @click="doLogin"
         >
-          {{ $t(m.labelKey) }}
+          {{ $t('settings.loginWithGoogle') }}
         </button>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <div class="w-2 h-2 rounded-full" :class="status.loggedIn ? 'bg-success' : 'bg-base-300'" />
-        <span
-          class="text-sm"
-          :class="status.loggedIn ? 'text-base-content' : 'text-base-content/70'"
+        <button
+          class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
+          :disabled="isBusy || !status.loggedIn"
+          @click="doLogout"
         >
-          {{
-            status.loggedIn ? $t('settings.authStatusLoggedIn') : $t('settings.authStatusLoggedOut')
-          }}
-        </span>
-        <span v-if="lastLoginText" class="text-xs text-base-content/50">
-          · {{ $t('settings.authLastLogin') }} {{ lastLoginText }}
-        </span>
-      </div>
+          {{ $t('settings.logout') }}
+        </button>
+      </template>
 
-      <div class="flex flex-wrap items-center gap-2">
-        <template v-if="settings.youtube.method === 'electron'">
-          <button
-            class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-            :disabled="isBusy"
-            @click="doLogin"
-          >
-            {{ $t('settings.loginWithGoogle') }}
-          </button>
-          <button
-            class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
-            :disabled="isBusy || !status.loggedIn"
-            @click="doLogout"
-          >
-            {{ $t('settings.logout') }}
-          </button>
-        </template>
+      <template v-else-if="settings.youtube.method === 'manual'">
+        <button
+          class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+          :disabled="isBusy"
+          @click="doImport"
+        >
+          {{ $t('settings.importCookies') }}
+        </button>
+        <button
+          v-if="status.cookiesPath"
+          class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
+          @click="doExport"
+        >
+          {{ $t('settings.exportCookies') }}
+        </button>
+        <button
+          class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
+          :disabled="isBusy || !status.loggedIn"
+          @click="doLogout"
+        >
+          {{ $t('settings.logout') }}
+        </button>
+      </template>
 
-        <template v-else-if="settings.youtube.method === 'manual'">
-          <button
-            class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-            :disabled="isBusy"
-            @click="doImport"
-          >
-            {{ $t('settings.importCookies') }}
-          </button>
-          <button
-            v-if="status.cookiesPath"
-            class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
-            @click="doExport"
-          >
-            {{ $t('settings.exportCookies') }}
-          </button>
-          <button
-            class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
-            :disabled="isBusy || !status.loggedIn"
-            @click="doLogout"
-          >
-            {{ $t('settings.logout') }}
-          </button>
-        </template>
+      <template v-else-if="settings.youtube.method === 'browser'">
+        <select
+          class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
+          :value="settings.youtube.cookiesBrowser"
+          @change="onBrowserChange"
+        >
+          <option v-for="b in browsers" :key="b.value" :value="b.value">{{ b.label }}</option>
+        </select>
+        <span class="text-xs text-base-content/50">{{ $t('settings.authBrowserHint') }}</span>
+      </template>
+    </div>
 
-        <template v-else-if="settings.youtube.method === 'browser'">
-          <select
-            class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
-            :value="settings.youtube.cookiesBrowser"
-            @change="onBrowserChange"
-          >
-            <option v-for="b in browsers" :key="b.value" :value="b.value">{{ b.label }}</option>
-          </select>
-          <span class="text-xs text-base-content/50">{{ $t('settings.authBrowserHint') }}</span>
-        </template>
-      </div>
-
-      <p v-if="errorMsg" class="text-xs text-error">{{ errorMsg }}</p>
-      <p v-if="settings.youtube.method !== 'none'" class="text-[11px] text-warning">
-        {{ $t('settings.cookiesSecurityHint') }}
-      </p>
-    </SettingsCard>
-  </SettingsPanel>
+    <p v-if="errorMsg" class="text-xs text-error">{{ errorMsg }}</p>
+    <p v-if="settings.youtube.method !== 'none'" class="text-[11px] text-warning">
+      {{ $t('settings.cookiesSecurityHint') }}
+    </p>
+  </SettingsGroup>
 </template>

@@ -13,7 +13,8 @@ import type {
   ToastSettings,
   DependencyStatus,
   GeneralSettings,
-  StatusBarSettings
+  StatusBarSettings,
+  HomeSettings
 } from '@renderer/types/settings';
 import {
   DEFAULT_APPEARANCE,
@@ -28,7 +29,8 @@ import {
   DEFAULT_UPDATES,
   DEFAULT_TOAST,
   DEFAULT_GENERAL,
-  DEFAULT_STATUS_BAR
+  DEFAULT_STATUS_BAR,
+  DEFAULT_HOME
 } from '@renderer/utils/constants';
 import type { AudioLayoutElement, AudioLayoutPreset } from '@renderer/types/settings';
 import { computePresetLayout, computeResetLayout } from '@renderer/utils/audioLayoutPresets';
@@ -49,6 +51,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const toast = ref<ToastSettings>({ ...DEFAULT_TOAST });
   const dependencies = ref<Record<string, DependencyStatus>>({});
   const statusBar = ref<StatusBarSettings>({ ...DEFAULT_STATUS_BAR });
+  const home = ref<HomeSettings>({ ...DEFAULT_HOME });
   const isLoaded = ref(false);
 
   const { load, save, saveImmediate, resetToDefaults, applyImported } = createSettingsPersistence({
@@ -66,6 +69,7 @@ export const useSettingsStore = defineStore('settings', () => {
     toast,
     dependencies,
     statusBar,
+    home,
     isLoaded
   });
 
@@ -141,6 +145,11 @@ export const useSettingsStore = defineStore('settings', () => {
     save();
   }
 
+  function updateHome(partial: Partial<HomeSettings>) {
+    Object.assign(home.value, partial);
+    save();
+  }
+
   function updateLibrary(partial: Partial<LibrarySettings>) {
     Object.assign(library.value, partial);
     save();
@@ -166,6 +175,7 @@ export const useSettingsStore = defineStore('settings', () => {
     toast,
     dependencies,
     statusBar,
+    home,
     isLoaded,
     load,
     save,
@@ -183,6 +193,7 @@ export const useSettingsStore = defineStore('settings', () => {
     updateShortcut,
     updateNetwork,
     updateStatusBar,
+    updateHome,
     resetToDefaults,
     applyImported,
     updateDependency,

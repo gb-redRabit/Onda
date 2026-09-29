@@ -3,12 +3,11 @@ import { ref, watch, computed, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { CornerUpRight, CornerUpLeft, CornerDownRight, CornerDownLeft } from '@lucide/vue';
-import SettingsPanel from '@renderer/components/settings/SettingsPanel.vue';
-import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
 import SettingsSectionTitle from '@renderer/components/settings/SettingsSectionTitle.vue';
 import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
 import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
 import SettingsPositionGrid from '@renderer/components/settings/SettingsPositionGrid.vue';
+import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
 
 const settings = useSettingsStore();
 const { t } = useI18n();
@@ -37,6 +36,7 @@ const pipPositionOptions = computed(() =>
 );
 
 const pipPreviewOpen = ref(false);
+let removePreviewClosedListener: (() => void) | null = null;
 
 async function togglePreview() {
   if (pipPreviewOpen.value) {
@@ -51,6 +51,11 @@ async function togglePreview() {
   });
   if (started) pipPreviewOpen.value = true;
 }
+
+removePreviewClosedListener =
+  window.api?.on('pip:previewClosed', () => {
+    pipPreviewOpen.value = false;
+  }) ?? null;
 
 watch(
   () => [settings.playback.pipPosition, settings.playback.pipWidth, settings.playback.pipHeight],
@@ -67,85 +72,85 @@ watch(
 
 onBeforeUnmount(() => {
   if (pipPreviewOpen.value) void window.api?.pipPreviewStop();
+  removePreviewClosedListener?.();
+  removePreviewClosedListener = null;
 });
 </script>
 
 <template>
-  <SettingsPanel :title="$t('settings.pipVideo')" :description="$t('settings.pipVideoDesc')">
-    <SettingsCard>
-      <div class="flex items-center justify-between pb-4 border-b border-base-300">
-        <SettingsSectionTitle :title="$t('settings.videoPipSection')" class="mb-0!" />
-        <button
-          class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
-          :class="
-            pipPreviewOpen
-              ? 'bg-error/20 text-error hover:bg-error/30'
-              : 'bg-primary text-primary-content hover:bg-primary/90'
-          "
-          @click="togglePreview"
-        >
-          {{ pipPreviewOpen ? $t('settings.closePreview') : $t('settings.showPreview') }}
-        </button>
-      </div>
+  <SettingsGroup>
+    <div class="flex items-center justify-between pb-4 border-b border-base-300">
+      <SettingsSectionTitle :title="$t('settings.videoPipSection')" class="mb-0!" />
+      <button
+        data-testid="pip-video-preview-toggle"
+        class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
+        :aria-pressed="pipPreviewOpen"
+        :class="
+          pipPreviewOpen
+            ? 'bg-error/20 text-error hover:bg-error/30'
+            : 'bg-primary text-primary-content hover:bg-primary/90'
+        "
+        @click="togglePreview"
+      >
+        {{ pipPreviewOpen ? $t('settings.closePreview') : $t('settings.showPreview') }}
+      </button>
+    </div>
 
-      <div>
-        <SettingsSectionTitle :title="$t('settings.pipPositionLabel')" />
-        <SettingsPositionGrid
-          :model-value="settings.playback.pipPosition"
-          :options="pipPositionOptions"
-          :selected-label="
-            t(pipPositions.find((p) => p.id === settings.playback.pipPosition)?.labelKey ?? '')
-          "
-          @update:model-value="
-            settings.updatePlayback({ pipPosition: $event as (typeof pipPositions)[number]['id'] })
-          "
-        />
-      </div>
+    <div>
+      <SettingsSectionTitle :title="$t('settings.pipPositionLabel')" />
+      <SettingsPositionGrid
+        :model-value="settings.playback.pipPosition"
+        :options="pipPositionOptions"
+        :selected-label="
+          t(pipPositions.find((p) => p.id === settings.playback.pipPosition)?.labelKey ?? '')
+        "
+        @update:model-value="
+          settings.updatePlayback({ pipPosition: $event as (typeof pipPositions)[number]['id'] })
+        "
+      />
+    </div>
 
-      <div>
-        <SettingsSectionTitle :title="`${$t('settings.width')} ${settings.playback.pipWidth}px`" />
-        <input
-          type="range"
-          min="240"
-          max="1200"
-          step="10"
-          :value="settings.playback.pipWidth"
-          class="w-full"
-          @input="
-            settings.updatePlayback({
-              pipWidth: parseInt(($event.target as HTMLInputElement).value)
-            })
-          "
-        />
-      </div>
+    <div>
+      <SettingsSectionTitle :title="`${$t('settings.width')} ${settings.playback.pipWidth}px`" />
+      <input
+        type="range"
+        min="240"
+        max="1200"
+        step="10"
+        :value="settings.playback.pipWidth"
+        class="w-full"
+        @input="
+          settings.updatePlayback({
+            pipWidth: parseInt(($event.target as HTMLInputElement).value)
+          })
+        "
+      />
+    </div>
 
-      <div>
-        <SettingsSectionTitle
-          :title="`${$t('settings.height')} ${settings.playback.pipHeight}px`"
-        />
-        <input
-          type="range"
-          min="140"
-          max="800"
-          step="10"
-          :value="settings.playback.pipHeight"
-          class="w-full"
-          @input="
-            settings.updatePlayback({
-              pipHeight: parseInt(($event.target as HTMLInputElement).value)
-            })
-          "
-        />
-      </div>
+    <div>
+      <SettingsSectionTitle :title="`${$t('settings.height')} ${settings.playback.pipHeight}px`" />
+      <input
+        type="range"
+        min="140"
+        max="800"
+        step="10"
+        :value="settings.playback.pipHeight"
+        class="w-full"
+        @input="
+          settings.updatePlayback({
+            pipHeight: parseInt(($event.target as HTMLInputElement).value)
+          })
+        "
+      />
+    </div>
 
-      <div class="pt-4 border-t border-base-300">
-        <SettingsRow :label="$t('settings.pipPreBuffer')">
-          <SettingsToggle
-            :model-value="settings.playback.pipPreBuffer"
-            @update:model-value="settings.updatePlayback({ pipPreBuffer: $event })"
-          />
-        </SettingsRow>
-      </div>
-    </SettingsCard>
-  </SettingsPanel>
+    <div class="pt-4 border-t border-base-300">
+      <SettingsRow :label="$t('settings.pipPreBuffer')">
+        <SettingsToggle
+          :model-value="settings.playback.pipPreBuffer"
+          @update:model-value="settings.updatePlayback({ pipPreBuffer: $event })"
+        />
+      </SettingsRow>
+    </div>
+  </SettingsGroup>
 </template>

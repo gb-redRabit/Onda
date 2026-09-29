@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
-import SettingsCard from '@renderer/components/settings/SettingsCard.vue';
-import SettingsSectionTitle from '@renderer/components/settings/SettingsSectionTitle.vue';
 import { Save, Trash2 } from '@lucide/vue';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { AUDIO_FORMATS, VIDEO_QUALITIES, VIDEO_CONTAINERS } from '@shared/constants';
 import type { IpcDownloadConfig } from '@shared/types/ipc';
+import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
 
 const settings = useSettingsStore();
 const {
@@ -110,11 +109,10 @@ async function doDeleteProfile() {
 </script>
 
 <template>
-  <SettingsCard>
-    <SettingsSectionTitle
-      :title="$t('settings.profilesSection')"
-      :description="$t('settings.profilesSectionDesc')"
-    />
+  <SettingsGroup
+    :title="$t('settings.profilesSection')"
+    :description="$t('settings.profilesSectionDesc')"
+  >
     <div class="flex items-center gap-2">
       <select
         class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm"
@@ -247,5 +245,5 @@ async function doDeleteProfile() {
         selectedProfileId ? $t('settings.profileSaveUpdate') : $t('settings.profileSaveCreate')
       }}
     </button>
-  </SettingsCard>
+  </SettingsGroup>
 </template>
