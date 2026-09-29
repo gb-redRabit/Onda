@@ -54,6 +54,7 @@ function folderTracksFor(name: string, meta: Record<string, DirChildMeta>) {
       <div class="aspect-square bg-base-200 overflow-hidden flex items-center justify-center">
         <img
           v-if="tr.type === 'image' || tr.type === 'video'"
+          alt=""
           :src="getThumb(tr.path) || ''"
           class="w-full h-full object-cover"
           loading="lazy"

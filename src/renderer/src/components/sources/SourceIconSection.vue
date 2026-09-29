@@ -51,7 +51,7 @@ function clearIcon() {
       <div
         class="w-12 h-12 shrink-0 rounded-field bg-base-100 border border-base-300 flex items-center justify-center overflow-hidden"
       >
-        <img v-if="iconValid" :src="icon" class="w-full h-full object-cover" />
+        <img v-if="iconValid" alt="" :src="icon" class="w-full h-full object-cover" />
         <Globe v-else :size="20" class="text-base-content/50" />
       </div>
       <div class="flex-1 min-w-0 space-y-2">

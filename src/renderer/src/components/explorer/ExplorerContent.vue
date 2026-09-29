@@ -137,6 +137,7 @@ defineExpose({ reveal });
         >
           <img
             v-if="extraSmallIcon(files[virtualRow.index])"
+            alt=""
             :src="extraSmallIcon(files[virtualRow.index])!"
             class="w-4 h-4 object-contain shrink-0"
           />

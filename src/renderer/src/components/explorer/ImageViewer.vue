@@ -83,6 +83,8 @@ const {
           <img
             v-if="oldSrc"
             :src="oldSrc"
+            alt=""
+            aria-hidden="true"
             class="absolute inset-0 max-w-full max-h-full m-auto pointer-events-none"
             :style="{
               ...oldStyle,
@@ -96,6 +98,7 @@ const {
             v-show="displaySrc && !imgError"
             :key="currentIndex"
             :src="displaySrc"
+            :alt="currentFile?.name || ''"
             class="absolute inset-0 max-w-full max-h-full m-auto"
             :style="{
               ...newStyle,

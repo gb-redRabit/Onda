@@ -32,6 +32,7 @@ watch(
     >
       <img
         v-if="tr.type === 'image' || tr.type === 'video'"
+        alt=""
         :src="getThumb(tr.path) || ''"
         class="w-full h-full object-cover"
         loading="lazy"

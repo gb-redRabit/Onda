@@ -175,7 +175,12 @@ onUnmounted(() => {
       preload="auto"
       playsinline
     />
-    <img v-else-if="result.data && !isVideoLike" :src="src" class="w-full h-full object-cover" />
+    <img
+      v-else-if="result.data && !isVideoLike"
+      alt=""
+      :src="src"
+      class="w-full h-full object-cover"
+    />
     <component :is="iconComponent" v-else :size="iconSize" />
   </div>
 </template>

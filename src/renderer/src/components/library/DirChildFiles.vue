@@ -30,7 +30,12 @@ const { showImageMenu } = useLibraryContextMenu();
           showImageMenu($event, img, () => emit('open-image', childName, img.path))
         "
       >
-        <img :src="getThumb(img.path) || ''" class="w-full h-full object-cover" loading="lazy" />
+        <img
+          alt=""
+          :src="getThumb(img.path) || ''"
+          class="w-full h-full object-cover"
+          loading="lazy"
+        />
       </button>
     </div>
     <div v-if="meta.directAudio.length > 0" class="divide-y divide-base-300/30">

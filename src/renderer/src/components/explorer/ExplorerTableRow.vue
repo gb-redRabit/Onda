@@ -71,11 +71,13 @@ function iconComponent() {
     <div class="flex items-center gap-2 min-w-0">
       <img
         v-if="mediaThumb && !isAtDrives && !item.isDirectory"
+        alt=""
         :src="mediaThumb"
         class="w-4 h-4 object-contain shrink-0"
       />
       <img
         v-else-if="systemIcon && !isAtDrives && !item.isDirectory"
+        alt=""
         :src="systemIcon"
         class="w-4 h-4 object-contain shrink-0"
       />

@@ -98,9 +98,10 @@ const size = computed(() => {
         :size="Math.round(size.icon * 0.55)"
         class="text-primary"
       />
-      <img v-else-if="mediaThumb" :src="mediaThumb" class="w-full h-full object-cover" />
+      <img v-else-if="mediaThumb" alt="" :src="mediaThumb" class="w-full h-full object-cover" />
       <img
         v-else-if="systemIcon"
+        alt=""
         :src="systemIcon"
         :style="{
           width: `${Math.round(size.icon * 0.5)}px`,
