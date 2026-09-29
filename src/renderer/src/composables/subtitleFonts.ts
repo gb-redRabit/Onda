@@ -1,71 +1,94 @@
 import type { MkvFont } from '@renderer/types/subtitles';
 import { extractAssFamilies, hashContent } from '@renderer/utils/subtitleConvert';
 import { logger } from '@shared/logger';
-import arialUrl from '/fonts/arial.ttf?url';
-import arialBoldUrl from '/fonts/ArialBold.ttf?url';
-import arialItalicUrl from '/fonts/ArialItalic.ttf?url';
-import arialBoldItalicUrl from '/fonts/ArialBoldItalic.ttf?url';
-import calibriUrl from '/fonts/Calibri.ttf?url';
-import calibriBoldUrl from '/fonts/CalibriBold.ttf?url';
-import calibriItalicUrl from '/fonts/CalibriItalic.ttf?url';
-import timesNewRomanUrl from '/fonts/TimesNewRoman.ttf?url';
-import tahomaUrl from '/fonts/Tahoma.ttf?url';
-import tahomaBoldUrl from '/fonts/TahomaBold.ttf?url';
-import trebuchetMsUrl from '/fonts/TrebuchetMS.ttf?url';
-import trebuchetMsBoldUrl from '/fonts/TrebuchetMSBold.ttf?url';
-import courierNewUrl from '/fonts/CourierNew.ttf?url';
-import verdanaUrl from '/fonts/Verdana.ttf?url';
-import verdanaBoldUrl from '/fonts/VerdanaBold.ttf?url';
-import georgiaUrl from '/fonts/Georgia.ttf?url';
-import comicSansMsUrl from '/fonts/ComicSansMS.ttf?url';
-import segoeUiEmojiUrl from '/fonts/SegoeUIEmoji.ttf?url';
+
+// Subtitle fonts are resolved on demand instead of shipping font files:
+//   1. the family named by the subtitle is looked up through the Local Font
+//      Access ponyfill — installed fonts first, Google Fonts as fallback,
+//   2. if that family cannot be resolved, common Windows/Office families are
+//      mapped to their libre metric-compatible clones on Google Fonts
+//      (Arial → Arimo, Calibri → Carlito, …) so old subtitle files keep their
+//      intended look.
+// Bundling the original Windows fonts cost 25 MB of proprietary files
+// (Calibri/Arial/Segoe are not redistributable), which this removes entirely.
+const FONT_ALIASES: Record<string, string> = {
+  arial: 'Arimo',
+  'arial black': 'Archivo Black',
+  calibri: 'Carlito',
+  cambria: 'Caladea',
+  'comic sans ms': 'Comic Neue',
+  'courier new': 'Cousine',
+  georgia: 'Gelasio',
+  'times new roman': 'Tinos',
+  // No metric clones on Google Fonts — a neutral sans keeps the text readable.
+  tahoma: 'Noto Sans',
+  'trebuchet ms': 'Noto Sans',
+  verdana: 'Noto Sans',
+  'segoe ui emoji': 'Noto Emoji'
+};
+
+const VARIANT_SUFFIXES = [
+  ['', ''],
+  [' bold', '-Bold'],
+  [' italic', '-Italic'],
+  [' bold italic', '-BoldItalic']
+] as const;
 
 const fontMapCache = new Map<string, Record<string, string>>();
 const remoteFontCache = new Map<string, string>();
 
-const availableFonts: Record<string, string> = {
-  arial: arialUrl,
-  'arial bold': arialBoldUrl,
-  'arial italic': arialItalicUrl,
-  'arial bold italic': arialBoldItalicUrl,
-  calibri: calibriUrl,
-  'calibri bold': calibriBoldUrl,
-  'calibri italic': calibriItalicUrl,
-  'times new roman': timesNewRomanUrl,
-  tahoma: tahomaUrl,
-  'tahoma bold': tahomaBoldUrl,
-  'trebuchet ms': trebuchetMsUrl,
-  'trebuchet ms bold': trebuchetMsBoldUrl,
-  'courier new': courierNewUrl,
-  verdana: verdanaUrl,
-  'verdana bold': verdanaBoldUrl,
-  georgia: georgiaUrl,
-  'comic sans ms': comicSansMsUrl,
-  'segoe ui emoji': segoeUiEmojiUrl
-};
+type FontQuery = (options?: {
+  postscriptNames?: string[];
+}) => Promise<Array<{ blob: () => Promise<Blob> }>>;
 
-async function loadRemoteVariant(
+// lfa-ponyfill ships plain JS without type declarations; describe the small
+// surface we use (one justified cast at that boundary).
+let fontQuery: FontQuery | null = null;
+async function loadFontQuery(): Promise<FontQuery> {
+  if (fontQuery) return fontQuery;
+  const mod = (await import('lfa-ponyfill')) as unknown as {
+    default?: FontQuery;
+    queryRemoteFonts?: FontQuery;
+  };
+  const fn = mod.default ?? mod.queryRemoteFonts;
+  if (!fn) throw new Error('lfa-ponyfill: no font query export');
+  fontQuery = fn;
+  return fontQuery;
+}
+
+// Loads the four style variants of `family` into `fontMap` under `mapKey`
+// (the family name used by the subtitle), returning whether anything resolved.
+async function loadFamilyVariants(
   fontMap: Record<string, string>,
   mapKey: string,
-  postscript: string
-): Promise<void> {
-  if (fontMap[mapKey]) return;
-  const cachedUrl = remoteFontCache.get(postscript);
-  if (cachedUrl) {
-    fontMap[mapKey] = cachedUrl;
-    return;
-  }
-  try {
-    const { queryRemoteFonts } = await import('lfa-ponyfill');
-    const fonts = await queryRemoteFonts({ postscriptNames: [postscript] });
-    if (!fonts.length) return;
-    const blob = await fonts[0].blob();
-    const url = URL.createObjectURL(blob);
-    remoteFontCache.set(postscript, url);
-    fontMap[mapKey] = url;
-  } catch (e) {
-    logger.error('Subtitles', 'failed to load font', mapKey, e);
-  }
+  family: string
+): Promise<boolean> {
+  const base = family.replace(/\s+/g, '-');
+  const results = await Promise.all(
+    VARIANT_SUFFIXES.map(async ([mapSuffix, psSuffix]) => {
+      const key = `${mapKey}${mapSuffix}`;
+      if (fontMap[key]) return true;
+      const postscript = `${base}${psSuffix}`;
+      const cached = remoteFontCache.get(postscript);
+      if (cached) {
+        fontMap[key] = cached;
+        return true;
+      }
+      try {
+        const queryFonts = await loadFontQuery();
+        const fonts = await queryFonts({ postscriptNames: [postscript] });
+        if (!fonts.length) return false;
+        const url = URL.createObjectURL(await fonts[0].blob());
+        remoteFontCache.set(postscript, url);
+        fontMap[key] = url;
+        return true;
+      } catch (e) {
+        logger.warn('Subtitles', `failed to load font ${postscript}`, e);
+        return false;
+      }
+    })
+  );
+  return results.some(Boolean);
 }
 
 export async function buildFontMap(
@@ -75,8 +98,7 @@ export async function buildFontMap(
   const cacheKey = `${hashContent(assContent)}-${attachmentNames.map((f) => f.name).join(',')}`;
   if (fontMapCache.has(cacheKey)) return fontMapCache.get(cacheKey)!;
 
-  const fontMap: Record<string, string> = { ...availableFonts };
-  const localKeys = new Set(Object.keys(availableFonts));
+  const fontMap: Record<string, string> = {};
 
   for (const f of attachmentNames) {
     const key = f.name.toLowerCase();
@@ -90,35 +112,32 @@ export async function buildFontMap(
   const families = new Set<string>(extractAssFamilies(assContent));
   for (const f of attachmentNames) families.add(f.name);
 
-  const local: string[] = [];
-  const google: string[] = [];
+  const resolved: string[] = [];
+  const aliased: string[] = [];
   const missing: string[] = [];
 
   for (const family of families) {
     const key = family.toLowerCase();
-    if (localKeys.has(key) || fontMap[key]) {
-      local.push(family);
+    if (fontMap[key]) {
+      resolved.push(family);
       continue;
     }
-
-    const base = family.replace(/ /g, '-');
-    const variants = [
-      ['', base],
-      [' bold', `${base}-Bold`],
-      [' italic', `${base}-Italic`],
-      [' bold italic', `${base}-BoldItalic`]
-    ] as const;
-    await Promise.all(
-      variants.map(([suffix, post]) => loadRemoteVariant(fontMap, `${key}${suffix}`, post))
-    );
-    const loaded = variants.some(([suffix]) => fontMap[`${key}${suffix}`]);
-    if (loaded) google.push(family);
-    else missing.push(family);
+    if (await loadFamilyVariants(fontMap, key, family)) {
+      resolved.push(family);
+      continue;
+    }
+    const alias = FONT_ALIASES[key];
+    if (alias && (await loadFamilyVariants(fontMap, key, alias))) {
+      aliased.push(`${family}→${alias}`);
+      continue;
+    }
+    missing.push(family);
   }
 
   logger.info(
     'Subtitles',
-    `buildFontMap: local=${local.length} google=${google.length} missing=${missing.length} missingNames=[${missing.join(', ')}]`
+    `buildFontMap: resolved=${resolved.length} alias=${aliased.length} missing=${missing.length} ` +
+      `aliasedNames=[${aliased.join(', ')}] missingNames=[${missing.join(', ')}]`
   );
   fontMapCache.set(cacheKey, fontMap);
   return fontMap;
