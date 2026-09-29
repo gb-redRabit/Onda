@@ -26,7 +26,7 @@ interface LibraryMbApplyData {
   coverMime?: string;
 }
 
-// structuredClone can reject reactive proxies / Uint8Array in the renderer �
+// structuredClone can reject reactive proxies / Uint8Array in the renderer —
 // fall back to a JSON round-trip in that case.
 function cloneOrJson<T>(value: T): T {
   try {

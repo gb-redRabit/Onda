@@ -54,12 +54,16 @@ async function runJob(job: Job): Promise<void> {
         await postProcess(job);
         return;
       }
-      const retryable = result.errorCode === 'network' || result.errorCode === 'bot-block';
+      // Only a transport failure is worth retrying. `bot-block` is YouTube
+      // saying "too many requests from this address" — retrying it immediately
+      // is what escalates a 429 into an IP ban, and the backoff is too short to
+      // matter anyway. It needs the user to wait or sign in.
+      const retryable = result.errorCode === 'network';
       const status = job.status as IpcDownloadTask['status'];
       const stopped = status === 'cancelled' || status === 'paused';
       if (!retryable || stopped || attempt >= retryCfg.attempts) return;
       // Reset transient state and retry after an exponential backoff. Privacy,
-      // access-rights and not-found errors are never retried.
+      // access-rights, not-found and bot-block errors are never retried.
       job.status = 'downloading';
       job.progress = 0;
       job.speed = '';

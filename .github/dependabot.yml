@@ -1,0 +1,63 @@
+version: 2
+
+# Release automation owns the version; Dependabot is deliberately limited to
+# non-major upgrades so an Electron 44 or Vue 4 cannot land unattended on a
+# project whose release flow is tuned to the current major. See RELEASE.md.
+updates:
+  # Application dependencies
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '07:00'
+      timezone: Europe/Warsaw
+    open-pull-requests-limit: 8
+    labels: [dependencies]
+    commit-message:
+      prefix: 'deps'
+    groups:
+      # Patch upgrades are the bulk of the noise and the safest to batch.
+      dev-dependencies:
+        applies-to: version-updates
+        dependency-type: development
+        update-types: [patch, minor]
+        groups:
+          tooling:
+            patterns: ['eslint*', 'prettier', 'typescript', 'vue-tsc', 'vitest', '@playwright/*']
+      electron-runtime:
+        patterns:
+          [
+            'electron',
+            '@electron-toolkit/*',
+            'electron-builder',
+            'electron-updater',
+            'electron-vite'
+          ]
+        update-types: [patch]
+      # sharp ships arch-specific binaries pinned by electron-builder.yml
+      # (x64ArchFiles on macOS universal) — a major change there needs a local
+      # build, so it stays a pull request the author verifies.
+      native-deps:
+        patterns: ['sharp', '@img/*', 'jassub', 'music-metadata']
+        update-types: [patch]
+      security:
+        applies-to: version-updates
+        update-types: [patch, minor]
+        patterns: ['electron', 'vue', 'pinia', 'vue-router', 'vue-i18n', 'chokidar']
+
+  # Release automation
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels: [dependencies, ci]
+    commit-message:
+      prefix: 'ci'
+    groups:
+      actions:
+        patterns: ['actions/*', 'googleapis/*']
+
+# These are downloaded and SHA-256 verified at runtime from binaries.json rather
+# than installed from npm, so Dependabot cannot see them. Review the pinned
+# versions there when a new release is out (FEATURES/Manifest binarek note).

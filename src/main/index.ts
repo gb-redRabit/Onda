@@ -322,7 +322,7 @@ app.whenReady().then(async () => {
     logger.warn('main', 'seeding media server roots from library folders failed', e);
   }
 
-  // Started at login with "start minimized" â€” keep the window hidden until the
+  // Started at login with "start minimized" — keep the window hidden until the
   // user opens it from the tray.
   startHidden = process.argv.includes('--hidden');
   perf(`settings ready (${bootFolders} folders, ${bootRoots} roots)`);

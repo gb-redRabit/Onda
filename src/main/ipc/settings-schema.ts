@@ -150,7 +150,7 @@ const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
   pipHeight: numClamped(150, 2160),
   pipPreBuffer: bool,
   cursorHide: bool,
-  // cursorTimeout jest w SEKUNDACH (renderer uĹĽywa czas * 1000; slider 1â€“10 s)
+  // cursorTimeout jest w SEKUNDACH (renderer użływa czas * 1000; slider 1—10 s)
   cursorTimeout: numClamped(1, 30),
   resumePromptTimeout: numClamped(1, 60),
   playbackSpeed: numClamped(0.2, 3),
@@ -338,7 +338,7 @@ interface SanitizedSettings {
 /**
  * Whitelist + type validation for settings payloads coming from the renderer
  * (settings:set) or from imported JSON files (settings:import). Unknown keys and
- * values of the wrong type are dropped â€” they never reach the electron-store.
+ * values of the wrong type are dropped — they never reach the electron-store.
  * API key secret values are treated as opaque strings here; encryption happens in
  * the handlers via settings-crypto.
  */
