@@ -29,14 +29,21 @@ const localeLoaders: Record<Locale, () => Promise<LocaleModule>> = {
 };
 
 const initialLocale = detectLocale();
-const initialMessages = await localeLoaders[initialLocale]();
 
+// Created synchronously with empty messages so the renderer module graph never
+// blocks on a top-level `await`. The initial locale is loaded by `initI18n()`
+// before `app.mount()` (see `main.ts`), which keeps the first paint free of
+// missing-key flashes while letting Vue/components evaluate in parallel.
 export const i18n = createI18n({
   legacy: false,
   locale: initialLocale,
   fallbackLocale: 'en',
-  messages: { [initialLocale]: initialMessages.default }
+  messages: {}
 });
+
+export async function initI18n(): Promise<void> {
+  await loadLocaleMessages(initialLocale);
+}
 
 export async function loadLocaleMessages(loc: string): Promise<void> {
   const resolved = resolveLocale(loc);

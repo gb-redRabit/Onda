@@ -6,7 +6,8 @@ import type {
   UpdateSettings,
   ToastSettings,
   YoutubeAuthSettings,
-  GeneralSettings
+  GeneralSettings,
+  HomeSettings
 } from '@renderer/types/settings';
 
 export * from './constants/audio';
@@ -29,8 +30,7 @@ export const DEFAULT_GENERAL: GeneralSettings = {
   closeToTray: true,
   restoreSession: false,
   logLevel: 'info' as const,
-  logMaxSizeMB: 10,
-  experimentalEnabled: false
+  logMaxSizeMB: 10
 };
 
 export const DEFAULT_LIBRARY: LibrarySettings = {
@@ -90,6 +90,10 @@ export const DEFAULT_STATUS_BAR: StatusBarSettings = {
   ]
 };
 
+export const DEFAULT_HOME: HomeSettings = {
+  sections: ['continue', 'recent', 'mostPlayed', 'favorites', 'playlists', 'albums', 'artists']
+};
+
 export const DEFAULT_SHORTCUTS: Record<string, string> = {
   'play-pause': 'Space',
   'skip-forward': 'ArrowRight',
@@ -114,7 +118,6 @@ export const DEFAULT_SHORTCUTS: Record<string, string> = {
 export * from './constants/appearance';
 
 export const DEFAULT_PLAYBACK = {
-  defaultPlayer: 'html5' as const,
   normalization: false,
   replayGain: false,
   gaplessPlayback: true,
@@ -137,12 +140,7 @@ export const DEFAULT_PLAYBACK = {
     sensitivity: 0.5,
     smoothing: 0.8,
     fpsCap: 60
-  },
-  crossfadeSeconds: 0,
-  streamPreloadSeconds: 5,
-  perSourceVolume: false,
-  autoResume: true,
-  sleepTimerMinutes: 0
+  }
 };
 
 export const DEFAULT_DOWNLOAD = {

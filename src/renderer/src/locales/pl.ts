@@ -1,6 +1,5 @@
 export default {
   app: {
-    name: 'Onda',
     error: 'Wystąpił błąd'
   },
   window: {
@@ -21,11 +20,7 @@ export default {
     queue: 'Kolejka',
     collapse: 'Zwiń',
     expand: 'Rozwiń',
-    newTab: 'Nowa karta',
-    duplicate: 'Duplikuj',
-    closeTab: 'Zamknij kartę',
-    closeOthers: 'Zamknij pozostałe',
-    closeAll: 'Zamknij wszystkie'
+    newTab: 'Nowa karta'
   },
   menu: {
     file: 'Plik',
@@ -45,7 +40,6 @@ export default {
     prevTrack: 'Poprzedni utwór',
     shuffle: 'Losowo',
     repeat: 'Powtarzanie',
-    stop: 'Zatrzymaj',
     eq: 'Korektor',
     picInPic: 'Obraz w obrazie',
     viewSearch: 'Szukaj w widoku',
@@ -53,8 +47,7 @@ export default {
     help: 'Pomoc',
     documentation: 'Dokumentacja',
     about: 'O Onda',
-    search: 'Szukaj',
-    viewPlaylists: 'Listy odtwarzania'
+    search: 'Szukaj'
   },
   home: {
     welcome: 'Witaj ponownie',
@@ -73,9 +66,29 @@ export default {
     showAll: 'Pokaż wszystko',
     noTracks: 'Brak odtwarzanych utworów',
     openFileToStart: 'Otwórz plik aby rozpocząć',
-    unknown: 'Nieznany',
     removeFromRecent: 'Usuń z ostatnich',
-    removedFromRecent: 'Usunięto z ostatnio odtwarzanych'
+    removedFromRecent: 'Usunięto z ostatnio odtwarzanych',
+    openInLibrary: 'Otwórz w bibliotece',
+    scrollLeft: 'Przewiń w lewo',
+    scrollRight: 'Przewiń w prawo',
+    continueTitle: 'Kontynuuj',
+    resume: 'Wznów',
+    mostPlayed: 'Najczęściej grane',
+    favorites: 'Ulubione',
+    trackCountOne: '{count} utwór',
+    trackCountFew: '{count} utwory',
+    trackCountMany: '{count} utworów',
+    playCount: 'Odtworzenia: {count}',
+    resetSections: 'Pokaż wszystkie sekcje',
+    sections: {
+      continue: 'Karta „Kontynuuj”',
+      recent: 'Ostatnio odtwarzane',
+      mostPlayed: 'Najczęściej grane',
+      favorites: 'Ulubione',
+      playlists: 'Playlisty',
+      albums: 'Albumy',
+      artists: 'Artyści'
+    }
   },
   library: {
     title: 'Biblioteka',
@@ -91,6 +104,8 @@ export default {
     search: 'Szukaj...',
     searchPlaceholder: 'Szukaj w bibliotece...',
     noAudio: 'Brak utworów audio',
+    searchNoResults: 'Nie znaleziono pasujących plików',
+    showMoreResults: 'Pokaż więcej wyników',
     noVideo: 'Brak plików wideo',
     noFolders: 'Brak folderów',
     noArtists: 'Brak artystów',
@@ -131,15 +146,7 @@ export default {
     chipMost: 'Najczęściej',
     folderPlay: 'Odtwórz folder',
     folderShuffle: 'Losowo',
-    folderShowInExplorer: 'Pokaż w Eksploratorze',
-    colTitle: 'Tytuł',
-    colArtist: 'Wykonawca',
-    colAlbum: 'Album',
-    colDuration: 'Czas',
-    colFolder: 'Folder',
-    selectedCount: '{n} zaznaczonych',
-    addToQueue: 'Dodaj do kolejki',
-    clearSelection: 'Wyczyść'
+    folderShowInExplorer: 'Pokaż w Eksploratorze'
   },
   sources: {
     title: 'Źródła',
@@ -154,6 +161,9 @@ export default {
     name: 'Nazwa',
     namePlaceholder: 'Moje źródło API',
     baseUrl: 'Bazowy URL',
+    trustPrivateNetwork: 'Zezwól temu źródłu na dostęp do sieci lokalnej',
+    trustPrivateNetworkDescription:
+      'Zezwala temu źródłu na adresy loopback i prywatne adresy LAN. Importowane źródła nie zachowują tego uprawnienia.',
     auth: 'Uwierzytelnianie',
     authNone: 'Brak',
     authApiKey: 'Klucz API',
@@ -161,35 +171,26 @@ export default {
     chooseKey: 'Wybierz zapisany klucz...',
     headerName: 'Nazwa nagłówka',
     queryParam: 'Parametr zapytania',
-    endpoints: 'Endpointy',
-    addEndpoint: 'Dodaj endpoint',
     endpointName: 'Nazwa endpointu',
     arrayPath: 'Ścieżka do listy',
     params: 'Parametry',
     test: 'Test',
-    preview: 'Podgląd',
     download: 'Pobierz',
     untitled: 'Bez tytułu',
     openInBrowser: 'Otwórz w przeglądarce',
     pageParam: 'Parametr strony',
     startPage: 'Strona startowa',
-    pagHint:
-      'Stronicowanie liczbowe: wypełnij „Parametr strony” (np. page) — na widoku pojawią się przyciski poprzednia/następna strona. Dla API kursorowych użyj pól tokenu / „ma więcej”.',
     nextFromField: 'Pole tokenu następnej strony',
     totalField: 'Pole „ma więcej”',
-    childEndpoint: 'Endpoint podrzędny (otwierany kliknięciem)',
     noChild: '— brak —',
     rangeCountField: 'Pole liczby elementów (dot-path)',
     rangeCountValue: 'Stała liczba',
     rangeStartAt: 'Numer startowy',
     rangeTitleTemplate: 'Szablon tytułu',
-    nestHint:
-      'Zagnieżdżanie: kliknięcie elementu otwiera endpoint podrzędny. W ścieżce/parametrach używaj placeholderów {lb}a.b{rb} wypełnianych JSON-em klikniętego elementu ({lb}n{rb} = wygenerowany indeks). Range generuje pozycje 1..N zamiast fetcha (np. odcinki: pole liczby z rodzica, ścieżka jak /episodes/find/{lb}slug{rb}/{lb}n{rb}). Odpowiedź pojedynczego obiektu jest traktowana jako jeden element.',
     back: 'Wstecz',
     fTitle: 'tytuł',
     fSubtitle: 'podtytuł',
     fThumbnail: 'miniaturka',
-    fMediaUrl: 'URL mediów',
     fPlayerUrl: 'Player (embed/iframe) — URL odtwarzacza',
     fPlayerUrlPh: 'np. pole z https://.../embed/...',
     fType: 'typ',
@@ -524,6 +525,11 @@ export default {
     showSetupWizard: 'Konfiguracja startowa',
     showSetupWizardDesc: 'Uruchom ponownie kreator konfiguracji (biblioteka, sieć, wygląd, PiP).',
     searchSettings: 'Szukaj ustawień...',
+    searchField: 'ustawienie',
+    resetSetting: 'Przywróć domyślną',
+    modified: 'Zmienione względem domyślnych',
+    more: 'Więcej',
+    telemetryOff: 'Telemetria jest zawsze wyłączona (offline-first).',
     overview: 'Przegląd',
     sectionPlayback: 'Odtwarzanie',
     sectionAppearance: 'Wygląd',
@@ -540,7 +546,14 @@ export default {
     warningsTitle: 'Ostatnie ostrzeżenia',
     warningsDesc: '20 ostatnich ostrzeżeń procesu głównego (z rate-limitem, tylko lokalnie).',
     warningsEmpty: 'Brak zarejestrowanych ostrzeżeń.',
-    version: 'Wersja',
+    perfTitle: 'Wydajność',
+    perfDesc: 'Timeline startu i zużycie pamięci — dane lokalne.',
+    perfBootTimeline: 'Start aplikacji',
+    perfRendererDom: 'Renderer: DOM gotowy',
+    perfRendererReady: 'Renderer: gotowość UI',
+    perfProcesses: 'Procesy (pamięć / CPU)',
+    perfEmpty: 'Brak danych.',
+    runtimeDetails: 'Informacje o środowisku',
     os: 'System operacyjny',
     platform: 'Platforma',
     uptime: 'Czas pracy',
@@ -564,7 +577,6 @@ export default {
       'Usunąć WSZYSTKIE dane aplikacji?\n\nUstawienia, biblioteka, kolejka pobrań, subskrypcje, zapisane elementy, konta, wtyczki i cache zostaną usunięte, a aplikacja uruchomi się ponownie. Tej operacji nie można cofnąć.',
     resetFactoryRestarting: 'Trwa resetowanie… aplikacja uruchomi się ponownie.',
     resetFactoryError: 'Błąd resetu fabrycznego',
-    envVersions: 'Wersje środowiska',
     licenses: 'Licencje',
     licenseUnknown: 'Nieznana',
     noResults: 'Brak wyników',
@@ -696,15 +708,12 @@ export default {
     apiKeysEncrypted: 'Szyfrowane przechowywanie',
     apiKeysEncryptedDesc: 'Klucze nigdy nie są zapisywane jako zwykły tekst.',
     plugins: 'Wtyczki',
-    systemInfo: 'Informacje o systemie',
-    systemInfoDesc: 'Wersje, ścieżki i logi',
     sectionAdvanced: 'Zaawansowane',
     animations: 'Animacje',
     animationsDesc: 'Włącz animacje interfejsu',
     clipFormat: 'Format klipu',
     userAgent: 'User Agent',
     userAgentDesc: 'Nagłówek User-Agent dla żądań sieciowych',
-    defaultPlayer: 'Domyślny odtwarzacz',
     videoFilter: 'Filtr wideo',
     visualization: 'Wizualizacja',
     vizMode: 'Tryb',
@@ -730,17 +739,6 @@ export default {
     tempDir: 'Katalog tymczasowy',
     tempDirDesc: 'Gdzie trzymać częściowe pliki .part (pusty = systemowy tmp)',
     tempDirPlaceholder: 'np. D:\\Temp\\Onda',
-    crossfade: 'Crossfade',
-    crossfadeDesc: 'Przenikanie między utworami (0 = wyłączone)',
-    streamPreload: 'Bufor strumienia',
-    streamPreloadDesc: 'Ile sekund strumienia buforować z wyprzedzeniem',
-    perSourceVolume: 'Głośność per źródło',
-    perSourceVolumeDesc: 'Zapamiętuj głośność osobno dla każdego źródła',
-    autoResume: 'Auto-wznawianie',
-    autoResumeDesc: 'Wznów odtwarzanie po restarcie aplikacji',
-    sleepTimer: 'Sleep timer',
-    sleepTimerDesc: 'Zatrzymaj odtwarzanie po czasie (0 = wyłączony)',
-    sleepOff: 'wyłączony',
     qualityPerPlatform: 'Jakość per platforma',
     qualityPerPlatformDesc: 'Inna domyślna jakość dla YouTube i SoundCloud',
     proxyPerPlatform: 'Proxy per platforma',
@@ -748,32 +746,21 @@ export default {
     logLevel: 'Poziom logów',
     logLevelDesc: 'Ile szczegółów zapisywać do pliku logu',
     logMaxSize: 'Rozmiar logu',
-    experimental: 'Tryb eksperymentalny',
-    experimentalDesc: 'Włącz ukryte flagi / funkcje wczesnego dostępu',
-    telemetryOff: 'Telemetria jest zawsze wyłączona (offline-first).',
     downloadPaths: 'Ścieżki pobierania',
     downloadQueue: 'Kolejka pobierania',
     networkPlatform: 'Online — per platforma',
-    playbackBuffer: 'Bufor i uśpienie',
     systemLogs: 'Logi i eksperymenty',
     downloadQueueSection: 'Kolejka',
     networkPlatformSection: 'Jakość i proxy per platforma',
-    playbackBufferSection: 'Buforowanie i odtwarzanie',
     logsSection: 'Logi systemowe'
   },
   status: {
     noMedia: 'Nie załadowano mediów',
-    tracks: 'utworów',
-    playlists: 'playlist',
     playlistsLabel: 'Playlisty',
     audioFiles: 'Pliki audio',
     videoFiles: 'Pliki wideo',
     images: 'Obrazy',
-    downloads: 'pobrań',
-    results: 'wyników',
-    items: 'elementów',
     active: 'aktywne',
-    completed: 'Ukończone',
     loggedIn: 'Zalogowano',
     notLoggedIn: 'Niezalogowano',
     connecting: 'Łączenie…',
@@ -792,11 +779,7 @@ export default {
     repeat: 'Powtarzanie',
     repeatOne: 'Powtarzaj pojedynczy utwór',
     eq: 'Korektor',
-    progress: 'Postęp odtwarzania',
     queuePos: '{cur}/{total} utworów',
-    subs: 'Napisy',
-    on: 'wł.',
-    off: 'wył.',
     selected: 'zaznaczonych',
     subscriptions: 'subskrypcji',
     activeDownloads: 'pobierania',
@@ -827,12 +810,42 @@ export default {
     empty: 'Brak zainstalowanych wtyczek.',
     installFromFolder: 'Instaluj z folderu',
     examplesTitle: 'Przykłady',
-    examplesDesc: 'Gotowe wtyczki dołączone do aplikacji — zainstaluj jednym kliknięciem.',
+    examplesDesc:
+      'Przykładowe wtyczki. Instalacja pozostawia je wyłączone; przed uruchomieniem przejrzysz ich dostęp.',
     examplesInstall: 'Zainstaluj',
     examplesInstalled: 'Zainstalowana',
     examplesError: 'Nie udało się zainstalować przykładu',
+    installSuccess: 'Wtyczka została zainstalowana',
+    installDisabledHint: 'Pozostaje wyłączona. Włącz ją, aby przejrzeć wymagane uprawnienia.',
+    enableConfirmTitle: 'Przejrzyj dostęp wtyczki',
+    enableConfirmWarning:
+      'Po włączeniu kod wtyczki będzie uruchamiany w izolowanym workerze i otrzyma poniższy dostęp.',
+    permissionChangedWarning:
+      'Zakres dostępu lub kod wtyczki zmieniły się od ostatniego uruchomienia. Zatwierdź je ponownie, aby włączyć wtyczkę.',
+    requestedPermissions: 'Żądane uprawnienia',
+    noOptionalPermissions: 'Wtyczka nie żąda opcjonalnych uprawnień.',
+    permissionStorage: 'Odczyt i zapis własnego, trwałego magazynu wtyczki.',
+    permissionNotifications: 'Wyświetlanie powiadomień w interfejsie Onda.',
+    permissionPlayer: 'Sterowanie odtwarzaniem, kolejką i ulubionymi.',
+    permissionVisual: 'Ustawianie dekoracji obsługiwanych przez widok audio.',
+    permissionNetwork: 'Wykonywanie żądań sieciowych przez proxy Onda.',
+    networkAllowlist: 'Dozwolone wzorce adresów:',
+    requestedHooks: 'Zdarzenia, których nasłuchuje wtyczka',
+    hooksDescription:
+      'Hooki przekazują metadane utworu lub pobrania; niektóre payloady zawierają ścieżki plików i URL-e.',
+    noHooksRequested: 'Wtyczka nie subskrybuje zdarzeń.',
+    requestedVisualSlots: 'Deklarowane warianty wyglądu',
+    requestedUiSlots: 'Zadeklarowane sloty UI (tekst renderowany przez aplikację)',
+    uiSlotTextOnly: 'wtyczka pisze tylko tekst; aplikacja rysuje własny layout',
+    enableCancel: 'Anuluj',
+    enableConfirm: 'Zatwierdź i włącz',
+    enable: 'Przejrzyj uprawnienia i włącz',
+    disable: 'Wyłącz wtyczkę',
+    uninstall: 'Odinstaluj wtyczkę',
+    enableFailed: 'Nie udało się włączyć wtyczki',
+    installError: 'Nie udało się zainstalować wtyczki',
+    permissionReviewRequired: 'Wymaga ponownego zatwierdzenia dostępu',
     refresh: 'Odśwież',
-    uninstall: 'Odinstaluj',
     enabled: 'Włączona',
     logs: 'Logi',
     noLogs: 'Brak wpisów.',
@@ -840,6 +853,9 @@ export default {
     settings: 'Konfiguracja',
     guide: {
       title: 'Poradnik wtyczek',
+      searchPlaceholder: 'Szukaj w poradniku (np. slot, spectrum, storage)…',
+      searchEmpty: 'Brak sekcji pasujących do zapytania.',
+      copyCode: 'Kopiuj kod',
       intro:
         'Wtyczki pozwalają rozszerzyć Onda małymi programami w JavaScripcie. Działają w bezpiecznym, sandboksowanym workerze, więc jedynym kanałem komunikacji z aplikacją jest obiekt api. Poniżej znajdziesz opis, co wtyczka może robić, jak ją zainstalować i jak napisać własną.',
       sections: [
@@ -853,18 +869,35 @@ export default {
           list: [
             'manifest.json — metadane i uprawnienia (opis poniżej)',
             'index.js — kod wtyczki; ścieżka względna podana w polu entry',
-            'Dozwolone znaki w identyfikatorze: małe litery, cyfry oraz - _ i . (np. hello, triangle); inne nazwy katalogów zostaną odrzucone'
+            'Dozwolone znaki w identyfikatorze: małe litery, cyfry oraz - _ i . (np. hello, triangle); inne nazwy katalogów zostaną odrzucone',
+            'Zatwierdzenie użytkownika dotyczy pliku wskazanego przez entry — dodatkowe pliki w katalogu są przez aplikację kopiowane, ale nie są częścią obliczanego skrótu.'
           ]
         },
         {
           heading: 'Instalacja i zarządzanie',
           body: 'Wtyczkami zarządza się w ustawieniach aplikacji.',
           list: [
-            'Ustawienia → Wtyczki → Instaluj z folderu — wybierz katalog wtyczki. Pliki są kopiowane do katalogu danych aplikacji, a wtyczka startuje automatycznie.',
-            'Ikona zasilania włącza/wyłącza wtyczkę (worker startuje od nowa).',
+            'Ustawienia → Wtyczki → Instaluj z folderu — wybierz katalog wtyczki. Pliki są kopiowane do danych aplikacji, ale nowa wtyczka (również przykład) pozostaje wyłączona.',
+            'Kliknięcie ikony zasilania pokazuje permissions, wzorce network.allow, hooki i zadeklarowane warianty visual. Kod uruchomi się dopiero po zatwierdzeniu.',
+            'Zgoda obejmuje zadeklarowane możliwości oraz sam plik z kodem wtyczki. Zmiana uprawnień, sieci, hooków, wariantów albo kodu wymaga ponownego zatwierdzenia.',
+            'Wtyczki włączone przed wprowadzeniem zapisu zgody wymagają jednorazowego zatwierdzenia po aktualizacji.',
             'Ikona kosza odinstalowuje wtyczkę i usuwa jej storage oraz konfigurację.',
-            'Odśwież ładuje ponownie wszystkie wtyczki — użyj go po edycji plików wtyczki.',
+            'Odśwież ładuje ponownie wtyczki po edycji plików; jeśli zmienił się kod lub zakres capabilities, wtyczka pozostanie wyłączona do ponownego zatwierdzenia.',
             'Wtyczki z polem settings w manifeście mają na karcie formularz konfiguracji.'
+          ]
+        },
+        {
+          heading: 'Anatomia workera i sandbox',
+          body: 'Wtyczka to osobny web worker, a nie fragment interfejsu. Poniżej pełna ścieżka od instalacji do wyłączenia.',
+          list: [
+            'Instalacja kopiuje pliki do katalogu danych aplikacji; wtyczka startuje wyłączona i z zapisanym skrótem (SHA-256) pliku entry oraz zestawem możliwości.',
+            'Użytkownik klika ikonę zasilania, widzi uprawnienia i zatwierdza. Dopiero wtedy aplikacja uruchamia workera i wstrzykuje shim.',
+            'Shim blokuje w workerze bezpośrednie fetch, XMLHttpRequest, WebSocket, EventSource, importScripts, indexedDB i caches — sieć jest dostępna wyłącznie przez api.fetch.',
+            'Hooki są dostarczane tylko wtedy, gdy nazwa zgadza się z wpisem w manifest.hooks; payloady z hooków, których nie zadeklarowano, nigdy nie docierają do workera.',
+            'Aplikacja odpytuje workera co 15 s (heartbeat). Brak odpowiedzi w ciągu 10 s oznacza worker-heartbeat-timeout i wyłączenie wtyczki, więc zawieszony kod nie zostawia procesu w tle.',
+            'Wyłączenie wtyczki zatrzymuje workera, wyrejestrowuje komendy i czyści jej zmiany w UI (dekoracje, sloty). Storage i konfiguracja zostają, bo należą do katalogu wtyczki.',
+            'Odinstalowanie usuwa katalog wtyczki wraz ze storage, konfiguracją i plikami danych.',
+            'Odpytania api są asynchroniczne i mają 45 s limitu; payload większy niż 100 000 bajtów JSON jest odrzucany zanim wyjdzie z workera.'
           ]
         },
         {
@@ -891,17 +924,34 @@ export default {
             'hooks — hooki, na które wtyczka subskrybuje',
             'settings — opcjonalna lista pól konfiguracji (key, label, type: text|boolean|number, default; dla number też min/max)',
             'layoutElements — opcjonalna lista własnych wariantów layoutu (element, variant, label); wymaga uprawnienia visual (opis poniżej)',
+            'uiSlots — opcjonalna lista slotów UI, do których wtyczka może pisać przez api.ui (obecnie audio-view); wymaga uprawnienia visual i jest objęta zgodą',
             'Pole id w manifeście jest ignorowane — identyfikatorem wtyczki jest nazwa katalogu'
+          ]
+        },
+        {
+          heading: 'Uprawnienia: co działa bez dodatkowej zgody',
+          body: 'Odczytowe zapytania są dostępne każdej wtyczce, ale każda powierzchnia, która może coś zmienić albo zobaczyć więcej niż stan odtwarzacza, jest za gatunkiem. Poniżej pełna mapa:',
+          list: [
+            'Bez uprawnień: player:status, player:progress, library:count, library:search, odczyt storage i settings (klucze spoza manifestu nie są udostępniane).',
+            'player — akcje player:play/pause/toggle/next/previous, player:setVolume, player:seek, player:enqueue oraz track:toggleFavorite.',
+            'storage — zapis i usuwanie danych wtyczki (api.storage.set/remove).',
+            'notifications — api.notify i powiadomienia przez komendy.',
+            'network — każde api.fetch; dodatkowo musi pasować do co najmniej jednego wzorca permissions.network.allow.',
+            'visual — dekoracje layoutu (api.visual), sloty UI (api.ui.set/clear) oraz zapytanie player:spectrum.',
+            'Deklaracja w manifeście sama w sobie niczego nie włącza: dopóki użytkownik nie zatwierdzi, worker nie startuje, a wyłączenie cofa uprawnienia natychmiast.'
           ]
         },
         {
           heading: 'Hooki',
           body: 'Subskrypcję ustawia się przez api.on(nazwa, handler). Ta sama nazwa musi być wymieniona w hooks w manifeście.',
           list: [
-            'app:start — aplikacja wystartowała; payload zawiera wersję aplikacji',
+            'app:start — worker wtyczki wystartował; payload nie zawiera dodatkowych danych',
             'track:play — zmieniono utwór; payload: title, artist, album, duration, path',
+            'track:timeupdate — pozycja odtwarzacza; wysyłany maksymalnie raz na sekundę; payload: position, duration, progress, rate, playing, track',
+            'track:end — utwór się zakończył; payload bieżącego utworu',
             'track:queued — dodano utwór do kolejki; payload jak track:play',
-            'library:scan — zakończono skanowanie biblioteki; payload: count'
+            'library:scan — zakończono skanowanie biblioteki; payload: count',
+            'download:start / download:complete / download:error — zmiana stanu pobierania i dane zadania'
           ]
         },
         {
@@ -917,14 +967,26 @@ export default {
             'fetch(url, opts) — sieć przez proxy procesu głównego',
             'registerCommand(cmd) — komenda w palecie (zwraca funkcję odrejestrującą)',
             'visual(klucz, pole) — dekoracja elementu widoku audio (zwraca Promise)',
+            'ui.set(slot, pozycje) / ui.clear(slot) — tekstowy slot UI renderowany przez hosta (uprawnienie visual + slot w uiSlots w manifeście)',
             'log.info / warn / error(wiadomość) — wpisy w zakładce Logi'
           ]
         },
         {
           heading: 'Zapytania',
           body: 'Wywołania query():',
+          code: `api.query('player:progress').then(function (p) {
+  // position, duration, progress, rate, playing, track
+  api.log.info(p.position + ' / ' + p.duration);
+});
+
+api.query('player:spectrum', { bins: 32 }).then(function (s) {
+  // s.bins — koszyki 0..1, s.available mówi, czy jest AnalyserNode
+  api.log.info('poziom: ' + (s.bins[0] || 0).toFixed(2));
+});`,
           list: [
             'player:status — stan odtwarzacza (currentTrack, isPlaying, volume, shuffle, repeat, queueLength)',
+            'player:progress — bieżąca pozycja (position, duration, progress, rate, playing, track)',
+            'player:spectrum — znormalizowane widmo 0..1 w «bins» koszykach (4–64, domyślnie 32); wymaga uprawnienia visual',
             'library:count — liczba utworów, plików audio i playlist',
             'library:search — wyniki dla «query» (opcjonalnie ograniczone przez «limit»)'
           ]
@@ -932,6 +994,22 @@ export default {
         {
           heading: 'Akcje',
           body: 'Wywołania action(). Akcje odtwarzacza wymagają uprawnienia player (poza notify):',
+          code2: `// Wzorzec płynnego wyciszania (jak w przykładzie auto-fade)
+var from = null;
+api.on('track:timeupdate', function (payload) {
+  var left = payload.duration - payload.position;
+  if (left > 8) return;
+  if (from === null) {
+    api.query('player:status').then(function (s) { from = s.volume; });
+    return;
+  }
+  api.action('player:setVolume', { volume: from * Math.max(0, left / 8) });
+});
+
+api.on('track:play', function () {
+  if (from !== null) api.action('player:setVolume', { volume: from });
+  from = null;
+});`,
           list: [
             'player:play / player:pause / player:toggle — sterowanie odtwarzaniem',
             'player:next / player:previous — zmiana utworu',
@@ -954,22 +1032,23 @@ export default {
         },
         {
           heading: 'Konfiguracja (settings)',
-          body: 'Pola zdefiniowane w settings w manifeście pojawiają się jako formularz na karcie wtyczki. Wartości są trwałe, a do odczytu/zapisu służy api.settings. Klucze ustawień to pola w manifeście — niezadeklarowany klucz nie może być zapisany.',
+          body: 'Pola zdefiniowane w settings w manifeście pojawiają się jako formularz na karcie wtyczki. Wartości są trwałe, a do odczytu/zapisu służy api.settings. Main sprawdza typ i zakres przy zapisie; przy odczycie wartości niezgodne z bieżącym manifestem wracają do poprawnego default lub są pomijane. Klucze spoza manifestu nie są udostępniane.',
           code: `«"settings": [
   { "key": "shape", "label": "Domyślny kształt", "type": "text", "default": "triangle" },
   { "key": "volume", "label": "Głośność", "type": "number", "min": 0, "max": 100 },
   { "key": "notify", "label": "Powiadomienia", "type": "boolean", "default": true }
 ]»`,
           list: [
-            'type — text, boolean albo number; dla number dostępne min/max',
+            'type — text, boolean albo number; text ma limit 4096 bajtów UTF-8, boolean przyjmuje tylko true/false, a number musi być skończony i w min/max',
             'default — wartość domyślna widoczna też przez api.settings.get(klucz)',
             'api.settings.get(klucz) — wartość lub null',
-            'api.settings.set(klucz, wartość) — zapis nowej wartości (musi być zserializowalna do JSON)'
+            'api.settings.set(klucz, wartość) — zapis nowej wartości zgodnej z typem i min/max; limit text to 4096 bajtów UTF-8',
+            'Zapisane wartości niezgodne ze zmienionym schematem są ignorowane; poprawny default jest używany zamiast nich'
           ]
         },
         {
           heading: 'Sieć',
-          body: 'api.fetch(url, opts) działa przez proxy w procesie głównym. Adres musi pasować do wzorca w permissions.network.allow.',
+          body: 'api.fetch(url, opts) działa przez proxy w procesie głównym. URL musi pasować do permissions.network.allow; hosty rozwiązywane do sieci prywatnej są blokowane, a każde przekierowanie jest ponownie sprawdzane.',
           code: `«{
   "permissions": {
     "network": { "allow": ["https://httpbin.org/*"] }
@@ -977,7 +1056,8 @@ export default {
 }»`,
           list: [
             'Opcje: «method», «headers», «body», «timeoutMs», «responseType»: "json" lub "text"',
-            'Maksymalnie 5 przekierowań; wzorce URL obsługują znak «*»'
+            'Maksymalnie 5 przekierowań; wzorce URL obsługują znak «*»',
+            'Przy przekierowaniu do innej domeny nagłówki wtyczki nie są przekazywane; przekierowania cross-origin dla POST/PUT/PATCH/DELETE są odrzucane'
           ]
         },
         {
@@ -1039,12 +1119,46 @@ export default {
           ]
         },
         {
+          heading: 'Sloty UI (uiSlots)',
+          body: 'Wtyczka nie renderuje własnego HTML ani nie ma dostępu do DOM. Zamiast tego może pisać krótkie pary tekstu do slotu, który rysuje host (obecnie «audio-view» — pasek nad widokiem odtwarzacza). Wymaga uprawnienia visual i deklaracji slotu w manifeście:',
+          code: `«{
+  "name": "Moja wtyczka",
+  "version": "1.0.0",
+  "permissions": { "visual": true },
+  "uiSlots": ["audio-view"]
+}»`,
+          code2: `api.ui.set('audio-view', [
+  { label: 'Czas', value: '01:24 / 03:40' },
+  { label: 'Plik', value: 'Album — Tytuł' }
+]);
+
+// Pusta lista czyści slot:
+api.ui.clear('audio-view');`,
+          list: [
+            'api.ui.set("audio-view", [{ label: "Bitrate", value: "320 kbps" }]) — zapis pozycji slotu',
+            'api.ui.clear("audio-view") — wyczyszczenie slotu (także po wyłączeniu wtyczki)',
+            'Limit hostowy: maksymalnie 8 pozycji, 48 znaków etykiety i 160 znaków wartości; większa lista jest odrzucana błędem, a nie przycinana',
+            'Treść jest renderowana jako tekst (bez HTML). Znaki sterujące są usuwane, a spacje normalizowane do jednej linii',
+            'Dodanie slotu do manifestu zmienia zakres zatwierdzenia, więc wtyczka wymaga ponownego zatwierdzenia przez użytkownika'
+          ]
+        },
+        {
           heading: 'Debugowanie',
           body: 'Każda karta wtyczki ma sekcję Logi.',
+          code: `api.query('player:progress')
+  .then(function (progress) {
+    api.log.info('pozycja: ' + progress.position);
+  })
+  .catch(function (err) {
+    // komunikat błędu to kod, np. permission-denied:visual
+    api.log.error('nie udało się: ' + err.message);
+  });`,
           list: [
-            'Sekcja Logi pokazuje wpisy z api.log.* oraz błędy workera.',
+            'Sekcja Logi pokazuje wpisy z api.log.* oraz błędy workera. Używaj api.log.* — console.log zostaje w kontekście workera i nigdzie nie trafia.',
+            'Każde wywołanie api zwraca Promise, więc błędy obsługuj w catch; niezłapany błąd kończy się komunikatem w logach, ale nie wyłącza wtyczki.',
             'Status: Nowa → Ładowanie → Załadowana; błędy uruchamiania są oznaczane jako Błąd.',
-            'Po zmianie plików wtyczki kliknij Odśwież, aby załadować nową wersję.'
+            'Po zmianie plików wtyczki kliknij Odśwież, aby załadować nową wersję. Zmiana kodu unieważnia wcześniejsze zatwierdzenie, więc po refreshu trzeba zatwierdzić ponownie.',
+            'Zawieszenie w pętli bez powrotu daje worker-heartbeat-timeout — nie blokuj pętli setTimeout w pętli głównej workera.'
           ]
         },
         {
@@ -1079,13 +1193,67 @@ api.registerCommand({
           ]
         },
         {
+          heading: 'Rozwiązywanie problemów',
+          body: 'Błędy z operacji api wracają jako rejected Promise; tekst błędu to kod, a nie zdanie. Najczęstsze:',
+          list: [
+            'permission-denied:player / :visual / :storage / :notifications — brakuje uprawnienia w manifeście. Dodaj je i przejdź zatwierdzenie ponownie.',
+            'unknown-op / unknown-query / unknown-action — literówka w nazwie operacji. Nazwy są wrażliwe na wielkość liter.',
+            'setting-unknown — api.settings.set dla klucza, którego nie ma w settings manifestu.',
+            'ui-slot:not-declared — slot nie wymieniony w manifest.uiSlots; ui-slot:unknown-slot — slotu nie ma w aplikacji.',
+            'ui-slot:too-many-items — więcej niż 8 pozycji; ui-slot:invalid-item — pozycja nie jest obiektem label/value.',
+            'plugin-op-args-too-large — argumenty przekraczają 100 000 bajtów JSON; plugin-op-timeout — host nie odpowiedział w 45 s.',
+            'worker-ready-timeout — kod workera rzucił wyjątek przy starcie; worker-heartbeat-timeout — kod blokuje pętlę (np. nieskończona pętla while).',
+            'fetch: forbidden — URL nie pasuje do allowlisty; invalid-url — zły adres; redirect-loop — za dużo przekierowań; too-large — odpowiedź przekracza limit; network — problem z siecią lub domeną.',
+            'manifest:missing-name / missing-version / bad-entry — brak wymaganego pola lub entry wskazujące poza katalog wtyczki.',
+            'Wtyczka znika z listy po Odśwież — katalog został usunięty albo manifest przestał się parsować (plik zostaje na dysku, komunikat jest w logach aplikacji).'
+          ]
+        },
+        {
+          heading: 'Limity',
+          body: 'Twarde ograniczenia wbudowane w aplikację — warto znać je przed projektowaniem wtyczki:',
+          list: [
+            'Manifest: 64 KiB; plik entry: 1 MiB; maksymalnie 20 zainstalowanych wtyczek.',
+            'Storage: 100 kluczy, łącznie 256 KiB; klucz to 1–64 znaki z [a-zA-Z0-9_.-].',
+            'Konfiguracja (settings): tekst do 4096 bajtów UTF-8; liczby ogranicza min/max z manifestu.',
+            'Hooki: długość nazwy do 64 znaków; track:timeupdate przychodzi maksymalnie raz na sekundę.',
+            'Polecenia: id do 64 znaków, label bez limitu długości w UI, location do 64, shortcut do 32 znaków.',
+            'api.fetch: maksymalnie 5 przekierowań, 30 s timeoutu, 10 MiB odpowiedzi (1 MiB dla odpowiedzi tekstowej).',
+            'Sloty UI: 8 pozycji, 48 znaków etykiety, 160 znaków wartości; api.log obcina wpis do 2000 znaków.',
+            'Wywołanie api: 100 000 bajtów argumentów i 45 s na odpowiedź hosta.'
+          ]
+        },
+        {
+          heading: 'Dołączone przykłady',
+          body: 'W katalogu resources/plugins-examples aplikacji znajduje się dwanaście gotowych wtyczek — każda instaluje się jednym kliknięciem w sekcji Przykłady i zostaje wyłączona do zatwierdzenia:',
+          list: [
+            'hello — powiadomienia, odczyt stanu odtwarzacza, licznik w storage i test sieci przez api.fetch (httpbin).',
+            'triangle — własne warianty layoutu okładki (plugin:cover:triangle i kolejne) plus komenda w palecie.',
+            'progress-slot — bezpieczny slot UI: pozycja odtwarzacza, poziom widma z player:spectrum i nazwa pliku.',
+            'sleep-timer — minuterka snu: liczy w tle (przeżywa restart) i ostatnie sekundy wycisza płynnie; komendy w palecie.',
+            'auto-fade — samo wyciszanie końcówki każdego utworu, z przywracaniem głośności przy zmianie utworu.',
+            'Uwaga do obu: worker ginie razem z wtyczką, więc wyłączenie jej w trakcie wyciszania zostawia głośność na obniżonej wartości — trzeba ją podnieść ręcznie.',
+            'vu-meter — żywy wskaźnik poziomu i szczytu w slocie UI, z tempem ataku i wypuszczania jak w VU.',
+            'focus-mode — licznik sesji w slocie UI, pauza na koniec i polecenia start / status / koniec.',
+            'smart-queue — po zakończeniu utworu dokłada następnego: bez powtórek, preferowany ten sam artysta, tryb losowy.',
+            'listen-history — lokalna historia odsłuchań: minuty dzisiaj, top wykonawcy tygodnia, ostatnie utwory (nic nie wychodzi z komputera).',
+            'track-actions — własne pozycje w menu kontekstowym utworu (kolejka, ulubione, informacje) i lista „jeszcze później”.',
+            'metadata-lookup — sprawdza w MusicBrainz wydanie utworu (rok, album) i pokazuje je w slocie UI; wyniki są cache’owane, sieć wymaga zgody.',
+            'note-readout — szacuje dominującą nutę z widma i pokazuje ją w slocie; to przybliżenie z grubej siatki, nie tuner.',
+            'Wtyczki z network.allow (hello, metadata-lookup) proszą o dostęp do sieci przy zatwierdzaniu — wzór hosta jest widać w oknie zgody.',
+            'Przykłady to najlepsza dokumentacja API: czytaj ich index.js, żeby zobaczyć, jak wywołania łączą się w działający kod.'
+          ]
+        },
+        {
           heading: 'Ograniczenia i bezpieczeństwo',
           list: [
             'Wtyczka nie ma dostępu do DOM, modułów Node ani do okna aplikacji — obowiązuje wyłącznie powyższe API.',
             'Każde żądanie sieciowe przechodzi przez proxy i jest filtrowane przez permissions.network.',
             'Storage jest oddzielny dla każdej wtyczki (per katalog).',
             'Brak uprawnienia zwraca błąd permission-denied; nieznane operacje kończą się błędem.',
-            'Wyłączenie lub odinstalowanie wtyczki cofa jej zmiany w UI (np. dekoracje okładki).'
+            'Wyłączenie lub odinstalowanie wtyczki cofa jej zmiany w UI (np. dekoracje okładki).',
+            'Zatwierdzenie jest kryptograficznie związane z plikiem entry: podmiana jednej litery w kodzie unieważnia zgodę i wtyczka wraca do stanu wyłączonej.',
+            'Sloty UI i widmo to jedyne miejsca, w których treść wtyczki trafia na ekran; aplikacja renderuje je sama, więc wtyczka nie może wstrzyknąć HTML ani skryptu.',
+            'apiVersion jest informacyjne — aplikacja nie odrzuca wtyczki na jego podstawie, ale warto zostawić 1, dopóki API się nie zmieni.'
           ]
         }
       ]
@@ -1098,8 +1266,10 @@ api.registerCommand({
     }
   },
   youtube: {
-    title: 'YouTube',
-    pasteOrSearch: 'Wklej link, ID wideo, nazwę kanału lub szukaj...',
+    pasteOrSearch:
+      'Wklej link wideo, handle kanału lub szukaj w YouTube, SoundCloud i innych serwisach...',
+    externalLink: 'Link obsługiwany przez yt-dlp',
+    genericExtractorHint: 'Obsługa strony i dostępne opcje pobierania zależą od yt-dlp.',
     batch: 'Wiele linków',
     batchPlaceholder: 'Wklej wiele linków (jeden na linię lub oddzielone przecinkiem)',
     batchDetected: 'Wykryto: {count}',
@@ -1109,7 +1279,6 @@ api.registerCommand({
     batchError: 'Nie udało się dodać linków',
     search: 'Szukaj',
     discover: 'Znajdź muzykę, filmy i więcej',
-    searchHeading: 'Szukaj na YouTube',
     searchHeadingOnline: 'Szukaj online',
     typeTrack: 'utwór',
     typeSet: 'set',
@@ -1149,8 +1318,6 @@ api.registerCommand({
     itemsCount: '{count} elementów',
     resolveError: 'Nie udało się rozpoznać tego linku',
     searchError: 'Nie udało się wyszukać',
-    back: 'Wstecz',
-    openChannel: 'Otwórz kanał',
     loadMore: 'Wczytaj więcej',
     subscribers: 'subskrybentów',
     followers: 'obserwujących',
@@ -1160,16 +1327,12 @@ api.registerCommand({
     shortsTab: 'Shorts',
     sortLatest: 'Najnowsze',
     sortOldest: 'Najstarsze',
-    latest: 'Najnowsze',
-    allVideos: 'Wszystkie wideo',
     noVideos: 'Brak wideo',
     viewTiles: 'Kafelki',
     viewList: 'Lista',
     pageOf: 'Strona {current} z {total}',
-    published: 'opublikowane',
     discoverTab: 'Odkrywaj',
     subscriptionsTab: 'Subskrypcje',
-    subscriptionsHeading: 'Twoje subskrypcje',
     noSubscriptions: 'Nie subskrybujesz jeszcze żadnego kanału',
     checkNow: 'Sprawdź teraz',
     lastChecked: 'Sprawdzono:',
@@ -1181,15 +1344,10 @@ api.registerCommand({
     subscribeChannel: 'Subskrybuj',
     unsubscribeChannel: 'Anuluj subskrypcję',
     unsubscribeChannelConfirm: 'Anulować subskrypcję? Preferencje powiadomień zostaną utracone.',
-    downloaded: 'Pobrane',
     downloading: 'Pobieranie…',
-    queuing: 'Dodawanie…',
     newCount: '{count} nowych',
     remainingCount: '{count} do pobrania',
-    remainingCountTitle: 'Ile filmów z tego kanału pozostało do pobrania',
-    newArrivalsTitle: 'Nowe filmy od ostatniego sprawdzenia',
     downloadPrefs: 'Preferencje pobierania',
-    downloadPrefsHint: 'Puste pola oznaczają użycie ustawień globalnych z zakładki Pobieranie.',
     prefKind: 'Rodzaj',
     prefAudio: 'Audio',
     prefVideo: 'Wideo',
@@ -1197,7 +1355,6 @@ api.registerCommand({
     prefContainer: 'Kontener',
     prefQuality: 'Jakość',
     prefTemplate: 'Szablon nazwy',
-    prefSubs: 'Napisy (języki)',
     prefTemplatePlaceholder: 'np. {title} - {artist}',
     prefOutputDir: 'Miejsce zapisu',
     prefOutputDirPlaceholder: 'Użyj globalnego folderu pobierania',
@@ -1217,11 +1374,9 @@ api.registerCommand({
     scopeNewDesc: 'Śledź kanał i pobieraj tylko przyszłe publikacje',
     scopeAll: 'Pobierz wszystko',
     scopeAllDesc: 'Pobierz też cały dotychczasowy katalog kanału od razu',
-    prefSection: 'Preferencje pobierania',
     prefSectionHint: 'Puste pola = użyj domyślnych wartości z Ustawienia → Pobieranie',
     prefsSummary: 'Podsumowanie preferencji',
     downloadAll: 'Pobierz całość',
-    downloadAllDesc: 'Pobierz też cały dotychczasowy katalog kanału od razu',
     downloadAllTitle: 'Dodaj wszystkie wideo z tego kanału do kolejki',
     checkChannelNow: 'Sprawdź ten kanał teraz',
     downloadAllSubs: 'Pobierz wszystkie nowe',
@@ -1229,7 +1384,6 @@ api.registerCommand({
     channelQueueFailed: 'Nie udało się pobrać listy wideo z kanału — spróbuj ponownie',
     nothingToQueue: 'Nic do dodania — wszystko już pobrane lub w kolejce',
     retryAlreadyActive: 'To wideo ma już aktywne zadanie w kolejce',
-    downloadConfigTitle: 'Konfiguracja pobierania',
     downloadConfigHint: 'Skonfiguruj pobieranie dla',
     profilesSection: 'Profile',
     profileNone: 'Bez profilu',
@@ -1275,10 +1429,11 @@ api.registerCommand({
     newVideosToastTitle: 'Nowe wideo — {channel}'
   },
   player: {
-    nowPlaying: 'Teraz odtwarzane',
     playing: 'Odtwarzanie',
     paused: 'Wstrzymano',
     volume: 'Głośność: {n}%',
+    repeatNone: 'Powtarzanie wyłączone',
+    repeatAll: 'Powtarzaj wszystko',
     muted: 'Wyciszono',
     speedTitle: 'Prędkość odtwarzania',
     speedCustom: 'Własna',
@@ -1356,9 +1511,6 @@ api.registerCommand({
   },
   downloads: {
     title: 'Pobrane',
-    active: 'Aktywne',
-    completed: 'Ukończone',
-    failed: 'Błędy / anulowane',
     cancel: 'Anuluj',
     retry: 'Powtórz',
     pause: 'Wstrzymaj',
@@ -1377,7 +1529,6 @@ api.registerCommand({
     play: 'Odtwórz',
     clearFinished: 'Wyczyść zakończone',
     empty: 'Brak pobranych plików',
-    downloads: 'pobrań',
     inLibrary: 'w bibliotece',
     inLibraryTitle: 'Pokaż w bibliotece',
     copyPath: 'Kopiuj ścieżkę',
@@ -1410,6 +1561,9 @@ api.registerCommand({
     ok: 'OK',
     back: 'Wstecz',
     play: 'Odtwórz',
+    clear: 'Wyczyść',
+    on: 'Wł.',
+    off: 'Wył.',
     pause: 'Pauza',
     previous: 'Poprzedni',
     next: 'Następny',
@@ -1422,7 +1576,6 @@ api.registerCommand({
     editTags: 'Edytuj tagi',
     showInFolder: 'Pokaż w folderze',
     addToPlaylist: 'Dodaj do playlisty',
-    removeFromPlaylist: 'Usuń z playlisty',
     cancel: 'Anuluj',
     save: 'Zapisz',
     delete: 'Usuń',
@@ -1431,7 +1584,6 @@ api.registerCommand({
     yes: 'Tak',
     no: 'Nie',
     loading: 'Ładowanie...',
-    error: 'Błąd',
     unknown: 'Nieznany',
     removeFav: 'Usuń z ulubionych',
     addFav: 'Dodaj do ulubionych',
@@ -1439,12 +1591,7 @@ api.registerCommand({
     miniPlayer: 'Mini odtwarzacz',
     playAlbum: 'Odtwórz album',
     addAllToQueue: 'Dodaj wszystkie do kolejki',
-    playNow: 'Odtwórz',
     noPlaylists: 'Brak playlist',
-    folderAudio: 'Audio',
-    folderVideo: 'Video',
-    folderMixed: 'Mieszany',
-    folderUnknown: 'Nieznany',
     tracks: 'utw.',
     files: 'plików',
     selected: 'wybranych',
@@ -1459,8 +1606,6 @@ api.registerCommand({
   },
   wizard: {
     title: 'Witaj w Onda',
-    welcome: 'Skonfiguruj aplikację w kilku krokach. Każdą opcję zmienisz później w Ustawieniach.',
-    addLibrary: 'Dodaj folder biblioteki',
     chooseDownload: 'Wybierz folder pobierania',
     noneSelected: 'Nie wybrano',
     start: 'Rozpocznij',
@@ -1517,21 +1662,12 @@ api.registerCommand({
     pipVideoDesc: 'Oglądaj filmy w małym przesuwanym oknie podczas pracy.',
     pipAudio: 'PiP audio',
     pipAudioDesc: 'Okładka, wizualizacja i kontrolki w kompaktowym okienku.',
-    pipAutoShow: 'Auto-pokazuj PiP audio przy odtwarzaniu',
-    pipMode: 'Domyślny tryb PiP audio',
-    pipModeMinimal: 'Minimalny',
-    pipModeMedium: 'Średni',
-    pipModeMax: 'Maksymalny',
-    pipModeWide: 'Szeroki',
     pipNote: 'Pozycję, przezroczystość i elementy zmienisz w Ustawieniach → Odtwarzanie.',
     summaryTitle: 'Gotowe!',
     summaryDesc: 'To Twoja konfiguracja startowa. Każdą opcję zmienisz później w Ustawieniach.',
     summaryLibrary: 'Biblioteka',
     summaryDownload: 'Pobieranie',
     summaryTheme: 'Motyw',
-    summaryPip: 'PiP audio',
-    summaryPipOn: 'Auto-pokaz: włączony',
-    summaryPipOff: 'Auto-pokaz: wyłączony',
     summaryScan: 'Skan biblioteki',
     summaryScanOn: 'Po zakończeniu kreatora',
     summaryScanOff: 'Później',
@@ -1565,9 +1701,7 @@ api.registerCommand({
     fromStart: 'Od początku'
   },
   playerBar: {
-    noTrack: 'Brak utworu',
-    noTrackTitle: 'Nie załadowano utworu',
-    selectTrack: 'Wybierz utwór'
+    noTrack: 'Brak utworu'
   },
   queue: {
     title: 'Kolejka',
@@ -1652,7 +1786,6 @@ api.registerCommand({
   },
   musicbrainz: {
     title: 'MusicBrainz',
-    searchPlaceholder: 'Szukaj: artist "album"...',
     search: 'Szukaj',
     searching: 'Szukanie...',
     noResults: 'Brak wyników',
@@ -1727,14 +1860,30 @@ api.registerCommand({
   },
   playerView: {
     noVideo: 'Brak wideo do odtworzenia',
-    browseFiles: 'Przeglądaj pliki'
+    browseFiles: 'Przeglądaj pliki',
+    back: 'Wróć do poprzedniego widoku',
+    pip: 'Obraz w obrazie',
+    fullscreen: 'Przełącz pełny ekran',
+    seek: 'Pozycja odtwarzania',
+    volume: 'Głośność',
+    seekBackward: 'Cofnij o 10 sekund',
+    seekForward: 'Przewiń o 10 sekund'
   },
-  folders: {
-    play: 'Odtwarzaj'
-  },
+  folders: {},
   imageViewer: {
     loadFailed: 'Nie udało się załadować obrazu',
-    loading: 'Ładowanie...'
+    loading: 'Ładowanie...',
+    close: 'Zamknij (Esc)',
+    startSlideshow: 'Rozpocznij pokaz slajdów (Spacja)',
+    stopSlideshow: 'Zatrzymaj pokaz slajdów (Spacja)',
+    slideshowSettings: 'Ustawienia pokazu slajdów',
+    fitToScreen: 'Dopasuj do ekranu',
+    zoomIn: 'Powiększ (+)',
+    zoomOut: 'Pomniejsz (-)',
+    rotate: 'Obróć (R)',
+    fullscreen: 'Pełny ekran (F)',
+    previous: 'Poprzedni obraz',
+    next: 'Następny obraz'
   },
   creator: {
     scheme: 'Motyw bazowy',
@@ -1812,5 +1961,14 @@ api.registerCommand({
       prefs: 'Ustawienia subskrypcji',
       unfollow: 'Usuń subskrypcję'
     }
+  },
+  deps: {
+    title: 'Brakujące zależności',
+    message: 'Do prawidłowego działania aplikacji brakuje: {tools}.',
+    required: 'wymagane',
+    optional: 'opcjonalne',
+    broken: 'uszkodzone',
+    manage: 'Zarządzaj zależnościami',
+    dismiss: 'Ukryj do następnego uruchomienia'
   }
 };

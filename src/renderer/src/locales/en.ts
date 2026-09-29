@@ -1,6 +1,5 @@
 export default {
   app: {
-    name: 'Onda',
     error: 'An error occurred'
   },
   window: {
@@ -21,11 +20,7 @@ export default {
     queue: 'Queue',
     collapse: 'Collapse',
     expand: 'Expand',
-    newTab: 'New Tab',
-    duplicate: 'Duplicate',
-    closeTab: 'Close Tab',
-    closeOthers: 'Close Others',
-    closeAll: 'Close All'
+    newTab: 'New Tab'
   },
   menu: {
     file: 'File',
@@ -45,7 +40,6 @@ export default {
     prevTrack: 'Previous Track',
     shuffle: 'Shuffle',
     repeat: 'Repeat',
-    stop: 'Stop',
     eq: 'Equalizer',
     picInPic: 'Picture-in-Picture',
     viewSearch: 'Search in view',
@@ -53,8 +47,7 @@ export default {
     help: 'Help',
     documentation: 'Documentation',
     about: 'About Onda',
-    search: 'Search',
-    viewPlaylists: 'Playlists'
+    search: 'Search'
   },
   home: {
     welcome: 'Welcome back',
@@ -73,9 +66,29 @@ export default {
     showAll: 'Show all',
     noTracks: 'No tracks playing',
     openFileToStart: 'Open a file to start',
-    unknown: 'Unknown',
     removeFromRecent: 'Remove from recent',
-    removedFromRecent: 'Removed from recently played'
+    removedFromRecent: 'Removed from recently played',
+    openInLibrary: 'Open in library',
+    scrollLeft: 'Scroll left',
+    scrollRight: 'Scroll right',
+    continueTitle: 'Continue',
+    resume: 'Resume',
+    mostPlayed: 'Most played',
+    favorites: 'Favorites',
+    trackCountOne: '{count} track',
+    trackCountFew: '{count} tracks',
+    trackCountMany: '{count} tracks',
+    playCount: 'Plays: {count}',
+    resetSections: 'Show all sections',
+    sections: {
+      continue: 'Continue card',
+      recent: 'Recently played',
+      mostPlayed: 'Most played',
+      favorites: 'Favorites',
+      playlists: 'Playlists',
+      albums: 'Albums',
+      artists: 'Artists'
+    }
   },
   library: {
     title: 'Library',
@@ -91,6 +104,8 @@ export default {
     search: 'Search...',
     searchPlaceholder: 'Search in library...',
     noAudio: 'No audio tracks',
+    searchNoResults: 'No matching media found',
+    showMoreResults: 'Show more results',
     noVideo: 'No video files',
     noFolders: 'No folders',
     noArtists: 'No artists',
@@ -131,15 +146,7 @@ export default {
     chipMost: 'Most played',
     folderPlay: 'Play folder',
     folderShuffle: 'Shuffle',
-    folderShowInExplorer: 'Show in Explorer',
-    colTitle: 'Title',
-    colArtist: 'Artist',
-    colAlbum: 'Album',
-    colDuration: 'Duration',
-    colFolder: 'Folder',
-    selectedCount: '{n} selected',
-    addToQueue: 'Add to queue',
-    clearSelection: 'Clear'
+    folderShowInExplorer: 'Show in Explorer'
   },
   sources: {
     title: 'Sources',
@@ -154,6 +161,9 @@ export default {
     name: 'Name',
     namePlaceholder: 'My API source',
     baseUrl: 'Base URL',
+    trustPrivateNetwork: 'Trust this source to access local network addresses',
+    trustPrivateNetworkDescription:
+      'Allows loopback and private LAN hosts for this source only. Imported sources never keep this permission.',
     auth: 'Authentication',
     authNone: 'No auth',
     authApiKey: 'API key',
@@ -161,35 +171,26 @@ export default {
     chooseKey: 'Choose saved key...',
     headerName: 'Header name',
     queryParam: 'Query param',
-    endpoints: 'Endpoints',
-    addEndpoint: 'Add endpoint',
     endpointName: 'Endpoint name',
     arrayPath: 'Items array path',
     params: 'Params',
     test: 'Test',
-    preview: 'Preview',
     download: 'Download',
     untitled: 'Untitled',
     openInBrowser: 'Open in browser',
     pageParam: 'Page param',
     startPage: 'Start page',
-    pagHint:
-      'Numeric paging: fill “Page param” (e.g. page) — the view gets prev/next buttons. For cursor APIs use the token / has-more fields.',
     nextFromField: 'Next-page token field',
     totalField: 'Has-more field',
-    childEndpoint: 'Child endpoint (opens on click)',
     noChild: '— none —',
     rangeCountField: 'Count field (dot-path)',
     rangeCountValue: 'Fixed count',
     rangeStartAt: 'Start at',
     rangeTitleTemplate: 'Title template',
-    nestHint:
-      'Nesting: clicking an item opens the child endpoint. Use {lb}a.b{rb} placeholders in the path / params, filled from the clicked item’s JSON ({lb}n{rb} = generated index). A range generates items 1..N instead of fetching (e.g. episodes: count field from the parent, path like /episodes/find/{lb}slug{rb}/{lb}n{rb}). Single-object responses are treated as one item.',
     back: 'Back',
     fTitle: 'title',
     fSubtitle: 'subtitle',
     fThumbnail: 'thumbnail',
-    fMediaUrl: 'media URL',
     fPlayerUrl: 'Player (embed/iframe) — player URL',
     fPlayerUrlPh: 'e.g. field with https://.../embed/...',
     fType: 'type',
@@ -520,6 +521,11 @@ export default {
     showSetupWizard: 'Startup setup wizard',
     showSetupWizardDesc: 'Re-run the setup wizard (library, online, appearance, PiP).',
     searchSettings: 'Search settings...',
+    searchField: 'setting',
+    resetSetting: 'Reset to default',
+    modified: 'Changed from the default',
+    more: 'More',
+    telemetryOff: 'Telemetry is always off (offline-first).',
     overview: 'Overview',
     sectionPlayback: 'Playback',
     sectionAppearance: 'Appearance',
@@ -536,7 +542,14 @@ export default {
     warningsTitle: 'Recent warnings',
     warningsDesc: 'Last 20 main-process warnings (rate-limited, local only).',
     warningsEmpty: 'No warnings recorded.',
-    version: 'Version',
+    perfTitle: 'Performance',
+    perfDesc: 'Boot timeline and memory usage — local data only.',
+    perfBootTimeline: 'App startup',
+    perfRendererDom: 'Renderer: DOM ready',
+    perfRendererReady: 'Renderer: UI ready',
+    perfProcesses: 'Processes (memory / CPU)',
+    perfEmpty: 'No data.',
+    runtimeDetails: 'Runtime details',
     os: 'OS',
     platform: 'Platform',
     uptime: 'Uptime',
@@ -560,7 +573,6 @@ export default {
       'Delete ALL app data?\n\nSettings, the library, download queue, subscriptions, saved items, accounts, plugins and caches will be removed, then the app restarts. This cannot be undone.',
     resetFactoryRestarting: 'Resetting… the app will restart.',
     resetFactoryError: 'Factory reset failed',
-    envVersions: 'Environment versions',
     licenses: 'Licenses',
     licenseUnknown: 'Unknown',
     noResults: 'No results',
@@ -691,15 +703,12 @@ export default {
     apiKeysEncrypted: 'Encrypted storage',
     apiKeysEncryptedDesc: 'Keys are never stored as plain text.',
     plugins: 'Plugins',
-    systemInfo: 'System Information',
-    systemInfoDesc: 'Versions, paths and logs',
     sectionAdvanced: 'Advanced',
     animations: 'Animations',
     animationsDesc: 'Enable interface animations',
     clipFormat: 'Clip format',
     userAgent: 'User Agent',
     userAgentDesc: 'User-Agent header for network requests',
-    defaultPlayer: 'Default player',
     videoFilter: 'Video filter',
     visualization: 'Visualization',
     vizMode: 'Mode',
@@ -725,17 +734,6 @@ export default {
     tempDir: 'Temp directory',
     tempDirDesc: 'Where to keep .part files (empty = system tmp)',
     tempDirPlaceholder: 'e.g. D:\\Temp\\Onda',
-    crossfade: 'Crossfade',
-    crossfadeDesc: 'Fade between tracks (0 = off)',
-    streamPreload: 'Stream buffer',
-    streamPreloadDesc: 'How many seconds to preload ahead',
-    perSourceVolume: 'Per-source volume',
-    perSourceVolumeDesc: 'Remember volume per source',
-    autoResume: 'Auto-resume',
-    autoResumeDesc: 'Resume playback after restart',
-    sleepTimer: 'Sleep timer',
-    sleepTimerDesc: 'Stop playback after time (0 = off)',
-    sleepOff: 'off',
     qualityPerPlatform: 'Quality per platform',
     qualityPerPlatformDesc: 'Different default quality for YouTube vs SoundCloud',
     proxyPerPlatform: 'Proxy per platform',
@@ -743,32 +741,21 @@ export default {
     logLevel: 'Log level',
     logLevelDesc: 'How much detail to write to log file',
     logMaxSize: 'Log size',
-    experimental: 'Experimental mode',
-    experimentalDesc: 'Enable hidden flags / early-access features',
-    telemetryOff: 'Telemetry is always off (offline-first).',
     downloadPaths: 'Download paths',
     downloadQueue: 'Download queue',
     networkPlatform: 'Online — per platform',
-    playbackBuffer: 'Buffer & sleep',
     systemLogs: 'Logs & experiments',
     downloadQueueSection: 'Queue',
     networkPlatformSection: 'Quality & proxy per platform',
-    playbackBufferSection: 'Buffer & playback',
     logsSection: 'System logs'
   },
   status: {
     noMedia: 'No media loaded',
-    tracks: 'tracks',
-    playlists: 'playlists',
     playlistsLabel: 'Playlists',
     audioFiles: 'Audio files',
     videoFiles: 'Video files',
     images: 'Images',
-    downloads: 'downloads',
-    results: 'results',
-    items: 'items',
     active: 'active',
-    completed: 'Completed',
     loggedIn: 'Signed in',
     notLoggedIn: 'Not signed in',
     connecting: 'Connecting…',
@@ -787,11 +774,7 @@ export default {
     repeat: 'Repeat',
     repeatOne: 'Repeat one',
     eq: 'Equalizer',
-    progress: 'Playback progress',
     queuePos: '{cur}/{total} tracks',
-    subs: 'Subtitles',
-    on: 'on',
-    off: 'off',
     selected: 'selected',
     subscriptions: 'subscriptions',
     activeDownloads: 'downloads',
@@ -822,12 +805,42 @@ export default {
     empty: 'No plugins installed.',
     installFromFolder: 'Install from folder',
     examplesTitle: 'Examples',
-    examplesDesc: 'Ready-made plugins bundled with the app — install with one click.',
+    examplesDesc:
+      'Example plugins. Installation leaves them disabled; review their access before enabling.',
     examplesInstall: 'Install',
     examplesInstalled: 'Installed',
     examplesError: 'Could not install the example',
+    installSuccess: 'Plugin installed',
+    installDisabledHint: 'It remains disabled. Enable it to review the access it requests.',
+    enableConfirmTitle: 'Review plugin access',
+    enableConfirmWarning:
+      'When enabled, this plugin’s code will run in an isolated worker with the access listed below.',
+    permissionChangedWarning:
+      'The plugin’s access scope or code changed since it was last enabled. Review and approve it again.',
+    requestedPermissions: 'Requested permissions',
+    noOptionalPermissions: 'This plugin requests no optional permissions.',
+    permissionStorage: 'Read and write its private, persistent plugin storage.',
+    permissionNotifications: 'Show notifications inside Onda.',
+    permissionPlayer: 'Control playback, the queue, and favorites.',
+    permissionVisual: 'Set decorations supported by the audio view.',
+    permissionNetwork: 'Make network requests through the Onda proxy.',
+    networkAllowlist: 'Allowed URL patterns:',
+    requestedHooks: 'Events this plugin subscribes to',
+    hooksDescription:
+      'Hooks provide track or download metadata; some payloads include file paths and URLs.',
+    noHooksRequested: 'This plugin does not subscribe to events.',
+    requestedVisualSlots: 'Declared appearance variants',
+    requestedUiSlots: 'Declared UI slots (text rendered by the app)',
+    uiSlotTextOnly: 'the plugin only writes text; the app draws the layout',
+    enableCancel: 'Cancel',
+    enableConfirm: 'Approve and enable',
+    enable: 'Review access and enable',
+    disable: 'Disable plugin',
+    uninstall: 'Uninstall plugin',
+    enableFailed: 'Could not enable the plugin',
+    installError: 'Could not install the plugin',
+    permissionReviewRequired: 'Access approval required',
     refresh: 'Refresh',
-    uninstall: 'Uninstall',
     enabled: 'Enabled',
     logs: 'Logs',
     noLogs: 'No entries.',
@@ -835,6 +848,9 @@ export default {
     settings: 'Configuration',
     guide: {
       title: 'Plugin guide',
+      searchPlaceholder: 'Search the guide (e.g. slot, spectrum, storage)…',
+      searchEmpty: 'No section matches the query.',
+      copyCode: 'Copy code',
       intro:
         'Plugins let you extend Onda with small JavaScript programs. They run in a safe, sandboxed worker, so the only way they can talk to the app is through the api object. Everything below describes what a plugin can do, how to install one and how to write your own.',
       sections: [
@@ -843,22 +859,39 @@ export default {
           body: 'A plugin is a JavaScript extension of Onda that runs in a separate, sandboxed web worker. It has no access to the application window or the DOM: the api object is the only channel to talk to the app. Permissions (data, network, player, notifications, appearance) are declared in the manifest, and every network request is additionally filtered by the main process.'
         },
         {
+          heading: 'Worker anatomy and sandbox',
+          body: 'A plugin is a separate web worker, not a piece of UI. Here is the full path from installation to disabling.',
+          list: [
+            'Installation copies the files into the app data directory; the plugin starts disabled, with a stored SHA-256 digest of the entry file and of the declared capabilities.',
+            'The user clicks the power icon, reviews the permissions and approves. Only then does the app spawn the worker and inject the shim.',
+            'The shim blocks direct fetch, XMLHttpRequest, WebSocket, EventSource, importScripts, indexedDB and caches inside the worker - the network is reachable only through api.fetch.',
+            'Hooks are delivered only when the name matches an entry in manifest.hooks; payloads of undeclared hooks never reach the worker.',
+            'The app pings the worker every 15 s (heartbeat). No answer within 10 s raises worker-heartbeat-timeout and disables the plugin, so a frozen script cannot stay in the background.',
+            'Disabling stops the worker, unregisters commands and clears the plugin UI changes (decorations, slots). Storage and configuration stay, because they belong to the plugin folder.',
+            'Uninstalling removes the plugin folder together with its storage, configuration and data files.',
+            'api calls are asynchronous with a 45 s limit; a payload larger than 100,000 bytes of JSON is rejected before it leaves the worker.'
+          ]
+        },
+        {
           heading: 'Plugin structure',
           body: 'Every plugin lives in its own directory. The directory name becomes the plugin id.',
           list: [
             'manifest.json - metadata and permissions (described below)',
             'index.js - plugin code; the path is taken from the entry field',
-            'Allowed id characters: lowercase letters, digits and - _ . (for example hello, triangle); other folder names are rejected'
+            'Allowed id characters: lowercase letters, digits and - _ . (for example hello, triangle); other folder names are rejected',
+            'The approval covers the file named by entry - extra files in the folder are copied by the app but are not part of the computed digest'
           ]
         },
         {
           heading: 'Installation and management',
           body: 'Plugins are managed in the application settings.',
           list: [
-            'Settings → Plugins → Install from folder - pick the plugin directory. Files are copied to the app data folder and the plugin starts automatically.',
-            'The power icon enables/disables a plugin (the worker restarts).',
+            'Settings → Plugins → Install from folder - pick the plugin directory. Files are copied to app data, but every new plugin (including examples) stays disabled.',
+            'Clicking the power icon shows permissions, network.allow patterns, hooks and declared visual variants. The code starts only after approval.',
+            'Approval covers the declared capabilities AND the plugin entry file. Changing permissions, network, hooks, variants or the code itself requires review again.',
+            'Plugins enabled before approval tracking was introduced require a one-time review after updating.',
             'The trash icon uninstalls a plugin and removes its storage and configuration.',
-            'Refresh reloads all plugins - use it after editing plugin files.',
+            'Refresh reloads plugins after file edits; if the code or capability set changed, the plugin stays disabled until approved again.',
             'Plugins that declare settings in the manifest get a configuration form on their card.'
           ]
         },
@@ -886,17 +919,34 @@ export default {
             'hooks - hooks the plugin wants to receive',
             'settings - optional list of configuration fields (key, label, type: text|boolean|number, default; min/max for number)',
             'layoutElements - optional list of custom layout variants (element, variant, label); requires the visual permission (described below)',
+            'uiSlots - optional list of UI slots the plugin may write to via api.ui (currently audio-view); requires the visual permission and is part of the approval',
             'The id field in the manifest is ignored: the plugin id is the directory name'
+          ]
+        },
+        {
+          heading: 'Permissions: what works without extra approval',
+          body: 'Read-only queries are available to every plugin, but anything that can change state or see more than the player state sits behind a permission. The full map:',
+          list: [
+            'No permission needed: player:status, player:progress, library:count, library:search, reading storage and settings (keys outside the manifest are not exposed).',
+            'player - the player:play/pause/toggle/next/previous actions, player:setVolume, player:seek, player:enqueue and track:toggleFavorite.',
+            'storage - writing and deleting plugin data (api.storage.set/remove).',
+            'notifications - api.notify and command notifications.',
+            'network - every api.fetch; the URL must additionally match at least one permissions.network.allow pattern.',
+            'visual - layout decorations (api.visual), UI slots (api.ui.set/clear) and the player:spectrum query.',
+            'Declaring something in the manifest does not enable it: the worker does not start until the user approves, and disabling revokes it immediately.'
           ]
         },
         {
           heading: 'Hooks',
           body: 'Subscribe with api.on(name, handler). The same name must be listed in the hooks array of the manifest.',
           list: [
-            'app:start - the application started; the payload contains the app version',
+            'app:start - the plugin worker started; the payload contains no additional data',
             'track:play - the current track changed; payload: title, artist, album, duration, path',
+            'track:timeupdate - playback position; sent at most once per second; payload: position, duration, progress, rate, playing, track',
+            'track:end - the current track ended; payload contains the current track',
             'track:queued - a track was added to the queue; payload like track:play',
-            'library:scan - library scan finished; payload: count'
+            'library:scan - library scan finished; payload: count',
+            'download:start / download:complete / download:error - download state changes and task data'
           ]
         },
         {
@@ -912,14 +962,26 @@ export default {
             'fetch(url, opts) - network through the main-process proxy',
             'registerCommand(cmd) - palette command (returns an unregister function)',
             'visual(key, payload) - audio view element decoration (returns a Promise)',
+            'ui.set(slot, items) / ui.clear(slot) - text slot rendered by the host (visual permission + the slot declared in uiSlots)',
             'log.info / warn / error(message) - entries in the Logs tab'
           ]
         },
         {
           heading: 'Queries',
           body: 'query() calls:',
+          code: `api.query('player:progress').then(function (p) {
+  // position, duration, progress, rate, playing, track
+  api.log.info(p.position + ' / ' + p.duration);
+});
+
+api.query('player:spectrum', { bins: 32 }).then(function (s) {
+  // s.bins - buckets 0..1, s.available tells you whether an AnalyserNode exists
+  api.log.info('level: ' + (s.bins[0] || 0).toFixed(2));
+});`,
           list: [
             'player:status - player state (currentTrack, isPlaying, volume, shuffle, repeat, queueLength)',
+            'player:progress - current position (position, duration, progress, rate, playing, track)',
+            'player:spectrum - normalized 0..1 spectrum in «bins» buckets (4-64, 32 by default); requires the visual permission',
             'library:count - number of tracks, audio items and playlists',
             'library:search - results for «query» (optionally capped by «limit»)'
           ]
@@ -927,6 +989,22 @@ export default {
         {
           heading: 'Actions',
           body: 'action() calls. Player actions require the player permission (except notify):',
+          code2: `// Fade-out pattern (same shape as the auto-fade example)
+var from = null;
+api.on('track:timeupdate', function (payload) {
+  var left = payload.duration - payload.position;
+  if (left > 8) return;
+  if (from === null) {
+    api.query('player:status').then(function (s) { from = s.volume; });
+    return;
+  }
+  api.action('player:setVolume', { volume: from * Math.max(0, left / 8) });
+});
+
+api.on('track:play', function () {
+  if (from !== null) api.action('player:setVolume', { volume: from });
+  from = null;
+});`,
           list: [
             'player:play / player:pause / player:toggle - playback control',
             'player:next / player:previous - change track',
@@ -949,22 +1027,23 @@ export default {
         },
         {
           heading: 'Configuration (settings)',
-          body: 'Fields declared in the manifest settings appear as a form on the plugin card. Values are persistent, and api.settings is used to read/write them. Setting keys are the manifest fields - an undeclared key cannot be saved.',
+          body: 'Fields declared in the manifest settings appear as a form on the plugin card. Values are persistent, and api.settings is used to read/write them. Main validates the type and range on write; values incompatible with the current manifest fall back to a valid default or are omitted on read. Undeclared keys are not exposed.',
           code: `«"settings": [
   { "key": "shape", "label": "Default shape", "type": "text", "default": "triangle" },
   { "key": "volume", "label": "Volume", "type": "number", "min": 0, "max": 100 },
   { "key": "notify", "label": "Notifications", "type": "boolean", "default": true }
 ]»`,
           list: [
-            'type - text, boolean or number; number supports min/max',
+            'type - text, boolean or number; text is limited to 4096 UTF-8 bytes, boolean accepts only true/false, and number must be finite and within min/max',
             'default - default value also visible through api.settings.get(key)',
             'api.settings.get(key) - value or null',
-            'api.settings.set(key, value) - save a new value (must be JSON-serializable)'
+            'api.settings.set(key, value) - saves a value matching the declared type and min/max; text is limited to 4096 UTF-8 bytes',
+            'Stored values that no longer match a changed schema are ignored; a valid default is used instead'
           ]
         },
         {
           heading: 'Network',
-          body: 'api.fetch(url, opts) runs through the main-process proxy. The URL must match a pattern in permissions.network.allow.',
+          body: 'api.fetch(url, opts) runs through the main-process proxy. The URL must match permissions.network.allow; hosts resolving to private networks are blocked and every redirect is checked again.',
           code: `«{
   "permissions": {
     "network": { "allow": ["https://httpbin.org/*"] }
@@ -972,7 +1051,8 @@ export default {
 }»`,
           list: [
             'Options: «method», «headers», «body», «timeoutMs», «responseType»: "json" or "text"',
-            'At most 5 redirects; URL patterns support the «*» wildcard'
+            'At most 5 redirects; URL patterns support the «*» wildcard',
+            'Headers supplied by the plugin are dropped on cross-origin redirects; cross-origin redirects for POST/PUT/PATCH/DELETE are rejected'
           ]
         },
         {
@@ -1034,12 +1114,46 @@ export default {
           ]
         },
         {
+          heading: 'UI slots (uiSlots)',
+          body: 'A plugin never renders its own HTML and has no DOM access. Instead it can write short text pairs into a slot that the host draws (currently «audio-view» — a bar above the player view). This requires the visual permission and a slot declared in the manifest:',
+          code: `«{
+  "name": "My plugin",
+  "version": "1.0.0",
+  "permissions": { "visual": true },
+  "uiSlots": ["audio-view"]
+}»`,
+          code2: `api.ui.set('audio-view', [
+  { label: 'Time', value: '01:24 / 03:40' },
+  { label: 'File', value: 'Album - Title' }
+]);
+
+// An empty list clears the slot:
+api.ui.clear('audio-view');`,
+          list: [
+            'api.ui.set("audio-view", [{ label: "Bitrate", value: "320 kbps" }]) - writes the slot rows',
+            'api.ui.clear("audio-view") - clears the slot (also happens when the plugin is disabled)',
+            'Host limits: at most 8 rows, 48 characters per label and 160 per value; a larger list is rejected with an error instead of being truncated',
+            'Content is rendered as text (no HTML). Control characters are stripped and whitespace collapsed into a single line',
+            'Adding a slot changes the approval scope, so the plugin needs a fresh review'
+          ]
+        },
+        {
           heading: 'Debugging',
           body: 'Every plugin card has a Logs section.',
+          code: `api.query('player:progress')
+  .then(function (progress) {
+    api.log.info('position: ' + progress.position);
+  })
+  .catch(function (err) {
+    // the error message is a code, e.g. permission-denied:visual
+    api.log.error('failed: ' + err.message);
+  });`,
           list: [
-            'The Logs section shows api.log.* entries and worker errors.',
+            'The Logs section shows api.log.* entries and worker errors. Use api.log.* - console.log stays inside the worker context and never reaches the app.',
+            'Every api call returns a Promise, so handle failures in catch; an uncaught error shows up in the logs but does not disable the plugin.',
             'Status: New → Loading → Loaded; startup failures are marked as Error.',
-            'After editing plugin files click Refresh to load the new version.'
+            'After editing plugin files click Refresh to load the new version. A code change invalidates the previous approval, so you have to approve again after the refresh.',
+            'Blocking the loop forever leads to worker-heartbeat-timeout - do not run a setTimeout loop synchronously in the worker main body.'
           ]
         },
         {
@@ -1074,13 +1188,67 @@ api.registerCommand({
           ]
         },
         {
+          heading: 'Troubleshooting',
+          body: 'Errors from api calls arrive as a rejected Promise; the message is a code, not a sentence. The most common ones:',
+          list: [
+            'permission-denied:player / :visual / :storage / :notifications - the manifest is missing that permission. Add it and go through approval again.',
+            'unknown-op / unknown-query / unknown-action - a typo in the operation name. Names are case sensitive.',
+            'setting-unknown - api.settings.set for a key that is not in the manifest settings.',
+            'ui-slot:not-declared - the slot is not listed in manifest.uiSlots; ui-slot:unknown-slot - the app has no such slot.',
+            'ui-slot:too-many-items - more than 8 rows; ui-slot:invalid-item - a row is not a label/value object.',
+            'plugin-op-args-too-large - arguments exceed 100,000 bytes of JSON; plugin-op-timeout - the host did not answer within 45 s.',
+            'worker-ready-timeout - the plugin code threw while starting; worker-heartbeat-timeout - the code blocks the loop (e.g. an endless while).',
+            'fetch: forbidden - the URL does not match the allowlist; invalid-url - bad address; redirect-loop - too many redirects; too-large - the response exceeds the limit; network - network or DNS problem.',
+            'manifest:missing-name / missing-version / bad-entry - a required field is missing or entry points outside the plugin folder.',
+            'A plugin disappears from the list after Refresh - the folder was removed or the manifest stopped parsing (files stay on disk, details are in the app logs).'
+          ]
+        },
+        {
+          heading: 'Limits',
+          body: 'Hard limits built into the app - worth knowing before designing a plugin:',
+          list: [
+            'Manifest: 64 KiB; entry file: 1 MiB; at most 20 installed plugins.',
+            'Storage: 100 keys, 256 KiB in total; a key is 1-64 characters from [a-zA-Z0-9_.-].',
+            'Configuration (settings): text up to 4096 UTF-8 bytes; numbers are bounded by min/max from the manifest.',
+            'Hooks: name up to 64 characters; track:timeupdate arrives at most once per second.',
+            'Commands: id up to 64 characters, location up to 64, shortcut up to 32 characters.',
+            'api.fetch: at most 5 redirects, 30 s timeout, 10 MiB response (1 MiB for text responses).',
+            'UI slots: 8 rows, 48 characters per label, 160 per value; api.log truncates an entry to 2000 characters.',
+            'An api call: 100,000 bytes of arguments and 45 s for the host response.'
+          ]
+        },
+        {
+          heading: 'Bundled examples',
+          body: 'The application ships twelve ready-made plugins in resources/plugins-examples — each installs with one click in the Examples section and stays disabled until approved:',
+          list: [
+            'hello - notifications, player status reads, a storage counter and a network test through api.fetch (httpbin).',
+            'triangle - custom cover layout variants (plugin:cover:triangle and friends) plus a palette command.',
+            'progress-slot - the safe UI slot: playback position, a level derived from player:spectrum and the file name.',
+            'sleep-timer - a sleep timer that counts in the background (survives a restart) and fades the last seconds out; palette commands.',
+            'auto-fade - fades the end of every track on its own and restores the volume when the track changes.',
+            'Caveat for both: the worker dies with the plugin, so disabling it mid-fade leaves the volume lowered and you have to raise it by hand.',
+            'vu-meter - a live level and peak-hold readout in the UI slot, with VU-style attack and release.',
+            'focus-mode - a session countdown in the UI slot, pause at the end and start / status / stop commands.',
+            'smart-queue - queues the next track after a track ends: no repeats, the same artist preferred, optional random mode.',
+            'listen-history - a local listening history: minutes today, top artists this week, recent tracks (nothing leaves the computer).',
+            'track-actions - custom entries in the track context menu (queue, favourites, details) plus a "play later" list.',
+            'metadata-lookup - checks the release of a track in MusicBrainz (year, album) and shows it in the UI slot; results are cached and the network needs approval.',
+            'note-readout - estimates the dominant note from the spectrum and shows it in the slot; it is a rough estimate from a coarse grid, not a tuner.',
+            'Plugins with network.allow (hello, metadata-lookup) ask for network access during approval - the host pattern is visible in the dialog.',
+            'The examples are the best API documentation: read their index.js to see the calls combined into working code.'
+          ]
+        },
+        {
           heading: 'Limits and safety',
           list: [
             'Plugins have no access to the DOM, Node modules or the application window - only the API above.',
             'Every network request goes through the proxy and is filtered by permissions.network.',
             'Storage is separate for each plugin (per folder).',
             'A missing permission raises permission-denied; unknown operations raise an error.',
-            'Disabling or uninstalling a plugin reverts its UI changes (e.g. cover decorations).'
+            'Disabling or uninstalling a plugin reverts its UI changes (e.g. cover decorations).',
+            'Approval is cryptographically tied to the entry file: changing a single character of the code invalidates it and the plugin returns to the disabled state.',
+            'UI slots and the spectrum are the only places where plugin content reaches the screen; the app renders them itself, so a plugin cannot inject HTML or scripts.',
+            'apiVersion is informational - the app does not reject a plugin based on it, but keep it at 1 until the API changes.'
           ]
         }
       ]
@@ -1093,8 +1261,9 @@ api.registerCommand({
     }
   },
   youtube: {
-    title: 'YouTube',
-    pasteOrSearch: 'Paste a link, video ID, channel name or search...',
+    pasteOrSearch: 'Paste a video link, channel handle, or search YouTube, SoundCloud and more...',
+    externalLink: 'Generic yt-dlp link',
+    genericExtractorHint: 'Site support and available download options depend on yt-dlp.',
     batch: 'Multiple links',
     batchPlaceholder: 'Paste multiple links (one per line or comma-separated)',
     batchDetected: 'Detected: {count}',
@@ -1104,7 +1273,6 @@ api.registerCommand({
     batchError: 'Could not add links',
     search: 'Search',
     discover: 'Find music, videos and more',
-    searchHeading: 'Search YouTube',
     searchHeadingOnline: 'Search online',
     typeTrack: 'track',
     typeSet: 'set',
@@ -1144,8 +1312,6 @@ api.registerCommand({
     itemsCount: '{count} items',
     resolveError: 'Could not resolve this link',
     searchError: 'Search failed',
-    back: 'Back',
-    openChannel: 'Open channel',
     loadMore: 'Load more',
     subscribers: 'subscribers',
     followers: 'followers',
@@ -1155,16 +1321,12 @@ api.registerCommand({
     shortsTab: 'Shorts',
     sortLatest: 'Latest',
     sortOldest: 'Oldest',
-    latest: 'Latest',
-    allVideos: 'All videos',
     noVideos: 'No videos',
     viewTiles: 'Tiles',
     viewList: 'List',
     pageOf: 'Page {current} of {total}',
-    published: 'published',
     discoverTab: 'Discover',
     subscriptionsTab: 'Subscriptions',
-    subscriptionsHeading: 'Your subscriptions',
     noSubscriptions: 'You are not subscribed to any channel yet',
     checkNow: 'Check now',
     lastChecked: 'Checked:',
@@ -1176,15 +1338,10 @@ api.registerCommand({
     subscribeChannel: 'Subscribe',
     unsubscribeChannel: 'Unsubscribe',
     unsubscribeChannelConfirm: 'Unsubscribe? Notification preferences will be lost.',
-    downloaded: 'Downloaded',
     downloading: 'Downloading…',
-    queuing: 'Adding…',
     newCount: '{count} new',
     remainingCount: '{count} to download',
-    remainingCountTitle: 'How many videos from this channel are still to download',
-    newArrivalsTitle: 'New videos since the last check',
     downloadPrefs: 'Download preferences',
-    downloadPrefsHint: 'Empty fields fall back to the global settings from the Download tab.',
     prefKind: 'Type',
     prefAudio: 'Audio',
     prefVideo: 'Video',
@@ -1192,7 +1349,6 @@ api.registerCommand({
     prefContainer: 'Container',
     prefQuality: 'Quality',
     prefTemplate: 'Filename template',
-    prefSubs: 'Subtitles (languages)',
     prefTemplatePlaceholder: 'e.g. {title} - {artist}',
     prefOutputDir: 'Save folder',
     prefOutputDirPlaceholder: 'Use global download folder',
@@ -1212,11 +1368,9 @@ api.registerCommand({
     scopeNewDesc: 'Track the channel and download only future uploads',
     scopeAll: 'Download everything',
     scopeAllDesc: 'Also download the entire existing back catalog now',
-    prefSection: 'Download preferences',
     prefSectionHint: 'Empty fields = use the default from Settings → Download',
     prefsSummary: 'Preference summary',
     downloadAll: 'Download all',
-    downloadAllDesc: 'Also download the entire existing back catalog now',
     downloadAllTitle: 'Queue all videos from this channel',
     checkChannelNow: 'Check this channel now',
     downloadAllSubs: 'Download all new',
@@ -1224,7 +1378,6 @@ api.registerCommand({
     channelQueueFailed: 'Could not fetch the channel video list — please try again',
     nothingToQueue: 'Nothing to queue — everything is already downloaded or queued',
     retryAlreadyActive: 'This video already has an active job in the queue',
-    downloadConfigTitle: 'Download setup',
     downloadConfigHint: 'Configure download for',
     profilesSection: 'Profiles',
     profileNone: 'No profile',
@@ -1270,10 +1423,11 @@ api.registerCommand({
     newVideosToastTitle: 'New videos — {channel}'
   },
   player: {
-    nowPlaying: 'Now playing',
     playing: 'Playing',
     paused: 'Paused',
     volume: 'Volume: {n}%',
+    repeatNone: 'Repeat off',
+    repeatAll: 'Repeat all',
     muted: 'Muted',
     speedTitle: 'Playback speed',
     speedCustom: 'Custom',
@@ -1351,9 +1505,6 @@ api.registerCommand({
   },
   downloads: {
     title: 'Downloads',
-    active: 'Active',
-    completed: 'Completed',
-    failed: 'Failed / cancelled',
     cancel: 'Cancel',
     retry: 'Retry',
     pause: 'Pause',
@@ -1372,7 +1523,6 @@ api.registerCommand({
     play: 'Play',
     clearFinished: 'Clear finished',
     empty: 'No downloaded files',
-    downloads: 'downloads',
     inLibrary: 'in library',
     inLibraryTitle: 'Show in library',
     copyPath: 'Copy path',
@@ -1406,6 +1556,9 @@ api.registerCommand({
     back: 'Back',
     play: 'Play',
     pause: 'Pause',
+    clear: 'Clear',
+    on: 'On',
+    off: 'Off',
     previous: 'Previous',
     next: 'Next',
     shuffle: 'Shuffle',
@@ -1417,7 +1570,6 @@ api.registerCommand({
     editTags: 'Edit tags',
     showInFolder: 'Show in folder',
     addToPlaylist: 'Add to playlist',
-    removeFromPlaylist: 'Remove from playlist',
     cancel: 'Cancel',
     save: 'Save',
     delete: 'Delete',
@@ -1426,7 +1578,6 @@ api.registerCommand({
     yes: 'Yes',
     no: 'No',
     loading: 'Loading...',
-    error: 'Error',
     unknown: 'Unknown',
     removeFav: 'Remove from favorites',
     addFav: 'Add to favorites',
@@ -1434,12 +1585,7 @@ api.registerCommand({
     miniPlayer: 'Mini player',
     playAlbum: 'Play album',
     addAllToQueue: 'Add all to queue',
-    playNow: 'Play',
     noPlaylists: 'No playlists',
-    folderAudio: 'Audio',
-    folderVideo: 'Video',
-    folderMixed: 'Mixed',
-    folderUnknown: 'Unknown',
     tracks: 'tracks',
     files: 'files',
     selected: 'selected',
@@ -1454,8 +1600,6 @@ api.registerCommand({
   },
   wizard: {
     title: 'Welcome to Onda',
-    welcome: 'Set up the app in a few steps. You can change every option later in Settings.',
-    addLibrary: 'Add library folder',
     chooseDownload: 'Choose download folder',
     noneSelected: 'Not selected',
     start: 'Get started',
@@ -1512,21 +1656,12 @@ api.registerCommand({
     pipVideoDesc: 'Watch films in a small draggable window while you work.',
     pipAudio: 'Audio PiP',
     pipAudioDesc: 'Cover, visualization and controls in a compact window.',
-    pipAutoShow: 'Auto-show audio PiP on playback',
-    pipMode: 'Default audio PiP mode',
-    pipModeMinimal: 'Minimal',
-    pipModeMedium: 'Medium',
-    pipModeMax: 'Max',
-    pipModeWide: 'Wide',
     pipNote: 'Position, opacity and elements are in Settings → Playback.',
     summaryTitle: 'All set!',
     summaryDesc: 'This is your starting configuration. Change any option later in Settings.',
     summaryLibrary: 'Library',
     summaryDownload: 'Downloading',
     summaryTheme: 'Theme',
-    summaryPip: 'Audio PiP',
-    summaryPipOn: 'Auto-show: on',
-    summaryPipOff: 'Auto-show: off',
     summaryScan: 'Library scan',
     summaryScanOn: 'After the wizard',
     summaryScanOff: 'Later',
@@ -1560,9 +1695,7 @@ api.registerCommand({
     fromStart: 'From start'
   },
   playerBar: {
-    noTrack: 'No track',
-    noTrackTitle: 'No track loaded',
-    selectTrack: 'Select a track'
+    noTrack: 'No track'
   },
   queue: {
     title: 'Queue',
@@ -1647,7 +1780,6 @@ api.registerCommand({
   },
   musicbrainz: {
     title: 'MusicBrainz',
-    searchPlaceholder: 'Search: artist "album"...',
     search: 'Search',
     searching: 'Searching...',
     noResults: 'No results',
@@ -1722,14 +1854,30 @@ api.registerCommand({
   },
   playerView: {
     noVideo: 'No video to play',
-    browseFiles: 'Browse files'
+    browseFiles: 'Browse files',
+    back: 'Back to previous view',
+    pip: 'Picture in picture',
+    fullscreen: 'Toggle fullscreen',
+    seek: 'Playback position',
+    volume: 'Volume',
+    seekBackward: 'Seek back 10 seconds',
+    seekForward: 'Seek forward 10 seconds'
   },
-  folders: {
-    play: 'Play'
-  },
+  folders: {},
   imageViewer: {
     loadFailed: 'Failed to load image',
-    loading: 'Loading...'
+    loading: 'Loading...',
+    close: 'Close (Esc)',
+    startSlideshow: 'Start slideshow (Space)',
+    stopSlideshow: 'Stop slideshow (Space)',
+    slideshowSettings: 'Slideshow settings',
+    fitToScreen: 'Fit to screen',
+    zoomIn: 'Zoom in (+)',
+    zoomOut: 'Zoom out (-)',
+    rotate: 'Rotate (R)',
+    fullscreen: 'Fullscreen (F)',
+    previous: 'Previous image',
+    next: 'Next image'
   },
   creator: {
     scheme: 'Base theme',
@@ -1806,5 +1954,14 @@ api.registerCommand({
       prefs: 'Subscription settings',
       unfollow: 'Unfollow'
     }
+  },
+  deps: {
+    title: 'Missing dependencies',
+    message: 'Onda needs these tools to work correctly: {tools}.',
+    required: 'required',
+    optional: 'optional',
+    broken: 'broken',
+    manage: 'Manage dependencies',
+    dismiss: 'Hide until next launch'
   }
 };
