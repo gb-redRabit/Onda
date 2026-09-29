@@ -151,7 +151,7 @@ npm run dev
 
 ### Testy
 
-Aplikacja zawiera **977 testów** (Vitest, 107 plików) oraz 9 scenariuszy E2E (Playwright + Electron):
+Aplikacja zawiera **1039 testów** (Vitest, 113 plików) oraz 9 scenariuszy E2E (Playwright + Electron):
 
 ```bash
 npm test
@@ -187,17 +187,18 @@ i `mac.notarize: true`.
 
 ## Skrypty
 
-| Polecenie              | Opis                                        |
-| ---------------------- | ------------------------------------------- |
-| `npm run dev`          | Serwer deweloperski z hot reload            |
-| `npm run build`        | Typecheck + build produkcyjny               |
-| `npm run typecheck`    | Weryfikacja typów (main/preload + renderer) |
-| `npm test`             | Testy jednostkowe                           |
-| `npm run lint`         | ESLint                                      |
-| `npm run format`       | Prettier (formatowanie)                     |
-| `npm run format:check` | Sprawdzenie formatowania                    |
-| `npm run start`        | Podgląd zbudowanej paczki                   |
-| `npm run build:win`    | Instalator Windows (NSIS)                   |
+| Polecenie               | Opis                                        |
+| ----------------------- | ------------------------------------------- |
+| `npm run dev`           | Serwer deweloperski z hot reload            |
+| `npm run build`         | Typecheck + build produkcyjny               |
+| `npm run typecheck`     | Weryfikacja typów (main/preload + renderer) |
+| `npm test`              | Testy jednostkowe                           |
+| `npm run lint`          | ESLint                                      |
+| `npm run format`        | Prettier (formatowanie)                     |
+| `npm run format:check`  | Sprawdzenie formatowania                    |
+| `npm run version:check` | Wersję ustawia release-please (guard CI)    |
+| `npm run start`         | Podgląd zbudowanej paczki                   |
+| `npm run build:win`     | Instalator Windows (NSIS)                   |
 
 ---
 
@@ -224,6 +225,13 @@ Kluczowe koncepty:
 ## Współpraca
 
 Zgłoszenia i pull requesty mile widziane. Przed commitem uruchom `npm run build` i `npm test`.
+
+### Wersjonowanie
+
+Wersję ustala **release-please** z commitów Conventional Commits (`feat` → minor, `fix` → patch).
+`package.json` na `main` trzyma wersję ostatnio opublikowanego release'a; podnosi ją wyłącznie
+commit `chore(main): release X.Y.Z` z PR-a release-please. **Nie uruchamiaj `npm version` na `main`** —
+`npm run version:check` w CI to wykryje. Szczegóły: [`docs/release.md`](./docs/release.md).
 
 ## Licencja
 

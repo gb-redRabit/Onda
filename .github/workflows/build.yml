@@ -27,6 +27,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          # version:check compares the tree against the newest v* tag, so the
+          # tags have to be present. The history is ~350 commits, so a full
+          # fetch costs nothing next to the three matrix builds below.
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v5
@@ -36,6 +41,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # release-please owns the version. This fails if someone hand-edited
+      # package.json, which is what makes the repo and the published release
+      # disagree. See docs/release.md.
+      - name: Check version ownership
+        run: npm run version:check
 
       - name: Test
         run: npm test

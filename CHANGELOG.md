@@ -2,35 +2,11 @@
 
 Wszystkie istotne zmiany w projekcie Onda są dokumentowane w tym pliku.
 
-## [0.4.4](https://github.com/gb-redRabit/Onda/compare/v0.4.3...v0.4.4) (2026-09-29)
-
-### Bug Fixes
-
-- **security:** pin DNS for all outbound fetches and guard IPC senders
-- **pip:** correct bounds typing and route video PiP through its own entry
-
-### Features
-
-- **plugins:** gate activation behind a capability review
-- **deps:** missing-dependency banner and pinned binary resolver
-- **diagnostics:** factory reset, cache clear and typed settings schema
-- **online:** harden streaming and split SoundCloud from YouTube
-- **home:** continue shelf, configurable sections and shared UI primitives
-- **ipc:** generate the preload allowlist from the channel contract
-- **i18n:** enforce locale parity and drop dead keys in tests
-
-### Performance Improvements
-
-- **assets:** drop 19 bundled system fonts and tighten the CSP
-
-### Refactoring
-
-- **settings:** category rail over a flat grouped list
-- **player:** split the audio engine graph and focus the theme engine
-
-### Tests
-
-- **e2e:** cover plugins, settings, views and interactions
+Wersję ustala **release-please** na podstawie commitów Conventional Commits
+(`feat` → minor, `fix` → patch, `BREAKING CHANGE` → major). `package.json` trzyma
+na `main` wersję ostatnio opublikowanego release'a; wersję podnosi wyłącznie commit
+`chore(main): release X.Y.Z` z PR-a release-please. Ręczne `npm version` na `main`
+jest błędem — pilnuje tego `npm run version:check` w CI (patrz `docs/release.md`).
 
 ## [0.4.3](https://github.com/gb-redRabit/Onda/compare/v0.4.3...v0.4.3) (2026-09-15)
 

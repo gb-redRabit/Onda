@@ -1,7 +1,7 @@
 {
   "name": "onda",
   "desktopName": "onda",
-  "version": "0.4.4",
+  "version": "0.4.3",
   "description": "An Electron application with Vue and TypeScript",
   "engines": {
     "node": ">=22.12"
@@ -15,6 +15,7 @@
     "format:check": "prettier --check .",
     "lint": "eslint --cache .",
     "check:catch": "node scripts/check-catch.mjs",
+    "version:check": "node scripts/check-version.mjs",
     "ipc:inventory": "node scripts/ipc-inventory.mjs",
     "ipc:gen": "node scripts/gen-ipc.mjs",
     "ipc:gen:check": "node scripts/gen-ipc.mjs --check",
