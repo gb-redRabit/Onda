@@ -7,24 +7,16 @@ import { useLibraryStore } from '@renderer/stores/library';
 import { getAllTracksIndexed } from '@renderer/utils/libraryIndex';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { usePlayerStore } from '@renderer/stores/player';
-import LibraryTracksTab from '@renderer/components/library/LibraryTracksTab.vue';
 import LibraryToolbar from '@renderer/components/library/LibraryToolbar.vue';
 import LibraryHeader from '@renderer/components/library/LibraryHeader.vue';
-import LibraryVideoTab from '@renderer/components/library/LibraryVideoTab.vue';
-import LibraryImagesTab from '@renderer/components/library/LibraryImagesTab.vue';
-import LibraryFoldersTab from '@renderer/components/library/LibraryFoldersTab.vue';
-import LibraryArtistsTab from '@renderer/components/library/LibraryArtistsTab.vue';
-import LibraryAlbumsTab from '@renderer/components/library/LibraryAlbumsTab.vue';
-import LibraryPlaylistManager from '@renderer/components/library/LibraryPlaylistManager.vue';
-import LibraryOverviewTab from '@renderer/components/library/LibraryOverviewTab.vue';
 import LibraryTabBar from '@renderer/components/library/LibraryTabBar.vue';
+import Loader from '@renderer/components/layout/Loader.vue';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { useLibraryFilters } from '@renderer/composables/useLibraryFilters';
 import { useLibraryTagEditor } from '@renderer/composables/useLibraryTagEditor';
 import { useViewSearch } from '@renderer/composables/useViewSearch';
 import {
   applyLibraryChip,
-  filterLibrarySearch,
   sortLibraryTracks,
   type ChipId,
   type SortKey
@@ -38,6 +30,46 @@ const TrackTagEditor = defineAsyncComponent(
 const MusicBrainzLookup = defineAsyncComponent(
   () => import('@renderer/components/library/MusicBrainzLookup.vue')
 );
+const LibraryTracksTab = defineAsyncComponent({
+  loader: () => import('@renderer/components/library/LibraryTracksTab.vue'),
+  loadingComponent: Loader,
+  delay: 120
+});
+const LibraryVideoTab = defineAsyncComponent({
+  loader: () => import('@renderer/components/library/LibraryVideoTab.vue'),
+  loadingComponent: Loader,
+  delay: 120
+});
+const LibraryImagesTab = defineAsyncComponent({
+  loader: () => import('@renderer/components/library/LibraryImagesTab.vue'),
+  loadingComponent: Loader,
+  delay: 120
+});
+const LibraryFoldersTab = defineAsyncComponent({
+  loader: () => import('@renderer/components/library/LibraryFoldersTab.vue'),
+  loadingComponent: Loader,
+  delay: 120
+});
+const LibraryArtistsTab = defineAsyncComponent({
+  loader: () => import('@renderer/components/library/LibraryArtistsTab.vue'),
+  loadingComponent: Loader,
+  delay: 120
+});
+const LibraryAlbumsTab = defineAsyncComponent({
+  loader: () => import('@renderer/components/library/LibraryAlbumsTab.vue'),
+  loadingComponent: Loader,
+  delay: 120
+});
+const LibraryPlaylistManager = defineAsyncComponent({
+  loader: () => import('@renderer/components/library/LibraryPlaylistManager.vue'),
+  loadingComponent: Loader,
+  delay: 120
+});
+const LibraryOverviewTab = defineAsyncComponent({
+  loader: () => import('@renderer/components/library/LibraryOverviewTab.vue'),
+  loadingComponent: Loader,
+  delay: 120
+});
 
 const { t } = useI18n();
 const library = useLibraryStore();
@@ -48,6 +80,7 @@ const {
   query,
   debouncedQuery,
   filteredTracks,
+  filteredAll,
   filteredVideo,
   filteredImages,
   filteredArtists,
@@ -123,8 +156,6 @@ const chips = computed(() => [
   { id: 'recent' as const, label: t('library.chipRecent') },
   { id: 'most' as const, label: t('library.chipMost') }
 ]);
-
-const filteredAll = computed(() => filterLibrarySearch(library.tracks, debouncedQuery.value));
 
 const sortedFilteredTracks = computed(() =>
   sortLibraryTracks(
@@ -239,7 +270,7 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
 <template>
   <div class="flex flex-col h-full">
     <!-- Sticky glass header — Minimal Spotify -->
-    <div class="sticky top-0 z-10 backdrop-blur border-b border-base-300 shrink-0">
+    <div class="ui-page-header sticky top-0 z-10 backdrop-blur border-b border-base-300 shrink-0">
       <div class="px-4 pt-4 pb-3">
         <LibraryHeader
           :total-count="library.totalCount"

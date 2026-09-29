@@ -1,15 +1,49 @@
 <script setup lang="ts">
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { Music2, Play, Clock, FolderOpen, Disc3, Radio, ArrowRight, FolderUp } from '@lucide/vue';
+import { useI18n } from 'vue-i18n';
+import {
+  Music2,
+  Clock,
+  FolderOpen,
+  Disc3,
+  Radio,
+  ArrowRight,
+  FolderUp,
+  TrendingUp,
+  Heart,
+  ListMusic,
+  Mic2
+} from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useLibraryStore } from '@renderer/stores/library';
+import { useSettingsStore } from '@renderer/stores/settings';
 import { openMediaFiles } from '@renderer/composables/useOpenMedia';
 import { useHomeContextMenu } from '@renderer/composables/useHomeContextMenu';
+import { orderedHomeSections } from '@renderer/utils/homeSections';
+import { pluralCategory } from '@renderer/utils/plural';
+import { playTrackList } from '@renderer/utils/playTracks';
+import { formatDuration } from '@renderer/utils/formatters';
+import HomeShelf from '@renderer/components/home/HomeShelf.vue';
+import HomeMediaCard from '@renderer/components/home/HomeMediaCard.vue';
+import HomeContinueCard from '@renderer/components/home/HomeContinueCard.vue';
+import PageHeader from '@renderer/components/ui/PageHeader.vue';
+import EmptyState from '@renderer/components/ui/EmptyState.vue';
+import type { MediaFile } from '@renderer/types/media';
+import type { HomeSectionId } from '@renderer/types/settings';
+import type { TabId } from '@renderer/utils/libraryTabs';
 
 const router = useRouter();
+const { t, locale } = useI18n();
 const player = usePlayerStore();
 const library = useLibraryStore();
+const settings = useSettingsStore();
 const homeContextMenu = useHomeContextMenu();
+
+const sections = computed(() => orderedHomeSections(settings.home.sections));
+function has(id: HomeSectionId): boolean {
+  return sections.value.includes(id);
+}
 
 async function openFile() {
   const result = (await window.api?.invoke('dialog:openFile')) as
@@ -51,14 +85,111 @@ const actions = [
     route: () => router.push('/online')
   }
 ];
+
+interface HomeCounter {
+  value: number;
+  key: string;
+  color: string;
+  tab: TabId;
+}
+
+const counters = computed<HomeCounter[]>(() => [
+  {
+    value: library.totalCount,
+    key: 'home.totalTracks',
+    color: 'text-base-content',
+    tab: 'overview'
+  },
+  { value: library.audioCount, key: 'home.audioFiles', color: 'text-primary', tab: 'tracks' },
+  { value: library.videoCount, key: 'home.videoFiles', color: 'text-success', tab: 'video' },
+  { value: library.imageCount, key: 'home.imageFiles', color: 'text-secondary', tab: 'images' },
+  {
+    value: library.playlists.length,
+    key: 'library.playlists',
+    color: 'text-warning',
+    tab: 'playlists'
+  }
+]);
+
+function openLibrary(tab: TabId): void {
+  router.push({ path: '/library', query: { tab } });
+}
+
+// ---- Shelves -----------------------------------------------------------------
+
+const recentTracks = computed(() => library.recentTracks.slice(0, 12));
+const mostPlayed = computed(() =>
+  library.mostPlayed.filter((t) => (t.playCount || 0) > 0).slice(0, 12)
+);
+const favoriteTracks = computed(() => {
+  const favorites = new Set(player.favorites);
+  if (!favorites.size) return [];
+  return library.tracks.filter((t) => favorites.has(t.path)).slice(0, 12);
+});
+const playlists = computed(() => library.playlists.slice(0, 12));
+const albums = computed(() => library.albums.slice(0, 12));
+const artists = computed(() => library.artists.slice(0, 12));
+
+function trackTitle(track: MediaFile): string {
+  return track.metadata?.title || track.name;
+}
+
+function trackSubtitle(track: MediaFile): string {
+  const artist = track.metadata?.artist;
+  if (artist) return artist;
+  const duration = track.duration || track.metadata?.duration || 0;
+  return duration > 0 ? formatDuration(duration) : track.extension;
+}
+
+// vue-i18n's built-in plural rules get Polish one/few/many wrong on a 3-form
+// message, so the form is chosen explicitly (see utils/plural.ts).
+function trackCountLabel(count: number): string {
+  const category = pluralCategory(locale.value, count);
+  const key =
+    category === 'one'
+      ? 'home.trackCountOne'
+      : category === 'few'
+        ? 'home.trackCountFew'
+        : 'home.trackCountMany';
+  return t(key, { count });
+}
+
+// ---- Continue card -----------------------------------------------------------
+
+const continueTrack = computed<MediaFile | null>(() => library.recentTracks[0] ?? null);
+const continuePosition = ref(0);
+
+async function loadContinuePosition(track: MediaFile | null): Promise<void> {
+  if (!track) {
+    continuePosition.value = 0;
+    return;
+  }
+  try {
+    continuePosition.value = (await window.api?.getPlaybackPosition(track.path)) || 0;
+  } catch {
+    continuePosition.value = 0;
+  }
+}
+
+watch(continueTrack, (track) => void loadContinuePosition(track), { immediate: true });
+
+function playContinue(): void {
+  const track = continueTrack.value;
+  if (!track) return;
+  player.setTrack(track);
+  player.play();
+  if (track.type === 'video') router.push('/player');
+}
+
+onMounted(() => {
+  // Favourites live in settings; load them so the shelf renders on first paint.
+  void player.ensureFavorites();
+});
 </script>
 
 <template>
-  <div class="p-6 max-w-7xl mx-auto">
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold mb-1">{{ $t('home.welcome') }}</h1>
-      <p class="text-base-content/70 text-sm">{{ $t('home.subtitle') }}</p>
-    </div>
+  <div class="p-6 max-w-7xl mx-auto" @contextmenu="homeContextMenu.showHomeMenu($event)">
+    <PageHeader :title="t('home.welcome')" :subtitle="t('home.subtitle')" class="mb-6" />
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <button
@@ -93,67 +224,160 @@ const actions = [
         </div>
       </template>
       <template v-else>
-        <div
-          v-for="s in [
-            { v: library.totalCount, k: 'home.totalTracks', c: 'text-base-content' },
-            { v: library.audioCount, k: 'home.audioFiles', c: 'text-primary' },
-            { v: library.videoCount, k: 'home.videoFiles', c: 'text-success' },
-            { v: library.imageCount, k: 'home.imageFiles', c: 'text-secondary' },
-            { v: library.playlists.length, k: 'library.playlists', c: 'text-warning' }
-          ]"
-          :key="s.k"
-          class="p-4 rounded-box bg-base-100 border border-base-300"
+        <button
+          v-for="s in counters"
+          :key="s.key"
+          class="p-4 rounded-box bg-base-100 border border-base-300 text-left hover:bg-base-content/5 transition-colors"
+          :title="$t('home.openInLibrary')"
+          @click="openLibrary(s.tab)"
         >
-          <div :class="['text-3xl font-bold', s.c]">{{ s.v }}</div>
-          <div class="text-xs text-base-content/50 mt-1">{{ $t(s.k) }}</div>
-        </div>
+          <div :class="['text-3xl font-bold', s.color]">{{ s.value }}</div>
+          <div class="text-xs text-base-content/50 mt-1">{{ $t(s.key) }}</div>
+        </button>
       </template>
     </div>
 
-    <div class="mb-8">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-base font-semibold flex items-center gap-2">
-          <Clock :size="16" class="text-primary" /> {{ $t('home.recentlyPlayed') }}
-        </h2>
-        <button
-          class="text-xs text-primary hover:text-primary/90 font-medium transition-colors"
-          @click="router.push('/library')"
-        >
-          {{ $t('home.showAll') }}
-        </button>
-      </div>
-      <div
-        v-if="!library.isLoaded || library.recentTracks.length === 0"
-        class="text-center py-14 rounded-box bg-base-100 border border-base-300"
-      >
-        <Music2 :size="40" class="mx-auto mb-3 text-base-content/40" />
-        <p class="text-sm text-base-content/70">{{ $t('home.noTracks') }}</p>
-        <p class="text-xs text-base-content/50 mt-1">{{ $t('home.openFileToStart') }}</p>
-      </div>
-      <div v-else class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <button
-          v-for="t in library.recentTracks.slice(0, 8)"
-          :key="t.path"
-          class="flex items-center gap-3 p-3 fx-depth rounded-box fx-noise bg-base-100 border border-base-300 hover:bg-base-content/10 transition-all text-left group"
-          @click="player.setTrack(t)"
-          @contextmenu="homeContextMenu.showRecentMenu($event, t)"
-        >
-          <div
-            class="w-10 h-10 rounded-field bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors"
-          >
-            <Play
-              :size="14"
-              class="text-primary group-hover:text-neutral-content ml-0.5 transition-colors"
-            />
-          </div>
-          <div class="min-w-0">
-            <div class="text-sm font-medium truncate">{{ t.metadata?.title || t.name }}</div>
-            <div class="text-xs text-base-content/50 truncate">
-              {{ t.metadata?.artist || $t('home.unknown') }}
-            </div>
-          </div>
-        </button>
-      </div>
-    </div>
+    <HomeContinueCard
+      v-if="has('continue') && continueTrack"
+      :track="continueTrack"
+      :position="continuePosition"
+      @play="playContinue"
+    />
+
+    <HomeShelf
+      v-if="has('recent') && recentTracks.length"
+      :title="$t('home.recentlyPlayed')"
+      :icon="Clock"
+      :item-count="recentTracks.length"
+      :see-all-label="$t('home.showAll')"
+      @see-all="openLibrary('tracks')"
+    >
+      <HomeMediaCard
+        v-for="item in recentTracks"
+        :key="item.path"
+        :title="trackTitle(item)"
+        :subtitle="trackSubtitle(item)"
+        :cover-path="item.path"
+        :cover-size="132"
+        :fallback="item.type === 'video' ? 'film' : 'music'"
+        @play="player.setTrack(item)"
+        @contextmenu="homeContextMenu.showRecentMenu($event, item)"
+      />
+    </HomeShelf>
+
+    <EmptyState
+      v-else-if="has('recent') && library.isLoaded"
+      :title="$t('home.noTracks')"
+      :description="$t('home.openFileToStart')"
+      :icon="Music2"
+      class="mb-8 bg-base-100"
+    />
+
+    <HomeShelf
+      v-if="has('mostPlayed') && mostPlayed.length"
+      :title="$t('home.mostPlayed')"
+      :icon="TrendingUp"
+      :item-count="mostPlayed.length"
+      :see-all-label="$t('home.showAll')"
+      @see-all="openLibrary('tracks')"
+    >
+      <HomeMediaCard
+        v-for="item in mostPlayed"
+        :key="item.path"
+        :title="trackTitle(item)"
+        :subtitle="$t('home.playCount', { count: item.playCount })"
+        :cover-path="item.path"
+        :cover-size="132"
+        @play="player.setTrack(item)"
+        @contextmenu="homeContextMenu.showRecentMenu($event, item)"
+      />
+    </HomeShelf>
+
+    <HomeShelf
+      v-if="has('favorites') && favoriteTracks.length"
+      :title="$t('home.favorites')"
+      :icon="Heart"
+      :item-count="favoriteTracks.length"
+      :see-all-label="$t('home.showAll')"
+      @see-all="openLibrary('tracks')"
+    >
+      <HomeMediaCard
+        v-for="item in favoriteTracks"
+        :key="item.path"
+        :title="trackTitle(item)"
+        :subtitle="trackSubtitle(item)"
+        :cover-path="item.path"
+        :cover-size="132"
+        @play="player.setTrack(item)"
+        @contextmenu="homeContextMenu.showRecentMenu($event, item)"
+      />
+    </HomeShelf>
+
+    <HomeShelf
+      v-if="has('playlists') && playlists.length"
+      :title="$t('library.playlists')"
+      :icon="ListMusic"
+      :item-count="playlists.length"
+      :see-all-label="$t('home.showAll')"
+      @see-all="openLibrary('playlists')"
+    >
+      <HomeMediaCard
+        v-for="pl in playlists"
+        :key="pl.id"
+        :title="pl.name"
+        :subtitle="trackCountLabel(pl.tracks.length)"
+        :cover-path="pl.coverUrl || pl.tracks[0]?.path"
+        :cover-size="132"
+        fallback="play"
+        :open-label="$t('home.openInLibrary')"
+        @play="playTrackList(pl.tracks)"
+        @open="openLibrary('playlists')"
+      />
+    </HomeShelf>
+
+    <HomeShelf
+      v-if="has('albums') && albums.length"
+      :title="$t('library.albums')"
+      :icon="Disc3"
+      :item-count="albums.length"
+      :see-all-label="$t('home.showAll')"
+      @see-all="openLibrary('albums')"
+    >
+      <HomeMediaCard
+        v-for="[name, tracks] in albums"
+        :key="name"
+        :title="name"
+        :subtitle="trackCountLabel(tracks.length)"
+        :cover-path="tracks[0]?.path"
+        :cover-size="132"
+        fallback="disc"
+        :open-label="$t('home.openInLibrary')"
+        @play="playTrackList(tracks)"
+        @open="openLibrary('albums')"
+      />
+    </HomeShelf>
+
+    <HomeShelf
+      v-if="has('artists') && artists.length"
+      :title="$t('library.artists')"
+      :icon="Mic2"
+      :item-count="artists.length"
+      :see-all-label="$t('home.showAll')"
+      @see-all="openLibrary('artists')"
+    >
+      <HomeMediaCard
+        v-for="[name, tracks] in artists"
+        :key="name"
+        :title="name"
+        :subtitle="trackCountLabel(tracks.length)"
+        :cover-path="tracks[0]?.path"
+        :cover-size="132"
+        fallback="disc"
+        round
+        :open-label="$t('home.openInLibrary')"
+        @play="playTrackList(tracks)"
+        @open="openLibrary('artists')"
+      />
+    </HomeShelf>
   </div>
 </template>

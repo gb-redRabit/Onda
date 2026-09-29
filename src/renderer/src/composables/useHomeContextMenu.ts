@@ -2,7 +2,9 @@ import { useI18n } from 'vue-i18n';
 import type { MediaFile } from '@renderer/types/media';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useLibraryStore } from '@renderer/stores/library';
+import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore } from '@renderer/stores/ui';
+import { HOME_SECTION_ORDER, toggleHomeSection } from '@renderer/utils/homeSections';
 import { useContextMenu, type ContextMenuAction } from './useContextMenu';
 
 interface RecentCtx {
@@ -13,6 +15,7 @@ export function useHomeContextMenu() {
   const { t } = useI18n();
   const player = usePlayerStore();
   const library = useLibraryStore();
+  const settings = useSettingsStore();
   const ui = useUIStore();
   const { open } = useContextMenu();
 
@@ -41,5 +44,24 @@ export function useHomeContextMenu() {
     open(e, defs, { track });
   }
 
-  return { showRecentMenu };
+  // Background menu: which shelves Home shows (same ✓ pattern as the status
+  // bar's section menu, so the app stays consistent).
+  function showHomeMenu(e: MouseEvent) {
+    const defs: ContextMenuAction<null>[] = HOME_SECTION_ORDER.map((id) => {
+      const on = settings.home.sections.includes(id);
+      return {
+        label: `${on ? '✓ ' : ''}${t(`home.sections.${id}`)}`,
+        action: () =>
+          settings.updateHome({ sections: toggleHomeSection(settings.home.sections, id) })
+      };
+    });
+    defs.push({ separator: true, label: '' });
+    defs.push({
+      label: t('home.resetSections'),
+      action: () => settings.updateHome({ sections: [...HOME_SECTION_ORDER] })
+    });
+    open(e, defs, null);
+  }
+
+  return { showRecentMenu, showHomeMenu };
 }

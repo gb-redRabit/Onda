@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { MediaFile } from '@renderer/types/media';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
 import { Heart, Clock, Flame, Sparkles, Shuffle, Play } from '@lucide/vue';
 import LibraryTrackCard from './LibraryTrackCard.vue';
+import EmptyState from '@renderer/components/ui/EmptyState.vue';
 
 const { t } = useI18n();
 const library = useLibraryStore();
@@ -24,6 +25,14 @@ const emit = defineEmits<{
 }>();
 
 const hasQuery = computed(() => props.query.trim().length > 0);
+const searchLimit = ref(48);
+const displayedSearchTracks = computed(() => props.filteredAll.slice(0, searchLimit.value));
+watch(
+  () => props.query,
+  () => {
+    searchLimit.value = 48;
+  }
+);
 
 const likedTracks = computed(() => {
   const fav = new Set(player.favorites);
@@ -132,20 +141,20 @@ const sections = computed(() => [
         <Play :size="12" /> {{ $t('library.playAll') }}
       </button>
     </div>
-    <div
+    <EmptyState
       v-if="filteredAll.length === 0"
-      class="flex flex-col items-center justify-center h-64 gap-3 text-base-content/50"
-    >
-      <Sparkles :size="32" class="opacity-30" />
-      <p class="text-sm">{{ $t('common.noPlaylists') }} — {{ query }}</p>
-    </div>
+      :title="$t('library.searchNoResults')"
+      :description="query"
+      :icon="Sparkles"
+      class="my-8 mx-4"
+    />
     <div
       v-else
       class="flex-1 overflow-auto p-4 grid gap-3"
       style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); align-content: start"
     >
       <LibraryTrackCard
-        v-for="tr in filteredAll.slice(0, 48)"
+        v-for="tr in displayedSearchTracks"
         :key="tr.path"
         :track="tr"
         :show-playlist="true"
@@ -153,6 +162,13 @@ const sections = computed(() => [
         @edit="emit('edit', $event)"
       />
     </div>
+    <button
+      v-if="displayedSearchTracks.length < filteredAll.length"
+      class="ui-icon-button mx-auto mb-4 min-h-9 px-4 text-xs font-medium"
+      @click="searchLimit += 48"
+    >
+      {{ $t('library.showMoreResults') }}
+    </button>
   </div>
 
   <!-- Overview dashboard -->
@@ -249,12 +265,9 @@ const sections = computed(() => [
       >
         <span>{{ library.totalCount }} {{ $t('common.files') }}</span>
         <span>·</span>
-        <span>{{ library.audioCount }} audio</span>
+        <span>{{ library.audioCount }} {{ $t('home.audioFiles') }}</span>
         <span>·</span>
-        <span
-          >{{ library.playlists.length }}
-          {{ $t('common.noPlaylists') === 'Brak playlist' ? 'playlist' : 'playlists' }}</span
-        >
+        <span>{{ library.playlists.length }} {{ $t('library.playlists') }}</span>
       </div>
     </div>
   </div>
