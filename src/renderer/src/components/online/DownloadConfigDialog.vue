@@ -20,7 +20,7 @@ const props = defineProps<{
   channelTitle?: string;
   playlistTitle?: string;
   /** SoundCloud downloads are fixed MP3s — most sections do not apply. */
-  platform?: 'youtube' | 'soundcloud';
+  platform?: 'youtube' | 'soundcloud' | 'generic';
 }>();
 
 const emit = defineEmits<{
@@ -38,6 +38,7 @@ const form = useDownloadConfigForm({
 });
 const {
   isSc,
+  isGeneric,
   profiles,
   systemDownloads,
   kind,
@@ -143,6 +144,9 @@ function confirm() {
               <span v-if="props.channelTitle">{{ props.channelTitle }}</span>
               <span v-if="props.channelTitle && props.playlistTitle"> · </span>
               <span v-if="props.playlistTitle">{{ props.playlistTitle }}</span>
+            </p>
+            <p v-if="isGeneric" class="mt-1 text-[11px] text-info">
+              {{ $t('youtube.genericExtractorHint') }}
             </p>
           </div>
           <button

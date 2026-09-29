@@ -4,7 +4,7 @@ import type { IpcStreamResult } from '../../shared/types/ipc';
 import { redactSecrets } from '../downloads/error-classifier';
 import { runYtDlp } from './youtube-handlers';
 import { parseStreamGetOutput } from './youtube-utils';
-import { readProxyArgs } from './proxy-utils';
+import { readNetworkArgs } from './proxy-utils';
 import { extractSignedUrlExpiryMs, scTrackStreamUrl } from './soundcloud-client';
 import { errorCodeOf } from './soundcloud-error';
 
@@ -98,7 +98,7 @@ async function resolveStream(url: string): Promise<IpcStreamResult> {
         '-g',
         '-4',
         '--no-warnings',
-        ...(await readProxyArgs())
+        ...(await readNetworkArgs('soundcloud'))
       ],
       30000
     );

@@ -42,9 +42,11 @@ export function buildSourceDownloadInput(args: SourceDownloadInputArgs): IpcDown
     addToLibrary: addToLibrary ?? autoAddToLibrary,
     source: {
       mode: useYtdlp ? 'ytdlp' : 'http',
+      sourceId: source.id,
       fileName: useYtdlp ? undefined : deriveFileName(item),
       apiKeyId: auth && auth.type !== 'none' ? auth.apiKeyId : undefined,
-      headerName: auth && auth.type === 'apikey' ? auth.headerName : undefined
+      headerName: auth && auth.type === 'apikey' ? auth.headerName : undefined,
+      allowPrivateNetwork: source.allowPrivateNetwork
     }
   };
 }

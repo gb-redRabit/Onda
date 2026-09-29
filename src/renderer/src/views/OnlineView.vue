@@ -29,6 +29,7 @@ import OnlineResolvedPanel from '@renderer/components/online/OnlineResolvedPanel
 import OnlineConfirmDialog from '@renderer/components/online/OnlineConfirmDialog.vue';
 import OnlineChannelError from '@renderer/components/online/OnlineChannelError.vue';
 import YTAuthButton from '@renderer/components/online/YTAuthButton.vue';
+import PageHeader from '@renderer/components/ui/PageHeader.vue';
 
 // Heavy dialogs/views are lazy-loaded so they don't bloat the Online chunk
 // (plan 3.5).
@@ -62,7 +63,11 @@ const {
   confirmUnfollow,
   onUnfollowConfirm
 } = useOnlineSubscriptions();
-const { searchError, resolveError, submit } = useOnlineSearch(input, t, openDiscover);
+const { searchError, resolveError, submit, cancelPending } = useOnlineSearch(
+  input,
+  t,
+  openDiscover
+);
 const { expandedSearchId, expandedResolvedId, configTarget, openWatchUrl, onKeydown, toastAdded } =
   useOnlineDialogs(input, prefsOpen, unfollowTarget);
 const rangeStart = ref(1);
@@ -116,6 +121,20 @@ function clearResolved() {
   input.value = '';
 }
 
+function openChannelInApp(url: string): void {
+  cancelPending();
+  searchError.value = '';
+  resolveError.value = '';
+  activeSection.value = 'discover';
+  input.value = url;
+  void yt.openChannel(url);
+}
+
+function openSubscriptionChannel(channelId: string): void {
+  cancelPending();
+  openChannelFromSubscription(channelId);
+}
+
 function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs>[1] }) {
   const target = prefsOpen.value;
   if (!target) return;
@@ -126,15 +145,10 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
 
 <template>
   <div class="flex flex-col h-full">
-    <header
-      class="sticky top-0 z-10 bg-base-100/(--glass-alpha) backdrop-blur border border-b border-base-300 px-4 py-4"
-    >
-      <div class="flex items-center gap-3 mb-4">
-        <Radio :size="24" class="text-primary" />
-        <h1 class="text-xl font-bold">{{ $t('nav.online') }}</h1>
-        <div class="flex-1" />
+    <PageHeader :title="$t('nav.online')" :icon="Radio" sticky>
+      <template #actions>
         <YTAuthButton />
-      </div>
+      </template>
 
       <OnlineSearchBar
         v-model="input"
@@ -207,7 +221,7 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
 
       <p v-if="resolveError" class="text-xs text-error mt-3">{{ resolveError }}</p>
       <p v-if="searchError" class="text-xs text-error mt-3">{{ searchError }}</p>
-    </header>
+    </PageHeader>
 
     <div class="flex-1 overflow-auto p-4">
       <OnlineSubscriptionsPanel
@@ -216,7 +230,7 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
         :loaded="yt.subscriptionsLoaded"
         :checking-channel-id="yt.checkingChannelId"
         :queueing-channel-id="yt.queueingChannelId"
-        @open-channel="openChannelFromSubscription"
+        @open-channel="openSubscriptionChannel"
         @download-all="downloadSubscriptionAll"
         @check-now="yt.checkChannelNow"
         @toggle-auto-download="yt.setAutoDownload"
@@ -242,6 +256,7 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
           @quick-queue="quickQueueResolved"
           @options="queueResolvedItem"
           @open-window="openWatchUrl"
+          @open-channel="openChannelInApp"
           @download-all="addSelectedToQueue"
           @play-all="yt.playAllStreams(yt.resolved?.items ?? [])"
           @save="saveResolvedPlaylist"
@@ -257,6 +272,7 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
           @quick-queue="quickQueueVideo"
           @options="queueChannelVideo"
           @open-window="openWatchUrl"
+          @open-channel="openChannelInApp"
         />
       </template>
     </div>

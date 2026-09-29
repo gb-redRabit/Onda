@@ -52,6 +52,8 @@ const emit = defineEmits<{
         <button
           class="fx-noise p-1.5 fx-depth rounded-field text-primary hover:bg-primary/10 transition-colors"
           :title="$t('sources.addSource')"
+          :aria-label="$t('sources.addSource')"
+          data-testid="sources-add"
           @click="emit('add')"
         >
           <Plus :size="16" />
@@ -64,6 +66,7 @@ const emit = defineEmits<{
         :key="s.id"
         class="group flex items-center gap-2 px-2.5 py-2 rounded-field cursor-pointer transition-colors"
         :class="s.id === activeSourceId ? 'bg-primary/10 text-primary' : 'hover:bg-base-content/10'"
+        :data-testid="`sources-item-${s.id}`"
         @click="emit('select', s.id)"
       >
         <Globe v-if="!s.icon" :size="14" class="shrink-0" />

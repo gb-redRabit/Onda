@@ -211,11 +211,19 @@ export function sanitizeSource(v: unknown): MediaSource | null {
     name,
     icon: sanitizeIcon(v.icon),
     baseUrl,
+    allowPrivateNetwork: v.allowPrivateNetwork === true,
     auth: sanitizeAuth(v.auth),
     endpoints,
     download: sanitizeDownload(v.download),
     createdAt: typeof v.createdAt === 'number' ? v.createdAt : Date.now()
   };
+}
+
+/** Importing configuration must not silently grant access to local networks. */
+export function sanitizeImportedSource(v: unknown): MediaSource | null {
+  const source = sanitizeSource(v);
+  if (source) source.allowPrivateNetwork = false;
+  return source;
 }
 
 let writeChain: Promise<void> = Promise.resolve();

@@ -1,6 +1,6 @@
 import { pickChannelThumbnail, type YtDlpEntry } from './youtube-utils';
 import { runYtDlp } from './youtube-handlers';
-import { readProxyArgs } from './proxy-utils';
+import { readNetworkArgs } from './proxy-utils';
 import { scVideoFromEntry, entryUrl } from './soundcloud-entries';
 
 // yt-dlp fallback for SoundCloud profile listings, split out of
@@ -37,7 +37,7 @@ export async function fallbackChannelPage(
       String(end),
       '--no-warnings',
       '-J',
-      ...(await readProxyArgs())
+      ...(await readNetworkArgs('soundcloud'))
     ],
     60000
   );
@@ -65,7 +65,7 @@ export async function fallbackChannelAll(
   target: string
 ): Promise<{ channel: ScFallbackChannel; items: ReturnType<typeof scVideoFromEntry>[] }> {
   const stdout = await runYtDlp(
-    [target, '--flat-playlist', '--no-warnings', '-J', ...(await readProxyArgs())],
+    [target, '--flat-playlist', '--no-warnings', '-J', ...(await readNetworkArgs('soundcloud'))],
     120000
   );
   const parsed = JSON.parse(stdout) as YtDlpEntry;

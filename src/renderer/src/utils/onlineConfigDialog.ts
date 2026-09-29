@@ -1,4 +1,5 @@
 import { isScItem } from '@renderer/utils/onlineView';
+import { detectPlatform, isHttpUrl } from '@shared/platform';
 import type {
   YouTubeResolvedItem,
   YouTubeResolveResult,
@@ -41,9 +42,12 @@ export function configDialogPlatform(
   target: OnlineConfigTarget,
   resolved: YouTubeResolveResult | null,
   itemUrl: (v: YouTubeVideo | YouTubeResolvedItem) => string
-): 'youtube' | 'soundcloud' {
+): 'youtube' | 'soundcloud' | 'generic' {
   if (!target) return 'youtube';
   const item = target.mode === 'single' ? target.video : resolved?.items[0];
   if (!item) return 'youtube';
-  return isScItem(item, itemUrl(item)) ? 'soundcloud' : 'youtube';
+  if (isScItem(item, itemUrl(item))) return 'soundcloud';
+  const url = itemUrl(item);
+  if (detectPlatform(url)?.platform === 'youtube') return 'youtube';
+  return isHttpUrl(url) ? 'generic' : 'youtube';
 }

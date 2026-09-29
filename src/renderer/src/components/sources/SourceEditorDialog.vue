@@ -38,6 +38,7 @@ function onOverlayClick() {
   const isDirty =
     draft.name.trim() !== (props.source?.name || '') ||
     draft.baseUrl.trim() !== (props.source?.baseUrl || '') ||
+    draft.allowPrivateNetwork !== (props.source?.allowPrivateNetwork === true) ||
     draft.endpoints.length !== (props.source?.endpoints?.length || 0);
   overlayClicks++;
   if (isDirty) ui.notify('warning', t('common.unsavedChangesClickAgain'));
@@ -52,6 +53,7 @@ const draft = reactive({
   name: props.source?.name || '',
   icon: props.source?.icon || '',
   baseUrl: props.source?.baseUrl || '',
+  allowPrivateNetwork: props.source?.allowPrivateNetwork === true,
   authType: (props.source?.auth?.type || 'none') as SourceAuthType,
   apiKeyId: props.source?.auth?.apiKeyId || '',
   headerName: props.source?.auth?.headerName || '',
@@ -142,6 +144,7 @@ function buildSource(): MediaSource | null {
     name,
     icon: draft.icon.trim() || undefined,
     baseUrl,
+    allowPrivateNetwork: draft.allowPrivateNetwork,
     auth: buildAuth(),
     endpoints,
     download:
@@ -244,6 +247,7 @@ async function onTestTable(idx: number) {
     >
       <div
         class="w-full max-w-3xl max-h-full flex flex-col rounded-box bg-base-200 border border-base-300 shadow-2xl overflow-hidden"
+        data-testid="source-editor-dialog"
       >
         <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
           <h2 class="text-sm font-medium flex-1">
@@ -286,6 +290,19 @@ async function onTestTable(idx: number) {
                 class="w-full px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
+            <label
+              class="flex items-start gap-2.5 rounded-field border border-warning/30 bg-warning/5 p-3 cursor-pointer"
+            >
+              <input v-model="draft.allowPrivateNetwork" type="checkbox" class="mt-0.5" />
+              <span class="min-w-0">
+                <span class="block text-xs font-medium text-base-content">
+                  {{ $t('sources.trustPrivateNetwork') }}
+                </span>
+                <span class="block mt-0.5 text-[11px] text-base-content/55">
+                  {{ $t('sources.trustPrivateNetworkDescription') }}
+                </span>
+              </span>
+            </label>
           </div>
 
           <SourceIconSection v-model:icon="draft.icon" @error="errorMsg = $event" />

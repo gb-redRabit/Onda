@@ -8,7 +8,9 @@ export {
   formatDuration,
   formatUploadDate,
   isStableAvatarUrl,
+  isSafeThumbnailUrl,
   pickThumbnail,
+  mapExternalResolvedEntry,
   mapResolvedEntry,
   mapVideoEntry,
   pickChannelThumbnail,
@@ -115,7 +117,7 @@ export function buildYtArgs(
 export function buildStreamGetArgs(
   url: string,
   proxyArgs: string[] = [],
-  options: { fallback?: boolean } = {}
+  options: { fallback?: boolean; generic?: boolean } = {}
 ): string[] {
   // Prefer progressive (https) formats, which <audio> can play directly:
   // DASH (http_dash_segments) and HLS (m3u8) streams need MSE/hls.js. The
@@ -135,15 +137,16 @@ export function buildStreamGetArgs(
   // clients fail (age-restricted videos etc.) — it degrades to itag 18, but
   // keeps playback working where the primary clients can't extract at all.
   const client = options.fallback ? 'android,web' : 'ios_safari,tv_embedded';
+  const platformArgs = options.generic
+    ? []
+    : ['-4', '--extractor-args', `youtube:player_client=${client}`];
   return [
     url,
     '--no-playlist',
     '-f',
     'ba[protocol^=https]/bestaudio[protocol^=https]/b[protocol^=https]/w[protocol^=https]/ba/bestaudio/b/w',
     '-g',
-    '-4',
-    '--extractor-args',
-    `youtube:player_client=${client}`,
+    ...platformArgs,
     '--no-warnings',
     '--no-check-formats',
     ...proxyArgs

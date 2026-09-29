@@ -20,6 +20,7 @@ const emit = defineEmits<{
   quickQueue: [YouTubeResolvedItem];
   options: [YouTubeResolvedItem];
   openWindow: [string];
+  openChannel: [string];
   downloadAll: [];
   playAll: [];
   save: [];
@@ -108,6 +109,7 @@ function itemDownloadState(videoId: string): 'queuing' | 'downloading' | 'done' 
           @play="yt.playStream(item)"
           @options="emit('options', item)"
           @open-window="emit('openWindow', watchUrl(item))"
+          @open-channel="emit('openChannel', $event)"
         />
       </div>
 

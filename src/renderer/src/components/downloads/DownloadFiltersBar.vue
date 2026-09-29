@@ -17,6 +17,9 @@ const { t } = useI18n();
     <button
       v-for="f in filters"
       :key="f.id"
+      type="button"
+      :aria-pressed="filter === f.id"
+      :data-testid="`downloads-filter-${f.id}`"
       class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
       :class="
         filter === f.id

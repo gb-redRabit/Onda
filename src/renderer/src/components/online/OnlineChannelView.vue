@@ -269,6 +269,7 @@ onUnmounted(() => {
             @queue="queueVideo(v)"
             @play="yt.playStream(v)"
             @open-window="openWatchWindow(v)"
+            @open-channel="yt.openChannel($event)"
           />
         </div>
       </div>

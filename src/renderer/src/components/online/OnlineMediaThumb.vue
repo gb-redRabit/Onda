@@ -42,6 +42,10 @@ const { t } = useI18n();
 const isSc = computed(
   () => detectPlatform((props.video as YouTubeVideo).url || '')?.platform === 'soundcloud'
 );
+const isGeneric = computed(() => {
+  const url = (props.video as YouTubeVideo).url;
+  return !!url && detectPlatform(url) === null;
+});
 const isPlayable = computed(() => (props.video as YouTubeResolvedItem).isPlayable !== false);
 const isSaved = computed(() => saved.isTrackSaved(props.video.id));
 void saved.ensureLoaded();
@@ -65,7 +69,7 @@ function onPlay(e: MouseEvent) {
 
 function onExpand(e?: MouseEvent) {
   e?.stopPropagation();
-  if (!isPlayable.value || isSc.value) return;
+  if (!isPlayable.value || isSc.value || isGeneric.value) return;
   emit('expand', props.video);
 }
 </script>
@@ -136,9 +140,9 @@ function onExpand(e?: MouseEvent) {
         >
           <Radio :size="30" />
         </button>
-        <div v-if="!isSc" class="w-px h-16 bg-neutral-content py-5"></div>
+        <div v-if="!isSc && !isGeneric" class="w-px h-16 bg-neutral-content py-5"></div>
         <button
-          v-if="!isSc"
+          v-if="!isSc && !isGeneric"
           type="button"
           :title="$t('youtube.playOnYoutube')"
           class="flex items-center justify-center text-base-content hover:scale-115 active:scale-95 shadow-black/30 transition-all duration-150 cursor-pointer"

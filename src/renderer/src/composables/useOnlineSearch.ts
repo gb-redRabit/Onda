@@ -1,6 +1,6 @@
 import { computed, ref, type Ref } from 'vue';
 import { useOnlineStore } from '@renderer/stores/online';
-import { detectChannelPrefix, detectPlatform } from '@shared/platform';
+import { detectChannelPrefix, detectPlatform, isHttpUrl } from '@shared/platform';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
 
 type Translate = (key: string, params?: Record<string, unknown>) => string;
@@ -17,11 +17,16 @@ export function useOnlineSearch(input: Ref<string>, t: Translate, openDiscover: 
 
   // A pasted input is "resolvable" when it is a direct link of ANY supported
   // platform — it then resolves to a track/playlist/profile instead of a search.
-  const isResolvable = computed(() => detectPlatform(input.value) !== null);
+  const isResolvable = computed(
+    () => detectPlatform(input.value) !== null || isHttpUrl(input.value)
+  );
 
   async function search() {
     if (!input.value.trim()) return;
+    resolveSeq++;
+    yt.isResolving = false;
     openDiscover();
+    resolveError.value = '';
     yt.setResolved(null);
     yt.closeChannel();
     yt.isSearching = true;
@@ -53,7 +58,13 @@ export function useOnlineSearch(input: Ref<string>, t: Translate, openDiscover: 
   async function resolveLink() {
     const url = input.value.trim();
     if (!url) return;
+    searchSeq++;
+    yt.isSearching = false;
     openDiscover();
+    yt.closeChannel();
+    yt.setResolved(null);
+    yt.setResults([]);
+    searchError.value = '';
     yt.isResolving = true;
     resolveError.value = '';
     const seq = ++resolveSeq;
@@ -85,8 +96,15 @@ export function useOnlineSearch(input: Ref<string>, t: Translate, openDiscover: 
     // @name -> YouTube channel, $name -> SoundCloud profile: open directly.
     const prefix = detectChannelPrefix(input.value);
     if (prefix) {
+      searchSeq++;
+      resolveSeq++;
+      yt.isSearching = false;
+      yt.isResolving = false;
       openDiscover();
+      searchError.value = '';
+      resolveError.value = '';
       yt.setResolved(null);
+      yt.setResults([]);
       yt.closeChannel();
       await yt.openChannelPrefix(prefix);
       return;
@@ -98,5 +116,12 @@ export function useOnlineSearch(input: Ref<string>, t: Translate, openDiscover: 
     }
   }
 
-  return { isResolvable, searchError, resolveError, search, resolveLink, submit };
+  function cancelPending(): void {
+    searchSeq++;
+    resolveSeq++;
+    yt.isSearching = false;
+    yt.isResolving = false;
+  }
+
+  return { isResolvable, searchError, resolveError, search, resolveLink, submit, cancelPending };
 }

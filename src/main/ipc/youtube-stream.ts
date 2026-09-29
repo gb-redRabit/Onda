@@ -3,8 +3,11 @@ import { logger } from '../../shared/logger';
 import { cacheStream, getCachedStream } from './youtube-stream-cache';
 import type { IpcStreamResult } from '../../shared/types/ipc';
 import { buildStreamGetArgs, parseStreamGetOutput, detectYtKind } from './youtube-utils';
-import { readProxyArgs } from './proxy-utils';
+import { readNetworkArgs } from './proxy-utils';
 import { runYtDlp } from './youtube-fetch';
+import { isHttpUrl } from '../../shared/platform';
+import { resolveNetworkTarget } from './network-target';
+import { registerGenericStreamUrl } from '../media-server-stream-registry';
 
 // Resolves a direct audio stream URL for a video via `yt-dlp -g`. Results are
 // cached (LRU, 5h TTL — googlevideo URLs stay valid ~6h) because repeated -g
@@ -16,11 +19,12 @@ import { runYtDlp } from './youtube-fetch';
 const streamPending = new Map<string, Promise<IpcStreamResult>>();
 
 export function getStreamUrl(url: string): Promise<IpcStreamResult> {
+  const kind = typeof url === 'string' ? detectYtKind(url) : null;
   if (
     typeof url !== 'string' ||
     !url.trim() ||
     url.length > 2048 ||
-    detectYtKind(url) !== 'video'
+    (kind !== 'video' && !(kind === null && isHttpUrl(url)))
   ) {
     return Promise.resolve({
       success: false,
@@ -31,6 +35,15 @@ export function getStreamUrl(url: string): Promise<IpcStreamResult> {
 
   const cached = getCachedStream(url);
   if (cached) {
+    if (detectYtKind(url) === null) {
+      return registerGenericStreamUrl(cached.url)
+        .then(() => ({ success: true, url: cached.url }))
+        .catch((e: unknown) => ({
+          success: false,
+          error: e instanceof Error ? e.message : String(e),
+          code: 'network' as const
+        }));
+    }
     return Promise.resolve({ success: true, url: cached.url });
   }
 
@@ -46,13 +59,23 @@ export function getStreamUrl(url: string): Promise<IpcStreamResult> {
 
 async function resolveStreamUrl(url: string): Promise<IpcStreamResult> {
   const t0 = Date.now();
-  const proxyArgs = await readProxyArgs();
+  const generic = detectYtKind(url) === null;
+  try {
+    await resolveNetworkTarget(url);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { success: false, error: msg, code: 'invalid' };
+  }
+  const proxyArgs = await readNetworkArgs(generic ? 'generic' : 'youtube');
   // Primary attempt uses ios_safari/tv_embedded (audio-only 251, ~3 s resolve).
   // When both fail (e.g. age-restricted videos), retry once with the android,web
   // client pair — it degrades to the combined itag 18, but keeps playback alive.
   for (const fallback of [false, true]) {
     try {
-      const stdout = await runYtDlp(buildStreamGetArgs(url, proxyArgs, { fallback }), 30000);
+      const stdout = await runYtDlp(
+        buildStreamGetArgs(url, proxyArgs, { fallback, generic }),
+        30000
+      );
       const parsed = parseStreamGetOutput(stdout);
       logger.info(
         'yt',
@@ -66,6 +89,18 @@ async function resolveStreamUrl(url: string): Promise<IpcStreamResult> {
           error: code === 'hls' ? 'HLS streams are not supported yet' : 'Invalid stream URL',
           code
         };
+      }
+      if (generic) {
+        try {
+          await registerGenericStreamUrl(parsed.url);
+        } catch (e: unknown) {
+          const err = e as { message?: string };
+          return {
+            success: false,
+            error: err.message || 'The extracted stream host is not publicly reachable',
+            code: 'network'
+          };
+        }
       }
       cacheStream(url, parsed.url);
       return { success: true, url: parsed.url };

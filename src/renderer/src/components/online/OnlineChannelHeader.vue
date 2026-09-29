@@ -32,6 +32,7 @@ watch(
 <template>
   <div
     v-if="yt.channel"
+    data-testid="online-channel-header"
     class="relative rounded-box overflow-hidden bg-base-100 border border-base-300"
   >
     <div

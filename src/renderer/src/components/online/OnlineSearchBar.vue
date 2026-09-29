@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { Search, ArrowRight, ListMusic, SlidersHorizontal, Globe } from '@lucide/vue';
 import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@renderer/stores/settings';
-import { detectChannelPrefix, detectPlatform } from '@shared/platform';
+import { detectChannelPrefix, detectPlatform, isHttpUrl } from '@shared/platform';
 import { AUDIO_FORMATS, VIDEO_QUALITIES, VIDEO_CONTAINERS } from '@shared/constants';
 import OnlineButton from './OnlineButton.vue';
 import OnlineIconButton from './OnlineIconButton.vue';
@@ -27,7 +27,7 @@ const settings = useSettingsStore();
 
 // What the current input resolves to: an @/$ channel prefix or a platform
 // link. Drives the left badge inside the field.
-const detection = computed<{ label: string; kind: 'yt' | 'sc' } | null>(() => {
+const detection = computed<{ label: string; kind: 'yt' | 'sc' | 'web' } | null>(() => {
   const value = props.modelValue.trim();
   if (!value) return null;
   const prefix = detectChannelPrefix(value);
@@ -37,7 +37,9 @@ const detection = computed<{ label: string; kind: 'yt' | 'sc' } | null>(() => {
       : { label: `SC · ${t('youtube.kindProfile')} $`, kind: 'sc' };
   }
   const d = detectPlatform(value);
-  if (!d) return null;
+  if (!d) {
+    return isHttpUrl(value) ? { label: `WEB · ${t('youtube.externalLink')}`, kind: 'web' } : null;
+  }
   const typeKey =
     d.kind === 'video'
       ? d.platform === 'soundcloud'
@@ -80,10 +82,16 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <span
           v-if="detection"
           class="absolute left-2.5 top-1/2 -translate-y-1/2 z-10 text-xs font-bold pointer-events-none select-none"
-          :class="detection.kind === 'sc' ? 'text-warning' : 'text-error'"
+          :class="
+            detection.kind === 'sc'
+              ? 'text-warning'
+              : detection.kind === 'web'
+                ? 'text-info'
+                : 'text-error'
+          "
           :title="detection.label"
         >
-          {{ detection.kind === 'sc' ? 'SC' : 'YT' }}
+          {{ detection.kind === 'sc' ? 'SC' : detection.kind === 'web' ? 'WEB' : 'YT' }}
         </span>
         <Globe
           v-else

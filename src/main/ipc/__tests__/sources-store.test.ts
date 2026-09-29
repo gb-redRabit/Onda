@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sanitizeSource, sanitizeEndpoint } from '../sources-store';
+import { sanitizeImportedSource, sanitizeSource, sanitizeEndpoint } from '../sources-store';
 
 const BASE = {
   id: 's1',
@@ -50,6 +50,22 @@ describe('sanitizeSource — download prefs', () => {
     expect(src?.download?.outputDir).toBe('/media/api');
     expect(src?.endpoints[0].mapping.fields.title).toBe('name');
     expect(sanitizeEndpoint({ path: '/x', mapping: { fields: {} } }, 0)).not.toBeNull();
+  });
+});
+
+describe('sanitizeSource — private-network trust', () => {
+  it('keeps only an explicit boolean opt-in', () => {
+    expect(sanitizeSource({ ...BASE, allowPrivateNetwork: true })?.allowPrivateNetwork).toBe(true);
+    expect(sanitizeSource({ ...BASE, allowPrivateNetwork: 'true' })?.allowPrivateNetwork).toBe(
+      false
+    );
+    expect(sanitizeSource(BASE)?.allowPrivateNetwork).toBe(false);
+  });
+
+  it('never imports local-network trust from JSON', () => {
+    expect(
+      sanitizeImportedSource({ ...BASE, allowPrivateNetwork: true })?.allowPrivateNetwork
+    ).toBe(false);
   });
 });
 

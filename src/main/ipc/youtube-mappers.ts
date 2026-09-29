@@ -7,6 +7,7 @@ import type { YouTubeResolvedItem } from '../../renderer/src/types/online';
 // working unchanged.
 
 export interface YtDlpEntry {
+  _type?: string;
   id?: string;
   title?: string;
   description?: string;
@@ -46,7 +47,7 @@ export function formatUploadDate(date: string | undefined): string {
 // yt-dlp returns thumbnail URLs from network data — never feed them to <img>
 // without validation. Allow only https and reject loopback/localhost (SSRF to
 // local services) including IPv6 loopback.
-function isSafeThumbnailUrl(url: string): boolean {
+export function isSafeThumbnailUrl(url: string): boolean {
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -105,6 +106,32 @@ export function mapResolvedEntry(entry: YtDlpEntry): YouTubeResolvedItem {
     channelTitle: entry.channel || entry.uploader || '',
     channelId: entry.channel_id || '',
     isPlayable: entry.is_playable !== false
+  };
+}
+
+/** Maps generic yt-dlp results without inventing a YouTube fallback thumbnail. */
+export function mapExternalResolvedEntry(
+  entry: YtDlpEntry,
+  fallbackUrl: string
+): YouTubeResolvedItem {
+  const thumbnailCandidates = [
+    entry.thumbnail,
+    ...(entry.thumbnails || [])
+      .sort((a, b) => (b.width || 0) - (a.width || 0))
+      .map((thumbnail) => thumbnail.url)
+  ];
+  const thumbnail = thumbnailCandidates.find(
+    (url): url is string => !!url && isSafeThumbnailUrl(url)
+  );
+  return {
+    id: entry.id || entry.webpage_url || entry.url || fallbackUrl,
+    title: entry.title || entry.id || fallbackUrl,
+    duration: formatDuration(entry.duration),
+    thumbnail: thumbnail || '',
+    channelTitle: entry.channel || entry.uploader || '',
+    channelId: entry.channel_id || entry.uploader_id || '',
+    isPlayable: entry.is_playable !== false,
+    url: entry.webpage_url || entry.url || fallbackUrl
   };
 }
 

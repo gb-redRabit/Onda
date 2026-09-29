@@ -1,5 +1,5 @@
 import { runYtDlp, fetchEntryJson } from './youtube-handlers';
-import { readProxyArgs } from './proxy-utils';
+import { readNetworkArgs } from './proxy-utils';
 import { mapResolvedContainer, type YtDlpEntry } from './youtube-utils';
 import { scThumbFromEntry, entryUrl, scVideoFromEntry } from './soundcloud-entries';
 import type { IpcYoutubeVideo } from '../../shared/types/ipc';
@@ -10,7 +10,13 @@ import type { IpcYoutubeVideo } from '../../shared/types/ipc';
 
 export async function fallbackSearch(query: string): Promise<IpcYoutubeVideo[]> {
   const stdout = await runYtDlp(
-    [`scsearch100:${query}`, '--flat-playlist', '--no-warnings', '-J', ...(await readProxyArgs())],
+    [
+      `scsearch100:${query}`,
+      '--flat-playlist',
+      '--no-warnings',
+      '-J',
+      ...(await readNetworkArgs('soundcloud'))
+    ],
     60000
   );
   const parsed = JSON.parse(stdout) as { entries?: YtDlpEntry[] };

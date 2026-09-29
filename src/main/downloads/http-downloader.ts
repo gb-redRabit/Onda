@@ -2,6 +2,11 @@ import fs from 'fs';
 import http from 'http';
 import https from 'https';
 import { logger } from '../../shared/logger';
+import {
+  createPinnedLookup,
+  privateNetworkAllowedForTarget,
+  resolveNetworkTarget
+} from '../ipc/network-target';
 
 const MAX_REDIRECTS = 5;
 const DOWNLOAD_TIMEOUT_MS = 30 * 60 * 1000;
@@ -15,20 +20,28 @@ interface HttpDownloadOptions {
   url: string;
   destPath: string;
   headers?: Record<string, string>;
+  allowPrivateNetwork?: boolean;
   timeoutMs?: number;
   signal?: AbortSignal;
   onProgress?: (p: HttpDownloadProgress) => void;
 }
 
-function doDownload(opts: HttpDownloadOptions, redirectsLeft: number): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (opts.signal?.aborted) {
-      reject(new Error('Aborted'));
-      return;
-    }
+async function doDownload(
+  opts: HttpDownloadOptions,
+  redirectsLeft: number,
+  trustedOrigin?: string
+): Promise<void> {
+  if (opts.signal?.aborted) throw new Error('Aborted');
+  const origin = trustedOrigin ?? new URL(opts.url).origin;
+  const allowPrivateNetwork = privateNetworkAllowedForTarget(
+    opts.url,
+    origin,
+    opts.allowPrivateNetwork === true
+  );
+  const target = await resolveNetworkTarget(opts.url, { allowPrivateNetwork });
 
-    const isHttps = opts.url.startsWith('https:');
-    const transport = isHttps ? https : http;
+  return new Promise((resolve, reject) => {
+    const transport = target.url.protocol === 'https:' ? https : http;
     let received = 0;
     let total: number | null = null;
     const partPath = `${opts.destPath}.part`;
@@ -62,72 +75,80 @@ function doDownload(opts: HttpDownloadOptions, redirectsLeft: number): Promise<v
       requestHeaders['Range'] = `bytes=${startByte}-`;
     }
 
-    const req = transport.get(opts.url, { headers: requestHeaders }, (res) => {
-      const status = res.statusCode ?? 0;
-      if (status >= 300 && status < 400 && res.headers.location) {
-        res.resume();
-        if (redirectsLeft <= 0) {
-          cleanup();
-          reject(new Error('Too many redirects'));
+    const req = transport.get(
+      target.url,
+      { headers: requestHeaders, lookup: createPinnedLookup(target.addresses) },
+      (res) => {
+        const status = res.statusCode ?? 0;
+        if (status >= 300 && status < 400 && res.headers.location) {
+          res.resume();
+          if (redirectsLeft <= 0) {
+            cleanup();
+            reject(new Error('Too many redirects'));
+            return;
+          }
+          const next = new URL(res.headers.location, target.url).toString();
+          const nextHeaders = new URL(next).origin === target.url.origin ? opts.headers : undefined;
+          doDownload({ ...opts, url: next, headers: nextHeaders }, redirectsLeft - 1, origin).then(
+            resolve,
+            reject
+          );
           return;
         }
-        const next = new URL(res.headers.location, opts.url).toString();
-        doDownload({ ...opts, url: next }, redirectsLeft - 1).then(resolve, reject);
-        return;
-      }
-      // 206 Partial Content — server supports resume
-      // 200 OK — server doesn't support resume, restart from scratch
-      const isResuming = status === 206;
-      if (!isResuming && startByte > 0) {
-        // Server doesn't support Range — reset offset
-        startByte = 0;
-        received = 0;
-        cleanup();
-      }
-      if (status < 200 || (status >= 300 && status !== 206)) {
-        res.resume();
-        cleanup();
-        reject(new Error(`HTTP ${status}`));
-        return;
-      }
-      const contentLength = res.headers['content-length'];
-      if (contentLength) {
-        const len = parseInt(contentLength, 10) || 0;
-        total = isResuming ? startByte + len : len;
-      }
-      const out = fs.createWriteStream(partPath, { flags: isResuming ? 'a' : 'w' });
-      res.on('data', (c: Buffer) => {
-        received += c.length;
-        opts.onProgress?.({ received, total });
-      });
-      res.pipe(out);
-      out.on('finish', () => {
-        out.close(() => {
-          try {
-            fs.renameSync(partPath, opts.destPath);
-          } catch {
-            try {
-              fs.copyFileSync(partPath, opts.destPath);
-              fs.unlinkSync(partPath);
-            } catch (copyErr) {
-              cleanup();
-              reject(copyErr as Error);
-              return;
-            }
-          }
+        // 206 Partial Content — server supports resume
+        // 200 OK — server doesn't support resume, restart from scratch
+        const isResuming = status === 206;
+        if (!isResuming && startByte > 0) {
+          // Server doesn't support Range — reset offset
+          startByte = 0;
+          received = 0;
+          cleanup();
+        }
+        if (status < 200 || (status >= 300 && status !== 206)) {
+          res.resume();
+          cleanup();
+          reject(new Error(`HTTP ${status}`));
+          return;
+        }
+        const contentLength = res.headers['content-length'];
+        if (contentLength) {
+          const len = parseInt(contentLength, 10) || 0;
+          total = isResuming ? startByte + len : len;
+        }
+        const out = fs.createWriteStream(partPath, { flags: isResuming ? 'a' : 'w' });
+        res.on('data', (c: Buffer) => {
+          received += c.length;
           opts.onProgress?.({ received, total });
-          resolve();
         });
-      });
-      out.on('error', (err) => {
-        cleanup();
-        reject(err);
-      });
-      res.on('error', (err) => {
-        cleanup();
-        reject(err);
-      });
-    });
+        res.pipe(out);
+        out.on('finish', () => {
+          out.close(() => {
+            try {
+              fs.renameSync(partPath, opts.destPath);
+            } catch {
+              try {
+                fs.copyFileSync(partPath, opts.destPath);
+                fs.unlinkSync(partPath);
+              } catch (copyErr) {
+                cleanup();
+                reject(copyErr as Error);
+                return;
+              }
+            }
+            opts.onProgress?.({ received, total });
+            resolve();
+          });
+        });
+        out.on('error', (err) => {
+          cleanup();
+          reject(err);
+        });
+        res.on('error', (err) => {
+          cleanup();
+          reject(err);
+        });
+      }
+    );
 
     const onAbort = (): void => {
       cleanup();

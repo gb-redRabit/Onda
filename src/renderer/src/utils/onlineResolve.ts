@@ -1,4 +1,4 @@
-import { detectPlatform } from '@shared/platform';
+import { detectPlatform, isHttpUrl } from '@shared/platform';
 import type { YouTubeResolveResult } from '@renderer/types/online';
 
 export interface OnlineResolveResponse {
@@ -12,7 +12,10 @@ export interface OnlineResolveResponse {
 // itself, not from the active UI tab).
 export async function resolveOnlineUrl(url: string): Promise<OnlineResolveResponse> {
   const detected = detectPlatform(url);
-  if (!detected) return { success: false, error: 'Unsupported or invalid link' };
+  if (!detected) {
+    if (!isHttpUrl(url)) return { success: false, error: 'Unsupported or invalid link' };
+    return (await window.api.invoke('yt:resolve', url)) as OnlineResolveResponse;
+  }
   if (detected.platform === 'soundcloud') {
     return (await window.api.invoke('sc:resolve', url)) as OnlineResolveResponse;
   }

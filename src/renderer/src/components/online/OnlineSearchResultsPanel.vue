@@ -15,6 +15,7 @@ const emit = defineEmits<{
   quickQueue: [YouTubeVideo];
   options: [YouTubeVideo];
   openWindow: [string];
+  openChannel: [string];
 }>();
 
 const yt = useOnlineStore();
@@ -77,6 +78,7 @@ function itemDownloadState(videoId: string): 'queuing' | 'downloading' | 'done' 
         @play="yt.playStream(v)"
         @options="emit('options', v)"
         @open-window="emit('openWindow', watchUrl(v))"
+        @open-channel="emit('openChannel', $event)"
       />
     </div>
 

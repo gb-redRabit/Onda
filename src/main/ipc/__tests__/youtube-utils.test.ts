@@ -11,6 +11,7 @@ import {
   normalizeYtUrl,
   extractYtVideoId,
   parseBatchInput,
+  mapExternalResolvedEntry,
   mapResolvedEntry,
   mapResolvedContainer,
   mapVideoEntry,
@@ -650,6 +651,28 @@ describe('buildStreamGetArgs', () => {
   it('appends proxy args at the end', () => {
     const args = buildStreamGetArgs('https://youtu.be/abc', ['--proxy', 'socks5://127.0.0.1:1080']);
     expect(args.slice(-2)).toEqual(['--proxy', 'socks5://127.0.0.1:1080']);
+  });
+
+  it('does not force YouTube extractor clients or IPv4 for generic extractors', () => {
+    const args = buildStreamGetArgs('https://vimeo.com/123', [], { generic: true });
+    expect(args).toContain('https://vimeo.com/123');
+    expect(args).not.toContain('-4');
+    expect(args.some((arg) => arg.startsWith('youtube:player_client='))).toBe(false);
+  });
+});
+
+describe('mapExternalResolvedEntry', () => {
+  it('keeps the generic page URL and does not invent a YouTube thumbnail fallback', () => {
+    const mapped = mapExternalResolvedEntry(
+      { id: 'abc', title: 'Generic media', webpage_url: 'https://vimeo.com/abc' },
+      'https://vimeo.com/abc'
+    );
+    expect(mapped).toMatchObject({
+      id: 'abc',
+      title: 'Generic media',
+      url: 'https://vimeo.com/abc',
+      thumbnail: ''
+    });
   });
 });
 

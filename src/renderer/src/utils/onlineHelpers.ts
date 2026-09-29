@@ -21,6 +21,27 @@ export function isSoundcloudItem(item: { id: string; url?: string }): boolean {
   return detectPlatform(streamTargetFor(item))?.platform === 'soundcloud';
 }
 
+/** Canonical in-app target for a known YouTube channel or SoundCloud profile. */
+export function channelPageUrl(item: { channelId?: string; url?: string }): string | null {
+  const channelId = item.channelId?.trim();
+  const platform = item.url ? detectPlatform(item.url)?.platform : null;
+  if (platform === 'soundcloud') {
+    const profile = channelId?.replace(/^https?:\/\/(?:www\.)?soundcloud\.com\//i, '') || '';
+    const slug = profile.split('/').filter(Boolean)[0];
+    return slug ? `https://soundcloud.com/${encodeURIComponent(slug)}` : null;
+  }
+  if (platform === 'youtube' && channelId?.startsWith('@')) {
+    return `https://www.youtube.com/${channelId}`;
+  }
+  if (
+    channelId &&
+    (platform === 'youtube' || (!item.url && /^UC[A-Za-z0-9_-]{20,}$/.test(channelId)))
+  ) {
+    return channelId ? `https://www.youtube.com/channel/${encodeURIComponent(channelId)}` : null;
+  }
+  return null;
+}
+
 // IPC channel resolving the direct stream URL for a given target.
 export function streamChannelFor(target: string): 'yt:stream:get' | 'sc:stream:get' {
   if (/^\d+$/.test(target)) return 'sc:stream:get';

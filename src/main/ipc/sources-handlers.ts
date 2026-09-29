@@ -6,6 +6,7 @@ import {
   saveSource,
   deleteSource,
   saveAllSources,
+  sanitizeImportedSource,
   sanitizeSource,
   sanitizeEndpoint
 } from './sources-store';
@@ -17,6 +18,7 @@ import {
   resolveSourceHeaders
 } from './generic-fetch';
 import { scrapePlayerUrl } from './player-scraper';
+import { resolveNetworkTarget } from './network-target';
 import { addDownloadJobs } from '../downloads/download-manager';
 import type { IpcDownloadJobInput } from '../../shared/types/ipc';
 import type { MediaSource, SourceEndpoint, SourceItem } from '../../renderer/src/types/sources';
@@ -96,7 +98,7 @@ export function registerSourcesHandlers(): void {
         const seen = new Set(existing.map((s) => s.id));
         let count = 0;
         for (const v of arr) {
-          const clean = sanitizeSource(v);
+          const clean = sanitizeImportedSource(v);
           if (!clean) continue;
           clean.id = seen.has(clean.id) ? `import-${Date.now().toString(36)}-${count}` : clean.id;
           seen.add(clean.id);
@@ -227,34 +229,55 @@ export function registerSourcesHandlers(): void {
         : [];
       if (!list.length) return [];
       try {
-        // Fallback dla serwisów nieznanych yt-dlp (embed bez extractora):
-        // wyciągamy bezpośredni m3u8/mp4 ze strony playera. HLS dalej idzie
-        // przez yt-dlp z nagłówkiem Referer; bezpośredni plik — trybem http.
+        // Validate each source URL before handing it to a downloader. Private
+        // targets require the explicit per-source trust flag; one bad item does
+        // not prevent other valid items in a bulk queue from being added.
+        const safeList: IpcDownloadJobInput[] = [];
+        const trustedSourceIds = new Set(
+          (await loadSources(getSourcesFile()))
+            .filter((source) => source.allowPrivateNetwork)
+            .map((source) => source.id)
+        );
         for (const input of list) {
-          if (input.source?.mode !== 'ytdlp' || !/^https:\/\//i.test(input.url)) continue;
-          const authHeaders = await resolveSourceHeaders(
-            input.source.apiKeyId,
-            input.source.headerName
-          );
-          const scraped = await scrapePlayerUrl(input.url, authHeaders);
-          if (!scraped) continue;
-          input.url = scraped.url;
-          if (scraped.kind === 'hls') {
-            input.source = {
-              ...input.source,
-              mode: 'ytdlp',
-              headers: {
-                ...(input.source.headers || {}),
-                Referer: scraped.referer,
-                'User-Agent':
-                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+          try {
+            const allowPrivateNetwork =
+              !!input.source?.sourceId && trustedSourceIds.has(input.source.sourceId);
+            if (input.source) {
+              input.source = { ...input.source, allowPrivateNetwork };
+            }
+            await resolveNetworkTarget(input.url, { allowPrivateNetwork });
+
+            // Fallback for player embeds that yt-dlp cannot resolve itself.
+            if (input.source?.mode === 'ytdlp' && /^https:\/\//i.test(input.url)) {
+              const authHeaders = await resolveSourceHeaders(
+                input.source.apiKeyId,
+                input.source.headerName
+              );
+              const scraped = await scrapePlayerUrl(input.url, authHeaders, allowPrivateNetwork);
+              if (scraped) {
+                input.url = scraped.url;
+                if (scraped.kind === 'hls') {
+                  input.source = {
+                    ...input.source,
+                    mode: 'ytdlp',
+                    headers: {
+                      ...(input.source.headers || {}),
+                      Referer: scraped.referer,
+                      'User-Agent':
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+                    }
+                  };
+                } else {
+                  input.source = { ...input.source, mode: 'http' };
+                }
               }
-            };
-          } else {
-            input.source = { ...input.source, mode: 'http' };
+            }
+            safeList.push(input);
+          } catch (e) {
+            logger.warn('sources', `blocked download target for ${input.title}`, e);
           }
         }
-        return await addDownloadJobs(list);
+        return await addDownloadJobs(safeList);
       } catch (e) {
         logger.warn('sources', 'sources:enqueue failed', e);
         return [];

@@ -6,6 +6,7 @@ import { detectPlatform } from '@shared/platform';
 import { formatNumber } from '@renderer/utils/formatters';
 import { useOnlineStore } from '@renderer/stores/online';
 import { observeIntersection } from '@renderer/utils/sharedIntersection';
+import { channelPageUrl } from '@renderer/utils/onlineHelpers';
 import YtEmbedPlayer from './YtEmbedPlayer.vue';
 import OnlineIconButton from './OnlineIconButton.vue';
 import OnlineMediaThumb from './OnlineMediaThumb.vue';
@@ -50,6 +51,7 @@ const emit = defineEmits<{
   options: [video: Media];
   toggleSelect: [id: string];
   openWindow: [url: string];
+  openChannel: [url: string];
 }>();
 
 function defaultWatchUrl(id: string): string {
@@ -61,9 +63,19 @@ function defaultWatchUrl(id: string): string {
 const isSc = computed(
   () => detectPlatform((props.video as YouTubeVideo).url || '')?.platform === 'soundcloud'
 );
+const isGeneric = computed(() => {
+  const url = (props.video as YouTubeVideo).url;
+  return !!url && detectPlatform(url) === null;
+});
+const channelTarget = computed(() => channelPageUrl(props.video));
 
 function onOpenWindow() {
   emit('openWindow', defaultWatchUrl(props.video.id));
+}
+
+function onOpenChannel(): void {
+  const target = channelTarget.value;
+  if (target) emit('openChannel', target);
 }
 
 function onQueue(e: MouseEvent) {
@@ -84,7 +96,7 @@ function onToggleSelect(e: MouseEvent) {
 // Primary list action: stream playback for SC (no embed), embed-expansion for YT.
 function onListPlay(e: MouseEvent) {
   e.stopPropagation();
-  if (isSc.value) {
+  if (isSc.value || isGeneric.value) {
     logger.info('yt', `playStream click video=${props.video.id}`);
     emit('play', props.video);
     return;
@@ -146,7 +158,7 @@ onBeforeUnmount(() => {
     @mouseenter="onMouseEnter"
   >
     <YtEmbedPlayer
-      v-if="expanded && !isSc"
+      v-if="expanded && !isSc && !isGeneric"
       :video-id="video.id"
       :title="video.title"
       :channel-title="video.channelTitle"
@@ -191,9 +203,9 @@ onBeforeUnmount(() => {
         <h3 class="text-sm font-semibold text-base-content line-clamp-2">{{ video.title }}</h3>
         <div class="text-xs text-base-content/70 mt-0.5">
           <button
-            v-if="showChannel && (video as YouTubeVideo).channelId"
+            v-if="showChannel && channelTarget"
             class="hover:text-primary transition-colors"
-            @click.stop="$emit('openWindow', defaultWatchUrl(video.id))"
+            @click.stop="onOpenChannel"
           >
             {{ video.channelTitle }}
           </button>

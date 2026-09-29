@@ -2,6 +2,8 @@ import { ipcMain } from 'electron';
 import { classifyYtDlpError } from '../downloads/error-classifier';
 import { logger } from '../../shared/logger';
 import type { IpcDownloadErrorCode } from '../../shared/types/ipc';
+import { detectPlatform, isHttpUrl } from '../../shared/platform';
+import { resolveNetworkTarget } from './network-target';
 import {
   pickChannelThumbnail,
   resolveChannelAvatar,
@@ -10,9 +12,10 @@ import {
   mapResolvedEntry,
   mapResolvedContainer,
   mapVideoEntry,
+  mapExternalResolvedEntry,
   type YtDlpEntry
 } from './youtube-utils';
-import { readProxyArgs } from './proxy-utils';
+import { readNetworkArgs } from './proxy-utils';
 
 import { runYtDlp, fetchEntryJson, fetchRangeJson } from './youtube-fetch';
 import { getStreamUrl } from './youtube-stream';
@@ -48,6 +51,20 @@ export async function fetchChannelItems(opts: {
   const base = normalizeYtUrl(opts.url, 'channel');
   const tab = opts.tab === 'shorts' ? 'shorts' : 'videos';
   const target = `${base}/${tab}`;
+  if (e2eFixturesEnabled()) {
+    return {
+      success: true,
+      channel: {
+        id: 'UCabcdefghijABCDEFGHIJ1234',
+        url: base,
+        title: 'E2E Channel',
+        thumbnail: '',
+        videoCount: 0
+      },
+      items: [],
+      hasMore: false
+    };
+  }
   const start = Math.max(1, Math.floor(Number(opts.start) || 1));
   const end = Math.max(start, Math.min(start + 199, Math.floor(Number(opts.end) || start + 29)));
   try {
@@ -61,7 +78,7 @@ export async function fetchChannelItems(opts: {
         String(end),
         '--no-warnings',
         '-J',
-        ...(await readProxyArgs())
+        ...(await readNetworkArgs('youtube'))
       ],
       60000
     );
@@ -130,7 +147,7 @@ export async function fetchChannelAll(opts: { url: string; tab?: 'videos' | 'sho
   const target = `${base}/${tab}`;
   try {
     const stdout = await runYtDlp(
-      [target, '--flat-playlist', '--no-warnings', '-J', ...(await readProxyArgs())],
+      [target, '--flat-playlist', '--no-warnings', '-J', ...(await readNetworkArgs('youtube'))],
       120000
     );
     const parsed = JSON.parse(stdout) as YtDlpEntry;
@@ -191,7 +208,7 @@ export function registerYoutubeHandlers(): void {
           '--flat-playlist',
           '--no-warnings',
           '-J',
-          ...(await readProxyArgs())
+          ...(await readNetworkArgs('youtube'))
         ],
         60000
       );
@@ -233,12 +250,71 @@ export function registerYoutubeHandlers(): void {
 
   ipcMain.handle('yt:resolve', async (_event, url: string) => {
     if (e2eFixturesEnabled()) {
+      if (!detectPlatform(url) && isHttpUrl(url)) {
+        return {
+          success: true,
+          result: {
+            kind: 'video',
+            sourceUrl: url,
+            title: 'External E2E Media',
+            meta: {},
+            items: [
+              {
+                id: 'external-e2e-media',
+                title: 'External E2E Media',
+                thumbnail: '',
+                channelTitle: '',
+                channelId: '',
+                isPlayable: true,
+                url
+              }
+            ]
+          }
+        };
+      }
       // Keep the E2E prefetch path away from yt-dlp entirely.
       return { success: false, error: 'e2e fixtures: resolve disabled' };
     }
     const kind = detectYtKind(url);
     if (!kind) {
-      return { success: false, error: 'Unsupported or invalid YouTube link' };
+      if (!isHttpUrl(url)) {
+        return { success: false, error: 'Paste a valid public http(s) link' };
+      }
+      try {
+        await resolveNetworkTarget(url);
+        const parsed = await fetchEntryJson(url, 'page30', 'generic');
+        const isCollection = Array.isArray(parsed.entries) || parsed._type === 'playlist';
+        const entries = isCollection ? (parsed.entries ?? []) : [parsed];
+        const items = entries
+          .filter((entry) => entry.id || entry.url || entry.webpage_url || entry.title)
+          .map((entry) => mapExternalResolvedEntry(entry, url));
+        if (!items.length) {
+          return { success: false, error: 'This site did not return playable media' };
+        }
+        const title =
+          parsed.title || parsed.playlist_title || parsed.channel || parsed.uploader || url;
+        const totalItems = parsed.playlist_count ?? items.length;
+        return {
+          success: true,
+          result: {
+            kind: isCollection ? 'playlist' : 'video',
+            sourceUrl: parsed.webpage_url || url,
+            title,
+            meta: {
+              channelId: parsed.channel_id || parsed.uploader_id || '',
+              channelTitle: parsed.channel || parsed.uploader || '',
+              totalItems,
+              hasMore: isCollection && items.length >= 30 && items.length < totalItems
+            },
+            items
+          }
+        };
+      } catch (e: unknown) {
+        const err = e as { message?: string };
+        const msg = err.message || String(e);
+        logger.warn('yt', 'external link resolve failed', msg);
+        return { success: false, error: msg, code: classifyYtDlpError(msg) };
+      }
     }
     const target = normalizeYtUrl(url, kind);
     // Channels open directly in the dedicated channel view — no need to fetch
@@ -310,7 +386,8 @@ export function registerYoutubeHandlers(): void {
   ipcMain.handle(
     'yt:resolveMore',
     async (_event, opts: { url: string; start: number; end: number }) => {
-      if (!opts || typeof opts.url !== 'string' || !detectYtKind(opts.url)) {
+      const kind = typeof opts?.url === 'string' ? detectYtKind(opts.url) : null;
+      if (!opts || typeof opts.url !== 'string' || (!kind && !isHttpUrl(opts.url))) {
         return {
           success: false,
           error: 'Invalid YouTube link',
@@ -320,12 +397,14 @@ export function registerYoutubeHandlers(): void {
         };
       }
       try {
+        const target = kind ? normalizeYtUrl(opts.url, kind) : opts.url;
+        await resolveNetworkTarget(target);
         const start = Math.max(1, Math.floor(Number(opts.start) || 1));
         const end = Math.max(
           start,
           Math.min(start + 199, Math.floor(Number(opts.end) || start + 29))
         );
-        const parsed = await fetchRangeJson(opts.url, start, end);
+        const parsed = await fetchRangeJson(target, start, end, kind ? 'youtube' : 'generic');
         const items = mapResolvedContainer(parsed);
         const playlistCount = parsed.playlist_count;
         return {

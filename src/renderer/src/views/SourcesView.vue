@@ -20,6 +20,7 @@ import SourcesFilterBar from '@renderer/components/sources/SourcesFilterBar.vue'
 import SourcesSidebar from '@renderer/components/sources/SourcesSidebar.vue';
 import TransientToast from '@renderer/components/TransientToast.vue';
 import { useTransientToast } from '@renderer/composables/useTransientToast';
+import EmptyState from '@renderer/components/ui/EmptyState.vue';
 
 // Modals are lazy — only mounted on demand (plan 3.5).
 const SourceGuideModal = defineAsyncComponent(
@@ -247,11 +248,14 @@ const isAuthError = computed(() =>
 
     <div class="flex-1 min-w-0 h-full flex flex-col">
       <div v-if="activeSource" class="flex flex-col h-full">
-        <div class="flex items-center gap-2 px-4 py-2 border-b border-base-300 overflow-x-auto">
+        <div
+          class="ui-page-toolbar flex items-center gap-2 px-4 py-2 border-b border-base-300 overflow-x-auto"
+        >
           <button
             v-if="sources.navStack.length"
             class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors"
             :title="$t('sources.back')"
+            :aria-label="$t('sources.back')"
             :disabled="sources.loading"
             @click="sources.goBack().then(scrollToTop)"
           >
@@ -291,6 +295,7 @@ const isAuthError = computed(() =>
               class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-40"
               :disabled="sources.currentPage <= sources.startPage"
               :title="$t('sources.prevPage')"
+              :aria-label="$t('sources.prevPage')"
               @click="pagePrev"
             >
               <ChevronLeft :size="14" />
@@ -307,6 +312,7 @@ const isAuthError = computed(() =>
               class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-40"
               :disabled="sources.loading || !sources.hasMore"
               :title="$t('sources.nextPage')"
+              :aria-label="$t('sources.nextPage')"
               @click="pageNext"
             >
               <ChevronRight :size="14" />
@@ -315,6 +321,7 @@ const isAuthError = computed(() =>
           <button
             class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors"
             :title="$t('sources.testSourceBtn')"
+            :aria-label="$t('sources.testSourceBtn')"
             :disabled="sources.loading"
             @click="onTestSource"
           >
@@ -324,6 +331,7 @@ const isAuthError = computed(() =>
             v-if="downloadable && !isPage && sources.items.length"
             class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
             :title="$t('sources.downloadAll')"
+            :aria-label="$t('sources.downloadAll')"
             :disabled="sources.loading || downloadingAll"
             @click="onDownloadAll(displayItems)"
           >
@@ -333,6 +341,7 @@ const isAuthError = computed(() =>
           <button
             class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
             :title="$t('sources.refresh')"
+            :aria-label="$t('sources.refresh')"
             :disabled="sources.loading"
             @click="refresh"
           >
@@ -380,19 +389,15 @@ const isAuthError = computed(() =>
         </div>
       </div>
 
-      <div
-        v-else
-        class="flex-1 flex flex-col items-center justify-center gap-3 text-base-content/50"
-      >
-        <Globe :size="40" class="opacity-50" />
-        <p class="text-sm">{{ $t('sources.emptyList') }}</p>
+      <EmptyState v-else :title="$t('sources.emptyList')" :icon="Globe" class="m-auto">
         <button
-          class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors"
+          class="flex items-center gap-1.5 px-3 h-8 rounded-field text-xs font-medium bg-primary text-primary-content fx-depth"
+          data-testid="sources-empty-add"
           @click="openAdd"
         >
           {{ $t('sources.addFirstSource') }}
         </button>
-      </div>
+      </EmptyState>
     </div>
 
     <SourceEditorDialog

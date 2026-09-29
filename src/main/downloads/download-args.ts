@@ -6,7 +6,7 @@ import { mapFilenameTemplate, buildFormatSelector, resolveOutputDir } from './do
 import { buildThumbnailArgs, buildSectionArgs } from './cover-spec';
 import { buildSubtitleArgs } from './subtitle-args';
 import { buildSponsorBlockArgs } from './sponsorblock';
-import { readProxyArgs, readSpeedLimitArgs } from '../ipc/proxy-utils';
+import { readNetworkArgs, readSpeedLimitArgs } from '../ipc/proxy-utils';
 import { addAllowedRoot } from '../media-server';
 
 // Base yt-dlp argument list for a download job, extracted from
@@ -113,7 +113,10 @@ export async function buildBaseArgs(job: Job): Promise<string[]> {
       })
     );
   }
-  base.push(...(await readProxyArgs()));
+  // Per-platform proxy/User-Agent follow the job's source (ytdlp = YouTube).
+  base.push(
+    ...(await readNetworkArgs(job.source?.mode === 'soundcloud' ? 'soundcloud' : 'youtube'))
+  );
   base.push(...(await readSpeedLimitArgs()));
   base.push('--', job.url);
   return base;

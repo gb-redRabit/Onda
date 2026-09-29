@@ -47,6 +47,7 @@ async function runHttpAttempt(
       url: job.url,
       destPath,
       headers,
+      allowPrivateNetwork: job.source?.allowPrivateNetwork,
       signal,
       onProgress: (p) => {
         if (job.status !== 'downloading') return;

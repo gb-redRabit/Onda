@@ -2,7 +2,7 @@ import { runCommand } from '../utils/exec';
 import { resolveBin } from '../binaries';
 import { getYtAuthConfig, cleanupYtAuthTemp } from '../youtube-auth';
 import { buildYtArgs, type YtDlpEntry } from './youtube-utils';
-import { readProxyArgs } from './proxy-utils';
+import { readNetworkArgs } from './proxy-utils';
 
 // Runs yt-dlp with authentication applied and cleans up any temporary cookie
 // file afterwards. Centralized so every caller gets auth + cleanup consistently.
@@ -19,8 +19,12 @@ export async function runYtDlp(args: string[], timeout: number): Promise<string>
 // Spawns yt-dlp for one target and parses its `-J` JSON output. Shared by the
 // YouTube handlers and the SoundCloud yt-dlp fallback (the engine is yt-dlp,
 // so the spawn/mapping layer is reused; only the platform logic differs).
-export async function fetchEntryJson(target: string, mode: 'full' | 'page30'): Promise<YtDlpEntry> {
-  const proxyArgs = await readProxyArgs();
+export async function fetchEntryJson(
+  target: string,
+  mode: 'full' | 'page30',
+  scope: 'youtube' | 'generic' = 'youtube'
+): Promise<YtDlpEntry> {
+  const proxyArgs = await readNetworkArgs(scope);
   const args =
     mode === 'full'
       ? [target, '--no-warnings', '-J', ...proxyArgs]
@@ -41,9 +45,10 @@ export async function fetchEntryJson(target: string, mode: 'full' | 'page30'): P
 export async function fetchRangeJson(
   target: string,
   start: number,
-  end: number
+  end: number,
+  scope: 'youtube' | 'generic' = 'youtube'
 ): Promise<YtDlpEntry> {
-  const proxyArgs = await readProxyArgs();
+  const proxyArgs = await readNetworkArgs(scope);
   return JSON.parse(
     await runYtDlp(
       [

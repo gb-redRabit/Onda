@@ -22,12 +22,16 @@ const tabs = computed(() => [
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center justify-between gap-3 border border-b border-base-300">
-    <div class="flex gap-1 -mb-px">
+  <div
+    class="ui-page-toolbar flex flex-wrap items-center justify-between gap-3 border border-b border-base-300"
+  >
+    <div class="flex gap-1 -mb-px" role="tablist" :aria-label="t('nav.online')">
       <button
         v-for="tab in tabs"
         :key="tab.key"
         type="button"
+        role="tab"
+        :aria-selected="modelValue === tab.key"
         class="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors border-b-(--border)"
         :class="
           modelValue === tab.key

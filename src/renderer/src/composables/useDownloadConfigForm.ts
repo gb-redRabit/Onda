@@ -9,7 +9,7 @@ import type { IpcDownloadConfig } from '@shared/types/ipc';
 export interface DownloadConfigFormOptions {
   getChannelTitle: () => string | undefined;
   getPlaylistTitle: () => string | undefined;
-  getPlatform: () => 'youtube' | 'soundcloud' | undefined;
+  getPlatform: () => 'youtube' | 'soundcloud' | 'generic' | undefined;
 }
 
 // Download-config dialog form state, extracted from
@@ -17,6 +17,7 @@ export interface DownloadConfigFormOptions {
 export function useDownloadConfigForm(options: DownloadConfigFormOptions) {
   const settings = useSettingsStore();
   const isSc = computed(() => options.getPlatform() === 'soundcloud');
+  const isGeneric = computed(() => options.getPlatform() === 'generic');
   const { profiles, save, remove, ensureLoaded } = useDownloadProfiles();
 
   const systemDownloads = ref('');
@@ -149,6 +150,7 @@ export function useDownloadConfigForm(options: DownloadConfigFormOptions) {
 
   return {
     isSc,
+    isGeneric,
     profiles,
     ensureLoaded,
     save,

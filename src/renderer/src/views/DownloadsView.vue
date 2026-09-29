@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, type ComponentPublicInstance } from 'vue';
+import { useVirtualizer } from '@tanstack/vue-virtual';
 import { useRouter } from 'vue-router';
 import { useOnlineStore } from '@renderer/stores/online';
 import { usePlayerStore } from '@renderer/stores/player';
@@ -13,6 +14,7 @@ import DownloadMetaDialog from '@renderer/components/downloads/DownloadMetaDialo
 import DownloadFiltersBar from '@renderer/components/downloads/DownloadFiltersBar.vue';
 import DownloadToolbar from '@renderer/components/downloads/DownloadToolbar.vue';
 import DownloadRow from '@renderer/components/downloads/DownloadRow.vue';
+import EmptyState from '@renderer/components/ui/EmptyState.vue';
 import type { DownloadTask } from '@renderer/types/online';
 import type { MediaFile } from '@renderer/types/media';
 import { Download } from '@lucide/vue';
@@ -20,6 +22,7 @@ import { Download } from '@lucide/vue';
 const yt = useOnlineStore();
 const router = useRouter();
 const player = usePlayerStore();
+const downloadListRef = ref<HTMLElement | null>(null);
 
 const filter = ref<'all' | 'active' | 'completed' | 'failed'>('all');
 const channelFilter = ref('');
@@ -106,6 +109,20 @@ const visible = computed(() =>
 );
 
 const filters = computed(() => buildDownloadFilters(yt.downloads, grouped.value));
+
+const downloadVirtualizer = useVirtualizer({
+  get count() {
+    return visible.value.length;
+  },
+  getScrollElement: () => downloadListRef.value,
+  estimateSize: () => 112,
+  overscan: 8,
+  measureElement: (element) => element.getBoundingClientRect().height
+});
+
+function measureDownloadRow(node: Element | ComponentPublicInstance | null): void {
+  if (node instanceof HTMLElement) downloadVirtualizer.value.measureElement(node);
+}
 </script>
 
 <template>
@@ -123,22 +140,35 @@ const filters = computed(() => buildDownloadFilters(yt.downloads, grouped.value)
       :channels="channels"
     />
 
-    <div class="flex-1 overflow-auto p-4">
-      <div v-if="visible.length" class="space-y-2">
-        <DownloadRow
-          v-for="t in visible"
-          :key="t.id"
-          :task="t"
-          @play="playDownload(t)"
-          @edit-meta="openMetaEditor(t)"
-          @open-library="openLibrary(t)"
-        />
+    <div ref="downloadListRef" class="flex-1 min-h-0 overflow-auto p-4">
+      <div
+        v-if="visible.length"
+        class="relative"
+        :style="{ height: downloadVirtualizer.getTotalSize() + 'px' }"
+      >
+        <div
+          v-for="row in downloadVirtualizer.getVirtualItems()"
+          :key="visible[row.index].id"
+          :ref="measureDownloadRow"
+          :data-index="row.index"
+          class="absolute top-0 left-0 w-full pb-2"
+          :style="{ transform: `translateY(${row.start}px)` }"
+        >
+          <DownloadRow
+            :task="visible[row.index]"
+            @play="playDownload(visible[row.index])"
+            @edit-meta="openMetaEditor(visible[row.index])"
+            @open-library="openLibrary(visible[row.index])"
+          />
+        </div>
       </div>
 
-      <div v-else class="flex flex-col items-center justify-center py-16 text-base-content/50">
-        <Download :size="48" class="mb-3 opacity-30" />
-        <p class="text-sm">{{ $t('downloads.empty') }}</p>
-      </div>
+      <EmptyState
+        v-else
+        :title="$t('downloads.empty')"
+        :icon="Download"
+        data-testid="downloads-empty"
+      />
     </div>
 
     <DownloadMetaDialog

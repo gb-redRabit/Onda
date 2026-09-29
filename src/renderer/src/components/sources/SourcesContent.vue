@@ -1,12 +1,24 @@
 <script setup lang="ts">
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+  type ComponentPublicInstance
+} from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useVirtualizer } from '@tanstack/vue-virtual';
 import { AlertCircle, Globe } from '@lucide/vue';
 import SourceCard from './SourceCard.vue';
 import SourcePageView from './SourcePageView.vue';
 import Loader from '@renderer/components/layout/Loader.vue';
 import type { SourceItem } from '@renderer/types/sources';
+import { useVirtualGrid } from '@renderer/composables/useVirtualGrid';
+import EmptyState from '@renderer/components/ui/EmptyState.vue';
 
-defineProps<{
+const props = defineProps<{
   error: string;
   isAuthError: boolean;
   isPage: boolean;
@@ -33,6 +45,49 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const sourceGridRef = ref<HTMLElement | null>(null);
+const sourceGrid = useVirtualGrid(sourceGridRef, 220, 5);
+const sourceRows = useVirtualizer({
+  get count() {
+    return Math.ceil(props.displayItems.length / sourceGrid.cols.value);
+  },
+  getScrollElement: () => sourceGridRef.value,
+  estimateSize: () => 260,
+  overscan: 3
+});
+const visibleSourceRows = computed(() => {
+  const columns = sourceGrid.cols.value;
+  return sourceRows.value.getVirtualItems().map((row) => ({
+    index: row.index,
+    top: row.start,
+    items: props.displayItems.slice(row.index * columns, (row.index + 1) * columns)
+  }));
+});
+
+onMounted(() => sourceGrid.observe());
+watch(
+  () => props.displayItems.length,
+  async (count) => {
+    if (count && !props.isPage) {
+      await nextTick();
+      sourceGrid.observe();
+    }
+  }
+);
+watch(
+  () => props.isPage,
+  async (isPage) => {
+    if (!isPage) {
+      await nextTick();
+      sourceGrid.observe();
+    } else sourceGrid.destroy();
+  }
+);
+onBeforeUnmount(() => sourceGrid.destroy());
+
+function measureSourceRow(node: Element | ComponentPublicInstance | null): void {
+  if (node instanceof HTMLElement) sourceRows.value.measureElement(node);
+}
 </script>
 
 <template>
@@ -59,19 +114,30 @@ const { t } = useI18n();
     @download-all="emit('downloadAll', $event)"
   />
   <div v-else class="p-4">
-    <div
-      v-if="items.length"
-      class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4"
-    >
-      <SourceCard
-        v-for="(item, i) in displayItems"
-        :key="item.id || `${item.id}-${i}`"
-        :item="item"
-        :downloading="downloadingItem === item"
-        :downloadable="downloadable"
-        @preview="emit('preview', $event)"
-        @download="emit('download', $event)"
-      />
+    <div v-if="displayItems.length" ref="sourceGridRef" class="max-h-[75vh] overflow-auto">
+      <div class="relative" :style="{ height: sourceRows.getTotalSize() + 'px' }">
+        <div
+          v-for="row in visibleSourceRows"
+          :key="row.index"
+          :ref="measureSourceRow"
+          :data-index="row.index"
+          class="absolute top-0 left-0 grid w-full gap-4 pb-4"
+          :style="{
+            transform: `translateY(${row.top}px)`,
+            gridTemplateColumns: `repeat(${sourceGrid.cols.value}, minmax(0, 1fr))`
+          }"
+        >
+          <SourceCard
+            v-for="(item, i) in row.items"
+            :key="item.id || `${row.index}-${i}`"
+            :item="item"
+            :downloading="downloadingItem === item"
+            :downloadable="downloadable"
+            @preview="emit('preview', $event)"
+            @download="emit('download', $event)"
+          />
+        </div>
+      </div>
     </div>
     <div
       v-else-if="loading"
@@ -80,20 +146,7 @@ const { t } = useI18n();
       <Loader :size="56" />
       <p class="text-sm">{{ t('sources.refresh') }}...</p>
     </div>
-    <div
-      v-else-if="displayItems.length === 0 && filterText"
-      class="h-full flex flex-col items-center justify-center gap-2 text-base-content/50"
-    >
-      <Globe :size="32" class="opacity-50" />
-      <p class="text-sm">{{ t('sources.noItems') }}</p>
-    </div>
-    <div
-      v-else-if="!loading"
-      class="h-full flex flex-col items-center justify-center gap-2 text-base-content/50"
-    >
-      <Globe :size="32" class="opacity-50" />
-      <p class="text-sm">{{ t('sources.noItems') }}</p>
-    </div>
+    <EmptyState v-else-if="!loading" :title="t('sources.noItems')" :icon="Globe" />
     <button
       v-if="hasMore && items.length && paginationMode !== 'page'"
       class="fx-noise mt-4 mx-auto block px-4 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"

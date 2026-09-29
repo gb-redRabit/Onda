@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
+import { useVirtualizer } from '@tanstack/vue-virtual';
 import { AlertCircle, ChevronDown, ChevronRight, ListMusic, Play, Trash2 } from '@lucide/vue';
 import { useSavedStore } from '@renderer/stores/saved';
 import { useOnlineStore } from '@renderer/stores/online';
@@ -8,16 +10,51 @@ import OnlineMediaCard from '@renderer/components/online/OnlineMediaCard.vue';
 import Loader from '@renderer/components/layout/Loader.vue';
 import { toResolvedItem } from '@renderer/utils/savedItem';
 import type { IpcSavedPlaylist } from '@shared/types/ipc';
+import { useVirtualGrid } from '@renderer/composables/useVirtualGrid';
+import EmptyState from '@renderer/components/ui/EmptyState.vue';
 
 const saved = useSavedStore();
 const yt = useOnlineStore();
+const router = useRouter();
 const { t } = useI18n();
 
 const playingPlaylistId = ref<string | null>(null);
 const expandedPlaylistId = ref<string | null>(null);
 const playlistError = ref<Record<string, boolean>>({});
+const playlistItemsRef = ref<HTMLElement | null>(null);
+const playlistGrid = useVirtualGrid(playlistItemsRef, 220, 4);
+const expandedItems = computed(
+  () => saved.playlists.find((playlist) => playlist.id === expandedPlaylistId.value)?.items ?? []
+);
+const playlistItemRows = useVirtualizer({
+  get count() {
+    return Math.ceil(expandedItems.value.length / playlistGrid.cols.value);
+  },
+  getScrollElement: () => playlistItemsRef.value,
+  estimateSize: () => 230,
+  overscan: 3
+});
+const visiblePlaylistRows = computed(() => {
+  const columns = playlistGrid.cols.value;
+  return playlistItemRows.value.getVirtualItems().map((row) => ({
+    index: row.index,
+    top: row.start,
+    items: expandedItems.value.slice(row.index * columns, (row.index + 1) * columns)
+  }));
+});
 
 const playlistCount = computed(() => saved.playlists.length);
+
+watch(expandedPlaylistId, async (id) => {
+  if (!id) {
+    playlistGrid.destroy();
+    return;
+  }
+  await nextTick();
+  playlistGrid.observe();
+});
+
+onBeforeUnmount(() => playlistGrid.destroy());
 
 async function togglePlaylist(p: { id: string; url: string }) {
   if (expandedPlaylistId.value === p.id) {
@@ -50,6 +87,11 @@ function removePlaylist(id: string) {
   void saved.removePlaylist(id);
   if (expandedPlaylistId.value === id) expandedPlaylistId.value = null;
 }
+
+async function openChannelInApp(url: string): Promise<void> {
+  await router.push('/online');
+  await yt.openChannel(url);
+}
 </script>
 
 <template>
@@ -60,12 +102,12 @@ function removePlaylist(id: string) {
       <span class="text-base-content/60 text-xs">({{ playlistCount }})</span>
     </h2>
 
-    <div
+    <EmptyState
       v-if="playlistCount === 0"
-      class="rounded-box border border-dashed border-base-300 p-8 text-center text-sm text-base-content/50"
-    >
-      {{ t('saved.emptyPlaylists') }}
-    </div>
+      :title="t('saved.emptyPlaylists')"
+      :icon="ListMusic"
+      compact
+    />
 
     <div v-else class="space-y-2">
       <div
@@ -74,11 +116,14 @@ function removePlaylist(id: string) {
         class="group rounded-box bg-base-100 border border-base-300 transition-colors"
         :class="expandedPlaylistId === p.id ? 'border-primary/60' : 'hover:border-base-300'"
       >
-        <div class="flex items-center gap-3 p-3 cursor-pointer" @click="togglePlaylist(p)">
+        <div class="flex items-center gap-3 p-3">
           <button
             type="button"
             class="fx-noise shrink-0 p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
             :title="t('saved.expandPlaylist')"
+            :aria-label="t('saved.expandPlaylist')"
+            :aria-expanded="expandedPlaylistId === p.id"
+            @click="togglePlaylist(p)"
           >
             <ChevronDown v-if="expandedPlaylistId === p.id" :size="16" />
             <ChevronRight v-else :size="16" />
@@ -106,6 +151,7 @@ function removePlaylist(id: string) {
             type="button"
             class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
             :title="t('youtube.playAll')"
+            :aria-label="t('youtube.playAll')"
             :disabled="playingPlaylistId === p.id"
             @click.stop="playPlaylist(p)"
           >
@@ -119,6 +165,7 @@ function removePlaylist(id: string) {
             type="button"
             class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:text-error hover:bg-base-content/10 transition-colors"
             :title="t('common.delete')"
+            :aria-label="t('common.delete')"
             @click.stop="removePlaylist(p.id)"
           >
             <Trash2 :size="16" />
@@ -142,19 +189,32 @@ function removePlaylist(id: string) {
             <AlertCircle :size="16" />
             {{ t('saved.playlistLoadError') }}
           </p>
-          <div v-else class="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            <OnlineMediaCard
-              v-for="item in p.items"
-              :key="item.id"
-              :video="toResolvedItem(item)"
-              :cover-status="'none'"
-              :watch-url="'https://www.youtube.com/watch?v=' + item.id"
-              :hide-quick-actions="true"
-              layout="grid"
-              @expand="expandedPlaylistId = null"
-              @queue="yt.queueVideo(toResolvedItem(item))"
-              @play="yt.playStream(toResolvedItem(item))"
-            />
+          <div v-else ref="playlistItemsRef" class="max-h-[60vh] overflow-auto">
+            <div class="relative" :style="{ height: playlistItemRows.getTotalSize() + 'px' }">
+              <div
+                v-for="row in visiblePlaylistRows"
+                :key="row.index"
+                class="absolute top-0 left-0 grid w-full gap-3 pb-3"
+                :style="{
+                  transform: `translateY(${row.top}px)`,
+                  gridTemplateColumns: `repeat(${playlistGrid.cols.value}, minmax(0, 1fr))`
+                }"
+              >
+                <OnlineMediaCard
+                  v-for="item in row.items"
+                  :key="item.id"
+                  :video="toResolvedItem(item)"
+                  :cover-status="'none'"
+                  :watch-url="'https://www.youtube.com/watch?v=' + item.id"
+                  :hide-quick-actions="true"
+                  layout="grid"
+                  @expand="expandedPlaylistId = null"
+                  @queue="yt.queueVideo(toResolvedItem(item))"
+                  @play="yt.playStream(toResolvedItem(item))"
+                  @open-channel="openChannelInApp"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
