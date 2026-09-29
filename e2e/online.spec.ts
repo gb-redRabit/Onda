@@ -6,7 +6,7 @@ interface OndaTestApi {
 }
 
 test.describe('online search and download queue', () => {
-  test('runs a search against fixture results and shows the queued download', async () => {
+  test('opens channels in-app, resolves generic links and queues downloads', async () => {
     // ONDA_E2E_FIXTURES makes yt:search return canned items and yt:download:add
     // return a simulated queue (no yt-dlp/network), while the UI paths stay real.
     const onda = await launchOnda({ env: { ONDA_E2E_FIXTURES: '1' } });
@@ -25,6 +25,13 @@ test.describe('online search and download queue', () => {
       const cards = onda.page.getByTestId('online-media-card');
       await expect(cards).toHaveCount(3);
       await expect(cards.first()).toContainText('E2E Result 1');
+
+      await onda.page.getByRole('button', { name: 'E2E Channel' }).first().click();
+      await expect(onda.page.getByTestId('online-channel-header')).toContainText('E2E Channel');
+
+      await input.fill('https://vimeo.example/videos/12345');
+      await input.press('Enter');
+      await expect(onda.page.getByTestId('online-media-card')).toContainText('External E2E Media');
 
       await onda.page.evaluate(async () => {
         const api = (window as unknown as { api: OndaTestApi }).api;

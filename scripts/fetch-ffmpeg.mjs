@@ -1,6 +1,10 @@
 // Fetches pinned FFmpeg + FFprobe binaries into `resources/ffmpeg/<platform>-<arch>/`
-// for bundling into the packaged app (electron-builder `extraResources` copies the
-// whole `resources/ffmpeg` folder into `process.resourcesPath/ffmpeg`).
+// for LOCAL development / offline experiments only — the packaged app does NOT
+// bundle them (nothing copies `resources/ffmpeg` into the installer anymore).
+// Users install the same pinned, SHA-256 verified builds into their profile at
+// runtime from Settings → Dependencies (src/main/ipc/dependency-handlers.ts).
+// A local `resources/ffmpeg/<platform>-<arch>` layout is still picked up by the
+// resolver as the `bundled` source, which is handy when testing without network.
 //
 // Versions, URLs and SHA-256 hashes live in `binaries.json` (single source, PR-only
 // updates — never a mutable `latest` redirect). Keep them in sync with the runtime
