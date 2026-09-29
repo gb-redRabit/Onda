@@ -3,6 +3,8 @@ import { writeFile, readFile } from 'fs/promises';
 import { getStore } from './cover-cache';
 import { isResetting } from './factory-reset';
 import { configureAutoCheck } from '../updater-scheduler';
+import { applyLogSettings } from '../log-file';
+import { applyCoverCacheSettings } from './cover-cache';
 import { sanitizeSettings } from './settings-schema';
 import { encryptApiKeys, decryptApiKeys } from './settings-crypto';
 import { syncSubscriptionsScheduler } from './subscriptions-handlers';
@@ -37,7 +39,11 @@ export function registerSettingsHandlers(): void {
       for (const [key, value] of Object.entries(sanitized)) {
         store.set(key, value);
       }
-      if (sanitized.general) setCloseToTray(sanitized.general.closeToTray !== false);
+      if (sanitized.general) {
+        setCloseToTray(sanitized.general.closeToTray !== false);
+        applyLogSettings(sanitized.general.logLevel, sanitized.general.logMaxSizeMB);
+      }
+      if (sanitized.library) applyCoverCacheSettings(sanitized.library.coverCacheMaxEntries);
       if (sanitized.updates) void configureAutoCheck();
       if (sanitized.download) void syncSubscriptionsScheduler();
       return true;
@@ -115,7 +121,11 @@ export function registerSettingsHandlers(): void {
         for (const [key, value] of Object.entries(toPersist)) {
           store.set(key, value);
         }
-        if (toPersist.general) setCloseToTray(toPersist.general.closeToTray !== false);
+        if (toPersist.general) {
+          setCloseToTray(toPersist.general.closeToTray !== false);
+          applyLogSettings(toPersist.general.logLevel, toPersist.general.logMaxSizeMB);
+        }
+        if (toPersist.library) applyCoverCacheSettings(toPersist.library.coverCacheMaxEntries);
         if (toPersist.updates) void configureAutoCheck();
         if (toPersist.download) void syncSubscriptionsScheduler();
         // return plaintext keys so the renderer store stays consistent (no double-encrypt on save)

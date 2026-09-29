@@ -32,13 +32,21 @@ export const coverResultCache = new Map<string, CachedCover>();
 export const durationCache = new Map<string, { duration: number; mtimeMs: number }>();
 const coverCacheLocks = new Map<string, Array<() => void>>();
 
-const CACHE_MAX_SIZE = 5000;
+const DEFAULT_CACHE_MAX_SIZE = 5000;
+
+// `library.coverCacheMaxEntries` (Settings → Library). Applied at boot and when
+// the setting changes, so the slider really resizes the in-memory cover cache.
+let cacheMaxSize = DEFAULT_CACHE_MAX_SIZE;
+
+export function applyCoverCacheSettings(maxEntries?: number): void {
+  if (typeof maxEntries === 'number' && maxEntries > 0) cacheMaxSize = Math.round(maxEntries);
+}
 
 export function cacheSet<T>(
   map: Map<string, T>,
   key: string,
   value: T,
-  maxSize: number = CACHE_MAX_SIZE
+  maxSize: number = cacheMaxSize
 ): void {
   map.set(key, value);
   evictCache(map as Map<string, unknown>, maxSize);

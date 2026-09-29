@@ -139,7 +139,6 @@ const VISUALIZATION_FIELDS: Record<string, Sanitizer> = {
 };
 
 const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
-  defaultPlayer: enumOf(['html5', 'vlc']),
   normalization: bool,
   replayGain: bool,
   gaplessPlayback: bool,
@@ -151,17 +150,12 @@ const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
   pipHeight: numClamped(150, 2160),
   pipPreBuffer: bool,
   cursorHide: bool,
-  // cursorTimeout jest w SEKUNDACH (renderer używa czas * 1000; slider 1–10 s)
+  // cursorTimeout jest w SEKUNDACH (renderer uĹĽywa czas * 1000; slider 1â€“10 s)
   cursorTimeout: numClamped(1, 30),
   resumePromptTimeout: numClamped(1, 60),
   playbackSpeed: numClamped(0.2, 3),
   videoFilter: str,
-  visualization: obj(VISUALIZATION_FIELDS),
-  crossfadeSeconds: numClamped(0, 12),
-  streamPreloadSeconds: numClamped(0, 60),
-  perSourceVolume: bool,
-  autoResume: bool,
-  sleepTimerMinutes: numClamped(0, 240)
+  visualization: obj(VISUALIZATION_FIELDS)
 };
 
 const EXPLORER_FIELDS: Record<string, Sanitizer> = {
@@ -233,8 +227,7 @@ const GENERAL_FIELDS: Record<string, Sanitizer> = {
   closeToTray: bool,
   restoreSession: bool,
   logLevel: enumOf(['debug', 'info', 'warn', 'error']),
-  logMaxSizeMB: numClamped(1, 100),
-  experimentalEnabled: bool
+  logMaxSizeMB: numClamped(1, 100)
 };
 
 function apiKeyEntry(v: unknown): unknown | undefined {
@@ -302,6 +295,20 @@ const STATUS_BAR_FIELDS: Record<string, Sanitizer> = {
   sections: arrayOf(enumOf(STATUS_BAR_SECTIONS))
 };
 
+const HOME_SECTIONS = [
+  'continue',
+  'recent',
+  'mostPlayed',
+  'favorites',
+  'playlists',
+  'albums',
+  'artists'
+] as const;
+
+const HOME_FIELDS: Record<string, Sanitizer> = {
+  sections: arrayOf(enumOf(HOME_SECTIONS))
+};
+
 const TOP_LEVEL: Record<string, Sanitizer> = {
   general: obj(GENERAL_FIELDS),
   appearance: (v) => obj(APPEARANCE_FIELDS)(migrateAppearance(v)),
@@ -317,6 +324,7 @@ const TOP_LEVEL: Record<string, Sanitizer> = {
   toast: obj(TOAST_FIELDS),
   dependencies: recordOf(obj(DEPENDENCY_FIELDS)),
   statusBar: obj(STATUS_BAR_FIELDS),
+  home: obj(HOME_FIELDS),
   favorites: stringArray
 };
 
@@ -330,7 +338,7 @@ interface SanitizedSettings {
 /**
  * Whitelist + type validation for settings payloads coming from the renderer
  * (settings:set) or from imported JSON files (settings:import). Unknown keys and
- * values of the wrong type are dropped — they never reach the electron-store.
+ * values of the wrong type are dropped â€” they never reach the electron-store.
  * API key secret values are treated as opaque strings here; encryption happens in
  * the handlers via settings-crypto.
  */

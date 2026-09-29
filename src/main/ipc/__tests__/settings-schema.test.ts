@@ -53,6 +53,19 @@ describe('sanitizeSettings', () => {
     });
   });
 
+  it('sanitizes home sections and drops unknown ids', () => {
+    const { sanitized } = sanitizeSettings({
+      home: {
+        sections: ['continue', 'bogus', 'albums', 7, 'artists'],
+        extra: true
+      }
+    });
+
+    expect(sanitized.home).toEqual({
+      sections: ['continue', 'albums', 'artists']
+    });
+  });
+
   it('migrates legacy accentColor to customColors.primary and drops old fields', () => {
     const { sanitized } = sanitizeSettings({
       appearance: {
@@ -98,17 +111,28 @@ describe('sanitizeSettings', () => {
     expect(sanitized.appearance).toEqual({ customColors: { info: '#0af' } });
   });
 
+  it('drops the settings that were removed from the UI', () => {
+    const { sanitized } = sanitizeSettings({
+      playback: { crossfadeSeconds: 3, streamPreloadSeconds: 10, perSourceVolume: true },
+      general: { experimentalEnabled: true },
+      appearance: { animations: false }
+    });
+
+    expect(sanitized.playback ?? {}).toEqual({});
+    expect(sanitized.general ?? {}).toEqual({});
+    // Still a supported setting.
+    expect(sanitized.appearance).toEqual({ animations: false });
+  });
+
   it('drops unknown enum values', () => {
     const { sanitized } = sanitizeSettings({
       playback: {
-        defaultPlayer: 'html5',
         pipPosition: 'center',
         pipWidth: 480,
         playbackSpeed: 1.25
       }
     });
     expect(sanitized.playback).toEqual({
-      defaultPlayer: 'html5',
       pipWidth: 480,
       playbackSpeed: 1.25
     });
