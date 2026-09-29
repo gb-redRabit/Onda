@@ -44,12 +44,18 @@ jobs:
 
       # release-please owns the version. This fails if someone hand-edited
       # package.json, which is what makes the repo and the published release
-      # disagree. See docs/release.md.
+      # disagree. See RELEASE.md §2.
       - name: Check version ownership
         run: npm run version:check
 
       - name: Test
         run: npm test
+
+      # A test that writes through a relative path leaves a file in the repo
+      # root, and on Linux/macOS the next step fails on it with a confusing
+      # prettier warning. Fail here instead, naming the file.
+      - name: Check tests left no artifacts
+        run: npm run check:artifacts
 
       - name: Lint
         run: npm run lint

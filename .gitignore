@@ -14,6 +14,7 @@ resources/*
 .DS_Store
 .eslintcache
 *.log*
+*.tsbuildinfo
 .git.bak
 logs/
 .memory

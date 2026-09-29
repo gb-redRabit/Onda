@@ -1,6 +1,9 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import http from 'http';
 import { isIP } from 'node:net';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { AddressInfo } from 'net';
 import type { NetworkTargetOptions } from '../ipc/network-target';
 import { createMediaServer, type MediaServer } from '../media-server';
@@ -84,18 +87,30 @@ function requestStream(rawUrl: string): Promise<{ status: number; body: string }
   });
 }
 
+/**
+ * The radio store writes a real file, so it needs a real directory — and it
+ * must not be the repository. `process.env.TEMP` exists on Windows only; on
+ * Linux/macOS it is unset, and a `'.'` fallback dropped `onda-radio-test.json`
+ * into the repo root, which then failed `prettier --check` on every CI run.
+ */
+let radioDir = '';
+
+function radioFile(): string {
+  return join(radioDir, 'radios.json');
+}
+
 /** Registers a station through the real store, so the proxy allowlist syncs. */
 async function addStation(host: string): Promise<void> {
-  const file = `${process.env.TEMP ?? process.env.TMP ?? '.'}/onda-radio-test.json`;
-  await radio.persistRadio(file, [
+  await radio.persistRadio(radioFile(), [
     { id: 'station-1', name: 'Test', url: `http://${host}:${upstreamPort}/audio`, addedAt: 1 }
   ]);
-  const loaded = await radio.loadRadioData(file);
+  const loaded = await radio.loadRadioData(radioFile());
   expect(loaded).toHaveLength(1);
   expect(radio.isAllowedRadioHost(host)).toBe(true);
 }
 
 beforeAll(async () => {
+  radioDir = await mkdtemp(join(tmpdir(), 'onda-radio-'));
   mediaServer = await createMediaServer();
   upstream = http.createServer((req, res) => {
     if (req.url === '/private-redirect') {
@@ -118,6 +133,7 @@ beforeAll(async () => {
 afterAll(async () => {
   mediaServer?.close();
   await close(upstream);
+  if (radioDir) await rm(radioDir, { recursive: true, force: true });
 });
 
 describe('media-server radio stream proxy', () => {

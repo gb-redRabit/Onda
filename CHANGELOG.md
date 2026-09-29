@@ -6,7 +6,8 @@ Wersję ustala **release-please** na podstawie commitów Conventional Commits
 (`feat` → minor, `fix` → patch, `BREAKING CHANGE` → major). `package.json` trzyma
 na `main` wersję ostatnio opublikowanego release'a; wersję podnosi wyłącznie commit
 `chore(main): release X.Y.Z` z PR-a release-please. Ręczne `npm version` na `main`
-jest błędem — pilnuje tego `npm run version:check` w CI (patrz `docs/release.md`).
+jest błędem — pilnują tego `npm run version:check` i `npm run check:artifacts` w CI
+(patrz `RELEASE.md`).
 
 ## [0.4.3](https://github.com/gb-redRabit/Onda/compare/v0.4.3...v0.4.3) (2026-09-15)
 
