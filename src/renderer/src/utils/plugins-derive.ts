@@ -1,4 +1,5 @@
 import type { PluginManifest, PluginSettingField } from '@shared/types/ipc';
+import { pluginSettingValueValid } from '@shared/plugin-settings';
 import type { AudioLayoutElementId } from '@renderer/types/settings';
 import { LAYOUT_ELEMENT_IDS, PLUGIN_HOST_VARIANTS } from '@renderer/utils/plugins-helpers';
 
@@ -45,11 +46,11 @@ export function mergeSettingDefaults(
   stored: Record<string, unknown>,
   fields: PluginSettingField[]
 ): Record<string, unknown> {
-  const out: Record<string, unknown> = { ...stored };
+  const out: Record<string, unknown> = {};
   for (const field of fields) {
-    if (field.default !== undefined && out[field.key] === undefined) {
-      out[field.key] = field.default;
-    }
+    const saved = stored[field.key];
+    if (pluginSettingValueValid(field, saved)) out[field.key] = saved;
+    else if (pluginSettingValueValid(field, field.default)) out[field.key] = field.default;
   }
   return out;
 }

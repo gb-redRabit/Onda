@@ -7,19 +7,21 @@ export interface PluginCommandsDeps {
   commands: Ref<PluginCommandEntry[]>;
   workers: ShallowRef<Record<string, PluginWorkerHandle>>;
   readyWorkers: Set<string>;
+  getManifest: (id: string) => { hooks?: string[] } | undefined;
   logPush: (id: string, line: string) => void;
 }
 
 // Hook/command dispatch onto spawned plugin workers, extracted from
 // `stores/plugins.ts` (plan 2.8).
 export function createPluginCommands(deps: PluginCommandsDeps) {
-  const { commands, workers, readyWorkers, logPush } = deps;
+  const { commands, workers, readyWorkers, getManifest, logPush } = deps;
 
   function emitHook(name: string, payload: PluginHookPayload): void {
     if (!isKnownHook(name)) return;
     const list = Object.entries(workers.value);
     for (const [id, handle] of list) {
       if (!readyWorkers.has(id)) continue;
+      if (!getManifest(id)?.hooks?.includes(name)) continue;
       try {
         handle.postHook(name, payload);
       } catch (e) {

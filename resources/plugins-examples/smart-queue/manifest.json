@@ -1,0 +1,24 @@
+{
+  "name": "Kolejka z wyboru",
+  "version": "1.0.0",
+  "description": "Po zakończeniu utworu dokłada następny: bez powtórek, w pierwszej kolejności tego samego artysty, a w trybie odkrywania losowo.",
+  "author": "Onda",
+  "entry": "index.js",
+  "apiVersion": "1",
+  "permissions": {
+    "player": true,
+    "storage": true
+  },
+  "hooks": ["app:start", "track:play", "track:end", "library:scan"],
+  "settings": [
+    { "key": "mode", "label": "Tryb (artist | shuffle)", "type": "text", "default": "artist" },
+    {
+      "key": "historySize",
+      "label": "Ile utworów pamiętać",
+      "type": "number",
+      "default": 40,
+      "min": 10,
+      "max": 200
+    }
+  ]
+}

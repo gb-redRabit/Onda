@@ -33,6 +33,8 @@ export interface PluginManifest {
   hooks?: string[];
   settings?: PluginSettingField[];
   layoutElements?: PluginLayoutElement[];
+  /** Sloty UI, do których wtyczka może pisać przez `api.ui.set` (wymaga `visual`). */
+  uiSlots?: string[];
 }
 
 export interface PluginInfo {
@@ -43,6 +45,11 @@ export interface PluginInfo {
   author?: string;
   enabled: boolean;
   permissions: PluginPermissions;
+  hooks?: string[];
+  layoutElements?: PluginLayoutElement[];
+  uiSlots?: string[];
+  capabilityHash?: string;
+  permissionReviewRequired?: boolean;
 }
 
 /** A plugin bundled with the app and installable from Settings → Plugins. */
@@ -52,12 +59,18 @@ export interface PluginExample {
   version: string;
   description?: string;
   author?: string;
+  permissions: PluginPermissions;
+  hooks?: string[];
+  layoutElements?: PluginLayoutElement[];
+  uiSlots?: string[];
 }
 
 export interface IpcPluginGetResult {
   success: boolean;
   manifest?: PluginManifest;
   code?: string;
+  /** SHA-256 over declared capabilities + entry file; required to enable. */
+  consentHash?: string;
   error?: string;
 }
 

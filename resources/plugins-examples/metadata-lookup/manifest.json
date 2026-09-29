@@ -1,0 +1,28 @@
+{
+  "name": "Wydanie z MusicBrainz",
+  "version": "1.0.0",
+  "description": "Sprawdza w MusicBrainz, kiedy i w jakim wydaniu nagrano utwór, i pokazuje wynik w slocie UI. Wymaga internetu; wyniki są cache’owane lokalnie.",
+  "author": "Onda",
+  "entry": "index.js",
+  "apiVersion": "1",
+  "permissions": {
+    "visual": true,
+    "storage": true,
+    "notifications": true,
+    "network": {
+      "allow": ["https://musicbrainz.org/ws/2/*"]
+    }
+  },
+  "hooks": ["app:start", "track:play"],
+  "uiSlots": ["audio-view"],
+  "settings": [
+    {
+      "key": "cacheDays",
+      "label": "Ważność cache (dni)",
+      "type": "number",
+      "default": 30,
+      "min": 1,
+      "max": 90
+    }
+  ]
+}

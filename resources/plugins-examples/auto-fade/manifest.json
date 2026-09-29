@@ -1,0 +1,22 @@
+{
+  "name": "Wyciszanie utworu",
+  "version": "1.0.0",
+  "description": "Płynnie ścisza końcówkę każdego utworu (zamiast urwać go w połowie głośności) i przywraca głośność przy zmianie utworu. Uwaga: wyłączenie wtyczki w trakcie wyciszania zostawia głośność na obniżonej wartości — trzeba ją podnieść ręcznie.",
+  "author": "Onda",
+  "entry": "index.js",
+  "apiVersion": "1",
+  "permissions": {
+    "player": true
+  },
+  "hooks": ["app:start", "track:play", "track:end", "track:timeupdate"],
+  "settings": [
+    {
+      "key": "fadeSeconds",
+      "label": "Długość wyciszania (sekundy)",
+      "type": "number",
+      "default": 8,
+      "min": 0,
+      "max": 60
+    }
+  ]
+}

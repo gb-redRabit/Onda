@@ -1,0 +1,13 @@
+{
+  "name": "Pasek postępu",
+  "version": "1.0.0",
+  "description": "Przykładowa wtyczka: bezpieczny slot UI z pozycją odtwarzania, poziomem widma i formatem pliku (api.ui.set).",
+  "author": "Onda",
+  "entry": "index.js",
+  "apiVersion": "1",
+  "permissions": {
+    "visual": true
+  },
+  "hooks": ["app:start", "track:play", "track:timeupdate"],
+  "uiSlots": ["audio-view"]
+}

@@ -9,6 +9,12 @@ import {
   sanitizePermissions,
   validStorageKey,
   sanitizeStoredObject,
+  pluginSettingValueValid,
+  pluginCapabilityHash,
+  pluginConsentHash,
+  pluginApprovalMatches,
+  normalizePluginSettings,
+  sha256Hex,
   storageSizeBytes,
   loadStateFile,
   saveStateFile,
@@ -222,6 +228,149 @@ describe('parseManifest', () => {
       { element: 'progress', variant: 'ok-v2' }
     ]);
   });
+
+  it('keeps only host-known uiSlots, and only with visual permission', () => {
+    const { manifest } = parseManifest(
+      {
+        name: 'Slotty',
+        version: '1',
+        entry: 'a.js',
+        permissions: { visual: true },
+        uiSlots: ['audio-view', 'audio-view', 'player-bar', 42]
+      },
+      'slotty'
+    );
+    expect(manifest?.uiSlots).toEqual(['audio-view']);
+
+    const { manifest: noVisual } = parseManifest(
+      {
+        name: 'Slotty',
+        version: '1',
+        entry: 'a.js',
+        permissions: { storage: true },
+        uiSlots: ['audio-view']
+      },
+      'slotty'
+    );
+    expect(noVisual?.uiSlots).toBeUndefined();
+  });
+});
+
+describe('plugin setting schema values', () => {
+  it('validates setting type, storage bounds, and numeric min/max', () => {
+    expect(
+      pluginSettingValueValid({ key: 'enabled', label: 'Enabled', type: 'boolean' }, true)
+    ).toBe(true);
+    expect(
+      pluginSettingValueValid({ key: 'count', label: 'Count', type: 'number', min: 1, max: 5 }, 3)
+    ).toBe(true);
+    expect(
+      pluginSettingValueValid({ key: 'count', label: 'Count', type: 'number', min: 1, max: 5 }, 0)
+    ).toBe(false);
+    expect(
+      pluginSettingValueValid({ key: 'enabled', label: 'Enabled', type: 'boolean' }, 'true')
+    ).toBe(false);
+    expect(
+      pluginSettingValueValid({ key: 'text', label: 'Text', type: 'text' }, 'x'.repeat(4097))
+    ).toBe(false);
+  });
+});
+
+describe('plugin capability approval', () => {
+  const manifest = {
+    permissions: { storage: true, network: { allow: ['https://api.example/*'] } },
+    hooks: ['track:play', 'app:start'],
+    layoutElements: [{ element: 'cover', variant: 'circle' }]
+  };
+
+  it('hashes the same capability set independent of hook and network order', () => {
+    expect(pluginCapabilityHash(manifest)).toBe(
+      pluginCapabilityHash({
+        permissions: { network: { allow: ['https://api.example/*'] }, storage: true },
+        hooks: ['app:start', 'track:play'],
+        layoutElements: [{ element: 'cover', variant: 'circle' }]
+      })
+    );
+  });
+
+  it('requires a fresh approval when a permission, hook, or visual slot changes', () => {
+    const code = sha256Hex('console.log(1)');
+    const approved = pluginConsentHash(manifest, code);
+    expect(pluginApprovalMatches(manifest, code, approved)).toBe(true);
+    expect(
+      pluginApprovalMatches(
+        { ...manifest, permissions: { ...manifest.permissions, player: true } },
+        code,
+        approved
+      )
+    ).toBe(false);
+    expect(pluginApprovalMatches({ ...manifest, hooks: ['track:end'] }, code, approved)).toBe(
+      false
+    );
+    expect(
+      pluginApprovalMatches(
+        { ...manifest, layoutElements: [{ element: 'cover', variant: 'diamond' }] },
+        code,
+        approved
+      )
+    ).toBe(false);
+    expect(pluginApprovalMatches(manifest, code, undefined)).toBe(false);
+    expect(pluginApprovalMatches(manifest, code, 'not-a-hash')).toBe(false);
+  });
+
+  it('requires a fresh approval when the plugin code changes', () => {
+    const original = sha256Hex('console.log(1)');
+    const updated = sha256Hex('console.log(2)');
+    const approved = pluginConsentHash(manifest, original);
+
+    expect(pluginApprovalMatches(manifest, original, approved)).toBe(true);
+    expect(pluginApprovalMatches(manifest, updated, approved)).toBe(false);
+  });
+
+  it('covers declared ui slots in the approval digest', () => {
+    const code = sha256Hex('console.log(1)');
+    const withSlot = { ...manifest, permissions: { visual: true }, uiSlots: ['audio-view'] };
+    const approved = pluginConsentHash(withSlot, code);
+
+    expect(pluginApprovalMatches(withSlot, code, approved)).toBe(true);
+    // Adding a host surface after approval invalidates it.
+    expect(
+      pluginApprovalMatches({ ...withSlot, uiSlots: ['audio-view', 'player-bar'] }, code, approved)
+    ).toBe(false);
+    // Dropping the slot is a change too, so the old approval is not reused.
+    expect(pluginApprovalMatches(manifest, code, approved)).toBe(false);
+  });
+});
+
+describe('normalizePluginSettings', () => {
+  const manifest = {
+    settings: [
+      { key: 'shape', label: 'Shape', type: 'text' as const, default: 'circle' },
+      { key: 'volume', label: 'Volume', type: 'number' as const, min: 0, max: 100 }
+    ]
+  };
+
+  it('drops undeclared keys and invalid values, reporting that a rewrite is needed', () => {
+    const result = normalizePluginSettings(manifest, {
+      shape: 42,
+      volume: 150,
+      removed: 'stale'
+    });
+    expect(result.value).toEqual({ shape: 'circle' });
+    expect(result.changed).toBe(true);
+  });
+
+  it('keeps compatible values and reports no rewrite', () => {
+    const result = normalizePluginSettings(manifest, { shape: 'hexagon', volume: 80 });
+    expect(result.value).toEqual({ shape: 'hexagon', volume: 80 });
+    expect(result.changed).toBe(false);
+  });
+
+  it('leaves stored values untouched when the manifest declares no settings', () => {
+    const result = normalizePluginSettings({ settings: undefined }, { anything: 1 });
+    expect(result.value).toEqual({ anything: 1 });
+    expect(result.changed).toBe(false);
+  });
 });
 
 describe('sanitizePermissions', () => {
@@ -285,9 +434,21 @@ describe('state file round-trip', () => {
   });
   it('loadStateFile/saveStateFile', async () => {
     const file = join(dir, 'state.json');
-    await saveStateFile(file, { 'a.b': { enabled: true } });
-    expect(await loadStateFile(file)).toEqual({ 'a.b': { enabled: true } });
+    const approval = 'a'.repeat(64);
+    await saveStateFile(file, { 'a.b': { enabled: true, approvedConsent: approval } });
+    expect(await loadStateFile(file)).toEqual({
+      'a.b': { enabled: true, approvedConsent: approval }
+    });
     await expect(loadStateFile(join(dir, 'missing.json'))).resolves.toEqual({});
+  });
+
+  it('ignores a legacy capability-only approval so updated code is re-reviewed', async () => {
+    const file = join(dir, 'state-legacy.json');
+    await writeFile(
+      file,
+      JSON.stringify({ 'a.b': { enabled: true, approvedCapabilities: 'a'.repeat(64) } })
+    );
+    expect(await loadStateFile(file)).toEqual({ 'a.b': { enabled: true } });
   });
 });
 
@@ -311,6 +472,23 @@ describe('network allowlist', () => {
   });
   it('urlAllowed rejects when patterns empty', () => {
     expect(urlAllowed('https://api.example.com/x', [])).toBe(false);
+  });
+  it('urlAllowed requires a host boundary (no look-alike hosts)', () => {
+    // Regression: `https://api.example.com` used to match `api.example.com.evil`.
+    const bare = ['https://api.example.com'];
+    expect(urlAllowed('https://api.example.com.evil/steal', bare)).toBe(false);
+    expect(urlAllowed('https://api.example.com', bare)).toBe(true);
+    expect(urlAllowed('https://api.example.com/v1/track', bare)).toBe(true);
+    expect(urlAllowed('https://api.example.com?x=1', bare)).toBe(true);
+    expect(urlAllowed('https://api.example.com#frag', bare)).toBe(true);
+    // A port on the allowlisted host is fine (same host, e.g. self-hosted sources).
+    expect(urlAllowed('https://api.example.com:8443/v1', bare)).toBe(true);
+    expect(urlAllowed('https://api.example.com.evil:8443/v1', bare)).toBe(false);
+    expect(urlAllowed('https://api.example.comm/v1', bare)).toBe(false);
+
+    // Wildcards keep working, including an explicit host suffix.
+    expect(urlAllowed('https://a.cdn.example.net/x', ['https://*.example.net/*'])).toBe(true);
+    expect(urlAllowed('https://evil.com/x', ['https://*.example.net/*'])).toBe(false);
   });
   it('resolveRedirectUrl', () => {
     expect(resolveRedirectUrl('https://a.com/x', '/y')).toBe('https://a.com/y');

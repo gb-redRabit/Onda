@@ -55,7 +55,9 @@ describe('PLUGIN_API_SHIM', () => {
       'invoke-command',
       'BLOCKED_GLOBALS',
       'MAX_ARGS_BYTES',
-      'MAX_LOG_CHARS'
+      'MAX_LOG_CHARS',
+      'MAX_SLOT_ITEMS',
+      'filterSlotItems'
     ]) {
       expect(PLUGIN_API_SHIM).toContain(needle);
     }
@@ -171,6 +173,50 @@ describe('PLUGIN_API_SHIM runtime', () => {
       type: 'api-request',
       op: 'ui:set',
       args: ['element.decoration', { element: 'cover', value: 'triangle' }]
+    });
+  });
+
+  it('api.ui.set posts ui:slot and clamps the item list before it leaves the worker', () => {
+    const { api, messages } = runShim();
+    const ui = api.ui as { set: (slot: string, items: unknown) => Promise<unknown> };
+    void ui.set('audio-view', [{ label: 'A', value: 'B' }]);
+    expect(readWorkerMsg(messages[messages.length - 1])).toMatchObject({
+      type: 'api-request',
+      op: 'ui:slot',
+      args: ['audio-view', [{ label: 'A', value: 'B' }]]
+    });
+
+    const many = Array.from({ length: 20 }, (_, i) => ({ label: `l${i}`, value: 'v' }));
+    void ui.set('audio-view', many);
+    const clamped = readWorkerMsg(messages[messages.length - 1]) as unknown as {
+      args: [string, { label: string }[]];
+    };
+    expect(clamped.args[1]).toHaveLength(8);
+
+    const long = [{ label: 'x'.repeat(500), value: 'y'.repeat(500) }];
+    void ui.set('audio-view', long);
+    const trimmed = readWorkerMsg(messages[messages.length - 1]) as unknown as {
+      args: [string, { label: string; value: string }[]];
+    };
+    expect(trimmed.args[1][0].label).toHaveLength(160);
+    expect(trimmed.args[1][0].value).toHaveLength(160);
+  });
+
+  it('api.ui.clear posts an empty list and non-arrays collapse to empty', () => {
+    const { api, messages } = runShim();
+    const ui = api.ui as {
+      clear: (slot: string) => Promise<unknown>;
+      set: (s: string, i: unknown) => Promise<unknown>;
+    };
+    void ui.clear('audio-view');
+    expect(readWorkerMsg(messages[messages.length - 1])).toMatchObject({
+      op: 'ui:slot',
+      args: ['audio-view', []]
+    });
+    void ui.set('audio-view', 'not-a-list');
+    expect(readWorkerMsg(messages[messages.length - 1])).toMatchObject({
+      op: 'ui:slot',
+      args: ['audio-view', []]
     });
   });
 

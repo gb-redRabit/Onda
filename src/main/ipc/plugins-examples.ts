@@ -6,12 +6,18 @@ import type {
   PluginInfo,
   PluginManifest
 } from '../../shared/types/ipc';
-import { isWithin, parseManifest, validatePluginId, MAX_MANIFEST_BYTES } from './plugins-core';
+import {
+  isWithin,
+  parseManifest,
+  validatePluginId,
+  MAX_MANIFEST_BYTES,
+  pluginCapabilityHash
+} from './plugins-core';
 
 // Bundled example plugins shipped in `resources/plugins-examples/<id>` (the
 // Settings → Plugins "Examples" section installs them with one click). Kept as
 // pure fs helpers so they can be unit-tested; the IPC handler supplies the
-// resources/userData paths and flips the enabled state afterwards.
+// resources/userData paths. Installation never enables a plugin automatically.
 
 async function readManifest(dir: string, folderId: string): Promise<PluginManifest | null> {
   try {
@@ -40,7 +46,11 @@ export async function listPluginExamples(examplesDir: string): Promise<PluginExa
       name: manifest.name,
       version: manifest.version,
       description: manifest.description,
-      author: manifest.author
+      author: manifest.author,
+      permissions: manifest.permissions,
+      hooks: manifest.hooks,
+      layoutElements: manifest.layoutElements,
+      uiSlots: manifest.uiSlots
     });
   }
   return out.sort((a, b) => a.name.localeCompare(b.name));
@@ -84,7 +94,11 @@ export async function installPluginFromDir(
     description: installed.description,
     author: installed.author,
     enabled: false,
-    permissions: installed.permissions
+    permissions: installed.permissions,
+    hooks: installed.hooks,
+    layoutElements: installed.layoutElements,
+    uiSlots: installed.uiSlots,
+    capabilityHash: pluginCapabilityHash(installed)
   };
   return { success: true, installed: info };
 }

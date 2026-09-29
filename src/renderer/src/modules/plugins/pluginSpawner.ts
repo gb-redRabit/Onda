@@ -12,6 +12,7 @@ export interface PluginSpawnerDeps {
   readyWorkers: Set<string>;
   logPush: (id: string, line: string) => void;
   setStatus: (id: string, status: PluginUiStatus, error?: string) => void;
+  onReady: (id: string) => void;
   getManifest: (id: string) => PluginManifest | undefined;
   setManifest: (id: string, manifest: PluginManifest) => void;
   clearPluginState: (id: string) => void;
@@ -36,6 +37,7 @@ export function createPluginSpawner(deps: PluginSpawnerDeps): PluginSpawner {
     readyWorkers,
     logPush,
     setStatus,
+    onReady,
     getManifest,
     setManifest,
     clearPluginState,
@@ -56,6 +58,7 @@ export function createPluginSpawner(deps: PluginSpawnerDeps): PluginSpawner {
       onReady() {
         readyWorkers.add(pluginId);
         setStatus(pluginId, 'loaded');
+        onReady(pluginId);
       },
       onCommand(command) {
         if (!command || typeof command.id !== 'string') return;

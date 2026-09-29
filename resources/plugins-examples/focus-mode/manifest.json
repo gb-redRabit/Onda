@@ -1,0 +1,26 @@
+{
+  "name": "Tryb skupienia",
+  "version": "1.0.0",
+  "description": "Odlicza czas pracy w widoku audio, na końcu pauzuje i pokazuje pozostały czas w bezpiecznym slocie UI.",
+  "author": "Onda",
+  "entry": "index.js",
+  "apiVersion": "1",
+  "permissions": {
+    "player": true,
+    "visual": true,
+    "notifications": true
+  },
+  "hooks": ["app:start"],
+  "uiSlots": ["audio-view"],
+  "settings": [
+    {
+      "key": "minutes",
+      "label": "Długość sesji (minuty)",
+      "type": "number",
+      "default": 25,
+      "min": 1,
+      "max": 240
+    },
+    { "key": "autoPause", "label": "Pauza na koniec sesji", "type": "boolean", "default": true }
+  ]
+}

@@ -22,6 +22,12 @@ import {
   writeStorageFile,
   validStorageKey,
   sanitizeStoredObject,
+  pluginSettingValueValid,
+  pluginCapabilityHash,
+  pluginConsentHash,
+  pluginApprovalMatches,
+  normalizePluginSettings,
+  sha256Hex,
   MAX_MANIFEST_BYTES,
   MAX_ENTRY_BYTES,
   MAX_PLUGINS,
@@ -96,7 +102,11 @@ async function readManifestSafe(dir: string): Promise<PluginInfo | null> {
     description: manifest.description,
     author: manifest.author,
     enabled: false,
-    permissions: manifest.permissions
+    permissions: manifest.permissions,
+    hooks: manifest.hooks,
+    layoutElements: manifest.layoutElements,
+    uiSlots: manifest.uiSlots,
+    capabilityHash: pluginCapabilityHash(manifest)
   };
 }
 
@@ -124,14 +134,49 @@ function loadEnabledState(): Promise<PluginStateFile> {
   return loadStateFile(stateFilePath());
 }
 
-async function setEnabled(id: string, enabled: boolean): Promise<void> {
+async function setEnabled(
+  id: string,
+  enabled: boolean,
+  approvedConsent?: string | null
+): Promise<void> {
   const state = await loadEnabledState();
-  state[id] = { enabled };
+  if (approvedConsent === null) {
+    state[id] = { enabled };
+  } else if (typeof approvedConsent === 'string') {
+    state[id] = { enabled, approvedConsent };
+  } else {
+    state[id] = { ...state[id], enabled };
+  }
   await saveStateFile(stateFilePath(), state);
 }
 
-function mergeInfos(plugins: PluginInfo[], state: PluginStateFile): PluginInfo[] {
-  return plugins.map((p) => ({ ...p, enabled: state[p.id]?.enabled === true }));
+/**
+ * A plugin only stays enabled while the saved consent still matches the current
+ * manifest AND entry digest, so editing a plugin's code or capabilities forces
+ * a fresh review instead of silently running unapproved code after a restart.
+ */
+async function mergeInfos(plugins: PluginInfo[], state: PluginStateFile): Promise<PluginInfo[]> {
+  const out: PluginInfo[] = [];
+  for (const plugin of plugins) {
+    const saved = state[plugin.id];
+    let consentApproved = false;
+    if (saved?.enabled === true && saved.approvedConsent) {
+      const dir = join(getPluginsDir(), plugin.id);
+      const digest = await readEntryDigest(dir, plugin.id);
+      if (digest) {
+        const manifest = await readManifest(dir, plugin.id);
+        consentApproved =
+          !!manifest && pluginApprovalMatches(manifest, digest, saved.approvedConsent);
+      }
+    }
+    const permissionReviewRequired = saved?.enabled === true && !consentApproved;
+    out.push({
+      ...plugin,
+      enabled: saved?.enabled === true && consentApproved,
+      permissionReviewRequired
+    });
+  }
+  return out;
 }
 
 async function storageData(id: string): Promise<Record<string, unknown>> {
@@ -140,10 +185,30 @@ async function storageData(id: string): Promise<Record<string, unknown>> {
   return readStorageFile(pluginStorageFile(id));
 }
 
-async function settingsData(id: string): Promise<Record<string, unknown>> {
+/**
+ * Reads persisted plugin settings and migrates them to the current manifest
+ * schema: undeclared keys are dropped and out-of-schema values fall back to a
+ * valid default. The file is rewritten once so the migration does not repeat
+ * on every read.
+ */
+async function settingsData(
+  id: string,
+  manifest?: PluginManifest | null
+): Promise<Record<string, unknown>> {
   const base = getPluginsDataDir();
   await mkdir(join(base, id), { recursive: true });
-  return readStorageFile(pluginSettingsFile(id));
+  const file = pluginSettingsFile(id);
+  const stored = await readStorageFile(file);
+  if (!manifest?.settings?.length) return stored;
+  const { value, changed } = normalizePluginSettings(manifest, stored);
+  if (changed) {
+    try {
+      await writeStorageFile(file, value);
+    } catch (e) {
+      logger.warn('plugins', 'settings migration write failed', e);
+    }
+  }
+  return value;
 }
 
 async function readPluginEntry(dir: string, id: string): Promise<string | null> {
@@ -157,6 +222,12 @@ async function readPluginEntry(dir: string, id: string): Promise<string | null> 
   } catch {
     return null;
   }
+}
+
+/** SHA-256 of the plugin entry file, so consent is bound to the actual code. */
+async function readEntryDigest(dir: string, id: string): Promise<string | null> {
+  const code = await readPluginEntry(dir, id);
+  return code === null ? null : sha256Hex(code);
 }
 
 async function installFromFolder(): Promise<IpcPluginInstallResult> {
@@ -176,16 +247,17 @@ async function installFromFolder(): Promise<IpcPluginInstallResult> {
       .pop() || '';
   const result2 = await installPluginFromDir(source, getPluginsDir(), sourceId);
   if (!result2.success || !result2.installed) return result2;
-  await setEnabled(result2.installed.id, true);
+  await setEnabled(result2.installed.id, false, null);
   const enabled = await loadEnabledState();
-  return { success: true, installed: mergeInfos([result2.installed], enabled)[0] };
+  const [info] = await mergeInfos([result2.installed], enabled);
+  return { success: true, installed: info };
 }
 
 export function registerPluginsHandlers(): void {
   ipcMain.handle('plugins:list', async (): Promise<PluginInfo[]> => {
     try {
       const plugins = await listInstalledPlugins();
-      return mergeInfos(plugins, await loadEnabledState());
+      return await mergeInfos(plugins, await loadEnabledState());
     } catch (e) {
       logger.warn('plugins', 'plugins:list failed', e);
       return [];
@@ -212,9 +284,10 @@ export function registerPluginsHandlers(): void {
         }
         const result = await installPluginFromDir(join(getExamplesDir(), id), getPluginsDir(), id);
         if (!result.success || !result.installed) return result;
-        await setEnabled(id, true);
+        await setEnabled(id, false, null);
         const enabled = await loadEnabledState();
-        return { success: true, installed: mergeInfos([result.installed], enabled)[0] };
+        const [info] = await mergeInfos([result.installed], enabled);
+        return { success: true, installed: info };
       } catch (e) {
         logger.warn('plugins', 'plugins:installExample failed', e);
         return { success: false, error: pickError(e) };
@@ -230,23 +303,42 @@ export function registerPluginsHandlers(): void {
       if (!manifest) return { success: false, error: 'Plugin not found' };
       const code = await readPluginEntry(dir, id);
       if (code === null) return { success: false, error: 'Entry file missing' };
-      return { success: true, manifest, code };
+      // Consent is bound to the entry file, so the approval token the renderer
+      // submits can never be replayed against different code.
+      return {
+        success: true,
+        manifest,
+        code,
+        consentHash: pluginConsentHash(manifest, sha256Hex(code))
+      };
     } catch (e) {
       logger.warn('plugins', 'plugins:get failed', e);
       return { success: false, error: pickError(e) };
     }
   });
 
-  ipcMain.handle('plugins:toggle', async (_e, id: string, enabled: boolean): Promise<boolean> => {
-    try {
-      if (!validatePluginId(id)) return false;
-      await setEnabled(id, enabled === true);
-      return true;
-    } catch (e) {
-      logger.warn('plugins', 'plugins:toggle failed', e);
-      return false;
+  ipcMain.handle(
+    'plugins:toggle',
+    async (_e, id: string, enabled: boolean, approvedConsent?: string): Promise<boolean> => {
+      try {
+        if (!validatePluginId(id)) return false;
+        if (enabled === true) {
+          const manifest = await readManifestById(id);
+          if (!manifest) return false;
+          const dir = join(getPluginsDir(), id);
+          const digest = await readEntryDigest(dir, id);
+          if (!digest || !pluginApprovalMatches(manifest, digest, approvedConsent)) return false;
+          await setEnabled(id, true, approvedConsent);
+        } else {
+          await setEnabled(id, false);
+        }
+        return true;
+      } catch (e) {
+        logger.warn('plugins', 'plugins:toggle failed', e);
+        return false;
+      }
     }
-  });
+  );
 
   ipcMain.handle('plugins:uninstall', async (_e, id: string): Promise<IpcPluginUninstallResult> => {
     try {
@@ -350,7 +442,9 @@ export function registerPluginsHandlers(): void {
     async (_e, id: string): Promise<Record<string, unknown>> => {
       try {
         if (!validatePluginId(id)) return {};
-        return await settingsData(id);
+        // Reading through the manifest also migrates values that no longer
+        // match the current schema, rewriting the file once.
+        return await settingsData(id, await readManifestById(id));
       } catch (e) {
         logger.warn('plugins', 'plugins:settings:get failed', e);
         return {};
@@ -364,9 +458,14 @@ export function registerPluginsHandlers(): void {
       try {
         const manifest = await readManifestById(id);
         if (!manifest || !validStorageKey(key)) return false;
+        const field = manifest.settings?.find((candidate) => candidate.key === key);
+        if (!field || !pluginSettingValueValid(field, value)) return false;
         const declared = manifest.settings?.map((field) => field.key);
         if (!settingWriteAllowed(manifest.permissions, declared, key)) return false;
-        const next: Record<string, unknown> = { ...(await settingsData(id)), [key]: value };
+        const next: Record<string, unknown> = {
+          ...(await settingsData(id, manifest)),
+          [key]: value
+        };
         if (sanitizeStoredObject(next)[key] === undefined) return false;
         await writeStorageFile(pluginSettingsFile(id), next);
         return true;

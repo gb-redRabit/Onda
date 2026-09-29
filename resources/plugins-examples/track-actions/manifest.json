@@ -1,0 +1,14 @@
+{
+  "name": "Akcje utworu",
+  "version": "1.0.0",
+  "description": "Dodaje własne pozycje do menu kontekstowego utworu (dodaj na koniec kolejki, ulubione, informacje) oraz kolejkę „jeszcze później” sterowaną z palety.",
+  "author": "Onda",
+  "entry": "index.js",
+  "apiVersion": "1",
+  "permissions": {
+    "player": true,
+    "storage": true,
+    "notifications": true
+  },
+  "hooks": ["app:start"]
+}

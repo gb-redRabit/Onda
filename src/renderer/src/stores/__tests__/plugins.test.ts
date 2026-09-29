@@ -73,6 +73,10 @@ function apiMock() {
   api.pluginsStorageRemove = vi.fn().mockResolvedValue(true);
   api.pluginsSettingsGet = vi.fn().mockResolvedValue({});
   api.pluginsSettingsSet = vi.fn().mockResolvedValue(true);
+  // The store loads bundled examples on init; without these the run logged a
+  // TypeError per call (caught, but noisy and untested).
+  api.pluginsListExamples = vi.fn().mockResolvedValue([]);
+  api.pluginsInstallExample = vi.fn().mockResolvedValue({ success: true });
   api.pluginsFetch = vi.fn().mockResolvedValue({
     success: true,
     status: 200,
@@ -129,6 +133,33 @@ describe('purely local API dispatch', () => {
     await expect(store.dispatchApi('query', ['nope', {}], 'hello')).rejects.toThrow(
       'unknown-query'
     );
+  });
+
+  it('player:progress reports timeupdate state without the player permission', async () => {
+    apiMock();
+    const store = usePluginsStore();
+    const player = usePlayerStore();
+    player.setTrack(makeTrack('7'));
+    player.currentTime = 12.5;
+    player.duration = 100;
+    const progress = (await store.dispatchApi('query', ['player:progress', {}], 'hello')) as {
+      position: number;
+      duration: number;
+      progress: number;
+      track: { title: string } | null;
+    };
+    expect(progress.position).toBe(12.5);
+    expect(progress.duration).toBe(100);
+    expect(progress.progress).toBeCloseTo(0.125);
+    expect(progress.track?.title).toBe('Title 7');
+  });
+
+  it('player:spectrum needs visual permission and returns zero bins without an analyser', async () => {
+    apiMock();
+    const store = usePluginsStore();
+    await expect(
+      store.dispatchApi('query', ['player:spectrum', { bins: 16 }], 'hello')
+    ).rejects.toThrow('permission-denied:visual');
   });
 });
 
@@ -537,6 +568,110 @@ describe('ui:set visual capability', () => {
     expect(store.decorations.cover).toBeUndefined();
   });
 
+  describe('ui:slot', () => {
+    function loadSlotPlugin(uiSlots: string[] = ['audio-view']): void {
+      (window as any).api.pluginsList = vi.fn().mockResolvedValue([
+        {
+          id: 'slotty',
+          name: 'Slotty',
+          version: '1',
+          enabled: true,
+          permissions: { visual: true }
+        }
+      ]);
+      (window as any).api.pluginsGet = vi.fn().mockResolvedValue({
+        success: true,
+        manifest: {
+          id: 'slotty',
+          name: 'Slotty',
+          version: '1',
+          entry: 'i.js',
+          permissions: { visual: true },
+          uiSlots
+        },
+        code: '// plugin'
+      });
+    }
+
+    it('stores a sanitized slot payload for a declared slot', async () => {
+      apiMock();
+      loadSlotPlugin();
+      const store = usePluginsStore();
+      await store.load();
+      await store.dispatchApi(
+        'ui:slot',
+        [
+          'audio-view',
+          [
+            { label: 'Format', value: 'FLAC\n24-bit' },
+            { label: '', value: '<b>not html</b>' }
+          ]
+        ],
+        'slotty'
+      );
+      expect(store.slots.slotty?.['audio-view']).toEqual([
+        { label: 'Format', value: 'FLAC 24-bit' },
+        { label: '', value: '<b>not html</b>' }
+      ]);
+    });
+
+    it('clears the slot for an empty list and for the plugin on disable', async () => {
+      apiMock();
+      loadSlotPlugin();
+      const store = usePluginsStore();
+      await store.load();
+      await store.dispatchApi('ui:slot', ['audio-view', [{ label: 'A', value: 'B' }]], 'slotty');
+      expect(store.slots.slotty?.['audio-view']).toHaveLength(1);
+      await store.dispatchApi('ui:slot', ['audio-view', []], 'slotty');
+      expect(store.slots.slotty?.['audio-view']).toBeUndefined();
+
+      await store.dispatchApi('ui:slot', ['audio-view', [{ label: 'A', value: 'B' }]], 'slotty');
+      await store.toggle('slotty');
+      expect(store.slots.slotty).toBeUndefined();
+    });
+
+    it('rejects undeclared slots, unknown host slots and oversized payloads', async () => {
+      apiMock();
+      loadSlotPlugin(['player-bar']);
+      const store = usePluginsStore();
+      await store.load();
+      await expect(
+        store.dispatchApi('ui:slot', ['audio-view', [{ label: 'A', value: 'B' }]], 'slotty')
+      ).rejects.toThrow('ui-slot:not-declared');
+      (window as any).api.pluginsGet = vi.fn().mockResolvedValue({
+        success: true,
+        manifest: {
+          id: 'slotty',
+          name: 'Slotty',
+          version: '1',
+          entry: 'i.js',
+          permissions: { visual: true },
+          uiSlots: ['audio-view', 'nowhere']
+        },
+        code: '// plugin'
+      });
+      await store.refresh();
+      await expect(
+        store.dispatchApi('ui:slot', ['nowhere', [{ label: 'A', value: 'B' }]], 'slotty')
+      ).rejects.toThrow('ui-slot:unknown-slot');
+      await expect(
+        store.dispatchApi(
+          'ui:slot',
+          ['audio-view', Array.from({ length: 9 }, (_, i) => ({ label: `l${i}`, value: `v${i}` }))],
+          'slotty'
+        )
+      ).rejects.toThrow('ui-slot:too-many-items');
+    });
+
+    it('rejects a slot write without visual permission', async () => {
+      apiMock();
+      const store = usePluginsStore();
+      await expect(
+        store.dispatchApi('ui:slot', ['audio-view', [{ label: 'A', value: 'B' }]], 'no-perms')
+      ).rejects.toThrow('permission-denied:visual');
+    });
+  });
+
   it('lists host-known plugin layout variants only', async () => {
     apiMock();
     (window as any).api.pluginsList = vi
@@ -778,6 +913,60 @@ describe('command shortcuts', () => {
 });
 
 describe('worker lifecycle', () => {
+  it('requires a consent token issued for the current code before enabling', async () => {
+    apiMock();
+    (window as any).api.pluginsToggle = vi.fn().mockResolvedValue(true);
+    (window as any).api.pluginsGet = vi.fn().mockResolvedValue({
+      success: true,
+      manifest: {
+        id: 'review',
+        name: 'Review',
+        version: '1.0.0',
+        entry: 'index.js',
+        permissions: { network: { allow: ['https://api.example/*'] } }
+      },
+      code: '// plugin',
+      consentHash: 'b'.repeat(64)
+    });
+    const store = usePluginsStore();
+    store.plugins.push({
+      id: 'review',
+      name: 'Review',
+      version: '1.0.0',
+      enabled: false,
+      permissions: { network: { allow: ['https://api.example/*'] } },
+      status: 'new'
+    });
+
+    await expect(store.toggle('review')).resolves.toBe(false);
+    expect((window as any).api.pluginsToggle).not.toHaveBeenCalled();
+
+    // Enabling through the store fetches the token that main computed for the
+    // manifest + entry file it is about to run.
+    await expect(store.approveAndEnable('review')).resolves.toBe(true);
+    expect((window as any).api.pluginsGet).toHaveBeenCalledWith('review');
+    expect((window as any).api.pluginsToggle).toHaveBeenCalledWith('review', true, 'b'.repeat(64));
+    expect(fakeWorkers).toHaveLength(1);
+  });
+
+  it('refuses to enable when main does not return a consent hash', async () => {
+    apiMock();
+    (window as any).api.pluginsToggle = vi.fn().mockResolvedValue(true);
+    (window as any).api.pluginsGet = vi.fn().mockResolvedValue({ success: true, code: '// x' });
+    const store = usePluginsStore();
+    store.plugins.push({
+      id: 'review',
+      name: 'Review',
+      version: '1.0.0',
+      enabled: false,
+      permissions: {},
+      status: 'new'
+    });
+
+    await expect(store.approveAndEnable('review')).resolves.toBe(false);
+    expect((window as any).api.pluginsToggle).not.toHaveBeenCalled();
+  });
+
   it('spawns enabled plugin and forwards hooks + api-request', async () => {
     apiMock();
     (window as any).api.pluginsList = vi.fn().mockResolvedValue([
@@ -798,7 +987,8 @@ describe('worker lifecycle', () => {
         name: 'Hello',
         version: '1.0.0',
         entry: 'i.js',
-        permissions: { notifications: true }
+        permissions: { notifications: true },
+        hooks: ['app:start', 'track:play']
       },
       code: '// plugin'
     });
@@ -806,15 +996,29 @@ describe('worker lifecycle', () => {
     await store.load();
     expect(store.plugins[0].id).toBe('hello');
     expect(fakeWorkers.length).toBe(1);
+    await store.load();
+    expect(fakeWorkers.length).toBe(1);
     const worker = fakeWorkers[0];
     worker.onmessage?.({ data: wrapIntoWorker({ type: 'ready' }) });
     expect(store.plugins[0].status).toBe('loaded');
 
+    const startHooks = worker.posts.filter(
+      (p) => (p as { __onda?: { type?: string; name?: string } }).__onda?.name === 'app:start'
+    );
+    expect(startHooks).toHaveLength(1);
+
     store.emitHook('track:play', { title: 'X' });
     const hookMsg = worker.posts.find(
-      (p) => (p as { __onda?: { type?: string } }).__onda?.type === 'hook'
+      (p) => (p as { __onda?: { type?: string; name?: string } }).__onda?.name === 'track:play'
     ) as { __onda: { type: string; name: string } };
     expect(hookMsg.__onda).toMatchObject({ type: 'hook', name: 'track:play' });
+
+    store.emitHook('track:end', { title: 'undeclared' });
+    expect(
+      worker.posts.some(
+        (p) => (p as { __onda?: { type?: string; name?: string } }).__onda?.name === 'track:end'
+      )
+    ).toBe(false);
 
     (window as any).api.pluginsStorageGet = vi.fn().mockResolvedValue(41);
     await worker.onmessage?.({

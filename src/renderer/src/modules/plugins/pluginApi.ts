@@ -1,9 +1,11 @@
 import type { Ref } from 'vue';
 import type { PluginManifest } from '@shared/types/ipc';
+import { isPluginUiSlot, sanitizeSlotItems, type PluginSlotItem } from '@shared/plugin-ui-slots';
 import type { MediaFile } from '@renderer/types/media';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useLibraryStore } from '@renderer/stores/library';
 import { useUIStore } from '@renderer/stores/ui';
+import { audioEngine } from '@renderer/modules/audioEngine';
 import {
   LAYOUT_ELEMENT_IDS,
   PLUGIN_HOST_VARIANTS,
@@ -18,6 +20,8 @@ export interface PluginApiDeps {
   getSettings: (id: string) => Record<string, unknown>;
   saveSetting: (id: string, key: string, value: unknown) => Promise<boolean>;
   visuals: Ref<Record<string, Record<string, string>>>;
+  /** `pluginId -> slot -> items`; host renderuje te wartości jako tekst. */
+  slots: Ref<Record<string, Record<string, PluginSlotItem[]>>>;
 }
 
 export type PluginApiDispatch = (op: string, args: unknown[], pluginId: string) => Promise<unknown>;
@@ -28,7 +32,7 @@ export type PluginApiDispatch = (op: string, args: unknown[], pluginId: string) 
  * accessors, the visuals ref and the settings writer.
  */
 export function createPluginApi(deps: PluginApiDeps): PluginApiDispatch {
-  const { getManifest, getSettings, saveSetting, visuals } = deps;
+  const { getManifest, getSettings, saveSetting, visuals, slots } = deps;
 
   function hasPermission(
     id: string,
@@ -47,6 +51,47 @@ export function createPluginApi(deps: PluginApiDeps): PluginApiDispatch {
       repeat: player.repeat,
       queueLength: player.queueLength
     };
+  }
+
+  /** `timeupdate` jako zapytanie — dla workerów bez zadeklarowanego hooka. */
+  function playerProgress(): unknown {
+    const player = usePlayerStore();
+    return {
+      position: player.currentTime,
+      duration: player.duration,
+      progress: player.progress,
+      rate: player.playbackRate,
+      playing: player.isPlaying,
+      track: snapshotTrack(player.currentTrack)
+    };
+  }
+
+  /**
+   * Znormalizowane widmo z `AnalyserNode` (log-scale, 32 koszyki, 0..1).
+   * Wtyczka dostaje liczby — nigdy surowy bufor PCM. Wymaga `visual`,
+   * bo to ta sama powierzchnia co dekorowanie elementu `visualization`.
+   */
+  function playerSpectrum(bins: number): unknown {
+    const analyser = audioEngine.getAnalyserNode();
+    const count = Math.max(4, Math.min(64, Math.floor(bins) || 32));
+    if (!analyser) return { bins: new Array<number>(count).fill(0), available: false };
+    const spectrum = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(spectrum);
+    const nyquist = 22050;
+    const out: number[] = [];
+    for (let i = 0; i < count; i++) {
+      // Logarytmiczne buckety: 40 Hz .. 16 kHz — równe szerokości oktaw.
+      const from = Math.floor(((40 * Math.pow(400, i / count)) / nyquist) * spectrum.length);
+      const to = Math.max(
+        from + 1,
+        Math.floor(((40 * Math.pow(400, (i + 1) / count)) / nyquist) * spectrum.length)
+      );
+      let peak = 0;
+      for (let j = from; j < to && j < spectrum.length; j++) peak = Math.max(peak, spectrum[j]);
+      // Delikatna kompresja, żeby ciche fragmenty nie były płaskie.
+      out.push(Math.min(1, Number(((peak / 255) ** 0.75).toFixed(3))));
+    }
+    return { bins: out, available: true };
   }
 
   function libraryCount(): unknown {
@@ -78,13 +123,18 @@ export function createPluginApi(deps: PluginApiDeps): PluginApiDispatch {
     };
   }
 
-  function dispatchQuery(args: unknown[], _pluginId: string): Promise<unknown> | unknown {
+  function dispatchQuery(args: unknown[], pluginId: string): Promise<unknown> | unknown {
     const name = String(args[0] ?? '');
     const qargs =
       args[1] && typeof args[1] === 'object' ? (args[1] as Record<string, unknown>) : {};
     switch (name) {
       case 'player:status':
         return playerStatus();
+      case 'player:progress':
+        return playerProgress();
+      case 'player:spectrum':
+        if (!hasPermission(pluginId, 'visual')) throw new Error('permission-denied:visual');
+        return playerSpectrum(Number(qargs.bins) || 32);
       case 'library:count':
         return libraryCount();
       case 'library:search':
@@ -195,6 +245,25 @@ export function createPluginApi(deps: PluginApiDeps): PluginApiDispatch {
     return true;
   }
 
+  /**
+   * `api.ui.set(slot, items)` / `api.ui.clear(slot)`. Wtyczka deklaruje slot w
+   * `manifest.uiSlots` i musi mieć `visual`; payload jest walidowany i
+   * ograniczony, a renderuje go host (bez HTML ze strony wtyczki).
+   */
+  function dispatchUiSlot(args: unknown[], pluginId: string): boolean {
+    if (!hasPermission(pluginId, 'visual')) throw new Error('permission-denied:visual');
+    const slot = String(args[0] ?? '');
+    if (!isPluginUiSlot(slot)) throw new Error('ui-slot:unknown-slot');
+    const manifest = getManifest(pluginId);
+    if (!manifest?.uiSlots?.includes(slot)) throw new Error('ui-slot:not-declared');
+    const items = sanitizeSlotItems(args[1]);
+    const next = { ...(slots.value[pluginId] || {}) };
+    if (items) next[slot] = items;
+    else delete next[slot];
+    slots.value = { ...slots.value, [pluginId]: next };
+    return true;
+  }
+
   async function dispatchFetch(pluginId: string, args: unknown[]): Promise<unknown> {
     const url = String(args[0] ?? '');
     const opts = args[1] && typeof args[1] === 'object' ? (args[1] as Record<string, unknown>) : {};
@@ -249,6 +318,8 @@ export function createPluginApi(deps: PluginApiDeps): PluginApiDispatch {
         return dispatchFetch(pluginId, args);
       case 'ui:set':
         return dispatchVisual(args, pluginId);
+      case 'ui:slot':
+        return dispatchUiSlot(args, pluginId);
       default:
         throw new Error('unknown-op');
     }

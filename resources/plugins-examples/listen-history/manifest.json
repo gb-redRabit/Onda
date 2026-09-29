@@ -1,0 +1,13 @@
+{
+  "name": "Historia odsłuchań",
+  "version": "1.0.0",
+  "description": "Lokalna historia odsłuchań: ile minut dzisiaj, top wykonawcy tygodnia i pełna lista w komendzie palety. Nic nie wychodzi poza ten komputer.",
+  "author": "Onda",
+  "entry": "index.js",
+  "apiVersion": "1",
+  "permissions": {
+    "storage": true,
+    "notifications": true
+  },
+  "hooks": ["app:start", "track:play", "track:timeupdate", "track:end"]
+}

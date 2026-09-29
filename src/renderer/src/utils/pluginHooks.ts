@@ -4,6 +4,7 @@ import type { PluginHookPayload } from '@renderer/modules/plugins/plugin-shim';
 export type PluginHookName =
   | 'app:start'
   | 'track:play'
+  | 'track:timeupdate'
   | 'track:end'
   | 'track:queued'
   | 'library:scan'
@@ -14,6 +15,7 @@ export type PluginHookName =
 const KNOWN_HOOKS = new Set<PluginHookName>([
   'app:start',
   'track:play',
+  'track:timeupdate',
   'track:end',
   'track:queued',
   'library:scan',

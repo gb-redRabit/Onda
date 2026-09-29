@@ -1,0 +1,31 @@
+{
+  "name": "Odczyt nuty",
+  "version": "1.0.0",
+  "description": "Szacuje dominującą nutę z widma (player:spectrum) i pokazuje ją w slocie UI. To wyliczenie z grubej siatki, nie tuner — wynik wymaga kalibracji słuchem.",
+  "author": "Onda",
+  "entry": "index.js",
+  "apiVersion": "1",
+  "permissions": {
+    "visual": true
+  },
+  "hooks": ["app:start", "track:play"],
+  "uiSlots": ["audio-view"],
+  "settings": [
+    {
+      "key": "offset",
+      "label": "Kalibracja (półtony)",
+      "type": "number",
+      "default": 0,
+      "min": -12,
+      "max": 12
+    },
+    {
+      "key": "minLevel",
+      "label": "Czułość progu (1–60)",
+      "type": "number",
+      "default": 12,
+      "min": 1,
+      "max": 60
+    }
+  ]
+}

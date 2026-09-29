@@ -45,4 +45,21 @@ export function usePluginsHooks(): void {
   audioEvents.on('trackEnd', () => {
     store.emitHook('track:end', trackPayload(snapshotTrack(player.currentTrack)));
   });
+
+  // `timeupdate` z audio elementu leci ~4×/s — hook throttlujemy do ~1 Hz, żeby
+  // worker nie dostawał setek wiadomości na sekundę odtwarzania.
+  let lastProgressAt = 0;
+  audioEvents.on('timeUpdate', (position) => {
+    const now = Date.now();
+    if (now - lastProgressAt < 1000) return;
+    lastProgressAt = now;
+    store.emitHook('track:timeupdate', {
+      position,
+      duration: player.duration,
+      progress: player.progress,
+      rate: player.playbackRate,
+      playing: player.isPlaying,
+      track: snapshotTrack(player.currentTrack)
+    });
+  });
 }

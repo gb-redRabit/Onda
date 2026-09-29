@@ -7,6 +7,7 @@ import type {
   IpcPluginInstallResult
 } from '@shared/types/ipc';
 import type { PluginCommandEntry } from '@renderer/modules/plugins/plugin-shim';
+import type { PluginSlotItem } from '@shared/plugin-ui-slots';
 import type { PluginWorkerHandle } from '@renderer/modules/plugins/pluginWorker';
 import { createPluginSpawner, type PluginUiStatus } from '@renderer/modules/plugins/pluginSpawner';
 import { createPluginApi } from '@renderer/modules/plugins/pluginApi';
@@ -37,11 +38,14 @@ export const usePluginsStore = defineStore('plugins', () => {
   const logs = ref<Record<string, string[]>>({});
   const loading = ref(false);
   const visuals = ref<Record<string, Record<string, string>>>({});
+  const slots = ref<Record<string, Record<string, PluginSlotItem[]>>>({});
   const pluginSettings = ref<Record<string, Record<string, unknown>>>({});
 
   const manifests = ref<Record<string, PluginManifest>>({});
   const workers = shallowRef<Record<string, PluginWorkerHandle>>({});
   const readyWorkers = new Set<string>();
+  let hasLoaded = false;
+  let loadPromise: Promise<void> | null = null;
 
   const decorations = computed(() => computeDecorations(plugins.value, visuals.value));
 
@@ -64,6 +68,7 @@ export const usePluginsStore = defineStore('plugins', () => {
 
   function clearPluginState(id: string): void {
     if (visuals.value[id]) visuals.value = omitKey(visuals.value, id);
+    if (slots.value[id]) slots.value = omitKey(slots.value, id);
     if (pluginSettings.value[id]) pluginSettings.value = omitKey(pluginSettings.value, id);
   }
 
@@ -71,7 +76,8 @@ export const usePluginsStore = defineStore('plugins', () => {
     getManifest: manifestOf,
     getSettings: settingsOf,
     saveSetting,
-    visuals
+    visuals,
+    slots
   });
 
   const spawner = createPluginSpawner({
@@ -80,6 +86,11 @@ export const usePluginsStore = defineStore('plugins', () => {
     readyWorkers,
     logPush,
     setStatus,
+    onReady(id) {
+      if (manifestOf(id)?.hooks?.includes('app:start')) {
+        workers.value[id]?.postHook('app:start', {});
+      }
+    },
     getManifest: manifestOf,
     setManifest(id, manifest) {
       manifests.value = { ...manifests.value, [id]: manifest };
@@ -96,56 +107,80 @@ export const usePluginsStore = defineStore('plugins', () => {
     }
   }
 
-  async function load(): Promise<void> {
+  async function load(force = false): Promise<void> {
+    if (loadPromise) return loadPromise;
+    if (hasLoaded && !force) return;
     loading.value = true;
-    try {
-      await loadExamples();
-      const list = (await window.api.pluginsList()) || [];
-      manifests.value = {};
-      workers.value = {};
-      readyWorkers.clear();
-      commands.value = [];
-      visuals.value = {};
-      plugins.value = list.map((p) => ({ ...p, status: 'new' as PluginUiStatus }));
-      logs.value = {};
-      pluginSettings.value = {};
-      const fetchedSettings = await Promise.all(
-        list.map(async (plugin) => {
-          let value: Record<string, unknown> = {};
-          try {
-            value = (await window.api.pluginsSettingsGet(plugin.id)) || {};
-          } catch {
-            value = {};
-          }
-          return [plugin.id, value] as const;
-        })
-      );
-      pluginSettings.value = {};
-      for (const [id, value] of fetchedSettings) {
-        pluginSettings.value[id] = value;
-      }
-      for (const plugin of list) {
-        if (plugin.enabled) {
-          await spawner.spawnPlugin(plugin.id);
+    hasLoaded = false;
+    loadPromise = (async () => {
+      try {
+        for (const id of Object.keys(workers.value)) spawner.terminatePlugin(id, true);
+        await loadExamples();
+        const list = (await window.api.pluginsList()) || [];
+        manifests.value = {};
+        workers.value = {};
+        readyWorkers.clear();
+        commands.value = [];
+        visuals.value = {};
+        slots.value = {};
+        plugins.value = list.map((p) => ({ ...p, status: 'new' as PluginUiStatus }));
+        logs.value = {};
+        pluginSettings.value = {};
+        const fetchedSettings = await Promise.all(
+          list.map(async (plugin) => {
+            let value: Record<string, unknown> = {};
+            try {
+              value = (await window.api.pluginsSettingsGet(plugin.id)) || {};
+            } catch {
+              value = {};
+            }
+            return [plugin.id, value] as const;
+          })
+        );
+        pluginSettings.value = {};
+        for (const [id, value] of fetchedSettings) {
+          pluginSettings.value[id] = value;
         }
+        for (const plugin of list) {
+          if (plugin.enabled) {
+            await spawner.spawnPlugin(plugin.id);
+          }
+        }
+        hasLoaded = true;
+      } catch (e) {
+        logger.error('plugins', 'plugins.load failed', e);
       }
-      readyWorkers.forEach(() => undefined);
-      emitHook('app:start', {});
-    } catch (e) {
-      logger.error('plugins', 'plugins.load failed', e);
+    })();
+    try {
+      await loadPromise;
     } finally {
+      loadPromise = null;
       loading.value = false;
     }
   }
 
-  async function toggle(id: string): Promise<void> {
+  /**
+   * Enables a plugin after review: the main process issues a consent token for
+   * the manifest + entry file it is about to run, so the approval cannot be
+   * replayed against different code.
+   */
+  async function approveAndEnable(id: string): Promise<boolean> {
+    const info = plugins.value.find((p) => p.id === id);
+    if (!info) return false;
+    const fetched = await window.api.pluginsGet(id);
+    if (!fetched.success || !fetched.consentHash) return false;
+    return await toggle(id, fetched.consentHash);
+  }
+
+  async function toggle(id: string, approvedConsent?: string): Promise<boolean> {
     const info = plugins.value.find((p) => p.id === id);
     const enabled = info ? !info.enabled : false;
-    const ok = await window.api.pluginsToggle(id, enabled);
-    if (!ok) return;
+    if (!info || (enabled && !approvedConsent)) return false;
+    const ok = await window.api.pluginsToggle(id, enabled, approvedConsent);
+    if (!ok) return false;
     if (enabled) {
       plugins.value = plugins.value.map((p) =>
-        p.id === id ? { ...p, enabled: true, status: 'new' } : p
+        p.id === id ? { ...p, enabled: true, status: 'new', permissionReviewRequired: false } : p
       );
       await spawner.spawnPlugin(id);
     } else {
@@ -154,6 +189,7 @@ export const usePluginsStore = defineStore('plugins', () => {
         p.id === id ? { ...p, enabled: false, status: 'new' } : p
       );
     }
+    return true;
   }
 
   async function uninstall(id: string): Promise<void> {
@@ -166,7 +202,7 @@ export const usePluginsStore = defineStore('plugins', () => {
   async function installFromFolder(): Promise<IpcPluginInstallResult> {
     const result = await window.api.pluginsInstallFromFolder();
     if (result.success && result.installed) {
-      await load();
+      await load(true);
     }
     return result;
   }
@@ -174,18 +210,17 @@ export const usePluginsStore = defineStore('plugins', () => {
   async function installExample(id: string): Promise<IpcPluginInstallResult> {
     const result = await window.api.pluginsInstallExample(id);
     if (result.success && result.installed) {
-      await load();
+      await load(true);
     }
     return result;
   }
 
   async function refresh(): Promise<void> {
-    for (const id of Object.keys(workers.value)) spawner.terminatePlugin(id, true);
-    await load();
+    await load(true);
   }
 
   const { emitHook, commandsIn, dispatchShortcut, dispatchCommand, invokeCommandWithContext } =
-    createPluginCommands({ commands, workers, readyWorkers, logPush });
+    createPluginCommands({ commands, workers, readyWorkers, getManifest: manifestOf, logPush });
 
   if (typeof window !== 'undefined') {
     window.addEventListener('beforeunload', () => spawner.terminateAll());
@@ -197,6 +232,7 @@ export const usePluginsStore = defineStore('plugins', () => {
     commands,
     logs,
     visuals,
+    slots,
     decorations,
     layoutVariants,
     pluginSettings,
@@ -204,6 +240,7 @@ export const usePluginsStore = defineStore('plugins', () => {
     load,
     loadExamples,
     toggle,
+    approveAndEnable,
     uninstall,
     installFromFolder,
     installExample,

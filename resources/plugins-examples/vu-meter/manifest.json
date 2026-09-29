@@ -1,0 +1,23 @@
+{
+  "name": "Wskaźnik poziomu",
+  "version": "1.0.0",
+  "description": "Żywy wskaźnik głośności i szczytu (peak hold) w bezpiecznym slocie UI widoku audio, na podstawie widma z player:spectrum.",
+  "author": "Onda",
+  "entry": "index.js",
+  "apiVersion": "1",
+  "permissions": {
+    "visual": true
+  },
+  "hooks": ["app:start", "track:play"],
+  "uiSlots": ["audio-view"],
+  "settings": [
+    {
+      "key": "width",
+      "label": "Szerokość paska (znaki)",
+      "type": "number",
+      "default": 18,
+      "min": 8,
+      "max": 28
+    }
+  ]
+}

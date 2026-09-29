@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { resolve, sep, normalize } from 'path';
 import { readFile, writeFile, mkdir, rename } from 'fs/promises';
 import type {
@@ -6,12 +7,14 @@ import type {
   PluginPermissions,
   PluginSettingField
 } from '../../shared/types/ipc';
+import { isPluginUiSlot } from '../../shared/plugin-ui-slots';
 import {
   STORAGE_KEY_RE,
   MAX_STRING_VALUE_BYTES,
   validStorageKey,
   storageSizeBytes,
   sanitizeStoredObject,
+  pluginSettingValueValid,
   compileNetworkPattern,
   urlAllowed,
   resolveRedirectUrl
@@ -22,6 +25,7 @@ export {
   validStorageKey,
   storageSizeBytes,
   sanitizeStoredObject,
+  pluginSettingValueValid,
   compileNetworkPattern,
   urlAllowed,
   resolveRedirectUrl
@@ -93,6 +97,16 @@ function sanitizeLayoutElements(value: unknown): PluginLayoutElement[] | undefin
   return out.length > 0 ? out : undefined;
 }
 
+/** Tylko sloty, które host umie wyrenderować; reszta jest odrzucana. */
+function sanitizeUiSlots(value: unknown): string[] | undefined {
+  if (!Array.isArray(value) || value.length === 0) return undefined;
+  const seen = new Set<string>();
+  for (const raw of value) {
+    if (typeof raw === 'string' && isPluginUiSlot(raw)) seen.add(raw);
+  }
+  return seen.size > 0 ? [...seen] : undefined;
+}
+
 export function sanitizePermissions(value: unknown): PluginPermissions {
   const o = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
   const permissions: PluginPermissions = {};
@@ -132,6 +146,7 @@ export function parseManifest(raw: unknown, folderId: string): ParsedManifest {
   const permissions = sanitizePermissions(o.permissions);
   const layoutElements =
     permissions.visual === true ? sanitizeLayoutElements(o.layoutElements) : undefined;
+  const uiSlots = permissions.visual === true ? sanitizeUiSlots(o.uiSlots) : undefined;
   return {
     manifest: {
       id: folderId,
@@ -144,7 +159,8 @@ export function parseManifest(raw: unknown, folderId: string): ParsedManifest {
       permissions,
       hooks,
       settings: sanitizeSettings(o.settings),
-      ...(layoutElements ? { layoutElements } : {})
+      ...(layoutElements ? { layoutElements } : {}),
+      ...(uiSlots ? { uiSlots } : {})
     }
   };
 }
@@ -163,11 +179,20 @@ function sanitizeSettings(value: unknown): PluginSettingField[] | undefined {
     if (!type) continue;
     const min = typeof o.min === 'number' && Number.isFinite(o.min) ? o.min : undefined;
     const max = typeof o.max === 'number' && Number.isFinite(o.max) ? o.max : undefined;
-    const def = sanitizeStoredObject({ [o.key]: o.default })[o.key];
+    if (type === 'number' && min !== undefined && max !== undefined && min > max) continue;
+    const field = {
+      key: o.key,
+      label: pickString(o.label, 80) ?? o.key,
+      type: type as PluginSettingField['type'],
+      min,
+      max
+    };
+    const candidateDefault = sanitizeStoredObject({ [o.key]: o.default })[o.key];
+    const def = pluginSettingValueValid(field, candidateDefault) ? candidateDefault : undefined;
     seen.add(o.key);
     fields.push({
       key: o.key,
-      label: pickString(o.label, 80) ?? o.key,
+      label: field.label,
       type: type as PluginSettingField['type'],
       ...(def !== undefined ? { default: def } : {}),
       ...(min !== undefined ? { min } : {}),
@@ -178,7 +203,81 @@ function sanitizeSettings(value: unknown): PluginSettingField[] | undefined {
 }
 
 export interface PluginStateFile {
-  [id: string]: { enabled?: boolean };
+  [id: string]: { enabled?: boolean; approvedConsent?: string };
+}
+
+export function sha256Hex(input: string): string {
+  return createHash('sha256').update(input).digest('hex');
+}
+
+/** Stable digest of the capabilities a user reviews before enabling a plugin. */
+export function pluginCapabilityHash(
+  manifest: Pick<PluginManifest, 'permissions' | 'hooks' | 'layoutElements' | 'uiSlots'>
+): string {
+  const permissions = manifest.permissions || {};
+  const layoutElements = [...(manifest.layoutElements || [])]
+    .map(({ element, variant }) => ({ element, variant }))
+    .sort((a, b) => a.element.localeCompare(b.element) || a.variant.localeCompare(b.variant));
+  const capabilities = {
+    permissions: {
+      storage: permissions.storage === true,
+      network: [...(permissions.network?.allow || [])].sort(),
+      notifications: permissions.notifications === true,
+      player: permissions.player === true,
+      visual: permissions.visual === true
+    },
+    hooks: [...new Set(manifest.hooks || [])].sort(),
+    layoutElements,
+    uiSlots: [...new Set(manifest.uiSlots || [])].sort()
+  };
+  return sha256Hex(JSON.stringify(capabilities));
+}
+
+/**
+ * Digest covering what the user actually approves: the declared capabilities
+ * AND the entry file that will run. Editing the plugin code therefore requires
+ * a new review, not just editing the manifest.
+ */
+export function pluginConsentHash(
+  manifest: Pick<PluginManifest, 'permissions' | 'hooks' | 'layoutElements' | 'uiSlots'>,
+  entrySha256: string
+): string {
+  return sha256Hex(`${pluginCapabilityHash(manifest)}:${entrySha256}`);
+}
+
+export function pluginApprovalMatches(
+  manifest: Pick<PluginManifest, 'permissions' | 'hooks' | 'layoutElements' | 'uiSlots'>,
+  entrySha256: string,
+  approvedConsent: unknown
+): boolean {
+  return (
+    typeof approvedConsent === 'string' &&
+    approvedConsent === pluginConsentHash(manifest, entrySha256)
+  );
+}
+
+/**
+ * Drops keys that are no longer declared and replaces values that no longer
+ * match the manifest schema (type, min/max, text size). Returns whether the
+ * stored map has to be rewritten, so callers can migrate the file once.
+ */
+export function normalizePluginSettings(
+  manifest: Pick<PluginManifest, 'settings'>,
+  stored: Record<string, unknown>
+): { value: Record<string, unknown>; changed: boolean } {
+  const fields = manifest.settings || [];
+  if (fields.length === 0) return { value: { ...stored }, changed: false };
+  const value: Record<string, unknown> = {};
+  for (const field of fields) {
+    const saved = stored[field.key];
+    if (pluginSettingValueValid(field, saved)) value[field.key] = saved;
+    else if (pluginSettingValueValid(field, field.default)) value[field.key] = field.default;
+  }
+  const storedKeys = Object.keys(stored);
+  const changed =
+    storedKeys.length !== Object.keys(value).length ||
+    storedKeys.some((key) => stored[key] !== value[key]);
+  return { value, changed };
 }
 
 export async function loadStateFile(filePath: string): Promise<PluginStateFile> {
@@ -193,7 +292,14 @@ export async function loadStateFile(filePath: string): Promise<PluginStateFile> 
         value && typeof value === 'object' && !Array.isArray(value)
           ? (value as Record<string, unknown>)
           : {};
-      out[id] = { enabled: v.enabled === true };
+      const approvedConsent =
+        typeof v.approvedConsent === 'string' && /^[a-f0-9]{64}$/.test(v.approvedConsent)
+          ? v.approvedConsent
+          : undefined;
+      out[id] = {
+        enabled: v.enabled === true,
+        ...(approvedConsent ? { approvedConsent } : {})
+      };
     }
     return out;
   } catch {

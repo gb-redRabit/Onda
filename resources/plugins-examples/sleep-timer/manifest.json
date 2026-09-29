@@ -1,0 +1,32 @@
+{
+  "name": "Minuterka snu",
+  "version": "1.0.0",
+  "description": "Zatrzymuje odtwarzanie po zadanym czasie: liczy w tle (przeżywa restart) i ostatnie sekundy wycisza płynnie. Uwaga: wyłączenie wtyczki w trakcie wyciszania zostawia głośność na obniżonej wartości.",
+  "author": "Onda",
+  "entry": "index.js",
+  "apiVersion": "1",
+  "permissions": {
+    "player": true,
+    "storage": true,
+    "notifications": true
+  },
+  "hooks": ["app:start", "track:play", "track:end"],
+  "settings": [
+    {
+      "key": "minutes",
+      "label": "Czas (minuty)",
+      "type": "number",
+      "default": 30,
+      "min": 1,
+      "max": 600
+    },
+    {
+      "key": "fadeSeconds",
+      "label": "Wyciszanie (sekundy)",
+      "type": "number",
+      "default": 20,
+      "min": 0,
+      "max": 120
+    }
+  ]
+}

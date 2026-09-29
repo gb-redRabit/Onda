@@ -12,6 +12,7 @@ export interface PluginCommandEntry {
 
 export type PluginWorkerMsg =
   | { type: 'ready' }
+  | { type: 'pong' }
   | { type: 'api-request'; id: number; op: string; args: unknown[] }
   | { type: 'register-command'; command: PluginCommandEntry }
   | { type: 'unregister-command'; commandId: string }
@@ -19,6 +20,7 @@ export type PluginWorkerMsg =
   | { type: 'error'; message: string };
 
 export type PluginMainMsg =
+  | { type: 'ping' }
   | { type: 'hook'; name: string; payload: PluginHookPayload }
   | { type: 'api-response'; id: number; ok: boolean; data?: unknown; error?: string }
   | { type: 'invoke-command'; commandId: string; payload?: PluginHookPayload };
@@ -61,6 +63,8 @@ export const PLUGIN_API_SHIM = [
   '  }',
   '  var pending = Object.create(null);',
   '  var nextReq = 1;',
+  '  var MAX_SLOT_ITEMS = 8;',
+  '  var MAX_SLOT_CHARS = 160;',
   '  function post(type, payload) {',
   '    try { self.postMessage({ __onda: Object.assign({ type: type }, payload || {}) }); } catch (e) { /* ignore */ }',
   '  }',
@@ -83,6 +87,20 @@ export const PLUGIN_API_SHIM = [
   '    var m = String(err && err.message ? err.message : err);',
   "    post('error', { message: m.slice(0, 1000) });",
   '  }',
+  '  function filterSlotItems(items) {',
+  '    if (!Array.isArray(items)) return [];',
+  '    var out = [];',
+  '    for (var i = 0; i < items.length && out.length < MAX_SLOT_ITEMS; i++) {',
+  '      var it = items[i];',
+  '      if (!it || typeof it !== "object") continue;',
+  '      var label = String(it.label == null ? "" : it.label);',
+  '      var value = String(it.value == null ? "" : it.value);',
+  '      if (label.length > MAX_SLOT_CHARS) label = label.slice(0, MAX_SLOT_CHARS);',
+  '      if (value.length > MAX_SLOT_CHARS) value = value.slice(0, MAX_SLOT_CHARS);',
+  '      out.push({ label: label, value: value });',
+  '    }',
+  '    return out;',
+  '  }',
   '  var hooks = Object.create(null);',
   '  var commands = Object.create(null);',
   '  var api = {',
@@ -103,6 +121,10 @@ export const PLUGIN_API_SHIM = [
   '    },',
   "    fetch: function (url, opts) { return call('fetch', [url, opts || {}]); },",
   "    visual: function (key, value) { return call('ui:set', [key, value || '']); },",
+  '    ui: {',
+  "      set: function (slot, items) { return call('ui:slot', [slot, filterSlotItems(items)]); },",
+  "      clear: function (slot) { return call('ui:slot', [slot, []]); }",
+  '    },',
   '    registerCommand: function (cmd) {',
   "      if (!cmd || typeof cmd.id !== 'string' || typeof cmd.label !== 'string') return function () {};",
   "      var entry = { id: cmd.id, label: cmd.label, icon: typeof cmd.icon === 'string' ? cmd.icon : undefined };",
@@ -126,7 +148,9 @@ export const PLUGIN_API_SHIM = [
   '  self.onmessage = function (e) {',
   '    var o = e && e.data && e.data.__onda;',
   '    if (!o) return;',
-  "    if (o.type === 'api-response') {",
+  "    if (o.type === 'ping') {",
+  "      post('pong', {});",
+  "    } else if (o.type === 'api-response') {",
   '      var p = pending[o.id];',
   '      if (!p) return;',
   '      delete pending[o.id];',
