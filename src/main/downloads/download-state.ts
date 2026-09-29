@@ -49,10 +49,32 @@ export function flushQueueNow(): void {
   void persistJobs(queueFilePath(), collectPersistableJobs());
 }
 
+/**
+ * Publishes a job's progress/status to the renderer and the on-disk queue.
+ *
+ * The object in `jobs` is mutated IN PLACE rather than replaced. The running
+ * download holds its own reference to the job (and sets `job.child` on it), so
+ * swapping the map entry for a fresh copy left the runner writing to an object
+ * the rest of the app could no longer see — `cancel`/`pause` then found no
+ * child process, and the `finally` in runJob re-persisted the stale copy,
+ * undoing the cancellation.
+ */
 export function persist(job: Job): void {
   const copy = snapshotDownloadTask(job);
   const prev = knownStatuses.get(job.id);
-  jobs.set(job.id, { ...job, ...copy });
+  const tracked = jobs.get(job.id);
+  if (tracked) {
+    // `child` is process state, not an IPC field, so the snapshot drops it.
+    // Carry it over explicitly: assigning the caller's fields would otherwise
+    // clear a child that only the tracked object knows about.
+    const child = tracked.child ?? job.child;
+    Object.assign(tracked, job, copy);
+    tracked.child = child;
+  } else {
+    // Job was created outside the queue (e.g. a direct runner call); adopt it
+    // under its own id so later lookups see the same object.
+    jobs.set(job.id, Object.assign(job, copy));
+  }
   // Persist to disk only on status transitions (progress ticks do not change
   // the status and must not thrash the queue store).
   if (prev !== copy.status) {
@@ -60,6 +82,12 @@ export function persist(job: Job): void {
     markQueueDirty();
   }
   emit?.(copy);
+}
+
+/** Drops the status memo for a job, so the next persist re-triggers a write. */
+export function forgetJob(id: string): void {
+  knownStatuses.delete(id);
+  jobAbortControllers.delete(id);
 }
 
 type DownloadCompletedHandler = (channelId: string, videoId: string) => void;

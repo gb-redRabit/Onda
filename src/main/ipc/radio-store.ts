@@ -1,8 +1,10 @@
 import { app, ipcMain } from 'electron';
 import { join, dirname } from 'path';
+import { isIP } from 'node:net';
 import { readFile, writeFile, rename, mkdir } from 'fs/promises';
 import type { IpcRadioStation } from '../../shared/types/ipc';
 import { logger } from '../../shared/logger';
+import { isNeverPublicAddress } from './network-target';
 
 const SCHEMA_VERSION = 1;
 const MAX_STATIONS = 200;
@@ -24,9 +26,15 @@ const allowedRadioHosts = new Set<string>();
 function isValidStationUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return (
-      (parsed.protocol === 'http:' || parsed.protocol === 'https:') && parsed.hostname.length > 0
-    );
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+    if (parsed.hostname.length === 0) return false;
+    if (parsed.username || parsed.password) return false;
+    // Reject a literal loopback / link-local target up front. A station on the
+    // user's LAN is legitimate, but a loopback address only ever points at
+    // something running on this machine, and the stream proxy would then be a
+    // way to read it. Hostnames are resolved later, at request time.
+    if (isIP(parsed.hostname) && isNeverPublicAddress(parsed.hostname)) return false;
+    return true;
   } catch {
     return false;
   }

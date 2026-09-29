@@ -9,8 +9,7 @@ import {
   rm,
   copyFile,
   cp,
-  realpath,
-  readFile
+  realpath
 } from 'fs/promises';
 import { join, extname, basename } from 'path';
 import { iconSourcePath } from '../utils/file-icon';
@@ -21,6 +20,30 @@ import type { FileItem } from '../../renderer/src/types/explorer';
 import { getDrives, getFileItem, stripDuplicateSuffix, fileHash, uniqueDestPath } from './fs-utils';
 import { getFileProperties } from './fs-properties';
 import { isSafeAbsolutePath, isSafeStringArray } from '../utils/validate';
+import { readTextFileWithinBounds, TEXT_EXTS, TEXT_MAX_BYTES } from '../utils/read-text-file';
+import { isProtectedPath, parentOf } from '../path-policy';
+
+/**
+ * True when any already-existing ancestor of `target` is a protected path.
+ * Used for the create/copy destinations, where `recursive: true` would
+ * materialise intermediate directories the user never named.
+ */
+async function touchesProtectedAncestor(target: string): Promise<boolean> {
+  let current = target;
+  // Bounded walk: a path longer than the segments cap cannot be legitimate.
+  for (let depth = 0; depth < 64; depth++) {
+    if (isProtectedPath(current)) return true;
+    try {
+      await stat(current);
+      return false; // exists and is not protected — nothing above matters
+    } catch {
+      const parent = parentOf(current);
+      if (!parent) return false;
+      current = parent;
+    }
+  }
+  return false;
+}
 
 const EXECUTABLE_EXTS = new Set([
   '.exe',
@@ -87,6 +110,13 @@ export function registerFsHandlers(): void {
       logger.warn('fs', 'mkdir rejected invalid path');
       return false;
     }
+    // `recursive: true` creates every missing segment, so a bare `/etc/x`
+    // recreates a system path. Refuse when any *existing* ancestor is
+    // protected, not just the leaf.
+    if (await touchesProtectedAncestor(dirPath)) {
+      logger.warn('fs', `mkdir rejected under protected path: ${dirPath}`);
+      return false;
+    }
     try {
       await mkdir(dirPath, { recursive: true });
       return true;
@@ -99,6 +129,10 @@ export function registerFsHandlers(): void {
   ipcMain.handle('fs:delete', async (_event, filePath: unknown) => {
     if (!isSafeAbsolutePath(filePath)) {
       logger.warn('fs', 'delete rejected invalid path');
+      return false;
+    }
+    if (isProtectedPath(filePath)) {
+      logger.warn('fs', `delete rejected protected path: ${filePath}`);
       return false;
     }
     try {
@@ -122,8 +156,17 @@ export function registerFsHandlers(): void {
       logger.warn('fs', 'move rejected invalid arguments');
       return;
     }
+    if (isProtectedPath(destination) || isProtectedPath(parentOf(destination))) {
+      logger.warn('fs', `move rejected protected destination: ${destination}`);
+      return;
+    }
     for (const src of paths) {
       if (!isSafeAbsolutePath(src)) continue;
+      // Moving is a delete at the source: the same guard applies.
+      if (isProtectedPath(src)) {
+        logger.warn('fs', `move rejected protected source: ${src}`);
+        continue;
+      }
       try {
         const name = src.split('\\').pop() || src.split('/').pop() || '';
         const dest = await uniqueDestPath(join(destination, name));
@@ -153,6 +196,12 @@ export function registerFsHandlers(): void {
   ipcMain.handle('fs:copy', async (_event, paths: unknown, destination: unknown) => {
     if (!isSafeStringArray(paths) || !isSafeAbsolutePath(destination)) {
       logger.warn('fs', 'copy rejected invalid arguments');
+      return;
+    }
+    // Copy cannot destroy the source, but writing a directory tree over a
+    // system path is still never legitimate.
+    if (isProtectedPath(destination) || isProtectedPath(parentOf(destination))) {
+      logger.warn('fs', `copy rejected protected destination: ${destination}`);
       return;
     }
     for (const src of paths) {
@@ -337,18 +386,11 @@ export function registerFsHandlers(): void {
     return match ? app.getPath(match) : '';
   });
 
-  // Reads a small text file (used for TXT/CSV batch import). Capped in size and
-  // limited to .txt/.csv/.tsv extensions so it can't slurp arbitrary files.
+  // Reads a small text file (used for TXT/CSV batch import). The extension and
+  // size bounds live in one place shared with the subtitle reader, so neither
+  // channel can be widened into a general file-read primitive.
   ipcMain.handle('fs:readTextFile', async (_event, filePath: string): Promise<string | null> => {
-    if (typeof filePath !== 'string' || !filePath) return null;
-    if (!/\.(txt|csv|tsv)$/i.test(filePath)) return null;
-    try {
-      if (!(await isSafeAbsolutePath(filePath))) return null;
-      const info = await stat(filePath);
-      if (info.size > 5 * 1024 * 1024) return null;
-      return await readFile(filePath, 'utf-8');
-    } catch {
-      return null;
-    }
+    const result = await readTextFileWithinBounds(filePath, TEXT_EXTS, TEXT_MAX_BYTES, 'fs');
+    return result.ok ? result.text : null;
   });
 }

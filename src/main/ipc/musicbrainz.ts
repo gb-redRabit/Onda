@@ -3,6 +3,7 @@ import https from 'https';
 import http from 'http';
 import type { MusicbrainzRelease } from '../../shared/types/ipc';
 import { logger } from '../../shared/logger';
+import { decideRateLimitRetry } from './musicbrainz-rate-limit';
 
 let appVersion = '0.4.0';
 try {
@@ -25,7 +26,7 @@ async function throttleMb() {
   lastMbRequest = Date.now();
 }
 
-function mbFetch(url: string): Promise<Record<string, unknown> | string> {
+function mbFetch(url: string, rateLimitAttempt = 0): Promise<Record<string, unknown> | string> {
   return throttleMb().then(
     () =>
       new Promise<Record<string, unknown> | string>((resolve, reject) => {
@@ -36,12 +37,29 @@ function mbFetch(url: string): Promise<Record<string, unknown> | string> {
           url,
           { headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' } },
           (res) => {
-            // rate-limit 503 z Retry-After
-            if (res.statusCode === 503) {
-              const retryAfter = Number(res.headers['retry-after'] || '2');
+            // MusicBrainz answers a throttled request with 503 + Retry-After.
+            // The retry is bounded so a persistently rate-limiting endpoint
+            // surfaces as an error instead of looping in the background.
+            const rateLimit = decideRateLimitRetry(
+              res.statusCode,
+              rateLimitAttempt,
+              res.headers['retry-after']
+            );
+            if (rateLimit) {
+              res.resume();
               setTimeout(
-                () => mbFetch(url).then(resolve, reject),
-                Math.min(retryAfter * 1000, 5000)
+                () => mbFetch(url, rateLimit.nextAttempt).then(resolve, reject),
+                rateLimit.delayMs
+              );
+              return;
+            }
+            if (res.statusCode === 503) {
+              res.resume();
+              reject(
+                Object.assign(new Error('Rate limited HTTP 503'), {
+                  rateLimited: true,
+                  errorKind: 'rate-limit'
+                })
               );
               return;
             }
@@ -63,19 +81,15 @@ function mbFetch(url: string): Promise<Record<string, unknown> | string> {
                   logger.warn('musicbrainz', 'non-JSON response', url, e);
                   resolve(data);
                 }
-              } else if (res.statusCode === 429 || res.statusCode === 503) {
+              } else if (res.statusCode === 429) {
                 reject(
-                  Object.assign(new Error(`Rate limited HTTP ${res.statusCode}`), {
-                    rateLimited: true
+                  Object.assign(new Error('Rate limited HTTP 429'), {
+                    rateLimited: true,
+                    errorKind: 'rate-limit'
                   })
                 );
               } else {
-                const kind =
-                  res.statusCode === 404
-                    ? 'not-found'
-                    : res.statusCode === 503
-                      ? 'rate-limit'
-                      : 'http';
+                const kind = res.statusCode === 404 ? 'not-found' : 'http';
                 reject(
                   Object.assign(new Error(`HTTP ${res.statusCode}: ${data.slice(0, 200)}`), {
                     errorKind: kind

@@ -7,6 +7,11 @@ import { logger } from '../../shared/logger';
 import { runCommand } from '../utils/exec';
 import { isNonNegativeInt } from '../../shared/helpers';
 import { isSafeAbsolutePath } from '../utils/validate';
+import {
+  readTextFileWithinBounds,
+  SUBTITLE_EXTS,
+  SUBTITLE_MAX_BYTES
+} from '../utils/read-text-file';
 
 function uniqueId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -205,20 +210,17 @@ export function registerSubtitleHandlers(): void {
     }
   );
 
+  // Returns file content to the renderer, so the path is restricted to subtitle
+  // extensions and a size ceiling — otherwise this channel reads any file the
+  // main process can open (session cookies, config, keys).
   ipcMain.handle('subtitles:readFile', async (_event, filePath: string): Promise<string | null> => {
-    if (!isSafeAbsolutePath(filePath)) return null;
-    try {
-      const buf = await readFile(filePath);
-      const utf8 = buf.toString('utf-8');
-      if (!utf8.includes('\ufffd')) return utf8;
-      try {
-        return buf.toString('latin1');
-      } catch {
-        return utf8;
-      }
-    } catch {
-      return null;
-    }
+    const result = await readTextFileWithinBounds(
+      filePath,
+      SUBTITLE_EXTS,
+      SUBTITLE_MAX_BYTES,
+      'subtitles'
+    );
+    return result.ok ? result.text : null;
   });
 
   ipcMain.handle(

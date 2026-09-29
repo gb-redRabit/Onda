@@ -2,7 +2,7 @@ import { ipcMain } from 'electron';
 import https from 'node:https';
 import { isIP } from 'node:net';
 import { logger } from '../../shared/logger';
-import { createPinnedLookup, isNonPublicAddress, resolveNetworkTarget } from './network-target';
+import { createPinnedLookup, isNeverPublicAddress, resolveNetworkTarget } from './network-target';
 
 // Fetches remote images (channel avatars / banners) in the main process and
 // returns them as `data:` URLs. The renderer can fail to load certain external
@@ -42,7 +42,7 @@ function isAllowedRemoteUrl(rawUrl: string): boolean {
     return false;
   }
   const literalHost = host.replace(/^\[|\]$/g, '');
-  if (isIP(literalHost) && isNonPublicAddress(literalHost)) return false;
+  if (isIP(literalHost) && isNeverPublicAddress(literalHost)) return false;
   return true;
 }
 

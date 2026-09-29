@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createPinnedLookup,
+  isNeverPublicAddress,
   isNonPublicAddress,
   privateNetworkAllowedForTarget,
   resolveNetworkTarget
@@ -23,6 +24,70 @@ describe('network target validation', () => {
 
   it.each(['8.8.8.8', '1.1.1.1', '2606:4700:4700::1111'])('allows public address %s', (address) => {
     expect(isNonPublicAddress(address)).toBe(false);
+  });
+
+  it.each(['127.0.0.1', '127.1.2.3', '0.0.0.0', '169.254.169.254', '::1', 'fe80::1', 'ff00::1'])(
+    'classifies %s as never-public even for a caller allowing private networks',
+    (address) => {
+      expect(isNeverPublicAddress(address)).toBe(true);
+    }
+  );
+
+  it.each(['192.168.1.50', '10.0.0.8', '172.16.5.5', 'fc00::1', '8.8.8.8'])(
+    'does not treat RFC1918/ULA %s as never-public',
+    (address) => {
+      expect(isNeverPublicAddress(address)).toBe(false);
+    }
+  );
+
+  it('refuses loopback and metadata even with private networks allowed', async () => {
+    await expect(
+      resolveNetworkTarget('http://127.0.0.1:8080/api', {
+        allowPrivateNetwork: true,
+        blockLoopback: true
+      })
+    ).rejects.toThrow('Loopback address is not allowed');
+    await expect(
+      resolveNetworkTarget('http://169.254.169.254/latest/meta-data/', {
+        allowPrivateNetwork: true,
+        blockLoopback: true
+      })
+    ).rejects.toThrow('Loopback address is not allowed');
+  });
+
+  it('allows a LAN address for a caller that opted into private networks', async () => {
+    await expect(
+      resolveNetworkTarget('http://192.168.1.50:8000/stream', {
+        allowPrivateNetwork: true,
+        blockLoopback: true
+      })
+    ).resolves.toMatchObject({ addresses: [{ address: '192.168.1.50', family: 4 }] });
+  });
+
+  it('still rejects a LAN address without the opt-in', async () => {
+    await expect(
+      resolveNetworkTarget('http://192.168.1.50:8000/stream', { blockLoopback: true })
+    ).rejects.toThrow('Private network address is not allowed');
+  });
+
+  it('checks a rebinding hostname against the address it actually resolves to', async () => {
+    const loopback = async () => [{ address: '127.0.0.1', family: 4 as const }];
+    await expect(
+      resolveNetworkTarget(
+        'https://rebind.example/stream',
+        { allowPrivateNetwork: true, blockLoopback: true },
+        loopback
+      )
+    ).rejects.toThrow('Loopback address is not allowed');
+
+    const metadata = async () => [{ address: '169.254.169.254', family: 4 as const }];
+    await expect(
+      resolveNetworkTarget(
+        'https://rebind.example/',
+        { allowPrivateNetwork: true, blockLoopback: true },
+        metadata
+      )
+    ).rejects.toThrow('Loopback address is not allowed');
   });
 
   it('rejects private literal targets unless the source is explicitly trusted', async () => {

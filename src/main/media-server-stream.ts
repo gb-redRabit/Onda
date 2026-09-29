@@ -2,6 +2,7 @@ import http from 'http';
 import https from 'https';
 import { logger } from '../shared/logger';
 import { createPinnedLookup, resolveNetworkTarget } from './ipc/network-target';
+import { isAllowedRadioHost } from './ipc/radio-store';
 import { isRegisteredGenericStreamUrl } from './media-server-stream-registry';
 import {
   validateStreamUrl,
@@ -86,16 +87,28 @@ export async function handleStreamProxy(
 
   for (let hop = 0; hop <= STREAM_MAX_REDIRECTS; hop++) {
     let lookup: https.RequestOptions['lookup'];
-    if (generic) {
+    // A station the user added is allowed to live on their LAN (a radio server
+    // at 192.168.x.x is a real use case), but /stream is reachable from the
+    // renderer, so a station must not become a forwarder to loopback or the
+    // cloud metadata endpoint — and a rebinding hostname must not be able to
+    // change what we already validated. Both need a resolved, pinned address.
+    const isUserStation = !generic && isAllowedRadioHost(current.hostname);
+    if (generic || isUserStation) {
       try {
-        const target = await resolveNetworkTarget(current.toString());
+        const target = await resolveNetworkTarget(current.toString(), {
+          allowPrivateNetwork: isUserStation,
+          blockLoopback: isUserStation
+        });
+        current = target.url;
         lookup = createPinnedLookup(target.addresses);
-      } catch {
+      } catch (e) {
+        logger.warn('media-server', `stream target rejected host=${current.hostname}`, e);
         res.writeHead(403);
         res.end('forbidden');
         return;
       }
-    } else {
+    }
+    if (!generic) {
       const validated = validateStreamUrl(current.toString());
       if (!validated) {
         res.writeHead(403);

@@ -12,6 +12,7 @@ import {
   queueOrder,
   jobAbortControllers,
   collectPersistableJobs,
+  forgetJob,
   markQueueDirty,
   persist
 } from './download-state';
@@ -19,6 +20,18 @@ import { pump } from './download-runner';
 
 // Queue mutations (add/cancel/pause/resume/move/list/import/export/clear) and
 // queue restore, extracted from `download-manager.ts` (plan 2.8).
+
+/**
+ * Removes a job id from the pending order.
+ *
+ * `indexOf` returns -1 when the id is not queued, and `splice(-1, 1)` deletes
+ * the LAST element — so a cancel/pause of an unqueued job silently dropped an
+ * unrelated download from the queue.
+ */
+function removeFromQueue(id: string): void {
+  const idx = queueOrder.indexOf(id);
+  if (idx >= 0) queueOrder.splice(idx, 1);
+}
 
 // Restores the queue from disk after a restart. Interrupted downloads become
 // paused (never completed) so the user can resume them via `--continue`; pending
@@ -73,8 +86,8 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
       for (const [id, j] of [...jobs.entries()]) {
         if (j.videoId !== input.videoId) continue;
         if (j.status !== 'error' && j.status !== 'cancelled') continue;
-        const qIdx = queueOrder.indexOf(id);
-        if (qIdx >= 0) queueOrder.splice(qIdx, 1);
+        removeFromQueue(id);
+        forgetJob(id);
         jobs.delete(id);
         replaced++;
       }
@@ -190,7 +203,7 @@ export function cancelDownloadJob(id: string): boolean {
   const job = jobs.get(id);
   if (!job) return false;
   if (job.status === 'pending') {
-    queueOrder.splice(queueOrder.indexOf(id), 1);
+    removeFromQueue(id);
     job.status = 'cancelled';
     persist(job);
     return true;
@@ -223,7 +236,7 @@ export function pauseDownloadJob(id: string): boolean {
   const job = jobs.get(id);
   if (!job) return false;
   if (job.status === 'pending') {
-    queueOrder.splice(queueOrder.indexOf(id), 1);
+    removeFromQueue(id);
     job.status = 'paused';
     persist(job);
     return true;
@@ -382,6 +395,10 @@ export function clearFinishedDownloads(): boolean {
   let removed = false;
   for (const [id, job] of [...jobs.entries()]) {
     if (job.status === 'completed' || job.status === 'error' || job.status === 'cancelled') {
+      // Also drop the status memo and any abort controller, otherwise both
+      // maps grow for the lifetime of the session.
+      forgetJob(id);
+      removeFromQueue(id);
       jobs.delete(id);
       removed = true;
     }
