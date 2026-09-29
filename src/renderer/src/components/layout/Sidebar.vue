@@ -115,6 +115,7 @@ function onResizeStart(e: MouseEvent) {
           :key="item.label"
           class="fx-noise w-full flex items-center gap-3 p-3 fx-depth rounded-field text-sm font-medium transition-all"
           :aria-label="item.label"
+          :aria-current="route.path === item.route ? 'page' : undefined"
           :class="
             route.path === item.route
               ? 'bg-primary text-primary-content shadow-lg shadow-primary/25'
@@ -164,10 +165,11 @@ function onResizeStart(e: MouseEvent) {
 
       <SidebarQueuePreview v-if="!collapsed" />
 
-      <div class="p-2 border border-t border-base-300 space-y-1">
+      <div class="p-2 space-y-1">
         <button
           class="fx-noise w-full flex items-center gap-3 px-3 py-2.5 fx-depth rounded-field text-sm font-medium transition-all"
           :aria-label="$t('nav.settings')"
+          :aria-current="route.path === '/settings' ? 'page' : undefined"
           :class="
             route.path === '/settings'
               ? 'bg-primary text-primary-content shadow-lg shadow-primary/25'

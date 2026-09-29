@@ -21,6 +21,7 @@ const emit = defineEmits<{
   >
     <button
       class="fx-noise p-2 fx-depth rounded-field bg-neutral-content/10 hover:bg-neutral-content/20 text-neutral-content transition-colors"
+      :aria-label="$t('playerView.back')"
       @click="emit('back')"
     >
       <ArrowLeft :size="20" />
@@ -33,12 +34,14 @@ const emit = defineEmits<{
     </div>
     <button
       class="fx-noise p-2 fx-depth rounded-field bg-neutral-content/10 mr-2 hover:bg-neutral-content/20 text-neutral-content transition-colors"
+      :aria-label="$t('playerView.pip')"
       @click="emit('pip')"
     >
       <PictureInPicture :size="18" />
     </button>
     <button
       class="fx-noise p-2 fx-depth rounded-field bg-neutral-content/10 hover:bg-neutral-content/20 text-neutral-content transition-colors"
+      :aria-label="$t('playerView.fullscreen')"
       @click="emit('fullscreen')"
     >
       <Maximize2 :size="18" />

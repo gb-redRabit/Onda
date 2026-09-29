@@ -41,7 +41,7 @@ export const usePlayerStore = defineStore('player', () => {
     insertInQueue,
     toggleQueue
   } = usePlayerQueue(enrichTrack);
-  const { favorites, isFavorite, toggleFavorite } = usePlayerFavorites();
+  const { favorites, isFavorite, toggleFavorite, ensureFavorites } = usePlayerFavorites();
   const { recordPlay } = usePlayerStats();
   const {
     subtitleTracks,
@@ -154,6 +154,7 @@ export const usePlayerStore = defineStore('player', () => {
     streamPending,
     favorites,
     isFavorite,
-    toggleFavorite
+    toggleFavorite,
+    ensureFavorites
   };
 });

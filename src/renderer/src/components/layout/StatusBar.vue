@@ -214,19 +214,23 @@ function openContextMenu(e: MouseEvent) {
     </template>
     <div class="flex-1" />
     <template v-if="hasSection('downloads') && activeDownload">
-      <span
-        class="flex items-center gap-1.5 cursor-pointer rounded-sm px-0.5 -mx-0.5 hover:bg-base-content/5"
+      <button
+        type="button"
+        class="flex items-center gap-1.5 rounded-sm px-0.5 -mx-0.5 hover:bg-base-content/5"
         :title="$t('status.openDownloads')"
+        :aria-label="$t('status.openDownloads')"
         @click="goTo('/downloads')"
       >
         <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
         {{ activeDownload.title }} {{ activeDownload.progress }}%
-      </span>
+      </button>
     </template>
     <template v-if="hasSection('youtube')">
-      <span
-        class="flex items-center gap-1.5 cursor-pointer rounded-sm px-0.5 -mx-0.5 hover:bg-base-content/5"
+      <button
+        type="button"
+        class="flex items-center gap-1.5 rounded-sm px-0.5 -mx-0.5 hover:bg-base-content/5"
         :title="$t('status.openOnline')"
+        :aria-label="$t('status.openOnline')"
         @click="goTo('/online')"
       >
         <span
@@ -234,25 +238,29 @@ function openContextMenu(e: MouseEvent) {
           :class="status.loggedIn ? 'bg-success' : 'bg-base-300'"
         />
         {{ status.loggedIn ? $t('status.loggedIn') : $t('status.notLoggedIn') }}
-      </span>
+      </button>
     </template>
     <template v-if="hasSection('dependencies') && depsText">
-      <span
-        class="cursor-pointer rounded-sm px-0.5 -mx-0.5 hover:bg-base-content/5"
+      <button
+        type="button"
+        class="rounded-sm px-0.5 -mx-0.5 hover:bg-base-content/5"
         :title="$t('status.openDependencies')"
+        :aria-label="$t('status.openDependencies')"
         @click="goTo('/settings?tab=dependencies')"
       >
         {{ depsText }}
-      </span>
+      </button>
     </template>
     <template v-if="hasSection('version') && info">
-      <span
+      <button
+        type="button"
         class="text-base-content/60 cursor-pointer rounded-sm px-0.5 -mx-0.5 hover:bg-base-content/5"
         :title="$t('status.openAbout')"
+        :aria-label="$t('status.openAbout')"
         @click="goTo('/settings?tab=about')"
       >
         Onda v{{ info.appVersion }}
-      </span>
+      </button>
     </template>
     <template v-if="hasSection('clock')">
       <span class="font-mono" :title="$t('status.clockHint')">{{ clockText }}</span>

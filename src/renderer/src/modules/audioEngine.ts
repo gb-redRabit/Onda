@@ -206,16 +206,43 @@ class AudioEngine {
     if (settings.playback.rememberPosition) {
       const savedPos = this.savedPositions.get(track.path) || 0;
       if (savedPos > 0) {
-        this.audioEl!.addEventListener(
-          'loadedmetadata',
-          () => {
-            if (this.audioEl && this.audioEl.currentTime < 3) {
-              this.audioEl.currentTime = savedPos;
-            }
-          },
-          { once: true }
-        );
+        this.applySavedPosition(track.path, savedPos);
+      } else {
+        // The in-memory map only holds positions saved during this session;
+        // positions from earlier sessions live in the main-process store.
+        void this.restoreSavedPosition(track.path);
       }
+    }
+  }
+
+  // Seeks to `position` once metadata is available, but only while `path` is
+  // still the loaded track (guards against a slow fetch landing after the user
+  // already switched) and playback has not moved on.
+  private applySavedPosition(path: string, position: number): void {
+    const el = this.audioEl;
+    if (!el) return;
+    const apply = (): void => {
+      if (!this.audioEl) return;
+      if (usePlayerStore().currentTrack?.path !== path) return;
+      if (this.audioEl.currentTime < 3) this.audioEl.currentTime = position;
+    };
+    // Fast local files can finish loading before this runs — seek immediately.
+    if (el.readyState >= 1) {
+      apply();
+      return;
+    }
+    el.addEventListener('loadedmetadata', apply, { once: true });
+  }
+
+  private async restoreSavedPosition(path: string): Promise<void> {
+    try {
+      const position = (await window.api?.getPlaybackPosition(path)) || 0;
+      if (position <= 0) return;
+      this.savedPositions.set(path, position);
+      if (usePlayerStore().currentTrack?.path !== path) return;
+      this.applySavedPosition(path, position);
+    } catch (e) {
+      logger.warn('audio', 'restore saved position failed', e);
     }
   }
 

@@ -70,8 +70,48 @@ function onSeek(e: MouseEvent) {
 }
 
 function onVolume(e: MouseEvent) {
-  const rect = (e.target as HTMLElement).getBoundingClientRect();
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
   audio.setVolume((e.clientX - rect.left) / rect.width);
+}
+
+function onSeekKeydown(e: KeyboardEvent) {
+  const step = e.shiftKey ? 30 : 5;
+  const current = audio.currentTime.value;
+  const duration = audio.duration.value;
+  const next =
+    e.key === 'ArrowLeft'
+      ? current - step
+      : e.key === 'ArrowRight'
+        ? current + step
+        : e.key === 'PageDown'
+          ? current - 30
+          : e.key === 'PageUp'
+            ? current + 30
+            : e.key === 'Home'
+              ? 0
+              : e.key === 'End'
+                ? duration
+                : null;
+  if (next === null) return;
+  e.preventDefault();
+  audio.seek(Math.max(0, Math.min(duration, next)));
+}
+
+function onVolumeKeydown(e: KeyboardEvent) {
+  const step = e.shiftKey ? 0.1 : 0.05;
+  const next =
+    e.key === 'ArrowDown' || e.key === 'ArrowLeft'
+      ? player.volume - step
+      : e.key === 'ArrowUp' || e.key === 'ArrowRight'
+        ? player.volume + step
+        : e.key === 'Home'
+          ? 0
+          : e.key === 'End'
+            ? 1
+            : null;
+  if (next === null) return;
+  e.preventDefault();
+  audio.setVolume(Math.max(0, Math.min(1, next)));
 }
 
 function togglePlay() {
@@ -108,7 +148,15 @@ function togglePlay() {
     <div
       v-if="!isLive"
       class="absolute top-0 left-0 right-0 h-1 bg-border-default/50 cursor-pointer hover:h-1.5 group transition-[height] z-10"
+      role="slider"
+      tabindex="0"
+      :aria-label="$t('playerView.seek')"
+      :aria-valuemin="0"
+      :aria-valuemax="audio.duration.value"
+      :aria-valuenow="audio.currentTime.value"
+      :aria-valuetext="`${formatDuration(audio.currentTime.value)} / ${formatDuration(audio.duration.value)}`"
       @click="onSeek"
+      @keydown="onSeekKeydown"
     >
       <div
         class="absolute inset-y-0 left-0 h-full bg-primary/50 rounded-r-full"
@@ -258,7 +306,14 @@ function togglePlay() {
       </button>
       <div
         class="w-30 h-1 bg-border-default/60 rounded-full cursor-pointer hover:h-1.5 transition-[height]"
+        role="slider"
+        tabindex="0"
+        :aria-label="$t('playerView.volume')"
+        :aria-valuemin="0"
+        :aria-valuemax="100"
+        :aria-valuenow="Math.round(player.volume * 100)"
         @click="onVolume"
+        @keydown="onVolumeKeydown"
       >
         <div
           class="h-full bg-base-content rounded-full"

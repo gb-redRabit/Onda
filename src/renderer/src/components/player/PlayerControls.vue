@@ -60,10 +60,48 @@ function onSeek(e: MouseEvent) {
   emit('seek', pct * player.duration);
 }
 
+function onSeekKeydown(e: KeyboardEvent) {
+  const step = e.shiftKey ? 30 : 5;
+  const next =
+    e.key === 'ArrowLeft'
+      ? player.currentTime - step
+      : e.key === 'ArrowRight'
+        ? player.currentTime + step
+        : e.key === 'PageDown'
+          ? player.currentTime - 30
+          : e.key === 'PageUp'
+            ? player.currentTime + 30
+            : e.key === 'Home'
+              ? 0
+              : e.key === 'End'
+                ? player.duration
+                : null;
+  if (next === null) return;
+  e.preventDefault();
+  emit('seek', Math.max(0, Math.min(player.duration, next)));
+}
+
 function onVolumeClick(e: MouseEvent) {
   const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
   const v = (e.clientX - r.left) / r.width;
   emit('volumeChange', v);
+}
+
+function onVolumeKeydown(e: KeyboardEvent) {
+  const step = e.shiftKey ? 0.1 : 0.05;
+  const next =
+    e.key === 'ArrowDown' || e.key === 'ArrowLeft'
+      ? player.volume - step
+      : e.key === 'ArrowUp' || e.key === 'ArrowRight'
+        ? player.volume + step
+        : e.key === 'Home'
+          ? 0
+          : e.key === 'End'
+            ? 1
+            : null;
+  if (next === null) return;
+  e.preventDefault();
+  emit('volumeChange', Math.max(0, Math.min(1, next)));
 }
 </script>
 
@@ -84,7 +122,15 @@ function onVolumeClick(e: MouseEvent) {
     <div
       ref="seekBarRef"
       class="relative w-full h-1.5 bg-neutral-content/10 rounded-full cursor-pointer hover:h-2.5 transition-[height] mb-4"
+      role="slider"
+      tabindex="0"
+      :aria-label="$t('playerView.seek')"
+      :aria-valuemin="0"
+      :aria-valuemax="player.duration"
+      :aria-valuenow="player.currentTime"
+      :aria-valuetext="`${formatDuration(player.currentTime)} / ${formatDuration(player.duration)}`"
       @click="onSeek"
+      @keydown="onSeekKeydown"
       @mousemove="previewMouseMove"
       @mouseleave="previewMouseLeave"
     >
@@ -130,6 +176,7 @@ function onVolumeClick(e: MouseEvent) {
         <button
           class="text-neutral-content/40 hover:text-neutral-content/80 transition-colors"
           :class="{ 'text-primary!': player.shuffle }"
+          :aria-label="$t('common.shuffle')"
           @click="player.toggleShuffle"
         >
           <Shuffle :size="16" />
@@ -138,6 +185,11 @@ function onVolumeClick(e: MouseEvent) {
           class="text-neutral-content/40 hover:text-neutral-content/80 transition-colors"
           :class="{ 'text-error!': player.isFavorite(player.currentTrack?.path || '') }"
           :title="
+            player.isFavorite(player.currentTrack?.path || '')
+              ? $t('common.removeFav')
+              : $t('common.addFav')
+          "
+          :aria-label="
             player.isFavorite(player.currentTrack?.path || '')
               ? $t('common.removeFav')
               : $t('common.addFav')
@@ -151,6 +203,7 @@ function onVolumeClick(e: MouseEvent) {
         </button>
         <button
           class="text-neutral-content/60 hover:text-neutral-content transition-colors"
+          :aria-label="$t('common.previous')"
           @click="player.prevTrack"
         >
           <SkipBack :size="18" fill="currentColor" />
@@ -164,6 +217,7 @@ function onVolumeClick(e: MouseEvent) {
           />
           <button
             class="relative w-12 h-12 rounded-full bg-neutral-content/15 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/5"
+            :aria-label="player.isPlaying ? $t('common.pause') : $t('common.play')"
             @click="player.togglePlay"
           >
             <Pause
@@ -178,6 +232,7 @@ function onVolumeClick(e: MouseEvent) {
 
         <button
           class="text-neutral-content/60 hover:text-neutral-content transition-colors"
+          :aria-label="$t('common.next')"
           @click="player.nextTrack"
         >
           <SkipForward :size="18" fill="currentColor" />
@@ -185,6 +240,7 @@ function onVolumeClick(e: MouseEvent) {
         <button
           class="text-neutral-content/40 hover:text-neutral-content/80 transition-colors"
           :class="{ 'text-primary!': player.repeat !== 'none' }"
+          :aria-label="$t('common.repeat')"
           @click="player.cycleRepeat"
         >
           <component :is="player.repeat === 'one' ? Repeat1 : Repeat" :size="16" />
@@ -196,6 +252,7 @@ function onVolumeClick(e: MouseEvent) {
         <!-- skip back -->
         <button
           class="text-neutral-content/40 hover:text-neutral-content transition-colors"
+          :aria-label="$t('playerView.seekBackward')"
           @click="emit('skip', -10)"
         >
           <ChevronLeft :size="18" />
@@ -212,6 +269,7 @@ function onVolumeClick(e: MouseEvent) {
         <!-- skip forward -->
         <button
           class="text-neutral-content/40 hover:text-neutral-content transition-colors"
+          :aria-label="$t('playerView.seekForward')"
           @click="emit('skip', 10)"
         >
           <ChevronRight :size="18" />
@@ -225,6 +283,7 @@ function onVolumeClick(e: MouseEvent) {
           class="text-neutral-content/40 hover:text-neutral-content/80 transition-colors"
           :class="{ 'text-primary!': player.equalizerVisible }"
           data-eq-toggle
+          :aria-label="$t('common.equalizer')"
           @click="player.toggleEqualizer"
         >
           <SlidersHorizontal :size="16" />
@@ -232,6 +291,7 @@ function onVolumeClick(e: MouseEvent) {
         <button
           class="text-neutral-content/40 hover:text-neutral-content/80 transition-colors"
           :class="{ 'text-primary!': player.queueVisible }"
+          :aria-label="$t('common.queue')"
           @click="player.toggleQueue"
         >
           <ListMusic :size="16" />
@@ -239,6 +299,7 @@ function onVolumeClick(e: MouseEvent) {
         <SubtitleTrackSelector />
         <button
           class="text-neutral-content/50 hover:text-neutral-content transition-colors"
+          :aria-label="$t('common.mute')"
           @click="player.toggleMute"
         >
           <VolumeX v-if="player.isMuted" :size="16" />
@@ -248,7 +309,14 @@ function onVolumeClick(e: MouseEvent) {
         <!-- volume bar — accent -->
         <div
           class="w-20 h-1 bg-neutral-content/10 rounded-full cursor-pointer hover:h-1.5 transition-[height]"
+          role="slider"
+          tabindex="0"
+          :aria-label="$t('playerView.volume')"
+          :aria-valuemin="0"
+          :aria-valuemax="100"
+          :aria-valuenow="Math.round(player.volume * 100)"
           @click="onVolumeClick"
+          @keydown="onVolumeKeydown"
         >
           <div
             class="h-full bg-primary/70 rounded-full transition-colors"

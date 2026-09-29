@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, watch, computed, defineAsyncComponent, ref } from 'vue';
+import {
+  onMounted,
+  onBeforeUnmount,
+  watch,
+  computed,
+  defineAsyncComponent,
+  ref,
+  nextTick
+} from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { loadLocaleMessages } from './i18n';
 import { useSettingsStore } from './stores/settings';
@@ -13,13 +21,15 @@ import { moduleManager } from './modules/ModuleManager';
 import { useAudioPiP } from './composables/useAudioPiP';
 import { storeToRefs } from 'pinia';
 import { usePluginsStore } from './stores/plugins';
-import { useTheme } from './composables/useTheme';
+import { getThemeEngine } from './composables/useTheme';
 import { useNewVideoNotifications } from './composables/useNewVideoNotifications';
 import { useUpdaterNotifications } from './composables/useUpdaterNotifications';
 import { useMediaSession } from './composables/useMediaSession';
 import { useSessionPersistence } from './composables/useSessionPersistence';
 import { audioEngine } from './modules/audioEngine';
+import { markRendererReady } from './utils/bootMetrics';
 import AppMenu from './components/layout/AppMenu.vue';
+import DependencyBanner from './components/layout/DependencyBanner.vue';
 import Sidebar from './components/layout/Sidebar.vue';
 import PlayerBar from './components/layout/PlayerBar.vue';
 import StatusBar from './components/layout/StatusBar.vue';
@@ -45,15 +55,17 @@ useUpdaterNotifications();
 useMediaSession();
 const session = useSessionPersistence();
 const isWinMaximized = ref(false);
+const isNarrowLayout = ref(window.innerWidth < 1200);
 const glassOn = computed(() => (settings.appearance.glassAlpha ?? 100) < 100);
 let offMaximized: (() => void) | null = null;
 
 const isExplorerWindow = computed(() => route.name === 'explorer-window');
 
 const { appearance: appearanceRef } = storeToRefs(settings);
-const theme = useTheme(appearanceRef);
+const theme = getThemeEngine(appearanceRef);
 
 onMounted(async () => {
+  window.addEventListener('resize', onAppResize);
   document.addEventListener('keydown', onGlobalKeydown);
   document.addEventListener('mousedown', onGlobalMouseDown);
   window.addEventListener('blur', onWindowBlur);
@@ -61,15 +73,31 @@ onMounted(async () => {
     window.api?.on('window:maximized', (val: unknown) => {
       isWinMaximized.value = !!val;
     }) ?? null;
-  await settings.load();
+  // Settings may already be loading (started in main.ts before mount).
+  if (!settings.isLoaded) await settings.load();
   theme.applyTheme();
   await loadLocaleMessages(settings.appearance.locale);
   library.loadFromDisk();
+  // Settings → Playback → default volume is the volume the app starts with.
+  player.setVolume(settings.playback.defaultVolume);
+  audioPip.dock.value = settings.appearance.audioPipDock;
+  audioPip.setAutoShow(settings.appearance.audioPipAutoShow);
+
+  // Signal readiness as soon as the shell is themed, localised and painted —
+  // main then closes the splash and shows the window. Module activation, audio
+  // warm-up, session restore and the first-run wizard must not hold it open.
+  await nextTick();
+  markRendererReady();
+  // Wait for a composited frame: the window is transparent (+ acrylic on
+  // Windows), so showing it before the first paint flashes the blurred desktop.
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+  );
+  window.api?.invoke('app:rendererReady');
+
   if (!moduleManager.getActive()) {
     await moduleManager.switchTo('home');
   }
-  audioPip.dock.value = settings.appearance.audioPipDock;
-  audioPip.setAutoShow(settings.appearance.audioPipAutoShow);
 
   // Pre-create the AudioContext in idle time so the first play click isn't
   // blocked by the one-time context creation cost.
@@ -83,10 +111,6 @@ onMounted(async () => {
   if (settings.general.restoreSession) {
     void session.restore(router);
   }
-
-  // Signal to main that the app is fully mounted and theme applied —
-  // main will close the splash and show the window.
-  window.api?.invoke('app:rendererReady');
 
   // First-run wizard (one time). Re-runnable from Settings / search.
   try {
@@ -103,8 +127,13 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', onGlobalKeydown);
   document.removeEventListener('mousedown', onGlobalMouseDown);
   window.removeEventListener('blur', onWindowBlur);
+  window.removeEventListener('resize', onAppResize);
   offMaximized?.();
 });
+
+function onAppResize(): void {
+  isNarrowLayout.value = window.innerWidth < 1200;
+}
 
 watch(
   () => settings.appearance.locale,
@@ -117,6 +146,11 @@ watch(
       /* noop */
     }
   }
+);
+
+watch(
+  () => settings.playback.defaultVolume,
+  (volume) => player.setVolume(volume)
 );
 
 watch(
@@ -210,13 +244,16 @@ function onWindowBlur() {
 <template>
   <div
     data-testid="app-root"
-    class="app-root flex flex-col h-full w-full overflow-hidden border border-base-300 bg-base-200/(--glass-alpha)"
+    class="app-root relative flex flex-col h-full w-full overflow-hidden border border-base-300 bg-base-200/(--glass-alpha)"
     :class="{ 'is-maximized': isWinMaximized, 'app-root-glass': glassOn }"
   >
     <AppMenu v-if="ui.topMenuVisible && !isExplorerWindow" />
-    <div class="flex flex-1 min-h-0">
+    <!-- Warn on every launch about dependencies Onda cannot work without.
+         Hidden while the wizard is open (it offers the same installs). -->
+    <DependencyBanner v-if="!isExplorerWindow && !ui.setupWizardVisible" />
+    <div class="relative flex flex-1 min-h-0">
       <Sidebar v-if="!isExplorerWindow && settings.appearance.sidebarPosition === 'left'" />
-      <main class="flex-1 min-w-0 relative overflow-auto flex flex-col">
+      <main :data-route="route.name" class="flex-1 min-w-0 relative overflow-auto flex flex-col">
         <router-view v-slot="{ Component }">
           <transition name="page" mode="out-in">
             <ErrorBoundary>
@@ -225,11 +262,23 @@ function onWindowBlur() {
           </transition>
         </router-view>
       </main>
-      <QueuePanel v-if="!isExplorerWindow && player.queueVisible" class="w-75 shrink-0" />
+      <QueuePanel
+        v-if="!isExplorerWindow && player.queueVisible && !isNarrowLayout"
+        class="w-75 shrink-0"
+      />
       <Sidebar v-if="!isExplorerWindow && settings.appearance.sidebarPosition === 'right'" />
       <div v-if="!isExplorerWindow && player.equalizerVisible" class="fixed bottom-24 right-6 z-40">
         <Equalizer />
       </div>
+      <div
+        v-if="!isExplorerWindow && player.queueVisible && isNarrowLayout"
+        class="absolute inset-0 z-20 bg-neutral/35"
+        @click="player.toggleQueue"
+      />
+      <QueuePanel
+        v-if="!isExplorerWindow && player.queueVisible && isNarrowLayout"
+        class="absolute inset-y-0 right-0 z-30 w-80 max-w-[90vw] fx-depth"
+      />
     </div>
     <PlayerBar
       v-if="

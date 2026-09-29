@@ -2,6 +2,7 @@ import { shallowRef, triggerRef } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import { captureVideoFrame, type CoverResult } from '@renderer/utils/videoFrameCapture';
 import { useLibraryStore } from './library';
+import { useSettingsStore } from './settings';
 
 export type { CoverResult };
 
@@ -47,10 +48,22 @@ export function usePlayerCover() {
     }, 0);
   }
 
+  // Settings → Library → cover cache size (the renderer keeps a much smaller
+  // window than the main-process cache). Falls back to the built-in cap when the
+  // settings store is not reachable (unit tests, very early calls).
+  function coverCacheMax(): number {
+    try {
+      return useSettingsStore().library.coverCacheMaxEntries ?? COVER_CACHE_MAX;
+    } catch {
+      return COVER_CACHE_MAX;
+    }
+  }
+
   function evictCoverCache(): void {
+    const max = coverCacheMax();
     const keys = Object.keys(coverCache.value);
-    if (keys.length <= COVER_CACHE_MAX) return;
-    const excess = keys.length - COVER_CACHE_MAX;
+    if (keys.length <= max) return;
+    const excess = keys.length - max;
     for (let i = 0; i < excess; i++) {
       const path = keys[i];
       delete coverCache.value[path];

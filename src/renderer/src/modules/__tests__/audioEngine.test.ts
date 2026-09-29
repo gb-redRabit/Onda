@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { audioEngine } from '../audioEngine';
 import { audioEvents } from '@renderer/utils/audioEvents';
+import { usePlayerStore } from '@renderer/stores/player';
 
 type FakeNode = {
   connect: ReturnType<typeof vi.fn>;
@@ -61,6 +62,7 @@ class FakeAudio {
   src = '';
   currentTime = 0;
   duration = 0;
+  readyState = 0;
   paused = true;
   volume = 1;
   removeAttribute = vi.fn();
@@ -210,5 +212,87 @@ describe('audioEngine video element routing', () => {
     expect(spy).toHaveBeenCalledTimes(1);
     expect(spy).toHaveBeenCalledWith('4');
     off();
+  });
+});
+
+describe('audioEngine saved position restore', () => {
+  const track = {
+    id: 'a',
+    name: 'a.mp3',
+    path: 'D:/music/a.mp3',
+    extension: 'mp3',
+    mimeType: 'audio/mpeg',
+    size: 1,
+    type: 'audio' as const,
+    addedAt: 0,
+    playCount: 0
+  };
+
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+    vi.stubGlobal('Audio', FakeAudio);
+  });
+
+  afterEach(async () => {
+    vi.unstubAllGlobals();
+    delete (window as unknown as { api?: unknown }).api;
+    await audioEngine.destroy().catch(() => {});
+  });
+
+  it('seeks to the position persisted by a previous session', async () => {
+    const getPlaybackPosition = vi.fn(async () => 42);
+    (window as unknown as { api: unknown }).api = { getPlaybackPosition };
+
+    const player = usePlayerStore();
+    player.currentTrack = track;
+
+    audioEngine.loadTrack(track);
+    const el = audioEngine.getMediaElement() as unknown as FakeAudio;
+    // Metadata already decoded by the time the stored position arrives.
+    el.readyState = 4;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(getPlaybackPosition).toHaveBeenCalledWith(track.path);
+    expect(el.currentTime).toBe(42);
+  });
+
+  it('waits for metadata before seeking when the element is not ready yet', async () => {
+    const getPlaybackPosition = vi.fn(async () => 42);
+    (window as unknown as { api: unknown }).api = { getPlaybackPosition };
+
+    const player = usePlayerStore();
+    player.currentTrack = track;
+
+    audioEngine.loadTrack(track);
+    const el = audioEngine.getMediaElement() as unknown as FakeAudio;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(el.currentTime).toBe(0);
+    const listeners = (el.addEventListener as ReturnType<typeof vi.fn>).mock.calls.filter(
+      (call) => call[0] === 'loadedmetadata'
+    );
+    expect(listeners.length).toBeGreaterThan(0);
+
+    el.currentTime = 0;
+    listeners[listeners.length - 1][1]();
+    expect(el.currentTime).toBe(42);
+  });
+
+  it('does not seek when the track already changed', async () => {
+    const getPlaybackPosition = vi.fn(async () => 42);
+    (window as unknown as { api: unknown }).api = { getPlaybackPosition };
+
+    const player = usePlayerStore();
+    player.currentTrack = track;
+
+    audioEngine.loadTrack(track);
+    const el = audioEngine.getMediaElement() as unknown as FakeAudio;
+    el.readyState = 4;
+    // User already moved on before the stored position came back.
+    player.currentTrack = { ...track, path: 'D:/music/b.mp3' };
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(el.currentTime).toBe(0);
   });
 });

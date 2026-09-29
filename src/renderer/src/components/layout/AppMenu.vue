@@ -201,7 +201,7 @@ const {
           >
             {{ t('menu.playPause') }}
             <span class="ml-auto text-[10px] text-base-content/50 font-mono">{{
-              player.isPlaying ? 'Pause' : 'Play'
+              $t(player.isPlaying ? 'common.pause' : 'common.play')
             }}</span>
           </button>
           <button
@@ -235,7 +235,7 @@ const {
           >
             {{ t('menu.shuffle') }}
             <span class="ml-auto text-[10px] text-base-content/50 font-mono">{{
-              player.shuffle ? 'On' : 'Off'
+              $t(player.shuffle ? 'common.on' : 'common.off')
             }}</span>
           </button>
           <button
@@ -244,7 +244,13 @@ const {
           >
             {{ t('menu.repeat') }}
             <span class="ml-auto text-[10px] text-base-content/50 font-mono">{{
-              player.repeat
+              $t(
+                player.repeat === 'none'
+                  ? 'player.repeatNone'
+                  : player.repeat === 'one'
+                    ? 'player.repeatOne'
+                    : 'player.repeatAll'
+              )
             }}</span>
           </button>
           <div class="border-t border-base-300 my-1 mx-2" />

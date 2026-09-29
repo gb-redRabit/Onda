@@ -64,5 +64,5 @@ export function usePlayerFavorites() {
     }
   }
 
-  return { favorites, isFavorite, toggleFavorite };
+  return { favorites, isFavorite, toggleFavorite, ensureFavorites };
 }

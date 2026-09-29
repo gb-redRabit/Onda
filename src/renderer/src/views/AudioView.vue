@@ -5,6 +5,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { usePluginsStore } from '@renderer/stores/plugins';
 import AudioCanvasElements from '@renderer/components/audio/AudioCanvasElements.vue';
+import PluginUiSlot from '@renderer/components/plugins/PluginUiSlot.vue';
 import AudioHudToolbar from '@renderer/components/audio/AudioHudToolbar.vue';
 import AudioVizSettings from '@renderer/components/audio/AudioVizSettings.vue';
 import { nextVizMode } from '@renderer/utils/audioVisualizer';
@@ -95,6 +96,9 @@ const hudOpacity = computed(() => (settings.appearance.audioLayout?.hudOpacity ?
       :ui-visible="showUI"
       @element-mousedown="onElementMouseDown"
     />
+
+    <!-- ─── Plugin UI slot (host-rendered, plain text) ─── -->
+    <PluginUiSlot slot-id="audio-view" :visible="showUI && !showLayoutEditor" />
 
     <!-- ─── Viz Overlay Toolbar (Teleported out of viz stacking context) ─── -->
     <AudioHudToolbar
