@@ -21,7 +21,7 @@ import {
 import { getStore } from './ipc/cover-cache';
 import { flushQueueNow } from './downloads/download-manager';
 import { flushLibraryScanned } from './ipc/library-store';
-import { setupFileLogging, applyLogSettings } from './log-file';
+import { setupFileLogging, applyLogSettings, flushLogWrites } from './log-file';
 import { applyCoverCacheSettings } from './ipc/cover-cache';
 import { initAutoUpdater, replayUpdaterEvent } from './updater';
 import { markBootPhase, markBootStart } from './boot-timeline';
@@ -358,6 +358,9 @@ app.whenReady().then(async () => {
     closeLoginWindow();
     // Flush debounced persistence so the last ~0.5s of changes aren't lost.
     flushQueueNow();
+    // Same for the log queue: the lines written during shutdown are the ones
+    // worth having when a crash brought us here.
+    void flushLogWrites();
     void flushLibraryScanned();
     void getStore().then((s) => s.set('mediaRoots', getExtraRoots().slice(0, 50)));
   });

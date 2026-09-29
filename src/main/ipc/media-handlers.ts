@@ -24,6 +24,7 @@ import {
   cleanupOldTranscodes
 } from './media-transcode';
 import { isSafeAbsolutePath, isSafeStringArray } from '../utils/validate';
+import { isProtectedPath } from '../path-policy';
 import { addAllowedRoot } from '../media-server';
 
 export async function getDuration(filePath: string): Promise<number> {
@@ -303,8 +304,17 @@ export function registerMediaHandlers(): void {
 
   // Grants the media server access to a file's folder (or the folder itself),
   // called by the renderer when the user explicitly opens a media file.
+  //
+  // The grant is persisted, so it must not be a way to hand the media server
+  // (and therefore a compromised renderer) a system directory. `extraRoots` is
+  // a plain path list with no other gate, so the shape check is the only thing
+  // between a caller and read access to whatever the main process can open.
   ipcMain.handle('media:grantAccess', async (_event, filePath: unknown): Promise<boolean> => {
     if (!isSafeAbsolutePath(filePath)) return false;
+    if (isProtectedPath(filePath) || isProtectedPath(dirname(filePath))) {
+      logger.warn('media', `media:grantAccess rejected protected path: ${filePath}`);
+      return false;
+    }
     await addAllowedRoot(filePath);
     await addAllowedRoot(dirname(filePath));
     return true;

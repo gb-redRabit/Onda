@@ -9,16 +9,20 @@ vi.mock('electron', () => ({
   app: { getPath: () => userDataDir }
 }));
 
-const { applyLogSettings, setupFileLogging, getLogPath } = await import('../log-file');
+const { applyLogSettings, setupFileLogging, getLogPath, flushLogWrites } =
+  await import('../log-file');
 
-const delay = () => new Promise((resolve) => setTimeout(resolve, 20));
+// Awaits the write queue instead of sleeping: the log is written asynchronously
+// and a fixed delay turns this into a flake as soon as the suite gets busier.
+const flush = () => flushLogWrites();
 
 beforeEach(() => {
   setupFileLogging();
   applyLogSettings('info', 10);
 });
 
-afterEach(() => {
+afterEach(async () => {
+  await flush();
   rmSync(userDataDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 });
 });
 
@@ -28,7 +32,7 @@ describe('log file level filtering', () => {
     console.warn('[test] warn line');
     console.error('[test] error line');
     console.debug('[test] debug line');
-    await delay();
+    await flush();
 
     const text = readFileSync(getLogPath(), 'utf8');
     expect(text).toContain('[INFO] [test] info line');
@@ -41,7 +45,7 @@ describe('log file level filtering', () => {
     applyLogSettings('warn', 10);
     console.info('[test] info hidden');
     console.warn('[test] warn kept');
-    await delay();
+    await flush();
 
     const text = readFileSync(getLogPath(), 'utf8');
     expect(text).not.toContain('info hidden');
@@ -51,7 +55,7 @@ describe('log file level filtering', () => {
   it('includes debug lines when the level is debug', async () => {
     applyLogSettings('debug', 10);
     console.debug('[test] debug kept');
-    await delay();
+    await flush();
 
     expect(readFileSync(getLogPath(), 'utf8')).toContain('[DEBUG] [test] debug kept');
   });

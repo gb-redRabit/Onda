@@ -1,5 +1,5 @@
 import { readFile, writeFile } from 'fs/promises';
-import { join } from 'path';
+import { isAbsolute, join } from 'path';
 import os from 'os';
 import { app } from 'electron';
 import { getStore } from './cover-store';
@@ -13,13 +13,27 @@ export const COVER_CACHE_MAP_KEY = 'coverCacheMap';
 let coverMapFile: string | null = null;
 function getCoverMapFile(): string {
   if (!coverMapFile) {
-    try {
-      coverMapFile = join(app.getPath('userData'), 'cover-cache-map.json');
-    } catch {
-      coverMapFile = join(os.tmpdir(), 'onda', 'cover-cache-map.json');
-    }
+    // `app.getPath` can return an empty string (not only throw) if it is called
+    // before the app is ready. `join('', name)` yields a RELATIVE path, so the
+    // map would then be written into the process working directory — which for
+    // a packaged app is wherever the user launched it from. Anything that is
+    // not an absolute path is treated as unavailable and falls back to tmp.
+    const userData = safeUserDataPath();
+    coverMapFile = userData
+      ? join(userData, 'cover-cache-map.json')
+      : join(os.tmpdir(), 'onda', 'cover-cache-map.json');
   }
   return coverMapFile;
+}
+
+/** The profile directory, or null when Electron cannot provide one yet. */
+function safeUserDataPath(): string | null {
+  try {
+    const dir = app.getPath('userData');
+    return dir && isAbsolute(dir) ? dir : null;
+  } catch {
+    return null;
+  }
 }
 
 let coverMapData: Record<string, { cacheFile: string; mtime: number }> | null = null;

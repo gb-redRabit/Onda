@@ -23,12 +23,21 @@ import { isSafeAbsolutePath, isSafeStringArray } from '../utils/validate';
 import { readTextFileWithinBounds, TEXT_EXTS, TEXT_MAX_BYTES } from '../utils/read-text-file';
 import { isProtectedPath, parentOf } from '../path-policy';
 
+// `fs:findDuplicates` hashes candidate files. The explorer's use case is a
+// folder of media, so these bounds are far above a normal library and only
+// exist to stop one call from saturating the disk.
+const MAX_DUPLICATE_CANDIDATES = 5000;
+const MAX_DUPLICATE_FILE_BYTES = 2 * 1024 * 1024 * 1024;
+const MAX_PATH_LENGTH = 4096;
+
+/** One detached shell at a time, so the channel cannot be used as a spawn loop. */
+let openTerminalInFlight = false;
+
 /**
  * True when any already-existing ancestor of `target` is a protected path.
  * Used for the create/copy destinations, where `recursive: true` would
  * materialise intermediate directories the user never named.
- */
-async function touchesProtectedAncestor(target: string): Promise<boolean> {
+ */ async function touchesProtectedAncestor(target: string): Promise<boolean> {
   let current = target;
   // Bounded walk: a path longer than the segments cap cannot be legitimate.
   for (let depth = 0; depth < 64; depth++) {
@@ -64,12 +73,21 @@ export function registerFsHandlers(): void {
     return getDrives();
   });
 
-  ipcMain.handle('fs:getProperties', async (_event, filePath: string) => {
+  ipcMain.handle('fs:getProperties', async (_event, filePath: unknown) => {
+    if (!isSafeAbsolutePath(filePath)) {
+      logger.warn('fs', 'getProperties rejected invalid path');
+      return null;
+    }
     return getFileProperties(filePath);
   });
 
-  ipcMain.handle('fs:readdir', async (event, dirPath: string): Promise<void> => {
-    if (!dirPath || dirPath === '/') {
+  ipcMain.handle('fs:readdir', async (event, dirPath: unknown): Promise<void> => {
+    if (!isSafeAbsolutePath(dirPath)) {
+      logger.warn('fs', 'readdir rejected invalid path');
+      event.sender.send('fs:readdir:batch', { done: true, items: [] });
+      return;
+    }
+    if (dirPath === '/' || /^[A-Z]:$/i.test(dirPath)) {
       event.sender.send('fs:readdir:batch', { done: true, items: await getDrives() });
       return;
     }
@@ -221,15 +239,25 @@ export function registerFsHandlers(): void {
     }
   });
 
-  ipcMain.handle('fs:findDuplicates', async (_event, directory: string) => {
+  ipcMain.handle('fs:findDuplicates', async (_event, directory: unknown) => {
     interface DupGroup {
       original: string;
       duplicates: string[];
     }
     const groups: DupGroup[] = [];
+    // This hashes every candidate file in the directory, so it is the most
+    // expensive channel here. Bound both the entry count and the bytes read so
+    // a stray call cannot saturate the disk.
+    if (!isSafeAbsolutePath(directory)) {
+      logger.warn('fs', 'findDuplicates rejected invalid path');
+      return groups;
+    }
     try {
       const entries = await readdir(directory, { withFileTypes: true });
-      const files = entries.filter((e) => e.isFile()).map((e) => join(directory, e.name));
+      const files = entries
+        .filter((e) => e.isFile())
+        .slice(0, MAX_DUPLICATE_CANDIDATES)
+        .map((e) => join(directory, e.name));
 
       const bucket = new Map<string, string[]>();
       for (const f of files) {
@@ -260,20 +288,22 @@ export function registerFsHandlers(): void {
           }
         }
         const refSize = refStats.size;
-        let refHash = '';
+        if (refSize > MAX_DUPLICATE_FILE_BYTES) continue;
+        let refHash: string | null = null;
         try {
-          refHash = await fileHash(refPath);
+          refHash = await fileHash(refPath, MAX_DUPLICATE_FILE_BYTES);
         } catch (e) {
           logger.warn('fs', `duplicate reference hash failed for ${refPath}`, e);
           continue;
         }
+        if (!refHash) continue;
         const dups: string[] = [];
         for (const c of candidates) {
           if (c.toLowerCase() === refPath.toLowerCase()) continue;
           try {
             const s = await stat(c);
             if (s.size !== refSize) continue;
-            if ((await fileHash(c)) === refHash) dups.push(c);
+            if ((await fileHash(c, MAX_DUPLICATE_FILE_BYTES)) === refHash) dups.push(c);
           } catch (e) {
             logger.warn('fs', `duplicate compare failed for ${c}`, e);
           }
@@ -286,7 +316,11 @@ export function registerFsHandlers(): void {
     return groups;
   });
 
-  ipcMain.handle('shell:showItemInFolder', (_event, fullPath: string) => {
+  ipcMain.handle('shell:showItemInFolder', (_event, fullPath: unknown) => {
+    if (!isSafeAbsolutePath(fullPath)) {
+      logger.warn('fs', 'showItemInFolder rejected invalid path');
+      return;
+    }
     try {
       shell.showItemInFolder(fullPath);
     } catch (e) {
@@ -294,7 +328,11 @@ export function registerFsHandlers(): void {
     }
   });
 
-  ipcMain.handle('shell:openTerminal', async (_event, dirPath: string) => {
+  ipcMain.handle('shell:openTerminal', async (_event, dirPath: unknown) => {
+    if (!isSafeAbsolutePath(dirPath)) {
+      logger.warn('fs', 'openTerminal rejected invalid path');
+      return;
+    }
     try {
       const info = await stat(dirPath);
       if (!info.isDirectory()) {
@@ -302,6 +340,14 @@ export function registerFsHandlers(): void {
         return;
       }
       const real = await realpath(dirPath);
+      // Each call spawns a detached shell, so an unbounded handler is a process
+      // bomb. The latch is taken only on the spawn path, so a rejected call
+      // never blocks the next attempt.
+      if (openTerminalInFlight) {
+        logger.warn('fs', 'openTerminal rejected (one already opening)');
+        return;
+      }
+      openTerminalInFlight = true;
       const isWindows = process.platform === 'win32';
       if (isWindows) {
         spawn('cmd', ['/K', 'cd', '/d', real], { windowsHide: true, detached: true }).unref();
@@ -310,6 +356,12 @@ export function registerFsHandlers(): void {
       }
     } catch (e) {
       logger.warn('fs', `openTerminal failed for ${dirPath}`, e);
+    } finally {
+      // The child is detached and unref'd, so there is nothing to await; the
+      // latch only has to cover the spawn itself.
+      setTimeout(() => {
+        openTerminalInFlight = false;
+      }, 500);
     }
   });
 
@@ -355,7 +407,15 @@ export function registerFsHandlers(): void {
     }
   });
 
-  ipcMain.handle('shell:getFileIcon', async (_event, filePath: string) => {
+  ipcMain.handle('shell:getFileIcon', async (_event, filePath: unknown) => {
+    // Without a shape check this is an existence oracle plus a base64 pump for
+    // any path the renderer names. There is deliberately no concurrency cap:
+    // a folder listing asks for hundreds of icons at once and dropping them
+    // would be a visible regression.
+    if (!isSafeAbsolutePath(filePath)) {
+      logger.warn('fs', 'getFileIcon rejected invalid path');
+      return null;
+    }
     try {
       const icon = await app.getFileIcon(iconSourcePath(filePath), { size: 'large' });
       if (icon.isEmpty()) return null;
@@ -366,7 +426,8 @@ export function registerFsHandlers(): void {
     }
   });
 
-  ipcMain.handle('fs:copyPath', (_event, filePath: string) => {
+  ipcMain.handle('fs:copyPath', (_event, filePath: unknown) => {
+    if (typeof filePath !== 'string' || filePath.length > MAX_PATH_LENGTH) return;
     clipboard.writeText(filePath);
   });
 

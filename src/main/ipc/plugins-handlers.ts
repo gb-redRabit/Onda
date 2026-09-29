@@ -151,6 +151,30 @@ async function setEnabled(
 }
 
 /**
+ * The manifest, but only for a plugin that is CURRENTLY approved.
+ *
+ * Every capability channel (storage, settings, network) has to clear this, not
+ * just check the manifest. The manifest says what the plugin DECLARES; this is
+ * what the user APPROVED, re-verified against the entry digest so that editing
+ * the code or widening the permissions after the fact revokes the grant.
+ *
+ * Without this an installed-but-never-approved plugin still reached its own
+ * storage and the network allowlist through IPC, because the capability
+ * handlers only ever looked at the manifest.
+ */
+async function approvedManifest(id: string): Promise<PluginManifest | null> {
+  if (!validatePluginId(id)) return null;
+  const saved = (await loadEnabledState())[id];
+  if (saved?.enabled !== true || !saved.approvedConsent) return null;
+  const dir = join(getPluginsDir(), id);
+  const digest = await readEntryDigest(dir, id);
+  if (!digest) return null;
+  const manifest = await readManifest(dir, id);
+  if (!manifest || !pluginApprovalMatches(manifest, digest, saved.approvedConsent)) return null;
+  return manifest;
+}
+
+/**
  * A plugin only stays enabled while the saved consent still matches the current
  * manifest AND entry digest, so editing a plugin's code or capabilities forces
  * a fresh review instead of silently running unapproved code after a restart.
@@ -369,7 +393,7 @@ export function registerPluginsHandlers(): void {
 
   ipcMain.handle('plugins:storage:keys', async (_e, id: string): Promise<string[]> => {
     try {
-      const manifest = await readManifestById(id);
+      const manifest = await approvedManifest(id);
       if (!manifest || !storagePermissionGranted(manifest.permissions)) return [];
       return Object.keys(await storageData(id));
     } catch (e) {
@@ -380,7 +404,7 @@ export function registerPluginsHandlers(): void {
 
   ipcMain.handle('plugins:storage:get', async (_e, id: string, key: string): Promise<unknown> => {
     try {
-      const manifest = await readManifestById(id);
+      const manifest = await approvedManifest(id);
       if (!manifest || !storagePermissionGranted(manifest.permissions) || !validStorageKey(key)) {
         return null;
       }
@@ -396,7 +420,7 @@ export function registerPluginsHandlers(): void {
     'plugins:storage:set',
     async (_e, id: string, key: string, value: unknown): Promise<boolean> => {
       try {
-        const manifest = await readManifestById(id);
+        const manifest = await approvedManifest(id);
         if (!manifest || !storagePermissionGranted(manifest.permissions)) return false;
         if (!validStorageKey(key)) return false;
         const current = await storageData(id);
@@ -421,7 +445,7 @@ export function registerPluginsHandlers(): void {
     'plugins:storage:remove',
     async (_e, id: string, key: string): Promise<boolean> => {
       try {
-        const manifest = await readManifestById(id);
+        const manifest = await approvedManifest(id);
         if (!manifest || !storagePermissionGranted(manifest.permissions)) return false;
         if (!validStorageKey(key)) return false;
         const current = await storageData(id);
@@ -456,7 +480,7 @@ export function registerPluginsHandlers(): void {
     'plugins:settings:set',
     async (_e, id: string, key: string, value: unknown): Promise<boolean> => {
       try {
-        const manifest = await readManifestById(id);
+        const manifest = await approvedManifest(id);
         if (!manifest || !validStorageKey(key)) return false;
         const field = manifest.settings?.find((candidate) => candidate.key === key);
         if (!field || !pluginSettingValueValid(field, value)) return false;
@@ -485,10 +509,12 @@ export function registerPluginsHandlers(): void {
       options: PluginFetchOptions
     ): Promise<PluginFetchResult> => {
       try {
-        const plugins = await listInstalledPlugins();
-        const info = plugins.find((p) => p.id === id);
-        const allow = info?.permissions.network?.allow || [];
-        if (!info || allow.length === 0) {
+        // Approval, not just the manifest: an installed plugin the user never
+        // activated — or one whose code changed after the review — must not be
+        // able to borrow the app's network identity.
+        const manifest = await approvedManifest(id);
+        const allow = manifest?.permissions.network?.allow || [];
+        if (!manifest || allow.length === 0) {
           return {
             success: false,
             error: 'Network access not permitted for this plugin',

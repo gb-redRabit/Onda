@@ -124,12 +124,28 @@ export function stripDuplicateSuffix(name: string): string | null {
   return null;
 }
 
-export function fileHash(filePath: string): Promise<string> {
+/**
+ * SHA-256 of a file, streaming so a large video does not have to be buffered.
+ *
+ * `maxBytes` bounds the read: hashing a multi-gigabyte file is minutes of disk
+ * saturation, so a caller that scans a directory can cap what it is willing to
+ * look at. Returns null when the file is larger than the budget.
+ */
+export function fileHash(filePath: string, maxBytes?: number): Promise<string | null> {
   return new Promise((resolve, reject) => {
     const hash = createHash('sha256');
+    let seen = 0;
     const stream = createReadStream(filePath);
     stream.on('error', reject);
-    stream.on('data', (chunk) => hash.update(chunk));
+    stream.on('data', (chunk) => {
+      seen += chunk.length;
+      if (maxBytes !== undefined && seen > maxBytes) {
+        stream.destroy();
+        resolve(null);
+      } else {
+        hash.update(chunk);
+      }
+    });
     stream.on('end', () => resolve(hash.digest('hex')));
   });
 }

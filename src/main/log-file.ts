@@ -107,6 +107,18 @@ export function setupFileLogging(): void {
   };
 }
 
+/**
+ * Resolves once every queued line has been written.
+ *
+ * The queue is otherwise never awaited, which means the last lines before a
+ * crash are lost and any caller that wants to read the log immediately after
+ * logging has to guess a delay. `app:quit` awaits this; the tests await it
+ * instead of sleeping.
+ */
+export async function flushLogWrites(): Promise<void> {
+  await writeQueue;
+}
+
 export async function readLogTail(lines: number = LOG_LINES): Promise<string> {
   try {
     const data = await readFile(getLogPath(), 'utf-8');
