@@ -140,30 +140,34 @@ describe('exploratory fs channels validate their arguments', () => {
     expect(batchedItems()).toEqual({ batches: 1, items: [] });
   });
 
-  it('fs:readdir reads an absent path as the drives view, not as invalid', async () => {
-    // The explorer's nav pane and breadcrumb call navigateTo(''), which arrives
-    // here as an empty string. Validating the argument before handling that made
-    // the drives view come back empty: no error anywhere, just a permanently
-    // blank list, and nothing that looked like a bug.
-    for (const empty of ['', null, undefined]) {
-      // Each invoke() creates its own sender, so batchedItems() sees this call only.
-      await invoke('fs:readdir', empty);
-      expect(batchedItems().batches, JSON.stringify(empty)).toBe(1);
-      expect(batchedItems().items.length, JSON.stringify(empty)).toBeGreaterThan(0);
-    }
-  });
+  // Enumerating every drive is real I/O. Locally that is milliseconds, but on a
+  // cold Windows CI runner, or one with a network-mapped drive, it overruns the
+  // default 5 s budget, so these tests failed on the runner while passing on
+  // every developer machine. 30 s leaves ample headroom without hiding a real
+  // hang, since a hang never completes.
+  const DRIVE_ENUMERATION_TIMEOUT_MS = 30_000;
+
+  it(
+    'fs:readdir reads an absent path as the drives view, not as invalid',
+    async () => {
+      // The explorer's nav pane and breadcrumb call navigateTo(''), which arrives
+      // here as an empty string. Validating the argument before handling that made
+      // the drives view come back empty: no error anywhere, just a permanently
+      // blank list, and nothing that looked like a bug.
+      for (const empty of ['', null, undefined]) {
+        // Each invoke() creates its own sender, so batchedItems() sees this call only.
+        await invoke('fs:readdir', empty);
+        expect(batchedItems().batches, JSON.stringify(empty)).toBe(1);
+        expect(batchedItems().items.length, JSON.stringify(empty)).toBeGreaterThan(0);
+      }
+    },
+    DRIVE_ENUMERATION_TIMEOUT_MS
+  );
 
   it('fs:readdir still lists the current directory', async () => {
     await invoke('fs:readdir', mediaDir);
     expect(batchedItems().items.map((i) => i.name)).toContain('track.mp3');
   });
-
-  // Enumerating every drive is real I/O. Locally that is milliseconds, but on a
-  // cold Windows CI runner, or one with a network-mapped drive, it overruns the
-  // default 5 s budget, so the test failed on the runner while passing on every
-  // developer machine. 30 s leaves ample headroom without hiding a real hang,
-  // since a hang never completes.
-  const DRIVE_ENUMERATION_TIMEOUT_MS = 30_000;
 
   it(
     'fs:readdir still lists drives for the root',

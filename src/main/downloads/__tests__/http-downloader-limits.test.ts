@@ -6,6 +6,8 @@ import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { downloadHttpFile } from '../http-downloader';
 
+const delay = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
 // Two defects the audit found here:
 //  - nothing bounded the body, so a source that never stopped sending filled
 //    the disk;
@@ -43,6 +45,29 @@ afterEach(async () => {
 
 const TRUST = { allowPrivateNetwork: true } as const;
 
+/**
+ * Asserts the .part file is gone.
+ *
+ * The download's promise settles as soon as the failure is decided, but the
+ * unlink happens on the write stream's `close` event — the descriptor has to be
+ * released first, which on Windows is not instantaneous and is why the handler
+ * cannot simply unlink inline. A single immediate `stat` therefore races it. This
+ * is not a cosmetic wait: a zero-length .part left behind is exactly what the
+ * next attempt would resume from, so the check is worth polling for rather than
+ * sampling once.
+ */
+async function expectPartRemoved(destPath: string): Promise<void> {
+  const deadline = Date.now() + 5_000;
+  let exists = true;
+  while (exists && Date.now() < deadline) {
+    exists = await stat(`${destPath}.part`)
+      .then(() => true)
+      .catch(() => false);
+    if (exists) await delay(20);
+  }
+  expect(exists, `${destPath}.part was left behind`).toBe(false);
+}
+
 describe('http download size limit', () => {
   it('refuses a body whose content-length exceeds the cap, writing nothing', async () => {
     const origin = await startServer((_req, res) => {
@@ -56,7 +81,7 @@ describe('http download size limit', () => {
     ).rejects.toThrow(/too large/i);
 
     // The partial file is cleaned up, so nothing is left claiming disk.
-    await expect(stat(`${destPath}.part`)).rejects.toThrow();
+    await expectPartRemoved(destPath);
   });
 
   it('refuses a body that grows past the cap even without a content-length', async () => {
@@ -83,7 +108,7 @@ describe('http download size limit', () => {
       downloadHttpFile({ url: `${origin}/f`, destPath, maxBytes: 1024, ...TRUST })
     ).rejects.toThrow(/too large/i);
 
-    await expect(stat(`${destPath}.part`)).rejects.toThrow();
+    await expectPartRemoved(destPath);
   });
 
   it('allows a body under the cap and reports progress', async () => {
@@ -151,8 +176,38 @@ describe('http download stream teardown', () => {
     await expect(promise).rejects.toThrow(/Aborted/);
     // A leaked descriptor would keep the file handle open; the .part is removed
     // either way, and the promise settles exactly once.
-    await expect(stat(`${destPath}.part`)).rejects.toThrow();
+    await expectPartRemoved(destPath);
   });
+
+  it('leaves no .part when the abort lands before the write stream opens', async () => {
+    // The narrow race: unlinking the .part before createWriteStream has finished
+    // opening it lets the pending open() create the file afterwards, so a
+    // zero-length .part survives — and the next attempt treats it as a valid
+    // resume prefix. It only reproduces when the abort beats the open, so it is
+    // driven here by aborting at once, across several attempts.
+    const origin = await startServer((_req, res) => {
+      res.writeHead(200, { 'content-type': 'application/octet-stream' });
+      const pump = (n: number): void => {
+        if (n === 0) return;
+        res.write('a'.repeat(256));
+        setTimeout(() => pump(n - 1), 10);
+      };
+      pump(200);
+    });
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const destPath = await tempFile(`early-abort-${attempt}.bin`);
+      const controller = new AbortController();
+      const promise = downloadHttpFile({
+        url: `${origin}/f`,
+        destPath,
+        signal: controller.signal,
+        allowPrivateNetwork: true
+      });
+      controller.abort();
+      await expect(promise, `attempt ${attempt}`).rejects.toThrow(/Aborted/);
+      await expectPartRemoved(destPath);
+    }
+  }, 20_000);
 
   it('rejects once when the response errors mid-body', async () => {
     // Destroy on the first write rather than after a timer: a timer races the

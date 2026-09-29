@@ -52,6 +52,13 @@ async function doDownload(
   );
   const target = await resolveNetworkTarget(opts.url, { allowPrivateNetwork });
 
+  // Resolving the host is an await, and the abort listener is not attached until
+  // inside the promise below — so a cancel that lands during DNS or the connect
+  // probe fired an event nobody was listening for, and the download carried on
+  // regardless. Re-checked here so cancelling while the request is still being
+  // set up actually cancels it.
+  if (opts.signal?.aborted) throw new Error('Aborted');
+
   return new Promise((resolve, reject) => {
     const transport = target.url.protocol === 'https:' ? https : http;
     const maxBytes = opts.maxBytes ?? MAX_DOWNLOAD_BYTES;
@@ -95,9 +102,16 @@ async function doDownload(
      */
     let abortStreams: ((err: Error) => void) | null = null;
     const teardown = (err: Error): void => {
-      cleanup();
       req.destroy();
-      abortStreams?.(err);
+      // Once the response body is being written, `fail` owns the .part file: it
+      // has to wait for the write stream to close before unlinking. Cleaning up
+      // here as well would race the still-pending open() and leave a zero-length
+      // .part behind for the next attempt to resume from.
+      if (abortStreams) {
+        abortStreams(err);
+        return;
+      }
+      cleanup();
       reject(err);
     };
 
@@ -160,9 +174,14 @@ async function doDownload(
           if (settled) return;
           settled = true;
           res.unpipe(out);
-          out.destroy();
           res.destroy();
-          cleanup();
+          out.destroy();
+          // The .part is unlinked only once the descriptor is gone. Removing it
+          // first loses the race against a pending open() — the file is created
+          // afterwards, and a zero-length .part is left for the next attempt to
+          // treat as a valid resume prefix.
+          if (out.closed) cleanup();
+          else out.once('close', cleanup);
           reject(err);
         };
         abortStreams = fail;
@@ -203,6 +222,10 @@ async function doDownload(
 
     const onAbortListener = (): void => teardown(new Error('Aborted'));
     opts.signal?.addEventListener('abort', onAbortListener, { once: true });
+    // A signal aborted between the check above and this line would have missed
+    // its one event, so the listener is attached before anything is waited on and
+    // the state is re-read once, here.
+    if (opts.signal?.aborted) onAbortListener();
 
     req.setTimeout(opts.timeoutMs ?? DOWNLOAD_TIMEOUT_MS, () => teardown(new Error('Timeout')));
     req.on('error', (err) => {
