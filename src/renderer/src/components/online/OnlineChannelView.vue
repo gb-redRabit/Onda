@@ -29,7 +29,7 @@ const settings = useSettingsStore();
 const { t } = useI18n();
 
 const followed = computed(() => (yt.channel ? yt.isSubscribed(yt.channel.id) : false));
-// SoundCloud profile: no subscriptions, no shorts, different counter labels.
+// Profil SoundCloud: brak subskrypcji i shortsów, inne etykiety liczników.
 const isScChannel = computed(() => yt.channelIsSc);
 const subscribeOpen = ref(false);
 const unfollowOpen = ref(false);
@@ -112,8 +112,8 @@ function itemDownloadState(videoId: string): OnlineItemDownloadState {
   );
 }
 
-// Audio downloads open the cover/metadata config dialog first (Faza 5), unless
-// Smart Mode is on — then download immediately with defaults.
+// Pobrania audio najpierw otwierają dialog konfiguracji okładki/metadanych (Faza 5),
+// chyba że włączony jest Smart Mode — wtedy pobierają od razu z ustawieniami domyślnymi.
 function queueVideo(v: YouTubeVideo) {
   if (settings.download.smartMode) {
     void yt.queueVideo(v);
@@ -122,8 +122,8 @@ function queueVideo(v: YouTubeVideo) {
   }
 }
 
-// The per-card options button always opens the full config dialog, even when
-// Smart Mode would otherwise download with defaults.
+// Przycisk opcji na karcie zawsze otwiera pełny dialog konfiguracji, nawet gdy
+// Smart Mode w przeciwnym razie pobrałby z ustawieniami domyślnymi.
 function openDownloadOptions(v: YouTubeVideo) {
   queueTarget.value = v;
 }

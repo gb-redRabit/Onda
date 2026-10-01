@@ -52,8 +52,8 @@ export const useSettingsStore = defineStore('settings', () => {
   const dependencies = ref<Record<string, DependencyStatus>>({});
   const statusBar = ref<StatusBarSettings>({ ...DEFAULT_STATUS_BAR });
   const home = ref<HomeSettings>({ ...DEFAULT_HOME });
-  // Favourites are part of the settings state so there is one writer and one
-  // reset path; player-favorites reads this ref instead of its own copy.
+  // Ulubione są częścią stanu ustawień, więc jest jeden pisarz i jedna
+  // ścieżka resetu; player-favorites czyta ten ref zamiast własnej kopii.
   const favorites = ref<string[]>([]);
   const isLoaded = ref(false);
 

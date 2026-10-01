@@ -15,14 +15,14 @@ function detectLocale(): Locale {
   return 'en';
 }
 
-// Resolves a UI locale ('auto' → system language).
+// Rozwiązuje locale UI ('auto' → język systemu).
 export function resolveLocale(loc: string): Locale {
   if (loc === 'pl' || loc === 'en') return loc;
   const sysLang = navigator.language || '';
   return sysLang.startsWith('pl') ? 'pl' : 'en';
 }
 
-// Static map keeps the imports analyzable for Vite (code-splits each locale).
+// Statyczna mapa utrzymuje importy analizowalne dla Vite (code-splituje każdy locale).
 const localeLoaders: Record<Locale, () => Promise<LocaleModule>> = {
   pl: () => import('./locales/pl'),
   en: () => import('./locales/en')
@@ -30,10 +30,10 @@ const localeLoaders: Record<Locale, () => Promise<LocaleModule>> = {
 
 const initialLocale = detectLocale();
 
-// Created synchronously with empty messages so the renderer module graph never
-// blocks on a top-level `await`. The initial locale is loaded by `initI18n()`
-// before `app.mount()` (see `main.ts`), which keeps the first paint free of
-// missing-key flashes while letting Vue/components evaluate in parallel.
+// Tworzone synchronicznie z pustymi komunikatami, żeby graf modułów renderera nigdy nie
+// blokował się na top-level `await`. Początkowy locale jest ładowany przez `initI18n()`
+// przed `app.mount()` (patrz `main.ts`), co utrzymuje pierwsze malowanie wolne od
+// błysków brakujących kluczy, pozwalając Vue/komponentom ewaluować równolegle.
 export const i18n = createI18n({
   legacy: false,
   locale: initialLocale,

@@ -119,12 +119,12 @@ const trackCount = computed(() => saved.tracks.length);
     </PageHeader>
 
     <div class="flex-1 overflow-y-auto px-6 py-6 space-y-8">
-      <!-- Radio tab -->
+      <!-- Zakładka radia -->
       <WebcastRadioTab v-if="activeTab === 'radio'" @add="radioDialogOpen = true" />
 
-      <!-- Saved tab -->
+      <!-- Zakładka zapisanych -->
       <template v-else>
-        <!-- Saved tracks -->
+        <!-- Zapisane utwory -->
         <section>
           <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 mb-3">
             <Play :size="14" class="text-primary" />
@@ -218,7 +218,7 @@ const trackCount = computed(() => saved.tracks.length);
           </div>
         </section>
 
-        <!-- Saved playlists -->
+        <!-- Zapisane playlisty -->
         <WebcastSavedPlaylists />
       </template>
 

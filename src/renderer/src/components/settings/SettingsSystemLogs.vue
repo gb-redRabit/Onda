@@ -5,7 +5,7 @@ import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
 import { readSelect } from '@renderer/utils/selectOptions';
 const settings = useSettingsStore();
 
-/** Same values the options below are rendered from. */
+/** Te same wartości, z których renderowane są opcje poniżej. */
 const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
 </script>
 <template>

@@ -1,6 +1,6 @@
 import type { VisualizationMode } from '@renderer/types/settings';
 
-// Static audio-visualizer data extracted from
+// Statyczne dane wizualizera audio wydzielone z
 // `components/audio/AudioVisualizer.vue` (plan 2.8).
 
 export const VIZ_CYCLES: VisualizationMode[] = [

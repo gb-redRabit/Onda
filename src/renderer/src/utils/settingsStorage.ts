@@ -35,9 +35,9 @@ interface SettingsState {
   dependencies: Ref<Record<string, DependencyStatus>>;
   statusBar: Ref<StatusBarSettings>;
   home: Ref<HomeSettings>;
-  /** Favourites live here rather than in their own store: they are a setting, and
-   * having two writers for one key meant a factory reset or an import could not
-   * see them. */
+  /** Ulubione żyją tutaj, a nie we własnym store: są ustawieniem, a
+   * posiadanie dwóch pisarzy dla jednego klucza oznaczało, że reset fabryczny lub import
+   * ich nie widział. */
   favorites: Ref<string[]>;
 }
 
@@ -46,11 +46,11 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
 }
 
 /**
- * Recursively merges a persisted patch onto the current (default) value so that
- * keys which exist only in the defaults — i.e. fields added in a newer app
- * version — survive a load. Arrays and non-plain values replace wholesale.
- * A shallow Object.assign used to drop such nested defaults, which showed up as
- * "a setting silently reverts after an update".
+ * Rekurencyjnie scala zapisany patch z bieżącą (domyślną) wartością, tak by
+ * klucze istniejące tylko w domyślnych — tj. pola dodane w nowszej wersji
+ * aplikacji — przetrwały wczytanie. Tablice i wartości niebędące zwykłymi obiektami są zastępowane w całości.
+ * Płytki Object.assign gubił takie zagnieżdżone domyślne, co objawiało się jako
+ * "ustawienie po cichu wraca po aktualizacji".
  */
 export function deepMerge<T>(base: T, patch: unknown): T {
   if (patch === undefined) return base;
@@ -99,7 +99,7 @@ export async function loadSettings(target: SettingsState): Promise<void> {
       if (data) mergeSettings(target, data);
     }
   } catch (e) {
-    // Never hide this: a failed load shows up as "settings reset themselves".
+    // Nigdy tego nie ukrywaj: nieudane wczytanie objawia się jako "ustawienia same się resetują".
     logger.warn('settings', 'loadSettings failed, falling back to defaults', e);
   }
 }

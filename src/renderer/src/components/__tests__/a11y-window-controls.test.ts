@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// Icon-only controls have no text content, so without an accessible name a
-// screen reader announces them as just "button". The frameless main window and
-// the explorer window both draw their own minimize/maximize/close buttons.
+// Kontrolki tylko z ikoną nie mają treści tekstowej, więc bez dostępnej nazwy
+// czytnik ekranu ogłasza je jako samo "button". Bezramkowe okno główne i
+// okno explorera rysują własne przyciski minimalizacji/maksymalizacji/zamknięcia.
 
 const ROOT = process.cwd();
 
@@ -13,7 +13,7 @@ const FILES = [
   'src/renderer/src/views/ExplorerWindowView.vue'
 ];
 
-/** Buttons whose entire content is an icon and that carry no aria-label. */
+/** Przyciski, których cała treść to ikona i które nie mają aria-label. */
 function iconOnlyButtonsWithoutAriaLabel(source: string): string[] {
   const buttons = source.match(/<button[\s\S]*?<\/button>/g) ?? [];
   const offenders: string[] = [];

@@ -17,7 +17,7 @@ async function chooseFolder() {
       settings.updateDownload({ defaultPath: paths[0] });
     }
   } catch {
-    /* cancelled */
+    /* anulowano */
   }
 }
 </script>

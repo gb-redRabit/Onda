@@ -41,7 +41,7 @@ function reportError(err: unknown, info: string): void {
     const ui = useUIStore();
     ui.notify('error', i18n.global.t('app.error'), (err as Error).message || String(err));
   } catch {
-    // UI store may not be ready
+    // Store UI może nie być gotowy
   }
 }
 
@@ -49,9 +49,9 @@ app.config.errorHandler = (err, _instance, info) => {
   reportError(err, info);
 };
 
-// IPC invokes now reject (instead of resolving to `undefined`), so any caller
-// that did not wrap the await would otherwise fail silently. Surface it — but
-// throttle repeats so a periodic fire-and-forget call cannot spam toasts.
+// Wywołania IPC teraz odrzucają (zamiast rozwiązywać się do `undefined`), więc każdy wywołujący,
+// który nie opakował await, w przeciwnym razie zawiódłby po cichu. Ujawnij to — ale
+// dław powtórzenia, żeby okresowe fire-and-forget nie spamowało toastami.
 const reportedRejections = new Map<string, number>();
 const REJECTION_TOAST_THROTTLE_MS = 10_000;
 window.addEventListener('unhandledrejection', (event) => {
@@ -63,12 +63,12 @@ window.addEventListener('unhandledrejection', (event) => {
   try {
     useUIStore().notify('error', i18n.global.t('app.error'), message);
   } catch {
-    // UI store may not be ready
+    // Store UI może nie być gotowy
   }
 });
 
-// Each view is its own chunk; warm the two most visited ones while the app is
-// idle so the first navigation is instant instead of showing the loader.
+// Każdy widok to własny chunk; rozgrzej dwa najczęściej odwiedzane, gdy aplikacja jest
+// bezczynna, żeby pierwsza nawigacja była natychmiastowa zamiast pokazywać loader.
 function prefetchLikelyRoutes(): void {
   const warm = (): void => {
     void import('@renderer/views/LibraryView.vue').catch(() => {});
@@ -82,9 +82,9 @@ function prefetchLikelyRoutes(): void {
 }
 
 async function bootstrap(): Promise<void> {
-  // Locale + module init run in parallel with the settings IPC round-trip (the
-  // store also reads it back from App.vue only if it is not loaded yet), so
-  // neither is on the first-paint critical path.
+  // Inicjalizacja locale + modułów biegnie równolegle z rundą IPC ustawień (store
+  // też odczytuje je z App.vue tylko jeśli jeszcze nie jest wczytany), więc
+  // żadne z nich nie jest na ścieżce krytycznej pierwszego malowania.
   await Promise.all([initI18n(), moduleManager.initAll(), useSettingsStore().load()]);
   app.mount('#app');
   usePluginsHooks();

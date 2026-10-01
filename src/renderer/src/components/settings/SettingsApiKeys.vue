@@ -13,18 +13,18 @@ const newService = ref('generic');
 const newKey = ref('');
 
 /**
- * Whether the OS can actually protect a key on this machine. Checked up front so
- * the user is told before pasting a secret, not after believing it was saved:
- * `weak` means no keyring was found and the value would only be obfuscated,
- * `unavailable` means it cannot be stored at all.
+ * Czy system operacyjny może faktycznie chronić klucz na tej maszynie. Sprawdzane
+ * z góry, aby użytkownik został poinformowany przed wklejeniem sekretu, a nie po
+ * uwierzeniu, że został zapisany: `weak` oznacza brak keyringu i wartość tylko
+ * zaciemnioną, `unavailable` oznacza, że nie da się jej zapisać wcale.
  */
 const secretStorage = ref<SecretStorageStatus | null>(null);
 onMounted(async () => {
   try {
     secretStorage.value = await window.api.invoke('settings:secretStorageStatus');
   } catch {
-    // Older main process without the channel; treat as unknown rather than
-    // blocking the panel.
+    // Starszy proces main bez tego kanału; traktuj jako nieznane, zamiast
+    // blokować panel.
     secretStorage.value = null;
   }
 });

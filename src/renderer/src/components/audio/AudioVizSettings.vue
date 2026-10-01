@@ -8,7 +8,7 @@ const viz = computed(() => settings.playback.visualization);
 const audioLayout = computed(() => settings.appearance.audioLayout);
 const vizQuality = computed(() => audioLayout.value?.vizQuality ?? 'high');
 
-// Local preview for hudOpacity (commit on change — no store write per mousemove)
+// Lokalny podgląd hudOpacity (zatwierdzanie przy zmianie — brak zapisu do store na każdy mousemove)
 const hudOpacityInput = ref(audioLayout.value?.hudOpacity ?? 100);
 
 watch(audioLayout, (l) => {

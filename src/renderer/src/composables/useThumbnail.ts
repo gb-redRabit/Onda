@@ -11,8 +11,8 @@ import {
 } from '@renderer/utils/thumbLoader';
 import { logger } from '@shared/logger';
 
-// Single shared IntersectionObserver for every thumbnail element — one
-// observer instead of one per row.
+// Pojedynczy współdzielony IntersectionObserver dla każdego elementu miniatury — jeden
+// obserwator zamiast jednego na wiersz.
 const thumbVisibleCallbacks = new WeakMap<Element, () => void>();
 
 const thumbVisibilityObserver: IntersectionObserver | null =

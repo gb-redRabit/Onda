@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-// Guards the two easy-to-break fixes: the semantic tokens components reference
-// must exist, and the glass selector must match both Tailwind class syntaxes.
+// Pilnuje dwóch łatwych do zepsucia poprawek: tokeny semantyczne, do których
+// odwołują się komponenty, muszą istnieć, a selektor glass musi pasować do obu składni klas Tailwind.
 
 const css = readFileSync(join(process.cwd(), 'src/renderer/src/assets/main.css'), 'utf8');
 

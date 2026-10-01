@@ -39,7 +39,7 @@ const lastClear = ref<AppCacheClearResult | null>(null);
 const resetBusy = ref(false);
 const resetting = ref(false);
 const perf = ref<IpcPerfSnapshot | null>(null);
-// Captured once: the renderer marks ready at App mount, before this view opens.
+// Przechwycone raz: renderer oznacza gotowość przy montowaniu App, zanim otworzy się ten widok.
 const rendererBoot = getRendererBootMetrics();
 
 function bootBarWidth(ms: number): string {
@@ -127,8 +127,8 @@ async function onFactoryReset(): Promise<void> {
   try {
     const res = await window.api?.factoryReset();
     if (res?.success) {
-      // Main restarts the app in a moment — keep the card in the "restarting"
-      // state instead of pretending the operation is done.
+      // Main za chwilę zrestartuje aplikację — utrzymaj kartę w stanie
+      // "restarting", zamiast udawać, że operacja jest zakończona.
       resetting.value = true;
       ui.notify('success', t('settings.resetFactoryRestarting'));
     } else {

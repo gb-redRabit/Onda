@@ -2,9 +2,9 @@
 import { useI18n } from 'vue-i18n';
 import CoverDetailFields from './CoverDetailFields.vue';
 
-// Shared cover fields for the download and subscribe config dialogs. Replaces
-// the two near-identical DownloadCoverSection/SubscribeCoverSection wrappers
-// with one component and one set of models.
+// Współdzielone pola okładki dla dialogów konfiguracji pobierania i subskrypcji.
+// Zastępuje dwa niemal identyczne wrappery DownloadCoverSection/SubscribeCoverSection
+// jednym komponentem i jednym zestawem modeli.
 defineProps<{ isSc: boolean; kind: 'audio' | 'video' }>();
 
 const coverType = defineModel<'thumbnail' | 'custom' | 'frame' | 'clip' | 'none'>('coverType', {
@@ -20,7 +20,7 @@ const { t } = useI18n();
 </script>
 
 <template>
-  <!-- Video: thumbnail or none -->
+  <!-- Wideo: miniatura lub brak -->
   <section v-if="!isSc && kind === 'video'">
     <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
       {{ t('youtube.coverSection') }}
@@ -51,7 +51,7 @@ const { t } = useI18n();
     </div>
   </section>
 
-  <!-- Audio: thumbnail / none / frame / clip / custom -->
+  <!-- Audio: miniatura / brak / klatka / klip / własna -->
   <section v-else-if="!isSc">
     <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
       {{ t('youtube.coverSection') }}

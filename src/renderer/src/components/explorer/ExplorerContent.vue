@@ -85,7 +85,7 @@ defineExpose({ reveal });
       </h3>
     </div>
 
-    <!-- extraSmall: virtualized list -->
+    <!-- extraSmall: zwirtualizowana lista -->
     <div
       v-if="explorer.viewMode === 'extraSmall' && files.length > 0"
       :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }"
@@ -163,7 +163,7 @@ defineExpose({ reveal });
       </div>
     </div>
 
-    <!-- grid modes: virtualized rows -->
+    <!-- tryby siatki: zwirtualizowane wiersze -->
     <div
       v-else-if="isGridMode && files.length > 0"
       :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }"
@@ -206,7 +206,7 @@ defineExpose({ reveal });
       </div>
     </div>
 
-    <!-- details: virtualized table -->
+    <!-- szczegóły: zwirtualizowana tabela -->
     <div v-else-if="explorer.viewMode === 'details' && files.length > 0">
       <ExplorerDetailsHeader
         :sort-by="explorer.sortBy"
@@ -244,7 +244,7 @@ defineExpose({ reveal });
       </div>
     </div>
 
-    <!-- band select overlay -->
+    <!-- nakładka zaznaczania pasmem -->
     <div
       v-if="bandSelect"
       class="fixed pointer-events-none z-40 rounded-field border"

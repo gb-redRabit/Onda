@@ -1,8 +1,8 @@
 /**
- * Deep-clones a value for IPC or persistence. `structuredClone` is preferred
- * (native, no JSON round-trip, keeps types like Uint8Array and Date), but it
- * rejects Vue reactive proxies and some host objects, so a JSON round-trip is
- * the fallback. Use this instead of ad-hoc `JSON.parse(JSON.stringify(...))`.
+ * Głęboko klonuje wartość na potrzeby IPC lub trwałości. Preferowany jest
+ * `structuredClone` (natywny, bez rundy przez JSON, zachowuje typy takie jak Uint8Array i Date),
+ * ale odrzuca reaktywne proxy Vue i niektóre obiekty hosta, więc fallbackiem jest
+ * runda przez JSON. Używaj tego zamiast doraźnego `JSON.parse(JSON.stringify(...))`.
  */
 export function clonePlain<T>(value: T): T {
   try {

@@ -6,10 +6,10 @@ import { useSettingsStore } from './settings';
 
 export type { CoverResult };
 
-// Stream tracks (YouTube/SoundCloud/radio) use remote http(s) URLs as their
-// path — main rejects them with "unsafe path" on media:getCover, and they only
-// ever get a real cover through enrichTrack's thumbnail seeding. Never enqueue
-// or IPC them; a cache miss degrades to the fallback icon.
+// Utwory strumieniowe (YouTube/SoundCloud/radio) używają zdalnych URL-i http(s) jako
+// ścieżki — main odrzuca je jako "unsafe path" w media:getCover, a prawdziwą okładkę
+// dostają wyłącznie przez seedowanie miniatury w enrichTrack. Nigdy nie kolejkuj
+// ich ani nie wysyłaj przez IPC; pudło w cache degraduje się do zastępczej ikony.
 function isRemoteUrl(filePath: string): boolean {
   return /^https?:\/\//i.test(filePath) || filePath.startsWith('//');
 }
@@ -21,9 +21,9 @@ export function usePlayerCover() {
   let coverFlushScheduled = false;
   let coverProcessing = false;
   const COVER_CACHE_MAX = 500;
-  // A "no cover" result is cached briefly (cheap — main returns instantly from
-  // its mem cache) and re-probed afterwards, so a transient IPC failure or a
-  // file that was missing for a moment can never leave the cache poisoned.
+  // Wynik "brak okładki" jest buforowany krótko (tanio — main zwraca natychmiast z
+  // własnego cache w pamięci) i sondowany ponownie później, więc przejściowy błąd IPC lub
+  // plik chwilowo nieobecny nigdy nie zatrują cache.
   const NULL_COVER_TTL_MS = 30_000;
 
   async function processCoverBatch(): Promise<void> {
@@ -48,9 +48,9 @@ export function usePlayerCover() {
     }, 0);
   }
 
-  // Settings → Library → cover cache size (the renderer keeps a much smaller
-  // window than the main-process cache). Falls back to the built-in cap when the
-  // settings store is not reachable (unit tests, very early calls).
+  // Ustawienia → Biblioteka → rozmiar cache okładek (renderer trzyma znacznie mniejsze
+  // okno niż cache procesu main). Wraca do wbudowanego limitu, gdy
+  // store ustawień jest nieosiągalny (testy jednostkowe, bardzo wczesne wywołania).
   function coverCacheMax(): number {
     try {
       return useSettingsStore().library.coverCacheMaxEntries ?? COVER_CACHE_MAX;
@@ -74,15 +74,15 @@ export function usePlayerCover() {
   async function doLoadCover(filePath: string): Promise<void> {
     const cached = coverCache.value[filePath];
     if (cached && cached.data) return;
-    // Remote URLs (streams/radio) have no local file to probe — never round-trip
-    // through IPC for them, just seal a null cover.
+    // Zdalne URL-e (strumienie/radio) nie mają lokalnego pliku do sondowania — nigdy nie
+    // wykonuj dla nich rundy przez IPC, tylko zapieczętuj pustą okładkę.
     if (isRemoteUrl(filePath)) {
       coverCache.value[filePath] = { type: null, data: null };
       coverSealedAt.set(filePath, Date.now());
       triggerRef(coverCache);
       return;
     }
-    // Fresh "no cover" result — skip the round-trip until the TTL expires.
+    // Świeży wynik "brak okładki" — pomiń rundę, aż TTL wygaśnie.
     const sealedAt = coverSealedAt.get(filePath);
     if (sealedAt && Date.now() - sealedAt < NULL_COVER_TTL_MS) return;
     if (cached) {
@@ -130,9 +130,9 @@ export function usePlayerCover() {
     loadCover(filePath);
   }
 
-  // Micro-batch duration lookups: bulk queueing used to fire one IPC call per
-  // track. Collect paths for ~50ms and resolve them with a single
-  // `media:batchDurations` call (falls back to getDuration when unavailable) —
+  // Mikro-wsadowe odpytywanie czasu trwania: masowe kolejkowanie odpalało kiedyś jedno wywołanie IPC na
+  // utwór. Zbierz ścieżki przez ~50ms i rozwiąż je jednym
+  // wywołaniem `media:batchDurations` (wraca do getDuration gdy niedostępne) —
   // plan 1.7.
   const pendingDuration = new Map<string, { track: MediaFile; resolve: () => void }>();
   let durationTimer: ReturnType<typeof setTimeout> | null = null;
@@ -157,7 +157,7 @@ export function usePlayerCover() {
         );
       }
     } catch {
-      /* leave zeros */
+      /* zostaw zera */
     }
     for (const b of batch) {
       const dur = results[b.track.path] ?? 0;
@@ -171,9 +171,9 @@ export function usePlayerCover() {
   }
 
   async function enrichTrack(track: MediaFile): Promise<void> {
-    // Streams have no local file: no duration lookup, no file cover. The
-    // YouTube thumbnail (a remote https URL, allowed by CSP img-src) is seeded
-    // straight into the cover cache so PlayerBar/AudioView render it instantly.
+    // Strumienie nie mają lokalnego pliku: brak odpytania o czas trwania, brak okładki z pliku.
+    // Miniatura YouTube (zdalny URL https, dozwolony przez CSP img-src) jest seedowana
+    // prosto do cache okładek, więc PlayerBar/AudioView renderują ją natychmiast.
     if (track.type === 'stream') {
       if (track.thumbnail && coverCache.value[track.path]?.data !== track.thumbnail) {
         coverCache.value[track.path] = { type: 'image', data: track.thumbnail };
@@ -192,11 +192,11 @@ export function usePlayerCover() {
         }
       });
     }
-    // NOTE: no loadCover() here — enqueueing (e.g. "play all" on a folder)
-    // would otherwise flood the cover loader with one IPC round-trip per
-    // queued track, even for hundreds the user has never seen. Covers are
-    // fetched on demand by MediaCover through its IntersectionObserver when a
-    // thumbnail actually renders.
+    // UWAGA: brak loadCover() tutaj — zakolejkowanie (np. "odtwórz wszystko" w folderze)
+    // zalałoby loader okładek jedną rundą IPC na
+    // zakolejkowany utwór, nawet dla setek, których użytkownik nigdy nie widział. Okładki są
+    // pobierane na żądanie przez MediaCover przez jego IntersectionObserver, gdy
+    // miniatura faktycznie się renderuje.
   }
 
   return { loadCover, getCover, invalidateCoverCache, enrichTrack };

@@ -1,7 +1,7 @@
 import type { MusicbrainzRelease } from '@shared/types/ipc';
 import type { MediaFile } from '@renderer/types/media';
 
-// Pure MusicBrainz lookup helpers extracted from
+// Czyste helpery wyszukiwania MusicBrainz wydzielone z
 // `components/library/MusicBrainzLookup.vue` (plan 2.8).
 
 export function buildMusicbrainzQuery(q: {
@@ -30,8 +30,8 @@ export function displayTrackNumber(
   return Number(track.number) || Number(track.position) || index + 1;
 }
 
-// Splits a loose initial query into fields: pasted "Artist - Title" or a raw
-// search expression ("field:value" / "x AND y" → album as-is).
+// Rozbija luźne zapytanie początkowe na pola: wklejone "Artist - Title" lub surowe
+// wyrażenie wyszukiwania ("field:value" / "x AND y" → album bez zmian).
 export function splitInitialQuery(q: string): {
   artist?: string;
   title?: string;

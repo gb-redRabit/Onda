@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { createApp, defineComponent, h, nextTick, ref, type Ref, type VNode } from 'vue';
 import { useDialogFocus, type DialogFocusOptions } from '../useDialogFocus';
 
-// Static checks cover that the dialogs declare the right roles; these cover what
-// the shared trap actually does, because "has role=dialog" says nothing about
-// whether focus is trapped and restored.
+// Testy statyczne sprawdzają, że dialogi deklarują właściwe role; te sprawdzają, co
+// wspólna pułapka faktycznie robi, bo "ma role=dialog" nic nie mówi o tym,
+// czy fokus jest uwięziony i przywracany.
 
 async function mountDialog(
   render: (panel: Ref<HTMLElement | null>) => VNode[],
@@ -41,12 +41,12 @@ describe('useDialogFocus', () => {
     const last = document.getElementById('last')!;
     expect(document.activeElement).toBe(first);
 
-    // Forward Tab from the last control wraps to the first, not to the page.
+    // Tab w przód z ostatniej kontrolki zawija do pierwszej, nie do strony.
     last.focus();
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
     expect(document.activeElement).toBe(first);
 
-    // Backward Tab from the first wraps to the last.
+    // Tab w tył z pierwszej kontrolki zawija do ostatniej.
     first.focus();
     document.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true })
@@ -79,8 +79,8 @@ describe('useDialogFocus', () => {
     expect(document.activeElement).toBe(panel);
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
-    // Focus must not escape to <body> — that is how a keyboard user ends up
-    // interacting with the page behind the overlay.
+    // Fokus nie może uciec do <body> — tak użytkownik klawiatury kończy
+    // wchodząc w interakcję ze stroną za nakładką.
     expect(document.activeElement).toBe(panel);
 
     unmount();

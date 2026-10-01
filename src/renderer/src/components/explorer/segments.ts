@@ -1,18 +1,18 @@
 /**
- * Breadcrumb segments for an explorer path.
+ * Segmenty breadcrumb dla ścieżki explorera.
  *
- * Each entry carries the path its button navigates to, and that path is used as
- * the v-for key. The key used to be the index, so navigating from `a\b\c` to
- * `a\d` reused the button DOM of `a\b` for `a\d` — including its drag state and
- * focus. A path is unique per segment and stable while the user stays in the
- * folder, so the shared prefix keeps its nodes across a navigation.
+ * Każdy wpis niesie ścieżkę, do której nawiguje jego przycisk, i ta ścieżka jest używana jako
+ * klucz v-for. Kluczem kiedyś był indeks, więc nawigacja z `a\b\c` do
+ * `a\d` używała ponownie DOM przycisku `a\b` dla `a\d` — wraz z jego stanem przeciągania i
+ * fokusem. Ścieżka jest unikalna dla segmentu i stabilna, dopóki użytkownik pozostaje w
+ * folderze, więc współdzielony prefiks zachowuje swoje węzły podczas nawigacji.
  */
 export interface BreadcrumbSegment {
-  /** Folder name shown in the button. */
+  /** Nazwa folderu pokazywana w przycisku. */
   part: string;
-  /** Position in the segment list; the separator is drawn above index 0. */
+  /** Pozycja na liście segmentów; separator jest rysowany nad indeksem 0. */
   idx: number;
-  /** Full path up to and including this segment. Unique within the list. */
+  /** Pełna ścieżka do tego segmentu włącznie. Unikalna w obrębie listy. */
   path: string;
 }
 

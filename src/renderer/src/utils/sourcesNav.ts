@@ -8,8 +8,8 @@ export function itemPassContext(
   return applyPassKeys((item.extra ?? {}) as Record<string, unknown>, endpoint.passKeys);
 }
 
-// Page-level context merged with the row's extra (row wins), then page passKeys,
-// then table passKeys (row still wins).
+// Kontekst poziomu strony scalony z extra wiersza (wiersz wygrywa), potem passKeys strony,
+// następnie passKeys tabeli (wiersz nadal wygrywa).
 export function tableRowPassContext(
   pageCtx: unknown,
   row: SourceItem,

@@ -1,7 +1,7 @@
 import type { YouTubeResolvedItem } from '@renderer/types/online';
 
-// Maps a saved track/playlist item to the resolved-item shape used by the
-// online cards. Extracted from `views/WebcastView.vue` (plan 2.8).
+// Mapuje zapisany utwór/element playlisty na kształt resolved-item używany przez
+// karty online. Wydzielone z `views/WebcastView.vue` (plan 2.8).
 export function toResolvedItem(s: {
   id: string;
   title: string;
@@ -19,8 +19,8 @@ export function toResolvedItem(s: {
     channelId: s.channelId ?? '',
     duration: s.duration,
     isPlayable: true,
-    // SoundCloud permalink — without it a numeric SC id cannot be turned into
-    // a playable URL.
+    // Permalink SoundCloud — bez niego numerycznego id SC nie da się zamienić na
+    // odtwarzalny URL.
     ...(s.url ? { url: s.url } : {})
   };
 }

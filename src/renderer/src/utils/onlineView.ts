@@ -1,10 +1,10 @@
 import { detectPlatform } from '@shared/platform';
 import { buildSoundcloudProfileUrl, buildYouTubeChannelUrl } from '@shared/provider';
 
-// Pure helpers extracted from `views/OnlineView.vue` (plan 2.8).
+// Czyste helpery wydzielone z `views/OnlineView.vue` (plan 2.8).
 
-// SoundCloud items may carry no URL at all (legacy saved entries resolve to a
-// bare numeric id) — treat those as SoundCloud too.
+// Elementy SoundCloud mogą nie nieść żadnego URL (starsze zapisane wpisy rozwiązują się
+// do gołego numerycznego id) — traktuj je również jako SoundCloud.
 export function isScItem(item: { id: string; url?: string }, url: string): boolean {
   if (!item.url && /^\d+$/.test(item.id)) return true;
   return detectPlatform(url)?.platform === 'soundcloud';

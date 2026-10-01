@@ -5,9 +5,9 @@ import { errorCodeKey } from '@renderer/utils/errorCodes';
 
 type Translate = (key: string, params?: Record<string, unknown>) => string;
 
-// Unified online search/resolve actions with stale-response guarding (a
-// superseded request's result is discarded). Errors are exposed as translated
-// strings. `openDiscover` switches the view back to the discover section.
+// Ujednolicone akcje wyszukiwania/rozwiązywania online z ochroną przed nieaktualnymi
+// odpowiedziami (wynik zastąpionego żądania jest odrzucany). Błędy są udostępniane jako
+// przetłumaczone ciągi. `openDiscover` przełącza widok z powrotem na sekcję odkrywania.
 export function useOnlineSearch(input: Ref<string>, t: Translate, openDiscover: () => void) {
   const yt = useOnlineStore();
   let searchSeq = 0;
@@ -15,8 +15,8 @@ export function useOnlineSearch(input: Ref<string>, t: Translate, openDiscover: 
   const searchError = ref('');
   const resolveError = ref('');
 
-  // A pasted input is "resolvable" when it is a direct link of ANY supported
-  // platform — it then resolves to a track/playlist/profile instead of a search.
+  // Wklejone wejście jest "rozwiązywalne", gdy jest bezpośrednim linkiem DOWOLNEJ obsługiwanej
+  // platformy — wtedy rozwiązuje się do utworu/playlisty/profilu zamiast wyszukiwania.
   const isResolvable = computed(
     () => detectPlatform(input.value) !== null || isHttpUrl(input.value)
   );
@@ -35,7 +35,7 @@ export function useOnlineSearch(input: Ref<string>, t: Translate, openDiscover: 
     const seq = ++searchSeq;
     try {
       const result = await yt.searchOnline(input.value);
-      // Stale response from a superseded search — discard.
+      // Nieaktualna odpowiedź z zastąpionego wyszukiwania — odrzuć.
       if (seq !== searchSeq) return;
       if (result.success) {
         yt.setResults(
@@ -70,7 +70,7 @@ export function useOnlineSearch(input: Ref<string>, t: Translate, openDiscover: 
     const seq = ++resolveSeq;
     try {
       const res = await yt.resolveOnline(url);
-      // Stale response from a superseded resolve — discard.
+      // Nieaktualna odpowiedź z zastąpionego rozwiązywania — odrzuć.
       if (seq !== resolveSeq) return;
       if (res.success && res.result) {
         if (res.result.kind === 'channel') {
@@ -93,7 +93,7 @@ export function useOnlineSearch(input: Ref<string>, t: Translate, openDiscover: 
 
   async function submit() {
     if (!input.value.trim()) return;
-    // @name -> YouTube channel, $name -> SoundCloud profile: open directly.
+    // @name -> kanał YouTube, $name -> profil SoundCloud: otwórz bezpośrednio.
     const prefix = detectChannelPrefix(input.value);
     if (prefix) {
       searchSeq++;

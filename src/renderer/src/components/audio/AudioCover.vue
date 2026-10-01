@@ -6,8 +6,8 @@ import MediaCover from '@renderer/components/MediaCover.vue';
 
 const props = defineProps<{ size?: string; variant?: string; decoration?: string }>();
 
-// Cover decorations come only from plugins (`plugin:cover:<variant>`); the
-// variants below are the host implementations registered in
+// Dekoracje okładki pochodzą wyłącznie z wtyczek (`plugin:cover:<variant>`);
+// poniższe warianty to implementacje hosta zarejestrowane w
 // `PLUGIN_HOST_VARIANTS` (utils/plugins-helpers.ts).
 const COVER_PLUGIN_CLIP: Record<string, string> = {
   'plugin:cover:triangle': 'polygon(50% 0%, 0% 100%, 100% 100%)',
@@ -47,7 +47,7 @@ function measurePulse() {
     return;
   }
 
-  // Sample bass at ~30fps (skip every other frame); audio juice does not change faster
+  // Próbkuj bas przy ~30fps (pomijaj co drugą klatkę); audio juice nie zmienia się szybciej
   frame++;
   if ((frame & 1) === 1) pulseScale.value = 1;
 
@@ -58,13 +58,13 @@ function measurePulse() {
   }
   analyser.getByteFrequencyData(dataArray);
 
-  // Bass energy (low frequencies = first ~10 bins)
+  // Energia basu (niskie częstotliwości = pierwsze ~10 binów)
   const bassEnd = Math.min(10, bufferLength);
   let bassSum = 0;
   for (let i = 0; i < bassEnd; i++) bassSum += dataArray[i];
   const bassAvg = bassSum / bassEnd / 255;
 
-  // Map 0-1 bass to scale 1.0-1.06 (subtle pulse)
+  // Mapuj bas 0-1 na skalę 1.0-1.06 (subtelny puls)
   pulseScale.value = 1 + bassAvg * 0.06;
 
   animFrame = requestAnimationFrame(measurePulse);

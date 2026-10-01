@@ -9,15 +9,15 @@ export interface SourcesDownloadsDeps {
   activeSource: ComputedRef<MediaSource | null>;
 }
 
-// Source item download queueing (single item + whole list) extracted from
-// `stores/sources.ts` (plan 2.7). The store destructures the returned actions
-// back into the same names, so call sites elsewhere are unchanged.
+// Kolejkowanie pobierania elementu źródła (pojedynczy element + cała lista) wyodrębnione z
+// `stores/sources.ts` (plan 2.7). Store destrukturyzuje zwrócone akcje
+// z powrotem do tych samych nazw, więc miejsca wywołań gdzie indziej pozostają bez zmian.
 export function createSourcesDownloads(deps: SourcesDownloadsDeps) {
   const { activeSource } = deps;
   const settings = useSettingsStore();
 
-  // API ids of items already downloaded for the active source. Kept as a fresh
-  // Set on every mutation so Vue re-renders dependents reliably.
+  // Id API elementów już pobranych dla aktywnego źródła. Trzymane jako świeży
+  // Set przy każdej mutacji, więc Vue niezawodnie rerenderuje zależnych.
   const downloadedIds = ref<Set<string>>(new Set());
 
   async function loadDownloaded(sourceId: string): Promise<void> {
@@ -40,15 +40,15 @@ export function createSourcesDownloads(deps: SourcesDownloadsDeps) {
     downloadedIds.value = new Set(downloadedIds.value).add(itemId);
   }
 
-  // Reload whenever the active source changes (also on first resolution).
+  // Przeładuj, gdy zmieni się aktywne źródło (także przy pierwszym rozwiązaniu).
   watch(
     () => activeSource.value?.id ?? null,
     (id) => void loadDownloaded(id ?? ''),
     { immediate: true }
   );
 
-  // A download that finishes while the view is open marks its item at once.
-  // The main process already persisted it, so a later fetch stays consistent.
+  // Pobieranie, które kończy się, gdy widok jest otwarty, od razu oznacza swój element.
+  // Proces main już je zapisał, więc późniejsze pobranie pozostaje spójne.
   let subscribed = false;
   function subscribeDownloadProgress(): void {
     if (subscribed) return;

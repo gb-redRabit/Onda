@@ -26,11 +26,11 @@ import { createOnlineStreams } from './online/streams';
 import { createOnlineResolved } from './online/resolved';
 
 export const useOnlineStore = defineStore('online', () => {
-  // The global composer, not useI18n(): a Pinia store is not a component, so
-  // there is no active instance for useI18n() to read a local scope from. It
-  // only worked because every current call site happened to run inside a
-  // component's setup — a store constructed from an IPC event or a test would
-  // have thrown.
+  // Globalny composer, nie useI18n(): store Pinia nie jest komponentem, więc
+  // nie ma aktywnej instancji, z której useI18n() mógłby odczytać lokalny zakres. To
+  // działało tylko dlatego, że każde obecne miejsce wywołania trafiało wewnątrz
+  // setup komponentu — store zbudowany ze zdarzenia IPC lub testu
+  // rzuciłby.
   const t = i18n.global.t;
   const {
     searchResults,
@@ -151,21 +151,21 @@ export const useOnlineStore = defineStore('online', () => {
     queueChannelVideos
   });
 
-  // Opens the channel/profile view for an @/$ prefixed query.
+  // Otwiera widok kanału/profilu dla zapytania z prefiksem @/$.
   async function openChannelPrefix(prefix: { platform: 'youtube' | 'soundcloud'; name: string }) {
     await openChannel(channelUrlForPrefix(prefix));
   }
 
-  // Plays a video online: resolves the direct stream URL (cached in main) and
-  // sets it as an unpersisted 'stream' track. Failures (HLS, auth, bot-block)
-  // surface as a notification instead of failing silently.
+  // Odtwarza wideo online: rozwiązuje bezpośredni URL strumienia (buforowany w main) i
+  // ustawia go jako niezapisywany utwór 'stream'. Błędy (HLS, auth, bot-block)
+  // pojawiają się jako powiadomienie zamiast cichej porażki.
   async function playStream(video: YouTubeVideo | YouTubeResolvedItem) {
     const player = usePlayerStore();
     const url = streamTargetFor(video);
-    // Optimistic UI: the player bar (and its thumbnail) appears instantly, while
-    // the URL resolves in the background. streamPending is display-only — it is
-    // never fed to the audio engine. The placeholder path is a non-empty key the
-    // cover cache can seed (MediaCover ignores empty paths).
+    // Optymistyczne UI: pasek odtwarzacza (i jego miniatura) pojawia się natychmiast, gdy
+    // URL rozwiązuje się w tle. streamPending służy tylko do wyświetlania — nigdy nie jest
+    // podawany silnikowi audio. Ścieżka zastępcza to niepusty klucz, który
+    // cache okładek może zaseedować (MediaCover ignoruje puste ścieżki).
     const pending = buildStreamTrack(video, `${url}`, 0);
     player.streamPending = pending;
     player.enrichTrack(pending);
@@ -180,9 +180,9 @@ export const useOnlineStore = defineStore('online', () => {
       result = undefined;
     }
     logger.info('yt', `playStream resolve ms=${Math.round(performance.now() - t0)}`, result);
-    // A newer intent may have replaced this pending track. A click for the SAME
-    // video (e.g. playAllStreams claiming the same first item) must not cancel
-    // the resolved URL — only a different video takes over.
+    // Nowsza intencja mogła zastąpić ten oczekujący utwór. Kliknięcie TEGO SAMEGO
+    // wideo (np. playAllStreams zajmujące ten sam pierwszy element) nie może anulować
+    // rozwiązania URL — tylko inne wideo przejmuje kontrolę.
     const superseding = player.streamPending;
     if (superseding && superseding.id !== pending.id) {
       logger.warn(
@@ -205,14 +205,14 @@ export const useOnlineStore = defineStore('online', () => {
     player.enrichTrack(track);
   }
 
-  // Resolves the stream URL ahead of the click (card visibility) so playback
-  // starts instantly: the main process LRU cache then serves the click without
-  // waiting on the resolver. Best-effort — real errors surface through playStream.
+  // Rozwiązuje URL strumienia przed kliknięciem (widoczność karty), więc odtwarzanie
+  // startuje natychmiast: cache LRU procesu main obsługuje wtedy kliknięcie bez
+  // czekania na resolver. Best-effort — prawdziwe błędy pojawiają się przez playStream.
   const { prefetch: prefetchStream } = createStreamPrefetcher();
 
-  // Streams every item of a playlist/channel: resolves URLs in the background
-  // (the main process caches them, so a repeated play-through is fast), plays the
-  // first resolved item immediately and queues the rest in their original order.
+  // Strumieniuje każdy element playlisty/kanału: rozwiązuje URL-e w tle
+  // (proces main je buforuje, więc powtórne odtworzenie jest szybkie), odtwarza
+  // pierwszy rozwiązany element natychmiast i kolejkuje resztę w oryginalnej kolejności.
   const { queueSavedTrack, playAllStreams } = createOnlineStreams();
 
   const { syncingSavedPlaylistState, syncSavedPlaylist, playSavedPlaylist } =

@@ -98,7 +98,7 @@ describe('httpJsonFetch redirects', () => {
     const hop = target.received[0];
     expect(hop.headers.authorization).toBeUndefined();
     expect(hop.headers['x-api-key']).toBeUndefined();
-    // Safe defaults still travel.
+    // Bezpieczne domyślne wartości nadal wędrują.
     expect(hop.headers['user-agent']).toBe('Onda/1.0');
   });
 

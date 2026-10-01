@@ -10,7 +10,7 @@ async function login() {
   try {
     await window.api.invoke('yt:login');
   } catch {
-    // login window closed or failed — keep current status
+    // okno logowania zamknięte lub nieudane — zachowaj bieżący status
   }
   await refresh();
 }

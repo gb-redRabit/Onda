@@ -11,27 +11,27 @@ export interface LibraryWatchDeps {
   scheduleLoadTracksAsync: () => Promise<void>;
 }
 
-// Main-process library event wiring extracted from `stores/library.ts` (plan 2.8):
-// refresh on re-scan and the batched `library:fileMissing` handling (plan 1.4).
+// Okablowanie zdarzeń biblioteki z procesu main wyodrębnione z `stores/library.ts` (plan 2.8):
+// odświeżanie przy ponownym skanowaniu i wsadowa obsługa `library:fileMissing` (plan 1.4).
 export function createLibraryWatch(deps: LibraryWatchDeps) {
   const { isLoaded, tracks, folderTypes, playlists, scheduleLoadTracksAsync } = deps;
   let subscribedToLibraryUpdates = false;
   let pendingMissing = new Set<string>();
   let missingTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // Re-read playlists from disk (they can be changed by the auto channel
-  // playlist feature in the main process after a download).
+  // Ponownie odczytaj playlisty z dysku (mogą zostać zmienione przez funkcję
+  // automatycznej playlisty kanału w procesie main po pobraniu).
   async function reloadPlaylists() {
     try {
       const list = (await window.api?.invoke('playlist:loadAll')) as Playlist[] | undefined;
       if (list) playlists.value = list;
     } catch {
-      /* playlists unavailable */
+      /* playlisty niedostępne */
     }
   }
 
-  // Refresh the track list when the main process re-scanned a library folder
-  // (e.g. after a finished download landed inside a library folder).
+  // Odśwież listę utworów, gdy proces main ponownie przeskanował folder biblioteki
+  // (np. po tym, jak zakończone pobieranie trafiło do folderu biblioteki).
   function subscribeLibraryUpdates() {
     if (subscribedToLibraryUpdates) return;
     subscribedToLibraryUpdates = true;
@@ -39,9 +39,9 @@ export function createLibraryWatch(deps: LibraryWatchDeps) {
       if (isLoaded.value) void scheduleLoadTracksAsync();
       void reloadPlaylists();
     });
-    // Batch missing-file events: the main process reports one event per file, and
-    // each used to trigger a full array filter + clone + save (O(n²) when a whole
-    // drive disappears — plan 1.4).
+    // Wsadowo obsługuj zdarzenia brakujących plików: proces main zgłasza jedno zdarzenie na plik, a
+    // każde wyzwalało pełny filtr tablicy + clone + zapis (O(n²), gdy znika cały
+    // dysk — plan 1.4).
     window.api?.on('library:fileMissing', (...args: unknown[]) => {
       const p = args[0] as string | undefined;
       if (typeof p !== 'string' || !p) return;

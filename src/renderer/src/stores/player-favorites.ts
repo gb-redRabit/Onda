@@ -1,10 +1,10 @@
 import { useSettingsStore } from './settings';
 
-// Favourites are a setting, so they live in the settings state and are written by
-// the same debounced persistence as everything else. This module used to keep its
-// own ref and call `settings:set` directly, which meant a second writer for one
-// key: a factory reset or an imported profile had no idea favourites existed, and
-// a toggle could be lost by a save that was already in flight.
+// Ulubione są ustawieniem, więc żyją w stanie ustawień i są zapisywane przez
+// tę samą debounce'owaną persystencję co wszystko inne. Ten moduł trzymał kiedyś własny
+// ref i wywoływał `settings:set` bezpośrednio, co oznaczało drugiego pisarza jednego
+// klucza: reset fabryczny lub zaimportowany profil nie wiedziały o istnieniu ulubionych, a
+// przełączenie mogło zostać zgubione przez zapis, który był już w toku.
 
 export function usePlayerFavorites() {
   const settings = useSettingsStore();
@@ -16,11 +16,11 @@ export function usePlayerFavorites() {
     if (loadPromise) return loadPromise;
     loadPromise = (async () => {
       try {
-        // The settings store loads everything at boot; a late consumer (a view
-        // opened after the first paint) still has to wait for that.
+        // Store ustawień ładuje wszystko przy starcie; późny konsument (widok
+        // otwarty po pierwszym malowaniu) wciąż musi na to poczekać.
         if (!settings.isLoaded) await settings.load();
       } catch {
-        /* defaults */
+        /* domyślne */
       } finally {
         favoritesLoaded = true;
         loadPromise = null;
@@ -29,9 +29,9 @@ export function usePlayerFavorites() {
     return loadPromise;
   }
 
-  // Read through the store on every call rather than holding the array: the
-  // store may have been assigned a new array since this was created, and a
-  // captured reference would then be stale.
+  // Czytaj przez store przy każdym wywołaniu, zamiast trzymać tablicę: store
+  // mógł otrzymać nową tablicę od czasu utworzenia tego, a
+  // przechwycone odwołanie byłoby wtedy nieaktualne.
   function isFavorite(path: string): boolean {
     void ensureFavorites();
     return settings.favorites.includes(path);

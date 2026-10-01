@@ -20,9 +20,9 @@ export const usePlayerStore = defineStore('player', () => {
   const equalizerPreset = ref('flat');
   const pendingFullscreen = ref(false);
   const resumePrompt = ref<{ path: string; position: number } | null>(null);
-  // Display-only track shown while a YouTube stream URL is being resolved, so
-  // the player bar appears the moment the user clicks. Replaced by currentTrack
-  // once the URL is ready; never fed to the audio engine.
+  // Utwór tylko do wyświetlania pokazywany, gdy URL strumienia YouTube jest rozwiązywany, więc
+  // pasek odtwarzacza pojawia się w momencie kliknięcia przez użytkownika. Zastępowany przez currentTrack
+  // gdy URL będzie gotowy; nigdy nie podawany silnikowi audio.
   const streamPending = ref<MediaFile | null>(null);
 
   const { loadCover, getCover, invalidateCoverCache, enrichTrack } = usePlayerCover();

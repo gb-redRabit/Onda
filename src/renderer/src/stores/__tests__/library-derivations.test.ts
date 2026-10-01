@@ -21,12 +21,12 @@ describe('library derivations follow metadata edits, not just the track count', 
     const tracks = ref<MediaFile[]>([track('/a.mp3', 'Alpha', 'One')]);
     const d = useLibraryDerivations(tracks);
 
-    // The read above is the point: it warms the memo, so the edit below meets a
-    // populated cache rather than an empty one.
+    // Odczyt powyżej jest tu istotny: rozgrzewa memo, więc poniższa edycja trafia na
+    // zapełniony cache, a nie pusty.
     expect(d.artists.value.map(([name]) => name)).toEqual(['Alpha']);
 
-    // Same length, different artist. The old cache was keyed on tracks.length, so
-    // this edit was invisible until the library was rescanned.
+    // Ta sama długość, inny artysta. Stary cache był kluczowany po tracks.length, więc
+    // ta edycja była niewidoczna, dopóki biblioteka nie została ponownie przeskanowana.
     tracks.value[0].metadata!.artist = 'Beta';
 
     expect(d.artists.value.map(([name]) => name)).toEqual(['Beta']);
@@ -44,12 +44,12 @@ describe('library derivations follow metadata edits, not just the track count', 
   });
 
   it('does not let one derivation poison the other', () => {
-    // Both used to share a single length counter, so whichever computed last set
-    // it and the other was left believing its cache was still valid.
+    // Oba dzieliły kiedyś jeden licznik długości, więc ten, który policzył się ostatni, ustawiał
+    // go, a drugi pozostawał w przekonaniu, że jego cache jest wciąż ważny.
     const tracks = ref<MediaFile[]>([track('/a.mp3', 'Alpha', 'One')]);
     const d = useLibraryDerivations(tracks);
 
-    // Both are read here, so both memos are warm before either tag is edited.
+    // Oba są tu czytane, więc oba memo są rozgrzane, zanim którykolwiek tag zostanie edytowany.
     expect(d.artists.value.map(([n]) => n)).toEqual(['Alpha']);
     expect(d.albums.value.map(([n]) => n)).toEqual(['One']);
 

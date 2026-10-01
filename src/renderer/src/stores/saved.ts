@@ -46,8 +46,8 @@ export const useSavedStore = defineStore('saved', () => {
       channelTitle: video.channelTitle,
       channelId: video.channelId,
       duration: video.duration,
-      // Canonical page URL — mandatory for SoundCloud items (permalinks cannot
-      // be rebuilt from the numeric id); absent for YouTube items.
+      // Kanoniczny URL strony — obowiązkowy dla elementów SoundCloud (permalinków nie można
+      // odtworzyć z numerycznego id); nieobecny dla elementów YouTube.
       ...(video.url ? { url: video.url } : {}),
       savedAt: Date.now()
     };
@@ -109,7 +109,7 @@ export const useSavedStore = defineStore('saved', () => {
     return ok;
   }
 
-  // Replaces the stored item list of a saved playlist (background sync result).
+  // Zastępuje zapisaną listę elementów zapisanej playlisty (wynik synchronizacji w tle).
   async function updatePlaylistItems(
     id: string,
     items: IpcSavedStream[],

@@ -38,7 +38,7 @@ export function useVideoCodec(ctx: VideoCodecContext) {
           audioEngine.playSecondaryAudio();
         }
       } catch {
-        /* chunk failed — fall through to full transcode */
+        /* chunk nie powiódł się — przejdź do pełnego transkodowania */
       }
     }
 

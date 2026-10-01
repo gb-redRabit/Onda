@@ -25,10 +25,10 @@ function checkApi(tool: DepToolName): (() => Promise<DepToolStatus>) | undefined
   }
 }
 
-// Reports which dependencies Onda is missing (or has broken) so the app can
-// warn the user on every launch. State-only: the caller decides when to check
-// (the banner checks on mount and on window focus), which keeps this testable
-// without mounting a component.
+// Zgłasza, których zależności brakuje Onda (lub które są zepsute), aby aplikacja mogła
+// ostrzec użytkownika przy każdym uruchomieniu. Tylko stan: wywołujący decyduje, kiedy sprawdzić
+// (baner sprawdza przy montowaniu i przy uaktywnieniu okna), co czyni to testowalnym
+// bez montowania komponentu.
 export function useMissingDependencies() {
   const issues = ref<DependencyIssue[]>([]);
   const checking = ref(false);
@@ -40,8 +40,8 @@ export function useMissingDependencies() {
   async function check(): Promise<void> {
     checking.value = true;
     try {
-      // The banner must reflect the real system (a tool may have been installed or
-      // removed outside the app), so drop the cached probe verdict first.
+      // Baner musi odzwierciedlać rzeczywisty system (narzędzie mogło zostać zainstalowane lub
+      // usunięte poza aplikacją), więc najpierw odrzucamy zbuforowany wynik sondy.
       await recheckDependencies();
       const results = await Promise.all(
         DEP_LIST.map((dep) => safeCheck(checkApi(dep.tool), { ...EMPTY_DEP_STATUS }))
@@ -60,15 +60,15 @@ export function useMissingDependencies() {
     }
   }
 
-  // Hides the banner until the next launch: a missing dependency is worth
-  // repeating every start, but not worth blocking the current session.
+  // Ukrywa baner do następnego uruchomienia: brakująca zależność jest warta
+  // powtórzenia przy każdym starcie, ale nie warta blokowania bieżącej sesji.
   function dismiss(): void {
     dismissed.value = true;
   }
 
-  // An install/removal elsewhere (Settings, wizard) must clear the banner at
-  // once — without this it only refreshed on window focus, so it kept listing a
-  // tool that had just been installed.
+  // Instalacja/usunięcie w innym miejscu (Ustawienia, kreator) musi od razu wyczyścić
+  // baner — bez tego odświeżał się tylko przy uaktywnieniu okna, więc wciąż wymieniał
+  // narzędzie, które właśnie zostało zainstalowane.
   const unsubscribe = depEvents.on('changed', () => void check());
 
   return { issues, hasIssues, visible, checking, check, dismiss, unsubscribe };

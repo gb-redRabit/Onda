@@ -60,7 +60,7 @@ describe('sanitizeFileName', () => {
 });
 
 describe('extractSignedUrlExpiryMs', () => {
-  // Real CloudFront Policy blob captured from a cf-media.sndcdn.com URL.
+  // Prawdziwy blok CloudFront Policy przechwycony z URL cf-media.sndcdn.com.
   const POLICY =
     'eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiKjovL2NmLW1lZGlhLnNuZGNkbi5jb20vaTFsOVhvSVF4ZUE3LjEyOC5tcDMqIiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNzg3MzUwNjA2fX19XX0_';
 
@@ -168,7 +168,7 @@ describe('scSearchTracks with client_id rotation', () => {
         };
       }
       if (url.includes('/assets/')) {
-        // The first bundle has no id; the second carries the fresh one.
+        // Pierwszy bundle nie ma id; drugi niesie świeże.
         return {
           status: 200,
           body: url.includes('49-a') ? 'window.__sc = {}' : 'config={client_id:"fresh1234567890ab"}'
@@ -182,7 +182,7 @@ describe('scSearchTracks with client_id rotation', () => {
     expect(items[0]!.url).toBe('https://soundcloud.com/artist/my-song');
     expect(await getClientId()).toBe('fresh1234567890ab');
     expect(apiCalls).toBe(2);
-    // The absolute a-v2.sndcdn.com bundle URL must have been probed.
+    // Musiał zostać sprawdzony absolutny URL bundle'a a-v2.sndcdn.com.
     expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('a-v2.sndcdn.com'))).toBe(true);
   });
 });

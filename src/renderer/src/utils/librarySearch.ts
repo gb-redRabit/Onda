@@ -9,7 +9,7 @@ interface SearchableTrack {
   metadata?: { title?: string; artist?: string; album?: string };
 }
 
-/** The single field set every library search matches: name, path and metadata. */
+/** Jedyny zestaw pól, które dopasowuje każde wyszukiwanie biblioteki: nazwa, ścieżka i metadane. */
 export function searchableTerms(track: SearchableTrack): Array<string | undefined> {
   return [
     track.name,
@@ -20,7 +20,7 @@ export function searchableTerms(track: SearchableTrack): Array<string | undefine
   ];
 }
 
-/** True when a track matches the query on any searchable field (empty = match). */
+/** Prawda, gdy utwór pasuje do zapytania na którymkolwiek z przeszukiwalnych pól (puste = pasuje). */
 export function trackMatchesQuery(track: SearchableTrack, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;

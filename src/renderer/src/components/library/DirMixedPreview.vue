@@ -27,7 +27,7 @@ function folderTracksFor(name: string, meta: Record<string, DirChildMeta>) {
   return (meta[name]?.audio ?? []).slice(0, 4);
 }
 
-/** Polish has three plural forms, so the caller picks one. See utils/plural.ts. */
+/** Polski ma trzy formy liczby mnogiej, więc wywołujący wybiera jedną. Zobacz utils/plural.ts. */
 function fileCountLabel(count: number): string {
   const { locale, t } = useI18n();
   const category = pluralCategory(locale.value, count);

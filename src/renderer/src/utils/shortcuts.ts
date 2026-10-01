@@ -12,9 +12,9 @@ export function matchesShortcut(shortcut: string, e: KeyboardEvent): boolean {
   if (meta !== (e.metaKey || false)) return false;
   if (alt !== (e.altKey || false)) return false;
 
-  // Support raw shifted symbols (e.g. '>' / '<' are stored without an
-  // explicit Shift modifier, but can only be typed with Shift held). Letters
-  // and digits stay strict so Ctrl+K ≠ Ctrl+Shift+K.
+  // Obsługa surowych symboli z Shiftem (np. '>' / '<' są zapisane bez
+  // jawnego modyfikatora Shift, ale można je wpisać tylko z trzymanym Shiftem). Litery
+  // i cyfry pozostają ścisłe, więc Ctrl+K ≠ Ctrl+Shift+K.
   const needsShift = keyPart.length === 1 && /[^0-9a-zA-Z ]/.test(keyPart);
   if (shift) {
     if (!e.shiftKey) return false;
@@ -44,10 +44,10 @@ export interface NavShortcutBinding {
 }
 
 /**
- * Pre-computes the navigation-shortcut bindings from the current settings, so
- * the global keydown handler does not rebuild the action table and re-read
- * `settings.shortcuts` on every keystroke. Actions without a bound shortcut are
- * dropped.
+ * Wstępnie wylicza powiązania skrótów nawigacji z bieżących ustawień, tak by
+ * globalny handler keydown nie przebudowywał tabeli akcji i nie odczytywał ponownie
+ * `settings.shortcuts` przy każdym naciśnięciu klawisza. Akcje bez przypisanego skrótu są
+ * pomijane.
  */
 export function navShortcutBindings(
   shortcuts: Record<string, string>,
@@ -58,9 +58,9 @@ export function navShortcutBindings(
     .filter((binding): binding is NavShortcutBinding => Boolean(binding.shortcut));
 }
 
-// Normalize a KeyboardEvent to the canonical shortcut string used by plugin
-// command shortcuts, e.g. "Ctrl+Shift+K" or "Alt+F5". Returns null for events
-// without a modifier or for non-shortcut keys.
+// Normalizuje KeyboardEvent do kanonicznego stringa skrótu używanego przez skróty
+// komend wtyczek, np. "Ctrl+Shift+K" lub "Alt+F5". Zwraca null dla zdarzeń
+// bez modyfikatora lub dla klawiszy niebędących skrótami.
 export function matchesPluginShortcut(e: KeyboardEvent): string | null {
   const mods: string[] = [];
   if (e.ctrlKey) mods.push('Ctrl');

@@ -1,5 +1,5 @@
-// Renderer-side boot marks shown in Diagnostics → Performance, paired with the
-// main-process timeline from `diagnostics:getPerf`.
+// Znaczniki startu po stronie renderera pokazywane w Diagnostyka → Wydajność,
+// sparowane z osią czasu procesu głównego z `diagnostics:getPerf`.
 
 let rendererReadyMs: number | null = null;
 

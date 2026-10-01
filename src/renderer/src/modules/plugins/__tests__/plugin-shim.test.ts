@@ -83,8 +83,8 @@ describe('PLUGIN_API_SHIM runtime', () => {
     sandboxSelf: SandboxSelf;
   } {
     const messages: unknown[] = [];
-    // Null-prototype on purpose: the shim hardens `Object.getPrototypeOf(self)`,
-    // and a normal object would resolve to the HOST Object.prototype inside a vm.
+    // Celowo prototyp null: shim wzmacnia `Object.getPrototypeOf(self)`,
+    // a zwykły obiekt rozwiązywałby się do HOSTOWEGO Object.prototype wewnątrz vm.
     const sandboxSelf = Object.create(null) as SandboxSelf;
     sandboxSelf.postMessage = (m: unknown) => messages.push(m);
     const sandbox: Record<string, unknown> = {

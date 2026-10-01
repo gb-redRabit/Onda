@@ -1,9 +1,9 @@
 import type { SubscriptionDownloadPrefs, CoverSpec, MetaOverride } from '@renderer/types/online';
 
-// Pure subscription-prefs builder extracted from
-// `components/online/SubscribeConfigDialog.vue` (plan 2.8). Only values that
-// differ from the app defaults are stored, so changing a default later applies
-// to existing subscriptions.
+// Czysty builder preferencji subskrypcji wydzielony z
+// `components/online/SubscribeConfigDialog.vue` (plan 2.8). Zapisywane są tylko wartości
+// różniące się od domyślnych aplikacji, więc późniejsza zmiana domyślnej obowiązuje
+// istniejące subskrypcje.
 
 export interface SubscribePrefsInput {
   isSc: boolean;
@@ -50,8 +50,8 @@ export function buildSubscribePrefs(
   i: SubscribePrefsInput,
   d: SubscribePrefsDefaults
 ): SubscriptionDownloadPrefs {
-  // SoundCloud jobs are plain MP3 downloads — only folder/template/library
-  // prefs are meaningful.
+  // Zadania SoundCloud to zwykłe pobierania MP3 — znaczenie mają tylko
+  // preferencje folderu/szablonu/biblioteki.
   if (i.isSc) {
     const scPrefs: SubscriptionDownloadPrefs = {};
     if (i.folderMode === 'channel') scPrefs.outputDir = i.channelFolder;
@@ -75,8 +75,8 @@ export function buildSubscribePrefs(
   if (i.audioLanguage.trim()) prefs.audioLanguage = i.audioLanguage.trim();
   const cover: CoverSpec | undefined = (() => {
     if (i.kind === 'video') {
-      // Video downloads embed the YouTube thumbnail by default; "none" is the
-      // explicit opt-out, undefined means "keep the default".
+      // Pobierania wideo domyślnie osadzają miniaturę YouTube; "none" to
+      // jawne wyłączenie, undefined oznacza "zachowaj domyślne".
       return i.coverType === 'none' ? { type: 'none' } : undefined;
     }
     if (i.coverType === d.cover) return undefined;

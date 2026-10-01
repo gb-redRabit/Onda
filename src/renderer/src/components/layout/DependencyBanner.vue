@@ -15,8 +15,8 @@ function onWindowFocus(): void {
 
 onMounted(() => {
   window.addEventListener('focus', onWindowFocus);
-  // First probe runs after the shell has painted: the checks spawn processes in
-  // the main process and must not compete with the boot sequence.
+  // Pierwsze sprawdzenie uruchamia się po namalowaniu powłoki: testy tworzą procesy w
+  // procesie głównym i nie mogą konkurować z sekwencją startową.
   if ('requestIdleCallback' in window) {
     window.requestIdleCallback(() => void check(), { timeout: 3000 });
   } else {

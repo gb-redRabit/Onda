@@ -37,9 +37,9 @@ export interface LibraryMenuDeps {
   revealInExplorer: (path: string) => void;
 }
 
-// Menu definition builders extracted from `composables/useLibraryContextMenu.ts`
-// (plan 2.8). Each returns the defs plus the context object the caller opens
-// with; the composable stays responsible for `useContextMenu().open`.
+// Buildery definicji menu wydzielone z `composables/useLibraryContextMenu.ts`
+// (plan 2.8). Każdy zwraca defs oraz obiekt kontekstu, z którym wywołujący
+// otwiera; composable pozostaje odpowiedzialny za `useContextMenu().open`.
 export function createLibraryMenuDefs(deps: LibraryMenuDeps) {
   const { t, player, library, plugins, revealInExplorer } = deps;
 

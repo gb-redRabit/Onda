@@ -38,8 +38,8 @@ const { t } = useI18n();
 const pluginsStore = usePluginsStore();
 const rightTab = ref<RightTab>('elements');
 
-// Plugin-only decorations for the selected element (empty when no active plugin
-// declares variants — the section is then hidden).
+// Dekoracje tylko z wtyczek dla wybranego elementu (puste, gdy żadna aktywna wtyczka
+// nie deklaruje wariantów — sekcja jest wtedy ukryta).
 const decorationOptions = computed(() =>
   props.selected ? decorationOptionsFor(props.selected.id, pluginsStore.layoutVariants, t) : []
 );
@@ -47,7 +47,7 @@ const decorationOptions = computed(() =>
 
 <template>
   <div class="w-64 shrink-0 flex flex-col gap-3 relative z-[60]">
-    <!-- Presets -->
+    <!-- Presety -->
     <div>
       <div class="text-[10px] font-semibold uppercase tracking-wider text-base-content/50 mb-2">
         {{ t('audioView.layoutEditor') }}
@@ -73,7 +73,7 @@ const decorationOptions = computed(() =>
       </div>
     </div>
 
-    <!-- Tabs -->
+    <!-- Zakładki -->
     <div class="flex gap-0.5 p-0.5 rounded-field bg-base-300/50">
       <button
         v-for="tab in TABS"
@@ -91,7 +91,7 @@ const decorationOptions = computed(() =>
     </div>
 
     <div class="flex flex-col gap-3 flex-1 min-h-0 overflow-auto">
-      <!-- Element list -->
+      <!-- Lista elementów -->
       <div v-if="rightTab === 'elements'" class="flex flex-col gap-1">
         <div
           v-for="el in props.elements"
@@ -118,7 +118,7 @@ const decorationOptions = computed(() =>
         </div>
       </div>
 
-      <!-- Variant tab -->
+      <!-- Zakładka wariantu -->
       <div v-else-if="rightTab === 'variant' && props.selected" class="flex flex-col gap-2">
         <div class="text-[11px] font-semibold text-base-content/70 uppercase tracking-wider">
           {{ t(ELEMENT_META[props.selected.id].labelKey) }}
@@ -171,7 +171,7 @@ const decorationOptions = computed(() =>
         </div>
       </div>
 
-      <!-- Layout tab -->
+      <!-- Zakładka układu -->
       <AudioLayoutPositionTab
         v-else-if="rightTab === 'layout'"
         :element="props.selected"

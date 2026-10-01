@@ -11,7 +11,7 @@ export interface PluginCommandsDeps {
   logPush: (id: string, line: string) => void;
 }
 
-// Hook/command dispatch onto spawned plugin workers, extracted from
+// Dysponowanie hookami/komendami do uruchomionych workerów pluginów, wydzielone z
 // `stores/plugins.ts` (plan 2.8).
 export function createPluginCommands(deps: PluginCommandsDeps) {
   const { commands, workers, readyWorkers, getManifest, logPush } = deps;

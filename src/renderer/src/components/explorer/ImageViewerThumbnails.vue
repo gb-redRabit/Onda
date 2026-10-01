@@ -19,8 +19,8 @@ const emit = defineEmits<{
   (e: 'update:showThumbs', val: boolean): void;
 }>();
 
-const ITEM_W = 68; // 64px thumb + 4px gap
-const WINDOW = 30; // thumbs rendered on each side of currentIndex
+const ITEM_W = 68; // miniatura 64px + 4px odstępu
+const WINDOW = 30; // miniatury renderowane po każdej stronie currentIndex
 
 const stripRef = ref<HTMLElement | null>(null);
 let thumbObserver: IntersectionObserver | null = null;
@@ -63,7 +63,7 @@ async function flushBatch() {
       if (dataUrl) props.thumbCache.set(p, dataUrl);
     }
   } catch {
-    /* batch thumb fail, ignore */
+    /* niepowodzenie wsadowych miniatur, ignoruj */
   }
 }
 
@@ -133,9 +133,9 @@ watch(
 );
 
 onMounted(() => {
-  // The viewer can open on any index (e.g. the 41st of 55 images): the strip
-  // must scroll to the active thumbnail on first paint, not only when the index
-  // later changes, otherwise the active thumb starts off-screen.
+  // Viewer może otworzyć się na dowolnym indeksie (np. 41. z 55 obrazów): pasek
+  // musi przewinąć do aktywnej miniatury przy pierwszym malowaniu, nie tylko gdy indeks
+  // zmieni się później, inaczej aktywna miniatura startuje poza ekranem.
   nextTick(() => {
     setupThumbObserver();
     scrollToCurrent();

@@ -8,8 +8,8 @@ import { buildAudioPipState, resolveAudioPipLayoutOpts, type AudioPipDock } from
 import { createAudioPipRuntime } from './audioPipRuntime';
 import { dispatchAudioPipAction } from './audioPipActions';
 
-// Singleton so the audio PiP state is shared across the whole app (App.vue
-// owns the lifecycle, views toggle show/hide).
+// Singleton, dzięki czemu stan audio PiP jest współdzielony w całej aplikacji (App.vue
+// zarządza cyklem życia, widoki przełączają pokaż/ukryj).
 const isActive = ref(false);
 const dock = ref<AudioPipDock>('bottom-right');
 let autoShowEnabled = true;

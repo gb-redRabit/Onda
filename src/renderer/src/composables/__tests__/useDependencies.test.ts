@@ -64,8 +64,8 @@ describe('useDependencies status refresh', () => {
     await flush();
     expect(check.checkFfmpeg).toHaveBeenCalledTimes(1);
 
-    // Settings installed/uninstalled something: the wizard/settings copy must not
-    // stay stale until the next restart.
+    // Ustawienia coś zainstalowały/odinstalowały: kopia kreatora/ustawień nie może
+    // pozostać nieaktualna aż do następnego restartu.
     depEvents.emit('changed');
     await flush();
 

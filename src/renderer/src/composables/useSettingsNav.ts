@@ -3,8 +3,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { SETTINGS_SECTIONS as sections, SETTINGS_TABS as tabs } from '@renderer/utils/settingsNav';
 
-// Section/tab navigation + search filtering for the settings view. The view
-// destructures the returned refs/actions back into the same names.
+// Nawigacja sekcja/zakładka + filtrowanie wyszukiwania dla widoku ustawień. Widok
+// destrukturyzuje zwrócone refy/akcje z powrotem do tych samych nazw.
 export function useSettingsNav() {
   const { t } = useI18n();
   const route = useRoute();
@@ -18,11 +18,11 @@ export function useSettingsNav() {
     return tabs.find((item) => item.id === tabId)?.section ?? null;
   }
 
-  // Deep links (`/settings?tab=dependencies`) must also work while the settings
-  // view is already open: the missing-dependencies banner points here from the
-  // settings screen itself, where only the query changes and the view is not
-  // re-created. A tab without an explicit section reveals its section too, so the
-  // sidebar shows where the user landed.
+  // Deep linki (`/settings?tab=dependencies`) muszą działać także, gdy widok
+  // ustawień jest już otwarty: baner brakujących zależności wskazuje tutaj z
+  // samego ekranu ustawień, gdzie zmienia się tylko query, a widok nie jest
+  // tworzony ponownie. Zakładka bez jawnej sekcji odsłania też swoją sekcję, więc
+  // pasek boczny pokazuje, gdzie użytkownik trafił.
   function applyRouteQuery(): void {
     const requestedTab = typeof route.query.tab === 'string' ? route.query.tab : null;
     const tab = requestedTab === 'systemInfo' ? 'diagnostics' : requestedTab;
@@ -66,9 +66,9 @@ export function useSettingsNav() {
 
   const activeSectionItem = computed(() => sections.find((s) => s.id === activeSection.value));
 
-  // Keep the URL in sync with the visible tab/section (`replace`: browsing the
-  // settings must not flood the history), so a later banner/menu link always
-  // changes the query and the watcher above picks it up.
+  // Utrzymuj URL zsynchronizowany z widoczną zakładką/sekcją (`replace`: przeglądanie
+  // ustawień nie może zaśmiecać historii), więc późniejszy link banera/menu zawsze
+  // zmienia query i watcher powyżej go przechwytuje.
   function selectSection(id: string) {
     activeSection.value = id;
     activeTab.value = null;

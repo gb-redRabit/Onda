@@ -16,7 +16,7 @@ import LibraryFolderTile from '@renderer/components/library/LibraryFolderTile.vu
 const library = useLibraryStore();
 const { locale, t } = useI18n();
 
-/** Polish has three plural forms, so the caller picks one. See utils/plural.ts. */
+/** Polski ma trzy formy liczby mnogiej, więc wywołujący wybiera jedną. Zobacz utils/plural.ts. */
 function fileCountLabel(count: number): string {
   const category = pluralCategory(locale.value, count);
   const key =
@@ -55,7 +55,7 @@ watch(
 function togglePath(fp: string) {
   const s = new Set(expandedPaths.value);
   const key = canonicalPath(fp);
-  // keep original paths but compare canonical
+  // zachowaj oryginalne ścieżki, ale porównuj kanoniczne
   const has = [...s].some((v) => canonicalPath(v) === key);
   if (has) {
     for (const v of [...s]) if (canonicalPath(v) === key) s.delete(v);
@@ -173,7 +173,7 @@ const noMatch = computed(
       :key="meta.path"
       class="group rounded-box bg-base-100 border border-base-300 overflow-hidden hover:border-primary/20 hover:shadow-sm transition-all duration-150"
     >
-      <!-- Glass header z mozaiką -->
+      <!-- Szklany nagłówek z mozaiką -->
       <div
         class="flex items-center gap-3 px-4 py-3 hover:bg-base-200/50 transition-colors"
         draggable="true"

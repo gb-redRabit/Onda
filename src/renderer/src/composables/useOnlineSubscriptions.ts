@@ -3,7 +3,7 @@ import { useOnlineStore } from '@renderer/stores/online';
 import { buildChannelUrl } from '@renderer/utils/onlineView';
 import type { Subscription } from '@renderer/types/online';
 
-// Subscriptions section state + actions (prefs dialog, unfollow, bulk queueing).
+// Stan i akcje sekcji subskrypcji (dialog preferencji, odobserwowanie, masowe kolejkowanie).
 export function useOnlineSubscriptions() {
   const yt = useOnlineStore();
   const activeSection = ref<'discover' | 'subscriptions'>('discover');

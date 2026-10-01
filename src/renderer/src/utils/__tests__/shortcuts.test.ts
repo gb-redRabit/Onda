@@ -88,8 +88,8 @@ describe('matchesShortcut', () => {
   it('skip shortcuts ignore a held Shift so ±30s stays reachable', () => {
     const shortcut = DEFAULT_SHORTCUTS['skip-forward'];
     expect(matchesShortcut(shortcut!, keyEvent({ key: 'ArrowRight' }))).toBe(true);
-    // strict match rejects the held Shift, and the matching pass used for
-    // ±30s strips Shift before retrying — so both branches must be true.
+    // ścisłe dopasowanie odrzuca trzymany Shift, a przebieg dopasowania używany
+    // dla ±30s usuwa Shift przed ponowną próbą — więc obie gałęzie muszą być prawdziwe.
     expect(matchesShortcut(shortcut!, keyEvent({ key: 'ArrowRight', shiftKey: true }))).toBe(false);
     expect(matchesShortcut(shortcut!, keyEvent({ key: 'ArrowRight' }))).toBe(true);
   });

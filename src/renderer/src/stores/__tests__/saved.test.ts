@@ -84,7 +84,7 @@ describe('saved store', () => {
       url: 'https://www.youtube.com/playlist?list=PL123&extra=1',
       title: 'Mix 2'
     });
-    // same id -> replace, not duplicate
+    // to samo id -> zastąp, nie duplikuj
     expect(store.playlists).toHaveLength(1);
     expect(mockSavedSavePlaylist.mock.calls.length).toBe(before + 1);
   });

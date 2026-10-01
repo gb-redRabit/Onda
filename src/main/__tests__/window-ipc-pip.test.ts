@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 
-// Capture the channels the module registers without a real ipcMain.
+// Przechwytuje kanały rejestrowane przez moduł bez prawdziwego ipcMain.
 const { handled } = vi.hoisted(() => ({ handled: [] as string[] }));
 
 vi.mock('electron', () => ({

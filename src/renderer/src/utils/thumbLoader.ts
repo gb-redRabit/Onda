@@ -7,9 +7,9 @@ const iconCache = new Map<string, string>();
 const thumbAccessOrder: string[] = [];
 const iconAccessOrder: string[] = [];
 
-// An empty NativeImage serialises to `data:image/png;base64,` (no payload).
-// Treat anything without a real payload as "no image" so the explorer never
-// renders a broken <img> placeholder and never caches a blank icon.
+// Pusty NativeImage serializuje się do `data:image/png;base64,` (bez payloadu).
+// Traktuj wszystko bez prawdziwego payloadu jako "brak obrazu", tak by eksplorator nigdy
+// nie renderował zepsutego placeholdera <img> i nigdy nie cache'ował pustej ikony.
 export function isUsableImageDataUrl(v: string | null | undefined): v is string {
   if (!v || typeof v !== 'string') return false;
   const m = /^data:image\/[\w.+-]+;base64,(.+)$/.exec(v);

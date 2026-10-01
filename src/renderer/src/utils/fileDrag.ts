@@ -28,7 +28,7 @@ export function getDroppedFilePaths(dt: DataTransfer | null): string[] {
         if (p && !out.includes(p)) out.push(p);
       }
     } catch {
-      /* ignore malformed uri */
+      /* ignoruj błędny uri */
     }
   }
   for (const f of Array.from(dt.files || [])) {

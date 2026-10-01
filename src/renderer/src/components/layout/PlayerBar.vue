@@ -38,16 +38,16 @@ const coverClip = computed(() => {
   return dec && dec !== 'none' ? COVER_SHAPE_CLIP[dec] : undefined;
 });
 
-// While a YouTube stream URL resolves, the bar shows the pending track
-// immediately instead of waiting for the (1-2 s) resolution.
+// Gdy URL strumienia YouTube się rozwiązuje, pasek pokazuje oczekujący utwór
+// natychmiast, zamiast czekać na rozwiązanie (1-2 s).
 const displayTrack = computed(() => player.currentTrack ?? player.streamPending);
 
 const progressPct = computed(() =>
   audio.duration.value > 0 ? (audio.currentTime.value / audio.duration.value) * 100 : 0
 );
 
-// Live radio stations are 'stream' tracks without a duration: no seek bar, no
-// time counter — just a "LIVE" badge.
+// Stacje radia na żywo to utwory 'stream' bez czasu trwania: brak paska przewijania,
+// brak licznika czasu — tylko plakietka "LIVE".
 const isLive = computed(
   () =>
     player.currentTrack?.type === 'stream' &&
@@ -118,7 +118,7 @@ function togglePlay() {
 </script>
 
 <template>
-  <!-- mini player -->
+  <!-- mini odtwarzacz -->
   <PlayerBarMini
     v-if="isMini"
     :display-track="displayTrack"
@@ -132,7 +132,7 @@ function togglePlay() {
     @expand="isMini = false"
   />
 
-  <!-- full player -->
+  <!-- pełny odtwarzacz -->
   <div
     v-else
     data-testid="player-bar"

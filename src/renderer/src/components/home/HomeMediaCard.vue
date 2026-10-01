@@ -7,12 +7,12 @@ withDefaults(
     title: string;
     subtitle?: string;
     coverPath?: string;
-    /** Circular artwork (artists). */
+    /** Okrągła grafika (wykonawcy). */
     round?: boolean;
-    /** Cover request size in px; also the fallback icon size. */
+    /** Rozmiar żądania okładki w px; także rozmiar ikony zapasowej. */
     coverSize?: number;
     fallback?: 'music' | 'play' | 'disc' | 'film';
-    /** Shows the "open in library" affordance on hover. */
+    /** Pokazuje afordancję "otwórz w bibliotece" przy najechaniu. */
     openLabel?: string;
   }>(),
   { round: false, coverSize: 132, fallback: 'music', subtitle: '', coverPath: '' }

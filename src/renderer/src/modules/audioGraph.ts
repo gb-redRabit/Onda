@@ -74,10 +74,10 @@ export class AudioGraph {
     }
   }
 
-  // Detaches all source nodes from the graph without tearing down the rest of
-  // the chain (gain/analyser/destination stay wired). Used for direct stream
-  // playback: a cross-origin, CORS-less media element routed through the graph
-  // would be tainted (silent), so it must play natively to the output.
+  // Odłącza wszystkie węzły źródłowe od grafu bez rozbierania reszty
+  // łańcucha (gain/analyser/destination pozostają podłączone). Używane przy bezpośrednim
+  // odtwarzaniu strumienia: cross-origin element mediów bez CORS przepuszczony przez graf
+  // zostałby skażony (cisza), więc musi grać natywnie na wyjściu.
   disconnectSourceNode(): void {
     try {
       this.sourceNode?.disconnect();

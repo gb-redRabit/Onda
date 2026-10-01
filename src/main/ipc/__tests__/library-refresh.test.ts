@@ -9,8 +9,8 @@ vi.mock('../media/media-handlers', () => ({
   getDuration: vi.fn(async () => 0)
 }));
 
-// audio files are parsed with music-metadata — write a minimal real MP3
-// (ID3 header) so parseFile does not block the test on invalid input.
+// pliki audio są parsowane przez music-metadata — zapisz minimalny prawdziwy MP3
+// (nagłówek ID3), aby parseFile nie blokował testu na nieprawidłowym wejściu.
 function writeMinimalMp3(path: string) {
   const id3 = Buffer.concat([
     Buffer.from('ID3'),
@@ -87,8 +87,8 @@ describe('scanDir incremental refresh', () => {
     const types = result.files.map((f) => f.type);
     expect(types).toEqual(['audio']);
     expect(result.files.map((f) => f.path)).toContain(mp3);
-    // cover videos are still counted so the folder-type classification stays
-    // consistent, but they must never become tracks.
+    // filmy okładek są nadal liczone, aby klasyfikacja typu folderu pozostała
+    // spójna, ale nigdy nie mogą stać się utworami.
     expect(result.videoCount).toBe(2);
   });
 

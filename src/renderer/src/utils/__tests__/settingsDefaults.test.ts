@@ -22,9 +22,9 @@ function fakeStore() {
     bags,
     updatePlayback,
     updateAppearance,
-    // The helper reads state through `$state`, which is where a real Pinia store
-    // keeps it. Exposing the bags directly as well mirrors how Pinia unwraps
-    // state onto the store, so this stays a faithful stand-in.
+    // Helper czyta stan przez `$state`, gdzie trzyma go prawdziwy store Pinia.
+    // Udostępnianie worków bezpośrednio odzwierciedla też sposób, w jaki Pinia
+    // odwija stan na store, więc to pozostaje wiernym zaślepkiem.
     $state: bags,
     ...bags
   };

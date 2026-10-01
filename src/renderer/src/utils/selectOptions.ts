@@ -1,15 +1,15 @@
 /**
- * Read a `<select>` value as one of the values its options actually offer.
+ * Czyta wartość `<select>` jako jedną z wartości, które faktycznie oferują jego opcje.
  *
- * The settings selects all typed a raw `.value` cast to `any`, which meant the
- * union on the settings field (`'best' | 'high' | 'medium' | 'low'` and friends)
- * was never actually checked: renaming an option, or a value arriving from a
- * stale settings file, would flow straight into the store and only fail later,
- * somewhere else.
+ * Wszystkie selecty ustawień typowały surowe `.value` rzutowane na `any`, co oznaczało,
+ * że unia na polu ustawień (`'best' | 'high' | 'medium' | 'low'` i podobne)
+ * nigdy nie była faktycznie sprawdzana: zmiana nazwy opcji albo wartość przychodząca
+ * z nieaktualnego pliku ustawień wpływała prosto do store i zawodziła dopiero później,
+ * gdzie indziej.
  *
- * `allowed` is the same array the template iterates, so validation and rendering
- * cannot disagree. An unexpected value falls back to the first option instead of
- * poisoning the store.
+ * `allowed` to ta sama tablica, po której iteruje szablon, więc walidacja i renderowanie
+ * nie mogą się rozjechać. Nieoczekiwana wartość wycofuje się do pierwszej opcji, zamiast
+ * zatruwać store.
  */
 export function readSelect<T extends string>(event: Event, allowed: readonly T[]): T {
   const value = (event.target as HTMLSelectElement | null)?.value;

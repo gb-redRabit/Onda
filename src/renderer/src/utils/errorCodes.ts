@@ -1,5 +1,5 @@
-// Maps a classified error code to its i18n key (used by the downloads list and
-// the YouTube search/resolve/channel views). Returns '' when the code is unknown.
+// Mapuje sklasyfikowany kod błędu na jego klucz i18n (używany przez listę pobierań i
+// widoki wyszukiwania/rozwiązywania/kanału YouTube). Zwraca '' gdy kod jest nieznany.
 export function errorCodeKey(code?: string): string {
   switch (code) {
     case 'auth-required':

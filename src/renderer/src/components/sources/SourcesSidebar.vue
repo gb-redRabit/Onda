@@ -2,8 +2,8 @@
 import { Plus, Pencil, Trash2, Globe, HelpCircle, Upload, Download } from '@lucide/vue';
 import type { MediaSource } from '@renderer/types/sources';
 
-// Presentational source list (plan 6.3): all actions are emitted, the view owns
-// the store, dialogs and toast.
+// Prezentacyjna lista źródeł (plan 6.3): wszystkie akcje są emitowane, widok
+// zarządza store'em, dialogami i toastem.
 defineProps<{
   sources: MediaSource[];
   activeSourceId: string | null;

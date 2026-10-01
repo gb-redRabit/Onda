@@ -24,9 +24,9 @@ const emit = defineEmits<{
   select: [e: MouseEvent];
 }>();
 
-// Escapes the 5 HTML-significant chars. Track metadata comes from media
-// files (untrusted input), so highlight() must never emit it raw — the
-// template renders the result via v-html (see the eslint-disable notes there).
+// Eskapuje 5 znaków istotnych w HTML. Metadane utworu pochodzą z plików
+// multimedialnych (niezaufane wejście), więc highlight() nigdy nie może emitować ich surowo —
+// szablon renderuje wynik przez v-html (zobacz notatki eslint-disable tam).
 function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => {
     switch (c) {
@@ -135,7 +135,7 @@ function onDragStart(e: DragEvent) {
       </button>
     </div>
 
-    <!-- eslint-disable vue/no-v-html -- highlight() HTML-escapes untrusted file metadata; only the <mark> wrapper is raw -->
+    <!-- eslint-disable vue/no-v-html -- highlight() eskapsuje HTML niezaufanych metadanych plików; surowy jest tylko wrapper <mark> -->
     <div class="flex-1 min-w-0">
       <div
         class="text-sm font-medium truncate leading-none"

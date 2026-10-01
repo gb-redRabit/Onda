@@ -43,8 +43,8 @@ describe('explorer reorderTab', () => {
 
   it('adjusts active index when moving a non-active tab across it', () => {
     const store = setupStore();
-    store.switchTab(1); // active = '/b'
-    store.reorderTab(2, 0); // '/c' moved to front
+    store.switchTab(1); // aktywna = '/b'
+    store.reorderTab(2, 0); // '/c' przeniesiona na przód
     expect(store.tabs.map((t) => t.path)).toEqual(['/c', '/a', '/b']);
     expect(store.activeTabIndex).toBe(2);
   });

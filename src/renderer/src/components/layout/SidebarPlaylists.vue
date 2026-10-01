@@ -45,7 +45,7 @@ function onPlaylistDrop(e: DragEvent, playlistId: string) {
     dragOverPlaylistId.value = null;
     ui.notify('success', t('common.addToPlaylist'));
   } catch {
-    // not our data format
+    // to nie nasz format danych
   }
 }
 
@@ -95,7 +95,7 @@ function playPlaylist(playlistId: string) {
         </button>
       </div>
 
-      <!-- create playlist -->
+      <!-- utwórz playlistę -->
       <div v-if="isCreatingPlaylist" class="px-2 py-1">
         <input
           v-model="newPlaylistName"

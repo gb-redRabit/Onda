@@ -16,11 +16,11 @@ export function useLibraryPlaylists() {
     try {
       await window.api?.invoke('playlist:saveAll', clonePlain(playlists.value));
     } catch {
-      // non-fatal
+      // niekrytyczne
     }
   }
 
-  // Rapid mutations (drag reorder, tag edits) collapse into a single write.
+  // Szybkie mutacje (przeciąganie kolejności, edycje tagów) zwijają się w jeden zapis.
   function scheduleSave() {
     if (saveTimer !== null) clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {

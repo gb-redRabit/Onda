@@ -5,7 +5,7 @@ import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
 
 type Player = ReturnType<typeof usePlayerStore>;
 
-// Video-element event handlers extracted from `composables/useVideoSource.ts`
+// Handlery zdarzeń elementu wideo wydzielone z `composables/useVideoSource.ts`
 // (plan 2.8).
 
 export function connectVideoEvents(el: HTMLVideoElement, player: Player): void {

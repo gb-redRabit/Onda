@@ -14,7 +14,7 @@ async function addFolder() {
     if (!paths || paths.length === 0) return;
     for (const p of paths) void library.addFolder(p);
   } catch {
-    /* cancelled */
+    /* anulowano */
   }
 }
 

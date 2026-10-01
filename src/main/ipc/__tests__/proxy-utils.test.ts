@@ -49,7 +49,7 @@ describe('proxy-utils', () => {
     };
 
     expect(await readProxyArgs('youtube')).toEqual(['--proxy', 'http://10.0.0.2:3128']);
-    // SoundCloud's own proxy is disabled -> falls back to the global one.
+    // Własne proxy SoundCloud jest wyłączone -> następuje powrót do globalnego.
     expect(await readProxyArgs('soundcloud')).toEqual(['--proxy', 'http://10.0.0.1:8080']);
   });
 

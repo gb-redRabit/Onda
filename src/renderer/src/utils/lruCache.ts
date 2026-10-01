@@ -1,8 +1,8 @@
 /**
- * Minimal bounded cache with least-recently-used eviction. Used by renderer
- * media caches (remote images, thumbnails) that must not grow without bound
- * across a long session. JavaScript `Map` preserves insertion order, so the
- * first key is the least recently used.
+ * Minimalny ograniczony cache z eviction least-recently-used. Używany przez cache
+ * mediów renderera (zdalne obrazy, miniatury), które nie mogą rosnąć bez ograniczeń
+ * przez długą sesję. JavaScript `Map` zachowuje kolejność wstawiania, więc
+ * pierwszy klucz jest najdawniej używany.
  */
 export class LruCache<V> {
   private readonly map = new Map<string, V>();
@@ -20,7 +20,7 @@ export class LruCache<V> {
   get(key: string): V | undefined {
     const value = this.map.get(key);
     if (value === undefined) return undefined;
-    // Touch: move to the most-recently-used end.
+    // Dotknięcie: przenieś na koniec najświeżej używanych.
     this.map.delete(key);
     this.map.set(key, value);
     return value;

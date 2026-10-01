@@ -81,15 +81,15 @@ export async function safeCheck<T>(fn: (() => Promise<T>) | undefined, fallback:
   }
 }
 
-// Drops the main-process probe cache so the following checks re-run the binaries.
-// The resolver caches its verdict per process (cleared only by installs/uninstalls
-// made in the app), so without this a tool removed elsewhere — or a manual
-// "refresh status" click — kept showing the stale result until a restart.
+// Usuwa cache sondy procesu głównego, by kolejne sprawdzenia ponownie uruchomiły binarki.
+// Resolver cache'uje swój werdykt per proces (czyszczony tylko przez instalacje/deinstalacje
+// wykonane w aplikacji), więc bez tego narzędzie usunięte gdzie indziej — albo ręczne
+// kliknięcie "odśwież status" — pokazywało nieaktualny wynik aż do restartu.
 export async function recheckDependencies(): Promise<void> {
   try {
     await window.api?.invoke('dep:recheck');
   } catch {
-    /* older builds / no bridge: fall back to the cached check */
+    /* starsze buildy / brak bridge: fallback do sprawdzenia z cache */
   }
 }
 

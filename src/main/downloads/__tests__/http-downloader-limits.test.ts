@@ -8,11 +8,11 @@ import { downloadHttpFile } from '../http-downloader';
 
 const delay = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
-// Two defects the audit found here:
-//  - nothing bounded the body, so a source that never stopped sending filled
-//    the disk;
-//  - every failure path rejected the promise but left the fs.WriteStream open,
-//    leaking one file descriptor per cancelled download.
+// Dwa defekty znalezione tu przez audyt:
+//  - nic nie ograniczało ciała odpowiedzi, więc źródło, które nigdy nie przestawało wysyłać, zapełniało
+//    dysk;
+//  - każda ścieżka błędu odrzucała promise, ale zostawiała fs.WriteStream otwarty,
+//    wyciekając jeden deskryptor pliku na każde anulowane pobieranie.
 
 const servers: http.Server[] = [];
 const tempDirs: string[] = [];
@@ -46,15 +46,15 @@ afterEach(async () => {
 const TRUST = { allowPrivateNetwork: true } as const;
 
 /**
- * Asserts the .part file is gone.
+ * Sprawdza, że plik .part zniknął.
  *
- * The download's promise settles as soon as the failure is decided, but the
- * unlink happens on the write stream's `close` event — the descriptor has to be
- * released first, which on Windows is not instantaneous and is why the handler
- * cannot simply unlink inline. A single immediate `stat` therefore races it. This
- * is not a cosmetic wait: a zero-length .part left behind is exactly what the
- * next attempt would resume from, so the check is worth polling for rather than
- * sampling once.
+ * Promise pobierania kończy się, gdy tylko błąd zostanie rozstrzygnięty, ale
+ * unlink następuje w zdarzeniu `close` strumienia zapisu — deskryptor musi być
+ * najpierw zwolniony, co na Windows nie jest natychmiastowe i dlatego handler
+ * nie może po prostu wywołać unlink w miejscu. Pojedynczy natychmiastowy `stat` więc to wyścignie. To
+ * nie jest kosmetyczne oczekiwanie: pozostawiony .part o zerowej długości jest dokładnie tym,
+ * od czego wznowiłaby następna próba, więc warte jest odpytywanie w pętli, a nie
+ * jednokrotne sprawdzenie.
  */
 async function expectPartRemoved(destPath: string): Promise<void> {
   const deadline = Date.now() + 5_000;
@@ -68,7 +68,7 @@ async function expectPartRemoved(destPath: string): Promise<void> {
   expect(exists, `${destPath}.part was left behind`).toBe(false);
 }
 
-/** Size of the partial file, or -1 when it is not there. */
+/** Rozmiar pliku częściowego albo -1, gdy go nie ma. */
 async function partSize(destPath: string): Promise<number> {
   return stat(`${destPath}.part`)
     .then((s) => s.size)
@@ -87,14 +87,14 @@ describe('http download size limit', () => {
       downloadHttpFile({ url: `${origin}/f`, destPath, maxBytes: 1024, ...TRUST })
     ).rejects.toThrow(/too large/i);
 
-    // The partial file is cleaned up, so nothing is left claiming disk.
+    // Plik częściowy jest czyszczony, więc nic nie pozostaje zajętego na dysku.
     await expectPartRemoved(destPath);
   });
 
   it('refuses a body that grows past the cap even without a content-length', async () => {
     const origin = await startServer((_req, res) => {
       res.writeHead(200, { 'content-type': 'application/octet-stream' });
-      // Chunked: the server never declares a length.
+      // Chunked: serwer nigdy nie deklaruje długości.
       const chunk = 'y'.repeat(512);
       let sent = 0;
       const pump = (): void => {
@@ -140,8 +140,8 @@ describe('http download size limit', () => {
   });
 
   it('counts a resumed prefix against the cap', async () => {
-    // A .part file that is already over the limit must be refused before the
-    // request is even made, not after another 20 GB has been appended.
+    // Plik .part, który już przekracza limit, musi zostać odrzucony, zanim
+    // żądanie w ogóle zostanie wysłane, a nie po dołączeniu kolejnych 20 GB.
     const destPath = await tempFile('resume.bin');
     await writeFile(`${destPath}.part`, 'p'.repeat(4096));
     const origin = await startServer((_req, res) => {
@@ -159,7 +159,7 @@ describe('http download stream teardown', () => {
   it('keeps the partial bytes when the download is aborted, so a retry resumes', async () => {
     const origin = await startServer((_req, res) => {
       res.writeHead(200, { 'content-type': 'application/octet-stream' });
-      // Drip data so the abort lands while the body is being written.
+      // Podawaj dane kropla po kropli, aby przerwanie nastąpiło w trakcie zapisu ciała.
       const pump = (n: number): void => {
         if (n === 0) return;
         res.write('a'.repeat(64));
@@ -176,25 +176,25 @@ describe('http download stream teardown', () => {
       signal: controller.signal,
       allowPrivateNetwork: true
     });
-    // Wait for the first chunk rather than guessing, so the abort is guaranteed
-    // to land after the write stream exists.
+    // Czekaj na pierwszy fragment zamiast zgadywać, więc przerwanie na pewno
+    // nastąpi po utworzeniu strumienia zapisu.
     setTimeout(() => controller.abort(), 120);
 
     await expect(promise).rejects.toThrow(/Aborted/);
-    // A paused or cancelled job used to lose everything it had downloaded. The
-    // descriptor is released either way — the .part just stays on disk.
+    // Wstrzymane lub anulowane zadanie traciło wszystko, co pobrało. Deskryptor
+    // jest zwalniany tak czy inaczej — .part po prostu zostaje na dysku.
     await delay(200);
     const size = await partSize(destPath);
     expect(size).toBeGreaterThan(0);
   });
 
   it('settles the promise exactly once when the abort lands before the stream opens', async () => {
-    // The narrow race: the unlink used to run before createWriteStream had
-    // finished opening the file, so the pending open created a zero-length .part
-    // afterwards and the next attempt treated it as a valid resume prefix. That
-    // file is now expected — an abort before the first byte legitimately leaves
-    // an empty .part — so what is asserted is that the abort is still honoured
-    // and the promise settles, which is what the race used to break.
+    // Wąski wyścig: unlink uruchamiał się, zanim createWriteStream zdążył
+    // otworzyć plik, więc oczekujące otwarcie tworzyło potem .part o zerowej długości,
+    // a następna próba traktowała go jako poprawny prefiks do wznowienia. Ten
+    // plik jest teraz oczekiwany — przerwanie przed pierwszym bajtem zgodnie z prawem zostawia
+    // pusty .part — więc sprawdzane jest to, że przerwanie nadal jest respektowane,
+    // a promise się kończy, co właśnie łamał ten wyścig.
     const origin = await startServer((_req, res) => {
       res.writeHead(200, { 'content-type': 'application/octet-stream' });
       const pump = (n: number): void => {
@@ -219,10 +219,10 @@ describe('http download stream teardown', () => {
   }, 20_000);
 
   it('rejects once when the response errors mid-body and keeps what arrived', async () => {
-    // Destroy on the first write rather than after a timer: a timer races the
-    // body, and on a fast machine the download would complete and resolve. The
-    // delay is still needed — an immediate destroy resets the socket before the
-    // client reads anything, and then there is no partial file to keep.
+    // Niszcz przy pierwszym zapisie, a nie po timerze: timer ściga się z
+    // ciałem, a na szybkiej maszynie pobieranie zakończyłoby się i zwróciło wynik. Opóźnienie
+    // jest jednak potrzebne — natychmiastowe zniszczenie resetuje gniazdo, zanim
+    // klient cokolwiek odczyta, i wtedy nie ma pliku częściowego do zachowania.
     const origin = await startServer((_req, res) => {
       res.writeHead(200, { 'content-length': '4096' });
       res.write('a'.repeat(64));
@@ -231,8 +231,8 @@ describe('http download stream teardown', () => {
     const destPath = await tempFile('reset.bin');
 
     await expect(downloadHttpFile({ url: `${origin}/f`, destPath, ...TRUST })).rejects.toThrow();
-    // A dropped connection is the definition of a retryable failure, so the
-    // bytes that did arrive stay on disk for the next attempt.
+    // Zerwane połączenie to definicja błędu, który można ponowić, więc
+    // bajty, które dotarły, zostają na dysku na następną próbę.
     await delay(300);
     expect(await partSize(destPath)).toBe(64);
   });

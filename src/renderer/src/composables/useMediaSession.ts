@@ -1,8 +1,8 @@
 import { watch } from 'vue';
 import { usePlayerStore } from '@renderer/stores/player';
 
-// Basic Media Session integration: exposes metadata and play/pause/seek
-// controls to the OS (lock screen, media keys, Bluetooth controls).
+// Podstawowa integracja Media Session: udostępnia metadane i kontrolki
+// play/pause/seek systemowi (ekran blokady, klawisze mediów, kontrolki Bluetooth).
 export function useMediaSession(): void {
   const player = usePlayerStore();
 
@@ -23,9 +23,9 @@ export function useMediaSession(): void {
   }
 
   async function updateArtwork(path: string): Promise<void> {
-    // Stream/radio tracks use remote http(s) URLs as their path — main rejects
-    // them on media:getCover ("unsafe path"). Their artwork is already set via
-    // track.thumbnail in MediaMetadata, so skip the IPC round-trip entirely.
+    // Utwory strumieniowe/radiowe używają zdalnych URL-i http(s) jako ścieżki — main odrzuca
+    // je w media:getCover ("unsafe path"). Ich grafika jest już ustawiona przez
+    // track.thumbnail w MediaMetadata, więc pomiń całkowicie rundę IPC.
     if (/^https?:\/\//i.test(path) || path.startsWith('//')) return;
     try {
       const cover = await window.api?.getCover(path);
@@ -33,7 +33,7 @@ export function useMediaSession(): void {
         navigator.mediaSession.metadata.artwork = [{ src: cover.data }];
       }
     } catch {
-      // artwork unavailable
+      // grafika niedostępna
     }
   }
 
@@ -63,6 +63,6 @@ export function useMediaSession(): void {
       if (details.seekTime != null) player.seek(details.seekTime);
     });
   } catch {
-    // some environments restrict action handlers
+    // niektóre środowiska ograniczają handlery akcji
   }
 }

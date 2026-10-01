@@ -79,8 +79,8 @@ function revealDupFile(path: string) {
 }
 
 async function openImageViewer(index: number) {
-  // Images are served through the local media server — grant access to the
-  // current folder before the viewer requests the URLs.
+  // Obrazy są serwowane przez lokalny serwer mediów — przed żądaniem URL-i przez
+  // przeglądarkę przyznaj dostęp do bieżącego folderu.
   if (explorer.currentPath) await window.api?.grantMediaAccess(explorer.currentPath);
   const files = filteredFiles.value.filter(
     (f) => !f.isDirectory && f.extension && IMAGE_EXT_SET.has(f.extension)

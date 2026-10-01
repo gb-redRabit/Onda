@@ -51,10 +51,10 @@ export const PLUGIN_API_SHIM = [
   '  var MAX_WAIT = 45000;',
   '  var MAX_ARGS_BYTES = 100000;',
   '  var MAX_LOG_CHARS = 2000;',
-  // Hardening (plan 7.1): a classic Worker can fetch/XHR/WebSocket directly and
-  // bypass the manifest network allowlist enforced by api.fetch. Lock the direct
-  // channels down on both the global object and its prototype — own
-  // non-configurable properties cannot be deleted, shadowed or restored.
+  // Wzmocnienie (plan 7.1): klasyczny Worker może bezpośrednio użyć fetch/XHR/WebSocket i
+  // ominąć allowlistę sieciową manifestu wymuszaną przez api.fetch. Zablokuj bezpośrednie
+  // kanały zarówno na obiekcie globalnym, jak i jego prototypie — własne
+  // niekonfigurowalne właściwości nie dają się usunąć, przesłonić ani przywrócić.
   '  var BLOCKED_GLOBALS = ["fetch","XMLHttpRequest","WebSocket","EventSource","importScripts","indexedDB","caches"];',
   '  var globalProto = Object.getPrototypeOf(self);',
   '  for (var bi = 0; bi < BLOCKED_GLOBALS.length; bi++) {',

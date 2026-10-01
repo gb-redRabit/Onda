@@ -1,7 +1,7 @@
-// Scratch buffer reused across frames (no per-frame allocation).
+// Bufor roboczy używany ponownie między klatkami (bez alokacji per klatka).
 let binScratch: number[] = [];
 
-// Downsamples the analyser frequency data into `count` averaged bins.
+// Downsample'uje dane częstotliwości analizatora do `count` uśrednionych binów.
 export function binFreq(freqBinCount: number, data: Uint8Array, count: number): number[] {
   const len = freqBinCount;
   const binSize = Math.floor(len / count);

@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 
-// The audit flagged the wizard, toasts and the context menu as lacking dialog /
-// live-region / menu semantics. This guards each of them.
+// Audyt wskazał kreator, toasty i menu kontekstowe jako pozbawione semantyki
+// dialog / live-region / menu. Ten test pilnuje każdego z nich.
 
 const ROOT = process.cwd();
 const read = (relative: string): string => readFileSync(join(ROOT, relative), 'utf8');

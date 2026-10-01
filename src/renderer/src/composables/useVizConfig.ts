@@ -2,8 +2,8 @@ import { reactive, ref, watch } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { qualityPreset } from '@renderer/utils/audioVisualizer';
 
-// Cached visualization config (avoids touching the Pinia proxy every frame) and
-// the resolved quality preset. The visualizer destructures the returned values.
+// Zbuforowana konfiguracja wizualizacji (unika dotykania proxy Pinia co klatkę) i
+// rozwiązany preset jakości. Wizualizator destrukturyzuje zwrócone wartości.
 export function useVizConfig() {
   const settings = useSettingsStore();
 

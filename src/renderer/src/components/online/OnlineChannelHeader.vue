@@ -13,11 +13,11 @@ const emit = defineEmits<{
 
 const yt = useOnlineStore();
 const followed = computed(() => (yt.channel ? yt.isSubscribed(yt.channel.id) : false));
-// SoundCloud profile: no subscriptions, no shorts, different counter labels.
+// Profil SoundCloud: brak subskrypcji i shortsów, inne etykiety liczników.
 const isScChannel = computed(() => yt.channelIsSc);
 
-// Reset on channel/id change so a previously failed avatar can retry
-// (also when the same channel is reopened or the thumbnail gets refreshed).
+// Reset przy zmianie kanału/id, aby wcześniej nieudany awatar mógł spróbować ponownie
+// (także gdy ten sam kanał jest otwierany ponownie lub miniatura jest odświeżana).
 const avatarFailed = ref(false);
 const avatarSrc = useRemoteImage(computed(() => yt.channel?.thumbnail));
 const bannerSrc = useRemoteImage(computed(() => yt.channel?.bannerUrl));

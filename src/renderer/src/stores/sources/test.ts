@@ -2,9 +2,9 @@ import { ref } from 'vue';
 import type { MediaSource, SourceEndpoint, SourceItem } from '@renderer/types/sources';
 import { toPlain } from '@renderer/utils/sources-helpers';
 
-// Connection test state/actions extracted from `stores/sources.ts` (plan 2.7).
-// The store destructures the returned refs/actions back into the same names,
-// so call sites elsewhere are unchanged.
+// Stan/akcje testu połączenia wyodrębnione z `stores/sources.ts` (plan 2.7).
+// Store destrukturyzuje zwrócone refy/akcje z powrotem do tych samych nazw,
+// więc miejsca wywołań gdzie indziej pozostają bez zmian.
 export function createSourcesTest() {
   /** Wynik ostatniego testu połączenia per źródło (sesja). */
   const testStatus = ref<Record<string, { success: boolean; error?: string }>>({});

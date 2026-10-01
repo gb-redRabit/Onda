@@ -48,9 +48,9 @@ export function useDependencies() {
       const dep = deps.value.find((d) => d.tool === p.tool);
       if (dep) dep.percent = p.percent;
     });
-    // Every instance keeps its own copy of the status (settings page, first-run
-    // wizard), so an install/uninstall made in one place has to refresh the
-    // others — otherwise the second view kept showing "installed" until restart.
+    // Każda instancja trzyma własną kopię statusu (strona ustawień, kreator pierwszego
+    // uruchomienia), więc instalacja/odinstalowanie w jednym miejscu muszą odświeżyć
+    // pozostałe — inaczej drugi widok pokazywał "zainstalowane" aż do restartu.
     depEventCleanup = depEvents.on('changed', () => void refreshAll());
     refreshAll();
   });
@@ -106,8 +106,8 @@ export function useDependencies() {
       dep.percent = 0;
       dep.error = null;
     }
-    // Manual "refresh status" (and every mount) must reflect the real system, not
-    // the cached probe verdict.
+    // Ręczne "odśwież status" (i każde zamontowanie) musi odzwierciedlać rzeczywisty system,
+    // a nie zbuforowany wynik sondy.
     await recheckDependencies();
     try {
       const [ffmpeg, ffprobe, ytdlp, mkv] = await Promise.all([
@@ -154,12 +154,12 @@ export function useDependencies() {
         if (isStatus(probe)) applyStatus(deps.value[1], probe, now);
       }
       await checkYtdlpUpdate();
-      // Let other views holding their own status copy (the missing-dependencies
-      // banner, the wizard) refresh right away instead of waiting for the next
-      // window focus.
+      // Pozwala innym widokom trzymającym własną kopię statusu (baner brakujących
+      // zależności, kreator) odświeżyć się od razu, zamiast czekać na następne
+      // uaktywnienie okna.
       depEvents.emit('changed');
     } else if (result?.cancelled) {
-      // Elevation prompt dismissed — nothing changed, so no error either.
+      // Monit o podniesienie uprawnień odrzucony — nic się nie zmieniło, więc też brak błędu.
     } else {
       dep.error = result?.error ?? t('settings.depInstallFailed');
     }
@@ -188,7 +188,7 @@ export function useDependencies() {
       await checkYtdlpUpdate();
       depEvents.emit('changed');
     } else if (result?.cancelled) {
-      // Elevation prompt dismissed — nothing changed, so no error either.
+      // Monit o podniesienie uprawnień odrzucony — nic się nie zmieniło, więc też brak błędu.
     } else {
       dep.error = result?.error ?? t('settings.depInstallFailed');
     }

@@ -21,8 +21,8 @@ function detectType(extension: string): MediaFile['type'] {
 }
 
 export function buildMediaFile(options: BuildMediaFileOptions): MediaFile {
-  // Derive the extension from the path when not provided explicitly (e.g.
-  // "Open File"/file-association callers pass only `{ path }`).
+  // Wyprowadź rozszerzenie ze ścieżki, gdy nie podano go jawnie (np.
+  // wywołujący "Otwórz plik"/skojarzenia plików przekazują tylko `{ path }`).
   const dot = options.path.lastIndexOf('.');
   const fromPath = dot > 0 ? options.path.slice(dot + 1) : '';
   const extension = (options.extension || fromPath).replace(/^\./, '').toLowerCase();

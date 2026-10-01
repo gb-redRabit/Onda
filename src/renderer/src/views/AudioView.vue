@@ -12,7 +12,7 @@ import { nextVizMode } from '@renderer/utils/audioVisualizer';
 import { useAudioElementDrag } from '@renderer/composables/useAudioElementDrag';
 import { useAudioImmersive } from '@renderer/composables/useAudioImmersive';
 
-// The layout editor (750+ lines) only renders when the user opens it — lazy.
+// Edytor układu (750+ linii) renderuje się dopiero, gdy użytkownik go otworzy — leniwie.
 const AudioLayoutEditor = defineAsyncComponent(
   () => import('@renderer/components/audio/AudioLayoutEditor.vue')
 );
@@ -40,14 +40,14 @@ const { setViewEl, showUI, isFullscreen, onMouseMove, toggleFullscreen } = useAu
   showLayoutEditor
 });
 
-// Drag state
+// Stan przeciągania
 const { dragging, dragPos, onElementMouseDown, onDragMouseMove, onDragMouseUp } =
   useAudioElementDrag(isFullscreen);
 
 const elements = computed(() => settings.appearance.audioLayout?.elements ?? []);
 const hudOpacity = computed(() => (settings.appearance.audioLayout?.hudOpacity ?? 100) / 100);
 
-// Cursor + HUD hide together — the delay comes from Odtwarzanie (playback) settings.
+// Kursor i HUD ukrywają się razem — opóźnienie pochodzi z ustawień Odtwarzania.
 </script>
 
 <template>
@@ -58,7 +58,7 @@ const hudOpacity = computed(() => (settings.appearance.audioLayout?.hudOpacity ?
     @mousemove="onMouseMove"
     @mouseup="onDragMouseUp"
   >
-    <!-- ─── Empty State (no track) ─── -->
+    <!-- ─── Stan pusty (brak utworu) ─── -->
     <div
       v-if="!player.currentTrack"
       data-testid="audio-empty"
@@ -71,7 +71,7 @@ const hudOpacity = computed(() => (settings.appearance.audioLayout?.hudOpacity ?
       </div>
     </div>
 
-    <!-- ─── Layout Editor (overlay) ─── -->
+    <!-- ─── Edytor układu (nakładka) ─── -->
     <div
       v-if="showLayoutEditor"
       class="absolute inset-0 z-90 bg-base-100/95 backdrop-blur-sm p-6 flex flex-col"
@@ -90,7 +90,7 @@ const hudOpacity = computed(() => (settings.appearance.audioLayout?.hudOpacity ?
       </div>
     </div>
 
-    <!-- ─── Free Canvas ─── -->
+    <!-- ─── Wolne płótno ─── -->
     <AudioCanvasElements
       :elements="elements"
       :drag-pos="dragPos"
@@ -99,10 +99,10 @@ const hudOpacity = computed(() => (settings.appearance.audioLayout?.hudOpacity ?
       @element-mousedown="onElementMouseDown"
     />
 
-    <!-- ─── Plugin UI slot (host-rendered, plain text) ─── -->
+    <!-- ─── Slot UI pluginu (renderowany przez host, czysty tekst) ─── -->
     <PluginUiSlot slot-id="audio-view" :visible="showUI && !showLayoutEditor" />
 
-    <!-- ─── Viz Overlay Toolbar (Teleported out of viz stacking context) ─── -->
+    <!-- ─── Pasek narzędzi nakładki wizualizacji (teleportowany poza kontekst stackowania wiz.) ─── -->
     <AudioHudToolbar
       v-model:layout-editor-open="showLayoutEditor"
       v-model:viz-settings-open="showVizSettings"
@@ -116,7 +116,7 @@ const hudOpacity = computed(() => (settings.appearance.audioLayout?.hudOpacity ?
       @run-command="pluginsStore.dispatchCommand($event)"
     />
 
-    <!-- ─── Viz Settings Panel (Teleported out of viz stacking context) ─── -->
+    <!-- ─── Panel ustawień wizualizacji (teleportowany poza kontekst stackowania wiz.) ─── -->
     <Teleport to="body">
       <div
         v-if="showVizSettings && !showLayoutEditor"

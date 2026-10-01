@@ -16,9 +16,9 @@ export function usePlayerNavigation(
   const pipTime = ref(0);
   const shuffle = ref(false);
   const repeat = ref<'none' | 'all' | 'one'>('none');
-  // One-shot request to resume a saved position. Only the Home "Continue" card
-  // sets it; every other play path starts from the beginning. Cleared as soon
-  // as the audio engine consumes it.
+  // Jednorazowe żądanie wznowienia zapisanej pozycji. Ustawia je tylko karta "Kontynuuj"
+  // na Home; każda inna ścieżka odtwarzania startuje od początku. Czyszczone, gdy
+  // tylko silnik audio je skonsumuje.
   const resumeIntent = ref<string | null>(null);
 
   function setTrack(track: MediaFile, options?: { resume?: boolean }) {
@@ -38,9 +38,9 @@ export function usePlayerNavigation(
   }
 
   /**
-   * Reports whether the track just loaded was explicitly asked to resume its
-   * saved position, then clears the intent. Path-guarded so a stale intent can
-   * never leak onto an unrelated track.
+   * Informuje, czy właśnie załadowany utwór został jawnie poproszony o wznowienie
+   * zapisanej pozycji, po czym czyści intencję. Strzeżone ścieżką, więc nieaktualna intencja
+   * nigdy nie przecieknie na niezwiązany utwór.
    */
   function consumeResumeIntent(path: string): boolean {
     if (resumeIntent.value !== path) return false;
@@ -126,15 +126,15 @@ export function usePlayerNavigation(
   }
 
   /**
-   * Releases the current track without playing anything.
+   * Zwalnia bieżący utwór bez odtwarzania czegokolwiek.
    *
-   * Used when the player view closes a video so the file handle is released and
-   * the same file can be opened again. Assigning `currentTrack` directly left
-   * the clock and the PiP position pointing at a track that no longer existed,
-   * so a later `play()` resumed at the old offset with nothing loaded.
+   * Używane, gdy widok odtwarzacza zamyka wideo, aby uchwyt pliku został zwolniony i
+   * ten sam plik można było otworzyć ponownie. Bezpośrednie przypisanie `currentTrack` pozostawiało
+   * zegar i pozycję PiP wskazujące na utwór, który już nie istniał,
+   * więc późniejsze `play()` wznawiało od starego offsetu z niczym załadowanym.
    *
-   * Deliberately not routed through `setTrack`: closing a track is not a
-   * transition, so it adds nothing to history and records no play.
+   * Celowo nie przechodzi przez `setTrack`: zamknięcie utworu nie jest
+   * przejściem, więc nic nie dodaje do historii i nie zapisuje odtworzenia.
    */
   function clearTrack(): void {
     currentTrack.value = null;

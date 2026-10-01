@@ -32,7 +32,7 @@ describe('ModuleManager', () => {
     expect(none.init).toHaveBeenCalled();
     expect(low.init).toHaveBeenCalled();
 
-    // initAll is idempotent
+    // initAll jest idempotentne
     (high.init as ReturnType<typeof vi.fn>).mockClear();
     await manager.initAll();
     expect(high.init).not.toHaveBeenCalled();
@@ -82,7 +82,7 @@ describe('ModuleManager', () => {
   it('destroyAll calls destroy (optional) and clears modules', async () => {
     const destroy = vi.fn(async () => {});
     const a = makeModule('a', { destroy });
-    const b = makeModule('b'); // no destroy
+    const b = makeModule('b'); // brak destroy
     manager.register(a);
     manager.register(b);
 

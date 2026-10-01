@@ -1,7 +1,7 @@
 import type { MediaFile } from '@renderer/types/media';
 
-// Pure library view helpers extracted from `views/LibraryView.vue` (plan 2.8):
-// quick search, Spotify-like chip filters and track sorting.
+// Czyste helpery widoku biblioteki wydzielone z `views/LibraryView.vue` (plan 2.8):
+// szybkie wyszukiwanie, filtry typu chip w stylu Spotify i sortowanie utworów.
 
 export type ChipId = 'all' | 'liked' | 'recent' | 'most';
 export type SortKey = 'title' | 'artist' | 'album' | 'duration' | 'added' | 'plays';

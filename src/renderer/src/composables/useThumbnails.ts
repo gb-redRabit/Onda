@@ -1,8 +1,8 @@
 import { useMediaAssets } from './useMediaAssets';
 
 /**
- * Batch thumbnails. Kept as a thin wrapper over `useMediaAssets` so the batch
- * path and the explorer's per-file `useThumbnail` share one LRU cache.
+ * Miniatury wsadowe. Trzymane jako cienka otoczka nad `useMediaAssets`, aby ścieżka
+ * wsadowa i per-plikowy `useThumbnail` eksploratora współdzieliły jeden cache LRU.
  */
 export function useThumbnails(size = 180) {
   const { thumbs, request, get, flush } = useMediaAssets(size);
@@ -11,7 +11,7 @@ export function useThumbnails(size = 180) {
     request,
     getThumb: get,
     flush,
-    // Kept for API compatibility; the timer is released via onScopeDispose.
+    // Zachowane dla kompatybilności API; timer jest zwalniany przez onScopeDispose.
     dispose: () => {}
   };
 }

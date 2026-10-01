@@ -29,15 +29,15 @@ function fetchDuration(filePath: string): Promise<number> {
 }
 
 async function loadCovers(tracks: MediaFile[]) {
-  // Pre-warm only the nearest chunk — covers for the rest are fetched lazily
-  // by each MediaCover's own visibility observer when the row scrolls in.
+  // Rozgrzewaj tylko najbliższy fragment — okładki dla reszty są pobierane leniwie
+  // przez własny obserwator widoczności każdego MediaCover, gdy wiersz wjedzie na ekran.
   for (const track of tracks.slice(0, 24)) {
     player.loadCover(track.path);
   }
 }
 
-// Virtualize the queue list — "play all" on a folder can put thousands of rows
-// in here (plan 1.6).
+// Wirtualizuj listę kolejki — "play all" na folderze może wstawić tu tysiące
+// wierszy (plan 1.6).
 const queueListRef = ref<HTMLElement | null>(null);
 const queueVirtualizer = useVirtualizer({
   get count() {
@@ -170,7 +170,7 @@ function onFileDrop(e: DragEvent) {
       </div>
     </div>
 
-    <!-- now playing -->
+    <!-- teraz odtwarzane -->
     <div v-if="player.currentTrack" class="px-4 py-3 border-b border-base-300 bg-base-100">
       <div class="text-[10px] text-primary font-medium uppercase tracking-wider mb-2">
         {{ $t('queue.nowPlaying') }}
@@ -193,7 +193,7 @@ function onFileDrop(e: DragEvent) {
       </div>
     </div>
 
-    <!-- drop hint when empty -->
+    <!-- podpowiedź upuszczenia gdy pusta -->
     <div
       v-if="player.displayQueue.length === 0"
       data-testid="queue-empty"
@@ -204,7 +204,7 @@ function onFileDrop(e: DragEvent) {
       <p class="text-[10px] text-base-content/50 mt-1">{{ $t('queue.dropHint') }}</p>
     </div>
 
-    <!-- queue list with drag & drop (virtualized) -->
+    <!-- lista kolejki z drag & drop (zwirtualizowana) -->
     <div v-else ref="queueListRef" class="flex-1 overflow-auto">
       <div
         class="py-1"
@@ -262,7 +262,7 @@ function onFileDrop(e: DragEvent) {
       </div>
     </div>
 
-    <!-- history -->
+    <!-- historia -->
     <div v-if="player.history.length > 0" class="border-t border-base-300 max-h-40 overflow-auto">
       <div class="px-4 py-2 text-[10px] text-base-content/50 font-medium uppercase tracking-wider">
         {{ $t('queue.history') }}

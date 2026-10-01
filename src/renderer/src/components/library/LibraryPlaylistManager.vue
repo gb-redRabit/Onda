@@ -88,13 +88,13 @@ function onTrackDrop(e: DragEvent, toIdx: number) {
   if (!payload) return;
   dragOverTrackIdx.value = null;
   if (payload.playlistId === selectedPlaylistId.value && typeof payload.dragIndex === 'number') {
-    // reorder within the same playlist
+    // zmiana kolejności w tej samej playliście
     const from = payload.dragIndex;
     const to = from < toIdx ? toIdx - 1 : toIdx;
     library.reorderPlaylistTrack(selectedPlaylistId.value!, from, to);
     return;
   }
-  // drop from the library → add to playlist
+  // upuszczenie z biblioteki → dodaj do playlisty
   const playlist = selectedPlaylist.value;
   if (!playlist) return;
   payload.paths!.forEach((path: string) => {
@@ -135,7 +135,7 @@ function onPlaylistContextMenu(e: MouseEvent, playlistId: string) {
   });
 }
 
-// Virtualize the playlist track list — playlists can hold thousands of tracks
+// Wirtualizuj listę utworów playlisty — playlisty mogą trzymać tysiące utworów
 // (plan 1.6).
 const playlistListRef = ref<HTMLElement | null>(null);
 const playlistVirtualizer = useVirtualizer({

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { classifyYtDlpError, describeError } from '../error-classifier';
 
-// A full disk used to fall through to the generic "network" bucket because the
-// classifier only knew yt-dlp's own stderr vocabulary, never ENOSPC.
+// Pełny dysk wpadał do ogólnego koszyka "network", ponieważ
+// klasyfikator znał tylko własne słownictwo stderr yt-dlp, nigdy ENOSPC.
 
 describe('classifyYtDlpError — disk full', () => {
   it('recognises out-of-space messages', () => {

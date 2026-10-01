@@ -1,6 +1,6 @@
 type Translate = (key: string, params?: Record<string, unknown>) => string;
 
-// Opens a text/csv file picker and returns its contents (null when canceled).
+// Otwiera wybór pliku tekstowego/csv i zwraca jego zawartość (null przy anulowaniu).
 export async function pickTextFile(t: Translate): Promise<string | null> {
   const res = (await window.api.invoke('dialog:openFile', {
     filters: [

@@ -3,12 +3,12 @@ import type { Ref } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import { topN } from '@renderer/utils/topN';
 
-// `tracks` is a `shallowRef`: edits to a track's metadata must be signalled by
-// the caller via `triggerRef`. Play statistics (playCount / lastPlayed) live on
-// the same objects but change on every play, so they are published through a
-// separate `statsRevision` counter instead — that way finishing a song only
-// recomputes the two stats views, not the artists/albums grouping (which sorts
-// thousands of entries with `localeCompare` and janks the UI on a 50k library).
+// `tracks` to `shallowRef`: edycje metadanych utworu muszą być sygnalizowane przez
+// wywołującego przez `triggerRef`. Statystyki odtwarzania (playCount / lastPlayed) żyją na
+// tych samych obiektach, ale zmieniają się przy każdym odtworzeniu, więc są publikowane przez
+// osobny licznik `statsRevision` — dzięki temu skończenie utworu tylko
+// przelicza dwa widoki statystyk, a nie grupowanie artystów/albumów (które sortuje
+// tysiące wpisów przez `localeCompare` i powoduje zacinanie UI przy bibliotece 50k).
 export function useLibraryDerivations(
   tracks: Ref<MediaFile[]>,
   statsRevision: Ref<number> = ref(0)
@@ -62,8 +62,8 @@ export function useLibraryDerivations(
     if (ts.length === 0) return [];
     const map = new Map<string, MediaFile[]>();
     for (let i = 0; i < ts.length; i++) {
-      // Only audio files carry artist metadata — videos/images must not be
-      // lumped into "Unknown Artist".
+      // Tylko pliki audio noszą metadane artysty — wideo/obrazy nie mogą być
+      // wrzucane do "Unknown Artist".
       if (ts[i].type !== 'audio') continue;
       const artist = ts[i].metadata?.artist || 'Unknown Artist';
       if (!map.has(artist)) map.set(artist, []);
@@ -77,8 +77,8 @@ export function useLibraryDerivations(
     if (ts.length === 0) return [];
     const map = new Map<string, MediaFile[]>();
     for (let i = 0; i < ts.length; i++) {
-      // Only audio files can belong to an album — keep images/videos out of
-      // the albums view (they have no album tag and would end up in
+      // Tylko pliki audio mogą należeć do albumu — trzymaj obrazy/wideo poza
+      // widokiem albumów (nie mają tagu albumu i trafiłyby do
       // "Unknown Album").
       if (ts[i].type !== 'audio') continue;
       const album = ts[i].metadata?.album || 'Unknown Album';

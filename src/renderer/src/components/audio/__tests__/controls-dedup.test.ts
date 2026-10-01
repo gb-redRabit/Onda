@@ -10,19 +10,19 @@ import {
   calcMode
 } from '@renderer/utils/audioControls';
 
-// The four full transport variants were four copies of the same eight buttons:
-// same handlers, same accessible names, differing only in a few Tailwind classes
-// and which size token the icons read from. That is why the accessible names and
-// the keyboard-operable volume slider had to be added four times, and why a
-// review could not tell which copies had been missed.
+// Cztery pełne warianty transportu były czterema kopiami tych samych ośmiu przycisków:
+// te same handlery, te same dostępne nazwy, różniące się tylko kilkoma klasami Tailwind
+// i tym, z którego tokenu rozmiaru czytają ikony. Dlatego dostępne nazwy i
+// obsługiwany z klawiatury suwak głośności trzeba było dodać cztery razy, i dlatego
+// przegląd nie potrafił stwierdzić, które kopie pominięto.
 
 const AUDIO_DIR = join(process.cwd(), 'src/renderer/src/components/audio');
 
 describe('transport controls are not duplicated per layout', () => {
   it('ships one transport component, not one per variant', () => {
     const variants = readdirSync(AUDIO_DIR).filter((f) => /^AudioControls[A-Z]/.test(f));
-    // AudioControlsCore (all layouts) and AudioControlsMicro (play only). A new
-    // AudioControlsXxx.vue here is the duplication this guards against.
+    // AudioControlsCore (wszystkie układy) i AudioControlsMicro (tylko odtwarzanie). Nowy
+    // AudioControlsXxx.vue tutaj to duplikacja, przed którą to chroni.
     expect(variants.sort()).toEqual(['AudioControlsCore.vue', 'AudioControlsMicro.vue']);
   });
 
@@ -40,8 +40,8 @@ describe('transport controls are not duplicated per layout', () => {
       expect(d.transport).toBeTruthy();
       expect(d.glow).toBeTruthy();
       expect(d.volumeRow).toBeTruthy();
-      // The size tokens are keyed by layout mode, so a density without one
-      // would render undefined sizes.
+      // Tokeny rozmiaru są kluczowane trybem układu, więc gęstość bez niego
+      // renderowałaby niezdefiniowane rozmiary.
       expect(ICON[mode]).toBeGreaterThan(0);
       expect(ICON_SM[mode]).toBeGreaterThan(0);
       expect(PLAY_SIZE[mode]).toBeGreaterThan(0);
@@ -51,8 +51,8 @@ describe('transport controls are not duplicated per layout', () => {
   });
 
   it('only gates the transport row on width for the minimal layout', () => {
-    // minimal pairs a gated transport row with a play-only fallback and a volume
-    // row shown in the opposite condition; the others always show the row.
+    // minimal łączy odcięty wiersz transportu z fallbackiem tylko do odtwarzania i wierszem
+    // głośności pokazywanym w przeciwnej sytuacji; pozostałe zawsze pokazują ten wiersz.
     expect(DENSITY.minimal.gateTransportOnWidth).toBe(true);
     expect(DENSITY.minimal.volume).toBe('whenNarrow');
     expect(DENSITY.minimal.extras).toBe(false);
@@ -64,8 +64,8 @@ describe('transport controls are not duplicated per layout', () => {
   });
 
   it('keeps the layout mode boundaries unchanged', () => {
-    // The dispatcher comment documents these; a change here resizes the UI for
-    // everyone, so it is asserted rather than left to the comment.
+    // Komentarz dispatchera je dokumentuje; zmiana tutaj zmienia rozmiar UI dla
+    // wszystkich, więc jest sprawdzana, a nie pozostawiona komentarzowi.
     expect(calcMode(400, 20)).toBe('micro');
     expect(calcMode(300, 130)).toBe('wide');
     expect(calcMode(200, 110)).toBe('compact');

@@ -1,9 +1,9 @@
 /**
- * Runs a single boot step and reports a failure instead of letting it abort the
- * rest of the mount. The renderer MUST always reach `app:rendererReady`; a
- * thrown error before it leaves the splash up until the 30s watchdog (see
- * `BOOT_WATCHDOG_DEADLINE_MS` in `src/main/index.ts`). Guarding each step also
- * means one failure does not skip the steps after it.
+ * Uruchamia pojedynczy krok startu i zgłasza błąd, zamiast pozwolić mu przerwać
+ * resztę montowania. Renderer MUSI zawsze dotrzeć do `app:rendererReady`; błąd
+ * rzucony przed tym zostawia splash na ekranie aż do watchdoga 30s (patrz
+ * `BOOT_WATCHDOG_DEADLINE_MS` w `src/main/index.ts`). Pilnowanie każdego kroku
+ * sprawia też, że jedna awaria nie pomija kroków po niej.
  */
 export async function guardBootStep(
   run: () => Promise<void> | void,

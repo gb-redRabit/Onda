@@ -83,10 +83,10 @@ function onDragSeek(e: MouseEvent) {
 const SEEK_STEP_SECONDS = 5;
 
 /**
- * Keyboard equivalent of the drag-to-seek.
+ * Klawiaturowy odpowiednik przeciągania w celu przewijania.
  *
- * The bar was a click-and-drag div with no role, no tabindex and no key
- * handling, so playback position could not be moved without a pointer at all.
+ * Pasek był divem klikaj-i-przeciągnij bez roli, bez tabindex i bez obsługi
+ * klawiszy, więc pozycji odtwarzania w ogóle nie dało się zmienić bez wskaźnika.
  */
 function onTrackKey(e: KeyboardEvent) {
   const total = audio.duration.value;

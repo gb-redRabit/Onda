@@ -38,7 +38,7 @@ describe('removeProfileState', () => {
       expect(await exists(join(dir, 'plugins-data'))).toBe(false);
       expect(await exists(join(dir, 'config.json.bak.1'))).toBe(false);
       expect(await exists(join(dir, 'config.json.bak.2'))).toBe(false);
-      // Kept on purpose — tooling, key and the (cleared) store file.
+      // Zachowane celowo — narzędzia, klucz i (wyczyszczony) plik store'a.
       expect(await exists(join(dir, 'bin', 'ffmpeg.exe'))).toBe(true);
       expect(await exists(join(dir, 'onda-store-key'))).toBe(true);
       expect(await exists(join(dir, 'config.json'))).toBe(true);

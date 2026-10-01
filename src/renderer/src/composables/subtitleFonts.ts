@@ -2,15 +2,15 @@ import type { MkvFont } from '@renderer/types/subtitles';
 import { extractAssFamilies, hashContent } from '@renderer/utils/subtitleConvert';
 import { logger } from '@shared/logger';
 
-// Subtitle fonts are resolved on demand instead of shipping font files:
-//   1. the family named by the subtitle is looked up through the Local Font
-//      Access ponyfill — installed fonts first, Google Fonts as fallback,
-//   2. if that family cannot be resolved, common Windows/Office families are
-//      mapped to their libre metric-compatible clones on Google Fonts
-//      (Arial → Arimo, Calibri → Carlito, …) so old subtitle files keep their
-//      intended look.
-// Bundling the original Windows fonts cost 25 MB of proprietary files
-// (Calibri/Arial/Segoe are not redistributable), which this removes entirely.
+// Czcionki napisów są rozwiązywane na żądanie zamiast dostarczać pliki czcionek:
+//   1. rodzina wskazana przez napisy jest wyszukiwana przez ponyfill Local Font
+//      Access — najpierw zainstalowane czcionki, Google Fonts jako fallback,
+//   2. jeśli ta rodzina nie może zostać rozwiązana, popularne rodziny Windows/Office są
+//      mapowane na ich wolne, metrycznie zgodne klony w Google Fonts
+//      (Arial → Arimo, Calibri → Carlito, …), aby stare pliki napisów zachowały
+//      zamierzony wygląd.
+// Dołączanie oryginalnych czcionek Windows kosztowało 25 MB zastrzeżonych plików
+// (Calibri/Arial/Segoe nie podlegają redystrybucji), co to całkowicie usuwa.
 const FONT_ALIASES: Record<string, string> = {
   arial: 'Arimo',
   'arial black': 'Archivo Black',
@@ -20,7 +20,7 @@ const FONT_ALIASES: Record<string, string> = {
   'courier new': 'Cousine',
   georgia: 'Gelasio',
   'times new roman': 'Tinos',
-  // No metric clones on Google Fonts — a neutral sans keeps the text readable.
+  // Brak metrycznych klonów w Google Fonts — neutralny sans zapewnia czytelność tekstu.
   tahoma: 'Noto Sans',
   'trebuchet ms': 'Noto Sans',
   verdana: 'Noto Sans',
@@ -41,8 +41,8 @@ type FontQuery = (options?: {
   postscriptNames?: string[];
 }) => Promise<Array<{ blob: () => Promise<Blob> }>>;
 
-// lfa-ponyfill ships plain JS without type declarations; describe the small
-// surface we use (one justified cast at that boundary).
+// lfa-ponyfill dostarcza czysty JS bez deklaracji typów; opisujemy mały
+// zakres, którego używamy (jeden uzasadniony cast na tej granicy).
 let fontQuery: FontQuery | null = null;
 async function loadFontQuery(): Promise<FontQuery> {
   if (fontQuery) return fontQuery;
@@ -56,8 +56,8 @@ async function loadFontQuery(): Promise<FontQuery> {
   return fontQuery;
 }
 
-// Loads the four style variants of `family` into `fontMap` under `mapKey`
-// (the family name used by the subtitle), returning whether anything resolved.
+// Ładuje cztery warianty stylu `family` do `fontMap` pod `mapKey`
+// (nazwa rodziny używana przez napisy), zwracając czy cokolwiek zostało rozwiązane.
 async function loadFamilyVariants(
   fontMap: Record<string, string>,
   mapKey: string,

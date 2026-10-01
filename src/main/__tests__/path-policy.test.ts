@@ -19,7 +19,7 @@ describe('isFilesystemRoot', () => {
 
 describe('protectedPathReason', () => {
   it('refuses a volume root and anything sitting directly in one', () => {
-    // `C:\` and `C:\Users` take every user profile with them.
+    // `C:\` i `C:\Users` pociągają za sobą każdy profil użytkownika.
     expect(protectedPathReason('C:\\', 'win32')).toBe('root');
     expect(protectedPathReason('C:\\Users', 'win32')).toBe('system');
     expect(protectedPathReason('D:\\', 'win32')).toBe('root');
@@ -63,11 +63,11 @@ describe('protectedPathReason', () => {
   });
 
   it('evaluates the policy for the requested platform, not the host one', () => {
-    // `C:\Windows` is not an absolute POSIX path, so on Linux it is rejected
-    // outright rather than matched against the POSIX system list.
+    // `C:\Windows` nie jest absolutną ścieżką POSIX, więc na Linux jest odrzucana
+    // od razu, a nie dopasowywana do listy systemowej POSIX.
     expect(protectedPathReason('C:\\Windows', 'linux')).toBe('invalid');
-    // On Windows a leading `/` is absolute (it resolves against the current
-    // drive), so the Windows list applies and `/etc` is not special there.
+    // Na Windows wiodący `/` jest absolutny (rozwiązuje się względem bieżącego
+    // dysku), więc obowiązuje lista Windows i `/etc` nie jest tam specjalne.
     expect(protectedPathReason('/etc/passwd', 'win32')).toBeNull();
     expect(protectedPathReason('/etc/passwd', 'linux')).toBe('system');
   });

@@ -20,8 +20,8 @@ beforeEach(() => {
       return () => {};
     })
   };
-  // The subscription is registered once per module (global listener), so the
-  // handler captured in the first test is reused by the remaining ones.
+  // Subskrypcja jest rejestrowana raz na moduł (globalny nasłuch), więc
+  // handler przechwycony w pierwszym teście jest ponownie używany przez pozostałe.
   useUpdaterNotifications();
 });
 

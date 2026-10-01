@@ -114,7 +114,7 @@ onMounted(() => {
       preload="auto"
     />
 
-    <!-- close + maximize + settings buttons -->
+    <!-- przyciski zamknij + maksymalizuj + ustawienia -->
     <div
       class="absolute top-1.5 right-1.5 flex gap-1 z-10 transition-opacity duration-150"
       :style="{ opacity: showOverlay ? 1 : 0 }"
@@ -157,7 +157,7 @@ onMounted(() => {
       </button>
     </div>
 
-    <!-- settings overlay -->
+    <!-- nakładka ustawień -->
     <div
       v-if="settingsOpen"
       data-testid="pip-video-settings-panel"

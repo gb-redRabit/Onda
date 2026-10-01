@@ -3,50 +3,50 @@ import { ref } from 'vue';
 import { useDialogFocus } from '@renderer/composables/useDialogFocus';
 
 /**
- * Teleport, backdrop and dialog panel for the modal components.
+ * Teleport, backdrop i panel dialogowy dla komponentów modalnych.
  *
- * Eleven dialogs each wrote this out by hand, and the copies had drifted: two
- * different z-index values (9999 and 10000), two backdrop opacities, and one
- * dialog whose `aria-labelledby` pointed at an id it no longer rendered. The
- * a11y attributes and the focus trap now live here, so a dialog cannot ship
- * without them — `useDialogFocus` needs the panel ref, and the panel ref lives
- * on this element.
+ * Jedenaście dialogów pisało to ręcznie, a kopie się rozjechały: dwie
+ * różne wartości z-index (9999 i 10000), dwie przezroczystości backdropu i jeden
+ * dialog, którego `aria-labelledby` wskazywał na id, którego już nie renderował.
+ * Atrybuty a11y i pułapka focusu są teraz tutaj, więc dialog nie może zostać
+ * wydany bez nich — `useDialogFocus` potrzebuje refa panelu, a ten ref żyje
+ * na tym elemencie.
  *
- * The visual parts stay the caller's: panel size, header and footer are all
- * slots, because the eleven dialogs disagree on all three and forcing them to
- * agree would change how they look.
+ * Części wizualne pozostają po stronie wywołującego: rozmiar panelu, nagłówek
+ * i stopka to sloty, ponieważ jedenaście dialogów nie zgadza się co do wszystkich
+ * trzech i zmuszenie ich do zgodności zmieniłoby ich wygląd.
  *
- * Only OnlineConfirmDialog has been migrated so far. The others each need
- * something the shell does not expose yet — ExplorerPromptDialog is addressed by
- * `data-testid` from E2E and brings its own Escape handling, others size their
- * own panel from a prop — so they were left alone rather than half-migrated.
+ * Na razie zmigrowano tylko OnlineConfirmDialog. Pozostałe potrzebują czegoś,
+ * czego shell jeszcze nie wystawia — ExplorerPromptDialog jest adresowany przez
+ * `data-testid` z E2E i przynosi własną obsługę Escape, inne ustawiają własny
+ * rozmiar panelu z propsa — więc pozostawiono je same, zamiast migrować połowicznie.
  */
 defineOptions({ inheritAttrs: false });
 
 const props = withDefaults(
   defineProps<{
-    /** Rendered only when true; the parent controls open/close. */
+    /** Renderowany tylko, gdy true; rodzic kontroluje otwarcie/zamknięcie. */
     visible?: boolean;
     /**
-     * Accessible name of the dialog. Pass an id that an element inside the
-     * default slot carries, so the name is read from the visible heading.
+     * Dostępna nazwa dialogu. Przekaż id, które nosi element wewnątrz
+     * domyślnego slotu, aby nazwa była czytana z widocznego nagłówka.
      */
     labelledBy?: string;
-    /** Backdrop dimming, matching the caller's previous look. */
+    /** Przyciemnienie backdropu, zgodne z poprzednim wyglądem wywołującego. */
     backdrop?: 'dim' | 'dim-blur';
-      /** Extra classes for the panel, e.g. its width and padding. */
+      /** Dodatkowe klasy panelu, np. jego szerokość i padding. */
       panelClass?: string;
-      /** Close when the backdrop itself is clicked. */
+      /** Zamknij, gdy kliknięto sam backdrop. */
       dismissOnBackdrop?: boolean;
       /**
-       * Whether Escape emits `escape` (which the caller usually maps to close).
-       * Set false for a dialog that handles Escape itself, so it is not handled
-       * twice.
+       * Czy Escape emituje `escape` (które wywołujący zwykle mapuje na zamknięcie).
+       * Ustaw false dla dialogu, który sam obsługuje Escape, aby nie był
+       * obsługiwany dwukrotnie.
        */
       closeOnEscape?: boolean;
-      /** `data-testid` for the backdrop element (the panel takes it via $attrs). */
+      /** `data-testid` dla elementu backdropu (panel bierze go przez $attrs). */
       backdropTestid?: string;
-      /** Panel surface: `base` (base-100, default) or `neutral`. */
+      /** Powierzchnia panelu: `base` (base-100, domyślnie) lub `neutral`. */
       panelTone?: 'base' | 'neutral';
     }>(),
     {
@@ -67,9 +67,9 @@ const emit = defineEmits<{
 
 const panelRef = ref<HTMLElement | null>(null);
 
-// Focus enters the dialog on open, cycles inside it, and returns to the opener
-// on close. Escape emits `escape` rather than `close` so a dialog that must not
-// be dismissed (a wizard step with unsaved input) can refuse it.
+// Focus wchodzi do dialogu przy otwarciu, krąży w nim i wraca do elementu
+// otwierającego przy zamknięciu. Escape emituje `escape`, a nie `close`, aby
+// dialog, którego nie wolno zamknąć (krok kreatora), mógł je odrzucić.
 useDialogFocus(panelRef, {
   closeOnEscape: props.closeOnEscape,
   onEscape: () => emit('escape')

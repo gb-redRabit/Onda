@@ -1,5 +1,5 @@
 type DepEvents = {
-  /** A dependency was installed, updated or removed — status may have changed. */
+  /** Zależność została zainstalowana, zaktualizowana lub usunięta — status mógł się zmienić. */
   changed: void;
 };
 
@@ -14,7 +14,7 @@ class DepEventBus {
     return () => this.listeners.get(event)?.delete(fn as Listener<unknown>);
   }
 
-  // `void` payloads are emitted without an argument (`emit('changed')`).
+  // Payloady `void` są emitowane bez argumentu (`emit('changed')`).
   emit<K extends keyof DepEvents>(
     event: K,
     ...args: DepEvents[K] extends void ? [] : [DepEvents[K]]
@@ -32,8 +32,8 @@ class DepEventBus {
   }
 }
 
-// Renderer-local bus for dependency changes. The status itself is probed in the
-// main process (dep:check*), so anything that keeps its own copy — today the
-// missing-dependencies banner — must be nudged when an install finishes instead
-// of waiting for the next window focus.
+// Lokalny dla renderera bus zmian zależności. Sam status jest sondowany w
+// procesie głównym (dep:check*), więc cokolwiek trzyma własną kopię — dziś
+// banner brakujących zależności — musi zostać pchnięte po zakończeniu instalacji,
+// zamiast czekać na następny focus okna.
 export const depEvents = new DepEventBus();

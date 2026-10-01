@@ -7,7 +7,7 @@ import type { MediaFile } from '@renderer/types/media';
 
 const props = defineProps<{
   track: MediaFile;
-  /** Saved playback position in seconds (0 = never started). */
+  /** Zapisana pozycja odtwarzania w sekundach (0 = nigdy nie rozpoczęto). */
   position: number;
 }>();
 

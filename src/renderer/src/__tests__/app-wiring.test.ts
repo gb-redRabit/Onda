@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// App.vue owns app-level wiring that is hard to mount in a unit test (no
-// @vue/test-utils in this repo), so these structural checks guard the exact
-// regressions the audit called out.
+// App.vue posiada okablowanie na poziomie aplikacji, które trudno zamontować w teście jednostkowym (brak
+// @vue/test-utils w tym repo), więc te kontrole strukturalne chronią dokładnie te
+// regresje, które wskazał audyt.
 
 const ROOT = process.cwd();
 const APP = readFileSync(join(ROOT, 'src/renderer/src/App.vue'), 'utf8');
@@ -19,20 +19,20 @@ describe('App.vue wiring', () => {
   });
 
   it('renders a single QueuePanel across layouts', () => {
-    // Two instances (wide + narrow) unmounted/remounted on resize and dropped
-    // the queue scroll position.
+    // Dwie instancje (szeroka + wąska) odmontowywały się/montowały przy resize i gubiły
+    // pozycję przewinięcia kolejki.
     const instances = APP.match(/<QueuePanel\b/g) ?? [];
     expect(instances).toHaveLength(1);
   });
 
   it('precomputes navigation shortcut bindings', () => {
     expect(APP).toMatch(/navShortcutBindings/);
-    // The per-keydown action table is gone.
+    // Tabela akcji per keydown zniknęła.
     expect(APP).not.toMatch(/const navActions/);
   });
 
   it('gives feedback when the view-search shortcut is unavailable', () => {
-    // The shortcut branch must notify instead of silently returning.
+    // Gałąź skrótu musi powiadamiać zamiast po cichu zwracać.
     expect(APP).toMatch(/ui\.notify\(/);
     expect(APP).toMatch(/menu\.viewSearchUnavailable/);
     expect(EN).toContain('viewSearchUnavailable');

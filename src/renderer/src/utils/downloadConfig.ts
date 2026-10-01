@@ -1,7 +1,7 @@
 import type { CoverSpec, MetaOverride } from '@renderer/types/online';
 import type { IpcDownloadConfig } from '@shared/types/ipc';
 
-// Pure download-config builder extracted from
+// Czysty builder konfiguracji pobierania wydzielony z
 // `components/online/DownloadConfigDialog.vue` (plan 2.8).
 
 export interface DownloadConfigInput {
@@ -38,8 +38,8 @@ export interface DownloadConfigInput {
 export function buildDownloadConfig(input: DownloadConfigInput): IpcDownloadConfig {
   const cover: CoverSpec | undefined = (() => {
     if (input.kind === 'video') {
-      // Video downloads embed the YouTube thumbnail by default; "none" is the
-      // explicit opt-out (animated covers are an audio feature).
+      // Pobierania wideo domyślnie osadzają miniaturę YouTube; "none" to
+      // jawne wyłączenie (animowane okładki są funkcją audio).
       return input.coverType === 'none' ? { type: 'none' } : { type: 'thumbnail' };
     }
     if (input.coverType === 'none') return { type: 'none' };
@@ -103,8 +103,8 @@ export interface SoundcloudDownloadInput {
   outputDir: string;
 }
 
-// SoundCloud is a fixed progressive MP3 — only folder + metadata overrides
-// apply (no cover/subtitles/format). Split out of
+// SoundCloud to stały progresywny MP3 — mają zastosowanie tylko nadpisania
+// folderu + metadanych (bez okładki/napisów/formatu). Wydzielone z
 // `useDownloadConfigForm.ts` (plan 2.8).
 export function buildSoundcloudDownloadConfig(input: SoundcloudDownloadInput): IpcDownloadConfig {
   const metaOverride: MetaOverride = {};

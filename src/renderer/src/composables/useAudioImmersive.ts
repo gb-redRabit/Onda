@@ -9,8 +9,8 @@ export interface AudioImmersiveOptions {
   showLayoutEditor: Ref<boolean>;
 }
 
-// Immersive-mode behaviour of the audio view: HUD/cursor auto-hide, fullscreen
-// toggling and global keyboard shortcuts.
+// Zachowanie trybu immersyjnego widoku audio: auto-ukrywanie HUD/kursora, przełączanie
+// pełnego ekranu i globalne skróty klawiszowe.
 export function useAudioImmersive({
   isDragging,
   onDragMove,
@@ -68,7 +68,7 @@ export function useAudioImmersive({
           hideUIAfterDelay();
         })
         .catch(() => {
-          /* best-effort: intentionally ignored (non-fatal) */
+          /* best-effort: celowo zignorowane (niekrytyczne) */
         });
     } else {
       document
@@ -79,7 +79,7 @@ export function useAudioImmersive({
           setCursorVisible(true);
         })
         .catch(() => {
-          /* best-effort: intentionally ignored (non-fatal) */
+          /* best-effort: celowo zignorowane (niekrytyczne) */
         });
     }
   }
@@ -177,7 +177,7 @@ export function useAudioImmersive({
     if (uiTimeout.value) clearTimeout(uiTimeout.value);
     if (document.fullscreenElement)
       document.exitFullscreen().catch(() => {
-        /* best-effort: intentionally ignored (non-fatal) */
+        /* best-effort: celowo zignorowane (niekrytyczne) */
       });
   });
 

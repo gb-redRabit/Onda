@@ -1,7 +1,7 @@
 import { onMounted, onUnmounted, ref, watch, type ComponentPublicInstance } from 'vue';
 import { useOnlineStore } from '@renderer/stores/online';
 
-// Sentinel-driven infinite scroll for the channel view, extracted from
+// Nieskończone przewijanie sterowane sentinelem dla widoku kanału, wyodrębnione z
 // `components/online/OnlineChannelView.vue` (plan 2.8).
 export function useChannelInfiniteScroll() {
   const yt = useOnlineStore();
@@ -39,8 +39,8 @@ export function useChannelInfiniteScroll() {
     observer = null;
   });
 
-  // After a page finishes loading the sentinel may still be in view (short list),
-  // so keep pulling pages until it scrolls out of the viewport.
+  // Po zakończeniu ładowania strony sentinel może wciąż być widoczny (krótka lista),
+  // więc pobieramy kolejne strony, aż wyjdzie poza viewport.
   watch(
     () => [yt.channelLoading, yt.channelHasMore],
     () => maybeLoadMore(),

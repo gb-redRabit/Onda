@@ -92,11 +92,11 @@ export interface StreamErrorOps {
   setGain: (value: number) => void;
 }
 
-// Stream error handling ladder, extracted from `modules/audioEngine.ts` (plan 2.8):
-//   proxy retries exhausted -> direct retry once (different request path)
-//   direct failed too       -> one more proxy pass (the per-IP throttle window
-//                              may have passed meanwhile)
-//   that failed as well     -> streamError event (footer shows it)
+// Drabinka obsługi błędów strumienia, wydzielona z `modules/audioEngine.ts` (plan 2.8):
+//   wyczerpane ponowienia proxy -> jedna bezpośrednia próba (inna ścieżka żądania)
+//   bezpośrednia też nieudana  -> jeszcze jedno przejście przez proxy (okno throttlingu
+//                                 na IP mogło tymczasem minąć)
+//   ta również nieudana        -> zdarzenie streamError (stopka je pokazuje)
 export function handleStreamSourceError(el: HTMLAudioElement, ops: StreamErrorOps): void {
   const err = el.error;
   logger.warn(
@@ -105,16 +105,16 @@ export function handleStreamSourceError(el: HTMLAudioElement, ops: StreamErrorOp
   );
   const streamUrl = ops.getStreamUrl();
   if (!streamUrl) {
-    // Local file playback (no stream URL): the file is missing, unreadable or
-    // the media server rejected it. Emit so the UI can skip gracefully.
+    // Odtwarzanie lokalnego pliku (bez stream URL): plik brakuje, jest nieczytelny
+    // lub serwer mediów go odrzucił. Emituj, żeby UI mogło płynnie pominąć.
     audioEvents.emit('trackError', err ? String(err.code) : 'unknown');
     return;
   }
   const normalized = ops.normalization();
   const scaledVolume = (ops.isMuted() ? 0 : ops.volume()) * normalized;
   if (ops.getMode() === 'proxy' && !ops.getTriedDirect()) {
-    // Proxy retries (403 with backoff) were exhausted — retry the raw URL once
-    // directly from the renderer as a different request path.
+    // Ponowienia proxy (403 z backoffem) zostały wyczerpane — ponów surowy URL raz
+    // bezpośrednio z renderera jako inną ścieżkę żądania.
     ops.setTriedDirect(true);
     ops.setMode('direct');
     logger.info(
@@ -131,7 +131,7 @@ export function handleStreamSourceError(el: HTMLAudioElement, ops: StreamErrorOp
     return;
   }
   if (ops.getMode() === 'direct' && !ops.getFinalRetried()) {
-    // Direct retry failed as well — go back through the proxy one last time.
+    // Bezpośrednie ponowienie też się nie udało — wróć przez proxy jeszcze ostatni raz.
     ops.setFinalRetried(true);
     ops.setMode('proxy');
     logger.info(

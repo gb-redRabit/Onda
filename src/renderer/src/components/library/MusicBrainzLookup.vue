@@ -74,7 +74,7 @@ const previewRows = computed(() =>
   buildPreviewRows(lookupResult.value, props.track, includeFields.value)
 );
 
-// 8.9.3 — batch
+// 8.9.3 — tryb wsadowy
 const { batchProgress, batchResults, batchRunning, startBatch, cancelBatch } = useMusicBrainzBatch(
   () => lookupResult.value,
   () => includeFields.value,

@@ -1,35 +1,35 @@
 import { onBeforeUnmount } from 'vue';
 
 /**
- * "Click outside twice to close" guard for dialogs with editable fields.
+ * Zabezpieczenie "kliknij poza dwa razy, aby zamknąć" dla dialogów z edytowalnymi polami.
  *
- * Three dialogs each carried their own copy of this: a click counter, a reset
- * timer, a dirty check and the two notifications. They had drifted — the tag
- * editor used a 2.5 s window where the others used 2 s, and it only notified on
- * the first click while the other two notified on both, including the click
- * that closed the dialog. The differences are now named options rather than
- * three subtly different hand-rolled versions.
+ * Trzy dialogi nosiły własną kopię tego: licznik kliknięć, timer resetu,
+ * sprawdzenie dirty i dwa powiadomienia. Rozjechały się — edytor tagów
+ * używał okna 2,5 s, gdzie pozostałe używały 2 s, i powiadamiał tylko przy
+ * pierwszym kliknięciu, gdy dwa pozostałe powiadamiały przy obu, w tym przy kliknięciu
+ * zamykającym dialog. Różnice są teraz nazwanymi opcjami zamiast
+ * trzech subtelnie różnych ręcznie pisanych wersji.
  */
 export interface UnsavedGuardOptions {
-  /** Recomputed on every click, so it must read current state, not a snapshot. */
+  /** Przeliczane przy każdym kliknięciu, więc musi czytać bieżący stan, nie snapshot. */
   isDirty: () => boolean;
-  /** Called on the click that actually closes. */
+  /** Wywoływane przy kliknięciu, które faktycznie zamyka. */
   onClose: () => void;
-  /** Warning shown while the form has unsaved edits. */
+  /** Ostrzeżenie pokazywane, gdy formularz ma niezapisane zmiany. */
   onDirtyHint: () => void;
-  /** Info shown while the form is clean. */
+  /** Informacja pokazywana, gdy formularz jest czysty. */
   onCleanHint: () => void;
-  /** Clicks within this window of each other count as a pair. */
+  /** Kliknięcia w tym oknie względem siebie liczą się jako para. */
   windowMs?: number;
   /**
-   * Longer window after a dirty click: the user just saw a warning, so give
-   * them more time to decide and click again.
+   * Dłuższe okno po kliknięciu na brudnym formularzu: użytkownik właśnie zobaczył ostrzeżenie, więc dajmy
+   * mu więcej czasu na decyzję i ponowne kliknięcie.
    */
   dirtyWindowMs?: number;
   /**
-   * When true, the closing click also fires a hint. The tag editor only hints
-   * on the click that does *not* close, because the dialog is already gone by
-   * the time the user reads the second message.
+   * Gdy true, kliknięcie zamykające również wywołuje podpowiedź. Edytor tagów podpowiada
+   * tylko przy kliknięciu, które *nie* zamyka, ponieważ dialog już zniknął, zanim
+   * użytkownik przeczyta drugą wiadomość.
    */
   notifyOnClosingClick?: boolean;
 }
@@ -61,7 +61,7 @@ export function useUnsavedGuard(options: UnsavedGuardOptions) {
     clicks++;
 
     if (clicks >= 2) {
-      // The counter resets before closing so a reopen starts from a clean slate.
+      // Licznik resetuje się przed zamknięciem, więc ponowne otwarcie startuje od czystej karty.
       reset();
       if (notifyOnClosingClick) (dirty ? onDirtyHint : onCleanHint)();
       onClose();

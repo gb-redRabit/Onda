@@ -1,8 +1,8 @@
 import type { AudioLayoutElement, AudioLayoutElementId } from '@renderer/types/settings';
 
-// Pure audio-layout geometry extracted from
-// `components/audio/AudioLayoutEditor.vue` (plan 2.8): per-element constraints,
-// grid/snap math and element sanitising.
+// Czysta geometria układu audio wydzielona z
+// `components/audio/AudioLayoutEditor.vue` (plan 2.8): ograniczenia per element,
+// matematyka siatki/snapowania i sanityzacja elementów.
 
 export const PREVIEW_W = 480;
 export const PREVIEW_H = 320;
@@ -15,10 +15,10 @@ export const CONSTRAINTS: Record<
   visualization: { minW: 10, minH: 10 },
   cover: { minW: 15, aspect: 16 / 9 },
   progress: { minW: 20, minH: 2, maxH: 20 },
-  // 4% and not 6%: the transport falls back to a play-only button below 28px
-  // (calcMode's `micro`), and 6% of the smallest allowed window was ~30px, so
-  // that branch could never render. The play button is 24px at that size, so
-  // the fallback fits exactly where the row of five buttons would not.
+  // 4%, a nie 6%: transport przechodzi na przycisk tylko-odtwarzanie poniżej 28px
+  // (`micro` w calcMode), a 6% z najmniejszego dozwolonego okna to ~30px, więc
+  // ta gałąź nigdy nie mogła się wyrenderować. Przycisk odtwarzania ma 24px przy tym rozmiarze,
+  // więc fallback mieści się dokładnie tam, gdzie rząd pięciu przycisków by się nie zmieścił.
   controls: { minW: 30, minH: 4, maxH: 25 },
   trackInfo: { minW: 25, minH: 6 }
 };

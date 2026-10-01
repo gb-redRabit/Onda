@@ -1,3 +1,3 @@
-// Moved to `../../../shared/types/settings` so the main process no longer imports
-// renderer sources. Re-exported here to keep `@renderer/types/settings` working.
+// Przeniesiono do `../../../shared/types/settings`, żeby proces główny nie importował
+// już źródeł renderera. Re-eksportowane tutaj, aby `@renderer/types/settings` dalej działał.
 export * from '../../../shared/types/settings';

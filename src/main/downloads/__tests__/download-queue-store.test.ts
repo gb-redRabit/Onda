@@ -70,7 +70,7 @@ describe('capPersistedJobs', () => {
     );
     const capped = capPersistedJobs(many);
     expect(capped.length).toBeLessThanOrEqual(500);
-    // All non-error jobs are kept; the excess error jobs are trimmed.
+    // Wszystkie zadania inne niż błędne są zachowywane; nadmiarowe błędne zadania są przycinane.
     expect(capped.filter((j) => j.status !== 'error').length).toBe(500);
     expect(capped.every((j) => j.status !== 'error')).toBe(true);
   });

@@ -3,10 +3,10 @@ import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-// `app.getPath` can return an empty string, not only throw. `join('', name)` is
-// a RELATIVE path, so the cover cache map was written into the process working
-// directory — the repository during development, and wherever the user launched
-// the app from once packaged. It is now rejected as non-absolute.
+// `app.getPath` może zwrócić pusty string, nie tylko rzucić wyjątek. `join('', name)` to
+// ścieżka WZGLĘDNA, więc mapa cache okładek była zapisywana do katalogu roboczego
+// procesu — repozytorium w trakcie developmentu i miejsca, z którego użytkownik uruchomił
+// aplikację po spakowaniu. Teraz jest odrzucana jako nieabsolutna.
 
 let userData: string | null = '';
 
@@ -54,8 +54,8 @@ describe('cover map path', () => {
   });
 
   it('never writes a relative path into the working directory', async () => {
-    // The bug: an empty userData produced "cover-cache-map.json", which the
-    // process then resolved against its cwd.
+    // Błąd: pusty userData tworzył "cover-cache-map.json", który
+    // proces następnie rozwiązywał względem swojego cwd.
     userData = '';
     const mod = await load();
     await mod.writeCoverMap({ '/a.mp3': { cacheFile: 'x.jpg', mtime: 1 } });

@@ -2,10 +2,10 @@ import { readdir, readFile } from 'fs/promises';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 
-// Guards IPC drift without touching the contract itself yet: every channel the
-// renderer invokes literally must be present in the preload invoke allowlist,
-// otherwise the call is blocked at runtime with only a console warning.
-// The allowlist is generated from the contract (`npm run ipc:gen`).
+// Chroni przed dryfem IPC, jeszcze nie ruszając samego kontraktu: każdy kanał,
+// który renderer wywołuje dosłownie, musi być obecny na allowliście invoke preloadu,
+// inaczej wywołanie jest blokowane w czasie działania zaledwie ostrzeżeniem w konsoli.
+// Allowlista jest generowana z kontraktu (`npm run ipc:gen`).
 const ROOT = process.cwd();
 
 const IGNORED_DIRS = new Set(['node_modules', 'dist', 'out', 'release']);

@@ -1,7 +1,7 @@
 /**
- * Display name for a folder path: the last non-empty segment, or `fallback`
- * when there is no path (the "This PC" drives view). Split on both separators
- * so a path captured on one platform still names itself on another.
+ * Nazwa wyświetlana dla ścieżki folderu: ostatni niepusty segment, albo `fallback`
+ * gdy nie ma ścieżki (widok dysków "Ten komputer"). Dzielone po obu separatorach,
+ * więc ścieżka przechwycona na jednej platformie nadal nazywa się na innej.
  */
 export function explorerWindowTitle(path: string | null | undefined, fallback: string): string {
   if (!path) return fallback;

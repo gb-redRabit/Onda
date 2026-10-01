@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 
-// A cold cover miss used to stat the file twice inside `extractAndCacheCover`:
-// once to check existence and again to record the mtime for the cache entry.
-// The second stat is redundant — the file is the one just validated.
+// Zimne pudło okładki statowało plik dwukrotnie w `extractAndCacheCover`:
+// raz, aby sprawdzić istnienie, i ponownie, aby zapisać mtime dla wpisu w cache.
+// Drugi stat jest zbędny — plik to ten właśnie zweryfikowany.
 
 const { statMock } = vi.hoisted(() => ({
   statMock: vi.fn(async (..._args: unknown[]) => ({ mtimeMs: 123, size: 1 }))
@@ -51,8 +51,8 @@ import {
 describe('extractAndCacheCover stat usage', () => {
   it('stats a cold cover miss only once', async () => {
     statMock.mockClear();
-    // A non-audio, non-video extension takes the "no cover" branch without
-    // invoking ffmpeg/sharp, so only the stat calls are exercised.
+    // Rozszerzenie inne niż audio i wideo wybiera gałąź "brak okładki" bez
+    // wywoływania ffmpeg/sharp, więc testowane są tylko wywołania stat.
     const result = await extractAndCacheCover('/music/picture.jpg');
     expect(result).toEqual({ type: null, data: null });
     expect(statMock).toHaveBeenCalledTimes(1);

@@ -13,7 +13,7 @@ describe('isAllowedNavigationUrl', () => {
   });
 
   it('blocks file: URLs outside the app directory', () => {
-    // Regression: every file: URL used to be allowed (local file read primitive).
+    // Regresja: każdy URL file: był kiedyś dozwolony (prymityw odczytu lokalnych plików).
     expect(isAllowedNavigationUrl('file:///etc/passwd', undefined)).toBe(false);
     expect(isAllowedNavigationUrl('file:///C:/Windows/System32/cmd.exe', undefined)).toBe(false);
     expect(isAllowedNavigationUrl('file:///tmp/evil.html', DEV_URL)).toBe(false);

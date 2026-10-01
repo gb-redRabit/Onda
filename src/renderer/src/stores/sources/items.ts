@@ -14,10 +14,10 @@ export interface SourcesItemsDeps {
   startPage: ComputedRef<number>;
 }
 
-// Page items + table rows state and fetching (first page, more, pagination)
-// extracted from `stores/sources.ts` (plan 2.7). Navigation writes `context`;
-// the store destructures the returned refs/actions back into the same names,
-// so call sites elsewhere are unchanged.
+// Stan elementów strony + wierszy tabeli oraz pobieranie (pierwsza strona, więcej, paginacja)
+// wyodrębnione z `stores/sources.ts` (plan 2.7). Nawigacja zapisuje `context`;
+// store destrukturyzuje zwrócone refy/akcje z powrotem do tych samych nazw,
+// więc miejsca wywołań gdzie indziej pozostają bez zmian.
 export function createSourcesItems(deps: SourcesItemsDeps) {
   const { activeSource, activeEndpoint, paginationMode, startPage } = deps;
   const items = ref<SourceItem[]>([]);
@@ -118,7 +118,7 @@ export function createSourcesItems(deps: SourcesItemsDeps) {
         })) as SourceFetchResult;
         if (id !== loadId) return;
         if (res?.error) {
-          // Do not advance the page on failure, or the next "more" skips a page.
+          // Nie przesuwaj strony przy błędzie, bo następne "więcej" pominie stronę.
           lastError.value = res.error;
         } else {
           currentPage.value = nextPage;

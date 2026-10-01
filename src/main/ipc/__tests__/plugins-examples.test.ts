@@ -118,9 +118,9 @@ describe('plugins-examples', () => {
     for (const entry of await readdir(dir, { withFileTypes: true })) {
       if (!entry.isDirectory()) continue;
       const code = await readFile(join(dir, entry.name, 'index.js'), 'utf-8');
-      // A syntax error in an example would only surface when a user installs it.
+      // Błąd składni w przykładzie ujawniłby się dopiero, gdy użytkownik go zainstaluje.
       expect(() => new vm.Script(code, { filename: `${entry.name}/index.js` })).not.toThrow();
-      // console.log from a worker never reaches the app — the Logs tab uses api.log.
+      // console.log z workera nigdy nie dociera do aplikacji — zakładka Logs używa api.log.
       expect(code).not.toMatch(/console\s*\.\s*log/);
       expect(code).toContain('api.');
     }
@@ -133,7 +133,7 @@ describe('plugins-examples', () => {
       .filter((example) => (example.permissions.network?.allow ?? []).length > 0)
       .map((example) => example.id)
       .sort();
-    // Only the two lookup-style examples talk to the network, both over HTTPS.
+    // Tylko dwa przykłady typu lookup komunikują się z siecią, oba przez HTTPS.
     expect(withNetwork).toEqual(['hello', 'metadata-lookup']);
     for (const example of examples) {
       for (const pattern of example.permissions.network?.allow ?? []) {

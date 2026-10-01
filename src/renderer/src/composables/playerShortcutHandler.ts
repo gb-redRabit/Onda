@@ -33,9 +33,9 @@ interface PlayerShortcutCtx {
 let ctx: PlayerShortcutCtx | null = null;
 
 /**
- * Context provider for the video view (/player). App-level keydown handling
- * stays installed for the whole app lifetime; this only says whether a player
- * is on screen and what to act upon when a shortcut matches.
+ * Dostawca kontekstu dla widoku wideo (/player). Obsługa keydown na poziomie aplikacji
+ * pozostaje zainstalowana przez cały czas życia aplikacji; to jedynie mówi, czy odtwarzacz
+ * jest na ekranie i na czym działać, gdy skrót pasuje.
  */
 export function setPlayerShortcutCtx(next: PlayerShortcutCtx | null): void {
   ctx = next;
@@ -48,8 +48,8 @@ function matches(action: string, e: KeyboardEvent): boolean {
   return !!shortcut && matchesShortcut(shortcut, e);
 }
 
-// Skip accepts Shift as a secondary "±30s" modifier, so the raw key must
-// match even when Shift is held (the shortcut itself carries no Shift).
+// Pomijanie akceptuje Shift jako dodatkowy modyfikator "±30s", więc surowy klawisz musi
+// pasować nawet przy wciśniętym Shift (sam skrót nie zawiera Shift).
 function matchesSkip(action: string, e: KeyboardEvent): boolean {
   const c = ctx;
   if (!c) return false;
@@ -81,9 +81,9 @@ function setTransportVolume(volume: number): void {
 }
 
 /**
- * Handles player-view shortcuts. Invoked from the single App-level keydown
- * listener (always registered while the window is focused) so playback keys
- * keep working across view mount/unmount churn.
+ * Obsługuje skróty widoku odtwarzacza. Wywoływane z pojedynczego nasłuchu keydown
+ * na poziomie App (zawsze zarejestrowanego, gdy okno jest aktywne), dzięki czemu klawisze
+ * odtwarzania działają mimo ciągłego montowania/odmontowywania widoków.
  */
 export function handlePlayerShortcutKeydown(e: KeyboardEvent): void {
   const c = ctx;

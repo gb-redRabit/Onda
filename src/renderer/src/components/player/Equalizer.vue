@@ -65,10 +65,10 @@ function onSliderDrag(e: MouseEvent, index: number) {
 }
 
 /**
- * Keyboard equivalent of the drag.
+ * Klawiaturowy odpowiednik przeciągania.
  *
- * Each band was a mousedown-only div: no role, no tabindex, no key handling, so
- * the equalizer could not be adjusted without a pointer.
+ * Każdy pas był divem obsługującym tylko mousedown: bez roli, bez tabindex i bez
+ * obsługi klawiszy, więc korektora nie dało się ustawić bez wskaźnika.
  */
 function onBandKey(e: KeyboardEvent, index: number) {
   const current = player.equalizerBands[index] ?? 0;
@@ -103,7 +103,7 @@ function onBandKey(e: KeyboardEvent, index: number) {
       </button>
     </div>
 
-    <!-- presets -->
+    <!-- presety -->
     <div class="flex flex-wrap gap-1.5 mb-5">
       <button
         v-for="(_, name) in presets"
@@ -121,7 +121,7 @@ function onBandKey(e: KeyboardEvent, index: number) {
       </button>
     </div>
 
-    <!-- bands -->
+    <!-- pasma -->
     <div class="flex gap-2 h-48">
       <div v-for="(label, i) in bandLabels" :key="label" class="flex-1 flex flex-col items-center">
         <span
@@ -142,12 +142,12 @@ function onBandKey(e: KeyboardEvent, index: number) {
           @mousedown="onSliderDrag($event, i)"
           @keydown="onBandKey($event, i)"
         >
-          <!-- track background — wider, high contrast -->
+          <!-- tło ścieżki — szersze, wysoki kontrast -->
           <div
             class="absolute w-1.25 h-full rounded-full bg-base-content/20"
             style="left: 50%; transform: translateX(-50%)"
           />
-          <!-- filled portion from center -->
+          <!-- wypełniona część od środka -->
           <div
             class="absolute w-1.25 rounded-full bg-primary"
             style="left: 50%; transform: translateX(-50%)"
@@ -160,12 +160,12 @@ function onBandKey(e: KeyboardEvent, index: number) {
                 : { top: '50%', height: (Math.abs(player.equalizerBands[i]) / 24) * 100 + '%' }
             "
           />
-          <!-- center line -->
+          <!-- linia środkowa -->
           <div
             class="absolute w-3 h-0.5 rounded-full bg-base-content/70"
             style="left: 50%; transform: translateX(-50%); top: 50%"
           />
-          <!-- thumb -->
+          <!-- uchwyt -->
           <div
             class="absolute w-4 h-4 rounded-full bg-primary border border-white shadow-md transition-all duration-75"
             :style="{

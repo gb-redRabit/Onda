@@ -88,7 +88,7 @@ describe('useMissingDependencies', () => {
     expect(deps.visible.value).toBe(false);
     expect(deps.hasIssues.value).toBe(true);
 
-    // A later re-check must not resurrect the banner in the same session.
+    // Późniejsze ponowne sprawdzenie nie może wskrzesić banera w tej samej sesji.
     await deps.check();
     expect(deps.visible.value).toBe(false);
   });
@@ -110,8 +110,8 @@ describe('useMissingDependencies', () => {
     await deps.check();
     expect(deps.issues.value.map((i) => i.tool)).toEqual(['ffmpeg']);
 
-    // Settings/wizard finished an install: the status is only probed in main, so
-    // the banner has to be nudged instead of waiting for the next window focus.
+    // Ustawienia/kreator zakończyły instalację: status jest sondowany tylko w main, więc
+    // baner trzeba szturchnąć zamiast czekać na następne uaktywnienie okna.
     installApi();
     depEvents.emit('changed');
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -127,8 +127,8 @@ describe('useMissingDependencies', () => {
 
     await deps.check();
 
-    // A tool can be removed outside the app; the resolver caches its verdict per
-    // process, so every check has to invalidate it first.
+    // Narzędzie może zostać usunięte poza aplikacją; resolver buforuje swój wyrok na
+    // proces, więc każde sprawdzenie musi go najpierw unieważnić.
     expect(api.invoke).toHaveBeenCalledWith('dep:recheck');
     deps.unsubscribe();
   });

@@ -53,7 +53,7 @@ const { t } = useI18n();
       />
     </div>
 
-    <!-- Width -->
+    <!-- Szerokość -->
     <div>
       <div class="flex items-center justify-between mb-1">
         <label class="text-[11px] text-base-content/50">{{ t('audioView.width') }}</label>
@@ -69,7 +69,7 @@ const { t } = useI18n();
       />
     </div>
 
-    <!-- Height -->
+    <!-- Wysokość -->
     <div v-if="!hasLockedAspect">
       <div class="flex items-center justify-between mb-1">
         <label class="text-[11px] text-base-content/50">{{ t('audioView.height') }}</label>
@@ -84,7 +84,7 @@ const { t } = useI18n();
         @input="emit('update', { height: Number(($event.target as HTMLInputElement).value) })"
       />
     </div>
-    <!-- Height poz. aspekt zablokowany (16:9) -->
+    <!-- Wysokość poz. aspekt zablokowany (16:9) -->
     <div v-else>
       <div class="flex items-center justify-between mb-1">
         <label class="text-[11px] text-base-content/50">{{ t('audioView.height') }}</label>
@@ -95,7 +95,7 @@ const { t } = useI18n();
       <p class="text-[10px] text-base-content/40">{{ t('audioView.coverAspectLocked') }}</p>
     </div>
 
-    <!-- Opacity -->
+    <!-- Krycie -->
     <div>
       <div class="flex items-center justify-between mb-1">
         <label class="text-[11px] text-base-content/50">{{ t('audioView.opacity') }}</label>
@@ -113,7 +113,7 @@ const { t } = useI18n();
       />
     </div>
 
-    <!-- Layer -->
+    <!-- Warstwa -->
     <div>
       <div class="flex items-center justify-between mb-1">
         <label class="text-[11px] text-base-content/50">{{ t('audioView.layer') }}</label>
@@ -129,7 +129,7 @@ const { t } = useI18n();
       />
     </div>
 
-    <!-- Background -->
+    <!-- Tło -->
     <div class="flex items-center justify-between pt-1">
       <span class="text-[11px] text-base-content/50">{{ t('audioView.elementBg') }}</span>
       <button

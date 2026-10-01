@@ -2,10 +2,10 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 import { EventEmitter } from 'node:events';
 import { killDownloadProcess } from '../kill-download-process';
 
-// `child.kill()` signals one process. yt-dlp spawns ffmpeg, so cancelling a job
-// used to leave the encoder running: still writing the output file, still
-// holding the handle, and unkillable from the UI because the job was gone. A
-// retried job then competed with the orphan for the same destination.
+// `child.kill()` sygnalizuje jeden proces. yt-dlp uruchamia ffmpeg, więc anulowanie zadania
+// zostawiało działający enkoder: wciąż zapisujący plik wyjściowy, wciąż
+// trzymający uchwyt i niemożliwy do zabicia z UI, bo zadanie zniknęło. Ponowione
+// zadanie konkurowało wtedy z osieroconym procesem o to samo miejsce docelowe.
 
 vi.mock('@shared/logger', () => ({
   logger: { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() }
@@ -25,7 +25,7 @@ class FakeChild extends EventEmitter {
     return true;
   }
 
-  /** Simulates a process that traps SIGTERM and keeps running. */
+  /** Symuluje proces, który przechwytuje SIGTERM i działa dalej. */
   onSignal(signal: NodeJS.Signals, fn: () => void): void {
     this.handlers.push([signal, fn]);
   }
@@ -51,8 +51,8 @@ describe('killDownloadProcess', () => {
 
     killDownloadProcess(child as never);
 
-    // SIGTERM first: yt-dlp cleans up its .part on the polite signal, and a
-    // hard kill from the start would leave a truncated download behind.
+    // Najpierw SIGTERM: yt-dlp sprząta swój .part przy uprzejmym sygnale, a
+    // twarde zabicie od razu zostawiłoby obcięte pobieranie.
     expect(child.signals[0]).toBe('SIGTERM');
   });
 
@@ -61,7 +61,7 @@ describe('killDownloadProcess', () => {
     try {
       const child = new FakeChild();
       child.pid = 4242;
-      // No handler: the process survives SIGTERM, as a wedged ffmpeg would.
+      // Brak handlera: proces przeżywa SIGTERM, jak zawieszony ffmpeg.
       setPlatform('linux');
 
       killDownloadProcess(child as never);
@@ -121,7 +121,7 @@ describe('killDownloadProcess', () => {
     child.pid = undefined;
     setPlatform('linux');
 
-    // No pid means there is no group to signal; the process still has to die.
+    // Brak pid oznacza brak grupy do sygnalizowania; proces i tak musi zginąć.
     expect(() => killDownloadProcess(child as never)).not.toThrow();
     expect(child.signals[0]).toBe('SIGTERM');
   });

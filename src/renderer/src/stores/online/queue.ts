@@ -26,15 +26,15 @@ export interface OnlineQueueDeps {
   submitJobs: (jobs: IpcDownloadJobInput[]) => Promise<unknown>;
 }
 
-// Queueing actions for online items (single, resolved batch and whole channels)
-// extracted from `stores/online.ts` (plan 2.7). The store destructures the
-// returned refs/actions back into the same names, so call sites are unchanged.
+// Akcje kolejkowania dla elementów online (pojedynczy, partia rozwiązana i całe kanały)
+// wyodrębnione z `stores/online.ts` (plan 2.7). Store destrukturyzuje
+// zwrócone refy/akcje z powrotem do tych samych nazw, więc miejsca wywołań pozostają bez zmian.
 export function createOnlineQueue(deps: OnlineQueueDeps) {
   const { t, channel, resolved, downloads, getSubscription, addSubscription, submitJobs } = deps;
   const queuingId = ref<string | null>(null);
   const queueingChannelId = ref<string | null>(null);
-  // Platform-dispatched link resolution (detects the platform from the link
-  // itself, not from the active UI tab).
+  // Rozwiązywanie linków z dyspozycją po platformie (wykrywa platformę z samego
+  // linku, a nie z aktywnej zakładki UI).
   async function resolveOnline(url: string): Promise<OnlineResolveResponse> {
     return resolveOnlineUrl(url);
   }
@@ -68,8 +68,8 @@ export function createOnlineQueue(deps: OnlineQueueDeps) {
     extra?: JobExtra
   ) {
     const job = buildJob(video, prefs, extra);
-    // Channel listings come from a flat playlist without channel_id per entry,
-    // so stamp the job with the channel currently being browsed.
+    // Listy kanału pochodzą z płaskiej playlisty bez channel_id na wpis,
+    // więc oznacz zadanie kanałem aktualnie przeglądanym.
     if (!job.channelId && channel.value?.id) job.channelId = channel.value.id;
     if (!job.channelTitle && channel.value?.title) job.channelTitle = channel.value.title;
     queuingId.value = video.id;
@@ -95,7 +95,7 @@ export function createOnlineQueue(deps: OnlineQueueDeps) {
       })) as Subscription | null;
       if (updated) addSubscription(updated);
     } catch {
-      /* failed to record queued ids */
+      /* nie udało się zapisać zakolejkowanych id */
     }
   }
 
@@ -109,8 +109,8 @@ export function createOnlineQueue(deps: OnlineQueueDeps) {
     const downloadedIds = includeDownloaded
       ? new Set<string>()
       : new Set(subscription?.downloadedVideoIds || []);
-    // Only active or finished jobs block a re-queue — a failed/cancelled attempt
-    // must be re-queueable or "download all" silently skips it forever.
+    // Tylko aktywne lub zakończone zadania blokują ponowne zakolejkowanie — nieudana/anulowana próba
+    // musi być możliwa do ponownego zakolejkowania, inaczej "pobierz wszystko" po cichu ją pomija na zawsze.
     const existingIds = new Set(
       downloads.value
         .filter((d) => d.status !== 'error' && d.status !== 'cancelled')
@@ -154,9 +154,9 @@ export function createOnlineQueue(deps: OnlineQueueDeps) {
     }
   }
 
-  // Resolves and queues a batch of links (videos and playlist first-page
-  // items; channels are skipped) across platforms. Returns how many downloads
-  // were enqueued.
+  // Rozwiązuje i kolejkuje partię linków (wideo i elementy pierwszej strony
+  // playlisty; kanały są pomijane) między platformami. Zwraca, ile pobrań
+  // zostało zakolejkowanych.
   async function queueBatch(urls: string[], extra?: JobExtra): Promise<number> {
     let queued = 0;
     for (const url of urls) {
@@ -176,14 +176,14 @@ export function createOnlineQueue(deps: OnlineQueueDeps) {
           }
         }
       } catch {
-        /* skip unresolvable entry */
+        /* pomiń nierozwiązywalny wpis */
       }
     }
     return queued;
   }
 
-  // Loads every page of the currently relevant playlist (used when the user
-  // saves it) so the snapshot contains the full list, not just the first page.
+  // Ładuje każdą stronę aktualnie istotnej playlisty (używane, gdy użytkownik
+  // ją zapisuje), więc snapshot zawiera pełną listę, a nie tylko pierwszą stronę.
   async function loadAllResolvedItems(url: string) {
     return resolveAllPlaylistItems(url);
   }

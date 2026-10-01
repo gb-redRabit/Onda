@@ -6,8 +6,8 @@ export interface CoverResult {
   data: string | null;
 }
 
-// Grabs a still frame from a local video via a hidden <video> + canvas, served
-// through the media server. Extracted from `stores/player-cover.ts` (plan 2.8).
+// Pobiera nieruchomą klatkę z lokalnego wideo przez ukryty <video> + canvas, serwowaną
+// przez media server. Wydzielone z `stores/player-cover.ts` (plan 2.8).
 export function captureVideoFrame(filePath: string): Promise<CoverResult> {
   const ext = filePath.slice(filePath.lastIndexOf('.')).toLowerCase();
   if (!VIDEO_EXTS.includes(ext)) return Promise.resolve({ type: null, data: null });

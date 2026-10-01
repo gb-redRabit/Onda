@@ -12,13 +12,13 @@ import {
   streamTargetFor
 } from '@renderer/utils/onlineHelpers';
 
-// Stream playback: queueing a single saved track and playing every item of a
-// playlist/channel. Uses the player + UI stores directly; the store
-// destructures the returned actions back into the same names.
+// Odtwarzanie strumieni: kolejkowanie pojedynczego zapisanego utworu i odtwarzanie każdego elementu
+// playlisty/kanału. Używa bezpośrednio store player + UI; store
+// destrukturyzuje zwrócone akcje z powrotem do tych samych nazw.
 export function createOnlineStreams() {
   const t = i18n.global.t;
 
-  // Queues a single saved track (platform-dispatched via the stored page URL).
+  // Kolejkuje pojedynczy zapisany utwór (dyspozycja po platformie przez zapisany URL strony).
   async function queueSavedTrack(video: {
     id: string;
     title: string;
@@ -44,13 +44,13 @@ export function createOnlineStreams() {
     if (items.length === 0) return;
     const player = usePlayerStore();
     logger.info('yt', `playAllStreams start items=${items.length} first=${items[0]!.id}`);
-    // The player bar appears instantly with the first item while it resolves.
+    // Pasek odtwarzacza pojawia się natychmiast z pierwszym elementem, gdy ten się rozwiązuje.
     player.streamPending = buildStreamTrack(items[0]!, `yt:${items[0]!.id}`, 0);
     player.enrichTrack(player.streamPending);
-    // Resolve with a small concurrency cap: parallel yt-dlp spawns hammer
-    // YouTube and amplify the transient 403 rate-limit windows. The first item
-    // plays immediately from its cached/prefetched URL; the rest can resolve in
-    // the background while it plays.
+    // Rozwiązuj z małym limitem współbieżności: równoległe procesy yt-dlp dobijają
+    // YouTube i wzmacniają przejściowe okna limitu 403. Pierwszy element
+    // odtwarza się natychmiast z zbuforowanego/prefetchowanego URL; reszta może rozwiązywać się w
+    // tle, gdy on się odtwarza.
     const ordered: (MediaFile | null)[] = items.map(() => null);
     let failures = 0;
     let started = false;
@@ -76,15 +76,15 @@ export function createOnlineStreams() {
         ordered[idx] = track;
         if (!started) {
           started = true;
-          // If the user clicked a specific video while play-all was resolving,
-          // respect the click: its pending stays, the first item goes to the
-          // queue and everything follows in order. Same-video clicks already
-          // promote through playStream - do not replay a current track.
+          // Jeśli użytkownik kliknął konkretne wideo, gdy play-all się rozwiązywał,
+          // uszanuj kliknięcie: jego pending zostaje, pierwszy element trafia do
+          // kolejki, a wszystko idzie po kolei. Kliknięcia tego samego wideo już
+          // promują przez playStream - nie odtwarzaj bieżącego utworu ponownie.
           const current = player.currentTrack;
           if (current && current.id === track.id) {
             if (player.streamPending?.id === track.id) player.streamPending = null;
           } else if (player.streamPending && player.streamPending.id !== track.id) {
-            // fall through: queue items[0] too, in original order
+            // przejdź dalej: zakolejkuj też items[0], w oryginalnej kolejności
           } else {
             player.streamPending = null;
             player.setTrack(track);
@@ -97,9 +97,9 @@ export function createOnlineStreams() {
       Array.from({ length: Math.min(MAX_CONCURRENT, items.length) }, () => worker())
     );
 
-    // Rebuild the queue once, in the original order, dropping tracks that already
-    // played (history) or are currently playing. Doing this per resolved item was
-    // O(n²) and let concurrent workers expose half-built queue states.
+    // Odbuduj kolejkę raz, w oryginalnej kolejności, odrzucając utwory, które już
+    // się odtworzyły (historia) lub są aktualnie odtwarzane. Robienie tego na rozwiązany element było
+    // O(n²) i pozwalało równoległym workerom odsłaniać na wpół zbudowane stany kolejki.
     {
       const consumed = new Set(player.history.map((h) => h.path));
       const current = player.currentTrack;

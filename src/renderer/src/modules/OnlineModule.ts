@@ -7,7 +7,7 @@ export class OnlineModule implements AppModule {
   private _active = false;
 
   init(): void {
-    // Nothing to set up eagerly — search state lives in the store.
+    // Nic do przygotowania z góry — stan wyszukiwania żyje w store.
   }
 
   activate(_context?: unknown): void {

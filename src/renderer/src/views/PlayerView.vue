@@ -90,9 +90,9 @@ onMounted(() => {
     return;
   }
 
-  // Imperative listener: fixed Vue @wheel bindings register non-passive
-  // listeners implicitly. A passive listener only observes — the handler
-  // skips areas flagged with [data-wheel-ignore] instead of preventDefault().
+  // Nasłuch imperatywny: stałe wiązania Vue @wheel rejestrują domyślnie
+  // nasłuchy non-passive. Nasłuch pasywny tylko obserwuje — handler
+  // pomija obszary oznaczone [data-wheel-ignore] zamiast preventDefault().
   const container = playerContainerRef.value;
   if (container) {
     wheelHandler = (e: WheelEvent) => ctl.onWheel(e);
@@ -101,8 +101,8 @@ onMounted(() => {
 
   vp.init(player.currentTrack);
 
-  // The app-level keydown handler (App.vue) stays installed forever; here we
-  // only (de)register the action context it dispatches to.
+  // Handler keydown na poziomie aplikacji (App.vue) pozostaje zainstalowany na stałe;
+  // tutaj tylko (de)rejestrujemy kontekst akcji, do którego przekazuje zdarzenia.
   setPlayerShortcutCtx({
     player,
     settings,
@@ -131,18 +131,18 @@ onUnmounted(() => {
     playerContainerRef.value?.removeEventListener('wheel', wheelHandler);
     wheelHandler = null;
   }
-  // Leaving the player while a video is playing must not kill playback: hand it
-  // off to the Picture-in-Picture window (exactly as the PiP button would)
-  // instead of clearing the track. Called before `vp.destroy()` so the current
-  // play position is captured from the live <video>.
+  // Wyjście z odtwarzacza podczas grania wideo nie może zabijać odtwarzania: przekaż je
+  // do okna Picture-in-Picture (dokładnie tak, jak zrobiłby to przycisk PiP)
+  // zamiast czyścić utwór. Wywoływane przed `vp.destroy()`, żeby bieżąca
+  // pozycja odtwarzania została pobrana z żywego <video>.
   const autoPiP = player.currentTrack?.type === 'video' && !player.pipActive && player.isPlaying;
   if (autoPiP) void vp.togglePiP();
 
   ctl.cleanup();
   vp.destroy();
   document.body.style.cursor = 'default';
-  // clear the currently played video on exit so the same file can be reopened
-  // (but not when it was just handed off to PiP, or when PiP was already active)
+  // wyczyść aktualnie odtwarzane wideo przy wyjściu, żeby ten sam plik można było
+  // otworzyć ponownie (ale nie gdy właśnie przekazano je do PiP lub gdy PiP był już aktywny)
   if (!autoPiP && player.currentTrack?.type === 'video' && !player.pipActive) {
     player.clearTrack();
   }
@@ -164,7 +164,7 @@ onUnmounted(() => {
       @fullscreen="ctl.toggleFullscreen"
     />
 
-    <!-- video area -->
+    <!-- obszar wideo -->
     <div v-if="isVideo" class="relative flex-1 flex items-center justify-center overflow-hidden">
       <video
         :ref="vp.onVideoRef"
@@ -182,7 +182,7 @@ onUnmounted(() => {
         "
       />
 
-      <!-- skip left zone -->
+      <!-- strefa przewijania w lewo -->
       <div
         class="absolute left-0 top-0 bottom-0 w-[20%] z-10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
         @click="ctl.skip(-10)"
@@ -194,7 +194,7 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- skip right zone -->
+      <!-- strefa przewijania w prawo -->
       <div
         class="absolute right-0 top-0 bottom-0 w-[20%] z-10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
         @click="ctl.skip(10)"
@@ -214,7 +214,7 @@ onUnmounted(() => {
       />
     </div>
 
-    <!-- audio area -->
+    <!-- obszar audio -->
     <div
       v-else-if="isAudio"
       data-testid="player-audio-surface"

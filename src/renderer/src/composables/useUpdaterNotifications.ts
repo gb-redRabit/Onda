@@ -5,10 +5,10 @@ import type { IpcUpdaterEvent } from '@shared/types/ipc';
 let subscribed = false;
 let lastNotified = '';
 
-// Global listener for auto-update events: toasts about available / downloaded
-// updates regardless of the currently open view. Mounted once from App.vue.
-// Main replays the last event on `app:rendererReady`, so a late renderer mount
-// still gets the notification.
+// Globalny nasłuch zdarzeń auto-aktualizacji: toasty o dostępnych / pobranych
+// aktualizacjach niezależnie od aktualnie otwartego widoku. Montowany raz z App.vue.
+// Main odtwarza ostatnie zdarzenie przy `app:rendererReady`, więc późne zamontowanie renderera
+// wciąż otrzymuje powiadomienie.
 export function useUpdaterNotifications() {
   const { t } = useI18n();
   if (!subscribed) {

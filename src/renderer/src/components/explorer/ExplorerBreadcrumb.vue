@@ -17,8 +17,8 @@ const dropTargetIdx = ref(-2);
 const dragEnterCount = ref(0);
 
 /**
- * Breadcrumb segments, each carrying the path it navigates to. See buildSegments
- * for why the path is the key rather than the index.
+ * Segmenty breadcrumb, każdy niesie ścieżkę, do której nawiguje. Zobacz buildSegments,
+ * dlaczego kluczem jest ścieżka, a nie indeks.
  */
 const segments = computed(() => buildSegments(explorer.currentPath));
 

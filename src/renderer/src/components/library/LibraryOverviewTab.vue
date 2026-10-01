@@ -41,8 +41,8 @@ const likedTracks = computed(() => {
 
 const recentTracks = computed(() => library.recentTracks.slice(0, 6) as MediaFile[]);
 const mostPlayed = computed(() => library.mostPlayed.slice(0, 6) as MediaFile[]);
-// Partial selection of the 6 newest + reservoir sampling — avoids sorting /
-// copying the whole library on every change (plan 1.8).
+// Częściowy wybór 6 najnowszych + próbkowanie rezerwuarowe — unika sortowania /
+// kopiowania całej biblioteki przy każdej zmianie (plan 1.8).
 const OVERVIEW_N = 6;
 const newest = computed(() => {
   const arr = library.audioTracks;
@@ -67,9 +67,9 @@ function pickRandomTracks(): MediaFile[] {
   }
   return res;
 }
-// The pick is impure, so it must not live in a `computed` — that would reshuffle
-// the section on any dependency tick (including every play). Re-roll only when
-// the set of audio tracks actually changes.
+// Wybór jest nieczysty, więc nie może żyć w `computed` — to przetasowywałoby
+// sekcję przy każdym ticku zależności (w tym przy każdym odtwarzaniu). Losuj ponownie tylko gdy
+// zbiór utworów audio faktycznie się zmieni.
 const randomTracks = ref<MediaFile[]>(pickRandomTracks());
 watch(
   () => library.audioTracks.length,
@@ -137,7 +137,7 @@ const sections = computed(() => [
 </script>
 
 <template>
-  <!-- Search results mode -->
+  <!-- Tryb wyników wyszukiwania -->
   <div v-if="hasQuery" class="flex-1 flex flex-col min-h-0">
     <div class="flex items-center justify-between px-4 py-3 border-b border-base-300 shrink-0">
       <span class="text-xs text-base-content/50"
@@ -181,13 +181,13 @@ const sections = computed(() => [
     </button>
   </div>
 
-  <!-- Overview dashboard -->
+  <!-- Panel przeglądu -->
   <div v-else class="flex-1 overflow-auto">
     <div class="p-4 pb-2">
       <p class="text-xs text-base-content/50">{{ $t('library.overviewHint') }}</p>
     </div>
 
-    <!-- Liked hero when has likes -->
+    <!-- Hero polubionych, gdy są polubienia -->
     <div
       v-if="likedTracks.length > 0"
       class="mx-4 mb-4 p-4 rounded-box bg-base-100 border border-base-300 flex items-center gap-4"
@@ -269,7 +269,7 @@ const sections = computed(() => [
         </div>
       </section>
 
-      <!-- Stats footer minimal -->
+      <!-- Minimalna stopka statystyk -->
       <div
         class="flex items-center gap-2 text-[11px] text-base-content/40 pt-4 border-t border-base-300"
       >

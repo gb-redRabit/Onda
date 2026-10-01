@@ -134,7 +134,7 @@ useDialogFocus(panelRef, {
         {{ $t('saved.addRadio') }}
       </h2>
 
-      <!-- file import -->
+      <!-- import pliku -->
       <div class="space-y-2">
         <div
           class="flex items-center gap-2 rounded-box border border-dashed border-base-300 p-3 hover:border-primary/50 transition-colors"
@@ -192,7 +192,7 @@ useDialogFocus(panelRef, {
 
       <div class="h-px bg-base-300" />
 
-      <!-- direct URL -->
+      <!-- bezpośredni URL -->
       <div class="space-y-2">
         <div class="flex items-center gap-2 text-xs font-semibold text-base-content/70">
           <Link2 :size="14" />

@@ -7,11 +7,11 @@ const props = withDefaults(
   defineProps<{
     label: string;
     description?: string;
-    /** `<group>.<field>` — enables the "changed" dot and per-setting reset. */
+    /** `<group>.<field>` — włącza kropkę "zmienione" i reset pojedynczego ustawienia. */
     path?: string;
-    /** Anchor id used by settings search. */
+    /** Id kotwicy używane przez wyszukiwanie ustawień. */
     anchor?: string;
-    /** Wider control column for sliders/colour pickers. */
+    /** Szersza kolumna kontrolki dla suwaków/wybieraków kolorów. */
     wide?: boolean;
   }>(),
   { wide: false }

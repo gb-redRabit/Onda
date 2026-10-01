@@ -146,8 +146,8 @@ describe('usePlayerCover hover pipeline', () => {
       expect(cover.getCover('/d.mp3').type).toBeNull();
       expect(api.getCover).toHaveBeenCalledTimes(1);
 
-      // Fresh null is cached — no re-probe while waiting for the hover/scroll
-      // reaction from the user.
+      // Świeży null jest buforowany — brak ponownej sondy, gdy czekamy na reakcję
+      // hover/scroll od użytkownika.
       await cover.loadCover('/d.mp3');
       await vi.advanceTimersByTimeAsync(0);
       expect(api.getCover).toHaveBeenCalledTimes(1);

@@ -5,9 +5,9 @@ import { BarChart3, Settings2, LayoutGrid, Maximize2, Minimize2 } from '@lucide/
 import AudioLayoutSwitcher from './AudioLayoutSwitcher.vue';
 import { pluginIcon } from '@renderer/utils/audioView';
 
-// HUD overlay of the audio view (plan 6.3 follow-up): layout editor toggle,
-// layout switcher, plugin commands, viz mode + settings and fullscreen.
-// Visibility/state come in as props; every action is emitted.
+// Nakładka HUD widoku audio (kontynuacja planu 6.3): przełącznik edytora układu,
+// przełącznik układów, polecenia wtyczek, tryb wizualizacji + ustawienia i pełny ekran.
+// Widoczność/stan przychodzą jako propsy; każda akcja jest emitowana.
 
 export interface AudioHudCommand {
   id: string;
@@ -35,9 +35,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-// The toolbar rendered the raw mode id ("bars", "particles", "waveform") to the
-// user. A plugin may register a mode with any id, so unknown ids fall back to
-// the id itself rather than to an empty label.
+// Pasek narzędzi pokazywał użytkownikowi surowe id trybu ("bars", "particles", "waveform").
+// Wtyczka może zarejestrować tryb z dowolnym id, więc nieznane id spadają
+// do samego id, a nie do pustej etykiety.
 const VIZ_MODE_LABEL_KEYS: Record<string, string> = {
   bars: 'audioView.vizModeBars',
   particles: 'audioView.vizModeParticles',
@@ -68,7 +68,7 @@ const vizModeLabel = computed(() => {
       <AudioLayoutSwitcher />
     </div>
 
-    <!-- Plugin toolbar buttons -->
+    <!-- Przyciski paska narzędzi wtyczek -->
     <div v-if="props.commands.length" class="flex items-center gap-1 pointer-events-auto">
       <button
         v-for="cmd in props.commands"

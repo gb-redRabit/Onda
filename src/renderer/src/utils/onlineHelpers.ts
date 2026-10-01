@@ -9,12 +9,12 @@ import {
   buildSoundcloudProfileUrl
 } from '@shared/provider';
 
-// Pure helpers extracted from `stores/online.ts` (plan 2.7) — no store state,
-// so they live here and keep the store focused on orchestration.
+// Czyste helpery wydzielone z `stores/online.ts` (plan 2.7) — bez stanu store,
+// więc żyją tutaj i utrzymują store skoncentrowany na orkiestracji.
 
-// Canonical page URL of an online item — SC items carry their permalink,
-// YT items are rebuilt from the video id. Legacy saved SC entries have a
-// bare numeric id (no permalink); sc:stream:get resolves those directly.
+// Kanoniczny URL strony elementu online — elementy SC niosą swój permalink,
+// elementy YT są odbudowywane z id wideo. Starsze zapisane wpisy SC mają
+// gołe numeryczne id (bez permalinku); sc:stream:get rozwiązuje je bezpośrednio.
 export function streamTargetFor(item: { id: string; url?: string }): string {
   if (item.url) return item.url;
   if (/^\d+$/.test(item.id)) return item.id;
@@ -26,7 +26,7 @@ export function isSoundcloudItem(item: { id: string; url?: string }): boolean {
   return detectPlatform(streamTargetFor(item))?.platform === 'soundcloud';
 }
 
-/** Canonical in-app target for a known YouTube channel or SoundCloud profile. */
+/** Kanoniczny cel w aplikacji dla znanego kanału YouTube lub profilu SoundCloud. */
 export function channelPageUrl(item: { channelId?: string; url?: string }): string | null {
   const channelId = item.channelId?.trim();
   const platform = item.url ? detectPlatform(item.url)?.platform : null;
@@ -45,15 +45,15 @@ export function channelPageUrl(item: { channelId?: string; url?: string }): stri
   return null;
 }
 
-// IPC channel resolving the direct stream URL for a given target.
+// Kanał IPC rozwiązujący bezpośredni URL strumienia dla danego celu.
 export function streamChannelFor(target: string): 'yt:stream:get' | 'sc:stream:get' {
   if (/^\d+$/.test(target)) return 'sc:stream:get';
   return detectPlatform(target)?.platform === 'soundcloud' ? 'sc:stream:get' : 'yt:stream:get';
 }
 
-// Strips filesystem-hostile characters and caps the length for a download file
-// name. Re-exported under the historical name; the implementation now lives in
-// @shared/text so the main process uses the exact same logic.
+// Usuwa znaki wrogie systemowi plików i ogranicza długość nazwy pliku pobierania.
+// Re-eksportowane pod historyczną nazwą; implementacja żyje teraz w
+// @shared/text, więc proces główny używa dokładnie tej samej logiki.
 export { sanitizeFilename as sanitizeFileName } from '@shared/text';
 
 export function parseDurationText(text?: string): number | undefined {

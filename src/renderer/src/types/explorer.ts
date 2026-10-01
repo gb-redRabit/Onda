@@ -1,3 +1,3 @@
-// Moved to `../../../shared/types/explorer` so the main process no longer imports
-// renderer sources. Re-exported here to keep `@renderer/types/explorer` working.
+// Przeniesiono do `../../../shared/types/explorer`, żeby proces główny nie importował
+// już źródeł renderera. Re-eksportowane tutaj, aby `@renderer/types/explorer` dalej działał.
 export * from '../../../shared/types/explorer';

@@ -4,7 +4,7 @@ import type { IpcDownloadProfile, IpcDownloadConfig } from '@shared/types/ipc';
 const profiles = ref<IpcDownloadProfile[]>([]);
 let initialized = false;
 
-// Shared download-profile state (saved in `download-profiles.json` via IPC).
+// Współdzielony stan profili pobierania (zapisywany w `download-profiles.json` przez IPC).
 export function useDownloadProfiles() {
   async function load(): Promise<void> {
     try {
@@ -22,7 +22,7 @@ export function useDownloadProfiles() {
       )) as IpcDownloadProfile[] | null;
       if (list) profiles.value = list;
     } catch {
-      /* save failed */
+      /* zapis nie powiódł się */
     }
   }
 
@@ -30,7 +30,7 @@ export function useDownloadProfiles() {
     try {
       profiles.value = (await window.api.invoke('profiles:delete', id)) as IpcDownloadProfile[];
     } catch {
-      /* delete failed */
+      /* usuwanie nie powiodło się */
     }
   }
 

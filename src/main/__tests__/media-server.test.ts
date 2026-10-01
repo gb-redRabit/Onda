@@ -109,8 +109,8 @@ describe('media-server', () => {
   });
 
   it('HEAD leaks no metadata for files outside the allowed roots', async () => {
-    // Regression: the HEAD fast-path skipped the root check, so the token alone
-    // revealed existence/size/type of any local file.
+    // Regresja: fast-path HEAD pomijał sprawdzanie korzenia, więc sam token
+    // ujawniał istnienie/rozmiar/typ dowolnego lokalnego pliku.
     const outside = join(os.homedir(), 'onda-head-outside-test.txt');
     const res = await request(`/${server!.token}/?path=${encodeURIComponent(outside)}`, {
       method: 'HEAD'
@@ -246,13 +246,13 @@ describe('media-server', () => {
   });
 
   it('serves a path granted via addAllowedRoot (extra roots)', async () => {
-    // The granted dir must live OUTSIDE os.tmpdir() (an always-allowed root), and
-    // in a place path-policy accepts. dirname(os.tmpdir()) is not that: on macOS
-    // it is still under /var, and on a Windows runner with TEMP/TMP unset it is
-    // C:\WINDOWS — both protected, so the server correctly refuses them and the
-    // test fails for a reason unrelated to what it checks. homedir is the one
-    // location that is an ordinary writable folder on all three platforms, and it
-    // is outside tmpdir on all three, which is what this needs.
+    // Przyznany katalog musi znajdować się POZA os.tmpdir() (korzeniem zawsze dozwolonym) i
+    // w miejscu akceptowanym przez path-policy. dirname(os.tmpdir()) nim nie jest: na macOS
+    // wciąż jest pod /var, a na runnerze Windows bez ustawionych TEMP/TMP jest to
+    // C:\WINDOWS — oba chronione, więc serwer słusznie je odrzuca, a
+    // test zawodzi z powodu niezwiązanego z tym, co sprawdza. homedir to jedyne
+    // miejsce, które jest zwykłym zapisywalnym folderem na wszystkich trzech platformach, i
+    // znajduje się poza tmpdir na wszystkich trzech, czego to wymaga.
     const scratch = await makeGrantableScratch('ms-extra');
     const dir = scratch.dir;
     const file = join(dir, 'granted.mp3');
@@ -267,14 +267,14 @@ describe('media-server', () => {
     const granted = await request(`/${server!.token}/?path=${encodeURIComponent(file)}`);
     expect(granted.status).toBe(200);
     expect(granted.headers['content-type']).toBe('audio/mpeg');
-    // The server canonicalizes allowed roots (fs.realpath) before storing them
-    // (see media-server.ts), so compare against the canonical form to be
-    // portable across hosts (8.3 short names on Windows CI, /var symlinks).
+    // Serwer kanonizuje dozwolone korzenie (fs.realpath) przed ich zapisaniem
+    // (patrz media-server.ts), więc porównuj z formą kanoniczną, aby zachować
+    // przenośność między hostami (krótkie nazwy 8.3 w CI Windows, symlinki /var).
     expect(getExtraRoots()).toContain(await fs.realpath(dir));
   });
 
   it('keeps extra roots when library roots are replaced', async () => {
-    // Same reasoning as the extra-roots test above.
+    // To samo uzasadnienie co w powyższym teście dodatkowych korzeni.
     const scratch = await makeGrantableScratch('ms-keep');
     const dir = scratch.dir;
     const file = join(dir, 'kept.mp4');
@@ -347,15 +347,15 @@ describe('media-server path guard (plan 7.4)', () => {
   });
 
   it('rejects a symlink inside an allowed root that points outside it', async (ctx) => {
-    // Target must exist on every platform: /etc/hostname exists on Linux but
-    // NOT on macOS (the symlink would dangle and the server answers 500).
+    // Cel musi istnieć na każdej platformie: /etc/hostname istnieje na Linux, ale
+    // NIE na macOS (symlink byłby wiszący, a serwer odpowiada 500).
     const outside = process.platform === 'win32' ? 'C:/Windows/System32/notepad.exe' : '/etc/hosts';
     const linkDir = await fs.mkdtemp(join(os.tmpdir(), 'onda-ms-link-'));
     const linkPath = join(linkDir, 'escape.mp4');
     try {
       await fs.symlink(outside, linkPath, 'file');
     } catch {
-      // Windows without developer mode / symlink privileges.
+      // Windows bez trybu deweloperskiego / uprawnień do symlinków.
       ctx.skip();
       return;
     }

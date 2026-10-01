@@ -2,12 +2,12 @@ import { markRaw, type Component } from 'vue';
 import { Circle, Puzzle, Square, Triangle } from '@lucide/vue';
 import type { AudioLayoutElement } from '@renderer/types/settings';
 
-// Pure audio-view helpers extracted from `views/AudioView.vue` (plan 2.8):
-// element decoration resolution and plugin toolbar icons. Decorations come from
-// plugins (`element.decoration`); the host only renders the variants registered
-// in `PLUGIN_HOST_VARIANTS` (cover clip paths live in `AudioCover.vue`).
+// Czyste helpery widoku audio wydzielone z `views/AudioView.vue` (plan 2.8):
+// rozwiązywanie dekoracji elementu i ikony paska narzędzi wtyczek. Dekoracje pochodzą z
+// wtyczek (`element.decoration`); host renderuje tylko warianty zarejestrowane
+// w `PLUGIN_HOST_VARIANTS` (ścieżki clip cover żyją w `AudioCover.vue`).
 
-// A plugin may override the user's decoration at runtime.
+// Wtyczka może nadpisać dekorację użytkownika w czasie działania.
 export function resolveElementDecoration(
   el: AudioLayoutElement,
   liveDecorations: Record<string, string | undefined>

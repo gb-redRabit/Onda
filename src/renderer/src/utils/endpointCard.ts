@@ -5,7 +5,7 @@ import {
 } from '@renderer/components/sources/endpointDraft';
 import type { MediaSource } from '@renderer/types/sources';
 
-// Pure endpoint-preview builder extracted from
+// Czysty builder podglądu endpointu wydzielony z
 // `components/sources/EndpointLevelCard.vue` (plan 2.8).
 export function buildEndpointPreview(draft: DraftEndpoint, baseUrl: string): string {
   const endpoint = buildEndpointFromDraft(draft);

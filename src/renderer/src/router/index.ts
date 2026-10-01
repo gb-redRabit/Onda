@@ -102,7 +102,7 @@ router.beforeEach(async (to) => {
   const moduleId = ROUTE_MODULE_MAP[routeName];
   if (!moduleId) return true;
 
-  // Prevent recursion when switchTo triggers navigation (e.g. watch in App.vue)
+  // Zapobiegaj rekurencji, gdy switchTo wywołuje nawigację (np. watch w App.vue)
   if (_isSwitching) {
     _pendingSwitch = routeName;
     return false;
@@ -115,7 +115,7 @@ router.beforeEach(async (to) => {
     _isSwitching = false;
   }
 
-  // If another navigation occurred during switchTo, redirect
+  // Jeśli podczas switchTo nastąpiła inna nawigacja, przekieruj
   if (_pendingSwitch && _pendingSwitch !== routeName) {
     const target = _pendingSwitch;
     _pendingSwitch = null;

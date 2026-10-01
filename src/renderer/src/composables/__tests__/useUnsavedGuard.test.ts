@@ -2,15 +2,15 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { createApp, defineComponent, h, ref } from 'vue';
 import { useUnsavedGuard, type UnsavedGuardOptions } from '../useUnsavedGuard';
 
-// Three dialogs had their own copy of the double-click-to-close guard and they
-// had drifted: different reset windows, and one of them notified on the click
-// that closed the dialog while the others notified on both clicks. These tests
-// pin the shared behaviour and the options that record those differences.
+// Trzy dialogi miały własną kopię zabezpieczenia podwójnego kliknięcia i
+// rozjechały się: różne okna resetu, a jeden z nich powiadamiał przy kliknięciu
+// zamykającym dialog, gdy pozostałe powiadamiały przy obu kliknięciach. Te testy
+// przypinają współdzielone zachowanie i opcje, które zapisują te różnice.
 
 /**
- * The composable registers onBeforeUnmount, so it has to be called from inside
- * a component. createApp into jsdom stands in for a mount helper — the repo has
- * no @vue/test-utils and this is not worth a dependency.
+ * Composable rejestruje onBeforeUnmount, więc musi być wywoływany z wnętrza
+ * komponentu. createApp do jsdom zastępuje helper montujący — repo nie ma
+ * @vue/test-utils i to nie jest warte zależności.
  */
 function mountGuard(overrides: Partial<UnsavedGuardOptions> = {}) {
   const dirty = ref(false);
@@ -90,7 +90,7 @@ describe('useUnsavedGuard', () => {
     g.click();
     g.dirty.value = true;
     g.click();
-    // The second click closes, and it must be judged against the current value.
+    // Drugie kliknięcie zamyka i musi być ocenione względem bieżącej wartości.
     expect(g.onClose).toHaveBeenCalledTimes(1);
     expect(g.onDirtyHint).toHaveBeenCalledTimes(1);
     g.unmount();
@@ -102,7 +102,7 @@ describe('useUnsavedGuard', () => {
     g.click();
     vi.advanceTimersByTime(2100);
     g.click();
-    // 2100 ms is past the clean window but inside the dirty one.
+    // 2100 ms mija czyste okno, ale mieści się w brudnym.
     expect(g.onClose).toHaveBeenCalledTimes(1);
     g.unmount();
   });
@@ -129,7 +129,7 @@ describe('useUnsavedGuard', () => {
     g.click();
     expect(g.onClose).toHaveBeenCalledTimes(1);
 
-    // A reopen must not treat the first click as the second half of a pair.
+    // Ponowne otwarcie nie może potraktować pierwszego kliknięcia jako drugiej połowy pary.
     g.onCleanHint.mockClear();
     g.click();
     expect(g.onClose).toHaveBeenCalledTimes(1);
@@ -143,7 +143,7 @@ describe('useUnsavedGuard', () => {
     g.click();
     g.unmount();
     vi.advanceTimersByTime(5000);
-    // The reset that runs on unmount must not throw or fire a late close.
+    // Reset uruchamiany przy odmontowaniu nie może rzucić ani wywołać późnego zamknięcia.
     expect(g.onClose).not.toHaveBeenCalled();
   });
 });

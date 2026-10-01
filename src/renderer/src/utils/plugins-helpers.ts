@@ -1,9 +1,9 @@
 import type { MediaFile } from '@renderer/types/media';
 
-// Pure plugin UI helpers extracted from `stores/plugins.ts` (plan 2.8). The
-// store re-exports them so components and composables stay unchanged.
+// Czyste helpery UI wtyczek wydzielone z `stores/plugins.ts` (plan 2.8). Store
+// re-eksportuje je, więc komponenty i composables pozostają bez zmian.
 
-// Audio-view layout elements a plugin may decorate (`element.decoration`).
+// Elementy układu widoku audio, które wtyczka może dekorować (`element.decoration`).
 export const LAYOUT_ELEMENT_IDS = [
   'cover',
   'visualization',

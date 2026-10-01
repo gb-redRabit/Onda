@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { finalizeRequest } from '../generic-fetch';
 import type { MediaSource, SourceEndpoint } from '../../../shared/types/sources';
 
-// The source declares `https://api.example.com`; the endpoint path may be an
-// absolute URL to another host. Credentials resolved for the source must never
-// travel to that other host.
+// Źródło deklaruje `https://api.example.com`; ścieżka endpointu może być
+// absolutnym URL do innego hosta. Poświadczenia rozwiązane dla źródła nigdy nie mogą
+// trafić do tego innego hosta.
 
 const source = {
   id: 's1',

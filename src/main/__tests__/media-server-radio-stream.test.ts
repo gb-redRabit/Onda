@@ -8,13 +8,13 @@ import type { AddressInfo } from 'net';
 import type { NetworkTargetOptions } from '../ipc/network-target';
 import { createMediaServer, type MediaServer } from '../media/media-server';
 
-// A radio station is a user-added host, and `/stream` is reachable from the
-// renderer — so a station resolving to a private address turned the media
-// server into a request forwarder (loopback services, 169.254.169.254). The
-// proxy now resolves and pins station targets on every hop, like the generic
-// path already did.
+// Stacja radiowa to host dodany przez użytkownika, a `/stream` jest osiągalny z
+// renderera — więc stacja rozwiązująca się do prywatnego adresu zamieniała media
+// server w forwarder żądań (usługi loopback, 169.254.169.254). Proxy
+// teraz rozwiązuje i przypina cele stacji na każdym przeskoku, tak jak ogólna
+// ścieżka już to robiła.
 
-/** Stands in for DNS: which address each host in this test resolves to. */
+/** Zastępuje DNS: na jaki adres rozwiązuje się każdy host w tym teście. */
 const DNS: Record<string, string> = {
   'station.example': '93.184.216.34',
   'rebind.example': '127.0.0.1',
@@ -26,9 +26,9 @@ vi.mock('../ipc/network-target', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../ipc/network-target')>();
   return {
     ...actual,
-    // The stub VALIDATES the simulated DNS answer but PINS to the local
-    // upstream, so the proxy's pinned lookup still reaches the test server
-    // instead of a real Internet address.
+    // Stub WALIDUJE symulowaną odpowiedź DNS, ale PRZYPINA do lokalnego
+    // upstreamu, więc przypięte wyszukiwanie proxy wciąż trafia do serwera testowego
+    // zamiast do prawdziwego adresu internetowego.
     resolveNetworkTarget: vi.fn(async (rawUrl: string, options: NetworkTargetOptions = {}) => {
       const url = new URL(rawUrl);
       const host = url.hostname;
@@ -88,10 +88,10 @@ function requestStream(rawUrl: string): Promise<{ status: number; body: string }
 }
 
 /**
- * The radio store writes a real file, so it needs a real directory — and it
- * must not be the repository. `process.env.TEMP` exists on Windows only; on
- * Linux/macOS it is unset, and a `'.'` fallback dropped `onda-radio-test.json`
- * into the repo root, which then failed `prettier --check` on every CI run.
+ * Store radia zapisuje prawdziwy plik, więc potrzebuje prawdziwego katalogu — i
+ * nie może to być repozytorium. `process.env.TEMP` istnieje tylko na Windows; na
+ * Linux/macOS jest nieustawiony, a fallback `'.'` wrzucał `onda-radio-test.json`
+ * do korzenia repo, co potem psuło `prettier --check` przy każdym uruchomieniu CI.
  */
 let radioDir = '';
 
@@ -99,7 +99,7 @@ function radioFile(): string {
   return join(radioDir, 'radios.json');
 }
 
-/** Registers a station through the real store, so the proxy allowlist syncs. */
+/** Rejestruje stację przez prawdziwy store, więc allowlista proxy się synchronizuje. */
 async function addStation(host: string): Promise<void> {
   await radio.persistRadio(radioFile(), [
     { id: 'station-1', name: 'Test', url: `http://${host}:${upstreamPort}/audio`, addedAt: 1 }

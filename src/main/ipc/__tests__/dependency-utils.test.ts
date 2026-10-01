@@ -16,8 +16,8 @@ import {
 } from '../dependency/dependency-utils';
 import binaries from '../../../../binaries.json';
 
-// Version probes are mocked: paths registered in `brokenPaths` fail the probe,
-// every other candidate reports a working version.
+// Sondy wersji są zamockowane: ścieżki zarejestrowane w `brokenPaths` nie przechodzą sondy,
+// każdy inny kandydat zgłasza działającą wersję.
 const probeState = vi.hoisted(() => ({ brokenPaths: new Set<string>() }));
 
 vi.mock('../../utils/exec', () => ({

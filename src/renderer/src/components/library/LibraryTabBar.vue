@@ -2,11 +2,11 @@
 import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue';
 import type { LibraryTab, TabId } from '@renderer/utils/libraryTabs';
 
-// Tab bar with width-aware collapse (plan 6.3). Instead of letting labels get
-// cut off (ellipsis) when the window is too narrow, the tabs shrink gracefully:
-// full label + count -> icon + count -> icon only. Measured against the actual
-// available width, so it adapts to any window size, count lengths and
-// translated labels.
+// Pasek zakładek ze zwijaniem uwzględniającym szerokość (plan 6.3). Zamiast pozwalać etykietom
+// być ucinanym (wielokropek), gdy okno jest zbyt wąskie, zakładki kurczą się płynnie:
+// pełna etykieta + licznik -> ikona + licznik -> tylko ikona. Mierzone względem rzeczywistej
+// dostępnej szerokości, więc dostosowuje się do dowolnego rozmiaru okna, długości liczników i
+// przetłumaczonych etykiet.
 
 const props = defineProps<{
   tabs: readonly LibraryTab[];
@@ -36,13 +36,13 @@ function measureTabMode() {
   )
     return;
 
-  // Natural (un-truncated) widths of the current layout, so paddings and the
-  // actual inter-tab gap come straight from the applied CSS.
+  // Naturalne (nieucięte) szerokości bieżącego układu, więc paddingi i
+  // rzeczywisty odstęp między zakładkami pochodzą wprost z zastosowanego CSS.
   const contentW = buttons.map((b) => b.scrollWidth);
   const labelW = Array.from(labels, (l) => l.scrollWidth);
   const badgeW = Array.from(badges, (b) => b.offsetWidth);
   const gapPx = parseFloat(getComputedStyle(row).gap) || 4;
-  const extras = gapPx * (props.tabs.length - 1) + 8; // inter-tab gaps + row px-1 padding
+  const extras = gapPx * (props.tabs.length - 1) + 8; // odstępy między zakładkami + padding px-1 wiersza
   const weight = props.tabs.map((tabItem) => (tabItem.id === props.modelValue ? 1.2 : 1));
   const fullNeed = props.tabs.reduce((acc, _t, i) => acc + weight[i] * contentW[i], 0) + extras;
   const compactNeed = fullNeed - props.tabs.reduce((acc, _t, i) => acc + weight[i] * labelW[i], 0);
@@ -116,10 +116,10 @@ onUnmounted(() => tabResizeObserver?.disconnect());
 </template>
 
 <style scoped>
-/* Tab collapse: 'compact' hides the text label, 'icon' hides the count too.
-   Labels are never ellipsis-cut — they are removed when tight. Visibility is
-   used (not display) so the layout stays stable and the width measurement
-   never oscillates. */
+/* Zwijanie zakładek: 'compact' ukrywa etykietę tekstową, 'icon' ukrywa też licznik.
+   Etykiety nigdy nie są ucinane wielokropkiem — są usuwane, gdy brakuje miejsca. Używana jest
+   visibility (nie display), żeby układ pozostał stabilny, a pomiar szerokości
+   nigdy nie oscylował. */
 [data-mode='compact'] [data-tab-label],
 [data-mode='icon'] [data-tab-label],
 [data-mode='icon'] [data-tab-count] {

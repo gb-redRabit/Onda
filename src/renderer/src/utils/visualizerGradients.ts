@@ -1,4 +1,4 @@
-// Gradient caches (rebuilt only when the canvas size or colors change).
+// Cache gradientów (odbudowywane tylko, gdy zmieni się rozmiar canvas lub kolory).
 let barGrad: CanvasGradient | null = null;
 let barGradH = 0;
 let barGradPrim = '';

@@ -21,7 +21,7 @@ const props = withDefaults(
     state?: DownloadState;
     layout?: 'card' | 'grid' | 'list';
     hideQuickActions?: boolean;
-    /** Tiny YT/SC corner tag — used on merged (multi-platform) result grids. */
+    /** Malutka plakietka narożna YT/SC — używana na scalonych (wieloplatformowych) siatkach wyników. */
     platformTag?: string;
   }>(),
   { layout: 'card', state: null }
@@ -38,8 +38,8 @@ const saved = useSavedStore();
 const ui = useUIStore();
 const { t } = useI18n();
 
-// SoundCloud items have no YouTube embed — the bookmark (saved-streams is
-// YT-only) and the embed-expansion are hidden for them.
+// Elementy SoundCloud nie mają embedu YouTube — zakładka (saved-streams jest
+// tylko dla YT) i rozwijanie embedu są dla nich ukryte.
 const isSc = computed(
   () => detectPlatform((props.video as YouTubeVideo).url || '')?.platform === 'soundcloud'
 );
@@ -96,7 +96,7 @@ function onExpand(e?: MouseEvent) {
       class="absolute inset-0 w-full h-full object-cover"
     />
 
-    <!-- Downloaded badge -->
+    <!-- Plakietka pobranego -->
     <div
       v-if="downloaded && coverStatus !== 'fetching'"
       class="absolute top-1.5 left-1.5 flex items-center gap-0.5 px-1.5 py-0.5 rounded-field bg-success text-success-content text-[10px] font-medium"
@@ -104,7 +104,7 @@ function onExpand(e?: MouseEvent) {
       <Check :size="10" />
     </div>
 
-    <!-- Platform tag (merged multi-platform grids) -->
+    <!-- Tag platformy (scalone wieloplatformowe siatki) -->
     <span
       v-if="platformTag"
       class="absolute top-1.5 right-1.5 px-1 py-0.5 rounded-field bg-neutral/70 text-[9px] font-bold pointer-events-none"
@@ -113,7 +113,7 @@ function onExpand(e?: MouseEvent) {
       {{ platformTag }}
     </span>
 
-    <!-- Cover fetching badge -->
+    <!-- Plakietka pobierania okładki -->
     <div
       v-if="coverStatus === 'fetching'"
       class="absolute top-1.5 left-1.5 flex items-center gap-0.5 px-1.5 py-0.5 rounded-field bg-warning text-warning-content text-[10px] font-medium"
@@ -121,7 +121,7 @@ function onExpand(e?: MouseEvent) {
       <RefreshCw :size="10" class="animate-spin" />
     </div>
 
-    <!-- Center actions: stream and embed-on-YouTube side by side -->
+    <!-- Akcje środkowe: strumień i embed na YouTube obok siebie -->
     <div
       class="absolute inset-0 z-10 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/30 transition-colors select-none pointer-events-none"
       :class="isPlayable ? '' : 'opacity-50'"
@@ -151,8 +151,8 @@ function onExpand(e?: MouseEvent) {
       </div>
     </div>
 
-    <!-- Download action overlay (card only; hidden for contexts like the
-         Webcast playlist where save/download are redundant) -->
+    <!-- Nakładka akcji pobierania (tylko karta; ukryta w kontekstach takich jak
+         playlista Webcast, gdzie zapis/pobieranie są zbędne) -->
     <div
       v-if="layout !== 'list' && !hideQuickActions"
       class="online-card-actions absolute bottom-1.5 left-1.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1 pointer-events-none group-hover:pointer-events-auto"
@@ -182,9 +182,9 @@ function onExpand(e?: MouseEvent) {
       </OnlineIconButton>
     </div>
 
-    <!-- Bottom-right: duration + full-control download (opens the config dialog).
-         Always visible so the per-file options are discoverable, unlike the
-         hover-only quick actions. -->
+    <!-- Prawy dolny róg: czas trwania + pobieranie z pełną kontrolą (otwiera dialog konfiguracji).
+         Zawsze widoczne, aby opcje per plik były odkrywalne, w przeciwieństwie do
+         szybkich akcji widocznych tylko przy najechaniu. -->
     <div class="online-card-actions absolute bottom-1.5 right-1.5 z-20 flex items-center gap-1">
       <div
         v-if="video.duration"
@@ -207,8 +207,8 @@ function onExpand(e?: MouseEvent) {
 </template>
 
 <style scoped>
-/* The action buttons scale with the window instead of staying pixel-fixed, so
-   they stay proportionate on large displays and don't dominate small cards. */
+/* Przyciski akcji skalują się z oknem, zamiast pozostać stałe w pikselach, więc
+   zachowują proporcje na dużych ekranach i nie dominują małych kart. */
 .online-card-actions {
   font-size: clamp(11px, 0.6vw + 7px, 16px);
 }

@@ -2,15 +2,15 @@
 import { type Component } from 'vue';
 
 /**
- * Shared empty-state block.
+ * Współdzielony blok pustego stanu.
  *
- * Two of these existed — one here, one in components/online — with the same
- * shape (icon, title, description, slot) and different styling. The online copy
- * is now the `plain` variant: no dashed frame, a larger icon and more vertical
- * breathing room, which is what the subscription and search panels want.
+ * Istniały dwa takie — jeden tutaj, jeden w components/online — o tym samym
+ * kształcie (ikona, tytuł, opis, slot) i różnym stylowaniu. Kopia z online jest
+ * teraz wariantem `plain`: bez przerywanej ramki, większa ikona i więcej
+ * pionowego luzu, czego chcą panele subskrypcji i wyszukiwania.
  *
- * `data-testid` is forwarded through $attrs to the root element, so callers can
- * target a specific empty state in E2E tests.
+ * `data-testid` jest przekazywany przez $attrs do elementu głównego, więc
+ * wywołujący mogą wskazać konkretny pusty stan w testach E2E.
  */
 withDefaults(
   defineProps<{
@@ -19,8 +19,8 @@ withDefaults(
     icon?: Component;
     compact?: boolean;
     /**
-     * `panel` is a dashed, bordered box that reads as an inset placeholder.
-     * `plain` is borderless and roomier, for a whole-panel "nothing here" state.
+     * `panel` to przerywane, obramowane pudełko czytane jako wbudowany placeholder.
+     * `plain` jest bezramkowe i przestronniejsze, dla stanu "nic tu nie ma" na całym panelu.
      */
     variant?: 'panel' | 'plain';
   }>(),

@@ -20,7 +20,7 @@ const props = defineProps<{
   thumbnail?: string;
   channelTitle?: string;
   playlistTitle?: string;
-  /** SoundCloud downloads are fixed MP3s — most sections do not apply. */
+  /** Pobrania SoundCloud to stałe MP3 — większość sekcji nie ma zastosowania. */
   platform?: 'youtube' | 'soundcloud' | 'generic';
 }>();
 
@@ -130,7 +130,7 @@ function confirm() {
     @close="onOverlayClick"
     @escape="emit('cancel')"
   >
-        <!-- Header -->
+        <!-- Nagłówek -->
         <div class="flex items-center gap-3 px-5 py-4 border-b border-base-300 shrink-0">
           <div
             v-if="props.thumbnail"
@@ -162,15 +162,15 @@ function confirm() {
           </button>
         </div>
 
-        <!-- Body -->
+        <!-- Treść -->
         <div class="flex-1 overflow-auto px-5 py-5">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <!-- Left: preview -->
+            <!-- Lewa: podgląd -->
             <DownloadPreviewCard :thumbnail="props.thumbnail" :title="props.title" />
 
-            <!-- Right: settings -->
+            <!-- Prawa: ustawienia -->
             <div class="space-y-5">
-              <!-- Profiles -->
+              <!-- Profile -->
               <DownloadProfilesSection
                 v-model:profile-name="profileName"
                 :is-sc="isSc"
@@ -196,7 +196,7 @@ function confirm() {
                 :is-sc="isSc"
               />
 
-              <!-- Cover (video: thumbnail/none) + Cover (audio) -->
+              <!-- Okładka (wideo: miniatura/brak) + Okładka (audio) -->
               <CoverOptionsFields
                 v-model:cover-type="coverType"
                 v-model:custom-path="customPath"
@@ -208,14 +208,14 @@ function confirm() {
                 :kind="kind"
               />
 
-              <!-- Metadata -->
+              <!-- Metadane -->
               <MetadataFieldsSection
                 v-model:artist="artist"
                 v-model:album="album"
                 v-model:year="year"
               />
 
-              <!-- Subtitles -->
+              <!-- Napisy -->
               <SubscribeSubtitlesSection
                 v-model:subs-enabled="subsEnabled"
                 v-model:subs-langs="subsLangs"
@@ -225,7 +225,7 @@ function confirm() {
                 :is-sc="isSc"
               />
 
-              <!-- Output folder -->
+              <!-- Folder wyjściowy -->
               <DownloadOutputSection
                 v-model:folder-mode="folderMode"
                 v-model:output-dir="outputDir"
@@ -238,7 +238,7 @@ function confirm() {
           </div>
         </div>
 
-        <!-- Footer -->
+        <!-- Stopka -->
         <div
           class="flex items-center justify-end gap-2 px-5 py-4 border-t border-base-300 shrink-0"
         >

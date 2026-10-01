@@ -7,8 +7,8 @@ export interface ResolveMoreResponse {
   totalItems?: number | null;
 }
 
-// A playlist that fits on the first page and reports no count is already fully
-// loaded — the items length is its exact total.
+// Playlista, która mieści się na pierwszej stronie i nie zgłasza liczby, jest już
+// w pełni wczytana — długość elementów to jej dokładna suma.
 export function normalizeResolvedTotal(
   result: YouTubeResolveResult | null
 ): YouTubeResolveResult | null {

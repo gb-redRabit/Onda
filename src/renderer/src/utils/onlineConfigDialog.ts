@@ -37,7 +37,7 @@ export function configDialogPlaylistTitle(
   return resolved?.meta.channelTitle || '';
 }
 
-// Platform of the item(s) being configured — SC shows a reduced dialog.
+// Platforma konfigurowanego elementu (elementów) — SC pokazuje zredukowany dialog.
 export function configDialogPlatform(
   target: OnlineConfigTarget,
   resolved: YouTubeResolveResult | null,

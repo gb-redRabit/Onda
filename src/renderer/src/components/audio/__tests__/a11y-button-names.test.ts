@@ -2,11 +2,11 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// Every icon-only control in the audio view used to be an unlabelled <button>:
-// the transport row, mute, the equalizer and queue toggles. A screen reader
-// announced them all as just "button", so the transport was unusable without
-// sight of the icons. Buttons with visible text get their name from content and
-// are exempt — this only checks the ones that have nothing but an icon.
+// Każda kontrolka tylko z ikoną w widoku audio była kiedyś <button> bez etykiety:
+// wiersz transportu, mute, przełączniki korektora i kolejki. Czytnik ekranu
+// ogłaszał je wszystkie jako samo "button", więc transport był bezużyteczny bez
+// widoku ikon. Przyciski z widocznym tekstem biorą nazwę z treści i
+// są wyłączone — to sprawdza tylko te, które nie mają nic poza ikoną.
 
 const AUDIO_DIR = join(process.cwd(), 'src/renderer/src/components/audio');
 
@@ -25,10 +25,10 @@ function readButtons(file: string): ButtonOpeningTag[] {
   for (let match = openTag.exec(source); match !== null; match = openTag.exec(source)) {
     const tag = match[0];
     const line = source.slice(0, match.index).split('\n').length;
-    // Content up to the matching </button>, ignoring nested tags. Any mustache
-    // counts as rendered text — what a binding produces is a runtime question,
-    // not a static-source defect, and the transport buttons this guards contain
-    // nothing but an icon component.
+    // Treść do pasującego </button>, ignorując zagnieżdżone tagi. Każdy mustache
+    // liczy się jako wyrenderowany tekst — to, co produkuje binding, jest pytaniem o runtime,
+    // a nie defektem statycznego źródła, a pilnowane tu przyciski transportu zawierają
+    // tylko komponent ikony.
     const close = source.indexOf('</button>', match.index);
     const body = close === -1 ? '' : source.slice(match.index + tag.length, close);
     const textContent = body

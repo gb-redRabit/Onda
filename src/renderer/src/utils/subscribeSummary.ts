@@ -1,4 +1,4 @@
-// Pure subscription-prefs summary extracted from
+// Czyste podsumowanie preferencji subskrypcji wydzielone z
 // `components/online/SubscribeConfigDialog.vue` (plan 2.8).
 
 export interface SummaryItem {

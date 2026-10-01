@@ -1,6 +1,6 @@
-// One shared IntersectionObserver per rootMargin for the whole app. Lists that
-// are not virtualized (online results, channel videos) would otherwise create
-// one observer per card and fire hundreds of callbacks at once (plan 1.6).
+// Jeden współdzielony IntersectionObserver per rootMargin dla całej aplikacji. Listy,
+// które nie są wirtualizowane (wyniki online, filmy kanału), tworzyłyby w przeciwnym razie
+// jeden observer per karta i odpalały setki callbacków naraz (plan 1.6).
 const observers = new Map<string, IntersectionObserver>();
 const handlers = new WeakMap<Element, (isIntersecting: boolean) => void>();
 
@@ -22,8 +22,8 @@ function getObserver(rootMargin: string): IntersectionObserver | null {
 }
 
 /**
- * Observe `el` with the shared observer; `cb` runs on every intersection change.
- * Returns a cleanup function that unobserves the element.
+ * Obserwuj `el` współdzielonym observerem; `cb` uruchamia się przy każdej zmianie przecięcia.
+ * Zwraca funkcję sprzątającą, która przestaje obserwować element.
  */
 export function observeIntersection(
   el: Element,

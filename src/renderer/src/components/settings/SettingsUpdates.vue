@@ -13,8 +13,8 @@ import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
 const settings = useSettingsStore();
 const { t } = useI18n();
 
-// Segmented buttons instead of a dropdown: four short options are faster to scan
-// and pick, and match the other choice rows in Settings.
+// Przyciski segmentowe zamiast listy rozwijanej: cztery krótkie opcje szybciej się
+// skanuje i wybiera, i pasują do innych wierszy wyboru w Ustawieniach.
 const intervalOptions = [
   { id: 'startup' as const, labelKey: 'settings.onStartup' },
   { id: 'hourly' as const, labelKey: 'settings.hourly' },

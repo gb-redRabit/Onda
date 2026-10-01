@@ -25,8 +25,8 @@ function tabsOf(sectionId: string) {
   return props.tabs.filter((tab) => tab.section === sectionId);
 }
 
-// In the collapsed (narrow) variant only section icons are visible, so highlight
-// the section that owns the open tab.
+// W zwiniętym (wąskim) wariancie widoczne są tylko ikony sekcji, więc podświetl
+// sekcję, do której należy otwarta zakładka.
 const activeSectionId = computed(
   () => props.activeSection ?? props.tabs.find((tab) => tab.id === props.activeTab)?.section ?? null
 );

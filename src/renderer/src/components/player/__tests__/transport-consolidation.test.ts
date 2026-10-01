@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-// Guards the transport consolidation: the audio bar and the video controls must
-// render the one shared TransportButtons, and that component owns the transport
-// accessible names (so an ARIA fix lands in one place).
+// Pilnuje konsolidacji transportu: pasek audio i kontrolki wideo muszą
+// renderować jeden współdzielony TransportButtons, a ten komponent posiada
+// dostępne nazwy transportu (żeby poprawka ARIA trafiała w jedno miejsce).
 
 const dir = join(process.cwd(), 'src/renderer/src/components');
 const read = (p: string) => readFileSync(join(dir, p), 'utf8');

@@ -65,7 +65,7 @@ describe('remote-image redirects', () => {
     );
 
     expect(res).toBeNull();
-    // Only the first (allowlisted) hop was requested.
+    // Zażądano tylko pierwszego (z allowlisty) przeskoku.
     expect(calls.map((c) => c.url)).toEqual(['https://cdn.example.com/a.png']);
     expect(calls[0].url).toBe('https://cdn.example.com/a.png');
   });

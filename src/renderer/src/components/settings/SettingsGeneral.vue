@@ -23,7 +23,7 @@ async function setLocale(loc: string) {
   try {
     localStorage.setItem('onda-locale', loc);
   } catch {
-    /* noop */
+    /* brak operacji */
   }
 }
 
@@ -32,7 +32,7 @@ onMounted(async () => {
     const s = await window.api?.getAutoLaunch();
     if (s) settings.updateGeneral({ autoLaunch: s.enabled, startMinimized: s.hidden });
   } catch {
-    /* auto-launch status unavailable */
+    /* status autostartu niedostępny */
   }
 });
 
@@ -56,7 +56,7 @@ async function setCloseToTray(value: boolean): Promise<void> {
   try {
     await window.api?.invoke('app:setCloseToTray', value);
   } catch {
-    /* main sync failed — debounced persist will sync */
+    /* synchronizacja z main nie powiodła się — odroczony zapis zsynchronizuje */
   }
 }
 </script>

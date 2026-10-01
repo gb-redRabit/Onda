@@ -18,8 +18,8 @@ export function useLibraryFilters(library: ReturnType<typeof useLibraryStore>) {
     { immediate: true }
   );
 
-  // Normalize searchable metadata only when the library collection changes,
-  // rather than rebuilding lowercase strings on every keystroke.
+  // Normalizuj metadane przeszukiwalne tylko przy zmianie kolekcji biblioteki,
+  // zamiast przebudowywać ciągi lowercase przy każdym wciśnięciu klawisza.
   const audioIndex = computed(() =>
     buildSearchIndex(library.audioTracks, (track) => searchableTerms(track))
   );
@@ -72,10 +72,10 @@ export function useLibraryFilters(library: ReturnType<typeof useLibraryStore>) {
     return filterSearchIndex(allPlayableIndex.value, normalizedQuery.value);
   });
 
-  // Covers are loaded lazily by MediaCover's IntersectionObserver — only rows
-  // that are actually rendered (visible + overscan) trigger loadCover. No
-  // eager preload here, otherwise up to N IPC cover requests fire for rows the
-  // user never scrolls to.
+  // Okładki są ładowane leniwie przez IntersectionObserver w MediaCover — tylko wiersze
+  // faktycznie renderowane (widoczne + overscan) wyzwalają loadCover. Bez
+  // wczesnego preloadu tutaj, inaczej do N żądań IPC o okładki odpaliłoby się dla wierszy,
+  // do których użytkownik nigdy nie przewinie.
 
   onUnmounted(() => {
     if (queryTimer) clearTimeout(queryTimer);

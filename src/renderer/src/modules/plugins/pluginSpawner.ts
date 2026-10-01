@@ -26,9 +26,9 @@ export interface PluginSpawner {
 }
 
 /**
- * Worker lifecycle for plugins: resolves manifest/entry via IPC, creates the
- * worker, wires its command/log/api callbacks and tears it down again. Owned by
- * `stores/plugins.ts`, which supplies the reactive refs and UI callbacks.
+ * Cykl życia workera dla pluginów: rozwiązuje manifest/entry przez IPC, tworzy
+ * workera, podłącza jego callbacki komend/logów/api i ponownie go rozbiera. Należy do
+ * `stores/plugins.ts`, który dostarcza reaktywne refy i callbacki UI.
  */
 export function createPluginSpawner(deps: PluginSpawnerDeps): PluginSpawner {
   const {
@@ -141,7 +141,7 @@ export function createPluginSpawner(deps: PluginSpawnerDeps): PluginSpawner {
       try {
         handle.terminate();
       } catch {
-        /* ignore */
+        /* pomiń */
       }
     }
     workers.value = {};

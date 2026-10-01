@@ -32,7 +32,7 @@ const props = withDefaults(
     showDescription?: boolean;
     showViews?: boolean;
     hideQuickActions?: boolean;
-    /** Tiny YT/SC corner tag — used on merged (multi-platform) result grids. */
+    /** Malutka plakietka narożna YT/SC — używana na scalonych (wieloplatformowych) siatkach wyników. */
     platformTag?: string;
   }>(),
   {
@@ -59,8 +59,8 @@ function defaultWatchUrl(id: string): string {
     return props.watchUrl || buildYouTubeWatchUrl(id);
 }
 
-// SoundCloud items have no YouTube embed — the bookmark (saved-streams is
-// YT-only) and the embed-expansion are hidden for them.
+// Elementy SoundCloud nie mają embedu YouTube — zakładka (saved-streams jest
+// tylko dla YT) i rozwijanie embedu są dla nich ukryte.
 const isSc = computed(
   () => detectPlatform((props.video as YouTubeVideo).url || '')?.platform === 'soundcloud'
 );
@@ -94,7 +94,7 @@ function onToggleSelect(e: MouseEvent) {
   emit('toggleSelect', props.video.id);
 }
 
-// Primary list action: stream playback for SC (no embed), embed-expansion for YT.
+// Główna akcja listy: odtwarzanie strumienia dla SC (bez embedu), rozwijanie embedu dla YT.
 function onListPlay(e: MouseEvent) {
   e.stopPropagation();
   if (isSc.value || isGeneric.value) {
@@ -112,9 +112,9 @@ const rootEl = ref<HTMLElement | null>(null);
 let stopObserve: (() => void) | null = null;
 let hoverTimer: number | undefined;
 
-// Prefetch the stream URL (yt-dlp resolve + proxy warm-up) as soon as the card
-// is about to become visible. Uses the app-wide shared observer — a playlist of
-// hundreds of cards would otherwise create one IntersectionObserver per card.
+// Prefetchuj URL strumienia (rozwiązywanie yt-dlp + rozgrzewanie proxy), gdy tylko
+// karta ma stać się widoczna. Używa współdzielonego obserwatora aplikacji — playlista
+// setek kart w przeciwnym razie tworzyłaby jeden IntersectionObserver na kartę.
 onMounted(() => {
   if (!isPlayable.value || !rootEl.value) return;
   stopObserve = observeIntersection(
@@ -123,17 +123,17 @@ onMounted(() => {
       if (!isIntersecting) return;
       stopObserve?.();
       stopObserve = null;
-      // Small delay so fast scrolling through a grid doesn't fire all resolves
-      // at once (prefetchStream caps in-flight requests too).
+      // Niewielkie opóźnienie, aby szybkie przewijanie siatki nie uruchamiało
+      // wszystkich rozwiązań naraz (prefetchStream też ogranicza żądania w locie).
       setTimeout(() => useOnlineStore().prefetchStream(props.video), 600);
     },
     '300px'
   );
 });
 
-// Hover = intent: prefetch with a short debounce so a quick mouse pass-over
-// does not fire a resolve. prefetchStream dedupes per video and caps in-flight
-// requests, so repeated hovers cost nothing.
+// Hover = intencja: prefetch z krótkim debounce, aby szybkie przesunięcie myszą
+// nie uruchamiało rozwiązania. prefetchStream deduplikuje per wideo i ogranicza
+// żądania w locie, więc powtarzane najechania nic nie kosztują.
 function onMouseEnter() {
   if (!isPlayable.value) return;
   window.clearTimeout(hoverTimer);
@@ -169,7 +169,7 @@ onBeforeUnmount(() => {
     />
 
     <template v-else>
-      <!-- Checkbox for multiselect -->
+      <!-- Checkbox do wielokrotnego wyboru -->
       <button
         v-if="selectable"
         type="button"
@@ -184,7 +184,7 @@ onBeforeUnmount(() => {
         <Check v-if="selected" :size="12" />
       </button>
 
-      <!-- Thumbnail -->
+      <!-- Miniatura -->
       <OnlineMediaThumb
         :video="video"
         :layout="layout"
@@ -200,7 +200,7 @@ onBeforeUnmount(() => {
         @options="emit('options', $event)"
       />
 
-      <!-- Info -->
+      <!-- Informacje -->
       <div :class="layout === 'list' ? 'flex-1 min-w-0' : 'mt-2'">
         <h3 class="text-sm font-semibold text-base-content line-clamp-2">{{ video.title }}</h3>
         <div class="text-xs text-base-content/70 mt-0.5">
@@ -225,7 +225,7 @@ onBeforeUnmount(() => {
         </p>
       </div>
 
-      <!-- List actions -->
+      <!-- Akcje listy -->
       <div
         v-if="layout === 'list'"
         class="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"

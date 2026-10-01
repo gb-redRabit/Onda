@@ -11,8 +11,8 @@ import { logger } from '@shared/logger';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { streamTargetFor, isSoundcloudItem, sanitizeFileName } from './onlineHelpers';
 
-// Job building extracted from `stores/online.ts` (plan 2.7). Only depends on the
-// (global) settings store + the pure online helpers.
+// Budowanie zadań wydzielone z `stores/online.ts` (plan 2.7). Zależy tylko od
+// (globalnego) store ustawień + czystych helperów online.
 
 export type VideoSource = YouTubeVideo | YouTubeResolvedItem;
 
@@ -73,12 +73,12 @@ export function buildJob(
   const audioQuality =
     extra?.audioQuality ?? prefs?.audioQuality ?? settings.download.defaultAudioQuality;
   const videoContainer = extra?.videoContainer ?? settings.download.defaultVideoContainer ?? 'mp4';
-  // Canonical page URL: SC items carry their permalink (ids cannot be
-  // rebuilt into a URL); YT falls back to the classic watch URL.
+  // Kanoniczny URL strony: elementy SC niosą swój permalink (id nie da się
+  // odbudować do URL); YT wycofuje się do klasycznego URL watch.
   const jobUrl = streamTargetFor(video);
   const scJob = isSoundcloudItem(video);
-  // SoundCloud downloads bypass yt-dlp entirely: the manager resolves a
-  // fresh progressive-MP3 URL at attempt start. No covers/subs/tag pipeline.
+  // Pobierania SoundCloud całkowicie omijają yt-dlp: manager rozwiązuje świeży
+  // progresywny URL MP3 na starcie próby. Bez pipeline'u okładek/napisów/tagów.
   if (scJob) {
     return {
       url: jobUrl,
@@ -105,9 +105,9 @@ export function buildJob(
       }
     };
   }
-  // Audio covers follow the global default (thumbnail/frame/clip/none); video
-  // downloads always embed the YouTube thumbnail by default. An explicit
-  // cover (including `none`) always wins over the defaults.
+  // Okładki audio podążają za globalną domyślną (thumbnail/frame/clip/none);
+  // pobierania wideo domyślnie zawsze osadzają miniaturę YouTube. Jawna
+  // okładka (w tym `none`) zawsze wygrywa z domyślnymi.
   const cover =
     extra?.cover !== undefined || prefs?.cover !== undefined
       ? (extra?.cover ?? prefs?.cover)

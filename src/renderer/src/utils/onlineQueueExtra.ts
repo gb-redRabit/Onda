@@ -20,8 +20,8 @@ export interface QueueConfigPayload {
   trimEnd?: number;
 }
 
-// Builds the per-job extra payload from the config dialog, including only the
-// fields the user actually set (empty values are dropped).
+// Buduje dodatkowy payload per zadanie z dialogu konfiguracji, uwzględniając tylko
+// pola faktycznie ustawione przez użytkownika (puste wartości są pomijane).
 export function buildQueueExtra(payload: QueueConfigPayload) {
   return {
     ...(payload.kind ? { kind: payload.kind } : {}),

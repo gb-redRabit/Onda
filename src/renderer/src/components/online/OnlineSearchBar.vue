@@ -7,7 +7,7 @@ import { detectChannelPrefix, detectPlatform, isHttpUrl } from '@shared/platform
 import { AUDIO_FORMATS, VIDEO_QUALITIES, VIDEO_CONTAINERS } from '@shared/constants';
 import { readSelect } from '@renderer/utils/selectOptions';
 
-/** Same list the options are rendered from, so the two cannot drift. */
+/** Ta sama lista, z której renderowane są opcje, więc obie nie mogą się rozjechać. */
 const AUDIO_QUALITIES = ['best', 'high', 'medium', 'low'] as const;
 import OnlineButton from './OnlineButton.vue';
 import OnlineIconButton from './OnlineIconButton.vue';
@@ -29,8 +29,8 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const settings = useSettingsStore();
 
-// What the current input resolves to: an @/$ channel prefix or a platform
-// link. Drives the left badge inside the field.
+// Na co rozwiązuje się bieżące wejście: prefiks kanału @/$ lub link do
+// platformy. Steruje lewą plakietką wewnątrz pola.
 const detection = computed<{ label: string; kind: 'yt' | 'sc' | 'web' } | null>(() => {
   const value = props.modelValue.trim();
   if (!value) return null;
@@ -81,8 +81,8 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
   <div class="flex flex-col gap-3">
     <div class="flex items-center gap-2">
       <div class="relative flex-1 min-w-0">
-        <!-- Left: platform indicator — YT/SC (colored) when a link or @/$
-             prefix is recognized, globe for plain text. -->
+        <!-- Lewa: wskaźnik platformy — YT/SC (kolorowy), gdy rozpoznano link lub
+             prefiks @/$, globus dla zwykłego tekstu. -->
         <span
           v-if="detection"
           data-testid="online-detect-badge"
@@ -150,7 +150,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
       </OnlineIconButton>
     </div>
 
-    <!-- Quick download settings popover -->
+    <!-- Popover szybkich ustawień pobierania -->
     <Transition
       enter-active-class="transition-all duration-200 ease-out"
       enter-from-class="opacity-0 -translate-y-1"

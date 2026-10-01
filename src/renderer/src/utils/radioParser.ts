@@ -1,5 +1,5 @@
-// Parsers for internet radio station files (.pls / .m3u / .m3u8 / .xspf) and
-// direct stream URLs. Returns normalized { name, url } entries.
+// Parsery plików stacji radia internetowego (.pls / .m3u / .m3u8 / .xspf) oraz
+// bezpośrednich URL strumieni. Zwraca znormalizowane wpisy { name, url }.
 export interface ParsedRadioStation {
   name: string;
   url: string;
@@ -25,9 +25,9 @@ function cleanUrl(raw: string): string {
   }
 }
 
-// PLS: ini-like [playlist] section with File1=/Title1= pairs (SHOUTcast,
-// Icecast "listen.pls" files). Also tolerates unnumbered File=/Title= and a
-// bare File line without [playlist].
+// PLS: sekcja [playlist] w stylu ini z parami File1=/Title1= (pliki SHOUTcast,
+// Icecast "listen.pls"). Toleruje też nienumerowane File=/Title= oraz
+// goły wiersz File bez [playlist].
 export function parsePls(text: string): ParsedRadioStation[] {
   const out: ParsedRadioStation[] = [];
   const byNumber = new Map<number, { url?: string; title?: string }>();
@@ -71,8 +71,8 @@ export function parsePls(text: string): ParsedRadioStation[] {
   return out;
 }
 
-// M3U / M3U8: either plain URL-per-line or extended (#EXTM3U + #EXTINF:title
-// followed by the URL). Tolerates comments and blank lines.
+// M3U / M3U8: albo zwykły URL na linię, albo rozszerzony (#EXTM3U + #EXTINF:title
+// a następnie URL). Toleruje komentarze i puste linie.
 export function parseM3u(text: string): ParsedRadioStation[] {
   const out: ParsedRadioStation[] = [];
   let pendingTitle = '';
@@ -93,7 +93,7 @@ export function parseM3u(text: string): ParsedRadioStation[] {
   return out;
 }
 
-// XSPF: XML with <track><location>URL</location><title>Name</title></track>.
+// XSPF: XML z <track><location>URL</location><title>Name</title></track>.
 export function parseXspf(text: string): ParsedRadioStation[] {
   const out: ParsedRadioStation[] = [];
   const trackRe = /<track\b[^>]*>([\s\S]*?)<\/track>/gi;
@@ -107,7 +107,7 @@ export function parseXspf(text: string): ParsedRadioStation[] {
   return out;
 }
 
-// A single direct stream URL (pasted by the user) with an optional name.
+// Pojedynczy bezpośredni URL strumienia (wklejony przez użytkownika) z opcjonalną nazwą.
 export function parseDirectUrl(raw: string): ParsedRadioStation | null {
   const url = cleanUrl(raw);
   if (!url) return null;
@@ -119,7 +119,7 @@ export function parseRadioFile(fileName: string, text: string): ParsedRadioStati
   if (lower.endsWith('.pls')) return parsePls(text);
   if (lower.endsWith('.m3u') || lower.endsWith('.m3u8')) return parseM3u(text);
   if (lower.endsWith('.xspf')) return parseXspf(text);
-  // Unknown extension: sniff by content.
+  // Nieznane rozszerzenie: rozpoznaj po zawartości.
   const trimmed = text.trimStart();
   if (trimmed.startsWith('[playlist]')) return parsePls(text);
   if (trimmed.startsWith('#EXTM3U')) return parseM3u(text);

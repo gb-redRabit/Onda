@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 
-// The cover/duration maps used to be exported directly, so any caller could
-// `set`/`clear`/`delete` and bypass the eviction cap. They are now private and
-// reachable only through accessors.
+// Mapy cover/duration były kiedyś eksportowane bezpośrednio, więc każdy wywołujący mógł
+// `set`/`clear`/`delete` i obejść limit usuwania wpisów. Teraz są prywatne i
+// osiągalne tylko przez akcesory.
 
 const SOURCE = readFileSync(join(process.cwd(), 'src/main/ipc/cover/cover-cache.ts'), 'utf8');
 

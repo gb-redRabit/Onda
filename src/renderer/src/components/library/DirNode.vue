@@ -56,7 +56,7 @@ function childCanonical(name: string) {
   return canonicalPath(props.dir) + '/' + name;
 }
 function childOriginal(name: string) {
-  // reconstruct with original sep style if needed — canonical slash works with isUnderPath
+  // odtwórz w oryginalnym stylu separatora, jeśli trzeba — kanoniczny slash działa z isUnderPath
   return childCanonical(name);
 }
 

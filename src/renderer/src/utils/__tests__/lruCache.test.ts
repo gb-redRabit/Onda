@@ -6,7 +6,7 @@ describe('LruCache', () => {
     const cache = new LruCache<number>(2);
     cache.set('a', 1);
     cache.set('b', 2);
-    expect(cache.get('a')).toBe(1); // touch 'a' -> 'b' becomes the LRU
+    expect(cache.get('a')).toBe(1); // dotknięcie 'a' -> 'b' staje się LRU
 
     cache.set('c', 3);
 

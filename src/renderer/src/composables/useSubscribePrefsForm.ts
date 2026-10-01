@@ -14,7 +14,7 @@ export interface SubscribePrefsFormOptions {
   getPlatform: () => 'youtube' | 'soundcloud' | undefined;
 }
 
-// Subscription-prefs form state extracted from
+// Stan formularza preferencji subskrypcji wyodrębniony z
 // `components/online/SubscribeConfigDialog.vue` (plan 2.8).
 export function useSubscribePrefsForm(options: SubscribePrefsFormOptions) {
   const settings = useSettingsStore();
@@ -27,8 +27,8 @@ export function useSubscribePrefsForm(options: SubscribePrefsFormOptions) {
   const selectedProfileId = ref('');
   const systemDownloads = ref('');
 
-  // Pref values default to the current global setting; a field is only stored as
-  // an override when the user changes it away from the global default.
+  // Wartości preferencji domyślnie pochodzą z bieżącego ustawienia globalnego; pole jest zapisywane jako
+  // nadpisanie tylko wtedy, gdy użytkownik zmieni je poza wartość globalną domyślną.
   const kind = ref<'audio' | 'video'>(initial.value?.kind ?? settings.download.defaultKind);
   const format = ref<string>(initial.value?.format ?? settings.download.defaultAudioFormat);
   const quality = ref<string>(initial.value?.quality ?? settings.download.defaultVideoQuality);
@@ -69,8 +69,8 @@ export function useSubscribePrefsForm(options: SubscribePrefsFormOptions) {
     return baseDir.value ? joinPath(baseDir.value, name) : name;
   });
 
-  // Single source for both the summary and the confirm payload — avoids
-  // repeating the 25-field mapping twice.
+  // Pojedyncze źródło dla podsumowania i payloadu potwierdzenia — unika
+  // powtarzania mapowania 25 pól dwukrotnie.
   const formValues = computed(() => ({
     isSc: isSc.value,
     folderMode: folderMode.value,

@@ -3,10 +3,10 @@ import type { YouTubeVideo } from '@renderer/types/online';
 
 const SEARCH_PAGE_SIZE = 20;
 
-// Unified search across platforms: a plain phrase runs on BOTH YouTube and
-// SoundCloud in parallel (YT results first, SC appended) and the pagination
-// state for both. Exposed refs are destructured back into the store under the
-// same names, so call sites elsewhere are unchanged.
+// Ujednolicone wyszukiwanie między platformami: zwykła fraza działa RÓWNOLEGLE na YouTube i
+// SoundCloud (najpierw wyniki YT, dołączone SC) oraz stan paginacji
+// dla obu. Udostępnione refy są destrukturyzowane z powrotem do store pod
+// tymi samymi nazwami, więc miejsca wywołań gdzie indziej pozostają bez zmian.
 export function createOnlineSearch() {
   const searchResults = ref<YouTubeVideo[]>([]);
   const searchQuery = ref('');
@@ -48,7 +48,7 @@ export function createOnlineSearch() {
       (ytRes.status === 'fulfilled' && !!ytRes.value?.success) ||
       (scRes.status === 'fulfilled' && !!scRes.value?.success);
     if (anySuccess) {
-      // Track SC pagination: a full page means deeper offsets exist.
+      // Śledź paginację SC: pełna strona oznacza, że istnieją głębsze offsety.
       searchScOffset.value = scItems.length;
       hasMoreSc.value = scItems.length >= 100;
       return { success: true, items: [...ytItems, ...scItems] };
@@ -62,7 +62,7 @@ export function createOnlineSearch() {
     };
   }
 
-  // Appends the next SoundCloud result page (YT caps at its first batch).
+  // Dołącza następną stronę wyników SoundCloud (YT ogranicza się do pierwszej partii).
   async function loadMoreSearch(): Promise<void> {
     const q = searchQuery.value.trim();
     if (!q || searchLoadingMore.value || !hasMoreSc.value) return;

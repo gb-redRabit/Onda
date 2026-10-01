@@ -15,7 +15,7 @@ const { t } = useI18n();
 </script>
 
 <template>
-  <!-- Search + controls row -->
+  <!-- Wiersz wyszukiwania + kontrolek -->
   <div v-if="tab !== 'playlists'" class="flex gap-2 mt-3">
     <div class="relative flex-1 group">
       <Search
@@ -36,7 +36,7 @@ const { t } = useI18n();
       </button>
     </div>
 
-    <!-- Sort + view mode for tracks -->
+    <!-- Sortowanie + tryb widoku dla utworów -->
     <div v-if="tab === 'tracks'" class="hidden sm:flex items-center gap-1.5 shrink-0">
       <div class="relative">
         <select
@@ -78,7 +78,7 @@ const { t } = useI18n();
     </button>
   </div>
 
-  <!-- Quick filter chips — Spotify-like -->
+  <!-- Szybkie filtry (chips) — w stylu Spotify -->
   <div
     v-if="tab === 'tracks'"
     class="flex gap-1.5 mt-2.5 overflow-x-auto scrollbar-none pb-1"

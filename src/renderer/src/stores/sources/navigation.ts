@@ -14,9 +14,9 @@ export interface SourcesNavigationDeps {
   fetchItems: (query?: Record<string, string>) => Promise<void>;
 }
 
-// Navigation state (stack + per-source memory) and actions extracted from
-// `stores/sources.ts` (plan 2.7). The store destructures the returned
-// refs/actions back into the same names, so call sites are unchanged.
+// Stan nawigacji (stos + pamięć per źródło) i akcje wyodrębnione z
+// `stores/sources.ts` (plan 2.7). Store destrukturyzuje zwrócone
+// refy/akcje z powrotem do tych samych nazw, więc miejsca wywołań pozostają bez zmian.
 export function createSourcesNavigation(deps: SourcesNavigationDeps) {
   const {
     sources,

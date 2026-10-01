@@ -63,7 +63,7 @@ export function useMusicBrainzBatch(
         if (fields.year && rel.date) payload.year = rel.date.slice(0, 4);
         if (fields.title && mbTrack?.title) payload.title = mbTrack.title;
         if (fields.track) payload.track = String(idx + 1);
-        // write tags
+        // zapisz tagi
         const tagRes = await window.api?.writeTags(tr.path, payload as Record<string, string>);
         if (tagRes && tagRes.success === false) {
           throw new Error(tagRes.error || 'writeTags failed');
@@ -81,7 +81,7 @@ export function useMusicBrainzBatch(
       }
       batchProgress.value = idx + 1;
       idx++;
-      setTimeout(next, 1100); // 1 req/s throttle
+      setTimeout(next, 1100); // throttle 1 req/s
     };
     next();
   }

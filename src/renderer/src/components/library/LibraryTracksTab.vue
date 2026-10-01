@@ -211,7 +211,7 @@ onUnmounted(() => {
         </button>
       </div>
     </div>
-    <!-- Bulk bar -->
+    <!-- Pasek zbiorczy -->
     <LibraryTracksBulkBar
       v-if="selectedCount > 0"
       :count="selectedCount"

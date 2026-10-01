@@ -36,7 +36,7 @@ describe('useSettingsNav', () => {
     const nav = useSettingsNav();
     expect(nav.activeTab.value).toBe('appearance');
 
-    // The banner pushes /settings?tab=dependencies: same route, new query.
+    // Baner wypycha /settings?tab=dependencies: ta sama trasa, nowe query.
     route.query = { tab: 'dependencies' };
     await nextTick();
 

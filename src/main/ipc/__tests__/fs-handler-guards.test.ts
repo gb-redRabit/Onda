@@ -4,9 +4,9 @@ import { realpath } from 'node:fs/promises';
 import { join } from 'node:path';
 import { makeGrantableScratch } from '../../__tests__/scratch-dirs';
 
-// The exploratory fs channels took renderer arguments unchecked. `fs:readdir`
-// and `fs:getProperties` were happy to walk any path, and `shell:openTerminal`
-// spawned a detached shell per call.
+// Eksploracyjne kanały fs przyjmowały argumenty z renderera bez sprawdzenia. `fs:readdir`
+// i `fs:getProperties` chętnie przechodziły dowolną ścieżkę, a `shell:openTerminal`
+// uruchamiał odłączony shell przy każdym wywołaniu.
 
 type Handler = (event: unknown, ...args: unknown[]) => unknown;
 const handlers = new Map<string, Handler>();
@@ -31,8 +31,8 @@ vi.mock('electron', () => ({
 const grantedRoots: string[] = [];
 const spawns: Array<{ cmd: string; args: string[] }> = [];
 
-// Partial: fs-utils promisifies `exec` from this module, so only `spawn` is
-// replaced. A full stub would break the module graph.
+// Częściowy: fs-utils promisifikuje `exec` z tego modułu, więc zastępowany jest
+// tylko `spawn`. Pełny stub zepsułby graf modułów.
 vi.mock('child_process', async (importOriginal) => {
   const actual = await importOriginal<typeof import('child_process')>();
   const fakeSpawn = (cmd: string, args: string[]) => {
@@ -46,9 +46,9 @@ vi.mock('child_process', async (importOriginal) => {
   };
 });
 
-// media-handlers imports addAllowedRoot from src/main/media-server, which is
-// two levels up from this test file. The mock mirrors the real signature: the
-// handler branches on whether the root was actually stored.
+// media-handlers importuje addAllowedRoot z src/main/media-server, co jest
+// dwa poziomy wyżej od tego pliku testowego. Mock odwzorowuje prawdziwą sygnaturę:
+// handler rozgałęzia się na tym, czy korzeń został faktycznie zapisany.
 vi.mock('../../media/media-server', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../media/media-server')>();
   return {
@@ -77,9 +77,9 @@ function invoke(channel: string, ...args: unknown[]): Promise<unknown> {
 }
 
 /**
- * `fs:readdir` streams: one `{done:false, items:[...]}` per batch followed by a
- * `{done:true, items:[]}` terminator, so the items have to be collected rather
- * than read off the last call.
+ * `fs:readdir` streamuje: jedno `{done:false, items:[...]}` na partię, po którym następuje
+ * terminator `{done:true, items:[]}`, więc elementy trzeba zbierać, a nie
+ * odczytywać z ostatniego wywołania.
  */
 function batchedItems(): { batches: number; items: Array<{ name: string }> } {
   const sender = senders.at(-1)!;
@@ -96,9 +96,9 @@ function batchedItems(): { batches: number; items: Array<{ name: string }> } {
 }
 
 let mediaDir = '';
-// os.tmpdir() is not an ordinary folder everywhere — on macOS it is under
-// /var, and on a Windows runner with TEMP/TMP unset it is C:\WINDOWS\temp — so
-// the fixture lives under the home directory instead. See scratch-dirs.ts.
+// os.tmpdir() nie jest zwykłym folderem wszędzie — na macOS jest pod
+// /var, a na runnerze Windows bez ustawionych TEMP/TMP jest to C:\WINDOWS\temp — więc
+// fixture znajduje się pod katalogiem domowym. Patrz scratch-dirs.ts.
 let scratch: Awaited<ReturnType<typeof makeGrantableScratch>> | null = null;
 
 beforeAll(async () => {
@@ -142,22 +142,22 @@ describe('exploratory fs channels validate their arguments', () => {
     expect(batchedItems()).toEqual({ batches: 1, items: [] });
   });
 
-  // Enumerating every drive is real I/O. Locally that is milliseconds, but on a
-  // cold Windows CI runner, or one with a network-mapped drive, it overruns the
-  // default 5 s budget, so these tests failed on the runner while passing on
-  // every developer machine. 30 s leaves ample headroom without hiding a real
-  // hang, since a hang never completes.
+  // Wyliczanie każdego dysku to prawdziwe I/O. Lokalnie to milisekundy, ale na
+  // zimnym runnerze CI Windows, albo takim z dyskiem mapowanym sieciowo, przekracza
+  // domyślny budżet 5 s, więc te testy zawodzą na runnerze, choć przechodzą na
+  // każdej maszynie deweloperskiej. 30 s zostawia spory zapas bez ukrywania prawdziwego
+  // zawieszenia, bo zawieszenie nigdy się nie kończy.
   const DRIVE_ENUMERATION_TIMEOUT_MS = 30_000;
 
   it(
     'fs:readdir reads an absent path as the drives view, not as invalid',
     async () => {
-      // The explorer's nav pane and breadcrumb call navigateTo(''), which arrives
-      // here as an empty string. Validating the argument before handling that made
-      // the drives view come back empty: no error anywhere, just a permanently
-      // blank list, and nothing that looked like a bug.
+      // Panel nawigacji i breadcrumb explorera wywołują navigateTo(''), co trafia
+      // tu jako pusty string. Walidacja argumentu przed obsłużeniem tego powodowała,
+      // że widok dysków wracał pusty: nigdzie błędu, tylko trwale
+      // pusta lista i nic, co wyglądałoby na błąd.
       for (const empty of ['', null, undefined]) {
-        // Each invoke() creates its own sender, so batchedItems() sees this call only.
+        // Każde invoke() tworzy własnego sendera, więc batchedItems() widzi tylko to wywołanie.
         await invoke('fs:readdir', empty);
         expect(batchedItems().batches, JSON.stringify(empty)).toBe(1);
         expect(batchedItems().items.length, JSON.stringify(empty)).toBeGreaterThan(0);
@@ -189,8 +189,8 @@ describe('exploratory fs channels validate their arguments', () => {
   });
 
   it('shell:openTerminal spawns one shell for a burst of overlapping calls', async () => {
-    // Without the re-entrancy latch each call spawned a detached cmd.exe, so
-    // the channel was usable as a process bomb.
+    // Bez zatrzasku re-entrancy każde wywołanie uruchamiało odłączony cmd.exe, więc
+    // kanału można było użyć jako bomby procesowej.
     await Promise.all([
       invoke('shell:openTerminal', mediaDir),
       invoke('shell:openTerminal', mediaDir),
@@ -206,8 +206,8 @@ describe('exploratory fs channels validate their arguments', () => {
   });
 
   it('shell:openTerminal accepts a new directory once the latch clears', async () => {
-    // The burst test above left the 500 ms latch engaged; a real second click
-    // after that window has to work.
+    // Powyższy test serii pozostawił zatrzask 500 ms włączony; prawdziwe drugie kliknięcie
+    // po tym oknie musi zadziałać.
     await new Promise((r) => setTimeout(r, 600));
     await invoke('shell:openTerminal', mediaDir);
     expect(spawns).toHaveLength(1);
@@ -217,8 +217,8 @@ describe('exploratory fs channels validate their arguments', () => {
   });
 
   it('media:grantAccess refuses a protected path', async () => {
-    // The grant is persisted into extraRoots, so without this a caller could
-    // hand the media server a system directory for the rest of the session.
+    // Grant jest zapisywany w extraRoots, więc bez tego wywołujący mógłby
+    // przekazać media serverowi katalog systemowy na resztę sesji.
     const protectedDir = process.platform === 'win32' ? 'C:\\Windows' : '/etc';
     expect(await invoke('media:grantAccess', join(protectedDir, 'a.dll'))).toBe(false);
     expect(grantedRoots).toEqual([]);
@@ -227,14 +227,14 @@ describe('exploratory fs channels validate their arguments', () => {
   it('media:grantAccess accepts an existing media file', async () => {
     const track = join(mediaDir, 'track.mp3');
     expect(await invoke('media:grantAccess', track)).toBe(true);
-    // Only the containing directory: adding the file as a root too doubled the
-    // allowlist for the common case of one track in a folder.
+    // Tylko katalog zawierający: dodanie także pliku jako korzenia podwajało
+    // allowlistę w typowym przypadku jednego utworu w folderze.
     expect(grantedRoots).toEqual([mediaDir]);
   });
 
   it('media:grantAccess refuses a path that does not exist', async () => {
-    // A grant for a path that is not there can only inflate the allowlist, so
-    // it is refused outright rather than stored.
+    // Grant dla nieistniejącej ścieżki może tylko rozdąć allowlistę, więc
+    // jest odrzucany od razu, a nie zapisywany.
     const missing = join(mediaDir, 'not-here.mp3');
     expect(await invoke('media:grantAccess', missing)).toBe(false);
     expect(grantedRoots).toEqual([]);
@@ -246,7 +246,7 @@ describe('exploratory fs channels validate their arguments', () => {
   });
 
   it('fs:copyPath refuses an oversized string', async () => {
-    // Clipboard writes are cheap but unbounded input from the renderer is not.
+    // Zapis do schowka jest tani, ale nieograniczone wejście z renderera już nie.
     await expect(invoke('fs:copyPath', 'C:\\' + 'a'.repeat(9000))).resolves.not.toThrow();
   });
 });

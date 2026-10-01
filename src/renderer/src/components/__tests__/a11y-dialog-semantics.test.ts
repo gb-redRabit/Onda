@@ -2,10 +2,10 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// Ten of the eleven dialogs were plain divs. Without role="dialog" assistive
-// technology was never told a dialog had opened, focus stayed on the page
-// behind the overlay so tabbing walked the background instead of the dialog's
-// controls, and nothing restored focus on close. This guards all of them.
+// Dziesięć z jedenastu dialogów było zwykłymi divami. Bez role="dialog" technologie
+// wspomagające nigdy nie dowiadywały się, że otwarto dialog, fokus zostawał na stronie
+// za nakładką, więc tabowanie chodziło po tle zamiast po kontrolkach dialogu,
+// a zamknięcie niczego nie przywracało fokusu. Ten test pilnuje ich wszystkich.
 
 const COMPONENTS = join(process.cwd(), 'src/renderer/src/components');
 
@@ -26,10 +26,10 @@ const SHELL = join(COMPONENTS, 'ui/ModalShell.vue');
 const shellSource = readFileSync(SHELL, 'utf8');
 
 /**
- * A dialog may either declare the semantics itself or delegate them to
- * ModalShell, which owns the panel and the focus trap. Delegating is not a way
- * around the requirement — ModalShell is checked by its own test below — but it
- * does mean the attributes legitimately live in another file.
+ * Dialog może albo sam deklarować semantykę, albo delegować ją do
+ * ModalShell, który posiada panel i focus trap. Delegowanie nie jest obejściem
+ * wymogu — ModalShell jest sprawdzany przez własny test poniżej — ale
+ * oznacza, że atrybuty legalnie żyją w innym pliku.
  */
 function delegatesToShell(source: string): boolean {
   return /<ModalShell[\s>]/.test(source);
@@ -52,7 +52,7 @@ describe('dialog semantics', () => {
   it.each(files)('%s declares itself a modal dialog', (file) => {
     const source = readFileSync(file, 'utf8');
     if (delegatesToShell(source)) {
-      // Still has to name itself, or the dialog is announced as bare "dialog".
+      // Wciąż musi się nazwać, inaczej dialog jest ogłaszany jako samo "dialog".
       expect(
         /labelled-by=/.test(source) || /aria-label=/.test(source),
         `${rel(file)} delegates to ModalShell but gives it no accessible name`
@@ -62,12 +62,12 @@ describe('dialog semantics', () => {
     const missing: string[] = [];
     if (!/role="dialog"/.test(source)) missing.push('role="dialog"');
     if (!/aria-modal="true"/.test(source)) missing.push('aria-modal="true"');
-    // A dialog with no accessible name is announced as just "dialog".
+    // Dialog bez dostępnej nazwy jest ogłaszany jako samo "dialog".
     if (!/aria-labelledby="/.test(source) && !/aria-label=/.test(source)) {
       missing.push('aria-labelledby / aria-label');
     }
-    // tabindex="-1" is what lets focus land on a dialog that has no focusable
-    // control of its own.
+    // tabindex="-1" pozwala fokusowi trafić na dialog, który nie ma własnej
+    // kontrolki fokusowalnej.
     if (!/tabindex="-1"/.test(source)) missing.push('tabindex="-1"');
     expect(missing, `${rel(file)} is missing: ${missing.join(', ')}`).toEqual([]);
   });
@@ -75,12 +75,12 @@ describe('dialog semantics', () => {
   it.each(files)('%s wires up the shared focus trap', (file) => {
     const source = readFileSync(file, 'utf8');
     if (delegatesToShell(source)) {
-      // ModalShell calls useDialogFocus on the panel it renders, so the dialog
-      // inherits the trap and the focus restore.
+      // ModalShell wywołuje useDialogFocus na renderowanym panelu, więc dialog
+      // dziedziczy trap i przywracanie fokusu.
       return;
     }
     expect(/useDialogFocus\(/.test(source), `${rel(file)} does not call useDialogFocus`).toBe(true);
-    // The ref has to be bound to the panel, not left dangling in script.
+    // Ref musi być przypięty do panelu, a nie zostawiony luźno w skrypcie.
     expect(/ref="panelRef"/.test(source), `${rel(file)} has no ref="panelRef"`).toBe(true);
   });
 });

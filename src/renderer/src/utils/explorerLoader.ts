@@ -48,16 +48,16 @@ export function createBatchLoader(files: Ref<FileItem[]>, isLoading: Ref<boolean
         useUIStore().notify('error', 'Błąd odczytu folderu', data.error);
       }
       if (data.items.length > 0) {
-        // Push (reactive deep ref) instead of copying the whole array per batch
-        // — the copy was O(n) per batch and forced a full re-sort each time.
+        // Push (reaktywny deep ref) zamiast kopiowania całej tablicy na batch
+        // — kopia była O(n) na batch i wymuszała pełne ponowne sortowanie za każdym razem.
         files.value.push(...data.items);
       }
       if (data.done) finish(stopListening);
     });
     cleanup = () => finish(stopListening);
 
-    // If the `done` batch never arrives (dropped event, main crash) the old code
-    // left `isLoading` true forever and leaked the listener.
+    // Jeśli batch `done` nigdy nie dotrze (zgubione zdarzenie, awaria main), stary kod
+    // zostawiał `isLoading` na zawsze true i wyciekał listener.
     timeout = setTimeout(() => {
       if (loadId !== currentLoadId) return;
       finish(stopListening);

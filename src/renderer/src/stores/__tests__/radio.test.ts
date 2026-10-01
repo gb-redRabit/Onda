@@ -46,8 +46,8 @@ describe('radio store', () => {
     await store.addStations([{ name: 'A', url: 'http://a.example/stream' }]);
     const sent = mockRadioSave.mock.calls[0][0] as unknown;
     expect(Array.isArray(sent)).toBe(true);
-    // structuredClone throws DataCloneError ("An object could not be cloned")
-    // on Vue reactive proxies — exactly what Electron IPC does on send.
+    // structuredClone rzuca DataCloneError ("An object could not be cloned")
+    // na reaktywnych proxy Vue — dokładnie to, co robi Electron IPC przy wysyłce.
     expect(() => structuredClone(sent)).not.toThrow();
     expect(Object.getPrototypeOf((sent as object[])[0])).toBe(Object.prototype);
   });

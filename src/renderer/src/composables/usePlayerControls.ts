@@ -26,7 +26,7 @@ export function usePlayerControls(ctx: PlayerControlsCtx) {
   let resumePromptTimer: ReturnType<typeof setTimeout> | null = null;
   let clickTimer: ReturnType<typeof setTimeout> | null = null;
 
-  /** Minimum change in the hide deadline that justifies rescheduling the timer. */
+  /** Minimalna zmiana terminu ukrycia, która uzasadnia przeplanowanie timera. */
   const CONTROLS_RESCHEDULE_GRACE_MS = 250;
 
   function showToast(text: string, duration = 1500) {
@@ -89,12 +89,12 @@ export function usePlayerControls(ctx: PlayerControlsCtx) {
     if (settings.playback.cursorHide && isFullscreen.value && playerContainerRef.value) {
       playerContainerRef.value.classList.remove('hide-cursor');
     }
-    // mousemove fires well over 100x/s while the pointer is moving. Clearing and
-    // recreating the hide timer on every one of those events was pure churn and
-    // starved the event loop during playback. Rescheduling is skipped while the
-    // pending deadline is still close enough to the new one — the controls hide
-    // at the configured timeout after the last *significant* move, which is
-    // imperceptibly different and no longer scales with pointer speed.
+    // mousemove odpala się znacznie ponad 100x/s, gdy wskaźnik się porusza. Czyszczenie i
+    // odtwarzanie timera ukrywania przy każdym z tych zdarzeń było czystym narzutem i
+    // zagładzało event loop podczas odtwarzania. Przeplanowanie jest pomijane, dopóki
+    // oczekujący termin jest wciąż wystarczająco blisko nowego — kontrolki ukrywają się
+    // po skonfigurowanym czasie od ostatniego *istotnego* ruchu, co jest
+    // niezauważalnie inne i przestaje skalować się z prędkością wskaźnika.
     const deadline = performance.now() + settings.playback.cursorTimeout * 1000;
     if (controlsTimeout && deadline - controlsDeadline < CONTROLS_RESCHEDULE_GRACE_MS) return;
     controlsDeadline = deadline;

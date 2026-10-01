@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { buildJobSource } from '../download-source';
 
-// Regression: the queue dropped `sourceId`, `sourceItemId` and
-// `allowPrivateNetwork` when rebuilding a job's source, so a finished source
-// download was never recorded as "downloaded" and private-network trust was lost.
+// Regresja: kolejka gubiła `sourceId`, `sourceItemId` oraz
+// `allowPrivateNetwork` przy odbudowie źródła zadania, więc ukończone pobieranie
+// źródła nigdy nie zostało zapisane jako "downloaded", a zaufanie do sieci prywatnej zostało utracone.
 
 describe('buildJobSource', () => {
   it('returns undefined when there is no source', () => {

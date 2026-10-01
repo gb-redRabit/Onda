@@ -2,10 +2,10 @@ import type { SubscriptionDownloadPrefs, YouTubeVideo } from '@renderer/types/on
 import type { IpcDownloadJobInput } from '@shared/types/ipc';
 import { buildJob } from '@renderer/utils/onlineJob';
 
-// Builds download jobs for a flat channel listing, skipping ids already queued
-// or already downloaded. Flat listings carry no channel_id per entry, so each
-// job is attributed to the channel being downloaded. `existingIds` is mutated
-// so duplicate ids within the same listing are skipped too.
+// Buduje zadania pobierania dla płaskiej listy kanału, pomijając id już zakolejkowane
+// lub już pobrane. Płaskie listy nie niosą channel_id per wpis, więc każde
+// zadanie jest przypisane do kanału, który jest pobierany. `existingIds` jest mutowane,
+// więc duplikaty id w tej samej liście też są pomijane.
 export function buildChannelJobs(
   items: YouTubeVideo[],
   channelId: string,

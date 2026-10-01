@@ -1,7 +1,7 @@
 import type { AudioPipDock, AudioPipElementId } from '@shared/types/pip';
 
-// Appearance defaults + audio-layout presets split out of `utils/constants.ts`
-// (plan 2.8); re-exported from there so imports stay unchanged.
+// Domyślne ustawienia wyglądu + presety układu audio wydzielone z `utils/constants.ts`
+// (plan 2.8); re-eksportowane z tamtąd, więc importy pozostają bez zmian.
 
 export const DEFAULT_APPEARANCE = {
   theme: 'dark' as const,

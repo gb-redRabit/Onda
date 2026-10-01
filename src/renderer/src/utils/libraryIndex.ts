@@ -11,10 +11,10 @@ interface LibraryIndex {
 let cached: LibraryIndex | null = null;
 let lastSig = '';
 
-// Cheap change signature. The old version re-hashed every track path on each
-// call (O(N) per index read — and DirNode calls it many times per rendered
-// row). The array identity catches every replacement (load/scan/filter) and the
-// length catches in-place pushes (addTrack); folders are joined (tiny).
+// Tania sygnatura zmian. Stara wersja hashowała ponownie każdą ścieżkę utworu przy
+// każdym wywołaniu (O(N) na odczyt indeksu — a DirNode woła to wiele razy na renderowany
+// wiersz). Tożsamość tablicy wychwytuje każde zastąpienie (load/scan/filter), a długość
+// wychwytuje push w miejscu (addTrack); foldery są łączone (małe).
 const arrIds = new WeakMap<object, number>();
 let nextArrId = 1;
 function arrayId(a: object): number {
@@ -37,12 +37,12 @@ export function getLibraryIndex(tracks: MediaFile[], folders: string[]): Library
   const directMap = new Map<string, MediaFile[]>();
   const allMap = new Map<string, MediaFile[]>();
 
-  // build directMap and allMap
+  // zbuduj directMap i allMap
   for (const tr of tracks) {
     const dir = canonicalPath(dirname(tr.path));
     if (!directMap.has(dir)) directMap.set(dir, []);
     directMap.get(dir)!.push(tr);
-    // allMap for each ancestor folder that is in library.folders or is parent of file
+    // allMap dla każdego folderu przodka, który jest w library.folders lub jest rodzicem pliku
     let cur = dir;
     while (cur && cur !== '/' && cur !== '.') {
       if (!allMap.has(cur)) allMap.set(cur, []);

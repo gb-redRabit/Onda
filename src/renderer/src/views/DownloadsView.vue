@@ -46,8 +46,8 @@ function openLibrary(t: DownloadTask) {
 
 function playDownload(t: DownloadTask) {
   if (!t.outputPath) return;
-  // The media server serves files from granted roots only — a download outside
-  // the library (e.g. default Downloads) must be granted before playback.
+  // Serwer mediów serwuje pliki tylko z przyznanych katalogów głównych — pobranie
+  // spoza biblioteki (np. domyślne Pobrane) trzeba zatwierdzić przed odtwarzaniem.
   void window.api?.grantMediaAccess(t.outputPath);
   const ext = t.outputPath.slice(t.outputPath.lastIndexOf('.')).toLowerCase();
   const file: MediaFile = {

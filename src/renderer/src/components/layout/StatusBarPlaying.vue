@@ -13,8 +13,8 @@ const { t } = useI18n();
 const player = usePlayerStore();
 const audio = useAudioPlayer();
 
-// The status bar's "playing" section should open the AUDIO player for music
-// and streams — only video goes to the video player (/player).
+// Sekcja "playing" paska statusu powinna otwierać odtwarzacz AUDIO dla muzyki
+// i strumieni — tylko wideo trafia do odtwarzacza wideo (/player).
 const playingTarget = computed(() => {
   const type = player.currentTrack?.type ?? player.streamPending?.type;
   return type === 'video' ? '/player' : '/audio';

@@ -2,12 +2,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// Both of these are pointer-only controls: a div with a mousedown handler that
-// scrubs a value. A screen reader cannot see them at all, and a keyboard user
-// cannot reach them, so playback position and every equalizer band were movable
-// with a mouse and nothing else. `role="slider"` alone is not enough — the
-// control has to be focusable and actually respond to keys, otherwise the role
-// just announces a dead element.
+// Oba są kontrolkami tylko dla wskaźnika: div z handlerem mousedown, który
+// przewija wartość. Czytnik ekranu w ogóle ich nie widzi, a użytkownik klawiatury
+// nie może do nich dotrzeć, więc pozycja odtwarzania i każde pasmo korektora były przesuwane
+// tylko myszą i niczym innym. Samo `role="slider"` nie wystarcza — kontrolka
+// musi być fokusowalna i faktycznie reagować na klawisze, inaczej rola
+// ogłasza jedynie martwy element.
 
 interface DragSurface {
   file: string;
@@ -27,9 +27,9 @@ function readDragSurfaces(relPath: string): { surfaces: DragSurface[]; script: s
   const script = source.slice(0, source.indexOf('<template>'));
   const surfaces: DragSurface[] = [];
 
-  // Quoted attribute values are consumed explicitly, because a `>` inside one
-  // (`:aria-valuetext="... ${x > 0} ..."`) would otherwise end the tag early and
-  // hide the very attributes being asserted.
+  // Wartości atrybutów w cudzysłowach są konsumowane jawnie, bo `>` w jednej z nich
+  // (`:aria-valuetext="... ${x > 0} ..."`) inaczej zakończyłby tag wcześniej i
+  // ukrył same atrybuty, które są sprawdzane.
   for (const match of template.matchAll(/<div\b(?:[^>"']|"[^"]*"|'[^']*')*>/g)) {
     if (!/@mousedown/.test(match[0])) continue;
     const before = template.slice(0, match.index);
@@ -66,8 +66,8 @@ describe('pointer-only value controls are reachable from the keyboard', () => {
   it.each(TARGETS)('$label: exposes its value to assistive tech', ({ file }) => {
     const { surfaces } = readDragSurfaces(file);
     for (const s of surfaces) {
-      // aria-valuenow is the only way a screen reader can report the current
-      // value, and without an accessible name the slider is announced bare.
+      // aria-valuenow to jedyny sposób, w jaki czytnik ekranu może zgłosić bieżącą
+      // wartość, a bez dostępnej nazwy suwak jest ogłaszany jako goły.
       expect(s.tag, `${s.file}:${s.line} has no aria-valuenow`).toMatch(/aria-valuenow=/);
       expect(s.tag, `${s.file}:${s.line} has no aria-label`).toMatch(/:?aria-label=/);
     }
@@ -77,8 +77,8 @@ describe('pointer-only value controls are reachable from the keyboard', () => {
     const { script } = readDragSurfaces(file);
     const handler = script.match(/function on\w*Key\([\s\S]*?\n}/)?.[0];
     expect(handler, `no on*Key handler found in ${file}`).toBeDefined();
-    // Arrow keys are the minimum a slider must answer; Page/Home/End are the
-    // coarse movements that make a long track usable without 200 presses.
+    // Klawisze strzałek to minimum, na które suwak musi odpowiadać; Page/Home/End to
+    // grube ruchy, które czynią długi utwór użytecznym bez 200 naciśnięć.
     expect(handler, `${file} key handler ignores arrow keys`).toMatch(/ArrowUp|ArrowRight/);
     expect(handler, `${file} key handler ignores Page keys`).toMatch(/PageUp|PageDown/);
     expect(handler, `${file} key handler ignores Home/End`).toMatch(/Home/);

@@ -14,8 +14,8 @@ interface LibraryLoadCtx {
   scanProgress: Ref<{ current: number; total: number }>;
 }
 
-// Files are pulled in bounded slices: a 50k-file library never crosses IPC as a
-// single structured-clone payload, and each slice yields to the event loop.
+// Pliki są pobierane w ograniczonych wycinkach: biblioteka 50k plików nigdy nie przechodzi IPC jako
+// pojedynczy payload structured-clone, a każdy wycinek oddaje sterowanie event loopowi.
 const TRACK_CHUNK_SIZE = 2000;
 
 async function loadTracksInChunks(ctx: LibraryLoadCtx): Promise<void> {
@@ -54,7 +54,7 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
         ctx.folders.value = loadedFolders;
       }
     } catch {
-      // individual catches handle errors
+      // pojedyncze catch obsługują błędy
     }
     await scheduleLoadTracksAsync();
   }
@@ -70,7 +70,7 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
       ctx.isLoading.value = false;
       void loadTracksInChunks(ctx)
         .catch(() => {
-          /* nothing to load */
+          /* nic do załadowania */
         })
         .finally(() => {
           ctx.isLoaded.value = true;
@@ -88,10 +88,10 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
   }
 
   /**
-   * Resolves once the queued load finishes, or after a ceiling so a caller can
-   * never hang. The timer is cleared when the load resolves first — otherwise
-   * every call left a 5 s timer behind, and a caller that awaited it kept a
-   * promise alive for five seconds after the library was already loaded.
+   * Rozwiązuje się, gdy zakolejkowane ładowanie się skończy, lub po pułapie, więc wywołujący
+   * nigdy nie zawiesi się. Timer jest czyszczony, gdy ładowanie rozwiąże się pierwsze — inaczej
+   * każde wywołanie zostawiało 5-sekundowy timer, a wywołujący, który na niego czekał, trzymał
+   * promise żywą przez pięć sekund po tym, jak biblioteka była już załadowana.
    */
   function scheduleLoadTracksAsync(): Promise<void> {
     return new Promise((resolve) => {
@@ -134,12 +134,12 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
           total: ctx.folders.value.length
         };
         if (result.aborted) {
-          // The scan was cancelled (or superseded) — reloading now would bring
-          // back stale data, so skip it and tell the user instead.
+          // Skanowanie zostało anulowane (lub zastąpione) — ponowne ładowanie teraz przywróciłoby
+          // nieaktualne dane, więc pomiń je i zamiast tego powiadom użytkownika.
           try {
             useUIStore().notify('error', 'Skanowanie przerwane', 'Spróbuj ponownie.');
           } catch {
-            // store not available
+            // store niedostępny
           }
         } else {
           scheduleLoadTracks();
@@ -149,7 +149,7 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
       try {
         useUIStore().notify('error', 'Błąd skanowania biblioteki', errMsg(err));
       } catch {
-        // store not available
+        // store niedostępny
       }
     } finally {
       stopListening?.();
@@ -161,7 +161,7 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
     try {
       await window.api?.cancelLibraryScan();
     } catch {
-      /* cancel failed */
+      /* anulowanie nie powiodło się */
     }
   }
 

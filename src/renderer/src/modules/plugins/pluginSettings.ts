@@ -7,7 +7,7 @@ export interface PluginSettingsDeps {
   getManifest: (id: string) => PluginManifest | undefined;
 }
 
-// Per-plugin settings store surface extracted from `stores/plugins.ts` (plan 2.8).
+// Powierzchnia store ustawień per plugin, wydzielona z `stores/plugins.ts` (plan 2.8).
 export function createPluginSettings(deps: PluginSettingsDeps) {
   const { pluginSettings, getManifest } = deps;
 

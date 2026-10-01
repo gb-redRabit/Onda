@@ -3,10 +3,10 @@ import { EQ_PRESETS } from './usePipAudioState';
 import { EQ_BTN, EQ_BTN_ON } from './pipTheme';
 
 /**
- * Equalizer preset row, shared by the layouts that expose it.
+ * Rząd presetów equalizera, współdzielony przez układy, które go wystawiają.
  *
- * Copied verbatim between the bar and card layouts. The stack layout has no room
- * for presets and simply does not render this.
+ * Kopiowany dosłownie między układami paska i karty. Układ stosu nie ma miejsca
+ * na presety i po prostu tego nie renderuje.
  */
 defineProps<{
   eqPreset: string;

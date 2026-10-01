@@ -29,8 +29,8 @@ export interface DownloadProfileForm {
   trimEnd?: number;
 }
 
-// Maps a saved download profile config onto subscribe/download dialog form
-// fields. Pure; the caller applies the patch to its refs.
+// Mapuje zapisaną konfigurację profilu pobierania na pola formularza dialogu
+// subskrypcji/pobierania. Czyste; wywołujący nakłada patch na swoje refy.
 export function downloadProfileToForm(c: IpcDownloadConfig): DownloadProfileForm {
   const f: DownloadProfileForm = {};
   if (c.kind) f.kind = c.kind;

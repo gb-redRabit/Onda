@@ -1,9 +1,9 @@
 import { usePlayerStore } from '@renderer/stores/player';
 import type { MediaFile } from '@renderer/types/media';
 
-// Plays a list of tracks as a fresh queue: the first one starts now, the rest
-// wait in the queue. Same behaviour as the search palette's playlist action, so
-// every "play this group" entry point (shelf, album, artist, playlist) matches.
+// Odtwarza listę utworów jako świeżą kolejkę: pierwszy startuje teraz, reszta
+// czeka w kolejce. To samo zachowanie co akcja playlisty w palecie wyszukiwania, więc
+// każde miejsce "odtwórz tę grupę" (półka, album, wykonawca, playlista) działa tak samo.
 export function playTrackList(tracks: readonly MediaFile[]): void {
   if (!tracks.length) return;
   const player = usePlayerStore();

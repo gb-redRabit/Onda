@@ -1,8 +1,8 @@
 import { defineAsyncComponent } from 'vue';
 
-// Lazy settings-tab components, keyed by tab id. Extracted from
-// `views/SettingsView.vue` (plan 2.8) so the view renders `<component :is>`
-// instead of a long v-if/v-else-if chain.
+// Leniwe komponenty zakładek ustawień, kluczowane po id zakładki. Wyodrębnione z
+// `views/SettingsView.vue` (plan 2.8), aby widok renderował `<component :is>`
+// zamiast długiego łańcucha v-if/v-else-if.
 export const SETTINGS_TAB_COMPONENTS: Record<string, ReturnType<typeof defineAsyncComponent>> = {
   theme: defineAsyncComponent(() => import('./SettingsTheme.vue')),
   appearance: defineAsyncComponent(() => import('./SettingsAppearance.vue')),

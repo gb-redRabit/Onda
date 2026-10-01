@@ -8,8 +8,8 @@ const ICON_CONCURRENCY = 6;
 export function useFileIcons() {
   const extraSmallIcons = shallowRef<Record<string, string>>({});
   const iconPendingQueue = new Set<string>();
-  // Paths whose shell icon came back empty/broken — never re-request them
-  // (the caller renders a category fallback instead of an endless retry loop).
+  // Ścieżki, których ikona powłoki wróciła pusta/uszkodzona — nigdy nie pytamy o nie ponownie
+  // (wywołujący renderuje zastępczą ikonę kategorii zamiast nieskończonej pętli ponowień).
   const failedIcons = new Set<string>();
   let iconActive = 0;
   let iconQueueTimer: ReturnType<typeof setTimeout> | null = null;

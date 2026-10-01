@@ -21,7 +21,7 @@ export interface LookupApplyData {
   coverMime?: string;
 }
 
-// Search / release-lookup / apply-payload state extracted from
+// Stan wyszukiwania / lookupu wydania / payloadu zastosowania wyodrębniony z
 // `components/library/MusicBrainzLookup.vue` (plan 2.8).
 export function useMusicBrainzLookup(options: { onApply: (data: LookupApplyData) => void }) {
   const { t } = useI18n();

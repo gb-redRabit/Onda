@@ -33,8 +33,8 @@ describe('readTextFileWithinBounds', () => {
   });
 
   it('rejects a file that is not a subtitle, so the channel is not a generic read', async () => {
-    // The real leak: a compromised renderer naming the YouTube session cookie
-    // file, which has no subtitle extension.
+    // Prawdziwy wyciek: przejęty renderer wskazujący plik ciasteczek sesji
+    // YouTube, który nie ma rozszerzenia napisów.
     const p = await write('youtube-cookies.txt', 'SID=secret-session-id');
     const result = await readTextFileWithinBounds(p, SUBTITLE_EXTS, SUBTITLE_MAX_BYTES, 'test');
     expect(result).toEqual({ ok: false, reason: 'forbidden' });
@@ -62,8 +62,8 @@ describe('readTextFileWithinBounds', () => {
   });
 
   it('re-checks the size after reading, so a concurrent growth cannot slip past', async () => {
-    // `stat` and `readFile` are separate calls; a file that grows in between
-    // must still be refused rather than returned in full.
+    // `stat` i `readFile` to osobne wywołania; plik, który urośnie pomiędzy nimi,
+    // nadal musi zostać odrzucony, a nie zwrócony w całości.
     const result = await readTextFileWithinBounds(
       join(dir, 'growing.srt'),
       SUBTITLE_EXTS,
@@ -89,7 +89,7 @@ describe('readTextFileWithinBounds', () => {
 
   it('falls back to latin1 for a non-UTF8 subtitle instead of returning mojibake', async () => {
     const p = join(dir, 'legacy.ass');
-    // 0xE9 is 'é' in latin1 and an invalid UTF-8 byte on its own.
+    // 0xE9 to 'é' w latin1 i samodzielnie nieprawidłowy bajt UTF-8.
     await writeFile(p, Buffer.from([0x5b, 0xe9, 0x5d]));
     const result = await readTextFileWithinBounds(p, SUBTITLE_EXTS, SUBTITLE_MAX_BYTES, 'test');
     expect(result.ok).toBe(true);

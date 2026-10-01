@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// A group of settings inside a tab: sticky heading + hairline-separated rows
-// (flat list instead of nested cards, so a tab scans like a table of contents).
+// Grupa ustawień wewnątrz zakładki: przyklejony nagłówek + wiersze oddzielone
+// cienką linią (płaska lista zamiast zagnieżdżonych kart, więc zakładkę czyta się jak spis treści).
 defineProps<{ title?: string; description?: string; id?: string }>();
 </script>
 

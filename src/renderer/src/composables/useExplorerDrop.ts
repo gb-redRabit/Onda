@@ -28,8 +28,8 @@ export function useExplorerDrop(
   }
 
   function onContentDragLeave(e: DragEvent) {
-    // dragleave bubbles on every boundary crossing between child elements, so
-    // only clear the hover when the pointer truly leaves the drop container.
+    // dragleave bąbelkuje przy każdym przekroczeniu granicy między elementami podrzędnymi,
+    // więc czyścimy hover dopiero, gdy wskaźnik naprawdę opuści kontener upuszczania.
     const related = e.relatedTarget as Node | null;
     const container = contentRef.value;
     if (container && related && container.contains(related)) return;

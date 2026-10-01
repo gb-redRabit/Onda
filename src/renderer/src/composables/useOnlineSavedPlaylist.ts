@@ -5,9 +5,9 @@ import { useSavedStore } from '@renderer/stores/saved';
 import { useUIStore } from '@renderer/stores/ui';
 import { savedPlaylistId } from '@renderer/utils/onlineSavedPlaylist';
 
-// Save/unsave the currently resolved playlist. The stored entry keeps the FULL
-// item list (all pages), so the Saved view and playback start instantly without
-// re-resolving the playlist on every visit.
+// Zapisz/odznacz aktualnie rozwiązaną playlistę. Zapisany wpis trzyma PEŁNĄ
+// listę elementów (wszystkie strony), więc widok Zapisane i odtwarzanie startują natychmiast bez
+// ponownego rozwiązywania playlisty przy każdej wizycie.
 export function useOnlineSavedPlaylist() {
   const yt = useOnlineStore();
   const saved = useSavedStore();

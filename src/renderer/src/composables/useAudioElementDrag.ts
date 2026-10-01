@@ -2,8 +2,8 @@ import { ref, type Ref } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import type { AudioLayoutElement } from '@renderer/types/settings';
 
-// Fullscreen-only element dragging: keeps a transient drag position and commits
-// it to the audio layout on mouse-up.
+// Przeciąganie elementów tylko w pełnym ekranie: utrzymuje tymczasową pozycję przeciągania
+// i zatwierdza ją w układzie audio przy puszczeniu myszy.
 export function useAudioElementDrag(isFullscreen: Ref<boolean>) {
   const settings = useSettingsStore();
 

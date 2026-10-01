@@ -67,7 +67,7 @@ function applyNarrowLayout(width: number): void {
 
 const isExplorerWindow = computed(() => route.name === 'explorer-window');
 
-// Rebuilt only when the shortcuts change, not on every keystroke.
+// Przebudowywane tylko przy zmianie skrótów, nie przy każdym naciśnięciu klawisza.
 const NAV_ACTIONS: Record<string, string> = {
   settings: '/settings',
   explorer: '/explorer',
@@ -80,8 +80,8 @@ const { appearance: appearanceRef } = storeToRefs(settings);
 const theme = getThemeEngine(appearanceRef);
 
 onMounted(async () => {
-  // Applied on every resize event (the ref write is O(1) and Vue dedupes an
-  // unchanged boolean) so the narrow layout never lags behind the window.
+  // Stosowane przy każdym zdarzeniu resize (zapis do refa jest O(1), a Vue deduplikuje
+  // niezmieniony boolean), żeby wąski układ nigdy nie zostawał w tyle za oknem.
   window.addEventListener('resize', onAppResize);
   document.addEventListener('keydown', onGlobalKeydown);
   document.addEventListener('mousedown', onGlobalMouseDown);
@@ -90,9 +90,9 @@ onMounted(async () => {
     window.api?.on('window:maximized', (val: unknown) => {
       isWinMaximized.value = !!val;
     }) ?? null;
-  // Settings may already be loading (started in main.ts before mount). Each
-  // step is guarded so a single failure cannot stop the renderer from reaching
-  // `app:rendererReady` (main keeps the splash up until the 30s watchdog).
+  // Ustawienia mogą już się ładować (uruchomione w main.ts przed mountem). Każdy
+  // krok jest chroniony, żeby pojedyncza awaria nie powstrzymała renderera przed
+  // osiągnięciem `app:rendererReady` (main trzyma splash do 30-sekundowego watchdoga).
   const onBootStepError = (e: unknown): void =>
     logger.error('App', 'boot step failed — continuing with defaults', e);
   await guardBootStep(async () => {
@@ -101,20 +101,20 @@ onMounted(async () => {
   await guardBootStep(() => theme.applyTheme(), onBootStepError);
   await guardBootStep(() => loadLocaleMessages(settings.appearance.locale), onBootStepError);
   await guardBootStep(() => library.loadFromDisk(), onBootStepError);
-  // Settings → Playback → default volume is the volume the app starts with.
+  // Ustawienia → Odtwarzanie → domyślna głośność to głośność, z którą startuje aplikacja.
   await guardBootStep(() => player.setVolume(settings.playback.defaultVolume), onBootStepError);
   await guardBootStep(() => {
     audioPip.dock.value = settings.appearance.audioPipDock;
     audioPip.setAutoShow(settings.appearance.audioPipAutoShow);
   }, onBootStepError);
 
-  // Signal readiness as soon as the shell is themed, localised and painted —
-  // main then closes the splash and shows the window. Module activation, audio
-  // warm-up, session restore and the first-run wizard must not hold it open.
+  // Zgłoś gotowość, gdy tylko powłoka jest wystrojona, zlokalizowana i namalowana —
+  // main zamyka wtedy splash i pokazuje okno. Aktywacja modułów, rozgrzewanie audio,
+  // przywracanie sesji i kreator pierwszego uruchomienia nie mogą go wstrzymywać.
   await nextTick();
   markRendererReady();
-  // Wait for a composited frame: the window is transparent (+ acrylic on
-  // Windows), so showing it before the first paint flashes the blurred desktop.
+  // Poczekaj na skomponowaną klatkę: okno jest przezroczyste (+ akryl na
+  // Windows), więc pokazanie go przed pierwszym malowaniem błyska rozmytym pulpitem.
   await new Promise<void>((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
   );
@@ -124,28 +124,28 @@ onMounted(async () => {
     await moduleManager.switchTo('home');
   }
 
-  // Pre-create the AudioContext in idle time so the first play click isn't
-  // blocked by the one-time context creation cost.
+  // Utwórz AudioContext z wyprzedzeniem w czasie bezczynności, żeby pierwszego kliknięcia play nie
+  // blokował jednorazowy koszt tworzenia kontekstu.
   if ('requestIdleCallback' in window) {
     window.requestIdleCallback(() => audioEngine.warmUp(), { timeout: 2000 });
   } else {
     setTimeout(() => audioEngine.warmUp(), 1000);
   }
 
-  // Restore the last played track + queue (opt-in via settings).
+  // Przywróć ostatnio odtwarzany utwór + kolejkę (opcjonalnie przez ustawienia).
   if (settings.general.restoreSession) {
     void session.restore(router);
   }
 
-  // First-run wizard (one time). Re-runnable from Settings / search. The flag
-  // now lives in settings so it is covered by export/import; migrate the legacy
-  // localStorage value once so existing profiles don't see the wizard again.
+  // Kreator pierwszego uruchomienia (jednorazowo). Można go powtórzyć z Ustawień / wyszukiwania. Flaga
+  // żyje teraz w ustawieniach, więc jest objęta eksportem/importem; zmigruj jednorazowo
+  // starą wartość localStorage, żeby istniejące profile nie zobaczyły kreatora ponownie.
   try {
     if (!settings.general.firstRunDone && localStorage.getItem('onda-first-run-done')) {
       settings.updateGeneral({ firstRunDone: true });
     }
   } catch {
-    /* storage unavailable */
+    /* pamięć niedostępna */
   }
   if (!settings.general.firstRunDone) ui.openSetupWizard();
 
@@ -161,7 +161,7 @@ onBeforeUnmount(() => {
   offMaximized?.();
 });
 
-// Fallback for environments without ResizeObserver.
+// Fallback dla środowisk bez ResizeObserver.
 function onAppResize(): void {
   applyNarrowLayout(window.innerWidth);
 }
@@ -211,7 +211,7 @@ function onGlobalKeydown(e: KeyboardEvent) {
       if (['library', 'explorer', 'downloads'].includes(route.name as string)) {
         ui.toggleViewSearch();
       } else {
-        // Home / settings have no view search — say so instead of swallowing it.
+        // Strona główna / ustawienia nie mają wyszukiwania widoku — powiedz o tym zamiast to połykać.
         ui.notify('info', i18n.global.t('menu.viewSearchUnavailable'));
       }
     } else if (activeEl?.tagName === 'INPUT' && activeEl.closest('[data-app-search]')) {
@@ -220,8 +220,8 @@ function onGlobalKeydown(e: KeyboardEvent) {
     }
     return;
   }
-  // Navigation shortcuts (settings / explorer / library / home) — bound to
-  // their editable entries in Settings → Shortcuts.
+  // Skróty nawigacji (ustawienia / eksplorator / biblioteka / strona główna) — powiązane z
+  // ich edytowalnymi wpisami w Ustawienia → Skróty.
   if (!document.body.dataset.shortcutRecording) {
     for (const { shortcut, path } of navBindings.value) {
       if (matchesShortcut(shortcut, e)) {
@@ -239,7 +239,7 @@ function onGlobalKeydown(e: KeyboardEvent) {
     ui.closeSearch();
   }
 
-  // Plugin command shortcuts (registerCommand({ shortcut })).
+  // Skróty komend pluginów (registerCommand({ shortcut })).
   if (!document.querySelector('input:focus, textarea:focus')) {
     const normalized = matchesPluginShortcut(e);
     if (normalized && pluginsStore.dispatchShortcut(normalized)) {
@@ -248,9 +248,9 @@ function onGlobalKeydown(e: KeyboardEvent) {
     }
   }
 
-  // Playback shortcuts (/player view). The listener lives here — app-level,
-  // registered once — so keys work regardless of view mount/unmount churn;
-  // PlayerView only donates its action context via setPlayerShortcutCtx().
+  // Skróty odtwarzania (widok /player). Nasłuch żyje tutaj — na poziomie aplikacji,
+  // zarejestrowany raz — więc klawisze działają niezależnie od montowania/odmontowywania widoków;
+  // PlayerView tylko użycza swojego kontekstu akcji przez setPlayerShortcutCtx().
   handlePlayerShortcutKeydown(e);
 }
 
@@ -275,8 +275,8 @@ function onWindowBlur() {
     :class="{ 'is-maximized': isWinMaximized, 'app-root-glass': glassOn }"
   >
     <AppMenu v-if="!isExplorerWindow" />
-    <!-- Warn on every launch about dependencies Onda cannot work without.
-         Hidden while the wizard is open (it offers the same installs). -->
+    <!-- Ostrzegaj przy każdym uruchomieniu o zależnościach, bez których Onda nie działa.
+         Ukryte, gdy kreator jest otwarty (oferuje te same instalacje). -->
     <DependencyBanner v-if="!isExplorerWindow && !ui.setupWizardVisible" />
     <div class="relative flex flex-1 min-h-0">
       <Sidebar v-if="!isExplorerWindow && settings.appearance.sidebarPosition === 'left'" />
@@ -289,8 +289,8 @@ function onWindowBlur() {
           </transition>
         </router-view>
       </main>
-      <!-- One instance across layouts: switching between wide and narrow must
-           not unmount it, or the queue's scroll position is lost. -->
+      <!-- Jedna instancja między układami: przełączanie między szerokim a wąskim nie może
+           jej odmontować, bo pozycja przewinięcia kolejki zostanie utracona. -->
       <QueuePanel
         v-if="!isExplorerWindow && player.queueVisible"
         :class="
@@ -319,8 +319,8 @@ function onWindowBlur() {
         route.name !== 'audio'
       "
     />
-    <!-- Visibility belongs to settings.statusBar.visible, which StatusBar reads
-         itself. This used to be a second gate that nothing ever changed. -->
+    <!-- Widoczność należy do settings.statusBar.visible, które StatusBar odczytuje
+         sam. To była druga brama, której nic nigdy nie zmieniało. -->
     <StatusBar v-if="!isExplorerWindow" />
 
     <AppSearch />

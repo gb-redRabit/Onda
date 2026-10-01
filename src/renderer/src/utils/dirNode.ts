@@ -9,8 +9,8 @@ import { trackMatchesQuery } from '@renderer/utils/librarySearch';
 
 type Folders = Parameters<typeof getChildDirsIndexed>[2];
 
-// Everything the row/template needs for a child folder, computed once per child
-// instead of filtering/reducing the subtree 3-5x per render (see plan 1.1).
+// Wszystko, czego wiersz/szablon potrzebuje dla folderu potomnego, liczone raz na dziecko
+// zamiast filtrowania/redukcji poddrzewa 3-5x na render (patrz plan 1.1).
 export interface DirChildMeta {
   subtree: MediaFile[];
   audio: MediaFile[];

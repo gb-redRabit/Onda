@@ -32,13 +32,13 @@ export const useRadioStore = defineStore('radio', () => {
 
   async function persist(): Promise<void> {
     await ensureLoaded();
-    // ref() values are Vue reactive proxies — structured-clone (used by
-    // ipcRenderer.invoke) cannot serialize them ("An object could not be
-    // cloned"), so send a plain deep copy instead.
+    // Wartości ref() to reaktywne proxy Vue — structured-clone (używany przez
+    // ipcRenderer.invoke) nie może ich serializować ("An object could not be
+    // cloned"), więc wyślij zamiast tego czystą głęboką kopię.
     await window.api?.radioSave(clonePlain(stations.value));
   }
 
-  // Adds stations, deduping by url. Returns the number actually added.
+  // Dodaje stacje, deduplikując po url. Zwraca liczbę faktycznie dodanych.
   async function addStations(inputs: RadioStationInput[]): Promise<number> {
     await ensureLoaded();
     const seen = new Set(stations.value.map((s) => s.url));
@@ -85,8 +85,8 @@ export const useRadioStore = defineStore('radio', () => {
     await persist();
   }
 
-  // Live streams are plain 'stream' tracks with no duration: the player shows
-  // "na żywo" and never seeks.
+  // Strumienie na żywo to zwykłe utwory 'stream' bez czasu trwania: odtwarzacz pokazuje
+  // "na żywo" i nigdy nie przewija.
   function buildRadioTrack(station: IpcRadioStation): MediaFile {
     return {
       id: `radio:${station.id}`,

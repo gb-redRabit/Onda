@@ -2,11 +2,11 @@ import type { DepToolStatus } from '@shared/types/ipc';
 
 export type DepToolName = 'ffmpeg' | 'ffprobe' | 'yt-dlp' | 'mkvextract';
 
-// Tools Onda cannot work correctly without: FFmpeg does every transcode, frame
-// extraction and stream remux, FFprobe every duration / subtitle probe. yt-dlp
-// and mkvextract only drive online downloads and MKV font extraction, so a
-// missing one is reported as an optional issue (same "missing vs required"
-// split the dependency resolver uses at runtime).
+// Narzędzia, bez których Onda nie może działać poprawnie: FFmpeg wykonuje każdy
+// transcode, ekstrakcję klatek i remux strumienia, FFprobe każdą sondę czasu trwania /
+// napisów. yt-dlp i mkvextract obsługują tylko pobierania online i ekstrakcję czcionek MKV,
+// więc brak jednego z nich jest zgłaszany jako opcjonalny problem (ten sam podział
+// "brakujące vs wymagane", którego resolver zależności używa w czasie działania).
 const REQUIRED_TOOLS: readonly DepToolName[] = ['ffmpeg', 'ffprobe'];
 
 export interface DependencyStatusEntry {
@@ -18,13 +18,13 @@ export interface DependencyStatusEntry {
 export interface DependencyIssue {
   tool: DepToolName;
   name: string;
-  /** Missing/broken tool the app needs for basic playback features. */
+  /** Brakujące/uszkodzone narzędzie potrzebne aplikacji do podstawowego odtwarzania. */
   required: boolean;
-  /** Present but the version probe failed (resolver marks it "broken"). */
+  /** Obecne, ale sonda wersji zawiodła (resolver oznacza je jako "broken"). */
   broken: boolean;
 }
 
-// Missing or broken dependencies, required ones first (stable within a group).
+// Brakujące lub uszkodzone zależności, wymagane najpierw (stabilnie w obrębie grupy).
 export function buildDependencyIssues(
   entries: readonly DependencyStatusEntry[]
 ): DependencyIssue[] {

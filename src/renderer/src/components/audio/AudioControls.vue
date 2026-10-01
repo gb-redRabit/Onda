@@ -36,15 +36,15 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="rootEl" class="w-full h-full overflow-hidden">
-    <!-- ═══ MICRO (<28px tall) — only the play button ═══ -->
+    <!-- ═══ MICRO (wys. <28px) — tylko przycisk odtwarzania ═══ -->
     <AudioControlsMicro v-if="mode === 'micro'" />
 
     <!--
       ═══ WIDE (≥280 × ≥120) ═══
       ═══ COMPACT (≥180 × ≥100) ═══
       ═══ TALL (<180 × ≥140) ═══
-      ═══ MINIMAL (<180 × <140, ≥28px tall) ═══
-      One component; the differences are presentation only, and they live in
+      ═══ MINIMAL (<180 × <140, wys. ≥28px) ═══
+      Jeden komponent; różnice są wyłącznie prezentacyjne i żyją w
       DENSITY (utils/audioControls.ts).
     -->
     <AudioControlsCore

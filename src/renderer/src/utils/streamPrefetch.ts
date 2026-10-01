@@ -2,17 +2,17 @@ import type { IpcStreamResult } from '@shared/types/ipc';
 import { toMediaStreamUrl } from '@renderer/utils/mediaUrl';
 import { streamTargetFor, streamChannelFor } from '@renderer/utils/onlineHelpers';
 
-// High enough to cover a grid row + one click ahead; low enough to not hammer
-// YouTube with parallel yt-dlp spawns (they amplify transient 403 windows).
+// Wystarczająco wysoko, by pokryć rząd siatki + jedno kliknięcie w przód; wystarczająco nisko,
+// by nie zarzucać YouTube równoległymi spawnami yt-dlp (wzmacniają przejściowe okna 403).
 const PREFETCH_MAX_IN_FLIGHT = 5;
 
 export interface StreamPrefetcher {
   prefetch(video: { id: string; url?: string }): Promise<void>;
 }
 
-// Resolves a stream URL ahead of the click (card visibility) so playback starts
-// instantly: the main process LRU cache then serves the click without waiting on
-// the resolver. Best-effort — real errors surface through playStream.
+// Rozwiązuje URL strumienia przed kliknięciem (widoczność karty), by odtwarzanie startowało
+// natychmiast: cache LRU procesu głównego obsługuje wtedy kliknięcie bez czekania na
+// resolver. Best-effort — prawdziwe błędy ujawniają się przez playStream.
 export function createStreamPrefetcher(): StreamPrefetcher {
   const prefetched = new Set<string>();
   let inFlight = 0;
@@ -27,18 +27,18 @@ export function createStreamPrefetcher(): StreamPrefetcher {
       const res = (await window.api?.invoke(streamChannelFor(url), url)) as
         IpcStreamResult | undefined;
       if (res?.success && res.url) {
-        // Warm the CDN connection right away through the media-server proxy (it
-        // retries transient 403s with backoff). By the time the user clicks, the
-        // URL has already passed its rate-limit window, so the click loads in a
-        // single attempt instead of paying 403s + retry delays.
+        // Rozgrzej połączenie CDN od razu przez proxy media servera (ponawia
+        // przejściowe 403 z backoffem). Zanim użytkownik kliknie, URL
+        // minął już swoje okno rate-limitu, więc kliknięcie ładuje się w
+        // jednej próbie zamiast płacić 403 + opóźnienia ponowień.
         try {
           await fetch(toMediaStreamUrl(res.url), { headers: { Range: 'bytes=0-1' } });
         } catch {
-          // best-effort probe — playback does not depend on it
+          // sonda best-effort — odtwarzanie od niej nie zależy
         }
       }
     } catch {
-      // ignore: prefetch is best-effort
+      // ignoruj: prefetch jest best-effort
     } finally {
       inFlight--;
     }

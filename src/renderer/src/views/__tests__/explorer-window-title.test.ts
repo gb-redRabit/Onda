@@ -2,10 +2,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// Every explorer window used to carry the static BrowserWindow title
-// "Explorer", so the OS taskbar showed N identical entries. The renderer has to
-// push the current folder's name into document.title (Electron mirrors it onto
-// the window).
+// Każde okno eksploratora miało kiedyś statyczny tytuł BrowserWindow
+// "Explorer", więc pasek zadań systemu pokazywał N identycznych wpisów. Renderer musi
+// wpisywać nazwę bieżącego folderu do document.title (Electron odzwierciedla ją
+// w oknie).
 
 const VIEW = join(process.cwd(), 'src/renderer/src/views/ExplorerWindowView.vue');
 const source = readFileSync(VIEW, 'utf8');

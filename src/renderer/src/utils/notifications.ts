@@ -1,5 +1,5 @@
-// Native system notifications (HTML5 Notification API). Fall back silently
-// when unavailable or permission is denied.
+// Natywne powiadomienia systemowe (HTML5 Notification API). Ciche wycofanie,
+// gdy niedostępne lub odmówiono pozwolenia.
 export function notifyNative(title: string, body?: string): void {
   try {
     if (typeof Notification === 'undefined') return;
@@ -11,6 +11,6 @@ export function notifyNative(title: string, body?: string): void {
       });
     }
   } catch {
-    /* notifications unavailable */
+    /* powiadomienia niedostępne */
   }
 }

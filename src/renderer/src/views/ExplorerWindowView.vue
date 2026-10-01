@@ -55,8 +55,8 @@ const titleText = computed(() =>
   explorerWindowTitle(explorer.currentPath, t('explorer.thisComputer'))
 );
 
-// Electron mirrors document.title onto the OS window title, so each explorer
-// window shows its folder in the taskbar instead of a generic "Explorer".
+// Electron odzwierciedla document.title w tytule okna systemowego, więc każde okno
+// eksploratora pokazuje swój folder na pasku zadań zamiast ogólnego "Explorer".
 watch(
   titleText,
   (title) => {

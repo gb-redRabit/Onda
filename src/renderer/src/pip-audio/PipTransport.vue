@@ -3,15 +3,15 @@ import { computed } from 'vue';
 import { BTN_ACTIVE, BTN_EDGE, BTN_PLAY_EDGE } from './pipTheme';
 
 /**
- * The five transport buttons, shared by all three PiP layouts.
+ * Pięć przycisków transportu, współdzielonych przez wszystkie trzy układy PiP.
  *
- * They were written out three times, once per layout, and had drifted: only the
- * card layout showed the "1" badge for repeat-one, so the same state read
- * differently depending on which dock was in use. The badge now lives in one
- * place and every layout gets it.
+ * Były wypisane trzy razy, po jednym na układ, i się rozjechały: tylko układ
+ * karty pokazywał plakietkę "1" dla powtarzania jednego, więc ten sam stan czytał się
+ * różnie w zależności od używanej doki. Plakietka żyje teraz w jednym
+ * miejscu i każdy układ ją dostaje.
  *
- * The layouts still own their own wrapper classes and their `has('controls')`
- * gate — this component only owns the buttons themselves.
+ * Układy nadal mają własne klasy wrapperów i własną bramkę
+ * `has('controls')` — ten komponent posiada tylko same przyciski.
  */
 const props = withDefaults(
   defineProps<{
@@ -19,7 +19,7 @@ const props = withDefaults(
     isPlaying: boolean;
     shuffle: boolean;
     repeat: string;
-    /** Vertical stacks put play/pause first; the others put it in the middle. */
+    /** Pionowe stosy dają play/pause na początku; pozostałe w środku. */
     layout?: 'horizontal' | 'vertical';
     btnClass?: string;
     playBtnClass?: string;
@@ -38,7 +38,7 @@ interface TransportButton {
   action: string;
   glyph: string;
   active: boolean;
-  /** Only repeat-one carries a badge; plain repeat and repeat-off do not. */
+  /** Tylko powtarzanie jednego nosi plakietkę; zwykłe powtarzanie i wyłączone nie. */
   badge: string;
   btnClass: string;
 }

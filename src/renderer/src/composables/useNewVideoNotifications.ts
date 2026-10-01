@@ -6,8 +6,8 @@ import type { IpcNewVideosEvent } from '@shared/types/ipc';
 
 let subscribed = false;
 
-// Global listener for subscription auto-check results: toasts about new videos
-// regardless of the currently open view. Mounted once from App.vue.
+// Globalny nasłuch wyników auto-sprawdzania subskrypcji: toasty o nowych filmach
+// niezależnie od aktualnie otwartego widoku. Montowany raz z App.vue.
 export function useNewVideoNotifications() {
   const { t } = useI18n();
   if (!subscribed) {

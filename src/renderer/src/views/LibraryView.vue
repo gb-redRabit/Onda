@@ -24,7 +24,7 @@ import { isTabId, buildLibraryTabs, type TabId } from '@renderer/utils/libraryTa
 import { readString, writeString, readStringArray, writeJson } from '@renderer/utils/localStore';
 import { clonePlain } from '@renderer/utils/clone';
 
-// Modals only mounted on demand — lazy so the Library chunk stays lean (3.5).
+// Modale montowane tylko na żądanie — leniwie, żeby chunk Biblioteki pozostał lekki (3.5).
 const TrackTagEditor = defineAsyncComponent(
   () => import('@renderer/components/library/TrackTagEditor.vue')
 );
@@ -110,7 +110,7 @@ function onMbEvent(e: Event) {
 onMounted(() => window.addEventListener('onda:openMusicbrainz', onMbEvent));
 onUnmounted(() => window.removeEventListener('onda:openMusicbrainz', onMbEvent));
 
-// Tabs — overview default (Minimal Spotify)
+// Zakładki — domyślnie przegląd (Minimal Spotify)
 const route = useRoute();
 const savedTab = readString('onda.libraryTab');
 const storedTab: TabId = isTabId(route.query.tab)
@@ -120,7 +120,7 @@ const storedTab: TabId = isTabId(route.query.tab)
     : 'overview';
 const tab = ref<TabId>(storedTab);
 watch(tab, (v) => writeString('onda.libraryTab', v));
-// Navigation from other views (e.g. Downloads "in library") passes ?tab=… .
+// Nawigacja z innych widoków (np. Pobrane "w bibliotece") przekazuje ?tab=… .
 watch(
   () => route.query.tab,
   (q) => {
@@ -134,7 +134,7 @@ function setViewMode(mode: 'list' | 'grid') {
   settings.updateLibrary({ viewModes });
 }
 
-// Spotify-like quick filters + sort (for tracks tab)
+// Szybkie filtry + sortowanie w stylu Spotify (dla zakładki utworów)
 const chip = ref<ChipId>('all');
 const sortKey = ref<SortKey>('added');
 const sortDir = ref<'asc' | 'desc'>('desc');
@@ -152,7 +152,7 @@ const tabs = computed(() =>
   })
 );
 
-// Dynamic tab collapse lives in LibraryTabBar (plan 6.3).
+// Dynamiczne zwijanie zakładek znajduje się w LibraryTabBar (plan 6.3).
 
 const chips = computed(() => [
   { id: 'all' as const, label: t('library.chipAll') },
@@ -185,7 +185,7 @@ function handleOverviewShowAll(section: string) {
     sortDir.value = 'desc';
   } else if (section === 'random') {
     chip.value = 'all';
-    // shuffle is handled by overview itself
+    // tasowanie obsługuje sam przegląd
   }
   tab.value = 'tracks';
 }
@@ -265,7 +265,7 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
 
 <template>
   <div data-testid="library-view" class="flex flex-col h-full">
-    <!-- Sticky glass header — Minimal Spotify -->
+    <!-- Przyklejony szklany nagłówek — Minimal Spotify -->
     <div class="ui-page-header sticky top-0 z-10 backdrop-blur border-b border-base-300 shrink-0">
       <div class="px-4 pt-4 pb-3">
         <LibraryHeader
@@ -292,7 +292,7 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
       </div>
     </div>
 
-    <!-- Content -->
+    <!-- Zawartość -->
     <div v-if="library.isLoading && !library.isLoaded" class="flex-1 p-4 space-y-3">
       <div
         v-for="i in 6"

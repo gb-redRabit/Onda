@@ -7,17 +7,17 @@ import type { YouTubeResolvedItem } from '@renderer/types/online';
 import { resolvedToSavedStream, savedStreamToItem } from '@renderer/utils/onlineHelpers';
 import { resolveAllPlaylistItems } from '@renderer/utils/onlineResolveAll';
 
-// Saved-playlist sync + instant playback. `playAllStreams` is injected from the
-// store (it owns the player queue wiring) so this module does not import the
-// store. The store destructures the returned actions back into the same names.
+// Synchronizacja zapisanej playlisty + natychmiastowe odtwarzanie. `playAllStreams` jest wstrzykiwane ze
+// store (posiada okablowanie kolejki odtwarzacza), więc ten moduł nie importuje
+// store. Store destrukturyzuje zwrócone akcje z powrotem do tych samych nazw.
 export function createOnlineSaved(playAllStreams: (items: YouTubeResolvedItem[]) => Promise<void>) {
   const t = i18n.global.t;
   const syncingSavedPlaylists = new Set<string>();
   const syncingSavedPlaylistState = ref(new Set<string>());
 
-  // Re-checks a saved playlist against YouTube in the background: new items are
-  // appended at the end, removed ones are dropped, and the stored snapshot is
-  // updated. Never blocks playback - results only surface through a toast.
+  // Ponownie sprawdza zapisaną playlistę względem YouTube w tle: nowe elementy są
+  // dołączane na końcu, usunięte są odrzucane, a zapisany snapshot jest
+  // aktualizowany. Nigdy nie blokuje odtwarzania - wyniki pojawiają się tylko przez toast.
   async function syncSavedPlaylist(p: IpcSavedPlaylist): Promise<{
     added: number;
     removed: number;
@@ -54,9 +54,9 @@ export function createOnlineSaved(playAllStreams: (items: YouTubeResolvedItem[])
     }
   }
 
-  // Plays a saved playlist instantly from its stored snapshot (no network wait)
-  // and re-checks the source in the background. Entries saved before the item
-  // snapshot existed fall back to a full resolve first.
+  // Odtwarza zapisaną playlistę natychmiast z jej zapisanego snapshotu (bez czekania na sieć)
+  // i ponownie sprawdza źródło w tle. Wpisy zapisane, zanim istniał snapshot elementów,
+  // najpierw wracają do pełnego rozwiązania.
   async function playSavedPlaylist(p: IpcSavedPlaylist) {
     let items = p.items ?? [];
     if (items.length === 0) {

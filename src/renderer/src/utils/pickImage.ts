@@ -1,14 +1,14 @@
 /**
- * Ask the main process for an image and return the chosen path.
+ * Pyta proces główny o obraz i zwraca wybraną ścieżkę.
  *
- * Three components opened the image picker and then each re-implemented the
- * same unwrapping of the dialog result: bail out when the user cancelled, bail
- * out when no path came back, otherwise take the first one. The result type is
- * declared per call site with an inline cast, so a change to the IPC shape would
- * have broken each of them separately.
+ * Trzy komponenty otwierały wybór obrazu i każdy ponownie implementował to samo
+ * odwijanie wyniku dialogu: wyjdź, gdy użytkownik anulował, wyjdź, gdy nie wróciła
+ * żadna ścieżka, w przeciwnym razie weź pierwszą. Typ wyniku był deklarowany
+ * per miejsce wywołania inline castem, więc zmiana kształtu IPC zepsułaby
+ * każdy z nich osobno.
  *
- * Returns null when the dialog is unavailable (no preload bridge), cancelled, or
- * returns nothing usable.
+ * Zwraca null, gdy dialog jest niedostępny (brak bridge preload), anulowany, albo
+ * zwraca nic użytecznego.
  */
 export async function pickImagePath(): Promise<string | null> {
   const result = await window.api?.openImageDialog();

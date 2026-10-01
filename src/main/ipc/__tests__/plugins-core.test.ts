@@ -333,11 +333,11 @@ describe('plugin capability approval', () => {
     const approved = pluginConsentHash(withSlot, code);
 
     expect(pluginApprovalMatches(withSlot, code, approved)).toBe(true);
-    // Adding a host surface after approval invalidates it.
+    // Dodanie powierzchni hosta po zatwierdzeniu unieważnia je.
     expect(
       pluginApprovalMatches({ ...withSlot, uiSlots: ['audio-view', 'player-bar'] }, code, approved)
     ).toBe(false);
-    // Dropping the slot is a change too, so the old approval is not reused.
+    // Usunięcie slotu to też zmiana, więc stare zatwierdzenie nie jest ponownie używane.
     expect(pluginApprovalMatches(manifest, code, approved)).toBe(false);
   });
 });
@@ -474,19 +474,19 @@ describe('network allowlist', () => {
     expect(urlAllowed('https://api.example.com/x', [])).toBe(false);
   });
   it('urlAllowed requires a host boundary (no look-alike hosts)', () => {
-    // Regression: `https://api.example.com` used to match `api.example.com.evil`.
+    // Regresja: `https://api.example.com` pasowało kiedyś do `api.example.com.evil`.
     const bare = ['https://api.example.com'];
     expect(urlAllowed('https://api.example.com.evil/steal', bare)).toBe(false);
     expect(urlAllowed('https://api.example.com', bare)).toBe(true);
     expect(urlAllowed('https://api.example.com/v1/track', bare)).toBe(true);
     expect(urlAllowed('https://api.example.com?x=1', bare)).toBe(true);
     expect(urlAllowed('https://api.example.com#frag', bare)).toBe(true);
-    // A port on the allowlisted host is fine (same host, e.g. self-hosted sources).
+    // Port na hoście z allowlisty jest w porządku (ten sam host, np. źródła self-hosted).
     expect(urlAllowed('https://api.example.com:8443/v1', bare)).toBe(true);
     expect(urlAllowed('https://api.example.com.evil:8443/v1', bare)).toBe(false);
     expect(urlAllowed('https://api.example.comm/v1', bare)).toBe(false);
 
-    // Wildcards keep working, including an explicit host suffix.
+    // Wildcardy nadal działają, także z jawnym sufiksem hosta.
     expect(urlAllowed('https://a.cdn.example.net/x', ['https://*.example.net/*'])).toBe(true);
     expect(urlAllowed('https://evil.com/x', ['https://*.example.net/*'])).toBe(false);
   });

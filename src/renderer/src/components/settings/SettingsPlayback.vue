@@ -7,7 +7,7 @@ import { readSelect } from '@renderer/utils/selectOptions';
 
 const settings = useSettingsStore();
 
-/** Same values the options below are rendered from. */
+/** Te same wartości, z których renderowane są opcje poniżej. */
 const VIZ_MODES = ['none', 'circle', 'bars', 'particles', 'wave', 'radial'] as const;
 
 const toggles = [

@@ -4,9 +4,9 @@ import { createSSRApp, h } from 'vue';
 import { createI18n } from 'vue-i18n';
 import AudioControlsCore from '../AudioControlsCore.vue';
 
-// Renders each layout so the density map is exercised for real rather than only
-// asserted structurally: a typo in a class name or a missing token would still
-// produce markup, but a wrong `d.volumeRow` reference would not resolve at all.
+// Renderuje każdy układ, żeby mapa gęstości była naprawdę przećwiczona, a nie tylko
+// sprawdzana strukturalnie: literówka w nazwie klasy lub brakujący token nadal
+// tworzyłyby markup, ale błędne odwołanie `d.volumeRow` w ogóle by się nie rozwiązało.
 
 vi.mock('@renderer/composables/useAudioPlayer', () => ({
   useAudioPlayer: () => ({
@@ -68,15 +68,15 @@ describe('AudioControlsCore renders each layout', () => {
       for (const name of ['common.shuffle', 'common.previous', 'common.next']) {
         expect(html, `${variant} is missing ${name}`).toContain(name);
       }
-      // Not playing, so the play button's name is common.play, not common.pause.
+      // Nie odtwarza, więc nazwą przycisku odtwarzania jest common.play, a nie common.pause.
       expect(html, variant).toContain('common.play');
       expect(html, variant).toContain('player.repeatNone');
     }
   });
 
   it('names the volume controls in every layout', async () => {
-    // minimal shows the volume row only when the transport was gated away, so
-    // this configuration is the one where all four have one.
+    // minimal pokazuje wiersz głośności tylko wtedy, gdy transport został odcięty, więc
+    // ta konfiguracja jest tą, w której wszystkie cztery go mają.
     for (const variant of ['wide', 'tall', 'compact', 'minimal'] as const) {
       const html = await render({
         variant,
@@ -120,11 +120,11 @@ describe('AudioControlsCore renders each layout', () => {
       widthSufficient: false,
       volumeFit: true
     });
-    // Transport gated away — shuffle/prev/next must be gone, play must remain.
+    // Transport odcięty — shuffle/prev/next muszą zniknąć, play musi pozostać.
     expect(html).not.toContain('common.shuffle');
     expect(html).not.toContain('common.previous');
     expect(html).toContain('common.play');
-    // ...and the volume row appears, because minimal shows it in that case.
+    // ...i pojawia się wiersz głośności, bo minimal pokazuje go w tym przypadku.
     expect(html).toContain('player.volumeSlider');
   });
 

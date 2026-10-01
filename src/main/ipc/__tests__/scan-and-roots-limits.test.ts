@@ -5,9 +5,9 @@ import { join } from 'node:path';
 import { addAllowedRoot, getExtraRoots } from '../../media/media-server';
 import { createScanBudget, scanDir } from '../library/library-scan';
 
-// Two ceilings that used to bound the *result* rather than the *cost*: a
-// renderer could grow the media allowlist one call at a time without limit, and
-// a library scan read and parsed every file before dropping the excess.
+// Dwa pułapy, które ograniczały kiedyś *wynik*, a nie *koszt*: renderer
+// mógł powiększać allowlistę mediów wywołanie po wywołaniu bez limitu, a
+// skan biblioteki czytał i parsował każdy plik, zanim odrzucił nadmiar.
 
 describe('extraRoots is bounded', () => {
   const CAP = 200;
@@ -18,8 +18,8 @@ describe('extraRoots is bounded', () => {
   });
 
   it('refuses new roots past the ceiling without evicting what is already granted', async () => {
-    // The list is module state with no exported reset, so this one test owns
-    // filling it rather than assuming a clean start.
+    // Ta lista to stan modułu bez eksportowanego resetu, więc ten jeden test
+    // odpowiada za jej zapełnienie, zamiast zakładać czysty start.
     const first = join(dir, 'first');
     await mkdir(first, { recursive: true });
     expect(await addAllowedRoot(first)).toBe(true);
@@ -34,13 +34,13 @@ describe('extraRoots is bounded', () => {
 
     const roots = getExtraRoots();
     expect(roots.length).toBe(CAP);
-    // A refused grant must not evict something already allowed, or a runaway
-    // caller could knock out folders the app is actively playing from.
+    // Odrzucony grant nie może usuwać czegoś już dozwolonego, bo wymykający się
+    // kontroli wywołujący mógłby wybić foldery, z których aplikacja aktywnie odtwarza.
     expect(roots).toContain(first);
     expect(roots).toContain(join(dir, 'r0'));
 
-    // Idempotent: re-asking for an already-allowed root is not a new root, so it
-    // is not refused even with the list at the ceiling.
+    // Idempotentne: ponowne proszenie o już dozwolony korzeń to nie nowy korzeń, więc
+    // nie jest odrzucane, nawet gdy lista jest na pułapie.
     expect(await addAllowedRoot(first)).toBe(true);
     expect(getExtraRoots().length).toBe(CAP);
   });

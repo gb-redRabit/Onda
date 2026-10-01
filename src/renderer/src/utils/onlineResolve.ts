@@ -8,8 +8,8 @@ export interface OnlineResolveResponse {
   result?: YouTubeResolveResult;
 }
 
-// Platform-dispatched link resolution (detects the platform from the link
-// itself, not from the active UI tab).
+// Rozwiązywanie linku z dyspozycją per platforma (wykrywa platformę z samego
+// linku, a nie z aktywnej zakładki UI).
 export async function resolveOnlineUrl(url: string): Promise<OnlineResolveResponse> {
   const detected = detectPlatform(url);
   if (!detected) {

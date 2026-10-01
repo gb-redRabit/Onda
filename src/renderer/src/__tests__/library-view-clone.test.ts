@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 
-// Cloning the whole image list with a JSON round-trip was needlessly expensive;
-// the shared clonePlain (structuredClone) helper is used instead.
+// Klonowanie całej listy obrazów przez rundę JSON było niepotrzebnie kosztowne;
+// zamiast tego używany jest współdzielony helper clonePlain (structuredClone).
 
 const VIEW = readFileSync(join(process.cwd(), 'src/renderer/src/views/LibraryView.vue'), 'utf8');
 

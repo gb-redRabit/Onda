@@ -14,16 +14,16 @@ export interface AudioEventRefs {
   buffered: Ref<number>;
 }
 
-// audioEngine event wiring extracted from `composables/useAudioPlayer.ts`
-// (plan 2.8). Registered once per renderer lifetime.
+// okablowanie zdarzeń audioEngine wyodrębnione z `composables/useAudioPlayer.ts`
+// (plan 2.8). Rejestrowane raz na czas życia renderera.
 export function wireAudioEvents(r: AudioEventRefs): void {
   audioEvents.on('timeUpdate', (time: number) => {
     r.currentTime.value = time;
   });
 
   audioEvents.on('durationChange', (dur: number) => {
-    // Live radio streams report Infinity — treat as "no duration" instead of
-    // poisoning progress/time rendering.
+    // Strumienie radia na żywo zwracają Infinity — traktujemy to jako "brak czasu trwania"
+    // zamiast psuć renderowanie postępu/czasu.
     r.duration.value = Number.isFinite(dur) && dur > 0 ? dur : 0;
   });
 
@@ -51,9 +51,9 @@ export function wireAudioEvents(r: AudioEventRefs): void {
     r.error.value = 'stream-failed';
   });
 
-  // Local file load failed (missing/unreadable file, media server error).
-  // Auto-skip while playing; a 2s throttle caps skip storms (e.g. a folder of
-  // stale entries or repeat-one on a broken file) — then pause instead.
+  // Ładowanie lokalnego pliku nie powiodło się (brakujący/nieczytelny plik, błąd serwera mediów).
+  // Auto-pomijanie podczas odtwarzania; 2-sekundowy throttle ogranicza lawinę pominięć (np. folder
+  // nieaktualnych wpisów lub repeat-one na uszkodzonym pliku) — potem pauza.
   let lastTrackErrorAt = 0;
   audioEvents.on('trackError', () => {
     r.isLoading.value = false;

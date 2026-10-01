@@ -5,8 +5,8 @@ import type { OnlineConfigTarget } from '@renderer/utils/onlineConfigDialog';
 import { buildQueueExtra, type QueueConfigPayload } from '@renderer/utils/onlineQueueExtra';
 import type { YouTubeResolvedItem, YouTubeVideo } from '@renderer/types/online';
 
-// Resolved-list selection + queueing actions. `toastAdded` is injected from the
-// view so the success notification format stays in one place.
+// Zaznaczanie i kolejkowanie na liście rozwiązanej. `toastAdded` jest wstrzykiwane z
+// widoku, aby format powiadomienia o sukcesie pozostał w jednym miejscu.
 export function useOnlineQueueing(
   configTarget: Ref<OnlineConfigTarget>,
   rangeStart: Ref<number>,
@@ -33,7 +33,7 @@ export function useOnlineQueueing(
     yt.selectedResolved = allSelected ? new Set() : new Set(all);
   }
 
-  // Selects a 1-based inclusive range of resolved items (e.g. 1-100, 101-200).
+  // Zaznacza 1-indeksowany obustronnie domknięty zakres rozwiązanych elementów (np. 1-100, 101-200).
   function selectRange() {
     if (!yt.resolved) return;
     const total = yt.resolved.items.length;
@@ -49,7 +49,7 @@ export function useOnlineQueueing(
 
   function addSelectedToQueue() {
     if (!yt.resolved || yt.selectedResolved.size === 0) return;
-    // Smart Mode: download immediately with defaults; otherwise open the dialog.
+    // Tryb Smart: pobierz natychmiast z domyślnymi ustawieniami; w przeciwnym razie otwórz dialog.
     if (settings.download.smartMode) {
       void yt.queueFromResolved([...yt.selectedResolved]);
       toastAdded();
@@ -66,7 +66,7 @@ export function useOnlineQueueing(
     configTarget.value = { mode: 'single', video: v };
   }
 
-  // Quick download (Smart Mode): queue with defaults without the dialog.
+  // Szybkie pobieranie (tryb Smart): kolejkuj z domyślnymi bez dialogu.
   function quickQueueResolved(item: YouTubeResolvedItem) {
     if (settings.download.smartMode) {
       void yt.queueVideo(item);

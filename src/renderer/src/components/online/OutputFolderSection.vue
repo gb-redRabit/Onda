@@ -2,9 +2,9 @@
 import { useI18n } from 'vue-i18n';
 import { FolderOpen } from '@lucide/vue';
 
-// Shared output-folder picker used by the download and subscribe config
-// dialogs. The channel option shows only when a channel title is available,
-// the playlist option only for download jobs that carry a playlist.
+// Współdzielony wybór folderu wyjściowego używany przez dialogi konfiguracji
+// pobierania i subskrypcji. Opcja kanału pokazuje się tylko, gdy dostępny jest tytuł
+// kanału, a opcja playlisty tylko dla zadań pobierania, które niosą playlistę.
 defineProps<{
   channelFolder: string;
   playlistFolder?: string;

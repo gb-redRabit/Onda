@@ -23,7 +23,7 @@ const props = withDefaults(
     channel: { channelId: string; channelTitle: string; channelThumbnail?: string };
     mode?: 'create' | 'edit';
     initialPrefs?: SubscriptionDownloadPrefs;
-    /** SoundCloud subscriptions only use folder/template/library prefs. */
+    /** Subskrypcje SoundCloud używają tylko preferencji folderu/szablonu/biblioteki. */
     platform?: 'youtube' | 'soundcloud';
   }>(),
   {
@@ -125,7 +125,7 @@ function confirm() {
     @close="onOverlayClickSub"
     @escape="emit('cancel')"
   >
-        <!-- Header -->
+        <!-- Nagłówek -->
         <div class="flex items-center gap-3 px-5 py-4 border-b border-base-300 shrink-0">
           <div
             v-if="avatarSrc && !avatarFailed"
@@ -157,19 +157,19 @@ function confirm() {
             <X :size="16" />
           </button>
         </div>
-        <!-- Body -->
+        <!-- Treść -->
         <div class="flex-1 overflow-auto px-5 py-5 space-y-5">
-          <!-- Channel card -->
+          <!-- Karta kanału -->
           <SubscribeChannelCard :channel="props.channel" :is-sc="isSc" :is-edit="isEdit" />
 
-          <!-- Scope (create only) -->
+          <!-- Zakres (tylko tworzenie) -->
           <SubscribeScopeSelector v-model="downloadAll" :is-edit="isEdit" />
 
-          <!-- Preferences grid -->
+          <!-- Siatka preferencji -->
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <!-- Left column -->
+            <!-- Lewa kolumna -->
             <div class="space-y-5">
-              <!-- Profile -->
+              <!-- Profil -->
               <SubscribeProfileSection
                 :is-sc="isSc"
                 :profiles="profiles"
@@ -190,7 +190,7 @@ function confirm() {
                 :is-sc="isSc"
               />
 
-              <!-- Cover (audio only) -->
+              <!-- Okładka (tylko audio) -->
               <CoverOptionsFields
                 v-model:cover-type="coverType"
                 v-model:custom-path="customCoverPath"
@@ -203,9 +203,9 @@ function confirm() {
               />
             </div>
 
-            <!-- Right column -->
+            <!-- Prawa kolumna -->
             <div class="space-y-5">
-              <!-- Metadata -->
+              <!-- Metadane -->
               <MetadataFieldsSection
                 v-if="!isSc"
                 v-model:artist="artist"
@@ -214,7 +214,7 @@ function confirm() {
                 grid-class="grid-cols-3 gap-2"
               />
 
-              <!-- Subtitles -->
+              <!-- Napisy -->
               <SubscribeSubtitlesSection
                 v-model:subs-enabled="subsEnabled"
                 v-model:subs-langs="subsLangs"
@@ -224,7 +224,7 @@ function confirm() {
                 :is-sc="isSc"
               />
 
-              <!-- Output folder -->
+              <!-- Folder wyjściowy -->
               <SubscribeOutputSection
                 v-model:folder-mode="folderMode"
                 v-model:output-dir="outputDir"
@@ -235,11 +235,11 @@ function confirm() {
             </div>
           </div>
 
-          <!-- Summary -->
+          <!-- Podsumowanie -->
           <SubscribePrefsSummary :items="prefsSummary" />
         </div>
 
-        <!-- Footer -->
+        <!-- Stopka -->
         <div
           class="flex items-center justify-end gap-2 px-5 py-4 border-t border-base-300 shrink-0"
         >

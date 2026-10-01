@@ -1,6 +1,6 @@
 import { Film, Image, ImagePlus, Scissors } from '@lucide/vue';
 
-// Static download-config-dialog metadata extracted from
+// Statyczne metadane dialogu konfiguracji pobierania wydzielone z
 // `components/online/DownloadConfigDialog.vue` (plan 2.8).
 
 export const DOWNLOAD_COVER_TYPES = [

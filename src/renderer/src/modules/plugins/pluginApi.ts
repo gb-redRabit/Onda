@@ -27,9 +27,9 @@ export interface PluginApiDeps {
 export type PluginApiDispatch = (op: string, args: unknown[], pluginId: string) => Promise<unknown>;
 
 /**
- * Routes the sandboxed plugin `api.*` calls coming from `pluginWorker` to host
- * capabilities. Owned by `stores/plugins.ts`, which provides manifest/settings
- * accessors, the visuals ref and the settings writer.
+ * Kieruje wywołania `api.*` z piaskownicy pluginu, przychodzące z `pluginWorker`, do
+ * możliwości hosta. Należy do `stores/plugins.ts`, który dostarcza akcesory
+ * manifestu/ustawień, ref visuals oraz zapis ustawień.
  */
 export function createPluginApi(deps: PluginApiDeps): PluginApiDispatch {
   const { getManifest, getSettings, saveSetting, visuals, slots } = deps;
@@ -222,8 +222,8 @@ export function createPluginApi(deps: PluginApiDeps): PluginApiDispatch {
     if (!(LAYOUT_ELEMENT_IDS as readonly string[]).includes(element)) {
       throw new Error('unknown-visual-element');
     }
-    // Decorations come only from plugins: `none` clears, anything else must be a
-    // host-implemented variant declared in this plugin's manifest.
+    // Dekoracje pochodzą wyłącznie od pluginów: `none` czyści, wszystko inne musi być
+    // wariantem zaimplementowanym przez host, zadeklarowanym w manifeście tego pluginu.
     if (value !== 'none') {
       const parts = value.split(':');
       if (parts.length !== 3 || parts[0] !== 'plugin' || parts[1] !== element) {

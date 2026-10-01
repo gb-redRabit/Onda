@@ -10,9 +10,9 @@ import { resolveElementDecoration } from '@renderer/utils/audioView';
 import { elementStyle } from '@renderer/utils/audioElementStyle';
 import type { AudioLayoutElement } from '@renderer/types/settings';
 
-// Free-canvas element renderer extracted from AudioView (plan 6.3 follow-up).
-// Drag state stays with the view/composable; this component only renders and
-// forwards the drag mousedown.
+// Renderer elementów free-canvas wyodrębniony z AudioView (kontynuacja planu 6.3).
+// Stan przeciągania zostaje w widoku/composable; ten komponent tylko renderuje i
+// przekazuje mousedown przeciągania.
 
 const props = defineProps<{
   elements: AudioLayoutElement[];
@@ -45,14 +45,14 @@ function styleFor(el: AudioLayoutElement) {
     class="absolute overflow-hidden"
     :style="styleFor(el)"
   >
-    <!-- Visualization (with built-in toolbar) -->
+    <!-- Wizualizacja (z wbudowanym paskiem narzędzi) -->
     <template v-if="el.id === 'visualization'">
       <div class="relative w-full h-full">
         <AudioVisualizer class="w-full h-full" />
       </div>
     </template>
 
-    <!-- Cover -->
+    <!-- Okładka -->
     <template v-else-if="el.id === 'cover'">
       <div
         class="w-full h-full flex items-center justify-center p-2"
@@ -66,7 +66,7 @@ function styleFor(el: AudioLayoutElement) {
       </div>
     </template>
 
-    <!-- Track Info -->
+    <!-- Informacje o utworze -->
     <template v-else-if="el.id === 'trackInfo'">
       <div
         class="w-full h-full flex items-center justify-center px-4 transition-opacity"
@@ -82,7 +82,7 @@ function styleFor(el: AudioLayoutElement) {
       </div>
     </template>
 
-    <!-- Progress -->
+    <!-- Postęp -->
     <template v-else-if="el.id === 'progress'">
       <div
         class="w-full h-full flex items-center px-4 transition-opacity"
@@ -96,7 +96,7 @@ function styleFor(el: AudioLayoutElement) {
       </div>
     </template>
 
-    <!-- Controls -->
+    <!-- Kontrolki -->
     <template v-else-if="el.id === 'controls'">
       <div
         class="w-full h-full flex items-center justify-center transition-opacity"

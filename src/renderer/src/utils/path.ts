@@ -23,8 +23,8 @@ export function isUnderPath(p: string, folder: string): boolean {
 
 const INVALID_DIR_CHARS = /[\\/:*?"<>|]/g;
 
-// Sanitizes a channel/playlist name so it can be used as a folder name on
-// Windows/macOS/Linux (invalid chars, reserved device names, trailing dots).
+// Sanityzuje nazwę kanału/playlisty, by mogła być użyta jako nazwa folderu na
+// Windows/macOS/Linux (nieprawidłowe znaki, zarezerwowane nazwy urządzeń, końcowe kropki).
 export function sanitizeDirName(name: string): string {
   const cleaned = (name || 'channel')
     .replace(INVALID_DIR_CHARS, ' ')
@@ -39,7 +39,7 @@ export function sanitizeDirName(name: string): string {
   return final;
 }
 
-// Joins path segments preserving the separator style of the first segment.
+// Łączy segmenty ścieżki, zachowując styl separatora pierwszego segmentu.
 export function joinPath(...parts: string[]): string {
   const nonEmpty = parts.filter((p) => p && p.trim());
   if (nonEmpty.length === 0) return '';

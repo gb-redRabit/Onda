@@ -2,12 +2,12 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// No <img> in the renderer had an alt attribute. That is not automatically a
-// bug: most of them are thumbnails sitting next to the file name as text, and
-// the correct answer there is an explicitly empty alt, which is what says "this
-// adds nothing for a screen reader" and suppresses the filename a screen reader
-// would otherwise read out. A missing attribute is ambiguous, an empty one is
-// a decision — so the guard is that none is left unstated.
+// Żaden <img> w rendererze nie miał atrybutu alt. To nie zawsze jest
+// błąd: większość z nich to miniatury obok nazwy pliku jako tekstu, a
+// poprawną odpowiedzią jest tam jawnie pusty alt, który mówi "to
+// nic nie wnosi dla czytnika ekranu" i tłumi nazwę pliku, którą czytnik ekranu
+// w przeciwnym razie by odczytał. Brakujący atrybut jest niejednoznaczny, pusty to
+// decyzja — więc zabezpieczeniem jest to, że żaden nie pozostaje nieokreślony.
 
 const SRC = join(process.cwd(), 'src/renderer/src');
 
@@ -22,7 +22,7 @@ function vueFiles(dir: string): string[] {
 const files = vueFiles(SRC);
 const rel = (f: string) => f.replace(`${process.cwd()}\\`, '').replace(/\\/g, '/');
 
-/** Strips comments so an <img> mentioned in prose is not treated as markup. */
+/** Usuwa komentarze, żeby <img> wspomniany w prozie nie był traktowany jak znacznik. */
 function stripComments(source: string): string {
   return source
     .replace(/\/\*[\s\S]*?\*\//g, '')

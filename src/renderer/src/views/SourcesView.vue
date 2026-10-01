@@ -20,7 +20,7 @@ import SourcesSidebar from '@renderer/components/sources/SourcesSidebar.vue';
 import { useUIStore } from '@renderer/stores/ui';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
 
-// Modals are lazy — only mounted on demand (plan 3.5).
+// Modale są leniwe — montowane tylko na żądanie (plan 3.5).
 const SourceGuideModal = defineAsyncComponent(
   () => import('@renderer/components/sources/SourceGuideModal.vue')
 );
@@ -46,8 +46,8 @@ const sortMode = ref<'none' | 'titleAsc' | 'titleDesc' | 'type'>('none');
 const filterText = ref('');
 const downloadingAll = ref(false);
 const ui = useUIStore();
-// Sources used a view-local toast; route it through the global notification
-// queue so the whole app has one toast system (and one look).
+// Źródła używały lokalnego toastu widoku; przekieruj go przez globalną kolejkę
+// powiadomień, żeby cała aplikacja miała jeden system toastów (i jeden wygląd).
 function showToast(msg: string, ok = true): void {
   ui.notify(ok ? 'success' : 'error', msg);
 }
@@ -191,9 +191,9 @@ async function onDownloadAll(list: SourceItem[]) {
   }
 }
 
-// Entering a source always re-checks the connection: the toolbar button is gone
-// and the result drives the sidebar status dot (green/red) plus a short
-// "checking" state while the request is in flight.
+// Wejście do źródła zawsze ponownie sprawdza połączenie: przycisk na pasku zniknął,
+// a wynik steruje kropką statusu na pasku bocznym (zielona/czerwona) oraz krótkim
+// stanem "sprawdzania", gdy żądanie jest w toku.
 function onSelectSource(id: string): void {
   sources.setActive(id);
   const src = sources.sources.find((s) => s.id === id);

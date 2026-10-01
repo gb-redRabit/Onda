@@ -22,11 +22,11 @@ class AudioEngine {
   private normalization = 1;
   private preloadEl: HTMLAudioElement | null = null;
   private loadStartTs = 0;
-  // Stream (YouTube online) playback state. Streams are proxied through the
-  // media server (CORS-enabled, so the WebAudio graph/EQ/visualizer keep
-  // working); googlevideo intermittently 403s and the proxy retries with
-  // backoff. If the proxy path is exhausted, the raw URL is retried once
-  // directly from the renderer (different request path) as a last resort.
+  // Stan odtwarzania strumieni (YouTube online). Strumienie przechodzą przez proxy
+  // serwera mediów (z CORS, dzięki czemu graf WebAudio/EQ/wizualizator dalej
+  // działają); googlevideo okresowo zwraca 403, a proxy ponawia z
+  // backoffem. Gdy ścieżka proxy zostanie wyczerpana, surowy URL jest ponawiany raz
+  // bezpośrednio z renderera (inna ścieżka żądania) jako ostatnia deska ratunku.
   private streamUrl: string | null = null;
   private streamTriedDirect = false;
   private streamFinalRetried = false;
@@ -69,10 +69,10 @@ class AudioEngine {
   }
 
   private replayIfDesired(el: HTMLAudioElement): void {
-    // Re-play after a late/retried load: resumeAndPlay fires play() at +50ms,
-    // which rejects while the element is still loading or errored (e.g. a
-    // stream that needed proxy retries or a direct fallback). Once the media
-    // is actually ready, re-issue play if the user still wants playback.
+    // Ponów odtwarzanie po późnym/ponowionym wczytaniu: resumeAndPlay odpala play() po +50ms,
+    // co odrzuca, gdy element wciąż się ładuje lub ma błąd (np.
+    // strumień wymagający ponowień proxy lub bezpośredniego fallbacku). Gdy media
+    // są faktycznie gotowe, ponów play, jeśli użytkownik nadal chce odtwarzania.
     if (this.streamMode && usePlayerStore().isPlaying && this.audioEl && this.audioEl.paused) {
       el.play().catch(() => {});
     }
@@ -120,8 +120,8 @@ class AudioEngine {
     this.initialized = true;
   }
 
-  // Pre-create the AudioContext during idle time so the first playback click
-  // doesn't pay the (expensive) one-time context creation cost synchronously.
+  // Utwórz AudioContext z wyprzedzeniem w czasie bezczynności, żeby pierwsze kliknięcie odtwarzania
+  // nie ponosiło synchronicznie (kosztownego) jednorazowego kosztu tworzenia kontekstu.
   warmUp(): void {
     this.graph.ensureContext();
   }
@@ -160,10 +160,10 @@ class AudioEngine {
     this.loadStartTs = performance.now();
     const player = usePlayerStore();
     if (mode === 'direct') {
-      // CORS-less cross-origin playback: no crossorigin attribute (a CORS-mode
-      // fetch would be blocked by googlevideo, which sends no ACAO headers)
-      // and no MediaElementSource connection (a tainted element would be
-      // silent through the graph). Volume is applied on the element itself.
+      // Odtwarzanie cross-origin bez CORS: brak atrybutu crossorigin (fetch w trybie CORS
+      // zostałby zablokowany przez googlevideo, które nie wysyła nagłówków ACAO)
+      // oraz brak połączenia MediaElementSource (skażony element byłby
+      // cichy przez graf). Głośność jest stosowana na samym elemencie.
       this.audioEl!.crossOrigin = null;
       this.graph.disconnectSourceNode();
       this.disconnectSecondaryAudio();
@@ -177,9 +177,9 @@ class AudioEngine {
       }
     }
     this.audioEl!.src = src;
-    // Explicit load(): without it the element does not reload when the new src
-    // equals the current one (e.g. retrying a cached stream URL after an
-    // upstream hiccup), leaving playback stuck in the previous error state.
+    // Jawne load(): bez niego element nie przeładuje się, gdy nowy src
+    // równa się bieżącemu (np. ponawianie zbuforowanego stream URL po
+    // potknięciu upstreamu), zostawiając odtwarzanie w poprzednim stanie błędu.
     this.audioEl!.load();
     logger.info(
       'audioEngine',
@@ -196,31 +196,31 @@ class AudioEngine {
       return;
     }
 
-    // Volume normalization / ReplayGain: apply the track's ReplayGain ratio
-    // when either setting is enabled and the metadata carries a gain value.
+    // Normalizacja głośności / ReplayGain: zastosuj współczynnik ReplayGain utworu,
+    // gdy którekolwiek ustawienie jest włączone, a metadane niosą wartość gain.
     const enableNorm = settings.playback.replayGain || settings.playback.normalization;
     this.normalization = computeTrackNormalization(enableNorm, track.metadata?.replayGainTrackGain);
 
     this.loadSource(toMediaServerUrl(track.path));
 
-    // Resuming a saved position is opt-in: only the Home "Continue" card asks
-    // for it. Every other play path starts from the beginning, which is why the
-    // default is not to touch the element's clock here.
+    // Wznawianie zapisanej pozycji jest opcjonalne: prosi o nie tylko karta
+    // "Kontynuuj" na stronie głównej. Każda inna ścieżka odtwarzania startuje od początku,
+    // dlatego domyślnie nie ruszamy tutaj zegara elementu.
     if (options?.resume && settings.playback.rememberPosition) {
       const savedPos = this.savedPositions.get(track.path) || 0;
       if (savedPos > 0) {
         this.applySavedPosition(track.path, savedPos);
       } else {
-        // The in-memory map only holds positions saved during this session;
-        // positions from earlier sessions live in the main-process store.
+        // Mapa w pamięci trzyma tylko pozycje zapisane w tej sesji;
+        // pozycje z wcześniejszych sesji żyją w store procesu głównego.
         void this.restoreSavedPosition(track.path);
       }
     }
   }
 
-  // Seeks to `position` once metadata is available, but only while `path` is
-  // still the loaded track (guards against a slow fetch landing after the user
-  // already switched) and playback has not moved on.
+  // Przewija do `position`, gdy metadane są dostępne, ale tylko dopóki `path` to
+  // wciąż wczytany utwór (zabezpiecza przed wolnym fetchem lądującym po tym, jak użytkownik
+  // już przełączył) i odtwarzanie nie poszło dalej.
   private applySavedPosition(path: string, position: number): void {
     const el = this.audioEl;
     if (!el) return;
@@ -229,7 +229,7 @@ class AudioEngine {
       if (usePlayerStore().currentTrack?.path !== path) return;
       if (this.audioEl.currentTime < 3) this.audioEl.currentTime = position;
     };
-    // Fast local files can finish loading before this runs — seek immediately.
+    // Szybkie lokalne pliki mogą skończyć ładowanie przed tym wywołaniem — przewiń natychmiast.
     if (el.readyState >= 1) {
       apply();
       return;
@@ -249,16 +249,16 @@ class AudioEngine {
     }
   }
 
-  // Plays a remote stream (YouTube online) through the media-server proxy. The
-  // proxy retries googlevideo's transient 403s with backoff; if that is
-  // exhausted the raw URL is retried directly from the renderer. Positions are
-  // not persisted for streams; rememberPosition does not apply.
+  // Odtwarza zdalny strumień (YouTube online) przez proxy serwera mediów.
+  // Proxy ponawia przejściowe 403 googlevideo z backoffem; jeśli to zostanie
+  // wyczerpane, surowy URL jest ponawiany bezpośrednio z renderera. Pozycje nie są
+  // zapisywane dla strumieni; rememberPosition nie ma zastosowania.
   loadRemote(url: string): void {
     this.normalization = 1;
     this.streamUrl = url;
-    // A new stream must start with a clean retry ladder. `loadSource` only
-    // resets these when mode is falsy, so clearing them here stops the previous
-    // track's "final retry spent" flag from disabling this stream's last retry.
+    // Nowy strumień musi zacząć z czystą drabinką ponowień. `loadSource` resetuje
+    // je tylko gdy mode jest fałszywe, więc wyzerowanie ich tutaj nie pozwala
+    // flagie "ostatnie ponowienie zużyte" poprzedniego utworu wyłączyć ostatniego ponowienia tego strumienia.
     this.streamTriedDirect = false;
     this.streamFinalRetried = false;
     logger.info('audioEngine', `loadRemote url=${url.slice(0, 160)}`);
@@ -287,8 +287,8 @@ class AudioEngine {
     if (this.graph.gainNode) this.graph.gainNode.gain.value = v * this.normalization;
   }
 
-  // Warms the cache for the next track so the transition is as seamless as
-  // possible (used by the "gapless playback" setting).
+  // Rozgrzewa cache dla następnego utworu, żeby przejście było możliwie
+  // płynne (używane przez ustawienie "odtwarzanie bez przerw").
   preloadNext(track: MediaFile): void {
     if (!this.preloadEl) {
       this.preloadEl = new Audio();
@@ -391,8 +391,8 @@ class AudioEngine {
     this.graph.disconnectNodes();
     cleanupAudioElement(this.audioEl);
     this.audioEl = null;
-    // Release the prefetch element and the per-track position cache; both would
-    // otherwise outlive the engine and keep a buffer/network handle alive.
+    // Zwolnij element prefetch i cache pozycji per utwór; oba w przeciwnym razie
+    // przeżyłyby silnik i trzymały bufor/uchwyt sieciowy przy życiu.
     if (this.preloadEl) {
       this.preloadEl.pause();
       this.preloadEl.removeAttribute('src');

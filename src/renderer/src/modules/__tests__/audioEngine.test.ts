@@ -204,7 +204,7 @@ describe('audioEngine video element routing', () => {
       value: { code: 4, message: 'MEDIA_ELEMENT_ERROR: Format error' },
       configurable: true
     });
-    // Simulate a local (non-stream) load: no stream URL is set.
+    // Symuluj lokalne (nie-strumieniowe) wczytanie: nie ustawiono stream URL.
     (audioEngine as unknown as { streamUrl: string | null }).streamUrl = null;
     (audioEngine as unknown as { handleStreamError(el: HTMLAudioElement): void }).handleStreamError(
       el
@@ -249,7 +249,7 @@ describe('audioEngine saved position restore', () => {
 
     audioEngine.loadTrack(track, { resume: true });
     const el = audioEngine.getMediaElement() as unknown as FakeAudio;
-    // Metadata already decoded by the time the stored position arrives.
+    // Metadane zdążyły się zdekodować, zanim dotarła zapisana pozycja.
     el.readyState = 4;
     await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -289,7 +289,7 @@ describe('audioEngine saved position restore', () => {
     audioEngine.loadTrack(track, { resume: true });
     const el = audioEngine.getMediaElement() as unknown as FakeAudio;
     el.readyState = 4;
-    // User already moved on before the stored position came back.
+    // Użytkownik już przeszedł dalej, zanim wróciła zapisana pozycja.
     player.currentTrack = { ...track, path: 'D:/music/b.mp3' };
     await new Promise((resolve) => setTimeout(resolve, 0));
 

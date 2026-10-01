@@ -71,7 +71,7 @@ export const useUIStore = defineStore('ui', () => {
         try {
           removeNotification(id);
         } catch {
-          /* ignore */
+          /* zignoruj */
         }
       }, duration);
     }

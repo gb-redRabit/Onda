@@ -8,9 +8,9 @@ import {
 } from '@renderer/utils/onlineResolved';
 import { RESOLVED_AUTO_CAP } from '@renderer/utils/onlineResolveAll';
 
-// Resolved-playlist (link/playlist resolve result) state + paged loaders. The
-// store destructures the returned refs/actions back into the same names, so
-// call sites elsewhere are unchanged.
+// Stan rozwiązanej playlisty (wynik rozwiązania linku/playlisty) + stronicowane loadery.
+// Store destrukturyzuje zwrócone refy/akcje z powrotem do tych samych nazw, więc
+// miejsca wywołań gdzie indziej pozostają bez zmian.
 export function createOnlineResolved() {
   const resolved = ref<YouTubeResolveResult | null>(null);
   const isResolving = ref(false);
@@ -22,8 +22,8 @@ export function createOnlineResolved() {
   function setResolved(result: YouTubeResolveResult | null) {
     resolveLoadId++;
     resolvedCapped.value = false;
-    // A playlist that fits on the first page and reports no count is already
-    // fully loaded - the items length is its exact total.
+    // Playlista, która mieści się na pierwszej stronie i nie podaje liczby, jest już
+    // w pełni załadowana - długość items to jej dokładny total.
     result = normalizeResolvedTotal(result);
     resolved.value = result;
     resolvedLoading.value = false;
@@ -35,12 +35,12 @@ export function createOnlineResolved() {
     }
   }
 
-  // Loads one more page (30 items) of a resolved playlist. Shared by the
-  // automatic loader and the manual "load more" button.
+  // Ładuje jeszcze jedną stronę (30 elementów) rozwiązanej playlisty. Współdzielone przez
+  // automatyczny loader i ręczny przycisk "załaduj więcej".
   async function loadResolvedPage(): Promise<boolean> {
     const r = resolved.value;
     if (!r || r.kind !== 'playlist' || !r.meta.hasMore) return false;
-    // Platform dispatch - SC sets paginate via sc:resolveMore.
+    // Dyspozycja po platformie - SC ustawia paginację przez sc:resolveMore.
     const moreChannel =
       detectPlatform(r.sourceUrl)?.platform === 'soundcloud' ? 'sc:resolveMore' : 'yt:resolveMore';
     const nextStart = r.items.length + 1;
@@ -74,7 +74,7 @@ export function createOnlineResolved() {
         if (loadId !== resolveLoadId) return;
         if (!hasMore) break;
       }
-      // All items are loaded now, so the exact total is finally known.
+      // Wszystkie elementy są teraz załadowane, więc dokładny total jest wreszcie znany.
       if (loadId === resolveLoadId && resolved.value && resolved.value.meta.totalItems == null) {
         const r = resolved.value;
         resolved.value = {

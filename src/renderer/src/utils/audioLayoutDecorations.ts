@@ -1,9 +1,9 @@
 import type { AudioLayoutElementId } from '@renderer/types/settings';
 
-// Decoration options for the layout editor. Decorations come only from plugins
-// (manifest `layoutElements`, host-implemented in `PLUGIN_HOST_VARIANTS`), so
-// the list is empty unless an active plugin provides variants for the element —
-// then a single "none" entry lets the user clear the plugin decoration.
+// Opcje dekoracji dla edytora układu. Dekoracje pochodzą wyłącznie z wtyczek
+// (manifest `layoutElements`, implementowane w hoście w `PLUGIN_HOST_VARIANTS`),
+// więc lista jest pusta, dopóki aktywna wtyczka nie dostarczy wariantów dla elementu —
+// wtedy pojedynczy wpis "none" pozwala użytkownikowi wyczyścić dekorację wtyczki.
 export function decorationOptionsFor(
   elementId: AudioLayoutElementId,
   variants: Record<string, { value: string; label: string; plugin: string }[]>,

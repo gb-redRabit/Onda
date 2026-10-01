@@ -2,7 +2,7 @@ import type { SourceEndpoint, SourceItem } from '@renderer/types/sources';
 import { sanitizeFilenameSpaced } from '@shared/text';
 import { clonePlain } from '@renderer/utils/clone';
 
-// Pure source-download helpers extracted from `stores/sources.ts` (plan 2.8).
+// Czyste helpery pobierania źródeł wydzielone z `stores/sources.ts` (plan 2.8).
 
 export function computePaginationMode(
   endpoint: SourceEndpoint | null | undefined
@@ -25,7 +25,7 @@ export function deriveFileName(item: SourceItem): string {
     const dot = last.lastIndexOf('.');
     if (dot > 0 && last.length - dot <= 10) return `${base}${last.slice(dot).toLowerCase()}`;
   } catch {
-    // not a URL
+    // to nie URL
   }
   const fallback =
     item.type === 'image'

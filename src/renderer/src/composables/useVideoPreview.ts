@@ -6,9 +6,9 @@ const PREVIEW_WIDTH = 320;
 const PREVIEW_HEIGHT = 180;
 const SEEK_DEBOUNCE_MS = 60;
 
-// Realtime frame extraction preview for the main video player's seek bar.
-// Mirrors usePipVideoPreview: a hidden <video> is seeked to the hovered time
-// and its frame is drawn to a canvas as a JPEG data URL.
+// Podgląd ekstrakcji klatek w czasie rzeczywistym dla paska przewijania odtwarzacza wideo.
+// Odzwierciedla usePipVideoPreview: ukryty <video> jest przewijany do wskazanego czasu,
+// a jego klatka rysowana jest na canvas jako data URL JPEG.
 export function useVideoPreview(
   videoRef: Ref<HTMLVideoElement | null>,
   progressRef: Ref<HTMLElement | null>

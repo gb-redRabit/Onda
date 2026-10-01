@@ -16,8 +16,8 @@ export const useLibraryStore = defineStore('library', () => {
   const scanProgress = ref({ current: 0, total: 0 });
   const isLoaded = ref(false);
   const isLoading = ref(false);
-  // Bumped by `updateTrackStats` so play-statistics views recompute without
-  // invalidating the expensive artists/albums/trackStats derivations.
+  // Zwiększane przez `updateTrackStats`, więc widoki statystyk odtwarzania przeliczają się bez
+  // unieważniania kosztownych derywacji artystów/albumów/trackStats.
   const statsRevision = ref(0);
 
   const {
@@ -54,8 +54,8 @@ export const useLibraryStore = defineStore('library', () => {
   });
 
   const totalCount = computed(() => tracks.value.length);
-  // O(1) membership test for isLibraryFolder (was folders.some() + per-call
-  // regex replace in every explorer row — plan 1.10).
+  // Test przynależności O(1) dla isLibraryFolder (było folders.some() + zamiana
+  // regex przy każdym wywołaniu w każdym wierszu eksploratora — plan 1.10).
   const normalizedFolders = computed(
     () => new Set(folders.value.map((f) => f.replace(/[\\/]$/, '')))
   );
@@ -74,7 +74,7 @@ export const useLibraryStore = defineStore('library', () => {
     try {
       await window.api?.invoke('library:saveFolders', [...folders.value]);
     } catch {
-      // Revert local state if persist failed
+      // Przywróć lokalny stan, jeśli zapis się nie powiódł
       folders.value = folders.value.filter((f) => f !== folderPath);
     }
   }
@@ -85,7 +85,7 @@ export const useLibraryStore = defineStore('library', () => {
     try {
       await window.api?.invoke('library:saveFolders', [...folders.value]);
     } catch {
-      // Revert local state if persist failed
+      // Przywróć lokalny stan, jeśli zapis się nie powiódł
       folders.value = prevFolders;
       return;
     }
@@ -117,8 +117,8 @@ export const useLibraryStore = defineStore('library', () => {
     return tracks.value.filter((t) => trackMatchesQuery(t, query));
   }
 
-  // Metadata / structural edit: invalidates every derived view. Returns the
-  // updated track so callers don't need a second `find`.
+  // Edycja metadanych / strukturalna: unieważnia każdy widok pochodny. Zwraca
+  // zaktualizowany utwór, więc wywołujący nie potrzebują drugiego `find`.
   function updateTrack(path: string, updater: (track: MediaFile) => void): MediaFile | undefined {
     const idx = tracks.value.findIndex((t) => t.path === path);
     if (idx < 0) return undefined;
@@ -128,8 +128,8 @@ export const useLibraryStore = defineStore('library', () => {
     return track;
   }
 
-  // Play-statistics change: only the stats views depend on this, so it must not
-  // `triggerRef(tracks)` — that would re-group artists/albums on every play.
+  // Zmiana statystyk odtwarzania: tylko widoki statystyk od tego zależą, więc nie może
+  // `triggerRef(tracks)` — to pogrupowałoby na nowo artystów/albumy przy każdym odtworzeniu.
   function updateTrackStats(
     path: string,
     updater: (track: MediaFile) => void

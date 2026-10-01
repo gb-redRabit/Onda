@@ -36,7 +36,7 @@ let lastDpr = 0;
 let lastFrameTime = 0;
 let nonePainted = false;
 
-// Crossfade state
+// Stan przenikania (crossfade)
 let fadeAlpha = 1;
 let prevStyle: VisualizationMode | null = null;
 
@@ -97,7 +97,7 @@ function draw(timestamp: number) {
 
   ctx.clearRect(0, 0, cw, ch);
 
-  // Crossfade alpha when switching modes
+  // Alpha przenikania przy zmianie trybów
   if (prevStyle !== null && prevStyle !== style.value) {
     fadeAlpha -= 0.08;
     if (fadeAlpha <= 0) {
@@ -237,7 +237,7 @@ watch(
   }
 );
 
-// Apply smoothing to AnalyserNode
+// Zastosuj wygładzanie do AnalyserNode
 watch(
   () => settings.playback.visualization.smoothing,
   (s) => {

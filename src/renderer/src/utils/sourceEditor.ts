@@ -1,6 +1,6 @@
 import type { SourceAuthType } from '@renderer/types/sources';
 
-// Pure source-editor helpers extracted from
+// Czyste helpery edytora źródeł wydzielone z
 // `components/sources/SourceEditorDialog.vue` (plan 2.8).
 
 export interface AuthDraft {
@@ -37,8 +37,8 @@ export interface ChainEndpoint {
   tableChildId?: string | null;
 }
 
-// Keeps each level's child pointer valid: reuse the configured id when it still
-// exists in the chain, otherwise fall back to the next level. Mutates in place.
+// Utrzymuje poprawność wskaźnika dziecka każdego poziomu: użyj ponownie skonfigurowanego
+// id, gdy nadal istnieje w łańcuchu, w przeciwnym razie wycofaj się do następnego poziomu. Mutuje w miejscu.
 export function syncEndpointChain(endpoints: ChainEndpoint[]): void {
   const ids = new Set(endpoints.map((e) => e.id));
   for (let i = 0; i < endpoints.length; i++) {

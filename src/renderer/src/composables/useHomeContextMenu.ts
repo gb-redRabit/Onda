@@ -44,8 +44,8 @@ export function useHomeContextMenu() {
     open(e, defs, { track });
   }
 
-  // Background menu: which shelves Home shows (same ✓ pattern as the status
-  // bar's section menu, so the app stays consistent).
+  // Menu tła: które półki pokazuje Home (ten sam wzorzec ✓ co menu sekcji
+  // paska statusu, żeby aplikacja była spójna).
   function showHomeMenu(e: MouseEvent) {
     const defs: ContextMenuAction<null>[] = HOME_SECTION_ORDER.map((id) => {
       const on = settings.home.sections.includes(id);

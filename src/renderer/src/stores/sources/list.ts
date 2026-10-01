@@ -2,11 +2,11 @@ import { computed, ref } from 'vue';
 import type { MediaSource } from '@renderer/types/sources';
 import { computePaginationMode } from '@renderer/utils/sources-helpers';
 
-// Source catalog (list + active selection) extracted from `stores/sources.ts`
-// (plan 2.7). The store destructures the returned refs/actions back into the
-// same names, so call sites elsewhere are unchanged. Cache invalidation after
-// save/delete is glued in the store (navigation/test state lives in the other
-// modules created later).
+// Katalog źródeł (lista + aktywne wybory) wyodrębniony z `stores/sources.ts`
+// (plan 2.7). Store destrukturyzuje zwrócone refy/akcje z powrotem do tych samych
+// nazw, więc miejsca wywołań gdzie indziej pozostają bez zmian. Unieważnianie cache po
+// zapisie/usunięciu jest sklejane w store (stan nawigacji/testu żyje w innych
+// modułach tworzonych później).
 export function createSourcesList() {
   const sources = ref<MediaSource[]>([]);
   const activeSourceId = ref('');
@@ -71,7 +71,7 @@ export function createSourcesList() {
       if (wasActive) selectFirst();
       return { ok: true, wasActive };
     } catch {
-      // non-fatal
+      // niekrytyczne
       return { ok: false, wasActive: false };
     }
   }

@@ -7,8 +7,8 @@ import type { AppearanceSettings } from '@renderer/types/settings';
 const originalInvoke = window.api.invoke;
 const originalSend = window.api.send;
 
-// Appearance changes go through reapplyTheme(), which coalesces them into a
-// single rAF so a theme import that touches several fields repaints once.
+// Zmiany wyglądu przechodzą przez reapplyTheme(), która scala je w
+// pojedynczy rAF, więc import motywu dotykający kilku pól powoduje jedno przemalowanie.
 async function flushThemeFrame(): Promise<void> {
   await nextTick();
   await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -50,8 +50,8 @@ describe('useTheme window material', () => {
       glassAlpha: 60
     });
     const invoke = vi.fn().mockResolvedValue(true);
-    // pushToPip uses send(), applyWindowMode uses invoke() — both are per-repaint
-    // side effects, so both have to be counted.
+    // pushToPip używa send(), applyWindowMode używa invoke() — oba są efektami ubocznymi
+    // na przemalowanie, więc oba trzeba zliczać.
     const send = vi.fn();
     window.api.invoke = invoke as typeof window.api.invoke;
     window.api.send = send as typeof window.api.send;
@@ -60,9 +60,9 @@ describe('useTheme window material', () => {
     theme.applyTheme();
     const sendBaseline = send.mock.calls.length;
 
-    // A single import touches every watched field; the old per-field watchers
-    // called applyTheme() once per field, so this repainted four times and sent
-    // four rounds of pip messages in the same tick.
+    // Pojedynczy import dotyka każdego obserwowanego pola; stare watchery per pole
+    // wywoływały applyTheme() raz na pole, więc to przemalowywało cztery razy i wysyłało
+    // cztery rundy wiadomości pip w tym samym ticku.
     appearance.value.customBase = 'light';
     appearance.value.fontSize = 15;
     appearance.value.glassAlpha = 90;
@@ -71,7 +71,7 @@ describe('useTheme window material', () => {
     const pipThemeSends = send.mock.calls
       .slice(sendBaseline)
       .filter((c) => c[0] === 'audio-pip:theme' || c[0] === 'pip:theme');
-    expect(pipThemeSends).toHaveLength(2); // audio-pip + pip, one paint each
-    expect(send.mock.calls.length - sendBaseline).toBe(3); // + one locale
+    expect(pipThemeSends).toHaveLength(2); // audio-pip + pip, po jednym malowaniu każde
+    expect(send.mock.calls.length - sendBaseline).toBe(3); // + jedna locale
   });
 });

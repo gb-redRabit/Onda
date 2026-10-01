@@ -2,12 +2,12 @@
 import { VOL_LABEL } from './pipTheme';
 
 /**
- * Mute label plus the volume slider, shared by all three PiP layouts.
+ * Etykieta wyciszenia oraz suwak głośności, współdzielone przez wszystkie trzy układy PiP.
  *
- * Each layout repeated the same markup and then diverged: the bar layout was
- * the only one that dropped the numeric readout. `showPct` defaults to true so
- * every dock now shows it, and a layout that genuinely has no room can opt out
- * explicitly.
+ * Każdy układ powtarzał ten sam markup, a potem się rozjeżdżał: układ paska był
+ * jedynym, który gubił liczbowy odczyt. `showPct` domyślnie true, więc
+ * każda doka go teraz pokazuje, a układ, który naprawdę nie ma miejsca, może
+ * jawnie zrezygnować.
  */
 withDefaults(
   defineProps<{

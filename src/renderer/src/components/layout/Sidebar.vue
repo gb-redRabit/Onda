@@ -42,9 +42,9 @@ watch(
   }
 );
 
-// Blinks the Downloads nav icon whenever a new task joins the queue — no
-// matter which view enqueued it (Online, Sources, Saved/Webcast...). The
-// first sync (startup queue restore) is swallowed as a baseline.
+// Mruga ikoną nawigacji Pobierania, gdy nowe zadanie dołączy do kolejki — nie
+// ma znaczenia, który widok je dodał (Online, Źródła, Zapisane/Webcast...). Pierwsza
+// synchronizacja (przywrócenie kolejki przy starcie) jest połykana jako punkt odniesienia.
 const yt = useOnlineStore();
 const downloadBlink = ref(false);
 let blinkTimer: number | undefined;
@@ -132,11 +132,11 @@ function onResizeStart(e: MouseEvent) {
           <span v-if="!collapsed" class="truncate">{{ item.label }}</span>
         </button>
 
-        <!-- playlists section -->
+        <!-- sekcja playlist -->
         <template v-if="!collapsed">
           <SidebarPlaylists v-if="settings.appearance.showPlaylists" />
 
-          <!-- albums section -->
+          <!-- sekcja albumów -->
           <div v-if="settings.appearance.showAlbums" class="pt-1">
             <button
               class="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] font-medium text-base-content/50 uppercase tracking-wider hover:text-base-content/70 transition-colors"
@@ -192,7 +192,7 @@ function onResizeStart(e: MouseEvent) {
       </div>
     </aside>
 
-    <!-- resize handle -->
+    <!-- uchwyt zmiany rozmiaru -->
     <div
       v-if="!collapsed"
       class="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/40 transition-colors z-10"

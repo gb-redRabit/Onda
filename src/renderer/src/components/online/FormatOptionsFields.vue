@@ -3,10 +3,10 @@ import { useI18n } from 'vue-i18n';
 import { AUDIO_FORMATS, VIDEO_CONTAINERS, VIDEO_QUALITIES } from '@shared/constants';
 import FilenameTemplatePresets from '@renderer/components/FilenameTemplatePresets.vue';
 
-// Shared download/subscribe format fields. The download and subscribe config
-// dialogs render the same kind/format/quality/trim/sponsor-block fields; the
-// download dialog adds a video container and a filename template, which the
-// subscribe dialog carries elsewhere. One component, one set of models.
+// Współdzielone pola formatu pobierania/subskrybowania. Dialogi konfiguracji
+// pobierania i subskrypcji renderują te same pola rodzaju/formatu/jakości/przycinania/
+// sponsor-blocka; dialog pobierania dodaje kontener wideo i szablon nazwy pliku, które
+// dialog subskrypcji trzyma gdzie indziej. Jeden komponent, jeden zestaw modeli.
 
 withDefaults(
   defineProps<{

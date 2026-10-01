@@ -160,9 +160,9 @@ export const usePluginsStore = defineStore('plugins', () => {
   }
 
   /**
-   * Enables a plugin after review: the main process issues a consent token for
-   * the manifest + entry file it is about to run, so the approval cannot be
-   * replayed against different code.
+   * Włącza plugin po przeglądzie: proces main wydaje token zgody dla
+   * manifestu + pliku wejściowego, który ma uruchomić, więc zatwierdzenie nie może być
+   * powtórzone przeciw innemu kodowi.
    */
   async function approveAndEnable(id: string): Promise<boolean> {
     const info = plugins.value.find((p) => p.id === id);

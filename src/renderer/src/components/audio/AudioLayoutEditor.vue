@@ -153,7 +153,7 @@ const readout = computed(() => {
 
 <template>
   <div class="flex gap-4 h-full min-h-0">
-    <!-- ─── Left: Mini Preview ─── -->
+    <!-- ─── Lewa: Mini podgląd ─── -->
     <div class="flex-1 flex flex-col min-w-0">
       <div class="flex items-center justify-between mb-3">
         <h3 class="text-sm font-semibold text-base-content">{{ t('audioView.layoutPreview') }}</h3>
@@ -170,7 +170,7 @@ const readout = computed(() => {
         class="relative z-0 isolate bg-base-300/50 rounded-box border border-base-300 overflow-hidden select-none"
         :style="{ aspectRatio: `${PREVIEW_W}/${PREVIEW_H}` }"
       >
-        <!-- Grid (1% + 5%) -->
+        <!-- Siatka (1% + 5%) -->
         <svg class="absolute inset-0 w-full h-full pointer-events-none">
           <defs>
             <pattern
@@ -211,7 +211,7 @@ const readout = computed(() => {
           :style="{ top: guides.y + '%' }"
         />
 
-        <!-- Elements -->
+        <!-- Elementy -->
         <div
           v-for="el in sortedElements"
           v-show="el.visible"
@@ -231,7 +231,7 @@ const readout = computed(() => {
         </div>
       </div>
 
-      <!-- Readout: pozycja/size aktywnego elementu -->
+        <!-- Odczyt: pozycja/rozmiar aktywnego elementu -->
       <div
         class="mt-2 flex items-center justify-between px-1 text-[10px] font-mono text-base-content/50 tabular-nums"
       >
@@ -243,7 +243,7 @@ const readout = computed(() => {
       </div>
     </div>
 
-    <!-- ─── Right: Element Controls ─── -->
+    <!-- ─── Prawa: Kontrolki elementów ─── -->
     <AudioLayoutRightPanel
       :elements="elements"
       :selected="selected"

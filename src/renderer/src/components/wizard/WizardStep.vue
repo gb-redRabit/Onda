@@ -1,23 +1,23 @@
 <script setup lang="ts">
 /**
- * Heading block shared by the nine first-run wizard steps.
+ * Blok nagłówka współdzielony przez dziewięć kroków kreatora pierwszego uruchomienia.
  *
- * Every step opened with the same `<h3>` and the same description paragraph,
- * hand-copied, and two of them had drifted: WizardAudio and WizardSummary carried
- * an extra `mb-5` on the description that the other seven did not, so those two
- * steps sat further from their content than the rest. The heading is also the
- * only thing giving a step its accessible name, so having it in one place is
- * what keeps that name present.
+ * Każdy krok otwierał się tym samym `<h3>` i tym samym akapitem opisu,
+ * kopiowanym ręcznie, a dwa z nich się rozjechały: WizardAudio i WizardSummary
+ * miały dodatkowe `mb-5` na opisie, którego pozostałe siedem nie miało, więc te dwa
+ * kroki były dalej od swojej treści niż reszta. Nagłówek jest też jedyną rzeczą
+ * nadającą krokowi jego dostępną nazwę, więc trzymanie go w jednym miejscu
+ * utrzymuje tę nazwę obecną.
  *
- * Pass the resolved strings, not the keys: the wizard resolves them with the
- * global composer already, and taking `string` here keeps this component free of
- * an i18n dependency.
+ * Przekazuj rozwiązane łańcuchy, nie klucze: kreator rozwiązuje je już globalnym
+ * composerem, a przyjęcie tutaj `string` trzyma ten komponent wolnym od
+ * zależności i18n.
  */
 withDefaults(
   defineProps<{
     title: string;
     description?: string;
-    /** Extra space below the description, for steps whose body is a plain form. */
+    /** Dodatkowa przestrzeń pod opisem, dla kroków, których treścią jest zwykły formularz. */
     descriptionGap?: boolean;
   }>(),
   { descriptionGap: false }

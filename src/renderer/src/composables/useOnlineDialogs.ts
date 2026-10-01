@@ -4,8 +4,8 @@ import { useUIStore } from '@renderer/stores/ui';
 import type { OnlineConfigTarget } from '@renderer/utils/onlineConfigDialog';
 import type { Subscription } from '@renderer/types/online';
 
-// Transient dialog/inline-panel state for the Online view + the shared Escape
-// handler (closes the topmost dialog, newest-first).
+// Tymczasowy stan dialogu/panelu inline dla widoku Online + wspólny handler
+// Escape (zamyka najwyższy dialog, od najnowszego).
 export function useOnlineDialogs(
   input: Ref<string>,
   prefsOpen: Ref<Subscription | null>,
@@ -19,7 +19,7 @@ export function useOnlineDialogs(
   const configTarget = ref<OnlineConfigTarget>(null);
 
   function openWatchUrl(url: string) {
-    // Legacy saved SC entries may resolve to a bare numeric id — no page URL.
+    // Starsze zapisane wpisy SC mogą rozwiązać się do samego numerycznego id — bez URL strony.
     if (!/^https:/i.test(url)) {
       ui.notify('info', input.value || url, t('youtube.openUnavailable'));
       return;
@@ -31,7 +31,7 @@ export function useOnlineDialogs(
     if (e.key !== 'Escape') return;
     if (expandedSearchId.value) expandedSearchId.value = null;
     if (expandedResolvedId.value) expandedResolvedId.value = null;
-    // Close the topmost inline dialog, newest-first.
+    // Zamknij najwyższy dialog inline, od najnowszego.
     if (configTarget.value) {
       configTarget.value = null;
       return;

@@ -1,10 +1,10 @@
 import type { SourceItem } from '@renderer/types/sources';
 
-// Pure helpers extracted from `views/SourcesView.vue` (plan 2.8).
+// Czyste helpery wydzielone z `views/SourcesView.vue` (plan 2.8).
 
 export type SourceSortMode = 'none' | 'titleAsc' | 'titleDesc' | 'type';
 
-// One `key=value` per line; blank/malformed lines are ignored.
+// Jedno `key=value` na linię; puste/błędne linie są ignorowane.
 export function parseQueryLines(raw: string): Record<string, string> {
   const out: Record<string, string> = {};
   for (const line of raw.split('\n')) {

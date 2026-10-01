@@ -10,9 +10,9 @@ import {
   __resetEncryptionStatusCache
 } from '../settings/settings-crypto';
 
-// This module is the only place a stored API key can be trusted to, so the
-// behaviour that matters is what happens when the platform cannot encrypt:
-// the value must not reach disk at all, and the user must find out.
+// Ten moduł to jedyne miejsce, któremu można zaufać w kwestii zapisanego klucza API, więc
+// istotne jest zachowanie, gdy platforma nie potrafi szyfrować:
+// wartość nie może w ogóle trafić na dysk, a użytkownik musi się o tym dowiedzieć.
 
 vi.mock('electron', () => ({
   safeStorage: {
@@ -32,7 +32,7 @@ vi.mock('../../warnings', () => ({ recordWarning: vi.fn() }));
 const PREFIX = 'onda-enc:v1:';
 const PLAIN_PREFIX = 'onda-plain:v1:';
 
-/** basic_text derives its key from a constant: available, but not protection. */
+/** basic_text wyprowadza klucz ze stałej: dostępne, ale to nie ochrona. */
 function setPlatform(opts: {
   available: boolean;
   platform?: NodeJS.Platform;
@@ -79,8 +79,8 @@ describe('encryptionStatus', () => {
   });
 
   it('is weak on the Linux basic_text backend, even though it claims to encrypt', () => {
-    // This is the case that matters: isEncryptionAvailable() returns true, so a
-    // boolean check would report the key as protected when it is not.
+    // To jest ten istotny przypadek: isEncryptionAvailable() zwraca true, więc
+    // sprawdzenie boolowskie zgłosiłoby klucz jako chroniony, gdy nie jest.
     setPlatform({ available: true, platform: 'linux', backend: 'basic_text' });
     expect(encryptionStatus()).toBe('weak');
   });
@@ -115,8 +115,8 @@ describe('encryptSecret', () => {
 
   it('refuses to write a secret when encryption is unavailable', () => {
     setPlatform({ available: false });
-    // The old code returned PLAIN_PREFIX + plain here, which put the key in the
-    // settings file in the clear and told nobody.
+    // Stary kod zwracał tu PLAIN_PREFIX + plain, co umieszczało klucz w
+    // pliku ustawień jawnym tekstem i nikogo nie informowało.
     expect(() => encryptSecret('sk-secret')).toThrow(SecretStorageUnavailableError);
   });
 
@@ -144,8 +144,8 @@ describe('encryptSecret', () => {
   it('passes an already-encrypted value through untouched', () => {
     setPlatform({ available: false });
     const already = PREFIX + 'abc';
-    // A settings save re-sends the value it was given; re-encrypting would
-    // double-wrap it.
+    // Zapis ustawień ponownie wysyła wartość, którą dostał; ponowne zaszyfrowanie
+    // owinęłoby ją podwójnie.
     expect(encryptSecret(already)).toBe(already);
   });
 });
@@ -162,15 +162,15 @@ describe('decryptSecret', () => {
   });
 
   it('still reads values written by older builds that stored plaintext', () => {
-    // Upgrading must not lose a key the user already configured.
+    // Aktualizacja nie może zgubić klucza, który użytkownik już skonfigurował.
     setPlatform({ available: false });
     expect(decryptSecret(PLAIN_PREFIX + 'sk-secret')).toBe('sk-secret');
   });
 
   it('keeps the stored value when decryption fails, rather than corrupting it', () => {
-    // A key encrypted by a different OS keychain cannot be read. Returning the
-    // ciphertext is better than returning garbage that the user would then save
-    // over their real key.
+    // Klucza zaszyfrowanego przez inny keychain systemu nie da się odczytać. Zwrócenie
+    // szyfrogramu jest lepsze niż zwrócenie śmieci, które użytkownik zapisałby potem
+    // nad swoim prawdziwym kluczem.
     setPlatform({ available: true, platform: 'win32' });
     vi.mocked(safeStorage.decryptString).mockImplementation(() => {
       throw new Error('wrong keyring');

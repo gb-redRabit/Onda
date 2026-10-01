@@ -120,7 +120,7 @@ describe('sanitizeSettings', () => {
 
     expect(sanitized.playback ?? {}).toEqual({});
     expect(sanitized.general ?? {}).toEqual({});
-    // Still a supported setting.
+    // Nadal wspierane ustawienie.
     expect(sanitized.appearance).toEqual({ animations: false });
   });
 

@@ -69,7 +69,7 @@ describe('usePluginsHooks — track:timeupdate', () => {
       track: expect.objectContaining({ title: 'Title' })
     });
 
-    // Sub-second updates are dropped (the audio element fires ~4x per second).
+    // Aktualizacje poniżej sekundy są odrzucane (element audio odpala ~4x na sekundę).
     audioEvents.emit('timeUpdate', 5.2);
     audioEvents.emit('timeUpdate', 5.4);
     expect(emitHook).toHaveBeenCalledTimes(1);

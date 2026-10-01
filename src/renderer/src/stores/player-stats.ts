@@ -17,7 +17,7 @@ export function usePlayerStats() {
       }));
       pendingStats.clear();
       window.api?.invoke('library:updateStats', stats).catch(() => {
-        /* non-fatal */
+        /* niekrytyczne */
       });
     }, 1000);
   }
@@ -25,8 +25,8 @@ export function usePlayerStats() {
   function recordPlay(track: MediaFile) {
     if (!track?.path) return;
     const library = useLibraryStore();
-    // Single lookup: `updateTrackStats` returns the updated track, so there is
-    // no second O(n) `find` over a 50k array on every play.
+    // Pojedyncze wyszukanie: `updateTrackStats` zwraca zaktualizowany utwór, więc nie ma
+    // drugiego `find` O(n) po tablicy 50k przy każdym odtworzeniu.
     const updated = library.updateTrackStats(track.path, (t) => {
       t.playCount = (t.playCount || 0) + 1;
       t.lastPlayed = Date.now();

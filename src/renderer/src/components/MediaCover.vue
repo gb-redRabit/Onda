@@ -28,9 +28,9 @@ const loaded = ref(false);
 const inView = ref(false);
 let observedTarget: Element | null = null;
 
-// One shared IntersectionObserver for every MediaCover instance — a long
-// (non-virtualized) queue would otherwise create hundreds of observers and
-// mount hundreds of streaming <video> elements at once, freezing the app.
+// Jeden współdzielony IntersectionObserver dla każdej instancji MediaCover — długa
+// (niezwirtualizowana) kolejka tworzyłaby inaczej setki obserwatorów i
+// montowałaby setki streamujących <video> naraz, zamrażając aplikację.
 const ioHandlers = new WeakMap<Element, (isIntersecting: boolean) => void>();
 let sharedObserver: IntersectionObserver | null = null;
 function getSharedObserver(): IntersectionObserver | null {
@@ -65,9 +65,9 @@ const isVideoFile = computed(() => {
 });
 const isVideoLike = computed(() => result.value.type === 'video' || isVideoFile.value);
 const isVideo = computed(() => isVideoLike.value && props.renderAsVideo);
-// Static consumers (folder tiles, album cards) can't show a playing video —
-// a paused <video> still renders its first frame, unlike an <img> pointing at
-// an mp4 (which always renders empty).
+// Statyczni odbiorcy (kafle folderów, karty albumów) nie mogą pokazać odtwarzanego wideo —
+// zatrzymany <video> i tak renderuje pierwszą klatkę, inaczej niż <img> wskazujący
+// na mp4 (który zawsze renderuje się pusty).
 const isStaticVideo = computed(() => isVideoLike.value && !props.renderAsVideo);
 const src = computed(() => {
   if (!result.value.data) return '';
@@ -125,7 +125,7 @@ onMounted(() => {
 
   const obs = getSharedObserver();
   if (!obs || !el.value) {
-    // No IntersectionObserver available (jsdom, old env) — load immediately.
+    // Brak dostępnego IntersectionObserver (jsdom, stare środowisko) — ładuj natychmiast.
     loaded.value = true;
     inView.value = true;
     player.loadCover(props.path);
@@ -134,8 +134,8 @@ onMounted(() => {
 
   observedTarget = el.value;
   ioHandlers.set(observedTarget, (isIntersecting) => {
-    // Video covers only mount a <video> element while near the viewport, so a
-    // long queue never spawns hundreds of simultaneous media-server streams.
+    // Okładki wideo montują element <video> tylko w pobliżu viewportu, więc
+    // długa kolejka nigdy nie tworzy setek równoczesnych strumieni media-servera.
     inView.value = isIntersecting;
     if (isIntersecting) {
       loaded.value = true;

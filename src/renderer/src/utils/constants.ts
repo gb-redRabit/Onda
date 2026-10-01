@@ -121,8 +121,8 @@ export const DEFAULT_SHORTCUTS: Record<string, string> = {
 
 export * from './constants/appearance';
 
-// Annotated because the settings helper derives per-group patch types from
-// these, and an unannotated const widens every field to string/number/boolean.
+// Z adnotacją, bo helper ustawień wyprowadza z nich typy patch per grupa,
+// a const bez adnotacji rozszerza każde pole do string/number/boolean.
 export const DEFAULT_PLAYBACK: PlaybackSettings = {
   normalization: false,
   replayGain: false,

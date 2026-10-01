@@ -149,8 +149,8 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown);
   window.removeEventListener('mousedown', onClickOutside);
   window.removeEventListener('blur', onScroll);
-  // The hover timers outlive the component otherwise: a menu unmounted while a
-  // submenu was opening left a pending timeout that later touched a dead ref.
+  // W przeciwnym razie timery hover przeżywają komponent: menu odmontowane
+  // w trakcie otwierania podmenu zostawiało timeout sięgający później martwego refa.
   if (openTimer) clearTimeout(openTimer);
   if (closeTimer) clearTimeout(closeTimer);
   openTimer = null;

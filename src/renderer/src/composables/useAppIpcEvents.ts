@@ -10,10 +10,10 @@ export interface AppIpcDeps {
   route: RouteLocationNormalizedLoaded;
 }
 
-// Global IPC listeners registered once in `App.vue` (plan 2.8): media keys/tray,
-// video PiP, cross-window explorer tabs and OS "open with" files.
+// Globalne nasłuchy IPC rejestrowane raz w `App.vue` (plan 2.8): klawisze mediów/tray,
+// PiP wideo, zakładki eksploratora między oknami oraz pliki systemowe "otwórz za pomocą".
 export function registerAppIpc({ player, router, route }: AppIpcDeps): void {
-  // global media keys / tray — wire to player store
+  // globalne klawisze mediów / tray — podłączone do store odtwarzacza
   window.api?.on('media:playPause', () => player.togglePlay());
   window.api?.on('media:next', () => player.nextTrack());
   window.api?.on('media:previous', () => player.prevTrack());
@@ -25,7 +25,7 @@ export function registerAppIpc({ player, router, route }: AppIpcDeps): void {
   window.api?.on('media:volumeDown', () => player.setVolume(player.volume - 0.05));
   window.api?.on('media:toggleMute', () => player.toggleMute());
 
-  // global PiP IPC — always active even when PlayerView is unmounted
+  // globalne IPC PiP — aktywne nawet gdy PlayerView jest odmontowany
   window.api?.on('pip:closed', (_time: unknown) => {
     player.pipActive = false;
     player.pipTime = 0;
@@ -46,8 +46,8 @@ export function registerAppIpc({ player, router, route }: AppIpcDeps): void {
     player.pendingFullscreen = true;
     if (route.name !== 'player') router.push('/player');
   });
-  // Restore requested from the main window (player bar / menu button): bring the
-  // video back into the player at the last known position, no fullscreen.
+  // Przywrócenie zażądane z głównego okna (pasek odtwarzacza / przycisk menu): przenosi
+  // wideo z powrotem do odtwarzacza na ostatniej znanej pozycji, bez pełnego ekranu.
   window.api?.on('pip:restore', (time: unknown) => {
     const t = (time as number) || 0;
     player.pipActive = false;
@@ -57,7 +57,7 @@ export function registerAppIpc({ player, router, route }: AppIpcDeps): void {
     if (route.name !== 'player') router.push('/player');
   });
 
-  // cross-window explorer tabs (tab moved between windows)
+  // zakładki eksploratora między oknami (zakładka przeniesiona między oknami)
   window.api?.on('explorer:add-tab', (path: unknown) => {
     if (typeof path === 'string') useExplorerStore().addTab(path);
   });
@@ -82,7 +82,7 @@ export function registerAppIpc({ player, router, route }: AppIpcDeps): void {
     explorerStore.closeTab(idx);
   });
 
-  // files opened from the OS (file associations / single-instance forwarding)
+  // pliki otwarte z systemu (skojarzenia plików / przekazywanie single-instance)
   window.api?.on('open-files', (paths: unknown) => {
     if (Array.isArray(paths)) {
       const files = paths.filter((p): p is string => typeof p === 'string');
@@ -90,7 +90,7 @@ export function registerAppIpc({ player, router, route }: AppIpcDeps): void {
     }
   });
 
-  // Pull any files queued while the app was still starting up.
+  // Pobiera pliki zakolejkowane, gdy aplikacja jeszcze się uruchamiała.
   void (async () => {
     try {
       const pending = (await window.api?.invoke('app:getPendingFiles')) as string[] | undefined;
@@ -99,7 +99,7 @@ export function registerAppIpc({ player, router, route }: AppIpcDeps): void {
         if (files.length) void openMediaFiles(files, router);
       }
     } catch {
-      /* pending files unavailable */
+      /* oczekujące pliki niedostępne */
     }
   })();
 }

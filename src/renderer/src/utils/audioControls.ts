@@ -1,4 +1,4 @@
-// Pure responsive-control helpers extracted from
+// Czyste helpery responsywnych kontrolek wydzielone z
 // `components/audio/AudioControls.vue` (plan 2.8).
 
 export type LayoutMode = 'wide' | 'compact' | 'tall' | 'minimal' | 'micro';
@@ -23,45 +23,45 @@ export function calcMode(w: number, h: number): LayoutMode {
 }
 
 /**
- * Per-variant presentation for the transport controls.
+ * Prezentacja per wariant dla kontrolek transportu.
  *
- * The four full variants — wide, tall, compact, minimal — were four near-identical
- * components: the same eight buttons, the same handlers, the same accessible
- * names, differing only in a handful of Tailwind classes and which size token the
- * icons read from. Every behavioural change had to be made four times, and a
- * change made in three of them was invisible until someone happened to resize the
- * window. They now share one component and differ only by the row below.
+ * Cztery pełne warianty — wide, tall, compact, minimal — były czterema niemal
+ * identycznymi komponentami: te same osiem przycisków, te same handlery, te same
+ * nazwy dostępności, różniące się jedynie kilkoma klasami Tailwind i tokenem
+ * rozmiaru, z którego czytają ikony. Każda zmiana zachowania musiała być zrobiona
+ * cztery razy, a zmiana w trzech z nich była niewidoczna, dopóki ktoś przypadkiem nie
+ * zmienił rozmiaru okna. Teraz współdzielą jeden komponent i różnią się tylko wierszem poniżej.
  */
 export interface ControlsDensity {
-  /** Outer column. */
+  /** Zewnętrzna kolumna. */
   container: string;
-  /** Row holding the transport buttons. */
+  /** Wiersz z przyciskami transportu. */
   transport: string;
-  /** Padding on the round transport buttons. */
+  /** Padding na okrągłych przyciskach transportu. */
   button: string;
-  /** Blur on the halo behind the play button while playing. */
+  /** Rozmycie halo za przyciskiem odtwarzania podczas grania. */
   glow: string;
-  /** Row holding mute and the volume slider. */
+  /** Wiersz z wyciszeniem i suwakiem głośności. */
   volumeRow: string;
-  /** Height of the volume track. */
+  /** Wysokość paska głośności. */
   volumeTrack: string;
-  /** Row holding the equalizer and queue toggles. */
+  /** Wiersz z przełącznikami equalizera i kolejki. */
   extrasRow: string;
-  /** Shared classes for the equalizer/queue toggles. */
+  /** Wspólne klasy dla przełączników equalizera/kolejki. */
   extrasButton: string;
   /**
-   * Whether the transport row is hidden when the box is too narrow to fit it.
-   * Only minimal does this, and it pairs with the play-only fallback; the others
-   * always show the row and rely on the box never being that narrow.
+   * Czy wiersz transportu jest ukrywany, gdy box jest zbyt wąski, by się zmieścił.
+   * Robi tak tylko minimal, i łączy się to z fallbackiem tylko-odtwarzanie; pozostałe
+   * zawsze pokazują wiersz i polegają na tym, że box nigdy nie jest tak wąski.
    */
   gateTransportOnWidth: boolean;
   /**
-   * When to show the volume row. The other variants show it whenever not
-   * compact; minimal shows it only when the transport was gated away, because
-   * the two cannot both fit.
+   * Kiedy pokazać wiersz głośności. Pozostałe warianty pokazują go zawsze, gdy nie
+   * jest compact; minimal pokazuje go tylko wtedy, gdy transport został odcięty,
+   * bo oba nie mogą się zmieścić jednocześnie.
    */
   volume: 'whenNotCompact' | 'whenNarrow' | 'never';
-  /** The equalizer/queue row does not exist in minimal at all. */
+  /** Wiersz equalizera/kolejki nie istnieje w minimal w ogóle. */
   extras: boolean;
 }
 

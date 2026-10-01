@@ -53,9 +53,9 @@ interface MenuCtx {
 const IMAGE_EXT_SET = new Set(IMAGE_EXTS);
 const MEDIA_EXT_SET = new Set([...AUDIO_EXTS, ...VIDEO_EXTS, ...IMAGE_EXTS]);
 
-// Explorer menu definition builders extracted from
-// `composables/useExplorerContextMenu.ts` (plan 2.8). Return `{ defs, menuCtx }`
-// so the composable keeps owning `useContextMenu().open`.
+// Buildery definicji menu Eksploratora wydzielone z
+// `composables/useExplorerContextMenu.ts` (plan 2.8). Zwracają `{ defs, menuCtx }`,
+// więc composable zachowuje własność `useContextMenu().open`.
 export function createExplorerMenuDefs(ctx: ExplorerActionCtx) {
   const { explorer, fileClipboard, library, t, filteredFiles } = ctx;
 

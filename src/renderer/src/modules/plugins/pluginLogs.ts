@@ -2,7 +2,7 @@ import type { Ref } from 'vue';
 
 const MAX_LOG_LINES = 50;
 
-// Bounded per-plugin log ring buffer extracted from `stores/plugins.ts` (plan 2.8).
+// Ograniczony bufor pierścieniowy logów per plugin, wydzielony z `stores/plugins.ts` (plan 2.8).
 export function createPluginLogs(logs: Ref<Record<string, string[]>>) {
   function logPush(id: string, line: string): void {
     let list = logs.value[id];

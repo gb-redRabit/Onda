@@ -13,8 +13,8 @@ const volume = ref(0.8);
 const mediaEl = ref<HTMLAudioElement | null>(null);
 const isReady = ref(false);
 const error = ref<string | null>(null);
-// True between the moment a load is issued and the element becoming playable
-// (used for the "buffering" indicator; streams also gate on this).
+// Prawda między momentem zlecenia ładowania a momentem, gdy element staje się odtwarzalny
+// (używane dla wskaźnika "buforowania"; strumienie również się na tym opierają).
 const isLoading = ref(false);
 
 function resumeAndPlay() {

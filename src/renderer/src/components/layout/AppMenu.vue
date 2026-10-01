@@ -33,9 +33,9 @@ const {
   player
 } = useAppMenu();
 
-// A11y: menu-bar keyboard model. Each dropdown is role="menu" with
-// role="menuitem" children; arrows rove focus, Escape closes and returns focus
-// to the trigger, Tab dismisses.
+// A11y: model klawiaturowy paska menu. Każdy dropdown to role="menu" z
+// dziećmi role="menuitem"; strzałki przenoszą fokus, Escape zamyka i przywraca fokus
+// do wyzwalacza, Tab odrzuca.
 function menuItems(name: string): HTMLElement[] {
   const el = document.querySelector<HTMLElement>(`[data-menu="${name}"]`);
   return el ? Array.from(el.querySelectorAll<HTMLElement>('[role="menuitem"]')) : [];
@@ -91,13 +91,13 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
     class="relative z-40 flex h-9 bg-base-100/(--glass-alpha) border border-b border-base-300 shrink-0 select-none"
     style="-webkit-app-region: drag"
   >
-    <!-- Logo + static menus -->
+    <!-- Logo + statyczne menu -->
     <div class="flex items-center shrink-0" style="-webkit-app-region: no-drag">
       <div class="flex items-center gap-2 px-3">
         <img :src="appIcon" alt="Onda Logo" class="w-5 h-5 object-contain" />
       </div>
 
-      <!-- File -->
+      <!-- Plik -->
       <div class="relative">
         <button
           class="h-9 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
@@ -155,7 +155,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
         </div>
       </div>
 
-      <!-- View -->
+      <!-- Widok -->
       <div class="relative">
         <button
           class="h-9 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
@@ -279,7 +279,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
         </div>
       </div>
 
-      <!-- Playback -->
+      <!-- Odtwarzanie -->
       <div v-if="player.currentTrack" class="relative">
         <button
           class="h-9 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
@@ -392,7 +392,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
         </div>
       </div>
 
-      <!-- Help -->
+      <!-- Pomoc -->
       <div class="relative">
         <button
           class="h-9 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
@@ -414,7 +414,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
       </div>
     </div>
 
-    <!-- View-specific actions (middle area stays draggable; only buttons opt out) -->
+    <!-- Akcje specyficzne dla widoku (środkowy obszar pozostaje przeciągalny; tylko przyciski rezygnują) -->
     <AppMenuViewActions
       :show="showViewActions"
       :label="viewLabel"
@@ -424,7 +424,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
       @search="toggleViewSearch"
     />
 
-    <!-- Right side: search + window controls -->
+    <!-- Prawa strona: wyszukiwanie + kontrolki okna -->
     <AppMenuWindowControls
       :is-maximized="isMaximized"
       @minimize="minimize"

@@ -64,7 +64,7 @@ describe('setTrack', () => {
     const t = makeTrack('1');
     store.setTrack(t, { resume: true });
     expect(store.consumeResumeIntent(t.path)).toBe(true);
-    // One-shot: the next consumer must not see it.
+    // Jednorazowe: następny konsument nie może tego zobaczyć.
     expect(store.consumeResumeIntent(t.path)).toBe(false);
   });
 
@@ -333,8 +333,8 @@ describe('playFromHistory', () => {
 
 describe('favorites', () => {
   it('isFavorite returns true if path is in favorites', () => {
-    // Favourites are owned by the settings store; the player store exposes a
-    // live read-only view of them, which is all the views use.
+    // Ulubione należą do store ustawień; store player udostępnia ich
+    // żywy widok tylko do odczytu, którego używają wszystkie widoki.
     useSettingsStore().favorites = ['/path/to/song.mp3'];
     const store = usePlayerStore();
     expect(store.isFavorite('/path/to/song.mp3')).toBe(true);
@@ -354,9 +354,9 @@ describe('favorites', () => {
   it('toggleFavorite persists through the settings store, not a second writer', async () => {
     const store = usePlayerStore();
     await store.toggleFavorite('/x.mp3');
-    // Favourites are a setting, so the write goes through the same debounced
-    // persistence as everything else. A direct `settings:set` here was a second
-    // writer for one key, invisible to a factory reset or an imported profile.
+    // Ulubione są ustawieniem, więc zapis przechodzi przez tę samą debounce'owaną
+    // persystencję co wszystko inne. Bezpośrednie `settings:set` tutaj było drugim
+    // pisarzem jednego klucza, niewidocznym dla resetu fabrycznego lub zaimportowanego profilu.
     expect((window as any).api.invoke).not.toHaveBeenCalledWith('settings:set', {
       favorites: ['/x.mp3']
     });
@@ -365,7 +365,7 @@ describe('favorites', () => {
   });
 
   it('a factory reset clears favourites with everything else', () => {
-    // The reason there is one writer: the reset path now reaches favourites.
+    // Powód, dla którego jest jeden pisarz: ścieżka resetu dociera teraz do ulubionych.
     const settings = useSettingsStore();
     settings.favorites = ['/keep.mp3'];
     settings.resetToDefaults();

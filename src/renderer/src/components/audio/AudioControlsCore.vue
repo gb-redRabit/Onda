@@ -7,23 +7,23 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { DENSITY, ICON, ICON_SM, PLAY_BOX, PLAY_SIZE } from '@renderer/utils/audioControls';
 import TransportButtons from '@renderer/components/player/TransportButtons.vue';
 
-// The transport for every layout that has one. This replaces four components
-// that were the same eight buttons with the same handlers and the same
-// accessible names, differing only in a few Tailwind classes — so a behaviour or
-// an accessibility fix had to be applied four times, and missing one was
-// invisible until the window was resized into that variant.
+// Transport dla każdego układu, który go ma. Zastępuje cztery komponenty,
+// które były tymi samymi ośmioma przyciskami z tymi samymi handlerami i tymi samymi
+// dostępnymi nazwami, różniąc się tylko kilkoma klasami Tailwind — więc poprawkę
+// zachowania lub dostępności trzeba było zastosować cztery razy, a pominięcie jednej było
+// niewidoczne, dopóki okno nie zostało zmienione na ten wariant.
 //
-// The one variant with genuinely different logic is micro (a single play
-// button); it stays its own component.
+// Jedyny wariant z naprawdę inną logiką to micro (pojedynczy przycisk
+// odtwarzania); zostaje własnym komponentem.
 
 const props = defineProps<{
-  /** Which density row from DENSITY to render with. */
+  /** Który wiersz gęstości z DENSITY renderować. */
   variant: 'wide' | 'tall' | 'compact' | 'minimal';
-  /** Hides the volume and extras rows regardless of available space. */
+  /** Ukrywa wiersze głośności i dodatków niezależnie od dostępnego miejsca. */
   compact: boolean;
-  /** Box is wide enough for the full transport row. */
+  /** Pole jest wystarczająco szerokie na pełny wiersz transportu. */
   widthSufficient: boolean;
-  /** Box is tall enough to give the volume row its own line. */
+  /** Pole jest wystarczająco wysokie, by wiersz głośności dostał własną linię. */
   volumeFit: boolean;
 }>();
 
@@ -37,7 +37,7 @@ const iconSm = computed(() => ICON_SM[props.variant]);
 const playSize = computed(() => PLAY_SIZE[props.variant]);
 const playBox = computed(() => PLAY_BOX[props.variant]);
 
-// The transport buttons reuse the shared component with this density's classes.
+// Przyciski transportu używają współdzielonego komponentu z klasami tej gęstości.
 const transportStyles = computed(() => ({
   toggle: `${d.value.button} rounded-full transition-colors`,
   step: `${d.value.button} rounded-full`,
@@ -77,8 +77,8 @@ function onVolume(e: MouseEvent) {
   audio.setVolume(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)));
 }
 
-// The volume bar is a click-only div without this: no role, no tabindex, no
-// keyboard handler, so volume could only be changed with a mouse.
+// Pasek głośności to bez tego div tylko do klikania: brak roli, brak tabindex,
+// brak obsługi klawiatury, więc głośność dało się zmieniać tylko myszą.
 const VOLUME_STEP = 0.05;
 function onVolumeKey(e: KeyboardEvent) {
   const current = player.isMuted ? 0 : player.volume;

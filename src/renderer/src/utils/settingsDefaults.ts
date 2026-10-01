@@ -30,19 +30,19 @@ import {
 
 type SettingsStore = ReturnType<typeof useSettingsStore>;
 
-// Path form: `<group>.<field>` (e.g. `playback.defaultVolume`). Used by
-// SettingsRow to show "changed from default" and to reset a single setting, so
-// every control gets that for free without per-tab bookkeeping.
+// Forma ścieżki: `<group>.<field>` (np. `playback.defaultVolume`). Używana przez
+// SettingsRow do pokazania "zmienione z domyślnego" i do resetowania pojedynczego ustawienia,
+// więc każda kontrolka dostaje to za darmo bez księgowości per zakładka.
 
 /**
- * The groups a setting path can address, each carrying its own bag type.
+ * Grupy, które może adresować ścieżka ustawienia, każda z własnym typem worka.
  *
- * This map is what keeps the dynamic path form honest. It was
- * `Record<string, Record<string, unknown>>` with a cast on every entry, which
- * meant a typo in a group name, or a field of the wrong shape, could not be
- * caught anywhere: the values had been flattened to `unknown` on the way in.
- * Here `DEFAULTS.general` is a `GeneralSettings`, so a mistake shows up as a
- * type error at the map itself.
+ * Ta mapa utrzymuje uczciwość dynamicznej formy ścieżki. Wcześniej było to
+ * `Record<string, Record<string, unknown>>` z castem na każdym wpisie, co
+ * oznaczało, że literówka w nazwie grupy albo pole o złym kształcie nie mogły być
+ * nigdzie wychwycone: wartości zostały spłaszczone do `unknown` po drodze.
+ * Tutaj `DEFAULTS.general` jest `GeneralSettings`, więc pomyłka pokazuje się jako
+ * błąd typu przy samej mapie.
  */
 const DEFAULTS = {
   general: DEFAULT_GENERAL,
@@ -63,13 +63,13 @@ const DEFAULTS = {
 type SettingsGroup = keyof typeof DEFAULTS;
 
 /**
- * The settings bag each group owns.
+ * Worek ustawień, którego właścicielem jest każda grupa.
  *
- * Keyed off the settings interfaces rather than off the DEFAULT_* constants on
- * purpose: two of those constants carry no type annotation, so TypeScript infers
- * their fields as plain `string`/`number`/`boolean`. Deriving the patch type
- * from them would accept any value for those fields, which is the same hole the
- * old `as never` had.
+ * Celowo oparte na interfejsach ustawień, a nie na stałych DEFAULT_*: dwie z tych
+ * stałych nie mają adnotacji typu, więc TypeScript wnioskuje ich pola jako zwykłe
+ * `string`/`number`/`boolean`. Wyprowadzenie typu patch z nich przyjmowałoby
+ * dowolną wartość dla tych pól, co jest tą samą dziurą, którą miało stare
+ * `as never`.
  */
 interface GroupBag {
   general: GeneralSettings;
@@ -86,11 +86,11 @@ interface GroupBag {
 }
 
 /**
- * Group name to the updater that writes it, with the patch type the store
- * actually declares. These were `as never`, which silenced the compiler
- * completely — `updateGeneral({ volume: 'loud' })` through this table was
- * accepted, and `as never` is the one cast that suppresses checking even when
- * the target type is concrete.
+ * Nazwa grupy do aktualizatora, który ją zapisuje, z typem patch, który store
+ * faktycznie deklaruje. Wcześniej było `as never`, co całkowicie uciszało kompilator
+ * — `updateGeneral({ volume: 'loud' })` przez tę tabelę było
+ * akceptowane, a `as never` to jedyny cast, który tłumi sprawdzanie nawet gdy
+ * typ docelowy jest konkretny.
  */
 const UPDATERS: {
   [K in keyof GroupBag]: (patch: Partial<GroupBag[K]>) => void;
@@ -112,7 +112,7 @@ type UpdatableGroup = keyof typeof UPDATERS;
 
 let storeRef: SettingsStore | null = null;
 
-/** Called once from the settings view so the helpers can write back. */
+/** Wywoływane raz z widoku ustawień, by helpery mogły zapisywać z powrotem. */
 export function bindSettingsStore(store: SettingsStore): void {
   storeRef = store;
 }
@@ -139,7 +139,7 @@ export function currentOf(path: string): unknown {
   return state[group]?.[field];
 }
 
-/** True when the current value differs from the shipped default. */
+/** Prawda, gdy bieżąca wartość różni się od domyślnej dostarczonej z aplikacją. */
 export function isSettingModified(path: string): boolean {
   const current = currentOf(path);
   const fallback = defaultOf(path);
@@ -150,7 +150,7 @@ export function isSettingModified(path: string): boolean {
   return current !== fallback;
 }
 
-/** Restores a single setting to its shipped default. */
+/** Przywraca pojedyncze ustawienie do jego domyślnej wartości dostarczonej z aplikacją. */
 export function resetSetting(path: string): void {
   const [group, field] = split(path);
   const bag = DEFAULTS[group as SettingsGroup] as Record<string, unknown> | undefined;
@@ -158,8 +158,8 @@ export function resetSetting(path: string): void {
   if (fallback === undefined) return;
   const updater = UPDATERS[group as UpdatableGroup];
   if (!updater) return;
-  // The one unavoidable widening: the path is resolved at runtime, so the
-  // compiler cannot know which group's patch type applies. The updater above
-  // still checks the shape, and the group key is checked against DEFAULTS.
+  // Jedno nieuniknione rozszerzenie: ścieżka jest rozwiązywana w czasie działania, więc
+  // kompilator nie może wiedzieć, który typ patch grupy ma zastosowanie. Aktualizator powyżej
+  // nadal sprawdza kształt, a klucz grupy jest sprawdzany względem DEFAULTS.
   updater({ [field]: fallback } as never);
 }

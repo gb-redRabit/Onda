@@ -7,7 +7,7 @@ import { readSelect } from '@renderer/utils/selectOptions';
 
 const settings = useSettingsStore();
 
-/** Same lists the options are rendered from, so validation and UI cannot drift. */
+/** Te same listy, z których renderowane są opcje, więc walidacja i UI nie mogą się rozjechać. */
 const EXPLORER_SORT_BY = ['name', 'size', 'type', 'modified'] as const;
 const EXPLORER_SORT_ORDER = ['asc', 'desc'] as const;
 </script>

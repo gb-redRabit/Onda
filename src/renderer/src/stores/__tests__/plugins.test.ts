@@ -73,8 +73,8 @@ function apiMock() {
   api.pluginsStorageRemove = vi.fn().mockResolvedValue(true);
   api.pluginsSettingsGet = vi.fn().mockResolvedValue({});
   api.pluginsSettingsSet = vi.fn().mockResolvedValue(true);
-  // The store loads bundled examples on init; without these the run logged a
-  // TypeError per call (caught, but noisy and untested).
+  // Store ładuje dołączone przykłady przy inicjalizacji; bez nich uruchomienie logowało
+  // TypeError na wywołanie (łapane, ale hałaśliwe i nieprzetestowane).
   api.pluginsListExamples = vi.fn().mockResolvedValue([]);
   api.pluginsInstallExample = vi.fn().mockResolvedValue({ success: true });
   api.pluginsFetch = vi.fn().mockResolvedValue({
@@ -505,7 +505,7 @@ describe('ui:set visual capability', () => {
       'triangle'
     );
     expect(store.decorations.cover).toBe('plugin:cover:diamond');
-    // `visualization` has no host variant — plugin values are rejected there.
+    // `visualization` nie ma wariantu hosta — wartości pluginu są tam odrzucane.
     await expect(
       store.dispatchApi(
         'ui:set',
@@ -529,7 +529,7 @@ describe('ui:set visual capability', () => {
         'triangle'
       )
     ).rejects.toThrow('unknown-decoration');
-    // Built-in decorations were removed: a bare variant name is not accepted.
+    // Wbudowane dekoracje zostały usunięte: sama nazwa wariantu nie jest akceptowana.
     await expect(
       store.dispatchApi(
         'ui:set',
@@ -941,8 +941,8 @@ describe('worker lifecycle', () => {
     await expect(store.toggle('review')).resolves.toBe(false);
     expect((window as any).api.pluginsToggle).not.toHaveBeenCalled();
 
-    // Enabling through the store fetches the token that main computed for the
-    // manifest + entry file it is about to run.
+    // Włączenie przez store pobiera token, który main obliczył dla
+    // manifestu + pliku wejściowego, który ma uruchomić.
     await expect(store.approveAndEnable('review')).resolves.toBe(true);
     expect((window as any).api.pluginsGet).toHaveBeenCalledWith('review');
     expect((window as any).api.pluginsToggle).toHaveBeenCalledWith('review', true, 'b'.repeat(64));

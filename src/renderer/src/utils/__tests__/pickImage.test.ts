@@ -1,9 +1,9 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { pickImagePath } from '../pickImage';
 
-// Three components opened the image picker and each re-implemented the same
-// unwrapping of the dialog result, so "cancelled" and "no path" were handled
-// slightly differently in each. These cases are the contract.
+// Trzy komponenty otwierały wybór obrazu i każdy ponownie implementował to samo
+// odwijanie wyniku dialogu, więc "anulowano" i "brak ścieżki" były obsługiwane
+// nieco inaczej w każdym z nich. Te przypadki są kontraktem.
 
 type DialogResult = { canceled: boolean; filePaths: string[] } | undefined;
 
@@ -38,15 +38,15 @@ describe('pickImagePath', () => {
   });
 
   it('returns null when no path came back', async () => {
-    // A dialog that reports success but selects nothing is not a cancel, and
-    // must not be treated as a path.
+    // Dialog zgłaszający sukces, ale niewybierający niczego, nie jest anulowaniem
+    // i nie może być traktowany jako ścieżka.
     stubApi({ canceled: false, filePaths: [] });
     expect(await pickImagePath()).toBeNull();
   });
 
   it('returns null when the preload bridge is missing', async () => {
-    // The renderer can be exercised without a bridge (tests, a dev page); the
-    // optional chain must not throw.
+    // Renderer można uruchomić bez bridge (testy, strona dev); opcjonalny
+    // łańcuch nie może rzucać wyjątku.
     (window as unknown as { api?: unknown }).api = undefined;
     expect(await pickImagePath()).toBeNull();
   });

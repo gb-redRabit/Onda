@@ -35,8 +35,8 @@ const router = useRouter();
 const input = ref<HTMLInputElement | null>(null);
 const activeIndex = ref(0);
 
-// Debounce the (potentially huge) library filter so typing in the command
-// palette doesn't re-scan every track on each keystroke (plan 1.8).
+// Debounce (potencjalnie ogromnego) filtra biblioteki, żeby pisanie w palecie
+// poleceń nie skanowało każdego utworu przy każdym naciśnięciu klawisza (plan 1.8).
 const debouncedQuery = ref(ui.searchQuery);
 let queryTimer: ReturnType<typeof setTimeout> | null = null;
 watch(

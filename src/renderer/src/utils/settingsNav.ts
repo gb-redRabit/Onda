@@ -18,7 +18,7 @@
   Activity
 } from '@lucide/vue';
 
-// Settings navigation data extracted from `views/SettingsView.vue` (plan 2.8).
+// Dane nawigacji ustawień wydzielone z `views/SettingsView.vue` (plan 2.8).
 
 export const SETTINGS_SECTIONS = [
   { id: 'appearance', labelKey: 'settings.sectionAppearance', icon: Palette },

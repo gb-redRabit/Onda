@@ -3,17 +3,17 @@ import { logger } from '@shared/logger';
 import { cachedThumb, setCachedThumb } from '@renderer/utils/thumbLoader';
 
 /**
- * Unified batch-thumbnail access for the library and explorer. Fetches through
- * `media:batchThumbnails` and shares the single LRU cache (`thumbLoader`) with
- * the explorer's per-file `useThumbnail`, so a thumbnail loaded by either path
- * is immediately available to the other — one cache, one source of truth.
+ * Ujednolicony dostęp do miniatur wsadowych dla biblioteki i eksploratora. Pobiera przez
+ * `media:batchThumbnails` i współdzieli pojedynczy cache LRU (`thumbLoader`) z
+ * per-plikowym `useThumbnail` eksploratora, więc miniatura załadowana przez jedną ścieżkę
+ * jest natychmiast dostępna dla drugiej — jeden cache, jedno źródło prawdy.
  */
 export function useMediaAssets(size = 180) {
   const thumbs = ref<Record<string, string>>({});
   let pending: string[] = [];
   let timer: ReturnType<typeof setTimeout> | null = null;
 
-  // The 40ms flush timer must not outlive the component scope.
+  // 40-milisekundowy timer flush nie może przeżyć zakresu komponentu.
   onScopeDispose(() => {
     if (timer) {
       clearTimeout(timer);

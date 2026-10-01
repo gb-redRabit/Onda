@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-// The main process and the shared layer must not depend on renderer sources:
-// that inversion meant main could not be built or tested without the Vue tree.
-// This guard fails if an import into `renderer/src` reappears.
+// Proces główny i warstwa współdzielona nie mogą zależeć od źródeł renderera:
+// ta inwersja powodowała, że main nie dało się zbudować ani przetestować bez drzewa Vue.
+// Ten strażnik zawodzi, jeśli import do `renderer/src` pojawi się ponownie.
 
 const IMPORT_RE = /(?:from\s*|import\s*\(\s*)['"][^'"]*renderer\/src/;
 

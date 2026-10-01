@@ -24,7 +24,7 @@ const ui = useUIStore();
 const settings = useSettingsStore();
 
 const panelRef = ref<HTMLElement | null>(null);
-// Dialog semantics + focus trap; Escape behaves like the close button.
+// Semantyka dialogu + focus trap; Escape działa jak przycisk zamknięcia.
 useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => skipAll() });
 
 const steps: Component[] = [
@@ -50,12 +50,12 @@ const stepProps = computed(() =>
 );
 
 function markDone() {
-  // Persist in settings (covered by export/import), keep localStorage as a hint.
+  // Zapis w ustawieniach (objęte eksportem/importem), localStorage zostaje jako podpowiedź.
   settings.updateGeneral({ firstRunDone: true });
   try {
     localStorage.setItem('onda-first-run-done', '1');
   } catch {
-    /* storage unavailable */
+    /* pamięć niedostępna */
   }
 }
 

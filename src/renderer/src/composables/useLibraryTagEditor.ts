@@ -36,7 +36,7 @@ function persistScanned(library: ReturnType<typeof useLibraryStore>) {
       ?.invoke('library:saveScanned', { files, folderTypes })
       .catch((err) => logger.error('Library', 'saveScanned', err));
   } catch (_e) {
-    /* serialization failed silently */
+    /* serializacja nie powiodła się po cichu */
   }
 }
 
@@ -77,7 +77,7 @@ export function useLibraryTagEditor(
   function onMBApply(data: LibraryMbApplyData) {
     if (!editingTrack.value) return;
     const targetPath = editingTrack.value.path;
-    // updateTrack triggers the reactive refresh (triggerRef) the derived views need
+    // updateTrack wyzwala reaktywne odświeżenie (triggerRef) potrzebne widokom pochodnym
     library.updateTrack(targetPath, (track) => {
       track.metadata = {
         ...(track.metadata || {}),

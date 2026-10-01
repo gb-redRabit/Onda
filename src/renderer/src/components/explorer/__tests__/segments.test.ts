@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { buildSegments } from '../segments';
 
-// The breadcrumb used to key its segments by index, so moving between folders
-// reused the button DOM of a different folder. These tests pin the two
-// properties that make the path a usable key: it is unique within a list, and it
-// is stable for the part of the path that did not change.
+// Breadcrumb kiedyś kluczował segmenty po indeksie, więc przechodzenie między folderami
+// używało ponownie DOM przycisku innego folderu. Te testy utrwalają dwie
+// właściwości, które czynią ścieżkę użytecznym kluczem: jest unikalna w liście i
+// stabilna dla tej części ścieżki, która się nie zmieniła.
 
 describe('buildSegments', () => {
   it('gives every segment the cumulative path it navigates to', () => {
@@ -12,15 +12,15 @@ describe('buildSegments', () => {
   });
 
   it('keys are unique, including when a folder name repeats down the path', () => {
-    // A duplicate key is not a cosmetic problem: Vue warns and then reuses the
-    // wrong node. `a\a` would collide if the key were the folder name alone.
+    // Zduplikowany klucz nie jest problemem kosmetycznym: Vue ostrzega, a potem używa
+    // złego węzła. `a\a` kolidowałoby, gdyby kluczem była sama nazwa folderu.
     const paths = buildSegments('a\\a\\a').map((s) => s.path);
     expect(new Set(paths).size).toBe(paths.length);
   });
 
   it('keeps the keys of the shared prefix when navigating', () => {
-    // This is the actual regression. From a\b\c to a\d, index keys 0 and 1 are
-    // reused, so `a` keeps its node and `a\b` is reused for `a\d`.
+    // To jest właściwa regresja. Z a\b\c do a\d klucze indeksów 0 i 1 są
+    // używane ponownie, więc `a` zachowuje swój węzeł, a `a\b` jest użyty dla `a\d`.
     const before = buildSegments('a\\b\\c').map((s) => s.path);
     const after = buildSegments('a\\d').map((s) => s.path);
     const shared = after.filter((path) => before.includes(path));

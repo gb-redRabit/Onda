@@ -6,8 +6,8 @@ import { parseBatchInputAll } from '@shared/platform';
 import { countSkippedBatchLines } from '@renderer/utils/onlineView';
 import { pickTextFile, batchResultMessage } from '@renderer/utils/onlineBatch';
 
-// Batch download panel: pasted/imported links, parsed entries, profile choice
-// and submission.
+// Panel pobierania wsadowego: wklejone/zaimportowane linki, sparsowane wpisy, wybór profilu
+// i wysłanie.
 export function useOnlineBatch() {
   const yt = useOnlineStore();
   const { profiles } = useDownloadProfiles();
@@ -21,12 +21,12 @@ export function useOnlineBatch() {
 
   const batchEntries = computed(() => parseBatchInputAll(batchText.value));
 
-  // Lines that were dropped by the parser (channels, prefixes, junk).
+  // Linie odrzucone przez parser (kanały, prefiksy, śmieci).
   const batchSkippedCount = computed(() =>
     countSkippedBatchLines(batchText.value, batchEntries.value.length)
   );
 
-  // SoundCloud links ignore download profiles — hide the selector for them.
+  // Linki SoundCloud ignorują profile pobierania — ukryj dla nich selektor.
   const batchHasSc = computed(() => batchEntries.value.some((e) => e.platform === 'soundcloud'));
 
   async function submitBatch() {

@@ -6,7 +6,7 @@ const props = defineProps<{
   title: string;
   icon: Component;
   seeAllLabel?: string;
-  /** Re-evaluates the scroll arrows when the shelf content changes. */
+  /** Ponownie ocenia strzałki przewijania, gdy zmienia się zawartość półki. */
   itemCount: number;
 }>();
 

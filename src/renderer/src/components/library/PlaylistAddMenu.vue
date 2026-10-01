@@ -4,12 +4,12 @@ import { Plus, ListMusic } from '@lucide/vue';
 import { useLibraryStore } from '@renderer/stores/library';
 import type { MediaFile } from '@renderer/types/media';
 
-// Shared "add to playlist" trigger + popup — was duplicated 1:1 in
-// LibraryTrackRow, LibraryTrackCard and AlbumCard (plan 2.2).
+// Współdzielony trigger + popup "dodaj do playlisty" — był zduplikowany 1:1 w
+// LibraryTrackRow, LibraryTrackCard i AlbumCard (plan 2.2).
 const props = withDefaults(
   defineProps<{
     tracks: MediaFile[];
-    /** `toggle` shows ✓ and toggles membership; `add` just adds every track. */
+    /** `toggle` pokazuje ✓ i przełącza członkostwo; `add` po prostu dodaje każdy utwór. */
     mode?: 'toggle' | 'add';
     iconSize?: number;
     buttonClass?: string;

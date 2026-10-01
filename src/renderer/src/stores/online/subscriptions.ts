@@ -1,10 +1,10 @@
 import { ref } from 'vue';
 import type { Subscription } from '@renderer/types/online';
 
-// Subscriptions collection + local mutation helpers. Reference-counting and
-// persistence stay in main (yt:subs:*); this module only holds the in-memory
-// list and optimistic updates. The store destructures the returned refs/actions
-// back into the same names, so call sites elsewhere are unchanged.
+// Kolekcja subskrypcji + lokalne helpery mutacji. Liczenie referencji i
+// persystencja pozostają w main (yt:subs:*); ten moduł trzyma tylko listę w pamięci
+// i optymistyczne aktualizacje. Store destrukturyzuje zwrócone refy/akcje
+// z powrotem do tych samych nazw, więc miejsca wywołań gdzie indziej pozostają bez zmian.
 export function createOnlineSubscriptions() {
   const subscriptions = ref<Subscription[]>([]);
   const subscriptionsLoaded = ref(false);
@@ -34,10 +34,10 @@ export function createOnlineSubscriptions() {
     return !!sub && (sub.downloadedVideoIds || []).includes(videoId);
   }
 
-  // Optimistic local update only. Persistence is handled in main by
-  // setDownloadCompletedHandler (atomic append + yt:subs:updated broadcast),
-  // so this never writes a stale full array over the file. pendingCount is
-  // decremented here too so the „do pobrania" badge is live while downloading.
+  // Tylko optymistyczna lokalna aktualizacja. Persystencja jest obsługiwana w main przez
+  // setDownloadCompletedHandler (atomowe dopisanie + broadcast yt:subs:updated),
+  // więc to nigdy nie nadpisuje pliku nieaktualną pełną tablicą. pendingCount jest
+  // tu również dekrementowany, więc plakietka "do pobrania" jest aktualna podczas pobierania.
   function markVideoDownloaded(videoId: string, channelId: string) {
     const sub = getSubscription(channelId);
     if (!sub) return;
@@ -60,7 +60,7 @@ export function createOnlineSubscriptions() {
       const list = (await window.api.invoke('yt:subs:list')) as Subscription[] | null;
       if (list) subscriptions.value = list;
     } catch {
-      /* subscriptions unavailable */
+      /* subskrypcje niedostępne */
     }
     subscriptionsLoaded.value = true;
   }

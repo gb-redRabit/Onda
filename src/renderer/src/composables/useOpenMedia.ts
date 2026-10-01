@@ -25,8 +25,8 @@ export async function openMediaFiles(paths: string[], router: Router): Promise<v
 
   const [first, ...rest] = playQueue;
 
-  // Grant the media server access to the folder of the first file (belt-and-
-  // suspenders for every open path: dialog, file association, drag&drop).
+  // Przyznaj serwerowi mediów dostęp do folderu pierwszego pliku (dodatkowe
+  // zabezpieczenie przy każdej ścieżce otwarcia: dialog, skojarzenie plików, drag&drop).
   await window.api?.grantMediaAccess(first.path);
 
   if (first.type === 'audio') {

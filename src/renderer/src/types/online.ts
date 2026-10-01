@@ -1,3 +1,3 @@
-// Moved to `../../../shared/types/online` so the main process no longer imports
-// renderer sources. Re-exported here to keep `@renderer/types/online` working.
+// Przeniesiono do `../../../shared/types/online`, żeby proces główny nie importował
+// już źródeł renderera. Re-eksportowane tutaj, aby `@renderer/types/online` dalej działał.
 export * from '../../../shared/types/online';

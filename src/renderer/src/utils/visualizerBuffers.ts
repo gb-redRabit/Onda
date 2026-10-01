@@ -1,4 +1,4 @@
-// Analyser scratch buffers (no per-frame allocation).
+// Bufory robocze analizatora (bez alokacji per klatka).
 let freqData: Uint8Array<ArrayBuffer> | null = null;
 let smoothPrev: Uint8Array<ArrayBuffer> | null = null;
 let smoothOut: Uint8Array<ArrayBuffer> | null = null;
@@ -10,7 +10,7 @@ export function getFreqData(analyser: AnalyserNode, bufferLength: number): Uint8
   return freqData;
 }
 
-// Applies the exponential-smoothing envelope; returns the buffer to draw from.
+// Nakłada obwiednię wygładzania wykładniczego; zwraca bufor, z którego rysować.
 export function smoothData(
   data: Uint8Array<ArrayBuffer>,
   smoothing: number,
@@ -24,7 +24,7 @@ export function smoothData(
   for (let i = 0; i < bufferLength; i++) {
     out[i] = Math.max(data[i], Math.round(prev[i] * smoothing));
   }
-  // ping-pong: the just-computed buffer becomes the baseline for the next frame
+  // ping-pong: świeżo policzony bufor staje się bazą dla następnej klatki
   smoothPrev = out;
   smoothOut = prev;
   return out;

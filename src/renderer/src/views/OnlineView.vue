@@ -31,7 +31,7 @@ import OnlineChannelError from '@renderer/components/online/OnlineChannelError.v
 import YTAuthButton from '@renderer/components/online/YTAuthButton.vue';
 import PageHeader from '@renderer/components/ui/PageHeader.vue';
 
-// Heavy dialogs/views are lazy-loaded so they don't bloat the Online chunk
+// Ciężkie dialogi/widoki są ładowane leniwie, żeby nie rozdymały chunka Online
 // (plan 3.5).
 const OnlineChannelView = defineAsyncComponent({
   loader: () => import('@renderer/components/online/OnlineChannelView.vue'),

@@ -5,15 +5,15 @@ import { readSelect } from '../selectOptions';
 import { AUDIO_FORMATS, VIDEO_QUALITIES, VIDEO_CONTAINERS } from '@shared/constants';
 import type { DownloadSettings } from '@renderer/types/settings';
 
-// readSelect replaces a raw `as any` cast on a <select>'s value. The cast never
-// failed, so a renamed option, or a value left over from an older settings file,
-// flowed straight into the store. The value is now checked against the option
-// list, and these tests pin both halves: the check works, and the declared lists
-// still cover the options their templates render.
+// readSelect zastępuje surowy cast `as any` na wartości <select>. Cast nigdy nie
+// zawodził, więc zmieniona nazwa opcji albo wartość pozostawiona ze starszego pliku
+// ustawień wpływała prosto do store. Wartość jest teraz sprawdzana względem listy
+// opcji, a te testy pilnują obu połówek: sprawdzenie działa i zadeklarowane listy
+// nadal pokrywają opcje renderowane przez ich szablony.
 
 function change(value: string): Event {
-  // A bare <select> with no options discards an assigned value, so the target
-  // is a plain stand-in with the one field readSelect touches.
+  // Samotny <select> bez opcji odrzuca przypisaną wartość, więc cel jest
+  // zwykłym zaślepkiem z jednym polem, którego dotyka readSelect.
   return { target: { value } } as unknown as Event;
 }
 
@@ -25,8 +25,8 @@ describe('readSelect', () => {
   });
 
   it('falls back to the first option for a value the list does not contain', () => {
-    // The case the old cast let through: the union on the settings field said
-    // 'best' | 'mp3' | ..., and anything else was accepted anyway.
+    // Przypadek, który przepuszczał stary cast: unia na polu ustawień mówiła
+    // 'best' | 'mp3' | ..., a i tak przyjmowano cokolwiek innego.
     expect(readSelect(change('wma'), AUDIO_FORMATS)).toBe('best');
     expect(readSelect(change('4320p'), VIDEO_QUALITIES)).toBe('best');
   });
@@ -54,11 +54,11 @@ function declaredList(file: string, name: string): string[] {
 }
 
 /**
- * Option values of the one <select> that calls readSelect with `list`.
+ * Wartości opcji jednego <select>, który wywołuje readSelect z `list`.
  *
- * Scanning the whole file would pick up the options of every other select in the
- * component — sort order, visualizer palettes — and compare them against the
- * wrong list.
+ * Skanowanie całego pliku wychwyciłoby opcje każdego innego select w
+ * komponencie — kolejność sortowania, palety wizualizera — i porównało je z
+ * niewłaściwą listą.
  */
 function optionsForList(file: string, list: string): string[] {
   const source = readFileSync(file, 'utf8');
@@ -71,10 +71,10 @@ function optionsForList(file: string, list: string): string[] {
 }
 
 /**
- * The validation lists live next to the components while the <option> tags are
- * hand-written with translated labels. Adding an option without adding it to the
- * list would make that option snap back to the first one when selected, so the
- * two are compared here rather than trusted.
+ * Listy walidacyjne żyją obok komponentów, a tagi <option> są pisane ręcznie
+ * z przetłumaczonymi etykietami. Dodanie opcji bez dodania jej do listy
+ * powodowałoby, że po wybraniu ta opcja wracałaby do pierwszej, więc oba
+ * elementy są tu porównywane, a nie uznawane za pewne.
  */
 describe('declared select lists cover the options they validate', () => {
   const cases = [
@@ -98,8 +98,8 @@ describe('declared select lists cover the options they validate', () => {
 });
 
 /**
- * Type-level half: each list must match the union on the settings field it
- * writes, so a value added to one and not the other is a compile error.
+ * Połowa na poziomie typów: każda lista musi pasować do unii na polu ustawień,
+ * do którego pisze, więc wartość dodana do jednej, a nie do drugiej, to błąd kompilacji.
  */
 type AssertEqual<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 

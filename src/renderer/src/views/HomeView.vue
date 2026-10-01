@@ -120,7 +120,7 @@ function openLibrary(tab: TabId): void {
   router.push({ path: '/library', query: { tab } });
 }
 
-// ---- Shelves -----------------------------------------------------------------
+// ---- Półki -------------------------------------------------------------------
 
 const recentTracks = computed(() => library.recentTracks.slice(0, 12));
 const mostPlayed = computed(() =>
@@ -146,8 +146,8 @@ function trackSubtitle(track: MediaFile): string {
   return duration > 0 ? formatDuration(duration) : track.extension;
 }
 
-// vue-i18n's built-in plural rules get Polish one/few/many wrong on a 3-form
-// message, so the form is chosen explicitly (see utils/plural.ts).
+// Wbudowane reguły liczby mnogiej vue-i18n błędnie obsługują polskie one/few/many
+// dla komunikatu 3-formowego, więc forma jest wybierana jawnie (patrz utils/plural.ts).
 function trackCountLabel(count: number): string {
   const category = pluralCategory(locale.value, count);
   const key =
@@ -159,11 +159,11 @@ function trackCountLabel(count: number): string {
   return t(key, { count });
 }
 
-// ---- Continue card -----------------------------------------------------------
+// ---- Karta kontynuacji -------------------------------------------------------
 
-// The card is a "pick up where you left off" affordance, so it must never show
-// the track that is already loaded in the player — fall through to the next
-// most recent one, and hide the card entirely when there is none.
+// Karta jest elementem "wróć tam, gdzie skończyłeś", więc nigdy nie może pokazywać
+// utworu już wczytanego w odtwarzaczu — przejdź do następnego
+// najnowszego, a gdy go nie ma, całkowicie ukryj kartę.
 const continueTrack = computed<MediaFile | null>(() => {
   const current = player.currentTrack?.path;
   return library.recentTracks.find((t) => t.path !== current) ?? null;
@@ -189,12 +189,12 @@ function playContinue(): void {
   if (!track) return;
   if (track.type === 'video') {
     player.setTrack(track);
-    // Video has no resume hook in the engine; seed the clock before PlayerView
-    // loads the source (setTrack resets currentTime, so seek afterwards).
+    // Wideo nie ma hooka wznawiania w silniku; ustaw zegar przed
+    // wczytaniem źródła przez PlayerView (setTrack resetuje currentTime, więc przewiń potem).
     if (continuePosition.value > 5) player.seek(continuePosition.value);
   } else {
-    // Only this card resumes a saved position; every other play path starts
-    // from the beginning.
+    // Tylko ta karta wznawia zapisaną pozycję; każda inna ścieżka odtwarzania
+    // zaczyna od początku.
     player.setTrack(track, { resume: true });
   }
   player.play();
@@ -204,8 +204,8 @@ function playContinue(): void {
 function playContinueFromStart(): void {
   const track = continueTrack.value;
   if (!track) return;
-  // "From the start" also forgets the saved position, so the resume affordance
-  // and the progress bar disappear for this track.
+  // "Od początku" zapomina też zapisaną pozycję, więc element wznawiania
+  // i pasek postępu znikają dla tego utworu.
   void window.api?.clearPlaybackPosition(track.path);
   if (track.type === 'audio') audioEngine.clearSavedPosition(track.path);
   continuePosition.value = 0;
@@ -215,7 +215,7 @@ function playContinueFromStart(): void {
 }
 
 onMounted(() => {
-  // Favourites live in settings; load them so the shelf renders on first paint.
+  // Ulubione żyją w ustawieniach; wczytaj je, żeby półka wyrenderowała się przy pierwszym malowaniu.
   void player.ensureFavorites();
 });
 </script>

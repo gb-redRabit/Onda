@@ -54,7 +54,7 @@ export interface SettingsState {
   isLoaded: Ref<boolean>;
 }
 
-// Load/save/reset/import wiring extracted from `stores/settings.ts` (plan 2.8).
+// Okablowanie load/save/reset/import wyodrębnione z `stores/settings.ts` (plan 2.8).
 export function createSettingsPersistence(state: SettingsState) {
   const {
     general,
@@ -101,9 +101,9 @@ export function createSettingsPersistence(state: SettingsState) {
   }
 
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
-  // Serialised writer: the newest snapshot always wins. A plain debounce cannot
-  // cancel a `persistSettings` call already in flight, so a slider change racing
-  // resetToDefaults/applyImported could land out of order in the store.
+  // Serializowany pisarz: najnowszy snapshot zawsze wygrywa. Zwykły debounce nie może
+  // anulować wywołania `persistSettings` już w toku, więc zmiana suwaka ścigająca się
+  // z resetToDefaults/applyImported mogłaby wylądować w store poza kolejnością.
   let revision = 0;
   let persistedRevision = 0;
   let writing = false;
@@ -115,7 +115,7 @@ export function createSettingsPersistence(state: SettingsState) {
       while (persistedRevision < revision) {
         const target = revision;
         await persistSettings(snapshot());
-        persistedRevision = target; // only after a successful write
+        persistedRevision = target; // dopiero po udanym zapisie
       }
     } finally {
       writing = false;

@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChildProcess } from 'child_process';
 
-// The regression this file exists for: `persist()` used to REPLACE the object in
-// the `jobs` map. The running download kept writing to the old object (and set
-// `job.child` on it), so `cancelDownloadJob` looked the job up in the map, found
-// a copy without the child process, and returned false — the cancel silently
-// did nothing and the download ran to completion.
+// Regresja, dla której istnieje ten plik: `persist()` ZASTĘPOWAŁ obiekt w
+// mapie `jobs`. Działające pobieranie nadal pisało do starego obiektu (i ustawiało
+// na nim `job.child`), więc `cancelDownloadJob` odszukiwał zadanie w mapie, znajdował
+// kopię bez procesu potomnego i zwracał false — anulowanie po cichu
+// nic nie robiło, a pobieranie biegło do końca.
 
 vi.mock('electron', () => ({
   app: { getPath: () => process.cwd(), isPackaged: false }
@@ -30,17 +30,17 @@ describe('download job identity', () => {
     const job = { id: 'job-1', url: 'https://x/y', title: 't', status: 'downloading' } as any;
     state.jobs.set(job.id, job);
 
-    // What the runner does on the first progress line.
+    // Co robi runner przy pierwszej linii postępu.
     state.persist(job);
     const trackedBefore = state.jobs.get(job.id);
     expect(trackedBefore).toBe(job);
 
-    // What download-attempt.ts does when yt-dlp starts.
+    // Co robi download-attempt.ts, gdy yt-dlp startuje.
     const child = { kill: vi.fn() } as unknown as ChildProcess;
     job.child = child;
     state.persist(job);
 
-    // A later lookup (cancel/pause) must see the very same object.
+    // Późniejsze wyszukanie (anulowanie/pauza) musi zobaczyć ten sam obiekt.
     const trackedAfter = state.jobs.get(job.id);
     expect(trackedAfter).toBe(job);
     expect(trackedAfter?.child).toBe(child);
@@ -56,8 +56,8 @@ describe('download job identity', () => {
     job.child = child;
     state.persist(job);
 
-    // The IPC snapshot has no `child` field (it is not an IPC field), so this
-    // is the case that used to silently drop the process handle.
+    // Migawka IPC nie ma pola `child` (nie jest to pole IPC), więc to
+    // jest przypadek, który kiedyś po cichu gubił uchwyt procesu.
     const { snapshotDownloadTask } = await import('../download-snapshot');
     expect(snapshotDownloadTask(job)).not.toHaveProperty('child');
     expect(state.jobs.get('job-2')?.child).toBe(child);
@@ -101,8 +101,8 @@ describe('download job identity', () => {
     state.forgetJob('job-5');
     expect(state.jobAbortControllers.has('job-5')).toBe(false);
 
-    // The memo is gone, so the next persist is treated as a status transition
-    // and marks the queue dirty again.
+    // Memo zniknęło, więc następny persist jest traktowany jako zmiana statusu
+    // i ponownie oznacza kolejkę jako brudną.
     state.persist(job);
     state.persist(job);
     expect(emit).toHaveBeenCalledTimes(3);
@@ -115,7 +115,7 @@ describe('queueOrder removal', () => {
     state.queueOrder.length = 0;
     state.queueOrder.push('a', 'b', 'c');
 
-    // The bug: `splice(indexOf(id), 1)` with indexOf === -1 deletes 'c'.
+    // Błąd: `splice(indexOf(id), 1)` przy indexOf === -1 usuwa 'c'.
     const idx = state.queueOrder.indexOf('missing');
     if (idx >= 0) state.queueOrder.splice(idx, 1);
     expect(state.queueOrder).toEqual(['a', 'b', 'c']);

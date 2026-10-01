@@ -29,9 +29,9 @@ watch(
   }
 );
 
-// Escape/Enter are handled here because the input carries the interaction; the
-// shell's own Escape is disabled (`close-on-escape="false"`) to avoid double
-// handling.
+// Escape/Enter są obsługiwane tutaj, bo to input niesie interakcję; własny Escape
+// powłoki jest wyłączony (`close-on-escape="false"`), żeby uniknąć podwójnej
+// obsługi.
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Enter') emit('confirm');
   if (e.key === 'Escape') emit('cancel');
@@ -48,7 +48,7 @@ function onKeydown(e: KeyboardEvent) {
     @close="emit('cancel')"
     @escape="emit('cancel')"
   >
-    <!-- The prompt text is the dialog's only label; there is no heading. -->
+    <!-- Tekst zachęty jest jedyną etykietą dialogu; nie ma nagłówka. -->
     <p
       id="explorer-prompt-dialog-title"
       class="text-sm text-base-content mb-3 whitespace-pre-wrap"

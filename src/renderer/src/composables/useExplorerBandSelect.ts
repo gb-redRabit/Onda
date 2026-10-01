@@ -19,8 +19,8 @@ export function useExplorerBandSelect(
   let bandRects: BandRect[] = [];
   let bandRafId: number | null = null;
 
-  // Don't show a 0x0 box on a plain click — only enter selection mode once the
-  // pointer actually drags beyond a small threshold.
+  // Nie pokazuj prostokąta 0x0 przy zwykłym kliknięciu — tryb zaznaczania włączaj dopiero,
+  // gdy wskaźnik faktycznie przeciągnie powyżej małego progu.
   const MIN_DRAG = 3;
 
   function onBandMouseDown(e: MouseEvent) {

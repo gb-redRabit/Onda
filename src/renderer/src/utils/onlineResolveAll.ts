@@ -1,12 +1,12 @@
 import { detectPlatform } from '@shared/platform';
 import type { YouTubeResolvedItem } from '@renderer/types/online';
 
-// Never auto-load more than this many playlist items into memory — large
-// playlists load on demand via the "load more" button instead.
+// Nigdy nie ładuj automatycznie więcej niż tyle elementów playlisty do pamięci — duże
+// playlisty ładują się na żądanie przez przycisk "wczytaj więcej".
 export const RESOLVED_AUTO_CAP = 500;
 
-// Loads every item of a playlist (platform-dispatched: YT playlists via
-// yt:resolve, SoundCloud sets via sc:resolve), up to `cap` items.
+// Ładuje każdy element playlisty (dyspozycja per platforma: playlisty YT przez
+// yt:resolve, zestawy SoundCloud przez sc:resolve), do `cap` elementów.
 export async function resolveAllPlaylistItems(
   url: string,
   cap = RESOLVED_AUTO_CAP

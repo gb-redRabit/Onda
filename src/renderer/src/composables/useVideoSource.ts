@@ -50,8 +50,8 @@ export function useVideoSource(
 
   async function setupVideo(track: MediaFile | null) {
     if (!track || track.type !== 'video' || !videoRef.value) return;
-    // Video is served through the local media server — grant access to the
-    // track's folder before the element requests the URL.
+    // Wideo jest serwowane przez lokalny serwer mediów — przyznaj dostęp do
+    // folderu utworu, zanim element zażąda URL.
     await window.api?.grantMediaAccess(track.path);
     const el = videoRef.value;
     const src = getTrackSrc(track);
@@ -112,8 +112,8 @@ export function useVideoSource(
       setupVideo(player.currentTrack);
       const video = el as HTMLVideoElement;
       let connectAttempts = 0;
-      // Waits for the element to be attached to the DOM, then primes subtitles
-      // once. rAF throttles naturally with the tab, cost is bounded (~2s).
+      // Czeka, aż element zostanie dołączony do DOM, potem jednorazowo przygotowuje
+      // napisy. rAF naturalnie dławi się wraz z kartą, koszt jest ograniczony (~2s).
       const tryInit = () => {
         if (loadId !== currentLoadId) return;
         if (!video.isConnected) {
@@ -145,9 +145,9 @@ export function useVideoSource(
     }
   }
 
-  // Tracks a pending onVideoRef init and cancels it if the current track
-  // changes before the element is connected. Called by the single merged
-  // currentTrack watcher in useVideoPlayer.
+  // Śledzi oczekującą inicjalizację onVideoRef i anuluje ją, jeśli bieżący utwór
+  // zmieni się, zanim element zostanie podłączony. Wywoływane przez pojedynczy scalony
+  // watcher currentTrack w useVideoPlayer.
   function onTrackChanged(track: MediaFile | null, oldTrack: MediaFile | null): void {
     if (oldTrack && track?.path !== oldTrack?.path) {
       currentLoadId++;

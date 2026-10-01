@@ -1,7 +1,7 @@
 import type { DownloadTask } from '@renderer/types/online';
 
-// Pure download-list helpers extracted from `views/DownloadsView.vue`
-// (plan 2.8): single-pass grouping + filtering of the download queue.
+// Czyste helpery listy pobierań wydzielone z `views/DownloadsView.vue`
+// (plan 2.8): jednoprzebiegowe grupowanie + filtrowanie kolejki pobierań.
 
 export type DownloadFilter = 'all' | 'active' | 'completed' | 'failed';
 
@@ -12,8 +12,8 @@ export interface DownloadGroups {
   pausedCount: number;
 }
 
-// Single pass over the list instead of four separate filters on every progress
-// event (plan 1.6).
+// Jeden przebieg po liście zamiast czterech osobnych filtrów przy każdym zdarzeniu
+// postępu (plan 1.6).
 export function groupDownloads(downloads: DownloadTask[]): DownloadGroups {
   const active: DownloadTask[] = [];
   const completed: DownloadTask[] = [];

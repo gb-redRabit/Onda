@@ -2,14 +2,14 @@ import type { IpcDownloadJobInput } from '@shared/types/ipc';
 import type { MediaSource, SourceItem } from '@renderer/types/sources';
 import { deriveFileName, sanitizeName } from '@renderer/utils/sources-helpers';
 
-// Builds the yt-dlp/http download job input for a source item. Extracted from
-// `stores/sources.ts` (plan 2.8); the store resolves the base directory (IPC)
-// and passes it in.
+// Buduje wejście zadania pobierania yt-dlp/http dla elementu źródła. Wydzielone z
+// `stores/sources.ts` (plan 2.8); store rozwiązuje katalog bazowy (IPC)
+// i przekazuje go tutaj.
 
 export interface SourceDownloadInputArgs {
   item: SourceItem;
   source: MediaSource;
-  /** Resolved download root (settings/downloadDir), without per-source folder. */
+  /** Rozwiązany korzeń pobierania (settings/downloadDir), bez folderu per źródło. */
   baseDir: string;
   outputDir?: string;
   addToLibrary?: boolean;
@@ -43,8 +43,8 @@ export function buildSourceDownloadInput(args: SourceDownloadInputArgs): IpcDown
     source: {
       mode: useYtdlp ? 'ytdlp' : 'http',
       sourceId: source.id,
-      // Only items that expose an API id can be recognised again after the
-      // download finishes; the main process records it as "downloaded".
+      // Tylko elementy ujawniające id API mogą zostać rozpoznane ponownie po
+      // zakończeniu pobierania; proces główny zapisuje je jako "downloaded".
       sourceItemId: item.id || undefined,
       fileName: useYtdlp ? undefined : deriveFileName(item),
       apiKeyId: auth && auth.type !== 'none' ? auth.apiKeyId : undefined,

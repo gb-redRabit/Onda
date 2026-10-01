@@ -3,10 +3,10 @@ import { renderToString } from '@vue/server-renderer';
 import { createSSRApp, h } from 'vue';
 import PipTransport from '../PipTransport.vue';
 
-// The three PiP layouts each had their own copy of the transport buttons, and
-// the copies had drifted: only the card layout drew the "1" badge for
-// repeat-one. These tests pin the shared component's behaviour so the badge and
-// the active states cannot go missing from a layout again.
+// Trzy układy PiP miały własne kopie przycisków transportu, a
+// kopie się rozjechały: tylko układ karty rysował plakietkę "1" dla
+// powtarzania jednego. Te testy utrwalają zachowanie współdzielonego komponentu, żeby plakietka
+// i stany aktywne nie mogły znowu zniknąć z żadnego układu.
 
 interface TransportProps {
   send: (action: string) => void;
@@ -26,7 +26,7 @@ const send = vi.fn();
 
 const GLYPHS = ['⇄', '⏮', '▶', '⏸', '⏭', '↻'];
 
-/** Button glyphs in document order. */
+/** Glify przycisków w kolejności dokumentu. */
 function glyphOrder(html: string): string[] {
   const body = html.slice(html.indexOf('<button'));
   return GLYPHS.filter((g) => body.indexOf(g) !== -1).sort(
@@ -42,9 +42,9 @@ describe('PipTransport', () => {
 
   it('renders the horizontal order shuffle, prev, play, next, repeat', async () => {
     const html = await render({ send, isPlaying: false, shuffle: false, repeat: 'none' });
-    // SSR does not serialise event handlers, so the button order is asserted
-    // through the glyphs. Each action has a distinct glyph, which makes the
-    // order observable in the rendered output.
+    // SSR nie serializuje handlerów zdarzeń, więc kolejność przycisków jest sprawdzana
+    // przez glify. Każda akcja ma odrębny glif, co czyni
+    // kolejność obserwowalną w wyrenderowanym wyniku.
     expect(glyphOrder(html)).toEqual(['⇄', '⏮', '▶', '⏭', '↻']);
   });
 
@@ -82,8 +82,8 @@ describe('PipTransport', () => {
     const off = await render({ send, isPlaying: false, shuffle: false, repeat: 'none' });
     const on = await render({ send, isPlaying: true, shuffle: true, repeat: 'all' });
 
-    // BTN_ACTIVE is the primary-colour override; it must appear exactly for
-    // shuffle and repeat when they are engaged.
+    // BTN_ACTIVE to nadpisanie kolorem primary; musi pojawić się dokładnie dla
+    // tasowania i powtarzania, gdy są włączone.
     const activeCount = (html: string) => (html.match(/color-primary\)\]!/g) ?? []).length;
     expect(activeCount(off)).toBe(0);
     expect(activeCount(on)).toBe(2);

@@ -11,8 +11,8 @@ describe('settings navigation', () => {
   });
 
   it('keeps the diagnostics tab reachable', () => {
-    // Regression guard: the tab was dropped from the nav during the settings
-    // refactor (257efa3) while the component stayed registered.
+    // Zabezpieczenie regresji: zakładka wypadła z nawigacji podczas refaktoru
+    // ustawień (257efa3), a komponent pozostał zarejestrowany.
     const tab = SETTINGS_TABS.find((item) => item.id === 'diagnostics');
     expect(tab?.section).toBe('system');
     expect(tab?.labelKey).toBe('settings.diagnostics');

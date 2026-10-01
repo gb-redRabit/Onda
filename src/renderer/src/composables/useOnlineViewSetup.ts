@@ -3,8 +3,8 @@ import { useOnlineStore } from '@renderer/stores/online';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { detectPlatform } from '@shared/platform';
 
-// View-level setup: avatar error cache, global Escape listener and the
-// clipboard prefill on mount.
+// Konfiguracja na poziomie widoku: cache błędów awatara, globalny nasłuch Escape i
+// prefill schowka przy montowaniu.
 export function useOnlineViewSetup(input: Ref<string>, onKeydown: (e: KeyboardEvent) => void) {
   const yt = useOnlineStore();
   const { ensureLoaded: ensureProfilesLoaded } = useDownloadProfiles();
@@ -25,7 +25,7 @@ export function useOnlineViewSetup(input: Ref<string>, onKeydown: (e: KeyboardEv
         input.value = text.trim();
       }
     } catch {
-      /* clipboard unavailable */
+      /* schowek niedostępny */
     }
     void ensureProfilesLoaded();
   });

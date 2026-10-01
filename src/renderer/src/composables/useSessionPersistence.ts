@@ -4,12 +4,12 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { openMediaFiles } from './useOpenMedia';
 
 const SESSION_KEY = 'onda-session';
-// A session only needs a bounded tail of the queue — persisting every path of a
-// 50k library serialises several MB synchronously on each change (plan 1.9).
+// Sesja potrzebuje tylko ograniczonego ogona kolejki — zapisywanie każdej ścieżki
+// biblioteki 50k serializuje kilka MB synchronicznie przy każdej zmianie (plan 1.9).
 const MAX_PERSISTED_QUEUE = 500;
 
-// Persists the last played track + queue to localStorage and restores them on
-// startup (when "restore last session" is enabled).
+// Zapisuje ostatnio odtwarzany utwór + kolejkę do localStorage i przywraca je przy
+// starcie (gdy "przywróć ostatnią sesję" jest włączone).
 export function useSessionPersistence() {
   const player = usePlayerStore();
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -28,7 +28,7 @@ export function useSessionPersistence() {
         })
       );
     } catch {
-      /* storage unavailable */
+      /* pamięć niedostępna */
     }
   }
 
@@ -45,8 +45,8 @@ export function useSessionPersistence() {
     () => scheduleSave()
   );
 
-  // A pending debounce is a 1 s timer that would write to localStorage after
-  // the owning scope is gone.
+  // Oczekujący debounce to 1-sekundowy timer, który zapisałby do localStorage po
+  // zniknięciu właścicielskiego zakresu.
   onScopeDispose(() => {
     if (saveTimer) {
       clearTimeout(saveTimer);

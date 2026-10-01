@@ -29,9 +29,9 @@ export const useExplorerStore = defineStore('explorer', () => {
   const canGoUp = computed(() => currentPath.value !== '' && !isAtDrives.value);
   const selectedCount = computed(() => selectedFiles.value.size);
 
-  // During a batched load don't re-sort on every batch (O(n² log n) for large
-  // dirs). Show the raw order while loading and sort once when it finishes (or
-  // whenever the sort order changes outside a load) — plan 1.5.
+  // Podczas wsadowego ładowania nie sortuj ponownie przy każdej partii (O(n² log n) dla dużych
+  // katalogów). Pokazuj surową kolejność podczas ładowania i posortuj raz po zakończeniu (lub
+  // gdy kolejność sortowania zmieni się poza ładowaniem) — plan 1.5.
   const sortedFiles = computed(() =>
     isLoading.value ? files.value : sortFiles(files.value, sortBy.value, sortOrder.value)
   );

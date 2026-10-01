@@ -34,7 +34,7 @@ export class PlayerModule implements AppModule {
     if (player.currentTrack?.type === 'video') {
       await audioEngine.deactivate();
     } else {
-      // Audio track (or none) — keep playing in the background during navigation.
+      // Utwór audio (lub brak) — graj dalej w tle podczas nawigacji.
       audioEngine.savePosition();
     }
   }

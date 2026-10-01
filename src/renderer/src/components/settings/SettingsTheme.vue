@@ -65,7 +65,7 @@ async function copyThemeJson() {
     );
     await navigator.clipboard.writeText(payload);
   } catch {
-    /* clipboard unavailable */
+    /* schowek niedostępny */
   }
 }
 
@@ -84,7 +84,7 @@ async function pasteThemeJson() {
       customColors: colors
     });
   } catch {
-    /* invalid json or clipboard unavailable */
+    /* nieprawidłowy json lub schowek niedostępny */
   }
 }
 </script>

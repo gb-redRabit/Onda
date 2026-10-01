@@ -21,7 +21,7 @@ export function usePipVideoSubtitle(videoRef: { value: HTMLVideoElement | null }
       try {
         jassub.destroy();
       } catch {
-        /* already broken */
+        /* już zepsute */
       }
       jassub = null;
     }
@@ -58,7 +58,7 @@ export function usePipVideoSubtitle(videoRef: { value: HTMLVideoElement | null }
         try {
           instance.destroy();
         } catch {
-          /* superseded */
+          /* zastąpione */
         }
         return;
       }

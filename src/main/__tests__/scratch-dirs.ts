@@ -4,19 +4,19 @@ import { join } from 'node:path';
 import { isProtectedPath } from '../path-policy';
 
 /**
- * A scratch directory that path-policy considers ordinary.
+ * Katalog roboczy, który path-policy uznaje za zwykły.
  *
- * Tests that assert a path is *accepted* cannot use os.tmpdir(): the temp
- * directory is not an ordinary folder on every platform, and the difference is
- * invisible until CI runs somewhere else. On macOS it is
- * /var/folders/.../T, and on a Windows runner with TEMP and TMP unset it
- * resolves to C:\WINDOWS\temp — both are protected prefixes, so the handler
- * correctly refuses them and the test fails for a reason that has nothing to do
- * with what it is testing. That is exactly what happened on macOS.
+ * Testy sprawdzające, że ścieżka jest *akceptowana*, nie mogą używać os.tmpdir():
+ * katalog tymczasowy nie jest zwykłym folderem na każdej platformie, a różnica jest
+ * niewidoczna, dopóki CI nie uruchomi się gdzie indziej. Na macOS jest to
+ * /var/folders/.../T, a na runnerze Windows bez ustawionych TEMP i TMP
+ * rozwiązuje się do C:\WINDOWS\temp — oba są chronionymi prefiksami, więc handler
+ * słusznie je odrzuca i test zawodzi z powodu, który nie ma nic wspólnego
+ * z tym, co testuje. Dokładnie to zdarzyło się na macOS.
  *
- * The user's home directory is the one location guaranteed to be a plain folder
- * on Windows, macOS and Linux. It is still outside the repository, so
- * `check:artifacts` stays satisfied.
+ * Katalog domowy użytkownika to jedyne miejsce gwarantowane jako zwykły folder
+ * na Windows, macOS i Linux. Wciąż znajduje się poza repozytorium, więc
+ * `check:artifacts` pozostaje spełnione.
  */
 export async function makeGrantableScratch(prefix: string): Promise<{
   dir: string;
@@ -26,7 +26,7 @@ export async function makeGrantableScratch(prefix: string): Promise<{
   const dir = await mkdtemp(base);
 
   if (isProtectedPath(dir)) {
-    // Better to say why than to fail later inside an unrelated assertion.
+    // Lepiej wyjaśnić dlaczego, niż zawieść później w środku niepowiązanej asercji.
     await rm(dir, { recursive: true, force: true });
     throw new Error(
       `scratch directory ${dir} is a protected path; the test fixture must be somewhere path-policy accepts`
@@ -39,7 +39,7 @@ export async function makeGrantableScratch(prefix: string): Promise<{
   };
 }
 
-/** For tests that genuinely need a temp directory and never assert on policy. */
+/** Dla testów, które naprawdę potrzebują katalogu tymczasowego i nigdy nie sprawdzają polityki. */
 export function makeTempDir(prefix: string): Promise<string> {
   return mkdtemp(join(tmpdir(), `onda-${prefix}-`));
 }

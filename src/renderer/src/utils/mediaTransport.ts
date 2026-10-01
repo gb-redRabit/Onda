@@ -1,8 +1,8 @@
 import { audioEngine } from '@renderer/modules/audioEngine';
 
 /**
- * Shared media transport helpers used by both the player view (HTMLVideoElement)
- * and the audio engine (no <video> on screen, e.g. an audio track in /player).
+ * Wspólne helpery transportu mediów używane zarówno przez widok odtwarzacza (HTMLVideoElement),
+ * jak i silnik audio (brak <video> na ekranie, np. utwór audio w /player).
  */
 
 export function applyVolumeTarget(

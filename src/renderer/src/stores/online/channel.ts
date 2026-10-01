@@ -2,10 +2,10 @@ import { computed, ref } from 'vue';
 import { detectPlatform } from '@shared/platform';
 import type { YouTubeChannel, YouTubeVideo } from '@renderer/types/online';
 
-// Channel/profile browsing state + actions (YouTube channels and SoundCloud
-// profiles). Kept separate from the store so the channel concern is testable in
-// isolation; the store destructures the returned refs/actions back into the
-// same names, so call sites elsewhere are unchanged.
+// Stan i akcje przeglądania kanału/profilu (kanały YouTube i profile SoundCloud).
+// Trzymane osobno od store, więc zagadnienie kanału jest testowalne w
+// izolacji; store destrukturyzuje zwrócone refy/akcje z powrotem do
+// tych samych nazw, więc miejsca wywołań gdzie indziej pozostają bez zmian.
 export function createOnlineChannel() {
   const channel = ref<YouTubeChannel | null>(null);
   const channelInput = ref('');
@@ -23,8 +23,8 @@ export function createOnlineChannel() {
   const channelShortsHasMore = ref(false);
   const channelShortsOffset = ref(0);
   const channelShortsLoaded = ref(false);
-  // True while browsing a SoundCloud profile — switches the IPC channel and
-  // disables the shorts tab / subscribe UI for it.
+  // Prawda podczas przeglądania profilu SoundCloud — przełącza kanał IPC i
+  // wyłącza dla niego zakładkę shorts / UI subskrypcji.
   const channelIsSc = ref(false);
   let channelKey = 0;
 
@@ -126,9 +126,9 @@ export function createOnlineChannel() {
           });
       if (key !== channelKey) return;
       if (res && res.success) {
-        // Dedupe by id: overlapping start/end windows (or a channel that shifts
-        // items between pages) would otherwise append duplicate cards and
-        // collide their `:key`.
+        // Deduplikuj po id: nachodzące na siebie okna start/end (lub kanał, który przesuwa
+        // elementy między stronami) dodałyby w przeciwnym razie duplikaty kart i
+        // zderzyły ich `:key`.
         if (tab === 'shorts') {
           const seen = new Set(channelShorts.value.map((v) => v.id));
           channelShorts.value.push(...res.items.filter((v) => !seen.has(v.id)));

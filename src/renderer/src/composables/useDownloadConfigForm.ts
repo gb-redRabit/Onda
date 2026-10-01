@@ -12,7 +12,7 @@ export interface DownloadConfigFormOptions {
   getPlatform: () => 'youtube' | 'soundcloud' | 'generic' | undefined;
 }
 
-// Download-config dialog form state, extracted from
+// Stan formularza dialogu konfiguracji pobierania, wyodrębniony z
 // `components/online/DownloadConfigDialog.vue` (plan 2.8).
 export function useDownloadConfigForm(options: DownloadConfigFormOptions) {
   const settings = useSettingsStore();
@@ -95,7 +95,7 @@ export function useDownloadConfigForm(options: DownloadConfigFormOptions) {
   }
 
   function confirmConfig(): IpcDownloadConfig {
-    // SoundCloud: fixed progressive MP3 — only folder/metadata apply.
+    // SoundCloud: stały progresywny MP3 — mają zastosowanie tylko folder/metadane.
     if (isSc.value) {
       return buildSoundcloudDownloadConfig({
         artist: artist.value,

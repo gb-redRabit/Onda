@@ -34,7 +34,7 @@ describe('startBootWatchdog', () => {
     expect(onTimeout).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);
     expect(onTimeout).toHaveBeenCalledTimes(1);
-    // And it does not keep firing afterwards.
+    // I nie strzela dalej po tym.
     vi.advanceTimersByTime(1000);
     expect(onTimeout).toHaveBeenCalledTimes(1);
   });

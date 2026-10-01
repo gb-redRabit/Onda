@@ -56,9 +56,9 @@ function onMenuDocKeydown(e: KeyboardEvent): void {
 }
 const highlightedId = ref<string | null>(null);
 
-// ---- Search ------------------------------------------------------------------
-// Matches the tab labels/descriptions and the field catalog (label + keywords),
-// so "proxy" or "głośność" jumps straight to the field instead of a card.
+// ---- Wyszukiwanie -----------------------------------------------------------
+// Dopasowuje etykiety/opisy zakładek oraz katalog pól (etykieta + słowa kluczowe),
+// więc "proxy" lub "głośność" przeskakuje prosto do pola zamiast do karty.
 interface SearchHit {
   kind: 'tab' | 'field';
   id: string;
@@ -115,7 +115,7 @@ async function openTab(tabId: string): Promise<void> {
   selectTab(tabId);
 }
 
-// Used by the overview landing screen: the tabs that belong to a section.
+// Używane przez ekran startowy przeglądu: zakładki należące do sekcji.
 function tabsOfSection(sectionId: string) {
   return SETTINGS_TABS.filter((tab) => tab.section === sectionId);
 }
@@ -131,7 +131,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
   }
 }
 
-// ---- Header actions ----------------------------------------------------------
+// ---- Akcje nagłówka ---------------------------------------------------------
 async function onReset() {
   const ok = await showConfirm(t('settings.resetConfirm'));
   if (!ok) return;
@@ -175,7 +175,7 @@ function onMenuAction(action: 'export' | 'import' | 'reset'): void {
   else void onReset();
 }
 
-// ---- Misc --------------------------------------------------------------------
+// ---- Różne ------------------------------------------------------------------
 const activeTabMeta = computed(
   () => SETTINGS_TABS.find((item) => item.id === activeTab.value) ?? null
 );
@@ -194,9 +194,9 @@ watch(activeTab, (_newTab, oldTab) => {
 });
 
 onMounted(() => {
-  // A section-only deep link (`?section=network`) opens that section's first
-  // tab; a bare `/settings` now lands on the overview instead of an arbitrary
-  // first tab.
+  // Link bezpośredni tylko do sekcji (`?section=network`) otwiera pierwszą
+  // zakładkę tej sekcji; samo `/settings` trafia teraz na przegląd zamiast
+  // dowolnej pierwszej zakładki.
   if (activeSection.value && !activeTab.value) {
     const first = SETTINGS_TABS.find((tab) => tab.section === activeSection.value);
     if (first) selectTab(first.id);
@@ -213,7 +213,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div data-testid="settings-view" class="flex flex-col h-full">
-    <!-- Header: title + search + rare actions under ⋯ -->
+    <!-- Nagłówek: tytuł + wyszukiwanie + rzadkie akcje pod ⋯ -->
     <PageHeader
       :title="t('settings.title')"
       :icon="Settings"
@@ -258,7 +258,7 @@ onBeforeUnmount(() => {
         </div>
       </template>
 
-      <!-- Rare actions: export / import / reset -->
+      <!-- Rzadkie akcje: eksport / import / reset -->
       <template #overlay>
         <div
           v-if="menuOpen"
@@ -308,7 +308,7 @@ onBeforeUnmount(() => {
       />
 
       <main class="flex-1 min-w-0 overflow-auto">
-        <!-- Search results -->
+        <!-- Wyniki wyszukiwania -->
         <div v-if="query" class="px-6 py-5">
           <EmptyState v-if="!hits.length" :title="t('settings.noResults')" :icon="Search" />
           <ul v-else class="space-y-0.5">
@@ -338,7 +338,7 @@ onBeforeUnmount(() => {
           </ul>
         </div>
 
-        <!-- Overview: landing screen with every section and tab -->
+        <!-- Przegląd: ekran startowy ze wszystkimi sekcjami i zakładkami -->
         <div v-else-if="!activeTab" class="px-6 py-6 space-y-8" data-testid="settings-overview">
           <section v-for="section in SETTINGS_SECTIONS" :key="section.id">
             <h3
@@ -371,7 +371,7 @@ onBeforeUnmount(() => {
           </section>
         </div>
 
-        <!-- Active tab -->
+        <!-- Aktywna zakładka -->
         <div v-else :key="'tab-' + activeTab" class="px-6 py-6">
           <header class="mb-6 flex items-start gap-3">
             <span

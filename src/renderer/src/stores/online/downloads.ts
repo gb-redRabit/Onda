@@ -7,16 +7,16 @@ import { pluginHookBus } from '@renderer/utils/pluginHooks';
 import { toDownloadTask } from '@renderer/utils/onlineDownloadTask';
 import { buildTaskInput } from '@renderer/utils/onlineJob';
 
-// Downloads list + job submission. `markVideoDownloaded` is injected from the
-// subscriptions module so a completed job can update the subscription snapshot
-// without this module importing the store (avoids a cycle). The store
-// destructures the returned refs/actions back into the same names.
+// Lista pobrań + wysyłanie zadań. `markVideoDownloaded` jest wstrzykiwane z
+// modułu subskrypcji, więc zakończone zadanie może zaktualizować snapshot subskrypcji
+// bez importowania store przez ten moduł (unika cyklu). Store
+// destrukturyzuje zwrócone refy/akcje z powrotem do tych samych nazw.
 export function createOnlineDownloads(
   markVideoDownloaded: (videoId: string, channelId: string) => void
 ) {
   const t = i18n.global.t;
   const downloads = ref<DownloadTask[]>([]);
-  // O(1) lookup by videoId - updated in upsertTask, avoids O(n) find per item per render.
+  // Wyszukiwanie O(1) po videoId - aktualizowane w upsertTask, unika find O(n) na element na render.
   const downloadByVideoId = new Map<string, DownloadTask>();
 
   function upsertTask(task: DownloadTask) {
@@ -35,7 +35,7 @@ export function createOnlineDownloads(
       try {
         useUIStore().notify('error', task.title, task.error);
       } catch {
-        // ui store unavailable
+        // store ui niedostępny
       }
     }
     try {
@@ -67,7 +67,7 @@ export function createOnlineDownloads(
         });
       }
     } catch {
-      // plugins unavailable
+      // pluginy niedostępne
     }
   }
 
@@ -82,16 +82,16 @@ export function createOnlineDownloads(
     }
   }
 
-  // Status of the download task for a given video id (used to show a loading /
-  // downloading / done state on the quick "download" button).
+  // Status zadania pobierania dla danego id wideo (używane do pokazania stanu ładowanie /
+  // pobieranie / gotowe na szybkim przycisku "pobierz").
   function downloadStatusFor(videoId: string): DownloadTask['status'] | null {
     if (!videoId) return null;
     const task = downloadByVideoId.get(videoId);
     return task ? task.status : null;
   }
 
-  // Cover-processing status of the task for a video (used to show that the
-  // animated cover is still being prepared after the audio download finished).
+  // Status przetwarzania okładki zadania dla wideo (używane do pokazania, że
+  // animowana okładka wciąż jest przygotowywana po zakończeniu pobierania audio).
   function coverStatusFor(videoId: string): CoverStatus | null {
     if (!videoId) return null;
     const task = downloadByVideoId.get(videoId);
@@ -109,7 +109,7 @@ export function createOnlineDownloads(
         }
       }
     } catch {
-      /* downloads unavailable yet */
+      /* pobrania jeszcze niedostępne */
     }
   }
 
@@ -128,7 +128,7 @@ export function createOnlineDownloads(
         }
       }
     } catch {
-      /* cancel failed */
+      /* anulowanie nie powiodło się */
     }
   }
 
@@ -143,7 +143,7 @@ export function createOnlineDownloads(
         }
       }
     } catch {
-      /* pause failed */
+      /* pauza nie powiodła się */
     }
   }
 
@@ -158,21 +158,21 @@ export function createOnlineDownloads(
         }
       }
     } catch {
-      /* resume failed */
+      /* wznowienie nie powiodło się */
     }
   }
 
   async function retryDownload(task: DownloadTask) {
     const created = await submitJobs([buildTaskInput(task)]);
     if (!created) {
-      // The main process replaced the failed job with a fresh one only when no
-      // active job with the same video id existed. If it was skipped, tell the
-      // user instead of failing silently.
+      // Proces main zastąpił nieudane zadanie nowym tylko wtedy, gdy nie istniało
+      // aktywne zadanie z tym samym id wideo. Jeśli zostało pominięte, powiadom
+      // użytkownika zamiast cichej porażki.
       useUIStore().notify('info', t('downloads.retry'), t('youtube.retryAlreadyActive'));
       return;
     }
-    // A retry creates a brand-new job — drop the old failed row so the same
-    // video is not listed twice (once as error, once as pending).
+    // Ponowienie tworzy zupełnie nowe zadanie — usuń stary nieudany wiersz, żeby to samo
+    // wideo nie było wymienione dwa razy (raz jako błąd, raz jako oczekujące).
     const idx = downloads.value.findIndex((d) => d.id === task.id);
     if (idx >= 0) downloads.value.splice(idx, 1);
     if (task.videoId && downloadByVideoId.get(task.videoId)?.id === task.id) {
@@ -184,7 +184,7 @@ export function createOnlineDownloads(
     try {
       await window.api.invoke('yt:download:pauseAll');
     } catch {
-      /* pause all failed */
+      /* pauza wszystkich nie powiodła się */
     }
   }
 
@@ -192,7 +192,7 @@ export function createOnlineDownloads(
     try {
       await window.api.invoke('yt:download:resumeAll');
     } catch {
-      /* resume all failed */
+      /* wznowienie wszystkich nie powiodło się */
     }
   }
 
@@ -200,7 +200,7 @@ export function createOnlineDownloads(
     try {
       await window.api.invoke('yt:download:moveToFront', id);
     } catch {
-      /* move to front failed */
+      /* przeniesienie na przód nie powiodło się */
     }
   }
 
@@ -208,7 +208,7 @@ export function createOnlineDownloads(
     try {
       await window.api.invoke('yt:download:move', id, direction);
     } catch {
-      /* move failed */
+      /* przeniesienie nie powiodło się */
     }
   }
 
@@ -240,7 +240,7 @@ export function createOnlineDownloads(
     try {
       await window.api.invoke('yt:download:schedule', timestamp);
     } catch {
-      /* schedule failed */
+      /* planowanie nie powiodło się */
     }
   }
 
@@ -274,7 +274,7 @@ export function createOnlineDownloads(
         if (d.videoId) downloadByVideoId.set(d.videoId, d);
       }
     } catch {
-      /* clear failed */
+      /* czyszczenie nie powiodło się */
     }
   }
   return {

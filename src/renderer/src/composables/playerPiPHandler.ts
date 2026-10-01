@@ -3,9 +3,9 @@ type PiPHandler = () => void;
 let handler: PiPHandler | null = null;
 
 /**
- * Global registry for the video PiP toggle. /player registers its local
- * `vp.togglePiP` while mounted so app-level menus (Playback menu) can toggle
- * Picture-in-Picture from any view.
+ * Globalny rejestr przełącznika PiP wideo. /player rejestruje swój lokalny
+ * `vp.togglePiP` podczas montowania, dzięki czemu menu na poziomie aplikacji (menu Odtwarzanie) mogą przełączać
+ * Picture-in-Picture z dowolnego widoku.
  */
 export function setPlayerPiPHandler(next: PiPHandler | null): void {
   handler = next;

@@ -104,7 +104,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
     class="absolute bottom-0 left-0 right-0 z-20 bg-linear-to-t from-neutral/80 via-neutral/30 to-transparent pt-12 pb-6 px-6 transition-opacity"
     :class="{ 'opacity-0': !showControls }"
   >
-    <!-- seek bar -->
+    <!-- pasek przewijania -->
     <video
       :ref="setHiddenVideoRef"
       class="absolute top-0 left-0 w-1 h-1 opacity-0 pointer-events-none"
@@ -164,7 +164,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
     </div>
 
     <div class="flex items-center justify-between">
-      <!-- left: playback buttons -->
+      <!-- lewa: przyciski odtwarzania -->
       <TransportButtons
         variant="video"
         :is-playing="player.isPlaying"
@@ -180,9 +180,9 @@ function onVolumeKeydown(e: KeyboardEvent) {
         @toggle-favorite="player.toggleFavorite(player.currentTrack?.path || '')"
       />
 
-      <!-- center: skip — time — speed -->
+      <!-- środek: przewijanie — czas — prędkość -->
       <div class="flex items-center gap-4">
-        <!-- skip back -->
+        <!-- przewiń wstecz -->
         <button
           class="text-neutral-content/40 hover:text-neutral-content transition-colors"
           :aria-label="$t('playerView.seekBackward')"
@@ -191,7 +191,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
           <ChevronLeft :size="18" />
         </button>
 
-        <!-- time -->
+        <!-- czas -->
         <div class="flex items-center gap-2 text-neutral-content/50 text-xs font-mono tabular-nums">
           <span>{{ formatDuration(player.currentTime) }}</span>
           <span class="text-neutral-content/20">/</span>
@@ -199,7 +199,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
         </div>
 
         <PlayerSpeedMenu :speed="speed" @set-speed="emit('setSpeed', $event)" />
-        <!-- skip forward -->
+        <!-- przewiń w przód -->
         <button
           class="text-neutral-content/40 hover:text-neutral-content transition-colors"
           :aria-label="$t('playerView.seekForward')"
@@ -209,7 +209,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
         </button>
       </div>
 
-      <!-- right side: tools + volume -->
+      <!-- prawa strona: narzędzia + głośność -->
       <div class="flex items-center gap-2.5">
         <VideoFilterDropdown />
         <button
@@ -239,7 +239,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
           <Volume2 v-else :size="16" />
         </button>
 
-        <!-- volume bar — accent -->
+        <!-- pasek głośności — akcent -->
         <div
           class="w-20 h-1 bg-neutral-content/10 rounded-full cursor-pointer hover:h-1.5 transition-[height]"
           role="slider"

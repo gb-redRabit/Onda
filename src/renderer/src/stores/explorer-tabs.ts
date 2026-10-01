@@ -12,8 +12,8 @@ export interface ExplorerTabs {
   syncActiveTab: (path: string) => void;
 }
 
-// Explorer tab state + operations extracted from `stores/explorer.ts` (plan 2.8).
-// `navigateTo` is injected so switching a tab drives the store's navigation.
+// Stan i operacje zakładek eksploratora wyodrębnione z `stores/explorer.ts` (plan 2.8).
+// `navigateTo` jest wstrzykiwane, więc przełączenie zakładki napędza nawigację store'a.
 export function createExplorerTabs(navigateTo: (path: string) => void): ExplorerTabs {
   const tabs = ref<ExplorerTab[]>([]);
   const activeTabIndex = ref(-1);

@@ -4,14 +4,14 @@ import { ImagePlus } from '@lucide/vue';
 import { pickImagePath } from '@renderer/utils/pickImage';
 
 /**
- * The detail inputs that depend on which cover type is selected: a frame time,
- * a clip range with its container, or a chosen file.
+ * Pola szczegółów zależne od wybranego typu okładki: czas klatki,
+ * zakres klipu z jego kontenerem lub wybrany plik.
  *
- * DownloadCoverSection and SubscribeCoverSection both wrote these out, and they
- * had drifted: one had `step="1"` on the frame input and the other did not, one
- * laid the clip fields out in two columns and the other in three, and the
- * subscribe copy put the custom branch after the clip branch so the conditions
- * were in a different order. Those differences are now props.
+ * DownloadCoverSection i SubscribeCoverSection pisały to obie, i się
+ * rozjechały: jedna miała `step="1"` na polu klatki, a druga nie, jedna
+ * rozkładała pola klipu w dwóch kolumnach, a druga w trzech, a kopia dla
+ * subskrypcji umieszczała gałąź własną po gałęzi klipu, więc warunki były w
+ * innej kolejności. Te różnice są teraz propsami.
  */
 type CoverType = 'thumbnail' | 'custom' | 'frame' | 'clip' | 'none';
 
@@ -23,9 +23,9 @@ withDefaults(
     clipEnd: number;
     clipFormat: 'webm' | 'mp4';
     customPath: string;
-    /** Show the `step` hint on the numeric inputs. */
+    /** Pokazuj podpowiedź `step` na polach liczbowych. */
     stepIntegers?: boolean;
-    /** Grid columns for the clip row: 2 puts the format on its own line. */
+    /** Kolumny siatki dla wiersza klipu: 2 stawia format w osobnej linii. */
     clipColumns?: 2 | 3;
   }>(),
   { stepIntegers: true, clipColumns: 2 }
@@ -49,7 +49,7 @@ async function onPickFile() {
 const INPUT_BASE =
   'mt-1 w-full py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none';
 
-/** The 3-column clip row is narrower, so it drops a step of horizontal padding. */
+/** Wiersz klipu z 3 kolumnami jest węższy, więc traci stopień poziomego paddingu. */
 function inputClass(compact: boolean): string {
   return `${INPUT_BASE} ${compact ? 'px-2' : 'px-3'}`;
 }

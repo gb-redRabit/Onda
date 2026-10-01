@@ -22,7 +22,7 @@ const { t } = useI18n();
     :channel-folder="channelFolder"
   />
 
-  <!-- Filename template -->
+  <!-- Szablon nazwy pliku -->
   <section>
     <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-1">
       {{ t('youtube.prefTemplate') }}
@@ -37,7 +37,7 @@ const { t } = useI18n();
     </div>
   </section>
 
-  <!-- Add to library -->
+  <!-- Dodaj do biblioteki -->
   <section>
     <label
       class="flex items-center gap-2 text-sm cursor-pointer select-none"

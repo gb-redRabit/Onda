@@ -3,9 +3,9 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-// A new library scan used to overwrite the AbortController without aborting the
-// previous one, so two full directory traversals ran in parallel. This drives
-// the real handlers and observes the signals the scans are given.
+// Nowe skanowanie biblioteki nadpisywało AbortController bez przerywania
+// poprzedniego, więc dwa pełne przejścia po katalogach biegły równolegle. To napędza
+// prawdziwe handlery i obserwuje sygnały przekazywane skanom.
 
 type Handler = (event: unknown, ...args: unknown[]) => unknown;
 const handlers = new Map<string, Handler>();
@@ -44,8 +44,8 @@ beforeAll(async () => {
   userData = await mkdtemp(join(tmpdir(), 'onda-scan-abort-'));
   bigDir = join(userData, 'big');
   smallDir = join(userData, 'small');
-  // Enough entries that the first traversal is still running when the second
-  // scan is issued.
+  // Wystarczająco dużo wpisów, aby pierwsze przejście wciąż trwało, gdy
+  // zostanie wydane drugie skanowanie.
   await mkdir(bigDir, { recursive: true });
   await Promise.all(
     Array.from({ length: 400 }, async (_unused, i) => {
@@ -71,7 +71,7 @@ afterAll(async () => {
 describe('library:scan supersedes the running scan', () => {
   it('aborts the previous scan instead of running two traversals at once', async () => {
     signals.length = 0;
-    // The first scan is deliberately not awaited: the second must cut it short.
+    // Pierwsze skanowanie celowo nie jest awaited: drugie musi je przerwać.
     const first = invoke('library:scan', [bigDir]);
     const second = invoke('library:scan', [smallDir]);
 
@@ -80,9 +80,9 @@ describe('library:scan supersedes the running scan', () => {
       aborted: boolean;
     }>;
 
-    // The superseded scan reports itself aborted and contributes nothing.
+    // Zastąpione skanowanie zgłasza się jako przerwane i nic nie wnosi.
     expect(firstResult.aborted).toBe(true);
-    // The surviving scan is the one the user asked for last.
+    // Ocalałe skanowanie to to, o które użytkownik poprosił jako ostatnie.
     expect(secondResult.aborted).toBe(false);
     expect(secondResult.count).toBe(1);
   });
@@ -91,8 +91,8 @@ describe('library:scan supersedes the running scan', () => {
     setLibraryScanned({ files: [], folderTypes: {} });
     signals.length = 0;
     await Promise.all([invoke('library:scan', [bigDir]), invoke('library:scan', [smallDir])]);
-    // Whatever the ordering, the persisted library is one of the two scanned
-    // folders, never a merge of both and never an empty wipe from the aborted run.
+    // Niezależnie od kolejności, zapisana biblioteka to jeden z dwóch przeskanych
+    // folderów, nigdy scalenie obu i nigdy puste wyczyszczenie z przerwanego przebiegu.
     const { getLibraryScanned } = await import('../library/library-store');
     const stored = getLibraryScanned();
     const paths = stored.files.map((f: { path: string }) => f.path);

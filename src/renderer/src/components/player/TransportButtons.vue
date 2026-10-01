@@ -3,11 +3,11 @@ import { computed } from 'vue';
 import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1, Heart } from '@lucide/vue';
 import { useI18n } from 'vue-i18n';
 
-// Shared playback transport (shuffle / prev / play-pause / next / repeat, and an
-// optional favourite). Presentational: state in, actions out. Two built-in
-// skins (`bar` = the audio player bar, `video` = the video controls) plus an
-// optional `styles` override so a bespoke density system (the audio-view
-// controls) can reuse the same logic without duplicating it.
+// Współdzielony transport odtwarzania (shuffle / prev / play-pause / next / repeat oraz
+// opcjonalny ulubiony). Prezentacyjny: stan wchodzi, akcje wychodzą. Dwie wbudowane
+// skórki (`bar` = pasek odtwarzacza audio, `video` = kontrolki wideo) plus
+// opcjonalne nadpisanie `styles`, żeby niestandardowy system gęstości (kontrolki
+// widoku audio) mógł użyć tej samej logiki bez duplikowania jej.
 
 interface TransportStyles {
   toggle?: string;

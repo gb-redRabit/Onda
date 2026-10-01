@@ -12,7 +12,7 @@ import {
 } from '@lucide/vue';
 import type { AudioLayoutElementId, AudioLayoutPreset } from '@renderer/types/settings';
 
-// Static audio-layout-editor metadata extracted from
+// Statyczne metadane edytora układu audio wydzielone z
 // `components/audio/AudioLayoutEditor.vue` (plan 2.8).
 
 export type RightTab = 'elements' | 'variant' | 'layout';

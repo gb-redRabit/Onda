@@ -1,6 +1,6 @@
-﻿// Settings search catalog: every entry is a jump target. Searching matches the
-// translated label plus keywords; picking a result opens `tab` and scrolls to the
-// element carrying the entry id (SettingsRow `anchor`).
+﻿// Katalog wyszukiwania ustawień: każdy wpis jest celem przeskoku. Wyszukiwanie dopasowuje
+// przetłumaczoną etykietę plus słowa kluczowe; wybranie wyniku otwiera `tab` i przewija do
+// elementu noszącego id wpisu (SettingsRow `anchor`).
 export interface SettingsCatalogEntry {
   id: string;
   labelKey: string;

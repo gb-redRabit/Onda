@@ -5,12 +5,12 @@ import { Heart } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import type { MediaFile } from '@renderer/types/media';
 
-// Single track-info component for the whole app.
-//  - variant 'inline' (default): the compact left-aligned title/artist used in
-//    the player bar, mini bar and queue.
-//  - variant 'audio': the centered, density-aware, marquee title/artist (with an
-//    optional favourite) used by the audio-view canvas.
-// Merging the two removed a near-duplicate and its separate prop API.
+// Pojedynczy komponent track-info dla całej aplikacji.
+//  - wariant 'inline' (domyślny): kompaktowy, wyrównany do lewej tytuł/wykonawca używany w
+//    pasku odtwarzacza, mini pasku i kolejce.
+//  - wariant 'audio': wyśrodkowany, zależny od gęstości, przewijany (marquee) tytuł/wykonawca (z
+//    opcjonalnym ulubionym) używany przez canvas widoku audio.
+// Połączenie obu usunęło niemal duplikat i jego osobne API propsów.
 
 const { t } = useI18n();
 const player = usePlayerStore();
@@ -43,7 +43,7 @@ const props = withDefaults(
   }
 );
 
-// --- inline variant ---
+// --- wariant inline ---
 const displayTitle = computed(
   () =>
     props.track?.metadata?.title ||
@@ -60,7 +60,7 @@ const displayAlbum = computed(() =>
   props.showAlbum && props.track?.metadata?.album ? props.track.metadata.album : ''
 );
 
-// --- audio variant ---
+// --- wariant audio ---
 const isMinimal = computed(() => props.audioVariant === 'minimal');
 const isLarge = computed(() => props.audioVariant === 'large');
 type Density = 'roomy' | 'fit' | 'tight';

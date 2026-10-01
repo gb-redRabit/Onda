@@ -37,7 +37,7 @@ describe('subscriptions-store', () => {
     expect(sub!.channelId).toBe('UC123');
     expect(sub!.autoDownload).toBe(true);
     expect(sub!.downloadedVideoIds).toEqual([]);
-    // Legacy default — no field means YouTube.
+    // Domyślne dla starszych wersji — brak pola oznacza YouTube.
     expect(sub!.platform).toBe('youtube');
 
     const list = await loadSubscriptions(file);
@@ -188,12 +188,12 @@ describe('subscriptions-store', () => {
     await appendDownloadedVideos(file, 'UC123', ['vid-a', 'vid-b']);
     let list = await loadSubscriptions(file);
     expect(list[0].pendingCount).toBe(3);
-    // Re-appending an already downloaded id must not decrement twice.
+    // Ponowne dołączenie już pobranego id nie może zmniejszyć licznika dwa razy.
     await appendDownloadedVideos(file, 'UC123', ['vid-a']);
     list = await loadSubscriptions(file);
     expect(list[0].pendingCount).toBe(3);
 
-    // Multiple concurrent completions keep the count live under the write lock.
+    // Wiele równoczesnych ukończeń utrzymuje licznik aktualny pod blokadą zapisu.
     await Promise.all(
       ['vid-c', 'vid-d', 'vid-e'].map((id) => appendDownloadedVideos(file, 'UC123', [id]))
     );

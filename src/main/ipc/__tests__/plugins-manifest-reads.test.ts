@@ -4,10 +4,10 @@ import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-// `mergeInfos` used to read a plugin's manifest twice: once directly and once
-// more inside `readEntryDigest` (which reads the manifest to find `entry`).
-// `parseManifest` runs exactly once per manifest read, so it is the observable
-// proxy here (Node built-in ESM namespaces cannot be spied on).
+// `mergeInfos` czytał kiedyś manifest pluginu dwukrotnie: raz bezpośrednio i raz
+// więcej wewnątrz `readEntryDigest` (który czyta manifest, by znaleźć `entry`).
+// `parseManifest` uruchamia się dokładnie raz na odczyt manifestu, więc jest tu
+// obserwowalnym proxy (wbudowanych przestrzeni nazw ESM Node nie da się szpiegować).
 
 const { parsedIds } = vi.hoisted(() => ({ parsedIds: [] as string[] }));
 
@@ -84,7 +84,7 @@ describe('plugin manifest reads', () => {
     const listed = (await invoke('plugins:list')) as Array<{ id: string }>;
     expect(listed.map((p) => p.id)).toContain(id);
 
-    // One parse while listing the folder + one during the merge (was two).
+    // Jeden parse przy listowaniu folderu + jeden podczas scalania (były dwa).
     expect(parsedIds.filter((parsedId) => parsedId === id)).toHaveLength(2);
   });
 });

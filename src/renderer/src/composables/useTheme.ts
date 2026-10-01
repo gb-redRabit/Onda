@@ -22,16 +22,16 @@ export function useTheme(appearanceRef: Ref<AppearanceSettings>) {
     window.api?.send('pip:locale', get().locale);
   }
 
-  // The platform material follows the appearance: acrylic only for glass
-  // appearances (transparency < 100), off for the opaque default. Applied on
-  // every theme change, so a restart, an imported theme or the transparency
-  // slider always end up in the same state — the material is set to acrylic at
-  // window creation, which is wrong for the opaque default (it leaked through the
-  // rounded window corners and the frames before the first paint).
+  // Materiał platformy podąża za wyglądem: acrylic tylko dla szklanych
+  // wyglądów (przezroczystość < 100), wyłączony dla nieprzezroczystego domyślnego. Stosowane przy
+  // każdej zmianie motywu, więc restart, zaimportowany motyw lub suwak
+  // przezroczystości zawsze kończą w tym samym stanie — materiał jest ustawiany na acrylic przy
+  // tworzeniu okna, co jest błędne dla nieprzezroczystego domyślnego (przeciekało przez
+  // zaokrąglone narożniki okna i ramki przed pierwszym malowaniem).
   //
-  // Note: do NOT paint the window background on html/body to hide that: a
-  // background on the root element propagates to the whole window canvas and is
-  // not clipped by its border-radius, which makes the rounded corners disappear.
+  // Uwaga: NIE maluj tła okna na html/body, żeby to ukryć: tło
+  // na elemencie głównym propaguje się na całe płótno okna i nie jest
+  // przycinane przez jego border-radius, co sprawia, że zaokrąglone narożniki znikają.
   function applyWindowMode() {
     const material = (get().glassAlpha ?? 100) < 100 ? 'acrylic' : 'auto';
     if (material === lastWindowMaterial) return;
@@ -39,9 +39,9 @@ export function useTheme(appearanceRef: Ref<AppearanceSettings>) {
     void window.api?.invoke('app:setBackgroundMaterial', material);
   }
 
-  // `appearance.animations: false` disables interface transitions/animations
-  // globally (page transitions, hover fades, …). Canvas animations are JS-driven
-  // and intentionally unaffected.
+  // `appearance.animations: false` globalnie wyłącza przejścia/animacje interfejsu
+  // (przejścia stron, zanikanie hover, …). Animacje canvas są sterowane przez JS
+  // i celowo pozostają bez zmian.
   function applyMotion() {
     document.documentElement.classList.toggle('no-animations', !get().animations);
   }
@@ -50,9 +50,9 @@ export function useTheme(appearanceRef: Ref<AppearanceSettings>) {
     const resolved = resolveThemeAppearance(get());
     const vars = buildEngineVars(resolved, get().fontSize);
     setVars(vars);
-    // Native chrome (the <select> popup, scrollbars, checkboxes, range tracks)
-    // follows the OS scheme unless the page declares one — without this the dark
-    // themes rendered a light, unreadable dropdown list.
+    // Natywny chrome (popup <select>, paski przewijania, checkboxy, tory range)
+    // podąża za schematem OS, chyba że strona zadeklaruje własny — bez tego ciemne
+    // motywy renderowały jasną, nieczytelną listę rozwijaną.
     document.documentElement.style.colorScheme = resolved.scheme;
     applyWindowMode();
     applyMotion();
@@ -76,10 +76,10 @@ export function useTheme(appearanceRef: Ref<AppearanceSettings>) {
     });
   }
 
-  // One watcher instead of seven. Each of them called applyTheme() directly, so
-  // importing a theme — which sets theme, customBase, customColors and geometry
-  // together — rebuilt every CSS variable and sent three IPC messages four times
-  // in the same tick. reapplyTheme() coalesces that into a single rAF.
+  // Jeden watcher zamiast siedmiu. Każdy z nich wywoływał applyTheme() bezpośrednio, więc
+  // import motywu — który ustawia razem theme, customBase, customColors i geometry
+  // — przebudowywał każdą zmienną CSS i wysyłał trzy wiadomości IPC cztery razy
+  // w tym samym ticku. reapplyTheme() scala to w jeden rAF.
   watch(
     () => {
       const a = get();

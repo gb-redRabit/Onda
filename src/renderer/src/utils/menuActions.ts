@@ -1,5 +1,5 @@
-// Shared context-menu actions (plan 3.3). The same IPC calls / clipboard writes
-// were duplicated across every menu registry.
+// Wspólne akcje menu kontekstowego (plan 3.3). Te same wywołania IPC / zapisy do schowka
+// były duplikowane w każdym rejestrze menu.
 export function revealInFolder(path: string): void {
   void window.api?.invoke('shell:showItemInFolder', path);
 }
@@ -16,7 +16,7 @@ export function copyPathToClipboard(path: string): void {
   void navigator.clipboard?.writeText(path);
 }
 
-/** Copies via the main process (`fs:copyPath`) — used by the Explorer. */
+/** Kopiuje przez proces główny (`fs:copyPath`) — używane przez Eksploratora. */
 export function copyPathViaMain(path: string): void {
   void window.api?.invoke('fs:copyPath', path);
 }

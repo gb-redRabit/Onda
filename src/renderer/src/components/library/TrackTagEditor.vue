@@ -57,8 +57,8 @@ const { onOverlayClick } = useUnsavedGuard({
   onClose: () => emit('close'),
   onDirtyHint: () => ui.notify('warning', t('common.unsavedChangesClickAgain')),
   onCleanHint: () => ui.notify('info', t('common.clickAgainToClose')),
-  // This one warns for longer after a dirty click, and does not notify on the
-  // click that closes — the dialog is already gone by the time it is read.
+  // Ten ostrzega dłużej po kliknięciu ze zmianami i nie powiadamia przy
+  // kliknięciu, które zamyka — dialog zniknął już, zanim zostanie odczytane.
   dirtyWindowMs: 2500,
   notifyOnClosingClick: false
 });

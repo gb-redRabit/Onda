@@ -12,8 +12,8 @@ vi.mock('electron', () => ({
 const { applyLogSettings, setupFileLogging, getLogPath, flushLogWrites } =
   await import('../log-file');
 
-// Awaits the write queue instead of sleeping: the log is written asynchronously
-// and a fixed delay turns this into a flake as soon as the suite gets busier.
+// Czeka na kolejkę zapisu zamiast spać: log jest zapisywany asynchronicznie,
+// a stałe opóźnienie zamienia to w flake, gdy tylko zestaw stanie się bardziej zajęty.
 const flush = () => flushLogWrites();
 
 beforeEach(() => {

@@ -5,9 +5,9 @@ import {
   MB_MAX_RETRY_DELAY_MS
 } from '../musicbrainz-rate-limit';
 
-// The bug this covers: `mbFetch` re-entered itself on every 503 with no attempt
-// counter, so an endpoint that kept rate limiting spun forever in the
-// background. The policy is pure so the bound is provable without a stub.
+// Błąd, który to obejmuje: `mbFetch` wchodził sam w siebie przy każdym 503 bez
+// licznika prób, więc endpoint, który stale ograniczał tempo, kręcił się w
+// tle na zawsze. Polityka jest czysta, więc ograniczenie da się udowodnić bez stuba.
 
 describe('decideRateLimitRetry', () => {
   it('retries a 503 a bounded number of times, then stops', () => {

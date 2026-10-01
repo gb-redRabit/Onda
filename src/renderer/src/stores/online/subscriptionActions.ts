@@ -19,11 +19,11 @@ export interface OnlineSubscriptionActionsDeps {
   ) => Promise<void>;
 }
 
-// Follow/unfollow + preference mutations for subscriptions, plus the manual
-// "check now" actions. Persistence stays in main (yt:subs:*); this module holds
-// only the in-flight flags and optimistic local updates. The store destructures
-// the returned refs/actions back into the same names, so call sites elsewhere
-// are unchanged.
+// Obserwowanie/odobserwowanie + mutacje preferencji dla subskrypcji oraz ręczne
+// akcje "sprawdź teraz". Persystencja pozostaje w main (yt:subs:*); ten moduł trzyma
+// tylko flagi w toku i optymistyczne lokalne aktualizacje. Store destrukturyzuje
+// zwrócone refy/akcje z powrotem do tych samych nazw, więc miejsca wywołań gdzie indziej
+// pozostają bez zmian.
 export function createOnlineSubscriptionActions(deps: OnlineSubscriptionActionsDeps) {
   const { addSubscription, removeSubscription, loadSubscriptions, queueChannelVideos } = deps;
   const checkingSubscriptions = ref(false);
@@ -34,7 +34,7 @@ export function createOnlineSubscriptionActions(deps: OnlineSubscriptionActionsD
       const sub = (await window.api.invoke('yt:subs:add', channel)) as Subscription | null;
       if (sub) addSubscription(sub);
     } catch {
-      /* failed to follow */
+      /* nie udało się zaobserwować */
     }
   }
 
@@ -56,7 +56,7 @@ export function createOnlineSubscriptionActions(deps: OnlineSubscriptionActionsD
         await queueChannelVideos(sub.channelId, setup.prefs || sub.downloadPrefs, true);
       }
     } catch {
-      /* failed to follow */
+      /* nie udało się zaobserwować */
     }
   }
 
@@ -65,7 +65,7 @@ export function createOnlineSubscriptionActions(deps: OnlineSubscriptionActionsD
       await window.api.invoke('yt:subs:remove', channelId);
       removeSubscription(channelId);
     } catch {
-      /* failed to unfollow */
+      /* nie udało się odobserwować */
     }
   }
 
@@ -76,7 +76,7 @@ export function createOnlineSubscriptionActions(deps: OnlineSubscriptionActionsD
       })) as Subscription | null;
       if (sub) addSubscription(sub);
     } catch {
-      /* failed to update */
+      /* nie udało się zaktualizować */
     }
   }
 
@@ -87,7 +87,7 @@ export function createOnlineSubscriptionActions(deps: OnlineSubscriptionActionsD
       })) as Subscription | null;
       if (sub) addSubscription(sub);
     } catch {
-      /* failed to update prefs */
+      /* nie udało się zaktualizować preferencji */
     }
   }
 
@@ -98,7 +98,7 @@ export function createOnlineSubscriptionActions(deps: OnlineSubscriptionActionsD
       await window.api.invoke('yt:subs:checkNow');
       await loadSubscriptions();
     } catch {
-      /* check failed */
+      /* sprawdzanie nie powiodło się */
     } finally {
       checkingSubscriptions.value = false;
     }
@@ -111,7 +111,7 @@ export function createOnlineSubscriptionActions(deps: OnlineSubscriptionActionsD
       await window.api.invoke('yt:subs:checkChannel', channelId);
       await loadSubscriptions();
     } catch {
-      /* check failed */
+      /* sprawdzanie nie powiodło się */
     } finally {
       checkingChannelId.value = null;
     }

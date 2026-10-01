@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 
-// Brand loader: the radial audio-visualizer from the boot splash
-// (resources/splash.html), reusable for any content-loading state. The colour
-// follows `--color-primary`, so it adapts to the active theme; the fallback is
-// the splash brand purple.
+// Loader marki: radialny audio-wizualizator z ekranu startowego
+// (resources/splash.html), wielokrotnego użytku dla dowolnego stanu ładowania treści. Kolor
+// podąża za `--color-primary`, więc dostosowuje się do aktywnego motywu; fallback to
+// firmowy fiolet splash.
 const props = withDefaults(
   defineProps<{
-    /** Canvas box in CSS pixels — bars and radius scale with it. */
+    /** Pole canvas w pikselach CSS — słupki i promień skalują się z nim. */
     size?: number;
-    /** Optional caption under the animation. */
+    /** Opcjonalny podpis pod animacją. */
     label?: string;
-    /** Fill and centre inside the parent instead of adding vertical padding. */
+    /** Wypełnia i centruje wewnątrz rodzica zamiast dodawać pionowy padding. */
     overlay?: boolean;
   }>(),
   { size: 96, label: '', overlay: false }
@@ -99,7 +99,7 @@ onMounted(() => {
     ctx.stroke();
   };
 
-  // Accessibility: a single static frame when the user prefers reduced motion.
+  // Dostępność: pojedyncza statyczna klatka, gdy użytkownik preferuje ograniczony ruch.
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
     randomize();
     for (let i = 0; i < COUNT; i++) values[i] = target[i];

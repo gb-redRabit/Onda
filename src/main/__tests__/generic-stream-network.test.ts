@@ -8,22 +8,22 @@ import { runCommand } from '../utils/exec';
 import { whichInPath } from '../ipc/dependency/dependency-utils';
 import { buildStreamGetArgs, parseStreamGetOutput } from '../ipc/youtube/youtube-utils';
 
-// Opt-in network smoke test for the generic (non-YouTube) playback path.
-// It runs the real yt-dlp extractor, registers the returned stream URL and
-// fetches it through the real media-server proxy with a byte range.
+// Opcjonalny test sieciowy dymny dla ogólnej (nie-YouTube) ścieżki odtwarzania.
+// Uruchamia prawdziwy ekstraktor yt-dlp, rejestruje zwrócony URL strumienia i
+// pobiera go przez prawdziwe proxy media-server z zakresem bajtów.
 //
-// Enable with:
+// Włącz przez:
 //   ONDA_NETWORK_TESTS=1 npx vitest run src/main/__tests__/generic-stream-network.test.ts
-// Optional overrides:
-//   ONDA_YTDLP   - absolute path to the yt-dlp binary
-//   ONDA_BIN_DIR  - directory containing the yt-dlp binary (e.g. userData/bin)
-//   ONDA_TEST_URLS - comma separated page URLs to test instead of the defaults
+// Opcjonalne nadpisania:
+//   ONDA_YTDLP   - bezwzględna ścieżka do pliku binarnego yt-dlp
+//   ONDA_BIN_DIR  - katalog zawierający plik binarny yt-dlp (np. userData/bin)
+//   ONDA_TEST_URLS - oddzielone przecinkami adresy URL stron do testowania zamiast domyślnych
 const enabled = process.env.ONDA_NETWORK_TESTS === '1';
 
 const DEFAULT_URLS = [
-  // Direct media file handled by the generic extractor.
+  // Bezpośredni plik multimedialny obsługiwany przez ogólny ekstraktor.
   'https://download.samplelib.com/mp3/sample-6s.mp3',
-  // Redirects to another public host, so the proxy revalidation is exercised.
+  // Przekierowuje do innego publicznego hosta, więc testowana jest rewalidacja w proxy.
   'https://archive.org/download/testmp3testfile/mpthreetest.mp3'
 ];
 
@@ -105,8 +105,8 @@ describe.skipIf(!enabled)('generic stream playback over the real network', () =>
         expect(parsed.ok, `${pageUrl}: ${stdout}`).toBe(true);
         streamUrl = parsed.url as string;
       } catch (e) {
-        // Extractor/site availability is outside our control; report instead of
-        // failing the whole suite, but require at least one URL to work.
+        // Dostępność ekstraktora/strony jest poza naszą kontrolą; zgłoś zamiast
+        // przewalać cały zestaw, ale wymagaj, aby zadziałał co najmniej jeden URL.
         failures.push(`${pageUrl}: resolve failed (${e instanceof Error ? e.message : e})`);
         continue;
       }

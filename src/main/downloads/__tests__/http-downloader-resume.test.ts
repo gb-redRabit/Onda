@@ -6,11 +6,11 @@ import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { downloadHttpFile } from '../http-downloader';
 
-// Every failure used to delete the `.part`, so a connection that dropped after
-// 4 GB of a 10 GB file meant starting again from zero — and pausing a job threw
-// away its progress too, because pausing is an abort. The partial file now
-// survives anything the network might recover from, and is removed only when a
-// retry cannot help.
+// Każdy błąd usuwał `.part`, więc połączenie zerwane po
+// 4 GB z 10 GB pliku oznaczało start od zera — a wstrzymanie zadania wyrzucało
+// także jego postęp, bo wstrzymanie jest przerwaniem. Plik częściowy teraz
+// przetrwa wszystko, z czego sieć może się podnieść, i jest usuwany tylko wtedy, gdy
+// ponowienie nie pomoże.
 
 const TRUST = { allowPrivateNetwork: true } as const;
 const servers: http.Server[] = [];
@@ -37,7 +37,7 @@ async function partSize(destPath: string): Promise<number> {
     .catch(() => -1);
 }
 
-/** Waits for the unlink, which happens on the write stream's close event. */
+/** Czeka na unlink, który następuje w zdarzeniu close strumienia zapisu. */
 async function waitForPartGone(destPath: string): Promise<boolean> {
   const deadline = Date.now() + 5_000;
   while (Date.now() < deadline) {
@@ -57,9 +57,9 @@ describe('a failed download keeps what it can', () => {
     const origin = await startServer((_req, res) => {
       res.writeHead(200, { 'content-length': '4096' });
       res.write('a'.repeat(256));
-      // Destroying immediately would reset the socket before the client reads
-      // the body, and there would be nothing to keep. The delay is what makes
-      // this "a connection that dropped part way through" rather than a refusal.
+      // Natychmiastowe zniszczenie zresetowałoby gniazdo, zanim klient odczyta
+      // ciało, i nie byłoby czego zachować. To opóźnienie sprawia, że
+      // jest to "połączenie zerwane w połowie", a nie odmowa.
       setTimeout(() => res.destroy(), 80);
     });
     const destPath = await scratch('reset');
@@ -74,7 +74,7 @@ describe('a failed download keeps what it can', () => {
         res.writeHead(status).end();
       });
       const destPath = await scratch(`retry-${status}`);
-      // Start from a partial file, as a previous attempt would have left.
+      // Zacznij od pliku częściowego, jakiego zostawiłaby poprzednia próba.
       await writeFile(`${destPath}.part`, 'partial');
       await expect(downloadHttpFile({ url: `${origin}/f`, destPath, ...TRUST })).rejects.toThrow();
       expect(await partSize(destPath), `status ${status}`).toBe(7);
@@ -137,8 +137,8 @@ describe('a hopeless failure still discards the .part', () => {
   });
 
   it('removes it when a resumed file is rejected as too large in total', async () => {
-    // The prefix counts against the ceiling, so an existing .part can push the
-    // total over even when the remaining body would not.
+    // Prefiks liczy się do pułapu, więc istniejący .part może wypchnąć
+    // sumę ponad limit, nawet gdy samo pozostałe ciało by tego nie zrobiło.
     const origin = await startServer((_req, res) => {
       res.writeHead(200, { 'content-length': '4096' });
       res.end('x'.repeat(4096));
