@@ -20,14 +20,16 @@ function createFsFixture(): string {
 }
 
 async function openExplorerAt(page: Page, dir: string): Promise<void> {
-  await page.evaluate(async (path) => {
-    const api = (window as unknown as { api: OndaTestApi }).api;
-    await api.invoke('explorer:sendTabToMain', path);
-  }, dir);
+  // Najpierw zmontuj widok eksploratora, potem wyślij zakładkę: zdarzenie
+  // `explorer:add-tab` dociera do store'a, a widok montuje się już z właściwą ścieżką.
   await page.evaluate(() => {
     window.location.hash = '#/explorer';
   });
   await expect(page.getByTestId('explorer-view')).toBeVisible();
+  await page.evaluate(async (path) => {
+    const api = (window as unknown as { api: OndaTestApi }).api;
+    await api.invoke('explorer:sendTabToMain', path);
+  }, dir);
 }
 
 async function confirmDialog(page: Page): Promise<void> {

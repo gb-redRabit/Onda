@@ -17,6 +17,17 @@ export interface BreadcrumbSegment {
 }
 
 export function buildSegments(currentPath: string): BreadcrumbSegment[] {
-  const parts = currentPath.split('\\').filter(Boolean);
-  return parts.map((part, idx) => ({ part, idx, path: parts.slice(0, idx + 1).join('\\') }));
+  if (!currentPath) return [];
+  // Obsłuż zarówno separator Windows, jak i POSIX; ścieżka segmentu musi być
+  // prawidłowym celem nawigacji na tej platformie.
+  const sep = currentPath.includes('\\') ? '\\' : '/';
+  const leading = currentPath.startsWith(sep) ? sep : '';
+  const parts = currentPath.split(/[\\/]/).filter(Boolean);
+  const segments: BreadcrumbSegment[] = [];
+  let acc = '';
+  parts.forEach((part, idx) => {
+    acc = acc ? `${acc}${sep}${part}` : `${leading}${part}`;
+    segments.push({ part, idx, path: acc });
+  });
+  return segments;
 }

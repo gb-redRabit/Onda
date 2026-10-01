@@ -81,13 +81,14 @@ test.describe('context menu — explorer item', () => {
     const { page } = onda;
     try {
       await dismissWizard(page);
+      await page.evaluate(() => {
+        window.location.hash = '#/explorer';
+      });
+      await expect(page.getByTestId('explorer-view')).toBeVisible();
       await page.evaluate(async (path) => {
         const api = (window as unknown as { api: OndaTestApi }).api;
         await api.invoke('explorer:sendTabToMain', path);
       }, dir);
-      await page.evaluate(() => {
-        window.location.hash = '#/explorer';
-      });
       await expect(page.getByTestId('explorer-item-note.txt')).toBeVisible();
 
       await page.getByTestId('explorer-item-note.txt').click({ button: 'right' });

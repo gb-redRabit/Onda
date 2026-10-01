@@ -35,4 +35,16 @@ describe('buildSegments', () => {
     expect(buildSegments('')).toEqual([]);
     expect(buildSegments('\\')).toEqual([]);
   });
+
+  it('handles POSIX paths with a leading root', () => {
+    expect(buildSegments('/home/user/Music').map((s) => s.path)).toEqual([
+      '/home',
+      '/home/user',
+      '/home/user/Music'
+    ]);
+  });
+
+  it('handles a POSIX root-only path', () => {
+    expect(buildSegments('/')).toEqual([]);
+  });
 });

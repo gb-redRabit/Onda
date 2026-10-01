@@ -54,6 +54,9 @@ test.describe('audio playback and audio view', () => {
       await expect(page.getByTestId('player-queue')).toBeVisible();
       await page.getByTestId('player-queue').click();
       await page.getByTestId('player-eq').click();
+      // Zamknij kolejkę: w układzie narrow panel kolejki jest nakładką i zasłoniłby HUD widoku Audio.
+      await page.getByTestId('player-queue').click();
+      await expect(page.getByTestId('queue-panel')).toHaveCount(0);
 
       // Widok Audio: kontrolki HUD renderują się, gdy utwór jest załadowany, pusty stan znika.
       await page.evaluate(() => {
