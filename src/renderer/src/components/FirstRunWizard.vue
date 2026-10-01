@@ -14,6 +14,7 @@ import WizardAudio from './wizard/WizardAudio.vue';
 import WizardPip from './wizard/WizardPip.vue';
 import WizardDependencies from './wizard/WizardDependencies.vue';
 import WizardSummary from './wizard/WizardSummary.vue';
+import { useDialogFocus } from '@renderer/composables/useDialogFocus';
 
 const emit = defineEmits<{ close: [] }>();
 
@@ -21,6 +22,10 @@ const { t } = useI18n();
 const library = useLibraryStore();
 const ui = useUIStore();
 const settings = useSettingsStore();
+
+const panelRef = ref<HTMLElement | null>(null);
+// Dialog semantics + focus trap; Escape behaves like the close button.
+useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => skipAll() });
 
 const steps: Component[] = [
   WizardWelcome,
@@ -86,17 +91,23 @@ function skipAll() {
     @click.self="skipAll"
   >
     <div
+      ref="panelRef"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="wizard-title"
+      tabindex="-1"
       class="w-full max-w-xl rounded-box bg-base-100 border border-base-300 shadow-2xl shadow-black/50 flex flex-col max-h-[86vh]"
     >
       <header class="px-6 pt-5 pb-4 border-b border-base-300">
         <div class="flex items-center justify-between gap-4">
-          <div class="text-xs font-medium text-base-content/50">
+          <div id="wizard-title" class="text-xs font-medium text-base-content/50">
             {{ t('wizard.title') }}
           </div>
           <button
             data-testid="wizard-close"
             class="p-1.5 rounded hover:bg-base-content/10 text-base-content/50 hover:text-base-content transition-colors"
             :title="t('wizard.later')"
+            :aria-label="t('wizard.later')"
             @click="skipAll"
           >
             <X :size="16" />

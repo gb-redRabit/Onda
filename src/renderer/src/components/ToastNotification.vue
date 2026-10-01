@@ -53,6 +53,8 @@ function color(type: string) {
 
 <template>
   <div
+    role="status"
+    aria-live="polite"
     class="fixed z-80 flex flex-col gap-2 pointer-events-none"
     :class="positionClasses[settings.toast.position] || positionClasses['bottom-right']"
   >
@@ -70,6 +72,7 @@ function color(type: string) {
       </div>
       <button
         class="p-0.5 shrink-0 text-base-content/50 hover:text-base-content transition-colors"
+        :aria-label="$t('common.close')"
         @click="ui.removeNotification(n.id)"
       >
         <X :size="12" />
