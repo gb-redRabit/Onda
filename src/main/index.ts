@@ -1,5 +1,5 @@
 ﻿import { app, BrowserWindow, ipcMain, globalShortcut, dialog } from 'electron';
-import { join, dirname } from 'path';
+import { join } from 'path';
 import os from 'os';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { createMediaServer } from './media/media-server';
@@ -34,6 +34,9 @@ import { createWindow as createBrowserWindow } from './windows/window-factory';
 import { GLASS_WINDOW_OPTS } from './windows/window-presets';
 import { destroyTray, hasTray, setupTray } from './windows/tray';
 import { SplashController } from './windows/splash';
+import { registerGlobalShortcuts } from './bootstrap/global-shortcuts';
+import { startBootWatchdog } from './bootstrap/boot-watchdog';
+import { OpenFileForwarder } from './bootstrap/open-files';
 
 let mainWindow: BrowserWindow | null = null;
 let startHidden = false;
@@ -55,25 +58,10 @@ function perf(label: string): number {
 
 const preFullscreenBounds: { current: Electron.Rectangle | null } = { current: null };
 
-let pendingOpenFiles: string[] = [];
-
-function focusMainWindow(): void {
-  if (!mainWindow || mainWindow.isDestroyed()) return;
-  if (mainWindow.isMinimized()) mainWindow.restore();
-  mainWindow.show();
-  mainWindow.focus();
-}
-
-function forwardOpenFiles(paths: string[]): void {
-  if (paths.length) {
-    // Grant the media server access to the folders of files opened from the OS.
-    for (const p of paths) void addAllowedRoot(dirname(p));
-    pendingOpenFiles.push(...paths);
-  }
-  focusMainWindow();
-  if (!paths.length || !mainWindow || mainWindow.webContents.isLoading()) return;
-  mainWindow.webContents.send('open-files', paths);
-}
+const openFiles = new OpenFileForwarder(
+  () => mainWindow,
+  (dir) => void addAllowedRoot(dir)
+);
 
 // E2E/portable override: point the whole profile (settings, logs, tokens) at a
 // throw-away directory before anything reads it. Must run before the
@@ -89,11 +77,11 @@ if (!gotSingleInstanceLock) {
   app.on('second-instance', (_event, argv) => {
     // Focus the existing window even when launched without a file (e.g. clicking
     // the desktop/taskbar icon) and forward any media paths.
-    forwardOpenFiles(extractMediaPaths(argv));
+    openFiles.forward(extractMediaPaths(argv));
   });
   app.on('open-file', (event, path) => {
     event.preventDefault();
-    forwardOpenFiles(extractMediaPaths([path]));
+    openFiles.forward(extractMediaPaths([path]));
   });
 }
 
@@ -153,31 +141,6 @@ function createWindow(): BrowserWindow {
   });
 
   return win;
-}
-
-function registerGlobalShortcuts(): void {
-  const sendIfAlive = (channel: string) => {
-    if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.webContents.isDestroyed()) {
-      mainWindow.webContents.send(channel);
-    }
-  };
-  const shortcuts: Record<string, () => void> = {
-    MediaPlayPause: () => sendIfAlive('media:playPause'),
-    MediaNextTrack: () => sendIfAlive('media:next'),
-    MediaPreviousTrack: () => sendIfAlive('media:previous'),
-    MediaStop: () => sendIfAlive('media:stop'),
-    VolumeUp: () => sendIfAlive('media:volumeUp'),
-    VolumeDown: () => sendIfAlive('media:volumeDown'),
-    VolumeMute: () => sendIfAlive('media:toggleMute')
-  };
-
-  for (const [accelerator, handler] of Object.entries(shortcuts)) {
-    try {
-      globalShortcut.register(accelerator, handler);
-    } catch (e) {
-      logger.warn('main', `global shortcut unavailable: ${accelerator}`, e);
-    }
-  }
 }
 
 app.whenReady().then(async () => {
@@ -296,9 +259,7 @@ app.whenReady().then(async () => {
   });
 
   ipcMain.handle('app:getPendingFiles', () => {
-    const files = pendingOpenFiles;
-    pendingOpenFiles = [];
-    return files;
+    return openFiles.takePending();
   });
 
   ipcMain.handle('app:quit', () => {
@@ -360,14 +321,14 @@ app.whenReady().then(async () => {
   audioPipManager.setMainWindow(mainWindow);
   audioPipManager.init();
   setupTray(() => mainWindow);
-  registerGlobalShortcuts();
+  registerGlobalShortcuts(() => mainWindow);
   perf('PiP/tray/shortcuts ready');
 
   // Forward media files passed on the command line (Windows/Linux) once the
   // renderer has mounted its IPC listeners (pull-based via app:getPendingFiles).
   const initialPaths = extractMediaPaths(process.argv.slice(1));
   if (initialPaths.length > 0) {
-    forwardOpenFiles(initialPaths);
+    openFiles.forward(initialPaths);
   }
 
   // Minimum splash display is only an anti-flicker floor: the window is shown as
@@ -383,23 +344,10 @@ app.whenReady().then(async () => {
   // (cold dev server, first run after a cache clear, slow disk). Warn every few
   // seconds and only force the window at the deadline — real failures (crash,
   // fail-load, preload error) call `forceClose()` immediately.
-  const BOOT_WATCHDOG_INTERVAL_MS = 5000;
-  const BOOT_WATCHDOG_DEADLINE_MS = 30000;
-  const bootWatchdogStart = Date.now();
-  const bootWatchdog = setInterval(() => {
-    if (splash.isRendererReady()) {
-      clearInterval(bootWatchdog);
-      return;
-    }
-    const elapsed = Date.now() - bootWatchdogStart;
-    if (elapsed >= BOOT_WATCHDOG_DEADLINE_MS) {
-      clearInterval(bootWatchdog);
-      logger.warn('boot', `renderer not ready after ${elapsed}ms — showing the window anyway`);
-      splash.forceClose();
-      return;
-    }
-    logger.warn('boot', `renderer still booting (${elapsed}ms) — splash kept visible`);
-  }, BOOT_WATCHDOG_INTERVAL_MS);
+  startBootWatchdog({
+    isRendererReady: () => splash.isRendererReady(),
+    onTimeout: () => splash.forceClose()
+  });
 
   registerWindowHandlers({
     getMainWindow: () => mainWindow,
