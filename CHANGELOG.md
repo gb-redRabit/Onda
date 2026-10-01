@@ -9,6 +9,13 @@ na `main` wersję ostatnio opublikowanego release'a; wersję podnosi wyłącznie
 jest błędem — pilnują tego `npm run version:check` i `npm run check:artifacts` w CI
 (patrz `RELEASE.md`).
 
+## [0.6.2](https://github.com/gb-redRabit/Onda/compare/v0.6.1...v0.6.2) (2026-10-01)
+
+
+### Bug Fixes
+
+* **ci:** wait for the renderer's deferred settings save in settings-transfer e2e ([9399a02](https://github.com/gb-redRabit/Onda/commit/9399a02646adfffc19dfc79f1e5fbb6cc8699234))
+
 ## [0.6.1](https://github.com/gb-redRabit/Onda/compare/v0.6.0...v0.6.1) (2026-10-01)
 
 
