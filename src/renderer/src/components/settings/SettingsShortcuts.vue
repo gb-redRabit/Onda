@@ -86,7 +86,7 @@ function displayKey(key: string): string {
         :class="
           recording === action
             ? 'border-primary bg-primary/10 text-primary animate-pulse'
-            : 'border-base-300 bg-base-200/[var(--glass-alpha)] text-base-content/70 hover:border-primary hover:text-base-content'
+            : 'border-base-300 bg-base-200/(--glass-alpha) text-base-content/70 hover:border-primary hover:text-base-content'
         "
         @click="startRecording(String(action))"
       >

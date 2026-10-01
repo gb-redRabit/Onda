@@ -38,6 +38,7 @@ const peekFillState = computed(() => pipPeekFillState(isPlaying.value));
 
 <template>
   <div
+    data-testid="pip-audio-root"
     class="pip-fade-in relative box-border h-full w-full overflow-hidden"
     :class="rootClass"
     @dblclick="onRootDblClick"

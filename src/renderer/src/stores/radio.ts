@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import { usePlayerStore } from './player';
 import type { IpcRadioStation } from '@shared/types/ipc';
 import type { MediaFile } from '@renderer/types/media';
+import { clonePlain } from '@renderer/utils/clone';
 
 export interface RadioStationInput {
   name: string;
@@ -34,7 +35,7 @@ export const useRadioStore = defineStore('radio', () => {
     // ref() values are Vue reactive proxies — structured-clone (used by
     // ipcRenderer.invoke) cannot serialize them ("An object could not be
     // cloned"), so send a plain deep copy instead.
-    await window.api?.radioSave(JSON.parse(JSON.stringify(stations.value)));
+    await window.api?.radioSave(clonePlain(stations.value));
   }
 
   // Adds stations, deduping by url. Returns the number actually added.

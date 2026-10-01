@@ -18,6 +18,7 @@ import {
 import { usePlayerStore } from '@renderer/stores/player';
 import { useLibraryStore } from '@renderer/stores/library';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { audioEngine } from '@renderer/modules/audioEngine';
 import { openMediaFiles } from '@renderer/composables/useOpenMedia';
 import { useHomeContextMenu } from '@renderer/composables/useHomeContextMenu';
 import { orderedHomeSections } from '@renderer/utils/homeSections';
@@ -61,24 +62,28 @@ async function openFolder() {
 
 const actions = [
   {
+    id: 'open-file',
     labelKey: 'home.openFile',
     descKey: 'home.browseLocalMedia',
     icon: FolderOpen,
     route: openFile
   },
   {
+    id: 'open-folder',
     labelKey: 'home.openFolder',
     descKey: 'home.loadMediaFromFolder',
     icon: FolderUp,
     route: openFolder
   },
   {
+    id: 'library',
     labelKey: 'library.title',
     descKey: 'home.yourMusicCollection',
     icon: Disc3,
     route: () => router.push('/library')
   },
   {
+    id: 'online',
     labelKey: 'nav.online',
     descKey: 'home.searchAndDownload',
     icon: Radio,
@@ -156,7 +161,13 @@ function trackCountLabel(count: number): string {
 
 // ---- Continue card -----------------------------------------------------------
 
-const continueTrack = computed<MediaFile | null>(() => library.recentTracks[0] ?? null);
+// The card is a "pick up where you left off" affordance, so it must never show
+// the track that is already loaded in the player — fall through to the next
+// most recent one, and hide the card entirely when there is none.
+const continueTrack = computed<MediaFile | null>(() => {
+  const current = player.currentTrack?.path;
+  return library.recentTracks.find((t) => t.path !== current) ?? null;
+});
 const continuePosition = ref(0);
 
 async function loadContinuePosition(track: MediaFile | null): Promise<void> {
@@ -176,6 +187,28 @@ watch(continueTrack, (track) => void loadContinuePosition(track), { immediate: t
 function playContinue(): void {
   const track = continueTrack.value;
   if (!track) return;
+  if (track.type === 'video') {
+    player.setTrack(track);
+    // Video has no resume hook in the engine; seed the clock before PlayerView
+    // loads the source (setTrack resets currentTime, so seek afterwards).
+    if (continuePosition.value > 5) player.seek(continuePosition.value);
+  } else {
+    // Only this card resumes a saved position; every other play path starts
+    // from the beginning.
+    player.setTrack(track, { resume: true });
+  }
+  player.play();
+  if (track.type === 'video') router.push('/player');
+}
+
+function playContinueFromStart(): void {
+  const track = continueTrack.value;
+  if (!track) return;
+  // "From the start" also forgets the saved position, so the resume affordance
+  // and the progress bar disappear for this track.
+  void window.api?.clearPlaybackPosition(track.path);
+  if (track.type === 'audio') audioEngine.clearSavedPosition(track.path);
+  continuePosition.value = 0;
   player.setTrack(track);
   player.play();
   if (track.type === 'video') router.push('/player');
@@ -188,13 +221,18 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-6 max-w-7xl mx-auto" @contextmenu="homeContextMenu.showHomeMenu($event)">
+  <div
+    data-testid="home-view"
+    class="p-6 max-w-7xl mx-auto"
+    @contextmenu="homeContextMenu.showHomeMenu($event)"
+  >
     <PageHeader :title="t('home.welcome')" :subtitle="t('home.subtitle')" class="mb-6" />
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <button
         v-for="a in actions"
         :key="a.labelKey"
+        :data-testid="'home-action-' + a.id"
         class="flex items-center gap-4 p-5 fx-depth rounded-box fx-noise bg-base-100 border border-base-300 hover:border-base-300 hover:bg-base-content/10 transition-all group text-left"
         @click="a.route()"
       >
@@ -227,6 +265,7 @@ onMounted(() => {
         <button
           v-for="s in counters"
           :key="s.key"
+          :data-testid="'home-counter-' + s.tab"
           class="p-4 rounded-box bg-base-100 border border-base-300 text-left hover:bg-base-content/5 transition-colors"
           :title="$t('home.openInLibrary')"
           @click="openLibrary(s.tab)"
@@ -242,6 +281,7 @@ onMounted(() => {
       :track="continueTrack"
       :position="continuePosition"
       @play="playContinue"
+      @play-from-start="playContinueFromStart"
     />
 
     <HomeShelf

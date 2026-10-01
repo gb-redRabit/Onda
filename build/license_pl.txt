@@ -1,0 +1,29 @@
+﻿PolyForm Noncommercial License 1.0.0
+
+https://polyformproject.org/licenses/noncommercial/1.0.0
+
+UWAGA: Wersja angielska licencji jest wersją wiążącą. Poniższe
+tłumaczenie ma charakter wyłącznie informacyjny i nie tworzy
+żadnych praw ani obowiązków. W razie jakichkolwiek rozbieżności
+rozstrzyga oryginalny tekst angielski.
+
+Onda jest udostępniona na licencji PolyForm Noncommercial 1.0.0.
+Oznacza to, że możesz ją bezpłatnie używać, kopiować, modyfikować
+i rozpowszechniać WYŁĄCZNIE do celów niekomercyjnych — m.in. do
+użytku osobistego, nauki, projektów hobbystycznych, edukacji,
+badań, organizacji charytatywnych oraz instytucji publicznych.
+JAKIKOLWIEK UŻYTEK KOMERCYJNY wymaga odrębnej, pisemnej licencji
+od właściciela praw autorskich.
+
+Rozpowszechniając oprogramowanie (lub prace na nim oparte),
+musisz dołączyć niniejsze warunki albo ich adres URL oraz
+zachować linie "Required Notice:" wskazane przez licencjodawcę.
+
+Oprogramowanie jest dostarczane "tak jak jest", bez jakichkolwiek
+gwarancji. W zakresie dozwolonym przez prawo licencjodawca nie
+odpowiada za szkody wynikające z korzystania z oprogramowania.
+
+Pełny, wiążący tekst licencji (angielski):
+https://polyformproject.org/licenses/noncommercial/1.0.0
+
+Required Notice: Copyright (c) 2026 Onda Contributors (https://github.com/gb-redRabit/Onda)

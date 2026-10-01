@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import type { Component } from 'vue';
 
 defineProps<{
@@ -13,7 +13,7 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
 <template>
   <div>
     <div
-      class="w-full rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300 p-2 relative select-none"
+      class="w-full rounded-box bg-base-200/(--glass-alpha) border border-base-300 p-2 relative select-none"
     >
       <div class="grid gap-2" :class="columns === 4 ? 'grid-cols-4' : 'grid-cols-2'">
         <button
@@ -23,7 +23,7 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
           :class="
             modelValue === opt.id
               ? 'border-primary bg-primary/10 text-primary shadow-primary/20'
-              : 'border-transparent text-base-content/50 hover:bg-base-content/10 hover:text-base-content/70'
+              : 'border-transparent bg-base-100 text-base-content/50 hover:bg-base-content/10 hover:text-base-content/70'
           "
           @click="emit('update:modelValue', opt.id)"
         >

@@ -22,6 +22,10 @@ function fakeStore() {
     bags,
     updatePlayback,
     updateAppearance,
+    // The helper reads state through `$state`, which is where a real Pinia store
+    // keeps it. Exposing the bags directly as well mirrors how Pinia unwraps
+    // state onto the store, so this stays a faithful stand-in.
+    $state: bags,
     ...bags
   };
 }

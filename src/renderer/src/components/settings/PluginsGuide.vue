@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ModalShell from '@renderer/components/ui/ModalShell.vue';
 import { X, BookOpen, Search, Check, Copy } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -13,7 +14,7 @@ interface GuideSection {
 
 const { t, tm } = useI18n();
 
-defineEmits<{
+const emit = defineEmits<{
   close: [];
 }>();
 
@@ -67,121 +68,118 @@ function clearSearch(): void {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      class="fixed inset-0 z-50 flex items-center justify-center bg-neutral/70 p-4 sm:p-6"
-      data-testid="plugins-guide-dialog"
-      @click.self="$emit('close')"
-    >
-      <div
-        class="w-full max-w-3xl max-h-full flex flex-col rounded-box bg-base-100 border border-base-300 shadow-2xl overflow-hidden"
+  <ModalShell
+    labelled-by="plugins-guide-modal-title"
+    backdrop-testid="plugins-guide-dialog"
+    panel-class="w-full max-w-3xl max-h-full flex flex-col overflow-hidden"
+    @close="emit('close')"
+  >
+    <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
+      <BookOpen :size="16" class="text-primary shrink-0" />
+      <h2 id="plugins-guide-modal-title" class="text-lg font-medium truncate flex-1">
+        {{ t('plugins.guide.title') }}
+      </h2>
+      <button
+        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
+        :aria-label="t('common.close')"
+        data-testid="plugins-guide-close"
+        @click="emit('close')"
       >
-        <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
-          <BookOpen :size="16" class="text-primary shrink-0" />
-          <h2 class="text-lg font-medium truncate flex-1">{{ t('plugins.guide.title') }}</h2>
-          <button
-            class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
-            :aria-label="t('common.close')"
-            data-testid="plugins-guide-close"
-            @click="$emit('close')"
-          >
-            <X :size="16" />
-          </button>
-        </div>
+        <X :size="16" />
+      </button>
+    </div>
 
-        <div class="flex items-center gap-2 px-4 py-2 border-b border-base-300">
-          <div class="relative flex-1">
-            <Search
-              :size="14"
-              class="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/50 pointer-events-none"
-            />
-            <input
-              ref="searchInput"
-              v-model="query"
-              type="text"
-              :placeholder="t('plugins.guide.searchPlaceholder')"
-              class="w-full pl-8 pr-7 py-1.5 text-xs fx-depth rounded-field bg-base-100 border border-base-300 text-base-content placeholder:text-base-content/50 outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
-              data-testid="plugins-guide-search"
-            />
-            <button
-              v-if="query"
-              class="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-              :aria-label="t('common.clear')"
-              data-testid="plugins-guide-search-clear"
-              @click="clearSearch"
-            >
-              <X :size="12" />
-            </button>
-          </div>
-          <span
-            class="shrink-0 text-[11px] text-base-content/50 tabular-nums"
-            data-testid="plugins-guide-count"
-          >
-            {{ sections.length }} / {{ allSections.length }}
-          </span>
-        </div>
+    <div class="flex items-center gap-2 px-4 py-2 border-b border-base-300">
+      <div class="relative flex-1">
+        <Search
+          :size="14"
+          class="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/50 pointer-events-none"
+        />
+        <input
+          ref="searchInput"
+          v-model="query"
+          type="text"
+          :placeholder="t('plugins.guide.searchPlaceholder')"
+          class="w-full pl-8 pr-7 py-1.5 text-xs fx-depth rounded-field bg-base-100 border border-base-300 text-base-content placeholder:text-base-content/50 outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
+          data-testid="plugins-guide-search"
+        />
+        <button
+          v-if="query"
+          class="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
+          :aria-label="t('common.clear')"
+          data-testid="plugins-guide-search-clear"
+          @click="clearSearch"
+        >
+          <X :size="12" />
+        </button>
+      </div>
+      <span
+        class="shrink-0 text-[11px] text-base-content/50 tabular-nums"
+        data-testid="plugins-guide-count"
+      >
+        {{ sections.length }} / {{ allSections.length }}
+      </span>
+    </div>
 
-        <div class="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-5">
-          <p v-if="!isFiltered" class="text-sm leading-relaxed text-base-content/70">
-            {{ t('plugins.guide.intro') }}
-          </p>
+    <div class="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-5">
+      <p v-if="!isFiltered" class="text-sm leading-relaxed text-base-content/70">
+        {{ t('plugins.guide.intro') }}
+      </p>
 
+      <p
+        v-if="!sections.length"
+        class="text-sm text-base-content/50"
+        data-testid="plugins-guide-empty"
+      >
+        {{ t('plugins.guide.searchEmpty') }}
+      </p>
+
+      <div v-for="{ section, index } in sections" :key="index" class="flex gap-3">
+        <span
+          class="shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-sm font-semibold flex items-center justify-center mt-0.5"
+        >
+          {{ index + 1 }}
+        </span>
+        <div class="min-w-0 flex-1 space-y-2">
+          <h3 class="text-base font-semibold" :data-testid="`plugins-guide-heading-${index}`">
+            {{ braces(section.heading) }}
+          </h3>
           <p
-            v-if="!sections.length"
-            class="text-sm text-base-content/50"
-            data-testid="plugins-guide-empty"
+            v-if="section.body"
+            class="text-sm leading-relaxed text-base-content/70 whitespace-pre-line"
           >
-            {{ t('plugins.guide.searchEmpty') }}
+            {{ braces(section.body) }}
           </p>
-
-          <div v-for="{ section, index } in sections" :key="index" class="flex gap-3">
-            <span
-              class="shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-sm font-semibold flex items-center justify-center mt-0.5"
+          <ul v-if="section.list && section.list.length" class="space-y-1">
+            <li
+              v-for="(item, j) in section.list"
+              :key="j"
+              class="flex gap-2 text-sm leading-relaxed text-base-content/70"
             >
-              {{ index + 1 }}
-            </span>
-            <div class="min-w-0 flex-1 space-y-2">
-              <h3 class="text-base font-semibold" :data-testid="`plugins-guide-heading-${index}`">
-                {{ braces(section.heading) }}
-              </h3>
-              <p
-                v-if="section.body"
-                class="text-sm leading-relaxed text-base-content/70 whitespace-pre-line"
-              >
-                {{ braces(section.body) }}
-              </p>
-              <ul v-if="section.list && section.list.length" class="space-y-1">
-                <li
-                  v-for="(item, j) in section.list"
-                  :key="j"
-                  class="flex gap-2 text-sm leading-relaxed text-base-content/70"
-                >
-                  <span class="text-primary shrink-0 mt-0.5">•</span>
-                  <span class="whitespace-pre-line">{{ braces(item) }}</span>
-                </li>
-              </ul>
-              <div
-                v-for="(code, c) in [section.code, section.code2].filter(Boolean) as string[]"
-                :key="c"
-                class="relative group"
-              >
-                <pre
-                  class="p-3 pe-12 rounded-field bg-base-200 text-[11px] leading-relaxed text-base-content/70 overflow-auto whitespace-pre-wrap break-all"
-                ><code>{{ braces(code) }}</code></pre>
-                <button
-                  class="absolute top-1.5 right-1.5 p-1 fx-depth rounded-field text-base-content/50 opacity-60 hover:opacity-100 hover:text-base-content hover:bg-base-content/10 transition-colors focus:opacity-100"
-                  :aria-label="t('plugins.guide.copyCode')"
-                  data-testid="plugins-guide-copy"
-                  @click="copyCode(code, `${index}:${c}`)"
-                >
-                  <Check v-if="copied === `${index}:${c}`" :size="12" class="text-success" />
-                  <Copy v-else :size="12" />
-                </button>
-              </div>
-            </div>
+              <span class="text-primary shrink-0 mt-0.5">•</span>
+              <span class="whitespace-pre-line">{{ braces(item) }}</span>
+            </li>
+          </ul>
+          <div
+            v-for="(code, c) in [section.code, section.code2].filter(Boolean) as string[]"
+            :key="c"
+            class="relative group"
+          >
+            <pre
+              class="p-3 pe-12 rounded-field bg-base-200 text-[11px] leading-relaxed text-base-content/70 overflow-auto whitespace-pre-wrap break-all"
+            ><code>{{ braces(code) }}</code></pre>
+            <button
+              class="absolute top-1.5 right-1.5 p-1 fx-depth rounded-field text-base-content/50 opacity-60 hover:opacity-100 hover:text-base-content hover:bg-base-content/10 transition-colors focus:opacity-100"
+              :aria-label="t('plugins.guide.copyCode')"
+              data-testid="plugins-guide-copy"
+              @click="copyCode(code, `${index}:${c}`)"
+            >
+              <Check v-if="copied === `${index}:${c}`" :size="12" class="text-success" />
+              <Copy v-else :size="12" />
+            </button>
           </div>
         </div>
       </div>
     </div>
-  </Teleport>
+  </ModalShell>
 </template>

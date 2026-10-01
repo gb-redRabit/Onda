@@ -86,7 +86,7 @@ export function useVideoSource(
       el.addEventListener(
         'playing',
         () => {
-          player.flushPendingQueue();
+          player.enrichPendingQueue();
         },
         { once: true }
       );

@@ -112,12 +112,17 @@ onMounted(async () => {
     void session.restore(router);
   }
 
-  // First-run wizard (one time). Re-runnable from Settings / search.
+  // First-run wizard (one time). Re-runnable from Settings / search. The flag
+  // now lives in settings so it is covered by export/import; migrate the legacy
+  // localStorage value once so existing profiles don't see the wizard again.
   try {
-    if (!localStorage.getItem('onda-first-run-done')) ui.openSetupWizard();
+    if (!settings.general.firstRunDone && localStorage.getItem('onda-first-run-done')) {
+      settings.updateGeneral({ firstRunDone: true });
+    }
   } catch {
     /* storage unavailable */
   }
+  if (!settings.general.firstRunDone) ui.openSetupWizard();
 
   registerAppIpc({ player, router, route });
 });
@@ -247,7 +252,7 @@ function onWindowBlur() {
     class="app-root relative flex flex-col h-full w-full overflow-hidden border border-base-300 bg-base-200/(--glass-alpha)"
     :class="{ 'is-maximized': isWinMaximized, 'app-root-glass': glassOn }"
   >
-    <AppMenu v-if="ui.topMenuVisible && !isExplorerWindow" />
+    <AppMenu v-if="!isExplorerWindow" />
     <!-- Warn on every launch about dependencies Onda cannot work without.
          Hidden while the wizard is open (it offers the same installs). -->
     <DependencyBanner v-if="!isExplorerWindow && !ui.setupWizardVisible" />
@@ -283,7 +288,6 @@ function onWindowBlur() {
     <PlayerBar
       v-if="
         !isExplorerWindow &&
-        ui.playerBarVisible &&
         (player.currentTrack?.type === 'audio' ||
           player.currentTrack?.type === 'stream' ||
           player.streamPending?.type === 'stream') &&
@@ -291,7 +295,9 @@ function onWindowBlur() {
         route.name !== 'audio'
       "
     />
-    <StatusBar v-if="ui.statusBarVisible && !isExplorerWindow" />
+    <!-- Visibility belongs to settings.statusBar.visible, which StatusBar reads
+         itself. This used to be a second gate that nothing ever changed. -->
+    <StatusBar v-if="!isExplorerWindow" />
 
     <AppSearch />
     <ContextMenu />

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Play, History } from '@lucide/vue';
+import { Play, History, RotateCcw } from '@lucide/vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import { formatDuration } from '@renderer/utils/formatters';
 import type { MediaFile } from '@renderer/types/media';
@@ -11,7 +11,7 @@ const props = defineProps<{
   position: number;
 }>();
 
-const emit = defineEmits<{ (e: 'play'): void }>();
+const emit = defineEmits<{ (e: 'play'): void; (e: 'playFromStart'): void }>();
 
 const duration = computed(() => props.track.duration || props.track.metadata?.duration || 0);
 const title = computed(() => props.track.metadata?.title || props.track.name);
@@ -56,13 +56,23 @@ const hasProgress = computed(() => props.position > 5 && duration.value > 0);
           {{ formatDuration(duration) }}
         </div>
       </div>
-      <button
-        class="shrink-0 flex items-center gap-2 px-4 py-2 rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors fx-depth fx-noise"
-        @click="emit('play')"
-      >
-        <Play :size="16" />
-        {{ hasProgress ? $t('home.resume') : $t('common.play') }}
-      </button>
+      <div class="shrink-0 flex items-center gap-2">
+        <button
+          v-if="hasProgress"
+          class="fx-noise flex items-center gap-2 px-3 py-2 rounded-field bg-base-200 border border-base-300 text-base-content text-sm font-medium hover:bg-base-content/10 transition-colors fx-depth"
+          @click="emit('playFromStart')"
+        >
+          <RotateCcw :size="16" />
+          {{ $t('home.playFromStart') }}
+        </button>
+        <button
+          class="fx-noise flex items-center gap-2 px-4 py-2 rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors fx-depth"
+          @click="emit('play')"
+        >
+          <Play :size="16" />
+          {{ hasProgress ? $t('home.resume') : $t('common.play') }}
+        </button>
+      </div>
     </div>
   </section>
 </template>

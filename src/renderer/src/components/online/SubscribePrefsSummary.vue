@@ -14,8 +14,8 @@ const { t } = useI18n();
     </p>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
       <div
-        v-for="(item, idx) in items"
-        :key="idx"
+        v-for="item in items"
+        :key="`${item.label}\u0000${item.value}`"
         class="flex items-start justify-between gap-2 text-xs"
       >
         <span class="text-base-content/50">{{ item.label }}</span>

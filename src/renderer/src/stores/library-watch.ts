@@ -1,6 +1,7 @@
 import type { Ref, ShallowRef } from 'vue';
 import { logger } from '@shared/logger';
 import type { MediaFile, Playlist } from '@renderer/types/media';
+import { clonePlain } from '@renderer/utils/clone';
 
 export interface LibraryWatchDeps {
   isLoaded: Ref<boolean>;
@@ -8,20 +9,12 @@ export interface LibraryWatchDeps {
   folderTypes: Ref<Record<string, 'audio' | 'video' | 'image' | 'mixed'>>;
   playlists: Ref<Playlist[]>;
   scheduleLoadTracksAsync: () => Promise<void>;
-  invalidateDerivedCache: () => void;
 }
 
 // Main-process library event wiring extracted from `stores/library.ts` (plan 2.8):
 // refresh on re-scan and the batched `library:fileMissing` handling (plan 1.4).
 export function createLibraryWatch(deps: LibraryWatchDeps) {
-  const {
-    isLoaded,
-    tracks,
-    folderTypes,
-    playlists,
-    scheduleLoadTracksAsync,
-    invalidateDerivedCache
-  } = deps;
+  const { isLoaded, tracks, folderTypes, playlists, scheduleLoadTracksAsync } = deps;
   let subscribedToLibraryUpdates = false;
   let pendingMissing = new Set<string>();
   let missingTimer: ReturnType<typeof setTimeout> | null = null;
@@ -61,10 +54,9 @@ export function createLibraryWatch(deps: LibraryWatchDeps) {
         const before = tracks.value.length;
         tracks.value = tracks.value.filter((t) => !toRemove.has(t.path));
         if (tracks.value.length !== before) {
-          invalidateDerivedCache();
           // zapisz od razu żeby nie wracał po restarcie
           try {
-            const files = JSON.parse(JSON.stringify(tracks.value));
+            const files = clonePlain(tracks.value);
             window.api?.invoke('library:saveScanned', { files, folderTypes: folderTypes.value });
           } catch (e) {
             logger.warn('library', 'failed to persist scanned library after missing files', e);

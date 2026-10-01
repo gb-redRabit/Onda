@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { join } from 'path';
 import { pathToFileURL } from 'url';
-import { APP_PATH, isAllowedNavigationUrl } from '../navigation-policy';
+import { APP_PATH, isAllowedNavigationUrl } from '../windows/navigation-policy';
 
 const DEV_URL = 'http://localhost:5173';
 

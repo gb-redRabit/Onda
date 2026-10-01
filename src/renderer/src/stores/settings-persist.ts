@@ -50,6 +50,7 @@ export interface SettingsState {
   dependencies: Ref<Record<string, DependencyStatus>>;
   statusBar: Ref<StatusBarSettings>;
   home: Ref<HomeSettings>;
+  favorites: Ref<string[]>;
   isLoaded: Ref<boolean>;
 }
 
@@ -71,6 +72,7 @@ export function createSettingsPersistence(state: SettingsState) {
     dependencies,
     statusBar,
     home,
+    favorites,
     isLoaded
   } = state;
 
@@ -89,7 +91,8 @@ export function createSettingsPersistence(state: SettingsState) {
     toast,
     dependencies,
     statusBar,
-    home
+    home,
+    favorites
   });
 
   async function load() {
@@ -98,20 +101,38 @@ export function createSettingsPersistence(state: SettingsState) {
   }
 
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
+  // Serialised writer: the newest snapshot always wins. A plain debounce cannot
+  // cancel a `persistSettings` call already in flight, so a slider change racing
+  // resetToDefaults/applyImported could land out of order in the store.
+  let revision = 0;
+  let persistedRevision = 0;
+  let writing = false;
 
-  const saveImmediate = () => {
-    if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = null;
-    persistSettings(snapshot());
-  };
+  async function drainWrites(): Promise<void> {
+    if (writing) return;
+    writing = true;
+    try {
+      while (persistedRevision < revision) {
+        const target = revision;
+        await persistSettings(snapshot());
+        persistedRevision = target; // only after a successful write
+      }
+    } finally {
+      writing = false;
+    }
+  }
 
-  const save = () => {
+  function scheduleSave(delay: number): void {
+    revision += 1;
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
       saveTimer = null;
-      persistSettings(snapshot());
-    }, 300);
-  };
+      void drainWrites();
+    }, delay);
+  }
+
+  const saveImmediate = () => scheduleSave(0);
+  const save = () => scheduleSave(300);
 
   function resetToDefaults() {
     general.value = { ...DEFAULT_GENERAL };
@@ -129,6 +150,7 @@ export function createSettingsPersistence(state: SettingsState) {
     toast.value = { ...DEFAULT_TOAST };
     statusBar.value = { ...DEFAULT_STATUS_BAR };
     home.value = { ...DEFAULT_HOME };
+    favorites.value = [];
     save();
   }
 

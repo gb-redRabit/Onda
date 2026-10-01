@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, shallowRef, computed, triggerRef } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import { isUnderPath } from '@renderer/utils/path';
+import { trackMatchesQuery } from '@renderer/utils/librarySearch';
 import { useLibraryDerivations } from './library-derivations';
 import { useLibraryPlaylists } from './library-playlists';
 import { useLibraryLoad } from './library-load';
@@ -15,6 +16,9 @@ export const useLibraryStore = defineStore('library', () => {
   const scanProgress = ref({ current: 0, total: 0 });
   const isLoaded = ref(false);
   const isLoading = ref(false);
+  // Bumped by `updateTrackStats` so play-statistics views recompute without
+  // invalidating the expensive artists/albums/trackStats derivations.
+  const statsRevision = ref(0);
 
   const {
     playlists,
@@ -36,9 +40,8 @@ export const useLibraryStore = defineStore('library', () => {
     recentTracks,
     mostPlayed,
     artists,
-    albums,
-    invalidateDerivedCache
-  } = useLibraryDerivations(tracks);
+    albums
+  } = useLibraryDerivations(tracks, statsRevision);
   const { loadFromDisk, scheduleLoadTracksAsync, scanFolders, cancelScan } = useLibraryLoad({
     tracks,
     folders,
@@ -62,8 +65,7 @@ export const useLibraryStore = defineStore('library', () => {
     tracks,
     folderTypes,
     playlists,
-    scheduleLoadTracksAsync,
-    invalidateDerivedCache
+    scheduleLoadTracksAsync
   });
 
   async function addFolder(folderPath: string) {
@@ -91,7 +93,6 @@ export const useLibraryStore = defineStore('library', () => {
     delete newTypes[folderPath];
     folderTypes.value = newTypes;
     tracks.value = tracks.value.filter((t) => !isUnderPath(t.path, folderPath));
-    invalidateDerivedCache();
   }
 
   function getFolderType(folderPath: string): 'audio' | 'video' | 'image' | 'mixed' | 'unknown' {
@@ -106,7 +107,6 @@ export const useLibraryStore = defineStore('library', () => {
       tracks.value.push(track);
     }
     triggerRef(tracks);
-    invalidateDerivedCache();
   }
 
   function removeTrack(path: string) {
@@ -114,35 +114,42 @@ export const useLibraryStore = defineStore('library', () => {
   }
 
   function search(query: string): MediaFile[] {
-    const q = query.toLowerCase();
-    return tracks.value.filter(
-      (t) =>
-        t.name.toLowerCase().includes(q) ||
-        t.metadata?.title?.toLowerCase().includes(q) ||
-        t.metadata?.artist?.toLowerCase().includes(q) ||
-        t.metadata?.album?.toLowerCase().includes(q)
-    );
+    return tracks.value.filter((t) => trackMatchesQuery(t, query));
   }
 
-  function updateTrack(path: string, updater: (track: MediaFile) => void, metadataChanged = false) {
+  // Metadata / structural edit: invalidates every derived view. Returns the
+  // updated track so callers don't need a second `find`.
+  function updateTrack(path: string, updater: (track: MediaFile) => void): MediaFile | undefined {
     const idx = tracks.value.findIndex((t) => t.path === path);
-    if (idx >= 0) {
-      updater(tracks.value[idx]);
-      triggerRef(tracks);
-      if (metadataChanged) invalidateDerivedCache();
-    }
+    if (idx < 0) return undefined;
+    const track = tracks.value[idx];
+    updater(track);
+    triggerRef(tracks);
+    return track;
+  }
+
+  // Play-statistics change: only the stats views depend on this, so it must not
+  // `triggerRef(tracks)` — that would re-group artists/albums on every play.
+  function updateTrackStats(
+    path: string,
+    updater: (track: MediaFile) => void
+  ): MediaFile | undefined {
+    const idx = tracks.value.findIndex((t) => t.path === path);
+    if (idx < 0) return undefined;
+    const track = tracks.value[idx];
+    updater(track);
+    statsRevision.value++;
+    return track;
   }
 
   function refreshDerived() {
     triggerRef(tracks);
-    invalidateDerivedCache();
   }
 
   function clearRecent(path: string): void {
-    updateTrack(path, (t) => {
-      t.lastPlayed = undefined;
+    const t = updateTrackStats(path, (track) => {
+      track.lastPlayed = undefined;
     });
-    const t = tracks.value.find((x) => x.path === path);
     if (t) {
       window.api?.invoke('library:updateStats', [{ path, playCount: t.playCount, lastPlayed: 0 }]);
     }
@@ -182,6 +189,7 @@ export const useLibraryStore = defineStore('library', () => {
     addTrack,
     removeTrack,
     updateTrack,
+    updateTrackStats,
     createPlaylist,
     addToPlaylist,
     removeFromPlaylist,

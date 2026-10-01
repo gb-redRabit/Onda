@@ -93,6 +93,12 @@ export function forgetJob(id: string): void {
 type DownloadCompletedHandler = (channelId: string, videoId: string) => void;
 let onDownloadCompleted: DownloadCompletedHandler | null = null;
 
+// Called when a finished download carries a media-source job (sourceId +
+// sourceItemId). The sources layer records the item as downloaded so the
+// Sources view can badge it on the next fetch.
+type SourceItemDownloadedHandler = (sourceId: string, itemId: string) => void;
+let onSourceItemDownloaded: SourceItemDownloadedHandler | null = null;
+
 // Called whenever a job finishes successfully and carries a channel+video id.
 // The subscriptions layer uses it to atomically grow downloadedVideoIds (so
 // finished downloads are never lost, and are recorded even if renderer state
@@ -101,11 +107,21 @@ export function setDownloadCompletedHandler(cb: DownloadCompletedHandler | null)
   onDownloadCompleted = cb;
 }
 
+export function setSourceItemDownloadedHandler(cb: SourceItemDownloadedHandler | null): void {
+  onSourceItemDownloaded = cb;
+}
+
 export function reportCompleted(job: Job): void {
-  if (!job.channelId || !job.videoId) return;
   try {
-    onDownloadCompleted?.(job.channelId, job.videoId);
+    if (job.channelId && job.videoId) onDownloadCompleted?.(job.channelId, job.videoId);
   } catch {
     // Non-fatal: next check would re-queue the video.
+  }
+  try {
+    const sourceId = job.source?.sourceId;
+    const itemId = job.source?.sourceItemId;
+    if (sourceId && itemId) onSourceItemDownloaded?.(sourceId, itemId);
+  } catch {
+    // Non-fatal: a later fetch still reads what was already persisted.
   }
 }

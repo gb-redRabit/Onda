@@ -131,13 +131,20 @@ onUnmounted(() => {
     playerContainerRef.value?.removeEventListener('wheel', wheelHandler);
     wheelHandler = null;
   }
+  // Leaving the player while a video is playing must not kill playback: hand it
+  // off to the Picture-in-Picture window (exactly as the PiP button would)
+  // instead of clearing the track. Called before `vp.destroy()` so the current
+  // play position is captured from the live <video>.
+  const autoPiP = player.currentTrack?.type === 'video' && !player.pipActive && player.isPlaying;
+  if (autoPiP) void vp.togglePiP();
+
   ctl.cleanup();
   vp.destroy();
   document.body.style.cursor = 'default';
   // clear the currently played video on exit so the same file can be reopened
-  if (player.currentTrack?.type === 'video' && !player.pipActive) {
-    player.currentTrack = null;
-    player.isPlaying = false;
+  // (but not when it was just handed off to PiP, or when PiP was already active)
+  if (!autoPiP && player.currentTrack?.type === 'video' && !player.pipActive) {
+    player.clearTrack();
   }
 });
 </script>
@@ -145,6 +152,7 @@ onUnmounted(() => {
 <template>
   <div
     ref="playerContainerRef"
+    data-testid="player-view"
     class="player-container flex flex-col h-full bg-neutral relative"
     @mousemove="ctl.onMouseMove"
   >
@@ -209,6 +217,7 @@ onUnmounted(() => {
     <!-- audio area -->
     <div
       v-else-if="isAudio"
+      data-testid="player-audio-surface"
       class="relative flex-1 flex flex-col items-center justify-center gap-6 overflow-hidden bg-base-200/(--glass-alpha)"
       @contextmenu="
         playerContextMenu.showAudioMenu($event, {

@@ -5,7 +5,7 @@ import { logger } from '../../shared/logger';
 import type { IpcCoverSpec, IpcMetaOverride } from '../../shared/types/ipc';
 import { resolveBin } from '../binaries';
 import { runCommand } from '../utils/exec';
-import { getYtAuthConfig, cleanupYtAuthTemp } from '../youtube-auth';
+import { getYtAuthConfig, cleanupYtAuthTemp } from '../youtube/youtube-auth';
 import { buildYtArgs } from '../ipc/youtube-utils';
 import { writeCoverToAudioFile } from '../ipc/media-handlers';
 import { buildSectionArgs, siblingCoverPath } from './cover-spec';

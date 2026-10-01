@@ -90,6 +90,7 @@ function revealDupFile(path: string) {
 <template>
   <div
     v-if="open"
+    data-testid="explorer-duplicates-panel"
     class="absolute right-0 top-0 bottom-0 w-80 max-w-[85%] z-20 flex flex-col bg-base-100 border-l border-base-300 shadow-2xl"
   >
     <div class="flex items-center justify-between px-3 py-2.5 border-b border-base-300 shrink-0">
@@ -97,6 +98,7 @@ function revealDupFile(path: string) {
         <Copy :size="14" class="text-primary" /> {{ $t('explorer.duplicates') }}
       </h3>
       <button
+        data-testid="explorer-duplicates-close"
         class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
         @click="emit('update:open', false)"
       >
@@ -127,6 +129,8 @@ function revealDupFile(path: string) {
       <div
         v-for="group in dupGroups"
         :key="group.original"
+        data-testid="explorer-duplicate-group"
+        :data-original="group.original"
         class="rounded-field border border-base-300 overflow-hidden"
       >
         <div
@@ -151,6 +155,7 @@ function revealDupFile(path: string) {
           >
             <input
               type="checkbox"
+              data-testid="explorer-duplicate-check"
               class="accent-primary shrink-0"
               :checked="dupSelected.has(dup)"
               @click.stop="toggleDupSelection(dup)"
@@ -166,12 +171,14 @@ function revealDupFile(path: string) {
       class="flex items-center gap-2 px-3 py-2.5 border-t border-base-300 shrink-0"
     >
       <button
+        data-testid="explorer-duplicates-select-all"
         class="fx-noise flex-1 px-2 py-1.5 fx-depth rounded-field text-[11px] text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
         @click="selectAllDuplicates"
       >
         {{ $t('explorer.duplicatesSelectAll') }}
       </button>
       <button
+        data-testid="explorer-duplicates-delete"
         class="fx-noise flex-1 px-2 py-1.5 fx-depth rounded-field text-[11px] bg-error/15 text-error hover:bg-error/25 transition-colors flex items-center justify-center gap-1 disabled:opacity-40 disabled:pointer-events-none"
         :disabled="dupSelected.size === 0"
         @click="deleteSelectedDuplicates"

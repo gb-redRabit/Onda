@@ -60,12 +60,15 @@ export const useSourcesStore = defineStore('sources', () => {
 
   const {
     testStatus,
+    checking,
     testSource,
     tableRowsTest,
     forgetSource: forgetSourceTest
   } = createSourcesTest();
 
-  const { enqueueDownload, enqueueAll } = createSourcesDownloads({ activeSource });
+  const { enqueueDownload, enqueueAll, downloadedIds, loadDownloaded } = createSourcesDownloads({
+    activeSource
+  });
 
   // Zapis/usunięcie źródła unieważnia zapamiętaną nawigację i status testu
   // (moduły nav/test są tworzone po liście, więc spinamy to w store).
@@ -120,12 +123,15 @@ export const useSourcesStore = defineStore('sources', () => {
     tableRows,
     tableLoading,
     testStatus,
+    checking,
     fetchItems,
     fetchMore,
     setPage,
     testSource,
     tableRowsTest,
     enqueueDownload,
-    enqueueAll
+    enqueueAll,
+    downloadedIds,
+    loadDownloaded
   };
 });

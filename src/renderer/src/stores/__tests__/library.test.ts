@@ -331,8 +331,8 @@ describe('scanFolders', () => {
     const api = (window as any).api;
     api.invoke.mockImplementation((channel: string) => {
       if (channel === 'library:scan') return Promise.resolve({ count: 1, folderTypes: {} });
-      if (channel === 'library:loadScanned')
-        return Promise.resolve({ files: [makeTrack('only')], folderTypes: {} });
+      if (channel === 'library:loadScannedChunk')
+        return Promise.resolve({ files: [makeTrack('only')], total: 1, folderTypes: {} });
       return Promise.resolve(undefined);
     });
 
@@ -351,9 +351,9 @@ describe('scanFolders', () => {
     api.invoke.mockImplementation((channel: string) => {
       if (channel === 'library:scan')
         return Promise.resolve({ count: 0, folderTypes: {}, aborted: true });
-      if (channel === 'library:loadScanned') {
+      if (channel === 'library:loadScannedChunk') {
         loadScannedCalls++;
-        return Promise.resolve({ files: [makeTrack('stale')], folderTypes: {} });
+        return Promise.resolve({ files: [makeTrack('stale')], total: 1, folderTypes: {} });
       }
       return Promise.resolve(undefined);
     });

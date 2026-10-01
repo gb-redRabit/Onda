@@ -1,186 +1,237 @@
-<script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useI18n } from 'vue-i18n';
+﻿<script setup lang="ts">
 import { useSettingsStore } from '@renderer/stores/settings';
-import { useYoutubeAuth } from '@renderer/composables/useYoutubeAuth';
-import type { YoutubeAuthMethod } from '@renderer/types/settings';
+import SettingsSectionTitle from '@renderer/components/settings/SettingsSectionTitle.vue';
+import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
+import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
+import FilenameTemplatePresets from '@renderer/components/FilenameTemplatePresets.vue';
+import { AUDIO_FORMATS, VIDEO_QUALITIES, VIDEO_CONTAINERS } from '@shared/constants';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
 
 const settings = useSettingsStore();
-const { t } = useI18n();
-const { status, refresh, ensureLoaded } = useYoutubeAuth();
-ensureLoaded();
 
-const methods: Array<{ value: YoutubeAuthMethod; labelKey: string }> = [
-  { value: 'none', labelKey: 'settings.authDisabled' },
-  { value: 'electron', labelKey: 'settings.authElectron' },
-  { value: 'manual', labelKey: 'settings.authManual' },
-  { value: 'browser', labelKey: 'settings.authBrowser' }
-];
-
-const browsers = [
-  { value: 'chrome', label: 'Chrome' },
-  { value: 'edge', label: 'Edge' },
-  { value: 'firefox', label: 'Firefox' },
-  { value: 'brave', label: 'Brave' },
-  { value: 'opera', label: 'Opera' },
-  { value: 'vivaldi', label: 'Vivaldi' },
-  { value: 'safari', label: 'Safari' }
-];
-
-const isBusy = ref(false);
-const errorMsg = ref('');
-
-const lastLoginText = computed(() => {
-  if (!status.value.lastLogin) return '';
-  return new Date(status.value.lastLogin).toLocaleString();
-});
-
-async function setMethod(m: YoutubeAuthMethod) {
-  settings.updateYoutube({ method: m });
-  await refresh();
-}
-
-async function refreshAll() {
-  await settings.load();
-  await refresh();
-}
-
-async function doLogin() {
-  isBusy.value = true;
-  errorMsg.value = '';
-  try {
-    const res = await window.api.invoke('yt:login');
-    if (res.error) errorMsg.value = res.error;
-    await refreshAll();
-  } finally {
-    isBusy.value = false;
-  }
-}
-
-async function doLogout() {
-  isBusy.value = true;
-  errorMsg.value = '';
-  try {
-    await window.api.invoke('yt:logout');
-    await refreshAll();
-  } finally {
-    isBusy.value = false;
-  }
-}
-
-async function doImport() {
-  isBusy.value = true;
-  errorMsg.value = '';
-  try {
-    const res = await window.api.invoke('yt:importCookies');
-    if (res.error) errorMsg.value = res.error;
-    await refreshAll();
-  } finally {
-    isBusy.value = false;
-  }
-}
-
-async function doExport() {
-  if (!window.confirm(t('settings.cookiesExportWarning'))) return;
-  await window.api.invoke('yt:exportCookies');
-}
-
-function onBrowserChange(e: Event) {
-  settings.updateYoutube({ cookiesBrowser: (e.target as HTMLSelectElement).value });
-}
+const audioFormats = AUDIO_FORMATS;
+const videoQualities = VIDEO_QUALITIES;
+const videoContainers = VIDEO_CONTAINERS;
+const audioQualities = ['best', 'high', 'medium', 'low'] as const;
+const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
 </script>
 
 <template>
-  <SettingsGroup
-    :title="$t('settings.googleAccount')"
-    :description="$t('settings.googleAccountDesc')"
-  >
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+  <SettingsGroup>
+    <SettingsRow :label="$t('settings.smartMode')" :description="$t('settings.smartModeDesc')">
+      <SettingsToggle
+        :model-value="settings.download.smartMode"
+        @update:model-value="settings.updateDownload({ smartMode: $event })"
+      />
+    </SettingsRow>
+  </SettingsGroup>
+
+  <SettingsGroup :title="$t('settings.defaultKind')">
+    <div class="flex gap-1 bg-base-200/(--glass-alpha) rounded-box p-1 w-fit">
       <button
-        v-for="m in methods"
-        :key="m.value"
-        class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors"
+        v-for="k in ['audio', 'video'] as const"
+        :key="k"
+        class="fx-noise px-4 py-2 fx-depth rounded-field text-sm font-medium transition-colors"
         :class="
-          settings.youtube.method === m.value
-            ? 'border-primary bg-primary/10 text-primary font-medium'
-            : 'border-base-300 text-base-content/70 hover:bg-base-content/10'
+          settings.download.defaultKind === k
+            ? 'bg-primary text-primary-content'
+            : 'text-base-content/70 hover:text-base-content'
         "
-        @click="setMethod(m.value)"
+        @click="settings.updateDownload({ defaultKind: k })"
       >
-        {{ $t(m.labelKey) }}
+        {{ k === 'audio' ? $t('youtube.prefAudio') : $t('youtube.prefVideo') }}
       </button>
     </div>
+  </SettingsGroup>
 
+  <SettingsGroup :title="$t('settings.defaultAudioFormat')">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <button
+        v-for="f in audioFormats"
+        :key="f"
+        class="fx-noise px-4 py-2 fx-depth rounded-field text-sm uppercase border transition-colors font-medium"
+        :class="
+          settings.download.defaultAudioFormat === f
+            ? 'border-primary bg-primary/10 text-primary'
+            : 'border-base-300 bg-base-100 text-base-content/70 hover:bg-base-content/10'
+        "
+        @click="settings.updateDownload({ defaultAudioFormat: f })"
+      >
+        {{ f === 'best' ? $t('settings.audioNative') : f }}
+      </button>
+    </div>
+  </SettingsGroup>
+
+  <SettingsGroup :title="$t('settings.defaultAudioQuality')">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <button
+        v-for="q in audioQualities"
+        :key="q"
+        class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors font-medium"
+        :class="
+          settings.download.defaultAudioQuality === q
+            ? 'border-primary bg-primary/10 text-primary'
+            : 'border-base-300 bg-base-100 text-base-content/70 hover:bg-base-content/10'
+        "
+        @click="settings.updateDownload({ defaultAudioQuality: q })"
+      >
+        {{ $t('settings.audioQuality.' + q) }}
+      </button>
+    </div>
+  </SettingsGroup>
+
+  <SettingsGroup :title="$t('settings.defaultVideoQuality')">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <button
+        v-for="q in videoQualities"
+        :key="q"
+        class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors"
+        :class="
+          settings.download.defaultVideoQuality === q
+            ? 'border-primary bg-primary/10 text-primary font-medium'
+            : 'border-base-300 bg-base-100 text-base-content/70 hover:bg-base-content/10'
+        "
+        @click="settings.updateDownload({ defaultVideoQuality: q })"
+      >
+        {{ q }}
+      </button>
+    </div>
+  </SettingsGroup>
+
+  <SettingsGroup :title="$t('settings.defaultVideoContainer')">
+    <div class="grid grid-cols-3 gap-2">
+      <button
+        v-for="c in videoContainers"
+        :key="c"
+        class="fx-noise px-4 py-2 fx-depth rounded-field text-sm uppercase border transition-colors font-medium"
+        :class="
+          settings.download.defaultVideoContainer === c
+            ? 'border-primary bg-primary/10 text-primary'
+            : 'border-base-300 bg-base-100 text-base-content/70 hover:bg-base-content/10'
+        "
+        @click="settings.updateDownload({ defaultVideoContainer: c })"
+      >
+        {{ c }}
+      </button>
+    </div>
+  </SettingsGroup>
+
+  <SettingsGroup :title="$t('settings.defaultCover')">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <button
+        v-for="c in coverTypes"
+        :key="c"
+        class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors font-medium"
+        :class="
+          settings.download.defaultCover === c
+            ? 'border-primary bg-primary/10 text-primary'
+            : 'border-base-300 bg-base-100 text-base-content/70 hover:bg-base-content/10'
+        "
+        @click="settings.updateDownload({ defaultCover: c })"
+      >
+        {{ $t('settings.cover.' + c) }}
+      </button>
+    </div>
+    <div v-if="settings.download.defaultCover === 'frame'" class="mt-3">
+      <SettingsSectionTitle
+        :title="`${$t('youtube.frameTimeLabel')}: ${settings.download.defaultCoverFrameTime}s`"
+      />
+      <input
+        type="range"
+        min="0"
+        max="300"
+        step="1"
+        :value="settings.download.defaultCoverFrameTime"
+        class="w-full"
+        @input="
+          settings.updateDownload({
+            defaultCoverFrameTime: parseInt(($event.target as HTMLInputElement).value)
+          })
+        "
+      />
+    </div>
+    <div v-else-if="settings.download.defaultCover === 'clip'" class="mt-3 grid grid-cols-2 gap-3">
+      <div>
+        <SettingsSectionTitle :title="$t('youtube.clipStartLabel')" />
+        <input
+          type="number"
+          min="0"
+          :value="settings.download.defaultCoverClipStart"
+          class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
+          @change="
+            settings.updateDownload({
+              defaultCoverClipStart: parseInt(($event.target as HTMLInputElement).value) || 0
+            })
+          "
+        />
+      </div>
+      <div>
+        <SettingsSectionTitle :title="$t('youtube.clipEndLabel')" />
+        <input
+          type="number"
+          min="1"
+          :value="settings.download.defaultCoverClipEnd"
+          class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
+          @change="
+            settings.updateDownload({
+              defaultCoverClipEnd: parseInt(($event.target as HTMLInputElement).value) || 30
+            })
+          "
+        />
+      </div>
+    </div>
+    <div class="mt-3">
+      <SettingsSectionTitle :title="$t('settings.clipFormat')" />
+      <select
+        :value="settings.download.defaultCoverClipFormat"
+        class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
+        @change="
+          settings.updateDownload({
+            defaultCoverClipFormat: ($event.target as HTMLSelectElement).value as 'webm' | 'mp4'
+          })
+        "
+      >
+        <option value="webm">WebM</option>
+        <option value="mp4">MP4</option>
+      </select>
+    </div>
+  </SettingsGroup>
+
+  <SettingsGroup>
+    <SettingsRow :label="$t('settings.defaultSubs')" :description="$t('settings.defaultSubsDesc')">
+      <SettingsToggle
+        :model-value="settings.download.defaultSubs"
+        @update:model-value="settings.updateDownload({ defaultSubs: $event })"
+      />
+    </SettingsRow>
+    <div v-if="settings.download.defaultSubs" class="pt-1">
+      <SettingsSectionTitle :title="$t('settings.defaultSubsLangs')" />
+      <input
+        :value="settings.download.defaultSubsLangs"
+        class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
+        :placeholder="$t('youtube.subsLangsPlaceholder')"
+        @change="
+          settings.updateDownload({
+            defaultSubsLangs: ($event.target as HTMLInputElement).value
+          })
+        "
+      />
+    </div>
+  </SettingsGroup>
+
+  <SettingsGroup :title="$t('settings.filenameTemplate')">
     <div class="flex items-center gap-2">
-      <div class="w-2 h-2 rounded-full" :class="status.loggedIn ? 'bg-success' : 'bg-base-300'" />
-      <span class="text-sm" :class="status.loggedIn ? 'text-base-content' : 'text-base-content/70'">
-        {{
-          status.loggedIn ? $t('settings.authStatusLoggedIn') : $t('settings.authStatusLoggedOut')
-        }}
-      </span>
-      <span v-if="lastLoginText" class="text-xs text-base-content/50">
-        · {{ $t('settings.authLastLogin') }} {{ lastLoginText }}
-      </span>
+      <input
+        :value="settings.download.filenameTemplate"
+        class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
+        @change="
+          settings.updateDownload({ filenameTemplate: ($event.target as HTMLInputElement).value })
+        "
+      />
+      <FilenameTemplatePresets @preset="settings.updateDownload({ filenameTemplate: $event })" />
     </div>
-
-    <div class="flex flex-wrap items-center gap-2">
-      <template v-if="settings.youtube.method === 'electron'">
-        <button
-          class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-          :disabled="isBusy"
-          @click="doLogin"
-        >
-          {{ $t('settings.loginWithGoogle') }}
-        </button>
-        <button
-          class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
-          :disabled="isBusy || !status.loggedIn"
-          @click="doLogout"
-        >
-          {{ $t('settings.logout') }}
-        </button>
-      </template>
-
-      <template v-else-if="settings.youtube.method === 'manual'">
-        <button
-          class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-          :disabled="isBusy"
-          @click="doImport"
-        >
-          {{ $t('settings.importCookies') }}
-        </button>
-        <button
-          v-if="status.cookiesPath"
-          class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
-          @click="doExport"
-        >
-          {{ $t('settings.exportCookies') }}
-        </button>
-        <button
-          class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
-          :disabled="isBusy || !status.loggedIn"
-          @click="doLogout"
-        >
-          {{ $t('settings.logout') }}
-        </button>
-      </template>
-
-      <template v-else-if="settings.youtube.method === 'browser'">
-        <select
-          class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
-          :value="settings.youtube.cookiesBrowser"
-          @change="onBrowserChange"
-        >
-          <option v-for="b in browsers" :key="b.value" :value="b.value">{{ b.label }}</option>
-        </select>
-        <span class="text-xs text-base-content/50">{{ $t('settings.authBrowserHint') }}</span>
-      </template>
-    </div>
-
-    <p v-if="errorMsg" class="text-xs text-error">{{ errorMsg }}</p>
-    <p v-if="settings.youtube.method !== 'none'" class="text-[11px] text-warning">
-      {{ $t('settings.cookiesSecurityHint') }}
+    <p class="text-xs text-base-content/50">
+      {{ $t('settings.available') }} {'{title}'}, {'{artist}'}, {'{album}'}, {'{year}'}
     </p>
   </SettingsGroup>
 </template>

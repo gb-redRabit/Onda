@@ -79,6 +79,31 @@ function onDragSeek(e: MouseEvent) {
   document.addEventListener('mousemove', onMove);
   document.addEventListener('mouseup', onUp);
 }
+
+const SEEK_STEP_SECONDS = 5;
+
+/**
+ * Keyboard equivalent of the drag-to-seek.
+ *
+ * The bar was a click-and-drag div with no role, no tabindex and no key
+ * handling, so playback position could not be moved without a pointer at all.
+ */
+function onTrackKey(e: KeyboardEvent) {
+  const total = audio.duration.value;
+  if (!(total > 0)) return;
+  let next: number | null = null;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowUp')
+    next = audio.currentTime.value + SEEK_STEP_SECONDS;
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown')
+    next = audio.currentTime.value - SEEK_STEP_SECONDS;
+  else if (e.key === 'Home') next = 0;
+  else if (e.key === 'End') next = total;
+  else if (e.key === 'PageUp') next = audio.currentTime.value + 30;
+  else if (e.key === 'PageDown') next = audio.currentTime.value - 30;
+  if (next === null) return;
+  e.preventDefault();
+  audio.seek(Math.max(0, Math.min(total, next)));
+}
 </script>
 
 <template>
@@ -93,7 +118,18 @@ function onDragSeek(e: MouseEvent) {
     >
       {{ formatDuration(audio.currentTime.value) }}
     </span>
-    <div :class="trackClass" @mousedown="onDragSeek">
+    <div
+      :class="trackClass"
+      role="slider"
+      tabindex="0"
+      :aria-label="$t('player.seekSlider')"
+      :aria-valuemin="0"
+      :aria-valuemax="Math.round(audio.duration.value)"
+      :aria-valuenow="Math.round(audio.currentTime.value)"
+      :aria-valuetext="`${formatDuration(audio.currentTime.value)} / ${formatDuration(audio.duration.value)}`"
+      @mousedown="onDragSeek"
+      @keydown="onTrackKey"
+    >
       <div :class="bufferedClass" :style="{ width: bufferedPct + '%' }" />
       <div
         v-if="isNeon"

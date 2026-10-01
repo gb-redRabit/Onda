@@ -1,13 +1,19 @@
-import { ref, watch, type Ref } from 'vue';
+import { onScopeDispose, ref, watch, type Ref } from 'vue';
+import { LruCache } from '@renderer/utils/lruCache';
 
 // Loads a remote image through the main process (which returns a cached `data:`
 // URL). Used for channel avatars/banners, which the renderer cannot always load
 // directly (host-specific network/Chromium quirks).
 
-const cache = new Map<string, string>();
+// Bounded so browsing many channels cannot accumulate base64 blobs forever.
+const cache = new LruCache<string>(200);
 
 export function useRemoteImage(url: Ref<string | undefined | null>): Ref<string | null> {
   const src = ref<string | null>(null);
+  let disposed = false;
+  onScopeDispose(() => {
+    disposed = true;
+  });
 
   watch(
     url,
@@ -23,6 +29,7 @@ export function useRemoteImage(url: Ref<string | undefined | null>): Ref<string 
       }
       try {
         const res = (await window.api?.invoke('media:remoteImage', u)) as string | null;
+        if (disposed) return;
         if (res) {
           cache.set(u, res);
           src.value = res;

@@ -1,7 +1,5 @@
-import { request as httpRequest } from 'http';
-import { request as httpsRequest } from 'https';
-import { createPinnedLookup, resolveNetworkTarget } from './network-target';
-import { urlAllowed, resolveRedirectUrl } from './plugins-guards';
+import { httpRequest } from './http-request';
+import { urlAllowed } from './plugins-guards';
 import {
   MAX_FETCH_BYTES,
   MAX_FETCH_TEXT_BYTES,
@@ -13,91 +11,22 @@ import type { PluginFetchOptions, PluginFetchResult } from '../../shared/types/i
 
 // Plugin network fetch (extracted from `plugins-handlers.ts`, plan 2.8). The
 // permission lookup stays in the handler: callers pass the plugin's resolved
-// network allowlist so this module is pure orchestration + HTTP transport.
+// network allowlist. The HTTP transport is shared with the media sources; the
+// allowlist redirect policy and the error codes stay plugin-specific.
 
-async function fetchRequest(
-  url: string,
-  opts: {
-    method: string;
-    headers: Record<string, string>;
-    body?: string;
-    timeoutMs: number;
-  },
-  onRedirect: (next: string) => boolean,
-  redirectsLeft = MAX_FETCH_REDIRECTS
-): Promise<{ status: number; statusText: string; headers: Record<string, string>; text: string }> {
-  let target: Awaited<ReturnType<typeof resolveNetworkTarget>>;
-  try {
-    target = await resolveNetworkTarget(url);
-  } catch (e) {
-    const err = e as { message?: string };
-    const message = err.message || String(e);
-    throw {
-      code: message.includes('Private network') ? 'forbidden' : 'network',
-      message
-    };
+/** Maps a transport error message to the plugin fetch error code. */
+function classifyFetchError(message: string): PluginFetchResult['code'] {
+  if (message === 'Timeout') return 'timeout';
+  if (message === 'Response too large') return 'too-large';
+  if (
+    message === 'Too many redirects' ||
+    message === 'Redirect not allowed' ||
+    message === 'Cross-origin redirect refused'
+  ) {
+    return 'redirect-loop';
   }
-  return new Promise((resolvePromise, reject) => {
-    const transport = target.url.protocol === 'https:' ? httpsRequest : httpRequest;
-    const req = transport(
-      target.url,
-      {
-        method: opts.method,
-        headers: { 'User-Agent': 'Onda-plugin/1.0', ...opts.headers },
-        lookup: createPinnedLookup(target.addresses)
-      },
-      (res) => {
-        const status = res.statusCode ?? 0;
-        if (status >= 300 && status < 400 && res.headers.location) {
-          res.resume();
-          if (redirectsLeft <= 0) {
-            reject({ code: 'redirect-loop', message: 'Too many redirects' });
-            return;
-          }
-          const next = resolveRedirectUrl(url, res.headers.location);
-          if (!next || !onRedirect(next)) {
-            reject({ code: 'redirect-loop', message: 'Redirect not allowed' });
-            return;
-          }
-          const sameOrigin = new URL(next).origin === target.url.origin;
-          if (!sameOrigin && opts.method !== 'GET') {
-            reject({ code: 'redirect-loop', message: 'Cross-origin redirect refused' });
-            return;
-          }
-          const nextOpts = sameOrigin ? opts : { ...opts, headers: {}, body: undefined };
-          fetchRequest(next, nextOpts, onRedirect, redirectsLeft - 1).then(resolvePromise, reject);
-          return;
-        }
-        let size = 0;
-        const chunks: Buffer[] = [];
-        res.on('data', (chunk: Buffer) => {
-          size += chunk.length;
-          if (size > MAX_FETCH_BYTES) {
-            req.destroy();
-            reject({ code: 'too-large', message: 'Response too large' });
-            return;
-          }
-          chunks.push(chunk);
-        });
-        res.on('end', () => {
-          resolvePromise({
-            status,
-            statusText: res.statusMessage || '',
-            headers: res.headers as Record<string, string>,
-            text: Buffer.concat(chunks).toString('utf-8')
-          });
-        });
-        res.on('error', (e) => reject({ code: 'network', message: e.message }));
-      }
-    );
-    req.setTimeout(opts.timeoutMs, () => {
-      req.destroy();
-      reject({ code: 'timeout', message: 'Timeout' });
-    });
-    req.on('error', (e) => reject({ code: 'network', message: e.message }));
-    if (opts.body) req.write(opts.body);
-    req.end();
-  });
+  if (/private network/i.test(message)) return 'forbidden';
+  return 'network';
 }
 
 export async function runPluginFetch(
@@ -118,16 +47,16 @@ export async function runPluginFetch(
       : DEFAULT_FETCH_TIMEOUT_MS;
   const timeoutMs = Math.min(requestedTimeout, MAX_FETCH_TIMEOUT_MS);
   try {
-    const result = await fetchRequest(
-      url,
-      {
-        method,
-        headers: options.headers || {},
-        body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-        timeoutMs
-      },
-      (next) => urlAllowed(next, allow)
-    );
+    const result = await httpRequest(url, {
+      method: method as 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+      headers: options.headers || {},
+      defaultHeaders: { 'User-Agent': 'Onda-plugin/1.0' },
+      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      timeoutMs,
+      maxBytes: MAX_FETCH_BYTES,
+      maxRedirects: MAX_FETCH_REDIRECTS,
+      onRedirect: (next) => urlAllowed(next, allow)
+    });
     if (result.text.length > MAX_FETCH_TEXT_BYTES) {
       return { success: false, error: 'Response too large', code: 'too-large' };
     }
@@ -143,15 +72,11 @@ export async function runPluginFetch(
       success: true,
       status: result.status,
       statusText: result.statusText,
-      headers: result.headers,
+      headers: result.headers as Record<string, string>,
       data
     };
   } catch (e) {
-    const err = e as { code?: string; message?: string };
-    return {
-      success: false,
-      error: err.message || String(e),
-      code: (err.code as PluginFetchResult['code']) || 'unknown'
-    };
+    const message = e instanceof Error ? e.message : String(e);
+    return { success: false, error: message, code: classifyFetchError(message) };
   }
 }

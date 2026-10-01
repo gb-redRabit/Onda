@@ -7,7 +7,9 @@ import type {
   ToastSettings,
   YoutubeAuthSettings,
   GeneralSettings,
-  HomeSettings
+  HomeSettings,
+  PlaybackSettings,
+  DownloadSettings
 } from '@renderer/types/settings';
 
 export * from './constants/audio';
@@ -29,6 +31,7 @@ export const DEFAULT_GENERAL: GeneralSettings = {
   startMinimized: false,
   closeToTray: true,
   restoreSession: false,
+  firstRunDone: false,
   logLevel: 'info' as const,
   logMaxSizeMB: 10
 };
@@ -47,7 +50,8 @@ export const DEFAULT_EXPLORER: ExplorerSettings = {
   viewMode: 'medium',
   sortBy: 'name',
   sortOrder: 'asc',
-  confirmBeforeMove: true
+  confirmBeforeMove: true,
+  permanentDelete: false
 };
 
 export const DEFAULT_API_KEYS: ApiKeySettings = {
@@ -117,7 +121,9 @@ export const DEFAULT_SHORTCUTS: Record<string, string> = {
 
 export * from './constants/appearance';
 
-export const DEFAULT_PLAYBACK = {
+// Annotated because the settings helper derives per-group patch types from
+// these, and an unannotated const widens every field to string/number/boolean.
+export const DEFAULT_PLAYBACK: PlaybackSettings = {
   normalization: false,
   replayGain: false,
   gaplessPlayback: true,
@@ -143,7 +149,7 @@ export const DEFAULT_PLAYBACK = {
   }
 };
 
-export const DEFAULT_DOWNLOAD = {
+export const DEFAULT_DOWNLOAD: DownloadSettings = {
   defaultPath: '',
   /** Globalny katalog ĹşrĂłdeĹ‚ (Sources/API); pusty = defaultPath/api (albo systemowe Pobrane/api). */
   sourcesDir: '',

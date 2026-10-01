@@ -1,5 +1,6 @@
 import { ref } from 'vue';
 import { logger } from '@shared/logger';
+import { clonePlain } from '@renderer/utils/clone';
 import type { useLibraryStore } from '@renderer/stores/library';
 import type { usePlayerStore } from '@renderer/stores/player';
 import type { MediaFile } from '@renderer/types/media';
@@ -26,20 +27,11 @@ interface LibraryMbApplyData {
   coverMime?: string;
 }
 
-// structuredClone can reject reactive proxies / Uint8Array in the renderer —
-// fall back to a JSON round-trip in that case.
-function cloneOrJson<T>(value: T): T {
-  try {
-    return structuredClone(value);
-  } catch {
-    return JSON.parse(JSON.stringify(value)) as T;
-  }
-}
 function persistScanned(library: ReturnType<typeof useLibraryStore>) {
   try {
     // używaj JSON jako fallback dla proxy / Uint8Array które structuredClone czasem odrzuca w rendererze
-    const files = cloneOrJson(library.tracks);
-    const folderTypes = cloneOrJson(library.folderTypes);
+    const files = clonePlain(library.tracks);
+    const folderTypes = clonePlain(library.folderTypes);
     window.api
       ?.invoke('library:saveScanned', { files, folderTypes })
       .catch((err) => logger.error('Library', 'saveScanned', err));
@@ -58,28 +50,24 @@ export function useLibraryTagEditor(
   function onTagSaved(tags: LibraryTagInput) {
     if (!editingTrack.value) return;
     const oldPath = editingTrack.value.path;
-    library.updateTrack(
-      oldPath,
-      (track) => {
-        track.metadata = {
-          ...(track.metadata || {}),
-          title: tags.title,
-          artist: tags.artist,
-          album: tags.album,
-          year: tags.year,
-          genre: tags.genre,
-          track: tags.track
-        };
-        if (tags.name) {
-          track.name = tags.name + (track.name.match(/\.[^.]+$/)?.[0] || '');
-        }
-        if (tags.path) {
-          track.path = tags.path;
-          track.id = tags.path;
-        }
-      },
-      true
-    );
+    library.updateTrack(oldPath, (track) => {
+      track.metadata = {
+        ...(track.metadata || {}),
+        title: tags.title,
+        artist: tags.artist,
+        album: tags.album,
+        year: tags.year,
+        genre: tags.genre,
+        track: tags.track
+      };
+      if (tags.name) {
+        track.name = tags.name + (track.name.match(/\.[^.]+$/)?.[0] || '');
+      }
+      if (tags.path) {
+        track.path = tags.path;
+        track.id = tags.path;
+      }
+    });
     if (tags.path) {
       player.invalidateCoverCache(oldPath);
     }
@@ -89,22 +77,18 @@ export function useLibraryTagEditor(
   function onMBApply(data: LibraryMbApplyData) {
     if (!editingTrack.value) return;
     const targetPath = editingTrack.value.path;
-    // użyj updateTrack żeby triggerRef i cache invalidation zadziałały poprawnie
-    library.updateTrack(
-      targetPath,
-      (track) => {
-        track.metadata = {
-          ...(track.metadata || {}),
-          title: data.title || track.metadata?.title,
-          artist: data.artist || track.metadata?.artist,
-          album: data.album || track.metadata?.album,
-          year: data.year || track.metadata?.year,
-          genre: data.genre || track.metadata?.genre,
-          track: data.track || track.metadata?.track
-        };
-      },
-      true
-    );
+    // updateTrack triggers the reactive refresh (triggerRef) the derived views need
+    library.updateTrack(targetPath, (track) => {
+      track.metadata = {
+        ...(track.metadata || {}),
+        title: data.title || track.metadata?.title,
+        artist: data.artist || track.metadata?.artist,
+        album: data.album || track.metadata?.album,
+        year: data.year || track.metadata?.year,
+        genre: data.genre || track.metadata?.genre,
+        track: data.track || track.metadata?.track
+      };
+    });
     if (data.coverData) {
       try {
         // wyślij jako Uint8Array (wydajniejsze niż number[] dla structuredClone)

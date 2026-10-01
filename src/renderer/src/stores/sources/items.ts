@@ -111,15 +111,20 @@ export function createSourcesItems(deps: SourcesItemsDeps) {
     loading.value = true;
     try {
       if (paginationMode.value === 'page') {
-        currentPage.value += 1;
+        const nextPage = currentPage.value + 1;
         const res = (await window.api.invoke('sources:fetch', toPlain(source), toPlain(endpoint), {
-          page: currentPage.value,
+          page: nextPage,
           context: toPlain(context.value)
         })) as SourceFetchResult;
         if (id !== loadId) return;
-        items.value = res?.items || [];
-        hasMore.value = (res?.items?.length ?? 0) > 0;
-        if (res?.error) lastError.value = res.error;
+        if (res?.error) {
+          // Do not advance the page on failure, or the next "more" skips a page.
+          lastError.value = res.error;
+        } else {
+          currentPage.value = nextPage;
+          items.value = res?.items || [];
+          hasMore.value = (res?.items?.length ?? 0) > 0;
+        }
       } else {
         if (!nextFrom.value) return;
         const res = (await window.api.invoke('sources:fetch', toPlain(source), toPlain(endpoint), {

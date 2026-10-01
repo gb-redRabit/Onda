@@ -7,7 +7,7 @@ import { buildThumbnailArgs, buildSectionArgs } from './cover-spec';
 import { buildSubtitleArgs } from './subtitle-args';
 import { buildSponsorBlockArgs } from './sponsorblock';
 import { readNetworkArgs, readSpeedLimitArgs } from '../ipc/proxy-utils';
-import { addAllowedRoot } from '../media-server';
+import { addAllowedRoot } from '../media/media-server';
 
 // Base yt-dlp argument list for a download job, extracted from
 // `download-manager.ts` (plan 2.8). Side effects are intentional: it ensures the

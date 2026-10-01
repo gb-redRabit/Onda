@@ -1,15 +1,33 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
 import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
+import type { SecretStorageStatus } from '@renderer/types/settings';
 
 const settings = useSettingsStore();
 const showAdd = ref(false);
 const newName = ref('');
 const newService = ref('generic');
 const newKey = ref('');
+
+/**
+ * Whether the OS can actually protect a key on this machine. Checked up front so
+ * the user is told before pasting a secret, not after believing it was saved:
+ * `weak` means no keyring was found and the value would only be obfuscated,
+ * `unavailable` means it cannot be stored at all.
+ */
+const secretStorage = ref<SecretStorageStatus | null>(null);
+onMounted(async () => {
+  try {
+    secretStorage.value = await window.api.invoke('settings:secretStorageStatus');
+  } catch {
+    // Older main process without the channel; treat as unknown rather than
+    // blocking the panel.
+    secretStorage.value = null;
+  }
+});
 
 function addKey() {
   if (!newName.value.trim() || !newKey.value.trim()) return;
@@ -42,6 +60,21 @@ function toggleActive(id: string, active: boolean) {
 
 <template>
   <SettingsGroup :title="$t('settings.apiKeysTitle')" :description="$t('settings.apiKeysDesc')">
+    <p
+      v-if="secretStorage !== null && secretStorage !== 'strong'"
+      class="mb-3 rounded-field border px-3 py-2 text-xs"
+      :class="
+        secretStorage === 'unavailable'
+          ? 'border-error/40 bg-error/10 text-error'
+          : 'border-warning/40 bg-warning/10 text-warning'
+      "
+    >
+      {{
+        secretStorage === 'unavailable'
+          ? $t('settings.secretStorageUnavailable')
+          : $t('settings.secretStorageWeak')
+      }}
+    </p>
     <div
       v-if="settings.apiKeys.keys.length === 0"
       class="py-4 text-center text-sm text-base-content/50"

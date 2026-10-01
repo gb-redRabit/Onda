@@ -4,6 +4,8 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { Monitor, Plus, Pin, PinOff, Copy } from '@lucide/vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
+import { clonePlain } from '@renderer/utils/clone';
+import { joinPath } from '@renderer/utils/path';
 import { useClipboardStore } from '@renderer/stores/clipboard';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
@@ -84,7 +86,7 @@ async function openImageViewer(index: number) {
     (f) => !f.isDirectory && f.extension && IMAGE_EXT_SET.has(f.extension)
   );
   const actualIndex = files.findIndex((f) => f.path === filteredFiles.value[index].path);
-  const plain = JSON.parse(JSON.stringify(files));
+  const plain = clonePlain(files);
   window.api?.invoke('imageViewer:open', plain, actualIndex >= 0 ? actualIndex : 0);
 }
 
@@ -114,7 +116,7 @@ const actions = useExplorerActions({
 async function createNewFolder() {
   const name = await showPrompt(t('explorer.newFolder'));
   if (!name || !name.trim()) return;
-  const path = explorer.currentPath ? explorer.currentPath + '\\' + name.trim() : name.trim();
+  const path = joinPath(explorer.currentPath, name.trim());
   const ok = await window.api?.invoke('fs:mkdir', path);
   if (ok) explorer.loadFiles(explorer.currentPath);
 }
@@ -178,13 +180,18 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex h-full" @dragover.prevent @drop.prevent="onWindowTabDrop">
+  <div
+    data-testid="explorer-view"
+    class="flex h-full"
+    @dragover.prevent
+    @drop.prevent="onWindowTabDrop"
+  >
     <ExplorerNavPane />
     <div class="flex flex-col flex-1 min-w-0 relative" @dragover.prevent @drop.prevent>
       <ExplorerTabs />
 
       <div
-        class="ui-page-toolbar flex items-center gap-2 px-3 py-2 border-b border-base-300 bg-base-200/(--glass-alpha)"
+        class="ui-page-toolbar relative z-20 flex flex-wrap items-center gap-2 px-3 py-2 border-b border-base-300 bg-base-200/(--glass-alpha)"
       >
         <ExplorerBreadcrumb />
 
@@ -199,6 +206,7 @@ onBeforeUnmount(() => {
               ? 'text-primary bg-primary/10'
               : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
           "
+          data-testid="explorer-always-on-top"
           :title="$t('explorer.alwaysOnTop')"
           :aria-label="$t('explorer.alwaysOnTop')"
           @click="togglePin"
@@ -217,6 +225,7 @@ onBeforeUnmount(() => {
               ? 'text-primary bg-primary/10'
               : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
           "
+          data-testid="explorer-duplicates"
           :title="$t('explorer.duplicates')"
           :aria-label="$t('explorer.duplicates')"
           @click="toggleDuplicatesPanel"
@@ -226,6 +235,7 @@ onBeforeUnmount(() => {
 
         <button
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
+          data-testid="explorer-new-folder"
           :title="$t('explorer.newFolder')"
           :aria-label="$t('explorer.newFolder')"
           @click="createNewFolder"
@@ -235,6 +245,7 @@ onBeforeUnmount(() => {
 
         <button
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
+          data-testid="explorer-open-window"
           :title="$t('explorer.openInWindow')"
           :aria-label="$t('explorer.openInWindow')"
           @click="openInWindow"

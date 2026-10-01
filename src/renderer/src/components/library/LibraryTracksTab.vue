@@ -180,6 +180,7 @@ onUnmounted(() => {
         </button>
         <div class="w-px h-6 bg-base-300 mx-1"></div>
         <button
+          data-testid="library-play-all"
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors fx-depth fx-noise"
           @click="emit('playAll')"
         >

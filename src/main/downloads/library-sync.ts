@@ -1,5 +1,5 @@
 import { dirname, resolve, sep } from 'path';
-import type { MediaFile } from '../../renderer/src/types/media';
+import type { MediaFile } from '../../shared/types/media';
 import { getStore } from '../ipc/cover-cache';
 import { loadLibraryScanned, setLibraryScanned } from '../ipc/library-store';
 import { scanDir, classifyFolderType, filterFilesForFolderType } from '../ipc/library-scan';

@@ -1,4 +1,4 @@
-import type { AppSettings } from '../../renderer/src/types/settings';
+import type { AppSettings } from '../../shared/types/settings';
 import {
   isPlainObject,
   str,
@@ -19,7 +19,7 @@ import {
   sizeMultiplier,
   type Sanitizer
 } from './settings-sanitizers';
-import { migrateAppearance, pipElementArray } from './settings-migrations';
+import { migrateAppearance, migrateSettingsPayload, pipElementArray, SETTINGS_VERSION } from './settings-migrations';
 
 const GEOMETRY_FIELDS: Record<string, Sanitizer> = {
   radiusBox: numClamped(0, 32),
@@ -162,7 +162,8 @@ const EXPLORER_FIELDS: Record<string, Sanitizer> = {
   viewMode: enumOf(['extraSmall', 'small', 'medium', 'large', 'extraLarge', 'details']),
   sortBy: enumOf(['name', 'size', 'type', 'modified']),
   sortOrder: enumOf(['asc', 'desc']),
-  confirmBeforeMove: bool
+  confirmBeforeMove: bool,
+  permanentDelete: bool
 };
 
 const LIBRARY_FIELDS: Record<string, Sanitizer> = {
@@ -226,6 +227,7 @@ const GENERAL_FIELDS: Record<string, Sanitizer> = {
   startMinimized: bool,
   closeToTray: bool,
   restoreSession: bool,
+  firstRunDone: bool,
   logLevel: enumOf(['debug', 'info', 'warn', 'error']),
   logMaxSizeMB: numClamped(1, 100)
 };
@@ -310,6 +312,7 @@ const HOME_FIELDS: Record<string, Sanitizer> = {
 };
 
 const TOP_LEVEL: Record<string, Sanitizer> = {
+  version: num,
   general: obj(GENERAL_FIELDS),
   appearance: (v) => obj(APPEARANCE_FIELDS)(migrateAppearance(v)),
   playback: obj(PLAYBACK_FIELDS),
@@ -344,9 +347,10 @@ interface SanitizedSettings {
  */
 export function sanitizeSettings(raw: unknown): SanitizedSettings {
   if (!isPlainObject(raw)) return { sanitized: {}, droppedKeys: ['(root)'] };
+  const migrated = migrateSettingsPayload(raw);
   const sanitized: Record<string, unknown> = {};
   const droppedKeys: string[] = [];
-  for (const [key, value] of Object.entries(raw)) {
+  for (const [key, value] of Object.entries(migrated)) {
     const fn = TOP_LEVEL[key];
     if (!fn) {
       droppedKeys.push(key);
@@ -359,5 +363,8 @@ export function sanitizeSettings(raw: unknown): SanitizedSettings {
       sanitized[key] = cleaned;
     }
   }
+  // Always stamp the schema version, regardless of what the caller sent, so the
+  // persisted payload carries the version the app wrote it with.
+  sanitized.version = SETTINGS_VERSION;
   return { sanitized: sanitized as Partial<AppSettings>, droppedKeys };
 }

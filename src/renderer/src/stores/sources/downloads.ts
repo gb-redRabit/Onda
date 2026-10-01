@@ -1,3 +1,4 @@
+import { ref, watch } from 'vue';
 import type { ComputedRef } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import type { MediaSource, SourceItem } from '@renderer/types/sources';
@@ -14,6 +15,58 @@ export interface SourcesDownloadsDeps {
 export function createSourcesDownloads(deps: SourcesDownloadsDeps) {
   const { activeSource } = deps;
   const settings = useSettingsStore();
+
+  // API ids of items already downloaded for the active source. Kept as a fresh
+  // Set on every mutation so Vue re-renders dependents reliably.
+  const downloadedIds = ref<Set<string>>(new Set());
+
+  async function loadDownloaded(sourceId: string): Promise<void> {
+    if (!sourceId) {
+      downloadedIds.value = new Set();
+      return;
+    }
+    try {
+      const ids = (await window.api?.invoke('sources:downloaded', sourceId)) as
+        string[] | undefined;
+      downloadedIds.value = new Set(ids ?? []);
+    } catch (e) {
+      logger.warn('sources', 'loadDownloaded failed', e);
+      downloadedIds.value = new Set();
+    }
+  }
+
+  function markDownloaded(itemId: string): void {
+    if (!itemId || downloadedIds.value.has(itemId)) return;
+    downloadedIds.value = new Set(downloadedIds.value).add(itemId);
+  }
+
+  // Reload whenever the active source changes (also on first resolution).
+  watch(
+    () => activeSource.value?.id ?? null,
+    (id) => void loadDownloaded(id ?? ''),
+    { immediate: true }
+  );
+
+  // A download that finishes while the view is open marks its item at once.
+  // The main process already persisted it, so a later fetch stays consistent.
+  let subscribed = false;
+  function subscribeDownloadProgress(): void {
+    if (subscribed) return;
+    subscribed = true;
+    window.api?.on('yt:downloadProgress', (raw) => {
+      const task = raw as {
+        status?: string;
+        source?: { sourceId?: string; sourceItemId?: string };
+      };
+      if (task?.status !== 'completed') return;
+      const sourceId = task.source?.sourceId;
+      const itemId = task.source?.sourceItemId;
+      if (!sourceId || !itemId) return;
+      if (activeSource.value?.id !== sourceId) return;
+      markDownloaded(itemId);
+    });
+  }
+  subscribeDownloadProgress();
 
   async function enqueueDownload(
     item: SourceItem,
@@ -64,6 +117,8 @@ export function createSourcesDownloads(deps: SourcesDownloadsDeps) {
   }
 
   return {
+    downloadedIds,
+    loadDownloaded,
     enqueueDownload,
     enqueueAll
   };

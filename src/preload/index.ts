@@ -57,22 +57,27 @@ function trySend(channel: string, ...args: unknown[]): void {
 
 // Every invoke goes through this guard — the generated allowlist is the single
 // source of truth, so typed wrappers cannot silently bypass it.
+//
+// Errors are propagated to the renderer instead of being swallowed into
+// `undefined`: a failed handler (missing file, denied permission, network
+// error) must be catchable by the caller so the UI can show feedback rather
+// than silently doing nothing.
 function tryInvoke<C extends IpcChannel>(channel: C, ...args: IpcArgs<C>): Promise<IpcResult<C>>;
 function tryInvoke(channel: string, ...args: unknown[]): Promise<unknown>;
 function tryInvoke(channel: string, ...args: unknown[]): Promise<unknown> {
   if (!ALLOWED_INVOKE_CHANNELS.has(channel)) {
-    logger.warn('preload', `IPC invoke on non-allowlisted channel '${channel}' blocked`);
-    return Promise.resolve(undefined);
+    const message = `IPC invoke on non-allowlisted channel '${channel}' blocked`;
+    logger.warn('preload', message);
+    return Promise.reject(new Error(message));
   }
   try {
-    const p = ipcRenderer.invoke(channel, ...args);
-    return p.catch((e) => {
+    return ipcRenderer.invoke(channel, ...args).catch((e) => {
       logger.error('preload', `IPC invoke rejected on '${channel}'`, e);
-      return undefined;
+      throw e instanceof Error ? e : new Error(String(e));
     });
   } catch (e) {
     logger.error('preload', `IPC invoke failed on '${channel}'`, e);
-    return Promise.resolve(undefined);
+    return Promise.reject(e instanceof Error ? e : new Error(String(e)));
   }
 }
 
@@ -129,6 +134,10 @@ const api: OndaAPI = {
   },
   pipStop: async (): Promise<boolean> => {
     const r = await tryInvoke('pip:stop');
+    return !!r;
+  },
+  pipRestore: async (): Promise<boolean> => {
+    const r = await tryInvoke('pip:restore');
     return !!r;
   },
   pipPreviewStart: async (opts: {
@@ -245,8 +254,6 @@ const api: OndaAPI = {
     releases: MusicbrainzRelease[];
     error?: string;
   }> => tryInvoke('musicbrainz:autodetect', query),
-  musicbrainzBatchApply: (payload: unknown): Promise<{ success: boolean; error?: string }> =>
-    tryInvoke('musicbrainz:batchApply', payload),
   getFilePath: (file: File): string => webUtils.getPathForFile(file),
   listEmbeddedSubtitles: (
     filePath: string

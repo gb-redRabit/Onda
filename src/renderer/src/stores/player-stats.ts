@@ -25,17 +25,17 @@ export function usePlayerStats() {
   function recordPlay(track: MediaFile) {
     if (!track?.path) return;
     const library = useLibraryStore();
-    let found = false;
-    library.updateTrack(track.path, (t) => {
+    // Single lookup: `updateTrackStats` returns the updated track, so there is
+    // no second O(n) `find` over a 50k array on every play.
+    const updated = library.updateTrackStats(track.path, (t) => {
       t.playCount = (t.playCount || 0) + 1;
       t.lastPlayed = Date.now();
-      found = true;
     });
-    if (found) {
-      const t = library.tracks.find((x) => x.path === track.path);
-      if (t) {
-        pendingStats.set(track.path, { playCount: t.playCount, lastPlayed: t.lastPlayed! });
-      }
+    if (updated) {
+      pendingStats.set(track.path, {
+        playCount: updated.playCount,
+        lastPlayed: updated.lastPlayed!
+      });
       persistStats();
     }
   }

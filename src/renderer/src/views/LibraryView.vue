@@ -268,7 +268,7 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
 </script>
 
 <template>
-  <div class="flex flex-col h-full">
+  <div data-testid="library-view" class="flex flex-col h-full">
     <!-- Sticky glass header — Minimal Spotify -->
     <div class="ui-page-header sticky top-0 z-10 backdrop-blur border-b border-base-300 shrink-0">
       <div class="px-4 pt-4 pb-3">

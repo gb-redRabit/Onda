@@ -5,7 +5,7 @@ import { join, extname, basename, dirname } from 'path';
 import { exec as execCb } from 'child_process';
 import { promisify } from 'util';
 import { logger } from '../../shared/logger';
-import type { FileItem } from '../../renderer/src/types/explorer';
+import type { FileItem } from '../../shared/types/explorer';
 
 const execAsync = promisify(execCb);
 

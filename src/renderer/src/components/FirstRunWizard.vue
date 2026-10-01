@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { X, ArrowLeft, ArrowRight, Check } from '@lucide/vue';
 import { useLibraryStore } from '@renderer/stores/library';
 import { useUIStore } from '@renderer/stores/ui';
+import { useSettingsStore } from '@renderer/stores/settings';
 import WizardWelcome from './wizard/WizardWelcome.vue';
 import WizardLibrary from './wizard/WizardLibrary.vue';
 import WizardDownload from './wizard/WizardDownload.vue';
@@ -19,6 +20,7 @@ const emit = defineEmits<{ close: [] }>();
 const { t } = useI18n();
 const library = useLibraryStore();
 const ui = useUIStore();
+const settings = useSettingsStore();
 
 const steps: Component[] = [
   WizardWelcome,
@@ -43,6 +45,8 @@ const stepProps = computed(() =>
 );
 
 function markDone() {
+  // Persist in settings (covered by export/import), keep localStorage as a hint.
+  settings.updateGeneral({ firstRunDone: true });
   try {
     localStorage.setItem('onda-first-run-done', '1');
   } catch {
@@ -77,6 +81,7 @@ function skipAll() {
 
 <template>
   <div
+    data-testid="wizard"
     class="fixed inset-0 z-50 bg-neutral/60 backdrop-blur-sm flex items-center justify-center p-6"
     @click.self="skipAll"
   >
@@ -89,6 +94,7 @@ function skipAll() {
             {{ t('wizard.title') }}
           </div>
           <button
+            data-testid="wizard-close"
             class="p-1.5 rounded hover:bg-base-content/10 text-base-content/50 hover:text-base-content transition-colors"
             :title="t('wizard.later')"
             @click="skipAll"
@@ -98,16 +104,17 @@ function skipAll() {
         </div>
         <div class="mt-2 h-1.5 rounded-full bg-base-300 overflow-hidden">
           <div
+            data-testid="wizard-progress"
             class="h-full rounded-full bg-primary transition-all duration-300"
             :style="{ width: progress + '%' }"
           />
         </div>
-        <div class="mt-1.5 text-[11px] text-base-content/40">
+        <div data-testid="wizard-step-indicator" class="mt-1.5 text-[11px] text-base-content/40">
           {{ t('wizard.step', { current: current + 1, total }) }}
         </div>
       </header>
 
-      <main class="px-6 py-5 overflow-y-auto">
+      <main data-testid="wizard-step-body" :data-step="current" class="px-6 py-5 overflow-y-auto">
         <component :is="steps[current]" v-bind="stepProps" @update:scan-now="scanNow = $event" />
       </main>
 
@@ -123,6 +130,7 @@ function skipAll() {
         <div class="flex-1" />
 
         <button
+          data-testid="wizard-back"
           class="fx-noise px-3.5 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5"
           :disabled="isFirst"
           @click="back"
@@ -132,6 +140,7 @@ function skipAll() {
         </button>
 
         <button
+          data-testid="wizard-next"
           class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-1.5"
           @click="next"
         >

@@ -23,13 +23,13 @@ const { t } = useI18n();
     <div v-if="subsEnabled" class="mt-2 space-y-2">
       <input
         v-model="subsLangs"
-        class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
+        class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
         :placeholder="t('youtube.subsLangsPlaceholder')"
       />
       <div class="grid grid-cols-2 gap-2">
         <select
           v-model="subsMode"
-          class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
+          class="px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
         >
           <option value="best">{{ t('youtube.subsModeBest') }}</option>
           <option value="manual">{{ t('youtube.subsModeManual') }}</option>
@@ -37,7 +37,7 @@ const { t } = useI18n();
         </select>
         <select
           v-model="subsFormat"
-          class="px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
+          class="px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
         >
           <option value="srt">SRT</option>
           <option value="vtt">VTT</option>

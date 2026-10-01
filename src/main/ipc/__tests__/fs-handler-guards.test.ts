@@ -47,13 +47,15 @@ vi.mock('child_process', async (importOriginal) => {
 });
 
 // media-handlers imports addAllowedRoot from src/main/media-server, which is
-// two levels up from this test file.
-vi.mock('../../media-server', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../media-server')>();
+// two levels up from this test file. The mock mirrors the real signature: the
+// handler branches on whether the root was actually stored.
+vi.mock('../../media/media-server', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../media/media-server')>();
   return {
     ...actual,
-    addAllowedRoot: async (root: string) => {
+    addAllowedRoot: async (root: string): Promise<boolean> => {
       grantedRoots.push(root);
+      return true;
     }
   };
 });
@@ -222,10 +224,25 @@ describe('exploratory fs channels validate their arguments', () => {
     expect(grantedRoots).toEqual([]);
   });
 
-  it('media:grantAccess accepts an ordinary media folder', async () => {
+  it('media:grantAccess accepts an existing media file', async () => {
     const track = join(mediaDir, 'track.mp3');
     expect(await invoke('media:grantAccess', track)).toBe(true);
-    expect(grantedRoots).toEqual([track, mediaDir]);
+    // Only the containing directory: adding the file as a root too doubled the
+    // allowlist for the common case of one track in a folder.
+    expect(grantedRoots).toEqual([mediaDir]);
+  });
+
+  it('media:grantAccess refuses a path that does not exist', async () => {
+    // A grant for a path that is not there can only inflate the allowlist, so
+    // it is refused outright rather than stored.
+    const missing = join(mediaDir, 'not-here.mp3');
+    expect(await invoke('media:grantAccess', missing)).toBe(false);
+    expect(grantedRoots).toEqual([]);
+  });
+
+  it('media:grantAccess grants a directory itself when asked for one', async () => {
+    expect(await invoke('media:grantAccess', mediaDir)).toBe(true);
+    expect(grantedRoots).toEqual([mediaDir]);
   });
 
   it('fs:copyPath refuses an oversized string', async () => {

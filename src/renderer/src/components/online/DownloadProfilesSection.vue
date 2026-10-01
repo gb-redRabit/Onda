@@ -25,7 +25,7 @@ const { t } = useI18n();
     <div class="flex items-center gap-2">
       <select
         :value="selectedId"
-        class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
+        class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
         @change="onChange"
       >
         <option value="">{{ t('youtube.profileNone') }}</option>
@@ -43,7 +43,7 @@ const { t } = useI18n();
     <div class="flex items-center gap-2 mt-2">
       <input
         v-model="profileName"
-        class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
+        class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
         :placeholder="t('youtube.profileNamePlaceholder')"
       />
       <button

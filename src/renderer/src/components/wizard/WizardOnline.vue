@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import WizardStep from './WizardStep.vue';
 import { onMounted } from 'vue';
 import { LogIn, Check } from '@lucide/vue';
 import { useYoutubeAuth } from '@renderer/composables/useYoutubeAuth';
@@ -13,8 +14,7 @@ onMounted(() => {
 
 <template>
   <div>
-    <h3 class="text-lg font-bold tracking-tight mb-1.5">{{ $t('wizard.onlineTitle') }}</h3>
-    <p class="text-sm text-base-content/70">{{ $t('wizard.onlineDesc') }}</p>
+    <WizardStep :title="$t('wizard.onlineTitle')" :description="$t('wizard.onlineDesc')" />
 
     <div
       class="mt-5 flex items-center gap-4 p-4 fx-depth rounded-box border border-base-300 bg-base-200/(--glass-alpha)"

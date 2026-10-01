@@ -142,6 +142,7 @@ function onFileDrop(e: DragEvent) {
 
 <template>
   <div
+    data-testid="queue-panel"
     class="h-full flex flex-col bg-base-100 border-l border-base-300"
     @dragover.prevent
     @drop="onFileDrop"
@@ -154,6 +155,7 @@ function onFileDrop(e: DragEvent) {
       <div class="flex items-center gap-1">
         <button
           v-if="player.displayQueue.length"
+          data-testid="queue-clear"
           class="text-[11px] text-base-content/50 hover:text-error transition-colors px-2 py-1"
           @click="player.clearQueue"
         >
@@ -194,6 +196,7 @@ function onFileDrop(e: DragEvent) {
     <!-- drop hint when empty -->
     <div
       v-if="player.displayQueue.length === 0"
+      data-testid="queue-empty"
       class="flex-1 flex flex-col items-center justify-center py-12 text-base-content/50"
     >
       <Music2 :size="32" class="mb-2 opacity-30" />
@@ -220,6 +223,7 @@ function onFileDrop(e: DragEvent) {
           }"
         >
           <div
+            :data-testid="'queue-row-' + v.index"
             class="flex items-center gap-2 px-4 py-2 hover:bg-base-content/10 transition-colors group cursor-pointer"
             :class="{ 'border-t-2 border-primary': dragOverIndex === v.index }"
             draggable="true"

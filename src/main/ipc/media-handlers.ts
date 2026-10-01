@@ -25,7 +25,7 @@ import {
 } from './media-transcode';
 import { isSafeAbsolutePath, isSafeStringArray } from '../utils/validate';
 import { isProtectedPath } from '../path-policy';
-import { addAllowedRoot } from '../media-server';
+import { addAllowedRoot } from '../media/media-server';
 
 export async function getDuration(filePath: string): Promise<number> {
   const cached = durationCache.get(filePath);
@@ -307,7 +307,7 @@ export function registerMediaHandlers(): void {
   //
   // The grant is persisted, so it must not be a way to hand the media server
   // (and therefore a compromised renderer) a system directory. `extraRoots` is
-  // a plain path list with no other gate, so the shape check is the only thing
+  // a plain path list with no other gate, so the checks below are all that is
   // between a caller and read access to whatever the main process can open.
   ipcMain.handle('media:grantAccess', async (_event, filePath: unknown): Promise<boolean> => {
     if (!isSafeAbsolutePath(filePath)) return false;
@@ -315,9 +315,30 @@ export function registerMediaHandlers(): void {
       logger.warn('media', `media:grantAccess rejected protected path: ${filePath}`);
       return false;
     }
-    await addAllowedRoot(filePath);
-    await addAllowedRoot(dirname(filePath));
-    return true;
+    // A grant for something that is not there can only inflate the allowlist, so
+    // it is refused outright. Existence is also the one piece of evidence the
+    // main process has that this is a real media file and not a guess.
+    let isFile = false;
+    try {
+      isFile = (await stat(filePath)).isFile();
+    } catch {
+      logger.warn('media', `media:grantAccess rejected missing path: ${filePath}`);
+      return false;
+    }
+
+    // The containing directory is what playback actually needs. Adding the file
+    // itself as a root is only useful when nothing else covers it, and adding
+    // both doubled the list for the common case of one track in a folder.
+    const parent = dirname(filePath);
+    if (!isFile) {
+      const ok = await addAllowedRoot(filePath);
+      return ok;
+    }
+    const parentAdded = await addAllowedRoot(parent);
+    if (parentAdded) return true;
+    // The parent is already granted or the list is full — the file itself is
+    // still enough to play this one track.
+    return addAllowedRoot(filePath);
   });
 
   ipcMain.handle('media:getDuration', async (_event, filePath: string): Promise<number> => {

@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'net';
 import type { NetworkTargetOptions } from '../ipc/network-target';
-import { createMediaServer, type MediaServer } from '../media-server';
+import { createMediaServer, type MediaServer } from '../media/media-server';
 
 // A radio station is a user-added host, and `/stream` is reachable from the
 // renderer — so a station resolving to a private address turned the media

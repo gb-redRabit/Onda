@@ -13,7 +13,9 @@ const includeFields = defineModel<Record<string, boolean>>('includeFields', { re
 
 <template>
   <div class="border border-base-300 rounded-field overflow-hidden">
-    <div class="bg-base-300/50 px-2 py-1 text-[11px] font-medium">Podgląd zmian</div>
+    <div class="bg-base-300/50 px-2 py-1 text-[11px] font-medium">
+      {{ $t('musicbrainz.previewChanges') }}
+    </div>
     <div
       v-for="row in rows"
       :key="row.key"

@@ -16,12 +16,13 @@ import { iconSourcePath } from '../utils/file-icon';
 import { spawn } from 'child_process';
 import { errMsg } from '../../shared/helpers';
 import { logger } from '../../shared/logger';
-import type { FileItem } from '../../renderer/src/types/explorer';
+import type { FileItem } from '../../shared/types/explorer';
 import { getDrives, getFileItem, stripDuplicateSuffix, fileHash, uniqueDestPath } from './fs-utils';
 import { getFileProperties } from './fs-properties';
 import { isSafeAbsolutePath, isSafeStringArray } from '../utils/validate';
 import { readTextFileWithinBounds, TEXT_EXTS, TEXT_MAX_BYTES } from '../utils/read-text-file';
 import { isProtectedPath, parentOf } from '../path-policy';
+import { getStore } from './cover-cache';
 
 // `fs:findDuplicates` hashes candidate files. The explorer's use case is a
 // folder of media, so these bounds are far above a normal library and only
@@ -99,7 +100,7 @@ export function registerFsHandlers(): void {
       event.sender.send('fs:readdir:batch', { done: true, items: await getDrives() });
       return;
     }
-    const resolvedPath = /^[A-Z]:$/i.test(dirPath) ? `${dirPath}\\` : dirPath;
+    const resolvedPath = dirPath;
     let entries;
     try {
       entries = await readdir(resolvedPath, { withFileTypes: true });
@@ -162,13 +163,23 @@ export function registerFsHandlers(): void {
       return false;
     }
     try {
-      const s = await lstat(filePath);
-      if (s.isSymbolicLink()) {
-        await unlink(filePath);
-      } else if (s.isDirectory()) {
-        await rm(filePath, { recursive: true, force: true });
+      const explorer = (await getStore()).get('explorer') as
+        { permanentDelete?: boolean } | undefined;
+      if (explorer?.permanentDelete) {
+        // Explicit opt-in: irreversible delete.
+        const s = await lstat(filePath);
+        if (s.isSymbolicLink()) {
+          await unlink(filePath);
+        } else if (s.isDirectory()) {
+          await rm(filePath, { recursive: true, force: true });
+        } else {
+          await unlink(filePath);
+        }
       } else {
-        await unlink(filePath);
+        // Safe default: the OS Trash / Recycle Bin, so a mistake is recoverable.
+        // If the Trash is unavailable we fail the operation rather than falling
+        // back to an irreversible delete.
+        await shell.trashItem(filePath);
       }
       return true;
     } catch (e) {
@@ -194,7 +205,7 @@ export function registerFsHandlers(): void {
         continue;
       }
       try {
-        const name = src.split('\\').pop() || src.split('/').pop() || '';
+        const name = basename(src);
         const dest = await uniqueDestPath(join(destination, name));
         if (src.toLowerCase() === dest.toLowerCase()) {
           continue;
@@ -202,7 +213,7 @@ export function registerFsHandlers(): void {
         await rename(src, dest);
       } catch {
         try {
-          const name = src.split('\\').pop() || src.split('/').pop() || '';
+          const name = basename(src);
           const dest = await uniqueDestPath(join(destination, name));
           const s = await lstat(src);
           if (s.isDirectory()) {
@@ -233,7 +244,7 @@ export function registerFsHandlers(): void {
     for (const src of paths) {
       if (!isSafeAbsolutePath(src)) continue;
       try {
-        const name = src.split('\\').pop() || src.split('/').pop() || '';
+        const name = basename(src);
         const dest = await uniqueDestPath(join(destination, name));
         const s = await lstat(src);
         if (s.isDirectory()) {
@@ -387,25 +398,18 @@ export function registerFsHandlers(): void {
       // Executable files can run arbitrary code — require explicit confirmation.
       if (EXECUTABLE_EXTS.has(ext)) {
         const win = BrowserWindow.fromWebContents(event.sender);
+        const options: Electron.MessageBoxOptions = {
+          type: 'warning',
+          buttons: ['Anuluj', 'Otwórz'],
+          defaultId: 0,
+          cancelId: 0,
+          title: 'Otwieranie pliku wykonywalnego',
+          message: `Czy na pewno chcesz otworzyć plik wykonywalny?\n${filePath}`,
+          detail: 'Uruchamianie nieznanych plików wykonywalnych może być niebezpieczne.'
+        };
         const { response } = win
-          ? await dialog.showMessageBox(win, {
-              type: 'warning',
-              buttons: ['Anuluj', 'Otwórz'],
-              defaultId: 0,
-              cancelId: 0,
-              title: 'Otwieranie pliku wykonywalnego',
-              message: `Czy na pewno chcesz otworzyć plik wykonywalny?\n${filePath}`,
-              detail: 'Uruchamianie nieznanych plików wykonywalnych może być niebezpieczne.'
-            })
-          : await dialog.showMessageBox({
-              type: 'warning',
-              buttons: ['Anuluj', 'Otwórz'],
-              defaultId: 0,
-              cancelId: 0,
-              title: 'Otwieranie pliku wykonywalnego',
-              message: `Czy na pewno chcesz otworzyć plik wykonywalny?\n${filePath}`,
-              detail: 'Uruchamianie nieznanych plików wykonywalnych może być niebezpieczne.'
-            });
+          ? await dialog.showMessageBox(win, options)
+          : await dialog.showMessageBox(options);
         if (response !== 1) return;
       }
       const real = await realpath(filePath);

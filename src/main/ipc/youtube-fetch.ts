@@ -1,6 +1,6 @@
 import { runCommand } from '../utils/exec';
 import { resolveBin } from '../binaries';
-import { getYtAuthConfig, cleanupYtAuthTemp } from '../youtube-auth';
+import { getYtAuthConfig, cleanupYtAuthTemp } from '../youtube/youtube-auth';
 import { buildYtArgs, type YtDlpEntry } from './youtube-utils';
 import { readNetworkArgs } from './proxy-utils';
 

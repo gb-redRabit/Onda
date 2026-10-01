@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import WizardStep from './WizardStep.vue';
 import { PictureInPicture, Tv2 } from '@lucide/vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
@@ -14,8 +15,7 @@ const docks = [
 
 <template>
   <div>
-    <h3 class="text-lg font-bold tracking-tight mb-1.5">{{ $t('wizard.pipTitle') }}</h3>
-    <p class="text-sm text-base-content/70">{{ $t('wizard.pipDesc') }}</p>
+    <WizardStep :title="$t('wizard.pipTitle')" :description="$t('wizard.pipDesc')" />
 
     <div class="mt-5 space-y-3">
       <div

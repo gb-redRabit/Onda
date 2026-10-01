@@ -7,6 +7,7 @@ import OnlineIconButton from './OnlineIconButton.vue';
 import OnlineBadge from './OnlineBadge.vue';
 import { useContextMenu, type ContextMenuAction } from '@renderer/composables/useContextMenu';
 import { useRemoteImage } from '@renderer/composables/useRemoteImage';
+import { buildSoundcloudProfileUrl, buildYouTubeChannelUrl } from '@shared/provider';
 import type { Subscription } from '@renderer/types/online';
 
 const props = defineProps<{
@@ -29,8 +30,8 @@ const { open } = useContextMenu();
 
 const channelUrl = computed(() =>
   props.sub.platform === 'soundcloud'
-    ? `https://soundcloud.com/${props.sub.channelId}`
-    : `https://www.youtube.com/channel/${props.sub.channelId}`
+    ? buildSoundcloudProfileUrl(props.sub.channelId)
+    : buildYouTubeChannelUrl(props.sub.channelId)
 );
 
 function copyChannelUrl() {
@@ -92,6 +93,7 @@ function lastCheckedLabel(ts?: number): string {
 
 <template>
   <div
+    data-testid="online-subscription-card"
     class="flex flex-col p-4 rounded-box bg-base-100 border border-base-300 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-base-300"
     @contextmenu="openMenu"
   >

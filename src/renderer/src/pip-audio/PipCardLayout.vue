@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import PipCover from './PipCover.vue';
-import { BTN, BTN_PLAY, BTN_ACTIVE, VOL_LABEL, EQ_BTN, EQ_BTN_ON } from './pipTheme';
-import { EQ_PRESETS } from './usePipAudioState';
+import PipTransport from './PipTransport.vue';
+import PipVolume from './PipVolume.vue';
+import PipEqPresets from './PipEqPresets.vue';
+import { BTN, BTN_PLAY } from './pipTheme';
 import type { PipState } from './pipState';
 
 const props = defineProps<{ state: PipState }>();
@@ -64,6 +66,7 @@ const {
           fmt(currentTime)
         }}</span>
         <div
+          data-testid="pip-progress"
           class="h-1 flex-1 cursor-pointer rounded bg-base-content/10"
           @click="onProgressClick"
           @dblclick.stop
@@ -77,19 +80,15 @@ const {
           fmt(duration)
         }}</span>
       </div>
-      <div v-if="has('controls')" class="flex items-center gap-0.5" @dblclick.stop>
-        <button :class="[BTN, shuffle ? BTN_ACTIVE : '']" @click.stop="send('shuffle')">
-          &#x21C4;
-        </button>
-        <button :class="BTN" @click.stop="send('prev')">&#x23EE;</button>
-        <button :class="BTN_PLAY" @click.stop="send('playPause')">
-          {{ isPlaying ? '⏸' : '▶' }}
-        </button>
-        <button :class="BTN" @click.stop="send('next')">&#x23ED;</button>
-        <button :class="[BTN, repeat !== 'none' ? BTN_ACTIVE : '']" @click.stop="send('repeat')">
-          &#x21BB;<span v-if="repeat === 'one'" class="-ml-px text-[8px]">1</span>
-        </button>
-      </div>
+      <PipTransport
+        v-if="has('controls')"
+        :send="send"
+        :is-playing="isPlaying"
+        :shuffle="shuffle"
+        :repeat="repeat"
+        :btn-class="BTN"
+        :play-btn-class="BTN_PLAY"
+      />
     </div>
 
     <div
@@ -97,32 +96,16 @@ const {
       class="flex shrink-0 flex-col items-end justify-center gap-1"
       @dblclick.stop
     >
-      <div v-if="has('volume')" class="flex items-center gap-1">
-        <span :class="VOL_LABEL" @click.stop="send('mute')">{{ volLabel }}</span>
-        <input
-          type="range"
-          class="w-14"
-          min="0"
-          max="1"
-          step="0.05"
-          :value="volume"
-          @input="onVolumeInput"
-          @click.stop
-        />
-        <span class="min-w-5 text-right tabular-nums text-[9px] text-base-content/50">{{
-          volPct
-        }}</span>
-      </div>
-      <div v-if="has('eq')" class="flex items-center gap-0.5">
-        <button
-          v-for="p in EQ_PRESETS.slice(0, 4)"
-          :key="p.id"
-          :class="[EQ_BTN, eqPreset === p.id ? EQ_BTN_ON : '']"
-          @click.stop="selectEqPreset(p.id)"
-        >
-          {{ p.label }}
-        </button>
-      </div>
+      <PipVolume
+        v-if="has('volume')"
+        :send="send"
+        :volume="volume"
+        :vol-label="volLabel"
+        :vol-pct="volPct"
+        :on-volume-input="onVolumeInput"
+        slider-class="w-14"
+      />
+      <PipEqPresets v-if="has('eq')" :eq-preset="eqPreset" :select-eq-preset="selectEqPreset" />
     </div>
   </div>
 </template>

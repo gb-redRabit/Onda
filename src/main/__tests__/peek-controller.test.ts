@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { PeekController, type PeekControllerDeps } from '../peek-controller';
+import { PeekController, type PeekControllerDeps } from '../pip/peek-controller';
 
 function makeController(overrides: Partial<PeekControllerDeps> = {}): {
   controller: PeekController;

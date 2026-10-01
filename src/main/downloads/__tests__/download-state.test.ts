@@ -121,3 +121,41 @@ describe('queueOrder removal', () => {
     expect(state.queueOrder).toEqual(['a', 'b', 'c']);
   });
 });
+
+describe('reportCompleted routing', () => {
+  it('routes a channel+video job to the subscription handler only', async () => {
+    const state = await loadState();
+    const subs = vi.fn();
+    const sources = vi.fn();
+    state.setDownloadCompletedHandler(subs);
+    state.setSourceItemDownloadedHandler(sources);
+
+    state.reportCompleted({ channelId: 'ch', videoId: 'vid' } as any);
+
+    expect(subs).toHaveBeenCalledWith('ch', 'vid');
+    expect(sources).not.toHaveBeenCalled();
+  });
+
+  it('routes a source+item job to the sources handler only', async () => {
+    const state = await loadState();
+    const subs = vi.fn();
+    const sources = vi.fn();
+    state.setDownloadCompletedHandler(subs);
+    state.setSourceItemDownloadedHandler(sources);
+
+    state.reportCompleted({ source: { sourceId: 'src', sourceItemId: 'item' } } as any);
+
+    expect(sources).toHaveBeenCalledWith('src', 'item');
+    expect(subs).not.toHaveBeenCalled();
+  });
+
+  it('does not report a source job without an item id', async () => {
+    const state = await loadState();
+    const sources = vi.fn();
+    state.setSourceItemDownloadedHandler(sources);
+
+    state.reportCompleted({ source: { sourceId: 'src' } } as any);
+
+    expect(sources).not.toHaveBeenCalled();
+  });
+});

@@ -36,7 +36,7 @@ export const usePlayerStore = defineStore('player', () => {
     addToQueueMultiple,
     removeFromQueue,
     clearQueue,
-    flushPendingQueue,
+    enrichPendingQueue,
     reorderQueue,
     insertInQueue,
     toggleQueue
@@ -62,6 +62,7 @@ export const usePlayerStore = defineStore('player', () => {
     shuffle,
     repeat,
     setTrack,
+    clearTrack,
     play,
     pause,
     togglePlay,
@@ -70,7 +71,8 @@ export const usePlayerStore = defineStore('player', () => {
     cycleRepeat,
     nextTrack,
     prevTrack,
-    playFromHistory
+    playFromHistory,
+    consumeResumeIntent
   } = usePlayerNavigation(queue, pendingQueue, recordPlay);
 
   const hasTrack = computed(() => currentTrack.value !== null);
@@ -116,6 +118,7 @@ export const usePlayerStore = defineStore('player', () => {
     queueLength,
     displayQueue,
     setTrack,
+    clearTrack,
     play,
     pause,
     togglePlay,
@@ -129,7 +132,7 @@ export const usePlayerStore = defineStore('player', () => {
     removeFromQueue,
     clearQueue,
     pendingQueue,
-    flushPendingQueue,
+    enrichPendingQueue,
     reorderQueue,
     insertInQueue,
     toggleQueue,
@@ -137,6 +140,7 @@ export const usePlayerStore = defineStore('player', () => {
     nextTrack,
     prevTrack,
     playFromHistory,
+    consumeResumeIntent,
     loadCover,
     getCover,
     invalidateCoverCache,

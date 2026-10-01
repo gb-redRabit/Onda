@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import WizardStep from './WizardStep.vue';
 import { computed, onMounted } from 'vue';
 import { CheckCircle2 } from '@lucide/vue';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -46,11 +47,14 @@ const rows = computed(() => [
     >
       <CheckCircle2 :size="24" />
     </span>
-    <h3 class="text-lg font-bold tracking-tight mb-1.5">{{ $t('wizard.summaryTitle') }}</h3>
-    <p class="text-sm text-base-content/70 mb-5">{{ $t('wizard.summaryDesc') }}</p>
+    <WizardStep
+      :title="$t('wizard.summaryTitle')"
+      :description="$t('wizard.summaryDesc')"
+      description-gap
+    />
 
     <div
-      class="rounded-box border border-base-300 bg-base-200/[var(--glass-alpha)] overflow-hidden"
+      class="rounded-box border border-base-300 bg-base-200/(--glass-alpha) overflow-hidden"
     >
       <div
         v-for="(row, i) in rows"

@@ -1,13 +1,8 @@
 <script setup lang="ts">
 import PipCover from './PipCover.vue';
-import {
-  BTN_ACTIVE,
-  BTN_EDGE,
-  BTN_PLAY_EDGE,
-  EDGE_PROGRESS_FILL_V,
-  EDGE_PROGRESS_TRACK_V,
-  VOL_LABEL
-} from './pipTheme';
+import PipTransport from './PipTransport.vue';
+import PipVolume from './PipVolume.vue';
+import { EDGE_PROGRESS_FILL_V, EDGE_PROGRESS_TRACK_V } from './pipTheme';
 import type { PipState } from './pipState';
 
 const props = defineProps<{ state: PipState }>();
@@ -70,42 +65,31 @@ const {
         <span class="truncate text-[9px] text-base-content/40">&#x21B3; {{ nextTrackName }}</span>
       </div>
 
-      <div v-if="has('controls')" class="flex shrink-0 flex-col items-center gap-1" @dblclick.stop>
-        <button :class="BTN_PLAY_EDGE" @click.stop="send('playPause')">
-          {{ isPlaying ? '⏸' : '▶' }}
-        </button>
-        <button :class="BTN_EDGE" @click.stop="send('prev')">&#x23EE;</button>
-        <button :class="BTN_EDGE" @click.stop="send('next')">&#x23ED;</button>
-        <button :class="[BTN_EDGE, shuffle ? BTN_ACTIVE : '']" @click.stop="send('shuffle')">
-          &#x21C4;
-        </button>
-        <button
-          :class="[BTN_EDGE, repeat !== 'none' ? BTN_ACTIVE : '']"
-          @click.stop="send('repeat')"
-        >
-          &#x21BB;
-        </button>
-      </div>
+      <PipTransport
+        v-if="has('controls')"
+        layout="vertical"
+        class="items-center"
+        :send="send"
+        :is-playing="isPlaying"
+        :shuffle="shuffle"
+        :repeat="repeat"
+      />
 
       <div class="min-h-1 flex-1"></div>
       <div v-if="has('progress')" class="shrink-0 tabular-nums text-[9px] text-base-content/50">
         {{ fmt(currentTime) }} / {{ fmt(duration) }}
       </div>
 
-      <div v-if="has('volume')" class="flex shrink-0 flex-col items-center gap-1" @dblclick.stop>
-        <span :class="VOL_LABEL" @click.stop="send('mute')">{{ volLabel }}</span>
-        <input
-          type="range"
-          class="my-5.5 w-14 -rotate-90"
-          min="0"
-          max="1"
-          step="0.05"
-          :value="volume"
-          @input="onVolumeInput"
-          @click.stop
-        />
-        <span class="tabular-nums text-[9px] text-base-content/50">{{ volPct }}</span>
-      </div>
+      <PipVolume
+        v-if="has('volume')"
+        layout="vertical"
+        slider-class="my-5.5 w-14 -rotate-90"
+        :send="send"
+        :volume="volume"
+        :vol-label="volLabel"
+        :vol-pct="volPct"
+        :on-volume-input="onVolumeInput"
+      />
     </div>
   </div>
 </template>

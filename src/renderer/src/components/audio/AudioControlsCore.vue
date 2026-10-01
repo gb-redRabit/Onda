@@ -1,22 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import {
-  ListMusic,
-  Pause,
-  Play,
-  Repeat,
-  Repeat1,
-  Shuffle,
-  SkipBack,
-  SkipForward,
-  SlidersHorizontal,
-  Volume2,
-  VolumeX
-} from '@lucide/vue';
+import { ListMusic, Pause, Play, SlidersHorizontal, Volume2, VolumeX } from '@lucide/vue';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { usePlayerStore } from '@renderer/stores/player';
 import { DENSITY, ICON, ICON_SM, PLAY_BOX, PLAY_SIZE } from '@renderer/utils/audioControls';
+import TransportButtons from '@renderer/components/player/TransportButtons.vue';
 
 // The transport for every layout that has one. This replaces four components
 // that were the same eight buttons with the same handlers and the same
@@ -48,6 +37,19 @@ const iconSm = computed(() => ICON_SM[props.variant]);
 const playSize = computed(() => PLAY_SIZE[props.variant]);
 const playBox = computed(() => PLAY_BOX[props.variant]);
 
+// The transport buttons reuse the shared component with this density's classes.
+const transportStyles = computed(() => ({
+  toggle: `${d.value.button} rounded-full transition-colors`,
+  step: `${d.value.button} rounded-full`,
+  play: `${playBox.value} ${PLAY_ICON_CLASS}`,
+  playIcon: 'text-primary',
+  glow: d.value.glow,
+  active: 'text-primary',
+  toggleSize: iconSm.value,
+  skipSize: icon.value,
+  playSize: playSize.value
+}));
+
 const showTransport = computed(() => !d.value.gateTransportOnWidth || props.widthSufficient);
 const showVolume = computed(() => {
   if (d.value.volume === 'never') return false;
@@ -58,19 +60,9 @@ const showVolume = computed(() => {
 });
 const showExtras = computed(() => d.value.extras && !props.compact);
 
-// Tri-state (off / all / one) has no boolean ARIA equivalent, so the label names
-// the current mode rather than exposing aria-pressed.
-const repeatLabel = computed(() => {
-  const mode = player.repeat;
-  if (mode === 'one') return t('player.repeatOne');
-  return mode === 'all' ? t('player.repeatAll') : t('player.repeatNone');
-});
-
 const PLAY_ICON_CLASS =
   'relative rounded-full bg-primary/15 backdrop-blur-xl border border-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg';
 const TOGGLE_OFF = 'text-base-content/50 hover:text-base-content hover:bg-base-content/10';
-const STEP_ON =
-  'text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors';
 
 function togglePlay() {
   if (audio.isPlaying.value) {
@@ -105,64 +97,20 @@ function onVolumeKey(e: KeyboardEvent) {
 
 <template>
   <div :class="d.container">
-    <div v-if="showTransport" :class="d.transport">
-      <button
-        :class="[
-          d.button,
-          'rounded-full transition-colors',
-          player.shuffle ? 'text-primary' : TOGGLE_OFF
-        ]"
-        :aria-label="t('common.shuffle')"
-        :aria-pressed="player.shuffle"
-        @click="player.toggleShuffle"
-      >
-        <Shuffle :size="iconSm" />
-      </button>
-      <button
-        :class="[d.button, 'rounded-full', STEP_ON]"
-        :aria-label="t('common.previous')"
-        @click="player.prevTrack"
-      >
-        <SkipBack :size="icon" fill="currentColor" />
-      </button>
-      <div class="relative">
-        <div
-          v-if="audio.isPlaying.value"
-          :class="['absolute inset-0 rounded-full bg-primary/15', d.glow]"
-        />
-        <button
-          :class="[playBox, PLAY_ICON_CLASS]"
-          :aria-label="audio.isPlaying.value ? t('common.pause') : t('common.play')"
-          @click="togglePlay"
-        >
-          <Pause
-            v-if="audio.isPlaying.value"
-            :size="playSize"
-            class="text-primary"
-            fill="currentColor"
-          />
-          <Play v-else :size="playSize" class="text-primary ml-0.5" fill="currentColor" />
-        </button>
-      </div>
-      <button
-        :class="[d.button, 'rounded-full', STEP_ON]"
-        :aria-label="t('common.next')"
-        @click="player.nextTrack"
-      >
-        <SkipForward :size="icon" fill="currentColor" />
-      </button>
-      <button
-        :class="[
-          d.button,
-          'rounded-full transition-colors',
-          player.repeat !== 'none' ? 'text-primary' : TOGGLE_OFF
-        ]"
-        :aria-label="repeatLabel"
-        @click="player.cycleRepeat"
-      >
-        <component :is="player.repeat === 'one' ? Repeat1 : Repeat" :size="iconSm" />
-      </button>
-    </div>
+    <TransportButtons
+      v-if="showTransport"
+      variant="bar"
+      :container-class="d.transport"
+      :styles="transportStyles"
+      :is-playing="audio.isPlaying.value"
+      :shuffle="player.shuffle"
+      :repeat="player.repeat"
+      @play-pause="togglePlay"
+      @prev="player.prevTrack"
+      @next="player.nextTrack"
+      @toggle-shuffle="player.toggleShuffle"
+      @cycle-repeat="player.cycleRepeat"
+    />
     <button
       v-else
       :class="[playBox, PLAY_ICON_CLASS, 'shrink-0']"

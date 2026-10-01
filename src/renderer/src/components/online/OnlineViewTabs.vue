@@ -31,6 +31,7 @@ const tabs = computed(() => [
         :key="tab.key"
         type="button"
         role="tab"
+        :data-testid="'online-tab-' + tab.key"
         :aria-selected="modelValue === tab.key"
         class="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors border-b-(--border)"
         :class="

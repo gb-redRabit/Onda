@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { Folder, ChevronDown, Shuffle, Play, ExternalLink } from '@lucide/vue';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
@@ -7,11 +8,25 @@ import { canonicalPath, basename, isUnderPath } from '@renderer/utils/path';
 import { logger } from '@shared/logger';
 import { useLibraryContextMenu } from '@renderer/composables/useLibraryContextMenu';
 import { formatDuration } from '@renderer/utils/formatters';
+import { pluralCategory } from '@renderer/utils/plural';
 import { getAllTracksIndexed } from '@renderer/utils/libraryIndex';
 import DirNode from '@renderer/components/library/DirNode.vue';
 import LibraryFolderTile from '@renderer/components/library/LibraryFolderTile.vue';
 
 const library = useLibraryStore();
+const { locale, t } = useI18n();
+
+/** Polish has three plural forms, so the caller picks one. See utils/plural.ts. */
+function fileCountLabel(count: number): string {
+  const category = pluralCategory(locale.value, count);
+  const key =
+    category === 'one'
+      ? 'library.fileCountOne'
+      : category === 'few'
+        ? 'library.fileCountFew'
+        : 'library.fileCountMany';
+  return t(key, { count });
+}
 const player = usePlayerStore();
 const { showFolderMenu } = useLibraryContextMenu();
 
@@ -199,9 +214,8 @@ const noMatch = computed(
           </div>
           <div class="text-xs text-base-content/50 truncate hidden sm:block">{{ meta.path }}</div>
           <div class="text-xs text-base-content/50 sm:hidden">
-            {{ meta.count }} plików<span v-if="meta.duration">
-              · {{ formatDuration(meta.duration, '') }}</span
-            >
+            {{ fileCountLabel(meta.count)
+            }}<span v-if="meta.duration"> · {{ formatDuration(meta.duration, '') }}</span>
           </div>
         </div>
 

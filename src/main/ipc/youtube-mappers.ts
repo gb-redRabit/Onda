@@ -1,6 +1,7 @@
 import { formatDuration as formatDurationBase } from '../../shared/formatDuration';
 import type { IpcYoutubeVideo } from '../../shared/types/ipc';
-import type { YouTubeResolvedItem } from '../../renderer/src/types/online';
+import type { YouTubeResolvedItem } from '../../shared/types/online';
+import { isLoopbackHost } from './network-target';
 
 // Pure yt-dlp entry mappers/validators extracted from `youtube-utils.ts`
 // (plan 2.8). `youtube-utils` re-exports them so existing importers/tests keep
@@ -55,10 +56,7 @@ export function isSafeThumbnailUrl(url: string): boolean {
     return false;
   }
   if (parsed.protocol !== 'https:') return false;
-  const host = parsed.hostname.toLowerCase();
-  if (host === 'localhost' || host === '127.0.0.1' || host === '::1') return false;
-  if (host.endsWith('.localhost')) return false;
-  if (/^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) return false;
+  if (isLoopbackHost(parsed.hostname)) return false;
   return true;
 }
 

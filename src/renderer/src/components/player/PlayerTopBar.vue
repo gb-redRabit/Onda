@@ -33,6 +33,7 @@ const emit = defineEmits<{
       <p class="text-neutral-content/50 text-xs">{{ track?.metadata?.artist || '' }}</p>
     </div>
     <button
+      data-testid="player-pip"
       class="fx-noise p-2 fx-depth rounded-field bg-neutral-content/10 mr-2 hover:bg-neutral-content/20 text-neutral-content transition-colors"
       :aria-label="$t('playerView.pip')"
       @click="emit('pip')"

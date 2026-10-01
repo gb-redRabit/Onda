@@ -1,7 +1,7 @@
 import { detectYtKind, normalizeYtUrl } from './youtube';
 import { detectScKind, normalizeScUrl } from './soundcloud';
 import type { PlatformKind } from './platform';
-import type { YouTubeResolveKind } from '../renderer/src/types/online';
+import type { YouTubeResolveKind } from './types/online';
 
 // Provider adapter registry — the shared seam between platforms. Each service
 // exposes URL detection, kind classification, normalization and the "watch"
@@ -41,4 +41,35 @@ export function resolveProvider(url: string): MediaProvider | null {
     if (provider.canResolve(url)) return provider;
   }
   return null;
+}
+
+// Canonical URL builders. Views should use these instead of interpolating
+// platform URLs by hand, so a scheme change is made in one place.
+export function buildYouTubeWatchUrl(videoId: string): string {
+  return `https://www.youtube.com/watch?v=${videoId}`;
+}
+
+/** Channel URL from a `UC…` id, or a `@handle` (leading `@` optional). */
+export function buildYouTubeChannelUrl(channelId: string): string {
+  const id = channelId.trim();
+  if (!id) return '';
+  if (id.startsWith('@')) return `https://www.youtube.com/${id}`;
+  return `https://www.youtube.com/channel/${encodeURIComponent(id)}`;
+}
+
+/** Channel URL from a bare `@handle` (a handle is not a channel id). */
+export function buildYouTubeHandleUrl(handle: string): string {
+  const h = handle.trim().replace(/^@/, '');
+  return h ? `https://www.youtube.com/@${encodeURIComponent(h)}` : '';
+}
+
+/** Profile URL from a SoundCloud slug or any soundcloud.com URL. */
+export function buildSoundcloudProfileUrl(profileOrUrl: string): string {
+  const slug = profileOrUrl
+    .trim()
+    .replace(/^https?:\/\/(?:www\.)?soundcloud\.com\//i, '')
+    .replace(/^@/, '')
+    .split('/')
+    .filter(Boolean)[0];
+  return slug ? `https://soundcloud.com/${encodeURIComponent(slug)}` : '';
 }

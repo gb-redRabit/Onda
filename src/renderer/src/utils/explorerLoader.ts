@@ -26,6 +26,18 @@ export function createBatchLoader(files: Ref<FileItem[]>, isLoading: Ref<boolean
       isLoading.value = false;
       return;
     }
+
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    const finish = (stopListening: () => void) => {
+      if (timeout) {
+        clearTimeout(timeout);
+        timeout = null;
+      }
+      isLoading.value = false;
+      stopListening();
+      cleanup = null;
+    };
+
     const stopListening = window.api.on('fs:readdir:batch', (...args: unknown[]) => {
       if (loadId !== currentLoadId) {
         stopListening();
@@ -40,21 +52,23 @@ export function createBatchLoader(files: Ref<FileItem[]>, isLoading: Ref<boolean
         // — the copy was O(n) per batch and forced a full re-sort each time.
         files.value.push(...data.items);
       }
-      if (data.done) {
-        isLoading.value = false;
-        stopListening();
-        cleanup = null;
-      }
+      if (data.done) finish(stopListening);
     });
-    cleanup = stopListening;
+    cleanup = () => finish(stopListening);
+
+    // If the `done` batch never arrives (dropped event, main crash) the old code
+    // left `isLoading` true forever and leaked the listener.
+    timeout = setTimeout(() => {
+      if (loadId !== currentLoadId) return;
+      finish(stopListening);
+    }, 15_000);
+
     try {
       await window.api.invoke('fs:readdir', path);
     } catch {
       if (loadId === currentLoadId) {
         files.value = [];
-        isLoading.value = false;
-        stopListening();
-        cleanup = null;
+        finish(stopListening);
       }
     }
   }

@@ -63,14 +63,25 @@ describe('useSettingsNav', () => {
     expect(replace).toHaveBeenLastCalledWith({ query: { section: 'network' } });
     expect(nav.activeTab.value).toBeNull();
 
-    nav.selectTab('download');
-    expect(replace).toHaveBeenLastCalledWith({ query: { section: 'network', tab: 'download' } });
-    expect(nav.activeTab.value).toBe('download');
+    nav.selectTab('network-platform');
+    expect(replace).toHaveBeenLastCalledWith({
+      query: { section: 'network', tab: 'network-platform' }
+    });
+    expect(nav.activeTab.value).toBe('network-platform');
 
     nav.goBackToSection();
     expect(replace).toHaveBeenLastCalledWith({ query: { section: 'network' } });
 
     nav.goHome();
     expect(replace).toHaveBeenLastCalledWith({ query: {} });
+  });
+
+  it('groups the download tabs under their own section', async () => {
+    const nav = useSettingsNav();
+    for (const id of ['download', 'download-paths', 'download-queue']) {
+      nav.selectTab(id);
+      await nextTick();
+      expect(nav.activeSection.value).toBe('downloads');
+    }
   });
 });

@@ -8,8 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowLeft,
-  Download,
-  Wifi
+  Download
 } from '@lucide/vue';
 import { useSourcesStore } from '@renderer/stores/sources';
 import { filterAndSortSourceItems, parseQueryLines } from '@renderer/utils/sourcesView';
@@ -18,8 +17,7 @@ import type { MediaSource, SourceItem } from '@renderer/types/sources';
 import SourcesContent from '@renderer/components/sources/SourcesContent.vue';
 import SourcesFilterBar from '@renderer/components/sources/SourcesFilterBar.vue';
 import SourcesSidebar from '@renderer/components/sources/SourcesSidebar.vue';
-import TransientToast from '@renderer/components/TransientToast.vue';
-import { useTransientToast } from '@renderer/composables/useTransientToast';
+import { useUIStore } from '@renderer/stores/ui';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
 
 // Modals are lazy — only mounted on demand (plan 3.5).
@@ -47,7 +45,12 @@ const scrollRef = ref<HTMLElement | null>(null);
 const sortMode = ref<'none' | 'titleAsc' | 'titleDesc' | 'type'>('none');
 const filterText = ref('');
 const downloadingAll = ref(false);
-const { toast, showToast, dismiss: dismissToast } = useTransientToast();
+const ui = useUIStore();
+// Sources used a view-local toast; route it through the global notification
+// queue so the whole app has one toast system (and one look).
+function showToast(msg: string, ok = true): void {
+  ui.notify(ok ? 'success' : 'error', msg);
+}
 
 const displayItems = computed(() =>
   filterAndSortSourceItems(sources.items, filterText.value, sortMode.value)
@@ -87,6 +90,7 @@ watch(
 onMounted(async () => {
   if (!sources.isLoaded) await sources.loadSources();
   if (sources.activeSource) {
+    void sources.testSource(sources.activeSource);
     await sources.fetchItems(Object.keys(queryParams.value).length ? queryParams.value : undefined);
   }
 });
@@ -162,7 +166,9 @@ async function onDownload(item: SourceItem) {
   try {
     const res = await sources.enqueueDownload(item);
     showToast(
-      res.ok ? t('sources.toastQueued') : t('sources.toastFailed', { err: res.error || 'unknown' }),
+      res.ok
+        ? t('sources.toastQueuedOne')
+        : t('sources.toastFailed', { err: res.error || 'unknown' }),
       res.ok
     );
   } finally {
@@ -185,15 +191,13 @@ async function onDownloadAll(list: SourceItem[]) {
   }
 }
 
-async function onTestSource() {
-  if (!sources.activeSource) return;
-  const res = await sources.testSource(sources.activeSource);
-  showToast(
-    res.success
-      ? t('sources.testSourceOk')
-      : t('sources.testSourceFail', { err: res.error || 'unknown' }),
-    res.success
-  );
+// Entering a source always re-checks the connection: the toolbar button is gone
+// and the result drives the sidebar status dot (green/red) plus a short
+// "checking" state while the request is in flight.
+function onSelectSource(id: string): void {
+  sources.setActive(id);
+  const src = sources.sources.find((s) => s.id === id);
+  if (src) void sources.testSource(src);
 }
 
 async function onExport() {
@@ -232,12 +236,13 @@ const isAuthError = computed(() =>
 </script>
 
 <template>
-  <div class="h-full flex">
+  <div data-testid="sources-view" class="h-full flex">
     <SourcesSidebar
       :sources="sources.sources"
       :active-source-id="sources.activeSourceId"
       :test-status="sources.testStatus"
-      @select="sources.setActive($event)"
+      :checking="sources.checking"
+      @select="onSelectSource"
       @add="openAdd"
       @edit="openEdit"
       @remove="sources.deleteSource($event)"
@@ -247,7 +252,7 @@ const isAuthError = computed(() =>
     />
 
     <div class="flex-1 min-w-0 h-full flex flex-col">
-      <div v-if="activeSource" class="flex flex-col h-full">
+      <div v-if="activeSource" data-testid="sources-detail" class="flex flex-col h-full">
         <div
           class="ui-page-toolbar flex items-center gap-2 px-4 py-2 border-b border-base-300 overflow-x-auto"
         >
@@ -272,7 +277,11 @@ const isAuthError = computed(() =>
             </option>
           </select>
           <div v-else class="shrink-0 flex items-center gap-1 text-xs">
-            <span v-for="(entry, i) in sources.navStack" :key="i" class="flex items-center gap-1">
+            <span
+              v-for="(entry, i) in sources.navStack"
+              :key="`${entry.endpointId}\u0000${i}`"
+              class="flex items-center gap-1"
+            >
               <button
                 class="text-base-content/50 hover:text-base-content/70 transition-colors"
                 :disabled="sources.loading"
@@ -319,15 +328,6 @@ const isAuthError = computed(() =>
             </button>
           </div>
           <button
-            class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors"
-            :title="$t('sources.testSourceBtn')"
-            :aria-label="$t('sources.testSourceBtn')"
-            :disabled="sources.loading"
-            @click="onTestSource"
-          >
-            <Wifi :size="14" />
-          </button>
-          <button
             v-if="downloadable && !isPage && sources.items.length"
             class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
             :title="$t('sources.downloadAll')"
@@ -348,6 +348,14 @@ const isAuthError = computed(() =>
             <Loader2 v-if="sources.loading" :size="14" class="animate-spin" />
             <RefreshCw v-else :size="14" />
           </button>
+        </div>
+        <div
+          v-if="sources.activeSourceId && sources.checking[sources.activeSourceId]"
+          class="px-4 py-1.5 text-xs text-warning flex items-center gap-2 border-b border-base-300"
+          data-testid="sources-checking"
+        >
+          <Loader2 :size="12" class="animate-spin" />
+          {{ $t('sources.testChecking') }}
         </div>
         <SourcesFilterBar
           v-if="!isPage"
@@ -379,6 +387,7 @@ const isAuthError = computed(() =>
             :has-more="sources.hasMore"
             :pagination-mode="sources.paginationMode"
             :downloading-item="downloadingItem"
+            :downloaded-ids="sources.downloadedIds"
             @row-click="onRowClick"
             @download="onDownload"
             @download-all="onDownloadAll"
@@ -409,10 +418,10 @@ const isAuthError = computed(() =>
     <SourceDetailModal
       :item="previewItem"
       :downloadable="downloadable"
+      :downloaded="!!previewItem?.id && sources.downloadedIds.has(previewItem.id)"
       @close="previewItem = null"
       @download="onDownload"
     />
     <SourceGuideModal v-if="showGuide" @close="showGuide = false" />
-    <TransientToast v-if="toast" :message="toast.msg" :ok="toast.ok" @close="dismissToast" />
   </div>
 </template>

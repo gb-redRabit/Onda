@@ -1,10 +1,5 @@
-import https from 'https';
-import http from 'http';
-import {
-  createPinnedLookup,
-  privateNetworkAllowedForTarget,
-  resolveNetworkTarget
-} from './network-target';
+import { privateNetworkAllowedForTarget, resolveNetworkTarget } from './network-target';
+import { httpRequest } from './http-request';
 
 interface PlayerScrapeResult {
   url: string;
@@ -44,68 +39,22 @@ export async function fetchPageText(
   allowPrivateNetwork = false,
   trustedOrigin?: string
 ): Promise<string> {
-  const origin = trustedOrigin ?? new URL(url).origin;
-  const allowPrivate = privateNetworkAllowedForTarget(url, origin, allowPrivateNetwork);
-  const target = await resolveNetworkTarget(url, { allowPrivateNetwork: allowPrivate });
-  return new Promise((resolve, reject) => {
-    const transport = target.url.protocol === 'https:' ? https : http;
-    const req = transport.request(
-      target.url,
-      {
-        method: 'GET',
-        lookup: createPinnedLookup(target.addresses),
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          Referer: url,
-          ...headers
-        }
-      },
-      (res) => {
-        const status = res.statusCode ?? 0;
-        if (status >= 300 && status < 400 && res.headers.location) {
-          if (redirectsLeft <= 0) {
-            res.resume();
-            reject(new Error('Too many redirects'));
-            return;
-          }
-          res.resume();
-          const next = new URL(res.headers.location, target.url).toString();
-          const nextHeaders = new URL(next).origin === target.url.origin ? headers : {};
-          fetchPageText(next, nextHeaders, redirectsLeft - 1, allowPrivateNetwork, origin).then(
-            resolve,
-            reject
-          );
-          return;
-        }
-        if (status < 200 || status >= 300) {
-          res.resume();
-          reject(new Error(`HTTP ${status}`));
-          return;
-        }
-        let size = 0;
-        const chunks: Buffer[] = [];
-        res.on('data', (c: Buffer) => {
-          size += c.length;
-          if (size > MAX_BYTES) {
-            req.destroy();
-            reject(new Error('Response too large'));
-            return;
-          }
-          chunks.push(c);
-        });
-        res.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
-        res.on('error', reject);
-      }
-    );
-    req.setTimeout(TIMEOUT_MS, () => {
-      req.destroy();
-      reject(new Error('Timeout'));
-    });
-    req.on('error', reject);
-    req.end();
+  const res = await httpRequest(url, {
+    method: 'GET',
+    headers,
+    defaultHeaders: (u) => ({
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      Referer: u
+    }),
+    allowPrivateNetwork,
+    trustedOrigin,
+    maxRedirects: redirectsLeft,
+    timeoutMs: TIMEOUT_MS,
+    maxBytes: MAX_BYTES
   });
+  return res.text;
 }
 
 /**

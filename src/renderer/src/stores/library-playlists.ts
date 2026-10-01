@@ -1,5 +1,6 @@
 import { ref } from 'vue';
 import type { MediaFile, Playlist } from '@renderer/types/media';
+import { clonePlain } from '@renderer/utils/clone';
 
 const SAVE_DEBOUNCE_MS = 500;
 
@@ -13,7 +14,7 @@ export function useLibraryPlaylists() {
       saveTimer = null;
     }
     try {
-      await window.api?.invoke('playlist:saveAll', JSON.parse(JSON.stringify(playlists.value)));
+      await window.api?.invoke('playlist:saveAll', clonePlain(playlists.value));
     } catch {
       // non-fatal
     }

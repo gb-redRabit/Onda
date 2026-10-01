@@ -72,9 +72,6 @@ export function describeError(code: IpcDownloadErrorCode): string {
 }
 
 // Strips secrets (cookie file paths, cookies, tokens, passwords) from yt-dlp
-// stderr before it is stored or shown, so diagnostics never leak a session.
-export function redactSecrets(text: string): string {
-  return text
-    .replace(/--cookies(?:-from-browser)?\s+\S+/g, '--cookies [REDACTED]')
-    .replace(/(\b(?:cookie|password|token|auth|authorization)\s*[=:]\s*)\S+/gi, '$1[REDACTED]');
-}
+// stderr before it is stored or shown. Shared implementation so logs and stored
+// errors redact the same way.
+export { redactSecrets } from '../../shared/redact';

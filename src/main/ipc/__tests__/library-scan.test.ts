@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { MediaFile } from '../../../renderer/src/types/media';
+import type { MediaFile } from '../../../shared/types/media';
 import { classifyFolderType, filterFilesForFolderType } from '../library-scan';
 
 vi.mock('../media-handlers', () => ({

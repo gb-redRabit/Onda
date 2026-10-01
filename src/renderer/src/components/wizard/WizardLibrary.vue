@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import WizardStep from './WizardStep.vue';
 import { FolderPlus, X } from '@lucide/vue';
 import { useLibraryStore } from '@renderer/stores/library';
 
@@ -24,8 +25,7 @@ function removeFolder(path: string) {
 
 <template>
   <div>
-    <h3 class="text-lg font-bold tracking-tight mb-1.5">{{ $t('wizard.libraryTitle') }}</h3>
-    <p class="text-sm text-base-content/70">{{ $t('wizard.libraryDesc') }}</p>
+    <WizardStep :title="$t('wizard.libraryTitle')" :description="$t('wizard.libraryDesc')" />
 
     <div class="mt-5 space-y-2.5">
       <div

@@ -8,11 +8,14 @@ import { toPlain } from '@renderer/utils/sources-helpers';
 export function createSourcesTest() {
   /** Wynik ostatniego testu połączenia per źródło (sesja). */
   const testStatus = ref<Record<string, { success: boolean; error?: string }>>({});
+  /** Trwa test połączenia dla danego źródła (do wskaźnika „sprawdzanie"). */
+  const checking = ref<Record<string, boolean>>({});
 
   async function testSource(
     source: MediaSource,
     endpoint?: SourceEndpoint
   ): Promise<{ success: boolean; error?: string; sample?: SourceItem | null }> {
+    checking.value[source.id] = true;
     try {
       const res = (await window.api.invoke(
         'sources:test',
@@ -29,6 +32,8 @@ export function createSourcesTest() {
       const err = e instanceof Error ? e.message : String(e);
       testStatus.value[source.id] = { success: false, error: err };
       return { success: false, error: err };
+    } finally {
+      checking.value[source.id] = false;
     }
   }
 
@@ -49,10 +54,12 @@ export function createSourcesTest() {
   /** Edycja/usunięcie źródła unieważnia zapamiętany status testu. */
   function forgetSource(id: string) {
     delete testStatus.value[id];
+    delete checking.value[id];
   }
 
   return {
     testStatus,
+    checking,
     testSource,
     tableRowsTest,
     forgetSource

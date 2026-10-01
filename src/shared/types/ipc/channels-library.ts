@@ -1,4 +1,4 @@
-import type { AppSettings } from '../../../renderer/src/types/settings';
+import type { AppSettings, SecretStorageStatus } from '../settings';
 import type { IpcMediaFile, IpcPlaylist } from './media';
 
 export interface LibraryChannels {
@@ -9,10 +9,14 @@ export interface LibraryChannels {
   'library:scanCancel': { args: []; result: boolean };
   'library:loadFolders': { args: []; result: string[] };
   'library:saveFolders': { args: [folders: string[]]; result: string[] };
-  'library:loadScanned': {
-    args: [];
+  // The renderer pulls the scanned files in bounded slices so a 50k-file
+  // library never crosses IPC as one huge payload (each slice also yields to
+  // the event loop, keeping the first paint smooth).
+  'library:loadScannedChunk': {
+    args: [offset: number, limit: number];
     result: {
       files: IpcMediaFile[];
+      total: number;
       folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
     } | null;
   };
@@ -37,6 +41,12 @@ export interface LibraryChannels {
   };
   'settings:get': { args: []; result: Partial<AppSettings> };
   'settings:set': { args: [data: Partial<AppSettings>]; result: boolean };
+  /**
+   * How well the platform can protect a stored API key. `weak` means the OS
+   * keyring was not found, so the value is obfuscated rather than encrypted —
+   * the API keys panel shows this before the user pastes a secret.
+   */
+  'settings:secretStorageStatus': { args: []; result: SecretStorageStatus };
   'settings:export': { args: []; result: { success: boolean; canceled?: boolean; error?: string } };
   'settings:import': {
     args: [];

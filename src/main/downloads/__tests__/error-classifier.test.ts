@@ -66,14 +66,14 @@ describe('describeError', () => {
 
 describe('redactSecrets', () => {
   it('strips cookie file paths', () => {
-    expect(redactSecrets('--cookies /home/me/youtube-cookies.txt')).toBe('--cookies [REDACTED]');
-    expect(redactSecrets('--cookies-from-browser chrome')).toBe('--cookies [REDACTED]');
+    expect(redactSecrets('--cookies /home/me/youtube-cookies.txt')).toBe('--cookies ***');
+    expect(redactSecrets('--cookies-from-browser chrome')).toBe('--cookies ***');
   });
 
   it('redacts key/value secrets', () => {
-    expect(redactSecrets('cookie=abc123')).toBe('cookie=[REDACTED]');
-    expect(redactSecrets('password=hunter2')).toBe('password=[REDACTED]');
-    expect(redactSecrets('token=sekret')).toBe('token=[REDACTED]');
+    expect(redactSecrets('cookie=abc123')).toBe('cookie=***');
+    expect(redactSecrets('password=hunter2')).toBe('password=***');
+    expect(redactSecrets('token=sekret')).toBe('token=***');
   });
 
   it('leaves ordinary text untouched', () => {

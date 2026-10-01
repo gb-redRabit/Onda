@@ -25,7 +25,7 @@ const { deps, refreshing, refreshAll, runInstall, uninstallDependency, cancelIns
         <div class="flex items-center gap-3 min-w-0">
           <div
             class="w-2 h-2 rounded-full shrink-0"
-            :class="dep.broken ? 'bg-amber-500' : dep.installed ? 'bg-success' : 'bg-error'"
+            :class="dep.broken ? 'bg-warning' : dep.installed ? 'bg-success' : 'bg-error'"
           />
           <div class="min-w-0">
             <div class="text-sm font-medium flex items-center gap-2">
@@ -64,13 +64,13 @@ const { deps, refreshing, refreshAll, runInstall, uninstallDependency, cancelIns
           </template>
           <template v-else>
             <div class="text-right">
-              <div v-if="dep.broken" class="text-xs text-amber-500 font-medium">
+              <div v-if="dep.broken" class="text-xs text-warning font-medium">
                 {{ $t('settings.depBroken') }}
               </div>
               <div v-else-if="dep.version" class="text-xs text-base-content/50 font-mono">
                 v{{ dep.version }}
               </div>
-              <div v-if="dep.updateAvailable" class="text-xs text-amber-500 font-medium">
+              <div v-if="dep.updateAvailable" class="text-xs text-warning font-medium">
                 {{ $t('settings.depUpdateAvailable') }}
               </div>
               <div
@@ -100,7 +100,7 @@ const { deps, refreshing, refreshAll, runInstall, uninstallDependency, cancelIns
               </button>
               <button
                 v-if="dep.installed"
-                class="fx-noise px-3 py-1.5 fx-depth rounded-field border border-red-500/40 text-error text-xs font-medium hover:bg-error/10 transition-colors"
+                class="fx-noise px-3 py-1.5 fx-depth rounded-field border border-error/40 text-error text-xs font-medium hover:bg-error/10 transition-colors"
                 @click="uninstallDependency(dep)"
               >
                 {{ $t('settings.depUninstall') }}
@@ -120,7 +120,7 @@ const { deps, refreshing, refreshAll, runInstall, uninstallDependency, cancelIns
           />
         </div>
       </div>
-      <div v-if="dep.error || dep.probeError" class="mt-2 text-xs text-error break-words">
+      <div v-if="dep.error || dep.probeError" class="mt-2 text-xs text-error wrap-break-word">
         {{ dep.error || dep.probeError }}
       </div>
     </SettingsGroup>

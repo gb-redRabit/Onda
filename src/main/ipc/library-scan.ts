@@ -1,7 +1,7 @@
 import { readdir, stat } from 'fs/promises';
 import { join, extname, basename } from 'path';
 import { parseFile } from 'music-metadata';
-import type { MediaFile } from '../../renderer/src/types/media';
+import type { MediaFile } from '../../shared/types/media';
 import { VIDEO_EXTS, AUDIO_EXTS, IMAGE_EXTS } from '../../shared/constants';
 import { MIME_TYPES } from '../../shared/mime';
 import { logger } from '../../shared/logger';
@@ -246,14 +246,38 @@ async function processImageFile(
   };
 }
 
+/**
+ * Shared ceiling for one library scan.
+ *
+ * The cap used to be applied to the finished array, which meant a 300k-file
+ * library was fully read, fully parsed and fully held in memory before anything
+ * was dropped — the cap bounded the result, not the cost. A budget threaded
+ * through the recursion stops the walk instead: unread directories are never
+ * opened and unparsed files are never allocated.
+ */
+export interface ScanBudget {
+  remaining: number;
+  /** Set once the ceiling was hit, so the caller can say so rather than lie. */
+  truncated: boolean;
+}
+
+export function createScanBudget(limit: number): ScanBudget {
+  return { remaining: limit, truncated: false };
+}
+
 export async function scanDir(
   dirPath: string,
   maxDepth = 10,
   depth = 0,
   signal?: AbortSignal,
-  previous?: Map<string, MediaFile>
+  previous?: Map<string, MediaFile>,
+  budget?: ScanBudget
 ): Promise<{ files: MediaFile[]; audioCount: number; videoCount: number; imageCount: number }> {
   if (signal?.aborted || depth > maxDepth) {
+    return { files: [], audioCount: 0, videoCount: 0, imageCount: 0 };
+  }
+  if (budget && budget.remaining <= 0) {
+    budget.truncated = true;
     return { files: [], audioCount: 0, videoCount: 0, imageCount: 0 };
   }
 
@@ -278,9 +302,20 @@ export async function scanDir(
       if (signal?.aborted) break;
       const fullPath = join(dirPath, entry.name);
       if (entry.isDirectory()) {
-        subDirTasks.push(() => scanDir(fullPath, maxDepth, depth + 1, signal, previous));
+        subDirTasks.push(() => scanDir(fullPath, maxDepth, depth + 1, signal, previous, budget));
       } else if (entry.isFile()) {
         const ext = extname(entry.name).toLowerCase();
+        const isMedia = AUDIO_EXT_SET.has(ext) || VIDEO_EXT_SET.has(ext) || IMAGE_EXT_SET.has(ext);
+        // Reserve the budget as the work is queued, not when the directory
+        // finishes. A single directory with 300k files queues them all in this
+        // loop, so charging afterwards would let the whole lot through.
+        if (isMedia && budget) {
+          if (budget.remaining <= 0) {
+            budget.truncated = true;
+            break;
+          }
+          budget.remaining -= 1;
+        }
         if (AUDIO_EXT_SET.has(ext)) {
           audioCount++;
           audioTasks.push(() =>
@@ -307,6 +342,10 @@ export async function scanDir(
     let ii = 0;
     while (ai < audioTasks.length || vi < videoTasks.length || ii < imageTasks.length) {
       if (signal?.aborted) return { files: [], audioCount: 0, videoCount: 0, imageCount: 0 };
+      if (budget && budget.remaining <= 0) {
+        budget.truncated = true;
+        break;
+      }
       const chunk: Array<() => Promise<{ file: MediaFile | null }>> = [];
       while (
         chunk.length < chunkSize &&

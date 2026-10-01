@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   isRegisteredGenericStreamUrl,
   registerGenericStreamUrl
-} from '../media-server-stream-registry';
+} from '../media/media-server-stream-registry';
 
 const publicLookup = async () => [{ address: '93.184.216.34', family: 4 as const }];
 const privateLookup = async () => [{ address: '127.0.0.1', family: 4 as const }];

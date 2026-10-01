@@ -7,7 +7,7 @@ import { readNetworkArgs } from './proxy-utils';
 import { runYtDlp } from './youtube-fetch';
 import { isHttpUrl } from '../../shared/platform';
 import { resolveNetworkTarget } from './network-target';
-import { registerGenericStreamUrl } from '../media-server-stream-registry';
+import { registerGenericStreamUrl } from '../media/media-server-stream-registry';
 
 // Resolves a direct audio stream URL for a video via `yt-dlp -g`. Results are
 // cached (LRU, 5h TTL — googlevideo URLs stay valid ~6h) because repeated -g

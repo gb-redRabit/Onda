@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -95,7 +95,7 @@ async function pasteThemeJson() {
 
     <div class="flex-1 min-w-0 flex flex-col gap-8">
       <div
-        class="rounded-box border border-base-300 bg-base-200/[var(--glass-alpha)] p-5 flex flex-wrap items-end gap-3"
+        class="rounded-box border border-base-300 bg-base-200/(--glass-alpha) p-5 flex flex-wrap items-end gap-3"
       >
         <div v-for="id in PREVIEW_TOKENS" :key="id" class="flex flex-col items-center gap-1.5">
           <span
@@ -117,11 +117,12 @@ async function pasteThemeJson() {
             <button
               v-for="seed in BUILTIN_THEME_NAMES"
               :key="seed"
+              :data-testid="'theme-seed-' + seed"
               class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors"
               :class="
                 (settings.appearance.customBase ?? 'dark') === seed
                   ? 'border-primary bg-primary/10 text-primary font-medium'
-                  : 'border-base-300 text-base-content/70 hover:bg-base-content/10'
+                  : 'border-base-300 bg-base-100 text-base-content/70 hover:bg-base-content/10'
               "
               @click="setScheme(seed)"
             >
@@ -163,7 +164,7 @@ async function pasteThemeJson() {
             <button
               v-for="act in ['seedDark', 'seedLight', 'copy', 'paste']"
               :key="act"
-              class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border border-base-300 text-base-content/70 hover:bg-base-content/10 transition-colors"
+              class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border border-base-300 bg-base-100 text-base-content/70 hover:bg-base-content/10 transition-colors"
               @click="
                 act === 'seedDark'
                   ? resetCustom('dark')

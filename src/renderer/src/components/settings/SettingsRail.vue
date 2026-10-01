@@ -4,7 +4,13 @@ import { RotateCcw } from '@lucide/vue';
 
 const props = defineProps<{
   sections: readonly { id: string; labelKey: string; icon: Component }[];
-  tabs: readonly { id: string; labelKey: string; icon: Component; section: string }[];
+  tabs: readonly {
+    id: string;
+    labelKey: string;
+    descKey?: string;
+    icon: Component;
+    section: string;
+  }[];
   activeSection: string | null;
   activeTab: string | null;
 }>();
@@ -28,11 +34,11 @@ const activeSectionId = computed(
 
 <template>
   <nav
-    class="shrink-0 flex flex-col overflow-y-auto border-r border-base-300/60 bg-base-200/30 w-12 lg:w-56 px-1 lg:px-2 py-3"
+    class="shrink-0 flex flex-col overflow-y-auto border-r border-base-300/60 bg-base-200/30 w-14 lg:w-64 px-1.5 lg:px-3 py-3"
   >
     <template v-for="section in sections" :key="section.id">
       <button
-        class="flex items-center gap-2 px-2 h-8 rounded-field text-[11px] font-semibold uppercase tracking-wider transition-colors shrink-0"
+        class="flex items-center gap-2.5 px-2 h-8 rounded-field transition-colors shrink-0"
         :class="
           activeSectionId === section.id
             ? 'text-primary'
@@ -45,13 +51,15 @@ const activeSectionId = computed(
         @click="emit('select-section', section.id)"
       >
         <component :is="section.icon" :size="15" class="shrink-0" />
-        <span class="hidden lg:inline truncate">{{ $t(section.labelKey) }}</span>
+        <span class="hidden lg:inline text-[11px] font-semibold uppercase tracking-wider truncate">
+          {{ $t(section.labelKey) }}
+        </span>
       </button>
-      <div class="hidden lg:flex flex-col gap-0.5 mb-1">
+      <div class="hidden lg:flex flex-col gap-0.5 mb-2 pl-3 ml-3.75 border-l border-base-300/60">
         <button
           v-for="tab in tabsOf(section.id)"
           :key="tab.id"
-          class="flex items-center gap-2 pl-7 pr-2 h-7 rounded-field text-[13px] text-left transition-colors"
+          class="flex items-center gap-2 pl-2 pr-2 h-8 rounded-field text-[13px] text-left transition-colors"
           :class="
             activeTab === tab.id
               ? 'bg-primary/15 text-primary font-medium'
@@ -61,6 +69,7 @@ const activeSectionId = computed(
           :data-testid="`settings-tab-${tab.id}`"
           @click="emit('select-tab', tab.id)"
         >
+          <component :is="tab.icon" :size="14" class="shrink-0 opacity-80" />
           <span class="truncate">{{ $t(tab.labelKey) }}</span>
         </button>
       </div>

@@ -28,7 +28,7 @@ export function usePlayerQueue(enrich: (track: MediaFile) => void) {
     queue.value = [];
     pendingQueue.value = [];
   }
-  function flushPendingQueue() {
+  function enrichPendingQueue() {
     if (pendingQueue.value.length) {
       pendingQueue.value.forEach(enrich);
     }
@@ -67,7 +67,7 @@ export function usePlayerQueue(enrich: (track: MediaFile) => void) {
     addToQueueMultiple,
     removeFromQueue,
     clearQueue,
-    flushPendingQueue,
+    enrichPendingQueue,
     reorderQueue,
     insertInQueue,
     toggleQueue

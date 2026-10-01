@@ -144,7 +144,7 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
 </script>
 
 <template>
-  <div class="flex flex-col h-full">
+  <div data-testid="online-view" class="flex flex-col h-full">
     <PageHeader :title="$t('nav.online')" :icon="Radio" sticky>
       <template #actions>
         <YTAuthButton />

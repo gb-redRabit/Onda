@@ -18,7 +18,7 @@ import {
   YTDLP_PINNED_VERSION,
   type BinTool
 } from './dependency-utils';
-import { getBinDir, resolveBin, resolveBinInfo, invalidateBinaries } from '../binaries';
+import { getBinDir, resolveBinInfo, invalidateBinaries } from '../binaries';
 import {
   emitProgress,
   newSignal,
@@ -475,6 +475,3 @@ export function registerDependencyHandlers(): void {
     uninstallTool(event.sender, 'mkvextract')
   );
 }
-
-// keep re-exported for legacy callers/tests
-export { resolveBin };

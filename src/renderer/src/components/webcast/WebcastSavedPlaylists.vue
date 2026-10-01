@@ -7,6 +7,7 @@ import { AlertCircle, ChevronDown, ChevronRight, ListMusic, Play, Trash2 } from 
 import { useSavedStore } from '@renderer/stores/saved';
 import { useOnlineStore } from '@renderer/stores/online';
 import OnlineMediaCard from '@renderer/components/online/OnlineMediaCard.vue';
+import { buildYouTubeWatchUrl } from '@shared/provider';
 import Loader from '@renderer/components/layout/Loader.vue';
 import { toResolvedItem } from '@renderer/utils/savedItem';
 import type { IpcSavedPlaylist } from '@shared/types/ipc';
@@ -205,7 +206,7 @@ async function openChannelInApp(url: string): Promise<void> {
                   :key="item.id"
                   :video="toResolvedItem(item)"
                   :cover-status="'none'"
-                  :watch-url="'https://www.youtube.com/watch?v=' + item.id"
+                  :watch-url="buildYouTubeWatchUrl(item.id)"
                   :hide-quick-actions="true"
                   layout="grid"
                   @expand="expandedPlaylistId = null"

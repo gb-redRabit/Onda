@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, inject } from 'vue';
+import { ref, computed, inject } from 'vue';
 import { ChevronLeft, ChevronRight, ChevronUp, Home } from '@lucide/vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useI18n } from 'vue-i18n';
+import { buildSegments } from './segments';
 
 const explorer = useExplorerStore();
 const settings = useSettingsStore();
@@ -15,11 +16,11 @@ const showConfirm = inject<(msg: string) => Promise<boolean>>('showConfirm', asy
 const dropTargetIdx = ref(-2);
 const dragEnterCount = ref(0);
 
-function segmentPath(idx: number): string {
-  if (idx < 0) return '';
-  const parts = explorer.currentPath.split('\\').filter(Boolean);
-  return parts.slice(0, idx + 1).join('\\');
-}
+/**
+ * Breadcrumb segments, each carrying the path it navigates to. See buildSegments
+ * for why the path is the key rather than the index.
+ */
+const segments = computed(() => buildSegments(explorer.currentPath));
 
 function onDragOver(e: DragEvent, idx: number) {
   e.preventDefault();
@@ -103,18 +104,18 @@ async function onDrop(e: DragEvent, targetPath: string) {
       <Home :size="12" class="pointer-events-none" />
     </button>
     <template v-if="explorer.currentPath">
-      <template v-for="(part, idx) in explorer.currentPath.split('\\').filter(Boolean)" :key="idx">
-        <span v-if="idx > 0" class="text-base-content/50">\</span>
+      <template v-for="seg in segments" :key="seg.path">
+        <span v-if="seg.idx > 0" class="text-base-content/50">\</span>
         <button
           class="fx-noise px-1 py-0.5 fx-depth rounded-field hover:bg-base-content/10 text-base-content/70 hover:text-base-content transition-colors truncate max-w-30"
-          :class="{ 'ring-2 ring-primary bg-primary/50': dropTargetIdx === idx }"
-          @click="explorer.navigateTo(segmentPath(idx))"
-          @dragover="onDragOver($event, idx)"
-          @dragenter="onDragEnter($event, idx)"
+          :class="{ 'ring-2 ring-primary bg-primary/50': dropTargetIdx === seg.idx }"
+          @click="explorer.navigateTo(seg.path)"
+          @dragover="onDragOver($event, seg.idx)"
+          @dragenter="onDragEnter($event, seg.idx)"
           @dragleave="onDragLeave"
-          @drop="onDrop($event, segmentPath(idx))"
+          @drop="onDrop($event, seg.path)"
         >
-          {{ part }}
+          {{ seg.part }}
         </button>
       </template>
     </template>

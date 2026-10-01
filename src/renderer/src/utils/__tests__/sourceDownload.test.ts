@@ -44,4 +44,31 @@ describe('buildSourceDownloadInput', () => {
 
     expect(input.source?.allowPrivateNetwork).toBe(false);
   });
+
+  it('carries the item API id so a finished download can be marked', () => {
+    const input = buildSourceDownloadInput({
+      item: {
+        id: 'episode-1',
+        title: 'Episode 1',
+        mediaUrl: 'https://cdn.example.com/1.mp4',
+        type: 'video'
+      },
+      source: SOURCE,
+      baseDir: 'C:/Downloads/api',
+      autoAddToLibrary: false
+    });
+
+    expect(input.source?.sourceItemId).toBe('episode-1');
+  });
+
+  it('omits the item API id when the mapping did not provide one', () => {
+    const input = buildSourceDownloadInput({
+      item: { id: '', title: 'Item', mediaUrl: 'https://cdn.example.com/2.mp4', type: 'file' },
+      source: SOURCE,
+      baseDir: 'C:/Downloads/api',
+      autoAddToLibrary: false
+    });
+
+    expect(input.source?.sourceItemId).toBeUndefined();
+  });
 });

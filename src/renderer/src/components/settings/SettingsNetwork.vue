@@ -23,7 +23,7 @@ function updateProxy(patch: Partial<typeof settings.network.proxy>) {
 
     <template v-if="settings.network.proxy.enabled">
       <SettingsSectionTitle :title="$t('settings.proxyType')" />
-      <div class="flex gap-1 bg-base-200/[var(--glass-alpha)] rounded-box p-1 w-fit">
+      <div class="flex gap-1 bg-base-200/(--glass-alpha) rounded-box p-1 w-fit">
         <button
           v-for="type in ['http', 'https', 'socks5'] as const"
           :key="type"
@@ -44,7 +44,7 @@ function updateProxy(patch: Partial<typeof settings.network.proxy>) {
           <SettingsSectionTitle :title="$t('settings.proxyHost')" />
           <input
             :value="settings.network.proxy.host"
-            class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
+            class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
             @input="updateProxy({ host: ($event.target as HTMLInputElement).value })"
           />
         </div>
@@ -53,7 +53,7 @@ function updateProxy(patch: Partial<typeof settings.network.proxy>) {
           <input
             type="number"
             :value="settings.network.proxy.port"
-            class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
+            class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
             @input="updateProxy({ port: parseInt(($event.target as HTMLInputElement).value) || 0 })"
           />
         </div>
@@ -61,7 +61,7 @@ function updateProxy(patch: Partial<typeof settings.network.proxy>) {
           <SettingsSectionTitle :title="$t('settings.proxyUsername')" />
           <input
             :value="settings.network.proxy.username"
-            class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
+            class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
             @input="updateProxy({ username: ($event.target as HTMLInputElement).value })"
           />
         </div>
@@ -70,7 +70,7 @@ function updateProxy(patch: Partial<typeof settings.network.proxy>) {
           <input
             type="password"
             :value="settings.network.proxy.password"
-            class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
+            class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
             @input="updateProxy({ password: ($event.target as HTMLInputElement).value })"
           />
         </div>
@@ -109,7 +109,7 @@ function updateProxy(patch: Partial<typeof settings.network.proxy>) {
     <input
       :value="settings.network.userAgent"
       placeholder="Mozilla/5.0 ..."
-      class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
+      class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
       @input="settings.updateNetwork({ userAgent: ($event.target as HTMLInputElement).value })"
     />
   </SettingsGroup>

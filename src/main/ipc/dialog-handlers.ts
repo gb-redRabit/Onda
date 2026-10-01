@@ -2,19 +2,27 @@ import { ipcMain, dialog, BrowserWindow } from 'electron';
 import { readdir } from 'fs/promises';
 import { join, extname, dirname } from 'path';
 import { VIDEO_EXTS, AUDIO_EXTS } from '../../shared/constants';
-import { addAllowedRoot } from '../media-server';
+import { addAllowedRoot } from '../media/media-server';
 import { logger } from '../../shared/logger';
 
-function getParentWindow(): BrowserWindow | null {
-  return BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0] ?? null;
+// Parent the dialog to the window that actually invoked it. `getFocusedWindow()`
+// can point at another window (PiP, explorer) if focus changes while the call is
+// in flight, which makes the modal attach to the wrong window.
+function getParentWindow(sender: Electron.WebContents): BrowserWindow | null {
+  return (
+    BrowserWindow.fromWebContents(sender) ??
+    BrowserWindow.getFocusedWindow() ??
+    BrowserWindow.getAllWindows()[0] ??
+    null
+  );
 }
 
 export function registerDialogHandlers(): void {
   ipcMain.handle(
     'dialog:openImage',
-    async (_event): Promise<{ canceled: boolean; filePaths: string[] }> => {
+    async (event): Promise<{ canceled: boolean; filePaths: string[] }> => {
       try {
-        const win = getParentWindow();
+        const win = getParentWindow(event.sender);
         const result = win
           ? await dialog.showOpenDialog(win, {
               properties: ['openFile'],
@@ -34,9 +42,9 @@ export function registerDialogHandlers(): void {
 
   ipcMain.handle(
     'dialog:openSubtitle',
-    async (_event): Promise<{ canceled: boolean; filePaths: string[] }> => {
+    async (event): Promise<{ canceled: boolean; filePaths: string[] }> => {
       try {
-        const win = getParentWindow();
+        const win = getParentWindow(event.sender);
         const options: Electron.OpenDialogOptions = {
           properties: ['openFile', 'multiSelections'],
           filters: [
@@ -58,9 +66,9 @@ export function registerDialogHandlers(): void {
     }
   );
 
-  ipcMain.handle('dialog:openFile', async (_event, options?: Electron.OpenDialogOptions) => {
+  ipcMain.handle('dialog:openFile', async (event, options?: Electron.OpenDialogOptions) => {
     try {
-      const win = getParentWindow();
+      const win = getParentWindow(event.sender);
       const dialogOptions: Electron.OpenDialogOptions = {
         properties: ['openFile', 'multiSelections'],
         filters: [
@@ -104,9 +112,9 @@ export function registerDialogHandlers(): void {
     }
   });
 
-  ipcMain.handle('dialog:openFolder', async (_event): Promise<string[]> => {
+  ipcMain.handle('dialog:openFolder', async (event): Promise<string[]> => {
     try {
-      const win = getParentWindow();
+      const win = getParentWindow(event.sender);
       const result = win
         ? await dialog.showOpenDialog(win, { properties: ['openDirectory'] })
         : await dialog.showOpenDialog({ properties: ['openDirectory'] });
@@ -122,9 +130,9 @@ export function registerDialogHandlers(): void {
     }
   });
 
-  ipcMain.handle('dialog:openFolderFiles', async (_event) => {
+  ipcMain.handle('dialog:openFolderFiles', async (event) => {
     try {
-      const win = getParentWindow();
+      const win = getParentWindow(event.sender);
       const result = win
         ? await dialog.showOpenDialog(win, { properties: ['openDirectory'] })
         : await dialog.showOpenDialog({ properties: ['openDirectory'] });

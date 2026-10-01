@@ -7,20 +7,6 @@ export type ChipId = 'all' | 'liked' | 'recent' | 'most';
 export type SortKey = 'title' | 'artist' | 'album' | 'duration' | 'added' | 'plays';
 export type SortDir = 'asc' | 'desc';
 
-export function filterLibrarySearch(tracks: MediaFile[], query: string): MediaFile[] {
-  const q = query.toLowerCase().trim();
-  if (!q) return [];
-  return tracks.filter(
-    (tr) =>
-      tr.type !== 'image' &&
-      (tr.name.toLowerCase().includes(q) ||
-        tr.metadata?.title?.toLowerCase().includes(q) ||
-        tr.metadata?.artist?.toLowerCase().includes(q) ||
-        tr.metadata?.album?.toLowerCase().includes(q) ||
-        tr.path.toLowerCase().includes(q))
-  );
-}
-
 export function applyLibraryChip(
   tracks: MediaFile[],
   chip: ChipId,

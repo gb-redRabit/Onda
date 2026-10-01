@@ -68,6 +68,13 @@ async function expectPartRemoved(destPath: string): Promise<void> {
   expect(exists, `${destPath}.part was left behind`).toBe(false);
 }
 
+/** Size of the partial file, or -1 when it is not there. */
+async function partSize(destPath: string): Promise<number> {
+  return stat(`${destPath}.part`)
+    .then((s) => s.size)
+    .catch(() => -1);
+}
+
 describe('http download size limit', () => {
   it('refuses a body whose content-length exceeds the cap, writing nothing', async () => {
     const origin = await startServer((_req, res) => {
@@ -149,7 +156,7 @@ describe('http download size limit', () => {
 });
 
 describe('http download stream teardown', () => {
-  it('releases the write stream when the download is aborted', async () => {
+  it('keeps the partial bytes when the download is aborted, so a retry resumes', async () => {
     const origin = await startServer((_req, res) => {
       res.writeHead(200, { 'content-type': 'application/octet-stream' });
       // Drip data so the abort lands while the body is being written.
@@ -174,17 +181,20 @@ describe('http download stream teardown', () => {
     setTimeout(() => controller.abort(), 120);
 
     await expect(promise).rejects.toThrow(/Aborted/);
-    // A leaked descriptor would keep the file handle open; the .part is removed
-    // either way, and the promise settles exactly once.
-    await expectPartRemoved(destPath);
+    // A paused or cancelled job used to lose everything it had downloaded. The
+    // descriptor is released either way — the .part just stays on disk.
+    await delay(200);
+    const size = await partSize(destPath);
+    expect(size).toBeGreaterThan(0);
   });
 
-  it('leaves no .part when the abort lands before the write stream opens', async () => {
-    // The narrow race: unlinking the .part before createWriteStream has finished
-    // opening it lets the pending open() create the file afterwards, so a
-    // zero-length .part survives — and the next attempt treats it as a valid
-    // resume prefix. It only reproduces when the abort beats the open, so it is
-    // driven here by aborting at once, across several attempts.
+  it('settles the promise exactly once when the abort lands before the stream opens', async () => {
+    // The narrow race: the unlink used to run before createWriteStream had
+    // finished opening the file, so the pending open created a zero-length .part
+    // afterwards and the next attempt treated it as a valid resume prefix. That
+    // file is now expected — an abort before the first byte legitimately leaves
+    // an empty .part — so what is asserted is that the abort is still honoured
+    // and the promise settles, which is what the race used to break.
     const origin = await startServer((_req, res) => {
       res.writeHead(200, { 'content-type': 'application/octet-stream' });
       const pump = (n: number): void => {
@@ -205,20 +215,25 @@ describe('http download stream teardown', () => {
       });
       controller.abort();
       await expect(promise, `attempt ${attempt}`).rejects.toThrow(/Aborted/);
-      await expectPartRemoved(destPath);
     }
   }, 20_000);
 
-  it('rejects once when the response errors mid-body', async () => {
+  it('rejects once when the response errors mid-body and keeps what arrived', async () => {
     // Destroy on the first write rather than after a timer: a timer races the
-    // body, and on a fast machine the download would complete and resolve.
+    // body, and on a fast machine the download would complete and resolve. The
+    // delay is still needed — an immediate destroy resets the socket before the
+    // client reads anything, and then there is no partial file to keep.
     const origin = await startServer((_req, res) => {
       res.writeHead(200, { 'content-length': '4096' });
       res.write('a'.repeat(64));
-      res.destroy();
+      setTimeout(() => res.destroy(), 80);
     });
     const destPath = await tempFile('reset.bin');
 
     await expect(downloadHttpFile({ url: `${origin}/f`, destPath, ...TRUST })).rejects.toThrow();
+    // A dropped connection is the definition of a retryable failure, so the
+    // bytes that did arrive stay on disk for the next attempt.
+    await delay(300);
+    expect(await partSize(destPath)).toBe(64);
   });
 });

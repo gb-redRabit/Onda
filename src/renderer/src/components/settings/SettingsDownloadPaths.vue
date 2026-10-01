@@ -32,7 +32,7 @@ function onSourcesFolderChange(e: Event) {
       <input
         :value="settings.download.defaultPath"
         readonly
-        class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm"
+        class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm"
         :placeholder="$t('settings.downloadPathPlaceholder')"
       />
       <button
@@ -48,7 +48,7 @@ function onSourcesFolderChange(e: Event) {
       <input
         :value="settings.download.sourcesDir"
         readonly
-        class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm"
+        class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm"
         :placeholder="$t('settings.sourcesPathPlaceholder')"
       />
       <button
@@ -73,7 +73,7 @@ function onSourcesFolderChange(e: Event) {
       <input
         :value="settings.download.tempDir || ''"
         readonly
-        class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm"
+        class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm"
         :placeholder="$t('settings.tempDirPlaceholder')"
       />
       <button

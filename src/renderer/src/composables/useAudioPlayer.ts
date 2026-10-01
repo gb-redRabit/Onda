@@ -60,11 +60,11 @@ function ensureModule() {
         } else if (track.type === 'stream') {
           audioEngine.loadRemote(track.path);
           resumeAndPlay();
-          player.flushPendingQueue();
+          player.enrichPendingQueue();
         } else if (track.type === 'audio') {
-          audioEngine.loadTrack(track);
+          audioEngine.loadTrack(track, { resume: player.consumeResumeIntent(track.path) });
           resumeAndPlay();
-          player.flushPendingQueue();
+          player.enrichPendingQueue();
           if (useSettingsStore().playback.gaplessPlayback) {
             const next = player.pendingQueue[0] ?? player.queue[0];
             if (next && next.type === 'audio') audioEngine.preloadNext(next);
@@ -105,7 +105,9 @@ function ensureModule() {
 
   const existingTrack = player.currentTrack;
   if (existingTrack?.type === 'audio') {
-    audioEngine.loadTrack(existingTrack);
+    audioEngine.loadTrack(existingTrack, {
+      resume: player.consumeResumeIntent(existingTrack.path)
+    });
     if (player.isPlaying) {
       resumeAndPlay();
     }
@@ -114,7 +116,7 @@ function ensureModule() {
     if (player.isPlaying) {
       resumeAndPlay();
     }
-    player.flushPendingQueue();
+    player.enrichPendingQueue();
   }
 
   volume.value = player.volume;

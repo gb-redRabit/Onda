@@ -107,6 +107,7 @@ onMounted(async () => {
     </div>
     <button
       v-if="hasFinished"
+      data-testid="downloads-clear-finished"
       class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
       @click="yt.clearFinishedDownloads"
     >

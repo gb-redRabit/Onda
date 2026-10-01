@@ -1,239 +1,416 @@
+<div align="center">
+
 # Onda
 
-<div align="center">
-  <img src="https://img.shields.io/badge/Electron-43.2-47848f?style=flat&logo=electron&logoColor=white" alt="Electron" />
-  <img src="https://img.shields.io/badge/Vue.js-3.5-4FC08D?style=flat&logo=vue.js&logoColor=white" alt="Vue 3" />
-  <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Tailwind_CSS-4.3-38B2AC?style=flat&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
-  <img src="https://img.shields.io/badge/Vitest-3.2-6E9F18?style=flat&logo=vitest&logoColor=white" alt="Vitest" />
-  <img src="https://img.shields.io/github/v/release/gb-redRabit/Onda?style=flat&label=version&color=605dff" alt="Wersja" />
+### Your music and video, finally in one place. · Twoja muzyka i wideo wreszcie w jednym miejscu.
+
+<img src="https://img.shields.io/badge/Electron-43.2-47848f?style=flat&logo=electron&logoColor=white" alt="Electron" />
+<img src="https://img.shields.io/badge/Vue.js-3.5-4FC08D?style=flat&logo=vue.js&logoColor=white" alt="Vue 3" />
+<img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat&logo=typescript&logoColor=white" alt="TypeScript" />
+<img src="https://img.shields.io/badge/Tailwind_CSS-4.3-38B2AC?style=flat&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+<img src="https://img.shields.io/badge/Playwright-1.63-2EAD33?style=flat&logo=playwright&logoColor=white" alt="Playwright" />
+<img src="https://img.shields.io/github/v/release/gb-redRabit/Onda?style=flat&label=version&color=605dff" alt="Version" />
+
+**[⬇ Download the latest release](https://github.com/gb-redRabit/Onda/releases)**
+
+[English](#english-version) &nbsp;|&nbsp; [Polski](#wersja-polska)
+
 </div>
 
-<br>
-
-**Onda** to zaawansowany, desktopowy odtwarzacz muzyki i wideo zbudowany na stosie **Electron + Vue 3 + TypeScript + Tailwind CSS**. Odtwarza lokalne pliki audio i wideo, zarządza biblioteką multimediów z metadanymi, eksploruje system plików, wyświetla obrazy, obsługuje napisy (ASS/SRT/VTT), streamuje z YouTube i SoundCloud, pobiera media i oferuje w pełni konfigurowalne motywy w Kreatorze Motywów.
-
 ---
 
-**[Pobierz najnowszą wersję](https://github.com/gb-redRabit/Onda/releases)**
+## English Version
 
-## Funkcje
+### Onda — a local-first media player and downloader that respects your machine
 
-### Odtwarzanie
+**Onda** is a fast, private, offline-first desktop media hub for Windows, macOS and Linux, built on **Electron + Vue 3 + TypeScript**. It plays your local audio and video, manages a rich media library, browses your file system, renders subtitles, streams from YouTube and SoundCloud, downloads media with a full post-processing pipeline, and lets you design your own theme — all without an account or telemetry.
 
-- **Silnik audio** oparty o Web Audio API, oddzielony od UI (EventBus) — audio gra w tle także przy przełączaniu widoków.
-- **10-pasmowy equalizer** z presetami, regulacja głośności, seek, kolejka odtwarzania z przeciąganiem, tasowanie i powtarzanie (all/one/none).
-- **Wizualizacje audio** — 8 trybów renderowanych na canvasie z użyciem `AnalyserNode`: bars, spectrum, wave, radial, rings, circle, particles, none. Crossfade między trybami, konfigurowalne kolory (primary/secondary), czułość (sensitivity), wygładzanie (smoothing), limit FPS i jakość renderowania (low/medium/high — DPR cap + liczba elementów).
-- **Widok Audio (free canvas)** — pełna swoboda rozmieszczania 5 elementów (wizualizacja, okładka, info utworu, progress, kontrolki) na canvasie z pozycjonowaniem procentowym, warstwami (layer 1–5), przezroczystością i widocznością. 5 presetów layoutu (compact/stacked/split/full/immersive) z natychmiastowym przełączaniem.
-- **Edytor layoutu audio** — split-view z mini podglądem (480×320), siatką 1%, drag-and-drop na canvasie, suwaki X/Y/width/height/opacity/layer, show/hide per element, przycisk reset.
-- **Fullscreen audio** — prawdziwy Fullscreen API (Escape/F11), auto-hide HUD z konfigurowalnym opóźnieniem (0–10s), przezroczystość HUD (10–100%).
-- **Pulse okładki** — subtelna animacja scale(1.0–1.06) zsynchronizowana z basem z `AnalyserNode`.
-- **Video cover loop** — okładki wideo (rodzeństwo mp4 przy audio) grają w pętli do przodu (`onended` → `currentTime = 0; play()`); ping-pong odrzucony, bo `playbackRate = -1` nie jest wspierany w Electronie.
-- **Marquee tytułu** — długie tytuły i artyści przesuwają się animacją CSS z obliczanym offsetem.
-- **Odtwarzanie wideo** — HTML5, pełny ekran, Picture-in-Picture, prędkość 0.2–3.0×, filtry, strefy pomijania (skip zones), OSD.
-- **Transkodowanie w locie** (chunk-first) kodeków niewspieranych przez Chromium (np. AC3/DTS → AAC) do osobnego toru audio.
-- **Media Session API** — metadata i sterowanie (odtwórz/pauza/następny/poprzedni/seek) z poziomu systemu i ekranu blokady.
+> No cloud lock-in. No telemetry. Your files, your machine, your rules.
 
-### Napisy
+### Features
 
-- ASS/SRT/VTT/SSA, napisy zewnętrzne i osadzone, renderowanie ASS przez **JASSUB** (Wasm + Web Worker).
-- Ekstrakcja czcionek z załączników MKV (`mkvextract`).
-- Przełączanie ścieżek napisów w locie.
+**Playback**
 
-### Biblioteka multimediów
+- 🎧 Audio engine built on the Web Audio API, decoupled from the UI via an event bus — music keeps playing while you browse.
+- 🎚 10-band equalizer with presets, gapless/normalization routing and per-source volume.
+- 🌈 8 canvas visualizations (bars, spectrum, wave, radial, rings, circle, particles, none) with crossfade, configurable colors, sensitivity, smoothing, FPS cap and quality levels.
+- 🖼 Free-canvas Audio View: place 5 elements (visualizer, cover, track info, progress, controls) anywhere with percentage positioning, layers and opacity. 5 layout presets.
+- 🛠 Layout editor with a live mini-preview, 1% grid, drag-and-drop and per-element show/hide.
+- ⛶ True Fullscreen API, auto-hiding HUD, cover "pulse" synced to the bass, video-cover loops and CSS marquee for long titles.
+- 🎬 Video playback: fullscreen, Picture-in-Picture, 0.2–3.0× speed, filters, skip zones, on-the-fly transcoding of Chromium-unsupported codecs (AC3/DTS → AAC).
+- 📱 Media Session API integration (system media keys, lock screen).
 
-- Skanowanie folderów z **incremental scan** (niezmienione pliki nie są parsowane ponownie) i **watcherem plików** (`chokidar` — automatyczne odświeżanie przy zmianach na dysku).
-- Metadane audio (ID3/FLAC/MP4) przez `music-metadata`, okładki (pamięć + cache na dysku, `sharp`).
-- Widoki: lista utworów, siatka wideo/albumów, drzewo folderów, artyści, playlisty, obrazy.
-- Edycja tagów ID3, wyszukiwanie/uzupełnianie metadanych z **MusicBrainz**, ulubione, statystyki odtworzeń.
+**Subtitles**
 
-### Eksplorator plików
+- 💬 ASS/SRT/VTT/SSA, external and embedded, rendered through **JASSUB** (WASM + Web Worker).
+- 🔤 Font extraction from MKV attachments (`mkvextract`), live track switching.
 
-- Dyski, foldery, zakładki, breadcrumb, 6 trybów widoku z wirtualizacją (`@tanstack/vue-virtual`).
-- Zaznaczanie wielokrotne, kopiowanie/przenoszenie/usuwanie, zmiana nazwy, duplikaty, właściwości, terminal, otwieranie w aplikacji domyślnej.
-- **ImageViewer** (lightbox) z przejściami, zoomem, rotacją, pokazem slajdów i paskiem miniatur.
+**Media library**
 
-### Online (YouTube / SoundCloud) i pobieranie
+- 📚 Incremental folder scanning (unchanged files are never re-parsed) + a file watcher (`chokidar`) for automatic refresh.
+- 🏷 Audio metadata (ID3/FLAC/MP4) via `music-metadata`, covers cached to disk with `sharp`.
+- 🗂 Views: track list, video/album grid, folder tree, artists, playlists, images.
+- ✏️ ID3 tag editing, MusicBrainz metadata lookup, favorites and play statistics.
 
-- Widok **/online** z przełącznikiem platform: YouTube i SoundCloud.
-- **Streaming online** — „Odtwórz" na kartach wyników gra bez pobierania (YT przez yt-dlp, SC przez wewnętrzne API z fallbackiem yt-dlp); kolejka streamów z auto-next, cache URL-i (LRU, TTL 2h) i prefetch na hover.
-- **Hardening streamów** — retry 403 z backoffem ×4, fallback direct (bez CORS) przy błędzie proxy, re-play w `canplay`, prefetch + warm probe (IntersectionObserver, 300px/600ms), cap współbieżności (4).
-- **SoundCloud** — własny klient api-v2 (wewnętrzne API web-aplikacji SC) z automatyczną ekstrakcją `client_id` z bundli, fallback yt-dlp. Wyszukiwanie, sety (playlisty), profile artystów; pobieranie MP3 z tagami ID3 i okładką (fallback yt-dlp dla utworów bez progressive); subskrypcje z auto-download nowych utworów; zapisywanie utworów/setów i batch linków obu platform.
-- **Zapisane** (`/saved`) — osobny widok zapisanych utworów/playlist (YT/SC) do szybkiego powrotu, radio online (placeholder „Wkrótce").
-- **Wyszukiwanie i nawigacja** — rozpoznawanie linków (wideo / playlista / kanał), widok kanału z zakładkami Wideo/Shorts i nieskończonym przewijaniem, nieskończony scroll w wynikach.
-- **Subskrypcje kanałów** — automatyczne sprawdzanie nowych wideo (co 6h), powiadomienia, auto-download.
-- **Pobieranie** (yt-dlp) — kolejka audio/wideo, progres, prędkość, ETA, anulowanie, retry/backoff, okładki (miniatura / klatka / clip wideo), metadane, podfoldery kanału/playlisty. Post-process: tagi, okładki, sync z biblioteką, SHA-256 (opcjonalny), napisy. Persystencja kolejki, restore po restarcie (interrupted→paused, pending→re-queued).
-- **Integracja z biblioteką** — pobrane pliki lądują w bibliotece (jeśli folder docelowy jest folderem biblioteki).
+**File explorer**
 
-### PiP (Picture-in-Picture)
+- 🗃 Drives, folders, tabs, breadcrumbs and 6 virtualized view modes.
+- 🧹 Multi-select, copy/move/delete, rename, duplicate finder, properties, terminal, open-with.
+- 🖼 ImageViewer lightbox with zoom, rotate, slideshow and a thumbnail strip.
 
-- Osobne okna dla wideo i audio, pozycja, rozmiar, always-on-top, podgląd.
-- Synchronizacja motywu między głównym oknem a oknami PiP przez IPC (`audio-pip:theme`/`pip:theme`).
+**Online (YouTube / SoundCloud) & downloads**
 
-### System i integracja
+- 🌐 One `/online` view with a platform switch.
+- ▶️ Online streaming without downloading — YouTube through `yt-dlp`, SoundCloud through its internal API with a `yt-dlp` fallback; stream queue with auto-next, LRU URL cache (2 h TTL) and hover prefetch.
+- 🛡 Stream hardening: 403 retry with backoff, direct fallback, concurrency cap, warm probes.
+- 🎵 SoundCloud client (api-v2, auto `client_id` extraction), sets, artist profiles, MP3 download with ID3 tags and cover art.
+- 🔔 Subscriptions — automatic new-video checks (every 6 h), notifications and auto-download.
+- ⬇️ Download queue (`yt-dlp` + native HTTP) with progress, speed, ETA, cancel, retry/backoff, covers (thumbnail / frame / video clip), metadata, channel/playlist subfolders and a full post-process (tags, covers, SHA-256, subtitles, library sync).
+- 🔄 Queue persistence and crash-safe restore (interrupted → paused, pending → re-queued).
 
-- **Wtyczki** — instalacja z folderu pozostawia wtyczkę wyłączoną; przed aktywacją użytkownik przegląda uprawnienia, allowlistę sieciową i hooki. Każdy worker działa w sandboxie. Zgoda jest wiązana z SHA‑256 pliku `entry` i z zestawem zadeklarowanych możliwości, więc zmiana kodu lub manifestu wymaga ponownego zatwierdzenia; wtyczka z nieaktualną zgodą jest wyłączana przy starcie.
-  - **API** — `api.on` (hooki `app:start`, `track:play`, `track:timeupdate`, `track:end`, `track:queued`, `library:scan`, `download:start`, `download:complete`, `download:error`; hook musi być zadeklarowany w `manifest.hooks`), `api.query` (status odtwarzacza, `player:progress`, `player:spectrum`, wyszukiwanie biblioteki), `api.action` (`player:seek`, `player:enqueue`, `track:toggleFavorite`), `api.storage` (keys/get/set/remove), `api.settings` (typy i zakresy z manifestu są walidowane), `api.fetch` (allowlista `permissions.network.allow`, blokada private IP i walidacja redirectów), `api.notify`, `api.visual` (hostowane dekoracje elementów widoku audio), `api.ui.set/clear` (hostowo renderowane sloty tekstowe, `manifest.uiSlots`, wymaga `visual`), `api.log`.
-  - **Komendy** — `api.registerCommand({ id, label, icon, location, shortcut, action })`: dostępne w palecie poleceń, na karcie wtyczki, w pasku widoku audio (`location: 'audio-view'`) i w menu kontekstowym utworu (`location: 'track-menu'`, akcja otrzymuje snapshot utworu).
-  - **Konfiguracja** — pole `settings` w manifeście renderowane jako formularz na karcie wtyczki.
-  - **Przykłady** — 12 wtyczek w `resources/plugins-examples` (hello, triangle, progress-slot, sleep-timer, auto-fade, vu-meter, focus-mode, smart-queue, listen-history, track-actions, metadata-lookup, note-readout) instaluje się jednym kliknięciem; każda zostaje wyłączona do zatwierdzenia uprawnień.
-  - **Skróty** — globalne skróty klawiszowe komend z walidacją i wykrywaniem kolizji.
-- **Autostart** (uruchamianie przy starcie systemu, start zminimalizowany do trayu, ukrywanie do trayu po zamknięciu).
-- **Skojarzenia plików** (mp3, flac, ogg, wav, m4a, aac, mp4, mkv, webm, mov, avi) i **single-instance** (otwieranie plików z systemu trafia do istniejącej instancji).
-- Globalne skróty (media keys), tray, command palette (Ctrl+K), aktualizacje (`electron-updater`).
-- Lokalizacja **PL/EN**, motywy (dark / light / midnight / spotify).
+**Picture-in-Picture**
 
-### Motywy i wygląd
+- 📌 Separate always-on-top windows for video and audio, with position/size memory, peek/auto-hide and live theme sync.
 
-- **29 zmiennych semantycznych** zgodnych z daisyUI Theme Generator (kolory 20 + radiusy 3 + rozmiary 2 + border 1 + efekty 2 + szkło 1).
-- **4 motywy wbudowane** (dark/light/midnight/spotify) + **Kreator Motywów** (Własny) z live-preview: Baza, Marka (primary/secondary/accent/neutral), Statusy, Geometria (radius/border/size), Szkło (glassAlpha 0–100%), Kopiuj/Wklej JSON.
-- **Przezroczyste okno** — `transparent: true` + `--glass-alpha` steruje kryciem; backdrop-filter blur na tłach.
-- **Migracja 111 plików** — legacy klasy (`bg-bg-*`, `border-border-*`, `text-fg-*`, `accent-*`) → tokeny semantyczne (`bg-base-*`, `border-base-300`, `text-base-content`, `primary`); 2700 podmian, zero resztek.
-- **Radiusy** — `rounded-box` (karty/modale), `rounded-field` (kontrolki), `rounded-selector` (checkboxy/toggle); suwaki geometrii sterują całym UI.
-- **Depth/noise** — klasy `.fx-depth`/`.fx-noise` na polach/kartach, przełączniki w Kreatorze.
+**Plugins**
 
-### Ustawienia (9 grup w 6 sekcjach)
+- 🔌 Install from a folder; every plugin starts disabled until you review its permissions, network allowlist and hooks.
+- 🧱 Sandboxed Web Worker with resource budgets; consent is bound to the entry file's SHA-256 so changed code needs re-approval.
+- 🧩 Rich API: `on` hooks, `query`, `action`, `storage`, `settings`, `fetch` (host allowlist + private-IP block), `notify`, `visual`, `ui`, `log` + custom commands in the command palette and context menus.
+- 📦 12 ready-made example plugins installable with one click.
 
-Odtwarzanie · Wygląd · Motyw · Biblioteka · Sieć · System · Zaawansowane (Eksplorator, Klucze API, SystemInfo)
+**System & integration**
 
-- **Reorganizacja** — 16 zakładek → 9 grup w 6 sekcjach z ikonami i opisami.
-- **Wyszukiwarka ustawień** — filtruje po kluczach PL/EN (jak CommandPalette).
-- **Eksport/import** — JSON (sekrety przez safeStorage, nigdy plaintext).
-- **Zaawansowane ustawienia** — cache okładek (500–10000), max pobierania (1–8), limit prędkości, retry/backoff, crossfade (0–12s), preload strumieni, głośność per źródło, sleep timer, jakość per platforma (YT/SC), proxy per platforma, log level, telemetria OFF.
+- 🚀 Autostart, start minimized to tray, close-to-tray.
+- 📂 File associations (mp3, flac, ogg, wav, m4a, aac, mp4, mkv, webm, mov, avi) and single-instance file opening.
+- ⌨️ Global media shortcuts, tray, command palette (Ctrl+K), auto-updates (`electron-updater`).
+- 🌍 PL/EN localization, 4 built-in themes (dark / light / midnight / spotify) and a live-preview Theme Creator.
 
----
+**Themes & appearance**
 
-## Stos technologiczny
+- 🎨 29 semantic theme variables (daisyUI-compatible), transparent/acrylic window with adjustable opacity.
+- 🧬 Radius presets (`rounded-box` / `rounded-field` / `rounded-selector`) driving the whole UI, depth/noise effects.
 
-| Komponent      | Technologia                                    |
-| -------------- | ---------------------------------------------- |
-| Runtime        | Electron 43.2                                  |
-| Frontend       | Vue 3.5 (Composition API, `<script setup>`)    |
-| Język          | TypeScript 5.9 (strict)                        |
-| Builder        | electron-vite 5 + Vite 7.2                     |
-| Style          | Tailwind CSS 4.3 + daisyUI (theme values)      |
-| Stan           | Pinia 3                                        |
-| Lokalizacja    | vue-i18n 11 (PL/EN, parytety wymuszane testem) |
-| Routing        | vue-router 4 (hash history, lazy loading)      |
-| Metadane       | music-metadata, node-id3                       |
-| Wirtualizacja  | @tanstack/vue-virtual                          |
-| Obrazy         | sharp (libvips)                                |
-| Napisy         | jassub (Wasm)                                  |
-| Watcher plików | chokidar                                       |
-| Testy          | Vitest 3 + jsdom                               |
-| Pakiety        | electron-builder (NSIS/DMG/AppImage/deb/rpm)   |
-| Streaming      | yt-dlp (nightly), SoundCloud api-v2            |
+**Settings**
 
----
+- ⚙️ 9 groups in 6 sections, a settings search bar, JSON export/import with `safeStorage`-encrypted secrets, per-platform quality/proxy, cache and download limits, log level and telemetry off.
 
-## Zależności zewnętrzne (nie-NPM)
+### Tech Stack
 
-Aplikacja **nie dołącza** żadnych binarek — instalator zawiera wyłącznie Onda i Electron.
-FFmpeg/FFprobe oraz yt-dlp są pobierane na żądanie do profilu użytkownika i weryfikowane
-SHA-256 (wersje przypięte w `binaries.json`, aktualizowane przez PR); jeśli narzędzie jest
-już w systemie (PATH), Onda użyje go bez pobierania. Status pokazuje i instaluje panel
-**Ustawienia → Zależności** (oraz krok zależności w kreatorze pierwszego uruchomienia):
+| Layer          | Technology                                                    |
+| -------------- | ------------------------------------------------------------- |
+| Runtime        | Electron 43.2 (sandbox, contextIsolation, no nodeIntegration) |
+| UI             | Vue 3.5 (Composition API, `<script setup>`)                   |
+| Language       | TypeScript 5.9 (strict)                                       |
+| Build          | electron-vite 5 + Vite 7.2                                    |
+| Styling        | Tailwind CSS 4.3 + daisyUI theme values                       |
+| State          | Pinia 3                                                       |
+| Routing        | vue-router 4 (hash history, lazy loading)                     |
+| i18n           | vue-i18n 11 (PL/EN, parity enforced by tests)                 |
+| Metadata       | music-metadata, node-id3                                      |
+| Virtualization | @tanstack/vue-virtual                                         |
+| Images         | sharp (libvips)                                               |
+| Subtitles      | jassub (WASM)                                                 |
+| File watching  | chokidar                                                      |
+| Testing        | Vitest 3 + jsdom, Playwright 1.63 (E2E)                       |
+| Packaging      | electron-builder (NSIS / DMG / AppImage / deb / rpm)          |
 
-- **FFmpeg / FFprobe** — transkodowanie audio w locie, ekstrakcja klatek, miniatury.
-- **yt-dlp** — pobieranie z YouTube i SoundCloud (fallback dla API), nightly builds.
-- **MKVToolNix (mkvextract)** — ekstrakcja osadzonych czcionek z `.mkv`.
+### External dependencies (not bundled)
 
----
+The installer ships **only Onda and Electron** — no third-party binaries. FFmpeg/FFprobe and `yt-dlp` are fetched on demand into the user profile and verified against a pinned SHA-256 (`binaries.json`); if a tool already exists on `PATH`, Onda uses it as-is. Status and installation live in **Settings → Dependencies** (and in the first-run wizard):
 
-## Uruchomienie
+- **FFmpeg / FFprobe** — on-the-fly audio transcoding, frame extraction, thumbnails.
+- **yt-dlp** — downloading from YouTube and SoundCloud (API fallback).
+- **MKVToolNix (`mkvextract`)** — extracting embedded MKV fonts.
 
-Wymagania: **Node.js ≥ 22.12**.
+### Project Structure
+
+```text
+Onda/
+├─ src/
+│  ├─ main/                 Electron main process (Windows, tray, lifecycle)
+│  │  ├─ index.ts           bootstrap, single-instance, splash, boot timeline
+│  │  ├─ media-server.ts    local HTTP media server (token, roots, Range)
+│  │  ├─ ipc/               ~25 typed IPC handler modules (contract-driven)
+│  │  ├─ downloads/         yt-dlp + HTTP download pipeline (queue, retry, post-process)
+│  │  ├─ utils/             exec, sharp, validation, safe broadcast
+│  │  └─ …                  updater, tray, PiP managers, auth, watchers
+│  ├─ preload/              contextBridge + generated allowlists (window.api)
+│  ├─ renderer/src/
+│  │  ├─ views/             Home, Library, Explorer, Online, Downloads, Player, Audio, Settings, Sources
+│  │  ├─ modules/           ModuleManager + Player/Explorer/Library/YouTube/Home/Settings
+│  │  ├─ stores/            Pinia stores (player, library, settings, ui, online, sources …)
+│  │  ├─ composables/       ~76 reusable composables
+│  │  ├─ components/        layout, library, online, settings, audio, explorer, sources, wizard …
+│  │  ├─ utils/             ~105 helpers (formatters, caches, media, search …)
+│  │  └─ locales/           en.ts / pl.ts
+│  └─ shared/               types, constants, IPC contract, logger, built-in themes
+├─ e2e/                     Playwright + Electron end-to-end specs
+├─ scripts/                 IPC codegen, FFmpeg fetch, CI guards
+├─ resources/               splash, icons, example plugins
+└─ docs/                    architecture & contributor rules
+```
+
+### Quick Start
+
+Requirements: **Node.js ≥ 22.12** and npm ≥ 11.
 
 ```bash
 npm install
 npm run dev
 ```
 
-### Testy
-
-Aplikacja zawiera **1039 testów** (Vitest, 113 plików) oraz 9 scenariuszy E2E (Playwright + Electron):
+Quality gates:
 
 ```bash
-npm test
-npm run test:watch
+npm test           # 1498 unit tests across 148 files (Vitest)
+npm run typecheck  # tsc (main/preload) + vue-tsc (renderer)
+npm run lint       # ESLint
+npm run e2e        # Playwright + Electron (run `npm run build` first)
 ```
 
-### Build
+Production builds:
 
 ```bash
-npm run build          # typecheck + build (main/preload/renderer)
-npm run build:win      # instalator NSIS (Windows)
-npm run build:mac      # DMG (macOS)
-npm run build:linux    # AppImage / deb / rpm (Linux)
+npm run build        # typecheck + build (main / preload / renderer)
+npm run build:win    # NSIS installer (Windows)
+npm run build:mac    # DMG (macOS)
+npm run build:linux  # AppImage / deb / rpm (Linux)
 ```
 
-### Podpisywanie instalatorów
+> **Signing:** CI-published builds are unsigned (Windows SmartScreen and macOS Gatekeeper will warn). Signing requires an Authenticode certificate and an Apple Developer ID — see `electron-builder.yml`. Until then, keep `verifyUpdateCodeSignature: false` so `electron-updater` accepts its own unsigned updates.
 
-Buildy publikowane z CI są **niespodpisywane** (Windows SmartScreen pokaże
-„Unknown publisher", macOS Gatekeeper wymusi otwarcie przez prawy przycisk →
-Open): podpisywanie wymaga certyfikatu Authenticode (Windows) i Apple
-Developer ID (macOS), patrz sekcja signing w `electron-builder.yml`. Do czasu
-ich dodania nie włączaj `verifyUpdateCodeSignature: true` — inaczej
-electron-updater odrzuca własne, niespodpisane aktualizacje.
+### Performance & Optimization
 
-Konsekwencja dla supply-chain: dopóki instalatory nie są podpisane,
-electron-updater przyjmie aktualizację bez weryfikacji podpisu
-(`verifyUpdateCodeSignature: false`), więc jedynym zabezpieczeniem jest kanał
-dystrybucji (GitHub Releases + `GH_TOKEN` w CI). Po dodaniu certyfikatów:
-ustaw `CODE_SIGN_PUBLISHER`, włącz `verifyUpdateCodeSignature: true`
-i `mac.notarize: true`.
+Onda is built to stay smooth on large libraries and slow disks.
 
----
+| Optimization                     | What it delivers                                                                                                                                                    |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Virtualization everywhere**    | Every long list/grid (library, downloads, explorer, queue, sources) renders only visible rows via `@tanstack/vue-virtual`.                                          |
+| **Lazy loading + idle prefetch** | All routes and heavy panels are async-loaded; core views are prefetched during browser idle time.                                                                   |
+| **Cheap reactivity**             | Large collections use `shallowRef`/`triggerRef`; search uses a prebuilt, normalized index computed once per collection change — not per keystroke.                  |
+| **Debounce & throttle**          | Search 200 ms, settings persistence 300 ms (serialized revision writer), download progress 200 ms, file watcher 2 s.                                                |
+| **Scale-ready scanning**         | Incremental scan (reuses unchanged files by size+mtime), 16-way bounded concurrency, interleaved 50-file chunks and a 50 000-file budget that stops the walk early. |
+| **Byte-range streaming**         | A local HTTP media server serves audio/video with `Range` (incl. suffix) requests; remote streams are proxied with bounded retries.                                 |
+| **Layered caches**               | Cover, thumbnail, stream-URL and remote-image caches are memory+disk layered, each with an explicit cap and TTL — no unbounded growth.                              |
+| **Work off the main thread**     | JASSUB subtitles run in a Web Worker (WASM); plugins are sandboxed in workers with hard CPU/message budgets.                                                        |
+| **Resource safety**              | `AbortController` for cancelling scans/downloads, pinned DNS to prevent SSRF, download concurrency capped at 8, atomic queue persistence.                           |
+| **Quality gates**                | 1498 unit tests + 51 Playwright E2E tests (33 specs) + lint + typecheck + IPC codegen check run on every change.                                                    |
 
-## Skrypty
+### Contributing
 
-| Polecenie                 | Opis                                        |
-| ------------------------- | ------------------------------------------- |
-| `npm run dev`             | Serwer deweloperski z hot reload            |
-| `npm run build`           | Typecheck + build produkcyjny               |
-| `npm run typecheck`       | Weryfikacja typów (main/preload + renderer) |
-| `npm test`                | Testy jednostkowe                           |
-| `npm run lint`            | ESLint                                      |
-| `npm run format`          | Prettier (formatowanie)                     |
-| `npm run format:check`    | Sprawdzenie formatowania                    |
-| `npm run version:check`   | Wersję ustawia release-please (guard CI)    |
-| `npm run check:artifacts` | Testy nie zostawiają plików w repo          |
-| `npm run start`           | Podgląd zbudowanej paczki                   |
-| `npm run build:win`       | Instalator Windows (NSIS)                   |
+Issues and pull requests are welcome. Before committing, run `npm run build` and `npm test`. We follow **Conventional Commits**; releases are managed by **release-please** (`feat` → minor, `fix` → patch). Never run `npm version` on `main` — `npm run version:check` enforces this. See [`RELEASE.md`](./RELEASE.md).
 
----
+By contributing, you agree that your contribution is licensed under the PolyForm Noncommercial License 1.0.0.
 
-## Architektura
+### License
 
-Aplikacja ma strukturę modułową z czystym rozdziałem procesów Electrona:
+[PolyForm Noncommercial License 1.0.0](./LICENSE)
 
-- **main** — cykl życia aplikacji, IPC, media server, downloader, updater, zależności, watcher biblioteki.
-- **preload** — ograniczone, typowane API wystawiane do renderera (contextIsolation + sandbox).
-- **renderer** — widoki zarządzane przez `ModuleManager` (cykl `init → activate → deactivate → destroy`).
-- **shared** — wspólne typy, stałe i helpery (themeModel, builtin-themes, platform, youtube, soundcloud).
+Onda is **source-available**, not open source: you may use, modify and share it freely for any **noncommercial** purpose — personal use, study, hobby projects, education, charities, research and government institutions. **Commercial use requires a separate license**; contact the maintainers. See [`LICENSE`](./LICENSE) for the full terms.
 
-Kluczowe koncepty:
-
-- **Separacja audio/wideo** — `AudioEngine` (Web Audio API) jest niezależny od `<video>` i komunikuje się z UI wyłącznie przez EventBus. `AudioEventBus` jedyny kanał engine→renderer.
-- **Widok Audio (free canvas)** — jeden silnik layoutu zamiast 3 zduplikowanych szablonów. 5 elementów na canvasie z procentowym pozycjonowaniem, warstwami i presetami. Stan persystowany w `settings.appearance.audioLayout`.
-- **Lokalny serwer mediów** — wideo i obrazy są serwowane przez lokalny HTTP z tokenem, obsługą `Range` i fail-closed whitelistą katalogów (omijanie CSP i `file://`). Dwa zestawy rootów: `libraryRoots` (nadpisywane) + `extraRoots` (narastające).
-- **Bezpieczeństwo** — `sandbox`, `contextIsolation`, `nodeIntegration: false`, `webSecurity: true`, walidacja argumentów IPC po stronie main, szyfrowanie sekretów (`safeStorage`), allowlisty IPC, media-server token+origins+roots+realpath, redakcja sekretów w logach.
-- **Multi-platform streaming** — wspólny rejestr providerów (`platform.ts`), hybrydowy klient SC (api-v2 + fallback yt-dlp), cache URL-i (LRU TTL 2h, hardened z retry 403/backoff), proxy CORS-clean przez media-server.
-- **Persystencja** — electron-store (settings, mediaRoots), JSON atomiczny (download-queue, subscriptions, saved-streams), localStorage (biblioteka, settings renderera).
+© 2026 Onda Contributors.
 
 ---
 
-## Współpraca
+## Wersja polska
 
-Zgłoszenia i pull requesty mile widziane. Przed commitem uruchom `npm run build` i `npm test`.
+### Onda — lokalny odtwarzacz i pobierak multimediów, który szanuje Twój komputer
 
-### Wersjonowanie
+**Onda** to szybki, prywatny, działający offline desktopowy hub multimediów dla Windows, macOS i Linux, zbudowany na **Electron + Vue 3 + TypeScript**. Odtwarza lokalne audio i wideo, zarządza bogatą biblioteką, eksploruje system plików, renderuje napisy, streamuje z YouTube i SoundCloud, pobiera media z pełnym post-processingiem i pozwala zaprojektować własny motyw — bez konta i bez telemetrii.
 
-Wersję ustala **release-please** z commitów Conventional Commits (`feat` → minor, `fix` → patch).
-`package.json` na `main` trzyma wersję ostatnio opublikowanego release'a; podnosi ją wyłącznie
-commit `chore(main): release X.Y.Z` z PR-a release-please. **Nie uruchamiaj `npm version` na `main`** —
-`npm run version:check` w CI to wykryje. Szczegóły: [`RELEASE.md`](./RELEASE.md).
+> Bez chmury i Vendor lock-in. Bez telemetrii. Twoje pliki, Twój komputer, Twoje zasady.
 
-## Licencja
+### Funkcje
 
-[MIT](./LICENSE)
+**Odtwarzanie**
+
+- 🎧 Silnik audio oparty o Web Audio API, oddzielony od UI przez szynę zdarzeń — muzyka gra dalej, gdy przeglądasz aplikację.
+- 🎚 10-pasmowy equalizer z presetami, routingiem gapless/normalizacją i głośnością per źródło.
+- 🌈 8 wizualizacji na canvasie (bars, spectrum, wave, radial, rings, circle, particles, none) z crossfade, kolorami, czułością, wygładzaniem, limitem FPS i jakością.
+- 🖼 Widok Audio (free canvas): 5 elementów (wizualizacja, okładka, info, progress, kontrolki) w dowolnym miejscu, pozycjonowanie procentowe, warstwy i przezroczystość. 5 presetów.
+- 🛠 Edytor layoutu z mini-podglądem, siatką 1%, drag-and-drop i show/hide per element.
+- ⛶ Prawdziwy Fullscreen API, auto-ukrywany HUD, „puls" okładki zsynchronizowany z basem, pętle okładek wideo i marquee długich tytułów.
+- 🎬 Odtwarzanie wideo: pełny ekran, Picture-in-Picture, prędkość 0.2–3.0×, filtry, strefy pomijania, transkodowanie w locie kodeków niewspieranych przez Chromium (AC3/DTS → AAC).
+- 📱 Integracja z Media Session API (multimedialne klawisze systemowe, ekran blokady).
+
+**Napisy**
+
+- 💬 ASS/SRT/VTT/SSA, zewnętrzne i osadzone, renderowane przez **JASSUB** (WASM + Web Worker).
+- 🔤 Ekstrakcja czcionek z załączników MKV (`mkvextract`), przełączanie ścieżek w locie.
+
+**Biblioteka multimediów**
+
+- 📚 Skanowanie przyrostowe folderów (niezmienione pliki nie są parsowane ponownie) + watcher (`chokidar`) z automatycznym odświeżaniem.
+- 🏷 Metadane audio (ID3/FLAC/MP4) przez `music-metadata`, okładki cache'owane na dysku (`sharp`).
+- 🗂 Widoki: lista utworów, siatka wideo/albumów, drzewo folderów, artyści, playlisty, obrazy.
+- ✏️ Edycja tagów ID3, uzupełnianie metadanych z MusicBrainz, ulubione i statystyki odtworzeń.
+
+**Eksplorator plików**
+
+- 🗃 Dyski, foldery, zakładki, breadcrumb i 6 zwirtualizowanych trybów widoku.
+- 🧹 Zaznaczanie wielokrotne, kopiuj/przenieś/usuń, zmiana nazwy, wyszukiwanie duplikatów, właściwości, terminal, otwieranie w aplikacji domyślnej.
+- 🖼 Podgląd obrazów (lightbox) z zoomem, rotacją, pokazem slajdów i paskiem miniatur.
+
+**Online (YouTube / SoundCloud) i pobieranie**
+
+- 🌐 Jeden widok `/online` z przełącznikiem platform.
+- ▶️ Streaming online bez pobierania — YouTube przez `yt-dlp`, SoundCloud przez wewnętrzne API z fallbackiem `yt-dlp`; kolejka streamów z auto-next, cache URL-i (LRU, TTL 2 h) i prefetch na hover.
+- 🛡 Hardening streamów: retry 403 z backoffem, fallback direct, cap współbieżności, warm probe.
+- 🎵 Klient SoundCloud (api-v2, automatyczna ekstrakcja `client_id`), sety, profile artystów, pobieranie MP3 z tagami ID3 i okładką.
+- 🔔 Subskrypcje — automatyczne sprawdzanie nowych wideo (co 6 h), powiadomienia i auto-download.
+- ⬇️ Kolejka pobierania (`yt-dlp` + natywny HTTP) z progresem, prędkością, ETA, anulowaniem, retry/backoffem, okładkami (miniatura / klatka / klip), metadanymi, podfolderami kanału/playlisty i pełnym post-processingiem (tagi, okładki, SHA-256, napisy, sync z biblioteką).
+- 🔄 Persystencja kolejki i bezpieczne wznowienie po restarcie (przerwane → pauza, oczekujące → ponownie w kolejce).
+
+**Picture-in-Picture**
+
+- 📌 Osobne okna always-on-top dla wideo i audio, z pamięcią pozycji/rozmiaru, peek/auto-hide i synchronizacją motywu na żywo.
+
+**Wtyczki**
+
+- 🔌 Instalacja z folderu; każda wtyczka startuje wyłączona, dopóki nie przejrzysz jej uprawnień, allowlisty sieciowej i hooków.
+- 🧱 Sandbox w Web Workerze z budżetami zasobów; zgoda wiązana z SHA-256 pliku wejściowego, więc zmiana kodu wymaga ponownej akceptacji.
+- 🧩 Bogate API: hooki `on`, `query`, `action`, `storage`, `settings`, `fetch` (allowlista hostów + blokada prywatnych IP), `notify`, `visual`, `ui`, `log` oraz własne komendy w palecie poleceń i menu kontekstowym.
+- 📦 12 gotowych wtyczek-przykładów instalowanych jednym kliknięciem.
+
+**System i integracja**
+
+- 🚀 Autostart, start zminimalizowany do trayu, ukrywanie do trayu po zamknięciu.
+- 📂 Skojarzenia plików (mp3, flac, ogg, wav, m4a, aac, mp4, mkv, webm, mov, avi) i single-instance (otwieranie plików z systemu trafia do istniejącej instancji).
+- ⌨️ Globalne skróty multimedialne, tray, paleta poleceń (Ctrl+K), aktualizacje (`electron-updater`).
+- 🌍 Lokalizacja PL/EN, 4 motywy wbudowane (dark / light / midnight / spotify) i Kreator Motywów z live-preview.
+
+**Motywy i wygląd**
+
+- 🎨 29 semantycznych zmiennych motywu (zgodnych z daisyUI), przezroczyste okno akrylowe z regulacją krycia.
+- 🧬 Presety radiusów (`rounded-box` / `rounded-field` / `rounded-selector`) sterujące całym UI, efekty depth/noise.
+
+**Ustawienia**
+
+- ⚙️ 9 grup w 6 sekcjach, wyszukiwarka ustawień, eksport/import JSON z sekretami szyfrowanymi `safeStorage`, jakość/proxy per platforma, limity cache i pobierania, poziom logów i telemetria wyłączona.
+
+### Stos technologiczny
+
+| Warstwa        | Technologia                                                     |
+| -------------- | --------------------------------------------------------------- |
+| Runtime        | Electron 43.2 (sandbox, contextIsolation, brak nodeIntegration) |
+| UI             | Vue 3.5 (Composition API, `<script setup>`)                     |
+| Język          | TypeScript 5.9 (strict)                                         |
+| Build          | electron-vite 5 + Vite 7.2                                      |
+| Style          | Tailwind CSS 4.3 + wartości motywu daisyUI                      |
+| Stan           | Pinia 3                                                         |
+| Routing        | vue-router 4 (hash history, lazy loading)                       |
+| i18n           | vue-i18n 11 (PL/EN, parytet wymuszany testami)                  |
+| Metadane       | music-metadata, node-id3                                        |
+| Wirtualizacja  | @tanstack/vue-virtual                                           |
+| Obrazy         | sharp (libvips)                                                 |
+| Napisy         | jassub (WASM)                                                   |
+| Watcher plików | chokidar                                                        |
+| Testy          | Vitest 3 + jsdom, Playwright 1.63 (E2E)                         |
+| Pakiety        | electron-builder (NSIS / DMG / AppImage / deb / rpm)            |
+
+### Zależności zewnętrzne (nie-NPM)
+
+Instalator zawiera **wyłącznie Onda i Electron** — żadnych binarek stron trzecich. FFmpeg/FFprobe oraz `yt-dlp` są pobierane na żądanie do profilu użytkownika i weryfikowane przypiętym SHA-256 (`binaries.json`); jeśli narzędzie jest już w `PATH`, Onda użyje go bez pobierania. Status i instalacja: **Ustawienia → Zależności** (oraz kreator pierwszego uruchomienia):
+
+- **FFmpeg / FFprobe** — transkodowanie audio w locie, ekstrakcja klatek, miniatury.
+- **yt-dlp** — pobieranie z YouTube i SoundCloud (fallback dla API).
+- **MKVToolNix (`mkvextract`)** — ekstrakcja osadzonych czcionek z MKV.
+
+### Struktura projektu
+
+```text
+Onda/
+├─ src/
+│  ├─ main/                 proces główny Electrona (okna, tray, cykl życia)
+│  │  ├─ index.ts           bootstrap, single-instance, splash, boot timeline
+│  │  ├─ media-server.ts    lokalny serwer HTTP mediów (token, rooty, Range)
+│  │  ├─ ipc/               ~25 typowanych modułów IPC (zgodnych z kontraktem)
+│  │  ├─ downloads/         pipeline pobierania yt-dlp + HTTP (kolejka, retry, post-process)
+│  │  ├─ utils/             exec, sharp, walidacja, bezpieczny broadcast
+│  │  └─ …                  updater, tray, menedżery PiP, auth, watchery
+│  ├─ preload/              contextBridge + generowane allowlisty (window.api)
+│  ├─ renderer/src/
+│  │  ├─ views/             Home, Library, Explorer, Online, Downloads, Player, Audio, Settings, Sources
+│  │  ├─ modules/           ModuleManager + Player/Explorer/Library/YouTube/Home/Settings
+│  │  ├─ stores/            store'y Pinia (player, library, settings, ui, online, sources …)
+│  │  ├─ composables/       ~76 reużywalnych composables
+│  │  ├─ components/        layout, library, online, settings, audio, explorer, sources, wizard …
+│  │  ├─ utils/             ~105 helperów (formattery, cache, media, wyszukiwanie …)
+│  │  └─ locales/           en.ts / pl.ts
+│  └─ shared/               typy, stałe, kontrakt IPC, logger, motywy wbudowane
+├─ e2e/                     specyfikacje Playwright + Electron
+├─ scripts/                 codegen IPC, pobieranie FFmpeg, guardy CI
+├─ resources/               splash, ikony, przykładowe wtyczki
+└─ docs/                    architektura i reguły dla kontrybutorów
+```
+
+### Szybki start
+
+Wymagania: **Node.js ≥ 22.12** i npm ≥ 11.
+
+```bash
+npm install
+npm run dev
+```
+
+Bramki jakości:
+
+```bash
+npm test           # 1498 testów jednostkowych w 148 plikach (Vitest)
+npm run typecheck  # tsc (main/preload) + vue-tsc (renderer)
+npm run lint       # ESLint
+npm run e2e        # Playwright + Electron (najpierw `npm run build`)
+```
+
+Buildy produkcyjne:
+
+```bash
+npm run build        # typecheck + build (main / preload / renderer)
+npm run build:win    # instalator NSIS (Windows)
+npm run build:mac    # DMG (macOS)
+npm run build:linux  # AppImage / deb / rpm (Linux)
+```
+
+> **Podpisywanie:** buildy publikowane z CI są niespodpisane (Windows SmartScreen i macOS Gatekeeper ostrzegą). Podpisywanie wymaga certyfikatu Authenticode i Apple Developer ID — patrz `electron-builder.yml`. Do tego czasu trzymaj `verifyUpdateCodeSignature: false`, aby `electron-updater` przyjmował własne niespodpisane aktualizacje.
+
+### Wydajność i optymalizacja
+
+Onda jest zaprojektowana tak, by pozostać płynna przy dużych bibliotekach i wolnych dyskach.
+
+| Optymalizacja                       | Efekt                                                                                                                                                                                |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Wirtualizacja wszędzie**          | Każda długa lista/siatka (biblioteka, pobierania, eksplorator, kolejka, źródła) renderuje tylko widoczne wiersze (`@tanstack/vue-virtual`).                                          |
+| **Lazy loading + prefetch na idle** | Wszystkie trasy i ciężkie panele ładowane asynchronicznie; kluczowe widoki prefetchowane w czasie bezczynności.                                                                      |
+| **Tania reaktywność**               | Duże kolekcje na `shallowRef`/`triggerRef`; wyszukiwanie korzysta z gotowego indeksu budowanego raz na zmianę kolekcji — nie przy każdym klawiszu.                                   |
+| **Debounce i throttle**             | Wyszukiwarka 200 ms, zapis ustawień 300 ms (serializowany writer), postęp pobierania 200 ms, watcher 2 s.                                                                            |
+| **Skanowanie gotowe na skalę**      | Skan przyrostowy (wykorzystuje niezmienione pliki po rozmiarze+mtime), 16-wątkowa ograniczona współbieżność, przeplatane porcje po 50 i budżet 50 000 plików zatrzymujący przejście. |
+| **Streaming zakresowy**             | Lokalny serwer HTTP serwuje audio/wideo z nagłówkami `Range` (w tym suffix); zdalne strumienie przez proxy z ograniczonym backoffem.                                                 |
+| **Warstwowe cache**                 | Cache okładek, miniatur, URL-i streamów i zdalnych obrazów są warstwowe (pamięć+dysk), każdy z jawnym limitem i TTL — bez niekontrolowanego wzrostu.                                 |
+| **Praca poza wątkiem głównym**      | Napisy JASSUB w Web Workerze (WASM); wtyczki w sandboxie workera z twardymi budżetami.                                                                                               |
+| **Bezpieczeństwo zasobów**          | `AbortController` do anulowania skanów/pobrań, przypięty DNS przeciw SSRF, limit współbieżności pobrań 8, atomowa persystencja kolejki.                                              |
+| **Bramki jakości**                  | 1498 testów jednostkowych + 51 testów E2E (33 specyfikacje) + lint + typecheck + check codegenu IPC przy każdej zmianie.                                                             |
+
+### Współpraca
+
+Zgłoszenia i pull requesty mile widziane. Przed commitem uruchom `npm run build` i `npm test`. Stosujemy **Conventional Commits**, a wydaniami zarządza **release-please** (`feat` → minor, `fix` → patch). Nie uruchamiaj `npm version` na `main` — pilnuje tego `npm run version:check`. Szczegóły: [`RELEASE.md`](./RELEASE.md).
+
+Wysyłając zmianę, zgadzasz się na licencjonowanie swojego wkładu na warunkach PolyForm Noncommercial License 1.0.0.
+
+### Licencja
+
+[PolyForm Noncommercial License 1.0.0](./LICENSE)
+
+Onda jest **source-available**, a nie open source: możesz jej używać, modyfikować i udostępniać bezpłatnie w dowolnym celu **niekomercyjnym** — użytek prywatny, nauka, projekty hobbystyczne, edukacja, organizacje charytatywne, badania i instytucje publiczne. **Użytek komercyjny wymaga osobnej licencji**; skontaktuj się z opiekunami projektu. Pełna treść: [`LICENSE`](./LICENSE).
+
+© 2026 Onda Contributors.
+
+---
+
+<div align="center">
+
+**[⬆ English](#english-version) · [⬆ Polski](#wersja-polska)**
+
+Made with care for people who own their media. · Zrobione z myślą o ludziach, którzy są właścicielami swoich mediów.
+
+</div>

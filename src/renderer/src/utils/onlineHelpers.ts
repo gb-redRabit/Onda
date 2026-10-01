@@ -2,7 +2,12 @@ import type { MediaFile } from '@renderer/types/media';
 import type { YouTubeResolvedItem } from '@renderer/types/online';
 import type { IpcSavedStream } from '@shared/types/ipc';
 import { detectPlatform } from '@shared/platform';
-import { youtubeProvider } from '@shared/provider';
+import {
+  youtubeProvider,
+  buildYouTubeChannelUrl,
+  buildYouTubeHandleUrl,
+  buildSoundcloudProfileUrl
+} from '@shared/provider';
 
 // Pure helpers extracted from `stores/online.ts` (plan 2.7) — no store state,
 // so they live here and keep the store focused on orchestration.
@@ -26,18 +31,16 @@ export function channelPageUrl(item: { channelId?: string; url?: string }): stri
   const channelId = item.channelId?.trim();
   const platform = item.url ? detectPlatform(item.url)?.platform : null;
   if (platform === 'soundcloud') {
-    const profile = channelId?.replace(/^https?:\/\/(?:www\.)?soundcloud\.com\//i, '') || '';
-    const slug = profile.split('/').filter(Boolean)[0];
-    return slug ? `https://soundcloud.com/${encodeURIComponent(slug)}` : null;
+    return buildSoundcloudProfileUrl(channelId ?? '') || null;
   }
   if (platform === 'youtube' && channelId?.startsWith('@')) {
-    return `https://www.youtube.com/${channelId}`;
+    return buildYouTubeHandleUrl(channelId);
   }
   if (
     channelId &&
     (platform === 'youtube' || (!item.url && /^UC[A-Za-z0-9_-]{20,}$/.test(channelId)))
   ) {
-    return channelId ? `https://www.youtube.com/channel/${encodeURIComponent(channelId)}` : null;
+    return buildYouTubeChannelUrl(channelId) || null;
   }
   return null;
 }
@@ -48,16 +51,10 @@ export function streamChannelFor(target: string): 'yt:stream:get' | 'sc:stream:g
   return detectPlatform(target)?.platform === 'soundcloud' ? 'sc:stream:get' : 'yt:stream:get';
 }
 
-// Strips filesystem-hostile characters and caps the length for a download
-// file name (http/soundcloud jobs write the bytes directly under this name).
-export function sanitizeFileName(title: string): string {
-  const cleaned = title
-    // eslint-disable-next-line no-control-regex -- control chars are invalid in file names
-    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_')
-    .trim()
-    .replace(/[.\s]+$/, '');
-  return (cleaned || 'track').slice(0, 120);
-}
+// Strips filesystem-hostile characters and caps the length for a download file
+// name. Re-exported under the historical name; the implementation now lives in
+// @shared/text so the main process uses the exact same logic.
+export { sanitizeFilename as sanitizeFileName } from '@shared/text';
 
 export function parseDurationText(text?: string): number | undefined {
   if (!text) return undefined;

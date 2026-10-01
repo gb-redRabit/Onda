@@ -53,6 +53,7 @@ const hudOpacity = computed(() => (settings.appearance.audioLayout?.hudOpacity ?
 <template>
   <div
     :ref="setViewEl"
+    data-testid="audio-view"
     class="h-full w-full bg-base-200/(--glass-alpha) select-none"
     @mousemove="onMouseMove"
     @mouseup="onDragMouseUp"
@@ -60,6 +61,7 @@ const hudOpacity = computed(() => (settings.appearance.audioLayout?.hudOpacity ?
     <!-- ─── Empty State (no track) ─── -->
     <div
       v-if="!player.currentTrack"
+      data-testid="audio-empty"
       class="absolute inset-0 z-95 flex flex-col items-center justify-center gap-3 pointer-events-none"
     >
       <Music2 :size="48" class="text-base-content/15" />

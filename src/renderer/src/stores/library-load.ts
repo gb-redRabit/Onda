@@ -14,6 +14,29 @@ interface LibraryLoadCtx {
   scanProgress: Ref<{ current: number; total: number }>;
 }
 
+// Files are pulled in bounded slices: a 50k-file library never crosses IPC as a
+// single structured-clone payload, and each slice yields to the event loop.
+const TRACK_CHUNK_SIZE = 2000;
+
+async function loadTracksInChunks(ctx: LibraryLoadCtx): Promise<void> {
+  const first = await window.api?.invoke('library:loadScannedChunk', 0, TRACK_CHUNK_SIZE);
+  if (!first) return;
+  ctx.folderTypes.value = first.folderTypes || {};
+  if (first.total <= first.files.length) {
+    ctx.tracks.value = first.files;
+    return;
+  }
+  const all: MediaFile[] = first.files.slice();
+  let offset = all.length;
+  while (offset < first.total) {
+    const chunk = await window.api?.invoke('library:loadScannedChunk', offset, TRACK_CHUNK_SIZE);
+    if (!chunk || chunk.files.length === 0) break;
+    all.push(...chunk.files);
+    offset += chunk.files.length;
+  }
+  ctx.tracks.value = all;
+}
+
 export function useLibraryLoad(ctx: LibraryLoadCtx) {
   async function loadFromDisk() {
     ctx.isLoading.value = true;
@@ -45,19 +68,12 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
     loadTracksScheduled = true;
     const doLoad = (): void => {
       ctx.isLoading.value = false;
-      window.api
-        ?.invoke('library:loadScanned')
-        .then((result) => {
-          if (result?.files) {
-            ctx.tracks.value = result.files;
-            ctx.folderTypes.value = result.folderTypes || {};
-          }
-          ctx.isLoaded.value = true;
-        })
+      void loadTracksInChunks(ctx)
         .catch(() => {
-          ctx.isLoaded.value = true;
+          /* nothing to load */
         })
         .finally(() => {
+          ctx.isLoaded.value = true;
           loadTracksScheduled = false;
           const res = loadTracksResolve;
           loadTracksResolve = [];

@@ -1,11 +1,5 @@
-import http from 'http';
-import https from 'https';
 import { extname } from 'path';
-import {
-  createPinnedLookup,
-  privateNetworkAllowedForTarget,
-  resolveNetworkTarget
-} from './network-target';
+import { httpRequest } from './http-request';
 import { getStore } from './cover-cache';
 import { decryptApiKeys } from './settings-crypto';
 import { logger } from '../../shared/logger';
@@ -16,7 +10,7 @@ import type {
   SourceItemType,
   SourceFetchResult,
   SourceTestResult
-} from '../../renderer/src/types/sources';
+} from '../../shared/types/sources';
 import {
   dotGet,
   asString,
@@ -27,8 +21,6 @@ import {
 } from './generic-fetch-mappers';
 export { dotGet, generateRangeItems, buildUrl } from './generic-fetch-mappers';
 
-const TIMEOUT_MS = 20_000;
-const MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
 const MAX_REDIRECTS = 5;
 
 const IMAGE_EXTS = new Set([
@@ -188,12 +180,13 @@ export async function fetchTableRows(
     if (table.mode === 'endpoint') {
       const path = table.path?.trim();
       if (!path) return [];
-      const { headers, query } = await resolveAuth(source);
-      const url = buildUrl(
+      const auth = await resolveAuth(source);
+      const { url, headers } = finalizeRequest(
         source,
         { ...endpoint, path, params: undefined, pagination: undefined, method: 'GET' },
+        auth,
         undefined,
-        query,
+        {},
         undefined,
         opts?.context
       );
@@ -204,8 +197,16 @@ export async function fetchTableRows(
       });
       json = res.json;
     } else {
-      const { headers, query } = await resolveAuth(source);
-      const url = buildUrl(source, endpoint, undefined, query, undefined, opts?.context);
+      const auth = await resolveAuth(source);
+      const { url, headers } = finalizeRequest(
+        source,
+        endpoint,
+        auth,
+        undefined,
+        {},
+        undefined,
+        opts?.context
+      );
       const res = await httpJsonFetch(url, {
         method: endpoint.method,
         headers,
@@ -236,82 +237,20 @@ export async function httpJsonFetch(
   redirectsLeft: number = MAX_REDIRECTS,
   trustedOrigin?: string
 ): Promise<{ json: unknown; status: number }> {
-  const origin = trustedOrigin ?? new URL(url).origin;
-  const requestUrl = new URL(url);
-  const allowPrivateNetwork = privateNetworkAllowedForTarget(
-    requestUrl.href,
-    origin,
-    opts.allowPrivateNetwork === true
-  );
-  const target = await resolveNetworkTarget(url, { allowPrivateNetwork });
-  return new Promise((resolve, reject) => {
-    const transport = target.url.protocol === 'https:' ? https : http;
-    const req = transport.request(
-      target.url,
-      {
-        method: opts.method,
-        headers: { Accept: 'application/json', 'User-Agent': 'Onda/1.0', ...opts.headers },
-        lookup: createPinnedLookup(target.addresses)
-      },
-      (res) => {
-        const status = res.statusCode ?? 0;
-        if (status >= 300 && status < 400 && res.headers.location) {
-          if (redirectsLeft <= 0) {
-            res.resume();
-            reject(new Error('Too many redirects'));
-            return;
-          }
-          res.resume();
-          const next = new URL(res.headers.location, url).toString();
-          // A redirect to another origin must not carry the resolved credentials:
-          // the API key would otherwise leak to whatever host the (possibly
-          // compromised) endpoint points at. Same-origin hops keep everything;
-          // cross-origin hops keep only the safe defaults, and a cross-origin
-          // redirect of a POST is refused outright (no body replay).
-          const sameOrigin = new URL(next).origin === new URL(url).origin;
-          if (!sameOrigin && opts.method !== 'GET') {
-            reject(new Error('Cross-origin redirect refused'));
-            return;
-          }
-          const nextOpts = sameOrigin ? opts : { method: opts.method, headers: {} };
-          httpJsonFetch(next, nextOpts, redirectsLeft - 1, origin).then(resolve, reject);
-          return;
-        }
-        if (status < 200 || status >= 300) {
-          res.resume();
-          reject(new Error(`HTTP ${status}`));
-          return;
-        }
-        let size = 0;
-        const chunks: Buffer[] = [];
-        res.on('data', (c: Buffer) => {
-          size += c.length;
-          if (size > MAX_RESPONSE_BYTES) {
-            req.destroy();
-            reject(new Error('Response too large'));
-            return;
-          }
-          chunks.push(c);
-        });
-        res.on('end', () => {
-          const text = Buffer.concat(chunks).toString('utf-8');
-          try {
-            resolve({ json: text ? JSON.parse(text) : {}, status });
-          } catch {
-            reject(new Error('Invalid JSON response'));
-          }
-        });
-        res.on('error', reject);
-      }
-    );
-    req.setTimeout(TIMEOUT_MS, () => {
-      req.destroy();
-      reject(new Error('Timeout'));
-    });
-    req.on('error', reject);
-    if (opts.body) req.write(opts.body);
-    req.end();
+  const res = await httpRequest(url, {
+    method: opts.method,
+    headers: opts.headers,
+    defaultHeaders: { Accept: 'application/json', 'User-Agent': 'Onda/1.0' },
+    body: opts.body,
+    allowPrivateNetwork: opts.allowPrivateNetwork,
+    trustedOrigin,
+    maxRedirects: redirectsLeft
   });
+  try {
+    return { json: res.text ? JSON.parse(res.text) : {}, status: res.status };
+  } catch {
+    throw new Error('Invalid JSON response');
+  }
 }
 
 async function resolveApiKey(apiKeyId: string): Promise<string | undefined> {
@@ -358,6 +297,39 @@ async function resolveAuth(source: MediaSource): Promise<{
   return { headers, query };
 }
 
+function safeOrigin(url: string): string | null {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Builds the request URL and drops resolved credentials when the target origin
+ * differs from the source's declared origin. `endpoint.path` may be an absolute
+ * URL (CDN-style), so a renderer-supplied config must never carry the source's
+ * API key to another host. When credentials are refused the URL is rebuilt
+ * without the auth query parameter, so the key never reaches the other origin.
+ */
+export function finalizeRequest(
+  source: MediaSource,
+  endpoint: SourceEndpoint,
+  auth: { headers: Record<string, string>; query: Record<string, string> },
+  pageToken: string | undefined,
+  extraQuery: Record<string, string>,
+  page: number | undefined,
+  context: unknown
+): { url: string; headers: Record<string, string> } {
+  const merged = { ...auth.query, ...extraQuery };
+  const url = buildUrl(source, endpoint, pageToken, merged, page, context);
+  if (safeOrigin(url) === safeOrigin(source.baseUrl)) return { url, headers: auth.headers };
+  if (Object.keys(auth.headers).length || Object.keys(auth.query).length) {
+    logger.warn('sources', `credentials dropped: ${url} is not same-origin as ${source.baseUrl}`);
+  }
+  return { url: buildUrl(source, endpoint, pageToken, extraQuery, page, context), headers: {} };
+}
+
 export async function fetchSourceItems(
   source: MediaSource,
   endpoint: SourceEndpoint,
@@ -367,12 +339,13 @@ export async function fetchSourceItems(
     if (endpoint.range) {
       return { items: generateRangeItems(endpoint, opts?.context), hasMore: false };
     }
-    const { headers, query } = await resolveAuth(source);
-    const url = buildUrl(
+    const auth = await resolveAuth(source);
+    const { url, headers } = finalizeRequest(
       source,
       endpoint,
+      auth,
       opts?.pageToken,
-      { ...query, ...(opts?.query || {}) },
+      opts?.query || {},
       opts?.page,
       opts?.context
     );
@@ -414,8 +387,16 @@ export async function testSourceConnection(
   opts?: { context?: unknown }
 ): Promise<SourceTestResult> {
   try {
-    const { headers, query } = await resolveAuth(source);
-    const url = buildUrl(source, endpoint, undefined, query, undefined, opts?.context);
+    const auth = await resolveAuth(source);
+    const { url, headers } = finalizeRequest(
+      source,
+      endpoint,
+      auth,
+      undefined,
+      {},
+      undefined,
+      opts?.context
+    );
     const bodyParams: Record<string, string> = {};
     for (const [k, v] of Object.entries(endpoint.params || {})) {
       bodyParams[k] = resolveTemplate(v, opts?.context);

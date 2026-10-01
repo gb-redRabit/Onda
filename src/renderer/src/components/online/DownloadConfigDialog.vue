@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useDialogFocus } from '@renderer/composables/useDialogFocus';
+import ModalShell from '@renderer/components/ui/ModalShell.vue';
 import { ref, onMounted } from 'vue';
 import { X, Download } from '@lucide/vue';
 import { useI18n } from 'vue-i18n';
@@ -10,7 +10,7 @@ import type { IpcDownloadConfig } from '@shared/types/ipc';
 import DownloadPreviewCard from './DownloadPreviewCard.vue';
 import MetadataFieldsSection from './MetadataFieldsSection.vue';
 import DownloadFormatSection from './DownloadFormatSection.vue';
-import DownloadCoverSection from './DownloadCoverSection.vue';
+import CoverOptionsFields from './CoverOptionsFields.vue';
 import DownloadProfilesSection from './DownloadProfilesSection.vue';
 import DownloadOutputSection from './DownloadOutputSection.vue';
 import SubscribeSubtitlesSection from './SubscribeSubtitlesSection.vue';
@@ -120,26 +120,16 @@ function close() {
 function confirm() {
   emit('confirm', confirmConfig());
 }
-const panelRef = ref<HTMLElement | null>(null);
-// Focus enters the dialog on open, cycles inside it, and returns to the opener
-// on close; Escape is handled here so every dialog dismisses the same way.
-useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => emit('cancel') });
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      class="fixed inset-0 z-9999 bg-neutral/60 backdrop-blur-sm flex items-center justify-center p-4"
-      @click.self="onOverlayClick"
-    >
-      <div
-        ref="panelRef"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="download-config-dialog-title"
-        tabindex="-1"
-        class="bg-base-100 border border-base-300 rounded-box w-full max-w-3xl max-h-[92vh] shadow-2xl overflow-hidden flex flex-col"
-      >
+  <ModalShell
+    labelled-by="download-config-dialog-title"
+    backdrop="dim-blur"
+    panel-class="w-full max-w-3xl max-h-[92vh] overflow-hidden flex flex-col"
+    @close="onOverlayClick"
+    @escape="emit('cancel')"
+  >
         <!-- Header -->
         <div class="flex items-center gap-3 px-5 py-4 border-b border-base-300 shrink-0">
           <div
@@ -207,7 +197,7 @@ useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => emit('cancel') }
               />
 
               <!-- Cover (video: thumbnail/none) + Cover (audio) -->
-              <DownloadCoverSection
+              <CoverOptionsFields
                 v-model:cover-type="coverType"
                 v-model:custom-path="customPath"
                 v-model:frame-time="frameTime"
@@ -266,7 +256,5 @@ useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => emit('cancel') }
             {{ $t('youtube.addToQueue') }}
           </button>
         </div>
-      </div>
-    </div>
-  </Teleport>
+  </ModalShell>
 </template>

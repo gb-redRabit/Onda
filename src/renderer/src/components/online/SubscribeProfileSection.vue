@@ -22,7 +22,7 @@ const { t } = useI18n();
     </p>
     <select
       :value="selectedId"
-      class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/[var(--glass-alpha)] border border-base-300 text-sm focus:border-primary focus:outline-none"
+      class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
       @change="onChange"
     >
       <option value="">{{ t('youtube.profileNone') }}</option>

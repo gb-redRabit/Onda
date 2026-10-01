@@ -1,7 +1,7 @@
-<script setup lang="ts">
-import { computed, ref } from 'vue';
+﻿<script setup lang="ts">
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useDialogFocus } from '@renderer/composables/useDialogFocus';
+import ModalShell from '@renderer/components/ui/ModalShell.vue';
 import type { PluginInfo } from '@shared/types/ipc';
 
 const props = defineProps<{ plugin: PluginInfo }>();
@@ -11,9 +11,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-
-const panelRef = ref<HTMLElement | null>(null);
-useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => emit('cancel') });
 
 const permissions = computed(() => props.plugin.permissions || {});
 const grantedCapabilities = computed(() => {
@@ -28,29 +25,21 @@ const grantedCapabilities = computed(() => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      class="fixed inset-0 z-[70] flex items-center justify-center bg-neutral/70 p-4 sm:p-6"
-      @click.self="$emit('cancel')"
-      @keydown.esc="$emit('cancel')"
-    >
-      <section
-        ref="panelRef"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="plugin-permission-title"
-        data-testid="plugin-permission-dialog"
-        tabindex="-1"
-        class="w-full max-w-xl max-h-full flex flex-col rounded-box bg-base-100 border border-base-300 shadow-2xl overflow-hidden"
-      >
+  <ModalShell
+    labelled-by="plugin-permission-title"
+    data-testid="plugin-permission-dialog"
+    panel-class="w-full max-w-xl max-h-full flex flex-col overflow-hidden"
+    @close="emit('cancel')"
+    @escape="emit('cancel')"
+  >
         <header class="flex items-start gap-3 px-5 py-4 border-b border-base-300">
           <div class="flex-1 min-w-0">
             <h2 id="plugin-permission-title" class="text-lg font-semibold">
               {{ t('plugins.enableConfirmTitle') }}
             </h2>
             <p class="mt-1 text-sm text-base-content/60">
-              {{ plugin.name }} <span v-if="plugin.version">· v{{ plugin.version }}</span>
-              <span v-if="plugin.author">· {{ plugin.author }}</span>
+              {{ plugin.name }} <span v-if="plugin.version">Â· v{{ plugin.version }}</span>
+              <span v-if="plugin.author">Â· {{ plugin.author }}</span>
             </p>
           </div>
           <button
@@ -59,7 +48,7 @@ const grantedCapabilities = computed(() => {
             :aria-label="t('common.close')"
             @click="$emit('cancel')"
           >
-            ×
+            Ă—
           </button>
         </header>
 
@@ -90,7 +79,7 @@ const grantedCapabilities = computed(() => {
                 :key="capability"
                 class="flex gap-2 text-sm text-base-content/80"
               >
-                <span class="text-primary" aria-hidden="true">•</span>
+                <span class="text-primary" aria-hidden="true">â€˘</span>
                 <span>{{ capability }}</span>
               </li>
             </ul>
@@ -142,8 +131,8 @@ const grantedCapabilities = computed(() => {
                 :key="`${layout.element}:${layout.variant}`"
                 class="text-sm text-base-content/70"
               >
-                <code>{{ layout.element }} · {{ layout.variant }}</code>
-                <span v-if="layout.label"> — {{ layout.label }}</span>
+                <code>{{ layout.element }} Â· {{ layout.variant }}</code>
+                <span v-if="layout.label"> â€” {{ layout.label }}</span>
               </li>
             </ul>
           </section>
@@ -160,7 +149,7 @@ const grantedCapabilities = computed(() => {
             <ul class="space-y-1">
               <li v-for="slot in plugin.uiSlots" :key="slot" class="text-sm text-base-content/70">
                 <code>{{ slot }}</code>
-                <span> — {{ t('plugins.uiSlotTextOnly') }}</span>
+                <span> â€” {{ t('plugins.uiSlotTextOnly') }}</span>
               </li>
             </ul>
           </section>
@@ -169,7 +158,7 @@ const grantedCapabilities = computed(() => {
         <footer class="flex justify-end gap-2 px-5 py-4 border-t border-base-300">
           <button
             type="button"
-            class="px-3 h-9 rounded-field text-sm font-medium border border-base-300 text-base-content/70 hover:bg-base-content/10 transition-colors"
+            class="px-3 h-9 rounded-field text-sm font-medium border border-base-300 bg-base-100 text-base-content/70 hover:bg-base-content/10 transition-colors"
             @click="$emit('cancel')"
           >
             {{ t('plugins.enableCancel') }}
@@ -182,7 +171,5 @@ const grantedCapabilities = computed(() => {
             {{ t('plugins.enableConfirm') }}
           </button>
         </footer>
-      </section>
-    </div>
-  </Teleport>
+  </ModalShell>
 </template>

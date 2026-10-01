@@ -1,8 +1,8 @@
 import { existsSync } from 'fs';
 import { win32 as winPath, posix as posixPath } from 'path';
 import { fetchPageText } from './player-scraper';
-import type { YoutubeAuthMethod } from '../../renderer/src/types/settings';
-import type { YouTubeResolvedItem } from '../../renderer/src/types/online';
+import type { YoutubeAuthMethod } from '../../shared/types/settings';
+import type { YouTubeResolvedItem } from '../../shared/types/online';
 import { extractAvatarUrl, mapResolvedEntry, type YtDlpEntry } from './youtube-mappers';
 export {
   formatDuration,

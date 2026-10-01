@@ -2,13 +2,6 @@
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import {
-  Play,
-  Pause,
-  SkipBack,
-  SkipForward,
-  Shuffle,
-  Repeat,
-  Repeat1,
   Volume2,
   VolumeX,
   Volume1,
@@ -25,6 +18,7 @@ import MediaCover from '@renderer/components/MediaCover.vue';
 import TrackInfo from '@renderer/components/TrackInfo.vue';
 import { usePluginsStore } from '@renderer/stores/plugins';
 import PlayerBarMini from './PlayerBarMini.vue';
+import TransportButtons from '@renderer/components/player/TransportButtons.vue';
 
 const player = usePlayerStore();
 const audio = useAudioPlayer();
@@ -168,7 +162,7 @@ function togglePlay() {
       />
     </div>
 
-    <div class="flex items-center gap-3 w-70 min-w-0">
+    <div class="flex items-center gap-3 min-w-0 w-70 shrink-0 max-lg:w-56 max-md:w-44">
       <div
         class="w-11 h-11 rounded-field bg-base-100 border border-base-300 flex items-center justify-center shrink-0 overflow-hidden"
         :style="coverClip ? { clipPath: coverClip } : undefined"
@@ -209,51 +203,17 @@ function togglePlay() {
     </div>
 
     <div class="flex-1 flex flex-col items-center gap-0.5">
-      <div class="flex items-center gap-3">
-        <button
-          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-          :class="{ 'text-primary!': player.shuffle }"
-          :aria-label="$t('common.shuffle')"
-          @click="player.toggleShuffle"
-        >
-          <Shuffle :size="15" />
-        </button>
-        <button
-          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
-          :aria-label="$t('common.previous')"
-          @click="player.prevTrack"
-        >
-          <SkipBack :size="17" fill="currentColor" />
-        </button>
-        <button
-          class="w-10 h-10 rounded-full bg-base-content flex items-center justify-center hover:scale-105 active:scale-95 transition-[transform,opacity] shadow-lg"
-          :aria-label="audio.isPlaying.value ? $t('common.pause') : $t('common.play')"
-          @click="togglePlay"
-        >
-          <Pause
-            v-if="audio.isPlaying.value"
-            :size="18"
-            class="text-base-200"
-            fill="currentColor"
-          />
-          <Play v-else :size="18" class="text-base-200 ml-0.5" fill="currentColor" />
-        </button>
-        <button
-          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
-          :aria-label="$t('common.next')"
-          @click="player.nextTrack"
-        >
-          <SkipForward :size="17" fill="currentColor" />
-        </button>
-        <button
-          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-          :class="{ 'text-primary!': player.repeat !== 'none' }"
-          :aria-label="$t('common.repeat')"
-          @click="player.cycleRepeat"
-        >
-          <component :is="player.repeat === 'one' ? Repeat1 : Repeat" :size="15" />
-        </button>
-      </div>
+      <TransportButtons
+        variant="bar"
+        :is-playing="audio.isPlaying.value"
+        :shuffle="player.shuffle"
+        :repeat="player.repeat"
+        @play-pause="togglePlay"
+        @prev="player.prevTrack"
+        @next="player.nextTrack"
+        @toggle-shuffle="player.toggleShuffle"
+        @cycle-repeat="player.cycleRepeat"
+      />
       <div
         v-if="isLive"
         class="flex items-center gap-2 text-[11px] font-bold tracking-widest text-error"
@@ -270,11 +230,12 @@ function togglePlay() {
       </div>
     </div>
 
-    <div class="flex items-center gap-1.5 w-64 justify-end">
+    <div class="flex items-center gap-1.5 justify-end w-64 shrink-0 max-lg:w-auto">
       <button
         class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
         :class="{ 'text-primary!': player.equalizerVisible }"
         data-eq-toggle
+        data-testid="player-eq"
         :aria-label="$t('common.equalizer')"
         @click="player.toggleEqualizer"
       >
@@ -283,6 +244,7 @@ function togglePlay() {
       <button
         class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
         :class="{ 'text-primary!': player.queueVisible }"
+        data-testid="player-queue"
         :aria-label="$t('common.queue')"
         @click="player.toggleQueue"
       >
@@ -305,7 +267,7 @@ function togglePlay() {
         />
       </button>
       <div
-        class="w-30 h-1 bg-border-default/60 rounded-full cursor-pointer hover:h-1.5 transition-[height]"
+        class="w-30 h-1 bg-border-default/60 rounded-full cursor-pointer hover:h-1.5 transition-[height] max-md:hidden"
         role="slider"
         tabindex="0"
         :aria-label="$t('playerView.volume')"

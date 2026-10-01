@@ -8,6 +8,7 @@ defineProps<{
   sources: MediaSource[];
   activeSourceId: string | null;
   testStatus: Record<string, { success: boolean; error?: string }>;
+  checking: Record<string, boolean>;
 }>();
 
 const emit = defineEmits<{
@@ -74,14 +75,17 @@ const emit = defineEmits<{
         <span
           class="w-2 h-2 rounded-full shrink-0"
           :class="{
-            'bg-success': testStatus[s.id]?.success,
-            'bg-error': testStatus[s.id] && !testStatus[s.id].success,
-            'bg-base-300': !testStatus[s.id]
+            'bg-warning animate-pulse': checking[s.id],
+            'bg-success': !checking[s.id] && testStatus[s.id]?.success,
+            'bg-error': !checking[s.id] && testStatus[s.id] && !testStatus[s.id].success,
+            'bg-base-300': !checking[s.id] && !testStatus[s.id]
           }"
           :title="
-            testStatus[s.id]
-              ? testStatus[s.id].error || $t('sources.testSourceOk')
-              : $t('sources.testNotRun')
+            checking[s.id]
+              ? $t('sources.testChecking')
+              : testStatus[s.id]
+                ? testStatus[s.id].error || $t('sources.testSourceOk')
+                : $t('sources.testNotRun')
           "
         />
         <div class="flex-1 min-w-0">

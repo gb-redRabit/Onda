@@ -247,7 +247,7 @@ describe('audioEngine saved position restore', () => {
     const player = usePlayerStore();
     player.currentTrack = track;
 
-    audioEngine.loadTrack(track);
+    audioEngine.loadTrack(track, { resume: true });
     const el = audioEngine.getMediaElement() as unknown as FakeAudio;
     // Metadata already decoded by the time the stored position arrives.
     el.readyState = 4;
@@ -264,7 +264,7 @@ describe('audioEngine saved position restore', () => {
     const player = usePlayerStore();
     player.currentTrack = track;
 
-    audioEngine.loadTrack(track);
+    audioEngine.loadTrack(track, { resume: true });
     const el = audioEngine.getMediaElement() as unknown as FakeAudio;
     await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -286,13 +286,29 @@ describe('audioEngine saved position restore', () => {
     const player = usePlayerStore();
     player.currentTrack = track;
 
-    audioEngine.loadTrack(track);
+    audioEngine.loadTrack(track, { resume: true });
     const el = audioEngine.getMediaElement() as unknown as FakeAudio;
     el.readyState = 4;
     // User already moved on before the stored position came back.
     player.currentTrack = { ...track, path: 'D:/music/b.mp3' };
     await new Promise((resolve) => setTimeout(resolve, 0));
 
+    expect(el.currentTime).toBe(0);
+  });
+
+  it('does not resume by default — a plain play starts from the beginning', async () => {
+    const getPlaybackPosition = vi.fn(async () => 42);
+    (window as unknown as { api: unknown }).api = { getPlaybackPosition };
+
+    const player = usePlayerStore();
+    player.currentTrack = track;
+
+    audioEngine.loadTrack(track);
+    const el = audioEngine.getMediaElement() as unknown as FakeAudio;
+    el.readyState = 4;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(getPlaybackPosition).not.toHaveBeenCalled();
     expect(el.currentTime).toBe(0);
   });
 });

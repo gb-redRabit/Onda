@@ -11,6 +11,10 @@ let watched: string[] = [];
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let scanCallback: (() => Promise<void>) | null = null;
 let starting: Promise<void> | null = null;
+// Bumped on every stop. A start whose dynamic import resolves after a stop sees
+// a stale generation and discards the watcher it just created instead of
+// leaking a handle nothing can close.
+let generation = 0;
 
 export function setLibraryWatcherScan(cb: () => Promise<void>): void {
   scanCallback = cb;
@@ -44,11 +48,16 @@ export async function startLibraryWatcher(folders: string[]): Promise<void> {
   if (watcher && sameFolders(watched, clean)) return;
 
   stopLibraryWatcher();
+  const myGeneration = generation;
   watched = clean;
   starting = (async () => {
     try {
       const { watch } = await import('chokidar');
-      watcher = watch(clean, {
+
+      // A stop/restart may have run while the dynamic import was pending.
+      if (myGeneration !== generation || !sameFolders(watched, clean)) return;
+
+      const next = watch(clean, {
         ignoreInitial: true,
         depth: 8,
         ignored: (path, stats) => {
@@ -66,11 +75,12 @@ export async function startLibraryWatcher(folders: string[]): Promise<void> {
         }, DEBOUNCE_MS);
       };
 
-      watcher.on('add', schedule);
-      watcher.on('change', schedule);
-      watcher.on('unlink', schedule);
-      watcher.on('error', (e) => logger.warn('library-watcher', 'watcher error', e));
+      next.on('add', schedule);
+      next.on('change', schedule);
+      next.on('unlink', schedule);
+      next.on('error', (e) => logger.warn('library-watcher', 'watcher error', e));
 
+      watcher = next;
       logger.info('library-watcher', `watching ${clean.length} folder(s)`);
     } catch (e) {
       logger.warn('library-watcher', 'failed to start watcher', e);
@@ -82,6 +92,7 @@ export async function startLibraryWatcher(folders: string[]): Promise<void> {
 }
 
 function stopLibraryWatcher(): void {
+  generation += 1;
   watched = [];
   if (debounceTimer) {
     clearTimeout(debounceTimer);

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import {
@@ -17,11 +17,12 @@ const resolved = computed(() => resolveThemeAppearance(settings.appearance));
     <button
       v-for="name in BUILTIN_THEME_NAMES"
       :key="name"
+      :data-testid="'theme-' + name"
       class="fx-noise p-3 fx-depth rounded-field border transition-all flex items-center gap-4 text-left shrink-0 xl:w-full hover:shadow-md"
       :class="
         settings.appearance.theme === name
           ? 'border-primary bg-primary/5'
-          : 'border-base-300 hover:border-primary/40'
+          : 'border-base-300 bg-base-100 hover:border-primary/40'
       "
       @click="settings.updateAppearance({ theme: name })"
     >
@@ -41,8 +42,13 @@ const resolved = computed(() => resolveThemeAppearance(settings.appearance));
       <span class="text-sm font-medium whitespace-nowrap">{{ $t(`settings.${name}`) }}</span>
     </button>
     <button
+      data-testid="theme-custom"
       class="fx-noise p-3 fx-depth rounded-field border transition-all flex items-center gap-4 text-left shrink-0 xl:w-full hover:shadow-md"
-      :class="isCustom ? 'border-primary bg-primary/5' : 'border-base-300 hover:border-primary/40'"
+      :class="
+        isCustom
+          ? 'border-primary bg-primary/5'
+          : 'border-base-300 bg-base-100 hover:border-primary/40'
+      "
       @click="settings.updateAppearance({ theme: 'custom' })"
     >
       <span

@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Play, Download, Check, RefreshCw, ExternalLink, SlidersHorizontal } from '@lucide/vue';
 import { logger } from '@shared/logger';
 import { detectPlatform } from '@shared/platform';
+import { buildYouTubeWatchUrl } from '@shared/provider';
 import { formatNumber } from '@renderer/utils/formatters';
 import { useOnlineStore } from '@renderer/stores/online';
 import { observeIntersection } from '@renderer/utils/sharedIntersection';
@@ -55,7 +56,7 @@ const emit = defineEmits<{
 }>();
 
 function defaultWatchUrl(id: string): string {
-  return props.watchUrl || `https://www.youtube.com/watch?v=${id}`;
+    return props.watchUrl || buildYouTubeWatchUrl(id);
 }
 
 // SoundCloud items have no YouTube embed — the bookmark (saved-streams is
@@ -196,6 +197,7 @@ onBeforeUnmount(() => {
         @play="emit('play', $event)"
         @expand="emit('expand', $event)"
         @queue="emit('queue', $event)"
+        @options="emit('options', $event)"
       />
 
       <!-- Info -->

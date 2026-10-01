@@ -57,7 +57,7 @@ const newest = computed(() => {
   }
   return top;
 });
-const randomTracks = computed(() => {
+function pickRandomTracks(): MediaFile[] {
   const arr = library.audioTracks;
   if (arr.length <= OVERVIEW_N) return [...arr];
   const res: MediaFile[] = arr.slice(0, OVERVIEW_N);
@@ -66,7 +66,17 @@ const randomTracks = computed(() => {
     if (j < OVERVIEW_N) res[j] = arr[i];
   }
   return res;
-});
+}
+// The pick is impure, so it must not live in a `computed` — that would reshuffle
+// the section on any dependency tick (including every play). Re-roll only when
+// the set of audio tracks actually changes.
+const randomTracks = ref<MediaFile[]>(pickRandomTracks());
+watch(
+  () => library.audioTracks.length,
+  () => {
+    randomTracks.value = pickRandomTracks();
+  }
+);
 
 function playAll(tracks: MediaFile[]) {
   if (tracks.length === 0) return;

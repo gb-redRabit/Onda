@@ -92,7 +92,7 @@ onMounted(() => {
         "
       />
       <div
-        class="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/75 to-transparent"
+        class="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-black/75 to-transparent"
       />
       <div class="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
         <div class="min-w-0">
@@ -120,6 +120,7 @@ onMounted(() => {
       :style="{ opacity: showOverlay ? 1 : 0 }"
     >
       <button
+        data-testid="pip-video-settings"
         class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[11px] top-btn"
         :title="t('settings')"
         @click="settingsOpen = !settingsOpen"
@@ -128,6 +129,7 @@ onMounted(() => {
       </button>
       <button
         v-if="!preview"
+        data-testid="pip-video-maximize"
         class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[10px] top-btn"
         :title="t('maximize')"
         @click="sendMaximize"
@@ -146,6 +148,7 @@ onMounted(() => {
       </button>
       <button
         v-else
+        data-testid="pip-video-close"
         class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[11px] close-btn"
         :title="t('close')"
         @click="api?.send('pip:hidden')"
@@ -157,6 +160,7 @@ onMounted(() => {
     <!-- settings overlay -->
     <div
       v-if="settingsOpen"
+      data-testid="pip-video-settings-panel"
       class="absolute top-9 right-1.5 z-20 rounded-field p-3 min-w-44"
       :style="{
         background: 'var(--color-neutral)',
@@ -168,6 +172,7 @@ onMounted(() => {
           t('subtitles')
         }}</span>
         <button
+          data-testid="pip-video-subs"
           class="w-8 h-4.5 rounded-full transition-colors relative"
           :class="subsVisible ? 'bg-primary' : ''"
           :style="

@@ -16,13 +16,18 @@ export function usePlayerNavigation(
   const pipTime = ref(0);
   const shuffle = ref(false);
   const repeat = ref<'none' | 'all' | 'one'>('none');
+  // One-shot request to resume a saved position. Only the Home "Continue" card
+  // sets it; every other play path starts from the beginning. Cleared as soon
+  // as the audio engine consumes it.
+  const resumeIntent = ref<string | null>(null);
 
-  function setTrack(track: MediaFile) {
+  function setTrack(track: MediaFile, options?: { resume?: boolean }) {
     if (currentTrack.value) {
       history.value.unshift(currentTrack.value);
       if (history.value.length > 100) history.value.pop();
     }
     if (track.type === 'video') audioEngine.resume();
+    resumeIntent.value = options?.resume === true ? track.path : null;
     currentTrack.value = track;
     currentTime.value = 0;
     pipTime.value = 0;
@@ -30,6 +35,17 @@ export function usePlayerNavigation(
       isPlaying.value = true;
     }
     recordPlay(track);
+  }
+
+  /**
+   * Reports whether the track just loaded was explicitly asked to resume its
+   * saved position, then clears the intent. Path-guarded so a stale intent can
+   * never leak onto an unrelated track.
+   */
+  function consumeResumeIntent(path: string): boolean {
+    if (resumeIntent.value !== path) return false;
+    resumeIntent.value = null;
+    return true;
   }
 
   function play() {
@@ -109,6 +125,24 @@ export function usePlayerNavigation(
     return prev;
   }
 
+  /**
+   * Releases the current track without playing anything.
+   *
+   * Used when the player view closes a video so the file handle is released and
+   * the same file can be opened again. Assigning `currentTrack` directly left
+   * the clock and the PiP position pointing at a track that no longer existed,
+   * so a later `play()` resumed at the old offset with nothing loaded.
+   *
+   * Deliberately not routed through `setTrack`: closing a track is not a
+   * transition, so it adds nothing to history and records no play.
+   */
+  function clearTrack(): void {
+    currentTrack.value = null;
+    isPlaying.value = false;
+    currentTime.value = 0;
+    pipTime.value = 0;
+  }
+
   return {
     currentTrack,
     history,
@@ -119,6 +153,7 @@ export function usePlayerNavigation(
     shuffle,
     repeat,
     setTrack,
+    clearTrack,
     play,
     pause,
     togglePlay,
@@ -127,6 +162,7 @@ export function usePlayerNavigation(
     cycleRepeat,
     nextTrack,
     prevTrack,
-    playFromHistory
+    playFromHistory,
+    consumeResumeIntent
   };
 }

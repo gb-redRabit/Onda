@@ -80,3 +80,22 @@ export function migrateAppearance(v: unknown): unknown {
   if (!('audioPipAutoHide' in out)) out['audioPipAutoHide'] = true;
   return out;
 }
+
+/** Schema version stamped into every persisted settings payload. */
+export const SETTINGS_VERSION = 2;
+
+/**
+ * Top-level migration hook, run before any field-level sanitizer. Field-level
+ * shape changes stay next to their group (e.g. `migrateAppearance`); this entry
+ * point stamps the schema version and is the place for future cross-group moves.
+ */
+export function migrateSettingsPayload(v: unknown): Record<string, unknown> {
+  if (!isPlainObject(v)) return {};
+  const out: Record<string, unknown> = { ...(v as Record<string, unknown>) };
+
+  // Migrations for version < SETTINGS_VERSION go here. Appearance is already
+  // upgraded per-field by `migrateAppearance` in the schema.
+
+  out['version'] = SETTINGS_VERSION;
+  return out;
+}

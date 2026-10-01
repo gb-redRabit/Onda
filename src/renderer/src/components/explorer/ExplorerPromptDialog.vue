@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useDialogFocus } from '@renderer/composables/useDialogFocus';
+import ModalShell from '@renderer/components/ui/ModalShell.vue';
 import { ref, watch, nextTick } from 'vue';
 
 const props = defineProps<{
@@ -29,61 +29,54 @@ watch(
   }
 );
 
+// Escape/Enter are handled here because the input carries the interaction; the
+// shell's own Escape is disabled (`close-on-escape="false"`) to avoid double
+// handling.
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Enter') emit('confirm');
   if (e.key === 'Escape') emit('cancel');
 }
-const panelRef = ref<HTMLElement | null>(null);
-useDialogFocus(panelRef);
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="visible"
-      class="fixed inset-0 z-9999 bg-neutral/50 flex items-center justify-center"
-      @click.self="emit('cancel')"
+  <ModalShell
+    :visible="visible"
+    labelled-by="explorer-prompt-dialog-title"
+    panel-class="p-5 min-w-75"
+    :close-on-escape="false"
+    data-testid="explorer-prompt-dialog"
+    @close="emit('cancel')"
+    @escape="emit('cancel')"
+  >
+    <!-- The prompt text is the dialog's only label; there is no heading. -->
+    <p
+      id="explorer-prompt-dialog-title"
+      class="text-sm text-base-content mb-3 whitespace-pre-wrap"
     >
-      <div
-        ref="panelRef"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="explorer-prompt-dialog-title"
-        tabindex="-1"
-        class="bg-base-100 border border-base-300 rounded-box p-5 min-w-75 shadow-2xl"
-        data-testid="explorer-prompt-dialog"
+      {{ message }}
+    </p>
+    <input
+      v-if="!isConfirm"
+      ref="inputRef"
+      :value="value"
+      type="text"
+      class="w-full px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm text-base-content outline-none focus:ring-1 focus:ring-primary"
+      @input="emit('update:value', ($event.target as HTMLInputElement).value)"
+      @keydown="onKeydown"
+    />
+    <div class="flex justify-end gap-2 mt-4">
+      <button
+        class="fx-noise px-4 py-1.5 fx-depth rounded-field text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
+        @click="emit('cancel')"
       >
-        <!-- The prompt text is the dialog's only label; there is no heading. -->
-        <p
-          id="explorer-prompt-dialog-title"
-          class="text-sm text-base-content mb-3 whitespace-pre-wrap"
-        >
-          {{ message }}
-        </p>
-        <input
-          v-if="!isConfirm"
-          ref="inputRef"
-          :value="value"
-          type="text"
-          class="w-full px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm text-base-content outline-none focus:ring-1 focus:ring-primary"
-          @input="emit('update:value', ($event.target as HTMLInputElement).value)"
-          @keydown="onKeydown"
-        />
-        <div class="flex justify-end gap-2 mt-4">
-          <button
-            class="fx-noise px-4 py-1.5 fx-depth rounded-field text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
-            @click="emit('cancel')"
-          >
-            {{ $t('common.cancel') }}
-          </button>
-          <button
-            class="fx-noise px-4 py-1.5 fx-depth rounded-field text-xs bg-primary text-primary-content hover:bg-primary/90 transition-colors"
-            @click="emit('confirm')"
-          >
-            {{ $t('common.ok') }}
-          </button>
-        </div>
-      </div>
+        {{ $t('common.cancel') }}
+      </button>
+      <button
+        class="fx-noise px-4 py-1.5 fx-depth rounded-field text-xs bg-primary text-primary-content hover:bg-primary/90 transition-colors"
+        @click="emit('confirm')"
+      >
+        {{ $t('common.ok') }}
+      </button>
     </div>
-  </Teleport>
+  </ModalShell>
 </template>

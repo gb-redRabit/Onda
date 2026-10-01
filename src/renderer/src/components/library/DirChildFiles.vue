@@ -51,7 +51,7 @@ const { showImageMenu } = useLibraryContextMenu();
         class="w-full py-2 text-xs text-primary hover:bg-primary/10 transition-colors"
         @click="() => {}"
       >
-        Pokazano 50 z {{ meta.directAudio.length }} — użyj wyszukiwarki aby zawęzić
+        {{ $t('library.listTruncated', { shown: 50, total: meta.directAudio.length }) }}
       </button>
     </div>
   </div>

@@ -8,7 +8,7 @@ import type {
   SourceAuth,
   SourcePassKey,
   SourceDownloadPrefs
-} from '../../renderer/src/types/sources';
+} from '../../shared/types/sources';
 
 const MAX_SOURCES = 50;
 const MAX_ENDPOINTS_PER_SOURCE = 20;
@@ -223,6 +223,24 @@ export function sanitizeSource(v: unknown): MediaSource | null {
 export function sanitizeImportedSource(v: unknown): MediaSource | null {
   const source = sanitizeSource(v);
   if (source) source.allowPrivateNetwork = false;
+  return source;
+}
+
+/**
+ * Applies trust to a source resolved from renderer input. Private-network
+ * access and API credentials come ONLY from the persisted record matched by id;
+ * a draft (no stored record) gets neither, so a compromised renderer cannot pair
+ * a real API key with an attacker host or reach loopback/LAN addresses.
+ */
+export function applySourceTrust(source: MediaSource, stored: MediaSource | undefined): MediaSource {
+  if (!stored) {
+    source.allowPrivateNetwork = false;
+    source.auth = { type: 'none' };
+    return source;
+  }
+  source.allowPrivateNetwork = stored.allowPrivateNetwork === true;
+  source.baseUrl = stored.baseUrl;
+  source.auth = stored.auth;
   return source;
 }
 

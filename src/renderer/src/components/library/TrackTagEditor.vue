@@ -4,8 +4,11 @@ import { useI18n } from 'vue-i18n';
 import type { MediaFile } from '@renderer/types/media';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useUIStore } from '@renderer/stores/ui';
+import { useUnsavedGuard } from '@renderer/composables/useUnsavedGuard';
+import { pickImagePath } from '@renderer/utils/pickImage';
 import { X, Upload } from '@lucide/vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
+import ModalShell from '@renderer/components/ui/ModalShell.vue';
 
 const { t } = useI18n();
 
@@ -42,37 +45,25 @@ const saving = ref(false);
 const uploadingCover = ref(false);
 const coverUrl = ref<string | null>(null);
 let closeTimer: ReturnType<typeof setTimeout> | null = null;
-const overlayClicks = ref(0);
-let overlayTimer: ReturnType<typeof setTimeout> | null = null;
-function onOverlayClick() {
-  // nie zamykaj od razu — chroń przed przypadkowym kliknięciem poza
-  const isDirty =
+const { onOverlayClick } = useUnsavedGuard({
+  isDirty: () =>
     title.value !== (props.track?.metadata?.title || '') ||
     artist.value !== (props.track?.metadata?.artist || '') ||
     album.value !== (props.track?.metadata?.album || '') ||
     year.value !== (props.track?.metadata?.year?.toString() || '') ||
     genre.value !== (props.track?.metadata?.genre || '') ||
     trackNumber.value !== (props.track?.metadata?.track?.no?.toString() || '') ||
-    name.value !== (props.track?.name.replace(/\.[^.]+$/, '') || '');
-  if (isDirty) {
-    // przy brudnych danych wymagaj 2 klików + hint
-    overlayClicks.value++;
-    ui.notify('warning', t('common.unsavedChangesClickAgain'));
-    if (overlayClicks.value >= 2) emit('close');
-    if (overlayTimer) clearTimeout(overlayTimer);
-    overlayTimer = setTimeout(() => (overlayClicks.value = 0), 2500);
-    return;
-  }
-  // bez zmian — też 2 kliknięcia chronią przed przypadkiem
-  overlayClicks.value++;
-  if (overlayClicks.value >= 2) emit('close');
-  else ui.notify('info', t('common.clickAgainToClose'));
-  if (overlayTimer) clearTimeout(overlayTimer);
-  overlayTimer = setTimeout(() => (overlayClicks.value = 0), 2000);
-}
+    name.value !== (props.track?.name.replace(/\.[^.]+$/, '') || ''),
+  onClose: () => emit('close'),
+  onDirtyHint: () => ui.notify('warning', t('common.unsavedChangesClickAgain')),
+  onCleanHint: () => ui.notify('info', t('common.clickAgainToClose')),
+  // This one warns for longer after a dirty click, and does not notify on the
+  // click that closes — the dialog is already gone by the time it is read.
+  dirtyWindowMs: 2500,
+  notifyOnClosingClick: false
+});
 onBeforeUnmount(() => {
   if (closeTimer) clearTimeout(closeTimer);
-  if (overlayTimer) clearTimeout(overlayTimer);
 });
 const coverObj = computed<{ type: string | null; data: string | null } | undefined>(() => {
   if (!coverUrl.value) return undefined;
@@ -120,11 +111,11 @@ async function loadCover() {
 
 async function pickCover() {
   if (!props.track) return;
-  const result = await window.api?.openImageDialog();
-  if (result?.canceled || !result?.filePaths?.[0]) return;
+  const picked = await pickImagePath();
+  if (!picked) return;
   uploadingCover.value = true;
   try {
-    const r = await window.api?.writeCover(props.track.path, result.filePaths[0]);
+    const r = await window.api?.writeCover(props.track.path, picked);
     if (r?.success) {
       ui.notify('success', t('tags.coverSaved'));
       player.invalidateCoverCache(props.track.path);
@@ -184,17 +175,16 @@ async function save() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="track"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-neutral/40"
-      @click.self="onOverlayClick"
-    >
-      <div
-        class="w-full max-w-lg mx-4 rounded-box bg-neutral border border-base-300 shadow-2xl overflow-hidden backdrop-blur-xl"
-      >
+  <ModalShell
+    :visible="!!track"
+    labelled-by="track-tag-editor-title"
+    panel-tone="neutral"
+    panel-class="w-full max-w-lg mx-4 overflow-hidden backdrop-blur-xl"
+    @close="onOverlayClick"
+    @escape="emit('close')"
+  >
         <div class="flex items-center justify-between px-5 py-4 border-b border-base-300">
-          <h2 class="text-base font-bold">{{ $t('tags.title') }}</h2>
+          <h2 id="track-tag-editor-title" class="text-base font-bold">{{ $t('tags.title') }}</h2>
           <button
             class="fx-noise p-1.5 fx-depth rounded-field hover:bg-base-content/10 transition-colors text-base-content/50"
             @click="emit('close')"
@@ -293,7 +283,5 @@ async function save() {
             {{ saving ? $t('tags.saving') : $t('common.save') }}
           </button>
         </div>
-      </div>
-    </div>
-  </Teleport>
+  </ModalShell>
 </template>

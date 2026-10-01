@@ -53,6 +53,9 @@ export interface IpcDownloadSource {
   mode: 'http' | 'ytdlp' | 'soundcloud';
   /** ID of the user-configured media source that created this job. */
   sourceId?: string;
+  /** API `id` of the source item (from the endpoint's `fields.id` mapping). When
+   *  present, a finished download records it as "downloaded" for this source. */
+  sourceItemId?: string;
   /** Finalna nazwa pliku (z rozszerzeniem) dla trybu http/soundcloud. */
   fileName?: string;
   /** Ref do settings.apiKeys; nagłówki rozwiązywane w main (safeStorage). */

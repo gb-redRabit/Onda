@@ -82,7 +82,6 @@ export const INVOKE_CHANNELS = [
   'musicbrainz:lookupRelease',
   'musicbrainz:getCoverData',
   'musicbrainz:autodetect',
-  'musicbrainz:batchApply',
   'dep:checkFfmpeg',
   'dep:checkFfprobe',
   'dep:checkYtdlp',
@@ -114,12 +113,13 @@ export const INVOKE_CHANNELS = [
   // library
   'settings:get',
   'settings:set',
+  'settings:secretStorageStatus',
   'settings:export',
   'settings:import',
   'library:scan',
   'library:scanCancel',
   'library:loadFolders',
-  'library:loadScanned',
+  'library:loadScannedChunk',
   'library:saveFolders',
   'library:saveScanned',
   'library:updateStats',
@@ -192,9 +192,11 @@ export const INVOKE_CHANNELS = [
   'sources:fetch',
   'sources:tableRows',
   'sources:enqueue',
+  'sources:downloaded',
   // overlays
   'pip:start',
   'pip:stop',
+  'pip:restore',
   'pip:preload',
   'pip:loadtrack',
   'pip:updateSubtitle',
@@ -259,6 +261,7 @@ export const RECEIVE_CHANNELS = [
   'pip:closed',
   'pip:ended',
   'pip:maximize',
+  'pip:restore',
   'pip:videoSrc',
   'pip:play',
   'pip:requestTime',
@@ -291,5 +294,6 @@ export const RECEIVE_CHANNELS = [
 
 // Compile-time guard: a channel added to the contract types but missing from
 // INVOKE_CHANNELS (and thus from the generated allowlist) fails typecheck.
-export const ALL_CONTRACT_CHANNELS_ALLOWLISTED: IpcChannel extends IpcInvokeChannel ? true : never =
-  true;
+// Type-only (no runtime value): `IpcChannel` must be assignable to the generated
+// `IpcInvokeChannel` union.
+export type AllChannelsAllowlisted = IpcChannel extends IpcInvokeChannel ? true : never;

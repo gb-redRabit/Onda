@@ -27,7 +27,7 @@ watch(
     <div class="flex items-center gap-4">
       <div
         v-if="avatarSrc && !avatarFailed"
-        class="w-16 h-16 rounded-full overflow-hidden shrink-0 bg-base-200/[var(--glass-alpha)]"
+        class="w-16 h-16 rounded-full overflow-hidden shrink-0 bg-base-200/(--glass-alpha)"
       >
         <img
           :src="avatarSrc"
@@ -38,7 +38,7 @@ watch(
       </div>
       <div
         v-else
-        class="w-16 h-16 rounded-full bg-base-200/[var(--glass-alpha)] border border-base-300 flex items-center justify-center shrink-0 text-base-content/50"
+        class="w-16 h-16 rounded-full bg-base-200/(--glass-alpha) border border-base-300 flex items-center justify-center shrink-0 text-base-content/50"
       >
         <Tv2 :size="28" />
       </div>

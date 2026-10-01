@@ -11,9 +11,9 @@ import {
   getExtraRoots,
   isAllowedStreamHost,
   validateStreamUrl
-} from '../media-server';
-import { isWithinRoot } from '../media-server-guards';
-import type { MediaServer } from '../media-server';
+} from '../media/media-server';
+import { isWithinRoot } from '../media/media-server-guards';
+import type { MediaServer } from '../media/media-server';
 
 let server: MediaServer | null = null;
 const tempFiles: string[] = [];

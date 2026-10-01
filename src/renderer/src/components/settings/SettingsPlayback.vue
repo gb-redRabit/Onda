@@ -3,8 +3,12 @@ import { useSettingsStore } from '@renderer/stores/settings';
 import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
 import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
+import { readSelect } from '@renderer/utils/selectOptions';
 
 const settings = useSettingsStore();
+
+/** Same values the options below are rendered from. */
+const VIZ_MODES = ['none', 'circle', 'bars', 'particles', 'wave', 'radial'] as const;
 
 const toggles = [
   { key: 'gaplessPlayback' as const, labelKey: 'settings.gapless' },
@@ -152,17 +156,17 @@ const toggles = [
             settings.updatePlayback({
               visualization: {
                 ...settings.playback.visualization,
-                mode: ($event.target as HTMLSelectElement).value as any
+                mode: readSelect($event, VIZ_MODES)
               }
             })
           "
         >
-          <option value="none">None</option>
-          <option value="circle">Circle</option>
-          <option value="bars">Bars</option>
-          <option value="particles">Particles</option>
-          <option value="wave">Wave</option>
-          <option value="radial">Radial</option>
+          <option value="none">{{ $t('settings.vizModeNone') }}</option>
+          <option value="circle">{{ $t('settings.vizModeCircle') }}</option>
+          <option value="bars">{{ $t('settings.vizModeBars') }}</option>
+          <option value="particles">{{ $t('settings.vizModeParticles') }}</option>
+          <option value="wave">{{ $t('settings.vizModeWave') }}</option>
+          <option value="radial">{{ $t('settings.vizModeRadial') }}</option>
         </select>
       </label>
       <div class="grid grid-cols-2 gap-3">

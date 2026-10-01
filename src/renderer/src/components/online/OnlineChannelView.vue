@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useOnlineStore } from '@renderer/stores/online';
+import { buildYouTubeWatchUrl } from '@shared/provider';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
 import {
@@ -35,7 +36,7 @@ const unfollowOpen = ref(false);
 const expandedId = ref<string | null>(null);
 
 function watchUrl(v: { id: string; url?: string }): string {
-  return v.url || `https://www.youtube.com/watch?v=${v.id}`;
+    return v.url || buildYouTubeWatchUrl(v.id);
 }
 
 function openWatchWindow(v: { id: string; url?: string }) {
@@ -119,6 +120,12 @@ function queueVideo(v: YouTubeVideo) {
   } else {
     queueTarget.value = v;
   }
+}
+
+// The per-card options button always opens the full config dialog, even when
+// Smart Mode would otherwise download with defaults.
+function openDownloadOptions(v: YouTubeVideo) {
+  queueTarget.value = v;
 }
 
 function confirmQueue(payload: {
@@ -268,6 +275,7 @@ onUnmounted(() => {
             @collapse="expandedId = null"
             @queue="queueVideo(v)"
             @play="yt.playStream(v)"
+            @options="openDownloadOptions(v)"
             @open-window="openWatchWindow(v)"
             @open-channel="yt.openChannel($event)"
           />

@@ -253,8 +253,8 @@ defineExpose({ reveal });
         top: bandSelect.top + 'px',
         width: bandSelect.width + 'px',
         height: bandSelect.height + 'px',
-        borderColor: 'rgb(99,102,241)',
-        backgroundColor: 'rgba(99,102,241,0.08)'
+        borderColor: 'var(--color-primary)',
+        backgroundColor: 'color-mix(in srgb, var(--color-primary) 12%, transparent)'
       }"
     />
   </div>

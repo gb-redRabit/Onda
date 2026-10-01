@@ -7,7 +7,7 @@ import { logger } from '../../shared/logger';
 import { getStore } from './cover-store';
 import { clearAppCaches } from './app-cache';
 import { clearLogFile, getLogDir } from '../log-file';
-import { AUTH_PARTITION } from '../youtube-auth-session';
+import { AUTH_PARTITION } from '../youtube/youtube-auth-session';
 import { removeProfileState } from '../utils/profile-state';
 import { CURRENT_STORE_VERSION, MAX_STORE_BACKUPS, STORE_VERSION_KEY } from '../state-migrations';
 

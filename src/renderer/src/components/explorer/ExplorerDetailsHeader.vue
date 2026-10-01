@@ -25,7 +25,7 @@ function isActive(field: SortBy): boolean {
 
 <template>
   <div
-    class="grid grid-cols-[1fr_120px_100px_100px] gap-2 px-3 py-2 text-[11px] text-base-content/50 font-medium uppercase tracking-wider border-b border-base-300 mb-1 sticky top-0 bg-base-200/[var(--glass-alpha)] z-10"
+    class="grid grid-cols-[1fr_120px_100px_100px] gap-2 px-3 py-2 text-[11px] text-base-content/50 font-medium uppercase tracking-wider border-b border-base-300 mb-1 sticky top-0 bg-base-200/(--glass-alpha) z-10"
   >
     <button
       v-for="col in columns"

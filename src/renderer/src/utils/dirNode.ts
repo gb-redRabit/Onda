@@ -5,6 +5,7 @@ import {
   getDirectTracksIndexed,
   getChildDirsIndexed
 } from '@renderer/utils/libraryIndex';
+import { trackMatchesQuery } from '@renderer/utils/librarySearch';
 
 type Folders = Parameters<typeof getChildDirsIndexed>[2];
 
@@ -40,10 +41,8 @@ export function directTracksInDir(
   folders: Folders,
   query: string
 ): MediaFile[] {
-  const q = query.toLowerCase().trim();
   const all = getDirectTracksIndexed(dir, tracks, folders);
-  if (!q) return all;
-  return all.filter((t) => t.name.toLowerCase().includes(q) || t.path.toLowerCase().includes(q));
+  return all.filter((t) => trackMatchesQuery(t, query));
 }
 
 export function buildChildMeta(

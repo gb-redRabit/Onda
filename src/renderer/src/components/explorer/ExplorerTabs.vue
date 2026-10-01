@@ -182,7 +182,7 @@ async function onTabDrop(e: DragEvent, idx: number) {
       class="fx-noise group flex items-center gap-1.5 px-2.5 h-7 text-xs fx-depth rounded-field transition-colors shrink-0 min-w-0 max-w-44 border"
       :class="{
         'bg-primary text-primary-content border-transparent': explorer.activeTabIndex === idx,
-        'bg-base-200/[var(--glass-alpha)] text-base-content/70 border-transparent hover:text-base-content hover:bg-base-content/10':
+        'bg-base-200/(--glass-alpha) text-base-content/70 border-transparent hover:text-base-content hover:bg-base-content/10':
           explorer.activeTabIndex !== idx,
         'ring-2 ring-primary': tabDropTargetIdx === idx
       }"

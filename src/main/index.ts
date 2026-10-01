@@ -1,41 +1,43 @@
-﻿import { app, BrowserWindow, ipcMain, globalShortcut, shell, dialog } from 'electron';
+﻿import { app, BrowserWindow, ipcMain, globalShortcut, dialog } from 'electron';
 import { join, dirname } from 'path';
 import os from 'os';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import { createMediaServer } from './media-server';
+import { createMediaServer } from './media/media-server';
 import { registerOndaProtocolHandler } from './protocol';
-import { registerWindowHandlers } from './window-ipc';
+import { registerWindowHandlers } from './windows/window-ipc';
 import { registerIPC } from './ipc/handlers';
-import { pipManager } from './pip-manager';
-import { audioPipManager } from './audio-pip-manager';
-import { closeLoginWindow } from './youtube-auth';
+import { pipManager } from './pip/pip-manager';
+import { audioPipManager } from './pip/audio-pip-manager';
+import { closeLoginWindow } from './youtube/youtube-auth';
 import { logger } from '../shared/logger';
-import { extractMediaPaths } from './media-paths';
-import { setMediaServerUrl, registerMediaUrlHandler } from './media-url-args';
+import { extractMediaPaths } from './media/media-paths';
+import { setMediaServerUrl, registerMediaUrlHandler } from './media/media-url-args';
 import {
   setAllowedRoots,
   addAllowedRoot,
   setRootsChangedHandler,
   getExtraRoots
-} from './media-server';
+} from './media/media-server';
 import { getStore } from './ipc/cover-cache';
 import { flushQueueNow } from './downloads/download-manager';
-import { flushLibraryScanned } from './ipc/library-store';
+import { flushLibraryScanned, flushStats } from './ipc/library-store';
+import { stopSubscriptionChecker } from './ipc/subscription-checker';
 import { setupFileLogging, applyLogSettings, flushLogWrites } from './log-file';
 import { applyCoverCacheSettings } from './ipc/cover-cache';
 import { initAutoUpdater, replayUpdaterEvent } from './updater';
 import { markBootPhase, markBootStart } from './boot-timeline';
 import { configureAutoCheck } from './updater-scheduler';
 import { syncSubscriptionsScheduler } from './ipc/subscriptions-handlers';
-import { shouldCloseToTray, setCloseToTray } from './close-behavior';
-import { installNavigationGuard } from './navigation-guard';
-import { windowIcon } from './window-icon';
-import { createChildWindow } from './child-window';
-import { destroyTray, hasTray, setupTray } from './tray';
-import { SplashController } from './splash';
+import { shouldCloseToTray, setCloseToTray } from './windows/close-behavior';
+import { windowIcon } from './windows/window-icon';
+import { createWindow as createBrowserWindow } from './windows/window-factory';
+import { destroyTray, hasTray, setupTray } from './windows/tray';
+import { SplashController } from './windows/splash';
 
 let mainWindow: BrowserWindow | null = null;
 let startHidden = false;
+// Guards the one-shot async cleanup in the `before-quit` handler below.
+let isAppQuitting = false;
 
 const splash = new SplashController({
   windowIcon,
@@ -95,7 +97,7 @@ if (!gotSingleInstanceLock) {
 }
 
 function createWindow(): BrowserWindow {
-  const win = new BrowserWindow({
+  const win = createBrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 900,
@@ -111,33 +113,10 @@ function createWindow(): BrowserWindow {
       ? { vibrancy: 'sidebar' as const, visualEffectState: 'active' as const }
       : {}),
     icon: windowIcon(),
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: true,
-      contextIsolation: true,
-      nodeIntegration: false,
-      webSecurity: true
+    // The splash owns when the main window first appears.
+    onReadyToShow: (w) => {
+      if (!splash.isActive() && !startHidden) w.show();
     }
-  });
-
-  win.on('ready-to-show', () => {
-    if (!splash.isActive() && !startHidden) win.show();
-  });
-
-  win.on('maximize', () => {
-    win.webContents.send('window:maximized', true);
-  });
-
-  win.on('unmaximize', () => {
-    win.webContents.send('window:maximized', false);
-  });
-
-  win.on('enter-full-screen', () => {
-    win.webContents.send('window:fullscreenChanged', true);
-  });
-
-  win.on('leave-full-screen', () => {
-    win.webContents.send('window:fullscreenChanged', false);
   });
 
   win.on('close', (e) => {
@@ -145,18 +124,6 @@ function createWindow(): BrowserWindow {
       e.preventDefault();
       win.hide();
     }
-  });
-
-  win.webContents.setWindowOpenHandler((details) => {
-    try {
-      const parsed = new URL(details.url);
-      if (['https:', 'http:', 'mailto:'].includes(parsed.protocol)) {
-        shell.openExternal(details.url);
-      }
-    } catch (e) {
-      logger.warn('main', 'setWindowOpenHandler: invalid URL', details.url, e);
-    }
-    return { action: 'deny' };
   });
 
   // Boot diagnostics: a renderer that never finishes loading otherwise looks
@@ -191,14 +158,6 @@ function createWindow(): BrowserWindow {
     logger.error('main', 'render-process-gone', details);
     splash.forceClose();
   });
-
-  installNavigationGuard(win);
-
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    win.loadURL(process.env['ELECTRON_RENDERER_URL']);
-  } else {
-    win.loadFile(join(__dirname, '../renderer/index.html'));
-  }
 
   return win;
 }
@@ -353,16 +312,39 @@ app.whenReady().then(async () => {
     app.quit();
   });
 
-  app.on('will-quit', () => {
-    mediaServer.close();
-    closeLoginWindow();
-    // Flush debounced persistence so the last ~0.5s of changes aren't lost.
-    flushQueueNow();
-    // Same for the log queue: the lines written during shutdown are the ones
-    // worth having when a crash brought us here.
-    void flushLogWrites();
-    void flushLibraryScanned();
-    void getStore().then((s) => s.set('mediaRoots', getExtraRoots().slice(0, 50)));
+  // Graceful shutdown. `will-quit` is synchronous: the Node event loop is torn
+  // down as soon as the listener returns, so async flushes started there never
+  // finish — the last debounced writes are lost, .tmp files can be left behind
+  // and the library/stats files can be left half-written. Delay the quit once
+  // on `before-quit`, await every flush, then quit for real.
+  app.on('before-quit', (event) => {
+    if (isAppQuitting) return;
+    event.preventDefault();
+    isAppQuitting = true;
+    void (async () => {
+      try {
+        globalShortcut.unregisterAll();
+        // Stop background schedulers so no yt-dlp/network sweep starts during exit.
+        stopSubscriptionChecker();
+        mediaServer.close();
+        closeLoginWindow();
+        // Flush debounced persistence so the last ~0.5s of changes aren't lost.
+        flushQueueNow();
+        await Promise.allSettled([
+          // The lines written during shutdown are the ones worth having when a
+          // crash brought us here.
+          flushLogWrites(),
+          flushLibraryScanned(),
+          // Play statistics are debounced (400ms); flush them or the last plays are lost.
+          flushStats(),
+          getStore().then((s) => s.set('mediaRoots', getExtraRoots().slice(0, 50)))
+        ]);
+      } catch (e) {
+        logger.error('main', 'graceful shutdown failed', e);
+      } finally {
+        app.quit();
+      }
+    })();
   });
 
   registerOndaProtocolHandler();
@@ -428,7 +410,6 @@ app.whenReady().then(async () => {
   registerWindowHandlers({
     getMainWindow: () => mainWindow,
     preFullscreenBounds,
-    createChildWindow: (parent, options) => createChildWindow(parent, options),
     pipManager,
     audioPipManager
   });
@@ -437,6 +418,14 @@ app.whenReady().then(async () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       mainWindow = createWindow();
       mainWindow.webContents.on('did-finish-load', () => splash.onMainReady());
+
+      // 'window-all-closed' destroys the PiP managers, which removes their
+      // ipcMain listeners. On macOS the app is still alive, so re-initialise
+      // them here or PiP stays broken until a full restart.
+      pipManager.setMainWindow(mainWindow);
+      pipManager.init();
+      audioPipManager.setMainWindow(mainWindow);
+      audioPipManager.init();
     }
   });
 });
@@ -449,8 +438,4 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
-});
-
-app.on('will-quit', () => {
-  globalShortcut.unregisterAll();
 });

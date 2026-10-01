@@ -4,6 +4,7 @@ import type { ChildProcess } from 'child_process';
 import type { IpcDownloadTask } from '../../shared/types/ipc';
 import { AUDIO_EXTS } from '../../shared/constants';
 import { resolveFolderTokens } from './cover-spec';
+import { sanitizeFilenameSpaced } from '../../shared/text';
 
 // Pure helpers extracted from `download-manager.ts` (plan 2.8) — no queue state.
 
@@ -67,11 +68,7 @@ export function outputExtensions(job: Job): string[] {
   return [`.${job.format || 'mp3'}`];
 }
 
-export function formatBytes(bytesPerSec: number): string {
-  if (bytesPerSec >= 1024 * 1024) return `${(bytesPerSec / (1024 * 1024)).toFixed(1)} MB`;
-  if (bytesPerSec >= 1024) return `${Math.round(bytesPerSec / 1024)} KB`;
-  return `${Math.round(bytesPerSec)} B`;
-}
+export { formatBytes } from '../../shared/formatBytes';
 
 export function formatEta(seconds: number): string {
   const s = Math.max(0, Math.round(seconds));
@@ -82,12 +79,7 @@ export function formatEta(seconds: number): string {
 }
 
 export function sanitizeFileName(name: string): string {
-  return (
-    name
-      .replace(/\s*[\\/:*?"<>|]\s*/g, ' ')
-      .trim()
-      .slice(0, 180) || 'download'
-  );
+  return sanitizeFilenameSpaced(name);
 }
 
 export function deriveHttpFileName(job: Job): string {

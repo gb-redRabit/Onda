@@ -62,6 +62,7 @@ const {
 
 <template>
   <div
+    data-testid="image-viewer"
     class="fixed inset-0 z-50 flex flex-col bg-base-200/95 select-none"
     :class="slideshowActive && !uiVisible ? 'cursor-none' : ''"
     @click.self="handleClose"
@@ -71,6 +72,7 @@ const {
       <div class="absolute inset-0 flex items-center justify-center overflow-hidden contain-layout">
         <button
           v-if="hasPrev && !slideshowActive"
+          data-testid="image-viewer-prev"
           class="ui-icon-button absolute left-3 z-10 rounded-full bg-base-300 p-2"
           :title="$t('imageViewer.previous')"
           :aria-label="$t('imageViewer.previous')"
@@ -97,6 +99,7 @@ const {
           <img
             v-show="displaySrc && !imgError"
             :key="currentIndex"
+            data-testid="image-viewer-image"
             :src="displaySrc"
             :alt="currentFile?.name || ''"
             class="absolute inset-0 max-w-full max-h-full m-auto"
@@ -122,6 +125,7 @@ const {
 
         <button
           v-if="hasNext && !slideshowActive"
+          data-testid="image-viewer-next"
           class="ui-icon-button absolute right-3 z-10 mr-12 rounded-full bg-base-300 p-2"
           :title="$t('imageViewer.next')"
           :aria-label="$t('imageViewer.next')"
@@ -132,6 +136,7 @@ const {
 
         <div
           v-if="slideshowActive"
+          data-testid="image-viewer-slideshow-progress"
           class="absolute top-0 left-0 right-0 h-0.5 bg-border-default/30 z-10 transition-opacity duration-300"
           :class="uiVisible ? 'opacity-100' : 'opacity-0'"
         >

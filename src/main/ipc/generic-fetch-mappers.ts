@@ -1,4 +1,4 @@
-import type { MediaSource, SourceEndpoint, SourceItem } from '../../renderer/src/types/sources';
+import type { MediaSource, SourceEndpoint, SourceItem } from '../../shared/types/sources';
 
 // Pure templating/URL/dot-path helpers extracted from `generic-fetch.ts`
 // (plan 2.8). `generic-fetch` re-exports the public ones so existing

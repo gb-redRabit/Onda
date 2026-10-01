@@ -1,4 +1,5 @@
 import { ref, type Ref } from 'vue';
+import { buildSoundcloudProfileUrl, buildYouTubeChannelUrl } from '@shared/provider';
 import { useUIStore } from '@renderer/stores/ui';
 import type {
   DownloadTask,
@@ -120,10 +121,10 @@ export function createOnlineQueue(deps: OnlineQueueDeps) {
     try {
       const res = isSc
         ? ((await window.api.invoke('sc:channelAll', {
-            url: `https://soundcloud.com/${channelId}`
+            url: buildSoundcloudProfileUrl(channelId)
           })) as { success?: boolean; items?: YouTubeVideo[] })
         : ((await window.api.invoke('yt:channelAll', {
-            url: `https://www.youtube.com/channel/${channelId}`,
+            url: buildYouTubeChannelUrl(channelId),
             tab: 'videos'
           })) as { success?: boolean; items?: YouTubeVideo[] });
       if (res?.success && res.items) {

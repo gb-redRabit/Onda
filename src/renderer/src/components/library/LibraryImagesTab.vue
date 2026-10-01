@@ -130,7 +130,7 @@ onUnmounted(() => {
             @contextmenu.prevent="onImageContext($event, item.img)"
           >
             <div
-              class="aspect-square bg-base-200/[var(--glass-alpha)] overflow-hidden flex items-center justify-center"
+              class="aspect-square bg-base-200/(--glass-alpha) overflow-hidden flex items-center justify-center"
             >
               <img
                 v-if="getThumb(item.img.path)"

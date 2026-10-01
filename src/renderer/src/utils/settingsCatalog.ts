@@ -1,4 +1,4 @@
-// Settings search catalog: every entry is a jump target. Searching matches the
+﻿// Settings search catalog: every entry is a jump target. Searching matches the
 // translated label plus keywords; picking a result opens `tab` and scrolls to the
 // element carrying the entry id (SettingsRow `anchor`).
 export interface SettingsCatalogEntry {
@@ -32,10 +32,9 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
   {
     id: 'setting-language',
     labelKey: 'settings.language',
-    tab: 'appearance',
+    tab: 'general',
     keywords: ['jezyk', 'language', 'locale']
   },
-  { id: 'setting-reset', labelKey: 'settings.reset', tab: 'appearance', keywords: [] },
   {
     id: 'setting-sidebar-collapsed',
     labelKey: 'settings.sidebarCollapsed',
@@ -70,7 +69,7 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
   {
     id: 'setting-google-account',
     labelKey: 'settings.googleAccount',
-    tab: 'download',
+    tab: 'network-platform',
     keywords: []
   },
   {
@@ -127,6 +126,12 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     labelKey: 'settings.confirmBeforeMove',
     tab: 'explorer',
     keywords: []
+  },
+  {
+    id: 'setting-permanent-delete',
+    labelKey: 'settings.permanentDelete',
+    tab: 'explorer',
+    keywords: ['trash', 'kosz', 'delete']
   },
   { id: 'setting-explorer', labelKey: 'settings.explorer', tab: 'explorer', keywords: [] },
   { id: 'setting-sorting', labelKey: 'settings.sorting', tab: 'explorer', keywords: [] },
@@ -271,62 +276,56 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     tab: 'shortcuts',
     keywords: []
   },
-  { id: 'setting-clip-format', labelKey: 'settings.clipFormat', tab: 'smart-mode', keywords: [] },
+  { id: 'setting-clip-format', labelKey: 'settings.clipFormat', tab: 'download', keywords: [] },
   {
     id: 'setting-default-audio-format',
     labelKey: 'settings.defaultAudioFormat',
-    tab: 'smart-mode',
+    tab: 'download',
     keywords: []
   },
   {
     id: 'setting-default-audio-quality',
     labelKey: 'settings.defaultAudioQuality',
-    tab: 'smart-mode',
+    tab: 'download',
     keywords: []
   },
   {
     id: 'setting-default-cover',
     labelKey: 'settings.defaultCover',
-    tab: 'smart-mode',
+    tab: 'download',
     keywords: []
   },
-  { id: 'setting-default-kind', labelKey: 'settings.defaultKind', tab: 'smart-mode', keywords: [] },
-  { id: 'setting-default-subs', labelKey: 'settings.defaultSubs', tab: 'smart-mode', keywords: [] },
+  { id: 'setting-default-kind', labelKey: 'settings.defaultKind', tab: 'download', keywords: [] },
+  { id: 'setting-default-subs', labelKey: 'settings.defaultSubs', tab: 'download', keywords: [] },
   {
     id: 'setting-default-subs-langs',
     labelKey: 'settings.defaultSubsLangs',
-    tab: 'smart-mode',
+    tab: 'download',
     keywords: []
   },
   {
     id: 'setting-default-video-container',
     labelKey: 'settings.defaultVideoContainer',
-    tab: 'smart-mode',
+    tab: 'download',
     keywords: []
   },
   {
     id: 'setting-default-video-quality',
     labelKey: 'settings.defaultVideoQuality',
-    tab: 'smart-mode',
+    tab: 'download',
     keywords: []
   },
   {
     id: 'setting-filename-template',
     labelKey: 'settings.filenameTemplate',
-    tab: 'smart-mode',
+    tab: 'download',
     keywords: []
   },
   {
     id: 'setting-smart-mode',
     labelKey: 'settings.smartMode',
-    tab: 'smart-mode',
+    tab: 'download',
     keywords: ['inteligentny', 'smart']
-  },
-  {
-    id: 'setting-smart-mode-tab',
-    labelKey: 'settings.smartModeTab',
-    tab: 'smart-mode',
-    keywords: []
   },
   {
     id: 'setting-log-level',

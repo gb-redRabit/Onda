@@ -52,6 +52,9 @@ export const useSettingsStore = defineStore('settings', () => {
   const dependencies = ref<Record<string, DependencyStatus>>({});
   const statusBar = ref<StatusBarSettings>({ ...DEFAULT_STATUS_BAR });
   const home = ref<HomeSettings>({ ...DEFAULT_HOME });
+  // Favourites are part of the settings state so there is one writer and one
+  // reset path; player-favorites reads this ref instead of its own copy.
+  const favorites = ref<string[]>([]);
   const isLoaded = ref(false);
 
   const { load, save, saveImmediate, resetToDefaults, applyImported } = createSettingsPersistence({
@@ -70,6 +73,7 @@ export const useSettingsStore = defineStore('settings', () => {
     dependencies,
     statusBar,
     home,
+    favorites,
     isLoaded
   });
 
@@ -176,6 +180,7 @@ export const useSettingsStore = defineStore('settings', () => {
     dependencies,
     statusBar,
     home,
+    favorites,
     isLoaded,
     load,
     save,

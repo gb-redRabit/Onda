@@ -1,4 +1,6 @@
-import type { PipSubtitleData } from '../pip';
+import type { PipSubtitleData, AudioPipLayoutOpts } from '../pip';
+
+export type { AudioPipLayoutOpts };
 
 export interface PipLayoutOpts {
   position?: string;
@@ -11,16 +13,11 @@ export interface PipStartSettings extends PipLayoutOpts {
   subtitle?: PipSubtitleData | null;
 }
 
-export interface AudioPipLayoutOpts {
-  dock?: string;
-  cornerElements?: string[];
-  edgeElements?: string[];
-  autoHide?: boolean;
-}
-
 export interface PipChannels {
   'pip:start': { args: [videoSrc: string, settings?: PipStartSettings]; result: boolean };
   'pip:stop': { args: []; result: boolean };
+  /** Main window asks to pull the video PiP back into the player. */
+  'pip:restore': { args: []; result: boolean };
   'pip:preload': { args: [videoSrc: string, subtitleData: PipSubtitleData | null]; result: void };
   'pip:loadtrack': { args: [videoSrc: string, subtitleData: PipSubtitleData | null]; result: void };
   'pip:updateSubtitle': { args: [data: PipSubtitleData | null]; result: void };

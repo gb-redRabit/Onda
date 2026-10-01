@@ -224,9 +224,4 @@ export function registerMusicBrainzHandlers() {
       return { success: false, error: String(e), match: 'none', releases: [] };
     }
   });
-
-  ipcMain.handle('musicbrainz:batchApply', async (_event, _payload: unknown) => {
-    // placeholder — renderer iteruje per utwór i woła lookup+getCover, main tylko throttluje
-    return { success: true };
-  });
 }

@@ -1,5 +1,5 @@
 import { extname } from 'path';
-import type { MediaFile } from '../../renderer/src/types/media';
+import type { MediaFile } from '../../shared/types/media';
 import { VIDEO_EXTS } from '../../shared/constants';
 
 // Pure folder-type / file filters extracted from `library-scan.ts` (plan 2.8).

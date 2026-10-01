@@ -1,4 +1,6 @@
 import type { SourceEndpoint, SourceItem } from '@renderer/types/sources';
+import { sanitizeFilenameSpaced } from '@shared/text';
+import { clonePlain } from '@renderer/utils/clone';
 
 // Pure source-download helpers extracted from `stores/sources.ts` (plan 2.8).
 
@@ -11,12 +13,7 @@ export function computePaginationMode(
 }
 
 export function sanitizeName(name: string): string {
-  return (
-    name
-      .replace(/\s*[\\/:*?"<>|]\s*/g, ' ')
-      .trim()
-      .slice(0, 180) || 'download'
-  );
+  return sanitizeFilenameSpaced(name);
 }
 
 export function deriveFileName(item: SourceItem): string {
@@ -42,5 +39,5 @@ export function deriveFileName(item: SourceItem): string {
 }
 
 export function toPlain<T>(v: T): T {
-  return JSON.parse(JSON.stringify(v));
+  return clonePlain(v);
 }

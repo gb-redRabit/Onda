@@ -170,6 +170,7 @@ function setRef(i: number) {
       v-if="ui.contextMenu"
       id="context-menu"
       ref="rootEl"
+      data-testid="context-menu"
       class="fixed z-999 bg-neutral border border-neutral-content/20 rounded-box shadow-2xl shadow-black/50 py-1.5 min-w-45 max-h-[80vh] overflow-y-auto"
       :style="position"
       @click.stop
@@ -187,6 +188,7 @@ function setRef(i: number) {
           @mouseleave="onItemLeave()"
         >
           <button
+            data-testid="context-menu-item"
             class="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-sm hover:bg-primary/10 hover:text-primary transition-colors"
             :class="{ 'opacity-40 pointer-events-none': item.disabled }"
             :disabled="item.disabled"
@@ -224,6 +226,7 @@ function setRef(i: number) {
                 <div v-if="child.separator" class="border-t border-base-300 my-1 mx-2" />
                 <button
                   v-else
+                  data-testid="context-menu-subitem"
                   class="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-sm hover:bg-primary/10 hover:text-primary transition-colors"
                   :class="{ 'opacity-40 pointer-events-none': child.disabled }"
                   :disabled="child.disabled"

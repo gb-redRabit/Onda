@@ -12,7 +12,6 @@ export const SETTINGS_TAB_COMPONENTS: Record<string, ReturnType<typeof defineAsy
   download: defineAsyncComponent(() => import('./SettingsDownload.vue')),
   'download-paths': defineAsyncComponent(() => import('./SettingsDownloadPaths.vue')),
   'download-queue': defineAsyncComponent(() => import('./SettingsDownloadQueue.vue')),
-  'smart-mode': defineAsyncComponent(() => import('./SettingsSmartMode.vue')),
   shortcuts: defineAsyncComponent(() => import('./SettingsShortcuts.vue')),
   network: defineAsyncComponent(() => import('./SettingsNetwork.vue')),
   'network-platform': defineAsyncComponent(() => import('./SettingsNetworkPlatform.vue')),

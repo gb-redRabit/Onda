@@ -1,10 +1,10 @@
-import type { YouTubeResolveResult, YouTubeResolvedItem } from '../../../renderer/src/types/online';
+import type { YouTubeResolveResult, YouTubeResolvedItem } from '../online';
 import type {
   MediaSource,
   SourceEndpoint,
   SourceFetchResult,
   SourceItem
-} from '../../../renderer/src/types/sources';
+} from '../sources';
 import type {
   IpcDownloadConfig,
   IpcDownloadErrorCode,
@@ -242,4 +242,5 @@ export interface OnlineChannels {
     result: SourceItem[];
   };
   'sources:enqueue': { args: [jobs: IpcDownloadJobInput[]]; result: IpcDownloadTask[] };
+  'sources:downloaded': { args: [sourceId: string]; result: string[] };
 }

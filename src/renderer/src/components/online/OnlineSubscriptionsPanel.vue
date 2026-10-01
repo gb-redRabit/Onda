@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import { Bell } from '@lucide/vue';
-import OnlineEmptyState from './OnlineEmptyState.vue';
+import EmptyState from '@renderer/components/ui/EmptyState.vue';
 import OnlineSubscriptionCard from './OnlineSubscriptionCard.vue';
 import Loader from '@renderer/components/layout/Loader.vue';
 import type { Subscription } from '@renderer/types/online';
@@ -25,11 +25,12 @@ const { t } = useI18n();
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div data-testid="online-subscriptions-panel" class="space-y-4">
     <Loader v-if="!loaded" overlay :label="$t('common.loading')" />
 
-    <OnlineEmptyState
+    <EmptyState
       v-else-if="subscriptions.length === 0"
+      variant="plain"
       :icon="Bell"
       :title="t('youtube.noSubscriptions')"
     />

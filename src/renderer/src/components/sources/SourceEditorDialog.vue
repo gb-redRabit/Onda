@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { useDialogFocus } from '@renderer/composables/useDialogFocus';
+import ModalShell from '@renderer/components/ui/ModalShell.vue';
+import { useUnsavedGuard } from '@renderer/composables/useUnsavedGuard';
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { X, Plus, Loader2 } from '@lucide/vue';
@@ -33,21 +34,16 @@ const emit = defineEmits<{
 const ui = useUIStore();
 const sources = useSourcesStore();
 const settings = useSettingsStore();
-let overlayClicks = 0;
-let overlayTimer: ReturnType<typeof setTimeout> | null = null;
-function onOverlayClick() {
-  const isDirty =
+const { onOverlayClick } = useUnsavedGuard({
+  isDirty: () =>
     draft.name.trim() !== (props.source?.name || '') ||
     draft.baseUrl.trim() !== (props.source?.baseUrl || '') ||
     draft.allowPrivateNetwork !== (props.source?.allowPrivateNetwork === true) ||
-    draft.endpoints.length !== (props.source?.endpoints?.length || 0);
-  overlayClicks++;
-  if (isDirty) ui.notify('warning', t('common.unsavedChangesClickAgain'));
-  else ui.notify('info', t('common.clickAgainToClose'));
-  if (overlayClicks >= 2) emit('close');
-  if (overlayTimer) clearTimeout(overlayTimer);
-  overlayTimer = setTimeout(() => (overlayClicks = 0), 2000);
-}
+    draft.endpoints.length !== (props.source?.endpoints?.length || 0),
+  onClose: () => emit('close'),
+  onDirtyHint: () => ui.notify('warning', t('common.unsavedChangesClickAgain')),
+  onCleanHint: () => ui.notify('info', t('common.clickAgainToClose'))
+});
 
 const draft = reactive({
   id: props.source?.id || '',
@@ -238,27 +234,16 @@ async function onTestTable(idx: number) {
     tableTestingId.value = '';
   }
 }
-const panelRef = ref<HTMLElement | null>(null);
-// Focus enters the dialog on open, cycles inside it, and returns to the opener
-// on close; Escape is handled here so every dialog dismisses the same way.
-useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => emit('close') });
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      class="fixed inset-0 z-50 flex items-center justify-center bg-neutral/70 p-6"
-      @click.self="onOverlayClick"
-    >
-      <div
-        ref="panelRef"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="source-editor-dialog-title"
-        tabindex="-1"
-        class="w-full max-w-3xl max-h-full flex flex-col rounded-box bg-base-200 border border-base-300 shadow-2xl overflow-hidden"
-        data-testid="source-editor-dialog"
-      >
+  <ModalShell
+    labelled-by="source-editor-dialog-title"
+    data-testid="source-editor-dialog"
+    panel-class="w-full max-w-3xl max-h-full flex flex-col overflow-hidden"
+    @close="onOverlayClick"
+    @escape="emit('close')"
+  >
         <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
           <h2 id="source-editor-dialog-title" class="text-sm font-medium flex-1">
             {{ props.source ? $t('sources.editSource') : $t('sources.addSource') }}
@@ -421,7 +406,5 @@ useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => emit('close') })
             {{ $t('common.save') }}
           </button>
         </div>
-      </div>
-    </div>
-  </Teleport>
+  </ModalShell>
 </template>

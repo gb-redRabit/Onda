@@ -2,7 +2,7 @@ import { logger } from '../../shared/logger';
 import type { IpcDownloadTask } from '../../shared/types/ipc';
 import { type Job } from './download-helpers';
 import { resolveBin } from '../binaries';
-import { getYtAuthConfig, cleanupYtAuthTemp } from '../youtube-auth';
+import { getYtAuthConfig, cleanupYtAuthTemp } from '../youtube/youtube-auth';
 import type { YtAuthConfig } from '../ipc/youtube-utils';
 import { buildBaseArgs } from './download-args';
 import { runJobAttempt } from './download-attempt';

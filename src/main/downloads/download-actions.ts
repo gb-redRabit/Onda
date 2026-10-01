@@ -4,6 +4,7 @@ import type { IpcDownloadJobInput, IpcDownloadTask } from '../../shared/types/ip
 import { type Job } from './download-helpers';
 import { snapshotDownloadTask } from './download-snapshot';
 import { normalizeCoverSpec } from './cover-spec';
+import { buildJobSource } from './download-source';
 import { resolveProvider } from '../../shared/provider';
 import { isSafeAbsolutePath } from '../utils/validate';
 import { loadPersistedJobs, queueFilePath } from './download-queue-store';
@@ -17,6 +18,7 @@ import {
   persist
 } from './download-state';
 import { pump } from './download-runner';
+import { killDownloadProcess } from './kill-download-process';
 
 // Queue mutations (add/cancel/pause/resume/move/list/import/export/clear) and
 // queue restore, extracted from `download-manager.ts` (plan 2.8).
@@ -93,52 +95,12 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
       }
       knownVideoIds.add(input.videoId);
     }
-    const source =
-      input.source && input.source.mode === 'http'
-        ? {
-            mode: 'http' as const,
-            fileName:
-              typeof input.source.fileName === 'string' && input.source.fileName
-                ? input.source.fileName.slice(0, 200)
-                : undefined,
-            apiKeyId:
-              typeof input.source.apiKeyId === 'string'
-                ? input.source.apiKeyId.slice(0, 200)
-                : undefined,
-            headerName:
-              typeof input.source.headerName === 'string'
-                ? input.source.headerName.slice(0, 100)
-                : undefined
-          }
-        : input.source && input.source.mode === 'soundcloud'
-          ? {
-              mode: 'soundcloud' as const,
-              fileName:
-                typeof input.source.fileName === 'string' && input.source.fileName
-                  ? input.source.fileName.slice(0, 200)
-                  : undefined
-            }
-          : input.source && input.source.mode === 'ytdlp'
-            ? {
-                mode: 'ytdlp' as const,
-                apiKeyId:
-                  typeof input.source.apiKeyId === 'string'
-                    ? input.source.apiKeyId.slice(0, 200)
-                    : undefined,
-                headerName:
-                  typeof input.source.headerName === 'string'
-                    ? input.source.headerName.slice(0, 100)
-                    : undefined,
-                headers:
-                  input.source.headers && typeof input.source.headers === 'object'
-                    ? Object.fromEntries(
-                        Object.entries(input.source.headers).filter(
-                          ([k, v]) => typeof k === 'string' && typeof v === 'string'
-                        )
-                      )
-                    : undefined
-              }
-            : undefined;
+    // Fields shared by every source mode. These used to be dropped when the
+    // source object was rebuilt field-by-field: without `sourceId`/`sourceItemId`
+    // a finished source download could never be recorded as "downloaded", and
+    // without `allowPrivateNetwork` the private-network trust the sources layer
+    // granted was lost before the attempt ran.
+    const source = buildJobSource(input.source);
     const cover = normalizeCoverSpec(input.cover);
     // Direct-URL downloads have no yt-dlp thumbnail step — drop thumbnail covers.
     const finalCover = source && cover?.type === 'thumbnail' ? undefined : cover;
@@ -216,7 +178,7 @@ export function cancelDownloadJob(id: string): boolean {
   if (job.status === 'downloading' && job.child) {
     job.status = 'cancelled';
     persist(job);
-    job.child.kill();
+    killDownloadProcess(job.child);
     return true;
   }
   // HTTP-mode jobs have no child process — abort via AbortController.
@@ -245,7 +207,7 @@ export function pauseDownloadJob(id: string): boolean {
     job.status = 'paused';
     persist(job);
     try {
-      job.child.kill();
+      killDownloadProcess(job.child);
     } catch {
       /* already gone */
     }
@@ -288,11 +250,7 @@ export function pauseAllDownloads(): boolean {
     } else if (job.status === 'downloading') {
       job.status = 'paused';
       persist(job);
-      try {
-        job.child?.kill();
-      } catch {
-        /* already gone */
-      }
+      killDownloadProcess(job.child);
       changed = true;
     }
   }

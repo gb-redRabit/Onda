@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import http from 'http';
 import type { AddressInfo } from 'net';
-import { createMediaServer, type MediaServer } from '../media-server';
-import { registerGenericStreamUrl } from '../media-server-stream-registry';
+import { createMediaServer, type MediaServer } from '../media/media-server';
+import { registerGenericStreamUrl } from '../media/media-server-stream-registry';
 
 vi.mock('../ipc/network-target', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../ipc/network-target')>();

@@ -1,7 +1,13 @@
-import { ref } from 'vue';
+import { useSettingsStore } from './settings';
+
+// Favourites are a setting, so they live in the settings state and are written by
+// the same debounced persistence as everything else. This module used to keep its
+// own ref and call `settings:set` directly, which meant a second writer for one
+// key: a factory reset or an imported profile had no idea favourites existed, and
+// a toggle could be lost by a save that was already in flight.
 
 export function usePlayerFavorites() {
-  const favorites = ref<string[]>([]);
+  const settings = useSettingsStore();
   let favoritesLoaded = false;
   let loadPromise: Promise<void> | null = null;
 
@@ -9,23 +15,10 @@ export function usePlayerFavorites() {
     if (favoritesLoaded) return;
     if (loadPromise) return loadPromise;
     loadPromise = (async () => {
-      if (!window.api) {
-        favoritesLoaded = true;
-        return;
-      }
       try {
-        const data = (await window.api.invoke('settings:get')) as
-          { favorites?: unknown } | undefined;
-        const list = (data as { favorites?: unknown })?.favorites;
-        if (Array.isArray(list)) {
-          if (favorites.value.length === 0) {
-            favorites.value = list as string[];
-          } else {
-            // merge — nie nadpisuj ♥ dodanych przed zakończeniem loadu (wyścig cold start)
-            const merged = new Set<string>([...favorites.value, ...(list as string[])]);
-            favorites.value = [...merged];
-          }
-        }
+        // The settings store loads everything at boot; a late consumer (a view
+        // opened after the first paint) still has to wait for that.
+        if (!settings.isLoaded) await settings.load();
       } catch {
         /* defaults */
       } finally {
@@ -36,33 +29,24 @@ export function usePlayerFavorites() {
     return loadPromise;
   }
 
+  // Read through the store on every call rather than holding the array: the
+  // store may have been assigned a new array since this was created, and a
+  // captured reference would then be stale.
   function isFavorite(path: string): boolean {
     void ensureFavorites();
-    return favorites.value.includes(path);
+    return settings.favorites.includes(path);
   }
 
   async function toggleFavorite(path: string) {
     await ensureFavorites();
-    const idx = favorites.value.indexOf(path);
+    const idx = settings.favorites.indexOf(path);
     if (idx >= 0) {
-      favorites.value.splice(idx, 1);
+      settings.favorites.splice(idx, 1);
     } else {
-      favorites.value.push(path);
+      settings.favorites.push(path);
     }
-    await saveFavorites();
+    settings.save();
   }
 
-  async function saveFavorites() {
-    try {
-      if (window.api) {
-        await window.api.invoke('settings:set', {
-          favorites: [...favorites.value]
-        });
-      }
-    } catch {
-      // silent fail
-    }
-  }
-
-  return { favorites, isFavorite, toggleFavorite, ensureFavorites };
+  return { favorites: settings.favorites, isFavorite, toggleFavorite, ensureFavorites };
 }

@@ -14,12 +14,13 @@ import {
   parseYtDlpProgress
 } from './download-helpers';
 import { buildYtArgs, type YtAuthConfig } from '../ipc/youtube-utils';
+import { killDownloadProcess } from './kill-download-process';
 import { resolveFinalOutputPath, findNewestOutput } from './output-path';
 import { downloadHttpFile } from './http-downloader';
 import { resolveSourceHeaders } from '../ipc/generic-fetch';
 import { resolveScDownloadSource } from '../ipc/soundcloud-client';
 import { classifyYtDlpError, describeError, redactSecrets } from './error-classifier';
-import { addAllowedRoot } from '../media-server';
+import { addAllowedRoot } from '../media/media-server';
 import { persist, reportCompleted, jobAbortControllers } from './download-state';
 
 // A single download attempt (HTTP stream or yt-dlp process) for one job,
@@ -69,6 +70,9 @@ async function runHttpAttempt(
     job.progress = 100;
     job.completedAt = Date.now();
     persist(job);
+    // HTTP/direct-URL jobs complete here, not in the yt-dlp spawn path, so the
+    // "downloaded" bookkeeping (subscriptions + sources) must fire here too.
+    reportCompleted(job);
     return { finishedOk: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -138,6 +142,10 @@ export async function runJobAttempt(
   // UTF-8 output so the parsed paths match the real files on disk.
   const child = spawn(bin, args, {
     windowsHide: true,
+    // Group leader, so cancelling can signal the whole group and reach the
+    // ffmpeg yt-dlp spawns. Without it only yt-dlp dies and ffmpeg keeps writing
+    // to the output file. The stdio pipes are unaffected by detaching.
+    detached: process.platform !== 'win32',
     env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' }
   });
   job.child = child;
@@ -190,7 +198,7 @@ export async function runJobAttempt(
       job.errorCode = 'network';
       persist(job);
       try {
-        child.kill();
+        killDownloadProcess(child);
       } catch {
         resolve();
       }

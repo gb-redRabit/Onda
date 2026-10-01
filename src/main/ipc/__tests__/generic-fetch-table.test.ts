@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mapTableRows, tableArrayFromData } from '../generic-fetch';
-import type { SourceTable } from '../../../renderer/src/types/sources';
+import type { SourceTable } from '../../../shared/types/sources';
 
 function table(partial: Partial<SourceTable>): SourceTable {
   return { mode: 'endpoint', ...partial };

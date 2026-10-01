@@ -38,6 +38,30 @@ interface HttpDownloadOptions {
   onProgress?: (p: HttpDownloadProgress) => void;
 }
 
+/**
+ * Whether a failed download is worth retrying from where it stopped.
+ *
+ * Every failure used to delete the `.part`, so a connection that dropped after
+ * 4 GB of a 10 GB file meant starting again from zero — and a paused job could
+ * not resume either, because pausing is an abort. Now the partial file survives
+ * anything the network might recover from, and is removed only when retrying
+ * cannot help: the file is too large, the server refuses it outright, or the URL
+ * cannot be followed far enough to know what is being fetched.
+ */
+function isTransientDownloadError(err: Error): boolean {
+  const http = /^HTTP (\d{3})/.exec(err.message);
+  if (http) {
+    const status = Number(http[1]);
+    // 408 and 429 are the server asking us to come back later; 5xx is its side
+    // being unwell. A 4xx otherwise is a verdict on the request.
+    return status === 408 || status === 429 || status >= 500;
+  }
+  if (/too many redirects/i.test(err.message)) return false;
+  if (/too large/i.test(err.message)) return false;
+  // Aborts, timeouts, resets and refused connections are the network talking.
+  return true;
+}
+
 async function doDownload(
   opts: HttpDownloadOptions,
   redirectsLeft: number,
@@ -87,6 +111,12 @@ async function doDownload(
       }
     };
 
+    /** Removes the partial file only when the failure rules out a retry. */
+    const discardIfHopeless = (err: Error): void => {
+      if (isTransientDownloadError(err)) return;
+      cleanup();
+    };
+
     const requestHeaders: Record<string, string> = {
       'User-Agent': 'Onda/1.0',
       ...(opts.headers || {})
@@ -111,7 +141,7 @@ async function doDownload(
         abortStreams(err);
         return;
       }
-      cleanup();
+      discardIfHopeless(err);
       reject(err);
     };
 
@@ -138,17 +168,24 @@ async function doDownload(
         // 206 Partial Content — server supports resume
         // 200 OK — server doesn't support resume, restart from scratch
         const isResuming = status === 206;
+        if (status < 200 || (status >= 300 && status !== 206)) {
+          // Checked before the resume reset below: a 429 or 503 never carries a
+          // Range, so treating the missing 206 as "the partial is worthless" ran
+          // first and deleted the file before the status was ever classified.
+          res.resume();
+          // 4xx is a verdict on the request, so the partial file is dead weight;
+          // 5xx, 408 and 429 are the server asking to try again, so it stays.
+          const err = new Error(`HTTP ${status}`);
+          discardIfHopeless(err);
+          reject(err);
+          return;
+        }
         if (!isResuming && startByte > 0) {
-          // Server doesn't support Range — reset offset
+          // Server doesn't support Range — the prefix we hold is not a prefix of
+          // this response, so it has to go.
           startByte = 0;
           received = 0;
           cleanup();
-        }
-        if (status < 200 || (status >= 300 && status !== 206)) {
-          res.resume();
-          cleanup();
-          reject(new Error(`HTTP ${status}`));
-          return;
         }
         const contentLength = res.headers['content-length'];
         if (contentLength) {
@@ -176,12 +213,13 @@ async function doDownload(
           res.unpipe(out);
           res.destroy();
           out.destroy();
-          // The .part is unlinked only once the descriptor is gone. Removing it
-          // first loses the race against a pending open() — the file is created
-          // afterwards, and a zero-length .part is left for the next attempt to
-          // treat as a valid resume prefix.
-          if (out.closed) cleanup();
-          else out.once('close', cleanup);
+          // When the .part does have to go, it goes only once the descriptor is
+          // gone. Removing it first loses the race against a pending open() — the
+          // file is created afterwards, and a zero-length .part is left for the
+          // next attempt to treat as a valid resume prefix. A retryable failure
+          // keeps the file, so nothing is unlinked at all.
+          if (out.closed) discardIfHopeless(err);
+          else out.once('close', () => discardIfHopeless(err));
           reject(err);
         };
         abortStreams = fail;
@@ -206,7 +244,21 @@ async function doDownload(
                 fs.copyFileSync(partPath, opts.destPath);
                 fs.unlinkSync(partPath);
               } catch (copyErr) {
-                cleanup();
+                // The download is complete and correct; only the move into place
+                // failed. Deleting the .part threw away the whole file, so it is
+                // kept — but only if it looks like a real download, since a full
+                // disk would otherwise leave a truncated file occupying what
+                // little space is left.
+                const size = fs.statSync(partPath, { throwIfNoEntry: false })?.size ?? 0;
+                if (size > 0) {
+                  logger.warn(
+                    'download',
+                    `downloaded file could not be moved to ${opts.destPath}; kept at ${partPath}`,
+                    copyErr
+                  );
+                } else {
+                  cleanup();
+                }
                 reject(copyErr as Error);
                 return;
               }

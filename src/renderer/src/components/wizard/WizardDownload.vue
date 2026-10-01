@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import WizardStep from './WizardStep.vue';
 import { Download, Music2, Film } from '@lucide/vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 
@@ -23,8 +24,7 @@ async function chooseFolder() {
 
 <template>
   <div>
-    <h3 class="text-lg font-bold tracking-tight mb-1.5">{{ $t('wizard.downloadTitle') }}</h3>
-    <p class="text-sm text-base-content/70">{{ $t('wizard.downloadDesc') }}</p>
+    <WizardStep :title="$t('wizard.downloadTitle')" :description="$t('wizard.downloadDesc')" />
 
     <div class="mt-5 space-y-5">
       <button

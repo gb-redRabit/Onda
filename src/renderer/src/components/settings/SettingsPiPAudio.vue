@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, watch, computed, onBeforeUnmount } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import type { AudioPipDock, AudioPipElementId } from '@shared/types/pip';
@@ -79,9 +79,9 @@ const activeElements = computed<AudioPipElementId[]>(() =>
 const sizeHint = computed(() => {
   const s = getAudioPipSize(settings.appearance.audioPipDock, activeElements.value);
   const d = settings.appearance.audioPipDock;
-  if (d === 'top' || d === 'bottom') return `100% × ${s.height}px`;
-  if (d === 'left' || d === 'right') return `${s.width}px × 100%`;
-  return `${s.width} × ${s.height}px`;
+  if (d === 'top' || d === 'bottom') return `100% Ă— ${s.height}px`;
+  if (d === 'left' || d === 'right') return `${s.width}px Ă— 100%`;
+  return `${s.width} Ă— ${s.height}px`;
 });
 
 function setDock(id: AudioPipDock): void {
@@ -180,7 +180,7 @@ onBeforeUnmount(() => {
                   settings.appearance.audioPipDock ===
                   DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id
                     ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-base-300 text-base-content/60 hover:bg-base-content/5'
+                    : 'border-base-300 bg-base-100 text-base-content/60 hover:bg-base-content/5'
                 "
                 :title="dockLabel(DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id)"
                 @click="setDock(DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id)"
@@ -204,7 +204,7 @@ onBeforeUnmount(() => {
         <p class="mt-2 text-xs text-base-content/50 max-w-44">
           {{
             isEdge
-              ? $t('settings.audioPipDock_edge') + ' · ' + $t('settings.audioPipAutoHideDesc')
+              ? $t('settings.audioPipDock_edge') + ' Â· ' + $t('settings.audioPipAutoHideDesc')
               : $t('settings.audioPipDock_corner')
           }}
         </p>
@@ -215,7 +215,7 @@ onBeforeUnmount(() => {
           <SettingsSectionTitle
             :title="
               (isEdge ? $t('settings.audioPipEdgeContent') : $t('settings.audioPipCornerContent')) +
-              ' · ' +
+              ' Â· ' +
               $t('settings.audioPipSizeHint') +
               ': ' +
               sizeHint
@@ -229,7 +229,7 @@ onBeforeUnmount(() => {
               :class="
                 isChecked(id)
                   ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-base-300 text-base-content/60 hover:bg-base-content/5'
+                  : 'border-base-300 bg-base-100 text-base-content/60 hover:bg-base-content/5'
               "
               @click="toggleElement(id)"
             >
@@ -255,7 +255,7 @@ onBeforeUnmount(() => {
         </div>
 
         <p class="text-xs text-base-content/50 leading-relaxed">
-          {{ $t('settings.audioPipDblClickHint') }} · glass-alpha + blur z motywu aplikacji.
+          {{ $t('settings.audioPipDblClickHint') }} {{ $t('settings.audioPipGlassBlur') }}
         </p>
       </div>
     </div>

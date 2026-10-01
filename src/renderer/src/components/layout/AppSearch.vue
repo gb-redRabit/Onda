@@ -208,8 +208,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
 <template>
   <div
     v-if="ui.searchMode !== 'closed'"
+    data-testid="app-search"
     class="fixed inset-0 z-70 flex items-start justify-center pt-[12vh]"
-    :class="ui.searchMode === 'global' ? 'bg-gray-900/45 backdrop-blur-sm' : ''"
+    :class="ui.searchMode === 'global' ? 'bg-neutral/45 backdrop-blur-sm' : ''"
     @click.self="close"
   >
     <div
@@ -226,7 +227,15 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
         <input
           ref="input"
           v-model="ui.searchQuery"
+          data-testid="app-search-input"
           data-app-search
+          role="combobox"
+          aria-autocomplete="list"
+          aria-controls="app-search-results"
+          :aria-expanded="ui.searchMode === 'global'"
+          :aria-activedescendant="
+            ui.searchMode === 'global' ? `app-search-item-${activeIndex}` : undefined
+          "
           class="flex-1 bg-transparent text-sm text-base-content outline-none placeholder:text-base-content/50"
           :placeholder="
             ui.searchMode === 'view' ? $t('menu.viewSearch') : $t('cmdPalette.placeholder')
@@ -243,6 +252,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
 
       <AppSearchResults
         v-if="ui.searchMode === 'global'"
+        id="app-search-results"
+        role="listbox"
         :groups="groups"
         :flat-items="flatItems"
         :active-index="activeIndex"

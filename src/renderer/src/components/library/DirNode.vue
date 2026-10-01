@@ -7,6 +7,8 @@ import { canonicalPath, isUnderPath, dirname } from '@renderer/utils/path';
 import { formatDuration } from '@renderer/utils/formatters';
 import type { MediaFile } from '@renderer/types/media';
 import { getChildDirsIndexed, getAllTracksIndexed } from '@renderer/utils/libraryIndex';
+import { clonePlain } from '@renderer/utils/clone';
+import { trackMatchesQuery } from '@renderer/utils/librarySearch';
 import {
   buildChildMeta,
   directTracksInDir,
@@ -132,12 +134,7 @@ function onFolderDrag(e: DragEvent, folderPath: string) {
 }
 function playDir(fp: string) {
   const tracks = library.tracks.filter(
-    (t) =>
-      isUnderPath(t.path, fp) &&
-      t.type !== 'image' &&
-      (!props.query ||
-        t.name.toLowerCase().includes(props.query.toLowerCase().trim()) ||
-        t.path.toLowerCase().includes(props.query.toLowerCase().trim()))
+    (t) => isUnderPath(t.path, fp) && t.type !== 'image' && trackMatchesQuery(t, props.query)
   );
   if (tracks.length === 0) return;
   player.clearQueue();
@@ -161,7 +158,7 @@ function openImageViewer(imagePath: string) {
     mimeType: tr.mimeType
   }));
   const idx = imgs.findIndex((t) => t.path === imagePath);
-  window.api?.invoke('imageViewer:open', JSON.parse(JSON.stringify(files)), Math.max(0, idx));
+  window.api?.invoke('imageViewer:open', clonePlain(files), Math.max(0, idx));
 }
 function openImageViewerForChild(childName: string, imagePath: string) {
   const childDir = childOriginal(childName);
@@ -179,7 +176,7 @@ function openImageViewerForChild(childName: string, imagePath: string) {
     mimeType: tr.mimeType
   }));
   const idx = imgs.findIndex((t) => t.path === imagePath);
-  window.api?.invoke('imageViewer:open', JSON.parse(JSON.stringify(files)), Math.max(0, idx));
+  window.api?.invoke('imageViewer:open', clonePlain(files), Math.max(0, idx));
 }
 </script>
 

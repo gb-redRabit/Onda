@@ -43,6 +43,9 @@ export function buildSourceDownloadInput(args: SourceDownloadInputArgs): IpcDown
     source: {
       mode: useYtdlp ? 'ytdlp' : 'http',
       sourceId: source.id,
+      // Only items that expose an API id can be recognised again after the
+      // download finishes; the main process records it as "downloaded".
+      sourceItemId: item.id || undefined,
       fileName: useYtdlp ? undefined : deriveFileName(item),
       apiKeyId: auth && auth.type !== 'none' ? auth.apiKeyId : undefined,
       headerName: auth && auth.type === 'apikey' ? auth.headerName : undefined,

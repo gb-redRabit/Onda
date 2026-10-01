@@ -17,7 +17,7 @@ onErrorCaptured((err) => {
 <template>
   <div class="flex-1 min-h-0">
     <div v-if="error" class="flex items-center justify-center h-full p-8">
-      <div class="max-w-md p-6 rounded-box bg-error/10 border border-red-500/20 text-center">
+      <div class="max-w-md p-6 rounded-box bg-error/10 border border-error/20 text-center">
         <div class="text-3xl mb-2">!</div>
         <h3 class="text-lg font-semibold text-error mb-2">{{ $t('errorBoundary.title') }}</h3>
         <pre class="text-xs text-error/70 font-mono whitespace-pre-wrap mb-4">{{

@@ -1,5 +1,5 @@
-import { readFile, writeFile } from 'fs/promises';
-import { isAbsolute, join } from 'path';
+import { mkdir, readFile, writeFile } from 'fs/promises';
+import { dirname, isAbsolute, join } from 'path';
 import os from 'os';
 import { app } from 'electron';
 import { getStore } from './cover-store';
@@ -74,7 +74,13 @@ export async function writeCoverMap(
     resolveLock = r;
   });
   try {
-    await writeFile(getCoverMapFile(), JSON.stringify(data), 'utf-8');
+    const file = getCoverMapFile();
+    // The directory is not created by anything else on this path: when
+    // `app.getPath` is unavailable the map falls back to a tmp subdirectory that
+    // exists only if something made it first, so the write failed with ENOENT
+    // and the failure was logged on every test run that touched the cover cache.
+    await mkdir(dirname(file), { recursive: true });
+    await writeFile(file, JSON.stringify(data), 'utf-8');
     coverMapData = data;
   } finally {
     coverMapWriteLock = null;

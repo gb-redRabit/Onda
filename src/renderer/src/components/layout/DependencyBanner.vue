@@ -38,9 +38,9 @@ function openDependencies(): void {
   <div
     v-if="visible"
     data-testid="dependency-banner"
-    class="flex items-start gap-3 shrink-0 px-4 py-2 border-b border-amber-500/30 bg-amber-500/10"
+    class="flex items-start gap-3 shrink-0 px-4 py-2 border-b border-warning/30 bg-warning/10"
   >
-    <AlertTriangle :size="16" class="mt-0.5 shrink-0 text-amber-500" />
+    <AlertTriangle :size="16" class="mt-0.5 shrink-0 text-warning" />
     <div class="min-w-0 flex-1">
       <div class="text-xs font-medium">{{ $t('deps.title') }}</div>
       <div class="text-[11px] text-base-content/70">

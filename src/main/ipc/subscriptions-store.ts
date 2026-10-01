@@ -1,7 +1,7 @@
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { dirname } from 'path';
 import { logger } from '../../shared/logger';
-import type { Subscription } from '../../renderer/src/types/online';
+import type { Subscription } from '../../shared/types/online';
 
 export interface SubscriptionInput {
   channelId: string;

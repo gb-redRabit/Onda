@@ -69,8 +69,13 @@ function pluginSettingsFile(id: string): string {
   return join(getPluginsDataDir(), id, 'settings.json');
 }
 
-function getParentWindow(): BrowserWindow | null {
-  return BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0] ?? null;
+function getParentWindow(sender: Electron.WebContents): BrowserWindow | null {
+  return (
+    BrowserWindow.fromWebContents(sender) ??
+    BrowserWindow.getFocusedWindow() ??
+    BrowserWindow.getAllWindows()[0] ??
+    null
+  );
 }
 
 function pickError(e: unknown): string {
@@ -254,8 +259,8 @@ async function readEntryDigest(dir: string, id: string): Promise<string | null> 
   return code === null ? null : sha256Hex(code);
 }
 
-async function installFromFolder(): Promise<IpcPluginInstallResult> {
-  const win = getParentWindow();
+async function installFromFolder(sender: Electron.WebContents): Promise<IpcPluginInstallResult> {
+  const win = getParentWindow(sender);
   const options: Electron.OpenDialogOptions = { properties: ['openDirectory'] };
   const result = win
     ? await dialog.showOpenDialog(win, options)
@@ -382,9 +387,9 @@ export function registerPluginsHandlers(): void {
     }
   });
 
-  ipcMain.handle('plugins:installFromFolder', async (): Promise<IpcPluginInstallResult> => {
+  ipcMain.handle('plugins:installFromFolder', async (event): Promise<IpcPluginInstallResult> => {
     try {
-      return await installFromFolder();
+      return await installFromFolder(event.sender);
     } catch (e) {
       logger.warn('plugins', 'plugins:installFromFolder failed', e);
       return { success: false, error: pickError(e) };

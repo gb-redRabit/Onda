@@ -46,6 +46,16 @@ export function registerAppIpc({ player, router, route }: AppIpcDeps): void {
     player.pendingFullscreen = true;
     if (route.name !== 'player') router.push('/player');
   });
+  // Restore requested from the main window (player bar / menu button): bring the
+  // video back into the player at the last known position, no fullscreen.
+  window.api?.on('pip:restore', (time: unknown) => {
+    const t = (time as number) || 0;
+    player.pipActive = false;
+    player.pipTime = 0;
+    player.currentTime = t;
+    player.isPlaying = true;
+    if (route.name !== 'player') router.push('/player');
+  });
 
   // cross-window explorer tabs (tab moved between windows)
   window.api?.on('explorer:add-tab', (path: unknown) => {

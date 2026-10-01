@@ -5,6 +5,10 @@ import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { detectChannelPrefix, detectPlatform, isHttpUrl } from '@shared/platform';
 import { AUDIO_FORMATS, VIDEO_QUALITIES, VIDEO_CONTAINERS } from '@shared/constants';
+import { readSelect } from '@renderer/utils/selectOptions';
+
+/** Same list the options are rendered from, so the two cannot drift. */
+const AUDIO_QUALITIES = ['best', 'high', 'medium', 'low'] as const;
 import OnlineButton from './OnlineButton.vue';
 import OnlineIconButton from './OnlineIconButton.vue';
 
@@ -81,6 +85,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
              prefix is recognized, globe for plain text. -->
         <span
           v-if="detection"
+          data-testid="online-detect-badge"
           class="absolute left-2.5 top-1/2 -translate-y-1/2 z-10 text-xs font-bold pointer-events-none select-none"
           :class="
             detection.kind === 'sc'
@@ -182,7 +187,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
           class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-none"
           @change="
             settings.updateDownload({
-              defaultAudioFormat: ($event.target as HTMLSelectElement).value as any
+              defaultAudioFormat: readSelect($event, AUDIO_FORMATS)
             })
           "
         >
@@ -197,7 +202,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
           class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-none"
           @change="
             settings.updateDownload({
-              defaultVideoQuality: ($event.target as HTMLSelectElement).value as any
+              defaultVideoQuality: readSelect($event, VIDEO_QUALITIES)
             })
           "
         >
@@ -210,7 +215,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
           class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-none"
           @change="
             settings.updateDownload({
-              defaultVideoContainer: ($event.target as HTMLSelectElement).value as any
+              defaultVideoContainer: readSelect($event, VIDEO_CONTAINERS)
             })
           "
         >
@@ -223,11 +228,11 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
           class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-none"
           @change="
             settings.updateDownload({
-              defaultAudioQuality: ($event.target as HTMLSelectElement).value as any
+              defaultAudioQuality: readSelect($event, AUDIO_QUALITIES)
             })
           "
         >
-          <option v-for="q in ['best', 'high', 'medium', 'low'] as const" :key="q" :value="q">
+          <option v-for="q in AUDIO_QUALITIES" :key="q" :value="q">
             {{ t('settings.audioQuality.' + q) }}
           </option>
         </select>

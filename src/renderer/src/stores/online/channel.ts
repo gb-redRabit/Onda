@@ -126,12 +126,17 @@ export function createOnlineChannel() {
           });
       if (key !== channelKey) return;
       if (res && res.success) {
+        // Dedupe by id: overlapping start/end windows (or a channel that shifts
+        // items between pages) would otherwise append duplicate cards and
+        // collide their `:key`.
         if (tab === 'shorts') {
-          channelShorts.value.push(...res.items);
+          const seen = new Set(channelShorts.value.map((v) => v.id));
+          channelShorts.value.push(...res.items.filter((v) => !seen.has(v.id)));
           channelShortsHasMore.value = res.hasMore;
           channelShortsOffset.value += res.items.length;
         } else {
-          channelVideos.value.push(...res.items);
+          const seen = new Set(channelVideos.value.map((v) => v.id));
+          channelVideos.value.push(...res.items.filter((v) => !seen.has(v.id)));
           channelVideosHasMore.value = res.hasMore;
           channelVideosOffset.value += res.items.length;
         }

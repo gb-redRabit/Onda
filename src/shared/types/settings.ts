@@ -1,0 +1,323 @@
+import type { AudioPipDock, AudioPipElementId } from './pip';
+
+/**
+ * How well the OS can protect a stored secret. See main/ipc/settings-crypto.ts:
+ * on Linux without a keyring Electron reports encryption as available while
+ * deriving its key from a constant, so `weak` has to be distinguishable from
+ * `strong` rather than collapsed into a boolean.
+ */
+export type SecretStorageStatus = 'strong' | 'weak' | 'unavailable';
+
+export interface LibrarySettings {
+  viewModes: Record<string, 'list' | 'grid'>;
+  coverCacheMaxEntries?: number;
+}
+
+export interface AppSettings {
+  general: GeneralSettings;
+  appearance: AppearanceSettings;
+  playback: PlaybackSettings;
+  explorer: ExplorerSettings;
+  library: LibrarySettings;
+  download: DownloadSettings;
+  shortcuts: ShortcutSettings;
+  network: NetworkSettings;
+  apiKeys: ApiKeySettings;
+  youtube: YoutubeAuthSettings;
+  updates: UpdateSettings;
+  toast: ToastSettings;
+  dependencies: Record<string, DependencyStatus>;
+  statusBar: StatusBarSettings;
+  home: HomeSettings;
+  favorites?: string[];
+}
+
+export type HomeSectionId =
+  'continue' | 'recent' | 'mostPlayed' | 'favorites' | 'playlists' | 'albums' | 'artists';
+
+export interface HomeSettings {
+  sections: HomeSectionId[];
+}
+
+export type StatusBarSectionId =
+  | 'playing'
+  | 'separator'
+  | 'viewCounts'
+  | 'downloads'
+  | 'youtube'
+  | 'dependencies'
+  | 'version'
+  | 'clock';
+
+export interface StatusBarSettings {
+  visible: boolean;
+  sections: StatusBarSectionId[];
+}
+
+export interface GeneralSettings {
+  autoLaunch: boolean;
+  startMinimized: boolean;
+  closeToTray: boolean;
+  restoreSession: boolean;
+  /** Persisted first-run wizard flag (was localStorage-only). */
+  firstRunDone: boolean;
+  logLevel: 'debug' | 'info' | 'warn' | 'error';
+  logMaxSizeMB: number;
+}
+
+export type YoutubeAuthMethod = 'none' | 'electron' | 'browser' | 'manual';
+
+export interface YoutubeAuthSettings {
+  method: YoutubeAuthMethod;
+  cookiesPath: string;
+  cookiesBrowser: string;
+  lastLogin: number | null;
+}
+
+export interface ExplorerSettings {
+  viewMode: 'extraSmall' | 'small' | 'medium' | 'large' | 'extraLarge' | 'details';
+  sortBy: 'name' | 'size' | 'type' | 'modified';
+  sortOrder: 'asc' | 'desc';
+  confirmBeforeMove: boolean;
+  /** Delete files permanently instead of moving them to the system Trash. */
+  permanentDelete: boolean;
+}
+
+export interface AppearanceSettings {
+  theme:
+    | 'dark'
+    | 'light'
+    | 'midnight'
+    | 'spotify'
+    | 'luxury'
+    | 'cyberpunk'
+    | 'aqua'
+    | 'black'
+    | 'lemonade'
+    | 'abyss'
+    | 'custom';
+  customBase?:
+    | 'dark'
+    | 'light'
+    | 'midnight'
+    | 'spotify'
+    | 'luxury'
+    | 'cyberpunk'
+    | 'aqua'
+    | 'black'
+    | 'lemonade'
+    | 'abyss';
+  customColors?: Partial<Record<string, string>>;
+  geometry?: {
+    radiusBox?: number;
+    radiusField?: number;
+    radiusSelector?: number;
+    sizeField?: number;
+    sizeSelector?: number;
+    border?: number;
+    depth?: 0 | 1;
+    noise?: 0 | 1;
+  };
+  glassAlpha?: number;
+  fontSize: number;
+  sidebarPosition: 'left' | 'right';
+  sidebarCollapsed: boolean;
+  showPlaylists: boolean;
+  showAlbums: boolean;
+  locale: 'pl' | 'en' | 'auto';
+  animations: boolean;
+  audioPipDock: AudioPipDock;
+  audioPipAutoShow: boolean;
+  audioPipAutoHide: boolean;
+  audioPipCornerElements: AudioPipElementId[];
+  audioPipEdgeElements: AudioPipElementId[];
+  /** @deprecated Migracja ze starego modelu. */
+  audioPipMode?: 'minimal' | 'medium' | 'max' | 'wide';
+  /** @deprecated Migracja ze starego modelu. */
+  audioPipOpacity?: number;
+  /** @deprecated Migracja ze starego modelu. */
+  audioPipPosition?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  /** @deprecated Migracja ze starego modelu. */
+  audioPipEdgePosition?: 'top' | 'bottom';
+  audioLayout: AudioLayoutSettings;
+}
+
+export type AudioLayoutElementId =
+  'visualization' | 'cover' | 'progress' | 'trackInfo' | 'controls';
+
+export type AudioLayoutPreset = 'compact' | 'stacked' | 'split' | 'full' | 'immersive';
+
+export type VizQuality = 'low' | 'medium' | 'high';
+
+export interface AudioLayoutElement {
+  id: AudioLayoutElementId;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  opacity: number;
+  layer: number;
+  visible: boolean;
+  /** Tło elementu w kolorze base-300 z regulowaną przezroczystością. */
+  bg?: boolean;
+  /** Przezroczystość tła 0–100. */
+  bgOpacity?: number;
+  /**
+   * Wariant wyglądu elementu (presety per typ):
+   * cover: default|rounded|ring|glass; trackInfo: classic|minimal|large;
+   * progress: classic|thin|neon; controls: standard|compact; visualization: default.
+   * Nieznane/niedozwolone wartości renderują się jako default dla danego typu.
+   */
+  variant?: string;
+  /**
+   * Dekoracja wyglądu nadana przez wtyczkę (wartość z listy hosta, np. triangle/glow/glass).
+   * Gdy aktywna wtyczka nie nadpisuje dekoracji, w użyciu jest wartość zapisana w layoutcie.
+   */
+  decoration?: string;
+}
+
+export interface AudioLayoutSettings {
+  elements: AudioLayoutElement[];
+  preset?: AudioLayoutPreset;
+  hudOpacity?: number;
+  vizQuality?: VizQuality;
+  /** Custom layouts per named preset, persisted so switching back preserves the user's edits. */
+  customLayouts?: Partial<Record<AudioLayoutPreset, AudioLayoutElement[]>>;
+}
+
+export type VisualizationMode =
+  'circle' | 'bars' | 'particles' | 'wave' | 'radial' | 'spectrum' | 'rings' | 'none';
+
+interface VisualizationSettings {
+  mode: VisualizationMode;
+  primaryColor: string;
+  secondaryColor: string;
+  sensitivity: number;
+  smoothing: number;
+  fpsCap: number;
+}
+
+export interface PlaybackSettings {
+  normalization: boolean;
+  replayGain: boolean;
+  gaplessPlayback: boolean;
+  autoPauseOnFocusLoss: boolean;
+  defaultVolume: number;
+  rememberPosition: boolean;
+  pipPosition: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  pipWidth: number;
+  pipHeight: number;
+  pipPreBuffer: boolean;
+  cursorHide: boolean;
+  /** Czas (w sekundach) po którym kursor i HUD chowają się podczas odtwarzania. */
+  cursorTimeout: number;
+  /** Czas (w sekundach) po którym przypomnienie o wznowieniu zamyka się samoczynnie. */
+  resumePromptTimeout: number;
+  playbackSpeed: number;
+  videoFilter: string;
+  visualization: VisualizationSettings;
+}
+
+export interface DownloadSettings {
+  defaultPath: string;
+  sourcesDir: string;
+  sourcesFolder: boolean;
+  defaultKind: 'audio' | 'video';
+  defaultAudioFormat: 'best' | 'mp3' | 'flac' | 'ogg' | 'aac' | 'opus' | 'm4a' | 'wav';
+  defaultAudioQuality: 'best' | 'high' | 'medium' | 'low';
+  defaultVideoQuality: 'best' | '2160p' | '1440p' | '1080p' | '720p' | '480p';
+  defaultVideoContainer: 'mp4' | 'mkv' | 'webm';
+  defaultCover: 'thumbnail' | 'none' | 'frame' | 'clip';
+  defaultCoverFrameTime: number;
+  defaultCoverClipStart: number;
+  defaultCoverClipEnd: number;
+  defaultCoverClipFormat: 'webm' | 'mp4';
+  filenameTemplate: string;
+  maxConcurrent: number;
+  retryAttempts: number;
+  retryBaseMs: number;
+  tempDir: string;
+  autoDownloadSubscriptions: boolean;
+  hashFiles: boolean;
+  smartMode: boolean;
+  defaultSubs: boolean;
+  defaultSubsLangs: string;
+  nightScheduleEnabled: boolean;
+  nightScheduleStart: number;
+  nightScheduleEnd: number;
+  autoAddDownloadFolder: boolean;
+}
+
+export interface ShortcutSettings {
+  [action: string]: string;
+}
+
+export interface NetworkSettings {
+  proxy: {
+    enabled: boolean;
+    type: 'http' | 'https' | 'socks5';
+    host: string;
+    port: number;
+    username?: string;
+    password?: string;
+  };
+  proxyPerPlatform: boolean;
+  proxyYoutube: {
+    enabled: boolean;
+    type: 'http' | 'https' | 'socks5';
+    host: string;
+    port: number;
+    username?: string;
+    password?: string;
+  };
+  proxySoundcloud: {
+    enabled: boolean;
+    type: 'http' | 'https' | 'socks5';
+    host: string;
+    port: number;
+    username?: string;
+    password?: string;
+  };
+  defaultQualityPerPlatform: boolean;
+  youtubeQuality: string;
+  soundcloudQuality: string;
+  downloadSpeedLimit: number;
+  userAgent: string;
+}
+
+export interface ApiKeySettings {
+  keys: ApiKeyEntry[];
+}
+
+interface ApiKeyEntry {
+  id: string;
+  name: string;
+  service: string;
+  key: string;
+  values?: Record<string, string | number | boolean>;
+  isActive: boolean;
+}
+
+export interface UpdateSettings {
+  autoCheck: boolean;
+  checkInterval: 'startup' | 'hourly' | 'daily' | 'weekly';
+}
+
+export interface ToastSettings {
+  position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  showInfo: boolean;
+  showSuccess: boolean;
+  showWarning: boolean;
+  showNative: boolean;
+}
+
+export interface DependencyStatus {
+  name: string;
+  installed: boolean;
+  version: string | null;
+  checkedAt: number | null;
+  path?: string | null;
+  managed?: boolean;
+  latestVersion?: string | null;
+  updateAvailable?: boolean;
+}

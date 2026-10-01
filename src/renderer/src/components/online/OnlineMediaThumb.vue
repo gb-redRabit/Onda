@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Play, Download, Check, RefreshCw, Radio, Bookmark } from '@lucide/vue';
+import { Play, Download, Check, RefreshCw, Radio, Bookmark, SlidersHorizontal } from '@lucide/vue';
 import { logger } from '@shared/logger';
 import { detectPlatform } from '@shared/platform';
 import { useSavedStore } from '@renderer/stores/saved';
@@ -31,6 +31,7 @@ const emit = defineEmits<{
   play: [video: Media];
   expand: [video: Media];
   queue: [video: Media];
+  options: [video: Media];
 }>();
 
 const saved = useSavedStore();
@@ -59,6 +60,11 @@ function onToggleSave() {
 function onQueue(e: MouseEvent) {
   e.stopPropagation();
   emit('queue', props.video);
+}
+
+function onOptions(e: MouseEvent) {
+  e.stopPropagation();
+  emit('options', props.video);
 }
 
 function onPlay(e: MouseEvent) {
@@ -115,14 +121,6 @@ function onExpand(e?: MouseEvent) {
       <RefreshCw :size="10" class="animate-spin" />
     </div>
 
-    <!-- Duration badge -->
-    <div
-      v-if="video.duration"
-      class="absolute bottom-1.5 right-1.5 bg-neutral/80 text-neutral-content text-[10px] px-1.5 py-0.5 rounded-field"
-    >
-      {{ video.duration }}
-    </div>
-
     <!-- Center actions: stream and embed-on-YouTube side by side -->
     <div
       class="absolute inset-0 z-10 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/30 transition-colors select-none pointer-events-none"
@@ -157,7 +155,7 @@ function onExpand(e?: MouseEvent) {
          Webcast playlist where save/download are redundant) -->
     <div
       v-if="layout !== 'list' && !hideQuickActions"
-      class="absolute bottom-1.5 left-1.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1 pointer-events-none group-hover:pointer-events-auto"
+      class="online-card-actions absolute bottom-1.5 left-1.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1 pointer-events-none group-hover:pointer-events-auto"
     >
       <OnlineIconButton
         :title="isSaved ? $t('saved.removeTrack') : $t('saved.saveTrack')"
@@ -183,5 +181,44 @@ function onExpand(e?: MouseEvent) {
         <Download v-else :size="11" />
       </OnlineIconButton>
     </div>
+
+    <!-- Bottom-right: duration + full-control download (opens the config dialog).
+         Always visible so the per-file options are discoverable, unlike the
+         hover-only quick actions. -->
+    <div class="online-card-actions absolute bottom-1.5 right-1.5 z-20 flex items-center gap-1">
+      <div
+        v-if="video.duration"
+        class="bg-neutral/80 text-neutral-content text-[10px] px-1.5 py-0.5 rounded-field"
+      >
+        {{ video.duration }}
+      </div>
+      <button
+        v-if="layout !== 'list' && !hideQuickActions"
+        type="button"
+        class="fx-noise inline-flex items-center justify-center rounded-field bg-neutral/80 text-neutral-content hover:bg-neutral hover:text-base-content transition-colors"
+        :title="$t('youtube.downloadOptions')"
+        :aria-label="$t('youtube.downloadOptions')"
+        @click.stop="onOptions"
+      >
+        <SlidersHorizontal :size="12" />
+      </button>
+    </div>
   </div>
 </template>
+
+<style scoped>
+/* The action buttons scale with the window instead of staying pixel-fixed, so
+   they stay proportionate on large displays and don't dominate small cards. */
+.online-card-actions {
+  font-size: clamp(11px, 0.6vw + 7px, 16px);
+}
+
+.online-card-actions :deep(button) {
+  padding: 0.4em;
+}
+
+.online-card-actions :deep(svg) {
+  width: 1.1em;
+  height: 1.1em;
+}
+</style>

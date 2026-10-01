@@ -23,10 +23,42 @@ export function e2eSearchItems(query: string): IpcYoutubeVideo[] {
 
 type Emit = (task: IpcDownloadTask) => void;
 
-let tasks: IpcDownloadTask[] = [];
+const ACTIVE_STATUSES = new Set(['pending', 'downloading', 'paused']);
 
-// Mirrors the real queue lifecycle (pending → downloading → completed) so the
-// renderer's progress broadcasts and status rendering are exercised end to end.
+let tasks: IpcDownloadTask[] = [];
+const taskTimers = new Map<string, Array<ReturnType<typeof setTimeout>>>();
+
+function clearTaskTimers(id: string): void {
+  const pending = taskTimers.get(id);
+  if (!pending) return;
+  for (const timer of pending) clearTimeout(timer);
+  taskTimers.delete(id);
+}
+
+function schedule(id: string, ms: number, fn: () => void): void {
+  const pending = taskTimers.get(id) ?? [];
+  pending.push(setTimeout(fn, ms));
+  taskTimers.set(id, pending);
+}
+
+function findTask(id: string): IpcDownloadTask | undefined {
+  return tasks.find((task) => task.id === id);
+}
+
+function isFinished(task: IpcDownloadTask): boolean {
+  return task.status === 'completed' || task.status === 'error' || task.status === 'cancelled';
+}
+
+// URL markers let a test pick a deterministic lifecycle instead of racing the
+// real timers: `#hold` stays pending (queued), `#downloading` stays active at
+// 40 %, anything else mirrors pending → downloading → completed so the
+// renderer's progress broadcasts and status rendering are exercised.
+function behaviorOf(url: string): 'hold' | 'downloading' | 'normal' {
+  if (url.includes('#hold')) return 'hold';
+  if (url.includes('#downloading')) return 'downloading';
+  return 'normal';
+}
+
 export function e2eAddDownloadTasks(jobs: IpcDownloadJobInput[], emit: Emit): IpcDownloadTask[] {
   const created = jobs.map((job, index) => {
     const task: IpcDownloadTask = {
@@ -47,40 +79,79 @@ export function e2eAddDownloadTasks(jobs: IpcDownloadJobInput[], emit: Emit): Ip
       coverStatus: 'none'
     };
     tasks.push(task);
-    return task;
+    return { task, index };
   });
 
-  created.forEach((task, index) => {
-    setTimeout(
-      () => {
-        task.status = 'downloading';
-        task.progress = 50;
-        task.speed = '1.0 MiB/s';
-        emit({ ...task });
-      },
-      150 + index * 50
-    );
-    setTimeout(
-      () => {
-        task.status = 'completed';
-        task.progress = 100;
-        task.speed = '';
-        task.completedAt = Date.now();
-        task.outputPath = `${task.outputDir}/e2e-output.${task.kind === 'audio' ? 'm4a' : 'mp4'}`;
-        emit({ ...task });
-      },
-      500 + index * 50
-    );
-  });
+  for (const { task, index } of created) {
+    // Broadcast the queued snapshot immediately: jobs that never progress
+    // (e.g. `#hold`) would otherwise never reach the renderer store.
+    emit({ ...task });
 
-  return created.map((task) => ({ ...task }));
+    const behavior = behaviorOf(task.url);
+    if (behavior === 'hold') continue;
+
+    schedule(task.id, 150 + index * 50, () => {
+      task.status = 'downloading';
+      task.progress = behavior === 'downloading' ? 40 : 50;
+      task.speed = '1.0 MiB/s';
+      task.eta = '0:05';
+      emit({ ...task });
+    });
+    if (behavior === 'downloading') continue;
+
+    schedule(task.id, 500 + index * 50, () => {
+      task.status = 'completed';
+      task.progress = 100;
+      task.speed = '';
+      task.eta = '';
+      task.completedAt = Date.now();
+      task.outputPath = `${task.outputDir}/e2e-output.${task.kind === 'audio' ? 'm4a' : 'mp4'}`;
+      emit({ ...task });
+    });
+  }
+
+  return created.map(({ task }) => ({ ...task }));
 }
 
 export function e2eListDownloadTasks(): IpcDownloadTask[] {
   return tasks.map((task) => ({ ...task }));
 }
 
-export function e2eClearFinishedDownloadTasks(): boolean {
-  tasks = tasks.filter((task) => task.status !== 'completed');
+export function e2ePauseDownloadTask(id: string): boolean {
+  const task = findTask(id);
+  if (!task || !ACTIVE_STATUSES.has(task.status) || task.status === 'paused') return false;
+  clearTaskTimers(id);
+  task.status = 'paused';
   return true;
+}
+
+export function e2eResumeDownloadTask(id: string): boolean {
+  const task = findTask(id);
+  if (!task || task.status !== 'paused') return false;
+  task.status = 'pending';
+  task.error = undefined;
+  return true;
+}
+
+export function e2eCancelDownloadTask(id: string): boolean {
+  const task = findTask(id);
+  if (!task || !ACTIVE_STATUSES.has(task.status)) return false;
+  clearTaskTimers(id);
+  task.status = 'cancelled';
+  return true;
+}
+
+export function e2eClearFinishedDownloadTasks(): boolean {
+  const kept: IpcDownloadTask[] = [];
+  let removed = false;
+  for (const task of tasks) {
+    if (isFinished(task)) {
+      clearTaskTimers(task.id);
+      removed = true;
+    } else {
+      kept.push(task);
+    }
+  }
+  tasks = kept;
+  return removed;
 }

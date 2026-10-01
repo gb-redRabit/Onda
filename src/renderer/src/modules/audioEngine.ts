@@ -189,7 +189,7 @@ class AudioEngine {
     audioEvents.emit('trackLoaded', undefined);
   }
 
-  loadTrack(track: MediaFile): void {
+  loadTrack(track: MediaFile, options?: { resume?: boolean }): void {
     const settings = useSettingsStore();
 
     if (track.type === 'video') {
@@ -203,7 +203,10 @@ class AudioEngine {
 
     this.loadSource(toMediaServerUrl(track.path));
 
-    if (settings.playback.rememberPosition) {
+    // Resuming a saved position is opt-in: only the Home "Continue" card asks
+    // for it. Every other play path starts from the beginning, which is why the
+    // default is not to touch the element's clock here.
+    if (options?.resume && settings.playback.rememberPosition) {
       const savedPos = this.savedPositions.get(track.path) || 0;
       if (savedPos > 0) {
         this.applySavedPosition(track.path, savedPos);
@@ -253,7 +256,11 @@ class AudioEngine {
   loadRemote(url: string): void {
     this.normalization = 1;
     this.streamUrl = url;
+    // A new stream must start with a clean retry ladder. `loadSource` only
+    // resets these when mode is falsy, so clearing them here stops the previous
+    // track's "final retry spent" flag from disabling this stream's last retry.
     this.streamTriedDirect = false;
+    this.streamFinalRetried = false;
     logger.info('audioEngine', `loadRemote url=${url.slice(0, 160)}`);
     this.loadSource(toMediaStreamUrl(url), { mode: 'proxy' });
   }
@@ -384,6 +391,15 @@ class AudioEngine {
     this.graph.disconnectNodes();
     cleanupAudioElement(this.audioEl);
     this.audioEl = null;
+    // Release the prefetch element and the per-track position cache; both would
+    // otherwise outlive the engine and keep a buffer/network handle alive.
+    if (this.preloadEl) {
+      this.preloadEl.pause();
+      this.preloadEl.removeAttribute('src');
+      this.preloadEl.load();
+      this.preloadEl = null;
+    }
+    this.savedPositions.clear();
     await this.graph.closeContext();
     this.initialized = false;
   }

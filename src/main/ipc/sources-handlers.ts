@@ -8,7 +8,8 @@ import {
   saveAllSources,
   sanitizeImportedSource,
   sanitizeSource,
-  sanitizeEndpoint
+  sanitizeEndpoint,
+  applySourceTrust
 } from './sources-store';
 import { getStore } from './cover-cache';
 import {
@@ -19,9 +20,10 @@ import {
 } from './generic-fetch';
 import { scrapePlayerUrl } from './player-scraper';
 import { resolveNetworkTarget } from './network-target';
-import { addDownloadJobs } from '../downloads/download-manager';
+import { addDownloadJobs, setSourceItemDownloadedHandler } from '../downloads/download-manager';
+import { appendDownloadedItem, getDownloadedForSource } from './sources-downloaded-store';
 import type { IpcDownloadJobInput } from '../../shared/types/ipc';
-import type { MediaSource, SourceEndpoint, SourceItem } from '../../renderer/src/types/sources';
+import type { MediaSource, SourceEndpoint, SourceItem } from '../../shared/types/sources';
 import { logger } from '../../shared/logger';
 
 function mimeFromExtension(ext: string): string | null {
@@ -42,8 +44,36 @@ function getSourcesFile(): string {
   return join(app.getPath('userData'), 'sources.json');
 }
 
+function getDownloadedFile(): string {
+  return join(app.getPath('userData'), 'sources-downloaded.json');
+}
+
+/**
+ * Resolves the source used for a fetch/test. Trust — private-network access and
+ * API credentials — is bound to the PERSISTED record matched by id, never to a
+ * renderer-supplied flag or base URL. A draft (not yet saved) gets neither, so a
+ * compromised renderer cannot pair a real API key with an attacker host, nor
+ * reach loopback/LAN addresses. `sources:enqueue` already follows this model.
+ */
+async function resolveTrustedSource(raw: unknown): Promise<MediaSource | null> {
+  const source = sanitizeSource(raw);
+  if (!source) return null;
+  const stored = (await loadSources(getSourcesFile())).find((s) => s.id === source.id);
+  return applySourceTrust(source, stored);
+}
+
 export function registerSourcesHandlers(): void {
+  // Finished source downloads are recorded per source, so the Sources view can
+  // badge items that were downloaded in an earlier session.
+  setSourceItemDownloadedHandler((sourceId, itemId) => {
+    void appendDownloadedItem(getDownloadedFile(), sourceId, itemId);
+  });
+
   ipcMain.handle('sources:list', async (): Promise<MediaSource[]> => loadSources(getSourcesFile()));
+
+  ipcMain.handle('sources:downloaded', async (_event, sourceId: string): Promise<string[]> =>
+    getDownloadedForSource(getDownloadedFile(), typeof sourceId === 'string' ? sourceId : '')
+  );
 
   /** Eksport źródeł do pliku JSON (natywny dialog zapisu). */
   ipcMain.handle(
@@ -175,7 +205,7 @@ export function registerSourcesHandlers(): void {
   );
 
   ipcMain.handle('sources:test', async (_event, sourceRaw: unknown, endpointRaw: unknown) => {
-    const source = sanitizeSource(sourceRaw);
+    const source = await resolveTrustedSource(sourceRaw);
     const endpoint = source ? sanitizeEndpoint(endpointRaw ?? source.endpoints[0], 0) : null;
     if (!source || !endpoint) return { success: false, error: 'Invalid source' };
     const res = await testSourceConnection(source, endpoint);
@@ -195,7 +225,7 @@ export function registerSourcesHandlers(): void {
         context?: unknown;
       }
     ) => {
-      const source = sanitizeSource(sourceRaw);
+      const source = await resolveTrustedSource(sourceRaw);
       const endpoint: SourceEndpoint | null = source
         ? sanitizeEndpoint(endpointRaw ?? source.endpoints[0], 0)
         : null;
@@ -212,7 +242,7 @@ export function registerSourcesHandlers(): void {
       endpointRaw: unknown,
       opts?: { context?: unknown }
     ): Promise<SourceItem[]> => {
-      const source = sanitizeSource(sourceRaw);
+      const source = await resolveTrustedSource(sourceRaw);
       const endpoint: SourceEndpoint | null = source
         ? sanitizeEndpoint(endpointRaw ?? source.endpoints[0], 0)
         : null;

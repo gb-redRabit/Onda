@@ -37,20 +37,22 @@ const emit = defineEmits<{
 
 <template>
   <div
+    data-testid="image-viewer-settings"
     class="absolute right-full mr-2 top-0 bg-base-100 border border-base-300 rounded-field shadow-xl p-3 min-w-55 z-20"
     @click.stop
   >
     <div class="text-xs font-semibold text-base-content mb-2 tracking-wide uppercase">
-      Slideshow
+      {{ $t('imageViewer.ssSlideshow') }}
     </div>
 
     <div class="text-[11px] text-base-content/70 mb-1 flex items-center gap-1">
-      <Clock :size="11" class="pointer-events-none" /> Interval
+      <Clock :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssInterval') }}
     </div>
     <div class="flex flex-wrap gap-1 mb-2">
       <button
         v-for="ms in SLIDESHOW_INTERVALS"
         :key="ms"
+        :data-testid="'iv-interval-' + ms"
         class="fx-noise px-2 py-1 text-xs fx-depth rounded-field transition-colors"
         :class="
           interval === ms
@@ -64,12 +66,14 @@ const emit = defineEmits<{
     </div>
 
     <div class="text-[11px] text-base-content/70 mb-1 flex items-center gap-1">
-      <GripHorizontal :size="11" class="pointer-events-none" /> Transition
+      <GripHorizontal :size="11" class="pointer-events-none" />
+      {{ $t('imageViewer.ssTransition') }}
     </div>
     <div class="flex flex-wrap gap-1 mb-2">
       <button
         v-for="type in TRANSITION_TYPES"
         :key="type"
+        :data-testid="'iv-transition-' + type"
         class="fx-noise px-2 py-1 text-xs fx-depth rounded-field capitalize transition-colors"
         :class="
           transitionType === type
@@ -83,12 +87,13 @@ const emit = defineEmits<{
     </div>
 
     <div class="text-[11px] text-base-content/70 mb-1 flex items-center gap-1">
-      <Clock :size="11" class="pointer-events-none" /> Duration
+      <Clock :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssDuration') }}
     </div>
     <div class="flex flex-wrap gap-1 mb-2">
       <button
         v-for="d in TRANSITION_DURATIONS"
         :key="d"
+        :data-testid="'iv-duration-' + d"
         class="fx-noise px-2 py-1 text-xs fx-depth rounded-field transition-colors"
         :class="
           transitionDuration === d
@@ -103,9 +108,10 @@ const emit = defineEmits<{
 
     <div class="flex items-center justify-between mb-1">
       <div class="text-[11px] text-base-content/70 flex items-center gap-1">
-        <Repeat :size="11" class="pointer-events-none" /> Loop
+        <Repeat :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssLoop') }}
       </div>
       <button
+        data-testid="iv-loop"
         class="w-7 h-4 rounded-full transition-colors relative"
         :class="loop ? 'bg-primary' : 'bg-base-content/10'"
         @click="emit('update:loop', !loop)"
@@ -119,9 +125,10 @@ const emit = defineEmits<{
 
     <div class="flex items-center justify-between mb-1">
       <div class="text-[11px] text-base-content/70 flex items-center gap-1">
-        <Shuffle :size="11" class="pointer-events-none" /> Shuffle
+        <Shuffle :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssShuffle') }}
       </div>
       <button
+        data-testid="iv-shuffle"
         class="w-7 h-4 rounded-full transition-colors relative"
         :class="shuffle ? 'bg-primary' : 'bg-base-content/10'"
         @click="emit('update:shuffle', !shuffle)"
@@ -135,9 +142,10 @@ const emit = defineEmits<{
 
     <div class="flex items-center justify-between mb-1">
       <div class="text-[11px] text-base-content/70 flex items-center gap-1">
-        <Maximize2 :size="11" class="pointer-events-none" /> Ken Burns
+        <Maximize2 :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssKenBurns') }}
       </div>
       <button
+        data-testid="iv-ken-burns"
         class="w-7 h-4 rounded-full transition-colors relative"
         :class="kenBurns ? 'bg-primary' : 'bg-base-content/10'"
         @click="emit('update:kenBurns', !kenBurns)"
@@ -153,9 +161,10 @@ const emit = defineEmits<{
 
     <div class="flex items-center justify-between">
       <div class="text-[11px] text-base-content/70 flex items-center gap-1">
-        <Maximize2 :size="11" class="pointer-events-none" /> Auto-hide
+        <Maximize2 :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssAutoHide') }}
       </div>
       <button
+        data-testid="iv-auto-hide"
         class="w-7 h-4 rounded-full transition-colors relative"
         :class="autoHide ? 'bg-primary' : 'bg-base-content/10'"
         @click="emit('update:autoHide', !autoHide)"
@@ -168,8 +177,10 @@ const emit = defineEmits<{
     </div>
 
     <div class="text-[10px] text-base-content/60 mt-1.5 leading-relaxed">
-      <span class="text-base-content/80 font-semibold">H</span> toggle UI &middot;
-      <span class="text-base-content/80 font-semibold">Space</span> stop
+      <span class="text-base-content/80 font-semibold">H</span>
+      {{ $t('imageViewer.ssToggleUi') }} &middot;
+      <span class="text-base-content/80 font-semibold">Space</span>
+      {{ $t('imageViewer.ssStop') }}
     </div>
   </div>
 </template>

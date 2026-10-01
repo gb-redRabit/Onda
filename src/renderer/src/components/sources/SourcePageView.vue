@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Download, ListVideo, Loader2 } from '@lucide/vue';
+import { Download, ListVideo, Loader2, Check } from '@lucide/vue';
 import type { SourceItem } from '@renderer/types/sources';
 
 defineProps<{
@@ -9,6 +9,8 @@ defineProps<{
   rowClickable?: boolean;
   /** Poziom ma skonfigurowane pole pobierania — bez tego przycisk Pobierz się nie pojawia. */
   downloadable?: boolean;
+  /** Strona o tym API id została już pobrana. */
+  downloaded?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -43,12 +45,19 @@ const emit = defineEmits<{
           class="flex items-center gap-2"
         >
           <button
-            class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
-            :title="$t('sources.download')"
+            class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors disabled:opacity-70"
+            :class="
+              downloaded
+                ? 'bg-success text-success-content'
+                : 'bg-primary text-primary-content hover:bg-primary/90'
+            "
+            :disabled="downloaded"
+            :title="downloaded ? $t('sources.downloaded') : $t('sources.download')"
             @click="emit('download', item)"
           >
-            <Download :size="13" />
-            {{ $t('sources.download') }}
+            <Check v-if="downloaded" :size="13" />
+            <Download v-else :size="13" />
+            {{ downloaded ? $t('sources.downloaded') : $t('sources.download') }}
           </button>
         </div>
       </div>

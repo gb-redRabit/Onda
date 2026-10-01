@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Radio, RefreshCw } from '@lucide/vue';
 import { useOnlineStore } from '@renderer/stores/online';
 import { isScItem } from '@renderer/utils/onlineView';
 import OnlineButton from './OnlineButton.vue';
-import OnlineEmptyState from './OnlineEmptyState.vue';
+import EmptyState from '@renderer/components/ui/EmptyState.vue';
 import OnlineMediaCard from './OnlineMediaCard.vue';
 import Loader from '@renderer/components/layout/Loader.vue';
 import type { YouTubeVideo } from '@renderer/types/online';
@@ -48,8 +48,9 @@ function itemDownloadState(videoId: string): 'queuing' | 'downloading' | 'done' 
 <template>
   <Loader v-if="yt.isSearching" overlay :label="$t('common.loading')" />
 
-  <OnlineEmptyState
+  <EmptyState
     v-else-if="yt.searchResults.length === 0 && !yt.resolved"
+    variant="plain"
     :icon="Radio"
     :title="t('youtube.searchHeadingOnline')"
     :description="t('youtube.discover')"

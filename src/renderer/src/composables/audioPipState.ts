@@ -3,16 +3,17 @@ import { audioEngine } from '@renderer/modules/audioEngine';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { getFrequencyBins as collectBins } from '@renderer/utils/audioViz';
-import type { AudioPipDock, AudioPipElementId, AudioPipState } from '@shared/types/pip';
+import type {
+  AudioPipDock,
+  AudioPipElementId,
+  AudioPipLayoutOpts as SharedAudioPipLayoutOpts,
+  AudioPipState
+} from '@shared/types/pip';
 
 export type { AudioPipState, AudioPipDock, AudioPipElementId };
 
-export interface AudioPipLayoutOpts {
-  dock: AudioPipDock;
-  cornerElements: AudioPipElementId[];
-  edgeElements: AudioPipElementId[];
-  autoHide: boolean;
-}
+/** Wariant w pełni wypełniony — `resolveAudioPipLayoutOpts` ustawia zawsze wszystkie pola. */
+export type AudioPipLayoutOpts = Required<SharedAudioPipLayoutOpts>;
 
 export function resolveAudioPipLayoutOpts(): AudioPipLayoutOpts {
   const settings = useSettingsStore();

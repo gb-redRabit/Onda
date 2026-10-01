@@ -1,5 +1,7 @@
 import { formatDuration } from '../../shared/formatDuration';
 import type { IpcYoutubeVideo } from '../../shared/types/ipc';
+import { sanitizeFilename } from '../../shared/text';
+import { isLoopbackHost } from './network-target';
 
 // Pure SoundCloud API shapes / mappers / validators extracted from
 // `soundcloud-client.ts` (plan 2.8). `soundcloud-client` re-exports the public
@@ -86,9 +88,7 @@ export function isSafeImageUrl(url: string): boolean {
     return false;
   }
   if (parsed.protocol !== 'https:') return false;
-  const host = parsed.hostname.toLowerCase();
-  if (host === 'localhost' || host === '127.0.0.1' || host === '::1') return false;
-  if (/^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) return false;
+  if (isLoopbackHost(parsed.hostname)) return false;
   return true;
 }
 
@@ -129,14 +129,9 @@ export function mapScTrack(track: ScApiTrack): IpcYoutubeVideo {
 }
 
 // Filesystem-safe file name for a track title (http/soundcloud download jobs
-// write bytes directly under this name).
+// write bytes directly under this name). Implementation lives in shared/text.
 export function sanitizeFileName(title: string): string {
-  const cleaned = title
-    // eslint-disable-next-line no-control-regex -- control chars are invalid in file names
-    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_')
-    .trim()
-    .replace(/[.\s]+$/, '');
-  return (cleaned || 'track').slice(0, 120);
+  return sanitizeFilename(title, { maxLength: 120, fallback: 'track' });
 }
 
 // CloudFront-signed CDN URLs carry their own expiry inside the base64url

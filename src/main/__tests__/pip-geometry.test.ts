@@ -4,8 +4,8 @@ vi.mock('electron', () => ({
   screen: { getPrimaryDisplay: () => ({ workArea: { x: 0, y: 0, width: 1920, height: 1080 } }) }
 }));
 
-import { computeEdgePeekBounds } from '../pip-edge-position';
-import { computePipPosition } from '../pip-position';
+import { computeEdgePeekBounds } from '../pip/pip-edge-position';
+import { computePipPosition } from '../pip/pip-position';
 import { getAudioPipSize, isAudioPipEdgeDock, audioPipLayoutKind } from '../../shared/types/pip';
 
 const workArea = { x: 100, y: 50, width: 1000, height: 800 };

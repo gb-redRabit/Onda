@@ -2,7 +2,11 @@
 import { useSettingsStore } from '@renderer/stores/settings';
 import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
+import { readSelect } from '@renderer/utils/selectOptions';
 const settings = useSettingsStore();
+
+/** Same values the options below are rendered from. */
+const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
 </script>
 <template>
   <SettingsGroup>
@@ -15,9 +19,7 @@ const settings = useSettingsStore();
       <select
         :value="settings.general.logLevel || 'info'"
         class="px-2 py-1.5 rounded-field bg-base-100 border border-base-300 text-sm"
-        @change="
-          settings.updateGeneral({ logLevel: ($event.target as HTMLSelectElement).value as any })
-        "
+        @change="settings.updateGeneral({ logLevel: readSelect($event, LOG_LEVELS) })"
       >
         <option value="debug">debug</option>
         <option value="info">info</option>

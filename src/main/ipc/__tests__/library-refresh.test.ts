@@ -3,7 +3,7 @@ import { mkdtempSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { scanDir, filterCoverSiblingVideos } from '../library-scan';
-import type { MediaFile } from '../../../renderer/src/types/media';
+import type { MediaFile } from '../../../shared/types/media';
 
 vi.mock('../media-handlers', () => ({
   getDuration: vi.fn(async () => 0)

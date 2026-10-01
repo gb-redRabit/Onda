@@ -10,6 +10,7 @@
   "main": "./out/main/index.js",
   "author": "gb-redRabit",
   "homepage": "https://github.com/gb-redRabit/Onda",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",

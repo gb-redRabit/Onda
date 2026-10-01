@@ -3,8 +3,13 @@ import { useSettingsStore } from '@renderer/stores/settings';
 import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
 import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
+import { readSelect } from '@renderer/utils/selectOptions';
 
 const settings = useSettingsStore();
+
+/** Same lists the options are rendered from, so validation and UI cannot drift. */
+const EXPLORER_SORT_BY = ['name', 'size', 'type', 'modified'] as const;
+const EXPLORER_SORT_ORDER = ['asc', 'desc'] as const;
 </script>
 
 <template>
@@ -33,9 +38,7 @@ const settings = useSettingsStore();
         <select
           :value="settings.explorer.sortBy"
           class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
-          @change="
-            settings.updateExplorer({ sortBy: ($event.target as HTMLSelectElement).value as any })
-          "
+          @change="settings.updateExplorer({ sortBy: readSelect($event, EXPLORER_SORT_BY) })"
         >
           <option value="name">{{ $t('settings.sortByName') }}</option>
           <option value="size">{{ $t('settings.sortBySize') }}</option>
@@ -50,7 +53,7 @@ const settings = useSettingsStore();
           class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
           @change="
             settings.updateExplorer({
-              sortOrder: ($event.target as HTMLSelectElement).value as any
+              sortOrder: readSelect($event, EXPLORER_SORT_ORDER)
             })
           "
         >
@@ -69,6 +72,15 @@ const settings = useSettingsStore();
       <SettingsToggle
         :model-value="settings.explorer.confirmBeforeMove"
         @update:model-value="settings.updateExplorer({ confirmBeforeMove: $event })"
+      />
+    </SettingsRow>
+    <SettingsRow
+      :label="$t('settings.permanentDelete')"
+      :description="$t('settings.permanentDeleteDesc')"
+    >
+      <SettingsToggle
+        :model-value="settings.explorer.permanentDelete"
+        @update:model-value="settings.updateExplorer({ permanentDelete: $event })"
       />
     </SettingsRow>
   </SettingsGroup>

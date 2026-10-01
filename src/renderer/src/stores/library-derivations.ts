@@ -1,19 +1,18 @@
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import type { Ref } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import { topN } from '@renderer/utils/topN';
 
-export function useLibraryDerivations(tracks: Ref<MediaFile[]>) {
-  let lastTracksCount = -1;
-  let cachedArtists: Array<[string, MediaFile[]]> = [];
-  let cachedAlbums: Array<[string, MediaFile[]]> = [];
-
-  function invalidateDerivedCache() {
-    lastTracksCount = -1;
-    cachedArtists = [];
-    cachedAlbums = [];
-  }
-
+// `tracks` is a `shallowRef`: edits to a track's metadata must be signalled by
+// the caller via `triggerRef`. Play statistics (playCount / lastPlayed) live on
+// the same objects but change on every play, so they are published through a
+// separate `statsRevision` counter instead — that way finishing a song only
+// recomputes the two stats views, not the artists/albums grouping (which sorts
+// thousands of entries with `localeCompare` and janks the UI on a 50k library).
+export function useLibraryDerivations(
+  tracks: Ref<MediaFile[]>,
+  statsRevision: Ref<number> = ref(0)
+) {
   const trackStats = computed(() => {
     let audio = 0,
       video = 0,
@@ -45,12 +44,14 @@ export function useLibraryDerivations(tracks: Ref<MediaFile[]>) {
   const imageTracks = computed(() => trackStats.value.imageArr);
 
   const recentTracks = computed(() => {
+    void statsRevision.value;
     const ts = tracks.value;
     const withPlayed = ts.filter((t) => t.lastPlayed);
     if (withPlayed.length === 0) return [];
     return topN(withPlayed, 20, (t) => t.lastPlayed || 0);
   });
   const mostPlayed = computed(() => {
+    void statsRevision.value;
     const ts = tracks.value;
     if (ts.length === 0) return [];
     return topN(ts, 20, (t) => t.playCount);
@@ -59,7 +60,6 @@ export function useLibraryDerivations(tracks: Ref<MediaFile[]>) {
   const artists = computed(() => {
     const ts = tracks.value;
     if (ts.length === 0) return [];
-    if (ts.length === lastTracksCount && cachedArtists.length) return cachedArtists;
     const map = new Map<string, MediaFile[]>();
     for (let i = 0; i < ts.length; i++) {
       // Only audio files carry artist metadata — videos/images must not be
@@ -69,15 +69,12 @@ export function useLibraryDerivations(tracks: Ref<MediaFile[]>) {
       if (!map.has(artist)) map.set(artist, []);
       map.get(artist)!.push(ts[i]);
     }
-    cachedArtists = Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-    lastTracksCount = ts.length;
-    return cachedArtists;
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   });
 
   const albums = computed(() => {
     const ts = tracks.value;
     if (ts.length === 0) return [];
-    if (ts.length === lastTracksCount && cachedAlbums.length) return cachedAlbums;
     const map = new Map<string, MediaFile[]>();
     for (let i = 0; i < ts.length; i++) {
       // Only audio files can belong to an album — keep images/videos out of
@@ -88,9 +85,7 @@ export function useLibraryDerivations(tracks: Ref<MediaFile[]>) {
       if (!map.has(album)) map.set(album, []);
       map.get(album)!.push(ts[i]);
     }
-    cachedAlbums = Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-    lastTracksCount = ts.length;
-    return cachedAlbums;
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   });
 
   return {
@@ -104,7 +99,6 @@ export function useLibraryDerivations(tracks: Ref<MediaFile[]>) {
     recentTracks,
     mostPlayed,
     artists,
-    albums,
-    invalidateDerivedCache
+    albums
   };
 }

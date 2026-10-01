@@ -133,7 +133,13 @@ watch(
 );
 
 onMounted(() => {
-  nextTick(setupThumbObserver);
+  // The viewer can open on any index (e.g. the 41st of 55 images): the strip
+  // must scroll to the active thumbnail on first paint, not only when the index
+  // later changes, otherwise the active thumb starts off-screen.
+  nextTick(() => {
+    setupThumbObserver();
+    scrollToCurrent();
+  });
 });
 onBeforeUnmount(() => {
   thumbObserver?.disconnect();
@@ -152,6 +158,7 @@ onBeforeUnmount(() => {
     <div
       v-if="files.length > 1"
       ref="stripRef"
+      data-testid="image-viewer-strip"
       class="relative px-3 py-2 bg-neutral border-t border-neutral-content/20 overflow-x-auto transition-all duration-200"
       :class="showThumbs ? 'h-20' : 'h-0 py-0 overflow-hidden'"
       @click.stop
@@ -195,6 +202,7 @@ onBeforeUnmount(() => {
     >
       <div class="flex items-center gap-2">
         <button
+          data-testid="image-viewer-thumbnails-toggle"
           class="fx-noise p-1 fx-depth rounded-field transition-colors"
           :class="showThumbs ? 'text-primary' : 'text-base-content/70 hover:text-base-content'"
           title="Toggle thumbnails"
@@ -203,14 +211,16 @@ onBeforeUnmount(() => {
           <PanelBottom :size="14" class="pointer-events-none" />
         </button>
         <div class="w-px h-3 bg-border-default/30" />
-        <span>{{ currentIndex + 1 }} / {{ files.length }}</span>
+        <span data-testid="image-viewer-counter">{{ currentIndex + 1 }} / {{ files.length }}</span>
         <span v-if="currentFile" class="text-base-content/70 truncate max-w-50">{{
           currentFile.name
         }}</span>
       </div>
       <div class="flex items-center gap-2 text-base-content/70">
-        <span v-if="scale !== 1">{{ Math.round(scale * 100) }}%</span>
-        <span v-if="rotation !== 0">{{ rotation }}°</span>
+        <span v-if="scale !== 1" data-testid="image-viewer-scale"
+          >{{ Math.round(scale * 100) }}%</span
+        >
+        <span v-if="rotation !== 0" data-testid="image-viewer-rotation">{{ rotation }}°</span>
       </div>
     </div>
   </div>

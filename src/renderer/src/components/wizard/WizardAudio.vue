@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import WizardStep from './WizardStep.vue';
 import { Gauge, LayoutGrid, Maximize2, Pencil } from '@lucide/vue';
 
 const features = [
@@ -27,8 +28,11 @@ const features = [
 
 <template>
   <div>
-    <h3 class="text-lg font-bold tracking-tight mb-1.5">{{ $t('wizard.audioTitle') }}</h3>
-    <p class="text-sm text-base-content/70 mb-5">{{ $t('wizard.audioDesc') }}</p>
+    <WizardStep
+      :title="$t('wizard.audioTitle')"
+      :description="$t('wizard.audioDesc')"
+      description-gap
+    />
 
     <div class="space-y-2.5">
       <div

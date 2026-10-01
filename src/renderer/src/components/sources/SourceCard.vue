@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Image, Play, Music2, File, Download, Eye } from '@lucide/vue';
+import { Image, Play, Music2, File, Download, Eye, Check } from '@lucide/vue';
 import type { SourceItem } from '@renderer/types/sources';
 
 defineProps<{
@@ -7,6 +7,8 @@ defineProps<{
   downloading?: boolean;
   /** Poziom ma skonfigurowane pole pobierania — bez tego przycisk Pobierz się nie pojawia. */
   downloadable?: boolean;
+  /** Element o tym API id został już pobrany (potwierdzone przez main). */
+  downloaded?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -51,6 +53,14 @@ const typeIcon = {
         {{ item.duration }}
       </div>
       <div
+        v-if="downloaded"
+        class="absolute top-1.5 right-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-field bg-success text-success-content text-[10px] font-medium"
+        :title="$t('sources.downloaded')"
+      >
+        <Check :size="10" />
+        <span>{{ $t('sources.downloaded') }}</span>
+      </div>
+      <div
         class="pointer-events-none absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/30 transition-colors"
       >
         <div class="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -60,11 +70,13 @@ const typeIcon = {
       <button
         v-if="downloadable && (item.mediaUrl || item.playerUrl)"
         class="fx-noise absolute bottom-1.5 left-1.5 opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-neutral/70 text-neutral-content text-[10px] hover:bg-neutral/90 disabled:opacity-60"
-        :title="$t('sources.download')"
-        :disabled="downloading || (!item.mediaUrl && !item.playerUrl)"
+        :class="{ 'bg-success/80! hover:bg-success/80!': downloaded }"
+        :title="downloaded ? $t('sources.downloaded') : $t('sources.download')"
+        :disabled="downloaded || downloading || (!item.mediaUrl && !item.playerUrl)"
         @click.stop="emit('download', item)"
       >
-        <Download :size="11" />
+        <Check v-if="downloaded" :size="11" />
+        <Download v-else :size="11" />
       </button>
     </div>
     <div class="mt-2">

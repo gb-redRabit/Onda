@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useDialogFocus } from '@renderer/composables/useDialogFocus';
+import ModalShell from '@renderer/components/ui/ModalShell.vue';
 import { ref, computed, onMounted } from 'vue';
 import { X, Download, Tv2 } from '@lucide/vue';
 import { useUIStore } from '@renderer/stores/ui';
@@ -14,7 +14,7 @@ import MetadataFieldsSection from './MetadataFieldsSection.vue';
 import SubscribeOutputSection from './SubscribeOutputSection.vue';
 import SubscribeFormatSection from './SubscribeFormatSection.vue';
 import SubscribeProfileSection from './SubscribeProfileSection.vue';
-import SubscribeCoverSection from './SubscribeCoverSection.vue';
+import CoverOptionsFields from './CoverOptionsFields.vue';
 import { useRemoteImage } from '@renderer/composables/useRemoteImage';
 import type { SubscriptionDownloadPrefs } from '@renderer/types/online';
 
@@ -115,26 +115,16 @@ function close() {
 function confirm() {
   emit('confirm', { prefs: confirmPrefs(), downloadAll: downloadAll.value });
 }
-const panelRef = ref<HTMLElement | null>(null);
-// Focus enters the dialog on open, cycles inside it, and returns to the opener
-// on close; Escape is handled here so every dialog dismisses the same way.
-useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => emit('cancel') });
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      class="fixed inset-0 z-9999 bg-neutral/60 backdrop-blur-sm flex items-center justify-center p-4"
-      @click.self="onOverlayClickSub"
-    >
-      <div
-        ref="panelRef"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="subscribe-config-dialog-title"
-        tabindex="-1"
-        class="bg-base-100 border border-base-300 rounded-box w-full max-w-3xl max-h-[92vh] shadow-2xl overflow-hidden flex flex-col"
-      >
+  <ModalShell
+    labelled-by="subscribe-config-dialog-title"
+    backdrop="dim-blur"
+    panel-class="w-full max-w-3xl max-h-[92vh] overflow-hidden flex flex-col"
+    @close="onOverlayClickSub"
+    @escape="emit('cancel')"
+  >
         <!-- Header -->
         <div class="flex items-center gap-3 px-5 py-4 border-b border-base-300 shrink-0">
           <div
@@ -201,13 +191,13 @@ useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => emit('cancel') }
               />
 
               <!-- Cover (audio only) -->
-              <SubscribeCoverSection
+              <CoverOptionsFields
                 v-model:cover-type="coverType"
-                v-model:cover-frame-time="coverFrameTime"
-                v-model:cover-clip-start="coverClipStart"
-                v-model:cover-clip-end="coverClipEnd"
-                v-model:cover-clip-format="coverClipFormat"
-                v-model:custom-cover-path="customCoverPath"
+                v-model:custom-path="customCoverPath"
+                v-model:frame-time="coverFrameTime"
+                v-model:clip-start="coverClipStart"
+                v-model:clip-end="coverClipEnd"
+                v-model:clip-format="coverClipFormat"
                 :is-sc="isSc"
                 :kind="kind"
               />
@@ -267,7 +257,5 @@ useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => emit('cancel') }
             {{ isEdit ? $t('common.save') : $t('youtube.subscribeAndSave') }}
           </button>
         </div>
-      </div>
-    </div>
-  </Teleport>
+  </ModalShell>
 </template>

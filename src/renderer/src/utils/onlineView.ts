@@ -1,4 +1,5 @@
 import { detectPlatform } from '@shared/platform';
+import { buildSoundcloudProfileUrl, buildYouTubeChannelUrl } from '@shared/provider';
 
 // Pure helpers extracted from `views/OnlineView.vue` (plan 2.8).
 
@@ -11,8 +12,8 @@ export function isScItem(item: { id: string; url?: string }, url: string): boole
 
 export function buildChannelUrl(channelId: string, platform?: string): string {
   return platform === 'soundcloud'
-    ? `https://soundcloud.com/${channelId}`
-    : `https://www.youtube.com/channel/${channelId}`;
+    ? buildSoundcloudProfileUrl(channelId)
+    : buildYouTubeChannelUrl(channelId);
 }
 
 export function countSkippedBatchLines(text: string, parsedCount: number): number {
@@ -21,8 +22,4 @@ export function countSkippedBatchLines(text: string, parsedCount: number): numbe
     .map((s) => s.trim())
     .filter(Boolean).length;
   return Math.max(0, total - parsedCount);
-}
-
-export function pageTotalFromCount(count: number, perPage = 20): number {
-  return Math.ceil(count / perPage);
 }

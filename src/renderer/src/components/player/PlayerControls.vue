@@ -2,24 +2,17 @@
 import { computed, ref } from 'vue';
 import type { Ref } from 'vue';
 import {
-  Play,
-  Pause,
-  SkipBack,
-  SkipForward,
   Volume2,
   VolumeX,
-  Shuffle,
-  Repeat,
-  Repeat1,
   ListMusic,
   SlidersHorizontal,
   ChevronLeft,
-  ChevronRight,
-  Heart
+  ChevronRight
 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { formatDuration } from '@renderer/utils/formatters';
 import PlayerSpeedMenu from './PlayerSpeedMenu.vue';
+import TransportButtons from './TransportButtons.vue';
 import { useVideoPreview } from '@renderer/composables/useVideoPreview';
 import SubtitleTrackSelector from './SubtitleTrackSelector.vue';
 import VideoFilterDropdown from './VideoFilterDropdown.vue';
@@ -172,80 +165,20 @@ function onVolumeKeydown(e: KeyboardEvent) {
 
     <div class="flex items-center justify-between">
       <!-- left: playback buttons -->
-      <div class="flex items-center gap-3">
-        <button
-          class="text-neutral-content/40 hover:text-neutral-content/80 transition-colors"
-          :class="{ 'text-primary!': player.shuffle }"
-          :aria-label="$t('common.shuffle')"
-          @click="player.toggleShuffle"
-        >
-          <Shuffle :size="16" />
-        </button>
-        <button
-          class="text-neutral-content/40 hover:text-neutral-content/80 transition-colors"
-          :class="{ 'text-error!': player.isFavorite(player.currentTrack?.path || '') }"
-          :title="
-            player.isFavorite(player.currentTrack?.path || '')
-              ? $t('common.removeFav')
-              : $t('common.addFav')
-          "
-          :aria-label="
-            player.isFavorite(player.currentTrack?.path || '')
-              ? $t('common.removeFav')
-              : $t('common.addFav')
-          "
-          @click="player.toggleFavorite(player.currentTrack?.path || '')"
-        >
-          <Heart
-            :size="16"
-            :fill="player.isFavorite(player.currentTrack?.path || '') ? 'currentColor' : 'none'"
-          />
-        </button>
-        <button
-          class="text-neutral-content/60 hover:text-neutral-content transition-colors"
-          :aria-label="$t('common.previous')"
-          @click="player.prevTrack"
-        >
-          <SkipBack :size="18" fill="currentColor" />
-        </button>
-
-        <!-- play button — glassmorphism -->
-        <div class="relative">
-          <div
-            v-if="player.isPlaying"
-            class="absolute inset-0 rounded-full bg-neutral-content/10 blur-lg"
-          />
-          <button
-            class="relative w-12 h-12 rounded-full bg-neutral-content/15 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/5"
-            :aria-label="player.isPlaying ? $t('common.pause') : $t('common.play')"
-            @click="player.togglePlay"
-          >
-            <Pause
-              v-if="player.isPlaying"
-              :size="22"
-              class="text-neutral-content"
-              fill="currentColor"
-            />
-            <Play v-else :size="22" class="text-neutral-content ml-0.5" fill="currentColor" />
-          </button>
-        </div>
-
-        <button
-          class="text-neutral-content/60 hover:text-neutral-content transition-colors"
-          :aria-label="$t('common.next')"
-          @click="player.nextTrack"
-        >
-          <SkipForward :size="18" fill="currentColor" />
-        </button>
-        <button
-          class="text-neutral-content/40 hover:text-neutral-content/80 transition-colors"
-          :class="{ 'text-primary!': player.repeat !== 'none' }"
-          :aria-label="$t('common.repeat')"
-          @click="player.cycleRepeat"
-        >
-          <component :is="player.repeat === 'one' ? Repeat1 : Repeat" :size="16" />
-        </button>
-      </div>
+      <TransportButtons
+        variant="video"
+        :is-playing="player.isPlaying"
+        :shuffle="player.shuffle"
+        :repeat="player.repeat"
+        :favorite="player.isFavorite(player.currentTrack?.path || '')"
+        :show-favorite="true"
+        @play-pause="player.togglePlay"
+        @prev="player.prevTrack"
+        @next="player.nextTrack"
+        @toggle-shuffle="player.toggleShuffle"
+        @cycle-repeat="player.cycleRepeat"
+        @toggle-favorite="player.toggleFavorite(player.currentTrack?.path || '')"
+      />
 
       <!-- center: skip — time — speed -->
       <div class="flex items-center gap-4">

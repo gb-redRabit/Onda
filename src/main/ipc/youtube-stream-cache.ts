@@ -14,7 +14,16 @@ export interface StreamCacheEntry {
 
 const STREAM_CACHE_TTL_MS = 5 * 60 * 60 * 1000;
 const STREAM_CACHE_MAX = 100;
-const STREAM_CACHE_FILE = join(app.getPath('userData'), 'stream-url-cache.json');
+// Resolved lazily: `app.setPath('userData', ...)` for portable/E2E mode runs
+// after module evaluation, so reading the path at import time would point the
+// cache at the real user profile.
+let streamCacheFileCache: string | null = null;
+function streamCacheFile(): string {
+  if (!streamCacheFileCache) {
+    streamCacheFileCache = join(app.getPath('userData'), 'stream-url-cache.json');
+  }
+  return streamCacheFileCache;
+}
 
 const streamCache = new Map<string, StreamCacheEntry>();
 let streamCacheLoaded = false;
@@ -27,7 +36,7 @@ function loadStreamCache(): void {
   if (streamCacheLoaded) return;
   streamCacheLoaded = true;
   try {
-    const raw = readFileSync(STREAM_CACHE_FILE, 'utf8');
+    const raw = readFileSync(streamCacheFile(), 'utf8');
     const entries = JSON.parse(raw) as { url: string; streamUrl: string; expires: number }[];
     const now = Date.now();
     for (const entry of entries) {
@@ -61,8 +70,8 @@ function scheduleStreamCacheSave(): void {
       const entries = [...streamCache.entries()]
         .filter(([, v]) => v.expires > now)
         .map(([url, v]) => ({ url, streamUrl: v.url, expires: v.expires }));
-      mkdirSync(dirname(STREAM_CACHE_FILE), { recursive: true });
-      writeFileSync(STREAM_CACHE_FILE, JSON.stringify(entries));
+      mkdirSync(dirname(streamCacheFile()), { recursive: true });
+      writeFileSync(streamCacheFile(), JSON.stringify(entries));
     } catch (e) {
       logger.warn('yt', 'stream cache save failed', String(e));
     }
@@ -111,8 +120,8 @@ export function clearStreamCache(): {
   let removed = 0;
   let bytesFreed = 0;
   try {
-    bytesFreed = statSync(STREAM_CACHE_FILE).size;
-    rmSync(STREAM_CACHE_FILE, { force: true });
+    bytesFreed = statSync(streamCacheFile()).size;
+    rmSync(streamCacheFile(), { force: true });
     removed = 1;
   } catch {
     // no persisted cache file — nothing to remove

@@ -14,6 +14,7 @@ import MusicBrainzTrackList from './MusicBrainzTrackList.vue';
 import MusicBrainzPreviewTable from './MusicBrainzPreviewTable.vue';
 import { useUIStore } from '@renderer/stores/ui';
 import { useMusicBrainzBatch } from '@renderer/composables/useMusicBrainzBatch';
+import ModalShell from '@renderer/components/ui/ModalShell.vue';
 
 const { t } = useI18n();
 const ui = useUIStore();
@@ -117,16 +118,15 @@ onMounted(() => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      class="fixed inset-0 z-60 flex items-center justify-center bg-neutral/40"
-      @click.self="onOverlayClick"
-    >
-      <div
-        class="w-full max-w-xl mx-4 rounded-box bg-neutral border border-base-300 shadow-2xl overflow-hidden max-h-[80vh] flex flex-col backdrop-blur-xl"
-      >
+  <ModalShell
+    labelled-by="musicbrainz-lookup-title"
+    panel-tone="neutral"
+    panel-class="w-full max-w-xl mx-4 max-h-[80vh] flex flex-col overflow-hidden backdrop-blur-xl"
+    @close="onOverlayClick"
+    @escape="emit('close')"
+  >
         <div class="flex items-center justify-between px-5 py-4 border-b border-base-300 shrink-0">
-          <h2 class="text-base font-bold flex items-center gap-2">
+          <h2 id="musicbrainz-lookup-title" class="text-base font-bold flex items-center gap-2">
             <Disc3 :size="18" /> {{ $t('musicbrainz.title') }}
           </h2>
           <button
@@ -222,7 +222,5 @@ onMounted(() => {
             </div>
           </template>
         </div>
-      </div>
-    </div>
-  </Teleport>
+  </ModalShell>
 </template>

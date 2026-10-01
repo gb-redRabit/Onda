@@ -32,6 +32,9 @@ function isActive(item: FlatItem): boolean {
       <template v-for="item in group.items" :key="item.label">
         <div
           v-if="item.type === 'track'"
+          :id="`app-search-item-${indexOf(item)}`"
+          role="option"
+          :aria-selected="isActive(item)"
           class="flex items-center gap-2.5 px-3 py-2 cursor-pointer text-sm transition-colors"
           :class="isActive(item) ? 'bg-primary/10 text-primary' : 'hover:bg-base-content/10'"
           @click="emit('run', item)"
@@ -49,6 +52,9 @@ function isActive(item: FlatItem): boolean {
         </div>
         <div
           v-else
+          :id="`app-search-item-${indexOf(item)}`"
+          role="option"
+          :aria-selected="isActive(item)"
           class="flex items-center gap-2.5 px-3 py-2 cursor-pointer text-sm transition-colors"
           :class="isActive(item) ? 'bg-primary/10 text-primary' : 'hover:bg-base-content/10'"
           @click="emit('run', item)"

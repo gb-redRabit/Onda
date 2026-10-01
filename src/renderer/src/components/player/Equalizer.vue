@@ -63,10 +63,35 @@ function onSliderDrag(e: MouseEvent, index: number) {
   document.addEventListener('mousemove', onMove);
   document.addEventListener('mouseup', onUp);
 }
+
+/**
+ * Keyboard equivalent of the drag.
+ *
+ * Each band was a mousedown-only div: no role, no tabindex, no key handling, so
+ * the equalizer could not be adjusted without a pointer.
+ */
+function onBandKey(e: KeyboardEvent, index: number) {
+  const current = player.equalizerBands[index] ?? 0;
+  let next: number | null = null;
+  if (e.key === 'ArrowUp' || e.key === 'ArrowRight') next = current + 1;
+  else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') next = current - 1;
+  else if (e.key === 'PageUp') next = current + 6;
+  else if (e.key === 'PageDown') next = current - 6;
+  else if (e.key === 'Home') next = -12;
+  else if (e.key === 'End') next = 12;
+  else if (e.key === '0') next = 0;
+  if (next === null) return;
+  e.preventDefault();
+  setEqualizerBand(index, Math.max(-12, Math.min(12, next)));
+}
 </script>
 
 <template>
-  <div ref="panel" class="bg-base-100 border border-base-300 rounded-box p-4 w-95">
+  <div
+    ref="panel"
+    data-testid="equalizer"
+    class="bg-base-100 border border-base-300 rounded-box p-4 w-95"
+  >
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-sm font-semibold">{{ $t('equalizer.title') }}</h3>
       <button
@@ -83,6 +108,7 @@ function onSliderDrag(e: MouseEvent, index: number) {
       <button
         v-for="(_, name) in presets"
         :key="name"
+        :data-testid="'eq-preset-' + name"
         class="fx-noise px-2.5 py-1 fx-depth rounded-field text-[11px] font-medium transition-colors"
         :class="
           player.equalizerPreset === name
@@ -97,13 +123,25 @@ function onSliderDrag(e: MouseEvent, index: number) {
 
     <!-- bands -->
     <div class="flex gap-2 h-48">
-      <div v-for="(label, i) in bandLabels" :key="i" class="flex-1 flex flex-col items-center">
+      <div v-for="(label, i) in bandLabels" :key="label" class="flex-1 flex flex-col items-center">
         <span
           class="text-[10px] text-base-content/70 font-mono tabular-nums mb-1.5 h-4 leading-4 select-none"
         >
           {{ player.equalizerBands[i] > 0 ? '+' : '' }}{{ player.equalizerBands[i] }}
         </span>
-        <div class="flex-1 w-full relative cursor-pointer" @mousedown="onSliderDrag($event, i)">
+        <div
+          :data-testid="'eq-band-' + i"
+          class="flex-1 w-full relative cursor-pointer"
+          role="slider"
+          tabindex="0"
+          :aria-label="`${t('equalizer.band')} ${label} Hz`"
+          :aria-valuemin="-12"
+          :aria-valuemax="12"
+          :aria-valuenow="player.equalizerBands[i] ?? 0"
+          :aria-valuetext="`${player.equalizerBands[i] > 0 ? '+' : ''}${player.equalizerBands[i] ?? 0} dB`"
+          @mousedown="onSliderDrag($event, i)"
+          @keydown="onBandKey($event, i)"
+        >
           <!-- track background — wider, high contrast -->
           <div
             class="absolute w-1.25 h-full rounded-full bg-base-content/20"

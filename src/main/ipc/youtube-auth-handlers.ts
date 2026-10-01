@@ -6,7 +6,7 @@ import {
   exportCookiesToFile,
   getAuthStatus,
   type YoutubeAuthStatus
-} from '../youtube-auth';
+} from '../youtube/youtube-auth';
 import { logger } from '../../shared/logger';
 
 export function registerYoutubeAuthHandlers(): void {

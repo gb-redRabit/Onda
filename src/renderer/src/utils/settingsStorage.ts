@@ -1,4 +1,5 @@
 import type { Ref } from 'vue';
+import { logger } from '@shared/logger';
 import type {
   AppearanceSettings,
   PlaybackSettings,
@@ -34,24 +35,61 @@ interface SettingsState {
   dependencies: Ref<Record<string, DependencyStatus>>;
   statusBar: Ref<StatusBarSettings>;
   home: Ref<HomeSettings>;
+  /** Favourites live here rather than in their own store: they are a setting, and
+   * having two writers for one key meant a factory reset or an import could not
+   * see them. */
+  favorites: Ref<string[]>;
 }
 
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+/**
+ * Recursively merges a persisted patch onto the current (default) value so that
+ * keys which exist only in the defaults — i.e. fields added in a newer app
+ * version — survive a load. Arrays and non-plain values replace wholesale.
+ * A shallow Object.assign used to drop such nested defaults, which showed up as
+ * "a setting silently reverts after an update".
+ */
+export function deepMerge<T>(base: T, patch: unknown): T {
+  if (patch === undefined) return base;
+  if (!isPlainObject(base) || !isPlainObject(patch)) return patch as T;
+  const out: Record<string, unknown> = { ...base };
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === undefined) continue;
+    out[key] = key in base ? deepMerge((base as Record<string, unknown>)[key], value) : value;
+  }
+  return out as T;
+}
+
+const SETTINGS_GROUPS = [
+  'general',
+  'appearance',
+  'playback',
+  'explorer',
+  'library',
+  'download',
+  'shortcuts',
+  'network',
+  'apiKeys',
+  'youtube',
+  'updates',
+  'toast',
+  'dependencies',
+  'statusBar',
+  'home'
+] as const;
+
 export function mergeSettings(target: SettingsState, data: Partial<AppSettings>): void {
-  if (data.general) Object.assign(target.general.value, data.general);
-  if (data.appearance) Object.assign(target.appearance.value, data.appearance);
-  if (data.playback) Object.assign(target.playback.value, data.playback);
-  if (data.explorer) Object.assign(target.explorer.value, data.explorer);
-  if (data.library) Object.assign(target.library.value, data.library);
-  if (data.download) Object.assign(target.download.value, data.download);
-  if (data.shortcuts) Object.assign(target.shortcuts.value, data.shortcuts);
-  if (data.network) Object.assign(target.network.value, data.network);
-  if (data.apiKeys) Object.assign(target.apiKeys.value, data.apiKeys);
-  if (data.youtube) Object.assign(target.youtube.value, data.youtube);
-  if (data.updates) Object.assign(target.updates.value, data.updates);
-  if (data.toast) Object.assign(target.toast.value, data.toast);
-  if (data.dependencies) Object.assign(target.dependencies.value, data.dependencies);
-  if (data.statusBar) Object.assign(target.statusBar.value, data.statusBar);
-  if (data.home) Object.assign(target.home.value, data.home);
+  if (!isPlainObject(data)) return;
+  for (const group of SETTINGS_GROUPS) {
+    const patch = data[group];
+    if (patch === undefined) continue;
+    const ref = target[group] as unknown as Ref<Record<string, unknown>>;
+    ref.value = deepMerge(ref.value, patch);
+  }
+  if (Array.isArray(data.favorites)) target.favorites.value = [...data.favorites];
 }
 
 export async function loadSettings(target: SettingsState): Promise<void> {
@@ -60,8 +98,9 @@ export async function loadSettings(target: SettingsState): Promise<void> {
       const data = await window.api.invoke('settings:get');
       if (data) mergeSettings(target, data);
     }
-  } catch {
-    // use defaults
+  } catch (e) {
+    // Never hide this: a failed load shows up as "settings reset themselves".
+    logger.warn('settings', 'loadSettings failed, falling back to defaults', e);
   }
 }
 
@@ -84,12 +123,13 @@ export async function persistSettings(state: SettingsState): Promise<void> {
           toast: state.toast.value,
           dependencies: state.dependencies.value,
           statusBar: state.statusBar.value,
-          home: state.home.value
+          home: state.home.value,
+          favorites: state.favorites.value
         })
       );
       await window.api.invoke('settings:set', payload);
     }
-  } catch {
-    // silent
+  } catch (e) {
+    logger.warn('settings', 'persistSettings failed', e);
   }
 }

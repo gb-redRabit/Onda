@@ -79,6 +79,7 @@ onUnmounted(() => tabResizeObserver?.disconnect());
         :key="tabItem.id"
         role="tab"
         data-tab
+        :data-testid="'library-tab-' + tabItem.id"
         :aria-selected="props.modelValue === tabItem.id"
         :aria-label="tabItem.label"
         class="group flex flex-1 min-w-0 items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 rounded-field text-xs font-medium transition-all duration-150 border fx-depth hover:border-primary/30"

@@ -35,7 +35,7 @@ app.use(pinia);
 app.use(router);
 app.use(i18n);
 
-app.config.errorHandler = (err, _instance, info) => {
+function reportError(err: unknown, info: string): void {
   logger.error('Error', `${err}`, info);
   try {
     const ui = useUIStore();
@@ -43,7 +43,29 @@ app.config.errorHandler = (err, _instance, info) => {
   } catch {
     // UI store may not be ready
   }
+}
+
+app.config.errorHandler = (err, _instance, info) => {
+  reportError(err, info);
 };
+
+// IPC invokes now reject (instead of resolving to `undefined`), so any caller
+// that did not wrap the await would otherwise fail silently. Surface it — but
+// throttle repeats so a periodic fire-and-forget call cannot spam toasts.
+const reportedRejections = new Map<string, number>();
+const REJECTION_TOAST_THROTTLE_MS = 10_000;
+window.addEventListener('unhandledrejection', (event) => {
+  const message = (event.reason as Error)?.message || String(event.reason);
+  logger.error('Error', `unhandledrejection: ${message}`);
+  const now = Date.now();
+  if (now - (reportedRejections.get(message) ?? 0) < REJECTION_TOAST_THROTTLE_MS) return;
+  reportedRejections.set(message, now);
+  try {
+    useUIStore().notify('error', i18n.global.t('app.error'), message);
+  } catch {
+    // UI store may not be ready
+  }
+});
 
 // Each view is its own chunk; warm the two most visited ones while the app is
 // idle so the first navigation is instant instead of showing the loader.

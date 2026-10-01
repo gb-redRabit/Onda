@@ -33,6 +33,7 @@ const { t } = useI18n();
   <div class="flex items-center gap-1 shrink-0">
     <button
       v-if="task.status === 'completed' && task.outputPath"
+      data-testid="download-action-play"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-base-content/10 transition-colors"
       :title="t('downloads.play')"
       @click="emit('play')"
@@ -74,6 +75,7 @@ const { t } = useI18n();
     </button>
     <button
       v-if="task.status === 'downloading'"
+      data-testid="download-action-pause"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
       :title="t('downloads.pause')"
       @click="yt.pauseDownload(task.id)"
@@ -82,6 +84,7 @@ const { t } = useI18n();
     </button>
     <button
       v-if="task.status === 'paused'"
+      data-testid="download-action-resume"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-base-content/10 transition-colors"
       :title="t('downloads.resume')"
       @click="yt.resumeDownload(task.id)"
@@ -114,6 +117,7 @@ const { t } = useI18n();
     </button>
     <button
       v-if="task.status === 'downloading' || task.status === 'pending'"
+      data-testid="download-action-cancel"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-error hover:bg-base-content/10 transition-colors"
       :title="t('downloads.cancel')"
       @click="yt.cancelDownload(task.id)"
@@ -122,6 +126,7 @@ const { t } = useI18n();
     </button>
     <button
       v-if="task.status === 'paused'"
+      data-testid="download-action-cancel"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-error hover:bg-base-content/10 transition-colors"
       :title="t('downloads.cancel')"
       @click="yt.cancelDownload(task.id)"
@@ -130,6 +135,7 @@ const { t } = useI18n();
     </button>
     <button
       v-if="task.status === 'error' || task.status === 'cancelled'"
+      data-testid="download-action-retry"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
       :title="t('downloads.retry')"
       @click="yt.retryDownload(task)"

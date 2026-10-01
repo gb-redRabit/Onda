@@ -92,7 +92,7 @@ const trackCount = computed(() => saved.tracks.length);
 </script>
 
 <template>
-  <div class="flex flex-col h-full">
+  <div data-testid="webcast-view" class="flex flex-col h-full">
     <PageHeader :title="$t('saved.title')" :icon="RadioTower" sticky>
       <div class="ui-segmented" role="tablist" :aria-label="$t('saved.title')">
         <button

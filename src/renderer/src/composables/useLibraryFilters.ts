@@ -1,6 +1,6 @@
 import { ref, computed, watch, onUnmounted } from 'vue';
 import type { useLibraryStore } from '@renderer/stores/library';
-import { buildSearchIndex, filterSearchIndex } from '@renderer/utils/librarySearch';
+import { buildSearchIndex, filterSearchIndex, searchableTerms } from '@renderer/utils/librarySearch';
 
 export function useLibraryFilters(library: ReturnType<typeof useLibraryStore>) {
   const query = ref('');
@@ -26,7 +26,9 @@ export function useLibraryFilters(library: ReturnType<typeof useLibraryStore>) {
   const videoIndex = computed(() =>
     buildSearchIndex(library.videoTracks, (track) => searchableTerms(track))
   );
-  const imageIndex = computed(() => buildSearchIndex(library.imageTracks, (track) => [track.name]));
+  const imageIndex = computed(() =>
+    buildSearchIndex(library.imageTracks, (track) => searchableTerms(track))
+  );
   const allPlayableIndex = computed(() =>
     buildSearchIndex(
       library.tracks.filter((track) => track.type !== 'image'),
@@ -89,18 +91,4 @@ export function useLibraryFilters(library: ReturnType<typeof useLibraryStore>) {
     filteredArtists,
     filteredAlbums
   };
-}
-
-function searchableTerms(track: {
-  name: string;
-  path: string;
-  metadata?: { title?: string; artist?: string; album?: string };
-}): Array<string | undefined> {
-  return [
-    track.name,
-    track.path,
-    track.metadata?.title,
-    track.metadata?.artist,
-    track.metadata?.album
-  ];
 }

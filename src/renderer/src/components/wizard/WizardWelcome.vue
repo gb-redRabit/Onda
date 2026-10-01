@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import WizardStep from './WizardStep.vue';
 import { HardDrive, Radio, Palette, PictureInPicture } from '@lucide/vue';
 
 const features = [
@@ -11,8 +12,7 @@ const features = [
 
 <template>
   <div>
-    <h3 class="text-lg font-bold tracking-tight mb-1.5">{{ $t('wizard.title') }}</h3>
-    <p class="text-sm text-base-content/70">{{ $t('wizard.welcomeIntro') }}</p>
+    <WizardStep :title="$t('wizard.title')" :description="$t('wizard.welcomeIntro')" />
 
     <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div

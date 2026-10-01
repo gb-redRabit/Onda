@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import WizardStep from './WizardStep.vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { BUILTIN_THEMES, BUILTIN_THEME_NAMES } from '@shared/builtin-themes';
 
@@ -7,8 +8,7 @@ const settings = useSettingsStore();
 
 <template>
   <div>
-    <h3 class="text-lg font-bold tracking-tight mb-1.5">{{ $t('wizard.appearanceTitle') }}</h3>
-    <p class="text-sm text-base-content/70">{{ $t('wizard.appearanceDesc') }}</p>
+    <WizardStep :title="$t('wizard.appearanceTitle')" :description="$t('wizard.appearanceDesc')" />
 
     <div class="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-2.5">
       <button

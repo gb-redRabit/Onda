@@ -126,7 +126,7 @@ function measureDownloadRow(node: Element | ComponentPublicInstance | null): voi
 </script>
 
 <template>
-  <div class="flex flex-col h-full">
+  <div data-testid="downloads-view" class="flex flex-col h-full">
     <DownloadToolbar
       :active-count="active.length"
       :paused-count="pausedCount"

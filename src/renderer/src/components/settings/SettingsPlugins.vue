@@ -16,6 +16,7 @@ import {
 import { usePluginsStore } from '@renderer/stores/plugins';
 import type { PluginUiInfo } from '@renderer/stores/plugins';
 import { useUIStore } from '@renderer/stores/ui';
+import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
 import type { PluginPermissions, PluginSettingField } from '@shared/types/ipc';
 import PluginsGuide from '@renderer/components/settings/PluginsGuide.vue';
 import PluginPermissionDialog from '@renderer/components/settings/PluginPermissionDialog.vue';
@@ -45,13 +46,13 @@ const statusLabel = (status: string): string => {
 const statusClass = (status: string): string => {
   switch (status) {
     case 'loaded':
-      return 'badge-success';
+      return 'bg-success/15 text-success';
     case 'error':
-      return 'badge-error';
+      return 'bg-error/15 text-error';
     case 'loading':
-      return 'badge-info';
+      return 'bg-info/15 text-info';
     default:
-      return 'badge-ghost';
+      return 'bg-base-content/10 text-base-content/60';
   }
 };
 
@@ -205,7 +206,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
             <span
               v-for="capability in capabilityLabels(ex.permissions)"
               :key="capability"
-              class="badge badge-xs badge-ghost"
+              class="inline-flex items-center px-1.5 py-0.5 rounded-selector bg-base-content/10 text-base-content/60 text-[10px] font-medium"
               >{{ capability }}</span
             >
           </div>
@@ -278,7 +279,10 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
               {{ p.author ? `${p.author} · ` : '' }}{{ p.description || p.id }}
             </div>
             <div class="flex items-center gap-2 mt-2">
-              <span class="badge badge-sm" :class="statusClass(p.status)">
+              <span
+                class="inline-flex items-center px-2 py-0.5 rounded-selector text-[11px] font-medium"
+                :class="statusClass(p.status)"
+              >
                 {{ statusLabel(p.status) }}
               </span>
               <span
@@ -288,11 +292,16 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
                 <Check :size="11" />
                 {{ t('plugins.enabled') }}
               </span>
-              <span v-if="p.permissionReviewRequired" class="badge badge-sm badge-warning">{{
-                t('plugins.permissionReviewRequired')
-              }}</span>
+              <span
+                v-if="p.permissionReviewRequired"
+                class="inline-flex items-center px-2 py-0.5 rounded-selector text-[11px] font-medium bg-warning/15 text-warning"
+                >{{ t('plugins.permissionReviewRequired') }}</span
+              >
             </div>
-            <div v-if="p.status === 'error' && p.error" class="text-xs text-error mt-1 break-words">
+            <div
+              v-if="p.status === 'error' && p.error"
+              class="text-xs text-error mt-1 wrap-break-word"
+            >
               {{ p.error }}
             </div>
           </div>
@@ -356,14 +365,16 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
             <input
               v-if="field.type === 'text'"
               type="text"
-              class="setting-input"
+              :data-testid="`plugin-setting-${p.id}-${field.key}`"
+              class="w-40 px-2 py-1 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-xs focus:border-primary focus:outline-none"
               :value="String(settingsValue(p.id, field) ?? '')"
               @change="onSettingChange(p.id, field.key, ($event.target as HTMLInputElement).value)"
             />
             <input
               v-else-if="field.type === 'number'"
               type="number"
-              class="setting-input w-24"
+              :data-testid="`plugin-setting-${p.id}-${field.key}`"
+              class="w-24 px-2 py-1 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-xs focus:border-primary focus:outline-none"
               :min="field.min"
               :max="field.max"
               :value="Number(settingsValue(p.id, field))"
@@ -371,14 +382,11 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
                 onSettingChange(p.id, field.key, Number(($event.target as HTMLInputElement).value))
               "
             />
-            <input
+            <SettingsToggle
               v-else
-              type="checkbox"
-              class="toggle toggle-sm"
-              :checked="settingsValue(p.id, field) === true"
-              @change="
-                onSettingChange(p.id, field.key, ($event.target as HTMLInputElement).checked)
-              "
+              :data-testid="`plugin-setting-${p.id}-${field.key}`"
+              :model-value="settingsValue(p.id, field) === true"
+              @update:model-value="onSettingChange(p.id, field.key, $event)"
             />
           </div>
         </div>

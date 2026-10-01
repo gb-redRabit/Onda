@@ -8,7 +8,12 @@
 //   - download-schedule.ts   — scheduled start
 //   - download-actions.ts    — queue mutations + restore/add
 
-export { setDownloadEmit, setDownloadCompletedHandler, flushQueueNow } from './download-state';
+export {
+  setDownloadEmit,
+  setDownloadCompletedHandler,
+  setSourceItemDownloadedHandler,
+  flushQueueNow
+} from './download-state';
 
 export {
   addDownloadJobs,

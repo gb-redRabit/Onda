@@ -16,6 +16,7 @@ export interface OndaAPI {
   // video PiP
   pipStart: BoundIpcMethod<'pip:start'>;
   pipStop: BoundIpcMethod<'pip:stop'>;
+  pipRestore: BoundIpcMethod<'pip:restore'>;
   pipPreviewStart: BoundIpcMethod<'pip:previewStart'>;
   pipPreviewStop: BoundIpcMethod<'pip:previewStop'>;
   pipPreviewUpdate: BoundIpcMethod<'pip:previewUpdate'>;
@@ -70,7 +71,6 @@ export interface OndaAPI {
   musicbrainzLookupRelease: BoundIpcMethod<'musicbrainz:lookupRelease'>;
   musicbrainzGetCoverData: BoundIpcMethod<'musicbrainz:getCoverData'>;
   musicbrainzAutodetect: BoundIpcMethod<'musicbrainz:autodetect'>;
-  musicbrainzBatchApply: BoundIpcMethod<'musicbrainz:batchApply'>;
   listEmbeddedSubtitles: BoundIpcMethod<'subtitles:listEmbedded'>;
   extractEmbeddedSubtitle: BoundIpcMethod<'subtitles:extractEmbedded'>;
   findExternalSubtitles: BoundIpcMethod<'subtitles:findExternal'>;

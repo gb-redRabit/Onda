@@ -1,5 +1,6 @@
 import { stat, readFile, writeFile, mkdir, unlink } from 'fs/promises';
 import { join, extname } from 'path';
+import { BrowserWindow } from 'electron';
 import { parseFile } from 'music-metadata';
 import sharp from 'sharp';
 import os from 'os';
@@ -122,7 +123,7 @@ async function extractAudioCover(filePath: string): Promise<string | null> {
     }
   } catch (e) {
     if (isEnoent(e)) {
-      missingCache.set(filePath, Date.now());
+      rememberMissing(filePath);
       notifyMissing(filePath);
       logger.info('cover', `file missing, skip cover for ${filePath}`);
       return null;
@@ -199,10 +200,25 @@ function waitForCoverLock(filePath: string): Promise<void> {
 
 const missingCache = new Map<string, number>();
 const MISSING_TTL = 5 * 60 * 1000;
+/**
+ * The TTL only decided when a miss was *honoured*; the entries themselves were
+ * never dropped, so a long session scanning a library with many moved or deleted
+ * files grew this map for as long as the app stayed in the tray.
+ */
+const MISSING_MAX = 2000;
+
+function rememberMissing(filePath: string): void {
+  // Insertion order is oldest-first, so the head is the entry to drop.
+  missingCache.set(filePath, Date.now());
+  while (missingCache.size > MISSING_MAX) {
+    const oldest = missingCache.keys().next();
+    if (oldest.done) break;
+    missingCache.delete(oldest.value);
+  }
+}
 
 function notifyMissing(filePath: string) {
   try {
-    const { BrowserWindow } = require('electron') as typeof import('electron');
     for (const w of BrowserWindow.getAllWindows()) {
       if (!w.isDestroyed()) w.webContents.send('library:fileMissing', filePath);
     }
@@ -220,7 +236,7 @@ export async function extractAndCacheCover(
     await stat(filePath);
   } catch (e) {
     if (isEnoent(e)) {
-      missingCache.set(filePath, Date.now());
+      rememberMissing(filePath);
       notifyMissing(filePath);
       logger.info('cover', `file missing, skip cover for ${filePath}`);
       return { type: null, data: null };

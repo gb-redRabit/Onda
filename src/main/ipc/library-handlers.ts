@@ -1,14 +1,19 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron';
 import { stat, writeFile } from 'fs/promises';
 import { isAbsolute, basename } from 'path';
-import type { MediaFile, Playlist } from '../../renderer/src/types/media';
+import type { MediaFile, Playlist } from '../../shared/types/media';
 import { getStore } from './cover-cache';
 import { logger } from '../../shared/logger';
-import { setAllowedRoots } from '../media-server';
-import { scanDir, classifyFolderType, filterFilesForFolderType } from './library-scan';
+import { setAllowedRoots } from '../media/media-server';
+import {
+  scanDir,
+  classifyFolderType,
+  filterFilesForFolderType,
+  createScanBudget
+} from './library-scan';
 import { broadcastToAllWindows } from '../utils/broadcast';
 import { startLibraryWatcher, setLibraryWatcherScan } from './library-watcher';
-import { loadLibraryScanned, setLibraryScanned, scheduleLibraryScannedSave } from './library-store';
+import { loadLibraryScanned, setLibraryScanned, updateLibraryStats } from './library-store';
 
 const MAX_SCAN_FOLDERS = 100;
 const MAX_SCANNED_FILES = 50000;
@@ -52,6 +57,8 @@ export type LibraryScanResult = {
   count: number;
   folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
   aborted: boolean;
+  /** True when the file ceiling stopped the walk, so the library is partial. */
+  truncated: boolean;
 };
 
 async function runLibraryScan(
@@ -60,6 +67,10 @@ async function runLibraryScan(
   onProgress?: (current: number, total: number) => void,
   broadcast = false
 ): Promise<LibraryScanResult> {
+  // The budget is shared across folders, so the ceiling is on the whole scan
+  // and the walk stops where the ceiling is reached instead of reading
+  // everything and dropping most of it afterwards.
+  const budget = createScanBudget(MAX_SCANNED_FILES);
   const folderResults: Array<{
     folderType: 'audio' | 'video' | 'image' | 'mixed';
     files: MediaFile[];
@@ -92,7 +103,7 @@ async function runLibraryScan(
         folderResults.push(null);
         continue;
       }
-      const result = await scanDir(folderPath, 8, 0, signal, previous);
+      const result = await scanDir(folderPath, 8, 0, signal, previous, budget);
       const folderType = classifyFolderType(result);
       folderResults.push({
         folderType,
@@ -113,9 +124,6 @@ async function runLibraryScan(
     allFiles.push(...r.files);
   }
 
-  // Hard cap so a renderer cannot flood the store with an unbounded scan.
-  if (allFiles.length > MAX_SCANNED_FILES) allFiles.length = MAX_SCANNED_FILES;
-
   // Only persist if the scan completed (not aborted/cancelled).  Aborting
   // mid-scan would write an incomplete list and effectively wipe the library.
   if (!signal.aborted) {
@@ -123,8 +131,23 @@ async function runLibraryScan(
     if (broadcast) broadcastToAllWindows('library:updated');
   }
 
+  if (budget.truncated) {
+    // Silently dropping the rest would look like data loss, or like the library
+    // forgot files. Say so instead — the user can raise the limit or split the
+    // folder.
+    logger.warn(
+      'library',
+      `scan hit the ${MAX_SCANNED_FILES} file ceiling — the library is incomplete`
+    );
+  }
+
   logger.info('library', `scan completed: ${allFiles.length} files`);
-  return { count: allFiles.length, folderTypes, aborted: signal.aborted };
+  return {
+    count: allFiles.length,
+    folderTypes,
+    aborted: signal.aborted,
+    truncated: budget.truncated
+  };
 }
 
 export function registerLibraryHandlers(): void {
@@ -151,7 +174,7 @@ export function registerLibraryHandlers(): void {
         });
       } catch (err) {
         logger.error('library', 'scan handler failed', err);
-        return { count: 0, folderTypes: {}, aborted: false };
+        return { count: 0, folderTypes: {}, aborted: false, truncated: false };
       } finally {
         releaseScanController(controller);
       }
@@ -189,15 +212,28 @@ export function registerLibraryHandlers(): void {
   });
 
   ipcMain.handle(
-    'library:loadScanned',
-    async (): Promise<{
+    'library:loadScannedChunk',
+    async (
+      _event,
+      offset: unknown,
+      limit: unknown
+    ): Promise<{
       files: MediaFile[];
+      total: number;
       folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
     } | null> => {
       try {
-        return await loadLibraryScanned();
+        const data = await loadLibraryScanned();
+        if (!data) return null;
+        const start = Math.max(0, Math.floor(Number(offset) || 0));
+        const size = Math.min(5000, Math.max(1, Math.floor(Number(limit) || 1000)));
+        return {
+          files: data.files.slice(start, start + size),
+          total: data.files.length,
+          folderTypes: data.folderTypes
+        };
       } catch (err) {
-        logger.error('library', 'loadScanned failed', err);
+        logger.error('library', 'loadScannedChunk failed', err);
         return null;
       }
     }
@@ -234,19 +270,10 @@ export function registerLibraryHandlers(): void {
       try {
         const data = await loadLibraryScanned();
         if (!data || !Array.isArray(data.files)) return;
-        const byPath = new Map(clean.map((s) => [s.path, s]));
-        let changed = false;
-        for (const file of data.files) {
-          const s = byPath.get(file.path);
-          if (s) {
-            file.playCount = s.playCount;
-            if (typeof s.lastPlayed === 'number') {
-              file.lastPlayed = s.lastPlayed;
-            }
-            changed = true;
-          }
-        }
-        if (changed) scheduleLibraryScannedSave();
+        // Writes only the changed entries to library-stats.json. Scheduling a full
+        // library write here meant serialising every file on the main thread
+        // each time a track finished.
+        updateLibraryStats(clean);
       } catch (err) {
         logger.error('library', 'updateStats failed', err);
       }

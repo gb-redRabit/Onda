@@ -21,24 +21,11 @@ export interface Notification {
 }
 
 export const useUIStore = defineStore('ui', () => {
-  const topMenuVisible = ref(true);
-  const statusBarVisible = ref(true);
-  const playerBarVisible = ref(true);
-  const settingsVisible = ref(false);
-  const currentView = ref('home');
-  const isFullscreen = ref(false);
   const searchMode = ref<'closed' | 'view' | 'global'>('closed');
   const searchQuery = ref('');
   const setupWizardVisible = ref(false);
   const contextMenu = ref<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const notifications = ref<Notification[]>([]);
-
-  function toggleTopMenu() {
-    topMenuVisible.value = !topMenuVisible.value;
-  }
-  function toggleStatusBar() {
-    statusBarVisible.value = !statusBarVisible.value;
-  }
 
   function toggleGlobalSearch() {
     searchMode.value = searchMode.value === 'global' ? 'closed' : 'global';
@@ -68,10 +55,6 @@ export const useUIStore = defineStore('ui', () => {
     setupWizardVisible.value = false;
   }
 
-  function setView(view: string) {
-    currentView.value = view;
-  }
-
   function showContextMenu(x: number, y: number, items: ContextMenuItem[]) {
     contextMenu.value = { x, y, items };
   }
@@ -99,19 +82,11 @@ export const useUIStore = defineStore('ui', () => {
   }
 
   return {
-    topMenuVisible,
-    statusBarVisible,
-    playerBarVisible,
-    settingsVisible,
-    currentView,
-    isFullscreen,
     searchMode,
     searchQuery,
     setupWizardVisible,
     contextMenu,
     notifications,
-    toggleTopMenu,
-    toggleStatusBar,
     toggleGlobalSearch,
     toggleViewSearch,
     openSearch,
@@ -119,7 +94,6 @@ export const useUIStore = defineStore('ui', () => {
     setSearchQuery,
     openSetupWizard,
     closeSetupWizard,
-    setView,
     showContextMenu,
     hideContextMenu,
     notify,

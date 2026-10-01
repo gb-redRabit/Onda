@@ -1,4 +1,4 @@
-import type { YoutubeAuthMethod } from '../../../renderer/src/types/settings';
+import type { YoutubeAuthMethod } from '../settings';
 
 export interface YoutubeAuthStatus {
   method: YoutubeAuthMethod;

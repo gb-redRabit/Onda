@@ -29,6 +29,10 @@
   --radius-selector: 0.5rem;
   --size-field: 0.25rem;
   --size-selector: 0.25rem;
+
+  /* Semantic extras used by existing components (tokens were previously undefined). */
+  --color-border-default: color-mix(in srgb, var(--color-base-content) 22%, transparent);
+  --color-elevated: var(--color-base-100);
 }
 
 :root {
@@ -227,9 +231,6 @@ input[type='checkbox'] {
   flex-shrink: 0;
 }
 
-.h-field-sm {
-  height: calc(var(--size-field) - 4px);
-}
 .h-field {
   height: var(--size-field);
 }
@@ -241,8 +242,10 @@ input[type='checkbox'] {
   border-width: var(--border);
 }
 
-[class*='bg-base-200/[var(--glass-alpha]']:not(.app-root),
-[class*='bg-base-100/[var(--glass-alpha]']:not(.app-root) {
+/* Matches both the bracket form `bg-base-100/[var(--glass-alpha)]` and the
+   shorthand `bg-base-100/(--glass-alpha)`, so every glass surface blurs. */
+[class*='(--glass-alpha)']:not(.app-root),
+[class*='[var(--glass-alpha]']:not(.app-root) {
   backdrop-filter: blur(var(--glass-blur));
 }
 .app-root {
@@ -308,21 +311,6 @@ input[type='checkbox'] {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-}
-
-.settings-enter-active,
-.settings-leave-active {
-  transition:
-    opacity 0.18s ease,
-    transform 0.18s ease;
-}
-.settings-enter-from {
-  opacity: 0;
-  transform: translateY(8px);
-}
-.settings-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
 }
 
 @keyframes download-blink {

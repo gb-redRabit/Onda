@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import AudioVisualizer from './AudioVisualizer.vue';
 import AudioCover from './AudioCover.vue';
-import AudioTrackInfo from './AudioTrackInfo.vue';
+import TrackInfo from '../TrackInfo.vue';
 import AudioProgressBar from './AudioProgressBar.vue';
 import AudioControls from './AudioControls.vue';
 import { usePluginsStore } from '@renderer/stores/plugins';
+import { usePlayerStore } from '@renderer/stores/player';
 import { resolveElementDecoration } from '@renderer/utils/audioView';
 import { elementStyle } from '@renderer/utils/audioElementStyle';
 import type { AudioLayoutElement } from '@renderer/types/settings';
@@ -25,6 +26,7 @@ const emit = defineEmits<{
 }>();
 
 const pluginsStore = usePluginsStore();
+const player = usePlayerStore();
 
 function elementDecoration(el: AudioLayoutElement): string | undefined {
   return resolveElementDecoration(el, pluginsStore.decorations);
@@ -71,7 +73,12 @@ function styleFor(el: AudioLayoutElement) {
         :class="{ 'opacity-0 pointer-events-none': props.isFullscreen && !props.uiVisible }"
         @mousedown="emit('element-mousedown', $event, el)"
       >
-        <AudioTrackInfo :variant="el.variant ?? 'classic'" />
+        <TrackInfo
+          :track="player.currentTrack"
+          variant="audio"
+          :audio-variant="el.variant ?? 'classic'"
+          show-favorite
+        />
       </div>
     </template>
 

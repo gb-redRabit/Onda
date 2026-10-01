@@ -13,7 +13,7 @@ defineProps<{ title?: string; description?: string; id?: string }>();
       {{ title }}
     </h3>
     <p v-if="description" class="pt-3 text-xs text-base-content/50">{{ description }}</p>
-    <div class="divide-y divide-base-300/60">
+    <div class="divide-y divide-base-300/60 py-2">
       <slot />
     </div>
   </section>

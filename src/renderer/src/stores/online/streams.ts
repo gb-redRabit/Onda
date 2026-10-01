@@ -91,24 +91,26 @@ export function createOnlineStreams() {
             player.enrichTrack(track);
           }
         }
-        // Rebuild the queue in the original order, dropping tracks that already
-        // played (history) or are currently playing.
-        const consumed = new Set(player.history.map((h) => h.path));
-        const current = player.currentTrack;
-        const queued = ordered
-          .map((t, i) => ({ t, i }))
-          .filter(
-            ({ t }) => t !== null && (!current || t.id !== current.id) && !consumed.has(t.path)
-          )
-          .sort((a, b) => a.i - b.i)
-          .map(({ t }) => t!);
-        player.clearQueue();
-        player.addToQueueMultiple(queued);
       }
     };
     await Promise.all(
       Array.from({ length: Math.min(MAX_CONCURRENT, items.length) }, () => worker())
     );
+
+    // Rebuild the queue once, in the original order, dropping tracks that already
+    // played (history) or are currently playing. Doing this per resolved item was
+    // O(n²) and let concurrent workers expose half-built queue states.
+    {
+      const consumed = new Set(player.history.map((h) => h.path));
+      const current = player.currentTrack;
+      const queued = ordered
+        .map((t, i) => ({ t, i }))
+        .filter(({ t }) => t !== null && (!current || t.id !== current.id) && !consumed.has(t.path))
+        .sort((a, b) => a.i - b.i)
+        .map(({ t }) => t!);
+      player.clearQueue();
+      player.addToQueueMultiple(queued);
+    }
     if (failures > 0) {
       useUIStore().notify(
         'warning',

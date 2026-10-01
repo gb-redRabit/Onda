@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import type { MediaFile } from '@renderer/types/media';
 import type { DirChildMeta } from '@renderer/utils/dirNode';
 import { useLibraryContextMenu } from '@renderer/composables/useLibraryContextMenu';
+import { pluralCategory } from '@renderer/utils/plural';
 import LibraryFolderTile from './LibraryFolderTile.vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
 
@@ -24,6 +26,19 @@ const { showImageMenu, showTrackMenu } = useLibraryContextMenu();
 function folderTracksFor(name: string, meta: Record<string, DirChildMeta>) {
   return (meta[name]?.audio ?? []).slice(0, 4);
 }
+
+/** Polish has three plural forms, so the caller picks one. See utils/plural.ts. */
+function fileCountLabel(count: number): string {
+  const { locale, t } = useI18n();
+  const category = pluralCategory(locale.value, count);
+  const key =
+    category === 'one'
+      ? 'library.fileCountOne'
+      : category === 'few'
+        ? 'library.fileCountFew'
+        : 'library.fileCountMany';
+  return t(key, { count });
+}
 </script>
 
 <template>
@@ -37,7 +52,9 @@ function folderTracksFor(name: string, meta: Record<string, DirChildMeta>) {
     >
       <LibraryFolderTile :tracks="folderTracksFor(sub, meta)" />
       <span class="text-xs font-medium truncate w-full">{{ sub }}</span>
-      <span class="text-[11px] text-base-content/50">{{ meta[sub]?.audioCount ?? 0 }} plików</span>
+      <span class="text-[11px] text-base-content/50">{{
+        fileCountLabel(meta[sub]?.audioCount ?? 0)
+      }}</span>
     </button>
     <button
       v-for="tr in files"

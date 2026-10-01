@@ -128,7 +128,7 @@ useDialogFocus(panelRef, {
       aria-modal="true"
       aria-labelledby="radio-add-dialog-title"
       tabindex="-1"
-      class="w-[520px] max-h-[80vh] overflow-y-auto rounded-box bg-base-100 border border-base-300 p-5 space-y-5"
+      class="w-130 max-w-[92vw] max-h-[80vh] overflow-y-auto rounded-box bg-base-100 border border-base-300 p-5 space-y-5"
     >
       <h2 id="radio-add-dialog-title" class="text-sm font-semibold text-base-content">
         {{ $t('saved.addRadio') }}
@@ -163,7 +163,7 @@ useDialogFocus(panelRef, {
         <div v-if="fileStations.length > 0" class="space-y-1 max-h-48 overflow-y-auto pr-1">
           <label
             v-for="(s, i) in fileStations"
-            :key="i"
+            :key="`${s.url}\u0000${i}`"
             class="flex items-center gap-2 p-2 rounded-field hover:bg-base-content/10 cursor-pointer"
           >
             <input

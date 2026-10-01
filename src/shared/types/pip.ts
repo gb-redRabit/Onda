@@ -1,9 +1,3 @@
-/** @deprecated Używane tylko do migracji starych ustawień. */
-export type PipMode = 'minimal' | 'medium' | 'max' | 'wide';
-/** @deprecated Używane tylko do migracji starych ustawień. */
-export type PipPosition =
-  'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'top' | 'bottom' | 'left' | 'right';
-
 /** Dokowanie adaptacyjnego PiP audio: 4 rogi + 4 krawędzie (pełna długość). */
 export type AudioPipDock =
   'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
@@ -13,6 +7,14 @@ export type AudioPipElementId =
   'cover' | 'trackInfo' | 'controls' | 'progress' | 'volume' | 'viz' | 'nextTrack' | 'eq';
 
 export type AudioPipLayoutKind = 'card' | 'bar-h' | 'bar-v';
+
+/** Opcje układu PiP audio. Wszystkie pola opcjonalne — brak oznacza „bez zmian”. */
+export interface AudioPipLayoutOpts {
+  dock?: AudioPipDock;
+  cornerElements?: AudioPipElementId[];
+  edgeElements?: AudioPipElementId[];
+  autoHide?: boolean;
+}
 
 export function isAudioPipEdgeDock(dock: AudioPipDock): boolean {
   return dock === 'top' || dock === 'bottom' || dock === 'left' || dock === 'right';

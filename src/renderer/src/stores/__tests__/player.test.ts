@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { usePlayerStore } from '../player';
+import { useSettingsStore } from '../settings';
 import { useLibraryStore } from '../library';
 import type { MediaFile } from '@renderer/types/media';
 
@@ -49,6 +50,31 @@ describe('setTrack', () => {
       store.setTrack(makeTrack(String(i)));
     }
     expect(store.history.length).toBeLessThanOrEqual(100);
+  });
+
+  it('does not request a resume by default', () => {
+    const store = usePlayerStore();
+    const t = makeTrack('1');
+    store.setTrack(t);
+    expect(store.consumeResumeIntent(t.path)).toBe(false);
+  });
+
+  it('requests a resume once when setTrack is told to', () => {
+    const store = usePlayerStore();
+    const t = makeTrack('1');
+    store.setTrack(t, { resume: true });
+    expect(store.consumeResumeIntent(t.path)).toBe(true);
+    // One-shot: the next consumer must not see it.
+    expect(store.consumeResumeIntent(t.path)).toBe(false);
+  });
+
+  it('never leaks a resume intent onto another track', () => {
+    const store = usePlayerStore();
+    const t1 = makeTrack('1');
+    const t2 = makeTrack('2');
+    store.setTrack(t1, { resume: true });
+    expect(store.consumeResumeIntent(t2.path)).toBe(false);
+    expect(store.consumeResumeIntent(t1.path)).toBe(true);
   });
 });
 
@@ -160,11 +186,11 @@ describe('queue management', () => {
     expect(store.pendingQueue).toHaveLength(0);
   });
 
-  it('flushPendingQueue enriches pending items (does not move them)', () => {
+  it('enrichPendingQueue enriches pending items (does not move them)', () => {
     const store = usePlayerStore();
     const p = makeTrack('p1');
     store.pendingQueue.push(p);
-    store.flushPendingQueue();
+    store.enrichPendingQueue();
     expect(store.pendingQueue).toHaveLength(1);
   });
 
@@ -307,10 +333,13 @@ describe('playFromHistory', () => {
 
 describe('favorites', () => {
   it('isFavorite returns true if path is in favorites', () => {
+    // Favourites are owned by the settings store; the player store exposes a
+    // live read-only view of them, which is all the views use.
+    useSettingsStore().favorites = ['/path/to/song.mp3'];
     const store = usePlayerStore();
-    store.favorites = ['/path/to/song.mp3'];
     expect(store.isFavorite('/path/to/song.mp3')).toBe(true);
     expect(store.isFavorite('/other.mp3')).toBe(false);
+    expect(store.favorites).toEqual(['/path/to/song.mp3']);
   });
 
   it('toggleFavorite adds and removes paths', async () => {
@@ -322,12 +351,25 @@ describe('favorites', () => {
     expect(store.favorites).not.toContain(path);
   });
 
-  it('toggleFavorite persists via saveFavorites (invokes settings:set)', async () => {
+  it('toggleFavorite persists through the settings store, not a second writer', async () => {
     const store = usePlayerStore();
     await store.toggleFavorite('/x.mp3');
-    expect((window as any).api.invoke).toHaveBeenCalledWith('settings:set', {
+    // Favourites are a setting, so the write goes through the same debounced
+    // persistence as everything else. A direct `settings:set` here was a second
+    // writer for one key, invisible to a factory reset or an imported profile.
+    expect((window as any).api.invoke).not.toHaveBeenCalledWith('settings:set', {
       favorites: ['/x.mp3']
     });
+    const settings = useSettingsStore();
+    expect(settings.favorites).toContain('/x.mp3');
+  });
+
+  it('a factory reset clears favourites with everything else', () => {
+    // The reason there is one writer: the reset path now reaches favourites.
+    const settings = useSettingsStore();
+    settings.favorites = ['/keep.mp3'];
+    settings.resetToDefaults();
+    expect(settings.favorites).toEqual([]);
   });
 });
 

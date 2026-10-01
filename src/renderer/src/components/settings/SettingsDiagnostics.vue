@@ -6,9 +6,12 @@ import type {
   AppInfo,
   DepSource,
   DepToolPaths,
+  IpcPerfSnapshot,
   IpcWarningEntry
 } from '@shared/types/ipc';
 import { logger } from '@shared/logger';
+import { formatBytes } from '@shared/formatBytes';
+import { getRendererBootMetrics } from '@renderer/utils/bootMetrics';
 import { useUIStore } from '@renderer/stores/ui';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
 import { Download, RefreshCw, RotateCcw, Trash2 } from '@lucide/vue';
@@ -35,21 +38,31 @@ const cacheBusy = ref(false);
 const lastClear = ref<AppCacheClearResult | null>(null);
 const resetBusy = ref(false);
 const resetting = ref(false);
+const perf = ref<IpcPerfSnapshot | null>(null);
+// Captured once: the renderer marks ready at App mount, before this view opens.
+const rendererBoot = getRendererBootMetrics();
+
+function bootBarWidth(ms: number): string {
+  const max = Math.max(1, ...(perf.value?.phases.map((p) => p.ms) ?? [1]));
+  return `${Math.max(2, Math.round((ms / max) * 100))}%`;
+}
 
 onMounted(() => loadAll());
 
 async function loadAll(): Promise<void> {
   try {
-    const [i, l, r, w] = await Promise.all([
+    const [i, l, r, w, p] = await Promise.all([
       window.api?.getAppInfo(),
       window.api?.readLogs(),
       window.api?.getDependencyPaths(),
-      window.api?.getRecentWarnings()
+      window.api?.getRecentWarnings(),
+      window.api?.getPerfSnapshot()
     ]);
     if (i) info.value = i;
     if (l !== undefined) logs.value = l;
     if (r) resolver.value = r;
     if (w) warnings.value = w;
+    if (p) perf.value = p;
   } catch (e) {
     logger.warn('diagnostics', 'load failed', e);
   }
@@ -81,16 +94,10 @@ async function onClear(): Promise<void> {
   if (ok) logs.value = '';
 }
 
-function formatSize(bytes: number): string {
-  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${bytes} B`;
-}
-
 function cacheDetail(result: AppCacheClearResult): string {
   return t('settings.cacheClearedDetail', {
     files: result.filesRemoved,
-    size: formatSize(result.bytesFreed)
+    size: formatBytes(result.bytesFreed)
   });
 }
 
@@ -141,37 +148,37 @@ async function onFactoryReset(): Promise<void> {
     <div class="mb-3 text-sm font-medium">{{ $t('settings.runtimeDetails') }}</div>
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
       <template v-if="info">
-        <div class="p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
           <div class="text-[11px] text-base-content/50 mb-0.5">Electron</div>
           <div class="text-sm font-mono">{{ info.electron }}</div>
         </div>
-        <div class="p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
           <div class="text-[11px] text-base-content/50 mb-0.5">Chrome</div>
           <div class="text-sm font-mono">{{ info.chrome }}</div>
         </div>
-        <div class="p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
           <div class="text-[11px] text-base-content/50 mb-0.5">Node.js</div>
           <div class="text-sm font-mono">{{ info.node }}</div>
         </div>
-        <div class="p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
           <div class="text-[11px] text-base-content/50 mb-0.5">V8</div>
           <div class="text-sm font-mono">{{ info.v8 }}</div>
         </div>
-        <div class="p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
           <div class="text-[11px] text-base-content/50 mb-0.5">{{ $t('settings.os') }}</div>
           <div class="text-sm font-mono truncate" :title="info.os">{{ info.os }}</div>
         </div>
-        <div class="p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
           <div class="text-[11px] text-base-content/50 mb-0.5">{{ $t('settings.platform') }}</div>
           <div class="text-sm font-mono">{{ info.platform }} / {{ info.arch }}</div>
         </div>
-        <div class="p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
           <div class="text-[11px] text-base-content/50 mb-0.5">{{ $t('settings.uptime') }}</div>
           <div class="text-sm font-mono">{{ info.uptime }}s</div>
         </div>
       </template>
       <div
-        class="col-span-2 p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300"
+        class="col-span-2 p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300"
       >
         <div class="text-[11px] text-base-content/50 mb-0.5">
           {{ $t('settings.userDataPath') }}
@@ -179,12 +186,66 @@ async function onFactoryReset(): Promise<void> {
         <div class="text-xs font-mono break-all">{{ info?.userDataPath }}</div>
       </div>
       <div
-        class="col-span-2 p-3 rounded-box bg-base-200/[var(--glass-alpha)] border border-base-300"
+        class="col-span-2 p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300"
       >
         <div class="text-[11px] text-base-content/50 mb-0.5">{{ $t('settings.logPath') }}</div>
         <div class="text-xs font-mono break-all">{{ info?.logPath }}</div>
       </div>
     </div>
+  </SettingsGroup>
+
+  <SettingsGroup>
+    <div class="flex items-baseline justify-between gap-3 mb-3">
+      <div class="text-sm font-medium">{{ $t('settings.perfTitle') }}</div>
+      <div class="text-[11px] text-base-content/50">{{ $t('settings.perfDesc') }}</div>
+    </div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
+        <div class="text-[11px] text-base-content/50 mb-0.5">
+          {{ $t('settings.perfRendererDom') }}
+        </div>
+        <div class="text-sm font-mono">
+          {{ rendererBoot.domContentLoadedMs !== null ? `${rendererBoot.domContentLoadedMs} ms` : '—' }}
+        </div>
+      </div>
+      <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
+        <div class="text-[11px] text-base-content/50 mb-0.5">
+          {{ $t('settings.perfRendererReady') }}
+        </div>
+        <div class="text-sm font-mono">
+          {{ rendererBoot.rendererReadyMs !== null ? `${rendererBoot.rendererReadyMs} ms` : '—' }}
+        </div>
+      </div>
+      <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
+        <div class="text-[11px] text-base-content/50 mb-0.5">
+          {{ $t('settings.perfMainRss') }}
+        </div>
+        <div class="text-sm font-mono">{{ perf ? `${perf.mainRssMb} MB` : '—' }}</div>
+      </div>
+      <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
+        <div class="text-[11px] text-base-content/50 mb-0.5">
+          {{ $t('settings.perfProcesses') }}
+        </div>
+        <div class="text-sm font-mono">{{ perf?.processes.length ?? 0 }}</div>
+      </div>
+    </div>
+    <div v-if="perf && perf.phases.length" class="mt-3 space-y-1">
+      <div class="text-[11px] text-base-content/50 mb-1.5">
+        {{ $t('settings.perfBootTimeline') }}
+      </div>
+      <div v-for="phase in perf.phases" :key="phase.label" class="flex items-center gap-2 text-xs">
+        <span class="font-mono text-base-content/40 w-16 text-right shrink-0 tabular-nums">
+          {{ phase.ms }} ms
+        </span>
+        <span class="flex-1 h-1.5 rounded-full bg-base-content/10 overflow-hidden">
+          <span class="block h-full bg-primary" :style="{ width: bootBarWidth(phase.ms) }" />
+        </span>
+        <span class="text-base-content/70 w-40 truncate shrink-0" :title="phase.label">
+          {{ phase.label }}
+        </span>
+      </div>
+    </div>
+    <div v-else class="text-xs text-base-content/50">{{ $t('settings.perfEmpty') }}</div>
   </SettingsGroup>
 
   <SettingsGroup>
@@ -201,7 +262,7 @@ async function onFactoryReset(): Promise<void> {
         <div class="flex items-center gap-2 min-w-0 pt-0.5">
           <span
             class="w-1.5 h-1.5 rounded-full shrink-0"
-            :class="row.broken ? 'bg-amber-500' : row.path ? 'bg-success' : 'bg-error'"
+            :class="row.broken ? 'bg-warning' : row.path ? 'bg-success' : 'bg-error'"
           />
           <span class="font-medium">{{ row.tool }}</span>
           <span
@@ -213,7 +274,7 @@ async function onFactoryReset(): Promise<void> {
         <div class="text-right min-w-0">
           <div
             v-if="row.broken"
-            class="text-amber-500 font-medium truncate"
+            class="text-warning font-medium truncate"
             :title="row.error ?? ''"
           >
             {{ $t('settings.depBroken')
@@ -248,10 +309,10 @@ async function onFactoryReset(): Promise<void> {
         <span class="font-mono text-[10px] text-base-content/40 shrink-0 pt-0.5">
           {{ formatTime(w.at) }}
         </span>
-        <span class="text-base-content/70 break-words min-w-0">{{ w.text }}</span>
+        <span class="text-base-content/70 wrap-break-word min-w-0">{{ w.text }}</span>
         <span
           v-if="w.count > 1"
-          class="text-[10px] px-1.5 py-0.5 rounded-field bg-amber-500/15 text-amber-500 font-medium shrink-0"
+          class="text-[10px] px-1.5 py-0.5 rounded-field bg-warning/15 text-warning font-medium shrink-0"
         >
           ×{{ w.count }}
         </span>
@@ -269,7 +330,7 @@ async function onFactoryReset(): Promise<void> {
     </div>
     <div class="flex flex-wrap items-center gap-3">
       <button
-        class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-red-500/40 text-error text-xs font-medium hover:bg-error/10 transition-colors disabled:opacity-50"
+        class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-error/40 text-error text-xs font-medium hover:bg-error/10 transition-colors disabled:opacity-50"
         :disabled="cacheBusy"
         @click="onClearCache"
       >
@@ -317,7 +378,7 @@ async function onFactoryReset(): Promise<void> {
       <Download :size="14" />{{ $t('settings.downloadLog') }}
     </button>
     <button
-      class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-red-500/40 text-error text-xs font-medium hover:bg-error/10 transition-colors"
+      class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-error/40 text-error text-xs font-medium hover:bg-error/10 transition-colors"
       @click="onClear"
     >
       <Trash2 :size="14" />{{ $t('settings.clearLog') }}
@@ -326,7 +387,7 @@ async function onFactoryReset(): Promise<void> {
 
   <SettingsGroup :padded="false">
     <pre
-      class="h-64 overflow-auto p-4 text-[11px] leading-relaxed font-mono text-base-content/70 whitespace-pre-wrap break-words"
+      class="h-64 overflow-auto p-4 text-[11px] leading-relaxed font-mono text-base-content/70 whitespace-pre-wrap wrap-break-word"
       >{{ logs || $t('settings.logEmpty') }}</pre>
   </SettingsGroup>
 

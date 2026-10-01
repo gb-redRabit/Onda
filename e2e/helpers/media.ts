@@ -1,6 +1,6 @@
-import { mkdtempSync, writeFileSync } from 'fs';
+import { mkdtempSync, writeFileSync, copyFileSync } from 'fs';
 import { tmpdir } from 'os';
-import { join } from 'path';
+import { join, resolve } from 'path';
 
 // Generates real media fixtures so the scan and the player run against the
 // actual filesystem instead of mocks.
@@ -39,4 +39,23 @@ export function createMediaFixture(): MediaFixture {
   const wavPath = join(dir, 'tone.wav');
   writeFileSync(wavPath, buildToneWav(1, 440, 8000));
   return { dir, wavPath };
+}
+
+// A folder with `count` real PNGs (copies of the app icon) for the image viewer
+// / thumbnail strip stress tests.
+export interface ImageFixture {
+  dir: string;
+  files: string[];
+}
+
+export function createImageFixture(count = 55): ImageFixture {
+  const dir = mkdtempSync(join(tmpdir(), 'onda-images-'));
+  const source = resolve(__dirname, '..', '..', 'resources', 'icon.png');
+  const files: string[] = [];
+  for (let i = 1; i <= count; i++) {
+    const dest = join(dir, `img-${String(i).padStart(3, '0')}.png`);
+    copyFileSync(source, dest);
+    files.push(dest);
+  }
+  return { dir, files };
 }

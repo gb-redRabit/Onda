@@ -42,7 +42,7 @@ function color(type: string) {
     case 'success':
       return 'text-success';
     case 'warning':
-      return 'text-yellow-400';
+      return 'text-warning';
     case 'error':
       return 'text-error';
     default:
@@ -59,6 +59,8 @@ function color(type: string) {
     <div
       v-for="n in filtered"
       :key="n.id"
+      data-testid="toast"
+      :data-toast-type="n.type"
       class="pointer-events-auto flex items-start gap-2.5 px-3 py-2.5 rounded-box bg-neutral border border-neutral-content/20 shadow-xl shadow-black/30 max-w-xs animate-in"
     >
       <component :is="icon(n.type)" :size="16" class="shrink-0 mt-0.5" :class="color(n.type)" />

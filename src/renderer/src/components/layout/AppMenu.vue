@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { FolderOpen, FileAudio, PictureInPicture } from '@lucide/vue';
+import { onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useAppMenu } from '@renderer/composables/useAppMenu';
 import { getPlayerPiPHandler } from '@renderer/composables/playerPiPHandler';
@@ -31,12 +32,63 @@ const {
   t,
   player
 } = useAppMenu();
+
+// A11y: menu-bar keyboard model. Each dropdown is role="menu" with
+// role="menuitem" children; arrows rove focus, Escape closes and returns focus
+// to the trigger, Tab dismisses.
+function menuItems(name: string): HTMLElement[] {
+  const el = document.querySelector<HTMLElement>(`[data-menu="${name}"]`);
+  return el ? Array.from(el.querySelectorAll<HTMLElement>('[role="menuitem"]')) : [];
+}
+function focusTrigger(name: string): void {
+  document.querySelector<HTMLElement>(`[data-menu-trigger="${name}"]`)?.focus();
+}
+async function openMenu(name: string): Promise<void> {
+  openDropdown.value = name;
+  await nextTick();
+  menuItems(name)[0]?.focus();
+}
+function onMenuKeydown(e: KeyboardEvent): void {
+  const name = openDropdown.value;
+  if (!name) return;
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    openDropdown.value = null;
+    focusTrigger(name);
+    return;
+  }
+  if (e.key === 'Tab') {
+    openDropdown.value = null;
+    return;
+  }
+  const items = menuItems(name);
+  if (!items.length) return;
+  const current = items.indexOf(document.activeElement as HTMLElement);
+  let next = current;
+  if (e.key === 'ArrowDown') next = (current + 1 + items.length) % items.length;
+  else if (e.key === 'ArrowUp') next = (current - 1 + items.length) % items.length;
+  else if (e.key === 'Home') next = 0;
+  else if (e.key === 'End') next = items.length - 1;
+  else return;
+  e.preventDefault();
+  items[next]?.focus();
+}
+function restorePip(): void {
+  void window.api?.pipRestore();
+  closeDropdown();
+}
+
+const shortcut = (key: string): string => settings.shortcuts[key] ?? '';
+
+onMounted(() => document.addEventListener('keydown', onMenuKeydown));
+onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
 </script>
 
 <template>
   <div
     data-app-menu
-    class="flex h-9 bg-base-100/(--glass-alpha) border border-b border-base-300 shrink-0 select-none"
+    role="menubar"
+    class="relative z-40 flex h-9 bg-base-100/(--glass-alpha) border border-b border-base-300 shrink-0 select-none"
     style="-webkit-app-region: drag"
   >
     <!-- Logo + static menus -->
@@ -50,16 +102,25 @@ const {
         <button
           class="h-9 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
           :class="{ 'bg-primary/10 text-primary': openDropdown === 'file' }"
+          aria-haspopup="true"
+          :aria-expanded="openDropdown === 'file'"
+          data-menu-trigger="file"
           @click="toggleDropdown('file')"
+          @keydown.down.prevent="openMenu('file')"
           @mouseenter="openDropdown && (openDropdown = 'file')"
         >
           {{ $t('menu.file') }}
         </button>
         <div
           v-if="openDropdown === 'file'"
-          class="absolute top-full left-0 mt-0.5 bg-base-100 border border-base-300 rounded-box shadow-2xl shadow-black/40 py-1.5 min-w-48 z-50"
+          role="menu"
+          data-menu="file"
+          class="absolute top-full left-0 mt-0.5 bg-base-100 border border-base-300 rounded-box shadow-2xl shadow-black/40 py-1.5 min-w-48 z-[70]"
+          @keydown="onMenuKeydown"
         >
           <button
+            role="menuitem"
+            tabindex="-1"
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
             @click="
               openFile();
@@ -67,9 +128,10 @@ const {
             "
           >
             <FileAudio :size="13" /> {{ $t('menu.openFile') }}
-            <span class="ml-auto text-[10px] text-base-content/50 font-mono">Ctrl+O</span>
           </button>
           <button
+            role="menuitem"
+            tabindex="-1"
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
             @click="
               openFolder();
@@ -77,10 +139,11 @@ const {
             "
           >
             <FolderOpen :size="13" /> {{ $t('menu.openFolder') }}
-            <span class="ml-auto text-[10px] text-base-content/50 font-mono">Ctrl+Shift+O</span>
           </button>
           <div class="border-t border-base-300 my-1 mx-2" />
           <button
+            role="menuitem"
+            tabindex="-1"
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors"
             @click="
               quitApp();
@@ -97,16 +160,25 @@ const {
         <button
           class="h-9 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
           :class="{ 'bg-primary/10 text-primary': openDropdown === 'view' }"
+          aria-haspopup="true"
+          :aria-expanded="openDropdown === 'view'"
+          data-menu-trigger="view"
           @click="toggleDropdown('view')"
+          @keydown.down.prevent="openMenu('view')"
           @mouseenter="openDropdown && (openDropdown = 'view')"
         >
           {{ $t('menu.view') }}
         </button>
         <div
           v-if="openDropdown === 'view'"
-          class="absolute top-full left-0 mt-0.5 bg-base-100 border border-base-300 rounded-box shadow-2xl shadow-black/40 py-1.5 min-w-48 z-50"
+          role="menu"
+          data-menu="view"
+          class="absolute top-full left-0 mt-0.5 bg-base-100 border border-base-300 rounded-box shadow-2xl shadow-black/40 py-1.5 min-w-48 z-[70]"
+          @keydown="onMenuKeydown"
         >
           <button
+            role="menuitem"
+            tabindex="-1"
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
             @click="
               navigateAndClose('/');
@@ -114,9 +186,15 @@ const {
             "
           >
             {{ $t('menu.home') }}
-            <span class="ml-auto text-[10px] text-base-content/50 font-mono">Alt+1</span>
+            <span
+              v-if="shortcut('home')"
+              class="ml-auto text-[10px] text-base-content/50 font-mono"
+              >{{ shortcut('home') }}</span
+            >
           </button>
           <button
+            role="menuitem"
+            tabindex="-1"
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
             @click="
               navigateAndClose('/library');
@@ -124,9 +202,15 @@ const {
             "
           >
             {{ $t('menu.library') }}
-            <span class="ml-auto text-[10px] text-base-content/50 font-mono">Alt+2</span>
+            <span
+              v-if="shortcut('library')"
+              class="ml-auto text-[10px] text-base-content/50 font-mono"
+              >{{ shortcut('library') }}</span
+            >
           </button>
           <button
+            role="menuitem"
+            tabindex="-1"
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
             @click="
               navigateAndClose('/explorer');
@@ -134,9 +218,15 @@ const {
             "
           >
             {{ $t('menu.explorer') }}
-            <span class="ml-auto text-[10px] text-base-content/50 font-mono">Alt+3</span>
+            <span
+              v-if="shortcut('explorer')"
+              class="ml-auto text-[10px] text-base-content/50 font-mono"
+              >{{ shortcut('explorer') }}</span
+            >
           </button>
           <button
+            role="menuitem"
+            tabindex="-1"
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
             @click="
               navigateAndClose('/online');
@@ -144,9 +234,10 @@ const {
             "
           >
             {{ $t('menu.online') }}
-            <span class="ml-auto text-[10px] text-base-content/50 font-mono">Alt+4</span>
           </button>
           <button
+            role="menuitem"
+            tabindex="-1"
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
             @click="
               navigateAndClose('/downloads');
@@ -154,10 +245,11 @@ const {
             "
           >
             {{ $t('menu.downloads') }}
-            <span class="ml-auto text-[10px] text-base-content/50 font-mono">Alt+5</span>
           </button>
           <div class="border-t border-base-300 my-1 mx-2" />
           <button
+            role="menuitem"
+            tabindex="-1"
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
             @click="
               navigateAndClose('/settings');
@@ -165,10 +257,16 @@ const {
             "
           >
             {{ $t('menu.settings') }}
-            <span class="ml-auto text-[10px] text-base-content/50 font-mono">Alt+6</span>
+            <span
+              v-if="shortcut('settings')"
+              class="ml-auto text-[10px] text-base-content/50 font-mono"
+              >{{ shortcut('settings') }}</span
+            >
           </button>
           <div class="border-t border-base-300 my-1 mx-2" />
           <button
+            role="menuitem"
+            tabindex="-1"
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
             @click="
               settings.updateStatusBar({ visible: !settings.statusBar.visible });
@@ -186,16 +284,25 @@ const {
         <button
           class="h-9 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
           :class="{ 'bg-primary/10 text-primary': openDropdown === 'playback' }"
+          aria-haspopup="true"
+          :aria-expanded="openDropdown === 'playback'"
+          data-menu-trigger="playback"
           @click="toggleDropdown('playback')"
+          @keydown.down.prevent="openMenu('playback')"
           @mouseenter="openDropdown && (openDropdown = 'playback')"
         >
           {{ $t('menu.playback') }}
         </button>
         <div
           v-if="openDropdown === 'playback'"
-          class="absolute top-full left-0 mt-0.5 bg-base-100 border border-base-300 rounded-box shadow-2xl shadow-black/40 py-1.5 min-w-52 z-50"
+          role="menu"
+          data-menu="playback"
+          class="absolute top-full left-0 mt-0.5 bg-base-100 border border-base-300 rounded-box shadow-2xl shadow-black/40 py-1.5 min-w-52 z-[70]"
+          @keydown="onMenuKeydown"
         >
           <button
+            role="menuitem"
+            tabindex="-1"
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
             @click="actionClose(player.togglePlay)"
           >
@@ -205,12 +312,16 @@ const {
             }}</span>
           </button>
           <button
+            role="menuitem"
+            tabindex="-1"
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors"
             @click="actionClose(player.nextTrack)"
           >
             {{ t('menu.nextTrack') }}
           </button>
           <button
+            role="menuitem"
+            tabindex="-1"
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors"
             @click="actionClose(player.prevTrack)"
           >
@@ -220,6 +331,8 @@ const {
             v-if="
               player.currentTrack.type === 'video' && !player.pipActive && getPlayerPiPHandler()
             "
+            role="menuitem"
+            tabindex="-1"
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
             @click="
               getPlayerPiPHandler()?.();
@@ -228,8 +341,20 @@ const {
           >
             <PictureInPicture :size="13" /> {{ t('menu.picInPic') }}
           </button>
+          <button
+            v-if="player.currentTrack?.type === 'video' && player.pipActive"
+            role="menuitem"
+            tabindex="-1"
+            data-testid="menu-return-pip"
+            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
+            @click="restorePip"
+          >
+            <PictureInPicture :size="13" /> {{ t('menu.returnFromPip') }}
+          </button>
           <div class="border-t border-base-300 my-1 mx-2" />
           <button
+            role="menuitem"
+            tabindex="-1"
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
             @click="actionClose(player.toggleShuffle)"
           >
@@ -239,6 +364,8 @@ const {
             }}</span>
           </button>
           <button
+            role="menuitem"
+            tabindex="-1"
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
             @click="actionClose(player.cycleRepeat)"
           >
@@ -255,6 +382,8 @@ const {
           </button>
           <div class="border-t border-base-300 my-1 mx-2" />
           <button
+            role="menuitem"
+            tabindex="-1"
             class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors"
             @click="actionClose(player.toggleEqualizer)"
           >
@@ -268,7 +397,11 @@ const {
         <button
           class="h-9 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
           :class="{ 'bg-primary/10 text-primary': openDropdown === 'help' }"
+          aria-haspopup="true"
+          :aria-expanded="openDropdown === 'help'"
+          data-menu-trigger="help"
           @click="toggleDropdown('help')"
+          @keydown.down.prevent="openMenu('help')"
           @mouseenter="openDropdown && (openDropdown = 'help')"
         >
           {{ $t('menu.help') }}

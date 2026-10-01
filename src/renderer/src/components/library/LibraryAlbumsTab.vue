@@ -86,17 +86,17 @@ onUnmounted(() => grid.destroy());
     <div
       class="flex items-center justify-between px-4 py-2 border-b border-base-300 bg-base-100/50 backdrop-blur shrink-0 sticky top-0 z-[1]"
     >
-      <span class="text-xs font-medium text-base-content/60"
-        >{{ albums.length }} {{ $t('library.tracksCount') }}</span
+      <span class="text-xs font-medium text-base-content/60">
+        {{ albums.length }} {{ $t('library.albumsCount') }}</span
       >
       <div class="flex items-center gap-1.5">
         <select
           v-model="sortKey"
           class="px-2 py-1 rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none"
         >
-          <option value="name">Nazwa A→Z</option>
-          <option value="count">Liczba utworów</option>
-          <option value="year">Rok</option>
+          <option value="name">{{ $t('library.sortAlbumsByName') }}</option>
+          <option value="count">{{ $t('library.sortAlbumsByCount') }}</option>
+          <option value="year">{{ $t('library.sortAlbumsByYear') }}</option>
         </select>
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"

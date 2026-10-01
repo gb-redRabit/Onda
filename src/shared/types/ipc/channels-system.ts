@@ -193,10 +193,6 @@ export interface SystemChannels {
       error?: string;
     };
   };
-  'musicbrainz:batchApply': {
-    args: [payload: unknown];
-    result: { success: boolean; error?: string };
-  };
   'media:checkAudioCodec': {
     args: [filePath: string];
     result: { codec: string; supported: boolean } | null;

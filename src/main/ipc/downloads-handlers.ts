@@ -23,9 +23,12 @@ import { isSafeAbsolutePath } from '../utils/validate';
 import { broadcastToAllWindows } from '../utils/broadcast';
 import {
   e2eAddDownloadTasks,
+  e2eCancelDownloadTask,
   e2eClearFinishedDownloadTasks,
   e2eFixturesEnabled,
-  e2eListDownloadTasks
+  e2eListDownloadTasks,
+  e2ePauseDownloadTask,
+  e2eResumeDownloadTask
 } from '../e2e-fixtures';
 import type { IpcDownloadTask, IpcDownloadJobInput, IpcMetaOverride } from '../../shared/types/ipc';
 
@@ -63,13 +66,13 @@ export function registerDownloadHandlers(): void {
       e2eFixturesEnabled() ? e2eAddDownloadTasks(jobs, broadcast) : addDownloadJobs(jobs)
   );
   ipcMain.handle('yt:download:cancel', async (_event, id: string): Promise<boolean> =>
-    cancelDownloadJob(id)
+    e2eFixturesEnabled() ? e2eCancelDownloadTask(id) : cancelDownloadJob(id)
   );
   ipcMain.handle('yt:download:pause', async (_event, id: string): Promise<boolean> =>
-    pauseDownloadJob(id)
+    e2eFixturesEnabled() ? e2ePauseDownloadTask(id) : pauseDownloadJob(id)
   );
   ipcMain.handle('yt:download:resume', async (_event, id: string): Promise<boolean> =>
-    resumeDownloadJob(id)
+    e2eFixturesEnabled() ? e2eResumeDownloadTask(id) : resumeDownloadJob(id)
   );
   ipcMain.handle('yt:download:list', async (): Promise<IpcDownloadTask[]> =>
     e2eFixturesEnabled() ? e2eListDownloadTasks() : listDownloadJobs()
@@ -142,7 +145,7 @@ export function registerDownloadHandlers(): void {
   ipcMain.handle(
     'yt:download:updateMetadata',
     async (_event, filePath: string, meta: IpcMetaOverride) => {
-      if (typeof filePath !== 'string' || !(await isSafeAbsolutePath(filePath))) {
+      if (typeof filePath !== 'string' || !isSafeAbsolutePath(filePath)) {
         return { success: false, error: 'Invalid path' };
       }
       try {

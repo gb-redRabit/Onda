@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('../ipc/youtube-utils', () => ({ isValidCookieFile: () => false }));
 
-import { SESSION_COOKIE_NAMES, cookieOnDomain, hasSessionCookies } from '../youtube-auth-cookies';
+import { SESSION_COOKIE_NAMES, cookieOnDomain, hasSessionCookies } from '../youtube/youtube-auth-cookies';
 
 function cookie(name: string, domain: string, value = 'v'): Electron.Cookie {
   return { name, value, domain, sameSite: 'no_restriction' };

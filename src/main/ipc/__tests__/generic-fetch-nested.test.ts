@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { dotGet, buildUrl, mapResponse, generateRangeItems } from '../generic-fetch';
-import type { MediaSource, SourceEndpoint } from '../../../renderer/src/types/sources';
+import type { MediaSource, SourceEndpoint } from '../../../shared/types/sources';
 
 const SOURCE: MediaSource = {
   id: 's1',

@@ -58,6 +58,7 @@ const vizModeLabel = computed(() => {
   >
     <div class="flex items-center gap-1 pointer-events-auto">
       <button
+        data-testid="audio-layout-editor"
         class="pointer-events-auto fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all"
         :title="$t('audioView.layoutEditor')"
         @click.stop="emit('update:layoutEditorOpen', !props.layoutEditorOpen)"
@@ -82,6 +83,7 @@ const vizModeLabel = computed(() => {
 
     <div class="flex items-center gap-1 pointer-events-auto">
       <button
+        data-testid="audio-cycle-viz"
         class="fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all"
         :title="$t('audioView.vizMode')"
         :aria-label="vizModeLabel"
@@ -93,6 +95,7 @@ const vizModeLabel = computed(() => {
         </div>
       </button>
       <button
+        data-testid="audio-viz-settings"
         class="fx-noise p-1.5 fx-depth rounded-field backdrop-blur-sm transition-all"
         :class="
           props.vizSettingsOpen
@@ -105,6 +108,7 @@ const vizModeLabel = computed(() => {
         <Settings2 :size="12" />
       </button>
       <button
+        data-testid="audio-fullscreen"
         class="fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all"
         :title="props.isFullscreen ? $t('audioView.exitFullscreen') : $t('audioView.fullscreen')"
         :aria-label="

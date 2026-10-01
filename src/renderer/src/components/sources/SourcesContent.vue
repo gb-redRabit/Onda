@@ -34,6 +34,7 @@ const props = defineProps<{
   hasMore: boolean;
   paginationMode: string;
   downloadingItem: SourceItem | null;
+  downloadedIds: Set<string>;
 }>();
 const emit = defineEmits<{
   rowClick: [SourceItem];
@@ -109,12 +110,13 @@ function measureSourceRow(node: Element | ComponentPublicInstance | null): void 
     :row-loading="rowLoading"
     :row-clickable="rowClickable"
     :downloadable="downloadable"
+    :downloaded="!!pageItem.id && downloadedIds.has(pageItem.id)"
     @row-click="emit('rowClick', $event)"
     @download="emit('download', $event)"
     @download-all="emit('downloadAll', $event)"
   />
   <div v-else class="p-4">
-    <div v-if="displayItems.length" ref="sourceGridRef" class="max-h-[75vh] overflow-auto">
+    <div v-if="displayItems.length" ref="sourceGridRef">
       <div class="relative" :style="{ height: sourceRows.getTotalSize() + 'px' }">
         <div
           v-for="row in visibleSourceRows"
@@ -133,6 +135,7 @@ function measureSourceRow(node: Element | ComponentPublicInstance | null): void 
             :item="item"
             :downloading="downloadingItem === item"
             :downloadable="downloadable"
+            :downloaded="!!item.id && downloadedIds.has(item.id)"
             @preview="emit('preview', $event)"
             @download="emit('download', $event)"
           />

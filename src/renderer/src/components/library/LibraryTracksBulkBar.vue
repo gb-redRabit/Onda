@@ -27,7 +27,7 @@ const showBulkPlaylist = ref(false);
         class="px-2.5 py-1 rounded-field bg-primary text-primary-content hover:bg-primary/90 flex items-center gap-1 fx-depth fx-noise"
         @click="emit('play')"
       >
-        <Play :size="12" /> Play
+        <Play :size="12" /> {{ $t('common.play') }}
       </button>
       <button
         class="px-2.5 py-1 rounded-field bg-base-100 border border-base-300 hover:bg-base-200"

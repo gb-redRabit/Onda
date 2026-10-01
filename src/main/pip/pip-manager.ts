@@ -1,0 +1,344 @@
+import { BrowserWindow, ipcMain } from 'electron';
+import { join } from 'path';
+import { PipPreview } from './pip-preview';
+import { logger } from '../../shared/logger';
+import { createWindow } from '../windows/window-factory';
+import { pipWindowIcon } from './pip-icon';
+import { computePipPosition } from './pip-position';
+import { resolveMediaPath } from '../path-utils';
+import { sendToWindow } from '../utils/broadcast';
+import type { PipSubtitleData } from '../../shared/types/pip';
+
+interface PipShowOptions {
+  src: string;
+  startTime?: number;
+  position?: string;
+  width?: number;
+  height?: number;
+  subtitle?: PipSubtitleData | null;
+}
+
+interface PendingData {
+  src: string;
+  subtitle: PipSubtitleData | null;
+  autoPlay: boolean;
+  startTime: number;
+}
+
+export class PipManager {
+  private window: BrowserWindow | null = null;
+  private preview: PipPreview = new PipPreview();
+  private lastTime = 0;
+  private timeTimer: ReturnType<typeof setInterval> | null = null;
+  private ready = false;
+  private mainWindow: BrowserWindow | null = null;
+  private loadedSrc: string | null = null;
+  private pendingData: PendingData | null = null;
+  private cssVars: Record<string, string> = {};
+  private pipLocale = 'en';
+
+  private static normalizeFilePath(url: string): string {
+    try {
+      return resolveMediaPath(url);
+    } catch (e) {
+      logger.warn('pip', 'normalizeFilePath failed', url, e);
+      return url.toLowerCase();
+    }
+  }
+
+  setMainWindow(win: BrowserWindow): void {
+    this.mainWindow = win;
+  }
+
+  init(): void {
+    this.preview.setClosedHandler(() => sendToWindow(this.mainWindow, 'pip:previewClosed'));
+    this.createWindow();
+    this.registerIpc();
+  }
+
+  private createWindow(): void {
+    this.window = createWindow({
+      width: 480,
+      height: 290,
+      minWidth: 180,
+      minHeight: 110,
+      show: false,
+      alwaysOnTop: true,
+      frame: false,
+      skipTaskbar: true,
+      resizable: true,
+      transparent: true,
+      backgroundColor: '#00000000',
+      icon: pipWindowIcon(),
+      webPreferences: { preload: join(__dirname, '../preload/pip.js') },
+      htmlFile: 'pip.html',
+      // PiP windows are shown on demand by the manager, never on load.
+      autoShow: false,
+      onClosed: () => {
+        this.window = null;
+        this.ready = false;
+        this.loadedSrc = null;
+        this.stopTimeTracking();
+      }
+    });
+
+    this.window.webContents.on('did-finish-load', () => {
+      this.ready = true;
+      this.sendToRenderer('pip:theme', this.cssVars);
+      this.sendToRenderer('pip:locale', this.pipLocale);
+      if (this.pendingData) {
+        const pd = this.pendingData;
+        this.pendingData = null;
+        this.sendVideoSrc(pd.src, pd.subtitle, 0);
+        if (pd.autoPlay) {
+          this.sendPlay(pd.startTime);
+          this.startTimeTracking();
+        }
+      }
+    });
+  }
+
+  private registerIpc(): void {
+    ipcMain.on('pip:hidden', (event) => {
+      if (this.preview.owns(event.sender)) {
+        this.hidePreview();
+        return;
+      }
+      this.hide();
+      this.notifyClosed();
+    });
+
+    ipcMain.on('pip:timeUpdate', (_event, time: number) => {
+      this.lastTime = time || 0;
+    });
+
+    ipcMain.on('pip:ended', () => {
+      this.stopTimeTracking();
+      this.loadedSrc = null;
+      sendToWindow(this.mainWindow, 'pip:ended');
+    });
+
+    ipcMain.on('pip:theme', (_event, vars: Record<string, string>) => {
+      this.cssVars = vars;
+      this.sendToRenderer('pip:theme', vars);
+      this.preview.updateTheme(vars);
+    });
+
+    ipcMain.on('pip:maximize', (_event, time: number) => {
+      this.lastTime = time || 0;
+      this.stop();
+      sendToWindow(this.mainWindow, 'pip:maximize', this.lastTime);
+    });
+
+    // Main-window initiated restore (a button in the player / menu): close the
+    // PiP window and hand the current position back to the player, without the
+    // fullscreen jump that `pip:maximize` implies.
+    ipcMain.removeHandler('pip:restore');
+    ipcMain.handle('pip:restore', () => {
+      if (!this.window || this.window.isDestroyed()) return false;
+      const time = this.lastTime;
+      this.stop();
+      sendToWindow(this.mainWindow, 'pip:restore', time);
+      return true;
+    });
+
+    ipcMain.on('pip:locale', (_event, locale: string) => {
+      this.pipLocale = locale || 'en';
+      this.sendToRenderer('pip:locale', this.pipLocale);
+      this.preview.updateLocale(this.pipLocale);
+    });
+  }
+
+  private sendToRenderer(channel: string, ...args: unknown[]): void {
+    sendToWindow(this.window, channel, ...args);
+  }
+
+  private sendPlay(startTime: number): void {
+    this.sendToRenderer('pip:play', startTime);
+  }
+
+  private notifyClosed(): void {
+    const time = this.lastTime;
+    sendToWindow(this.mainWindow, 'pip:closed', time);
+  }
+
+  private startTimeTracking(): void {
+    this.stopTimeTracking();
+    this.timeTimer = setInterval(() => {
+      if (this.window && !this.window.isDestroyed()) {
+        this.window.webContents.send('pip:requestTime');
+      }
+    }, 500);
+  }
+
+  private stopTimeTracking(): void {
+    if (this.timeTimer) {
+      clearInterval(this.timeTimer);
+      this.timeTimer = null;
+    }
+  }
+
+  private ensureWindow(): BrowserWindow {
+    if (!this.window || this.window.isDestroyed()) {
+      this.ready = false;
+      this.loadedSrc = null;
+      this.createWindow();
+    }
+    if (!this.window) {
+      throw new Error('PipManager: window creation failed');
+    }
+    return this.window;
+  }
+
+  private positionWindow(opts: { position?: string; width?: number; height?: number }): {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } {
+    const pw = opts.width || 480;
+    const ph = opts.height || 290;
+    return computePipPosition({ position: opts.position, width: pw, height: ph });
+  }
+
+  private sendVideoSrc(
+    src: string,
+    subtitle: PipSubtitleData | null | undefined,
+    startTime: number
+  ): void {
+    if (!this.window || this.window.isDestroyed()) {
+      return;
+    }
+    this.window.webContents.send('pip:videoSrc', { src, start: startTime || 0 });
+    this.loadedSrc = src;
+
+    if (subtitle && subtitle.subContent) {
+      this.window.webContents.send('pip:subtitle', subtitle);
+    } else if (subtitle !== undefined) {
+      this.window.webContents.send('pip:clearSubtitle');
+    }
+  }
+
+  preload(src: string, subtitleData: PipSubtitleData | null): void {
+    this.ensureWindow();
+
+    if (this.ready) {
+      this.sendVideoSrc(src, subtitleData, 0);
+    } else {
+      this.pendingData = { src, subtitle: subtitleData, autoPlay: false, startTime: 0 };
+    }
+  }
+
+  show(options: PipShowOptions): boolean {
+    const win = this.ensureWindow();
+
+    const bounds = this.positionWindow(options);
+    win.setBounds(bounds);
+    win.show();
+    win.focus();
+
+    this.lastTime = options.startTime || 0;
+
+    if (this.ready) {
+      const loaded = this.loadedSrc ? PipManager.normalizeFilePath(this.loadedSrc) : null;
+      const requested = options.src ? PipManager.normalizeFilePath(options.src) : null;
+      if (loaded && requested && loaded === requested) {
+        this.sendPlay(options.startTime || 0);
+        this.startTimeTracking();
+      } else {
+        this.sendVideoSrc(options.src, options.subtitle, options.startTime || 0);
+        this.sendPlay(options.startTime || 0);
+        this.startTimeTracking();
+      }
+    } else {
+      this.pendingData = {
+        src: options.src,
+        subtitle: options.subtitle || null,
+        autoPlay: true,
+        startTime: options.startTime || 0
+      };
+    }
+
+    return true;
+  }
+
+  loadTrack(src: string, subtitleData: PipSubtitleData | null): void {
+    this.ensureWindow();
+
+    if (this.ready) {
+      this.lastTime = 0;
+      this.sendVideoSrc(src, subtitleData, 0);
+      this.sendPlay(0);
+      this.startTimeTracking();
+    } else {
+      this.pendingData = { src, subtitle: subtitleData, autoPlay: true, startTime: 0 };
+    }
+  }
+
+  hide(): void {
+    this.stopTimeTracking();
+    if (this.window && !this.window.isDestroyed()) {
+      this.window.webContents.send('pip:pause');
+      this.window.hide();
+    }
+  }
+
+  stop(): void {
+    this.stopTimeTracking();
+    if (this.window && !this.window.isDestroyed()) {
+      this.window.webContents.send('pip:clear');
+      this.window.hide();
+      this.loadedSrc = null;
+    }
+    this.notifyClosed();
+  }
+
+  updateSubtitle(data: PipSubtitleData | null): void {
+    if (!this.window || this.window.isDestroyed()) return;
+    if (data && data.subContent) {
+      this.window.webContents.send('pip:subtitle', data);
+    } else {
+      this.window.webContents.send('pip:clearSubtitle');
+    }
+  }
+
+  getTime(): number {
+    return this.lastTime;
+  }
+
+  isShowing(): boolean {
+    return !!this.window && !this.window.isDestroyed() && this.window.isVisible();
+  }
+
+  showPreview(opts: { position?: string; width?: number; height?: number }): boolean {
+    return this.preview.show(opts, { theme: this.cssVars, locale: this.pipLocale });
+  }
+
+  hidePreview(): void {
+    this.preview.hide();
+  }
+
+  updatePreview(opts: { position?: string; width?: number; height?: number }): void {
+    this.preview.update(opts);
+  }
+
+  destroy(): void {
+    this.stopTimeTracking();
+    this.preview.destroy();
+    if (this.window && !this.window.isDestroyed()) {
+      this.window.destroy();
+    }
+    this.window = null;
+    this.ready = false;
+    this.loadedSrc = null;
+    ipcMain.removeAllListeners('pip:hidden');
+    ipcMain.removeAllListeners('pip:timeUpdate');
+    ipcMain.removeAllListeners('pip:ended');
+    ipcMain.removeAllListeners('pip:theme');
+    ipcMain.removeAllListeners('pip:maximize');
+    ipcMain.removeAllListeners('pip:locale');
+    ipcMain.removeHandler('pip:restore');
+  }
+}
+
+export const pipManager = new PipManager();

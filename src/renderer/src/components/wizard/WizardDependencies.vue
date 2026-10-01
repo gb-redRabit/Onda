@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import WizardStep from './WizardStep.vue';
 import { RefreshCw } from '@lucide/vue';
 import { useDependencies } from '@renderer/composables/useDependencies';
 
@@ -9,10 +10,10 @@ const { deps, refreshing, refreshAll, runInstall, cancelInstall } = useDependenc
   <div>
     <div class="flex items-start justify-between gap-4">
       <div class="min-w-0">
-        <h3 class="text-lg font-bold tracking-tight mb-1.5">
-          {{ $t('wizard.dependenciesTitle') }}
-        </h3>
-        <p class="text-sm text-base-content/70">{{ $t('wizard.dependenciesDesc') }}</p>
+        <WizardStep
+          :title="$t('wizard.dependenciesTitle')"
+          :description="$t('wizard.dependenciesDesc')"
+        />
       </div>
       <button
         class="fx-noise shrink-0 flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors disabled:opacity-60"

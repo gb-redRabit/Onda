@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
   Search,
@@ -44,6 +44,16 @@ const { activeSection, activeTab, search, selectTab } = useSettingsNav();
 
 const searchInput = ref<HTMLInputElement | null>(null);
 const menuOpen = ref(false);
+
+function onMenuDocClick(e: MouseEvent): void {
+  if (!menuOpen.value) return;
+  const target = e.target as HTMLElement | null;
+  if (target?.closest('[data-testid="settings-more"], [data-testid="settings-menu"]')) return;
+  menuOpen.value = false;
+}
+function onMenuDocKeydown(e: KeyboardEvent): void {
+  if (e.key === 'Escape' && menuOpen.value) menuOpen.value = false;
+}
 const highlightedId = ref<string | null>(null);
 
 // ---- Search ------------------------------------------------------------------
@@ -105,6 +115,11 @@ async function openTab(tabId: string): Promise<void> {
   selectTab(tabId);
 }
 
+// Used by the overview landing screen: the tabs that belong to a section.
+function tabsOfSection(sectionId: string) {
+  return SETTINGS_TABS.filter((tab) => tab.section === sectionId);
+}
+
 function onSearchKeydown(event: KeyboardEvent): void {
   if (event.key === 'Escape') {
     search.value = '';
@@ -161,10 +176,11 @@ function onMenuAction(action: 'export' | 'import' | 'reset'): void {
 }
 
 // ---- Misc --------------------------------------------------------------------
-const activeTabLabel = computed(() => {
-  const tab = SETTINGS_TABS.find((item) => item.id === activeTab.value);
-  return tab ? t(tab.labelKey) : '';
-});
+const activeTabMeta = computed(
+  () => SETTINGS_TABS.find((item) => item.id === activeTab.value) ?? null
+);
+const activeTabLabel = computed(() => (activeTabMeta.value ? t(activeTabMeta.value.labelKey) : ''));
+const activeTabDesc = computed(() => (activeTabMeta.value ? t(activeTabMeta.value.descKey) : ''));
 
 watch(activeTab, (_newTab, oldTab) => {
   if (oldTab === 'pip-video') {
@@ -178,20 +194,32 @@ watch(activeTab, (_newTab, oldTab) => {
 });
 
 onMounted(() => {
-  if (!activeTab.value) {
-    const first = SETTINGS_TABS.find(
-      (tab) => tab.section === (activeSection.value ?? 'appearance')
-    );
-    if (first) activeSection.value = first.section;
-    if (!activeTab.value && first) selectTab(first.id);
+  // A section-only deep link (`?section=network`) opens that section's first
+  // tab; a bare `/settings` now lands on the overview instead of an arbitrary
+  // first tab.
+  if (activeSection.value && !activeTab.value) {
+    const first = SETTINGS_TABS.find((tab) => tab.section === activeSection.value);
+    if (first) selectTab(first.id);
   }
+  document.addEventListener('mousedown', onMenuDocClick);
+  document.addEventListener('keydown', onMenuDocKeydown);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('mousedown', onMenuDocClick);
+  document.removeEventListener('keydown', onMenuDocKeydown);
 });
 </script>
 
 <template>
-  <div class="flex flex-col h-full">
+  <div data-testid="settings-view" class="flex flex-col h-full">
     <!-- Header: title + search + rare actions under ⋯ -->
-    <PageHeader :title="t('settings.title')" :icon="Settings" compact class="shrink-0">
+    <PageHeader
+      :title="t('settings.title')"
+      :icon="Settings"
+      compact
+      class="shrink-0 relative z-30"
+    >
       <template #actions>
         <div class="relative ml-2 w-[min(42vw,24rem)]">
           <Search
@@ -216,9 +244,9 @@ onMounted(() => {
           </button>
         </div>
 
-        <div class="ml-auto flex items-center gap-1.5 shrink-0">
+        <div class="ml-auto flex items-center gap-1.5 shrink-0 relative z-40">
           <button
-            class="ui-icon-button fx-noise fx-depth"
+            class="ui-icon-button fx-noise fx-depth relative z-40"
             :title="t('settings.more')"
             :aria-label="t('settings.more')"
             :aria-expanded="menuOpen"
@@ -234,7 +262,7 @@ onMounted(() => {
       <template #overlay>
         <div
           v-if="menuOpen"
-          class="absolute right-6 top-full z-30 mt-1 w-56 rounded-box border border-base-300 bg-base-100 fx-depth p-1.5 text-[13px]"
+          class="absolute right-6 top-full z-50 mt-1 w-56 rounded-box border border-base-300 bg-base-100 fx-depth p-1.5 text-[13px]"
           data-testid="settings-menu"
         >
           <button
@@ -310,10 +338,58 @@ onMounted(() => {
           </ul>
         </div>
 
+        <!-- Overview: landing screen with every section and tab -->
+        <div v-else-if="!activeTab" class="px-6 py-6 space-y-8" data-testid="settings-overview">
+          <section v-for="section in SETTINGS_SECTIONS" :key="section.id">
+            <h3
+              class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-3"
+            >
+              <component :is="section.icon" :size="15" class="text-primary" />
+              {{ t(section.labelKey) }}
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              <button
+                v-for="tab in tabsOfSection(section.id)"
+                :key="tab.id"
+                class="flex items-start gap-3 p-4 fx-depth fx-noise rounded-box bg-base-100 border border-base-300 text-left transition-colors hover:border-primary/40 hover:bg-base-content/5"
+                :data-testid="`settings-overview-${tab.id}`"
+                @click="openTab(tab.id)"
+              >
+                <span
+                  class="grid place-items-center w-9 h-9 rounded-field bg-primary/10 text-primary shrink-0"
+                >
+                  <component :is="tab.icon" :size="17" />
+                </span>
+                <span class="min-w-0">
+                  <span class="block text-sm font-medium truncate">{{ t(tab.labelKey) }}</span>
+                  <span class="block text-xs text-base-content/55 line-clamp-2 mt-0.5">
+                    {{ t(tab.descKey) }}
+                  </span>
+                </span>
+              </button>
+            </div>
+          </section>
+        </div>
+
         <!-- Active tab -->
-        <div v-else :key="'tab-' + activeTab" class="px-6 py-4">
-          <h2 class="text-lg font-bold tracking-tight mb-1">{{ activeTabLabel }}</h2>
-          <component :is="SETTINGS_TAB_COMPONENTS[activeTab ?? '']" :highlight="highlightedId" />
+        <div v-else :key="'tab-' + activeTab" class="px-6 py-6">
+          <header class="mb-6 flex items-start gap-3">
+            <span
+              v-if="activeTabMeta"
+              class="grid place-items-center w-10 h-10 rounded-box bg-primary/10 text-primary shrink-0"
+            >
+              <component :is="activeTabMeta.icon" :size="20" />
+            </span>
+            <div class="min-w-0">
+              <h2 class="text-lg font-bold tracking-tight">{{ activeTabLabel }}</h2>
+              <p v-if="activeTabDesc" class="text-sm text-base-content/55 mt-0.5">
+                {{ activeTabDesc }}
+              </p>
+            </div>
+          </header>
+          <div class="space-y-6">
+            <component :is="SETTINGS_TAB_COMPONENTS[activeTab ?? '']" :highlight="highlightedId" />
+          </div>
         </div>
       </main>
     </div>

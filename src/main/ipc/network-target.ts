@@ -99,6 +99,18 @@ export function isNeverPublicAddress(address: string): boolean {
   return true;
 }
 
+/**
+ * True for a loopback host in any common spelling: `localhost`, a `*.localhost`
+ * name, `::1`, or any `127.0.0.0/8` literal. Shared by the URL validators that
+ * reject network-supplied URLs pointing at local services.
+ */
+export function isLoopbackHost(host: string): boolean {
+  const h = host.trim().toLowerCase().replace(/^\[|\]$/g, '');
+  if (h === 'localhost' || h.endsWith('.localhost')) return true;
+  if (h === '::1') return true;
+  return /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h);
+}
+
 export interface NetworkTargetOptions {
   /**
    * Allows the non-public address space, for a target the user explicitly
