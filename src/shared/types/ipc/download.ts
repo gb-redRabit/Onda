@@ -105,6 +105,9 @@ export type IpcDownloadErrorCode =
   | 'network'
   | 'proxy'
   | 'dependency'
+  // Destination disk/volume ran out of space (ENOSPC), from yt-dlp or the
+  // Node write stream.
+  | 'disk-full'
   // Resource recognized but not supported (e.g. personalized SoundCloud
   // /discover/sets links, which the API does not serve).
   | 'unsupported'

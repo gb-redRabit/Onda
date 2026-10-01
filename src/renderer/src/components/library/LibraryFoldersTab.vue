@@ -5,11 +5,11 @@ import { Folder, ChevronDown, Shuffle, Play, ExternalLink } from '@lucide/vue';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
 import { canonicalPath, basename, isUnderPath } from '@renderer/utils/path';
-import { logger } from '@shared/logger';
 import { useLibraryContextMenu } from '@renderer/composables/useLibraryContextMenu';
 import { formatDuration } from '@renderer/utils/formatters';
 import { pluralCategory } from '@renderer/utils/plural';
 import { getAllTracksIndexed } from '@renderer/utils/libraryIndex';
+import { readStringArray, writeJson } from '@renderer/utils/localStore';
 import DirNode from '@renderer/components/library/DirNode.vue';
 import LibraryFolderTile from '@renderer/components/library/LibraryFolderTile.vue';
 
@@ -42,23 +42,13 @@ const emit = defineEmits<{
 // persystencja rozwinięć
 const STORAGE_KEY = 'onda.libraryExpanded';
 function loadExpanded(): Set<string> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return new Set(JSON.parse(raw));
-  } catch (e) {
-    logger.warn('library', 'failed to read expanded folders from localStorage', e);
-  }
-  return new Set<string>();
+  return new Set<string>(readStringArray(STORAGE_KEY));
 }
 const expandedPaths = ref<Set<string>>(loadExpanded());
 watch(
   () => [...expandedPaths.value].sort().join('|'),
   () => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify([...expandedPaths.value]));
-    } catch (e) {
-      logger.warn('library', 'failed to persist expanded folders in localStorage', e);
-    }
+    writeJson(STORAGE_KEY, [...expandedPaths.value]);
   }
 );
 

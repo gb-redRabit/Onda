@@ -34,6 +34,9 @@ export function classifyYtDlpError(stderr: string): IpcDownloadErrorCode {
   if (/(ffmpeg|ffprobe|avconv|avprobe)/.test(s)) {
     return 'dependency';
   }
+  if (/(enospc|no space left|not enough space|disk full|disk is full)/.test(s)) {
+    return 'disk-full';
+  }
   if (/(proxy)/.test(s)) {
     return 'proxy';
   }
@@ -66,6 +69,8 @@ export function describeError(code: IpcDownloadErrorCode): string {
       return 'Proxy error — check your proxy settings';
     case 'dependency':
       return 'Missing dependency (FFmpeg/FFprobe)';
+    case 'disk-full':
+      return 'Not enough disk space — free up space and retry';
     default:
       return 'Download failed';
   }

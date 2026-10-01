@@ -64,6 +64,7 @@ type DownloadErrorCode =
   | 'network'
   | 'proxy'
   | 'dependency'
+  | 'disk-full'
   | 'unsupported'
   | 'unknown';
 

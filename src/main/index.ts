@@ -38,6 +38,7 @@ import { registerGlobalShortcuts } from './bootstrap/global-shortcuts';
 import { startBootWatchdog } from './bootstrap/boot-watchdog';
 import { OpenFileForwarder } from './bootstrap/open-files';
 import { initMainLocale, setMainLocale, mainMessages } from './i18n-main';
+import { asPositiveNumber, asNonEmptyString } from './utils/store-guards';
 
 let mainWindow: BrowserWindow | null = null;
 let startHidden = false;
@@ -181,13 +182,14 @@ app.whenReady().then(async () => {
 
   try {
     const store = await getStore();
-    // Cover cache size from Settings → Library.
-    const library = store.get('library') as { coverCacheMaxEntries?: number } | undefined;
-    applyCoverCacheSettings(library?.coverCacheMaxEntries);
+    // Cover cache size from Settings → Library. Values come from a JSON file on
+    // disk, so they are validated rather than cast.
+    const library = store.get('library') as Record<string, unknown> | undefined;
+    applyCoverCacheSettings(asPositiveNumber(library?.coverCacheMaxEntries));
     await initCoverCache();
     // The saved UI locale now drives the remaining main-process messages.
-    const appearance = store.get('appearance') as { locale?: string } | undefined;
-    setMainLocale(appearance?.locale);
+    const appearance = store.get('appearance') as Record<string, unknown> | undefined;
+    setMainLocale(asNonEmptyString(appearance?.locale));
     const folders = store.get('libraryFolders', []);
     bootFolders = Array.isArray(folders) ? folders.length : 0;
     if (Array.isArray(folders)) {

@@ -12,6 +12,7 @@ import RadioAddDialog from '@renderer/components/radio/RadioAddDialog.vue';
 import { useVirtualGrid } from '@renderer/composables/useVirtualGrid';
 import PageHeader from '@renderer/components/ui/PageHeader.vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
+import { readString, writeString } from '@renderer/utils/localStore';
 
 type WebcastTab = 'radio' | 'saved';
 
@@ -19,13 +20,14 @@ const saved = useSavedStore();
 const yt = useOnlineStore();
 const radio = useRadioStore();
 
+const savedWebcastTab = readString('onda.webcastTab');
 const activeTab = ref<WebcastTab>(
-  (localStorage.getItem('onda.webcastTab') as WebcastTab) || 'saved'
+  savedWebcastTab === 'radio' || savedWebcastTab === 'saved' ? savedWebcastTab : 'saved'
 );
 
 function selectTab(tab: WebcastTab) {
   activeTab.value = tab;
-  localStorage.setItem('onda.webcastTab', tab);
+  writeString('onda.webcastTab', tab);
 }
 
 const radioDialogOpen = ref(false);

@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 import { useOnlineStore } from '@renderer/stores/online';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useViewSearch } from '@renderer/composables/useViewSearch';
+import { writeString } from '@renderer/utils/localStore';
 import {
   buildDownloadFilters,
   groupDownloads,
@@ -39,7 +40,7 @@ const channels = computed(() => {
 
 function openLibrary(t: DownloadTask) {
   const tab = t.kind === 'video' ? 'video' : 'tracks';
-  localStorage.setItem('onda.libraryTab', tab);
+  writeString('onda.libraryTab', tab);
   void router.push({ name: 'library', query: { tab } });
 }
 

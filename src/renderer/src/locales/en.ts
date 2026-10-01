@@ -1603,6 +1603,7 @@ api.registerCommand({
     errorNetwork: 'Network error while downloading',
     errorProxy: 'Proxy error — check your proxy settings',
     errorDependency: 'Missing dependency (FFmpeg/FFprobe)',
+    errorDiskFull: 'Not enough disk space — free up space and retry',
     errorUnsupported: 'This link type is not supported (personalized SoundCloud sets)'
   },
   common: {

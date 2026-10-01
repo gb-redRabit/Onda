@@ -2,7 +2,6 @@
 import { ref, computed, watch, onMounted, onUnmounted, defineAsyncComponent } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
-import { logger } from '@shared/logger';
 import { useLibraryStore } from '@renderer/stores/library';
 import { getAllTracksIndexed } from '@renderer/utils/libraryIndex';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -22,6 +21,7 @@ import {
   type SortKey
 } from '@renderer/utils/libraryView';
 import { isTabId, buildLibraryTabs, type TabId } from '@renderer/utils/libraryTabs';
+import { readString, writeString, readStringArray, writeJson } from '@renderer/utils/localStore';
 
 // Modals only mounted on demand — lazy so the Library chunk stays lean (3.5).
 const TrackTagEditor = defineAsyncComponent(
@@ -111,11 +111,14 @@ onUnmounted(() => window.removeEventListener('onda:openMusicbrainz', onMbEvent))
 
 // Tabs — overview default (Minimal Spotify)
 const route = useRoute();
-const storedTab = isTabId(route.query.tab)
+const savedTab = readString('onda.libraryTab');
+const storedTab: TabId = isTabId(route.query.tab)
   ? route.query.tab
-  : (localStorage.getItem('onda.libraryTab') as TabId) || 'overview';
+  : isTabId(savedTab)
+    ? savedTab
+    : 'overview';
 const tab = ref<TabId>(storedTab);
-watch(tab, (v) => localStorage.setItem('onda.libraryTab', v));
+watch(tab, (v) => writeString('onda.libraryTab', v));
 // Navigation from other views (e.g. Downloads "in library") passes ?tab=… .
 watch(
   () => route.query.tab,
@@ -243,23 +246,17 @@ function playFolder(folderPath: string) {
 function navigateToFolder(path: string) {
   tab.value = 'folders';
   query.value = path.split(/[\\/]/).pop() || '';
-  try {
-    const key = 'onda.libraryExpanded';
-    const raw = localStorage.getItem(key);
-    const set = raw ? new Set<string>(JSON.parse(raw)) : new Set<string>();
-    set.add(path);
-    // dodaj też przodków żeby drzewo było rozwinięte do pliku
-    let cur = path;
-    while (cur.includes('/') || cur.includes('\\')) {
-      const idx = Math.max(cur.lastIndexOf('/'), cur.lastIndexOf('\\'));
-      if (idx <= 0) break;
-      cur = cur.slice(0, idx);
-      set.add(cur);
-    }
-    localStorage.setItem(key, JSON.stringify([...set]));
-  } catch (e) {
-    logger.warn('library', 'failed to persist expanded folders in localStorage', e);
+  const set = new Set<string>(readStringArray('onda.libraryExpanded'));
+  set.add(path);
+  // dodaj też przodków żeby drzewo było rozwinięte do pliku
+  let cur = path;
+  while (cur.includes('/') || cur.includes('\\')) {
+    const idx = Math.max(cur.lastIndexOf('/'), cur.lastIndexOf('\\'));
+    if (idx <= 0) break;
+    cur = cur.slice(0, idx);
+    set.add(cur);
   }
+  writeJson('onda.libraryExpanded', [...set]);
 }
 
 function onTrackEdit(tr: (typeof library.tracks)[0]) {

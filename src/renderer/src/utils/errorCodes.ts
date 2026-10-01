@@ -18,6 +18,8 @@ export function errorCodeKey(code?: string): string {
       return 'downloads.errorDependency';
     case 'unsupported':
       return 'downloads.errorUnsupported';
+    case 'disk-full':
+      return 'downloads.errorDiskFull';
     default:
       return '';
   }

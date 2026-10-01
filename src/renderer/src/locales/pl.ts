@@ -1608,6 +1608,7 @@ api.registerCommand({
     errorNetwork: 'Błąd sieci podczas pobierania',
     errorProxy: 'Błąd proxy — sprawdź ustawienia proxy',
     errorDependency: 'Brak zależności (FFmpeg/FFprobe)',
+    errorDiskFull: 'Za mało miejsca na dysku — zwolnij miejsce i spróbuj ponownie',
     errorUnsupported: 'Ten typ linku nie jest obsługiwany (personalizowane sety SoundCloud)'
   },
   common: {
