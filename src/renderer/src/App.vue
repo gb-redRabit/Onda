@@ -15,7 +15,6 @@ import { usePlayerStore } from './stores/player';
 import { useUIStore } from './stores/ui';
 import { useLibraryStore } from './stores/library';
 import { matchesShortcut, matchesPluginShortcut, navShortcutBindings } from './utils/shortcuts';
-import { debounce } from './utils/debounce';
 import { registerAppIpc } from './composables/useAppIpcEvents';
 import { handlePlayerShortcutKeydown } from './composables/playerShortcutHandler';
 import { moduleManager } from './modules/ModuleManager';
@@ -62,6 +61,10 @@ const isNarrowLayout = ref(window.innerWidth < 1200);
 const glassOn = computed(() => (settings.appearance.glassAlpha ?? 100) < 100);
 let offMaximized: (() => void) | null = null;
 
+function applyNarrowLayout(width: number): void {
+  isNarrowLayout.value = width < 1200;
+}
+
 const isExplorerWindow = computed(() => route.name === 'explorer-window');
 
 // Rebuilt only when the shortcuts change, not on every keystroke.
@@ -77,6 +80,8 @@ const { appearance: appearanceRef } = storeToRefs(settings);
 const theme = getThemeEngine(appearanceRef);
 
 onMounted(async () => {
+  // Applied on every resize event (the ref write is O(1) and Vue dedupes an
+  // unchanged boolean) so the narrow layout never lags behind the window.
   window.addEventListener('resize', onAppResize);
   document.addEventListener('keydown', onGlobalKeydown);
   document.addEventListener('mousedown', onGlobalMouseDown);
@@ -156,11 +161,10 @@ onBeforeUnmount(() => {
   offMaximized?.();
 });
 
-// A drag fires resize on every frame; the threshold only needs re-evaluating
-// once the drag settles.
-const onAppResize = debounce(() => {
-  isNarrowLayout.value = window.innerWidth < 1200;
-}, 100);
+// Fallback for environments without ResizeObserver.
+function onAppResize(): void {
+  applyNarrowLayout(window.innerWidth);
+}
 
 watch(
   () => settings.appearance.locale,

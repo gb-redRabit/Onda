@@ -6,6 +6,7 @@ import { logger } from '../shared/logger';
 import { redactSecrets } from '../shared/redact';
 import { recordWarning, clearWarnings } from './warnings';
 import { rotateLogIfNeeded } from './log-rotate';
+import { WriteQueue } from './utils/write-queue';
 
 const LOG_LINES = 2000;
 
@@ -52,7 +53,7 @@ function ts(): string {
   return new Date().toISOString();
 }
 
-let writeQueue: Promise<void> = Promise.resolve();
+const writeQueue = new WriteQueue();
 
 function writeLine(level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR', args: unknown[]): void {
   if (LEVEL_WEIGHT[level.toLowerCase() as LogLevel] < LEVEL_WEIGHT[minLevel]) return;
@@ -61,17 +62,17 @@ function writeLine(level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR', args: unknown[]):
   const text = redactSecrets(formatArgs(args));
   if (level === 'WARN') recordWarning(text);
   const line = `[${ts()}] [${level}] ${text}\n`;
-  writeQueue = writeQueue
-    .then(async () => {
+  writeQueue.push(async () => {
+    try {
       await mkdir(dir, { recursive: true });
       // Rotate (keep one previous file) instead of truncating, so a burst that
       // crosses the cap does not throw away the earlier diagnostics.
       await rotateLogIfNeeded(file, maxFileBytes);
       await appendFile(file, line, 'utf-8');
-    })
-    .catch((e) => {
+    } catch (e) {
       logger.warn('logfile', 'write failed', e);
-    });
+    }
+  });
 }
 
 // Patch console in the main process so every logger call also lands on disk.
@@ -116,7 +117,7 @@ export function setupFileLogging(): void {
  * instead of sleeping.
  */
 export async function flushLogWrites(): Promise<void> {
-  await writeQueue;
+  await writeQueue.whenIdle();
 }
 
 export async function readLogTail(lines: number = LOG_LINES): Promise<string> {

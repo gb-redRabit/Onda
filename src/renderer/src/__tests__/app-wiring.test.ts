@@ -12,9 +12,10 @@ const EN = readFileSync(join(ROOT, 'src/renderer/src/locales/en.ts'), 'utf8');
 const PL = readFileSync(join(ROOT, 'src/renderer/src/locales/pl.ts'), 'utf8');
 
 describe('App.vue wiring', () => {
-  it('debounces the window resize handler', () => {
-    expect(APP).toMatch(/import \{ debounce \} from '\.\/utils\/debounce'/);
-    expect(APP).toMatch(/onAppResize\s*=\s*debounce\(/);
+  it('updates the narrow layout on resize without debouncing', () => {
+    expect(APP).toMatch(/applyNarrowLayout\(/);
+    expect(APP).toMatch(/addEventListener\('resize'/);
+    expect(APP).not.toMatch(/debounce\(/);
   });
 
   it('renders a single QueuePanel across layouts', () => {
