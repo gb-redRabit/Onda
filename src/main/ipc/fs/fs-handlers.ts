@@ -15,6 +15,7 @@ import { join, extname, basename } from 'path';
 import { iconSourcePath } from '../../utils/file-icon';
 import { spawn } from 'child_process';
 import { terminalCandidates, spawnFirstAvailable } from '../../utils/terminal';
+import { withTimeout } from '../../utils/with-timeout';
 import { mainMessages } from '../../i18n-main';
 import { errMsg } from '../../../shared/helpers';
 import { logger } from '../../../shared/logger';
@@ -32,6 +33,10 @@ import { getStore } from '../cover/cover-cache';
 const MAX_DUPLICATE_CANDIDATES = 5000;
 const MAX_DUPLICATE_FILE_BYTES = 2 * 1024 * 1024 * 1024;
 const MAX_PATH_LENGTH = 4096;
+
+// Filesystem calls (readdir/stat) on a dead network share or a spun-down disk
+// can hang indefinitely; a timeout turns that into an error the UI can show.
+const FS_OP_TIMEOUT_MS = 15_000;
 
 /** One detached shell at a time, so the channel cannot be used as a spawn loop. */
 let openTerminalInFlight = false;
@@ -81,7 +86,12 @@ export function registerFsHandlers(): void {
       logger.warn('fs', 'getProperties rejected invalid path');
       return null;
     }
-    return getFileProperties(filePath);
+    try {
+      return await withTimeout(getFileProperties(filePath), FS_OP_TIMEOUT_MS);
+    } catch (e) {
+      logger.warn('fs', `getProperties failed for ${filePath}`, e);
+      return null;
+    }
   });
 
   ipcMain.handle('fs:readdir', async (event, dirPath: unknown): Promise<void> => {
@@ -105,7 +115,7 @@ export function registerFsHandlers(): void {
     const resolvedPath = dirPath;
     let entries;
     try {
-      entries = await readdir(resolvedPath, { withFileTypes: true });
+      entries = await withTimeout(readdir(resolvedPath, { withFileTypes: true }), FS_OP_TIMEOUT_MS);
     } catch (err) {
       event.sender.send('fs:readdir:batch', {
         done: true,
@@ -121,7 +131,7 @@ export function registerFsHandlers(): void {
       const results = await Promise.allSettled(
         batch.map(async (entry) => {
           const fullPath = join(resolvedPath, entry.name);
-          const stats = await stat(fullPath);
+          const stats = await withTimeout(stat(fullPath), FS_OP_TIMEOUT_MS);
           return getFileItem(fullPath, stats, entry.name);
         })
       );

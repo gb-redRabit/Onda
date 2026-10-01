@@ -22,6 +22,7 @@ import {
 } from '@renderer/utils/libraryView';
 import { isTabId, buildLibraryTabs, type TabId } from '@renderer/utils/libraryTabs';
 import { readString, writeString, readStringArray, writeJson } from '@renderer/utils/localStore';
+import { clonePlain } from '@renderer/utils/clone';
 
 // Modals only mounted on demand — lazy so the Library chunk stays lean (3.5).
 const TrackTagEditor = defineAsyncComponent(
@@ -190,19 +191,17 @@ function handleOverviewShowAll(section: string) {
 }
 
 function openImageViewer(index: number) {
-  const files = JSON.parse(
-    JSON.stringify(
-      filteredImages.value.map((tr) => ({
-        name: tr.name,
-        path: tr.path,
-        isDirectory: false,
-        size: tr.size,
-        modifiedAt: tr.addedAt,
-        createdAt: tr.addedAt,
-        extension: tr.extension,
-        mimeType: tr.mimeType
-      }))
-    )
+  const files = clonePlain(
+    filteredImages.value.map((tr) => ({
+      name: tr.name,
+      path: tr.path,
+      isDirectory: false,
+      size: tr.size,
+      modifiedAt: tr.addedAt,
+      createdAt: tr.addedAt,
+      extension: tr.extension,
+      mimeType: tr.mimeType
+    }))
   );
   window.api?.invoke('imageViewer:open', files, index);
 }
