@@ -1,8 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
 import { launchOnda, dismissWizard } from './helpers/app';
 
-// Built-in themes + Theme Creator: switching a theme must update the document's
-// `color-scheme` (dark/light) and survive a reload.
+// Wbudowane motywy + Theme Creator: przełączenie motywu musi zaktualizować
+// `color-scheme` dokumentu (ciemny/jasny) i przetrwać przeładowanie.
 
 async function setHash(page: Page, hash: string): Promise<void> {
   await page.evaluate((h) => {
@@ -23,7 +23,7 @@ test.describe('themes & creator', () => {
       await setHash(page, '/settings');
       await expect(page.locator('main[data-route]')).toHaveAttribute('data-route', 'settings');
 
-      // Open the Theme tab from the overview.
+      // Otwórz zakładkę Theme z przeglądu.
       await page.getByTestId('settings-overview-theme').click();
       await expect(page.getByTestId('theme-dark')).toBeVisible();
       await expect(page.getByTestId('theme-light')).toBeVisible();
@@ -35,14 +35,14 @@ test.describe('themes & creator', () => {
       await page.getByTestId('theme-dark').click();
       await expect.poll(() => currentColorScheme(page)).toBe('dark');
 
-      // Theme Creator: custom scheme seeds flip color-scheme live.
+      // Theme Creator: ziarna custom scheme przełączają color-scheme na żywo.
       await page.getByTestId('theme-custom').click();
       await expect(page.getByTestId('theme-seed-light')).toBeVisible();
       await expect(page.getByTestId('theme-seed-dark')).toBeVisible();
       await page.getByTestId('theme-seed-light').click();
       await expect.poll(() => currentColorScheme(page)).toBe('light');
 
-      // The choice persists across a reload (settings saves are debounced).
+      // Wybór utrzymuje się po przeładowaniu (zapisy ustawień są debounced).
       await page.waitForTimeout(700);
       await page.reload();
       await dismissWizard(page);

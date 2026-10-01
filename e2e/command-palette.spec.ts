@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { launchOnda, dismissWizard } from './helpers/app';
 
-// Command palette (Ctrl+K, global) and view search (Ctrl+F, current view).
+// Paleta poleceń (Ctrl+K, globalna) i wyszukiwanie widoku (Ctrl+F, bieżący widok).
 
 test.describe('command palette', () => {
   test('Ctrl+K opens the palette and runs an action; Ctrl+F opens view search', async () => {
@@ -14,7 +14,7 @@ test.describe('command palette', () => {
       });
       await expect(page.locator('main[data-route]')).toHaveAttribute('data-route', 'library');
 
-      // Global palette: an empty query lists every view action.
+      // Globalna paleta: puste zapytanie wyświetla każdą akcję widoku.
       await page.keyboard.press('Control+k');
       await expect(page.getByTestId('app-search')).toBeVisible();
       await expect(page.getByTestId('app-search-input')).toBeVisible();
@@ -24,14 +24,14 @@ test.describe('command palette', () => {
       await page.keyboard.press('Escape');
       await expect(page.getByTestId('app-search')).toHaveCount(0);
 
-      // Running the first action (Home) navigates and closes the palette.
+      // Uruchomienie pierwszej akcji (Home) nawiguje i zamyka paletę.
       await page.keyboard.press('Control+k');
       await expect(page.locator('#app-search-item-0')).toBeVisible();
       await page.locator('#app-search-item-0').click();
       await expect(page.getByTestId('app-search')).toHaveCount(0);
       await expect(page.locator('main[data-route]')).toHaveAttribute('data-route', 'home');
 
-      // Ctrl+F view search on a searchable view (no global results list).
+      // Wyszukiwanie widoku Ctrl+F w widoku z wyszukiwaniem (brak globalnej listy wyników).
       await page.evaluate(() => {
         window.location.hash = '#/library';
       });

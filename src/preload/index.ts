@@ -33,9 +33,9 @@ import {
 } from './generated';
 import { logger } from '../shared/logger';
 
-// Fetched over IPC (not CLI args) so the media-server token never shows up in
-// the process command line. The main handler is registered before any window
-// is created, so sendSync resolves immediately.
+// Pobierane przez IPC (nie przez argumenty CLI), dzięki czemu token media-server
+// nigdy nie pojawia się w wierszu poleceń procesu. Główny handler jest rejestrowany
+// przed utworzeniem jakiegokolwiek okna, więc sendSync rozwiązuje się natychmiast.
 let mediaServerUrl = '';
 try {
   mediaServerUrl = ipcRenderer.sendSync('media:getServerUrl') as string;
@@ -55,13 +55,13 @@ function trySend(channel: string, ...args: unknown[]): void {
   }
 }
 
-// Every invoke goes through this guard — the generated allowlist is the single
-// source of truth, so typed wrappers cannot silently bypass it.
+// Każdy invoke przechodzi przez ten guard — wygenerowana allowlista jest jedynym
+// źródłem prawdy, więc typowane wrappery nie mogą jej po cichu ominąć.
 //
-// Errors are propagated to the renderer instead of being swallowed into
-// `undefined`: a failed handler (missing file, denied permission, network
-// error) must be catchable by the caller so the UI can show feedback rather
-// than silently doing nothing.
+// Błędy są propagowane do renderera zamiast być połykane jako `undefined`:
+// nieudany handler (brak pliku, odmowa dostępu, błąd sieci) musi być
+// przechwytywalny przez wywołującego, aby UI mogło pokazać informację zwrotną,
+// a nie po cichu nic nie robić.
 function tryInvoke<C extends IpcChannel>(channel: C, ...args: IpcArgs<C>): Promise<IpcResult<C>>;
 function tryInvoke(channel: string, ...args: unknown[]): Promise<unknown>;
 function tryInvoke(channel: string, ...args: unknown[]): Promise<unknown> {

@@ -4,9 +4,9 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { launchOnda, dismissWizard } from './helpers/app';
 
-// Settings export/import round-trip through the real IPC handlers. The native
-// save/open dialogs are stubbed in the main process, so the flow is
-// deterministic and no OS picker is shown.
+// Eksport/import ustawień w obie strony przez prawdziwe handlery IPC. Natywne
+// dialogi zapisu/otwarcia są zaślepione w procesie głównym, więc przepływ jest
+// deterministyczny i żaden systemowy selektor nie jest pokazywany.
 
 interface OndaTestApi {
   invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
@@ -26,7 +26,7 @@ test.describe('settings export/import', () => {
     try {
       await dismissWizard(page);
 
-      // Point both native pickers at a throw-away file.
+      // Skieruj oba natywne selektory na plik jednorazowy.
       await onda.app.evaluate(({ dialog }, filePath) => {
         const d = dialog as unknown as {
           showSaveDialog: () => Promise<{ canceled: boolean; filePath: string }>;
@@ -40,7 +40,7 @@ test.describe('settings export/import', () => {
         const api = (window as unknown as { api: OndaTestApi }).api;
         const setOn = await api.invoke('settings:set', { explorer: { permanentDelete: true } });
         const exported = await api.invoke('settings:export');
-        // Diverge from the exported value so the import has something to restore.
+        // Odejdź od wyeksportowanej wartości, aby import miał co przywrócić.
         await api.invoke('settings:set', { explorer: { permanentDelete: false } });
         const exportedFile = path;
         const beforeImport = (await api.invoke('settings:get')) as {
@@ -63,7 +63,7 @@ test.describe('settings export/import', () => {
       expect(result.imported.data?.explorer?.permanentDelete).toBe(true);
       expect(result.afterImport.explorer?.permanentDelete).toBe(true);
 
-      // The written file is the sanitized settings object and never carries secrets.
+      // Zapisany plik to oczyszczony obiekt ustawień i nigdy nie zawiera sekretów.
       const raw = JSON.parse(readFileSync(exportPath, 'utf-8')) as {
         explorer?: { permanentDelete?: boolean };
         apiKeys?: unknown;

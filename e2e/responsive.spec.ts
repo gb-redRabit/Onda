@@ -1,10 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
 import { launchOnda, dismissWizard } from './helpers/app';
 
-// Responsiveness: every primary view at many window sizes, at the real display
-// size (maximized) and in true fullscreen. Checks: no horizontal overflow, the
-// view fills the window height, the main region stays inside the viewport and
-// full-width views actually expand. Soft expectations collect every offender.
+// Responsywność: każdy główny widok przy wielu rozmiarach okna, przy rzeczywistym rozmiarze
+// wyświetlania (zmaksymalizowany) i w prawdziwym pełnym ekranie. Sprawdza: brak poziomego przepełnienia,
+// widok wypełnia wysokość okna, główny region pozostaje w viewporcie i
+// widoki pełnej szerokości faktycznie się rozszerzają. Miękkie asercje zbierają każdego winowajcę.
 
 interface Measurement {
   innerW: number;
@@ -21,12 +21,12 @@ interface ViewSpec {
   route: string;
   path: string;
   root: string;
-  /** Full-width view: must expand to the main region's width. */
+  /** Pełnoszerokościowy widok: musi rozszerzać się do szerokości głównego regionu. */
   fill: boolean;
 }
 
 const VIEWS: ViewSpec[] = [
-  { route: 'home', path: '/', root: 'home-view', fill: false }, // centred on purpose
+  { route: 'home', path: '/', root: 'home-view', fill: false }, // celowo wyśrodkowany
   { route: 'library', path: '/library', root: 'library-view', fill: true },
   { route: 'explorer', path: '/explorer', root: 'explorer-view', fill: true },
   { route: 'online', path: '/online', root: 'online-view', fill: true },
@@ -67,7 +67,7 @@ async function measure(page: Page): Promise<Measurement> {
   });
 }
 
-/** Navigates to a view and asserts it fits; returns the measurement. */
+/** Nawiguje do widoku i sprawdza, czy się mieści; zwraca pomiar. */
 async function assertViewFits(page: Page, view: ViewSpec, tag: string): Promise<Measurement> {
   await page.evaluate((p) => {
     window.location.hash = `#${p}`;
@@ -136,7 +136,7 @@ test.describe('responsive layout', () => {
       await dismissWizard(page);
       const size = await app.evaluate(({ screen }) => screen.getPrimaryDisplay().size);
 
-      // Maximize the main window to the whole display.
+      // Zmaksymalizuj główne okno na cały wyświetlacz.
       await app.evaluate(({ BrowserWindow }, s) => {
         const main = BrowserWindow.getAllWindows().find(
           (w) => !w.webContents.getURL().includes('pip') && !w.webContents.getURL().includes('splash')
@@ -151,7 +151,7 @@ test.describe('responsive layout', () => {
         await assertViewFits(page, view, `maximized ${view.route}@${maximized.innerW}`);
       }
 
-      // True fullscreen via the app's own IPC.
+      // Prawdziwy pełny ekran przez własne IPC aplikacji.
       const entered = await page.evaluate(async () => {
         const api = (window as unknown as { api: { invoke: (c: string) => Promise<unknown> } }).api;
         return api.invoke('window:toggleFullscreen');

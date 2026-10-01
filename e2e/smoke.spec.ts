@@ -8,7 +8,7 @@ test.describe('app smoke', () => {
       await expect(onda.page.getByTestId('app-root')).toBeVisible();
       await expect(onda.page).toHaveTitle('Onda');
 
-      // First run on a fresh profile: dismiss the onboarding wizard.
+      // Pierwsze uruchomienie na świeżym profilu: odrzuć kreatora onboardingu.
       await dismissWizard(onda.page);
       await expect(onda.page.getByTestId('wizard-skip')).toHaveCount(0);
 

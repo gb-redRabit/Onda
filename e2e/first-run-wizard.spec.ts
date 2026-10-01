@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { launchOnda } from './helpers/app';
 
-// Step navigation of the first-run wizard. A fresh profile mounts it
-// automatically (App.vue), so the helper that only clicks "skip" is deliberately
-// not used here.
+// Nawigacja krokami kreatora pierwszego uruchomienia. Świeży profil montuje go
+// automatycznie (App.vue), więc helper, który tylko klika "skip", jest celowo
+// tutaj nieużywany.
 
-const LAST_STEP = 8; // 9 steps, zero-indexed
+const LAST_STEP = 8; // 9 kroków, indeksowane od zera
 
 test.describe('first-run wizard', () => {
   test('walks every step, finishes, and can be re-opened from settings', async () => {
@@ -19,26 +19,26 @@ test.describe('first-run wizard', () => {
       await expect(body).toHaveAttribute('data-step', '0');
       await expect(page.getByTestId('wizard-back')).toBeDisabled();
 
-      // Forward through every step; the step host index advances one at a time.
+      // Do przodu przez każdy krok; indeks hosta kroków zwiększa się o jeden naraz.
       for (let step = 1; step <= LAST_STEP; step++) {
         await page.getByTestId('wizard-next').click();
         await expect(body).toHaveAttribute('data-step', String(step));
       }
 
-      // Back and forward again keep the same step host.
+      // Wstecz i ponownie do przodu utrzymują ten sam host kroków.
       await page.getByTestId('wizard-back').click();
       await expect(body).toHaveAttribute('data-step', String(LAST_STEP - 1));
       await page.getByTestId('wizard-next').click();
       await expect(body).toHaveAttribute('data-step', String(LAST_STEP));
 
-      // The last step's button completes the wizard.
+      // Przycisk ostatniego kroku kończy kreatora.
       await page.getByTestId('wizard-next').click();
       await expect(wizard).toHaveCount(0);
       await expect
         .poll(() => page.evaluate(() => localStorage.getItem('onda-first-run-done')))
         .toBe('1');
 
-      // Settings can re-open the wizard, and it starts at the first step again.
+      // Settings może ponownie otworzyć kreatora, a on startuje znów od pierwszego kroku.
       await page.evaluate(() => {
         window.location.hash = '#/settings?tab=general';
       });
@@ -47,7 +47,7 @@ test.describe('first-run wizard', () => {
       await expect(wizard).toBeVisible();
       await expect(body).toHaveAttribute('data-step', '0');
 
-      // "Skip everything" closes it from any step.
+      // "Skip everything" zamyka go z dowolnego kroku.
       await page.getByTestId('wizard-next').click();
       await expect(body).toHaveAttribute('data-step', '1');
       await page.getByTestId('wizard-skip').click();

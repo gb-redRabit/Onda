@@ -3,8 +3,8 @@ import { mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
-// Launches the built app (out/main/index.js) with a throw-away user profile so
-// E2E runs never touch the developer's real settings, logs or library.
+// Uruchamia zbudowaną aplikację (out/main/index.js) z jednorazowym profilem użytkownika, aby
+// przebiegi E2E nigdy nie dotykały prawdziwych ustawień, logów ani biblioteki dewelopera.
 
 export interface OndaApp {
   app: ElectronApplication;
@@ -15,11 +15,11 @@ export interface OndaApp {
 }
 
 export interface LaunchOptions {
-  /** Runs against the fresh profile directory before Electron starts. */
+  /** Uruchamia się na świeżym katalogu profilu przed startem Electrona. */
   profileSetup?: (userDataDir: string) => void;
-  /** Reuses an existing profile (e.g. seeded by a previous run) instead of a fresh one. */
+  /** Ponownie używa istniejącego profilu (np. zasiał go poprzedni przebieg) zamiast świeżego. */
   userDataDir?: string;
-  /** Extra environment for the Electron process (e.g. ONDA_E2E_FIXTURES=1). */
+  /** Dodatkowe środowisko dla procesu Electron (np. ONDA_E2E_FIXTURES=1). */
   env?: Record<string, string>;
 }
 
@@ -52,11 +52,11 @@ export async function launchOnda(options: LaunchOptions = {}): Promise<OndaApp> 
   const userDataDir = options.userDataDir ?? mkdtempSync(join(tmpdir(), 'onda-e2e-'));
   options.profileSetup?.(userDataDir);
   const args = ['.'];
-  // CI Linux runs as root without a usable chrome-sandbox.
+  // CI Linux działa jako root bez użytecznego chrome-sandbox.
   if (process.platform === 'linux') args.push('--no-sandbox');
 
-  // main/index.ts applies this before the single-instance lock, so every run
-  // gets a fresh profile and parallel instances do not fight over the lock.
+  // main/index.ts stosuje to przed blokadą pojedynczej instancji, więc każdy przebieg
+  // dostaje świeży profil, a równoległe instancje nie walczą o blokadę.
   const env = {
     ...process.env,
     ONDA_USER_DATA_DIR: userDataDir,
@@ -77,8 +77,8 @@ export async function launchOnda(options: LaunchOptions = {}): Promise<OndaApp> 
       pageErrors,
       userDataDir,
       dispose: async () => {
-        // Onda hides to tray instead of closing (close-to-tray), so destroy the
-        // windows first; then give Playwright a bounded chance to reap the app.
+        // Onda ukrywa się do tray zamiast zamykać (close-to-tray), więc najpierw zniszcz
+        // okna; następnie daj Playwrightowi ograniczoną szansę na zebranie aplikacji.
         await app
           .evaluate(({ BrowserWindow }) => {
             for (const win of BrowserWindow.getAllWindows()) win.destroy();
@@ -90,7 +90,7 @@ export async function launchOnda(options: LaunchOptions = {}): Promise<OndaApp> 
       }
     };
   } catch (error) {
-    // Never leak an Electron process holding the instance lock.
+    // Nigdy nie zostawiaj procesu Electron trzymającego blokadę instancji.
     await app.close().catch(() => {});
     if (!proc.killed) proc.kill('SIGKILL');
     rmSync(userDataDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
@@ -102,16 +102,16 @@ const WIZARD_WAIT_MS = 8_000;
 const WIZARD_CLICK_TIMEOUT_MS = 5_000;
 
 /**
- * First run on a fresh profile shows the onboarding wizard. It mounts
- * asynchronously (settings + locale load first) and its full-screen overlay
- * swallows pointer events, so wait for it, dismiss it and confirm the node is
- * gone before the test interacts with the UI.
+ * Pierwsze uruchomienie na świeżym profilu pokazuje kreatora onboardingu. Montuje się
+ * asynchronicznie (najpierw ładują się ustawienia + locale), a jego pełnoekranowa nakładka
+ * pożera zdarzenia wskaźnika, więc poczekaj na niego, odrzuć go i potwierdź, że węzeł
+ * zniknął, zanim test wejdzie w interakcję z UI.
  */
 export async function dismissWizard(page: Page): Promise<void> {
   const skip = page.getByTestId('wizard-skip');
 
-  // After a dismissal the flag survives reloads, so the wizard will not mount
-  // again — don't sit through the full appearance timeout.
+  // Po odrzuceniu flaga przetrwa przeładowania, więc kreator nie zamontuje się
+  // ponownie — nie czekaj przez pełny timeout pojawienia się.
   const done = await page
     .evaluate(() => {
       try {

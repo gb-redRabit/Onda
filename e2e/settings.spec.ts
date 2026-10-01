@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { launchOnda, dismissWizard } from './helpers/app';
 
-// Interaction coverage for the Settings shell: rail navigation, settings search,
-// the overflow menu and the reset confirmation. Destructive actions (import /
-// factory reset) are never confirmed here — only their wiring is verified.
+// Pokrycie interakcji dla powłoki Settings: nawigacja rail, wyszukiwanie ustawień,
+// menu przepełnienia i potwierdzenie resetu. Akcje destrukcyjne (import /
+// factory reset) nigdy nie są tutaj potwierdzane — weryfikowane jest tylko ich okablowanie.
 
 test.describe('settings interactions', () => {
   test('navigates the rail, searches settings and opens the reset confirmation', async () => {
@@ -15,7 +15,7 @@ test.describe('settings interactions', () => {
       });
       await expect(onda.page.locator('main[data-route]')).toHaveAttribute('data-route', 'settings');
 
-      // Rail: a section jumps to its first tab.
+      // Rail: sekcja przeskakuje do swojej pierwszej zakładki.
       await onda.page.getByTestId('settings-section-appearance').click();
       await onda.page.waitForFunction(() => window.location.hash.includes('tab=theme'));
       await expect(onda.page.getByTestId('settings-tab-theme')).toHaveAttribute(
@@ -23,12 +23,12 @@ test.describe('settings interactions', () => {
         'page'
       );
 
-      // A specific tab can be selected directly.
+      // Konkretną zakładkę można wybrać bezpośrednio.
       await onda.page.getByTestId('settings-section-playback').click();
       await onda.page.waitForFunction(() => window.location.hash.includes('tab=playback'));
 
-      // Search narrows to hits and Enter opens the first hit. The query is
-      // derived from a visible tab label so the test is locale-independent.
+      // Wyszukiwanie zawęża do trafień, a Enter otwiera pierwsze trafienie. Zapytanie jest
+      // wyprowadzane z widocznej etykiety zakładki, więc test jest niezależny od lokalizacji.
       await onda.page.getByTestId('settings-section-advanced').click();
       const pluginsTab = onda.page.getByTestId('settings-tab-plugins');
       const tabLabel = (await pluginsTab.innerText()).trim();
@@ -42,7 +42,7 @@ test.describe('settings interactions', () => {
       await onda.page.waitForFunction(() => window.location.hash.includes('tab='));
       await expect(onda.page.getByTestId('settings-search-hit')).toHaveCount(0);
 
-      // The overflow menu exposes export / import / reset without running them.
+      // Menu przepełnienia eksponuje eksport / import / reset bez ich uruchamiania.
       await onda.page.getByTestId('settings-more').click();
       await expect(onda.page.getByTestId('settings-menu')).toBeVisible();
       await expect(onda.page.getByTestId('settings-export')).toBeVisible();
@@ -51,7 +51,7 @@ test.describe('settings interactions', () => {
       await onda.page.getByTestId('settings-more').click();
       await expect(onda.page.getByTestId('settings-menu')).toHaveCount(0);
 
-      // Reset asks for confirmation and cancelling keeps the app alive.
+      // Reset prosi o potwierdzenie, a anulowanie utrzymuje aplikację przy życiu.
       await onda.page.getByTestId('settings-reset').click();
       const confirmDialog = onda.page.getByTestId('explorer-prompt-dialog');
       await expect(confirmDialog).toBeVisible();

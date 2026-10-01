@@ -3,8 +3,8 @@ import { rmSync } from 'fs';
 import { launchOnda, dismissWizard } from './helpers/app';
 import { createMediaFixture } from './helpers/media';
 
-// Equalizer: opened from the player bar, presets apply to the bands, and every
-// band is keyboard-operable.
+// Equalizer: otwierany z paska odtwarzacza, presety stosują się do pasm, a każde
+// pasmo obsługuje się z klawiatury.
 
 interface OndaTestApi {
   invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
@@ -50,12 +50,12 @@ test.describe('equalizer', () => {
       await expect(page.getByTestId('eq-band-0')).toBeVisible();
       await expect(page.getByTestId('eq-preset-flat')).toBeVisible();
 
-      // Bass preset pushes the low band to +8 dB.
+      // Preset Bass wypycha niskie pasmo do +8 dB.
       await page.getByTestId('eq-preset-bassBoost').click();
       await expect(page.getByTestId('eq-band-0')).toHaveAttribute('aria-valuenow', '8');
       await expect(page.getByTestId('eq-band-9')).toHaveAttribute('aria-valuenow', '0');
 
-      // Keyboard: ArrowUp on a focused band raises it by 1 dB.
+      // Klawiatura: ArrowUp na zaznaczonym paśmie podnosi je o 1 dB.
       const band9 = page.getByTestId('eq-band-9');
       await band9.focus();
       await band9.press('ArrowUp');

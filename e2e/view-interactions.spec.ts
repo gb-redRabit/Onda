@@ -5,13 +5,13 @@ interface OndaTestApi {
   invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
 }
 
-// Interaction coverage for the remaining primary views: Downloads filters,
-// Webcast tabs, Sources (empty state, editor, created entry) and Explorer
-// (create folder + selection). Nothing destructive is confirmed.
+// Pokrycie interakcji pozostałych głównych widoków: filtry Downloads,
+// zakładki Webcast, Sources (pusty stan, edytor, utworzony wpis) i Explorer
+// (utwórz folder + zaznaczenie). Nic destrukcyjnego nie jest potwierdzane.
 
 test.describe('view interactions', () => {
   test('filters the download queue and switches Webcast tabs', async () => {
-    // ONDA_E2E_FIXTURES makes the download queue deterministic.
+    // ONDA_E2E_FIXTURES czyni kolejkę pobierania deterministyczną.
     const onda = await launchOnda({ env: { ONDA_E2E_FIXTURES: '1' } });
     try {
       await dismissWizard(onda.page);
@@ -132,7 +132,7 @@ test.describe('view interactions', () => {
       });
       await expect(onda.page.locator('main[data-route]')).toHaveAttribute('data-route', 'explorer');
 
-      // A query that matches nothing empties the list and can be cleared again.
+      // Zapytanie, które nic nie pasuje, opróżnia listę i można je ponownie wyczyścić.
       const search = onda.page.getByTestId('explorer-search');
       const items = onda.page.locator('[data-testid^="explorer-item-"]');
       await expect(search).toBeVisible();
@@ -142,7 +142,7 @@ test.describe('view interactions', () => {
       await search.fill('');
       await expect.poll(() => items.count()).toBeGreaterThan(0);
 
-      // View mode dropdown switches the list presentation.
+      // Lista rozwijana trybu widoku przełącza prezentację listy.
       await onda.page.getByTestId('explorer-view-mode').click();
       await onda.page.getByTestId('explorer-view-details').click();
       await expect(onda.page.getByTestId('explorer-view-mode')).toHaveAttribute(
@@ -156,8 +156,8 @@ test.describe('view interactions', () => {
         'false'
       );
 
-      // Selecting the first visible row marks it (ring/aria are host-rendered,
-      // so assert through the row's existence plus no page errors).
+      // Zaznaczenie pierwszego widocznego wiersza oznacza go (ring/aria są renderowane przez hosta,
+      // więc weryfikujemy przez istnienie wiersza plus brak błędów strony).
       const firstRow = onda.page.locator('[data-testid^="explorer-item-"]').first();
       if (await firstRow.count()) {
         await firstRow.click();

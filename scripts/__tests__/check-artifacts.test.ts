@@ -29,7 +29,7 @@ function git(dir: string, ...args: string[]): void {
   execFileSync('git', args, { cwd: dir, stdio: 'ignore' });
 }
 
-/** A committed repo whose working tree starts clean — the state CI is in. */
+/** Zacommitowane repo, którego drzewo robocze zaczyna jako czyste — stan, w jakim jest CI. */
 function makeRepo(): string {
   const dir = mkdtempSync(join(tmpdir(), 'onda-artifacts-'));
   git(dir, 'init', '-q');
@@ -62,8 +62,8 @@ describe('check:artifacts', () => {
   });
 
   it('fails on an untracked file dropped in the repo root', () => {
-    // The regression: a test writing through a path that resolves to the repo
-    // root leaves a file that `prettier --check` then rejects on CI.
+    // Regresja: test piszący przez ścieżkę, która rozwiązuje się do katalogu
+    // głównego repo, pozostawia plik, który `prettier --check` odrzuca potem na CI.
     const dir = repo();
     writeFileSync(join(dir, 'onda-radio-test.json'), '{}');
     const result = runCheck(dir);
@@ -81,8 +81,8 @@ describe('check:artifacts', () => {
   });
 
   it('ignores a staged change, which is the developer own work in progress', () => {
-    // Keeps the check usable locally: `git add` without commit is not an
-    // artifact, and CI never reaches that state anyway.
+    // Utrzymuje sprawdzenie użyteczne lokalnie: `git add` bez commita nie jest
+    // artefaktem, a CI i tak nigdy nie osiąga tego stanu.
     const dir = repo();
     writeFileSync(join(dir, 'b.txt'), 'work in progress\n');
     git(dir, 'add', 'b.txt');

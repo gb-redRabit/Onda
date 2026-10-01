@@ -4,8 +4,8 @@ import { basename } from 'path';
 import { launchOnda, dismissWizard } from './helpers/app';
 import { createImageFixture } from './helpers/media';
 
-// The image viewer is a full-bleed lightbox: its overlay must fill the window
-// (fullscreen and windowed), with the image and thumbnail strip inside bounds.
+// Przeglądarka obrazów to pełnoekranowy lightbox: jej nakładka musi wypełniać okno
+// (pełny ekran i okno), z obrazem i paskiem miniatur w granicach.
 
 interface OndaTestApi {
   invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
@@ -86,7 +86,7 @@ test.describe('image viewer fills the window', () => {
           };
         });
 
-      // Fullscreen: overlay == window.
+      // Pełny ekran: nakładka == okno.
       await expect
         .poll(async () => {
           const v = await measure();
@@ -99,7 +99,7 @@ test.describe('image viewer fills the window', () => {
       expect(m.imgRight).toBeLessThanOrEqual(m.iw + 1);
       expect(m.stripRight).toBeLessThanOrEqual(m.iw + 1);
 
-      // Leave fullscreen and resize: the overlay still fills the window.
+      // Wyjdź z pełnego ekranu i zmień rozmiar: nakładka nadal wypełnia okno.
       await viewer.getByTestId('image-viewer-fullscreen').click();
       await viewer.waitForTimeout(500);
       const winId = await viewer.evaluate(() =>

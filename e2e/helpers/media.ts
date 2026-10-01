@@ -2,8 +2,8 @@ import { mkdtempSync, writeFileSync, copyFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 
-// Generates real media fixtures so the scan and the player run against the
-// actual filesystem instead of mocks.
+// Generuje prawdziwe fixture'y mediów, aby skanowanie i odtwarzacz działały na
+// rzeczywistym systemie plików zamiast mocków.
 
 export interface MediaFixture {
   dir: string;
@@ -41,8 +41,8 @@ export function createMediaFixture(): MediaFixture {
   return { dir, wavPath };
 }
 
-// A folder with `count` real PNGs (copies of the app icon) for the image viewer
-// / thumbnail strip stress tests.
+// Folder z `count` prawdziwych PNG (kopie ikony aplikacji) dla testów obciążeniowych
+// przeglądarki obrazów / paska miniatur.
 export interface ImageFixture {
   dir: string;
   files: string[];

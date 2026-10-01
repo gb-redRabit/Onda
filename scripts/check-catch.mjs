@@ -1,5 +1,5 @@
-// Flags truly empty `catch {}` blocks. A comment inside the block is treated as
-// a conscious "best-effort, intentionally ignored" decision and is allowed.
+// Wykrywa naprawdę puste bloki `catch {}`. Komentarz wewnątrz bloku jest traktowany
+// jako świadoma decyzja "best-effort, celowo zignorowane" i jest dozwolony.
 import { readdir, readFile } from 'fs/promises';
 import { join } from 'path';
 

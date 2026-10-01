@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test';
 import { resolve } from 'path';
 import { launchOnda, dismissWizard } from './helpers/app';
 
-// The video PiP window: it is placed/resized from the requested position and its
-// own controls (settings panel, subtitles, close) work.
+// Okno PiP wideo: jest pozycjonowane i zmieniane rozmiarowo na podstawie żądanej pozycji, a jego
+// własne kontrolki (panel ustawień, napisy, zamknięcie) działają.
 
 const FIXTURE = resolve(__dirname, 'fixtures', 'sample.webm');
 
@@ -53,7 +53,7 @@ test.describe('video PiP window', () => {
           return w ? w.getBounds() : null;
         });
 
-      // Top-left, small.
+      // Lewy górny róg, mały.
       await startPip('top-left', 320, 180);
       await expect.poll(() => findPip()).not.toBeNull();
       const small = (await findPip())!;
@@ -62,7 +62,7 @@ test.describe('video PiP window', () => {
       expect(Math.abs(small.x - (work.x + 20))).toBeLessThanOrEqual(2);
       expect(Math.abs(small.y - (work.y + 20))).toBeLessThanOrEqual(2);
 
-      // Bigger, bottom-right: the size follows the request and the window moves.
+      // Większy, prawy dolny róg: rozmiar podąża za żądaniem, a okno się przesuwa.
       await startPip('bottom-right', 420, 260);
       await expect.poll(async () => (await findPip())!.width).toBeGreaterThan(small.width);
       const big = (await findPip())!;
@@ -74,14 +74,14 @@ test.describe('video PiP window', () => {
         (p) => p.url().includes('/pip.html') && !p.url().includes('preview')
       )!;
 
-      // Settings panel opens, subtitles toggle, panel closes.
+      // Panel ustawień otwiera się, napisy przełączają się, panel się zamyka.
       await pip.getByTestId('pip-video-settings').click();
       await expect(pip.getByTestId('pip-video-settings-panel')).toBeVisible();
       await pip.getByTestId('pip-video-subs').click();
       await pip.getByTestId('pip-video-settings').click();
       await expect(pip.getByTestId('pip-video-settings-panel')).toHaveCount(0);
 
-      // Close hides the window (it stays alive for reuse).
+      // Zamknięcie ukrywa okno (pozostaje żywe do ponownego użycia).
       await pip.getByTestId('pip-video-close').click();
       await expect
         .poll(() =>

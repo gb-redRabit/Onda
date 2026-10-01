@@ -88,7 +88,7 @@ test.describe('plugin permission review', () => {
       await expect(slots).toBeVisible();
       await expect(slots).toContainText('audio-view');
       await expect(slots).toContainText(/tekst|text/i);
-      // The timeupdate hook is part of the reviewed surface too.
+      // Hook timeupdate jest również częścią przeglądanej powierzchni.
       await expect(dialog).toContainText('track:timeupdate');
 
       await dialog.getByRole('button', { name: /cancel|anuluj/i }).click();
@@ -115,7 +115,7 @@ test.describe('plugin permission review', () => {
       expect(total).toMatch(/^(\d+) \/ \1$/);
       expect(total).not.toMatch(/^1 \//);
 
-      // Filtering keeps the original numbering of the remaining section.
+      // Filtrowanie zachowuje oryginalną numerację pozostałej sekcji.
       await search.fill('spectrum');
       await expect(count).not.toHaveText(total);
       await expect(guide).toContainText('player:spectrum');
@@ -126,7 +126,7 @@ test.describe('plugin permission review', () => {
       await onda.page.getByTestId('plugins-guide-search-clear').click();
       await expect(count).toHaveText(total);
 
-      // Code blocks are copyable; a failing clipboard must not break the dialog.
+      // Bloki kodu można kopiować; zawodny schowek nie może zepsuć dialogu.
       await search.fill('manifest');
       const copy = onda.page.getByTestId('plugins-guide-copy').first();
       await expect(copy).toBeVisible();
@@ -180,7 +180,7 @@ test.describe('plugin permission review', () => {
         await expect(card).not.toContainText(/Błąd|Error/);
       }
 
-      // sleep-timer ships a configuration form (settings in the manifest).
+      // sleep-timer dostarcza formularz konfiguracji (ustawienia w manifeście).
       await expect(onda.page.getByTestId('plugin-card-sleep-timer')).toContainText(
         /Konfiguracja|Configuration/
       );
@@ -202,7 +202,7 @@ test.describe('plugin permission review', () => {
         await api.invoke('plugins:installExample', 'progress-slot');
       }, media.dir);
 
-      // Enable the plugin through the real review dialog.
+      // Włącz wtyczkę przez prawdziwy dialog przeglądu.
       await onda.page.evaluate(() => {
         window.location.hash = '#/settings?tab=plugins';
       });
@@ -217,7 +217,7 @@ test.describe('plugin permission review', () => {
         /Loaded|Załadowana/
       );
 
-      // The library index is debounced; reboot so the scan result is loaded.
+      // Indeks biblioteki jest debounced; uruchom ponownie, aby wynik skanowania został załadowany.
       await onda.page.waitForTimeout(1000);
       await onda.page.evaluate(() => localStorage.setItem('onda.libraryTab', 'tracks'));
       await onda.page.reload();

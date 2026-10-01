@@ -1,6 +1,6 @@
-// Generates docs/ipc-inventory.md — a complete list of IPC channels with the
-// main-process handler (if any) and whether the channel is allowlisted for
-// invoke/send/receive in the preload. Read-only with respect to app code.
+// Generuje docs/ipc-inventory.md — pełną listę kanałów IPC wraz z
+// handlerem w main (jeśli istnieje) oraz informacją, czy kanał jest allowlistowany dla
+// invoke/send/receive w preloadzie. Tylko do odczytu względem kodu aplikacji.
 import { mkdir, readdir, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 

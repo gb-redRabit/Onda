@@ -1,10 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
 import { launchOnda, dismissWizard } from './helpers/app';
 
-// Coverage for every primary view and its key elements (audit follow-up).
-// One launch per test group keeps the suite fast while still asserting the real
-// DOM of each view: root element, toolbars, tabs/segmented controls and the
-// empty states a fresh profile shows.
+// Pokrycie każdego głównego widoku i jego kluczowych elementów (kontynuacja audytu).
+// Jedno uruchomienie na grupę testów utrzymuje zestaw szybkim, jednocześnie weryfikując prawdziwy
+// DOM każdego widoku: element główny, paski narzędzi, zakładki/kontrolki segmentowe i
+// stany puste, które pokazuje świeży profil.
 
 async function setHash(page: Page, hash: string): Promise<void> {
   await page.evaluate((h) => {
@@ -45,7 +45,7 @@ test.describe('all views — structure', () => {
         }
       }
 
-      // `/player` has no track on a fresh profile, so PlayerView redirects home.
+      // `/player` nie ma utworu na świeżym profilu, więc PlayerView przekierowuje do domu.
       await setHash(page, '/player');
       await expect(page.locator('main[data-route]')).toHaveAttribute('data-route', 'home');
 
@@ -67,13 +67,13 @@ test.describe('all views — structure', () => {
       for (const id of ['open-file', 'open-folder', 'library', 'online']) {
         await expect(page.getByTestId(`home-action-${id}`)).toBeVisible();
       }
-      // Counters render once the (empty) library has loaded.
+      // Liczniki renderują się, gdy (pusta) biblioteka zostanie załadowana.
       await expect(page.getByTestId('home-counter-overview')).toBeVisible({ timeout: 15_000 });
       for (const tab of ['tracks', 'video', 'images', 'playlists']) {
         await expect(page.getByTestId(`home-counter-${tab}`)).toBeVisible();
       }
 
-      // ---- Library: every tab selects and keeps the view mounted ------------
+      // ---- Library: każda zakładka wybiera się i utrzymuje widok zamontowany ------------
       await gotoView(page, '/library', 'library');
       await expect(page.getByTestId('library-view')).toBeVisible();
       const libraryTabs = [
@@ -116,13 +116,13 @@ test.describe('all views — structure', () => {
       const items = page.locator('[data-testid^="explorer-item-"]');
       await expect.poll(() => items.count(), { timeout: 15_000 }).toBeGreaterThan(0);
 
-      // Filtering empties the list and clearing restores it.
+      // Filtrowanie opróżnia listę, a wyczyszczenie ją przywraca.
       await search.fill('zzz-onda-e2e-no-such-file');
       await expect.poll(() => items.count()).toBe(0);
       await search.fill('');
       await expect.poll(() => items.count()).toBeGreaterThan(0);
 
-      // Both view-mode entries exist and close the dropdown.
+      // Oba wpisy trybu widoku istnieją i zamykają listę rozwijaną.
       await viewMode.click();
       await expect(page.getByTestId('explorer-view-details')).toBeVisible();
       await page.getByTestId('explorer-view-details').click();
@@ -174,7 +174,7 @@ test.describe('all views — structure', () => {
   });
 
   test('Downloads and Sources expose their primary controls', async () => {
-    // ONDA_E2E_FIXTURES keeps the online/download channels deterministic.
+    // ONDA_E2E_FIXTURES utrzymuje kanały online/download deterministycznymi.
     const onda = await launchOnda({ env: { ONDA_E2E_FIXTURES: '1' } });
     const { page } = onda;
     try {
@@ -214,7 +214,7 @@ test.describe('all views — structure', () => {
       await gotoView(page, '/settings', 'settings');
       await expect(page.getByTestId('settings-view')).toBeVisible();
 
-      // Search box + ⋯ actions menu.
+      // Pole wyszukiwania + menu akcji ⋯.
       await expect(page.getByTestId('settings-search')).toBeVisible();
       await expect(page.getByTestId('settings-overview')).toBeVisible();
       await page.getByTestId('settings-more').click();
@@ -225,7 +225,7 @@ test.describe('all views — structure', () => {
       await page.keyboard.press('Escape');
       await expect(page.getByTestId('settings-menu')).toHaveCount(0);
 
-      // Rail: every section, and its tabs (lg layout shows them).
+      // Rail: każda sekcja i jej zakładki (układ lg je pokazuje).
       for (const id of [
         'appearance',
         'playback',
@@ -240,14 +240,14 @@ test.describe('all views — structure', () => {
       await expect(page.getByTestId('settings-tab-playback')).toBeVisible();
       await expect(page.getByTestId('settings-tab-diagnostics')).toBeVisible();
 
-      // Search replaces the overview with hits; clearing brings it back.
+      // Wyszukiwanie zastępuje przegląd trafieniami; wyczyszczenie go przywraca.
       await page.getByTestId('settings-search').fill('pip');
       await expect.poll(() => page.getByTestId('settings-search-hit').count()).toBeGreaterThan(0);
       await expect(page.getByTestId('settings-overview')).toHaveCount(0);
       await page.getByTestId('settings-search').fill('');
       await expect(page.getByTestId('settings-overview')).toBeVisible();
 
-      // Overview exposes a card per tab; opening one leaves the overview.
+      // Przegląd eksponuje kartę na zakładkę; otwarcie jednej opuszcza przegląd.
       for (const id of ['playback', 'pip-video', 'theme', 'general', 'plugins']) {
         await expect(page.getByTestId(`settings-overview-${id}`)).toBeVisible();
       }

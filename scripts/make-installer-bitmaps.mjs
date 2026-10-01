@@ -1,9 +1,9 @@
-// Generates the NSIS installer bitmaps and the DMG background from build/icon.png.
-// Run: node scripts/make-installer-bitmaps.mjs
+// Generuje bitmapy instalatora NSIS oraz tło DMG z build/icon.png.
+// Uruchom: node scripts/make-installer-bitmaps.mjs
 //
-// MUI2 requires BMP bitmaps with EXACT dimensions (warnings are errors):
-//   - installerHeader / installerSidebar: 150x57 and 164x314.
-// sharp cannot write BMP, so we render raw RGB with sharp and encode 24-bit BMP here.
+// MUI2 wymaga bitmap BMP o DOKŁADNYCH wymiarach (ostrzeżenia są błędami):
+//   - installerHeader / installerSidebar: 150x57 i 164x314.
+// sharp nie potrafi zapisać BMP, więc renderujemy surowe RGB przez sharp i kodujemy tutaj 24-bitowy BMP.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -31,7 +31,7 @@ function encodeBmp24(width, height, rgb) {
   buf.writeUInt32LE(offBits, 10);
   buf.writeUInt32LE(40, 14);
   buf.writeInt32LE(width, 18);
-  buf.writeInt32LE(height, 22); // positive => bottom-up rows
+  buf.writeInt32LE(height, 22); // wartość dodatnia => wiersze od dołu
   buf.writeUInt16LE(1, 26);
   buf.writeUInt16LE(24, 28);
   buf.writeUInt32LE(pixelDataSize, 34);

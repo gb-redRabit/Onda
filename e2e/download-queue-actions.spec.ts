@@ -1,10 +1,10 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { launchOnda, dismissWizard } from './helpers/app';
 
-// Download-queue row actions against the deterministic lifecycle fixtures:
-// pending jobs stay queued (`#hold`), `#downloading` jobs stay active, so
-// pause / resume / cancel / retry / clear-finished can be asserted without
-// racing the real download timers.
+// Akcje wiersza kolejki pobierania na deterministycznych fixture'ach cyklu życia:
+// zadania oczekujące pozostają w kolejce (`#hold`), zadania `#downloading` pozostają aktywne, więc
+// pauza / wznowienie / anulowanie / ponowienie / wyczyszczenie ukończonych można zweryfikować bez
+// wyścigu z rzeczywistymi timerami pobierania.
 
 interface OndaTestApi {
   invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
@@ -52,29 +52,29 @@ test.describe('download queue actions', () => {
       const live = row(page, 'E2E Live');
       const done = row(page, 'E2E Done');
 
-      // Pause an active download.
+      // Wstrzymaj aktywne pobieranie.
       await expect(live.getByTestId('download-action-pause')).toBeVisible({ timeout: 10_000 });
       await live.getByTestId('download-action-pause').click();
       await expect(live.getByTestId('download-action-resume')).toBeVisible();
 
-      // Resume it back to the queue.
+      // Wznów je z powrotem do kolejki.
       await live.getByTestId('download-action-resume').click();
       await expect(live.getByTestId('download-action-cancel')).toBeVisible();
 
-      // Cancel it, then retry the cancelled row (a fresh job replaces it).
+      // Anuluj je, następnie ponów anulowany wiersz (świeże zadanie je zastępuje).
       await live.getByTestId('download-action-cancel').click();
       await expect(live.getByTestId('download-action-retry')).toBeVisible();
       await live.getByTestId('download-action-retry').click();
       await expect(live.getByTestId('download-action-retry')).toHaveCount(0);
       await expect(rows).toHaveCount(3);
 
-      // The untouched job reaches completion, then clear-finished removes it.
+      // Nieruszone zadanie osiąga ukończenie, następnie clear-finished usuwa je.
       await expect(done.getByTestId('download-action-play')).toBeVisible({ timeout: 10_000 });
       await page.getByTestId('downloads-clear-finished').click();
       await expect(done).toHaveCount(0);
       await expect(rows).toHaveCount(2);
 
-      // Cancel + retry a still-pending job.
+      // Anuluj + ponów wciąż oczekujące zadanie.
       await hold.getByTestId('download-action-cancel').click();
       await expect(hold.getByTestId('download-action-retry')).toBeVisible();
       await hold.getByTestId('download-action-retry').click();

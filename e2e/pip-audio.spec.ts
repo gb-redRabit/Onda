@@ -1,9 +1,9 @@
 import { test, expect, type ElectronApplication } from '@playwright/test';
 import { launchOnda, dismissWizard } from './helpers/app';
 
-// Audio PiP has fixed per-dock dimensions, so this checks (1) the window is
-// placed where the dock says and (2) the in-window controls emit the actions the
-// main process forwards to the player.
+// Audio PiP ma stałe wymiary dla każdego docku, więc to sprawdza (1) czy okno jest
+// umieszczone tam, gdzie mówi dock, i (2) czy kontrolki w oknie emitują akcje, które
+// proces główny przekazuje do odtwarzacza.
 
 interface OndaTestApi {
   audioPipShow: (state: Record<string, unknown>, opts?: Record<string, unknown>) => Promise<boolean>;
@@ -43,7 +43,7 @@ test.describe('audio PiP', () => {
       const work = await app.evaluate(({ screen }) => screen.getPrimaryDisplay().workArea);
       const margin = 20;
 
-      // Corner dock: fixed card size, bottom-right with the standard margin.
+      // Dock narożny: stały rozmiar karty, prawy dolny róg ze standardowym marginesem.
       await page.evaluate((s) => {
         const api = (window as unknown as { api: OndaTestApi }).api;
         return api.audioPipShow(s, { dock: 'bottom-right' });
@@ -54,11 +54,11 @@ test.describe('audio PiP', () => {
       expect(b.width).toBeLessThanOrEqual(400);
       expect(b.height).toBeGreaterThanOrEqual(56);
       expect(b.height).toBeLessThanOrEqual(150);
-      // OS/DPI rounding can move a window by a pixel or two.
+      // Zaokrąglanie OS/DPI może przesunąć okno o piksel lub dwa.
       expect(Math.abs(b.x - (work.x + work.width - b.width - margin))).toBeLessThanOrEqual(2);
       expect(Math.abs(b.y - (work.y + work.height - b.height - margin))).toBeLessThanOrEqual(2);
 
-      // Another corner: top-left uses the same margin on both axes.
+      // Inny narożnik: lewy górny używa tego samego marginesu na obu osiach.
       await page.evaluate((s) => {
         const api = (window as unknown as { api: OndaTestApi }).api;
         return api.audioPipUpdate(s, { dock: 'top-left' });
@@ -69,7 +69,7 @@ test.describe('audio PiP', () => {
       b = (await pipBounds(app))!;
       expect(Math.abs(b.y - (work.y + margin))).toBeLessThanOrEqual(2);
 
-      // Bottom bar: full width, height capped, flush with the screen edges.
+      // Dolny pasek: pełna szerokość, ograniczona wysokość, równo z krawędziami ekranu.
       await page.evaluate((s) => {
         const api = (window as unknown as { api: OndaTestApi }).api;
         return api.audioPipUpdate(s, { dock: 'bottom' });
@@ -82,7 +82,7 @@ test.describe('audio PiP', () => {
       expect(Math.abs(b.x - work.x)).toBeLessThanOrEqual(2);
       expect(Math.abs(b.y - (work.y + work.height - b.height))).toBeLessThanOrEqual(2);
 
-      // Right edge: full height, width capped, flush with the right edge.
+      // Prawa krawędź: pełna wysokość, ograniczona szerokość, równo z prawą krawędzią.
       await page.evaluate((s) => {
         const api = (window as unknown as { api: OndaTestApi }).api;
         return api.audioPipUpdate(s, { dock: 'right' });
@@ -150,14 +150,14 @@ test.describe('audio PiP', () => {
       await pip.getByTestId('pip-mute').click();
       await pip.getByTestId('pip-eq-flat').click();
 
-      // Volume slider input.
+      // Wejście suwaka głośności.
       await pip.getByTestId('pip-volume').evaluate((el) => {
         const input = el as HTMLInputElement;
         input.value = '0.5';
         input.dispatchEvent(new Event('input', { bubbles: true }));
       });
 
-      // Seek by clicking the progress bar.
+      // Przewiń, klikając pasek postępu.
       await pip.getByTestId('pip-progress').click({ position: { x: 12, y: 2 } });
 
       const actions = await page.evaluate(

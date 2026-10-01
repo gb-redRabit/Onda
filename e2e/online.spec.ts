@@ -7,8 +7,8 @@ interface OndaTestApi {
 
 test.describe('online search and download queue', () => {
   test('opens channels in-app, resolves generic links and queues downloads', async () => {
-    // ONDA_E2E_FIXTURES makes yt:search return canned items and yt:download:add
-    // return a simulated queue (no yt-dlp/network), while the UI paths stay real.
+    // ONDA_E2E_FIXTURES sprawia, że yt:search zwraca gotowe elementy, a yt:download:add
+    // zwraca symulowaną kolejkę (bez yt-dlp/sieci), podczas gdy ścieżki UI pozostają prawdziwe.
     const onda = await launchOnda({ env: { ONDA_E2E_FIXTURES: '1' } });
     try {
       await expect(onda.page.getByTestId('app-root')).toBeVisible();
@@ -55,7 +55,7 @@ test.describe('online search and download queue', () => {
       await expect(row).toBeVisible();
       await expect(row).toContainText('E2E Download 1');
 
-      // The fixture queue advances to completed through real progress broadcasts.
+      // Kolejka fixture'ów przechodzi do ukończenia przez prawdziwe transmisje postępu.
       await expect
         .poll(
           () =>

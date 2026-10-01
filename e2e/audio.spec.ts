@@ -3,8 +3,8 @@ import { rmSync } from 'fs';
 import { launchOnda, dismissWizard } from './helpers/app';
 import { createMediaFixture } from './helpers/media';
 
-// Audio: a generated WAV is scanned, played through the player bar, and the
-// Audio view exposes its HUD (visualization/settings/layout controls).
+// Audio: wygenerowany plik WAV jest skanowany, odtwarzany przez pasek odtwarzacza, a
+// widok Audio eksponuje swój HUD (kontrolki wizualizacji/ustawień/układu).
 
 interface OndaTestApi {
   invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
@@ -49,13 +49,13 @@ test.describe('audio playback and audio view', () => {
         page.locator('[data-testid="player-bar"][data-playing="true"]')
       ).toBeVisible({ timeout: 20_000 });
 
-      // Player-bar controls exist and toggle without errors.
+      // Kontrolki paska odtwarzacza istnieją i przełączają się bez błędów.
       await expect(page.getByTestId('player-eq')).toBeVisible();
       await expect(page.getByTestId('player-queue')).toBeVisible();
       await page.getByTestId('player-queue').click();
       await page.getByTestId('player-eq').click();
 
-      // Audio view: HUD controls render while a track is loaded, empty state gone.
+      // Widok Audio: kontrolki HUD renderują się, gdy utwór jest załadowany, pusty stan znika.
       await page.evaluate(() => {
         window.location.hash = '#/audio';
       });

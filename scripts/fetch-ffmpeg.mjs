@@ -1,23 +1,23 @@
-// Fetches pinned FFmpeg + FFprobe binaries into `resources/ffmpeg/<platform>-<arch>/`
-// for LOCAL development / offline experiments only — the packaged app does NOT
-// bundle them (nothing copies `resources/ffmpeg` into the installer anymore).
-// Users install the same pinned, SHA-256 verified builds into their profile at
-// runtime from Settings → Dependencies (src/main/ipc/dependency-handlers.ts).
-// A local `resources/ffmpeg/<platform>-<arch>` layout is still picked up by the
-// resolver as the `bundled` source, which is handy when testing without network.
+// Pobiera przypięte binaria FFmpeg + FFprobe do `resources/ffmpeg/<platform>-<arch>/`
+// wyłącznie na potrzeby LOKALNEGO developmentu / eksperymentów offline — spakowana aplikacja
+// ich NIE dołącza (nic już nie kopiuje `resources/ffmpeg` do instalatora).
+// Użytkownicy instalują te same przypięte, zweryfikowane przez SHA-256 kompilacje do swojego profilu
+// w czasie działania z Settings → Dependencies (src/main/ipc/dependency-handlers.ts).
+// Lokalny układ `resources/ffmpeg/<platform>-<arch>` jest nadal rozpoznawany przez
+// resolver jako źródło `bundled`, co jest przydatne przy testowaniu bez sieci.
 //
-// Versions, URLs and SHA-256 hashes live in `binaries.json` (single source, PR-only
-// updates — never a mutable `latest` redirect). Keep them in sync with the runtime
-// managed-FFmpeg entries in the same file (src/main/ipc/dependency-utils.ts).
+// Wersje, URL-e i hashe SHA-256 znajdują się w `binaries.json` (jedno źródło, aktualizacje
+// tylko przez PR — nigdy zmienny redirect `latest`). Trzymaj je zsynchronizowane z wpisami
+// managed-FFmpeg w runtime w tym samym pliku (src/main/ipc/dependency-utils.ts).
 //
-// Usage:
-//   node scripts/fetch-ffmpeg.mjs                    # current platform
+// Użycie:
+//   node scripts/fetch-ffmpeg.mjs                    # bieżąca platforma
 //   node scripts/fetch-ffmpeg.mjs --platform win32
 //   node scripts/fetch-ffmpeg.mjs --platform darwin --arch arm64
-//   node scripts/fetch-ffmpeg.mjs --all              # every platform/arch
-//   node scripts/fetch-ffmpeg.mjs --all --dry-run    # print resolved sources only
+//   node scripts/fetch-ffmpeg.mjs --all              # każda platforma/arch
+//   node scripts/fetch-ffmpeg.mjs --all --dry-run    # tylko wypisz rozwiązane źródła
 //
-// Every download is verified against the pinned SHA-256 before it is extracted.
+// Każde pobranie jest weryfikowane względem przypiętego SHA-256, zanim zostanie rozpakowane.
 
 import { createWriteStream, mkdirSync, readdirSync, statSync } from 'fs';
 import { mkdir, rm, readFile, copyFile } from 'fs/promises';
@@ -35,11 +35,11 @@ const DRY_RUN = process.argv.includes('--dry-run');
 
 const MANIFEST = JSON.parse(await readFile(join(ROOT, 'binaries.json'), 'utf-8'));
 
-// Bundled sources keyed by `<platform>-<arch>` (BtbN assets are pinned to a
-// concrete `autobuild-…` tag in binaries.json; there is no mutable tag here).
+// Źródła bundled kluczowane przez `<platform>-<arch>` (assety BtbN są przypięte do
+// konkretnego tagu `autobuild-…` w binaries.json; nie ma tu zmiennego tagu).
 const SOURCES = MANIFEST.ffmpeg.bundled;
 
-// macOS ships ffprobe as a separate evermeet archive.
+// macOS dostarcza ffprobe jako osobne archiwum evermeet.
 const PROBE_URLS = {};
 const PROBE_SHA256 = {};
 for (const [key, src] of Object.entries(SOURCES)) {
@@ -128,7 +128,7 @@ async function extract(archive, dest, kind) {
   }
 }
 
-// Recursively finds the first file named `name` under `root`.
+// Rekurencyjnie znajduje pierwszy plik o nazwie `name` pod `root`.
 function findFile(root, name) {
   const stack = [root];
   while (stack.length) {
@@ -175,7 +175,7 @@ async function fetchFor(key) {
     const ffprobe = await findFile(extractDir, src.ffprobe);
     if (ffprobe) await copyFile(ffprobe, join(destDir, src.ffprobe));
   }
-  // macOS ships ffprobe as a separate archive.
+  // macOS dostarcza ffprobe jako osobne archiwum.
   if (PROBE_URLS[key]) {
     const probeArchive = join(work, `${key}-probe.zip`);
     await rm(probeArchive, { force: true }).catch(() => {});

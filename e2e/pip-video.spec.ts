@@ -2,8 +2,8 @@ import { test, expect, type ElectronApplication } from '@playwright/test';
 import { resolve } from 'path';
 import { launchOnda, dismissWizard } from './helpers/app';
 
-// Real video PiP: the fixture is a tiny VP9/WebM generated with the managed
-// ffmpeg (e2e/fixtures/sample.webm) — no network, no H.264 dependency.
+// Prawdziwy PiP wideo: fixture to mały VP9/WebM wygenerowany przy użyciu zarządzanego
+// ffmpeg (e2e/fixtures/sample.webm) — bez sieci, bez zależności od H.264.
 
 interface OndaTestApi {
   invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
@@ -28,7 +28,7 @@ test.describe('video PiP', () => {
     try {
       await dismissWizard(page);
 
-      // Seed the library with the generated video and rescan.
+      // Zapełnij bibliotekę wygenerowanym wideo i skanuj ponownie.
       const scanned = await page.evaluate(async (dir) => {
         const api = (window as unknown as { api: OndaTestApi }).api;
         await api.invoke('library:saveFolders', [dir]);
@@ -54,27 +54,27 @@ test.describe('video PiP', () => {
       const card = page.getByTestId('video-card').first();
       await expect(card).toBeVisible({ timeout: 15_000 });
 
-      // Playing a video auto-navigates to the player route.
+      // Odtwarzanie wideo automatycznie nawiguje do trasy odtwarzacza.
       await card.click();
       await expect(page.locator('main[data-route]')).toHaveAttribute('data-route', 'player');
       await expect(page.getByTestId('player-view')).toBeVisible();
       await expect(page.getByTestId('player-view').locator('video').first()).toBeVisible();
 
-      // Start PiP from the player top bar. The PiP window is created hidden at
-      // boot (pipManager.init), so showing it emits no "new window" event.
+      // Uruchom PiP z górnego paska odtwarzacza. Okno PiP jest tworzone ukryte przy
+      // starcie (pipManager.init), więc jego pokazanie nie emituje zdarzenia "new window".
       await page.getByTestId('player-pip').click();
       await expect.poll(() => isVideoPipVisible(app), { timeout: 15_000 }).toBe(true);
       const pip = app.windows().find((w) => /\/pip\.html/.test(w.url()));
       expect(pip).toBeTruthy();
       await expect(pip!.locator('video').first()).toBeVisible();
 
-      // The Playback menu now offers "return PiP to player".
+      // Menu Playback oferuje teraz "return PiP to player".
       await page.locator('[data-menu-trigger="playback"]').click();
       const returnItem = page.getByTestId('menu-return-pip');
       await expect(returnItem).toBeVisible();
       await returnItem.click();
 
-      // The PiP window hides again and the player keeps the video.
+      // Okno PiP ponownie się ukrywa, a odtwarzacz zachowuje wideo.
       await expect.poll(() => isVideoPipVisible(app), { timeout: 15_000 }).toBe(false);
       await expect(page.getByTestId('player-view')).toBeVisible();
 

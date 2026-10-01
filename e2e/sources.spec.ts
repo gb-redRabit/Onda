@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { launchOnda, dismissWizard } from './helpers/app';
 
-// Sources (generic API module): create → select → editor → remove.
+// Sources (generyczny moduł API): utwórz → wybierz → edytor → usuń.
 
 interface OndaTestApi {
   invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
@@ -49,7 +49,7 @@ test.describe('sources', () => {
       await item.click();
       await expect(page.getByTestId('sources-detail')).toBeVisible();
 
-      // New-source editor opens from the sidebar and can be cancelled.
+      // Edytor nowego źródła otwiera się z paska bocznego i można go anulować.
       await page.getByTestId('sources-add').click();
       const editor = page.getByTestId('source-editor-dialog');
       await expect(editor).toBeVisible();
@@ -59,7 +59,7 @@ test.describe('sources', () => {
         .click();
       await expect(editor).toHaveCount(0);
 
-      // Remove the source.
+      // Usuń źródło.
       await page.evaluate(async () => {
         const api = (window as unknown as { api: OndaTestApi }).api;
         await api.invoke('sources:delete', 'e2e-src');

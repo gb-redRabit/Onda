@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { launchOnda, dismissWizard } from './helpers/app';
 
-// Plugin lifecycle beyond the permission review: the enabled state persists
-// across a reload, disabling needs no re-approval, and uninstalling removes it.
+// Cykl życia wtyczki poza przeglądem uprawnień: stan włączony utrzymuje się
+// po przeładowaniu, wyłączanie nie wymaga ponownej aprobaty, a odinstalowanie ją usuwa.
 
 interface OndaTestApi {
   invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
@@ -29,7 +29,7 @@ test.describe('plugin lifecycle', () => {
       await expect(page.getByTestId('plugins-refresh')).toBeVisible();
       await page.getByTestId('plugins-refresh').click();
 
-      // Enable both through the review dialog.
+      // Włącz obie przez dialog przeglądu.
       for (const id of ['sleep-timer', 'vu-meter']) {
         await page.getByTestId(`plugin-toggle-${id}`).click();
         await page
@@ -42,7 +42,7 @@ test.describe('plugin lifecycle', () => {
       }
       await page.waitForTimeout(600);
 
-      // The enabled state survives a reload.
+      // Stan włączony przetrwa przeładowanie.
       await page.reload();
       await dismissWizard(page);
       await page.evaluate(() => {
@@ -52,13 +52,13 @@ test.describe('plugin lifecycle', () => {
       await expect(page.getByTestId('plugin-card-sleep-timer')).toContainText(/Loaded|Załadowana/);
       await expect(page.getByTestId('plugin-card-vu-meter')).toContainText(/Loaded|Załadowana/);
 
-      // Disabling needs no approval dialog; the "Enabled" badge disappears.
+      // Wyłączanie nie wymaga dialogu zatwierdzenia; plakietka "Enabled" znika.
       await expect(page.getByTestId('plugin-card-vu-meter')).toContainText(/Enabled|Włączona/);
       await page.getByTestId('plugin-toggle-vu-meter').click();
       await expect(page.getByTestId('plugin-permission-dialog')).toHaveCount(0);
       await expect(page.getByTestId('plugin-card-vu-meter')).not.toContainText(/Enabled|Włączona/);
 
-      // Uninstall removes the plugin from the list.
+      // Odinstalowanie usuwa wtyczkę z listy.
       const uninstalled = await page.evaluate(async () => {
         const api = (window as unknown as { api: OndaTestApi }).api;
         return api.invoke('plugins:uninstall', 'sleep-timer');

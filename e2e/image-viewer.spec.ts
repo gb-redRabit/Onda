@@ -4,10 +4,10 @@ import { basename } from 'path';
 import { launchOnda, dismissWizard } from './helpers/app';
 import { createImageFixture } from './helpers/media';
 
-// Image viewer stress test: 55 real PNGs. Verifies the thumbnail strip renders
-// (windowed around the active index), the active thumbnail is highlighted,
-// centred and scrolled into view, plus navigation, zoom/rotate/fit, slideshow
-// and the thumbnails toggle.
+// Test obciążeniowy przeglądarki obrazów: 55 prawdziwych PNG. Weryfikuje, że pasek miniatur renderuje się
+// (okienkowany wokół aktywnego indeksu), aktywna miniatura jest podświetlona,
+// wyśrodkowana i przewinięta do widoku, plus nawigacja, zoom/obrót/dopasowanie, pokaz slajdów
+// i przełącznik miniatur.
 
 interface OndaTestApi {
   invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
@@ -67,16 +67,16 @@ test.describe('image viewer', () => {
       );
       await expect(viewer.getByTestId('image-viewer-image')).toBeVisible({ timeout: 20_000 });
 
-      // Thumbnails are windowed around the active index (not all 55 at once).
+      // Miniatury są okienkowane wokół aktywnego indeksu (nie wszystkie 55 naraz).
       const thumbCount = await viewer.locator('[data-thumb-idx]').count();
       expect(thumbCount).toBeGreaterThan(30);
       expect(thumbCount).toBeLessThan(COUNT);
 
-      // The active thumbnail is highlighted.
+      // Aktywna miniatura jest podświetlona.
       const active = viewer.locator(`[data-thumb-idx="${midIndex}"]`);
       await expect(active).toHaveClass(/border-primary/);
 
-      // The strip auto-scrolls so the active thumbnail is centred and in view.
+      // Pasek automatycznie się przewija, aby aktywna miniatura była wyśrodkowana i widoczna.
       const strip = viewer.getByTestId('image-viewer-strip');
       await expect.poll(() => strip.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
       const placement = await viewer.evaluate((idx) => {
@@ -93,9 +93,9 @@ test.describe('image viewer', () => {
       expect(placement.inView).toBe(true);
       expect(placement.delta).toBeLessThan(80);
 
-      // Next / previous move the active index and its highlight. Each navigation
-      // starts a ~500ms transition that intentionally blocks the next one, so we
-      // let it settle between steps.
+      // Next / previous przenoszą aktywny indeks i jego podświetlenie. Każda nawigacja
+      // rozpoczyna ~500ms przejście, które celowo blokuje następne, więc
+      // pozwalamy mu się ustabilizować między krokami.
       const settle = () => viewer.waitForTimeout(650);
       await viewer.getByTestId('image-viewer-next').click();
       await expect(viewer.getByTestId('image-viewer-counter')).toHaveText(
@@ -110,7 +110,7 @@ test.describe('image viewer', () => {
         `${midIndex + 1} / ${COUNT}`
       );
       await settle();
-      // Keyboard handler (ArrowRight) advances again.
+      // Obsługa klawiatury (ArrowRight) przesuwa ponownie.
       await viewer.evaluate(() =>
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
       );
@@ -119,11 +119,11 @@ test.describe('image viewer', () => {
       );
       await settle();
 
-      // Clicking a rendered thumbnail jumps to it (the strip is windowed).
+      // Kliknięcie wyrenderowanej miniatury przeskakuje do niej (pasek jest okienkowany).
       await viewer.locator('[data-thumb-idx="20"]').click();
       await expect(viewer.getByTestId('image-viewer-counter')).toHaveText(`21 / ${COUNT}`);
 
-      // Zoom / rotate / fit readouts.
+      // Odczyty zoom / obrót / dopasowanie.
       await viewer.getByTestId('image-viewer-zoom-in').click();
       await expect(viewer.getByTestId('image-viewer-scale')).toBeVisible();
       await viewer.getByTestId('image-viewer-rotate').click();
@@ -131,19 +131,19 @@ test.describe('image viewer', () => {
       await viewer.getByTestId('image-viewer-fit').click();
       await expect(viewer.getByTestId('image-viewer-scale')).toHaveCount(0);
 
-      // Slideshow toggles and exposes the progress bar.
+      // Pokaz slajdów przełącza się i eksponuje pasek postępu.
       await viewer.getByTestId('image-viewer-slideshow').click();
       await expect(viewer.getByTestId('image-viewer-slideshow-progress')).toBeVisible();
       await viewer.getByTestId('image-viewer-slideshow').click();
       await expect(viewer.getByTestId('image-viewer-slideshow-progress')).toHaveCount(0);
 
-      // Thumbnails toggle collapses and re-opens the strip.
+      // Przełącznik miniatur zwija i ponownie otwiera pasek.
       await viewer.getByTestId('image-viewer-thumbnails-toggle').click();
       await expect(strip).toHaveClass(/h-0/);
       await viewer.getByTestId('image-viewer-thumbnails-toggle').click();
       await expect(strip).toHaveClass(/h-20/);
 
-      // Close from the toolbar.
+      // Zamknij z paska narzędzi.
       await viewer.getByTestId('image-viewer-close').click();
       await expect.poll(() => viewer.isClosed()).toBe(true);
 

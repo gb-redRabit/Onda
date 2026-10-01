@@ -4,8 +4,8 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { launchOnda, dismissWizard } from './helpers/app';
 
-// Explorer file operations against a real temporary directory: new folder
-// (prompt), rename, delete to Trash (default) and duplicate detection.
+// Operacje na plikach w eksploratorze na prawdziwym katalogu tymczasowym: nowy folder
+// (prompt), zmiana nazwy, usunięcie do kosza (domyślnie) i wykrywanie duplikatów.
 
 interface OndaTestApi {
   invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
@@ -49,7 +49,7 @@ test.describe('explorer file operations', () => {
       await openExplorerAt(page, dir);
       await expect(page.getByTestId('explorer-item-notes.txt')).toBeVisible();
 
-      // Deleting uses the OS Trash by default.
+      // Usuwanie domyślnie korzysta z kosza systemowego.
       const defaultDelete = await page.evaluate(async () => {
         const api = (window as unknown as { api: OndaTestApi }).api;
         const settings = (await api.invoke('settings:get')) as {
@@ -59,7 +59,7 @@ test.describe('explorer file operations', () => {
       });
       expect(defaultDelete ?? false).toBe(false);
 
-      // New folder via the prompt.
+      // Nowy folder przez prompt.
       await page.getByTestId('explorer-new-folder').click();
       const prompt = page.getByTestId('explorer-prompt-dialog');
       await expect(prompt).toBeVisible();
@@ -68,7 +68,7 @@ test.describe('explorer file operations', () => {
       await expect(page.getByTestId('explorer-item-NewDir')).toBeVisible();
       expect(existsSync(join(dir, 'NewDir'))).toBe(true);
 
-      // Rename via the item context menu.
+      // Zmiana nazwy przez menu kontekstowe elementu.
       await page.getByTestId('explorer-item-notes.txt').click({ button: 'right' });
       await expect(page.getByTestId('context-menu')).toBeVisible();
       await page
@@ -83,7 +83,7 @@ test.describe('explorer file operations', () => {
       expect(existsSync(join(dir, 'renamed.txt'))).toBe(true);
       expect(existsSync(join(dir, 'notes.txt'))).toBe(false);
 
-      // Delete to Trash via the context menu.
+      // Usuń do kosza przez menu kontekstowe.
       await page.getByTestId('explorer-item-renamed.txt').click({ button: 'right' });
       await expect(page.getByTestId('context-menu')).toBeVisible();
       await page
@@ -97,7 +97,7 @@ test.describe('explorer file operations', () => {
         .poll(() => existsSync(join(dir, 'renamed.txt')), { timeout: 10_000 })
         .toBe(false);
 
-      // Duplicate scan finds the copy and can delete it.
+      // Skanowanie duplikatów znajduje kopię i może ją usunąć.
       await page.getByTestId('explorer-duplicates').click();
       await expect(page.getByTestId('explorer-duplicates-panel')).toBeVisible();
       await expect(page.getByTestId('explorer-duplicate-group')).toHaveCount(1, {

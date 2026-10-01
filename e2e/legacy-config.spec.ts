@@ -13,8 +13,8 @@ test.describe('legacy profile migration', () => {
   });
 
   test('re-encrypts a hostname-keyed config and migrates the old PiP model at boot', async () => {
-    // Pre-migration profile: config.json encrypted with the legacy hostname key,
-    // and no onda-store-key file yet.
+    // Profil przed migracją: config.json zaszyfrowany kluczem ze starej nazwy hosta,
+    // oraz jeszcze brak pliku onda-store-key.
     const legacySettings = {
       appearance: {
         accentColor: '#ff8800',
@@ -47,7 +47,7 @@ test.describe('legacy profile migration', () => {
       expect(appearance.audioPipAutoHide).toBe(true);
       expect((appearance.customColors as Record<string, unknown>)?.primary).toBe('#ff8800');
 
-      // The store key was re-created and the config re-encrypted with it.
+      // Klucz magazynu został odtworzony, a konfiguracja ponownie nim zaszyfrowana.
       const key = readFileSync(join(profileDir, 'onda-store-key'), 'utf-8').trim();
       expect(key).toMatch(/^[0-9a-f]{64}$/);
       const config = readFileSync(join(profileDir, 'config.json'));

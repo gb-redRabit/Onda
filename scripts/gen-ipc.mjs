@@ -1,8 +1,8 @@
-// Generates the preload IPC allowlists and the channel union types from the
-// single-source contract in src/shared/ipc/contract.ts (plan 1.2).
+// Generuje allowlisty IPC preloadu oraz typy unii kanałów z
+// jednoźródłowego kontraktu w src/shared/ipc/contract.ts (plan 1.2).
 //
-//   node scripts/gen-ipc.mjs          -> writes the generated files
-//   node scripts/gen-ipc.mjs --check  -> exits 1 when they are stale
+//   node scripts/gen-ipc.mjs          -> zapisuje wygenerowane pliki
+//   node scripts/gen-ipc.mjs --check  -> kończy się kodem 1, gdy są nieaktualne
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { dirname, join } from 'path';
 import prettier from 'prettier';

@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-// Fails when the test suite left files behind in the working tree.
+// Kończy się niepowodzeniem, gdy zestaw testów pozostawił pliki w drzewie roboczym.
 //
-// A test that writes through a relative path — typically `process.env.TEMP ??
-// '.'`, whose fallback only resolves on Windows — drops a file into the repo
-// root. Nothing local notices, because Windows has TEMP set; on Linux and macOS
-// the artifact appears and the NEXT CI step fails with a confusing
-// `prettier --check` warning about a file nobody wrote by hand.
+// Test, który zapisuje przez ścieżkę względną — zazwyczaj `process.env.TEMP ??
+// '.'`, którego fallback rozwiązuje się tylko na Windows — upuszcza plik w katalogu
+// głównym repo. Lokalnie nic tego nie zauważa, bo Windows ma ustawiony TEMP; na Linuksie i macOS
+// artefakt się pojawia i NASTĘPNY krok CI kończy się niepowodzeniem z mylącym
+// ostrzeżeniem `prettier --check` o pliku, którego nikt nie napisał ręcznie.
 //
-// So: whatever the tests produced, the tree must be unchanged.
+// Czyli: cokolwiek wyprodukowały testy, drzewo musi pozostać niezmienione.
 
 import { execFileSync } from 'child_process';
 import { join, dirname } from 'path';
@@ -28,13 +28,13 @@ try {
 }
 
 /**
- * Only paths a test could have produced:
- *  - `??` — a new untracked file
- *  - a dirty WORKTREE column — a tracked file modified on disk
+ * Tylko ścieżki, które mógł wyprodukować test:
+ *  - `??` — nowy nieśledzony plik
+ *  - brudna kolumna WORKTREE — śledzony plik zmodyfikowany na dysku
  *
- * A staged-only entry (`M `) is the developer's own work in progress, not test
- * output, so it is ignored. That keeps the check usable locally while staying
- * exact in CI, where the checkout is clean to begin with.
+ * Wpis wyłącznie staged (`M `) to praca własna dewelopera, a nie wynik testu,
+ * więc jest ignorowany. Dzięki temu sprawdzenie jest użyteczne lokalnie, a jednocześnie
+ * dokładne w CI, gdzie checkout jest czysty od początku.
  */
 const artifacts = out
   .split('\n')

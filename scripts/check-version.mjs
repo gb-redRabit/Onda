@@ -1,22 +1,22 @@
 #!/usr/bin/env node
-// Guards the version/release invariant so a hand-edited version can never
-// silently disagree with release-please.
+// Pilnuje niezmiennika wersji/release, dzięki czemu ręcznie edytowana wersja nigdy
+// nie może po cichu różnić się od release-please.
 //
-// The failure this prevents: someone runs `npm version 0.4.4` and commits it,
-// while release-please has independently computed 0.5.0 from the Conventional
-// Commits. The repo then claims one version and the release PR and the
-// published tag claim another — and nothing fails until a user installs the
-// "wrong" build.
+// Awaria, której to zapobiega: ktoś uruchamia `npm version 0.4.4` i commituje to,
+// podczas gdy release-please niezależnie wyliczył 0.5.0 na podstawie Conventional
+// Commits. Repo twierdzi wtedy, że ma jedną wersję, a release PR i
+// opublikowany tag twierdzą, że inną — i nic nie zawodzi, dopóki użytkownik nie zainstaluje
+// "złej" kompilacji.
 //
-// release-please owns the version. The invariant, as a property of the tree:
+// release-please jest właścicielem wersji. Niezmiennik, jako właściwość drzewa:
 //
-//   package.json version === .release-please-manifest.json version
-//   AND that version is either
-//     (a) the latest v* tag                       — no release pending
-//     (b) ahead of it, written by a release commit — release PR merged,
-//                                                  tag not pushed yet
+//   wersja package.json === wersja .release-please-manifest.json
+//   ORAZ ta wersja jest albo
+//     (a) najnowszym tagiem v*                    — brak oczekującego release
+//     (b) przed nim, zapisana przez release commit — release PR scalony,
+//                                                    tag jeszcze nie wypchnięty
 //
-// Any other state means a human edited the version by hand.
+// Każdy inny stan oznacza, że człowiek ręcznie edytował wersję.
 
 import { readFileSync } from 'fs';
 import { execFileSync } from 'child_process';
@@ -63,10 +63,10 @@ const latestTagVersion = latestTag ? latestTag.slice(1) : null;
 
 if (version && latestTagVersion) {
   if (version === latestTagVersion) {
-    // (a) clean: the tree is exactly the last published release.
+    // (a) czysto: drzewo to dokładnie ostatni opublikowany release.
   } else {
-    // (b) or a violation. Only a release-please commit may carry a version
-    //     that is ahead of the newest tag.
+    // (b) albo naruszenie. Tylko commit release-please może nieść wersję
+    //     nowszą niż najnowszy tag.
     const subject = git(['log', '-1', '--format=%s', '--', 'package.json']);
     const isReleaseCommit =
       subject !== null && /^chore\(main\): release \d+\.\d+\.\d+/.test(subject);

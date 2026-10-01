@@ -1,9 +1,9 @@
 import { createCipheriv, createHash, pbkdf2Sync, randomBytes } from 'crypto';
 import { hostname } from 'os';
 
-// Reimplements the legacy on-disk format so a test can seed a pre-migration
-// profile: sha256('onda-settings-' + hostname) + conf's aes-256-cbc container
-// (`iv(16) ':' ciphertext`). Mirrors src/main/ipc/store-crypto.ts.
+// Ponownie implementuje stary format na dysku, aby test mógł zasiać profil
+// przed migracją: sha256('onda-settings-' + hostname) + kontener aes-256-cbc z conf
+// (`iv(16) ':' ciphertext`). Odwzorowuje src/main/ipc/store-crypto.ts.
 
 const IV_LENGTH = 16;
 const PBKDF2_ITERATIONS = 10000;
@@ -14,7 +14,7 @@ export function legacyStoreKey(): string {
 
 export function encryptLegacyConfig(plain: string, key: string): Buffer {
   let iv = randomBytes(IV_LENGTH);
-  // migrateLegacyStore treats a leading '{' as plaintext; avoid that 1-in-256 case.
+  // migrateLegacyStore traktuje wiodące '{' jako plaintext; unikaj tego przypadku 1-na-256.
   while (iv[0] === 0x7b) iv = randomBytes(IV_LENGTH);
   const password = pbkdf2Sync(key, iv, PBKDF2_ITERATIONS, 32, 'sha512');
   const cipher = createCipheriv('aes-256-cbc', password, iv);

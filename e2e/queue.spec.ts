@@ -4,7 +4,7 @@ import { join } from 'path';
 import { launchOnda, dismissWizard } from './helpers/app';
 import { createMediaFixture } from './helpers/media';
 
-// Playback queue: "play all" fills it and drag & drop reorders the rows.
+// Kolejka odtwarzania: "play all" ją wypełnia, a przeciągnij i upuść zmienia kolejność wierszy.
 
 interface OndaTestApi {
   invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
@@ -65,7 +65,7 @@ test.describe('playback queue', () => {
       const before1 = (await row1.innerText()).trim();
       expect(before0).not.toBe(before1);
 
-      // Drag the second row onto the first: the order swaps.
+      // Przeciągnij drugi wiersz na pierwszy: kolejność się zamienia.
       await row1.dragTo(row0);
       await expect.poll(async () => (await row0.innerText()).trim()).toBe(before1);
 

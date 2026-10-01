@@ -21,8 +21,8 @@ test.describe('library scan and playback', () => {
       await expect(onda.page.getByTestId('app-root')).toBeVisible();
       await dismissWizard(onda.page);
 
-      // Persist the folder and run the real main-process scan (the native folder
-      // picker is not automatable; every other step is the production path).
+      // Zapisz folder i uruchom prawdziwe skanowanie w procesie głównym (natywny wybór folderu
+      // nie jest automatyzowalny; każdy inny krok to ścieżka produkcyjna).
       const scanned = await onda.page.evaluate(async (dir) => {
         const api = (window as unknown as { api: OndaTestApi }).api;
         await api.invoke('library:saveFolders', [dir]);
@@ -31,7 +31,7 @@ test.describe('library scan and playback', () => {
       }, media.dir);
       expect(scanned).toBeGreaterThan(0);
 
-      // Let the debounced library-scanned.json flush, then boot the library again.
+      // Pozwól odświeżyć debounced library-scanned.json, następnie uruchom bibliotekę ponownie.
       await onda.page.waitForTimeout(1000);
       await onda.page.evaluate(() => localStorage.setItem('onda.libraryTab', 'tracks'));
       await onda.page.reload();

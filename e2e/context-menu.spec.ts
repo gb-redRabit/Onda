@@ -5,8 +5,8 @@ import { join } from 'path';
 import { launchOnda, dismissWizard } from './helpers/app';
 import { createMediaFixture } from './helpers/media';
 
-// Right-click context menus on the three main surfaces: a library track, an
-// explorer item and the playing track in the player.
+// Menu kontekstowe prawego przycisku na trzech głównych powierzchniach: utworze biblioteki,
+// elemencie eksploratora i odtwarzanym utworze w odtwarzaczu.
 
 interface OndaTestApi {
   invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
@@ -54,7 +54,7 @@ test.describe('context menu — library track', () => {
       await menuItem(page, /add to favorites|dodaj do ulubionych/i).click();
       await expect(page.getByTestId('context-menu')).toHaveCount(0);
 
-      // Re-opening reflects the new state.
+      // Ponowne otwarcie odzwierciedla nowy stan.
       await track.click({ button: 'right' });
       await expect(menuItem(page, /remove from favorites|usuń z ulubionych/i)).toBeVisible();
       await page.keyboard.press('Escape');

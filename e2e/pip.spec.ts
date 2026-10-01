@@ -18,7 +18,7 @@ test.describe('audio PiP', () => {
       await expect(onda.page.getByTestId('app-root')).toBeVisible();
       await dismissWizard(onda.page);
 
-      // The window is prewarmed hidden; assert real visibility of the BrowserWindow.
+      // Okno jest wstępnie rozgrzane w stanie ukrytym; zweryfikuj rzeczywistą widoczność BrowserWindow.
       const pipWindowVisible = (): Promise<boolean> =>
         onda.app.evaluate(({ BrowserWindow }) =>
           BrowserWindow.getAllWindows().some(

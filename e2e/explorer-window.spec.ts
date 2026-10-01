@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { launchOnda, dismissWizard } from './helpers/app';
 
-// Explorer detached window: "Open in window" spawns a real second BrowserWindow
-// that renders the explorer at the current path, and can be closed.
+// Odłączone okno eksploratora: "Open in window" tworzy prawdziwe drugie BrowserWindow,
+// które renderuje eksplorator na bieżącej ścieżce i można je zamknąć.
 
 test.describe('explorer detached window', () => {
   test('opens a second explorer window and closes it', async () => {
@@ -14,7 +14,7 @@ test.describe('explorer detached window', () => {
         window.location.hash = '#/explorer';
       });
       await expect(page.getByTestId('explorer-view')).toBeVisible();
-      // Wait until the explorer has content (a current path) before detaching.
+      // Poczekaj, aż eksplorator będzie miał zawartość (bieżącą ścieżkę), zanim go odłączysz.
       await expect
         .poll(() => page.locator('[data-testid^="explorer-item-"]').count(), { timeout: 15_000 })
         .toBeGreaterThan(0);
@@ -35,7 +35,7 @@ test.describe('explorer detached window', () => {
         })
         .toBeGreaterThan(0);
 
-      // Close it from inside the detached window.
+      // Zamknij je z wnętrza odłączonego okna.
       const closed = detached.waitForEvent('close');
       await detached.evaluate(() => {
         const api = (window as unknown as { api?: { invoke: (c: string) => Promise<unknown> } }).api;

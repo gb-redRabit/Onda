@@ -4,8 +4,8 @@ import { basename } from 'path';
 import { launchOnda, dismissWizard } from './helpers/app';
 import { createImageFixture } from './helpers/media';
 
-// Image viewer slideshow settings: interval, transition type, duration and the
-// loop / shuffle / ken-burns / auto-hide switches.
+// Ustawienia pokazu slajdów przeglądarki obrazów: interwał, typ przejścia, czas trwania oraz
+// przełączniki loop / shuffle / ken-burns / auto-hide.
 
 interface OndaTestApi {
   invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
@@ -50,26 +50,26 @@ test.describe('image viewer settings', () => {
       const viewer = await windowPromise;
       await expect(viewer.getByTestId('image-viewer')).toBeVisible();
 
-      // Open the settings panel.
+      // Otwórz panel ustawień.
       await viewer.getByTestId('image-viewer-slideshow-settings').click();
       const panel = viewer.getByTestId('image-viewer-settings');
       await expect(panel).toBeVisible();
 
-      // Interval: selecting one marks it primary, the others are not.
+      // Interwał: zaznaczenie jednego oznacza go jako primary, pozostałe nie.
       await viewer.getByTestId('iv-interval-1000').click();
       await expect(viewer.getByTestId('iv-interval-1000')).toHaveClass(/bg-primary/);
       await expect(viewer.getByTestId('iv-interval-3000')).not.toHaveClass(/bg-primary/);
 
-      // Transition type.
+      // Typ przejścia.
       await viewer.getByTestId('iv-transition-slide').click();
       await expect(viewer.getByTestId('iv-transition-slide')).toHaveClass(/bg-primary/);
       await expect(viewer.getByTestId('iv-transition-fade')).not.toHaveClass(/bg-primary/);
 
-      // Transition duration.
+      // Czas trwania przejścia.
       await viewer.getByTestId('iv-duration-800').click();
       await expect(viewer.getByTestId('iv-duration-800')).toHaveClass(/bg-primary/);
 
-      // Switches flip their state.
+      // Przełączniki zmieniają swój stan.
       for (const id of ['iv-loop', 'iv-shuffle', 'iv-ken-burns', 'iv-auto-hide']) {
         const toggle = viewer.getByTestId(id);
         const before = await toggle.evaluate((el) => el.className.includes('bg-primary'));
@@ -79,8 +79,8 @@ test.describe('image viewer settings', () => {
           .toBe(!before);
       }
 
-      // Escape closes the settings panel (the click-outside overlay covers the
-      // gear button, so the keyboard path is the deterministic one).
+      // Escape zamyka panel ustawień (nakładka click-outside pokrywa
+      // przycisk koła zębatego, więc ścieżka klawiaturowa jest deterministyczna).
       await viewer.evaluate(() =>
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
       );

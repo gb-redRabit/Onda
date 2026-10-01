@@ -1,8 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
 import { launchOnda, dismissWizard } from './helpers/app';
 
-// Plugin behaviour beyond install/approve: running a registered command from
-// the global command palette, and persisting a plugin's settings form.
+// Zachowanie wtyczki poza instalacją/zatwierdzeniem: uruchamianie zarejestrowanego polecenia z
+// globalnej palety poleceń oraz utrwalanie formularza ustawień wtyczki.
 
 interface OndaTestApi {
   invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
@@ -39,7 +39,7 @@ test.describe('plugin command palette', () => {
       await dismissWizard(page);
       await enablePlugin(page, 'hello');
 
-      // The plugin command is the only match for its distinctive label.
+      // Polecenie wtyczki jest jedynym dopasowaniem dla jego charakterystycznej etykiety.
       await page.keyboard.press('Control+k');
       await expect(page.getByTestId('app-search-input')).toBeFocused();
       await page.getByTestId('app-search-input').fill('powiedz');
@@ -84,7 +84,7 @@ test.describe('plugin settings form', () => {
         })
         .toBe(45);
 
-      // The form reflects the stored value after a full reload.
+      // Formularz odzwierciedla zapisaną wartość po pełnym przeładowaniu.
       await page.reload();
       await dismissWizard(page);
       await page.evaluate(() => {

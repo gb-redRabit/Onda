@@ -1,8 +1,8 @@
 import { test, expect, type ElectronApplication, type Page } from '@playwright/test';
 import { launchOnda, dismissWizard } from './helpers/app';
 
-// The detached Explorer window is free to resize: at every size the page must
-// not overflow, the explorer must fill it and its toolbar must keep working.
+// Odłączone okno eksploratora można swobodnie zmieniać rozmiar: przy każdym rozmiarze strona nie może
+// przepełniać, eksplorator musi ją wypełniać, a jego pasek narzędzi musi nadal działać.
 
 interface Bounds {
   x: number;
@@ -86,7 +86,7 @@ test.describe('detached explorer window layout', () => {
           .toBeGreaterThanOrEqual(m.mainClientW * 0.95 - 1);
       }
 
-      // Toolbar still works in the detached window.
+      // Pasek narzędzi nadal działa w odłączonym oknie.
       const search = detached.getByTestId('explorer-search');
       const items = detached.locator('[data-testid^="explorer-item-"]');
       await expect.poll(() => items.count(), { timeout: 15_000 }).toBeGreaterThan(0);

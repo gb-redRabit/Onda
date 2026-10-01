@@ -4,9 +4,9 @@ import { mkdtempSync, writeFileSync, mkdirSync, rmSync, copyFileSync } from 'fs'
 import { join } from 'path';
 import { tmpdir } from 'os';
 
-// `scripts/check-version.mjs` is the guard that stops a hand-edited version
-// from disagreeing with release-please. It is the one script in the repo that
-// nothing tests, so it is exercised here against throwaway repositories.
+// `scripts/check-version.mjs` to guard, który powstrzymuje ręcznie edytowaną wersję
+// przed niezgodnością z release-please. To jedyny skrypt w repo, którego
+// nic nie testuje, więc jest tu sprawdzany na jednorazowych repozytoriach.
 
 const REAL_SCRIPT = join(process.cwd(), 'scripts', 'check-version.mjs');
 
@@ -15,7 +15,7 @@ interface RunResult {
   out: string;
 }
 
-/** Runs the copy inside `dir` — the script resolves its root from its own path. */
+/** Uruchamia kopię wewnątrz `dir` — skrypt rozwiązuje swój root na podstawie własnej ścieżki. */
 function runCheck(dir: string): RunResult {
   try {
     const out = execFileSync('node', [join(dir, 'scripts', 'check-version.mjs')], {
@@ -34,7 +34,7 @@ function git(dir: string, ...args: string[]): void {
   execFileSync('git', args, { cwd: dir, stdio: 'ignore' });
 }
 
-/** Builds a throwaway repo in the state the guard is meant to accept. */
+/** Buduje jednorazowe repo w stanie, który guard ma akceptować. */
 function makeRepo(version: string, recorded: string | null, tag: string | null, subject: string) {
   const dir = mkdtempSync(join(tmpdir(), 'onda-version-check-'));
   git(dir, 'init', '-q');
@@ -50,8 +50,8 @@ function makeRepo(version: string, recorded: string | null, tag: string | null, 
       JSON.stringify({ '.': recorded }, null, 2)
     );
   }
-  // The script resolves its repo root from its own location, so a copy of the
-  // real script is what has to run inside the fixture.
+  // Skrypt rozwiązuje swój root repo na podstawie własnej lokalizacji, więc to kopia
+  // prawdziwego skryptu musi zostać uruchomiona wewnątrz fixture'a.
   mkdirSync(join(dir, 'scripts'), { recursive: true });
   copyFileSync(REAL_SCRIPT, join(dir, 'scripts', 'check-version.mjs'));
   git(dir, 'add', '-A');
@@ -79,23 +79,23 @@ describe('version:check', () => {
   });
 
   it('passes when a release commit carries the version ahead of the tag', () => {
-    // The release PR is merged but release-please has not pushed the tag yet.
+    // Release PR jest scalony, ale release-please jeszcze nie wypchnął tagu.
     const result = runCheck(repo('0.5.0', '0.5.0', 'v0.4.3', 'chore(main): release 0.5.0'));
     expect(result.code).toBe(0);
   });
 
   it('fails on a hand-edited version that is ahead of the tag', () => {
-    // The exact regression: someone ran `npm version` on main while
-    // release-please had computed a different number.
+    // Dokładna regresja: ktoś uruchomił `npm version` na main, podczas gdy
+    // release-please wyliczył inną liczbę.
     const result = runCheck(repo('0.4.4', '0.4.4', 'v0.4.3', 'chore(release): 0.4.4'));
     expect(result.code).toBe(1);
     expect(result.out).toContain('Only release-please may move the version');
   });
 
   it('fails when a release-please PR bumps the version', () => {
-    // A hand edit that lowers the version back to the released value is
-    // indistinguishable from doing nothing, so it passes — but a bump to a
-    // number release-please did not ask for is rejected.
+    // Ręczna edycja obniżająca wersję z powrotem do wydanej wartości jest
+    // nieodróżnialna od braku zmian, więc przechodzi — ale podbicie do
+    // liczby, o którą release-please nie prosił, jest odrzucane.
     const lowered = runCheck(repo('0.4.3', '0.4.3', 'v0.4.3', 'chore(main): release 0.4.3'));
     expect(lowered.code).toBe(0);
 

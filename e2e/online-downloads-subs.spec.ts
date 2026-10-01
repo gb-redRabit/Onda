@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { launchOnda, dismissWizard } from './helpers/app';
 
-// Downloads from both platforms (via the deterministic e2e queue fixtures) and
-// the subscriptions flow (local store — no network).
+// Pobierania z obu platform (przez deterministyczne fixture'y kolejki e2e) i
+// przepływ subskrypcji (lokalny magazyn — bez sieci).
 
 interface OndaTestApi {
   invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
@@ -18,7 +18,7 @@ test.describe('online downloads and subscriptions', () => {
         window.location.hash = '#/online';
       });
 
-      // The search field detects the platform of a pasted link.
+      // Pole wyszukiwania wykrywa platformę wklejonego linku.
       const input = page.getByTestId('online-search-input');
       await expect(input).toBeVisible();
       await input.fill('https://soundcloud.com/e2e/track');
@@ -27,7 +27,7 @@ test.describe('online downloads and subscriptions', () => {
       await expect(page.getByTestId('online-detect-badge')).toHaveText('YT');
       await input.fill('');
 
-      // Queue one YouTube and one SoundCloud job (fixtures mirror the lifecycle).
+      // Zakolejkuj jedno zadanie YouTube i jedno SoundCloud (fixture'y odzwierciedlają cykl życia).
       await page.evaluate(async () => {
         const api = (window as unknown as { api: OndaTestApi }).api;
         await api.invoke('yt:download:add', [
@@ -60,7 +60,7 @@ test.describe('online downloads and subscriptions', () => {
       await expect(rows.first()).toContainText('E2E YouTube');
       await expect(rows.nth(1)).toContainText('E2E SoundCloud');
 
-      // Subscriptions: add locally, persists across reload, then unfollow.
+      // Subskrypcje: dodaj lokalnie, utrzymuje się po przeładowaniu, następnie przestań obserwować.
       await page.evaluate(async () => {
         const api = (window as unknown as { api: OndaTestApi }).api;
         await api.invoke('yt:subs:add', {
