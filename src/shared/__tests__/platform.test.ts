@@ -37,7 +37,7 @@ describe('detectPlatform', () => {
   it('returns null for unknown input', () => {
     expect(detectPlatform('hello world')).toBeNull();
     expect(detectPlatform('https://example.com/a')).toBeNull();
-    // A bare YT-like id is still a YouTube video.
+    // Samo id w stylu YT to wciąż film YouTube.
     expect(detectPlatform('LpNVf8sczqU')).toEqual({ platform: 'youtube', kind: 'video' });
   });
 
@@ -84,7 +84,7 @@ describe('parseBatchInputAll', () => {
         'https://soundcloud.com/a/b/'
       ].join('\n')
     );
-    // 1 unique YT video + 1 unique SC track; channel skipped.
+    // 1 unikalny film YT + 1 unikalny utwór SC; kanał pominięty.
     expect(entries).toHaveLength(2);
     expect(entries.map((e) => e.platform).sort()).toEqual(['soundcloud', 'youtube']);
   });

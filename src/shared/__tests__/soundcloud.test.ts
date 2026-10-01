@@ -10,8 +10,8 @@ describe('detectScKind', () => {
   it('classifies sets (playlists)', () => {
     expect(detectScKind('https://soundcloud.com/artist/sets/summer-mix')).toBe('playlist');
     expect(detectScKind('https://soundcloud.com/artist/sets/a/b')).toBe('playlist');
-    // Personalized discover sets are recognized as playlists too — the API
-    // then rejects them with a clear "unsupported" instead of silent junk.
+    // Personalizowane zestawy discover są też rozpoznawane jako playlisty — API
+    // odrzuca je wtedy z jasnym "unsupported" zamiast cichego śmiecia.
     expect(detectScKind('https://soundcloud.com/discover/sets/your-moods:267441895:1')).toBe(
       'playlist'
     );

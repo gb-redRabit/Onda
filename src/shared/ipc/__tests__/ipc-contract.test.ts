@@ -8,9 +8,9 @@ import {
   ALLOWED_SEND_CHANNELS
 } from '../../../preload/generated';
 
-// Plan 1.5: the contract and the main-process handlers must match in both
-// directions. `ipc:gen:check` guards the generated files against the contract;
-// this test guards the contract against `ipcMain.handle` in src/main.
+// Plan 1.5: kontrakt i handlery procesu głównego muszą się zgadzać w obu
+// kierunkach. `ipc:gen:check` pilnuje wygenerowanych plików względem kontraktu;
+// ten test pilnuje kontraktu względem `ipcMain.handle` w src/main.
 const ROOT = process.cwd();
 const IGNORED_DIRS = new Set(['node_modules', 'dist', 'out', 'release']);
 const HANDLE_RE = /ipcMain\.handle(?:Once)?\(\s*'([^']+)'/g;

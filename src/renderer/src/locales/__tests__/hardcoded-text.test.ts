@@ -2,26 +2,26 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// A dozen labels were written straight into the template, so they never reached
-// the locale files. The Polish ones were the worst case: `LibraryAlbumsTab` and
-// `MusicBrainzSearchForm` had Polish sort labels and field names hardcoded in a
-// component with no `useI18n` at all, so an English user read "Rok" and
-// "Wykonawca / Artysta" in an otherwise English screen.
+// Kilkanaście etykiet wpisano wprost w szablon, więc nigdy nie trafiły
+// do plików lokalizacji. Polskie były najgorszym przypadkiem: `LibraryAlbumsTab`
+// i `MusicBrainzSearchForm` miały zaszyte polskie etykiety sortowania i nazwy pól
+// w komponencie bez `useI18n`, więc angielski użytkownik czytał "Rok" i
+// "Wykonawca / Artysta" na skądinąd angielskim ekranie.
 //
-// This guards the specific failure — a visible text node that is not an
-// interpolation — rather than all hardcoded strings, because plenty of visible
-// text is deliberately not translated: keyboard shortcuts, file extensions,
-// HTTP verbs, brand names, and log level names. Translating `warn` would break
-// searching the log viewer, so the allowlist below is a decision, not an
-// oversight.
+// To pilnuje konkretnej usterki — widocznego węzła tekstowego, który nie jest
+// interpolacją — a nie wszystkich zaszytych ciągów, bo sporo widocznego
+// tekstu celowo nie podlega tłumaczeniu: skróty klawiszowe, rozszerzenia plików,
+// czasowniki HTTP, nazwy marek i nazwy poziomów logowania. Przetłumaczenie `warn`
+// zepsułoby przeszukiwanie podglądu logów, więc poniższa lista dozwolonych jest decyzją, a nie
+// przeoczeniem.
 
 const SRC = join(process.cwd(), 'src/renderer/src');
 
 /**
- * Visible text that must stay verbatim in every language.
+ * Widoczny tekst, który musi pozostać dosłowny w każdym języku.
  *
- * `kind` is matched against the surrounding context so the exemption is narrow:
- * `brand` only exempts a known proper noun, `ext` only a file extension.
+ * `kind` jest dopasowywany do otaczającego kontekstu, więc wyjątek jest wąski:
+ * `brand` zwalnia tylko znany rzeczownik własny, `ext` tylko rozszerzenie pliku.
  */
 const ALLOWED: { match: RegExp; why: string }[] = [
   { match: /^(Ctrl|Alt|Shift|Meta)\+[\w+]+$/, why: 'keyboard shortcut' },
@@ -38,14 +38,14 @@ const ALLOWED: { match: RegExp; why: string }[] = [
   { match: /^(H|Space|Esc|M)$/, why: 'literal key name in a shortcut hint' },
   { match: /^(ms|kHz|px|pt|em)$/i, why: 'unit suffix after a value' },
   {
-    // `{'{title}'}, {'{artist}'}` — an example of template variables, meant to
-    // be shown to the user exactly as written.
+    // `{'{title}'}, {'{artist}'}` — przykład zmiennych szablonu, które mają
+    // być pokazane użytkownikowi dokładnie tak, jak zostały zapisane.
     match: /^(?:\{['"]\{[a-z]+\}['"]\})(?:, \{['"]\{[a-z]+\}['"]\})*$/,
     why: 'example of template variables, meant to be shown literally'
   }
 ];
 
-/** Bracketed template fragments the regex above would otherwise trip on. */
+/** Fragmenty szablonu w nawiasach, na których powyższy regex w przeciwnym razie by się potknął. */
 const TAIL = /^[A-Za-z]{2,}$/;
 
 function isAllowed(text: string): boolean {
@@ -79,38 +79,38 @@ function findHardcodedText(): Offender[] {
     const source = readFileSync(file, 'utf8');
     const start = source.indexOf('<template>');
     if (start === -1) continue;
-    // A scoped <style> block is markup to this scan, not user-facing text.
+    // Blok <style> z atrybutem scoped to dla tego skanowania znacznik, a nie tekst widoczny dla użytkownika.
     const styleStart = source.indexOf('<style', start);
     const template = styleStart === -1 ? source.slice(start) : source.slice(start, styleStart);
     const lineOffset = source.slice(0, start).split('\n').length - 1;
 
-    // Text between tags. Quoted attribute values are consumed explicitly so a
-    // `>` inside a binding (`:aria-valuetext="... x > 0 ..."`) cannot end the
-    // scan early, and interpolations are skipped outright.
+    // Tekst między znacznikami. Wartości atrybutów w cudzysłowach są pochłaniane jawnie, żeby
+    // `>` wewnątrz bindowania (`:aria-valuetext="... x > 0 ..."`) nie zakończył
+    // skanowania przedwcześnie, a interpolacje są całkowicie pomijane.
     for (const match of template.matchAll(/>([^<>]+)</g)) {
       const raw = match[1].trim();
       if (!raw) continue;
-      // A text node may mix an interpolation with a literal, and the literal is
-      // the part that escapes translation: `{{ count }} plików` is one node, so
-      // skipping every node containing `{{` — as this did at first — let a
-      // hardcoded Polish plural through. What is checked is the literal remainder
-      // after the last interpolation.
+      // Węzeł tekstowy może mieszać interpolację z literałem, a literał to
+      // ta część, która umyka tłumaczeniu: `{{ count }} plików` to jeden węzeł, więc
+      // pomijanie każdego węzła zawierającego `{{` — jak robiono to początkowo — przepuszczało
+      // zaszyty polski plural. Sprawdzana jest reszta literału
+      // po ostatniej interpolacji.
       const lastClose = raw.lastIndexOf('}}');
       const literal = (lastClose === -1 ? raw : raw.slice(lastClose + 2))
         .replace(/\s+/g, ' ')
         .trim();
       if (lastClose === -1) {
-        // No interpolation at all: check the whole node.
+        // Brak jakiejkolwiek interpolacji: sprawdź cały węzeł.
         if (raw.includes('{{') || raw.includes('}}')) continue;
       }
-      // A single leftover interpolation fragment or binding is not a label.
+      // Pojedynczy pozostały fragment interpolacji lub bindowanie to nie etykieta.
       if (/^[:@]?[a-z-]*[=\"']/.test(literal)) continue;
       const text = literal;
       if (!/[a-z]{2}/i.test(text)) continue;
       if (!/[a-z]/.test(text)) continue;
       if (isAllowed(text)) continue;
-      // `Space stop` and similar: drop the leading keycap token, which is a
-      // literal key name and not part of the sentence.
+      // `Space stop` i podobne: odrzuć wiodący token klawisza, który jest
+      // dosłowną nazwą klawisza, a nie częścią zdania.
       if (
         TAIL.test(text.split(' ')[0]) &&
         isAllowed(text.split(' ')[0]) &&

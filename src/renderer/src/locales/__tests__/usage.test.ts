@@ -4,13 +4,13 @@ import { join, sep } from 'path';
 import en from '../en';
 import pl from '../pl';
 
-// i18n usage audit. Three guards:
-//   1. every statically referenced key exists in BOTH locales (missing translation),
-//   2. every dynamic prefix (`t(`a.b.${x}`)` / `t('a.b.' + x)`) matches some key
-//      (catches typos in the prefix itself),
-//   3. no dead keys: a key defined in both locales but never referenced anywhere.
-// Dead keys are a maintenance smell, not a bug — add them to the allowlist below
-// with a short reason if they must stay (e.g. reserved for an upcoming feature).
+// Audyt użycia i18n. Trzy zabezpieczenia:
+//   1. każdy statycznie referowany klucz istnieje w OBU lokalizacjach (brakujące tłumaczenie),
+//   2. każdy dynamiczny prefiks (`t(`a.b.${x}`)` / `t('a.b.' + x)`) pasuje do jakiegoś klucza
+//      (łapie literówki w samym prefiksie),
+//   3. brak martwych kluczy: klucz zdefiniowany w obu lokalizacjach, ale nigdzie nieużywany.
+// Martwe klucze to oznaka zaniedbania, a nie błąd — dodaj je do poniższej listy dozwolonych
+// z krótkim uzasadnieniem, jeśli muszą zostać (np. zarezerwowane na przyszłą funkcję).
 
 const ALLOWED_DEAD_KEYS: string[] = [];
 
@@ -53,9 +53,9 @@ const dynamicPrefixes = new Set<string>();
 
 for (const file of sourceFiles) {
   const text = readFileSync(file, 'utf8');
-  // t('a.b') / tm('a.b') — the two accessors used across the app. The literal must
-  // be the whole argument (`,` or `)` right after), otherwise the prefix of a
-  // concatenation like t('a.b.' + x) would be reported as a missing key.
+  // t('a.b') / tm('a.b') — dwa akcesory używane w całej aplikacji. Literał musi
+  // być całym argumentem (`,` lub `)` zaraz po nim), w przeciwnym razie prefiks
+  // konkatenacji takiej jak t('a.b.' + x) zostałby zgłoszony jako brakujący klucz.
   for (const m of text.matchAll(/\btm?\(\s*['"`]([A-Za-z0-9_.-]+)['"`]\s*[,)]/g)) {
     staticRefs.add(m[1]);
   }
@@ -64,8 +64,8 @@ for (const file of sourceFiles) {
   for (const m of text.matchAll(/\btm?\(\s*['"]([A-Za-z0-9_.-]+)['"]\s*\+/g)) {
     dynamicPrefixes.add(m[1]);
   }
-  // Any string literal that is exactly a defined key counts as used — covers key
-  // tables (`{ key: 'home.audioFiles' }`, labelKey/descKey fields, …).
+  // Każdy literał łańcuchowy, który jest dokładnie zdefiniowanym kluczem, liczy się jako użyty — obejmuje
+  // tabele kluczy (`{ key: 'home.audioFiles' }`, pola labelKey/descKey, …).
   for (const m of text.matchAll(/['"`]([A-Za-z0-9_.-]+)['"`]/g)) {
     if (enKeys.has(m[1])) staticRefs.add(m[1]);
   }

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 
-// Guards against the electron-vite placeholder description coming back.
+// Chroni przed powrotem zastępczego opisu z electron-vite.
 
 describe('package.json metadata', () => {
   const pkg = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf-8')) as {
