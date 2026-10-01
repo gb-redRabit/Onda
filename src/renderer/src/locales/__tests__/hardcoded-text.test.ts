@@ -141,7 +141,7 @@ describe('user-facing text goes through i18n', () => {
   const offenders = findHardcodedText();
 
   it('finds the component files it is meant to check', () => {
-    const names = vueFiles(SRC).map((f) => f.split('\\').pop());
+    const names = vueFiles(SRC).map((f) => f.split(/[\\/]/).pop());
     expect(names).toContain('LibraryAlbumsTab.vue');
     expect(names).toContain('SettingsPlayback.vue');
   });

@@ -78,7 +78,10 @@ const INPUT =
           <option v-for="q in VIDEO_QUALITIES" :key="q" :value="q">{{ q }}</option>
         </select>
       </label>
-      <label v-if="kind === 'video' && showVideoContainer" class="block text-xs text-base-content/50">
+      <label
+        v-if="kind === 'video' && showVideoContainer"
+        class="block text-xs text-base-content/50"
+      >
         {{ t('settings.defaultVideoContainer') }}
         <select v-model="videoContainer" :class="INPUT">
           <option v-for="c in VIDEO_CONTAINERS" :key="c" :value="c">{{ c }}</option>
@@ -88,7 +91,11 @@ const INPUT =
 
     <label v-if="kind === 'audio'" class="mt-3 block text-xs text-base-content/50">
       {{ t('youtube.audioLanguage') }}
-      <input v-model="audioLanguage" :class="INPUT" :placeholder="t('youtube.audioLanguagePlaceholder')" />
+      <input
+        v-model="audioLanguage"
+        :class="INPUT"
+        :placeholder="t('youtube.audioLanguagePlaceholder')"
+      />
     </label>
 
     <div class="mt-3 grid grid-cols-2 gap-3">

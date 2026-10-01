@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { addAllowedRoot, getExtraRoots } from '../../media/media-server';
@@ -36,8 +36,10 @@ describe('extraRoots is bounded', () => {
     expect(roots.length).toBe(CAP);
     // Odrzucony grant nie może usuwać czegoś już dozwolonego, bo wymykający się
     // kontroli wywołujący mógłby wybić foldery, z których aplikacja aktywnie odtwarza.
-    expect(roots).toContain(first);
-    expect(roots).toContain(join(dir, 'r0'));
+    // addAllowedRoot zapisuje realpath (rozwiązane symlinki / nazwy 8.3), więc
+    // oczekiwanie trzeba znormalizować tak samo — tmpdir różni się między systemami.
+    expect(roots).toContain(await realpath(first));
+    expect(roots).toContain(await realpath(join(dir, 'r0')));
 
     // Idempotentne: ponowne proszenie o już dozwolony korzeń to nie nowy korzeń, więc
     // nie jest odrzucane, nawet gdy lista jest na pułapie.

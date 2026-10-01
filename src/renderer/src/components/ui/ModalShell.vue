@@ -34,31 +34,31 @@ const props = withDefaults(
     labelledBy?: string;
     /** Przyciemnienie backdropu, zgodne z poprzednim wyglądem wywołującego. */
     backdrop?: 'dim' | 'dim-blur';
-      /** Dodatkowe klasy panelu, np. jego szerokość i padding. */
-      panelClass?: string;
-      /** Zamknij, gdy kliknięto sam backdrop. */
-      dismissOnBackdrop?: boolean;
-      /**
-       * Czy Escape emituje `escape` (które wywołujący zwykle mapuje na zamknięcie).
-       * Ustaw false dla dialogu, który sam obsługuje Escape, aby nie był
-       * obsługiwany dwukrotnie.
-       */
-      closeOnEscape?: boolean;
-      /** `data-testid` dla elementu backdropu (panel bierze go przez $attrs). */
-      backdropTestid?: string;
-      /** Powierzchnia panelu: `base` (base-100, domyślnie) lub `neutral`. */
-      panelTone?: 'base' | 'neutral';
-    }>(),
-    {
-      visible: true,
-      backdrop: 'dim',
-      panelClass: '',
-      dismissOnBackdrop: true,
-      closeOnEscape: true,
-      backdropTestid: undefined,
-      panelTone: 'base'
-    }
-  );
+    /** Dodatkowe klasy panelu, np. jego szerokość i padding. */
+    panelClass?: string;
+    /** Zamknij, gdy kliknięto sam backdrop. */
+    dismissOnBackdrop?: boolean;
+    /**
+     * Czy Escape emituje `escape` (które wywołujący zwykle mapuje na zamknięcie).
+     * Ustaw false dla dialogu, który sam obsługuje Escape, aby nie był
+     * obsługiwany dwukrotnie.
+     */
+    closeOnEscape?: boolean;
+    /** `data-testid` dla elementu backdropu (panel bierze go przez $attrs). */
+    backdropTestid?: string;
+    /** Powierzchnia panelu: `base` (base-100, domyślnie) lub `neutral`. */
+    panelTone?: 'base' | 'neutral';
+  }>(),
+  {
+    visible: true,
+    backdrop: 'dim',
+    panelClass: '',
+    dismissOnBackdrop: true,
+    closeOnEscape: true,
+    backdropTestid: undefined,
+    panelTone: 'base'
+  }
+);
 
 const emit = defineEmits<{
   close: [];

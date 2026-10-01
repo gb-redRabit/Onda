@@ -36,7 +36,7 @@ const unfollowOpen = ref(false);
 const expandedId = ref<string | null>(null);
 
 function watchUrl(v: { id: string; url?: string }): string {
-    return v.url || buildYouTubeWatchUrl(v.id);
+  return v.url || buildYouTubeWatchUrl(v.id);
 }
 
 function openWatchWindow(v: { id: string; url?: string }) {

@@ -36,8 +36,7 @@ export function useMediaAssets(size = 180) {
     if (toFetch.length === 0) return;
     try {
       const result = (await window.api?.invoke('media:batchThumbnails', toFetch, size)) as
-        | Record<string, string>
-        | undefined;
+        Record<string, string> | undefined;
       if (result) {
         for (const [k, v] of Object.entries(result)) setCachedThumb(k, v);
         thumbs.value = { ...thumbs.value, ...result };

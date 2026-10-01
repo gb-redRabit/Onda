@@ -41,9 +41,9 @@ test.describe('equalizer', () => {
       });
       await page.getByTestId('library-tab-tracks').click();
       await page.getByTestId('library-track-play').first().click();
-      await expect(
-        page.locator('[data-testid="player-bar"][data-playing="true"]')
-      ).toBeVisible({ timeout: 20_000 });
+      await expect(page.locator('[data-testid="player-bar"][data-playing="true"]')).toBeVisible({
+        timeout: 20_000
+      });
 
       await page.getByTestId('player-eq').click();
       await expect(page.getByTestId('equalizer')).toBeVisible();

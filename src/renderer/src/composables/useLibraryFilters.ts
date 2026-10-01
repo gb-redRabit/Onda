@@ -1,6 +1,10 @@
 import { ref, computed, watch, onUnmounted } from 'vue';
 import type { useLibraryStore } from '@renderer/stores/library';
-import { buildSearchIndex, filterSearchIndex, searchableTerms } from '@renderer/utils/librarySearch';
+import {
+  buildSearchIndex,
+  filterSearchIndex,
+  searchableTerms
+} from '@renderer/utils/librarySearch';
 
 export function useLibraryFilters(library: ReturnType<typeof useLibraryStore>) {
   const query = ref('');

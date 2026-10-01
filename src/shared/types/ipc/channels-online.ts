@@ -1,10 +1,5 @@
 import type { YouTubeResolveResult, YouTubeResolvedItem } from '../online';
-import type {
-  MediaSource,
-  SourceEndpoint,
-  SourceFetchResult,
-  SourceItem
-} from '../sources';
+import type { MediaSource, SourceEndpoint, SourceFetchResult, SourceItem } from '../sources';
 import type {
   IpcDownloadConfig,
   IpcDownloadErrorCode,

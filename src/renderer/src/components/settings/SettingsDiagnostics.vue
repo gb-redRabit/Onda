@@ -177,17 +177,13 @@ async function onFactoryReset(): Promise<void> {
           <div class="text-sm font-mono">{{ info.uptime }}s</div>
         </div>
       </template>
-      <div
-        class="col-span-2 p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300"
-      >
+      <div class="col-span-2 p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
         <div class="text-[11px] text-base-content/50 mb-0.5">
           {{ $t('settings.userDataPath') }}
         </div>
         <div class="text-xs font-mono break-all">{{ info?.userDataPath }}</div>
       </div>
-      <div
-        class="col-span-2 p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300"
-      >
+      <div class="col-span-2 p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
         <div class="text-[11px] text-base-content/50 mb-0.5">{{ $t('settings.logPath') }}</div>
         <div class="text-xs font-mono break-all">{{ info?.logPath }}</div>
       </div>
@@ -205,7 +201,9 @@ async function onFactoryReset(): Promise<void> {
           {{ $t('settings.perfRendererDom') }}
         </div>
         <div class="text-sm font-mono">
-          {{ rendererBoot.domContentLoadedMs !== null ? `${rendererBoot.domContentLoadedMs} ms` : '—' }}
+          {{
+            rendererBoot.domContentLoadedMs !== null ? `${rendererBoot.domContentLoadedMs} ms` : '—'
+          }}
         </div>
       </div>
       <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
@@ -272,11 +270,7 @@ async function onFactoryReset(): Promise<void> {
           </span>
         </div>
         <div class="text-right min-w-0">
-          <div
-            v-if="row.broken"
-            class="text-warning font-medium truncate"
-            :title="row.error ?? ''"
-          >
+          <div v-if="row.broken" class="text-warning font-medium truncate" :title="row.error ?? ''">
             {{ $t('settings.depBroken')
             }}<span v-if="row.error" class="text-base-content/50 font-normal">
               — {{ row.error }}</span

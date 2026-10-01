@@ -70,9 +70,9 @@ test.describe('video PiP window', () => {
       expect(big.x).toBeGreaterThan(small.x);
       expect(big.y).toBeGreaterThan(small.y);
 
-      const pip = app.windows().find(
-        (p) => p.url().includes('/pip.html') && !p.url().includes('preview')
-      )!;
+      const pip = app
+        .windows()
+        .find((p) => p.url().includes('/pip.html') && !p.url().includes('preview'))!;
 
       // Panel ustawień otwiera się, napisy przełączają się, panel się zamyka.
       await pip.getByTestId('pip-video-settings').click();

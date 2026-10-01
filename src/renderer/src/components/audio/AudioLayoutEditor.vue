@@ -231,7 +231,7 @@ const readout = computed(() => {
         </div>
       </div>
 
-        <!-- Odczyt: pozycja/rozmiar aktywnego elementu -->
+      <!-- Odczyt: pozycja/rozmiar aktywnego elementu -->
       <div
         class="mt-2 flex items-center justify-between px-1 text-[10px] font-mono text-base-content/50 tabular-nums"
       >

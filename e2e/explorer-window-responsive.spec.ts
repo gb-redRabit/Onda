@@ -29,7 +29,9 @@ function measure(page: Page) {
   return page.evaluate(() => {
     const de = document.documentElement;
     const main = document.querySelector('main[data-route]') as HTMLElement | null;
-    const root = document.querySelector('[data-testid="explorer-window-root"]') as HTMLElement | null;
+    const root = document.querySelector(
+      '[data-testid="explorer-window-root"]'
+    ) as HTMLElement | null;
     const view = document.querySelector('[data-testid="explorer-view"]') as HTMLElement | null;
     const rr = root?.getBoundingClientRect();
     const vr = view?.getBoundingClientRect();
@@ -64,8 +66,8 @@ test.describe('detached explorer window layout', () => {
       await page.getByTestId('explorer-open-window').click();
       const detached = await windowPromise;
       await expect(detached.getByTestId('explorer-window-root')).toBeVisible();
-      const winId = await detached.evaluate(
-        () => (window as unknown as { api: { getWindowId: () => Promise<number> } }).api.getWindowId()
+      const winId = await detached.evaluate(() =>
+        (window as unknown as { api: { getWindowId: () => Promise<number> } }).api.getWindowId()
       );
 
       for (const bounds of SIZES) {
@@ -78,9 +80,15 @@ test.describe('detached explorer window layout', () => {
         expect
           .soft(m.mainScrollW, `${tag}: main overflows horizontally`)
           .toBeLessThanOrEqual(m.mainClientW + 1);
-        expect.soft(m.mainRight, `${tag}: main past the viewport`).toBeLessThanOrEqual(m.innerW + 1);
-        expect.soft(Math.abs(m.rootW - m.innerW), `${tag}: window root width`).toBeLessThanOrEqual(2);
-        expect.soft(Math.abs(m.rootH - m.innerH), `${tag}: window root height`).toBeLessThanOrEqual(2);
+        expect
+          .soft(m.mainRight, `${tag}: main past the viewport`)
+          .toBeLessThanOrEqual(m.innerW + 1);
+        expect
+          .soft(Math.abs(m.rootW - m.innerW), `${tag}: window root width`)
+          .toBeLessThanOrEqual(2);
+        expect
+          .soft(Math.abs(m.rootH - m.innerH), `${tag}: window root height`)
+          .toBeLessThanOrEqual(2);
         expect
           .soft(m.viewW, `${tag}: explorer does not fill the window`)
           .toBeGreaterThanOrEqual(m.mainClientW * 0.95 - 1);

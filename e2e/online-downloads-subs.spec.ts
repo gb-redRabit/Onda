@@ -92,7 +92,9 @@ test.describe('online downloads and subscriptions', () => {
         window.location.hash = '#/online';
       });
       await page.getByTestId('online-tab-subscriptions').click();
-      await expect(page.getByTestId('online-subscription-card')).toHaveCount(0, { timeout: 15_000 });
+      await expect(page.getByTestId('online-subscription-card')).toHaveCount(0, {
+        timeout: 15_000
+      });
 
       expect(onda.pageErrors).toEqual([]);
     } finally {

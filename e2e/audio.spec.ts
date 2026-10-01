@@ -45,9 +45,9 @@ test.describe('audio playback and audio view', () => {
       await page.getByTestId('library-tab-tracks').click();
       await expect(page.getByTestId('library-track').first()).toBeVisible();
       await page.getByTestId('library-track-play').first().click();
-      await expect(
-        page.locator('[data-testid="player-bar"][data-playing="true"]')
-      ).toBeVisible({ timeout: 20_000 });
+      await expect(page.locator('[data-testid="player-bar"][data-playing="true"]')).toBeVisible({
+        timeout: 20_000
+      });
 
       // Kontrolki paska odtwarzacza istnieją i przełączają się bez błędów.
       await expect(page.getByTestId('player-eq')).toBeVisible();

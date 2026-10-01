@@ -244,167 +244,165 @@ async function onTestTable(idx: number) {
     @close="onOverlayClick"
     @escape="emit('close')"
   >
-        <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
-          <h2 id="source-editor-dialog-title" class="text-sm font-medium flex-1">
-            {{ props.source ? $t('sources.editSource') : $t('sources.addSource') }}
-          </h2>
-          <button
-            class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
-            :aria-label="$t('common.close')"
-            @click="emit('close')"
+    <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
+      <h2 id="source-editor-dialog-title" class="text-sm font-medium flex-1">
+        {{ props.source ? $t('sources.editSource') : $t('sources.addSource') }}
+      </h2>
+      <button
+        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
+        :aria-label="$t('common.close')"
+        @click="emit('close')"
+      >
+        <X :size="16" />
+      </button>
+    </div>
+
+    <div class="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-5">
+      <div class="grid grid-cols-1 gap-3">
+        <div>
+          <label
+            class="block text-[11px] font-medium text-base-content/50 uppercase tracking-wider mb-1"
           >
-            <X :size="16" />
-          </button>
-        </div>
-
-        <div class="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-5">
-          <div class="grid grid-cols-1 gap-3">
-            <div>
-              <label
-                class="block text-[11px] font-medium text-base-content/50 uppercase tracking-wider mb-1"
-              >
-                {{ $t('sources.name') }}
-              </label>
-              <input
-                v-model="draft.name"
-                type="text"
-                :placeholder="$t('sources.namePlaceholder')"
-                class="w-full px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-            <div>
-              <label
-                class="block text-[11px] font-medium text-base-content/50 uppercase tracking-wider mb-1"
-              >
-                {{ $t('sources.baseUrl') }}
-              </label>
-              <input
-                v-model="draft.baseUrl"
-                type="text"
-                placeholder="https://api.example.com"
-                class="w-full px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-            <label
-              class="flex items-start gap-2.5 rounded-field border border-warning/30 bg-warning/5 p-3 cursor-pointer"
-            >
-              <input v-model="draft.allowPrivateNetwork" type="checkbox" class="mt-0.5" />
-              <span class="min-w-0">
-                <span class="block text-xs font-medium text-base-content">
-                  {{ $t('sources.trustPrivateNetwork') }}
-                </span>
-                <span class="block mt-0.5 text-[11px] text-base-content/55">
-                  {{ $t('sources.trustPrivateNetworkDescription') }}
-                </span>
-              </span>
-            </label>
-          </div>
-
-          <SourceIconSection v-model:icon="draft.icon" @error="errorMsg = $event" />
-
-          <div class="space-y-2">
-            <label
-              class="block text-[11px] font-medium text-base-content/50 uppercase tracking-wider"
-            >
-              {{ $t('sources.auth') }}
-            </label>
-            <div class="flex flex-wrap gap-2">
-              <select
-                v-model="draft.authType"
-                class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                <option value="none">{{ $t('sources.authNone') }}</option>
-                <option value="apikey">{{ $t('sources.authApiKey') }}</option>
-                <option value="bearer">{{ $t('sources.authBearer') }}</option>
-              </select>
-              <template v-if="draft.authType !== 'none'">
-                <select
-                  v-model="draft.apiKeyId"
-                  class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                >
-                  <option value="">{{ $t('sources.chooseKey') }}</option>
-                  <option v-for="k in apiKeyOptions" :key="k.id" :value="k.id">
-                    {{ k.label }}
-                  </option>
-                </select>
-                <template v-if="draft.authType === 'apikey'">
-                  <input
-                    v-model="draft.headerName"
-                    type="text"
-                    :placeholder="$t('sources.headerName')"
-                    class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                  <input
-                    v-model="draft.queryParam"
-                    type="text"
-                    :placeholder="$t('sources.queryParam')"
-                    class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </template>
-              </template>
-            </div>
-          </div>
-
-          <SourceDownloadSection
-            v-model:output-dir="draft.downloadOutputDir"
-            v-model:folder="draft.downloadFolder"
-            :default-dir="defaultDownloadDir"
+            {{ $t('sources.name') }}
+          </label>
+          <input
+            v-model="draft.name"
+            type="text"
+            :placeholder="$t('sources.namePlaceholder')"
+            class="w-full px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
           />
+        </div>
+        <div>
+          <label
+            class="block text-[11px] font-medium text-base-content/50 uppercase tracking-wider mb-1"
+          >
+            {{ $t('sources.baseUrl') }}
+          </label>
+          <input
+            v-model="draft.baseUrl"
+            type="text"
+            placeholder="https://api.example.com"
+            class="w-full px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+        <label
+          class="flex items-start gap-2.5 rounded-field border border-warning/30 bg-warning/5 p-3 cursor-pointer"
+        >
+          <input v-model="draft.allowPrivateNetwork" type="checkbox" class="mt-0.5" />
+          <span class="min-w-0">
+            <span class="block text-xs font-medium text-base-content">
+              {{ $t('sources.trustPrivateNetwork') }}
+            </span>
+            <span class="block mt-0.5 text-[11px] text-base-content/55">
+              {{ $t('sources.trustPrivateNetworkDescription') }}
+            </span>
+          </span>
+        </label>
+      </div>
 
-          <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <label class="text-[11px] font-medium text-base-content/50 uppercase tracking-wider">
-                {{ $t('sources.levels') }}
-              </label>
-              <button
-                class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
-                @click="addLevel"
-              >
-                <Plus :size="12" />
-                {{ $t('sources.addLevel') }}
-              </button>
-            </div>
+      <SourceIconSection v-model:icon="draft.icon" @error="errorMsg = $event" />
 
-            <EndpointLevelCard
-              v-for="(ep, idx) in draft.endpoints"
-              :key="ep.id"
-              v-model="draft.endpoints[idx]"
-              :index="idx"
-              :base-url="draft.baseUrl"
-              :available-keys="availableKeys(idx)"
-              :self-keys="selfKeys(idx)"
-              :field-options="sampleFields[ep.id] || []"
-              :row-options="rowSamples[ep.id] || []"
-              :level-options="levelOptions(idx)"
-              :testing="testingId === ep.id"
-              :table-testing="tableTestingId === ep.id"
-              @test="onTest(idx)"
-              @test-table="onTestTable(idx)"
-              @remove="removeLevel(idx)"
-            />
-          </div>
+      <div class="space-y-2">
+        <label class="block text-[11px] font-medium text-base-content/50 uppercase tracking-wider">
+          {{ $t('sources.auth') }}
+        </label>
+        <div class="flex flex-wrap gap-2">
+          <select
+            v-model="draft.authType"
+            class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            <option value="none">{{ $t('sources.authNone') }}</option>
+            <option value="apikey">{{ $t('sources.authApiKey') }}</option>
+            <option value="bearer">{{ $t('sources.authBearer') }}</option>
+          </select>
+          <template v-if="draft.authType !== 'none'">
+            <select
+              v-model="draft.apiKeyId"
+              class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">{{ $t('sources.chooseKey') }}</option>
+              <option v-for="k in apiKeyOptions" :key="k.id" :value="k.id">
+                {{ k.label }}
+              </option>
+            </select>
+            <template v-if="draft.authType === 'apikey'">
+              <input
+                v-model="draft.headerName"
+                type="text"
+                :placeholder="$t('sources.headerName')"
+                class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              <input
+                v-model="draft.queryParam"
+                type="text"
+                :placeholder="$t('sources.queryParam')"
+                class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </template>
+          </template>
+        </div>
+      </div>
 
-          <p v-if="testMsg" class="text-xs" :class="testPassed ? 'text-success' : 'text-error'">
-            {{ testMsg }}
-          </p>
-          <p v-if="errorMsg" class="text-xs text-error">{{ errorMsg }}</p>
+      <SourceDownloadSection
+        v-model:output-dir="draft.downloadOutputDir"
+        v-model:folder="draft.downloadFolder"
+        :default-dir="defaultDownloadDir"
+      />
+
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <label class="text-[11px] font-medium text-base-content/50 uppercase tracking-wider">
+            {{ $t('sources.levels') }}
+          </label>
+          <button
+            class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+            @click="addLevel"
+          >
+            <Plus :size="12" />
+            {{ $t('sources.addLevel') }}
+          </button>
         </div>
 
-        <div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-base-300">
-          <button
-            class="fx-noise px-3 py-1.5 fx-depth rounded-field text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
-            @click="emit('close')"
-          >
-            {{ $t('common.cancel') }}
-          </button>
-          <button
-            class="fx-noise px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-1.5"
-            :disabled="saving"
-            @click="onSave"
-          >
-            <Loader2 v-if="saving" :size="14" class="animate-spin" />
-            {{ $t('common.save') }}
-          </button>
-        </div>
+        <EndpointLevelCard
+          v-for="(ep, idx) in draft.endpoints"
+          :key="ep.id"
+          v-model="draft.endpoints[idx]"
+          :index="idx"
+          :base-url="draft.baseUrl"
+          :available-keys="availableKeys(idx)"
+          :self-keys="selfKeys(idx)"
+          :field-options="sampleFields[ep.id] || []"
+          :row-options="rowSamples[ep.id] || []"
+          :level-options="levelOptions(idx)"
+          :testing="testingId === ep.id"
+          :table-testing="tableTestingId === ep.id"
+          @test="onTest(idx)"
+          @test-table="onTestTable(idx)"
+          @remove="removeLevel(idx)"
+        />
+      </div>
+
+      <p v-if="testMsg" class="text-xs" :class="testPassed ? 'text-success' : 'text-error'">
+        {{ testMsg }}
+      </p>
+      <p v-if="errorMsg" class="text-xs text-error">{{ errorMsg }}</p>
+    </div>
+
+    <div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-base-300">
+      <button
+        class="fx-noise px-3 py-1.5 fx-depth rounded-field text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
+        @click="emit('close')"
+      >
+        {{ $t('common.cancel') }}
+      </button>
+      <button
+        class="fx-noise px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-1.5"
+        :disabled="saving"
+        @click="onSave"
+      >
+        <Loader2 v-if="saving" :size="14" class="animate-spin" />
+        {{ $t('common.save') }}
+      </button>
+    </div>
   </ModalShell>
 </template>

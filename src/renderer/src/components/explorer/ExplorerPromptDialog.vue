@@ -49,10 +49,7 @@ function onKeydown(e: KeyboardEvent) {
     @escape="emit('cancel')"
   >
     <!-- Tekst zachęty jest jedyną etykietą dialogu; nie ma nagłówka. -->
-    <p
-      id="explorer-prompt-dialog-title"
-      class="text-sm text-base-content mb-3 whitespace-pre-wrap"
-    >
+    <p id="explorer-prompt-dialog-title" class="text-sm text-base-content mb-3 whitespace-pre-wrap">
       {{ message }}
     </p>
     <input

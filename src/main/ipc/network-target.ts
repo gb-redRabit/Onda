@@ -105,7 +105,10 @@ export function isNeverPublicAddress(address: string): boolean {
  * odrzucają URL-e pochodzące z sieci wskazujące na lokalne usługi.
  */
 export function isLoopbackHost(host: string): boolean {
-  const h = host.trim().toLowerCase().replace(/^\[|\]$/g, '');
+  const h = host
+    .trim()
+    .toLowerCase()
+    .replace(/^\[|\]$/g, '');
   if (h === 'localhost' || h.endsWith('.localhost')) return true;
   if (h === '::1') return true;
   return /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h);

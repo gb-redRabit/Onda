@@ -40,13 +40,10 @@ test.describe('image viewer settings', () => {
         mimeType: 'image/png'
       }));
       const windowPromise = app.waitForEvent('window');
-      await page.evaluate(
-        async (items) => {
-          const api = (window as unknown as { api: OndaTestApi }).api;
-          await api.invoke('imageViewer:open', items, 0);
-        },
-        files
-      );
+      await page.evaluate(async (items) => {
+        const api = (window as unknown as { api: OndaTestApi }).api;
+        await api.invoke('imageViewer:open', items, 0);
+      }, files);
       const viewer = await windowPromise;
       await expect(viewer.getByTestId('image-viewer')).toBeVisible();
 

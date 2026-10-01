@@ -139,7 +139,8 @@ test.describe('responsive layout', () => {
       // Zmaksymalizuj główne okno na cały wyświetlacz.
       await app.evaluate(({ BrowserWindow }, s) => {
         const main = BrowserWindow.getAllWindows().find(
-          (w) => !w.webContents.getURL().includes('pip') && !w.webContents.getURL().includes('splash')
+          (w) =>
+            !w.webContents.getURL().includes('pip') && !w.webContents.getURL().includes('splash')
         );
         main?.setBounds({ x: 0, y: 0, width: s.width, height: s.height });
       }, size);

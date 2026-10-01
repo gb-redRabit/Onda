@@ -156,7 +156,10 @@ onMounted(checkOverflow);
         {{ displayTitle }}
       </p>
     </div>
-    <div v-if="showAudioArtist && (audioArtist || audioAlbum)" class="relative w-full overflow-hidden">
+    <div
+      v-if="showAudioArtist && (audioArtist || audioAlbum)"
+      class="relative w-full overflow-hidden"
+    >
       <p
         ref="artistEl"
         :class="[

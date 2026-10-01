@@ -91,9 +91,7 @@ onMounted(() => {
           );
         "
       />
-      <div
-        class="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-black/75 to-transparent"
-      />
+      <div class="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-black/75 to-transparent" />
       <div class="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
         <div class="min-w-0">
           <p class="text-sm font-semibold text-white drop-shadow">{{ t('previewTitle') }}</p>

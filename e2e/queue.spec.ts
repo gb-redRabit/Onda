@@ -50,9 +50,9 @@ test.describe('playback queue', () => {
       await page.getByTestId('library-tab-tracks').click();
       await expect(page.getByTestId('library-play-all')).toBeVisible();
       await page.getByTestId('library-play-all').click();
-      await expect(
-        page.locator('[data-testid="player-bar"][data-playing="true"]')
-      ).toBeVisible({ timeout: 20_000 });
+      await expect(page.locator('[data-testid="player-bar"][data-playing="true"]')).toBeVisible({
+        timeout: 20_000
+      });
 
       await page.getByTestId('player-queue').click();
       await expect(page.getByTestId('queue-panel')).toBeVisible();

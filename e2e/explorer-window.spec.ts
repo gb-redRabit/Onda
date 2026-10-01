@@ -38,7 +38,8 @@ test.describe('explorer detached window', () => {
       // Zamknij je z wnętrza odłączonego okna.
       const closed = detached.waitForEvent('close');
       await detached.evaluate(() => {
-        const api = (window as unknown as { api?: { invoke: (c: string) => Promise<unknown> } }).api;
+        const api = (window as unknown as { api?: { invoke: (c: string) => Promise<unknown> } })
+          .api;
         return api?.invoke('window:close');
       });
       await closed;

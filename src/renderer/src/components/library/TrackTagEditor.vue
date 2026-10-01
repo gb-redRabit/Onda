@@ -183,105 +183,101 @@ async function save() {
     @close="onOverlayClick"
     @escape="emit('close')"
   >
-        <div class="flex items-center justify-between px-5 py-4 border-b border-base-300">
-          <h2 id="track-tag-editor-title" class="text-base font-bold">{{ $t('tags.title') }}</h2>
-          <button
-            class="fx-noise p-1.5 fx-depth rounded-field hover:bg-base-content/10 transition-colors text-base-content/50"
-            @click="emit('close')"
-          >
-            <X :size="16" />
-          </button>
-        </div>
+    <div class="flex items-center justify-between px-5 py-4 border-b border-base-300">
+      <h2 id="track-tag-editor-title" class="text-base font-bold">{{ $t('tags.title') }}</h2>
+      <button
+        class="fx-noise p-1.5 fx-depth rounded-field hover:bg-base-content/10 transition-colors text-base-content/50"
+        @click="emit('close')"
+      >
+        <X :size="16" />
+      </button>
+    </div>
 
-        <div class="flex gap-5 p-5">
-          <div class="shrink-0 flex flex-col items-center gap-2">
-            <div
-              class="w-28 h-28 rounded-box bg-base-100 border border-base-300 overflow-hidden flex items-center justify-center"
-            >
-              <MediaCover :cover="coverObj" :size="32" fallback="music" />
-            </div>
-            <button
-              class="fx-noise flex items-center gap-1 px-3 py-1.5 fx-depth rounded-field text-xs font-medium bg-primary/10 text-primary hover:bg-primary hover:text-primary-content transition-colors"
-              :disabled="uploadingCover"
-              @click="pickCover"
-            >
-              <Upload :size="12" /> {{ uploadingCover ? '...' : $t('tags.cover') }}
-            </button>
-          </div>
-
-          <div class="flex-1 space-y-2.5 min-w-0">
-            <label class="block">
-              <span class="text-xs font-medium text-base-content/70">{{
-                $t('tags.filename')
-              }}</span>
-              <input
-                v-model="name"
-                class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
-              />
-            </label>
-            <label class="block">
-              <span class="text-xs font-medium text-base-content/70">{{
-                $t('tags.titleField')
-              }}</span>
-              <input
-                v-model="title"
-                class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
-              />
-            </label>
-            <label class="block">
-              <span class="text-xs font-medium text-base-content/70">{{ $t('tags.artist') }}</span>
-              <input
-                v-model="artist"
-                class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
-              />
-            </label>
-            <label class="block">
-              <span class="text-xs font-medium text-base-content/70">{{ $t('tags.album') }}</span>
-              <input
-                v-model="album"
-                class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
-              />
-            </label>
-            <div class="grid grid-cols-3 gap-2.5">
-              <label class="block">
-                <span class="text-xs font-medium text-base-content/70">{{ $t('tags.year') }}</span>
-                <input
-                  v-model="year"
-                  class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
-                />
-              </label>
-              <label class="block col-span-2">
-                <span class="text-xs font-medium text-base-content/70">{{ $t('tags.genre') }}</span>
-                <input
-                  v-model="genre"
-                  class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
-                />
-              </label>
-            </div>
-            <label class="block">
-              <span class="text-xs font-medium text-base-content/70">{{ $t('tags.trackNo') }}</span>
-              <input
-                v-model="trackNumber"
-                class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
-              />
-            </label>
-          </div>
+    <div class="flex gap-5 p-5">
+      <div class="shrink-0 flex flex-col items-center gap-2">
+        <div
+          class="w-28 h-28 rounded-box bg-base-100 border border-base-300 overflow-hidden flex items-center justify-center"
+        >
+          <MediaCover :cover="coverObj" :size="32" fallback="music" />
         </div>
+        <button
+          class="fx-noise flex items-center gap-1 px-3 py-1.5 fx-depth rounded-field text-xs font-medium bg-primary/10 text-primary hover:bg-primary hover:text-primary-content transition-colors"
+          :disabled="uploadingCover"
+          @click="pickCover"
+        >
+          <Upload :size="12" /> {{ uploadingCover ? '...' : $t('tags.cover') }}
+        </button>
+      </div>
 
-        <div class="flex justify-end gap-2 px-5 py-4 border-t border-base-300">
-          <button
-            class="fx-noise px-4 py-2 fx-depth rounded-field text-sm font-medium text-base-content/70 hover:bg-base-content/10 transition-colors"
-            @click="emit('close')"
-          >
-            {{ $t('common.cancel') }}
-          </button>
-          <button
-            class="fx-noise px-4 py-2 fx-depth rounded-field text-sm font-medium bg-primary text-primary-content hover:bg-primary/90 transition-colors disabled:opacity-50"
-            :disabled="saving || uploadingCover"
-            @click="save"
-          >
-            {{ saving ? $t('tags.saving') : $t('common.save') }}
-          </button>
+      <div class="flex-1 space-y-2.5 min-w-0">
+        <label class="block">
+          <span class="text-xs font-medium text-base-content/70">{{ $t('tags.filename') }}</span>
+          <input
+            v-model="name"
+            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+          />
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium text-base-content/70">{{ $t('tags.titleField') }}</span>
+          <input
+            v-model="title"
+            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+          />
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium text-base-content/70">{{ $t('tags.artist') }}</span>
+          <input
+            v-model="artist"
+            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+          />
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium text-base-content/70">{{ $t('tags.album') }}</span>
+          <input
+            v-model="album"
+            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+          />
+        </label>
+        <div class="grid grid-cols-3 gap-2.5">
+          <label class="block">
+            <span class="text-xs font-medium text-base-content/70">{{ $t('tags.year') }}</span>
+            <input
+              v-model="year"
+              class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+            />
+          </label>
+          <label class="block col-span-2">
+            <span class="text-xs font-medium text-base-content/70">{{ $t('tags.genre') }}</span>
+            <input
+              v-model="genre"
+              class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+            />
+          </label>
         </div>
+        <label class="block">
+          <span class="text-xs font-medium text-base-content/70">{{ $t('tags.trackNo') }}</span>
+          <input
+            v-model="trackNumber"
+            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+          />
+        </label>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-2 px-5 py-4 border-t border-base-300">
+      <button
+        class="fx-noise px-4 py-2 fx-depth rounded-field text-sm font-medium text-base-content/70 hover:bg-base-content/10 transition-colors"
+        @click="emit('close')"
+      >
+        {{ $t('common.cancel') }}
+      </button>
+      <button
+        class="fx-noise px-4 py-2 fx-depth rounded-field text-sm font-medium bg-primary text-primary-content hover:bg-primary/90 transition-colors disabled:opacity-50"
+        :disabled="saving || uploadingCover"
+        @click="save"
+      >
+        {{ saving ? $t('tags.saving') : $t('common.save') }}
+      </button>
+    </div>
   </ModalShell>
 </template>

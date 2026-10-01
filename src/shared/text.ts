@@ -34,5 +34,10 @@ export function sanitizeFilenameSpaced(
   options: SanitizeFilenameOptions = {}
 ): string {
   const { maxLength = 180, fallback = 'download' } = options;
-  return (input ?? '').replace(/\s*[\\/:*?"<>|]\s*/g, ' ').trim().slice(0, maxLength) || fallback;
+  return (
+    (input ?? '')
+      .replace(/\s*[\\/:*?"<>|]\s*/g, ' ')
+      .trim()
+      .slice(0, maxLength) || fallback
+  );
 }

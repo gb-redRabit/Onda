@@ -6,7 +6,10 @@ import { launchOnda, dismissWizard } from './helpers/app';
 // proces główny przekazuje do odtwarzacza.
 
 interface OndaTestApi {
-  audioPipShow: (state: Record<string, unknown>, opts?: Record<string, unknown>) => Promise<boolean>;
+  audioPipShow: (
+    state: Record<string, unknown>,
+    opts?: Record<string, unknown>
+  ) => Promise<boolean>;
   audioPipUpdate: (
     state: Record<string, unknown>,
     opts?: Record<string, unknown>
@@ -138,13 +141,7 @@ test.describe('audio PiP', () => {
       await expect(pip.getByTestId('pip-audio-root')).toBeVisible();
       await expect(pip.getByTestId('pip-audio-root')).toContainText('E2E Track');
 
-      for (const id of [
-        'pip-playPause',
-        'pip-next',
-        'pip-prev',
-        'pip-repeat',
-        'pip-shuffle'
-      ]) {
+      for (const id of ['pip-playPause', 'pip-next', 'pip-prev', 'pip-repeat', 'pip-shuffle']) {
         await pip.getByTestId(id).click();
       }
       await pip.getByTestId('pip-mute').click();

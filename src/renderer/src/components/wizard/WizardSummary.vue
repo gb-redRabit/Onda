@@ -53,9 +53,7 @@ const rows = computed(() => [
       description-gap
     />
 
-    <div
-      class="rounded-box border border-base-300 bg-base-200/(--glass-alpha) overflow-hidden"
-    >
+    <div class="rounded-box border border-base-300 bg-base-200/(--glass-alpha) overflow-hidden">
       <div
         v-for="(row, i) in rows"
         :key="row.labelKey"

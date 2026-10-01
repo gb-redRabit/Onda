@@ -56,7 +56,7 @@ const emit = defineEmits<{
 }>();
 
 function defaultWatchUrl(id: string): string {
-    return props.watchUrl || buildYouTubeWatchUrl(id);
+  return props.watchUrl || buildYouTubeWatchUrl(id);
 }
 
 // Elementy SoundCloud nie mają embedu YouTube — zakładka (saved-streams jest
