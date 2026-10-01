@@ -9,6 +9,29 @@ na `main` wersję ostatnio opublikowanego release'a; wersję podnosi wyłącznie
 jest błędem — pilnują tego `npm run version:check` i `npm run check:artifacts` w CI
 (patrz `RELEASE.md`).
 
+## [0.6.0](https://github.com/gb-redRabit/Onda/compare/v0.5.0...v0.6.0) (2026-10-01)
+
+
+### Features
+
+* **i18n:** localise main-process messages (splash, dialogs, dependency errors) ([61e99b5](https://github.com/gb-redRabit/Onda/commit/61e99b5ae0c8c49354466e8e7f8da45ec8a119fb))
+
+
+### Bug Fixes
+
+* **a11y:** dialog semantics + focus trap for the wizard, live toasts, menu roles ([f341d99](https://github.com/gb-redRabit/Onda/commit/f341d9942ea0ae8a268b4250679dcb98a5884686))
+* apply verified external-audit findings ([f3a02bb](https://github.com/gb-redRabit/Onda/commit/f3a02bb9c5201d2cccfcd9396a05d5e0dae4340b))
+* **build:** strip UTF-8 BOM from installer license files ([b8aa369](https://github.com/gb-redRabit/Onda/commit/b8aa36999a2c52d96d727f5028ca3a7d1607a7ad))
+* **ci:** cross-platform explorer paths and robust e2e navigation ([24fb9a1](https://github.com/gb-redRabit/Onda/commit/24fb9a11241e5ae379bfea0836ca1267d16d949b))
+* **ci:** cross-platform test paths and repo-wide Prettier formatting ([5f3db31](https://github.com/gb-redRabit/Onda/commit/5f3db312da2992b886766ef3b84a1e5f1ad2b97e))
+* **ci:** skip macOS-crashing explorer-file-ops e2e (documented) ([efd48a9](https://github.com/gb-redRabit/Onda/commit/efd48a96c99ddb6b95a24b6258b05da25ed9f872))
+* **ci:** stabilise flaky e2e (image-viewer scroll settle, retries) ([e59d553](https://github.com/gb-redRabit/Onda/commit/e59d5535c6c5ddef70133ead0c8c3c1ab87926f0))
+* **data:** validate store reads, safe localStorage, classify disk-full ([5c45c50](https://github.com/gb-redRabit/Onda/commit/5c45c5060e6c7fea8e622dd5aff8e07e2a2f1578))
+* external audit follow-up and app-wide hardening ([0b88acb](https://github.com/gb-redRabit/Onda/commit/0b88acb8a470ce4a719396a5d28da6b8865b4ca6))
+* **fs:** bound filesystem calls with a timeout; use clonePlain for image export ([92864d9](https://github.com/gb-redRabit/Onda/commit/92864d9795057058c904df5d18970b6dbdfcc444))
+* **quality:** bounded log write queue, real package description, responsive narrow layout ([313906f](https://github.com/gb-redRabit/Onda/commit/313906f4b002d58256813774bab674ec5282d7af))
+* **security:** rate-limit expensive IPC, rotate logs, async stat, real Linux terminal ([b071e1c](https://github.com/gb-redRabit/Onda/commit/b071e1c60d10bba51913327bc089748d54fd6018))
+
 ## [0.5.0](https://github.com/gb-redRabit/Onda/compare/v0.4.3...v0.5.0) (2026-09-29)
 
 
