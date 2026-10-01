@@ -9,6 +9,13 @@ na `main` wersję ostatnio opublikowanego release'a; wersję podnosi wyłącznie
 jest błędem — pilnują tego `npm run version:check` i `npm run check:artifacts` w CI
 (patrz `RELEASE.md`).
 
+## [0.6.1](https://github.com/gb-redRabit/Onda/compare/v0.6.0...v0.6.1) (2026-10-01)
+
+
+### Bug Fixes
+
+* **fs:** deterministic drives fallback when PowerShell is slow/unavailable ([799092a](https://github.com/gb-redRabit/Onda/commit/799092a71b6899a33f6267858d78e24c8a7026fb))
+
 ## [0.6.0](https://github.com/gb-redRabit/Onda/compare/v0.5.0...v0.6.0) (2026-10-01)
 
 
