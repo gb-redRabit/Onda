@@ -3,8 +3,8 @@ import { runYtDlp } from '../youtube/youtube-handlers';
 import { readNetworkArgs } from '../proxy-utils';
 import { scVideoFromEntry, entryUrl } from './soundcloud-entries';
 
-// yt-dlp fallback for SoundCloud profile listings, split out of
-// `soundcloud-handlers.ts` (plan 2.8). Used when the api-v2 client throws.
+// Fallback yt-dlp dla listingów profilu SoundCloud, wyodrębniony z
+// `soundcloud-handlers.ts` (plan 2.8). Używany, gdy klient api-v2 rzuci wyjątek.
 
 export interface ScFallbackChannel {
   id: string;

@@ -22,16 +22,16 @@ export { cleanupYtAuthTemp } from './youtube-auth-session';
 const LOGIN_POLL_MS = 1000;
 const LOGIN_TIMEOUT_MS = 10 * 60 * 1000;
 const LOGIN_DIAGNOSTIC_MS = 10 * 1000;
-// Starting on youtube.com makes Google redirect to sign-in when needed and then
-// back to youtube.com after login — so the .youtube.com session cookies that
-// yt-dlp actually needs are always present before we export.
+// Start na youtube.com sprawia, że Google przekierowuje do logowania w razie potrzeby,
+// a potem z powrotem na youtube.com po zalogowaniu — więc cookies sesji .youtube.com,
+// których yt-dlp faktycznie potrzebuje, są zawsze obecne przed eksportem.
 const LOGIN_START_URL = 'https://www.youtube.com/';
 
 let loginWindow: BrowserWindow | null = null;
 
-// Opens an in-app Google login window bound to the auth partition. Resolves on
-// success (cookies exported + settings persisted), when the user closes the
-// window (canceled) or on timeout/error.
+// Otwiera wbudowane okno logowania Google przypisane do partycji auth. Rozwiązuje się
+// przy sukcesie (cookies wyeksportowane + ustawienia zapisane), gdy użytkownik zamknie
+// okno (anulowanie) lub przy timeout/błędzie.
 export async function startGoogleLogin(): Promise<{
   success: boolean;
   canceled?: boolean;
@@ -66,33 +66,33 @@ export async function startGoogleLogin(): Promise<{
     logger.warn('ytauth', 'login renderer gone', details.reason, details.exitCode);
   });
 
-  // Deny popups without re-navigating this window — calling loadURL from the
-  // popup handler can crash the main process on Windows (and YouTube/Google
-  // occasionally open popups to their own origin, which aborts the current load).
+  // Odrzuca popupy bez ponownej nawigacji tego okna — wywołanie loadURL z handlera
+  // popupa może zawiesić główny proces w Windows (a YouTube/Google czasem otwierają
+  // popupy do własnego origin, co przerywa bieżące ładowanie).
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 
-  // Flow diagnostics: log which pages the login window visits (origin + path
-  // only — Google URLs carry tokens in the query string).
+  // Diagnostyka przepływu: loguj, które strony odwiedza okno logowania (tylko origin
+  // + ścieżka — URL-e Google niosą tokeny w query stringu).
   const logUrl = (event: string, url: string): void => {
     try {
       const u = new URL(url);
       logger.info('ytauth', `login nav [${event}] ${u.origin}${u.pathname}`);
     } catch {
-      // about:blank / data: URLs are not interesting
+      // about:blank / URL-e data: nie są interesujące
     }
   };
   win.webContents.on('did-navigate', (_e, url) => logUrl('navigate', url));
   win.webContents.on('did-fail-load', (_e, code, desc, url) => logUrl(`fail ${code} ${desc}`, url));
 
-  // Google rejects Electron's default user agent, so strip it to a plain
-  // Chromium UA. Set it on the webContents (not per-load) to avoid a renderer
-  // crash on Windows and keep it across all navigations.
+  // Google odrzuca domyślny user agent Electrona, więc zredukuj go do zwykłego
+  // UA Chromium. Ustaw go na webContents (nie per-load), aby uniknąć crashu
+  // renderera w Windows i zachować go we wszystkich nawigacjach.
   const ua = session.defaultSession.getUserAgent().replace(/Electron\/\S+\s*/, '');
   win.webContents.setUserAgent(ua);
 
-  // Start the poll loop without waiting for the initial navigation: the
-  // youtube.com → accounts.google.com chain rejects with ERR_ABORTED and, in
-  // rare cases, `loadURL` never settles — the loop must run regardless.
+  // Uruchom pętlę pollingu bez czekania na początkową nawigację: łańcuch
+  // youtube.com → accounts.google.com odrzuca z ERR_ABORTED i w rzadkich
+  // przypadkach `loadURL` nigdy się nie rozwiązuje — pętla musi działać niezależnie.
   void win.loadURL(LOGIN_START_URL).catch((e: unknown) => {
     const msg = e instanceof Error ? e.message : String(e);
     if (!msg.includes('ERR_ABORTED')) {
@@ -104,8 +104,8 @@ export async function startGoogleLogin(): Promise<{
   let stableCount = 0;
   let lastDiagnosticAt = 0;
   while (loginWindow === win && !win.isDestroyed()) {
-    // Only .youtube.com session cookies count — Google-wide cookies are not
-    // enough for yt-dlp to unlock age-restricted content.
+    // Liczą się tylko cookies sesji .youtube.com — cookies całego Google nie
+    // wystarczą, aby yt-dlp odblokował treści z ograniczeniem wieku.
     const cookies = await getSessionCookies();
     if (hasSessionCookies(cookies, YT_COOKIE_HOST).length > 0) {
       stableCount++;
@@ -122,8 +122,8 @@ export async function startGoogleLogin(): Promise<{
       stableCount = 0;
     }
 
-    // One diagnostic line every 10 s while waiting: where the flow is and which
-    // SID-family cookies exist (names/domains only — never values).
+    // Jedna linia diagnostyczna co 10 s podczas oczekiwania: gdzie jest przepływ i
+    // które cookies z rodziny SID istnieją (tylko nazwy/domeny — nigdy wartości).
     if (Date.now() - lastDiagnosticAt > LOGIN_DIAGNOSTIC_MS) {
       lastDiagnosticAt = Date.now();
       const hint =
@@ -225,8 +225,8 @@ export async function getAuthStatus(): Promise<YoutubeAuthStatus> {
     if (settings.method === 'electron') {
       status.loggedIn = await exportSessionCookies();
       if (!status.loggedIn) {
-        // Cold start / partition loss — rebuild the live session from the
-        // persisted file so the status is stable across restarts.
+        // Zimny start / utrata partycji — odbuduj żywą sesję z zapisanego
+        // pliku, aby status był stabilny między restartami.
         await restorePartitionSession();
         status.loggedIn =
           (await exportSessionCookies()) || (await cookieFileHasValidYouTubeSession());
@@ -243,17 +243,17 @@ export async function getAuthStatus(): Promise<YoutubeAuthStatus> {
   return status;
 }
 
-// Auth flags for every yt-dlp invocation. For the in-app session this writes a
-// fresh, temporary cookie file (deleted by the caller via cleanupYtAuthTemp)
-// so the session is never left as a copyable file on disk beyond the process.
+// Flagi auth dla każdego wywołania yt-dlp. Dla sesji wbudowanej zapisuje
+// świeży, tymczasowy plik cookies (usuwany przez wywołującego przez cleanupYtAuthTemp),
+// aby sesja nigdy nie została na dysku jako kopiowalny plik poza czasem procesu.
 export async function getYtAuthConfig(): Promise<YtAuthConfig | null> {
   const settings = await getAuthSettings();
   if (settings.method === 'none') return null;
   if (settings.method === 'electron') {
     let tmpPath = await writeTempSessionCookies();
     if (!tmpPath) {
-      // The partition lost the live session — try to bring it back from the
-      // persisted file, then export again.
+      // Partycja zgubiła żywą sesję — spróbuj przywrócić ją z zapisanego
+      // pliku, a potem wyeksportuj ponownie.
       await restorePartitionSession();
       tmpPath = await writeTempSessionCookies();
     }

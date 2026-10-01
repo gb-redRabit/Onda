@@ -2,7 +2,7 @@ import { shell } from 'electron';
 import { existsSync } from 'fs';
 import { extname } from 'path';
 
-/** Injectable edges so the resolution logic can be unit-tested without mocks. */
+/** Wstrzykiwalne krawędzie, aby logikę rozwiązywania można było testować jednostkowo bez mocków. */
 export interface IconSourceDeps {
   platform?: NodeJS.Platform;
   readShortcutLink?: (shortcutPath: string) => { icon?: string; target?: string };
@@ -10,12 +10,12 @@ export interface IconSourceDeps {
 }
 
 /**
- * Path whose icon should be used for `filePath`.
+ * Ścieżka, której ikona powinna zostać użyta dla `filePath`.
  *
- * Windows resolves a `.lnk` to the generic shortcut icon, so every desktop
- * shortcut would look identical. We use the shortcut's own icon (when set and
- * present) or its target — an `.exe` carries the real application icon. Any
- * other path is returned unchanged.
+ * Windows rozwiązuje `.lnk` do ogólnej ikony skrótu, więc każdy skrót na pulpicie
+ * wyglądałby identycznie. Używamy ikony własnej skrótu (gdy ustawiona i obecna)
+ * albo jego celu — `.exe` niesie prawdziwą ikonę aplikacji. Każda inna ścieżka
+ * jest zwracana bez zmian.
  */
 export function iconSourcePath(filePath: string, deps: IconSourceDeps = {}): string {
   const platform = deps.platform ?? process.platform;
@@ -30,12 +30,12 @@ export function iconSourcePath(filePath: string, deps: IconSourceDeps = {}): str
     if (iconPath && exists(iconPath)) return iconPath;
     if (link.target && exists(link.target)) return link.target;
   } catch {
-    // unreadable/invalid shortcut — fall back to the shortcut itself
+    // nieczytelny/nieprawidłowy skrót — wróć do samego skrótu
   }
   return filePath;
 }
 
-/** Windows stores the shortcut icon as `path,index` or `"path",index`. */
+/** Windows przechowuje ikonę skrótu jako `path,index` lub `"path",index`. */
 function parseIconField(icon: string): string {
   const value = icon.trim();
   if (value.startsWith('"')) {

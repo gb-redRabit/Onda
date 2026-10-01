@@ -1,6 +1,6 @@
 import { getStore } from '../ipc/cover/cover-cache';
 
-// Download settings readers extracted from `download-manager.ts` (plan 2.8).
+// Readery ustawień pobierania wyodrębnione z `download-manager.ts` (plan 2.8).
 
 export const MAX_CONCURRENT = 8;
 export const DEFAULT_RETRY_ATTEMPTS = 3;

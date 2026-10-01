@@ -9,10 +9,10 @@ import {
   resolveNetworkTarget
 } from './network-target';
 
-// Fetches remote images (channel avatars / banners) in the main process and
-// returns them as `data:` URLs. The renderer can fail to load certain external
-// CDNs directly (host-specific network/Chromium quirks), so main proxies them.
-// https-only and private/loopback hosts are rejected to avoid SSRF.
+// Pobiera zdalne obrazy (awatary / banery kanałów) w procesie main i
+// zwraca je jako URL-e `data:`. Renderer może nie wczytać niektórych zewnętrznych
+// CDN bezpośrednio (specyficzne dla hosta quirki sieci/Chromium), więc main je proxyuje.
+// Tylko https, a hosty prywatne/loopback są odrzucane, aby uniknąć SSRF.
 
 const MAX_BYTES = 4 * 1024 * 1024;
 const TIMEOUT_MS = 15_000;
@@ -89,10 +89,10 @@ function remember(url: string, data: string): void {
   cache.set(url, { data, at: Date.now() });
 }
 
-// Follows redirects manually so EVERY hop is validated: with `redirect: 'follow'`
-// a public URL could bounce the request to localhost / a private range / a cloud
-// metadata endpoint, bypassing the SSRF check applied to the initial URL.
-// Exported for tests.
+// Podąża za przekierowaniami ręcznie, aby KAŻDY krok był walidowany: przy `redirect: 'follow'`
+// publiczny URL mógłby odbić żądanie do localhost / zakresu prywatnego / endpointu
+// metadanych chmury, omijając sprawdzenie SSRF zastosowane do początkowego URL.
+// Eksportowane dla testów.
 export async function followImageRedirects(
   rawUrl: string,
   signal: AbortSignal,
@@ -116,7 +116,7 @@ export async function followImageRedirects(
   return null;
 }
 
-/** Read an image body without ever buffering more than the configured cap. */
+/** Czyta body obrazu, nigdy nie buforując więcej niż skonfigurowany limit. */
 export async function readRemoteImageBody(res: RemoteImageResponse): Promise<Buffer | null> {
   const contentLength = responseHeader(res, 'content-length');
   if (contentLength && /^\d+$/.test(contentLength) && Number(contentLength) > MAX_BYTES) {
@@ -185,7 +185,7 @@ export function registerRemoteImageHandler(): void {
   ipcMain.handle('media:remoteImage', (_event, url: string) => getRemoteImage(url));
 }
 
-/** Drops every cached remote image (in-memory LRU). Returns the entry count. */
+/** Usuwa każdy zbuforowany zdalny obraz (LRU w pamięci). Zwraca liczbę wpisów. */
 export function clearRemoteImageCache(): number {
   const entries = cache.size;
   cache.clear();

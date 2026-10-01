@@ -121,9 +121,9 @@ export async function fetchChannelItems(opts: {
   }
 }
 
-// Fetches the ENTIRE channel video list in a single `--flat-playlist -J` call
-// (no per-page pagination). Used by the subscription checker so "check now"
-// does not issue dozens of redundant yt-dlp invocations.
+// Pobiera CAŁĄ listę filmów kanału w jednym wywołaniu `--flat-playlist -J`
+// (bez paginacji per strona). Używane przez checker subskrypcji, aby "sprawdź teraz"
+// nie wywoływał dziesiątek redundantnych uruchomień yt-dlp.
 export async function fetchChannelAll(opts: { url: string; tab?: 'videos' | 'shorts' }): Promise<{
   success: boolean;
   error?: string;
@@ -272,7 +272,7 @@ export function registerYoutubeHandlers(): void {
           }
         };
       }
-      // Keep the E2E prefetch path away from yt-dlp entirely.
+      // Całkowicie trzymaj ścieżkę prefetch E2E z dala od yt-dlp.
       return { success: false, error: 'e2e fixtures: resolve disabled' };
     }
     const kind = detectYtKind(url);
@@ -317,8 +317,8 @@ export function registerYoutubeHandlers(): void {
       }
     }
     const target = normalizeYtUrl(url, kind);
-    // Channels open directly in the dedicated channel view — no need to fetch
-    // the full uploads list here, so return a lightweight marker.
+    // Kanały otwierają się bezpośrednio w dedykowanym widoku kanału — nie ma potrzeby pobierać
+    // tutaj całej listy przesłanych, więc zwracamy lekki marker.
     if (kind === 'channel') {
       return {
         success: true,
@@ -352,8 +352,8 @@ export function registerYoutubeHandlers(): void {
       const title =
         parsed.title || parsed.playlist_title || parsed.channel || parsed.uploader || '';
       const playlistCount = parsed.playlist_count;
-      // When yt-dlp does not report the playlist count we leave it unknown and
-      // let the renderer fill in the exact total once the whole list is loaded.
+      // Gdy yt-dlp nie raportuje liczby elementów playlisty, zostawiamy ją nieznaną i
+      // pozwalamy rendererowi uzupełnić dokładną sumę po wczytaniu całej listy.
       const totalItems = playlistCount ?? null;
       return {
         success: true,
@@ -365,8 +365,8 @@ export function registerYoutubeHandlers(): void {
             channelId: parsed.channel_id || parsed.uploader_id || '',
             channelTitle: parsed.channel || parsed.uploader || '',
             totalItems,
-            // Keep loading while the page is full — even when playlist_count is
-            // missing, a full 30-item page means there is almost certainly more.
+            // Ładuj dalej, gdy strona jest pełna — nawet gdy brakuje playlist_count,
+            // pełna 30-elementowa strona oznacza, że prawie na pewno jest więcej.
             hasMore: items.length >= 30 && (playlistCount == null || items.length < playlistCount)
           },
           items
@@ -410,8 +410,8 @@ export function registerYoutubeHandlers(): void {
         return {
           success: true,
           items,
-          // A full page means there is more to load — unless the playlist count
-          // is known and the cumulative items already reached it.
+          // Pełna strona oznacza, że jest więcej do wczytania — chyba że liczba elementów playlisty
+          // jest znana, a skumulowane elementy już ją osiągnęły.
           hasMore:
             items.length >= end - start + 1 &&
             (playlistCount == null || start - 1 + items.length < playlistCount),

@@ -1,7 +1,7 @@
-// SoundCloud downloads are raw progressive MP3 streams — no ID3 tags and no
-// artwork. After the file lands on disk we embed title/artist (+ optional
-// album/year overrides) and the track's artwork_url as APIC so the library
-// shows proper metadata instead of file names.
+// Pobrania z SoundCloud to surowe strumienie progresywne MP3 — bez tagów ID3 i bez
+// okładki. Po zapisaniu pliku na dysk osadzamy title/artist (+ opcjonalne nadpisania
+// album/year) oraz artwork_url utworu jako APIC, aby biblioteka
+// pokazywała właściwe metadane zamiast nazw plików.
 import NodeID3 from 'node-id3';
 import { logger } from '../../shared/logger';
 import { writeCoverToAudioFile } from '../ipc/media/media-handlers';

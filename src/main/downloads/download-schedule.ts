@@ -1,7 +1,7 @@
 import { hold } from './download-state';
 import { pump } from './download-runner';
 
-// Scheduled-start control extracted from `download-manager.ts` (plan 2.8).
+// Sterowanie zaplanowanym startem wyodrębnione z `download-manager.ts` (plan 2.8).
 
 let holdTimer: ReturnType<typeof setTimeout> | null = null;
 

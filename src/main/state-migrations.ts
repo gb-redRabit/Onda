@@ -6,31 +6,32 @@ import { migrateAppearance } from './ipc/settings/settings-migrations';
 import { migrateLegacyStore } from './ipc/store-crypto';
 import type { Store } from './ipc/cover/cover-store';
 
-// Central registry for one-time state migrations (plan 4.1/4.2). Two layers:
+// Centralny rejestr jednorazowych migracji stanu (plan 4.1/4.2). Dwie warstwy:
 //
-//  - FILE migrations run before the encrypted store can be opened (e.g. the
-//    legacy hostname-derived encryption key) and are driven by cover-store.
-//  - STORE migrations run once, in version order, against the decrypted store
-//    and are tracked by the `schemaVersion` key it holds.
+//  - migracje FILE uruchamiają się, zanim można otworzyć zaszyfrowany store
+//    (np. starszy klucz szyfrowania wywodzony z nazwy hosta) i są sterowane
+//    przez cover-store.
+//  - migracje STORE uruchamiają się raz, w kolejności wersji, na odszyfrowanym
+//    store i są śledzone przez klucz `schemaVersion`, który on przechowuje.
 //
-// Golden rule: never add a destructive store migration before the pre-migration
-// `.bak` backup from plan 4.4 lands.
+// Złota zasada: nigdy nie dodawaj destrukcyjnej migracji store, zanim nie
+// powstanie kopia `.bak` sprzed migracji z planu 4.4.
 
 export const STORE_VERSION_KEY = 'schemaVersion';
 export const CURRENT_STORE_VERSION = 1;
 
-// Rolling `.bak` copies kept before a migration rewrites config.json.
+// Kroczące kopie `.bak` zachowywane, zanim migracja nadpisze config.json.
 export const MAX_STORE_BACKUPS = 3;
 
 export interface StoreMigration {
-  /** Target version; migrations run in ascending order above the stored one. */
+  /** Wersja docelowa; migracje działają w kolejności rosnącej powyżej zapisanej. */
   version: number;
   name: string;
   migrate(store: Store): void;
 }
 
-// The appearance sanitizer also normalizes imported payloads, so this migration
-// is idempotent — it only guarantees stored state gets upgraded once at boot.
+// Sanitizer wyglądu normalizuje też importowane payloady, więc ta migracja jest
+// idempotentna — gwarantuje tylko, że zapisany stan zostanie raz zaktualizowany przy starcie.
 export const STORE_MIGRATIONS: StoreMigration[] = [
   {
     version: 1,
@@ -64,14 +65,14 @@ export async function runStoreMigrations(
   }
 }
 
-// Creates `config.json.bak.1` (rotating older copies up to `maxBackups`) before
-// a migration rewrites the store. Returns false when the backup failed — the
-// caller must then SKIP migrations (plan 4.4: no backup, no migration).
+// Tworzy `config.json.bak.1` (rotując starsze kopie do `maxBackups`) przed
+// nadpisaniem store przez migrację. Zwraca false, gdy kopia zapasowa się nie
+// powiodła — wywołujący musi wtedy POMINĄĆ migracje (plan 4.4: brak kopii, brak migracji).
 export async function ensureStoreBackup(
   configPath: string,
   maxBackups = MAX_STORE_BACKUPS
 ): Promise<boolean> {
-  if (!existsSync(configPath)) return true; // fresh store — nothing to protect
+  if (!existsSync(configPath)) return true; // świeży store — nie ma czego chronić
   try {
     await mkdir(dirname(configPath), { recursive: true });
     for (let i = maxBackups; i >= 1; i--) {
@@ -90,7 +91,7 @@ export async function ensureStoreBackup(
 
 export interface FileMigration {
   name: string;
-  /** Returns the new encryption key when the config file was rewritten. */
+  /** Zwraca nowy klucz szyfrowania, gdy plik konfiguracyjny został przepisany. */
   run(keyPath: string): Promise<string | null>;
 }
 

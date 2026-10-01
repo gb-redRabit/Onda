@@ -6,9 +6,9 @@ export class TimeoutError extends Error {
 }
 
 /**
- * Rejects with a TimeoutError if `promise` has not settled within `ms`. Used to
- * keep a hung filesystem call (a dead network share, a sleeping external disk)
- * from freezing the Explorer view forever.
+ * Odrzuca z TimeoutError, jeśli `promise` nie został rozstrzygnięty w ciągu `ms`.
+ * Używane, aby zawieszone wywołanie systemu plików (martwy udział sieciowy,
+ * uśpiony dysk zewnętrzny) nie zamroziło widoku Eksploratora na zawsze.
  */
 export async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;

@@ -17,8 +17,8 @@ function uniqueId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-// Attachment filenames in MKV metadata are controlled by the author — the
-// extension must not be trusted (it can contain path separators / traversal).
+// Nazwy plików załączników w metadanych MKV są kontrolowane przez autora —
+// rozszerzeniu nie można ufać (może zawierać separatory ścieżki / traversal).
 const FONT_EXTS = new Set(['ttf', 'otf', 'ttc', 'woff', 'woff2', 'eot']);
 function safeFontExt(filename: string, fallback: string = 'ttf'): string {
   const last = (filename.split('.').pop() || '').toLowerCase();
@@ -76,7 +76,7 @@ export function registerSubtitleHandlers(): void {
       try {
         if (!isNonNegativeInt(streamIndex)) return null;
         await mkdir(getTempDir(), { recursive: true });
-        // detect codec to choose best output format
+        // wykryj kodek, aby wybrać najlepszy format wyjściowy
         const ffprobe = (await resolveBin('ffprobe')) || 'ffprobe';
         const stdout = await runCommand(
           ffprobe,
@@ -101,7 +101,7 @@ export function registerSubtitleHandlers(): void {
         const ffmpeg = (await resolveBin('ffmpeg')) || 'ffmpeg';
 
         if (TEXT_CODECS.has(codec)) {
-          // text-based codec: try extract with native format first
+          // kodek tekstowy: najpierw spróbuj wyodrębnić w natywnym formacie
           try {
             await runCommand(
               ffmpeg,
@@ -125,7 +125,7 @@ export function registerSubtitleHandlers(): void {
               `copy failed for stream ${streamIndex} (${codec}), trying transcode`,
               (e1 as Error).message?.split('\n')[0]
             );
-            // copy failed, try transcoding to srt
+            // kopiowanie nie powiodło się, spróbuj transkodować do srt
             const srtPath = join(getTempDir(), `sub_${uniqueId()}.srt`);
             await runCommand(
               ffmpeg,
@@ -149,7 +149,7 @@ export function registerSubtitleHandlers(): void {
             return { content, format: 'srt' };
           }
         } else {
-          // binary codec (pgs, dvd_subtitle, etc): transcode to srt
+          // kodek binarny (pgs, dvd_subtitle itp.): transkoduj do srt
           await runCommand(
             ffmpeg,
             [
@@ -210,9 +210,9 @@ export function registerSubtitleHandlers(): void {
     }
   );
 
-  // Returns file content to the renderer, so the path is restricted to subtitle
-  // extensions and a size ceiling — otherwise this channel reads any file the
-  // main process can open (session cookies, config, keys).
+  // Zwraca zawartość pliku do renderera, więc ścieżka jest ograniczona do rozszerzeń
+  // napisów i pułapu rozmiaru — inaczej ten kanał czytałby dowolny plik, jaki może
+  // otworzyć proces main (cookies sesji, konfiguracja, klucze).
   ipcMain.handle('subtitles:readFile', async (_event, filePath: string): Promise<string | null> => {
     const result = await readTextFileWithinBounds(
       filePath,
@@ -238,7 +238,7 @@ export function registerSubtitleHandlers(): void {
       const fonts: Array<{ name: string; ext: string; data: number[] }> = [];
 
       try {
-        // list attachments via ffprobe
+        // wylistuj załączniki przez ffprobe
         let attachmentStreams: Array<{ index: number; filename: string }> = [];
         try {
           const ffprobe = (await resolveBin('ffprobe')) || 'ffprobe';
@@ -272,7 +272,7 @@ export function registerSubtitleHandlers(): void {
 
         if (!attachmentStreams.length) return [];
 
-        // try mkvextract first
+        // najpierw spróbuj mkvextract
         let bin: string | null = null;
         try {
           bin = await resolveBin('mkvextract');
@@ -288,7 +288,7 @@ export function registerSubtitleHandlers(): void {
 
           if (bin) {
             try {
-              // mkvextract numbers attachments starting from 1
+              // mkvextract numeruje załączniki od 1
               await runCommand(bin, [filePath, 'attachments', `${i + 1}:${outPath}`], {
                 timeout: 30000
               });
@@ -308,8 +308,8 @@ export function registerSubtitleHandlers(): void {
             const ext = safeFontExt(s.filename);
             args.push(`-dump_attachment:${s.index}`, `att_${i}.${ext}`);
           }
-          // attachments live in the container header; -t 0.001 stops ffmpeg right
-          // after the header is read instead of demuxing the whole file
+          // załączniki są w nagłówku kontenera; -t 0.001 zatrzymuje ffmpeg zaraz
+          // po odczytaniu nagłówka, zamiast demuksować cały plik
           args.push('-t', '0.001', '-i', filePath, '-f', 'null', '-');
           try {
             await runCommand(ffmpeg, args, { timeout: 30000, cwd: dumpDir });
@@ -318,7 +318,7 @@ export function registerSubtitleHandlers(): void {
           }
         }
 
-        // read all dumped files (only ones actually inside dumpDir)
+        // odczytaj wszystkie zrzucone pliki (tylko te faktycznie wewnątrz dumpDir)
         const realDumpDir = await realpath(dumpDir);
         const dumped = await readdir(dumpDir);
         const seen = new Set<string>();
@@ -338,7 +338,7 @@ export function registerSubtitleHandlers(): void {
               data: Array.from(buf)
             });
           } catch {
-            /* skip unreadable */
+            /* pomiń nieczytelne */
           }
         }
       } catch (err) {

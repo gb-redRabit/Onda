@@ -12,7 +12,7 @@ import { logger } from '../../../shared/logger';
 
 const cacheDir = join(os.tmpdir(), 'onda', 'thumbs');
 
-/** Removes every cached thumbnail (shared with `SharpService`). */
+/** Usuwa każdą zbuforowaną miniaturę (współdzielone z `SharpService`). */
 export async function clearThumbnailCache(): Promise<{
   removed: number;
   bytesFreed: number;
@@ -35,7 +35,7 @@ async function readCache(cacheFile: string): Promise<string | null> {
   }
 }
 
-// Include size + mtime so a replaced file never reuses a stale thumbnail.
+// Uwzględnij size + mtime, aby zastąpiony plik nigdy nie użył nieaktualnej miniatury.
 async function sourceStamp(filePath: string): Promise<string> {
   try {
     const s = await stat(filePath);
@@ -60,8 +60,8 @@ async function buildThumbnail(filePath: string, maxSize: number): Promise<Buffer
         buf = thumb.toJPEG(85);
       }
     } catch {
-      // No OS thumbnail (shortcuts, office docs, …) — the shell-icon fallback
-      // below supplies an icon instead, so this is not worth logging.
+      // Brak miniatury systemowej (skróty, dokumenty biurowe, …) — poniższy fallback
+      // ikony shell dostarcza ikonę, więc nie warto tego logować.
     }
   }
 
@@ -87,14 +87,14 @@ async function buildThumbnail(filePath: string, maxSize: number): Promise<Buffer
     }
   }
 
-  // Last resort for non-media files (e.g. .lnk, .docx, .pdf): use the shell's
-  // associated file icon so the explorer never shows a bare/empty row.
+  // Ostatnia deska ratunku dla plików niebędących mediami (np. .lnk, .docx, .pdf): użyj
+  // powiązanej ikony pliku z shella, aby explorer nigdy nie pokazywał pustego wiersza.
   if (!buf && !AUDIO_EXTS.includes(ext) && !VIDEO_EXTS.includes(ext)) {
     try {
       const icon = await app.getFileIcon(filePath, { size: 'normal' });
       if (!icon.isEmpty()) buf = icon.toJPEG(85);
     } catch {
-      // No associated icon (or shell unavailable) — leave the thumbnail empty.
+      // Brak powiązanej ikony (lub shell niedostępny) — pozostaw miniaturę pustą.
     }
   }
 

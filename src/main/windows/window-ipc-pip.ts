@@ -3,8 +3,8 @@ import type { PipManager } from '../pip/pip-manager';
 import type { AudioPipManager } from '../pip/audio-pip-manager';
 import type { AudioPipLayoutOpts, PipLayoutOpts } from '../../shared/types/ipc/channels-pip';
 
-// Video- and audio-PiP IPC handlers, extracted from `window-ipc.ts` so window
-// controls and PiP orchestration can be reasoned about (and changed) separately.
+// Handlery IPC dla PiP wideo i audio, wyodrębnione z `window-ipc.ts`, aby
+// sterowanie oknem i orkiestrację PiP można było analizować (i zmieniać) osobno.
 
 interface PipSubtitlePayload {
   subContent: string;

@@ -20,9 +20,9 @@ export interface MediaServer {
   close: () => void;
 }
 
-// Library roots are replaced wholesale on every library change; granted roots
-// (files/folders explicitly opened or download output dirs) accumulate and
-// must survive restarts, so they are tracked separately and persisted.
+// Korzenie biblioteki są wymieniane w całości przy każdej zmianie biblioteki;
+// przyznane korzenie (jawnie otwarte pliki/foldery lub katalogi wyjściowe pobrań)
+// akumulują się i muszą przetrwać restarty, więc są śledzone osobno i zapisywane.
 const libraryRoots: string[] = [];
 const extraRoots: string[] = [];
 let rootsChanged: (() => void) | null = null;
@@ -45,14 +45,14 @@ async function resolveAll(roots: string[]): Promise<string[]> {
   return resolved;
 }
 
-// Hook invoked whenever the allowed-root set changes, so the caller can persist
-// the granted roots across restarts.
+// Hook wywoływany przy każdej zmianie zbioru dozwolonych korzeni, aby wywołujący
+// mógł zapisać przyznane korzenie między restartami.
 export function setRootsChangedHandler(cb: (() => void) | null): void {
   rootsChanged = cb;
 }
 
-// The granted (extra) roots — persisted by the app so downloads remain
-// playable after a restart.
+// Przyznane (dodatkowe) korzenie — zapisywane przez aplikację, aby pobrania
+// pozostały odtwarzalne po restarcie.
 export function getExtraRoots(): string[] {
   return [...extraRoots];
 }
@@ -64,15 +64,15 @@ export async function setAllowedRoots(roots: string[]): Promise<void> {
 }
 
 /**
- * Ceiling on ad-hoc roots, so a compromised renderer cannot grow the list
- * without bound by calling `media:grantAccess` in a loop. Only the paths the app
- * grants on its own — library folders via `setAllowedRoots`, downloads, the
- * player's current file — land here, so a legitimate install needs a small
- * fraction of this.
+ * Sufit na korzenie ad-hoc, aby skompromitowany renderer nie mógł rosnąć listy
+ * bez ograniczeń, wywołując `media:grantAccess` w pętli. Trafiają tu tylko ścieżki,
+ * które aplikacja przyznaje sama — foldery biblioteki przez `setAllowedRoots`,
+ * pobrania, bieżący plik odtwarzacza — więc legalna instalacja potrzebuje małego
+ * ułamka tego.
  */
 const MAX_EXTRA_ROOTS = 200;
 
-/** False once the ceiling is reached, so the caller can report the refusal. */
+/** False po osiągnięciu sufitu, aby wywołujący mógł zgłosić odmowę. */
 export async function addAllowedRoot(root: string): Promise<boolean> {
   if (typeof root !== 'string' || !root) return false;
   const real = await resolveReal(root);
@@ -93,9 +93,9 @@ function isWithinAnyRoot(filePath: string): boolean {
   return false;
 }
 
-// Canonicalizes a `?path=` target and enforces the allowed-root whitelist.
-// Shared by GET and HEAD so neither method can read (or leak metadata about)
-// files outside the granted roots.
+// Kanonizuje cel `?path=` i egzekwuje whitelistę dozwolonych korzeni.
+// Współdzielone przez GET i HEAD, aby żadna metoda nie mogła odczytać (ani
+// ujawnić metadanych o) plikach poza przyznanymi korzeniami.
 type MediaPathResolution =
   { ok: true; path: string } | { ok: false; reason: 'invalid' | 'forbidden' };
 
@@ -107,15 +107,16 @@ async function resolveAllowedMediaPath(rawPath: string): Promise<MediaPathResolu
   try {
     realPath = await fs.promises.realpath(normalized);
   } catch {
-    // realpath fails for a missing (or unreadable) file. Canonicalize the parent
-    // directory instead and re-attach the basename, so an 8.3 short name
-    // (Windows CI: RUNNER~1) or a /var -> /private/var symlink resolves inside
-    // the realpath'd allowed roots. The root check below still applies to the
-    // rebuilt path, so paths genuinely outside every root remain 403.
+    // realpath zawodzi dla brakującego (lub nieczytelnego) pliku. Zamiast tego
+    // skanonizuj katalog nadrzędny i ponownie dołącz nazwę bazową, aby krótka nazwa
+    // 8.3 (Windows CI: RUNNER~1) lub symlink /var -> /private/var rozwiązały się
+    // wewnątrz zrealpathowanych dozwolonych korzeni. Poniższe sprawdzenie korzenia
+    // nadal dotyczy odbudowanej ścieżki, więc ścieżki faktycznie poza każdym korzeniem
+    // pozostają 403.
     try {
       realPath = join(await fs.promises.realpath(dirname(normalized)), basename(normalized));
     } catch {
-      // fall back to the normalized path; the root check below still applies
+      // przejdź do znormalizowanej ścieżki; poniższe sprawdzenie korzenia nadal obowiązuje
     }
   }
 
@@ -164,15 +165,15 @@ export function createMediaServer(): Promise<MediaServer> {
           return;
         }
 
-        // Remote stream proxy: /{token}/stream?url=<https stream url>
+        // Proxy zdalnego strumienia: /{token}/stream?url=<https stream url>
         if (url.pathname.replace(/^\/+/, '').split('/')[1] === 'stream') {
           await handleStreamProxy(req, res, url.searchParams.get('url') || '');
           return;
         }
 
-        // HEAD fast-path: return headers without reading the file. It MUST run the
-        // same root check as GET — otherwise the metadata (existence, size, type)
-        // of any local file was readable with the token alone.
+        // Szybka ścieżka HEAD: zwraca nagłówki bez czytania pliku. MUSI przejść to
+        // samo sprawdzenie korzenia co GET — inaczej metadane (istnienie, rozmiar, typ)
+        // dowolnego lokalnego pliku były czytelne samym tokenem.
         if (req.method === 'HEAD') {
           const resolved = await resolveAllowedMediaPath(url.searchParams.get('path') || '');
           if (!resolved.ok) {

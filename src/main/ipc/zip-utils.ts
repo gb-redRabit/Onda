@@ -1,7 +1,7 @@
 import { readdir, stat } from 'fs/promises';
 import { join } from 'path';
 
-// Recursively find the first file with the given name inside a directory.
+// Rekursywnie znajduje pierwszy plik o podanej nazwie w katalogu.
 export async function findFile(dir: string, name: string): Promise<string | null> {
   let entries;
   try {

@@ -4,8 +4,8 @@ import { getYtAuthConfig, cleanupYtAuthTemp } from '../../youtube/youtube-auth';
 import { buildYtArgs, type YtDlpEntry } from './youtube-utils';
 import { readNetworkArgs } from '../proxy-utils';
 
-// Runs yt-dlp with authentication applied and cleans up any temporary cookie
-// file afterwards. Centralized so every caller gets auth + cleanup consistently.
+// Uruchamia yt-dlp z zastosowanym uwierzytelnianiem i sprząta ewentualny tymczasowy plik
+// cookie po zakończeniu. Scentralizowane, aby każdy wywołujący dostawał auth + cleanup spójnie.
 export async function runYtDlp(args: string[], timeout: number): Promise<string> {
   const bin = (await resolveBin('yt-dlp')) || 'yt-dlp';
   const auth = await getYtAuthConfig();
@@ -16,9 +16,9 @@ export async function runYtDlp(args: string[], timeout: number): Promise<string>
   }
 }
 
-// Spawns yt-dlp for one target and parses its `-J` JSON output. Shared by the
-// YouTube handlers and the SoundCloud yt-dlp fallback (the engine is yt-dlp,
-// so the spawn/mapping layer is reused; only the platform logic differs).
+// Uruchamia yt-dlp dla jednego celu i parsuje jego wyjście JSON `-J`. Współdzielone przez
+// handlery YouTube i fallback yt-dlp SoundCloud (silnikiem jest yt-dlp,
+// więc warstwa spawn/mapowania jest ponownie użyta; różni się tylko logika platformy).
 export async function fetchEntryJson(
   target: string,
   mode: 'full' | 'page30',

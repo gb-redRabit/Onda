@@ -22,14 +22,14 @@ import { classifyYtDlpError, describeError, redactSecrets } from './error-classi
 import { addAllowedRoot } from '../media/media-server';
 import { persist, reportCompleted, jobAbortControllers } from './download-state';
 
-// A single download attempt (HTTP stream or yt-dlp process) for one job,
-// extracted from `download-manager.ts` (plan 2.8).
+// Pojedyncza próba pobierania (strumień HTTP lub proces yt-dlp) dla jednego
+// zadania, wyodrębniona z `download-manager.ts` (plan 2.8).
 
 const MAX_STDERR_BYTES = 64 * 1024;
 const DOWNLOAD_TIMEOUT_MS = 30 * 60 * 1000;
 
-// Direct-URL (source) download: streams the file with progress, then falls back
-// to the shared postProcess (library sync, hash). No yt-dlp involved.
+// Pobieranie z bezpośredniego URL (source): strumieniuje plik z postępem, potem
+// przechodzi do wspólnego postProcess (sync biblioteki, hash). Bez udziału yt-dlp.
 async function runHttpAttempt(
   job: Job,
   signal?: AbortSignal
@@ -69,14 +69,14 @@ async function runHttpAttempt(
     job.progress = 100;
     job.completedAt = Date.now();
     persist(job);
-    // HTTP/direct-URL jobs complete here, not in the yt-dlp spawn path, so the
-    // "downloaded" bookkeeping (subscriptions + sources) must fire here too.
+    // Zadania HTTP/direct-URL kończą się tutaj, a nie w ścieżce spawn yt-dlp, więc
+    // księgowość "downloaded" (subskrypcje + źródła) musi zadziałać również tutaj.
     reportCompleted(job);
     return { finishedOk: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    // If the job was paused/cancelled (via AbortController), don't overwrite
-    // the status with 'error' — the caller already set it correctly.
+    // Jeśli zadanie zostało wstrzymane/anulowane (przez AbortController), nie nadpisuj
+    // statusu na 'error' — wywołujący już ustawił go poprawnie.
     const alreadyStopped = job.status === 'paused' || job.status === 'cancelled';
     if (!alreadyStopped) {
       job.status = 'error';
@@ -88,8 +88,8 @@ async function runHttpAttempt(
   }
 }
 
-// Runs a single yt-dlp process for the job. Resolves with whether the download
-// finished successfully and (on failure) the classified error code.
+// Uruchamia pojedynczy proces yt-dlp dla zadania. Zwraca informację, czy pobieranie
+// zakończyło się sukcesem, oraz (przy niepowodzeniu) sklasyfikowany kod błędu.
 export async function runJobAttempt(
   job: Job,
   bin: string,
@@ -108,14 +108,14 @@ export async function runJobAttempt(
   if (job.source?.mode === 'soundcloud') {
     let resolved: string | null = null;
     try {
-      // SoundCloud CDN links are signed and time-limited: resolve a FRESH
-      // progressive-MP3 URL at the start of every attempt so retries never
-      // replay an expired signature.
+      // Linki CDN SoundCloud są podpisane i ograniczone czasowo: pobierz ŚWIEŻY
+      // URL progresywnego MP3 na początku każdej próby, aby ponowienia nigdy
+      // nie odtwarzały wygasłego podpisu.
       resolved = await resolveScDownloadSource(job.url);
     } catch (e) {
-      // No progressive transcoding (Go+ gated / HLS-only) — degrade this
-      // attempt to the yt-dlp pipeline, which handles HLS via ffmpeg and
-      // still produces a playable audio file.
+      // Brak transkodowania progresywnego (Go+ gated / tylko HLS) — zdegraduj tę
+      // próbę do pipeline'u yt-dlp, który obsługuje HLS przez ffmpeg i
+      // nadal tworzy odtwarzalny plik audio.
       logger.warn(
         'downloads',
         `sc progressive unavailable for ${job.id}, falling back to yt-dlp`,
@@ -133,17 +133,17 @@ export async function runJobAttempt(
         jobAbortControllers.delete(job.id);
       }
     }
-    // fall through to the yt-dlp spawn path below
+    // przechodzi dalej do ścieżki spawn yt-dlp poniżej
   }
   const args = buildYtArgs(base, auth);
-  // On Windows yt-dlp prints "Destination:" lines to stdout in the console
-  // codepage, which would mangle non-ASCII names when decoded as UTF-8. Force
-  // UTF-8 output so the parsed paths match the real files on disk.
+  // W Windows yt-dlp wypisuje linie "Destination:" na stdout w kodowaniu strony
+  // konsoli, co zniekształciłoby nazwy spoza ASCII przy dekodowaniu jako UTF-8. Wymuś
+  // wyjście UTF-8, aby sparsowane ścieżki zgadzały się z rzeczywistymi plikami na dysku.
   const child = spawn(bin, args, {
     windowsHide: true,
-    // Group leader, so cancelling can signal the whole group and reach the
-    // ffmpeg yt-dlp spawns. Without it only yt-dlp dies and ffmpeg keeps writing
-    // to the output file. The stdio pipes are unaffected by detaching.
+    // Lider grupy, aby anulowanie mogło zasygnalizować całą grupę i dotrzeć do
+    // ffmpeg, którego spawnuje yt-dlp. Bez tego ginie tylko yt-dlp, a ffmpeg dalej
+    // zapisuje do pliku wyjściowego. Potoki stdio nie są dotknięte odłączeniem.
     detached: process.platform !== 'win32',
     env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' }
   });
@@ -235,14 +235,14 @@ export async function runJobAttempt(
   return { finishedOk, errorCode: job.errorCode };
 }
 
-// "Destination:" lines parsed from yt-dlp stdout can be mangled for non-ASCII
-// names (Windows console codepage), while the files on disk always carry the
-// correct Unicode name. Resolve the real final path by verifying the parsed
-// destinations against the filesystem; as a last resort pick the newest
-// matching file in the output directory.
+// Linie "Destination:" sparsowane ze stdout yt-dlp mogą być zniekształcone dla
+// nazw spoza ASCII (kodowanie strony konsoli Windows), podczas gdy pliki na dysku
+// zawsze mają poprawną nazwę Unicode. Ustal rzeczywistą ścieżkę końcową, weryfikując
+// sparsowane destinations względem systemu plików; w ostateczności wybierz najnowszy
+// pasujący plik w katalogu wyjściowym.
 async function resolveRealOutputPath(job: Job, destinations: string[]): Promise<void> {
-  // Probe every candidate concurrently, off the main thread, so a slow disk
-  // cannot block the event loop (statSync here stalled all IPC during a download).
+  // Sprawdza każdego kandydata współbieżnie, poza głównym wątkiem, aby wolny dysk
+  // nie blokował pętli zdarzeń (statSync tutaj blokował całe IPC podczas pobierania).
   const existing = new Set<string>();
   await Promise.all(
     destinations.map(async (p) => {
@@ -250,7 +250,7 @@ async function resolveRealOutputPath(job: Job, destinations: string[]): Promise<
       try {
         if ((await stat(p)).isFile()) existing.add(p);
       } catch {
-        // candidate does not exist
+        // kandydat nie istnieje
       }
     })
   );

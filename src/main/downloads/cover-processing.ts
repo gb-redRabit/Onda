@@ -10,8 +10,8 @@ import { buildYtArgs } from '../ipc/youtube/youtube-utils';
 import { writeCoverToAudioFile } from '../ipc/media/media-handlers';
 import { buildSectionArgs, siblingCoverPath } from './cover-spec';
 
-// Covers are short clips, but they deserve real quality — pull the best
-// available source up to full HD (1080p).
+// Covery to krótkie klipy, ale zasługują na prawdziwą jakość — pobierz najlepsze
+// dostępne źródło do pełnego HD (1080p).
 const COVER_VIDEO_FORMAT = 'bestvideo[height<=1080]+bestaudio/best';
 
 async function workDirFor(taskId: string): Promise<string> {
@@ -24,15 +24,15 @@ async function cleanup(dir: string): Promise<void> {
   try {
     await rm(dir, { recursive: true, force: true });
   } catch {
-    // temp dir gone — nothing to do
+    // katalog tymczasowy zniknął — nic do zrobienia
   }
 }
 
-// Downloads the source video (a short section, at most 480p) into `videoPath`.
+// Pobiera źródłowe wideo (krótki fragment, maksymalnie 480p) do `videoPath`.
 async function downloadSource(url: string, videoPath: string, extra: string[]): Promise<void> {
   const bin = (await resolveBin('yt-dlp')) || 'yt-dlp';
-  // May be null for anonymous public downloads — the same auth rules apply as
-  // the main download pipeline.
+  // Może być null dla anonimowych publicznych pobrań — obowiązują te same zasady
+  // autoryzacji co w głównym pipeline pobierania.
   const auth = await getYtAuthConfig();
   const args = buildYtArgs(
     [
@@ -61,8 +61,8 @@ async function ffmpegBin(): Promise<string> {
   return (await resolveBin('ffmpeg')) || 'ffmpeg';
 }
 
-// yt-dlp writes the embedded thumbnail to disk too (`Title.jpg` next to the
-// audio). Since it is already embedded in the tags, drop the leftover image.
+// yt-dlp zapisuje osadzoną miniaturę także na dysk (`Title.jpg` obok pliku
+// audio). Ponieważ jest już osadzona w tagach, usuń pozostały obraz.
 export async function removeThumbnailFiles(audioPath: string): Promise<void> {
   const dir = dirname(audioPath);
   const base = basename(audioPath, extname(audioPath));
@@ -71,7 +71,7 @@ export async function removeThumbnailFiles(audioPath: string): Promise<void> {
   }
 }
 
-// Re-muxes the file with overridden artist/album/year tags (no re-encode).
+// Ponownie muxuje plik z nadpisanymi tagami artist/album/year (bez ponownego kodowania).
 export async function applyMetadataOverride(
   filePath: string,
   meta: IpcMetaOverride
@@ -102,9 +102,9 @@ interface CoverJobContext {
   outputPath: string;
 }
 
-// Runs the cover pipeline after the audio file has been downloaded. Thumbnails
-// are already embedded by yt-dlp during download; custom files and frames are
-// written into the audio tags; clips are saved as a sibling video file.
+// Uruchamia pipeline covera po pobraniu pliku audio. Miniatury są już osadzone
+// przez yt-dlp podczas pobierania; pliki custom i frames są zapisywane w tagach
+// audio; clipy są zapisywane jako sąsiedni plik wideo.
 export async function processCover(
   ctx: CoverJobContext
 ): Promise<{ status: 'embedded' | 'saved' | 'error'; error?: string }> {
@@ -119,8 +119,8 @@ export async function processCover(
     const workDir = await workDirFor(ctx.taskId);
     try {
       if (cover.type === 'frame') {
-        // Pull a 1s section around the requested time and take its first frame
-        // — avoids seeking past the end of short videos.
+        // Pobiera 1-sekundowy fragment wokół żądanego czasu i bierze z niego pierwszą
+        // klatkę — unika przewijania poza koniec krótkich filmów.
         const t = cover.frameTime ?? 30;
         const videoPath = join(workDir, 'frame.mp4');
         await downloadSource(ctx.url, videoPath, buildSectionArgs(t, t + 1));
@@ -137,9 +137,9 @@ export async function processCover(
       const videoPath = join(workDir, 'clip.mp4');
       await downloadSource(ctx.url, videoPath, [
         ...buildSectionArgs(cover.clipStart ?? 0, cover.clipEnd ?? 30),
-        // Pull the YouTube thumbnail too — it gets embedded into the audio
-        // tags so the file has a cover even though the animated one lives in
-        // the sibling video.
+        // Pobiera też miniaturę YouTube — zostaje osadzona w tagach audio,
+        // dzięki czemu plik ma cover, mimo że animowany znajduje się w
+        // sąsiednim wideo.
         '--write-thumbnail',
         '--convert-thumbnails',
         'jpg'
@@ -162,8 +162,8 @@ export async function processCover(
             ]
           : ['-y', '-i', videoPath, '-c:v', 'libvpx', '-crf', '10', '-b:v', '2500k', '-an', target];
       await runCommand(await ffmpegBin(), args, { timeout: 120000 });
-      // Embed the YouTube thumbnail into the audio file (non-fatal: the
-      // animated clip is already saved, and some containers can't hold tags).
+      // Osadza miniaturę YouTube w pliku audio (niekrytyczne: animowany klip jest
+      // już zapisany, a niektóre kontenery nie mogą przechowywać tagów).
       const thumbPath = join(workDir, 'clip.jpg');
       try {
         const res = await writeCoverToAudioFile(ctx.outputPath, thumbPath);

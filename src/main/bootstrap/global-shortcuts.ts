@@ -2,9 +2,10 @@ import { globalShortcut, type BrowserWindow } from 'electron';
 import { logger } from '../../shared/logger';
 
 /**
- * OS-wide media keys forwarded to the renderer, so playback control works while
- * Onda is not focused. `getMainWindow` is resolved on each keypress (not
- * captured) because the window can be recreated (e.g. macOS re-activate).
+ * Systemowe klawisze multimedialne przekazywane do renderera, aby sterowanie
+ * odtwarzaniem działało, gdy Onda nie jest skupiona. `getMainWindow` jest
+ * rozwiązywane przy każdym naciśnięciu klawisza (nie przechwytywane), ponieważ
+ * okno może zostać odtworzone (np. ponowna aktywacja macOS).
  */
 export function registerGlobalShortcuts(getMainWindow: () => BrowserWindow | null): void {
   const sendIfAlive = (channel: string): void => {

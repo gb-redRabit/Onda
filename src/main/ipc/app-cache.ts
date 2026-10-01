@@ -6,9 +6,9 @@ import { clearStreamCache } from './youtube/youtube-stream-cache';
 import { clearRemoteImageCache } from './remote-image';
 
 /**
- * Clears every user-facing cache: extracted covers (memory + persistent
- * directory + map), thumbnails, resolved YouTube/SoundCloud stream URLs and
- * proxied remote images. Best-effort — each cache rebuilds on next use.
+ * Czyści każdy cache widoczny dla użytkownika: wyodrębnione okładki (pamięć + trwały
+ * katalog + mapa), miniatury, rozwiązane adresy strumieni YouTube/SoundCloud oraz
+ * proxowane zdalne obrazy. Best-effort — każdy cache odbudowuje się przy następnym użyciu.
  */
 export async function clearAppCaches(): Promise<AppCacheClearResult> {
   try {

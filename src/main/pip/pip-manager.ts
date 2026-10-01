@@ -72,7 +72,7 @@ export class PipManager {
       icon: pipWindowIcon(),
       webPreferences: { preload: join(__dirname, '../preload/pip.js') },
       htmlFile: 'pip.html',
-      // PiP windows are shown on demand by the manager, never on load.
+      // Okna PiP są pokazywane na żądanie przez managera, nigdy przy ładowaniu.
       autoShow: false,
       onClosed: () => {
         this.window = null;
@@ -130,9 +130,9 @@ export class PipManager {
       sendToWindow(this.mainWindow, 'pip:maximize', this.lastTime);
     });
 
-    // Main-window initiated restore (a button in the player / menu): close the
-    // PiP window and hand the current position back to the player, without the
-    // fullscreen jump that `pip:maximize` implies.
+    // Przywracanie inicjowane przez okno główne (przycisk w odtwarzaczu / menu):
+    // zamknij okno PiP i przekaż bieżącą pozycję z powrotem do odtwarzacza, bez
+    // skoku do pełnego ekranu, który sugeruje `pip:maximize`.
     ipcMain.removeHandler('pip:restore');
     ipcMain.handle('pip:restore', () => {
       if (!this.window || this.window.isDestroyed()) return false;

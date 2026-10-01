@@ -3,9 +3,9 @@ import type { IpcYoutubeVideo } from '../../../shared/types/ipc';
 import type { YouTubeResolvedItem } from '../../../shared/types/online';
 import { isLoopbackHost } from '../network-target';
 
-// Pure yt-dlp entry mappers/validators extracted from `youtube-utils.ts`
-// (plan 2.8). `youtube-utils` re-exports them so existing importers/tests keep
-// working unchanged.
+// Czyste mappery/walidatory wpisów yt-dlp wyodrębnione z `youtube-utils.ts`
+// (plan 2.8). `youtube-utils` re-eksportuje je, aby istniejące importery/testy działały
+// bez zmian.
 
 export interface YtDlpEntry {
   _type?: string;
@@ -28,8 +28,8 @@ export interface YtDlpEntry {
   playlist_count?: number;
   thumbnail?: string;
   thumbnails?: Array<{ url?: string; width?: number; height?: number }>;
-  // Canonical page URL — present on SoundCloud entries (flat search results are
-  // URL entries; the id alone cannot rebuild their permalink).
+  // Kanoniczny URL strony — obecny we wpisach SoundCloud (płaskie wyniki wyszukiwania to
+  // wpisy URL; sam id nie odtworzy ich permalinka).
   webpage_url?: string;
   url?: string;
   entries?: YtDlpEntry[];
@@ -45,9 +45,9 @@ export function formatUploadDate(date: string | undefined): string {
   return `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}`;
 }
 
-// yt-dlp returns thumbnail URLs from network data — never feed them to <img>
-// without validation. Allow only https and reject loopback/localhost (SSRF to
-// local services) including IPv6 loopback.
+// yt-dlp zwraca URL-e miniatur z danych sieciowych — nigdy nie podawaj ich do <img>
+// bez walidacji. Zezwalaj tylko na https i odrzucaj loopback/localhost (SSRF do
+// lokalnych usług), w tym loopback IPv6.
 export function isSafeThumbnailUrl(url: string): boolean {
   let parsed: URL;
   try {
@@ -60,11 +60,11 @@ export function isSafeThumbnailUrl(url: string): boolean {
   return true;
 }
 
-// Channel AVATARS get persisted for days (subscriptions store), so they must
-// NOT carry short-lived signatures. yt-dlp channel headers mix stable
-// yt3.ggpht/ytc paths with lh3.googleusercontent URLs signed by
-// ?expire=<epoch>&sig=... which die within ~a day — those are rejected here
-// so a dead link is never saved as the channel thumbnail.
+// AWATARY kanałów są zapisywane na dni (store subskrypcji), więc NIE mogą
+// nieść krótkotrwałych podpisów. Nagłówki kanałów yt-dlp mieszają stabilne
+// ścieżki yt3.ggpht/ytc z URL-ami lh3.googleusercontent podpisanymi przez
+// ?expire=<epoch>&sig=..., które padają w ciągu ~dnia — te są tu odrzucane,
+// aby martwy link nigdy nie został zapisany jako miniatura kanału.
 export function isStableAvatarUrl(url: string): boolean {
   if (!isSafeThumbnailUrl(url)) return false;
   let parsed: URL;
@@ -93,8 +93,8 @@ export function pickThumbnail(entry: YtDlpEntry): string {
   return isSafeThumbnailUrl(fallback) ? fallback : '';
 }
 
-// Normalizes a flat yt-dlp entry (playlist/channel row or full video info)
-// into the shape the renderer consumes for the resolve preview.
+// Normalizuje płaski wpis yt-dlp (wiersz playlisty/kanału lub pełne info o wideo)
+// do kształtu, który renderer konsumuje dla podglądu resolve.
 export function mapResolvedEntry(entry: YtDlpEntry): YouTubeResolvedItem {
   return {
     id: entry.id || '',
@@ -107,7 +107,7 @@ export function mapResolvedEntry(entry: YtDlpEntry): YouTubeResolvedItem {
   };
 }
 
-/** Maps generic yt-dlp results without inventing a YouTube fallback thumbnail. */
+/** Mapuje ogólne wyniki yt-dlp bez wymyślania fallbackowej miniatury YouTube. */
 export function mapExternalResolvedEntry(
   entry: YtDlpEntry,
   fallbackUrl: string
@@ -133,8 +133,8 @@ export function mapExternalResolvedEntry(
   };
 }
 
-// Normalizes a yt-dlp entry into the video shape used by search and the
-// channel video list.
+// Normalizuje wpis yt-dlp do kształtu wideo używanego przez wyszukiwanie i
+// listę filmów kanału.
 export function mapVideoEntry(entry: YtDlpEntry): IpcYoutubeVideo {
   return {
     id: entry.id || '',
@@ -149,12 +149,12 @@ export function mapVideoEntry(entry: YtDlpEntry): IpcYoutubeVideo {
   };
 }
 
-// Picks the channel avatar thumbnail. Unlike a video, a channel page mixes
-// wide banner images with square avatar crops in the same `thumbnails` list,
-// so always prefer squares (width === height) and take the largest of those.
-// Falls back to the widest safe thumbnail, then to the single `thumbnail`
-// string some yt-dlp versions emit. Only STABLE URLs are eligible — signed
-// expiring ones are skipped entirely (see isStableAvatarUrl).
+// Wybiera miniaturę awatara kanału. W przeciwieństwie do wideo, strona kanału miesza
+// szerokie obrazy banerów z kwadratowymi kadrami awatara w tej samej liście `thumbnails`,
+// więc zawsze preferuj kwadraty (width === height) i bierz największy z nich.
+// Spada do najszerszej bezpiecznej miniatury, potem do pojedynczego stringa `thumbnail`,
+// który emitują niektóre wersje yt-dlp. Kwalifikują się tylko STABILNE URL-e — podpisane
+// wygasające są całkowicie pomijane (patrz isStableAvatarUrl).
 export function pickChannelThumbnail(entry: YtDlpEntry): string {
   const thumbs = (entry.thumbnails || []).filter((t) => t.url && isStableAvatarUrl(t.url));
   if (thumbs.length) {

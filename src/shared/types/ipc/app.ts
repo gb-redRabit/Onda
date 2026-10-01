@@ -42,7 +42,7 @@ export type UpdaterEventName =
   | 'update-downloaded'
   | 'error';
 
-/** Payload of the main → renderer `updater:event` broadcast. */
+/** Payload rozgłoszenia main → renderer `updater:event`. */
 export interface IpcUpdaterEvent {
   event: UpdaterEventName;
   version?: string;

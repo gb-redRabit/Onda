@@ -1,4 +1,4 @@
-// Pure sanitizer primitives extracted from `settings-schema.ts` (plan 2.8).
+// Czyste prymitywy sanitizerów wyodrębnione z `settings-schema.ts` (plan 2.8).
 
 export type Sanitizer = (value: unknown) => unknown | undefined;
 

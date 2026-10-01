@@ -35,7 +35,7 @@ export async function getDuration(filePath: string): Promise<number> {
       const { mtimeMs } = await stat(filePath);
       if (mtimeMs <= cached.mtimeMs) return cached.duration;
     } catch {
-      // file gone — fall through and re-probe
+      // plik zniknął — przechodzimy dalej i sondujemy ponownie
     }
     deleteCachedDuration(filePath);
   }
@@ -66,9 +66,9 @@ export async function getDuration(filePath: string): Promise<number> {
   }
 }
 
-// Shared cover writer used both by the `media:writeCover` IPC handler and by
-// the download pipeline (custom cover files / extracted frames). Embeds the
-// image into ID3 tags and invalidates the cover cache for the file.
+// Wspólny writer okładek używany zarówno przez handler IPC `media:writeCover`, jak i przez
+// pipeline pobierania (własne pliki okładek / wyodrębnione klatki). Wbudowuje
+// obraz w tagi ID3 i unieważnia cache okładek dla pliku.
 export async function writeCoverToAudioFile(
   filePath: string,
   imageSource: number[] | string,
@@ -108,7 +108,7 @@ export async function writeCoverToAudioFile(
       try {
         await unlink(cachePath);
       } catch {
-        // cached cover gone — ok to skip
+        // zbuforowana okładka zniknęła — można pominąć
       }
       delete cacheMap[filePath];
       store.set(COVER_CACHE_MAP_KEY, structuredClone(cacheMap));
@@ -300,25 +300,25 @@ export function registerMediaHandlers(): void {
     }
   );
 
-  // cleanup old transcoded files on startup
+  // posprzątaj stare transkodowane pliki przy starcie
   cleanupOldTranscodes();
 
-  // Grants the media server access to a file's folder (or the folder itself),
-  // called by the renderer when the user explicitly opens a media file.
+  // Przyznaje serwerowi mediów dostęp do folderu pliku (lub do samego folderu),
+  // wywoływane przez renderer, gdy użytkownik jawnie otwiera plik mediów.
   //
-  // The grant is persisted, so it must not be a way to hand the media server
-  // (and therefore a compromised renderer) a system directory. `extraRoots` is
-  // a plain path list with no other gate, so the checks below are all that is
-  // between a caller and read access to whatever the main process can open.
+  // Nadanie jest zapisywane, więc nie może być sposobem na wręczenie serwerowi mediów
+  // (a więc i przejętemu rendererowi) katalogu systemowego. `extraRoots` to
+  // zwykła lista ścieżek bez innej bramy, więc poniższe sprawdzenia są wszystkim, co
+  // dzieli wywołującego od dostępu do odczytu tego, co może otworzyć proces main.
   ipcMain.handle('media:grantAccess', async (_event, filePath: unknown): Promise<boolean> => {
     if (!isSafeAbsolutePath(filePath)) return false;
     if (isProtectedPath(filePath) || isProtectedPath(dirname(filePath))) {
       logger.warn('media', `media:grantAccess rejected protected path: ${filePath}`);
       return false;
     }
-    // A grant for something that is not there can only inflate the allowlist, so
-    // it is refused outright. Existence is also the one piece of evidence the
-    // main process has that this is a real media file and not a guess.
+    // Nadanie dla czegoś, czego nie ma, może tylko rozdąć allowlistę, więc
+    // jest odrzucane od razu. Istnienie to także jedyny dowód, jaki ma
+    // proces main, że to prawdziwy plik mediów, a nie zgadywanie.
     let isFile = false;
     try {
       isFile = (await stat(filePath)).isFile();
@@ -327,9 +327,9 @@ export function registerMediaHandlers(): void {
       return false;
     }
 
-    // The containing directory is what playback actually needs. Adding the file
-    // itself as a root is only useful when nothing else covers it, and adding
-    // both doubled the list for the common case of one track in a folder.
+    // Katalog zawierający to, czego odtwarzanie faktycznie potrzebuje. Dodawanie samego
+    // pliku jako rootu jest przydatne tylko, gdy nic innego go nie obejmuje, a dodawanie
+    // obu podwajało listę w typowym przypadku jednego utworu w folderze.
     const parent = dirname(filePath);
     if (!isFile) {
       const ok = await addAllowedRoot(filePath);
@@ -337,8 +337,8 @@ export function registerMediaHandlers(): void {
     }
     const parentAdded = await addAllowedRoot(parent);
     if (parentAdded) return true;
-    // The parent is already granted or the list is full — the file itself is
-    // still enough to play this one track.
+    // Rodzic jest już nadany lub lista jest pełna — sam plik wciąż
+    // wystarczy, aby odtworzyć ten jeden utwór.
     return addAllowedRoot(filePath);
   });
 
@@ -352,9 +352,9 @@ export function registerMediaHandlers(): void {
     }
   });
 
-  // Batched duration lookup (plan 1.7): bulk queueing used to fire one IPC call
-  // per track. Bounded concurrency keeps the main process from spawning hundreds
-  // of parses at once.
+  // Wsadowe pobieranie długości (plan 1.7): masowe kolejkowanie kiedyś odpalało jedno wywołanie IPC
+  // na utwór. Ograniczona współbieżność nie pozwala procesowi main uruchamiać setek
+  // parsowań naraz.
   ipcMain.handle(
     'media:batchDurations',
     async (_event, paths: string[]): Promise<Record<string, number>> => {

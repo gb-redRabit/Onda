@@ -3,7 +3,7 @@ export interface ChannelVideoRef {
 }
 
 export interface ChannelDiffInput<T extends ChannelVideoRef = ChannelVideoRef> {
-  // Channel videos, newest first (as returned by yt-dlp `--flat-playlist`).
+  // Filmy kanału, od najnowszych (w kolejności zwracanej przez yt-dlp `--flat-playlist`).
   items: T[];
   downloadedVideoIds: string[];
   queuedVideoIds: string[];
@@ -11,19 +11,19 @@ export interface ChannelDiffInput<T extends ChannelVideoRef = ChannelVideoRef> {
 }
 
 export interface ChannelDiffResult<T extends ChannelVideoRef = ChannelVideoRef> {
-  // Videos newer than the baseline (or all videos when there is no baseline)
-  // that are neither downloaded nor queued.
+  // Filmy nowsze niż baseline (lub wszystkie, gdy nie ma baseline),
+  // które nie są ani pobrane, ani w kolejce.
   newArrivals: T[];
-  // Count of videos not yet downloaded (regardless of queued/baseline state).
+  // Liczba filmów jeszcze niepobranych (niezależnie od stanu kolejki/baseline).
   remainingCount: number;
-  // True when the baseline video was found in the scanned list — lets a paginated
-  // scanner stop early once the baseline is reached.
+  // True, gdy film baseline został znaleziony na przeskanowanej liście — pozwala
+  // paginowanemu skanerowi zatrzymać się wcześniej po osiągnięciu baseline.
   reachedBaseline: boolean;
 }
 
-// Separates a channel's videos into "new", "not downloaded" and "downloaded"
-// using the subscription's persisted state. Uploads are newest-first, so "new"
-// means every video that appears BEFORE the baseline in the list.
+// Rozdziela filmy kanału na "nowe", "niepobrane" i "pobrane"
+// na podstawie zapisanego stanu subskrypcji. Przesłane są od najnowszych, więc "nowe"
+// oznacza każdy film, który pojawia się PRZED baseline na liście.
 export function computeChannelDiff<T extends ChannelVideoRef>(
   input: ChannelDiffInput<T>
 ): ChannelDiffResult<T> {

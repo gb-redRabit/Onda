@@ -4,20 +4,20 @@ interface RunCommandOptions {
   timeout?: number;
   cwd?: string;
   /**
-   * Cap on the combined captured stdout+stderr. The process is killed and the
-   * promise rejects once the cap is exceeded, so a runaway yt-dlp/ffmpeg can
-   * never grow the two strings until the V8 heap is exhausted.
+   * Limit łącznego przechwyconego stdout+stderr. Proces jest zabijany, a promise
+   * odrzucany po przekroczeniu limitu, więc rozbiegane yt-dlp/ffmpeg nigdy nie
+   * rozrosną tych dwóch stringów, aż sterta V8 się wyczerpie.
    */
   maxBuffer?: number;
 }
 
-// 64 MB: far above any legitimate `--version`/metadata JSON, but bounded.
+// 64 MB: znacznie powyżej każdego uzasadnionego JSON-a `--version`/metadanych, ale ograniczone.
 const DEFAULT_MAX_BUFFER = 64 * 1024 * 1024;
 
 /**
- * Run a binary with explicit argument array (no shell), avoiding shell
- * injection from untrusted file paths. Resolves with captured stdout, or
- * rejects with an Error containing captured stderr / exit code.
+ * Uruchamia binarium z jawną tablicą argumentów (bez shella), unikając wstrzyknięcia
+ * poleceń z niezaufanych ścieżek plików. Rozwiązuje się przechwyconym stdout albo
+ * odrzuca błędem zawierającym przechwycony stderr / kod wyjścia.
  */
 export function runCommand(
   bin: string,

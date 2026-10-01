@@ -9,9 +9,9 @@ export interface LibraryChannels {
   'library:scanCancel': { args: []; result: boolean };
   'library:loadFolders': { args: []; result: string[] };
   'library:saveFolders': { args: [folders: string[]]; result: string[] };
-  // The renderer pulls the scanned files in bounded slices so a 50k-file
-  // library never crosses IPC as one huge payload (each slice also yields to
-  // the event loop, keeping the first paint smooth).
+  // Renderer pobiera zeskanowane pliki w ograniczonych porcjach, żeby biblioteka
+  // 50k plików nigdy nie przekraczała IPC jako jeden ogromny payload (każda porcja
+  // ustępuje też pętli zdarzeń, utrzymując płynne pierwsze malowanie).
   'library:loadScannedChunk': {
     args: [offset: number, limit: number];
     result: {
@@ -42,9 +42,9 @@ export interface LibraryChannels {
   'settings:get': { args: []; result: Partial<AppSettings> };
   'settings:set': { args: [data: Partial<AppSettings>]; result: boolean };
   /**
-   * How well the platform can protect a stored API key. `weak` means the OS
-   * keyring was not found, so the value is obfuscated rather than encrypted —
-   * the API keys panel shows this before the user pastes a secret.
+   * Jak dobrze platforma chroni zapisany klucz API. `weak` oznacza, że nie
+   * znaleziono keyringu systemu, więc wartość jest zaciemniona, a nie zaszyfrowana —
+   * panel kluczy API pokazuje to, zanim użytkownik wklei sekret.
    */
   'settings:secretStorageStatus': { args: []; result: SecretStorageStatus };
   'settings:export': { args: []; result: { success: boolean; canceled?: boolean; error?: string } };

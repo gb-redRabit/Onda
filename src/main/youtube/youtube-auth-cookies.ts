@@ -1,11 +1,11 @@
 import { readFile } from 'fs/promises';
 import { isValidCookieFile } from '../ipc/youtube/youtube-utils';
 
-// Cookies that mark a signed-in YouTube session. Google's login flow moves the
-// SID-family around: a modern sign-in can leave `SID`/`HSID`/`__Secure-1PSID` on
-// `.google.com` and set `__Secure-3PSID` (+ `LOGIN_INFO`) on `.youtube.com`.
-// Accepting both variants (and `LOGIN_INFO`) avoids false "not logged in" states
-// that keep the login window open forever.
+// Cookies oznaczające zalogowaną sesję YouTube. Przepływ logowania Google przenosi
+// rodzinę SID: nowoczesne logowanie może pozostawić `SID`/`HSID`/`__Secure-1PSID` na
+// `.google.com` i ustawić `__Secure-3PSID` (+ `LOGIN_INFO`) na `.youtube.com`.
+// Akceptacja obu wariantów (i `LOGIN_INFO`) zapobiega fałszywym stanom "not logged in",
+// które trzymają okno logowania otwarte na zawsze.
 export const SESSION_COOKIE_NAMES = [
   'SID',
   'HSID',

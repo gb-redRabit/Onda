@@ -3,10 +3,10 @@ import { is } from '@electron-toolkit/utils';
 import { logger } from '../../shared/logger';
 import { isAllowedNavigationUrl, type NavigationPolicyOptions } from './navigation-policy';
 
-// Blocks top-frame navigations away from the app's own origins (file:, onda:,
-// dev server). The initial loadURL/loadFile calls are programmatic and do not
-// trigger will-navigate, so they are unaffected. Subframe navigations (e.g. the
-// YouTube embed) are governed by the renderer CSP (frame-src).
+// Blokuje nawigacje ramki głównej poza własne originy aplikacji (file:, onda:,
+// serwer dev). Początkowe wywołania loadURL/loadFile są programistyczne i nie
+// wyzwalają will-navigate, więc pozostają niezmienione. Nawigacje podramek
+// (np. embed YouTube) są regulowane przez CSP renderera (frame-src).
 export function installNavigationGuard(
   win: BrowserWindow,
   options: NavigationPolicyOptions = {}

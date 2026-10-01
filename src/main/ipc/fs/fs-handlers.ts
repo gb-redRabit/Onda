@@ -27,32 +27,32 @@ import { readTextFileWithinBounds, TEXT_EXTS, TEXT_MAX_BYTES } from '../../utils
 import { isProtectedPath, parentOf } from '../../path-policy';
 import { getStore } from '../cover/cover-cache';
 
-// `fs:findDuplicates` hashes candidate files. The explorer's use case is a
-// folder of media, so these bounds are far above a normal library and only
-// exist to stop one call from saturating the disk.
+// `fs:findDuplicates` hash'uje pliki-kandydatów. Przypadek użycia explorera to
+// folder mediów, więc te limity są znacznie powyżej normalnej biblioteki i istnieją
+// tylko po to, by jedno wywołanie nie wysyciło dysku.
 const MAX_DUPLICATE_CANDIDATES = 5000;
 const MAX_DUPLICATE_FILE_BYTES = 2 * 1024 * 1024 * 1024;
 const MAX_PATH_LENGTH = 4096;
 
-// Filesystem calls (readdir/stat) on a dead network share or a spun-down disk
-// can hang indefinitely; a timeout turns that into an error the UI can show.
+// Wywołania systemu plików (readdir/stat) na martwym udziale sieciowym lub wyłączonym dysku
+// mogą wisieć w nieskończoność; timeout zamienia to w błąd, który UI może pokazać.
 const FS_OP_TIMEOUT_MS = 15_000;
 
-/** One detached shell at a time, so the channel cannot be used as a spawn loop. */
+/** Jeden odłączony shell naraz, aby kanału nie można było użyć jako pętli spawn. */
 let openTerminalInFlight = false;
 
 /**
- * True when any already-existing ancestor of `target` is a protected path.
- * Used for the create/copy destinations, where `recursive: true` would
- * materialise intermediate directories the user never named.
+ * True, gdy dowolny już istniejący przodek `target` jest ścieżką chronioną.
+ * Używane dla celów tworzenia/kopiowania, gdzie `recursive: true` utworzyłoby
+ * katalogi pośrednie, których użytkownik nigdy nie wskazał.
  */ async function touchesProtectedAncestor(target: string): Promise<boolean> {
   let current = target;
-  // Bounded walk: a path longer than the segments cap cannot be legitimate.
+  // Ograniczone przejście: ścieżka dłuższa niż limit segmentów nie może być legalna.
   for (let depth = 0; depth < 64; depth++) {
     if (isProtectedPath(current)) return true;
     try {
       await stat(current);
-      return false; // exists and is not protected — nothing above matters
+      return false; // istnieje i nie jest chroniona — nic powyżej nie ma znaczenia
     } catch {
       const parent = parentOf(current);
       if (!parent) return false;
@@ -95,10 +95,10 @@ export function registerFsHandlers(): void {
   });
 
   ipcMain.handle('fs:readdir', async (event, dirPath: unknown): Promise<void> => {
-    // An absent path is the drives view, not an invalid one — the explorer's
-    // nav pane and breadcrumb call navigateTo('') to mean "show me drives". The
-    // check has to come before validation, or the drives view silently comes back
-    // empty instead of listing them.
+    // Brak ścieżki oznacza widok dysków, a nie nieprawidłową ścieżkę — panel nawigacji
+    // explorera i breadcrumb wywołują navigateTo('') w znaczeniu "pokaż dyski". To
+    // sprawdzenie musi być przed walidacją, inaczej widok dysków po cichu wraca
+    // pusty zamiast je wylistować.
     if (dirPath === '' || dirPath === undefined || dirPath === null || dirPath === '/') {
       event.sender.send('fs:readdir:batch', { done: true, items: await getDrives() });
       return;
@@ -149,9 +149,9 @@ export function registerFsHandlers(): void {
       logger.warn('fs', 'mkdir rejected invalid path');
       return false;
     }
-    // `recursive: true` creates every missing segment, so a bare `/etc/x`
-    // recreates a system path. Refuse when any *existing* ancestor is
-    // protected, not just the leaf.
+    // `recursive: true` tworzy każdy brakujący segment, więc samo `/etc/x`
+    // odtwarza ścieżkę systemową. Odrzucamy, gdy dowolny *istniejący* przodek jest
+    // chroniony, nie tylko liść.
     if (await touchesProtectedAncestor(dirPath)) {
       logger.warn('fs', `mkdir rejected under protected path: ${dirPath}`);
       return false;
@@ -178,7 +178,7 @@ export function registerFsHandlers(): void {
       const explorer = (await getStore()).get('explorer') as
         { permanentDelete?: boolean } | undefined;
       if (explorer?.permanentDelete) {
-        // Explicit opt-in: irreversible delete.
+        // Jawna zgoda: nieodwracalne usunięcie.
         const s = await lstat(filePath);
         if (s.isSymbolicLink()) {
           await unlink(filePath);
@@ -188,9 +188,9 @@ export function registerFsHandlers(): void {
           await unlink(filePath);
         }
       } else {
-        // Safe default: the OS Trash / Recycle Bin, so a mistake is recoverable.
-        // If the Trash is unavailable we fail the operation rather than falling
-        // back to an irreversible delete.
+        // Bezpieczne domyślne: Kosz systemowy, więc pomyłka jest odwracalna.
+        // Jeśli Kosz jest niedostępny, operacja kończy się niepowodzeniem, zamiast
+        // spadać do nieodwracalnego usunięcia.
         await shell.trashItem(filePath);
       }
       return true;
@@ -211,7 +211,7 @@ export function registerFsHandlers(): void {
     }
     for (const src of paths) {
       if (!isSafeAbsolutePath(src)) continue;
-      // Moving is a delete at the source: the same guard applies.
+      // Przenoszenie to usunięcie u źródła: obowiązuje ten sam guard.
       if (isProtectedPath(src)) {
         logger.warn('fs', `move rejected protected source: ${src}`);
         continue;
@@ -247,8 +247,8 @@ export function registerFsHandlers(): void {
       logger.warn('fs', 'copy rejected invalid arguments');
       return;
     }
-    // Copy cannot destroy the source, but writing a directory tree over a
-    // system path is still never legitimate.
+    // Kopiowanie nie może zniszczyć źródła, ale zapis drzewa katalogów nad
+    // ścieżką systemową i tak nigdy nie jest legalny.
     if (isProtectedPath(destination) || isProtectedPath(parentOf(destination))) {
       logger.warn('fs', `copy rejected protected destination: ${destination}`);
       return;
@@ -276,9 +276,9 @@ export function registerFsHandlers(): void {
       duplicates: string[];
     }
     const groups: DupGroup[] = [];
-    // This hashes every candidate file in the directory, so it is the most
-    // expensive channel here. Bound both the entry count and the bytes read so
-    // a stray call cannot saturate the disk.
+    // To hash'uje każdy plik-kandydata w katalogu, więc jest najdroższym
+    // kanałem tutaj. Ograniczamy zarówno liczbę wpisów, jak i czytane bajty, aby
+    // pojedyncze wywołanie nie wysyciło dysku.
     if (!isSafeAbsolutePath(directory)) {
       logger.warn('fs', 'findDuplicates rejected invalid path');
       return groups;
@@ -306,7 +306,7 @@ export function registerFsHandlers(): void {
         try {
           refStats = await stat(originalPath);
         } catch {
-          // original missing — expected, may pick candidate as reference
+          // brak oryginału — spodziewane, można wybrać kandydata jako referencję
         }
         if (!refStats?.isFile()) {
           if (candidates.length < 2) continue;
@@ -371,15 +371,15 @@ export function registerFsHandlers(): void {
         return;
       }
       const real = await realpath(dirPath);
-      // Each call spawns a detached shell, so an unbounded handler is a process
-      // bomb. The latch is taken only on the spawn path, so a rejected call
-      // never blocks the next attempt.
+      // Każde wywołanie uruchamia odłączony shell, więc nieograniczony handler to
+      // bomba procesowa. Zatrzask jest zajmowany tylko na ścieżce spawn, więc odrzucone
+      // wywołanie nigdy nie blokuje następnej próby.
       if (openTerminalInFlight) {
         logger.warn('fs', 'openTerminal rejected (one already opening)');
         return;
       }
       openTerminalInFlight = true;
-      // Windows → cmd, macOS → Terminal, Linux → first available emulator.
+      // Windows → cmd, macOS → Terminal, Linux → pierwszy dostępny emulator.
       const launched = await spawnFirstAvailable(
         terminalCandidates(process.platform, real),
         (cmd, args, opts) => spawn(cmd, args, opts)
@@ -390,8 +390,8 @@ export function registerFsHandlers(): void {
     } catch (e) {
       logger.warn('fs', `openTerminal failed for ${dirPath}`, e);
     } finally {
-      // The child is detached and unref'd, so there is nothing to await; the
-      // latch only has to cover the spawn itself.
+      // Dziecko jest odłączone i unref'owane, więc nie ma na co czekać; zatrzask
+      // musi pokryć tylko sam spawn.
       setTimeout(() => {
         openTerminalInFlight = false;
       }, 500);
@@ -409,7 +409,7 @@ export function registerFsHandlers(): void {
         logger.warn('fs', `openWithDefault blocked (shortcut file): ${filePath}`);
         return;
       }
-      // Executable files can run arbitrary code — require explicit confirmation.
+      // Pliki wykonywalne mogą uruchomić dowolny kod — wymagamy wyraźnego potwierdzenia.
       if (EXECUTABLE_EXTS.has(ext)) {
         const win = BrowserWindow.fromWebContents(event.sender);
         const m = mainMessages();
@@ -435,10 +435,10 @@ export function registerFsHandlers(): void {
   });
 
   ipcMain.handle('shell:getFileIcon', async (_event, filePath: unknown) => {
-    // Without a shape check this is an existence oracle plus a base64 pump for
-    // any path the renderer names. There is deliberately no concurrency cap:
-    // a folder listing asks for hundreds of icons at once and dropping them
-    // would be a visible regression.
+    // Bez sprawdzenia kształtu to wyrocznia istnienia plus pompa base64 dla
+    // dowolnej ścieżki podanej przez renderer. Celowo nie ma limitu współbieżności:
+    // listing folderu prosi o setki ikon naraz, a ich odrzucanie
+    // byłoby widoczną regresją.
     if (!isSafeAbsolutePath(filePath)) {
       logger.warn('fs', 'getFileIcon rejected invalid path');
       return null;
@@ -467,16 +467,16 @@ export function registerFsHandlers(): void {
   });
 
   ipcMain.handle('app:getPath', (_event, name: string) => {
-    // Only expose the specific system paths the renderer actually needs —
-    // never the full app.getPath() surface (userData, temp, crashDumps, ...).
+    // Udostępniamy tylko konkretne ścieżki systemowe, których renderer naprawdę potrzebuje —
+    // nigdy całej powierzchni app.getPath() (userData, temp, crashDumps, ...).
     const validPaths = ['desktop', 'downloads'] as const;
     const match = validPaths.find((validPath) => validPath === name);
     return match ? app.getPath(match) : '';
   });
 
-  // Reads a small text file (used for TXT/CSV batch import). The extension and
-  // size bounds live in one place shared with the subtitle reader, so neither
-  // channel can be widened into a general file-read primitive.
+  // Czyta mały plik tekstowy (używane do wsadowego importu TXT/CSV). Ograniczenia
+  // rozszerzeń i rozmiaru są w jednym miejscu współdzielonym z czytnikiem napisów, więc żaden
+  // kanał nie może zostać rozszerzony w ogólną prymitywę odczytu plików.
   ipcMain.handle('fs:readTextFile', async (_event, filePath: string): Promise<string | null> => {
     const result = await readTextFileWithinBounds(filePath, TEXT_EXTS, TEXT_MAX_BYTES, 'fs');
     return result.ok ? result.text : null;

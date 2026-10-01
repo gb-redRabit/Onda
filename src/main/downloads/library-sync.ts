@@ -48,10 +48,10 @@ async function autoAddDownloadFolderEnabled(): Promise<boolean> {
   }
 }
 
-// After a download finishes, re-scans the target folder when it belongs to the
-// library (per decision: never auto-add folders, only refresh existing ones).
-// Merges new files into the persisted scan, preserving play stats of files
-// that were already known.
+// Po zakończeniu pobierania ponownie skanuje folder docelowy, gdy należy on do
+// biblioteki (zgodnie z decyzją: nigdy nie dodawaj folderów automatycznie, tylko
+// odświeżaj istniejące). Scala nowe pliki z zapisanym skanem, zachowując statystyki
+// odtwarzania plików, które były już znane.
 export async function syncDownloadToLibrary(
   outputPath: string,
   opts?: { forceAdd?: boolean }
@@ -61,16 +61,16 @@ export async function syncDownloadToLibrary(
     const folders = await loadLibraryFolders();
     let folder = folders.find((f) => isUnderPath(targetDir, resolve(f)));
     if (!folder && (opts?.forceAdd || (await autoAddDownloadFolderEnabled()))) {
-      // Add the download folder to the library so the file is browsable and
-      // playable right after the download finishes (opt-in per job or globally).
+      // Dodaje folder pobierania do biblioteki, aby plik był przeglądalny i
+      // odtwarzalny od razu po zakończeniu pobierania (opt-in per zadanie lub globalnie).
       await addLibraryFolder(targetDir);
       folder = targetDir;
     }
     if (!folder) return { inLibrary: false };
 
-    // Scan ONLY the folder the download landed in (non-recursive). Rescanning
-    // the whole tree (depth 8) + rewriting the persisted library on every
-    // finished download was the biggest write amplification (plan 1.3).
+    // Skanuje TYLKO folder, do którego trafiło pobranie (nierekurencyjnie). Ponowne
+    // skanowanie całego drzewa (głębokość 8) + przepisywanie zapisanej biblioteki przy
+    // każdym zakończonym pobraniu było największą amplifikacją zapisu (plan 1.3).
     const result = await scanDir(targetDir, 0);
     const data = await loadLibraryScanned();
     const existing = data && Array.isArray(data.files) ? data.files : [];

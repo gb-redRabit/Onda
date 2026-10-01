@@ -1,9 +1,9 @@
 import { logger } from '../../shared/logger';
 
 export interface BootWatchdogOptions {
-  /** True once the renderer has signalled `app:rendererReady`. */
+  /** True, gdy renderer zgłosił `app:rendererReady`. */
   isRendererReady: () => boolean;
-  /** Called once, at the deadline, if the renderer never became ready. */
+  /** Wywoływane raz, w terminie, jeśli renderer nigdy nie stał się gotowy. */
   onTimeout: () => void;
   intervalMs?: number;
   deadlineMs?: number;
@@ -13,13 +13,13 @@ export const BOOT_WATCHDOG_INTERVAL_MS = 5000;
 export const BOOT_WATCHDOG_DEADLINE_MS = 30000;
 
 /**
- * Never hide a broken renderer behind the splash forever, but also never flash
- * an unpainted window just because the renderer is slow (cold dev server, first
- * run after a cache clear, slow disk): warn periodically and force the window
- * only at the deadline. Real failures (crash, fail-load, preload error) close
- * the splash immediately elsewhere.
+ * Nigdy nie ukrywaj zepsutego renderera za splashem na zawsze, ale też nigdy nie
+ * pokazuj niepomalowanego okna tylko dlatego, że renderer jest wolny (zimny serwer
+ * dev, pierwszy start po czyszczeniu cache, wolny dysk): ostrzegaj okresowo i wymuś
+ * okno dopiero w terminie. Prawdziwe awarie (crash, fail-load, błąd preload)
+ * zamykają splash natychmiast gdzie indziej.
  *
- * Returns a stop function; it also stops itself once ready or timed out.
+ * Zwraca funkcję stop; zatrzymuje się też sama po osiągnięciu gotowości lub przekroczeniu terminu.
  */
 export function startBootWatchdog(options: BootWatchdogOptions): () => void {
   const intervalMs = options.intervalMs ?? BOOT_WATCHDOG_INTERVAL_MS;

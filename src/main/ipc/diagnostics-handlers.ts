@@ -41,7 +41,7 @@ export function registerDiagnosticsHandlers(): void {
   });
 
   ipcMain.handle('diagnostics:readLogs', (_event, lines?: number) => {
-    // Cap how many log lines a renderer can pull in one call.
+    // Ogranicza liczbę linii logu, jakie renderer może pobrać w jednym wywołaniu.
     const n = Math.floor(Number(lines));
     const clamped = Number.isFinite(n) && n > 0 ? Math.min(n, 2000) : undefined;
     return readLogTail(clamped);

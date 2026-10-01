@@ -9,12 +9,12 @@ import {
 } from './plugins-core';
 import type { PluginFetchOptions, PluginFetchResult } from '../../../shared/types/ipc';
 
-// Plugin network fetch (extracted from `plugins-handlers.ts`, plan 2.8). The
-// permission lookup stays in the handler: callers pass the plugin's resolved
-// network allowlist. The HTTP transport is shared with the media sources; the
-// allowlist redirect policy and the error codes stay plugin-specific.
+// Pobieranie sieciowe pluginów (wyodrębnione z `plugins-handlers.ts`, plan 2.8).
+// Sprawdzanie uprawnień zostaje w handlerze: wywołujący przekazują rozwiązaną
+// allowlistę sieciową pluginu. Transport HTTP jest współdzielony ze źródłami mediów;
+// polityka przekierowań allowlisty i kody błędów pozostają specyficzne dla pluginów.
 
-/** Maps a transport error message to the plugin fetch error code. */
+/** Mapuje komunikat błędu transportu na kod błędu pobierania pluginu. */
 function classifyFetchError(message: string): PluginFetchResult['code'] {
   if (message === 'Timeout') return 'timeout';
   if (message === 'Response too large') return 'too-large';

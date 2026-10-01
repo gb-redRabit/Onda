@@ -30,7 +30,7 @@ function broadcastSubscriptionUpdated(sub: IpcSubscription): void {
 }
 
 export function registerSubscriptionHandlers(): void {
-  // Finished downloads atomically grow downloadedVideoIds (Faza 3→4 bridge).
+  // Ukończone pobrania atomowo powiększają downloadedVideoIds (most Faza 3→4).
   setDownloadCompletedHandler((channelId, videoId) => {
     void appendDownloadedVideos(getSubscriptionsFile(), channelId, [videoId]).then((updated) => {
       if (updated) broadcastSubscriptionUpdated(updated);

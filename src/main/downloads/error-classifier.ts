@@ -1,9 +1,9 @@
 import type { IpcDownloadErrorCode } from '../../shared/types/ipc';
 
-// Classifies yt-dlp stderr into a stable, user-facing error category. The order
-// of the checks matters: the most specific conditions (private, bot-block,
-// not-found) are matched before the broad "sign in" / "login" pattern so a
-// private or removed video is never reported as a generic auth problem.
+// Klasyfikuje stderr yt-dlp do stabilnej, widocznej dla użytkownika kategorii błędu.
+// Kolejność sprawdzeń ma znaczenie: najbardziej szczegółowe warunki (private,
+// bot-block, not-found) są dopasowywane przed szerokim wzorcem "sign in" / "login",
+// aby prywatne lub usunięte wideo nigdy nie było zgłaszane jako ogólny problem auth.
 export function classifyYtDlpError(stderr: string): IpcDownloadErrorCode {
   const s = stderr.toLowerCase();
 
@@ -50,9 +50,9 @@ export function classifyYtDlpError(stderr: string): IpcDownloadErrorCode {
   return 'unknown';
 }
 
-// Short English fallback for each category. The renderer translates these via
-// i18n; this is only used when the renderer has no translation available or a
-// raw message is needed outside the UI.
+// Krótki angielski fallback dla każdej kategorii. Renderer tłumaczy je przez
+// i18n; używane tylko wtedy, gdy renderer nie ma dostępnego tłumaczenia lub
+// surowy komunikat jest potrzebny poza UI.
 export function describeError(code: IpcDownloadErrorCode): string {
   switch (code) {
     case 'auth-required':
@@ -76,7 +76,7 @@ export function describeError(code: IpcDownloadErrorCode): string {
   }
 }
 
-// Strips secrets (cookie file paths, cookies, tokens, passwords) from yt-dlp
-// stderr before it is stored or shown. Shared implementation so logs and stored
-// errors redact the same way.
+// Usuwa sekrety (ścieżki plików cookies, cookies, tokeny, hasła) ze stderr
+// yt-dlp, zanim zostanie zapisany lub pokazany. Wspólna implementacja, aby logi i
+// zapisane błędy redagowały w ten sam sposób.
 export { redactSecrets } from '../../shared/redact';

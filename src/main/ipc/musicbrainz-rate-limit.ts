@@ -1,13 +1,13 @@
 /**
- * Retry policy for MusicBrainz rate limiting.
+ * Polityka ponawiania dla rate limitingu MusicBrainz.
  *
- * MusicBrainz answers a throttled request with 503 + Retry-After. Retrying is
- * correct, but the retry has to be BOUNDED: an endpoint that keeps returning
- * 503 must surface as an error, not re-enter the fetch forever in the
- * background while the app appears idle.
+ * MusicBrainz odpowiada na zdławione żądanie kodem 503 + Retry-After. Ponawianie jest
+ * poprawne, ale musi być OGRANICZONE: endpoint, który ciągle zwraca
+ * 503, musi ujawnić się jako błąd, a nie wracać do fetch w nieskończoność
+ * w tle, gdy aplikacja wydaje się bezczynna.
  *
- * Kept pure and separate from the transport so the policy is testable without
- * a network stub.
+ * Trzymana czysta i oddzielona od transportu, aby politykę można było testować bez
+ * stubu sieciowego.
  */
 
 export const MB_MAX_RATE_LIMIT_RETRIES = 3;
@@ -17,7 +17,7 @@ const DEFAULT_RETRY_AFTER_SECONDS = 2;
 export interface RateLimitDecision {
   retry: boolean;
   delayMs: number;
-  /** The attempt number the caller should pass to the next request. */
+  /** Numer próby, który wywołujący powinien przekazać do następnego żądania. */
   nextAttempt: number;
 }
 
@@ -26,8 +26,8 @@ export function decideRateLimitRetry(
   attempt: number,
   retryAfterHeader: string | string[] | undefined
 ): RateLimitDecision | null {
-  // 429 is the explicit "slow down" answer; the caller surfaces it rather than
-  // retrying, because MusicBrainz bans on sustained pressure.
+  // 429 to wyraźna odpowiedź "zwolnij"; wywołujący ujawnia ją, zamiast
+  // ponawiać, ponieważ MusicBrainz banuje za długotrwały nacisk.
   if (statusCode !== 503) return null;
   if (attempt >= MB_MAX_RATE_LIMIT_RETRIES) return null;
 

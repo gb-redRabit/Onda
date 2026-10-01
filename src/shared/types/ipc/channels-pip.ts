@@ -16,7 +16,7 @@ export interface PipStartSettings extends PipLayoutOpts {
 export interface PipChannels {
   'pip:start': { args: [videoSrc: string, settings?: PipStartSettings]; result: boolean };
   'pip:stop': { args: []; result: boolean };
-  /** Main window asks to pull the video PiP back into the player. */
+  /** Okno główne prosi o wciągnięcie wideo PiP z powrotem do odtwarzacza. */
   'pip:restore': { args: []; result: boolean };
   'pip:preload': { args: [videoSrc: string, subtitleData: PipSubtitleData | null]; result: void };
   'pip:loadtrack': { args: [videoSrc: string, subtitleData: PipSubtitleData | null]; result: void };

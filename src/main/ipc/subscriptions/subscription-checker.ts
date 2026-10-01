@@ -16,17 +16,17 @@ const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const CHECK_TIMEOUT_MS = 10 * 60 * 1000;
 
 let timer: NodeJS.Timeout | null = null;
-// Guards against overlapping checks (interval + manual "check now" + per-channel
-// check). Without it, two concurrent runs could race on queuedVideoIds and
-// double-enqueue the same video.
+// Chroni przed nakładającymi się sprawdzeniami (interwał + ręczne "sprawdź teraz" + sprawdzenie
+// per kanał). Bez tego dwa równoczesne przebiegi mogłyby się ścigać na queuedVideoIds i
+// podwójnie zakolejkować ten sam film.
 let checkRunning = false;
 
 interface ChannelVideoSummary {
   id: string;
   title: string;
   thumbnail: string;
-  // Canonical page URL — set for SoundCloud tracks (permalink needed for the
-  // download job; YT ids are rebuilt into watch URLs).
+  // Kanoniczny URL strony — ustawiany dla utworów SoundCloud (permalink potrzebny do
+  // zadania pobierania; id YT są odtwarzane w URL-e watch).
   url?: string;
 }
 
@@ -206,19 +206,19 @@ async function runCheck(
     try {
       const platform = platformOf(sub);
       const { items: all, thumbnail, title } = await fetchAllChannelVideos(sub.channelId, platform);
-      // Separates "new" (before baseline) from "not downloaded" and "downloaded"
-      // using the subscription's persisted state.
+      // Rozdziela "nowe" (przed baseline) od "niepobranych" i "pobranych"
+      // na podstawie zapisanego stanu subskrypcji.
       const { newArrivals, remainingCount } = computeChannelDiff({
         items: all,
         downloadedVideoIds: sub.downloadedVideoIds || [],
         queuedVideoIds: sub.queuedVideoIds || [],
         baselineVideoId: sub.baselineVideoId
       });
-      // Self-healing: videos recorded in queuedVideoIds whose job no longer
-      // exists (failed download, cleared queue, app restart) are re-queued on
-      // the next check so a failed batch is retried instead of staying
-      // "do pobrania" forever. The download manager replaces any leftover
-      // error/cancelled job for the same video.
+      // Samonaprawianie: filmy zapisane w queuedVideoIds, których zadanie już nie
+      // istnieje (nieudane pobranie, wyczyszczona kolejka, restart aplikacji), są ponownie kolejkowane
+      // przy następnym sprawdzeniu, aby nieudana partia została ponowiona, zamiast pozostawać
+      // na zawsze "do pobrania". Menedżer pobierania zastępuje każde pozostałe
+      // zadanie błędu/anulowania dla tego samego filmu.
       const activeVideoIds = new Set(
         listDownloadJobs()
           .filter(
@@ -276,9 +276,9 @@ async function runCheck(
           }));
           queued += (await addDownloadJobs(scJobs)).length;
         } else {
-          // Public videos can be downloaded anonymously; yt-dlp reports a specific
-          // error for age-restricted / private / members-only content, which the
-          // download manager classifies and surfaces in the UI.
+          // Publiczne filmy można pobierać anonimowo; yt-dlp zgłasza konkretny
+          // błąd dla treści z ograniczeniem wiekowym / prywatnych / tylko dla członków, który
+          // menedżer pobierania klasyfikuje i pokazuje w UI.
           const jobs = toQueue.map((i) => ({
             url: `https://www.youtube.com/watch?v=${i.id}`,
             title: i.title,
@@ -346,7 +346,7 @@ async function runCheck(
   return { checked, newVideos, queued, errors };
 }
 
-// Checks a single channel (per-channel "check now" button).
+// Sprawdza pojedynczy kanał (przycisk "sprawdź teraz" per kanał).
 export async function checkSingleChannel(
   filePath: string,
   channelId: string

@@ -32,7 +32,7 @@ import {
   type InstallResult
 } from './dependency-download';
 
-// Downloads the yt-dlp release asset into userData/bin and verifies its SHA-256.
+// Pobiera asset wydania yt-dlp do userData/bin i weryfikuje jego SHA-256.
 async function installYtdlpManaged(
   sender: WebContents,
   reinstall: boolean
@@ -42,9 +42,9 @@ async function installYtdlpManaged(
     const binDir = getBinDir();
     await mkdir(binDir, { recursive: true });
     const dest = join(binDir, ytdlpBinaryName());
-    // Always resolve the newest release from the active channel (the GitHub
-    // *tag* is immutable, unlike the mutable `latest` redirect); the pinned tag
-    // is only a fallback when the GitHub API is unreachable.
+    // Zawsze rozwiązuj najnowsze wydanie z aktywnego kanału (GitHub
+    // *tag* jest niezmienny, w przeciwieństwie do zmiennego redirectu `latest`); przypięty tag
+    // jest tylko fallbackiem, gdy API GitHub jest nieosiągalne.
     const version = (await fetchLatestYtdlpVersion()) ?? YTDLP_PINNED_VERSION;
     const url = ytdlpDownloadUrl(process.platform, process.arch, version);
     const shaUrl = ytdlpShaUrl(version);
@@ -87,12 +87,12 @@ async function installYtdlpManaged(
   }
 }
 
-// Extracts a zip (Windows/macOS) or tar.xz (Linux) archive. macOS bsdtar and
-// `unzip` both handle zip; GNU tar on Linux does not, but Linux builds are
-// tar.xz, so each platform only hits the extractor it supports.
+// Wyodrębnia archiwum zip (Windows/macOS) lub tar.xz (Linux). macOS bsdtar i
+// `unzip` obsługują zip; GNU tar w Linuxie nie, ale buildy dla Linuxa są w
+// tar.xz, więc każda platforma trafia tylko na obsługiwany przez siebie ekstraktor.
 async function extractArchive(archive: string, dest: string): Promise<void> {
   if (process.platform === 'win32') {
-    // Escape single quotes for the PowerShell single-quoted literal paths.
+    // Escape'uje pojedyncze cudzysłowy dla dosłownych ścieżek w pojedynczych cudzysłowach PowerShell.
     const psLiteral = (p: string): string => p.replace(/'/g, "''");
     await runCommand(
       'powershell',
@@ -114,7 +114,7 @@ async function extractArchive(archive: string, dest: string): Promise<void> {
   );
 }
 
-// Copies a downloaded binary into place and restores the exec bit on POSIX.
+// Kopiuje pobraną binarkę na miejsce i przywraca bit wykonywalności w POSIX.
 async function installBinary(src: string, dest: string): Promise<void> {
   const { copyFile } = await import('fs/promises');
   await copyFile(src, dest);
@@ -123,9 +123,9 @@ async function installBinary(src: string, dest: string): Promise<void> {
   }
 }
 
-// Downloads the pinned managed FFmpeg build into userData/bin and verifies its
-// SHA-256. Windows/Linux archives contain both tools; macOS ships ffmpeg and
-// ffprobe as separate archives (the probe is pinned via probeUrl/probeSha256).
+// Pobiera przypięty zarządzany build FFmpeg do userData/bin i weryfikuje jego
+// SHA-256. Archiwa Windows/Linux zawierają oba narzędzia; macOS dostarcza ffmpeg i
+// ffprobe jako osobne archiwa (probe jest przypięty przez probeUrl/probeSha256).
 async function installFfmpegManaged(sender: WebContents): Promise<InstallResult> {
   const signal = newSignal('ffmpeg');
   const exe = process.platform === 'win32' ? '.exe' : '';
@@ -181,7 +181,7 @@ async function installFfmpegManaged(sender: WebContents): Promise<InstallResult>
     }
     await installBinary(ffmpegFile, ffmpegDest);
 
-    // ffprobe: usually in the same archive; macOS publishes it separately.
+    // ffprobe: zwykle w tym samym archiwum; macOS publikuje go osobno.
     let probeFile = await findFile(extractDir, `ffprobe${exe}`);
     const probeUrl = ffmpegProbeUrl();
     const probeSha256 = ffmpegProbeSha256();
@@ -222,8 +222,8 @@ async function runShell(argv: string[]): Promise<string> {
   return output;
 }
 
-// Ask the user for explicit consent before running a privileged (sudo -n)
-// system command from the renderer's request. Returns false when cancelled.
+// Prosi użytkownika o wyraźną zgodę przed uruchomieniem uprzywilejowanej (sudo -n)
+// komendy systemowej na żądanie renderera. Zwraca false przy anulowaniu.
 async function confirmPrivileged(sender: WebContents, command: string): Promise<boolean> {
   const win = BrowserWindow.fromWebContents(sender);
   const options = {
@@ -241,7 +241,7 @@ async function confirmPrivileged(sender: WebContents, command: string): Promise<
   return response === 1;
 }
 
-// System install through a package manager with real post-install verification.
+// Instalacja systemowa przez menedżera pakietów z prawdziwą weryfikacją po instalacji.
 async function installSystem(sender: WebContents, tool: BinTool): Promise<InstallResult> {
   emitProgress(sender, tool, 'manager', 10);
   const pkgManager = (await detectPkgManagers())[0] ?? null;
@@ -288,8 +288,8 @@ async function installSystem(sender: WebContents, tool: BinTool): Promise<Instal
 async function uninstallTool(sender: WebContents, tool: BinTool): Promise<InstallResult> {
   const info = await resolveBinInfo(tool);
   if (info?.managed) {
-    // Only files in userData/bin are ours to delete. `managed` also covers the
-    // binary bundled inside the app (resources/ffmpeg) — never unlink that.
+    // Tylko pliki w userData/bin są nasze do usunięcia. `managed` obejmuje też
+    // binarkę dołączoną do aplikacji (resources/ffmpeg) — nigdy jej nie odłączaj.
     if (!info.path.startsWith(getBinDir())) {
       return {
         success: false,
@@ -306,9 +306,9 @@ async function uninstallTool(sender: WebContents, tool: BinTool): Promise<Instal
     }
   }
 
-  // System install — infer which manager actually owns it from the resolved
-  // path (choco/winGet/scoop shims live in distinctive folders), then fall
-  // back to every available manager until the binary is really gone.
+  // Instalacja systemowa — wywnioskuj, który menedżer faktycznie nią zarządza, ze rozwiązanej
+  // ścieżki (shimy choco/winGet/scoop są w charakterystycznych folderach), potem przejdź
+  // po wszystkich dostępnych menedżerach, aż binarka naprawdę zniknie.
   const managers = await detectPkgManagers();
   const inferred = inferPkgManager(info?.path ?? null);
   const candidates = inferred ? [inferred, ...managers.filter((m) => m !== inferred)] : managers;
@@ -321,10 +321,10 @@ async function uninstallTool(sender: WebContents, tool: BinTool): Promise<Instal
     }
     try {
       const output = await runShell(argv);
-      // Package managers remove the files asynchronously and often leave a shim
-      // behind for a moment, so give it a beat and treat "found but no longer
-      // runnable" as removed — otherwise a successful winget uninstall was
-      // reported as a failure ("binarka nadal istnieje").
+      // Menedżery pakietów usuwają pliki asynchronicznie i często na chwilę
+      // zostawiają shim, więc daj im moment i traktuj "znaleziona, ale już
+      // nieuruchamialna" jako usuniętą — inaczej udana dezinstalacja winget była
+      // raportowana jako błąd ("binarka nadal istnieje").
       const gone = await waitUntilRemoved(tool);
       if (gone) return { success: true };
       errors.push(`${cmd} — narzędzie nadal działa\n${output}`);
@@ -345,9 +345,9 @@ async function uninstallTool(sender: WebContents, tool: BinTool): Promise<Instal
   };
 }
 
-// Re-probes a few times after an uninstall: a leftover shim pointing at the
-// removed files (or a half-finished removal) is reported by the resolver as
-// `broken`, which for "did the uninstall work?" means gone.
+// Ponawia probe kilka razy po dezinstalacji: pozostały shim wskazujący na
+// usunięte pliki (lub niedokończone usuwanie) jest raportowany przez resolver jako
+// `broken`, co dla pytania "czy dezinstalacja zadziałała?" oznacza brak.
 async function waitUntilRemoved(tool: BinTool): Promise<boolean> {
   for (let attempt = 0; attempt < 4; attempt++) {
     invalidateBinaries();
@@ -396,10 +396,10 @@ export function registerDependencyHandlers(): void {
   ipcMain.handle('dep:checkMkvextract', async () => checkTool('mkvextract'));
   ipcMain.handle('dep:checkYtdlp', async () => checkTool('yt-dlp'));
 
-  // Drops the per-process probe cache so the next `dep:check*` really re-runs the
-  // binaries. Without it a tool removed outside the app (manually, another package
-  // manager) kept reporting as installed until a restart — the resolver only
-  // invalidates after an install/uninstall driven from here.
+  // Czyści cache prób na proces, aby następne `dep:check*` naprawdę ponownie uruchomiło
+  // binarki. Bez tego narzędzie usunięte poza aplikacją (ręcznie, przez innego menedżera
+  // pakietów) było raportowane jako zainstalowane aż do restartu — resolver unieważnia
+  // tylko po instalacji/dezinstalacji zainicjowanej stąd.
   ipcMain.handle('dep:recheck', () => {
     invalidateBinaries();
     return true;
@@ -418,7 +418,7 @@ export function registerDependencyHandlers(): void {
         error: string | null;
       }>
     > => {
-      // The diagnostics report must show the current system, not the cached probe.
+      // Raport diagnostyczny musi pokazywać bieżący system, a nie zbuforowaną próbę.
       invalidateBinaries();
       const tools: BinTool[] = ['ffmpeg', 'ffprobe', 'yt-dlp', 'mkvextract'];
       const results = await Promise.all(tools.map((t) => resolveBinInfo(t)));
@@ -451,10 +451,10 @@ export function registerDependencyHandlers(): void {
   });
 
   ipcMain.handle('dep:installFfmpeg', async (event) => {
-    // Managed download (pinned + SHA-256 verified, no sudo) is the default on
-    // every platform the manifest pins a build for. The packaged app no longer
-    // bundles FFmpeg, so this is the primary install path; system package
-    // managers remain the fallback where no build is pinned.
+    // Zarządzane pobieranie (przypięte + zweryfikowane SHA-256, bez sudo) jest domyślne na
+    // każdej platformie, dla której manifest przypina build. Spakowana aplikacja nie
+    // dołącza już FFmpeg, więc to główna ścieżka instalacji; systemowi menedżerowie
+    // pakietów pozostają fallbackiem tam, gdzie żaden build nie jest przypięty.
     if (ffmpegDownloadUrl()) {
       return installFfmpegManaged(event.sender);
     }

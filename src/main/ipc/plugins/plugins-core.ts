@@ -210,7 +210,7 @@ export function sha256Hex(input: string): string {
   return createHash('sha256').update(input).digest('hex');
 }
 
-/** Stable digest of the capabilities a user reviews before enabling a plugin. */
+/** Stabilny digest możliwości, które użytkownik przegląda przed włączeniem pluginu. */
 export function pluginCapabilityHash(
   manifest: Pick<PluginManifest, 'permissions' | 'hooks' | 'layoutElements' | 'uiSlots'>
 ): string {
@@ -234,9 +234,9 @@ export function pluginCapabilityHash(
 }
 
 /**
- * Digest covering what the user actually approves: the declared capabilities
- * AND the entry file that will run. Editing the plugin code therefore requires
- * a new review, not just editing the manifest.
+ * Digest obejmujący to, co użytkownik faktycznie zatwierdza: zadeklarowane możliwości
+ * ORAZ plik wejściowy, który zostanie uruchomiony. Edycja kodu pluginu wymaga więc
+ * nowego przeglądu, a nie tylko edycji manifestu.
  */
 export function pluginConsentHash(
   manifest: Pick<PluginManifest, 'permissions' | 'hooks' | 'layoutElements' | 'uiSlots'>,
@@ -257,9 +257,9 @@ export function pluginApprovalMatches(
 }
 
 /**
- * Drops keys that are no longer declared and replaces values that no longer
- * match the manifest schema (type, min/max, text size). Returns whether the
- * stored map has to be rewritten, so callers can migrate the file once.
+ * Odrzuca klucze, które nie są już zadeklarowane, i zastępuje wartości, które nie pasują
+ * już do schematu manifestu (typ, min/max, rozmiar tekstu). Zwraca, czy zapisana
+ * mapa musi zostać przepisana, aby wywołujący mogli raz zmigrować plik.
  */
 export function normalizePluginSettings(
   manifest: Pick<PluginManifest, 'settings'>,

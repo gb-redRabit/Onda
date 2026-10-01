@@ -71,7 +71,7 @@ function detectItemType(url: string | undefined): SourceItemType {
     if (VIDEO_EXTS.has(ext)) return 'video';
     if (AUDIO_EXTS.has(ext)) return 'audio';
   } catch {
-    // not a URL — fall through
+    // to nie URL — przechodzimy dalej
   }
   return 'file';
 }
@@ -222,8 +222,8 @@ export async function fetchTableRows(
   }
 }
 
-// Exported for tests: redirect handling (credential stripping) is security
-// relevant and easier to cover directly than through a source configuration.
+// Eksportowane dla testów: obsługa przekierowań (usuwanie poświadczeń) jest istotna
+// dla bezpieczeństwa i łatwiej ją pokryć bezpośrednio niż przez konfigurację źródła.
 export interface HttpJsonFetchOptions {
   method: 'GET' | 'POST';
   headers: Record<string, string>;
@@ -306,11 +306,11 @@ function safeOrigin(url: string): string | null {
 }
 
 /**
- * Builds the request URL and drops resolved credentials when the target origin
- * differs from the source's declared origin. `endpoint.path` may be an absolute
- * URL (CDN-style), so a renderer-supplied config must never carry the source's
- * API key to another host. When credentials are refused the URL is rebuilt
- * without the auth query parameter, so the key never reaches the other origin.
+ * Buduje URL żądania i usuwa rozwiązane poświadczenia, gdy origin celu
+ * różni się od zadeklarowanego origin źródła. `endpoint.path` może być absolutnym
+ * URL (w stylu CDN), więc konfiguracja dostarczona przez renderer nigdy nie może
+ * przenieść klucza API źródła na inny host. Gdy poświadczenia zostaną odrzucone, URL
+ * jest budowany ponownie bez parametru zapytania auth, więc klucz nigdy nie trafia na inny origin.
  */
 export function finalizeRequest(
   source: MediaSource,

@@ -9,8 +9,8 @@ export interface SubscriptionInput {
   channelThumbnail: string;
   downloadPrefs?: Subscription['downloadPrefs'];
   seedBaseline?: boolean;
-  // 'youtube' by default — SoundCloud subscriptions carry 'soundcloud' and use
-  // profile permalinks as channelId.
+  // Domyślnie 'youtube' — subskrypcje SoundCloud niosą 'soundcloud' i używają
+  // permalinków profilu jako channelId.
   platform?: 'youtube' | 'soundcloud';
 }
 
@@ -33,9 +33,9 @@ export type SubscriptionPatch = Partial<
 
 let writeChain: Promise<void> = Promise.resolve();
 
-// Serializes read-modify-write access to subscriptions.json. Without this,
-// concurrent yt:subs:update calls (e.g. many finished downloads at once) race
-// and silently lose downloadedVideoIds entries.
+// Serializuje dostęp read-modify-write do subscriptions.json. Bez tego
+// równoczesne wywołania yt:subs:update (np. wiele ukończonych pobrań naraz) ścigają się
+// i po cichu gubią wpisy downloadedVideoIds.
 function withWriteLock<T>(fn: () => Promise<T>): Promise<T> {
   const result = writeChain.then(fn);
   writeChain = result.then(
@@ -67,8 +67,8 @@ export async function loadSubscriptions(filePath: string): Promise<Subscription[
   return readList(filePath);
 }
 
-// Appends videoIds to a channel's downloadedVideoIds atomically. Used by the
-// download manager so that no completed download is ever lost to a race.
+// Atomowo dopisuje videoIds do downloadedVideoIds kanału. Używane przez
+// menedżera pobierania, aby żadne ukończone pobranie nigdy nie przepadło przez wyścig.
 export function appendDownloadedVideos(
   filePath: string,
   channelId: string,
@@ -83,11 +83,11 @@ export function appendDownloadedVideos(
     for (const id of videoIds) {
       if (id) known.add(id);
     }
-    // A completed download is no longer „queued" — drop it from the queue set
-    // so a future check never re-queues it and pendingCount counts it correctly.
+    // Ukończone pobranie nie jest już "w kolejce" — usuń je ze zbioru kolejki,
+    // aby przyszłe sprawdzenie nigdy nie zakolejkowało go ponownie i pendingCount liczył je poprawnie.
     const queued = (list[idx].queuedVideoIds || []).filter((id) => !videoIds.includes(id));
-    // A finished download means one fewer video left to fetch — keep the
-    // "do pobrania" badge live in the UI instead of waiting for the next check.
+    // Zakończone pobranie oznacza o jeden film mniej do pobrania — utrzymuj
+    // odznakę "do pobrania" na bieżąco w UI, zamiast czekać na następne sprawdzenie.
     const prevPending = list[idx].pendingCount;
     const pendingCount = prevPending != null ? Math.max(0, prevPending - freshCount) : prevPending;
     list[idx] = {

@@ -30,7 +30,7 @@ export class SharpService {
         await access(cached);
         return await readFile(cached);
       } catch {
-        // cache miss, generate
+        // brak w cache, wygeneruj
       }
 
       let buf: Buffer;

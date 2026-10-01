@@ -5,12 +5,12 @@ interface DiskEntry {
   mtimeMs: number;
 }
 
-// yt-dlp on Windows prints filenames to stdout using the console codepage, so
-// the parsed destination may be mangled for non-ASCII names. The file written
-// to disk however always has the correct Unicode name. To derive the real final
-// path we walk the parsed destinations from the last one backwards and return
-// the first that actually exists (intermediates are deleted by yt-dlp after
-// audio extraction / merging).
+// yt-dlp w Windows wypisuje nazwy plików na stdout w kodowaniu strony konsoli, więc
+// sparsowany destination może być zniekształcony dla nazw spoza ASCII. Plik zapisany
+// na dysku ma jednak zawsze poprawną nazwę Unicode. Aby ustalić rzeczywistą ścieżkę
+// końcową, przechodzimy sparsowane destinations od ostatniego wstecz i zwracamy
+// pierwszy, który faktycznie istnieje (pliki pośrednie są usuwane przez yt-dlp po
+// ekstrakcji audio / scalaniu).
 export function resolveFinalOutputPath(
   destinations: string[],
   exists: (path: string) => boolean
@@ -22,9 +22,9 @@ export function resolveFinalOutputPath(
   return undefined;
 }
 
-// Last-resort fallback when no parsed destination exists on disk (e.g. the
-// destination lines were mangled beyond recovery): pick the newest file in the
-// output directory with a matching extension created after the job started.
+// Ostateczny fallback, gdy żaden sparsowany destination nie istnieje na dysku (np.
+// linie destination zostały zniekształcone nie do odratowania): wybierz najnowszy plik
+// w katalogu wyjściowym z pasującym rozszerzeniem utworzony po starcie zadania.
 export function findNewestOutput(
   dirEntries: DiskEntry[],
   extensions: readonly string[],

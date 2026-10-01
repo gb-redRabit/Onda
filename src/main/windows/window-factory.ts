@@ -5,18 +5,18 @@ import { installNavigationGuard } from './navigation-guard';
 import { windowIcon } from './window-icon';
 import { logger } from '../../shared/logger';
 
-// Single place that builds every BrowserWindow in Onda (plan 2.8 / audit Top 2):
-// the hardened webPreferences, the navigation guard, the window-state events and
-// the "open external links in the OS browser" policy used to be copy-pasted in
-// every window creator. Callers now pass only what is genuinely different.
+// Jedyne miejsce, które buduje każde BrowserWindow w Onda (plan 2.8 / audit Top 2):
+// wzmocnione webPreferences, strażnik nawigacji, zdarzenia stanu okna i polityka
+// "otwieraj linki zewnętrzne w przeglądarce OS" były wcześniej kopiowane w każdym
+// kreatorze okien. Wywołujący przekazują teraz tylko to, co naprawdę się różni.
 export interface WindowFactoryOptions extends BrowserWindowConstructorOptions {
-  /** SPA route passed as the URL hash (e.g. `/explorer/window/1`). */
+  /** Trasa SPA przekazywana jako hash URL (np. `/explorer/window/1`). */
   hash?: string;
-  /** Dedicated renderer entry instead of the SPA (e.g. `pip.html`). */
+  /** Dedykowany entry renderera zamiast SPA (np. `pip.html`). */
   htmlFile?: string;
-  /** Show + focus on `ready-to-show`. Ignored when `onReadyToShow` is given. */
+  /** Pokaż + skup w `ready-to-show`. Ignorowane, gdy podano `onReadyToShow`. */
   autoShow?: boolean;
-  /** Open http/https/mailto externally and deny in-window navigation. */
+  /** Otwieraj http/https/mailto na zewnątrz i odrzucaj nawigację w oknie. */
   openExternal?: boolean;
   onReadyToShow?: (win: BrowserWindow) => void;
   onClosed?: (win: BrowserWindow) => void;

@@ -4,20 +4,20 @@ import os from 'os';
 import { app } from 'electron';
 import { getStore } from './cover-store';
 
-// Cover cache map persisted to its own JSON file (instead of the encrypted
-// electron-store) to avoid rewriting the entire config on every cover save.
-// Split out of `cover-cache.ts` (plan 2.8).
+// Mapa cache okładek zapisywana we własnym pliku JSON (zamiast szyfrowanego
+// electron-store), aby uniknąć przepisywania całej konfiguracji przy każdym zapisie okładki.
+// Wyodrębnione z `cover-cache.ts` (plan 2.8).
 
 export const COVER_CACHE_MAP_KEY = 'coverCacheMap';
 
 let coverMapFile: string | null = null;
 function getCoverMapFile(): string {
   if (!coverMapFile) {
-    // `app.getPath` can return an empty string (not only throw) if it is called
-    // before the app is ready. `join('', name)` yields a RELATIVE path, so the
-    // map would then be written into the process working directory — which for
-    // a packaged app is wherever the user launched it from. Anything that is
-    // not an absolute path is treated as unavailable and falls back to tmp.
+    // `app.getPath` może zwrócić pusty string (nie tylko rzucić wyjątek), jeśli zostanie
+    // wywołane przed gotowością aplikacji. `join('', name)` daje ścieżkę WZGLĘDNĄ, więc
+    // mapa zostałaby zapisana w katalogu roboczym procesu — który dla
+    // spakowanej aplikacji jest miejscem, z którego użytkownik ją uruchomił. Wszystko, co nie
+    // jest ścieżką absolutną, jest traktowane jako niedostępne i spada do tmp.
     const userData = safeUserDataPath();
     coverMapFile = userData
       ? join(userData, 'cover-cache-map.json')
@@ -26,7 +26,7 @@ function getCoverMapFile(): string {
   return coverMapFile;
 }
 
-/** The profile directory, or null when Electron cannot provide one yet. */
+/** Katalog profilu lub null, gdy Electron nie może go jeszcze podać. */
 function safeUserDataPath(): string | null {
   try {
     const dir = app.getPath('userData');
@@ -48,7 +48,7 @@ export async function readCoverMap(): Promise<
     coverMapData = JSON.parse(raw);
   } catch {
     coverMapData = {};
-    // Migrate from electron-store if the file doesn't exist yet
+    // Migracja z electron-store, jeśli plik jeszcze nie istnieje
     try {
       const store = await getStore();
       const legacy = store.get(COVER_CACHE_MAP_KEY) as
@@ -59,7 +59,7 @@ export async function readCoverMap(): Promise<
         store.set(COVER_CACHE_MAP_KEY, undefined);
       }
     } catch {
-      // migration failed — start fresh
+      // migracja nie powiodła się — zaczynamy od nowa
     }
   }
   return coverMapData!;
@@ -75,10 +75,10 @@ export async function writeCoverMap(
   });
   try {
     const file = getCoverMapFile();
-    // The directory is not created by anything else on this path: when
-    // `app.getPath` is unavailable the map falls back to a tmp subdirectory that
-    // exists only if something made it first, so the write failed with ENOENT
-    // and the failure was logged on every test run that touched the cover cache.
+    // Katalog nie jest tworzony przez nic innego na tej ścieżce: gdy
+    // `app.getPath` jest niedostępne, mapa spada do podkatalogu tmp, który
+    // istnieje tylko jeśli coś go wcześniej utworzyło, więc zapis kończył się ENOENT
+    // i błąd był logowany przy każdym uruchomieniu testów dotykających cache okładek.
     await mkdir(dirname(file), { recursive: true });
     await writeFile(file, JSON.stringify(data), 'utf-8');
     coverMapData = data;

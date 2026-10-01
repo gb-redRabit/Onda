@@ -2,9 +2,9 @@ import { readdir, rm, stat } from 'fs/promises';
 import { join } from 'path';
 
 /**
- * Removes every entry inside `dir` (files and subdirectories) and reports how
- * many entries were removed and how many bytes of regular files they held.
- * A missing or unreadable directory is a no-op — the caches are best-effort.
+ * Usuwa każdy wpis wewnątrz `dir` (pliki i podkatalogi) i raportuje, ile wpisów
+ * usunięto oraz ile bajtów zajmowały pliki zwykłe. Brakujący lub nieczytelny
+ * katalog to brak operacji — cache są best-effort.
  */
 export async function clearDirContents(dir: string): Promise<{
   removed: number;
@@ -21,7 +21,7 @@ export async function clearDirContents(dir: string): Promise<{
       await rm(full, { recursive: true, force: true });
       removed++;
     } catch {
-      // best-effort: locked/in-use entries stay until the next clear
+      // best-effort: zablokowane/używane wpisy zostają do następnego czyszczenia
     }
   }
   return { removed, bytesFreed };

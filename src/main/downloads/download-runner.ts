@@ -12,9 +12,9 @@ import { isWithinWindow } from './schedule';
 import { jobs, queueOrder, hold, persist } from './download-state';
 import { readMaxConcurrent, readNightSchedule, readRetryConfig } from './download-settings';
 
-// Queue runner (pump + single-job execution), extracted from
-// `download-manager.ts` (plan 2.8). `running` (active job count) lives here
-// because only pump() reads it and runJob() mutates it.
+// Runner kolejki (pump + wykonanie pojedynczego zadania), wyodrębniony z
+// `download-manager.ts` (plan 2.8). `running` (liczba aktywnych zadań) znajduje
+// się tutaj, bo tylko pump() je odczytuje, a runJob() je modyfikuje.
 
 let running = 0;
 
@@ -42,9 +42,9 @@ async function runJob(job: Job): Promise<void> {
   let auth: YtAuthConfig | null = null;
   try {
     const bin = (await resolveBin('yt-dlp')) || 'yt-dlp';
-    // May be null when auth is disabled ("none") or no valid session exists —
-    // public videos can still be downloaded without cookies, and yt-dlp reports
-    // a specific error for age-restricted / private / members-only content.
+    // Może być null, gdy autoryzacja jest wyłączona ("none") lub nie istnieje
+    // ważna sesja — publiczne filmy nadal można pobierać bez cookies, a yt-dlp
+    // zgłasza konkretny błąd dla treści z ograniczeniem wieku / prywatnych / tylko dla członków.
     auth = await getYtAuthConfig();
     const base = await buildBaseArgs(job);
     const retryCfg = await readRetryConfig();
@@ -54,16 +54,16 @@ async function runJob(job: Job): Promise<void> {
         await postProcess(job);
         return;
       }
-      // Only a transport failure is worth retrying. `bot-block` is YouTube
-      // saying "too many requests from this address" — retrying it immediately
-      // is what escalates a 429 into an IP ban, and the backoff is too short to
-      // matter anyway. It needs the user to wait or sign in.
+      // Ponowienia warte jest tylko niepowodzenie transportu. `bot-block` to YouTube
+      // mówiący "zbyt wiele żądań z tego adresu" — natychmiastowe ponawianie to właśnie
+      // to, co eskaluje 429 do bana na IP, a backoff jest i tak zbyt krótki, by mieć
+      // znaczenie. Wymaga to od użytkownika odczekania lub zalogowania się.
       const retryable = result.errorCode === 'network';
       const status = job.status as IpcDownloadTask['status'];
       const stopped = status === 'cancelled' || status === 'paused';
       if (!retryable || stopped || attempt >= retryCfg.attempts) return;
-      // Reset transient state and retry after an exponential backoff. Privacy,
-      // access-rights, not-found and bot-block errors are never retried.
+      // Resetuje stan przejściowy i ponawia po wykładniczym backoffie. Błędy
+      // prywatności, praw dostępu, nieznalezienia i bot-block nigdy nie są ponawiane.
       job.status = 'downloading';
       job.progress = 0;
       job.speed = '';
@@ -74,8 +74,8 @@ async function runJob(job: Job): Promise<void> {
       persist(job);
       logger.info('downloads', `retrying ${job.id} (attempt ${attempt + 1}/${retryCfg.attempts})`);
       await new Promise((r) => setTimeout(r, retryCfg.baseMs * 2 ** (attempt - 1)));
-      // Re-check status after the backoff — the user may have paused/cancelled
-      // during the sleep (job.child is undefined so pause/cancel can't kill it).
+      // Ponownie sprawdza status po backoffie — użytkownik mógł wstrzymać/anulować
+      // podczas oczekiwania (job.child jest undefined, więc pause/cancel nie może go zabić).
       const postSleep = job.status as IpcDownloadTask['status'];
       if (postSleep === 'cancelled' || postSleep === 'paused') return;
     }

@@ -1,9 +1,9 @@
 import type { IpcWarningEntry } from '../shared/types/ipc/channels-system';
 
-// Ring buffer of the most recent main-process warnings (plan 5.3). Identical
-// warnings repeated within RATE_WINDOW_MS collapse into one entry with a count,
-// so a noisy loop cannot push everything else out of the buffer. Purely local:
-// nothing leaves the machine; the exported log remains the only sharing path.
+// Bufor pierścieniowy najnowszych ostrzeżeń procesu głównego (plan 5.3). Identyczne
+// ostrzeżenia powtarzane w obrębie RATE_WINDOW_MS scalają się w jeden wpis z licznikiem,
+// dzięki czemu hałaśliwa pętla nie wypycha reszty z bufora. Działa wyłącznie lokalnie:
+// nic nie opuszcza komputera; eksportowany log pozostaje jedyną ścieżką udostępniania.
 
 const MAX_ENTRIES = 20;
 const RATE_WINDOW_MS = 10_000;

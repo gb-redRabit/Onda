@@ -7,11 +7,11 @@ const PREFIX = 'onda-enc:v1:';
 const PLAIN_PREFIX = 'onda-plain:v1:';
 
 /**
- * `weak` is not a theoretical concern: on Linux, when no OS keyring can be
- * found, Electron falls back to the `basic_text` backend, which reports
- * encryption as *available* while actually deriving its key from a constant
- * baked into the library. Anything written then is obfuscated, not protected —
- * and `isEncryptionAvailable()` alone cannot tell the two cases apart.
+ * `weak` to nie teoretyczne zmartwienie: w Linuxie, gdy nie można znaleźć
+ * keyringu systemowego, Electron spada do backendu `basic_text`, który raportuje
+ * szyfrowanie jako *dostępne*, podczas gdy faktycznie wyprowadza klucz ze stałej
+ * wkompilowanej w bibliotekę. Wszystko, co wtedy zapisano, jest zaciemnione, a nie chronione —
+ * a samo `isEncryptionAvailable()` nie odróżnia tych dwóch przypadków.
  */
 export type { SecretStorageStatus };
 
@@ -20,8 +20,8 @@ const REAL_KEYRINGS = new Set(['gnome_libsecret', 'kwallet', 'kwallet5', 'kwalle
 let cached: SecretStorageStatus | null = null;
 
 /**
- * Thrown instead of writing a secret to disk unprotected. Callers surface this
- * to the user; a secret that cannot be encrypted is not stored at all.
+ * Rzucane zamiast zapisania sekretu na dysk bez ochrony. Wywołujący pokazują to
+ * użytkownikowi; sekret, którego nie można zaszyfrować, nie jest w ogóle zapisywany.
  */
 export class SecretStorageUnavailableError extends Error {
   constructor() {
@@ -36,7 +36,7 @@ export function encryptionStatus(): SecretStorageStatus {
   return cached;
 }
 
-/** Test seam: the platform cannot change inside one process. */
+/** Szew testowy: platforma nie może się zmienić w obrębie jednego procesu. */
 export function __resetEncryptionStatusCache(): void {
   cached = null;
 }
@@ -51,8 +51,8 @@ function resolveStatus(): SecretStorageStatus {
   }
   if (!available) return 'unavailable';
 
-  // Only Linux has selectable backends; on Windows and macOS the OS keychain is
-  // always what is used, and getSelectedStorageBackend throws there.
+  // Tylko Linux ma wybieralne backendy; w Windows i macOS zawsze używany jest
+  // keychain systemowy, a getSelectedStorageBackend rzuca tam wyjątek.
   if (process.platform !== 'linux') return 'strong';
 
   let backend: string;
@@ -67,8 +67,8 @@ function resolveStatus(): SecretStorageStatus {
 
 function warnOnce(text: string): void {
   logger.warn('settings', text);
-  // Surfaces in Settings > Diagnostics, so the user can see that the key is not
-  // actually protected rather than having to find it in a log file.
+  // Pokazuje się w Ustawienia > Diagnostyka, więc użytkownik może zobaczyć, że klucz nie
+  // jest faktycznie chroniony, zamiast musieć szukać tego w pliku logu.
   recordWarning(text);
 }
 
@@ -77,9 +77,9 @@ export function encryptSecret(plain: string): string {
 
   const status = encryptionStatus();
   if (status === 'unavailable') {
-    // Storing the value as marked plaintext would put the key in the settings
-    // file in the clear. Refusing is the only way the user learns their key is
-    // not being protected, instead of finding out after trusting the app.
+    // Zapisanie wartości jako oznaczonego plaintextu umieściłoby klucz w pliku
+    // ustawień jawnie. Odmowa to jedyny sposób, by użytkownik dowiedział się, że jego klucz
+    // nie jest chroniony, zamiast odkryć to po zaufaniu aplikacji.
     warnOnce(
       'System key storage is unavailable, so API keys are not being saved. ' +
         'Set a keyring (GNOME Keyring or KWallet) and restart Onda.'
@@ -96,7 +96,7 @@ export function encryptSecret(plain: string): string {
   try {
     return PREFIX + safeStorage.encryptString(plain).toString('base64');
   } catch (e) {
-    // An encryption that throws is not recoverable by writing the value out.
+    // Szyfrowania, które rzuca wyjątek, nie da się naprawić przez zapisanie wartości.
     logger.warn('settings', 'safeStorage.encryptString failed', e);
     warnOnce('Encrypting the API key failed, so it was not saved.');
     throw new SecretStorageUnavailableError();
@@ -108,16 +108,16 @@ export function decryptSecret(stored: string): string {
     try {
       return safeStorage.decryptString(Buffer.from(stored.slice(PREFIX.length), 'base64'));
     } catch (e) {
-      // A value written by a different OS keychain, or after the keyring was
-      // reset, cannot be read. Returning the ciphertext keeps the user from
-      // silently overwriting a key they cannot see, and encryptSecret() passes
-      // already-prefixed values through untouched.
+      // Wartości zapisanej przez inny keychain systemowy lub po zresetowaniu keyringu
+      // nie da się odczytać. Zwrócenie szyfrogramu powstrzymuje użytkownika przed
+      // cichym nadpisaniem klucza, którego nie widzi, a encryptSecret() przepuszcza
+      // już oprefiksowane wartości nietknięte.
       logger.warn('settings', 'safeStorage decrypt failed, keeping stored value', e);
       return stored;
     }
   }
-  // Values written by older builds that fell back to plaintext are still read,
-  // so upgrading does not lose a configured key.
+  // Wartości zapisane przez starsze buildy, które spadały do plaintextu, są nadal czytane,
+  // więc aktualizacja nie gubi skonfigurowanego klucza.
   if (stored.startsWith(PLAIN_PREFIX)) return stored.slice(PLAIN_PREFIX.length);
   return stored;
 }

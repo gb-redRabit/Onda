@@ -25,12 +25,12 @@ interface CachedCover {
   checkedAt: number;
 }
 
-// Re-validate a mem-cached cover against the file mtime at most once per TTL
-// to avoid a stat() syscall on every cover hit.
+// Ponownie waliduje okładkę z cache w pamięci względem mtime pliku najwyżej raz na TTL,
+// aby uniknąć wywołania systemowego stat() przy każdym trafieniu okładki.
 const COVER_STAT_TTL_MS = 60_000;
 
-// Not exported: the maps are an implementation detail. External callers go
-// through the accessors below so an eviction invariant cannot be bypassed.
+// Nieeksportowane: mapy to szczegół implementacji. Zewnętrzni wywołujący korzystają
+// przez poniższe akcesory, aby nie można było obejść niezmiennika eviction.
 const coverResultCache = new Map<string, CachedCover>();
 export type CachedDuration = { duration: number; mtimeMs: number };
 const durationCache = new Map<string, CachedDuration>();
@@ -38,8 +38,8 @@ const coverCacheLocks = new Map<string, Array<() => void>>();
 
 const DEFAULT_CACHE_MAX_SIZE = 5000;
 
-// `library.coverCacheMaxEntries` (Settings → Library). Applied at boot and when
-// the setting changes, so the slider really resizes the in-memory cover cache.
+// `library.coverCacheMaxEntries` (Ustawienia → Biblioteka). Stosowane przy starcie i gdy
+// ustawienie się zmieni, aby suwak faktycznie zmieniał rozmiar cache okładek w pamięci.
 let cacheMaxSize = DEFAULT_CACHE_MAX_SIZE;
 
 export function applyCoverCacheSettings(maxEntries?: number): void {
@@ -56,7 +56,7 @@ function cacheSet<T>(
   evictCache(map as Map<string, unknown>, maxSize);
 }
 
-/** Invalidate the in-memory cover for one file (e.g. after rewriting its tags). */
+/** Unieważnia okładkę w pamięci dla jednego pliku (np. po przepisaniu jego tagów). */
 export function invalidateCachedCover(filePath: string): void {
   coverResultCache.delete(filePath);
 }
@@ -138,8 +138,8 @@ async function extractAudioCover(filePath: string): Promise<string | null> {
       } catch (e) {
         logger.warn('cover', `cover resize failed for ${filePath}`, e);
       }
-      // Fire-and-forget: the cover is already returned; persistence must not
-      // delay it, but the intent is explicit so it is not read as a leaked promise.
+      // Fire-and-forget: okładka jest już zwrócona; persistencja nie może
+      // jej opóźniać, ale intencja jest jawna, aby nie odczytano tego jako wyciekłego promise.
       void savePersistentCover(filePath, buf, imgExt);
       return `data:image/jpeg;base64,${buf.toString('base64')}`;
     }
@@ -215,7 +215,7 @@ function waitForCoverLock(filePath: string): Promise<void> {
       return;
     }
     list.push(resolve);
-    // Safety timeout so a waiter is never stuck if the owner dies.
+    // Timeout bezpieczeństwa, aby oczekujący nigdy nie utknął, jeśli właściciel padnie.
     setTimeout(resolve, 5000);
   });
 }
@@ -223,14 +223,14 @@ function waitForCoverLock(filePath: string): Promise<void> {
 const missingCache = new Map<string, number>();
 const MISSING_TTL = 5 * 60 * 1000;
 /**
- * The TTL only decided when a miss was *honoured*; the entries themselves were
- * never dropped, so a long session scanning a library with many moved or deleted
- * files grew this map for as long as the app stayed in the tray.
+ * TTL decydował tylko o tym, kiedy miss był *respektowany*; same wpisy nigdy
+ * nie były usuwane, więc długa sesja skanowania biblioteki z wieloma przeniesionymi lub usuniętymi
+ * plikami rozrastała tę mapę tak długo, jak aplikacja pozostawała w zasobniku.
  */
 const MISSING_MAX = 2000;
 
 function rememberMissing(filePath: string): void {
-  // Insertion order is oldest-first, so the head is the entry to drop.
+  // Kolejność wstawiania jest od najstarszych, więc początek to wpis do usunięcia.
   missingCache.set(filePath, Date.now());
   while (missingCache.size > MISSING_MAX) {
     const oldest = missingCache.keys().next();
@@ -254,7 +254,7 @@ export async function extractAndCacheCover(
 ): Promise<{ type: 'video' | 'image' | null; data: string | null }> {
   const miss = missingCache.get(filePath);
   if (miss && Date.now() - miss < MISSING_TTL) return { type: null, data: null };
-  // Stat once: the result is reused for the cache entry's mtime further down.
+  // Jeden stat: wynik jest ponownie użyty dla mtime wpisu cache niżej.
   let fileStat: Awaited<ReturnType<typeof stat>> | null = null;
   try {
     fileStat = await stat(filePath);
@@ -278,16 +278,16 @@ export async function extractAndCacheCover(
     return result;
   }
 
-  // A previous caller may already be extracting this file — wait for it and
-  // reuse the cached result (even a "no cover" result is cached).
+  // Poprzedni wywołujący może już wyodrębniać ten plik — poczekaj na niego i
+  // użyj ponownie zbuforowanego wyniku (nawet wynik "brak okładki" jest buforowany).
   if (coverCacheLocks.has(filePath)) {
     await waitForCoverLock(filePath);
     const waited = await getCachedCover(filePath);
     if (waited) return waited;
   }
 
-  // Acquire the lock synchronously (no await between check and set) so only
-  // one caller can ever extract a given file concurrently.
+  // Zajmij blokadę synchronicznie (bez await między sprawdzeniem a ustawieniem), aby tylko
+  // jeden wywołujący mógł kiedykolwiek równolegle wyodrębniać dany plik.
   coverCacheLocks.set(filePath, []);
 
   try {
@@ -337,7 +337,7 @@ async function getCachedCover(
 ): Promise<{ type: 'video' | 'image' | null; data: string | null } | null> {
   const memCached = coverResultCache.get(filePath);
   if (memCached) {
-    // Fresh enough — skip the stat() syscall.
+    // Wystarczająco świeże — pomiń wywołanie systemowe stat().
     if (Date.now() - memCached.checkedAt < COVER_STAT_TTL_MS) return memCached.result;
     try {
       const { mtimeMs } = await stat(filePath);
@@ -378,21 +378,21 @@ export async function clearCoverCache(): Promise<{ removed: number; bytesFreed: 
   }
 }
 
-// Clear stale persistent cache entries.  Files that were previously cached as
-// image-type covers (extracted JPEG frames from sibling videos) need to be
-// re-extracted because `extractAndCacheCover` now returns the video path
-// directly.  We detect this by checking whether any audio file in the library
-// has a sibling video — if so, nuke the entire persistent cache to force a
-// clean re-extraction.  The cache is purely a performance optimization and
-// will be rebuilt on next access.
+// Czyści nieaktualne wpisy trwałego cache. Pliki wcześniej zbuforowane jako
+// okładki typu image (wyodrębnione klatki JPEG z towarzyszących wideo) trzeba
+// wyodrębnić ponownie, bo `extractAndCacheCover` zwraca teraz ścieżkę wideo
+// bezpośrednio. Wykrywamy to, sprawdzając, czy dowolny plik audio w bibliotece
+// ma towarzyszące wideo — jeśli tak, usuwamy cały trwały cache, aby wymusić
+// czyste ponowne wyodrębnienie. Cache jest wyłącznie optymalizacją wydajności
+// i zostanie odbudowany przy następnym dostępie.
 const STALE_CACHE_KEY = '__v2_sibling_video__';
 
 /**
- * One-shot migration: clears persistent cover entries that predate the
- * "return the sibling video path directly" change so they are re-extracted
- * cleanly. Must be invoked explicitly from app startup (after the store is
- * ready) — never as an import side effect, which used to delete files merely
- * because the module was required.
+ * Jednorazowa migracja: czyści trwałe wpisy okładek sprzed zmiany
+ * "zwracaj ścieżkę towarzyszącego wideo bezpośrednio", aby zostały wyodrębnione
+ * na nowo w czysty sposób. Musi być wywołana jawnie przy starcie aplikacji (po
+ * gotowości store) — nigdy jako efekt uboczny importu, który kiedyś usuwał pliki tylko
+ * dlatego, że moduł został zaimportowany.
  */
 export async function initCoverCache(): Promise<void> {
   try {

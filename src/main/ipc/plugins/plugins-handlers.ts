@@ -46,8 +46,8 @@ function getPluginsDir(): string {
   return pluginsDir;
 }
 
-// Bundled examples ship inside the app bundle: dev `out/main` → repo
-// `resources/`, packaged `app.asar/out/main` → `app.asar/resources/`.
+// Dołączone przykłady są dostarczane w bundlu aplikacji: dev `out/main` → repo
+// `resources/`, spakowane `app.asar/out/main` → `app.asar/resources/`.
 function getExamplesDir(): string {
   return join(__dirname, '../../resources/plugins-examples');
 }
@@ -156,16 +156,16 @@ async function setEnabled(
 }
 
 /**
- * The manifest, but only for a plugin that is CURRENTLY approved.
+ * Manifest, ale tylko dla pluginu, który jest OBECNIE zatwierdzony.
  *
- * Every capability channel (storage, settings, network) has to clear this, not
- * just check the manifest. The manifest says what the plugin DECLARES; this is
- * what the user APPROVED, re-verified against the entry digest so that editing
- * the code or widening the permissions after the fact revokes the grant.
+ * Każdy kanał możliwości (storage, ustawienia, sieć) musi to przejść, a nie
+ * tylko sprawdzić manifest. Manifest mówi, co plugin DEKLARUJE; to jest to,
+ * co użytkownik ZATWIERDZIŁ, ponownie zweryfikowane względem digestu wejścia, aby edycja
+ * kodu lub rozszerzenie uprawnień po fakcie cofnęła nadanie.
  *
- * Without this an installed-but-never-approved plugin still reached its own
- * storage and the network allowlist through IPC, because the capability
- * handlers only ever looked at the manifest.
+ * Bez tego zainstalowany, ale nigdy niezatwierdzony plugin nadal sięgał do własnego
+ * storage i allowlisty sieciowej przez IPC, bo handlery możliwości
+ * patrzyły wyłącznie na manifest.
  */
 async function approvedManifest(id: string): Promise<PluginManifest | null> {
   if (!validatePluginId(id)) return null;
@@ -180,9 +180,9 @@ async function approvedManifest(id: string): Promise<PluginManifest | null> {
 }
 
 /**
- * A plugin only stays enabled while the saved consent still matches the current
- * manifest AND entry digest, so editing a plugin's code or capabilities forces
- * a fresh review instead of silently running unapproved code after a restart.
+ * Plugin pozostaje włączony tylko dopóki zapisana zgoda wciąż pasuje do bieżącego
+ * manifestu ORAZ digestu wejścia, więc edycja kodu lub możliwości pluginu wymusza
+ * świeży przegląd, zamiast po cichu uruchamiać niezatwierdzony kod po restarcie.
  */
 async function mergeInfos(plugins: PluginInfo[], state: PluginStateFile): Promise<PluginInfo[]> {
   const out: PluginInfo[] = [];
@@ -191,8 +191,8 @@ async function mergeInfos(plugins: PluginInfo[], state: PluginStateFile): Promis
     let consentApproved = false;
     if (saved?.enabled === true && saved.approvedConsent) {
       const dir = join(getPluginsDir(), plugin.id);
-      // Read the manifest once and reuse it for the digest: `readEntryDigest`
-      // needs the manifest only to locate `entry`.
+      // Wczytaj manifest raz i użyj ponownie do digestu: `readEntryDigest`
+      // potrzebuje manifestu tylko do zlokalizowania `entry`.
       const manifest = await readManifest(dir, plugin.id);
       if (manifest) {
         const digest = await readEntryDigest(dir, plugin.id, manifest);
@@ -217,10 +217,10 @@ async function storageData(id: string): Promise<Record<string, unknown>> {
 }
 
 /**
- * Reads persisted plugin settings and migrates them to the current manifest
- * schema: undeclared keys are dropped and out-of-schema values fall back to a
- * valid default. The file is rewritten once so the migration does not repeat
- * on every read.
+ * Wczytuje zapisane ustawienia pluginu i migruje je do bieżącego schematu
+ * manifestu: niezadeklarowane klucze są odrzucane, a wartości poza schematem spadają do
+ * poprawnego domyślnego. Plik jest przepisywany raz, aby migracja nie powtarzała się
+ * przy każdym odczycie.
  */
 async function settingsData(
   id: string,
@@ -259,7 +259,7 @@ async function readPluginEntry(
   }
 }
 
-/** SHA-256 of the plugin entry file, so consent is bound to the actual code. */
+/** SHA-256 pliku wejściowego pluginu, aby zgoda była związana z faktycznym kodem. */
 async function readEntryDigest(
   dir: string,
   id: string,
@@ -342,8 +342,8 @@ export function registerPluginsHandlers(): void {
       if (!manifest) return { success: false, error: 'Plugin not found' };
       const code = await readPluginEntry(dir, id);
       if (code === null) return { success: false, error: 'Entry file missing' };
-      // Consent is bound to the entry file, so the approval token the renderer
-      // submits can never be replayed against different code.
+      // Zgoda jest związana z plikiem wejściowym, więc token zatwierdzenia, który renderer
+      // przesyła, nigdy nie może zostać odtworzony dla innego kodu.
       return {
         success: true,
         manifest,
@@ -481,8 +481,8 @@ export function registerPluginsHandlers(): void {
     async (_e, id: string): Promise<Record<string, unknown>> => {
       try {
         if (!validatePluginId(id)) return {};
-        // Reading through the manifest also migrates values that no longer
-        // match the current schema, rewriting the file once.
+        // Odczyt przez manifest migruje też wartości, które nie pasują już
+        // do bieżącego schematu, przepisując plik raz.
         return await settingsData(id, await readManifestById(id));
       } catch (e) {
         logger.warn('plugins', 'plugins:settings:get failed', e);
@@ -524,9 +524,9 @@ export function registerPluginsHandlers(): void {
       options: PluginFetchOptions
     ): Promise<PluginFetchResult> => {
       try {
-        // Approval, not just the manifest: an installed plugin the user never
-        // activated — or one whose code changed after the review — must not be
-        // able to borrow the app's network identity.
+        // Zatwierdzenie, nie tylko manifest: zainstalowany plugin, którego użytkownik nigdy
+        // nie aktywował — lub taki, którego kod zmienił się po przeglądzie — nie może
+        // pożyczać tożsamości sieciowej aplikacji.
         const manifest = await approvedManifest(id);
         const allow = manifest?.permissions.network?.allow || [];
         if (!manifest || allow.length === 0) {

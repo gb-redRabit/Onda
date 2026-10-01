@@ -21,8 +21,8 @@ const MAX_SCANNED_FILES = 50000;
 let activeScanController: AbortController | null = null;
 let currentLibraryFolders: string[] = [];
 
-// Folders/paths arriving from the renderer are untrusted — keep only non-empty
-// absolute paths, dedupe and cap the count.
+// Foldery/ścieżki przychodzące z renderera są niezaufane — zachowujemy tylko niepuste
+// ścieżki absolutne, deduplikujemy i ograniczamy liczbę.
 function sanitizeFolderPaths(input: unknown): string[] {
   if (!Array.isArray(input)) return [];
   const seen = new Set<string>();
@@ -38,9 +38,9 @@ function sanitizeFolderPaths(input: unknown): string[] {
   return out;
 }
 
-// Adds a folder to the library (idempotent), updating the media-server roots and
-// the file watcher. Used by the auto-add-download-folder feature so a download
-// landing outside the library is still browsable/playable.
+// Dodaje folder do biblioteki (idempotentnie), aktualizując rooty serwera mediów i
+// watcher plików. Używane przez funkcję automatycznego dodawania folderu pobierania,
+// aby pobranie trafiające poza bibliotekę było nadal przeglądalne/odtwarzalne.
 export async function addLibraryFolder(folder: string): Promise<string[]> {
   const store = await getStore();
   const current = sanitizeFolderPaths(store.get('libraryFolders', []));
@@ -57,7 +57,7 @@ export type LibraryScanResult = {
   count: number;
   folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
   aborted: boolean;
-  /** True when the file ceiling stopped the walk, so the library is partial. */
+  /** True, gdy limit plików zatrzymał przejście, więc biblioteka jest częściowa. */
   truncated: boolean;
 };
 
@@ -67,9 +67,9 @@ async function runLibraryScan(
   onProgress?: (current: number, total: number) => void,
   broadcast = false
 ): Promise<LibraryScanResult> {
-  // The budget is shared across folders, so the ceiling is on the whole scan
-  // and the walk stops where the ceiling is reached instead of reading
-  // everything and dropping most of it afterwards.
+  // Budżet jest współdzielony między folderami, więc limit dotyczy całego skanowania
+  // i przejście zatrzymuje się tam, gdzie limit zostaje osiągnięty, zamiast czytać
+  // wszystko i odrzucać większość potem.
   const budget = createScanBudget(MAX_SCANNED_FILES);
   const folderResults: Array<{
     folderType: 'audio' | 'video' | 'image' | 'mixed';
@@ -81,8 +81,8 @@ async function runLibraryScan(
   const folderTotal = safePaths.length;
   let doneCount = 0;
 
-  // Load the previous scan so unchanged files can be reused (incremental
-  // scan) — this preserves playCount/lastPlayed and avoids re-parsing.
+  // Wczytaj poprzednie skanowanie, aby niezmienione pliki mogły być ponownie użyte
+  // (skan przyrostowy) — zachowuje to playCount/lastPlayed i unika ponownego parsowania.
   const prevData = await loadLibraryScanned();
   const previous = new Map<string, MediaFile>();
   if (prevData && Array.isArray(prevData.files)) {
@@ -91,7 +91,7 @@ async function runLibraryScan(
     }
   }
 
-  // Scan folders sequentially to avoid saturating the disk, emitting progress per folder.
+  // Skanuj foldery sekwencyjnie, aby nie wysycić dysku, emitując postęp na folder.
   for (const folderPath of safePaths) {
     if (signal.aborted) break;
     doneCount++;
@@ -124,16 +124,16 @@ async function runLibraryScan(
     allFiles.push(...r.files);
   }
 
-  // Only persist if the scan completed (not aborted/cancelled).  Aborting
-  // mid-scan would write an incomplete list and effectively wipe the library.
+  // Zapisuj tylko jeśli skan się zakończył (nie przerwano/anulowano). Przerwanie
+  // w trakcie zapisałoby niekompletną listę i praktycznie wyczyściłoby bibliotekę.
   if (!signal.aborted) {
     setLibraryScanned({ files: allFiles, folderTypes });
     if (broadcast) broadcastToAllWindows('library:updated');
   }
 
   if (budget.truncated) {
-    // Silently dropping the rest would look like data loss, or like the library
-    // forgot files. Say so instead — the user can raise the limit or split the
+    // Ciche odrzucenie reszty wyglądałoby jak utrata danych albo jakby biblioteka
+    // zapomniała plików. Powiedzmy o tym — użytkownik może podnieść limit lub podzielić
     // folder.
     logger.warn(
       'library',
@@ -159,10 +159,10 @@ export function registerLibraryHandlers(): void {
   ipcMain.handle(
     'library:scan',
     async (event, folderPaths: string[]): Promise<LibraryScanResult> => {
-      // A new scan supersedes the running one. Overwriting the controller
-      // without aborting left the previous scan walking the whole library in
-      // parallel — two full directory traversals, doubled memory, and the
-      // slower one deciding what the library finally contains.
+      // Nowe skanowanie zastępuje uruchomione. Nadpisanie kontrolera
+      // bez przerwania zostawiało poprzednie skanowanie przechodzące całą bibliotekę
+      // równolegle — dwa pełne przejścia po katalogach, podwójna pamięć, a
+      // wolniejsze decydowało, co finalnie zawiera biblioteka.
       const controller = new AbortController();
       const previous = activeScanController;
       activeScanController = controller;
@@ -270,9 +270,9 @@ export function registerLibraryHandlers(): void {
       try {
         const data = await loadLibraryScanned();
         if (!data || !Array.isArray(data.files)) return;
-        // Writes only the changed entries to library-stats.json. Scheduling a full
-        // library write here meant serialising every file on the main thread
-        // each time a track finished.
+        // Zapisuje tylko zmienione wpisy do library-stats.json. Zaplanowanie pełnego
+        // zapisu biblioteki tutaj oznaczałoby serializację każdego pliku w wątku main
+        // przy każdym zakończeniu utworu.
         updateLibraryStats(clean);
       } catch (err) {
         logger.error('library', 'updateStats failed', err);
@@ -311,8 +311,8 @@ export function registerLibraryHandlers(): void {
     }
   });
 
-  // Export a library playlist as an M3U file. Throws no secrets across IPC —
-  // track entries are plain file paths resolved by the main process.
+  // Eksportuje playlistę biblioteki jako plik M3U. Przez IPC nie przechodzą żadne sekrety —
+  // wpisy utworów to zwykłe ścieżki plików rozwiązywane przez proces main.
   ipcMain.handle(
     'playlist:export',
     async (
@@ -354,12 +354,12 @@ export function registerLibraryHandlers(): void {
     }
   );
 
-  // File watcher: re-scan (incremental) when media files change on disk, then
-  // broadcast so the renderer refreshes. The watcher must NOT abort a running
-  // user-initiated scan — otherwise a refresh clicked during a download would
-  // be silently cancelled and the renderer would reload stale data (deleted or
-  // new files never showing up). Instead, the watcher defers until the active
-  // scan finishes.
+  // Watcher plików: ponownie skanuje (przyrostowo), gdy pliki mediów zmienią się na dysku,
+  // potem rozgłasza, aby renderer się odświeżył. Watcher NIE może przerywać uruchomionego
+  // skanowania zainicjowanego przez użytkownika — inaczej odświeżenie kliknięte w trakcie pobierania
+  // zostałoby po cichu anulowane, a renderer wczytałby nieaktualne dane (usunięte lub
+  // nowe pliki nigdy by się nie pokazały). Zamiast tego watcher czeka, aż aktywne
+  // skanowanie się zakończy.
   let watcherRescanRequested = false;
 
   function releaseScanController(controller: AbortController): void {

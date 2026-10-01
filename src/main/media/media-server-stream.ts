@@ -29,11 +29,11 @@ function streamProxyRequest(
     };
     if (range) headers.range = range;
 
-    // googlevideo playback URLs are signed for the client IP (`ip=` param).
-    // The URL is produced from yt-dlp, which connected via the SAME family as
-    // `ip=` — but Node's autoSelectFamily usually wins with IPv4, so a
-    // v6-signed URL gets 403'd. Force the signed family; the retry attempt
-    // falls back to the other family (e.g. when v6 is unreachable).
+    // URL-e odtwarzania googlevideo są podpisane dla IP klienta (`ip=` param).
+    // URL pochodzi z yt-dlp, które połączyło się z TĄ SAMĄ rodziną co
+    // `ip=` — ale autoSelectFamily Node'a zwykle wygrywa z IPv4, więc
+    // URL podpisany dla v6 dostaje 403. Wymuś podpisaną rodzinę; próba ponowienia
+    // przechodzi do drugiej rodziny (np. gdy v6 jest nieosiągalny).
     const ipParam = upstreamUrl.searchParams.get('ip') || '';
     const signedFamily = ipParam.includes(':') ? 6 : ipParam ? 4 : 0;
     const opts: https.RequestOptions = {
@@ -51,9 +51,9 @@ function streamProxyRequest(
   });
 }
 
-// Proxies /{token}/stream?url=... to the resolved yt-dlp audio URL. The
-// upstream request carries no Referer/Origin (like a regular player), Range is
-// forwarded so <audio> seeking works, and the body is streamed untouched.
+// Proksuje /{token}/stream?url=... do rozwiązanego URL-a audio z yt-dlp.
+// Żądanie upstream nie niesie Referer/Origin (jak zwykły odtwarzacz), Range jest
+// przekazywany, aby przewijanie <audio> działało, a treść jest strumieniowana bez zmian.
 export async function handleStreamProxy(
   req: http.IncomingMessage,
   res: http.ServerResponse,
@@ -87,11 +87,11 @@ export async function handleStreamProxy(
 
   for (let hop = 0; hop <= STREAM_MAX_REDIRECTS; hop++) {
     let lookup: https.RequestOptions['lookup'];
-    // A station the user added is allowed to live on their LAN (a radio server
-    // at 192.168.x.x is a real use case), but /stream is reachable from the
-    // renderer, so a station must not become a forwarder to loopback or the
-    // cloud metadata endpoint — and a rebinding hostname must not be able to
-    // change what we already validated. Both need a resolved, pinned address.
+    // Stacja dodana przez użytkownika może znajdować się w jego LAN (serwer radia
+    // pod 192.168.x.x to realny przypadek), ale /stream jest osiągalne z renderera,
+    // więc stacja nie może stać się forwarderem do loopbacku lub endpointu metadanych
+    // chmury — a nazwa hosta z rebindingiem nie może zmienić tego, co już zwalidowaliśmy.
+    // Oba wymagają rozwiązania i przypięcia adresu.
     const isUserStation = !generic && isAllowedRadioHost(current.hostname);
     if (generic || isUserStation) {
       try {
@@ -181,8 +181,8 @@ export async function handleStreamProxy(
         );
         upRes.destroy();
         if (attempt < STREAM_MAX_ATTEMPTS - 1) {
-          // googlevideo 403s are usually transient (per-IP throttling on the
-          // shared CGNAT address); a short delay between tries often passes.
+          // 403 z googlevideo są zwykle przejściowe (throttling per-IP na
+          // współdzielonym adresie CGNAT); krótka zwłoka między próbami często wystarcza.
           await sleep(STREAM_RETRY_DELAYS[attempt]);
           continue;
         }

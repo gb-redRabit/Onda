@@ -3,9 +3,9 @@ import { dirname, join } from 'path';
 import { app } from 'electron';
 import { logger } from '../../../shared/logger';
 
-// Persisted YouTube stream-URL cache extracted from `youtube-handlers.ts`
-// (plan 2.8). yt-dlp resolves are slow (~3-10s) and rate-limited, so resolved
-// URLs are cached (LRU + TTL) and persisted to userData across restarts.
+// Trwały cache URL-i strumieni YouTube wyodrębniony z `youtube-handlers.ts`
+// (plan 2.8). Rozwiązywanie yt-dlp jest wolne (~3-10 s) i rate-limitowane, więc rozwiązane
+// URL-e są cache'owane (LRU + TTL) i utrwalane w userData między restartami.
 
 export interface StreamCacheEntry {
   url: string;
@@ -14,9 +14,9 @@ export interface StreamCacheEntry {
 
 const STREAM_CACHE_TTL_MS = 5 * 60 * 60 * 1000;
 const STREAM_CACHE_MAX = 100;
-// Resolved lazily: `app.setPath('userData', ...)` for portable/E2E mode runs
-// after module evaluation, so reading the path at import time would point the
-// cache at the real user profile.
+// Rozwiązywane leniwie: `app.setPath('userData', ...)` dla trybu portable/E2E działa
+// po ewaluacji modułu, więc odczyt ścieżki w czasie importu wskazałby
+// cache na prawdziwy profil użytkownika.
 let streamCacheFileCache: string | null = null;
 function streamCacheFile(): string {
   if (!streamCacheFileCache) {
@@ -29,9 +29,9 @@ const streamCache = new Map<string, StreamCacheEntry>();
 let streamCacheLoaded = false;
 let streamCacheSaveTimer: NodeJS.Timeout | null = null;
 
-// Lazy, best-effort load of the persisted URL cache. Corrupt/missing files are
-// ignored — the cache just starts empty. Persisted entries beyond the LRU cap
-// are dropped on the next save.
+// Leniwe, best-effort wczytywanie trwałego cache URL-i. Uszkodzone/brakujące pliki są
+// ignorowane — cache po prostu startuje pusty. Zapisane wpisy ponad limit LRU
+// są usuwane przy następnym zapisie.
 function loadStreamCache(): void {
   if (streamCacheLoaded) return;
   streamCacheLoaded = true;
@@ -55,12 +55,12 @@ function loadStreamCache(): void {
       logger.info('yt', `stream cache loaded entries=${streamCache.size}`);
     }
   } catch {
-    // first run or corrupt file — start with an empty cache
+    // pierwsze uruchomienie lub uszkodzony plik — zacznij z pustym cache
   }
 }
 
-// Debounced write so a burst of resolves (play-all, hover prefetches) flushes
-// at most once per second instead of once per resolve.
+// Debounce'owany zapis, aby seria rozwiązań (play-all, prefetch przy hoverze) zlewała się
+// najwyżej raz na sekundę, a nie raz na rozwiązanie.
 function scheduleStreamCacheSave(): void {
   if (streamCacheSaveTimer) return;
   streamCacheSaveTimer = setTimeout(() => {
@@ -78,8 +78,8 @@ function scheduleStreamCacheSave(): void {
   }, 1000);
 }
 
-// Returns a live cached entry (touching LRU order) or undefined; expired
-// entries are dropped.
+// Zwraca żywy wpis cache (aktualizując kolejność LRU) lub undefined; wygasłe
+// wpisy są usuwane.
 export function getCachedStream(url: string, now = Date.now()): StreamCacheEntry | undefined {
   loadStreamCache();
   const cached = streamCache.get(url);
@@ -103,8 +103,8 @@ export function cacheStream(url: string, streamUrl: string): void {
 }
 
 /**
- * Drops the in-memory URL cache and the persisted JSON file. Returns the number
- * of live entries dropped plus the removed file count and its size in bytes.
+ * Usuwa cache URL-i w pamięci i trwały plik JSON. Zwraca liczbę
+ * usuniętych żywych wpisów plus liczbę usuniętych plików i ich rozmiar w bajtach.
  */
 export function clearStreamCache(): {
   entries: number;
@@ -124,7 +124,7 @@ export function clearStreamCache(): {
     rmSync(streamCacheFile(), { force: true });
     removed = 1;
   } catch {
-    // no persisted cache file — nothing to remove
+    // brak trwałego pliku cache — nie ma czego usuwać
   }
   return { entries, removed, bytesFreed };
 }

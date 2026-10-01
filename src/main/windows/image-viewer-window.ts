@@ -1,8 +1,8 @@
 import { BrowserWindow } from 'electron';
 import { createWindow } from './window-factory';
 
-// Image-viewer window (lightbox) extracted from `window-ipc.ts` (plan 2.8).
-// A single reusable fullscreen window whose file list is pushed over IPC.
+// Okno podglądu zdjęć (lightbox) wyodrębnione z `window-ipc.ts` (plan 2.8).
+// Jedno reużywalne okno pełnoekranowe, którego lista plików jest wysyłana przez IPC.
 
 let imageViewerWindow: BrowserWindow | null = null;
 let imageViewerData: { files: unknown[]; index: number } | null = null;
@@ -33,8 +33,8 @@ export function openImageViewer(files: unknown[], index: number): number {
       win.moveTop();
       win.setFullScreen(true);
       win.setAlwaysOnTop(true);
-      // The window can be closed before this fires; touching a destroyed
-      // BrowserWindow throws an uncaught exception in the main process.
+      // Okno może zostać zamknięte, zanim to zadziała; dotknięcie zniszczonego
+      // BrowserWindow rzuca nieprzechwycony wyjątek w procesie głównym.
       setTimeout(() => {
         if (!win.isDestroyed()) win.setAlwaysOnTop(false);
       }, 100);

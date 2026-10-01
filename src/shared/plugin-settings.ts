@@ -2,7 +2,7 @@ import type { PluginSettingField } from './types/ipc';
 
 export const MAX_PLUGIN_SETTING_TEXT_BYTES = 4096;
 
-/** Runtime validation shared by plugin settings UI and main-process IPC. */
+/** Walidacja w czasie działania współdzielona przez UI ustawień wtyczek i IPC procesu głównego. */
 export function pluginSettingValueValid(field: PluginSettingField, value: unknown): boolean {
   switch (field.type) {
     case 'text':

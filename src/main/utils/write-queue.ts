@@ -1,8 +1,8 @@
 /**
- * Serialises async writes through a bounded FIFO instead of an ever-growing
- * promise chain (`q = q.then(...)`), which retains every pending link. Tasks
- * run one at a time in order; a failing task is isolated and does not stop the
- * ones after it.
+ * Serializuje asynchroniczne zapisy przez ograniczoną kolejkę FIFO zamiast
+ * rosnącego w nieskończoność łańcucha promise'ów (`q = q.then(...)`), który
+ * zachowuje każde oczekujące ogniwo. Zadania działają jedno po drugim w kolejności;
+ * zadanie, które zawiedzie, jest izolowane i nie zatrzymuje następnych.
  */
 export class WriteQueue {
   private readonly items: Array<() => Promise<void>> = [];
@@ -23,8 +23,8 @@ export class WriteQueue {
         try {
           await task();
         } catch {
-          // A task must not break the queue; it is expected to report its own
-          // failure (log-file does).
+          // Zadanie nie może zepsuć kolejki; oczekuje się, że samo zgłosi
+          // swoją awarię (log-file to robi).
         }
         task = this.items.shift();
       }
@@ -35,7 +35,7 @@ export class WriteQueue {
     }
   }
 
-  /** Resolves once every task pushed so far has settled. */
+  /** Rozwiązuje się, gdy każde dotąd dodane zadanie zostało zakończone. */
   whenIdle(): Promise<void> {
     if (!this.running && this.items.length === 0) return Promise.resolve();
     return new Promise<void>((resolve) => this.idleWaiters.push(resolve));

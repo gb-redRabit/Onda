@@ -3,14 +3,14 @@ import { snapshotDownloadTask } from './download-snapshot';
 import { capPersistedJobs, persistJobs, queueFilePath } from './download-queue-store';
 import type { Job } from './download-helpers';
 
-// In-memory download queue state + persistence, extracted from
-// `download-manager.ts` (plan 2.8). Other download modules share this state.
+// Stan kolejki pobierania w pamięci + trwałość, wyodrębniony z
+// `download-manager.ts` (plan 2.8). Inne moduły pobierania współdzielą ten stan.
 
 export const jobs = new Map<string, Job>();
 export const queueOrder: string[] = [];
 
-// Scheduled-start hold: while `until` is in the future, pump() does not start new
-// jobs. Already-running downloads are unaffected.
+// Wstrzymanie zaplanowanego startu: dopóki `until` jest w przyszłości, pump() nie
+// uruchamia nowych zadań. Już działające pobrania pozostają nienaruszone.
 export const hold = { until: 0 };
 
 export const PERSISTABLE_STATUSES = new Set(['pending', 'paused', 'downloading', 'error']);
@@ -39,8 +39,8 @@ export function markQueueDirty(): void {
   }, 400);
 }
 
-// Immediately persists the queue to disk, cancelling any pending debounce.
-// Called on app quit to avoid losing the last ~0.5s of status changes.
+// Natychmiast zapisuje kolejkę na dysk, anulując ewentualny oczekujący debounce.
+// Wywoływane przy zamykaniu aplikacji, aby nie utracić ostatnich ~0,5s zmian statusu.
 export function flushQueueNow(): void {
   if (queuePersistTimer) {
     clearTimeout(queuePersistTimer);
@@ -50,33 +50,33 @@ export function flushQueueNow(): void {
 }
 
 /**
- * Publishes a job's progress/status to the renderer and the on-disk queue.
+ * Publikuje postęp/status zadania do renderera i kolejki na dysku.
  *
- * The object in `jobs` is mutated IN PLACE rather than replaced. The running
- * download holds its own reference to the job (and sets `job.child` on it), so
- * swapping the map entry for a fresh copy left the runner writing to an object
- * the rest of the app could no longer see — `cancel`/`pause` then found no
- * child process, and the `finally` in runJob re-persisted the stale copy,
- * undoing the cancellation.
+ * Obiekt w `jobs` jest modyfikowany W MIEJSCU, a nie zastępowany. Działające
+ * pobieranie trzyma własną referencję do zadania (i ustawia na nim `job.child`),
+ * więc podmiana wpisu w mapie na świeżą kopię pozostawiała runner piszący do obiektu,
+ * którego reszta aplikacji już nie widziała — `cancel`/`pause` nie znajdowały wtedy
+ * procesu potomnego, a `finally` w runJob ponownie zapisywał nieaktualną kopię,
+ * cofając anulowanie.
  */
 export function persist(job: Job): void {
   const copy = snapshotDownloadTask(job);
   const prev = knownStatuses.get(job.id);
   const tracked = jobs.get(job.id);
   if (tracked) {
-    // `child` is process state, not an IPC field, so the snapshot drops it.
-    // Carry it over explicitly: assigning the caller's fields would otherwise
-    // clear a child that only the tracked object knows about.
+    // `child` to stan procesu, nie pole IPC, więc snapshot go pomija.
+    // Przenieś go jawnie: przypisanie pól wywołującego w przeciwnym razie
+    // wyczyściłoby dziecko, o którym wie tylko śledzony obiekt.
     const child = tracked.child ?? job.child;
     Object.assign(tracked, job, copy);
     tracked.child = child;
   } else {
-    // Job was created outside the queue (e.g. a direct runner call); adopt it
-    // under its own id so later lookups see the same object.
+    // Zadanie zostało utworzone poza kolejką (np. bezpośrednie wywołanie runnera);
+    // przyjmij je pod jego własnym id, aby późniejsze wyszukiwania widziały ten sam obiekt.
     jobs.set(job.id, Object.assign(job, copy));
   }
-  // Persist to disk only on status transitions (progress ticks do not change
-  // the status and must not thrash the queue store).
+  // Zapisuje na dysk tylko przy zmianach statusu (tyknięcia postępu nie zmieniają
+  // statusu i nie mogą szarpać magazynu kolejki).
   if (prev !== copy.status) {
     knownStatuses.set(job.id, copy.status);
     markQueueDirty();
@@ -84,7 +84,7 @@ export function persist(job: Job): void {
   emit?.(copy);
 }
 
-/** Drops the status memo for a job, so the next persist re-triggers a write. */
+/** Usuwa memo statusu zadania, aby następny persist ponownie wyzwolił zapis. */
 export function forgetJob(id: string): void {
   knownStatuses.delete(id);
   jobAbortControllers.delete(id);
@@ -93,16 +93,16 @@ export function forgetJob(id: string): void {
 type DownloadCompletedHandler = (channelId: string, videoId: string) => void;
 let onDownloadCompleted: DownloadCompletedHandler | null = null;
 
-// Called when a finished download carries a media-source job (sourceId +
-// sourceItemId). The sources layer records the item as downloaded so the
-// Sources view can badge it on the next fetch.
+// Wywoływane, gdy ukończone pobieranie niesie zadanie źródła mediów (sourceId +
+// sourceItemId). Warstwa źródeł zapisuje element jako pobrany, aby widok Sources
+// mógł go oznaczyć przy następnym pobraniu.
 type SourceItemDownloadedHandler = (sourceId: string, itemId: string) => void;
 let onSourceItemDownloaded: SourceItemDownloadedHandler | null = null;
 
-// Called whenever a job finishes successfully and carries a channel+video id.
-// The subscriptions layer uses it to atomically grow downloadedVideoIds (so
-// finished downloads are never lost, and are recorded even if renderer state
-// was stale at completion time).
+// Wywoływane, gdy zadanie kończy się sukcesem i niesie id kanału+wideo.
+// Warstwa subskrypcji używa tego do atomowego powiększania downloadedVideoIds (aby
+// ukończone pobrania nigdy nie ginęły i były zapisywane nawet, jeśli stan renderera
+// był nieaktualny w chwili ukończenia).
 export function setDownloadCompletedHandler(cb: DownloadCompletedHandler | null): void {
   onDownloadCompleted = cb;
 }
@@ -115,13 +115,13 @@ export function reportCompleted(job: Job): void {
   try {
     if (job.channelId && job.videoId) onDownloadCompleted?.(job.channelId, job.videoId);
   } catch {
-    // Non-fatal: next check would re-queue the video.
+    // Niekrytyczne: następne sprawdzenie ponownie zakolejkowałoby wideo.
   }
   try {
     const sourceId = job.source?.sourceId;
     const itemId = job.source?.sourceItemId;
     if (sourceId && itemId) onSourceItemDownloaded?.(sourceId, itemId);
   } catch {
-    // Non-fatal: a later fetch still reads what was already persisted.
+    // Niekrytyczne: późniejsze pobranie i tak odczyta to, co zostało już zapisane.
   }
 }

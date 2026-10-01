@@ -9,10 +9,10 @@ import { buildSponsorBlockArgs } from './sponsorblock';
 import { readNetworkArgs, readSpeedLimitArgs } from '../ipc/proxy-utils';
 import { addAllowedRoot } from '../media/media-server';
 
-// Base yt-dlp argument list for a download job, extracted from
-// `download-manager.ts` (plan 2.8). Side effects are intentional: it ensures the
-// output dir exists and is exposed to the local media server, and may clear
-// `job.cover` / set `job.coverStatus` (mutates the job).
+// Bazowa lista argumentów yt-dlp dla zadania pobierania, wyodrębniona z
+// `download-manager.ts` (plan 2.8). Efekty uboczne są zamierzone: zapewnia, że
+// katalog wyjściowy istnieje i jest udostępniony lokalnemu serwerowi mediów, oraz
+// może wyczyścić `job.cover` / ustawić `job.coverStatus` (modyfikuje zadanie).
 
 const AUDIO_QUALITY_MAP: Record<string, string> = {
   best: '0',
@@ -24,14 +24,14 @@ const AUDIO_QUALITY_MAP: Record<string, string> = {
 export async function buildBaseArgs(job: Job): Promise<string[]> {
   const dir = resolveOutputDir(job);
   await mkdir(dir, { recursive: true });
-  // The media server only knows library folders + explicitly opened files.
-  // A download into any other folder (e.g. default Downloads) would get 403 on
-  // cover/playback requests, so grant access to the output dir up front — the
-  // audio file and its animated-cover sibling land here.
+  // Serwer mediów zna tylko foldery biblioteki + jawnie otwarte pliki.
+  // Pobieranie do innego folderu (np. domyślnego Downloads) dostałoby 403 na
+  // żądaniach covera/odtwarzania, więc przyznaj dostęp do katalogu wyjściowego z góry —
+  // trafiają tu plik audio i towarzyszący mu animowany cover.
   void addAllowedRoot(dir);
   const outputTemplate = join(dir, `${mapFilenameTemplate(job.filenameTemplate)}.%(ext)s`);
-  // Guard against option injection: a URL starting with "-" would be parsed
-  // as a yt-dlp flag.  Prepend "--" to end the options list, then validate.
+  // Zabezpieczenie przed wstrzyknięciem opcji: URL zaczynający się od "-" zostałby
+  // sparsowany jako flaga yt-dlp. Dodaj "--" na końcu listy opcji, potem waliduj.
   if (!job.url.startsWith('https://') && !job.url.startsWith('http://')) {
     throw new Error(`Invalid download URL: rejected non-http(s) scheme`);
   }
@@ -45,10 +45,10 @@ export async function buildBaseArgs(job: Job): Promise<string[]> {
   ];
   if (job.kind === 'audio') {
     if (job.format === 'best') {
-      // Native: keep the best available audio stream without re-encoding.
+      // Natywnie: zachowaj najlepszy dostępny strumień audio bez ponownego kodowania.
       base.push('-f', buildFormatSelector(job.quality, 'audio'));
-      // Thumbnail embedding requires a container conversion; skip it for
-      // native audio (frame/clip covers are still processed afterwards).
+      // Osadzanie miniatury wymaga konwersji kontenera; pomiń je dla
+      // natywnego audio (covery frame/clip są i tak przetwarzane później).
       if (job.cover?.type === 'thumbnail') job.cover = undefined;
     } else {
       base.push(
@@ -76,7 +76,7 @@ export async function buildBaseArgs(job: Job): Promise<string[]> {
     );
     if (job.cover?.type === 'thumbnail') {
       if (job.videoContainer === 'webm') {
-        // WebM has no attached cover-art support — drop the thumbnail request.
+        // WebM nie obsługuje dołączanej okładki — odrzuć żądanie miniatury.
         job.cover = undefined;
       } else {
         base.push(...buildThumbnailArgs());
@@ -113,7 +113,7 @@ export async function buildBaseArgs(job: Job): Promise<string[]> {
       })
     );
   }
-  // Per-platform proxy/User-Agent follow the job's source (ytdlp = YouTube).
+  // Proxy/User-Agent per platforma wynikają ze źródła zadania (ytdlp = YouTube).
   base.push(
     ...(await readNetworkArgs(job.source?.mode === 'soundcloud' ? 'soundcloud' : 'youtube'))
   );

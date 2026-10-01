@@ -8,25 +8,25 @@ import { readNetworkArgs } from '../proxy-utils';
 import { extractSignedUrlExpiryMs, scTrackStreamUrl } from './soundcloud-client';
 import { errorCodeOf } from './soundcloud-error';
 
-// SoundCloud stream cache + resolution extracted from
-// `soundcloud-handlers.ts` (plan 2.8). Progressive MP3 through the API, with a
-// yt-dlp `-g` fallback, LRU-cached and persisted in memory.
+// Cache strumienia SoundCloud + rozwiązywanie wyodrębnione z
+// `soundcloud-handlers.ts` (plan 2.8). Progresywne MP3 przez API, z
+// fallbackiem `-g` yt-dlp, cache'owane LRU i trzymane w pamięci.
 
 export interface ScStreamCacheEntry {
   url: string;
   expires: number;
 }
 
-// Fallback for URLs without a parseable signature; signed SC CDN URLs
-// (~30 min lifetime) always use their own embedded expiry minus a safety
-// margin — see streamCacheExpiry below.
+// Fallback dla URL-i bez parsowalnego podpisu; podpisane URL-e CDN SC
+// (~30 min życia) zawsze używają własnego wbudowanego wygaśnięcia minus margines
+// bezpieczeństwa — patrz streamCacheExpiry poniżej.
 const STREAM_CACHE_FALLBACK_TTL_MS = 10 * 60 * 1000;
-// Serve the URL at most until this long BEFORE its real expiry.
+// Serwuj URL najwyżej do tego czasu PRZED jego rzeczywistym wygaśnięciem.
 const STREAM_EXPIRY_SAFETY_MS = 60 * 1000;
 export const STREAM_CACHE_MAX = 50;
 
-// Cache lifetime for a resolved CDN URL: the signature's own expiry (parsed
-// from the Policy blob) minus a safety margin, capped by the fallback TTL.
+// Czas życia cache dla rozwiązanego URL CDN: własne wygaśnięcie podpisu (sparsowane
+// z bloba Policy) minus margines bezpieczeństwa, ograniczony przez fallbackowy TTL.
 export function streamCacheExpiry(cdnUrl: string): number {
   const now = Date.now();
   const epoch = extractSignedUrlExpiryMs(cdnUrl);
@@ -41,8 +41,8 @@ const streamCache = new Map<string, ScStreamCacheEntry>();
 const streamPending = new Map<string, Promise<IpcStreamResult>>();
 
 export async function getScStreamUrl(rawUrl: string): Promise<IpcStreamResult> {
-  // Legacy saved SoundCloud entries carry a bare numeric track id instead of
-  // a permalink — the client resolves those via /tracks/{id}.
+  // Starsze zapisane wpisy SoundCloud niosą sam numeryczny id utworu zamiast
+  // permalinka — klient rozwiązuje je przez /tracks/{id}.
   const isNumericId = typeof rawUrl === 'string' && /^\d+$/.test(rawUrl.trim());
   const kind = typeof rawUrl === 'string' && !isNumericId ? detectScKind(rawUrl) : 'video';
   if (typeof rawUrl !== 'string' || !rawUrl.trim() || rawUrl.length > 2048 || kind === null) {
@@ -71,7 +71,7 @@ export async function getScStreamUrl(rawUrl: string): Promise<IpcStreamResult> {
 }
 
 async function resolveStream(url: string): Promise<IpcStreamResult> {
-  // Primary: internal API progressive MP3 (~300 ms).
+  // Główne: progresywne MP3 z wewnętrznego API (~300 ms).
   try {
     const stream = await scTrackStreamUrl(url);
     if (stream?.url) {
@@ -87,7 +87,7 @@ async function resolveStream(url: string): Promise<IpcStreamResult> {
     logger.warn('sc', `api stream failed, falling back to yt-dlp url=${url}`, String(e));
   }
 
-  // Fallback: yt-dlp -g (rejects HLS via parseStreamGetOutput → readable error).
+  // Fallback: yt-dlp -g (odrzuca HLS przez parseStreamGetOutput → czytelny błąd).
   try {
     const stdout = await runYtDlp(
       [

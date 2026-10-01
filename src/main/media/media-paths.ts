@@ -2,9 +2,9 @@ import { extname, normalize } from 'path';
 import { statSync } from 'fs';
 import { AUDIO_EXTS, VIDEO_EXTS } from '../../shared/constants';
 
-// Pure media-path helpers extracted from `main/index.ts` (plan 2.8): turn an
-// argv list (file associations, drag & drop, CLI) into the normalized media
-// files that actually exist on disk.
+// Czyste helpery ścieżek mediów wyodrębnione z `main/index.ts` (plan 2.8): zamieniają
+// listę argv (skojarzenia plików, drag & drop, CLI) na znormalizowane pliki
+// mediów, które faktycznie istnieją na dysku.
 
 const MEDIA_EXTS = new Set([...AUDIO_EXTS, ...VIDEO_EXTS]);
 

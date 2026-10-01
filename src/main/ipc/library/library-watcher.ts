@@ -11,9 +11,9 @@ let watched: string[] = [];
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let scanCallback: (() => Promise<void>) | null = null;
 let starting: Promise<void> | null = null;
-// Bumped on every stop. A start whose dynamic import resolves after a stop sees
-// a stale generation and discards the watcher it just created instead of
-// leaking a handle nothing can close.
+// Zwiększane przy każdym zatrzymaniu. Start, którego dynamiczny import rozwiąże się po zatrzymaniu,
+// widzi nieaktualną generację i odrzuca właśnie utworzony watcher, zamiast
+// wyciekać uchwyt, którego nic nie może zamknąć.
 let generation = 0;
 
 export function setLibraryWatcherScan(cb: () => Promise<void>): void {
@@ -28,13 +28,13 @@ function sameFolders(a: string[], b: string[]): boolean {
 }
 
 /**
- * Watches library folders and triggers a debounced re-scan when media files
- * are added, changed or removed. Uses chokidar (ESM-only) via dynamic import.
+ * Obserwuje foldery biblioteki i wyzwala debounce'owane ponowne skanowanie, gdy pliki mediów
+ * zostaną dodane, zmienione lub usunięte. Używa chokidar (tylko ESM) przez dynamiczny import.
  *
- * Calling this with the folders that are already watched is a no-op. It used to
- * stop and recreate the watcher every time, and the caller is the download
- * completion path — so a batch of downloads left a gap where nothing was being
- * watched, and each teardown closed handles the next start had to re-open.
+ * Wywołanie tego z folderami już obserwowanymi jest no-opem. Kiedyś zatrzymywało
+ * i odtwarzało watcher za każdym razem, a wywołującym jest ścieżka ukończenia
+ * pobierania — więc seria pobrań zostawiała lukę, w której nic nie było
+ * obserwowane, a każde zamknięcie zamykało uchwyty, które następny start musiał otworzyć ponownie.
  */
 export async function startLibraryWatcher(folders: string[]): Promise<void> {
   const clean = folders.filter((f): f is string => !!f && typeof f === 'string');
@@ -42,8 +42,8 @@ export async function startLibraryWatcher(folders: string[]): Promise<void> {
     stopLibraryWatcher();
     return;
   }
-  // Serialise concurrent starts: a folder switch calls this twice, and both
-  // would otherwise race to create a watcher, leaking the first one.
+  // Serializuj równoczesne starty: zmiana folderu wywołuje to dwa razy i oba
+  // wyścigowo tworzyłyby watcher, wyciekając pierwszy.
   if (starting) await starting.catch(() => {});
   if (watcher && sameFolders(watched, clean)) return;
 
@@ -54,7 +54,7 @@ export async function startLibraryWatcher(folders: string[]): Promise<void> {
     try {
       const { watch } = await import('chokidar');
 
-      // A stop/restart may have run while the dynamic import was pending.
+      // Zatrzymanie/restart mogło wykonać się, gdy dynamiczny import był w toku.
       if (myGeneration !== generation || !sameFolders(watched, clean)) return;
 
       const next = watch(clean, {

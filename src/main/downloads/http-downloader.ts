@@ -12,12 +12,13 @@ const MAX_REDIRECTS = 5;
 const DOWNLOAD_TIMEOUT_MS = 30 * 60 * 1000;
 
 /**
- * Upper bound for a single HTTP download.
+ * Górna granica dla pojedynczego pobierania HTTP.
  *
- * The stream is a user-configured media source, so the length is whatever the
- * server claims — and a source that never stops sending would fill the disk.
- * The cap is deliberately far above any plausible single file, so it only fires
- * on a broken or hostile response; `onTooLarge` lets the caller surface it.
+ * Strumień pochodzi ze źródła mediów skonfigurowanego przez użytkownika, więc długość
+ * jest taka, jaką poda serwer — a źródło, które nigdy nie przestaje wysyłać, zapełniłoby
+ * dysk. Limit jest celowo znacznie powyżej każdego prawdopodobnego pojedynczego pliku,
+ * więc uruchamia się tylko przy uszkodzonej lub wrogiej odpowiedzi; `onTooLarge`
+ * pozwala wywołującemu to ujawnić.
  */
 const MAX_DOWNLOAD_BYTES = 20 * 1024 * 1024 * 1024;
 
@@ -33,32 +34,32 @@ interface HttpDownloadOptions {
   allowPrivateNetwork?: boolean;
   timeoutMs?: number;
   signal?: AbortSignal;
-  /** Overrides MAX_DOWNLOAD_BYTES; the total including a resumed prefix. */
+  /** Nadpisuje MAX_DOWNLOAD_BYTES; suma obejmująca wznowiony prefiks. */
   maxBytes?: number;
   onProgress?: (p: HttpDownloadProgress) => void;
 }
 
 /**
- * Whether a failed download is worth retrying from where it stopped.
+ * Czy nieudane pobieranie warto ponowić od miejsca, w którym się zatrzymało.
  *
- * Every failure used to delete the `.part`, so a connection that dropped after
- * 4 GB of a 10 GB file meant starting again from zero — and a paused job could
- * not resume either, because pausing is an abort. Now the partial file survives
- * anything the network might recover from, and is removed only when retrying
- * cannot help: the file is too large, the server refuses it outright, or the URL
- * cannot be followed far enough to know what is being fetched.
+ * Każde niepowodzenie usuwało wcześniej `.part`, więc połączenie zerwane po
+ * 4 GB z pliku 10 GB oznaczało start od zera — a wstrzymane zadanie również nie
+ * mogło zostać wznowione, bo wstrzymanie to abort. Teraz plik częściowy przetrwa
+ * wszystko, z czego sieć może się podnieść, i jest usuwany tylko wtedy, gdy ponowienie
+ * nie pomoże: plik jest zbyt duży, serwer kategorycznie go odrzuca albo URL nie da się
+ * śledzić wystarczająco daleko, by wiedzieć, co jest pobierane.
  */
 function isTransientDownloadError(err: Error): boolean {
   const http = /^HTTP (\d{3})/.exec(err.message);
   if (http) {
     const status = Number(http[1]);
-    // 408 and 429 are the server asking us to come back later; 5xx is its side
-    // being unwell. A 4xx otherwise is a verdict on the request.
+    // 408 i 429 to serwer proszący nas o powrót później; 5xx to jego zła
+    // kondycja. Poza tym 4xx to wyrok na żądanie.
     return status === 408 || status === 429 || status >= 500;
   }
   if (/too many redirects/i.test(err.message)) return false;
   if (/too large/i.test(err.message)) return false;
-  // Aborts, timeouts, resets and refused connections are the network talking.
+  // Anulowania, timeouts, resety i odrzucone połączenia to głos sieci.
   return true;
 }
 
@@ -76,11 +77,11 @@ async function doDownload(
   );
   const target = await resolveNetworkTarget(opts.url, { allowPrivateNetwork });
 
-  // Resolving the host is an await, and the abort listener is not attached until
-  // inside the promise below — so a cancel that lands during DNS or the connect
-  // probe fired an event nobody was listening for, and the download carried on
-  // regardless. Re-checked here so cancelling while the request is still being
-  // set up actually cancels it.
+  // Rozwiązywanie hosta to await, a listener abort nie jest podłączony aż do
+  // wnętrza poniższego promise — więc anulowanie, które trafiło podczas DNS lub
+  // próby połączenia, wysyłało zdarzenie, którego nikt nie słuchał, a pobieranie
+  // trwało dalej. Sprawdzane ponownie tutaj, aby anulowanie w trakcie konfiguracji
+  // żądania faktycznie je anulowało.
   if (opts.signal?.aborted) throw new Error('Aborted');
 
   return new Promise((resolve, reject) => {
@@ -90,7 +91,7 @@ async function doDownload(
     let total: number | null = null;
     const partPath = `${opts.destPath}.part`;
 
-    // Resume support: check existing .part file and send Range header.
+    // Obsługa wznowienia: sprawdź istniejący plik .part i wyślij nagłówek Range.
     let startByte = 0;
     try {
       const partStat = fs.statSync(partPath, { throwIfNoEntry: false });
@@ -99,19 +100,19 @@ async function doDownload(
         received = startByte;
       }
     } catch {
-      // no partial file — start from scratch
+      // brak pliku częściowego — start od zera
     }
 
     const cleanup = (): void => {
       try {
         fs.rmSync(partPath, { force: true });
       } catch (e) {
-        // A stale .part file would make the next attempt resume from wrong bytes.
+        // Nieaktualny plik .part powodowałby, że następna próba wznowiłaby od złych bajtów.
         logger.warn('download', `failed to remove partial file ${partPath}`, e);
       }
     };
 
-    /** Removes the partial file only when the failure rules out a retry. */
+    /** Usuwa plik częściowy tylko wtedy, gdy niepowodzenie wyklucza ponowienie. */
     const discardIfHopeless = (err: Error): void => {
       if (isTransientDownloadError(err)) return;
       cleanup();
@@ -126,17 +127,17 @@ async function doDownload(
     }
 
     /**
-     * Set once the response body is being written, so an abort or a timeout can
-     * tear down the write stream as well as the request. Leaving it open leaks a
-     * file descriptor on every cancelled download.
+     * Ustawiane, gdy treść odpowiedzi jest już zapisywana, aby abort lub timeout
+     * mógł zamknąć zarówno strumień zapisu, jak i żądanie. Pozostawienie go otwartego
+     * wycieka deskryptor pliku przy każdym anulowanym pobieraniu.
      */
     let abortStreams: ((err: Error) => void) | null = null;
     const teardown = (err: Error): void => {
       req.destroy();
-      // Once the response body is being written, `fail` owns the .part file: it
-      // has to wait for the write stream to close before unlinking. Cleaning up
-      // here as well would race the still-pending open() and leave a zero-length
-      // .part behind for the next attempt to resume from.
+      // Gdy treść odpowiedzi jest zapisywana, `fail` zarządza plikiem .part: musi
+      // poczekać na zamknięcie strumienia zapisu przed odlinkowaniem. Sprzątanie
+      // tutaj również wyścigowałoby się z wciąż oczekującym open() i pozostawiłoby
+      // zerowej długości .part dla następnej próby do wznowienia.
       if (abortStreams) {
         abortStreams(err);
         return;
@@ -165,24 +166,25 @@ async function doDownload(
           );
           return;
         }
-        // 206 Partial Content — server supports resume
-        // 200 OK — server doesn't support resume, restart from scratch
+        // 206 Partial Content — serwer obsługuje wznowienie
+        // 200 OK — serwer nie obsługuje wznowienia, restart od zera
         const isResuming = status === 206;
         if (status < 200 || (status >= 300 && status !== 206)) {
-          // Checked before the resume reset below: a 429 or 503 never carries a
-          // Range, so treating the missing 206 as "the partial is worthless" ran
-          // first and deleted the file before the status was ever classified.
+          // Sprawdzane przed poniższym resetem wznowienia: 429 lub 503 nigdy nie
+          // niesie Range, więc potraktowanie brakującego 206 jako "częściowy jest
+          // bezwartościowy" zadziałałoby pierwsze i usunęło plik, zanim status został
+          // w ogóle sklasyfikowany.
           res.resume();
-          // 4xx is a verdict on the request, so the partial file is dead weight;
-          // 5xx, 408 and 429 are the server asking to try again, so it stays.
+          // 4xx to wyrok na żądanie, więc plik częściowy jest zbędnym balastem;
+          // 5xx, 408 i 429 to serwer proszący o ponowną próbę, więc zostaje.
           const err = new Error(`HTTP ${status}`);
           discardIfHopeless(err);
           reject(err);
           return;
         }
         if (!isResuming && startByte > 0) {
-          // Server doesn't support Range — the prefix we hold is not a prefix of
-          // this response, so it has to go.
+          // Serwer nie obsługuje Range — trzymany prefiks nie jest prefiksem tej
+          // odpowiedzi, więc musi zniknąć.
           startByte = 0;
           received = 0;
           cleanup();
@@ -192,8 +194,8 @@ async function doDownload(
           const len = parseInt(contentLength, 10) || 0;
           total = isResuming ? startByte + len : len;
         }
-        // Reject an oversized body from the header before writing a byte, then
-        // again while streaming for a response that sends no length at all.
+        // Odrzuć zbyt dużą treść na podstawie nagłówka, zanim zapisze się bajt, a
+        // potem ponownie podczas strumieniowania dla odpowiedzi bez żadnej długości.
         if (total !== null && total > maxBytes) {
           res.resume();
           cleanup();
@@ -203,9 +205,10 @@ async function doDownload(
 
         const out = fs.createWriteStream(partPath, { flags: isResuming ? 'a' : 'w' });
 
-        // Every failure goes through here: the response and the write stream are
-        // separate file descriptors, and abandoning the write stream leaks one
-        // per aborted download. `settled` keeps the first failure authoritative.
+        // Każde niepowodzenie przechodzi tędy: odpowiedź i strumień zapisu to
+        // osobne deskryptory plików, a porzucenie strumienia zapisu wycieka jeden
+        // na każde anulowane pobieranie. `settled` sprawia, że pierwsze niepowodzenie
+        // jest wiążące.
         let settled = false;
         const fail = (err: Error): void => {
           if (settled) return;
@@ -213,11 +216,11 @@ async function doDownload(
           res.unpipe(out);
           res.destroy();
           out.destroy();
-          // When the .part does have to go, it goes only once the descriptor is
-          // gone. Removing it first loses the race against a pending open() — the
-          // file is created afterwards, and a zero-length .part is left for the
-          // next attempt to treat as a valid resume prefix. A retryable failure
-          // keeps the file, so nothing is unlinked at all.
+          // Gdy .part faktycznie musi zniknąć, znika dopiero po zniknięciu
+          // deskryptora. Usunięcie go najpierw przegrywa wyścig z oczekującym open() —
+          // plik zostaje utworzony później, a zerowej długości .part pozostaje dla
+          // następnej próby do potraktowania jako prawidłowy prefiks wznowienia.
+          // Ponawialne niepowodzenie zachowuje plik, więc nic nie jest odlinkowywane.
           if (out.closed) discardIfHopeless(err);
           else out.once('close', () => discardIfHopeless(err));
           reject(err);
@@ -244,11 +247,11 @@ async function doDownload(
                 fs.copyFileSync(partPath, opts.destPath);
                 fs.unlinkSync(partPath);
               } catch (copyErr) {
-                // The download is complete and correct; only the move into place
-                // failed. Deleting the .part threw away the whole file, so it is
-                // kept — but only if it looks like a real download, since a full
-                // disk would otherwise leave a truncated file occupying what
-                // little space is left.
+                // Pobieranie jest kompletne i poprawne; nie udało się tylko
+                // przeniesienie na miejsce. Usunięcie .part wyrzuciłoby cały plik,
+                // więc jest zachowywany — ale tylko jeśli wygląda jak prawdziwe
+                // pobranie, bo zapełniony dysk pozostawiłby w przeciwnym razie obcięty
+                // plik zajmujący resztę wolnego miejsca.
                 const size = fs.statSync(partPath, { throwIfNoEntry: false })?.size ?? 0;
                 if (size > 0) {
                   logger.warn(
@@ -274,9 +277,9 @@ async function doDownload(
 
     const onAbortListener = (): void => teardown(new Error('Aborted'));
     opts.signal?.addEventListener('abort', onAbortListener, { once: true });
-    // A signal aborted between the check above and this line would have missed
-    // its one event, so the listener is attached before anything is waited on and
-    // the state is re-read once, here.
+    // Sygnał anulowany między powyższym sprawdzeniem a tą linią przegapiłby swoje
+    // jedyne zdarzenie, więc listener jest podłączony, zanim cokolwiek jest oczekiwane,
+    // a stan jest odczytywany ponownie raz, tutaj.
     if (opts.signal?.aborted) onAbortListener();
 
     req.setTimeout(opts.timeoutMs ?? DOWNLOAD_TIMEOUT_MS, () => teardown(new Error('Timeout')));

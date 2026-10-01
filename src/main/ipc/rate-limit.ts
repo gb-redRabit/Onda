@@ -1,8 +1,8 @@
 export interface RateLimiterOptions {
-  /** Calls allowed per key inside the window. */
+  /** Liczba wywołań dozwolonych na klucz w oknie. */
   maxCalls: number;
   windowMs: number;
-  /** Injectable clock (tests). */
+  /** Wstrzykiwalny zegar (testy). */
   now?: () => number;
 }
 
@@ -12,9 +12,9 @@ export interface RateLimiter {
 }
 
 /**
- * Sliding-window rate limiter keyed by an opaque string (e.g. sender+channel).
- * Used to stop a compromised renderer from hammering expensive IPC handlers
- * (library scan, duplicate hashing, installs) into exhausting CPU/disk.
+ * Rate limiter ze ślizgającym się oknem, kluczowany nieprzezroczystym stringiem (np. nadawca+kanał).
+ * Używany, aby przejęty renderer nie bombardował kosztownych handlerów IPC
+ * (skan biblioteki, hashowanie duplikatów, instalacje), doprowadzając do wyczerpania CPU/dysku.
  */
 export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
   const { maxCalls, windowMs } = options;

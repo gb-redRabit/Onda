@@ -52,7 +52,7 @@ export interface PluginInfo {
   permissionReviewRequired?: boolean;
 }
 
-/** A plugin bundled with the app and installable from Settings → Plugins. */
+/** Wtyczka dołączona do aplikacji, instalowalna z Ustawienia → Wtyczki. */
 export interface PluginExample {
   id: string;
   name: string;
@@ -69,7 +69,7 @@ export interface IpcPluginGetResult {
   success: boolean;
   manifest?: PluginManifest;
   code?: string;
-  /** SHA-256 over declared capabilities + entry file; required to enable. */
+  /** SHA-256 po zadeklarowanych uprawnieniach + pliku wejściowym; wymagany do włączenia. */
   consentHash?: string;
   error?: string;
 }

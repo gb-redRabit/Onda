@@ -5,11 +5,11 @@ import type { MediaFile } from '../../../shared/types/media';
 import { logger } from '../../../shared/logger';
 import { getStore } from '../cover/cover-cache';
 
-// Persistence for the scanned library, kept OUT of the encrypted electron-store:
-// every save there re-serialised + AES-encrypted the whole list (up to 50k
-// files) on the main thread. This module uses a plain JSON file with atomic
-// writes and a debounce/coalesce, so bursts (stats updates, downloads) collapse
-// into a single write (plan 1.2).
+// Persistencja przeskanowanej biblioteki, trzymana POZA szyfrowanym electron-store:
+// każdy zapis tam ponownie serializował + szyfrował AES całą listę (do 50 tys.
+// plików) w wątku main. Ten moduł używa zwykłego pliku JSON z atomowymi
+// zapisami i debounce/coalesce, więc serie (aktualizacje statystyk, pobrania) zlewają
+// się w jeden zapis (plan 1.2).
 export interface LibraryScannedData {
   files: MediaFile[];
   folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
@@ -18,14 +18,14 @@ export interface LibraryScannedData {
 const EMPTY: LibraryScannedData = { files: [], folderTypes: {} };
 
 /**
- * Play counts and last-played dates, in their own file.
+ * Liczniki odtworzeń i daty ostatniego odtworzenia, w osobnym pliku.
  *
- * They are the only part of a MediaFile that changes after a scan, and the only
- * part that changes often — a track finishing, a favourite being played twice.
- * Keeping them inside the main file meant every play serialised the entire
- * library, so a 50k collection was rewritten roughly every second and a half for
- * the duration of a listening session. Here the write is proportional to what
- * actually changed, and the main file is written only when a scan rebuilds it.
+ * To jedyna część MediaFile, która zmienia się po skanowaniu, i jedyna,
+ * która zmienia się często — kończący się utwór, ulubiony odtwarzany dwa razy.
+ * Trzymanie ich w głównym pliku oznaczało, że każde odtworzenie serializowało całą
+ * bibliotekę, więc kolekcja 50 tys. była przepisywana mniej więcej co półtorej sekundy przez
+ * czas sesji słuchania. Tutaj zapis jest proporcjonalny do tego, co
+ * faktycznie się zmieniło, a główny plik jest zapisywany tylko gdy skan go odbuduje.
  */
 type StatsMap = Record<string, { playCount: number; lastPlayed: number }>;
 
@@ -53,12 +53,12 @@ async function readStats(): Promise<StatsMap> {
     const parsed = JSON.parse(raw) as unknown;
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed as StatsMap;
   } catch {
-    // not created yet
+    // jeszcze nie utworzono
   }
   return {};
 }
 
-/** The sidecar wins: it is newer than whatever the last full write captured. */
+/** Sidecar wygrywa: jest nowszy niż to, co uchwycił ostatni pełny zapis. */
 function applyStats(data: LibraryScannedData): LibraryScannedData {
   for (const file of data.files) {
     const s = stats[file.path];
@@ -77,12 +77,12 @@ async function readJson(): Promise<LibraryScannedData | null> {
       return { files: parsed.files, folderTypes: parsed.folderTypes ?? {} };
     }
   } catch {
-    // file not created yet (first run)
+    // plik jeszcze nie utworzony (pierwsze uruchomienie)
   }
   return null;
 }
 
-// One-time migration from the legacy encrypted electron-store key.
+// Jednorazowa migracja ze starego klucza szyfrowanego electron-store.
 async function migrateFromStore(): Promise<LibraryScannedData | null> {
   try {
     const store = await getStore();
@@ -102,7 +102,7 @@ async function migrateFromStore(): Promise<LibraryScannedData | null> {
       return data;
     }
   } catch {
-    // store unavailable — nothing to migrate
+    // store niedostępny — nie ma czego migrować
   }
   return null;
 }
@@ -126,9 +126,9 @@ export function getLibraryScanned(): LibraryScannedData {
 
 export function setLibraryScanned(data: LibraryScannedData): void {
   cache = data;
-  // The sidecar is rebuilt from the new file set: it has to pick up counts for
-  // files the scan re-created, and drop paths that no longer exist, otherwise it
-  // grows for the life of the profile and a moved file keeps its old history.
+  // Sidecar jest odbudowywany z nowego zbioru plików: musi pobrać liczniki dla
+  // plików odtworzonych przez skan i usunąć ścieżki, które już nie istnieją, inaczej
+  // rośnie przez całe życie profilu, a przeniesiony plik zachowuje starą historię.
   const next: StatsMap = {};
   for (const file of data.files) {
     if (typeof file.playCount === 'number' && file.playCount > 0) {
@@ -152,10 +152,10 @@ export function scheduleLibraryScannedSave(delay = 400): void {
 }
 
 /**
- * Records play counts for a handful of paths and persists only those.
+ * Zapisuje liczniki odtworzeń dla kilku ścieżek i utrwala tylko je.
  *
- * Returns whether anything changed, so a caller that already scheduled a full
- * write does not queue a second one for the same burst.
+ * Zwraca, czy cokolwiek się zmieniło, aby wywołujący, który już zaplanował pełny
+ * zapis, nie zakolejkował drugiego dla tej samej serii.
  */
 export function updateLibraryStats(
   updates: Array<{ path: string; playCount: number; lastPlayed: number }>

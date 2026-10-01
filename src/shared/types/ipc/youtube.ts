@@ -10,8 +10,8 @@ export interface IpcYoutubeVideo {
   duration?: string;
   viewCount?: string;
   publishedAt: string;
-  // Canonical page URL — set for SoundCloud items (permalinks cannot be
-  // rebuilt from the numeric id). YouTube items may omit it.
+  // Kanoniczny URL strony — ustawiany dla elementów SoundCloud (permalinki nie mogą
+  // być odtworzone z numerycznego id). Elementy YouTube mogą go pomijać.
   url?: string;
 }
 
@@ -32,9 +32,9 @@ export interface IpcSubscription {
   channelTitle: string;
   channelThumbnail: string;
   autoDownload: boolean;
-  // Platform of the subscribed channel — 'youtube' by default (legacy entries
-  // have no field). SoundCloud subscriptions use profile permalinks as
-  // channelId and download MP3s via the internal API.
+  // Platforma subskrybowanego kanału — domyślnie 'youtube' (starsze wpisy
+  // nie mają pola). Subskrypcje SoundCloud używają permalinków profilu jako
+  // channelId i pobierają MP3 przez wewnętrzne API.
   platform?: 'youtube' | 'soundcloud';
   lastChecked?: number;
   lastVideoId?: string;
@@ -89,15 +89,15 @@ export interface IpcSubscriptionCheckResult {
   errors: number;
 }
 
-// A user-saved online stream (YT, SoundCloud) for the "Saved" view.
-// Only metadata is stored — the stream URL is resolved live on play, so the
-// entry never goes stale.
+// Zapisany przez użytkownika strumień online (YT, SoundCloud) dla widoku "Zapisane".
+// Przechowywane są tylko metadane — URL strumienia jest rozwiązywany na żywo przy odtwarzaniu, więc
+// wpis nigdy się nie zestarzeje.
 export interface IpcSavedStream {
   id: string;
   title: string;
   thumbnail?: string;
-  // Canonical page URL — set for SoundCloud items (permalinks cannot be
-  // rebuilt from the numeric id). YouTube items may omit it.
+  // Kanoniczny URL strony — ustawiany dla elementów SoundCloud (permalinki nie mogą
+  // być odtworzone z numerycznego id). Elementy YouTube mogą go pomijać.
   url?: string;
   channelTitle?: string;
   channelId?: string;
@@ -105,9 +105,9 @@ export interface IpcSavedStream {
   savedAt: number;
 }
 
-// A user-saved playlist/channel. The full item list is stored with the entry
-// so playback starts instantly from the snapshot; a background sync re-resolves
-// the source (yt-dlp) and appends new / drops removed items.
+// Zapisana przez użytkownika playlista/kanał. Pełna lista elementów jest przechowywana z wpisem,
+// żeby odtwarzanie startowało natychmiast z migawki; synchronizacja w tle ponownie rozwiązuje
+// źródło (yt-dlp) i dodaje nowe / usuwa usunięte elementy.
 export interface IpcSavedPlaylist {
   id: string;
   kind: 'playlist' | 'channel';
@@ -125,9 +125,9 @@ export interface IpcSavedData {
   playlists: IpcSavedPlaylist[];
 }
 
-// An internet radio station the user added (from a .pls/.m3u/.xspf file or a
-// direct stream URL). Playback streams `url` live through the media-server
-// proxy — no duration, no seeking.
+// Stacja radia internetowego dodana przez użytkownika (z pliku .pls/.m3u/.xspf lub
+// bezpośredniego URL strumienia). Odtwarzanie strumieniuje `url` na żywo przez proxy
+// serwera mediów — bez czasu trwania, bez przewijania.
 export interface IpcRadioStation {
   id: string;
   name: string;

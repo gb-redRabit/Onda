@@ -6,27 +6,27 @@ import {
   resolveNetworkTarget
 } from './network-target';
 
-// Shared HTTP transport for the main process. Consolidates the near-identical
-// request skeletons that each media source / scraper used to hand-roll: resolve
-// the target (DNS-pinned, SSRF-guarded), follow redirects while stripping the
-// CALLER's headers on a cross-origin hop (protocol defaults are re-applied), and
-// refuse a cross-origin non-GET body replay. Body size and timeout are capped.
+// Wspólny transport HTTP dla procesu main. Scala niemal identyczne
+// szkielety żądań, które każde źródło mediów / scraper wcześniej tworzyły ręcznie: rozwiązuje
+// cel (przypięty DNS, chroniony przed SSRF), podąża za przekierowaniami, usuwając
+// nagłówki WYWOŁUJĄCEGO przy przejściu cross-origin (domyślne ustawienia protokołu są nakładane ponownie), oraz
+// odrzuca odtworzenie body dla żądania innego niż GET cross-origin. Rozmiar body i timeout są ograniczone.
 
 export interface HttpRequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-  /** Caller headers (e.g. credentials): kept on same-origin redirects, dropped on cross-origin. */
+  /** Nagłówki wywołującego (np. poświadczenia): zachowywane przy przekierowaniach same-origin, usuwane przy cross-origin. */
   headers?: Record<string, string>;
-  /** Protocol defaults applied on every hop (may depend on the hop URL, e.g. Referer). */
+  /** Domyślne ustawienia protokołu nakładane na każdym kroku (mogą zależeć od URL kroku, np. Referer). */
   defaultHeaders?: Record<string, string> | ((url: string) => Record<string, string>);
   body?: string;
   timeoutMs?: number;
   maxBytes?: number;
   maxRedirects?: number;
-  /** Allows non-public addresses for a user-approved target. */
+  /** Zezwala na niepubliczne adresy dla celu zatwierdzonego przez użytkownika. */
   allowPrivateNetwork?: boolean;
-  /** Origin used for the private-network decision; defaults to the request's. */
+  /** Origin używany do decyzji o sieci prywatnej; domyślnie origin żądania. */
   trustedOrigin?: string;
-  /** Returns false to refuse a redirect (e.g. a plugin allowlist). */
+  /** Zwraca false, aby odrzucić przekierowanie (np. allowlist pluginów). */
   onRedirect?: (next: string) => boolean;
 }
 
@@ -108,8 +108,8 @@ function request(
                 reject(new Error('Cross-origin redirect refused'));
                 return;
               }
-              // Drop the caller's headers on a cross-origin hop; protocol
-              // defaults are re-applied by the recursive request.
+              // Usuwamy nagłówki wywołującego przy przejściu cross-origin; domyślne
+              // ustawienia protokołu nakłada rekurencyjne żądanie.
               const nextHeaders = sameOrigin ? callerHeaders : {};
               request(next, nextHeaders, options, redirectsLeft - 1, origin).then(resolve, reject);
               return;

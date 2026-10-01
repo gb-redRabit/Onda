@@ -65,7 +65,7 @@ const TABLES: Record<MainLocale, MainMessages> = { en: EN, pl: PL };
 
 let current: MainLocale = 'en';
 
-/** Map any locale tag (e.g. "pl-PL", "en-US") to a supported main-process locale. */
+/** Mapuje dowolny tag locale (np. "pl-PL", "en-US") na obsługiwany locale procesu głównego. */
 export function normaliseLocale(locale: string | undefined): MainLocale {
   return locale?.toLowerCase().startsWith('pl') ? 'pl' : 'en';
 }

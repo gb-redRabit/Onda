@@ -7,7 +7,7 @@ import { createExplorerWindow, getExplorerWindows } from './explorer-windows';
 import { closeImageViewer, getImageViewerData, openImageViewer } from './image-viewer-window';
 import { registerPipHandlers } from './window-ipc-pip';
 
-// Bounds carry an extra restore flag that Electron does not type.
+// Bounds niosą dodatkową flagę przywracania, której Electron nie typuje.
 type BoundsWithFlag = Electron.Rectangle & { wasMaximized?: boolean };
 type WindowBackgroundMaterial = 'auto' | 'none' | 'mica' | 'acrylic' | 'tabbed';
 
@@ -67,8 +67,8 @@ export function registerWindowHandlers(context: {
     typeof value === 'number' && Number.isInteger(value) && value > 0;
 
   ipcMain.handle('imageViewer:open', (_event, files: unknown[], index: unknown) => {
-    // A renderer can send anything; a NaN / negative index would be stored and
-    // later used to slice the file list. Normalise it here, at the boundary.
+    // Renderer może wysłać cokolwiek; indeks NaN / ujemny zostałby zapisany i
+    // później użyty do pocięcia listy plików. Znormalizuj go tutaj, na granicy.
     const safeIndex =
       typeof index === 'number' && Number.isFinite(index) && index >= 0 ? Math.floor(index) : 0;
     return openImageViewer(files, safeIndex);
@@ -119,10 +119,10 @@ export function registerWindowHandlers(context: {
     if (process.platform !== 'win32') return false;
     const valid: WindowBackgroundMaterial[] = ['auto', 'none', 'mica', 'acrylic', 'tabbed'];
     if (!(valid as string[]).includes(material)) return false;
-    // Only the window that asked: the renderer's theme engine calls this in every
-    // window it runs in (main, explorer), and PiP windows manage their own
-    // surface. Applying it to all windows used to leave acrylic behind windows
-    // whose appearance had no transparency.
+    // Tylko okno, które poprosiło: silnik motywu renderera wywołuje to w każdym
+    // oknie, w którym działa (główne, eksplorator), a okna PiP zarządzają własną
+    // powierzchnią. Stosowanie tego do wszystkich okien zostawiało akryl za oknami,
+    // których wygląd nie miał przezroczystości.
     const win = BrowserWindow.fromWebContents(event.sender) ?? getMainWindow();
     if (!win || win.isDestroyed()) return false;
     const mode = material as WindowBackgroundMaterial;
@@ -155,7 +155,7 @@ export function registerWindowHandlers(context: {
   });
 
   function restoreBounds(win: BrowserWindow) {
-    // Called from a 400ms fallback timer — the window may be gone by then.
+    // Wywoływane z 400 ms timera awaryjnego — okno może już nie istnieć.
     if (win.isDestroyed()) return;
     if (!preFullscreenBounds.current) return;
     const bounds = preFullscreenBounds.current;
@@ -166,9 +166,9 @@ export function registerWindowHandlers(context: {
     } else {
       win.setBounds(bounds as Electron.Rectangle);
     }
-    // WORKAROUND (Windows): after leaving full-screen the compositor can still
-    // report the window as non-resizable, and `setBounds()` is then ignored.
-    // Toggling `resizable` forces it to accept the restored bounds.
+    // WORKAROUND (Windows): po wyjściu z pełnego ekranu kompozytor może nadal
+    // raportować okno jako niezmienialne, a `setBounds()` jest wtedy ignorowane.
+    // Przełączenie `resizable` zmusza je do przyjęcia przywróconych bounds.
     win.setResizable(false);
     win.setResizable(true);
   }

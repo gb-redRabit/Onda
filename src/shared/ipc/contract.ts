@@ -1,11 +1,11 @@
 import type { IpcChannels, IpcChannel } from '../types/ipc/channels';
 import type { IpcInvokeChannel } from './generated-types';
 
-// Single source of truth for the IPC contract (plan 1.1). The type map lives in
-// `src/shared/types/ipc/channels-*.ts`; the runtime channel lists below are the
-// input for `scripts/gen-ipc.mjs`, which emits the preload allowlists
-// (`src/preload/generated.ts`) and the generated channel unions
-// (`src/shared/ipc/generated-types.d.ts`). Run `npm run ipc:gen` after edits.
+// Jedyne źródło prawdy dla kontraktu IPC (plan 1.1). Mapa typów żyje w
+// `src/shared/types/ipc/channels-*.ts`; listy kanałów wykonawczych poniżej są
+// wejściem dla `scripts/gen-ipc.mjs`, który emituje allowlisty preloadu
+// (`src/preload/generated.ts`) oraz wygenerowane unie kanałów
+// (`src/shared/ipc/generated-types.d.ts`). Po zmianach uruchom `npm run ipc:gen`.
 
 export type { IpcChannels, IpcChannel } from '../types/ipc/channels';
 export type { IpcInvokeChannel, IpcSendChannel, IpcReceiveChannel } from './generated-types';
@@ -193,7 +193,7 @@ export const INVOKE_CHANNELS = [
   'sources:tableRows',
   'sources:enqueue',
   'sources:downloaded',
-  // overlays
+  // nakładki
   'pip:start',
   'pip:stop',
   'pip:restore',
@@ -292,8 +292,8 @@ export const RECEIVE_CHANNELS = [
   'app:setBackgroundMaterial'
 ] as const;
 
-// Compile-time guard: a channel added to the contract types but missing from
-// INVOKE_CHANNELS (and thus from the generated allowlist) fails typecheck.
-// Type-only (no runtime value): `IpcChannel` must be assignable to the generated
-// `IpcInvokeChannel` union.
+// Strażnik czasu kompilacji: kanał dodany do typów kontraktu, ale nieobecny w
+// INVOKE_CHANNELS (a więc i w wygenerowanym allowliście) nie przechodzi typechecku.
+// Tylko typ (brak wartości wykonawczej): `IpcChannel` musi być przypisywalny do
+// wygenerowanej unii `IpcInvokeChannel`.
 export type AllChannelsAllowlisted = IpcChannel extends IpcInvokeChannel ? true : never;

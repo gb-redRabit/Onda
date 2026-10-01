@@ -3,16 +3,16 @@ import { extname } from 'path';
 import { logger } from '../../shared/logger';
 import { isSafeAbsolutePath } from './validate';
 
-// Subtitle/text reads return file content to the renderer, so the handler is a
-// local-file-read primitive: without a shape check a compromised renderer can
-// name ANY absolute path and get its bytes back. Both bounds below are what
-// make it a subtitle loader instead of that primitive.
+// Odczyty napisów/tekstu zwracają zawartość pliku do renderera, więc handler jest
+// prymitywem odczytu pliku lokalnego: bez sprawdzenia kształtu przejęty renderer
+// może wskazać DOWOLNĄ ścieżkę absolutną i odzyskać jej bajty. Oba ograniczenia
+// poniżej czynią z niego loader napisów, a nie taki prymityw.
 
-/** Extensions `subtitles:readFile` will read, and their size ceiling. */
+/** Rozszerzenia, które odczyta `subtitles:readFile`, oraz ich limit rozmiaru. */
 export const SUBTITLE_EXTS = new Set(['.srt', '.ass', '.ssa', '.vtt', '.sub', '.sbv', '.ttml']);
 export const SUBTITLE_MAX_BYTES = 5 * 1024 * 1024;
 
-/** `fs:readTextFile` is used for TXT/CSV/TSV batch import — same shape rule. */
+/** `fs:readTextFile` jest używane do importu wsadowego TXT/CSV/TSV — ta sama zasada kształtu. */
 export const TEXT_EXTS = new Set(['.txt', '.csv', '.tsv']);
 export const TEXT_MAX_BYTES = 5 * 1024 * 1024;
 
@@ -26,12 +26,12 @@ export interface ReadTextFileDeps {
 const defaultDeps: ReadTextFileDeps = { stat, readFile };
 
 /**
- * Reads a small text file, refusing anything that is not an absolute path
- * with an allowed extension and a size under `maxBytes`.
+ * Odczytuje mały plik tekstowy, odrzucając wszystko, co nie jest ścieżką
+ * absolutną z dozwolonym rozszerzeniem i rozmiarem poniżej `maxBytes`.
  *
- * Subtitle files are frequently not valid UTF-8 (legacy encodings, or a
- * Latin-1 file that a player would still render), so a decode that produces
- * replacement characters falls back to latin1 rather than failing outright.
+ * Pliki napisów często nie są poprawnym UTF-8 (starsze kodowania lub plik
+ * Latin-1, który odtwarzacz i tak by wyrenderował), więc dekodowanie dające
+ * znaki zastępcze przechodzi na latin1, zamiast od razu zawodzić.
  */
 export async function readTextFileWithinBounds(
   filePath: unknown,
@@ -61,8 +61,8 @@ export async function readTextFileWithinBounds(
 
   try {
     const buf = await deps.readFile(filePath);
-    // `stat` and `readFile` race against a concurrent write; re-check so a
-    // growing file cannot slip past the cap between the two calls.
+    // `stat` i `readFile` ścigają się ze współbieżnym zapisem; sprawdź ponownie,
+    // aby rosnący plik nie prześlizgnął się obok limitu między tymi wywołaniami.
     if (buf.byteLength > maxBytes) return { ok: false, reason: 'too-large' };
     const utf8 = buf.toString('utf-8');
     if (!utf8.includes('\ufffd')) return { ok: true, text: utf8 };

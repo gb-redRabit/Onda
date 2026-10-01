@@ -5,8 +5,8 @@ import type { IpcDownloadTask } from '../../shared/types/ipc';
 import { logger } from '../../shared/logger';
 
 const SCHEMA_VERSION = 1;
-// Upper bound on persisted jobs so the store cannot grow without limit. Pending
-// and paused work is kept before error history is trimmed.
+// Górna granica liczby zapisanych zadań, aby magazyn nie rósł bez ograniczeń.
+// Oczekująca i wstrzymana praca jest zachowywana, zanim historia błędów jest przycinana.
 const MAX_JOBS = 500;
 
 interface PersistedQueue {
@@ -33,8 +33,8 @@ export async function loadPersistedJobs(filePath: string): Promise<IpcDownloadTa
 
 let writeChain: Promise<void> = Promise.resolve();
 
-// Serializes writes and swaps the file in atomically (temp file + rename) so a
-// crash mid-write never leaves a half-written queue.
+// Serializuje zapisy i podmienia plik atomowo (plik tymczasowy + rename), aby
+// awaria w trakcie zapisu nigdy nie pozostawiła częściowo zapisanej kolejki.
 export function persistJobs(filePath: string, jobs: IpcDownloadTask[]): Promise<void> {
   const data: PersistedQueue = { version: SCHEMA_VERSION, jobs };
   writeChain = writeChain.then(async () => {

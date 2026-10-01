@@ -7,7 +7,7 @@ import { app } from 'electron';
 const IV_LENGTH = 16;
 const PBKDF2_ITERATIONS = 10000;
 
-// Legacy key used by earlier builds: sha256('onda-settings-' + hostname).
+// Starszy klucz używany przez wcześniejsze buildy: sha256('onda-settings-' + hostname).
 export function legacyStoreKey(): string {
   const host = os.hostname();
   return createHash('sha256').update(`onda-settings-${host}`).digest('hex').slice(0, 32);
@@ -17,7 +17,7 @@ function derivePassword(key: string, iv: Buffer): Buffer {
   return pbkdf2Sync(key, iv, PBKDF2_ITERATIONS, 32, 'sha512');
 }
 
-// Mirrors conf's encryption format (aes-256-cbc): iv ':' ciphertext.
+// Odzwierciedla format szyfrowania conf (aes-256-cbc): iv ':' ciphertext.
 export function decryptConf(data: Buffer, key: string): string | null {
   try {
     const iv = data.subarray(0, IV_LENGTH);
@@ -36,8 +36,8 @@ export function encryptConf(plain: string, key: string): Buffer {
   return Buffer.concat([iv, Buffer.from(':'), encrypted]);
 }
 
-// If a legacy hostname-keyed store exists, re-encrypt it with a fresh random
-// key so existing user data survives the key change. Returns the new key.
+// Jeśli istnieje starszy store kluczowany nazwą hosta, zaszyfruj go ponownie świeżym losowym
+// kluczem, aby istniejące dane użytkownika przetrwały zmianę klucza. Zwraca nowy klucz.
 export async function migrateLegacyStore(keyPath: string): Promise<string | null> {
   const configPath = join(app.getPath('userData'), 'config.json');
   let raw: Buffer;
@@ -46,7 +46,7 @@ export async function migrateLegacyStore(keyPath: string): Promise<string | null
   } catch {
     return null;
   }
-  // Empty file or plaintext JSON ('{') — nothing to migrate.
+  // Pusty plik lub jawny JSON ('{') — nie ma czego migrować.
   if (raw.length === 0 || raw[0] === 0x7b) return null;
   if (raw.length < IV_LENGTH + 1 || raw[IV_LENGTH] !== ':'.charCodeAt(0)) return null;
   const plain = decryptConf(raw, legacyStoreKey());

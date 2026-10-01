@@ -6,14 +6,14 @@ interface SubtitleArgsInput {
   format?: SubtitleFormat;
   mode?: SubtitleMode;
   kind: 'audio' | 'video';
-  // When true, subtitles are muxed into the container (video). For audio the
-  // subtitles are written as separate sidecar files.
+  // Gdy true, napisy są muxowane do kontenera (wideo). Dla audio napisy są
+  // zapisywane jako osobne pliki sidecar.
   embed: boolean;
 }
 
-// Builds the yt-dlp arguments for subtitles. `mode` selects which sources to
-// write: manual subtitles, automatic (ASR) subtitles, or both ("best" — manual
-// with automatic fallback). Failures stay non-critical via `--ignore-errors`.
+// Buduje argumenty yt-dlp dla napisów. `mode` wybiera, które źródła zapisać:
+// napisy ręczne, automatyczne (ASR) lub oba ("best" — ręczne
+// z automatycznym fallbackiem). Niepowodzenia pozostają niekrytyczne przez `--ignore-errors`.
 export function buildSubtitleArgs(opts: SubtitleArgsInput): string[] {
   const mode: SubtitleMode = opts.mode ?? 'best';
   const args: string[] = [];

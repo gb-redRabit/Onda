@@ -2,9 +2,9 @@ import { extname } from 'path';
 import type { MediaFile } from '../../../shared/types/media';
 import { VIDEO_EXTS } from '../../../shared/constants';
 
-// Pure folder-type / file filters extracted from `library-scan.ts` (plan 2.8).
-// `library-scan` re-exports the public ones so existing importers/tests keep
-// working unchanged.
+// Czyste filtry typu folderu / plików wyodrębnione z `library-scan.ts` (plan 2.8).
+// `library-scan` re-eksportuje publiczne z nich, aby istniejące importery/testy działały
+// bez zmian.
 
 const VIDEO_EXT_SET = new Set(VIDEO_EXTS);
 
@@ -24,9 +24,9 @@ export function classifyFolderType(counts: {
   return 'mixed';
 }
 
-// Audio folders add ONLY audio files to the library — covers (images) and
-// videos living inside an audio folder are skipped during the scan. Other
-// folder types keep all media files.
+// Foldery audio dodają do biblioteki TYLKO pliki audio — okładki (obrazy) i
+// wideo znajdujące się w folderze audio są pomijane podczas skanowania. Pozostałe
+// typy folderów zachowują wszystkie pliki mediów.
 export function filterFilesForFolderType(
   files: MediaFile[],
   folderType: 'audio' | 'video' | 'image' | 'mixed'
@@ -35,18 +35,18 @@ export function filterFilesForFolderType(
   return files;
 }
 
-// A video file that is the animated cover for a same-directory audio file
-// (e.g. "Swørn - Butterfly.mp3" ↔ "Swørn - Butterfly.mp4", or the "…_rev.mp4"
-// reverse variant used by some ffmpeg covers) must never land in the library
-// as a separate video track — the audio track already exists, and MediaCover
-// serves the video as its cover.
+// Plik wideo będący animowaną okładką audio z tego samego katalogu
+// (np. "Swørn - Butterfly.mp3" ↔ "Swørn - Butterfly.mp4" albo wariant odwrotny
+// "…_rev.mp4" używany przez niektóre okładki ffmpeg) nigdy nie może trafić do biblioteki
+// jako osobny utwór wideo — utwór audio już istnieje, a MediaCover
+// serwuje wideo jako jego okładkę.
 export function filterCoverSiblingVideos(files: MediaFile[]): MediaFile[] {
   const audioStemSet = new Set<string>();
   for (const f of files) {
     if (f.type === 'audio') {
       const ext = extname(f.name).toLowerCase();
-      // Case-insensitive stem: strip the extension by length, not by
-      // path.basename(name, ext) which compares extension case-sensitively.
+      // Stem bez rozróżniania wielkości liter: usuń rozszerzenie po długości, a nie przez
+      // path.basename(name, ext), które porównuje rozszerzenie z rozróżnianiem wielkości liter.
       audioStemSet.add(f.name.slice(0, f.name.length - ext.length).toLowerCase());
     }
   }

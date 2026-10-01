@@ -1,6 +1,6 @@
-// Barrel for the IPC type contract. The definitions live in `src/shared/types/ipc/`
-// split by domain (plan 3.4); this module re-exports the public surface so existing
-// `@shared/types/ipc` imports keep working unchanged.
+// Barrel dla kontraktu typów IPC. Definicje żyją w `src/shared/types/ipc/`
+// podzielone domenami (plan 3.4); ten moduł re-eksportuje publiczną powierzchnię, żeby istniejące
+// importy `@shared/types/ipc` działały bez zmian.
 
 export type { MusicbrainzRelease } from './ipc/musicbrainz';
 export type {

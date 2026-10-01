@@ -1,9 +1,9 @@
 import type { YouTubeResolveKind } from './types/online';
 
-// Classifies a user-pasted link as a single video, a playlist or a channel.
-// Accepts full URLs as well as bare keys: an 11-character video ID and a
-// channel handle with (@MrMoMMusic) or without (MrMoMMusic) the leading @.
-// Returns null for anything that is not a recognizable YouTube link.
+// Klasyfikuje link wklejony przez użytkownika jako pojedyncze wideo, playlistę lub kanał.
+// Akceptuje pełne URL-e oraz same klucze: 11-znakowy identyfikator wideo i
+// uchwyt kanału z (@MrMoMMusic) lub bez (MrMoMMusic) wiodącego @.
+// Zwraca null dla wszystkiego, co nie jest rozpoznawalnym linkiem YouTube.
 export function detectYtKind(rawInput: string): YouTubeResolveKind | null {
   const input = rawInput.trim();
   if (!input) return null;
@@ -34,16 +34,16 @@ export function detectYtKind(rawInput: string): YouTubeResolveKind | null {
     return null;
   }
 
-  // Bare 11-character video ID (base64-like alphabet).
+  // Sam 11-znakowy identyfikator wideo (alfabet podobny do base64).
   if (/^[A-Za-z0-9_-]{11}$/.test(input)) return 'video';
-  // Channel handle with the leading @ — unambiguous. A bare name without @ is
-  // treated as a search query instead, so the user opts into channels with @.
+  // Uchwyt kanału z wiodącym @ — jednoznaczny. Sama nazwa bez @ jest
+  // traktowana jako zapytanie wyszukiwania, więc użytkownik wybiera kanały przez @.
   if (/^@[A-Za-z0-9_.-]+$/.test(input)) return 'channel';
   return null;
 }
 
-// Turns a bare video ID or channel handle/name into a canonical YouTube URL
-// before it is handed to yt-dlp. Full URLs pass through unchanged.
+// Zamienia sam identyfikator wideo lub uchwyt/nazwę kanału na kanoniczny URL YouTube
+// zanim trafi do yt-dlp. Pełne URL-e przechodzą bez zmian.
 export function normalizeYtUrl(input: string, kind: YouTubeResolveKind): string {
   const trimmed = input.trim();
   if (kind === 'video' && /^[A-Za-z0-9_-]{11}$/.test(trimmed)) {
@@ -56,9 +56,9 @@ export function normalizeYtUrl(input: string, kind: YouTubeResolveKind): string 
   return trimmed;
 }
 
-// Extracts the 11-character video ID from a bare ID or a YouTube URL (watch,
-// youtu.be, shorts, embed, live). Returns null for playlists, channels and
-// anything unrecognized.
+// Wyciąga 11-znakowy identyfikator wideo z samego id lub URL YouTube (watch,
+// youtu.be, shorts, embed, live). Zwraca null dla playlist, kanałów i
+// wszystkiego nierozpoznanego.
 export function extractYtVideoId(rawInput: string): string | null {
   const input = rawInput.trim();
   if (/^[A-Za-z0-9_-]{11}$/.test(input)) return input;
@@ -91,8 +91,8 @@ interface BatchEntry {
   videoId: string | null;
 }
 
-// Splits pasted text (newlines or commas) into YouTube links, drops unrecognized
-// lines and dedupes by video ID (when available) or by the raw link.
+// Dzieli wklejony tekst (nowe linie lub przecinki) na linki YouTube, odrzuca
+// nierozpoznane linie i deduplikuje po identyfikatorze wideo (gdy dostępny) lub po surowym linku.
 export function parseBatchInput(text: string): BatchEntry[] {
   const lines = text
     .split(/[\n,]+/)

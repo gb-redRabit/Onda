@@ -5,9 +5,9 @@ import { logger } from '../../shared/logger';
 import { isPathInside } from '../path-security';
 import { createRateLimiter } from './rate-limit';
 
-// Expensive or destructive channels: a compromised renderer must not be able to
-// hammer them (CPU/disk exhaustion). Cheap, high-frequency channels (progress,
-// reads) are deliberately NOT listed.
+// Kanały kosztowne lub destrukcyjne: przejęty renderer nie może móc
+// ich bombardować (wyczerpanie CPU/dysku). Tanie, wysokoczęstotliwościowe kanały (postęp,
+// odczyty) celowo NIE są tu wymienione.
 const RATE_LIMITED_CHANNELS = new Set<string>([
   'library:scan',
   'fs:findDuplicates',
@@ -20,8 +20,8 @@ const RATE_LIMITED_CHANNELS = new Set<string>([
   'yt:download:add'
 ]);
 
-// 20 calls/second per sender+channel: far above any legitimate use, far below a
-// denial-of-service burst.
+// 20 wywołań/sekundę na nadawcę+kanał: znacznie powyżej każdego legalnego użycia, znacznie poniżej
+// burstu denial-of-service.
 const invokeLimiter = createRateLimiter({ maxCalls: 20, windowMs: 1000 });
 
 function isTrustedAppFile(url: URL): boolean {
@@ -38,8 +38,8 @@ function isTrustedSenderFrame(frame: WebFrameMain | null | undefined): boolean {
   if (!frame) return false;
   try {
     const url = new URL(frame.url);
-    // Only the app's own page (production build) is trusted, not any arbitrary
-    // file: URL that could be navigated to from within a compromised renderer.
+    // Zaufana jest tylko własna strona aplikacji (build produkcyjny), a nie dowolny
+    // file: URL, do którego można nawigować z przejętego renderera.
     if (url.protocol === 'file:') return isTrustedAppFile(url);
     const devUrl = process.env['ELECTRON_RENDERER_URL'];
     if (devUrl) {
@@ -84,9 +84,9 @@ export function installIpcGuards(): void {
     originalOn(channel, (event, ...args) => {
       if (!isTrustedSenderFrame(event.senderFrame)) {
         blockLog('event', channel);
-        // `ipcRenderer.sendSync` waits for `event.returnValue`; without this a
-        // blocked sync bootstrap (e.g. media:getServerUrl from the initial
-        // about:blank preload) would hang the renderer forever.
+        // `ipcRenderer.sendSync` czeka na `event.returnValue`; bez tego zablokowany
+        // sync bootstrap (np. media:getServerUrl z początkowego preloadu
+        // about:blank) zawiesiłby renderer na zawsze.
         event.returnValue = undefined;
         return;
       }

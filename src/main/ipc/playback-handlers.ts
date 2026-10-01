@@ -17,7 +17,7 @@ async function persist(filePath: string, position: number | null): Promise<void>
     } else {
       all[filePath] = position;
     }
-    // Keep the store bounded — drop the oldest entries past the cap.
+    // Utrzymuje store w ograniczeniu — usuwa najstarsze wpisy ponad limit.
     const keys = Object.keys(all);
     if (keys.length > MAX_ENTRIES) {
       for (const k of keys.slice(0, keys.length - MAX_ENTRIES)) delete all[k];
@@ -39,7 +39,7 @@ export function registerPlaybackHandlers(): void {
         playbackPositions.set(filePath, pos);
         return pos;
       }
-      // Lazily clean up entries pointing at files that no longer exist.
+      // Leniwie usuwa wpisy wskazujące na pliki, które już nie istnieją.
       if (filePath && all[filePath] !== undefined) {
         const exists = await stat(filePath).catch(() => null);
         if (!exists) {

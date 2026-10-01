@@ -9,13 +9,13 @@ import { isHttpUrl } from '../../../shared/platform';
 import { resolveNetworkTarget } from '../network-target';
 import { registerGenericStreamUrl } from '../../media/media-server-stream-registry';
 
-// Resolves a direct audio stream URL for a video via `yt-dlp -g`. Results are
-// cached (LRU, 5h TTL — googlevideo URLs stay valid ~6h) because repeated -g
-// calls are slow (~3-10s) and can trigger rate-limits. The cache is persisted
-// to userData so repeat plays stay instant across app restarts.
-// In-flight dedupe: a hover-prefetch and the subsequent click must not spawn
-// two yt-dlp processes for the same URL — the second caller awaits the first.
-// Split out of `youtube-handlers.ts` (plan 2.8).
+// Rozwiązuje bezpośredni URL strumienia audio dla wideo przez `yt-dlp -g`. Wyniki są
+// cache'owane (LRU, TTL 5h — URL-e googlevideo pozostają ważne ~6h), bo powtarzane wywołania -g
+// są wolne (~3-10 s) i mogą wyzwalać rate-limity. Cache jest utrwalany
+// w userData, aby powtórne odtwarzania były natychmiastowe między restartami aplikacji.
+// Dedupe w locie: prefetch przy hoverze i kolejne kliknięcie nie mogą uruchomić
+// dwóch procesów yt-dlp dla tego samego URL — drugi wywołujący czeka na pierwszy.
+// Wyodrębnione z `youtube-handlers.ts` (plan 2.8).
 const streamPending = new Map<string, Promise<IpcStreamResult>>();
 
 export function getStreamUrl(url: string): Promise<IpcStreamResult> {
@@ -67,9 +67,9 @@ async function resolveStreamUrl(url: string): Promise<IpcStreamResult> {
     return { success: false, error: msg, code: 'invalid' };
   }
   const proxyArgs = await readNetworkArgs(generic ? 'generic' : 'youtube');
-  // Primary attempt uses ios_safari/tv_embedded (audio-only 251, ~3 s resolve).
-  // When both fail (e.g. age-restricted videos), retry once with the android,web
-  // client pair — it degrades to the combined itag 18, but keeps playback alive.
+  // Główna próba używa ios_safari/tv_embedded (tylko audio 251, ~3 s rozwiązania).
+  // Gdy obie zawiodą (np. filmy z ograniczeniem wiekowym), ponów raz z parą
+  // klientów android,web — degraduje do połączonego itag 18, ale utrzymuje odtwarzanie.
   for (const fallback of [false, true]) {
     try {
       const stdout = await runYtDlp(

@@ -7,8 +7,8 @@ import { decideRateLimitRetry } from './musicbrainz-rate-limit';
 
 let appVersion = '0.4.0';
 try {
-  // `app.getVersion()` works in dev and packaged builds; a relative
-  // require('../../package.json') breaks once main is bundled into out/main.
+  // `app.getVersion()` działa w dev i w buildach spakowanych; względne
+  // require('../../package.json') psuje się, gdy main jest bundlowany do out/main.
   appVersion = app.getVersion();
 } catch (e) {
   logger.warn('musicbrainz', 'could not read the app version via app.getVersion()', e);
@@ -37,9 +37,9 @@ function mbFetch(url: string, rateLimitAttempt = 0): Promise<Record<string, unkn
           url,
           { headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' } },
           (res) => {
-            // MusicBrainz answers a throttled request with 503 + Retry-After.
-            // The retry is bounded so a persistently rate-limiting endpoint
-            // surfaces as an error instead of looping in the background.
+            // MusicBrainz odpowiada na zdławione żądanie kodem 503 + Retry-After.
+            // Ponowienie jest ograniczone, więc trwale rate-limitujący endpoint
+            // ujawnia się jako błąd, zamiast zapętlać się w tle.
             const rateLimit = decideRateLimitRetry(
               res.statusCode,
               rateLimitAttempt,
@@ -138,7 +138,7 @@ function fetchCoverWithRedirect(url: string, redirects = 0): Promise<Buffer> {
             }
             const ct = res.headers['content-type'] || '';
             if (ct && !String(ct).startsWith('image/') && total < 1024) {
-              // allow but warn
+              // pozwól, ale ostrzeż
             }
             chunks.push(c);
           });
@@ -201,7 +201,7 @@ export function registerMusicBrainzHandlers() {
     }
   );
 
-  // 8.9 — autodetect + batch
+  // 8.9 — autodetekcja + batch
 
   ipcMain.handle('musicbrainz:autodetect', async (_event, query: string) => {
     try {

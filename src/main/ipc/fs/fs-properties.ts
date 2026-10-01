@@ -2,8 +2,8 @@ import { readdir, stat } from 'fs/promises';
 import { basename, join } from 'path';
 import { logger } from '../../../shared/logger';
 
-// File/folder properties for the explorer: for a directory it walks the tree
-// (bounded by MAX entries) and returns item/dir/file counts and total size.
+// Właściwości pliku/folderu dla explorera: dla katalogu przechodzi drzewo
+// (ograniczone liczbą MAX wpisów) i zwraca liczby elementów/katalogów/plików oraz łączny rozmiar.
 export async function getFileProperties(filePath: string) {
   let s;
   try {

@@ -219,7 +219,7 @@ export function sanitizeSource(v: unknown): MediaSource | null {
   };
 }
 
-/** Importing configuration must not silently grant access to local networks. */
+/** Importowanie konfiguracji nie może po cichu nadawać dostępu do sieci lokalnych. */
 export function sanitizeImportedSource(v: unknown): MediaSource | null {
   const source = sanitizeSource(v);
   if (source) source.allowPrivateNetwork = false;
@@ -227,10 +227,10 @@ export function sanitizeImportedSource(v: unknown): MediaSource | null {
 }
 
 /**
- * Applies trust to a source resolved from renderer input. Private-network
- * access and API credentials come ONLY from the persisted record matched by id;
- * a draft (no stored record) gets neither, so a compromised renderer cannot pair
- * a real API key with an attacker host or reach loopback/LAN addresses.
+ * Nakłada zaufanie na źródło rozwiązane z danych renderera. Dostęp do sieci prywatnej
+ * i poświadczenia API pochodzą WYŁĄCZNIE z zapisanego rekordu dopasowanego po id;
+ * szkic (brak zapisanego rekordu) nie dostaje niczego z tego, więc przejęty renderer nie może
+ * połączyć prawdziwego klucza API z hostem atakującego ani sięgnąć adresów loopback/LAN.
  */
 export function applySourceTrust(
   source: MediaSource,

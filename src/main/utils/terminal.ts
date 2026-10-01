@@ -6,9 +6,9 @@ export interface TerminalCommand {
 }
 
 /**
- * Terminal emulators to try, in order, for the current platform. Windows uses
- * cmd; macOS `open -a Terminal`; Linux has no single binary, so the common
- * emulators are tried and `xdg-open` is the last resort.
+ * Emulatory terminala do wypróbowania, w kolejności, dla bieżącej platformy.
+ * Windows używa cmd; macOS `open -a Terminal`; Linux nie ma jednego binarium,
+ * więc próbowane są popularne emulatory, a `xdg-open` jest ostatnią deską ratunku.
  */
 export function terminalCandidates(platform: NodeJS.Platform, dir: string): TerminalCommand[] {
   if (platform === 'win32') return [{ cmd: 'cmd', args: ['/K', 'cd', '/d', dir] }];
@@ -26,10 +26,11 @@ export function terminalCandidates(platform: NodeJS.Platform, dir: string): Term
 export type SpawnLike = (cmd: string, args: string[], options: object) => ChildProcess;
 
 /**
- * Spawns the first candidate that actually launches. A missing binary does not
- * throw synchronously — Node emits an asynchronous 'error' — so each candidate
- * is awaited until its 'spawn' event fires, then unref'd (detached).
- * Resolves true when one launched, false when none did.
+ * Uruchamia pierwszego kandydata, który faktycznie się uruchomi. Brakujące
+ * binarium nie rzuca synchronicznie — Node emituje asynchroniczny 'error' —
+ * więc każdy kandydat jest oczekiwany, aż wystrzeli jego zdarzenie 'spawn',
+ * a potem unref'owany (detached).
+ * Rozwiązuje się na true, gdy jeden się uruchomił, false, gdy żaden.
  */
 export async function spawnFirstAvailable(
   candidates: TerminalCommand[],

@@ -1,12 +1,12 @@
 import type { IpcDownloadSource } from '../../shared/types/ipc/download';
 
-// Rebuilds the source descriptor that is stored on a download job. Field-by-field
-// (not a spread) so nothing unexpected from the renderer leaks into the queue.
+// Odbudowuje deskryptor source zapisywany na zadaniu pobierania. Pole po polu
+// (nie spread), aby nic nieoczekiwanego z renderera nie wyciekło do kolejki.
 //
-// Regression: `sourceId`/`sourceItemId`/`allowPrivateNetwork` were dropped here.
-// The sources layer marks a finished download as "downloaded" from
-// `sourceId`+`sourceItemId`, and the attempted network target uses
-// `allowPrivateNetwork`, so losing them silently broke both.
+// Regresja: `sourceId`/`sourceItemId`/`allowPrivateNetwork` były tu gubione.
+// Warstwa źródeł oznacza ukończone pobieranie jako "downloaded" na podstawie
+// `sourceId`+`sourceItemId`, a próbowany cel sieciowy używa
+// `allowPrivateNetwork`, więc ich utrata po cichu psuła jedno i drugie.
 export function buildJobSource(
   input: IpcDownloadSource | undefined
 ): IpcDownloadSource | undefined {

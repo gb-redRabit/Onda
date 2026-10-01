@@ -1,9 +1,9 @@
 import { BrowserWindow } from 'electron';
 
 /**
- * Sends an event to a window's renderer, tolerating windows that are absent,
- * destroyed or mid-teardown (quit / relaunch / factory reset). Returns whether
- * the message was actually delivered.
+ * Wysyła zdarzenie do renderera okna, tolerując okna nieobecne, zniszczone lub
+ * w trakcie rozbierania (quit / restart / reset fabryczny). Zwraca, czy wiadomość
+ * faktycznie została dostarczona.
  */
 export function sendToWindow(
   win: BrowserWindow | null | undefined,
@@ -15,13 +15,13 @@ export function sendToWindow(
     win.webContents.send(channel, ...args);
     return true;
   } catch {
-    // renderer gone between the guard and the send — nothing to do
+    // renderer zniknął między strażnikiem a wysłaniem — nie ma nic do zrobienia
     return false;
   }
 }
 
-// Sends an event payload to every open window. Used for main-driven status
-// pushes (download progress, subscription updates, library refresh, etc.).
+// Wysyła payload zdarzenia do każdego otwartego okna. Używane do push'y statusu
+// sterowanych z procesu głównego (postęp pobierania, aktualizacje subskrypcji, odświeżenie biblioteki itp.).
 export function broadcastToAllWindows(channel: string, ...args: unknown[]): void {
   for (const win of BrowserWindow.getAllWindows()) {
     sendToWindow(win, channel, ...args);

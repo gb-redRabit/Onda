@@ -36,9 +36,9 @@ import type {
   IpcMetaOverride
 } from '../../../shared/types/ipc';
 
-// Throttle broadcast emissions to avoid flooding all BrowserWindows with
-// per-chunk progress updates (hundreds of times/sec on fast links).
-// Coalesces by job id and only sends the most recent snapshot per tick.
+// Ogranicza emisje broadcast, aby nie zalewać wszystkich BrowserWindows
+// aktualizacjami postępu na chunk (setki razy/s na szybkich łączach).
+// Scala według id zadania i wysyła tylko najnowszy snapshot na tick.
 const BROADCAST_INTERVAL_MS = 200;
 const pendingBroadcasts = new Map<string, IpcDownloadTask>();
 let broadcastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -61,8 +61,8 @@ function broadcast(task: IpcDownloadTask): void {
 
 export function registerDownloadHandlers(): void {
   setDownloadEmit(broadcast);
-  // Restore the persisted queue (interrupted downloads become paused) before the
-  // renderer asks for the list, so no queued work is lost across restarts.
+  // Przywróć zapisaną kolejkę (przerwane pobrania stają się wstrzymane), zanim
+  // renderer poprosi o listę, aby żadna zakolejkowana praca nie przepadła przy restartach.
   void restoreDownloadQueue();
   ipcMain.handle(
     'yt:download:add',
@@ -144,8 +144,8 @@ export function registerDownloadHandlers(): void {
   ipcMain.handle('yt:download:schedule:get', async (): Promise<number | null> =>
     getScheduledStart()
   );
-  // Re-applies metadata (artist/album/year) to an already-downloaded file without
-  // re-downloading it.
+  // Ponownie nakłada metadane (artysta/album/rok) na już pobrany plik bez
+  // ponownego pobierania go.
   ipcMain.handle(
     'yt:download:updateMetadata',
     async (_event, filePath: string, meta: IpcMetaOverride) => {

@@ -22,10 +22,10 @@ function managedBinPath(binDir: string, tool: BinTool): string {
   return join(binDir, toolFileName(tool));
 }
 
-// Path to a binary bundled with the app. The packaged app no longer ships
-// FFmpeg (users install it into userData/bin), so this only matches a local
-// `resources/ffmpeg/<platform>-<arch>` layout created for development/offline
-// experiments (scripts/fetch-ffmpeg.mjs). Returns null when not present.
+// Ścieżka do binarki dołączonej do aplikacji. Spakowana aplikacja nie dostarcza już
+// FFmpeg (użytkownicy instalują go w userData/bin), więc to pasuje tylko do lokalnego
+// układu `resources/ffmpeg/<platform>-<arch>` utworzonego na potrzeby developmentu/eksperymentów
+// offline (scripts/fetch-ffmpeg.mjs). Zwraca null, gdy nie istnieje.
 function bundledBinPath(
   tool: BinTool,
   resourcesPath?: string,
@@ -43,24 +43,24 @@ function bundledBinPath(
   return null;
 }
 
-// electron's `process.resourcesPath` is only defined in the main process; read it
-// defensively so the dependency code also runs in plain Node (tests).
+// `process.resourcesPath` Electrona jest zdefiniowane tylko w procesie main; czytamy je
+// defensywnie, aby kod zależności działał też w zwykłym Node (testy).
 function currentResourcesPath(): string | undefined {
   return (process as { resourcesPath?: string }).resourcesPath;
 }
 
-// yt-dlp release channel and fallback pin come from binaries.json (PR-only
-// updates). `nightly` ships day-zero YouTube fixes — the stable channel can lag
-// weeks behind breaking changes (e.g. the 2026-08 SABR/403 wave, fixed on
-// master 2026-08-18, still absent from stable 2026.07.04).
+// Kanał wydań yt-dlp i fallbackowy pin pochodzą z binaries.json (aktualizacje
+// wyłącznie przez PR). `nightly` dostarcza poprawki YouTube od dnia zero — kanał stabilny może
+// pozostawać tygodniami za zmianami łamiącymi (np. fala SABR/403 z 2026-08, naprawiona
+// na masterze 2026-08-18, wciąż nieobecna w stabilnym 2026.07.04).
 export type YtdlpChannel = 'stable' | 'nightly';
 export const YTDLP_CHANNEL = binaries.ytdlp.channel as YtdlpChannel;
 
-// Pinned to a concrete release tag instead of `releases/latest/download` — the
-// `latest` URL is mutable, so a compromised or mistaken release would be pulled
-// silently on the next fresh install. Bump this manually; the in-app updater
-// still fetches the specific latest tag when the user explicitly updates.
-// Nightly tags look like `2026.08.18.122307` (no leading "v").
+// Przypięte do konkretnego tagu wydania zamiast `releases/latest/download` —
+// URL `latest` jest zmienny, więc przejęte lub omyłkowe wydanie zostałoby pobrane
+// po cichu przy następnej świeżej instalacji. Podnoś to ręcznie; wbudowany updater
+// wciąż pobiera konkretny najnowszy tag, gdy użytkownik jawnie aktualizuje.
+// Tagi nightly wyglądają jak `2026.08.18.122307` (bez wiodącego "v").
 export const YTDLP_PINNED_VERSION: string = binaries.ytdlp.pinnedVersion;
 
 function ytdlpRepo(channel: YtdlpChannel): string {
@@ -75,14 +75,14 @@ export function ytdlpDownloadUrl(
   version: string = YTDLP_PINNED_VERSION,
   channel: YtdlpChannel = YTDLP_CHANNEL
 ): string {
-  // yt-dlp tags do not carry a leading "v" (e.g. "2026.07.04", "2026.08.18.122307")
+  // Tagi yt-dlp nie mają wiodącego "v" (np. "2026.07.04", "2026.08.18.122307")
   const base = `${ytdlpRepo(channel)}/${version}`;
   switch (platform) {
     case 'win32':
       return `${base}/yt-dlp.exe`;
     case 'darwin':
-      // Nightly ships a single universal `yt-dlp_macos`; stable additionally
-      // publishes `yt-dlp_macos_legacy` for Intel.
+      // Nightly dostarcza jeden uniwersalny `yt-dlp_macos`; stabilny dodatkowo
+      // publikuje `yt-dlp_macos_legacy` dla Intela.
       return channel === 'nightly' || arch === 'arm64'
         ? `${base}/yt-dlp_macos`
         : `${base}/yt-dlp_macos_legacy`;
@@ -93,8 +93,8 @@ export function ytdlpDownloadUrl(
   }
 }
 
-// yt-dlp publishes a single checksums manifest (SHA2-256SUMS), not per-file
-// hashes; the release tag is immutable so the manifest is equivalent to a pin.
+// yt-dlp publikuje pojedynczy manifest sum kontrolnych (SHA2-256SUMS), a nie hash'e
+// per plik; tag wydania jest niezmienny, więc manifest odpowiada pinowi.
 export function ytdlpShaUrl(
   version: string = YTDLP_PINNED_VERSION,
   channel: YtdlpChannel = YTDLP_CHANNEL
@@ -107,18 +107,18 @@ interface ManagedFfmpegSource {
   url: string;
   sha256: string;
   kind: string;
-  /** macOS ships ffprobe as a separate archive. */
+  /** macOS dostarcza ffprobe jako osobne archiwum. */
   probeUrl?: string;
   probeSha256?: string;
 }
 
 const MANAGED_FFMPEG = binaries.ffmpeg.managed as Record<string, ManagedFfmpegSource>;
 
-// Managed (in-app) FFmpeg builds are available for every platform we ship on.
-// They are pinned in binaries.json to an immutable release tag/asset AND the
-// exact SHA-256, so the download is verified without a mutable checksum
-// manifest. Windows/Linux use the LGPL builds (no GPL redistribution), macOS
-// uses evermeet (pinned hash; the app downloads it, never bundles it).
+// Zarządzane (w aplikacji) buildy FFmpeg są dostępne dla każdej platformy, na którą
+// dostarczamy. Są przypięte w binaries.json do niezmiennego tagu/assetu wydania ORAZ
+// dokładnego SHA-256, więc pobranie jest weryfikowane bez zmiennego manifestu
+// sum kontrolnych. Windows/Linux używają buildów LGPL (bez redystrybucji GPL), macOS
+// używa evermeet (przypięty hash; aplikacja go pobiera, nigdy nie dołącza).
 export function ffmpegDownloadUrl(
   platform: NodeJS.Platform = process.platform,
   arch: string = process.arch
@@ -133,7 +133,7 @@ export function ffmpegSha256(
   return MANAGED_FFMPEG[`${platform}-${arch}`]?.sha256 ?? null;
 }
 
-/** Separate ffprobe archive (macOS only) — null when the main archive has it. */
+/** Osobne archiwum ffprobe (tylko macOS) — null, gdy główne archiwum je zawiera. */
 export function ffmpegProbeUrl(
   platform: NodeJS.Platform = process.platform,
   arch: string = process.arch
@@ -148,7 +148,7 @@ export function ffmpegProbeSha256(
   return MANAGED_FFMPEG[`${platform}-${arch}`]?.probeSha256 ?? null;
 }
 
-/** Release tag/version the pinned managed build comes from (for diagnostics). */
+/** Tag/wersja wydania, z którego pochodzi przypięty zarządzany build (dla diagnostyki). */
 export function ffmpegManagedVersion(
   platform: NodeJS.Platform = process.platform,
   arch: string = process.arch
@@ -156,7 +156,7 @@ export function ffmpegManagedVersion(
   return MANAGED_FFMPEG[`${platform}-${arch}`]?.version ?? null;
 }
 
-// Search the system PATH for an executable (respecting PATHEXT on Windows).
+// Przeszukuje systemowy PATH w poszukiwaniu pliku wykonywalnego (z uwzględnieniem PATHEXT w Windows).
 export function whichInPath(binName: string): string | null {
   const isWin = process.platform === 'win32';
   const pathVar = process.env.PATH || '';
@@ -165,7 +165,7 @@ export function whichInPath(binName: string): string | null {
     : [''];
   const dirs = pathVar.split(isWin ? ';' : ':').filter(Boolean);
   for (const dir of dirs) {
-    // toolFileName() already appends ".exe" on Windows — check it verbatim first.
+    // toolFileName() już dodaje ".exe" w Windows — najpierw sprawdź dosłownie.
     const plain = join(dir, binName);
     if (existsSync(plain)) return plain;
     for (const ext of pathext) {
@@ -218,12 +218,12 @@ interface BinaryCandidate {
   source: DepSource;
 }
 
-// 1. bundled (resources/ffmpeg) → 2. userData/bin (managed) → 3. PATH (system),
-// plus known mkvextract locations. A candidate that exists but fails its
-// `--version` probe is marked `broken` and skipped so the next source can
-// self-heal the tool (e.g. a corrupted bundled build falls back to a managed
-// install). When nothing works the first broken candidate is returned so the
-// UI can offer a reinstall.
+// 1. dołączone (resources/ffmpeg) → 2. userData/bin (zarządzane) → 3. PATH (system),
+// plus znane lokalizacje mkvextract. Kandydat, który istnieje, ale nie przechodzi
+// próby `--version`, jest oznaczany jako `broken` i pomijany, aby następne źródło mogło
+// samo uleczyć narzędzie (np. uszkodzony dołączony build spada do zarządzanej
+// instalacji). Gdy nic nie działa, zwracany jest pierwszy zepsuty kandydat, aby
+// UI mogło zaproponować ponowną instalację.
 export async function resolveBinary(binDir: string, tool: BinTool): Promise<ResolvedBinary | null> {
   const candidates: BinaryCandidate[] = [];
   const bundled = bundledBinPath(tool, currentResourcesPath());
@@ -232,8 +232,8 @@ export async function resolveBinary(binDir: string, tool: BinTool): Promise<Reso
   if (existsSync(managedPath)) candidates.push({ path: managedPath, source: 'managed' });
   const pathBin = whichInPath(toolFileName(tool));
   if (pathBin) candidates.push({ path: pathBin, source: 'system' });
-  // mkvextract is often installed to a fixed path without being added to PATH
-  // (e.g. C:\Program Files\MKVToolNix) — try those known locations too.
+  // mkvextract jest często instalowany do stałej ścieżki bez dodania do PATH
+  // (np. C:\Program Files\MKVToolNix) — spróbuj też tych znanych lokalizacji.
   if (tool === 'mkvextract') {
     for (const candidate of getMkvExtractCandidates().slice(1)) {
       if (existsSync(candidate)) candidates.push({ path: candidate, source: 'system' });
@@ -292,7 +292,7 @@ const PKG_MANAGER_CMDS: Record<PkgManager, string> = {
   pacman: 'pacman'
 };
 
-// All available package managers for a platform, in preference order.
+// Wszystkie dostępne menedżery pakietów dla platformy, w kolejności preferencji.
 export async function detectPkgManagers(
   platform: NodeJS.Platform = process.platform
 ): Promise<PkgManager[]> {
@@ -309,8 +309,8 @@ export async function detectPkgManagers(
   return available;
 }
 
-// Infer the package manager from a resolved binary path (choco/winGet/scoop/brew
-// install binaries to distinctive locations).
+// Wnioskuje menedżera pakietów ze rozwiązanej ścieżki binarki (choco/winGet/scoop/brew
+// instalują binarki w charakterystycznych lokalizacjach).
 export function inferPkgManager(binPath: string | null): PkgManager | null {
   if (!binPath) return null;
   const p = binPath.toLowerCase().replace(/\\/g, '/');
@@ -322,9 +322,9 @@ export function inferPkgManager(binPath: string | null): PkgManager | null {
 }
 
 interface PkgCommand {
-  /** Full human-readable command line (for error messages / user hints). */
+  /** Pełna czytelna dla człowieka linia komend (dla komunikatów błędów / podpowiedzi). */
   cmd: string;
-  /** argv array ready for spawn — no shell, no injection surface. */
+  /** Tablica argv gotowa dla spawn — bez shella, bez powierzchni do wstrzyknięć. */
   argv: string[];
 }
 
@@ -343,9 +343,9 @@ export function pkgInstallCommand(pkgManager: PkgManager, tool: BinTool): PkgCom
   let argv: string[];
   switch (pkgManager) {
     case 'winget':
-      // --accept-source-agreements + --disable-interactivity keep winget from
-      // parking on an unseen prompt when spawned with no TTY (--silent alone
-      // only suppresses the installer UI, not agreement prompts).
+      // --accept-source-agreements + --disable-interactivity nie pozwalają winget
+      // zatrzymać się na niewidocznym pytaniu, gdy uruchamiany bez TTY (sam --silent
+      // tłumi tylko UI instalatora, nie pytania o zgodę).
       argv = [
         'winget',
         'install',
@@ -409,7 +409,7 @@ export function pkgUninstallCommand(pkgManager: PkgManager, tool: BinTool): PkgC
   return { cmd: joinCmd(argv), argv };
 }
 
-/** True when the manager's commands require elevated privileges (sudo -n). */
+/** True, gdy komendy menedżera wymagają podniesionych uprawnień (sudo -n). */
 export function needsSudo(pkgManager: PkgManager): boolean {
   return pkgManager === 'apt' || pkgManager === 'dnf' || pkgManager === 'pacman';
 }

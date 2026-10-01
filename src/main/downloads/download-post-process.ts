@@ -9,13 +9,13 @@ import { addToChannelPlaylist } from './channel-playlist';
 import { sha256File } from './hash-file';
 import { findSiblingSubtitleFiles, moveSubtitlesToFolder } from './subtitle-files';
 
-// Post-download pipeline (Faza 5/6): metadata override, cover processing and
-// library refresh. Extracted from `download-manager.ts` (plan 2.8). Failures are
-// non-fatal — the file itself is already done.
+// Pipeline po pobraniu (Faza 5/6): nadpisanie metadanych, przetwarzanie covera
+// i odświeżenie biblioteki. Wyodrębniony z `download-manager.ts` (plan 2.8).
+// Niepowodzenia są niekrytyczne — sam plik jest już gotowy.
 export async function postProcess(job: Job): Promise<void> {
   const outputPath = job.outputPath || '';
-  // SoundCloud MP3s are raw progressive streams — embed title/artist/artwork
-  // here instead of the yt-dlp metadata/cover pipeline.
+  // MP3 z SoundCloud to surowe strumienie progresywne — osadź tutaj
+  // title/artist/artwork zamiast pipeline'u metadanych/covera yt-dlp.
   if (job.source?.mode === 'soundcloud' && outputPath && job.kind === 'audio') {
     job.coverStatus = 'fetching';
     persist(job);
@@ -55,8 +55,8 @@ export async function postProcess(job: Job): Promise<void> {
     persist(job);
   } else if (job.cover?.type === 'thumbnail') {
     job.coverStatus = 'embedded';
-    // The thumbnail is already embedded in the tags — drop the leftover image
-    // yt-dlp wrote next to the audio file.
+    // Miniatura jest już osadzona w tagach — usuń pozostały obraz, który
+    // yt-dlp zapisał obok pliku audio.
     if (outputPath) await removeThumbnailFiles(outputPath);
   }
   if (outputPath) {
@@ -68,8 +68,8 @@ export async function postProcess(job: Job): Promise<void> {
         await addToChannelPlaylist(job.channelTitle, sync.file);
       }
     }
-    // SHA-256 checksum is opt-in (Settings → Pobieranie → hashFiles). It runs
-    // after the file is final so the hash reflects the completed media.
+    // Suma kontrolna SHA-256 jest opcjonalna (Ustawienia → Pobieranie → hashFiles).
+    // Uruchamiana po sfinalizowaniu pliku, aby hash odzwierciedlał gotowe media.
     if (await readHashFilesEnabled()) {
       try {
         job.fileHash = await sha256File(outputPath);
@@ -78,9 +78,9 @@ export async function postProcess(job: Job): Promise<void> {
         logger.warn('downloads', `hash failed for ${job.id}`, e);
       }
     }
-    // Surface subtitle outcome instead of silently swallowing it via
-    // `--ignore-errors`. Video subtitles are muxed into the container; audio
-    // subtitles are sidecar files, optionally moved into a Subtitles/ folder.
+    // Ujawnia wynik napisów zamiast po cichu go połykać przez
+    // `--ignore-errors`. Napisy wideo są muxowane do kontenera; napisy audio
+    // to pliki sidecar, opcjonalnie przenoszone do folderu Subtitles/.
     if (job.subsLangs) {
       if (job.kind === 'video') {
         job.subtitleStatus = 'embedded';

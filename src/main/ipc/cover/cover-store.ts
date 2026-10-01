@@ -10,10 +10,10 @@ import {
   runStoreMigrations
 } from '../../state-migrations';
 
-// Encrypted electron-store bootstrap, split out of `cover-cache.ts` (plan 2.8).
+// Bootstrap szyfrowanego electron-store, wyodrębniony z `cover-cache.ts` (plan 2.8).
 
-// The electron-store encryption key is persisted as a random per-install value
-// instead of being derived from the hostname (which is public and predictable).
+// Klucz szyfrowania electron-store jest zapisywany jako losowa wartość na instalację
+// zamiast być wyprowadzany z nazwy hosta (która jest publiczna i przewidywalna).
 const STORE_KEY_FILE = 'onda-store-key';
 
 export type Store = InstanceType<typeof import('electron-store').default>;
@@ -26,7 +26,7 @@ async function getOrCreateStoreKey(): Promise<string> {
     const existing = (await readFile(keyPath, 'utf-8')).trim();
     if (/^[0-9a-f]{64}$/.test(existing)) return existing;
   } catch {
-    // first run
+    // pierwsze uruchomienie
   }
   const migrated = await runFileMigrations(keyPath);
   if (migrated) return migrated;

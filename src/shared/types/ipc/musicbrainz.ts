@@ -9,7 +9,7 @@ export interface MusicbrainzRelease {
   date?: string;
   country?: string;
   'track-count'?: number;
-  /** Relevance score returned by the search/autodetect endpoints. */
+  /** Wynik trafności zwracany przez endpointy wyszukiwania/autodetekcji. */
   score?: string;
   genres?: Array<{ name: string }>;
   'artist-credit'?: MusicbrainzArtistCredit[];

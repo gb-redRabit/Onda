@@ -20,24 +20,24 @@ import {
 import { pump } from './download-runner';
 import { killDownloadProcess } from './kill-download-process';
 
-// Queue mutations (add/cancel/pause/resume/move/list/import/export/clear) and
-// queue restore, extracted from `download-manager.ts` (plan 2.8).
+// Mutacje kolejki (add/cancel/pause/resume/move/list/import/export/clear) i
+// przywracanie kolejki, wyodrębnione z `download-manager.ts` (plan 2.8).
 
 /**
- * Removes a job id from the pending order.
+ * Usuwa id zadania z kolejki oczekujących.
  *
- * `indexOf` returns -1 when the id is not queued, and `splice(-1, 1)` deletes
- * the LAST element — so a cancel/pause of an unqueued job silently dropped an
- * unrelated download from the queue.
+ * `indexOf` zwraca -1, gdy id nie jest w kolejce, a `splice(-1, 1)` usuwa
+ * OSTATNI element — więc cancel/pause zadania spoza kolejki po cichu usuwał
+ * niezwiązane pobieranie z kolejki.
  */
 function removeFromQueue(id: string): void {
   const idx = queueOrder.indexOf(id);
   if (idx >= 0) queueOrder.splice(idx, 1);
 }
 
-// Restores the queue from disk after a restart. Interrupted downloads become
-// paused (never completed) so the user can resume them via `--continue`; pending
-// jobs are re-queued and pumped again.
+// Przywraca kolejkę z dysku po restarcie. Przerwane pobrania stają się
+// wstrzymane (nigdy ukończone), aby użytkownik mógł je wznowić przez `--continue`;
+// zadania oczekujące są ponownie kolejkowane i pompowane.
 export async function restoreDownloadQueue(): Promise<void> {
   const persisted = await loadPersistedJobs(queueFilePath());
   for (const task of persisted) {
@@ -63,11 +63,11 @@ export async function restoreDownloadQueue(): Promise<void> {
 export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<IpcDownloadTask[]> {
   const created: IpcDownloadTask[] = [];
   let replaced = 0;
-  // Dedup by video ID against already-queued/finished jobs so the same video is
-  // not enqueued twice in one session. Failed/cancelled jobs do NOT block a new
-  // attempt — they are replaced below so a retry yields a single fresh job
-  // instead of piling up duplicates (which also made later retries silently
-  // skip while the duplicate was active).
+  // Deduplikacja po ID wideo względem już zakolejkowanych/ukończonych zadań, aby to samo
+  // wideo nie trafiło do kolejki dwa razy w jednej sesji. Zadania zakończone błędem/anulowane
+  // NIE blokują nowej próby — są zastępowane poniżej, więc ponowienie daje jedno świeże
+  // zadanie zamiast piętrzyć duplikaty (co też powodowało, że późniejsze ponowienia po cichu
+  // były pomijane, gdy duplikat był aktywny).
   const knownVideoIds = new Set<string>();
   for (const j of jobs.values()) {
     if (j.videoId && j.status !== 'error' && j.status !== 'cancelled') {
@@ -83,8 +83,8 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
     if (!isHttpSource && !isExplicitYtdlp && !resolveProvider(input.url)) continue;
     if (input.videoId && knownVideoIds.has(input.videoId)) continue;
     if (input.videoId) {
-      // A re-queue is a retry of the previous attempt: drop every failed or
-      // cancelled job for the same video so the queue holds one job per video.
+      // Ponowne zakolejkowanie to retry poprzedniej próby: usuń każde zakończone błędem
+      // lub anulowane zadanie dla tego samego wideo, aby kolejka trzymała jedno zadanie na wideo.
       for (const [id, j] of [...jobs.entries()]) {
         if (j.videoId !== input.videoId) continue;
         if (j.status !== 'error' && j.status !== 'cancelled') continue;
@@ -95,14 +95,14 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
       }
       knownVideoIds.add(input.videoId);
     }
-    // Fields shared by every source mode. These used to be dropped when the
-    // source object was rebuilt field-by-field: without `sourceId`/`sourceItemId`
-    // a finished source download could never be recorded as "downloaded", and
-    // without `allowPrivateNetwork` the private-network trust the sources layer
-    // granted was lost before the attempt ran.
+    // Pola wspólne dla każdego trybu źródła. Kiedyś były gubione, gdy obiekt source
+    // był odbudowywany pole po polu: bez `sourceId`/`sourceItemId` ukończone pobieranie
+    // ze źródła nigdy nie mogło zostać zapisane jako "downloaded", a bez
+    // `allowPrivateNetwork` zaufanie do sieci prywatnej przyznane przez warstwę źródeł
+    // było tracone przed uruchomieniem próby.
     const source = buildJobSource(input.source);
     const cover = normalizeCoverSpec(input.cover);
-    // Direct-URL downloads have no yt-dlp thumbnail step — drop thumbnail covers.
+    // Pobierania z bezpośredniego URL nie mają kroku miniatury yt-dlp — odrzuć covery typu thumbnail.
     const finalCover = source && cover?.type === 'thumbnail' ? undefined : cover;
     const now = Date.now();
     const job: Job = {
@@ -181,7 +181,7 @@ export function cancelDownloadJob(id: string): boolean {
     killDownloadProcess(job.child);
     return true;
   }
-  // HTTP-mode jobs have no child process — abort via AbortController.
+  // Zadania w trybie HTTP nie mają procesu potomnego — anuluj przez AbortController.
   if (job.status === 'downloading' && !job.child) {
     const ac = jobAbortControllers.get(id);
     if (ac) {
@@ -209,11 +209,11 @@ export function pauseDownloadJob(id: string): boolean {
     try {
       killDownloadProcess(job.child);
     } catch {
-      /* already gone */
+      /* już nie istnieje */
     }
     return true;
   }
-  // HTTP-mode jobs — abort the stream via AbortController.
+  // Zadania w trybie HTTP — anuluj strumień przez AbortController.
   if (job.status === 'downloading' && !job.child) {
     const ac = jobAbortControllers.get(id);
     if (ac) {
@@ -237,8 +237,8 @@ export function resumeDownloadJob(id: string): boolean {
   return true;
 }
 
-// Pauses the whole queue: pending jobs leave the queue, active downloads are
-// killed (their `.part` files are resumed later via `--continue`).
+// Wstrzymuje całą kolejkę: zadania oczekujące opuszczają kolejkę, aktywne pobrania są
+// zabijane (ich pliki `.part` są później wznawiane przez `--continue`).
 export function pauseAllDownloads(): boolean {
   let changed = false;
   queueOrder.length = 0;
@@ -257,7 +257,7 @@ export function pauseAllDownloads(): boolean {
   return changed;
 }
 
-// Resumes every paused job and pumps the queue again.
+// Wznawia każde wstrzymane zadanie i ponownie pompuje kolejkę.
 export function resumeAllDownloads(): boolean {
   let changed = false;
   for (const job of jobs.values()) {
@@ -273,7 +273,7 @@ export function resumeAllDownloads(): boolean {
   return changed;
 }
 
-// Moves a pending job to the front of the queue ("download now").
+// Przenosi oczekujące zadanie na początek kolejki ("download now").
 export function moveDownloadToFront(id: string): boolean {
   const job = jobs.get(id);
   if (!job || job.status !== 'pending') return false;
@@ -285,7 +285,7 @@ export function moveDownloadToFront(id: string): boolean {
   return true;
 }
 
-// Swaps a pending job with its neighbour in the queue (direction -1 = up, 1 = down).
+// Zamienia oczekujące zadanie z sąsiadem w kolejce (direction -1 = w górę, 1 = w dół).
 export function moveDownload(id: string, direction: -1 | 1): boolean {
   const job = jobs.get(id);
   if (!job || job.status !== 'pending') return false;
@@ -302,13 +302,13 @@ export function listDownloadJobs(): IpcDownloadTask[] {
   return [...jobs.values()].map(snapshotDownloadTask);
 }
 
-// Snapshots the persistable jobs (pending/paused/downloading/error) for export.
+// Tworzy snapshoty zadań nadających się do zapisu (pending/paused/downloading/error) na potrzeby eksportu.
 export function exportQueue(): IpcDownloadTask[] {
   return collectPersistableJobs();
 }
 
-// Re-enqueues a list of previously persisted tasks (import). Tasks in a terminal
-// state are dropped; active ones are re-added as pending work.
+// Ponownie kolejkuje listę wcześniej zapisanych zadań (import). Zadania w stanie
+// końcowym są odrzucane; aktywne są dodawane ponownie jako praca oczekująca.
 export async function importQueue(tasks: IpcDownloadTask[]): Promise<number> {
   const inputs: IpcDownloadJobInput[] = [];
   for (const t of tasks) {
@@ -353,8 +353,8 @@ export function clearFinishedDownloads(): boolean {
   let removed = false;
   for (const [id, job] of [...jobs.entries()]) {
     if (job.status === 'completed' || job.status === 'error' || job.status === 'cancelled') {
-      // Also drop the status memo and any abort controller, otherwise both
-      // maps grow for the lifetime of the session.
+      // Usuwa też memo statusu i ewentualny abort controller, inaczej obie
+      // mapy rosną przez cały czas trwania sesji.
       forgetJob(id);
       removeFromQueue(id);
       jobs.delete(id);

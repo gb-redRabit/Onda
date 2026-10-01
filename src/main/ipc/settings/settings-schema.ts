@@ -344,11 +344,11 @@ interface SanitizedSettings {
 }
 
 /**
- * Whitelist + type validation for settings payloads coming from the renderer
- * (settings:set) or from imported JSON files (settings:import). Unknown keys and
- * values of the wrong type are dropped — they never reach the electron-store.
- * API key secret values are treated as opaque strings here; encryption happens in
- * the handlers via settings-crypto.
+ * Whitelist + walidacja typów dla ładunków ustawień przychodzących z renderera
+ * (settings:set) lub z importowanych plików JSON (settings:import). Nieznane klucze i
+ * wartości złego typu są odrzucane — nigdy nie trafiają do electron-store.
+ * Wartości sekretów kluczy API są tu traktowane jako nieprzezroczyste stringi; szyfrowanie odbywa się
+ * w handlerach przez settings-crypto.
  */
 export function sanitizeSettings(raw: unknown): SanitizedSettings {
   if (!isPlainObject(raw)) return { sanitized: {}, droppedKeys: ['(root)'] };
@@ -368,8 +368,8 @@ export function sanitizeSettings(raw: unknown): SanitizedSettings {
       sanitized[key] = cleaned;
     }
   }
-  // Always stamp the schema version, regardless of what the caller sent, so the
-  // persisted payload carries the version the app wrote it with.
+  // Zawsze wbijaj wersję schematu, niezależnie od tego, co przysłał wywołujący, aby
+  // zapisany ładunek niósł wersję, z którą aplikacja go zapisała.
   sanitized.version = SETTINGS_VERSION;
   return { sanitized: sanitized as Partial<AppSettings>, droppedKeys };
 }

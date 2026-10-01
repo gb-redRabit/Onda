@@ -16,8 +16,8 @@ import {
   hasSessionCookies
 } from './youtube-auth-cookies';
 
-// Dedicated persistent partition so the Google session survives restarts and
-// stays fully isolated from the app's own session.
+// Dedykowana trwała partycja, aby sesja Google przetrwała restarty i pozostawała
+// w pełni odizolowana od własnej sesji aplikacji.
 export const AUTH_PARTITION = 'persist:youtube-auth';
 const COOKIES_FILE = 'youtube-cookies.txt';
 
@@ -25,9 +25,9 @@ export function cookiesFilePath(): string {
   return join(app.getPath('userData'), COOKIES_FILE);
 }
 
-// Snapshot of the auth partition's cookies. The unfiltered `get({})` is the
-// primary source; a URL-scoped query is merged in as a safety net (it also
-// keeps the cookie store hydrated for the login poll).
+// Snapshot cookies partycji auth. Niefiltrowane `get({})` jest głównym źródłem;
+// zapytanie ograniczone do URL jest scalane jako siatka bezpieczeństwa (utrzymuje
+// też magazyn cookies nawodnionym na potrzeby pollingu logowania).
 export async function getSessionCookies(): Promise<Electron.Cookie[]> {
   await ensureSessionLoaded();
   const ses = session.fromPartition(AUTH_PARTITION);
@@ -46,18 +46,17 @@ export async function getSessionCookies(): Promise<Electron.Cookie[]> {
   return merged;
 }
 
-// Electron only opens the persistent partition's cookie store once a webContents
-// actually uses that partition. Until then session.cookies.get({}) returns an
-// empty list, so right after a restart the app reports "not logged in" even
-// though the session survived on disk. Loading a hidden about:blank page on the
-// auth partition forces the store to hydrate so the cookies API sees it.
+// Electron otwiera magazyn cookies trwałej partycji dopiero, gdy jakiś webContents
+// faktycznie użyje tej partycji. Do tego czasu session.cookies.get({}) zwraca
+// pustą listę, więc zaraz po restarcie aplikacja zgłasza "not logged in", mimo że
+// sesja przetrwała na dysku. Wczytanie ukrytej strony about:blank na partycji auth
+// wymusza nawodnienie magazynu, aby API cookies go widziało.
 //
-// The hidden window is only created when the persisted cookie file (source of
-// truth) actually holds a session — with nothing to hydrate a window would just
-// be created and destroyed at startup, churning with the splash/main windows
-// and emitting blink.mojom.WidgetHost rejection noise. During a login the
-// visible login window itself hydrates the same partition, so the guard never
-// blocks session detection there.
+// Ukryte okno jest tworzone tylko wtedy, gdy zapisany plik cookies (źródło prawdy)
+// faktycznie zawiera sesję — bez niczego do nawodnienia okno byłoby po prostu
+// tworzone i niszczone przy starcie, mieszając się z oknami splash/main i emitując
+// szum odrzuceń blink.mojom.WidgetHost. Podczas logowania samo widoczne okno
+// logowania nawadnia tę samą partycję, więc guard nigdy nie blokuje tam detekcji sesji.
 let sessionWarmPromise: Promise<void> | null = null;
 async function ensureSessionLoaded(): Promise<void> {
   if (!(await cookieFileHasValidYouTubeSession())) return;
@@ -79,12 +78,12 @@ async function ensureSessionLoaded(): Promise<void> {
   await sessionWarmPromise;
 }
 
-// Re-seeds the auth partition from the persisted cookie file. The exported file
-// is the source of truth (yt-dlp reads it) and survives restarts even when the
-// Chromium partition store does not hydrate in time — without a live session the
-// app would log "no .youtube.com session cookies" on every yt-dlp call while
-// still working through the file fallback. After a successful restore the next
-// exportSessionCookies() re-writes a fresh file from the live partition.
+// Ponownie zasiewa partycję auth z zapisanego pliku cookies. Wyeksportowany plik
+// jest źródłem prawdy (yt-dlp go czyta) i przetrwa restarty nawet, gdy magazyn
+// partycji Chromium nie nawodni się na czas — bez żywej sesji aplikacja logowałaby
+// "no .youtube.com session cookies" przy każdym wywołaniu yt-dlp, działając dalej
+// przez fallback plikowy. Po udanym przywróceniu następne
+// exportSessionCookies() przepisuje świeży plik z żywej partycji.
 export async function restorePartitionSession(): Promise<boolean> {
   try {
     await ensureSessionLoaded();
@@ -104,13 +103,13 @@ export async function restorePartitionSession(): Promise<boolean> {
           ...(cookie.expirationDate ? { expirationDate: cookie.expirationDate } : {})
         });
       } catch {
-        // Individual cookies can be rejected; the SID-family ones are what matter.
+        // Pojedyncze cookies mogą zostać odrzucone; liczą się te z rodziny SID.
       }
     }
     try {
       ses.cookies.flushStore();
     } catch {
-      // flushStore is unavailable in older Electron — cookies still persist.
+      // flushStore jest niedostępne w starszym Electronie — cookies i tak się zapisują.
     }
     return hasSessionCookies(await ses.cookies.get({}), YT_COOKIE_HOST).length > 0;
   } catch (e) {
@@ -119,8 +118,8 @@ export async function restorePartitionSession(): Promise<boolean> {
   }
 }
 
-// Serializes the live .youtube.com session cookies from the auth partition into
-// a Netscape cookie string, or returns null when no session is present.
+// Serializuje żywe cookies sesji .youtube.com z partycji auth do
+// stringa cookies Netscape lub zwraca null, gdy nie ma sesji.
 async function serializedSessionCookies(): Promise<string | null> {
   const cookies = await getSessionCookies();
   if (hasSessionCookies(cookies, YT_COOKIE_HOST).length === 0) {
@@ -131,9 +130,9 @@ async function serializedSessionCookies(): Promise<string | null> {
   return serializeCookies(cookies, eol);
 }
 
-// Re-exports the persisted session to the Netscape cookie file that survives
-// restarts (source of truth for the auth partition hydration). Written with
-// 0600 (POSIX) / current-user-only ACL (Windows) so it is not world-readable.
+// Ponownie eksportuje zapisaną sesję do pliku cookies Netscape, który przetrwa
+// restarty (źródło prawdy dla nawodnienia partycji auth). Zapisywany z
+// 0600 (POSIX) / ACL tylko dla bieżącego użytkownika (Windows), więc nie jest publicznie czytelny.
 export async function exportSessionCookies(): Promise<boolean> {
   try {
     const content = await serializedSessionCookies();
@@ -147,9 +146,9 @@ export async function exportSessionCookies(): Promise<boolean> {
   }
 }
 
-// Writes the live session to a temporary file for a single yt-dlp process. The
-// caller owns the file and must delete it via cleanupYtAuthTemp() when done —
-// the session never lingers as a copyable file beyond the process lifetime.
+// Zapisuje żywą sesję do pliku tymczasowego dla pojedynczego procesu yt-dlp.
+// Wywołujący jest właścicielem pliku i musi go usunąć przez cleanupYtAuthTemp() —
+// sesja nigdy nie zalega jako kopiowalny plik poza czasem życia procesu.
 export async function writeTempSessionCookies(): Promise<string | null> {
   try {
     const content = await serializedSessionCookies();
@@ -163,16 +162,16 @@ export async function writeTempSessionCookies(): Promise<string | null> {
   }
 }
 
-// Deletes a temporary cookie file created by writeTempSessionCookies. Safe to
-// call with any auth config — only files flagged as temporary are removed.
+// Usuwa tymczasowy plik cookies utworzony przez writeTempSessionCookies. Bezpieczne
+// do wywołania z dowolną konfiguracją auth — usuwane są tylko pliki oznaczone jako tymczasowe.
 export async function cleanupYtAuthTemp(auth?: YtAuthConfig | null): Promise<void> {
   if (!auth || !auth.temp || !auth.cookiesPath) return;
   await unlink(auth.cookiesPath).catch(() => {});
 }
 
-// Fallback for the "electron" method: if the partition's cookie store is not
-// readable yet (cold start), report the persisted Netscape file as valid as long
-// as it still carries an unexpired .youtube.com SID-family cookie.
+// Fallback dla metody "electron": jeśli magazyn cookies partycji nie jest jeszcze
+// czytelny (zimny start), zgłoś zapisany plik Netscape jako ważny, dopóki
+// nadal niesie niewygasłe cookie z rodziny SID dla .youtube.com.
 export async function cookieFileHasValidYouTubeSession(): Promise<boolean> {
   try {
     const content = await readFile(cookiesFilePath(), 'utf-8');

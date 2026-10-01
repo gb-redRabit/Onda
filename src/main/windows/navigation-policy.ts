@@ -2,11 +2,11 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { isPathInside } from '../path-security';
 
-// Exported for tests: the directory the app's own files live in.
+// Eksportowane dla testów: katalog, w którym żyją własne pliki aplikacji.
 export const APP_PATH = join(__dirname, '..');
 
 export interface NavigationPolicyOptions {
-  // Allow data: URLs (used by the PiP preview placeholder windows).
+  // Zezwól na adresy data: (używane przez okna-zastępcze podglądu PiP).
   allowData?: boolean;
 }
 
@@ -19,12 +19,12 @@ export function isAllowedNavigationUrl(
     const parsed = new URL(url);
     if (options.allowData && parsed.protocol === 'data:') return true;
     if (parsed.protocol === 'file:') {
-      // Only files shipped with the app. Media is served over http by the media
-      // server and consumed as <img>/<audio>/<video> sources — never as a
-      // navigation target — so nothing else may be navigated to. (Previously
-      // every file: URL was allowed, which is a local-file-read primitive.)
-      // `fileURLToPath` (not path.resolve on the pathname) handles Windows drive
-      // letters and percent-encoding correctly.
+      // Tylko pliki dostarczone z aplikacją. Media są serwowane przez http przez
+      // media server i konsumowane jako źródła <img>/<audio>/<video> — nigdy jako
+      // cel nawigacji — więc nic innego nie może być celem nawigacji. (Wcześniej
+      // każdy URL file: był dozwolony, co jest prymitywem odczytu pliku lokalnego.)
+      // `fileURLToPath` (a nie path.resolve na pathname) poprawnie obsługuje litery
+      // dysków Windows i percent-encoding.
       try {
         return isPathInside(APP_PATH, fileURLToPath(parsed));
       } catch {

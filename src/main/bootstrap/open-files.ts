@@ -2,12 +2,13 @@ import { dirname } from 'path';
 import type { BrowserWindow } from 'electron';
 
 /**
- * Files handed to Onda by the OS (file association, "Open with", command line).
- * They can arrive before the renderer has mounted its IPC listeners, so paths
- * are held until the renderer pulls them via `app:getPendingFiles`.
+ * Pliki przekazane Onda przez OS (skojarzenie plików, "Otwórz za pomocą",
+ * wiersz poleceń). Mogą dotrzeć, zanim renderer zamontuje swoje listenery IPC,
+ * więc ścieżki są przetrzymywane, dopóki renderer nie pobierze ich przez
+ * `app:getPendingFiles`.
  *
- * `grantRoot` is injected so the media-server dependency stays out of this
- * module (and it stays unit-testable).
+ * `grantRoot` jest wstrzykiwane, aby zależność od media-server nie trafiała do
+ * tego modułu (i aby pozostał testowalny jednostkowo).
  */
 export class OpenFileForwarder {
   private pending: string[] = [];
@@ -27,7 +28,7 @@ export class OpenFileForwarder {
 
   forward(paths: string[]): void {
     if (paths.length) {
-      // Grant the media server access to the folders of files opened from the OS.
+      // Przyznaje media serverowi dostęp do katalogów plików otwartych z OS.
       for (const p of paths) this.grantRoot(dirname(p));
       this.pending.push(...paths);
     }
@@ -37,7 +38,7 @@ export class OpenFileForwarder {
     win.webContents.send('open-files', paths);
   }
 
-  /** Returns the held paths and clears them (renderer pulled them). */
+  /** Zwraca przetrzymywane ścieżki i je czyści (renderer je pobrał). */
   takePending(): string[] {
     const files = this.pending;
     this.pending = [];

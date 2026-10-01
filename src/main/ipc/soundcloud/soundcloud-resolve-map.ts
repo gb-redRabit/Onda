@@ -10,9 +10,9 @@ interface ScTrackLike {
   user?: { permalink?: string; username?: string };
 }
 
-// Maps a resolved SoundCloud track to a yt-resolve `video` item. No avatar
-// fallback — a missing artwork shows the card placeholder instead of repeating
-// the profile image.
+// Mapuje rozwiązany utwór SoundCloud na element `video` yt-resolve. Bez fallbacku
+// awatara — brakująca okładka pokazuje placeholder karty, zamiast powtarzać
+// obraz profilu.
 export function mapScTrackItem(t: ScTrackLike, target: string) {
   const user = t.user || {};
   return {

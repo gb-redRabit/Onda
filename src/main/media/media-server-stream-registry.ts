@@ -8,9 +8,9 @@ const genericStreamUrls = new Map<string, number>();
 type LookupAllAddresses = (hostname: string) => Promise<LookupAddress[]>;
 
 /**
- * Register only URLs returned by yt-dlp's generic extractor. The stream proxy
- * still resolves and pins the address before every request, so this registry
- * does not turn the media server into an arbitrary URL proxy.
+ * Rejestruje tylko URL-e zwrócone przez generyczny extractor yt-dlp. Proxy
+ * strumienia i tak rozwiązuje i przypina adres przed każdym żądaniem, więc ten
+ * rejestr nie zamienia serwera mediów w proxy dowolnych URL-i.
  */
 export async function registerGenericStreamUrl(
   rawUrl: string,
@@ -21,7 +21,7 @@ export async function registerGenericStreamUrl(
   const target = await resolveNetworkTarget(rawUrl, {}, lookupHost);
   const key = target.url.href;
 
-  // Refresh insertion order as well as expiry, making the bounded map LRU-like.
+  // Odświeża kolejność wstawiania oraz wygaśnięcie, czyniąc ograniczoną mapę podobną do LRU.
   genericStreamUrls.delete(key);
   genericStreamUrls.set(key, now + GENERIC_STREAM_TTL_MS);
   for (const [registeredUrl, expiresAt] of genericStreamUrls) {

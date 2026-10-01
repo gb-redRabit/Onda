@@ -2,9 +2,9 @@ import crypto from 'crypto';
 import { sep } from 'path';
 import { isAllowedRadioHost } from '../ipc/radio-store';
 
-// Pure security/stream helpers extracted from `media-server.ts` (plan 2.8).
-// `media-server` re-exports `isAllowedStreamHost` and `validateStreamUrl` so
-// importers and tests stay unchanged.
+// Czyste helpery bezpieczeństwa/strumienia wyodrębnione z `media-server.ts` (plan 2.8).
+// `media-server` re-eksportuje `isAllowedStreamHost` i `validateStreamUrl`, aby
+// importerzy i testy pozostały bez zmian.
 
 export function isWithinRoot(filePath: string, root: string): boolean {
   if (process.platform === 'win32') {
@@ -28,7 +28,7 @@ export function timingSafeEqualString(a: string, b: string): boolean {
 }
 
 export function allowedOrigin(origin: string | undefined): string | null {
-  // Chromium sends 'null' as the literal string for file:// pages.
+  // Chromium wysyła 'null' jako dosłowny string dla stron file://.
   if (!origin) return null;
   if (origin === 'null') return origin;
   let parsed: URL;
@@ -44,28 +44,28 @@ export function allowedOrigin(origin: string | undefined): string | null {
   return isLocalDev ? origin : null;
 }
 
-// Remote stream proxying (online playback). Only YouTube/SoundCloud media
-// hosts plus the hosts of user-added radio stations are allowed so the
-// endpoint cannot be abused as an open SSRF proxy; the renderer can only ever
-// reach it with URLs produced by `yt:stream:get` / `sc:stream:get` or stations
-// persisted via `radio:save`.
+// Proxy zdalnych strumieni (odtwarzanie online). Dozwolone są tylko hosty mediów
+// YouTube/SoundCloud oraz hosty stacji radiowych dodanych przez użytkownika, aby
+// endpoint nie mógł być nadużyty jako otwarty proxy SSRF; renderer może do niego
+// dotrzeć wyłącznie z URL-ami wyprodukowanymi przez `yt:stream:get` / `sc:stream:get`
+// lub stacjami zapisanymi przez `radio:save`.
 export const STREAM_ALLOWED_HOSTS = [
   'googlevideo.com',
   'ytimg.com',
   'youtube.com',
   'youtu.be',
-  // SoundCloud progressive MP3 CDN + page hosts (short links redirect there).
+  // CDN progresywnego MP3 SoundCloud + hosty stron (tam przekierowują krótkie linki).
   'sndcdn.com',
   'soundcloud.com',
   'snd.sc'
 ];
 export const STREAM_MAX_REDIRECTS = 3;
-// googlevideo 403s are usually transient (per-IP throttling, flaky edge
-// routing), so give each stream up to 4 attempts with a short backoff. The
-// last delay is longer: throttle windows on a shared CGNAT IP can outlast the
-// first two, and the 4th attempt usually lands in a fresh window.
+// 403 z googlevideo są zwykle przejściowe (throttling per-IP, niestabilny routing
+// brzegowy), więc daj każdemu strumieniowi do 4 prób z krótkim backoffem. Ostatnia
+// zwłoka jest dłuższa: okna throttlingu na współdzielonym IP CGNAT mogą przetrwać
+// pierwsze dwie, a 4. próba zwykle trafia w świeże okno.
 export const STREAM_MAX_ATTEMPTS = 4;
-// Delay before retry attempt N (index 0 = before attempt 2, etc.).
+// Zwłoka przed próbą ponowienia N (indeks 0 = przed próbą 2, itd.).
 export const STREAM_RETRY_DELAYS = [400, 1200, 3000];
 export const STREAM_TIMEOUT_MS = 30000;
 
@@ -80,10 +80,10 @@ export function isAllowedStreamHost(hostname: string): boolean {
   );
 }
 
-// Validates a stream target for the /stream proxy: https on an allowlisted
-// YouTube media host, or http(s) on a host of a user-added radio station
-// (Icecast/SHOUTcast streams are commonly plain http). Returns null when
-// rejected.
+// Waliduje cel strumienia dla proxy /stream: https na dozwolonym hoście mediów
+// YouTube lub http(s) na hoście stacji radiowej dodanej przez użytkownika
+// (strumienie Icecast/SHOUTcast są często zwykłym http). Zwraca null, gdy
+// odrzucono.
 export function validateStreamUrl(rawUrl: string): URL | null {
   let parsed: URL;
   try {
@@ -106,7 +106,7 @@ export function validateStreamUrl(rawUrl: string): URL | null {
   return parsed;
 }
 
-// Browser-like UA: some googlevideo endpoints reject requests whose
-// User-Agent does not look like a browser.
+// UA przypominający przeglądarkę: niektóre endpointy googlevideo odrzucają żądania,
+// których User-Agent nie wygląda jak przeglądarka.
 export const STREAM_USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';

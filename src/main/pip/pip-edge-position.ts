@@ -1,15 +1,15 @@
 export interface EdgePeekBoundsArgs {
   dock: 'top' | 'bottom' | 'left' | 'right';
   peeked: boolean;
-  /** Width of the visible sliver when the window is hidden at the screen edge. */
+  /** Szerokość widocznego paska, gdy okno jest ukryte na krawędzi ekranu. */
   sliver: number;
   workArea: { x: number; y: number; width: number; height: number };
   size: { width: number; height: number };
 }
 
 /**
- * Bounds for an edge-docked PiP window. Shared by the peek/preview repositioning
- * and the regular `positionWindow` in `AudioPipManager` (plan 2.8).
+ * Współrzędne dla okna PiP zadokowanego na krawędzi. Współdzielone przez
+ * repozycjonowanie peek/preview i zwykłe `positionWindow` w `AudioPipManager` (plan 2.8).
  */
 export function computeEdgePeekBounds(args: EdgePeekBoundsArgs): {
   x: number;

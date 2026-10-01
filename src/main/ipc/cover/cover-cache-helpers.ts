@@ -3,7 +3,7 @@ import { statSync } from 'fs';
 import { basename, dirname, extname, join } from 'path';
 import { AUDIO_EXTS, VIDEO_EXTS } from '../../../shared/constants';
 
-// Pure helpers extracted from `cover-cache.ts` (plan 2.8) — no cache state.
+// Czyste helpery wyodrębnione z `cover-cache.ts` (plan 2.8) — bez stanu cache.
 
 export function evictCache(map: Map<string, unknown>, maxSize: number): void {
   if (map.size <= maxSize) return;

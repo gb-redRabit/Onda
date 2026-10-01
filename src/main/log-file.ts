@@ -10,9 +10,9 @@ import { WriteQueue } from './utils/write-queue';
 
 const LOG_LINES = 2000;
 
-// `general.logLevel` / `general.logMaxSizeMB` (Settings → System → Logs). Applied
-// at boot and whenever the settings change, so the level/cap are honoured instead
-// of being decorative controls.
+// `general.logLevel` / `general.logMaxSizeMB` (Ustawienia → System → Logi). Stosowane
+// przy starcie i przy każdej zmianie ustawień, więc poziom/limit są respektowane,
+// a nie pełnią funkcji dekoracyjnej.
 const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
 type LogLevel = (typeof LOG_LEVELS)[number];
 const LEVEL_WEIGHT: Record<LogLevel, number> = { debug: 0, info: 1, warn: 2, error: 3 };
@@ -65,8 +65,8 @@ function writeLine(level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR', args: unknown[]):
   writeQueue.push(async () => {
     try {
       await mkdir(dir, { recursive: true });
-      // Rotate (keep one previous file) instead of truncating, so a burst that
-      // crosses the cap does not throw away the earlier diagnostics.
+      // Rotuje (zachowując jeden poprzedni plik) zamiast obcinać, aby seria
+      // przekraczająca limit nie wyrzuciła wcześniejszej diagnostyki.
       await rotateLogIfNeeded(file, maxFileBytes);
       await appendFile(file, line, 'utf-8');
     } catch (e) {
@@ -75,7 +75,7 @@ function writeLine(level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR', args: unknown[]):
   });
 }
 
-// Patch console in the main process so every logger call also lands on disk.
+// Podmienia console w procesie głównym, aby każde wywołanie loggera trafiało też na dysk.
 export function setupFileLogging(): void {
   const original = {
     log: console.log,
@@ -88,7 +88,7 @@ export function setupFileLogging(): void {
     original.log(...args);
     writeLine('INFO', args);
   };
-  // `console.info` is its own reference in Node, so patching `log` is not enough.
+  // `console.info` ma w Node własną referencję, więc samo podmienienie `log` nie wystarczy.
   console.info = (...args: unknown[]) => {
     original.info(...args);
     writeLine('INFO', args);
@@ -101,7 +101,7 @@ export function setupFileLogging(): void {
     original.warn(...args);
     writeLine('WARN', args);
   };
-  // `debug` only reaches the file when `logLevel` is 'debug'.
+  // `debug` trafia do pliku tylko wtedy, gdy `logLevel` ma wartość 'debug'.
   console.debug = (...args: unknown[]) => {
     original.debug(...args);
     writeLine('DEBUG', args);
@@ -109,12 +109,12 @@ export function setupFileLogging(): void {
 }
 
 /**
- * Resolves once every queued line has been written.
+ * Rozwiązuje się, gdy każda zakolejkowana linia zostanie zapisana.
  *
- * The queue is otherwise never awaited, which means the last lines before a
- * crash are lost and any caller that wants to read the log immediately after
- * logging has to guess a delay. `app:quit` awaits this; the tests await it
- * instead of sleeping.
+ * Kolejka poza tym nie jest nigdy oczekiwana, co oznacza, że ostatnie linie przed
+ * awarią przepadają, a każdy wywołujący, który chce odczytać log zaraz po
+ * zapisaniu, musi zgadywać opóźnienie. `app:quit` czeka na to; testy czekają na to
+ * zamiast spać.
  */
 export async function flushLogWrites(): Promise<void> {
   await writeQueue.whenIdle();
@@ -122,8 +122,8 @@ export async function flushLogWrites(): Promise<void> {
 
 export async function readLogTail(lines: number = LOG_LINES): Promise<string> {
   try {
-    // Include the previous rotation so a tail request right after a rotation
-    // still shows the most recent activity.
+    // Uwzględnia poprzednią rotację, aby żądanie ogona zaraz po rotacji
+    // nadal pokazywało najnowszą aktywność.
     const [previous, current] = await Promise.all([
       readFile(`${getLogPath()}.1`, 'utf-8').catch(() => ''),
       readFile(getLogPath(), 'utf-8').catch(() => '')

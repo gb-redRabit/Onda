@@ -22,29 +22,29 @@ export interface YtAuthConfig {
   method: YoutubeAuthMethod;
   cookiesPath?: string;
   cookiesBrowser?: string;
-  // True when cookiesPath points to a temporary file that must be deleted by
-  // the caller once the yt-dlp process finishes (see cleanupYtAuthTemp).
+  // True, gdy cookiesPath wskazuje tymczasowy plik, który musi zostać usunięty przez
+  // wywołującego po zakończeniu procesu yt-dlp (patrz cleanupYtAuthTemp).
   temp?: boolean;
 }
 
-// Finds a Node.js executable that yt-dlp can use to solve YouTube's JavaScript
-// challenges (signature / n-challenge). Without one, yt-dlp reports "JS runtimes:
-// none" and playback extraction fails with "The page needs to be reloaded".
+// Znajduje plik wykonywalny Node.js, którego yt-dlp może użyć do rozwiązania JavaScriptowych
+// wyzwań YouTube (signature / n-challenge). Bez niego yt-dlp raportuje "JS runtimes:
+// none", a ekstrakcja odtwarzania kończy się błędem "The page needs to be reloaded".
 export function detectJsRuntime(
   env: NodeJS.ProcessEnv,
   probe: (path: string) => boolean = existsSync,
   platform: NodeJS.Platform = process.platform
 ): string | null {
-  // npm sets this to the node binary that runs npm scripts (dev flow).
+  // npm ustawia to na binarkę node uruchamiającą skrypty npm (przepływ dev).
   if (env.npm_node_execpath && probe(env.npm_node_execpath)) {
     return env.npm_node_execpath;
   }
   const separator = platform === 'win32' ? ';' : ':';
   const exe = platform === 'win32' ? 'node.exe' : 'node';
-  // Build candidate paths with the platform's own grammar. IPC tests run on
-  // every CI platform, so a win32 lookup must produce win32 separators even
-  // when the host is posix (and vice versa); host join() alone would mix
-  // separators (C:\foo + /bar) and never match a real executable.
+  // Buduj ścieżki-kandydatów gramatyką danej platformy. Testy IPC działają na
+  // każdej platformie CI, więc wyszukiwanie win32 musi dawać separatory win32 nawet
+  // gdy host jest posix (i odwrotnie); sam join() hosta mieszałby
+  // separatory (C:\foo + /bar) i nigdy nie dopasował prawdziwego pliku wykonywalnego.
   const pjoin = platform === 'win32' ? winPath : posixPath;
   for (const dir of (env.PATH || '').split(separator)) {
     if (!dir) continue;
@@ -69,8 +69,8 @@ export function detectJsRuntime(
 
 let cachedRuntime: string | null | undefined;
 
-// Cached wrapper around detectJsRuntime for production calls. Returns null when
-// no runtime exists — yt-dlp then falls back to its own discovery.
+// Cache'owany wrapper wokół detectJsRuntime dla wywołań produkcyjnych. Zwraca null, gdy
+// nie istnieje żaden runtime — yt-dlp spada wtedy do własnego wykrywania.
 function resolveJsRuntime(): string | null {
   if (cachedRuntime === undefined) {
     cachedRuntime = detectJsRuntime(process.env, existsSync, process.platform);
@@ -78,10 +78,10 @@ function resolveJsRuntime(): string | null {
   return cachedRuntime;
 }
 
-// Injects the authentication flags (session cookies) into a yt-dlp command.
-// Works for both the in-app Google session ("electron"), an imported cookies
-// file ("manual") and a system browser ("browser"). Also passes an explicit JS
-// runtime to yt-dlp so signature/n-challenge solving never silently fails.
+// Wstrzykuje flagi uwierzytelniania (cookies sesji) do komendy yt-dlp.
+// Działa zarówno dla sesji Google w aplikacji ("electron"), importowanego pliku
+// cookies ("manual") i przeglądarki systemowej ("browser"). Przekazuje też jawny JS
+// runtime do yt-dlp, aby rozwiązywanie signature/n-challenge nigdy nie zawiodło po cichu.
 export function buildYtArgs(
   base: string[],
   auth?: YtAuthConfig | null,
@@ -99,9 +99,9 @@ export function buildYtArgs(
   if (jsRuntime && !args.includes('--js-runtimes') && !extras.includes('--js-runtimes')) {
     extras.push('--js-runtimes', `node:${jsRuntime}`);
   }
-  // When the caller already ended the options list with '--', all injected
-  // flags must land *before* that separator; otherwise yt-dlp treats them as
-  // positional URLs.
+  // Gdy wywołujący zakończył już listę opcji przez '--', wszystkie wstrzyknięte
+  // flagi muszą trafić *przed* tym separatorem; inaczej yt-dlp potraktuje je jako
+  // pozycyjne URL-e.
   const sepIndex = args.indexOf('--');
   if (sepIndex >= 0) {
     args.splice(sepIndex, 0, ...extras);
@@ -111,31 +111,31 @@ export function buildYtArgs(
   return args;
 }
 
-// Builds the base (pre-auth) argument list for resolving a direct audio
-// stream URL via `yt-dlp -g`. Auth flags are injected later by buildYtArgs
-// at spawn time, so this stays a pure function and is unit-testable.
+// Buduje bazową (przed auth) listę argumentów do rozwiązania bezpośredniego URL
+// strumienia audio przez `yt-dlp -g`. Flagi auth są wstrzykiwane później przez buildYtArgs
+// w momencie spawn, więc to pozostaje czystą funkcją i jest testowalne jednostkowo.
 export function buildStreamGetArgs(
   url: string,
   proxyArgs: string[] = [],
   options: { fallback?: boolean; generic?: boolean } = {}
 ): string[] {
-  // Prefer progressive (https) formats, which <audio> can play directly:
-  // DASH (http_dash_segments) and HLS (m3u8) streams need MSE/hls.js. The
-  // trailing ba/bestaudio/b/w fallback keeps a result (possibly HLS, reported
-  // as a readable error) when no progressive format exists.
-  // --no-check-formats avoids the "Requested format is not available" failure
-  // when yt-dlp's format verification is blocked (common for -g).
-  // -4 forces IPv4: playback URLs are signed with the client IP YouTube saw,
-  // and our media-server proxy connects reliably over IPv4 — a v6-signed URL
-  // 403s whenever the ISP's IPv6 route is flaky.
-  // player_client=ios_safari,tv_embedded: as of 2026-08 YouTube's SABR
-  // experiment strips the URLs of audio-only DASH formats (itag 140/251) for
-  // the android/web clients, leaving only the combined 360p itag 18 (~50 MB
-  // per song). ios_safari (visionOS) and tv_embedded still return plain CDN
-  // audio-only URLs (itag 251 opus ≈ 2.7 MB) and resolve ~2× faster.
-  // `fallback` (android,web) is used as a second attempt when both primary
-  // clients fail (age-restricted videos etc.) — it degrades to itag 18, but
-  // keeps playback working where the primary clients can't extract at all.
+  // Preferuj formaty progresywne (https), które <audio> odtworzy bezpośrednio:
+  // strumienie DASH (http_dash_segments) i HLS (m3u8) wymagają MSE/hls.js. Końcowy
+  // fallback ba/bestaudio/b/w zachowuje wynik (możliwie HLS, raportowany
+  // jako czytelny błąd), gdy nie istnieje format progresywny.
+  // --no-check-formats unika błędu "Requested format is not available",
+  // gdy weryfikacja formatów yt-dlp jest zablokowana (częste dla -g).
+  // -4 wymusza IPv4: URL-e odtwarzania są podpisane adresem IP klienta, który widział YouTube,
+  // a nasze proxy serwera mediów łączy się niezawodnie przez IPv4 — URL podpisany v6
+  // daje 403, gdy trasa IPv6 ISP jest niestabilna.
+  // player_client=ios_safari,tv_embedded: od 2026-08 eksperyment SABR YouTube'a
+  // usuwa URL-e formatów DASH tylko-audio (itag 140/251) dla
+  // klientów android/web, zostawiając tylko połączony 360p itag 18 (~50 MB
+  // na utwór). ios_safari (visionOS) i tv_embedded nadal zwracają zwykłe CDN-owe
+  // URL-e tylko-audio (itag 251 opus ≈ 2,7 MB) i rozwiązują ~2× szybciej.
+  // `fallback` (android,web) jest używany jako druga próba, gdy oba główne
+  // klienty zawiodą (filmy z ograniczeniem wiekowym itp.) — degraduje do itag 18, ale
+  // utrzymuje odtwarzanie tam, gdzie główne klienty nie potrafią wyodrębnić wcale.
   const client = options.fallback ? 'android,web' : 'ios_safari,tv_embedded';
   const platformArgs = options.generic
     ? []
@@ -159,9 +159,9 @@ export interface StreamGetOutput {
   code?: 'hls' | 'invalid';
 }
 
-// Parses the single-line stdout of `yt-dlp -g` into a validated stream URL.
-// Rejects empty output, non-http(s) values and HLS playlists (Chromium
-// <audio> cannot play .m3u8 without hls.js).
+// Parsuje jednoliniowe stdout `yt-dlp -g` do zwalidowanego URL strumienia.
+// Odrzuca puste wyjście, wartości inne niż http(s) i playlisty HLS (Chromium
+// <audio> nie odtworzy .m3u8 bez hls.js).
 export function parseStreamGetOutput(stdout: string): StreamGetOutput {
   const firstLine = stdout.trim().split(/\r?\n/, 1)[0]?.trim() ?? '';
   if (!firstLine || !/^https?:\/\//i.test(firstLine)) {
@@ -183,7 +183,7 @@ interface YtCookieLike {
   expirationDate?: number;
 }
 
-// Serializes cookies to the Netscape/Mozilla cookie file format yt-dlp accepts.
+// Serializuje cookies do formatu pliku cookie Netscape/Mozilla akceptowanego przez yt-dlp.
 function sanitizeField(value: string): string {
   return value.replace(/[\t\r\n]/g, '');
 }
@@ -214,9 +214,9 @@ export function serializeCookies(cookies: YtCookieLike[], eol = '\n'): string {
   return lines.join(eol);
 }
 
-// Minimal structural check for a Netscape cookie file (>= 1 data line with 7
-// tab-separated columns). The HTTP 400 on Windows is avoided by re-writing the
-// imported file with the OS-native EOL.
+// Minimalne sprawdzenie strukturalne pliku cookie Netscape (>= 1 linia danych z 7
+// kolumnami rozdzielonymi tabulatorem). HTTP 400 w Windows jest unikane przez przepisanie
+// importowanego pliku z natywnym dla OS EOL.
 export function isValidCookieFile(content: string): boolean {
   const lines = content.split(/\r?\n/);
   let dataLines = 0;
@@ -239,9 +239,9 @@ interface NetscapeParsedCookie {
   expirationDate?: number;
 }
 
-// The inverse of serializeCookies: parses a Netscape cookie file back into
-// cookie-set params. Used to re-seed the in-app session partition from the
-// persisted file when the Chromium cookie store loses the live session.
+// Odwrotność serializeCookies: parsuje plik cookie Netscape z powrotem do
+// parametrów cookie-set. Używane do ponownego zasilenia partycji sesji w aplikacji z
+// zapisanego pliku, gdy store cookie Chromium zgubi żywą sesję.
 export function parseNetscapeCookies(content: string): NetscapeParsedCookie[] {
   const out: NetscapeParsedCookie[] = [];
   for (const line of content.split(/\r?\n/)) {
@@ -266,8 +266,8 @@ export function parseNetscapeCookies(content: string): NetscapeParsedCookie[] {
       path,
       secure,
       ...(expiry > 0 ? { expirationDate: expiry } : {}),
-      // Host-only cookies must NOT carry a domain option (Chromium would
-      // otherwise treat them as super-domain cookies).
+      // Cookie host-only NIE mogą nieść opcji domain (Chromium
+      // potraktowałby je inaczej jako cookie super-domenowe).
       ...(hostOnly ? {} : { domain })
     };
     out.push(cookie);
@@ -282,8 +282,8 @@ export {
   parseBatchInput
 } from '../../../shared/youtube';
 
-// Normalizes a flat yt-dlp entry (playlist/channel row or full video info)
-// into the shape the renderer consumes for the resolve preview.
+// Normalizuje płaski wpis yt-dlp (wiersz playlisty/kanału lub pełne info o wideo)
+// do kształtu, który renderer konsumuje dla podglądu resolve.
 // Wyciąga pierwszy URL awatara kanału z HTML-a strony kanału (ytInitialData).
 // yt-dlp z `--flat-playlist` bywa, że nie zwróci żadnej miniatury w headerze
 // kanału — wtedy używamy tej samej strony, którą i tak parsuje yt-dlp.
@@ -303,7 +303,7 @@ export async function resolveChannelAvatar(channelId: string): Promise<string> {
   }
 }
 
-// Maps a playlist/channel container entry to the renderer preview result.
+// Mapuje wpis kontenera playlisty/kanału na wynik podglądu renderera.
 export function mapResolvedContainer(entry: YtDlpEntry): YouTubeResolvedItem[] {
   const items = (entry.entries || [])
     .filter((e) => e.id && e.title)

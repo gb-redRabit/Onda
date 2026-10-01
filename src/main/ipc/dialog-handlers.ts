@@ -5,9 +5,9 @@ import { VIDEO_EXTS, AUDIO_EXTS } from '../../shared/constants';
 import { addAllowedRoot } from '../media/media-server';
 import { logger } from '../../shared/logger';
 
-// Parent the dialog to the window that actually invoked it. `getFocusedWindow()`
-// can point at another window (PiP, explorer) if focus changes while the call is
-// in flight, which makes the modal attach to the wrong window.
+// Ustawia okno, które faktycznie wywołało dialog, jako jego rodzica. `getFocusedWindow()`
+// może wskazywać inne okno (PiP, eksplorator), jeśli fokus zmieni się w trakcie
+// wywołania, przez co modal przypina się do złego okna.
 function getParentWindow(sender: Electron.WebContents): BrowserWindow | null {
   return (
     BrowserWindow.fromWebContents(sender) ??

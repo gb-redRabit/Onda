@@ -2,16 +2,17 @@ import { isAbsolute, win32 as win32Path } from 'path';
 
 const MAX_PATH_LENGTH = 4096;
 
-// IPC arguments come from the renderer and are never trusted. These guards
-// validate the shape of filesystem arguments before any fs operation runs.
+// Argumenty IPC pochodzą z renderera i nigdy nie są zaufane. Te strażniki
+// walidują kształt argumentów systemu plików, zanim uruchomi się jakakolwiek operacja fs.
 
 export function isSafeAbsolutePath(value: unknown): value is string {
   if (typeof value !== 'string') return false;
   if (!value || value.length > MAX_PATH_LENGTH) return false;
   if (value.includes('\0')) return false;
-  // Accept an absolute path in either gramatyka — win32 (C:/... or C:\...) or
-  // posix (/...). IPC callers are tested on all platforms, and a path is only
-  // "safe-absolute" if it is unambiguously absolute in at least one grammar.
+  // Akceptuj ścieżkę absolutną w którejkolwiek gramatyce — win32 (C:/... lub C:\...)
+  // albo posix (/...). Wywołujący IPC są testowani na wszystkich platformach, a
+  // ścieżka jest "safe-absolute" tylko wtedy, gdy jest jednoznacznie absolutna w co
+  // najmniej jednej gramatyce.
   return isAbsolute(value) || win32Path.isAbsolute(value);
 }
 

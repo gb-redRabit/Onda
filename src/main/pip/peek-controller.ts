@@ -1,16 +1,16 @@
-// Peek/auto-hide state machine for the edge-docked audio PiP (plan 6.2),
-// extracted from `audio-pip-manager.ts` so it can be tested without Electron.
-// The manager supplies the policy (`canPeek`) and the side effects (bounds +
-// UI update); the controller owns the state and the timer.
+// Maszyna stanów peek/auto-hide dla audio PiP zadokowanego na krawędzi (plan 6.2),
+// wyodrębniona z `audio-pip-manager.ts`, aby można ją było testować bez Electrona.
+// Manager dostarcza politykę (`canPeek`) i efekty uboczne (współrzędne +
+// aktualizacja UI); kontroler posiada stan i timer.
 
 export interface PeekControllerDeps {
-  /** Auto-hide enabled, an edge dock is active and no preview is showing. */
+  /** Auto-hide włączony, aktywne zadokowanie na krawędzi i brak pokazywanego podglądu. */
   canPeek: () => boolean;
-  /** Peeking only applies to a live, visible window. */
+  /** Peek dotyczy tylko żywego, widocznego okna. */
   isWindowVisible: () => boolean;
-  /** Repositions the window for the new peeked state. */
+  /** Repozycjonuje okno dla nowego stanu peeked. */
   applyPeeked: (peeked: boolean) => void;
-  /** Called after the state changed (UI refresh); optional. */
+  /** Wywoływane po zmianie stanu (odświeżenie UI); opcjonalne. */
   onChanged?: (peeked: boolean) => void;
   delayMs?: number;
   setTimeoutFn?: typeof setTimeout;
@@ -47,8 +47,8 @@ export class PeekController {
     this.setPeeked(false);
   }
 
-  /** Arms the auto-peek timer; no-op while one is pending, when peeking is not
-   * allowed or when the window is already peeked. */
+  /** Uzbraja timer auto-peek; no-op, gdy jakiś jest w toku, gdy peek nie jest
+   * dozwolony lub gdy okno jest już w stanie peeked. */
   schedule(): void {
     if (this.delayTimer || !this.deps.canPeek() || this.peekedState) return;
     const setTimeoutFn = this.deps.setTimeoutFn ?? setTimeout;
@@ -66,7 +66,7 @@ export class PeekController {
     }
   }
 
-  /** Drops the pending timer and the peeked state (callers usually also hide). */
+  /** Usuwa oczekujący timer i stan peeked (wywołujący zwykle też ukrywają). */
   reset(): void {
     this.cancelDelay();
     this.peekedState = false;

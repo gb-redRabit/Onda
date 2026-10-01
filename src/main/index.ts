@@ -42,7 +42,7 @@ import { asPositiveNumber, asNonEmptyString } from './utils/store-guards';
 
 let mainWindow: BrowserWindow | null = null;
 let startHidden = false;
-// Guards the one-shot async cleanup in the `before-quit` handler below.
+// Chroni jednorazowe asynchroniczne sprzątanie w handlerze `before-quit` poniżej.
 let isAppQuitting = false;
 
 const splash = new SplashController({
@@ -51,7 +51,7 @@ const splash = new SplashController({
   isStartHidden: () => startHidden
 });
 
-// Records the phase in the boot timeline (Diagnostics → Performance) and logs it.
+// Zapisuje fazę na osi czasu startu (Diagnostyka → Wydajność) i loguje ją.
 function perf(label: string): number {
   const ms = markBootPhase(label);
   logger.info('boot', `${label} — ${ms}ms`);
@@ -65,9 +65,9 @@ const openFiles = new OpenFileForwarder(
   (dir) => void addAllowedRoot(dir)
 );
 
-// E2E/portable override: point the whole profile (settings, logs, tokens) at a
-// throw-away directory before anything reads it. Must run before the
-// single-instance lock, which is keyed off userData.
+// Nadpisanie E2E/portable: kieruje cały profil (ustawienia, logi, tokeny) do
+// katalogu jednorazowego, zanim cokolwiek go odczyta. Musi zadziałać przed
+// blokadą pojedynczej instancji, która opiera się na userData.
 if (process.env.ONDA_USER_DATA_DIR) {
   app.setPath('userData', process.env.ONDA_USER_DATA_DIR);
 }
@@ -77,8 +77,8 @@ if (!gotSingleInstanceLock) {
   app.quit();
 } else {
   app.on('second-instance', (_event, argv) => {
-    // Focus the existing window even when launched without a file (e.g. clicking
-    // the desktop/taskbar icon) and forward any media paths.
+    // Skupia istniejące okno nawet przy uruchomieniu bez pliku (np. kliknięcie
+    // ikony na pulpicie/pasku zadań) i przekazuje dalej ścieżki mediów.
     openFiles.forward(extractMediaPaths(argv));
   });
   app.on('open-file', (event, path) => {
@@ -96,7 +96,7 @@ function createWindow(): BrowserWindow {
     show: false,
     ...GLASS_WINDOW_OPTS,
     icon: windowIcon(),
-    // The splash owns when the main window first appears.
+    // Splash decyduje, kiedy okno główne pojawi się po raz pierwszy.
     onReadyToShow: (w) => {
       if (!splash.isActive() && !startHidden) w.show();
     }
@@ -109,20 +109,20 @@ function createWindow(): BrowserWindow {
     }
   });
 
-  // Boot diagnostics: a renderer that never finishes loading otherwise looks
-  // like a silent hang (no window is ever shown). A real renderer failure also
-  // surfaces the window right away (with the error logged) instead of leaving
-  // the user staring at the splash.
+  // Diagnostyka startu: renderer, który nigdy nie kończy ładowania, wygląda
+  // inaczej jak ciche zawieszenie (żadne okno nie jest pokazywane). Prawdziwa
+  // awaria renderera od razu pokazuje okno (z zalogowanym błędem), zamiast
+  // zostawiać użytkownika wpatrzonego w splash.
   win.webContents.on(
     'did-fail-load',
     (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
-      // -3 (ERR_ABORTED) is a normal navigation/reload artefact, not a failure.
+      // -3 (ERR_ABORTED) to normalny artefakt nawigacji/przeładowania, nie awaria.
       if (errorCode === -3) return;
       logger.error('main', `did-fail-load ${errorCode} ${errorDescription} ${validatedURL}`);
       if (!isMainFrame) return;
-      // A main-frame failure leaves the app with no UI at all: explain it
-      // instead of showing an empty (white/acrylic) window. In dev the usual
-      // cause is the Vite dev server not being up.
+      // Awaria ramki głównej zostawia aplikację całkiem bez UI: wyjaśnij to
+      // zamiast pokazywać puste (białe/akrylowe) okno. W trybie dev zwykłą
+      // przyczyną jest niedziałający serwer dev Vite.
       const m = mainMessages();
       const hint = is.dev ? m.loadFailedDevHint : '';
       dialog.showErrorBox(
@@ -151,8 +151,8 @@ app.whenReady().then(async () => {
 
   electronApp.setAppUserModelId('com.onda.app');
 
-  // Main-process messages (splash, dialogs) follow the OS locale until the
-  // saved setting is read below.
+  // Komunikaty procesu głównego (splash, okna dialogowe) podążają za locale OS,
+  // dopóki zapisane ustawienie nie zostanie odczytane poniżej.
   initMainLocale();
 
   setupFileLogging();
@@ -182,12 +182,12 @@ app.whenReady().then(async () => {
 
   try {
     const store = await getStore();
-    // Cover cache size from Settings → Library. Values come from a JSON file on
-    // disk, so they are validated rather than cast.
+    // Rozmiar cache okładek z Ustawienia → Biblioteka. Wartości pochodzą z pliku
+    // JSON na dysku, więc są walidowane, a nie rzutowane.
     const library = store.get('library') as Record<string, unknown> | undefined;
     applyCoverCacheSettings(asPositiveNumber(library?.coverCacheMaxEntries));
     await initCoverCache();
-    // The saved UI locale now drives the remaining main-process messages.
+    // Zapisane locale UI napędza teraz pozostałe komunikaty procesu głównego.
     const appearance = store.get('appearance') as Record<string, unknown> | undefined;
     setMainLocale(asNonEmptyString(appearance?.locale));
     const folders = store.get('libraryFolders', []);
@@ -195,8 +195,8 @@ app.whenReady().then(async () => {
     if (Array.isArray(folders)) {
       await setAllowedRoots(folders);
     }
-    // Persist roots granted at runtime (download output dirs, opened files)
-    // so downloaded media stays playable after a restart.
+    // Utrwala korzenie przyznane w czasie działania (katalogi wyjściowe pobierania,
+    // otwarte pliki), aby pobrane media pozostały odtwarzalne po restarcie.
     let rootsPersistTimer: ReturnType<typeof setTimeout> | null = null;
     setRootsChangedHandler(() => {
       if (rootsPersistTimer) return;
@@ -205,8 +205,8 @@ app.whenReady().then(async () => {
         void store.set('mediaRoots', getExtraRoots().slice(0, 50));
       }, 500);
     });
-    // Seed previously granted roots plus the default downloads dir, so fresh
-    // downloads and old ones outside the library are servable right away.
+    // Zasiewa wcześniej przyznane korzenie plus domyślny katalog pobierania, aby
+    // świeże pobrania i stare spoza biblioteki były serwowane od razu.
     const storedRoots = store.get('mediaRoots', []);
     bootRoots = Array.isArray(storedRoots) ? storedRoots.length : 0;
     const seedRoots = new Set<string>([
@@ -221,8 +221,8 @@ app.whenReady().then(async () => {
       await addAllowedRoot(root);
     }
     logger.info('boot', `settings: folders=${bootFolders} roots=${bootRoots}`);
-    // Apply the persisted general settings (close-to-tray + auto-launch sync +
-    // log level/file cap from Settings → System → Logs).
+    // Stosuje utrwalone ustawienia ogólne (close-to-tray + synchronizacja
+    // auto-uruchamiania + poziom/limit logów z Ustawienia → System → Logi).
     const general = store.get('general') as
       | {
           autoLaunch?: boolean;
@@ -247,8 +247,8 @@ app.whenReady().then(async () => {
     logger.warn('main', 'seeding media server roots from library folders failed', e);
   }
 
-  // Started at login with "start minimized" — keep the window hidden until the
-  // user opens it from the tray.
+  // Uruchomienie przy logowaniu z "start zminimalizowany" — trzymaj okno ukryte,
+  // dopóki użytkownik nie otworzy go z tray.
   startHidden = process.argv.includes('--hidden');
   perf(`settings ready (${bootFolders} folders, ${bootRoots} roots)`);
 
@@ -257,9 +257,9 @@ app.whenReady().then(async () => {
   ipcMain.handle('app:rendererReady', (event) => {
     perf('renderer ready');
     splash.onRendererReady();
-    // The renderer may mount after an update event already fired (startup
-    // check, reload, macOS re-activate) — replay the last one so the global
-    // notification isn't lost.
+    // Renderer może zamontować się po tym, jak zdarzenie aktualizacji już
+    // wystrzeliło (sprawdzenie przy starcie, przeładowanie, ponowna aktywacja
+    // macOS) — odtwórz ostatnie, aby globalne powiadomienie nie przepadło.
     replayUpdaterEvent(event.sender);
   });
 
@@ -276,11 +276,12 @@ app.whenReady().then(async () => {
     app.quit();
   });
 
-  // Graceful shutdown. `will-quit` is synchronous: the Node event loop is torn
-  // down as soon as the listener returns, so async flushes started there never
-  // finish — the last debounced writes are lost, .tmp files can be left behind
-  // and the library/stats files can be left half-written. Delay the quit once
-  // on `before-quit`, await every flush, then quit for real.
+  // Łagodne wyłączanie. `will-quit` jest synchroniczne: pętla zdarzeń Node jest
+  // rozbierana, gdy tylko listener zwróci, więc asynchroniczne opróżnienia
+  // rozpoczęte tam nigdy się nie kończą — ostatnie debounce'owane zapisy przepadają,
+  // pliki .tmp mogą zostać, a pliki biblioteki/statystyk mogą pozostać w połowie
+  // zapisane. Opóźnij wyjście raz na `before-quit`, zaczekaj na każde opróżnienie,
+  // potem wyjdź naprawdę.
   app.on('before-quit', (event) => {
     if (isAppQuitting) return;
     event.preventDefault();
@@ -288,18 +289,18 @@ app.whenReady().then(async () => {
     void (async () => {
       try {
         globalShortcut.unregisterAll();
-        // Stop background schedulers so no yt-dlp/network sweep starts during exit.
+        // Zatrzymaj harmonogramy w tle, aby żadne przeglądanie yt-dlp/sieci nie zaczęło się podczas wyjścia.
         stopSubscriptionChecker();
         mediaServer.close();
         closeLoginWindow();
-        // Flush debounced persistence so the last ~0.5s of changes aren't lost.
+        // Opróżnij debounce'owaną persystencję, aby ostatnie ~0,5 s zmian nie przepadły.
         flushQueueNow();
         await Promise.allSettled([
-          // The lines written during shutdown are the ones worth having when a
-          // crash brought us here.
+          // Linie zapisane podczas zamykania są tymi, które warto mieć, gdy
+          // doprowadziła nas tu awaria.
           flushLogWrites(),
           flushLibraryScanned(),
-          // Play statistics are debounced (400ms); flush them or the last plays are lost.
+          // Statystyki odtwarzania są debounce'owane (400 ms); opróżnij je, inaczej ostatnie odtworzenia przepadną.
           flushStats(),
           getStore().then((s) => s.set('mediaRoots', getExtraRoots().slice(0, 50)))
         ]);
@@ -333,26 +334,27 @@ app.whenReady().then(async () => {
   registerGlobalShortcuts(() => mainWindow);
   perf('PiP/tray/shortcuts ready');
 
-  // Forward media files passed on the command line (Windows/Linux) once the
-  // renderer has mounted its IPC listeners (pull-based via app:getPendingFiles).
+  // Przekaż pliki mediów podane w wierszu poleceń (Windows/Linux), gdy
+  // renderer zamontuje już swoje listenery IPC (pull-based przez app:getPendingFiles).
   const initialPaths = extractMediaPaths(process.argv.slice(1));
   if (initialPaths.length > 0) {
     openFiles.forward(initialPaths);
   }
 
-  // Minimum splash display is only an anti-flicker floor: the window is shown as
-  // soon as BOTH the main process finished loading AND the renderer signalled
-  // app:rendererReady. Keeping this short (~300ms) avoids adding artificial delay
-  // to a boot that is already ready in well under a second (see `perf` logs).
+  // Minimalny czas wyświetlania splasha to jedynie dolny limit przeciw migotaniu:
+  // okno jest pokazywane, gdy JEDNOCZEŚNIE proces główny zakończy ładowanie ORAZ
+  // renderer zgłosi app:rendererReady. Trzymanie tego krótkim (~300 ms) unika
+  // sztucznego opóźnienia startu, który i tak jest gotowy znacznie poniżej sekundy
+  // (patrz logi `perf`).
   setTimeout(() => {
     splash.onMinTimerDone();
   }, 300);
 
-  // Watchdog: never hide a broken renderer behind the splash forever, but also
-  // never flash an unpainted (white) window just because the renderer is slow
-  // (cold dev server, first run after a cache clear, slow disk). Warn every few
-  // seconds and only force the window at the deadline — real failures (crash,
-  // fail-load, preload error) call `forceClose()` immediately.
+  // Watchdog: nigdy nie ukrywaj zepsutego renderera za splashem na zawsze, ale też
+  // nigdy nie pokazuj niepomalowanego (białego) okna tylko dlatego, że renderer
+  // jest wolny (zimny serwer dev, pierwszy start po czyszczeniu cache, wolny dysk).
+  // Ostrzegaj co kilka sekund i wymuś okno dopiero w terminie — prawdziwe awarie
+  // (crash, fail-load, błąd preload) wołają `forceClose()` natychmiast.
   startBootWatchdog({
     isRendererReady: () => splash.isRendererReady(),
     onTimeout: () => splash.forceClose()
@@ -370,9 +372,9 @@ app.whenReady().then(async () => {
       mainWindow = createWindow();
       mainWindow.webContents.on('did-finish-load', () => splash.onMainReady());
 
-      // 'window-all-closed' destroys the PiP managers, which removes their
-      // ipcMain listeners. On macOS the app is still alive, so re-initialise
-      // them here or PiP stays broken until a full restart.
+      // 'window-all-closed' niszczy menedżery PiP, co usuwa ich listenery
+      // ipcMain. Na macOS aplikacja nadal żyje, więc zainicjalizuj je tutaj na
+      // nowo, inaczej PiP pozostanie zepsuty do pełnego restartu.
       pipManager.setMainWindow(mainWindow);
       pipManager.init();
       audioPipManager.setMainWindow(mainWindow);

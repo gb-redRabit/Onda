@@ -15,8 +15,8 @@ export interface IpcMetaOverride {
   year?: string;
 }
 
-// Full download configuration — the shape of the download config dialog payload
-// and the saved download profiles.
+// Pełna konfiguracja pobierania — kształt payloadu dialogu konfiguracji pobierania
+// i zapisanych profili pobierania.
 export interface IpcDownloadConfig {
   kind?: 'audio' | 'video';
   format?: string;
@@ -44,17 +44,17 @@ export interface IpcDownloadProfile {
   config: IpcDownloadConfig;
 }
 
-// Direct-URL (non-YouTube) download source. `mode: 'http'` streams the URL to a
-// file without yt-dlp; `mode: 'ytdlp'` is the default YouTube pipeline;
-// `mode: 'soundcloud'` resolves a fresh progressive-MP3 URL through the
-// SoundCloud API at attempt start, then streams it like http. Secrets
-// are never carried here — only an `apiKeyId` reference resolved in main.
+// Źródło pobierania bezpośredniego z URL (nie-YouTube). `mode: 'http'` strumieniuje URL do
+// pliku bez yt-dlp; `mode: 'ytdlp'` to domyślny potok YouTube;
+// `mode: 'soundcloud'` rozwiązuje świeży URL progresywnego MP3 przez
+// API SoundCloud na starcie próby, a potem strumieniuje go jak http. Sekrety
+// nigdy nie są tu przenoszone — tylko referencja `apiKeyId` rozwiązywana w main.
 export interface IpcDownloadSource {
   mode: 'http' | 'ytdlp' | 'soundcloud';
-  /** ID of the user-configured media source that created this job. */
+  /** ID skonfigurowanego przez użytkownika źródła mediów, które utworzyło to zadanie. */
   sourceId?: string;
-  /** API `id` of the source item (from the endpoint's `fields.id` mapping). When
-   *  present, a finished download records it as "downloaded" for this source. */
+  /** API `id` elementu źródła (z mapowania `fields.id` endpointu). Gdy
+   *  obecne, ukończone pobieranie zapisuje je jako "downloaded" dla tego źródła. */
   sourceItemId?: string;
   /** Finalna nazwa pliku (z rozszerzeniem) dla trybu http/soundcloud. */
   fileName?: string;
@@ -64,7 +64,7 @@ export interface IpcDownloadSource {
   headerName?: string;
   /** Dodatkowe nagłówki dla trybu ytdlp (np. Referer strony embed przy HLS). */
   headers?: Record<string, string>;
-  /** Per-source opt-in for direct downloads from a private/local network. */
+  /** Włączenie per źródło dla pobrań bezpośrednich z sieci prywatnej/lokalnej. */
   allowPrivateNetwork?: boolean;
 }
 
@@ -105,11 +105,11 @@ export type IpcDownloadErrorCode =
   | 'network'
   | 'proxy'
   | 'dependency'
-  // Destination disk/volume ran out of space (ENOSPC), from yt-dlp or the
-  // Node write stream.
+  // Docelowy dysk/wolumen skończył miejsce (ENOSPC), z yt-dlp lub ze
+  // strumienia zapisu Node.
   | 'disk-full'
-  // Resource recognized but not supported (e.g. personalized SoundCloud
-  // /discover/sets links, which the API does not serve).
+  // Zasób rozpoznany, ale nieobsługiwany (np. spersonalizowane linki
+  // SoundCloud /discover/sets, których API nie obsługuje).
   | 'unsupported'
   | 'unknown';
 

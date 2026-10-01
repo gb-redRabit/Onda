@@ -18,10 +18,10 @@ interface NetworkSettingsLike {
   downloadSpeedLimit?: number;
 }
 
-/** Which platform a request belongs to — picks the per-platform proxy. */
+/** Do której platformy należy żądanie — wybiera proxy dla danej platformy. */
 export type ProxyScope = 'youtube' | 'soundcloud' | 'generic';
 
-// Builds yt-dlp `--proxy` args from the persisted network settings.
+// Buduje argumenty `--proxy` yt-dlp z zapisanych ustawień sieci.
 function proxyToArgs(proxy: ProxyConfig | undefined | null): string[] {
   if (!proxy || !proxy.enabled || !proxy.host) return [];
   const scheme = proxy.type === 'socks5' ? 'socks5' : 'http';
@@ -32,8 +32,8 @@ function proxyToArgs(proxy: ProxyConfig | undefined | null): string[] {
   return ['--proxy', `${scheme}://${auth}${proxy.host}${port}`];
 }
 
-// Per-platform proxies apply only when the user enabled that mode AND the
-// per-platform proxy itself; otherwise the global proxy is used.
+// Proxy dla danej platformy stosuje się tylko wtedy, gdy użytkownik włączył ten tryb ORAZ
+// samo proxy dla platformy; w przeciwnym razie używane jest proxy globalne.
 function pickProxy(
   network: NetworkSettingsLike | undefined,
   scope: ProxyScope
@@ -64,21 +64,21 @@ export async function readProxyArgs(scope: ProxyScope = 'generic'): Promise<stri
   return proxyToArgs(pickProxy(await readNetworkSettings(), scope));
 }
 
-// Custom User-Agent for yt-dlp (some regions/ISPs need a specific one). The media
-// server keeps its own fixed UA on purpose: googlevideo playback URLs are signed
-// for the client that resolved them.
+// Niestandardowy User-Agent dla yt-dlp (niektóre regiony/ISP wymagają konkretnego). Serwer
+// mediów celowo trzyma własny stały UA: adresy odtwarzania googlevideo są podpisane
+// dla klienta, który je rozwiązał.
 export async function readUserAgentArgs(): Promise<string[]> {
   const userAgent = (await readNetworkSettings())?.userAgent?.trim();
   return userAgent ? ['--user-agent', userAgent] : [];
 }
 
-// Proxy + User-Agent together — they always travel with the same yt-dlp call.
+// Proxy + User-Agent razem — zawsze jadą z tym samym wywołaniem yt-dlp.
 export async function readNetworkArgs(scope: ProxyScope): Promise<string[]> {
   return [...(await readProxyArgs(scope)), ...(await readUserAgentArgs())];
 }
 
-// Builds yt-dlp `--limit-rate` args from the persisted download speed limit
-// (KB/s, 0 = unlimited).
+// Buduje argumenty `--limit-rate` yt-dlp z zapisanego limitu prędkości pobierania
+// (KB/s, 0 = bez limitu).
 export async function readSpeedLimitArgs(): Promise<string[]> {
   const kb = (await readNetworkSettings())?.downloadSpeedLimit;
   if (typeof kb === 'number' && kb > 0) return ['--limit-rate', `${Math.floor(kb)}K`];

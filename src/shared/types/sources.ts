@@ -122,7 +122,7 @@ export interface MediaSource {
   /** Ikona źródła: data URL (wgrany obraz) lub adres http(s). */
   icon?: string;
   baseUrl: string;
-  /** Explicit opt-in for loopback/private hosts on this source only. */
+  /** Jawne włączenie dla hostów loopback/prywatnych tylko w tym źródle. */
   allowPrivateNetwork?: boolean;
   auth: SourceAuth;
   endpoints: SourceEndpoint[];

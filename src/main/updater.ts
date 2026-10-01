@@ -35,9 +35,10 @@ function send(
 }
 
 /**
- * Replays the most recent `updater:event` to a renderer that just became ready.
- * Events are one-shot broadcasts, so a window that mounts late (startup check,
- * reload, macOS re-activate) would otherwise miss the update notification.
+ * Odtwarza najnowszy `updater:event` dla renderera, który właśnie stał się gotowy.
+ * Zdarzenia są jednorazowymi transmisjami, więc okno montowane późno (sprawdzenie
+ * przy starcie, przeładowanie, ponowna aktywacja macOS) w innym razie przegapiłoby
+ * powiadomienie o aktualizacji.
  */
 export function replayUpdaterEvent(target?: WebContents): void {
   const wc = target ?? getMainWC();
@@ -53,11 +54,11 @@ export function initAutoUpdater(getWebContents: () => WebContents | null): void 
   getMainWC = getWebContents;
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
-  // Signature verification is driven by the embedded build config
-  // (win.verifyUpdateCodeSignature + win.publisherName in electron-builder.yml),
-  // which electron-updater reads automatically at runtime. No override needed
-  // here — leave it to the build-time config so unsigned test builds still
-  // install updates.
+  // Weryfikacja podpisu jest sterowana przez wbudowaną konfigurację kompilacji
+  // (win.verifyUpdateCodeSignature + win.publisherName w electron-builder.yml),
+  // którą electron-updater odczytuje automatycznie w czasie działania. Nie trzeba
+  // tu nic nadpisywać — zostaw to konfiguracji z czasu budowania, aby niepodpisane
+  // kompilacje testowe nadal instalowały aktualizacje.
 
   autoUpdater.on('checking-for-update', () => {
     status = 'checking';

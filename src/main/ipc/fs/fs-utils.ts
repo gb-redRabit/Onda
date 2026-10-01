@@ -117,7 +117,7 @@ export function stripDuplicateSuffix(name: string): string | null {
   m = /^(.+?)\s+(copy)(?:\s+(\d+))?$/i.exec(base);
   if (m) return m[1] + ext;
 
-  // Windows 11 keep-both / macOS conflict: " (2)", " (3)", " 2", " 3"
+  // Windows 11 keep-both / konflikt macOS: " (2)", " (3)", " 2", " 3"
   m = /^(.+?)\s+\((\d+)\)$/.exec(base) || /^(.+?)\s+(\d+)$/.exec(base);
   if (m) return m[1] + ext;
 
@@ -125,11 +125,11 @@ export function stripDuplicateSuffix(name: string): string | null {
 }
 
 /**
- * SHA-256 of a file, streaming so a large video does not have to be buffered.
+ * SHA-256 pliku, strumieniowo, aby dużego wideo nie trzeba było buforować.
  *
- * `maxBytes` bounds the read: hashing a multi-gigabyte file is minutes of disk
- * saturation, so a caller that scans a directory can cap what it is willing to
- * look at. Returns null when the file is larger than the budget.
+ * `maxBytes` ogranicza odczyt: hash'owanie wielogigabajtowego pliku to minuty
+ * wysycania dysku, więc wywołujący, który skanuje katalog, może ograniczyć to, na co
+ * chce patrzeć. Zwraca null, gdy plik jest większy niż budżet.
  */
 export function fileHash(filePath: string, maxBytes?: number): Promise<string | null> {
   return new Promise((resolve, reject) => {

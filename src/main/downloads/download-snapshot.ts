@@ -1,8 +1,8 @@
 import type { IpcDownloadTask } from '../../shared/types/ipc';
 
-// Shallow, field-picking copy of a download task, extracted from
-// `download-manager.ts` (plan 2.8). Used before persisting/emitting so only the
-// serializable IPC fields leak out (no Job-only internals).
+// Płytka kopia zadania pobierania z wybranymi polami, wyodrębniona z
+// `download-manager.ts` (plan 2.8). Używana przed zapisem/emisją, aby wyciekały
+// tylko serializowalne pola IPC (bez wewnętrznych danych specyficznych dla Job).
 export function snapshotDownloadTask(task: IpcDownloadTask): IpcDownloadTask {
   return {
     id: task.id,

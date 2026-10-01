@@ -28,15 +28,15 @@ function isSavedStream(v: unknown): v is IpcSavedStream {
   );
 }
 
-// Sanitizes the stored item list of a playlist: drops malformed entries and
-// caps the count so a huge playlist can never bloat the persisted file.
+// Sanityzuje zapisaną listę elementów playlisty: odrzuca błędne wpisy i
+// ogranicza liczbę, aby ogromna playlista nigdy nie rozdęła zapisanego pliku.
 function sanitizePlaylistItems(items: unknown): IpcSavedStream[] {
   if (!Array.isArray(items)) return [];
   return items.filter(isSavedStream).slice(0, MAX_PLAYLIST_ITEMS);
 }
 
-// Best-effort load with sanitization: corrupt files or malformed entries are
-// dropped so the view can never crash on bad persisted data.
+// Wczytywanie best-effort z sanityzacją: uszkodzone pliki lub błędne wpisy są
+// odrzucane, aby widok nigdy nie uległ awarii przez błędne zapisane dane.
 export async function loadSavedData(filePath: string): Promise<IpcSavedData> {
   try {
     const raw = await readFile(filePath, 'utf-8');
@@ -71,8 +71,8 @@ export async function loadSavedData(filePath: string): Promise<IpcSavedData> {
 
 let writeChain: Promise<void> = Promise.resolve();
 
-// Serializes writes and swaps the file in atomically (temp file + rename) so a
-// crash mid-write never leaves a half-written store.
+// Serializuje zapisy i podmienia plik atomowo (plik tymczasowy + rename), aby
+// awaria w trakcie zapisu nigdy nie pozostawiła w połowie zapisanego store.
 export function persistSaved(filePath: string, data: IpcSavedData): Promise<void> {
   const payload: PersistedSaved = { version: SCHEMA_VERSION, ...data };
   writeChain = writeChain.then(async () => {
@@ -131,8 +131,8 @@ export function registerSavedHandlers(): void {
     ) {
       return false;
     }
-    // Upsert: the renderer syncs a playlist in the background, so an existing
-    // entry is replaced with the updated item list rather than kept stale.
+    // Upsert: renderer synchronizuje playlistę w tle, więc istniejący
+    // wpis jest zastępowany zaktualizowaną listą elementów, a nie pozostawiany nieaktualny.
     data.playlists = [
       ...data.playlists.filter((p) => p.id !== playlist.id),
       { ...playlist, items: sanitizePlaylistItems(playlist.items) }

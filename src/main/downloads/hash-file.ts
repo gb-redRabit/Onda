@@ -1,8 +1,8 @@
 import { createHash } from 'crypto';
 import { createReadStream } from 'fs';
 
-// Computes the SHA-256 checksum of a file by streaming it (no full load into
-// memory). Rejects on read errors.
+// Oblicza sumę kontrolną SHA-256 pliku, strumieniując go (bez pełnego
+// ładowania do pamięci). Odrzuca przy błędach odczytu.
 export function sha256File(filePath: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const hash = createHash('sha256');

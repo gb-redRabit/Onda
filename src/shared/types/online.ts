@@ -9,8 +9,8 @@ export interface YouTubeVideo {
   viewCount?: string;
   publishedAt: string;
   tags?: string[];
-  // Canonical page URL — set for SoundCloud items (SC permalinks cannot be
-  // rebuilt from the numeric id). YouTube items may omit it.
+  // Kanoniczny URL strony — ustawiany dla elementów SoundCloud (permalinki SC nie
+  // mogą być odtworzone z numerycznego id). Elementy YouTube mogą go pomijać.
   url?: string;
 }
 
@@ -24,7 +24,7 @@ export interface YouTubeResolvedItem {
   channelTitle: string;
   channelId: string;
   isPlayable?: boolean;
-  // Canonical page URL — SoundCloud only (see YouTubeVideo.url).
+  // Kanoniczny URL strony — tylko SoundCloud (patrz YouTubeVideo.url).
   url?: string;
 }
 
@@ -159,9 +159,9 @@ export interface Subscription {
   channelTitle: string;
   channelThumbnail: string;
   autoDownload: boolean;
-  // Platform of the subscribed channel — 'youtube' by default (legacy
-  // entries have no field). SoundCloud subscriptions use profile permalinks
-  // as channelId and download MP3s via the internal API.
+  // Platforma subskrybowanego kanału — domyślnie 'youtube' (starsze
+  // wpisy nie mają pola). Subskrypcje SoundCloud używają permalinków profilu
+  // jako channelId i pobierają MP3 przez wewnętrzne API.
   platform?: 'youtube' | 'soundcloud';
   lastChecked?: number;
   lastVideoId?: string;

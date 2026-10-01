@@ -49,11 +49,11 @@ function getDownloadedFile(): string {
 }
 
 /**
- * Resolves the source used for a fetch/test. Trust — private-network access and
- * API credentials — is bound to the PERSISTED record matched by id, never to a
- * renderer-supplied flag or base URL. A draft (not yet saved) gets neither, so a
- * compromised renderer cannot pair a real API key with an attacker host, nor
- * reach loopback/LAN addresses. `sources:enqueue` already follows this model.
+ * Rozwiązuje źródło używane do fetch/test. Zaufanie — dostęp do sieci prywatnej i
+ * poświadczenia API — jest związane z ZAPISANYM rekordem dopasowanym po id, nigdy z
+ * flagą czy base URL dostarczonym przez renderer. Szkic (jeszcze niezapisany) nie dostaje
+ * niczego z tego, więc przejęty renderer nie może połączyć prawdziwego klucza API z hostem
+ * atakującego ani sięgnąć adresów loopback/LAN. `sources:enqueue` już stosuje ten model.
  */
 async function resolveTrustedSource(raw: unknown): Promise<MediaSource | null> {
   const source = sanitizeSource(raw);
@@ -63,8 +63,8 @@ async function resolveTrustedSource(raw: unknown): Promise<MediaSource | null> {
 }
 
 export function registerSourcesHandlers(): void {
-  // Finished source downloads are recorded per source, so the Sources view can
-  // badge items that were downloaded in an earlier session.
+  // Ukończone pobrania źródeł są zapisywane per źródło, aby widok Źródeł mógł
+  // oznaczać elementy pobrane w wcześniejszej sesji.
   setSourceItemDownloadedHandler((sourceId, itemId) => {
     void appendDownloadedItem(getDownloadedFile(), sourceId, itemId);
   });
@@ -259,9 +259,9 @@ export function registerSourcesHandlers(): void {
         : [];
       if (!list.length) return [];
       try {
-        // Validate each source URL before handing it to a downloader. Private
-        // targets require the explicit per-source trust flag; one bad item does
-        // not prevent other valid items in a bulk queue from being added.
+        // Waliduj każdy URL źródła, zanim przekażesz go do downloadera. Prywatne
+        // cele wymagają jawnej flagi zaufania per źródło; jeden zły element nie
+        // blokuje dodania innych prawidłowych elementów w masowej kolejce.
         const safeList: IpcDownloadJobInput[] = [];
         const trustedSourceIds = new Set(
           (await loadSources(getSourcesFile()))
@@ -277,7 +277,7 @@ export function registerSourcesHandlers(): void {
             }
             await resolveNetworkTarget(input.url, { allowPrivateNetwork });
 
-            // Fallback for player embeds that yt-dlp cannot resolve itself.
+            // Fallback dla embedów playera, których yt-dlp nie potrafi sam rozwiązać.
             if (input.source?.mode === 'ytdlp' && /^https:\/\//i.test(input.url)) {
               const authHeaders = await resolveSourceHeaders(
                 input.source.apiKeyId,

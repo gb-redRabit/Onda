@@ -1,8 +1,8 @@
 import { app, Menu, Tray, type BrowserWindow } from 'electron';
 import { trayIcon } from './window-icon';
 
-// Tray icon + context menu extracted from `main/index.ts` (plan 2.8). The tray
-// instance lives here; callers use `setupTray`/`destroyTray`.
+// Ikona tray + menu kontekstowe wyodrębnione z `main/index.ts` (plan 2.8).
+// Instancja tray żyje tutaj; wywołujący używają `setupTray`/`destroyTray`.
 
 let tray: Tray | null = null;
 
@@ -14,7 +14,7 @@ export function destroyTray(): void {
   try {
     if (tray && !tray.isDestroyed()) tray.destroy();
   } catch {
-    /* already destroyed */
+    /* już zniszczone */
   }
   tray = null;
 }

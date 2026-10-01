@@ -307,15 +307,15 @@ export class AudioPipManager {
       icon: pipWindowIcon(),
       webPreferences: { preload: join(__dirname, '../preload/audio-pip.js') },
       htmlFile: 'audio-pip.html',
-      // Shown on demand by the manager, never on load.
+      // Pokazywane na żądanie przez managera, nigdy przy ładowaniu.
       autoShow: false,
       onClosed: () => {
         this.window = null;
         this.ready = false;
         this.peek.reset();
         this.isPreview = false;
-        // The main window may already be destroyed (quit / factory reset) — a
-        // raw `webContents.send` here would crash the main process.
+        // Okno główne może być już zniszczone (quit / factory reset) — surowe
+        // `webContents.send` tutaj zawiesiłoby główny proces.
         sendToWindow(this.mainWindow, 'audio-pip:closed');
       }
     });
@@ -336,7 +336,7 @@ export class AudioPipManager {
         try {
           return screen.getDisplayMatching(bounds);
         } catch {
-          // fall through to primary display
+          // przejdź do głównego wyświetlacza
         }
       }
     }

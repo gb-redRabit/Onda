@@ -1,9 +1,9 @@
 import { stat, rename, rm } from 'fs/promises';
 
 /**
- * Rotates `file` to `file.1` (replacing the previous rotation) when it exceeds
- * `maxBytes`. Returns true when a rotation happened. Unlike truncating to zero,
- * this keeps the previous session's diagnostics available for the log viewer.
+ * Rotuje `file` do `file.1` (zastępując poprzednią rotację), gdy przekroczy
+ * `maxBytes`. Zwraca true, gdy rotacja nastąpiła. W przeciwieństwie do obcięcia
+ * do zera zachowuje diagnostykę poprzedniej sesji dla podglądu logów.
  */
 export async function rotateLogIfNeeded(file: string, maxBytes: number): Promise<boolean> {
   const s = await stat(file).catch(() => null);

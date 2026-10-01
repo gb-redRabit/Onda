@@ -10,7 +10,7 @@ import { resolveBin } from '../../binaries';
 const tempDir = join(os.tmpdir(), 'onda', 'audio-transcodes');
 const videoTempDir = join(os.tmpdir(), 'onda', 'video-transcodes');
 
-// Include size + mtime so a replaced file never reuses a stale transcode.
+// Uwzględnij size + mtime, aby zastąpiony plik nigdy nie użył nieaktualnego transkodowania.
 async function sourceStamp(filePath: string): Promise<string> {
   try {
     const s = await stat(filePath);
@@ -40,7 +40,7 @@ export async function transcodeAudioChunk(
     await stat(outPath);
     return outPath;
   } catch {
-    // transcoded chunk does not exist yet — expected control flow
+    // transkodowany chunk jeszcze nie istnieje — oczekiwany przebieg sterowania
   }
 
   try {
@@ -86,7 +86,7 @@ export async function transcodeAudio(filePath: string): Promise<string | null> {
     await stat(outPath);
     return outPath;
   } catch {
-    // transcoded file does not exist yet — expected control flow
+    // transkodowany plik jeszcze nie istnieje — oczekiwany przebieg sterowania
   }
 
   try {
@@ -128,7 +128,7 @@ export async function transcodeVideo(filePath: string): Promise<string | null> {
     await stat(outPath);
     return outPath;
   } catch {
-    // transcoded file does not exist yet — expected control flow
+    // transkodowany plik jeszcze nie istnieje — oczekiwany przebieg sterowania
   }
 
   try {

@@ -1,7 +1,7 @@
-// Runtime guards for values read out of electron-store. The store is a JSON
-// file that other software (or a corrupted write) can alter, so a value must be
-// validated before use instead of cast with `as` — TypeScript cannot see the
-// file's real contents.
+// Strażniki runtime dla wartości czytanych z electron-store. Store to plik JSON,
+// który inne oprogramowanie (lub uszkodzony zapis) może zmienić, więc wartość
+// musi zostać zwalidowana przed użyciem, a nie rzutowana przez `as` — TypeScript
+// nie widzi prawdziwej zawartości pliku.
 
 export function asPositiveNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : undefined;

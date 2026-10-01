@@ -15,9 +15,9 @@ function validPlaylists(raw: unknown): Playlist[] {
   );
 }
 
-// After a channel download lands in the library, add (or create) an Onda playlist
-// named after the YouTube channel so the channel's downloads are browsable as a
-// playlist. Deduplicates by file path.
+// Po trafieniu pobrania kanału do biblioteki dodaj (lub utwórz) playlistę Onda
+// nazwaną po kanale YouTube, aby pobrania tego kanału były przeglądalne jako
+// playlista. Deduplikuje po ścieżce pliku.
 export async function addToChannelPlaylist(channelTitle: string, file: MediaFile): Promise<void> {
   try {
     const store = await getStore();

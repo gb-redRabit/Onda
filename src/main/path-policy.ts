@@ -1,20 +1,20 @@
 import { posix, win32 } from 'path';
 
-// Destructive fs IPC handlers (delete / move / copy / mkdir) run with the full
-// privileges of the user, and the renderer is the only thing between a
-// compromised page and `rm -rf`. Rather than relying on the UI's confirm
-// dialog, the main process refuses a small set of paths outright: a volume root
-// and anything directly inside one, plus the system directories. None of those
-// is a legitimate delete or move target from a media player, and losing one is
-// not recoverable.
+// Destrukcyjne handlery fs IPC (delete / move / copy / mkdir) działają z pełnymi
+// uprawnieniami użytkownika, a renderer jest jedyną rzeczą między przejętą
+// stroną a `rm -rf`. Zamiast polegać na oknie potwierdzenia UI, proces główny
+// odrzuca od razu niewielki zbiór ścieżek: korzeń wolumenu i wszystko
+// bezpośrednio w nim, a także katalogi systemowe. Żadna z nich nie jest
+// uzasadnionym celem usunięcia lub przeniesienia z odtwarzacza mediów, a ich
+// utrata nie jest odwracalna.
 //
-// Every function takes an explicit `platform` so the policy is testable on a
-// single host; `path.isAbsolute` follows the host platform and cannot be used
-// for that.
+// Każda funkcja przyjmuje jawny `platform`, aby politykę można było testować na
+// jednym hoście; `path.isAbsolute` kieruje się platformą hosta i nie nadaje się
+// do tego.
 
 export type ProtectedPathReason = 'root' | 'system' | 'invalid';
 
-/** Windows directories whose loss breaks the OS, plus the shell's own homes. */
+/** Katalogi Windows, których utrata psuje system, plus własne katalogi domowe powłoki. */
 const WINDOWS_PROTECTED = [
   'windows',
   'windows\\system32',
@@ -33,9 +33,9 @@ const WINDOWS_PROTECTED = [
 ];
 
 /**
- * POSIX directories whose loss breaks the OS, plus pseudo-filesystems.
- * Stored without a leading separator so a value can be compared against a run
- * of path segments directly; the root itself is handled by isFilesystemRoot.
+ * Katalogi POSIX, których utrata psuje system, plus pseudosystemy plików.
+ * Przechowywane bez wiodącego separatora, aby wartość można było porównać
+ * bezpośrednio z ciągiem segmentów ścieżki; sam korzeń obsługuje isFilesystemRoot.
  */
 const POSIX_PROTECTED = [
   'bin',
@@ -57,12 +57,12 @@ const POSIX_PROTECTED = [
   'var/run'
 ];
 
-/** The non-empty path segments, with the volume or root stripped. */
+/** Niepuste segmenty ścieżki, z usuniętym wolumenem lub korzeniem. */
 function segmentsOf(target: string, platform: NodeJS.Platform): string[] {
   const normalized = platform === 'win32' ? win32.normalize(target) : posix.normalize(target);
   const parts = normalized.split(/[\\/]+/).filter(Boolean);
   if (platform === 'win32') {
-    // Drop the drive (`C:`) or the two UNC components (`server`, `share`).
+    // Usuwa dysk (`C:`) lub dwa komponenty UNC (`server`, `share`).
     if (parts.length && /^[a-z]:$/i.test(parts[0])) return parts.slice(1);
     if (parts.length > 2) return parts.slice(2);
     return parts;
@@ -78,18 +78,18 @@ function normalizeFor(target: string, platform: NodeJS.Platform): string {
   return platform === 'win32' ? win32.normalize(target).toLowerCase() : posix.normalize(target);
 }
 
-/** True when `target` is a volume root: `C:\`, `C:`, `\\server\share`, `/`. */
+/** True, gdy `target` jest korzeniem wolumenu: `C:\`, `C:`, `\\server\share`, `/`. */
 export function isFilesystemRoot(
   target: string,
   platform: NodeJS.Platform = process.platform
 ): boolean {
   if (typeof target !== 'string' || !target) return false;
   if (platform === 'win32') {
-    // `C:` is drive-relative — it resolves against the current directory of
-    // that drive, so it is not an absolute path, but it still names the root.
+    // `C:` jest względne wobec dysku — rozwiązuje się względem bieżącego katalogu
+    // tego dysku, więc nie jest ścieżką absolutną, ale nadal nazywa korzeń.
     if (/^[a-z]:\\?$/i.test(target)) return true;
     if (!win32.isAbsolute(target)) return false;
-    // A UNC share root has no child after the share name.
+    // Korzeń udziału UNC nie ma potomka po nazwie udziału.
     return /^\\\\[^\\]+\\[^\\]+\\?$/.test(target);
   }
   if (!posix.isAbsolute(target)) return false;
@@ -97,16 +97,16 @@ export function isFilesystemRoot(
 }
 
 /**
- * Rejects paths that must never be deleted from, moved over or created
- * directly under. Returns the reason, or null when the path is allowed.
+ * Odrzuca ścieżki, które nigdy nie mogą być celem usunięcia, przeniesienia
+ * ani utworzenia bezpośrednio pod nimi. Zwraca powód lub null, gdy ścieżka jest dozwolona.
  */
 export function protectedPathReason(
   target: unknown,
   platform: NodeJS.Platform = process.platform
 ): ProtectedPathReason | null {
   if (typeof target !== 'string' || !target || target.includes('\0')) return 'invalid';
-  // `C:` names a volume root even though it is drive-relative, so the root
-  // check runs before the absolute-path check.
+  // `C:` nazywa korzeń wolumenu mimo bycia względnym wobec dysku, więc test
+  // korzenia wykonuje się przed testem ścieżki absolutnej.
   if (isFilesystemRoot(target, platform)) return 'root';
   if (!isAbsoluteFor(target, platform)) return 'invalid';
 
@@ -114,19 +114,19 @@ export function protectedPathReason(
   const segments = segmentsOf(normalizeFor(target, platform), platform);
   const joiner = platform === 'win32' ? '\\' : '/';
 
-  // Anything sitting directly in a volume root (`C:\Users`, `/home`) takes the
-  // whole drive's user data with it, so it is refused alongside the root.
+  // Wszystko leżące bezpośrednio w korzeniu wolumenu (`C:\Users`, `/home`) zabiera
+  // ze sobą dane użytkownika całego dysku, więc jest odrzucane razem z korzeniem.
   if (segments.length <= 1) return 'system';
 
-  // A protected entry matches only as a PREFIX: `C:\Program Files\Onda` is
-  // refused, while `C:\Users\u\Music` and a user's own `Windows.old` are not.
+  // Wpis chroniony pasuje tylko jako PREFIKS: `C:\Program Files\Onda` jest
+  // odrzucane, natomiast `C:\Users\u\Music` i własny `Windows.old` użytkownika nie.
   for (let end = 0; end < segments.length; end++) {
     if (list.includes(segments.slice(0, end + 1).join(joiner))) return 'system';
   }
   return null;
 }
 
-/** Convenience wrapper for the destructive handlers. */
+/** Wygodna otoczka dla destrukcyjnych handlerów. */
 export function isProtectedPath(
   target: unknown,
   platform: NodeJS.Platform = process.platform
@@ -134,7 +134,7 @@ export function isProtectedPath(
   return protectedPathReason(target, platform) !== null;
 }
 
-/** The parent of a path, or null when the path has no usable parent. */
+/** Katalog nadrzędny ścieżki lub null, gdy ścieżka nie ma użytecznego rodzica. */
 export function parentOf(target: string): string | null {
   const idx = Math.max(target.lastIndexOf('/'), target.lastIndexOf('\\'));
   if (idx <= 0) return null;

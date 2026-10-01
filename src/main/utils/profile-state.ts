@@ -2,9 +2,9 @@ import { rm } from 'fs/promises';
 import { join } from 'path';
 import { logger } from '../../shared/logger';
 
-// Profile state wiped by the factory reset (IPC `app:factoryReset`). Keep in
-// sync with `docs/state.md` §3 — `bin/` (managed ffmpeg/yt-dlp) and
-// `onda-store-key` (per-install encryption key) are intentionally NOT listed.
+// Stan profilu czyszczony przez reset fabryczny (IPC `app:factoryReset`). Utrzymuj
+// w zgodzie z `docs/state.md` §3 — `bin/` (zarządzane ffmpeg/yt-dlp) i
+// `onda-store-key` (klucz szyfrowania na instalację) celowo NIE są wymienione.
 
 export const RESET_STATE_FILES = [
   'library-scanned.json',
@@ -20,13 +20,13 @@ export const RESET_STATE_FILES = [
   'youtube-cookies.txt'
 ];
 
-// User-installed plugins and their storage/settings.
+// Wtyczki zainstalowane przez użytkownika oraz ich storage/ustawienia.
 export const RESET_STATE_DIRS = ['plugins', 'plugins-data'];
 
 /**
- * Removes the profile state files/directories plus any extra files the caller
- * passes (e.g. `config.json.bak.*`). Best-effort: locked entries are returned
- * so the caller can log/report them; missing entries are not an error.
+ * Usuwa pliki/katalogi stanu profilu oraz wszelkie dodatkowe pliki przekazane
+ * przez wywołującego (np. `config.json.bak.*`). Best-effort: zablokowane wpisy
+ * są zwracane, aby wywołujący mógł je zalogować/zgłosić; brakujące wpisy nie są błędem.
  */
 export async function removeProfileState(
   userDataDir: string,

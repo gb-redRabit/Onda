@@ -18,16 +18,16 @@ import type { AppSettings } from '../../../shared/types/settings';
 import { logger } from '../../../shared/logger';
 
 /**
- * Encrypt the API keys in place, or drop them from the payload.
+ * Szyfruje klucze API w miejscu albo usuwa je z ładunku.
  *
- * encryptSecret throws when the platform cannot protect the value. Letting that
- * escape would fail the whole save, so a user who once typed an API key could no
- * longer change any other setting. Only the key is dropped instead, and the
- * handler reports the partial save by returning false. The API keys panel shows
- * the reason before the user pastes anything, so this is the backstop rather
- * than the notice.
+ * encryptSecret rzuca wyjątek, gdy platforma nie może chronić wartości. Wypuszczenie
+ * go zepsułoby cały zapis, więc użytkownik, który raz wpisał klucz API, nie mógłby
+ * już zmienić żadnego innego ustawienia. Zamiast tego usuwany jest tylko klucz, a
+ * handler raportuje częściowy zapis, zwracając false. Panel kluczy API pokazuje
+ * powód, zanim użytkownik cokolwiek wklei, więc to zabezpieczenie, a nie
+ * komunikat.
  *
- * Returns whether the keys were stored.
+ * Zwraca, czy klucze zostały zapisane.
  */
 function encryptKeysOrDrop(payload: Partial<AppSettings>): boolean {
   if (!payload.apiKeys) return true;
@@ -42,9 +42,8 @@ function encryptKeysOrDrop(payload: Partial<AppSettings>): boolean {
 }
 
 export function registerSettingsHandlers(): void {
-  // Reported to the API keys panel so the user learns the platform cannot
-  // protect the secret before pasting it, rather than after trusting that it was
-  // saved.
+  // Raportowane do panelu kluczy API, aby użytkownik dowiedział się, że platforma nie może
+  // chronić sekretu, zanim go wklei, a nie po zaufaniu, że został zapisany.
   ipcMain.handle('settings:secretStorageStatus', () => encryptionStatus());
 
   ipcMain.handle('settings:get', async (): Promise<Partial<AppSettings>> => {
@@ -60,8 +59,8 @@ export function registerSettingsHandlers(): void {
   });
 
   ipcMain.handle('settings:set', async (_event, data: Partial<AppSettings>): Promise<boolean> => {
-    // A factory reset already cleared the store; late debounced saves from the
-    // renderer must not resurrect the old settings before the restart.
+    // Factory reset już wyczyścił store; późne debounce'owane zapisy z
+    // renderera nie mogą wskrzesić starych ustawień przed restartem.
     if (isResetting()) return false;
     try {
       const { sanitized, droppedKeys } = sanitizeSettings(data);
@@ -102,7 +101,7 @@ export function registerSettingsHandlers(): void {
         const store = await getStore();
         const { sanitized } = sanitizeSettings(store.store || {});
         const exported: Partial<AppSettings> = { ...sanitized };
-        // Never write secrets (API keys, proxy password) to an unencrypted export file.
+        // Nigdy nie zapisuj sekretów (kluczy API, hasła proxy) do nieszyfrowanego pliku eksportu.
         delete exported.apiKeys;
         if (exported.network?.proxy) {
           exported.network = {
@@ -148,10 +147,10 @@ export function registerSettingsHandlers(): void {
             `settings:import dropped invalid keys: ${droppedKeys.join(', ')}`
           );
         }
-        // Encrypt secrets before they ever reach disk. If the platform cannot
-        // protect them the keys are dropped from the import and the failure is
-        // reported to the user, rather than the whole import being rejected or
-        // the keys landing on disk in the clear.
+        // Zaszyfruj sekrety, zanim trafią na dysk. Jeśli platforma nie może
+        // ich chronić, klucze są usuwane z importu, a niepowodzenie jest
+        // raportowane użytkownikowi, zamiast odrzucania całego importu albo
+        // lądowania kluczy na dysku jawnie.
         const toPersist: Partial<AppSettings> = { ...sanitized };
         const keysStored = encryptKeysOrDrop(toPersist);
         const store = await getStore();
@@ -165,7 +164,7 @@ export function registerSettingsHandlers(): void {
         if (toPersist.library) applyCoverCacheSettings(toPersist.library.coverCacheMaxEntries);
         if (toPersist.updates) void configureAutoCheck();
         if (toPersist.download) void syncSubscriptionsScheduler();
-        // return plaintext keys so the renderer store stays consistent (no double-encrypt on save)
+        // zwróć klucze plaintext, aby store renderera pozostał spójny (bez podwójnego szyfrowania przy zapisie)
         const data: Partial<AppSettings> = { ...toPersist };
         if (data.apiKeys) data.apiKeys = decryptApiKeys(data.apiKeys);
         if (!keysStored) {

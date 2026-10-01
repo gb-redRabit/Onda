@@ -6,7 +6,7 @@ import { AUDIO_EXTS } from '../../shared/constants';
 import { resolveFolderTokens } from './cover-spec';
 import { sanitizeFilenameSpaced } from '../../shared/text';
 
-// Pure helpers extracted from `download-manager.ts` (plan 2.8) — no queue state.
+// Czyste helpery wyodrębnione z `download-manager.ts` (plan 2.8) — bez stanu kolejki.
 
 export interface Job extends IpcDownloadTask {
   child?: ChildProcess;
@@ -60,8 +60,8 @@ export function resolveOutputDir(job: Job): string {
   );
 }
 
-// Candidate extensions of the final media file, used to locate the real output
-// on disk when the destination parsed from yt-dlp stdout is unavailable.
+// Kandydackie rozszerzenia finalnego pliku mediów, używane do zlokalizowania
+// rzeczywistego wyjścia na dysku, gdy destination sparsowany ze stdout yt-dlp jest niedostępny.
 export function outputExtensions(job: Job): string[] {
   if (job.kind === 'video') return [`.${job.videoContainer || 'mp4'}`];
   if (job.format === 'best') return [...AUDIO_EXTS, '.webm'];
@@ -88,7 +88,7 @@ export function deriveHttpFileName(job: Job): string {
     const ext = extname(new URL(job.url).pathname).toLowerCase();
     if (ext && ext.length <= 10) return `${base}${ext}`;
   } catch {
-    // not a URL — fall through
+    // to nie URL — przechodzi dalej
   }
   return `${base}.bin`;
 }

@@ -1,6 +1,6 @@
 import { posix, win32 } from 'path';
 
-/** True when candidate is root itself or a descendant, never a prefix sibling. */
+/** True, gdy kandydat jest korzeniem samym w sobie lub jego potomkiem, nigdy rodzeństwem o wspólnym prefiksie. */
 export function isPathInside(
   rootPath: string,
   candidatePath: string,

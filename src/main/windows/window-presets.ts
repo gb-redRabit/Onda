@@ -1,9 +1,9 @@
 import type { BrowserWindowConstructorOptions } from 'electron';
 
 /**
- * Frameless "glass" chrome shared by the main window and the explorer windows:
- * transparent background with acrylic on Windows and sidebar vibrancy on macOS.
- * Kept in one place so the two window creators cannot drift apart.
+ * Bezramkowa "szklana" oprawa wspólna dla okna głównego i okien eksploratora:
+ * przezroczyste tło z akrylem na Windows i vibrancy paska bocznego na macOS.
+ * Trzymane w jednym miejscu, aby dwa kreatory okien nie rozjechały się.
  */
 export const GLASS_WINDOW_OPTS: Partial<BrowserWindowConstructorOptions> = {
   frame: false,

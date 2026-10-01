@@ -3,11 +3,11 @@ import { join } from 'path';
 import { logger } from '../../shared/logger';
 import { installNavigationGuard } from './navigation-guard';
 
-// Boot splash window + "show main window when ready" gate, extracted from
-// `main/index.ts` (plan 2.8). Readiness is signalled from three independent
-// sources (main process `did-finish-load`, a minimum-display timer, and the
-// renderer's `app:rendererReady`); the main window is only shown once all three
-// have fired.
+// Okno splash przy starcie + bramka "pokaż okno główne, gdy gotowe", wyodrębnione
+// z `main/index.ts` (plan 2.8). Gotowość jest sygnalizowana z trzech niezależnych
+// źródeł (`did-finish-load` procesu głównego, timer minimalnego wyświetlania i
+// `app:rendererReady` renderera); okno główne jest pokazywane dopiero, gdy
+// wystrzelą wszystkie trzy.
 
 export interface SplashDeps {
   windowIcon: () => string | undefined;
@@ -28,7 +28,7 @@ export class SplashController {
     return this.win !== null;
   }
 
-  /** True once the renderer signalled `app:rendererReady`. */
+  /** True, gdy renderer zgłosił `app:rendererReady`. */
   isRendererReady(): boolean {
     return this.rendererReady;
   }

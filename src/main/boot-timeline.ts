@@ -1,9 +1,9 @@
 import { app } from 'electron';
 
-// Boot timeline + runtime snapshot for the Diagnostics "Performance" card.
-// `markBootStart()` is called at the very beginning of `app.whenReady()` and
-// every `markBootPhase()` adds a labelled offset, so users (and CI regression
-// checks) can see where startup time goes without attaching a profiler.
+// Oś czasu startu + migawka runtime dla karty "Wydajność" w Diagnostyce.
+// `markBootStart()` jest wywoływane na samym początku `app.whenReady()`, a
+// każde `markBootPhase()` dodaje oznaczony offset, dzięki czemu użytkownicy (i
+// testy regresji CI) widzą, gdzie znika czas startu, bez podłączania profilera.
 
 export interface BootPhase {
   label: string;
@@ -30,7 +30,7 @@ export function markBootStart(): void {
   phases.length = 0;
 }
 
-/** Records `label` at the current offset and returns that offset in ms. */
+/** Zapisuje `label` pod bieżącym offsetem i zwraca ten offset w ms. */
 export function markBootPhase(label: string): number {
   const ms = Math.round(performance.now() - startedAt);
   phases.push({ label, ms });

@@ -151,7 +151,7 @@ async function processAudioFile(
 ): Promise<{ file: MediaFile | null }> {
   const s = await stat(fullPath).catch(() => null);
   if (!s) return { file: null };
-  // Reuse the previous metadata when the file hasn't changed (size + mtime).
+  // Użyj ponownie poprzednich metadanych, gdy plik się nie zmienił (size + mtime).
   if (prev && prev.size === s.size && prev.mtime === s.mtimeMs) {
     return { file: prev };
   }
@@ -245,17 +245,17 @@ async function processImageFile(
 }
 
 /**
- * Shared ceiling for one library scan.
+ * Wspólny limit dla jednego skanowania biblioteki.
  *
- * The cap used to be applied to the finished array, which meant a 300k-file
- * library was fully read, fully parsed and fully held in memory before anything
- * was dropped — the cap bounded the result, not the cost. A budget threaded
- * through the recursion stops the walk instead: unread directories are never
- * opened and unparsed files are never allocated.
+ * Limit był kiedyś stosowany do gotowej tablicy, co oznaczało, że biblioteka z 300 tys.
+ * plików była w pełni czytana, w pełni parsowana i w pełni trzymana w pamięci, zanim
+ * cokolwiek zostało odrzucone — limit ograniczał wynik, nie koszt. Budżet przekazywany
+ * przez rekurencję zatrzymuje przejście zamiast tego: nieprzeczytane katalogi nigdy nie są
+ * otwierane, a niesparsowane pliki nigdy nie są alokowane.
  */
 export interface ScanBudget {
   remaining: number;
-  /** Set once the ceiling was hit, so the caller can say so rather than lie. */
+  /** Ustawiane po osiągnięciu limitu, aby wywołujący mógł o tym powiedzieć, zamiast kłamać. */
   truncated: boolean;
 }
 
@@ -304,9 +304,9 @@ export async function scanDir(
       } else if (entry.isFile()) {
         const ext = extname(entry.name).toLowerCase();
         const isMedia = AUDIO_EXT_SET.has(ext) || VIDEO_EXT_SET.has(ext) || IMAGE_EXT_SET.has(ext);
-        // Reserve the budget as the work is queued, not when the directory
-        // finishes. A single directory with 300k files queues them all in this
-        // loop, so charging afterwards would let the whole lot through.
+        // Rezerwuj budżet w momencie kolejkowania pracy, a nie gdy katalog
+        // się kończy. Pojedynczy katalog z 300 tys. plików kolejkuje je wszystkie w tej
+        // pętli, więc obciążanie po fakcie przepuściłoby całą masę.
         if (isMedia && budget) {
           if (budget.remaining <= 0) {
             budget.truncated = true;
@@ -379,9 +379,9 @@ export async function scanDir(
       totalImage += r.imageCount;
     }
 
-    // Files of THIS directory only (subdirs were already filtered by the
-    // recursive call above): drop animated-cover videos that duplicate an
-    // audio track in the same folder.
+    // Tylko pliki TEGO katalogu (podkatalogi zostały już przefiltrowane przez
+    // powyższe wywołanie rekurencyjne): odrzuć wideo animowanych okładek, które duplikują
+    // utwór audio w tym samym folderze.
     const localFiles = fileResults.map((r) => r.file).filter((f): f is MediaFile => f !== null);
     for (const f of filterCoverSiblingVideos(localFiles)) files.push(f);
     totalAudio += audioCount;

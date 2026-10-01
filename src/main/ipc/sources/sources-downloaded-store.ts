@@ -2,18 +2,18 @@ import { readFile, writeFile, mkdir } from 'fs/promises';
 import { dirname } from 'path';
 import { logger } from '../../../shared/logger';
 
-// Persistent record of source items (by their API `id`) whose download finished
-// successfully. Kept out of the encrypted settings store and out of
-// `sources.json` (that file is configuration; this is runtime state). Keyed per
-// source because the same API id can appear in more than one source.
+// Trwały zapis elementów źródeł (po ich `id` API), których pobieranie zakończyło się
+// sukcesem. Trzymany poza szyfrowanym store ustawień i poza
+// `sources.json` (ten plik to konfiguracja; to jest stan runtime). Kluczowany per
+// źródło, bo ten sam id API może wystąpić w więcej niż jednym źródle.
 
 export interface DownloadedSourceItems {
   version: 1;
   bySource: Record<string, string[]>;
 }
 
-// Serializes read-modify-write access so two downloads that finish at the same
-// time cannot lose each other's id.
+// Serializuje dostęp read-modify-write, aby dwa pobrania kończące się w tym samym
+// czasie nie zgubiły nawzajem swoich id.
 let writeChain: Promise<void> = Promise.resolve();
 function withWriteLock<T>(fn: () => Promise<T>): Promise<T> {
   const result = writeChain.then(fn);
@@ -42,7 +42,7 @@ async function read(filePath: string): Promise<DownloadedSourceItems> {
       return { version: 1, bySource };
     }
   } catch {
-    // Missing or corrupt file — treated as "nothing downloaded yet".
+    // Brakujący lub uszkodzony plik — traktowany jako "nic jeszcze nie pobrano".
   }
   return { version: 1, bySource: {} };
 }
@@ -61,7 +61,7 @@ export async function getDownloadedForSource(
   return data.bySource[sourceId] || [];
 }
 
-// Appends one completed item id to a source's downloaded list. Idempotent.
+// Dopisuje jedno ukończone id elementu do listy pobranych źródła. Idempotentne.
 export function appendDownloadedItem(
   filePath: string,
   sourceId: string,

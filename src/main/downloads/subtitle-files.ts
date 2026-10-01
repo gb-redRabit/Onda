@@ -7,7 +7,7 @@ export function isSubtitleFile(name: string): boolean {
   return SUBTITLE_EXTS.has(extname(name).toLowerCase());
 }
 
-// yt-dlp writes sidecar subtitles next to the media file as `{base}.{lang}.{ext}`.
+// yt-dlp zapisuje napisy sidecar obok pliku mediów jako `{base}.{lang}.{ext}`.
 function subtitleBaseOf(mediaPath: string): string {
   return basename(mediaPath, extname(mediaPath));
 }
@@ -25,8 +25,8 @@ export async function findSiblingSubtitleFiles(mediaPath: string): Promise<strin
   }
 }
 
-// Moves sidecar subtitle files into a `Subtitles/` subfolder. Returns how many
-// files were moved (0 when none exist or the move fails).
+// Przenosi pliki napisów sidecar do podfolderu `Subtitles/`. Zwraca liczbę
+// przeniesionych plików (0, gdy żadne nie istnieją lub przenoszenie się nie powiedzie).
 export async function moveSubtitlesToFolder(mediaPath: string): Promise<number> {
   const files = await findSiblingSubtitleFiles(mediaPath);
   if (files.length === 0) return 0;
@@ -39,7 +39,7 @@ export async function moveSubtitlesToFolder(mediaPath: string): Promise<number> 
       await rename(f, join(subDir, basename(f)));
       moved++;
     } catch {
-      // keep the file in place on failure
+      // przy niepowodzeniu pozostaw plik na miejscu
     }
   }
   return moved;

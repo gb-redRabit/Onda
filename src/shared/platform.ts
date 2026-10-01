@@ -1,6 +1,6 @@
-// Cross-platform dispatch — the ONLY shared online-sources module. Platform
-// specifics live in their own files (youtube.ts / soundcloud.ts); this layer
-// just routes a pasted link to the right one.
+// Dyspozytor międzyplatformowy — JEDYNY współdzielony moduł źródeł online.
+// Specyfika platform żyje w osobnych plikach (youtube.ts / soundcloud.ts); ta
+// warstwa tylko kieruje wklejony link do właściwego z nich.
 
 import { detectYtKind, normalizeYtUrl, extractYtVideoId } from './youtube';
 import { detectScKind, normalizeScUrl } from './soundcloud';
@@ -13,7 +13,7 @@ export interface DetectedPlatform {
   kind: PlatformKind;
 }
 
-/** Accepts ordinary web URLs for the generic yt-dlp extractor path. */
+/** Akceptuje zwykłe adresy URL dla ogólnej ścieżki ekstraktora yt-dlp. */
 export function isHttpUrl(input: string): boolean {
   try {
     const url = new URL(input.trim());
@@ -28,8 +28,8 @@ export function isHttpUrl(input: string): boolean {
   }
 }
 
-// Classifies a user-pasted link across every supported platform. Returns null
-// for anything unrecognizable.
+// Klasyfikuje link wklejony przez użytkownika na wszystkich obsługiwanych
+// platformach. Zwraca null dla wszystkiego, co jest nierozpoznawalne.
 export function detectPlatform(input: string): DetectedPlatform | null {
   const yt = detectYtKind(input);
   if (yt) return { platform: 'youtube', kind: yt };
@@ -38,15 +38,15 @@ export function detectPlatform(input: string): DetectedPlatform | null {
   return null;
 }
 
-// Normalizes a link for the platform it was detected as: YT expands bare
-// video IDs and handles into full URLs; SC permalinks pass through.
+// Normalizuje link dla platformy, na której go wykryto: YT rozwija same
+// identyfikatory wideo i uchwyty do pełnych URL-i; permalinki SC przechodzą bez zmian.
 export function normalizePlatformUrl(input: string, detected: DetectedPlatform): string {
   if (detected.platform === 'youtube') return normalizeYtUrl(input, detected.kind);
   return normalizeScUrl(input);
 }
 
-// Query-prefix convention: "@name" targets a YouTube channel handle, "$name"
-// targets a SoundCloud profile. Both open the channel/profile view directly.
+// Konwencja prefiksu zapytania: "@name" wskazuje uchwyt kanału YouTube, "$name"
+// wskazuje profil SoundCloud. Oba otwierają bezpośrednio widok kanału/profilu.
 export interface ChannelPrefixQuery {
   platform: MediaPlatform;
   name: string;
@@ -66,8 +66,8 @@ export interface BatchEntryPlatform {
   platform: MediaPlatform | 'generic';
 }
 
-// Splits pasted text (newlines or commas) into YT, SC and ordinary HTTP(S)
-// URLs. Channels are skipped (they open in the profile view, not download).
+// Dzieli wklejony tekst (nowe linie lub przecinki) na URL-e YT, SC i zwykłe
+// HTTP(S). Kanały są pomijane (otwierają widok profilu, a nie pobieranie).
 export function parseBatchInputAll(text: string): BatchEntryPlatform[] {
   const lines = text
     .split(/[\n,]+/)

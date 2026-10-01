@@ -1,6 +1,6 @@
-// Pure plugin-storage / network guard helpers extracted from `plugins-core.ts`
-// (plan 2.8). `plugins-core` re-exports them so importers and tests stay
-// unchanged.
+// Czyste helpery guardów przechowywania / sieci pluginów wyodrębnione z `plugins-core.ts`
+// (plan 2.8). `plugins-core` re-eksportuje je, aby importery i testy pozostały
+// bez zmian.
 import type { PluginPermissions } from '../../../shared/types/ipc';
 import { MAX_PLUGIN_SETTING_TEXT_BYTES } from '../../../shared/plugin-settings';
 export { pluginSettingValueValid } from '../../../shared/plugin-settings';
@@ -8,16 +8,16 @@ export { pluginSettingValueValid } from '../../../shared/plugin-settings';
 export const STORAGE_KEY_RE = /^[a-zA-Z0-9_.\-]{1,64}$/;
 export const MAX_STRING_VALUE_BYTES = MAX_PLUGIN_SETTING_TEXT_BYTES;
 
-// Permission checks (plan 7.1): the manifest decides which bridge operations a
-// plugin may use. Fetch checks the network allowlist in the handler; storage and
-// settings go through these helpers.
+// Sprawdzanie uprawnień (plan 7.1): manifest decyduje, z których operacji mostu
+// plugin może korzystać. Fetch sprawdza allowlistę sieciową w handlerze; storage i
+// ustawienia przechodzą przez te helpery.
 export function storagePermissionGranted(permissions: PluginPermissions): boolean {
   return permissions.storage === true;
 }
 
-// A plugin without the storage permission may only write settings it explicitly
-// declared in the manifest — otherwise settings would be an unbounded side door
-// around the storage quota and the storage permission itself.
+// Plugin bez uprawnienia storage może zapisywać tylko ustawienia jawnie
+// zadeklarowane w manifeście — inaczej ustawienia byłyby nieograniczonymi tylnymi
+// drzwiami obok limitu storage i samego uprawnienia storage.
 export function settingWriteAllowed(
   permissions: PluginPermissions,
   declaredKeys: readonly string[] | undefined,
@@ -61,9 +61,9 @@ export function compileNetworkPattern(pattern: string): RegExp | null {
   if (protocol !== 'http:' && protocol !== 'https:') return null;
   const parts = pattern.split('*');
   const escaped = parts.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*');
-  // Without a boundary a pattern like `https://api.example.com` also matched
-  // `https://api.example.com.evil` (host-confusion). A pattern that ends with an
-  // explicit `*` keeps its intentional prefix behaviour.
+  // Bez granicy wzorzec taki jak `https://api.example.com` pasowałby też do
+  // `https://api.example.com.evil` (host-confusion). Wzorzec kończący się jawnym
+  // `*` zachowuje zamierzone działanie prefiksu.
   const boundary = pattern.endsWith('*') ? '' : '(?=[/:?#]|$)';
   try {
     return new RegExp(`^${escaped}${boundary}`);

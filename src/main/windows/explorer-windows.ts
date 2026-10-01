@@ -3,7 +3,7 @@ import { logger } from '../../shared/logger';
 import { createWindow } from './window-factory';
 import { GLASS_WINDOW_OPTS } from './window-presets';
 
-// Explorer windows (secondary file-browser windows) extracted from
+// Okna eksploratora (drugorzędne okna przeglądania plików) wyodrębnione z
 // `window-ipc.ts` (plan 2.8).
 
 const explorerWindows = new Map<number, BrowserWindow>();

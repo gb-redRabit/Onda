@@ -81,20 +81,20 @@ export function migrateAppearance(v: unknown): unknown {
   return out;
 }
 
-/** Schema version stamped into every persisted settings payload. */
+/** Wersja schematu wbijana w każdy zapisywany ładunek ustawień. */
 export const SETTINGS_VERSION = 2;
 
 /**
- * Top-level migration hook, run before any field-level sanitizer. Field-level
- * shape changes stay next to their group (e.g. `migrateAppearance`); this entry
- * point stamps the schema version and is the place for future cross-group moves.
+ * Hak migracji najwyższego poziomu, uruchamiany przed jakimkolwiek sanitizerem pól. Zmiany
+ * kształtu na poziomie pól zostają obok swojej grupy (np. `migrateAppearance`); ten punkt
+ * wejścia wbija wersję schematu i jest miejscem na przyszłe przenosiny między grupami.
  */
 export function migrateSettingsPayload(v: unknown): Record<string, unknown> {
   if (!isPlainObject(v)) return {};
   const out: Record<string, unknown> = { ...(v as Record<string, unknown>) };
 
-  // Migrations for version < SETTINGS_VERSION go here. Appearance is already
-  // upgraded per-field by `migrateAppearance` in the schema.
+  // Migracje dla wersji < SETTINGS_VERSION idą tutaj. Appearance jest już
+  // aktualizowane per pole przez `migrateAppearance` w schemacie.
 
   out['version'] = SETTINGS_VERSION;
   return out;

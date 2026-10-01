@@ -1,10 +1,10 @@
 import type { AudioPipDock, AudioPipElementId } from './pip';
 
 /**
- * How well the OS can protect a stored secret. See main/ipc/settings-crypto.ts:
- * on Linux without a keyring Electron reports encryption as available while
- * deriving its key from a constant, so `weak` has to be distinguishable from
- * `strong` rather than collapsed into a boolean.
+ * Jak dobrze system chroni zapisany sekret. Patrz main/ipc/settings-crypto.ts:
+ * na Linuksie bez keyringu Electron zgłasza szyfrowanie jako dostępne, choć
+ * wyprowadza klucz ze stałej, więc `weak` musi być odróżnialne od
+ * `strong`, a nie spłaszczone do boolean.
  */
 export type SecretStorageStatus = 'strong' | 'weak' | 'unavailable';
 
@@ -59,7 +59,7 @@ export interface GeneralSettings {
   startMinimized: boolean;
   closeToTray: boolean;
   restoreSession: boolean;
-  /** Persisted first-run wizard flag (was localStorage-only). */
+  /** Utrwalona flaga kreatora pierwszego uruchomienia (wcześniej tylko localStorage). */
   firstRunDone: boolean;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   logMaxSizeMB: number;
@@ -79,7 +79,7 @@ export interface ExplorerSettings {
   sortBy: 'name' | 'size' | 'type' | 'modified';
   sortOrder: 'asc' | 'desc';
   confirmBeforeMove: boolean;
-  /** Delete files permanently instead of moving them to the system Trash. */
+  /** Usuwa pliki trwale zamiast przenosić je do kosza systemowego. */
   permanentDelete: boolean;
 }
 
@@ -181,7 +181,7 @@ export interface AudioLayoutSettings {
   preset?: AudioLayoutPreset;
   hudOpacity?: number;
   vizQuality?: VizQuality;
-  /** Custom layouts per named preset, persisted so switching back preserves the user's edits. */
+  /** Niestandardowe layouty per nazwany preset, utrwalane, żeby powrót zachował edycje użytkownika. */
   customLayouts?: Partial<Record<AudioLayoutPreset, AudioLayoutElement[]>>;
 }
 

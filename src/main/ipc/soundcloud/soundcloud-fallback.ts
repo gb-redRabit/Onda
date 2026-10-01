@@ -4,9 +4,9 @@ import { mapResolvedContainer, type YtDlpEntry } from '../youtube/youtube-utils'
 import { scThumbFromEntry, entryUrl, scVideoFromEntry } from './soundcloud-entries';
 import type { IpcYoutubeVideo } from '../../../shared/types/ipc';
 
-// yt-dlp fallbacks for SoundCloud extracted from `soundcloud-handlers.ts`
-// (plan 2.8): used when the internal api-v2 client cannot serve a request, so a
-// rotated client_id or API change degrades to "slow but working".
+// Fallbacki yt-dlp dla SoundCloud wyodrębnione z `soundcloud-handlers.ts`
+// (plan 2.8): używane, gdy wewnętrzny klient api-v2 nie może obsłużyć żądania, więc
+// zrotowany client_id lub zmiana API degraduje do "wolno, ale działa".
 
 export async function fallbackSearch(query: string): Promise<IpcYoutubeVideo[]> {
   const stdout = await runYtDlp(

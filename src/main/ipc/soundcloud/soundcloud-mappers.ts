@@ -3,18 +3,18 @@ import type { IpcYoutubeVideo } from '../../../shared/types/ipc';
 import { sanitizeFilename } from '../../../shared/text';
 import { isLoopbackHost } from '../network-target';
 
-// Pure SoundCloud API shapes / mappers / validators extracted from
-// `soundcloud-client.ts` (plan 2.8). `soundcloud-client` re-exports the public
-// ones so existing importers keep working unchanged.
+// Czyste kształty API SoundCloud / mappery / walidatory wyodrębnione z
+// `soundcloud-client.ts` (plan 2.8). `soundcloud-client` re-eksportuje publiczne
+// z nich, aby istniejące importery działały bez zmian.
 
-// Pulls client_id candidates out of a JS bundle.
+// Wyciąga kandydatów na client_id z bundle JS.
 export function extractClientIdFromBundle(js: string): string | null {
   const m = js.match(/client_id\s*[:=]\s*"([a-zA-Z0-9]{16,64})"/);
   return m ? m[1] : null;
 }
 
 // ---------------------------------------------------------------------------
-// API shapes (only the fields we consume)
+// Kształty API (tylko pola, które konsumujemy)
 
 export interface ScApiUser {
   id?: number;
@@ -60,8 +60,8 @@ export interface ScApiPlaylist {
 
 export type ScApiResource = ScApiTrack | ScApiPlaylist | ScApiUser | { kind?: string };
 
-// The API tags every resource with `kind`; the structural fallbacks cover
-// responses where it is missing (older proxy shapes).
+// API taguje każdy zasób `kind`; fallbacki strukturalne obsługują
+// odpowiedzi, w których go brakuje (starsze kształty proxy).
 export function isTrack(r: ScApiResource): r is ScApiTrack {
   if ((r as { kind?: string }).kind) return (r as { kind?: string }).kind === 'track';
   const t = r as ScApiTrack;
@@ -78,8 +78,8 @@ export function isUser(r: ScApiResource): r is ScApiUser {
   return typeof u.username === 'string' && u.followers_count !== undefined;
 }
 
-// Remote images are validated like every other network-provided thumbnail:
-// https only, never loopback (SSRF to local services).
+// Zdalne obrazy są walidowane jak każda inna miniatura z sieci:
+// tylko https, nigdy loopback (SSRF do lokalnych usług).
 export function isSafeImageUrl(url: string): boolean {
   let parsed: URL;
   try {
@@ -92,8 +92,8 @@ export function isSafeImageUrl(url: string): boolean {
   return true;
 }
 
-// SC artwork URLs end with a size token (-large.jpg, -t500x500.jpg, ...).
-// Request the big square variant when possible, falling back to what we got.
+// URL-e okładek SC kończą się tokenem rozmiaru (-large.jpg, -t500x500.jpg, ...).
+// Żądaj dużego kwadratowego wariantu, gdy to możliwe, spadając do tego, co dostaliśmy.
 export function upgradeArtworkUrl(raw: string | null | undefined): string {
   if (!raw || !isSafeImageUrl(raw)) return '';
   return raw.replace(/-large(\.(jpg|png))$/, '-t500x500$1');
@@ -105,10 +105,10 @@ export function scPublishedAt(created?: string): string {
   return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : '';
 }
 
-// Maps an API track onto the shared video shape used by cards/queue/downloads.
-// `url` is the permalink — mandatory for SC flows (ids cannot be rebuilt).
-// NOTE: no avatar fallback for missing artwork — using the artist's avatar as
-// the cover made every tile on a profile look identical.
+// Mapuje utwór API na wspólny kształt wideo używany przez karty/kolejkę/pobrania.
+// `url` to permalink — obowiązkowy dla przepływów SC (id nie da się odtworzyć).
+// UWAGA: brak fallbacku awatara przy brakującej okładce — użycie awatara artysty jako
+// okładki czyniło każdy kafelek na profilu identycznym.
 export function mapScTrack(track: ScApiTrack): IpcYoutubeVideo {
   const user = track.user || {};
   return {
@@ -128,21 +128,21 @@ export function mapScTrack(track: ScApiTrack): IpcYoutubeVideo {
   };
 }
 
-// Filesystem-safe file name for a track title (http/soundcloud download jobs
-// write bytes directly under this name). Implementation lives in shared/text.
+// Bezpieczna dla systemu plików nazwa dla tytułu utworu (zadania pobierania http/soundcloud
+// zapisują bajty bezpośrednio pod tą nazwą). Implementacja znajduje się w shared/text.
 export function sanitizeFileName(title: string): string {
   return sanitizeFilename(title, { maxLength: 120, fallback: 'track' });
 }
 
-// CloudFront-signed CDN URLs carry their own expiry inside the base64url
-// `Policy` param ("DateLessThan": {"AWS:EpochTime": <secs>}) — observed
-// lifetime is ~30 minutes, far shorter than any generic cache TTL, so caches
-// must derive their expiry from THIS instead of a fixed duration.
+// Podpisane przez CloudFront URL-e CDN noszą własne wygaśnięcie w parametrze
+// `Policy` base64url ("DateLessThan": {"AWS:EpochTime": <secs>}) — zaobserwowany
+// czas życia to ~30 minut, znacznie krótszy niż ogólny TTL cache, więc cache
+// muszą wyprowadzać wygaśnięcie z TEGO, a nie ze stałego czasu.
 export function extractSignedUrlExpiryMs(url: string): number | null {
   const m = url.match(/[?&]Policy=([^&]+)/);
   if (!m) return null;
   try {
-    // latin1 keeps stray trailing bytes harmless; the epoch number is ASCII.
+    // latin1 sprawia, że zbłąkane końcowe bajty są nieszkodliwe; liczba epoch jest ASCII.
     const raw = Buffer.from(m[1], 'base64url').toString('latin1');
     const e = raw.match(/"AWS:EpochTime"\s*:\s*(\d+)/);
     return e ? Number(e[1]) * 1000 : null;

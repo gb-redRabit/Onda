@@ -15,7 +15,7 @@ export function getBinDir(): string {
 
 const cache = new Map<BinTool, ResolvedBinary | null>();
 
-// Resolve a binary (managed userData/bin first, then PATH), cached per process.
+// Rozwiązuje binarium (najpierw zarządzane userData/bin, potem PATH), cache per proces.
 export async function resolveBin(tool: BinTool): Promise<string | null> {
   if (cache.has(tool)) {
     return cache.get(tool)?.path ?? null;
@@ -34,7 +34,7 @@ export async function resolveBinInfo(tool: BinTool): Promise<ResolvedBinary | nu
   return res;
 }
 
-// Must be called after any install / update / remove so the cache stays fresh.
+// Musi być wywołane po każdej instalacji / aktualizacji / usunięciu, aby cache pozostał świeży.
 export function invalidateBinaries(): void {
   cache.clear();
 }

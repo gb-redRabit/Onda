@@ -160,8 +160,8 @@ function downloadFileInternal(
 }
 
 export async function fetchLatestYtdlpVersion(): Promise<string | null> {
-  // Track the active channel (nightly by default) so the in-app update check
-  // reports real updates instead of comparing against stale stable releases.
+  // Śledzi aktywny kanał (domyślnie nightly), aby wbudowane sprawdzanie aktualizacji
+  // raportowało prawdziwe aktualizacje, a nie porównywało do nieaktualnych stabilnych wydań.
   const repo = YTDLP_CHANNEL === 'nightly' ? 'yt-dlp/yt-dlp-nightly-builds' : 'yt-dlp/yt-dlp';
   return new Promise((resolve) => {
     const req = https.get(
@@ -193,9 +193,9 @@ async function sha256OfFile(filePath: string): Promise<string> {
   return createHash('sha256').update(data).digest('hex');
 }
 
-// Verifies a downloaded file against an inline SHA-256 pin (used by managed
-// FFmpeg, whose binaries.json entry carries the exact asset hash). Fail-closed:
-// throws on mismatch so the caller never keeps an unverified binary.
+// Weryfikuje pobrany plik względem wbudowanego pinu SHA-256 (używane przez zarządzane
+// FFmpeg, którego wpis w binaries.json zawiera dokładny hash assetu). Fail-closed:
+// rzuca wyjątek przy niezgodności, więc wywołujący nigdy nie zachowuje niezweryfikowanej binarki.
 export async function verifyFileSha256(
   filePath: string,
   expectedSha256: string,
@@ -208,10 +208,10 @@ export async function verifyFileSha256(
   }
 }
 
-// Fail-closed checksum verification: downloads a SHA manifest, finds the entry for
-// `assetName`, and compares it against the SHA-256 of `filePath`. Throws on any
-// failure (download error, missing entry, or mismatch) so the caller never keeps
-// an unverified binary.
+// Weryfikacja sumy kontrolnej fail-closed: pobiera manifest SHA, znajduje wpis dla
+// `assetName` i porównuje go z SHA-256 pliku `filePath`. Rzuca wyjątek przy każdym
+// niepowodzeniu (błąd pobierania, brak wpisu lub niezgodność), więc wywołujący nigdy nie
+// zachowuje niezweryfikowanej binarki.
 export async function verifyDownloadedFile(
   filePath: string,
   shaUrl: string,
@@ -221,7 +221,7 @@ export async function verifyDownloadedFile(
   const shaDest = join(getBinDir(), `onda-${Date.now()}.sha256`);
   try {
     await downloadFile(shaUrl, shaDest, signal);
-    // Manifest lines look like `<hash>  <filename>` (and sometimes `*filename`).
+    // Linie manifestu wyglądają jak `<hash>  <filename>` (a czasem `*filename`).
     const line = (await readFile(shaDest, 'utf-8'))
       .split(/\r?\n/)
       .find((l) => l.trim().endsWith(` ${assetName}`) || l.trim().endsWith(` *${assetName}`));

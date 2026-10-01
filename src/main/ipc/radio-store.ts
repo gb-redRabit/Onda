@@ -18,9 +18,9 @@ export function radioFilePath(): string {
   return join(app.getPath('userData'), 'radios.json');
 }
 
-// Hosts of the stations the user added, mirrored from the persisted store so
-// the media-server stream proxy can allow them (radio streams are plain
-// http(s) Icecast/SHOUTcast URLs, unlike the YouTube allowlist).
+// Hosty stacji dodanych przez użytkownika, zsynchronizowane z zapisanym store,
+// aby proxy strumieni serwera mediów mogło je dopuścić (strumienie radiowe to zwykłe
+// URL-e http(s) Icecast/SHOUTcast, inaczej niż allowlist YouTube).
 const allowedRadioHosts = new Set<string>();
 
 function isValidStationUrl(url: string): boolean {
@@ -29,10 +29,10 @@ function isValidStationUrl(url: string): boolean {
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
     if (parsed.hostname.length === 0) return false;
     if (parsed.username || parsed.password) return false;
-    // Reject a literal loopback / link-local target up front. A station on the
-    // user's LAN is legitimate, but a loopback address only ever points at
-    // something running on this machine, and the stream proxy would then be a
-    // way to read it. Hostnames are resolved later, at request time.
+    // Z góry odrzucamy dosłowny cel loopback / link-local. Stacja w sieci LAN
+    // użytkownika jest legalna, ale adres loopback zawsze wskazuje na
+    // coś działającego na tej maszynie, a proxy strumienia byłoby wtedy
+    // sposobem na jego odczytanie. Nazwy hostów są rozwiązywane później, w momencie żądania.
     if (isIP(parsed.hostname) && isNeverPublicAddress(parsed.hostname)) return false;
     return true;
   } catch {
@@ -71,15 +71,15 @@ function sanitizeStations(input: unknown): IpcRadioStation[] {
   return out.slice(0, MAX_STATIONS);
 }
 
-// Keeps the proxy allowlist in sync with the persisted stations. Called on
-// every load/save so a station added while the app runs is playable at once.
+// Utrzymuje allowlist proxy zsynchronizowaną z zapisanymi stacjami. Wywoływane
+// przy każdym wczytaniu/zapisie, aby stacja dodana w trakcie działania aplikacji była od razu odtwarzalna.
 function syncAllowedRadioHosts(stations: IpcRadioStation[]): void {
   allowedRadioHosts.clear();
   for (const s of stations) {
     try {
       allowedRadioHosts.add(new URL(s.url).hostname.toLowerCase());
     } catch {
-      // sanitized already — skip
+      // już zsanityzowane — pomijamy
     }
   }
 }
@@ -88,8 +88,8 @@ export function isAllowedRadioHost(hostname: string): boolean {
   return allowedRadioHosts.has(hostname.toLowerCase());
 }
 
-// Best-effort load with sanitization: corrupt files or malformed entries are
-// dropped so the view can never crash on bad persisted data.
+// Wczytywanie best-effort z sanityzacją: uszkodzone pliki lub błędne wpisy są
+// odrzucane, aby widok nigdy nie uległ awarii przez błędne zapisane dane.
 export async function loadRadioData(filePath: string): Promise<IpcRadioStation[]> {
   try {
     const raw = await readFile(filePath, 'utf-8');
@@ -105,8 +105,8 @@ export async function loadRadioData(filePath: string): Promise<IpcRadioStation[]
 
 let writeChain: Promise<void> = Promise.resolve();
 
-// Serializes writes and swaps the file in atomically (temp file + rename) so a
-// crash mid-write never leaves a half-written store.
+// Serializuje zapisy i podmienia plik atomowo (plik tymczasowy + rename), aby
+// awaria w trakcie zapisu nigdy nie pozostawiła w połowie zapisanego store.
 export function persistRadio(filePath: string, stations: IpcRadioStation[]): Promise<void> {
   const payload: PersistedRadio = { version: SCHEMA_VERSION, stations };
   writeChain = writeChain.then(async () => {

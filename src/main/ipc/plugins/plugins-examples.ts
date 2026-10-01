@@ -14,10 +14,10 @@ import {
   pluginCapabilityHash
 } from './plugins-core';
 
-// Bundled example plugins shipped in `resources/plugins-examples/<id>` (the
-// Settings → Plugins "Examples" section installs them with one click). Kept as
-// pure fs helpers so they can be unit-tested; the IPC handler supplies the
-// resources/userData paths. Installation never enables a plugin automatically.
+// Dołączone przykładowe pluginy dostarczane w `resources/plugins-examples/<id>` (sekcja
+// Ustawienia → Pluginy "Przykłady" instaluje je jednym kliknięciem). Trzymane jako
+// czyste helpery fs, aby można je było testować jednostkowo; handler IPC dostarcza
+// ścieżki resources/userData. Instalacja nigdy nie włącza pluginu automatycznie.
 
 async function readManifest(dir: string, folderId: string): Promise<PluginManifest | null> {
   try {
@@ -33,7 +33,7 @@ async function readManifest(dir: string, folderId: string): Promise<PluginManife
   }
 }
 
-/** Metadata of the example plugins available in `examplesDir` (sorted by name). */
+/** Metadane przykładowych pluginów dostępnych w `examplesDir` (posortowane po nazwie). */
 export async function listPluginExamples(examplesDir: string): Promise<PluginExample[]> {
   const entries = await readdir(examplesDir, { withFileTypes: true }).catch(() => []);
   const out: PluginExample[] = [];
@@ -57,8 +57,8 @@ export async function listPluginExamples(examplesDir: string): Promise<PluginExa
 }
 
 /**
- * Installs `sourceDir` (trusted: the bundled examples; the folder dialog has its
- * own validation) into `destBase/<folderId>`, replacing an existing install.
+ * Instaluje `sourceDir` (zaufane: dołączone przykłady; dialog folderu ma własną
+ * walidację) w `destBase/<folderId>`, zastępując istniejącą instalację.
  */
 export async function installPluginFromDir(
   sourceDir: string,

@@ -1,8 +1,8 @@
 import type { BoundIpcMethod, IpcArgs, IpcChannel, IpcResult } from './contract';
 
-// Shared declaration of the renderer-facing API (plan 1.4): the preload
-// implements it, the renderer consumes it through `Window['api']`. Wrapper
-// signatures derive from the contract, so they cannot drift from the channels.
+// Współdzielona deklaracja API dla renderera (plan 1.4): preload je implementuje,
+// renderer konsumuje je przez `Window['api']`. Sygnatury wrapperów
+// wynikają z kontraktu, więc nie mogą się rozjechać z kanałami.
 export interface OndaAPI {
   mediaServerUrl: string;
   getWindowId: () => Promise<IpcResult<'window:id'>>;
@@ -13,7 +13,7 @@ export interface OndaAPI {
   removeAllListeners: (channel: string) => void;
   getFilePath: (file: File) => string;
 
-  // video PiP
+  // wideo PiP
   pipStart: BoundIpcMethod<'pip:start'>;
   pipStop: BoundIpcMethod<'pip:stop'>;
   pipRestore: BoundIpcMethod<'pip:restore'>;
@@ -24,7 +24,7 @@ export interface OndaAPI {
   pipLoadTrack: BoundIpcMethod<'pip:loadtrack'>;
   pipUpdateSubtitle: BoundIpcMethod<'pip:updateSubtitle'>;
 
-  // dependencies / diagnostics / updater
+  // zależności / diagnostyka / updater
   checkFfmpeg: BoundIpcMethod<'dep:checkFfmpeg'>;
   checkFfprobe: BoundIpcMethod<'dep:checkFfprobe'>;
   checkYtdlp: BoundIpcMethod<'dep:checkYtdlp'>;
@@ -52,7 +52,7 @@ export interface OndaAPI {
   downloadUpdate: BoundIpcMethod<'updater:download'>;
   installUpdate: BoundIpcMethod<'updater:install'>;
 
-  // media / tags / covers / subtitles
+  // media / tagi / okładki / napisy
   getCover: BoundIpcMethod<'media:getCover'>;
   getDuration: BoundIpcMethod<'media:getDuration'>;
   getDurations: BoundIpcMethod<'media:batchDurations'>;

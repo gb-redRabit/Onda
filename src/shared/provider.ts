@@ -3,18 +3,18 @@ import { detectScKind, normalizeScUrl } from './soundcloud';
 import type { PlatformKind } from './platform';
 import type { YouTubeResolveKind } from './types/online';
 
-// Provider adapter registry — the shared seam between platforms. Each service
-// exposes URL detection, kind classification, normalization and the "watch"
-// URL builder. Adding a service means adding a provider here, not rewriting
-// the queue, library or download views.
+// Rejestr adapterów dostawców — współdzielona granica między platformami. Każda
+// usługa udostępnia wykrywanie URL, klasyfikację rodzaju, normalizację oraz
+// budowanie URL "watch". Dodanie usługi oznacza dodanie tu dostawcy, a nie
+// przepisywanie widoków kolejki, biblioteki czy pobierania.
 interface MediaProvider {
   id: string;
   canResolve(url: string): boolean;
   kind(url: string): YouTubeResolveKind | null;
   normalizeUrl(url: string, kind: YouTubeResolveKind): string;
-  // Builds a canonical page URL from an item id. Returns '' when the platform
-  // cannot rebuild a URL from the id alone (SoundCloud permalinks are words,
-  // not numeric ids) — callers must then use the item's own `url` field.
+  // Buduje kanoniczny URL strony z identyfikatora elementu. Zwraca '' gdy
+  // platforma nie potrafi odtworzyć URL z samego id (permalinki SoundCloud to
+  // słowa, nie numeryczne id) — wywołujący muszą wtedy użyć pola `url` elementu.
   buildWatchUrl(videoId: string): string;
 }
 
@@ -43,13 +43,13 @@ export function resolveProvider(url: string): MediaProvider | null {
   return null;
 }
 
-// Canonical URL builders. Views should use these instead of interpolating
-// platform URLs by hand, so a scheme change is made in one place.
+// Kanoniczni budowniczowie URL. Widoki powinny używać ich zamiast ręcznej
+// interpolacji URL-i platform, żeby zmiana schematu była w jednym miejscu.
 export function buildYouTubeWatchUrl(videoId: string): string {
   return `https://www.youtube.com/watch?v=${videoId}`;
 }
 
-/** Channel URL from a `UC…` id, or a `@handle` (leading `@` optional). */
+/** URL kanału z id `UC…` lub `@handle` (wiodące `@` opcjonalne). */
 export function buildYouTubeChannelUrl(channelId: string): string {
   const id = channelId.trim();
   if (!id) return '';
@@ -57,13 +57,13 @@ export function buildYouTubeChannelUrl(channelId: string): string {
   return `https://www.youtube.com/channel/${encodeURIComponent(id)}`;
 }
 
-/** Channel URL from a bare `@handle` (a handle is not a channel id). */
+/** URL kanału z samego `@handle` (handle to nie id kanału). */
 export function buildYouTubeHandleUrl(handle: string): string {
   const h = handle.trim().replace(/^@/, '');
   return h ? `https://www.youtube.com/@${encodeURIComponent(h)}` : '';
 }
 
-/** Profile URL from a SoundCloud slug or any soundcloud.com URL. */
+/** URL profilu ze sluga SoundCloud lub dowolnego URL soundcloud.com. */
 export function buildSoundcloudProfileUrl(profileOrUrl: string): string {
   const slug = profileOrUrl
     .trim()

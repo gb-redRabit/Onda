@@ -1,5 +1,5 @@
-// Resolve a media src (onda://, file:/// or a plain path) to a normalized filesystem path.
-// Lowercased on Windows to allow case-insensitive comparisons.
+// Rozwiązuje src mediów (onda://, file:/// lub zwykłą ścieżkę) do znormalizowanej ścieżki systemu plików.
+// Na Windows zamieniane na małe litery, aby umożliwić porównania bez rozróżniania wielkości liter.
 export function resolveMediaPath(src: string): string {
   try {
     const decoded = decodeURIComponent(src);

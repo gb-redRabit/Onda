@@ -1,9 +1,9 @@
-// SoundCloud internal API v2 client (SC-only module — no YouTube imports, no
-// Electron). The web app authenticates every call with a `client_id` that is
-// embedded in its JS bundles and rotates every few days; we extract it once,
-// cache it and re-extract on 401/403. This is the same API yt-dlp drives under
-// the hood — minus the process spawn — so search/resolve/stream land in
-// hundreds of milliseconds instead of seconds.
+// Klient wewnętrznego API v2 SoundCloud (moduł tylko SC — bez importów YouTube, bez
+// Electrona). Aplikacja webowa uwierzytelnia każde wywołanie `client_id`, który jest
+// wbudowany w jej bundle JS i rotuje co kilka dni; wyodrębniamy go raz,
+// cache'ujemy i wyodrębniamy ponownie przy 401/403. To to samo API, które pod spodem
+// obsługuje yt-dlp — minus spawn procesu — więc search/resolve/stream trafiają w
+// setki milisekund zamiast sekund.
 import { logger } from '../../../shared/logger';
 import type { IpcYoutubeVideo } from '../../../shared/types/ipc';
 import {
@@ -29,7 +29,7 @@ export {
 const SC_API_BASE = 'https://api-v2.soundcloud.com';
 const SC_HOME = 'https://soundcloud.com/';
 const CLIENT_ID_TTL_MS = 24 * 60 * 60 * 1000;
-// After a failed extraction wait this long before probing the page again.
+// Po nieudanym wyodrębnieniu odczekaj tyle, zanim ponownie sprawdzisz stronę.
 const CLIENT_ID_FAIL_RETRY_MS = 60 * 1000;
 const REQUEST_TIMEOUT_MS = 10_000;
 const MAX_BODY_BYTES = 5 * 1024 * 1024;
@@ -74,9 +74,9 @@ async function extractClientId(): Promise<string | null> {
     logger.warn('sc', 'home page fetch failed', String(e));
     return null;
   }
-  // Bundles are served as absolute URLs on a-v2.sndcdn.com
-  // (<script src="https://a-v2.sndcdn.com/assets/NN-x.js">), sometimes as
-  // scheme-relative or root-relative paths — match every form.
+  // Bundle są serwowane jako absolutne URL-e na a-v2.sndcdn.com
+  // (<script src="https://a-v2.sndcdn.com/assets/NN-x.js">), czasem jako
+  // ścieżki względne wobec schematu lub roota — dopasuj każdą formę.
   const bundleUrls = [...home.matchAll(/<script[^>]*\bsrc=["']([^"']+)["']/gi)]
     .map((m) => m[1])
     .filter((src) => src.includes('/assets/') && /\.js(?:[?#].*)?$/.test(src))
@@ -97,7 +97,7 @@ async function extractClientId(): Promise<string | null> {
       const id = extractClientIdFromBundle(js);
       if (id) return id;
     } catch {
-      // try the next bundle
+      // spróbuj następnego bundle
     }
   }
   logger.warn('sc', 'no client_id found in bundles', String(unique.length));
@@ -109,8 +109,8 @@ export async function getClientId(forceRefresh = false): Promise<string | null> 
   if (!forceRefresh) {
     const age = now - clientIdState.fetchedAt;
     if (clientIdState.value && age < CLIENT_ID_TTL_MS) return clientIdState.value;
-    // A failed extraction is retried at most once per minute so a broken page
-    // layout never turns into an extraction storm on every API call.
+    // Nieudane wyodrębnienie jest ponawiane najwyżej raz na minutę, aby zepsuty układ
+    // strony nigdy nie zamienił się w burzę wyodrębnień przy każdym wywołaniu API.
     if (!clientIdState.value && age < CLIENT_ID_FAIL_RETRY_MS) return null;
   }
   if (!extractionInFlight) {
@@ -147,7 +147,7 @@ async function scApi<T>(path: string, params: Record<string, ScParamValue>): Pro
       body = await fetchText(url.toString());
     } catch (e) {
       const status = e instanceof ScApiError ? e.status : undefined;
-      // Rotated/expired client_id — refresh once and retry.
+      // Zrotowany/wygasły client_id — odśwież raz i ponów.
       if ((status === 401 || status === 403) && attempt === 0) continue;
       throw e;
     }
@@ -161,7 +161,7 @@ async function scApi<T>(path: string, params: Record<string, ScParamValue>): Pro
 }
 
 // ---------------------------------------------------------------------------
-// Public endpoint wrappers
+// Wrappery publicznych endpointów
 
 export async function scSearchTracks(
   query: string,
@@ -181,8 +181,8 @@ export type ScResolved =
   | { kind: 'playlist'; playlist: ScApiPlaylist }
   | { kind: 'user'; user: ScApiUser };
 
-// Resolves any SC URL (including on.soundcloud.com / snd.sc short links) to a
-// typed resource.
+// Rozwiązuje dowolny URL SC (w tym krótkie linki on.soundcloud.com / snd.sc) do
+// typowanego zasobu.
 export async function scResolve(url: string): Promise<ScResolved> {
   const resource = await scApi<ScApiResource>('/resolve', { url });
   if (!resource || typeof resource !== 'object') throw new ScApiError('Empty resolve result');
@@ -197,7 +197,7 @@ export async function scUserTracks(
   limit: number,
   offset: number
 ): Promise<{ items: IpcYoutubeVideo[]; total: number | null }> {
-  // Default (full) representation keeps artwork_url and media.transcodings.
+  // Domyślna (pełna) reprezentacja zachowuje artwork_url i media.transcodings.
   const res = await scApi<{ collection?: ScApiTrack[] }>(`/users/${userId}/tracks`, {
     limit,
     offset
@@ -218,14 +218,14 @@ export interface ScProfileSnapshot {
     trackCount?: number;
     description?: string;
   };
-  // Profile tracks, newest first — same ordering contract as yt-dlp
-  // --flat-playlist, so the subscription diff logic works unchanged.
+  // Utwory profilu, od najnowszych — ten sam kontrakt kolejności co yt-dlp
+  // --flat-playlist, więc logika różnic subskrypcji działa bez zmian.
   items: IpcYoutubeVideo[];
 }
 
-// Loads a profile's metadata and up to `cap` newest tracks in 200-item pages.
-// Used by "browse whole profile" and the subscription checker (one logical
-// call instead of many paginated ones).
+// Wczytuje metadane profilu i do `cap` najnowszych utworów w stronach po 200 elementów.
+// Używane przez "przeglądaj cały profil" i checker subskrypcji (jedno logiczne
+// wywołanie zamiast wielu paginowanych).
 export async function scProfileSnapshot(profileUrl: string, cap = 300): Promise<ScProfileSnapshot> {
   const resource = await scResolve(profileUrl);
   if (resource.kind !== 'user') throw new ScApiError('Not a SoundCloud profile');
@@ -253,10 +253,10 @@ export async function scProfileSnapshot(profileUrl: string, cap = 300): Promise<
   };
 }
 
-// Playlist tracks, newest-first page window, sliced from the FULL playlist
-// object (/playlists/{id}?representation=full embeds every track with
-// media/artwork). NOTE: the dedicated /playlists/{id}/tracks endpoint returns
-// 404 without OAuth (verified across old AND new sets), so it is not used.
+// Utwory playlisty, okno strony od najnowszych, wycięte z PEŁNEGO obiektu
+// playlisty (/playlists/{id}?representation=full zawiera każdy utwór z
+// media/artwork). UWAGA: dedykowany endpoint /playlists/{id}/tracks zwraca
+// 404 bez OAuth (zweryfikowane na starych I nowych zestawach), więc nie jest używany.
 export async function scPlaylistTracks(
   playlistId: number,
   limit: number,
@@ -271,11 +271,11 @@ export async function scPlaylistTracks(
   };
 }
 
-// Picks the progressive MP3 transcoding and exchanges it for a direct CDN
-// URL. HLS transcodings are ignored on purpose — Chromium <audio> cannot play
-// m3u8 without hls.js.
-// Accepts a track permalink URL or a BARE NUMERIC TRACK ID (legacy saved
-// entries store no permalink; /tracks/{id} resolves them directly).
+// Wybiera progresywne transkodowanie MP3 i wymienia je na bezpośredni URL
+// CDN. Transkodowania HLS są celowo ignorowane — Chromium <audio> nie odtworzy
+// m3u8 bez hls.js.
+// Przyjmuje permalink utworu lub SAM NUMERYCZNY ID UTWORU (starsze zapisane
+// wpisy nie przechowują permalinka; /tracks/{id} rozwiązuje je bezpośrednio).
 export async function scTrackStreamUrl(
   trackUrlOrResource: string | ScApiTrack
 ): Promise<{ url: string } | null> {
@@ -304,8 +304,8 @@ export async function scTrackStreamUrl(
   return { url: payload.url };
 }
 
-// Fresh direct MP3 URL for a download attempt. Called at ATTEMPT start by the
-// download manager so retries always get an unexpired signed URL.
+// Świeży bezpośredni URL MP3 dla próby pobrania. Wywoływane na POCZĄTKU PRÓBY przez
+// menedżera pobierania, aby ponowienia zawsze dostawały niewygasły podpisany URL.
 export async function resolveScDownloadSource(trackUrl: string): Promise<string> {
   const stream = await scTrackStreamUrl(trackUrl);
   if (!stream) throw new ScApiError('No progressive audio available for this track');

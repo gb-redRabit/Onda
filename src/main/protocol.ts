@@ -17,7 +17,7 @@ function getAllowedPrefixes(): string[] {
     const downloads = app.getPath('downloads');
     const desktop = app.getPath('desktop');
     const temp = app.getPath('temp');
-    // normalize all to avoid case mismatch on Windows
+    // normalizuj wszystkie, aby uniknąć niezgodności wielkości liter na Windows
     const paths = [home, docs, music, pics, vids, downloads, desktop, temp];
     for (const p of paths) {
       const n = normalize(p).toLowerCase();
@@ -77,7 +77,7 @@ export function registerOndaProtocolHandler(): void {
       try {
         real = await realpath(normalized);
       } catch {
-        // root check below still applies
+        // poniższy test korzenia nadal obowiązuje
       }
       const normalizedLower = normalize(real).toLowerCase();
       const prefixes = getAllowedPrefixes();
@@ -87,8 +87,8 @@ export function registerOndaProtocolHandler(): void {
       if (!allowed) {
         return new Response('path not allowed', { status: 403 });
       }
-      // Query params drive sharp work — clamp so the renderer can never
-      // request unbounded image processing through the onda:// handler.
+      // Parametry zapytania napędzają pracę sharp — ogranicz, aby renderer nigdy
+      // nie zażądał nieograniczonego przetwarzania obrazu przez handler onda://.
       const maxWidth = Math.min(
         parseInt(url.searchParams.get('w') || '0', 10) || 0,
         MAX_RESIZE_WIDTH

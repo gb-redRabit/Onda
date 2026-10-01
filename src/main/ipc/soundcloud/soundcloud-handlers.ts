@@ -1,7 +1,7 @@
-// SoundCloud IPC handlers (SC-only module). Primary data source is the
-// internal api-v2 client; yt-dlp is the explicit fallback engine for every
-// channel (search/resolve/stream) so a rotated client_id or API change
-// degrades to "slow but working" instead of breaking the platform.
+// Handlery IPC SoundCloud (moduł tylko SC). Głównym źródłem danych jest
+// wewnętrzny klient api-v2; yt-dlp to jawny silnik fallbacku dla każdego
+// kanału (search/resolve/stream), więc zrotowany client_id lub zmiana API
+// degraduje do "wolno, ale działa" zamiast psuć platformę.
 import { ipcMain } from 'electron';
 import { logger } from '../../../shared/logger';
 import { detectScKind, normalizeScUrl } from '../../../shared/soundcloud';
@@ -27,7 +27,7 @@ import { mapScTrackItem } from './soundcloud-resolve-map';
 import { e2eFixturesEnabled } from '../../e2e-fixtures';
 
 // ---------------------------------------------------------------------------
-// IPC registration
+// Rejestracja IPC
 
 export function registerSoundcloudHandlers(): void {
   ipcMain.handle('sc:search', async (_event, query: string, offset?: number) => {
@@ -44,7 +44,7 @@ export function registerSoundcloudHandlers(): void {
     } catch (e: unknown) {
       logger.warn('sc', 'api search failed, falling back to yt-dlp', String(e));
       if (pageOffset > 0) {
-        // yt-dlp scsearch has no offset — deeper pages are API-only.
+        // yt-dlp scsearch nie ma offsetu — głębsze strony są tylko przez API.
         return { success: true, items: [] };
       }
       try {
@@ -69,8 +69,8 @@ export function registerSoundcloudHandlers(): void {
       return { success: false, error: 'Unsupported or invalid SoundCloud link' };
     }
     const target = normalizeScUrl(rawUrl);
-    // Personalized /discover/sets links are session-bound — the API answers
-    // 404 for them. Fail fast with a clear code instead of a generic error.
+    // Spersonalizowane linki /discover/sets są związane z sesją — API odpowiada
+    // na nie 404. Kończymy szybko z jasnym kodem zamiast ogólnego błędu.
     if (/\/discover\/sets\//i.test(target)) {
       return {
         success: false,
@@ -78,8 +78,8 @@ export function registerSoundcloudHandlers(): void {
         code: 'unsupported'
       };
     }
-    // Channels open directly in the dedicated channel view — lightweight
-    // marker, same contract as yt:resolve.
+    // Kanały otwierają się bezpośrednio w dedykowanym widoku kanału — lekki
+    // marker, ten sam kontrakt co yt:resolve.
     if (kind === 'channel') {
       return {
         success: true,
@@ -135,8 +135,8 @@ export function registerSoundcloudHandlers(): void {
           }
         };
       }
-      // A user reached here means detection and resolution disagree; treat it
-      // as a channel marker so the UI opens the profile view.
+      // Dotarcie tutaj użytkownika oznacza, że detekcja i rozwiązanie się nie zgadzają; traktujemy
+      // to jako marker kanału, aby UI otworzyło widok profilu.
       return {
         success: true,
         result: { kind: 'channel', sourceUrl: target, title: '', meta: {}, items: [] }
@@ -299,8 +299,8 @@ export function registerSoundcloudHandlers(): void {
             url: permalink,
             title: user.username || '',
             thumbnail: avatar,
-            // SC profiles have no separate banner — reuse the avatar so the
-            // header keeps the same look as YT channels (banner behind title).
+            // Profile SC nie mają osobnego banera — użyj ponownie awatara, aby
+            // nagłówek wyglądał tak samo jak kanały YT (baner za tytułem).
             bannerUrl: avatar || undefined,
             subscriberCount: user.followers_count,
             description: typeof user.description === 'string' ? user.description : '',
@@ -333,7 +333,7 @@ export function registerSoundcloudHandlers(): void {
     return getScStreamUrl(url);
   });
 
-  // Whole profile in one call (subscription "download all" + checker).
+  // Cały profil w jednym wywołaniu (subskrypcja "pobierz wszystko" + checker).
   ipcMain.handle('sc:channelAll', async (_event, opts: { url: string }) => {
     if (detectScKind(opts?.url || '') !== 'channel') {
       return { success: false, error: 'Expected a SoundCloud profile link', items: [] };

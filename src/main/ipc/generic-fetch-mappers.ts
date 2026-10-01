@@ -1,8 +1,8 @@
 import type { MediaSource, SourceEndpoint, SourceItem } from '../../shared/types/sources';
 
-// Pure templating/URL/dot-path helpers extracted from `generic-fetch.ts`
-// (plan 2.8). `generic-fetch` re-exports the public ones so existing
-// importers/tests keep working unchanged.
+// Czyste helpery szablonów/URL/dot-path wyodrębnione z `generic-fetch.ts`
+// (plan 2.8). `generic-fetch` re-eksportuje publiczne z nich, aby istniejące
+// importery/testy działały bez zmian.
 
 /** Bezpieczny "dot-path" odczyt z JSON: rozdziela po '.', segmenty liczbowe = indeksy tablic. */
 export function dotGet(obj: unknown, path: string | undefined): unknown {

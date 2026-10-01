@@ -1,7 +1,8 @@
 import type { IpcDownloadJobInput, IpcDownloadTask, IpcYoutubeVideo } from '../shared/types/ipc';
 
-// Env-gated fixtures for the Playwright suite (plan 2.2). Inactive unless the
-// test launcher sets ONDA_E2E_FIXTURES=1, so packaged builds never see them.
+// Fixtury bramkowane zmienną środowiskową dla zestawu Playwright (plan 2.2).
+// Nieaktywne, o ile launcher testów nie ustawi ONDA_E2E_FIXTURES=1, więc
+// kompilacje spakowane nigdy ich nie widzą.
 
 export function e2eFixturesEnabled(): boolean {
   return process.env.ONDA_E2E_FIXTURES === '1';
@@ -49,10 +50,11 @@ function isFinished(task: IpcDownloadTask): boolean {
   return task.status === 'completed' || task.status === 'error' || task.status === 'cancelled';
 }
 
-// URL markers let a test pick a deterministic lifecycle instead of racing the
-// real timers: `#hold` stays pending (queued), `#downloading` stays active at
-// 40 %, anything else mirrors pending → downloading → completed so the
-// renderer's progress broadcasts and status rendering are exercised.
+// Markery URL pozwalają testowi wybrać deterministyczny cykl życia zamiast ścigać
+// się z prawdziwymi timerami: `#hold` pozostaje oczekujące (w kolejce),
+// `#downloading` pozostaje aktywne na 40 %, cokolwiek innego odwzorowuje
+// pending → downloading → completed, więc emisje postępu renderera i renderowanie
+// statusu są sprawdzane.
 function behaviorOf(url: string): 'hold' | 'downloading' | 'normal' {
   if (url.includes('#hold')) return 'hold';
   if (url.includes('#downloading')) return 'downloading';
@@ -83,8 +85,8 @@ export function e2eAddDownloadTasks(jobs: IpcDownloadJobInput[], emit: Emit): Ip
   });
 
   for (const { task, index } of created) {
-    // Broadcast the queued snapshot immediately: jobs that never progress
-    // (e.g. `#hold`) would otherwise never reach the renderer store.
+    // Emituje migawkę w kolejce natychmiast: zadania, które nigdy nie robią
+    // postępu (np. `#hold`), w innym razie nigdy nie dotarłyby do store renderera.
     emit({ ...task });
 
     const behavior = behaviorOf(task.url);

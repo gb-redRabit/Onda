@@ -5,10 +5,10 @@ import { BlockList, isIP } from 'node:net';
 const NON_PUBLIC_V4 = new BlockList();
 const NON_PUBLIC_V6 = new BlockList();
 
-// Addresses that are never a legitimate public origin. These stay blocked even
-// when a caller opts into RFC1918 (a home LAN radio station): loopback reaches
-// whatever the user runs locally, and link-local covers 169.254.169.254, the
-// cloud metadata endpoint.
+// Adresy, które nigdy nie są legalnym publicznym origin. Pozostają zablokowane nawet
+// gdy wywołujący włączy RFC1918 (domowa stacja radiowa w LAN): loopback sięga
+// do tego, co użytkownik uruchamia lokalnie, a link-local obejmuje 169.254.169.254,
+// endpoint metadanych chmury.
 const NEVER_PUBLIC_V4 = new BlockList();
 const NEVER_PUBLIC_V6 = new BlockList();
 
@@ -83,14 +83,14 @@ export function isNonPublicAddress(address: string): boolean {
 }
 
 /**
- * True for a loopback, link-local, unspecified or otherwise non-routable
- * LITERAL address — the ranges that are never a legitimate public origin, even
- * for a caller that allows a private network.
+ * True dla dosłownego adresu loopback, link-local, nieokreślonego lub w inny sposób
+ * nieroutowalnego — zakresów, które nigdy nie są legalnym publicznym origin, nawet
+ * dla wywołującego, który zezwala na sieć prywatną.
  *
- * Only meaningful for an address literal: a hostname is not an IP, so this
- * returns true for anything it cannot classify. Callers that hold a hostname
- * must guard with `isIP()` first (or use `resolveNetworkTarget`, which resolves
- * first and then checks the answers).
+ * Ma sens tylko dla dosłownego adresu: nazwa hosta nie jest adresem IP, więc
+ * zwraca true dla wszystkiego, czego nie potrafi zaklasyfikować. Wywołujący, którzy mają
+ * nazwę hosta, muszą najpierw zabezpieczyć się `isIP()` (albo użyć `resolveNetworkTarget`, który najpierw
+ * rozwiązuje, a potem sprawdza odpowiedzi).
  */
 export function isNeverPublicAddress(address: string): boolean {
   const family = isIP(address);
@@ -100,9 +100,9 @@ export function isNeverPublicAddress(address: string): boolean {
 }
 
 /**
- * True for a loopback host in any common spelling: `localhost`, a `*.localhost`
- * name, `::1`, or any `127.0.0.0/8` literal. Shared by the URL validators that
- * reject network-supplied URLs pointing at local services.
+ * True dla hosta loopback w każdym typowym zapisie: `localhost`, nazwa `*.localhost`,
+ * `::1` lub dowolny dosłowny adres z `127.0.0.0/8`. Współdzielone przez walidatory URL, które
+ * odrzucają URL-e pochodzące z sieci wskazujące na lokalne usługi.
  */
 export function isLoopbackHost(host: string): boolean {
   const h = host.trim().toLowerCase().replace(/^\[|\]$/g, '');
@@ -113,22 +113,22 @@ export function isLoopbackHost(host: string): boolean {
 
 export interface NetworkTargetOptions {
   /**
-   * Allows the non-public address space, for a target the user explicitly
-   * approved (a media source with the private-network toggle, a LAN radio
-   * station). Loopback is included, because a local service on 127.0.0.1 is a
-   * legitimate source.
+   * Zezwala na niepubliczną przestrzeń adresową dla celu wyraźnie zatwierdzonego
+   * przez użytkownika (źródło mediów z przełącznikiem sieci prywatnej, stacja
+   * radiowa w LAN). Loopback jest uwzględniony, bo lokalna usługa na 127.0.0.1 jest
+   * legalnym źródłem.
    */
   allowPrivateNetwork?: boolean;
   /**
-   * Narrows `allowPrivateNetwork` by additionally blocking loopback,
-   * link-local and the unspecified address. 169.254.169.254 is the cloud
-   * metadata endpoint and loopback is whatever runs on this machine; a path
-   * reachable from the renderer should not reach either by default.
+   * Zawęża `allowPrivateNetwork`, dodatkowo blokując loopback,
+   * link-local i adres nieokreślony. 169.254.169.254 to endpoint metadanych
+   * chmury, a loopback to cokolwiek działa na tej maszynie; ścieżka
+   * osiągalna z renderera nie powinna domyślnie sięgać do żadnego z nich.
    */
   blockLoopback?: boolean;
 }
 
-/** Resolves a URL once, rejects private targets by default and returns pinned IPs. */
+/** Rozwiązuje URL raz, domyślnie odrzuca cele prywatne i zwraca przypięte adresy IP. */
 export async function resolveNetworkTarget(
   rawUrl: string,
   options: NetworkTargetOptions = {},
@@ -160,7 +160,7 @@ export async function resolveNetworkTarget(
   return { url, addresses };
 }
 
-/** A private target is trusted only for the original, user-approved origin. */
+/** Prywatny cel jest zaufany tylko dla oryginalnego, zatwierdzonego przez użytkownika origin. */
 export function privateNetworkAllowedForTarget(
   targetUrl: string,
   trustedOrigin: string,
@@ -169,7 +169,7 @@ export function privateNetworkAllowedForTarget(
   return userApproved && new URL(targetUrl).origin === new URL(trustedOrigin).origin;
 }
 
-/** A lookup callback that pins the connection to the addresses just validated. */
+/** Callback lookup, który przypina połączenie do właśnie zwalidowanych adresów. */
 export function createPinnedLookup(addresses: LookupAddress[]) {
   return (
     _hostname: string,
