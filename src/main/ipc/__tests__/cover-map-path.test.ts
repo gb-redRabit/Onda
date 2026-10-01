@@ -27,9 +27,9 @@ function tempDir(prefix: string): string {
   return dir;
 }
 
-async function load(): Promise<typeof import('../cover-map')> {
+async function load(): Promise<typeof import('../cover/cover-map')> {
   vi.resetModules();
-  return import('../cover-map');
+  return import('../cover/cover-map');
 }
 
 function cwdEntry(name: string): boolean {

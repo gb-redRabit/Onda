@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'fs/promises';
 import { join, resolve } from 'path';
 import { tmpdir } from 'os';
 import vm from 'node:vm';
-import { installPluginFromDir, listPluginExamples } from '../plugins-examples';
+import { installPluginFromDir, listPluginExamples } from '../plugins/plugins-examples';
 import { isPluginUiSlot } from '../../../shared/plugin-ui-slots';
 
 async function makeExample(dir: string, id: string): Promise<void> {

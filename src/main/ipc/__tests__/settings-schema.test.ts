@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sanitizeSettings, SETTINGS_ALLOWED_KEYS } from '../settings-schema';
+import { sanitizeSettings, SETTINGS_ALLOWED_KEYS } from '../settings/settings-schema';
 
 describe('sanitizeSettings', () => {
   it('drops unknown top-level keys (internal store keys, junk)', () => {

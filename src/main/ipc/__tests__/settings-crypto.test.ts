@@ -8,7 +8,7 @@ import {
   encryptionStatus,
   SecretStorageUnavailableError,
   __resetEncryptionStatusCache
-} from '../settings-crypto';
+} from '../settings/settings-crypto';
 
 // This module is the only place a stored API key can be trusted to, so the
 // behaviour that matters is what happens when the platform cannot encrypt:

@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 // `set`/`clear`/`delete` and bypass the eviction cap. They are now private and
 // reachable only through accessors.
 
-const SOURCE = readFileSync(join(process.cwd(), 'src/main/ipc/cover-cache.ts'), 'utf8');
+const SOURCE = readFileSync(join(process.cwd(), 'src/main/ipc/cover/cover-cache.ts'), 'utf8');
 
 describe('cover cache encapsulation', () => {
   it('does not export the mutable caches or cacheSet', () => {

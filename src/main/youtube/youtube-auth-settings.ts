@@ -1,4 +1,4 @@
-import { getStore } from '../ipc/cover-cache';
+import { getStore } from '../ipc/cover/cover-cache';
 import type { YoutubeAuthSettings, YoutubeAuthMethod } from '../../shared/types/settings';
 import { logger } from '../../shared/logger';
 

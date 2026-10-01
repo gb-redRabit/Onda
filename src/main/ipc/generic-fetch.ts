@@ -1,7 +1,7 @@
 import { extname } from 'path';
 import { httpRequest } from './http-request';
-import { getStore } from './cover-cache';
-import { decryptApiKeys } from './settings-crypto';
+import { getStore } from './cover/cover-cache';
+import { decryptApiKeys } from './settings/settings-crypto';
 import { logger } from '../../shared/logger';
 import type {
   MediaSource,

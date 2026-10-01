@@ -24,8 +24,8 @@ import {
   urlAllowed,
   resolveRedirectUrl,
   MAX_STORAGE_KEYS
-} from '../plugins-core';
-import { settingWriteAllowed, storagePermissionGranted } from '../plugins-guards';
+} from '../plugins/plugins-core';
+import { settingWriteAllowed, storagePermissionGranted } from '../plugins/plugins-guards';
 
 let dir: string;
 

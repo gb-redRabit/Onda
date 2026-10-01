@@ -13,7 +13,7 @@ import {
   getMkvExtractCandidates,
   resolveBinary,
   toolFileName
-} from '../dependency-utils';
+} from '../dependency/dependency-utils';
 import binaries from '../../../../binaries.json';
 
 // Version probes are mocked: paths registered in `brokenPaths` fail the probe,

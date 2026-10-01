@@ -1,4 +1,4 @@
-import { getStore } from '../ipc/cover-cache';
+import { getStore } from '../ipc/cover/cover-cache';
 
 // Download settings readers extracted from `download-manager.ts` (plan 2.8).
 

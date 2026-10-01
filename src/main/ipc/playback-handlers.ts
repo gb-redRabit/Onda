@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
 import { stat } from 'fs/promises';
-import { getStore } from './cover-cache';
+import { getStore } from './cover/cover-cache';
 import { logger } from '../../shared/logger';
 
 const PLAYBACK_KEY = 'playbackPositions';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { runPluginFetch } from '../plugins-fetch';
+import { runPluginFetch } from '../plugins/plugins-fetch';
 
 describe('plugin network fetch', () => {
   it('rejects a manifest-allowed URL that resolves to loopback before making a request', async () => {

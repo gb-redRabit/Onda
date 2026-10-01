@@ -1,8 +1,8 @@
 import type { AppCacheClearResult } from '../../shared/types/ipc';
 import { logger } from '../../shared/logger';
-import { clearCoverCache } from './cover-cache';
-import { clearThumbnailCache } from './media-thumbnails';
-import { clearStreamCache } from './youtube-stream-cache';
+import { clearCoverCache } from './cover/cover-cache';
+import { clearThumbnailCache } from './media/media-thumbnails';
+import { clearStreamCache } from './youtube/youtube-stream-cache';
 import { clearRemoteImageCache } from './remote-image';
 
 /**

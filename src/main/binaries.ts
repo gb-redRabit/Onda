@@ -1,6 +1,10 @@
 import { app } from 'electron';
 import { join } from 'path';
-import { resolveBinary, type BinTool, type ResolvedBinary } from './ipc/dependency-utils';
+import {
+  resolveBinary,
+  type BinTool,
+  type ResolvedBinary
+} from './ipc/dependency/dependency-utils';
 
 let cachedDir: string | null = null;
 

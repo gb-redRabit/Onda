@@ -4,7 +4,7 @@ import { mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
 import type { AppFactoryResetResult } from '../../shared/types/ipc';
 import { logger } from '../../shared/logger';
-import { getStore } from './cover-store';
+import { getStore } from './cover/cover-store';
 import { clearAppCaches } from './app-cache';
 import { clearLogFile, getLogDir } from '../log-file';
 import { AUTH_PARTITION } from '../youtube/youtube-auth-session';

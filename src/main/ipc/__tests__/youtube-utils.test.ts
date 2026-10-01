@@ -20,7 +20,7 @@ import {
   parseNetscapeCookies,
   buildStreamGetArgs,
   parseStreamGetOutput
-} from '../youtube-utils';
+} from '../youtube/youtube-utils';
 
 describe('formatDuration', () => {
   it('returns undefined for missing/zero/negative duration', () => {

@@ -14,7 +14,7 @@ import {
   runFileMigrations,
   runStoreMigrations
 } from '../state-migrations';
-import type { Store } from '../ipc/cover-store';
+import type { Store } from '../ipc/cover/cover-store';
 
 interface FakeStore extends Store {
   data: Record<string, unknown>;

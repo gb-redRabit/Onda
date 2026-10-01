@@ -18,16 +18,16 @@ import {
   setRootsChangedHandler,
   getExtraRoots
 } from './media/media-server';
-import { getStore } from './ipc/cover-cache';
+import { getStore } from './ipc/cover/cover-cache';
 import { flushQueueNow } from './downloads/download-manager';
-import { flushLibraryScanned, flushStats } from './ipc/library-store';
-import { stopSubscriptionChecker } from './ipc/subscription-checker';
+import { flushLibraryScanned, flushStats } from './ipc/library/library-store';
+import { stopSubscriptionChecker } from './ipc/subscriptions/subscription-checker';
 import { setupFileLogging, applyLogSettings, flushLogWrites } from './log-file';
-import { applyCoverCacheSettings, initCoverCache } from './ipc/cover-cache';
+import { applyCoverCacheSettings, initCoverCache } from './ipc/cover/cover-cache';
 import { initAutoUpdater, replayUpdaterEvent } from './updater';
 import { markBootPhase, markBootStart } from './boot-timeline';
 import { configureAutoCheck } from './updater-scheduler';
-import { syncSubscriptionsScheduler } from './ipc/subscriptions-handlers';
+import { syncSubscriptionsScheduler } from './ipc/subscriptions/subscriptions-handlers';
 import { shouldCloseToTray, setCloseToTray } from './windows/close-behavior';
 import { windowIcon } from './windows/window-icon';
 import { createWindow as createBrowserWindow } from './windows/window-factory';

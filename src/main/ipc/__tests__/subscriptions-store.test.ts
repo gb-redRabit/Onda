@@ -8,7 +8,7 @@ import {
   removeSubscription,
   updateSubscription,
   appendDownloadedVideos
-} from '../subscriptions-store';
+} from '../subscriptions/subscriptions-store';
 
 let dir: string;
 let file: string;

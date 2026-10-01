@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { scanDir, filterCoverSiblingVideos } from '../library-scan';
+import { scanDir, filterCoverSiblingVideos } from '../library/library-scan';
 import type { MediaFile } from '../../../shared/types/media';
 
-vi.mock('../media-handlers', () => ({
+vi.mock('../media/media-handlers', () => ({
   getDuration: vi.fn(async () => 0)
 }));
 

@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { addAllowedRoot, getExtraRoots } from '../../media/media-server';
-import { createScanBudget, scanDir } from '../library-scan';
+import { createScanBudget, scanDir } from '../library/library-scan';
 
 // Two ceilings that used to bound the *result* rather than the *cost*: a
 // renderer could grow the media allowlist one call at a time without limit, and

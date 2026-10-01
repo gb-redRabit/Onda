@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { MediaFile } from '../../../shared/types/media';
-import { classifyFolderType, filterFilesForFolderType, scanDir } from '../library-scan';
+import { classifyFolderType, filterFilesForFolderType, scanDir } from '../library/library-scan';
 
-vi.mock('../media-handlers', () => ({
+vi.mock('../media/media-handlers', () => ({
   getDuration: vi.fn(async () => 0)
 }));
 

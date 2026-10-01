@@ -3,7 +3,11 @@ import { join } from 'path';
 import { randomUUID } from 'crypto';
 import { readFile, unlink } from 'fs/promises';
 import { writeFileRestricted } from '../utils/file-permissions';
-import { serializeCookies, parseNetscapeCookies, type YtAuthConfig } from '../ipc/youtube-utils';
+import {
+  serializeCookies,
+  parseNetscapeCookies,
+  type YtAuthConfig
+} from '../ipc/youtube/youtube-utils';
 import { logger } from '../../shared/logger';
 import {
   SESSION_COOKIE_NAMES,

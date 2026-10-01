@@ -7,9 +7,9 @@ const mocks = vi.hoisted(() => ({
   clearRemoteImageCache: vi.fn()
 }));
 
-vi.mock('../cover-cache', () => ({ clearCoverCache: mocks.clearCoverCache }));
-vi.mock('../media-thumbnails', () => ({ clearThumbnailCache: mocks.clearThumbnailCache }));
-vi.mock('../youtube-stream-cache', () => ({ clearStreamCache: mocks.clearStreamCache }));
+vi.mock('../cover/cover-cache', () => ({ clearCoverCache: mocks.clearCoverCache }));
+vi.mock('../media/media-thumbnails', () => ({ clearThumbnailCache: mocks.clearThumbnailCache }));
+vi.mock('../youtube/youtube-stream-cache', () => ({ clearStreamCache: mocks.clearStreamCache }));
 vi.mock('../remote-image', () => ({ clearRemoteImageCache: mocks.clearRemoteImageCache }));
 
 import { clearAppCaches } from '../app-cache';

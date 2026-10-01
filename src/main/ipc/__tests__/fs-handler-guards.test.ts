@@ -60,8 +60,8 @@ vi.mock('../../media/media-server', async (importOriginal) => {
   };
 });
 
-const { registerFsHandlers } = await import('../fs-handlers');
-const { registerMediaHandlers } = await import('../media-handlers');
+const { registerFsHandlers } = await import('../fs/fs-handlers');
+const { registerMediaHandlers } = await import('../media/media-handlers');
 
 const senders: Array<{ send: (channel: string, payload: unknown) => void }> = [];
 function event(): { sender: { send: (channel: string, payload: unknown) => void } } {

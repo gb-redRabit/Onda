@@ -1,9 +1,9 @@
 import { dirname, resolve, sep } from 'path';
 import type { MediaFile } from '../../shared/types/media';
-import { getStore } from '../ipc/cover-cache';
-import { loadLibraryScanned, setLibraryScanned } from '../ipc/library-store';
-import { scanDir, classifyFolderType, filterFilesForFolderType } from '../ipc/library-scan';
-import { addLibraryFolder } from '../ipc/library-handlers';
+import { getStore } from '../ipc/cover/cover-cache';
+import { loadLibraryScanned, setLibraryScanned } from '../ipc/library/library-store';
+import { scanDir, classifyFolderType, filterFilesForFolderType } from '../ipc/library/library-scan';
+import { addLibraryFolder } from '../ipc/library/library-handlers';
 import { logger } from '../../shared/logger';
 import { broadcastToAllWindows } from '../utils/broadcast';
 

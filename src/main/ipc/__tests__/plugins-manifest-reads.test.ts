@@ -11,8 +11,8 @@ import { tmpdir } from 'node:os';
 
 const { parsedIds } = vi.hoisted(() => ({ parsedIds: [] as string[] }));
 
-vi.mock('../plugins-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../plugins-core')>();
+vi.mock('../plugins/plugins-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../plugins/plugins-core')>();
   return {
     ...actual,
     parseManifest: (raw: unknown, folderId: string) => {
@@ -33,8 +33,8 @@ vi.mock('electron', () => ({
   BrowserWindow: { getFocusedWindow: () => null, getAllWindows: () => [] }
 }));
 
-const { registerPluginsHandlers } = await import('../plugins-handlers');
-const { pluginConsentHash } = await import('../plugins-core');
+const { registerPluginsHandlers } = await import('../plugins/plugins-handlers');
+const { pluginConsentHash } = await import('../plugins/plugins-core');
 
 const MANIFEST = {
   name: 'Demo',

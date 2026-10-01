@@ -17,15 +17,15 @@ vi.mock('electron', () => ({
   ipcMain: { handle: (channel: string, listener: Handler) => handlers.set(channel, listener) }
 }));
 
-vi.mock('../media-handlers', () => ({ getDuration: vi.fn(async () => 0) }));
+vi.mock('../media/media-handlers', () => ({ getDuration: vi.fn(async () => 0) }));
 
-vi.mock('../library-watcher', () => ({
+vi.mock('../library/library-watcher', () => ({
   startLibraryWatcher: vi.fn(async () => {}),
   setLibraryWatcherScan: vi.fn()
 }));
 
-const { registerLibraryHandlers } = await import('../library-handlers');
-const { setLibraryScanned } = await import('../library-store');
+const { registerLibraryHandlers } = await import('../library/library-handlers');
+const { setLibraryScanned } = await import('../library/library-store');
 
 let bigDir = '';
 let smallDir = '';
@@ -93,7 +93,7 @@ describe('library:scan supersedes the running scan', () => {
     await Promise.all([invoke('library:scan', [bigDir]), invoke('library:scan', [smallDir])]);
     // Whatever the ordering, the persisted library is one of the two scanned
     // folders, never a merge of both and never an empty wipe from the aborted run.
-    const { getLibraryScanned } = await import('../library-store');
+    const { getLibraryScanned } = await import('../library/library-store');
     const stored = getLibraryScanned();
     const paths = stored.files.map((f: { path: string }) => f.path);
     expect(paths.length === 0 || paths.every((p: string) => p.startsWith(smallDir))).toBe(true);

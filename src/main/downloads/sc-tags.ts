@@ -4,7 +4,7 @@
 // shows proper metadata instead of file names.
 import NodeID3 from 'node-id3';
 import { logger } from '../../shared/logger';
-import { writeCoverToAudioFile } from '../ipc/media-handlers';
+import { writeCoverToAudioFile } from '../ipc/media/media-handlers';
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const IMAGE_TIMEOUT_MS = 15_000;

@@ -11,7 +11,7 @@ interface ProxyConfig {
 
 let network: Record<string, unknown> | undefined;
 
-vi.mock('../cover-cache', () => ({
+vi.mock('../cover/cover-cache', () => ({
   getStore: async () => ({
     get: (key: string) => (key === 'network' ? network : undefined)
   })

@@ -13,12 +13,12 @@ import {
   deriveHttpFileName,
   parseYtDlpProgress
 } from './download-helpers';
-import { buildYtArgs, type YtAuthConfig } from '../ipc/youtube-utils';
+import { buildYtArgs, type YtAuthConfig } from '../ipc/youtube/youtube-utils';
 import { killDownloadProcess } from './kill-download-process';
 import { resolveFinalOutputPath, findNewestOutput } from './output-path';
 import { downloadHttpFile } from './http-downloader';
 import { resolveSourceHeaders } from '../ipc/generic-fetch';
-import { resolveScDownloadSource } from '../ipc/soundcloud-client';
+import { resolveScDownloadSource } from '../ipc/soundcloud/soundcloud-client';
 import { classifyYtDlpError, describeError, redactSecrets } from './error-classifier';
 import { addAllowedRoot } from '../media/media-server';
 import { persist, reportCompleted, jobAbortControllers } from './download-state';

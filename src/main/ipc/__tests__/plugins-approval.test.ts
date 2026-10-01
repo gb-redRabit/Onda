@@ -25,8 +25,8 @@ vi.mock('electron', () => ({
   BrowserWindow: { getFocusedWindow: () => null, getAllWindows: () => [] }
 }));
 
-const { registerPluginsHandlers } = await import('../plugins-handlers');
-const { pluginConsentHash } = await import('../plugins-core');
+const { registerPluginsHandlers } = await import('../plugins/plugins-handlers');
+const { pluginConsentHash } = await import('../plugins/plugins-core');
 
 const MANIFEST = {
   name: 'Demo',

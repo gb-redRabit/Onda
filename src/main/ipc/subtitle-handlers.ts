@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron';
 import { readdir, readFile, mkdir, unlink, rm, stat, realpath } from 'fs/promises';
 import { join, extname, basename, dirname, sep } from 'path';
-import { getTempDir } from './cover-cache';
+import { getTempDir } from './cover/cover-cache';
 import { resolveBin } from '../binaries';
 import { logger } from '../../shared/logger';
 import { runCommand } from '../utils/exec';

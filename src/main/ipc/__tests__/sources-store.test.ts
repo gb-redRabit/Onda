@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sanitizeImportedSource, sanitizeSource, sanitizeEndpoint } from '../sources-store';
+import { sanitizeImportedSource, sanitizeSource, sanitizeEndpoint } from '../sources/sources-store';
 
 const BASE = {
   id: 's1',

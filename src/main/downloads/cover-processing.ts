@@ -6,8 +6,8 @@ import type { IpcCoverSpec, IpcMetaOverride } from '../../shared/types/ipc';
 import { resolveBin } from '../binaries';
 import { runCommand } from '../utils/exec';
 import { getYtAuthConfig, cleanupYtAuthTemp } from '../youtube/youtube-auth';
-import { buildYtArgs } from '../ipc/youtube-utils';
-import { writeCoverToAudioFile } from '../ipc/media-handlers';
+import { buildYtArgs } from '../ipc/youtube/youtube-utils';
+import { writeCoverToAudioFile } from '../ipc/media/media-handlers';
 import { buildSectionArgs, siblingCoverPath } from './cover-spec';
 
 // Covers are short clips, but they deserve real quality — pull the best

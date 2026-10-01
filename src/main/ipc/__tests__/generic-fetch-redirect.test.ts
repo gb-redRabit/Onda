@@ -3,8 +3,8 @@ import http from 'http';
 import type { AddressInfo } from 'net';
 
 vi.mock('electron', () => ({ app: { getPath: () => '/tmp' } }));
-vi.mock('../cover-cache', () => ({ getStore: async () => ({ get: () => undefined }) }));
-vi.mock('../settings-crypto', () => ({ decryptApiKeys: async (keys: unknown) => keys }));
+vi.mock('../cover/cover-cache', () => ({ getStore: async () => ({ get: () => undefined }) }));
+vi.mock('../settings/settings-crypto', () => ({ decryptApiKeys: async (keys: unknown) => keys }));
 vi.mock('../network-target', () => ({
   privateNetworkAllowedForTarget: (
     targetUrl: string,

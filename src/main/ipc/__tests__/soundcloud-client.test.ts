@@ -8,7 +8,7 @@ import {
   scSearchTracks,
   sanitizeFileName,
   upgradeArtworkUrl
-} from '../soundcloud-client';
+} from '../soundcloud/soundcloud-client';
 
 const SC_TRACK = {
   kind: 'track',

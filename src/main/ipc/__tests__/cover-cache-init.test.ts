@@ -7,7 +7,7 @@ import { describe, it, expect } from 'vitest';
 // explicit initCoverCache() that the boot sequence calls once the store is up.
 
 const ROOT = process.cwd();
-const coverCache = readFileSync(join(ROOT, 'src/main/ipc/cover-cache.ts'), 'utf8');
+const coverCache = readFileSync(join(ROOT, 'src/main/ipc/cover/cover-cache.ts'), 'utf8');
 const index = readFileSync(join(ROOT, 'src/main/index.ts'), 'utf8');
 
 describe('cover cache initialisation', () => {
@@ -18,7 +18,7 @@ describe('cover cache initialisation', () => {
   });
 
   it('runs initCoverCache from the app boot sequence', () => {
-    expect(index).toMatch(/import \{[^}]*initCoverCache[^}]*\} from '\.\/ipc\/cover-cache'/);
+    expect(index).toMatch(/import \{[^}]*initCoverCache[^}]*\} from '\.\/ipc\/cover\/cover-cache'/);
     expect(index).toMatch(/await initCoverCache\(\)/);
   });
 });

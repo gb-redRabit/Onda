@@ -1,4 +1,4 @@
-import { getStore } from './ipc/cover-cache';
+import { getStore } from './ipc/cover/cover-cache';
 import { checkForUpdates, getUpdaterState } from './updater';
 import { logger } from '../shared/logger';
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applySourceTrust } from '../sources-store';
+import { applySourceTrust } from '../sources/sources-store';
 import type { MediaSource } from '../../../shared/types/sources';
 
 function draft(overrides: Partial<MediaSource> = {}): MediaSource {

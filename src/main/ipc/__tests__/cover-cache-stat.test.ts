@@ -23,13 +23,13 @@ vi.mock('electron', () => ({
   BrowserWindow: { getAllWindows: () => [] }
 }));
 
-vi.mock('../cover-map', () => ({
+vi.mock('../cover/cover-map', () => ({
   readCoverMap: vi.fn(async () => ({})),
   writeCoverMap: vi.fn(async () => {})
 }));
 
-vi.mock('../cover-cache-helpers', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../cover-cache-helpers')>();
+vi.mock('../cover/cover-cache-helpers', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../cover/cover-cache-helpers')>();
   return { ...actual, findSiblingVideo: () => null };
 });
 
@@ -46,7 +46,7 @@ import {
   getCachedDuration,
   setCachedDuration,
   deleteCachedDuration
-} from '../cover-cache';
+} from '../cover/cover-cache';
 
 describe('extractAndCacheCover stat usage', () => {
   it('stats a cold cover miss only once', async () => {

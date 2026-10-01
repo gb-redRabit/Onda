@@ -1,7 +1,7 @@
 import { BrowserWindow, session } from 'electron';
 import { readFile, unlink, copyFile } from 'fs/promises';
 import { writeFileRestricted } from '../utils/file-permissions';
-import { isValidCookieFile, type YtAuthConfig } from '../ipc/youtube-utils';
+import { isValidCookieFile, type YtAuthConfig } from '../ipc/youtube/youtube-utils';
 import type { YoutubeAuthMethod } from '../../shared/types/settings';
 import { logger } from '../../shared/logger';
 import { pipWindowIcon } from '../pip/pip-icon';

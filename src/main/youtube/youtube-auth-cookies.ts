@@ -1,5 +1,5 @@
 import { readFile } from 'fs/promises';
-import { isValidCookieFile } from '../ipc/youtube-utils';
+import { isValidCookieFile } from '../ipc/youtube/youtube-utils';
 
 // Cookies that mark a signed-in YouTube session. Google's login flow moves the
 // SID-family around: a modern sign-in can leave `SID`/`HSID`/`__Secure-1PSID` on

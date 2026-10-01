@@ -2,9 +2,9 @@ import { copyFile, mkdir, rm } from 'fs/promises';
 import { existsSync } from 'fs';
 import { dirname } from 'path';
 import { logger } from '../shared/logger';
-import { migrateAppearance } from './ipc/settings-migrations';
+import { migrateAppearance } from './ipc/settings/settings-migrations';
 import { migrateLegacyStore } from './ipc/store-crypto';
-import type { Store } from './ipc/cover-store';
+import type { Store } from './ipc/cover/cover-store';
 
 // Central registry for one-time state migrations (plan 4.1/4.2). Two layers:
 //

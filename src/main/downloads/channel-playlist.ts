@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import type { MediaFile, Playlist } from '../../shared/types/media';
-import { getStore } from '../ipc/cover-cache';
+import { getStore } from '../ipc/cover/cover-cache';
 import { broadcastToAllWindows } from '../utils/broadcast';
 import { logger } from '../../shared/logger';
 

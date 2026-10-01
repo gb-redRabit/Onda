@@ -5,8 +5,8 @@ import { join } from 'path';
 import { createMediaServer, type MediaServer } from '../media/media-server';
 import { registerGenericStreamUrl } from '../media/media-server-stream-registry';
 import { runCommand } from '../utils/exec';
-import { whichInPath } from '../ipc/dependency-utils';
-import { buildStreamGetArgs, parseStreamGetOutput } from '../ipc/youtube-utils';
+import { whichInPath } from '../ipc/dependency/dependency-utils';
+import { buildStreamGetArgs, parseStreamGetOutput } from '../ipc/youtube/youtube-utils';
 
 // Opt-in network smoke test for the generic (non-YouTube) playback path.
 // It runs the real yt-dlp extractor, registers the returned stream URL and

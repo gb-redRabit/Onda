@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, readFile, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { appendDownloadedItem, getDownloadedForSource } from '../sources-downloaded-store';
+import { appendDownloadedItem, getDownloadedForSource } from '../sources/sources-downloaded-store';
 
 let dir: string;
 let file: string;

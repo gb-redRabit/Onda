@@ -1,4 +1,4 @@
-import { getStore } from './cover-cache';
+import { getStore } from './cover/cover-cache';
 
 interface ProxyConfig {
   enabled?: boolean;
