@@ -14,6 +14,7 @@ import {
 import { join, extname, basename } from 'path';
 import { iconSourcePath } from '../../utils/file-icon';
 import { spawn } from 'child_process';
+import { terminalCandidates, spawnFirstAvailable } from '../../utils/terminal';
 import { errMsg } from '../../../shared/helpers';
 import { logger } from '../../../shared/logger';
 import type { FileItem } from '../../../shared/types/explorer';
@@ -367,11 +368,13 @@ export function registerFsHandlers(): void {
         return;
       }
       openTerminalInFlight = true;
-      const isWindows = process.platform === 'win32';
-      if (isWindows) {
-        spawn('cmd', ['/K', 'cd', '/d', real], { windowsHide: true, detached: true }).unref();
-      } else {
-        spawn('open', ['-a', 'Terminal', real], { detached: true }).unref();
+      // Windows → cmd, macOS → Terminal, Linux → first available emulator.
+      const launched = await spawnFirstAvailable(
+        terminalCandidates(process.platform, real),
+        (cmd, args, opts) => spawn(cmd, args, opts)
+      );
+      if (!launched) {
+        logger.warn('fs', `openTerminal: no terminal emulator available for ${real}`);
       }
     } catch (e) {
       logger.warn('fs', `openTerminal failed for ${dirPath}`, e);

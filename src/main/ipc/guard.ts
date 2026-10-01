@@ -3,6 +3,26 @@ import type { IpcMainInvokeEvent, IpcMainEvent, WebFrameMain } from 'electron';
 import { fileURLToPath } from 'url';
 import { logger } from '../../shared/logger';
 import { isPathInside } from '../path-security';
+import { createRateLimiter } from './rate-limit';
+
+// Expensive or destructive channels: a compromised renderer must not be able to
+// hammer them (CPU/disk exhaustion). Cheap, high-frequency channels (progress,
+// reads) are deliberately NOT listed.
+const RATE_LIMITED_CHANNELS = new Set<string>([
+  'library:scan',
+  'fs:findDuplicates',
+  'fs:copy',
+  'fs:move',
+  'fs:delete',
+  'plugins:installFromFolder',
+  'plugins:installExample',
+  'coverCache:clear',
+  'yt:download:add'
+]);
+
+// 20 calls/second per sender+channel: far above any legitimate use, far below a
+// denial-of-service burst.
+const invokeLimiter = createRateLimiter({ maxCalls: 20, windowMs: 1000 });
 
 function isTrustedAppFile(url: URL): boolean {
   let target: string;
@@ -48,6 +68,13 @@ export function installIpcGuards(): void {
       if (!isTrustedSenderFrame(event.senderFrame)) {
         blockLog('invoke', channel);
         return undefined;
+      }
+      if (RATE_LIMITED_CHANNELS.has(channel)) {
+        const key = `${event.sender?.id ?? 'unknown'}:${channel}`;
+        if (!invokeLimiter.tryAcquire(key)) {
+          blockLog('rate-limited invoke', channel);
+          return undefined;
+        }
       }
       return listener(event, ...args);
     });

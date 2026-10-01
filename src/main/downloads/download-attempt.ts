@@ -1,6 +1,5 @@
 import { spawn } from 'child_process';
-import { statSync } from 'fs';
-import { mkdir, readdir } from 'fs/promises';
+import { mkdir, readdir, stat } from 'fs/promises';
 import { join } from 'path';
 import { logger } from '../../shared/logger';
 import type { IpcDownloadErrorCode } from '../../shared/types/ipc';
@@ -242,29 +241,34 @@ export async function runJobAttempt(
 // destinations against the filesystem; as a last resort pick the newest
 // matching file in the output directory.
 async function resolveRealOutputPath(job: Job, destinations: string[]): Promise<void> {
-  const exists = (p: string): boolean => {
-    try {
-      return statSync(p).isFile();
-    } catch {
-      return false;
-    }
-  };
-  let real = resolveFinalOutputPath(destinations, exists);
+  // Probe every candidate concurrently, off the main thread, so a slow disk
+  // cannot block the event loop (statSync here stalled all IPC during a download).
+  const existing = new Set<string>();
+  await Promise.all(
+    destinations.map(async (p) => {
+      if (!p) return;
+      try {
+        if ((await stat(p)).isFile()) existing.add(p);
+      } catch {
+        // candidate does not exist
+      }
+    })
+  );
+  let real = resolveFinalOutputPath(destinations, (p) => existing.has(p));
   if (!real) {
     try {
       const dir = resolveOutputDir(job);
       const entries = await readdir(dir, { withFileTypes: true });
-      const name = findNewestOutput(
-        entries.map((e) => {
+      const stamped = await Promise.all(
+        entries.map(async (e) => {
           try {
-            return { name: e.name, mtimeMs: statSync(join(dir, e.name)).mtimeMs };
+            return { name: e.name, mtimeMs: (await stat(join(dir, e.name))).mtimeMs };
           } catch {
             return { name: e.name, mtimeMs: 0 };
           }
-        }),
-        outputExtensions(job),
-        job.startedAt
+        })
       );
+      const name = findNewestOutput(stamped, outputExtensions(job), job.startedAt);
       if (name) real = join(dir, name);
     } catch (e) {
       logger.warn('downloads', `locating output file failed for ${job.id}`, e);

@@ -1,10 +1,11 @@
 import { app } from 'electron';
-import { appendFile, mkdir, readFile, truncate, copyFile, stat } from 'fs/promises';
+import { appendFile, mkdir, readFile, truncate, copyFile, rm } from 'fs/promises';
 import { join } from 'path';
 import os from 'os';
 import { logger } from '../shared/logger';
 import { redactSecrets } from '../shared/redact';
 import { recordWarning, clearWarnings } from './warnings';
+import { rotateLogIfNeeded } from './log-rotate';
 
 const LOG_LINES = 2000;
 
@@ -63,10 +64,9 @@ function writeLine(level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR', args: unknown[]):
   writeQueue = writeQueue
     .then(async () => {
       await mkdir(dir, { recursive: true });
-      const s = await stat(file).catch(() => null);
-      if (s && s.size > maxFileBytes) {
-        await truncate(file, 0);
-      }
+      // Rotate (keep one previous file) instead of truncating, so a burst that
+      // crosses the cap does not throw away the earlier diagnostics.
+      await rotateLogIfNeeded(file, maxFileBytes);
       await appendFile(file, line, 'utf-8');
     })
     .catch((e) => {
@@ -121,8 +121,13 @@ export async function flushLogWrites(): Promise<void> {
 
 export async function readLogTail(lines: number = LOG_LINES): Promise<string> {
   try {
-    const data = await readFile(getLogPath(), 'utf-8');
-    const all = data.split('\n');
+    // Include the previous rotation so a tail request right after a rotation
+    // still shows the most recent activity.
+    const [previous, current] = await Promise.all([
+      readFile(`${getLogPath()}.1`, 'utf-8').catch(() => ''),
+      readFile(getLogPath(), 'utf-8').catch(() => '')
+    ]);
+    const all = `${previous}${current}`.split('\n');
     return all.slice(-lines).join('\n');
   } catch {
     return '';
@@ -132,6 +137,7 @@ export async function readLogTail(lines: number = LOG_LINES): Promise<string> {
 export async function clearLogFile(): Promise<boolean> {
   try {
     await truncate(getLogPath(), 0);
+    await rm(`${getLogPath()}.1`, { force: true }).catch(() => {});
     clearWarnings();
     return true;
   } catch (e) {
