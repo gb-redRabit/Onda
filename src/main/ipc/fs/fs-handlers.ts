@@ -15,6 +15,7 @@ import { join, extname, basename } from 'path';
 import { iconSourcePath } from '../../utils/file-icon';
 import { spawn } from 'child_process';
 import { terminalCandidates, spawnFirstAvailable } from '../../utils/terminal';
+import { mainMessages } from '../../i18n-main';
 import { errMsg } from '../../../shared/helpers';
 import { logger } from '../../../shared/logger';
 import type { FileItem } from '../../../shared/types/explorer';
@@ -401,14 +402,15 @@ export function registerFsHandlers(): void {
       // Executable files can run arbitrary code — require explicit confirmation.
       if (EXECUTABLE_EXTS.has(ext)) {
         const win = BrowserWindow.fromWebContents(event.sender);
+        const m = mainMessages();
         const options: Electron.MessageBoxOptions = {
           type: 'warning',
-          buttons: ['Anuluj', 'Otwórz'],
+          buttons: [m.openExecCancel, m.openExecOpen],
           defaultId: 0,
           cancelId: 0,
-          title: 'Otwieranie pliku wykonywalnego',
-          message: `Czy na pewno chcesz otworzyć plik wykonywalny?\n${filePath}`,
-          detail: 'Uruchamianie nieznanych plików wykonywalnych może być niebezpieczne.'
+          title: m.openExecTitle,
+          message: m.openExecMessage(filePath),
+          detail: m.openExecDetail
         };
         const { response } = win
           ? await dialog.showMessageBox(win, options)

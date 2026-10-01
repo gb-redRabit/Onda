@@ -2,6 +2,7 @@ import { ipcMain, dialog, BrowserWindow, type WebContents } from 'electron';
 import { mkdir, chmod, unlink, rm } from 'fs/promises';
 import { join, basename } from 'path';
 import { runCommand } from '../../utils/exec';
+import { mainMessages } from '../../i18n-main';
 import {
   ytdlpBinaryName,
   ytdlpDownloadUrl,
@@ -80,7 +81,7 @@ async function installYtdlpManaged(
     if (err.message === 'cancelled' || signal.aborted) {
       return { success: false, cancelled: true };
     }
-    return { success: false, error: err.message || 'Nie udało się pobrać yt-dlp' };
+    return { success: false, error: err.message || mainMessages().depYtDlp };
   } finally {
     clearSignal('yt-dlp');
   }
@@ -207,7 +208,7 @@ async function installFfmpegManaged(sender: WebContents): Promise<InstallResult>
     if (err.message === 'cancelled' || signal.aborted) {
       return { success: false, cancelled: true };
     }
-    return { success: false, error: err.message || 'Nie udało się zainstalować FFmpeg' };
+    return { success: false, error: err.message || mainMessages().depFfmpeg };
   } finally {
     for (const path of cleanup) {
       await rm(path, { recursive: true, force: true }).catch(() => {});
@@ -301,7 +302,7 @@ async function uninstallTool(sender: WebContents, tool: BinTool): Promise<Instal
       return { success: true, path: null, managed: true };
     } catch (e) {
       const err = e as { message?: string };
-      return { success: false, error: err.message || 'Nie udało się usunąć pliku' };
+      return { success: false, error: err.message || mainMessages().depRemove };
     }
   }
 

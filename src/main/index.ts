@@ -37,6 +37,7 @@ import { SplashController } from './windows/splash';
 import { registerGlobalShortcuts } from './bootstrap/global-shortcuts';
 import { startBootWatchdog } from './bootstrap/boot-watchdog';
 import { OpenFileForwarder } from './bootstrap/open-files';
+import { initMainLocale, setMainLocale, mainMessages } from './i18n-main';
 
 let mainWindow: BrowserWindow | null = null;
 let startHidden = false;
@@ -121,12 +122,11 @@ function createWindow(): BrowserWindow {
       // A main-frame failure leaves the app with no UI at all: explain it
       // instead of showing an empty (white/acrylic) window. In dev the usual
       // cause is the Vite dev server not being up.
-      const hint = is.dev
-        ? '\n\nKompilacja dev: upewnij się, że działa dev server (npm run dev).'
-        : '';
+      const m = mainMessages();
+      const hint = is.dev ? m.loadFailedDevHint : '';
       dialog.showErrorBox(
-        'Onda',
-        `Nie udało się załadować interfejsu (${errorCode} ${errorDescription}).${hint}`
+        m.loadFailedTitle,
+        `${m.loadFailedMessage(errorCode, errorDescription)}${hint}`
       );
       splash.forceClose();
     }
@@ -150,6 +150,10 @@ app.whenReady().then(async () => {
 
   electronApp.setAppUserModelId('com.onda.app');
 
+  // Main-process messages (splash, dialogs) follow the OS locale until the
+  // saved setting is read below.
+  initMainLocale();
+
   setupFileLogging();
 
   app.on('browser-window-created', (_, window) => {
@@ -158,7 +162,7 @@ app.whenReady().then(async () => {
 
   splash.start();
 
-  splash.send('Inicjalizowanie serwera mediów…', 10);
+  splash.send(mainMessages().bootMediaServer, 10);
 
   registerIPC();
   registerMediaUrlHandler();
@@ -170,7 +174,7 @@ app.whenReady().then(async () => {
     `media server port=${mediaServer.port} ${markBootPhase('media server ready')}ms`
   );
 
-  splash.send('Przywracanie ustawień…', 25);
+  splash.send(mainMessages().bootRestoringSettings, 25);
 
   let bootFolders = 0;
   let bootRoots = 0;
@@ -181,6 +185,9 @@ app.whenReady().then(async () => {
     const library = store.get('library') as { coverCacheMaxEntries?: number } | undefined;
     applyCoverCacheSettings(library?.coverCacheMaxEntries);
     await initCoverCache();
+    // The saved UI locale now drives the remaining main-process messages.
+    const appearance = store.get('appearance') as { locale?: string } | undefined;
+    setMainLocale(appearance?.locale);
     const folders = store.get('libraryFolders', []);
     bootFolders = Array.isArray(folders) ? folders.length : 0;
     if (Array.isArray(folders)) {
@@ -243,7 +250,7 @@ app.whenReady().then(async () => {
   startHidden = process.argv.includes('--hidden');
   perf(`settings ready (${bootFolders} folders, ${bootRoots} roots)`);
 
-  splash.send('Uruchamianie interfejsu…', 50);
+  splash.send(mainMessages().bootStartingUi, 50);
 
   ipcMain.handle('app:rendererReady', (event) => {
     perf('renderer ready');
@@ -304,7 +311,7 @@ app.whenReady().then(async () => {
 
   registerOndaProtocolHandler();
 
-  splash.send('Tworzenie okna…', 60);
+  splash.send(mainMessages().bootCreatingWindow, 60);
   mainWindow = createWindow();
   perf('window created');
   mainWindow.webContents.on('did-finish-load', () => {
@@ -312,7 +319,7 @@ app.whenReady().then(async () => {
     splash.onMainReady();
   });
 
-  splash.send('Inicjalizacja PiP i tray…', 75);
+  splash.send(mainMessages().bootPipTray, 75);
   initAutoUpdater(() => mainWindow?.webContents ?? null);
   configureAutoCheck();
   syncSubscriptionsScheduler();
