@@ -234,8 +234,10 @@ export async function extractAndCacheCover(
 ): Promise<{ type: 'video' | 'image' | null; data: string | null }> {
   const miss = missingCache.get(filePath);
   if (miss && Date.now() - miss < MISSING_TTL) return { type: null, data: null };
+  // Stat once: the result is reused for the cache entry's mtime further down.
+  let fileStat: Awaited<ReturnType<typeof stat>> | null = null;
   try {
-    await stat(filePath);
+    fileStat = await stat(filePath);
   } catch (e) {
     if (isEnoent(e)) {
       rememberMissing(filePath);
@@ -287,10 +289,9 @@ export async function extractAndCacheCover(
       result = { type: null, data: null };
     }
 
-    const statResult = await stat(filePath).catch(() => null);
     cacheSet(coverResultCache, filePath, {
       result,
-      mtimeMs: statResult?.mtimeMs ?? Date.now(),
+      mtimeMs: fileStat?.mtimeMs ?? Date.now(),
       checkedAt: Date.now()
     });
 
@@ -365,7 +366,15 @@ export async function clearCoverCache(): Promise<{ removed: number; bytesFreed: 
 // clean re-extraction.  The cache is purely a performance optimization and
 // will be rebuilt on next access.
 const STALE_CACHE_KEY = '__v2_sibling_video__';
-(async () => {
+
+/**
+ * One-shot migration: clears persistent cover entries that predate the
+ * "return the sibling video path directly" change so they are re-extracted
+ * cleanly. Must be invoked explicitly from app startup (after the store is
+ * ready) — never as an import side effect, which used to delete files merely
+ * because the module was required.
+ */
+export async function initCoverCache(): Promise<void> {
   try {
     const cacheMap = await readCoverMap();
     if (cacheMap[STALE_CACHE_KEY]) return; // already cleaned
@@ -380,4 +389,4 @@ const STALE_CACHE_KEY = '__v2_sibling_video__';
   } catch (e) {
     logger.warn('cover', 'stale cache cleanup failed', e);
   }
-})();
+}

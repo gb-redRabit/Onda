@@ -1,6 +1,7 @@
 import { BrowserWindow } from 'electron';
 import { logger } from '../../shared/logger';
 import { createWindow } from './window-factory';
+import { GLASS_WINDOW_OPTS } from './window-presets';
 
 // Explorer windows (secondary file-browser windows) extracted from
 // `window-ipc.ts` (plan 2.8).
@@ -15,16 +16,8 @@ export function createExplorerWindow(initialPath?: string): number | null {
       minWidth: 600,
       minHeight: 400,
       show: false,
-      frame: false,
-      titleBarStyle: 'hidden',
+      ...GLASS_WINDOW_OPTS,
       title: 'Explorer',
-      hasShadow: false,
-      transparent: true,
-      backgroundColor: '#00000000',
-      ...(process.platform === 'win32' ? { backgroundMaterial: 'acrylic' as const } : {}),
-      ...(process.platform === 'darwin'
-        ? { vibrancy: 'sidebar' as const, visualEffectState: 'active' as const }
-        : {}),
       hash: `/explorer/window/${Date.now()}${initialPath ? `?path=${encodeURIComponent(initialPath)}` : ''}`,
       onClosed: (w) => {
         explorerWindows.delete(w.id);

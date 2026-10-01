@@ -23,7 +23,7 @@ import { flushQueueNow } from './downloads/download-manager';
 import { flushLibraryScanned, flushStats } from './ipc/library-store';
 import { stopSubscriptionChecker } from './ipc/subscription-checker';
 import { setupFileLogging, applyLogSettings, flushLogWrites } from './log-file';
-import { applyCoverCacheSettings } from './ipc/cover-cache';
+import { applyCoverCacheSettings, initCoverCache } from './ipc/cover-cache';
 import { initAutoUpdater, replayUpdaterEvent } from './updater';
 import { markBootPhase, markBootStart } from './boot-timeline';
 import { configureAutoCheck } from './updater-scheduler';
@@ -31,6 +31,7 @@ import { syncSubscriptionsScheduler } from './ipc/subscriptions-handlers';
 import { shouldCloseToTray, setCloseToTray } from './windows/close-behavior';
 import { windowIcon } from './windows/window-icon';
 import { createWindow as createBrowserWindow } from './windows/window-factory';
+import { GLASS_WINDOW_OPTS } from './windows/window-presets';
 import { destroyTray, hasTray, setupTray } from './windows/tray';
 import { SplashController } from './windows/splash';
 
@@ -103,15 +104,7 @@ function createWindow(): BrowserWindow {
     minWidth: 900,
     minHeight: 600,
     show: false,
-    frame: false,
-    titleBarStyle: 'hidden',
-    hasShadow: false,
-    transparent: true,
-    backgroundColor: '#00000000',
-    ...(process.platform === 'win32' ? { backgroundMaterial: 'acrylic' as const } : {}),
-    ...(process.platform === 'darwin'
-      ? { vibrancy: 'sidebar' as const, visualEffectState: 'active' as const }
-      : {}),
+    ...GLASS_WINDOW_OPTS,
     icon: windowIcon(),
     // The splash owns when the main window first appears.
     onReadyToShow: (w) => {
@@ -224,6 +217,7 @@ app.whenReady().then(async () => {
     // Cover cache size from Settings → Library.
     const library = store.get('library') as { coverCacheMaxEntries?: number } | undefined;
     applyCoverCacheSettings(library?.coverCacheMaxEntries);
+    await initCoverCache();
     const folders = store.get('libraryFolders', []);
     bootFolders = Array.isArray(folders) ? folders.length : 0;
     if (Array.isArray(folders)) {

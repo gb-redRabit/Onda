@@ -21,3 +21,6 @@ logs/
 .opencode
 .vscode
 generate-random-icon.js
+
+# Playwright/test scratch output written to the repo root
+downloads-queue.json
