@@ -79,19 +79,23 @@ test.describe('image viewer', () => {
       // Pasek automatycznie się przewija, aby aktywna miniatura była wyśrodkowana i widoczna.
       const strip = viewer.getByTestId('image-viewer-strip');
       await expect.poll(() => strip.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
-      const placement = await viewer.evaluate((idx) => {
-        const s = document.querySelector('[data-testid="image-viewer-strip"]') as HTMLElement;
-        const a = document.querySelector(`[data-thumb-idx="${idx}"]`) as HTMLElement;
-        if (!s || !a) return { inView: false, delta: 9999 };
-        const sr = s.getBoundingClientRect();
-        const ar = a.getBoundingClientRect();
-        return {
-          inView: ar.left >= sr.left - 1 && ar.right <= sr.right + 1,
-          delta: Math.abs(ar.left + ar.width / 2 - (sr.left + sr.width / 2))
-        };
-      }, midIndex);
+      const measurePlacement = () =>
+        viewer.evaluate((idx) => {
+          const s = document.querySelector('[data-testid="image-viewer-strip"]') as HTMLElement;
+          const a = document.querySelector(`[data-thumb-idx="${idx}"]`) as HTMLElement;
+          if (!s || !a) return { inView: false, delta: 9999 };
+          const sr = s.getBoundingClientRect();
+          const ar = a.getBoundingClientRect();
+          return {
+            inView: ar.left >= sr.left - 1 && ar.right <= sr.right + 1,
+            delta: Math.abs(ar.left + ar.width / 2 - (sr.left + sr.width / 2))
+          };
+        }, midIndex);
+      // Przewijanie jest animowane ~500ms: czekaj aż się ustabilizuje, zamiast mierzyć
+      // jednorazowo w trakcie animacji (dawało to fałszywe ~85px na wolnym CI).
+      await expect.poll(async () => (await measurePlacement()).delta).toBeLessThan(80);
+      const placement = await measurePlacement();
       expect(placement.inView).toBe(true);
-      expect(placement.delta).toBeLessThan(80);
 
       // Next / previous przenoszą aktywny indeks i jego podświetlenie. Każda nawigacja
       // rozpoczyna ~500ms przejście, które celowo blokuje następne, więc

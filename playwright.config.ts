@@ -9,7 +9,7 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   fullyParallel: false,
   workers: 1,
-  retries: process.env.CI ? 1 : 0,
+  retries: process.env.CI ? 2 : 0,
   // The github reporter turns failures into check-run annotations, which are
   // readable without repo auth — the raw Actions log is not.
   reporter: process.env.CI ? [['github'], ['list'], ['html', { open: 'never' }]] : 'list',
