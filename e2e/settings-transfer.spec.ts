@@ -26,6 +26,22 @@ test.describe('settings export/import', () => {
     try {
       await dismissWizard(page);
 
+      // Kreator ("skip") zapisuje `general.firstRunDone` przez store renderera z
+      // debounce ~300 ms. Poczekaj, aż ten zapis trafi do store'a — inaczej ląduje
+      // w trakcie poniższej sekwencji i nadpisuje ustawienia zmieniane bezpośrednio
+      // przez IPC (import gubił permanentDelete na Windows).
+      await expect
+        .poll(async () =>
+          page.evaluate(async () => {
+            const api = (window as unknown as { api: OndaTestApi }).api;
+            const s = (await api.invoke('settings:get')) as {
+              general?: { firstRunDone?: boolean };
+            };
+            return s.general?.firstRunDone ?? false;
+          })
+        )
+        .toBe(true);
+
       // Skieruj oba natywne selektory na plik jednorazowy.
       await onda.app.evaluate(({ dialog }, filePath) => {
         const d = dialog as unknown as {
