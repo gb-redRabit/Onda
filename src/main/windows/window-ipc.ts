@@ -66,8 +66,12 @@ export function registerWindowHandlers(context: {
   const isPositiveIntId = (value: unknown): value is number =>
     typeof value === 'number' && Number.isInteger(value) && value > 0;
 
-  ipcMain.handle('imageViewer:open', (_event, files: unknown[], index: number) => {
-    return openImageViewer(files, index);
+  ipcMain.handle('imageViewer:open', (_event, files: unknown[], index: unknown) => {
+    // A renderer can send anything; a NaN / negative index would be stored and
+    // later used to slice the file list. Normalise it here, at the boundary.
+    const safeIndex =
+      typeof index === 'number' && Number.isFinite(index) && index >= 0 ? Math.floor(index) : 0;
+    return openImageViewer(files, safeIndex);
   });
 
   ipcMain.handle('imageViewer:getData', () => {

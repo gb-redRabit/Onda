@@ -118,7 +118,9 @@ async function extractAudioCover(filePath: string): Promise<string | null> {
       } catch (e) {
         logger.warn('cover', `cover resize failed for ${filePath}`, e);
       }
-      savePersistentCover(filePath, buf, imgExt);
+      // Fire-and-forget: the cover is already returned; persistence must not
+      // delay it, but the intent is explicit so it is not read as a leaked promise.
+      void savePersistentCover(filePath, buf, imgExt);
       return `data:image/jpeg;base64,${buf.toString('base64')}`;
     }
   } catch (e) {
@@ -297,7 +299,7 @@ export async function extractAndCacheCover(
       if (match) {
         const imgExt = match[1] === 'jpeg' ? 'jpg' : match[1];
         const buf = Buffer.from(match[2], 'base64');
-        savePersistentCover(filePath, buf, imgExt);
+        void savePersistentCover(filePath, buf, imgExt);
       }
     }
 

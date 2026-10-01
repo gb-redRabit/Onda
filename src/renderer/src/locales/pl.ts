@@ -44,6 +44,7 @@ export default {
     picInPic: 'Obraz w obrazie',
     returnFromPip: 'Przywróć PiP do odtwarzacza',
     viewSearch: 'Szukaj w widoku',
+    viewSearchUnavailable: 'Szukaj w widoku nie jest dostępne w tym widoku',
     statusBar: 'Pasek statusu',
     help: 'Pomoc',
     documentation: 'Dokumentacja',

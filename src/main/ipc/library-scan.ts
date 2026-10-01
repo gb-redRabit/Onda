@@ -1,4 +1,5 @@
 import { readdir, stat } from 'fs/promises';
+import type { Stats } from 'fs';
 import { join, extname, basename } from 'path';
 import { parseFile } from 'music-metadata';
 import type { MediaFile } from '../../shared/types/media';
@@ -44,7 +45,8 @@ async function mapLimit<T, R>(
 
 async function getAudioMetadata(
   filePath: string,
-  ext: string
+  ext: string,
+  s: Stats
 ): Promise<{
   title: string;
   artist: string;
@@ -63,8 +65,6 @@ async function getAudioMetadata(
   replayGainTrackGain?: number;
 } | null> {
   try {
-    const s = await stat(filePath).catch(() => null);
-    if (!s) return null;
     const meta = await parseFile(filePath, { duration: true });
     const formatInfo = meta.format;
     const gainDb = meta.common.replaygain_track_gain?.dB;
@@ -99,7 +99,8 @@ async function getAudioMetadata(
 
 async function getMetadata(
   filePath: string,
-  ext: string
+  ext: string,
+  s: Stats
 ): Promise<{
   title: string;
   artist: string;
@@ -118,13 +119,10 @@ async function getMetadata(
   replayGainTrackGain?: number;
 } | null> {
   try {
-    const s = await stat(filePath).catch(() => null);
-    if (!s) return null;
-
     const isVideo = VIDEO_EXTS.includes(ext);
 
     if (!isVideo) {
-      return getAudioMetadata(filePath, ext);
+      return getAudioMetadata(filePath, ext, s);
     }
 
     return {
@@ -157,7 +155,7 @@ async function processAudioFile(
   if (prev && prev.size === s.size && prev.mtime === s.mtimeMs) {
     return { file: prev };
   }
-  const meta = await getMetadata(fullPath, ext);
+  const meta = await getMetadata(fullPath, ext, s);
   return {
     file: {
       id: fullPath,

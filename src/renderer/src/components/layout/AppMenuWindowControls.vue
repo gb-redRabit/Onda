@@ -20,18 +20,21 @@ const ui = useUIStore();
     <button
       class="h-9 px-3 flex items-center hover:bg-base-content/10 transition-colors text-base-content/70 hover:text-base-content"
       :title="$t('menu.search')"
+      :aria-label="$t('menu.search')"
       @click="ui.toggleGlobalSearch()"
     >
       <Search :size="14" />
     </button>
     <button
       class="h-9 w-11 flex items-center justify-center hover:bg-base-content/10 transition-colors text-base-content/70 hover:text-base-content"
+      :aria-label="$t('window.minimize')"
       @click="emit('minimize')"
     >
       <Minus :size="14" />
     </button>
     <button
       class="h-9 w-11 flex items-center justify-center hover:bg-base-content/10 transition-colors text-base-content/70 hover:text-base-content"
+      :aria-label="$t('window.maximize')"
       @click="emit('maximize')"
     >
       <Maximize2 v-if="!isMaximized" :size="12" />
@@ -39,6 +42,7 @@ const ui = useUIStore();
     </button>
     <button
       class="h-9 w-11 flex items-center justify-center hover:bg-error/80 transition-colors text-base-content/70 hover:text-error-content"
+      :aria-label="$t('window.close')"
       @click="emit('close')"
     >
       <X :size="14" />

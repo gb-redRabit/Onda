@@ -44,6 +44,7 @@ export default {
     picInPic: 'Picture-in-Picture',
     returnFromPip: 'Return PiP to player',
     viewSearch: 'Search in view',
+    viewSearchUnavailable: 'Search in view is not available in this view',
     statusBar: 'Status bar',
     help: 'Help',
     documentation: 'Documentation',

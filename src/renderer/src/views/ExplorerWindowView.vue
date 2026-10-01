@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount } from 'vue';
+import { onMounted, onBeforeUnmount, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { FolderOpen, Minus, Square, X, Pin } from '@lucide/vue';
 import ExplorerView from '@renderer/views/ExplorerView.vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
+import { explorerWindowTitle } from '@renderer/utils/explorerTitle';
 
 const route = useRoute();
 const explorer = useExplorerStore();
@@ -50,27 +51,39 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', onWindowKeydown);
 });
 
-function titleText(): string {
-  if (!explorer.currentPath) return t('explorer.thisComputer');
-  const parts = explorer.currentPath.split(/[\\/]/);
-  return parts[parts.length - 1] || explorer.currentPath;
-}
+const titleText = computed(() =>
+  explorerWindowTitle(explorer.currentPath, t('explorer.thisComputer'))
+);
+
+// Electron mirrors document.title onto the OS window title, so each explorer
+// window shows its folder in the taskbar instead of a generic "Explorer".
+watch(
+  titleText,
+  (title) => {
+    document.title = title;
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
-  <div data-testid="explorer-window-root" class="flex flex-col h-full w-full bg-base-200/(--glass-alpha)">
+  <div
+    data-testid="explorer-window-root"
+    class="flex flex-col h-full w-full bg-base-200/(--glass-alpha)"
+  >
     <div
       class="flex items-center justify-between gap-3 pl-3 pr-1 h-9 shrink-0 border-b border-base-300 select-none"
       style="-webkit-app-region: drag"
     >
       <div class="flex items-center gap-2 text-xs text-base-content/70 min-w-0">
         <FolderOpen :size="14" class="text-primary shrink-0" />
-        <span class="truncate font-medium">{{ titleText() }}</span>
+        <span class="truncate font-medium">{{ titleText }}</span>
       </div>
       <div class="flex items-center gap-0.5 shrink-0" style="-webkit-app-region: no-drag">
         <button
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-primary/10 transition-colors"
           :title="$t('explorer.pinAsTab')"
+          :aria-label="$t('explorer.pinAsTab')"
           @click="pinAsTab"
         >
           <Pin :size="13" />
@@ -78,6 +91,7 @@ function titleText(): string {
         <button
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
           :title="$t('window.minimize')"
+          :aria-label="$t('window.minimize')"
           @click="minimize"
         >
           <Minus :size="14" />
@@ -85,6 +99,7 @@ function titleText(): string {
         <button
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
           :title="$t('window.maximize')"
+          :aria-label="$t('window.maximize')"
           @click="maximize"
         >
           <Square :size="12" />
@@ -92,6 +107,7 @@ function titleText(): string {
         <button
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-neutral-content hover:bg-error/80 transition-colors"
           :title="$t('window.close')"
+          :aria-label="$t('window.close')"
           @click="close"
         >
           <X :size="14" />

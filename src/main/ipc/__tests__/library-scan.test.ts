@@ -1,9 +1,26 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { MediaFile } from '../../../shared/types/media';
-import { classifyFolderType, filterFilesForFolderType } from '../library-scan';
+import { classifyFolderType, filterFilesForFolderType, scanDir } from '../library-scan';
 
 vi.mock('../media-handlers', () => ({
   getDuration: vi.fn(async () => 0)
+}));
+
+const { statMock, readdirMock } = vi.hoisted(() => ({
+  statMock: vi.fn(async (..._args: unknown[]) => ({ size: 10, mtimeMs: 1, birthtimeMs: 1 })),
+  readdirMock: vi.fn(async (..._args: unknown[]): Promise<unknown[]> => [])
+}));
+
+vi.mock('fs/promises', () => {
+  const mod = {
+    stat: (...args: unknown[]) => statMock(...args),
+    readdir: (...args: unknown[]) => readdirMock(...args)
+  };
+  return { ...mod, default: mod };
+});
+
+vi.mock('music-metadata', () => ({
+  parseFile: vi.fn(async () => ({ common: {}, format: {} }))
 }));
 
 function mediaFile(type: MediaFile['type'], path: string): MediaFile {
@@ -85,5 +102,18 @@ describe('filterFilesForFolderType', () => {
   it('returns an empty array for an audio folder with no audio files', () => {
     const onlyVideo = [mediaFile('video', '/b.mp4'), mediaFile('image', '/c.jpg')];
     expect(filterFilesForFolderType(onlyVideo, 'audio')).toEqual([]);
+  });
+});
+
+describe('scanDir stat efficiency', () => {
+  it('stats each audio file only once per scan', async () => {
+    readdirMock.mockResolvedValue([
+      { name: 'song.mp3', isDirectory: () => false, isFile: () => true }
+    ]);
+    statMock.mockClear();
+
+    await scanDir('/music');
+
+    expect(statMock).toHaveBeenCalledTimes(1);
   });
 });

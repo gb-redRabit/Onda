@@ -191,11 +191,13 @@ async function mergeInfos(plugins: PluginInfo[], state: PluginStateFile): Promis
     let consentApproved = false;
     if (saved?.enabled === true && saved.approvedConsent) {
       const dir = join(getPluginsDir(), plugin.id);
-      const digest = await readEntryDigest(dir, plugin.id);
-      if (digest) {
-        const manifest = await readManifest(dir, plugin.id);
+      // Read the manifest once and reuse it for the digest: `readEntryDigest`
+      // needs the manifest only to locate `entry`.
+      const manifest = await readManifest(dir, plugin.id);
+      if (manifest) {
+        const digest = await readEntryDigest(dir, plugin.id, manifest);
         consentApproved =
-          !!manifest && pluginApprovalMatches(manifest, digest, saved.approvedConsent);
+          !!digest && pluginApprovalMatches(manifest, digest, saved.approvedConsent);
       }
     }
     const permissionReviewRequired = saved?.enabled === true && !consentApproved;
@@ -240,11 +242,15 @@ async function settingsData(
   return value;
 }
 
-async function readPluginEntry(dir: string, id: string): Promise<string | null> {
+async function readPluginEntry(
+  dir: string,
+  id: string,
+  manifest?: PluginManifest | null
+): Promise<string | null> {
   try {
-    const manifest = await readManifest(dir, id);
-    if (!manifest) return null;
-    const entryPath = resolve(dir, manifest.entry);
+    const resolved = manifest ?? (await readManifest(dir, id));
+    if (!resolved) return null;
+    const entryPath = resolve(dir, resolved.entry);
     const entry = await readFile(entryPath, 'utf-8');
     if (Buffer.byteLength(entry, 'utf-8') > MAX_ENTRY_BYTES) return null;
     return entry;
@@ -254,8 +260,12 @@ async function readPluginEntry(dir: string, id: string): Promise<string | null> 
 }
 
 /** SHA-256 of the plugin entry file, so consent is bound to the actual code. */
-async function readEntryDigest(dir: string, id: string): Promise<string | null> {
-  const code = await readPluginEntry(dir, id);
+async function readEntryDigest(
+  dir: string,
+  id: string,
+  manifest?: PluginManifest | null
+): Promise<string | null> {
+  const code = await readPluginEntry(dir, id, manifest);
   return code === null ? null : sha256Hex(code);
 }
 

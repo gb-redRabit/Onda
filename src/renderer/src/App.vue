@@ -9,12 +9,13 @@ import {
   nextTick
 } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { loadLocaleMessages } from './i18n';
+import { i18n, loadLocaleMessages } from './i18n';
 import { useSettingsStore } from './stores/settings';
 import { usePlayerStore } from './stores/player';
 import { useUIStore } from './stores/ui';
 import { useLibraryStore } from './stores/library';
 import { matchesShortcut, matchesPluginShortcut } from './utils/shortcuts';
+import { debounce } from './utils/debounce';
 import { registerAppIpc } from './composables/useAppIpcEvents';
 import { handlePlayerShortcutKeydown } from './composables/playerShortcutHandler';
 import { moduleManager } from './modules/ModuleManager';
@@ -28,6 +29,8 @@ import { useMediaSession } from './composables/useMediaSession';
 import { useSessionPersistence } from './composables/useSessionPersistence';
 import { audioEngine } from './modules/audioEngine';
 import { markRendererReady } from './utils/bootMetrics';
+import { guardBootStep } from './utils/bootGuard';
+import { logger } from '@shared/logger';
 import AppMenu from './components/layout/AppMenu.vue';
 import DependencyBanner from './components/layout/DependencyBanner.vue';
 import Sidebar from './components/layout/Sidebar.vue';
@@ -73,15 +76,23 @@ onMounted(async () => {
     window.api?.on('window:maximized', (val: unknown) => {
       isWinMaximized.value = !!val;
     }) ?? null;
-  // Settings may already be loading (started in main.ts before mount).
-  if (!settings.isLoaded) await settings.load();
-  theme.applyTheme();
-  await loadLocaleMessages(settings.appearance.locale);
-  library.loadFromDisk();
+  // Settings may already be loading (started in main.ts before mount). Each
+  // step is guarded so a single failure cannot stop the renderer from reaching
+  // `app:rendererReady` (main keeps the splash up until the 30s watchdog).
+  const onBootStepError = (e: unknown): void =>
+    logger.error('App', 'boot step failed — continuing with defaults', e);
+  await guardBootStep(async () => {
+    if (!settings.isLoaded) await settings.load();
+  }, onBootStepError);
+  await guardBootStep(() => theme.applyTheme(), onBootStepError);
+  await guardBootStep(() => loadLocaleMessages(settings.appearance.locale), onBootStepError);
+  await guardBootStep(() => library.loadFromDisk(), onBootStepError);
   // Settings → Playback → default volume is the volume the app starts with.
-  player.setVolume(settings.playback.defaultVolume);
-  audioPip.dock.value = settings.appearance.audioPipDock;
-  audioPip.setAutoShow(settings.appearance.audioPipAutoShow);
+  await guardBootStep(() => player.setVolume(settings.playback.defaultVolume), onBootStepError);
+  await guardBootStep(() => {
+    audioPip.dock.value = settings.appearance.audioPipDock;
+    audioPip.setAutoShow(settings.appearance.audioPipAutoShow);
+  }, onBootStepError);
 
   // Signal readiness as soon as the shell is themed, localised and painted —
   // main then closes the splash and shows the window. Module activation, audio
@@ -136,9 +147,11 @@ onBeforeUnmount(() => {
   offMaximized?.();
 });
 
-function onAppResize(): void {
+// A drag fires resize on every frame; the threshold only needs re-evaluating
+// once the drag settles.
+const onAppResize = debounce(() => {
   isNarrowLayout.value = window.innerWidth < 1200;
-}
+}, 100);
 
 watch(
   () => settings.appearance.locale,
@@ -184,6 +197,9 @@ function onGlobalKeydown(e: KeyboardEvent) {
       e.preventDefault();
       if (['library', 'explorer', 'downloads'].includes(route.name as string)) {
         ui.toggleViewSearch();
+      } else {
+        // Home / settings have no view search — say so instead of swallowing it.
+        ui.notify('info', i18n.global.t('menu.viewSearchUnavailable'));
       }
     } else if (activeEl?.tagName === 'INPUT' && activeEl.closest('[data-app-search]')) {
       e.preventDefault();
