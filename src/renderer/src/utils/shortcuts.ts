@@ -38,6 +38,26 @@ export function matchesShortcut(shortcut: string, e: KeyboardEvent): boolean {
   return false;
 }
 
+export interface NavShortcutBinding {
+  shortcut: string;
+  path: string;
+}
+
+/**
+ * Pre-computes the navigation-shortcut bindings from the current settings, so
+ * the global keydown handler does not rebuild the action table and re-read
+ * `settings.shortcuts` on every keystroke. Actions without a bound shortcut are
+ * dropped.
+ */
+export function navShortcutBindings(
+  shortcuts: Record<string, string>,
+  actions: Record<string, string>
+): NavShortcutBinding[] {
+  return Object.entries(actions)
+    .map(([action, path]) => ({ shortcut: shortcuts[action], path }))
+    .filter((binding): binding is NavShortcutBinding => Boolean(binding.shortcut));
+}
+
 // Normalize a KeyboardEvent to the canonical shortcut string used by plugin
 // command shortcuts, e.g. "Ctrl+Shift+K" or "Alt+F5". Returns null for events
 // without a modifier or for non-shortcut keys.

@@ -14,7 +14,7 @@ import { useSettingsStore } from './stores/settings';
 import { usePlayerStore } from './stores/player';
 import { useUIStore } from './stores/ui';
 import { useLibraryStore } from './stores/library';
-import { matchesShortcut, matchesPluginShortcut } from './utils/shortcuts';
+import { matchesShortcut, matchesPluginShortcut, navShortcutBindings } from './utils/shortcuts';
 import { debounce } from './utils/debounce';
 import { registerAppIpc } from './composables/useAppIpcEvents';
 import { handlePlayerShortcutKeydown } from './composables/playerShortcutHandler';
@@ -63,6 +63,15 @@ const glassOn = computed(() => (settings.appearance.glassAlpha ?? 100) < 100);
 let offMaximized: (() => void) | null = null;
 
 const isExplorerWindow = computed(() => route.name === 'explorer-window');
+
+// Rebuilt only when the shortcuts change, not on every keystroke.
+const NAV_ACTIONS: Record<string, string> = {
+  settings: '/settings',
+  explorer: '/explorer',
+  library: '/library',
+  home: '/'
+};
+const navBindings = computed(() => navShortcutBindings(settings.shortcuts, NAV_ACTIONS));
 
 const { appearance: appearanceRef } = storeToRefs(settings);
 const theme = getThemeEngine(appearanceRef);
@@ -210,15 +219,8 @@ function onGlobalKeydown(e: KeyboardEvent) {
   // Navigation shortcuts (settings / explorer / library / home) — bound to
   // their editable entries in Settings → Shortcuts.
   if (!document.body.dataset.shortcutRecording) {
-    const navActions: Record<string, string> = {
-      settings: '/settings',
-      explorer: '/explorer',
-      library: '/library',
-      home: '/'
-    };
-    for (const [action, path] of Object.entries(navActions)) {
-      const shortcut = settings.shortcuts[action];
-      if (shortcut && matchesShortcut(shortcut, e)) {
+    for (const { shortcut, path } of navBindings.value) {
+      if (matchesShortcut(shortcut, e)) {
         if (!document.querySelector('input:focus, textarea:focus')) {
           e.preventDefault();
           router.push(path);
@@ -283,9 +285,15 @@ function onWindowBlur() {
           </transition>
         </router-view>
       </main>
+      <!-- One instance across layouts: switching between wide and narrow must
+           not unmount it, or the queue's scroll position is lost. -->
       <QueuePanel
-        v-if="!isExplorerWindow && player.queueVisible && !isNarrowLayout"
-        class="w-75 shrink-0"
+        v-if="!isExplorerWindow && player.queueVisible"
+        :class="
+          isNarrowLayout
+            ? 'absolute inset-y-0 right-0 z-30 w-80 max-w-[90vw] fx-depth'
+            : 'w-75 shrink-0'
+        "
       />
       <Sidebar v-if="!isExplorerWindow && settings.appearance.sidebarPosition === 'right'" />
       <div v-if="!isExplorerWindow && player.equalizerVisible" class="fixed bottom-24 right-6 z-40">
@@ -295,10 +303,6 @@ function onWindowBlur() {
         v-if="!isExplorerWindow && player.queueVisible && isNarrowLayout"
         class="absolute inset-0 z-20 bg-neutral/35"
         @click="player.toggleQueue"
-      />
-      <QueuePanel
-        v-if="!isExplorerWindow && player.queueVisible && isNarrowLayout"
-        class="absolute inset-y-0 right-0 z-30 w-80 max-w-[90vw] fx-depth"
       />
     </div>
     <PlayerBar

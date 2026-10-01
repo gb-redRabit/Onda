@@ -4,10 +4,11 @@ import { join, extname, dirname } from 'path';
 import NodeID3 from 'node-id3';
 import { parseFile } from 'music-metadata';
 import {
-  coverResultCache,
   getStore,
-  durationCache,
-  cacheSet,
+  getCachedDuration,
+  setCachedDuration,
+  deleteCachedDuration,
+  invalidateCachedCover,
   COVER_CACHE_MAP_KEY,
   PERSISTENT_COVER_DIR,
   clearCoverCache
@@ -28,7 +29,7 @@ import { isProtectedPath } from '../path-policy';
 import { addAllowedRoot } from '../media/media-server';
 
 export async function getDuration(filePath: string): Promise<number> {
-  const cached = durationCache.get(filePath);
+  const cached = getCachedDuration(filePath);
   if (cached) {
     try {
       const { mtimeMs } = await stat(filePath);
@@ -36,14 +37,14 @@ export async function getDuration(filePath: string): Promise<number> {
     } catch {
       // file gone — fall through and re-probe
     }
-    durationCache.delete(filePath);
+    deleteCachedDuration(filePath);
   }
 
   try {
     const meta = await parseFile(filePath, { duration: true });
     const duration = meta.format?.duration || 0;
     const s = await stat(filePath).catch(() => null);
-    if (s) cacheSet(durationCache, filePath, { duration, mtimeMs: s.mtimeMs });
+    if (s) setCachedDuration(filePath, { duration, mtimeMs: s.mtimeMs });
     return duration;
   } catch (e) {
     logger.warn('media', `music-metadata failed for ${filePath}`, e);
@@ -56,7 +57,7 @@ export async function getDuration(filePath: string): Promise<number> {
       );
       const duration = parseFloat(stdout.trim()) || 0;
       const s = await stat(filePath).catch(() => null);
-      if (s) cacheSet(durationCache, filePath, { duration, mtimeMs: s.mtimeMs });
+      if (s) setCachedDuration(filePath, { duration, mtimeMs: s.mtimeMs });
       return duration;
     } catch (e2) {
       logger.warn('media', `ffprobe duration failed for ${filePath}`, e2);
@@ -97,7 +98,7 @@ export async function writeCoverToAudioFile(
       },
       filePath
     );
-    coverResultCache.delete(filePath);
+    invalidateCachedCover(filePath);
     const store = await getStore();
     const cacheMap = store.get(COVER_CACHE_MAP_KEY) as
       Record<string, { cacheFile: string; mtime: number }> | undefined;

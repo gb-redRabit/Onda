@@ -17,6 +17,19 @@ describe('App.vue wiring', () => {
     expect(APP).toMatch(/onAppResize\s*=\s*debounce\(/);
   });
 
+  it('renders a single QueuePanel across layouts', () => {
+    // Two instances (wide + narrow) unmounted/remounted on resize and dropped
+    // the queue scroll position.
+    const instances = APP.match(/<QueuePanel\b/g) ?? [];
+    expect(instances).toHaveLength(1);
+  });
+
+  it('precomputes navigation shortcut bindings', () => {
+    expect(APP).toMatch(/navShortcutBindings/);
+    // The per-keydown action table is gone.
+    expect(APP).not.toMatch(/const navActions/);
+  });
+
   it('gives feedback when the view-search shortcut is unavailable', () => {
     // The shortcut branch must notify instead of silently returning.
     expect(APP).toMatch(/ui\.notify\(/);

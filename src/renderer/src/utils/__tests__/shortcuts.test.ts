@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { matchesShortcut } from '../shortcuts';
+import { matchesShortcut, navShortcutBindings } from '../shortcuts';
 import { DEFAULT_SHORTCUTS } from '../constants';
 
 function keyEvent(partial: Partial<KeyboardEvent>): KeyboardEvent {
@@ -92,5 +92,21 @@ describe('matchesShortcut', () => {
     // ±30s strips Shift before retrying — so both branches must be true.
     expect(matchesShortcut(shortcut!, keyEvent({ key: 'ArrowRight', shiftKey: true }))).toBe(false);
     expect(matchesShortcut(shortcut!, keyEvent({ key: 'ArrowRight' }))).toBe(true);
+  });
+});
+
+describe('navShortcutBindings', () => {
+  it('maps bound actions to their path and drops unbound ones', () => {
+    const bindings = navShortcutBindings(
+      { settings: 'Ctrl+,', home: '' },
+      { settings: '/settings', home: '/', library: '/library' }
+    );
+    expect(bindings).toEqual([{ shortcut: 'Ctrl+,', path: '/settings' }]);
+  });
+
+  it('returns one binding per bound action', () => {
+    const bindings = navShortcutBindings({ a: 'Ctrl+1', b: 'Ctrl+2' }, { a: '/a', b: '/b' });
+    expect(bindings).toHaveLength(2);
+    expect(bindings.map((binding) => binding.path)).toEqual(['/a', '/b']);
   });
 });

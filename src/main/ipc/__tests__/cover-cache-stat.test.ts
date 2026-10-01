@@ -41,7 +41,12 @@ vi.mock('../../utils/clear-dir', () => ({
   clearDirContents: vi.fn(async () => ({ removed: 0, bytesFreed: 0 }))
 }));
 
-import { extractAndCacheCover } from '../cover-cache';
+import {
+  extractAndCacheCover,
+  getCachedDuration,
+  setCachedDuration,
+  deleteCachedDuration
+} from '../cover-cache';
 
 describe('extractAndCacheCover stat usage', () => {
   it('stats a cold cover miss only once', async () => {
@@ -51,5 +56,12 @@ describe('extractAndCacheCover stat usage', () => {
     const result = await extractAndCacheCover('/music/picture.jpg');
     expect(result).toEqual({ type: null, data: null });
     expect(statMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('round-trips the duration cache through its accessors', () => {
+    setCachedDuration('/a.mp3', { duration: 5, mtimeMs: 1 });
+    expect(getCachedDuration('/a.mp3')).toEqual({ duration: 5, mtimeMs: 1 });
+    deleteCachedDuration('/a.mp3');
+    expect(getCachedDuration('/a.mp3')).toBeUndefined();
   });
 });

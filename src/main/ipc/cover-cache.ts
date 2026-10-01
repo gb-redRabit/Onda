@@ -29,8 +29,11 @@ interface CachedCover {
 // to avoid a stat() syscall on every cover hit.
 const COVER_STAT_TTL_MS = 60_000;
 
-export const coverResultCache = new Map<string, CachedCover>();
-export const durationCache = new Map<string, { duration: number; mtimeMs: number }>();
+// Not exported: the maps are an implementation detail. External callers go
+// through the accessors below so an eviction invariant cannot be bypassed.
+const coverResultCache = new Map<string, CachedCover>();
+export type CachedDuration = { duration: number; mtimeMs: number };
+const durationCache = new Map<string, CachedDuration>();
 const coverCacheLocks = new Map<string, Array<() => void>>();
 
 const DEFAULT_CACHE_MAX_SIZE = 5000;
@@ -43,7 +46,7 @@ export function applyCoverCacheSettings(maxEntries?: number): void {
   if (typeof maxEntries === 'number' && maxEntries > 0) cacheMaxSize = Math.round(maxEntries);
 }
 
-export function cacheSet<T>(
+function cacheSet<T>(
   map: Map<string, T>,
   key: string,
   value: T,
@@ -51,6 +54,23 @@ export function cacheSet<T>(
 ): void {
   map.set(key, value);
   evictCache(map as Map<string, unknown>, maxSize);
+}
+
+/** Invalidate the in-memory cover for one file (e.g. after rewriting its tags). */
+export function invalidateCachedCover(filePath: string): void {
+  coverResultCache.delete(filePath);
+}
+
+export function getCachedDuration(filePath: string): CachedDuration | undefined {
+  return durationCache.get(filePath);
+}
+
+export function setCachedDuration(filePath: string, value: CachedDuration): void {
+  cacheSet(durationCache, filePath, value);
+}
+
+export function deleteCachedDuration(filePath: string): void {
+  durationCache.delete(filePath);
 }
 
 export const PERSISTENT_COVER_DIR = join(getTempDir(), 'persistent');
