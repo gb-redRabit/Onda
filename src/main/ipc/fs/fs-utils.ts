@@ -1,4 +1,4 @@
-import { lstat } from 'fs/promises';
+import { access, lstat } from 'fs/promises';
 import { createReadStream } from 'fs';
 import { createHash } from 'crypto';
 import { join, extname, basename, dirname } from 'path';
@@ -12,50 +12,11 @@ const execAsync = promisify(execCb);
 export async function getDrives(): Promise<FileItem[]> {
   const platform = process.platform;
   if (platform === 'win32') {
-    try {
-      const cmd =
-        'powershell.exe -NoProfile -NonInteractive -Command "Get-PSDrive -PSProvider FileSystem | Select-Object Name,Root,Free,Used | ConvertTo-Json -Compress"';
-      const { stdout } = await execAsync(cmd, {
-        encoding: 'utf-8',
-        timeout: 10000,
-        windowsHide: true
-      });
-      if (!stdout || !stdout.trim()) return [];
-      interface DriveInfo {
-        Name: string;
-        Root: string;
-        Free: number;
-        Used: number;
-      }
-      let parsed: DriveInfo[];
-      try {
-        parsed = JSON.parse(stdout.trim());
-      } catch {
-        logger.warn('fs', 'could not parse drive list output');
-        return [];
-      }
-      if (!Array.isArray(parsed)) parsed = [parsed];
-      return parsed
-        .filter((d) => d && d.Name)
-        .map((d) => {
-          const name: string = d.Name;
-          const used: number = d.Used || 0;
-          const free: number = d.Free || 0;
-          return {
-            name: `${name}:`,
-            path: `${name}:`,
-            isDirectory: true,
-            size: used + free,
-            modifiedAt: Date.now(),
-            createdAt: Date.now(),
-            extension: '',
-            mimeType: undefined
-          };
-        });
-    } catch (e) {
-      logger.warn('fs', 'getDrives (win32) failed', e);
-      return [];
-    }
+    const viaPowerShell = await getDrivesViaPowerShell();
+    if (viaPowerShell.length > 0) return viaPowerShell;
+    // Fallback: PowerShell bywa wolne lub niedostępne pod obciążeniem (CI), a wtedy
+    // widok dysków wracał trwale pusty. Wylicz litery dysków bezpośrednio.
+    return await getDrivesViaLetterScan();
   }
   if (platform === 'darwin') {
     return [
@@ -84,6 +45,67 @@ export async function getDrives(): Promise<FileItem[]> {
       mimeType: undefined
     }
   ];
+}
+
+interface DriveInfo {
+  Name: string;
+  Root: string;
+  Free: number;
+  Used: number;
+}
+
+function driveItem(name: string, size: number): FileItem {
+  return {
+    name,
+    path: name,
+    isDirectory: true,
+    size,
+    modifiedAt: Date.now(),
+    createdAt: Date.now(),
+    extension: '',
+    mimeType: undefined
+  };
+}
+
+async function getDrivesViaPowerShell(): Promise<FileItem[]> {
+  try {
+    const cmd =
+      'powershell.exe -NoProfile -NonInteractive -Command "Get-PSDrive -PSProvider FileSystem | Select-Object Name,Root,Free,Used | ConvertTo-Json -Compress"';
+    const { stdout } = await execAsync(cmd, {
+      encoding: 'utf-8',
+      timeout: 15_000,
+      windowsHide: true
+    });
+    if (!stdout || !stdout.trim()) return [];
+    let parsed: DriveInfo[];
+    try {
+      parsed = JSON.parse(stdout.trim());
+    } catch {
+      logger.warn('fs', 'could not parse drive list output');
+      return [];
+    }
+    if (!Array.isArray(parsed)) parsed = [parsed];
+    return parsed
+      .filter((d) => d && d.Name)
+      .map((d) => driveItem(`${d.Name}:`, (d.Used || 0) + (d.Free || 0)));
+  } catch (e) {
+    logger.warn('fs', 'getDrives (win32) failed', e);
+    return [];
+  }
+}
+
+async function getDrivesViaLetterScan(): Promise<FileItem[]> {
+  const drives: FileItem[] = [];
+  for (let code = 65; code <= 90; code++) {
+    const letter = String.fromCharCode(code);
+    try {
+      await access(`${letter}:\\`);
+      drives.push(driveItem(`${letter}:`, 0));
+    } catch {
+      // litera niezamontowana
+    }
+  }
+  return drives;
 }
 
 export function getFileItem(fullPath: string, stats: import('fs').Stats, name: string): FileItem {
