@@ -18,8 +18,8 @@ export function computeEdgePeekBounds(args: EdgePeekBoundsArgs): {
   height: number;
 } {
   const { dock, peeked, sliver, workArea, size } = args;
-  let x = workArea.x;
-  let y = workArea.y;
+  let x: number;
+  let y: number;
   if (dock === 'top') {
     x = workArea.x;
     y = peeked ? Math.round(workArea.y - (size.height - sliver)) : Math.round(workArea.y);

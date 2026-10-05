@@ -55,7 +55,7 @@ export function useSessionPersistence() {
   });
 
   async function restore(router: Router): Promise<boolean> {
-    let data: { currentPath?: string; queue?: unknown } | null = null;
+    let data: { currentPath?: string; queue?: unknown } | null;
     try {
       data = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
     } catch {

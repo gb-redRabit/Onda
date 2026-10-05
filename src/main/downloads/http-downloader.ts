@@ -267,7 +267,7 @@ async function doDownload(
                   // więc jest zachowywany — ale tylko jeśli wygląda jak prawdziwe
                   // pobranie, bo zapełniony dysk pozostawiłby w przeciwnym razie obcięty
                   // plik zajmujący resztę wolnego miejsca.
-                  let size = 0;
+                  let size: number;
                   try {
                     size = (await fsStat(partPath)).size;
                   } catch {

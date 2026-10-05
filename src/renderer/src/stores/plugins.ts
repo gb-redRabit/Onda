@@ -128,7 +128,7 @@ export const usePluginsStore = defineStore('plugins', () => {
         pluginSettings.value = {};
         const fetchedSettings = await Promise.all(
           list.map(async (plugin) => {
-            let value: Record<string, unknown> = {};
+            let value: Record<string, unknown>;
             try {
               value = (await window.api.pluginsSettingsGet(plugin.id)) || {};
             } catch {

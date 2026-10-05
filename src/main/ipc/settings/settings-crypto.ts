@@ -42,7 +42,7 @@ export function __resetEncryptionStatusCache(): void {
 }
 
 function resolveStatus(): SecretStorageStatus {
-  let available = false;
+  let available: boolean;
   try {
     available = safeStorage.isEncryptionAvailable();
   } catch (e) {

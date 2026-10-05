@@ -69,7 +69,7 @@ const outputs = [
 
 let stale = false;
 for (const [path, code] of outputs) {
-  let current = null;
+  let current;
   try {
     current = await readFile(path, 'utf-8');
   } catch {

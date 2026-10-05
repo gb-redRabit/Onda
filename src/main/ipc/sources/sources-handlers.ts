@@ -146,7 +146,7 @@ export function registerSourcesHandlers(): void {
   /** Domyślny katalog pobierania źródeł: ustawienie sourcesDir, inaczej
    *  <ścieżka z ustawień Pobranych>/api, inaczej systemowe Pobrane/api. */
   ipcMain.handle('sources:downloadDir', async (): Promise<string> => {
-    let dir = '';
+    let dir: string;
     try {
       const store = await getStore();
       const dl = store.get('download') as { defaultPath?: string; sourcesDir?: string } | undefined;

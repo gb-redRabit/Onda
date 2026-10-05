@@ -354,7 +354,7 @@ export function registerMediaHandlers(): void {
     // Nadanie dla czegoś, czego nie ma, może tylko rozdąć allowlistę, więc
     // jest odrzucane od razu. Istnienie to także jedyny dowód, jaki ma
     // proces main, że to prawdziwy plik mediów, a nie zgadywanie.
-    let isFile = false;
+    let isFile: boolean;
     try {
       isFile = (await stat(filePath)).isFile();
     } catch {

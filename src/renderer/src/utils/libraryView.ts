@@ -35,8 +35,8 @@ export function sortLibraryTracks(
   const list = [...tracks];
   const dir = sortDir === 'asc' ? 1 : -1;
   list.sort((a, b) => {
-    let va: string | number = '';
-    let vb: string | number = '';
+    let va: string | number;
+    let vb: string | number;
     switch (sortKey) {
       case 'title':
         va = (a.metadata?.title || a.name).toLowerCase();

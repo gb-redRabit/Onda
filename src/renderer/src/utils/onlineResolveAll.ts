@@ -16,7 +16,7 @@ export async function resolveAllPlaylistItems(
   const moreChannel = isSc ? 'sc:resolveMore' : 'yt:resolveMore';
   const items: YouTubeResolvedItem[] = [];
   let totalItems: number | null = null;
-  let hasMore = false;
+  let hasMore: boolean;
   const first = (await window.api?.invoke(resolveChannel, url)) as
     | {
         success?: boolean;

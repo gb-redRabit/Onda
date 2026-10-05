@@ -65,7 +65,7 @@ function onMenuKeydown(e: KeyboardEvent): void {
   const items = menuItems(name);
   if (!items.length) return;
   const current = items.indexOf(document.activeElement as HTMLElement);
-  let next = current;
+  let next: number;
   if (e.key === 'ArrowDown') next = (current + 1 + items.length) % items.length;
   else if (e.key === 'ArrowUp') next = (current - 1 + items.length) % items.length;
   else if (e.key === 'Home') next = 0;

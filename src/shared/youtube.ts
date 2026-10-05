@@ -8,7 +8,7 @@ export function detectYtKind(rawInput: string): YouTubeResolveKind | null {
   const input = rawInput.trim();
   if (!input) return null;
 
-  let url: URL | null = null;
+  let url: URL | null;
   try {
     url = new URL(input);
   } catch {

@@ -60,7 +60,7 @@ async function handleMediaResume(
   track: MediaFile,
   player: ReturnType<typeof usePlayerStore>
 ): Promise<void> {
-  let savedPos = 0;
+  let savedPos: number;
   try {
     savedPos = (await window.api?.getPlaybackPosition(track.path)) || 0;
   } catch {
