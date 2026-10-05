@@ -9,6 +9,13 @@ na `main` wersję ostatnio opublikowanego release'a; wersję podnosi wyłącznie
 jest błędem — pilnują tego `npm run version:check` i `npm run check:artifacts` w CI
 (patrz `RELEASE.md`).
 
+## [0.7.3](https://github.com/gb-redRabit/Onda/compare/v0.7.2...v0.7.3) (2026-10-05)
+
+
+### Bug Fixes
+
+* **test:** retry temp cleanup in the library scan supersede spec ([57c37f0](https://github.com/gb-redRabit/Onda/commit/57c37f00b0486533111dc36addcad96adaedd8e1))
+
 ## [0.7.2](https://github.com/gb-redRabit/Onda/compare/v0.7.1...v0.7.2) (2026-10-05)
 
 
