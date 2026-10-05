@@ -77,6 +77,13 @@ test.describe('context menu — explorer item', () => {
   });
 
   test('copies the item path to the system clipboard', async () => {
+    // Na runnerze macOS proces Electron kończy się sygnałem SIGTRAP przy prawym
+    // kliknięciu elementu eksploratora (crash, nie asercja) — ten sam wzorzec co
+    // w `explorer-file-ops.spec.ts`. Pomijamy tam, dopóki nie zbierzemy trace'a.
+    test.skip(
+      process.platform === 'darwin',
+      'macOS runner: Electron exits (SIGTRAP) on the explorer item context menu'
+    );
     const onda = await launchOnda();
     const { page } = onda;
     try {
