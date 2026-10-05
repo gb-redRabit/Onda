@@ -213,7 +213,7 @@ export function registerFsHandlers(): void {
     copyPath(filePath);
   });
 
-  ipcMain.handle('app:readClipboard', (): string => {
+  ipcMain.handle('app:readClipboard', (): Promise<string> => {
     return readClipboard();
   });
 

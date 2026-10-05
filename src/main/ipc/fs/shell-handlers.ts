@@ -140,12 +140,17 @@ export async function getFileIcon(filePath: unknown): Promise<string | null> {
 
 export function copyPath(filePath: unknown): void {
   if (typeof filePath !== 'string' || filePath.length > MAX_PATH_LENGTH) return;
-  clipboard.writeText(filePath);
+  // Electron 44: writeText zwraca Promise (model W3C). Kopiowanie jest best-effort —
+  // błąd zapisu nie może wywrócić handlera IPC. `Promise.resolve` toleruje też
+  // synchroniczne mocki w testach.
+  void Promise.resolve(clipboard.writeText(filePath)).catch((e) =>
+    logger.warn('fs', 'clipboard.writeText failed', e)
+  );
 }
 
-export function readClipboard(): string {
+export async function readClipboard(): Promise<string> {
   try {
-    return clipboard.readText();
+    return await clipboard.readText();
   } catch {
     return '';
   }
