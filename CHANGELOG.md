@@ -9,6 +9,13 @@ na `main` wersję ostatnio opublikowanego release'a; wersję podnosi wyłącznie
 jest błędem — pilnują tego `npm run version:check` i `npm run check:artifacts` w CI
 (patrz `RELEASE.md`).
 
+## [0.7.0](https://github.com/gb-redRabit/Onda/compare/v0.6.2...v0.7.0) (2026-10-05)
+
+
+### Features
+
+* harden main process and split renderer IPC by domain ([bd21e3c](https://github.com/gb-redRabit/Onda/commit/bd21e3c3b9fbf5f72bf1f54026207ddb3555e6de))
+
 ## [0.6.2](https://github.com/gb-redRabit/Onda/compare/v0.6.1...v0.6.2) (2026-10-01)
 
 
