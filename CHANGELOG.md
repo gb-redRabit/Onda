@@ -9,6 +9,14 @@ na `main` wersję ostatnio opublikowanego release'a; wersję podnosi wyłącznie
 jest błędem — pilnują tego `npm run version:check` i `npm run check:artifacts` w CI
 (patrz `RELEASE.md`).
 
+## [0.7.2](https://github.com/gb-redRabit/Onda/compare/v0.7.1...v0.7.2) (2026-10-05)
+
+
+### Bug Fixes
+
+* **e2e:** give the heavy image-viewer spec a slow() timeout ([19f185f](https://github.com/gb-redRabit/Onda/commit/19f185f9e00bdaba6dee067d6114835b63746920))
+* **e2e:** skip macOS-crashing explorer context-menu spec ([4d403dc](https://github.com/gb-redRabit/Onda/commit/4d403dc9a9ea6e9d5e509da520e3d64a4010217e))
+
 ## [0.7.1](https://github.com/gb-redRabit/Onda/compare/v0.7.0...v0.7.1) (2026-10-05)
 
 
