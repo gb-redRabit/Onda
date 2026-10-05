@@ -120,6 +120,14 @@ function tabsOfSection(sectionId: string) {
   return SETTINGS_TABS.filter((tab) => tab.section === sectionId);
 }
 
+// Wybór sekcji w railu otwiera jej pierwszą zakładkę. Logika w typowanej funkcji,
+// a nie w inline handlerze szablonu — vue-tsc nie wnioskuje typu parametru zdarzenia
+// z inline `(id) => …` i zgłasza wtedy `implicit any`.
+function onSelectSection(id: string): void {
+  const first = SETTINGS_TABS.find((tab) => tab.section === id);
+  if (first) void openTab(first.id);
+}
+
 function onSearchKeydown(event: KeyboardEvent): void {
   if (event.key === 'Escape') {
     search.value = '';
@@ -297,12 +305,7 @@ onBeforeUnmount(() => {
         :tabs="SETTINGS_TABS"
         :active-section="activeSection"
         :active-tab="activeTab"
-        @select-section="
-          (id) => {
-            const first = SETTINGS_TABS.find((tab) => tab.section === id);
-            if (first) openTab(first.id);
-          }
-        "
+        @select-section="onSelectSection"
         @select-tab="openTab"
         @reset="onReset"
       />
