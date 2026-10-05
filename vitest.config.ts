@@ -27,14 +27,15 @@ export default defineConfig({
         'src/renderer/src/locales/**'
       ],
       // Progi są minimalnym progiem regresji, ustawionym nieco poniżej
-      // dzisiejszego pomiaru (liniowo ~37% — duża część main/ipc nie ładuje się
-      // w jsdom bez Electrona; gałęzie ~78%). Mają łapać spadki, nie blokować
-      // rozwoju.
+      // dzisiejszego pomiaru. Vitest 5 (provider v8) instrumentuje także pliki,
+      // które nie ładują się w jsdom bez Electrona, więc pomiar jest niższy niż
+      // przed aktualizacją (linie ~33.8%, instrukcje ~33.1%, funkcje ~31.6%,
+      // gałęzie ~30.0%). Mają łapać spadki, nie blokować rozwoju.
       thresholds: {
-        lines: 34,
-        statements: 34,
-        functions: 60,
-        branches: 72
+        lines: 33,
+        statements: 32,
+        functions: 30,
+        branches: 29
       }
     }
   }
