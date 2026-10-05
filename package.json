@@ -48,7 +48,7 @@
     "electron-updater": "^6.8.9",
     "jassub": "^2.5.7",
     "lfa-ponyfill": "^1.1.1",
-    "music-metadata": "^11.14.0",
+    "music-metadata": "^12.0.0",
     "node-id3": "^0.2.9",
     "pinia": "^3.0.4",
     "sharp": "^0.35.3",
