@@ -1,12 +1,22 @@
 import { extname, normalize } from 'path';
 import { statSync } from 'fs';
-import { AUDIO_EXTS, VIDEO_EXTS } from '../../shared/constants';
+import { AUDIO_EXTS, VIDEO_EXTS, IMAGE_EXTS } from '../../shared/constants';
 
 // Czyste helpery ścieżek mediów wyodrębnione z `main/index.ts` (plan 2.8): zamieniają
 // listę argv (skojarzenia plików, drag & drop, CLI) na znormalizowane pliki
 // mediów, które faktycznie istnieją na dysku.
 
 const MEDIA_EXTS = new Set([...AUDIO_EXTS, ...VIDEO_EXTS]);
+
+// Rozszerzenia, które serwer mediów może w ogóle oddać. Ogranicza wyciek, gdy
+// przejęty renderer przyzna korzeń zawierający pliki niebędące mediami (klucze,
+// konfiguracje, cookies): serwer i tak odmówi ich wydania.
+const SERVABLE_EXTS = new Set([...AUDIO_EXTS, ...VIDEO_EXTS, ...IMAGE_EXTS]);
+
+export function isServableMediaPath(p: string): boolean {
+  if (!p) return false;
+  return SERVABLE_EXTS.has(extname(p).toLowerCase());
+}
 
 export function isMediaFilePath(p: string): boolean {
   if (!p || p.startsWith('-')) return false;

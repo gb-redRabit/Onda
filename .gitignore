@@ -4,6 +4,7 @@ out
 test-results
 playwright-report
 blob-report
+coverage
 docs
 # Bundle assets are force-shipped: ignore the generated/downloaded bits
 # (resources/ffmpeg, …) but track the icon, splash and bundled plugin examples.

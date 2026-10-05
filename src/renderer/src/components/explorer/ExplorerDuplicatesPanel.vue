@@ -100,6 +100,7 @@ function revealDupFile(path: string) {
       <button
         data-testid="explorer-duplicates-close"
         class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
+        :aria-label="$t('common.close')"
         @click="emit('update:open', false)"
       >
         <X :size="14" />
@@ -134,6 +135,7 @@ function revealDupFile(path: string) {
         class="rounded-field border border-base-300 overflow-hidden"
       >
         <div
+          v-activate
           class="flex items-center gap-2 px-2.5 py-1.5 bg-base-100 border-b border-base-300 cursor-pointer hover:bg-base-content/10 transition-colors"
           @click="revealDupFile(group.original)"
         >
@@ -150,6 +152,7 @@ function revealDupFile(path: string) {
           <div
             v-for="(dup, di) in group.duplicates"
             :key="dup"
+            v-activate
             class="flex items-center gap-2 px-2.5 py-1.5 hover:bg-base-content/10 transition-colors cursor-pointer"
             @click="revealDupFile(dup)"
           >

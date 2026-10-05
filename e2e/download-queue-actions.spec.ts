@@ -61,8 +61,12 @@ test.describe('download queue actions', () => {
       await live.getByTestId('download-action-resume').click();
       await expect(live.getByTestId('download-action-cancel')).toBeVisible();
 
-      // Anuluj je, następnie ponów anulowany wiersz (świeże zadanie je zastępuje).
+      // Anuluj je (pobierane zadanie wymaga potwierdzenia), następnie ponów anulowany
+      // wiersz (świeże zadanie je zastępuje).
       await live.getByTestId('download-action-cancel').click();
+      const cancelDialog = page.getByTestId('explorer-prompt-dialog');
+      await expect(cancelDialog).toBeVisible();
+      await cancelDialog.getByRole('button', { name: /ok/i }).click();
       await expect(live.getByTestId('download-action-retry')).toBeVisible();
       await live.getByTestId('download-action-retry').click();
       await expect(live.getByTestId('download-action-retry')).toHaveCount(0);
@@ -76,6 +80,9 @@ test.describe('download queue actions', () => {
 
       // Anuluj + ponów wciąż oczekujące zadanie.
       await hold.getByTestId('download-action-cancel').click();
+      const cancelDialog2 = page.getByTestId('explorer-prompt-dialog');
+      await expect(cancelDialog2).toBeVisible();
+      await cancelDialog2.getByRole('button', { name: /ok/i }).click();
       await expect(hold.getByTestId('download-action-retry')).toBeVisible();
       await hold.getByTestId('download-action-retry').click();
       await expect(hold.getByTestId('download-action-retry')).toHaveCount(0);

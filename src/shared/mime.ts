@@ -18,6 +18,7 @@ export const MIME_TYPES: Record<string, string> = {
   '.aac': 'audio/aac',
   '.opus': 'audio/opus',
   '.aiff': 'audio/aiff',
+  '.alac': 'audio/x-alac',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.png': 'image/png',

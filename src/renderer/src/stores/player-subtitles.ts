@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import type { SubtitleTrack, MkvFont } from '@renderer/types/subtitles';
 import { logger } from '@shared/logger';
+import { i18n } from '@renderer/i18n';
 
 export function usePlayerSubtitles() {
   const subtitleTracks = ref<SubtitleTrack[]>([]);
@@ -36,13 +37,14 @@ export function usePlayerSubtitles() {
       const label = sub.title || sub.language || `Track ${sub.index}`;
       tracks.push({
         id: `emb-${sub.index}`,
-        label: `${label} (wbudowane)`,
+        label: i18n.global.t('player.embeddedSubtitle', { label }),
         language: sub.language,
         format: 'ass',
         source: 'embedded'
       });
     }
 
+    if (loadId !== currentLoadId) return;
     subtitleTracks.value = tracks;
 
     if (prevId && tracks.some((t) => t.id === prevId)) {
@@ -84,6 +86,9 @@ export function usePlayerSubtitles() {
   }
 
   async function loadCustomSubtitles(filePaths: string[]): Promise<number> {
+    // Unieważnia ewentualne trwające `loadSubtitles`, żeby jego końcowe
+    // `subtitleTracks.value = tracks` nie skasowało dodanych ręcznie napisów.
+    ++currentLoadId;
     let added = 0;
     for (const filePath of filePaths) {
       const content = await window.api?.readSubtitleFile(filePath);

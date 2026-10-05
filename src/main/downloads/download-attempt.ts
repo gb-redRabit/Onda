@@ -16,6 +16,7 @@ import { buildYtArgs, type YtAuthConfig } from '../ipc/youtube/youtube-utils';
 import { killDownloadProcess } from './kill-download-process';
 import { resolveFinalOutputPath, findNewestOutput } from './output-path';
 import { downloadHttpFile } from './http-downloader';
+import { safeDownloadFileName } from './download-source';
 import { resolveSourceHeaders } from '../ipc/generic-fetch';
 import { resolveScDownloadSource } from '../ipc/soundcloud/soundcloud-client';
 import { classifyYtDlpError, describeError, redactSecrets } from './error-classifier';
@@ -37,7 +38,10 @@ async function runHttpAttempt(
   const dir = resolveOutputDir(job);
   await mkdir(dir, { recursive: true });
   void addAllowedRoot(dir);
-  const destPath = join(dir, job.source?.fileName || deriveHttpFileName(job));
+  // Druga linia obrony: nawet gdyby do kolejki trafiło (np. z zapisanej starszej
+  // wersji) `fileName` z separatorami, bierzemy tylko bezpieczną nazwę bazową.
+  const fileName = safeDownloadFileName(job.source?.fileName) || deriveHttpFileName(job);
+  const destPath = join(dir, fileName);
   job.outputPath = destPath;
   persist(job);
   const headers = await resolveSourceHeaders(job.source?.apiKeyId, job.source?.headerName);
@@ -181,14 +185,32 @@ export async function runJobAttempt(
   };
   child.stdout?.on('data', (d: Buffer) => processChunk(d, 'out'));
   child.stderr?.on('data', (d: Buffer) => processChunk(d, 'err'));
+
+  let finishedOk = false;
+  let attemptSettled = false;
+  // Awaria spawnowania (ENOENT itd.) może wyemitować 'error', a potem 'close' z
+  // kodem != 0. Bez tej flagi 'close' nadpisałby precyzyjny błąd generykiem.
+  let spawnErrored = false;
+  let settleAttempt: () => void = () => {};
+  // Awaria spawnowania (np. ENOENT) emituje tylko 'error'. Bez rozstrzygnięcia
+  // oczekującej obietnicy `running` w runnerze nigdy by nie zmalało, a `pump()`
+  // stanąłby na stałe — kolejka nie ruszyłaby do restartu.
   child.on('error', (err) => {
+    spawnErrored = true;
     job.status = 'error';
     job.error = redactSecrets(err.message);
     job.errorCode = classifyYtDlpError(err.message);
     persist(job);
+    settleAttempt();
   });
-  let finishedOk = false;
+
   await new Promise<void>((resolve) => {
+    const settle = (): void => {
+      if (attemptSettled) return;
+      attemptSettled = true;
+      resolve();
+    };
+    settleAttempt = settle;
     let timedOut = false;
     const timer = setTimeout(() => {
       timedOut = true;
@@ -199,17 +221,22 @@ export async function runJobAttempt(
       try {
         killDownloadProcess(child);
       } catch {
-        resolve();
+        settle();
       }
     }, DOWNLOAD_TIMEOUT_MS);
     child.on('close', async (code, signal) => {
       clearTimeout(timer);
       if (timedOut) {
-        resolve();
+        settle();
+        return;
+      }
+      if (spawnErrored) {
+        // 'error' już ustawiło konkretny komunikat/kod; 'close' nie może go nadpisać.
+        settle();
         return;
       }
       if (job.status === 'cancelled' || job.status === 'paused') {
-        resolve();
+        settle();
         return;
       }
       if (signal) {
@@ -229,7 +256,7 @@ export async function runJobAttempt(
         job.error = detail || describeError(errorCode) || `yt-dlp exited with code ${code}`;
         if (job.coverStatus === 'fetching') job.coverStatus = 'error';
       }
-      resolve();
+      settle();
     });
   });
   return { finishedOk, errorCode: job.errorCode };

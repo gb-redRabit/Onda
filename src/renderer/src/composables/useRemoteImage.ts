@@ -11,6 +11,8 @@ const cache = new LruCache<string>(200);
 export function useRemoteImage(url: Ref<string | undefined | null>): Ref<string | null> {
   const src = ref<string | null>(null);
   let disposed = false;
+  // Token żądania: wolna odpowiedź dla starego URL-a nie może nadpisać nowszego.
+  let lastRequest = 0;
   onScopeDispose(() => {
     disposed = true;
   });
@@ -18,6 +20,7 @@ export function useRemoteImage(url: Ref<string | undefined | null>): Ref<string 
   watch(
     url,
     async (u) => {
+      const requestId = ++lastRequest;
       if (!u || !/^https:\/\//i.test(u)) {
         src.value = null;
         return;
@@ -29,7 +32,7 @@ export function useRemoteImage(url: Ref<string | undefined | null>): Ref<string 
       }
       try {
         const res = (await window.api?.invoke('media:remoteImage', u)) as string | null;
-        if (disposed) return;
+        if (disposed || requestId !== lastRequest) return;
         if (res) {
           cache.set(u, res);
           src.value = res;
@@ -37,7 +40,7 @@ export function useRemoteImage(url: Ref<string | undefined | null>): Ref<string 
           src.value = null;
         }
       } catch {
-        src.value = null;
+        if (requestId === lastRequest) src.value = null;
       }
     },
     { immediate: true }

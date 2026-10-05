@@ -22,7 +22,9 @@ watch(
     const v = videoEl.value;
     if (!v) return;
     if (playing && v.paused && !v.ended) {
-      v.play().catch(() => {});
+      v.play().catch(() => {
+        /* best-effort */
+      });
     } else if (!playing && !v.paused) {
       v.pause();
     }

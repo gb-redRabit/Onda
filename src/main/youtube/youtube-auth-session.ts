@@ -166,7 +166,9 @@ export async function writeTempSessionCookies(): Promise<string | null> {
 // do wywołania z dowolną konfiguracją auth — usuwane są tylko pliki oznaczone jako tymczasowe.
 export async function cleanupYtAuthTemp(auth?: YtAuthConfig | null): Promise<void> {
   if (!auth || !auth.temp || !auth.cookiesPath) return;
-  await unlink(auth.cookiesPath).catch(() => {});
+  await unlink(auth.cookiesPath).catch(() => {
+    /* best-effort */
+  });
 }
 
 // Fallback dla metody "electron": jeśli magazyn cookies partycji nie jest jeszcze

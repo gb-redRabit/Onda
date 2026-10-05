@@ -6,13 +6,11 @@ const api = (window as any).api as {
   invoke: ReturnType<typeof vi.fn>;
   getCover: ReturnType<typeof vi.fn>;
   getDuration: ReturnType<typeof vi.fn>;
-  mediaServerUrl?: string;
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
   api.getCover.mockReset();
-  api.mediaServerUrl = 'http://127.0.0.1:59110';
 });
 
 function flush(): Promise<void> {

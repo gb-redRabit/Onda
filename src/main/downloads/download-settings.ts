@@ -18,14 +18,30 @@ export async function readMaxConcurrent(): Promise<number> {
   }
 }
 
+// Górne/dolne granice chronią przed uszkodzonym ustawieniem, które inaczej dałoby
+// lawinę ponowień (np. attempts=1e9) albo przepełnienie opóźnienia (baseMs=1e18).
+const MIN_RETRY_ATTEMPTS = 1;
+const MAX_RETRY_ATTEMPTS = 10;
+const MIN_RETRY_BASE_MS = 100;
+const MAX_RETRY_BASE_MS = 60_000;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
 export async function readRetryConfig(): Promise<{ attempts: number; baseMs: number }> {
   try {
     const store = await getStore();
     const d = store.get('download') as { retryAttempts?: number; retryBaseMs?: number } | undefined;
-    return {
-      attempts: typeof d?.retryAttempts === 'number' ? d.retryAttempts : DEFAULT_RETRY_ATTEMPTS,
-      baseMs: typeof d?.retryBaseMs === 'number' ? d.retryBaseMs : DEFAULT_RETRY_BASE_MS
-    };
+    const attempts =
+      typeof d?.retryAttempts === 'number' && Number.isFinite(d.retryAttempts)
+        ? clamp(d.retryAttempts, MIN_RETRY_ATTEMPTS, MAX_RETRY_ATTEMPTS)
+        : DEFAULT_RETRY_ATTEMPTS;
+    const baseMs =
+      typeof d?.retryBaseMs === 'number' && Number.isFinite(d.retryBaseMs)
+        ? clamp(d.retryBaseMs, MIN_RETRY_BASE_MS, MAX_RETRY_BASE_MS)
+        : DEFAULT_RETRY_BASE_MS;
+    return { attempts, baseMs };
   } catch {
     return { attempts: DEFAULT_RETRY_ATTEMPTS, baseMs: DEFAULT_RETRY_BASE_MS };
   }

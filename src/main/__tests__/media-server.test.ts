@@ -273,6 +273,13 @@ describe('media-server', () => {
     expect(getExtraRoots()).toContain(await fs.realpath(dir));
   });
 
+  it('refuses to add a protected system path via addAllowedRoot', async () => {
+    const protectedDir = process.platform === 'win32' ? 'C:\\Windows\\System32' : '/etc';
+    const ok = await addAllowedRoot(protectedDir);
+    expect(ok).toBe(false);
+    expect(getExtraRoots()).not.toContain(protectedDir);
+  });
+
   it('keeps extra roots when library roots are replaced', async () => {
     // To samo uzasadnienie co w powyższym teście dodatkowych korzeni.
     const scratch = await makeGrantableScratch('ms-keep');

@@ -37,6 +37,7 @@ function removeFolder(path: string) {
         <span class="text-sm truncate">{{ folder }}</span>
         <button
           class="ml-auto p-1 rounded hover:bg-base-content/10 text-base-content/50 hover:text-error transition-colors"
+          :aria-label="$t('common.delete')"
           @click="removeFolder(folder)"
         >
           <X :size="14" />
@@ -63,6 +64,7 @@ function removeFolder(path: string) {
           type="button"
           role="switch"
           :aria-checked="scanNow"
+          :aria-label="$t('wizard.libraryScanNow')"
           class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
           :class="scanNow ? 'bg-primary' : 'bg-base-300'"
           @click="emit('update:scanNow', !scanNow)"

@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron';
-import { readFile, rename, unlink, stat } from 'fs/promises';
+import { readFile, rename, unlink, stat, realpath } from 'fs/promises';
 import { join, extname, dirname } from 'path';
 import NodeID3 from 'node-id3';
 import { parseFile } from 'music-metadata';
@@ -25,7 +25,17 @@ import {
   cleanupOldTranscodes
 } from './media-transcode';
 import { isSafeAbsolutePath, isSafeStringArray } from '../../utils/validate';
-import { isProtectedPath } from '../../path-policy';
+import { isProtectedPath, isSensitivePath } from '../../path-policy';
+import { isPathWithinAllowedRoots } from '../../media/media-server';
+
+// Mutujące operacje plikowe (zmiana nazwy, tagi, okładka) muszą przejść tę samą
+// politykę co destrukcyjne kanały `fs:*`: odrzucamy wyłącznie korzenie wolumenów i
+// katalogi systemowe (`isProtectedPath`). NIE używamy tu `isSensitivePath` — ta
+// dotyczy przyznawania dostępu mediów (dane logowania), a nie prawa użytkownika do
+// zarządzania własnymi plikami (np. `AppData\Local\Temp`).
+function isProtectedTarget(filePath: string): boolean {
+  return isProtectedPath(filePath) || isProtectedPath(dirname(filePath));
+}
 import { addAllowedRoot } from '../../media/media-server';
 
 export async function getDuration(filePath: string): Promise<number> {
@@ -92,7 +102,7 @@ export async function writeCoverToAudioFile(
       imageBuffer = Buffer.from(imageSource);
       if (mimeOverride) mime = mimeOverride;
     }
-    NodeID3.update(
+    await NodeID3.Promise.update(
       {
         image: { mime, type: { id: 3 }, imageBuffer, description: 'Cover' }
       },
@@ -119,11 +129,24 @@ export async function writeCoverToAudioFile(
   }
 }
 
+// Miniatury systemowe (`nativeImage.createThumbnailFromPath`) potrafią wyrenderować
+// podgląd PDF-ów i dokumentów Office, więc przejęty renderer mógłby odczytać dowolny
+// plik na dysku. Ograniczamy je do zkanonizowanych ścieżek w dozwolonych korzeniach
+// serwera mediów (biblioteka + jawnie przyznane katalogi).
+async function isThumbnailPathAllowed(filePath: string): Promise<boolean> {
+  try {
+    return isPathWithinAllowedRoots(await realpath(filePath));
+  } catch {
+    return false;
+  }
+}
+
 export function registerMediaHandlers(): void {
   ipcMain.handle(
     'media:getThumbnail',
     async (_event, filePath: string, maxSize: number = 320): Promise<string | null> => {
       if (!isSafeAbsolutePath(filePath)) return null;
+      if (!(await isThumbnailPathAllowed(filePath))) return null;
       return getThumbnail(filePath, maxSize);
     }
   );
@@ -132,7 +155,11 @@ export function registerMediaHandlers(): void {
     'media:batchThumbnails',
     async (_event, files: string[], maxSize: number = 320): Promise<Record<string, string>> => {
       if (!isSafeStringArray(files)) return {};
-      return batchThumbnails(files, maxSize);
+      const allowed: string[] = [];
+      for (const file of files) {
+        if (isSafeAbsolutePath(file) && (await isThumbnailPathAllowed(file))) allowed.push(file);
+      }
+      return batchThumbnails(allowed, maxSize);
     }
   );
 
@@ -144,12 +171,13 @@ export function registerMediaHandlers(): void {
       tags: Record<string, string | undefined>
     ): Promise<{ success: boolean; error?: string }> => {
       if (!isSafeAbsolutePath(filePath)) return { success: false, error: 'Invalid path' };
+      if (isProtectedTarget(filePath)) return { success: false, error: 'Protected path' };
       try {
         const toWrite: Record<string, string> = {};
         for (const [key, val] of Object.entries(tags)) {
           if (val !== undefined) toWrite[key] = val;
         }
-        NodeID3.update(toWrite, filePath);
+        await NodeID3.Promise.update(toWrite, filePath);
         return { success: true };
       } catch (e: unknown) {
         return { success: false, error: errMsg(e) };
@@ -165,6 +193,7 @@ export function registerMediaHandlers(): void {
       newName: string
     ): Promise<{ success: boolean; error?: string; newPath?: string }> => {
       if (!isSafeAbsolutePath(oldPath)) return { success: false, error: 'Invalid path' };
+      if (isProtectedTarget(oldPath)) return { success: false, error: 'Protected path' };
       try {
         const safeName = newName.trim().replace(/[<>:"/\\|?*]/g, '_');
         if (!safeName) {
@@ -192,6 +221,7 @@ export function registerMediaHandlers(): void {
       imageSource: number[] | string
     ): Promise<{ success: boolean; error?: string }> => {
       if (!isSafeAbsolutePath(filePath)) return { success: false, error: 'Invalid path' };
+      if (isProtectedTarget(filePath)) return { success: false, error: 'Protected path' };
       if (typeof imageSource === 'string' && !isSafeAbsolutePath(imageSource)) {
         return { success: false, error: 'Invalid image path' };
       }
@@ -204,13 +234,14 @@ export function registerMediaHandlers(): void {
     async (_event, filePath: string): Promise<{ mime?: string; data?: number[] } | null> => {
       if (!isSafeAbsolutePath(filePath)) return null;
       try {
-        const tags = NodeID3.read(filePath);
-        if (tags?.image) {
-          const img =
-            typeof tags.image === 'string'
-              ? { imageBuffer: await readFile(tags.image).catch(() => null), mime: 'image/jpeg' }
-              : tags.image;
-          if (img?.imageBuffer && Buffer.isBuffer(img.imageBuffer)) {
+        const tags = await NodeID3.Promise.read(filePath);
+        // Tylko osadzony bufor obrazu. Tag `image` typu string to ścieżka pliku
+        // pochodząca z metadanych audio — czytanie jej pozwalało spreparowanemu
+        // plikowi zmusić main do odczytania dowolnego pliku lokalnego i zwrócenia
+        // go do renderera (eksfiltracja).
+        if (tags?.image && typeof tags.image !== 'string') {
+          const img = tags.image;
+          if (img.imageBuffer && Buffer.isBuffer(img.imageBuffer)) {
             return { mime: img.mime || 'image/jpeg', data: Array.from(img.imageBuffer) };
           }
         }
@@ -312,7 +343,11 @@ export function registerMediaHandlers(): void {
   // dzieli wywołującego od dostępu do odczytu tego, co może otworzyć proces main.
   ipcMain.handle('media:grantAccess', async (_event, filePath: unknown): Promise<boolean> => {
     if (!isSafeAbsolutePath(filePath)) return false;
-    if (isProtectedPath(filePath) || isProtectedPath(dirname(filePath))) {
+    if (
+      isProtectedPath(filePath) ||
+      isProtectedPath(dirname(filePath)) ||
+      isSensitivePath(filePath)
+    ) {
       logger.warn('media', `media:grantAccess rejected protected path: ${filePath}`);
       return false;
     }

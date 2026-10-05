@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { ref, onScopeDispose } from 'vue';
 import type { MusicbrainzRelease } from '@shared/types/ipc';
 import type { MediaFile } from '@renderer/types/media';
 
@@ -32,6 +32,22 @@ export function useMusicBrainzBatch(
   const batchResults = ref<MusicbrainzBatchResult[]>([]);
   const batchRunning = ref(false);
   const batchCancelled = ref(false);
+  // Timer kroku batcha. Bez anulowania przy rozłączeniu zakresu rekurencyjny
+  // `setTimeout` dalej pisał pliki po odmontowaniu widoku.
+  let stepTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function clearStepTimer(): void {
+    if (stepTimer) {
+      clearTimeout(stepTimer);
+      stepTimer = null;
+    }
+  }
+
+  onScopeDispose(() => {
+    batchCancelled.value = true;
+    batchRunning.value = false;
+    clearStepTimer();
+  });
 
   function startBatch() {
     const rel = getRelease();
@@ -46,10 +62,12 @@ export function useMusicBrainzBatch(
       name: t.name,
       status: 'pending' as const
     }));
+    clearStepTimer();
     let idx = 0;
     const next = async () => {
       if (batchCancelled.value || idx >= list.length) {
         batchRunning.value = false;
+        clearStepTimer();
         return;
       }
       const tr = list[idx];
@@ -81,14 +99,22 @@ export function useMusicBrainzBatch(
       }
       batchProgress.value = idx + 1;
       idx++;
-      setTimeout(next, 1100); // throttle 1 req/s
+      // Sprawdź anulowanie PO zapisie (np. rozłączenie zakresu w trakcie żądania),
+      // żeby nie zakolejkować kolejnego kroku.
+      if (batchCancelled.value) {
+        batchRunning.value = false;
+        return;
+      }
+      clearStepTimer();
+      stepTimer = setTimeout(next, 1100); // throttle 1 req/s
     };
-    next();
+    void next();
   }
 
   function cancelBatch() {
     batchCancelled.value = true;
     batchRunning.value = false;
+    clearStepTimer();
   }
 
   return { batchProgress, batchResults, batchRunning, batchCancelled, startBatch, cancelBatch };

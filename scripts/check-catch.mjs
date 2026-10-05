@@ -1,5 +1,7 @@
-// Wykrywa naprawdę puste bloki `catch {}`. Komentarz wewnątrz bloku jest traktowany
-// jako świadoma decyzja "best-effort, celowo zignorowane" i jest dozwolony.
+// Wykrywa naprawdę puste bloki `catch {}` oraz puste handlery promise
+// `.catch(() => {})`. Komentarz wewnątrz bloku jest traktowany jako świadoma
+// decyzja "best-effort, celowo zignorowane" i jest dozwolony — przez to, że
+// przestaje pasować do wzorca `{ }`.
 import { readdir, readFile } from 'fs/promises';
 import { join } from 'path';
 
@@ -7,9 +9,10 @@ const ROOT = 'src';
 const CHECKED_EXT = ['.ts', '.vue'];
 const IGNORED_DIRS = new Set(['node_modules', 'dist', 'out', '__tests__']);
 
-const EMPTY_CATCH = /catch\s*(\([^)]*\))?\s*\{\s*\}/g;
+const EMPTY_BLOCK_CATCH = /catch\s*(\([^)]*\))?\s*\{\s*\}/g;
+const EMPTY_PROMISE_CATCH = /\.catch\(\s*(\([^)]*\))?\s*=>\s*\{\s*\}\s*\)/g;
 
-/** @type {{ file: string, line: number }[]} */
+/** @type {{ file: string, line: number, kind: string }[]} */
 const offenders = [];
 
 async function walk(dir) {
@@ -25,10 +28,12 @@ async function walk(dir) {
 
     const path = join(dir, entry.name);
     const content = await readFile(path, 'utf-8');
-    for (const match of content.matchAll(EMPTY_CATCH)) {
+    const report = (match, kind) => {
       const line = content.slice(0, match.index ?? 0).split('\n').length;
-      offenders.push({ file: path.replace(/\\/g, '/'), line });
-    }
+      offenders.push({ file: path.replace(/\\/g, '/'), line, kind });
+    };
+    for (const match of content.matchAll(EMPTY_BLOCK_CATCH)) report(match, 'catch {}');
+    for (const match of content.matchAll(EMPTY_PROMISE_CATCH)) report(match, '.catch(() => {})');
   }
 }
 
@@ -40,6 +45,6 @@ if (offenders.length === 0) {
 }
 
 console.error(`check:catch — ${offenders.length} empty catch block(s):`);
-for (const { file, line } of offenders) console.error(`  ${file}:${line}`);
+for (const { file, line, kind } of offenders) console.error(`  ${file}:${line}  ${kind}`);
 console.error('\nAdd a log call (logger.warn/debug) or a comment explaining why it is ignored.');
 process.exit(1);

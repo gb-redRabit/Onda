@@ -62,7 +62,7 @@ const {
         v-if="has('nextTrack') && nextTrackName"
         class="max-h-[18%] px-1 text-center [writing-mode:vertical-rl]"
       >
-        <span class="truncate text-[9px] text-base-content/40">&#x21B3; {{ nextTrackName }}</span>
+        <span class="truncate text-[9px] text-base-content/60">&#x21B3; {{ nextTrackName }}</span>
       </div>
 
       <PipTransport

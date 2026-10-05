@@ -17,6 +17,42 @@ function uniqueId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
+// Prosty semafor: te kanały spawnują ffprobe/ffmpeg, więc przejęty renderer mógł
+// nimi zalewać system procesami. Limit współbieżności jest globalny (nie per okno),
+// bo zasobem jest proces, nie wywołujący.
+const MAX_SUBTITLE_PROCS = 4;
+let subtitleProcs = 0;
+const subtitleWaiters: Array<() => void> = [];
+
+async function withSubtitleSlot<T>(task: () => Promise<T>): Promise<T> {
+  if (subtitleProcs >= MAX_SUBTITLE_PROCS) {
+    await new Promise<void>((resolve) => subtitleWaiters.push(resolve));
+  }
+  subtitleProcs++;
+  try {
+    return await task();
+  } finally {
+    subtitleProcs--;
+    const next = subtitleWaiters.shift();
+    if (next) next();
+  }
+}
+
+/** Rejestruje handler spawnujący procesy pod globalnym limitem współbieżności. */
+function handleSpawnSubtitle<A extends unknown[], R>(
+  channel: string,
+  listener: (event: Electron.IpcMainInvokeEvent, ...args: A) => Promise<R>
+): void {
+  ipcMain.handle(channel, (event, ...args) =>
+    withSubtitleSlot(() => listener(event, ...(args as A)))
+  );
+}
+
+// Załączniki-czcionki są wczytywane w całości do pamięci i wysyłane przez IPC.
+// Bez limitu jeden plik MKV mógł wcisnąć setki MB do structured clone.
+const MAX_FONT_BYTES = 25 * 1024 * 1024;
+const MAX_FONTS_TOTAL_BYTES = 100 * 1024 * 1024;
+
 // Nazwy plików załączników w metadanych MKV są kontrolowane przez autora —
 // rozszerzeniu nie można ufać (może zawierać separatory ścieżki / traversal).
 const FONT_EXTS = new Set(['ttf', 'otf', 'ttc', 'woff', 'woff2', 'eot']);
@@ -26,7 +62,7 @@ function safeFontExt(filename: string, fallback: string = 'ttf'): string {
 }
 
 export function registerSubtitleHandlers(): void {
-  ipcMain.handle(
+  handleSpawnSubtitle(
     'subtitles:listEmbedded',
     async (
       _event,
@@ -65,7 +101,7 @@ export function registerSubtitleHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleSpawnSubtitle(
     'subtitles:extractEmbedded',
     async (
       _event,
@@ -144,8 +180,12 @@ export function registerSubtitleHandlers(): void {
               { timeout: 30000 }
             );
             const content = await readFile(srtPath, 'utf-8');
-            await unlink(outPath).catch(() => {});
-            await unlink(srtPath).catch(() => {});
+            await unlink(outPath).catch(() => {
+              /* best-effort */
+            });
+            await unlink(srtPath).catch(() => {
+              /* best-effort */
+            });
             return { content, format: 'srt' };
           }
         } else {
@@ -169,7 +209,9 @@ export function registerSubtitleHandlers(): void {
         }
 
         const content = await readFile(outPath, 'utf-8');
-        await unlink(outPath).catch(() => {});
+        await unlink(outPath).catch(() => {
+          /* best-effort */
+        });
         return { content, format: ext.slice(1) };
       } catch (err) {
         logger.error('subtitles', 'extractEmbedded failed', err);
@@ -223,7 +265,7 @@ export function registerSubtitleHandlers(): void {
     return result.ok ? result.text : null;
   });
 
-  ipcMain.handle(
+  handleSpawnSubtitle(
     'subtitles:extractAttachments',
     async (
       _event,
@@ -322,6 +364,7 @@ export function registerSubtitleHandlers(): void {
         const realDumpDir = await realpath(dumpDir);
         const dumped = await readdir(dumpDir);
         const seen = new Set<string>();
+        let totalBytes = 0;
         for (const fname of dumped) {
           if (seen.has(fname)) continue;
           seen.add(fname);
@@ -329,8 +372,15 @@ export function registerSubtitleHandlers(): void {
           try {
             const real = await realpath(fpath);
             if (real !== realDumpDir && !real.startsWith(realDumpDir + sep)) continue;
-            await stat(fpath);
+            const info = await stat(fpath);
+            // Pomiń pojedyncze zbyt duże czcionki i przestań po globalnym budżecie —
+            // dane lecą w całości przez structured clone do renderera.
+            if (info.size > MAX_FONT_BYTES || totalBytes + info.size > MAX_FONTS_TOTAL_BYTES) {
+              logger.warn('subtitles', `skipping oversized attachment ${fname} (${info.size}b)`);
+              continue;
+            }
             const buf = await readFile(fpath);
+            totalBytes += buf.length;
             const ext = safeFontExt(fname);
             fonts.push({
               name: fname.replace(/\.(ttf|otf|ttc)$/i, ''),
@@ -344,7 +394,9 @@ export function registerSubtitleHandlers(): void {
       } catch (err) {
         logger.error('subtitles', 'extractAttachments failed', err);
       } finally {
-        await rm(dumpDir, { recursive: true, force: true }).catch(() => {});
+        await rm(dumpDir, { recursive: true, force: true }).catch(() => {
+          /* best-effort */
+        });
       }
 
       return fonts;

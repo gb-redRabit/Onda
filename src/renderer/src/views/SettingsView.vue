@@ -321,18 +321,18 @@ onBeforeUnmount(() => {
                   <span class="block text-[13px] text-base-content truncate">{{ hit.label }}</span>
                   <span
                     v-if="hit.description"
-                    class="block text-[11px] text-base-content/45 truncate"
+                    class="block text-[11px] text-base-content/60 truncate"
                   >
                     {{ hit.description }}
                   </span>
                 </span>
                 <span
                   v-if="hit.kind === 'field'"
-                  class="shrink-0 text-[10px] uppercase tracking-wider text-base-content/35"
+                  class="shrink-0 text-[10px] uppercase tracking-wider text-base-content/60"
                 >
                   {{ t('settings.searchField') }}
                 </span>
-                <CornerDownLeft :size="13" class="shrink-0 text-base-content/30" />
+                <CornerDownLeft :size="13" class="shrink-0 text-base-content/55" />
               </button>
             </li>
           </ul>
@@ -342,7 +342,7 @@ onBeforeUnmount(() => {
         <div v-else-if="!activeTab" class="px-6 py-6 space-y-8" data-testid="settings-overview">
           <section v-for="section in SETTINGS_SECTIONS" :key="section.id">
             <h3
-              class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-3"
+              class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-base-content/60 mb-3"
             >
               <component :is="section.icon" :size="15" class="text-primary" />
               {{ t(section.labelKey) }}

@@ -131,6 +131,7 @@ onMounted(() => {
       </h2>
       <button
         class="fx-noise p-1.5 fx-depth rounded-field hover:bg-base-content/10 transition-colors text-base-content/50"
+        :aria-label="$t('common.close')"
         @click="emit('close')"
       >
         <X :size="16" />

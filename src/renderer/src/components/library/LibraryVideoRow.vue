@@ -62,6 +62,7 @@ function onDragStart(e: DragEvent) {
       <MediaCover :cover="cover" :size="14" fallback="film" />
       <button
         class="absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/40 transition-colors"
+        :aria-label="$t('common.play')"
         @click="playNow"
       >
         <Play

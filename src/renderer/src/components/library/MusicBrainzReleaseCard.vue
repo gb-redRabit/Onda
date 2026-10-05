@@ -16,7 +16,7 @@ const emit = defineEmits<{ select: [] }>();
       class="w-10 h-10 rounded-field bg-base-100 flex items-center justify-center shrink-0 overflow-hidden"
     >
       <img v-if="thumb" alt="" :src="thumb" class="w-full h-full object-cover" />
-      <Music2 v-else :size="18" class="text-base-content/40" />
+      <Music2 v-else :size="18" class="text-base-content/60" />
     </div>
     <div class="flex-1 min-w-0">
       <div class="text-sm font-medium truncate">{{ rel.title }}</div>

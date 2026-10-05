@@ -1,6 +1,7 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { X } from '@lucide/vue';
 import ModalShell from '@renderer/components/ui/ModalShell.vue';
 import type { PluginInfo } from '@shared/types/ipc';
 
@@ -38,8 +39,8 @@ const grantedCapabilities = computed(() => {
           {{ t('plugins.enableConfirmTitle') }}
         </h2>
         <p class="mt-1 text-sm text-base-content/60">
-          {{ plugin.name }} <span v-if="plugin.version">Â· v{{ plugin.version }}</span>
-          <span v-if="plugin.author">Â· {{ plugin.author }}</span>
+          {{ plugin.name }} <span v-if="plugin.version">· v{{ plugin.version }}</span>
+          <span v-if="plugin.author">· {{ plugin.author }}</span>
         </p>
       </div>
       <button
@@ -48,7 +49,7 @@ const grantedCapabilities = computed(() => {
         :aria-label="t('common.close')"
         @click="$emit('cancel')"
       >
-        Ă—
+        <X :size="16" />
       </button>
     </header>
 
@@ -131,8 +132,8 @@ const grantedCapabilities = computed(() => {
             :key="`${layout.element}:${layout.variant}`"
             class="text-sm text-base-content/70"
           >
-            <code>{{ layout.element }} Â· {{ layout.variant }}</code>
-            <span v-if="layout.label"> â€” {{ layout.label }}</span>
+            <code>{{ layout.element }} · {{ layout.variant }}</code>
+            <span v-if="layout.label"> — {{ layout.label }}</span>
           </li>
         </ul>
       </section>
@@ -149,7 +150,7 @@ const grantedCapabilities = computed(() => {
         <ul class="space-y-1">
           <li v-for="slot in plugin.uiSlots" :key="slot" class="text-sm text-base-content/70">
             <code>{{ slot }}</code>
-            <span> â€” {{ t('plugins.uiSlotTextOnly') }}</span>
+            <span> — {{ t('plugins.uiSlotTextOnly') }}</span>
           </li>
         </ul>
       </section>

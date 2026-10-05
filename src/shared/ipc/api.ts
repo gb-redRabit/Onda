@@ -4,13 +4,16 @@ import type { BoundIpcMethod, IpcArgs, IpcChannel, IpcResult } from './contract'
 // renderer konsumuje je przez `Window['api']`. Sygnatury wrapperów
 // wynikają z kontraktu, więc nie mogą się rozjechać z kanałami.
 export interface OndaAPI {
-  mediaServerUrl: string;
+  /**
+   * Bazowy URL serwera mediów (z tokenem). Asynchroniczny, bo pobierany przez
+   * `invoke` — `sendSync` blokował wątek renderera przy starcie każdego okna.
+   */
+  getMediaServerUrl: () => Promise<string>;
   getWindowId: () => Promise<IpcResult<'window:id'>>;
   invoke: <C extends IpcChannel>(channel: C, ...args: IpcArgs<C>) => Promise<IpcResult<C>>;
   send: (channel: string, ...args: unknown[]) => void;
   on: (channel: string, callback: (...args: unknown[]) => void) => () => void;
   once: (channel: string, callback: (...args: unknown[]) => void) => void;
-  removeAllListeners: (channel: string) => void;
   getFilePath: (file: File) => string;
 
   // wideo PiP

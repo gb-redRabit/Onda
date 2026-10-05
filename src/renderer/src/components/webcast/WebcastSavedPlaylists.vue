@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
-import { useVirtualizer } from '@tanstack/vue-virtual';
+import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { AlertCircle, ChevronDown, ChevronRight, ListMusic, Play, Trash2 } from '@lucide/vue';
 import { useSavedStore } from '@renderer/stores/saved';
 import { useOnlineStore } from '@renderer/stores/online';
@@ -13,11 +13,14 @@ import { toResolvedItem } from '@renderer/utils/savedItem';
 import type { IpcSavedPlaylist } from '@shared/types/ipc';
 import { useVirtualGrid } from '@renderer/composables/useVirtualGrid';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
+import { usePromptDialog } from '@renderer/composables/usePromptDialog';
+import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 
 const saved = useSavedStore();
 const yt = useOnlineStore();
 const router = useRouter();
 const { t } = useI18n();
+const prompt = usePromptDialog();
 
 const playingPlaylistId = ref<string | null>(null);
 const expandedPlaylistId = ref<string | null>(null);
@@ -27,11 +30,9 @@ const playlistGrid = useVirtualGrid(playlistItemsRef, 220, 4);
 const expandedItems = computed(
   () => saved.playlists.find((playlist) => playlist.id === expandedPlaylistId.value)?.items ?? []
 );
-const playlistItemRows = useVirtualizer({
-  get count() {
-    return Math.ceil(expandedItems.value.length / playlistGrid.cols.value);
-  },
-  getScrollElement: () => playlistItemsRef.value,
+const playlistItemRows = useVirtualList({
+  count: () => Math.ceil(expandedItems.value.length / playlistGrid.cols.value),
+  scrollEl: () => playlistItemsRef.value,
   estimateSize: () => 230,
   overscan: 3
 });
@@ -84,7 +85,12 @@ async function playPlaylist(p: { id: string; url: string }) {
   }
 }
 
-function removePlaylist(id: string) {
+async function removePlaylist(id: string) {
+  const playlist = saved.playlists.find((p) => p.id === id);
+  const ok = await prompt.showConfirm(
+    t('saved.deletePlaylistConfirm', { name: playlist?.title ?? '' })
+  );
+  if (!ok) return;
   void saved.removePlaylist(id);
   if (expandedPlaylistId.value === id) expandedPlaylistId.value = null;
 }
@@ -220,5 +226,15 @@ async function openChannelInApp(url: string): Promise<void> {
         </div>
       </div>
     </div>
+
+    <ExplorerPromptDialog
+      :visible="prompt.promptVisible.value"
+      :is-confirm="prompt.promptIsConfirm.value"
+      :message="prompt.promptMessage.value"
+      :value="prompt.promptValue.value"
+      @update:value="prompt.promptValue.value = $event"
+      @confirm="prompt.promptConfirm()"
+      @cancel="prompt.promptCancel()"
+    />
   </section>
 </template>

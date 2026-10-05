@@ -47,6 +47,15 @@ export function classifyYtDlpError(stderr: string): IpcDownloadErrorCode {
   ) {
     return 'network';
   }
+  // Bezpośrednie pobrania HTTP (nie yt-dlp) zgłaszają goły status, np. `HTTP 500`.
+  // 408/429/5xx są przejściowe → `network`, dzięki czemu runner ponawia (a downloader
+  // celowo zachowuje `.part`). Bez tego trafiały do `unknown` i nie były ponawiane.
+  const httpStatus = /^http (\d{3})$/i.exec(stderr.trim());
+  if (httpStatus) {
+    const code = Number(httpStatus[1]);
+    if (code === 408 || code === 429 || code >= 500) return 'network';
+    if (code === 404 || code === 410) return 'not-found';
+  }
   return 'unknown';
 }
 

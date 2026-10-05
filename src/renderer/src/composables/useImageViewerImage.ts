@@ -1,4 +1,4 @@
-import { ref, reactive } from 'vue';
+import { ref, reactive, onScopeDispose } from 'vue';
 import type { Ref } from 'vue';
 import { toMediaServerUrl, loadScaledImageUrl } from '@renderer/utils/imageLoader';
 import { useTimeoutFn } from './useTimers';
@@ -16,6 +16,15 @@ export function useImageViewerImage(deps: ImageViewerImageDeps) {
   const displaySrc = ref('');
   const usingHighRes = ref(false);
   let currentObjectUrl: string | null = null;
+  let currentLoadEpoch = 0;
+
+  onScopeDispose(() => {
+    stopHighRes();
+    if (currentObjectUrl) {
+      URL.revokeObjectURL(currentObjectUrl);
+      currentObjectUrl = null;
+    }
+  });
 
   function toFileUrl(file: FileItem): string {
     return toMediaServerUrl(file.path);
@@ -51,8 +60,11 @@ export function useImageViewerImage(deps: ImageViewerImageDeps) {
     if (!file) return;
     deps.currentIndex.value = idx;
     usingHighRes.value = false;
+    const epoch = ++currentLoadEpoch;
     loadDisplayImage(file, 1920).then((url) => {
-      displaySrc.value = url;
+      if (epoch === currentLoadEpoch) {
+        displaySrc.value = url;
+      }
     });
   }
 
@@ -60,8 +72,11 @@ export function useImageViewerImage(deps: ImageViewerImageDeps) {
     usingHighRes.value = false;
     const file = deps.files.value[deps.currentIndex.value];
     if (file) {
+      const epoch = ++currentLoadEpoch;
       loadDisplayImage(file, 1920).then((url) => {
-        displaySrc.value = url;
+        if (epoch === currentLoadEpoch) {
+          displaySrc.value = url;
+        }
       });
       preloadNext();
     }

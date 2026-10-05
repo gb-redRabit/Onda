@@ -16,6 +16,8 @@ import {
   sanitizeStoredObject,
   pluginSettingValueValid,
   compileNetworkPattern,
+  compiledNetworkPatternCacheSize,
+  MAX_PATTERN_CACHE_SIZE,
   urlAllowed,
   resolveRedirectUrl
 } from './plugins-guards';
@@ -27,6 +29,8 @@ export {
   sanitizeStoredObject,
   pluginSettingValueValid,
   compileNetworkPattern,
+  compiledNetworkPatternCacheSize,
+  MAX_PATTERN_CACHE_SIZE,
   urlAllowed,
   resolveRedirectUrl
 };

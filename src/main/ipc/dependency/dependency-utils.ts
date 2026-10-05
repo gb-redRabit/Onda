@@ -2,6 +2,7 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import { runCommand } from '../../utils/exec';
 import { logger } from '../../../shared/logger';
+import { errMsg } from '../../../shared/helpers';
 import type { DepSource } from '../../../shared/types/ipc/channels-system';
 import binaries from '../../../../binaries.json';
 
@@ -148,14 +149,6 @@ export function ffmpegProbeSha256(
   return MANAGED_FFMPEG[`${platform}-${arch}`]?.probeSha256 ?? null;
 }
 
-/** Tag/wersja wydania, z którego pochodzi przypięty zarządzany build (dla diagnostyki). */
-export function ffmpegManagedVersion(
-  platform: NodeJS.Platform = process.platform,
-  arch: string = process.arch
-): string | null {
-  return MANAGED_FFMPEG[`${platform}-${arch}`]?.version ?? null;
-}
-
 // Przeszukuje systemowy PATH w poszukiwaniu pliku wykonywalnego (z uwzględnieniem PATHEXT w Windows).
 export function whichInPath(binName: string): string | null {
   const isWin = process.platform === 'win32';
@@ -181,10 +174,6 @@ interface VersionProbe {
   error: string | null;
 }
 
-function describeError(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
-}
-
 async function probeVersion(bin: string, tool: BinTool): Promise<VersionProbe> {
   try {
     if (tool === 'yt-dlp') {
@@ -200,7 +189,7 @@ async function probeVersion(bin: string, tool: BinTool): Promise<VersionProbe> {
     const m = stdout.match(/(?:ffmpeg|ffprobe) version (\S+)/);
     return { version: m ? m[1] : 'unknown', error: null };
   } catch (e) {
-    return { version: null, error: describeError(e) };
+    return { version: null, error: errMsg(e) };
   }
 }
 

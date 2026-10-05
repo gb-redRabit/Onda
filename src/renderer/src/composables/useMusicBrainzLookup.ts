@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue';
+import { ref, computed, onScopeDispose } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { MusicbrainzRelease } from '@shared/types/ipc';
 import { buildMusicbrainzQuery, splitInitialQuery } from '@renderer/utils/musicbrainz';
@@ -67,6 +67,14 @@ export function useMusicBrainzLookup(options: { onApply: (data: LookupApplyData)
   });
   const applyResult = ref<Record<string, boolean | string> | null>(null);
 
+  let disposed = false;
+  onScopeDispose(() => {
+    disposed = true;
+  });
+  // Tokeny: wolniejsza/późniejsza odpowiedź nie może nadpisać nowszego zapytania.
+  let searchSeq = 0;
+  let lookupSeq = 0;
+
   function setStatus(s: string) {
     status.value = s;
   }
@@ -74,68 +82,81 @@ export function useMusicBrainzLookup(options: { onApply: (data: LookupApplyData)
   async function search() {
     const q = query.value.trim();
     if (!q) return;
+    const seq = ++searchSeq;
     loading.value = true;
     error.value = '';
     releases.value = [];
     selectedId.value = null;
     lookupResult.value = null;
-    setStatus('Wyszukiwanie…');
-    let r = await window.api?.musicbrainzSearchRelease(q);
-    // retry bez cudzysłowów jeśli timeout (zbyt złożone cudzysłowy)
-    if (!r?.success && String(r?.error).includes('Timeout') && q.includes('"')) {
-      setStatus('Timeout — ponawiam prościej…');
-      const simple = q.replace(/"/g, '');
-      r = await window.api?.musicbrainzSearchRelease(simple);
-    }
-    if (r?.success && r.releases?.length) {
-      releases.value = r.releases;
-      setStatus(`Znaleziono ${r.releases.length}`);
-      // pobierz mini okładki dla wyników (lazy, z throttlingiem main 1 req/s)
-      for (const rel of r.releases.slice(0, 6)) {
-        getMusicbrainzCover(rel.id).then((cr) => {
-          if (cr?.success && cr.data) {
-            try {
-              coverThumbs.value = {
-                ...coverThumbs.value,
-                [rel.id]: coverBytesToDataUrl(cr.data, cr.mime)
-              };
-            } catch (e) {
-              logger.warn('musicbrainz', `cover thumbnail conversion failed for ${rel.id}`, e);
-            }
-          }
-        });
+    setStatus(t('musicbrainz.searching'));
+    try {
+      let r = await window.api?.musicbrainzSearchRelease(q);
+      if (seq !== searchSeq) return;
+      // retry bez cudzysłowów jeśli timeout (zbyt złożone cudzysłowy)
+      if (!r?.success && String(r?.error).includes('Timeout') && q.includes('"')) {
+        setStatus(t('musicbrainz.retrySimpler'));
+        const simple = q.replace(/"/g, '');
+        r = await window.api?.musicbrainzSearchRelease(simple);
+        if (seq !== searchSeq) return;
       }
-    } else {
-      error.value = r?.error || t('musicbrainz.noResults');
-      setStatus('');
+      if (r?.success && r.releases?.length) {
+        releases.value = r.releases;
+        setStatus(t('musicbrainz.found', { n: r.releases.length }));
+        // pobierz mini okładki dla wyników (lazy, z throttlingiem main 1 req/s)
+        for (const rel of r.releases.slice(0, 6)) {
+          getMusicbrainzCover(rel.id).then((cr) => {
+            if (seq !== searchSeq || disposed) return;
+            if (cr?.success && cr.data) {
+              try {
+                coverThumbs.value = {
+                  ...coverThumbs.value,
+                  [rel.id]: coverBytesToDataUrl(cr.data, cr.mime)
+                };
+              } catch (e) {
+                logger.warn('musicbrainz', `cover thumbnail conversion failed for ${rel.id}`, e);
+              }
+            }
+          });
+        }
+      } else {
+        error.value = r?.error || t('musicbrainz.noResults');
+        setStatus('');
+      }
+    } finally {
+      if (seq === searchSeq) loading.value = false;
     }
-    loading.value = false;
   }
 
   async function selectRelease(release: MusicbrainzRelease) {
+    const seq = ++lookupSeq;
     selectedId.value = release.id;
     lookingUp.value = release.id;
     error.value = '';
     lookupResult.value = null;
-    setStatus('Pobieranie szczegółów…');
-    const r = await window.api?.musicbrainzLookupRelease(release.id);
-    if (r?.success && r.release) {
-      const result: LookupResult = { ...r.release };
-      setStatus('Pobieranie okładki…');
-      const coverR = await getMusicbrainzCover(release.id);
-      if (coverR?.success && coverR.data) {
-        result._coverData = coverR.data;
-        result._coverMime = coverR.mime;
-      } else if (coverR?.rateLimited) {
-        setStatus('Serwer obciążony, ponawiam…');
+    setStatus(t('musicbrainz.loadingDetails'));
+    try {
+      const r = await window.api?.musicbrainzLookupRelease(release.id);
+      if (seq !== lookupSeq) return;
+      if (r?.success && r.release) {
+        const result: LookupResult = { ...r.release };
+        setStatus(t('musicbrainz.loadingCover'));
+        const coverR = await getMusicbrainzCover(release.id);
+        if (seq !== lookupSeq) return;
+        if (coverR?.success && coverR.data) {
+          result._coverData = coverR.data;
+          result._coverMime = coverR.mime;
+        } else if (coverR?.rateLimited) {
+          setStatus(t('musicbrainz.serverBusy'));
+        }
+        lookupResult.value = result;
+        setStatus('');
+      } else {
+        error.value = r?.error || t('musicbrainz.fetchError');
+        setStatus('');
       }
-      lookupResult.value = result;
-      setStatus('');
-    } else {
-      error.value = r?.error || t('musicbrainz.fetchError');
-      setStatus('');
+    } finally {
+      if (seq === lookupSeq) lookingUp.value = null;
     }
-    lookingUp.value = null;
   }
 
   function applyTags() {

@@ -31,6 +31,11 @@ export function useVideoSource(
   let lastLoadedPath = '';
   let currentLoadId = 0;
   const transcodeState: VideoTranscodeState = { attempted: '' };
+  // Usuwa jednorazowe listenery z poprzedniego źródła przy zmianie utworu.
+  // Bez tego `canplay`/`loadedmetadata` niedoszłe do końca zostawały na elemencie
+  // i odpalały się przy następnym `src` ze starym `seekTo`, a listenery `error`
+  // kumulowały się przy każdym przełączeniu.
+  let setupAbort: AbortController | null = null;
 
   const videoFilterStyle = computed(() => {
     const f = settings.playback.videoFilter;
@@ -64,6 +69,10 @@ export function useVideoSource(
       connectEventsOnce(el);
       el.src = src;
 
+      setupAbort?.abort();
+      setupAbort = new AbortController();
+      const { signal } = setupAbort;
+
       el.addEventListener(
         'canplay',
         () => {
@@ -71,7 +80,7 @@ export function useVideoSource(
             el.play().catch((e) => logger.warn('video', 'autoplay rejected', e));
           }
         },
-        { once: true }
+        { once: true, signal }
       );
 
       el.addEventListener(
@@ -80,7 +89,7 @@ export function useVideoSource(
           if (seekTo > 0) el.currentTime = seekTo;
           el.playbackRate = settings.playback.playbackSpeed;
         },
-        { once: true }
+        { once: true, signal }
       );
 
       el.addEventListener(
@@ -88,12 +97,12 @@ export function useVideoSource(
         () => {
           player.enrichPendingQueue();
         },
-        { once: true }
+        { once: true, signal }
       );
 
       el.load();
       checkVideoAudioCodec(track, el);
-      attachVideoTranscodeFallback(el, track, player, notify, transcodeState);
+      attachVideoTranscodeFallback(el, track, player, notify, transcodeState, signal);
     } else {
       audioEngine.setVideoVolume(player.isMuted ? 0 : player.volume);
       el.playbackRate = settings.playback.playbackSpeed;

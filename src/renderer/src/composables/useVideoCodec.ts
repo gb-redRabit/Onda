@@ -1,6 +1,7 @@
 import { audioEngine } from '@renderer/modules/audioEngine';
 import type { usePlayerStore } from '@renderer/stores/player';
 import type { MediaFile } from '@renderer/types/media';
+import { i18n } from '@renderer/i18n';
 
 interface VideoCodecContext {
   player: ReturnType<typeof usePlayerStore>;
@@ -22,15 +23,25 @@ export function useVideoCodec(ctx: VideoCodecContext) {
     audioCodecChecked = track.path;
     const generation = ++codecGeneration;
 
+    // Utwór zmienił się w trakcie asynchronicznej analizy. Jeśli zdążyliśmy
+    // wyciszyć element wideo, przywróć głośność; a marker analizy posprzątaj,
+    // żeby powrót do tego samego pliku ponownie sprawdził kodek.
+    const stale = (restoreVolume: boolean): boolean => {
+      if (generation === codecGeneration) return false;
+      if (audioCodecChecked === track.path) audioCodecChecked = '';
+      if (restoreVolume) restoreVideoVolume();
+      return true;
+    };
+
     const result = await window.api?.checkAudioCodec(track.path);
     if (!result || result.supported) return;
-    if (generation !== codecGeneration) return;
+    if (stale(false)) return;
 
     audioEngine.setVideoVolume(0);
     const seekPos = el.currentTime || 0;
 
     const chunkPath = await window.api?.transcodeAudioChunk(track.path, seekPos, 30);
-    if (generation !== codecGeneration) return;
+    if (stale(true)) return;
     if (chunkPath) {
       try {
         await audioEngine.connectSecondaryAudio(chunkPath, seekPos);
@@ -43,7 +54,7 @@ export function useVideoCodec(ctx: VideoCodecContext) {
     }
 
     const fullPath = await window.api?.transcodeAudio(track.path);
-    if (generation !== codecGeneration) return;
+    if (stale(true)) return;
     if (fullPath) {
       if (fullPath === chunkPath) return;
       audioEngine.disconnectSecondaryAudio();
@@ -55,7 +66,7 @@ export function useVideoCodec(ctx: VideoCodecContext) {
         }
       } catch {
         restoreVideoVolume();
-        notify('Audio playback failed', 3000);
+        notify(i18n.global.t('player.audioPlaybackFailed'), 3000);
       }
       return;
     }
@@ -65,7 +76,7 @@ export function useVideoCodec(ctx: VideoCodecContext) {
     // żeby następny utwór/próba mogły spróbować ponownie.
     restoreVideoVolume();
     audioCodecChecked = '';
-    notify('Audio codec not supported, sound may be missing', 5000);
+    notify(i18n.global.t('player.audioCodecUnsupported'), 5000);
   }
 
   return { checkVideoAudioCodec };

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed, watch } from 'vue';
+import { ref, shallowRef, computed, watch } from 'vue';
 import type { FileItem, ViewMode, SortBy, SortOrder } from '@renderer/types/explorer';
 import { VIEW_MODES } from '@renderer/types/explorer';
 import { useSettingsStore } from './settings';
@@ -11,7 +11,9 @@ import { createExplorerTabs } from './explorer-tabs';
 export const useExplorerStore = defineStore('explorer', () => {
   const settings = useSettingsStore();
   const currentPath = ref('');
-  const files = ref<FileItem[]>([]);
+  // `shallowRef`: duże katalogi nie są deep-proxyowane element po elemencie. Loader
+  // woła `triggerRef` po dołożeniu partii.
+  const files = shallowRef<FileItem[]>([]);
   const selectedFiles = ref<Set<string>>(new Set());
   const viewMode = ref<ViewMode>(settings.explorer.viewMode);
   const sortBy = ref<SortBy>(settings.explorer.sortBy);
@@ -19,6 +21,8 @@ export const useExplorerStore = defineStore('explorer', () => {
   const history = ref<string[]>([]);
   const historyIndex = ref(-1);
   const isLoading = ref(false);
+  // Komunikat błędu wczytania katalogu do wyświetlenia w miejscu treści (nie tylko toast).
+  const loadError = ref<string | null>(null);
 
   const { tabs, activeTabIndex, addTab, closeTab, switchTab, reorderTab, syncActiveTab } =
     createExplorerTabs(navigateTo);
@@ -65,7 +69,9 @@ export const useExplorerStore = defineStore('explorer', () => {
     if (canGoUp.value) navigateTo(parentPath(currentPath.value));
   }
 
-  const batchLoader = createBatchLoader(files, isLoading);
+  const batchLoader = createBatchLoader(files, isLoading, (message) => {
+    loadError.value = message;
+  });
 
   async function loadFiles(path: string) {
     await batchLoader.load(path);
@@ -123,6 +129,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     history,
     historyIndex,
     isLoading,
+    loadError,
     tabs,
     activeTabIndex,
     isAtDrives,

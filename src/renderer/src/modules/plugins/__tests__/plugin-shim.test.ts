@@ -98,9 +98,34 @@ describe('PLUGIN_API_SHIM runtime', () => {
 
   it('blocks direct network globals that bypass the permission bridge', () => {
     const { sandboxSelf } = runShim();
-    for (const name of ['fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'importScripts']) {
+    for (const name of [
+      'fetch',
+      'XMLHttpRequest',
+      'WebSocket',
+      'EventSource',
+      'importScripts',
+      'Worker',
+      'SharedWorker'
+    ]) {
       expect((sandboxSelf as unknown as Record<string, unknown>)[name]).toBeUndefined();
     }
+  });
+
+  it('blocks nested workers so a plugin cannot escape the network sandbox', () => {
+    const sandboxSelf = Object.create(null) as SandboxSelf & Record<string, unknown>;
+    sandboxSelf.postMessage = () => undefined;
+    // Realistyczny worker ma `Worker`/`SharedWorker`; gdyby shim ich nie blokował,
+    // plugin utworzyłby zagnieżdżony worker z Blob URL i użył w nim natywnego `fetch`.
+    sandboxSelf.Worker = class {};
+    sandboxSelf.SharedWorker = class {};
+    const sandbox: Record<string, unknown> = {
+      self: sandboxSelf,
+      setTimeout: (fn: () => void) => fn()
+    };
+    vm.createContext(sandbox);
+    vm.runInContext(PLUGIN_API_SHIM, sandbox);
+    expect(sandboxSelf.Worker).toBeUndefined();
+    expect(sandboxSelf.SharedWorker).toBeUndefined();
   });
 
   it('truncates plugin log lines to MAX_LOG_CHARS', () => {

@@ -19,7 +19,7 @@ import {
   resolveSourceHeaders
 } from '../generic-fetch';
 import { scrapePlayerUrl } from '../player-scraper';
-import { resolveNetworkTarget } from '../network-target';
+import { resolveNetworkTarget, privateNetworkAllowedForTarget } from '../network-target';
 import { addDownloadJobs, setSourceItemDownloadedHandler } from '../../downloads/download-manager';
 import { appendDownloadedItem, getDownloadedForSource } from './sources-downloaded-store';
 import type { IpcDownloadJobInput } from '../../../shared/types/ipc';
@@ -263,15 +263,35 @@ export function registerSourcesHandlers(): void {
         // cele wymagają jawnej flagi zaufania per źródło; jeden zły element nie
         // blokuje dodania innych prawidłowych elementów w masowej kolejce.
         const safeList: IpcDownloadJobInput[] = [];
-        const trustedSourceIds = new Set(
-          (await loadSources(getSourcesFile()))
-            .filter((source) => source.allowPrivateNetwork)
-            .map((source) => source.id)
-        );
+        const trustedOrigins = new Map<string, string>();
+        // Origin podstawy KAŻDEGO zapisanego źródła — do wiązania kluczy API.
+        const baseOrigins = new Map<string, string>();
+        for (const source of await loadSources(getSourcesFile())) {
+          if (source.baseUrl) {
+            try {
+              baseOrigins.set(source.id, new URL(source.baseUrl).origin);
+            } catch {
+              // nieprawidłowy baseUrl nie przyznaje niczego
+            }
+          }
+          if (!source.allowPrivateNetwork || !source.baseUrl) continue;
+          try {
+            trustedOrigins.set(source.id, new URL(source.baseUrl).origin);
+          } catch {
+            // nieprawidłowy baseUrl nie przyznaje niczego
+          }
+        }
         for (const input of list) {
           try {
-            const allowPrivateNetwork =
-              !!input.source?.sourceId && trustedSourceIds.has(input.source.sourceId);
+            // Zaufanie do sieci prywatnej wiążemy z ORIGINEM zapisanego źródła, a
+            // nie samym id: inaczej zaufane źródło dałoby się sparować z dowolnym
+            // adresem loopback/LAN/metadanych.
+            const sourceId = input.source?.sourceId;
+            const trustedOrigin =
+              typeof sourceId === 'string' ? trustedOrigins.get(sourceId) : undefined;
+            const allowPrivateNetwork = trustedOrigin
+              ? privateNetworkAllowedForTarget(input.url, trustedOrigin, true)
+              : false;
             if (input.source) {
               input.source = { ...input.source, allowPrivateNetwork };
             }
@@ -279,10 +299,16 @@ export function registerSourcesHandlers(): void {
 
             // Fallback dla embedów playera, których yt-dlp nie potrafi sam rozwiązać.
             if (input.source?.mode === 'ytdlp' && /^https:\/\//i.test(input.url)) {
-              const authHeaders = await resolveSourceHeaders(
-                input.source.apiKeyId,
-                input.source.headerName
-              );
+              // Klucz API wysyłamy TYLKO gdy cel ma origin zapisanego źródła —
+              // wcześniej apiKeyId/headerName z renderera można było sparować z
+              // dowolnym publicznym URL-em i wyeksfiltrować poświadczenia.
+              const targetOrigin = new URL(input.url).origin;
+              const boundOrigin =
+                typeof sourceId === 'string' ? baseOrigins.get(sourceId) : undefined;
+              const authHeaders =
+                boundOrigin && targetOrigin === boundOrigin
+                  ? await resolveSourceHeaders(input.source.apiKeyId, input.source.headerName)
+                  : {};
               const scraped = await scrapePlayerUrl(input.url, authHeaders, allowPrivateNetwork);
               if (scraped) {
                 input.url = scraped.url;

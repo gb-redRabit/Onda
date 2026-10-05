@@ -5,7 +5,6 @@ export class ExplorerModule implements AppModule {
   id = 'explorer';
   name = 'Explorer';
   private _active = false;
-  private cleanupListeners: (() => void)[] = [];
 
   activate(_context?: unknown): void {
     this._active = true;
@@ -17,10 +16,6 @@ export class ExplorerModule implements AppModule {
 
   async deactivate(): Promise<void> {
     this._active = false;
-    for (const cleanup of this.cleanupListeners) {
-      cleanup();
-    }
-    this.cleanupListeners = [];
   }
 
   isActive(): boolean {

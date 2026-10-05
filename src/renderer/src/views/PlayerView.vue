@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { logger } from '@shared/logger';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { usePlayerStore } from '@renderer/stores/player';
@@ -33,38 +34,34 @@ const playerContainerRef = ref<HTMLDivElement | null>(null);
 const isVideo = computed(() => player.currentTrack?.type === 'video');
 const isAudio = computed(() => player.currentTrack?.type === 'audio');
 
+// Wspólny powrót z PiP — onClosed i onMaximize różniły się wyłącznie pełnym ekranem.
+function resumeFromPiP(time: number): void {
+  player.exitPiP(time);
+  const video = vp.videoRef.value;
+  if (video) {
+    video.currentTime = time;
+    video.play().catch(() => {
+      /* best-effort */
+    });
+  }
+  vp.syncSubtitlesWithPiP();
+}
+
 const pip = usePiP({
   onClosed(savedTime) {
-    player.pipActive = false;
-    player.pipTime = 0;
-    if (vp.videoRef.value) {
-      vp.videoRef.value.currentTime = savedTime;
-      player.currentTime = savedTime;
-      vp.videoRef.value.play().catch(() => {});
-    }
-    player.isPlaying = true;
-    vp.syncSubtitlesWithPiP();
-  },
-  onEnded() {
-    if (player.queue.length > 0) {
-      player.nextTrack();
-    } else {
-      pip.stop();
-    }
+    resumeFromPiP(savedTime);
   },
   onMaximize(time) {
-    player.pipActive = false;
-    player.pipTime = 0;
-    if (vp.videoRef.value) {
-      vp.videoRef.value.currentTime = time;
-      player.currentTime = time;
-      vp.videoRef.value.play().catch(() => {});
-    }
-    player.isPlaying = true;
-    vp.syncSubtitlesWithPiP();
+    resumeFromPiP(time);
     ctl.toggleFullscreen();
   }
 });
+
+// Strefy przewijania przy krawędziach wideo — jeden helper zamiast dwóch kopii.
+const skipZones = [
+  { side: 'left', seconds: -10 },
+  { side: 'right', seconds: 10 }
+] as const;
 
 const vp = useVideoPlayer({
   player,
@@ -79,7 +76,14 @@ const onFullscreenChange = () => {
   ctl.isFullscreen.value = !!document.fullscreenElement;
 };
 
-let wheelHandler: ((e: WheelEvent) => void) | null = null;
+// „Wstecz" bez wpisu w historii (np. plik otwarty ze skojarzenia systemowego) nie może
+// być martwym przyciskiem — wracamy do Home.
+function goBack(): void {
+  if (window.history.state?.back) router.back();
+  else router.push('/');
+}
+
+const wheelAbort = new AbortController();
 
 onMounted(() => {
   if (
@@ -95,8 +99,10 @@ onMounted(() => {
   // pomija obszary oznaczone [data-wheel-ignore] zamiast preventDefault().
   const container = playerContainerRef.value;
   if (container) {
-    wheelHandler = (e: WheelEvent) => ctl.onWheel(e);
-    container.addEventListener('wheel', wheelHandler, { passive: true });
+    container.addEventListener('wheel', ctl.onWheel, {
+      passive: true,
+      signal: wheelAbort.signal
+    });
   }
 
   vp.init(player.currentTrack);
@@ -127,16 +133,24 @@ onUnmounted(() => {
   setPlayerShortcutCtx(null);
   setPlayerPiPHandler(null);
   document.removeEventListener('fullscreenchange', onFullscreenChange);
-  if (wheelHandler) {
-    playerContainerRef.value?.removeEventListener('wheel', wheelHandler);
-    wheelHandler = null;
-  }
+  // `AbortController` usuwa listener niezależnie od tego, czy template ref jest już null.
+  wheelAbort.abort();
   // Wyjście z odtwarzacza podczas grania wideo nie może zabijać odtwarzania: przekaż je
   // do okna Picture-in-Picture (dokładnie tak, jak zrobiłby to przycisk PiP)
   // zamiast czyścić utwór. Wywoływane przed `vp.destroy()`, żeby bieżąca
   // pozycja odtwarzania została pobrana z żywego <video>.
   const autoPiP = player.currentTrack?.type === 'video' && !player.pipActive && player.isPlaying;
   if (autoPiP) void vp.togglePiP();
+
+  if (
+    vp.videoRef.value &&
+    player.currentTrack?.type === 'video' &&
+    vp.videoRef.value.currentTime > 5
+  ) {
+    window.api
+      ?.setPlaybackPosition(player.currentTrack.path, vp.videoRef.value.currentTime)
+      .catch((e) => logger.warn('player', 'saving playback position failed', e));
+  }
 
   ctl.cleanup();
   vp.destroy();
@@ -159,7 +173,7 @@ onUnmounted(() => {
     <PlayerTopBar
       :show-controls="ctl.showControls.value"
       :track="player.currentTrack"
-      @back="router.back"
+      @back="goBack"
       @pip="vp.togglePiP"
       @fullscreen="ctl.toggleFullscreen"
     />
@@ -171,6 +185,7 @@ onUnmounted(() => {
         class="w-full h-full object-contain cursor-pointer"
         :style="vp.videoFilterStyle.value"
         crossorigin="anonymous"
+        :aria-label="player.currentTrack?.metadata?.title || player.currentTrack?.name"
         @click="ctl.handleClick"
         @dblclick="ctl.handleDoubleClick"
         @contextmenu="
@@ -182,36 +197,23 @@ onUnmounted(() => {
         "
       />
 
-      <!-- strefa przewijania w lewo -->
-      <div
-        class="absolute left-0 top-0 bottom-0 w-[20%] z-10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
-        @click="ctl.skip(-10)"
+      <button
+        v-for="zone in skipZones"
+        :key="zone.side"
+        type="button"
+        class="absolute top-0 bottom-0 w-[20%] z-10 flex items-center justify-center opacity-0 hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+        :class="zone.side === 'left' ? 'left-0' : 'right-0'"
+        :aria-label="
+          zone.seconds < 0 ? $t('playerView.seekBackward') : $t('playerView.seekForward')
+        "
+        @click="ctl.skip(zone.seconds)"
       >
-        <div
+        <span
           class="bg-neutral/50 rounded-full px-4 py-2 text-neutral-content text-sm font-medium pointer-events-none"
         >
-          -10s
-        </div>
-      </div>
-
-      <!-- strefa przewijania w prawo -->
-      <div
-        class="absolute right-0 top-0 bottom-0 w-[20%] z-10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
-        @click="ctl.skip(10)"
-      >
-        <div
-          class="bg-neutral/50 rounded-full px-4 py-2 text-neutral-content text-sm font-medium pointer-events-none"
-        >
-          +10s
-        </div>
-      </div>
-
-      <ResumePrompt
-        v-if="player.resumePrompt"
-        :position="player.resumePrompt.position"
-        @continue="ctl.onResumeContinue"
-        @start="ctl.onResumeStart"
-      />
+          {{ zone.seconds > 0 ? `+${zone.seconds}s` : `${zone.seconds}s` }}
+        </span>
+      </button>
     </div>
 
     <!-- obszar audio -->
@@ -243,12 +245,20 @@ onUnmounted(() => {
     <div v-else class="relative flex-1 flex items-center justify-center overflow-hidden">
       <p class="text-lg text-neutral-content/60">{{ $t('playerView.noVideo') }}</p>
       <button
+        type="button"
         class="fx-noise mt-4 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm"
         @click="router.push('/explorer')"
       >
         {{ $t('playerView.browseFiles') }}
       </button>
     </div>
+
+    <ResumePrompt
+      v-if="player.resumePrompt"
+      :position="player.resumePrompt.position"
+      @continue="ctl.onResumeContinue"
+      @start="ctl.onResumeStart"
+    />
 
     <PlayerControls
       :show-controls="ctl.showControls.value"

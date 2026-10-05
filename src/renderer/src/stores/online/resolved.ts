@@ -38,6 +38,7 @@ export function createOnlineResolved() {
   // Ładuje jeszcze jedną stronę (30 elementów) rozwiązanej playlisty. Współdzielone przez
   // automatyczny loader i ręczny przycisk "załaduj więcej".
   async function loadResolvedPage(): Promise<boolean> {
+    const loadId = resolveLoadId;
     const r = resolved.value;
     if (!r || r.kind !== 'playlist' || !r.meta.hasMore) return false;
     // Dyspozycja po platformie - SC ustawia paginację przez sc:resolveMore.
@@ -49,6 +50,9 @@ export function createOnlineResolved() {
       start: nextStart,
       end: nextStart + 29
     })) as ResolveMoreResponse;
+    // Recznie wywołane `loadMoreResolved` też musi respektować token: bez tego
+    // odpowiedź mogła nadpisać playlistę ustawioną przez `setResolved` w międzyczasie.
+    if (loadId !== resolveLoadId) return false;
     if (!res || !res.success || !res.items || res.items.length === 0) return false;
     const { resolved: merged, fresh } = mergeResolvedPage(r, res);
     resolved.value = merged;
@@ -89,12 +93,14 @@ export function createOnlineResolved() {
 
   async function loadMoreResolved() {
     if (resolvedLoading.value) return;
+    const loadId = resolveLoadId;
     resolvedLoading.value = true;
     try {
       const hasMore = await loadResolvedPage();
+      if (loadId !== resolveLoadId) return;
       resolvedCapped.value = hasMore;
     } finally {
-      resolvedLoading.value = false;
+      if (loadId === resolveLoadId) resolvedLoading.value = false;
     }
   }
 

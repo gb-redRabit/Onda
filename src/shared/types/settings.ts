@@ -95,6 +95,7 @@ export interface AppearanceSettings {
     | 'black'
     | 'lemonade'
     | 'abyss'
+    | 'system'
     | 'custom';
   customBase?:
     | 'dark'
@@ -293,7 +294,14 @@ interface ApiKeyEntry {
   id: string;
   name: string;
   service: string;
+  /**
+   * Wartość klucza. `settings:get` NIE zwraca tu sekretu — tylko `preview`
+   * (pierwsze znaki). Renderer wysyła nową wartość w tym polu przy zapisie;
+   * puste pole oznacza „nie zmieniaj" i main przywraca zapisany sekret.
+   */
   key: string;
+  /** Podgląd do UI (np. „sk-a…"), wyłącznie z `settings:get`. */
+  preview?: string;
   values?: Record<string, string | number | boolean>;
   isActive: boolean;
 }

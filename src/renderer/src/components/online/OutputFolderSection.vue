@@ -46,6 +46,7 @@ const { t } = useI18n();
       <button
         v-if="folderMode === 'custom'"
         class="fx-noise flex items-center gap-1 px-3 py-2 fx-depth rounded-field border border-base-300 text-base-content/70 hover:bg-base-content/10 transition-colors shrink-0"
+        :aria-label="$t('sources.chooseFolder')"
         @click="pickOutputDir"
       >
         <FolderOpen :size="14" />

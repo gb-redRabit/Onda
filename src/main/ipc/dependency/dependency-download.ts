@@ -2,9 +2,9 @@ import { unlink, readFile, rename } from 'fs/promises';
 import { basename, join } from 'path';
 import https from 'https';
 import { createWriteStream } from 'fs';
-import { createHash } from 'crypto';
 import type { WebContents } from 'electron';
 import { getBinDir } from '../../binaries';
+import { hashFile } from '../../utils/hash';
 import { YTDLP_CHANNEL, type BinTool } from './dependency-utils';
 
 export interface InstallResult {
@@ -90,7 +90,9 @@ function downloadFileInternal(
       settled = true;
       clearTimeout(timeout);
       signal.removeEventListener('abort', onAbort);
-      void unlink(tempDest).catch(() => {});
+      void unlink(tempDest).catch(() => {
+        /* best-effort */
+      });
       reject(err);
     };
     const onAbort = (): void => fail(new Error('cancelled'));
@@ -188,9 +190,12 @@ export async function fetchLatestYtdlpVersion(): Promise<string | null> {
   });
 }
 
+// Strumieniowe SHA-256 (współdzielone z detekcją duplikatów) — bez wczytywania
+// całej binarki (setki MB) do pamięci.
 async function sha256OfFile(filePath: string): Promise<string> {
-  const data = await readFile(filePath);
-  return createHash('sha256').update(data).digest('hex');
+  const hash = await hashFile(filePath);
+  if (hash === null) throw new Error(`could not hash ${basename(filePath)}`);
+  return hash;
 }
 
 // Weryfikuje pobrany plik względem wbudowanego pinu SHA-256 (używane przez zarządzane
@@ -231,6 +236,8 @@ export async function verifyDownloadedFile(
       throw new Error(`Checksum mismatch for ${assetName}`);
     }
   } finally {
-    await unlink(shaDest).catch(() => {});
+    await unlink(shaDest).catch(() => {
+      /* best-effort */
+    });
   }
 }

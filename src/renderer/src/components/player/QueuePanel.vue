@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { useVirtualizer } from '@tanstack/vue-virtual';
+import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { usePlayerStore } from '@renderer/stores/player';
 import { X, Music2, GripVertical, Trash2 } from '@lucide/vue';
 import { formatDuration } from '@renderer/utils/formatters';
@@ -39,11 +39,9 @@ async function loadCovers(tracks: MediaFile[]) {
 // Wirtualizuj listę kolejki — "play all" na folderze może wstawić tu tysiące
 // wierszy (plan 1.6).
 const queueListRef = ref<HTMLElement | null>(null);
-const queueVirtualizer = useVirtualizer({
-  get count() {
-    return player.displayQueue.length;
-  },
-  getScrollElement: () => queueListRef.value,
+const queueVirtualizer = useVirtualList({
+  count: () => player.displayQueue.length,
+  scrollEl: () => queueListRef.value,
   estimateSize: () => 52,
   overscan: 8
 });
@@ -163,6 +161,8 @@ function onFileDrop(e: DragEvent) {
         </button>
         <button
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors"
+          :aria-label="$t('common.close')"
+          :title="$t('common.close')"
           @click="player.toggleQueue"
         >
           <X :size="14" />
@@ -223,6 +223,7 @@ function onFileDrop(e: DragEvent) {
           }"
         >
           <div
+            v-activate
             :data-testid="'queue-row-' + v.index"
             class="flex items-center gap-2 px-4 py-2 hover:bg-base-content/10 transition-colors group cursor-pointer"
             :class="{ 'border-t-2 border-primary': dragOverIndex === v.index }"
@@ -235,7 +236,7 @@ function onFileDrop(e: DragEvent) {
           >
             <GripVertical
               :size="12"
-              class="text-base-content/40 shrink-0 opacity-0 group-hover:opacity-100 cursor-grab"
+              class="text-base-content/60 shrink-0 opacity-0 group-hover:opacity-100 cursor-grab"
             />
             <div
               class="w-8 h-8 rounded-field bg-neutral flex items-center justify-center shrink-0 overflow-hidden"
@@ -252,7 +253,9 @@ function onFileDrop(e: DragEvent) {
               formatDuration(player.displayQueue[v.index].duration || 0)
             }}</span>
             <button
-              class="fx-noise p-1 fx-depth rounded-field opacity-0 group-hover:opacity-100 text-base-content/50 hover:text-error transition-all"
+              class="fx-noise p-1 fx-depth rounded-field opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 text-base-content/50 hover:text-error transition-all"
+              :aria-label="$t('queue.removeFromQueue')"
+              :title="$t('queue.removeFromQueue')"
               @click.stop="player.removeFromQueue(v.index)"
             >
               <Trash2 :size="12" />
@@ -270,6 +273,7 @@ function onFileDrop(e: DragEvent) {
       <div
         v-for="(track, i) in player.history.slice(0, 10)"
         :key="i"
+        v-activate
         class="flex items-center gap-2 px-4 py-1.5 hover:bg-base-content/10 transition-colors cursor-pointer opacity-60"
         @click="player.playFromHistory(i)"
       >

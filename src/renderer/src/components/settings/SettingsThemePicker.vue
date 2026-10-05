@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
 import { computed } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { Monitor } from '@lucide/vue';
 import {
   resolveThemeAppearance,
   BUILTIN_THEMES,
@@ -9,11 +10,30 @@ import {
 
 const settings = useSettingsStore();
 const isCustom = computed(() => settings.appearance.theme === 'custom');
+const isSystem = computed(() => settings.appearance.theme === 'system');
 const resolved = computed(() => resolveThemeAppearance(settings.appearance));
 </script>
 
 <template>
   <div class="xl:w-64 shrink-0 flex xl:flex-col gap-2.5 overflow-x-auto pb-1">
+    <button
+      data-testid="theme-system"
+      class="fx-noise p-3 fx-depth rounded-field border transition-all flex items-center gap-4 text-left shrink-0 xl:w-full hover:shadow-md"
+      :class="
+        isSystem
+          ? 'border-primary bg-primary/5'
+          : 'border-base-300 bg-base-100 hover:border-primary/40'
+      "
+      @click="settings.updateAppearance({ theme: 'system' })"
+    >
+      <span
+        class="w-16 h-10 rounded-field shrink-0 flex items-center justify-center"
+        :style="{ backgroundColor: resolved.colors.base200 }"
+      >
+        <Monitor :size="18" :color="resolved.colors.primary" />
+      </span>
+      <span class="text-sm font-medium whitespace-nowrap">{{ $t('settings.system') }}</span>
+    </button>
     <button
       v-for="name in BUILTIN_THEME_NAMES"
       :key="name"

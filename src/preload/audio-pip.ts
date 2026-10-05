@@ -1,12 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-let mediaServerUrl = '';
-try {
-  mediaServerUrl = ipcRenderer.sendSync('media:getServerUrl') as string;
-} catch {
-  mediaServerUrl = '';
-}
-
 const ALLOWED_SEND_CHANNELS = new Set<string>([
   'audio-pip:showMain',
   'audio-pip:action',
@@ -22,7 +15,8 @@ const ALLOWED_RECEIVE_CHANNELS = new Set<string>([
 ]);
 
 const api = {
-  mediaServerUrl,
+  // Okno audio-PiP nie potrzebuje URL-a serwera mediów (okładka przychodzi jako
+  // dane), więc nie robimy tu blokującego `sendSync`.
   send: (channel: string, ...args: unknown[]): void => {
     if (!ALLOWED_SEND_CHANNELS.has(channel)) return;
     try {
@@ -42,12 +36,11 @@ const api = {
   }
 };
 
-if (process.contextIsolated) {
-  try {
-    contextBridge.exposeInMainWorld('api', api);
-  } catch {
-    /* noop */
-  }
-} else {
-  Object.assign(window, { api });
+if (!process.contextIsolated) {
+  throw new Error('Onda audio-pip preload requires contextIsolation');
+}
+try {
+  contextBridge.exposeInMainWorld('api', api);
+} catch {
+  /* noop */
 }

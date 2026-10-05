@@ -5,9 +5,7 @@
 import NodeID3 from 'node-id3';
 import { logger } from '../../shared/logger';
 import { writeCoverToAudioFile } from '../ipc/media/media-handlers';
-
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-const IMAGE_TIMEOUT_MS = 15_000;
+import { fetchRemoteImageBytes } from '../ipc/remote-image';
 
 export interface ScTagMeta {
   title: string;
@@ -24,16 +22,12 @@ function sniffImageMime(buf: Buffer): string {
 }
 
 async function fetchArtwork(url: string): Promise<number[] | null> {
-  if (!/^https:\/\//i.test(url)) return null;
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(IMAGE_TIMEOUT_MS) });
-    if (!res.ok) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.length === 0 || buf.length > MAX_IMAGE_BYTES) return null;
-    return [...buf];
-  } catch {
-    return null;
-  }
+  // `fetchRemoteImageBytes` waliduje każdy hop przekierowania i blokuje cele
+  // loopback/prywatne/metadanych — wcześniej surowy `fetch` podążał za
+  // przekierowaniami bez walidacji (SSRF przez `thumbnailUrl` z renderera).
+  const buf = await fetchRemoteImageBytes(url);
+  if (!buf || buf.length === 0) return null;
+  return [...buf];
 }
 
 export async function embedScMp3Tags(filePath: string, meta: ScTagMeta): Promise<boolean> {
@@ -45,7 +39,7 @@ export async function embedScMp3Tags(filePath: string, meta: ScTagMeta): Promise
     if (meta.album) tags.album = meta.album;
     if (meta.year) tags.year = meta.year;
     if (Object.keys(tags).length > 0) {
-      NodeID3.update(tags, filePath);
+      await NodeID3.Promise.update(tags, filePath);
     }
     const image = meta.thumbnailUrl ? await fetchArtwork(meta.thumbnailUrl) : null;
     if (image) {

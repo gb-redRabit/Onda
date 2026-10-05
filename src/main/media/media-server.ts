@@ -12,6 +12,8 @@ import {
   validateStreamUrl
 } from './media-server-guards';
 import { handleStreamProxy } from './media-server-stream';
+import { isServableMediaPath } from './media-paths';
+import { isProtectedPath } from '../path-policy';
 export { isAllowedStreamHost, validateStreamUrl };
 
 export interface MediaServer {
@@ -72,10 +74,14 @@ export async function setAllowedRoots(roots: string[]): Promise<void> {
  */
 const MAX_EXTRA_ROOTS = 200;
 
-/** False po osiągnięciu sufitu, aby wywołujący mógł zgłosić odmowę. */
+/** False po osiągnięciu sufitu lub przy próbie dodania chronionej ścieżki. */
 export async function addAllowedRoot(root: string): Promise<boolean> {
   if (typeof root !== 'string' || !root) return false;
   const real = await resolveReal(root);
+  if (isProtectedPath(real)) {
+    logger.warn('media', `refusing protected root: ${real}`);
+    return false;
+  }
   if (extraRoots.includes(real)) return true;
   if (extraRoots.length >= MAX_EXTRA_ROOTS) {
     logger.warn('media', `refusing extra root ${real}: limit of ${MAX_EXTRA_ROOTS} reached`);
@@ -91,6 +97,15 @@ function isWithinAnyRoot(filePath: string): boolean {
     if (isWithinRoot(filePath, root)) return true;
   }
   return false;
+}
+
+/**
+ * Synchroniczny test, czy ZKANONIZOWANA (realpath) ścieżka leży w którymś z
+ * dozwolonych korzeni. Używany m.in. przez handler `onda://` i `media:*Thumbnail`,
+ * aby ograniczyć dostęp do plików spoza biblioteki/jawnie przyznanych katalogów.
+ */
+export function isPathWithinAllowedRoots(realPath: string): boolean {
+  return isWithinAnyRoot(realPath);
 }
 
 // Kanonizuje cel `?path=` i egzekwuje whitelistę dozwolonych korzeni.
@@ -119,6 +134,11 @@ async function resolveAllowedMediaPath(rawPath: string): Promise<MediaPathResolu
       // przejdź do znormalizowanej ścieżki; poniższe sprawdzenie korzenia nadal obowiązuje
     }
   }
+
+  // Tylko rozszerzenia mediów/obrazów. Nawet gdy przejęty renderer przyzna
+  // korzeń zawierający klucze/konfiguracje, serwer nie odda tych plików —
+  // domyka eksfiltrację niebędących mediami plików przez znany token.
+  if (!isServableMediaPath(realPath)) return { ok: false, reason: 'forbidden' };
 
   return isWithinAnyRoot(realPath)
     ? { ok: true, path: realPath }

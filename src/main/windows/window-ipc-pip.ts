@@ -2,15 +2,13 @@ import { ipcMain } from 'electron';
 import type { PipManager } from '../pip/pip-manager';
 import type { AudioPipManager } from '../pip/audio-pip-manager';
 import type { AudioPipLayoutOpts, PipLayoutOpts } from '../../shared/types/ipc/channels-pip';
+import type { PipSubtitleData } from '../../shared/types/pip';
 
 // Handlery IPC dla PiP wideo i audio, wyodrębnione z `window-ipc.ts`, aby
 // sterowanie oknem i orkiestrację PiP można było analizować (i zmieniać) osobno.
 
-interface PipSubtitlePayload {
-  subContent: string;
-  fonts: Array<{ name: string; data: number[] }>;
-  availableFonts: Record<string, string>;
-}
+// Jedno źródło prawdy dla kształtu napisów PiP (był zduplikowany w preload i main).
+type PipSubtitlePayload = PipSubtitleData;
 
 export function registerPipHandlers(context: {
   pipManager: PipManager;

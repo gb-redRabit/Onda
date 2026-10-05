@@ -1,18 +1,13 @@
-export interface YouTubeVideo {
-  id: string;
-  title: string;
-  description: string;
-  thumbnail: string;
-  channelTitle: string;
-  channelId: string;
-  duration?: string;
-  viewCount?: string;
-  publishedAt: string;
-  tags?: string[];
-  // Kanoniczny URL strony — ustawiany dla elementów SoundCloud (permalinki SC nie
-  // mogą być odtworzone z numerycznego id). Elementy YouTube mogą go pomijać.
-  url?: string;
-}
+import type { IpcDownloadErrorCode, IpcDownloadSource, IpcDownloadTask } from './ipc/download';
+import type { IpcCoverSpec, IpcCoverStatus, IpcMetaOverride } from './ipc/download';
+import type { IpcSubscription, IpcSubscriptionDownloadPrefs, IpcYoutubeVideo } from './ipc/youtube';
+
+// Rendererowe typy domenowe DERIVUJĄ z kontraktu IPC (jedno źródło prawdy).
+// Wcześniej były zadeklarowane niezależnie, więc pole dodane po stronie IPC
+// mogło po cichu zniknąć w rendererze. Zachowujemy dotychczasowe nazwy, żeby nie
+// ruszać miejsc wywołań.
+
+export type YouTubeVideo = IpcYoutubeVideo;
 
 export type YouTubeResolveKind = 'video' | 'playlist' | 'channel';
 
@@ -54,122 +49,16 @@ export interface YouTubeChannel {
   bannerUrl?: string;
 }
 
-export type CoverStatus = 'none' | 'fetching' | 'embedded' | 'saved' | 'error';
+export type CoverStatus = IpcCoverStatus;
+export type CoverSpec = IpcCoverSpec;
+export type MetaOverride = IpcMetaOverride;
+export type DownloadSource = IpcDownloadSource;
+export type DownloadErrorCode = IpcDownloadErrorCode;
+export type SubscriptionDownloadPrefs = IpcSubscriptionDownloadPrefs;
+export type Subscription = IpcSubscription;
 
-type DownloadErrorCode =
-  | 'auth-required'
-  | 'bot-block'
-  | 'private'
-  | 'not-found'
-  | 'network'
-  | 'proxy'
-  | 'dependency'
-  | 'disk-full'
-  | 'unsupported'
-  | 'unknown';
-
-export interface CoverSpec {
-  type: 'none' | 'thumbnail' | 'custom' | 'frame' | 'clip';
-  customPath?: string;
-  frameTime?: number;
-  clipStart?: number;
-  clipEnd?: number;
-  clipFormat?: 'webm' | 'mp4';
-}
-
-export interface MetaOverride {
-  artist?: string;
-  album?: string;
-  year?: string;
-}
-
-export interface DownloadSource {
-  mode: 'http' | 'ytdlp' | 'soundcloud';
-  fileName?: string;
-  apiKeyId?: string;
-  headerName?: string;
-}
-
-export interface DownloadTask {
-  id: string;
-  url: string;
-  title: string;
-  thumbnail?: string;
-  kind: 'audio' | 'video';
-  format: string;
-  quality: string;
-  outputPath?: string;
+// Renderer pomija `filenameTemplate` (nie jest potrzebny w UI), a `outputDir`
+// czyni opcjonalnym — te dwa pola odbiegają od kontraktu IPC i są jedyną różnicą.
+export type DownloadTask = Omit<IpcDownloadTask, 'filenameTemplate' | 'outputDir'> & {
   outputDir?: string;
-  progress: number;
-  speed: string;
-  eta: string;
-  status: 'pending' | 'downloading' | 'paused' | 'completed' | 'error' | 'cancelled';
-  error?: string;
-  errorCode?: DownloadErrorCode;
-  startedAt: number;
-  completedAt?: number;
-  videoId?: string;
-  channelId?: string;
-  channelTitle?: string;
-  playlistTitle?: string;
-  cover?: CoverSpec;
-  coverStatus: CoverStatus;
-  metaOverride?: MetaOverride;
-  inLibrary?: boolean;
-  fileHash?: string;
-  subsLangs?: string;
-  subsFormat?: 'srt' | 'vtt' | 'ass';
-  subsMode?: 'manual' | 'auto' | 'best';
-  subsFolder?: boolean;
-  subtitleStatus?: 'none' | 'embedded' | 'saved' | 'missing';
-  audioQuality?: string;
-  audioLanguage?: string;
-  videoContainer?: 'mp4' | 'mkv' | 'webm';
-  sponsorBlock?: 'off' | 'mark' | 'remove';
-  trimStart?: number;
-  trimEnd?: number;
-  addToLibrary?: boolean;
-  source?: DownloadSource;
-}
-
-export interface SubscriptionDownloadPrefs {
-  kind?: 'audio' | 'video';
-  format?: string;
-  quality?: string;
-  audioQuality?: string;
-  audioLanguage?: string;
-  cover?: CoverSpec;
-  outputDir?: string;
-  filenameTemplate?: string;
-  subsLangs?: string;
-  subsFormat?: 'srt' | 'vtt' | 'ass';
-  subsMode?: 'manual' | 'auto' | 'best';
-  subsFolder?: boolean;
-  metaOverride?: MetaOverride;
-  sponsorBlock?: 'off' | 'mark' | 'remove';
-  trimStart?: number;
-  trimEnd?: number;
-  addToLibrary?: boolean;
-  profileId?: string;
-}
-
-export interface Subscription {
-  id: string;
-  channelId: string;
-  channelTitle: string;
-  channelThumbnail: string;
-  autoDownload: boolean;
-  // Platforma subskrybowanego kanału — domyślnie 'youtube' (starsze
-  // wpisy nie mają pola). Subskrypcje SoundCloud używają permalinków profilu
-  // jako channelId i pobierają MP3 przez wewnętrzne API.
-  platform?: 'youtube' | 'soundcloud';
-  lastChecked?: number;
-  lastVideoId?: string;
-  baselineVideoId?: string;
-  downloadedVideoIds?: string[];
-  queuedVideoIds?: string[];
-  pendingCount?: number;
-  newArrivals?: number;
-  downloadPrefs?: SubscriptionDownloadPrefs;
-  addedAt: number;
-}
+};

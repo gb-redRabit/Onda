@@ -51,7 +51,7 @@ watch(
       :key="'empty-' + n"
       class="bg-base-300 flex items-center justify-center"
     >
-      <Folder :size="10" class="text-base-content/20" />
+      <Folder :size="10" class="text-base-content/50" />
     </div>
   </div>
 </template>

@@ -55,7 +55,11 @@ export const PLUGIN_API_SHIM = [
   // ominąć allowlistę sieciową manifestu wymuszaną przez api.fetch. Zablokuj bezpośrednie
   // kanały zarówno na obiekcie globalnym, jak i jego prototypie — własne
   // niekonfigurowalne właściwości nie dają się usunąć, przesłonić ani przywrócić.
-  '  var BLOCKED_GLOBALS = ["fetch","XMLHttpRequest","WebSocket","EventSource","importScripts","indexedDB","caches"];',
+  //
+  // `Worker`/`SharedWorker` MUSZĄ być tu również: bez tego plugin tworzy zagnieżdżony
+  // worker z Blob URL (CSP dopuszcza `worker-src blob:`), a tam świeży global ma
+  // natywny `fetch` — blokada na `self` nie chroni nowego kontekstu.
+  '  var BLOCKED_GLOBALS = ["fetch","XMLHttpRequest","WebSocket","EventSource","importScripts","indexedDB","caches","Worker","SharedWorker"];',
   '  var globalProto = Object.getPrototypeOf(self);',
   '  for (var bi = 0; bi < BLOCKED_GLOBALS.length; bi++) {',
   '    try { Object.defineProperty(globalProto, BLOCKED_GLOBALS[bi], { value: undefined, writable: false, configurable: false }); } catch (e) { /* ignore */ }',

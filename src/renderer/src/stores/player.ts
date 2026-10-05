@@ -72,7 +72,9 @@ export const usePlayerStore = defineStore('player', () => {
     nextTrack,
     prevTrack,
     playFromHistory,
-    consumeResumeIntent
+    consumeResumeIntent,
+    enterPiP,
+    exitPiP
   } = usePlayerNavigation(queue, pendingQueue, recordPlay);
 
   const hasTrack = computed(() => currentTrack.value !== null);
@@ -141,6 +143,8 @@ export const usePlayerStore = defineStore('player', () => {
     prevTrack,
     playFromHistory,
     consumeResumeIntent,
+    enterPiP,
+    exitPiP,
     loadCover,
     getCover,
     invalidateCoverCache,

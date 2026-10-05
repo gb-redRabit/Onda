@@ -39,7 +39,7 @@ const includeFields = defineModel<Record<string, boolean>>('includeFields', { re
             ? 'text-success'
             : applyResult[row.key] === false
               ? 'text-error'
-              : 'text-base-content/40'
+              : 'text-base-content/60'
         "
         >{{
           applyResult[row.key] === true

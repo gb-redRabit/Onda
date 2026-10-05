@@ -61,10 +61,27 @@ describe('ModuleManager', () => {
     await manager.switchTo('missing');
     expect(manager.getActive()).toBeNull();
 
-    manager.switchTo('a');
+    await manager.switchTo('a');
     expect(manager.getActiveId()).toBe('a');
     await manager.switchTo('a');
     expect(a.activate).toHaveBeenCalledTimes(1);
+  });
+
+  it('awaits an asynchronous activate before marking the module active', async () => {
+    let releaseActivate!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      releaseActivate = resolve;
+    });
+    const activate = vi.fn(() => gate);
+    const a = makeModule('a', { activate });
+    manager.register(a);
+
+    const switching = manager.switchTo('a');
+    // Moduł nie może być uznany za aktywny, dopóki `activate` się nie zakończy.
+    expect(manager.getActiveId()).toBeNull();
+    releaseActivate();
+    await switching;
+    expect(manager.getActiveId()).toBe('a');
   });
 
   it('deactivateAll only deactivates active modules', async () => {
@@ -95,6 +112,73 @@ describe('ModuleManager', () => {
   it('get throws when module is missing', () => {
     manager.register(makeModule('a'));
     expect(() => manager.get('nope')).toThrow(/Module not found/);
+  });
+
+  it('keeps the last requested module when two switches overlap', async () => {
+    let releaseA!: () => void;
+    const gateA = new Promise<void>((resolve) => {
+      releaseA = resolve;
+    });
+    const a = makeModule('a', { activate: vi.fn(() => gateA) });
+    const b = makeModule('b', { activate: vi.fn() });
+    manager.register(a);
+    manager.register(b);
+
+    // 'a' zawiesza się w `activate`, więc 'b' startuje i kończy pierwsze.
+    const switchA = manager.switchTo('a');
+    await manager.switchTo('b');
+    expect(manager.getActiveId()).toBe('b');
+
+    // Spóźnione 'a' nie może nadpisać 'b'.
+    releaseA();
+    await switchA;
+    expect(manager.getActiveId()).toBe('b');
+  });
+
+  it('deactivates a stale activation that marked itself active before its await', async () => {
+    let releaseA!: () => void;
+    const gateA = new Promise<void>((resolve) => {
+      releaseA = resolve;
+    });
+    let aActive = false;
+    const aDeactivate = vi.fn(async () => {
+      aActive = false;
+    });
+    const a = makeModule('a', {
+      activate: vi.fn(async () => {
+        aActive = true;
+        await gateA;
+      }),
+      deactivate: aDeactivate,
+      isActive: () => aActive
+    });
+    const b = makeModule('b', { activate: vi.fn(), isActive: () => false });
+    manager.register(a);
+    manager.register(b);
+
+    const switchA = manager.switchTo('a'); // ustawia aActive=true, blokuje na gateA
+    await manager.switchTo('b');
+    expect(manager.getActiveId()).toBe('b');
+
+    releaseA();
+    await switchA;
+    // Spóźniona aktywacja 'a' musi zostać zdjęta, żeby nie została „aktywna" w tle.
+    expect(aDeactivate).toHaveBeenCalledTimes(1);
+    expect(manager.getActiveId()).toBe('b');
+  });
+
+  it('does not leave an active module when activate rejects', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const a = makeModule('a', {
+        activate: vi.fn(() => Promise.reject(new Error('boom')))
+      });
+      manager.register(a);
+      await manager.switchTo('a');
+      expect(manager.getActiveId()).toBeNull();
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 
   it('logs a warning when switching to an unknown module', async () => {

@@ -20,9 +20,25 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
   const { maxCalls, windowMs } = options;
   const now = options.now ?? (() => Date.now());
   const hits = new Map<string, number[]>();
+  // Klucz to nadawca+kanał — bez przycinania mapy rosłaby o każdy (okno × kanał)
+  // przez cały czas życia procesu. Okresowo usuwamy wpisy bez aktywnych trafień.
+  let lastSweep = 0;
+  const SWEEP_INTERVAL_MS = windowMs;
+
+  function sweep(t: number): void {
+    if (t - lastSweep < SWEEP_INTERVAL_MS) return;
+    lastSweep = t;
+    const cutoff = t - windowMs;
+    for (const [key, times] of hits) {
+      const kept = times.filter((x) => x > cutoff);
+      if (kept.length === 0) hits.delete(key);
+      else hits.set(key, kept);
+    }
+  }
 
   function tryAcquire(key: string): boolean {
     const t = now();
+    sweep(t);
     const cutoff = t - windowMs;
     const times = (hits.get(key) ?? []).filter((x) => x > cutoff);
     if (times.length >= maxCalls) {

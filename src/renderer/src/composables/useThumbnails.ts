@@ -6,12 +6,12 @@ import { useMediaAssets } from './useMediaAssets';
  */
 export function useThumbnails(size = 180) {
   const { thumbs, request, get, flush } = useMediaAssets(size);
+  // Sprzątanie (timery cache'u) robi `useMediaAssets` przez onScopeDispose — nie
+  // wystawiamy osobnego no-op `dispose`, który nic nie robił.
   return {
     thumbs,
     request,
     getThumb: get,
-    flush,
-    // Zachowane dla kompatybilności API; timer jest zwalniany przez onScopeDispose.
-    dispose: () => {}
+    flush
   };
 }

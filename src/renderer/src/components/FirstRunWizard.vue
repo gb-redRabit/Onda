@@ -120,7 +120,7 @@ function skipAll() {
             :style="{ width: progress + '%' }"
           />
         </div>
-        <div data-testid="wizard-step-indicator" class="mt-1.5 text-[11px] text-base-content/40">
+        <div data-testid="wizard-step-indicator" class="mt-1.5 text-[11px] text-base-content/60">
           {{ t('wizard.step', { current: current + 1, total }) }}
         </div>
       </header>

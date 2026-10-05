@@ -29,6 +29,7 @@ const queuePosition = computed(() => {
 
 <template>
   <div
+    v-activate
     class="flex items-center gap-1.5 cursor-pointer group rounded-sm px-0.5 -mx-0.5 hover:bg-base-content/5"
     :title="$t('status.playlistHint')"
     @click="emit('open', playingTarget)"

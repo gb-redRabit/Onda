@@ -41,3 +41,22 @@ export class WriteQueue {
     return new Promise<void>((resolve) => this.idleWaiters.push(resolve));
   }
 }
+
+export type WriteLock = <T>(task: () => Promise<T>) => Promise<T>;
+
+/**
+ * Serializuje zadania i zwraca wynik ostatniego ogniwa, izolując awarie. Wariant
+ * dla wywołań oczekujących rezultatu (np. read-modify-write listy), zastępujący
+ * ręcznie kopiowany `writeChain` w magazynach stanu.
+ */
+export function createWriteLock(): WriteLock {
+  let chain: Promise<void> = Promise.resolve();
+  return <T>(task: () => Promise<T>): Promise<T> => {
+    const result = chain.then(task);
+    chain = result.then(
+      () => undefined,
+      () => undefined
+    );
+    return result;
+  };
+}

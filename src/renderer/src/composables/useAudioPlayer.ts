@@ -40,9 +40,32 @@ function ensureModule() {
   });
 
   const player = usePlayerStore();
+  const settings = useSettingsStore();
+
+  audioEngine.setStateProvider({
+    getCurrentTrackPath: () => player.currentTrack?.path ?? null,
+    getCurrentTrack: () => player.currentTrack,
+    isMuted: () => player.isMuted,
+    getVolume: () => player.volume,
+    isPlaying: () => player.isPlaying
+  });
+  audioEngine.setNormalizationEnabled(
+    settings.playback.replayGain || settings.playback.normalization
+  );
+  audioEngine.setRememberPosition(settings.playback.rememberPosition);
+
   const scope = effectScope(true);
 
   scope.run(() => {
+    watch(
+      () => [settings.playback.replayGain, settings.playback.normalization],
+      ([rg, norm]) => audioEngine.setNormalizationEnabled(Boolean(rg || norm))
+    );
+    watch(
+      () => settings.playback.rememberPosition,
+      (rem) => audioEngine.setRememberPosition(rem)
+    );
+
     watch(
       () => player.currentTrack?.path ?? null,
       (path, _oldPath) => {
@@ -65,7 +88,7 @@ function ensureModule() {
           audioEngine.loadTrack(track, { resume: player.consumeResumeIntent(track.path) });
           resumeAndPlay();
           player.enrichPendingQueue();
-          if (useSettingsStore().playback.gaplessPlayback) {
+          if (settings.playback.gaplessPlayback) {
             const next = player.pendingQueue[0] ?? player.queue[0];
             if (next && next.type === 'audio') audioEngine.preloadNext(next);
           }
@@ -89,16 +112,14 @@ function ensureModule() {
     watch(
       () => player.isMuted,
       (muted) => {
-        audioEngine.setVolume(muted ? 0 : player.volume);
+        audioEngine.setMuted(muted);
       }
     );
 
     watch(
       () => player.volume,
       (v) => {
-        if (!player.isMuted) {
-          audioEngine.setVolume(v);
-        }
+        audioEngine.setVolume(v);
       }
     );
   });
@@ -138,7 +159,9 @@ export function useAudioPlayer() {
     isReady,
     isLoading,
     error,
-    analyserNode: audioEngine.getAnalyserNode(),
+    // Getter, nie wartość: w chwili tworzenia komponentu kontekst audio może nie być
+    // jeszcze rozgrzany, więc zamrożony `null` na zawsze psuł wizualizację.
+    getAnalyserNode: () => audioEngine.getAnalyserNode(),
     play: () => resumeAndPlay(),
     pause: () => audioEngine.pause(),
     seek: (time: number) => audioEngine.seek(time),

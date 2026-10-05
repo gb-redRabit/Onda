@@ -42,7 +42,8 @@ const coverClip = computed(() => {
 });
 
 function measurePulse() {
-  if (!audio.analyserNode || !audio.isPlaying.value) {
+  const analyser = audio.getAnalyserNode();
+  if (!analyser || !audio.isPlaying.value) {
     animFrame = requestAnimationFrame(measurePulse);
     return;
   }
@@ -51,7 +52,6 @@ function measurePulse() {
   frame++;
   if ((frame & 1) === 1) pulseScale.value = 1;
 
-  const analyser = audio.analyserNode;
   const bufferLength = analyser.frequencyBinCount;
   if (!dataArray || dataArray.length !== bufferLength) {
     dataArray = new Uint8Array(bufferLength);

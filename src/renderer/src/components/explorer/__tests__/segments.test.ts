@@ -47,4 +47,20 @@ describe('buildSegments', () => {
   it('handles a POSIX root-only path', () => {
     expect(buildSegments('/')).toEqual([]);
   });
+
+  it('renders a Windows drive root as a single segment navigating to C:\\', () => {
+    expect(buildSegments('C:\\')).toEqual([{ part: 'C:', idx: 0, path: 'C:\\' }]);
+    // Toleruj brak separatora (zapisana historia), ale cel nawigacji zawsze ma `\`.
+    expect(buildSegments('C:')).toEqual([{ part: 'C:', idx: 0, path: 'C:\\' }]);
+  });
+
+  it('builds drive-root children with correct cumulative paths', () => {
+    // Pierwszy segment (litera dysku) nawiguje do `C:\`, nie do względnego `C:`.
+    expect(buildSegments('C:\\Users\\Me').map((s) => s.path)).toEqual([
+      'C:\\',
+      'C:\\Users',
+      'C:\\Users\\Me'
+    ]);
+    expect(buildSegments('C:\\Users\\Me').map((s) => s.part)).toEqual(['C:', 'Users', 'Me']);
+  });
 });

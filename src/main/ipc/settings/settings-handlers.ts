@@ -9,13 +9,53 @@ import { sanitizeSettings } from './settings-schema';
 import {
   encryptApiKeys,
   decryptApiKeys,
+  maskApiKeys,
+  mergeApiKeys,
   encryptionStatus,
   SecretStorageUnavailableError
 } from './settings-crypto';
 import { syncSubscriptionsScheduler } from '../subscriptions/subscriptions-handlers';
 import { setCloseToTray } from '../../windows/close-behavior';
-import type { AppSettings } from '../../../shared/types/settings';
+import type { AppSettings, NetworkSettings } from '../../../shared/types/settings';
 import { logger } from '../../../shared/logger';
+
+// Renderer nigdy nie potrzebuje hasła proxy. Wysyłamy stałą maskę, a przy zapisie
+// maska oznacza „nie zmieniaj" — zapisane hasło jest przywracane z store.
+const PROXY_PASSWORD_MASK = '••••••••';
+type ProxyKey = 'proxy' | 'proxyYoutube' | 'proxySoundcloud';
+const PROXY_KEYS: ProxyKey[] = ['proxy', 'proxyYoutube', 'proxySoundcloud'];
+
+function maskProxyPasswords(network: NetworkSettings | undefined): void {
+  if (!network) return;
+  for (const key of PROXY_KEYS) {
+    const proxy = network[key];
+    if (proxy && typeof proxy.password === 'string' && proxy.password) {
+      proxy.password = PROXY_PASSWORD_MASK;
+    }
+  }
+}
+
+function restoreProxyPasswords(
+  incoming: NetworkSettings | undefined,
+  stored: NetworkSettings | undefined
+): void {
+  if (!incoming) return;
+  for (const key of PROXY_KEYS) {
+    const proxy = incoming[key];
+    if (!proxy) continue;
+    // Maska lub brak pola = „nie zmieniaj"; pusty string = użytkownik czyści hasło.
+    if (proxy.password === PROXY_PASSWORD_MASK || proxy.password === undefined) {
+      proxy.password = stored?.[key]?.password;
+    }
+  }
+}
+
+function stripProxyPasswords(network: NetworkSettings | undefined): void {
+  if (!network) return;
+  for (const key of PROXY_KEYS) {
+    if (network[key]) network[key].password = undefined;
+  }
+}
 
 /**
  * Szyfruje klucze API w miejscu albo usuwa je z ładunku.
@@ -50,7 +90,9 @@ export function registerSettingsHandlers(): void {
     try {
       const store = await getStore();
       const { sanitized } = sanitizeSettings(store.store || {});
-      if (sanitized.apiKeys) sanitized.apiKeys = decryptApiKeys(sanitized.apiKeys);
+      // Sekrety nie opuszczają procesu main — renderer dostaje tylko podgląd.
+      if (sanitized.apiKeys) sanitized.apiKeys = maskApiKeys(sanitized.apiKeys);
+      maskProxyPasswords(sanitized.network);
       return sanitized;
     } catch (e) {
       logger.warn('settings', 'settings:get failed', e);
@@ -67,8 +109,18 @@ export function registerSettingsHandlers(): void {
       if (droppedKeys.length > 0) {
         logger.warn('settings', `settings:set dropped invalid keys: ${droppedKeys.join(', ')}`);
       }
-      const secretSaved = encryptKeysOrDrop(sanitized);
       const store = await getStore();
+      // Renderer nie zna już sekretów (dostaje tylko `preview`), więc puste `key`
+      // oznacza „nie zmieniaj" — przywróć zapisaną wartość po `id` zamiast zapisywać ''.
+      if (sanitized.apiKeys) {
+        const storedKeys = sanitizeSettings(store.store || {}).sanitized.apiKeys;
+        const decryptedStored = storedKeys ? decryptApiKeys(storedKeys) : undefined;
+        sanitized.apiKeys = mergeApiKeys(sanitized.apiKeys, decryptedStored);
+      }
+      // Hasła proxy również nie wróciły z renderera (maska) — przywróć zapisane.
+      const storedNetwork = sanitizeSettings(store.store || {}).sanitized.network;
+      restoreProxyPasswords(sanitized.network, storedNetwork);
+      const secretSaved = encryptKeysOrDrop(sanitized);
       for (const [key, value] of Object.entries(sanitized)) {
         store.set(key, value);
       }
@@ -101,14 +153,9 @@ export function registerSettingsHandlers(): void {
         const store = await getStore();
         const { sanitized } = sanitizeSettings(store.store || {});
         const exported: Partial<AppSettings> = { ...sanitized };
-        // Nigdy nie zapisuj sekretów (kluczy API, hasła proxy) do nieszyfrowanego pliku eksportu.
+        // Nigdy nie zapisuj sekretów (kluczy API, haseł proxy) do nieszyfrowanego pliku eksportu.
         delete exported.apiKeys;
-        if (exported.network?.proxy) {
-          exported.network = {
-            ...exported.network,
-            proxy: { ...exported.network.proxy, password: undefined }
-          };
-        }
+        stripProxyPasswords(exported.network);
         await writeFile(result.filePath, JSON.stringify(exported, null, 2), 'utf-8');
         return { success: true };
       } catch (e) {
@@ -152,6 +199,8 @@ export function registerSettingsHandlers(): void {
         // raportowane użytkownikowi, zamiast odrzucania całego importu albo
         // lądowania kluczy na dysku jawnie.
         const toPersist: Partial<AppSettings> = { ...sanitized };
+        // Import nie może wnieść haseł proxy jawnym tekstem (eksport ich nie zawiera).
+        stripProxyPasswords(toPersist.network);
         const keysStored = encryptKeysOrDrop(toPersist);
         const store = await getStore();
         for (const [key, value] of Object.entries(toPersist)) {
@@ -164,9 +213,10 @@ export function registerSettingsHandlers(): void {
         if (toPersist.library) applyCoverCacheSettings(toPersist.library.coverCacheMaxEntries);
         if (toPersist.updates) void configureAutoCheck();
         if (toPersist.download) void syncSubscriptionsScheduler();
-        // zwróć klucze plaintext, aby store renderera pozostał spójny (bez podwójnego szyfrowania przy zapisie)
+        // Zwróć klucze zamaskowane (bez sekretów) — renderer nigdy ich nie potrzebuje;
+        // przy kolejnym zapisie puste `key` zachowa zapisaną wartość (mergeApiKeys).
         const data: Partial<AppSettings> = { ...toPersist };
-        if (data.apiKeys) data.apiKeys = decryptApiKeys(data.apiKeys);
+        if (data.apiKeys) data.apiKeys = maskApiKeys(data.apiKeys);
         if (!keysStored) {
           return {
             success: false,

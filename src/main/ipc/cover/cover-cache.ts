@@ -181,7 +181,9 @@ async function extractVideoFrame(filePath: string, time = '00:00:00.5'): Promise
       { timeout: 15000 }
     );
     const buf = await readFile(outPath);
-    await unlink(outPath).catch(() => {});
+    await unlink(outPath).catch(() => {
+      /* best-effort */
+    });
     return `data:image/jpeg;base64,${buf.toString('base64')}`;
   } catch (e) {
     logger.warn('cover', `extractVideoFrame failed for ${filePath}`, e);
@@ -200,7 +202,9 @@ async function extractEmbeddedCover(filePath: string): Promise<string | null> {
       { timeout: 15000 }
     );
     const buf = await readFile(outPath);
-    await unlink(outPath).catch(() => {});
+    await unlink(outPath).catch(() => {
+      /* best-effort */
+    });
     return `data:image/jpeg;base64,${buf.toString('base64')}`;
   } catch {
     return null;
@@ -402,7 +406,9 @@ export async function initCoverCache(): Promise<void> {
     const entries = await readdir(PERSISTENT_COVER_DIR).catch(() => [] as string[]);
     for (const entry of entries) {
       if (entry === '.' || entry === '..') continue;
-      await rm(join(PERSISTENT_COVER_DIR, entry), { force: true }).catch(() => {});
+      await rm(join(PERSISTENT_COVER_DIR, entry), { force: true }).catch(() => {
+        /* best-effort */
+      });
     }
     await writeCoverMap({ [STALE_CACHE_KEY]: { cacheFile: '', mtime: Date.now() } });
     logger.info('cover', 'persistent cover cache cleared for sibling video migration');

@@ -17,6 +17,9 @@ export function createOnlineSearch() {
   const searchScOffset = ref(0);
   const hasMoreSc = ref(false);
   const searchLoadingMore = ref(false);
+  // Rosnący token: wolniejsze wcześniejsze wyszukiwanie nie może nadpisać
+  // paginacji (offsetu SC) ani wyników nowszego zapytania.
+  let searchSeq = 0;
 
   async function searchOnline(query: string): Promise<{
     success?: boolean;
@@ -26,6 +29,7 @@ export function createOnlineSearch() {
     nextPageToken?: string | null;
     prevPageToken?: string | null;
   }> {
+    const seq = ++searchSeq;
     const [ytRes, scRes] = await Promise.allSettled([
       window.api.invoke('yt:search', query) as Promise<{
         success?: boolean;
@@ -48,9 +52,12 @@ export function createOnlineSearch() {
       (ytRes.status === 'fulfilled' && !!ytRes.value?.success) ||
       (scRes.status === 'fulfilled' && !!scRes.value?.success);
     if (anySuccess) {
-      // Śledź paginację SC: pełna strona oznacza, że istnieją głębsze offsety.
-      searchScOffset.value = scItems.length;
-      hasMoreSc.value = scItems.length >= 100;
+      // Śledź paginację SC tylko jeśli to wciąż najnowsze wyszukiwanie — inaczej
+      // starsza odpowiedź ustawiłaby offset dla nowego zapytania.
+      if (seq === searchSeq) {
+        searchScOffset.value = scItems.length;
+        hasMoreSc.value = scItems.length >= 100;
+      }
       return { success: true, items: [...ytItems, ...scItems] };
     }
     const ytError = ytRes.status === 'fulfilled' ? ytRes.value : undefined;
@@ -66,12 +73,16 @@ export function createOnlineSearch() {
   async function loadMoreSearch(): Promise<void> {
     const q = searchQuery.value.trim();
     if (!q || searchLoadingMore.value || !hasMoreSc.value) return;
+    // Migawka tokenu: jeśli w trakcie żądania startuje nowe wyszukiwanie, wynik
+    // „załaduj więcej" należy do poprzedniego zapytania i jest odrzucany.
+    const seq = searchSeq;
     searchLoadingMore.value = true;
     try {
       const res = (await window.api.invoke('sc:search', q, searchScOffset.value)) as {
         success?: boolean;
         items?: YouTubeVideo[];
       } | null;
+      if (seq !== searchSeq) return;
       if (res?.success && res.items?.length) {
         const seen = new Set(searchResults.value.map((i) => i.id));
         searchResults.value = [...searchResults.value, ...res.items.filter((i) => !seen.has(i.id))];
@@ -81,7 +92,7 @@ export function createOnlineSearch() {
         hasMoreSc.value = false;
       }
     } catch {
-      hasMoreSc.value = false;
+      if (seq === searchSeq) hasMoreSc.value = false;
     } finally {
       searchLoadingMore.value = false;
     }

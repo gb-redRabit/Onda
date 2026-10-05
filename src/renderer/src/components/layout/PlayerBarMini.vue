@@ -17,6 +17,7 @@ defineProps<{
 
 const emit = defineEmits<{
   seek: [event: MouseEvent];
+  'seek-by': [delta: number];
   'toggle-play': [];
   'audio-view': [];
   expand: [];
@@ -24,6 +25,14 @@ const emit = defineEmits<{
 
 const player = usePlayerStore();
 const audio = useAudioPlayer();
+
+function onSeekKeydown(e: KeyboardEvent): void {
+  const step = e.shiftKey ? 30 : 5;
+  const delta = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : null;
+  if (delta === null) return;
+  e.preventDefault();
+  emit('seek-by', delta);
+}
 </script>
 
 <template>
@@ -35,7 +44,14 @@ const audio = useAudioPlayer();
     <div
       v-if="!isLive"
       class="absolute top-0 left-0 right-0 h-1 bg-border-default/50 cursor-pointer group hover:h-1.5 transition-[height] z-10"
+      role="slider"
+      tabindex="0"
+      :aria-label="$t('playerView.seek')"
+      :aria-valuemin="0"
+      :aria-valuemax="audio.duration.value"
+      :aria-valuenow="audio.currentTime.value"
       @click="emit('seek', $event)"
+      @keydown="onSeekKeydown"
     >
       <div
         class="absolute inset-y-0 left-0 h-full bg-primary/50 rounded-r-full"

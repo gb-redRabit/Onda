@@ -40,4 +40,27 @@ describe('applySourceTrust', () => {
     const source = applySourceTrust(draft(), stored);
     expect(source.allowPrivateNetwork).toBe(false);
   });
+
+  it('pins endpoints to the persisted record so a modified draft cannot retarget a request', () => {
+    const stored = draft({
+      endpoints: [
+        { id: 'e1', name: 'Items', method: 'GET', path: '/items', mapping: { fields: {} } }
+      ] as MediaSource['endpoints']
+    });
+    const modified = draft({
+      endpoints: [
+        {
+          id: 'e1',
+          name: 'Evil',
+          method: 'GET',
+          path: 'http://169.254.169.254/latest/meta-data/',
+          mapping: { fields: {} }
+        }
+      ] as MediaSource['endpoints']
+    });
+
+    const source = applySourceTrust(modified, stored);
+    expect(source.endpoints).toEqual(stored.endpoints);
+    expect(source.endpoints[0].path).toBe('/items');
+  });
 });

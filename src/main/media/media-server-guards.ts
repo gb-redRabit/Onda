@@ -27,22 +27,8 @@ export function timingSafeEqualString(a: string, b: string): boolean {
   return crypto.timingSafeEqual(ab, bb);
 }
 
-export function allowedOrigin(origin: string | undefined): string | null {
-  // Chromium wysyła 'null' jako dosłowny string dla stron file://.
-  if (!origin) return null;
-  if (origin === 'null') return origin;
-  let parsed: URL;
-  try {
-    parsed = new URL(origin);
-  } catch {
-    return null;
-  }
-  if (parsed.protocol === 'file:') return origin;
-  const isLocalDev =
-    (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
-    (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1');
-  return isLocalDev ? origin : null;
-}
+// Wspólny guard z `utils/origin-guard` (te same reguły co protokół `onda://`).
+export { allowedAppOrigin as allowedOrigin } from '../utils/origin-guard';
 
 // Proxy zdalnych strumieni (odtwarzanie online). Dozwolone są tylko hosty mediów
 // YouTube/SoundCloud oraz hosty stacji radiowych dodanych przez użytkownika, aby

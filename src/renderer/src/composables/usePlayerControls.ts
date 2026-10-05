@@ -6,6 +6,7 @@ import type { useSettingsStore } from '@renderer/stores/settings';
 import type { useUIStore } from '@renderer/stores/ui';
 import { applyVolumeTarget, seekTarget, skipTarget } from '@renderer/utils/mediaTransport';
 import { useVideoPlayer } from '@renderer/composables/useVideoPlayer';
+import { audioEngine } from '@renderer/modules/audioEngine';
 
 interface PlayerControlsCtx {
   player: ReturnType<typeof usePlayerStore>;
@@ -133,18 +134,30 @@ export function usePlayerControls(ctx: PlayerControlsCtx) {
 
   function onResumeContinue() {
     const prompt = player.resumePrompt;
-    if (prompt && vp.videoRef.value) {
-      vp.videoRef.value.currentTime = prompt.position;
-      player.currentTime = prompt.position;
-      vp.videoRef.value.play().catch(() => {});
-      window.api?.setPlaybackPosition(prompt.path, prompt.position);
+    if (prompt) {
+      if (player.currentTrack?.type === 'video' && vp.videoRef.value) {
+        vp.videoRef.value.currentTime = prompt.position;
+        player.currentTime = prompt.position;
+        vp.videoRef.value.play().catch(() => {
+          /* best-effort */
+        });
+        window.api?.setPlaybackPosition(prompt.path, prompt.position);
+      } else {
+        audioEngine.seek(prompt.position);
+        player.currentTime = prompt.position;
+        audioEngine.play();
+        window.api?.setPlaybackPosition(prompt.path, prompt.position);
+      }
     }
     player.clearResumePrompt();
   }
 
   function onResumeStart() {
     const prompt = player.resumePrompt;
-    if (prompt) window.api?.clearPlaybackPosition(prompt.path);
+    if (prompt) {
+      window.api?.clearPlaybackPosition(prompt.path);
+      audioEngine.clearSavedPosition(prompt.path);
+    }
     player.clearResumePrompt();
   }
 

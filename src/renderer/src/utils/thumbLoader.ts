@@ -1,11 +1,12 @@
+import { LruCache } from './lruCache';
+
 export const thumbTasks: (() => void)[] = [];
 let thumbActive = 0;
 const THUMB_MAX = 3;
 const CACHE_MAX = 500;
-export const thumbCache = new Map<string, string>();
-const iconCache = new Map<string, string>();
-const thumbAccessOrder: string[] = [];
-const iconAccessOrder: string[] = [];
+// Wspólna implementacja LRU (zamiast ręcznej pary Map + tablica kolejności).
+const thumbCache = new LruCache<string>(CACHE_MAX);
+const iconCache = new LruCache<string>(CACHE_MAX);
 
 // Pusty NativeImage serializuje się do `data:image/png;base64,` (bez payloadu).
 // Traktuj wszystko bez prawdziwego payloadu jako "brak obrazu", tak by eksplorator nigdy
@@ -16,47 +17,24 @@ export function isUsableImageDataUrl(v: string | null | undefined): v is string 
   return !!m && m[1].length > 0;
 }
 
-function lruGet(cache: Map<string, string>, order: string[], key: string): string | undefined {
-  const val = cache.get(key);
-  if (val !== undefined) {
-    const idx = order.indexOf(key);
-    if (idx > 0) {
-      order.splice(idx, 1);
-      order.unshift(key);
-    }
-  }
-  return val;
-}
-
-function lruSet(cache: Map<string, string>, order: string[], key: string, val: string) {
-  if (order.length >= CACHE_MAX) {
-    const evicted = order.pop()!;
-    cache.delete(evicted);
-  }
-  const idx = order.indexOf(key);
-  if (idx >= 0) order.splice(idx, 1);
-  order.unshift(key);
-  cache.set(key, val);
-}
-
 export function cachedThumb(path: string): string | undefined {
-  const v = lruGet(thumbCache, thumbAccessOrder, path);
+  const v = thumbCache.get(path);
   return isUsableImageDataUrl(v) ? v : undefined;
 }
 
 export function setCachedThumb(path: string, dataUrl: string) {
   if (!isUsableImageDataUrl(dataUrl)) return;
-  lruSet(thumbCache, thumbAccessOrder, path, dataUrl);
+  thumbCache.set(path, dataUrl);
 }
 
 export function cachedIcon(path: string): string | undefined {
-  const v = lruGet(iconCache, iconAccessOrder, path);
+  const v = iconCache.get(path);
   return isUsableImageDataUrl(v) ? v : undefined;
 }
 
 export function setCachedIcon(path: string, icon: string) {
   if (!isUsableImageDataUrl(icon)) return;
-  lruSet(iconCache, iconAccessOrder, path, icon);
+  iconCache.set(path, icon);
 }
 
 export function processThumbQueue() {

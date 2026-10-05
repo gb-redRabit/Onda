@@ -6,7 +6,15 @@ on:
       - main
     tags:
       - 'v*'
+  # Walidacja PR-ów (w tym Dependabot i release-please) ZANIM trafią do main.
+  # Kroki budujące/publikujące instalatory są niżej wyłączone dla PR.
+  pull_request:
   workflow_dispatch:
+
+# Jeden przebieg na ref: kolejne pushe anulują poprzedni, a PR-y nie blokują main.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -48,8 +56,13 @@ jobs:
       - name: Check version ownership
         run: npm run version:check
 
-      - name: Test
-        run: npm test
+      - name: Test (with coverage gate)
+        run: npm run test:coverage
+
+      - name: Audit production dependencies
+        # Tylko zależności produkcyjne (dev-only advisories z toolchainu nie
+        # blokują wydania). Próg high — moderate zostają widoczne w logu.
+        run: npm audit --omit=dev --audit-level=high
 
       # A test that writes through a relative path leaves a file in the repo
       # root, and on Linux/macOS the next step fails on it with a confusing
@@ -103,7 +116,7 @@ jobs:
       # would reify and prune the arm64 twins. Versions follow sharp's own
       # optionalDependencies so they never rot on dependabot bumps.
       - name: Stage x64 sharp for universal mac
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
@@ -140,6 +153,9 @@ jobs:
           fi
 
       - name: Build & Publish
+        # PR-y tylko walidują (test/build/e2e); instalatory buduje i publikuje
+        # dopiero push do main (bez publikacji) albo tag/workflow_dispatch.
+        if: github.event_name != 'pull_request'
         # Publish only for tags (the release-please flow) or an explicit manual
         # run; ordinary pushes to main still build + smoke-test but do not touch
         # the GitHub release, so a push never re-uploads the current version's
@@ -158,7 +174,7 @@ jobs:
           EP_GH_IGNORE_TIME: '1'
 
       - name: Smoke test installer (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-latest' && github.event_name != 'pull_request'
         shell: pwsh
         run: |
           # The packaged app is a GUI app with no `--version` and no self-exit,
@@ -176,7 +192,7 @@ jobs:
           }
 
       - name: Smoke test unpacked app (Linux)
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && github.event_name != 'pull_request'
         run: |
           set +e
           chmod +x "${{ github.workspace }}/dist/linux-unpacked/onda"

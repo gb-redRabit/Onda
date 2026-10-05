@@ -137,6 +137,41 @@ export async function readRemoteImageBody(res: RemoteImageResponse): Promise<Buf
   return size > 0 ? Buffer.concat(chunks, size) : null;
 }
 
+/**
+ * Pobiera zdalny obraz jako surowe bajty, z pełną ochroną SSRF: tylko https,
+ * blokada loopback/prywatnych/metadanych, walidacja KAŻDEGO przekierowania i limit
+ * rozmiaru. Używane przez pobieranie okładek SoundCloud (wcześniej surowy `fetch`,
+ * który podążał za przekierowaniami bez walidacji hopów — wektor SSRF).
+ */
+export async function fetchRemoteImageBytes(
+  rawUrl: string,
+  request: RemoteImageRequest = requestRemoteImage
+): Promise<Buffer | null> {
+  if (typeof rawUrl !== 'string' || rawUrl.length === 0 || rawUrl.length > 4096) return null;
+  if (!isAllowedRemoteUrl(rawUrl)) return null;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  try {
+    const res = await followImageRedirects(rawUrl, ctrl.signal, request);
+    if (!res) return null;
+    if (res.status < 200 || res.status >= 300) {
+      res.cancel();
+      return null;
+    }
+    const type = (responseHeader(res, 'content-type') || '').split(';')[0].trim().toLowerCase();
+    if (type && !type.startsWith('image/')) {
+      res.cancel();
+      return null;
+    }
+    return await readRemoteImageBody(res);
+  } catch (e) {
+    logger.warn('media', `remote image bytes failed for ${rawUrl}`, e);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function getRemoteImage(
   rawUrl: string,
   request: RemoteImageRequest = requestRemoteImage

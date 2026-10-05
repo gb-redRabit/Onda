@@ -89,6 +89,33 @@ describe('resolveThemeAppearance', () => {
     const t = resolveThemeAppearance({ theme: 'nope' as string });
     expect(t.colors.primary).toBe(BUILTIN_THEMES.dark.colors.primary);
   });
+
+  it("resolves theme 'system' from customBase and the OS scheme", () => {
+    const original = window.matchMedia;
+    const setPrefersLight = (light: boolean): void => {
+      window.matchMedia = ((q: string) => ({
+        matches: light,
+        media: q,
+        addEventListener: () => {},
+        removeEventListener: () => {}
+      })) as unknown as typeof window.matchMedia;
+    };
+    try {
+      setPrefersLight(false);
+      const darkPref = resolveThemeAppearance({ theme: 'system', customBase: 'light' });
+      // Motyw bazowy to 'light', ale system preferuje ciemny → schemat ciemny + paleta dark,
+      // zachowując tożsamość bazową (glassAlpha).
+      expect(darkPref.scheme).toBe('dark');
+      expect(darkPref.colors.primary).toBe(BUILTIN_THEMES.dark.colors.primary);
+
+      setPrefersLight(true);
+      const lightPref = resolveThemeAppearance({ theme: 'system', customBase: 'light' });
+      expect(lightPref.scheme).toBe('light');
+      expect(lightPref.colors.primary).toBe(BUILTIN_THEMES.light.colors.primary);
+    } finally {
+      window.matchMedia = original;
+    }
+  });
 });
 
 describe('buildEngineVars', () => {

@@ -1,223 +1,62 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
-import { useI18n } from 'vue-i18n';
-import {
-  Music2,
-  Clock,
-  FolderOpen,
-  Disc3,
-  Radio,
-  ArrowRight,
-  FolderUp,
-  TrendingUp,
-  Heart,
-  ListMusic,
-  Mic2
-} from '@lucide/vue';
-import { usePlayerStore } from '@renderer/stores/player';
-import { useLibraryStore } from '@renderer/stores/library';
-import { useSettingsStore } from '@renderer/stores/settings';
-import { audioEngine } from '@renderer/modules/audioEngine';
-import { openMediaFiles } from '@renderer/composables/useOpenMedia';
-import { useHomeContextMenu } from '@renderer/composables/useHomeContextMenu';
-import { orderedHomeSections } from '@renderer/utils/homeSections';
-import { pluralCategory } from '@renderer/utils/plural';
+import { Clock, Music2, TrendingUp, Heart, Disc3, ListMusic, Mic2, ArrowRight } from '@lucide/vue';
 import { playTrackList } from '@renderer/utils/playTracks';
-import { formatDuration } from '@renderer/utils/formatters';
 import HomeShelf from '@renderer/components/home/HomeShelf.vue';
 import HomeMediaCard from '@renderer/components/home/HomeMediaCard.vue';
 import HomeContinueCard from '@renderer/components/home/HomeContinueCard.vue';
+import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 import PageHeader from '@renderer/components/ui/PageHeader.vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
-import type { MediaFile } from '@renderer/types/media';
-import type { HomeSectionId } from '@renderer/types/settings';
-import type { TabId } from '@renderer/utils/libraryTabs';
+import { useHomeView } from '@renderer/composables/useHomeView';
+import { usePromptDialog } from '@renderer/composables/usePromptDialog';
 
-const router = useRouter();
-const { t, locale } = useI18n();
-const player = usePlayerStore();
-const library = useLibraryStore();
-const settings = useSettingsStore();
-const homeContextMenu = useHomeContextMenu();
+const {
+  t,
+  player,
+  library,
+  homeContextMenu,
+  has,
+  actions,
+  counters,
+  openLibrary,
+  recentTracks,
+  mostPlayed,
+  favoriteTracks,
+  playlists,
+  albums,
+  artists,
+  trackTitle,
+  trackSubtitle,
+  trackCountLabel,
+  continueTrack,
+  continuePosition,
+  playContinue,
+  playContinueFromStart
+} = useHomeView();
 
-const sections = computed(() => orderedHomeSections(settings.home.sections));
-function has(id: HomeSectionId): boolean {
-  return sections.value.includes(id);
-}
+// „Odtwórz od nowa” nadpisuje zapisaną pozycję nieodwracalnie, więc gdy jest co
+// tracić (postęp > 5 s), pytamy o potwierdzenie. Sam odczyt pozycji i akcja
+// odtwarzania zostają w `useHomeView`; tutaj tylko bramkujemy wywołanie.
+const {
+  promptVisible,
+  promptIsConfirm,
+  promptMessage,
+  promptValue,
+  showConfirm,
+  promptConfirm,
+  promptCancel
+} = usePromptDialog();
 
-async function openFile() {
-  const result = (await window.api?.invoke('dialog:openFile')) as
-    { filePaths: string[]; canceled: boolean } | undefined;
-  if (!result || result.canceled || !result.filePaths.length) return;
-  await openMediaFiles(result.filePaths, router);
-}
-
-async function openFolder() {
-  const result = (await window.api?.invoke('dialog:openFolderFiles')) as
-    { filePaths: string[]; canceled: boolean } | undefined;
-  if (!result || result.canceled || !result.filePaths.length) return;
-  await openMediaFiles(result.filePaths, router);
-}
-
-const actions = [
-  {
-    id: 'open-file',
-    labelKey: 'home.openFile',
-    descKey: 'home.browseLocalMedia',
-    icon: FolderOpen,
-    route: openFile
-  },
-  {
-    id: 'open-folder',
-    labelKey: 'home.openFolder',
-    descKey: 'home.loadMediaFromFolder',
-    icon: FolderUp,
-    route: openFolder
-  },
-  {
-    id: 'library',
-    labelKey: 'library.title',
-    descKey: 'home.yourMusicCollection',
-    icon: Disc3,
-    route: () => router.push('/library')
-  },
-  {
-    id: 'online',
-    labelKey: 'nav.online',
-    descKey: 'home.searchAndDownload',
-    icon: Radio,
-    route: () => router.push('/online')
-  }
-];
-
-interface HomeCounter {
-  value: number;
-  key: string;
-  color: string;
-  tab: TabId;
-}
-
-const counters = computed<HomeCounter[]>(() => [
-  {
-    value: library.totalCount,
-    key: 'home.totalTracks',
-    color: 'text-base-content',
-    tab: 'overview'
-  },
-  { value: library.audioCount, key: 'home.audioFiles', color: 'text-primary', tab: 'tracks' },
-  { value: library.videoCount, key: 'home.videoFiles', color: 'text-success', tab: 'video' },
-  { value: library.imageCount, key: 'home.imageFiles', color: 'text-secondary', tab: 'images' },
-  {
-    value: library.playlists.length,
-    key: 'library.playlists',
-    color: 'text-warning',
-    tab: 'playlists'
-  }
-]);
-
-function openLibrary(tab: TabId): void {
-  router.push({ path: '/library', query: { tab } });
-}
-
-// ---- Półki -------------------------------------------------------------------
-
-const recentTracks = computed(() => library.recentTracks.slice(0, 12));
-const mostPlayed = computed(() =>
-  library.mostPlayed.filter((t) => (t.playCount || 0) > 0).slice(0, 12)
-);
-const favoriteTracks = computed(() => {
-  const favorites = new Set(player.favorites);
-  if (!favorites.size) return [];
-  return library.tracks.filter((t) => favorites.has(t.path)).slice(0, 12);
-});
-const playlists = computed(() => library.playlists.slice(0, 12));
-const albums = computed(() => library.albums.slice(0, 12));
-const artists = computed(() => library.artists.slice(0, 12));
-
-function trackTitle(track: MediaFile): string {
-  return track.metadata?.title || track.name;
-}
-
-function trackSubtitle(track: MediaFile): string {
-  const artist = track.metadata?.artist;
-  if (artist) return artist;
-  const duration = track.duration || track.metadata?.duration || 0;
-  return duration > 0 ? formatDuration(duration) : track.extension;
-}
-
-// Wbudowane reguły liczby mnogiej vue-i18n błędnie obsługują polskie one/few/many
-// dla komunikatu 3-formowego, więc forma jest wybierana jawnie (patrz utils/plural.ts).
-function trackCountLabel(count: number): string {
-  const category = pluralCategory(locale.value, count);
-  const key =
-    category === 'one'
-      ? 'home.trackCountOne'
-      : category === 'few'
-        ? 'home.trackCountFew'
-        : 'home.trackCountMany';
-  return t(key, { count });
-}
-
-// ---- Karta kontynuacji -------------------------------------------------------
-
-// Karta jest elementem "wróć tam, gdzie skończyłeś", więc nigdy nie może pokazywać
-// utworu już wczytanego w odtwarzaczu — przejdź do następnego
-// najnowszego, a gdy go nie ma, całkowicie ukryj kartę.
-const continueTrack = computed<MediaFile | null>(() => {
-  const current = player.currentTrack?.path;
-  return library.recentTracks.find((t) => t.path !== current) ?? null;
-});
-const continuePosition = ref(0);
-
-async function loadContinuePosition(track: MediaFile | null): Promise<void> {
-  if (!track) {
-    continuePosition.value = 0;
-    return;
-  }
-  try {
-    continuePosition.value = (await window.api?.getPlaybackPosition(track.path)) || 0;
-  } catch {
-    continuePosition.value = 0;
-  }
-}
-
-watch(continueTrack, (track) => void loadContinuePosition(track), { immediate: true });
-
-function playContinue(): void {
+async function onPlayFromStart(): Promise<void> {
   const track = continueTrack.value;
   if (!track) return;
-  if (track.type === 'video') {
-    player.setTrack(track);
-    // Wideo nie ma hooka wznawiania w silniku; ustaw zegar przed
-    // wczytaniem źródła przez PlayerView (setTrack resetuje currentTime, więc przewiń potem).
-    if (continuePosition.value > 5) player.seek(continuePosition.value);
-  } else {
-    // Tylko ta karta wznawia zapisaną pozycję; każda inna ścieżka odtwarzania
-    // zaczyna od początku.
-    player.setTrack(track, { resume: true });
+  if (continuePosition.value > 5) {
+    const title = track.metadata?.title || track.name;
+    const ok = await showConfirm(t('home.playFromStartConfirm', { title }));
+    if (!ok) return;
   }
-  player.play();
-  if (track.type === 'video') router.push('/player');
+  playContinueFromStart();
 }
-
-function playContinueFromStart(): void {
-  const track = continueTrack.value;
-  if (!track) return;
-  // "Od początku" zapomina też zapisaną pozycję, więc element wznawiania
-  // i pasek postępu znikają dla tego utworu.
-  void window.api?.clearPlaybackPosition(track.path);
-  if (track.type === 'audio') audioEngine.clearSavedPosition(track.path);
-  continuePosition.value = 0;
-  player.setTrack(track);
-  player.play();
-  if (track.type === 'video') router.push('/player');
-}
-
-onMounted(() => {
-  // Ulubione żyją w ustawieniach; wczytaj je, żeby półka wyrenderowała się przy pierwszym malowaniu.
-  void player.ensureFavorites();
-});
 </script>
 
 <template>
@@ -281,7 +120,7 @@ onMounted(() => {
       :track="continueTrack"
       :position="continuePosition"
       @play="playContinue"
-      @play-from-start="playContinueFromStart"
+      @play-from-start="onPlayFromStart"
     />
 
     <HomeShelf
@@ -419,5 +258,15 @@ onMounted(() => {
         @open="openLibrary('artists')"
       />
     </HomeShelf>
+
+    <ExplorerPromptDialog
+      v-if="promptVisible"
+      :visible="promptVisible"
+      :is-confirm="promptIsConfirm"
+      :message="promptMessage"
+      :value="promptValue"
+      @confirm="promptConfirm"
+      @cancel="promptCancel"
+    />
   </div>
 </template>

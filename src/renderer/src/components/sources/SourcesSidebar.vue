@@ -32,6 +32,7 @@ const emit = defineEmits<{
         <button
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
           :title="$t('sources.exportSources')"
+          :aria-label="$t('sources.exportSources')"
           @click="emit('exportAll')"
         >
           <Upload :size="14" />
@@ -39,6 +40,7 @@ const emit = defineEmits<{
         <button
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
           :title="$t('sources.importSources')"
+          :aria-label="$t('sources.importSources')"
           @click="emit('importAll')"
         >
           <Download :size="14" />
@@ -46,6 +48,7 @@ const emit = defineEmits<{
         <button
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
           :title="$t('sources.guide.title')"
+          :aria-label="$t('sources.guide.title')"
           @click="emit('guide')"
         >
           <HelpCircle :size="15" />
@@ -65,6 +68,7 @@ const emit = defineEmits<{
       <div
         v-for="s in sources"
         :key="s.id"
+        v-activate
         class="group flex items-center gap-2 px-2.5 py-2 rounded-field cursor-pointer transition-colors"
         :class="s.id === activeSourceId ? 'bg-primary/10 text-primary' : 'hover:bg-base-content/10'"
         :data-testid="`sources-item-${s.id}`"
@@ -94,10 +98,13 @@ const emit = defineEmits<{
             {{ $t('sources.endpointCount', { n: s.endpoints.length }) }}
           </p>
         </div>
-        <div class="opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
+        <div
+          class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 flex items-center gap-0.5"
+        >
           <button
             class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content"
             :title="$t('common.edit')"
+            :aria-label="$t('common.edit')"
             @click.stop="emit('edit', s)"
           >
             <Pencil :size="12" />
@@ -105,6 +112,7 @@ const emit = defineEmits<{
           <button
             class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-error"
             :title="$t('common.delete')"
+            :aria-label="$t('common.delete')"
             @click.stop="emit('remove', s.id)"
           >
             <Trash2 :size="12" />

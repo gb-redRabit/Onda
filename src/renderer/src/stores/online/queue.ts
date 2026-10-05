@@ -157,29 +157,46 @@ export function createOnlineQueue(deps: OnlineQueueDeps) {
   // Rozwiązuje i kolejkuje partię linków (wideo i elementy pierwszej strony
   // playlisty; kanały są pomijane) między platformami. Zwraca, ile pobrań
   // zostało zakolejkowanych.
+  //
+  // Wszystkie zadania są zbierane i wysyłane JEDNYM `submitJobs`, zamiast wywoływać
+  // `queueVideo` (osobne IPC `yt:download:add`) per element — wcześniej partia
+  // N linków robiła do 1+N round-tripów sekwencyjnie.
   async function queueBatch(urls: string[], extra?: JobExtra): Promise<number> {
-    let queued = 0;
-    for (const url of urls) {
-      try {
-        const res = await resolveOnline(url);
-        if (!res?.success || !res.result) continue;
-        if (res.result.kind === 'video') {
-          const item = res.result.items[0];
-          if (item) {
-            await queueVideo(item, undefined, extra);
-            queued++;
+    queuingId.value = 'batch';
+    try {
+      // Rozwiązywanie równoległe (bezpieczne: tylko sieć), kolejność zachowana.
+      const resolvedList = await Promise.all(
+        urls.map(async (url) => {
+          try {
+            const res = await resolveOnline(url);
+            return res?.success && res.result ? res.result : null;
+          } catch {
+            return null;
           }
-        } else if (res.result.kind === 'playlist') {
-          for (const item of res.result.items) {
-            await queueVideo(item, undefined, extra);
-            queued++;
-          }
+        })
+      );
+
+      const jobs: IpcDownloadJobInput[] = [];
+      for (const result of resolvedList) {
+        if (!result) continue;
+        const items =
+          result.kind === 'video'
+            ? result.items.slice(0, 1)
+            : result.kind === 'playlist'
+              ? result.items
+              : [];
+        for (const item of items) {
+          const job = buildJob(item, undefined, extra);
+          if (!job.channelId && channel.value?.id) job.channelId = channel.value.id;
+          if (!job.channelTitle && channel.value?.title) job.channelTitle = channel.value.title;
+          jobs.push(job);
         }
-      } catch {
-        /* pomiń nierozwiązywalny wpis */
       }
+      if (jobs.length) await submitJobs(jobs);
+      return jobs.length;
+    } finally {
+      queuingId.value = null;
     }
-    return queued;
   }
 
   // Ładuje każdą stronę aktualnie istotnej playlisty (używane, gdy użytkownik

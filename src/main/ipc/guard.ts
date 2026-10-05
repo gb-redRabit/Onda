@@ -17,7 +17,17 @@ const RATE_LIMITED_CHANNELS = new Set<string>([
   'plugins:installFromFolder',
   'plugins:installExample',
   'coverCache:clear',
-  'yt:download:add'
+  'yt:download:add',
+  // Transkodowanie spawnuje ffmpeg (także per-chunk dla nieznanego zakresu), a
+  // instalacje zależności pobierają i uruchamiają narzędzia — przejęty renderer
+  // nie może zalewać nimi systemu.
+  'media:transcodeAudio',
+  'media:transcodeAudioChunk',
+  'media:transcodeVideo',
+  'dep:installFfmpeg',
+  'dep:installMkvextract',
+  'dep:installYtdlp',
+  'app:factoryReset'
 ]);
 
 // 20 wywołań/sekundę na nadawcę+kanał: znacznie powyżej każdego legalnego użycia, znacznie poniżej
@@ -67,13 +77,13 @@ export function installIpcGuards(): void {
     originalHandle(channel, (event, ...args) => {
       if (!isTrustedSenderFrame(event.senderFrame)) {
         blockLog('invoke', channel);
-        return undefined;
+        throw new Error(`IPC '${channel}' blocked: untrusted sender`);
       }
       if (RATE_LIMITED_CHANNELS.has(channel)) {
         const key = `${event.sender?.id ?? 'unknown'}:${channel}`;
         if (!invokeLimiter.tryAcquire(key)) {
           blockLog('rate-limited invoke', channel);
-          return undefined;
+          throw new Error(`IPC '${channel}' blocked: rate limit exceeded`);
         }
       }
       return listener(event, ...args);

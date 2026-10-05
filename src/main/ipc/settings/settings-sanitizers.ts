@@ -5,6 +5,18 @@ export type Sanitizer = (value: unknown) => unknown | undefined;
 export const isPlainObject = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === 'object' && !Array.isArray(v);
 
+// Klucze, które przy przypisaniu `out[key] = value` zmieniłyby prototyp lub
+// konstruktor zamiast utworzyć własną właściwość (`__proto__` z JSON.parse).
+// Renderer kontroluje te klucze, więc są odrzucane we wszystkich builderach rekordów.
+export const UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+/** Bezpieczne przypisanie własnej właściwości; zwraca false dla kluczy proto/constructor. */
+export function safeAssign(target: Record<string, unknown>, key: string, value: unknown): boolean {
+  if (UNSAFE_OBJECT_KEYS.has(key)) return false;
+  target[key] = value;
+  return true;
+}
+
 export function str(v: unknown): unknown | undefined {
   return typeof v === 'string' ? v : undefined;
 }
@@ -31,7 +43,7 @@ export function obj(fields: Record<string, Sanitizer>): Sanitizer {
     for (const [key, fn] of Object.entries(fields)) {
       if (key in v) {
         const cleaned = fn(v[key]);
-        if (cleaned !== undefined) out[key] = cleaned;
+        if (cleaned !== undefined) safeAssign(out, key, cleaned);
       }
     }
     return out;
@@ -41,7 +53,7 @@ export function stringRecord(v: unknown): unknown | undefined {
   if (!isPlainObject(v)) return undefined;
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(v)) {
-    if (typeof value === 'string') out[key] = value;
+    if (typeof value === 'string') safeAssign(out, key, value);
   }
   return out;
 }
@@ -50,7 +62,7 @@ export function primitiveRecord(v: unknown): unknown | undefined {
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(v)) {
     if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-      out[key] = value;
+      safeAssign(out, key, value);
     }
   }
   return out;
@@ -61,7 +73,7 @@ export function recordOf(item: Sanitizer): Sanitizer {
     const out: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(v)) {
       const cleaned = item(value);
-      if (cleaned !== undefined) out[key] = cleaned;
+      if (cleaned !== undefined) safeAssign(out, key, cleaned);
     }
     return out;
   };
@@ -89,7 +101,7 @@ export function viewModes(v: unknown): unknown | undefined {
   if (!isPlainObject(v)) return undefined;
   const out: Record<string, 'list' | 'grid'> = {};
   for (const [key, value] of Object.entries(v)) {
-    if (value === 'list' || value === 'grid') out[key] = value;
+    if (value === 'list' || value === 'grid') safeAssign(out, key, value);
   }
   return out;
 }

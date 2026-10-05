@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, type ComponentPublicInstance } from 'vue';
-import { useVirtualizer } from '@tanstack/vue-virtual';
+import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { useRouter } from 'vue-router';
 import { useOnlineStore } from '@renderer/stores/online';
 import { usePlayerStore } from '@renderer/stores/player';
@@ -111,11 +111,9 @@ const visible = computed(() =>
 
 const filters = computed(() => buildDownloadFilters(yt.downloads, grouped.value));
 
-const downloadVirtualizer = useVirtualizer({
-  get count() {
-    return visible.value.length;
-  },
-  getScrollElement: () => downloadListRef.value,
+const downloadVirtualizer = useVirtualList({
+  count: () => visible.value.length,
+  scrollEl: () => downloadListRef.value,
   estimateSize: () => 112,
   overscan: 8,
   measureElement: (element) => element.getBoundingClientRect().height

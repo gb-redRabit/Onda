@@ -20,7 +20,8 @@ import { useVizConfig } from '@renderer/composables/useVizConfig';
 const audio = useAudioPlayer();
 const settings = useSettingsStore();
 const player = usePlayerStore();
-const { analyserNode } = audio;
+// Odświeżane w każdej klatce: kontekst audio może zostać rozgrzany po montażu.
+let analyserNode: AnalyserNode | null = audio.getAnalyserNode();
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const style = ref<VisualizationMode>(settings.playback.visualization.mode);
@@ -45,7 +46,14 @@ const CYCLES: VisualizationMode[] = VIZ_CYCLES;
 const { vizCfg, quality } = useVizConfig();
 
 function draw(timestamp: number) {
-  if (!canvasRef.value || !analyserNode) return;
+  // Kontekst audio może pojawić się po montażu — odśwież i, gdy wciąż go nie ma,
+  // próbuj dalej zamiast zatrzymywać pętlę na zawsze.
+  analyserNode = audio.getAnalyserNode();
+  if (!canvasRef.value) return;
+  if (!analyserNode) {
+    animFrame = requestAnimationFrame(draw);
+    return;
+  }
   const canvas = canvasRef.value;
 
   const frameInterval = 1000 / (vizCfg.fpsCap || 60);
@@ -279,6 +287,7 @@ defineExpose({ style, cycleStyle });
 
 <template>
   <div
+    v-activate
     class="relative w-full h-full bg-neutral overflow-hidden cursor-pointer group"
     @click="cycleStyle"
   >
@@ -290,7 +299,7 @@ defineExpose({ style, cycleStyle });
       <span class="text-base-content/70 text-sm font-medium">{{
         $t('audioView.noTrackTitle')
       }}</span>
-      <span class="text-base-content/40 text-[11px]">{{ $t('audioView.noTrackHint') }}</span>
+      <span class="text-base-content/60 text-[11px]">{{ $t('audioView.noTrackHint') }}</span>
     </div>
   </div>
 </template>

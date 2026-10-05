@@ -165,6 +165,15 @@ export const SETTINGS_TABS = [
     section: 'system'
   },
   {
+    // Przywrócona: AppMenu i StatusBar nawigowały do `?tab=about`, ale zakładki
+    // nie było w tej liście, więc `SettingsAbout.vue` był nieosiągalny z UI.
+    id: 'about',
+    labelKey: 'settings.about',
+    descKey: 'settings.tabDesc.about',
+    icon: Info,
+    section: 'system'
+  },
+  {
     id: 'apiKeys',
     labelKey: 'settings.apiKeys',
     descKey: 'settings.tabDesc.apiKeys',

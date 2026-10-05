@@ -1,53 +1,12 @@
 import type { MediaSource, SourceEndpoint, SourceItem } from '../../shared/types/sources';
+import { dotGet, asString, resolveTemplate, buildSourceUrl } from '../../shared/source-url';
 
 // Czyste helpery szablonów/URL/dot-path wyodrębnione z `generic-fetch.ts`
-// (plan 2.8). `generic-fetch` re-eksportuje publiczne z nich, aby istniejące
-// importery/testy działały bez zmian.
+// (plan 2.8). Współdzielone z rendererem przez `shared/source-url`, aby oba
+// procesy liczyły URL i dot-path identycznie. `generic-fetch` re-eksportuje
+// publiczne z nich, aby istniejące importery/testy działały bez zmian.
 
-/** Bezpieczny "dot-path" odczyt z JSON: rozdziela po '.', segmenty liczbowe = indeksy tablic. */
-export function dotGet(obj: unknown, path: string | undefined): unknown {
-  if (!path || obj == null) return undefined;
-  let current: unknown = obj;
-  for (const raw of path.split('.')) {
-    if (current == null) return undefined;
-    const seg = raw.trim();
-    if (!seg) return undefined;
-    if (Array.isArray(current)) {
-      const idx = Number(seg);
-      if (!Number.isInteger(idx) || idx < 0 || idx >= current.length) return undefined;
-      current = current[idx];
-    } else if (typeof current === 'object') {
-      current = (current as Record<string, unknown>)[seg];
-    } else {
-      return undefined;
-    }
-  }
-  return current;
-}
-
-export function asString(v: unknown): string | undefined {
-  if (typeof v === 'string') return v;
-  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
-  return undefined;
-}
-
-/** Zastępuje placeholdery {a.b} wartościami z kontekstu (surowy JSON rodzica); {n} = wygenerowany indeks. */
-export function resolveTemplate(template: string, context: unknown): string {
-  if (!context || typeof context !== 'object') return template;
-  return template.replace(/\{([^}]+)\}/g, (raw, name: string) => {
-    const v = dotGet(context, name);
-    return v === undefined || v === null ? raw : (asString(v) ?? raw);
-  });
-}
-
-/** Zamienia placeholdery w ścieżce; wartości trafiające do segmentu ścieżki są encodeURIComponent. */
-export function resolvePathTemplate(path: string, context: unknown): string {
-  if (!context || typeof context !== 'object' || !path.includes('{')) return path;
-  return path.replace(/\{([^}]+)\}/g, (raw, name: string) => {
-    const v = dotGet(context, name);
-    return v === undefined || v === null ? raw : encodeURIComponent(asString(v) ?? raw);
-  });
-}
+export { dotGet, asString, resolveTemplate } from '../../shared/source-url';
 
 const MAX_RANGE_ITEMS = 1000;
 
@@ -105,20 +64,7 @@ export function buildUrl(
   page?: number,
   context?: unknown
 ): string {
-  const base = source.baseUrl.replace(/\/+$/, '');
-  const path = resolvePathTemplate(endpoint.path.trim(), context);
-  const full = /^https?:\/\//i.test(path)
-    ? path
-    : base + (path.startsWith('/') ? path : `/${path}`);
-  if (endpoint.method === 'POST') return full;
-  const usp = new URLSearchParams();
-  for (const [k, v] of Object.entries(endpoint.params || {}))
-    usp.set(k, resolveTemplate(v, context));
-  if (query) for (const [k, v] of Object.entries(query)) usp.set(k, v);
-  if (endpoint.pagination?.pageParam) {
-    const v = page ?? pageToken;
-    if (v !== undefined) usp.set(endpoint.pagination.pageParam, String(v));
-  }
-  const qs = usp.toString();
-  return qs ? full + (full.includes('?') ? '&' : '?') + qs : full;
+  // Deleguje do współdzielonej implementacji (identyczne zachowanie); sygnatura
+  // pozycyjna zachowana dla istniejących importerów.
+  return buildSourceUrl(source, endpoint, { pageToken, query, page, context });
 }

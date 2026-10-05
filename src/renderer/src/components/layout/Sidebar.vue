@@ -151,6 +151,7 @@ function onResizeStart(e: MouseEvent) {
               <div
                 v-for="[album, tracks] in library.albums"
                 :key="album"
+                v-activate
                 class="group flex items-center gap-2 px-3 py-2 rounded-field text-xs text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors cursor-pointer"
                 @click="router.push('/library?album=' + encodeURIComponent(album))"
               >

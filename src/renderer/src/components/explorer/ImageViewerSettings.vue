@@ -113,6 +113,9 @@ const emit = defineEmits<{
       <button
         data-testid="iv-loop"
         class="w-7 h-4 rounded-full transition-colors relative"
+        role="switch"
+        :aria-label="$t('imageViewer.ssLoop')"
+        :aria-checked="loop"
         :class="loop ? 'bg-primary' : 'bg-base-content/10'"
         @click="emit('update:loop', !loop)"
       >
@@ -130,6 +133,9 @@ const emit = defineEmits<{
       <button
         data-testid="iv-shuffle"
         class="w-7 h-4 rounded-full transition-colors relative"
+        role="switch"
+        :aria-label="$t('imageViewer.ssShuffle')"
+        :aria-checked="shuffle"
         :class="shuffle ? 'bg-primary' : 'bg-base-content/10'"
         @click="emit('update:shuffle', !shuffle)"
       >
@@ -147,6 +153,9 @@ const emit = defineEmits<{
       <button
         data-testid="iv-ken-burns"
         class="w-7 h-4 rounded-full transition-colors relative"
+        role="switch"
+        :aria-label="$t('imageViewer.ssKenBurns')"
+        :aria-checked="kenBurns"
         :class="kenBurns ? 'bg-primary' : 'bg-base-content/10'"
         @click="emit('update:kenBurns', !kenBurns)"
       >
@@ -166,6 +175,9 @@ const emit = defineEmits<{
       <button
         data-testid="iv-auto-hide"
         class="w-7 h-4 rounded-full transition-colors relative"
+        role="switch"
+        :aria-label="$t('imageViewer.ssAutoHide')"
+        :aria-checked="autoHide"
         :class="autoHide ? 'bg-primary' : 'bg-base-content/10'"
         @click="emit('update:autoHide', !autoHide)"
       >

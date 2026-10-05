@@ -11,11 +11,23 @@ function fakeChild(outcome: 'spawn' | 'error'): ChildProcess {
 }
 
 describe('terminalCandidates', () => {
-  it('uses cmd on win32', () => {
+  it('uses cmd on win32 with the directory as cwd (no shell string)', () => {
     expect(terminalCandidates('win32', 'C:/x')[0]).toEqual({
       cmd: 'cmd',
-      args: ['/K', 'cd', '/d', 'C:/x']
+      args: [],
+      cwd: 'C:/x'
     });
+  });
+
+  it('does not run a shell with the directory interpolated (xterm regression)', () => {
+    const commands = terminalCandidates('linux', '/tmp/$(touch /tmp/pwned)');
+    const xterm = commands.find((c) => c.cmd === 'xterm');
+    expect(xterm).toBeDefined();
+    // Katalog idzie przez cwd, nie przez `sh -c "cd \"<dir>\" && ..."`.
+    expect(xterm?.args).toEqual(['-e', 'sh']);
+    expect(xterm?.cwd).toBe('/tmp/$(touch /tmp/pwned)');
+    // Żaden kandydat nie uruchamia shella z wbudowaną ścieżką (`-c`).
+    for (const c of commands) expect(c.args).not.toContain('-c');
   });
 
   it('uses Terminal on darwin', () => {

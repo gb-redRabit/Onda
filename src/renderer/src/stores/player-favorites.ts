@@ -1,3 +1,4 @@
+import { computed } from 'vue';
 import { useSettingsStore } from './settings';
 
 // Ulubione są ustawieniem, więc żyją w stanie ustawień i są zapisywane przez
@@ -29,12 +30,13 @@ export function usePlayerFavorites() {
     return loadPromise;
   }
 
-  // Czytaj przez store przy każdym wywołaniu, zamiast trzymać tablicę: store
-  // mógł otrzymać nową tablicę od czasu utworzenia tego, a
-  // przechwycone odwołanie byłoby wtedy nieaktualne.
+  // Zbiór liczony raz na zmianę ulubionych (computed cache'uje), więc `isFavorite`
+  // jest O(1) zamiast `Array.includes` O(F) wołanego kilka razy na wiersz listy.
+  const favoriteSet = computed(() => new Set(settings.favorites));
+
   function isFavorite(path: string): boolean {
     void ensureFavorites();
-    return settings.favorites.includes(path);
+    return favoriteSet.value.has(path);
   }
 
   async function toggleFavorite(path: string) {

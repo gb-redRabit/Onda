@@ -180,39 +180,18 @@ export async function fetchTableRows(
     if (table.mode === 'endpoint') {
       const path = table.path?.trim();
       if (!path) return [];
-      const auth = await resolveAuth(source);
-      const { url, headers } = finalizeRequest(
+      const request = await buildEndpointRequest(
         source,
         { ...endpoint, path, params: undefined, pagination: undefined, method: 'GET' },
-        auth,
-        undefined,
-        {},
-        undefined,
-        opts?.context
+        { context: opts?.context, includeBody: false }
       );
-      const res = await httpJsonFetch(url, {
-        method: 'GET',
-        headers,
-        allowPrivateNetwork: source.allowPrivateNetwork
-      });
-      json = res.json;
+      json = (await httpJsonFetch(request.url, request)).json;
     } else {
-      const auth = await resolveAuth(source);
-      const { url, headers } = finalizeRequest(
-        source,
-        endpoint,
-        auth,
-        undefined,
-        {},
-        undefined,
-        opts?.context
-      );
-      const res = await httpJsonFetch(url, {
-        method: endpoint.method,
-        headers,
-        allowPrivateNetwork: source.allowPrivateNetwork
+      const request = await buildEndpointRequest(source, endpoint, {
+        context: opts?.context,
+        includeBody: false
       });
-      json = res.json;
+      json = (await httpJsonFetch(request.url, request)).json;
     }
     return mapTableRows(tableArrayFromData(json, table), table);
   } catch (e) {
@@ -229,6 +208,12 @@ export interface HttpJsonFetchOptions {
   headers: Record<string, string>;
   body?: string;
   allowPrivateNetwork?: boolean;
+  /**
+   * Origin, z którym wolno łączyć się siecią prywatną. Zaufanie do sieci prywatnej
+   * źródła jest wiązane z jego ZAPISANYM `baseUrl`, więc przejęty renderer nie może
+   * sparować flagi z innym hostem (loopback/metadata).
+   */
+  trustedOrigin?: string;
 }
 
 export async function httpJsonFetch(
@@ -243,7 +228,7 @@ export async function httpJsonFetch(
     defaultHeaders: { Accept: 'application/json', 'User-Agent': 'Onda/1.0' },
     body: opts.body,
     allowPrivateNetwork: opts.allowPrivateNetwork,
-    trustedOrigin,
+    trustedOrigin: trustedOrigin ?? opts.trustedOrigin,
     maxRedirects: redirectsLeft
   });
   try {
@@ -325,9 +310,69 @@ export function finalizeRequest(
   const url = buildUrl(source, endpoint, pageToken, merged, page, context);
   if (safeOrigin(url) === safeOrigin(source.baseUrl)) return { url, headers: auth.headers };
   if (Object.keys(auth.headers).length || Object.keys(auth.query).length) {
-    logger.warn('sources', `credentials dropped: ${url} is not same-origin as ${source.baseUrl}`);
+    // Logujemy wyłącznie origin: pełny URL mógłby nieść klucz API w parametrze
+    // o nazwie spoza listy redakcji (np. `?q=`), a log jest czytelny dla renderera
+    // przez `diagnostics:readLogs`.
+    logger.warn(
+      'sources',
+      `credentials dropped: ${safeOrigin(url) ?? '(invalid)'} is not same-origin as ${source.baseUrl}`
+    );
   }
   return { url: buildUrl(source, endpoint, pageToken, extraQuery, page, context), headers: {} };
+}
+
+interface EndpointRequestInput {
+  query?: Record<string, string>;
+  pageToken?: string;
+  page?: number;
+  context?: unknown;
+  /** Tabele nie wysyłają ciała POST — tylko nagłówki/query. */
+  includeBody?: boolean;
+}
+
+/**
+ * Wspólna budowa żądania dla listy, tabeli i testu połączenia: rozwiązuje auth,
+ * finalizuje URL (z ochroną same-origin), renderuje szablony params i składa body
+ * dla POST. Wcześniej ta logika była powtórzona w trzech miejscach.
+ */
+async function buildEndpointRequest(
+  source: MediaSource,
+  endpoint: SourceEndpoint,
+  opts?: EndpointRequestInput
+): Promise<{
+  url: string;
+  method: 'GET' | 'POST';
+  headers: Record<string, string>;
+  body?: string;
+  allowPrivateNetwork?: boolean;
+  trustedOrigin: string;
+}> {
+  const auth = await resolveAuth(source);
+  const { url, headers } = finalizeRequest(
+    source,
+    endpoint,
+    auth,
+    opts?.pageToken,
+    opts?.query || {},
+    opts?.page,
+    opts?.context
+  );
+  let body: string | undefined;
+  if (endpoint.method === 'POST' && opts?.includeBody !== false) {
+    const bodyParams: Record<string, string> = {};
+    for (const [k, v] of Object.entries(endpoint.params || {})) {
+      bodyParams[k] = resolveTemplate(v, opts?.context);
+    }
+    body = JSON.stringify({ ...bodyParams, ...(opts?.query || {}) });
+  }
+  return {
+    url,
+    method: endpoint.method,
+    headers,
+    body,
+    allowPrivateNetwork: source.allowPrivateNetwork,
+    trustedOrigin: source.baseUrl
+  };
 }
 
 export async function fetchSourceItems(
@@ -339,30 +384,13 @@ export async function fetchSourceItems(
     if (endpoint.range) {
       return { items: generateRangeItems(endpoint, opts?.context), hasMore: false };
     }
-    const auth = await resolveAuth(source);
-    const { url, headers } = finalizeRequest(
-      source,
-      endpoint,
-      auth,
-      opts?.pageToken,
-      opts?.query || {},
-      opts?.page,
-      opts?.context
-    );
-    const bodyParams: Record<string, string> = {};
-    for (const [k, v] of Object.entries(endpoint.params || {})) {
-      bodyParams[k] = resolveTemplate(v, opts?.context);
-    }
-    const body =
-      endpoint.method === 'POST'
-        ? JSON.stringify({ ...bodyParams, ...(opts?.query || {}) })
-        : undefined;
-    const { json } = await httpJsonFetch(url, {
-      method: endpoint.method,
-      headers,
-      body,
-      allowPrivateNetwork: source.allowPrivateNetwork
+    const request = await buildEndpointRequest(source, endpoint, {
+      query: opts?.query,
+      pageToken: opts?.pageToken,
+      page: opts?.page,
+      context: opts?.context
     });
+    const { json } = await httpJsonFetch(request.url, request);
     const items = mapResponse(json, endpoint);
     const meta = paginationMeta(json, endpoint);
     const isPageMode =
@@ -387,27 +415,8 @@ export async function testSourceConnection(
   opts?: { context?: unknown }
 ): Promise<SourceTestResult> {
   try {
-    const auth = await resolveAuth(source);
-    const { url, headers } = finalizeRequest(
-      source,
-      endpoint,
-      auth,
-      undefined,
-      {},
-      undefined,
-      opts?.context
-    );
-    const bodyParams: Record<string, string> = {};
-    for (const [k, v] of Object.entries(endpoint.params || {})) {
-      bodyParams[k] = resolveTemplate(v, opts?.context);
-    }
-    const body = endpoint.method === 'POST' ? JSON.stringify(bodyParams) : undefined;
-    const { json, status } = await httpJsonFetch(url, {
-      method: endpoint.method,
-      headers,
-      body,
-      allowPrivateNetwork: source.allowPrivateNetwork
-    });
+    const request = await buildEndpointRequest(source, endpoint, { context: opts?.context });
+    const { json, status } = await httpJsonFetch(request.url, request);
     const items = mapResponse(json, endpoint);
     let sample = items[0];
     if (!sample && json && typeof json === 'object' && !Array.isArray(json)) {

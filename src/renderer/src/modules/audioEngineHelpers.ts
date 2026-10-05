@@ -7,6 +7,8 @@ export interface MediaListenerDeps {
   onError(el: HTMLAudioElement): void;
   loadStartTs(): number;
   onCanplay(el: HTMLAudioElement): void;
+  onPause?(): void;
+  onTimeUpdate?(currentTime: number): void;
 }
 
 export function attachMediaElementListeners(el: HTMLAudioElement, deps: MediaListenerDeps): void {
@@ -21,9 +23,11 @@ export function attachMediaElementListeners(el: HTMLAudioElement, deps: MediaLis
   });
   el.addEventListener('pause', () => {
     audioEvents.emit('playStateChange', false);
+    deps.onPause?.();
   });
   el.addEventListener('timeupdate', () => {
     audioEvents.emit('timeUpdate', el.currentTime);
+    deps.onTimeUpdate?.(el.currentTime);
   });
   el.addEventListener('loadedmetadata', () => {
     audioEvents.emit('durationChange', el.duration || 0);
@@ -92,11 +96,25 @@ export interface StreamErrorOps {
   setGain: (value: number) => void;
 }
 
-// Drabinka obsługi błędów strumienia, wydzielona z `modules/audioEngine.ts` (plan 2.8):
+export type StreamRetryStep = 'direct' | 'proxy' | 'fail';
+
+// Czysta decyzja drabinki ponowień (bez DOM/stanu silnika), więc testowalna
+// jednostkowo. Drabinka:
 //   wyczerpane ponowienia proxy -> jedna bezpośrednia próba (inna ścieżka żądania)
 //   bezpośrednia też nieudana  -> jeszcze jedno przejście przez proxy (okno throttlingu
 //                                 na IP mogło tymczasem minąć)
-//   ta również nieudana        -> zdarzenie streamError (stopka je pokazuje)
+//   ta również nieudana        -> 'fail' (zdarzenie streamError pokazuje stopka)
+export function nextStreamRetryStep(
+  mode: 'proxy' | 'direct' | null,
+  triedDirect: boolean,
+  finalRetried: boolean
+): StreamRetryStep {
+  if (mode === 'proxy' && !triedDirect) return 'direct';
+  if (mode === 'direct' && !finalRetried) return 'proxy';
+  return 'fail';
+}
+
+// Wykonuje krok drabinki na elemencie audio. Decyzja pochodzi z `nextStreamRetryStep`.
 export function handleStreamSourceError(el: HTMLAudioElement, ops: StreamErrorOps): void {
   const err = el.error;
   logger.warn(
@@ -112,7 +130,8 @@ export function handleStreamSourceError(el: HTMLAudioElement, ops: StreamErrorOp
   }
   const normalized = ops.normalization();
   const scaledVolume = (ops.isMuted() ? 0 : ops.volume()) * normalized;
-  if (ops.getMode() === 'proxy' && !ops.getTriedDirect()) {
+  const step = nextStreamRetryStep(ops.getMode(), ops.getTriedDirect(), ops.getFinalRetried());
+  if (step === 'direct') {
     // Ponowienia proxy (403 z backoffem) zostały wyczerpane — ponów surowy URL raz
     // bezpośrednio z renderera jako inną ścieżkę żądania.
     ops.setTriedDirect(true);
@@ -130,7 +149,7 @@ export function handleStreamSourceError(el: HTMLAudioElement, ops: StreamErrorOp
     audioEvents.emit('bufferChange', 0);
     return;
   }
-  if (ops.getMode() === 'direct' && !ops.getFinalRetried()) {
+  if (step === 'proxy') {
     // Bezpośrednie ponowienie też się nie udało — wróć przez proxy jeszcze ostatni raz.
     ops.setFinalRetried(true);
     ops.setMode('proxy');

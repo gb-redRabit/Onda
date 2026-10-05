@@ -2,7 +2,10 @@ import { ipcMain } from 'electron';
 
 // URL serwera mediów zawiera token uwierzytelniający na jeden przebieg. Nigdy nie
 // może być przekazywany przez argumenty CLI (widoczne przez `Get-Process` /
-// `/proc/pid/cmdline`), więc okna pobierają go synchronicznie przez IPC.
+// `/proc/pid/cmdline`), więc okna pobierają go przez IPC.
+//
+// Wcześniej był to `sendSync`, który blokuje wątek renderera przy starcie każdego
+// okna. Teraz to zwykły `invoke`; preload pobiera URL raz, asynchronicznie, i cache'uje.
 let currentMediaServerUrl = '';
 
 export function setMediaServerUrl(url: string): void {
@@ -14,7 +17,5 @@ function getMediaServerUrl(): string {
 }
 
 export function registerMediaUrlHandler(): void {
-  ipcMain.on('media:getServerUrl', (event) => {
-    event.returnValue = getMediaServerUrl();
-  });
+  ipcMain.handle('media:getServerUrl', () => getMediaServerUrl());
 }

@@ -232,11 +232,19 @@ describe('audioEngine saved position restore', () => {
     setActivePinia(createPinia());
     vi.stubGlobal('AudioContext', FakeAudioContext);
     vi.stubGlobal('Audio', FakeAudio);
+    audioEngine.setStateProvider({
+      getCurrentTrackPath: () => usePlayerStore().currentTrack?.path ?? null,
+      getCurrentTrack: () => usePlayerStore().currentTrack,
+      isMuted: () => usePlayerStore().isMuted,
+      getVolume: () => usePlayerStore().volume,
+      isPlaying: () => usePlayerStore().isPlaying
+    });
   });
 
   afterEach(async () => {
     vi.unstubAllGlobals();
     delete (window as unknown as { api?: unknown }).api;
+    audioEngine.setStateProvider(null);
     await audioEngine.destroy().catch(() => {});
   });
 
@@ -310,5 +318,46 @@ describe('audioEngine saved position restore', () => {
 
     expect(getPlaybackPosition).not.toHaveBeenCalled();
     expect(el.currentTime).toBe(0);
+  });
+
+  it('saves position via setPlaybackPosition when currentTime > 5', () => {
+    const setPlaybackPosition = vi.fn();
+    (window as unknown as { api: unknown }).api = { setPlaybackPosition };
+
+    const player = usePlayerStore();
+    player.currentTrack = track;
+
+    audioEngine.loadTrack(track);
+    const el = audioEngine.getMediaElement() as unknown as FakeAudio;
+    el.currentTime = 120;
+
+    audioEngine.savePosition();
+    expect(setPlaybackPosition).toHaveBeenCalledWith(track.path, 120);
+  });
+
+  it('clears position via clearPlaybackPosition on clearSavedPosition', () => {
+    const clearPlaybackPosition = vi.fn();
+    (window as unknown as { api: unknown }).api = { clearPlaybackPosition };
+
+    audioEngine.clearSavedPosition(track.path);
+    expect(clearPlaybackPosition).toHaveBeenCalledWith(track.path);
+  });
+
+  it('saves previous track position when loading a different track', () => {
+    const setPlaybackPosition = vi.fn();
+    (window as unknown as { api: unknown }).api = { setPlaybackPosition };
+
+    const player = usePlayerStore();
+    player.currentTrack = track;
+
+    audioEngine.loadTrack(track);
+    const el = audioEngine.getMediaElement() as unknown as FakeAudio;
+    el.currentTime = 45;
+
+    const track2 = { ...track, id: 'b', path: 'D:/music/b.mp3' };
+    player.currentTrack = track2;
+    audioEngine.loadTrack(track2);
+
+    expect(setPlaybackPosition).toHaveBeenCalledWith(track.path, 45);
   });
 });

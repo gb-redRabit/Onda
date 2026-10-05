@@ -54,9 +54,35 @@ export function useTheme(appearanceRef: Ref<AppearanceSettings>) {
     // podąża za schematem OS, chyba że strona zadeklaruje własny — bez tego ciemne
     // motywy renderowały jasną, nieczytelną listę rozwijaną.
     document.documentElement.style.colorScheme = resolved.scheme;
+    // Motyw systemowy: `theme: 'system'` rozwiązuje schemat w resolveThemeAppearance,
+    // więc nasłuch preferencji OS musi tylko przemalować. Detektory są zdejmowane
+    // przy zmianie na konkretny motyw i przy rozłączeniu komponentu.
+    syncSystemThemeListener();
     applyWindowMode();
     applyMotion();
+    applyLang();
     pushToPip(vars);
+  }
+
+  let removeSystemThemeListener: (() => void) | null = null;
+
+  function syncSystemThemeListener(): void {
+    const wantsSystem = get().theme === 'system';
+    if (wantsSystem && !removeSystemThemeListener && typeof window.matchMedia === 'function') {
+      const mq = window.matchMedia('(prefers-color-scheme: light)');
+      const onChange = (): void => reapplyTheme();
+      mq.addEventListener('change', onChange);
+      removeSystemThemeListener = () => mq.removeEventListener('change', onChange);
+    } else if (!wantsSystem && removeSystemThemeListener) {
+      removeSystemThemeListener();
+      removeSystemThemeListener = null;
+    }
+  }
+
+  // `<html lang>` steruje wymową czytnika ekranu — trzyma się języka UI.
+  function applyLang(): void {
+    const loc = get().locale === 'auto' ? navigator.language || 'en' : get().locale;
+    document.documentElement.lang = loc;
   }
 
   function applyPreviewVars(partial: Record<string, string>) {
@@ -97,7 +123,12 @@ export function useTheme(appearanceRef: Ref<AppearanceSettings>) {
     { deep: true }
   );
 
-  return { applyTheme, applyPreviewVars, reapplyTheme };
+  function dispose(): void {
+    removeSystemThemeListener?.();
+    removeSystemThemeListener = null;
+  }
+
+  return { applyTheme, applyPreviewVars, reapplyTheme, dispose };
 }
 
 let engineInstance: ReturnType<typeof useTheme> | null = null;

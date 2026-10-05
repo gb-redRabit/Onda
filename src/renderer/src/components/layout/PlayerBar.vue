@@ -63,6 +63,11 @@ function onSeek(e: MouseEvent) {
   audio.seek(time);
 }
 
+function onSeekBy(delta: number) {
+  const next = Math.max(0, Math.min(audio.duration.value, audio.currentTime.value + delta));
+  audio.seek(next);
+}
+
 function onVolume(e: MouseEvent) {
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
   audio.setVolume((e.clientX - rect.left) / rect.width);
@@ -127,6 +132,7 @@ function togglePlay() {
     :buffered-pct="bufferedPct"
     :is-live="isLive"
     @seek="onSeek"
+    @seek-by="onSeekBy"
     @toggle-play="togglePlay"
     @audio-view="router.push('/audio')"
     @expand="isMini = false"

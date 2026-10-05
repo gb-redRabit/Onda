@@ -92,7 +92,7 @@ const { t } = useI18n();
           {{ element.height }}% · 16:9
         </span>
       </div>
-      <p class="text-[10px] text-base-content/40">{{ t('audioView.coverAspectLocked') }}</p>
+      <p class="text-[10px] text-base-content/60">{{ t('audioView.coverAspectLocked') }}</p>
     </div>
 
     <!-- Krycie -->

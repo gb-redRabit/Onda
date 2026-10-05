@@ -38,10 +38,8 @@ export function useVideoPiP(
       subtitle: true
     });
     if (started) {
-      player.pipTime = startTime;
-      player.pipActive = true;
+      player.enterPiP(startTime);
       videoRef?.pause();
-      player.isPlaying = false;
       syncSubtitlesWithPiP();
     }
   }
@@ -52,7 +50,9 @@ export function useVideoPiP(
         if (guardPipActive && !player.pipActive) return;
         pip.updateSubtitle(subtitleData);
       })
-      .catch(() => {});
+      .catch(() => {
+        /* best-effort */
+      });
   }
 
   return { togglePiP, updatePiPSubtitles };

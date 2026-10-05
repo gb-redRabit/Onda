@@ -8,6 +8,8 @@ import { useUIStore } from './stores/ui';
 import { useSettingsStore } from './stores/settings';
 import { usePluginsStore } from './stores/plugins';
 import { usePluginsHooks } from './composables/usePluginsHooks';
+import { ensureMediaServerUrl } from './utils/imageLoader';
+import { vActivate } from './utils/activateDirective';
 import { logger } from '@shared/logger';
 
 import { moduleManager } from './modules/ModuleManager';
@@ -34,6 +36,7 @@ setActivePinia(pinia);
 app.use(pinia);
 app.use(router);
 app.use(i18n);
+app.directive('activate', vActivate);
 
 function reportError(err: unknown, info: string): void {
   logger.error('Error', `${err}`, info);
@@ -71,8 +74,14 @@ window.addEventListener('unhandledrejection', (event) => {
 // bezczynna, żeby pierwsza nawigacja była natychmiastowa zamiast pokazywać loader.
 function prefetchLikelyRoutes(): void {
   const warm = (): void => {
-    void import('@renderer/views/LibraryView.vue').catch(() => {});
-    void import('@renderer/views/OnlineView.vue').catch(() => {});
+    // Prefetch nie jest krytyczny, ale cicha porażka wczytywania chunka była
+    // niewidoczna — logujemy, gdy się nie powiedzie.
+    void import('@renderer/views/LibraryView.vue').catch((e) =>
+      logger.warn('app', 'LibraryView prefetch failed', e)
+    );
+    void import('@renderer/views/OnlineView.vue').catch((e) =>
+      logger.warn('app', 'OnlineView prefetch failed', e)
+    );
   };
   if ('requestIdleCallback' in window) {
     window.requestIdleCallback(warm, { timeout: 4000 });
@@ -81,15 +90,38 @@ function prefetchLikelyRoutes(): void {
   }
 }
 
+let mounted = false;
+
 async function bootstrap(): Promise<void> {
   // Inicjalizacja locale + modułów biegnie równolegle z rundą IPC ustawień (store
   // też odczytuje je z App.vue tylko jeśli jeszcze nie jest wczytany), więc
   // żadne z nich nie jest na ścieżce krytycznej pierwszego malowania.
-  await Promise.all([initI18n(), moduleManager.initAll(), useSettingsStore().load()]);
+  // Bazowy URL serwera mediów (z tokenem) musi być znany, zanim zamontujemy UI —
+  // odtwarzacz/okładki budują z niego URL-e synchronicznie.
+  await Promise.all([
+    initI18n(),
+    moduleManager.initAll(),
+    useSettingsStore().load(),
+    ensureMediaServerUrl()
+  ]);
   app.mount('#app');
+  mounted = true;
   usePluginsHooks();
   void usePluginsStore().load();
   prefetchLikelyRoutes();
 }
 
-void bootstrap();
+// Odrzucenie przed `app.mount` (np. dynamiczny import locale albo init modułu)
+// zostawiało biały renderer aż do 30-sekundowego watchdoga main. W takim wypadku
+// montujemy aplikację z domyślnymi ustawieniami, zamiast nic nie robić.
+void bootstrap().catch((e) => {
+  reportError(e, 'bootstrap failed; mounting with defaults');
+  if (!mounted) {
+    try {
+      app.mount('#app');
+      mounted = true;
+    } catch {
+      /* best-effort */
+    }
+  }
+});

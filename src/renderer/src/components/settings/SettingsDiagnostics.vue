@@ -232,7 +232,7 @@ async function onFactoryReset(): Promise<void> {
         {{ $t('settings.perfBootTimeline') }}
       </div>
       <div v-for="phase in perf.phases" :key="phase.label" class="flex items-center gap-2 text-xs">
-        <span class="font-mono text-base-content/40 w-16 text-right shrink-0 tabular-nums">
+        <span class="font-mono text-base-content/60 w-16 text-right shrink-0 tabular-nums">
           {{ phase.ms }} ms
         </span>
         <span class="flex-1 h-1.5 rounded-full bg-base-content/10 overflow-hidden">
@@ -279,10 +279,10 @@ async function onFactoryReset(): Promise<void> {
           <div v-else-if="row.version" class="font-mono text-base-content/50">
             v{{ row.version }}
           </div>
-          <div v-else class="text-base-content/40">{{ $t('settings.depMissing') }}</div>
+          <div v-else class="text-base-content/60">{{ $t('settings.depMissing') }}</div>
           <div
             v-if="row.path"
-            class="text-[10px] font-mono text-base-content/40 truncate max-w-[320px]"
+            class="text-[10px] font-mono text-base-content/60 truncate max-w-[320px]"
             :title="row.path"
           >
             {{ row.path }}
@@ -300,7 +300,7 @@ async function onFactoryReset(): Promise<void> {
     </div>
     <div v-if="warnings.length" class="space-y-1">
       <div v-for="(w, i) in warnings" :key="i" class="flex items-start gap-2 text-xs">
-        <span class="font-mono text-[10px] text-base-content/40 shrink-0 pt-0.5">
+        <span class="font-mono text-[10px] text-base-content/60 shrink-0 pt-0.5">
           {{ formatTime(w.at) }}
         </span>
         <span class="text-base-content/70 wrap-break-word min-w-0">{{ w.text }}</span>

@@ -1,6 +1,7 @@
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { dirname } from 'path';
 import { logger } from '../../../shared/logger';
+import { createWriteLock } from '../../utils/write-queue';
 
 // Trwały zapis elementów źródeł (po ich `id` API), których pobieranie zakończyło się
 // sukcesem. Trzymany poza szyfrowanym store ustawień i poza
@@ -14,15 +15,7 @@ export interface DownloadedSourceItems {
 
 // Serializuje dostęp read-modify-write, aby dwa pobrania kończące się w tym samym
 // czasie nie zgubiły nawzajem swoich id.
-let writeChain: Promise<void> = Promise.resolve();
-function withWriteLock<T>(fn: () => Promise<T>): Promise<T> {
-  const result = writeChain.then(fn);
-  writeChain = result.then(
-    () => undefined,
-    () => undefined
-  );
-  return result;
-}
+const withWriteLock = createWriteLock();
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);

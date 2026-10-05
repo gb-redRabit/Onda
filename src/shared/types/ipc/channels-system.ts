@@ -243,6 +243,7 @@ export interface SystemChannels {
     result: string | null;
   };
   'media:grantAccess': { args: [filePath: string]; result: boolean };
+  'media:getServerUrl': { args: []; result: string };
   'app:getInfo': { args: []; result: AppInfo };
   'app:getLicenses': {
     args: [];

@@ -8,6 +8,7 @@ import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
 import { usePluginsStore } from '@renderer/stores/plugins';
 import { include, type FlatItem, type SearchGroup } from '@renderer/utils/appSearch';
+import { useDialogFocus } from '@renderer/composables/useDialogFocus';
 import AppSearchResults from './AppSearchResults.vue';
 import {
   Search,
@@ -34,6 +35,10 @@ const router = useRouter();
 
 const input = ref<HTMLInputElement | null>(null);
 const activeIndex = ref(0);
+// Pułapka focusu + powrót fokusu po zamknięciu (WCAG 2.4.3). Panel to kontener
+// z inputem; Escape obsługuje własny `onKeydown` (zamyka paletę).
+const panelRef = ref<HTMLElement | null>(null);
+useDialogFocus(panelRef);
 
 // Debounce (potencjalnie ogromnego) filtra biblioteki, żeby pisanie w palecie
 // poleceń nie skanowało każdego utworu przy każdym naciśnięciu klawisza (plan 1.8).
@@ -209,11 +214,15 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
   <div
     v-if="ui.searchMode !== 'closed'"
     data-testid="app-search"
+    role="dialog"
+    aria-modal="true"
+    :aria-label="$t('cmdPalette.placeholder')"
     class="fixed inset-0 z-70 flex items-start justify-center pt-[12vh]"
     :class="ui.searchMode === 'global' ? 'bg-neutral/45 backdrop-blur-sm' : ''"
     @click.self="close"
   >
     <div
+      ref="panelRef"
       :class="ui.searchMode === 'global' ? 'w-120' : 'w-72'"
       class="max-w-[90vw] bg-neutral border border-neutral-content/20 rounded-box shadow-2xl shadow-black/50 overflow-hidden"
     >
@@ -230,6 +239,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
           data-testid="app-search-input"
           data-app-search
           role="combobox"
+          :aria-label="
+            ui.searchMode === 'view' ? $t('menu.viewSearch') : $t('cmdPalette.placeholder')
+          "
           aria-autocomplete="list"
           aria-controls="app-search-results"
           :aria-expanded="ui.searchMode === 'global'"
@@ -244,6 +256,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
         <button
           v-if="ui.searchQuery"
           class="shrink-0 text-base-content/50 hover:text-base-content"
+          :aria-label="$t('common.clear')"
           @click="clearQuery"
         >
           <X :size="14" />

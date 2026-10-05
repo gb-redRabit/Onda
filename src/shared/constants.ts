@@ -1,41 +1,17 @@
-export const VIDEO_EXTS = [
-  '.mp4',
-  '.mkv',
-  '.avi',
-  '.webm',
-  '.mov',
-  '.wmv',
-  '.m4v',
-  '.ts',
-  '.ogv',
-  '.flv'
-];
+import { MIME_TYPES } from './mime';
 
-export const AUDIO_EXTS = [
-  '.mp3',
-  '.flac',
-  '.wav',
-  '.ogg',
-  '.aac',
-  '.m4a',
-  '.wma',
-  '.opus',
-  '.aiff',
-  '.alac'
-];
+// Listy rozszerzeń wyprowadzone z tabeli MIME, żeby nie mogły się rozjechać:
+// wcześniej były osobnymi literałami, a `.alac` istniał tylko tutaj (bez MIME).
+// Kolejność jest deterministyczna (kolejność kluczy `MIME_TYPES`).
+function extsByMimePrefix(prefix: string): string[] {
+  return Object.entries(MIME_TYPES)
+    .filter(([, type]) => type.startsWith(prefix))
+    .map(([ext]) => ext);
+}
 
-export const IMAGE_EXTS = [
-  '.jpg',
-  '.jpeg',
-  '.png',
-  '.webp',
-  '.gif',
-  '.bmp',
-  '.svg',
-  '.ico',
-  '.tiff',
-  '.tif'
-];
+export const VIDEO_EXTS = extsByMimePrefix('video/');
+export const AUDIO_EXTS = extsByMimePrefix('audio/');
+export const IMAGE_EXTS = extsByMimePrefix('image/');
 
 // Opcje formatu/jakości pobierania współdzielone między procesem głównym a
 // rendererem. `best` dla audio oznacza "native" (bez ponownego kodowania), a

@@ -61,7 +61,10 @@ export function usePipVideoIpc(sub: ReturnType<typeof usePipVideoSubtitle>, refs
     if (!v) return;
     duration.value = fmt(v.duration);
     if (pendingStart > 0) v.currentTime = pendingStart;
-    if (!waitingForPlay) v.play().catch(() => {});
+    if (!waitingForPlay)
+      v.play().catch(() => {
+        /* best-effort */
+      });
   }
 
   function onTimeUpdate() {
@@ -108,7 +111,9 @@ export function usePipVideoIpc(sub: ReturnType<typeof usePipVideoSubtitle>, refs
       const v = videoRef.value;
       if (!v) return;
       if (startTime > 0) v.currentTime = startTime;
-      v.play().catch(() => {});
+      v.play().catch(() => {
+        /* best-effort */
+      });
     });
     cleanups.push(c2);
 

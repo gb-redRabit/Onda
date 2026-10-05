@@ -1,6 +1,7 @@
 import { useI18n } from 'vue-i18n';
 import type { MediaFile, Playlist } from '@renderer/types/media';
 import { useLibraryStore } from '@renderer/stores/library';
+import { useLibrarySelectionStore } from '@renderer/stores/library-selection';
 import { usePlayerStore } from '@renderer/stores/player';
 import { usePluginsStore } from '@renderer/stores/plugins';
 import { dirname } from '@renderer/utils/path';
@@ -12,6 +13,7 @@ export function useLibraryContextMenu() {
   const library = useLibraryStore();
   const player = usePlayerStore();
   const plugins = usePluginsStore();
+  const selection = useLibrarySelectionStore();
   const { open } = useContextMenu();
 
   function revealInExplorer(filePath: string) {
@@ -25,7 +27,8 @@ export function useLibraryContextMenu() {
     player,
     library,
     plugins,
-    revealInExplorer
+    revealInExplorer,
+    selection
   });
 
   function showTrackMenu(e: MouseEvent, track: MediaFile, opts?: { onEdit?: () => void }) {

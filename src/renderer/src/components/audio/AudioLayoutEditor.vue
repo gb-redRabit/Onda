@@ -216,6 +216,7 @@ const readout = computed(() => {
           v-for="el in sortedElements"
           v-show="el.visible"
           :key="el.id"
+          v-activate
           class="absolute flex items-center justify-center text-[10px] font-medium rounded-field border-2 cursor-move"
           :class="[
             el.id === selectedId

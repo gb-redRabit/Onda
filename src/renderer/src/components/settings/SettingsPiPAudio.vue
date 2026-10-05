@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref, watch, computed, onBeforeUnmount } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import type { AudioPipDock, AudioPipElementId } from '@shared/types/pip';
@@ -79,9 +79,9 @@ const activeElements = computed<AudioPipElementId[]>(() =>
 const sizeHint = computed(() => {
   const s = getAudioPipSize(settings.appearance.audioPipDock, activeElements.value);
   const d = settings.appearance.audioPipDock;
-  if (d === 'top' || d === 'bottom') return `100% Ă— ${s.height}px`;
-  if (d === 'left' || d === 'right') return `${s.width}px Ă— 100%`;
-  return `${s.width} Ă— ${s.height}px`;
+  if (d === 'top' || d === 'bottom') return `100% × ${s.height}px`;
+  if (d === 'left' || d === 'right') return `${s.width}px × 100%`;
+  return `${s.width} × ${s.height}px`;
 });
 
 function setDock(id: AudioPipDock): void {
@@ -194,7 +194,7 @@ onBeforeUnmount(() => {
                 v-else
                 class="w-11 h-11 rounded-field bg-base-content/5 flex items-center justify-center"
               >
-                <span class="text-[10px] text-base-content/40 text-center leading-tight">
+                <span class="text-[10px] text-base-content/60 text-center leading-tight">
                   {{ sizeHint }}
                 </span>
               </div>
@@ -204,7 +204,7 @@ onBeforeUnmount(() => {
         <p class="mt-2 text-xs text-base-content/50 max-w-44">
           {{
             isEdge
-              ? $t('settings.audioPipDock_edge') + ' Â· ' + $t('settings.audioPipAutoHideDesc')
+              ? $t('settings.audioPipDock_edge') + ' · ' + $t('settings.audioPipAutoHideDesc')
               : $t('settings.audioPipDock_corner')
           }}
         </p>
@@ -215,7 +215,7 @@ onBeforeUnmount(() => {
           <SettingsSectionTitle
             :title="
               (isEdge ? $t('settings.audioPipEdgeContent') : $t('settings.audioPipCornerContent')) +
-              ' Â· ' +
+              ' · ' +
               $t('settings.audioPipSizeHint') +
               ': ' +
               sizeHint

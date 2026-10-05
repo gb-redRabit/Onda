@@ -2,6 +2,7 @@ import type { usePlayerStore } from '@renderer/stores/player';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { logger } from '@shared/logger';
 import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
+import { i18n } from '@renderer/i18n';
 
 type Player = ReturnType<typeof usePlayerStore>;
 
@@ -67,7 +68,8 @@ export function attachVideoTranscodeFallback(
   track: { path: string },
   player: Player,
   notify: (text: string, duration?: number) => void,
-  state: VideoTranscodeState
+  state: VideoTranscodeState,
+  signal?: AbortSignal
 ): void {
   el.addEventListener(
     'error',
@@ -83,12 +85,12 @@ export function attachVideoTranscodeFallback(
       state.attempted = track.path;
       if (player.currentTrack?.path !== track.path) return;
       el.pause();
-      notify('Transcoding video, please wait…', 8000);
+      notify(i18n.global.t('player.transcodingVideo'), 8000);
       window.api
         ?.transcodeVideo(track.path)
         .then((outPath) => {
           if (!outPath) {
-            notify('Video format not supported', 4000);
+            notify(i18n.global.t('player.videoUnsupported'), 4000);
             return;
           }
           if (player.currentTrack?.path !== track.path) return;
@@ -97,10 +99,10 @@ export function attachVideoTranscodeFallback(
           const resume = () => {
             el.play().catch((e) => logger.warn('video', 'transcoded play rejected', e));
           };
-          el.addEventListener('canplay', resume, { once: true });
+          el.addEventListener('canplay', resume, { once: true, signal });
         })
-        .catch(() => notify('Video format not supported', 4000));
+        .catch(() => notify(i18n.global.t('player.videoUnsupported'), 4000));
     },
-    { once: true }
+    { once: true, signal }
   );
 }

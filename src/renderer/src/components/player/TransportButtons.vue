@@ -57,7 +57,7 @@ const toggleClass = computed(
     props.styles?.toggle ??
     (isBar.value
       ? 'fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors'
-      : 'text-neutral-content/40 hover:text-neutral-content/80 transition-colors')
+      : 'text-neutral-content/60 hover:text-neutral-content/80 transition-colors')
 );
 const stepClass = computed(
   () =>

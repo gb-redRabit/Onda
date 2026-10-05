@@ -41,7 +41,38 @@ function geom(
   };
 }
 
+/**
+ * Rozwiązuje warianty zależne od motywu systemowego (`theme: 'system'`).
+ *
+ * Motyw bazowy bierze się z jawnie wybranego `customBase` — jego tożsamość
+ * (kolory, geometria, przezroczystość) jest zachowana, a podmieniany jest tylko
+ * `scheme` oraz paleta, gdy wybrany motyw ma odpowiednik w drugim schemacie
+ * (`dark` ↔ `light`). Dla motywów bez lustrzanego odpowiednika (np. `midnight`)
+ * schemat pozostaje bez zmian, żeby nie zepsuć wyglądu.
+ */
+function applySystemScheme(theme: SemanticTheme): SemanticTheme {
+  const prefersLight =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-color-scheme: light)').matches;
+  const wantScheme = prefersLight ? 'light' : 'dark';
+  if (theme.scheme === wantScheme) return theme;
+
+  const counterpart = theme.scheme === 'dark' ? 'light' : 'dark';
+  // Paleta lustrzana: dla preferencji jasnych bierzemy wbudowany `light`
+  // niezależnie od tego, jaka jest baza — tak działa przełącznik systemowy w
+  // innych aplikacjach (system decyduje o jasności, nie o motywie bazowym).
+  const counterpartTheme = BUILTIN_THEMES[counterpart];
+  if (!counterpartTheme || counterpartTheme.scheme !== counterpart) return theme;
+
+  return { ...theme, scheme: counterpart, colors: { ...counterpartTheme.colors } };
+}
+
 export function resolveThemeAppearance(src: ThemeAppearanceSource): SemanticTheme {
+  if (src.theme === 'system') {
+    const base: ThemeAppearanceSource = { ...src, theme: src.customBase ?? 'dark' };
+    return applySystemScheme(resolveThemeAppearance(base));
+  }
   const name = (BUILTIN_THEME_NAMES as readonly string[]).includes(src.theme)
     ? (src.theme as BuiltinThemeName)
     : null;

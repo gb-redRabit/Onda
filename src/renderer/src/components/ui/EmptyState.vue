@@ -34,7 +34,7 @@ withDefaults(
     class="flex flex-col items-center justify-center py-16 px-4 text-center"
     role="status"
   >
-    <component :is="icon" v-if="icon" :size="64" class="mb-4 text-base-content/20" />
+    <component :is="icon" v-if="icon" :size="64" class="mb-4 text-base-content/50" />
     <p class="mb-1 text-lg font-semibold text-base-content">{{ title }}</p>
     <p v-if="description" class="max-w-md text-sm text-base-content/70">
       {{ description }}

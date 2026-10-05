@@ -21,6 +21,8 @@ import {
   readStorageFile,
   writeStorageFile,
   compileNetworkPattern,
+  compiledNetworkPatternCacheSize,
+  MAX_PATTERN_CACHE_SIZE,
   urlAllowed,
   resolveRedirectUrl,
   MAX_STORAGE_KEYS
@@ -459,6 +461,17 @@ describe('network allowlist', () => {
     expect(compileNetworkPattern('not a url')).toBeNull();
     expect(compileNetworkPattern('')).toBeNull();
   });
+  it('bounds the compiled-pattern cache so plugin allowlists cannot grow it without limit', () => {
+    // Wzorce pochodzą z manifestów pluginów, a liczba pozycji `network.allow` nie jest
+    // limitowana — cache musi mieć twardy górny rozmiar, inaczej autor pluginu może
+    // wymusić kompilację setek tysięcy RegExpów i wyczerpać pamięć procesu głównego.
+    for (let i = 0; i < MAX_PATTERN_CACHE_SIZE + 100; i++) {
+      compileNetworkPattern(`https://h${i}.example.com/*`);
+    }
+    expect(compiledNetworkPatternCacheSize()).toBeLessThanOrEqual(MAX_PATTERN_CACHE_SIZE);
+    // Wyparcie najstarszych wpisów nie psuje poprawności — wzorzec kompiluje się ponownie.
+    expect(compileNetworkPattern('https://h0.example.com/*')).not.toBeNull();
+  });
   it('urlAllowed', () => {
     const patterns = ['https://api.example.com/*', 'https://cdn.example.net/img/*.png'];
     expect(urlAllowed('https://api.example.com/v2/track', patterns)).toBe(true);
@@ -489,6 +502,24 @@ describe('network allowlist', () => {
     // Wildcardy nadal działają, także z jawnym sufiksem hosta.
     expect(urlAllowed('https://a.cdn.example.net/x', ['https://*.example.net/*'])).toBe(true);
     expect(urlAllowed('https://evil.com/x', ['https://*.example.net/*'])).toBe(false);
+    expect(urlAllowed('https://evil.com/.example.net/x', ['https://*.example.net/*'])).toBe(false);
+    expect(urlAllowed('https://evil.com/?q=.example.net', ['https://*.example.net/*'])).toBe(false);
+  });
+  it('urlAllowed matches the normalized URL (backslash and userinfo bypasses)', () => {
+    // Regresja P0: dopasowanie szło po surowym stringu, więc `\` (który parser
+    // WHATWG zamienia na `/`) i userinfo `@` pozwalały uderzyć w inny host niż
+    // widziała allowlista.
+    expect(urlAllowed('https://evil.com\\.example.net/x', ['https://*.example.net/*'])).toBe(false);
+    expect(urlAllowed('https://evil.com\\.example.com/x', ['https://*.example.com/*'])).toBe(false);
+    expect(urlAllowed('https://api.example.com@evil.com/', ['https://api.example.com/*'])).toBe(
+      false
+    );
+    expect(urlAllowed('https://api.example.com@evil.com/', ['https://api.example.com*'])).toBe(
+      false
+    );
+    // Wielkie litery normalizują się (proto/host) — poprawny cel nadal przechodzi.
+    expect(urlAllowed('HTTPS://API.EXAMPLE.COM/X', ['https://api.example.com/*'])).toBe(true);
+    expect(urlAllowed('https://api.example.com.evil/x', ['https://api.example.com'])).toBe(false);
   });
   it('resolveRedirectUrl', () => {
     expect(resolveRedirectUrl('https://a.com/x', '/y')).toBe('https://a.com/y');

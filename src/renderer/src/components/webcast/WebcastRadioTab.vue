@@ -6,15 +6,24 @@ import { useRadioStore } from '@renderer/stores/radio';
 import { usePlayerStore } from '@renderer/stores/player';
 import OnlineButton from '@renderer/components/online/OnlineButton.vue';
 import type { IpcRadioStation } from '@shared/types/ipc';
+import { usePromptDialog } from '@renderer/composables/usePromptDialog';
+import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 
 const emit = defineEmits<{ add: [] }>();
 
 const radio = useRadioStore();
 const player = usePlayerStore();
 const { t } = useI18n();
+const prompt = usePromptDialog();
 
 const editingRadioId = ref<string | null>(null);
 const editingRadioName = ref('');
+
+async function confirmRemoveStation(s: IpcRadioStation) {
+  const ok = await prompt.showConfirm(t('saved.deleteRadioConfirm', { name: s.name }));
+  if (!ok) return;
+  void radio.removeStation(s.id);
+}
 
 function startRadioRename(s: IpcRadioStation) {
   editingRadioId.value = s.id;
@@ -94,6 +103,7 @@ function commitRadioRename(id: string) {
             type="button"
             class="fx-noise p-2 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
             :title="t('saved.renameRadio')"
+            :aria-label="t('saved.renameRadio')"
             @click="startRadioRename(s)"
           >
             <Pencil :size="14" />
@@ -102,6 +112,7 @@ function commitRadioRename(id: string) {
             type="button"
             class="fx-noise p-2 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
             :title="t('saved.moveRadioTop')"
+            :aria-label="t('saved.moveRadioTop')"
             @click="radio.moveToTop(s.id)"
           >
             <ArrowUpToLine :size="14" />
@@ -110,12 +121,23 @@ function commitRadioRename(id: string) {
             type="button"
             class="fx-noise p-2 fx-depth rounded-field text-base-content/70 hover:text-error hover:bg-base-content/10 transition-colors"
             :title="t('common.delete')"
-            @click="radio.removeStation(s.id)"
+            :aria-label="t('common.delete')"
+            @click="confirmRemoveStation(s)"
           >
             <Trash2 :size="14" />
           </button>
         </div>
       </div>
     </div>
+
+    <ExplorerPromptDialog
+      :visible="prompt.promptVisible.value"
+      :is-confirm="prompt.promptIsConfirm.value"
+      :message="prompt.promptMessage.value"
+      :value="prompt.promptValue.value"
+      @update:value="prompt.promptValue.value = $event"
+      @confirm="prompt.promptConfirm()"
+      @cancel="prompt.promptCancel()"
+    />
   </section>
 </template>

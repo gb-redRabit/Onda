@@ -163,7 +163,9 @@ export async function logout(): Promise<void> {
   } catch (e) {
     logger.warn('ytauth', 'session clear failed', e);
   }
-  await unlink(cookiesFilePath()).catch(() => {});
+  await unlink(cookiesFilePath()).catch(() => {
+    /* best-effort */
+  });
   await setAuthSettings({ method: 'none', cookiesPath: '', lastLogin: null });
 }
 

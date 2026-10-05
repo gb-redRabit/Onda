@@ -7,7 +7,8 @@ import { normalizeCoverSpec } from './cover-spec';
 import { buildJobSource } from './download-source';
 import { resolveProvider } from '../../shared/provider';
 import { isSafeAbsolutePath } from '../utils/validate';
-import { loadPersistedJobs, queueFilePath } from './download-queue-store';
+import { isProtectedPath } from '../path-policy';
+import { privateNetworkAllowedForTarget } from '../ipc/network-target';
 import {
   jobs,
   queueOrder,
@@ -19,9 +20,12 @@ import {
 } from './download-state';
 import { pump } from './download-runner';
 import { killDownloadProcess } from './kill-download-process';
+import { trustedPrivateNetworkOrigins, restoreDownloadQueue } from './download-queue-restore';
 
-// Mutacje kolejki (add/cancel/pause/resume/move/list/import/export/clear) i
-// przywracanie kolejki, wyodrębnione z `download-manager.ts` (plan 2.8).
+// Mutacje kolejki (add/cancel/pause/resume/move/list/import/export/clear),
+// wyodrębnione z `download-manager.ts` (plan 2.8). Przywracanie kolejki i
+// zaufanie do sieci prywatnej żyją w `download-queue-restore.ts`.
+export { restoreDownloadQueue };
 
 /**
  * Usuwa id zadania z kolejki oczekujących.
@@ -35,34 +39,10 @@ function removeFromQueue(id: string): void {
   if (idx >= 0) queueOrder.splice(idx, 1);
 }
 
-// Przywraca kolejkę z dysku po restarcie. Przerwane pobrania stają się
-// wstrzymane (nigdy ukończone), aby użytkownik mógł je wznowić przez `--continue`;
-// zadania oczekujące są ponownie kolejkowane i pompowane.
-export async function restoreDownloadQueue(): Promise<void> {
-  const persisted = await loadPersistedJobs(queueFilePath());
-  for (const task of persisted) {
-    let status = task.status;
-    if (status === 'completed' || status === 'cancelled') continue;
-    if (status === 'downloading') status = 'paused';
-    const job: Job = {
-      ...task,
-      status,
-      progress: 0,
-      speed: '',
-      eta: '',
-      completedAt: undefined,
-      error: status === 'paused' ? undefined : task.error
-    };
-    jobs.set(job.id, job);
-    if (job.status === 'pending') queueOrder.push(job.id);
-  }
-  if (persisted.length) logger.info('downloads', `restored ${persisted.length} queued jobs`);
-  void pump();
-}
-
 export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<IpcDownloadTask[]> {
   const created: IpcDownloadTask[] = [];
   let replaced = 0;
+  const trustedPrivateNetwork = await trustedPrivateNetworkOrigins();
   // Deduplikacja po ID wideo względem już zakolejkowanych/ukończonych zadań, aby to samo
   // wideo nie trafiło do kolejki dwa razy w jednej sesji. Zadania zakończone błędem/anulowane
   // NIE blokują nowej próby — są zastępowane poniżej, więc ponowienie daje jedno świeże
@@ -101,6 +81,24 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
     // `allowPrivateNetwork` zaufanie do sieci prywatnej przyznane przez warstwę źródeł
     // było tracone przed uruchomieniem próby.
     const source = buildJobSource(input.source);
+    if (source) {
+      // Zaufanie do sieci prywatnej wyłącznie gdy zapisane źródło o tym samym id
+      // ma włączony dostęp, jego origin zgadza się z originem URL zadania, a
+      // zapisany rekord jest jawną zgodą użytkownika (userApproved=true).
+      const trustedOrigin =
+        typeof source.sourceId === 'string'
+          ? trustedPrivateNetwork.get(source.sourceId)
+          : undefined;
+      let allowPrivateNetwork = false;
+      if (trustedOrigin) {
+        try {
+          allowPrivateNetwork = privateNetworkAllowedForTarget(input.url, trustedOrigin, true);
+        } catch {
+          // nieprawidłowy URL zadania — brak zaufania
+        }
+      }
+      source.allowPrivateNetwork = allowPrivateNetwork;
+    }
     const cover = normalizeCoverSpec(input.cover);
     // Pobierania z bezpośredniego URL nie mają kroku miniatury yt-dlp — odrzuć covery typu thumbnail.
     const finalCover = source && cover?.type === 'thumbnail' ? undefined : cover;
@@ -114,7 +112,9 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
       format: input.format || 'mp3',
       quality: input.quality || 'best',
       outputDir:
-        typeof input.outputDir === 'string' && isSafeAbsolutePath(input.outputDir)
+        typeof input.outputDir === 'string' &&
+        isSafeAbsolutePath(input.outputDir) &&
+        !isProtectedPath(input.outputDir)
           ? input.outputDir
           : '',
       filenameTemplate: input.filenameTemplate || '{title} - {artist}',
@@ -250,7 +250,13 @@ export function pauseAllDownloads(): boolean {
     } else if (job.status === 'downloading') {
       job.status = 'paused';
       persist(job);
-      killDownloadProcess(job.child);
+      if (job.child) {
+        killDownloadProcess(job.child);
+      } else {
+        // Zadania HTTP/direct-URL nie mają procesu potomnego — bez abortu strumień
+        // leciał dalej i „wznów wszystkie" startowało drugi zapis do tego samego .part.
+        jobAbortControllers.get(job.id)?.abort();
+      }
       changed = true;
     }
   }

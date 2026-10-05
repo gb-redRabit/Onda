@@ -8,22 +8,45 @@ import { buildBaseArgs } from './download-args';
 import { runJobAttempt } from './download-attempt';
 import { postProcess } from './download-post-process';
 import { classifyYtDlpError, redactSecrets } from './error-classifier';
-import { isWithinWindow } from './schedule';
+import { isWithinWindow, msUntilWindowStart } from './schedule';
 import { jobs, queueOrder, hold, persist } from './download-state';
 import { readMaxConcurrent, readNightSchedule, readRetryConfig } from './download-settings';
+import type { NightSchedule } from './download-settings';
 
 // Runner kolejki (pump + wykonanie pojedynczego zadania), wyodrębniony z
 // `download-manager.ts` (plan 2.8). `running` (liczba aktywnych zadań) znajduje
 // się tutaj, bo tylko pump() je odczytuje, a runJob() je modyfikuje.
 
 let running = 0;
+// Jednorazowy budzik na otwarcie okna nocnego. Bez niego kolejka wstrzymana
+// przez harmonogram nocny nie miała kto obudzić.
+let nightTimer: ReturnType<typeof setTimeout> | null = null;
+
+function clearNightTimer(): void {
+  if (nightTimer) {
+    clearTimeout(nightTimer);
+    nightTimer = null;
+  }
+}
+
+function scheduleNightPump(night: NightSchedule): void {
+  clearNightTimer();
+  const delay = msUntilWindowStart(night.start, night.end);
+  if (delay <= 0) return;
+  nightTimer = setTimeout(() => {
+    nightTimer = null;
+    void pump();
+  }, delay);
+}
 
 export async function pump(): Promise<void> {
   if (hold.until && Date.now() < hold.until) return;
   const night = await readNightSchedule();
   if (night.enabled && !isWithinWindow(new Date().getHours(), night.start, night.end)) {
+    scheduleNightPump(night);
     return;
   }
+  clearNightTimer();
   const max = await readMaxConcurrent();
   while (running < max && queueOrder.length > 0) {
     const id = queueOrder.shift();

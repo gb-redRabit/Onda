@@ -1,10 +1,12 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron';
 import { stat, writeFile } from 'fs/promises';
-import { isAbsolute, basename } from 'path';
+import { isAbsolute, basename, normalize, sep } from 'path';
+import { tmpdir } from 'os';
 import type { MediaFile, Playlist } from '../../../shared/types/media';
 import { getStore } from '../cover/cover-cache';
 import { logger } from '../../../shared/logger';
 import { setAllowedRoots } from '../../media/media-server';
+import { isSensitivePath } from '../../path-policy';
 import {
   scanDir,
   classifyFolderType,
@@ -36,6 +38,27 @@ function sanitizeFolderPaths(input: unknown): string[] {
     if (out.length >= MAX_SCAN_FOLDERS) break;
   }
   return out;
+}
+
+// Korzenie biblioteki trafiają do allowlisty serwera mediów, więc przy ich
+// UTRWALANIU odrzucamy ścieżki z segmentami wrażliwymi (AppData, profile
+// przeglądarek, .ssh…), żeby przejęty renderer nie przyznał serwerowi takich
+// katalogów. `library:scan` nie grantuje rootów, więc skanowanie dowolnego
+// folderu (np. katalogu tymczasowego w testach) pozostaje dozwolone.
+//
+// Wyjątek: katalog tymczasowy systemu jest dozwolony — `onda://` już ufa
+// `app.getPath('temp')`, a fixture'y E2E i biblioteki trzymane w tempie muszą
+// działać. Blokowane pozostają właściwe AppData (Roaming, profile przeglądarek).
+const TEMP_PREFIX = normalize(tmpdir())
+  .toLowerCase()
+  .replace(/[\\/]+$/, '');
+function isSystemTemp(target: string): boolean {
+  const n = normalize(target).toLowerCase();
+  return n === TEMP_PREFIX || n.startsWith(TEMP_PREFIX + sep);
+}
+
+function withoutSensitivePaths(paths: string[]): string[] {
+  return paths.filter((p) => isSystemTemp(p) || !isSensitivePath(p));
 }
 
 // Dodaje folder do biblioteki (idempotentnie), aktualizując rooty serwera mediów i
@@ -185,7 +208,7 @@ export function registerLibraryHandlers(): void {
     try {
       const store = await getStore();
       const folders = store.get('libraryFolders', []);
-      const result = sanitizeFolderPaths(folders);
+      const result = withoutSensitivePaths(sanitizeFolderPaths(folders));
       currentLibraryFolders = result;
       await setAllowedRoots(result);
       void startLibraryWatcher(result);
@@ -198,7 +221,7 @@ export function registerLibraryHandlers(): void {
 
   ipcMain.handle('library:saveFolders', async (_event, folders: string[]): Promise<string[]> => {
     try {
-      const clean = sanitizeFolderPaths(folders);
+      const clean = withoutSensitivePaths(sanitizeFolderPaths(folders));
       const store = await getStore();
       store.set('libraryFolders', clean);
       currentLibraryFolders = clean;

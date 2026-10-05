@@ -164,7 +164,7 @@ const noMatch = computed(
     class="flex flex-col items-center justify-center h-64 gap-3 text-base-content/50"
   >
     <Folder :size="28" class="opacity-30" />
-    <p class="text-sm">Brak wyników dla "{{ query }}"</p>
+    <p class="text-sm">{{ $t('library.noResultsFor', { query }) }}</p>
   </div>
 
   <div v-else class="p-3 sm:p-4 space-y-3">
@@ -198,7 +198,7 @@ const noMatch = computed(
             >
             <span
               v-if="meta.duration > 0"
-              class="hidden md:inline text-[11px] text-base-content/40"
+              class="hidden md:inline text-[11px] text-base-content/60"
               >{{ formatDuration(meta.duration, '') }}</span
             >
           </div>
@@ -233,6 +233,8 @@ const noMatch = computed(
           </button>
           <button
             class="w-8 h-8 rounded-full bg-base-200 border border-base-300 flex items-center justify-center hover:bg-base-300 transition-colors ml-1"
+            :aria-label="$t('library.expandFolder')"
+            :aria-expanded="isExpanded(meta.path)"
             @click="togglePath(meta.path)"
           >
             <ChevronDown

@@ -14,9 +14,11 @@ import {
   X
 } from '@lucide/vue';
 import { useOnlineStore } from '@renderer/stores/online';
+import { usePromptDialog } from '@renderer/composables/usePromptDialog';
+import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 import type { DownloadTask } from '@renderer/types/online';
 
-defineProps<{ task: DownloadTask }>();
+const props = defineProps<{ task: DownloadTask }>();
 const emit = defineEmits<{
   play: [];
   copyPath: [];
@@ -27,6 +29,16 @@ const emit = defineEmits<{
 
 const yt = useOnlineStore();
 const { t } = useI18n();
+const prompt = usePromptDialog();
+
+// Anulowanie zadania wymaga potwierdzenia: dla pobieranych/wstrzymanych traci
+// częściowe dane, a dla oczekujących usuwa je z kolejki. Spójne z pozostałymi
+// akcjami destrukcyjnymi w aplikacji.
+async function onCancel(): Promise<void> {
+  const ok = await prompt.showConfirm(t('downloads.cancelConfirm', { name: props.task.title }));
+  if (!ok) return;
+  yt.cancelDownload(props.task.id);
+}
 </script>
 
 <template>
@@ -36,6 +48,7 @@ const { t } = useI18n();
       data-testid="download-action-play"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-base-content/10 transition-colors"
       :title="t('downloads.play')"
+      :aria-label="t('downloads.play')"
       @click="emit('play')"
     >
       <Play :size="14" />
@@ -44,6 +57,7 @@ const { t } = useI18n();
       v-if="task.status === 'completed' && task.outputPath"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
       :title="t('downloads.copyPath')"
+      :aria-label="t('downloads.copyPath')"
       @click="emit('copyPath')"
     >
       <Copy :size="14" />
@@ -52,6 +66,7 @@ const { t } = useI18n();
       v-if="task.status === 'completed' && task.outputPath"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
       :title="t('downloads.openFolder')"
+      :aria-label="t('downloads.openFolder')"
       @click="emit('openFolder')"
     >
       <FolderOpen :size="14" />
@@ -60,6 +75,7 @@ const { t } = useI18n();
       v-if="task.status === 'completed' && task.outputPath"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
       :title="t('downloads.editMetadata')"
+      :aria-label="t('downloads.editMetadata')"
       @click="emit('editMeta')"
     >
       <Pencil :size="14" />
@@ -78,6 +94,7 @@ const { t } = useI18n();
       data-testid="download-action-pause"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
       :title="t('downloads.pause')"
+      :aria-label="t('downloads.pause')"
       @click="yt.pauseDownload(task.id)"
     >
       <Pause :size="14" />
@@ -87,6 +104,7 @@ const { t } = useI18n();
       data-testid="download-action-resume"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-base-content/10 transition-colors"
       :title="t('downloads.resume')"
+      :aria-label="t('downloads.resume')"
       @click="yt.resumeDownload(task.id)"
     >
       <Play :size="14" />
@@ -95,6 +113,7 @@ const { t } = useI18n();
       v-if="task.status === 'pending'"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-base-content/10 transition-colors"
       :title="t('downloads.moveToFront')"
+      :aria-label="t('downloads.moveToFront')"
       @click="yt.moveToFront(task.id)"
     >
       <ArrowUpToLine :size="14" />
@@ -103,6 +122,7 @@ const { t } = useI18n();
       v-if="task.status === 'pending'"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
       :title="t('downloads.moveUp')"
+      :aria-label="t('downloads.moveUp')"
       @click="yt.move(task.id, -1)"
     >
       <ArrowUp :size="14" />
@@ -111,6 +131,7 @@ const { t } = useI18n();
       v-if="task.status === 'pending'"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
       :title="t('downloads.moveDown')"
+      :aria-label="t('downloads.moveDown')"
       @click="yt.move(task.id, 1)"
     >
       <ArrowDown :size="14" />
@@ -120,7 +141,8 @@ const { t } = useI18n();
       data-testid="download-action-cancel"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-error hover:bg-base-content/10 transition-colors"
       :title="t('downloads.cancel')"
-      @click="yt.cancelDownload(task.id)"
+      :aria-label="t('downloads.cancel')"
+      @click="onCancel"
     >
       <X :size="14" />
     </button>
@@ -129,7 +151,8 @@ const { t } = useI18n();
       data-testid="download-action-cancel"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-error hover:bg-base-content/10 transition-colors"
       :title="t('downloads.cancel')"
-      @click="yt.cancelDownload(task.id)"
+      :aria-label="t('downloads.cancel')"
+      @click="onCancel"
     >
       <X :size="14" />
     </button>
@@ -138,9 +161,20 @@ const { t } = useI18n();
       data-testid="download-action-retry"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
       :title="t('downloads.retry')"
+      :aria-label="t('downloads.retry')"
       @click="yt.retryDownload(task)"
     >
       <RotateCcw :size="14" />
     </button>
+
+    <ExplorerPromptDialog
+      :visible="prompt.promptVisible.value"
+      :is-confirm="prompt.promptIsConfirm.value"
+      :message="prompt.promptMessage.value"
+      :value="prompt.promptValue.value"
+      @update:value="prompt.promptValue.value = $event"
+      @confirm="prompt.promptConfirm()"
+      @cancel="prompt.promptCancel()"
+    />
   </div>
 </template>

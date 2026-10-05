@@ -1,6 +1,6 @@
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import type { Ref } from 'vue';
-import { useVirtualizer } from '@tanstack/vue-virtual';
+import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { useExplorerStore } from '@renderer/stores/explorer';
 import { useClipboardStore } from '@renderer/stores/clipboard';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -71,23 +71,28 @@ export function useExplorerContent(
 
   const { bandSelect, onBandMouseDown } = useExplorerBandSelect(scrollRef, explorer);
 
-  const virtualizerOptions = computed(() => ({
-    count: totalVirtualRows.value,
-    getScrollElement: () => scrollRef.value,
+  const virtualizer = useVirtualList({
+    count: () => totalVirtualRows.value,
+    scrollEl: () => scrollRef.value,
     estimateSize: () => virtualItemHeight.value,
     overscan: 2
-  }));
-  const virtualizer = useVirtualizer(virtualizerOptions);
+  });
 
   let resizeObserver: ResizeObserver | null = null;
 
   onMounted(() => {
-    if (scrollRef.value) {
-      resizeObserver = new ResizeObserver((entries) => {
-        containerWidth.value = entries[0].contentRect.width;
-      });
-      resizeObserver.observe(scrollRef.value);
-    }
+    if (!scrollRef.value) return;
+    resizeObserver = new ResizeObserver((entries) => {
+      containerWidth.value = entries[0].contentRect.width;
+    });
+    resizeObserver.observe(scrollRef.value);
+  });
+
+  // Bez odłączenia każdy mount/odmontowanie ExplorerContent zostawiał obserwator
+  // trzymający stary element przewijania (wyciek przy przełączaniu widoków).
+  onUnmounted(() => {
+    resizeObserver?.disconnect();
+    resizeObserver = null;
   });
 
   function onItemClick(event: MouseEvent, path: string, index: number) {

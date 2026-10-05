@@ -17,6 +17,13 @@ const USER_AGENT = `Onda/${appVersion} (onda-player.app; contact: onda-player.ap
 const MB_URL = 'https://musicbrainz.org/ws/2';
 const CA_URL = 'https://coverartarchive.org';
 
+// Release ID z renderera trafia do ścieżki URL — walidujemy format MBID (UUID),
+// zamiast ufać, że to czysty identyfikator (inaczej `../`/`?` manipulowałyby URL-em).
+const MBID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isReleaseId(value: unknown): value is string {
+  return typeof value === 'string' && MBID_RE.test(value);
+}
+
 // MusicBrainz wymaga 1 req/s — kolejka w main
 let lastMbRequest = 0;
 async function throttleMb() {
@@ -166,6 +173,7 @@ export function registerMusicBrainzHandlers() {
 
   ipcMain.handle('musicbrainz:lookupRelease', async (_event, releaseId: string) => {
     try {
+      if (!isReleaseId(releaseId)) return { success: false, error: 'Invalid release id' };
       const res = await mbFetch(
         `${MB_URL}/release/${releaseId}?inc=recordings+artist-credits+labels&fmt=json`
       );
@@ -191,6 +199,7 @@ export function registerMusicBrainzHandlers() {
       rateLimited?: boolean;
     }> => {
       try {
+        if (!isReleaseId(releaseId)) return { success: false, error: 'Invalid release id' };
         const buf = await fetchCoverWithRedirect(`${CA_URL}/release/${releaseId}/front`);
         return { success: true, data: Array.from(buf), mime: 'image/jpeg' };
       } catch (e: unknown) {

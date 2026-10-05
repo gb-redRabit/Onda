@@ -1,4 +1,4 @@
-import { _electron as electron, type ElectronApplication, type Page } from 'playwright';
+import { _electron as electron, type ElectronApplication, type Page } from '@playwright/test';
 import { mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';

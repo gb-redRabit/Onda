@@ -135,3 +135,44 @@ export function decryptApiKeys(apiKeys: ApiKeySettings | undefined): ApiKeySetti
     keys: (apiKeys.keys || []).map((k) => ({ ...k, key: decryptSecret(k.key) }))
   };
 }
+
+/**
+ * Wersja kluczy dla renderera: sekret NIGDY nie opuszcza procesu main. Zamiast
+ * wartości zwracamy tylko `preview` (pierwsze znaki) do celów UI; pole `key`
+ * jest puste, więc kompromitacja renderera nie daje surowych sekretów.
+ */
+export function maskApiKeys(apiKeys: ApiKeySettings | undefined): ApiKeySettings | undefined {
+  if (!apiKeys) return apiKeys;
+  return {
+    keys: (apiKeys.keys || []).map((k) => {
+      const plain = decryptSecret(k.key);
+      return {
+        ...k,
+        key: '',
+        preview: plain ? `${plain.slice(0, 4)}…` : ''
+      };
+    })
+  };
+}
+
+/**
+ * Scala klucze przychodzące z renderera z zapisanymi: wpis z pustym `key`
+ * (użytkownik nie zmieniał wartości) zachowuje zapisany sekret po `id`, nowy
+ * wpis dostaje podaną wartość. Bez tego zapis z UI nadpisałby sekret pustym
+ * stringiem (bo renderer już go nie zna).
+ */
+export function mergeApiKeys(
+  incoming: ApiKeySettings | undefined,
+  stored: ApiKeySettings | undefined
+): ApiKeySettings | undefined {
+  if (!incoming) return incoming;
+  const storedById = new Map((stored?.keys || []).map((k) => [k.id, k]));
+  return {
+    keys: (incoming.keys || []).map((k) => {
+      const { preview: _preview, ...rest } = k;
+      if (k.key) return { ...rest, key: k.key };
+      const existing = storedById.get(k.id);
+      return { ...rest, key: existing?.key ?? '' };
+    })
+  };
+}

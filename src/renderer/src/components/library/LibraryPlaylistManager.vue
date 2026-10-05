@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useVirtualizer } from '@tanstack/vue-virtual';
+import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { useI18n } from 'vue-i18n';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
@@ -56,11 +56,13 @@ function createPlaylist() {
   newName.value = '';
 }
 
-function deleteSelected() {
-  if (selectedPlaylistId.value) {
-    library.deletePlaylist(selectedPlaylistId.value);
-    selectedPlaylistId.value = null;
-  }
+async function deleteSelected() {
+  const pl = selectedPlaylist.value;
+  if (!pl) return;
+  const ok = await prompt.showConfirm(t('library.playlistDeleteConfirm', { name: pl.name }));
+  if (!ok) return;
+  library.deletePlaylist(pl.id);
+  selectedPlaylistId.value = null;
 }
 
 function onPlaylistDrop(e: DragEvent, playlistId: string) {
@@ -107,13 +109,20 @@ function onTrackDrop(e: DragEvent, toIdx: number) {
   );
 }
 
-function playAll() {
+function playFromPlaylist(index: number) {
   if (!selectedPlaylist.value) return;
   const tracks = selectedPlaylist.value.tracks;
-  if (tracks.length === 0) return;
-  if (tracks.length > 1) player.addToQueueMultiple(tracks.slice(1));
-  player.setTrack(tracks[0]);
+  if (!tracks[index]) return;
+  player.clearQueue();
+  if (index + 1 < tracks.length) {
+    player.addToQueueMultiple(tracks.slice(index + 1));
+  }
+  player.setTrack(tracks[index]);
   player.play();
+}
+
+function playAll() {
+  playFromPlaylist(0);
 }
 
 function renameSelected() {
@@ -138,11 +147,9 @@ function onPlaylistContextMenu(e: MouseEvent, playlistId: string) {
 // Wirtualizuj listę utworów playlisty — playlisty mogą trzymać tysiące utworów
 // (plan 1.6).
 const playlistListRef = ref<HTMLElement | null>(null);
-const playlistVirtualizer = useVirtualizer({
-  get count() {
-    return selectedPlaylist.value?.tracks.length ?? 0;
-  },
-  getScrollElement: () => playlistListRef.value,
+const playlistVirtualizer = useVirtualList({
+  count: () => selectedPlaylist.value?.tracks.length ?? 0,
+  scrollEl: () => playlistListRef.value,
   estimateSize: () => 56,
   overscan: 8
 });
@@ -163,6 +170,8 @@ const playlistVirtualizer = useVirtualizer({
         <button
           class="fx-noise p-1.5 fx-depth rounded-field bg-primary text-primary-content hover:bg-primary/90 transition-colors"
           :disabled="!newName.trim()"
+          :aria-label="$t('library.playlistCreate')"
+          :title="$t('library.playlistCreate')"
           @click="createPlaylist"
         >
           <Plus :size="14" />
@@ -214,6 +223,7 @@ const playlistVirtualizer = useVirtualizer({
           </button>
           <button
             class="fx-noise p-1.5 fx-depth rounded-field text-error hover:text-error/80 hover:bg-base-100 transition-colors"
+            :aria-label="$t('library.deletePlaylist')"
             @click="deleteSelected"
           >
             <Trash2 :size="14" />
@@ -248,6 +258,7 @@ const playlistVirtualizer = useVirtualizer({
               :track="selectedPlaylist.tracks[v.index]"
               :playlist-id="selectedPlaylist.id"
               :drag-index="v.index"
+              @play="playFromPlaylist(v.index)"
             />
           </div>
         </div>

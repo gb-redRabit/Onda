@@ -40,6 +40,8 @@ async function uploadSubtitles() {
     <button
       class="text-neutral-content/50 hover:text-neutral-content transition-colors"
       :class="{ 'text-primary!': player.activeSubtitleId }"
+      :aria-label="$t('player.subtitles')"
+      :aria-expanded="isOpen"
       @click="isOpen = !isOpen"
     >
       <Subtitles :size="16" />

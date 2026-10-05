@@ -55,11 +55,10 @@ function ts(): string {
 
 const writeQueue = new WriteQueue();
 
-function writeLine(level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR', args: unknown[]): void {
+function writeText(level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR', text: string): void {
   if (LEVEL_WEIGHT[level.toLowerCase() as LogLevel] < LEVEL_WEIGHT[minLevel]) return;
   const dir = getLogDir();
   const file = getLogPath();
-  const text = redactSecrets(formatArgs(args));
   if (level === 'WARN') recordWarning(text);
   const line = `[${ts()}] [${level}] ${text}\n`;
   writeQueue.push(async () => {
@@ -84,28 +83,25 @@ export function setupFileLogging(): void {
     warn: console.warn,
     debug: console.debug
   };
-  console.log = (...args: unknown[]) => {
-    original.log(...args);
-    writeLine('INFO', args);
+  // Jedno sformatowane i ZREDAGOWANE źródło prawdy dla obu ujść: konsola nie może
+  // wyciekać sekretów, które plik już maskuje (wcześniej `original.log` szedł z
+  // surowymi argumentami, a redakcja dotyczyła tylko zapisu na dysk).
+  const emit = (
+    level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR',
+    sink: (...a: unknown[]) => void,
+    args: unknown[]
+  ): void => {
+    const text = redactSecrets(formatArgs(args));
+    sink(text);
+    writeText(level, text);
   };
+  console.log = (...args: unknown[]) => emit('INFO', original.log, args);
   // `console.info` ma w Node własną referencję, więc samo podmienienie `log` nie wystarczy.
-  console.info = (...args: unknown[]) => {
-    original.info(...args);
-    writeLine('INFO', args);
-  };
-  console.error = (...args: unknown[]) => {
-    original.error(...args);
-    writeLine('ERROR', args);
-  };
-  console.warn = (...args: unknown[]) => {
-    original.warn(...args);
-    writeLine('WARN', args);
-  };
+  console.info = (...args: unknown[]) => emit('INFO', original.info, args);
+  console.error = (...args: unknown[]) => emit('ERROR', original.error, args);
+  console.warn = (...args: unknown[]) => emit('WARN', original.warn, args);
   // `debug` trafia do pliku tylko wtedy, gdy `logLevel` ma wartość 'debug'.
-  console.debug = (...args: unknown[]) => {
-    original.debug(...args);
-    writeLine('DEBUG', args);
-  };
+  console.debug = (...args: unknown[]) => emit('DEBUG', original.debug, args);
 }
 
 /**
@@ -138,7 +134,9 @@ export async function readLogTail(lines: number = LOG_LINES): Promise<string> {
 export async function clearLogFile(): Promise<boolean> {
   try {
     await truncate(getLogPath(), 0);
-    await rm(`${getLogPath()}.1`, { force: true }).catch(() => {});
+    await rm(`${getLogPath()}.1`, { force: true }).catch(() => {
+      /* best-effort */
+    });
     clearWarnings();
     return true;
   } catch (e) {

@@ -19,8 +19,12 @@ export function createSourcesDownloads(deps: SourcesDownloadsDeps) {
   // Id API elementów już pobranych dla aktywnego źródła. Trzymane jako świeży
   // Set przy każdej mutacji, więc Vue niezawodnie rerenderuje zależnych.
   const downloadedIds = ref<Set<string>>(new Set());
+  // Token anty-wyścig: przy szybkiej zmianie aktywnego źródła A→B wolniejsza
+  // odpowiedź dla A nie może nadpisać zbioru dla B.
+  let loadId = 0;
 
   async function loadDownloaded(sourceId: string): Promise<void> {
+    const id = ++loadId;
     if (!sourceId) {
       downloadedIds.value = new Set();
       return;
@@ -28,9 +32,11 @@ export function createSourcesDownloads(deps: SourcesDownloadsDeps) {
     try {
       const ids = (await window.api?.invoke('sources:downloaded', sourceId)) as
         string[] | undefined;
+      if (id !== loadId) return;
       downloadedIds.value = new Set(ids ?? []);
     } catch (e) {
       logger.warn('sources', 'loadDownloaded failed', e);
+      if (id !== loadId) return;
       downloadedIds.value = new Set();
     }
   }
@@ -97,23 +103,56 @@ export function createSourcesDownloads(deps: SourcesDownloadsDeps) {
     }
   }
 
-  /** Kolejkuje wszystkie elementy z adresem (player/bezpośredni), sekwencyjnie. */
+  /**
+   * Kolejkuje wszystkie elementy z adresem w JEDNYM wywołaniu IPC.
+   *
+   * Wcześniej każde pobranie rozwiązywało `sources:downloadDir` i wołało
+   * `sources:enqueue` osobno (2×N round-tripów). Handler `sources:enqueue` już
+   * przyjmuje tablicę, a `sources:downloadDir` zwraca ten sam katalog dla całej
+   * listy — więc katalog pobieramy raz i wysyłamy jedną partię.
+   */
   async function enqueueAll(
     list: SourceItem[]
   ): Promise<{ queued: number; failed: number; errors: string[] }> {
-    let queued = 0;
-    let failed = 0;
-    const errors: string[] = [];
-    for (const item of list) {
-      if (!(item.playerUrl || item.mediaUrl || item.sourceUrl)) continue;
-      const res = await enqueueDownload(item);
-      if (res.ok) queued++;
-      else {
-        failed++;
-        if (res.error && errors.length < 5) errors.push(`${item.title}: ${res.error}`);
+    const source = activeSource.value;
+    const items = list.filter((item) => item.playerUrl || item.mediaUrl || item.sourceUrl);
+    if (!source || items.length === 0) return { queued: 0, failed: 0, errors: [] };
+
+    let baseDir = source.download?.outputDir?.trim() || '';
+    if (!baseDir) {
+      try {
+        baseDir = (await window.api.invoke('sources:downloadDir')) as string;
+      } catch (e) {
+        logger.warn('sources', 'enqueueAll: downloadDir failed', e);
       }
     }
-    return { queued, failed, errors };
+
+    const inputs = items.map((item) =>
+      buildSourceDownloadInput({
+        item,
+        source,
+        baseDir,
+        autoAddToLibrary: settings.download.autoAddDownloadFolder
+      })
+    );
+
+    try {
+      const created = (await window.api.invoke('sources:enqueue', inputs)) as Array<{
+        id: string;
+      }>;
+      const queued = created?.length ?? 0;
+      // Handler pomija nieprawidłowe wpisy zamiast przerywać całą partię — raportujemy
+      // różnicę jako niepowodzenia, bez zgadywania, które konkretnie.
+      const failed = Math.max(0, inputs.length - queued);
+      return { queued, failed, errors: [] };
+    } catch (e) {
+      logger.warn('sources', 'enqueueAll failed', e);
+      return {
+        queued: 0,
+        failed: inputs.length,
+        errors: [e instanceof Error ? e.message : String(e)]
+      };
+    }
   }
 
   return {

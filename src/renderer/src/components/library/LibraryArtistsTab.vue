@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useVirtualizer } from '@tanstack/vue-virtual';
+import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { Mic2, LayoutList, LayoutGrid } from '@lucide/vue';
 import type { MediaFile } from '@renderer/types/media';
 import { useVirtualGrid } from '@renderer/composables/useVirtualGrid';
@@ -23,11 +23,9 @@ const sortedArtists = computed(() => {
 });
 
 const artistListRef = ref<HTMLElement | null>(null);
-const artistListVirtualizer = useVirtualizer({
-  get count() {
-    return sortedArtists.value.length;
-  },
-  getScrollElement: () => artistListRef.value,
+const artistListVirtualizer = useVirtualList({
+  count: () => sortedArtists.value.length,
+  scrollEl: () => artistListRef.value,
   estimateSize: () => 56,
   overscan: 10
 });
@@ -35,11 +33,9 @@ const artistListVirtualizer = useVirtualizer({
 const artistGridRef = ref<HTMLElement | null>(null);
 const grid = useVirtualGrid(artistGridRef, 180, 5);
 
-const artistRowVirtualizer = useVirtualizer({
-  get count() {
-    return Math.ceil(sortedArtists.value.length / grid.cols.value);
-  },
-  getScrollElement: () => artistGridRef.value,
+const artistRowVirtualizer = useVirtualList({
+  count: () => Math.ceil(sortedArtists.value.length / grid.cols.value),
+  scrollEl: () => artistGridRef.value,
   estimateSize: () => 180,
   overscan: 3
 });
@@ -135,6 +131,7 @@ onUnmounted(() => grid.destroy());
             }"
           >
             <div
+              v-activate
               class="flex items-center gap-3 px-4 py-2 hover:bg-base-content/10 transition-colors cursor-pointer h-full"
               @click="emit('playTracks', sortedArtists[v.index][1])"
             >

@@ -151,9 +151,9 @@ export const DEFAULT_PLAYBACK: PlaybackSettings = {
 
 export const DEFAULT_DOWNLOAD: DownloadSettings = {
   defaultPath: '',
-  /** Globalny katalog ĹşrĂłdeĹ‚ (Sources/API); pusty = defaultPath/api (albo systemowe Pobrane/api). */
+  /** Globalny katalog źródeł (Sources/API); pusty = defaultPath/api (albo systemowe Pobrane/api). */
   sourcesDir: '',
-  /** DomyĹ›lna preferencja "podfolder ĹşrĂłdĹ‚a" dla nowych ĹşrĂłdeĹ‚. */
+  /** Domyślna preferencja "podfolder źródła" dla nowych źródeł. */
   sourcesFolder: true,
   defaultKind: 'audio' as const,
   defaultAudioFormat: 'mp3' as const,

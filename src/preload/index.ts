@@ -26,22 +26,13 @@ import type {
 } from '../shared/types/ipc';
 import type { IpcArgs, IpcChannel, IpcResult } from '../shared/ipc/contract';
 import type { OndaAPI } from '../shared/ipc/api';
+import type { PipSubtitleData } from '../shared/types/pip';
 import {
   ALLOWED_INVOKE_CHANNELS,
   ALLOWED_RECEIVE_CHANNELS,
   ALLOWED_SEND_CHANNELS
 } from './generated';
 import { logger } from '../shared/logger';
-
-// Pobierane przez IPC (nie przez argumenty CLI), dzięki czemu token media-server
-// nigdy nie pojawia się w wierszu poleceń procesu. Główny handler jest rejestrowany
-// przed utworzeniem jakiegokolwiek okna, więc sendSync rozwiązuje się natychmiast.
-let mediaServerUrl = '';
-try {
-  mediaServerUrl = ipcRenderer.sendSync('media:getServerUrl') as string;
-} catch {
-  mediaServerUrl = '';
-}
 
 function trySend(channel: string, ...args: unknown[]): void {
   if (!ALLOWED_SEND_CHANNELS.has(channel)) {
@@ -82,7 +73,9 @@ function tryInvoke(channel: string, ...args: unknown[]): Promise<unknown> {
 }
 
 const api: OndaAPI = {
-  mediaServerUrl,
+  // URL serwera mediów (z tokenem) pobierany asynchronicznie — wcześniej `sendSync`
+  // blokował renderer na starcie każdego okna. Token nadal nie trafia do argv.
+  getMediaServerUrl: (): Promise<string> => tryInvoke('media:getServerUrl'),
   invoke: tryInvoke,
   getWindowId: (): Promise<number> => tryInvoke('window:id'),
   send: trySend,
@@ -105,16 +98,6 @@ const api: OndaAPI = {
     }
     ipcRenderer.once(channel, (_event, ...args) => callback(...args));
   },
-  removeAllListeners: (channel: string): void => {
-    if (!ALLOWED_RECEIVE_CHANNELS.has(channel)) {
-      logger.warn(
-        'preload',
-        `IPC removeAllListeners on non-allowlisted channel '${channel}' blocked`
-      );
-      return;
-    }
-    ipcRenderer.removeAllListeners(channel);
-  },
   pipStart: async (
     videoSrc: string,
     settings?: {
@@ -122,11 +105,7 @@ const api: OndaAPI = {
       width?: number;
       height?: number;
       startTime?: number;
-      subtitle?: {
-        subContent: string;
-        fonts: Array<{ name: string; data: number[] }>;
-        availableFonts: Record<string, string>;
-      } | null;
+      subtitle?: PipSubtitleData | null;
     }
   ): Promise<boolean> => {
     const r = await tryInvoke('pip:start', videoSrc, settings);
@@ -160,24 +139,10 @@ const api: OndaAPI = {
     const r = await tryInvoke('pip:previewUpdate', opts);
     return !!r;
   },
-  pipPreload: async (
-    videoSrc: string,
-    subtitleData: {
-      subContent: string;
-      fonts: Array<{ name: string; data: number[] }>;
-      availableFonts: Record<string, string>;
-    } | null
-  ): Promise<void> => {
+  pipPreload: async (videoSrc: string, subtitleData: PipSubtitleData | null): Promise<void> => {
     await tryInvoke('pip:preload', videoSrc, subtitleData);
   },
-  pipLoadTrack: async (
-    videoSrc: string,
-    subtitleData: {
-      subContent: string;
-      fonts: Array<{ name: string; data: number[] }>;
-      availableFonts: Record<string, string>;
-    } | null
-  ): Promise<void> => {
+  pipLoadTrack: async (videoSrc: string, subtitleData: PipSubtitleData | null): Promise<void> => {
     await tryInvoke('pip:loadtrack', videoSrc, subtitleData);
   },
   checkFfmpeg: () => tryInvoke('dep:checkFfmpeg'),
@@ -280,13 +245,7 @@ const api: OndaAPI = {
     tryInvoke('playback:setPosition', filePath, position),
   clearPlaybackPosition: (filePath: string): Promise<void> =>
     tryInvoke('playback:clearPosition', filePath),
-  pipUpdateSubtitle: async (
-    data: {
-      subContent: string;
-      fonts: Array<{ name: string; data: number[] }>;
-      availableFonts: Record<string, string>;
-    } | null
-  ): Promise<void> => {
+  pipUpdateSubtitle: async (data: PipSubtitleData | null): Promise<void> => {
     await tryInvoke('pip:updateSubtitle', data);
   },
   checkAudioCodec: (filePath: string): Promise<{ codec: string; supported: boolean } | null> =>
@@ -430,12 +389,14 @@ const api: OndaAPI = {
     tryInvoke('plugins:fetch', id, url, opts)
 };
 
-if (process.contextIsolated) {
-  try {
-    contextBridge.exposeInMainWorld('api', api);
-  } catch (error) {
-    logger.error('preload', 'exposeInMainWorld failed', error);
-  }
-} else {
-  Object.assign(window, { api });
+// Błąd konfiguracji musi być głośny. Wcześniejsza gałąź `else { Object.assign(window, { api }) }`
+// była martwa przy `contextIsolation: true`, ale gdyby ktoś kiedyś wyłączył izolację,
+// po cichu wystawiłaby cały mostek do niezaufanej strony.
+if (!process.contextIsolated) {
+  throw new Error('Onda preload requires contextIsolation to expose the API safely');
+}
+try {
+  contextBridge.exposeInMainWorld('api', api);
+} catch (error) {
+  logger.error('preload', 'exposeInMainWorld failed', error);
 }

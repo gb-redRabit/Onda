@@ -72,7 +72,7 @@ onUnmounted(() => tabResizeObserver?.disconnect());
 </script>
 
 <template>
-  <div class="relative -mx-1" role="tablist" aria-label="Biblioteka">
+  <div class="relative -mx-1" role="tablist" :aria-label="$t('library.title')">
     <div ref="tabRow" class="flex gap-1 sm:gap-1.5 px-1 pb-1 overflow-hidden" :data-mode="tabMode">
       <button
         v-for="tabItem in props.tabs"

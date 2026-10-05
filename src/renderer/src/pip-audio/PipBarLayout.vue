@@ -70,7 +70,7 @@ const {
         </template>
         <span
           v-if="has('nextTrack') && nextTrackName"
-          class="truncate text-[10px] text-base-content/40"
+          class="truncate text-[10px] text-base-content/60"
         >
           &#x21B3; {{ nextTrackName }}{{ nextTrackArtist ? ' — ' + nextTrackArtist : '' }}
         </span>

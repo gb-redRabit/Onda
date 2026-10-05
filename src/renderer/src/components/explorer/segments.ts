@@ -18,6 +18,12 @@ export interface BreadcrumbSegment {
 
 export function buildSegments(currentPath: string): BreadcrumbSegment[] {
   if (!currentPath) return [];
+  // Korzeń dysku Windows (`C:\`) to JEDEN segment „C:" nawigujący do `C:\` —
+  // bez tego akumulacja dokładała wiodący separator i dawała ścieżkę „\C:".
+  if (/^[A-Z]:[\\/]?$/i.test(currentPath)) {
+    const drive = currentPath.slice(0, 2);
+    return [{ part: drive, idx: 0, path: `${drive}\\` }];
+  }
   // Obsłuż zarówno separator Windows, jak i POSIX; ścieżka segmentu musi być
   // prawidłowym celem nawigacji na tej platformie.
   const sep = currentPath.includes('\\') ? '\\' : '/';
@@ -26,7 +32,16 @@ export function buildSegments(currentPath: string): BreadcrumbSegment[] {
   const segments: BreadcrumbSegment[] = [];
   let acc = '';
   parts.forEach((part, idx) => {
-    acc = acc ? `${acc}${sep}${part}` : `${leading}${part}`;
+    if (idx === 0 && /^[A-Z]:$/i.test(part)) {
+      // Pierwszy segment dysku nawiguje do korzenia z separatorem (`C:\`), nie do
+      // względnej ścieżki `C:` (która na Windows znaczy „bieżący katalog dysku").
+      acc = `${part}${sep}`;
+    } else if (acc.endsWith(sep)) {
+      // `acc` to już korzeń z separatorem (`C:\`) — nie dokładaj drugiego.
+      acc = `${acc}${part}`;
+    } else {
+      acc = acc ? `${acc}${sep}${part}` : `${leading}${part}`;
+    }
     segments.push({ part, idx, path: acc });
   });
   return segments;

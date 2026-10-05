@@ -1,7 +1,8 @@
-import { ipcMain, BrowserWindow, app } from 'electron';
+import { ipcMain, BrowserWindow } from 'electron';
 import type { PipManager } from '../pip/pip-manager';
 import type { AudioPipManager } from '../pip/audio-pip-manager';
 import { logger } from '../../shared/logger';
+import { getAutoLaunch, setAutoLaunch } from './auto-launch';
 import { setCloseToTray } from './close-behavior';
 import { createExplorerWindow, getExplorerWindows } from './explorer-windows';
 import { closeImageViewer, getImageViewerData, openImageViewer } from './image-viewer-window';
@@ -217,35 +218,13 @@ export function registerWindowHandlers(context: {
   });
 
   ipcMain.handle('app:getAutoLaunch', (): { enabled: boolean; hidden: boolean } => {
-    try {
-      const s = app.getLoginItemSettings() as {
-        openAtLogin: boolean;
-        args?: string[];
-        launchArgs?: string[];
-      };
-      const args = s.args ?? s.launchArgs ?? [];
-      return { enabled: !!s.openAtLogin, hidden: args.includes('--hidden') };
-    } catch {
-      return { enabled: false, hidden: false };
-    }
+    return getAutoLaunch();
   });
 
   ipcMain.handle(
     'app:setAutoLaunch',
     (_event, opts: { enabled: boolean; hidden?: boolean }): boolean => {
-      try {
-        const enabled = !!opts?.enabled;
-        const hidden = !!opts?.hidden;
-        app.setLoginItemSettings({
-          openAtLogin: enabled,
-          args: hidden ? ['--hidden'] : [],
-          ...(process.platform === 'darwin' ? { openAsHidden: hidden } : {})
-        });
-        return true;
-      } catch (e) {
-        logger.warn('window', 'setAutoLaunch failed', e);
-        return false;
-      }
+      return setAutoLaunch({ enabled: !!opts?.enabled, hidden: !!opts?.hidden });
     }
   );
 

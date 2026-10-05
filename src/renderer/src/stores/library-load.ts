@@ -1,6 +1,7 @@
 import type { Ref } from 'vue';
 import type { MediaFile, Playlist } from '@renderer/types/media';
 import { errMsg } from '@shared/helpers';
+import { i18n } from '@renderer/i18n';
 import { useUIStore } from './ui';
 
 interface LibraryLoadCtx {
@@ -108,8 +109,16 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
     });
   }
 
+  // Blokuje podwójny start skanu (np. dwuklik „Skanuj" albo równoległe wejście z
+  // ustawień i widoku): drugie wywołanie w locie było pomijane jako no-op, ale
+  // wcześniej i tak startowało drugi `library:scan` i jego `finally` kasował
+  // `isScanning` pierwszego skanu, zanim ten się skończył.
+  let scanInFlight = false;
+
   async function scanFolders() {
     if (ctx.folders.value.length === 0) return;
+    if (scanInFlight) return;
+    scanInFlight = true;
     ctx.isScanning.value = true;
     ctx.scanProgress.value = { current: 0, total: ctx.folders.value.length };
     const stopListening = window.api?.on('library:scan:progress', (...args: unknown[]) => {
@@ -137,7 +146,11 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
           // Skanowanie zostało anulowane (lub zastąpione) — ponowne ładowanie teraz przywróciłoby
           // nieaktualne dane, więc pomiń je i zamiast tego powiadom użytkownika.
           try {
-            useUIStore().notify('error', 'Skanowanie przerwane', 'Spróbuj ponownie.');
+            useUIStore().notify(
+              'error',
+              i18n.global.t('library.scanAborted'),
+              i18n.global.t('library.scanAbortedHint')
+            );
           } catch {
             // store niedostępny
           }
@@ -147,13 +160,14 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
       }
     } catch (err) {
       try {
-        useUIStore().notify('error', 'Błąd skanowania biblioteki', errMsg(err));
+        useUIStore().notify('error', i18n.global.t('library.scanError'), errMsg(err));
       } catch {
         // store niedostępny
       }
     } finally {
       stopListening?.();
       ctx.isScanning.value = false;
+      scanInFlight = false;
     }
   }
 

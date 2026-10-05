@@ -1,4 +1,4 @@
-import { BrowserWindow, screen, ipcMain } from 'electron';
+import { BrowserWindow, screen } from 'electron';
 import { join } from 'path';
 import type { AudioPipState } from '../../shared/types/pip';
 import {
@@ -18,6 +18,7 @@ import { logger } from '../../shared/logger';
 import { sendToWindow } from '../utils/broadcast';
 import { pipWindowIcon } from './pip-icon';
 import { DEFAULT_CORNER_ELEMENTS, DEFAULT_EDGE_ELEMENTS, PREVIEW_STATE } from './pip-defaults';
+import { registerAudioPipIpc, removeAudioPipIpc } from './audio-pip-ipc';
 
 export class AudioPipManager {
   private window: BrowserWindow | null = null;
@@ -404,62 +405,34 @@ export class AudioPipManager {
   }
 
   private registerIpc(): void {
-    ipcMain.on('audio-pip:showMain', () => {
-      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-        if (this.mainWindow.isMinimized()) this.mainWindow.restore();
-        this.mainWindow.show();
-        this.mainWindow.moveTop();
-        this.mainWindow.focus();
-      }
-    });
-
-    ipcMain.on('audio-pip:action', (_event, action: string) => {
-      if (this.isPreview) return;
-      sendToWindow(this.mainWindow, 'audio-pip:action', action);
-    });
-
-    ipcMain.on('audio-pip:progressClick', (_event, percent: number) => {
-      if (this.isPreview) return;
-      sendToWindow(this.mainWindow, 'audio-pip:progressClick', percent);
-    });
-
-    ipcMain.on('audio-pip:unpeek', () => {
-      this.peek.setMouseInside(true);
-      this.peek.unpeek();
-    });
-
-    ipcMain.on('audio-pip:peekDelay', () => {
-      this.peek.setMouseInside(false);
-      this.peek.schedule();
-    });
-
-    ipcMain.on('audio-pip:theme', (_event, vars: Record<string, string>) => {
-      this.setTheme(vars);
-    });
-
-    ipcMain.on('audio-pip:timeUpdate', (_event, state: AudioPipState) => {
-      if (this.isPreview) return;
-      Object.assign(this.currentState, state);
-      if (this.window && !this.window.isDestroyed() && this.window.isVisible() && this.ready) {
-        this.window.webContents.send('audio-pip:update', {
-          dock: this.dock,
-          layoutKind: this.layoutKind(),
-          elements: this.activeElements(),
-          edge: this.getEdge(),
-          peeked: this.peek.peeked,
-          isPreview: false,
-          state: this.currentState,
-          cssVars: this.cssVars
-        });
-      }
-    });
-
-    ipcMain.on('audio-pip:vizData', (_event, data: number[]) => {
-      if (this.isPreview) return;
-      if (!this.activeElements().includes('viz')) return;
-      if (this.window && !this.window.isDestroyed() && this.window.isVisible() && this.ready) {
-        this.window.webContents.send('audio-pip:vizData', data);
-      }
+    registerAudioPipIpc({
+      mainWindow: () => this.mainWindow,
+      isPreview: () => this.isPreview,
+      onTimeUpdate: (state) => {
+        Object.assign(this.currentState, state);
+        if (this.window && !this.window.isDestroyed() && this.window.isVisible() && this.ready) {
+          this.window.webContents.send('audio-pip:update', {
+            dock: this.dock,
+            layoutKind: this.layoutKind(),
+            elements: this.activeElements(),
+            edge: this.getEdge(),
+            peeked: this.peek.peeked,
+            isPreview: false,
+            state: this.currentState,
+            cssVars: this.cssVars
+          });
+        }
+      },
+      onVizData: (data) => {
+        if (!this.activeElements().includes('viz')) return;
+        if (this.window && !this.window.isDestroyed() && this.window.isVisible() && this.ready) {
+          this.window.webContents.send('audio-pip:vizData', data);
+        }
+      },
+      setTheme: (vars) => this.setTheme(vars),
+      setMouseInside: (inside) => this.peek.setMouseInside(inside),
+      unpeek: () => this.peek.unpeek(),
+      schedulePeek: () => this.peek.schedule()
     });
   }
 
@@ -481,14 +454,7 @@ export class AudioPipManager {
     screen.removeListener('display-metrics-changed', this.onDisplayMetricsChanged);
     screen.removeListener('display-added', this.repositionForDisplayChange);
     screen.removeListener('display-removed', this.repositionForDisplayChange);
-    ipcMain.removeAllListeners('audio-pip:showMain');
-    ipcMain.removeAllListeners('audio-pip:action');
-    ipcMain.removeAllListeners('audio-pip:progressClick');
-    ipcMain.removeAllListeners('audio-pip:unpeek');
-    ipcMain.removeAllListeners('audio-pip:peekDelay');
-    ipcMain.removeAllListeners('audio-pip:timeUpdate');
-    ipcMain.removeAllListeners('audio-pip:vizData');
-    ipcMain.removeAllListeners('audio-pip:theme');
+    removeAudioPipIpc();
   }
 }
 

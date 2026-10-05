@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { randomUUID } from 'crypto';
 import type { IpcDownloadProfile, IpcDownloadConfig } from '../../../shared/types/ipc';
+import { createWriteLock } from '../../utils/write-queue';
 
 function profilesFile(): string {
   return join(app.getPath('userData'), 'download-profiles.json');
@@ -25,16 +26,7 @@ async function readProfiles(): Promise<IpcDownloadProfile[]> {
   }
 }
 
-let writeChain: Promise<void> = Promise.resolve();
-
-function withWriteLock<T>(fn: () => Promise<T>): Promise<T> {
-  const result = writeChain.then(fn);
-  writeChain = result.then(
-    () => undefined,
-    () => undefined
-  );
-  return result;
-}
+const withWriteLock = createWriteLock();
 
 async function persistProfiles(list: IpcDownloadProfile[]): Promise<void> {
   await mkdir(dirname(profilesFile()), { recursive: true });

@@ -76,6 +76,7 @@ function playPlaylist(playlistId: string) {
       <div
         v-for="playlist in library.playlists"
         :key="playlist.id"
+        v-activate
         class="group flex items-center gap-2 px-3 py-2 rounded-field text-xs text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors cursor-pointer"
         :class="{ 'ring-1 ring-primary/50 bg-primary/10': dragOverPlaylistId === playlist.id }"
         @click="playPlaylist(playlist.id)"

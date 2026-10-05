@@ -44,7 +44,10 @@ export async function startLibraryWatcher(folders: string[]): Promise<void> {
   }
   // Serializuj równoczesne starty: zmiana folderu wywołuje to dwa razy i oba
   // wyścigowo tworzyłyby watcher, wyciekając pierwszy.
-  if (starting) await starting.catch(() => {});
+  if (starting)
+    await starting.catch(() => {
+      /* best-effort */
+    });
   if (watcher && sameFolders(watched, clean)) return;
 
   stopLibraryWatcher();

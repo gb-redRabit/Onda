@@ -45,7 +45,7 @@ const groups = computed(() =>
         class="flex items-baseline gap-2 text-[11px] leading-tight"
         :data-testid="`plugin-slot-item-${group.pluginId}`"
       >
-        <span v-if="item.label" class="shrink-0 text-base-content/45">{{ item.label }}</span>
+        <span v-if="item.label" class="shrink-0 text-base-content/60">{{ item.label }}</span>
         <span class="truncate text-base-content/85">{{ item.value }}</span>
       </span>
     </div>

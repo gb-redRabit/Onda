@@ -2,6 +2,7 @@ import { readFile, writeFile, mkdir } from 'fs/promises';
 import { dirname } from 'path';
 import { logger } from '../../../shared/logger';
 import type { Subscription } from '../../../shared/types/online';
+import { createWriteLock } from '../../utils/write-queue';
 
 export interface SubscriptionInput {
   channelId: string;
@@ -31,19 +32,10 @@ export type SubscriptionPatch = Partial<
   >
 >;
 
-let writeChain: Promise<void> = Promise.resolve();
-
 // Serializuje dostęp read-modify-write do subscriptions.json. Bez tego
 // równoczesne wywołania yt:subs:update (np. wiele ukończonych pobrań naraz) ścigają się
 // i po cichu gubią wpisy downloadedVideoIds.
-function withWriteLock<T>(fn: () => Promise<T>): Promise<T> {
-  const result = writeChain.then(fn);
-  writeChain = result.then(
-    () => undefined,
-    () => undefined
-  );
-  return result;
-}
+const withWriteLock = createWriteLock();
 
 async function readList(filePath: string): Promise<Subscription[]> {
   try {

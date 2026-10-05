@@ -42,7 +42,7 @@ const activeSectionId = computed(
         :class="
           activeSectionId === section.id
             ? 'text-primary'
-            : 'text-base-content/40 hover:text-base-content hover:bg-base-content/5'
+            : 'text-base-content/60 hover:text-base-content hover:bg-base-content/5'
         "
         :title="$t(section.labelKey)"
         :aria-label="$t(section.labelKey)"

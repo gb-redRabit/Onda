@@ -42,7 +42,7 @@ const settings = useSettingsStore();
         })
       "
     />
-    <div class="flex justify-between text-[10px] text-base-content/40 mt-1">
+    <div class="flex justify-between text-[10px] text-base-content/60 mt-1">
       <span>0 ({{ $t('common.none') }})</span><span>5</span>
     </div>
   </SettingsGroup>

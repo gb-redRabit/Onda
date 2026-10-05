@@ -132,6 +132,23 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
+/* Niestandardowe suwaki (`div[role=slider]`: pasek postępu/seek/volume) nie łapią
+   reguły `[role=button]` — bez tego nawigacja klawiaturą gubiła widoczny focus
+   (WCAG 2.4.7). Wartości jak dla przycisków. */
+[role='slider']:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--color-primary) 78%, white);
+  outline-offset: 2px;
+}
+
+/* Pola formularzy nie mają globalnego ringu focus — bez tego klawiatura gubi pozycję
+   na `select`/tekstowych (wiele komponentów ustawia tylko `focus:outline-none`). */
+select:focus-visible,
+textarea:focus-visible,
+input:not([type='range']):focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--color-primary) 55%, transparent);
+  outline-offset: 2px;
+}
+
 .ui-icon-button {
   display: inline-flex;
   align-items: center;
@@ -346,4 +363,17 @@ input[type='checkbox'] {
 
 .animate-marquee {
   animation: marquee 8s linear infinite;
+}
+
+/* Long online lists (resolved results, channel videos): skip rendering of
+   off-screen cards. Chromium keeps them in the DOM (find-in-page still works)
+   but avoids layout/paint until they scroll into view; `contain-intrinsic-size`
+   keeps the scrollbar stable. `layout`, `style` and `paint` containment is
+   disabled while the card is active, so the expanded embed player renders
+   normally. Rationale vs JS virtualization: cards are variable-height and one
+   can expand arbitrarily, which makes row windowing fragile, while this is a
+   no-layout-change win. Not applied to the expanded card. */
+.cv-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
 }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useVirtualizer } from '@tanstack/vue-virtual';
+import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { Disc3, LayoutList, LayoutGrid } from '@lucide/vue';
 import type { MediaFile } from '@renderer/types/media';
 import { useVirtualGrid } from '@renderer/composables/useVirtualGrid';
@@ -34,11 +34,9 @@ const sortedAlbums = computed(() => {
 });
 
 const albumListRef = ref<HTMLElement | null>(null);
-const albumListVirtualizer = useVirtualizer({
-  get count() {
-    return sortedAlbums.value.length;
-  },
-  getScrollElement: () => albumListRef.value,
+const albumListVirtualizer = useVirtualList({
+  count: () => sortedAlbums.value.length,
+  scrollEl: () => albumListRef.value,
   estimateSize: () => 56,
   overscan: 10
 });
@@ -46,11 +44,9 @@ const albumListVirtualizer = useVirtualizer({
 const albumGridRef = ref<HTMLElement | null>(null);
 const grid = useVirtualGrid(albumGridRef, 200, 5);
 
-const albumRowVirtualizer = useVirtualizer({
-  get count() {
-    return Math.ceil(sortedAlbums.value.length / grid.cols.value);
-  },
-  getScrollElement: () => albumGridRef.value,
+const albumRowVirtualizer = useVirtualList({
+  count: () => Math.ceil(sortedAlbums.value.length / grid.cols.value),
+  scrollEl: () => albumGridRef.value,
   estimateSize: () => 256,
   overscan: 3
 });
@@ -147,6 +143,7 @@ onUnmounted(() => grid.destroy());
             }"
           >
             <div
+              v-activate
               class="flex items-center gap-3 px-4 py-2 hover:bg-base-100 border border-transparent hover:border-base-300 hover:shadow-sm rounded-field transition-all cursor-pointer h-full mx-2"
               @click="emit('playTracks', sortedAlbums[v.index][1])"
               @mouseenter="onAlbumHover(sortedAlbums[v.index][1][0]?.path || '')"

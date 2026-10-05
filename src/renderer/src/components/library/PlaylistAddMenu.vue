@@ -69,7 +69,14 @@ function pick(playlistId: string) {
 
 <template>
   <div ref="btn" class="relative">
-    <button :class="buttonClass" @click="toggleMenu"><Plus :size="iconSize" /></button>
+    <button
+      :class="buttonClass"
+      :aria-label="$t('common.addToPlaylist')"
+      :title="$t('common.addToPlaylist')"
+      @click="toggleMenu"
+    >
+      <Plus :size="iconSize" />
+    </button>
     <Teleport to="body">
       <div
         v-if="open"

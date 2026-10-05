@@ -60,12 +60,28 @@ const isWinMaximized = ref(false);
 const isNarrowLayout = ref(window.innerWidth < 1200);
 const glassOn = computed(() => (settings.appearance.glassAlpha ?? 100) < 100);
 let offMaximized: (() => void) | null = null;
+let unregisterAppIpc: (() => void) | null = null;
 
 function applyNarrowLayout(width: number): void {
   isNarrowLayout.value = width < 1200;
 }
 
-const isExplorerWindow = computed(() => route.name === 'explorer-window');
+// Okna pomocnicze (eksplorator, podgląd zdjęć) ładują ten sam App.vue, ale nie mogą
+// renderować chromu głównego okna (menu, pasek boczny, player) — w przeciwnym razie
+// pełnoekranowy lightbox zdjęć otaczał się menu aplikacji.
+const isStandaloneWindow = computed(
+  () => route.name === 'explorer-window' || route.name === 'image-viewer'
+);
+
+const mainRef = ref<HTMLElement | null>(null);
+// Po zmianie trasy przenieś fokus do treści — inaczej klawiatura i czytnik ekranu
+// zostają w menu bocznym po nawigacji (WCAG 2.4.3).
+watch(
+  () => route.name,
+  () => {
+    void nextTick(() => mainRef.value?.focus());
+  }
+);
 
 // Przebudowywane tylko przy zmianie skrótów, nie przy każdym naciśnięciu klawisza.
 const NAV_ACTIONS: Record<string, string> = {
@@ -100,7 +116,10 @@ onMounted(async () => {
   }, onBootStepError);
   await guardBootStep(() => theme.applyTheme(), onBootStepError);
   await guardBootStep(() => loadLocaleMessages(settings.appearance.locale), onBootStepError);
-  await guardBootStep(() => library.loadFromDisk(), onBootStepError);
+  // Biblioteka nie może wstrzymywać splashu: odczyt startuje równolegle z resztą
+  // bootstrapu, a wynik jest oczekiwany dopiero po zgłoszeniu gotowości (main zamyka
+  // splash wcześniej). Czas startu nie rośnie już liniowo z rozmiarem biblioteki.
+  const libraryReady = library.loadFromDisk().catch(onBootStepError);
   // Ustawienia → Odtwarzanie → domyślna głośność to głośność, z którą startuje aplikacja.
   await guardBootStep(() => player.setVolume(settings.playback.defaultVolume), onBootStepError);
   await guardBootStep(() => {
@@ -118,7 +137,9 @@ onMounted(async () => {
   await new Promise<void>((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
   );
-  window.api?.invoke('app:rendererReady');
+  void window.api?.invoke('app:rendererReady').catch(onBootStepError);
+  // Czekamy na bibliotekę dopiero teraz — splash i pierwsze malowanie już nie czekają.
+  await libraryReady;
 
   if (!moduleManager.getActive()) {
     await moduleManager.switchTo('home');
@@ -149,19 +170,21 @@ onMounted(async () => {
   }
   if (!settings.general.firstRunDone) ui.openSetupWizard();
 
-  registerAppIpc({ player, router, route });
+  unregisterAppIpc = registerAppIpc({ player, router, route });
 });
 
 onBeforeUnmount(() => {
   moduleManager.deactivateAll();
+  theme.dispose();
   document.removeEventListener('keydown', onGlobalKeydown);
   document.removeEventListener('mousedown', onGlobalMouseDown);
   window.removeEventListener('blur', onWindowBlur);
   window.removeEventListener('resize', onAppResize);
   offMaximized?.();
+  unregisterAppIpc?.();
 });
 
-// Fallback dla środowisk bez ResizeObserver.
+// Układ wąski zależy od szerokości okna, więc każdy resize przelicza próg.
 function onAppResize(): void {
   applyNarrowLayout(window.innerWidth);
 }
@@ -274,13 +297,25 @@ function onWindowBlur() {
     class="app-root relative flex flex-col h-full w-full overflow-hidden border border-base-300 bg-base-200/(--glass-alpha)"
     :class="{ 'is-maximized': isWinMaximized, 'app-root-glass': glassOn }"
   >
-    <AppMenu v-if="!isExplorerWindow" />
+    <AppMenu v-if="!isStandaloneWindow" />
     <!-- Ostrzegaj przy każdym uruchomieniu o zależnościach, bez których Onda nie działa.
          Ukryte, gdy kreator jest otwarty (oferuje te same instalacje). -->
-    <DependencyBanner v-if="!isExplorerWindow && !ui.setupWizardVisible" />
+    <DependencyBanner v-if="!isStandaloneWindow && !ui.setupWizardVisible" />
+    <a
+      v-if="!isStandaloneWindow"
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-field focus:bg-primary focus:text-primary-content"
+      >{{ $t('common.skipToContent') }}</a
+    >
     <div class="relative flex flex-1 min-h-0">
-      <Sidebar v-if="!isExplorerWindow && settings.appearance.sidebarPosition === 'left'" />
-      <main :data-route="route.name" class="flex-1 min-w-0 relative overflow-auto flex flex-col">
+      <Sidebar v-if="!isStandaloneWindow && settings.appearance.sidebarPosition === 'left'" />
+      <main
+        id="main-content"
+        ref="mainRef"
+        tabindex="-1"
+        :data-route="route.name"
+        class="flex-1 min-w-0 relative overflow-auto flex flex-col outline-none"
+      >
         <router-view v-slot="{ Component }">
           <transition name="page" mode="out-in">
             <ErrorBoundary>
@@ -292,26 +327,29 @@ function onWindowBlur() {
       <!-- Jedna instancja między układami: przełączanie między szerokim a wąskim nie może
            jej odmontować, bo pozycja przewinięcia kolejki zostanie utracona. -->
       <QueuePanel
-        v-if="!isExplorerWindow && player.queueVisible"
+        v-if="!isStandaloneWindow && player.queueVisible"
         :class="
           isNarrowLayout
             ? 'absolute inset-y-0 right-0 z-30 w-80 max-w-[90vw] fx-depth'
             : 'w-75 shrink-0'
         "
       />
-      <Sidebar v-if="!isExplorerWindow && settings.appearance.sidebarPosition === 'right'" />
-      <div v-if="!isExplorerWindow && player.equalizerVisible" class="fixed bottom-24 right-6 z-40">
+      <Sidebar v-if="!isStandaloneWindow && settings.appearance.sidebarPosition === 'right'" />
+      <div
+        v-if="!isStandaloneWindow && player.equalizerVisible"
+        class="fixed bottom-24 right-6 z-40"
+      >
         <Equalizer />
       </div>
       <div
-        v-if="!isExplorerWindow && player.queueVisible && isNarrowLayout"
+        v-if="!isStandaloneWindow && player.queueVisible && isNarrowLayout"
         class="absolute inset-0 z-20 bg-neutral/35"
         @click="player.toggleQueue"
       />
     </div>
     <PlayerBar
       v-if="
-        !isExplorerWindow &&
+        !isStandaloneWindow &&
         (player.currentTrack?.type === 'audio' ||
           player.currentTrack?.type === 'stream' ||
           player.streamPending?.type === 'stream') &&
@@ -321,7 +359,7 @@ function onWindowBlur() {
     />
     <!-- Widoczność należy do settings.statusBar.visible, które StatusBar odczytuje
          sam. To była druga brama, której nic nigdy nie zmieniało. -->
-    <StatusBar v-if="!isExplorerWindow" />
+    <StatusBar v-if="!isStandaloneWindow" />
 
     <AppSearch />
     <ContextMenu />

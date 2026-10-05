@@ -113,7 +113,7 @@ const { t } = useI18n();
             v-model="model.tableTitle"
             type="text"
             :list="fieldId('ttitle')"
-            placeholder="Odcinek {n}"
+            :placeholder="$t('sources.episodeTemplatePlaceholder') + ' {n}'"
             class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
           />
           <datalist :id="fieldId('ttitle')">

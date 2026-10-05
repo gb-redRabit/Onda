@@ -63,16 +63,18 @@ export function createSourcesList() {
     }
   }
 
-  async function deleteSource(id: string): Promise<{ ok: boolean; wasActive: boolean }> {
+  async function deleteSource(
+    id: string
+  ): Promise<{ ok: boolean; wasActive: boolean; error?: string }> {
     const wasActive = activeSourceId.value === id;
     try {
       const list = (await window.api.invoke('sources:delete', id)) as MediaSource[];
       sources.value = list || [];
       if (wasActive) selectFirst();
       return { ok: true, wasActive };
-    } catch {
-      // niekrytyczne
-      return { ok: false, wasActive: false };
+    } catch (e) {
+      // Błąd zwracamy do widoku, żeby pokazał toast zamiast cicho połknąć porażkę.
+      return { ok: false, wasActive: false, error: e instanceof Error ? e.message : String(e) };
     }
   }
 

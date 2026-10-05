@@ -50,6 +50,7 @@
 - 📚 Incremental folder scanning (unchanged files are never re-parsed) + a file watcher (`chokidar`) for automatic refresh.
 - 🏷 Audio metadata (ID3/FLAC/MP4) via `music-metadata`, covers cached to disk with `sharp`.
 - 🗂 Views: track list, video/album grid, folder tree, artists, playlists, images.
+- ☑️ Track selection in the Tracks tab (list **and** grid): a checkbox or click selects a single track — Ctrl-click toggles individual tracks, Shift-click selects a range, Esc clears. The bulk bar then offers Play, Add to queue and Add to playlist for the selection (or directly for the one track).
 - ✏️ ID3 tag editing, MusicBrainz metadata lookup, favorites and play statistics.
 
 **File explorer**
@@ -84,7 +85,7 @@
 - 🚀 Autostart, start minimized to tray, close-to-tray.
 - 📂 File associations (mp3, flac, ogg, wav, m4a, aac, mp4, mkv, webm, mov, avi) and single-instance file opening.
 - ⌨️ Global media shortcuts, tray, command palette (Ctrl+K), auto-updates (`electron-updater`).
-- 🌍 PL/EN localization, 4 built-in themes (dark / light / midnight / spotify) and a live-preview Theme Creator.
+- 🌍 PL/EN localization, a follow-the-system theme plus 10 built-in themes (dark / light / midnight / spotify / luxury / cyberpunk / aqua / black / lemonade / abyss) and a live-preview Theme Creator.
 
 **Themes & appearance**
 
@@ -163,7 +164,7 @@ npm run dev
 Quality gates:
 
 ```bash
-npm test           # 1498 unit tests across 148 files (Vitest)
+npm test           # 1667 unit tests (Vitest)
 npm run typecheck  # tsc (main/preload) + vue-tsc (renderer)
 npm run lint       # ESLint
 npm run e2e        # Playwright + Electron (run `npm run build` first)
@@ -184,18 +185,31 @@ npm run build:linux  # AppImage / deb / rpm (Linux)
 
 Onda is built to stay smooth on large libraries and slow disks.
 
-| Optimization                     | What it delivers                                                                                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Virtualization everywhere**    | Every long list/grid (library, downloads, explorer, queue, sources) renders only visible rows via `@tanstack/vue-virtual`.                                          |
-| **Lazy loading + idle prefetch** | All routes and heavy panels are async-loaded; core views are prefetched during browser idle time.                                                                   |
-| **Cheap reactivity**             | Large collections use `shallowRef`/`triggerRef`; search uses a prebuilt, normalized index computed once per collection change — not per keystroke.                  |
-| **Debounce & throttle**          | Search 200 ms, settings persistence 300 ms (serialized revision writer), download progress 200 ms, file watcher 2 s.                                                |
-| **Scale-ready scanning**         | Incremental scan (reuses unchanged files by size+mtime), 16-way bounded concurrency, interleaved 50-file chunks and a 50 000-file budget that stops the walk early. |
-| **Byte-range streaming**         | A local HTTP media server serves audio/video with `Range` (incl. suffix) requests; remote streams are proxied with bounded retries.                                 |
-| **Layered caches**               | Cover, thumbnail, stream-URL and remote-image caches are memory+disk layered, each with an explicit cap and TTL — no unbounded growth.                              |
-| **Work off the main thread**     | JASSUB subtitles run in a Web Worker (WASM); plugins are sandboxed in workers with hard CPU/message budgets.                                                        |
-| **Resource safety**              | `AbortController` for cancelling scans/downloads, pinned DNS to prevent SSRF, download concurrency capped at 8, atomic queue persistence.                           |
-| **Quality gates**                | 1498 unit tests + 51 Playwright E2E tests (33 specs) + lint + typecheck + IPC codegen check run on every change.                                                    |
+| Optimization                     | What it delivers                                                                                                                                                                                                            |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Virtualization everywhere**    | Every long list/grid (library, downloads, explorer, queue, sources) renders only visible rows via `@tanstack/vue-virtual`.                                                                                                  |
+| **Lazy loading + idle prefetch** | All routes and heavy panels are async-loaded; core views are prefetched during browser idle time.                                                                                                                           |
+| **Cheap reactivity**             | Large collections use `shallowRef`/`triggerRef`; search uses a prebuilt, normalized index computed once per collection change — not per keystroke.                                                                          |
+| **Debounce & throttle**          | Search 200 ms, settings persistence 300 ms (serialized revision writer), download progress 200 ms, file watcher 2 s.                                                                                                        |
+| **Scale-ready scanning**         | Incremental scan (reuses unchanged files by size+mtime), 16-way bounded concurrency, interleaved 50-file chunks and a 50 000-file budget that stops the walk early.                                                         |
+| **Byte-range streaming**         | A local HTTP media server serves audio/video with `Range` (incl. suffix) requests; remote streams are proxied with bounded retries.                                                                                         |
+| **Layered caches**               | Cover, thumbnail, stream-URL and remote-image caches are memory+disk layered, each with an explicit cap and TTL — no unbounded growth.                                                                                      |
+| **Work off the main thread**     | JASSUB subtitles run in a Web Worker (WASM); plugins are sandboxed in workers with hard CPU/message budgets.                                                                                                                |
+| **Resource safety**              | `AbortController` for cancelling scans/downloads, pinned DNS to prevent SSRF, download concurrency capped at 8, atomic queue persistence, spawn semaphore for subtitle extraction, LRU eviction for cover/thumbnail caches. |
+| **Race-free selection & search** | Request-id/token guards make stale async responses (search pagination, cover loads, module switches, library scans) no-ops.                                                                                                 |
+| **Quality gates**                | 1667 unit tests + 56 Playwright E2E tests (35 specs) + lint + typecheck + IPC codegen check run on every change.                                                                                                            |
+
+### Security
+
+Onda treats the renderer as untrusted and enforces its boundaries in the main process:
+
+- **Process isolation** — `sandbox`, `contextIsolation`, `nodeIntegration: false`, `webSecurity: true`; a single window factory applies them everywhere.
+- **IPC contract** — every channel is declared in one source of truth (`src/shared/ipc/contract.ts`), allowlisted in the preload, and verified by a compile-time guard plus tests (invoke ↔ `ipcMain.handle`, send ↔ `ipcMain.on`). The `/metrics` of the codegen: **206 invoke / 15 send / 45 receive**.
+- **SSRF defense** — outbound fetches resolve through a pinned-DNS guard that blocks loopback/private/metadata ranges and validates **every** redirect hop (media, sources, remote images, SoundCloud artwork).
+- **Secrets never reach the renderer** — API keys are encrypted at rest via `safeStorage`; `settings:get` returns only a masked preview, and writes merge by id so the stored secret survives round-trips.
+- **Filesystem policy** — destructive and mutating handlers refuse volume roots, system directories and sensitive locations; the media server authorizes with a timing-safe token, origin checks and realpath-contained roots.
+- **Navigation & permissions** — a navigation guard, an external-link policy, deny-by-default session permissions, and log redaction for tokens/headers/passwords.
+- **Plugins** — sandboxed Web Workers with hard resource budgets, a host-allowlist network bridge and consent bound to the entry file's SHA-256.
 
 ### Contributing
 
@@ -244,6 +258,7 @@ Onda is **source-available**, not open source: you may use, modify and share it 
 - 📚 Skanowanie przyrostowe folderów (niezmienione pliki nie są parsowane ponownie) + watcher (`chokidar`) z automatycznym odświeżaniem.
 - 🏷 Metadane audio (ID3/FLAC/MP4) przez `music-metadata`, okładki cache'owane na dysku (`sharp`).
 - 🗂 Widoki: lista utworów, siatka wideo/albumów, drzewo folderów, artyści, playlisty, obrazy.
+- ☑️ Zaznaczanie utworów w zakładce Utwory (lista **i** siatka): checkbox lub klik zaznacza pojedynczy utwór — Ctrl+klik przełącza pojedyncze utwory, Shift+klik zaznacza zakres, Esc czyści. Pasek zbiorczy daje wtedy Odtwórz, Dodaj do kolejki i Dodaj do playlisty dla zaznaczenia (albo wprost dla tego jednego utworu).
 - ✏️ Edycja tagów ID3, uzupełnianie metadanych z MusicBrainz, ulubione i statystyki odtworzeń.
 
 **Eksplorator plików**
@@ -278,7 +293,7 @@ Onda is **source-available**, not open source: you may use, modify and share it 
 - 🚀 Autostart, start zminimalizowany do trayu, ukrywanie do trayu po zamknięciu.
 - 📂 Skojarzenia plików (mp3, flac, ogg, wav, m4a, aac, mp4, mkv, webm, mov, avi) i single-instance (otwieranie plików z systemu trafia do istniejącej instancji).
 - ⌨️ Globalne skróty multimedialne, tray, paleta poleceń (Ctrl+K), aktualizacje (`electron-updater`).
-- 🌍 Lokalizacja PL/EN, 4 motywy wbudowane (dark / light / midnight / spotify) i Kreator Motywów z live-preview.
+- 🌍 Lokalizacja PL/EN, motyw „systemowy" (podąża za ustawieniem systemu) plus 10 motywów wbudowanych (dark / light / midnight / spotify / luxury / cyberpunk / aqua / black / lemonade / abyss) i Kreator Motywów z live-preview.
 
 **Motywy i wygląd**
 
@@ -357,7 +372,7 @@ npm run dev
 Bramki jakości:
 
 ```bash
-npm test           # 1498 testów jednostkowych w 148 plikach (Vitest)
+npm test           # 1667 testów jednostkowych (Vitest)
 npm run typecheck  # tsc (main/preload) + vue-tsc (renderer)
 npm run lint       # ESLint
 npm run e2e        # Playwright + Electron (najpierw `npm run build`)
@@ -378,18 +393,31 @@ npm run build:linux  # AppImage / deb / rpm (Linux)
 
 Onda jest zaprojektowana tak, by pozostać płynna przy dużych bibliotekach i wolnych dyskach.
 
-| Optymalizacja                       | Efekt                                                                                                                                                                                |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Wirtualizacja wszędzie**          | Każda długa lista/siatka (biblioteka, pobierania, eksplorator, kolejka, źródła) renderuje tylko widoczne wiersze (`@tanstack/vue-virtual`).                                          |
-| **Lazy loading + prefetch na idle** | Wszystkie trasy i ciężkie panele ładowane asynchronicznie; kluczowe widoki prefetchowane w czasie bezczynności.                                                                      |
-| **Tania reaktywność**               | Duże kolekcje na `shallowRef`/`triggerRef`; wyszukiwanie korzysta z gotowego indeksu budowanego raz na zmianę kolekcji — nie przy każdym klawiszu.                                   |
-| **Debounce i throttle**             | Wyszukiwarka 200 ms, zapis ustawień 300 ms (serializowany writer), postęp pobierania 200 ms, watcher 2 s.                                                                            |
-| **Skanowanie gotowe na skalę**      | Skan przyrostowy (wykorzystuje niezmienione pliki po rozmiarze+mtime), 16-wątkowa ograniczona współbieżność, przeplatane porcje po 50 i budżet 50 000 plików zatrzymujący przejście. |
-| **Streaming zakresowy**             | Lokalny serwer HTTP serwuje audio/wideo z nagłówkami `Range` (w tym suffix); zdalne strumienie przez proxy z ograniczonym backoffem.                                                 |
-| **Warstwowe cache**                 | Cache okładek, miniatur, URL-i streamów i zdalnych obrazów są warstwowe (pamięć+dysk), każdy z jawnym limitem i TTL — bez niekontrolowanego wzrostu.                                 |
-| **Praca poza wątkiem głównym**      | Napisy JASSUB w Web Workerze (WASM); wtyczki w sandboxie workera z twardymi budżetami.                                                                                               |
-| **Bezpieczeństwo zasobów**          | `AbortController` do anulowania skanów/pobrań, przypięty DNS przeciw SSRF, limit współbieżności pobrań 8, atomowa persystencja kolejki.                                              |
-| **Bramki jakości**                  | 1498 testów jednostkowych + 51 testów E2E (33 specyfikacje) + lint + typecheck + check codegenu IPC przy każdej zmianie.                                                             |
+| Optymalizacja                                    | Efekt                                                                                                                                                                                                                |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Wirtualizacja wszędzie**                       | Każda długa lista/siatka (biblioteka, pobierania, eksplorator, kolejka, źródła) renderuje tylko widoczne wiersze (`@tanstack/vue-virtual`).                                                                          |
+| **Lazy loading + prefetch na idle**              | Wszystkie trasy i ciężkie panele ładowane asynchronicznie; kluczowe widoki prefetchowane w czasie bezczynności.                                                                                                      |
+| **Tania reaktywność**                            | Duże kolekcje na `shallowRef`/`triggerRef`; wyszukiwanie korzysta z gotowego indeksu budowanego raz na zmianę kolekcji — nie przy każdym klawiszu.                                                                   |
+| **Debounce i throttle**                          | Wyszukiwarka 200 ms, zapis ustawień 300 ms (serializowany writer), postęp pobierania 200 ms, watcher 2 s.                                                                                                            |
+| **Skanowanie gotowe na skalę**                   | Skan przyrostowy (wykorzystuje niezmienione pliki po rozmiarze+mtime), 16-wątkowa ograniczona współbieżność, przeplatane porcje po 50 i budżet 50 000 plików zatrzymujący przejście.                                 |
+| **Streaming zakresowy**                          | Lokalny serwer HTTP serwuje audio/wideo z nagłówkami `Range` (w tym suffix); zdalne strumienie przez proxy z ograniczonym backoffem.                                                                                 |
+| **Warstwowe cache**                              | Cache okładek, miniatur, URL-i streamów i zdalnych obrazów są warstwowe (pamięć+dysk), każdy z jawnym limitem i TTL — bez niekontrolowanego wzrostu.                                                                 |
+| **Praca poza wątkiem głównym**                   | Napisy JASSUB w Web Workerze (WASM); wtyczki w sandboxie workera z twardymi budżetami.                                                                                                                               |
+| **Bezpieczeństwo zasobów**                       | `AbortController` do anulowania skanów/pobrań, przypięty DNS przeciw SSRF, limit współbieżności pobrań 8, atomowa persystencja kolejki, semafor spawnu przy ekstrakcji napisów, ewiction LRU cache okładek/miniatur. |
+| **Wolne od wyścigów zaznaczanie i wyszukiwanie** | Tokeny/request-id sprawiają, że przedawnione odpowiedzi (paginacja wyszukiwania, ładowanie okładek, przełączenia modułów, skany biblioteki) są no-opami.                                                             |
+| **Bramki jakości**                               | 1667 testów jednostkowych + 56 testów E2E (35 specyfikacji) + lint + typecheck + check codegenu IPC przy każdej zmianie.                                                                                             |
+
+### Bezpieczeństwo
+
+Onda traktuje renderer jako niezaufany i egzekwuje granice w procesie głównym:
+
+- **Izolacja procesu** — `sandbox`, `contextIsolation`, `nodeIntegration: false`, `webSecurity: true`; jedna fabryka okien stosuje to wszędzie.
+- **Kontrakt IPC** — każdy kanał zadeklarowany w jednym źródle prawdy (`src/shared/ipc/contract.ts`), na allowliście preloadu i pilnowany strażnikiem czasu kompilacji oraz testami (invoke ↔ `ipcMain.handle`, send ↔ `ipcMain.on`). Stan codegenu: **206 invoke / 15 send / 45 receive**.
+- **Obrona przed SSRF** — wychodzące żądania przechodzą przez guard z przypiętym DNS, który blokuje zakresy loopback/prywatne/metadanych i waliduje **każdy** hop przekierowania (media, źródła, zdalne obrazy, okładki SoundCloud).
+- **Sekrety nie trafiają do renderera** — klucze API są szyfrowane w spoczynku przez `safeStorage`; `settings:get` zwraca tylko zamaskowany podgląd, a zapis scala po `id`, więc zapisany sekret przetrwa rundy zapisu.
+- **Polityka systemu plików** — destrukcyjne i mutujące handlery odrzucają korzenie wolumenów, katalogi systemowe i lokalizacje wrażliwe; serwer mediów autoryzuje timing-safe tokenem, sprawdzaniem originu i realpath wewnątrz rootów.
+- **Nawigacja i uprawnienia** — strażnik nawigacji, polityka otwierania linków, deny-by-default dla sesji i redakcja tokenów/nagłówków/haseł w logach.
+- **Wtyczki** — sandbox Web Worker z twardymi budżetami, most sieciowy z allowlistą hostów i zgoda związana z SHA-256 pliku wejściowego.
 
 ### Współpraca
 

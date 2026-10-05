@@ -5,6 +5,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { createMediaServer } from './media/media-server';
 import { registerOndaProtocolHandler } from './protocol';
 import { registerWindowHandlers } from './windows/window-ipc';
+import { setAutoLaunch } from './windows/auto-launch';
 import { registerIPC } from './ipc/handlers';
 import { pipManager } from './pip/pip-manager';
 import { audioPipManager } from './pip/audio-pip-manager';
@@ -20,7 +21,15 @@ import {
 } from './media/media-server';
 import { getStore } from './ipc/cover/cover-cache';
 import { flushQueueNow } from './downloads/download-manager';
+import { jobs, jobAbortControllers } from './downloads/download-state';
+import { killDownloadProcess } from './downloads/kill-download-process';
+import {
+  installProcessSafetyNets,
+  installSessionHardening,
+  installRendererRecovery
+} from './bootstrap/safety-nets';
 import { flushLibraryScanned, flushStats } from './ipc/library/library-store';
+import { flushPlaybackPositions } from './ipc/playback-handlers';
 import { stopSubscriptionChecker } from './ipc/subscriptions/subscription-checker';
 import { setupFileLogging, applyLogSettings, flushLogWrites } from './log-file';
 import { applyCoverCacheSettings, initCoverCache } from './ipc/cover/cover-cache';
@@ -44,6 +53,11 @@ let mainWindow: BrowserWindow | null = null;
 let startHidden = false;
 // Chroni jednorazowe asynchroniczne sprzątanie w handlerze `before-quit` poniżej.
 let isAppQuitting = false;
+
+// Górny limit opróżniania persystencji przy wyjściu. Bez niego zawieszony flush
+// (np. niedostępny dysk sieciowy) blokowałby `app.quit()` na zawsze, zostawiając
+// proces-widmo w tle.
+const SHUTDOWN_FLUSH_TIMEOUT_MS = 5000;
 
 const splash = new SplashController({
   windowIcon,
@@ -136,10 +150,8 @@ function createWindow(): BrowserWindow {
     logger.error('main', `preload-error ${preloadPath}`, error);
     splash.forceClose();
   });
-  win.webContents.on('render-process-gone', (_event, details) => {
-    logger.error('main', 'render-process-gone', details);
-    splash.forceClose();
-  });
+  // Crash renderera: zamknij splash i spróbuj odzyskać okno (reload z limitem).
+  installRendererRecovery(win, () => splash.forceClose());
 
   return win;
 }
@@ -156,6 +168,12 @@ app.whenReady().then(async () => {
   initMainLocale();
 
   setupFileLogging();
+
+  // Globalne handlery błędów: niewyłapany błąd w handlerze IPC nie może ubić
+  // procesu bez śladu w logu. Uprawnienia sesji: deny-by-default (m.in. zdalne
+  // okno logowania YouTube nie dostaje domyślnego dostępu do urządzeń).
+  installProcessSafetyNets();
+  installSessionHardening();
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window);
@@ -234,14 +252,8 @@ app.whenReady().then(async () => {
       | undefined;
     applyLogSettings(general?.logLevel, general?.logMaxSizeMB);
     if (general?.closeToTray !== undefined) setCloseToTray(general.closeToTray !== false);
-    if (general?.autoLaunch) {
-      app.setLoginItemSettings({
-        openAtLogin: true,
-        args: general.startMinimized ? ['--hidden'] : [],
-        ...(process.platform === 'darwin' ? { openAsHidden: !!general.startMinimized } : {})
-      });
-    } else if (general?.autoLaunch === false) {
-      app.setLoginItemSettings({ openAtLogin: false });
+    if (general?.autoLaunch !== undefined) {
+      setAutoLaunch({ enabled: !!general.autoLaunch, hidden: !!general.startMinimized });
     }
   } catch (e) {
     logger.warn('main', 'seeding media server roots from library folders failed', e);
@@ -293,17 +305,46 @@ app.whenReady().then(async () => {
         stopSubscriptionChecker();
         mediaServer.close();
         closeLoginWindow();
-        // Opróżnij debounce'owaną persystencję, aby ostatnie ~0,5 s zmian nie przepadły.
-        flushQueueNow();
-        await Promise.allSettled([
+        // Najpierw zatrzymaj pracę: procesy potomne yt-dlp/ffmpeg i strumienie HTTP
+        // inaczej piszą do plików w trakcie opróżniania persystencji (i przeżywają
+        // zamknięcie aplikacji).
+        for (const job of jobs.values()) {
+          if (job.status !== 'downloading') continue;
+          if (job.child) {
+            try {
+              killDownloadProcess(job.child);
+            } catch {
+              /* już nie istnieje */
+            }
+          } else {
+            jobAbortControllers.get(job.id)?.abort();
+          }
+        }
+        // Opróżnij debounce'owaną persystencję, aby ostatnie zmiany nie przepadły.
+        // Limit czasu gwarantuje, że zamknięcie zawsze się kończy.
+        const flushes = Promise.allSettled([
           // Linie zapisane podczas zamykania są tymi, które warto mieć, gdy
           // doprowadziła nas tu awaria.
           flushLogWrites(),
           flushLibraryScanned(),
           // Statystyki odtwarzania są debounce'owane (400 ms); opróżnij je, inaczej ostatnie odtworzenia przepadną.
           flushStats(),
+          // Pozycje odtwarzania są debounce'owane (15 s) — bez tego ostatnie ~15 s przepada.
+          flushPlaybackPositions(),
+          // Kolejka pobierania jest debounce'owana (400 ms) — bez awaitowania
+          // ostatni zapis mógł przepaść.
+          flushQueueNow(),
           getStore().then((s) => s.set('mediaRoots', getExtraRoots().slice(0, 50)))
         ]);
+        const shutdownTimeout = new Promise<'timeout'>((r) =>
+          setTimeout(() => r('timeout'), SHUTDOWN_FLUSH_TIMEOUT_MS)
+        );
+        if ((await Promise.race([flushes, shutdownTimeout])) === 'timeout') {
+          logger.warn(
+            'main',
+            `graceful shutdown flush exceeded ${SHUTDOWN_FLUSH_TIMEOUT_MS}ms — quitting anyway`
+          );
+        }
       } catch (e) {
         logger.error('main', 'graceful shutdown failed', e);
       } finally {

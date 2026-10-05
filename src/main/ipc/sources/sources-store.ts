@@ -2,6 +2,7 @@ import { readFile, writeFile, mkdir } from 'fs/promises';
 import { dirname } from 'path';
 import { randomUUID } from 'crypto';
 import { logger } from '../../../shared/logger';
+import { createWriteLock } from '../../utils/write-queue';
 import type {
   MediaSource,
   SourceEndpoint,
@@ -244,19 +245,14 @@ export function applySourceTrust(
   source.allowPrivateNetwork = stored.allowPrivateNetwork === true;
   source.baseUrl = stored.baseUrl;
   source.auth = stored.auth;
+  // Endpointy także pochodzą z zapisanego rekordu: bez tego przejęty renderer mógł
+  // podmienić `endpoint.path` na absolutny URL (loopback/metadata) i wykorzystać
+  // zaufanie do sieci prywatnej zapisanego źródła.
+  source.endpoints = stored.endpoints;
   return source;
 }
 
-let writeChain: Promise<void> = Promise.resolve();
-
-function withWriteLock<T>(fn: () => Promise<T>): Promise<T> {
-  const result = writeChain.then(fn);
-  writeChain = result.then(
-    () => undefined,
-    () => undefined
-  );
-  return result;
-}
+const withWriteLock = createWriteLock();
 
 async function readList(filePath: string): Promise<MediaSource[]> {
   try {

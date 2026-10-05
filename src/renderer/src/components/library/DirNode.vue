@@ -209,7 +209,7 @@ function openImageViewerForChild(childName: string, imagePath: string) {
         >
           <ChevronDown
             :size="12"
-            class="transition-transform duration-150 shrink-0 text-base-content/40"
+            class="transition-transform duration-150 shrink-0 text-base-content/60"
             :class="isExpanded(childOriginal(sub)) ? '' : '-rotate-90'"
           />
           <LibraryFolderTile
@@ -228,7 +228,7 @@ function openImageViewerForChild(childName: string, imagePath: string) {
           </span>
           <span
             v-if="metaFor(sub).duration > 0"
-            class="text-[11px] text-base-content/40 hidden sm:inline"
+            class="text-[11px] text-base-content/60 hidden sm:inline"
           >
             {{ formatDuration(metaFor(sub).duration, '') }}
           </span>
@@ -242,8 +242,8 @@ function openImageViewerForChild(childName: string, imagePath: string) {
           <Play :size="10" class="ml-px fill-current" />
         </button>
         <button
-          class="w-6 h-6 rounded-full bg-base-100 border border-base-300 text-base-content/40 hover:text-base-content flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-all shrink-0 hidden sm:flex"
-          title="Pokaż w folderze"
+          class="w-6 h-6 rounded-full bg-base-100 border border-base-300 text-base-content/60 hover:text-base-content flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-all shrink-0 hidden sm:flex"
+          :title="$t('common.showInFolder')"
           @click.stop="openExplorer(childOriginal(sub))"
         >
           <ExternalLink :size="10" />
@@ -273,7 +273,7 @@ function openImageViewerForChild(childName: string, imagePath: string) {
             childDirNames.length === 0 &&
             directHere.length === 0
           "
-          class="px-4 py-2 text-xs text-base-content/40 italic"
+          class="px-4 py-2 text-xs text-base-content/60 italic"
           :style="{ paddingLeft: 16 + (depth + 1) * 16 + 'px' }"
         >
           {{ $t('library.emptyFolder') }}

@@ -29,14 +29,14 @@ vi.mock('electron', () => ({
 }));
 
 const grantedRoots: string[] = [];
-const spawns: Array<{ cmd: string; args: string[] }> = [];
+const spawns: Array<{ cmd: string; args: string[]; cwd?: string }> = [];
 
 // Częściowy: fs-utils promisifikuje `exec` z tego modułu, więc zastępowany jest
 // tylko `spawn`. Pełny stub zepsułby graf modułów.
 vi.mock('child_process', async (importOriginal) => {
   const actual = await importOriginal<typeof import('child_process')>();
-  const fakeSpawn = (cmd: string, args: string[]) => {
-    spawns.push({ cmd, args });
+  const fakeSpawn = (cmd: string, args: string[], opts?: { cwd?: string }) => {
+    spawns.push({ cmd, args, cwd: opts?.cwd });
     return { unref: () => {}, kill: () => {} };
   };
   return {
@@ -197,7 +197,10 @@ describe('exploratory fs channels validate their arguments', () => {
       invoke('shell:openTerminal', mediaDir)
     ]);
     expect(spawns).toHaveLength(1);
-    expect(spawns[0].args.at(-1)).toBe(await realpath(mediaDir));
+    // Katalog trafia przez `cwd` (bezpiecznie), a nie jako zbudowany łańcuch shella;
+    // na platformach, których kandydat przekazuje go argumentem, akceptujemy i to.
+    const openedDir = spawns[0].cwd ?? spawns[0].args.at(-1);
+    expect(openedDir).toBe(await realpath(mediaDir));
   });
 
   it('shell:openTerminal refuses a file', async () => {

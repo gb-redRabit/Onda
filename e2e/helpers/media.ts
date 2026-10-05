@@ -41,6 +41,19 @@ export function createMediaFixture(): MediaFixture {
   return { dir, wavPath };
 }
 
+// Folder z `count` prawdziwych plików WAV o różnej częstotliwości — dla testów
+// biblioteki wymagających więcej niż jednego utworu (np. zaznaczanie wielokrotne).
+export function createLibraryFixture(count: number): MediaFixture & { wavPaths: string[] } {
+  const dir = mkdtempSync(join(tmpdir(), 'onda-library-'));
+  const wavPaths: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const wavPath = join(dir, `tone-${String(i + 1).padStart(2, '0')}.wav`);
+    writeFileSync(wavPath, buildToneWav(1, 220 + i * 55, 8000));
+    wavPaths.push(wavPath);
+  }
+  return { dir, wavPath: wavPaths[0], wavPaths };
+}
+
 // Folder z `count` prawdziwych PNG (kopie ikony aplikacji) dla testów obciążeniowych
 // przeglądarki obrazów / paska miniatur.
 export interface ImageFixture {

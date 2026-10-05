@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { useVirtualizer } from '@tanstack/vue-virtual';
+import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { RadioTower, Play, Trash2, Plus } from '@lucide/vue';
 import { useSavedStore } from '@renderer/stores/saved';
 import { useOnlineStore } from '@renderer/stores/online';
@@ -33,11 +33,9 @@ function selectTab(tab: WebcastTab) {
 const radioDialogOpen = ref(false);
 const trackGridRef = ref<HTMLElement | null>(null);
 const trackGrid = useVirtualGrid(trackGridRef, 220, 4);
-const savedTrackRows = useVirtualizer({
-  get count() {
-    return Math.ceil(saved.tracks.length / trackGrid.cols.value);
-  },
-  getScrollElement: () => trackGridRef.value,
+const savedTrackRows = useVirtualList({
+  count: () => Math.ceil(saved.tracks.length / trackGrid.cols.value),
+  scrollEl: () => trackGridRef.value,
   estimateSize: () => 220,
   overscan: 3
 });

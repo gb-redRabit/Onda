@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -127,7 +127,7 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
         }}
       </span>
       <span v-if="lastLoginText" class="text-xs text-base-content/50">
-        Â· {{ $t('settings.authLastLogin') }} {{ lastLoginText }}
+        · {{ $t('settings.authLastLogin') }} {{ lastLoginText }}
       </span>
     </div>
 

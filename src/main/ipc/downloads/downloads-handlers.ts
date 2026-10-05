@@ -1,5 +1,6 @@
 import { ipcMain, BrowserWindow, dialog } from 'electron';
 import { writeFile, readFile } from 'fs/promises';
+import { dirname } from 'path';
 import {
   addDownloadJobs,
   cancelDownloadJob,
@@ -20,6 +21,7 @@ import {
 } from '../../downloads/download-manager';
 import { applyMetadataOverride } from '../../downloads/cover-processing';
 import { isSafeAbsolutePath } from '../../utils/validate';
+import { isProtectedPath } from '../../path-policy';
 import { broadcastToAllWindows } from '../../utils/broadcast';
 import {
   e2eAddDownloadTasks,
@@ -151,6 +153,11 @@ export function registerDownloadHandlers(): void {
     async (_event, filePath: string, meta: IpcMetaOverride) => {
       if (typeof filePath !== 'string' || !isSafeAbsolutePath(filePath)) {
         return { success: false, error: 'Invalid path' };
+      }
+      // Remux/nadpisanie tagów mutuje plik: ta sama polityka co kanały `fs:*`
+      // (korzenie i katalogi systemowe; `isSensitivePath` celowo pominięte).
+      if (isProtectedPath(filePath) || isProtectedPath(dirname(filePath))) {
+        return { success: false, error: 'Protected path' };
       }
       try {
         await applyMetadataOverride(filePath, meta);

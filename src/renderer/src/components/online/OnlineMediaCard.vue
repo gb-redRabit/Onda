@@ -151,11 +151,12 @@ onBeforeUnmount(() => {
     ref="rootEl"
     data-testid="online-media-card"
     class="group"
-    :class="
+    :class="[
       layout === 'list'
         ? 'flex gap-3 items-center p-2 rounded-box hover:bg-base-content/10 transition-colors'
-        : 'rounded-box bg-base-100 border border-base-300 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-base-300'
-    "
+        : 'rounded-box bg-base-100 border border-base-300 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-base-300',
+      { 'cv-card': !expanded }
+    ]"
     @mouseenter="onMouseEnter"
   >
     <YtEmbedPlayer
@@ -174,6 +175,8 @@ onBeforeUnmount(() => {
         v-if="selectable"
         type="button"
         class="fx-noise shrink-0 flex items-center justify-center w-5 h-5 fx-depth rounded-field border transition-colors"
+        :aria-label="$t('common.select')"
+        :aria-pressed="selected"
         :class="
           selected
             ? 'bg-primary  border border-primary text-primary-content'

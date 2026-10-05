@@ -86,7 +86,7 @@ function toggleActive(id: string, active: boolean) {
         <div class="flex-1 min-w-0">
           <div class="text-sm font-medium truncate">{{ k.name }}</div>
           <div class="text-xs text-base-content/50 truncate">
-            {{ k.service }} · {{ k.key.slice(0, 4) }}…
+            {{ k.service }}<template v-if="k.preview"> · {{ k.preview }}</template>
           </div>
         </div>
         <SettingsToggle

@@ -19,7 +19,7 @@ const subtitle = computed(() => props.track.metadata?.artist || props.track.meta
 const percent = computed(() =>
   duration.value > 0 ? Math.min(100, (props.position / duration.value) * 100) : 0
 );
-const hasProgress = computed(() => props.position > 5 && duration.value > 0);
+const hasProgress = computed(() => props.position > 5);
 </script>
 
 <template>
@@ -45,11 +45,12 @@ const hasProgress = computed(() => props.position > 5 && duration.value > 0);
           {{ subtitle }}
         </div>
         <div v-if="hasProgress" class="mt-2.5">
-          <div class="h-1.5 rounded-full bg-base-content/10 overflow-hidden">
+          <div v-if="duration > 0" class="h-1.5 rounded-full bg-base-content/10 overflow-hidden">
             <div class="h-full bg-primary" :style="{ width: percent + '%' }" />
           </div>
           <div class="mt-1 text-[11px] text-base-content/50 font-mono">
-            {{ formatDuration(position) }} / {{ formatDuration(duration) }}
+            {{ formatDuration(position)
+            }}<span v-if="duration > 0"> / {{ formatDuration(duration) }}</span>
           </div>
         </div>
         <div v-else-if="duration" class="mt-1 text-[11px] text-base-content/50 font-mono">

@@ -156,6 +156,7 @@ function confirm() {
       </div>
       <button
         class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
+        :aria-label="$t('common.close')"
         @click="close"
       >
         <X :size="16" />

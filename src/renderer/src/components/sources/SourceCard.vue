@@ -25,7 +25,7 @@ const typeIcon = {
 </script>
 
 <template>
-  <div class="group cursor-pointer" @click="emit('preview', item)">
+  <div v-activate class="group cursor-pointer" @click="emit('preview', item)">
     <div class="relative rounded-box overflow-hidden bg-base-100">
       <div class="aspect-video w-full">
         <img

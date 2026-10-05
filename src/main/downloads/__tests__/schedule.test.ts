@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isWithinWindow } from '../schedule';
+import { isWithinWindow, msUntilWindowStart } from '../schedule';
 
 describe('isWithinWindow', () => {
   it('is always allowed when start equals end', () => {
@@ -22,5 +22,21 @@ describe('isWithinWindow', () => {
     expect(isWithinWindow(10, 8, 16)).toBe(true);
     expect(isWithinWindow(7, 8, 16)).toBe(false);
     expect(isWithinWindow(16, 8, 16)).toBe(false);
+  });
+});
+
+describe('msUntilWindowStart', () => {
+  it('returns 0 when the schedule is disabled (start === end)', () => {
+    expect(msUntilWindowStart(0, 0, new Date('2026-10-04T12:00:00'))).toBe(0);
+  });
+
+  it('counts to a later start the same day', () => {
+    // 12:00 -> 22:00 = 10h
+    expect(msUntilWindowStart(22, 6, new Date('2026-10-04T12:00:00'))).toBe(10 * 3600_000);
+  });
+
+  it('rolls over to the next day when the start already passed', () => {
+    // 23:30 -> następne 08:00 = 8.5h
+    expect(msUntilWindowStart(8, 16, new Date('2026-10-04T23:30:00'))).toBe(8.5 * 3600_000);
   });
 });

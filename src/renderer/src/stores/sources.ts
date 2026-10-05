@@ -84,15 +84,16 @@ export const useSourcesStore = defineStore('sources', () => {
     return { ok: res.ok, error: res.error };
   }
 
-  async function deleteSource(id: string) {
+  async function deleteSource(id: string): Promise<{ ok: boolean; error?: string }> {
     const res = await removeSource(id);
-    if (!res.ok) return;
+    if (!res.ok) return { ok: false, error: res.error };
     forgetSourceNavigation(id);
     forgetSourceTest(id);
     if (res.wasActive) {
       resetNavigation();
       resetItems();
     }
+    return { ok: true };
   }
 
   return {

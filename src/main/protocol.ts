@@ -2,6 +2,8 @@ import { protocol, app } from 'electron';
 import { normalize, isAbsolute, sep } from 'path';
 import { realpath } from 'fs/promises';
 import { SharpService } from './utils/sharp';
+import { allowedAppOrigin } from './utils/origin-guard';
+import { isPathWithinAllowedRoots } from './media/media-server';
 import { logger } from '../shared/logger';
 import { MAX_THUMB_SIZE, MAX_RESIZE_WIDTH } from '../shared/constants';
 
@@ -27,23 +29,8 @@ function getAllowedPrefixes(): string[] {
   return allowedPrefixes;
 }
 
-function isAllowedOrigin(origin: string | null | undefined): string | null {
-  if (!origin) return null;
-  let parsed: URL;
-  try {
-    parsed = new URL(origin);
-  } catch {
-    return null;
-  }
-  if (parsed.protocol === 'file:') return origin;
-  const isLocalDev =
-    (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
-    (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1');
-  return isLocalDev ? origin : null;
-}
-
 function corsHeaders(origin: string | null | undefined): Record<string, string> {
-  const allowed = isAllowedOrigin(origin);
+  const allowed = allowedAppOrigin(origin);
   if (allowed) {
     return { 'access-control-allow-origin': allowed };
   }
@@ -71,7 +58,9 @@ export function registerOndaProtocolHandler(): void {
       if (!rawPath) return new Response('missing path', { status: 400 });
       const normalized = normalize(rawPath);
       if (!isAbsolute(normalized)) {
-        return new Response(`invalid path: ${normalized}`, { status: 400 });
+        // Nie odbijaj ścieżki w odpowiedzi — to wyciek informacji o systemie plików
+        // do renderera bez potrzeby.
+        return new Response('invalid path', { status: 400 });
       }
       let real = normalized;
       try {
@@ -79,11 +68,14 @@ export function registerOndaProtocolHandler(): void {
       } catch {
         // poniższy test korzenia nadal obowiązuje
       }
-      const normalizedLower = normalize(real).toLowerCase();
+      const normalizedForPrefix = normalize(real).toLowerCase();
       const prefixes = getAllowedPrefixes();
-      const allowed = prefixes.some(
-        (p) => normalizedLower === p || normalizedLower.startsWith(p + sep)
-      );
+      // Dozwolone jest to, co leży w katalogach systemowych użytkownika ORAZ
+      // w korzeniach serwera mediów (biblioteka + jawnie przyznane katalogi),
+      // żeby obrazy z biblioteki na innym wolumenie (np. D:\Zdjęcia) nie dawały 403.
+      const allowed =
+        isPathWithinAllowedRoots(real) ||
+        prefixes.some((p) => normalizedForPrefix === p || normalizedForPrefix.startsWith(p + sep));
       if (!allowed) {
         return new Response('path not allowed', { status: 403 });
       }

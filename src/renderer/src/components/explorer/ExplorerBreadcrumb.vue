@@ -68,6 +68,8 @@ async function onDrop(e: DragEvent, targetPath: string) {
     <button
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 disabled:opacity-30 transition-colors"
       :disabled="!explorer.canGoBack"
+      :aria-label="$t('explorer.back')"
+      :title="$t('explorer.back')"
       @click="explorer.goBack"
     >
       <ChevronLeft :size="16" class="pointer-events-none" />
@@ -75,6 +77,8 @@ async function onDrop(e: DragEvent, targetPath: string) {
     <button
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 disabled:opacity-30 transition-colors"
       :disabled="!explorer.canGoForward"
+      :aria-label="$t('explorer.forward')"
+      :title="$t('explorer.forward')"
       @click="explorer.goForward"
     >
       <ChevronRight :size="16" class="pointer-events-none" />
@@ -82,6 +86,8 @@ async function onDrop(e: DragEvent, targetPath: string) {
     <button
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 disabled:opacity-30 transition-colors"
       :disabled="!explorer.canGoUp"
+      :aria-label="$t('explorer.up')"
+      :title="$t('explorer.up')"
       @click="explorer.goUp"
     >
       <ChevronUp :size="16" class="pointer-events-none" />
@@ -95,6 +101,8 @@ async function onDrop(e: DragEvent, targetPath: string) {
     <button
       class="fx-noise shrink-0 p-0.5 text-base-content/50 hover:text-base-content transition-colors"
       :class="{ 'ring-2 ring-primary bg-primary/50 fx-depth rounded-field': dropTargetIdx === -1 }"
+      :aria-label="$t('explorer.home')"
+      :title="$t('explorer.home')"
       @click="explorer.navigateTo('')"
       @dragover="onDragOver($event, -1)"
       @dragenter="onDragEnter($event, -1)"
@@ -107,6 +115,8 @@ async function onDrop(e: DragEvent, targetPath: string) {
       <template v-for="seg in segments" :key="seg.path">
         <span v-if="seg.idx > 0" class="text-base-content/50">\</span>
         <button
+          :data-testid="`explorer-crumb-${seg.idx}`"
+          :data-crumb-path="seg.path"
           class="fx-noise px-1 py-0.5 fx-depth rounded-field hover:bg-base-content/10 text-base-content/70 hover:text-base-content transition-colors truncate max-w-30"
           :class="{ 'ring-2 ring-primary bg-primary/50': dropTargetIdx === seg.idx }"
           @click="explorer.navigateTo(seg.path)"

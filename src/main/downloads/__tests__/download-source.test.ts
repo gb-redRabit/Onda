@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildJobSource } from '../download-source';
+import { buildJobSource, safeDownloadFileName } from '../download-source';
 
 // Regresja: kolejka gubiła `sourceId`, `sourceItemId` oraz
 // `allowPrivateNetwork` przy odbudowie źródła zadania, więc ukończone pobieranie
@@ -48,5 +48,24 @@ describe('buildJobSource', () => {
     });
     expect(source?.sourceId).toHaveLength(200);
     expect(source?.sourceItemId).toHaveLength(500);
+  });
+
+  it('strips directory components from fileName so a source cannot traverse out of outputDir', () => {
+    expect(safeDownloadFileName('..\\..\\AppData\\Roaming\\x.bat')).toBe('x.bat');
+    expect(safeDownloadFileName('../../etc/passwd')).toBe('passwd');
+    expect(safeDownloadFileName('C:\\Windows\\System32\\evil.dll')).toBe('evil.dll');
+    expect(safeDownloadFileName('..')).toBeUndefined();
+    expect(safeDownloadFileName('.')).toBeUndefined();
+    expect(safeDownloadFileName('')).toBeUndefined();
+    expect(safeDownloadFileName(42)).toBeUndefined();
+  });
+
+  it('sanitizes fileName when building an http job source', () => {
+    const source = buildJobSource({
+      mode: 'http',
+      sourceId: 'src-1',
+      fileName: '..\\..\\escape.bat'
+    });
+    expect(source?.fileName).toBe('escape.bat');
   });
 });

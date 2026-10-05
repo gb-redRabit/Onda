@@ -25,7 +25,7 @@ function isActive(item: FlatItem): boolean {
   <div class="max-h-80 overflow-y-auto py-1">
     <template v-for="group in groups" :key="group.key">
       <div
-        class="px-3 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-base-content/40"
+        class="px-3 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-base-content/60"
       >
         {{ group.label }}
       </div>

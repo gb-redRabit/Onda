@@ -65,7 +65,7 @@ const canSearch = computed(
       </label>
     </div>
     <div class="flex gap-2">
-      <div class="flex-1 text-[11px] text-base-content/40 self-center truncate">
+      <div class="flex-1 text-[11px] text-base-content/60 self-center truncate">
         {{ $t('musicbrainz.emptyFieldsHint') }}
       </div>
       <button

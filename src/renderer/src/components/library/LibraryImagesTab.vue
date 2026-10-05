@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { useVirtualizer } from '@tanstack/vue-virtual';
+import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { Images } from '@lucide/vue';
 import type { MediaFile } from '@renderer/types/media';
 import { useLibraryContextMenu } from '@renderer/composables/useLibraryContextMenu';
@@ -26,11 +26,9 @@ const imageGridRef = ref<HTMLElement | null>(null);
 const imageCols = ref(6);
 const imageCellSize = ref(180);
 
-const imageRowVirtualizer = useVirtualizer({
-  get count() {
-    return Math.ceil(props.images.length / imageCols.value);
-  },
-  getScrollElement: () => imageGridRef.value,
+const imageRowVirtualizer = useVirtualList({
+  count: () => Math.ceil(props.images.length / imageCols.value),
+  scrollEl: () => imageGridRef.value,
   estimateSize: () => imageCellSize.value + 52,
   overscan: 3
 });
@@ -140,7 +138,7 @@ onUnmounted(() => {
                 loading="lazy"
               />
               <div v-else class="w-full h-full flex items-center justify-center bg-base-200">
-                <Images :size="20" class="text-base-content/30" />
+                <Images :size="20" class="text-base-content/55" />
               </div>
             </div>
             <div class="px-2.5 py-2 min-w-0">

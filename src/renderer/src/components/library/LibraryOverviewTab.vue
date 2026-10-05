@@ -206,12 +206,14 @@ const sections = computed(() => [
       <div class="flex items-center gap-2">
         <button
           class="w-10 h-10 rounded-full bg-primary text-primary-content flex items-center justify-center hover:bg-primary/90 transition-colors fx-depth fx-noise"
+          :aria-label="$t('library.playAll')"
           @click="playAll(likedTracks)"
         >
           <Play :size="16" class="ml-0.5 fill-current" />
         </button>
         <button
           class="p-2 rounded-full hover:bg-base-content/10 text-base-content/60 hover:text-base-content transition-colors"
+          :aria-label="$t('library.shuffle')"
           @click="shuffleAll(likedTracks)"
         >
           <Shuffle :size="16" />
@@ -247,7 +249,7 @@ const sections = computed(() => [
 
         <div
           v-if="sec.tracks.length === 0"
-          class="py-8 flex flex-col items-center gap-2 text-base-content/40 border border-dashed border-base-300 rounded-box bg-base-100/50"
+          class="py-8 flex flex-col items-center gap-2 text-base-content/60 border border-dashed border-base-300 rounded-box bg-base-100/50"
         >
           <component :is="sec.icon" :size="20" class="opacity-30" />
           <p class="text-xs">{{ sec.empty }}</p>
@@ -271,7 +273,7 @@ const sections = computed(() => [
 
       <!-- Minimalna stopka statystyk -->
       <div
-        class="flex items-center gap-2 text-[11px] text-base-content/40 pt-4 border-t border-base-300"
+        class="flex items-center gap-2 text-[11px] text-base-content/60 pt-4 border-t border-base-300"
       >
         <span>{{ library.totalCount }} {{ $t('common.files') }}</span>
         <span>·</span>

@@ -62,6 +62,7 @@ export const INVOKE_CHANNELS = [
   'media:batchThumbnails',
   'media:remoteImage',
   'media:grantAccess',
+  'media:getServerUrl',
   'media:renameFile',
   'media:getCover',
   'media:getDuration',
@@ -236,6 +237,8 @@ export const SEND_CHANNELS = [
   'audio-pip:showMain',
   'audio-pip:action',
   'audio-pip:progressClick',
+  'audio-pip:unpeek',
+  'audio-pip:peekDelay',
   'pip:theme',
   'pip:locale',
   'pip:ended',
@@ -294,6 +297,10 @@ export const RECEIVE_CHANNELS = [
 
 // Strażnik czasu kompilacji: kanał dodany do typów kontraktu, ale nieobecny w
 // INVOKE_CHANNELS (a więc i w wygenerowanym allowliście) nie przechodzi typechecku.
-// Tylko typ (brak wartości wykonawczej): `IpcChannel` musi być przypisywalny do
-// wygenerowanej unii `IpcInvokeChannel`.
-export type AllChannelsAllowlisted = IpcChannel extends IpcInvokeChannel ? true : never;
+//
+// Sam alias typu nie wystarcza — TypeScript nie ewaluuje nieużywanego aliasu, więc
+// strażnik był bezczynny. Poniższa `const` wymusza ewaluację: gdy warunek jest
+// fałszywy, typ staje się `false`/`never` i przypisanie do `true` przerywa typecheck.
+type AllChannelsAllowlisted = IpcChannel extends IpcInvokeChannel ? true : false;
+const allChannelsAllowlisted: AllChannelsAllowlisted = true;
+void allChannelsAllowlisted;

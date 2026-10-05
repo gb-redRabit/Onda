@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import { FolderOpen, FileAudio, PictureInPicture } from '@lucide/vue';
-import { onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { usePlayerStore } from '@renderer/stores/player';
 import { useAppMenu } from '@renderer/composables/useAppMenu';
-import { getPlayerPiPHandler } from '@renderer/composables/playerPiPHandler';
+import { onMounted, onBeforeUnmount, nextTick } from 'vue';
+import AppMenuFileDropdown from './AppMenuFileDropdown.vue';
+import AppMenuViewDropdown from './AppMenuViewDropdown.vue';
+import AppMenuPlaybackDropdown from './AppMenuPlaybackDropdown.vue';
+import AppMenuHelpDropdown from './AppMenuHelpDropdown.vue';
 import AppMenuWindowControls from './AppMenuWindowControls.vue';
 import AppMenuViewActions from './AppMenuViewActions.vue';
-import AppMenuHelpDropdown from './AppMenuHelpDropdown.vue';
 import appIcon from '@renderer/assets/icon.png';
 
 const settings = useSettingsStore();
+const player = usePlayerStore();
 
 const {
   isMaximized,
@@ -28,9 +31,7 @@ const {
   navigateAndClose,
   toggleViewSearch,
   navigateSettingsTab,
-  actionClose,
-  t,
-  player
+  actionClose
 } = useAppMenu();
 
 // A11y: model klawiaturowy paska menu. Każdy dropdown to role="menu" z
@@ -91,7 +92,6 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
     class="relative z-40 flex h-9 bg-base-100/(--glass-alpha) border border-b border-base-300 shrink-0 select-none"
     style="-webkit-app-region: drag"
   >
-    <!-- Logo + statyczne menu -->
     <div class="flex items-center shrink-0" style="-webkit-app-region: no-drag">
       <div class="flex items-center gap-2 px-3">
         <img :src="appIcon" alt="Onda Logo" class="w-5 h-5 object-contain" />
@@ -111,48 +111,22 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
         >
           {{ $t('menu.file') }}
         </button>
-        <div
+        <AppMenuFileDropdown
           v-if="openDropdown === 'file'"
-          role="menu"
-          data-menu="file"
-          class="absolute top-full left-0 mt-0.5 bg-base-100 border border-base-300 rounded-box shadow-2xl shadow-black/40 py-1.5 min-w-48 z-[70]"
           @keydown="onMenuKeydown"
-        >
-          <button
-            role="menuitem"
-            tabindex="-1"
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
-            @click="
-              openFile();
-              closeDropdown();
-            "
-          >
-            <FileAudio :size="13" /> {{ $t('menu.openFile') }}
-          </button>
-          <button
-            role="menuitem"
-            tabindex="-1"
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
-            @click="
-              openFolder();
-              closeDropdown();
-            "
-          >
-            <FolderOpen :size="13" /> {{ $t('menu.openFolder') }}
-          </button>
-          <div class="border-t border-base-300 my-1 mx-2" />
-          <button
-            role="menuitem"
-            tabindex="-1"
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors"
-            @click="
-              quitApp();
-              closeDropdown();
-            "
-          >
-            {{ $t('menu.close') }}
-          </button>
-        </div>
+          @open-file="
+            openFile();
+            closeDropdown();
+          "
+          @open-folder="
+            openFolder();
+            closeDropdown();
+          "
+          @quit="
+            quitApp();
+            closeDropdown();
+          "
+        />
       </div>
 
       <!-- Widok -->
@@ -169,114 +143,15 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
         >
           {{ $t('menu.view') }}
         </button>
-        <div
+        <AppMenuViewDropdown
           v-if="openDropdown === 'view'"
-          role="menu"
-          data-menu="view"
-          class="absolute top-full left-0 mt-0.5 bg-base-100 border border-base-300 rounded-box shadow-2xl shadow-black/40 py-1.5 min-w-48 z-[70]"
+          :shortcut="shortcut"
           @keydown="onMenuKeydown"
-        >
-          <button
-            role="menuitem"
-            tabindex="-1"
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
-            @click="
-              navigateAndClose('/');
-              closeDropdown();
-            "
-          >
-            {{ $t('menu.home') }}
-            <span
-              v-if="shortcut('home')"
-              class="ml-auto text-[10px] text-base-content/50 font-mono"
-              >{{ shortcut('home') }}</span
-            >
-          </button>
-          <button
-            role="menuitem"
-            tabindex="-1"
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
-            @click="
-              navigateAndClose('/library');
-              closeDropdown();
-            "
-          >
-            {{ $t('menu.library') }}
-            <span
-              v-if="shortcut('library')"
-              class="ml-auto text-[10px] text-base-content/50 font-mono"
-              >{{ shortcut('library') }}</span
-            >
-          </button>
-          <button
-            role="menuitem"
-            tabindex="-1"
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
-            @click="
-              navigateAndClose('/explorer');
-              closeDropdown();
-            "
-          >
-            {{ $t('menu.explorer') }}
-            <span
-              v-if="shortcut('explorer')"
-              class="ml-auto text-[10px] text-base-content/50 font-mono"
-              >{{ shortcut('explorer') }}</span
-            >
-          </button>
-          <button
-            role="menuitem"
-            tabindex="-1"
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
-            @click="
-              navigateAndClose('/online');
-              closeDropdown();
-            "
-          >
-            {{ $t('menu.online') }}
-          </button>
-          <button
-            role="menuitem"
-            tabindex="-1"
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
-            @click="
-              navigateAndClose('/downloads');
-              closeDropdown();
-            "
-          >
-            {{ $t('menu.downloads') }}
-          </button>
-          <div class="border-t border-base-300 my-1 mx-2" />
-          <button
-            role="menuitem"
-            tabindex="-1"
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
-            @click="
-              navigateAndClose('/settings');
-              closeDropdown();
-            "
-          >
-            {{ $t('menu.settings') }}
-            <span
-              v-if="shortcut('settings')"
-              class="ml-auto text-[10px] text-base-content/50 font-mono"
-              >{{ shortcut('settings') }}</span
-            >
-          </button>
-          <div class="border-t border-base-300 my-1 mx-2" />
-          <button
-            role="menuitem"
-            tabindex="-1"
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
-            @click="
-              settings.updateStatusBar({ visible: !settings.statusBar.visible });
-              closeDropdown();
-            "
-          >
-            {{ $t('menu.statusBar') }}
-            <span v-if="settings.statusBar.visible" class="ml-auto text-primary">✓</span>
-          </button>
-        </div>
+          @navigate="
+            navigateAndClose($event);
+            closeDropdown();
+          "
+        />
       </div>
 
       <!-- Odtwarzanie -->
@@ -293,103 +168,13 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
         >
           {{ $t('menu.playback') }}
         </button>
-        <div
+        <AppMenuPlaybackDropdown
           v-if="openDropdown === 'playback'"
-          role="menu"
-          data-menu="playback"
-          class="absolute top-full left-0 mt-0.5 bg-base-100 border border-base-300 rounded-box shadow-2xl shadow-black/40 py-1.5 min-w-52 z-[70]"
+          :action="actionClose"
           @keydown="onMenuKeydown"
-        >
-          <button
-            role="menuitem"
-            tabindex="-1"
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
-            @click="actionClose(player.togglePlay)"
-          >
-            {{ t('menu.playPause') }}
-            <span class="ml-auto text-[10px] text-base-content/50 font-mono">{{
-              $t(player.isPlaying ? 'common.pause' : 'common.play')
-            }}</span>
-          </button>
-          <button
-            role="menuitem"
-            tabindex="-1"
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors"
-            @click="actionClose(player.nextTrack)"
-          >
-            {{ t('menu.nextTrack') }}
-          </button>
-          <button
-            role="menuitem"
-            tabindex="-1"
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors"
-            @click="actionClose(player.prevTrack)"
-          >
-            {{ t('menu.prevTrack') }}
-          </button>
-          <button
-            v-if="
-              player.currentTrack.type === 'video' && !player.pipActive && getPlayerPiPHandler()
-            "
-            role="menuitem"
-            tabindex="-1"
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
-            @click="
-              getPlayerPiPHandler()?.();
-              closeDropdown();
-            "
-          >
-            <PictureInPicture :size="13" /> {{ t('menu.picInPic') }}
-          </button>
-          <button
-            v-if="player.currentTrack?.type === 'video' && player.pipActive"
-            role="menuitem"
-            tabindex="-1"
-            data-testid="menu-return-pip"
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
-            @click="restorePip"
-          >
-            <PictureInPicture :size="13" /> {{ t('menu.returnFromPip') }}
-          </button>
-          <div class="border-t border-base-300 my-1 mx-2" />
-          <button
-            role="menuitem"
-            tabindex="-1"
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
-            @click="actionClose(player.toggleShuffle)"
-          >
-            {{ t('menu.shuffle') }}
-            <span class="ml-auto text-[10px] text-base-content/50 font-mono">{{
-              $t(player.shuffle ? 'common.on' : 'common.off')
-            }}</span>
-          </button>
-          <button
-            role="menuitem"
-            tabindex="-1"
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
-            @click="actionClose(player.cycleRepeat)"
-          >
-            {{ t('menu.repeat') }}
-            <span class="ml-auto text-[10px] text-base-content/50 font-mono">{{
-              $t(
-                player.repeat === 'none'
-                  ? 'player.repeatNone'
-                  : player.repeat === 'one'
-                    ? 'player.repeatOne'
-                    : 'player.repeatAll'
-              )
-            }}</span>
-          </button>
-          <div class="border-t border-base-300 my-1 mx-2" />
-          <button
-            role="menuitem"
-            tabindex="-1"
-            class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors"
-            @click="actionClose(player.toggleEqualizer)"
-          >
-            {{ t('menu.eq') }}
-          </button>
-        </div>
+          @restore-pip="restorePip"
+          @close="closeDropdown"
+        />
       </div>
 
       <!-- Pomoc -->
@@ -408,13 +193,13 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
         </button>
         <AppMenuHelpDropdown
           v-if="openDropdown === 'help'"
+          @keydown="onMenuKeydown"
           @about="navigateSettingsTab('about')"
           @shortcuts="navigateSettingsTab('shortcuts')"
         />
       </div>
     </div>
 
-    <!-- Akcje specyficzne dla widoku (środkowy obszar pozostaje przeciągalny; tylko przyciski rezygnują) -->
     <AppMenuViewActions
       :show="showViewActions"
       :label="viewLabel"
@@ -424,7 +209,6 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
       @search="toggleViewSearch"
     />
 
-    <!-- Prawa strona: wyszukiwanie + kontrolki okna -->
     <AppMenuWindowControls
       :is-maximized="isMaximized"
       @minimize="minimize"

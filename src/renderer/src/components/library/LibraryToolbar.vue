@@ -20,16 +20,16 @@ const { t } = useI18n();
     <div class="relative flex-1 group">
       <Search
         :size="14"
-        class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40 group-focus-within:text-primary transition-colors"
+        class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/60 group-focus-within:text-primary transition-colors"
       />
       <input
         v-model="query"
         :placeholder="tab === 'overview' ? t('library.searchPlaceholder') : t('library.search')"
-        class="w-full pl-9 pr-8 py-2.5 rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-base-content/40 transition-all"
+        class="w-full pl-9 pr-8 py-2.5 rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-base-content/60 transition-all"
       />
       <button
         v-if="query"
-        class="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-selector hover:bg-base-300 text-base-content/40 hover:text-base-content transition-colors"
+        class="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-selector hover:bg-base-300 text-base-content/60 hover:text-base-content transition-colors"
         @click="query = ''"
       >
         ×
@@ -52,7 +52,7 @@ const { t } = useI18n();
         </select>
         <ChevronDown
           :size="12"
-          class="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-base-content/40"
+          class="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-base-content/60"
         />
       </div>
       <button
@@ -97,7 +97,7 @@ const { t } = useI18n();
     >
       {{ c.label }}
     </button>
-    <span class="ml-auto text-[11px] text-base-content/40 self-center hidden sm:inline"
+    <span class="ml-auto text-[11px] text-base-content/60 self-center hidden sm:inline"
       >{{ count }} {{ t('library.tracksCount') }}</span
     >
   </div>

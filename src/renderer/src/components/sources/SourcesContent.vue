@@ -9,7 +9,7 @@ import {
   type ComponentPublicInstance
 } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useVirtualizer } from '@tanstack/vue-virtual';
+import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { AlertCircle, Globe } from '@lucide/vue';
 import SourceCard from './SourceCard.vue';
 import SourcePageView from './SourcePageView.vue';
@@ -48,11 +48,9 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const sourceGridRef = ref<HTMLElement | null>(null);
 const sourceGrid = useVirtualGrid(sourceGridRef, 220, 5);
-const sourceRows = useVirtualizer({
-  get count() {
-    return Math.ceil(props.displayItems.length / sourceGrid.cols.value);
-  },
-  getScrollElement: () => sourceGridRef.value,
+const sourceRows = useVirtualList({
+  count: () => Math.ceil(props.displayItems.length / sourceGrid.cols.value),
+  scrollEl: () => sourceGridRef.value,
   estimateSize: () => 260,
   overscan: 3
 });

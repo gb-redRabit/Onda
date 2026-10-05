@@ -1,11 +1,10 @@
 import type { MediaFile } from '@renderer/types/media';
-import { usePlayerStore } from '@renderer/stores/player';
-import { useSettingsStore } from '@renderer/stores/settings';
 import { audioEvents } from '@renderer/utils/audioEvents';
 import { toMediaServerUrl, toMediaStreamUrl } from '@renderer/utils/mediaUrl';
 import { logger } from '@shared/logger';
 import { AudioGraph } from './audioGraph';
 import { AudioSecondary } from './audioSecondary';
+import { AudioEnginePositions } from './audioEnginePositions';
 import {
   attachMediaElementListeners,
   cleanupAudioElement,
@@ -13,15 +12,33 @@ import {
   handleStreamSourceError
 } from './audioEngineHelpers';
 
+export interface AudioEngineStateProvider {
+  getCurrentTrackPath?: () => string | null;
+  getCurrentTrack?: () => MediaFile | null;
+  isMuted?: () => boolean;
+  getVolume?: () => number;
+  isPlaying?: () => boolean;
+}
+
 class AudioEngine {
   private graph = new AudioGraph();
   private audioEl: HTMLAudioElement | null = null;
   private secondary: AudioSecondary | null = null;
   private initialized = false;
-  private savedPositions = new Map<string, number>();
+  private readonly positionsStore = new AudioEnginePositions();
   private normalization = 1;
   private preloadEl: HTMLAudioElement | null = null;
   private loadStartTs = 0;
+  private currentVolume = 1;
+  private isMuted = false;
+  private desiredPlay = false;
+  private normalizationEnabled = false;
+  private rememberPosition = true;
+  private currentTrackPath: string | null = null;
+  private currentTrackType: MediaFile['type'] | null = null;
+  private stateProvider: AudioEngineStateProvider | null = null;
+  private lastSavedPosition = 0;
+
   // Stan odtwarzania strumieni (YouTube online). Strumienie przechodzą przez proxy
   // serwera mediów (z CORS, dzięki czemu graf WebAudio/EQ/wizualizator dalej
   // działają); googlevideo okresowo zwraca 403, a proxy ponawia z
@@ -31,6 +48,44 @@ class AudioEngine {
   private streamTriedDirect = false;
   private streamFinalRetried = false;
   private streamMode: 'proxy' | 'direct' | null = null;
+
+  setStateProvider(provider: AudioEngineStateProvider | null): void {
+    this.stateProvider = provider;
+  }
+
+  setNormalizationEnabled(enabled: boolean): void {
+    this.normalizationEnabled = enabled;
+  }
+
+  setRememberPosition(enabled: boolean): void {
+    this.rememberPosition = enabled;
+  }
+
+  setMuted(muted: boolean): void {
+    this.isMuted = muted;
+    this.applyVolume();
+  }
+
+  private getEffectiveVolume(): number {
+    const muted = this.stateProvider?.isMuted?.() ?? this.isMuted;
+    const vol = this.stateProvider?.getVolume?.() ?? this.currentVolume;
+    return (muted ? 0 : vol) * this.normalization;
+  }
+
+  private applyVolume(): void {
+    const effective = this.getEffectiveVolume();
+    if (this.streamMode === 'direct' && this.audioEl) {
+      this.audioEl.volume = effective;
+      return;
+    }
+    if (this.graph.gainNode) {
+      this.graph.gainNode.gain.value = effective;
+    }
+  }
+
+  private getActiveTrackPath(): string | null {
+    return this.stateProvider?.getCurrentTrackPath?.() ?? this.currentTrackPath;
+  }
 
   get sourceNode(): MediaElementAudioSourceNode | null {
     return this.graph.sourceNode;
@@ -61,10 +116,25 @@ class AudioEngine {
 
   private setupListeners(el: HTMLAudioElement): void {
     attachMediaElementListeners(el, {
-      onEnded: () => this.handleEnded(),
+      onEnded: () => {
+        const path = this.getActiveTrackPath();
+        if (path) {
+          this.clearSavedPosition(path);
+        }
+        this.handleEnded();
+      },
       onError: (element) => this.handleStreamError(element),
       loadStartTs: () => this.loadStartTs,
-      onCanplay: (element) => this.replayIfDesired(element)
+      onCanplay: (element) => this.replayIfDesired(element),
+      onPause: () => {
+        this.savePosition();
+      },
+      onTimeUpdate: (currentTime) => {
+        if (Math.abs(currentTime - this.lastSavedPosition) > 3) {
+          this.lastSavedPosition = currentTime;
+          this.savePosition();
+        }
+      }
     });
   }
 
@@ -73,8 +143,11 @@ class AudioEngine {
     // co odrzuca, gdy element wciąż się ładuje lub ma błąd (np.
     // strumień wymagający ponowień proxy lub bezpośredniego fallbacku). Gdy media
     // są faktycznie gotowe, ponów play, jeśli użytkownik nadal chce odtwarzania.
-    if (this.streamMode && usePlayerStore().isPlaying && this.audioEl && this.audioEl.paused) {
-      el.play().catch(() => {});
+    const isPlaying = this.stateProvider?.isPlaying?.() ?? this.desiredPlay;
+    if (this.streamMode && isPlaying && this.audioEl && this.audioEl.paused) {
+      el.play().catch(() => {
+        /* best-effort */
+      });
     }
   }
 
@@ -94,8 +167,8 @@ class AudioEngine {
         this.streamFinalRetried = value;
       },
       normalization: () => this.normalization,
-      isMuted: () => usePlayerStore().isMuted,
-      volume: () => usePlayerStore().volume,
+      isMuted: () => this.stateProvider?.isMuted?.() ?? this.isMuted,
+      volume: () => this.stateProvider?.getVolume?.() ?? this.currentVolume,
       disconnectSourceNode: () => this.graph.disconnectSourceNode(),
       disconnectSecondary: () => this.disconnectSecondaryAudio(),
       connectAudio: (element) => this.connectAudio(element),
@@ -127,22 +200,21 @@ class AudioEngine {
   }
 
   savePosition(): void {
-    const player = usePlayerStore();
-    if (this.audioEl && player.currentTrack && player.currentTrack.type === 'audio') {
+    // Celowo stan LOKALNY przed providerem: `loadTrack` zapisuje pozycję wychodzącego
+    // utworu, a store wskazuje już następny. `getActiveTrackPath` (provider-first)
+    // służy do sprawdzenia, czy zastosować zapisaną pozycję — to inny cel.
+    const trackPath = this.currentTrackPath ?? this.stateProvider?.getCurrentTrackPath?.() ?? null;
+    const trackType =
+      this.currentTrackType ?? this.stateProvider?.getCurrentTrack?.()?.type ?? 'audio';
+    if (this.audioEl && trackPath && trackType === 'audio') {
       if (this.audioEl.currentTime > 5) {
-        this.savedPositions.set(player.currentTrack.path, this.audioEl.currentTime);
-        window.api?.invoke(
-          'playback:setPosition',
-          player.currentTrack.path,
-          this.audioEl.currentTime
-        );
+        this.positionsStore.persist(trackPath, this.audioEl.currentTime);
       }
     }
   }
 
   clearSavedPosition(path: string): void {
-    this.savedPositions.delete(path);
-    window.api?.invoke('playback:clearPosition', path);
+    this.positionsStore.clear(path);
   }
 
   private loadSource(src: string, opts?: { mode?: 'proxy' | 'direct' }): void {
@@ -158,7 +230,7 @@ class AudioEngine {
       this.streamFinalRetried = false;
     }
     this.loadStartTs = performance.now();
-    const player = usePlayerStore();
+    const effectiveVol = this.getEffectiveVolume();
     if (mode === 'direct') {
       // Odtwarzanie cross-origin bez CORS: brak atrybutu crossorigin (fetch w trybie CORS
       // zostałby zablokowany przez googlevideo, które nie wysyła nagłówków ACAO)
@@ -167,13 +239,13 @@ class AudioEngine {
       this.audioEl!.crossOrigin = null;
       this.graph.disconnectSourceNode();
       this.disconnectSecondaryAudio();
-      this.audioEl!.volume = (player.isMuted ? 0 : player.volume) * this.normalization;
+      this.audioEl!.volume = effectiveVol;
     } else {
       this.audioEl!.crossOrigin = 'anonymous';
       this.audioEl!.volume = 1;
       this.connectAudio(this.audioEl!);
       if (this.graph.gainNode) {
-        this.graph.gainNode.gain.value = (player.isMuted ? 0 : player.volume) * this.normalization;
+        this.graph.gainNode.gain.value = effectiveVol;
       }
     }
     this.audioEl!.src = src;
@@ -189,16 +261,25 @@ class AudioEngine {
     audioEvents.emit('trackLoaded', undefined);
   }
 
-  loadTrack(track: MediaFile, options?: { resume?: boolean }): void {
-    const settings = useSettingsStore();
-
+  loadTrack(
+    track: MediaFile,
+    options?: { resume?: boolean; enableNormalization?: boolean; rememberPosition?: boolean }
+  ): void {
     if (track.type === 'video') {
       return;
     }
 
+    if (this.currentTrackPath && this.currentTrackPath !== track.path) {
+      this.savePosition();
+    }
+    this.lastSavedPosition = 0;
+
+    this.currentTrackPath = track.path;
+    this.currentTrackType = track.type;
+
     // Normalizacja głośności / ReplayGain: zastosuj współczynnik ReplayGain utworu,
     // gdy którekolwiek ustawienie jest włączone, a metadane niosą wartość gain.
-    const enableNorm = settings.playback.replayGain || settings.playback.normalization;
+    const enableNorm = options?.enableNormalization ?? this.normalizationEnabled;
     this.normalization = computeTrackNormalization(enableNorm, track.metadata?.replayGainTrackGain);
 
     this.loadSource(toMediaServerUrl(track.path));
@@ -206,8 +287,9 @@ class AudioEngine {
     // Wznawianie zapisanej pozycji jest opcjonalne: prosi o nie tylko karta
     // "Kontynuuj" na stronie głównej. Każda inna ścieżka odtwarzania startuje od początku,
     // dlatego domyślnie nie ruszamy tutaj zegara elementu.
-    if (options?.resume && settings.playback.rememberPosition) {
-      const savedPos = this.savedPositions.get(track.path) || 0;
+    const remember = options?.rememberPosition ?? this.rememberPosition;
+    if (options?.resume && remember) {
+      const savedPos = this.positionsStore.get(track.path);
       if (savedPos > 0) {
         this.applySavedPosition(track.path, savedPos);
       } else {
@@ -226,7 +308,7 @@ class AudioEngine {
     if (!el) return;
     const apply = (): void => {
       if (!this.audioEl) return;
-      if (usePlayerStore().currentTrack?.path !== path) return;
+      if (this.getActiveTrackPath() !== path) return;
       if (this.audioEl.currentTime < 3) this.audioEl.currentTime = position;
     };
     // Szybkie lokalne pliki mogą skończyć ładowanie przed tym wywołaniem — przewiń natychmiast.
@@ -238,15 +320,10 @@ class AudioEngine {
   }
 
   private async restoreSavedPosition(path: string): Promise<void> {
-    try {
-      const position = (await window.api?.getPlaybackPosition(path)) || 0;
-      if (position <= 0) return;
-      this.savedPositions.set(path, position);
-      if (usePlayerStore().currentTrack?.path !== path) return;
-      this.applySavedPosition(path, position);
-    } catch (e) {
-      logger.warn('audio', 'restore saved position failed', e);
-    }
+    const position = await this.positionsStore.restore(path);
+    if (position <= 0) return;
+    if (this.getActiveTrackPath() !== path) return;
+    this.applySavedPosition(path, position);
   }
 
   // Odtwarza zdalny strumień (YouTube online) przez proxy serwera mediów.
@@ -256,6 +333,8 @@ class AudioEngine {
   loadRemote(url: string): void {
     this.normalization = 1;
     this.streamUrl = url;
+    this.currentTrackPath = url;
+    this.currentTrackType = 'stream';
     // Nowy strumień musi zacząć z czystą drabinką ponowień. `loadSource` resetuje
     // je tylko gdy mode jest fałszywe, więc wyzerowanie ich tutaj nie pozwala
     // flagie "ostatnie ponowienie zużyte" poprzedniego utworu wyłączyć ostatniego ponowienia tego strumienia.
@@ -266,12 +345,14 @@ class AudioEngine {
   }
 
   play(): void {
+    this.desiredPlay = true;
     this.audioEl?.play().catch((e) => {
       logger.warn('audioEngine', 'audio play() rejected', e);
     });
   }
 
   pause(): void {
+    this.desiredPlay = false;
     this.audioEl?.pause();
   }
 
@@ -280,11 +361,8 @@ class AudioEngine {
   }
 
   setVolume(v: number): void {
-    if (this.streamMode === 'direct' && this.audioEl) {
-      this.audioEl.volume = v * this.normalization;
-      return;
-    }
-    if (this.graph.gainNode) this.graph.gainNode.gain.value = v * this.normalization;
+    this.currentVolume = Math.max(0, Math.min(1, v));
+    this.applyVolume();
   }
 
   // Rozgrzewa cache dla następnego utworu, żeby przejście było możliwie
@@ -378,6 +456,7 @@ class AudioEngine {
   }
 
   async deactivate(): Promise<void> {
+    this.desiredPlay = false;
     this.savePosition();
     if (this.audioEl) {
       this.audioEl.pause();
@@ -386,8 +465,12 @@ class AudioEngine {
   }
 
   async destroy(): Promise<void> {
+    this.desiredPlay = false;
     this.savePosition();
     this.disconnectSecondaryAudio();
+    // `secondary` powstał z kontekstu grafu; po jego zamknięciu musi zostać zresetowany,
+    // inaczej kolejne `connectSecondaryAudio` użyłoby obiektu z martwym kontekstem.
+    this.secondary = null;
     this.graph.disconnectNodes();
     cleanupAudioElement(this.audioEl);
     this.audioEl = null;
@@ -399,7 +482,7 @@ class AudioEngine {
       this.preloadEl.load();
       this.preloadEl = null;
     }
-    this.savedPositions.clear();
+    this.positionsStore.clearAll();
     await this.graph.closeContext();
     this.initialized = false;
   }
@@ -416,7 +499,7 @@ class AudioEngine {
   }
 
   connectVideoElement(videoEl: HTMLVideoElement): void {
-    this.graph.connectVideoElement(videoEl);
+    this.graph.connectVideoElement(videoEl, this.getEffectiveVolume());
   }
 
   disconnectVideoElement(): void {

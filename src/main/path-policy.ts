@@ -134,6 +134,45 @@ export function isProtectedPath(
   return protectedPathReason(target, platform) !== null;
 }
 
+/**
+ * Segmenty katalogów, których nie chcemy przyznawać serwerowi mediów nawet na
+ * żądanie użytkownika (dane logowania, konfiguracja, profile przeglądarek).
+ * To obrona w głąb wobec allowlisty rozszerzeń serwera: root i tak nie wyda
+ * plików niebędących mediami, ale nie ma powodu utrwalać takich korzeni.
+ */
+const SENSITIVE_SEGMENTS = new Set([
+  'appdata',
+  '.ssh',
+  '.aws',
+  '.azure',
+  '.gcloud',
+  '.gnupg',
+  '.kube',
+  '.docker',
+  '.config',
+  '.local',
+  '.cache',
+  '.mozilla',
+  '.thunderbird',
+  'keychains',
+  'login data',
+  'cookies',
+  '.netrc',
+  '.npmrc',
+  '.pypirc',
+  '.git-credentials'
+]);
+
+/** True, gdy ścieżka leży w katalogu, któremu nie przyznajemy dostępu mediów. */
+export function isSensitivePath(
+  target: unknown,
+  platform: NodeJS.Platform = process.platform
+): boolean {
+  if (typeof target !== 'string' || !target) return false;
+  const segments = segmentsOf(normalizeFor(target, platform), platform);
+  return segments.some((seg) => SENSITIVE_SEGMENTS.has(seg.toLowerCase()));
+}
+
 /** Katalog nadrzędny ścieżki lub null, gdy ścieżka nie ma użytecznego rodzica. */
 export function parentOf(target: string): string | null {
   const idx = Math.max(target.lastIndexOf('/'), target.lastIndexOf('\\'));

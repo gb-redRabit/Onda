@@ -27,6 +27,7 @@ const emit = defineEmits<{
 
 <template>
   <div
+    v-activate
     class="group w-[132px] shrink-0 cursor-pointer text-left"
     @click="emit('play')"
     @contextmenu="emit('contextmenu', $event)"

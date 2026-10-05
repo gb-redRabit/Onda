@@ -1,12 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-let mediaServerUrl = '';
-try {
-  mediaServerUrl = ipcRenderer.sendSync('media:getServerUrl') as string;
-} catch {
-  mediaServerUrl = '';
-}
-
 const ALLOWED_SEND_CHANNELS = new Set<string>([
   'pip:ended',
   'pip:timeUpdate',
@@ -27,7 +20,8 @@ const ALLOWED_RECEIVE_CHANNELS = new Set<string>([
 ]);
 
 const api = {
-  mediaServerUrl,
+  // Okna PiP nie potrzebują URL-a serwera mediów (dostają gotowy `videoSrc`),
+  // więc nie robimy tu `sendSync` — to była zbędna blokada przy starcie.
   send: (channel: string, ...args: unknown[]): void => {
     if (!ALLOWED_SEND_CHANNELS.has(channel)) return;
     try {
@@ -47,12 +41,13 @@ const api = {
   }
 };
 
-if (process.contextIsolated) {
-  try {
-    contextBridge.exposeInMainWorld('api', api);
-  } catch {
-    /* noop */
-  }
-} else {
-  Object.assign(window, { api });
+// Błąd konfiguracji musi być głośny: bez izolacji kontekstu mostek wystawiłby
+// całe API do niezaufanej strony.
+if (!process.contextIsolated) {
+  throw new Error('Onda pip preload requires contextIsolation');
+}
+try {
+  contextBridge.exposeInMainWorld('api', api);
+} catch {
+  /* noop */
 }

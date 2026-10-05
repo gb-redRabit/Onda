@@ -1,16 +1,9 @@
-export interface IpcMediaFile {
-  id: string;
-  name: string;
-  path: string;
-  extension: string;
-  mimeType: string;
-  size: number;
-  duration?: number;
-  type: 'audio' | 'video' | 'image' | 'unknown' | 'stream';
-  addedAt: number;
-  lastPlayed?: number;
-  playCount: number;
-}
+import type { MediaFile } from '../media';
+
+// Wersja „drutowa" pliku biblioteki: te same pola co rendererowy `MediaFile`,
+// ale bez ciężkich/opcjonalnych pól, które nie jadą każdym kanałem. Wyprowadzona,
+// żeby pole dodane do `MediaFile` nie mogło po cichu zniknąć w kontrakcie IPC.
+export type IpcMediaFile = Omit<MediaFile, 'metadata' | 'thumbnail' | 'mtime'>;
 
 export interface IpcPlaylist {
   id: string;

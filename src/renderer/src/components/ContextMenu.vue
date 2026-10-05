@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { ChevronRight } from '@lucide/vue';
 import { useUIStore } from '@renderer/stores/ui';
 import type { ContextMenuItem } from '@renderer/stores/ui';
@@ -30,6 +30,8 @@ const position = computed(() => {
 
 function closeSub() {
   openSubIndex.value = -1;
+  subActiveIndex.value = -1;
+  subItemRefs.value = [];
   subStyle.value = {};
   if (closeTimer) {
     clearTimeout(closeTimer);
@@ -82,12 +84,84 @@ function runAction(item: ContextMenuItem) {
   item.action?.();
 }
 
+/** Indeksy pozycji, do których da się przenieść fokus strzałkami. */
+function navigableIndexes(items: ContextMenuItem[] | undefined): number[] {
+  return (items ?? []).map((it, i) => (it.separator || it.disabled ? -1 : i)).filter((i) => i >= 0);
+}
+
+// Fokus podmenu (klawiatura) — by trafić do niego strzałkami/Tabem.
+const subItemRefs = ref<Array<HTMLElement | null>>([]);
+const subActiveIndex = ref(-1);
+
+function focusSubFirst(): void {
+  nextTick(() => {
+    const idx = navigableIndexes(ui.contextMenu?.items[openSubIndex.value]?.children)[0];
+    if (idx === undefined) return;
+    subActiveIndex.value = idx;
+    subItemRefs.value[idx]?.focus();
+  });
+}
+
+/** Otwiera podmenu wybranej pozycji i przenosi do niego fokus (ArrowRight/Enter). */
+function openSubKeyboard(idx: number) {
+  const el = itemRefs.value[idx];
+  const item = ui.contextMenu?.items[idx];
+  if (!el || !item?.children?.length) return;
+  const first = navigableIndexes(item.children)[0];
+  if (first === undefined) return;
+  subActiveIndex.value = first;
+  openSub(idx, el);
+  focusSubFirst();
+}
+
+function onSubKeydown(e: KeyboardEvent) {
+  if (openSubIndex.value < 0) return;
+  const parent = ui.contextMenu?.items[openSubIndex.value];
+  const children = parent?.children ?? [];
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    moveSubActive(children, 1);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    moveSubActive(children, -1);
+  } else if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    closeSub();
+    itemRefs.value[openSubIndex.value >= 0 ? openSubIndex.value : activeIndex.value]?.focus();
+  }
+}
+
+function moveSubActive(children: ContextMenuItem[], dir: 1 | -1): void {
+  const indexes = navigableIndexes(children);
+  if (!indexes.length) return;
+  const pos = indexes.indexOf(subActiveIndex.value);
+  const next = indexes[(pos + dir + indexes.length) % indexes.length];
+  subActiveIndex.value = next;
+  subItemRefs.value[next]?.focus();
+}
+
 function selectableIndexes(): number[] {
   const items = ui.contextMenu?.items ?? [];
-  return items
-    .map((it, i) => (it.separator || it.disabled || it.children?.length ? -1 : i))
-    .filter((i) => i >= 0);
+  // Pozycje z podmenu też są osiągalne z klawiatury (ArrowRight je otwiera),
+  // więc nie wykluczamy ich z nawigacji strzałkami.
+  return items.map((it, i) => (it.separator || it.disabled ? -1 : i)).filter((i) => i >= 0);
 }
+
+// Po otwarciu ustaw aktywnego kandydata i przenieś fokus do menu, żeby strzałki
+// działały od razu (wcześniej fokus zostawał poza menu).
+watch(
+  () => ui.contextMenu,
+  (menu) => {
+    activeIndex.value = -1;
+    closeSub();
+    if (!menu) return;
+    nextTick(() => {
+      const first = selectableIndexes()[0];
+      activeIndex.value = first ?? -1;
+      if (first !== undefined) itemRefs.value[first]?.focus();
+    });
+  }
+);
 
 function moveActive(dir: 1 | -1) {
   const indexes = selectableIndexes();
@@ -116,10 +190,26 @@ function onKeydown(e: KeyboardEvent) {
     moveActive(-1);
     return;
   }
+  // Gdy fokus jest w podmenu, obsługuje je onSubKeydown.
+  if (openSubIndex.value >= 0) {
+    onSubKeydown(e);
+    return;
+  }
+  if (e.key === 'ArrowRight' && activeIndex.value >= 0) {
+    const item = ui.contextMenu.items[activeIndex.value];
+    if (item?.children?.length) {
+      e.preventDefault();
+      openSubKeyboard(activeIndex.value);
+    }
+    return;
+  }
   if (e.key === 'Enter' && activeIndex.value >= 0) {
     e.preventDefault();
     const item = ui.contextMenu.items[activeIndex.value];
-    if (item && !item.disabled && !item.children?.length) runAction(item);
+    if (!item || item.disabled) return;
+    // Pozycja z podmenu: otwórz je i przenieś fokus zamiast ignorować Enter.
+    if (item.children?.length) openSubKeyboard(activeIndex.value);
+    else runAction(item);
   }
 }
 
@@ -162,6 +252,12 @@ function setRef(i: number) {
     itemRefs.value[i] = el as HTMLElement | null;
   };
 }
+
+function setSubRef(i: number) {
+  return (el: unknown) => {
+    subItemRefs.value[i] = el as HTMLElement | null;
+  };
+}
 </script>
 
 <template>
@@ -191,11 +287,14 @@ function setRef(i: number) {
           <button
             data-testid="context-menu-item"
             role="menuitem"
+            tabindex="-1"
+            :aria-haspopup="item.children?.length ? 'menu' : undefined"
+            :aria-expanded="item.children?.length ? openSubIndex === idx : undefined"
             class="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-sm hover:bg-primary/10 hover:text-primary transition-colors"
             :class="{ 'opacity-40 pointer-events-none': item.disabled }"
             :disabled="item.disabled"
             @mousemove="activeIndex = idx"
-            @click.stop="item.children?.length ? undefined : runAction(item)"
+            @click.stop="item.children?.length ? openSubKeyboard(idx) : runAction(item)"
           >
             <span v-if="item.icon" class="shrink-0 text-base-content/60">
               <component :is="item.icon" :size="14" />
@@ -217,6 +316,7 @@ function setRef(i: number) {
           <Teleport to="body">
             <div
               v-if="openSubIndex === idx && item.children?.length"
+              role="menu"
               class="fixed z-1000 bg-neutral border border-neutral-content/20 rounded-box shadow-2xl shadow-black/50 py-1.5 min-w-45 max-h-[80vh] overflow-y-auto"
               :style="subStyle"
               @mouseenter="onSubEnter()"
@@ -228,10 +328,14 @@ function setRef(i: number) {
                 <div v-if="child.separator" class="border-t border-base-300 my-1 mx-2" />
                 <button
                   v-else
+                  :ref="setSubRef(cidx)"
                   data-testid="context-menu-subitem"
+                  role="menuitem"
+                  tabindex="-1"
                   class="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-sm hover:bg-primary/10 hover:text-primary transition-colors"
                   :class="{ 'opacity-40 pointer-events-none': child.disabled }"
                   :disabled="child.disabled"
+                  @mousemove="subActiveIndex = cidx"
                   @click.stop="runAction(child)"
                 >
                   <span v-if="child.icon" class="shrink-0 text-base-content/60">

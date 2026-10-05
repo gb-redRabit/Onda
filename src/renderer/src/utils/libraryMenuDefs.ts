@@ -2,6 +2,7 @@ import type { useI18n } from 'vue-i18n';
 import type { MediaFile, Playlist } from '@renderer/types/media';
 import type { usePlayerStore } from '@renderer/stores/player';
 import type { useLibraryStore } from '@renderer/stores/library';
+import type { useLibrarySelectionStore } from '@renderer/stores/library-selection';
 import type { usePluginsStore } from '@renderer/stores/plugins';
 import { snapshotTrack } from '@renderer/stores/plugins';
 import type { PluginHookPayload } from '@renderer/modules/plugins/plugin-shim';
@@ -11,6 +12,8 @@ import { revealInFolder, copyPathToClipboard } from '@renderer/utils/menuActions
 export interface TrackCtx {
   track: MediaFile;
   onEdit?: () => void;
+  /** Zaznacza/odznacza utwór w zakładce Utwory. `null` poza zakładką Utwory. */
+  onToggleSelected?: (path: string) => void;
 }
 export interface AlbumCtx {
   name: string;
@@ -35,13 +38,15 @@ export interface LibraryMenuDeps {
   library: ReturnType<typeof useLibraryStore>;
   plugins: ReturnType<typeof usePluginsStore>;
   revealInExplorer: (path: string) => void;
+  /** Store zaznaczenia biblioteki (zakładka Utwory). */
+  selection?: ReturnType<typeof useLibrarySelectionStore>;
 }
 
 // Buildery definicji menu wydzielone z `composables/useLibraryContextMenu.ts`
 // (plan 2.8). Każdy zwraca defs oraz obiekt kontekstu, z którym wywołujący
 // otwiera; composable pozostaje odpowiedzialny za `useContextMenu().open`.
 export function createLibraryMenuDefs(deps: LibraryMenuDeps) {
-  const { t, player, library, plugins, revealInExplorer } = deps;
+  const { t, player, library, plugins, revealInExplorer, selection } = deps;
 
   function buildMbQuery(track: MediaFile): string {
     const a = track.metadata?.artist || '';
@@ -92,6 +97,7 @@ export function createLibraryMenuDefs(deps: LibraryMenuDeps) {
 
   function trackMenu(track: MediaFile, opts?: { onEdit?: () => void }) {
     const isFav = player.isFavorite(track.path);
+    const isSelected = selection?.has(track.path) ?? false;
     const defs: ContextMenuAction<TrackCtx>[] = [
       {
         label: t('common.play'),
@@ -103,6 +109,13 @@ export function createLibraryMenuDefs(deps: LibraryMenuDeps) {
       {
         label: isFav ? t('common.removeFav') : t('common.addFav'),
         action: () => player.toggleFavorite(track.path)
+      },
+      // Zaznaczanie/odznaczanie utworu — widoczne tylko tam, gdzie zaznaczenie
+      // ma konsumenta (zakładka Utwory udostępnia store zaznaczenia).
+      {
+        label: isSelected ? t('ctx.deselectTrack') : t('ctx.selectTrack'),
+        when: () => !!selection,
+        action: (c) => selection?.toggle(c.track.path)
       },
       { label: t('common.addToQueue'), action: (c) => player.addToQueue(c.track) },
       {

@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { Save, Trash2 } from '@lucide/vue';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
+import { usePromptDialog } from '@renderer/composables/usePromptDialog';
+import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 import { AUDIO_FORMATS, VIDEO_QUALITIES, VIDEO_CONTAINERS } from '@shared/constants';
 import type { IpcDownloadConfig } from '@shared/types/ipc';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
 
+const { t } = useI18n();
+const prompt = usePromptDialog();
 const settings = useSettingsStore();
 const {
   profiles,
@@ -103,6 +108,9 @@ async function doSaveProfile() {
 }
 async function doDeleteProfile() {
   if (!selectedProfileId.value) return;
+  const name = profiles.value.find((p) => p.id === selectedProfileId.value)?.name || '';
+  const ok = await prompt.showConfirm(t('settings.profileDeleteConfirm', { name }));
+  if (!ok) return;
   await removeProfile(selectedProfileId.value);
   resetProfileForm();
 }
@@ -124,6 +132,7 @@ async function doDeleteProfile() {
       </select>
       <button
         class="fx-noise flex items-center gap-1.5 px-3 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 disabled:opacity-40 shrink-0"
+        :aria-label="$t('settings.profileDelete')"
         :disabled="!selectedProfileId"
         @click="doDeleteProfile"
       >
@@ -245,5 +254,15 @@ async function doDeleteProfile() {
         selectedProfileId ? $t('settings.profileSaveUpdate') : $t('settings.profileSaveCreate')
       }}
     </button>
+
+    <ExplorerPromptDialog
+      :visible="prompt.promptVisible.value"
+      :is-confirm="prompt.promptIsConfirm.value"
+      :message="prompt.promptMessage.value"
+      :value="prompt.promptValue.value"
+      @update:value="prompt.promptValue.value = $event"
+      @confirm="prompt.promptConfirm()"
+      @cancel="prompt.promptCancel()"
+    />
   </SettingsGroup>
 </template>

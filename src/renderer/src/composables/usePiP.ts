@@ -8,9 +8,11 @@ interface PiPSubtitleData {
   availableFonts: Record<string, string>;
 }
 
+// `pip:ended` celowo NIE jest tu obsługiwane: globalny `registerAppIpc` (App.vue)
+// przechodzi do następnego utworu / zatrzymuje PiP. Subskrypcja w obu miejscach
+// powodowała podwójne `nextTrack()` i przeskakiwanie utworu.
 export function usePiP(callbacks?: {
   onClosed?: (time: number) => void;
-  onEnded?: () => void;
   onMaximize?: (time: number) => void;
 }) {
   const isActive = ref(false);
@@ -30,12 +32,6 @@ export function usePiP(callbacks?: {
         callbacks?.onClosed?.(savedTime);
       })
     );
-    cleanups.push(
-      window.api.on('pip:ended', () => {
-        callbacks?.onEnded?.();
-      })
-    );
-
     cleanups.push(
       window.api.on('pip:maximize', (time: unknown) => {
         callbacks?.onMaximize?.((time as number) || 0);

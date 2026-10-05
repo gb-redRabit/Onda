@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { ChevronLeft, ChevronRight } from '@lucide/vue';
 import type { FileItem } from '@renderer/types/explorer';
 import ImageViewerThumbnails from './ImageViewerThumbnails.vue';
 import ImageViewerToolbar from './ImageViewerToolbar.vue';
 import Loader from '@renderer/components/layout/Loader.vue';
 import { useImageViewer } from '@renderer/composables/useImageViewer';
+import { useDialogFocus } from '@renderer/composables/useDialogFocus';
 
 const props = defineProps<{
   files: FileItem[];
@@ -58,12 +60,22 @@ const {
   onWheel,
   makeTransform
 } = useImageViewer(props, { close: () => emit('close') });
+
+// Pułapka focusu + powrót fokusu po zamknięciu (WCAG 2.4.3). Escape i strzałki
+// obsługuje `useImageViewerKeyboard`; tutaj fokus krąży wewnątrz nakładki.
+const rootRef = ref<HTMLElement | null>(null);
+useDialogFocus(rootRef);
 </script>
 
 <template>
   <div
+    ref="rootRef"
     data-testid="image-viewer"
-    class="fixed inset-0 z-50 flex flex-col bg-base-200/95 select-none"
+    role="dialog"
+    aria-modal="true"
+    :aria-label="currentFile?.name"
+    tabindex="-1"
+    class="fixed inset-0 z-50 flex flex-col bg-base-200/95 select-none outline-none"
     :class="slideshowActive && !uiVisible ? 'cursor-none' : ''"
     @click.self="handleClose"
     @wheel.passive="onWheel"
@@ -190,6 +202,11 @@ const {
       @update:show-thumbs="showThumbnails = $event"
     />
 
-    <div v-if="settingsOpen" class="fixed inset-0 z-10" @click="settingsOpen = false" />
+    <div
+      v-if="settingsOpen"
+      class="fixed inset-0 z-10"
+      role="presentation"
+      @click="settingsOpen = false"
+    />
   </div>
 </template>

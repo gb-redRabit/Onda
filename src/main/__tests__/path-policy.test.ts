@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { isFilesystemRoot, isProtectedPath, parentOf, protectedPathReason } from '../path-policy';
+import {
+  isFilesystemRoot,
+  isProtectedPath,
+  isSensitivePath,
+  parentOf,
+  protectedPathReason
+} from '../path-policy';
 
 describe('isFilesystemRoot', () => {
   it('recognises Windows drive roots and UNC share roots', () => {
@@ -83,6 +89,33 @@ describe('protectedPathReason', () => {
   it('exposes a boolean wrapper for the handlers', () => {
     expect(isProtectedPath('C:\\Windows', 'win32')).toBe(true);
     expect(isProtectedPath('C:\\Users\\u\\Music', 'win32')).toBe(false);
+  });
+
+  it('allows user-owned files under AppData (mutating handlers must not use isSensitivePath)', () => {
+    // `isSensitivePath` (AppData) dotyczy przyznawania dostępu mediów, nie prawa do
+    // zmiany nazwy/tagów. Mutujące handlery opierają się na `isProtectedPath`, więc
+    // pliki tymczasowe użytkownika muszą przechodzić.
+    expect(isProtectedPath('C:\\Users\\u\\AppData\\Local\\Temp\\onda\\a.mp3', 'win32')).toBe(false);
+    expect(isSensitivePath('C:\\Users\\u\\AppData\\Local\\Temp\\onda\\a.mp3', 'win32')).toBe(true);
+  });
+});
+
+describe('isSensitivePath', () => {
+  it('flags credential, config and browser-profile directories', () => {
+    expect(isSensitivePath('C:\\Users\\u\\.ssh\\id_rsa', 'win32')).toBe(true);
+    expect(isSensitivePath('C:\\Users\\u\\AppData\\Roaming', 'win32')).toBe(true);
+    expect(isSensitivePath('/home/u/.aws/credentials', 'linux')).toBe(true);
+    expect(isSensitivePath('/home/u/.config/app/x.mp3', 'linux')).toBe(true);
+  });
+
+  it('does not flag ordinary media folders', () => {
+    expect(isSensitivePath('C:\\Users\\u\\Music\\song.mp3', 'win32')).toBe(false);
+    expect(isSensitivePath('/home/u/Music/song.mp3', 'linux')).toBe(false);
+  });
+
+  it('rejects non-strings', () => {
+    expect(isSensitivePath(null)).toBe(false);
+    expect(isSensitivePath(123)).toBe(false);
   });
 });
 

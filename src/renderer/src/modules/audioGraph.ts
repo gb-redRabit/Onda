@@ -1,4 +1,3 @@
-import { usePlayerStore } from '@renderer/stores/player';
 import { logger } from '@shared/logger';
 
 const eqFrequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
@@ -129,7 +128,7 @@ export class AudioGraph {
     }
   }
 
-  connectVideoElement(videoEl: HTMLVideoElement): void {
+  connectVideoElement(videoEl: HTMLVideoElement, initialVolume = 1): void {
     this.ensureContext();
     if (this.audioCtx && this.audioCtx.state === 'suspended') {
       this.audioCtx.resume();
@@ -147,9 +146,8 @@ export class AudioGraph {
         // Ten sam element, nowe źródło — przywróć głośność. Gain mógł zostać
         // wyzerowany przez transkodowanie audio poprzedniego utworu i bez tego
         // resetu kolejne wideo grałoby bez dźwięku.
-        const player = usePlayerStore();
         if (this.videoGainNode) {
-          this.videoGainNode.gain.value = player.isMuted ? 0 : player.volume;
+          this.videoGainNode.gain.value = initialVolume;
         }
         return;
       }
@@ -171,8 +169,7 @@ export class AudioGraph {
       this.videoGainNode.connect(this.gainNode);
     }
 
-    const player = usePlayerStore();
-    this.videoGainNode.gain.value = player.isMuted ? 0 : player.volume;
+    this.videoGainNode.gain.value = initialVolume;
   }
 
   disconnectVideoElement(): void {
@@ -260,6 +257,15 @@ export class AudioGraph {
       await this.audioCtx.close();
       this.audioCtx = null;
     }
+    // Wyzeruj wszystkie węzły: bez tego kolejne `connectSource` po ponownym użyciu
+    // singletona sięgnęłoby po węzeł z zamkniętego kontekstu (błąd / brak dźwięku).
+    this.analyserNode = null;
+    this.sourceNode = null;
+    this.gainNode = null;
+    this.eqFilters = [];
+    this.videoSourceNode = null;
+    this.videoGainNode = null;
+    this.videoSourceEl = null;
     this.eqChainBuilt = false;
   }
 }

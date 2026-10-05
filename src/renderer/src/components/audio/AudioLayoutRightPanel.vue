@@ -96,6 +96,7 @@ const decorationOptions = computed(() =>
         <div
           v-for="el in props.elements"
           :key="el.id"
+          v-activate
           class="flex items-center gap-2 px-2.5 py-2 rounded-field text-left transition-all text-xs cursor-pointer"
           :class="
             el.id === props.selectedId
@@ -113,7 +114,7 @@ const decorationOptions = computed(() =>
             @click.stop="emit('update', el.id, { visible: !el.visible })"
           >
             <EyeOff v-if="el.visible" :size="12" class="text-base-content/50" />
-            <Eye v-else :size="12" class="text-base-content/30" />
+            <Eye v-else :size="12" class="text-base-content/55" />
           </button>
         </div>
       </div>
@@ -140,7 +141,7 @@ const decorationOptions = computed(() =>
         </div>
         <p
           v-if="props.selected.id === 'visualization'"
-          class="text-[10px] text-base-content/40 leading-relaxed"
+          class="text-[10px] text-base-content/60 leading-relaxed"
         >
           {{ t('audioView.variantVizHint') }}
         </p>
@@ -165,7 +166,7 @@ const decorationOptions = computed(() =>
               {{ opt.label }}<template v-if="opt.plugin"> · {{ opt.plugin }}</template>
             </button>
           </div>
-          <p class="text-[10px] text-base-content/40 leading-relaxed">
+          <p class="text-[10px] text-base-content/60 leading-relaxed">
             {{ t('audioView.decorationHint') }}
           </p>
         </div>

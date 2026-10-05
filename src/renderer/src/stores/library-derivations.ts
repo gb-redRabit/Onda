@@ -9,6 +9,28 @@ import { topN } from '@renderer/utils/topN';
 // osobny licznik `statsRevision` — dzięki temu skończenie utworu tylko
 // przelicza dwa widoki statystyk, a nie grupowanie artystów/albumów (które sortuje
 // tysiące wpisów przez `localeCompare` i powoduje zacinanie UI przy bibliotece 50k).
+const nameCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+
+// Wspólne grupowanie utworów audio po jednym polu metadanych. `artists` i `albums`
+// różniły się tylko kluczem i fallbackiem, więc trzymanie dwóch kopii pętli
+// groziło rozjechaniem się przy kolejnych zmianach (np. po `genre`).
+function groupAudioByMetadataKey(
+  tracks: readonly MediaFile[],
+  key: 'artist' | 'album',
+  fallback: string
+): Array<[string, MediaFile[]]> {
+  if (tracks.length === 0) return [];
+  const groups = new Map<string, MediaFile[]>();
+  for (let i = 0; i < tracks.length; i++) {
+    const track = tracks[i];
+    const value = track.metadata?.[key] || fallback;
+    const bucket = groups.get(value);
+    if (bucket) bucket.push(track);
+    else groups.set(value, [track]);
+  }
+  return Array.from(groups.entries()).sort((a, b) => nameCollator.compare(a[0], b[0]));
+}
+
 export function useLibraryDerivations(
   tracks: Ref<MediaFile[]>,
   statsRevision: Ref<number> = ref(0)
@@ -57,36 +79,17 @@ export function useLibraryDerivations(
     return topN(ts, 20, (t) => t.playCount);
   });
 
-  const artists = computed(() => {
-    const ts = tracks.value;
-    if (ts.length === 0) return [];
-    const map = new Map<string, MediaFile[]>();
-    for (let i = 0; i < ts.length; i++) {
-      // Tylko pliki audio noszą metadane artysty — wideo/obrazy nie mogą być
-      // wrzucane do "Unknown Artist".
-      if (ts[i].type !== 'audio') continue;
-      const artist = ts[i].metadata?.artist || 'Unknown Artist';
-      if (!map.has(artist)) map.set(artist, []);
-      map.get(artist)!.push(ts[i]);
-    }
-    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  });
+  // Grupowanie działa na już odfiltrowanej domenie audio (`audioTracks`), a nie na
+  // całej bibliotece: obrazy i wideo nie niosą metadanych artysty/albumu, więc
+  // wcześniejsze `if (type !== 'audio') continue` marnowało cykle przy każdym
+  // odświeżeniu (dla 50k plików to tysiące odrzuceń na każdy widok).
+  const artists = computed(() =>
+    groupAudioByMetadataKey(audioTracks.value, 'artist', 'Unknown Artist')
+  );
 
-  const albums = computed(() => {
-    const ts = tracks.value;
-    if (ts.length === 0) return [];
-    const map = new Map<string, MediaFile[]>();
-    for (let i = 0; i < ts.length; i++) {
-      // Tylko pliki audio mogą należeć do albumu — trzymaj obrazy/wideo poza
-      // widokiem albumów (nie mają tagu albumu i trafiłyby do
-      // "Unknown Album").
-      if (ts[i].type !== 'audio') continue;
-      const album = ts[i].metadata?.album || 'Unknown Album';
-      if (!map.has(album)) map.set(album, []);
-      map.get(album)!.push(ts[i]);
-    }
-    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  });
+  const albums = computed(() =>
+    groupAudioByMetadataKey(audioTracks.value, 'album', 'Unknown Album')
+  );
 
   return {
     trackStats,

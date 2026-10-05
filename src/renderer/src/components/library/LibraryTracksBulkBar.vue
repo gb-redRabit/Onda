@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { X, ListMusic, Play } from '@lucide/vue';
 
-defineProps<{
+const props = defineProps<{
   count: number;
   playlists: Array<{ id: string; name: string }>;
 }>();
+
+// Etykiety akcji roboczych nie mają nazw liczby mnogiej (np. „Dodaj do kolejki"),
+// więc przy pojedynczym utworze mówimy wprost o utworze.
+const isSingle = computed(() => props.count === 1);
 
 const emit = defineEmits<{
   play: [];
@@ -19,6 +23,7 @@ const showBulkPlaylist = ref(false);
 
 <template>
   <div
+    data-testid="library-selection-bar"
     class="flex items-center gap-2 px-4 py-2 bg-primary/10 border-b border-primary/20 text-xs shrink-0"
   >
     <span class="font-medium text-primary">{{ count }} {{ $t('common.selected') }}</span>
@@ -33,14 +38,15 @@ const showBulkPlaylist = ref(false);
         class="px-2.5 py-1 rounded-field bg-base-100 border border-base-300 hover:bg-base-200"
         @click="emit('queue')"
       >
-        <ListMusic :size="12" class="inline mr-1" />{{ $t('common.addToQueue') }}
+        <ListMusic :size="12" class="inline mr-1" />
+        {{ isSingle ? $t('common.addTrackToQueue') : $t('common.addToQueue') }}
       </button>
       <div class="relative">
         <button
           class="px-2.5 py-1 rounded-field bg-base-100 border border-base-300 hover:bg-base-200"
           @click="showBulkPlaylist = !showBulkPlaylist"
         >
-          {{ $t('common.addToPlaylist') }}
+          {{ isSingle ? $t('common.addTrackToPlaylist') : $t('common.addToPlaylist') }}
         </button>
         <div
           v-if="showBulkPlaylist"
@@ -63,7 +69,9 @@ const showBulkPlaylist = ref(false);
         </div>
       </div>
       <button
+        data-testid="library-selection-clear"
         class="p-1 rounded-field hover:bg-base-300 text-base-content/60"
+        :aria-label="$t('common.clear')"
         @click="emit('clear')"
       >
         <X :size="12" />

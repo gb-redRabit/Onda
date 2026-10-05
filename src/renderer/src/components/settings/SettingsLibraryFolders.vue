@@ -150,7 +150,7 @@ function folderIcon(type: string): string {
         })
       "
     />
-    <div class="flex justify-between text-[10px] text-base-content/40 mt-1">
+    <div class="flex justify-between text-[10px] text-base-content/60 mt-1">
       <span>500</span><span>10 000</span>
     </div>
     <p class="text-[11px] text-base-content/50 mt-2">{{ $t('settings.coverCacheHint') }}</p>

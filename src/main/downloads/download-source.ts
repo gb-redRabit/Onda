@@ -1,4 +1,25 @@
 import type { IpcDownloadSource } from '../../shared/types/ipc/download';
+import { sanitizeFilename } from '../../shared/text';
+
+const MAX_FILE_NAME = 200;
+
+/**
+ * Nazwa pliku docelowego pochodzi z renderera, więc może nieść separatory
+ * katalogów i `..`. `join(outputDir, fileName)` znormalizowałby taką ścieżkę i
+ * pozwolił zapisać dowolny plik poza katalogiem wyjściowym (path traversal do
+ * np. folderu Startup). Bierzemy wyłącznie ostatni segment, odrzucamy `.`/`..`
+ * i przepuszczamy przez sanityzację nazw.
+ */
+export function safeDownloadFileName(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const last =
+    raw
+      .trim()
+      .split(/[\\/]+/)
+      .pop() ?? '';
+  if (!last || last === '.' || last === '..') return undefined;
+  return sanitizeFilename(last, { maxLength: MAX_FILE_NAME, fallback: '' }) || undefined;
+}
 
 // Odbudowuje deskryptor source zapisywany na zadaniu pobierania. Pole po polu
 // (nie spread), aby nic nieoczekiwanego z renderera nie wyciekło do kolejki.
@@ -7,6 +28,10 @@ import type { IpcDownloadSource } from '../../shared/types/ipc/download';
 // Warstwa źródeł oznacza ukończone pobieranie jako "downloaded" na podstawie
 // `sourceId`+`sourceItemId`, a próbowany cel sieciowy używa
 // `allowPrivateNetwork`, więc ich utrata po cichu psuła jedno i drugie.
+//
+// UWAGA: `allowPrivateNetwork` wciąż jest przepisywane z wejścia, ale
+// `addDownloadJobs` nadpisuje je po powiązaniu z ZAPISANYM źródłem po `sourceId`
+// (tak jak `sources:enqueue`); surowa flaga z renderera nigdy nie trafia do sieci.
 export function buildJobSource(
   input: IpcDownloadSource | undefined
 ): IpcDownloadSource | undefined {
@@ -21,10 +46,7 @@ export function buildJobSource(
     return {
       mode: 'http',
       ...common,
-      fileName:
-        typeof input.fileName === 'string' && input.fileName
-          ? input.fileName.slice(0, 200)
-          : undefined,
+      fileName: safeDownloadFileName(input.fileName),
       apiKeyId: typeof input.apiKeyId === 'string' ? input.apiKeyId.slice(0, 200) : undefined,
       headerName: typeof input.headerName === 'string' ? input.headerName.slice(0, 100) : undefined
     };
@@ -33,10 +55,7 @@ export function buildJobSource(
     return {
       mode: 'soundcloud',
       ...common,
-      fileName:
-        typeof input.fileName === 'string' && input.fileName
-          ? input.fileName.slice(0, 200)
-          : undefined
+      fileName: safeDownloadFileName(input.fileName)
     };
   }
   return {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { inject, ref } from 'vue';
-import { HardDrive, FolderOpen } from '@lucide/vue';
+import { HardDrive, FolderOpen, TriangleAlert } from '@lucide/vue';
 import { isLibraryFolder } from '@renderer/utils/libraryFolders';
 import { beginFileDrag } from '@renderer/utils/fileDrag';
 import { fileTypeIcon } from '@renderer/utils/fileTypeIcons';
@@ -66,7 +66,18 @@ defineExpose({ reveal });
     @mousedown="onBandMouseDown"
   >
     <div
-      v-if="files.length === 0 && !explorer.isLoading"
+      v-if="files.length === 0 && !explorer.isLoading && explorer.loadError"
+      data-testid="explorer-load-error"
+      role="alert"
+      class="flex flex-col items-center justify-center py-16 text-base-content/60"
+    >
+      <TriangleAlert :size="48" class="mb-3 text-warning opacity-60" />
+      <p class="text-sm font-medium">{{ $t('explorer.loadError') }}</p>
+      <p class="mt-1 max-w-md text-center text-xs text-base-content/60">{{ explorer.loadError }}</p>
+    </div>
+
+    <div
+      v-else-if="files.length === 0 && !explorer.isLoading"
       class="flex flex-col items-center justify-center py-16 text-base-content/50"
     >
       <FolderOpen :size="48" class="mb-3 opacity-30" />

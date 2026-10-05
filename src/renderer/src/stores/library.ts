@@ -20,6 +20,19 @@ export const useLibraryStore = defineStore('library', () => {
   // unieważniania kosztownych derywacji artystów/albumów/trackStats.
   const statsRevision = ref(0);
 
+  // Indeks ścieżka→pozycja, przebudowywany leniwie, gdy zmieni się tożsamość tablicy
+  // (load/filtr tworzą nową tablicę). Bez tego każde odtworzenie skanowało O(n) do 50k.
+  let pathIndexArray: MediaFile[] | null = null;
+  const pathIndex = new Map<string, number>();
+  function indexOfTrack(path: string): number {
+    if (pathIndexArray !== tracks.value) {
+      pathIndexArray = tracks.value;
+      pathIndex.clear();
+      for (let i = 0; i < tracks.value.length; i++) pathIndex.set(tracks.value[i].path, i);
+    }
+    return pathIndex.get(path) ?? -1;
+  }
+
   const {
     playlists,
     savePlaylists,
@@ -100,11 +113,12 @@ export const useLibraryStore = defineStore('library', () => {
   }
 
   function addTrack(track: MediaFile) {
-    const existing = tracks.value.findIndex((t) => t.path === track.path);
+    const existing = indexOfTrack(track.path);
     if (existing >= 0) {
       tracks.value[existing] = track;
     } else {
       tracks.value.push(track);
+      pathIndex.set(track.path, tracks.value.length - 1);
     }
     triggerRef(tracks);
   }
@@ -120,7 +134,7 @@ export const useLibraryStore = defineStore('library', () => {
   // Edycja metadanych / strukturalna: unieważnia każdy widok pochodny. Zwraca
   // zaktualizowany utwór, więc wywołujący nie potrzebują drugiego `find`.
   function updateTrack(path: string, updater: (track: MediaFile) => void): MediaFile | undefined {
-    const idx = tracks.value.findIndex((t) => t.path === path);
+    const idx = indexOfTrack(path);
     if (idx < 0) return undefined;
     const track = tracks.value[idx];
     updater(track);
@@ -134,7 +148,7 @@ export const useLibraryStore = defineStore('library', () => {
     path: string,
     updater: (track: MediaFile) => void
   ): MediaFile | undefined {
-    const idx = tracks.value.findIndex((t) => t.path === path);
+    const idx = indexOfTrack(path);
     if (idx < 0) return undefined;
     const track = tracks.value[idx];
     updater(track);

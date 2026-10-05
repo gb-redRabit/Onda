@@ -11,6 +11,7 @@ export interface MainMessages {
   loadFailedTitle: string;
   loadFailedMessage: (code: number, description: string) => string;
   loadFailedDevHint: string;
+  rendererCrashMessage: (reason: string) => string;
   openExecTitle: string;
   openExecMessage: (filePath: string) => string;
   openExecDetail: string;
@@ -31,6 +32,8 @@ const EN: MainMessages = {
   loadFailedMessage: (code, description) =>
     `The interface failed to load (${code} ${description}).`,
   loadFailedDevHint: '\n\nDev build: make sure the dev server is running (npm run dev).',
+  rendererCrashMessage: (reason) =>
+    `The interface stopped responding and could not be recovered (${reason}).\nOnda will close now.`,
   openExecTitle: 'Open executable file',
   openExecMessage: (filePath) => `Are you sure you want to open an executable file?\n${filePath}`,
   openExecDetail: 'Running unknown executables can be dangerous.',
@@ -51,6 +54,8 @@ const PL: MainMessages = {
   loadFailedMessage: (code, description) =>
     `Nie udało się załadować interfejsu (${code} ${description}).`,
   loadFailedDevHint: '\n\nKompilacja dev: upewnij się, że działa dev server (npm run dev).',
+  rendererCrashMessage: (reason) =>
+    `Interfejs przestał odpowiadać i nie udało się go odzyskać (${reason}).\nOnda zostanie teraz zamknięta.`,
   openExecTitle: 'Otwieranie pliku wykonywalnego',
   openExecMessage: (filePath) => `Czy na pewno chcesz otworzyć plik wykonywalny?\n${filePath}`,
   openExecDetail: 'Uruchamianie nieznanych plików wykonywalnych może być niebezpieczne.',

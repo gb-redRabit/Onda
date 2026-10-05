@@ -100,7 +100,7 @@ const emit = defineEmits<{
             />
             <div
               v-else
-              class="w-full h-full flex items-center justify-center bg-neutral text-neutral-content/40"
+              class="w-full h-full flex items-center justify-center bg-neutral text-neutral-content/60"
             >
               <ListVideo :size="24" />
             </div>

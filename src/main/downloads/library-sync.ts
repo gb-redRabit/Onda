@@ -6,8 +6,14 @@ import { scanDir, classifyFolderType, filterFilesForFolderType } from '../ipc/li
 import { addLibraryFolder } from '../ipc/library/library-handlers';
 import { logger } from '../../shared/logger';
 import { broadcastToAllWindows } from '../utils/broadcast';
+import { createWriteLock } from '../utils/write-queue';
 
 const MAX_SCANNED_FILES = 50000;
+
+// Skan + scalanie + zapis całej biblioteki to read-modify-write współdzielonego
+// cache. Przy MAX_CONCURRENT=8 równoległych pobrań dwie synchronizacje czytały ten
+// sam stan, a ostatni zapis gubił wpisy drugiej. Zamek serializuje całość.
+const syncLock = createWriteLock();
 
 function isUnderPath(filePath: string, folder: string): boolean {
   const fp = filePath.toLowerCase();
@@ -52,7 +58,14 @@ async function autoAddDownloadFolderEnabled(): Promise<boolean> {
 // biblioteki (zgodnie z decyzją: nigdy nie dodawaj folderów automatycznie, tylko
 // odświeżaj istniejące). Scala nowe pliki z zapisanym skanem, zachowując statystyki
 // odtwarzania plików, które były już znane.
-export async function syncDownloadToLibrary(
+export function syncDownloadToLibrary(
+  outputPath: string,
+  opts?: { forceAdd?: boolean }
+): Promise<{ inLibrary: boolean; folder?: string; file?: MediaFile }> {
+  return syncLock(() => syncDownloadToLibraryInner(outputPath, opts));
+}
+
+async function syncDownloadToLibraryInner(
   outputPath: string,
   opts?: { forceAdd?: boolean }
 ): Promise<{ inLibrary: boolean; folder?: string; file?: MediaFile }> {

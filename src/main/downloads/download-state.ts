@@ -41,12 +41,14 @@ export function markQueueDirty(): void {
 
 // Natychmiast zapisuje kolejkę na dysk, anulując ewentualny oczekujący debounce.
 // Wywoływane przy zamykaniu aplikacji, aby nie utracić ostatnich ~0,5s zmian statusu.
-export function flushQueueNow(): void {
+// Zwraca obietnicę faktycznego zapisu, żeby `before-quit` mógł na nią zaczekać —
+// wcześniej porzucana obietnica `persistJobs` mogła przepaść przy wyjściu.
+export function flushQueueNow(): Promise<void> {
   if (queuePersistTimer) {
     clearTimeout(queuePersistTimer);
     queuePersistTimer = null;
   }
-  void persistJobs(queueFilePath(), collectPersistableJobs());
+  return persistJobs(queueFilePath(), collectPersistableJobs());
 }
 
 /**

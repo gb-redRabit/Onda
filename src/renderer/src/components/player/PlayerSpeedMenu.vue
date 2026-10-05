@@ -63,7 +63,7 @@ function onSpeedPreset(v: number) {
       :class="
         speed !== 1
           ? 'text-primary bg-primary/10 hover:bg-primary/20'
-          : 'text-neutral-content/40 hover:text-neutral-content/70 bg-neutral-content/6 hover:bg-neutral-content/10'
+          : 'text-neutral-content/60 hover:text-neutral-content/70 bg-neutral-content/6 hover:bg-neutral-content/10'
       "
       :aria-haspopup="true"
       :aria-expanded="speedMenuOpen"

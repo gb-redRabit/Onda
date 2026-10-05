@@ -6,6 +6,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { useUIStore } from '@renderer/stores/ui';
 import { useUnsavedGuard } from '@renderer/composables/useUnsavedGuard';
 import { pickImagePath } from '@renderer/utils/pickImage';
+import { logger } from '@shared/logger';
 import { X, Upload } from '@lucide/vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import ModalShell from '@renderer/components/ui/ModalShell.vue';
@@ -64,6 +65,11 @@ const { onOverlayClick } = useUnsavedGuard({
 });
 onBeforeUnmount(() => {
   if (closeTimer) clearTimeout(closeTimer);
+  // Zwolnij `blob:` URL okładki przy zamknięciu edytora.
+  if (coverObjectUrl) {
+    URL.revokeObjectURL(coverObjectUrl);
+    coverObjectUrl = null;
+  }
 });
 const coverObj = computed<{ type: string | null; data: string | null } | undefined>(() => {
   if (!coverUrl.value) return undefined;
@@ -85,27 +91,46 @@ watch(
       trackNumber.value = t.metadata?.track?.no?.toString() || '';
       name.value = t.name.replace(/\.[^.]+$/, '');
     }
-    loadCover();
+    void loadCover();
   },
   { immediate: true }
 );
 
-async function loadCover() {
-  if (!props.track) return;
-  coverUrl.value = null;
-  const cached = await window.api?.getCover(props.track.path);
-  if (cached?.data) {
-    if (cached.type === 'image') {
-      coverUrl.value = cached.data;
-    } else if (cached.type === 'video') {
-      coverUrl.value = cached.data;
+// `blob:` URL-e trzeba zwalniać ręcznie. Bez tego każde otwarcie edytora okładki
+// zostawiało blob w pamięci renderera do końca życia okna.
+let coverObjectUrl: string | null = null;
+// Rosnący token: szybkie przełączanie utworów nie może pozwolić wolniejszej,
+// starszej odpowiedzi nadpisać okładki nowszego utworu.
+let coverLoadSeq = 0;
+
+function setCover(url: string | null, owned = false): void {
+  if (coverObjectUrl) URL.revokeObjectURL(coverObjectUrl);
+  coverObjectUrl = owned ? url : null;
+  coverUrl.value = url;
+}
+
+async function loadCover(): Promise<void> {
+  const track = props.track;
+  if (!track) return;
+  const seq = ++coverLoadSeq;
+  setCover(null);
+  try {
+    const cached = await window.api?.getCover(track.path);
+    if (seq !== coverLoadSeq) return;
+    if (cached?.data) {
+      setCover(cached.data);
+      return;
     }
-    return;
-  }
-  const embedded = await window.api?.readCover(props.track.path);
-  if (embedded?.data && embedded.data.length > 0) {
-    const blob = new Blob([new Uint8Array(embedded.data)], { type: embedded.mime || 'image/jpeg' });
-    coverUrl.value = URL.createObjectURL(blob);
+    const embedded = await window.api?.readCover(track.path);
+    if (seq !== coverLoadSeq) return;
+    if (embedded?.data && embedded.data.length > 0) {
+      const blob = new Blob([new Uint8Array(embedded.data)], {
+        type: embedded.mime || 'image/jpeg'
+      });
+      setCover(URL.createObjectURL(blob), true);
+    }
+  } catch (e) {
+    if (seq === coverLoadSeq) logger.warn('tags', 'loadCover failed', e);
   }
 }
 
@@ -119,7 +144,7 @@ async function pickCover() {
     if (r?.success) {
       ui.notify('success', t('tags.coverSaved'));
       player.invalidateCoverCache(props.track.path);
-      loadCover();
+      void loadCover();
     } else {
       ui.notify('error', t('tags.coverError'), r?.error);
     }
@@ -187,6 +212,7 @@ async function save() {
       <h2 id="track-tag-editor-title" class="text-base font-bold">{{ $t('tags.title') }}</h2>
       <button
         class="fx-noise p-1.5 fx-depth rounded-field hover:bg-base-content/10 transition-colors text-base-content/50"
+        :aria-label="$t('common.close')"
         @click="emit('close')"
       >
         <X :size="16" />

@@ -166,6 +166,7 @@ onBeforeUnmount(() => {
       <div class="relative h-full" :style="{ width: totalWidth + 'px' }">
         <template v-for="item in visibleThumbs" :key="item.file.path">
           <div
+            v-activate
             :data-thumb-idx="item.idx"
             class="absolute top-0 rounded-field overflow-hidden border transition-all cursor-pointer flex items-center justify-center"
             :class="[
@@ -205,7 +206,8 @@ onBeforeUnmount(() => {
           data-testid="image-viewer-thumbnails-toggle"
           class="fx-noise p-1 fx-depth rounded-field transition-colors"
           :class="showThumbs ? 'text-primary' : 'text-base-content/70 hover:text-base-content'"
-          title="Toggle thumbnails"
+          :title="$t('imageViewer.toggleThumbnails')"
+          :aria-label="$t('imageViewer.toggleThumbnails')"
           @click="emit('update:showThumbs', !showThumbs)"
         >
           <PanelBottom :size="14" class="pointer-events-none" />

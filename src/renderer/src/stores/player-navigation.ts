@@ -115,7 +115,11 @@ export function usePlayerNavigation(
     }
     if (currentTrack.value) {
       history.value.push(currentTrack.value);
-      if (history.value.length > 100) history.value.shift();
+      // `history[0]` to najnowsza przeszłość (kolejna do odtworzenia przez `shift`).
+      // Przy przepełnieniu usuwamy z KOŃCA (najstarszy / właśnie dołożony bieżący),
+      // a nie z początku — wcześniej `shift()` kasowało wpis, który `prevTrack`
+      // miał za chwilę odtworzyć, gubiąc jeden krok.
+      if (history.value.length > 100) history.value.pop();
     }
     const prev = history.value.shift()!;
     currentTrack.value = prev;
@@ -143,6 +147,22 @@ export function usePlayerNavigation(
     pipTime.value = 0;
   }
 
+  // Jeden punkt zmiany stanu PiP. Wcześniej widok (`PlayerView`) i composable
+  // (`useVideoPiP`) mutowały `pipActive`/`pipTime`/`isPlaying`/`currentTime`
+  // osobno, w odwrotnych kierunkach — łatwo było je rozjechać.
+  function enterPiP(time = currentTime.value): void {
+    pipTime.value = time;
+    pipActive.value = true;
+    isPlaying.value = false;
+  }
+
+  function exitPiP(time = pipTime.value): void {
+    pipActive.value = false;
+    pipTime.value = 0;
+    currentTime.value = time;
+    isPlaying.value = true;
+  }
+
   return {
     currentTrack,
     history,
@@ -163,6 +183,8 @@ export function usePlayerNavigation(
     nextTrack,
     prevTrack,
     playFromHistory,
-    consumeResumeIntent
+    consumeResumeIntent,
+    enterPiP,
+    exitPiP
   };
 }

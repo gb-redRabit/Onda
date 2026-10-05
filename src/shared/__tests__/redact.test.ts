@@ -28,6 +28,19 @@ describe('redactSecrets', () => {
     expect(redactSecrets('set-cookie: session=xyz')).toBe('set-cookie: ***');
   });
 
+  it('masks any Authorization scheme, not only Bearer', () => {
+    expect(redactSecrets('Authorization: Basic dXNlcjpwYXNz')).toBe('Authorization: ***');
+    expect(redactSecrets('authorization=ApiKey abcdef')).toBe('authorization=***');
+  });
+
+  it('masks refresh/id tokens, client_secret, X-Api-Key and proxy credentials', () => {
+    expect(redactSecrets('GET /x?refresh_token=abc&client_secret=def')).toBe(
+      'GET /x?refresh_token=***&client_secret=***'
+    );
+    expect(redactSecrets('X-Api-Key: abcdef')).toBe('X-Api-Key: ***');
+    expect(redactSecrets('--proxy http://user:pass@10.0.0.1:8080')).toBe('--proxy ***');
+  });
+
   it('keeps ordinary paths, ids and hashes intact', () => {
     const line =
       '[Onda/download] finished fileHash=9f2a1c4b8e7d6a5f4c3b2a1908f7e6d5 title=Song.mp3';

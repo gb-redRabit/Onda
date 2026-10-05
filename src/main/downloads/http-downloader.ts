@@ -1,4 +1,11 @@
 import fs from 'fs';
+import {
+  copyFile as fsCopyFile,
+  rename as fsRename,
+  rm as fsRm,
+  stat as fsStat,
+  unlink as fsUnlink
+} from 'fs/promises';
 import http from 'http';
 import https from 'https';
 import { logger } from '../../shared/logger';
@@ -84,32 +91,35 @@ async function doDownload(
   // żądania faktycznie je anulowało.
   if (opts.signal?.aborted) throw new Error('Aborted');
 
+  const maxBytes = opts.maxBytes ?? MAX_DOWNLOAD_BYTES;
+  const partPath = `${opts.destPath}.part`;
+  let received = 0;
+  let total: number | null = null;
+
+  // Obsługa wznowienia: sprawdź istniejący plik .part i wyślij nagłówek Range.
+  // Asynchronicznie — synchroniczny `stat` na tej ścieżce blokował pętlę zdarzeń Node
+  // (czyli całe IPC).
+  let startByte = 0;
+  try {
+    const partStat = await fsStat(partPath);
+    if (partStat.size > 0) {
+      startByte = partStat.size;
+      received = startByte;
+    }
+  } catch {
+    // brak pliku częściowego — start od zera
+  }
+
   return new Promise((resolve, reject) => {
     const transport = target.url.protocol === 'https:' ? https : http;
-    const maxBytes = opts.maxBytes ?? MAX_DOWNLOAD_BYTES;
-    let received = 0;
-    let total: number | null = null;
-    const partPath = `${opts.destPath}.part`;
-
-    // Obsługa wznowienia: sprawdź istniejący plik .part i wyślij nagłówek Range.
-    let startByte = 0;
-    try {
-      const partStat = fs.statSync(partPath, { throwIfNoEntry: false });
-      if (partStat && partStat.size > 0) {
-        startByte = partStat.size;
-        received = startByte;
-      }
-    } catch {
-      // brak pliku częściowego — start od zera
-    }
 
     const cleanup = (): void => {
-      try {
-        fs.rmSync(partPath, { force: true });
-      } catch (e) {
+      // Zwolnienie małego `.part` jest asynchroniczne (bez blokowania main); następna
+      // próba i tak otwiera plik przez `createWriteStream` z flagą `w`/`a`.
+      void fsRm(partPath, { force: true }).catch((e) => {
         // Nieaktualny plik .part powodowałby, że następna próba wznowiłaby od złych bajtów.
         logger.warn('download', `failed to remove partial file ${partPath}`, e);
-      }
+      });
     };
 
     /** Usuwa plik częściowy tylko wtedy, gdy niepowodzenie wyklucza ponowienie. */
@@ -184,10 +194,12 @@ async function doDownload(
         }
         if (!isResuming && startByte > 0) {
           // Serwer nie obsługuje Range — trzymany prefiks nie jest prefiksem tej
-          // odpowiedzi, więc musi zniknąć.
+          // odpowiedzi, więc musi zniknąć. `flags: 'w'` (użyte niżej) obcina plik
+          // do zera przy otwarciu, więc NIE wolno tu równolegle usuwać `.part`:
+          // asynchroniczny `rm` mógł wykonać się po `open()`, zostawiając strumień
+          // piszący do osieroconego i-węzła (rename kończył się ENOENT).
           startByte = 0;
           received = 0;
-          cleanup();
         }
         const contentLength = res.headers['content-length'];
         if (contentLength) {
@@ -240,34 +252,43 @@ async function doDownload(
           if (settled) return;
           settled = true;
           out.close(() => {
-            try {
-              fs.renameSync(partPath, opts.destPath);
-            } catch {
+            // Asynchronicznie: `rename`/`copyFile` (fallback cross-device!) do 20 GiB
+            // nie mogą blokować pętli zdarzeń main.
+            void (async () => {
               try {
-                fs.copyFileSync(partPath, opts.destPath);
-                fs.unlinkSync(partPath);
-              } catch (copyErr) {
-                // Pobieranie jest kompletne i poprawne; nie udało się tylko
-                // przeniesienie na miejsce. Usunięcie .part wyrzuciłoby cały plik,
-                // więc jest zachowywany — ale tylko jeśli wygląda jak prawdziwe
-                // pobranie, bo zapełniony dysk pozostawiłby w przeciwnym razie obcięty
-                // plik zajmujący resztę wolnego miejsca.
-                const size = fs.statSync(partPath, { throwIfNoEntry: false })?.size ?? 0;
-                if (size > 0) {
-                  logger.warn(
-                    'download',
-                    `downloaded file could not be moved to ${opts.destPath}; kept at ${partPath}`,
-                    copyErr
-                  );
-                } else {
-                  cleanup();
+                await fsRename(partPath, opts.destPath);
+              } catch {
+                try {
+                  await fsCopyFile(partPath, opts.destPath);
+                  await fsUnlink(partPath);
+                } catch (copyErr) {
+                  // Pobieranie jest kompletne i poprawne; nie udało się tylko
+                  // przeniesienie na miejsce. Usunięcie .part wyrzuciłoby cały plik,
+                  // więc jest zachowywany — ale tylko jeśli wygląda jak prawdziwe
+                  // pobranie, bo zapełniony dysk pozostawiłby w przeciwnym razie obcięty
+                  // plik zajmujący resztę wolnego miejsca.
+                  let size = 0;
+                  try {
+                    size = (await fsStat(partPath)).size;
+                  } catch {
+                    size = 0;
+                  }
+                  if (size > 0) {
+                    logger.warn(
+                      'download',
+                      `downloaded file could not be moved to ${opts.destPath}; kept at ${partPath}`,
+                      copyErr
+                    );
+                  } else {
+                    cleanup();
+                  }
+                  reject(copyErr as Error);
+                  return;
                 }
-                reject(copyErr as Error);
-                return;
               }
-            }
-            opts.onProgress?.({ received, total });
-            resolve();
+              opts.onProgress?.({ received, total });
+              resolve();
+            })();
           });
         });
         out.on('error', fail);

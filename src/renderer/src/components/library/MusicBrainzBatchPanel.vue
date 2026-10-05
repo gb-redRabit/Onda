@@ -10,7 +10,9 @@ const emit = defineEmits<{ start: []; cancel: [] }>();
 
 <template>
   <div class="border border-base-300 rounded-field p-2 space-y-2">
-    <div class="text-xs font-medium">Batch: {{ total }} utworów — {{ progress }}/{{ total }}</div>
+    <div class="text-xs font-medium">
+      {{ $t('musicbrainz.batchSummary', { total, progress }) }}
+    </div>
     <div class="w-full bg-base-300 rounded-full h-2 overflow-hidden">
       <div
         class="bg-primary h-2 transition-all"
@@ -25,7 +27,7 @@ const emit = defineEmits<{ start: []; cancel: [] }>();
               ? 'text-success'
               : r.status === 'error'
                 ? 'text-error'
-                : 'text-base-content/40'
+                : 'text-base-content/60'
           "
           >{{ r.status === 'ok' ? '✓' : r.status === 'error' ? '✗' : '…' }}</span
         >
@@ -39,14 +41,14 @@ const emit = defineEmits<{ start: []; cancel: [] }>();
         class="fx-noise flex-1 px-3 py-2 fx-depth rounded-field text-sm font-medium bg-primary text-primary-content hover:bg-primary/90 transition-colors"
         @click="emit('start')"
       >
-        Zastosuj dla wszystkich ({{ total }})
+        {{ $t('musicbrainz.applyAll', { total }) }}
       </button>
       <button
         v-else
         class="fx-noise flex-1 px-3 py-2 fx-depth rounded-field text-sm font-medium bg-error text-error-content hover:bg-error/90 transition-colors"
         @click="emit('cancel')"
       >
-        Anuluj ({{ progress }}/{{ total }})
+        {{ $t('musicbrainz.cancelProgress', { progress, total }) }}
       </button>
     </div>
   </div>

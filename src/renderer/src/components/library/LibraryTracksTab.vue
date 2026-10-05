@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { useVirtualizer } from '@tanstack/vue-virtual';
+import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { Music2, LayoutList, LayoutGrid } from '@lucide/vue';
 import type { MediaFile } from '@renderer/types/media';
 import { useVirtualGrid } from '@renderer/composables/useVirtualGrid';
 import { useLibraryStore } from '@renderer/stores/library';
+import { useLibrarySelectionStore } from '@renderer/stores/library-selection';
 import { usePlayerStore } from '@renderer/stores/player';
 import LibraryTrackRow from '@renderer/components/library/LibraryTrackRow.vue';
 import LibraryTrackCard from '@renderer/components/library/LibraryTrackCard.vue';
@@ -31,10 +32,10 @@ const emit = defineEmits<{
 
 const library = useLibraryStore();
 const player = usePlayerStore();
-const selected = ref<Set<string>>(new Set());
-const lastIndex = ref<number | null>(null);
-const selectedCount = computed(() => selected.value.size);
-const selectedTracks = computed(() => props.tracks.filter((t) => selected.value.has(t.path)));
+// Zaznaczenie w store (współdzielone z menu kontekstowym).
+const selection = useLibrarySelectionStore();
+const selectedCount = computed(() => selection.count);
+const selectedTracks = computed(() => props.tracks.filter((t) => selection.has(t.path)));
 function playSelected() {
   if (selectedTracks.value.length === 0) return;
   const t = selectedTracks.value;
@@ -54,38 +55,25 @@ function addSelectedToPlaylist(pid: string) {
 }
 
 function isSelected(path: string) {
-  return selected.value.has(path);
+  return selection.has(path);
 }
-function toggleSelect(index: number, e?: MouseEvent) {
+function toggleSelect(index: number, e?: MouseEvent | KeyboardEvent, additive = false) {
   const track = props.tracks[index];
   if (!track) return;
-  const isCtrl = e?.ctrlKey || e?.metaKey;
   const isShift = e?.shiftKey;
-  if (isShift && lastIndex.value !== null) {
-    const start = Math.min(lastIndex.value, index);
-    const end = Math.max(lastIndex.value, index);
-    const ns = new Set(selected.value);
-    for (let i = start; i <= end; i++) ns.add(props.tracks[i].path);
-    selected.value = ns;
-  } else if (isCtrl) {
-    const ns = new Set(selected.value);
-    if (ns.has(track.path)) ns.delete(track.path);
-    else ns.add(track.path);
-    selected.value = ns;
-    lastIndex.value = index;
+  if (isShift) {
+    // Shift rozszerza zakres od ostatniego punktu (wielokrotny wybór zakresu).
+    selection.selectRange(props.tracks, track.path);
   } else {
-    if (selected.value.size === 1 && selected.value.has(track.path)) {
-      selected.value = new Set();
-      lastIndex.value = null;
-      return;
-    }
-    selected.value = new Set([track.path]);
-    lastIndex.value = index;
+    // Zwykły klik (i checkbox) PRZEŁĄCZA utwór w zbiorze, więc wiele utworów
+    // zaznacza się bez Ctrl — dokładnie tak, jak oczekuje użytkownik.
+    // `additive` pozostaje w sygnaturze dla zgodności wywołań z karty/wiersza.
+    void additive;
+    selection.toggle(track.path);
   }
 }
 function clearSelection() {
-  selected.value = new Set();
-  lastIndex.value = null;
+  selection.clear();
 }
 function handleEsc(e: KeyboardEvent) {
   if (e.key === 'Escape' && selectedCount.value > 0) {
@@ -93,15 +81,15 @@ function handleEsc(e: KeyboardEvent) {
     clearSelection();
   }
 }
-watch(() => props.tracks.length, clearSelection);
+// Zmiana listy (filtr/skan) unieważnia zaznaczenie — nie pokazuj zaznaczonych
+// pozycji, których już nie ma na widocznej liście.
+watch(() => props.tracks, clearSelection);
 
 const trackListRef = ref<HTMLElement | null>(null);
 
-const trackVirtualizer = useVirtualizer({
-  get count() {
-    return props.tracks.length;
-  },
-  getScrollElement: () => trackListRef.value,
+const trackVirtualizer = useVirtualList({
+  count: () => props.tracks.length,
+  scrollEl: () => trackListRef.value,
   estimateSize: () => 48,
   overscan: 10
 });
@@ -109,12 +97,16 @@ const trackVirtualizer = useVirtualizer({
 const trackGridRef = ref<HTMLElement | null>(null);
 const grid = useVirtualGrid(trackGridRef, 220, 6);
 
-const trackRowVirtualizer = useVirtualizer({
-  get count() {
-    return Math.ceil(props.tracks.length / grid.cols.value);
-  },
-  getScrollElement: () => trackGridRef.value,
-  estimateSize: () => 280,
+// Wysokość wiersza MUSI być mierzona, a nie szacowana na sztywno: karta ma
+// wysokość zależną od zawartości (okładka 4:3 + tytuł/artysta), a pasek
+// zaznaczenia nad siatką zmienia offset. Stały `estimateSize` (dawniej 280 px
+// przy ~165 px karty) rozjeżdżał wiersze i po zaznaczeniu nakładał je na siebie.
+// `measureElement` mierzy realny wiersz; `estimateSize` to tylko pierwsza wartość.
+const trackRowVirtualizer = useVirtualList({
+  count: () => Math.ceil(props.tracks.length / grid.cols.value),
+  scrollEl: () => trackGridRef.value,
+  estimateSize: () => 200,
+  measureElement: (el: Element) => el.getBoundingClientRect().height,
   overscan: 3
 });
 
@@ -155,6 +147,7 @@ onUnmounted(() => {
       >
       <div class="flex items-center gap-1.5">
         <button
+          data-testid="library-view-list"
           class="p-2 rounded-full transition-colors"
           :class="
             viewMode === 'list'
@@ -162,11 +155,13 @@ onUnmounted(() => {
               : 'bg-base-100 border border-base-300 text-base-content/50 hover:text-base-content hover:border-primary/30'
           "
           :title="$t('library.viewModeList')"
+          :aria-label="$t('library.viewModeList')"
           @click="emit('update:viewMode', 'list')"
         >
           <LayoutList :size="14" />
         </button>
         <button
+          data-testid="library-view-grid"
           class="p-2 rounded-full transition-colors"
           :class="
             viewMode === 'grid'
@@ -174,6 +169,7 @@ onUnmounted(() => {
               : 'bg-base-100 border border-base-300 text-base-content/50 hover:text-base-content hover:border-primary/30'
           "
           :title="$t('library.viewModeGrid')"
+          :aria-label="$t('library.viewModeGrid')"
           @click="emit('update:viewMode', 'grid')"
         >
           <LayoutGrid :size="14" />
@@ -248,8 +244,9 @@ onUnmounted(() => {
               :show-playlist="true"
               :selected="isSelected(tracks[v.index].path)"
               :query="query"
+              @play="emit('play', $event)"
               @edit="emit('edit', $event)"
-              @select="toggleSelect(v.index, $event)"
+              @select="(e, additive) => toggleSelect(v.index, e, additive)"
             />
           </div>
         </div>
@@ -261,13 +258,17 @@ onUnmounted(() => {
         <div :style="{ height: trackRowVirtualizer.getTotalSize() + 'px', position: 'relative' }">
           <div
             v-for="row in visibleTracksGrid"
-            :key="'tgr-' + row.top"
+            :key="'tgr-' + row.index"
+            :ref="(el) => trackRowVirtualizer.measureElement(el as Element | null)"
+            :data-index="row.index"
             :style="{
               position: 'absolute',
-              top: row.top + 'px',
+              top: 0,
               left: 0,
               width: '100%',
+              transform: 'translateY(' + row.top + 'px)',
               display: 'flex',
+              alignItems: 'stretch',
               gap: '12px',
               padding: '6px'
             }"
@@ -280,7 +281,9 @@ onUnmounted(() => {
               :selected="isSelected(card.path)"
               @play="emit('play', $event)"
               @edit="emit('edit', $event)"
-              @select="toggleSelect(row.index * grid.cols.value + cIdx, $event)"
+              @select="
+                (e, additive) => toggleSelect(row.index * grid.cols.value + cIdx, e, additive)
+              "
             />
           </div>
         </div>

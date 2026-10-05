@@ -18,6 +18,14 @@ export function usePlayerCover() {
   const coverCache = shallowRef<Record<string, CoverResult>>({});
   const coverQueue: string[] = [];
   const coverSealedAt = new Map<string, number>();
+  // Kolejność ostatniego dostępu do wpisu cache — eviction usuwa NAJMNIEJ ostatnio
+  // używane, a nie najstarsze wstawione (FIFO wyrzucało często oglądane okładki,
+  // trzymając nieaktualne).
+  const coverLastUsed = new Map<string, number>();
+  let coverAccessClock = 0;
+  function touchCover(path: string): void {
+    coverLastUsed.set(path, ++coverAccessClock);
+  }
   let coverFlushScheduled = false;
   let coverProcessing = false;
   const COVER_CACHE_MAX = 500;
@@ -31,7 +39,13 @@ export function usePlayerCover() {
     try {
       while (coverQueue.length > 0) {
         const batch = coverQueue.splice(0, 5);
-        await Promise.all(batch.map((p) => doLoadCover(p).catch(() => {})));
+        await Promise.all(
+          batch.map((p) =>
+            doLoadCover(p).catch(() => {
+              /* best-effort */
+            })
+          )
+        );
         if (coverQueue.length > 0) await new Promise<void>((r) => queueMicrotask(() => r()));
       }
     } finally {
@@ -63,11 +77,15 @@ export function usePlayerCover() {
     const max = coverCacheMax();
     const keys = Object.keys(coverCache.value);
     if (keys.length <= max) return;
+    // Sortuj po czasie ostatniego użycia (starsze = do usunięcia); wpisy bez
+    // znacznika traktuj jako najstarsze.
+    const byAge = keys.sort((a, b) => (coverLastUsed.get(a) ?? 0) - (coverLastUsed.get(b) ?? 0));
     const excess = keys.length - max;
     for (let i = 0; i < excess; i++) {
-      const path = keys[i];
+      const path = byAge[i];
       delete coverCache.value[path];
       coverSealedAt.delete(path);
+      coverLastUsed.delete(path);
     }
   }
 
@@ -103,6 +121,7 @@ export function usePlayerCover() {
       delete coverCache.value[filePath];
       coverSealedAt.delete(filePath);
     }
+    touchCover(filePath);
     evictCoverCache();
     triggerRef(coverCache);
   }
@@ -110,6 +129,7 @@ export function usePlayerCover() {
   async function loadCover(filePath: string): Promise<CoverResult> {
     const cached = coverCache.value[filePath];
     if (cached) {
+      touchCover(filePath);
       const sealedAt = coverSealedAt.get(filePath) ?? 0;
       if (cached.data || Date.now() - sealedAt < NULL_COVER_TTL_MS) {
         return cached;
@@ -121,11 +141,13 @@ export function usePlayerCover() {
   }
 
   function getCover(filePath: string): CoverResult {
+    if (coverCache.value[filePath]) touchCover(filePath);
     return coverCache.value[filePath] ?? { type: null, data: null };
   }
 
   function invalidateCoverCache(filePath: string) {
     delete coverCache.value[filePath];
+    coverLastUsed.delete(filePath);
     triggerRef(coverCache);
     loadCover(filePath);
   }
@@ -177,6 +199,7 @@ export function usePlayerCover() {
     if (track.type === 'stream') {
       if (track.thumbnail && coverCache.value[track.path]?.data !== track.thumbnail) {
         coverCache.value[track.path] = { type: 'image', data: track.thumbnail };
+        touchCover(track.path);
         evictCoverCache();
         triggerRef(coverCache);
       }

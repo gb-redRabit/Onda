@@ -1,6 +1,4 @@
 import { access, lstat } from 'fs/promises';
-import { createReadStream } from 'fs';
-import { createHash } from 'crypto';
 import { join, extname, basename, dirname } from 'path';
 import { exec as execCb } from 'child_process';
 import { promisify } from 'util';
@@ -55,9 +53,13 @@ interface DriveInfo {
 }
 
 function driveItem(name: string, size: number): FileItem {
+  // Ścieżką dysku MUSI być korzeń z separatorem (`C:\`), nie samo `C:`. `C:` to
+  // ścieżka względna dysku (bieżący katalog na tym dysku), więc wejście na dysk
+  // lądowało w złym miejscu, a breadcrumb pokazywał „C:" zamiast „C:\".
+  const isWindowsLetter = /^[A-Z]:$/i.test(name);
   return {
     name,
-    path: name,
+    path: isWindowsLetter ? `${name}\\` : name,
     isDirectory: true,
     size,
     modifiedAt: Date.now(),
@@ -146,31 +148,8 @@ export function stripDuplicateSuffix(name: string): string | null {
   return null;
 }
 
-/**
- * SHA-256 pliku, strumieniowo, aby dużego wideo nie trzeba było buforować.
- *
- * `maxBytes` ogranicza odczyt: hash'owanie wielogigabajtowego pliku to minuty
- * wysycania dysku, więc wywołujący, który skanuje katalog, może ograniczyć to, na co
- * chce patrzeć. Zwraca null, gdy plik jest większy niż budżet.
- */
-export function fileHash(filePath: string, maxBytes?: number): Promise<string | null> {
-  return new Promise((resolve, reject) => {
-    const hash = createHash('sha256');
-    let seen = 0;
-    const stream = createReadStream(filePath);
-    stream.on('error', reject);
-    stream.on('data', (chunk) => {
-      seen += chunk.length;
-      if (maxBytes !== undefined && seen > maxBytes) {
-        stream.destroy();
-        resolve(null);
-      } else {
-        hash.update(chunk);
-      }
-    });
-    stream.on('end', () => resolve(hash.digest('hex')));
-  });
-}
+// Wspólna implementacja (utils/hash) — re-eksport zachowuje dotychczasowe importy.
+export { hashFile as fileHash } from '../../utils/hash';
 
 export async function uniqueDestPath(dest: string): Promise<string> {
   try {

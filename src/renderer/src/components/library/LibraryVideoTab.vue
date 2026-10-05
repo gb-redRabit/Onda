@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useVirtualizer } from '@tanstack/vue-virtual';
+import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { Film, LayoutList, LayoutGrid } from '@lucide/vue';
 import type { MediaFile } from '@renderer/types/media';
 import { useVirtualGrid } from '@renderer/composables/useVirtualGrid';
@@ -18,11 +18,9 @@ const emit = defineEmits<{
 }>();
 
 const videoListRef = ref<HTMLElement | null>(null);
-const videoListVirtualizer = useVirtualizer({
-  get count() {
-    return props.tracks.length;
-  },
-  getScrollElement: () => videoListRef.value,
+const videoListVirtualizer = useVirtualList({
+  count: () => props.tracks.length,
+  scrollEl: () => videoListRef.value,
   estimateSize: () => 48,
   overscan: 10
 });
@@ -30,11 +28,9 @@ const videoListVirtualizer = useVirtualizer({
 const videoGridRef = ref<HTMLElement | null>(null);
 const grid = useVirtualGrid(videoGridRef, 210, 6);
 
-const videoRowVirtualizer = useVirtualizer({
-  get count() {
-    return Math.ceil(props.tracks.length / grid.cols.value);
-  },
-  getScrollElement: () => videoGridRef.value,
+const videoRowVirtualizer = useVirtualList({
+  count: () => Math.ceil(props.tracks.length / grid.cols.value),
+  scrollEl: () => videoGridRef.value,
   estimateSize: () => 220,
   overscan: 3
 });

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, provide } from 'vue';
 import { RotateCcw } from '@lucide/vue';
 import { currentOf, isSettingModified, resetSetting } from '@renderer/utils/settingsDefaults';
+import { SETTINGS_ROW_LABEL } from './settingsRowLabel';
 
 const props = withDefaults(
   defineProps<{
@@ -15,6 +16,13 @@ const props = withDefaults(
     wide?: boolean;
   }>(),
   { wide: false }
+);
+
+// Udostępnij etykietę kontrolkom w slocie (np. SettingsToggle), które nie mają
+// własnej dostępnej nazwy — inaczej czytnik ogłasza sam „switch" bez kontekstu.
+provide(
+  SETTINGS_ROW_LABEL,
+  computed(() => props.label)
 );
 
 const modified = computed(() => (props.path ? isSettingModified(props.path) : false));
@@ -36,14 +44,21 @@ const valueLabel = computed(() => {
           :title="$t('settings.modified')"
         />
       </div>
-      <div v-if="description" class="mt-0.5 text-[11px] text-base-content/45">
+      <div v-if="description" class="mt-0.5 text-[11px] text-base-content/60">
         {{ description }}
       </div>
     </div>
-    <div class="shrink-0 flex items-center gap-2" :class="wide ? 'w-64' : 'w-auto'">
+    <!-- `role="group"` + nazwa z etykiety: kontrolka w slocie (np. przełącznik)
+         nie ma własnej dostępnej nazwy, więc czytnik ogłasza nazwę grupy. -->
+    <div
+      class="shrink-0 flex items-center gap-2"
+      :class="wide ? 'w-64' : 'w-auto'"
+      role="group"
+      :aria-label="label"
+    >
       <button
         v-if="modified"
-        class="p-1 rounded-field text-base-content/40 hover:text-base-content hover:bg-base-content/10 transition-colors"
+        class="p-1 rounded-field text-base-content/60 hover:text-base-content hover:bg-base-content/10 transition-colors"
         :title="$t('settings.resetSetting')"
         :aria-label="$t('settings.resetSetting')"
         @click="path && resetSetting(path)"

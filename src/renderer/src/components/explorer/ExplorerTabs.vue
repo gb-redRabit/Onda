@@ -204,6 +204,7 @@ async function onTabDrop(e: DragEvent, idx: number) {
       />
       <span class="truncate flex-1">{{ tab.label || $t('explorer.thisComputer') }}</span>
       <span
+        v-activate
         class="shrink-0 p-0.5 rounded-field cursor-pointer hover:bg-neutral/20 transition-opacity"
         :class="
           explorer.activeTabIndex === idx

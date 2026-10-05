@@ -4,6 +4,9 @@ import type { FileItem } from '@renderer/types/explorer';
 import { cachedIcon, setCachedIcon, isUsableImageDataUrl } from '@renderer/utils/thumbLoader';
 
 const ICON_CONCURRENCY = 6;
+// Górny limit „trwale nieudanych" ikon, aby zbiór nie rósł bez ograniczeń przez
+// cały czas życia widoku (po przekroczeniu najstarsze wpisy są zapominane).
+const MAX_FAILED_ICONS = 2000;
 
 export function useFileIcons() {
   const extraSmallIcons = shallowRef<Record<string, string>>({});
@@ -11,6 +14,15 @@ export function useFileIcons() {
   // Ścieżki, których ikona powłoki wróciła pusta/uszkodzona — nigdy nie pytamy o nie ponownie
   // (wywołujący renderuje zastępczą ikonę kategorii zamiast nieskończonej pętli ponowień).
   const failedIcons = new Set<string>();
+
+  function rememberFailedIcon(path: string): void {
+    if (failedIcons.size >= MAX_FAILED_ICONS) {
+      // Set iteruje w kolejności wstawiania — usuń najstarszy wpis.
+      const oldest = failedIcons.values().next().value;
+      if (oldest !== undefined) failedIcons.delete(oldest);
+    }
+    failedIcons.add(path);
+  }
   let iconActive = 0;
   let iconQueueTimer: ReturnType<typeof setTimeout> | null = null;
   let iconRenderTimer: ReturnType<typeof setTimeout> | null = null;
@@ -40,11 +52,11 @@ export function useFileIcons() {
             pendingIcons[path] = icon as string;
             scheduleIconRender();
           } else {
-            failedIcons.add(path);
+            rememberFailedIcon(path);
           }
         })
         .catch((err) => {
-          failedIcons.add(path);
+          rememberFailedIcon(path);
           logger.error('Explorer', 'getFileIcon', err);
         })
         .finally(() => {

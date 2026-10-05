@@ -184,7 +184,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
       <div class="flex items-center gap-4">
         <!-- przewiń wstecz -->
         <button
-          class="text-neutral-content/40 hover:text-neutral-content transition-colors"
+          class="text-neutral-content/60 hover:text-neutral-content transition-colors"
           :aria-label="$t('playerView.seekBackward')"
           @click="emit('skip', -10)"
         >
@@ -194,14 +194,14 @@ function onVolumeKeydown(e: KeyboardEvent) {
         <!-- czas -->
         <div class="flex items-center gap-2 text-neutral-content/50 text-xs font-mono tabular-nums">
           <span>{{ formatDuration(player.currentTime) }}</span>
-          <span class="text-neutral-content/20">/</span>
+          <span class="text-neutral-content/55">/</span>
           <span>{{ formatDuration(player.duration) }}</span>
         </div>
 
         <PlayerSpeedMenu :speed="speed" @set-speed="emit('setSpeed', $event)" />
         <!-- przewiń w przód -->
         <button
-          class="text-neutral-content/40 hover:text-neutral-content transition-colors"
+          class="text-neutral-content/60 hover:text-neutral-content transition-colors"
           :aria-label="$t('playerView.seekForward')"
           @click="emit('skip', 10)"
         >
@@ -213,7 +213,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
       <div class="flex items-center gap-2.5">
         <VideoFilterDropdown />
         <button
-          class="text-neutral-content/40 hover:text-neutral-content/80 transition-colors"
+          class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
           :class="{ 'text-primary!': player.equalizerVisible }"
           data-eq-toggle
           :aria-label="$t('common.equalizer')"
@@ -222,7 +222,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
           <SlidersHorizontal :size="16" />
         </button>
         <button
-          class="text-neutral-content/40 hover:text-neutral-content/80 transition-colors"
+          class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
           :class="{ 'text-primary!': player.queueVisible }"
           :aria-label="$t('common.queue')"
           @click="player.toggleQueue"

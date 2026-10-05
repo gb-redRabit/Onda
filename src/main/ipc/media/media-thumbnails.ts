@@ -114,7 +114,9 @@ export async function getThumbnail(filePath: string, maxSize: number): Promise<s
 
     const buf = await buildThumbnail(filePath, maxSize);
     if (!buf) return null;
-    await mkdir(cacheDir, { recursive: true }).catch(() => {});
+    await mkdir(cacheDir, { recursive: true }).catch(() => {
+      /* best-effort */
+    });
     await writeFile(cacheFile, buf);
     return `data:image/jpeg;base64,${buf.toString('base64')}`;
   } catch (e) {
@@ -129,7 +131,9 @@ export async function batchThumbnails(
 ): Promise<Record<string, string>> {
   maxSize = sanitizeThumbSize(maxSize);
   const result: Record<string, string> = {};
-  await mkdir(cacheDir, { recursive: true }).catch(() => {});
+  await mkdir(cacheDir, { recursive: true }).catch(() => {
+    /* best-effort */
+  });
   const concurrency = Math.max(1, os.cpus().length - 1);
   const batchThumbnailLocks = new Set<string>();
 

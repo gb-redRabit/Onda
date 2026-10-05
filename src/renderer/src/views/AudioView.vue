@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, defineAsyncComponent } from 'vue';
+import { ref, computed, defineAsyncComponent, watch, onUnmounted } from 'vue';
 import { Music2 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { usePluginsStore } from '@renderer/stores/plugins';
+import { audioEngine } from '@renderer/modules/audioEngine';
+import ResumePrompt from '@renderer/components/player/ResumePrompt.vue';
 import AudioCanvasElements from '@renderer/components/audio/AudioCanvasElements.vue';
 import PluginUiSlot from '@renderer/components/plugins/PluginUiSlot.vue';
 import AudioHudToolbar from '@renderer/components/audio/AudioHudToolbar.vue';
@@ -11,6 +13,7 @@ import AudioVizSettings from '@renderer/components/audio/AudioVizSettings.vue';
 import { nextVizMode } from '@renderer/utils/audioVisualizer';
 import { useAudioElementDrag } from '@renderer/composables/useAudioElementDrag';
 import { useAudioImmersive } from '@renderer/composables/useAudioImmersive';
+import { useDialogFocus } from '@renderer/composables/useDialogFocus';
 
 // Edytor układu (750+ linii) renderuje się dopiero, gdy użytkownik go otworzy — leniwie.
 const AudioLayoutEditor = defineAsyncComponent(
@@ -34,6 +37,9 @@ const pluginCommands = computed(() => pluginsStore.commandsIn('audio-view'));
 
 const showVizSettings = ref(false);
 const showLayoutEditor = ref(false);
+// Nakładka edytora układu jest modalna: pułapka focusu + powrót fokusu (WCAG 2.4.3).
+const layoutEditorRef = ref<HTMLElement | null>(null);
+useDialogFocus(layoutEditorRef);
 const { setViewEl, showUI, isFullscreen, onMouseMove, toggleFullscreen } = useAudioImmersive({
   isDragging: () => !!dragging.value,
   onDragMove: (e) => onDragMouseMove(e),
@@ -46,6 +52,48 @@ const { dragging, dragPos, onElementMouseDown, onDragMouseMove, onDragMouseUp } 
 
 const elements = computed(() => settings.appearance.audioLayout?.elements ?? []);
 const hudOpacity = computed(() => (settings.appearance.audioLayout?.hudOpacity ?? 100) / 100);
+
+let resumePromptTimer: ReturnType<typeof setTimeout> | null = null;
+
+function onResumeContinue() {
+  const prompt = player.resumePrompt;
+  if (prompt) {
+    audioEngine.seek(prompt.position);
+    player.currentTime = prompt.position;
+    audioEngine.play();
+    window.api?.setPlaybackPosition(prompt.path, prompt.position);
+  }
+  player.clearResumePrompt();
+}
+
+function onResumeStart() {
+  const prompt = player.resumePrompt;
+  if (prompt) {
+    window.api?.clearPlaybackPosition(prompt.path);
+    audioEngine.clearSavedPosition(prompt.path);
+  }
+  player.clearResumePrompt();
+}
+
+watch(
+  () => player.resumePrompt,
+  (prompt) => {
+    if (resumePromptTimer) {
+      clearTimeout(resumePromptTimer);
+      resumePromptTimer = null;
+    }
+    if (prompt) {
+      const timeout = Math.max(1, settings.playback.resumePromptTimeout || 7);
+      resumePromptTimer = setTimeout(() => {
+        player.clearResumePrompt();
+      }, timeout * 1000);
+    }
+  }
+);
+
+onUnmounted(() => {
+  if (resumePromptTimer) clearTimeout(resumePromptTimer);
+});
 
 // Kursor i HUD ukrywają się razem — opóźnienie pochodzi z ustawień Odtwarzania.
 </script>
@@ -67,14 +115,19 @@ const hudOpacity = computed(() => (settings.appearance.audioLayout?.hudOpacity ?
       <Music2 :size="48" class="text-base-content/15" />
       <div class="text-center">
         <p class="text-base-content/50 text-sm font-medium">{{ $t('audioView.noTrackTitle') }}</p>
-        <p class="text-base-content/30 text-[11px]">{{ $t('audioView.noTrackHint') }}</p>
+        <p class="text-base-content/55 text-[11px]">{{ $t('audioView.noTrackHint') }}</p>
       </div>
     </div>
 
     <!-- ─── Edytor układu (nakładka) ─── -->
     <div
       v-if="showLayoutEditor"
-      class="absolute inset-0 z-90 bg-base-100/95 backdrop-blur-sm p-6 flex flex-col"
+      ref="layoutEditorRef"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="$t('audioView.layoutEditor')"
+      tabindex="-1"
+      class="absolute inset-0 z-90 bg-base-100/95 backdrop-blur-sm p-6 flex flex-col outline-none"
     >
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-base font-bold">{{ $t('audioView.layoutEditor') }}</h2>
@@ -126,6 +179,13 @@ const hudOpacity = computed(() => (settings.appearance.audioLayout?.hudOpacity ?
         <AudioVizSettings />
       </div>
     </Teleport>
+
+    <ResumePrompt
+      v-if="player.resumePrompt"
+      :position="player.resumePrompt.position"
+      @continue="onResumeContinue"
+      @start="onResumeStart"
+    />
   </div>
 </template>
 
