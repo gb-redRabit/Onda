@@ -54,7 +54,13 @@ const POSIX_PROTECTED = [
   'usr',
   'var',
   'var/lib',
-  'var/run'
+  'var/run',
+  // macOS: `/etc` to symlink do `/private/etc`, a korzenie są kanonizowane
+  // (`fs.realpath`) ZANIM trafią tu, więc sam wpis `etc` nigdy nie pasował na
+  // macOS, przepuszczając przyznanie systemowej konfiguracji. Dodajemy tylko
+  // `/private/etc` (a nie całe `/private/var`), bo `/private/var/folders` jest
+  // katalogiem tymczasowym użytkownika, którego nie wolno blokować.
+  'private/etc'
 ];
 
 /** Niepuste segmenty ścieżki, z usuniętym wolumenem lub korzeniem. */

@@ -50,6 +50,15 @@ describe('protectedPathReason', () => {
     expect(protectedPathReason('C:\\WINDOWS', 'win32')).toBe('system');
   });
 
+  it('refuses the canonical macOS system dir but keeps the temp dir grantable', () => {
+    // macOS kanonizuje `/etc` do `/private/etc` (realpath przed sprawdzeniem),
+    // więc ochrona musi rozpoznać formę sprywatyzowaną.
+    expect(protectedPathReason('/private/etc', 'darwin')).toBe('system');
+    expect(protectedPathReason('/private/etc/ssh/sshd_config', 'darwin')).toBe('system');
+    // `/private/var/folders` to katalog tymczasowy użytkownika — nie wolno go blokować.
+    expect(protectedPathReason('/private/var/folders/tmp/x', 'darwin')).toBeNull();
+  });
+
   it('refuses a path that continues into a protected directory', () => {
     expect(protectedPathReason('C:\\Windows.old\\keep', 'win32')).toBeNull();
     expect(protectedPathReason('C:\\Windows\\System32\\drivers\\etc\\hosts', 'win32')).toBe(
