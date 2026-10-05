@@ -37,6 +37,10 @@ test.describe('image viewer', () => {
   }
 
   test('renders many thumbnails, centres the active one and supports the controls', async () => {
+    // Ciężki przebieg (55 PNG + nawigacja/zoom/slideshow); na wolnym runnerze
+    // macOS domyślne 60 s bywało przekraczane i test wpadał w „flaky". `slow()`
+    // potraja limit, nie zmieniając logiki.
+    test.slow();
     const onda = await launchOnda();
     const { page, app } = onda;
     try {
