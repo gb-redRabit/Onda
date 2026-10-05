@@ -69,7 +69,7 @@
     "electron-vite": "^5.0.0",
     "eslint": "^10.12.0",
     "eslint-plugin-vue": "^10.11.1",
-    "jsdom": "^26.1.0",
+    "jsdom": "^30.1.2",
     "prettier": "^3.7.4",
     "tailwindcss": "^4.3.2",
     "typescript": "^5.9.3",
