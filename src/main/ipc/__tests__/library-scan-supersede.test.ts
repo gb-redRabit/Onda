@@ -65,7 +65,10 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await rm(userData, { recursive: true, force: true });
+  // Przerwane skanowanie może jeszcze kończyć przejście po katalogu, gdy teardown
+  // usuwa fixture — na Windows dawało to `ENOTEMPTY: rmdir`. Retry (jak w specach
+  // E2E) ponawia usuwanie po krótkim odczekaniu.
+  await rm(userData, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 });
 
 describe('library:scan supersedes the running scan', () => {
