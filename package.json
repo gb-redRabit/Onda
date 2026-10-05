@@ -1,7 +1,7 @@
 {
   "name": "onda",
   "desktopName": "onda",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Onda — a local-first media player and library for audio, video, YouTube and SoundCloud.",
   "engines": {
     "node": ">=22.12"
