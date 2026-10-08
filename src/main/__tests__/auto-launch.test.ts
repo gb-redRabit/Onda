@@ -30,10 +30,7 @@ describe('setAutoLaunch', () => {
     expect(ok).toBe(true);
     expect(setLoginItemSettings).toHaveBeenCalledWith({
       openAtLogin: true,
-      args: ['--hidden'],
-      // macOS dostaje dodatkowo natywną flagę ukrytego startu; pozostałe systemy
-      // polegają wyłącznie na `args`.
-      ...(process.platform === 'darwin' ? { openAsHidden: true } : {})
+      args: ['--hidden']
     });
   });
 
