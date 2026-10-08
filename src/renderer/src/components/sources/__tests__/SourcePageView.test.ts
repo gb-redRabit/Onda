@@ -43,6 +43,7 @@ async function render(props: Record<string, unknown>): Promise<string> {
   });
   const app = createSSRApp({ render: () => h(SourcePageView, props as any) });
   app.use(i18n);
+  app.directive('activate', {});
   return renderToString(app);
 }
 
@@ -68,6 +69,18 @@ describe('SourcePageView', () => {
   it('renders the compact list when viewMode is compact', async () => {
     const html = await render({ item: page, rows, viewMode: 'compact' });
     expect(html).toContain('sources-compact');
+  });
+
+  it('renders gallery tiles and marks the selected ones in select mode', async () => {
+    const html = await render({
+      item: page,
+      rows,
+      viewMode: 'gallery',
+      selectable: true,
+      selectedIds: new Set(['r1'])
+    });
+    expect(html).toContain('source-gallery-tile');
+    expect(html).toContain('ring-primary');
   });
 
   it('shows the download-all-rows action only when downloadable', async () => {

@@ -63,6 +63,7 @@ const { t } = useI18n();
     </div>
     <button
       class="mt-1 w-full flex items-center gap-1.5 px-2.5 py-2 text-xs text-primary hover:bg-primary/10 transition-colors"
+      data-testid="sources-phase-add"
       @click="emit('add')"
     >
       <Plus :size="12" />

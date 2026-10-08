@@ -91,6 +91,11 @@ describe('SourcesContent', () => {
     expect(html).toContain('data-testid="sources-player"');
   });
 
+  it('renders the compact list for the compact view mode', async () => {
+    const html = await render({ viewMode: 'compact', items: [row], displayItems: [row] });
+    expect(html).toContain('data-testid="sources-compact"');
+  });
+
   it('shows the loader while loading and the empty state once settled', async () => {
     expect(await render({ loading: true })).toContain('Refresh');
     expect(await render({ loading: false })).toContain('No items');

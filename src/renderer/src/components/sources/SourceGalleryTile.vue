@@ -32,6 +32,7 @@ const typeIcon = {
   <div
     v-activate
     class="group relative rounded-box overflow-hidden bg-neutral cursor-pointer"
+    data-testid="source-gallery-tile"
     :class="selected ? 'ring-2 ring-primary' : ''"
     :title="item.title"
     @click="selectable ? emit('select', item, $event) : emit('activate', item)"

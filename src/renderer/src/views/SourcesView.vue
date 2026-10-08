@@ -197,6 +197,7 @@ void scrollRef;
             :icon="CheckSquare"
             :label="$t('sources.select')"
             class="shrink-0"
+            data-testid="sources-select-toggle"
             :pressed="selectMode"
             @click="toggleSelectMode"
           />
@@ -232,8 +233,9 @@ void scrollRef;
         <div
           v-if="selectMode"
           class="flex items-center gap-2 px-4 py-1.5 border-b border-base-300 bg-primary/10 text-xs"
+          data-testid="sources-bulk-bar"
         >
-          <span class="text-base-content/70 shrink-0">{{
+          <span class="text-base-content/70 shrink-0" data-testid="sources-selected-count">{{
             $t('sources.selectedCount', { n: selectedCount })
           }}</span>
           <span class="flex-1" />

@@ -67,6 +67,7 @@ function onKeydown(event: KeyboardEvent): void {
       role="dialog"
       aria-modal="true"
       aria-label="Gallery"
+      data-testid="source-lightbox"
       tabindex="-1"
       @keydown="onKeydown"
     >
