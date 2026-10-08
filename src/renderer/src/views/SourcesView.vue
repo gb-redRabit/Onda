@@ -314,6 +314,7 @@ void scrollRef;
             @download-all="onDownloadAll"
             @preview="onItemClick"
             @select="toggleSelect"
+            @play="onPlayNow"
             @fetch-more="sources.fetchMore()"
             @edit-source="openEdit(activeSource)"
           />

@@ -16,6 +16,8 @@ import SourcePageView from './SourcePageView.vue';
 import SourceCarousel from './SourceCarousel.vue';
 import SourcePlayerView from './SourcePlayerView.vue';
 import SourceCompact from './SourceCompact.vue';
+import SourceGalleryTile from './SourceGalleryTile.vue';
+import SourceLightbox from './SourceLightbox.vue';
 import Loader from '@renderer/components/layout/Loader.vue';
 import type { SourceItem } from '@renderer/types/sources';
 import type { SourceViewMode } from '@renderer/utils/sourcesView';
@@ -51,14 +53,26 @@ const emit = defineEmits<{
   fetchMore: [];
   editSource: [];
   select: [SourceItem, MouseEvent];
+  play: [SourceItem];
 }>();
 
 const { t } = useI18n();
+// Indeks pozycji otwartej w lightboxie galerii (-1 = zamknięty).
+const lightboxIndex = ref(-1);
+
+function openLightbox(item: SourceItem): void {
+  const i = props.displayItems.indexOf(item);
+  if (i >= 0) lightboxIndex.value = i;
+}
+
+function onSelect(item: SourceItem, event: MouseEvent): void {
+  emit('select', item, event);
+}
 const sourceGridRef = ref<HTMLElement | null>(null);
 // Galeria = większe kafelki (mniej kolumn), karty = gęsta siatka.
 const sourceGrid = useVirtualGrid(
   sourceGridRef,
-  () => (props.viewMode === 'gallery' ? 340 : 220),
+  () => (props.viewMode === 'gallery' ? 260 : 220),
   5
 );
 const sourceRows = useVirtualList({
@@ -179,7 +193,8 @@ function measureSourceRow(node: Element | ComponentPublicInstance | null): void 
             gridTemplateColumns: `repeat(${sourceGrid.cols.value}, minmax(0, 1fr))`
           }"
         >
-          <SourceCard
+          <component
+            :is="viewMode === 'gallery' ? SourceGalleryTile : SourceCard"
             v-for="(item, i) in row.items"
             :key="item.id || `${row.index}-${i}`"
             :item="item"
@@ -189,8 +204,9 @@ function measureSourceRow(node: Element | ComponentPublicInstance | null): void 
             :selectable="selectable"
             :selected="!!item.id && !!selectedIds?.has(item.id)"
             @preview="emit('preview', $event)"
+            @activate="openLightbox($event)"
             @download="emit('download', $event)"
-            @select="(it, ev) => emit('select', it, ev)"
+            @select="onSelect"
           />
         </div>
       </div>
@@ -212,4 +228,17 @@ function measureSourceRow(node: Element | ComponentPublicInstance | null): void 
       {{ t('sources.loadMore') }}
     </button>
   </div>
+
+  <SourceLightbox
+    v-if="lightboxIndex >= 0"
+    :items="displayItems"
+    :index="lightboxIndex"
+    :downloadable="downloadable"
+    :downloaded-ids="downloadedIds"
+    :downloading-item="downloadingItem"
+    @update:index="lightboxIndex = $event"
+    @close="lightboxIndex = -1"
+    @download="emit('download', $event)"
+    @play="emit('play', $event)"
+  />
 </template>

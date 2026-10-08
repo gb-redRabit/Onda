@@ -5,6 +5,7 @@ import type { SourceViewMode } from '@renderer/utils/sourcesView';
 import SourceCarousel from './SourceCarousel.vue';
 import SourcePlayerView from './SourcePlayerView.vue';
 import SourceCompact from './SourceCompact.vue';
+import SourceGalleryTile from './SourceGalleryTile.vue';
 
 defineProps<{
   item: SourceItem | null;
@@ -109,14 +110,19 @@ const emit = defineEmits<{
         @download="emit('download', $event)"
       />
       <div
-        v-else
-        class="grid gap-3"
-        :class="
-          viewMode === 'gallery'
-            ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'
-            : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
-        "
+        v-else-if="viewMode === 'gallery'"
+        class="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
       >
+        <SourceGalleryTile
+          v-for="(row, i) in rows"
+          :key="row.id || `${i}`"
+          :item="row"
+          :downloadable="downloadable"
+          @activate="emit('row-click', $event)"
+          @download="emit('download', $event)"
+        />
+      </div>
+      <div v-else class="grid gap-3 grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         <button
           v-for="(row, i) in rows"
           :key="row.id || `${i}`"
