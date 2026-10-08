@@ -25,8 +25,12 @@ export function sourceItemPlayUrl(item: SourceItem): string {
   return item.mediaUrl || '';
 }
 
+/**
+ * Czy element da się odtworzyć w playerze. Tylko audio/wideo — obrazy (`image`)
+ * i nieznane (`file`) NIE idą do playera/kolejki; obrazy ogląda się w galerii/lightboxie.
+ */
 export function isSourceItemPlayable(item: SourceItem): boolean {
-  return !!sourceItemPlayUrl(item);
+  return !!item.mediaUrl && (item.type === 'audio' || item.type === 'video');
 }
 
 function extensionOf(url: string): string {

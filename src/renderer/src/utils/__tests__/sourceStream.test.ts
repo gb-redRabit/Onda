@@ -27,6 +27,18 @@ describe('sourceStream', () => {
     expect(isSourceItemPlayable({ id: 'x', title: 'X', type: 'video' })).toBe(false);
   });
 
+  it('treats only audio/video as playable, never images or unknown files', () => {
+    expect(
+      isSourceItemPlayable({ id: 'a', title: 'A', type: 'audio', mediaUrl: 'https://c/a.mp3' })
+    ).toBe(true);
+    expect(
+      isSourceItemPlayable({ id: 'i', title: 'I', type: 'image', mediaUrl: 'https://c/i.jpg' })
+    ).toBe(false);
+    expect(
+      isSourceItemPlayable({ id: 'f', title: 'F', type: 'file', mediaUrl: 'https://c/f.bin' })
+    ).toBe(false);
+  });
+
   it('builds a stream track from the media url', () => {
     const track = buildSourceStreamTrack(source, video, 0);
     expect(track.id).toBe('src:src:v1');

@@ -3,6 +3,7 @@ import ModalShell from '@renderer/components/ui/ModalShell.vue';
 import { X, Download, ExternalLink, Check, Undo2, MonitorPlay, Play, ListPlus } from '@lucide/vue';
 import type { SourceItem } from '@renderer/types/sources';
 import { openPreviewWindow } from '@renderer/utils/previewWindow';
+import { isSourceItemPlayable } from '@renderer/utils/sourceStream';
 import EmbedWebview from './EmbedWebview.vue';
 
 const props = defineProps<{
@@ -146,7 +147,7 @@ function browserUrl(item: SourceItem): string {
 
           <div class="flex flex-col gap-2">
             <button
-              v-if="props.item.mediaUrl"
+              v-if="isSourceItemPlayable(props.item)"
               class="fx-noise px-3 py-2 fx-depth rounded-field text-xs font-medium bg-primary text-primary-content hover:bg-primary/90 transition-colors flex items-center justify-center gap-1.5"
               :title="$t('sources.playNow')"
               @click="emit('play', props.item)"
@@ -155,7 +156,7 @@ function browserUrl(item: SourceItem): string {
               {{ $t('sources.playNow') }}
             </button>
             <button
-              v-if="props.item.mediaUrl"
+              v-if="isSourceItemPlayable(props.item)"
               class="fx-noise px-3 py-2 fx-depth rounded-field text-xs text-base-content/70 hover:bg-base-content/10 transition-colors flex items-center justify-center gap-1.5"
               :title="$t('sources.addToQueue')"
               @click="emit('queue', props.item)"

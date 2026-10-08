@@ -12,6 +12,7 @@ import {
 import type { SourceItem } from '@renderer/types/sources';
 import { useDialogFocus } from '@renderer/composables/useDialogFocus';
 import { openPreviewWindow } from '@renderer/utils/previewWindow';
+import { isSourceItemPlayable } from '@renderer/utils/sourceStream';
 import EmbedWebview from './EmbedWebview.vue';
 
 // Pełnoekranowy podgląd galerii: obraz/wideo/audio/embed wybranej pozycji,
@@ -87,10 +88,10 @@ function onKeydown(event: KeyboardEvent): void {
             <MonitorPlay :size="14" />
           </button>
           <button
-            v-if="current?.mediaUrl"
+            v-if="current && isSourceItemPlayable(current)"
             class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 rounded-field hover:bg-white/10 transition-colors text-xs"
             :title="$t('sources.playNow')"
-            @click="current && emit('play', current)"
+            @click="emit('play', current)"
           >
             <Play :size="14" />
           </button>
