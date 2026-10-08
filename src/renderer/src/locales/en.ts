@@ -246,7 +246,6 @@ export default {
     addPassKey: 'Add key',
     keyString: 'text',
     keyNumber: 'number',
-    openChild: 'Opens level on click',
     openRow: 'Opens level on row click',
     tableEnable: 'Table (e.g. episodes)',
     tableSource: 'Table data source:',

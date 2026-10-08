@@ -15,7 +15,6 @@ import { buildEndpointPreview } from '@renderer/utils/endpointCard';
 import EndpointPassKeys from './EndpointPassKeys.vue';
 import EndpointTableConfig from './EndpointTableConfig.vue';
 import EndpointFieldsSection from './EndpointFieldsSection.vue';
-import FieldLabel from './FieldLabel.vue';
 import EndpointAdvancedSection from './EndpointAdvancedSection.vue';
 
 const { t } = useI18n();
@@ -138,17 +137,6 @@ function buildPreview(): string {
       :table-testing="tableTesting"
       @test-table="emit('test-table')"
     />
-
-    <div v-else>
-      <FieldLabel :text="t('sources.openChild')" />
-      <select
-        v-model="model.childId"
-        class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-      >
-        <option value="">{{ t('sources.noChild') }}</option>
-        <option v-for="o in levelOptions" :key="o.id" :value="o.id">{{ o.label }}</option>
-      </select>
-    </div>
 
     <EndpointAdvancedSection v-model="model" />
 

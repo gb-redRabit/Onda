@@ -246,7 +246,6 @@ export default {
     addPassKey: 'Dodaj klucz',
     keyString: 'tekst',
     keyNumber: 'liczba',
-    openChild: 'Po kliknięciu otwiera poziom',
     openRow: 'Po kliknięciu wiersza otwiera poziom',
     tableEnable: 'Tabela (np. odcinki)',
     tableSource: 'Źródło danych tabeli:',

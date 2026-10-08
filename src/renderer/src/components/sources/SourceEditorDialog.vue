@@ -378,7 +378,7 @@ async function onTestTable(idx: number) {
   <ModalShell
     labelled-by="source-editor-dialog-title"
     data-testid="source-editor-dialog"
-    panel-class="w-full max-w-5xl max-h-full flex flex-col overflow-hidden"
+    panel-class="w-full max-w-5xl h-[80vh] flex flex-col overflow-hidden"
     @close="onOverlayClick"
     @escape="emit('close')"
   >
