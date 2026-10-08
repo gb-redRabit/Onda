@@ -62,22 +62,6 @@ export function createSourcesDownloads(deps: SourcesDownloadsDeps) {
     }
   }
 
-  /** Czyści wszystkie oznaczenia „pobrane" dla aktywnego źródła. */
-  async function clearDownloaded(): Promise<boolean> {
-    const sourceId = activeSource.value?.id;
-    if (!sourceId) return false;
-    try {
-      const remaining = (await window.api.invoke('sources:unmarkDownloaded', sourceId, [
-        ''
-      ])) as string[];
-      downloadedIds.value = new Set(remaining ?? []);
-      return true;
-    } catch (e) {
-      logger.warn('sources', 'clearDownloaded failed', e);
-      return false;
-    }
-  }
-
   // Przeładuj, gdy zmieni się aktywne źródło (także przy pierwszym rozwiązaniu).
   watch(
     () => activeSource.value?.id ?? null,
@@ -192,7 +176,6 @@ export function createSourcesDownloads(deps: SourcesDownloadsDeps) {
     loadDownloaded,
     enqueueDownload,
     enqueueAll,
-    unmarkDownloaded,
-    clearDownloaded
+    unmarkDownloaded
   };
 }

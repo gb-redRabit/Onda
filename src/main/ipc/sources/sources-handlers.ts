@@ -216,9 +216,13 @@ export function registerSourcesHandlers(): void {
       saveSource(getSourcesFile(), raw)
   );
 
-  ipcMain.handle('sources:delete', async (_event, id: string): Promise<MediaSource[]> =>
-    deleteSource(getSourcesFile(), typeof id === 'string' ? id : '')
-  );
+  ipcMain.handle('sources:delete', async (_event, id: string): Promise<MediaSource[]> => {
+    const sourceId = typeof id === 'string' ? id : '';
+    const list = deleteSource(getSourcesFile(), sourceId);
+    // Usunięcie API usuwa też jego oznaczenia „pobrane" (nie zostawiamy sierot w store).
+    if (sourceId) await removeDownloadedItems(getDownloadedFile(), sourceId, []);
+    return list;
+  });
 
   ipcMain.handle('sources:reorder', async (_event, idsRaw: unknown): Promise<MediaSource[]> =>
     reorderSources(

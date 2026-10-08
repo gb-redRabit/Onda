@@ -302,10 +302,8 @@ export default {
     testRaw: 'Raw JSON response',
     responseHeaders: 'Response headers',
     queryBuilderParams: 'Query parameters',
-    clearDownloaded: 'Clear "downloaded" marks',
     unmarkDownloaded: 'Mark as not downloaded',
     toastUnmarked: 'Marked as not downloaded',
-    toastUnmarkedAll: 'Cleared downloaded marks',
     health: {
       checking: 'Checking…',
       ok: 'Connection OK',

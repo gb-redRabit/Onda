@@ -317,14 +317,6 @@ export function useSourcesView() {
     if (ok) previewItem.value = null;
   }
 
-  async function onClearDownloaded(): Promise<void> {
-    const ok = await sources.clearDownloaded();
-    showToast(
-      ok ? t('sources.toastUnmarkedAll') : t('sources.toastFailed', { err: 'unknown' }),
-      ok
-    );
-  }
-
   // Wejście do źródła zawsze ponownie sprawdza połączenie: przycisk na pasku zniknął,
   // a wynik steruje kropką statusu na pasku bocznym (zielona/czerwona) oraz krótkim
   // stanem "sprawdzania", gdy żądanie jest w toku.
@@ -454,7 +446,6 @@ export function useSourcesView() {
     onDownload,
     onDownloadAll,
     onUnmarkDownloaded,
-    onClearDownloaded,
     onSelectSource,
     onExport,
     onImport,

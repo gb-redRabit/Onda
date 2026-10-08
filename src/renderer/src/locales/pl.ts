@@ -302,10 +302,8 @@ export default {
     testRaw: 'Surowa odpowiedź JSON',
     responseHeaders: 'Nagłówki odpowiedzi',
     queryBuilderParams: 'Parametry zapytania',
-    clearDownloaded: 'Wyczyść oznaczenia „pobrane"',
     unmarkDownloaded: 'Oznacz jako niepobrane',
     toastUnmarked: 'Odznaczono jako niepobrane',
-    toastUnmarkedAll: 'Wyczyszczono oznaczenia pobranych',
     health: {
       checking: 'Sprawdzanie…',
       ok: 'Połączenie OK',

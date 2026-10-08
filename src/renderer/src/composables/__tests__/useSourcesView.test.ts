@@ -40,7 +40,6 @@ vi.mock('@renderer/stores/sources', async () => {
     enqueueDownload: vi.fn(async () => ({ ok: true })),
     enqueueAll: vi.fn(async () => ({ queued: 1, failed: 0 })),
     unmarkDownloaded: vi.fn(async () => true),
-    clearDownloaded: vi.fn(async () => true),
     loadSources: vi.fn(async () => {}),
     testSource: vi.fn(async () => {})
   });

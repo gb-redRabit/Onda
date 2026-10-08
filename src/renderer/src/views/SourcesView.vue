@@ -8,7 +8,6 @@ import {
   ChevronRight,
   ArrowLeft,
   Download,
-  CheckCheck,
   CheckSquare,
   ListPlus,
   Play,
@@ -87,7 +86,6 @@ const {
   onDownload,
   onDownloadAll,
   onUnmarkDownloaded,
-  onClearDownloaded,
   onSelectSource,
   onExport,
   onImport,
@@ -201,13 +199,6 @@ void scrollRef;
             class="shrink-0"
             :pressed="selectMode"
             @click="toggleSelectMode"
-          />
-          <IconButton
-            v-if="sources.downloadedIds.size"
-            :icon="CheckCheck"
-            :label="$t('sources.clearDownloaded')"
-            class="shrink-0"
-            @click="onClearDownloaded"
           />
           <IconButton
             :label="$t('sources.refresh')"
