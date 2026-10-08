@@ -12,12 +12,7 @@ import {
   CheckSquare,
   ListPlus,
   Play,
-  X,
-  LayoutGrid,
-  Images,
-  List,
-  GalleryHorizontalEnd,
-  MonitorPlay
+  X
 } from '@lucide/vue';
 import SourcesContent from '@renderer/components/sources/SourcesContent.vue';
 import SourcesFilterBar from '@renderer/components/sources/SourcesFilterBar.vue';
@@ -28,7 +23,6 @@ import EmptyState from '@renderer/components/ui/EmptyState.vue';
 import IconButton from '@renderer/components/ui/IconButton.vue';
 import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 import { useSourcesView } from '@renderer/composables/useSourcesView';
-import type { SourceViewMode } from '@renderer/utils/sourcesView';
 
 // Modale są leniwe — montowane tylko na żądanie (plan 3.5).
 const SourceGuideModal = defineAsyncComponent(
@@ -59,7 +53,6 @@ const {
   selectedIds,
   selectedCount,
   viewMode,
-  setRuntimeView,
   paramKeys,
   paramDefaults,
   builderValues,
@@ -104,15 +97,6 @@ const {
 // `scrollRef` jest wiązany w template (`ref="scrollRef"`); jawna referencja
 // zapobiega uznaniu przez vue-tsc, że jest nieużywane.
 void scrollRef;
-
-// Runtime'owy przełącznik widoku — nadpisuje konfigurację poziomu na czas sesji.
-const runtimeViews: Array<{ id: SourceViewMode; icon: typeof LayoutGrid; labelKey: string }> = [
-  { id: 'cards', icon: LayoutGrid, labelKey: 'sources.viewCards' },
-  { id: 'gallery', icon: Images, labelKey: 'sources.viewGallery' },
-  { id: 'compact', icon: List, labelKey: 'sources.viewCompact' },
-  { id: 'carousel', icon: GalleryHorizontalEnd, labelKey: 'sources.viewCarousel' },
-  { id: 'player', icon: MonitorPlay, labelKey: 'sources.viewPlayer' }
-];
 </script>
 
 <template>
@@ -199,29 +183,6 @@ const runtimeViews: Array<{ id: SourceViewMode; icon: typeof LayoutGrid; labelKe
               :disabled="sources.loading || !sources.hasMore"
               @click="pageNext"
             />
-          </div>
-          <div
-            v-if="sources.items.length"
-            class="shrink-0 flex rounded-field overflow-hidden border border-base-300 bg-base-100"
-            role="group"
-            :aria-label="$t('sources.viewLabel')"
-          >
-            <button
-              v-for="v in runtimeViews"
-              :key="v.id"
-              class="fx-noise flex items-center px-1.5 py-1 transition-colors"
-              :class="
-                viewMode === v.id
-                  ? 'bg-primary text-primary-content'
-                  : 'text-base-content/70 hover:bg-base-content/10'
-              "
-              :title="$t(v.labelKey)"
-              :aria-label="$t(v.labelKey)"
-              :aria-pressed="viewMode === v.id"
-              @click="setRuntimeView(v.id)"
-            >
-              <component :is="v.icon" :size="13" />
-            </button>
           </div>
           <IconButton
             v-if="downloadable && !isPage && sources.items.length"
