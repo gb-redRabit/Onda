@@ -13,13 +13,25 @@ type BoundsWithFlag = Electron.Rectangle & { wasMaximized?: boolean };
 type WindowBackgroundMaterial = 'auto' | 'none' | 'mica' | 'acrylic' | 'tabbed';
 
 const desiredWindowMaterials = new WeakMap<BrowserWindow, WindowBackgroundMaterial>();
+/** Ostatnio zastosowany (lub wstępnie ustawiony) materiał — do pomijania zbędnych wywołań. */
+const currentWindowMaterials = new WeakMap<BrowserWindow, WindowBackgroundMaterial>();
 const materialListenersInstalled = new WeakSet<BrowserWindow>();
 const materialReapplyTimers = new WeakMap<BrowserWindow, ReturnType<typeof setTimeout>>();
+
+/**
+ * Zapisuje materiał, z którym okno już powstało (np. akryl z `GLASS_WINDOW_OPTS`),
+ * aby pierwsze żądanie z renderera nie wołało `setBackgroundMaterial` po raz drugi
+ * (podwójne ustawienie akrylu na Windows powoduje chwilowe zaciśnięcie).
+ */
+export function seedWindowMaterial(win: BrowserWindow, material: WindowBackgroundMaterial): void {
+  currentWindowMaterials.set(win, material);
+}
 
 function applyWindowMaterial(win: BrowserWindow, material: WindowBackgroundMaterial): boolean {
   if (process.platform !== 'win32' || win.isDestroyed()) return false;
   try {
     win.setBackgroundMaterial(material);
+    currentWindowMaterials.set(win, material);
     return true;
   } catch (e) {
     logger.warn('window', 'setBackgroundMaterial failed (non-fatal)', e);
@@ -128,6 +140,9 @@ export function registerWindowHandlers(context: {
     if (!win || win.isDestroyed()) return false;
     const mode = material as WindowBackgroundMaterial;
     rememberWindowMaterial(win, mode);
+    // Okno już ma ten materiał (np. akryl ustawiony przy tworzeniu) — drugie
+    // ustawienie jest zbędne i powoduje chwilowe zaciśnięcie kompozytora.
+    if (currentWindowMaterials.get(win) === mode) return true;
     const applied = applyWindowMaterial(win, mode);
     if (applied) logger.info('window', `background material=${mode}`);
     return applied;
