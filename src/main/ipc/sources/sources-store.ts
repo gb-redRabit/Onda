@@ -63,7 +63,10 @@ function sanitizeTable(v: unknown): SourceEndpoint['table'] {
   const mode = v.mode === 'field' ? 'field' : 'endpoint';
   const table: SourceEndpoint['table'] = {
     mode,
-    view: v.view === 'gallery' || v.view === 'carousel' || v.view === 'player' ? v.view : undefined,
+    view:
+      v.view === 'gallery' || v.view === 'carousel' || v.view === 'player' || v.view === 'compact'
+        ? v.view
+        : undefined,
     arrayField: mode === 'field' ? str(v.arrayField) : undefined,
     path: mode === 'endpoint' ? str(v.path, 1000) : undefined,
     rowKey: str(v.rowKey),
@@ -145,7 +148,10 @@ export function sanitizeEndpoint(v: unknown, index: number): SourceEndpoint | nu
     method,
     path,
     type: v.type === 'page' ? 'page' : undefined,
-    view: v.view === 'gallery' || v.view === 'carousel' || v.view === 'player' ? v.view : undefined,
+    view:
+      v.view === 'gallery' || v.view === 'carousel' || v.view === 'player' || v.view === 'compact'
+        ? v.view
+        : undefined,
     params: sanitizeParams(v.params),
     pagination: pagination && Object.values(pagination).some((x) => !!x) ? pagination : undefined,
     childId: typeof v.childId === 'string' && v.childId ? v.childId.slice(0, 100) : undefined,

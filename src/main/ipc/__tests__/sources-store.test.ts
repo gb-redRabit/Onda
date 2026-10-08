@@ -131,6 +131,7 @@ describe('sanitizeEndpoint — view', () => {
     expect(sanitizeEndpoint({ ...base, view: 'gallery' }, 0)?.view).toBe('gallery');
     expect(sanitizeEndpoint({ ...base, view: 'carousel' }, 0)?.view).toBe('carousel');
     expect(sanitizeEndpoint({ ...base, view: 'player' }, 0)?.view).toBe('player');
+    expect(sanitizeEndpoint({ ...base, view: 'compact' }, 0)?.view).toBe('compact');
   });
 
   it('omits the default and any invalid value', () => {
@@ -149,6 +150,15 @@ describe('sanitizeEndpoint — view', () => {
       0
     );
     expect(keep?.table?.view).toBe('carousel');
+    const compact = sanitizeEndpoint(
+      {
+        ...base,
+        type: 'page',
+        table: { mode: 'endpoint', rowKey: 'n', view: 'compact' }
+      },
+      0
+    );
+    expect(compact?.table?.view).toBe('compact');
     const drop = sanitizeEndpoint(
       { ...base, type: 'page', table: { mode: 'endpoint', rowKey: 'n', view: 'nope' as never } },
       0
