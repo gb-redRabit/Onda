@@ -323,6 +323,8 @@ export default {
     viewCarousel: 'Carousel',
     viewPlayer: 'Player',
     viewCompact: 'Compact',
+    phaseSource: 'Source',
+    phaseTest: 'Test',
     openInModal: 'Open in window',
     openInPreview: 'Open in preview window',
     moveUp: 'Move up',

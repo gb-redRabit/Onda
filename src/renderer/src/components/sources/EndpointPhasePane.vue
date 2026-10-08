@@ -2,10 +2,8 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
-  Trash2,
   FlaskConical,
   Loader2,
-  Layers,
   LayoutGrid,
   Images,
   GalleryHorizontalEnd,
@@ -21,11 +19,9 @@ import FieldLabel from './FieldLabel.vue';
 import EndpointAdvancedSection from './EndpointAdvancedSection.vue';
 
 const { t } = useI18n();
-
 const model = defineModel<DraftEndpoint>({ required: true });
 
 const props = defineProps<{
-  index: number;
   baseUrl: string;
   availableKeys: string[];
   /** Klucze, które ten poziom sam udostępnia (do ścieżki tabeli). */
@@ -37,15 +33,11 @@ const props = defineProps<{
   tableTesting?: boolean;
 }>();
 
-const emit = defineEmits<{
-  test: [];
-  'test-table': [];
-  remove: [];
-}>();
+const emit = defineEmits<{ test: []; 'test-table': [] }>();
 
 const isPage = computed(() => model.value.type === 'page');
 
-// Prezentacja elementów poziomu (zapisywana w źródle) — karty/galeria/karuzela/player.
+// Prezentacja elementów poziomu (zapisywana w źródle) — karty/galeria/kompakt/karuzela/player.
 const viewOptions = [
   { id: 'cards' as const, icon: LayoutGrid, labelKey: 'sources.viewCards' },
   { id: 'gallery' as const, icon: Images, labelKey: 'sources.viewGallery' },
@@ -60,24 +52,7 @@ function buildPreview(): string {
 </script>
 
 <template>
-  <div class="rounded-box border border-base-300 bg-base-200 p-3 space-y-3">
-    <div class="flex items-center gap-2">
-      <span
-        class="flex items-center gap-1.5 text-[11px] font-medium text-base-content/50 uppercase tracking-wider"
-      >
-        <Layers :size="12" />
-        {{ t('sources.level') }} {{ index + 1 }}
-      </span>
-      <div class="flex-1" />
-      <button
-        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-error transition-colors"
-        :aria-label="t('common.delete')"
-        @click="emit('remove')"
-      >
-        <Trash2 :size="14" />
-      </button>
-    </div>
-
+  <div class="space-y-3">
     <div class="flex items-center gap-2">
       <div class="flex rounded-field overflow-hidden border border-base-300 bg-base-100 text-xs">
         <button
