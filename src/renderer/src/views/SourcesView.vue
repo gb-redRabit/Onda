@@ -195,7 +195,7 @@ void scrollRef;
             <Download v-else :size="14" />
           </IconButton>
           <IconButton
-            v-if="!isPage && sources.items.length"
+            v-if="isPage ? sources.tableRows.length : sources.items.length"
             :icon="CheckSquare"
             :label="$t('sources.select')"
             class="shrink-0"

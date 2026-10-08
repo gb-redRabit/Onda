@@ -20,6 +20,8 @@ vi.mock('@renderer/stores/sources', async () => {
     activeSource: null as unknown,
     activeEndpoint: null as unknown,
     items: [] as unknown[],
+    tableRows: [] as unknown[],
+    tableLoading: false,
     checking: {} as Record<string, boolean>,
     testStatus: {} as Record<string, { success: boolean }>,
     lastError: '',
@@ -72,6 +74,7 @@ type Store = {
   activeSource: unknown;
   activeEndpoint: unknown;
   items: Array<{ id: string; title: string; subtitle?: string; type: string }>;
+  tableRows: Array<{ id: string; title: string; type: string }>;
   checking: Record<string, boolean>;
   testStatus: Record<string, { success: boolean }>;
   lastError: string;
@@ -99,6 +102,7 @@ beforeEach(() => {
   store.activeSource = null;
   store.activeEndpoint = null;
   store.items = [];
+  store.tableRows = [];
   store.checking = {};
   store.testStatus = {};
   store.lastError = '';
@@ -289,6 +293,18 @@ describe('useSourcesView — multi-select', () => {
     const api = run();
     api.toggleSelect({ title: 'no id', type: 'video' } as never);
     expect(api.selectedCount.value).toBe(0);
+  });
+
+  it('selects page table rows when the level is a page', () => {
+    store.activeEndpoint = { type: 'page' };
+    store.items = [{ id: 'page', title: 'Series', type: 'video' }];
+    store.tableRows = [
+      { id: 'r1', title: 'Odc 1', type: 'file' },
+      { id: 'r2', title: 'Odc 2', type: 'file' }
+    ];
+    const api = run();
+    api.toggleSelect(store.tableRows[0] as never);
+    expect(api.selectedItems.value.map((i: { id: string }) => i.id)).toEqual(['r1']);
   });
 });
 

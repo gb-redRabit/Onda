@@ -44,4 +44,9 @@ describe('SourceCompact', () => {
     expect(await render({ items: withUrl, downloadable: false })).not.toContain('Download');
     expect(await render({ items: withUrl, downloadable: true })).toContain('Download');
   });
+
+  it('reflects the selection state in select mode', async () => {
+    const html = await render({ items, selectable: true, selectedIds: new Set(['a']) });
+    expect(html).toContain('ring-primary');
+  });
 });

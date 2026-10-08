@@ -7,7 +7,7 @@ import SourcePlayerView from './SourcePlayerView.vue';
 import SourceCompact from './SourceCompact.vue';
 import SourceGalleryTile from './SourceGalleryTile.vue';
 
-defineProps<{
+const props = defineProps<{
   item: SourceItem | null;
   rows: SourceItem[];
   viewMode?: SourceViewMode;
@@ -17,13 +17,21 @@ defineProps<{
   downloadable?: boolean;
   /** Strona o tym API id została już pobrana. */
   downloaded?: boolean;
+  /** Tryb zaznaczania zbiorczego — klik wiersza zaznacza zamiast nawigować. */
+  selectable?: boolean;
+  selectedIds?: Set<string>;
 }>();
 
 const emit = defineEmits<{
   'row-click': [item: SourceItem];
   download: [item: SourceItem];
   'download-all': [rows: SourceItem[]];
+  select: [item: SourceItem, event: MouseEvent];
 }>();
+
+function isRowSelected(item: SourceItem): boolean {
+  return !!item.id && !!props.selectedIds?.has(item.id);
+}
 </script>
 
 <template>
@@ -106,8 +114,11 @@ const emit = defineEmits<{
         v-else-if="viewMode === 'compact'"
         :items="rows"
         :downloadable="downloadable"
+        :selectable="selectable"
+        :selected-ids="selectedIds"
         @activate="emit('row-click', $event)"
         @download="emit('download', $event)"
+        @select="(it, ev) => emit('select', it, ev)"
       />
       <div
         v-else-if="viewMode === 'gallery'"
@@ -118,18 +129,26 @@ const emit = defineEmits<{
           :key="row.id || `${i}`"
           :item="row"
           :downloadable="downloadable"
+          :selectable="selectable"
+          :selected="isRowSelected(row)"
           @activate="emit('row-click', $event)"
           @download="emit('download', $event)"
+          @select="(it, ev) => emit('select', it, ev)"
         />
       </div>
       <div v-else class="grid gap-3 grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         <button
           v-for="(row, i) in rows"
           :key="row.id || `${i}`"
-          class="group text-left fx-depth rounded-box fx-noise overflow-hidden bg-base-100 border border-base-300 hover:border-primary/50 transition-colors"
-          :disabled="!rowClickable"
+          class="group relative text-left fx-depth rounded-box fx-noise overflow-hidden bg-base-100 border transition-colors"
+          :class="
+            isRowSelected(row)
+              ? 'border-primary ring-2 ring-primary'
+              : 'border-base-300 hover:border-primary/50'
+          "
+          :disabled="!rowClickable && !selectable"
           :title="row.title"
-          @click="emit('row-click', row)"
+          @click="selectable ? emit('select', row, $event) : emit('row-click', row)"
         >
           <div class="relative aspect-video bg-neutral">
             <img
@@ -145,6 +164,18 @@ const emit = defineEmits<{
             >
               <ListVideo :size="24" />
             </div>
+            <span
+              v-if="selectable"
+              class="absolute top-1.5 right-1.5 w-5 h-5 rounded-field flex items-center justify-center border"
+              :class="
+                isRowSelected(row)
+                  ? 'bg-primary border-primary text-primary-content'
+                  : 'bg-neutral/60 border-neutral-content/40 text-transparent'
+              "
+              aria-hidden="true"
+            >
+              <Check :size="12" />
+            </span>
           </div>
           <div class="px-2.5 py-2">
             <p class="text-xs font-medium line-clamp-2">

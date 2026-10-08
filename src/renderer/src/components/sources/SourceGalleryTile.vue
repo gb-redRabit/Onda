@@ -9,11 +9,15 @@ defineProps<{
   downloadable?: boolean;
   downloaded?: boolean;
   downloading?: boolean;
+  /** Tryb zaznaczania zbiorczego — klik zaznacza zamiast otwierać podgląd. */
+  selectable?: boolean;
+  selected?: boolean;
 }>();
 
 const emit = defineEmits<{
   activate: [item: SourceItem];
   download: [item: SourceItem];
+  select: [item: SourceItem, event: MouseEvent];
 }>();
 
 const typeIcon = {
@@ -28,8 +32,9 @@ const typeIcon = {
   <div
     v-activate
     class="group relative rounded-box overflow-hidden bg-neutral cursor-pointer"
+    :class="selected ? 'ring-2 ring-primary' : ''"
     :title="item.title"
-    @click="emit('activate', item)"
+    @click="selectable ? emit('select', item, $event) : emit('activate', item)"
   >
     <div class="aspect-video w-full">
       <img
@@ -52,10 +57,22 @@ const typeIcon = {
       {{ item.type }}
     </span>
     <span
-      v-if="item.duration"
+      v-if="item.duration && !selectable"
       class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-field bg-black/60 text-white text-[10px] font-mono"
     >
       {{ item.duration }}
+    </span>
+    <span
+      v-if="selectable"
+      class="absolute top-1.5 right-1.5 w-5 h-5 rounded-field flex items-center justify-center border"
+      :class="
+        selected
+          ? 'bg-primary border-primary text-primary-content'
+          : 'bg-black/60 border-white/40 text-transparent'
+      "
+      aria-hidden="true"
+    >
+      <Check :size="12" />
     </span>
 
     <!-- Tytuł na gradiencie -->

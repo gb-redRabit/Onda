@@ -146,7 +146,10 @@ function measureSourceRow(node: Element | ComponentPublicInstance | null): void 
     :row-clickable="rowClickable"
     :downloadable="downloadable"
     :downloaded="!!pageItem.id && downloadedIds.has(pageItem.id)"
+    :selectable="selectable"
+    :selected-ids="selectedIds"
     @row-click="emit('rowClick', $event)"
+    @select="onSelect"
     @download="emit('download', $event)"
     @download-all="emit('downloadAll', $event)"
   />
@@ -177,8 +180,11 @@ function measureSourceRow(node: Element | ComponentPublicInstance | null): void 
       :downloadable="downloadable"
       :downloaded-ids="downloadedIds"
       :downloading-item="downloadingItem"
+      :selectable="selectable"
+      :selected-ids="selectedIds"
       @activate="emit('preview', $event)"
       @download="emit('download', $event)"
+      @select="onSelect"
     />
     <div v-else-if="displayItems.length" ref="sourceGridRef" class="p-4">
       <div class="relative" :style="{ height: sourceRows.getTotalSize() + 'px' }">

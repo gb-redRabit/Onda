@@ -9,11 +9,15 @@ defineProps<{
   downloadable?: boolean;
   downloadedIds?: Set<string>;
   downloadingItem?: SourceItem | null;
+  /** Tryb zaznaczania zbiorczego — klik zaznacza zamiast otwierać podgląd. */
+  selectable?: boolean;
+  selectedIds?: Set<string>;
 }>();
 
 const emit = defineEmits<{
   activate: [item: SourceItem];
   download: [item: SourceItem];
+  select: [item: SourceItem, event: MouseEvent];
 }>();
 
 const typeIcon = {
@@ -31,9 +35,22 @@ const typeIcon = {
       :key="item.id || `${i}`"
       v-activate
       class="group flex items-center gap-3 px-2 py-1.5 rounded-field cursor-pointer transition-colors hover:bg-base-content/5"
+      :class="selectable && item.id && selectedIds?.has(item.id) ? 'ring-1 ring-primary' : ''"
       :title="item.title"
-      @click="emit('activate', item)"
+      @click="selectable ? emit('select', item, $event) : emit('activate', item)"
     >
+      <span
+        v-if="selectable"
+        class="w-5 h-5 shrink-0 rounded-field flex items-center justify-center border"
+        :class="
+          item.id && selectedIds?.has(item.id)
+            ? 'bg-primary border-primary text-primary-content'
+            : 'border-base-content/30 text-transparent'
+        "
+        aria-hidden="true"
+      >
+        <Check :size="12" />
+      </span>
       <span class="w-12 h-8 shrink-0 rounded-field overflow-hidden bg-neutral">
         <img
           v-if="item.thumbnail"

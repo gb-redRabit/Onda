@@ -52,4 +52,9 @@ describe('SourceGalleryTile', () => {
     const html = await render({ item, downloadable: true, downloaded: true });
     expect(html).toContain('Downloaded');
   });
+
+  it('reflects the selection state in select mode', async () => {
+    const html = await render({ item, selectable: true, selected: true });
+    expect(html).toContain('ring-primary');
+  });
 });

@@ -96,9 +96,11 @@ export function useSourcesView() {
     filterAndSortSourceItems(sources.items, filterText.value, sortMode.value)
   );
 
-  const selectedItems = computed(() =>
-    displayItems.value.filter((item) => !!item.id && selectedIds.value.has(item.id))
-  );
+  const selectedItems = computed(() => {
+    // Dla listy zaznaczamy elementy, dla strony — wiersze tabeli.
+    const pool = sources.activeEndpoint?.type === 'page' ? sources.tableRows : displayItems.value;
+    return pool.filter((item) => !!item.id && selectedIds.value.has(item.id));
+  });
   const selectedCount = computed(() => selectedItems.value.length);
 
   function clearSelection(): void {
@@ -120,7 +122,7 @@ export function useSourcesView() {
     if (!item.id) return;
     const next = new Set(selectedIds.value);
     if (event?.shiftKey && lastSelectedId.value && lastSelectedId.value !== item.id) {
-      const list = displayItems.value;
+      const list = sources.activeEndpoint?.type === 'page' ? sources.tableRows : displayItems.value;
       const from = list.findIndex((i) => i.id === lastSelectedId.value);
       const to = list.findIndex((i) => i.id === item.id);
       if (from !== -1 && to !== -1) {
