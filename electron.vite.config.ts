@@ -58,7 +58,8 @@ export default defineConfig({
         input: {
           index: resolve('src/renderer/index.html'),
           pip: resolve('src/renderer/pip.html'),
-          'audio-pip': resolve('src/renderer/audio-pip.html')
+          'audio-pip': resolve('src/renderer/audio-pip.html'),
+          preview: resolve('src/renderer/preview.html')
         },
         output: {
           manualChunks: {

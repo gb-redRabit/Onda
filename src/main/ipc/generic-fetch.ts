@@ -23,6 +23,35 @@ export { dotGet, generateRangeItems, buildUrl } from './generic-fetch-mappers';
 
 const MAX_REDIRECTS = 5;
 
+// Nagłówki odpowiedzi, których wartość maskujemy przed pokazaniem w UI/logach
+// (mogą nieść sekrety: tokeny, ciasteczka, klucze API).
+const SENSITIVE_HEADERS = new Set([
+  'authorization',
+  'proxy-authorization',
+  'cookie',
+  'set-cookie',
+  'x-api-key',
+  'api-key',
+  'x-auth-token',
+  'x-access-token'
+]);
+
+/** Normalizuje nagłówki odpowiedzi do stringów, maskując wartości wrażliwe. */
+export function maskHeaders(
+  headers: Record<string, string | string[] | undefined>
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(headers)) {
+    if (value === undefined) continue;
+    out[key] = SENSITIVE_HEADERS.has(key.toLowerCase())
+      ? '***'
+      : Array.isArray(value)
+        ? value.join(', ')
+        : value;
+  }
+  return out;
+}
+
 const IMAGE_EXTS = new Set([
   '.jpg',
   '.jpeg',
@@ -221,7 +250,7 @@ export async function httpJsonFetch(
   opts: HttpJsonFetchOptions,
   redirectsLeft: number = MAX_REDIRECTS,
   trustedOrigin?: string
-): Promise<{ json: unknown; status: number }> {
+): Promise<{ json: unknown; status: number; headers: Record<string, string> }> {
   const res = await httpRequest(url, {
     method: opts.method,
     headers: opts.headers,
@@ -232,7 +261,11 @@ export async function httpJsonFetch(
     maxRedirects: redirectsLeft
   });
   try {
-    return { json: res.text ? JSON.parse(res.text) : {}, status: res.status };
+    return {
+      json: res.text ? JSON.parse(res.text) : {},
+      status: res.status,
+      headers: maskHeaders(res.headers)
+    };
   } catch {
     throw new Error('Invalid JSON response');
   }
@@ -416,13 +449,13 @@ export async function testSourceConnection(
 ): Promise<SourceTestResult> {
   try {
     const request = await buildEndpointRequest(source, endpoint, { context: opts?.context });
-    const { json, status } = await httpJsonFetch(request.url, request);
+    const { json, status, headers } = await httpJsonFetch(request.url, request);
     const items = mapResponse(json, endpoint);
     let sample = items[0];
     if (!sample && json && typeof json === 'object' && !Array.isArray(json)) {
       sample = { id: '', title: '', type: 'file', extra: json as Record<string, unknown> };
     }
-    return { success: true, status, sample };
+    return { success: true, status, sample, raw: json, headers };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return { success: false, error: msg };

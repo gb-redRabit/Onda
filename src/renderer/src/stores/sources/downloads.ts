@@ -46,6 +46,38 @@ export function createSourcesDownloads(deps: SourcesDownloadsDeps) {
     downloadedIds.value = new Set(downloadedIds.value).add(itemId);
   }
 
+  /** Odznacza jeden element jako niepobrany (trwale, w main). */
+  async function unmarkDownloaded(itemId: string): Promise<boolean> {
+    const sourceId = activeSource.value?.id;
+    if (!sourceId || !itemId) return false;
+    try {
+      const remaining = (await window.api.invoke('sources:unmarkDownloaded', sourceId, [
+        itemId
+      ])) as string[];
+      downloadedIds.value = new Set(remaining ?? []);
+      return true;
+    } catch (e) {
+      logger.warn('sources', 'unmarkDownloaded failed', e);
+      return false;
+    }
+  }
+
+  /** Czyści wszystkie oznaczenia „pobrane" dla aktywnego źródła. */
+  async function clearDownloaded(): Promise<boolean> {
+    const sourceId = activeSource.value?.id;
+    if (!sourceId) return false;
+    try {
+      const remaining = (await window.api.invoke('sources:unmarkDownloaded', sourceId, [
+        ''
+      ])) as string[];
+      downloadedIds.value = new Set(remaining ?? []);
+      return true;
+    } catch (e) {
+      logger.warn('sources', 'clearDownloaded failed', e);
+      return false;
+    }
+  }
+
   // Przeładuj, gdy zmieni się aktywne źródło (także przy pierwszym rozwiązaniu).
   watch(
     () => activeSource.value?.id ?? null,
@@ -159,6 +191,8 @@ export function createSourcesDownloads(deps: SourcesDownloadsDeps) {
     downloadedIds,
     loadDownloaded,
     enqueueDownload,
-    enqueueAll
+    enqueueAll,
+    unmarkDownloaded,
+    clearDownloaded
   };
 }

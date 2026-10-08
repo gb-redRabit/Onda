@@ -5,6 +5,7 @@ import {
   loadSources,
   saveSource,
   deleteSource,
+  reorderSources,
   saveAllSources,
   sanitizeImportedSource,
   sanitizeSource,
@@ -21,7 +22,11 @@ import {
 import { scrapePlayerUrl } from '../player-scraper';
 import { resolveNetworkTarget, privateNetworkAllowedForTarget } from '../network-target';
 import { addDownloadJobs, setSourceItemDownloadedHandler } from '../../downloads/download-manager';
-import { appendDownloadedItem, getDownloadedForSource } from './sources-downloaded-store';
+import {
+  appendDownloadedItem,
+  getDownloadedForSource,
+  removeDownloadedItems
+} from './sources-downloaded-store';
 import type { IpcDownloadJobInput } from '../../../shared/types/ipc';
 import type { MediaSource, SourceEndpoint, SourceItem } from '../../../shared/types/sources';
 import { logger } from '../../../shared/logger';
@@ -73,6 +78,17 @@ export function registerSourcesHandlers(): void {
 
   ipcMain.handle('sources:downloaded', async (_event, sourceId: string): Promise<string[]> =>
     getDownloadedForSource(getDownloadedFile(), typeof sourceId === 'string' ? sourceId : '')
+  );
+
+  // Odznaczanie pobranych: pusta lista `itemIds` czyści całą listę źródła.
+  ipcMain.handle(
+    'sources:unmarkDownloaded',
+    async (_event, sourceId: string, itemIds: string[]): Promise<string[]> =>
+      removeDownloadedItems(
+        getDownloadedFile(),
+        typeof sourceId === 'string' ? sourceId : '',
+        Array.isArray(itemIds) ? itemIds.filter((id): id is string => typeof id === 'string') : []
+      )
   );
 
   /** Eksport źródeł do pliku JSON (natywny dialog zapisu). */
@@ -204,13 +220,28 @@ export function registerSourcesHandlers(): void {
     deleteSource(getSourcesFile(), typeof id === 'string' ? id : '')
   );
 
-  ipcMain.handle('sources:test', async (_event, sourceRaw: unknown, endpointRaw: unknown) => {
-    const source = await resolveTrustedSource(sourceRaw);
-    const endpoint = source ? sanitizeEndpoint(endpointRaw ?? source.endpoints[0], 0) : null;
-    if (!source || !endpoint) return { success: false, error: 'Invalid source' };
-    const res = await testSourceConnection(source, endpoint);
-    return { success: res.success, error: res.error, sample: res.sample ?? null };
-  });
+  ipcMain.handle('sources:reorder', async (_event, idsRaw: unknown): Promise<MediaSource[]> =>
+    reorderSources(
+      getSourcesFile(),
+      Array.isArray(idsRaw) ? idsRaw.filter((id): id is string => typeof id === 'string') : []
+    )
+  );
+
+  ipcMain.handle(
+    'sources:test',
+    async (_event, sourceRaw: unknown, endpointRaw: unknown, contextRaw?: unknown) => {
+      const source = await resolveTrustedSource(sourceRaw);
+      const endpoint = source ? sanitizeEndpoint(endpointRaw ?? source.endpoints[0], 0) : null;
+      if (!source || !endpoint) return { success: false, error: 'Invalid source' };
+      const res = await testSourceConnection(source, endpoint, { context: contextRaw });
+      return {
+        success: res.success,
+        error: res.error,
+        sample: res.sample ?? null,
+        raw: res.raw ?? null
+      };
+    }
+  );
 
   ipcMain.handle(
     'sources:fetch',

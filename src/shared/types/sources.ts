@@ -57,6 +57,9 @@ interface SourceRange {
 /** Typ poziomu: 'list' = karty, 'page' = pojedynczy obiekt (strona) z opcjonalną tabelą. Brak = 'list'. */
 type SourceEndpointType = 'list' | 'page';
 
+/** Prezentacja elementów poziomu (lista albo wiersze strony). Domyślnie 'cards'. */
+export type SourceEndpointView = 'cards' | 'gallery' | 'carousel' | 'player' | 'compact';
+
 export interface SourcePassKey {
   /** Dot-path pola w obiekcie, np. 'slug' albo 'anime_episode_number'. */
   from: string;
@@ -69,6 +72,8 @@ export interface SourcePassKey {
 export interface SourceTable {
   /** 'field' = tablica z odpowiedzi strony; 'endpoint' = osobny fetch po table.path. */
   mode: 'field' | 'endpoint';
+  /** Prezentacja wierszy: 'table' (siatka, domyślnie) | 'gallery' | 'carousel' | 'player' | 'compact'. */
+  view?: 'table' | 'gallery' | 'carousel' | 'player' | 'compact';
   /** mode='field': dot-path do tablicy w odpowiedzi strony. */
   arrayField?: string;
   /** mode='endpoint': ścieżka z placeholderami kontekstu strony, np. '/v1/episodes/count/{slug}'. */
@@ -94,6 +99,8 @@ export interface SourceEndpoint {
   path: string;
   /** Typ poziomu: 'page' = strona (single object), brak = 'list'. */
   type?: SourceEndpointType;
+  /** Prezentacja elementów (karty/galeria/karuzela/player); brak = 'cards'. */
+  view?: SourceEndpointView;
   /** Stałe query parametry (key=value). */
   params?: Record<string, string>;
   pagination?: SourcePagination;
@@ -155,5 +162,9 @@ export interface SourceTestResult {
   success: boolean;
   status?: number;
   sample?: SourceItem;
+  /** Surowa odpowiedź JSON (tylko przy sukcesie) — podgląd w edytorze źródła. */
+  raw?: unknown;
+  /** Nagłówki odpowiedzi (wartości wrażliwe zamaskowane `***`) — podgląd w edytorze. */
+  headers?: Record<string, string>;
   error?: string;
 }

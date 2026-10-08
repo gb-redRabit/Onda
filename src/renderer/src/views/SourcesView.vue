@@ -7,14 +7,28 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowLeft,
-  Download
+  Download,
+  CheckCheck,
+  CheckSquare,
+  ListPlus,
+  Play,
+  X,
+  LayoutGrid,
+  Images,
+  List,
+  GalleryHorizontalEnd,
+  MonitorPlay
 } from '@lucide/vue';
 import SourcesContent from '@renderer/components/sources/SourcesContent.vue';
 import SourcesFilterBar from '@renderer/components/sources/SourcesFilterBar.vue';
+import SourcesQueryBuilder from '@renderer/components/sources/SourcesQueryBuilder.vue';
 import SourcesSidebar from '@renderer/components/sources/SourcesSidebar.vue';
+import SourceHealthBar from '@renderer/components/sources/SourceHealthBar.vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
+import IconButton from '@renderer/components/ui/IconButton.vue';
 import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 import { useSourcesView } from '@renderer/composables/useSourcesView';
+import type { SourceViewMode } from '@renderer/utils/sourcesView';
 
 // Modale są leniwe — montowane tylko na żądanie (plan 3.5).
 const SourceGuideModal = defineAsyncComponent(
@@ -41,6 +55,15 @@ const {
   sortMode,
   filterText,
   downloadingAll,
+  selectMode,
+  selectedIds,
+  selectedCount,
+  viewMode,
+  setRuntimeView,
+  paramKeys,
+  paramDefaults,
+  builderValues,
+  healthState,
   displayItems,
   activeSource,
   activeEndpoint,
@@ -60,16 +83,36 @@ const {
   onEndpointChange,
   onItemClick,
   onRowClick,
+  onPlayNow,
+  onAddToQueue,
+  toggleSelectMode,
+  toggleSelect,
+  clearSelection,
+  onBulkDownload,
+  onBulkQueue,
+  onBulkPlay,
   onDownload,
   onDownloadAll,
+  onUnmarkDownloaded,
+  onClearDownloaded,
   onSelectSource,
   onExport,
   onImport,
-  onRemoveSource
+  onRemoveSource,
+  onReorderSources
 } = useSourcesView();
 // `scrollRef` jest wiązany w template (`ref="scrollRef"`); jawna referencja
 // zapobiega uznaniu przez vue-tsc, że jest nieużywane.
 void scrollRef;
+
+// Runtime'owy przełącznik widoku — nadpisuje konfigurację poziomu na czas sesji.
+const runtimeViews: Array<{ id: SourceViewMode; icon: typeof LayoutGrid; labelKey: string }> = [
+  { id: 'cards', icon: LayoutGrid, labelKey: 'sources.viewCards' },
+  { id: 'gallery', icon: Images, labelKey: 'sources.viewGallery' },
+  { id: 'compact', icon: List, labelKey: 'sources.viewCompact' },
+  { id: 'carousel', icon: GalleryHorizontalEnd, labelKey: 'sources.viewCarousel' },
+  { id: 'player', icon: MonitorPlay, labelKey: 'sources.viewPlayer' }
+];
 </script>
 
 <template>
@@ -83,6 +126,7 @@ void scrollRef;
       @add="openAdd"
       @edit="openEdit"
       @remove="onRemoveSource"
+      @reorder="onReorderSources"
       @export-all="onExport"
       @import-all="onImport"
       @guide="showGuide = true"
@@ -91,18 +135,16 @@ void scrollRef;
     <div class="flex-1 min-w-0 h-full flex flex-col">
       <div v-if="activeSource" data-testid="sources-detail" class="flex flex-col h-full">
         <div
-          class="ui-page-toolbar flex items-center gap-2 px-4 py-2 border-b border-base-300 overflow-x-auto"
+          class="ui-page-toolbar flex items-center gap-2 px-4 py-2 border-b border-base-300 bg-base-100/(--glass-alpha) backdrop-blur overflow-x-auto"
         >
-          <button
+          <IconButton
             v-if="sources.navStack.length"
-            class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors"
-            :title="$t('sources.back')"
-            :aria-label="$t('sources.back')"
+            :icon="ArrowLeft"
+            :label="$t('sources.back')"
+            class="shrink-0"
             :disabled="sources.loading"
             @click="sources.goBack().then(scrollToTop)"
-          >
-            <ArrowLeft :size="14" />
-          </button>
+          />
           <select
             v-if="!sources.navStack.length"
             :value="sources.activeEndpointId"
@@ -137,15 +179,12 @@ void scrollRef;
             class="flex-1 min-w-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
           />
           <div v-if="sources.paginationMode === 'page'" class="flex items-center gap-1 shrink-0">
-            <button
-              class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-40"
+            <IconButton
+              :icon="ChevronLeft"
+              :label="$t('sources.prevPage')"
               :disabled="sources.currentPage <= sources.startPage"
-              :title="$t('sources.prevPage')"
-              :aria-label="$t('sources.prevPage')"
               @click="pagePrev"
-            >
-              <ChevronLeft :size="14" />
-            </button>
+            />
             <input
               v-model.number="pageInput"
               type="number"
@@ -154,51 +193,132 @@ void scrollRef;
               :title="$t('sources.currentPage')"
               @change="goToPage"
             />
-            <button
-              class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-40"
+            <IconButton
+              :icon="ChevronRight"
+              :label="$t('sources.nextPage')"
               :disabled="sources.loading || !sources.hasMore"
-              :title="$t('sources.nextPage')"
-              :aria-label="$t('sources.nextPage')"
               @click="pageNext"
+            />
+          </div>
+          <div
+            v-if="sources.items.length"
+            class="shrink-0 flex rounded-field overflow-hidden border border-base-300 bg-base-100"
+            role="group"
+            :aria-label="$t('sources.viewLabel')"
+          >
+            <button
+              v-for="v in runtimeViews"
+              :key="v.id"
+              class="fx-noise flex items-center px-1.5 py-1 transition-colors"
+              :class="
+                viewMode === v.id
+                  ? 'bg-primary text-primary-content'
+                  : 'text-base-content/70 hover:bg-base-content/10'
+              "
+              :title="$t(v.labelKey)"
+              :aria-label="$t(v.labelKey)"
+              :aria-pressed="viewMode === v.id"
+              @click="setRuntimeView(v.id)"
             >
-              <ChevronRight :size="14" />
+              <component :is="v.icon" :size="13" />
             </button>
           </div>
-          <button
+          <IconButton
             v-if="downloadable && !isPage && sources.items.length"
-            class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
-            :title="$t('sources.downloadAll')"
-            :aria-label="$t('sources.downloadAll')"
+            :label="$t('sources.downloadAll')"
+            class="shrink-0"
             :disabled="sources.loading || downloadingAll"
             @click="onDownloadAll(displayItems)"
           >
             <Loader2 v-if="downloadingAll" :size="14" class="animate-spin" />
             <Download v-else :size="14" />
-          </button>
-          <button
-            class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
-            :title="$t('sources.refresh')"
-            :aria-label="$t('sources.refresh')"
+          </IconButton>
+          <IconButton
+            v-if="!isPage && sources.items.length"
+            :icon="CheckSquare"
+            :label="$t('sources.select')"
+            class="shrink-0"
+            :pressed="selectMode"
+            @click="toggleSelectMode"
+          />
+          <IconButton
+            v-if="sources.downloadedIds.size"
+            :icon="CheckCheck"
+            :label="$t('sources.clearDownloaded')"
+            class="shrink-0"
+            @click="onClearDownloaded"
+          />
+          <IconButton
+            :label="$t('sources.refresh')"
+            class="shrink-0"
             :disabled="sources.loading"
             @click="refresh"
           >
             <Loader2 v-if="sources.loading" :size="14" class="animate-spin" />
             <RefreshCw v-else :size="14" />
-          </button>
+          </IconButton>
         </div>
-        <div
-          v-if="sources.activeSourceId && sources.checking[sources.activeSourceId]"
-          class="px-4 py-1.5 text-xs text-warning flex items-center gap-2 border-b border-base-300"
-          data-testid="sources-checking"
-        >
-          <Loader2 :size="12" class="animate-spin" />
-          {{ $t('sources.testChecking') }}
-        </div>
+        <SourceHealthBar
+          :state="healthState"
+          :error="sources.testStatus[sources.activeSourceId]?.error"
+          :at="sources.testStatus[sources.activeSourceId]?.at"
+          :ms="sources.testStatus[sources.activeSourceId]?.ms"
+          :item-count="sources.items.length"
+          :downloaded-count="sources.downloadedIds.size"
+        />
         <SourcesFilterBar
           v-if="!isPage"
           v-model:filter-text="filterText"
           v-model:sort-mode="sortMode"
         />
+        <SourcesQueryBuilder
+          v-if="!isPage"
+          v-model="builderValues"
+          :keys="paramKeys"
+          :defaults="paramDefaults"
+        />
+        <div
+          v-if="selectMode"
+          class="flex items-center gap-2 px-4 py-1.5 border-b border-base-300 bg-primary/10 text-xs"
+        >
+          <span class="text-base-content/70 shrink-0">{{
+            $t('sources.selectedCount', { n: selectedCount })
+          }}</span>
+          <span class="flex-1" />
+          <button
+            class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/80 hover:bg-base-content/10 transition-colors disabled:opacity-50"
+            :disabled="!selectedCount"
+            :title="$t('sources.downloadAll')"
+            @click="onBulkDownload"
+          >
+            <Download :size="12" />
+            {{ $t('sources.downloadAll') }}
+          </button>
+          <button
+            class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/80 hover:bg-base-content/10 transition-colors disabled:opacity-50"
+            :disabled="!selectedCount"
+            :title="$t('sources.addToQueue')"
+            @click="onBulkQueue"
+          >
+            <ListPlus :size="12" />
+            {{ $t('sources.addToQueue') }}
+          </button>
+          <button
+            class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/80 hover:bg-base-content/10 transition-colors disabled:opacity-50"
+            :disabled="!selectedCount"
+            :title="$t('sources.playNow')"
+            @click="onBulkPlay"
+          >
+            <Play :size="12" />
+            {{ $t('sources.playNow') }}
+          </button>
+          <IconButton
+            :icon="X"
+            :label="$t('sources.clearSelection')"
+            class="shrink-0"
+            @click="clearSelection"
+          />
+        </div>
         <p
           v-if="currentUrl"
           class="px-4 py-1 text-[10px] font-mono text-base-content/50 truncate border-b border-base-300"
@@ -212,6 +332,7 @@ void scrollRef;
             :error="sources.lastError"
             :is-auth-error="isAuthError"
             :is-page="isPage"
+            :view-mode="viewMode"
             :page-item="sources.items[0]"
             :rows="sources.tableRows"
             :row-loading="sources.tableLoading"
@@ -225,10 +346,13 @@ void scrollRef;
             :pagination-mode="sources.paginationMode"
             :downloading-item="downloadingItem"
             :downloaded-ids="sources.downloadedIds"
+            :selectable="selectMode"
+            :selected-ids="selectedIds"
             @row-click="onRowClick"
             @download="onDownload"
             @download-all="onDownloadAll"
             @preview="onItemClick"
+            @select="toggleSelect"
             @fetch-more="sources.fetchMore()"
             @edit-source="openEdit(activeSource)"
           />
@@ -258,6 +382,9 @@ void scrollRef;
       :downloaded="!!previewItem?.id && sources.downloadedIds.has(previewItem.id)"
       @close="previewItem = null"
       @download="onDownload"
+      @unmark="onUnmarkDownloaded"
+      @play="onPlayNow"
+      @queue="onAddToQueue"
     />
     <SourceGuideModal v-if="showGuide" @close="showGuide = false" />
 

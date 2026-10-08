@@ -78,6 +78,24 @@ export function createSourcesList() {
     }
   }
 
+  /** Ustawia kolejność źródeł (lista id). Optymistycznie lokalnie + zapis w main. */
+  async function reorderSources(ids: string[]): Promise<void> {
+    const previous = sources.value;
+    const byId = new Map(previous.map((s) => [s.id, s]));
+    const optimistic = ids
+      .map((id) => byId.get(id))
+      .filter((s): s is MediaSource => !!s)
+      .concat(previous.filter((s) => !ids.includes(s.id)));
+    sources.value = optimistic;
+    try {
+      const list = (await window.api.invoke('sources:reorder', ids)) as MediaSource[];
+      if (Array.isArray(list)) sources.value = list;
+    } catch {
+      // Fail-safe: przywróć poprzednią kolejność, jeśli zapis się nie powiódł.
+      sources.value = previous;
+    }
+  }
+
   return {
     sources,
     activeSourceId,
@@ -89,6 +107,7 @@ export function createSourcesList() {
     startPage,
     loadSources,
     saveSource,
-    deleteSource
+    deleteSource,
+    reorderSources
   };
 }

@@ -1,23 +1,22 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import { type DraftEndpoint } from './endpointDraft';
+import FieldLabel from './FieldLabel.vue';
 
 const { t } = useI18n();
 const model = defineModel<DraftEndpoint>({ required: true });
 </script>
 
 <template>
-  <details class="rounded-field border border-neutral-content/20 bg-neutral">
+  <details class="rounded-box border border-base-300 bg-base-100">
     <summary
-      class="px-2.5 py-1.5 text-[10px] text-base-content/50 uppercase tracking-wider cursor-pointer select-none"
+      class="px-2.5 py-1.5 text-[11px] text-base-content/50 uppercase tracking-wider cursor-pointer select-none"
     >
       {{ t('sources.advanced') }}
     </summary>
     <div class="p-2.5 grid grid-cols-2 gap-2">
       <div>
-        <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-0.5">{{
-          t('sources.method')
-        }}</label>
+        <FieldLabel :text="t('sources.method')" tight />
         <select
           v-model="model.method"
           class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none"
@@ -27,9 +26,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
         </select>
       </div>
       <div>
-        <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-0.5">{{
-          t('sources.params')
-        }}</label>
+        <FieldLabel :text="t('sources.params')" tight />
         <input
           v-model="model.paramsText"
           type="text"
@@ -38,9 +35,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
         />
       </div>
       <div>
-        <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-0.5">{{
-          t('sources.arrayPath')
-        }}</label>
+        <FieldLabel :text="t('sources.arrayPath')" tight />
         <input
           v-model="model.arrayPath"
           type="text"
@@ -49,9 +44,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
         />
       </div>
       <div>
-        <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-0.5">{{
-          t('sources.pageParam')
-        }}</label>
+        <FieldLabel :text="t('sources.pageParam')" tight />
         <input
           v-model="model.pageParam"
           type="text"
@@ -60,9 +53,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
         />
       </div>
       <div>
-        <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-0.5">{{
-          t('sources.startPage')
-        }}</label>
+        <FieldLabel :text="t('sources.startPage')" tight />
         <input
           v-model.number="model.pageStart"
           type="number"
@@ -72,9 +63,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
         />
       </div>
       <div>
-        <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-0.5">{{
-          t('sources.nextFromField')
-        }}</label>
+        <FieldLabel :text="t('sources.nextFromField')" tight />
         <input
           v-model="model.nextFromField"
           type="text"
@@ -83,9 +72,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
         />
       </div>
       <div>
-        <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-0.5">{{
-          t('sources.totalField')
-        }}</label>
+        <FieldLabel :text="t('sources.totalField')" tight />
         <input
           v-model="model.totalField"
           type="text"
@@ -94,9 +81,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
         />
       </div>
       <div>
-        <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-0.5">{{
-          t('sources.rangeCountField')
-        }}</label>
+        <FieldLabel :text="t('sources.rangeCountField')" tight />
         <input
           v-model="model.rangeCountField"
           type="text"
@@ -105,9 +90,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
         />
       </div>
       <div>
-        <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-0.5">{{
-          t('sources.rangeCountValue')
-        }}</label>
+        <FieldLabel :text="t('sources.rangeCountValue')" tight />
         <input
           v-model.number="model.rangeCountValue"
           type="number"
@@ -117,9 +100,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
         />
       </div>
       <div>
-        <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-0.5">{{
-          t('sources.rangeStartAt')
-        }}</label>
+        <FieldLabel :text="t('sources.rangeStartAt')" tight />
         <input
           v-model.number="model.rangeStartAt"
           type="number"
@@ -129,9 +110,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
         />
       </div>
       <div>
-        <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-0.5">{{
-          t('sources.rangeTitleTemplate')
-        }}</label>
+        <FieldLabel :text="t('sources.rangeTitleTemplate')" tight />
         <input
           v-model="model.rangeTitleTemplate"
           type="text"
@@ -140,9 +119,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
         />
       </div>
       <div>
-        <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-0.5">{{
-          t('sources.fId')
-        }}</label>
+        <FieldLabel :text="t('sources.fId')" tight />
         <input
           v-model="model.fId"
           type="text"
@@ -151,9 +128,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
         />
       </div>
       <div>
-        <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-0.5">{{
-          t('sources.fType')
-        }}</label>
+        <FieldLabel :text="t('sources.fType')" tight />
         <input
           v-model="model.fType"
           type="text"
@@ -162,9 +137,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
         />
       </div>
       <div>
-        <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-0.5">{{
-          t('sources.fDuration')
-        }}</label>
+        <FieldLabel :text="t('sources.fDuration')" tight />
         <input
           v-model="model.fDuration"
           type="text"
@@ -173,9 +146,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
         />
       </div>
       <div>
-        <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-0.5">{{
-          t('sources.fSourceUrl')
-        }}</label>
+        <FieldLabel :text="t('sources.fSourceUrl')" tight />
         <input
           v-model="model.fSourceUrl"
           type="text"

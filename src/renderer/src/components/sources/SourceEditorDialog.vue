@@ -17,8 +17,12 @@ import {
 } from './endpointDraft';
 import type { MediaSource, SourceAuthType, SourceEndpoint } from '@renderer/types/sources';
 import { buildSourceAuth, syncEndpointChain } from '@renderer/utils/sourceEditor';
+import { applyPassKeys } from '@renderer/utils/sourceUrl';
+import { tableRowPassContext } from '@renderer/utils/sourcesNav';
 import SourceIconSection from './SourceIconSection.vue';
 import SourceDownloadSection from './SourceDownloadSection.vue';
+import FieldLabel from './FieldLabel.vue';
+import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
 
 const { t } = useI18n();
 
@@ -70,6 +74,27 @@ const sampleFields = ref<Record<string, string[]>>({});
 const pageSamples = ref<Record<string, Record<string, unknown>>>({});
 const rowSamples = ref<Record<string, string[]>>({});
 const defaultDownloadDir = ref('');
+/** Surowa odpowiedź JSON z ostatniego testu (podgląd diagnostyczny). */
+const testRaw = ref<unknown>(null);
+/** Nagłówki odpowiedzi z ostatniego testu (wartości wrażliwe zamaskowane w main). */
+const testHeaders = ref<Record<string, string>>({});
+const headerRows = computed(() => Object.entries(testHeaders.value));
+
+// Szkic (nowe, niezapisane źródło) nie dostaje w `sources:test` poświadczeń ani
+// dostępu do sieci prywatnej — zaufanie jest związane z zapisanym rekordem. Gdy
+// test nie może więc zadziałać, podpowiadamy zapis zamiast pokazywać mylące FAIL.
+const saveHint = computed(
+  () => !props.source && (draft.authType !== 'none' || draft.allowPrivateNetwork)
+);
+
+const prettyRaw = computed(() => {
+  if (testRaw.value === null || testRaw.value === undefined) return '';
+  try {
+    return JSON.stringify(testRaw.value, null, 2);
+  } catch {
+    return String(testRaw.value);
+  }
+});
 
 onMounted(async () => {
   defaultDownloadDir.value = (await window.api.invoke('sources:downloadDir')) as string;
@@ -173,20 +198,77 @@ async function onSave() {
   }
 }
 
+/** Zdobywa (raz) próbkę surowego JSON poziomu `idx`, testując go z jego własnym kontekstem. */
+async function ensureLevelSample(
+  idx: number
+): Promise<{ raw: Record<string, unknown> | null; built: MediaSource | null }> {
+  const endpoint = draft.endpoints[idx];
+  let raw = pageSamples.value[endpoint.id] ?? null;
+  const built = buildSource();
+  if (!built) return { raw: null, built: null };
+  if (!raw) {
+    const res = await sources.testSource(
+      built,
+      built.endpoints[idx],
+      (await contextForLevel(idx)) ?? undefined
+    );
+    if (res.success && res.sample?.extra) {
+      raw = res.sample.extra as Record<string, unknown>;
+      pageSamples.value = { ...pageSamples.value, [endpoint.id]: raw };
+    }
+  }
+  return { raw, built };
+}
+
+/**
+ * Kontekst dla testu poziomu `idx`, taki jak przy realnej nawigacji w dół:
+ *  - dziecko wiersza tabeli strony → strona + pierwszy wiersz tabeli (passKeys strony i tabeli),
+ *  - dziecko elementu listy → element + passKeys rodzica.
+ * Gdy brakuje próbki rodzica, dociągamy ją, testując poziom wyżej.
+ */
+async function contextForLevel(idx: number): Promise<Record<string, unknown> | null> {
+  if (idx <= 0) return null;
+  const parentDraft = draft.endpoints[idx - 1];
+  const childDraft = draft.endpoints[idx];
+  const { raw, built } = await ensureLevelSample(idx - 1);
+  if (!raw || !built) return null;
+  const parentEndpoint = built.endpoints[idx - 1];
+  if (
+    parentDraft.type === 'page' &&
+    parentDraft.tableEnabled &&
+    parentDraft.tableChildId === childDraft.id &&
+    parentEndpoint.table
+  ) {
+    const rows = await sources.tableRowsTest(built, parentEndpoint, raw);
+    const row = rows[0];
+    if (!row) return null;
+    return tableRowPassContext(raw, row, parentEndpoint, parentEndpoint.table);
+  }
+  return applyPassKeys(raw, parentEndpoint.passKeys);
+}
+
 async function onTest(idx: number) {
   errorMsg.value = '';
   testMsg.value = '';
+  testRaw.value = null;
+  testHeaders.value = {};
   const built = buildSource();
   if (!built) return;
   const endpoint = built.endpoints[idx];
   if (!endpoint) return;
   testingId.value = draft.endpoints[idx].id;
   try {
-    const res = await sources.testSource(built, endpoint);
+    // Poziom zagnieżdżony potrzebuje kontekstu (placeholdery {x} w ścieżce/parametrach).
+    const context = await contextForLevel(idx);
+    const res = await sources.testSource(built, endpoint, context ?? undefined);
     testPassed.value = res.success;
     testMsg.value = res.success
       ? t('sources.testOk', { n: built.endpoints.length })
       : t('sources.testFail', { err: res.error || 'unknown' });
+    if (res.success) {
+      testRaw.value = res.raw ?? res.sample?.extra ?? null;
+      testHeaders.value = res.headers ?? {};
+    }
     if (res.success && res.sample) {
       sampleFields.value = {
         ...sampleFields.value,
@@ -273,11 +355,7 @@ async function onTestTable(idx: number) {
           />
         </div>
         <div>
-          <label
-            class="block text-[11px] font-medium text-base-content/50 uppercase tracking-wider mb-1"
-          >
-            {{ $t('sources.baseUrl') }}
-          </label>
+          <FieldLabel :text="$t('sources.baseUrl')" />
           <input
             v-model="draft.baseUrl"
             type="text"
@@ -285,10 +363,14 @@ async function onTestTable(idx: number) {
             class="w-full px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
-        <label
-          class="flex items-start gap-2.5 rounded-field border border-warning/30 bg-warning/5 p-3 cursor-pointer"
+        <div
+          class="flex items-start gap-2.5 rounded-field border border-warning/30 bg-warning/5 p-3"
         >
-          <input v-model="draft.allowPrivateNetwork" type="checkbox" class="mt-0.5" />
+          <SettingsToggle
+            v-model="draft.allowPrivateNetwork"
+            :label="$t('sources.trustPrivateNetwork')"
+            class="mt-0.5"
+          />
           <span class="min-w-0">
             <span class="block text-xs font-medium text-base-content">
               {{ $t('sources.trustPrivateNetwork') }}
@@ -297,7 +379,7 @@ async function onTestTable(idx: number) {
               {{ $t('sources.trustPrivateNetworkDescription') }}
             </span>
           </span>
-        </label>
+        </div>
       </div>
 
       <SourceIconSection v-model:icon="draft.icon" @error="errorMsg = $event" />
@@ -385,6 +467,34 @@ async function onTestTable(idx: number) {
       <p v-if="testMsg" class="text-xs" :class="testPassed ? 'text-success' : 'text-error'">
         {{ testMsg }}
       </p>
+      <p v-if="saveHint" class="text-xs text-warning">{{ $t('sources.testSaveHint') }}</p>
+      <details
+        v-if="prettyRaw"
+        class="rounded-field border border-base-300 bg-base-100/50"
+        data-testid="source-test-raw"
+      >
+        <summary class="cursor-pointer px-3 py-2 text-[11px] font-medium text-base-content/60">
+          {{ $t('sources.testRaw') }}
+        </summary>
+        <pre
+          class="max-h-64 overflow-auto px-3 pb-3 text-[10px] font-mono whitespace-pre-wrap break-all"
+          >{{ prettyRaw }}</pre>
+      </details>
+      <details
+        v-if="headerRows.length"
+        class="rounded-field border border-base-300 bg-base-100/50"
+        data-testid="source-test-headers"
+      >
+        <summary class="cursor-pointer px-3 py-2 text-[11px] font-medium text-base-content/60">
+          {{ $t('sources.responseHeaders') }}
+        </summary>
+        <dl class="px-3 pb-3 text-[10px] font-mono space-y-0.5">
+          <div v-for="[key, value] in headerRows" :key="key" class="flex gap-2">
+            <dt class="shrink-0 text-base-content/50">{{ key }}:</dt>
+            <dd class="break-all">{{ value }}</dd>
+          </div>
+        </dl>
+      </details>
       <p v-if="errorMsg" class="text-xs text-error">{{ errorMsg }}</p>
     </div>
 

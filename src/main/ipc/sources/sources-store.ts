@@ -63,6 +63,7 @@ function sanitizeTable(v: unknown): SourceEndpoint['table'] {
   const mode = v.mode === 'field' ? 'field' : 'endpoint';
   const table: SourceEndpoint['table'] = {
     mode,
+    view: v.view === 'gallery' || v.view === 'carousel' || v.view === 'player' ? v.view : undefined,
     arrayField: mode === 'field' ? str(v.arrayField) : undefined,
     path: mode === 'endpoint' ? str(v.path, 1000) : undefined,
     rowKey: str(v.rowKey),
@@ -144,6 +145,7 @@ export function sanitizeEndpoint(v: unknown, index: number): SourceEndpoint | nu
     method,
     path,
     type: v.type === 'page' ? 'page' : undefined,
+    view: v.view === 'gallery' || v.view === 'carousel' || v.view === 'player' ? v.view : undefined,
     params: sanitizeParams(v.params),
     pagination: pagination && Object.values(pagination).some((x) => !!x) ? pagination : undefined,
     childId: typeof v.childId === 'string' && v.childId ? v.childId.slice(0, 100) : undefined,
@@ -309,6 +311,24 @@ export function deleteSource(filePath: string, id: string): Promise<MediaSource[
     const list = await readList(filePath);
     const next = list.filter((s) => s.id !== id);
     if (next.length !== list.length) await writeList(filePath, next);
+    return next;
+  });
+}
+
+/**
+ * Ustawia kolejność źródeł wg podanej listy id. Id spoza listy (nieznane/pominięte)
+ * trafiają na koniec w dotychczasowej kolejności, więc żadne źródło nie znika.
+ */
+export function reorderSources(filePath: string, ids: string[]): Promise<MediaSource[]> {
+  return withWriteLock(async () => {
+    const list = await readList(filePath);
+    const order = new Map(ids.map((id, index) => [id, index]));
+    const next = [...list].sort(
+      (a, b) =>
+        (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (order.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+    );
+    await writeList(filePath, next);
+    logger.info('sources', `reordered ${next.length} sources`);
     return next;
   });
 }

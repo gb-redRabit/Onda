@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import type { DraftEndpoint } from './endpointDraft';
+import FieldLabel from './FieldLabel.vue';
 
 defineProps<{ availableKeys: string[]; fieldOptions: string[] }>();
 const model = defineModel<DraftEndpoint>({ required: true });
@@ -24,16 +25,14 @@ const { t } = useI18n();
     <datalist :id="fieldId('path')">
       <option v-for="k in availableKeys" :key="k" :value="`{${k}}`" />
     </datalist>
-    <p v-if="availableKeys.length" class="text-[10px] text-base-content/50 mt-1">
+    <p v-if="availableKeys.length" class="text-[11px] text-base-content/50 mt-1">
       {{ t('sources.availableKeys') }}:
       <code class="font-mono">{{ availableKeys.map((k) => '{' + k + '}').join(' ') }}</code>
     </p>
   </div>
 
   <div class="space-y-1.5">
-    <label class="block text-[10px] text-base-content/50 uppercase tracking-wider">{{
-      t('sources.display')
-    }}</label>
+    <FieldLabel :text="t('sources.display')" />
     <div class="grid grid-cols-3 gap-2">
       <div>
         <input
@@ -75,9 +74,7 @@ const { t } = useI18n();
   </div>
 
   <div>
-    <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-1">{{
-      t('sources.downloadField')
-    }}</label>
+    <FieldLabel :text="t('sources.downloadField')" />
     <input
       v-model="model.fMediaUrl"
       type="text"
@@ -90,9 +87,7 @@ const { t } = useI18n();
     </datalist>
   </div>
   <div>
-    <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-1">{{
-      t('sources.fPlayerUrl')
-    }}</label>
+    <FieldLabel :text="t('sources.fPlayerUrl')" />
     <input
       v-model="model.fPlayerUrl"
       type="text"

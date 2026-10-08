@@ -1,8 +1,20 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { FlaskConical, Loader2, Plus, Trash2 } from '@lucide/vue';
+import {
+  FlaskConical,
+  Loader2,
+  Plus,
+  LayoutGrid,
+  Images,
+  GalleryHorizontalEnd,
+  MonitorPlay,
+  List
+} from '@lucide/vue';
 import type { DraftEndpoint, DraftPassKey } from '@renderer/components/sources/endpointDraft';
+import FieldLabel from './FieldLabel.vue';
+import PassKeyRow from './PassKeyRow.vue';
+import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
 
 const props = defineProps<{
   fieldOptions: string[];
@@ -30,18 +42,22 @@ function removePassKey(rows: DraftPassKey[], i: number) {
 }
 
 const { t } = useI18n();
+
+// Prezentacja wierszy tabeli: siatka (Tabela) lub karuzela/galeria/player.
+const tableViews = [
+  { id: 'table' as const, icon: LayoutGrid, labelKey: 'sources.viewTable' },
+  { id: 'gallery' as const, icon: Images, labelKey: 'sources.viewGallery' },
+  { id: 'compact' as const, icon: List, labelKey: 'sources.viewCompact' },
+  { id: 'carousel' as const, icon: GalleryHorizontalEnd, labelKey: 'sources.viewCarousel' },
+  { id: 'player' as const, icon: MonitorPlay, labelKey: 'sources.viewPlayer' }
+];
 </script>
 
 <template>
-  <div
-    v-if="isPage"
-    class="rounded-field border border-neutral-content/20 bg-neutral p-2.5 space-y-2"
-  >
+  <div v-if="isPage" class="rounded-box border border-base-300 bg-base-100 p-3 space-y-2">
     <div class="flex items-center gap-2">
-      <label class="flex items-center gap-1.5 text-xs text-base-content/70 select-none">
-        <input v-model="model.tableEnabled" type="checkbox" class="accent-primary" />
-        {{ t('sources.tableEnable') }}
-      </label>
+      <SettingsToggle v-model="model.tableEnabled" :label="t('sources.tableEnable')" />
+      <span class="text-xs text-base-content/70 select-none">{{ t('sources.tableEnable') }}</span>
       <span class="flex-1" />
       <button
         class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
@@ -56,7 +72,35 @@ const { t } = useI18n();
     </div>
     <template v-if="model.tableEnabled">
       <div class="flex items-center gap-2">
-        <span class="text-[10px] text-base-content/50 uppercase tracking-wider shrink-0">{{
+        <span class="text-[11px] text-base-content/50 uppercase tracking-wider shrink-0">{{
+          t('sources.viewLabel')
+        }}</span>
+        <div
+          class="flex rounded-field overflow-hidden border border-base-300 bg-base-100 text-xs"
+          role="group"
+          :aria-label="t('sources.viewLabel')"
+        >
+          <button
+            v-for="v in tableViews"
+            :key="v.id"
+            class="fx-noise flex items-center gap-1 px-2 py-1 font-medium transition-colors"
+            :class="
+              model.tableView === v.id
+                ? 'bg-primary text-primary-content'
+                : 'text-base-content/70 hover:bg-base-content/10'
+            "
+            :title="t(v.labelKey)"
+            :aria-label="t(v.labelKey)"
+            :aria-pressed="model.tableView === v.id"
+            @click="model.tableView = v.id"
+          >
+            <component :is="v.icon" :size="12" />
+            <span class="hidden sm:inline">{{ t(v.labelKey) }}</span>
+          </button>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-[11px] text-base-content/50 uppercase tracking-wider shrink-0">{{
           t('sources.tableSource')
         }}</span>
         <select
@@ -66,14 +110,12 @@ const { t } = useI18n();
           <option value="endpoint">{{ t('sources.tableSourceEndpoint') }}</option>
           <option value="field">{{ t('sources.tableSourceField') }}</option>
         </select>
-        <span class="text-[10px] text-base-content/50">{{
+        <span class="text-[11px] text-base-content/50">{{
           t(`sources.tableModeHint.${model.tableMode}`)
         }}</span>
       </div>
       <div v-if="model.tableMode === 'endpoint'">
-        <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-0.5">{{
-          t('sources.tableEndpointPath')
-        }}</label>
+        <FieldLabel :text="t('sources.tableEndpointPath')" tight />
         <input
           v-model="model.tablePath"
           type="text"
@@ -90,9 +132,7 @@ const { t } = useI18n();
         </datalist>
       </div>
       <div v-else>
-        <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-0.5">{{
-          t('sources.tableArrayField')
-        }}</label>
+        <FieldLabel :text="t('sources.tableArrayField')" tight />
         <input
           v-model="model.tableArrayField"
           type="text"
@@ -106,9 +146,7 @@ const { t } = useI18n();
       </div>
       <div class="grid grid-cols-2 gap-2">
         <div>
-          <label class="block text-[10px] text-base-content/50 mb-0.5">{{
-            t('sources.tableRowTitle')
-          }}</label>
+          <FieldLabel :text="t('sources.tableRowTitle')" :upper="false" tight />
           <input
             v-model="model.tableTitle"
             type="text"
@@ -121,9 +159,7 @@ const { t } = useI18n();
           </datalist>
         </div>
         <div>
-          <label class="block text-[10px] text-base-content/50 mb-0.5">{{
-            t('sources.tableRowThumb')
-          }}</label>
+          <FieldLabel :text="t('sources.tableRowThumb')" :upper="false" tight />
           <input
             v-model="model.tableThumbnail"
             type="text"
@@ -136,9 +172,7 @@ const { t } = useI18n();
           </datalist>
         </div>
         <div>
-          <label class="block text-[10px] text-base-content/50 mb-0.5">{{
-            t('sources.tableRowPlayer')
-          }}</label>
+          <FieldLabel :text="t('sources.tableRowPlayer')" :upper="false" tight />
           <input
             v-model="model.tablePlayerUrl"
             type="text"
@@ -151,9 +185,7 @@ const { t } = useI18n();
           </datalist>
         </div>
         <div>
-          <label class="block text-[10px] text-base-content/50 mb-0.5">{{
-            t('sources.tableRowKey')
-          }}</label>
+          <FieldLabel :text="t('sources.tableRowKey')" :upper="false" tight />
           <input
             v-model="model.tableRowKey"
             type="text"
@@ -168,11 +200,10 @@ const { t } = useI18n();
       </div>
       <div class="space-y-1">
         <div class="flex items-center justify-between">
-          <label class="block text-[10px] text-base-content/50 uppercase tracking-wider">{{
-            t('sources.tableRowKeys')
-          }}</label>
+          <FieldLabel :text="t('sources.tableRowKeys')" tight />
           <button
-            class="fx-noise flex items-center gap-1 px-1.5 py-0.5 fx-depth rounded-field text-primary text-[10px] font-medium hover:bg-primary/10 transition-colors"
+            type="button"
+            class="fx-noise flex items-center gap-1 px-1.5 py-0.5 fx-depth rounded-field text-primary text-[11px] font-medium hover:bg-primary/10 transition-colors"
             @click="addPassKey(model.tablePassKeys)"
           >
             <Plus :size="10" />
@@ -180,45 +211,18 @@ const { t } = useI18n();
           </button>
         </div>
         <div v-if="model.tablePassKeys.length" class="space-y-1">
-          <div v-for="(pk, i) in model.tablePassKeys" :key="i" class="flex items-center gap-1.5">
-            <input
-              v-model="pk.from"
-              type="text"
-              :list="fieldId(`tpk${i}`)"
-              placeholder="anime_episode_number"
-              class="flex-1 min-w-0 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-            <datalist :id="fieldId(`tpk${i}`)">
-              <option v-for="o in rowOptions" :key="o" :value="o" />
-            </datalist>
-            <span class="text-base-content/50 text-xs">→</span>
-            <input
-              v-model="pk.as"
-              type="text"
-              placeholder="n"
-              class="w-24 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-            <select
-              v-model="pk.type"
-              class="px-1.5 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none"
-            >
-              <option value="string">{{ t('sources.keyString') }}</option>
-              <option value="number">{{ t('sources.keyNumber') }}</option>
-            </select>
-            <button
-              class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-error transition-colors"
-              :aria-label="t('common.delete')"
-              @click="removePassKey(model.tablePassKeys, i)"
-            >
-              <Trash2 :size="12" />
-            </button>
-          </div>
+          <PassKeyRow
+            v-for="(_, i) in model.tablePassKeys"
+            :key="i"
+            v-model="model.tablePassKeys[i]"
+            :options="rowOptions"
+            :id-base="fieldId(`tpk${i}`)"
+            @remove="removePassKey(model.tablePassKeys, i)"
+          />
         </div>
       </div>
       <div>
-        <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-1">{{
-          t('sources.openRow')
-        }}</label>
+        <FieldLabel :text="t('sources.openRow')" />
         <select
           v-model="model.tableChildId"
           class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none focus:ring-1 focus:ring-primary"

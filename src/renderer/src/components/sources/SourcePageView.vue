@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { Download, ListVideo, Loader2, Check } from '@lucide/vue';
 import type { SourceItem } from '@renderer/types/sources';
+import type { SourceViewMode } from '@renderer/utils/sourcesView';
+import SourceCarousel from './SourceCarousel.vue';
+import SourcePlayerView from './SourcePlayerView.vue';
+import SourceCompact from './SourceCompact.vue';
 
 defineProps<{
   item: SourceItem | null;
   rows: SourceItem[];
+  viewMode?: SourceViewMode;
   rowLoading?: boolean;
   rowClickable?: boolean;
   /** Poziom ma skonfigurowane pole pobierania — bez tego przycisk Pobierz się nie pojawia. */
@@ -22,7 +27,7 @@ const emit = defineEmits<{
 
 <template>
   <div class="h-full overflow-y-auto p-4 space-y-4">
-    <div class="flex gap-4 rounded-box border border-neutral-content/20 bg-neutral p-4">
+    <div class="flex gap-4 rounded-box border border-base-300 bg-base-100 p-4">
       <div class="w-56 shrink-0 rounded-field overflow-hidden bg-base-100">
         <img
           v-if="item?.thumbnail"
@@ -81,7 +86,37 @@ const emit = defineEmits<{
           {{ $t('sources.downloadAllRows') }}
         </button>
       </div>
-      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
+      <SourceCarousel
+        v-if="viewMode === 'carousel'"
+        :items="rows"
+        :downloadable="downloadable"
+        @activate="emit('row-click', $event)"
+        @download="emit('download', $event)"
+      />
+      <SourcePlayerView
+        v-else-if="viewMode === 'player'"
+        class="min-h-[50vh] rounded-box border border-base-300 overflow-hidden"
+        :items="rows"
+        :downloadable="downloadable"
+        @activate="emit('row-click', $event)"
+        @download="emit('download', $event)"
+      />
+      <SourceCompact
+        v-else-if="viewMode === 'compact'"
+        :items="rows"
+        :downloadable="downloadable"
+        @activate="emit('row-click', $event)"
+        @download="emit('download', $event)"
+      />
+      <div
+        v-else
+        class="grid gap-3"
+        :class="
+          viewMode === 'gallery'
+            ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'
+            : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
+        "
+      >
         <button
           v-for="(row, i) in rows"
           :key="row.id || `${i}`"
@@ -112,12 +147,16 @@ const emit = defineEmits<{
           </div>
         </button>
       </div>
-      <p v-if="!rows.length && !rowLoading" class="text-xs text-base-content/50">
+      <p v-if="!rows.length && !rowLoading" role="status" class="text-xs text-base-content/50">
         {{ $t('sources.noTableRows') }}
       </p>
     </div>
 
-    <div v-else class="flex items-center justify-center py-8 text-xs text-base-content/50">
+    <div
+      v-else
+      role="status"
+      class="flex items-center justify-center py-8 text-xs text-base-content/50"
+    >
       {{ $t('sources.noTableRows') }}
     </div>
   </div>
