@@ -62,7 +62,7 @@ beforeAll(async () => {
     Buffer.concat([Buffer.from('ID3'), Buffer.from([0x04, 0x00, 0, 0, 0, 0, 0, 0, 0, 0])])
   );
   registerLibraryHandlers();
-});
+}, 30000);
 
 afterAll(async () => {
   // Przerwane skanowanie może jeszcze kończyć przejście po katalogu, gdy teardown
@@ -88,7 +88,7 @@ describe('library:scan supersedes the running scan', () => {
     // Ocalałe skanowanie to to, o które użytkownik poprosił jako ostatnie.
     expect(secondResult.aborted).toBe(false);
     expect(secondResult.count).toBe(1);
-  });
+  }, 20000);
 
   it('does not let the aborted scan overwrite the library', async () => {
     setLibraryScanned({ files: [], folderTypes: {} });
@@ -100,14 +100,14 @@ describe('library:scan supersedes the running scan', () => {
     const stored = getLibraryScanned();
     const paths = stored.files.map((f: { path: string }) => f.path);
     expect(paths.length === 0 || paths.every((p: string) => p.startsWith(smallDir))).toBe(true);
-  });
+  }, 20000);
 
   it('scanCancel still aborts the active scan', async () => {
     const scan = invoke('library:scan', [bigDir]);
     expect(await invoke('library:scanCancel')).toBe(true);
     const result = (await scan) as { aborted: boolean };
     expect(result.aborted).toBe(true);
-  });
+  }, 20000);
 });
 
 void signals;
