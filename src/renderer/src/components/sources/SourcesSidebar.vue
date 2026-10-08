@@ -173,6 +173,7 @@ function move(index: number, dir: -1 | 1): void {
             class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content"
             :title="$t('common.edit')"
             :aria-label="$t('common.edit')"
+            data-testid="sources-edit-item"
             @click.stop="emit('edit', s)"
           >
             <Pencil :size="12" />

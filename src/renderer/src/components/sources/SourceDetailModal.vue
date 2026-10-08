@@ -39,6 +39,7 @@ function browserUrl(item: SourceItem): string {
   <ModalShell
     :visible="!!props.item"
     labelled-by="source-detail-modal-title"
+    data-testid="source-detail-modal"
     panel-class="w-full max-w-5xl max-h-full flex flex-col overflow-hidden"
     @close="emit('close')"
   >
@@ -149,6 +150,7 @@ function browserUrl(item: SourceItem): string {
             <button
               v-if="isSourceItemPlayable(props.item)"
               class="fx-noise px-3 py-2 fx-depth rounded-field text-xs font-medium bg-primary text-primary-content hover:bg-primary/90 transition-colors flex items-center justify-center gap-1.5"
+              data-testid="source-play-now"
               :title="$t('sources.playNow')"
               @click="emit('play', props.item)"
             >

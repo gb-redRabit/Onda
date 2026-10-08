@@ -99,16 +99,22 @@ function isRowSelected(item: SourceItem): boolean {
         v-if="viewMode === 'carousel'"
         :items="rows"
         :downloadable="downloadable"
+        :selectable="selectable"
+        :selected-ids="selectedIds"
         @activate="emit('row-click', $event)"
         @download="emit('download', $event)"
+        @select="(it, ev) => emit('select', it, ev)"
       />
       <SourcePlayerView
         v-else-if="viewMode === 'player'"
         class="min-h-[50vh] rounded-box border border-base-300 overflow-hidden"
         :items="rows"
         :downloadable="downloadable"
+        :selectable="selectable"
+        :selected-ids="selectedIds"
         @activate="emit('row-click', $event)"
         @download="emit('download', $event)"
+        @select="(it, ev) => emit('select', it, ev)"
       />
       <SourceCompact
         v-else-if="viewMode === 'compact'"

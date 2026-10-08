@@ -222,4 +222,55 @@ test.describe('sources view', () => {
       await onda.dispose();
     }
   });
+
+  test('multi-select works in the carousel view', async () => {
+    await openSource('carousel', {}, async (page) => {
+      await expect(page.getByText('Foto 1')).toBeVisible({ timeout: 10_000 });
+      await page.getByTestId('sources-select-toggle').click();
+      const count = page.getByTestId('sources-selected-count');
+      await page.getByText('Foto 1').click();
+      await expect(count).toContainText('1');
+      await page.getByText('Klip 3').click();
+      await expect(count).toContainText('2');
+    });
+  });
+
+  test('multi-select works in the player view', async () => {
+    await openSource('player', {}, async (page) => {
+      await expect(page.getByTestId('sources-player')).toBeVisible({ timeout: 10_000 });
+      await page.getByTestId('sources-select-toggle').click();
+      const count = page.getByTestId('sources-selected-count');
+      // Scena pokazuje pierwszą pozycję, więc klikamy inną (jednoznaczny tytuł).
+      await page.getByText('Klip 3').click();
+      await expect(count).toContainText('1');
+    });
+  });
+
+  test('editor test shows the raw response and masked headers', async () => {
+    await openSource('cards', {}, async (page) => {
+      await page.getByTestId('sources-item-e2e-view').hover();
+      await page.getByTestId('sources-edit-item').click();
+      const editor = page.getByTestId('source-editor-dialog');
+      await expect(editor).toBeVisible();
+
+      // Ostatnia faza „Test" uruchamia globalny test połączenia.
+      await editor.getByRole('tab').last().click();
+      await editor.getByTestId('sources-phase-test-run').click();
+      await expect(editor.getByTestId('source-test-raw')).toBeVisible({ timeout: 15_000 });
+      await expect(editor.getByTestId('source-test-headers')).toBeVisible();
+    });
+  });
+
+  test('play now starts a stream and shows it in the player bar', async () => {
+    await openSource('cards', {}, async (page) => {
+      await expect(page.getByText('Klip 3')).toBeVisible({ timeout: 10_000 });
+      await page.getByText('Klip 3').click();
+      const modal = page.getByTestId('source-detail-modal');
+      await expect(modal).toBeVisible();
+      await modal.getByTestId('source-play-now').click();
+      await expect(page.getByTestId('player-bar').first()).toContainText('Klip 3', {
+        timeout: 10_000
+      });
+    });
+  });
 });

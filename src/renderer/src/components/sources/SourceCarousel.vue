@@ -13,11 +13,14 @@ const props = defineProps<{
   downloadable?: boolean;
   downloadedIds?: Set<string>;
   downloadingItem?: SourceItem | null;
+  selectable?: boolean;
+  selectedIds?: Set<string>;
 }>();
 
 const emit = defineEmits<{
   activate: [item: SourceItem];
   download: [item: SourceItem];
+  select: [item: SourceItem, event: MouseEvent];
 }>();
 
 const typeIcon = {
@@ -58,9 +61,16 @@ const cells = computed(() =>
       >
         <div
           v-activate
-          class="group w-56 max-lg:w-48 cursor-pointer fx-depth rounded-box fx-noise overflow-hidden bg-base-100 border border-base-300 hover:border-primary/50 transition-colors"
+          class="group w-56 max-lg:w-48 cursor-pointer fx-depth rounded-box fx-noise overflow-hidden bg-base-100 border border-base-300 transition-colors"
+          :class="
+            props.selectable && cell.item.id && props.selectedIds?.has(cell.item.id)
+              ? 'border-primary ring-2 ring-primary'
+              : 'hover:border-primary/50'
+          "
           :title="cell.item.title"
-          @click="emit('activate', cell.item)"
+          @click="
+            props.selectable ? emit('select', cell.item, $event) : emit('activate', cell.item)
+          "
         >
           <div class="relative aspect-video bg-neutral">
             <img
@@ -97,6 +107,18 @@ const cells = computed(() =>
             >
               <Check :size="10" />
             </div>
+            <span
+              v-if="props.selectable"
+              class="absolute top-1.5 right-1.5 w-5 h-5 rounded-field flex items-center justify-center border"
+              :class="
+                cell.item.id && props.selectedIds?.has(cell.item.id)
+                  ? 'bg-primary border-primary text-primary-content'
+                  : 'bg-neutral/60 border-neutral-content/40 text-transparent'
+              "
+              aria-hidden="true"
+            >
+              <Check :size="12" />
+            </span>
           </div>
           <div class="px-2.5 py-2">
             <p class="text-xs font-medium line-clamp-2">

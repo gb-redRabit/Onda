@@ -23,11 +23,14 @@ const props = defineProps<{
   downloadable?: boolean;
   downloadedIds?: Set<string>;
   downloadingItem?: SourceItem | null;
+  selectable?: boolean;
+  selectedIds?: Set<string>;
 }>();
 
 const emit = defineEmits<{
   activate: [item: SourceItem];
   download: [item: SourceItem];
+  select: [item: SourceItem, event: MouseEvent];
 }>();
 
 const selected = ref<SourceItem | null>(null);
@@ -179,11 +182,29 @@ function browserUrl(item: SourceItem | null): string {
           :ref="measureRow"
           :data-index="cell.index"
           class="fx-noise absolute top-0 left-0 w-full flex items-center gap-2 px-2.5 py-2 text-left border-b border-base-200 transition-colors"
-          :class="cell.item === current ? 'bg-primary/15' : 'hover:bg-base-content/5'"
+          :class="
+            props.selectable && cell.item.id && props.selectedIds?.has(cell.item.id)
+              ? 'ring-1 ring-primary bg-primary/10'
+              : cell.item === current
+                ? 'bg-primary/15'
+                : 'hover:bg-base-content/5'
+          "
           :style="{ transform: `translateY(${cell.start}px)` }"
           :title="cell.item.title"
-          @click="selected = cell.item"
+          @click="props.selectable ? emit('select', cell.item, $event) : (selected = cell.item)"
         >
+          <span
+            v-if="props.selectable"
+            class="w-5 h-5 shrink-0 rounded-field flex items-center justify-center border"
+            :class="
+              cell.item.id && props.selectedIds?.has(cell.item.id)
+                ? 'bg-primary border-primary text-primary-content'
+                : 'border-base-content/30 text-transparent'
+            "
+            aria-hidden="true"
+          >
+            <Check :size="12" />
+          </span>
           <span class="w-16 h-10 shrink-0 rounded-field overflow-hidden bg-neutral">
             <img
               v-if="cell.item.thumbnail"

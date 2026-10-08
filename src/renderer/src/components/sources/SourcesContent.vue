@@ -160,8 +160,11 @@ function measureSourceRow(node: Element | ComponentPublicInstance | null): void 
       :downloadable="downloadable"
       :downloaded-ids="downloadedIds"
       :downloading-item="downloadingItem"
+      :selectable="selectable"
+      :selected-ids="selectedIds"
       @activate="emit('preview', $event)"
       @download="emit('download', $event)"
+      @select="onSelect"
     />
     <SourcePlayerView
       v-else-if="displayItems.length && viewMode === 'player'"
@@ -170,8 +173,11 @@ function measureSourceRow(node: Element | ComponentPublicInstance | null): void 
       :downloadable="downloadable"
       :downloaded-ids="downloadedIds"
       :downloading-item="downloadingItem"
+      :selectable="selectable"
+      :selected-ids="selectedIds"
       @activate="emit('preview', $event)"
       @download="emit('download', $event)"
+      @select="onSelect"
     />
     <SourceCompact
       v-else-if="displayItems.length && viewMode === 'compact'"

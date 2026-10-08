@@ -218,7 +218,13 @@ export interface OnlineChannels {
   'sources:reorder': { args: [ids: string[]]; result: MediaSource[] };
   'sources:test': {
     args: [source: unknown, endpoint?: SourceEndpoint | null, context?: unknown];
-    result: { success: boolean; error?: string; sample?: SourceItem | null; raw?: unknown };
+    result: {
+      success: boolean;
+      error?: string;
+      sample?: SourceItem | null;
+      raw?: unknown;
+      headers?: Record<string, string> | null;
+    };
   };
   'sources:fetch': {
     args: [

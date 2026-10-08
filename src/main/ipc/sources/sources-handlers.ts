@@ -242,7 +242,8 @@ export function registerSourcesHandlers(): void {
         success: res.success,
         error: res.error,
         sample: res.sample ?? null,
-        raw: res.raw ?? null
+        raw: res.raw ?? null,
+        headers: res.headers ?? null
       };
     }
   );
