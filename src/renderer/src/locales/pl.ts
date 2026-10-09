@@ -591,6 +591,7 @@ export default {
     downloading: 'Pobieranie...',
     updateReady: 'Gotowe do instalacji:',
     restartInstall: 'Uruchom ponownie i zainstaluj',
+    updateManage: 'Pokaż w ustawieniach',
     updateUpToDate: 'Aplikacja jest aktualna.',
     checking: 'Sprawdzanie',
     updateError: 'Błąd aktualizacji',

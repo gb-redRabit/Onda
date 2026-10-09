@@ -591,6 +591,7 @@ export default {
     downloading: 'Downloading...',
     updateReady: 'Ready to install:',
     restartInstall: 'Restart & install',
+    updateManage: 'Show in settings',
     updateUpToDate: 'App is up to date.',
     checking: 'Checking',
     updateError: 'Update error',

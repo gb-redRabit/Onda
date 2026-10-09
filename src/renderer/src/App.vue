@@ -23,7 +23,7 @@ import { storeToRefs } from 'pinia';
 import { usePluginsStore } from './stores/plugins';
 import { getThemeEngine } from './composables/useTheme';
 import { useNewVideoNotifications } from './composables/useNewVideoNotifications';
-import { useUpdaterNotifications } from './composables/useUpdaterNotifications';
+import { useUpdater } from './composables/useUpdater';
 import { useMediaSession } from './composables/useMediaSession';
 import { useSessionPersistence } from './composables/useSessionPersistence';
 import { audioEngine } from './modules/audioEngine';
@@ -32,6 +32,7 @@ import { guardBootStep } from './utils/bootGuard';
 import { logger } from '@shared/logger';
 import AppMenu from './components/layout/AppMenu.vue';
 import DependencyBanner from './components/layout/DependencyBanner.vue';
+import UpdateBanner from './components/layout/UpdateBanner.vue';
 import Sidebar from './components/layout/Sidebar.vue';
 import PlayerBar from './components/layout/PlayerBar.vue';
 import StatusBar from './components/layout/StatusBar.vue';
@@ -53,7 +54,7 @@ const route = useRoute();
 const router = useRouter();
 const audioPip = useAudioPiP();
 useNewVideoNotifications();
-useUpdaterNotifications();
+useUpdater();
 useMediaSession();
 const session = useSessionPersistence();
 const isWinMaximized = ref(false);
@@ -301,6 +302,7 @@ function onWindowBlur() {
     <!-- Ostrzegaj przy każdym uruchomieniu o zależnościach, bez których Onda nie działa.
          Ukryte, gdy kreator jest otwarty (oferuje te same instalacje). -->
     <DependencyBanner v-if="!isStandaloneWindow && !ui.setupWizardVisible" />
+    <UpdateBanner v-if="!isStandaloneWindow && !ui.setupWizardVisible" />
     <a
       v-if="!isStandaloneWindow"
       href="#main-content"
