@@ -4,7 +4,7 @@ import os from 'os';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { createMediaServer } from './media/media-server';
 import { registerOndaProtocolHandler } from './protocol';
-import { registerWindowHandlers } from './windows/window-ipc';
+import { registerWindowHandlers, seedWindowMaterial } from './windows/window-ipc';
 import { setAutoLaunch } from './windows/auto-launch';
 import { registerIPC } from './ipc/handlers';
 import { pipManager } from './pip/pip-manager';
@@ -40,7 +40,7 @@ import { syncSubscriptionsScheduler } from './ipc/subscriptions/subscriptions-ha
 import { shouldCloseToTray, setCloseToTray } from './windows/close-behavior';
 import { windowIcon } from './windows/window-icon';
 import { createWindow as createBrowserWindow } from './windows/window-factory';
-import { GLASS_WINDOW_OPTS } from './windows/window-presets';
+import { GLASS_WINDOW_MATERIAL, GLASS_WINDOW_OPTS } from './windows/window-presets';
 import { destroyTray, hasTray, setupTray } from './windows/tray';
 import { SplashController } from './windows/splash';
 import { registerGlobalShortcuts } from './bootstrap/global-shortcuts';
@@ -110,11 +110,17 @@ function createWindow(): BrowserWindow {
     show: false,
     ...GLASS_WINDOW_OPTS,
     icon: windowIcon(),
+    // `<webview>` dla osadzeń playerów inline (modal) — izolowana partycja
+    // podglądu, wymuszana przez globalny guard w `preview-session`.
+    webPreferences: { webviewTag: true },
     // Splash decyduje, kiedy okno główne pojawi się po raz pierwszy.
     onReadyToShow: (w) => {
       if (!splash.isActive() && !startHidden) w.show();
     }
   });
+
+  // Okno powstało już z akrylem; zapamiętaj to, by motyw nie ustawiał go ponownie.
+  if (GLASS_WINDOW_MATERIAL) seedWindowMaterial(win, GLASS_WINDOW_MATERIAL);
 
   win.on('close', (e) => {
     if (hasTray() && shouldCloseToTray()) {

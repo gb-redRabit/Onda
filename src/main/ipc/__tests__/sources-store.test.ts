@@ -123,3 +123,46 @@ describe('sanitizeEndpoint — playerUrl fields', () => {
     expect(ep?.mapping.fields.playerUrl).toBeUndefined();
   });
 });
+
+describe('sanitizeEndpoint — view', () => {
+  const base = { id: 'e1', name: 'X', method: 'GET', path: '/x', mapping: { fields: {} } };
+
+  it('keeps a valid non-default view', () => {
+    expect(sanitizeEndpoint({ ...base, view: 'gallery' }, 0)?.view).toBe('gallery');
+    expect(sanitizeEndpoint({ ...base, view: 'carousel' }, 0)?.view).toBe('carousel');
+    expect(sanitizeEndpoint({ ...base, view: 'player' }, 0)?.view).toBe('player');
+    expect(sanitizeEndpoint({ ...base, view: 'compact' }, 0)?.view).toBe('compact');
+  });
+
+  it('omits the default and any invalid value', () => {
+    expect(sanitizeEndpoint({ ...base, view: 'cards' }, 0)?.view).toBeUndefined();
+    expect(sanitizeEndpoint({ ...base, view: 'nope' as never }, 0)?.view).toBeUndefined();
+    expect(sanitizeEndpoint({ ...base }, 0)?.view).toBeUndefined();
+  });
+
+  it('keeps a valid non-default table view and drops invalid values', () => {
+    const keep = sanitizeEndpoint(
+      {
+        ...base,
+        type: 'page',
+        table: { mode: 'endpoint', rowKey: 'n', view: 'carousel' }
+      },
+      0
+    );
+    expect(keep?.table?.view).toBe('carousel');
+    const compact = sanitizeEndpoint(
+      {
+        ...base,
+        type: 'page',
+        table: { mode: 'endpoint', rowKey: 'n', view: 'compact' }
+      },
+      0
+    );
+    expect(compact?.table?.view).toBe('compact');
+    const drop = sanitizeEndpoint(
+      { ...base, type: 'page', table: { mode: 'endpoint', rowKey: 'n', view: 'nope' as never } },
+      0
+    );
+    expect(drop?.table?.view).toBeUndefined();
+  });
+});

@@ -3,7 +3,7 @@ import { audioEvents } from '@renderer/utils/audioEvents';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
-import { duration } from '@renderer/composables/useAudioPlayer';
+import { duration, isPlaying as mediaPlaying } from '@renderer/composables/useAudioPlayer';
 import { buildAudioPipState, resolveAudioPipLayoutOpts, type AudioPipDock } from './audioPipState';
 import { createAudioPipRuntime } from './audioPipRuntime';
 import { dispatchAudioPipAction } from './audioPipActions';
@@ -48,11 +48,14 @@ async function toggle(): Promise<void> {
 function handleVisibilityChange(): void {
   if (!autoShowEnabled) return;
   const player = usePlayerStore();
+  // Sprawdzamy RZECZYWISTY stan elementu audio (`mediaPlaying`), nie `player.isPlaying`:
+  // dla strumieni `player.isPlaying` potrafi zostać `true` po zakończeniu, co pokazywało
+  // PiP bez dźwięku (np. podczas przeglądania galerii zdjęć).
   if (
     document.hidden &&
     player.currentTrack &&
     (player.currentTrack.type === 'audio' || player.currentTrack.type === 'stream') &&
-    player.isPlaying
+    mediaPlaying.value
   ) {
     void show();
   } else if (!document.hidden && isActive.value) {

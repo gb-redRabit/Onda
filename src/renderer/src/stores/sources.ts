@@ -18,7 +18,8 @@ export const useSourcesStore = defineStore('sources', () => {
     startPage,
     loadSources,
     saveSource: persistSource,
-    deleteSource: removeSource
+    deleteSource: removeSource,
+    reorderSources
   } = createSourcesList();
 
   const {
@@ -66,9 +67,8 @@ export const useSourcesStore = defineStore('sources', () => {
     forgetSource: forgetSourceTest
   } = createSourcesTest();
 
-  const { enqueueDownload, enqueueAll, downloadedIds, loadDownloaded } = createSourcesDownloads({
-    activeSource
-  });
+  const { enqueueDownload, enqueueAll, downloadedIds, loadDownloaded, unmarkDownloaded } =
+    createSourcesDownloads({ activeSource });
 
   // Zapis/usunięcie źródła unieważnia zapamiętaną nawigację i status testu
   // (moduły nav/test są tworzone po liście, więc spinamy to w store).
@@ -116,6 +116,7 @@ export const useSourcesStore = defineStore('sources', () => {
     loadSources,
     saveSource,
     deleteSource,
+    reorderSources,
     setActive,
     openItem,
     openTableRow,
@@ -133,6 +134,7 @@ export const useSourcesStore = defineStore('sources', () => {
     enqueueDownload,
     enqueueAll,
     downloadedIds,
-    loadDownloaded
+    loadDownloaded,
+    unmarkDownloaded
   };
 });

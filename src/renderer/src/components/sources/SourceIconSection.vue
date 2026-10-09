@@ -43,7 +43,7 @@ function clearIcon() {
 </script>
 
 <template>
-  <div class="space-y-2 rounded-box border border-neutral-content/20 bg-neutral p-3">
+  <div class="space-y-2 rounded-box border border-base-300 bg-base-200 p-3">
     <label class="block text-[11px] font-medium text-base-content/50 uppercase tracking-wider">
       {{ t('sources.iconSection') }}
     </label>
@@ -85,7 +85,7 @@ function clearIcon() {
             <Trash2 :size="14" />
           </button>
         </div>
-        <p class="text-[10px] text-base-content/50">{{ t('sources.iconHint') }}</p>
+        <p class="text-[11px] text-base-content/50">{{ t('sources.iconHint') }}</p>
       </div>
     </div>
   </div>

@@ -24,8 +24,9 @@ export function setAutoLaunch({ enabled, hidden = false }: AutoLaunchOptions): b
     }
     app.setLoginItemSettings({
       openAtLogin: enabled,
-      args: hidden ? ['--hidden'] : [],
-      ...(process.platform === 'darwin' ? { openAsHidden: hidden } : {})
+      // Ukryty start realizujemy argumentem `--hidden` (odczytywanym w `index.ts`).
+      // Electron 44 usunął `openAsHidden` (działało tylko na macOS ≤12).
+      args: hidden ? ['--hidden'] : []
     });
     return true;
   } catch (e) {

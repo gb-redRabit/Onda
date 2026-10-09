@@ -71,8 +71,9 @@ describe('additional labelled controls', () => {
 
   it('sources sidebar reveals actions on keyboard focus and labels them', () => {
     expect(SOURCES_SIDEBAR).toMatch(/group-focus-within:opacity-100/);
+    expect(SOURCES_SIDEBAR).toMatch(/<IconButton/);
     expect(SOURCES_SIDEBAR).toMatch(/:aria-label="\$t\('common\.delete'\)"/);
-    expect(SOURCES_SIDEBAR).toMatch(/:aria-label="\$t\('sources\.exportSources'\)"/);
+    expect(SOURCES_SIDEBAR).toMatch(/:label="\$t\('sources\.exportSources'\)"/);
   });
 
   it('app provides a skip link and a focusable main region', () => {

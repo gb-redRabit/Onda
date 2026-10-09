@@ -215,9 +215,21 @@ export interface OnlineChannels {
     result: { list: MediaSource[]; saved: MediaSource | null; error?: string };
   };
   'sources:delete': { args: [id: string]; result: MediaSource[] };
+  'sources:reorder': { args: [ids: string[]]; result: MediaSource[] };
   'sources:test': {
-    args: [source: unknown, endpoint?: SourceEndpoint | null];
-    result: { success: boolean; error?: string; sample?: SourceItem | null };
+    args: [
+      source: unknown,
+      endpoint?: SourceEndpoint | null,
+      context?: unknown,
+      includeRaw?: boolean
+    ];
+    result: {
+      success: boolean;
+      error?: string;
+      sample?: SourceItem | null;
+      raw?: unknown;
+      headers?: Record<string, string> | null;
+    };
   };
   'sources:fetch': {
     args: [
@@ -238,4 +250,11 @@ export interface OnlineChannels {
   };
   'sources:enqueue': { args: [jobs: IpcDownloadJobInput[]]; result: IpcDownloadTask[] };
   'sources:downloaded': { args: [sourceId: string]; result: string[] };
+  'sources:unmarkDownloaded': { args: [sourceId: string, itemIds: string[]]; result: string[] };
+  'preview:open': {
+    args: [url: string, opts?: { title?: string }];
+    result: { success: boolean; error?: string };
+  };
+  'preview:prepare': { args: []; result: { success: boolean } };
+  'preview:openExternal': { args: [url: string]; result: void };
 }

@@ -1,5 +1,9 @@
 import type { BrowserWindowConstructorOptions } from 'electron';
 
+/** Materiał tła ustawiany przy tworzeniu „szklanego" okna (Windows) albo null. */
+export const GLASS_WINDOW_MATERIAL: 'acrylic' | null =
+  process.platform === 'win32' ? 'acrylic' : null;
+
 /**
  * Bezramkowa "szklana" oprawa wspólna dla okna głównego i okien eksploratora:
  * przezroczyste tło z akrylem na Windows i vibrancy paska bocznego na macOS.
@@ -11,7 +15,7 @@ export const GLASS_WINDOW_OPTS: Partial<BrowserWindowConstructorOptions> = {
   hasShadow: false,
   transparent: true,
   backgroundColor: '#00000000',
-  ...(process.platform === 'win32' ? { backgroundMaterial: 'acrylic' as const } : {}),
+  ...(GLASS_WINDOW_MATERIAL ? { backgroundMaterial: GLASS_WINDOW_MATERIAL } : {}),
   ...(process.platform === 'darwin'
     ? { vibrancy: 'sidebar' as const, visualEffectState: 'active' as const }
     : {})
