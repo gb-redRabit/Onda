@@ -149,6 +149,12 @@ export interface SourceItem {
   duration?: string;
   sourceUrl?: string;
   extra?: Record<string, unknown>;
+  /**
+   * Rozwiązane wartości passKeys (`as` → wartość) dla nawigacji w dół. Liczone w main
+   * przy fetchu listy, żeby nie przesyłać do renderera pełnego surowego obiektu (`extra`),
+   * co dla dużych odpowiedzi blokowało wątek UI przy deserializacji IPC.
+   */
+  passContext?: Record<string, unknown>;
 }
 
 export interface SourceFetchResult {

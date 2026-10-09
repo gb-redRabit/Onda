@@ -16,7 +16,8 @@ export function createSourcesTest() {
   async function testSource(
     source: MediaSource,
     endpoint?: SourceEndpoint,
-    context?: unknown
+    context?: unknown,
+    includeRaw = false
   ): Promise<{
     success: boolean;
     error?: string;
@@ -31,7 +32,8 @@ export function createSourcesTest() {
         'sources:test',
         toPlain(source),
         endpoint ? toPlain(endpoint) : null,
-        context === undefined ? null : toPlain(context)
+        context === undefined ? null : toPlain(context),
+        includeRaw
       )) as {
         success: boolean;
         error?: string;

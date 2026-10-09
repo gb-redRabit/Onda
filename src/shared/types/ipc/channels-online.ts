@@ -217,7 +217,12 @@ export interface OnlineChannels {
   'sources:delete': { args: [id: string]; result: MediaSource[] };
   'sources:reorder': { args: [ids: string[]]; result: MediaSource[] };
   'sources:test': {
-    args: [source: unknown, endpoint?: SourceEndpoint | null, context?: unknown];
+    args: [
+      source: unknown,
+      endpoint?: SourceEndpoint | null,
+      context?: unknown,
+      includeRaw?: boolean
+    ];
     result: {
       success: boolean;
       error?: string;

@@ -233,11 +233,20 @@ export function registerSourcesHandlers(): void {
 
   ipcMain.handle(
     'sources:test',
-    async (_event, sourceRaw: unknown, endpointRaw: unknown, contextRaw?: unknown) => {
+    async (
+      _event,
+      sourceRaw: unknown,
+      endpointRaw: unknown,
+      contextRaw?: unknown,
+      includeRaw?: unknown
+    ) => {
       const source = await resolveTrustedSource(sourceRaw);
       const endpoint = source ? sanitizeEndpoint(endpointRaw ?? source.endpoints[0], 0) : null;
       if (!source || !endpoint) return { success: false, error: 'Invalid source' };
-      const res = await testSourceConnection(source, endpoint, { context: contextRaw });
+      const res = await testSourceConnection(source, endpoint, {
+        context: contextRaw,
+        includeRaw: includeRaw === true
+      });
       return {
         success: res.success,
         error: res.error,

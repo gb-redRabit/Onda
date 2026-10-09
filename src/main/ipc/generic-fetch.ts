@@ -138,6 +138,33 @@ function mapItem(raw: unknown, fields: Record<string, string | undefined>): Sour
   return item;
 }
 
+/** Rozwiązuje tylko wartości passKeys (as → wartość) z surowego obiektu. */
+function passValues(
+  raw: Record<string, unknown> | undefined,
+  keys: SourceEndpoint['passKeys']
+): Record<string, unknown> | undefined {
+  if (!raw || !keys?.length) return undefined;
+  const out: Record<string, unknown> = {};
+  for (const k of keys) {
+    if (!k.from || !k.as) continue;
+    const v = dotGet(raw, k.from);
+    if (v !== undefined && v !== null) out[k.as] = v;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
+/**
+ * Zastępuje ciężkie `extra` lekkim `passContext` (tylko wartości passKeys). Pełny surowy
+ * obiekt każdego elementu nie jest przesyłany do renderera — przy dużych listach jego
+ * deserializacja przez IPC blokowała wątek UI (freez i zatrzymana animacja ładowania).
+ */
+function slimItem(item: SourceItem, endpoint: SourceEndpoint): SourceItem {
+  if (!item.extra) return item;
+  const { extra, ...rest } = item;
+  const passContext = passValues(extra, endpoint.passKeys);
+  return passContext ? { ...rest, passContext } : rest;
+}
+
 export function mapResponse(data: unknown, endpoint: SourceEndpoint): SourceItem[] {
   const mapping = endpoint.mapping;
   let rawArr: unknown;
@@ -424,7 +451,7 @@ export async function fetchSourceItems(
       context: opts?.context
     });
     const { json } = await httpJsonFetch(request.url, request);
-    const items = mapResponse(json, endpoint);
+    const items = mapResponse(json, endpoint).map((item) => slimItem(item, endpoint));
     const meta = paginationMeta(json, endpoint);
     const isPageMode =
       !!endpoint.pagination?.pageParam &&
@@ -445,7 +472,7 @@ export async function fetchSourceItems(
 export async function testSourceConnection(
   source: MediaSource,
   endpoint: SourceEndpoint,
-  opts?: { context?: unknown }
+  opts?: { context?: unknown; includeRaw?: boolean }
 ): Promise<SourceTestResult> {
   try {
     const request = await buildEndpointRequest(source, endpoint, { context: opts?.context });
@@ -455,7 +482,13 @@ export async function testSourceConnection(
     if (!sample && json && typeof json === 'object' && !Array.isArray(json)) {
       sample = { id: '', title: '', type: 'file', extra: json as Record<string, unknown> };
     }
-    return { success: true, status, sample, raw: json, headers };
+    // Auto-test przy wejściu w źródło potrzebuje tylko `success` — pełna odpowiedź i próbka
+    // (`extra`) to duży ładunek IPC, który blokował renderer. Zwracamy je tylko na żądanie
+    // (edytor, diagnostyka).
+    if (opts?.includeRaw) {
+      return { success: true, status, sample, raw: json, headers };
+    }
+    return { success: true, status, headers };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return { success: false, error: msg };

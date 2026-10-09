@@ -265,7 +265,8 @@ async function ensureLevelSample(
     const res = await sources.testSource(
       built,
       built.endpoints[idx],
-      (await contextForLevel(idx)) ?? undefined
+      (await contextForLevel(idx)) ?? undefined,
+      true
     );
     if (res.success && res.sample?.extra) {
       raw = res.sample.extra as Record<string, unknown>;
@@ -315,7 +316,7 @@ async function onTest(idx: number) {
   try {
     // Poziom zagnieżdżony potrzebuje kontekstu (placeholdery {x} w ścieżce/parametrach).
     const context = await contextForLevel(idx);
-    const res = await sources.testSource(built, endpoint, context ?? undefined);
+    const res = await sources.testSource(built, endpoint, context ?? undefined, true);
     testPassed.value = res.success;
     endpointStatus.value = { ...endpointStatus.value, [endpoint.id]: res.success };
     testMsg.value = res.success

@@ -59,6 +59,20 @@ describe('drill-down context for Docchi (list → page table → episode)', () =
     );
   });
 
+  it('prefers the pre-resolved passContext shipped from main (no extra)', () => {
+    const item: SourceItem = {
+      id: 'oshi-no-ko',
+      title: 'Oshi no Ko',
+      type: 'file',
+      passContext: { slug: 'oshi-no-ko' }
+    };
+    const ctx = itemPassContext(item, listEndpoint);
+    expect(ctx['slug']).toBe('oshi-no-ko');
+    expect(buildSourceUrl(source, pageEndpoint, { context: ctx })).toBe(
+      'https://api.docchi.pl/v1/series/find/oshi-no-ko'
+    );
+  });
+
   it('merges the page and the first table row for a table child (level 2 → 3)', () => {
     const pageRaw = { slug: 'nanatsu-no-maken-ga-shihai-suru', title: 'X' };
     const row: SourceItem = {

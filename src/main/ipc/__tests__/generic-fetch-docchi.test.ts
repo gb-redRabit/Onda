@@ -97,7 +97,7 @@ const networkEnabled = process.env.ONDA_NETWORK_TESTS === '1';
 
 describe.skipIf(!networkEnabled)('Docchi API — live (ONDA_NETWORK_TESTS=1)', () => {
   it('fetches and maps the live series list', async () => {
-    const res = await testSourceConnection(docchiSource, listEndpoint);
+    const res = await testSourceConnection(docchiSource, listEndpoint, { includeRaw: true });
     expect(res.success).toBe(true);
     expect(res.sample?.title).toBeTruthy();
     expect(res.raw).toBeDefined();
