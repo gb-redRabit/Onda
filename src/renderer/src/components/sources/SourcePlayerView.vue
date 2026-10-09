@@ -13,7 +13,6 @@ import {
 } from '@lucide/vue';
 import type { SourceItem } from '@renderer/types/sources';
 import { openPreviewWindow } from '@renderer/utils/previewWindow';
-import { useVirtualList } from '@renderer/composables/useVirtualList';
 import EmbedWebview from './EmbedWebview.vue';
 
 // Widok „player": duży odtwarzacz/podgląd wybranej pozycji + lista po prawej.
@@ -41,23 +40,6 @@ watch(
     if (!selected.value || !list.includes(selected.value)) selected.value = list[0] ?? null;
   },
   { immediate: true }
-);
-
-// Prawa lista jest wirtualizowana pionowo (odcinki serii bywają długie).
-const asideRef = ref<HTMLElement | null>(null);
-// Stała wysokość wiersza (h-14 = 56px) — bez pomiaru, więc pozycje są równe i ciasne.
-const ROW_HEIGHT = 56;
-const listVirtual = useVirtualList({
-  count: () => props.items.length,
-  scrollEl: () => asideRef.value,
-  estimateSize: () => ROW_HEIGHT,
-  overscan: 6
-});
-const listCells = computed(() =>
-  listVirtual.value
-    .getVirtualItems()
-    .map((row) => ({ index: row.index, start: row.start, item: props.items[row.index] }))
-    .filter((cell): cell is { index: number; start: number; item: SourceItem } => !!cell.item)
 );
 
 const typeIcon = {
@@ -169,71 +151,60 @@ function browserUrl(item: SourceItem | null): string {
       </div>
     </div>
 
-    <!-- Lista -->
-    <aside
-      ref="asideRef"
-      class="w-72 max-lg:w-60 shrink-0 border-l border-base-300 overflow-y-auto"
-    >
-      <div class="relative w-full" :style="{ height: listVirtual.getTotalSize() + 'px' }">
-        <button
-          v-for="cell in listCells"
-          :key="cell.item.id || cell.index"
-          class="fx-noise absolute top-0 left-0 w-full h-14 flex items-center gap-2 px-2.5 text-left border-b border-base-200 transition-colors"
+    <!-- Lista (zwykły przepływ — równe, gęste odstępy) -->
+    <aside class="w-72 max-lg:w-60 shrink-0 border-l border-base-300 overflow-y-auto">
+      <button
+        v-for="(item, i) in items"
+        :key="item.id || i"
+        class="fx-noise w-full flex items-center gap-2 px-2.5 py-2 text-left border-b border-base-200 transition-colors"
+        :class="
+          selectable && item.id && selectedIds?.has(item.id)
+            ? 'ring-1 ring-primary bg-primary/10'
+            : item === current
+              ? 'bg-primary/15'
+              : 'hover:bg-base-content/5'
+        "
+        :title="item.title"
+        @click="selectable ? emit('select', item, $event) : (selected = item)"
+      >
+        <span
+          v-if="selectable"
+          class="w-5 h-5 shrink-0 rounded-field flex items-center justify-center border"
           :class="
-            props.selectable && cell.item.id && props.selectedIds?.has(cell.item.id)
-              ? 'ring-1 ring-primary bg-primary/10'
-              : cell.item === current
-                ? 'bg-primary/15'
-                : 'hover:bg-base-content/5'
+            item.id && selectedIds?.has(item.id)
+              ? 'bg-primary border-primary text-primary-content'
+              : 'border-base-content/30 text-transparent'
           "
-          :style="{ transform: `translateY(${cell.start}px)` }"
-          :title="cell.item.title"
-          @click="props.selectable ? emit('select', cell.item, $event) : (selected = cell.item)"
+          aria-hidden="true"
         >
-          <span
-            v-if="props.selectable"
-            class="w-5 h-5 shrink-0 rounded-field flex items-center justify-center border"
-            :class="
-              cell.item.id && props.selectedIds?.has(cell.item.id)
-                ? 'bg-primary border-primary text-primary-content'
-                : 'border-base-content/30 text-transparent'
-            "
-            aria-hidden="true"
-          >
-            <Check :size="12" />
-          </span>
-          <span class="w-16 h-10 shrink-0 rounded-field overflow-hidden bg-neutral">
-            <img
-              v-if="cell.item.thumbnail"
-              :src="cell.item.thumbnail"
-              :alt="cell.item.title"
-              loading="lazy"
-              class="w-full h-full object-cover"
-            />
-            <span
-              v-else
-              class="w-full h-full flex items-center justify-center text-base-content/50"
-            >
-              <component :is="typeIcon[cell.item.type]" :size="16" />
-            </span>
-          </span>
-          <span class="min-w-0 flex-1">
-            <span class="block text-xs font-medium line-clamp-1">{{
-              cell.item.title || $t('sources.untitled')
-            }}</span>
-            <span
-              v-if="cell.item.subtitle"
-              class="block text-[10px] text-base-content/50 truncate"
-              >{{ cell.item.subtitle }}</span
-            >
-          </span>
-          <Check
-            v-if="cell.item.id && downloadedIds?.has(cell.item.id)"
-            :size="12"
-            class="shrink-0 text-success"
+          <Check :size="12" />
+        </span>
+        <span class="w-16 h-10 shrink-0 rounded-field overflow-hidden bg-neutral">
+          <img
+            v-if="item.thumbnail"
+            :src="item.thumbnail"
+            :alt="item.title"
+            loading="lazy"
+            class="w-full h-full object-cover"
           />
-        </button>
-      </div>
+          <span v-else class="w-full h-full flex items-center justify-center text-base-content/50">
+            <component :is="typeIcon[item.type]" :size="16" />
+          </span>
+        </span>
+        <span class="min-w-0 flex-1">
+          <span class="block text-xs font-medium line-clamp-1">{{
+            item.title || $t('sources.untitled')
+          }}</span>
+          <span v-if="item.subtitle" class="block text-[10px] text-base-content/50 truncate">{{
+            item.subtitle
+          }}</span>
+        </span>
+        <Check
+          v-if="item.id && downloadedIds?.has(item.id)"
+          :size="12"
+          class="shrink-0 text-success"
+        />
+      </button>
     </aside>
   </div>
 </template>
