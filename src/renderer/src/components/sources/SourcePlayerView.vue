@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, type ComponentPublicInstance } from 'vue';
+import { computed, ref, watch } from 'vue';
 import {
   Image,
   Play,
@@ -45,10 +45,12 @@ watch(
 
 // Prawa lista jest wirtualizowana pionowo (odcinki serii bywają długie).
 const asideRef = ref<HTMLElement | null>(null);
+// Stała wysokość wiersza (h-14 = 56px) — bez pomiaru, więc pozycje są równe i ciasne.
+const ROW_HEIGHT = 56;
 const listVirtual = useVirtualList({
   count: () => props.items.length,
   scrollEl: () => asideRef.value,
-  estimateSize: () => 60,
+  estimateSize: () => ROW_HEIGHT,
   overscan: 6
 });
 const listCells = computed(() =>
@@ -57,9 +59,6 @@ const listCells = computed(() =>
     .map((row) => ({ index: row.index, start: row.start, item: props.items[row.index] }))
     .filter((cell): cell is { index: number; start: number; item: SourceItem } => !!cell.item)
 );
-function measureRow(node: Element | ComponentPublicInstance | null): void {
-  if (node instanceof HTMLElement) listVirtual.value.measureElement(node);
-}
 
 const typeIcon = {
   image: Image,
@@ -179,9 +178,7 @@ function browserUrl(item: SourceItem | null): string {
         <button
           v-for="cell in listCells"
           :key="cell.item.id || cell.index"
-          :ref="measureRow"
-          :data-index="cell.index"
-          class="fx-noise absolute top-0 left-0 w-full flex items-center gap-2 px-2.5 py-2 text-left border-b border-base-200 transition-colors"
+          class="fx-noise absolute top-0 left-0 w-full h-14 flex items-center gap-2 px-2.5 text-left border-b border-base-200 transition-colors"
           :class="
             props.selectable && cell.item.id && props.selectedIds?.has(cell.item.id)
               ? 'ring-1 ring-primary bg-primary/10'
@@ -221,7 +218,7 @@ function browserUrl(item: SourceItem | null): string {
             </span>
           </span>
           <span class="min-w-0 flex-1">
-            <span class="block text-xs font-medium line-clamp-2">{{
+            <span class="block text-xs font-medium line-clamp-1">{{
               cell.item.title || $t('sources.untitled')
             }}</span>
             <span
