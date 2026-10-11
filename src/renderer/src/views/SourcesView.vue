@@ -113,7 +113,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div data-testid="sources-view" class="h-full flex bg-base-200">
+  <div data-testid="sources-view" class="h-full flex">
     <SourcesSidebar
       :sources="sources.sources"
       :active-source-id="sources.activeSourceId"
@@ -129,10 +129,10 @@ onMounted(() => {
       @guide="showGuide = true"
     />
 
-    <div class="flex-1 min-w-0 h-full flex flex-col bg-base-200">
+    <div class="flex-1 min-w-0 h-full flex flex-col">
       <div v-if="activeSource" data-testid="sources-detail" class="flex flex-col h-full">
         <div
-          class="ui-page-toolbar flex items-center gap-2 px-4 py-2 border-b border-base-300 bg-base-200/(--glass-alpha) backdrop-blur overflow-x-auto"
+          class="ui-page-toolbar flex items-center gap-2 px-4 py-2 border-b border-base-300 bg-base-100/(--glass-alpha) backdrop-blur overflow-x-auto"
         >
           <IconButton
             v-if="sources.navStack.length"
