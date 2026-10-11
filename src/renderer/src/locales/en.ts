@@ -304,6 +304,7 @@ export default {
     queryBuilderParams: 'Query parameters',
     unmarkDownloaded: 'Mark as not downloaded',
     toastUnmarked: 'Marked as not downloaded',
+    noFilterResults: 'No results for the filter',
     health: {
       checking: 'Checking…',
       ok: 'Connection OK',

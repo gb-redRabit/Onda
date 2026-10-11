@@ -230,6 +230,12 @@ function measureSourceRow(node: Element | ComponentPublicInstance | null): void 
       <Loader :size="56" />
       <p class="text-sm">{{ t('sources.refresh') }}...</p>
     </div>
+    <EmptyState
+      v-else-if="!loading && filterText.trim()"
+      :title="t('sources.noFilterResults')"
+      :icon="Globe"
+      class="py-16"
+    />
     <EmptyState v-else-if="!loading" :title="t('sources.noItems')" :icon="Globe" class="py-16" />
     <button
       v-if="hasMore && items.length && paginationMode !== 'page'"

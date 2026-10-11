@@ -72,7 +72,7 @@ type Store = {
   activeEndpointId: string | null;
   activeSource: unknown;
   activeEndpoint: unknown;
-  items: Array<{ id: string; title: string; subtitle?: string; type: string }>;
+  items: Array<{ id: string; title: string; subtitle?: string; type: string; mediaUrl?: string }>;
   tableRows: Array<{ id: string; title: string; type: string }>;
   checking: Record<string, boolean>;
   testStatus: Record<string, { success: boolean }>;
@@ -294,6 +294,18 @@ describe('useSourcesView — multi-select', () => {
     expect(api.selectedCount.value).toBe(0);
   });
 
+  it('counts only playable selected items for queue/play', () => {
+    store.items = [
+      { id: 'v', title: 'V', type: 'video', mediaUrl: 'https://c/v.mp4' },
+      { id: 'i', title: 'I', type: 'image', mediaUrl: 'https://c/i.jpg' }
+    ];
+    const api = run();
+    api.toggleSelect(store.items[0] as never);
+    api.toggleSelect(store.items[1] as never);
+    expect(api.selectedCount.value).toBe(2);
+    expect(api.selectedPlayableCount.value).toBe(1);
+  });
+
   it('selects page table rows when the level is a page', () => {
     store.activeEndpoint = { type: 'page' };
     store.items = [{ id: 'page', title: 'Series', type: 'video' }];
@@ -304,18 +316,6 @@ describe('useSourcesView — multi-select', () => {
     const api = run();
     api.toggleSelect(store.tableRows[0] as never);
     expect(api.selectedItems.value.map((i: { id: string }) => i.id)).toEqual(['r1']);
-  });
-});
-
-describe('useSourcesView — runtime view', () => {
-  it('overrides the configured view and toggles back', () => {
-    store.activeEndpoint = { type: 'list', view: 'gallery' };
-    const api = run();
-    expect(api.viewMode.value).toBe('gallery');
-    api.setRuntimeView('compact');
-    expect(api.viewMode.value).toBe('compact');
-    api.setRuntimeView('compact');
-    expect(api.viewMode.value).toBe('gallery');
   });
 });
 

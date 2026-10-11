@@ -8,13 +8,11 @@ import {
   ChevronRight,
   ArrowLeft,
   Download,
-  CheckSquare,
-  ListPlus,
-  Play,
-  X
+  CheckSquare
 } from '@lucide/vue';
 import SourcesContent from '@renderer/components/sources/SourcesContent.vue';
 import SourcesFilterBar from '@renderer/components/sources/SourcesFilterBar.vue';
+import SourcesBulkBar from '@renderer/components/sources/SourcesBulkBar.vue';
 import SourcesQueryBuilder from '@renderer/components/sources/SourcesQueryBuilder.vue';
 import SourcesSidebar from '@renderer/components/sources/SourcesSidebar.vue';
 import SourceHealthBar from '@renderer/components/sources/SourceHealthBar.vue';
@@ -51,6 +49,7 @@ const {
   selectMode,
   selectedIds,
   selectedCount,
+  selectedPlayableCount,
   viewMode,
   paramKeys,
   paramDefaults,
@@ -225,54 +224,20 @@ void scrollRef;
           v-model:sort-mode="sortMode"
         />
         <SourcesQueryBuilder
-          v-if="!isPage"
+          v-if="paramKeys.length"
           v-model="builderValues"
           :keys="paramKeys"
           :defaults="paramDefaults"
         />
-        <div
+        <SourcesBulkBar
           v-if="selectMode"
-          class="flex items-center gap-2 px-4 py-1.5 border-b border-base-300 bg-primary/10 text-xs"
-          data-testid="sources-bulk-bar"
-        >
-          <span class="text-base-content/70 shrink-0" data-testid="sources-selected-count">{{
-            $t('sources.selectedCount', { n: selectedCount })
-          }}</span>
-          <span class="flex-1" />
-          <button
-            class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/80 hover:bg-base-content/10 transition-colors disabled:opacity-50"
-            :disabled="!selectedCount"
-            :title="$t('sources.downloadAll')"
-            @click="onBulkDownload"
-          >
-            <Download :size="12" />
-            {{ $t('sources.downloadAll') }}
-          </button>
-          <button
-            class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/80 hover:bg-base-content/10 transition-colors disabled:opacity-50"
-            :disabled="!selectedCount"
-            :title="$t('sources.addToQueue')"
-            @click="onBulkQueue"
-          >
-            <ListPlus :size="12" />
-            {{ $t('sources.addToQueue') }}
-          </button>
-          <button
-            class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/80 hover:bg-base-content/10 transition-colors disabled:opacity-50"
-            :disabled="!selectedCount"
-            :title="$t('sources.playNow')"
-            @click="onBulkPlay"
-          >
-            <Play :size="12" />
-            {{ $t('sources.playNow') }}
-          </button>
-          <IconButton
-            :icon="X"
-            :label="$t('sources.clearSelection')"
-            class="shrink-0"
-            @click="clearSelection"
-          />
-        </div>
+          :count="selectedCount"
+          :playable-count="selectedPlayableCount"
+          @download="onBulkDownload"
+          @queue="onBulkQueue"
+          @play="onBulkPlay"
+          @clear="clearSelection"
+        />
         <p
           v-if="currentUrl"
           class="px-4 py-1 text-[10px] font-mono text-base-content/50 truncate border-b border-base-300"

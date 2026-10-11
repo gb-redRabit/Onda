@@ -304,6 +304,7 @@ export default {
     queryBuilderParams: 'Parametry zapytania',
     unmarkDownloaded: 'Oznacz jako niepobrane',
     toastUnmarked: 'Odznaczono jako niepobrane',
+    noFilterResults: 'Brak wyników dla filtra',
     health: {
       checking: 'Sprawdzanie…',
       ok: 'Połączenie OK',

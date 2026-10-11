@@ -12,6 +12,7 @@ import type { MediaSource, SourceItem } from '@renderer/types/sources';
 import { useUIStore } from '@renderer/stores/ui';
 import { usePlayerStore } from '@renderer/stores/player';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
+import { useSourcesSelection } from '@renderer/composables/useSourcesSelection';
 import { buildSourceStreamTrack, isSourceItemPlayable } from '@renderer/utils/sourceStream';
 
 // Logika widoku Źródeł wyodrębniona z `SourcesView.vue` (template renderuje
@@ -34,15 +35,11 @@ export function useSourcesView() {
   const sortMode = ref<SourceSortMode>('none');
   const filterText = ref('');
   const downloadingAll = ref(false);
-  // Tryb zaznaczania zbiorczego (checkboxy na kartach + pasek akcji zbiorczych).
-  const selectMode = ref(false);
-  const selectedIds = ref<Set<string>>(new Set());
-  const lastSelectedId = ref<string | null>(null);
 
   // Prezentacja elementów pochodzi z konfiguracji poziomu (kreator źródła):
   //  - lista → `endpoint.view` (karty/galeria/kompakt/karuzela/player),
   //  - strona → `endpoint.table.view` (wiersze: tabela/galeria/kompakt/karuzela/player).
-  const configuredViewMode = computed<SourceViewMode>(() => {
+  const viewMode = computed<SourceViewMode>(() => {
     const endpoint = sources.activeEndpoint;
     if (!endpoint) return 'cards';
     if (endpoint.type === 'page') {
@@ -51,14 +48,6 @@ export function useSourcesView() {
     }
     return endpoint.view ?? 'cards';
   });
-
-  // Runtime'owy przełącznik widoku (sesyjny) nadpisuje konfigurację poziomu.
-  const runtimeView = ref<SourceViewMode | null>(null);
-  const viewMode = computed<SourceViewMode>(() => runtimeView.value ?? configuredViewMode.value);
-
-  function setRuntimeView(mode: SourceViewMode): void {
-    runtimeView.value = runtimeView.value === mode ? null : mode;
-  }
 
   // Stan paska kondycji aktywnego źródła (jawny string — patrz SourceHealthBar).
   const healthState = computed<'checking' | 'ok' | 'fail' | 'unknown'>(() => {
@@ -96,51 +85,20 @@ export function useSourcesView() {
     filterAndSortSourceItems(sources.items, filterText.value, sortMode.value)
   );
 
-  const selectedItems = computed(() => {
-    // Dla listy zaznaczamy elementy, dla strony — wiersze tabeli.
-    const pool = sources.activeEndpoint?.type === 'page' ? sources.tableRows : displayItems.value;
-    return pool.filter((item) => !!item.id && selectedIds.value.has(item.id));
-  });
-  const selectedCount = computed(() => selectedItems.value.length);
-
-  function clearSelection(): void {
-    selectedIds.value = new Set();
-    lastSelectedId.value = null;
-  }
-
-  function toggleSelectMode(): void {
-    selectMode.value = !selectMode.value;
-    if (!selectMode.value) clearSelection();
-  }
-
-  function isSelected(id?: string): boolean {
-    return !!id && selectedIds.value.has(id);
-  }
-
-  // Shift zaznacza zakres od ostatnio klikniętej pozycji (w obrębie widocznej listy).
-  function toggleSelect(item: SourceItem, event?: MouseEvent): void {
-    if (!item.id) return;
-    const next = new Set(selectedIds.value);
-    if (event?.shiftKey && lastSelectedId.value && lastSelectedId.value !== item.id) {
-      const list = sources.activeEndpoint?.type === 'page' ? sources.tableRows : displayItems.value;
-      const from = list.findIndex((i) => i.id === lastSelectedId.value);
-      const to = list.findIndex((i) => i.id === item.id);
-      if (from !== -1 && to !== -1) {
-        const [lo, hi] = from < to ? [from, to] : [to, from];
-        for (let i = lo; i <= hi; i++) {
-          const id = list[i]?.id;
-          if (id) next.add(id);
-        }
-        selectedIds.value = next;
-        lastSelectedId.value = item.id;
-        return;
-      }
-    }
-    if (next.has(item.id)) next.delete(item.id);
-    else next.add(item.id);
-    selectedIds.value = next;
-    lastSelectedId.value = item.id;
-  }
+  const selectPool = computed(() =>
+    sources.activeEndpoint?.type === 'page' ? sources.tableRows : displayItems.value
+  );
+  const {
+    selectMode,
+    selectedIds,
+    selectedItems,
+    selectedCount,
+    selectedPlayableCount,
+    clearSelection,
+    toggleSelectMode,
+    isSelected,
+    toggleSelect
+  } = useSourcesSelection(selectPool);
 
   const activeSource = computed(() => sources.activeSource);
   const activeEndpoint = computed(() => sources.activeEndpoint);
@@ -367,7 +325,6 @@ export function useSourcesView() {
     () => [sources.activeSourceId, sources.activeEndpointId],
     async () => {
       clearSelection();
-      runtimeView.value = null;
       builderValues.value = {};
       if (sources.activeSource) {
         await sources.fetchItems(currentQuery());
@@ -405,9 +362,8 @@ export function useSourcesView() {
     selectedIds,
     selectedItems,
     selectedCount,
+    selectedPlayableCount,
     viewMode,
-    runtimeView,
-    setRuntimeView,
     paramKeys,
     paramDefaults,
     builderValues,
