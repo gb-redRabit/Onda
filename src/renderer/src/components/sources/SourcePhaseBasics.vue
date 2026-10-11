@@ -3,19 +3,16 @@ import { useI18n } from 'vue-i18n';
 import type { SourceAuthType } from '@renderer/types/sources';
 import FieldLabel from './FieldLabel.vue';
 import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
-import SourceIconSection from './SourceIconSection.vue';
 import SourceDownloadSection from './SourceDownloadSection.vue';
 
-// Faza 0 — wszystko o samym źródle: nazwa, ikona, adres bazowy, uwierzytelnianie,
+// Faza 0 — wszystko o samym źródle: nazwa, adres bazowy, uwierzytelnianie,
 // zaufanie do sieci prywatnej i preferencje pobierania.
 defineProps<{
   defaultDownloadDir: string;
   apiKeyOptions: Array<{ id: string; label: string }>;
 }>();
-const emit = defineEmits<{ error: [message: string] }>();
 
 const name = defineModel<string>('name', { required: true });
-const icon = defineModel<string>('icon', { required: true });
 const baseUrl = defineModel<string>('baseUrl', { required: true });
 const allowPrivateNetwork = defineModel<boolean>('allowPrivateNetwork', { required: true });
 const authType = defineModel<SourceAuthType>('authType', { required: true });
@@ -65,8 +62,6 @@ const { t } = useI18n();
         </span>
       </div>
     </div>
-
-    <SourceIconSection v-model:icon="icon" @error="emit('error', $event)" />
 
     <div class="space-y-2">
       <FieldLabel :text="t('sources.auth')" />

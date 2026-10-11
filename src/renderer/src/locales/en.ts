@@ -342,14 +342,6 @@ export default {
     sortTitleDesc: 'Title Z→A',
     sortType: 'Type',
     editSourceShortcut: 'Edit source',
-    iconSection: 'Source icon',
-    iconFromPc: 'From computer…',
-    iconUrlPlaceholder: 'Image URL (http/https)',
-    iconApplyUrl: 'Use URL',
-    iconClear: 'Remove icon',
-    iconHint:
-      'Upload an image from your computer (up to 2 MB) or enter a web URL. Empty = default globe icon.',
-    iconUrlInvalid: 'Enter a valid http(s) URL',
     episodes: 'Episodes',
     noTableRows: 'No table rows',
     guide: {

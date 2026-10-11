@@ -5,7 +5,6 @@ import {
   Plus,
   Pencil,
   Trash2,
-  Globe,
   HelpCircle,
   Upload,
   Download,
@@ -129,13 +128,6 @@ function move(index: number, dir: -1 | 1): void {
         @drop="onDrop(i)"
         @dragend="onDragEnd"
       >
-        <Globe v-if="!s.icon" :size="14" class="shrink-0" />
-        <span
-          v-else
-          class="w-3.5 h-3.5 rounded-field shrink-0 bg-cover bg-center"
-          :style="{ backgroundImage: `url(${s.icon})` }"
-          aria-hidden="true"
-        />
         <span
           class="w-2 h-2 rounded-full shrink-0"
           :class="{

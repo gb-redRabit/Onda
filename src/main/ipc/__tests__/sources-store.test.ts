@@ -69,32 +69,6 @@ describe('sanitizeSource — private-network trust', () => {
   });
 });
 
-describe('sanitizeSource — icon', () => {
-  it('keeps a data URL icon', () => {
-    const src = sanitizeSource({ ...BASE, icon: 'data:image/png;base64,AAAA' });
-    expect(src?.icon).toBe('data:image/png;base64,AAAA');
-  });
-
-  it('keeps an http(s) icon URL', () => {
-    const src = sanitizeSource({ ...BASE, icon: 'https://cdn.example.com/icon.png' });
-    expect(src?.icon).toBe('https://cdn.example.com/icon.png');
-  });
-
-  it('drops non-image data URLs', () => {
-    expect(sanitizeSource({ ...BASE, icon: 'data:text/html;base64,AAAA' })?.icon).toBeUndefined();
-  });
-
-  it('drops non-http URLs and junk', () => {
-    expect(sanitizeSource({ ...BASE, icon: 'ftp://x/icon.png' })?.icon).toBeUndefined();
-    expect(sanitizeSource({ ...BASE, icon: 'not-a-url' })?.icon).toBeUndefined();
-  });
-
-  it('drops oversized data URLs', () => {
-    const big = 'data:image/png;base64,' + 'A'.repeat(200_001);
-    expect(sanitizeSource({ ...BASE, icon: big })?.icon).toBeUndefined();
-  });
-});
-
 describe('sanitizeEndpoint — playerUrl fields', () => {
   it('keeps playerUrl in mapping fields and table', () => {
     const ep = sanitizeEndpoint(

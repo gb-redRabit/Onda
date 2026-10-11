@@ -50,7 +50,6 @@ const { onOverlayClick } = useUnsavedGuard({
 const draft = reactive({
   id: props.source?.id || '',
   name: props.source?.name || '',
-  icon: props.source?.icon || '',
   baseUrl: props.source?.baseUrl || '',
   allowPrivateNetwork: props.source?.allowPrivateNetwork === true,
   authType: (props.source?.auth?.type || 'none') as SourceAuthType,
@@ -208,7 +207,6 @@ function buildSource(): MediaSource | null {
   return {
     id: draft.id || randomId(),
     name,
-    icon: draft.icon.trim() || undefined,
     baseUrl,
     allowPrivateNetwork: draft.allowPrivateNetwork,
     auth: buildAuth(),
@@ -287,7 +285,6 @@ function runTestTable(idx: number): void {
         <SourcePhaseBasics
           v-if="activePhase === 0"
           v-model:name="draft.name"
-          v-model:icon="draft.icon"
           v-model:base-url="draft.baseUrl"
           v-model:allow-private-network="draft.allowPrivateNetwork"
           v-model:auth-type="draft.authType"
@@ -298,7 +295,6 @@ function runTestTable(idx: number): void {
           v-model:download-folder="draft.downloadFolder"
           :default-download-dir="defaultDownloadDir"
           :api-key-options="apiKeyOptions"
-          @error="errorMsg = $event"
         />
 
         <EndpointPhasePane

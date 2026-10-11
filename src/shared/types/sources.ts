@@ -126,8 +126,6 @@ export interface SourceDownloadPrefs {
 export interface MediaSource {
   id: string;
   name: string;
-  /** Ikona źródła: data URL (wgrany obraz) lub adres http(s). */
-  icon?: string;
   baseUrl: string;
   /** Jawne włączenie dla hostów loopback/prywatnych tylko w tym źródle. */
   allowPrivateNetwork?: boolean;

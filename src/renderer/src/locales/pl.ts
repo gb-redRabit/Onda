@@ -342,14 +342,6 @@ export default {
     sortTitleDesc: 'Tytuł Z→A',
     sortType: 'Typ',
     editSourceShortcut: 'Edytuj źródło',
-    iconSection: 'Ikona źródła',
-    iconFromPc: 'Z komputera…',
-    iconUrlPlaceholder: 'Adres URL obrazu (http/https)',
-    iconApplyUrl: 'Użyj adresu',
-    iconClear: 'Usuń ikonę',
-    iconHint:
-      'Wgraj obraz z komputera (do 2 MB) lub podaj adres web. Puste = domyślna ikona globusa.',
-    iconUrlInvalid: 'Podaj poprawny adres http(s)',
     episodes: 'Odcinki',
     noTableRows: 'Brak wierszy w tabeli',
     guide: {
