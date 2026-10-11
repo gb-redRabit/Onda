@@ -34,33 +34,51 @@ const BLOCK_PATTERNS: RegExp[] = [
   /\/adserver/i
 ];
 
-// Selektory kontenerów reklam (ukrywanie kosmetyczne).
+// Selektory kontenerów reklam (ukrywanie kosmetyczne). CDA (cda.pl / ebd.cda.pl)
+// reklamuje się same-origin, więc oprócz generycznych dodajemy znane selektory CDA.
 const COSMETIC_CSS = `
   [id^="ad-"], [id*="-ad-"], [id$="-ad"], [class^="ad-"], [class*=" ad-"], [class*="ads"],
   [id*="banner"], [class*="banner"], [class*="sponsor"], [id*="sponsor"],
   [class*="popup"], [class*="popunder"],
-  iframe[src*="doubleclick"], iframe[src*="googlesyndication"], iframe[src*="/ads/"]
+  iframe[src*="doubleclick"], iframe[src*="googlesyndication"], iframe[src*="/ads/"],
+  #aa_ad, #kolumnaSrodkowa #aa_ad, .screening-video-panorama, .screening-video,
+  [id*="reklama" i], [class*="reklama" i], body > span[onclick]
     { display: none !important; }
 `;
 
-// Pomijanie reklam wideo: klika „Pomiń"; dla niepomijalnych szybko przewija i wycisza.
+// Pomijanie reklam wideo: klika „Pomiń", ukrywa znane kontenery i dla niepomijalnych
+// pre-rollów (np. CDA) szybko przewija i wycisza; neutralizuje też popupy (nowoif).
 const SKIP_SCRIPT = `(() => {
-  const trySkip = () => {
+  try { window.open = () => null; } catch (e) { void e; }
+  const adPlaying = () => {
+    if (!document.body) return false;
+    if (/reklama|reklamy|advertisement|zobacz na/i.test(document.body.innerText || '')) return true;
+    return !!document.querySelector(
+      '[class*="preroll" i], [id*="preroll" i], [class*="advert" i], [id*="advert" i]'
+    );
+  };
+  const tick = () => {
     const skip = document.querySelector(
       '.ytp-ad-skip-button, .ytp-skip-ad-button, .ytp-ad-skip-button-modern, ' +
       'button[class*="skip" i][class*="ad" i], [class*="skip" i][class*="ad" i]'
     );
     if (skip && typeof skip.click === 'function') { skip.click(); return; }
+    document.querySelectorAll('.screening-video-panorama, #aa_ad').forEach((el) => {
+      el.style.display = 'none';
+    });
     const v = document.querySelector('video');
     if (!v) return;
-    const adHost = v.closest('[class*="ad" i], [id*="ad" i]');
-    if (adHost && isFinite(v.duration) && v.duration > 0 && v.duration < 90) {
-      try { v.muted = true; v.playbackRate = 16; } catch (e) { void e; }
+    if (adPlaying() && isFinite(v.duration) && v.duration > 0 && v.duration < 150) {
+      try {
+        v.muted = true;
+        v.playbackRate = 16;
+        if (v.currentTime < v.duration - 0.5) v.currentTime = v.duration;
+      } catch (e) { void e; }
     }
   };
-  trySkip();
-  setInterval(trySkip, 1000);
-  new MutationObserver(trySkip).observe(document.documentElement, {
+  tick();
+  setInterval(tick, 800);
+  new MutationObserver(tick).observe(document.documentElement, {
     childList: true, subtree: true
   });
 })();`;
