@@ -1,18 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import {
-  Image,
-  Play,
-  Music2,
-  File,
-  Download,
-  Check,
-  ExternalLink,
-  Maximize2,
-  MonitorPlay
-} from '@lucide/vue';
+import { Image, Play, Music2, File, Download, Check, ExternalLink, Maximize2 } from '@lucide/vue';
 import type { SourceItem } from '@renderer/types/sources';
-import { openPreviewWindow } from '@renderer/utils/previewWindow';
 import EmbedWebview from './EmbedWebview.vue';
 
 // Widok „player": duży odtwarzacz/podgląd wybranej pozycji + lista po prawej.
@@ -123,15 +112,6 @@ function browserUrl(item: SourceItem | null): string {
         >
           <Maximize2 :size="13" />
           {{ $t('sources.openInModal') }}
-        </button>
-        <button
-          v-if="current.playerUrl"
-          class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-base-200 border border-base-300 text-xs text-base-content/80 hover:bg-base-content/10 transition-colors"
-          :title="$t('sources.openInPreview')"
-          @click="openPreviewWindow(current.playerUrl, current.title)"
-        >
-          <MonitorPlay :size="13" />
-          {{ $t('sources.openInPreview') }}
         </button>
         <button
           v-if="downloadable && (current.mediaUrl || current.playerUrl)"

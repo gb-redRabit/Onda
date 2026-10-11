@@ -65,12 +65,11 @@ describe('SourceDetailModal', () => {
     expect(html).not.toContain('source-detail-modal-title');
   });
 
-  it('embeds the player and shows the preview action when playerUrl is set', async () => {
+  it('embeds the player when playerUrl is set', async () => {
     const html = await render({
       item: { id: 'p', title: 'Player', type: 'video', playerUrl: 'https://p/embed' }
     });
     expect(html).toContain('data-testid="embed-webview"');
-    expect(html).toContain('Open in preview window');
   });
 
   it('shows the download button only when the level is downloadable and a url exists', async () => {

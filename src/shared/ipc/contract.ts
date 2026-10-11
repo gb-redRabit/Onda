@@ -196,7 +196,6 @@ export const INVOKE_CHANNELS = [
   'sources:enqueue',
   'sources:downloaded',
   'sources:unmarkDownloaded',
-  'preview:open',
   'preview:prepare',
   'preview:openExternal',
   'preview:setAdblock',

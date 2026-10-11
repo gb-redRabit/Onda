@@ -179,7 +179,6 @@ export type IpcInvokeChannel =
   | 'sources:enqueue'
   | 'sources:downloaded'
   | 'sources:unmarkDownloaded'
-  | 'preview:open'
   | 'preview:prepare'
   | 'preview:openExternal'
   | 'preview:setAdblock'

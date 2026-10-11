@@ -57,14 +57,6 @@ describe('SourcePlayerView', () => {
     expect(html).toContain('First');
   });
 
-  it('offers a preview-window action for playable items', async () => {
-    const withPlayer: SourceItem[] = [
-      { id: 'p', title: 'Player', type: 'video', playerUrl: 'https://p/embed' }
-    ];
-    const html = await render({ items: withPlayer });
-    expect(html).toContain('Open in preview window');
-  });
-
   it('shows the download action when downloadable', async () => {
     expect(await render({ items, downloadable: false })).not.toContain('Download<');
     const html = await render({ items, downloadable: true });

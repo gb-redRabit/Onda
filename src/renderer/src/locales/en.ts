@@ -324,7 +324,6 @@ export default {
     phaseSource: 'Source',
     phaseTest: 'Test',
     openInModal: 'Open in window',
-    openInPreview: 'Open in preview window',
     moveUp: 'Move up',
     moveDown: 'Move down',
     clearFilter: 'Clear filter',

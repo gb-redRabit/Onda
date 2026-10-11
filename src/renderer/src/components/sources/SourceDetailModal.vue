@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import ModalShell from '@renderer/components/ui/ModalShell.vue';
-import { X, Download, ExternalLink, Check, Undo2, MonitorPlay, Play, ListPlus } from '@lucide/vue';
+import { X, Download, ExternalLink, Check, Undo2, Play, ListPlus } from '@lucide/vue';
 import type { SourceItem } from '@renderer/types/sources';
-import { openPreviewWindow } from '@renderer/utils/previewWindow';
 import { isSourceItemPlayable } from '@renderer/utils/sourceStream';
 import EmbedWebview from './EmbedWebview.vue';
 
@@ -165,15 +164,6 @@ function browserUrl(item: SourceItem): string {
             >
               <ListPlus :size="13" />
               {{ $t('sources.addToQueue') }}
-            </button>
-            <button
-              v-if="props.item.playerUrl"
-              class="fx-noise px-3 py-2 fx-depth rounded-field text-xs text-base-content/70 hover:bg-base-content/10 transition-colors flex items-center justify-center gap-1.5"
-              :title="$t('sources.openInPreview')"
-              @click="openPreviewWindow(props.item.playerUrl, props.item.title)"
-            >
-              <MonitorPlay :size="13" />
-              {{ $t('sources.openInPreview') }}
             </button>
             <button
               v-if="props.downloadable"

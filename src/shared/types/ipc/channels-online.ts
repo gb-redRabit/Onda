@@ -251,10 +251,6 @@ export interface OnlineChannels {
   'sources:enqueue': { args: [jobs: IpcDownloadJobInput[]]; result: IpcDownloadTask[] };
   'sources:downloaded': { args: [sourceId: string]; result: string[] };
   'sources:unmarkDownloaded': { args: [sourceId: string, itemIds: string[]]; result: string[] };
-  'preview:open': {
-    args: [url: string, opts?: { title?: string }];
-    result: { success: boolean; error?: string };
-  };
   'preview:prepare': { args: []; result: { success: boolean } };
   'preview:openExternal': { args: [url: string]; result: void };
   'preview:setAdblock': { args: [enabled: boolean]; result: boolean };

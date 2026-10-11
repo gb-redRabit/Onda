@@ -1,17 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import {
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Play,
-  MonitorPlay,
-  ExternalLink
-} from '@lucide/vue';
+import { X, ChevronLeft, ChevronRight, Download, Play, ExternalLink } from '@lucide/vue';
 import type { SourceItem } from '@renderer/types/sources';
 import { useDialogFocus } from '@renderer/composables/useDialogFocus';
-import { openPreviewWindow } from '@renderer/utils/previewWindow';
 import { isSourceItemPlayable } from '@renderer/utils/sourceStream';
 import EmbedWebview from './EmbedWebview.vue';
 
@@ -80,14 +71,6 @@ function onKeydown(event: KeyboardEvent): void {
           <span class="flex-1 min-w-0 truncate text-sm text-white">
             {{ current?.title || $t('sources.untitled') }}
           </span>
-          <button
-            v-if="current?.playerUrl"
-            class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 rounded-field hover:bg-white/10 transition-colors text-xs"
-            :title="$t('sources.openInPreview')"
-            @click="openPreviewWindow(current.playerUrl, current.title)"
-          >
-            <MonitorPlay :size="14" />
-          </button>
           <button
             v-if="current && isSourceItemPlayable(current)"
             class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 rounded-field hover:bg-white/10 transition-colors text-xs"

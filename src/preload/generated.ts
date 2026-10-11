@@ -179,7 +179,6 @@ export const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set([
   'sources:enqueue',
   'sources:downloaded',
   'sources:unmarkDownloaded',
-  'preview:open',
   'preview:prepare',
   'preview:openExternal',
   'preview:setAdblock',
