@@ -13,45 +13,13 @@ type BoundsWithFlag = Electron.Rectangle & { wasMaximized?: boolean };
 type WindowBackgroundMaterial = 'auto' | 'none' | 'mica' | 'acrylic' | 'tabbed';
 
 const desiredWindowMaterials = new WeakMap<BrowserWindow, WindowBackgroundMaterial>();
-/** Ostatnio zastosowany materiał — by „nudge" odpalał się tylko przy realnej zmianie. */
-const currentWindowMaterials = new WeakMap<BrowserWindow, WindowBackgroundMaterial>();
 const materialListenersInstalled = new WeakSet<BrowserWindow>();
 const materialReapplyTimers = new WeakMap<BrowserWindow, ReturnType<typeof setTimeout>>();
 
-function isGlassMaterial(material: WindowBackgroundMaterial): boolean {
-  return material === 'acrylic' || material === 'mica' || material === 'tabbed';
-}
-
-/**
- * Wymusza ponowne przeliczenie materiału przez DWM. Chromium nie renderuje
- * materiału, dopóki rozmiar okna się nie zmieni (electron#39959) — 1px „nudge"
- * i powrót to udokumentowany workaround. Pomijamy okna zmaksymalizowane /
- * pełnoekranowe, gdzie `setSize` walczyłby z menedżerem okna. Nie ruszamy
- * `resizable` (na przezroczystym oknie to potrafi zepsuć przezroczystość).
- */
-function nudgeWindowMaterial(win: BrowserWindow): void {
-  if (win.isDestroyed() || win.isMaximized() || win.isFullScreen()) return;
-  const [w, h] = win.getSize();
-  win.setSize(w, h + 1, false);
-  win.setSize(w, h, false);
-}
-
 function applyWindowMaterial(win: BrowserWindow, material: WindowBackgroundMaterial): boolean {
   if (process.platform !== 'win32' || win.isDestroyed()) return false;
-  const changed = currentWindowMaterials.get(win) !== material;
   try {
-    // Acrylic/Mica renderują się tylko nad przezroczystym obszarem klienta.
-    // Chromium zapamiętuje flagę „translucent" przy tworzeniu okna i nie
-    // aktualizuje jej później, więc po maksymalizacji / pełnym ekranie /
-    // przywróceniu materiał potrafi przestać się renderować (electron#46855,
-    // #46753). Parowanie setBackgroundColor('#00000000') z setBackgroundMaterial
-    // uzbraja go ponownie — to oficjalny workaround z issue.
-    if (isGlassMaterial(material)) {
-      win.setBackgroundColor('#00000000');
-    }
     win.setBackgroundMaterial(material);
-    currentWindowMaterials.set(win, material);
-    if (changed && isGlassMaterial(material)) nudgeWindowMaterial(win);
     return true;
   } catch (e) {
     logger.warn('window', 'setBackgroundMaterial failed (non-fatal)', e);
@@ -80,9 +48,6 @@ function rememberWindowMaterial(win: BrowserWindow, material: WindowBackgroundMa
   win.on('restore', scheduleReapply);
   win.on('maximize', scheduleReapply);
   win.on('unmaximize', scheduleReapply);
-  // Pełny ekran to kolejny stan, po którym materiał przestaje się renderować.
-  win.on('enter-full-screen', scheduleReapply);
-  win.on('leave-full-screen', scheduleReapply);
   win.on('closed', () => {
     const timer = materialReapplyTimers.get(win);
     if (timer) clearTimeout(timer);
