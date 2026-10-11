@@ -22,9 +22,16 @@ const materialReapplyTimers = new WeakMap<BrowserWindow, ReturnType<typeof setTi
  * Zapisuje materiał, z którym okno już powstało (np. akryl z `GLASS_WINDOW_OPTS`),
  * aby pierwsze żądanie z renderera nie wołało `setBackgroundMaterial` po raz drugi
  * (podwójne ustawienie akrylu na Windows powoduje chwilowe zaciśnięcie).
+ *
+ * Instaluje też listenery re-apply od razu: bez tego przy starcie ze szklanym
+ * motywem żądanie `acrylic` jest pomijane (seed), a okno nie ma jeszcze
+ * listenerów `show`/`focus` (instaluje je dopiero pierwsze IPC renderera) —
+ * więc akryl nie zostaje zastosowany aż do następnego focusu. Z listenerami
+ * materiał jest nakładany krótko po pokazaniu okna, niezależnie od renderera.
  */
 export function seedWindowMaterial(win: BrowserWindow, material: WindowBackgroundMaterial): void {
   currentWindowMaterials.set(win, material);
+  rememberWindowMaterial(win, material);
 }
 
 function applyWindowMaterial(win: BrowserWindow, material: WindowBackgroundMaterial): boolean {
