@@ -19,6 +19,15 @@ const materialReapplyTimers = new WeakMap<BrowserWindow, ReturnType<typeof setTi
 function applyWindowMaterial(win: BrowserWindow, material: WindowBackgroundMaterial): boolean {
   if (process.platform !== 'win32' || win.isDestroyed()) return false;
   try {
+    // Acrylic/Mica renderują się tylko nad przezroczystym obszarem klienta.
+    // Chromium zapamiętuje flagę „translucent" przy tworzeniu okna i nie
+    // aktualizuje jej później, więc po maksymalizacji / pełnym ekranie /
+    // przywróceniu materiał potrafi przestać się renderować (electron#46855,
+    // #46753). Parowanie setBackgroundColor('#00000000') z setBackgroundMaterial
+    // uzbraja go ponownie — to oficjalny workaround z issue.
+    if (material === 'acrylic' || material === 'mica' || material === 'tabbed') {
+      win.setBackgroundColor('#00000000');
+    }
     win.setBackgroundMaterial(material);
     return true;
   } catch (e) {
@@ -48,6 +57,9 @@ function rememberWindowMaterial(win: BrowserWindow, material: WindowBackgroundMa
   win.on('restore', scheduleReapply);
   win.on('maximize', scheduleReapply);
   win.on('unmaximize', scheduleReapply);
+  // Pełny ekran to kolejny stan, po którym materiał przestaje się renderować.
+  win.on('enter-full-screen', scheduleReapply);
+  win.on('leave-full-screen', scheduleReapply);
   win.on('closed', () => {
     const timer = materialReapplyTimers.get(win);
     if (timer) clearTimeout(timer);
