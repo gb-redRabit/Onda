@@ -14,6 +14,7 @@ import {
 import type { DraftEndpoint, DraftPassKey } from '@renderer/components/sources/endpointDraft';
 import FieldLabel from './FieldLabel.vue';
 import PassKeyRow from './PassKeyRow.vue';
+import EndpointTableRowFields from './EndpointTableRowFields.vue';
 import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
 
 const props = defineProps<{
@@ -144,60 +145,7 @@ const tableViews = [
           <option v-for="o in fieldOptions" :key="o" :value="o" />
         </datalist>
       </div>
-      <div class="grid grid-cols-2 gap-2">
-        <div>
-          <FieldLabel :text="t('sources.tableRowTitle')" :upper="false" tight />
-          <input
-            v-model="model.tableTitle"
-            type="text"
-            :list="fieldId('ttitle')"
-            :placeholder="$t('sources.episodeTemplatePlaceholder') + ' {n}'"
-            class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-          />
-          <datalist :id="fieldId('ttitle')">
-            <option v-for="o in rowOptions" :key="o" :value="`{${o}}`" />
-          </datalist>
-        </div>
-        <div>
-          <FieldLabel :text="t('sources.tableRowThumb')" :upper="false" tight />
-          <input
-            v-model="model.tableThumbnail"
-            type="text"
-            :list="fieldId('tthumb')"
-            placeholder="bg"
-            class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-          />
-          <datalist :id="fieldId('tthumb')">
-            <option v-for="o in rowOptions" :key="o" :value="o" />
-          </datalist>
-        </div>
-        <div>
-          <FieldLabel :text="t('sources.tableRowPlayer')" :upper="false" tight />
-          <input
-            v-model="model.tablePlayerUrl"
-            type="text"
-            :list="fieldId('tplayer')"
-            :placeholder="t('sources.tableRowPlayerPh')"
-            class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-          />
-          <datalist :id="fieldId('tplayer')">
-            <option v-for="o in rowOptions" :key="o" :value="o" />
-          </datalist>
-        </div>
-        <div>
-          <FieldLabel :text="t('sources.tableRowKey')" :upper="false" tight />
-          <input
-            v-model="model.tableRowKey"
-            type="text"
-            :list="fieldId('trowkey')"
-            placeholder="anime_episode_number"
-            class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-          />
-          <datalist :id="fieldId('trowkey')">
-            <option v-for="o in rowOptions" :key="o" :value="o" />
-          </datalist>
-        </div>
-      </div>
+      <EndpointTableRowFields v-model="model" :row-options="rowOptions" :id-base="model.id" />
       <div class="space-y-1">
         <div class="flex items-center justify-between">
           <FieldLabel :text="t('sources.tableRowKeys')" tight />
