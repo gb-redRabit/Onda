@@ -257,4 +257,5 @@ export interface OnlineChannels {
   };
   'preview:prepare': { args: []; result: { success: boolean } };
   'preview:openExternal': { args: [url: string]; result: void };
+  'preview:setAdblock': { args: [enabled: boolean]; result: boolean };
 }

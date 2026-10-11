@@ -182,6 +182,7 @@ export type IpcInvokeChannel =
   | 'preview:open'
   | 'preview:prepare'
   | 'preview:openExternal'
+  | 'preview:setAdblock'
   | 'pip:start'
   | 'pip:stop'
   | 'pip:restore'

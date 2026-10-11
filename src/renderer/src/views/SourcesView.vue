@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineAsyncComponent } from 'vue';
+import { defineAsyncComponent, onMounted } from 'vue';
 import {
   RefreshCw,
   Loader2,
@@ -8,7 +8,9 @@ import {
   ChevronRight,
   ArrowLeft,
   Download,
-  CheckSquare
+  CheckSquare,
+  Shield,
+  ShieldOff
 } from '@lucide/vue';
 import SourcesContent from '@renderer/components/sources/SourcesContent.vue';
 import SourcesFilterBar from '@renderer/components/sources/SourcesFilterBar.vue';
@@ -20,6 +22,7 @@ import EmptyState from '@renderer/components/ui/EmptyState.vue';
 import IconButton from '@renderer/components/ui/IconButton.vue';
 import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 import { useSourcesView } from '@renderer/composables/useSourcesView';
+import { useSettingsStore } from '@renderer/stores/settings';
 
 // Modale są leniwe — montowane tylko na żądanie (plan 3.5).
 const SourceGuideModal = defineAsyncComponent(
@@ -94,6 +97,19 @@ const {
 // `scrollRef` jest wiązany w template (`ref="scrollRef"`); jawna referencja
 // zapobiega uznaniu przez vue-tsc, że jest nieużywane.
 void scrollRef;
+
+const settings = useSettingsStore();
+
+// Ad-blocker działa tylko w osadzonych playerach Źródeł; przełącznik trzyma ustawienie.
+function togglePreviewAdblock(): void {
+  const next = !settings.appearance.previewAdblock;
+  settings.updateAppearance({ previewAdblock: next });
+  void window.api?.invoke('preview:setAdblock', next);
+}
+
+onMounted(() => {
+  void window.api?.invoke('preview:setAdblock', settings.appearance.previewAdblock);
+});
 </script>
 
 <template>
@@ -200,6 +216,16 @@ void scrollRef;
             :pressed="selectMode"
             @click="toggleSelectMode"
           />
+          <IconButton
+            :label="$t('settings.previewAdblock')"
+            class="shrink-0"
+            data-testid="sources-adblock-toggle"
+            :pressed="settings.appearance.previewAdblock"
+            @click="togglePreviewAdblock"
+          >
+            <Shield v-if="settings.appearance.previewAdblock" :size="14" />
+            <ShieldOff v-else :size="14" />
+          </IconButton>
           <IconButton
             :label="$t('sources.refresh')"
             class="shrink-0"

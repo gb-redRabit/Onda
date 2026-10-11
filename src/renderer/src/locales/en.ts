@@ -593,6 +593,7 @@ export default {
     updateReady: 'Ready to install:',
     restartInstall: 'Restart & install',
     updateManage: 'Show in settings',
+    previewAdblock: 'Block ads in preview',
     updateUpToDate: 'App is up to date.',
     checking: 'Checking',
     updateError: 'Update error',

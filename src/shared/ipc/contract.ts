@@ -199,6 +199,7 @@ export const INVOKE_CHANNELS = [
   'preview:open',
   'preview:prepare',
   'preview:openExternal',
+  'preview:setAdblock',
   // nakładki
   'pip:start',
   'pip:stop',

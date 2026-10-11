@@ -131,7 +131,8 @@ const APPEARANCE_FIELDS: Record<string, Sanitizer> = {
   audioPipOpacity: numClamped(0, 1),
   audioPipPosition: enumOf(['bottom-right', 'bottom-left', 'top-right', 'top-left']),
   audioPipEdgePosition: enumOf(['top', 'bottom', 'left', 'right']),
-  audioLayout: obj(AUDIO_LAYOUT_FIELDS)
+  audioLayout: obj(AUDIO_LAYOUT_FIELDS),
+  previewAdblock: bool
 };
 
 const VISUALIZATION_FIELDS: Record<string, Sanitizer> = {

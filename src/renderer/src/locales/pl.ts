@@ -593,6 +593,7 @@ export default {
     updateReady: 'Gotowe do instalacji:',
     restartInstall: 'Uruchom ponownie i zainstaluj',
     updateManage: 'Pokaż w ustawieniach',
+    previewAdblock: 'Blokuj reklamy w podglądzie',
     updateUpToDate: 'Aplikacja jest aktualna.',
     checking: 'Sprawdzanie',
     updateError: 'Błąd aktualizacji',

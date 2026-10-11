@@ -182,6 +182,7 @@ export const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set([
   'preview:open',
   'preview:prepare',
   'preview:openExternal',
+  'preview:setAdblock',
   'pip:start',
   'pip:stop',
   'pip:restore',

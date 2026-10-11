@@ -1,6 +1,7 @@
 import { BrowserWindow, ipcMain, shell } from 'electron';
 import { createWindow } from '../windows/window-factory';
 import { configurePreviewSession, installWebviewGuard } from './preview-session';
+import { installPreviewAdblock, setPreviewAdblock } from './adblock';
 import { logger } from '../../shared/logger';
 
 // Okno podglądu playerów: własny renderer (`preview.html`) z paskiem narzędzi i
@@ -58,6 +59,14 @@ export function openPreviewWindow(
 export function registerPreviewHandlers(): void {
   // Guard `<webview>` obejmuje też osadzenia inline w głównym oknie (modal playera).
   installWebviewGuard();
+  // Własny ad-blocker dla sesji podglądu (tylko osadzone playery Źródeł).
+  installPreviewAdblock();
+
+  // Włącz/wyłącz ad-blocker podglądu (stan trzyma ustawienie `appearance.previewAdblock`).
+  ipcMain.handle('preview:setAdblock', (_event, on: unknown) => {
+    setPreviewAdblock(on === true);
+    return on === true;
+  });
 
   ipcMain.handle('preview:open', (_event, url: unknown, opts?: unknown) => {
     if (typeof url !== 'string') return { success: false, error: 'Invalid URL' };
