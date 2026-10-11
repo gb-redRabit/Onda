@@ -86,7 +86,7 @@ function move(index: number, dir: -1 | 1): void {
 <template>
   <div
     class="w-64 max-lg:w-56 shrink-0 h-full flex flex-col border-r border-base-300 bg-base-100/(--glass-alpha)"
-    :style="{ contain: 'paint' }"
+    :style="{ backdropFilter: 'none', WebkitBackdropFilter: 'none' }"
   >
     <div class="flex items-center justify-between px-3 py-2.5 border-b border-base-300">
       <h2 class="text-sm font-semibold">{{ $t('sources.title') }}</h2>
