@@ -24,15 +24,15 @@ function src(id: string): MediaSource {
 }
 
 describe('createSourcesList', () => {
-  it('loads sources and selects the first one', async () => {
+  it('loads sources without selecting any (no auto-fetch on entering the view)', async () => {
     const invoke = vi.fn().mockResolvedValue([src('a'), src('b')]);
     stub(invoke);
     const list = createSourcesList();
     await list.loadSources();
     expect(invoke).toHaveBeenCalledWith('sources:list');
     expect(list.sources.value.map((s) => s.id)).toEqual(['a', 'b']);
-    expect(list.activeSourceId.value).toBe('a');
-    expect(list.activeEndpointId.value).toBe('a-e');
+    expect(list.activeSourceId.value).toBe('');
+    expect(list.activeEndpointId.value).toBe('');
   });
 
   it('reorders optimistically and keeps the server order', async () => {
@@ -54,7 +54,7 @@ describe('createSourcesList', () => {
     expect(list.sources.value.map((s) => s.id)).toEqual(['a', 'b', 'c']);
   });
 
-  it('deletes a source and selects the first when the active one is removed', async () => {
+  it('deletes a source and clears the selection when the active one is removed', async () => {
     const invoke = vi.fn().mockResolvedValue([src('b')]);
     stub(invoke);
     const list = createSourcesList();
@@ -63,6 +63,6 @@ describe('createSourcesList', () => {
     const res = await list.deleteSource('a');
     expect(res).toEqual({ ok: true, wasActive: true });
     expect(list.sources.value.map((s) => s.id)).toEqual(['b']);
-    expect(list.activeSourceId.value).toBe('b');
+    expect(list.activeSourceId.value).toBe('');
   });
 });

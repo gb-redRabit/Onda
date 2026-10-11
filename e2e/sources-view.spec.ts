@@ -273,4 +273,46 @@ test.describe('sources view', () => {
       });
     });
   });
+
+  test('does not auto-select a source when entering the view', async () => {
+    const fixture = await startFixture();
+    const onda = await launchOnda();
+    const { page } = onda;
+    try {
+      await dismissWizard(page);
+      await page.evaluate(async (baseUrl) => {
+        const api = (window as unknown as { api: OndaTestApi }).api;
+        await api.invoke('sources:save', {
+          id: 'e2e-noselect',
+          name: 'No Select',
+          baseUrl,
+          auth: { type: 'none' },
+          allowPrivateNetwork: true,
+          endpoints: [
+            {
+              id: 'items',
+              name: 'Items',
+              method: 'GET',
+              path: '/items',
+              mapping: { arrayPath: 'items', fields: { title: 'title' } }
+            }
+          ],
+          createdAt: 0
+        });
+      }, fixture.url);
+
+      await page.reload();
+      await dismissWizard(page);
+      await page.evaluate(() => {
+        window.location.hash = '#/sources';
+      });
+      await expect(page.getByTestId('sources-view')).toBeVisible();
+      // Brak wybranego źródła: nie ma panelu szczegółów (i nie pobrano żadnej listy).
+      await expect(page.getByTestId('sources-detail')).toHaveCount(0);
+      expect(onda.pageErrors).toEqual([]);
+    } finally {
+      await onda.dispose();
+      await fixture.close();
+    }
+  });
 });

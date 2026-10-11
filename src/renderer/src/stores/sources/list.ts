@@ -24,17 +24,12 @@ export function createSourcesList() {
   );
   const startPage = computed(() => activeEndpoint.value?.pagination?.pageStart ?? 1);
 
-  function selectFirst() {
-    const first = sources.value[0];
-    activeSourceId.value = first?.id || '';
-    activeEndpointId.value = first?.endpoints[0]?.id || '';
-  }
-
   async function loadSources() {
     try {
       const list = (await window.api.invoke('sources:list')) as MediaSource[];
       sources.value = list || [];
-      if (!activeSourceId.value && sources.value.length) selectFirst();
+      // Świadomie NIE wybieramy pierwszego źródła: wejście w widok nie może
+      // automatycznie pobierać (dużej) listy — to powodowało freez. Wybór należy do użytkownika.
     } catch {
       sources.value = [];
     } finally {
@@ -70,7 +65,11 @@ export function createSourcesList() {
     try {
       const list = (await window.api.invoke('sources:delete', id)) as MediaSource[];
       sources.value = list || [];
-      if (wasActive) selectFirst();
+      // Usunięcie aktywnego źródła NIE wybiera następnego (bez auto-fetchu dużych list).
+      if (wasActive) {
+        activeSourceId.value = '';
+        activeEndpointId.value = '';
+      }
       return { ok: true, wasActive };
     } catch (e) {
       // Błąd zwracamy do widoku, żeby pokazał toast zamiast cicho połknąć porażkę.

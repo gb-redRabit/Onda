@@ -1,4 +1,4 @@
-import { ref, computed, watch, onMounted, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSourcesStore } from '@renderer/stores/sources';
 import {
@@ -337,10 +337,15 @@ export function useSourcesView() {
 
   onMounted(async () => {
     if (!sources.isLoaded) await sources.loadSources();
-    if (sources.activeSource) {
-      void sources.testSource(sources.activeSource);
-      await sources.fetchItems(currentQuery());
-    }
+    // Świadomie brak auto-wyboru i auto-pobierania: wejście w widok nie ładuje
+    // żadnego źródła (duże listy powodowały freez). Źródło wybiera użytkownik.
+  });
+
+  onBeforeUnmount(() => {
+    // Opuszczenie widoku czyści wybór, więc powrót zaczyna się bez wybranego źródła
+    // (i bez automatycznego pobierania).
+    sources.activeSourceId = '';
+    sources.activeEndpointId = '';
   });
 
   return {
