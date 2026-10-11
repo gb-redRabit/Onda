@@ -14,6 +14,8 @@ export const DEFAULT_APPEARANCE = {
   showAlbums: true,
   locale: 'pl' as const,
   animations: true,
+  // Blokowanie reklam w osadzonych playerach (tylko sesja podglądu Źródeł).
+  previewAdblock: true,
   audioPipDock: 'bottom-right' as AudioPipDock,
   audioPipAutoShow: true,
   audioPipAutoHide: true,

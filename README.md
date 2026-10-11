@@ -98,23 +98,23 @@
 
 ### Tech Stack
 
-| Layer          | Technology                                                    |
-| -------------- | ------------------------------------------------------------- |
-| Runtime        | Electron 43.2 (sandbox, contextIsolation, no nodeIntegration) |
-| UI             | Vue 3.5 (Composition API, `<script setup>`)                   |
-| Language       | TypeScript 5.9 (strict)                                       |
-| Build          | electron-vite 5 + Vite 7.2                                    |
-| Styling        | Tailwind CSS 4.3 + daisyUI theme values                       |
-| State          | Pinia 3                                                       |
-| Routing        | vue-router 4 (hash history, lazy loading)                     |
-| i18n           | vue-i18n 11 (PL/EN, parity enforced by tests)                 |
-| Metadata       | music-metadata, node-id3                                      |
-| Virtualization | @tanstack/vue-virtual                                         |
-| Images         | sharp (libvips)                                               |
-| Subtitles      | jassub (WASM)                                                 |
-| File watching  | chokidar                                                      |
-| Testing        | Vitest 3 + jsdom, Playwright 1.63 (E2E)                       |
-| Packaging      | electron-builder (NSIS / DMG / AppImage / deb / rpm)          |
+| Layer          | Technology                                                  |
+| -------------- | ----------------------------------------------------------- |
+| Runtime        | Electron 44 (sandbox, contextIsolation, no nodeIntegration) |
+| UI             | Vue 3.5 (Composition API, `<script setup>`)                 |
+| Language       | TypeScript 5.9 (strict)                                     |
+| Build          | electron-vite 5 + Vite 7.3                                  |
+| Styling        | Tailwind CSS 4.3 + daisyUI theme values                     |
+| State          | Pinia 4                                                     |
+| Routing        | vue-router 5 (hash history, lazy loading)                   |
+| i18n           | vue-i18n 11 (PL/EN, parity enforced by tests)               |
+| Metadata       | music-metadata, node-id3                                    |
+| Virtualization | @tanstack/vue-virtual                                       |
+| Images         | sharp (libvips)                                             |
+| Subtitles      | jassub (WASM)                                               |
+| File watching  | chokidar                                                    |
+| Testing        | Vitest 5 + jsdom 30, Playwright 1.63 (E2E)                  |
+| Packaging      | electron-builder (NSIS / DMG / AppImage / deb / rpm)        |
 
 ### External dependencies (not bundled)
 
@@ -154,7 +154,7 @@ Onda/
 
 ### Quick Start
 
-Requirements: **Node.js ≥ 22.12** and npm ≥ 11.
+Requirements: **Node.js ≥ 22.12** and npm ≥ 11. Packaged macOS builds require **macOS 13 (Ventura)** or later (Electron 44).
 
 ```bash
 npm install
@@ -306,23 +306,23 @@ Onda is **source-available**, not open source: you may use, modify and share it 
 
 ### Stos technologiczny
 
-| Warstwa        | Technologia                                                     |
-| -------------- | --------------------------------------------------------------- |
-| Runtime        | Electron 43.2 (sandbox, contextIsolation, brak nodeIntegration) |
-| UI             | Vue 3.5 (Composition API, `<script setup>`)                     |
-| Język          | TypeScript 5.9 (strict)                                         |
-| Build          | electron-vite 5 + Vite 7.2                                      |
-| Style          | Tailwind CSS 4.3 + wartości motywu daisyUI                      |
-| Stan           | Pinia 3                                                         |
-| Routing        | vue-router 4 (hash history, lazy loading)                       |
-| i18n           | vue-i18n 11 (PL/EN, parytet wymuszany testami)                  |
-| Metadane       | music-metadata, node-id3                                        |
-| Wirtualizacja  | @tanstack/vue-virtual                                           |
-| Obrazy         | sharp (libvips)                                                 |
-| Napisy         | jassub (WASM)                                                   |
-| Watcher plików | chokidar                                                        |
-| Testy          | Vitest 3 + jsdom, Playwright 1.63 (E2E)                         |
-| Pakiety        | electron-builder (NSIS / DMG / AppImage / deb / rpm)            |
+| Warstwa        | Technologia                                                   |
+| -------------- | ------------------------------------------------------------- |
+| Runtime        | Electron 44 (sandbox, contextIsolation, brak nodeIntegration) |
+| UI             | Vue 3.5 (Composition API, `<script setup>`)                   |
+| Język          | TypeScript 5.9 (strict)                                       |
+| Build          | electron-vite 5 + Vite 7.3                                    |
+| Style          | Tailwind CSS 4.3 + wartości motywu daisyUI                    |
+| Stan           | Pinia 4                                                       |
+| Routing        | vue-router 5 (hash history, lazy loading)                     |
+| i18n           | vue-i18n 11 (PL/EN, parytet wymuszany testami)                |
+| Metadane       | music-metadata, node-id3                                      |
+| Wirtualizacja  | @tanstack/vue-virtual                                         |
+| Obrazy         | sharp (libvips)                                               |
+| Napisy         | jassub (WASM)                                                 |
+| Watcher plików | chokidar                                                      |
+| Testy          | Vitest 5 + jsdom 30, Playwright 1.63 (E2E)                    |
+| Pakiety        | electron-builder (NSIS / DMG / AppImage / deb / rpm)          |
 
 ### Zależności zewnętrzne (nie-NPM)
 
@@ -362,7 +362,7 @@ Onda/
 
 ### Szybki start
 
-Wymagania: **Node.js ≥ 22.12** i npm ≥ 11.
+Wymagania: **Node.js ≥ 22.12** i npm ≥ 11. Spakowane buildy dla macOS wymagają **macOS 13 (Ventura)** lub nowszego (Electron 44).
 
 ```bash
 npm install

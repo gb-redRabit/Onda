@@ -24,17 +24,12 @@ export function createSourcesList() {
   );
   const startPage = computed(() => activeEndpoint.value?.pagination?.pageStart ?? 1);
 
-  function selectFirst() {
-    const first = sources.value[0];
-    activeSourceId.value = first?.id || '';
-    activeEndpointId.value = first?.endpoints[0]?.id || '';
-  }
-
   async function loadSources() {
     try {
       const list = (await window.api.invoke('sources:list')) as MediaSource[];
       sources.value = list || [];
-      if (!activeSourceId.value && sources.value.length) selectFirst();
+      // Świadomie NIE wybieramy pierwszego źródła: wejście w widok nie może
+      // automatycznie pobierać (dużej) listy — to powodowało freez. Wybór należy do użytkownika.
     } catch {
       sources.value = [];
     } finally {
@@ -70,11 +65,33 @@ export function createSourcesList() {
     try {
       const list = (await window.api.invoke('sources:delete', id)) as MediaSource[];
       sources.value = list || [];
-      if (wasActive) selectFirst();
+      // Usunięcie aktywnego źródła NIE wybiera następnego (bez auto-fetchu dużych list).
+      if (wasActive) {
+        activeSourceId.value = '';
+        activeEndpointId.value = '';
+      }
       return { ok: true, wasActive };
     } catch (e) {
       // Błąd zwracamy do widoku, żeby pokazał toast zamiast cicho połknąć porażkę.
       return { ok: false, wasActive: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
+  /** Ustawia kolejność źródeł (lista id). Optymistycznie lokalnie + zapis w main. */
+  async function reorderSources(ids: string[]): Promise<void> {
+    const previous = sources.value;
+    const byId = new Map(previous.map((s) => [s.id, s]));
+    const optimistic = ids
+      .map((id) => byId.get(id))
+      .filter((s): s is MediaSource => !!s)
+      .concat(previous.filter((s) => !ids.includes(s.id)));
+    sources.value = optimistic;
+    try {
+      const list = (await window.api.invoke('sources:reorder', ids)) as MediaSource[];
+      if (Array.isArray(list)) sources.value = list;
+    } catch {
+      // Fail-safe: przywróć poprzednią kolejność, jeśli zapis się nie powiódł.
+      sources.value = previous;
     }
   }
 
@@ -89,6 +106,7 @@ export function createSourcesList() {
     startPage,
     loadSources,
     saveSource,
-    deleteSource
+    deleteSource,
+    reorderSources
   };
 }

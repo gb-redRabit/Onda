@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineAsyncComponent } from 'vue';
+import { defineAsyncComponent, onMounted } from 'vue';
 import {
   RefreshCw,
   Loader2,
@@ -7,14 +7,22 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowLeft,
-  Download
+  Download,
+  CheckSquare,
+  Shield,
+  ShieldOff
 } from '@lucide/vue';
 import SourcesContent from '@renderer/components/sources/SourcesContent.vue';
 import SourcesFilterBar from '@renderer/components/sources/SourcesFilterBar.vue';
+import SourcesBulkBar from '@renderer/components/sources/SourcesBulkBar.vue';
+import SourcesQueryBuilder from '@renderer/components/sources/SourcesQueryBuilder.vue';
 import SourcesSidebar from '@renderer/components/sources/SourcesSidebar.vue';
+import SourceHealthBar from '@renderer/components/sources/SourceHealthBar.vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
+import IconButton from '@renderer/components/ui/IconButton.vue';
 import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 import { useSourcesView } from '@renderer/composables/useSourcesView';
+import { useSettingsStore } from '@renderer/stores/settings';
 
 // Modale są leniwe — montowane tylko na żądanie (plan 3.5).
 const SourceGuideModal = defineAsyncComponent(
@@ -41,6 +49,15 @@ const {
   sortMode,
   filterText,
   downloadingAll,
+  selectMode,
+  selectedIds,
+  selectedCount,
+  selectedPlayableCount,
+  viewMode,
+  paramKeys,
+  paramDefaults,
+  builderValues,
+  healthState,
   displayItems,
   activeSource,
   activeEndpoint,
@@ -60,16 +77,39 @@ const {
   onEndpointChange,
   onItemClick,
   onRowClick,
+  onPlayNow,
+  onAddToQueue,
+  toggleSelectMode,
+  toggleSelect,
+  clearSelection,
+  onBulkDownload,
+  onBulkQueue,
+  onBulkPlay,
   onDownload,
   onDownloadAll,
+  onUnmarkDownloaded,
   onSelectSource,
   onExport,
   onImport,
-  onRemoveSource
+  onRemoveSource,
+  onReorderSources
 } = useSourcesView();
 // `scrollRef` jest wiązany w template (`ref="scrollRef"`); jawna referencja
 // zapobiega uznaniu przez vue-tsc, że jest nieużywane.
 void scrollRef;
+
+const settings = useSettingsStore();
+
+// Ad-blocker działa tylko w osadzonych playerach Źródeł; przełącznik trzyma ustawienie.
+function togglePreviewAdblock(): void {
+  const next = !settings.appearance.previewAdblock;
+  settings.updateAppearance({ previewAdblock: next });
+  void window.api?.invoke('preview:setAdblock', next);
+}
+
+onMounted(() => {
+  void window.api?.invoke('preview:setAdblock', settings.appearance.previewAdblock);
+});
 </script>
 
 <template>
@@ -83,6 +123,7 @@ void scrollRef;
       @add="openAdd"
       @edit="openEdit"
       @remove="onRemoveSource"
+      @reorder="onReorderSources"
       @export-all="onExport"
       @import-all="onImport"
       @guide="showGuide = true"
@@ -91,18 +132,16 @@ void scrollRef;
     <div class="flex-1 min-w-0 h-full flex flex-col">
       <div v-if="activeSource" data-testid="sources-detail" class="flex flex-col h-full">
         <div
-          class="ui-page-toolbar flex items-center gap-2 px-4 py-2 border-b border-base-300 overflow-x-auto"
+          class="ui-page-toolbar flex items-center gap-2 px-4 py-2 border-b border-base-300 bg-base-100/(--glass-alpha) backdrop-blur overflow-x-auto"
         >
-          <button
+          <IconButton
             v-if="sources.navStack.length"
-            class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors"
-            :title="$t('sources.back')"
-            :aria-label="$t('sources.back')"
+            :icon="ArrowLeft"
+            :label="$t('sources.back')"
+            class="shrink-0"
             :disabled="sources.loading"
             @click="sources.goBack().then(scrollToTop)"
-          >
-            <ArrowLeft :size="14" />
-          </button>
+          />
           <select
             v-if="!sources.navStack.length"
             :value="sources.activeEndpointId"
@@ -137,15 +176,12 @@ void scrollRef;
             class="flex-1 min-w-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
           />
           <div v-if="sources.paginationMode === 'page'" class="flex items-center gap-1 shrink-0">
-            <button
-              class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-40"
+            <IconButton
+              :icon="ChevronLeft"
+              :label="$t('sources.prevPage')"
               :disabled="sources.currentPage <= sources.startPage"
-              :title="$t('sources.prevPage')"
-              :aria-label="$t('sources.prevPage')"
               @click="pagePrev"
-            >
-              <ChevronLeft :size="14" />
-            </button>
+            />
             <input
               v-model.number="pageInput"
               type="number"
@@ -154,50 +190,79 @@ void scrollRef;
               :title="$t('sources.currentPage')"
               @change="goToPage"
             />
-            <button
-              class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-40"
+            <IconButton
+              :icon="ChevronRight"
+              :label="$t('sources.nextPage')"
               :disabled="sources.loading || !sources.hasMore"
-              :title="$t('sources.nextPage')"
-              :aria-label="$t('sources.nextPage')"
               @click="pageNext"
-            >
-              <ChevronRight :size="14" />
-            </button>
+            />
           </div>
-          <button
+          <IconButton
             v-if="downloadable && !isPage && sources.items.length"
-            class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
-            :title="$t('sources.downloadAll')"
-            :aria-label="$t('sources.downloadAll')"
+            :label="$t('sources.downloadAll')"
+            class="shrink-0"
             :disabled="sources.loading || downloadingAll"
             @click="onDownloadAll(displayItems)"
           >
             <Loader2 v-if="downloadingAll" :size="14" class="animate-spin" />
             <Download v-else :size="14" />
-          </button>
-          <button
-            class="fx-noise shrink-0 p-2 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
-            :title="$t('sources.refresh')"
-            :aria-label="$t('sources.refresh')"
+          </IconButton>
+          <IconButton
+            v-if="isPage ? sources.tableRows.length : sources.items.length"
+            :icon="CheckSquare"
+            :label="$t('sources.select')"
+            class="shrink-0"
+            data-testid="sources-select-toggle"
+            :pressed="selectMode"
+            @click="toggleSelectMode"
+          />
+          <IconButton
+            :label="$t('settings.previewAdblock')"
+            class="shrink-0"
+            data-testid="sources-adblock-toggle"
+            :pressed="settings.appearance.previewAdblock"
+            @click="togglePreviewAdblock"
+          >
+            <Shield v-if="settings.appearance.previewAdblock" :size="14" />
+            <ShieldOff v-else :size="14" />
+          </IconButton>
+          <IconButton
+            :label="$t('sources.refresh')"
+            class="shrink-0"
             :disabled="sources.loading"
             @click="refresh"
           >
             <Loader2 v-if="sources.loading" :size="14" class="animate-spin" />
             <RefreshCw v-else :size="14" />
-          </button>
+          </IconButton>
         </div>
-        <div
-          v-if="sources.activeSourceId && sources.checking[sources.activeSourceId]"
-          class="px-4 py-1.5 text-xs text-warning flex items-center gap-2 border-b border-base-300"
-          data-testid="sources-checking"
-        >
-          <Loader2 :size="12" class="animate-spin" />
-          {{ $t('sources.testChecking') }}
-        </div>
+        <SourceHealthBar
+          :state="healthState"
+          :error="sources.testStatus[sources.activeSourceId]?.error"
+          :at="sources.testStatus[sources.activeSourceId]?.at"
+          :ms="sources.testStatus[sources.activeSourceId]?.ms"
+          :item-count="sources.items.length"
+          :downloaded-count="sources.downloadedIds.size"
+        />
         <SourcesFilterBar
           v-if="!isPage"
           v-model:filter-text="filterText"
           v-model:sort-mode="sortMode"
+        />
+        <SourcesQueryBuilder
+          v-if="paramKeys.length"
+          v-model="builderValues"
+          :keys="paramKeys"
+          :defaults="paramDefaults"
+        />
+        <SourcesBulkBar
+          v-if="selectMode"
+          :count="selectedCount"
+          :playable-count="selectedPlayableCount"
+          @download="onBulkDownload"
+          @queue="onBulkQueue"
+          @play="onBulkPlay"
+          @clear="clearSelection"
         />
         <p
           v-if="currentUrl"
@@ -212,6 +277,7 @@ void scrollRef;
             :error="sources.lastError"
             :is-auth-error="isAuthError"
             :is-page="isPage"
+            :view-mode="viewMode"
             :page-item="sources.items[0]"
             :rows="sources.tableRows"
             :row-loading="sources.tableLoading"
@@ -225,10 +291,14 @@ void scrollRef;
             :pagination-mode="sources.paginationMode"
             :downloading-item="downloadingItem"
             :downloaded-ids="sources.downloadedIds"
+            :selectable="selectMode"
+            :selected-ids="selectedIds"
             @row-click="onRowClick"
             @download="onDownload"
             @download-all="onDownloadAll"
             @preview="onItemClick"
+            @select="toggleSelect"
+            @play="onPlayNow"
             @fetch-more="sources.fetchMore()"
             @edit-source="openEdit(activeSource)"
           />
@@ -258,6 +328,9 @@ void scrollRef;
       :downloaded="!!previewItem?.id && sources.downloadedIds.has(previewItem.id)"
       @close="previewItem = null"
       @download="onDownload"
+      @unmark="onUnmarkDownloaded"
+      @play="onPlayNow"
+      @queue="onAddToQueue"
     />
     <SourceGuideModal v-if="showGuide" @close="showGuide = false" />
 

@@ -8,7 +8,10 @@ import { wireAudioEvents } from './audioPlayerEvents';
 export const currentTime = ref(0);
 export const duration = ref(0);
 const buffered = ref(0);
-const isPlaying = ref(false);
+// Rzeczywisty stan elementu audio (aktualizowany dla WSZYSTKICH typów, w tym `stream`).
+// Używane m.in. przez PiP audio, żeby nie pokazywać go dla wyciszonego/zakończonego strumienia,
+// gdy `player.isPlaying` jest nieaktualne (dla `stream` nie jest synchronizowane).
+export const isPlaying = ref(false);
 const volume = ref(0.8);
 const mediaEl = ref<HTMLAudioElement | null>(null);
 const isReady = ref(false);

@@ -9,16 +9,22 @@ interface VirtualGrid {
 
 export function useVirtualGrid(
   scrollRef: Ref<HTMLElement | null>,
-  colWidth: number,
+  colWidth: number | (() => number),
   defaultCols = 6
 ): VirtualGrid {
   const cols = ref(defaultCols);
   let indexRowObserver: ResizeObserver | null = null;
 
+  function resolveWidth(): number {
+    return typeof colWidth === 'function' ? colWidth() : colWidth;
+  }
+
   function update(): void {
     const el = scrollRef.value;
     if (!el) return;
-    cols.value = Math.max(2, Math.floor(el.clientWidth / colWidth));
+    const width = resolveWidth();
+    if (width <= 0) return;
+    cols.value = Math.max(2, Math.floor(el.clientWidth / width));
   }
 
   function observe(): void {

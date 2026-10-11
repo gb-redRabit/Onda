@@ -2,7 +2,11 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, readFile, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { appendDownloadedItem, getDownloadedForSource } from '../sources/sources-downloaded-store';
+import {
+  appendDownloadedItem,
+  getDownloadedForSource,
+  removeDownloadedItems
+} from '../sources/sources-downloaded-store';
 
 let dir: string;
 let file: string;
@@ -59,5 +63,32 @@ describe('sources-downloaded-store', () => {
     ]);
     const ids = await getDownloadedForSource(file, 'src-a');
     expect(ids.sort()).toEqual(['item-1', 'item-2', 'item-3']);
+  });
+
+  it('removes selected ids and returns the remaining ones', async () => {
+    await appendDownloadedItem(file, 'src-a', 'item-1');
+    await appendDownloadedItem(file, 'src-a', 'item-2');
+    await appendDownloadedItem(file, 'src-a', 'item-3');
+
+    const remaining = await removeDownloadedItems(file, 'src-a', ['item-2']);
+    expect(remaining).toEqual(['item-1', 'item-3']);
+    expect(await getDownloadedForSource(file, 'src-a')).toEqual(['item-1', 'item-3']);
+  });
+
+  it('clears the whole source when no ids are given', async () => {
+    await appendDownloadedItem(file, 'src-a', 'item-1');
+    await appendDownloadedItem(file, 'src-a', 'item-2');
+    await appendDownloadedItem(file, 'src-b', 'item-1');
+
+    expect(await removeDownloadedItems(file, 'src-a', [])).toEqual([]);
+    expect(await getDownloadedForSource(file, 'src-a')).toEqual([]);
+    // Inne źródła pozostają nietknięte.
+    expect(await getDownloadedForSource(file, 'src-b')).toEqual(['item-1']);
+  });
+
+  it('removing an unknown id is a no-op that keeps the rest', async () => {
+    await appendDownloadedItem(file, 'src-a', 'item-1');
+    expect(await removeDownloadedItems(file, 'src-a', ['nope'])).toEqual(['item-1']);
+    expect(await removeDownloadedItems(file, '', ['item-1'])).toEqual([]);
   });
 });

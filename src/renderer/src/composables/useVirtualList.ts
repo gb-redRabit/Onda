@@ -7,6 +7,8 @@ export interface VirtualListOptions {
   scrollEl: () => HTMLElement | null;
   estimateSize: () => number;
   overscan?: number;
+  /** Wirtualizacja pozioma (karuzela) — inaczej pionowa (lista). */
+  horizontal?: boolean;
   /** Opcjonalny własny pomiar wiersza (dla wierszy o zmiennej wysokości). */
   measureElement?: (el: Element) => number;
 }
@@ -22,6 +24,7 @@ export function useVirtualList(opts: VirtualListOptions) {
     getScrollElement: opts.scrollEl,
     estimateSize: opts.estimateSize,
     overscan: opts.overscan ?? 3,
+    horizontal: opts.horizontal ?? false,
     ...(opts.measureElement ? { measureElement: opts.measureElement } : {})
   });
 }

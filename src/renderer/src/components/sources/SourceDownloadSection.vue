@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import FieldLabel from './FieldLabel.vue';
+import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
 
 defineProps<{ defaultDir: string }>();
 const outputDir = defineModel<string>('outputDir', { required: true });
@@ -14,14 +16,10 @@ async function pickDownloadDir() {
 </script>
 
 <template>
-  <div class="space-y-2 rounded-box border border-neutral-content/20 bg-neutral p-3">
-    <label class="block text-[11px] font-medium text-base-content/50 uppercase tracking-wider">
-      {{ t('sources.downloadSection') }}
-    </label>
+  <div class="space-y-2 rounded-box border border-base-300 bg-base-200 p-3">
+    <FieldLabel :text="t('sources.downloadSection')" />
     <div>
-      <label class="block text-[10px] text-base-content/50 uppercase tracking-wider mb-1">
-        {{ t('sources.downloadOutputDir') }}
-      </label>
+      <FieldLabel :text="t('sources.downloadOutputDir')" />
       <div class="flex items-center gap-2">
         <input
           v-model="outputDir"
@@ -36,15 +34,17 @@ async function pickDownloadDir() {
           {{ t('sources.chooseFolder') }}
         </button>
       </div>
-      <p class="text-[10px] text-base-content/50 mt-1">
+      <p class="text-[11px] text-base-content/50 mt-1">
         {{ t('sources.downloadDefaultHint', { path: defaultDir }) }}
       </p>
     </div>
-    <label class="flex items-center gap-2 text-xs text-base-content/70 select-none">
-      <input v-model="folder" type="checkbox" class="accent-primary" />
-      {{ t('sources.downloadFolder') }}
-    </label>
-    <p class="text-[10px] text-base-content/50">
+    <div class="flex items-center gap-2">
+      <SettingsToggle v-model="folder" :label="t('sources.downloadFolder')" />
+      <span class="text-xs text-base-content/70 select-none">{{
+        t('sources.downloadFolder')
+      }}</span>
+    </div>
+    <p class="text-[11px] text-base-content/50">
       {{ t('sources.downloadFolderHint') }}
     </p>
   </div>

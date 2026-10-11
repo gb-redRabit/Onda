@@ -5,6 +5,9 @@ export function itemPassContext(
   item: SourceItem,
   endpoint: SourceEndpoint
 ): Record<string, unknown> {
+  // `passContext` jest już policzony w main (lekki); `extra` zostaje jako fallback dla
+  // elementów spoza listy (np. wiersze tabeli, starsze dane).
+  if (item.passContext) return { ...item.passContext };
   return applyPassKeys((item.extra ?? {}) as Record<string, unknown>, endpoint.passKeys);
 }
 

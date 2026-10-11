@@ -71,3 +71,29 @@ export function appendDownloadedItem(
     logger.info('sources', `marked downloaded sourceId=${sourceId} itemId=${itemId}`);
   });
 }
+
+/**
+ * Usuwa wskazane id elementów z listy pobranych źródła i zwraca pozostałe.
+ * Pusta lista `itemIds` czyści całą listę źródła (używane przez „wyczyść oznaczenia").
+ */
+export function removeDownloadedItems(
+  filePath: string,
+  sourceId: string,
+  itemIds: string[]
+): Promise<string[]> {
+  return withWriteLock(async () => {
+    if (!sourceId) return [];
+    const data = await read(filePath);
+    const current = data.bySource[sourceId] || [];
+    const toRemove = new Set(itemIds.filter((id) => typeof id === 'string' && !!id));
+    const remaining = toRemove.size ? current.filter((id) => !toRemove.has(id)) : [];
+    if (remaining.length) data.bySource[sourceId] = remaining;
+    else delete data.bySource[sourceId];
+    await write(filePath, data);
+    logger.info(
+      'sources',
+      `unmarked downloaded sourceId=${sourceId} removed=${toRemove.size || current.length}`
+    );
+    return remaining;
+  });
+}

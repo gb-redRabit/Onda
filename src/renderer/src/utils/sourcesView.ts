@@ -4,6 +4,18 @@ import type { SourceItem } from '@renderer/types/sources';
 
 export type SourceSortMode = 'none' | 'titleAsc' | 'titleDesc' | 'type';
 
+/** Tryby prezentacji elementów poziomu źródła (lista i wiersze strony). */
+export type SourceViewMode = 'cards' | 'gallery' | 'carousel' | 'player' | 'compact';
+
+/** Nowa kolejność po przeniesieniu elementu z indeksu `from` na `to` (bez mutacji wejścia). */
+export function moveItem<T>(list: T[], from: number, to: number): T[] {
+  if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) return list;
+  const next = [...list];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
+}
+
 // Jedno `key=value` na linię; puste/błędne linie są ignorowane.
 export function parseQueryLines(raw: string): Record<string, string> {
   const out: Record<string, string> = {};

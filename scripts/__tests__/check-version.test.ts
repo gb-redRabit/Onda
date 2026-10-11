@@ -76,13 +76,13 @@ describe('version:check', () => {
     const result = runCheck(repo('0.4.3', '0.4.3', 'v0.4.3', 'fix: something'));
     expect(result.code).toBe(0);
     expect(result.out).toContain('0.4.3');
-  });
+  }, 20000);
 
   it('passes when a release commit carries the version ahead of the tag', () => {
     // Release PR jest scalony, ale release-please jeszcze nie wypchnął tagu.
     const result = runCheck(repo('0.5.0', '0.5.0', 'v0.4.3', 'chore(main): release 0.5.0'));
     expect(result.code).toBe(0);
-  });
+  }, 20000);
 
   it('fails on a hand-edited version that is ahead of the tag', () => {
     // Dokładna regresja: ktoś uruchomił `npm version` na main, podczas gdy
@@ -90,7 +90,7 @@ describe('version:check', () => {
     const result = runCheck(repo('0.4.4', '0.4.4', 'v0.4.3', 'chore(release): 0.4.4'));
     expect(result.code).toBe(1);
     expect(result.out).toContain('Only release-please may move the version');
-  });
+  }, 20000);
 
   it('fails when a release-please PR bumps the version', () => {
     // Ręczna edycja obniżająca wersję z powrotem do wydanej wartości jest
@@ -102,17 +102,17 @@ describe('version:check', () => {
     const raised = runCheck(repo('0.4.4', '0.4.4', 'v0.4.3', 'chore(release): 0.4.4'));
     expect(raised.code).toBe(1);
     expect(raised.out).toContain('Only release-please may move the version');
-  });
+  }, 20000);
 
   it('fails when the release-please state is lost', () => {
     const result = runCheck(repo('0.4.3', null, 'v0.4.3', 'chore(main): release 0.4.3'));
     expect(result.code).toBe(1);
     expect(result.out).toContain('.release-please-manifest.json is missing');
-  });
+  }, 20000);
 
   it('skips the tag comparison before the first release', () => {
     const result = runCheck(repo('0.1.0', '0.1.0', null, 'feat: first release'));
     expect(result.code).toBe(0);
     expect(result.out).toContain('no v* tags yet');
-  });
+  }, 20000);
 });

@@ -9,11 +9,15 @@ defineProps<{
   downloadable?: boolean;
   /** Element o tym API id został już pobrany (potwierdzone przez main). */
   downloaded?: boolean;
+  /** Tryb zaznaczania zbiorczego — klik w kartę zaznacza zamiast otwierać podgląd. */
+  selectable?: boolean;
+  selected?: boolean;
 }>();
 
 const emit = defineEmits<{
   preview: [item: SourceItem];
   download: [item: SourceItem];
+  select: [item: SourceItem, event: MouseEvent];
 }>();
 
 const typeIcon = {
@@ -25,8 +29,13 @@ const typeIcon = {
 </script>
 
 <template>
-  <div v-activate class="group cursor-pointer" @click="emit('preview', item)">
-    <div class="relative rounded-box overflow-hidden bg-base-100">
+  <div
+    v-activate
+    class="group cursor-pointer"
+    :class="selected ? 'rounded-box ring-2 ring-primary' : ''"
+    @click="selectable ? emit('select', item, $event) : emit('preview', item)"
+  >
+    <div class="relative rounded-box overflow-hidden bg-base-100 border border-base-300">
       <div class="aspect-video w-full">
         <img
           v-if="item.thumbnail || (item.type === 'image' && item.mediaUrl)"
@@ -40,7 +49,6 @@ const typeIcon = {
         </div>
       </div>
       <div
-        v-if="downloadable"
         class="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-field bg-neutral/70 text-neutral-content text-[10px] font-medium uppercase"
       >
         <component :is="typeIcon[item.type]" :size="10" />
@@ -53,7 +61,19 @@ const typeIcon = {
         {{ item.duration }}
       </div>
       <div
-        v-if="downloaded"
+        v-if="selectable"
+        class="absolute top-1.5 right-1.5 w-5 h-5 rounded-field flex items-center justify-center border"
+        :class="
+          selected
+            ? 'bg-primary border-primary text-primary-content'
+            : 'bg-neutral/60 border-neutral-content/40 text-transparent'
+        "
+        aria-hidden="true"
+      >
+        <Check :size="12" />
+      </div>
+      <div
+        v-if="downloaded && !selectable"
         class="absolute top-1.5 right-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-field bg-success text-success-content text-[10px] font-medium"
         :title="$t('sources.downloaded')"
       >
@@ -69,9 +89,12 @@ const typeIcon = {
       </div>
       <button
         v-if="downloadable && (item.mediaUrl || item.playerUrl)"
-        class="fx-noise absolute bottom-1.5 left-1.5 opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-neutral/70 text-neutral-content text-[10px] hover:bg-neutral/90 disabled:opacity-60"
-        :class="{ 'bg-success/80! hover:bg-success/80!': downloaded }"
+        class="fx-noise absolute bottom-1.5 left-1.5 opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 fx-depth rounded-field text-neutral-content text-[10px] disabled:opacity-60"
+        :class="
+          downloaded ? 'bg-success/80 hover:bg-success/80' : 'bg-neutral/70 hover:bg-neutral/90'
+        "
         :title="downloaded ? $t('sources.downloaded') : $t('sources.download')"
+        :aria-label="downloaded ? $t('sources.downloaded') : $t('sources.download')"
         :disabled="downloaded || downloading || (!item.mediaUrl && !item.playerUrl)"
         @click.stop="emit('download', item)"
       >

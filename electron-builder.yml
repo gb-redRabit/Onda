@@ -122,6 +122,9 @@ mac:
   # Finder "Arrange by Application Category" / Launchpad grouping.
   category: public.app-category.music
   darkModeSupport: true
+  # Electron 44 dropped Chromium support for macOS 12 (Monterey) — macOS 13+
+  # (Ventura) is required. Declared explicitly so the Info.plist matches runtime.
+  minimumSystemVersion: '13.0'
   target:
     - dmg
     - zip

@@ -1,4 +1,4 @@
-import type { SourceEndpoint, SourcePassKey } from '@renderer/types/sources';
+import type { SourceEndpoint, SourcePassKey, SourceEndpointView } from '@renderer/types/sources';
 
 export interface DraftPassKey {
   from: string;
@@ -11,6 +11,7 @@ export interface DraftEndpoint {
   name: string;
   method: 'GET' | 'POST';
   type: 'list' | 'page';
+  view: SourceEndpointView;
   path: string;
   paramsText: string;
   pageParam: string;
@@ -34,6 +35,7 @@ export interface DraftEndpoint {
   fSourceUrl: string;
   passKeys: DraftPassKey[];
   tableEnabled: boolean;
+  tableView: 'table' | 'gallery' | 'carousel' | 'player' | 'compact';
   tableMode: 'field' | 'endpoint';
   tableArrayField: string;
   tablePath: string;
@@ -55,6 +57,7 @@ export function emptyEndpoint(): DraftEndpoint {
     name: '',
     method: 'GET',
     type: 'list',
+    view: 'cards',
     path: '/',
     paramsText: '',
     pageParam: '',
@@ -78,6 +81,7 @@ export function emptyEndpoint(): DraftEndpoint {
     fSourceUrl: '',
     passKeys: [],
     tableEnabled: false,
+    tableView: 'table',
     tableMode: 'endpoint',
     tableArrayField: '',
     tablePath: '',
@@ -96,6 +100,7 @@ export function endpointFromSource(e: SourceEndpoint): DraftEndpoint {
     name: e.name,
     method: e.method,
     type: e.type === 'page' ? 'page' : 'list',
+    view: e.view ?? 'cards',
     path: e.path,
     paramsText: Object.entries(e.params || {})
       .map(([k, v]) => `${k}=${v}`)
@@ -121,6 +126,7 @@ export function endpointFromSource(e: SourceEndpoint): DraftEndpoint {
     fSourceUrl: e.mapping.fields.sourceUrl || '',
     passKeys: (e.passKeys || []).map((k) => ({ from: k.from, as: k.as, type: k.type })),
     tableEnabled: !!e.table,
+    tableView: e.table?.view ?? 'table',
     tableMode: e.table?.mode || 'endpoint',
     tableArrayField: e.table?.arrayField || '',
     tablePath: e.table?.path || '',
@@ -156,6 +162,7 @@ export function buildEndpointFromDraft(d: DraftEndpoint): SourceEndpoint | null 
     d.type === 'page' && d.tableEnabled
       ? {
           mode: d.tableMode as 'field' | 'endpoint',
+          view: d.tableView !== 'table' ? d.tableView : undefined,
           arrayField: d.tableMode === 'field' ? d.tableArrayField.trim() || undefined : undefined,
           path: d.tableMode === 'endpoint' ? d.tablePath.trim() || undefined : undefined,
           rowKey: d.tableRowKey.trim() || undefined,
@@ -172,6 +179,7 @@ export function buildEndpointFromDraft(d: DraftEndpoint): SourceEndpoint | null 
     method: d.method,
     path,
     type: d.type === 'page' ? 'page' : undefined,
+    view: d.view !== 'cards' ? d.view : undefined,
     params: parseParams(d.paramsText),
     pagination:
       d.pageParam || d.nextFromField || d.totalField || d.pageStart

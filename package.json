@@ -27,6 +27,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:network": "node scripts/run-network-test.mjs",
+    "test:network:online": "node scripts/run-network-test.mjs src/main/__tests__/online-network-smoke.test.ts",
     "test:watch": "vitest",
     "e2e": "playwright test",
     "start": "electron-vite preview",

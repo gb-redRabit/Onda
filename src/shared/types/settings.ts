@@ -127,6 +127,8 @@ export interface AppearanceSettings {
   showAlbums: boolean;
   locale: 'pl' | 'en' | 'auto';
   animations: boolean;
+  /** Blokowanie reklam w osadzonych playerach (tylko sesja podglądu Źródeł). */
+  previewAdblock: boolean;
   audioPipDock: AudioPipDock;
   audioPipAutoShow: boolean;
   audioPipAutoHide: boolean;

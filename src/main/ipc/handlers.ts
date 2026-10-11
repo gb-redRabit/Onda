@@ -18,6 +18,7 @@ import { registerDialogHandlers } from './dialog-handlers';
 import { registerDiagnosticsHandlers } from './diagnostics-handlers';
 import { registerUpdaterHandlers } from './updater-handlers';
 import { registerSourcesHandlers } from './sources/sources-handlers';
+import { registerPreviewHandlers } from '../preview/preview-window';
 import { registerSavedHandlers } from './saved-streams';
 import { registerRadioHandlers } from './radio-store';
 import { registerPluginsHandlers } from './plugins/plugins-handlers';
@@ -46,6 +47,7 @@ export function registerIPC(): void {
   registerDiagnosticsHandlers();
   registerUpdaterHandlers();
   registerSourcesHandlers();
+  registerPreviewHandlers();
   registerSavedHandlers();
   registerRadioHandlers();
   registerPluginsHandlers();
