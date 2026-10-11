@@ -110,9 +110,6 @@ function createWindow(): BrowserWindow {
     show: false,
     ...GLASS_WINDOW_OPTS,
     icon: windowIcon(),
-    // `<webview>` dla osadzeń playerów inline (modal) — izolowana partycja
-    // podglądu, wymuszana przez globalny guard w `preview-session`.
-    webPreferences: { webviewTag: true },
     // Splash decyduje, kiedy okno główne pojawi się po raz pierwszy.
     onReadyToShow: (w) => {
       if (!splash.isActive() && !startHidden) w.show();
