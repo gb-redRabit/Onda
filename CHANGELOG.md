@@ -9,6 +9,13 @@ na `main` wersję ostatnio opublikowanego release'a; wersję podnosi wyłącznie
 jest błędem — pilnują tego `npm run version:check` i `npm run check:artifacts` w CI
 (patrz `RELEASE.md`).
 
+## [0.8.0](https://github.com/gb-redRabit/Onda/compare/v0.7.3...v0.8.0) (2026-10-11)
+
+
+### Features
+
+* **sources:** overhaul the sources view — view modes, streaming, multi-select and ad-blocker ([#16](https://github.com/gb-redRabit/Onda/issues/16)) ([0c014d3](https://github.com/gb-redRabit/Onda/commit/0c014d3d5902fc481c831a26b9ccda90cc7f8934))
+
 ## [0.7.3](https://github.com/gb-redRabit/Onda/compare/v0.7.2...v0.7.3) (2026-10-05)
 
 
