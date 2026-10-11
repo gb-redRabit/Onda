@@ -132,7 +132,8 @@ onMounted(() => {
     <div class="flex-1 min-w-0 h-full flex flex-col">
       <div v-if="activeSource" data-testid="sources-detail" class="flex flex-col h-full">
         <div
-          class="ui-page-toolbar flex items-center gap-2 px-4 py-2 border-b border-base-300 bg-base-100/(--glass-alpha) backdrop-blur overflow-x-auto"
+          class="ui-page-toolbar flex items-center gap-2 px-4 py-2 border-b border-base-300 bg-base-100/(--glass-alpha) overflow-x-auto"
+          :style="{ backdropFilter: 'none', WebkitBackdropFilter: 'none' }"
         >
           <IconButton
             v-if="sources.navStack.length"
