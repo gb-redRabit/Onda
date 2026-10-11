@@ -65,7 +65,9 @@ export function useUpdater() {
           error.value = s.error;
           enabled.value = s.enabled;
         })
-        .catch(() => {});
+        .catch(() => {
+          // best-effort: brak stanu updatera (np. dev) nie jest błędem — baner zostaje ukryty.
+        });
     }
   }
 
