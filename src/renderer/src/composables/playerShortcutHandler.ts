@@ -1,5 +1,9 @@
 import { matchesShortcut } from '@renderer/utils/shortcuts';
 import { applyVolumeTarget, seekTarget } from '@renderer/utils/mediaTransport';
+import { getActivePinia } from 'pinia';
+import { usePlayerStore } from '@renderer/stores/player';
+import { useSettingsStore } from '@renderer/stores/settings';
+import { useAudioPlayer } from './useAudioPlayer';
 
 type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
 
@@ -80,14 +84,48 @@ function setTransportVolume(volume: number): void {
   applyVolumeTarget(c.getVideoRef(), c.player.isMuted, volume);
 }
 
+function abCurrentTime(): number {
+  const video = ctx?.getVideoRef();
+  if (video) return video.currentTime;
+  return useAudioPlayer().currentTime.value;
+}
+
+/**
+ * Skróty pętli A–B działają niezależnie od widoku (wideo i audio): czas bierzemy z elementu
+ * wideo, gdy jest na ekranie, w przeciwnym razie z silnika audio.
+ */
+function handleAbShortcuts(e: KeyboardEvent): boolean {
+  // Bez aktywnej instancji Pinia (np. w teście jednostkowym) nie ma skrótów do sprawdzenia.
+  if (!getActivePinia()) return false;
+  const shortcuts = useSettingsStore().shortcuts;
+  const player = usePlayerStore();
+  const a = shortcuts['ab-set-a'];
+  if (a && matchesShortcut(a, e)) {
+    e.preventDefault();
+    player.setAbA(abCurrentTime());
+    return true;
+  }
+  const b = shortcuts['ab-set-b'];
+  if (b && matchesShortcut(b, e)) {
+    e.preventDefault();
+    player.setAbB(abCurrentTime());
+    return true;
+  }
+  const clear = shortcuts['ab-clear'];
+  if (clear && matchesShortcut(clear, e)) {
+    e.preventDefault();
+    player.clearAb();
+    return true;
+  }
+  return false;
+}
+
 /**
  * Obsługuje skróty widoku odtwarzacza. Wywoływane z pojedynczego nasłuchu keydown
  * na poziomie App (zawsze zarejestrowanego, gdy okno jest aktywne), dzięki czemu klawisze
  * odtwarzania działają mimo ciągłego montowania/odmontowywania widoków.
  */
 export function handlePlayerShortcutKeydown(e: KeyboardEvent): void {
-  const c = ctx;
-  if (!c) return;
   if (document.body.dataset.shortcutRecording) return;
 
   const target = e.target as HTMLElement | null;
@@ -98,6 +136,12 @@ export function handlePlayerShortcutKeydown(e: KeyboardEvent): void {
     target.isContentEditable
   )
     return;
+
+  // Pętla A–B działa w wideo i audio, więc obsługujemy ją przed sprawdzeniem kontekstu widoku.
+  if (handleAbShortcuts(e)) return;
+
+  const c = ctx;
+  if (!c) return;
 
   if (matches('play-pause', e)) {
     e.preventDefault();

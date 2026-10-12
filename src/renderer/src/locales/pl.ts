@@ -2026,7 +2026,12 @@ api.registerCommand({
     seek: 'Pozycja odtwarzania',
     volume: 'Głośność',
     seekBackward: 'Cofnij o 10 sekund',
-    seekForward: 'Przewiń o 10 sekund'
+    seekForward: 'Przewiń o 10 sekund',
+    abRepeat: 'Powtarzanie A–B',
+    abSetA: 'Ustaw punkt A',
+    abSetB: 'Ustaw punkt B',
+    abLoop: 'Pętla',
+    abClear: 'Wyczyść A–B'
   },
   folders: {},
   imageViewer: {

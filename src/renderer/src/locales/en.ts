@@ -2022,7 +2022,12 @@ api.registerCommand({
     seek: 'Playback position',
     volume: 'Volume',
     seekBackward: 'Seek back 10 seconds',
-    seekForward: 'Seek forward 10 seconds'
+    seekForward: 'Seek forward 10 seconds',
+    abRepeat: 'A–B repeat',
+    abSetA: 'Set point A',
+    abSetB: 'Set point B',
+    abLoop: 'Loop',
+    abClear: 'Clear A–B'
   },
   folders: {},
   imageViewer: {

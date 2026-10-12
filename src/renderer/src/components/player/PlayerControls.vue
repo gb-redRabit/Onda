@@ -16,6 +16,8 @@ import TransportButtons from './TransportButtons.vue';
 import { useVideoPreview } from '@renderer/composables/useVideoPreview';
 import SubtitleTrackSelector from './SubtitleTrackSelector.vue';
 import VideoFilterDropdown from './VideoFilterDropdown.vue';
+import AbRepeatButton from './AbRepeatButton.vue';
+import AbRepeatMarkers from './AbRepeatMarkers.vue';
 
 const props = defineProps<{
   showControls: boolean;
@@ -133,6 +135,8 @@ function onVolumeKeydown(e: KeyboardEvent) {
         />
       </div>
 
+      <AbRepeatMarkers :duration="player.duration" />
+
       <div
         v-if="previewVisible"
         class="absolute -top-2 -translate-x-1/2 -translate-y-full flex flex-col items-center pointer-events-none"
@@ -211,6 +215,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
 
       <!-- prawa strona: narzędzia + głośność -->
       <div class="flex items-center gap-2.5">
+        <AbRepeatButton :current-time="player.currentTime" />
         <VideoFilterDropdown />
         <button
           class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"

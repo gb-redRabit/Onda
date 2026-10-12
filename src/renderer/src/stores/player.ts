@@ -7,6 +7,7 @@ import { usePlayerSubtitles } from './player-subtitles';
 import { usePlayerCover } from './player-cover';
 import { usePlayerQueue } from './player-queue';
 import { usePlayerNavigation } from './player-navigation';
+import { usePlayerAb } from './player-ab';
 
 export type { CoverResult } from './player-cover';
 
@@ -76,6 +77,18 @@ export const usePlayerStore = defineStore('player', () => {
     enterPiP,
     exitPiP
   } = usePlayerNavigation(queue, pendingQueue, recordPlay);
+  const {
+    abA,
+    abB,
+    abActive,
+    setA: setAbA,
+    setB: setAbB,
+    toggle: toggleAb,
+    clear: clearAb,
+    moveA: moveAbA,
+    moveB: moveAbB,
+    loopTarget: abLoopTarget
+  } = usePlayerAb();
 
   const hasTrack = computed(() => currentTrack.value !== null);
   const progress = computed(() => (duration.value > 0 ? currentTime.value / duration.value : 0));
@@ -117,6 +130,16 @@ export const usePlayerStore = defineStore('player', () => {
     pendingFullscreen,
     hasTrack,
     progress,
+    abA,
+    abB,
+    abActive,
+    setAbA,
+    setAbB,
+    toggleAb,
+    clearAb,
+    moveAbA,
+    moveAbB,
+    abLoopTarget,
     queueLength,
     displayQueue,
     setTrack,
