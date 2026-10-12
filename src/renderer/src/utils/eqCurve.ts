@@ -91,8 +91,9 @@ export interface EqCurveGeometry {
   maxDb: number;
 }
 
-/** Ścieżka SVG (jedna linia) charakterystyki; oś X logarytmiczna, oś Y liniowa w dB. */
-export function eqCurvePath(bands: readonly EqBand[], geo: EqCurveGeometry): string {
+/** Ścieżka SVG (jedna linia) charakterystyki; oś X logarytmiczna, oś Y liniowa w dB.
+ *  `offsetDb` (np. preamp) przesuwa całą charakterystykę w pionie. */
+export function eqCurvePath(bands: readonly EqBand[], geo: EqCurveGeometry, offsetDb = 0): string {
   const { width, height, minFreq, maxFreq, minDb, maxDb } = geo;
   const steps = 120;
   const logMin = Math.log10(minFreq);
@@ -104,7 +105,7 @@ export function eqCurvePath(bands: readonly EqBand[], geo: EqCurveGeometry): str
   for (let i = 0; i <= steps; i++) {
     const x = (i / steps) * width;
     const freq = Math.pow(10, logMin + (i / steps) * logSpan);
-    points.push(`${x.toFixed(2)},${y(eqGainAt(freq, bands)).toFixed(2)}`);
+    points.push(`${x.toFixed(2)},${y(eqGainAt(freq, bands) + offsetDb).toFixed(2)}`);
   }
   return `M ${points.join(' L ')}`;
 }

@@ -77,7 +77,7 @@ const activePreset = computed(() => {
 
 // --- krzywa ---
 const CURVE = { width: 480, height: 110, minFreq: 20, maxFreq: 20000, minDb: -18, maxDb: 18 };
-const curvePath = computed(() => eqCurvePath(bands.value, CURVE));
+const curvePath = computed(() => eqCurvePath(bands.value, CURVE, player.equalizerPreamp));
 const dbToY = (db: number) =>
   CURVE.height -
   ((Math.max(CURVE.minDb, Math.min(CURVE.maxDb, db)) - CURVE.minDb) / (CURVE.maxDb - CURVE.minDb)) *
@@ -129,7 +129,9 @@ const hoverBand = ref<number | null>(null);
 // Menu kontekstowe otwiera się w dół, gdy kropka jest w górnej połowie, i w górę w dolnej —
 // dzięki temu nigdy nie wychodzi poza wykres.
 const menuBelow = computed(() =>
-  menuBand.value === null ? true : bandY(bands.value[menuBand.value]?.gain ?? 0) < 55
+  menuBand.value === null
+    ? true
+    : bandY((bands.value[menuBand.value]?.gain ?? 0) + player.equalizerPreamp) < 55
 );
 
 function timeFromEvent(e: PointerEvent | MouseEvent): { frequency: number; gain: number } | null {
@@ -140,7 +142,7 @@ function timeFromEvent(e: PointerEvent | MouseEvent): { frequency: number; gain:
   const ry = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
   return {
     frequency: Math.round(ratioToFreq(rx, CURVE.minFreq, CURVE.maxFreq)),
-    gain: Math.round(CURVE.maxDb - ry * (CURVE.maxDb - CURVE.minDb))
+    gain: Math.round(CURVE.maxDb - ry * (CURVE.maxDb - CURVE.minDb) - player.equalizerPreamp)
   };
 }
 function onCurveDown(i: number, e: PointerEvent) {
@@ -539,7 +541,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
         class="absolute w-5 h-5 flex items-center justify-center text-[9px] font-bold text-base-100 shadow cursor-grab active:cursor-grabbing"
         :style="{
           left: bandX(band.frequency) + '%',
-          top: bandY(band.gain) + '%',
+          top: bandY(band.gain + player.equalizerPreamp) + '%',
           backgroundColor: color(i),
           borderRadius: markerRadius(band.type),
           transform: `translate(-50%, -50%) scale(${hoverBand === i || draggingBand === i ? 1.3 : 1})`,
@@ -565,7 +567,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
         class="absolute z-50 w-36 p-1 rounded-field border border-base-300 bg-base-100 fx-depth text-[11px]"
         :style="{
           left: bandX(bands[menuBand].frequency) + '%',
-          top: bandY(bands[menuBand].gain) + '%',
+          top: bandY(bands[menuBand].gain + player.equalizerPreamp) + '%',
           transform: menuBelow ? 'translate(-50%, 14px)' : 'translate(-50%, calc(-100% - 14px))'
         }"
         @click.stop

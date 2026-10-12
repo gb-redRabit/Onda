@@ -43,4 +43,12 @@ describe('eqCurve', () => {
     expect(path.startsWith('M ')).toBe(true);
     expect(path).toContain(' L ');
   });
+
+  it('offsetDb (preamp) shifts the whole curve up', () => {
+    const base = eqCurvePath([band({ gain: 0 })], GEO);
+    const shifted = eqCurvePath([band({ gain: 0 })], GEO, 6);
+    const firstY = (p: string) => Number(p.slice(2).split(',')[1].split(' ')[0]);
+    expect(shifted).not.toBe(base);
+    expect(firstY(shifted)).toBeLessThan(firstY(base));
+  });
 });
