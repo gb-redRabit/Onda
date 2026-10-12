@@ -13,6 +13,9 @@ export class AudioGraph {
   eqFilters: BiquadFilterNode[] = [];
   /** Gain wyjściowy korektora (preamp) — między łańcuchem filtrów a głównym gainNode. */
   preampNode: GainNode | null = null;
+  /** Węzeł odsłuchu — pozwala spiąć kanały do mono (kontrola fazy). */
+  monitorNode: GainNode | null = null;
+  eqMono = false;
   /** Ostatnio ustawione pasma — nakładane na filtry także przy (od)tworzeniu kontekstu. */
   eqBands: readonly EqBand[] = [];
   eqEnabled = true;
@@ -30,6 +33,8 @@ export class AudioGraph {
     this.gainNode = this.audioCtx.createGain();
     this.preampNode = this.audioCtx.createGain();
     this.setEqPreamp(this.eqPreampDb);
+    this.monitorNode = this.audioCtx.createGain();
+    this.setEqMono(this.eqMono);
     this.eqFilters = Array.from({ length: EQ_SLOTS }, () => {
       const filter = this.audioCtx!.createBiquadFilter();
       filter.type = 'peaking';
@@ -57,7 +62,8 @@ export class AudioGraph {
       this.sourceNode?.connect(this.preampNode!);
     }
     this.preampNode!.connect(this.gainNode!);
-    this.gainNode!.connect(this.analyserNode!);
+    this.gainNode!.connect(this.monitorNode!);
+    this.monitorNode!.connect(this.analyserNode!);
     this.analyserNode!.connect(this.audioCtx!.destination);
     this.eqChainBuilt = true;
   }
@@ -235,7 +241,7 @@ export class AudioGraph {
     this.eqBands = bands;
     for (let i = 0; i < this.eqFilters.length; i++) {
       const f = this.eqFilters[i];
-      const band = this.eqEnabled ? bands[i] : undefined;
+      const band = this.eqEnabled && bands[i]?.enabled !== false ? bands[i] : undefined;
       if (band) {
         f.type = band.type;
         f.frequency.value = band.frequency;
@@ -260,6 +266,15 @@ export class AudioGraph {
   setEqEnabled(enabled: boolean): void {
     this.eqEnabled = enabled;
     this.setEqBands(this.eqBands);
+  }
+
+  /** Odsłuch mono: spina kanały (channelCount 1) — do kontroli fazy/zgodności. */
+  setEqMono(on: boolean): void {
+    this.eqMono = on;
+    if (!this.monitorNode) return;
+    this.monitorNode.channelCount = on ? 1 : 2;
+    this.monitorNode.channelCountMode = 'explicit';
+    this.monitorNode.channelInterpretation = 'speakers';
   }
 
   getAnalyserNode(): AnalyserNode | null {

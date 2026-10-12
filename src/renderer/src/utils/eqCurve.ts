@@ -14,9 +14,9 @@ interface Biquad {
   a2: number;
 }
 
-/** Współczynniki biquada dla pasma; `null` gdy pasmo jest neutralne (gain 0). */
+/** Współczynniki biquada dla pasma; `null` gdy pasmo jest neutralne (gain 0 lub wyłączone). */
 function biquad(band: EqBand): Biquad | null {
-  if (band.gain === 0) return null;
+  if (band.gain === 0 || band.enabled === false) return null;
   const A = Math.pow(10, band.gain / 40);
   const w0 = (2 * Math.PI * band.frequency) / FS;
   const cosW0 = Math.cos(w0);

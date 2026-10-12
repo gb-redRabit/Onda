@@ -223,6 +223,11 @@ export function useAudioPlayer() {
     applyEqGraph: (bands: EqBand[]) => {
       audioEngine.setEqBands(bands);
     },
+    /** Odsłuch mono (kontrola fazy) — tylko na graf, bez zapisu. */
+    setEqMono: (on: boolean) => {
+      usePlayerStore().equalizerMono = on;
+      audioEngine.setEqMono(on);
+    },
     savePosition: () => audioEngine.savePosition(),
     getAudioContext: () => audioEngine.getAudioContext()
   };

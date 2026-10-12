@@ -9,4 +9,6 @@ export interface EqBand {
   q: number;
   /** Wzmocnienie w dB. */
   gain: number;
+  /** Wyłączone pasmo jest pomijane (neutralne), ale zostaje na liście. Domyślnie włączone. */
+  enabled?: boolean;
 }

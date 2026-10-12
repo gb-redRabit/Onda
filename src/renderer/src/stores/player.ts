@@ -25,6 +25,7 @@ export const usePlayerStore = defineStore('player', () => {
   const equalizerMulticolor = ref(false);
   const equalizerSnap = ref(true);
   const equalizerSolo = ref<number | null>(null);
+  const equalizerMono = ref(false);
   const equalizerPreset = ref('flat');
   const pendingFullscreen = ref(false);
   const resumePrompt = ref<{ path: string; position: number } | null>(null);
@@ -137,6 +138,7 @@ export const usePlayerStore = defineStore('player', () => {
     equalizerMulticolor,
     equalizerSnap,
     equalizerSolo,
+    equalizerMono,
     equalizerPreset,
     pipActive,
     pipTime,

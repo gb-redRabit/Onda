@@ -24,6 +24,10 @@ describe('eqCurve', () => {
     expect(eqGainAt(1000, bands)).toBeGreaterThan(eqGainAt(4000, bands));
   });
 
+  it('ignores disabled bands', () => {
+    expect(eqGainAt(1000, [band({ frequency: 1000, gain: 6, enabled: false })])).toBeCloseTo(0, 5);
+  });
+
   it('shelves ramp at the extremes', () => {
     const low = [band({ type: 'lowshelf', frequency: 100, gain: 6 })];
     expect(eqGainAt(20, low)).toBeGreaterThan(eqGainAt(2000, low));

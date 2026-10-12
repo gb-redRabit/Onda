@@ -444,6 +444,10 @@ class AudioEngine {
     this.graph.setEqEnabled(enabled);
   }
 
+  setEqMono(on: boolean): void {
+    this.graph.setEqMono(on);
+  }
+
   getAnalyserNode(): AnalyserNode | null {
     return this.graph.getAnalyserNode();
   }

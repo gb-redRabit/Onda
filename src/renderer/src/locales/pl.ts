@@ -1838,6 +1838,8 @@ api.registerCommand({
     multicolor: 'Różnokolorowe pasma',
     snap: 'Przyciągaj do typowych częstotliwości',
     solo: 'Solo — odsłuchaj tylko to pasmo',
+    mono: 'Odsłuch mono (spina kanały)',
+    bandEnabled: 'Włącz/wyłącz to pasmo',
     type_lowshelf: 'Półka niska',
     type_peaking: 'Peak',
     type_highshelf: 'Półka wysoka'

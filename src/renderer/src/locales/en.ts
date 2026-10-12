@@ -1834,6 +1834,8 @@ api.registerCommand({
     multicolor: 'Multicolour bands',
     snap: 'Snap to standard frequencies',
     solo: 'Solo — audition only this band',
+    mono: 'Mono monitoring (sum channels)',
+    bandEnabled: 'Enable/disable this band',
     type_lowshelf: 'Low shelf',
     type_peaking: 'Peak',
     type_highshelf: 'High shelf'

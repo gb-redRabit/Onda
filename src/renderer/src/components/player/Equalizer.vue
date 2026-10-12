@@ -11,7 +11,8 @@ import {
   Upload,
   Save,
   Palette,
-  Magnet
+  Magnet,
+  Combine
 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
@@ -361,6 +362,17 @@ onUnmounted(() => cancelAnimationFrame(raf));
       <div class="flex items-center gap-1">
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
+          :class="player.equalizerMono ? 'text-primary' : 'text-base-content/50'"
+          data-testid="eq-mono"
+          :title="$t('equalizer.mono')"
+          :aria-label="$t('equalizer.mono')"
+          :aria-pressed="player.equalizerMono"
+          @click="audio.setEqMono(!player.equalizerMono)"
+        >
+          <Combine :size="14" />
+        </button>
+        <button
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="player.equalizerSnap ? 'text-primary' : 'text-base-content/50'"
           data-testid="eq-snap"
           :title="$t('equalizer.snap')"
@@ -573,6 +585,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
           top: bandY(band.gain + player.equalizerPreamp) + '%',
           backgroundColor: color(i),
           borderRadius: markerRadius(band.type),
+          opacity: band.enabled === false ? 0.35 : 1,
           transform: `translate(-50%, -50%) scale(${hoverBand === i || draggingBand === i ? 1.3 : 1})`,
           zIndex: hoverBand === i || draggingBand === i ? 5 : 1
         }"
@@ -628,6 +641,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
         :key="i"
         data-testid="eq-band-row"
         class="rounded-field bg-base-200/(--glass-alpha) p-2 transition-colors"
+        :class="{ 'opacity-50': band.enabled === false }"
         :style="{
           backgroundColor: hoverBand === i ? `color-mix(in srgb, ${color(i)} 8%, transparent)` : ''
         }"
@@ -654,7 +668,23 @@ onUnmounted(() => cancelAnimationFrame(raf));
           </select>
           <button
             type="button"
-            class="ml-auto shrink-0 px-1.5 py-1 rounded-field text-[10px] font-bold transition-colors"
+            class="ml-auto shrink-0 p-1 rounded-field transition-colors"
+            :class="
+              band.enabled === false
+                ? 'text-base-content/30 hover:text-base-content/60'
+                : 'text-primary hover:bg-base-content/10'
+            "
+            :data-testid="'eq-enable-' + i"
+            :title="$t('equalizer.bandEnabled')"
+            :aria-label="$t('equalizer.bandEnabled')"
+            :aria-pressed="band.enabled !== false"
+            @click="patchBand(i, { enabled: band.enabled === false })"
+          >
+            <Power :size="13" />
+          </button>
+          <button
+            type="button"
+            class="shrink-0 px-1.5 py-1 rounded-field text-[10px] font-bold transition-colors"
             :class="
               solo === i
                 ? 'bg-primary text-primary-content'

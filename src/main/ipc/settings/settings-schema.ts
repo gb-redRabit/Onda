@@ -148,7 +148,8 @@ const EQ_BAND_FIELDS: Record<string, Sanitizer> = {
   type: enumOf(['lowshelf', 'peaking', 'highshelf']),
   frequency: numClamped(20, 20000),
   q: numClamped(0.3, 8),
-  gain: numClamped(-18, 18)
+  gain: numClamped(-18, 18),
+  enabled: bool
 };
 
 // Zestaw pasm korektora: maksymalnie 12, tylko kompletne (typ + wszystkie liczby).
