@@ -2026,7 +2026,6 @@ api.registerCommand({
     abRepeat: 'A–B repeat',
     abSetA: 'Set point A',
     abSetB: 'Set point B',
-    abLoop: 'Loop',
     abClear: 'Clear A–B'
   },
   folders: {},

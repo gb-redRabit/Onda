@@ -2030,7 +2030,6 @@ api.registerCommand({
     abRepeat: 'Powtarzanie A–B',
     abSetA: 'Ustaw punkt A',
     abSetB: 'Ustaw punkt B',
-    abLoop: 'Pętla',
     abClear: 'Wyczyść A–B'
   },
   folders: {},
