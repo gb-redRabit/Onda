@@ -13,9 +13,10 @@ import {
   type EqBand,
   type EqBandType
 } from '@renderer/utils/constants/audio';
+import { eqCurvePath, freqToRatio, ratioToFreq } from '@renderer/utils/eqCurve';
 
-// Parametryczny korektor: każde pasmo ma typ, częstotliwość i dobroć (Q) oprócz wzmocnienia.
-// Pasma można dodawać i usuwać — użytkownik ma pełną swobodę.
+// Parametryczny korektor: krzywa charakterystyki + suwaki (częstotliwość/Q) i przeciągalne
+// wzmocnienie. Pasma można dodawać i usuwać — użytkownik ma pełną swobodę.
 
 const player = usePlayerStore();
 const { applyEqBands } = useAudioPlayer();
@@ -56,6 +57,19 @@ const activePreset = computed(() => {
   }
   return 'custom';
 });
+
+// --- krzywa charakterystyki ---
+const CURVE = { width: 480, height: 96, minFreq: 20, maxFreq: 20000, minDb: -18, maxDb: 18 };
+
+const curvePath = computed(() => eqCurvePath(bands.value, CURVE));
+const zeroLineY = computed(() => (CURVE.maxDb / (CURVE.maxDb - CURVE.minDb)) * CURVE.height);
+function markerX(freq: number): number {
+  return freqToRatio(freq, CURVE.minFreq, CURVE.maxFreq) * CURVE.width;
+}
+function markerY(gain: number): number {
+  const clamped = Math.max(CURVE.minDb, Math.min(CURVE.maxDb, gain));
+  return CURVE.height - ((clamped - CURVE.minDb) / (CURVE.maxDb - CURVE.minDb)) * CURVE.height;
+}
 
 function commit(next: EqBand[], preset = 'custom') {
   player.equalizerPreset = preset;
@@ -139,7 +153,7 @@ const gainPct = (gain: number) =>
   <div
     ref="panel"
     data-testid="equalizer"
-    class="bg-base-100 border border-base-300 rounded-box p-4 w-110 max-w-[90vw]"
+    class="bg-base-100 border border-base-300 rounded-box p-4 w-130 max-w-[95vw]"
   >
     <div class="flex items-center justify-between mb-3">
       <h3 class="text-sm font-semibold">{{ $t('equalizer.title') }}</h3>
@@ -154,7 +168,7 @@ const gainPct = (gain: number) =>
     </div>
 
     <!-- presety -->
-    <div class="flex flex-wrap gap-1.5 mb-4">
+    <div class="flex flex-wrap gap-1.5 mb-3">
       <button
         v-for="(_, name) in presets"
         :key="name"
@@ -178,119 +192,157 @@ const gainPct = (gain: number) =>
       </span>
     </div>
 
-    <!-- pasma -->
-    <div class="space-y-2.5 max-h-72 overflow-auto pr-1">
-      <div
-        v-for="(band, i) in bands"
-        :key="i"
-        data-testid="eq-band-row"
-        class="flex items-center gap-2"
+    <!-- krzywa charakterystyki -->
+    <div class="rounded-field border border-base-300 bg-base-200/(--glass-alpha) p-1 mb-3">
+      <svg
+        :viewBox="`0 0 ${CURVE.width} ${CURVE.height}`"
+        preserveAspectRatio="none"
+        class="w-full h-24"
+        data-testid="eq-curve"
+        aria-hidden="true"
       >
-        <!-- typ -->
-        <select
-          :value="band.type"
-          :data-testid="'eq-type-' + i"
-          :aria-label="$t('equalizer.type')"
-          class="shrink-0 w-24 px-1.5 py-1 rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-[11px] focus:border-primary focus:outline-none"
-          @change="patchBand(i, { type: ($event.target as HTMLSelectElement).value as EqBandType })"
-        >
-          <option v-for="tp in bandTypes" :key="tp" :value="tp">{{ typeLabel(tp) }}</option>
-        </select>
+        <line
+          x1="0"
+          :y1="zeroLineY"
+          :x2="CURVE.width"
+          :y2="zeroLineY"
+          class="stroke-base-content/20"
+          stroke-width="1"
+          stroke-dasharray="3 3"
+        />
+        <path :d="curvePath" fill="none" class="stroke-primary" stroke-width="2" />
+        <circle
+          v-for="(band, i) in bands"
+          :key="'m' + i"
+          :cx="markerX(band.frequency)"
+          :cy="markerY(band.gain)"
+          r="3"
+          class="fill-primary stroke-base-100"
+          stroke-width="1"
+        />
+      </svg>
+    </div>
 
-        <!-- częstotliwość -->
-        <label class="shrink-0 flex items-center gap-1 text-[10px] text-base-content/60">
-          F
-          <input
-            type="number"
-            :value="band.frequency"
-            :min="limits.minFrequency"
-            :max="limits.maxFrequency"
-            :data-testid="'eq-freq-' + i"
-            :aria-label="$t('equalizer.frequency')"
-            class="w-16 px-1 py-1 rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-[11px] font-mono tabular-nums focus:border-primary focus:outline-none"
+    <!-- pasma -->
+    <div class="space-y-2.5 max-h-64 overflow-auto pr-1">
+      <div v-for="(band, i) in bands" :key="i" data-testid="eq-band-row" class="space-y-1">
+        <div class="flex items-center gap-2">
+          <select
+            :value="band.type"
+            :data-testid="'eq-type-' + i"
+            :aria-label="$t('equalizer.type')"
+            class="shrink-0 w-28 px-1.5 py-1 rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-[11px] focus:border-primary focus:outline-none"
             @change="
-              patchBand(i, {
-                frequency: clamp(
-                  Number(($event.target as HTMLInputElement).value),
-                  limits.minFrequency,
-                  limits.maxFrequency
-                )
-              })
+              patchBand(i, { type: ($event.target as HTMLSelectElement).value as EqBandType })
             "
-          />{{ $t('equalizer.hz') }}
-        </label>
+          >
+            <option v-for="tp in bandTypes" :key="tp" :value="tp">{{ typeLabel(tp) }}</option>
+          </select>
 
-        <!-- Q -->
-        <label class="shrink-0 flex items-center gap-1 text-[10px] text-base-content/60">
-          Q
-          <input
-            type="number"
-            :value="band.q"
-            :min="limits.minQ"
-            :max="limits.maxQ"
-            step="0.1"
-            :data-testid="'eq-q-' + i"
-            :aria-label="$t('equalizer.q')"
-            class="w-14 px-1 py-1 rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-[11px] font-mono tabular-nums focus:border-primary focus:outline-none"
-            @change="
-              patchBand(i, {
-                q: clamp(
-                  Number(($event.target as HTMLInputElement).value),
-                  limits.minQ,
-                  limits.maxQ
-                )
-              })
-            "
-          />
-        </label>
+          <!-- wzmocnienie: przeciągalny pasek -->
+          <div
+            :data-testid="'eq-band-' + i"
+            class="flex-1 relative h-4 cursor-pointer flex items-center"
+            role="slider"
+            tabindex="0"
+            :aria-label="`${t('equalizer.band')} ${band.frequency} Hz`"
+            :aria-valuemin="limits.minGain"
+            :aria-valuemax="limits.maxGain"
+            :aria-valuenow="band.gain"
+            :aria-valuetext="`${band.gain > 0 ? '+' : ''}${band.gain} dB`"
+            @mousedown="onGainDrag($event, i)"
+            @keydown="onGainKey($event, i)"
+          >
+            <div class="absolute left-0 right-0 h-1 rounded-full bg-base-content/15" />
+            <div
+              class="absolute left-1/2 w-px h-2.5 bg-base-content/40"
+              style="transform: translateX(-50%)"
+            />
+            <div
+              class="absolute h-1 rounded-full bg-primary"
+              :style="{
+                left: band.gain >= 0 ? '50%' : gainPct(band.gain) + '%',
+                width: (Math.abs(band.gain) / (limits.maxGain - limits.minGain)) * 100 + '%'
+              }"
+            />
+            <div
+              class="absolute w-3.5 h-3.5 rounded-full bg-primary border border-white shadow-md"
+              :style="{ left: gainPct(band.gain) + '%', transform: 'translateX(-50%)' }"
+            />
+          </div>
 
-        <!-- wzmocnienie (przeciągalny pasek) -->
-        <div
-          :data-testid="'eq-band-' + i"
-          class="flex-1 relative h-4 cursor-pointer flex items-center"
-          role="slider"
-          tabindex="0"
-          :aria-label="`${t('equalizer.band')} ${band.frequency} Hz`"
-          :aria-valuemin="limits.minGain"
-          :aria-valuemax="limits.maxGain"
-          :aria-valuenow="band.gain"
-          :aria-valuetext="`${band.gain > 0 ? '+' : ''}${band.gain} dB`"
-          @mousedown="onGainDrag($event, i)"
-          @keydown="onGainKey($event, i)"
-        >
-          <div class="absolute left-0 right-0 h-1 rounded-full bg-base-content/15" />
-          <div
-            class="absolute left-1/2 w-px h-2.5 bg-base-content/40"
-            style="transform: translateX(-50%)"
-          />
-          <div
-            class="absolute h-1 rounded-full bg-primary"
-            :style="{
-              left: band.gain >= 0 ? '50%' : gainPct(band.gain) + '%',
-              width: (Math.abs(band.gain) / (limits.maxGain - limits.minGain)) * 100 + '%'
-            }"
-          />
-          <div
-            class="absolute w-3.5 h-3.5 rounded-full bg-primary border border-white shadow-md"
-            :style="{ left: gainPct(band.gain) + '%', transform: 'translateX(-50%)' }"
-          />
+          <span
+            class="shrink-0 w-14 text-right text-[10px] font-mono tabular-nums text-base-content/70"
+            >{{ band.gain > 0 ? '+' : '' }}{{ band.gain }} {{ $t('equalizer.db') }}</span
+          >
+
+          <button
+            type="button"
+            class="shrink-0 p-1 rounded-field text-base-content/40 hover:text-error hover:bg-base-content/10 transition-colors disabled:opacity-30"
+            :disabled="bands.length <= 1"
+            :data-testid="'eq-remove-' + i"
+            :aria-label="$t('equalizer.removeBand')"
+            @click="removeBand(i)"
+          >
+            <Trash2 :size="13" />
+          </button>
         </div>
 
-        <span
-          class="shrink-0 w-12 text-right text-[10px] font-mono tabular-nums text-base-content/70"
-          >{{ band.gain > 0 ? '+' : '' }}{{ band.gain }} {{ $t('equalizer.db') }}</span
-        >
-
-        <button
-          type="button"
-          class="shrink-0 p-1 rounded-field text-base-content/40 hover:text-error hover:bg-base-content/10 transition-colors disabled:opacity-30"
-          :disabled="bands.length <= 1"
-          :data-testid="'eq-remove-' + i"
-          :aria-label="$t('equalizer.removeBand')"
-          @click="removeBand(i)"
-        >
-          <Trash2 :size="13" />
-        </button>
+        <!-- częstotliwość + Q: suwaki -->
+        <div class="flex items-center gap-3 pl-1">
+          <label class="flex-1 flex items-center gap-2">
+            <span class="w-3 text-[10px] text-base-content/50">F</span>
+            <input
+              type="range"
+              :min="0"
+              :max="1"
+              step="0.001"
+              :value="freqToRatio(band.frequency, limits.minFrequency, limits.maxFrequency)"
+              :data-testid="'eq-freq-' + i"
+              :aria-label="$t('equalizer.frequency')"
+              class="flex-1 h-1 accent-primary cursor-pointer"
+              @input="
+                patchBand(i, {
+                  frequency: Math.round(
+                    ratioToFreq(
+                      Number(($event.target as HTMLInputElement).value),
+                      limits.minFrequency,
+                      limits.maxFrequency
+                    )
+                  )
+                })
+              "
+            />
+            <span class="w-16 text-right text-[10px] font-mono tabular-nums text-base-content/60"
+              >{{ band.frequency }} {{ $t('equalizer.hz') }}</span
+            >
+          </label>
+          <label class="w-40 flex items-center gap-2">
+            <span class="w-3 text-[10px] text-base-content/50">Q</span>
+            <input
+              type="range"
+              :min="limits.minQ"
+              :max="limits.maxQ"
+              step="0.1"
+              :value="band.q"
+              :data-testid="'eq-q-' + i"
+              :aria-label="$t('equalizer.q')"
+              class="flex-1 h-1 accent-primary cursor-pointer"
+              @input="
+                patchBand(i, {
+                  q: clamp(
+                    Number(($event.target as HTMLInputElement).value),
+                    limits.minQ,
+                    limits.maxQ
+                  )
+                })
+              "
+            />
+            <span class="w-8 text-right text-[10px] font-mono tabular-nums text-base-content/60">{{
+              band.q
+            }}</span>
+          </label>
+        </div>
       </div>
     </div>
 
