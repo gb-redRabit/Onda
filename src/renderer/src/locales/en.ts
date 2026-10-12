@@ -169,7 +169,17 @@ export default {
     folderPlay: 'Play folder',
     folderShuffle: 'Shuffle',
     folderShowInExplorer: 'Show in Explorer',
-    expandFolder: 'Expand or collapse folder'
+    expandFolder: 'Expand or collapse folder',
+    smart: 'Smart',
+    smartFolders: {
+      unplayed: 'Unplayed',
+      favorites: 'Favorites',
+      favoritesNoCover: 'Favorites without cover',
+      noCover: 'Without cover',
+      recent: 'Recently added',
+      mostPlayed: 'Most played',
+      lossless: 'Lossless'
+    }
   },
   sources: {
     title: 'Sources',

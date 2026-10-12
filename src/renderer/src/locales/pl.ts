@@ -169,7 +169,17 @@ export default {
     folderPlay: 'Odtwórz folder',
     folderShuffle: 'Losowo',
     folderShowInExplorer: 'Pokaż w Eksploratorze',
-    expandFolder: 'Rozwiń lub zwiń folder'
+    expandFolder: 'Rozwiń lub zwiń folder',
+    smart: 'Inteligentne',
+    smartFolders: {
+      unplayed: 'Niesłuchane',
+      favorites: 'Ulubione',
+      favoritesNoCover: 'Ulubione bez okładki',
+      noCover: 'Bez okładki',
+      recent: 'Ostatnio dodane',
+      mostPlayed: 'Najczęściej odtwarzane',
+      lossless: 'Bezstratne'
+    }
   },
   sources: {
     title: 'Źródła',

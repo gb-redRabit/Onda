@@ -84,7 +84,8 @@ test.describe('all views — structure', () => {
         'folders',
         'artists',
         'albums',
-        'playlists'
+        'playlists',
+        'smart'
       ];
       for (const id of libraryTabs) {
         const tab = page.getByTestId(`library-tab-${id}`);

@@ -21,6 +21,7 @@ import {
   type SortKey
 } from '@renderer/utils/libraryView';
 import { isTabId, buildLibraryTabs, type TabId } from '@renderer/utils/libraryTabs';
+import { SMART_FOLDERS } from '@renderer/utils/smartFolders';
 import { readString, writeString, readStringArray, writeJson } from '@renderer/utils/localStore';
 import { clonePlain } from '@renderer/utils/clone';
 
@@ -68,6 +69,11 @@ const LibraryPlaylistManager = defineAsyncComponent({
 });
 const LibraryOverviewTab = defineAsyncComponent({
   loader: () => import('@renderer/components/library/LibraryOverviewTab.vue'),
+  loadingComponent: Loader,
+  delay: 120
+});
+const LibrarySmartTab = defineAsyncComponent({
+  loader: () => import('@renderer/components/library/LibrarySmartTab.vue'),
   loadingComponent: Loader,
   delay: 120
 });
@@ -148,7 +154,8 @@ const tabs = computed(() =>
     folders: library.folders.length,
     artists: library.artists.length,
     albums: library.albums.length,
-    playlists: library.playlists.length
+    playlists: library.playlists.length,
+    smart: SMART_FOLDERS.length
   })
 );
 
@@ -359,6 +366,7 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
       <div v-else-if="tab === 'playlists'" class="h-full bg-base-100">
         <LibraryPlaylistManager />
       </div>
+      <LibrarySmartTab v-else-if="tab === 'smart'" @edit="onTrackEdit" />
     </div>
   </div>
   <TrackTagEditor :track="editingTrack" @close="editingTrack = null" @saved="onTagSaved" />
