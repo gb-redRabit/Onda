@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Repeat } from '@lucide/vue';
+import { ArrowLeftRight } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { formatDuration } from '@renderer/utils/formatters';
 
@@ -57,7 +57,7 @@ function onClick() {
     :title="title"
     @click="onClick"
   >
-    <Repeat :size="16" />
+    <ArrowLeftRight :size="16" />
     <span v-if="label" class="font-mono tabular-nums">{{ label }}</span>
   </button>
 </template>
