@@ -1822,6 +1822,8 @@ api.registerCommand({
     removeBand: 'Remove band',
     hz: 'Hz',
     db: 'dB',
+    showControls: 'Show sliders',
+    hideControls: 'Hide sliders (chart only)',
     type_lowshelf: 'Low shelf',
     type_peaking: 'Peak',
     type_highshelf: 'High shelf'

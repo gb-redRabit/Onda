@@ -1826,6 +1826,8 @@ api.registerCommand({
     removeBand: 'Usuń pasmo',
     hz: 'Hz',
     db: 'dB',
+    showControls: 'Pokaż suwaki',
+    hideControls: 'Ukryj suwaki (tylko wykres)',
     type_lowshelf: 'Półka niska',
     type_peaking: 'Peak',
     type_highshelf: 'Półka wysoka'
