@@ -23,6 +23,8 @@ export const usePlayerStore = defineStore('player', () => {
   const equalizerPreamp = ref(0);
   const equalizerUserPresets = ref<Record<string, EqBand[]>>({});
   const equalizerMulticolor = ref(false);
+  const equalizerSnap = ref(true);
+  const equalizerSolo = ref<number | null>(null);
   const equalizerPreset = ref('flat');
   const pendingFullscreen = ref(false);
   const resumePrompt = ref<{ path: string; position: number } | null>(null);
@@ -133,6 +135,8 @@ export const usePlayerStore = defineStore('player', () => {
     equalizerPreamp,
     equalizerUserPresets,
     equalizerMulticolor,
+    equalizerSnap,
+    equalizerSolo,
     equalizerPreset,
     pipActive,
     pipTime,

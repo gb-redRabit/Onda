@@ -15,6 +15,26 @@ export const EQ_LIMITS = {
   maxBands: 12
 } as const;
 
+/** Typowe częstotliwości korektora (tercje oktawy) — do „przyciągania". */
+export const EQ_SNAP_FREQS = [
+  20, 25, 31, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600,
+  2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500, 16000, 20000
+];
+
+/** Najbliższa typowa częstotliwość, jeśli w tolerancji (%), inaczej oryginał. */
+export function snapFrequency(freq: number, tolerancePct = 4): number {
+  let best = freq;
+  let bestDist = Infinity;
+  for (const f of EQ_SNAP_FREQS) {
+    const dist = Math.abs(f - freq);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = f;
+    }
+  }
+  return (bestDist / freq) * 100 <= tolerancePct ? best : freq;
+}
+
 /** Domyślny zestaw: półka niska, trzy peaki, półka wysoka — wszystkie neutralne. */
 export const DEFAULT_EQ_BANDS: EqBand[] = [
   { type: 'lowshelf', frequency: 80, q: 0.7, gain: 0 },

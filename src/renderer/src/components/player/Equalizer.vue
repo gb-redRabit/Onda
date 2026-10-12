@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
   RotateCcw,
@@ -10,7 +10,8 @@ import {
   Download,
   Upload,
   Save,
-  Palette
+  Palette,
+  Magnet
 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
@@ -21,6 +22,7 @@ import {
   cloneEqBands,
   eqBandColor,
   matchesEqPreset,
+  snapFrequency,
   type EqBand,
   type EqBandType
 } from '@renderer/utils/constants/audio';
@@ -61,6 +63,22 @@ const presetLabels: Record<string, string> = {
 
 const bands = computed(() => player.equalizerBands);
 const color = (i: number) => (player.equalizerMulticolor ? eqBandColor(i) : 'var(--color-primary)');
+const snap = (freq: number) => (player.equalizerSnap ? snapFrequency(freq) : freq);
+
+// „Solo": odsłuchaj tylko jedno pasmo (reszta neutralna) — zmiana tylko na grafie, bez zapisu.
+const solo = ref<number | null>(null);
+function applySoloGraph() {
+  const list =
+    solo.value !== null && bands.value[solo.value] ? [bands.value[solo.value]] : bands.value;
+  audio.applyEqGraph(list);
+}
+function toggleSolo(i: number) {
+  solo.value = solo.value === i ? null : i;
+  applySoloGraph();
+}
+watch(bands, () => {
+  if (solo.value !== null) applySoloGraph();
+});
 const markerRadius = (type: EqBandType): string =>
   type === 'lowshelf' ? '50% 50% 18% 18%' : type === 'highshelf' ? '18% 18% 50% 50%' : '50%';
 
@@ -141,7 +159,7 @@ function timeFromEvent(e: PointerEvent | MouseEvent): { frequency: number; gain:
   const rx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
   const ry = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
   return {
-    frequency: Math.round(ratioToFreq(rx, CURVE.minFreq, CURVE.maxFreq)),
+    frequency: Math.round(snap(ratioToFreq(rx, CURVE.minFreq, CURVE.maxFreq))),
     gain: Math.round(CURVE.maxDb - ry * (CURVE.maxDb - CURVE.minDb) - player.equalizerPreamp)
   };
 }
@@ -236,7 +254,7 @@ function onFreqKey(e: KeyboardEvent, index: number) {
   if (next === null) return;
   e.preventDefault();
   patchBand(index, {
-    frequency: Math.round(clamp(next, limits.minFrequency, limits.maxFrequency))
+    frequency: Math.round(snap(clamp(next, limits.minFrequency, limits.maxFrequency)))
   });
 }
 function onQKey(e: KeyboardEvent, index: number) {
@@ -341,6 +359,17 @@ onUnmounted(() => cancelAnimationFrame(raf));
         <h3 class="text-sm font-semibold">{{ $t('equalizer.title') }}</h3>
       </div>
       <div class="flex items-center gap-1">
+        <button
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
+          :class="player.equalizerSnap ? 'text-primary' : 'text-base-content/50'"
+          data-testid="eq-snap"
+          :title="$t('equalizer.snap')"
+          :aria-label="$t('equalizer.snap')"
+          :aria-pressed="player.equalizerSnap"
+          @click="audio.setEqSnap(!player.equalizerSnap)"
+        >
+          <Magnet :size="14" />
+        </button>
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="player.equalizerMulticolor ? 'text-primary' : 'text-base-content/50'"
@@ -625,7 +654,23 @@ onUnmounted(() => cancelAnimationFrame(raf));
           </select>
           <button
             type="button"
-            class="ml-auto shrink-0 p-1 rounded-field text-base-content/40 hover:text-error hover:bg-base-content/10 transition-colors disabled:opacity-30"
+            class="ml-auto shrink-0 px-1.5 py-1 rounded-field text-[10px] font-bold transition-colors"
+            :class="
+              solo === i
+                ? 'bg-primary text-primary-content'
+                : 'text-base-content/40 hover:text-base-content hover:bg-base-content/10'
+            "
+            :data-testid="'eq-solo-' + i"
+            :title="$t('equalizer.solo')"
+            :aria-label="$t('equalizer.solo')"
+            :aria-pressed="solo === i"
+            @click="toggleSolo(i)"
+          >
+            S
+          </button>
+          <button
+            type="button"
+            class="shrink-0 p-1 rounded-field text-base-content/40 hover:text-error hover:bg-base-content/10 transition-colors disabled:opacity-30"
             :disabled="bands.length <= 1"
             :data-testid="'eq-remove-' + i"
             :aria-label="$t('equalizer.removeBand')"
@@ -651,10 +696,12 @@ onUnmounted(() => cancelAnimationFrame(raf));
             @input="
               patchBand(i, {
                 frequency: Math.round(
-                  ratioToFreq(
-                    Number(($event.target as HTMLInputElement).value),
-                    limits.minFrequency,
-                    limits.maxFrequency
+                  snap(
+                    ratioToFreq(
+                      Number(($event.target as HTMLInputElement).value),
+                      limits.minFrequency,
+                      limits.maxFrequency
+                    )
                   )
                 )
               })

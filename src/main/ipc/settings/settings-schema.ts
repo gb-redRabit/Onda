@@ -194,7 +194,8 @@ const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
   equalizerEnabled: bool,
   equalizerPreamp: numClamped(-12, 12),
   equalizerUserPresets: recordOf(eqBands),
-  equalizerMulticolor: bool
+  equalizerMulticolor: bool,
+  equalizerSnap: bool
 };
 
 const EXPLORER_FIELDS: Record<string, Sanitizer> = {

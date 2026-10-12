@@ -4,7 +4,8 @@ import {
   EQUALIZER_PRESETS,
   EQ_LIMITS,
   cloneEqBands,
-  matchesEqPreset
+  matchesEqPreset,
+  snapFrequency
 } from '../audio';
 
 describe('parametric EQ model', () => {
@@ -42,5 +43,13 @@ describe('parametric EQ model', () => {
     expect(EQ_LIMITS.maxGain).toBeGreaterThan(0);
     expect(EQ_LIMITS.minQ).toBeLessThan(EQ_LIMITS.maxQ);
     expect(EQ_LIMITS.maxBands).toBeGreaterThan(DEFAULT_EQ_BANDS.length);
+  });
+});
+
+describe('snapFrequency', () => {
+  it('snaps near-standard frequencies and leaves the rest', () => {
+    expect(snapFrequency(1002)).toBe(1000);
+    expect(snapFrequency(2520)).toBe(2500);
+    expect(snapFrequency(1125)).toBe(1125);
   });
 });

@@ -155,7 +155,8 @@ export const DEFAULT_PLAYBACK: PlaybackSettings = {
   equalizerEnabled: true,
   equalizerPreamp: 0,
   equalizerUserPresets: {},
-  equalizerMulticolor: false
+  equalizerMulticolor: false,
+  equalizerSnap: true
 };
 
 export const DEFAULT_DOWNLOAD: DownloadSettings = {

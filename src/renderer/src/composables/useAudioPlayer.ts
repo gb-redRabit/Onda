@@ -72,6 +72,7 @@ function ensureModule() {
   audioEngine.setEqPreamp(preamp);
   player.equalizerUserPresets = settings.playback.equalizerUserPresets ?? {};
   player.equalizerMulticolor = settings.playback.equalizerMulticolor === true;
+  player.equalizerSnap = settings.playback.equalizerSnap !== false;
 
   const scope = effectScope(true);
 
@@ -213,6 +214,14 @@ export function useAudioPlayer() {
     setEqMulticolor: (on: boolean) => {
       usePlayerStore().equalizerMulticolor = on;
       useSettingsStore().updatePlayback({ equalizerMulticolor: on });
+    },
+    setEqSnap: (on: boolean) => {
+      usePlayerStore().equalizerSnap = on;
+      useSettingsStore().updatePlayback({ equalizerSnap: on });
+    },
+    /** Nakłada pasma TYLKO na graf (bez zapisu) — np. do „solo". */
+    applyEqGraph: (bands: EqBand[]) => {
+      audioEngine.setEqBands(bands);
     },
     savePosition: () => audioEngine.savePosition(),
     getAudioContext: () => audioEngine.getAudioContext()

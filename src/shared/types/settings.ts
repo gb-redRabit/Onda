@@ -230,6 +230,8 @@ export interface PlaybackSettings {
   equalizerUserPresets?: Record<string, EqBand[]>;
   /** Różnokolorowe pasma (domyślnie wszystkie w jednym kolorze). */
   equalizerMulticolor?: boolean;
+  /** Przyciąganie częstotliwości do typowych wartości (tercje). */
+  equalizerSnap?: boolean;
 }
 
 export interface DownloadSettings {

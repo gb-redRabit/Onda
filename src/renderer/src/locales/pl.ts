@@ -1836,6 +1836,8 @@ api.registerCommand({
     export: 'Kopiuj do schowka (eksport)',
     import: 'Wklej ze schowka (import)',
     multicolor: 'Różnokolorowe pasma',
+    snap: 'Przyciągaj do typowych częstotliwości',
+    solo: 'Solo — odsłuchaj tylko to pasmo',
     type_lowshelf: 'Półka niska',
     type_peaking: 'Peak',
     type_highshelf: 'Półka wysoka'
