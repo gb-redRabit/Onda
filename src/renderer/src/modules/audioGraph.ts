@@ -1,6 +1,9 @@
 import { logger } from '@shared/logger';
+import type { EqBand } from '@renderer/utils/constants/audio';
 
-const eqFrequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+// Stała liczba slotów filtrów (neutralne, gdy nieużywane) — dzięki temu dodawanie/usuwanie
+// pasm nie wymaga przebudowy łańcucha.
+const EQ_SLOTS = 12;
 
 export class AudioGraph {
   audioCtx: AudioContext | null = null;
@@ -19,11 +22,11 @@ export class AudioGraph {
     this.analyserNode = this.audioCtx.createAnalyser();
     this.analyserNode.fftSize = 2048;
     this.gainNode = this.audioCtx.createGain();
-    this.eqFilters = eqFrequencies.map((freq, i) => {
+    this.eqFilters = Array.from({ length: EQ_SLOTS }, () => {
       const filter = this.audioCtx!.createBiquadFilter();
-      filter.type = i === 0 ? 'lowshelf' : i === eqFrequencies.length - 1 ? 'highshelf' : 'peaking';
-      filter.frequency.value = freq;
-      filter.Q.value = 1.4;
+      filter.type = 'peaking';
+      filter.frequency.value = 1000;
+      filter.Q.value = 1;
       filter.gain.value = 0;
       return filter;
     });
@@ -217,15 +220,23 @@ export class AudioGraph {
     }
   }
 
-  setEqualizerBand(index: number, gain: number): void {
-    if (this.eqFilters[index]) this.eqFilters[index].gain.value = gain;
-  }
-
-  applyEqPreset(preset: Record<number, number>): void {
-    Object.entries(preset).forEach(([idx, gain]) => {
-      const i = parseInt(idx);
-      if (this.eqFilters[i]) this.eqFilters[i].gain.value = gain;
-    });
+  /** Ustawia cały łańcuch z definicji pasm; nadmiarowe sloty stają się neutralne. */
+  setEqBands(bands: readonly EqBand[]): void {
+    for (let i = 0; i < this.eqFilters.length; i++) {
+      const f = this.eqFilters[i];
+      const band = bands[i];
+      if (band) {
+        f.type = band.type;
+        f.frequency.value = band.frequency;
+        f.Q.value = band.q;
+        f.gain.value = band.gain;
+      } else {
+        f.type = 'peaking';
+        f.frequency.value = 1000;
+        f.Q.value = 1;
+        f.gain.value = 0;
+      }
+    }
   }
 
   getAnalyserNode(): AnalyserNode | null {

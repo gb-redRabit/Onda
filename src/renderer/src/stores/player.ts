@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
+import { DEFAULT_EQ_BANDS, cloneEqBands, type EqBand } from '@renderer/utils/constants/audio';
 import { usePlayerFavorites } from './player-favorites';
 import { usePlayerStats } from './player-stats';
 import { usePlayerSubtitles } from './player-subtitles';
@@ -17,7 +18,7 @@ export const usePlayerStore = defineStore('player', () => {
   const duration = ref(0);
   const playbackRate = ref(1);
   const equalizerVisible = ref(false);
-  const equalizerBands = ref<number[]>([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  const equalizerBands = ref<EqBand[]>(cloneEqBands(DEFAULT_EQ_BANDS));
   const equalizerPreset = ref('flat');
   const pendingFullscreen = ref(false);
   const resumePrompt = ref<{ path: string; position: number } | null>(null);

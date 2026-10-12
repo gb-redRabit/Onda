@@ -1816,7 +1816,19 @@ api.registerCommand({
     bass: 'Bas',
     treble: 'Wysokie',
     vocal: 'Wokal',
-    band: 'Pasek'
+    band: 'Pasek',
+    reset: 'Reset',
+    custom: 'Własny',
+    type: 'Typ',
+    frequency: 'Częstotliwość',
+    q: 'Dobroć (Q)',
+    addBand: 'Dodaj pasmo',
+    removeBand: 'Usuń pasmo',
+    hz: 'Hz',
+    db: 'dB',
+    type_lowshelf: 'Półka niska',
+    type_peaking: 'Peak',
+    type_highshelf: 'Półka wysoka'
   },
   subtitles: {
     title: 'Napisy',

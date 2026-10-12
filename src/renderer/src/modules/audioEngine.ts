@@ -3,6 +3,7 @@ import { audioEvents } from '@renderer/utils/audioEvents';
 import { toMediaServerUrl, toMediaStreamUrl } from '@renderer/utils/mediaUrl';
 import { logger } from '@shared/logger';
 import { AudioGraph } from './audioGraph';
+import type { EqBand } from '@renderer/utils/constants/audio';
 import { AudioSecondary } from './audioSecondary';
 import { AudioEnginePositions } from './audioEnginePositions';
 import {
@@ -431,12 +432,8 @@ class AudioEngine {
     if (this.audioEl) this.audioEl.playbackRate = rate;
   }
 
-  setEqualizerBand(index: number, gain: number): void {
-    this.graph.setEqualizerBand(index, gain);
-  }
-
-  applyEqPreset(preset: Record<number, number>): void {
-    this.graph.applyEqPreset(preset);
+  setEqBands(bands: readonly EqBand[]): void {
+    this.graph.setEqBands(bands);
   }
 
   getAnalyserNode(): AnalyserNode | null {

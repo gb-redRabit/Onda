@@ -1812,7 +1812,19 @@ api.registerCommand({
     bass: 'Bass',
     treble: 'Treble',
     vocal: 'Vocal',
-    band: 'Band'
+    band: 'Band',
+    reset: 'Reset',
+    custom: 'Custom',
+    type: 'Type',
+    frequency: 'Frequency',
+    q: 'Q',
+    addBand: 'Add band',
+    removeBand: 'Remove band',
+    hz: 'Hz',
+    db: 'dB',
+    type_lowshelf: 'Low shelf',
+    type_peaking: 'Peak',
+    type_highshelf: 'High shelf'
   },
   subtitles: {
     title: 'Subtitles',

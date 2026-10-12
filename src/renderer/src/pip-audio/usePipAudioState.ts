@@ -27,7 +27,6 @@ interface PipState {
   isMuted?: boolean;
   shuffle?: boolean;
   repeat?: 'none' | 'all' | 'one';
-  equalizerBands?: number[];
   equalizerPreset?: string;
   vizData?: number[];
   nextTrackName?: string;
@@ -56,7 +55,6 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
   const isMuted = ref(false);
   const shuffle = ref(false);
   const repeat = ref<'none' | 'all' | 'one'>('none');
-  const equalizerBands = ref<number[]>([]);
   const eqPreset = ref('flat');
   const vizData = ref<number[]>([]);
   const nextTrackName = ref('');
@@ -162,7 +160,6 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
         isMuted.value = !!s.isMuted;
         shuffle.value = !!s.shuffle;
         repeat.value = s.repeat || 'none';
-        if (s.equalizerBands) equalizerBands.value = s.equalizerBands;
         if (s.equalizerPreset) eqPreset.value = s.equalizerPreset;
         nextTrackName.value = s.nextTrackName || '';
         nextTrackArtist.value = s.nextTrackArtist || '';
@@ -220,7 +217,6 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
     isMuted,
     shuffle,
     repeat,
-    equalizerBands,
     eqPreset,
     vizData,
     nextTrackName,

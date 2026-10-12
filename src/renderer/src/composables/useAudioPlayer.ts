@@ -2,6 +2,7 @@ import { ref, computed, watch, effectScope } from 'vue';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { cloneEqBands, type EqBand } from '@renderer/utils/constants/audio';
 import { logger } from '@shared/logger';
 import { wireAudioEvents } from './audioPlayerEvents';
 
@@ -174,16 +175,10 @@ export function useAudioPlayer() {
       audioEngine.setVolume(usePlayerStore().isMuted ? 0 : v);
     },
     setPlaybackRate: (rate: number) => audioEngine.setPlaybackRate(rate),
-    setEqualizerBand: (index: number, gain: number) => {
-      usePlayerStore().equalizerBands[index] = gain;
-      audioEngine.setEqualizerBand(index, gain);
-    },
-    applyEqPreset: (preset: Record<number, number>) => {
-      Object.entries(preset).forEach(([idx, gain]) => {
-        const i = parseInt(idx);
-        usePlayerStore().equalizerBands[i] = gain;
-      });
-      audioEngine.applyEqPreset(preset);
+    applyEqBands: (bands: EqBand[]) => {
+      const player = usePlayerStore();
+      player.equalizerBands = cloneEqBands(bands);
+      audioEngine.setEqBands(player.equalizerBands);
     },
     savePosition: () => audioEngine.savePosition(),
     getAudioContext: () => audioEngine.getAudioContext()

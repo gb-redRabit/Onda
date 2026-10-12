@@ -88,7 +88,6 @@ export interface AudioPipState {
   isMuted?: boolean;
   shuffle?: boolean;
   repeat?: 'none' | 'all' | 'one';
-  equalizerBands?: number[];
   equalizerPreset?: string;
   vizData?: number[];
   nextTrackName?: string;

@@ -1,6 +1,6 @@
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { usePlayerStore } from '@renderer/stores/player';
-import { EQUALIZER_PRESETS } from '@renderer/utils/constants';
+import { EQUALIZER_PRESETS, cloneEqBands } from '@renderer/utils/constants';
 
 export function dispatchAudioPipAction(action: string): void {
   const player = usePlayerStore();
@@ -23,11 +23,11 @@ export function dispatchAudioPipAction(action: string): void {
     player.toggleMute();
   } else if (action.startsWith('eqPreset:')) {
     const presetName = action.slice(9);
-    const { applyEqPreset } = useAudioPlayer();
+    const { applyEqBands } = useAudioPlayer();
     const presets = EQUALIZER_PRESETS;
     if (presets[presetName]) {
       player.equalizerPreset = presetName;
-      applyEqPreset(presets[presetName]);
+      applyEqBands(cloneEqBands(presets[presetName]));
     }
   }
 }

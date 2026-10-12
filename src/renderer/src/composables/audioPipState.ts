@@ -61,7 +61,6 @@ export function buildAudioPipState(): AudioPipState {
     duration: +duration.value,
     volume: +player.volume,
     isMuted: !!player.isMuted,
-    equalizerBands: (player.equalizerBands || []).slice(),
     equalizerPreset: player.equalizerPreset || 'flat',
     vizData: [],
     nextTrackName: '' + (nextTrack?.name || ''),
