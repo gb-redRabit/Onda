@@ -28,6 +28,16 @@ function resumeAndPlay() {
 
 let moduleInitialized = false;
 
+// Debounce przebudowy łańcucha EQ (IIR ma stałe współczynniki — zmiana = rozłączenie).
+let eqGraphTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleEqGraph(bands: EqBand[]): void {
+  if (eqGraphTimer) clearTimeout(eqGraphTimer);
+  eqGraphTimer = setTimeout(() => {
+    eqGraphTimer = null;
+    audioEngine.setEqBands(bands);
+  }, 120);
+}
+
 function ensureModule() {
   if (moduleInitialized) return;
   moduleInitialized = true;
@@ -194,8 +204,10 @@ export function useAudioPlayer() {
     applyEqBands: (bands: EqBand[]) => {
       const player = usePlayerStore();
       player.equalizerBands = cloneEqBands(bands);
-      audioEngine.setEqBands(player.equalizerBands);
       useSettingsStore().updatePlayback({ equalizerBands: cloneEqBands(bands) });
+      // Graf przebudowujemy dopiero po chwili bez zmian — IIR ma stałe współczynniki,
+      // więc każda zmiana rozłącza łańcuch (podczas kręcenia dawałoby to dropy/trzaski).
+      scheduleEqGraph(player.equalizerBands);
     },
     setEqEnabled: (enabled: boolean) => {
       usePlayerStore().equalizerEnabled = enabled;
