@@ -154,7 +154,8 @@ export const DEFAULT_PLAYBACK: PlaybackSettings = {
   equalizerBands: cloneEqBands(DEFAULT_EQ_BANDS),
   equalizerEnabled: true,
   equalizerPreamp: 0,
-  equalizerUserPresets: {}
+  equalizerUserPresets: {},
+  equalizerMulticolor: false
 };
 
 export const DEFAULT_DOWNLOAD: DownloadSettings = {

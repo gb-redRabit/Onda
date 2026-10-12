@@ -193,7 +193,8 @@ const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
   equalizerBands: eqBands,
   equalizerEnabled: bool,
   equalizerPreamp: numClamped(-12, 12),
-  equalizerUserPresets: recordOf(eqBands)
+  equalizerUserPresets: recordOf(eqBands),
+  equalizerMulticolor: bool
 };
 
 const EXPLORER_FIELDS: Record<string, Sanitizer> = {

@@ -228,6 +228,8 @@ export interface PlaybackSettings {
   equalizerPreamp?: number;
   /** Własne presety korektora (nazwa → pasma). */
   equalizerUserPresets?: Record<string, EqBand[]>;
+  /** Różnokolorowe pasma (domyślnie wszystkie w jednym kolorze). */
+  equalizerMulticolor?: boolean;
 }
 
 export interface DownloadSettings {

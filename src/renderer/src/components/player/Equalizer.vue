@@ -9,7 +9,8 @@ import {
   Power,
   Download,
   Upload,
-  Save
+  Save,
+  Palette
 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
@@ -59,7 +60,7 @@ const presetLabels: Record<string, string> = {
 };
 
 const bands = computed(() => player.equalizerBands);
-const color = (i: number) => eqBandColor(i);
+const color = (i: number) => (player.equalizerMulticolor ? eqBandColor(i) : 'var(--color-primary)');
 const markerRadius = (type: EqBandType): string =>
   type === 'lowshelf' ? '50% 50% 18% 18%' : type === 'highshelf' ? '18% 18% 50% 50%' : '50%';
 
@@ -334,6 +335,17 @@ onUnmounted(() => cancelAnimationFrame(raf));
       </div>
       <div class="flex items-center gap-1">
         <button
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
+          :class="player.equalizerMulticolor ? 'text-primary' : 'text-base-content/50'"
+          data-testid="eq-multicolor"
+          :title="$t('equalizer.multicolor')"
+          :aria-label="$t('equalizer.multicolor')"
+          :aria-pressed="player.equalizerMulticolor"
+          @click="audio.setEqMulticolor(!player.equalizerMulticolor)"
+        >
+          <Palette :size="14" />
+        </button>
+        <button
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors disabled:opacity-30"
           data-testid="eq-add-band"
           :title="$t('equalizer.addBand')"
@@ -578,10 +590,8 @@ onUnmounted(() => cancelAnimationFrame(raf));
         v-for="(band, i) in bands"
         :key="i"
         data-testid="eq-band-row"
-        class="rounded-field border border-base-300 bg-base-200/(--glass-alpha) p-2 transition-colors"
+        class="rounded-field bg-base-200/(--glass-alpha) p-2 transition-colors"
         :style="{
-          borderLeftWidth: '3px',
-          borderLeftColor: color(i),
           backgroundColor: hoverBand === i ? `color-mix(in srgb, ${color(i)} 8%, transparent)` : ''
         }"
         @mouseenter="hoverBand = i"

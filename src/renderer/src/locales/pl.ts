@@ -1835,6 +1835,7 @@ api.registerCommand({
     presetName: 'Nazwa presetu',
     export: 'Kopiuj do schowka (eksport)',
     import: 'Wklej ze schowka (import)',
+    multicolor: 'Różnokolorowe pasma',
     type_lowshelf: 'Półka niska',
     type_peaking: 'Peak',
     type_highshelf: 'Półka wysoka'

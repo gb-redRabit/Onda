@@ -1831,6 +1831,7 @@ api.registerCommand({
     presetName: 'Preset name',
     export: 'Copy to clipboard (export)',
     import: 'Paste from clipboard (import)',
+    multicolor: 'Multicolour bands',
     type_lowshelf: 'Low shelf',
     type_peaking: 'Peak',
     type_highshelf: 'High shelf'

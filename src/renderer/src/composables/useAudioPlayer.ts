@@ -71,6 +71,7 @@ function ensureModule() {
   player.equalizerPreamp = preamp;
   audioEngine.setEqPreamp(preamp);
   player.equalizerUserPresets = settings.playback.equalizerUserPresets ?? {};
+  player.equalizerMulticolor = settings.playback.equalizerMulticolor === true;
 
   const scope = effectScope(true);
 
@@ -208,6 +209,10 @@ export function useAudioPlayer() {
     setEqUserPresets: (presets: Record<string, EqBand[]>) => {
       usePlayerStore().equalizerUserPresets = presets;
       useSettingsStore().updatePlayback({ equalizerUserPresets: presets });
+    },
+    setEqMulticolor: (on: boolean) => {
+      usePlayerStore().equalizerMulticolor = on;
+      useSettingsStore().updatePlayback({ equalizerMulticolor: on });
     },
     savePosition: () => audioEngine.savePosition(),
     getAudioContext: () => audioEngine.getAudioContext()
