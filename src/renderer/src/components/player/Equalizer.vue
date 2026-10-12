@@ -9,14 +9,15 @@ import {
   EQUALIZER_PRESET_LABELS,
   EQ_LIMITS,
   cloneEqBands,
+  eqBandColor,
   matchesEqPreset,
   type EqBand,
   type EqBandType
 } from '@renderer/utils/constants/audio';
 import { eqCurvePath, freqToRatio, ratioToFreq } from '@renderer/utils/eqCurve';
 
-// Parametryczny korektor: krzywa charakterystyki + suwaki (częstotliwość/Q) i przeciągalne
-// wzmocnienie. Pasma można dodawać i usuwać — użytkownik ma pełną swobodę.
+// Parametryczny korektor: krzywa charakterystyki z PRZECIĄGALNYMI kropkami (X = częstotliwość,
+// Y = wzmocnienie) + kolor per pasmo (kropka i wiersz w tym samym kolorze), suwaki Q i wzmocnienia.
 
 const player = usePlayerStore();
 const { applyEqBands } = useAudioPlayer();
@@ -50,6 +51,7 @@ const presetLabels: Record<string, string> = {
 };
 
 const bands = computed(() => player.equalizerBands);
+const color = (i: number) => eqBandColor(i);
 
 const activePreset = computed(() => {
   for (const name of Object.keys(presets)) {
@@ -58,49 +60,67 @@ const activePreset = computed(() => {
   return 'custom';
 });
 
-// --- krzywa charakterystyki ---
+// --- krzywa ---
 const CURVE = { width: 480, height: 96, minFreq: 20, maxFreq: 20000, minDb: -18, maxDb: 18 };
-
 const curvePath = computed(() => eqCurvePath(bands.value, CURVE));
-const zeroLineY = computed(() => (CURVE.maxDb / (CURVE.maxDb - CURVE.minDb)) * CURVE.height);
-function markerX(freq: number): number {
-  return freqToRatio(freq, CURVE.minFreq, CURVE.maxFreq) * CURVE.width;
+const zeroLineY = CURVE.height - ((0 - CURVE.minDb) / (CURVE.maxDb - CURVE.minDb)) * CURVE.height;
+const bandX = (freq: number) => freqToRatio(freq, CURVE.minFreq, CURVE.maxFreq) * 100;
+const bandY = (gain: number) =>
+  ((CURVE.maxDb - Math.max(CURVE.minDb, Math.min(CURVE.maxDb, gain))) /
+    (CURVE.maxDb - CURVE.minDb)) *
+  100;
+
+const curveEl = ref<HTMLElement | null>(null);
+const draggingBand = ref<number | null>(null);
+const hoverBand = ref<number | null>(null);
+
+function onCurveDown(i: number, e: PointerEvent) {
+  e.preventDefault();
+  e.stopPropagation();
+  draggingBand.value = i;
+  (e.currentTarget as Element).setPointerCapture(e.pointerId);
 }
-function markerY(gain: number): number {
-  const clamped = Math.max(CURVE.minDb, Math.min(CURVE.maxDb, gain));
-  return CURVE.height - ((clamped - CURVE.minDb) / (CURVE.maxDb - CURVE.minDb)) * CURVE.height;
+function onCurveMove(e: PointerEvent) {
+  const i = draggingBand.value;
+  const el = curveEl.value;
+  if (i === null || !el) return;
+  const rect = el.getBoundingClientRect();
+  const rx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  const ry = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+  patchBand(i, {
+    frequency: Math.round(ratioToFreq(rx, CURVE.minFreq, CURVE.maxFreq)),
+    gain: Math.round(CURVE.maxDb - ry * (CURVE.maxDb - CURVE.minDb))
+  });
+}
+function onCurveUp() {
+  draggingBand.value = null;
 }
 
 function commit(next: EqBand[], preset = 'custom') {
   player.equalizerPreset = preset;
   applyEqBands(next);
 }
-
 function selectPreset(name: string) {
   commit(cloneEqBands(presets[name]), name);
 }
-
 function patchBand(i: number, patch: Partial<EqBand>) {
   const next = cloneEqBands(bands.value);
   if (!next[i]) return;
   next[i] = { ...next[i], ...patch };
   commit(next);
 }
-
 function addBand() {
   if (bands.value.length >= limits.maxBands) return;
   const next = cloneEqBands(bands.value);
   next.push({ type: 'peaking', frequency: 1000, q: 1, gain: 0 });
   commit(next);
 }
-
 function removeBand(i: number) {
   if (bands.value.length <= 1) return;
   const next = cloneEqBands(bands.value);
   next.splice(i, 1);
   commit(next);
 }
-
 function clamp(v: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, v));
 }
@@ -120,14 +140,14 @@ function onGainKey(e: KeyboardEvent, index: number) {
   e.preventDefault();
   patchBand(index, { gain: clamp(next, limits.minGain, limits.maxGain) });
 }
-
 function onGainDrag(e: MouseEvent, index: number) {
   const target = e.currentTarget as HTMLElement;
   const rect = target.getBoundingClientRect();
   function update(ev: MouseEvent) {
     const pct = clamp((ev.clientX - rect.left) / rect.width, 0, 1);
-    const val = Math.round(pct * (limits.maxGain - limits.minGain) + limits.minGain);
-    patchBand(index, { gain: val });
+    patchBand(index, {
+      gain: Math.round(pct * (limits.maxGain - limits.minGain) + limits.minGain)
+    });
   }
   update(e);
   function onMove(ev: MouseEvent) {
@@ -140,11 +160,9 @@ function onGainDrag(e: MouseEvent, index: number) {
   document.addEventListener('mousemove', onMove);
   document.addEventListener('mouseup', onUp);
 }
-
 function typeLabel(type: EqBandType): string {
   return t(`equalizer.type_${type}`);
 }
-
 const gainPct = (gain: number) =>
   ((gain - limits.minGain) / (limits.maxGain - limits.minGain)) * 100;
 </script>
@@ -153,7 +171,7 @@ const gainPct = (gain: number) =>
   <div
     ref="panel"
     data-testid="equalizer"
-    class="bg-base-100 border border-base-300 rounded-box p-4 w-130 max-w-[95vw]"
+    class="bg-base-100 border border-base-300 rounded-box p-4 w-140 max-w-[95vw]"
   >
     <div class="flex items-center justify-between mb-3">
       <h3 class="text-sm font-semibold">{{ $t('equalizer.title') }}</h3>
@@ -192,13 +210,16 @@ const gainPct = (gain: number) =>
       </span>
     </div>
 
-    <!-- krzywa charakterystyki -->
-    <div class="rounded-field border border-base-300 bg-base-200/(--glass-alpha) p-1 mb-3">
+    <!-- krzywa z przeciągalnymi kropkami -->
+    <div
+      ref="curveEl"
+      class="relative rounded-field border border-base-300 bg-base-200/(--glass-alpha) mb-3 overflow-hidden"
+      data-testid="eq-curve"
+    >
       <svg
         :viewBox="`0 0 ${CURVE.width} ${CURVE.height}`"
         preserveAspectRatio="none"
-        class="w-full h-24"
-        data-testid="eq-curve"
+        class="w-full h-28 block"
         aria-hidden="true"
       >
         <line
@@ -209,29 +230,67 @@ const gainPct = (gain: number) =>
           class="stroke-base-content/20"
           stroke-width="1"
           stroke-dasharray="3 3"
+          vector-effect="non-scaling-stroke"
         />
-        <path :d="curvePath" fill="none" class="stroke-primary" stroke-width="2" />
-        <circle
-          v-for="(band, i) in bands"
-          :key="'m' + i"
-          :cx="markerX(band.frequency)"
-          :cy="markerY(band.gain)"
-          r="3"
-          class="fill-primary stroke-base-100"
-          stroke-width="1"
+        <path
+          :d="curvePath"
+          fill="none"
+          class="stroke-primary"
+          stroke-width="2"
+          vector-effect="non-scaling-stroke"
         />
       </svg>
+
+      <!-- kropki pasm (HTML, więc nie są rozciągane) -->
+      <button
+        v-for="(band, i) in bands"
+        :key="'m' + i"
+        type="button"
+        class="absolute w-4 h-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-base-100 shadow cursor-grab active:cursor-grabbing"
+        :style="{
+          left: bandX(band.frequency) + '%',
+          top: bandY(band.gain) + '%',
+          backgroundColor: color(i),
+          transform: `translate(-50%, -50%) scale(${hoverBand === i || draggingBand === i ? 1.35 : 1})`,
+          zIndex: hoverBand === i || draggingBand === i ? 5 : 1
+        }"
+        :aria-label="`${t('equalizer.band')} ${i + 1}`"
+        @pointerdown="(e: PointerEvent) => onCurveDown(i, e)"
+        @pointermove="onCurveMove"
+        @pointerup="onCurveUp"
+        @pointercancel="onCurveUp"
+        @mouseenter="hoverBand = i"
+        @mouseleave="hoverBand = null"
+      />
     </div>
 
     <!-- pasma -->
-    <div class="space-y-2.5 max-h-64 overflow-auto pr-1">
-      <div v-for="(band, i) in bands" :key="i" data-testid="eq-band-row" class="space-y-1">
+    <div class="space-y-2 max-h-64 overflow-auto pr-1">
+      <div
+        v-for="(band, i) in bands"
+        :key="i"
+        data-testid="eq-band-row"
+        class="rounded-field border border-base-300 bg-base-200/(--glass-alpha) p-2 transition-colors"
+        :style="{
+          borderLeftWidth: '3px',
+          borderLeftColor: color(i),
+          backgroundColor:
+            hoverBand === i ? 'color-mix(in srgb, ' + color(i) + ' 8%, transparent)' : ''
+        }"
+        @mouseenter="hoverBand = i"
+        @mouseleave="hoverBand = null"
+      >
         <div class="flex items-center gap-2">
+          <span
+            class="shrink-0 w-2.5 h-2.5 rounded-full"
+            :style="{ backgroundColor: color(i) }"
+            aria-hidden="true"
+          />
           <select
             :value="band.type"
             :data-testid="'eq-type-' + i"
             :aria-label="$t('equalizer.type')"
-            class="shrink-0 w-28 px-1.5 py-1 rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-[11px] focus:border-primary focus:outline-none"
+            class="shrink-0 w-28 px-1.5 py-1 rounded-field bg-base-100 border border-base-300 text-[11px] focus:border-primary focus:outline-none"
             @change="
               patchBand(i, { type: ($event.target as HTMLSelectElement).value as EqBandType })
             "
@@ -259,15 +318,20 @@ const gainPct = (gain: number) =>
               style="transform: translateX(-50%)"
             />
             <div
-              class="absolute h-1 rounded-full bg-primary"
+              class="absolute h-1 rounded-full"
               :style="{
+                backgroundColor: color(i),
                 left: band.gain >= 0 ? '50%' : gainPct(band.gain) + '%',
                 width: (Math.abs(band.gain) / (limits.maxGain - limits.minGain)) * 100 + '%'
               }"
             />
             <div
-              class="absolute w-3.5 h-3.5 rounded-full bg-primary border border-white shadow-md"
-              :style="{ left: gainPct(band.gain) + '%', transform: 'translateX(-50%)' }"
+              class="absolute w-3.5 h-3.5 rounded-full border-2 border-base-100 shadow-md"
+              :style="{
+                backgroundColor: color(i),
+                left: gainPct(band.gain) + '%',
+                transform: 'translateX(-50%)'
+              }"
             />
           </div>
 
@@ -288,8 +352,7 @@ const gainPct = (gain: number) =>
           </button>
         </div>
 
-        <!-- częstotliwość + Q: suwaki -->
-        <div class="flex items-center gap-3 pl-1">
+        <div class="flex items-center gap-3 mt-1 pl-5">
           <label class="flex-1 flex items-center gap-2">
             <span class="w-3 text-[10px] text-base-content/50">F</span>
             <input
@@ -300,7 +363,8 @@ const gainPct = (gain: number) =>
               :value="freqToRatio(band.frequency, limits.minFrequency, limits.maxFrequency)"
               :data-testid="'eq-freq-' + i"
               :aria-label="$t('equalizer.frequency')"
-              class="flex-1 h-1 accent-primary cursor-pointer"
+              class="flex-1 h-1 cursor-pointer"
+              :style="{ accentColor: color(i) }"
               @input="
                 patchBand(i, {
                   frequency: Math.round(
@@ -317,7 +381,7 @@ const gainPct = (gain: number) =>
               >{{ band.frequency }} {{ $t('equalizer.hz') }}</span
             >
           </label>
-          <label class="w-40 flex items-center gap-2">
+          <label class="w-44 flex items-center gap-2">
             <span class="w-3 text-[10px] text-base-content/50">Q</span>
             <input
               type="range"
@@ -327,7 +391,8 @@ const gainPct = (gain: number) =>
               :value="band.q"
               :data-testid="'eq-q-' + i"
               :aria-label="$t('equalizer.q')"
-              class="flex-1 h-1 accent-primary cursor-pointer"
+              class="flex-1 h-1 cursor-pointer"
+              :style="{ accentColor: color(i) }"
               @input="
                 patchBand(i, {
                   q: clamp(

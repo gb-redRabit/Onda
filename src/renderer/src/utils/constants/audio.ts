@@ -54,6 +54,11 @@ export function cloneEqBands(bands: readonly EqBand[]): EqBand[] {
   return bands.map((b) => ({ ...b }));
 }
 
+/** Wyraźny, powtarzalny kolor dla pasma (złoty kąt) — kropka na krzywej i wiersz mają ten sam. */
+export function eqBandColor(index: number): string {
+  return `hsl(${Math.round((index * 137.508) % 360)} 72% 62%)`;
+}
+
 /** Czy zestaw pasm odpowiada nazwanemu presetowi (po typie, częstotliwości, Q i gainie). */
 export function matchesEqPreset(bands: readonly EqBand[], preset: readonly EqBand[]): boolean {
   if (bands.length !== preset.length) return false;
