@@ -4,6 +4,7 @@ import { getActivePinia } from 'pinia';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useAudioPlayer } from './useAudioPlayer';
+import { EQUALIZER_PRESETS, EQ_LIMITS, cloneEqBands } from '@renderer/utils/constants';
 
 type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
 
@@ -121,6 +122,61 @@ function handleAbShortcuts(e: KeyboardEvent): boolean {
 }
 
 /**
+ * Globalne skróty korektora (działają wszędzie): pokaż/ukryj, bypass, dodaj pasmo, reset,
+ * snap, mono. Wartości edytowalne w Ustawieniach → Skróty.
+ */
+function handleEqShortcuts(e: KeyboardEvent): boolean {
+  if (!getActivePinia()) return false;
+  const shortcuts = useSettingsStore().shortcuts;
+  const player = usePlayerStore();
+  const audio = useAudioPlayer();
+
+  const toggle = shortcuts['eq-toggle'];
+  if (toggle && matchesShortcut(toggle, e)) {
+    e.preventDefault();
+    player.equalizerVisible = !player.equalizerVisible;
+    return true;
+  }
+  const bypass = shortcuts['eq-bypass'];
+  if (bypass && matchesShortcut(bypass, e)) {
+    e.preventDefault();
+    audio.setEqEnabled(!player.equalizerEnabled);
+    return true;
+  }
+  const add = shortcuts['eq-add-band'];
+  if (add && matchesShortcut(add, e)) {
+    e.preventDefault();
+    if (player.equalizerBands.length < EQ_LIMITS.maxBands) {
+      const next = cloneEqBands(player.equalizerBands);
+      next.push({ type: 'peaking', frequency: 1000, q: 1, gain: 0 });
+      player.equalizerPreset = 'custom';
+      audio.applyEqBands(next);
+    }
+    return true;
+  }
+  const reset = shortcuts['eq-reset'];
+  if (reset && matchesShortcut(reset, e)) {
+    e.preventDefault();
+    player.equalizerPreset = 'flat';
+    audio.applyEqBands(cloneEqBands(EQUALIZER_PRESETS.flat));
+    return true;
+  }
+  const snap = shortcuts['eq-snap'];
+  if (snap && matchesShortcut(snap, e)) {
+    e.preventDefault();
+    audio.setEqSnap(!player.equalizerSnap);
+    return true;
+  }
+  const mono = shortcuts['eq-mono'];
+  if (mono && matchesShortcut(mono, e)) {
+    e.preventDefault();
+    audio.setEqMono(!player.equalizerMono);
+    return true;
+  }
+  return false;
+}
+
+/**
  * Obsługuje skróty widoku odtwarzacza. Wywoływane z pojedynczego nasłuchu keydown
  * na poziomie App (zawsze zarejestrowanego, gdy okno jest aktywne), dzięki czemu klawisze
  * odtwarzania działają mimo ciągłego montowania/odmontowywania widoków.
@@ -139,6 +195,7 @@ export function handlePlayerShortcutKeydown(e: KeyboardEvent): void {
 
   // Pętla A–B działa w wideo i audio, więc obsługujemy ją przed sprawdzeniem kontekstu widoku.
   if (handleAbShortcuts(e)) return;
+  if (handleEqShortcuts(e)) return;
 
   const c = ctx;
   if (!c) return;
