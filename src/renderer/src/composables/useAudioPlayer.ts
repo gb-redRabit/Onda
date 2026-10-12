@@ -57,6 +57,12 @@ function ensureModule() {
     settings.playback.replayGain || settings.playback.normalization
   );
   audioEngine.setRememberPosition(settings.playback.rememberPosition);
+  // Zapisany korektor parametryczny: nałóż na store + silnik (graf zastosuje przy tworzeniu kontekstu).
+  const savedEq = settings.playback.equalizerBands;
+  if (savedEq?.length) {
+    player.equalizerBands = cloneEqBands(savedEq);
+    audioEngine.setEqBands(player.equalizerBands);
+  }
 
   const scope = effectScope(true);
 
@@ -179,6 +185,7 @@ export function useAudioPlayer() {
       const player = usePlayerStore();
       player.equalizerBands = cloneEqBands(bands);
       audioEngine.setEqBands(player.equalizerBands);
+      useSettingsStore().updatePlayback({ equalizerBands: cloneEqBands(bands) });
     },
     savePosition: () => audioEngine.savePosition(),
     getAudioContext: () => audioEngine.getAudioContext()

@@ -1,17 +1,9 @@
 // Parametryczny korektor: każde pasmo ma własny typ, częstotliwość i dobroć (Q) — nie tylko
 // wzmocnienie jak w graficznym. Pasma są definiowane przez użytkownika (dodawane/usuwane).
 
-export type EqBandType = 'lowshelf' | 'peaking' | 'highshelf';
+import type { EqBand, EqBandType } from '@shared/types/audio';
 
-export interface EqBand {
-  type: EqBandType;
-  /** Częstotliwość środkowa/odcięcia w Hz. */
-  frequency: number;
-  /** Dobroć (szerokość pasma); ignorowana dla półek. */
-  q: number;
-  /** Wzmocnienie w dB. */
-  gain: number;
-}
+export type { EqBand, EqBandType };
 
 export const EQ_LIMITS = {
   minFrequency: 20,

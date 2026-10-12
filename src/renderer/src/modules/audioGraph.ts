@@ -11,6 +11,8 @@ export class AudioGraph {
   sourceNode: MediaElementAudioSourceNode | null = null;
   gainNode: GainNode | null = null;
   eqFilters: BiquadFilterNode[] = [];
+  /** Ostatnio ustawione pasma — nakładane na filtry także przy (od)tworzeniu kontekstu. */
+  eqBands: readonly EqBand[] = [];
   videoSourceNode: MediaElementAudioSourceNode | null = null;
   videoGainNode: GainNode | null = null;
   videoSourceEl: HTMLVideoElement | null = null;
@@ -30,6 +32,7 @@ export class AudioGraph {
       filter.gain.value = 0;
       return filter;
     });
+    this.setEqBands(this.eqBands);
   }
 
   ensureEqChain(): void {
@@ -222,6 +225,7 @@ export class AudioGraph {
 
   /** Ustawia cały łańcuch z definicji pasm; nadmiarowe sloty stają się neutralne. */
   setEqBands(bands: readonly EqBand[]): void {
+    this.eqBands = bands;
     for (let i = 0; i < this.eqFilters.length; i++) {
       const f = this.eqFilters[i];
       const band = bands[i];

@@ -13,6 +13,7 @@ import type {
 } from '@renderer/types/settings';
 
 export * from './constants/audio';
+import { DEFAULT_EQ_BANDS, cloneEqBands } from './constants/audio';
 
 export const DEFAULT_NETWORK: NetworkSettings = {
   proxy: { enabled: false, type: 'http', host: '', port: 8080 },
@@ -149,7 +150,8 @@ export const DEFAULT_PLAYBACK: PlaybackSettings = {
     sensitivity: 0.5,
     smoothing: 0.8,
     fpsCap: 60
-  }
+  },
+  equalizerBands: cloneEqBands(DEFAULT_EQ_BANDS)
 };
 
 export const DEFAULT_DOWNLOAD: DownloadSettings = {

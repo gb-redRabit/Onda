@@ -144,6 +144,34 @@ const VISUALIZATION_FIELDS: Record<string, Sanitizer> = {
   fpsCap: numClamped(15, 120)
 };
 
+const EQ_BAND_FIELDS: Record<string, Sanitizer> = {
+  type: enumOf(['lowshelf', 'peaking', 'highshelf']),
+  frequency: numClamped(20, 20000),
+  q: numClamped(0.3, 8),
+  gain: numClamped(-18, 18)
+};
+
+// Zestaw pasm korektora: maksymalnie 12, tylko kompletne (typ + wszystkie liczby).
+const eqBands: Sanitizer = (v) => {
+  if (!Array.isArray(v)) return undefined;
+  const band = obj(EQ_BAND_FIELDS);
+  const out: unknown[] = [];
+  for (const item of v) {
+    if (out.length >= 12) break;
+    const cleaned = band(item) as Record<string, unknown> | undefined;
+    if (
+      cleaned &&
+      cleaned.type &&
+      cleaned.frequency !== undefined &&
+      cleaned.q !== undefined &&
+      cleaned.gain !== undefined
+    ) {
+      out.push(cleaned);
+    }
+  }
+  return out;
+};
+
 const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
   normalization: bool,
   replayGain: bool,
@@ -161,7 +189,8 @@ const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
   resumePromptTimeout: numClamped(1, 60),
   playbackSpeed: numClamped(0.2, 3),
   videoFilter: str,
-  visualization: obj(VISUALIZATION_FIELDS)
+  visualization: obj(VISUALIZATION_FIELDS),
+  equalizerBands: eqBands
 };
 
 const EXPLORER_FIELDS: Record<string, Sanitizer> = {

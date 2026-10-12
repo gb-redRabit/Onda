@@ -1,4 +1,5 @@
 import type { AudioPipDock, AudioPipElementId } from './pip';
+import type { EqBand } from './audio';
 
 /**
  * Jak dobrze system chroni zapisany sekret. Patrz main/ipc/settings-crypto.ts:
@@ -219,6 +220,8 @@ export interface PlaybackSettings {
   playbackSpeed: number;
   videoFilter: string;
   visualization: VisualizationSettings;
+  /** Zapisany zestaw pasm parametrycznego korektora. */
+  equalizerBands?: EqBand[];
 }
 
 export interface DownloadSettings {
