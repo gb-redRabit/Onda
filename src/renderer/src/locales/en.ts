@@ -1824,6 +1824,13 @@ api.registerCommand({
     db: 'dB',
     showControls: 'Show sliders',
     hideControls: 'Hide sliders (chart only)',
+    preamp: 'Preamp',
+    enable: 'Enable equalizer',
+    disable: 'Disable equalizer (bypass)',
+    savePreset: 'Save preset',
+    presetName: 'Preset name',
+    export: 'Copy to clipboard (export)',
+    import: 'Paste from clipboard (import)',
     type_lowshelf: 'Low shelf',
     type_peaking: 'Peak',
     type_highshelf: 'High shelf'

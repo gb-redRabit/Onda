@@ -1828,6 +1828,13 @@ api.registerCommand({
     db: 'dB',
     showControls: 'Pokaż suwaki',
     hideControls: 'Ukryj suwaki (tylko wykres)',
+    preamp: 'Preamp',
+    enable: 'Włącz korektor',
+    disable: 'Wyłącz korektor (bypass)',
+    savePreset: 'Zapisz preset',
+    presetName: 'Nazwa presetu',
+    export: 'Kopiuj do schowka (eksport)',
+    import: 'Wklej ze schowka (import)',
     type_lowshelf: 'Półka niska',
     type_peaking: 'Peak',
     type_highshelf: 'Półka wysoka'

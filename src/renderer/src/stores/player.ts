@@ -19,6 +19,9 @@ export const usePlayerStore = defineStore('player', () => {
   const playbackRate = ref(1);
   const equalizerVisible = ref(false);
   const equalizerBands = ref<EqBand[]>(cloneEqBands(DEFAULT_EQ_BANDS));
+  const equalizerEnabled = ref(true);
+  const equalizerPreamp = ref(0);
+  const equalizerUserPresets = ref<Record<string, EqBand[]>>({});
   const equalizerPreset = ref('flat');
   const pendingFullscreen = ref(false);
   const resumePrompt = ref<{ path: string; position: number } | null>(null);
@@ -125,6 +128,9 @@ export const usePlayerStore = defineStore('player', () => {
     queueVisible,
     equalizerVisible,
     equalizerBands,
+    equalizerEnabled,
+    equalizerPreamp,
+    equalizerUserPresets,
     equalizerPreset,
     pipActive,
     pipTime,

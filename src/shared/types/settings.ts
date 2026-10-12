@@ -222,6 +222,12 @@ export interface PlaybackSettings {
   visualization: VisualizationSettings;
   /** Zapisany zestaw pasm parametrycznego korektora. */
   equalizerBands?: EqBand[];
+  /** Czy korektor jest włączony (bypass bez utraty pasm). */
+  equalizerEnabled?: boolean;
+  /** Preamp korektora w dB. */
+  equalizerPreamp?: number;
+  /** Własne presety korektora (nazwa → pasma). */
+  equalizerUserPresets?: Record<string, EqBand[]>;
 }
 
 export interface DownloadSettings {

@@ -151,7 +151,10 @@ export const DEFAULT_PLAYBACK: PlaybackSettings = {
     smoothing: 0.8,
     fpsCap: 60
   },
-  equalizerBands: cloneEqBands(DEFAULT_EQ_BANDS)
+  equalizerBands: cloneEqBands(DEFAULT_EQ_BANDS),
+  equalizerEnabled: true,
+  equalizerPreamp: 0,
+  equalizerUserPresets: {}
 };
 
 export const DEFAULT_DOWNLOAD: DownloadSettings = {

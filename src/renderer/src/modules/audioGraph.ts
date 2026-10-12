@@ -11,8 +11,12 @@ export class AudioGraph {
   sourceNode: MediaElementAudioSourceNode | null = null;
   gainNode: GainNode | null = null;
   eqFilters: BiquadFilterNode[] = [];
+  /** Gain wyjściowy korektora (preamp) — między łańcuchem filtrów a głównym gainNode. */
+  preampNode: GainNode | null = null;
   /** Ostatnio ustawione pasma — nakładane na filtry także przy (od)tworzeniu kontekstu. */
   eqBands: readonly EqBand[] = [];
+  eqEnabled = true;
+  eqPreampDb = 0;
   videoSourceNode: MediaElementAudioSourceNode | null = null;
   videoGainNode: GainNode | null = null;
   videoSourceEl: HTMLVideoElement | null = null;
@@ -24,6 +28,8 @@ export class AudioGraph {
     this.analyserNode = this.audioCtx.createAnalyser();
     this.analyserNode.fftSize = 2048;
     this.gainNode = this.audioCtx.createGain();
+    this.preampNode = this.audioCtx.createGain();
+    this.setEqPreamp(this.eqPreampDb);
     this.eqFilters = Array.from({ length: EQ_SLOTS }, () => {
       const filter = this.audioCtx!.createBiquadFilter();
       filter.type = 'peaking';
@@ -46,10 +52,11 @@ export class AudioGraph {
         eqChain.connect(this.eqFilters[i]);
         eqChain = this.eqFilters[i];
       }
-      eqChain.connect(this.gainNode!);
+      eqChain.connect(this.preampNode!);
     } else {
-      this.sourceNode?.connect(this.gainNode!);
+      this.sourceNode?.connect(this.preampNode!);
     }
+    this.preampNode!.connect(this.gainNode!);
     this.gainNode!.connect(this.analyserNode!);
     this.analyserNode!.connect(this.audioCtx!.destination);
     this.eqChainBuilt = true;
@@ -74,7 +81,7 @@ export class AudioGraph {
       if (firstFilter) {
         this.sourceNode.connect(firstFilter);
       } else {
-        this.sourceNode.connect(this.gainNode!);
+        this.sourceNode.connect(this.preampNode!);
       }
     }
   }
@@ -170,9 +177,9 @@ export class AudioGraph {
     if (firstFilter) {
       this.videoSourceNode.connect(this.videoGainNode);
       this.videoGainNode.connect(firstFilter);
-    } else if (this.gainNode) {
+    } else if (this.preampNode) {
       this.videoSourceNode.connect(this.videoGainNode);
-      this.videoGainNode.connect(this.gainNode);
+      this.videoGainNode.connect(this.preampNode);
     }
 
     this.videoGainNode.gain.value = initialVolume;
@@ -202,8 +209,8 @@ export class AudioGraph {
     try {
       if (firstFilter) {
         this.sourceNode.connect(firstFilter);
-      } else if (this.gainNode) {
-        this.sourceNode.connect(this.gainNode);
+      } else if (this.preampNode) {
+        this.sourceNode.connect(this.preampNode);
       }
     } catch (e) {
       logger.warn(
@@ -228,7 +235,7 @@ export class AudioGraph {
     this.eqBands = bands;
     for (let i = 0; i < this.eqFilters.length; i++) {
       const f = this.eqFilters[i];
-      const band = bands[i];
+      const band = this.eqEnabled ? bands[i] : undefined;
       if (band) {
         f.type = band.type;
         f.frequency.value = band.frequency;
@@ -241,6 +248,18 @@ export class AudioGraph {
         f.gain.value = 0;
       }
     }
+  }
+
+  /** Preamp: płaski gain wyjściowy korektora (dB). */
+  setEqPreamp(db: number): void {
+    this.eqPreampDb = db;
+    if (this.preampNode) this.preampNode.gain.value = Math.pow(10, db / 20);
+  }
+
+  /** Włącz/wyłącz korektor bez utraty pasm (bypass = wszystkie filtry neutralne). */
+  setEqEnabled(enabled: boolean): void {
+    this.eqEnabled = enabled;
+    this.setEqBands(this.eqBands);
   }
 
   getAnalyserNode(): AnalyserNode | null {

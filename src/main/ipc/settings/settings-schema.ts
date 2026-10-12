@@ -190,7 +190,10 @@ const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
   playbackSpeed: numClamped(0.2, 3),
   videoFilter: str,
   visualization: obj(VISUALIZATION_FIELDS),
-  equalizerBands: eqBands
+  equalizerBands: eqBands,
+  equalizerEnabled: bool,
+  equalizerPreamp: numClamped(-12, 12),
+  equalizerUserPresets: recordOf(eqBands)
 };
 
 const EXPLORER_FIELDS: Record<string, Sanitizer> = {

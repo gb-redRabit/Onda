@@ -63,6 +63,14 @@ function ensureModule() {
     player.equalizerBands = cloneEqBands(savedEq);
     audioEngine.setEqBands(player.equalizerBands);
   }
+  if (settings.playback.equalizerEnabled === false) {
+    player.equalizerEnabled = false;
+    audioEngine.setEqEnabled(false);
+  }
+  const preamp = settings.playback.equalizerPreamp ?? 0;
+  player.equalizerPreamp = preamp;
+  audioEngine.setEqPreamp(preamp);
+  player.equalizerUserPresets = settings.playback.equalizerUserPresets ?? {};
 
   const scope = effectScope(true);
 
@@ -186,6 +194,20 @@ export function useAudioPlayer() {
       player.equalizerBands = cloneEqBands(bands);
       audioEngine.setEqBands(player.equalizerBands);
       useSettingsStore().updatePlayback({ equalizerBands: cloneEqBands(bands) });
+    },
+    setEqEnabled: (enabled: boolean) => {
+      usePlayerStore().equalizerEnabled = enabled;
+      audioEngine.setEqEnabled(enabled);
+      useSettingsStore().updatePlayback({ equalizerEnabled: enabled });
+    },
+    setEqPreamp: (db: number) => {
+      usePlayerStore().equalizerPreamp = db;
+      audioEngine.setEqPreamp(db);
+      useSettingsStore().updatePlayback({ equalizerPreamp: db });
+    },
+    setEqUserPresets: (presets: Record<string, EqBand[]>) => {
+      usePlayerStore().equalizerUserPresets = presets;
+      useSettingsStore().updatePlayback({ equalizerUserPresets: presets });
     },
     savePosition: () => audioEngine.savePosition(),
     getAudioContext: () => audioEngine.getAudioContext()

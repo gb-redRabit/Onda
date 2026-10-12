@@ -436,6 +436,14 @@ class AudioEngine {
     this.graph.setEqBands(bands);
   }
 
+  setEqPreamp(db: number): void {
+    this.graph.setEqPreamp(db);
+  }
+
+  setEqEnabled(enabled: boolean): void {
+    this.graph.setEqEnabled(enabled);
+  }
+
   getAnalyserNode(): AnalyserNode | null {
     return this.graph.getAnalyserNode();
   }
