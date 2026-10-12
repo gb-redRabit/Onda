@@ -466,7 +466,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
     <!-- krzywa -->
     <div
       ref="curveEl"
-      class="relative rounded-field border border-base-300 bg-base-200/(--glass-alpha) mb-3"
+      class="relative z-30 rounded-field border border-base-300 bg-base-200/(--glass-alpha) mb-3"
       data-testid="eq-curve"
       @dblclick="onCurveDblClick"
     >
