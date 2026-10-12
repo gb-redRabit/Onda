@@ -126,6 +126,11 @@ const spectrumPath = computed(() => {
 const curveEl = ref<HTMLElement | null>(null);
 const draggingBand = ref<number | null>(null);
 const hoverBand = ref<number | null>(null);
+// Menu kontekstowe otwiera się w dół, gdy kropka jest w górnej połowie, i w górę w dolnej —
+// dzięki temu nigdy nie wychodzi poza wykres.
+const menuBelow = computed(() =>
+  menuBand.value === null ? true : bandY(bands.value[menuBand.value]?.gain ?? 0) < 55
+);
 
 function timeFromEvent(e: PointerEvent | MouseEvent): { frequency: number; gain: number } | null {
   const el = curveEl.value;
@@ -461,7 +466,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
     <!-- krzywa -->
     <div
       ref="curveEl"
-      class="relative rounded-field border border-base-300 bg-base-200/(--glass-alpha) mb-3 overflow-hidden"
+      class="relative rounded-field border border-base-300 bg-base-200/(--glass-alpha) mb-3"
       data-testid="eq-curve"
       @dblclick="onCurveDblClick"
     >
@@ -531,7 +536,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
         v-for="(band, i) in bands"
         :key="'m' + i"
         type="button"
-        class="absolute w-5 h-5 flex items-center justify-center text-[9px] font-bold text-base-100 border-2 border-base-100 shadow cursor-grab active:cursor-grabbing"
+        class="absolute w-5 h-5 flex items-center justify-center text-[9px] font-bold text-base-100 shadow cursor-grab active:cursor-grabbing"
         :style="{
           left: bandX(band.frequency) + '%',
           top: bandY(band.gain) + '%',
@@ -557,10 +562,11 @@ onUnmounted(() => cancelAnimationFrame(raf));
       <!-- menu kontekstowe kropki -->
       <div
         v-if="menuBand !== null"
-        class="absolute z-20 w-36 p-1 rounded-field border border-base-300 bg-base-100 fx-depth text-[11px]"
+        class="absolute z-50 w-36 p-1 rounded-field border border-base-300 bg-base-100 fx-depth text-[11px]"
         :style="{
           left: bandX(bands[menuBand].frequency) + '%',
-          top: bandY(bands[menuBand].gain) + '%'
+          top: bandY(bands[menuBand].gain) + '%',
+          transform: menuBelow ? 'translate(-50%, 14px)' : 'translate(-50%, calc(-100% - 14px))'
         }"
         @click.stop
       >
@@ -599,7 +605,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
       >
         <div class="flex items-center gap-2">
           <span
-            class="shrink-0 w-4 h-4 flex items-center justify-center text-[9px] font-bold text-base-100 border border-base-100"
+            class="shrink-0 w-4 h-4 flex items-center justify-center text-[9px] font-bold text-base-100"
             :style="{ backgroundColor: color(i), borderRadius: markerRadius(band.type) }"
             aria-hidden="true"
             >{{ i + 1 }}</span
@@ -657,7 +663,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
           >
         </div>
 
-        <div class="flex items-center gap-2 mt-1 pl-6">
+        <div v-if="band.type === 'peaking'" class="flex items-center gap-2 mt-1 pl-6">
           <span class="w-3 text-[10px] text-base-content/50">Q</span>
           <input
             type="range"
