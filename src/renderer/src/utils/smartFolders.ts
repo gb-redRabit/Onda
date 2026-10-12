@@ -28,9 +28,13 @@ export interface SmartFolderDef {
 export const RECENT_WINDOW_DAYS = 30;
 const DAY_MS = 86_400_000;
 
-/** Utwór ma okładkę, jeśli ma miniaturę albo wbudowany obraz w metadanych. */
+/**
+ * Utwór ma okładkę, jeśli wykrył to skan (`hasCover`: osadzony obraz w tagach ALBO
+ * towarzyszące wideo) albo ma miniaturę (np. utwór online/pobrany). `metadata.picture`
+ * zostaje jako dodatkowy fallback — skan biblioteki go nie zapisuje.
+ */
 export function hasCover(track: MediaFile): boolean {
-  return !!track.thumbnail || (track.metadata?.picture?.length ?? 0) > 0;
+  return track.hasCover === true || !!track.thumbnail || (track.metadata?.picture?.length ?? 0) > 0;
 }
 
 export const SMART_FOLDERS: readonly SmartFolderDef[] = [

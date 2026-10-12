@@ -61,3 +61,26 @@ function isCoverVideo(file: MediaFile, audioStemSet: Set<string>): boolean {
   if (audioStemSet.has(stem)) return true;
   return stem.endsWith('_rev') && audioStemSet.has(stem.slice(0, -4));
 }
+
+function stemOf(name: string): string {
+  const ext = extname(name).toLowerCase();
+  return name.slice(0, name.length - ext.length).toLowerCase();
+}
+
+/**
+ * Oznacza `hasCover = true` utworom audio, którym towarzyszy wideo-okładka w tym samym
+ * katalogu (np. "Song.mp3" ↔ "Song.mp4") — `MediaCover` serwuje wtedy wideo jako okładkę.
+ * Mutuje przekazane pliki (wywoływane przed odrzuceniem wideo-okładek z biblioteki).
+ */
+export function markSiblingVideoCovers(files: MediaFile[]): void {
+  const audioByStem = new Map<string, MediaFile>();
+  for (const f of files) if (f.type === 'audio') audioByStem.set(stemOf(f.name), f);
+  for (const f of files) {
+    if (f.type !== 'video' || !VIDEO_EXT_SET.has(extname(f.name).toLowerCase())) continue;
+    const stem = stemOf(f.name);
+    const audio =
+      audioByStem.get(stem) ??
+      (stem.endsWith('_rev') ? audioByStem.get(stem.slice(0, -4)) : undefined);
+    if (audio) audio.hasCover = true;
+  }
+}

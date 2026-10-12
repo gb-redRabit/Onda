@@ -24,8 +24,12 @@ function track(over: Partial<MediaFile> = {}): MediaFile {
 const ctx = (favorites: string[] = [], now = NOW) => ({ favorites: new Set(favorites), now });
 
 describe('hasCover', () => {
-  it('is true for a thumbnail or an embedded picture, false otherwise', () => {
+  it('is true when the scan flagged a cover (embedded image or sibling video)', () => {
     expect(hasCover(track())).toBe(false);
+    expect(hasCover(track({ hasCover: true }))).toBe(true);
+  });
+
+  it('also treats a thumbnail or an embedded picture as a cover', () => {
     expect(hasCover(track({ thumbnail: 'data:image/jpeg;base64,x' }))).toBe(true);
     expect(
       hasCover(
@@ -36,9 +40,8 @@ describe('hasCover', () => {
 });
 
 describe('smart folders', () => {
-  const picture = { picture: [{ format: 'image/jpeg', data: new Uint8Array(1) }] };
   const tracks = [
-    track({ path: '/a', playCount: 0, addedAt: NOW - 1 * DAY, metadata: picture }),
+    track({ path: '/a', playCount: 0, addedAt: NOW - 1 * DAY, hasCover: true }),
     track({ path: '/b', playCount: 5, addedAt: NOW - 100 * DAY }),
     track({ path: '/c', playCount: 2, addedAt: NOW - 2 * DAY, metadata: { lossless: true } })
   ];
