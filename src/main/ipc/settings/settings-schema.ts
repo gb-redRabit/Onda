@@ -149,6 +149,7 @@ const EQ_BAND_FIELDS: Record<string, Sanitizer> = {
   frequency: numClamped(20, 20000),
   q: numClamped(0.3, 8),
   gain: numClamped(-18, 18),
+  slope: numClamped(0.3, 2),
   enabled: bool
 };
 

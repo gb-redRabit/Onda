@@ -9,6 +9,8 @@ export interface EqBand {
   q: number;
   /** Wzmocnienie w dB. */
   gain: number;
+  /** Nachylenie półki (S) — tylko dla półek; 1 = najostrzejsze bez przesterowania. */
+  slope?: number;
   /** Wyłączone pasmo jest pomijane (neutralne), ale zostaje na liście. Domyślnie włączone. */
   enabled?: boolean;
 }

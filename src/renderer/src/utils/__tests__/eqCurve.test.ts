@@ -35,6 +35,12 @@ describe('eqCurve', () => {
     expect(eqGainAt(16000, high)).toBeGreaterThan(eqGainAt(200, high));
   });
 
+  it('shelf slope (S) changes the shelf shape', () => {
+    const gentle = [band({ type: 'lowshelf', frequency: 200, gain: 6, slope: 0.4 })];
+    const steep = [band({ type: 'lowshelf', frequency: 200, gain: 6, slope: 1 })];
+    expect(Math.abs(eqGainAt(300, gentle) - eqGainAt(300, steep))).toBeGreaterThan(0.1);
+  });
+
   it('freqToRatio / ratioToFreq round-trip on the log axis', () => {
     expect(freqToRatio(20, 20, 20000)).toBeCloseTo(0, 5);
     expect(freqToRatio(20000, 20, 20000)).toBeCloseTo(1, 5);

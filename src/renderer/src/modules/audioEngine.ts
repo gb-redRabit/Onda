@@ -100,7 +100,7 @@ class AudioEngine {
     return this.graph.videoGainNode;
   }
 
-  get eqFilters(): BiquadFilterNode[] {
+  get eqFilters(): AudioNode[] {
     return this.graph.eqFilters;
   }
 

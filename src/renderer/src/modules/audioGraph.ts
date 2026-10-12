@@ -1,5 +1,6 @@
 import { logger } from '@shared/logger';
 import type { EqBand } from '@renderer/utils/constants/audio';
+import { iirCoefficients } from '@renderer/utils/eqBiquad';
 
 // Stała liczba slotów filtrów (neutralne, gdy nieużywane) — dzięki temu dodawanie/usuwanie
 // pasm nie wymaga przebudowy łańcucha.
@@ -10,7 +11,7 @@ export class AudioGraph {
   analyserNode: AnalyserNode | null = null;
   sourceNode: MediaElementAudioSourceNode | null = null;
   gainNode: GainNode | null = null;
-  eqFilters: BiquadFilterNode[] = [];
+  eqFilters: AudioNode[] = [];
   /** Gain wyjściowy korektora (preamp) — między łańcuchem filtrów a głównym gainNode. */
   preampNode: GainNode | null = null;
   /** Węzeł odsłuchu — pozwala spiąć kanały do mono (kontrola fazy). */
@@ -35,37 +36,70 @@ export class AudioGraph {
     this.setEqPreamp(this.eqPreampDb);
     this.monitorNode = this.audioCtx.createGain();
     this.setEqMono(this.eqMono);
-    this.eqFilters = Array.from({ length: EQ_SLOTS }, () => {
-      const filter = this.audioCtx!.createBiquadFilter();
-      filter.type = 'peaking';
-      filter.frequency.value = 1000;
-      filter.Q.value = 1;
-      filter.gain.value = 0;
-      return filter;
-    });
-    this.setEqBands(this.eqBands);
   }
 
   ensureEqChain(): void {
     this.ensureContext();
     if (this.eqChainBuilt) return;
-    const firstFilter = this.eqFilters[0];
-    if (firstFilter) {
-      this.sourceNode?.connect(firstFilter);
-      let eqChain: AudioNode = firstFilter;
-      for (let i = 1; i < this.eqFilters.length; i++) {
-        eqChain.connect(this.eqFilters[i]);
-        eqChain = this.eqFilters[i];
-      }
-      eqChain.connect(this.preampNode!);
-    } else {
-      this.sourceNode?.connect(this.preampNode!);
-    }
+    this.rebuildEqFilters();
     this.preampNode!.connect(this.gainNode!);
     this.gainNode!.connect(this.monitorNode!);
     this.monitorNode!.connect(this.analyserNode!);
     this.analyserNode!.connect(this.audioCtx!.destination);
     this.eqChainBuilt = true;
+  }
+
+  /**
+   * (Prze)budowuje IIR-y z bieżących pasm i łączy [źródło/wideo] → filtry → preamp.
+   * `IIRFilterNode` ma stałe współczynniki, więc każda zmiana pasma wymaga przebudowy
+   * (krótkie, jednorazowe rozłączenie łańcucha).
+   */
+  private rebuildEqFilters(): void {
+    const ctx = this.audioCtx;
+    if (!ctx) return;
+    for (const f of this.eqFilters) {
+      try {
+        f.disconnect();
+      } catch {
+        /* ok */
+      }
+    }
+    if (this.sourceNode) {
+      try {
+        this.sourceNode.disconnect();
+      } catch {
+        /* ok */
+      }
+    }
+    if (this.videoGainNode) {
+      try {
+        this.videoGainNode.disconnect();
+      } catch {
+        /* ok */
+      }
+    }
+    const passthrough = { feedforward: [1, 0, 0], feedback: [1, 0, 0] };
+    const slots = Math.max(EQ_SLOTS, this.eqBands.length);
+    this.eqFilters = Array.from({ length: slots }, (_, i) => {
+      const band =
+        this.eqEnabled && this.eqBands[i]?.enabled !== false ? this.eqBands[i] : undefined;
+      const c = band ? iirCoefficients(band, ctx.sampleRate) : passthrough;
+      return ctx.createIIRFilter(c.feedforward, c.feedback);
+    });
+    const first = this.eqFilters[0];
+    if (first) {
+      if (this.sourceNode) this.sourceNode.connect(first);
+      if (this.videoGainNode) this.videoGainNode.connect(first);
+      let prev: AudioNode = first;
+      for (let i = 1; i < this.eqFilters.length; i++) {
+        prev.connect(this.eqFilters[i]);
+        prev = this.eqFilters[i];
+      }
+      if (this.preampNode) prev.connect(this.preampNode);
+    } else {
+      if (this.sourceNode && this.preampNode) this.sourceNode.connect(this.preampNode);
+      if (this.videoGainNode && this.preampNode) this.videoGainNode.connect(this.preampNode);
+    }
   }
 
   connectSource(el: HTMLAudioElement): void {
@@ -83,12 +117,7 @@ export class AudioGraph {
     if (!this.eqChainBuilt) {
       this.ensureEqChain();
     } else {
-      const firstFilter = this.eqFilters[0];
-      if (firstFilter) {
-        this.sourceNode.connect(firstFilter);
-      } else {
-        this.sourceNode.connect(this.preampNode!);
-      }
+      this.rebuildEqFilters();
     }
   }
 
@@ -179,14 +208,8 @@ export class AudioGraph {
     this.videoSourceEl = videoEl;
 
     this.ensureEqChain();
-    const firstFilter = this.eqFilters[0];
-    if (firstFilter) {
-      this.videoSourceNode.connect(this.videoGainNode);
-      this.videoGainNode.connect(firstFilter);
-    } else if (this.preampNode) {
-      this.videoSourceNode.connect(this.videoGainNode);
-      this.videoGainNode.connect(this.preampNode);
-    }
+    if (this.videoSourceNode) this.videoSourceNode.connect(this.videoGainNode!);
+    this.rebuildEqFilters();
 
     this.videoGainNode.gain.value = initialVolume;
   }
@@ -211,20 +234,7 @@ export class AudioGraph {
     this.videoSourceEl = null;
 
     if (!this.sourceNode) return;
-    const firstFilter = this.eqFilters[0];
-    try {
-      if (firstFilter) {
-        this.sourceNode.connect(firstFilter);
-      } else if (this.preampNode) {
-        this.sourceNode.connect(this.preampNode);
-      }
-    } catch (e) {
-      logger.warn(
-        'audioEngine',
-        'disconnectVideoElement: reconnect failed (source already disconnected)',
-        e
-      );
-    }
+    this.rebuildEqFilters();
   }
 
   setVideoVolume(v: number): void {
@@ -236,24 +246,10 @@ export class AudioGraph {
     }
   }
 
-  /** Ustawia cały łańcuch z definicji pasm; nadmiarowe sloty stają się neutralne. */
+  /** Ustawia pasma i (prze)budowuje łańcuch IIR; nadmiarowe sloty stają się neutralne. */
   setEqBands(bands: readonly EqBand[]): void {
     this.eqBands = bands;
-    for (let i = 0; i < this.eqFilters.length; i++) {
-      const f = this.eqFilters[i];
-      const band = this.eqEnabled && bands[i]?.enabled !== false ? bands[i] : undefined;
-      if (band) {
-        f.type = band.type;
-        f.frequency.value = band.frequency;
-        f.Q.value = band.q;
-        f.gain.value = band.gain;
-      } else {
-        f.type = 'peaking';
-        f.frequency.value = 1000;
-        f.Q.value = 1;
-        f.gain.value = 0;
-      }
-    }
+    if (this.eqChainBuilt) this.rebuildEqFilters();
   }
 
   /** Preamp: płaski gain wyjściowy korektora (dB). */

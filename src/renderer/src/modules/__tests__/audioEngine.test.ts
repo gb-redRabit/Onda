@@ -13,6 +13,8 @@ type FakeNode = {
   type: string;
   fftSize: number;
   state: string;
+  feedforward?: number[];
+  feedback?: number[];
 };
 
 type TestableAudioEngine = {
@@ -45,6 +47,12 @@ class FakeAudioContext {
   createAnalyser = (): FakeNode => createFakeNode();
   createGain = (): FakeNode => createFakeNode();
   createBiquadFilter = (): FakeNode => createFakeNode();
+  createIIRFilter = (ff: number[], fb: number[]): FakeNode => {
+    const node = createFakeNode();
+    node.feedforward = ff;
+    node.feedback = fb;
+    return node;
+  };
   createMediaElementSource = (): FakeNode => createFakeNode();
   resume = (): Promise<void> => {
     this.state = 'running';
@@ -109,25 +117,21 @@ describe('audioEngine video element routing', () => {
     expect(engine.sourceNode?.connect).toHaveBeenCalledWith(firstFilter);
   });
 
-  it('setEqBands maps band definitions onto the filters and neutralises spare slots', () => {
+  it('setEqBands (re)builds the IIR chain from the band definitions', () => {
     const el = new FakeAudio() as unknown as HTMLAudioElement;
     engine.connectAudio(el);
+    const before = engine.eqFilters[0];
 
     audioEngine.setEqBands([
       { type: 'lowshelf', frequency: 60, q: 0.7, gain: 4 },
       { type: 'peaking', frequency: 2000, q: 2, gain: -3 }
     ]);
 
-    expect(engine.eqFilters[0].type).toBe('lowshelf');
-    expect(engine.eqFilters[0].frequency.value).toBe(60);
-    expect(engine.eqFilters[0].gain.value).toBe(4);
-    expect(engine.eqFilters[1].type).toBe('peaking');
-    expect(engine.eqFilters[1].frequency.value).toBe(2000);
-    expect(engine.eqFilters[1].Q.value).toBe(2);
-    expect(engine.eqFilters[1].gain.value).toBe(-3);
-    // Nadmiarowy slot jest neutralny (transparentny), więc dodanie/usunięcie pasma go nie psuje.
-    expect(engine.eqFilters[5].type).toBe('peaking');
-    expect(engine.eqFilters[5].gain.value).toBe(0);
+    // Łańcuch jest przebudowywany (nowe węzły IIR), więc pierwszy filtr się zmienia.
+    expect(engine.eqFilters[0]).not.toBe(before);
+    const first = engine.eqFilters[0] as unknown as { feedforward: number[] };
+    expect(Array.isArray(first.feedforward)).toBe(true);
+    expect(first.feedforward).toHaveLength(3);
   });
 
   it('disconnectVideoElement is a no-op without a source node', () => {

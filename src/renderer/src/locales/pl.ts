@@ -1822,6 +1822,7 @@ api.registerCommand({
     type: 'Typ',
     frequency: 'Częstotliwość',
     q: 'Dobroć (Q)',
+    slope: 'Nachylenie półki (S)',
     addBand: 'Dodaj pasmo',
     removeBand: 'Usuń pasmo',
     hz: 'Hz',

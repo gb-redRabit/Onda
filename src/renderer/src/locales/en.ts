@@ -1818,6 +1818,7 @@ api.registerCommand({
     type: 'Type',
     frequency: 'Frequency',
     q: 'Q',
+    slope: 'Shelf slope (S)',
     addBand: 'Add band',
     removeBand: 'Remove band',
     hz: 'Hz',

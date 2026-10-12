@@ -770,6 +770,29 @@ onUnmounted(() => cancelAnimationFrame(raf));
           }}</span>
         </div>
 
+        <div v-if="band.type !== 'peaking'" class="flex items-center gap-2 mt-1 pl-6">
+          <span class="w-3 text-[10px] text-base-content/50">S</span>
+          <input
+            type="range"
+            min="0.3"
+            max="2"
+            step="0.1"
+            :value="band.slope ?? 1"
+            :data-testid="'eq-slope-' + i"
+            :aria-label="$t('equalizer.slope')"
+            class="flex-1 h-1 cursor-pointer"
+            :style="{ accentColor: color(i) }"
+            @input="
+              patchBand(i, {
+                slope: clamp(Number(($event.target as HTMLInputElement).value), 0.3, 2)
+              })
+            "
+          />
+          <span class="w-18 text-right text-[10px] font-mono tabular-nums text-base-content/60">{{
+            band.slope ?? 1
+          }}</span>
+        </div>
+
         <div class="flex items-center gap-2 mt-1 pl-6">
           <span class="w-3 text-[10px] text-base-content/50">G</span>
           <div
