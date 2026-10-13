@@ -165,6 +165,7 @@ export const DEFAULT_PLAYBACK: PlaybackSettings = {
   equalizerBands: cloneEqBands(DEFAULT_EQ_BANDS),
   equalizerEnabled: true,
   nightMode: false,
+  audioDelayMs: 0,
   equalizerPreamp: 0,
   equalizerUserPresets: {},
   equalizerMulticolor: false,

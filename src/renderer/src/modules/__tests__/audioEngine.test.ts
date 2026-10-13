@@ -15,6 +15,7 @@ type FakeNode = {
   ratio: { value: number };
   attack: { value: number };
   release: { value: number };
+  delayTime: { value: number };
   type: string;
   fftSize: number;
   state: string;
@@ -45,6 +46,7 @@ function createFakeNode(): FakeNode {
     ratio: { value: 0 },
     attack: { value: 0 },
     release: { value: 0 },
+    delayTime: { value: 0 },
     type: '',
     fftSize: 2048,
     state: 'running'
@@ -58,6 +60,7 @@ class FakeAudioContext {
   createGain = (): FakeNode => createFakeNode();
   createBiquadFilter = (): FakeNode => createFakeNode();
   createDynamicsCompressor = (): FakeNode => createFakeNode();
+  createDelay = (): FakeNode => createFakeNode();
   createIIRFilter = (ff: number[], fb: number[]): FakeNode => {
     const node = createFakeNode();
     node.feedforward = ff;
@@ -186,6 +189,21 @@ describe('audioEngine video element routing', () => {
     expect(videoSource!.connect).toHaveBeenCalledWith(videoGain);
     const firstFilter = engine.eqFilters[0];
     expect(videoGain!.connect).toHaveBeenCalledWith(firstFilter);
+  });
+
+  it('setAudioDelayMs clamps to 0-500 ms and drives the delay node', () => {
+    const el = new FakeAudio() as unknown as HTMLAudioElement;
+    engine.connectAudio(el);
+    const graph = (audioEngine as unknown as { graph: { delayNode: FakeNode } }).graph;
+
+    audioEngine.setAudioDelayMs(120);
+    expect(graph.delayNode.delayTime.value).toBeCloseTo(0.12);
+
+    audioEngine.setAudioDelayMs(-50);
+    expect(graph.delayNode.delayTime.value).toBe(0);
+
+    audioEngine.setAudioDelayMs(9999);
+    expect(graph.delayNode.delayTime.value).toBeCloseTo(0.5);
   });
 
   it('emits trackEnd when the audio element ends', () => {

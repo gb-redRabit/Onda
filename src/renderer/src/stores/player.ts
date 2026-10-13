@@ -28,6 +28,7 @@ export const usePlayerStore = defineStore('player', () => {
   const equalizerSolo = ref<number | null>(null);
   const equalizerMono = ref(false);
   const nightMode = ref(false);
+  const audioDelayMs = ref(0);
   const equalizerPreset = ref('flat');
   const pendingFullscreen = ref(false);
   const resumePrompt = ref<{ path: string; position: number } | null>(null);
@@ -146,6 +147,7 @@ export const usePlayerStore = defineStore('player', () => {
     equalizerSolo,
     equalizerMono,
     nightMode,
+    audioDelayMs,
     equalizerPreset,
     pipActive,
     pipTime,

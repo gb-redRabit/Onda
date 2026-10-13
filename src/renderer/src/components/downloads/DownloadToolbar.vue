@@ -1,13 +1,22 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Download, Pause, Play, Trash2, Upload, X } from '@lucide/vue';
+import { Download, Pause, Play, Trash2, Upload, X, Gauge } from '@lucide/vue';
 import { useOnlineStore } from '@renderer/stores/online';
+import { useSettingsStore } from '@renderer/stores/settings';
 
 defineProps<{ activeCount: number; pausedCount: number; hasFinished: boolean }>();
 
 const yt = useOnlineStore();
+const settings = useSettingsStore();
 const { t } = useI18n();
+
+/** Limity w KB/s; 0 = bez limitu. Wartość jest stosowana przez yt-dlp (`--limit-rate`). */
+const SPEED_OPTIONS = [0, 1024, 2048, 5120, 10240];
+
+function setSpeedLimit(kb: number): void {
+  settings.updateNetwork({ downloadSpeedLimit: kb });
+}
 
 const scheduleTime = ref('');
 const scheduledAt = ref<number | null>(null);
@@ -82,6 +91,20 @@ onMounted(async () => {
       <Download :size="12" />
       {{ t('downloads.importQueue') }}
     </button>
+    <div class="flex items-center gap-1.5 text-xs text-base-content/70">
+      <Gauge :size="12" />
+      <select
+        :value="settings.network.downloadSpeedLimit"
+        class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none"
+        :title="t('downloads.speedLimit')"
+        :aria-label="t('downloads.speedLimit')"
+        @change="setSpeedLimit(Number(($event.target as HTMLSelectElement).value))"
+      >
+        <option v-for="kb in SPEED_OPTIONS" :key="kb" :value="kb">
+          {{ kb === 0 ? t('settings.speedUnlimited') : `${kb / 1024} MB/s` }}
+        </option>
+      </select>
+    </div>
     <div class="flex items-center gap-1">
       <input
         v-model="scheduleTime"

@@ -85,6 +85,8 @@ function ensureModule() {
   player.equalizerSnap = settings.playback.equalizerSnap !== false;
   player.nightMode = settings.playback.nightMode === true;
   audioEngine.setNightMode(player.nightMode);
+  player.audioDelayMs = settings.playback.audioDelayMs ?? 0;
+  audioEngine.setAudioDelayMs(player.audioDelayMs);
 
   const scope = effectScope(true);
 
@@ -247,6 +249,13 @@ export function useAudioPlayer() {
       usePlayerStore().nightMode = on;
       audioEngine.setNightMode(on);
       useSettingsStore().updatePlayback({ nightMode: on });
+    },
+    /** Kompensacja opóźnienia dźwięku (ms) względem obrazu. */
+    setAudioDelay: (ms: number) => {
+      const clamped = Math.max(0, Math.min(500, Math.round(ms) || 0));
+      usePlayerStore().audioDelayMs = clamped;
+      audioEngine.setAudioDelayMs(clamped);
+      useSettingsStore().updatePlayback({ audioDelayMs: clamped });
     },
     savePosition: () => audioEngine.savePosition(),
     getAudioContext: () => audioEngine.getAudioContext()

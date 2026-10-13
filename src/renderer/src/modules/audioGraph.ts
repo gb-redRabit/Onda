@@ -26,6 +26,12 @@ export class AudioGraph {
   nightMakeup: GainNode | null = null;
   nightDialogueEq: BiquadFilterNode | null = null;
   nightEnabled = false;
+  /**
+   * Kompensacja opóźnienia dźwięku: `DelayNode` opóźnia ścieżkę audio względem obrazu.
+   * Węzeł jest na stałe w łańcuchu; przy zerze opóźnienie jest neutralne.
+   */
+  delayNode: DelayNode | null = null;
+  audioDelayMs = 0;
   /** Ostatnio ustawione pasma — nakładane na filtry także przy (od)tworzeniu kontekstu. */
   eqBands: readonly EqBand[] = [];
   eqEnabled = true;
@@ -52,6 +58,8 @@ export class AudioGraph {
     this.nightDialogueEq.frequency.value = 2500;
     this.nightDialogueEq.Q.value = 1;
     this.applyNightParams();
+    this.delayNode = this.audioCtx.createDelay(1);
+    this.setAudioDelayMs(this.audioDelayMs);
   }
 
   ensureEqChain(): void {
@@ -61,7 +69,8 @@ export class AudioGraph {
     this.preampNode!.connect(this.nightCompressor!);
     this.nightCompressor!.connect(this.nightMakeup!);
     this.nightMakeup!.connect(this.nightDialogueEq!);
-    this.nightDialogueEq!.connect(this.gainNode!);
+    this.nightDialogueEq!.connect(this.delayNode!);
+    this.delayNode!.connect(this.gainNode!);
     this.gainNode!.connect(this.monitorNode!);
     this.monitorNode!.connect(this.analyserNode!);
     this.analyserNode!.connect(this.audioCtx!.destination);
@@ -313,6 +322,16 @@ export class AudioGraph {
     if (this.nightDialogueEq) this.nightDialogueEq.gain.value = on ? 4 : 0;
   }
 
+  /**
+   * Kompensacja opóźnienia dźwięku (ms). Dodatnie = dźwięk PÓŹNIEJ niż obraz
+   * (naprawia ścieżkę audio, która ucieka do przodu). `HTMLMediaElement` nie pozwala
+   * odtworzyć dźwięku wcześniej niż obraz, więc zakres jest dodatni.
+   */
+  setAudioDelayMs(ms: number): void {
+    this.audioDelayMs = Math.max(0, Math.min(500, Math.round(ms) || 0));
+    if (this.delayNode) this.delayNode.delayTime.value = this.audioDelayMs / 1000;
+  }
+
   getAnalyserNode(): AnalyserNode | null {
     return this.analyserNode;
   }
@@ -353,6 +372,7 @@ export class AudioGraph {
     this.nightCompressor = null;
     this.nightMakeup = null;
     this.nightDialogueEq = null;
+    this.delayNode = null;
     this.eqChainBuilt = false;
   }
 }

@@ -234,6 +234,8 @@ export interface PlaybackSettings {
   equalizerSnap?: boolean;
   /** Tryb nocny: kompresja dynamiki + podbicie dialogów. */
   nightMode?: boolean;
+  /** Kompensacja opóźnienia dźwięku w ms (0–500; dźwięk później niż obraz). */
+  audioDelayMs?: number;
 }
 
 export interface DownloadSettings {

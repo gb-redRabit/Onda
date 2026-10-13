@@ -195,6 +195,7 @@ const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
   equalizerBands: eqBands,
   equalizerEnabled: bool,
   nightMode: bool,
+  audioDelayMs: numClamped(0, 500),
   equalizerPreamp: numClamped(-12, 12),
   equalizerUserPresets: recordOf(eqBands),
   equalizerMulticolor: bool,

@@ -452,6 +452,10 @@ class AudioEngine {
     this.graph.setNightMode(on);
   }
 
+  setAudioDelayMs(ms: number): void {
+    this.graph.setAudioDelayMs(ms);
+  }
+
   getAnalyserNode(): AnalyserNode | null {
     return this.graph.getAnalyserNode();
   }

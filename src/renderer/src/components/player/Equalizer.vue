@@ -456,6 +456,27 @@ onUnmounted(() => cancelAnimationFrame(raf));
       >
     </div>
 
+    <!-- opóźnienie dźwięku (kompensacja lip-sync) -->
+    <div class="flex items-center gap-2 mb-3">
+      <span class="text-[10px] text-base-content/50 shrink-0">{{
+        $t('equalizer.audioDelay')
+      }}</span>
+      <input
+        type="range"
+        min="0"
+        max="500"
+        step="10"
+        :value="player.audioDelayMs"
+        data-testid="eq-audio-delay"
+        :aria-label="$t('equalizer.audioDelay')"
+        class="flex-1 h-1 cursor-pointer accent-primary"
+        @input="audio.setAudioDelay(Number(($event.target as HTMLInputElement).value))"
+      />
+      <span class="w-14 text-right text-[10px] font-mono tabular-nums text-base-content/70"
+        >{{ player.audioDelayMs }} {{ $t('equalizer.ms') }}</span
+      >
+    </div>
+
     <!-- presety (wbudowane + własne) -->
     <div class="flex flex-wrap gap-1.5 mb-3">
       <button
