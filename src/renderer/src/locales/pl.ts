@@ -1902,6 +1902,7 @@ api.registerCommand({
     delayLater: 'Napisy później',
     delayReset: 'Zeruj opóźnienie napisów',
     onlineSearch: 'Szukaj online…',
+    onlineTitle: 'Napisy online',
     onlineQuery: 'Tytuł do wyszukania',
     onlineLanguage: 'Język napisów',
     onlineSearching: 'Szukam…',

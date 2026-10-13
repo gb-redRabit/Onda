@@ -244,6 +244,14 @@ describe('queue management', () => {
     expect(store.queueVisible).toBe(false);
   });
 
+  it('toggleSubtitlePanel flips subtitlePanelVisible', () => {
+    const store = usePlayerStore();
+    store.toggleSubtitlePanel();
+    expect(store.subtitlePanelVisible).toBe(true);
+    store.toggleSubtitlePanel();
+    expect(store.subtitlePanelVisible).toBe(false);
+  });
+
   it('toggleEqualizer flips equalizerVisible', () => {
     const store = usePlayerStore();
     store.toggleEqualizer();

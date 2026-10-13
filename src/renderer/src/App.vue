@@ -40,6 +40,7 @@ import ErrorBoundary from './components/ErrorBoundary.vue';
 
 const FirstRunWizard = defineAsyncComponent(() => import('./components/FirstRunWizard.vue'));
 const QueuePanel = defineAsyncComponent(() => import('./components/player/QueuePanel.vue'));
+const SubtitlePanel = defineAsyncComponent(() => import('./components/player/SubtitlePanel.vue'));
 const Equalizer = defineAsyncComponent(() => import('./components/player/Equalizer.vue'));
 const AppSearch = defineAsyncComponent(() => import('./components/layout/AppSearch.vue'));
 const ToastNotification = defineAsyncComponent(() => import('./components/ToastNotification.vue'));
@@ -336,6 +337,14 @@ function onWindowBlur() {
             : 'w-75 shrink-0'
         "
       />
+      <SubtitlePanel
+        v-if="!isStandaloneWindow && player.subtitlePanelVisible"
+        :class="
+          isNarrowLayout
+            ? 'absolute inset-y-0 right-0 z-30 w-80 max-w-[90vw] fx-depth'
+            : 'w-75 shrink-0'
+        "
+      />
       <Sidebar v-if="!isStandaloneWindow && settings.appearance.sidebarPosition === 'right'" />
       <div
         v-if="!isStandaloneWindow && player.equalizerVisible"
@@ -347,6 +356,11 @@ function onWindowBlur() {
         v-if="!isStandaloneWindow && player.queueVisible && isNarrowLayout"
         class="absolute inset-0 z-20 bg-neutral/35"
         @click="player.toggleQueue"
+      />
+      <div
+        v-if="!isStandaloneWindow && player.subtitlePanelVisible && isNarrowLayout"
+        class="absolute inset-0 z-20 bg-neutral/35"
+        @click="player.toggleSubtitlePanel"
       />
     </div>
     <PlayerBar

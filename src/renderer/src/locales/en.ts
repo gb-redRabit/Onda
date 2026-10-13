@@ -1898,6 +1898,7 @@ api.registerCommand({
     delayLater: 'Subtitles later',
     delayReset: 'Reset subtitle delay',
     onlineSearch: 'Search online…',
+    onlineTitle: 'Online subtitles',
     onlineQuery: 'Title to search for',
     onlineLanguage: 'Subtitle language',
     onlineSearching: 'Searching…',

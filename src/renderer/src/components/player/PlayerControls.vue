@@ -14,7 +14,7 @@ import { formatDuration } from '@renderer/utils/formatters';
 import PlayerSpeedMenu from './PlayerSpeedMenu.vue';
 import TransportButtons from './TransportButtons.vue';
 import { useVideoPreview } from '@renderer/composables/useVideoPreview';
-import SubtitleTrackSelector from './SubtitleTrackSelector.vue';
+import SubtitleButton from './SubtitleButton.vue';
 import VideoFilterDropdown from './VideoFilterDropdown.vue';
 import AbRepeatButton from './AbRepeatButton.vue';
 import AbRepeatMarkers from './AbRepeatMarkers.vue';
@@ -234,7 +234,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
         >
           <ListMusic :size="16" />
         </button>
-        <SubtitleTrackSelector />
+        <SubtitleButton />
         <button
           class="text-neutral-content/50 hover:text-neutral-content transition-colors"
           :aria-label="$t('common.mute')"

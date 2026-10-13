@@ -18,6 +18,7 @@ export const usePlayerStore = defineStore('player', () => {
   const duration = ref(0);
   const playbackRate = ref(1);
   const equalizerVisible = ref(false);
+  const subtitlePanelVisible = ref(false);
   const equalizerBands = ref<EqBand[]>(cloneEqBands(DEFAULT_EQ_BANDS));
   const equalizerEnabled = ref(true);
   const equalizerPreamp = ref(0);
@@ -110,6 +111,9 @@ export const usePlayerStore = defineStore('player', () => {
   function toggleEqualizer() {
     equalizerVisible.value = !equalizerVisible.value;
   }
+  function toggleSubtitlePanel() {
+    subtitlePanelVisible.value = !subtitlePanelVisible.value;
+  }
   function showResumePrompt(path: string, position: number): void {
     resumePrompt.value = { path, position };
   }
@@ -131,6 +135,7 @@ export const usePlayerStore = defineStore('player', () => {
     repeat,
     queueVisible,
     equalizerVisible,
+    subtitlePanelVisible,
     equalizerBands,
     equalizerEnabled,
     equalizerPreamp,
@@ -177,6 +182,7 @@ export const usePlayerStore = defineStore('player', () => {
     insertInQueue,
     toggleQueue,
     toggleEqualizer,
+    toggleSubtitlePanel,
     nextTrack,
     prevTrack,
     playFromHistory,
