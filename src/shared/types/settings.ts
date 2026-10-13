@@ -236,6 +236,8 @@ export interface PlaybackSettings {
   nightMode?: boolean;
   /** Kompensacja opóźnienia dźwięku w ms (0–500; dźwięk później niż obraz). */
   audioDelayMs?: number;
+  /** Opóźnienie napisów w ms (±60 000; dodatnie = napisy później). */
+  subtitleDelayMs?: number;
 }
 
 export interface DownloadSettings {

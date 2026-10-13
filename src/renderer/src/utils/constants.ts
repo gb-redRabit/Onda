@@ -166,6 +166,7 @@ export const DEFAULT_PLAYBACK: PlaybackSettings = {
   equalizerEnabled: true,
   nightMode: false,
   audioDelayMs: 0,
+  subtitleDelayMs: 0,
   equalizerPreamp: 0,
   equalizerUserPresets: {},
   equalizerMulticolor: false,

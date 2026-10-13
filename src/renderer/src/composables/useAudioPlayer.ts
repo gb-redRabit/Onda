@@ -3,6 +3,7 @@ import { audioEngine } from '@renderer/modules/audioEngine';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { cloneEqBands, type EqBand } from '@renderer/utils/constants/audio';
+import { subtitleDelayMs } from './subtitleDelay';
 import { logger } from '@shared/logger';
 import { wireAudioEvents } from './audioPlayerEvents';
 
@@ -87,6 +88,8 @@ function ensureModule() {
   audioEngine.setNightMode(player.nightMode);
   player.audioDelayMs = settings.playback.audioDelayMs ?? 0;
   audioEngine.setAudioDelayMs(player.audioDelayMs);
+  // Opóźnienie napisów zapisujemy w tych samych ustawieniach odtwarzania co dźwięk.
+  subtitleDelayMs.value = settings.playback.subtitleDelayMs ?? 0;
 
   const scope = effectScope(true);
 
@@ -99,6 +102,9 @@ function ensureModule() {
       () => settings.playback.rememberPosition,
       (rem) => audioEngine.setRememberPosition(rem)
     );
+
+    // Regulacja skrótami/UI zmienia ref — tu jest jedyne miejsce zapisu do ustawień.
+    watch(subtitleDelayMs, (ms) => useSettingsStore().updatePlayback({ subtitleDelayMs: ms }));
 
     watch(
       () => player.currentTrack?.path ?? null,

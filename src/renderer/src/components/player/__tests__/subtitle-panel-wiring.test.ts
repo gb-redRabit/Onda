@@ -12,11 +12,13 @@ const PANEL = readFileSync(
 );
 
 describe('SubtitlePanel wiring', () => {
-  it('queries both providers in parallel and tags each result with its source', () => {
+  it('queries all providers in parallel and tags each result with its source', () => {
     expect(PANEL).toMatch(/openSubtitlesSearch\(/);
     expect(PANEL).toMatch(/napiProjektCheck\(/);
     expect(PANEL).toMatch(/animeSubSearch\(/);
-    expect(PANEL).toMatch(/Promise\.all\(/);
+    // Rozwiązywane niezależnie (stopniowo dopisywane), więc nie blokujemy się na najwolniejszym.
+    expect(PANEL).toMatch(/Promise\.allSettled\(/);
+    expect(PANEL).toMatch(/appendResults\(/);
     expect(PANEL).toMatch(/source === 'napi'/);
     expect(PANEL).toMatch(/source === 'an'/);
   });

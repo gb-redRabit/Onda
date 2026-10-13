@@ -106,68 +106,89 @@ function sourceTitle(source: PanelResult['source']): string {
   return 'OpenSubtitles';
 }
 
+function appendResults(items: PanelResult[]): void {
+  results.value = [...results.value, ...items];
+}
+
+/** Licznik „pokoleń" wyszukiwania — wyniki starego zapytania nie dopisują się do nowego. */
+let searchSeq = 0;
+
+/**
+ * Odpytuje wszystkich dostawców równolegle i dopisuje wyniki, gdy tylko wrócą — lista rośnie
+ * na żywo (najszybszy serwis nie czeka na najwolniejszy).
+ */
 async function runSearch(): Promise<void> {
-  if (!searchQuery.value.trim() && !searching.value) searchQuery.value = defaultQuery();
-  if (!searchQuery.value.trim() || searching.value) return;
+  if (!searchQuery.value.trim()) searchQuery.value = defaultQuery();
+  const query = searchQuery.value.trim();
+  if (!query) return;
+  const videoPath = player.currentTrack?.path;
+  const seq = ++searchSeq;
   searching.value = true;
   searchError.value = '';
   results.value = [];
   searched.value = false;
-  const videoPath = player.currentTrack?.path;
-  try {
-    // OpenSubtitles + AnimeSub po tytule, NapiProjekt po hashu pliku — równolegle, jedna lista.
-    const [os, napi, anime] = await Promise.all([
-      window.api
-        .openSubtitlesSearch({
-          query: searchQuery.value.trim(),
-          languages: searchLang.value || undefined
-        })
-        .catch(() => null),
-      videoPath
-        ? window.api.napiProjektCheck({ videoPath }).catch(() => null)
-        : Promise.resolve(null),
-      window.api.animeSubSearch({ query: searchQuery.value.trim() }).catch(() => null)
-    ]);
-    const list: PanelResult[] = [];
-    if (napi?.found) {
-      list.push({
-        source: 'napi',
-        language: 'pl',
-        release: t('subtitles.napiDownload'),
-        downloads: 0
-      });
-    }
-    if (anime?.success) {
-      for (const r of anime.results) {
-        list.push({
-          source: 'an',
-          animeId: r.id,
-          animeSh: r.sh,
-          language: r.language || 'pl',
-          release: r.title,
-          downloads: 0
-        });
-      }
-    }
-    if (os?.success) {
-      for (const r of os.results) {
-        list.push({
-          source: 'os',
-          fileId: r.fileId,
-          language: r.language,
-          release: r.release,
-          downloads: r.downloads
-        });
-      }
-    }
-    results.value = list;
-    if (!list.length && os && !os.success) searchError.value = os.error || 'unknown';
-  } catch (e) {
-    searchError.value = String(e);
-  } finally {
-    searching.value = false;
-    searched.value = true;
-  }
+
+  let osError = '';
+  const pending: Array<Promise<void>> = [];
+
+  pending.push(
+    (videoPath
+      ? window.api.napiProjektCheck({ videoPath }).catch(() => null)
+      : Promise.resolve(null)
+    ).then((napi) => {
+      if (seq !== searchSeq || !napi?.found) return;
+      appendResults([
+        { source: 'napi', language: 'pl', release: t('subtitles.napiDownload'), downloads: 0 }
+      ]);
+    })
+  );
+
+  pending.push(
+    window.api
+      .animeSubSearch({ query })
+      .catch(() => null)
+      .then((anime) => {
+        if (seq !== searchSeq || !anime?.success) return;
+        appendResults(
+          anime.results.map((r) => ({
+            source: 'an' as const,
+            animeId: r.id,
+            animeSh: r.sh,
+            language: r.language || 'pl',
+            release: r.title,
+            downloads: 0
+          }))
+        );
+      })
+  );
+
+  pending.push(
+    window.api
+      .openSubtitlesSearch({ query, languages: searchLang.value || undefined })
+      .catch(() => null)
+      .then((os) => {
+        if (seq !== searchSeq || !os) return;
+        if (!os.success) {
+          osError = os.error || 'unknown';
+          return;
+        }
+        appendResults(
+          os.results.map((r) => ({
+            source: 'os' as const,
+            fileId: r.fileId,
+            language: r.language,
+            release: r.release,
+            downloads: r.downloads
+          }))
+        );
+      })
+  );
+
+  await Promise.allSettled(pending);
+  if (seq !== searchSeq) return;
+  if (!results.value.length && osError) searchError.value = osError;
+  searching.value = false;
+  searched.value = true;
 }
 
 async function downloadResult(result: PanelResult): Promise<void> {
@@ -356,7 +377,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
           <button
             class="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-field bg-primary text-primary-content text-sm fx-depth fx-noise disabled:opacity-50"
             data-testid="subtitle-online-search"
-            :disabled="searching"
+            :disabled="!searchQuery.trim()"
             @click="runSearch"
           >
             <Search :size="14" />
@@ -364,16 +385,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
           </button>
         </div>
         <p v-if="searchErrorText" class="mt-2 text-[11px] text-error">{{ searchErrorText }}</p>
-        <p v-else-if="searching" class="mt-2 text-[11px] text-base-content/50">
-          {{ $t('subtitles.onlineSearching') }}
-        </p>
-        <p
-          v-else-if="searched && results.length === 0"
-          class="mt-2 text-[11px] text-base-content/50"
-        >
-          {{ $t('subtitles.onlineNoResults') }}
-        </p>
-        <div v-else-if="results.length" class="mt-2 flex max-h-64 flex-col overflow-y-auto">
+        <div v-if="results.length" class="mt-2 flex max-h-64 flex-col overflow-y-auto">
           <button
             v-for="result in results"
             :key="resultKey(result)"
@@ -399,6 +411,12 @@ async function downloadResult(result: PanelResult): Promise<void> {
             </span>
           </button>
         </div>
+        <p v-if="!results.length && searching" class="mt-2 text-[11px] text-base-content/50">
+          {{ $t('subtitles.onlineSearching') }}
+        </p>
+        <p v-else-if="!results.length && searched" class="mt-2 text-[11px] text-base-content/50">
+          {{ $t('subtitles.onlineNoResults') }}
+        </p>
       </div>
     </div>
   </div>
