@@ -4,6 +4,7 @@ import { basename, dirname, extname, join } from 'path';
 import { httpRequest } from './http-request';
 import { readZip } from '../utils/zip';
 import { isSafeAbsolutePath } from '../utils/validate';
+import { logRequestOutcome } from '../utils/request-outcome';
 import { logger } from '../../shared/logger';
 import type {
   AnimeSubDownloadParams,
@@ -134,7 +135,7 @@ export function registerAnimeSubHandlers(): void {
         sessionCookie = cookiesFrom(res.headers['set-cookie']);
         return { success: true, results: parseAnimeSubResults(decodeCp1250(res.text)) };
       } catch (e) {
-        logger.warn('animesub', 'search failed', e);
+        logRequestOutcome('animesub', 'search', e);
         return { success: false, results: [], error: String((e as Error)?.message ?? e) };
       }
     }
@@ -181,7 +182,7 @@ export function registerAnimeSubHandlers(): void {
         if (!chosen) return { success: false, error: 'no-subtitles' };
         return await saveSubtitle(videoPath, chosen.name, chosen.data);
       } catch (e) {
-        logger.warn('animesub', 'download failed', e);
+        logRequestOutcome('animesub', 'download', e);
         return { success: false, error: String((e as Error)?.message ?? e) };
       }
     }

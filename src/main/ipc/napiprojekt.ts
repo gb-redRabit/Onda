@@ -4,6 +4,7 @@ import { mkdir, open, writeFile } from 'fs/promises';
 import { basename, dirname, extname, join } from 'path';
 import { httpRequest } from './http-request';
 import { isSafeAbsolutePath } from '../utils/validate';
+import { logRequestOutcome, isRateLimited } from '../utils/request-outcome';
 import { logger } from '../../shared/logger';
 import type {
   NapiProjektCheckResult,
@@ -86,15 +87,14 @@ function decodeNapiText(latin1Text: string): string {
   }
 }
 
-/** Pobiera i konwertuje napisy (bez zapisu). Wspólne dla `check` i `download`. */
-async function loadNapiSrt(videoPath: string): Promise<{ srt: string } | { error: string }> {
+/** Pobiera i konwertuje napisy (bez zapisu). Wspólne dla `check` i `download`. */async function loadNapiSrt(videoPath: string): Promise<{ srt: string } | { error: string }> {
   if (!videoPath || !isSafeAbsolutePath(videoPath)) return { error: 'missing-file' };
 
   let hash: string;
   try {
     hash = await napiprojektHash(videoPath);
   } catch (e) {
-    logger.warn('napiprojekt', `cannot hash ${videoPath}`, e);
+    logRequestOutcome('napiprojekt', `hash ${basename(videoPath)}`, e);
     return { error: 'missing-file' };
   }
 
@@ -119,10 +119,35 @@ async function loadNapiSrt(videoPath: string): Promise<{ srt: string } | { error
     if (!srt) return { error: 'not-found' };
     return { srt };
   } catch (e) {
-    logger.warn('napiprojekt', 'fetch failed', e);
-    const msg = (e as Error)?.message ?? String(e);
-    return { error: /HTTP \d/.test(msg) ? 'network' : msg };
+    const msg = logRequestOutcome('napiprojekt', 'fetch', e);
+    if (isRateLimited(e)) return { error: 'rate-limit' };
+    return { error: /^HTTP \d{3}$/.test(msg) ? 'network' : msg };
   }
+}
+
+// Sprawdzenie jest odpytywane przy KAŻDYM wyszukiwaniu, więc krótki cache chroni przed
+// powtarzalnym 429 z NapiProjektu. Cache'ujemy tylko trwałe wyniki (znaleziono / brak),
+// nigdy błędów przejściowych (limit/sieć), żeby nie blokować użytkownika na 10 minut.
+const CHECK_TTL_MS = 10 * 60 * 1000;
+const CHECK_CACHE_MAX = 200;
+const checkCache = new Map<string, { found: boolean; error?: string; at: number }>();
+
+async function cachedNapiCheck(videoPath: string): Promise<NapiProjektCheckResult> {
+  const hit = checkCache.get(videoPath);
+  if (hit && Date.now() - hit.at < CHECK_TTL_MS) {
+    return hit.found ? { found: true } : { found: false, error: hit.error };
+  }
+  const result = await loadNapiSrt(videoPath);
+  if ('srt' in result) {
+    checkCache.set(videoPath, { found: true, at: Date.now() });
+    if (checkCache.size > CHECK_CACHE_MAX) {
+      const oldest = checkCache.keys().next();
+      if (!oldest.done) checkCache.delete(oldest.value);
+    }
+    return { found: true };
+  }
+  if (result.error === 'not-found') checkCache.set(videoPath, { found: false, at: Date.now() });
+  return { found: false, error: result.error };
 }
 
 export function registerNapiProjektHandlers(): void {
@@ -130,10 +155,7 @@ export function registerNapiProjektHandlers(): void {
   ipcMain.handle(
     'napiprojekt:check',
     async (_event, params: NapiProjektDownloadParams): Promise<NapiProjektCheckResult> => {
-      const result = await loadNapiSrt(
-        typeof params?.videoPath === 'string' ? params.videoPath : ''
-      );
-      return 'srt' in result ? { found: true } : { found: false, error: result.error };
+      return cachedNapiCheck(typeof params?.videoPath === 'string' ? params.videoPath : '');
     }
   );
 

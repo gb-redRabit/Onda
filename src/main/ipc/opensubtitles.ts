@@ -5,6 +5,7 @@ import { httpRequest } from './http-request';
 import { getStore } from './cover/cover-cache';
 import { decryptApiKeys } from './settings/settings-crypto';
 import { isSafeAbsolutePath } from '../utils/validate';
+import { logRequestOutcome } from '../utils/request-outcome';
 import { logger } from '../../shared/logger';
 import type {
   OpenSubtitlesDownloadParams,
@@ -113,7 +114,7 @@ export function registerOpenSubtitlesHandlers(): void {
         });
         return { success: true, results: normalizeOsResults(JSON.parse(res.text)) };
       } catch (e) {
-        logger.warn('opensubtitles', 'search failed', e);
+        logRequestOutcome('opensubtitles', 'search', e);
         return { success: false, results: [], error: errorMessage(e) };
       }
     }
@@ -163,7 +164,7 @@ export function registerOpenSubtitlesHandlers(): void {
         }
         return { success: true, content: file.text, format };
       } catch (e) {
-        logger.warn('opensubtitles', 'download failed', e);
+        logRequestOutcome('opensubtitles', 'download', e);
         return { success: false, error: errorMessage(e) };
       }
     }
