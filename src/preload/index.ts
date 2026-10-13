@@ -27,6 +27,12 @@ import type {
 import type { IpcArgs, IpcChannel, IpcResult } from '../shared/ipc/contract';
 import type { OndaAPI } from '../shared/ipc/api';
 import type { PipSubtitleData } from '../shared/types/pip';
+import type {
+  OpenSubtitlesDownloadParams,
+  OpenSubtitlesDownloadResult,
+  OpenSubtitlesSearchParams,
+  OpenSubtitlesSearchResult
+} from '../shared/types/opensubtitles';
 import {
   ALLOWED_INVOKE_CHANNELS,
   ALLOWED_RECEIVE_CHANNELS,
@@ -243,6 +249,11 @@ const api: OndaAPI = {
     tryInvoke('subtitles:fontCacheStats'),
   clearFontCache: (): Promise<{ removed: number; bytesFreed: number }> =>
     tryInvoke('subtitles:fontCacheClear'),
+  openSubtitlesSearch: (params: OpenSubtitlesSearchParams): Promise<OpenSubtitlesSearchResult> =>
+    tryInvoke('opensubtitles:search', params),
+  openSubtitlesDownload: (
+    params: OpenSubtitlesDownloadParams
+  ): Promise<OpenSubtitlesDownloadResult> => tryInvoke('opensubtitles:download', params),
   getPlaybackPosition: (filePath: string): Promise<number> =>
     tryInvoke('playback:getPosition', filePath),
   setPlaybackPosition: (filePath: string, position: number): Promise<void> =>

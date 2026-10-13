@@ -66,6 +66,8 @@ export const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set([
   'subtitles:extractAttachments',
   'subtitles:fontCacheStats',
   'subtitles:fontCacheClear',
+  'opensubtitles:search',
+  'opensubtitles:download',
   'musicbrainz:searchRelease',
   'musicbrainz:lookupRelease',
   'musicbrainz:getCoverData',

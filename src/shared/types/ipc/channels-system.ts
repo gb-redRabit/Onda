@@ -2,6 +2,12 @@ import type { IpcFileItem, OpenFileOptions } from './media';
 import type { AppInfo, UpdaterState } from './app';
 import type { MusicbrainzRelease } from './musicbrainz';
 import type {
+  OpenSubtitlesDownloadParams,
+  OpenSubtitlesDownloadResult,
+  OpenSubtitlesSearchParams,
+  OpenSubtitlesSearchResult
+} from '../opensubtitles';
+import type {
   IpcPluginGetResult,
   IpcPluginInstallResult,
   IpcPluginUninstallResult,
@@ -233,6 +239,14 @@ export interface SystemChannels {
   'subtitles:fontCacheClear': {
     args: [];
     result: { removed: number; bytesFreed: number };
+  };
+  'opensubtitles:search': {
+    args: [params: OpenSubtitlesSearchParams];
+    result: OpenSubtitlesSearchResult;
+  };
+  'opensubtitles:download': {
+    args: [params: OpenSubtitlesDownloadParams];
+    result: OpenSubtitlesDownloadResult;
   };
   'shell:getFileIcon': {
     args: [filePath: string];

@@ -1896,7 +1896,17 @@ api.registerCommand({
     delay: 'Delay',
     delayEarlier: 'Subtitles earlier',
     delayLater: 'Subtitles later',
-    delayReset: 'Reset subtitle delay'
+    delayReset: 'Reset subtitle delay',
+    onlineSearch: 'Search online…',
+    onlineQuery: 'Title to search for',
+    onlineLanguage: 'Subtitle language',
+    onlineSearching: 'Searching…',
+    onlineNoResults: 'No results',
+    onlineNoKey: 'Add an OpenSubtitles key in Settings → API Keys.',
+    onlineRateLimit: 'OpenSubtitles download limit reached — try again later.',
+    onlineQueryRequired: 'Enter a title.',
+    onlineDownloaded: 'Subtitles downloaded.',
+    onlineError: 'Failed to download subtitles.'
   },
   resume: {
     title: 'Saved position detected',

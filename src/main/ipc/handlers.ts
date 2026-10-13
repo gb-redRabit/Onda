@@ -6,6 +6,7 @@ import { registerSettingsHandlers } from './settings/settings-handlers';
 import { registerMediaHandlers } from './media/media-handlers';
 import { registerCoverHandlers } from './cover/cover-handlers';
 import { registerSubtitleHandlers } from './subtitle-handlers';
+import { registerOpenSubtitlesHandlers } from './opensubtitles';
 import { registerPlaybackHandlers } from './playback-handlers';
 import { registerDependencyHandlers } from './dependency/dependency-handlers';
 import { registerYoutubeHandlers } from './youtube/youtube-handlers';
@@ -34,6 +35,7 @@ export function registerIPC(): void {
   registerMediaHandlers();
   registerCoverHandlers();
   registerSubtitleHandlers();
+  registerOpenSubtitlesHandlers();
   registerPlaybackHandlers();
   registerDependencyHandlers();
   registerYoutubeHandlers();

@@ -1900,7 +1900,17 @@ api.registerCommand({
     delay: 'Opóźnienie',
     delayEarlier: 'Napisy wcześniej',
     delayLater: 'Napisy później',
-    delayReset: 'Zeruj opóźnienie napisów'
+    delayReset: 'Zeruj opóźnienie napisów',
+    onlineSearch: 'Szukaj online…',
+    onlineQuery: 'Tytuł do wyszukania',
+    onlineLanguage: 'Język napisów',
+    onlineSearching: 'Szukam…',
+    onlineNoResults: 'Brak wyników',
+    onlineNoKey: 'Dodaj klucz OpenSubtitles w Ustawieniach → Klucze API.',
+    onlineRateLimit: 'Limit pobrań OpenSubtitles — spróbuj później.',
+    onlineQueryRequired: 'Wpisz tytuł.',
+    onlineDownloaded: 'Pobrano napisy.',
+    onlineError: 'Nie udało się pobrać napisów.'
   },
   resume: {
     title: 'Wykryto zapisaną pozycję',

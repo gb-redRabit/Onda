@@ -66,6 +66,8 @@ export type IpcInvokeChannel =
   | 'subtitles:extractAttachments'
   | 'subtitles:fontCacheStats'
   | 'subtitles:fontCacheClear'
+  | 'opensubtitles:search'
+  | 'opensubtitles:download'
   | 'musicbrainz:searchRelease'
   | 'musicbrainz:lookupRelease'
   | 'musicbrainz:getCoverData'

@@ -125,6 +125,7 @@ function toggleActive(id: string, active: boolean) {
           <option value="generic">Generic</option>
           <option value="youtube">YouTube</option>
           <option value="soundcloud">SoundCloud</option>
+          <option value="opensubtitles">OpenSubtitles</option>
           <option value="openai">OpenAI</option>
         </select>
         <input
