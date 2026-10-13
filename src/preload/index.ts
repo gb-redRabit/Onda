@@ -239,6 +239,10 @@ const api: OndaAPI = {
     filePath: string
   ): Promise<Array<{ name: string; ext: string; data: number[] }>> =>
     tryInvoke('subtitles:extractAttachments', filePath),
+  getFontCacheStats: (): Promise<{ files: number; bytes: number; videos: number }> =>
+    tryInvoke('subtitles:fontCacheStats'),
+  clearFontCache: (): Promise<{ removed: number; bytesFreed: number }> =>
+    tryInvoke('subtitles:fontCacheClear'),
   getPlaybackPosition: (filePath: string): Promise<number> =>
     tryInvoke('playback:getPosition', filePath),
   setPlaybackPosition: (filePath: string, position: number): Promise<void> =>

@@ -79,6 +79,8 @@ export interface OndaAPI {
   findExternalSubtitles: BoundIpcMethod<'subtitles:findExternal'>;
   readSubtitleFile: BoundIpcMethod<'subtitles:readFile'>;
   extractSubtitleFonts: BoundIpcMethod<'subtitles:extractAttachments'>;
+  getFontCacheStats: BoundIpcMethod<'subtitles:fontCacheStats'>;
+  clearFontCache: BoundIpcMethod<'subtitles:fontCacheClear'>;
   getPlaybackPosition: BoundIpcMethod<'playback:getPosition'>;
   setPlaybackPosition: BoundIpcMethod<'playback:setPosition'>;
   clearPlaybackPosition: BoundIpcMethod<'playback:clearPosition'>;

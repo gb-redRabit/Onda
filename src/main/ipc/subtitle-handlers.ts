@@ -12,6 +12,7 @@ import {
   SUBTITLE_EXTS,
   SUBTITLE_MAX_BYTES
 } from '../utils/read-text-file';
+import { readCachedFonts, writeCachedFonts, fontCacheStats, clearFontCache } from './font-cache';
 
 function uniqueId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -272,6 +273,9 @@ export function registerSubtitleHandlers(): void {
       filePath: string
     ): Promise<Array<{ name: string; ext: string; data: number[] }>> => {
       if (!isSafeAbsolutePath(filePath)) return [];
+      // Trafienie w trwały cache pomija ffprobe + mkvextract/ffmpeg.
+      const cached = await readCachedFonts(filePath);
+      if (cached) return cached;
       const dumpDir = join(
         getTempDir(),
         `fonts_${Date.now()}_${Math.random().toString(36).slice(2)}`
@@ -399,7 +403,18 @@ export function registerSubtitleHandlers(): void {
         });
       }
 
+      if (fonts.length) await writeCachedFonts(filePath, fonts);
       return fonts;
     }
+  );
+
+  ipcMain.handle(
+    'subtitles:fontCacheStats',
+    async (): Promise<{ files: number; bytes: number; videos: number }> => fontCacheStats()
+  );
+
+  ipcMain.handle(
+    'subtitles:fontCacheClear',
+    async (): Promise<{ removed: number; bytesFreed: number }> => clearFontCache()
   );
 }

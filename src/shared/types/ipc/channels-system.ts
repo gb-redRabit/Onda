@@ -226,6 +226,14 @@ export interface SystemChannels {
     args: [filePath: string];
     result: Array<{ name: string; ext: string; data: number[] }>;
   };
+  'subtitles:fontCacheStats': {
+    args: [];
+    result: { files: number; bytes: number; videos: number };
+  };
+  'subtitles:fontCacheClear': {
+    args: [];
+    result: { removed: number; bytesFreed: number };
+  };
   'shell:getFileIcon': {
     args: [filePath: string];
     result: string | null;
