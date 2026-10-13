@@ -3,8 +3,17 @@ import { applyVolumeTarget, seekTarget } from '@renderer/utils/mediaTransport';
 import { getActivePinia } from 'pinia';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { useUIStore } from '@renderer/stores/ui';
 import { useAudioPlayer } from './useAudioPlayer';
 import { EQUALIZER_PRESETS, EQ_LIMITS, cloneEqBands } from '@renderer/utils/constants';
+import {
+  SUBTITLE_DELAY_STEP_MS,
+  SUBTITLE_DELAY_COARSE_MS,
+  adjustSubtitleDelay,
+  resetSubtitleDelay,
+  formatSubtitleDelay
+} from './subtitleDelay';
+import { i18n } from '@renderer/i18n';
 
 type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
 
@@ -177,6 +186,63 @@ function handleEqShortcuts(e: KeyboardEvent): boolean {
 }
 
 /**
+ * Dopasowanie z luźnym Shiftem: Shift jest dodatkowym modyfikatorem „krok gruby",
+ * więc surowy klawisz musi pasować także przy wciśniętym Shift (sam skrót go nie zawiera).
+ */
+function matchesLooseShift(shortcut: string, e: KeyboardEvent): boolean {
+  if (matchesShortcut(shortcut, e)) return true;
+  return (
+    e.shiftKey &&
+    matchesShortcut(shortcut, {
+      key: e.key,
+      ctrlKey: e.ctrlKey,
+      metaKey: e.metaKey,
+      altKey: e.altKey,
+      shiftKey: false
+    } as KeyboardEvent)
+  );
+}
+
+function notifySubtitleDelay(ms: number): void {
+  useUIStore().notify(
+    'info',
+    i18n.global.t('player.subtitleDelay', { delay: formatSubtitleDelay(ms) }),
+    undefined,
+    1400
+  );
+}
+
+/**
+ * Skróty przesunięcia napisów (Subtitle Delay / Offset). Krok 50 ms, Shift = 500 ms.
+ * Dodatnia wartość = napisy później. Wartości edytowalne w Ustawieniach → Skróty.
+ */
+function handleSubtitleDelayShortcuts(e: KeyboardEvent): boolean {
+  if (!getActivePinia()) return false;
+  const shortcuts = useSettingsStore().shortcuts;
+  const step = e.shiftKey ? SUBTITLE_DELAY_COARSE_MS : SUBTITLE_DELAY_STEP_MS;
+
+  const down = shortcuts['subtitle-delay-down'];
+  if (down && matchesLooseShift(down, e)) {
+    e.preventDefault();
+    notifySubtitleDelay(adjustSubtitleDelay(-step));
+    return true;
+  }
+  const up = shortcuts['subtitle-delay-up'];
+  if (up && matchesLooseShift(up, e)) {
+    e.preventDefault();
+    notifySubtitleDelay(adjustSubtitleDelay(step));
+    return true;
+  }
+  const reset = shortcuts['subtitle-delay-reset'];
+  if (reset && matchesLooseShift(reset, e)) {
+    e.preventDefault();
+    notifySubtitleDelay(resetSubtitleDelay());
+    return true;
+  }
+  return false;
+}
+
+/**
  * Obsługuje skróty widoku odtwarzacza. Wywoływane z pojedynczego nasłuchu keydown
  * na poziomie App (zawsze zarejestrowanego, gdy okno jest aktywne), dzięki czemu klawisze
  * odtwarzania działają mimo ciągłego montowania/odmontowywania widoków.
@@ -196,6 +262,7 @@ export function handlePlayerShortcutKeydown(e: KeyboardEvent): void {
   // Pętla A–B działa w wideo i audio, więc obsługujemy ją przed sprawdzeniem kontekstu widoku.
   if (handleAbShortcuts(e)) return;
   if (handleEqShortcuts(e)) return;
+  if (handleSubtitleDelayShortcuts(e)) return;
 
   const c = ctx;
   if (!c) return;

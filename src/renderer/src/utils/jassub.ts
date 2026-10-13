@@ -7,6 +7,7 @@ interface CreateJassubParams {
   subContent: string;
   fonts: Uint8Array[];
   availableFonts: Record<string, string>;
+  timeOffset?: number;
   queryFonts?: false | 'local' | 'localandremote';
   defaultFont?: string;
   workerUrlOverride?: string;
@@ -47,6 +48,7 @@ export async function createJassub(
     workerUrl: params.workerUrlOverride ?? workerUrl,
     wasmUrl: params.wasmUrlOverride ?? wasmUrl,
     modernWasmUrl: params.modernWasmUrlOverride ?? modernWasmUrl,
+    timeOffset: params.timeOffset ?? 0,
     queryFonts: params.queryFonts ?? false,
     fonts: params.fonts,
     availableFonts: params.availableFonts,

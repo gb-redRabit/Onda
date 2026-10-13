@@ -1569,6 +1569,7 @@ api.registerCommand({
     speed: 'Prędkość',
     pipVideo: 'Obraz w obrazie',
     embeddedSubtitle: '{label} (wbudowane)',
+    subtitleDelay: 'Napisy: {delay}',
     audioPlaybackFailed: 'Odtwarzanie dźwięku nie powiodło się',
     audioCodecUnsupported: 'Kodek audio nieobsługiwany — dźwięk może być niesłyszalny',
     transcodingVideo: 'Transkodowanie wideo, proszę czekać…',
