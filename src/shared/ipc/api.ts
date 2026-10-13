@@ -59,6 +59,8 @@ export interface OndaAPI {
   getCover: BoundIpcMethod<'media:getCover'>;
   getDuration: BoundIpcMethod<'media:getDuration'>;
   getDurations: BoundIpcMethod<'media:batchDurations'>;
+  getVideoFps: BoundIpcMethod<'media:getVideoFps'>;
+  saveScreenshot: BoundIpcMethod<'media:saveScreenshot'>;
   writeTags: BoundIpcMethod<'media:writeTags'>;
   renameFile: BoundIpcMethod<'media:renameFile'>;
   writeCover: BoundIpcMethod<'media:writeCover'>;

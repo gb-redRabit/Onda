@@ -63,6 +63,11 @@ export interface LibraryChannels {
   };
   'media:getDuration': { args: [filePath: string]; result: number };
   'media:batchDurations': { args: [paths: string[]]; result: Record<string, number> };
+  'media:getVideoFps': { args: [filePath: string]; result: number };
+  'media:saveScreenshot': {
+    args: [videoPath: string, data: number[], timeSec: number];
+    result: { success: boolean; path?: string; error?: string };
+  };
   'media:writeTags': {
     args: [filePath: string, tags: Record<string, string | undefined>];
     result: { success: boolean; error?: string };

@@ -12,6 +12,8 @@ export const SHORTCUT_LABELS: Record<string, string> = {
   'speed-up': 'shortcuts.speedUp',
   'speed-down': 'shortcuts.speedDown',
   'jump-start': 'shortcuts.jumpStart',
+  'frame-back': 'shortcuts.frameBack',
+  'frame-forward': 'shortcuts.frameForward',
   'next-track': 'shortcuts.nextTrack',
   'prev-track': 'shortcuts.prevTrack',
   'ab-set-a': 'shortcuts.abSetA',

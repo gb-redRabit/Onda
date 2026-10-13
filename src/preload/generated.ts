@@ -52,6 +52,8 @@ export const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set([
   'media:getCover',
   'media:getDuration',
   'media:batchDurations',
+  'media:getVideoFps',
+  'media:saveScreenshot',
   'media:writeTags',
   'media:writeCover',
   'media:readCover',

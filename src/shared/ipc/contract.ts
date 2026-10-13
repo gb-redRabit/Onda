@@ -67,6 +67,8 @@ export const INVOKE_CHANNELS = [
   'media:getCover',
   'media:getDuration',
   'media:batchDurations',
+  'media:getVideoFps',
+  'media:saveScreenshot',
   'media:writeTags',
   'media:writeCover',
   'media:readCover',

@@ -183,6 +183,13 @@ const api: OndaAPI = {
   getCover: (filePath: string): Promise<{ type: 'video' | 'image' | null; data: string | null }> =>
     tryInvoke('media:getCover', filePath),
   getDuration: (filePath: string): Promise<number> => tryInvoke('media:getDuration', filePath),
+  getVideoFps: (filePath: string): Promise<number> => tryInvoke('media:getVideoFps', filePath),
+  saveScreenshot: (
+    videoPath: string,
+    data: number[],
+    timeSec: number
+  ): Promise<{ success: boolean; path?: string; error?: string }> =>
+    tryInvoke('media:saveScreenshot', videoPath, data, timeSec),
   getDurations: (paths: string[]): Promise<Record<string, number>> =>
     tryInvoke('media:batchDurations', paths),
   writeTags: (

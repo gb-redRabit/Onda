@@ -4,6 +4,7 @@ import { registerFsHandlers } from './fs/fs-handlers';
 import { registerLibraryHandlers } from './library/library-handlers';
 import { registerSettingsHandlers } from './settings/settings-handlers';
 import { registerMediaHandlers } from './media/media-handlers';
+import { registerMediaFrameHandlers } from './media/media-frames';
 import { registerCoverHandlers } from './cover/cover-handlers';
 import { registerSubtitleHandlers } from './subtitle-handlers';
 import { registerOpenSubtitlesHandlers } from './opensubtitles';
@@ -34,6 +35,7 @@ export function registerIPC(): void {
   registerLibraryHandlers();
   registerSettingsHandlers();
   registerMediaHandlers();
+  registerMediaFrameHandlers();
   registerCoverHandlers();
   registerSubtitleHandlers();
   registerOpenSubtitlesHandlers();

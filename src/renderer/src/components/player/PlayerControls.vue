@@ -8,9 +8,12 @@ import {
   SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
-  Moon
+  Moon,
+  Camera
 } from '@lucide/vue';
+import { useI18n } from 'vue-i18n';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useUIStore } from '@renderer/stores/ui';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { formatDuration } from '@renderer/utils/formatters';
 import PlayerSpeedMenu from './PlayerSpeedMenu.vue';
@@ -36,6 +39,31 @@ const emit = defineEmits<{
 
 const player = usePlayerStore();
 const audio = useAudioPlayer();
+const ui = useUIStore();
+const { t } = useI18n();
+
+/** Rysuje bieżącą klatkę wideo do PNG w natywnej rozdzielczości i zapisuje obok pliku. */
+async function captureFrame(): Promise<void> {
+  const video = props.videoRef.value;
+  const path = player.currentTrack?.path;
+  if (!video || !path || !video.videoWidth || !video.videoHeight) return;
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx2d = canvas.getContext('2d');
+  if (!ctx2d) return;
+  ctx2d.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+  if (!blob) return;
+  const bytes = Array.from(new Uint8Array(await blob.arrayBuffer()));
+  try {
+    const res = await window.api.saveScreenshot(path, bytes, video.currentTime);
+    if (res.success && res.path) ui.notify('success', t('player.frameSaved'), res.path);
+    else ui.notify('error', t('player.frameSaveError'), res.error);
+  } catch (e) {
+    ui.notify('error', t('player.frameSaveError'), String(e));
+  }
+}
 
 const seekBarRef = ref<HTMLElement | null>(null);
 const {
@@ -230,6 +258,15 @@ function onVolumeKeydown(e: KeyboardEvent) {
           @click="audio.setNightMode(!player.nightMode)"
         >
           <Moon :size="16" />
+        </button>
+        <button
+          class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
+          data-capture-frame
+          :title="$t('player.captureFrame')"
+          :aria-label="$t('player.captureFrame')"
+          @click="captureFrame"
+        >
+          <Camera :size="16" />
         </button>
         <button
           class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"

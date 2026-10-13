@@ -110,6 +110,8 @@ export const DEFAULT_SHORTCUTS: Record<string, string> = {
   'speed-up': '>',
   'speed-down': '<',
   'jump-start': '0',
+  'frame-back': ',',
+  'frame-forward': '.',
   'next-track': 'MediaTrackNext',
   'prev-track': 'MediaTrackPrevious',
   'ab-set-a': '[',

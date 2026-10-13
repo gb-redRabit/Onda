@@ -101,6 +101,21 @@ function abCurrentTime(): number {
 }
 
 /**
+ * Krok o jedną klatkę wideo. fps bierzemy z ffprobe (cache w main), z fallbackiem 25,
+ * bo `HTMLVideoElement` nie udostępnia liczby klatek na sekundę.
+ */
+async function stepFrame(direction: 1 | -1): Promise<void> {
+  const video = ctx?.getVideoRef();
+  if (!video) return;
+  const path = usePlayerStore().currentTrack?.path;
+  let fps = path ? await window.api.getVideoFps(path).catch(() => 0) : 0;
+  if (!Number.isFinite(fps) || fps <= 0) fps = 25;
+  const duration = Number.isFinite(video.duration) ? video.duration : Number.POSITIVE_INFINITY;
+  video.currentTime = Math.max(0, Math.min(duration, video.currentTime + direction / fps));
+  ctx?.notify(`${direction > 0 ? '+' : '−'}${(1 / fps).toFixed(3)} s`, 900);
+}
+
+/**
  * Skróty pętli A–B działają niezależnie od widoku (wideo i audio): czas bierzemy z elementu
  * wideo, gdy jest na ekranie, w przeciwnym razie z silnika audio.
  */
@@ -340,6 +355,18 @@ export function handlePlayerShortcutKeydown(e: KeyboardEvent): void {
     seekTarget(c.getVideoRef(), 0);
     c.player.currentTime = 0;
     c.notify('0:00', 1000);
+    return;
+  }
+
+  if (matches('frame-back', e)) {
+    e.preventDefault();
+    void stepFrame(-1);
+    return;
+  }
+
+  if (matches('frame-forward', e)) {
+    e.preventDefault();
+    void stepFrame(1);
     return;
   }
 
