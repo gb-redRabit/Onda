@@ -177,6 +177,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
       <h3 class="text-sm font-semibold">{{ $t('subtitles.title') }}</h3>
       <button
         class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors"
+        data-testid="subtitle-panel-close"
         :aria-label="$t('common.close')"
         :title="$t('common.close')"
         @click="player.toggleSubtitlePanel"
@@ -265,6 +266,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
         <div class="flex items-center gap-2">
           <button
             class="p-1.5 rounded-field border border-base-300 text-base-content/70 hover:bg-base-content/10 transition-colors"
+            data-testid="subtitle-delay-down"
             :aria-label="$t('subtitles.delayEarlier')"
             :title="$t('subtitles.delayEarlier')"
             @click="nudgeDelay(-SUBTITLE_DELAY_STEP_MS)"
@@ -273,6 +275,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
           </button>
           <button
             class="min-w-20 px-2 py-1.5 rounded-field border border-base-300 font-mono text-xs text-center text-base-content/80 hover:bg-base-content/10 transition-colors"
+            data-testid="subtitle-delay-value"
             :aria-label="$t('subtitles.delayReset')"
             :title="$t('subtitles.delayReset')"
             @click="resetSubtitleDelay()"
@@ -281,6 +284,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
           </button>
           <button
             class="p-1.5 rounded-field border border-base-300 text-base-content/70 hover:bg-base-content/10 transition-colors"
+            data-testid="subtitle-delay-up"
             :aria-label="$t('subtitles.delayLater')"
             :title="$t('subtitles.delayLater')"
             @click="nudgeDelay(SUBTITLE_DELAY_STEP_MS)"
@@ -311,6 +315,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
           </select>
           <button
             class="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-field bg-primary text-primary-content text-sm fx-depth fx-noise disabled:opacity-50"
+            data-testid="subtitle-online-search"
             :disabled="searching"
             @click="runSearch"
           >
