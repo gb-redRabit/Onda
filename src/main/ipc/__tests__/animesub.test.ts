@@ -128,6 +128,8 @@ describe('animesub handlers', () => {
     expect(res.results).toHaveLength(2);
     expect(state.requests[0].url).toContain('wyslane=1');
     expect(state.requests[0].url).toContain('szukane=fate');
+    // Krótki timeout — scalona wyszukiwarka nie może czekać 20 s na wolny serwis.
+    expect(state.requests[0].options?.timeoutMs).toBe(8000);
   });
 
   it('rejects a download with missing parameters', async () => {

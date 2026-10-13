@@ -129,6 +129,9 @@ export function registerAnimeSubHandlers(): void {
           {
             headers: { 'User-Agent': USER_AGENT },
             encoding: 'latin1',
+            // Scalona wyszukiwarka czeka na wszystkich dostawców — krótki timeout, żeby
+            // wolny AnimeSub nie opóźniał listy (jego wyniki po prostu odpadają).
+            timeoutMs: 8000,
             maxBytes: MAX_HTML_BYTES
           }
         );

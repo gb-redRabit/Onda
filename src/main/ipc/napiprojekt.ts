@@ -87,7 +87,9 @@ function decodeNapiText(latin1Text: string): string {
   }
 }
 
-/** Pobiera i konwertuje napisy (bez zapisu). Wspólne dla `check` i `download`. */async function loadNapiSrt(videoPath: string): Promise<{ srt: string } | { error: string }> {
+/** Pobiera i konwertuje napisy (bez zapisu). Wspólne dla `check` i `download`. */ async function loadNapiSrt(
+  videoPath: string
+): Promise<{ srt: string } | { error: string }> {
   if (!videoPath || !isSafeAbsolutePath(videoPath)) return { error: 'missing-file' };
 
   let hash: string;
@@ -112,6 +114,8 @@ function decodeNapiText(latin1Text: string): string {
     const res = await httpRequest(`${NAPI_URL}?${query.toString()}`, {
       headers: { 'User-Agent': USER_AGENT },
       encoding: 'latin1',
+      // Sprawdzenie odpytywane przy każdym wyszukiwaniu — krótki timeout, żeby nie blokował listy.
+      timeoutMs: 8000,
       maxBytes: MAX_SUB_BYTES
     });
     if (res.text.startsWith('NPc0')) return { error: 'not-found' };

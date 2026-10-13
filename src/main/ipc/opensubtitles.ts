@@ -110,6 +110,7 @@ export function registerOpenSubtitlesHandlers(): void {
 
         const res = await httpRequest(`${OS_API}/subtitles?${qs.toString()}`, {
           headers: { 'Api-Key': key, 'User-Agent': USER_AGENT, Accept: 'application/json' },
+          timeoutMs: 10000,
           maxBytes: MAX_JSON_BYTES
         });
         return { success: true, results: normalizeOsResults(JSON.parse(res.text)) };
