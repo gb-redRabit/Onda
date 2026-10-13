@@ -1,6 +1,7 @@
 import workerUrl from 'jassub/dist/worker/worker.js?worker&url';
 import wasmUrl from 'jassub/dist/wasm/jassub-worker.wasm?url';
 import modernWasmUrl from 'jassub/dist/wasm/jassub-worker-modern.wasm?url';
+import defaultFontUrl from 'jassub/dist/default.woff2?url';
 
 interface CreateJassubParams {
   video: HTMLVideoElement;
@@ -42,6 +43,16 @@ export async function createJassub(
   JASSUBCtor: typeof import('jassub').default,
   params: CreateJassubParams
 ): Promise<InstanceType<typeof import('jassub').default>> {
+  // Wbudowana czcionka awaryjna JASSUB (Liberation Sans). JASSUB wylicza ją wewnętrznie
+  // przez `new URL('./default.woff2', import.meta.url)`, co w dev (vite) wskazuje nieistniejący
+  // URL, a worker pobiera stronę 404 → libass zgłasza "Error opening memory font" i napisy bez
+  // osadzonych czcionek (zwykły `.srt`) nie renderują się. Podajemy ją jawnie przez `?url`, żeby
+  // bundler wyemitował poprawny asset, i ustawiamy jako `defaultFont`.
+  const availableFonts: Record<string, string> = { ...(params.availableFonts ?? {}) };
+  if (!params.defaultFont && !availableFonts['liberation sans']) {
+    availableFonts['liberation sans'] = defaultFontUrl;
+  }
+
   const instance = new JASSUBCtor({
     video: params.video,
     subContent: params.subContent,
@@ -52,11 +63,8 @@ export async function createJassub(
     // `queryFonts: 'local'` pozwala libass sięgnąć po zainstalowane czcionki (np. Arial).
     queryFonts: params.queryFonts ?? 'local',
     fonts: params.fonts,
-    availableFonts: params.availableFonts,
-    // NIE wymuszamy `defaultFont`: JASSUB dodaje wtedy własną czcionkę awaryjną
-    // (Liberation Sans) i renderuje napisy bez osadzonych czcionek. Wymuszenie np. 'arial'
-    // tę awaryjną czcionkę WYŁĄCZA (patrz `jassub.js`), więc zwykły `.srt` nie renderował się.
-    defaultFont: params.defaultFont
+    availableFonts,
+    defaultFont: params.defaultFont ?? 'liberation sans'
   });
   await instance.ready;
   return instance;
