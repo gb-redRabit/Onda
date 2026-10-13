@@ -49,10 +49,14 @@ export async function createJassub(
     wasmUrl: params.wasmUrlOverride ?? wasmUrl,
     modernWasmUrl: params.modernWasmUrlOverride ?? modernWasmUrl,
     timeOffset: params.timeOffset ?? 0,
-    queryFonts: params.queryFonts ?? false,
+    // `queryFonts: 'local'` pozwala libass sięgnąć po zainstalowane czcionki (np. Arial).
+    queryFonts: params.queryFonts ?? 'local',
     fonts: params.fonts,
     availableFonts: params.availableFonts,
-    defaultFont: params.defaultFont ?? 'arial'
+    // NIE wymuszamy `defaultFont`: JASSUB dodaje wtedy własną czcionkę awaryjną
+    // (Liberation Sans) i renderuje napisy bez osadzonych czcionek. Wymuszenie np. 'arial'
+    // tę awaryjną czcionkę WYŁĄCZA (patrz `jassub.js`), więc zwykły `.srt` nie renderował się.
+    defaultFont: params.defaultFont
   });
   await instance.ready;
   return instance;

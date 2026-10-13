@@ -53,7 +53,7 @@ export function usePipVideoSubtitle(videoRef: { value: HTMLVideoElement | null }
         fonts,
         availableFonts,
         timeOffset: subtitleTimeOffsetSeconds(data.subtitleDelayMs ?? 0),
-        queryFonts: false,
+        queryFonts: 'local',
         wasmUrlOverride: wasmDataUrl,
         modernWasmUrlOverride: modernWasmDataUrl
       });
