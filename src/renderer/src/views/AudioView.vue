@@ -7,7 +7,7 @@ import { usePluginsStore } from '@renderer/stores/plugins';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import ResumePrompt from '@renderer/components/player/ResumePrompt.vue';
 import AudioCanvasElements from '@renderer/components/audio/AudioCanvasElements.vue';
-import PluginUiSlot from '@renderer/components/plugins/PluginUiSlot.vue';
+import PluginUiSlot from '@renderer/components/explorer/plugins/PluginUiSlot.vue';
 import AudioHudToolbar from '@renderer/components/audio/AudioHudToolbar.vue';
 import AudioVizSettings from '@renderer/components/audio/AudioVizSettings.vue';
 import { nextVizMode } from '@renderer/utils/audioVisualizer';
