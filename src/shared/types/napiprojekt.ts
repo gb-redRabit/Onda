@@ -5,6 +5,12 @@ export interface NapiProjektDownloadParams {
   videoPath: string;
 }
 
+/** Szybkie sprawdzenie (bez zapisu), czy NapiProjekt ma napisy do tego pliku. */
+export interface NapiProjektCheckResult {
+  found: boolean;
+  error?: string;
+}
+
 export interface NapiProjektDownloadResult {
   success: boolean;
   /** Ścieżka zapisanego pliku (obok wideo). */

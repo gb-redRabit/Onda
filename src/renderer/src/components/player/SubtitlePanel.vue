@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { Check, Upload, Minus, Plus, Search, X, Languages } from '@lucide/vue';
+import { Check, Upload, Minus, Plus, Search, X } from '@lucide/vue';
 import { useI18n } from 'vue-i18n';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useUIStore } from '@renderer/stores/ui';
-import type { OpenSubtitlesResult } from '@shared/types/opensubtitles';
 import {
   subtitleDelayMs,
   formatSubtitleDelay,
@@ -49,8 +48,17 @@ async function uploadSubtitles(): Promise<void> {
 const searchQuery = ref('');
 const searchLang = ref('pl');
 const searching = ref(false);
-const downloading = ref<number | null>(null);
-const results = ref<OpenSubtitlesResult[]>([]);
+/** Ujednolicony wiersz wyników: OpenSubtitles (po tytule) lub NapiProjekt (po hashu pliku). */
+interface PanelResult {
+  source: 'os' | 'napi';
+  fileId?: number;
+  language: string;
+  release: string;
+  downloads: number;
+}
+
+const downloading = ref<string | null>(null);
+const results = ref<PanelResult[]>([]);
 const searchError = ref('');
 const searched = ref(false);
 
@@ -77,6 +85,10 @@ function defaultQuery(): string {
     .trim();
 }
 
+function resultKey(result: PanelResult): string {
+  return result.source === 'napi' ? 'napi' : `os-${result.fileId}`;
+}
+
 async function runSearch(): Promise<void> {
   if (!searchQuery.value.trim() && !searching.value) searchQuery.value = defaultQuery();
   if (!searchQuery.value.trim() || searching.value) return;
@@ -84,13 +96,42 @@ async function runSearch(): Promise<void> {
   searchError.value = '';
   results.value = [];
   searched.value = false;
+  const videoPath = player.currentTrack?.path;
   try {
-    const res = await window.api.openSubtitlesSearch({
-      query: searchQuery.value.trim(),
-      languages: searchLang.value || undefined
-    });
-    if (res.success) results.value = res.results;
-    else searchError.value = res.error || 'unknown';
+    // OpenSubtitles po tytule + NapiProjekt po hashu pliku — równolegle, jedna lista.
+    const [os, napi] = await Promise.all([
+      window.api
+        .openSubtitlesSearch({
+          query: searchQuery.value.trim(),
+          languages: searchLang.value || undefined
+        })
+        .catch(() => null),
+      videoPath
+        ? window.api.napiProjektCheck({ videoPath }).catch(() => null)
+        : Promise.resolve(null)
+    ]);
+    const list: PanelResult[] = [];
+    if (napi?.found) {
+      list.push({
+        source: 'napi',
+        language: 'pl',
+        release: t('subtitles.napiDownload'),
+        downloads: 0
+      });
+    }
+    if (os?.success) {
+      for (const r of os.results) {
+        list.push({
+          source: 'os',
+          fileId: r.fileId,
+          language: r.language,
+          release: r.release,
+          downloads: r.downloads
+        });
+      }
+    }
+    results.value = list;
+    if (!list.length && os && !os.success) searchError.value = os.error || 'unknown';
   } catch (e) {
     searchError.value = String(e);
   } finally {
@@ -99,14 +140,17 @@ async function runSearch(): Promise<void> {
   }
 }
 
-async function downloadResult(result: OpenSubtitlesResult): Promise<void> {
-  downloading.value = result.fileId;
+async function downloadResult(result: PanelResult): Promise<void> {
+  downloading.value = resultKey(result);
   try {
-    const res = await window.api.openSubtitlesDownload({
-      fileId: result.fileId,
-      videoPath: player.currentTrack?.path,
-      language: result.language || searchLang.value
-    });
+    const res =
+      result.source === 'napi'
+        ? await window.api.napiProjektDownload({ videoPath: player.currentTrack?.path ?? '' })
+        : await window.api.openSubtitlesDownload({
+            fileId: result.fileId ?? 0,
+            videoPath: player.currentTrack?.path,
+            language: result.language || searchLang.value
+          });
     if (res.success && res.path) {
       const added = await player.loadCustomSubtitles([res.path]);
       if (added > 0) {
@@ -114,36 +158,12 @@ async function downloadResult(result: OpenSubtitlesResult): Promise<void> {
         return;
       }
     }
-    ui.notify('error', t('subtitles.onlineError'), res.error);
+    if (res.error === 'not-found') ui.notify('info', t('subtitles.napiNotFound'));
+    else ui.notify('error', t('subtitles.onlineError'), res.error);
   } catch (e) {
     ui.notify('error', t('subtitles.onlineError'), String(e));
   } finally {
     downloading.value = null;
-  }
-}
-
-// ── NapiProjekt (polskie napisy dopasowane po zawartości pliku) ──────────────
-const napiLoading = ref(false);
-
-async function downloadNapi(): Promise<void> {
-  const videoPath = player.currentTrack?.path;
-  if (!videoPath || napiLoading.value) return;
-  napiLoading.value = true;
-  try {
-    const res = await window.api.napiProjektDownload({ videoPath });
-    if (res.success && res.path) {
-      const added = await player.loadCustomSubtitles([res.path]);
-      if (added > 0) {
-        ui.notify('success', t('subtitles.napiDownloaded'));
-        return;
-      }
-    }
-    if (res.error === 'not-found') ui.notify('info', t('subtitles.napiNotFound'));
-    else ui.notify('error', t('subtitles.napiError'), res.error);
-  } catch (e) {
-    ui.notify('error', t('subtitles.napiError'), String(e));
-  } finally {
-    napiLoading.value = false;
   }
 }
 </script>
@@ -311,26 +331,18 @@ async function downloadNapi(): Promise<void> {
         <div v-else-if="results.length" class="mt-2 flex max-h-64 flex-col overflow-y-auto">
           <button
             v-for="result in results"
-            :key="result.fileId"
+            :key="resultKey(result)"
             class="flex items-center justify-between gap-2 rounded-field px-2 py-1.5 text-left text-xs hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50"
             :disabled="downloading !== null"
             @click="downloadResult(result)"
           >
             <span class="truncate">{{ result.release }}</span>
             <span class="shrink-0 text-[10px] text-base-content/50">
-              {{ result.language.toUpperCase() }} · {{ result.downloads }}
+              {{ result.language.toUpperCase()
+              }}<template v-if="result.source === 'os'"> · {{ result.downloads }}</template>
             </span>
           </button>
         </div>
-
-        <button
-          class="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-field border border-base-300 text-sm hover:bg-base-content/10 transition-colors disabled:opacity-50"
-          :disabled="napiLoading"
-          @click="downloadNapi"
-        >
-          <Languages :size="14" />
-          {{ $t('subtitles.napiDownload') }}
-        </button>
       </div>
     </div>
   </div>

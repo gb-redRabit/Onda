@@ -1913,9 +1913,7 @@ api.registerCommand({
     onlineDownloaded: 'Pobrano napisy.',
     onlineError: 'Nie udało się pobrać napisów.',
     napiDownload: 'Napisy PL (NapiProjekt)',
-    napiDownloaded: 'Pobrano napisy z NapiProjekt.',
-    napiNotFound: 'NapiProjekt nie ma napisów do tego pliku.',
-    napiError: 'Nie udało się pobrać z NapiProjekt.'
+    napiNotFound: 'NapiProjekt nie ma napisów do tego pliku.'
   },
   resume: {
     title: 'Wykryto zapisaną pozycję',

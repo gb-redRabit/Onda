@@ -7,7 +7,11 @@ import type {
   OpenSubtitlesSearchParams,
   OpenSubtitlesSearchResult
 } from '../opensubtitles';
-import type { NapiProjektDownloadParams, NapiProjektDownloadResult } from '../napiprojekt';
+import type {
+  NapiProjektCheckResult,
+  NapiProjektDownloadParams,
+  NapiProjektDownloadResult
+} from '../napiprojekt';
 import type {
   IpcPluginGetResult,
   IpcPluginInstallResult,
@@ -248,6 +252,10 @@ export interface SystemChannels {
   'opensubtitles:download': {
     args: [params: OpenSubtitlesDownloadParams];
     result: OpenSubtitlesDownloadResult;
+  };
+  'napiprojekt:check': {
+    args: [params: NapiProjektDownloadParams];
+    result: NapiProjektCheckResult;
   };
   'napiprojekt:download': {
     args: [params: NapiProjektDownloadParams];

@@ -83,6 +83,7 @@ export interface OndaAPI {
   clearFontCache: BoundIpcMethod<'subtitles:fontCacheClear'>;
   openSubtitlesSearch: BoundIpcMethod<'opensubtitles:search'>;
   openSubtitlesDownload: BoundIpcMethod<'opensubtitles:download'>;
+  napiProjektCheck: BoundIpcMethod<'napiprojekt:check'>;
   napiProjektDownload: BoundIpcMethod<'napiprojekt:download'>;
   getPlaybackPosition: BoundIpcMethod<'playback:getPosition'>;
   setPlaybackPosition: BoundIpcMethod<'playback:setPosition'>;

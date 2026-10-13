@@ -83,6 +83,30 @@ describe('napiprojekt:download', () => {
     registerNapiProjektHandlers();
   });
 
+  it('check reports found without writing a file', async () => {
+    const dir = tempDir();
+    const file = join(dir, 'Movie.mkv');
+    writeFileSync(file, Buffer.from('x'));
+    state.responses = [{ status: 200, text: '[10][20]ok' }];
+
+    const check = state.handlers.get('napiprojekt:check')!;
+    await expect(check({}, { videoPath: file })).resolves.toEqual({ found: true });
+    expect(existsSync(join(dir, 'Movie.pl.srt'))).toBe(false);
+  });
+
+  it('check reports not-found on the NPc0 marker', async () => {
+    const dir = tempDir();
+    const file = join(dir, 'Movie.mkv');
+    writeFileSync(file, Buffer.from('x'));
+    state.responses = [{ status: 200, text: 'NPc0' }];
+
+    const check = state.handlers.get('napiprojekt:check')!;
+    await expect(check({}, { videoPath: file })).resolves.toEqual({
+      found: false,
+      error: 'not-found'
+    });
+  });
+
   it('reports not-found on the NPc0 marker', async () => {
     const dir = tempDir();
     const file = join(dir, 'movie.mkv');

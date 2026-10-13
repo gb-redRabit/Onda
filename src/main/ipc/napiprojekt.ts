@@ -6,6 +6,7 @@ import { httpRequest } from './http-request';
 import { isSafeAbsolutePath } from '../utils/validate';
 import { logger } from '../../shared/logger';
 import type {
+  NapiProjektCheckResult,
   NapiProjektDownloadParams,
   NapiProjektDownloadResult
 } from '../../shared/types/napiprojekt';
@@ -85,55 +86,74 @@ function decodeNapiText(latin1Text: string): string {
   }
 }
 
+/** Pobiera i konwertuje napisy (bez zapisu). Wspólne dla `check` i `download`. */
+async function loadNapiSrt(videoPath: string): Promise<{ srt: string } | { error: string }> {
+  if (!videoPath || !isSafeAbsolutePath(videoPath)) return { error: 'missing-file' };
+
+  let hash: string;
+  try {
+    hash = await napiprojektHash(videoPath);
+  } catch (e) {
+    logger.warn('napiprojekt', `cannot hash ${videoPath}`, e);
+    return { error: 'missing-file' };
+  }
+
+  try {
+    const query = new URLSearchParams({
+      l: 'PL',
+      f: hash,
+      t: napiprojektSubhash(hash),
+      v: 'dreambox',
+      kolejka: 'false',
+      nick: '',
+      pass: '',
+      napios: 'Linux'
+    });
+    const res = await httpRequest(`${NAPI_URL}?${query.toString()}`, {
+      headers: { 'User-Agent': USER_AGENT },
+      encoding: 'latin1',
+      maxBytes: MAX_SUB_BYTES
+    });
+    if (res.text.startsWith('NPc0')) return { error: 'not-found' };
+    const srt = parseNapiSubtitles(decodeNapiText(res.text));
+    if (!srt) return { error: 'not-found' };
+    return { srt };
+  } catch (e) {
+    logger.warn('napiprojekt', 'fetch failed', e);
+    const msg = (e as Error)?.message ?? String(e);
+    return { error: /HTTP \d/.test(msg) ? 'network' : msg };
+  }
+}
+
 export function registerNapiProjektHandlers(): void {
+  // Wyszukiwarka odpytuje to równolegle z OpenSubtitles — tylko sprawdzenie, bez zapisu.
+  ipcMain.handle(
+    'napiprojekt:check',
+    async (_event, params: NapiProjektDownloadParams): Promise<NapiProjektCheckResult> => {
+      const result = await loadNapiSrt(
+        typeof params?.videoPath === 'string' ? params.videoPath : ''
+      );
+      return 'srt' in result ? { found: true } : { found: false, error: result.error };
+    }
+  );
+
   ipcMain.handle(
     'napiprojekt:download',
     async (_event, params: NapiProjektDownloadParams): Promise<NapiProjektDownloadResult> => {
+      const videoPath = typeof params?.videoPath === 'string' ? params.videoPath : '';
+      const result = await loadNapiSrt(videoPath);
+      if (!('srt' in result)) return { success: false, error: result.error };
       try {
-        const videoPath = typeof params?.videoPath === 'string' ? params.videoPath : '';
-        if (!videoPath || !isSafeAbsolutePath(videoPath)) {
-          return { success: false, error: 'missing-file' };
-        }
-
-        let hash: string;
-        try {
-          hash = await napiprojektHash(videoPath);
-        } catch (e) {
-          logger.warn('napiprojekt', `cannot hash ${videoPath}`, e);
-          return { success: false, error: 'missing-file' };
-        }
-
-        const query = new URLSearchParams({
-          l: 'PL',
-          f: hash,
-          t: napiprojektSubhash(hash),
-          v: 'dreambox',
-          kolejka: 'false',
-          nick: '',
-          pass: '',
-          napios: 'Linux'
-        });
-        const res = await httpRequest(`${NAPI_URL}?${query.toString()}`, {
-          headers: { 'User-Agent': USER_AGENT },
-          encoding: 'latin1',
-          maxBytes: MAX_SUB_BYTES
-        });
-        if (res.text.startsWith('NPc0')) return { success: false, error: 'not-found' };
-
-        const srt = parseNapiSubtitles(decodeNapiText(res.text));
-        if (!srt) return { success: false, error: 'not-found' };
-
         const outPath = join(
           dirname(videoPath),
           `${basename(videoPath, extname(videoPath))}.pl.srt`
         );
         await mkdir(dirname(outPath), { recursive: true });
-        await writeFile(outPath, srt, 'utf-8');
+        await writeFile(outPath, result.srt, 'utf-8');
         return { success: true, path: outPath, format: 'srt' };
       } catch (e) {
-        logger.warn('napiprojekt', 'download failed', e);
-        const msg = (e as Error)?.message ?? String(e);
-        return { success: false, error: /HTTP \d/.test(msg) ? 'network' : msg };
+        logger.warn('napiprojekt', 'cannot save subtitles', e);
+        return { success: false, error: String((e as Error)?.message ?? e) };
       }
     }
   );

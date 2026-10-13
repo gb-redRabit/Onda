@@ -1909,9 +1909,7 @@ api.registerCommand({
     onlineDownloaded: 'Subtitles downloaded.',
     onlineError: 'Failed to download subtitles.',
     napiDownload: 'Polish subtitles (NapiProjekt)',
-    napiDownloaded: 'Downloaded subtitles from NapiProjekt.',
-    napiNotFound: 'NapiProjekt has no subtitles for this file.',
-    napiError: 'Failed to download from NapiProjekt.'
+    napiNotFound: 'NapiProjekt has no subtitles for this file.'
   },
   resume: {
     title: 'Saved position detected',

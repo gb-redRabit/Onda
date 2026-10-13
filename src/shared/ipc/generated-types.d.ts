@@ -68,6 +68,7 @@ export type IpcInvokeChannel =
   | 'subtitles:fontCacheClear'
   | 'opensubtitles:search'
   | 'opensubtitles:download'
+  | 'napiprojekt:check'
   | 'napiprojekt:download'
   | 'musicbrainz:searchRelease'
   | 'musicbrainz:lookupRelease'
