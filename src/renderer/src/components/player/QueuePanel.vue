@@ -141,7 +141,7 @@ function onFileDrop(e: DragEvent) {
 <template>
   <div
     data-testid="queue-panel"
-    class="h-full flex flex-col bg-base-100 border-l border-base-300"
+    class="h-full flex flex-col bg-base-100/(--glass-alpha) border-l border-base-300"
     @dragover.prevent
     @drop="onFileDrop"
   >

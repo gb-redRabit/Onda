@@ -307,7 +307,7 @@ function onWindowBlur() {
     <a
       v-if="!isStandaloneWindow"
       href="#main-content"
-      class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-field focus:bg-primary focus:text-primary-content"
+      class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-100 focus:px-3 focus:py-2 focus:rounded-field focus:bg-primary focus:text-primary-content"
       >{{ $t('common.skipToContent') }}</a
     >
     <div class="relative flex flex-1 min-h-0">
