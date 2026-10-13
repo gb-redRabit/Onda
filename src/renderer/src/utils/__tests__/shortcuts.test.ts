@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { matchesShortcut, navShortcutBindings } from '../shortcuts';
 import { DEFAULT_SHORTCUTS } from '../constants';
+import { SHORTCUT_LABELS } from '../shortcutLabels';
 
 function keyEvent(partial: Partial<KeyboardEvent>): KeyboardEvent {
   return {
@@ -92,6 +93,21 @@ describe('matchesShortcut', () => {
     // dla ±30s usuwa Shift przed ponowną próbą — więc obie gałęzie muszą być prawdziwe.
     expect(matchesShortcut(shortcut!, keyEvent({ key: 'ArrowRight', shiftKey: true }))).toBe(false);
     expect(matchesShortcut(shortcut!, keyEvent({ key: 'ArrowRight' }))).toBe(true);
+  });
+
+  it('never binds two actions to the same key', () => {
+    const byKey = new Map<string, string[]>();
+    for (const [action, key] of Object.entries(DEFAULT_SHORTCUTS)) {
+      const normalized = key.toLowerCase();
+      byKey.set(normalized, [...(byKey.get(normalized) ?? []), action]);
+    }
+    const clashes = [...byKey.entries()].filter(([, actions]) => actions.length > 1);
+    expect(clashes).toEqual([]);
+  });
+
+  it('gives every action a human-readable label (Settings shows no raw ids)', () => {
+    const unlabelled = Object.keys(DEFAULT_SHORTCUTS).filter((action) => !SHORTCUT_LABELS[action]);
+    expect(unlabelled).toEqual([]);
   });
 });
 
