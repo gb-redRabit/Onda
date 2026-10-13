@@ -332,11 +332,22 @@ async function downloadResult(result: PanelResult): Promise<void> {
           <button
             v-for="result in results"
             :key="resultKey(result)"
-            class="flex items-center justify-between gap-2 rounded-field px-2 py-1.5 text-left text-xs hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50"
+            class="flex items-center gap-2 rounded-field px-2 py-1.5 text-left text-xs hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50"
             :disabled="downloading !== null"
             @click="downloadResult(result)"
           >
-            <span class="truncate">{{ result.release }}</span>
+            <span
+              class="shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
+              :class="
+                result.source === 'napi'
+                  ? 'bg-primary/15 text-primary'
+                  : 'bg-base-content/10 text-base-content/60'
+              "
+              :title="result.source === 'napi' ? 'NapiProjekt' : 'OpenSubtitles'"
+            >
+              {{ result.source === 'napi' ? 'NP' : 'OS' }}
+            </span>
+            <span class="min-w-0 flex-1 truncate">{{ result.release }}</span>
             <span class="shrink-0 text-[10px] text-base-content/50">
               {{ result.language.toUpperCase()
               }}<template v-if="result.source === 'os'"> · {{ result.downloads }}</template>
