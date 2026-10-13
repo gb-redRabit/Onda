@@ -368,6 +368,12 @@ export function registerSubtitleHandlers(): void {
         const realDumpDir = await realpath(dumpDir);
         const dumped = await readdir(dumpDir);
         const seen = new Set<string>();
+        // Zrzucone pliki to `att_<i>.<ext>`, a napisy dopasowują czcionki po NAZWIE
+        // rodziny — mapujemy więc z powrotem na oryginalną nazwę załącznika.
+        const nameByDump = new Map<string, string>();
+        for (const [i, s] of attachmentStreams.entries()) {
+          nameByDump.set(`att_${i}`, basename(s.filename).replace(/\.[^.]+$/, ''));
+        }
         let totalBytes = 0;
         for (const fname of dumped) {
           if (seen.has(fname)) continue;
@@ -386,8 +392,9 @@ export function registerSubtitleHandlers(): void {
             const buf = await readFile(fpath);
             totalBytes += buf.length;
             const ext = safeFontExt(fname);
+            const base = fname.replace(/\.[^.]+$/, '');
             fonts.push({
-              name: fname.replace(/\.(ttf|otf|ttc)$/i, ''),
+              name: nameByDump.get(base) ?? base,
               ext,
               data: Array.from(buf)
             });

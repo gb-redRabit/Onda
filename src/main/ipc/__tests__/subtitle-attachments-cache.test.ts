@@ -74,7 +74,7 @@ describe('subtitles:extractAttachments font cache', () => {
     const extract = state.handlers.get('subtitles:extractAttachments')!;
 
     const first = await extract({}, video);
-    expect(first).toEqual([{ name: 'att_0', ext: 'ttf', data: FONT_BYTES }]);
+    expect(first).toEqual([{ name: 'Roboto', ext: 'ttf', data: FONT_BYTES }]);
     expect(state.runCalls.length).toBeGreaterThanOrEqual(2);
 
     state.runCalls.length = 0;
