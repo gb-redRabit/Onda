@@ -1,0 +1,35 @@
+// Czytelne etykiety akcji skrótów dla Ustawień → Skróty. Id akcji pozostaje kluczem
+// technicznym w mapie ustawień; etykieta jest tłumaczona. Akcja bez wpisu spada do
+// surowego id (myślniki → spacje), więc nowy skrót nigdy nie zniknie z listy.
+export const SHORTCUT_LABELS: Record<string, string> = {
+  'play-pause': 'shortcuts.playPause',
+  'skip-forward': 'shortcuts.skipForward',
+  'skip-backward': 'shortcuts.skipBackward',
+  'volume-up': 'shortcuts.volumeUp',
+  'volume-down': 'shortcuts.volumeDown',
+  mute: 'shortcuts.mute',
+  fullscreen: 'shortcuts.fullscreen',
+  'speed-up': 'shortcuts.speedUp',
+  'speed-down': 'shortcuts.speedDown',
+  'jump-start': 'shortcuts.jumpStart',
+  'next-track': 'shortcuts.nextTrack',
+  'prev-track': 'shortcuts.prevTrack',
+  'ab-set-a': 'shortcuts.abSetA',
+  'ab-set-b': 'shortcuts.abSetB',
+  'ab-clear': 'shortcuts.abClear',
+  'subtitle-delay-down': 'shortcuts.subtitleDelayDown',
+  'subtitle-delay-up': 'shortcuts.subtitleDelayUp',
+  'subtitle-delay-reset': 'shortcuts.subtitleDelayReset',
+  'eq-toggle': 'shortcuts.eqToggle',
+  'eq-bypass': 'shortcuts.eqBypass',
+  'eq-add-band': 'shortcuts.eqAddBand',
+  'eq-reset': 'shortcuts.eqReset',
+  'eq-snap': 'shortcuts.eqSnap',
+  'eq-mono': 'shortcuts.eqMono',
+  search: 'shortcuts.search',
+  'view-search': 'shortcuts.viewSearch',
+  settings: 'shortcuts.openSettings',
+  explorer: 'shortcuts.openExplorer',
+  library: 'shortcuts.openLibrary',
+  home: 'shortcuts.openHome'
+};

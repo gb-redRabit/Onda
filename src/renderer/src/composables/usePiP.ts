@@ -6,6 +6,7 @@ interface PiPSubtitleData {
   subContent: string;
   fonts: MkvFont[];
   availableFonts: Record<string, string>;
+  subtitleDelayMs?: number;
 }
 
 // `pip:ended` celowo NIE jest tu obsługiwane: globalny `registerAppIpc` (App.vue)

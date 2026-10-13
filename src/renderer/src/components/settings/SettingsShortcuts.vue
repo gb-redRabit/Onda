@@ -1,11 +1,20 @@
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@renderer/stores/settings';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
+import { SHORTCUT_LABELS } from '@renderer/utils/shortcutLabels';
 
 const settings = useSettingsStore();
+const { t } = useI18n();
 
 const recording = ref<string | null>(null);
+
+/** Czytelna etykieta akcji; akcja bez tłumaczenia spada do surowego id. */
+function labelFor(action: string): string {
+  const key = SHORTCUT_LABELS[action];
+  return key ? t(key) : action.replace(/-/g, ' ');
+}
 
 function startRecording(action: string) {
   recording.value = action;
@@ -80,7 +89,7 @@ function displayKey(key: string): string {
       :key="action"
       class="flex items-center justify-between gap-4 px-4 py-2.5 border-b border-base-300 last:border-b-0"
     >
-      <span class="text-sm capitalize">{{ String(action).replace(/-/g, ' ') }}</span>
+      <span class="text-sm">{{ labelFor(String(action)) }}</span>
       <button
         class="fx-noise px-3 py-1 fx-depth rounded-field border text-xs font-mono transition-colors min-w-15 text-center"
         :class="

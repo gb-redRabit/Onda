@@ -1,12 +1,25 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { Subtitles, Check, Upload } from '@lucide/vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { Subtitles, Check, Upload, Minus, Plus } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
+import {
+  subtitleDelayMs,
+  formatSubtitleDelay,
+  adjustSubtitleDelay,
+  resetSubtitleDelay,
+  SUBTITLE_DELAY_STEP_MS
+} from '@renderer/composables/subtitleDelay';
 import { logger } from '@shared/logger';
 
 const player = usePlayerStore();
 const isOpen = ref(false);
 const container = ref<HTMLElement | null>(null);
+
+const formattedDelay = computed(() => formatSubtitleDelay(subtitleDelayMs.value));
+
+function nudgeDelay(delta: number): void {
+  adjustSubtitleDelay(delta);
+}
 
 function onClickOutside(e: MouseEvent) {
   const target = e.target as Node;
@@ -134,6 +147,39 @@ async function uploadSubtitles() {
           <span v-else class="w-3.5 shrink-0" />
           <span class="truncate">{{ track.label }}</span>
         </button>
+
+        <div class="border-t border-base-300 my-1 mx-2" />
+        <div class="flex items-center justify-between gap-2 px-3 py-1.5">
+          <span class="text-[10px] text-base-content/50 font-medium uppercase tracking-wider">
+            {{ $t('subtitles.delay') }}
+          </span>
+          <div class="flex items-center gap-1">
+            <button
+              class="p-1 rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors"
+              :aria-label="$t('subtitles.delayEarlier')"
+              :title="$t('subtitles.delayEarlier')"
+              @click="nudgeDelay(-SUBTITLE_DELAY_STEP_MS)"
+            >
+              <Minus :size="14" />
+            </button>
+            <button
+              class="min-w-14 px-1 py-0.5 rounded-field font-mono text-xs text-center text-base-content/80 hover:bg-base-content/10 transition-colors"
+              :aria-label="$t('subtitles.delayReset')"
+              :title="$t('subtitles.delayReset')"
+              @click="resetSubtitleDelay()"
+            >
+              {{ formattedDelay }}
+            </button>
+            <button
+              class="p-1 rounded-field text-base-content/70 hover:bg-base-content/10 transition-colors"
+              :aria-label="$t('subtitles.delayLater')"
+              :title="$t('subtitles.delayLater')"
+              @click="nudgeDelay(SUBTITLE_DELAY_STEP_MS)"
+            >
+              <Plus :size="14" />
+            </button>
+          </div>
+        </div>
 
         <div class="border-t border-base-300 my-1 mx-2" />
         <button

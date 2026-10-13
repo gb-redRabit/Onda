@@ -3,11 +3,13 @@ import JASSUB from 'jassub';
 import type { MkvFont } from '@renderer/types/subtitles';
 import { logger } from '@shared/logger';
 import { createJassub, loadJassubWasmDataUrls } from '@renderer/utils/jassub';
+import { subtitleTimeOffsetSeconds } from '@renderer/composables/subtitleDelay';
 
 export interface PipSubtitleData {
   subContent: string;
   fonts: MkvFont[];
   availableFonts: Record<string, string>;
+  subtitleDelayMs?: number;
 }
 
 export function usePipVideoSubtitle(videoRef: { value: HTMLVideoElement | null }) {
@@ -50,6 +52,7 @@ export function usePipVideoSubtitle(videoRef: { value: HTMLVideoElement | null }
         subContent: data.subContent,
         fonts,
         availableFonts,
+        timeOffset: subtitleTimeOffsetSeconds(data.subtitleDelayMs ?? 0),
         queryFonts: false,
         wasmUrlOverride: wasmDataUrl,
         modernWasmUrlOverride: modernWasmDataUrl
@@ -85,7 +88,14 @@ export function usePipVideoSubtitle(videoRef: { value: HTMLVideoElement | null }
   }
 
   function receiveSubtitle(data: PipSubtitleData | null) {
+    // Ten sam plik napisów, zmienione tylko opóźnienie → sam offset, bez przeładowania.
+    const delayOnly =
+      !!data && !!jassub && lastSubtitleData?.subContent === data.subContent && subsVisible.value;
     lastSubtitleData = data;
+    if (delayOnly) {
+      jassub!.timeOffset = subtitleTimeOffsetSeconds(data!.subtitleDelayMs ?? 0);
+      return;
+    }
     if (data && data.subContent && subsVisible.value) loadSubtitle(data);
     else clearSubtitle();
   }
