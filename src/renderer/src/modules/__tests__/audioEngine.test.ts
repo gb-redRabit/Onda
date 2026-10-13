@@ -10,6 +10,11 @@ type FakeNode = {
   gain: { value: number };
   frequency: { value: number };
   Q: { value: number };
+  threshold: { value: number };
+  knee: { value: number };
+  ratio: { value: number };
+  attack: { value: number };
+  release: { value: number };
   type: string;
   fftSize: number;
   state: string;
@@ -35,6 +40,11 @@ function createFakeNode(): FakeNode {
     gain: { value: 0 },
     frequency: { value: 0 },
     Q: { value: 0 },
+    threshold: { value: 0 },
+    knee: { value: 0 },
+    ratio: { value: 0 },
+    attack: { value: 0 },
+    release: { value: 0 },
     type: '',
     fftSize: 2048,
     state: 'running'
@@ -47,6 +57,7 @@ class FakeAudioContext {
   createAnalyser = (): FakeNode => createFakeNode();
   createGain = (): FakeNode => createFakeNode();
   createBiquadFilter = (): FakeNode => createFakeNode();
+  createDynamicsCompressor = (): FakeNode => createFakeNode();
   createIIRFilter = (ff: number[], fb: number[]): FakeNode => {
     const node = createFakeNode();
     node.feedforward = ff;
@@ -136,6 +147,26 @@ describe('audioEngine video element routing', () => {
 
   it('disconnectVideoElement is a no-op without a source node', () => {
     expect(() => engine.disconnectVideoElement()).not.toThrow();
+  });
+
+  it('setNightMode applies compression + dialogue boost, and clears them when off', () => {
+    const el = new FakeAudio() as unknown as HTMLAudioElement;
+    engine.connectAudio(el);
+    const graph = (
+      audioEngine as unknown as {
+        graph: { nightCompressor: FakeNode; nightDialogueEq: FakeNode; nightMakeup: FakeNode };
+      }
+    ).graph;
+
+    audioEngine.setNightMode(true);
+    expect(graph.nightCompressor.ratio.value).toBeGreaterThan(1);
+    expect(graph.nightCompressor.threshold.value).toBeLessThan(0);
+    expect(graph.nightDialogueEq.gain.value).toBeGreaterThan(0);
+
+    audioEngine.setNightMode(false);
+    expect(graph.nightCompressor.ratio.value).toBe(1);
+    expect(graph.nightCompressor.threshold.value).toBe(0);
+    expect(graph.nightDialogueEq.gain.value).toBe(0);
   });
 
   it('connectVideoElement is a no-op without a source node', () => {

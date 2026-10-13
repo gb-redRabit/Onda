@@ -17,6 +17,15 @@ export class AudioGraph {
   /** Węzeł odsłuchu — pozwala spiąć kanały do mono (kontrola fazy). */
   monitorNode: GainNode | null = null;
   eqMono = false;
+  /**
+   * Tryb nocny: kompresor dynamiki + podbicie dialogów. Węzły są na stałe w łańcuchu,
+   * a przełączenie zmienia tylko ich parametry (neutralne = brak wpływu) — bez przebudowy
+   * grafu i bez trzasków.
+   */
+  nightCompressor: DynamicsCompressorNode | null = null;
+  nightMakeup: GainNode | null = null;
+  nightDialogueEq: BiquadFilterNode | null = null;
+  nightEnabled = false;
   /** Ostatnio ustawione pasma — nakładane na filtry także przy (od)tworzeniu kontekstu. */
   eqBands: readonly EqBand[] = [];
   eqEnabled = true;
@@ -36,13 +45,23 @@ export class AudioGraph {
     this.setEqPreamp(this.eqPreampDb);
     this.monitorNode = this.audioCtx.createGain();
     this.setEqMono(this.eqMono);
+    this.nightCompressor = this.audioCtx.createDynamicsCompressor();
+    this.nightMakeup = this.audioCtx.createGain();
+    this.nightDialogueEq = this.audioCtx.createBiquadFilter();
+    this.nightDialogueEq.type = 'peaking';
+    this.nightDialogueEq.frequency.value = 2500;
+    this.nightDialogueEq.Q.value = 1;
+    this.applyNightParams();
   }
 
   ensureEqChain(): void {
     this.ensureContext();
     if (this.eqChainBuilt) return;
     this.rebuildEqFilters();
-    this.preampNode!.connect(this.gainNode!);
+    this.preampNode!.connect(this.nightCompressor!);
+    this.nightCompressor!.connect(this.nightMakeup!);
+    this.nightMakeup!.connect(this.nightDialogueEq!);
+    this.nightDialogueEq!.connect(this.gainNode!);
     this.gainNode!.connect(this.monitorNode!);
     this.monitorNode!.connect(this.analyserNode!);
     this.analyserNode!.connect(this.audioCtx!.destination);
@@ -273,10 +292,30 @@ export class AudioGraph {
     this.monitorNode.channelInterpretation = 'speakers';
   }
 
+  /** Tryb nocny: kompresja dynamiki — ciche dialogi głośniej, efekty/eksplozje ciszej. */
+  setNightMode(on: boolean): void {
+    this.nightEnabled = on;
+    this.applyNightParams();
+  }
+
+  /** Wyłączony tryb = parametry neutralne (łańcuch zostaje, ale nic nie zmienia). */
+  private applyNightParams(): void {
+    const on = this.nightEnabled;
+    if (this.nightCompressor) {
+      this.nightCompressor.threshold.value = on ? -32 : 0;
+      this.nightCompressor.knee.value = on ? 24 : 0;
+      this.nightCompressor.ratio.value = on ? 12 : 1;
+      this.nightCompressor.attack.value = on ? 0.003 : 0;
+      this.nightCompressor.release.value = 0.25;
+    }
+    // +6 dB wyrównania po kompresji, żeby dialogi nie zniknęły pod progiem.
+    if (this.nightMakeup) this.nightMakeup.gain.value = on ? Math.pow(10, 6 / 20) : 1;
+    if (this.nightDialogueEq) this.nightDialogueEq.gain.value = on ? 4 : 0;
+  }
+
   getAnalyserNode(): AnalyserNode | null {
     return this.analyserNode;
   }
-
   getAudioContext(): AudioContext | null {
     return this.audioCtx;
   }
@@ -311,6 +350,9 @@ export class AudioGraph {
     this.videoSourceNode = null;
     this.videoGainNode = null;
     this.videoSourceEl = null;
+    this.nightCompressor = null;
+    this.nightMakeup = null;
+    this.nightDialogueEq = null;
     this.eqChainBuilt = false;
   }
 }

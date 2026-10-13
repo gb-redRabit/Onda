@@ -1566,6 +1566,7 @@ api.registerCommand({
     pipVideo: 'Picture-in-Picture',
     embeddedSubtitle: '{label} (embedded)',
     subtitleDelay: 'Subtitles: {delay}',
+    nightMode: 'Night mode',
     audioPlaybackFailed: 'Audio playback failed',
     audioCodecUnsupported: 'Audio codec not supported, sound may be missing',
     transcodingVideo: 'Transcoding video, please wait…',

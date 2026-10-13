@@ -83,6 +83,8 @@ function ensureModule() {
   player.equalizerUserPresets = settings.playback.equalizerUserPresets ?? {};
   player.equalizerMulticolor = settings.playback.equalizerMulticolor === true;
   player.equalizerSnap = settings.playback.equalizerSnap !== false;
+  player.nightMode = settings.playback.nightMode === true;
+  audioEngine.setNightMode(player.nightMode);
 
   const scope = effectScope(true);
 
@@ -239,6 +241,12 @@ export function useAudioPlayer() {
     setEqMono: (on: boolean) => {
       usePlayerStore().equalizerMono = on;
       audioEngine.setEqMono(on);
+    },
+    /** Tryb nocny: kompresja dynamiki + podbicie dialogów. */
+    setNightMode: (on: boolean) => {
+      usePlayerStore().nightMode = on;
+      audioEngine.setNightMode(on);
+      useSettingsStore().updatePlayback({ nightMode: on });
     },
     savePosition: () => audioEngine.savePosition(),
     getAudioContext: () => audioEngine.getAudioContext()

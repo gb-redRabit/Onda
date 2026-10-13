@@ -194,6 +194,7 @@ const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
   visualization: obj(VISUALIZATION_FIELDS),
   equalizerBands: eqBands,
   equalizerEnabled: bool,
+  nightMode: bool,
   equalizerPreamp: numClamped(-12, 12),
   equalizerUserPresets: recordOf(eqBands),
   equalizerMulticolor: bool,

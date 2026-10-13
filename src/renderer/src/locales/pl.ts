@@ -1570,6 +1570,7 @@ api.registerCommand({
     pipVideo: 'Obraz w obrazie',
     embeddedSubtitle: '{label} (wbudowane)',
     subtitleDelay: 'Napisy: {delay}',
+    nightMode: 'Tryb nocny',
     audioPlaybackFailed: 'Odtwarzanie dźwięku nie powiodło się',
     audioCodecUnsupported: 'Kodek audio nieobsługiwany — dźwięk może być niesłyszalny',
     transcodingVideo: 'Transkodowanie wideo, proszę czekać…',

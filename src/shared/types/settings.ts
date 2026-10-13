@@ -232,6 +232,8 @@ export interface PlaybackSettings {
   equalizerMulticolor?: boolean;
   /** Przyciąganie częstotliwości do typowych wartości (tercje). */
   equalizerSnap?: boolean;
+  /** Tryb nocny: kompresja dynamiki + podbicie dialogów. */
+  nightMode?: boolean;
 }
 
 export interface DownloadSettings {

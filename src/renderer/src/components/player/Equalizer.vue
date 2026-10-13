@@ -12,7 +12,8 @@ import {
   Save,
   Palette,
   Magnet,
-  Combine
+  Combine,
+  Moon
 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
@@ -370,6 +371,17 @@ onUnmounted(() => cancelAnimationFrame(raf));
           @click="audio.setEqMono(!player.equalizerMono)"
         >
           <Combine :size="14" />
+        </button>
+        <button
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
+          :class="player.nightMode ? 'text-primary' : 'text-base-content/50'"
+          data-testid="eq-night"
+          :title="$t('player.nightMode')"
+          :aria-label="$t('player.nightMode')"
+          :aria-pressed="player.nightMode"
+          @click="audio.setNightMode(!player.nightMode)"
+        >
+          <Moon :size="14" />
         </button>
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"

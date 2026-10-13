@@ -448,6 +448,10 @@ class AudioEngine {
     this.graph.setEqMono(on);
   }
 
+  setNightMode(on: boolean): void {
+    this.graph.setNightMode(on);
+  }
+
   getAnalyserNode(): AnalyserNode | null {
     return this.graph.getAnalyserNode();
   }

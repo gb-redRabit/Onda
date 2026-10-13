@@ -7,9 +7,11 @@ import {
   ListMusic,
   SlidersHorizontal,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Moon
 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { formatDuration } from '@renderer/utils/formatters';
 import PlayerSpeedMenu from './PlayerSpeedMenu.vue';
 import TransportButtons from './TransportButtons.vue';
@@ -33,6 +35,7 @@ const emit = defineEmits<{
 }>();
 
 const player = usePlayerStore();
+const audio = useAudioPlayer();
 
 const seekBarRef = ref<HTMLElement | null>(null);
 const {
@@ -217,6 +220,17 @@ function onVolumeKeydown(e: KeyboardEvent) {
       <div class="flex items-center gap-2.5">
         <AbRepeatButton :current-time="player.currentTime" />
         <VideoFilterDropdown />
+        <button
+          class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
+          :class="{ 'text-primary!': player.nightMode }"
+          data-night-mode
+          :title="$t('player.nightMode')"
+          :aria-label="$t('player.nightMode')"
+          :aria-pressed="player.nightMode"
+          @click="audio.setNightMode(!player.nightMode)"
+        >
+          <Moon :size="16" />
+        </button>
         <button
           class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
           :class="{ 'text-primary!': player.equalizerVisible }"
