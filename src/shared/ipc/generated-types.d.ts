@@ -72,6 +72,8 @@ export type IpcInvokeChannel =
   | 'opensubtitles:download'
   | 'napiprojekt:check'
   | 'napiprojekt:download'
+  | 'animesub:search'
+  | 'animesub:download'
   | 'musicbrainz:searchRelease'
   | 'musicbrainz:lookupRelease'
   | 'musicbrainz:getCoverData'

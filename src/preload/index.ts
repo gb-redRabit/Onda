@@ -38,6 +38,12 @@ import type {
   NapiProjektDownloadParams,
   NapiProjektDownloadResult
 } from '../shared/types/napiprojekt';
+import type {
+  AnimeSubDownloadParams,
+  AnimeSubDownloadResult,
+  AnimeSubSearchParams,
+  AnimeSubSearchResult
+} from '../shared/types/animesub';
 import {
   ALLOWED_INVOKE_CHANNELS,
   ALLOWED_RECEIVE_CHANNELS,
@@ -270,6 +276,10 @@ const api: OndaAPI = {
     tryInvoke('napiprojekt:check', params),
   napiProjektDownload: (params: NapiProjektDownloadParams): Promise<NapiProjektDownloadResult> =>
     tryInvoke('napiprojekt:download', params),
+  animeSubSearch: (params: AnimeSubSearchParams): Promise<AnimeSubSearchResult> =>
+    tryInvoke('animesub:search', params),
+  animeSubDownload: (params: AnimeSubDownloadParams): Promise<AnimeSubDownloadResult> =>
+    tryInvoke('animesub:download', params),
   getPlaybackPosition: (filePath: string): Promise<number> =>
     tryInvoke('playback:getPosition', filePath),
   setPlaybackPosition: (filePath: string, position: number): Promise<void> =>

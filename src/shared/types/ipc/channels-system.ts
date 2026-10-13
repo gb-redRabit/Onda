@@ -13,6 +13,12 @@ import type {
   NapiProjektDownloadResult
 } from '../napiprojekt';
 import type {
+  AnimeSubDownloadParams,
+  AnimeSubDownloadResult,
+  AnimeSubSearchParams,
+  AnimeSubSearchResult
+} from '../animesub';
+import type {
   IpcPluginGetResult,
   IpcPluginInstallResult,
   IpcPluginUninstallResult,
@@ -260,6 +266,14 @@ export interface SystemChannels {
   'napiprojekt:download': {
     args: [params: NapiProjektDownloadParams];
     result: NapiProjektDownloadResult;
+  };
+  'animesub:search': {
+    args: [params: AnimeSubSearchParams];
+    result: AnimeSubSearchResult;
+  };
+  'animesub:download': {
+    args: [params: AnimeSubDownloadParams];
+    result: AnimeSubDownloadResult;
   };
   'shell:getFileIcon': {
     args: [filePath: string];

@@ -87,6 +87,8 @@ export interface OndaAPI {
   openSubtitlesDownload: BoundIpcMethod<'opensubtitles:download'>;
   napiProjektCheck: BoundIpcMethod<'napiprojekt:check'>;
   napiProjektDownload: BoundIpcMethod<'napiprojekt:download'>;
+  animeSubSearch: BoundIpcMethod<'animesub:search'>;
+  animeSubDownload: BoundIpcMethod<'animesub:download'>;
   getPlaybackPosition: BoundIpcMethod<'playback:getPosition'>;
   setPlaybackPosition: BoundIpcMethod<'playback:setPosition'>;
   clearPlaybackPosition: BoundIpcMethod<'playback:clearPosition'>;

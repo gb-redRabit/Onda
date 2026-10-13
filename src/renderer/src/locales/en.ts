@@ -1918,7 +1918,9 @@ api.registerCommand({
     onlineDownloaded: 'Subtitles downloaded.',
     onlineError: 'Failed to download subtitles.',
     napiDownload: 'Polish subtitles (NapiProjekt)',
-    napiNotFound: 'NapiProjekt has no subtitles for this file.'
+    napiNotFound: 'NapiProjekt has no subtitles for this file.',
+    animeDownloadError: 'Failed to download subtitles from AnimeSub.',
+    animeNoSession: 'AnimeSub session expired — search again.'
   },
   resume: {
     title: 'Saved position detected',

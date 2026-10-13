@@ -1922,7 +1922,9 @@ api.registerCommand({
     onlineDownloaded: 'Pobrano napisy.',
     onlineError: 'Nie udało się pobrać napisów.',
     napiDownload: 'Napisy PL (NapiProjekt)',
-    napiNotFound: 'NapiProjekt nie ma napisów do tego pliku.'
+    napiNotFound: 'NapiProjekt nie ma napisów do tego pliku.',
+    animeDownloadError: 'Nie udało się pobrać napisów z AnimeSub.',
+    animeNoSession: 'Sesja AnimeSub wygasła — wyszukaj ponownie.'
   },
   resume: {
     title: 'Wykryto zapisaną pozycję',

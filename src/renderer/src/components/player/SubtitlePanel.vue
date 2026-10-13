@@ -48,10 +48,12 @@ async function uploadSubtitles(): Promise<void> {
 const searchQuery = ref('');
 const searchLang = ref('pl');
 const searching = ref(false);
-/** Ujednolicony wiersz wyników: OpenSubtitles (po tytule) lub NapiProjekt (po hashu pliku). */
+/** Ujednolicony wiersz wyników: OpenSubtitles (tytuł), NapiProjekt (hash), AnimeSub (tytuł). */
 interface PanelResult {
-  source: 'os' | 'napi';
+  source: 'os' | 'napi' | 'an';
   fileId?: number;
+  animeId?: string;
+  animeSh?: string;
   language: string;
   release: string;
   downloads: number;
@@ -86,7 +88,22 @@ function defaultQuery(): string {
 }
 
 function resultKey(result: PanelResult): string {
-  return result.source === 'napi' ? 'napi' : `os-${result.fileId}`;
+  if (result.source === 'napi') return 'napi';
+  if (result.source === 'an') return `an-${result.animeId}`;
+  return `os-${result.fileId}`;
+}
+
+/** Krótka plakietka dostawcy: OS / NP / AN. */
+function sourceBadge(source: PanelResult['source']): string {
+  if (source === 'napi') return 'NP';
+  if (source === 'an') return 'AN';
+  return 'OS';
+}
+
+function sourceTitle(source: PanelResult['source']): string {
+  if (source === 'napi') return 'NapiProjekt';
+  if (source === 'an') return 'AnimeSub.info';
+  return 'OpenSubtitles';
 }
 
 async function runSearch(): Promise<void> {
@@ -98,8 +115,8 @@ async function runSearch(): Promise<void> {
   searched.value = false;
   const videoPath = player.currentTrack?.path;
   try {
-    // OpenSubtitles po tytule + NapiProjekt po hashu pliku — równolegle, jedna lista.
-    const [os, napi] = await Promise.all([
+    // OpenSubtitles + AnimeSub po tytule, NapiProjekt po hashu pliku — równolegle, jedna lista.
+    const [os, napi, anime] = await Promise.all([
       window.api
         .openSubtitlesSearch({
           query: searchQuery.value.trim(),
@@ -108,7 +125,8 @@ async function runSearch(): Promise<void> {
         .catch(() => null),
       videoPath
         ? window.api.napiProjektCheck({ videoPath }).catch(() => null)
-        : Promise.resolve(null)
+        : Promise.resolve(null),
+      window.api.animeSubSearch({ query: searchQuery.value.trim() }).catch(() => null)
     ]);
     const list: PanelResult[] = [];
     if (napi?.found) {
@@ -118,6 +136,18 @@ async function runSearch(): Promise<void> {
         release: t('subtitles.napiDownload'),
         downloads: 0
       });
+    }
+    if (anime?.success) {
+      for (const r of anime.results) {
+        list.push({
+          source: 'an',
+          animeId: r.id,
+          animeSh: r.sh,
+          language: r.language || 'pl',
+          release: r.title,
+          downloads: 0
+        });
+      }
     }
     if (os?.success) {
       for (const r of os.results) {
@@ -142,15 +172,22 @@ async function runSearch(): Promise<void> {
 
 async function downloadResult(result: PanelResult): Promise<void> {
   downloading.value = resultKey(result);
+  const videoPath = player.currentTrack?.path ?? '';
   try {
     const res =
       result.source === 'napi'
-        ? await window.api.napiProjektDownload({ videoPath: player.currentTrack?.path ?? '' })
-        : await window.api.openSubtitlesDownload({
-            fileId: result.fileId ?? 0,
-            videoPath: player.currentTrack?.path,
-            language: result.language || searchLang.value
-          });
+        ? await window.api.napiProjektDownload({ videoPath })
+        : result.source === 'an'
+          ? await window.api.animeSubDownload({
+              id: result.animeId ?? '',
+              sh: result.animeSh ?? '',
+              videoPath
+            })
+          : await window.api.openSubtitlesDownload({
+              fileId: result.fileId ?? 0,
+              videoPath: player.currentTrack?.path,
+              language: result.language || searchLang.value
+            });
     if (res.success && res.path) {
       const added = await player.loadCustomSubtitles([res.path]);
       if (added > 0) {
@@ -159,7 +196,10 @@ async function downloadResult(result: PanelResult): Promise<void> {
       }
     }
     if (res.error === 'not-found') ui.notify('info', t('subtitles.napiNotFound'));
-    else ui.notify('error', t('subtitles.onlineError'), res.error);
+    else if (res.error === 'no-session') ui.notify('error', t('subtitles.animeNoSession'));
+    else if (result.source === 'an') {
+      ui.notify('error', t('subtitles.animeDownloadError'), res.error);
+    } else ui.notify('error', t('subtitles.onlineError'), res.error);
   } catch (e) {
     ui.notify('error', t('subtitles.onlineError'), String(e));
   } finally {
@@ -344,13 +384,13 @@ async function downloadResult(result: PanelResult): Promise<void> {
             <span
               class="shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
               :class="
-                result.source === 'napi'
-                  ? 'bg-primary/15 text-primary'
-                  : 'bg-base-content/10 text-base-content/60'
+                result.source === 'os'
+                  ? 'bg-base-content/10 text-base-content/60'
+                  : 'bg-primary/15 text-primary'
               "
-              :title="result.source === 'napi' ? 'NapiProjekt' : 'OpenSubtitles'"
+              :title="sourceTitle(result.source)"
             >
-              {{ result.source === 'napi' ? 'NP' : 'OS' }}
+              {{ sourceBadge(result.source) }}
             </span>
             <span class="min-w-0 flex-1 truncate">{{ result.release }}</span>
             <span class="shrink-0 text-[10px] text-base-content/50">

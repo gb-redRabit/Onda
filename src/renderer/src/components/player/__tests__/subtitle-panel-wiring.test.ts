@@ -15,12 +15,15 @@ describe('SubtitlePanel wiring', () => {
   it('queries both providers in parallel and tags each result with its source', () => {
     expect(PANEL).toMatch(/openSubtitlesSearch\(/);
     expect(PANEL).toMatch(/napiProjektCheck\(/);
+    expect(PANEL).toMatch(/animeSubSearch\(/);
     expect(PANEL).toMatch(/Promise\.all\(/);
     expect(PANEL).toMatch(/source === 'napi'/);
+    expect(PANEL).toMatch(/source === 'an'/);
   });
 
   it('routes each result to its own download endpoint', () => {
     expect(PANEL).toMatch(/napiProjektDownload\(/);
+    expect(PANEL).toMatch(/animeSubDownload\(/);
     expect(PANEL).toMatch(/openSubtitlesDownload\(/);
   });
 

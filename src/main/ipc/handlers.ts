@@ -9,6 +9,7 @@ import { registerCoverHandlers } from './cover/cover-handlers';
 import { registerSubtitleHandlers } from './subtitle-handlers';
 import { registerOpenSubtitlesHandlers } from './opensubtitles';
 import { registerNapiProjektHandlers } from './napiprojekt';
+import { registerAnimeSubHandlers } from './animesub';
 import { registerPlaybackHandlers } from './playback-handlers';
 import { registerDependencyHandlers } from './dependency/dependency-handlers';
 import { registerYoutubeHandlers } from './youtube/youtube-handlers';
@@ -40,6 +41,7 @@ export function registerIPC(): void {
   registerSubtitleHandlers();
   registerOpenSubtitlesHandlers();
   registerNapiProjektHandlers();
+  registerAnimeSubHandlers();
   registerPlaybackHandlers();
   registerDependencyHandlers();
   registerYoutubeHandlers();
