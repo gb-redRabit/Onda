@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { Check, Upload, Minus, Plus, Search, X } from '@lucide/vue';
+import { Check, Upload, Minus, Plus, Search, X, Languages } from '@lucide/vue';
 import { useI18n } from 'vue-i18n';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useUIStore } from '@renderer/stores/ui';
@@ -121,12 +121,37 @@ async function downloadResult(result: OpenSubtitlesResult): Promise<void> {
     downloading.value = null;
   }
 }
+
+// ── NapiProjekt (polskie napisy dopasowane po zawartości pliku) ──────────────
+const napiLoading = ref(false);
+
+async function downloadNapi(): Promise<void> {
+  const videoPath = player.currentTrack?.path;
+  if (!videoPath || napiLoading.value) return;
+  napiLoading.value = true;
+  try {
+    const res = await window.api.napiProjektDownload({ videoPath });
+    if (res.success && res.path) {
+      const added = await player.loadCustomSubtitles([res.path]);
+      if (added > 0) {
+        ui.notify('success', t('subtitles.napiDownloaded'));
+        return;
+      }
+    }
+    if (res.error === 'not-found') ui.notify('info', t('subtitles.napiNotFound'));
+    else ui.notify('error', t('subtitles.napiError'), res.error);
+  } catch (e) {
+    ui.notify('error', t('subtitles.napiError'), String(e));
+  } finally {
+    napiLoading.value = false;
+  }
+}
 </script>
 
 <template>
   <div
     data-testid="subtitle-panel"
-    class="h-full flex flex-col bg-base-100 border-l border-base-300"
+    class="h-full flex flex-col bg-base-100/(--glass-alpha) border-l border-base-300"
   >
     <div class="flex items-center justify-between px-4 py-3 border-b border-base-300">
       <h3 class="text-sm font-semibold">{{ $t('subtitles.title') }}</h3>
@@ -297,6 +322,15 @@ async function downloadResult(result: OpenSubtitlesResult): Promise<void> {
             </span>
           </button>
         </div>
+
+        <button
+          class="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-field border border-base-300 text-sm hover:bg-base-content/10 transition-colors disabled:opacity-50"
+          :disabled="napiLoading"
+          @click="downloadNapi"
+        >
+          <Languages :size="14" />
+          {{ $t('subtitles.napiDownload') }}
+        </button>
       </div>
     </div>
   </div>

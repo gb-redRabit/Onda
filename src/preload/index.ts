@@ -33,6 +33,10 @@ import type {
   OpenSubtitlesSearchParams,
   OpenSubtitlesSearchResult
 } from '../shared/types/opensubtitles';
+import type {
+  NapiProjektDownloadParams,
+  NapiProjektDownloadResult
+} from '../shared/types/napiprojekt';
 import {
   ALLOWED_INVOKE_CHANNELS,
   ALLOWED_RECEIVE_CHANNELS,
@@ -254,6 +258,8 @@ const api: OndaAPI = {
   openSubtitlesDownload: (
     params: OpenSubtitlesDownloadParams
   ): Promise<OpenSubtitlesDownloadResult> => tryInvoke('opensubtitles:download', params),
+  napiProjektDownload: (params: NapiProjektDownloadParams): Promise<NapiProjektDownloadResult> =>
+    tryInvoke('napiprojekt:download', params),
   getPlaybackPosition: (filePath: string): Promise<number> =>
     tryInvoke('playback:getPosition', filePath),
   setPlaybackPosition: (filePath: string, position: number): Promise<void> =>

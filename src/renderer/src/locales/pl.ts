@@ -1911,7 +1911,11 @@ api.registerCommand({
     onlineRateLimit: 'Limit pobrań OpenSubtitles — spróbuj później.',
     onlineQueryRequired: 'Wpisz tytuł.',
     onlineDownloaded: 'Pobrano napisy.',
-    onlineError: 'Nie udało się pobrać napisów.'
+    onlineError: 'Nie udało się pobrać napisów.',
+    napiDownload: 'Napisy PL (NapiProjekt)',
+    napiDownloaded: 'Pobrano napisy z NapiProjekt.',
+    napiNotFound: 'NapiProjekt nie ma napisów do tego pliku.',
+    napiError: 'Nie udało się pobrać z NapiProjekt.'
   },
   resume: {
     title: 'Wykryto zapisaną pozycję',
