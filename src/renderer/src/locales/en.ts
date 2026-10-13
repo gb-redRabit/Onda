@@ -1765,6 +1765,12 @@ api.registerCommand({
     featLibraryDesc: 'Scan local folders — audio, video and images in one place.',
     featStream: 'Online streaming',
     featStreamDesc: 'Stream from YouTube and SoundCloud live, no download needed.',
+    featSubtitles: 'Subtitles & sync',
+    featSubtitlesDesc:
+      'Embedded and external subtitles plus online search (OpenSubtitles, NapiProjekt, AnimeSub), with live delay adjustment.',
+    featAudio: 'Equalizer & night mode',
+    featAudioDesc:
+      'A parametric equalizer with a response curve, night mode (compression + dialogue boost) and audio delay compensation.',
     featThemes: 'Full personalization',
     featThemesDesc: '10 themes and a creator for your own — colors, geometry, glass.',
     featPip: 'Picture-in-Picture',

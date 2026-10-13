@@ -1769,6 +1769,12 @@ api.registerCommand({
     featLibraryDesc: 'Skanuj foldery lokalne — audio, wideo i obrazy w jednym miejscu.',
     featStream: 'Streaming online',
     featStreamDesc: 'Odtwarzaj na żywo z YouTube i SoundCloud bez pobierania.',
+    featSubtitles: 'Napisy i synchronizacja',
+    featSubtitlesDesc:
+      'Wbudowane i zewnętrzne napisy oraz wyszukiwanie online (OpenSubtitles, NapiProjekt, AnimeSub) z regulacją opóźnienia w locie.',
+    featAudio: 'Equalizer i tryb nocny',
+    featAudioDesc:
+      'Parametryczny korektor z krzywą odpowiedzi, tryb nocny (kompresja + dialogi) i kompensacja opóźnienia dźwięku.',
     featThemes: 'Pełna personalizacja',
     featThemesDesc: '10 motywów i kreator własnych — kolory, geometria, szkło.',
     featPip: 'Obraz w obrazie',

@@ -1,10 +1,19 @@
 <script setup lang="ts">
 import WizardStep from './WizardStep.vue';
-import { HardDrive, Radio, Palette, PictureInPicture } from '@lucide/vue';
+import {
+  HardDrive,
+  Radio,
+  Palette,
+  PictureInPicture,
+  Subtitles,
+  SlidersHorizontal
+} from '@lucide/vue';
 
 const features = [
   { icon: HardDrive, titleKey: 'wizard.featLibrary', descKey: 'wizard.featLibraryDesc' },
   { icon: Radio, titleKey: 'wizard.featStream', descKey: 'wizard.featStreamDesc' },
+  { icon: Subtitles, titleKey: 'wizard.featSubtitles', descKey: 'wizard.featSubtitlesDesc' },
+  { icon: SlidersHorizontal, titleKey: 'wizard.featAudio', descKey: 'wizard.featAudioDesc' },
   { icon: Palette, titleKey: 'wizard.featThemes', descKey: 'wizard.featThemesDesc' },
   { icon: PictureInPicture, titleKey: 'wizard.featPip', descKey: 'wizard.featPipDesc' }
 ];

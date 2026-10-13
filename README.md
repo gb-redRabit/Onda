@@ -32,7 +32,11 @@
 **Playback**
 
 - 🎧 Audio engine built on the Web Audio API, decoupled from the UI via an event bus — music keeps playing while you browse.
-- 🎚 10-band equalizer with presets, gapless/normalization routing and per-source volume.
+- 🎚 Parametric equalizer: graphical response curve with draggable, numbered bands; editable type/frequency/Q/gain, shelf slope, per-band on/off, preamp, bypass, frequency snap, solo, mono, custom presets with clipboard export/import, a live spectrum and a hide-sliders mode — plus presets, gapless/normalization routing and per-source volume.
+- 🌙 Night mode — one click adds a DynamicsCompressor plus a dialogue boost: quiet dialogue gets louder, explosions and music get tamed.
+- ⏱ Audio delay compensation (0–500 ms) to fix lip-sync on files whose audio runs ahead of the picture.
+- 🔁 A-B repeat for audio and video: a single cycling button, draggable A/B markers on the progress bar and `[` `]` `\` shortcuts.
+- 🎞 Frame stepping (`,` / `.`) and a one-click PNG screenshot of the current frame at the video's native resolution.
 - 🌈 8 canvas visualizations (bars, spectrum, wave, radial, rings, circle, particles, none) with crossfade, configurable colors, sensitivity, smoothing, FPS cap and quality levels.
 - 🖼 Free-canvas Audio View: place 5 elements (visualizer, cover, track info, progress, controls) anywhere with percentage positioning, layers and opacity. 5 layout presets.
 - 🛠 Layout editor with a live mini-preview, 1% grid, drag-and-drop and per-element show/hide.
@@ -42,20 +46,22 @@
 
 **Subtitles**
 
-- 💬 ASS/SRT/VTT/SSA, external and embedded, rendered through **JASSUB** (WASM + Web Worker).
-- 🔤 Font extraction from MKV attachments (`mkvextract`), live track switching.
+- 💬 ASS/SRT/VTT/SSA, external and embedded, rendered through **JASSUB** (WASM + Web Worker); non-UTF-8 files are decoded as Windows-1250 so Polish subtitles show correctly.
+- 🔎 Online subtitle search from a right-side panel: **OpenSubtitles** (by title), **NapiProjekt** (matched by the file's own hash) and **AnimeSub** (by title, unpacking the returned ZIP) — results from all three stream into one list and are saved next to the video.
+- ⏱ Live subtitle delay/offset with shortcuts and an on-screen indicator (persisted, applied to the video and to the video PiP window).
+- 🔤 Font extraction from MKV attachments (`mkvextract`) with a **persistent font cache** (LRU, managed from Settings → Subtitles) and a bundled fallback font so a plain `.srt` always renders.
 
 **Media library**
 
 - 📚 Incremental folder scanning (unchanged files are never re-parsed) + a file watcher (`chokidar`) for automatic refresh.
 - 🏷 Audio metadata (ID3/FLAC/MP4) via `music-metadata`, covers cached to disk with `sharp`.
-- 🗂 Views: track list, video/album grid, folder tree, artists, playlists, images.
+- 🗂 Views: track list, video/album grid, folder tree, artists, playlists, images, and **smart folders** — virtual views such as recently added or most played.
 - ☑️ Track selection in the Tracks tab (list **and** grid): a checkbox or click selects a single track — Ctrl-click toggles individual tracks, Shift-click selects a range, Esc clears. The bulk bar then offers Play, Add to queue and Add to playlist for the selection (or directly for the one track).
 - ✏️ ID3 tag editing, MusicBrainz metadata lookup, favorites and play statistics.
 
 **File explorer**
 
-- 🗃 Drives, folders, tabs, breadcrumbs and 6 virtualized view modes.
+- 🗃 Drives, folders, tabs, breadcrumbs and 6 virtualized view modes, with real FFmpeg frame thumbnails for videos.
 - 🧹 Multi-select, copy/move/delete, rename, duplicate finder, properties, terminal, open-with.
 - 🖼 ImageViewer lightbox with zoom, rotate, slideshow and a thumbnail strip.
 
@@ -68,6 +74,7 @@
 - 🔔 Subscriptions — automatic new-video checks (every 6 h), notifications and auto-download.
 - ⬇️ Download queue (`yt-dlp` + native HTTP) with progress, speed, ETA, cancel, retry/backoff, covers (thumbnail / frame / video clip), metadata, channel/playlist subfolders and a full post-process (tags, covers, SHA-256, subtitles, library sync).
 - 🔄 Queue persistence and crash-safe restore (interrupted → paused, pending → re-queued).
+- 🐢 Download speed limit (unlimited / 1 / 2 / 5 / 10 MB/s) right in the Downloads toolbar, applied through `yt-dlp --limit-rate`.
 
 **Picture-in-Picture**
 
@@ -94,7 +101,7 @@
 
 **Settings**
 
-- ⚙️ 9 groups in 6 sections, a settings search bar, JSON export/import with `safeStorage`-encrypted secrets, per-platform quality/proxy, cache and download limits, log level and telemetry off.
+- ⚙️ 9 groups in 6 sections, a settings search bar, JSON export/import with `safeStorage`-encrypted secrets, a **Subtitles** tab (font cache stats and cleanup) and an **API keys** tab (OpenSubtitles), per-platform quality/proxy, cache and download limits, a downloads speed limit and telemetry off.
 
 ### Tech Stack
 
@@ -204,12 +211,13 @@ Onda is built to stay smooth on large libraries and slow disks.
 Onda treats the renderer as untrusted and enforces its boundaries in the main process:
 
 - **Process isolation** — `sandbox`, `contextIsolation`, `nodeIntegration: false`, `webSecurity: true`; a single window factory applies them everywhere.
-- **IPC contract** — every channel is declared in one source of truth (`src/shared/ipc/contract.ts`), allowlisted in the preload, and verified by a compile-time guard plus tests (invoke ↔ `ipcMain.handle`, send ↔ `ipcMain.on`). The `/metrics` of the codegen: **206 invoke / 15 send / 45 receive**.
+- **IPC contract** — every channel is declared in one source of truth (`src/shared/ipc/contract.ts`), allowlisted in the preload, and verified by a compile-time guard plus tests (invoke ↔ `ipcMain.handle`, send ↔ `ipcMain.on`). The `/metrics` of the codegen: **221 invoke / 15 send / 45 receive**.
 - **SSRF defense** — outbound fetches resolve through a pinned-DNS guard that blocks loopback/private/metadata ranges and validates **every** redirect hop (media, sources, remote images, SoundCloud artwork).
 - **Secrets never reach the renderer** — API keys are encrypted at rest via `safeStorage`; `settings:get` returns only a masked preview, and writes merge by id so the stored secret survives round-trips.
 - **Filesystem policy** — destructive and mutating handlers refuse volume roots, system directories and sensitive locations; the media server authorizes with a timing-safe token, origin checks and realpath-contained roots.
 - **Navigation & permissions** — a navigation guard, an external-link policy, deny-by-default session permissions, and log redaction for tokens/headers/passwords.
 - **Plugins** — sandboxed Web Workers with hard resource budgets, a host-allowlist network bridge and consent bound to the entry file's SHA-256.
+- **Subtitle providers** — OpenSubtitles/NapiProjekt/AnimeSub requests run in the main process and the OpenSubtitles key is decrypted only there. Note that NapiProjekt and AnimeSub are community sites served over **plain HTTP** and AnimeSub is scraped, so treat their downloads as untrusted files.
 
 ### Contributing
 
@@ -240,7 +248,11 @@ Onda is **source-available**, not open source: you may use, modify and share it 
 **Odtwarzanie**
 
 - 🎧 Silnik audio oparty o Web Audio API, oddzielony od UI przez szynę zdarzeń — muzyka gra dalej, gdy przeglądasz aplikację.
-- 🎚 10-pasmowy equalizer z presetami, routingiem gapless/normalizacją i głośnością per źródło.
+- 🎚 Parametryczny equalizer: graficzna krzywa odpowiedzi z przeciągalnymi, numerowanymi pasmami; edytowalny typ/częstotliwość/Q/wzmocnienie, nachylenie półki, on/off per pasmo, preamp, bypass, przyciąganie częstotliwości, solo, mono, własne presety z eksportem/importem przez schowek, spektrum na żywo i tryb ukrytych suwaków — plus presety, routing gapless/normalizacja i głośność per źródło.
+- 🌙 Tryb nocny — jedno kliknięcie dokłada `DynamicsCompressor` i podbicie dialogów: ciche rozmowy słychać lepiej, eksplozje i muzyka są przyciszone.
+- ⏱ Kompensacja opóźnienia dźwięku (0–500 ms) dla plików, w których dźwięk ucieka przed obrazem (lip-sync).
+- 🔁 Pętla A-B w audio i wideo: jeden przycisk cykliczny, przeciągalne znaczniki A/B na pasku postępu i skróty `[` `]` `\`.
+- 🎞 Przewijanie klatka po klatce (`,` / `.`) i zrzut bieżącej klatki do PNG w natywnej rozdzielczości.
 - 🌈 8 wizualizacji na canvasie (bars, spectrum, wave, radial, rings, circle, particles, none) z crossfade, kolorami, czułością, wygładzaniem, limitem FPS i jakością.
 - 🖼 Widok Audio (free canvas): 5 elementów (wizualizacja, okładka, info, progress, kontrolki) w dowolnym miejscu, pozycjonowanie procentowe, warstwy i przezroczystość. 5 presetów.
 - 🛠 Edytor layoutu z mini-podglądem, siatką 1%, drag-and-drop i show/hide per element.
@@ -250,20 +262,22 @@ Onda is **source-available**, not open source: you may use, modify and share it 
 
 **Napisy**
 
-- 💬 ASS/SRT/VTT/SSA, zewnętrzne i osadzone, renderowane przez **JASSUB** (WASM + Web Worker).
-- 🔤 Ekstrakcja czcionek z załączników MKV (`mkvextract`), przełączanie ścieżek w locie.
+- 💬 ASS/SRT/VTT/SSA, zewnętrzne i osadzone, renderowane przez **JASSUB** (WASM + Web Worker); pliki nie-UTF-8 są dekodowane jako Windows-1250, więc polskie napisy wyświetlają się poprawnie.
+- 🔎 Wyszukiwanie napisów online w panelu po prawej: **OpenSubtitles** (po tytule), **NapiProjekt** (dopasowanie po hashu pliku) i **AnimeSub** (po tytule, z rozpakowaniem ZIP-a) — wyniki wszystkich trzech napływają do jednej listy i lądują obok wideo.
+- ⏱ Synchronizacja napisów w locie ze skrótami i wskaźnikiem na ekranie (zapamiętywana, działa też w oknie PiP wideo).
+- 🔤 Ekstrakcja czcionek z załączników MKV (`mkvextract`) z **trwałym cache czcionek** (LRU, zarządzany w Ustawienia → Napisy) i wbudowaną czcionką awaryjną, więc zwykły `.srt` zawsze się wyrenderuje.
 
 **Biblioteka multimediów**
 
 - 📚 Skanowanie przyrostowe folderów (niezmienione pliki nie są parsowane ponownie) + watcher (`chokidar`) z automatycznym odświeżaniem.
 - 🏷 Metadane audio (ID3/FLAC/MP4) przez `music-metadata`, okładki cache'owane na dysku (`sharp`).
-- 🗂 Widoki: lista utworów, siatka wideo/albumów, drzewo folderów, artyści, playlisty, obrazy.
+- 🗂 Widoki: lista utworów, siatka wideo/albumów, drzewo folderów, artyści, playlisty, obrazy oraz **inteligentne foldery** — wirtualne widoki, np. ostatnio dodane albo najczęściej grane.
 - ☑️ Zaznaczanie utworów w zakładce Utwory (lista **i** siatka): checkbox lub klik zaznacza pojedynczy utwór — Ctrl+klik przełącza pojedyncze utwory, Shift+klik zaznacza zakres, Esc czyści. Pasek zbiorczy daje wtedy Odtwórz, Dodaj do kolejki i Dodaj do playlisty dla zaznaczenia (albo wprost dla tego jednego utworu).
 - ✏️ Edycja tagów ID3, uzupełnianie metadanych z MusicBrainz, ulubione i statystyki odtworzeń.
 
 **Eksplorator plików**
 
-- 🗃 Dyski, foldery, zakładki, breadcrumb i 6 zwirtualizowanych trybów widoku.
+- 🗃 Dyski, foldery, zakładki, breadcrumb i 6 zwirtualizowanych trybów widoku, z prawdziwymi miniaturami klatek z FFmpeg dla wideo.
 - 🧹 Zaznaczanie wielokrotne, kopiuj/przenieś/usuń, zmiana nazwy, wyszukiwanie duplikatów, właściwości, terminal, otwieranie w aplikacji domyślnej.
 - 🖼 Podgląd obrazów (lightbox) z zoomem, rotacją, pokazem slajdów i paskiem miniatur.
 
@@ -276,6 +290,7 @@ Onda is **source-available**, not open source: you may use, modify and share it 
 - 🔔 Subskrypcje — automatyczne sprawdzanie nowych wideo (co 6 h), powiadomienia i auto-download.
 - ⬇️ Kolejka pobierania (`yt-dlp` + natywny HTTP) z progresem, prędkością, ETA, anulowaniem, retry/backoffem, okładkami (miniatura / klatka / klip), metadanymi, podfolderami kanału/playlisty i pełnym post-processingiem (tagi, okładki, SHA-256, napisy, sync z biblioteką).
 - 🔄 Persystencja kolejki i bezpieczne wznowienie po restarcie (przerwane → pauza, oczekujące → ponownie w kolejce).
+- 🐢 Limit prędkości pobierania (bez limitu / 1 / 2 / 5 / 10 MB/s) wprost w pasku widoku Pobierania, egzekwowany przez `yt-dlp --limit-rate`.
 
 **Picture-in-Picture**
 
@@ -302,7 +317,7 @@ Onda is **source-available**, not open source: you may use, modify and share it 
 
 **Ustawienia**
 
-- ⚙️ 9 grup w 6 sekcjach, wyszukiwarka ustawień, eksport/import JSON z sekretami szyfrowanymi `safeStorage`, jakość/proxy per platforma, limity cache i pobierania, poziom logów i telemetria wyłączona.
+- ⚙️ 9 grup w 6 sekcjach, wyszukiwarka ustawień, eksport/import JSON z sekretami szyfrowanymi `safeStorage`, zakładka **Napisy** (statystyki i czyszczenie cache czcionek) oraz **Klucze API** (OpenSubtitles), jakość/proxy per platforma, limity cache i pobierania, limit prędkości pobierania i telemetria wyłączona.
 
 ### Stos technologiczny
 
@@ -412,12 +427,13 @@ Onda jest zaprojektowana tak, by pozostać płynna przy dużych bibliotekach i w
 Onda traktuje renderer jako niezaufany i egzekwuje granice w procesie głównym:
 
 - **Izolacja procesu** — `sandbox`, `contextIsolation`, `nodeIntegration: false`, `webSecurity: true`; jedna fabryka okien stosuje to wszędzie.
-- **Kontrakt IPC** — każdy kanał zadeklarowany w jednym źródle prawdy (`src/shared/ipc/contract.ts`), na allowliście preloadu i pilnowany strażnikiem czasu kompilacji oraz testami (invoke ↔ `ipcMain.handle`, send ↔ `ipcMain.on`). Stan codegenu: **206 invoke / 15 send / 45 receive**.
+- **Kontrakt IPC** — każdy kanał zadeklarowany w jednym źródle prawdy (`src/shared/ipc/contract.ts`), na allowliście preloadu i pilnowany strażnikiem czasu kompilacji oraz testami (invoke ↔ `ipcMain.handle`, send ↔ `ipcMain.on`). Stan codegenu: **221 invoke / 15 send / 45 receive**.
 - **Obrona przed SSRF** — wychodzące żądania przechodzą przez guard z przypiętym DNS, który blokuje zakresy loopback/prywatne/metadanych i waliduje **każdy** hop przekierowania (media, źródła, zdalne obrazy, okładki SoundCloud).
 - **Sekrety nie trafiają do renderera** — klucze API są szyfrowane w spoczynku przez `safeStorage`; `settings:get` zwraca tylko zamaskowany podgląd, a zapis scala po `id`, więc zapisany sekret przetrwa rundy zapisu.
 - **Polityka systemu plików** — destrukcyjne i mutujące handlery odrzucają korzenie wolumenów, katalogi systemowe i lokalizacje wrażliwe; serwer mediów autoryzuje timing-safe tokenem, sprawdzaniem originu i realpath wewnątrz rootów.
 - **Nawigacja i uprawnienia** — strażnik nawigacji, polityka otwierania linków, deny-by-default dla sesji i redakcja tokenów/nagłówków/haseł w logach.
 - **Wtyczki** — sandbox Web Worker z twardymi budżetami, most sieciowy z allowlistą hostów i zgoda związana z SHA-256 pliku wejściowego.
+- **Dostawcy napisów** — zapytania do OpenSubtitles/NapiProjekt/AnimeSub idą z procesu głównego, a klucz OpenSubtitles jest odszyfrowywany wyłącznie tam. Uwaga: NapiProjekt i AnimeSub to serwisy społecznościowe działające po **zwykłym HTTP**, a AnimeSub jest scrapowany — pobrane pliki traktuj jak niezaufane.
 
 ### Współpraca
 
