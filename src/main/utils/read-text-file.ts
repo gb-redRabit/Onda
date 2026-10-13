@@ -26,6 +26,22 @@ export interface ReadTextFileDeps {
 const defaultDeps: ReadTextFileDeps = { stat, readFile };
 
 /**
+ * Fallback dla plików napisów w starszych kodowaniach. Polskie napisy z serwisów są
+ * zwykle w Windows-1250; odróżniamy je od Latin-1 po tym, że CP1250 nie produkuje znaków
+ * sterujących C1 (U+0080–U+009F) — brak takich znaków oznacza spójne dekodowanie, więc
+ * wybieramy CP1250. W przeciwnym razie zostaje Latin-1 (ostateczność, zawsze się udaje).
+ */
+function decodeLegacy(buf: Buffer): string {
+  try {
+    const cp1250 = new TextDecoder('windows-1250').decode(buf);
+    if (!/[\u0080-\u009f]/.test(cp1250)) return cp1250;
+  } catch (e) {
+    logger.warn('text', 'windows-1250 decoder unavailable', e);
+  }
+  return buf.toString('latin1');
+}
+
+/**
  * Odczytuje mały plik tekstowy, odrzucając wszystko, co nie jest ścieżką
  * absolutną z dozwolonym rozszerzeniem i rozmiarem poniżej `maxBytes`.
  *
@@ -66,7 +82,7 @@ export async function readTextFileWithinBounds(
     if (buf.byteLength > maxBytes) return { ok: false, reason: 'too-large' };
     const utf8 = buf.toString('utf-8');
     if (!utf8.includes('\ufffd')) return { ok: true, text: utf8 };
-    return { ok: true, text: buf.toString('latin1') };
+    return { ok: true, text: decodeLegacy(buf) };
   } catch (e) {
     logger.warn(label, `read failed for ${filePath}`, e);
     return { ok: false, reason: 'unreadable' };
