@@ -19,6 +19,7 @@ vi.mock('@renderer/stores/sources', async () => {
     activeEndpointId: null as string | null,
     activeSource: null as unknown,
     activeEndpoint: null as unknown,
+    loading: false,
     items: [] as unknown[],
     tableRows: [] as unknown[],
     tableLoading: false,
@@ -72,12 +73,14 @@ type Store = {
   activeEndpointId: string | null;
   activeSource: unknown;
   activeEndpoint: unknown;
+  loading?: boolean;
   items: Array<{ id: string; title: string; subtitle?: string; type: string; mediaUrl?: string }>;
   tableRows: Array<{ id: string; title: string; type: string }>;
   checking: Record<string, boolean>;
   testStatus: Record<string, { success: boolean }>;
   lastError: string;
   setActive: ReturnType<typeof vi.fn>;
+  fetchItems: ReturnType<typeof vi.fn>;
   reorderSources: ReturnType<typeof vi.fn>;
 };
 
@@ -100,6 +103,7 @@ beforeEach(() => {
   store.activeEndpointId = null;
   store.activeSource = null;
   store.activeEndpoint = null;
+  store.loading = false;
   store.items = [];
   store.tableRows = [];
   store.checking = {};
@@ -209,6 +213,28 @@ describe('useSourcesView — actions', () => {
     expect(api.editingSource.value).toBeNull();
     api.openEdit({ id: 's1' } as never);
     expect(api.editingSource.value).toEqual({ id: 's1' });
+  });
+
+  it('does not fire a duplicate fetchItems from the watcher when navigation already started loading', async () => {
+    const { nextTick } = await import('vue');
+    store.activeSource = { id: 's1', name: 'S1' };
+    store.activeSourceId = 's1';
+    store.activeEndpointId = 'e1';
+    run();
+    await nextTick();
+    store.fetchItems.mockClear();
+
+    // Symuluje openItem/openTableRow/goBack: zmienia activeEndpointId i synchronicznie ustawia loading=true
+    store.loading = true;
+    store.activeEndpointId = 'e2';
+    await nextTick();
+    expect(store.fetchItems).not.toHaveBeenCalled();
+
+    // Zwykłe przełączenie endpointu (setActive -> loading=false) wywołuje fetchItems
+    store.loading = false;
+    store.activeEndpointId = 'e3';
+    await nextTick();
+    expect(store.fetchItems).toHaveBeenCalled();
   });
 });
 

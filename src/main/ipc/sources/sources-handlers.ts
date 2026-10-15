@@ -106,7 +106,7 @@ export function registerSourcesHandlers(): void {
         : await dialog.showSaveDialog(options);
       if (result.canceled || !result.filePath) return { success: false, canceled: true };
       try {
-        const list = loadSources(getSourcesFile());
+        const list = await loadSources(getSourcesFile());
         await writeFile(
           result.filePath,
           JSON.stringify({ version: 1, sources: list }, null, 2),
@@ -218,7 +218,7 @@ export function registerSourcesHandlers(): void {
 
   ipcMain.handle('sources:delete', async (_event, id: string): Promise<MediaSource[]> => {
     const sourceId = typeof id === 'string' ? id : '';
-    const list = deleteSource(getSourcesFile(), sourceId);
+    const list = await deleteSource(getSourcesFile(), sourceId);
     // Usunięcie API usuwa też jego oznaczenia „pobrane" (nie zostawiamy sierot w store).
     if (sourceId) await removeDownloadedItems(getDownloadedFile(), sourceId, []);
     return list;

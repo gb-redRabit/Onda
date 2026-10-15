@@ -49,6 +49,7 @@ vi.mock('../network-target', async (importOriginal) => {
 
 import { runYtDlp, fetchEntryJson, fetchRangeJson } from '../youtube/youtube-fetch';
 import { registerYoutubeHandlers } from '../youtube/youtube-handlers';
+import { resetChannelPlaylistCache } from '../youtube/youtube-channel';
 import { resetClientIdCache } from '../soundcloud/soundcloud-client';
 
 const runYtDlpMock = vi.mocked(runYtDlp);
@@ -108,6 +109,7 @@ const CHANNEL_PARSED = {
 beforeEach(() => {
   vi.clearAllMocks();
   resetClientIdCache();
+  resetChannelPlaylistCache();
 });
 
 describe('yt:search', () => {
@@ -252,6 +254,7 @@ describe('yt:channel and yt:channelAll', () => {
     expect(res.success).toBe(true);
     expect(res.channel).toMatchObject({ id: 'UCchan', title: 'Chan' });
     expect(res.channel.thumbnail).toBe('https://yt3.ggpht.com/avatar');
+    expect(res.channel.videoCount).toBe(2);
     expect(res.items).toHaveLength(2);
   });
 
@@ -262,5 +265,86 @@ describe('yt:channel and yt:channelAll', () => {
     })) as { success: boolean; items: unknown[] };
     expect(res.success).toBe(true);
     expect(res.items).toHaveLength(2);
+  });
+});
+
+// Regresja: yt:channel pokazywał liczbę filmów tylko z pierwszej strony yt-dlp
+// (np. 30 zamiast 107), bo playlist_count przy --playlist-start/--playlist-end
+// zwracał rozmiar strony. Licznik musi pochodzić z PEŁNEJ listy, a stronicowanie
+// odbywać się w JS.
+function channelFixture(count: number, playlistCount?: number) {
+  return {
+    id: 'UCbig',
+    channel: 'Big',
+    channel_follower_count: 1000,
+    ...(playlistCount === undefined ? {} : { playlist_count: playlistCount }),
+    thumbnails: [{ url: 'https://yt3.ggpht.com/avatar', width: 88, height: 88 }],
+    entries: Array.from({ length: count }, (_, i) => ({
+      id: `vid${i}`,
+      title: `Video ${i}`,
+      thumbnails: thumb(`vid${i}`)
+    }))
+  };
+}
+
+describe('yt:channel count + pagination (regression)', () => {
+  it('does not pass yt-dlp pagination flags', async () => {
+    runYtDlpMock.mockResolvedValueOnce(JSON.stringify(channelFixture(2, 2)));
+    await call('yt:channel', { url: 'https://www.youtube.com/channel/UCbig', start: 1, end: 30 });
+    const args = runYtDlpMock.mock.calls[0][0] as string[];
+    expect(args).toContain('--flat-playlist');
+    expect(args).not.toContain('--playlist-start');
+    expect(args).not.toContain('--playlist-end');
+  });
+
+  it('reports the full channel count, not the size of the returned page', async () => {
+    // 30 wpisów w odpowiedzi, ale kanał ma 107 filmów (dokładnie zgłoszony objaw).
+    runYtDlpMock.mockResolvedValueOnce(JSON.stringify(channelFixture(30, 107)));
+    const res = (await call('yt:channel', {
+      url: 'https://www.youtube.com/channel/UCbig',
+      start: 1,
+      end: 30
+    })) as { items: unknown[]; channel: { videoCount?: number }; hasMore: boolean };
+    expect(res.items).toHaveLength(30);
+    expect(res.channel.videoCount).toBe(107);
+    expect(res.hasMore).toBe(true);
+  });
+
+  it('slices the requested page in JS and computes hasMore from the total', async () => {
+    runYtDlpMock.mockResolvedValueOnce(JSON.stringify(channelFixture(5, 5)));
+    const res = (await call('yt:channel', {
+      url: 'https://www.youtube.com/channel/UCbig',
+      start: 2,
+      end: 3
+    })) as { items: Array<{ id: string }>; channel: { videoCount?: number }; hasMore: boolean };
+    expect(res.items.map((i) => i.id)).toEqual(['vid1', 'vid2']);
+    expect(res.channel.videoCount).toBe(5);
+    expect(res.hasMore).toBe(true);
+  });
+
+  it('falls back to the item count when playlist_count is absent', async () => {
+    runYtDlpMock.mockResolvedValueOnce(JSON.stringify(channelFixture(3)));
+    const res = (await call('yt:channel', {
+      url: 'https://www.youtube.com/channel/UCbig',
+      start: 1,
+      end: 30
+    })) as { channel: { videoCount?: number }; hasMore: boolean };
+    expect(res.channel.videoCount).toBe(3);
+    expect(res.hasMore).toBe(false);
+  });
+
+  it('serves repeated page loads from cache with a single yt-dlp call', async () => {
+    runYtDlpMock.mockResolvedValue(JSON.stringify(channelFixture(90, 90)));
+    await call('yt:channel', {
+      url: 'https://www.youtube.com/channel/UCcached',
+      start: 1,
+      end: 30
+    });
+    await call('yt:channel', {
+      url: 'https://www.youtube.com/channel/UCcached',
+      start: 31,
+      end: 60
+    });
+    expect(runYtDlpMock).toHaveBeenCalledTimes(1);
   });
 });

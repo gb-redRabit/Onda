@@ -1,5 +1,8 @@
 import { spawn } from 'child_process';
+import { createWriteStream } from 'fs';
 import { mkdir, readdir, stat } from 'fs/promises';
+import { Transform } from 'stream';
+import { pipeline } from 'stream/promises';
 import { join } from 'path';
 import { logger } from '../../shared/logger';
 import type { IpcDownloadErrorCode } from '../../shared/types/ipc';
@@ -19,6 +22,7 @@ import { downloadHttpFile } from './http-downloader';
 import { safeDownloadFileName } from './download-source';
 import { resolveSourceHeaders } from '../ipc/generic-fetch';
 import { resolveScDownloadSource } from '../ipc/soundcloud/soundcloud-client';
+import { resolveProviderFileUrl, settleProviderDownload } from '../ipc/providers/registry';
 import { classifyYtDlpError, describeError, redactSecrets } from './error-classifier';
 import { addAllowedRoot } from '../media/media-server';
 import { persist, reportCompleted, jobAbortControllers } from './download-state';
@@ -44,7 +48,10 @@ async function runHttpAttempt(
   const destPath = join(dir, fileName);
   job.outputPath = destPath;
   persist(job);
-  const headers = await resolveSourceHeaders(job.source?.apiKeyId, job.source?.headerName);
+  const headers = {
+    ...(await resolveSourceHeaders(job.source?.apiKeyId, job.source?.headerName)),
+    ...(job.source?.headers ?? {})
+  };
   const startedAt = Date.now();
   try {
     await downloadHttpFile({
@@ -92,6 +99,74 @@ async function runHttpAttempt(
   }
 }
 
+// Pobieranie ze STRUMIENIA providera (np. MEGA — deszyfrowanie po stronie klienta).
+// Zapisuje strumień do pliku z postępem i tą samą księgowością ukończenia co HTTP.
+// Uwaga: brak wsparcia dla pauzy/anulowania w trakcie (brak procesu/AbortController).
+async function runStreamAttempt(
+  job: Job,
+  stream: NodeJS.ReadableStream,
+  totalSize?: number,
+  signal?: AbortSignal
+): Promise<{ finishedOk: boolean; errorCode?: IpcDownloadErrorCode }> {
+  const dir = resolveOutputDir(job);
+  await mkdir(dir, { recursive: true });
+  void addAllowedRoot(dir);
+  const fileName = safeDownloadFileName(job.source?.fileName) || deriveHttpFileName(job);
+  const destPath = join(dir, fileName);
+  job.outputPath = destPath;
+  persist(job);
+  const startedAt = Date.now();
+  let received = 0;
+  // Pauza/anulowanie: przerwij strumień (MEGA nie ma procesu potomnego do zabicia).
+  const onAbort = (): void => {
+    try {
+      (stream as import('stream').Readable).destroy(new Error('aborted'));
+    } catch {
+      // strumień już zamknięty
+    }
+  };
+  signal?.addEventListener('abort', onAbort, { once: true });
+  const counter = new Transform({
+    transform(chunk: Buffer, _enc, cb) {
+      received += chunk.length;
+      if (job.status === 'downloading') {
+        if (totalSize && totalSize > 0) {
+          job.progress = Math.min(100, Math.round((received / totalSize) * 100));
+        }
+        const elapsed = (Date.now() - startedAt) / 1000;
+        if (elapsed > 0.5) {
+          const bps = received / elapsed;
+          job.speed = `${formatBytes(bps)}/s`;
+          if (totalSize) job.eta = formatEta((totalSize - received) / Math.max(bps, 1));
+        }
+        persist(job);
+      }
+      cb(null, chunk);
+    }
+  });
+  try {
+    await pipeline(stream as import('stream').Readable, counter, createWriteStream(destPath));
+    job.status = 'completed';
+    job.progress = 100;
+    job.completedAt = Date.now();
+    persist(job);
+    reportCompleted(job);
+    return { finishedOk: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    const alreadyStopped = job.status === 'paused' || job.status === 'cancelled';
+    if (!alreadyStopped) {
+      job.status = 'error';
+      job.error = redactSecrets(msg);
+      job.errorCode = classifyYtDlpError(msg);
+    }
+    persist(job);
+    return { finishedOk: false, errorCode: job.errorCode };
+  } finally {
+    signal?.removeEventListener('abort', onAbort);
+  }
+}
+
 // Uruchamia pojedynczy proces yt-dlp dla zadania. Zwraca informację, czy pobieranie
 // zakończyło się sukcesem, oraz (przy niepowodzeniu) sklasyfikowany kod błędu.
 export async function runJobAttempt(
@@ -108,6 +183,78 @@ export async function runJobAttempt(
     } finally {
       jobAbortControllers.delete(job.id);
     }
+  }
+  if (job.source?.mode === 'provider') {
+    const { providerId, providerRef, providerItemId } = job.source;
+    if (!providerId || !providerRef || !providerItemId) {
+      job.status = 'error';
+      job.error = 'Invalid provider source';
+      job.errorCode = 'unknown';
+      persist(job);
+      return { finishedOk: false, errorCode: 'unknown' };
+    }
+    // Widoczny status fazy przygotowania (rozwiązywanie linku / „转存" / oczekiwanie).
+    const setStatus = (key: string): void => {
+      job.message = key;
+      persist(job);
+    };
+    setStatus('downloads.statusChecking');
+    try {
+      // Linki providerów (PikPak/MEGA/Drive…) są podpisane i wygasają — rozwiąż
+      // ŚWIEŻY bezpośredni URL na początku każdej próby, aby ponowienia nigdy nie
+      // odtwarzały wygasłego podpisu. `forDownload=true`: provider może wykonać akcje
+      // jednorazowe dla pobrania (np. PikPak „转存" na dysk, by dostać oryginał).
+      const resolved = await resolveProviderFileUrl(
+        providerId,
+        providerRef,
+        providerItemId,
+        undefined,
+        true,
+        setStatus
+      );
+      // Providerzy deszyfrujący po stronie klienta (MEGA) zwracają strumień zamiast URL-a.
+      if (resolved.stream) {
+        const ac = new AbortController();
+        jobAbortControllers.set(job.id, ac);
+        try {
+          return await runStreamAttempt(job, resolved.stream, resolved.size, ac.signal);
+        } finally {
+          jobAbortControllers.delete(job.id);
+        }
+      }
+      if (!resolved.url) throw new Error('Provider nie zwrócił URL-a ani strumienia');
+      job.url = resolved.url;
+      job.source = {
+        ...job.source,
+        headers: { ...(job.source.headers ?? {}), ...(resolved.headers ?? {}) }
+      };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      job.message = undefined;
+      job.status = 'error';
+      job.error = redactSecrets(msg);
+      job.errorCode = classifyYtDlpError(msg);
+      persist(job);
+      return { finishedOk: false, errorCode: job.errorCode };
+    }
+    // Rozwiązano link — dalsze fazy pokazuje już postęp pobierania (speed/eta).
+    job.message = undefined;
+    const ac = new AbortController();
+    jobAbortControllers.set(job.id, ac);
+    let result: { finishedOk: boolean; errorCode?: IpcDownloadErrorCode };
+    try {
+      result = await runHttpAttempt(job, ac.signal);
+    } finally {
+      jobAbortControllers.delete(job.id);
+    }
+    // Sprzątanie po zakończeniu pobrania (sukces LUB błąd) — np. PikPak usuwa tymczasową
+    // kopię z dysku (trwale), żeby nie zajmowała miejsca.
+    try {
+      await settleProviderDownload(providerRef, providerItemId);
+    } catch (e) {
+      logger.warn('downloads', 'provider settle cleanup failed', e);
+    }
+    return result;
   }
   if (job.source?.mode === 'soundcloud') {
     let resolved: string | null = null;

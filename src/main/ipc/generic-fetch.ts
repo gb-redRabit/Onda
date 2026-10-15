@@ -452,6 +452,10 @@ export async function fetchSourceItems(
     });
     const { json } = await httpJsonFetch(request.url, request);
     const items = mapResponse(json, endpoint).map((item) => slimItem(item, endpoint));
+    const tableRows =
+      endpoint.type === 'page' && endpoint.table?.mode === 'field'
+        ? mapTableRows(tableArrayFromData(json, endpoint.table), endpoint.table)
+        : undefined;
     const meta = paginationMeta(json, endpoint);
     const isPageMode =
       !!endpoint.pagination?.pageParam &&
@@ -460,7 +464,8 @@ export async function fetchSourceItems(
     return {
       items,
       hasMore: isPageMode ? items.length > 0 : meta.hasMore,
-      ...(meta.nextFrom ? { nextFrom: meta.nextFrom } : {})
+      ...(meta.nextFrom ? { nextFrom: meta.nextFrom } : {}),
+      ...(tableRows ? { tableRows } : {})
     };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

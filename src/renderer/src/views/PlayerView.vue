@@ -152,6 +152,7 @@ onUnmounted(() => {
   if (
     vp.videoRef.value &&
     player.currentTrack?.type === 'video' &&
+    !/^https?:\/\//i.test(player.currentTrack.path) &&
     vp.videoRef.value.currentTime > 5
   ) {
     window.api

@@ -21,6 +21,7 @@ import {
 } from './media/media-server';
 import { getStore } from './ipc/cover/cover-cache';
 import { flushQueueNow } from './downloads/download-manager';
+import { flushProviderCache } from './ipc/providers/provider-cache';
 import { jobs, jobAbortControllers } from './downloads/download-state';
 import { killDownloadProcess } from './downloads/kill-download-process';
 import {
@@ -37,6 +38,9 @@ import { initAutoUpdater, replayUpdaterEvent } from './updater';
 import { markBootPhase, markBootStart } from './boot-timeline';
 import { configureAutoCheck } from './updater-scheduler';
 import { syncSubscriptionsScheduler } from './ipc/subscriptions/subscriptions-handlers';
+import { syncLinkSubsScheduler } from './ipc/providers/providers-handlers';
+import { stopLinkSubsChecker } from './ipc/providers/remote-subs-checker';
+import { closeProviderLoginWindow } from './ipc/providers/provider-login';
 import { shouldCloseToTray, setCloseToTray } from './windows/close-behavior';
 import { windowIcon } from './windows/window-icon';
 import { createWindow as createBrowserWindow } from './windows/window-factory';
@@ -306,8 +310,10 @@ app.whenReady().then(async () => {
         globalShortcut.unregisterAll();
         // Zatrzymaj harmonogramy w tle, aby żadne przeglądanie yt-dlp/sieci nie zaczęło się podczas wyjścia.
         stopSubscriptionChecker();
+        stopLinkSubsChecker();
         mediaServer.close();
         closeLoginWindow();
+        closeProviderLoginWindow();
         // Najpierw zatrzymaj pracę: procesy potomne yt-dlp/ffmpeg i strumienie HTTP
         // inaczej piszą do plików w trakcie opróżniania persystencji (i przeżywają
         // zamknięcie aplikacji).
@@ -337,6 +343,8 @@ app.whenReady().then(async () => {
           // Kolejka pobierania jest debounce'owana (400 ms) — bez awaitowania
           // ostatni zapis mógł przepaść.
           flushQueueNow(),
+          // Cache providerów (foldery) jest debounce'owany — opróżnij przy wyjściu.
+          flushProviderCache(),
           getStore().then((s) => s.set('mediaRoots', getExtraRoots().slice(0, 50)))
         ]);
         const shutdownTimeout = new Promise<'timeout'>((r) =>
@@ -370,6 +378,7 @@ app.whenReady().then(async () => {
   initAutoUpdater(() => mainWindow?.webContents ?? null);
   configureAutoCheck();
   syncSubscriptionsScheduler();
+  void syncLinkSubsScheduler();
   pipManager.setMainWindow(mainWindow);
   pipManager.init();
   audioPipManager.setMainWindow(mainWindow);

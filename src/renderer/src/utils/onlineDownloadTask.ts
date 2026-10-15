@@ -18,6 +18,7 @@ export function toDownloadTask(ipc: IpcDownloadTask): DownloadTask {
     status: ipc.status,
     error: ipc.error,
     errorCode: ipc.errorCode,
+    message: ipc.message,
     startedAt: ipc.startedAt,
     completedAt: ipc.completedAt,
     videoId: ipc.videoId,

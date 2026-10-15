@@ -47,8 +47,9 @@ export async function startGoogleLogin(): Promise<{
     height: 720,
     autoHideMenuBar: true,
     title: 'Google Sign-In',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#0f0f17',
     icon: pipWindowIcon(),
+    show: false,
     webPreferences: {
       partition: AUTH_PARTITION,
       sandbox: true,
@@ -59,6 +60,9 @@ export async function startGoogleLogin(): Promise<{
   });
   const win = loginWindow;
 
+  win.once('ready-to-show', () => {
+    if (!win.isDestroyed()) win.show();
+  });
   win.on('closed', () => {
     if (loginWindow === win) loginWindow = null;
   });

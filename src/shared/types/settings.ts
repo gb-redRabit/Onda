@@ -260,6 +260,7 @@ export interface DownloadSettings {
   retryBaseMs: number;
   tempDir: string;
   autoDownloadSubscriptions: boolean;
+  autoCheckLinkSubscriptions: boolean;
   hashFiles: boolean;
   smartMode: boolean;
   defaultSubs: boolean;

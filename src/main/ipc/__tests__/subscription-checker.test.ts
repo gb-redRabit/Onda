@@ -64,7 +64,9 @@ beforeEach(async () => {
 
 afterEach(async () => {
   stopSubscriptionChecker();
-  await rm(dir, { recursive: true, force: true });
+  // Odpornie na ENOTEMPTY: natychmiastowy check jest fire-and-forget i może
+  // jeszcze dopisywać plik, gdy sprzątamy katalog.
+  await rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
 });
 
 async function seedYtSub(overrides: Record<string, unknown> = {}) {

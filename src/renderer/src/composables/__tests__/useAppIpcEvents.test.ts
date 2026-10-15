@@ -57,7 +57,7 @@ describe('registerAppIpc', () => {
     const deps = makeDeps();
     const cleanup = registerAppIpc(deps);
 
-    // Kompozycja czterech domen: media (7), PiP (4), eksplorator (3), system (1).
+    // Kompozycja czterech domen: media (7), PiP (4), eksplorator (3), system (2).
     expect([...handlers.keys()]).toEqual(
       expect.arrayContaining([
         'media:playPause',
@@ -74,15 +74,16 @@ describe('registerAppIpc', () => {
         'explorer:add-tab',
         'explorer:refresh',
         'explorer:remove-tab',
-        'open-files'
+        'open-files',
+        'providers:limit'
       ])
     );
-    expect(handlers.size).toBe(15);
+    expect(handlers.size).toBe(16);
 
     handlers.get('media:playPause')!();
     expect(deps.player.togglePlay).toHaveBeenCalledTimes(1);
 
     cleanup();
-    expect(unsubscribe).toHaveBeenCalledTimes(15);
+    expect(unsubscribe).toHaveBeenCalledTimes(16);
   });
 });

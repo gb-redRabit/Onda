@@ -43,37 +43,49 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
   const created: IpcDownloadTask[] = [];
   let replaced = 0;
   const trustedPrivateNetwork = await trustedPrivateNetworkOrigins();
-  // Deduplikacja po ID wideo względem już zakolejkowanych/ukończonych zadań, aby to samo
-  // wideo nie trafiło do kolejki dwa razy w jednej sesji. Zadania zakończone błędem/anulowane
-  // NIE blokują nowej próby — są zastępowane poniżej, więc ponowienie daje jedno świeże
-  // zadanie zamiast piętrzyć duplikaty (co też powodowało, że późniejsze ponowienia po cichu
-  // były pomijane, gdy duplikat był aktywny).
-  const knownVideoIds = new Set<string>();
-  for (const j of jobs.values()) {
-    if (j.videoId && j.status !== 'error' && j.status !== 'cancelled') {
-      knownVideoIds.add(j.videoId);
+  // Deduplikacja: po `videoId` (YouTube/SoundCloud) LUB po tożsamości providera
+  // (`providerId:shareId:itemId`) — bez tego podwójne kliknięcie „Pobierz"/„Pobierz
+  // wszystko" kolejkowało ten sam plik providera dwa razy. Zadania zakończone
+  // błędem/anulowane NIE blokują nowej próby — są zastępowane poniżej.
+  const dedupKeyOf = (input: IpcDownloadJobInput): string | null => {
+    if (input.videoId) return `v:${input.videoId}`;
+    const src = input.source;
+    if (src?.mode === 'provider' && src.providerRef && src.providerItemId) {
+      return `p:${src.providerRef.provider}:${src.providerRef.shareId}:${src.providerItemId}`;
     }
+    return null;
+  };
+  const knownKeys = new Set<string>();
+  for (const j of jobs.values()) {
+    if (j.status === 'error' || j.status === 'cancelled') continue;
+    const key = dedupKeyOf({ videoId: j.videoId, source: j.source } as IpcDownloadJobInput);
+    if (key) knownKeys.add(key);
   }
   for (const input of inputs) {
     if (!input || !input.url) continue;
-    const isHttpSource = input.source?.mode === 'http' || input.source?.mode === 'soundcloud';
+    const isHttpSource =
+      input.source?.mode === 'http' ||
+      input.source?.mode === 'soundcloud' ||
+      input.source?.mode === 'provider';
     // Źródła generyczne (mega/cda/vk/drive) jawnie żądają yt-dlp — pomijamy
     // gate providera przeznaczony dla klasycznej ścieżki YouTube.
     const isExplicitYtdlp = input.source?.mode === 'ytdlp';
     if (!isHttpSource && !isExplicitYtdlp && !resolveProvider(input.url)) continue;
-    if (input.videoId && knownVideoIds.has(input.videoId)) continue;
-    if (input.videoId) {
+    const dedupKey = dedupKeyOf(input);
+    if (dedupKey && knownKeys.has(dedupKey)) continue;
+    if (dedupKey) {
       // Ponowne zakolejkowanie to retry poprzedniej próby: usuń każde zakończone błędem
-      // lub anulowane zadanie dla tego samego wideo, aby kolejka trzymała jedno zadanie na wideo.
+      // lub anulowane zadanie o tym samym kluczu, aby kolejka trzymała jedno na element.
       for (const [id, j] of [...jobs.entries()]) {
-        if (j.videoId !== input.videoId) continue;
+        const jKey = dedupKeyOf({ videoId: j.videoId, source: j.source } as IpcDownloadJobInput);
+        if (jKey !== dedupKey) continue;
         if (j.status !== 'error' && j.status !== 'cancelled') continue;
         removeFromQueue(id);
         forgetJob(id);
         jobs.delete(id);
         replaced++;
       }
-      knownVideoIds.add(input.videoId);
+      knownKeys.add(dedupKey);
     }
     // Pola wspólne dla każdego trybu źródła. Kiedyś były gubione, gdy obiekt source
     // był odbudowywany pole po polu: bez `sourceId`/`sourceItemId` ukończone pobieranie
@@ -319,7 +331,8 @@ export async function importQueue(tasks: IpcDownloadTask[]): Promise<number> {
   const inputs: IpcDownloadJobInput[] = [];
   for (const t of tasks) {
     if (!t || typeof t.url !== 'string') continue;
-    const isHttpSource = t.source?.mode === 'http' || t.source?.mode === 'soundcloud';
+    const isHttpSource =
+      t.source?.mode === 'http' || t.source?.mode === 'soundcloud' || t.source?.mode === 'provider';
     const isExplicitYtdlp = t.source?.mode === 'ytdlp';
     if (!isHttpSource && !isExplicitYtdlp && !resolveProvider(t.url)) continue;
     if (t.status === 'completed' || t.status === 'cancelled') continue;

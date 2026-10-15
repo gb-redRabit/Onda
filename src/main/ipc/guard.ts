@@ -27,7 +27,10 @@ const RATE_LIMITED_CHANNELS = new Set<string>([
   'dep:installFfmpeg',
   'dep:installMkvextract',
   'dep:installYtdlp',
-  'app:factoryReset'
+  'app:factoryReset',
+  'providers:cred:login',
+  'providers:subs:checkAll',
+  'sources:enqueue'
 ]);
 
 // 20 wywołań/sekundę na nadawcę+kanał: znacznie powyżej każdego legalnego użycia, znacznie poniżej

@@ -189,6 +189,13 @@ export const SETTINGS_TABS = [
     section: 'advanced'
   },
   {
+    id: 'providerCredentials',
+    labelKey: 'settings.providerCredentials',
+    descKey: 'settings.tabDesc.providerCredentials',
+    icon: Key,
+    section: 'advanced'
+  },
+  {
     id: 'plugins',
     labelKey: 'settings.plugins',
     descKey: 'settings.tabDesc.plugins',

@@ -113,6 +113,18 @@ export function setSourceItemDownloadedHandler(cb: SourceItemDownloadedHandler |
   onSourceItemDownloaded = cb;
 }
 
+// Ukończone pobranie z providera (PikPak/MEGA/Drive…) — trwałe oznaczanie „✓ pobrano".
+type ProviderItemDownloadedHandler = (
+  providerId: string,
+  ref: { provider: string; shareId: string },
+  itemId: string
+) => void;
+let onProviderItemDownloaded: ProviderItemDownloadedHandler | null = null;
+
+export function setProviderItemDownloadedHandler(cb: ProviderItemDownloadedHandler | null): void {
+  onProviderItemDownloaded = cb;
+}
+
 export function reportCompleted(job: Job): void {
   try {
     if (job.channelId && job.videoId) onDownloadCompleted?.(job.channelId, job.videoId);
@@ -125,5 +137,13 @@ export function reportCompleted(job: Job): void {
     if (sourceId && itemId) onSourceItemDownloaded?.(sourceId, itemId);
   } catch {
     // Niekrytyczne: późniejsze pobranie i tak odczyta to, co zostało już zapisane.
+  }
+  try {
+    const src = job.source;
+    if (src?.mode === 'provider' && src.providerId && src.providerRef && src.providerItemId) {
+      onProviderItemDownloaded?.(src.providerId, src.providerRef, src.providerItemId);
+    }
+  } catch {
+    // Niekrytyczne: trwały magazyn providers-downloaded zostanie zaktualizowany przy następnym pobraniu.
   }
 }

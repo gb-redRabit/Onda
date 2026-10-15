@@ -8,7 +8,14 @@ type Translate = (key: string, params?: Record<string, unknown>) => string;
 // Ujednolicone akcje wyszukiwania/rozwiązywania online z ochroną przed nieaktualnymi
 // odpowiedziami (wynik zastąpionego żądania jest odrzucany). Błędy są udostępniane jako
 // przetłumaczone ciągi. `openDiscover` przełącza widok z powrotem na sekcję odkrywania.
-export function useOnlineSearch(input: Ref<string>, t: Translate, openDiscover: () => void) {
+// `onProvider` (opcjonalne) daje pierwszeństwo providerom linków (PikPak/MEGA/Drive…) —
+// gdy rozpozna URL, zwraca true i przerywa standardową ścieżkę YT/SoundCloud.
+export function useOnlineSearch(
+  input: Ref<string>,
+  t: Translate,
+  openDiscover: () => void,
+  onProvider?: (url: string) => Promise<boolean>
+) {
   const yt = useOnlineStore();
   let searchSeq = 0;
   let resolveSeq = 0;
@@ -93,6 +100,8 @@ export function useOnlineSearch(input: Ref<string>, t: Translate, openDiscover: 
 
   async function submit() {
     if (!input.value.trim()) return;
+    // Provider linków (PikPak/MEGA/Drive…) ma pierwszeństwo — przełącza na zakładkę „Linki".
+    if (onProvider && (await onProvider(input.value.trim()))) return;
     // @name -> kanał YouTube, $name -> profil SoundCloud: otwórz bezpośrednio.
     const prefix = detectChannelPrefix(input.value);
     if (prefix) {

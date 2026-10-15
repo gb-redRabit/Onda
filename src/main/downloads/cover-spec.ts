@@ -80,3 +80,23 @@ export function siblingCoverPath(audioPath: string, format: 'webm' | 'mp4'): str
   const base = basename(audioPath, extname(audioPath));
   return join(dir, `${base}.${format}`);
 }
+
+// Selektor formatu dla okładki-klipu: natywny koder, który da się skopiować 1:1 do
+// kontenera docelowego, w NAJWYŻSZEJ dostępnej rozdzielczości (bez limitu wysokości,
+// więc sięga też 4K/8K).
+//  - MP4: AV1 (av01) przed H.264 (avc1) — YouTube daje H.264 tylko do 1080p, więc AV1
+//    jest potrzebny, by sięgnąć wyższych rozdzielczości,
+//  - WebM: VP9 lub AV1.
+// Regresja: selektory miały `[height<=1080]`, co ucinało klip do 1080p.
+export function clipFormatSelector(format: 'webm' | 'mp4'): string {
+  return format === 'mp4'
+    ? 'bestvideo[vcodec^=av01]/bestvideo[vcodec^=avc1]/bestvideo[ext=mp4]/bestvideo/best'
+    : 'bestvideo[vcodec^=vp9]/bestvideo[vcodec^=av01]/bestvideo[ext=webm]/bestvideo/best';
+}
+
+// Czy strumień skopiowany bez rekompresji (kodowanie z ffprobe) można zostawić w
+// kontenerze MP4 bez pogorszenia jakości. Chromium odtwarza AV1 (av01) i H.264 (avc1).
+export function clipCopiedCodecAcceptable(codecName: string): boolean {
+  const codec = (codecName || '').toLowerCase();
+  return codec.includes('h264') || codec.includes('av01');
+}

@@ -1,4 +1,5 @@
 import type { IpcDownloadJobInput, IpcDownloadTask, IpcYoutubeVideo } from '../shared/types/ipc';
+import type { ProviderDetectResult, RemoteItem } from '../shared/types/providers';
 
 // Fixtury bramkowane zmienną środowiskową dla zestawu Playwright (plan 2.2).
 // Nieaktywne, o ile launcher testów nie ustawi ONDA_E2E_FIXTURES=1, więc
@@ -6,6 +7,73 @@ import type { IpcDownloadJobInput, IpcDownloadTask, IpcYoutubeVideo } from '../s
 
 export function e2eFixturesEnabled(): boolean {
   return process.env.ONDA_E2E_FIXTURES === '1';
+}
+
+// ── Providerzy linków (PikPak/MEGA…) ─────────────────────────────────────────
+// Marker `e2e.provider` w URL sprawia, że detekcja zwraca fixturę PikPak, a listowanie —
+// deterministyczne pozycje (folder + pliki) bez sieci. `file-2` jest zgłoszone jako pobrane.
+
+const E2E_PROVIDER_MARKER = 'e2e.provider';
+const E2E_PROVIDER_SHARE = 'E2E-SHARE';
+
+export function e2eProviderDetect(url: string): ProviderDetectResult | null {
+  if (url.includes('e2e.provider.cookie')) {
+    return {
+      id: 'pikpak',
+      label: 'PikPak',
+      icon: 'pikpak',
+      capabilities: {
+        folders: true,
+        thumbnails: false,
+        anonymous: false,
+        expiringLink: false,
+        auth: 'cookie'
+      },
+      ref: { provider: 'pikpak', shareId: E2E_PROVIDER_SHARE }
+    };
+  }
+  if (!url.includes(E2E_PROVIDER_MARKER)) return null;
+  return {
+    id: 'pikpak',
+    label: 'PikPak',
+    icon: 'pikpak',
+    capabilities: {
+      folders: true,
+      thumbnails: true,
+      anonymous: true,
+      expiringLink: true,
+      auth: 'none'
+    },
+    ref: { provider: 'pikpak', shareId: E2E_PROVIDER_SHARE }
+  };
+}
+
+export function e2eProviderList(folderId?: string): RemoteItem[] {
+  if (folderId === 'folder-1') {
+    return [{ id: 'file-nested', name: 'Nested Clip.mp4', kind: 'file', size: 2097152 }];
+  }
+  return [
+    { id: 'folder-1', name: 'Folder One', kind: 'folder' },
+    { id: 'file-1', name: 'Movie One.mp4', kind: 'file', size: 10485760 },
+    { id: 'file-2', name: 'Song Two.flac', kind: 'file', size: 5242880 }
+  ];
+}
+
+export function e2eProviderDownloaded(): string[] {
+  return ['file-2'];
+}
+
+export function e2eProviderAuthList(): Array<{
+  id: string;
+  label: string;
+  icon: string;
+  hasCookie: boolean;
+  required: boolean;
+}> {
+  return [
+    { id: 'pikpak', label: 'PikPak', icon: 'pikpak', hasCookie: false, required: true },
+    { id: 'gdrive', label: 'Google Drive', icon: 'gdrive', hasCookie: false, required: false }
+  ];
 }
 
 export function e2eSearchItems(query: string): IpcYoutubeVideo[] {

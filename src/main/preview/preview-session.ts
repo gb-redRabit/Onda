@@ -50,12 +50,20 @@ export function installWebviewGuard(): void {
   if (webviewGuardInstalled) return;
   webviewGuardInstalled = true;
   app.on('web-contents-created', (_event, contents) => {
+    if (contents.getType?.() === 'webview') {
+      contents.setWindowOpenHandler?.(() => ({ action: 'deny' }));
+    }
     contents.on('will-attach-webview', (event, webPreferences, params) => {
       delete webPreferences.preload;
       webPreferences.nodeIntegration = false;
       webPreferences.contextIsolation = true;
       webPreferences.sandbox = true;
+      webPreferences.partition = PREVIEW_PARTITION;
       if (params.partition && params.partition !== PREVIEW_PARTITION) {
+        event.preventDefault();
+        return;
+      }
+      if (params.src && !/^https?:\/\//i.test(params.src)) {
         event.preventDefault();
       }
     });

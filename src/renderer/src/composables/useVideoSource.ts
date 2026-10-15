@@ -6,7 +6,7 @@ import type { MediaFile } from '@renderer/types/media';
 import { useVideoCodec } from '@renderer/composables/useVideoCodec';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { logger } from '@shared/logger';
-import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
+import { toMediaServerUrl, toMediaStreamUrl } from '@renderer/utils/mediaUrl';
 import {
   attachVideoTranscodeFallback,
   connectVideoEvents,
@@ -44,6 +44,11 @@ export function useVideoSource(
   });
 
   function getTrackSrc(track: { path: string }): string {
+    // Ścieżka już będąca proxy serwera mediów (np. `/stream?provider=` dla MEGA) — bez zmian.
+    if (/\/stream\?/.test(track.path)) return track.path;
+    // Zdalne URL-e (providerzy/strumienie) idą przez proxy serwera mediów (`/stream?url=`),
+    // pliki lokalne przez `?path=`.
+    if (/^https?:\/\//i.test(track.path)) return toMediaStreamUrl(track.path);
     return toMediaServerUrl(track.path);
   }
 
@@ -55,9 +60,9 @@ export function useVideoSource(
 
   async function setupVideo(track: MediaFile | null) {
     if (!track || track.type !== 'video' || !videoRef.value) return;
-    // Wideo jest serwowane przez lokalny serwer mediów — przyznaj dostęp do
-    // folderu utworu, zanim element zażąda URL.
-    await window.api?.grantMediaAccess(track.path);
+    // Wideo lokalne jest serwowane przez lokalny serwer mediów — przyznaj dostęp do
+    // folderu utworu, zanim element zażąda URL. Zdalne URL-e nie potrzebują zgody.
+    if (!/^https?:\/\//i.test(track.path)) await window.api?.grantMediaAccess(track.path);
     const el = videoRef.value;
     const src = getTrackSrc(track);
     if (el.getAttribute('data-src') !== src) {
@@ -101,8 +106,10 @@ export function useVideoSource(
       );
 
       el.load();
-      checkVideoAudioCodec(track, el);
-      attachVideoTranscodeFallback(el, track, player, notify, transcodeState, signal);
+      if (!/^https?:\/\//i.test(track.path)) {
+        checkVideoAudioCodec(track, el);
+        attachVideoTranscodeFallback(el, track, player, notify, transcodeState, signal);
+      }
     } else {
       audioEngine.setVideoVolume(player.isMuted ? 0 : player.volume);
       el.playbackRate = settings.playback.playbackSpeed;
@@ -164,7 +171,11 @@ export function useVideoSource(
     }
     if (track?.type === 'video' && track.path !== lastLoadedPath) {
       lastLoadedPath = track.path;
-      player.loadSubtitles(track.path);
+      if (!/^https?:\/\//i.test(track.path)) {
+        player.loadSubtitles(track.path);
+      } else {
+        player.clearSubtitles();
+      }
     }
   }
 

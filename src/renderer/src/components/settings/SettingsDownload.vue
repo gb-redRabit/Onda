@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { useSettingsStore } from '@renderer/stores/settings';
 import SettingsSectionTitle from '@renderer/components/settings/SettingsSectionTitle.vue';
 import SettingsRow from '@renderer/components/settings/SettingsRow.vue';

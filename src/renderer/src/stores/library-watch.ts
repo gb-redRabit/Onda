@@ -57,7 +57,10 @@ export function createLibraryWatch(deps: LibraryWatchDeps) {
           // zapisz od razu żeby nie wracał po restarcie
           try {
             const files = clonePlain(tracks.value);
-            window.api?.invoke('library:saveScanned', { files, folderTypes: folderTypes.value });
+            // `folderTypes.value` jest reaktywnym proxy — IPC (structured clone) go nie
+            // sklonuje ("An object could not be cloned"). Klonujemy jawnie.
+            const folderTypesPlain = clonePlain(folderTypes.value);
+            window.api?.invoke('library:saveScanned', { files, folderTypes: folderTypesPlain });
           } catch (e) {
             logger.warn('library', 'failed to persist scanned library after missing files', e);
           }

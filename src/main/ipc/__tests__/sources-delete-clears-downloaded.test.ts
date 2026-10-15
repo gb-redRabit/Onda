@@ -7,12 +7,16 @@ import type { MediaSource } from '../../../shared/types/sources';
 // Handler `sources:delete` ma też czyścić oznaczenia „pobrane" usuwanego źródła.
 const handlers = new Map<string, (...args: unknown[]) => unknown>();
 let userData = '';
+let dialogPath = '';
 
 vi.mock('electron', () => ({
   app: { getPath: () => userData, isPackaged: false, getVersion: () => '0.0.0-test' },
   ipcMain: { handle: (ch: string, fn: (...a: unknown[]) => unknown) => handlers.set(ch, fn) },
   BrowserWindow: { fromWebContents: () => null },
-  dialog: {},
+  dialog: {
+    showSaveDialog: async () => ({ canceled: false, filePath: dialogPath }),
+    showOpenDialog: async () => ({ canceled: false, filePaths: [dialogPath] })
+  },
   shell: {}
 }));
 vi.mock('../cover/cover-cache', () => ({
@@ -76,5 +80,21 @@ describe('sources:delete', () => {
 
     expect(await getDownloadedForSource(downloadedFile, 's1')).toEqual([]);
     expect(await getDownloadedForSource(downloadedFile, 's2')).toEqual(['item-2']);
+  });
+
+  it('exports sources as a resolved array (not an unawaited Promise) so import succeeds', async () => {
+    await invoke('sources:save', source);
+    dialogPath = join(userData, 'exported-sources.json');
+    const exp = (await invoke('sources:export')) as { success: boolean };
+    expect(exp).toEqual({ success: true });
+
+    await invoke('sources:delete', 's1');
+    expect(await invoke('sources:list')).toEqual([]);
+
+    const imp = (await invoke('sources:import')) as { success: boolean; count?: number };
+    expect(imp).toEqual({ success: true, count: 1 });
+    const list = (await invoke('sources:list')) as MediaSource[];
+    expect(list).toHaveLength(1);
+    expect(list[0].name).toBe('S');
   });
 });

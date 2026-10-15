@@ -145,6 +145,7 @@ onMounted(() => {
           <select
             v-if="!sources.navStack.length"
             :value="sources.activeEndpointId"
+            :aria-label="$t('sources.level')"
             class="shrink-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
             @change="onEndpointChange(($event.target as HTMLSelectElement).value)"
           >
@@ -172,6 +173,7 @@ onMounted(() => {
           <input
             v-model="queryText"
             type="text"
+            :aria-label="$t('sources.queryParams')"
             :placeholder="$t('sources.queryParams')"
             class="flex-1 min-w-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
           />

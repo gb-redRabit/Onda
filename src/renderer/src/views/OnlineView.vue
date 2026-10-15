@@ -3,6 +3,7 @@ import { ref, computed, defineAsyncComponent } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Download, Radio, X, RefreshCw } from '@lucide/vue';
 import { useOnlineStore } from '@renderer/stores/online';
+import { useProvidersStore } from '@renderer/stores/providers';
 import { useSavedStore } from '@renderer/stores/saved';
 import { useDownloadProfiles } from '@renderer/composables/useDownloadProfiles';
 import { useOnlineSearch } from '@renderer/composables/useOnlineSearch';
@@ -23,6 +24,8 @@ import OnlineSearchBar from '@renderer/components/online/OnlineSearchBar.vue';
 import OnlineViewTabs from '@renderer/components/online/OnlineViewTabs.vue';
 import OnlineButton from '@renderer/components/online/OnlineButton.vue';
 import OnlineSubscriptionsPanel from '@renderer/components/online/OnlineSubscriptionsPanel.vue';
+import ProviderPanel from '@renderer/components/online/providers/ProviderPanel.vue';
+import ProviderSubscriptionsPanel from '@renderer/components/online/providers/ProviderSubscriptionsPanel.vue';
 import OnlineBatchPanel from '@renderer/components/online/OnlineBatchPanel.vue';
 import OnlineSearchResultsPanel from '@renderer/components/online/OnlineSearchResultsPanel.vue';
 import OnlineResolvedPanel from '@renderer/components/online/OnlineResolvedPanel.vue';
@@ -45,6 +48,7 @@ const SubscribeConfigDialog = defineAsyncComponent(
   () => import('@renderer/components/online/SubscribeConfigDialog.vue')
 );
 const yt = useOnlineStore();
+const providerStore = useProvidersStore();
 const saved = useSavedStore();
 void saved.ensureLoaded();
 const { profiles } = useDownloadProfiles();
@@ -66,8 +70,35 @@ const {
 const { searchError, resolveError, submit, cancelPending } = useOnlineSearch(
   input,
   t,
-  openDiscover
+  openDiscover,
+  handleProviderLink
 );
+
+// Auto-detekcja providera w GLOBALNYM pasku: gdy wklejony link należy do providera
+// (PikPak/MEGA/Drive…), przełącz na zakładkę „Linki" i wczytaj jego zawartość.
+async function handleProviderLink(url: string): Promise<boolean> {
+  const ok = await providerStore.detect(url);
+  if (!ok) return false;
+  cancelPending();
+  searchError.value = '';
+  resolveError.value = '';
+  yt.setResolved(null);
+  yt.setResults([]);
+  yt.closeChannel();
+  activeSection.value = 'links';
+  input.value = '';
+  return true;
+}
+
+// Otwiera link z subskrypcji linków: przełącz na „Linki" i wczytaj zawartość.
+function openProviderSub(url: string): void {
+  cancelPending();
+  searchError.value = '';
+  resolveError.value = '';
+  activeSection.value = 'links';
+  input.value = '';
+  void providerStore.detect(url);
+}
 const { expandedSearchId, expandedResolvedId, configTarget, openWatchUrl, onKeydown, toastAdded } =
   useOnlineDialogs(input, prefsOpen, unfollowTarget);
 const rangeStart = ref(1);
@@ -206,6 +237,17 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
             {{ $t('youtube.checkNow') }}
           </OnlineButton>
         </template>
+        <template v-else-if="activeSection === 'links'">
+          <OnlineButton
+            v-if="providerStore.detected"
+            variant="secondary"
+            size="sm"
+            @click="providerStore.reset()"
+          >
+            <X :size="12" />
+            {{ $t('youtube.clear') }}
+          </OnlineButton>
+        </template>
         <template v-else>
           <OnlineButton
             v-if="yt.resolved || yt.searchResults.length"
@@ -224,19 +266,23 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
     </PageHeader>
 
     <div class="flex-1 overflow-auto p-4">
-      <OnlineSubscriptionsPanel
-        v-if="activeSection === 'subscriptions'"
-        :subscriptions="yt.subscriptions"
-        :loaded="yt.subscriptionsLoaded"
-        :checking-channel-id="yt.checkingChannelId"
-        :queueing-channel-id="yt.queueingChannelId"
-        @open-channel="openSubscriptionChannel"
-        @download-all="downloadSubscriptionAll"
-        @check-now="yt.checkChannelNow"
-        @toggle-auto-download="yt.setAutoDownload"
-        @open-prefs="togglePrefs"
-        @unfollow="confirmUnfollow"
-      />
+      <template v-if="activeSection === 'subscriptions'">
+        <OnlineSubscriptionsPanel
+          :subscriptions="yt.subscriptions"
+          :loaded="yt.subscriptionsLoaded"
+          :checking-channel-id="yt.checkingChannelId"
+          :queueing-channel-id="yt.queueingChannelId"
+          @open-channel="openSubscriptionChannel"
+          @download-all="downloadSubscriptionAll"
+          @check-now="yt.checkChannelNow"
+          @toggle-auto-download="yt.setAutoDownload"
+          @open-prefs="togglePrefs"
+          @unfollow="confirmUnfollow"
+        />
+        <ProviderSubscriptionsPanel class="mt-4" @open="openProviderSub" />
+      </template>
+
+      <ProviderPanel v-else-if="activeSection === 'links'" />
 
       <OnlineChannelView v-else-if="yt.channelLoading || yt.channel" />
 

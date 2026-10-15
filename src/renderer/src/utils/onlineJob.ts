@@ -10,6 +10,7 @@ import type { IpcDownloadJobInput } from '@shared/types/ipc';
 import { logger } from '@shared/logger';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { streamTargetFor, isSoundcloudItem, sanitizeFileName } from './onlineHelpers';
+import { clonePlain } from './clone';
 
 // Budowanie zadań wydzielone z `stores/online.ts` (plan 2.7). Zależy tylko od
 // (globalnego) store ustawień + czystych helperów online.
@@ -107,13 +108,16 @@ export function buildJob(
   }
   // Okładki audio podążają za globalną domyślną (thumbnail/frame/clip/none);
   // pobierania wideo domyślnie zawsze osadzają miniaturę YouTube. Jawna
-  // okładka (w tym `none`) zawsze wygrywa z domyślnymi.
-  const cover =
+  // okładka (w tym `none`) zawsze wygrywa z domyślnymi. `clonePlain` sprowadza
+  // reaktywne proxy (np. z `prefs` subskrypcji z Pinia) do zwykłych obiektów, żeby
+  // payload IPC nie zawierał Proxy Vue (structured clone rzuca na proxy).
+  const cover = clonePlain(
     extra?.cover !== undefined || prefs?.cover !== undefined
       ? (extra?.cover ?? prefs?.cover)
       : kind === 'audio'
         ? defaultCoverSpec()
-        : ({ type: 'thumbnail' } as const);
+        : ({ type: 'thumbnail' } as const)
+  );
   const subsLangs =
     extra?.subsLangs ??
     prefs?.subsLangs ??
@@ -141,7 +145,7 @@ export function buildJob(
     channelTitle: extra?.channelTitle || video.channelTitle,
     playlistTitle: extra?.playlistTitle,
     cover,
-    metaOverride: extra?.metaOverride ?? prefs?.metaOverride,
+    metaOverride: clonePlain(extra?.metaOverride ?? prefs?.metaOverride),
     subsLangs,
     subsFormat: extra?.subsFormat,
     subsMode: extra?.subsMode,

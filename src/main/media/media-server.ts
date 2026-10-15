@@ -11,7 +11,7 @@ import {
   isAllowedStreamHost,
   validateStreamUrl
 } from './media-server-guards';
-import { handleStreamProxy } from './media-server-stream';
+import { handleStreamProxy, handleProviderStreamProxy } from './media-server-stream';
 import { isServableMediaPath } from './media-paths';
 import { isProtectedPath } from '../path-policy';
 export { isAllowedStreamHost, validateStreamUrl };
@@ -186,7 +186,13 @@ export function createMediaServer(): Promise<MediaServer> {
         }
 
         // Proxy zdalnego strumienia: /{token}/stream?url=<https stream url>
+        // lub /{token}/stream?provider=<token> (strumień providera, np. MEGA).
         if (url.pathname.replace(/^\/+/, '').split('/')[1] === 'stream') {
+          const providerToken = url.searchParams.get('provider');
+          if (providerToken) {
+            await handleProviderStreamProxy(req, res, providerToken);
+            return;
+          }
           await handleStreamProxy(req, res, url.searchParams.get('url') || '');
           return;
         }

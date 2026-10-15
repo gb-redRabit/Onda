@@ -15,6 +15,7 @@ import {
   SecretStorageUnavailableError
 } from './settings-crypto';
 import { syncSubscriptionsScheduler } from '../subscriptions/subscriptions-handlers';
+import { syncLinkSubsScheduler } from '../providers/providers-handlers';
 import { setCloseToTray } from '../../windows/close-behavior';
 import type { AppSettings, NetworkSettings } from '../../../shared/types/settings';
 import { logger } from '../../../shared/logger';
@@ -130,7 +131,10 @@ export function registerSettingsHandlers(): void {
       }
       if (sanitized.library) applyCoverCacheSettings(sanitized.library.coverCacheMaxEntries);
       if (sanitized.updates) void configureAutoCheck();
-      if (sanitized.download) void syncSubscriptionsScheduler();
+      if (sanitized.download) {
+        void syncSubscriptionsScheduler();
+        void syncLinkSubsScheduler();
+      }
       return secretSaved;
     } catch (e) {
       logger.warn('settings', 'settings:set failed', e);
@@ -212,7 +216,10 @@ export function registerSettingsHandlers(): void {
         }
         if (toPersist.library) applyCoverCacheSettings(toPersist.library.coverCacheMaxEntries);
         if (toPersist.updates) void configureAutoCheck();
-        if (toPersist.download) void syncSubscriptionsScheduler();
+        if (toPersist.download) {
+          void syncSubscriptionsScheduler();
+          void syncLinkSubsScheduler();
+        }
         // Zwróć klucze zamaskowane (bez sekretów) — renderer nigdy ich nie potrzebuje;
         // przy kolejnym zapisie puste `key` zachowa zapisaną wartość (mergeApiKeys).
         const data: Partial<AppSettings> = { ...toPersist };

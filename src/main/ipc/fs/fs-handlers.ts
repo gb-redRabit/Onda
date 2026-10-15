@@ -228,4 +228,24 @@ export function registerFsHandlers(): void {
     const result = await readTextFileWithinBounds(filePath, TEXT_EXTS, TEXT_MAX_BYTES, 'fs');
     return result.ok ? result.text : null;
   });
+
+  // Zwraca tylko istniejące ścieżki (stat w main, bez wycieku błędów). Używane do
+  // sprzątania sesji/kolejki po plikach usuniętych z dysku między uruchomieniami.
+  ipcMain.handle('fs:existing', async (_event, paths: unknown): Promise<string[]> => {
+    if (!Array.isArray(paths)) return [];
+    const list = paths
+      .filter((p): p is string => typeof p === 'string' && isSafeAbsolutePath(p))
+      .slice(0, 2000);
+    const results = await Promise.all(
+      list.map(async (p) => {
+        try {
+          await withTimeout(stat(p), FS_OP_TIMEOUT_MS);
+          return p;
+        } catch {
+          return null;
+        }
+      })
+    );
+    return results.filter((p): p is string => !!p);
+  });
 }

@@ -326,12 +326,16 @@ export function useSourcesView() {
     async () => {
       clearSelection();
       builderValues.value = {};
-      if (sources.activeSource) {
-        await sources.fetchItems(currentQuery());
-        scrollToTop();
-      } else {
+      if (!sources.activeSource) {
         sources.items = [];
+        return;
       }
+      // Nawigacja (openItem, openTableRow, goBack, goBackTo) wywołuje fetchItems()
+      // synchronicznie przed flushem watchera (ustawiając sources.loading = true) —
+      // pomijamy wtedy drugie, nadmiarowe żądanie.
+      if (sources.loading) return;
+      await sources.fetchItems(currentQuery());
+      scrollToTop();
     }
   );
 

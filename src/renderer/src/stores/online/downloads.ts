@@ -1,6 +1,8 @@
 import { ref } from 'vue';
 import { i18n } from '@renderer/i18n';
+import { logger } from '@shared/logger';
 import { useUIStore } from '@renderer/stores/ui';
+import { clonePlain } from '@renderer/utils/clone';
 import type { CoverStatus, DownloadTask, MetaOverride } from '@renderer/types/online';
 import type { IpcDownloadJobInput, IpcDownloadTask } from '@shared/types/ipc';
 import { pluginHookBus } from '@renderer/utils/pluginHooks';
@@ -74,10 +76,16 @@ export function createOnlineDownloads(
   async function submitJobs(inputs: IpcDownloadJobInput[]): Promise<number> {
     if (!inputs.length) return 0;
     try {
-      const created = (await window.api.invoke('yt:download:add', inputs)) as IpcDownloadTask[];
+      // IPC serializuje argumenty structured-clone'em, który rzuca "An object could
+      // not be cloned" na reaktywnych proxy Vue. `prefs` subskrypcji pochodzą z Pinia
+      // (proxy), a buildJob wstawia zagnieżdżone `cover`/`metaOverride` do zadania —
+      // bez sprowadzenia do zwykłych obiektów cała partia była po cichu odrzucana.
+      const payload = clonePlain(inputs);
+      const created = (await window.api.invoke('yt:download:add', payload)) as IpcDownloadTask[];
       for (const task of created || []) upsertTask(toDownloadTask(task));
       return created?.length || 0;
-    } catch {
+    } catch (e) {
+      logger.error('yt', '[submitJobs] yt:download:add FAILED', e);
       return 0;
     }
   }

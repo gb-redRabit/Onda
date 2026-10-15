@@ -160,6 +160,8 @@ export interface SystemChannels {
   'shell:openWithDefault': { args: [filePath: string]; result: void };
   'fs:copyPath': { args: [filePath: string]; result: void };
   'fs:readTextFile': { args: [filePath: string]; result: string | null };
+  // Zbiorcza weryfikacja istnienia plików (np. sprzątanie sesji po usuniętych plikach).
+  'fs:existing': { args: [paths: string[]]; result: string[] };
   'app:getPath': { args: [name: string]; result: string };
   'app:readClipboard': { args: []; result: string };
   'app:getPendingFiles': { args: []; result: string[] };

@@ -69,7 +69,9 @@ async function runJob(job: Job): Promise<void> {
     // ważna sesja — publiczne filmy nadal można pobierać bez cookies, a yt-dlp
     // zgłasza konkretny błąd dla treści z ograniczeniem wieku / prywatnych / tylko dla członków.
     auth = await getYtAuthConfig();
-    const base = await buildBaseArgs(job);
+    // Tryb providera (PikPak/MEGA/Drive…) nie używa yt-dlp ani jego argumentów —
+    // URL jest syntetyczny (`provider://…`) i walidacja http w buildBaseArgs by go odrzuciła.
+    const base = job.source?.mode === 'provider' ? [] : await buildBaseArgs(job);
     const retryCfg = await readRetryConfig();
     for (let attempt = 1; attempt <= Math.max(1, retryCfg.attempts); attempt++) {
       const result = await runJobAttempt(job, bin, auth, base);

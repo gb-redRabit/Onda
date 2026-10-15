@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { Search, ArrowRight, ListMusic, SlidersHorizontal, Globe } from '@lucide/vue';
 import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { detectChannelPrefix, detectPlatform, isHttpUrl } from '@shared/platform';
+import type { ProviderDetectResult } from '@shared/types/providers';
 import { AUDIO_FORMATS, VIDEO_QUALITIES, VIDEO_CONTAINERS } from '@shared/constants';
 import { readSelect } from '@renderer/utils/selectOptions';
 
@@ -29,20 +30,87 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const settings = useSettingsStore();
 
-// Na co rozwiązuje się bieżące wejście: prefiks kanału @/$ lub link do
-// platformy. Steruje lewą plakietką wewnątrz pola.
-const detection = computed<{ label: string; kind: 'yt' | 'sc' | 'web' } | null>(() => {
+// Krótkie kody providerów dla plakietki (label bywa długi, np. „Internet Archive").
+const PROVIDER_SHORT: Record<string, string> = {
+  pikpak: 'PIKPAK',
+  mega: 'MEGA',
+  gdrive: 'DRIVE',
+  terabox: 'TERABOX',
+  aliyun: 'ALIYUN',
+  '115': '115',
+  quark: 'QUARK',
+  '123pan': '123PAN',
+  '189': '189',
+  baidu: 'BAIDU',
+  xunlei: 'XUNLEI',
+  dropbox: 'DROPBOX',
+  yandex: 'YANDEX',
+  archive: 'ARCHIVE',
+  direct: 'DIRECT'
+};
+
+// Auto-detekcja providera (PikPak/MEGA/Drive/hostery) przez IPC — debounce + ochrona
+// przed nieaktualnymi odpowiedziami. Dla nieobsługiwanych linków zostaje „WEB".
+const providerDetect = ref<ProviderDetectResult | null>(null);
+let providerSeq = 0;
+let providerTimer: ReturnType<typeof setTimeout> | null = null;
+
+watch(
+  () => props.modelValue,
+  (value) => {
+    if (providerTimer) clearTimeout(providerTimer);
+    const trimmed = value.trim();
+    if (!trimmed || !/^https?:\/\//i.test(trimmed)) {
+      providerDetect.value = null;
+      return;
+    }
+    providerTimer = setTimeout(async () => {
+      const seq = ++providerSeq;
+      try {
+        const res = (await window.api.invoke(
+          'providers:detect',
+          trimmed
+        )) as ProviderDetectResult | null;
+        if (seq === providerSeq) providerDetect.value = res ?? null;
+      } catch {
+        if (seq === providerSeq) providerDetect.value = null;
+      }
+    }, 200);
+  }
+);
+onBeforeUnmount(() => {
+  if (providerTimer) clearTimeout(providerTimer);
+});
+
+// Na co rozwiązuje się bieżące wejście: prefiks kanału @/$, link providera, link
+// platformy lub zwykły adres. Steruje lewą plakietką wewnątrz pola.
+const detection = computed<{
+  label: string;
+  short: string;
+  kind: 'yt' | 'sc' | 'web' | 'provider';
+} | null>(() => {
   const value = props.modelValue.trim();
   if (!value) return null;
+  if (providerDetect.value) {
+    return {
+      label: providerDetect.value.label,
+      short:
+        PROVIDER_SHORT[providerDetect.value.id] ||
+        providerDetect.value.label.toUpperCase().slice(0, 7),
+      kind: 'provider'
+    };
+  }
   const prefix = detectChannelPrefix(value);
   if (prefix) {
     return prefix.platform === 'youtube'
-      ? { label: `YT · ${t('youtube.kindChannel')} @`, kind: 'yt' }
-      : { label: `SC · ${t('youtube.kindProfile')} $`, kind: 'sc' };
+      ? { label: `YT · ${t('youtube.kindChannel')} @`, short: 'YT', kind: 'yt' }
+      : { label: `SC · ${t('youtube.kindProfile')} $`, short: 'SC', kind: 'sc' };
   }
   const d = detectPlatform(value);
   if (!d) {
-    return isHttpUrl(value) ? { label: `WEB · ${t('youtube.externalLink')}`, kind: 'web' } : null;
+    return isHttpUrl(value)
+      ? { label: `WEB · ${t('youtube.externalLink')}`, short: 'WEB', kind: 'web' }
+      : null;
   }
   const typeKey =
     d.kind === 'video'
@@ -56,6 +124,7 @@ const detection = computed<{ label: string; kind: 'yt' | 'sc' | 'web' } | null>(
         : 'youtube.kindChannel';
   return {
     label: `${d.platform === 'youtube' ? 'YT' : 'SC'} · ${t(typeKey)}`,
+    short: d.platform === 'youtube' ? 'YT' : 'SC',
     kind: d.platform === 'youtube' ? 'yt' : 'sc'
   };
 });
@@ -92,11 +161,13 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
               ? 'text-warning'
               : detection.kind === 'web'
                 ? 'text-info'
-                : 'text-error'
+                : detection.kind === 'provider'
+                  ? 'text-primary'
+                  : 'text-error'
           "
           :title="detection.label"
         >
-          {{ detection.kind === 'sc' ? 'SC' : detection.kind === 'web' ? 'WEB' : 'YT' }}
+          {{ detection.short }}
         </span>
         <Globe
           v-else
@@ -107,7 +178,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
           data-testid="online-search-input"
           :value="modelValue"
           :placeholder="t('youtube.pasteOrSearch')"
-          class="w-full pl-11 pr-3 h-field-lg fx-depth rounded-field bg-base-100 border border-base-300 text-sm text-base-content placeholder:text-base-content/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30 transition-shadow"
+          class="w-full pl-[46px] pr-3 h-field-lg fx-depth rounded-field bg-base-100 border border-base-300 text-sm text-base-content placeholder:text-base-content/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30 transition-shadow"
           @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
           @keydown.enter="emit('submit')"
           @dragover.prevent

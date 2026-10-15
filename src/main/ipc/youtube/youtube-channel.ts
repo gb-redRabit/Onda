@@ -17,6 +17,38 @@ import { e2eFixturesEnabled } from '../../e2e-fixtures';
 // wyodrębnione z `youtube-handlers.ts`. Pure parsowanie/mapowanie zostaje w
 // `youtube-utils`; tutaj żyje tylko uruchamianie yt-dlp i składanie odpowiedzi.
 
+// Cache PEŁNEJ płaskiej playlisty kanału dla widoku kanału. Licznik filmów (i tak
+// wymagany w pełni) oraz stronicowanie pochodzą z całej listy, więc bez cache każde
+// doładowanie strony (`loadMoreChannel`) uruchamiałoby yt-dlp po całą playlistę.
+// Krótki TTL — świeżość nie jest krytyczna w widoku kanału; subskrypcje (checker,
+// „pobierz wszystko") używają `fetchChannelAll` i celowo omijają ten cache.
+const CHANNEL_PLAYLIST_TTL_MS = 5 * 60 * 1000;
+const CHANNEL_PLAYLIST_MAX = 50;
+const channelPlaylistCache = new Map<string, { at: number; parsed: YtDlpEntry }>();
+
+export function resetChannelPlaylistCache(): void {
+  channelPlaylistCache.clear();
+}
+
+async function loadChannelPlaylist(target: string): Promise<YtDlpEntry> {
+  const cached = channelPlaylistCache.get(target);
+  const now = Date.now();
+  if (cached && now - cached.at < CHANNEL_PLAYLIST_TTL_MS) return cached.parsed;
+  const stdout = await runYtDlp(
+    [target, '--flat-playlist', '--no-warnings', '-J', ...(await readNetworkArgs('youtube'))],
+    120000
+  );
+  const parsed = JSON.parse(stdout) as YtDlpEntry;
+  // Zwiąż rozmiar cache (usuwaj najstarsze wpisy przy przekroczeniu limitu).
+  while (channelPlaylistCache.size >= CHANNEL_PLAYLIST_MAX) {
+    const oldest = channelPlaylistCache.keys().next().value;
+    if (oldest === undefined) break;
+    channelPlaylistCache.delete(oldest);
+  }
+  channelPlaylistCache.set(target, { at: now, parsed });
+  return parsed;
+}
+
 export async function fetchChannelItems(opts: {
   url: string;
   start?: number;
@@ -62,24 +94,14 @@ export async function fetchChannelItems(opts: {
   const start = Math.max(1, Math.floor(Number(opts.start) || 1));
   const end = Math.max(start, Math.min(start + 199, Math.floor(Number(opts.end) || start + 29)));
   try {
-    const stdout = await runYtDlp(
-      [
-        target,
-        '--flat-playlist',
-        '--playlist-start',
-        String(start),
-        '--playlist-end',
-        String(end),
-        '--no-warnings',
-        '-J',
-        ...(await readNetworkArgs('youtube'))
-      ],
-      60000
-    );
-    const parsed = JSON.parse(stdout) as YtDlpEntry;
-    const items = (parsed.entries || [])
+    // Pełna lista (z cache) — licznik i stronicowanie pochodzą z całości, a nie z
+    // rozmiaru żądanej strony, więc nagłówek kanału pokazuje pełną liczbę filmów.
+    const parsed = await loadChannelPlaylist(target);
+    const allItems = (parsed.entries || [])
       .filter((e) => e.id && e.title)
       .map((e) => mapVideoEntry(e));
+    const total = parsed.playlist_count ?? allItems.length;
+    const items = allItems.slice(start - 1, end);
     const channelId = parsed.channel_id || parsed.uploader_id || parsed.id || '';
     const channelThumbnail =
       pickChannelThumbnail(parsed) || (await resolveChannelAvatar(channelId));
@@ -92,11 +114,11 @@ export async function fetchChannelItems(opts: {
         thumbnail: channelThumbnail,
         subscriberCount: parsed.channel_follower_count,
         description: parsed.description || '',
-        videoCount: parsed.playlist_count ?? items.length,
+        videoCount: total,
         bannerUrl: pickChannelThumbnail(parsed) || undefined
       },
       items,
-      hasMore: items.length >= end - start + 1
+      hasMore: end < total
     };
   } catch (e: unknown) {
     const err = e as { message?: string };

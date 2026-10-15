@@ -195,6 +195,7 @@ export const DEFAULT_DOWNLOAD: DownloadSettings = {
   retryBaseMs: 1500,
   tempDir: '',
   autoDownloadSubscriptions: false,
+  autoCheckLinkSubscriptions: false,
   hashFiles: true,
   smartMode: true,
   defaultSubs: false,

@@ -160,7 +160,17 @@ const colors = {
             <Copy :size="10" />
           </button>
         </span>
-        <span v-if="task.status === 'downloading'" class="text-xs text-base-content/50 font-mono">
+        <span
+          v-if="task.message"
+          class="text-xs text-primary/80 truncate block"
+          :title="t(task.message)"
+        >
+          {{ t(task.message) }}
+        </span>
+        <span
+          v-else-if="task.status === 'downloading'"
+          class="text-xs text-base-content/50 font-mono"
+        >
           {{ task.speed }} · {{ task.eta }}
         </span>
       </div>

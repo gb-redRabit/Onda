@@ -139,6 +139,24 @@ describe('addDownloadJobs', () => {
     expect(jobs.has(failedId)).toBe(false);
     expect(listDownloadJobs()).toHaveLength(1);
   });
+
+  it('deduplicates provider jobs by providerId + shareId + itemId', async () => {
+    const input = jobInput({
+      url: 'provider://pikpak/S1/f1',
+      source: {
+        mode: 'provider',
+        providerId: 'pikpak',
+        providerRef: { provider: 'pikpak', shareId: 'S1' },
+        providerItemId: 'f1',
+        fileName: 'f1.mp4'
+      }
+    });
+    const first = await addDownloadJobs([input]);
+    const second = await addDownloadJobs([input]);
+    expect(first).toHaveLength(1);
+    expect(second).toHaveLength(0);
+    expect(listDownloadJobs()).toHaveLength(1);
+  });
 });
 
 describe('queue mutations', () => {

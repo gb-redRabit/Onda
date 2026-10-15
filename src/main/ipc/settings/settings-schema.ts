@@ -236,6 +236,7 @@ const DOWNLOAD_FIELDS: Record<string, Sanitizer> = {
   retryBaseMs: numClamped(500, 10000),
   tempDir: str,
   autoDownloadSubscriptions: bool,
+  autoCheckLinkSubscriptions: bool,
   hashFiles: bool,
   smartMode: bool,
   defaultSubs: bool,

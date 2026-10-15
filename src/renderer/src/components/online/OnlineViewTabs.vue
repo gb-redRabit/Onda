@@ -1,23 +1,24 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Bell } from '@lucide/vue';
+import { Bell, Link2 } from '@lucide/vue';
 import OnlineBadge from './OnlineBadge.vue';
 
 defineProps<{
-  modelValue: 'discover' | 'subscriptions';
+  modelValue: 'discover' | 'subscriptions' | 'links';
   subscriptionCount?: number;
 }>();
 
 const emit = defineEmits<{
-  'update:modelValue': [value: 'discover' | 'subscriptions'];
+  'update:modelValue': [value: 'discover' | 'subscriptions' | 'links'];
 }>();
 
 const { t } = useI18n();
 
 const tabs = computed(() => [
   { key: 'discover' as const, label: t('youtube.discoverTab') },
-  { key: 'subscriptions' as const, label: t('youtube.subscriptionsTab'), icon: Bell }
+  { key: 'subscriptions' as const, label: t('youtube.subscriptionsTab'), icon: Bell },
+  { key: 'links' as const, label: t('providers.tab'), icon: Link2 }
 ]);
 </script>
 

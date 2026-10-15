@@ -68,4 +68,31 @@ describe('buildJobSource', () => {
     });
     expect(source?.fileName).toBe('escape.bat');
   });
+
+  it('keeps the provider ref/item and sanitizes fileName for a provider job', () => {
+    const source = buildJobSource({
+      mode: 'provider',
+      providerId: 'pikpak',
+      providerRef: { provider: 'pikpak', shareId: 'SHARE1' },
+      providerItemId: 'item-1',
+      fileName: '../evil.mp4'
+    });
+    expect(source).toMatchObject({
+      mode: 'provider',
+      providerId: 'pikpak',
+      providerRef: { provider: 'pikpak', shareId: 'SHARE1' },
+      providerItemId: 'item-1',
+      fileName: 'evil.mp4'
+    });
+  });
+
+  it('drops a malformed provider ref', () => {
+    const source = buildJobSource({
+      mode: 'provider',
+      providerId: 'pikpak',
+      providerRef: undefined
+    });
+    expect(source?.mode).toBe('provider');
+    expect(source?.providerRef).toBeUndefined();
+  });
 });

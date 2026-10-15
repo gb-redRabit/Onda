@@ -1,4 +1,12 @@
 import type { YouTubeResolveResult, YouTubeResolvedItem } from '../online';
+import type {
+  ProviderDetectResult,
+  ProviderRef,
+  RemoteItem,
+  RemoteSubscription,
+  RemoteSubscriptionInput,
+  RemoteSubscriptionPatch
+} from '../providers';
 import type { MediaSource, SourceEndpoint, SourceFetchResult, SourceItem } from '../sources';
 import type {
   IpcDownloadConfig,
@@ -254,4 +262,56 @@ export interface OnlineChannels {
   'preview:prepare': { args: []; result: { success: boolean } };
   'preview:openExternal': { args: [url: string]; result: void };
   'preview:setAdblock': { args: [enabled: boolean]; result: boolean };
+  // Providery linków (PikPak, MEGA, Drive…): auto-detekcja, przeglądanie folderów
+  // i rozwiązywanie bezpośredniego URL. Pobranie idzie przez `yt:download:add`
+  // (source.mode = 'provider').
+  'providers:detect': { args: [url: string]; result: ProviderDetectResult | null };
+  'providers:list': {
+    args: [{ ref: ProviderRef; folderId?: string; force?: boolean }];
+    result: { success: boolean; error?: string; code?: IpcDownloadErrorCode; items: RemoteItem[] };
+  };
+  'providers:resolveUrl': {
+    args: [{ ref: ProviderRef; itemId: string }];
+    result: { success: boolean; error?: string; code?: IpcDownloadErrorCode; url?: string };
+  };
+  'providers:downloaded': {
+    args: [{ provider: string; shareId: string }];
+    result: string[];
+  };
+  'providers:cred:get': { args: [providerId: string]; result: { hasCookie: boolean } };
+  'providers:auth:list': {
+    args: [];
+    result: Array<{
+      id: string;
+      label: string;
+      icon: string;
+      hasCookie: boolean;
+      required: boolean;
+    }>;
+  };
+  'providers:cred:set': {
+    args: [{ providerId: string; cookie: string }];
+    result: boolean;
+  };
+  'providers:cred:clear': { args: [providerId: string]; result: boolean };
+  'providers:cred:login': {
+    args: [providerId: string];
+    result: { success: boolean; canceled?: boolean; error?: string };
+  };
+  'providers:streamUrl': {
+    args: [{ ref: ProviderRef; itemId: string; mime?: string }];
+    result: { success: boolean; error?: string; url?: string; streamToken?: string };
+  };
+  'providers:subs:list': { args: []; result: RemoteSubscription[] };
+  'providers:subs:add': {
+    args: [input: RemoteSubscriptionInput];
+    result: RemoteSubscription | null;
+  };
+  'providers:subs:remove': { args: [id: string]; result: boolean };
+  'providers:subs:update': {
+    args: [id: string, patch: RemoteSubscriptionPatch];
+    result: RemoteSubscription | null;
+  };
+  'providers:subs:check': { args: [id: string]; result: RemoteSubscription | null };
+  'providers:subs:checkAll': { args: []; result: RemoteSubscription[] };
 }

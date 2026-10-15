@@ -342,7 +342,9 @@ class AudioEngine {
     this.streamTriedDirect = false;
     this.streamFinalRetried = false;
     logger.info('audioEngine', `loadRemote url=${url.slice(0, 160)}`);
-    this.loadSource(toMediaStreamUrl(url), { mode: 'proxy' });
+    // Ścieżka już będąca proxy serwera mediów (np. `/stream?provider=` dla MEGA) nie może
+    // być opakowana ponownie.
+    this.loadSource(/\/stream\?/.test(url) ? url : toMediaStreamUrl(url), { mode: 'proxy' });
   }
 
   play(): void {

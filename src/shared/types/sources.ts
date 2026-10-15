@@ -159,6 +159,8 @@ export interface SourceFetchResult {
   items: SourceItem[];
   hasMore: boolean;
   nextFrom?: string;
+  /** Wiersze tabeli wyliczone od razu z odpowiedzi strony (dla `type === 'page'` i `table.mode === 'field'`). */
+  tableRows?: SourceItem[];
   error?: string;
 }
 

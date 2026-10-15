@@ -20,6 +20,7 @@ export function snapshotDownloadTask(task: IpcDownloadTask): IpcDownloadTask {
     status: task.status,
     error: task.error,
     errorCode: task.errorCode,
+    message: task.message,
     startedAt: task.startedAt,
     completedAt: task.completedAt,
     outputPath: task.outputPath,

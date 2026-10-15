@@ -40,7 +40,13 @@ export function registerYoutubeHandlers(): void {
   ipcMain.handle(
     'yt:channelAll',
     async (_event, opts: { url: string; tab?: 'videos' | 'shorts' }) => {
-      return fetchChannelAll(opts);
+      logger.info('yt', `[IPC yt:channelAll] received opts: ${JSON.stringify(opts)}`);
+      const res = await fetchChannelAll(opts);
+      logger.info(
+        'yt',
+        `[IPC yt:channelAll] result: success=${res.success}, items=${res.items?.length}, error=${res.error}`
+      );
+      return res;
     }
   );
 

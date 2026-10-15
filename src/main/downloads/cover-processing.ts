@@ -8,10 +8,16 @@ import { runCommand } from '../utils/exec';
 import { getYtAuthConfig, cleanupYtAuthTemp } from '../youtube/youtube-auth';
 import { buildYtArgs } from '../ipc/youtube/youtube-utils';
 import { writeCoverToAudioFile } from '../ipc/media/media-handlers';
-import { buildSectionArgs, siblingCoverPath } from './cover-spec';
+import {
+  buildSectionArgs,
+  clipFormatSelector,
+  clipCopiedCodecAcceptable,
+  siblingCoverPath
+} from './cover-spec';
 
-// Covery to krótkie klipy, ale zasługują na prawdziwą jakość — pobierz najlepsze
-// dostępne źródło do pełnego HD (1080p).
+// Źródło dla klatki-okładki (frame): to pojedynczy obrazek osadzany w tagach audio,
+// więc pełny HD (1080p) w zupełności wystarcza — nie pobieramy wyższych rozdzielczości.
+// (Okładki-klipy mają osobne selektory i idą w najwyższej dostępnej rozdzielczości.)
 const COVER_VIDEO_FORMAT = 'bestvideo[height<=1080]+bestaudio/best';
 
 async function workDirFor(taskId: string): Promise<string> {
@@ -28,8 +34,14 @@ async function cleanup(dir: string): Promise<void> {
   }
 }
 
-// Pobiera źródłowe wideo (krótki fragment, maksymalnie 480p) do `videoPath`.
-async function downloadSource(url: string, videoPath: string, extra: string[]): Promise<void> {
+// Pobiera źródłowe wideo (krótki fragment, do 1080p) do `videoPath`.
+async function downloadSource(
+  url: string,
+  videoPath: string,
+  extra: string[],
+  mergeFormat: 'mp4' | 'webm' | 'mkv' = 'mp4',
+  videoFormat: string = COVER_VIDEO_FORMAT
+): Promise<void> {
   const bin = (await resolveBin('yt-dlp')) || 'yt-dlp';
   // Może być null dla anonimowych publicznych pobrań — obowiązują te same zasady
   // autoryzacji co w głównym pipeline pobierania.
@@ -43,9 +55,9 @@ async function downloadSource(url: string, videoPath: string, extra: string[]): 
       '-o',
       videoPath,
       '-f',
-      COVER_VIDEO_FORMAT,
+      videoFormat,
       '--merge-output-format',
-      'mp4',
+      mergeFormat,
       ...extra
     ],
     auth
@@ -134,34 +146,86 @@ export async function processCover(
         if (!res.success) throw new Error(res.error || 'Failed to embed cover');
         return { status: 'embedded' };
       }
-      const videoPath = join(workDir, 'clip.mp4');
-      await downloadSource(ctx.url, videoPath, [
-        ...buildSectionArgs(cover.clipStart ?? 0, cover.clipEnd ?? 30),
-        // Pobiera też miniaturę YouTube — zostaje osadzona w tagach audio,
-        // dzięki czemu plik ma cover, mimo że animowany znajduje się w
-        // sąsiednim wideo.
-        '--write-thumbnail',
-        '--convert-thumbnails',
-        'jpg'
-      ]);
-      const target = siblingCoverPath(ctx.outputPath, cover.clipFormat === 'mp4' ? 'mp4' : 'webm');
-      const args =
-        cover.clipFormat === 'mp4'
-          ? [
-              '-y',
-              '-i',
-              videoPath,
-              '-c:v',
-              'libx264',
-              '-crf',
-              '18',
-              '-preset',
-              'medium',
-              '-an',
+      const format = cover.clipFormat === 'mp4' ? 'mp4' : 'webm';
+      // Najwyższa dostępna rozdzielczość, kodek gotowy do kopii 1:1 (patrz clipFormatSelector).
+      const formatSelector = clipFormatSelector(format);
+      const sourceExt = format === 'webm' ? 'webm' : 'mp4';
+      const videoPath = join(workDir, `clip.${sourceExt}`);
+      await downloadSource(
+        ctx.url,
+        videoPath,
+        [
+          // Pobieramy sekcję bezpośrednio jako kopię strumienia (bez --force-keyframes-at-cuts,
+          // która wymuszała stratną rekompresję do 200 kb/s przez ffmpeg).
+          '--download-sections',
+          `*${cover.clipStart ?? 0}-${cover.clipEnd ?? 30}`,
+          '--write-thumbnail',
+          '--convert-thumbnails',
+          'jpg'
+        ],
+        sourceExt,
+        formatSelector
+      );
+      const target = siblingCoverPath(ctx.outputPath, format);
+
+      if (format === 'webm') {
+        // Dla WebM: bezstratne kopiowanie VP9/AV1 (1:1 z YouTube, ułamek sekundy).
+        try {
+          await runCommand(
+            await ffmpegBin(),
+            ['-y', '-i', videoPath, '-c:v', 'copy', '-an', target],
+            { timeout: 120000 }
+          );
+        } catch {
+          await runCommand(
+            await ffmpegBin(),
+            ['-y', '-i', videoPath, '-c:v', 'libvpx-vp9', '-crf', '24', '-b:v', '0', '-an', target],
+            { timeout: 120000 }
+          );
+        }
+      } else {
+        // Dla MP4: Chromium odtwarza AV1 (av01) i H.264 (avc1). Najpierw próbujemy
+        // -c:v copy, żeby zachować źródłowy strumień 1:1 (AV1 lub H.264 z selektora
+        // formatu). Tylko gdy źródło nie było ani AV1, ani H.264 (np. sam VP9),
+        // enkodujemy do H.264 przez libopenh264.
+        let copied = false;
+        try {
+          await runCommand(
+            await ffmpegBin(),
+            ['-y', '-i', videoPath, '-c:v', 'copy', '-an', target],
+            { timeout: 120000 }
+          );
+          const probeBin = (await resolveBin('ffprobe')) || 'ffprobe';
+          const probeOutput = await runCommand(
+            probeBin,
+            [
+              '-v',
+              'error',
+              '-select_streams',
+              'v:0',
+              '-show_entries',
+              'stream=codec_name',
+              '-of',
+              'default=noprint_wrappers=1:nokey=1',
               target
-            ]
-          : ['-y', '-i', videoPath, '-c:v', 'libvpx', '-crf', '10', '-b:v', '2500k', '-an', target];
-      await runCommand(await ffmpegBin(), args, { timeout: 120000 });
+            ],
+            { timeout: 15000 }
+          );
+          if (clipCopiedCodecAcceptable(probeOutput)) {
+            copied = true;
+          }
+        } catch {
+          copied = false;
+        }
+
+        if (!copied) {
+          await runCommand(
+            await ffmpegBin(),
+            ['-y', '-i', videoPath, '-c:v', 'libopenh264', '-b:v', '8000k', '-an', target],
+            { timeout: 120000 }
+          );
+        }
+      }
       // Osadza miniaturę YouTube w pliku audio (niekrytyczne: animowany klip jest
       // już zapisany, a niektóre kontenery nie mogą przechowywać tagów).
       const thumbPath = join(workDir, 'clip.jpg');

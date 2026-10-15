@@ -50,13 +50,13 @@ export interface IpcDownloadProfile {
 // API SoundCloud na starcie próby, a potem strumieniuje go jak http. Sekrety
 // nigdy nie są tu przenoszone — tylko referencja `apiKeyId` rozwiązywana w main.
 export interface IpcDownloadSource {
-  mode: 'http' | 'ytdlp' | 'soundcloud';
+  mode: 'http' | 'ytdlp' | 'soundcloud' | 'provider';
   /** ID skonfigurowanego przez użytkownika źródła mediów, które utworzyło to zadanie. */
   sourceId?: string;
   /** API `id` elementu źródła (z mapowania `fields.id` endpointu). Gdy
    *  obecne, ukończone pobieranie zapisuje je jako "downloaded" dla tego źródła. */
   sourceItemId?: string;
-  /** Finalna nazwa pliku (z rozszerzeniem) dla trybu http/soundcloud. */
+  /** Finalna nazwa pliku (z rozszerzeniem) dla trybu http/soundcloud/provider. */
   fileName?: string;
   /** Ref do settings.apiKeys; nagłówki rozwiązywane w main (safeStorage). */
   apiKeyId?: string;
@@ -66,6 +66,12 @@ export interface IpcDownloadSource {
   headers?: Record<string, string>;
   /** Włączenie per źródło dla pobrań bezpośrednich z sieci prywatnej/lokalnej. */
   allowPrivateNetwork?: boolean;
+  // ── provider (PikPak/MEGA/Drive…): direct URL jest rozwiązywany ŚWIEŻO przy
+  // każdej próbie pobrania (podpisane linki wygasają), więc na zadaniu trzymamy
+  // tylko stabilny ref, a nie URL.
+  providerId?: string;
+  providerRef?: { provider: string; shareId: string };
+  providerItemId?: string;
 }
 
 export interface IpcDownloadJobInput {
@@ -111,6 +117,9 @@ export type IpcDownloadErrorCode =
   // Zasób rozpoznany, ale nieobsługiwany (np. spersonalizowane linki
   // SoundCloud /discover/sets, których API nie obsługuje).
   | 'unsupported'
+  // Limit serwisu (transfer/kwota/rate-limit) — np. MEGA „Bandwidth limit reached",
+  // HTTP 429. Zwykle przejściowy; ponowienie po czasie resetu.
+  | 'rate-limited'
   | 'unknown';
 
 export type IpcStreamErrorCode = IpcDownloadErrorCode | 'hls' | 'invalid';
@@ -138,6 +147,9 @@ export interface IpcDownloadTask {
   status: 'pending' | 'downloading' | 'paused' | 'completed' | 'error' | 'cancelled';
   error?: string;
   errorCode?: IpcDownloadErrorCode;
+  // Krótki klucz i18n fazy (np. 'downloads.statusChecking') — pokazywany w wierszu
+  // podczas przygotowania linku (rozwiązywanie/„转存"/oczekiwanie na serwer).
+  message?: string;
   startedAt: number;
   completedAt?: number;
   outputPath?: string;
