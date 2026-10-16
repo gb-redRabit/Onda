@@ -2,6 +2,7 @@ import { computed, ref, type Ref } from 'vue';
 import { useOnlineStore } from '@renderer/stores/online';
 import { detectChannelPrefix, detectPlatform, isHttpUrl } from '@shared/platform';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
+import { logger } from '@shared/logger';
 
 type Translate = (key: string, params?: Record<string, unknown>) => string;
 
@@ -52,7 +53,10 @@ export function useOnlineSearch(
         );
       } else {
         const key = errorCodeKey(result.code as never);
-        searchError.value = key ? t(key) : result.error || t('youtube.searchError');
+        // Pokazujemy zlokalizowany komunikat; surowy tekst backendu trafia do logu,
+        // a nie do UI (bywał nieczytelny i nieprzetłumaczony).
+        if (!key && result.error) logger.warn('yt', `search failed: ${result.error}`);
+        searchError.value = key ? t(key) : t('youtube.searchError');
         yt.setResults([]);
       }
     } catch {
@@ -89,7 +93,8 @@ export function useOnlineSearch(
         }
       } else {
         const key = errorCodeKey(res.code);
-        resolveError.value = key ? t(key) : res.error || t('youtube.resolveError');
+        if (!key && res.error) logger.warn('yt', `resolve failed: ${res.error}`);
+        resolveError.value = key ? t(key) : t('youtube.resolveError');
       }
     } catch {
       resolveError.value = t('youtube.resolveError');
