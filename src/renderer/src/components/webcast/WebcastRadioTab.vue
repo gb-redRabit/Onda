@@ -41,7 +41,7 @@ function commitRadioRename(id: string) {
   <section>
     <div class="flex items-center gap-2 mb-3">
       <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 flex-1">
-        <Radio :size="14" class="text-primary" />
+        <Radio :size="14" class="text-primary-text" />
         {{ t('saved.radioTitle') }}
       </h2>
       <OnlineButton variant="secondary" size="sm" @click="emit('add')">

@@ -50,7 +50,7 @@ onUnmounted(() => window.removeEventListener('resize', updateArrows));
   <section class="mb-8" data-testid="home-shelf">
     <div class="flex items-center justify-between gap-3 mb-3">
       <h2 class="text-base font-semibold flex items-center gap-2 min-w-0">
-        <component :is="icon" :size="16" class="text-primary shrink-0" />
+        <component :is="icon" :size="16" class="text-primary-text shrink-0" />
         <span class="truncate">{{ title }}</span>
       </h2>
       <div class="flex items-center gap-1 shrink-0">
@@ -72,7 +72,7 @@ onUnmounted(() => window.removeEventListener('resize', updateArrows));
         </button>
         <button
           v-if="seeAllLabel"
-          class="text-xs text-primary hover:text-primary/90 font-medium transition-colors ml-1"
+          class="text-xs text-primary-text hover:text-primary-text/90 font-medium transition-colors ml-1"
           @click="emit('seeAll')"
         >
           {{ seeAllLabel }}

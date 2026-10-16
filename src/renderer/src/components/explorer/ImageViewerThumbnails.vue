@@ -192,7 +192,7 @@ onBeforeUnmount(() => {
               draggable="false"
               loading="lazy"
             />
-            <span v-else class="text-[10px] text-base-content/50">{{ item.idx + 1 }}</span>
+            <span v-else class="text-[11px] text-base-content/50">{{ item.idx + 1 }}</span>
           </div>
         </template>
       </div>
@@ -205,7 +205,7 @@ onBeforeUnmount(() => {
         <button
           data-testid="image-viewer-thumbnails-toggle"
           class="fx-noise p-1 fx-depth rounded-field transition-colors"
-          :class="showThumbs ? 'text-primary' : 'text-base-content/70 hover:text-base-content'"
+          :class="showThumbs ? 'text-primary-text' : 'text-base-content/70 hover:text-base-content'"
           :title="$t('imageViewer.toggleThumbnails')"
           :aria-label="$t('imageViewer.toggleThumbnails')"
           @click="emit('update:showThumbs', !showThumbs)"

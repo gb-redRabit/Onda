@@ -74,14 +74,14 @@ const queuePosition = computed(() => {
       </span>
       <span
         v-if="player.shuffle"
-        class="flex items-center text-primary"
+        class="flex items-center text-primary-text"
         :title="$t('status.shuffle')"
       >
         <Shuffle :size="11" />
       </span>
       <span
         v-if="player.repeat !== 'none'"
-        class="flex items-center text-primary"
+        class="flex items-center text-primary-text"
         :title="$t(player.repeat === 'one' ? 'status.repeatOne' : 'status.repeat')"
       >
         <Repeat2 v-if="player.repeat === 'one'" :size="11" />
@@ -89,7 +89,7 @@ const queuePosition = computed(() => {
       </span>
       <span
         v-if="player.equalizerVisible"
-        class="flex items-center text-primary"
+        class="flex items-center text-primary-text"
         :title="$t('status.eq')"
       >
         <SlidersHorizontal :size="11" />

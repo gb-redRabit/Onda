@@ -41,7 +41,7 @@ const activeSectionId = computed(
         class="flex items-center gap-2.5 px-2 h-8 rounded-field transition-colors shrink-0"
         :class="
           activeSectionId === section.id
-            ? 'text-primary'
+            ? 'text-primary-text'
             : 'text-base-content/60 hover:text-base-content hover:bg-base-content/5'
         "
         :title="$t(section.labelKey)"
@@ -62,7 +62,7 @@ const activeSectionId = computed(
           class="flex items-center gap-2 pl-2 pr-2 h-8 rounded-field text-[13px] text-left transition-colors"
           :class="
             activeTab === tab.id
-              ? 'bg-primary/15 text-primary font-medium'
+              ? 'bg-primary/15 text-primary-text font-medium'
               : 'text-base-content/65 hover:bg-base-content/5 hover:text-base-content'
           "
           :aria-current="activeTab === tab.id ? 'page' : undefined"

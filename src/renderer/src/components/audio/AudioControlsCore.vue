@@ -42,9 +42,9 @@ const transportStyles = computed(() => ({
   toggle: `${d.value.button} rounded-full transition-colors`,
   step: `${d.value.button} rounded-full`,
   play: `${playBox.value} ${PLAY_ICON_CLASS}`,
-  playIcon: 'text-primary',
+  playIcon: 'text-primary-text',
   glow: d.value.glow,
-  active: 'text-primary',
+  active: 'text-primary-text',
   toggleSize: iconSm.value,
   skipSize: icon.value,
   playSize: playSize.value
@@ -120,10 +120,10 @@ function onVolumeKey(e: KeyboardEvent) {
       <Pause
         v-if="audio.isPlaying.value"
         :size="playSize"
-        class="text-primary"
+        class="text-primary-text"
         fill="currentColor"
       />
-      <Play v-else :size="playSize" class="text-primary ml-0.5" fill="currentColor" />
+      <Play v-else :size="playSize" class="text-primary-text ml-0.5" fill="currentColor" />
     </button>
 
     <div v-if="showVolume" :class="d.volumeRow">
@@ -164,7 +164,7 @@ function onVolumeKey(e: KeyboardEvent) {
       <button
         :class="[
           d.extrasButton,
-          player.equalizerVisible ? 'bg-primary/10 text-primary' : TOGGLE_OFF
+          player.equalizerVisible ? 'bg-primary/10 text-primary-text' : TOGGLE_OFF
         ]"
         :aria-label="t('common.equalizer')"
         :aria-pressed="player.equalizerVisible"
@@ -174,7 +174,10 @@ function onVolumeKey(e: KeyboardEvent) {
         <SlidersHorizontal :size="iconSm" />
       </button>
       <button
-        :class="[d.extrasButton, player.queueVisible ? 'bg-primary/10 text-primary' : TOGGLE_OFF]"
+        :class="[
+          d.extrasButton,
+          player.queueVisible ? 'bg-primary/10 text-primary-text' : TOGGLE_OFF
+        ]"
         :aria-label="t('common.queue')"
         :aria-pressed="player.queueVisible"
         @click="player.toggleQueue"

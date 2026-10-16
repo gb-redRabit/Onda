@@ -101,7 +101,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
       <div class="relative">
         <button
           class="h-9 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
-          :class="{ 'bg-primary/10 text-primary': openDropdown === 'file' }"
+          :class="{ 'bg-primary/10 text-primary-text': openDropdown === 'file' }"
           aria-haspopup="true"
           :aria-expanded="openDropdown === 'file'"
           data-menu-trigger="file"
@@ -133,7 +133,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
       <div class="relative">
         <button
           class="h-9 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
-          :class="{ 'bg-primary/10 text-primary': openDropdown === 'view' }"
+          :class="{ 'bg-primary/10 text-primary-text': openDropdown === 'view' }"
           aria-haspopup="true"
           :aria-expanded="openDropdown === 'view'"
           data-menu-trigger="view"
@@ -158,7 +158,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
       <div v-if="player.currentTrack" class="relative">
         <button
           class="h-9 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
-          :class="{ 'bg-primary/10 text-primary': openDropdown === 'playback' }"
+          :class="{ 'bg-primary/10 text-primary-text': openDropdown === 'playback' }"
           aria-haspopup="true"
           :aria-expanded="openDropdown === 'playback'"
           data-menu-trigger="playback"
@@ -181,7 +181,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
       <div class="relative">
         <button
           class="h-9 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
-          :class="{ 'bg-primary/10 text-primary': openDropdown === 'help' }"
+          :class="{ 'bg-primary/10 text-primary-text': openDropdown === 'help' }"
           aria-haspopup="true"
           :aria-expanded="openDropdown === 'help'"
           data-menu-trigger="help"

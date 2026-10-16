@@ -125,7 +125,7 @@ async function setCloseToTray(value: boolean): Promise<void> {
       </div>
       <button
         data-testid="settings-open-wizard"
-        class="fx-noise px-3.5 py-2 fx-depth rounded-field text-sm font-medium flex items-center gap-1.5 shrink-0 transition-colors border border-primary/40 text-primary hover:bg-primary/10"
+        class="fx-noise px-3.5 py-2 fx-depth rounded-field text-sm font-medium flex items-center gap-1.5 shrink-0 transition-colors border border-primary/40 text-primary-text hover:bg-primary/10"
         @click="ui.openSetupWizard()"
       >
         <Wand2 :size="15" />

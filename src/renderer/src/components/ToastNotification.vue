@@ -46,7 +46,7 @@ function color(type: string) {
     case 'error':
       return 'text-error';
     default:
-      return 'text-primary';
+      return 'text-primary-text';
   }
 }
 </script>

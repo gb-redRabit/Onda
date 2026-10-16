@@ -9,7 +9,8 @@ import type {
   GeneralSettings,
   HomeSettings,
   PlaybackSettings,
-  DownloadSettings
+  DownloadSettings,
+  StatusBarSettings
 } from '@renderer/types/settings';
 
 export * from './constants/audio';
@@ -78,8 +79,6 @@ export const DEFAULT_TOAST: ToastSettings = {
   showWarning: true,
   showNative: true
 };
-
-import type { StatusBarSettings } from '@renderer/types/settings';
 
 export const DEFAULT_STATUS_BAR: StatusBarSettings = {
   visible: true,

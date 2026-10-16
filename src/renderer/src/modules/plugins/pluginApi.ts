@@ -4,6 +4,7 @@ import { isPluginUiSlot, sanitizeSlotItems, type PluginSlotItem } from '@shared/
 import type { MediaFile } from '@renderer/types/media';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useLibraryStore } from '@renderer/stores/library';
+import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore } from '@renderer/stores/ui';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import {
@@ -60,7 +61,7 @@ export function createPluginApi(deps: PluginApiDeps): PluginApiDispatch {
       position: player.currentTime,
       duration: player.duration,
       progress: player.progress,
-      rate: player.playbackRate,
+      rate: useSettingsStore().playback.playbackSpeed,
       playing: player.isPlaying,
       track: snapshotTrack(player.currentTrack)
     };

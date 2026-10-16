@@ -31,7 +31,7 @@ const emit = defineEmits<{ select: [] }>();
         <span class="flex items-center gap-1"><Album :size="10" />{{ rel.country || '?' }}</span>
       </div>
     </div>
-    <Check v-if="selected && !lookingUp" :size="16" class="text-primary shrink-0 mt-1" />
+    <Check v-if="selected && !lookingUp" :size="16" class="text-primary-text shrink-0 mt-1" />
     <Loader2
       v-else-if="lookingUp"
       :size="14"

@@ -24,6 +24,7 @@ import { isTabId, buildLibraryTabs, type TabId } from '@renderer/utils/libraryTa
 import { SMART_FOLDERS } from '@renderer/utils/smartFolders';
 import { readString, writeString, readStringArray, writeJson } from '@renderer/utils/localStore';
 import { clonePlain } from '@renderer/utils/clone';
+import { shuffled } from '@renderer/utils/shuffle';
 
 // Modale montowane tylko na żądanie — leniwie, żeby chunk Biblioteki pozostał lekki (3.5).
 const TrackTagEditor = defineAsyncComponent(
@@ -230,12 +231,7 @@ function playAllTracks() {
   playTracks(sortedFilteredTracks.value);
 }
 function shuffleAllTracks() {
-  const shuffled = [...sortedFilteredTracks.value];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  playTracks(shuffled);
+  playTracks(shuffled(sortedFilteredTracks.value));
 }
 
 function playAllVideo() {

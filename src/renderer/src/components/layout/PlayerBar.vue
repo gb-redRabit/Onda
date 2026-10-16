@@ -252,7 +252,7 @@ function togglePlay() {
       <AbRepeatButton :current-time="audio.currentTime.value" />
       <button
         class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-        :class="{ 'text-primary!': player.equalizerVisible }"
+        :class="{ 'text-primary-text!': player.equalizerVisible }"
         data-eq-toggle
         data-testid="player-eq"
         :aria-label="$t('common.equalizer')"
@@ -262,7 +262,7 @@ function togglePlay() {
       </button>
       <button
         class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-        :class="{ 'text-primary!': player.queueVisible }"
+        :class="{ 'text-primary-text!': player.queueVisible }"
         data-testid="player-queue"
         :aria-label="$t('common.queue')"
         @click="player.toggleQueue"
@@ -302,7 +302,7 @@ function togglePlay() {
         />
       </div>
       <button
-        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-base-content/10 transition-colors"
+        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary-text hover:bg-base-content/10 transition-colors"
         :title="$t('common.audioView')"
         :aria-label="$t('common.audioView')"
         @click="router.push('/audio')"

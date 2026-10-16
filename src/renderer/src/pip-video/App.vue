@@ -97,7 +97,7 @@ onMounted(() => {
           <p class="text-sm font-semibold text-white drop-shadow">{{ t('previewTitle') }}</p>
           <p class="mt-0.5 text-[11px] text-white/70">{{ t('previewDescription') }}</p>
         </div>
-        <span class="shrink-0 rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-mono text-white">
+        <span class="shrink-0 rounded bg-black/50 px-1.5 py-0.5 text-[11px] font-mono text-white">
           1080p
         </span>
       </div>
@@ -128,7 +128,7 @@ onMounted(() => {
       <button
         v-if="!preview"
         data-testid="pip-video-maximize"
-        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[10px] top-btn"
+        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[11px] top-btn"
         :title="t('maximize')"
         @click="sendMaximize"
       >
@@ -188,7 +188,7 @@ onMounted(() => {
       </div>
       <div class="mb-1.5">
         <span
-          class="text-[10px]"
+          class="text-[11px]"
           :style="{ color: 'color-mix(in srgb, var(--color-base-content) 50%, transparent)' }"
           >{{ t('brightness') }} {{ brightness }}%</span
         >
@@ -205,7 +205,7 @@ onMounted(() => {
       </div>
       <div>
         <span
-          class="text-[10px]"
+          class="text-[11px]"
           :style="{ color: 'color-mix(in srgb, var(--color-base-content) 50%, transparent)' }"
           >{{ t('contrast') }} {{ contrast }}%</span
         >
@@ -223,14 +223,14 @@ onMounted(() => {
     </div>
 
     <div
-      class="absolute bottom-2 left-2 text-[10px] font-mono pointer-events-none"
+      class="absolute bottom-2 left-2 text-[11px] font-mono pointer-events-none"
       :style="{ color: 'color-mix(in srgb, var(--color-base-content) 50%, transparent)' }"
     >
       {{ preview ? '0:42' : currentTime }}
     </div>
 
     <div
-      class="absolute bottom-2 right-2 text-[10px] font-mono pointer-events-none"
+      class="absolute bottom-2 right-2 text-[11px] font-mono pointer-events-none"
       :style="{ color: 'color-mix(in srgb, var(--color-base-content) 50%, transparent)' }"
     >
       {{ preview ? '12:08' : duration }}
@@ -266,13 +266,13 @@ onMounted(() => {
           />
           <div
             v-else
-            class="w-full h-full flex items-center justify-center text-[9px] text-neutral-content/50"
+            class="w-full h-full flex items-center justify-center text-[10px] text-neutral-content/50"
           >
             {{ previewTimeLabel() }}
           </div>
         </div>
         <span
-          class="mt-1 text-[10px] text-neutral-content/80 tabular-nums bg-neutral/60 px-1 rounded-field"
+          class="mt-1 text-[11px] text-neutral-content/80 tabular-nums bg-neutral/60 px-1 rounded-field"
         >
           {{ previewTimeLabel() }}
         </span>

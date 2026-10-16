@@ -52,7 +52,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
         class="fx-noise px-4 py-2 fx-depth rounded-field text-sm uppercase border transition-colors font-medium"
         :class="
           settings.download.defaultAudioFormat === f
-            ? 'border-primary bg-primary/10 text-primary'
+            ? 'border-primary bg-primary/10 text-primary-text'
             : 'border-base-300 bg-base-100 text-base-content/70 hover:bg-base-content/10'
         "
         @click="settings.updateDownload({ defaultAudioFormat: f })"
@@ -70,7 +70,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
         class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors font-medium"
         :class="
           settings.download.defaultAudioQuality === q
-            ? 'border-primary bg-primary/10 text-primary'
+            ? 'border-primary bg-primary/10 text-primary-text'
             : 'border-base-300 bg-base-100 text-base-content/70 hover:bg-base-content/10'
         "
         @click="settings.updateDownload({ defaultAudioQuality: q })"
@@ -88,7 +88,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
         class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors"
         :class="
           settings.download.defaultVideoQuality === q
-            ? 'border-primary bg-primary/10 text-primary font-medium'
+            ? 'border-primary bg-primary/10 text-primary-text font-medium'
             : 'border-base-300 bg-base-100 text-base-content/70 hover:bg-base-content/10'
         "
         @click="settings.updateDownload({ defaultVideoQuality: q })"
@@ -106,7 +106,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
         class="fx-noise px-4 py-2 fx-depth rounded-field text-sm uppercase border transition-colors font-medium"
         :class="
           settings.download.defaultVideoContainer === c
-            ? 'border-primary bg-primary/10 text-primary'
+            ? 'border-primary bg-primary/10 text-primary-text'
             : 'border-base-300 bg-base-100 text-base-content/70 hover:bg-base-content/10'
         "
         @click="settings.updateDownload({ defaultVideoContainer: c })"
@@ -124,7 +124,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
         class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors font-medium"
         :class="
           settings.download.defaultCover === c
-            ? 'border-primary bg-primary/10 text-primary'
+            ? 'border-primary bg-primary/10 text-primary-text'
             : 'border-base-300 bg-base-100 text-base-content/70 hover:bg-base-content/10'
         "
         @click="settings.updateDownload({ defaultCover: c })"

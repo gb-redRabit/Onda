@@ -188,7 +188,7 @@ const emit = defineEmits<{
       </button>
     </div>
 
-    <div class="text-[10px] text-base-content/60 mt-1.5 leading-relaxed">
+    <div class="text-[11px] text-base-content/60 mt-1.5 leading-relaxed">
       <span class="text-base-content/80 font-semibold">H</span>
       {{ $t('imageViewer.ssToggleUi') }} &middot;
       <span class="text-base-content/80 font-semibold">Space</span>

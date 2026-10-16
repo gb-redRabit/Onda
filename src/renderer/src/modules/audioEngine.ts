@@ -2,6 +2,7 @@ import type { MediaFile } from '@renderer/types/media';
 import { audioEvents } from '@renderer/utils/audioEvents';
 import { toMediaServerUrl, toMediaStreamUrl } from '@renderer/utils/mediaUrl';
 import { logger } from '@shared/logger';
+import { RESUME_MIN_SECONDS } from '@shared/constants';
 import { AudioGraph } from './audioGraph';
 import type { EqBand } from '@renderer/utils/constants/audio';
 import { AudioSecondary } from './audioSecondary';
@@ -25,10 +26,10 @@ class AudioEngine {
   private graph = new AudioGraph();
   private audioEl: HTMLAudioElement | null = null;
   private secondary: AudioSecondary | null = null;
-  private initialized = false;
   private readonly positionsStore = new AudioEnginePositions();
   private normalization = 1;
   private preloadEl: HTMLAudioElement | null = null;
+  private lastPreloadPath = '';
   private loadStartTs = 0;
   private currentVolume = 1;
   private isMuted = false;
@@ -189,11 +190,6 @@ class AudioEngine {
     this.graph.disconnectVideoElement();
   }
 
-  init(): void {
-    if (this.initialized) return;
-    this.initialized = true;
-  }
-
   // Utwórz AudioContext z wyprzedzeniem w czasie bezczynności, żeby pierwsze kliknięcie odtwarzania
   // nie ponosiło synchronicznie (kosztownego) jednorazowego kosztu tworzenia kontekstu.
   warmUp(): void {
@@ -208,7 +204,7 @@ class AudioEngine {
     const trackType =
       this.currentTrackType ?? this.stateProvider?.getCurrentTrack?.()?.type ?? 'audio';
     if (this.audioEl && trackPath && trackType === 'audio') {
-      if (this.audioEl.currentTime > 5) {
+      if (this.audioEl.currentTime > RESUME_MIN_SECONDS) {
         this.positionsStore.persist(trackPath, this.audioEl.currentTime);
       }
     }
@@ -360,6 +356,7 @@ class AudioEngine {
   }
 
   seek(time: number): void {
+    if (!Number.isFinite(time)) return;
     if (this.audioEl) this.audioEl.currentTime = time;
   }
 
@@ -371,11 +368,15 @@ class AudioEngine {
   // Rozgrzewa cache dla następnego utworu, żeby przejście było możliwie
   // płynne (używane przez ustawienie "odtwarzanie bez przerw").
   preloadNext(track: MediaFile): void {
+    // Ten sam utwór bywa preloadowany wielokrotnie (zmiany kolejki/ustawień) —
+    // ponowne ustawienie `src`+`load()` marnowałoby pasmo i odrzucało bufor.
+    if (this.preloadEl && this.lastPreloadPath === track.path) return;
     if (!this.preloadEl) {
       this.preloadEl = new Audio();
       this.preloadEl.preload = 'auto';
       this.preloadEl.crossOrigin = 'anonymous';
     }
+    this.lastPreloadPath = track.path;
     this.preloadEl.src = toMediaServerUrl(track.path);
     this.preloadEl.load();
   }
@@ -430,10 +431,6 @@ class AudioEngine {
     this.secondary?.pause();
   }
 
-  setPlaybackRate(rate: number): void {
-    if (this.audioEl) this.audioEl.playbackRate = rate;
-  }
-
   setEqBands(bands: readonly EqBand[]): void {
     this.graph.setEqBands(bands);
   }
@@ -470,10 +467,6 @@ class AudioEngine {
     return this.audioEl;
   }
 
-  isActive(): boolean {
-    return this.initialized;
-  }
-
   async deactivate(): Promise<void> {
     this.desiredPlay = false;
     this.savePosition();
@@ -501,9 +494,9 @@ class AudioEngine {
       this.preloadEl.load();
       this.preloadEl = null;
     }
+    this.lastPreloadPath = '';
     this.positionsStore.clearAll();
     await this.graph.closeContext();
-    this.initialized = false;
   }
 
   resumeContext(): void {

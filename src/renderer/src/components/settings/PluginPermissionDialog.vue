@@ -80,7 +80,7 @@ const grantedCapabilities = computed(() => {
             :key="capability"
             class="flex gap-2 text-sm text-base-content/80"
           >
-            <span class="text-primary" aria-hidden="true">â€˘</span>
+            <span class="text-primary-text" aria-hidden="true">â€˘</span>
             <span>{{ capability }}</span>
           </li>
         </ul>

@@ -5,6 +5,7 @@ export const BASE_TOKENS: ColorTokenId[] = ['base200', 'base100', 'base300', 'ba
 export const BRAND_TOKENS: ColorTokenId[] = [
   'primary',
   'primaryContent',
+  'primaryText',
   'secondary',
   'secondaryContent',
   'accent',
@@ -31,6 +32,7 @@ export const PREVIEW_TOKENS: ColorTokenId[] = [
   'baseContent',
   'primary',
   'primaryContent',
+  'primaryText',
   'secondary',
   'accent',
   'neutral',

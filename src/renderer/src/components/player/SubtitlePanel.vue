@@ -251,8 +251,8 @@ async function downloadResult(result: PanelResult): Promise<void> {
       <div class="py-1.5">
         <button
           v-if="player.subtitleTracks.length > 0"
-          class="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
-          :class="{ 'text-primary': !player.activeSubtitleId }"
+          class="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 hover:text-primary-text transition-colors flex items-center gap-2"
+          :class="{ 'text-primary-text': !player.activeSubtitleId }"
           @click="selectTrack(null)"
         >
           <Check v-if="!player.activeSubtitleId" :size="14" class="shrink-0" />
@@ -261,14 +261,14 @@ async function downloadResult(result: PanelResult): Promise<void> {
         </button>
 
         <template v-if="embeddedTracks.length">
-          <div class="px-4 pt-3 pb-1 text-[10px] text-base-content/60 uppercase tracking-wider">
+          <div class="px-4 pt-3 pb-1 text-[11px] text-base-content/60 uppercase tracking-wider">
             {{ $t('subtitles.embedded') }}
           </div>
           <button
             v-for="track in embeddedTracks"
             :key="track.id"
-            class="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
-            :class="{ 'text-primary': player.activeSubtitleId === track.id }"
+            class="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 hover:text-primary-text transition-colors flex items-center gap-2"
+            :class="{ 'text-primary-text': player.activeSubtitleId === track.id }"
             @click="selectTrack(track.id)"
           >
             <Check v-if="player.activeSubtitleId === track.id" :size="14" class="shrink-0" />
@@ -278,14 +278,14 @@ async function downloadResult(result: PanelResult): Promise<void> {
         </template>
 
         <template v-if="externalTracks.length">
-          <div class="px-4 pt-3 pb-1 text-[10px] text-base-content/60 uppercase tracking-wider">
+          <div class="px-4 pt-3 pb-1 text-[11px] text-base-content/60 uppercase tracking-wider">
             {{ $t('subtitles.fromFolder') }}
           </div>
           <button
             v-for="track in externalTracks"
             :key="track.id"
-            class="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
-            :class="{ 'text-primary': player.activeSubtitleId === track.id }"
+            class="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 hover:text-primary-text transition-colors flex items-center gap-2"
+            :class="{ 'text-primary-text': player.activeSubtitleId === track.id }"
             @click="selectTrack(track.id)"
           >
             <Check v-if="player.activeSubtitleId === track.id" :size="14" class="shrink-0" />
@@ -295,14 +295,14 @@ async function downloadResult(result: PanelResult): Promise<void> {
         </template>
 
         <template v-if="customTracks.length">
-          <div class="px-4 pt-3 pb-1 text-[10px] text-base-content/60 uppercase tracking-wider">
+          <div class="px-4 pt-3 pb-1 text-[11px] text-base-content/60 uppercase tracking-wider">
             {{ $t('subtitles.custom') }}
           </div>
           <button
             v-for="track in customTracks"
             :key="track.id"
-            class="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
-            :class="{ 'text-primary': player.activeSubtitleId === track.id }"
+            class="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 hover:text-primary-text transition-colors flex items-center gap-2"
+            :class="{ 'text-primary-text': player.activeSubtitleId === track.id }"
             @click="selectTrack(track.id)"
           >
             <Check v-if="player.activeSubtitleId === track.id" :size="14" class="shrink-0" />
@@ -312,7 +312,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
         </template>
 
         <button
-          class="mt-1 w-full px-4 py-2 text-left text-sm text-primary hover:bg-primary/10 transition-colors flex items-center gap-2"
+          class="mt-1 w-full px-4 py-2 text-left text-sm text-primary-text hover:bg-primary/10 transition-colors flex items-center gap-2"
           @click="uploadSubtitles"
         >
           <Upload :size="14" class="shrink-0" />
@@ -321,7 +321,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
       </div>
 
       <div class="border-t border-base-300 px-4 py-3">
-        <div class="text-[10px] text-base-content/50 font-medium uppercase tracking-wider mb-2">
+        <div class="text-[11px] text-base-content/50 font-medium uppercase tracking-wider mb-2">
           {{ $t('subtitles.delay') }}
         </div>
         <div class="flex items-center gap-2">
@@ -356,7 +356,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
       </div>
 
       <div class="border-t border-base-300 px-4 py-3">
-        <div class="text-[10px] text-base-content/50 font-medium uppercase tracking-wider mb-2">
+        <div class="text-[11px] text-base-content/50 font-medium uppercase tracking-wider mb-2">
           {{ $t('subtitles.onlineTitle') }}
         </div>
         <input
@@ -389,23 +389,23 @@ async function downloadResult(result: PanelResult): Promise<void> {
           <button
             v-for="result in results"
             :key="resultKey(result)"
-            class="flex items-center gap-2 rounded-field px-2 py-1.5 text-left text-xs hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50"
+            class="flex items-center gap-2 rounded-field px-2 py-1.5 text-left text-xs hover:bg-primary/10 hover:text-primary-text transition-colors disabled:opacity-50"
             :disabled="downloading !== null"
             @click="downloadResult(result)"
           >
             <span
-              class="shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
+              class="shrink-0 rounded px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
               :class="
                 result.source === 'os'
                   ? 'bg-base-content/10 text-base-content/60'
-                  : 'bg-primary/15 text-primary'
+                  : 'bg-primary/15 text-primary-text'
               "
               :title="sourceTitle(result.source)"
             >
               {{ sourceBadge(result.source) }}
             </span>
             <span class="min-w-0 flex-1 truncate">{{ result.release }}</span>
-            <span class="shrink-0 text-[10px] text-base-content/50">
+            <span class="shrink-0 text-[11px] text-base-content/50">
               {{ result.language.toUpperCase()
               }}<template v-if="result.source === 'os'"> · {{ result.downloads }}</template>
             </span>

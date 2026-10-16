@@ -1,4 +1,5 @@
 import { logger } from '@shared/logger';
+import { RESUME_MIN_SECONDS } from '@shared/constants';
 
 // Zapamiętywanie/wznawianie pozycji odtwarzania per utwór, wyodrębnione z
 // `audioEngine.ts`. Trzyma mapę w pamięci (sesyjną) i mostkuje do store procesu
@@ -11,10 +12,6 @@ export class AudioEnginePositions {
   /** Zapisana pozycja z tej sesji (mapa w pamięci) lub 0. */
   get(path: string): number {
     return this.positions.get(path) ?? 0;
-  }
-
-  remember(path: string, position: number): void {
-    this.positions.set(path, position);
   }
 
   /** Usuwa pozycję z mapy i ze store (best-effort). */
@@ -33,7 +30,7 @@ export class AudioEnginePositions {
 
   /** Trwale zapisuje pozycję (mapa + store). Wywoływane przy pauzie/postępie/zmianie. */
   persist(path: string, position: number): void {
-    if (position <= 5) return;
+    if (position <= RESUME_MIN_SECONDS) return;
     this.positions.set(path, position);
     if (window.api?.setPlaybackPosition) {
       void window.api.setPlaybackPosition(path, position);

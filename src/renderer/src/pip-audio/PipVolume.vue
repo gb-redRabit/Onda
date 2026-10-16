@@ -48,7 +48,7 @@ withDefaults(
     />
     <span
       v-if="showPct"
-      class="text-[9px] tabular-nums text-base-content/50"
+      class="text-[10px] tabular-nums text-base-content/50"
       :class="layout === 'vertical' ? '' : 'min-w-5 text-right'"
     >
       {{ volPct }}

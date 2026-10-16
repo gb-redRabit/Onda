@@ -172,7 +172,7 @@ function onFileDrop(e: DragEvent) {
 
     <!-- teraz odtwarzane -->
     <div v-if="player.currentTrack" class="px-4 py-3 border-b border-base-300 bg-base-100">
-      <div class="text-[10px] text-primary font-medium uppercase tracking-wider mb-2">
+      <div class="text-[11px] text-primary-text font-medium uppercase tracking-wider mb-2">
         {{ $t('queue.nowPlaying') }}
       </div>
       <div class="flex items-center gap-3">
@@ -201,7 +201,7 @@ function onFileDrop(e: DragEvent) {
     >
       <Music2 :size="32" class="mb-2 opacity-30" />
       <p class="text-xs">{{ $t('queue.empty') }}</p>
-      <p class="text-[10px] text-base-content/50 mt-1">{{ $t('queue.dropHint') }}</p>
+      <p class="text-[11px] text-base-content/50 mt-1">{{ $t('queue.dropHint') }}</p>
     </div>
 
     <!-- lista kolejki z drag & drop (zwirtualizowana) -->
@@ -267,7 +267,7 @@ function onFileDrop(e: DragEvent) {
 
     <!-- historia -->
     <div v-if="player.history.length > 0" class="border-t border-base-300 max-h-40 overflow-auto">
-      <div class="px-4 py-2 text-[10px] text-base-content/50 font-medium uppercase tracking-wider">
+      <div class="px-4 py-2 text-[11px] text-base-content/50 font-medium uppercase tracking-wider">
         {{ $t('queue.history') }}
       </div>
       <div
@@ -283,7 +283,7 @@ function onFileDrop(e: DragEvent) {
           <MediaCover :path="track.path" :size="10" fallback="music" />
         </div>
         <span class="text-xs truncate flex-1">{{ track.metadata?.title || track.name }}</span>
-        <span class="text-[10px] text-base-content/50">{{
+        <span class="text-[11px] text-base-content/50">{{
           formatDuration(track.duration || 0)
         }}</span>
       </div>

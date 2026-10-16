@@ -9,7 +9,7 @@ const player = usePlayerStore();
   <button
     data-testid="subtitle-button"
     class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
-    :class="{ 'text-primary!': player.subtitlePanelVisible || !!player.activeSubtitleId }"
+    :class="{ 'text-primary-text!': player.subtitlePanelVisible || !!player.activeSubtitleId }"
     :aria-label="$t('player.subtitles')"
     :aria-expanded="player.subtitlePanelVisible"
     @click="player.toggleSubtitlePanel"

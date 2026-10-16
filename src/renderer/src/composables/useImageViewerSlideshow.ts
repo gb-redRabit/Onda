@@ -2,6 +2,7 @@ import { ref, computed } from 'vue';
 import type { Ref } from 'vue';
 import { useIntervalFn, useRafFn, useTimeoutFn } from './useTimers';
 import type { FileItem } from '@renderer/types/explorer';
+import { shuffled } from '@renderer/utils/shuffle';
 
 interface SlideshowDeps {
   files: FileItem[];
@@ -70,13 +71,9 @@ export function useImageViewerSlideshow(deps: SlideshowDeps) {
     }
     if (autoHideUI.value) deps.resetIdleTimer();
     if (shuffleSlideshow.value) {
-      shuffleOrder = [...Array(deps.files.length).keys()].filter(
-        (i) => i !== deps.currentIndex.value
+      shuffleOrder = shuffled(
+        [...Array(deps.files.length).keys()].filter((i) => i !== deps.currentIndex.value)
       );
-      for (let i = shuffleOrder.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffleOrder[i], shuffleOrder[j]] = [shuffleOrder[j], shuffleOrder[i]];
-      }
     }
     runProgress();
     scheduleAdvance();

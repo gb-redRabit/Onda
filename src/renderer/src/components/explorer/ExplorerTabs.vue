@@ -200,7 +200,7 @@ async function onTabDrop(e: DragEvent, idx: number) {
         :is="tabIcon(tab)"
         :size="12"
         class="shrink-0"
-        :class="explorer.activeTabIndex === idx ? 'text-neutral-content/80' : 'text-primary'"
+        :class="explorer.activeTabIndex === idx ? 'text-neutral-content/80' : 'text-primary-text'"
       />
       <span class="truncate flex-1">{{ tab.label || $t('explorer.thisComputer') }}</span>
       <span

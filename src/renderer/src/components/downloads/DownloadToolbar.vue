@@ -49,11 +49,11 @@ onMounted(async () => {
   <div
     class="ui-page-header flex flex-wrap items-center gap-3 border-b border-base-300 bg-base-100/(--glass-alpha) p-4"
   >
-    <Download :size="24" class="text-primary" />
+    <Download :size="24" class="text-primary-text" />
     <h1 class="shrink-0 text-lg font-bold tracking-tight">{{ t('downloads.title') }}</h1>
     <span
       v-if="activeCount"
-      class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium"
+      class="text-xs bg-primary/10 text-primary-text px-2 py-0.5 rounded-full font-medium"
       >{{ activeCount }} {{ t('status.active') }}</span
     >
     <div class="flex-1" />

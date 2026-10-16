@@ -62,7 +62,7 @@ function onSpeedPreset(v: number) {
       class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono transition-colors cursor-pointer select-none"
       :class="
         speed !== 1
-          ? 'text-primary bg-primary/10 hover:bg-primary/20'
+          ? 'text-primary-text bg-primary/10 hover:bg-primary/20'
           : 'text-neutral-content/60 hover:text-neutral-content/70 bg-neutral-content/6 hover:bg-neutral-content/10'
       "
       :aria-haspopup="true"
@@ -81,10 +81,10 @@ function onSpeedPreset(v: number) {
         class="absolute bottom-full right-0 mb-2 w-64 bg-base-100 border border-base-300 rounded-box shadow-2xl shadow-black/50 p-3 z-50"
       >
         <div class="flex items-center justify-between mb-2.5">
-          <span class="text-[10px] text-base-content/50 font-medium uppercase tracking-wider">
+          <span class="text-[11px] text-base-content/50 font-medium uppercase tracking-wider">
             {{ $t('player.speedTitle') }}
           </span>
-          <span class="text-[11px] font-mono text-primary tabular-nums">{{ speedLabel }}</span>
+          <span class="text-[11px] font-mono text-primary-text tabular-nums">{{ speedLabel }}</span>
         </div>
 
         <div class="grid grid-cols-3 gap-1.5 mb-3">
@@ -117,16 +117,16 @@ function onSpeedPreset(v: number) {
           />
         </div>
         <div
-          class="flex items-center justify-between text-[9px] text-base-content/60 font-mono mt-1 px-0.5"
+          class="flex items-center justify-between text-[10px] text-base-content/60 font-mono mt-1 px-0.5"
         >
           <span>0.25x</span>
           <span>3x</span>
         </div>
 
         <div class="flex items-center justify-between mt-2.5 pt-2.5 border-t border-base-300">
-          <span class="text-[10px] text-base-content/60">{{ $t('player.speedHint') }}</span>
+          <span class="text-[11px] text-base-content/60">{{ $t('player.speedHint') }}</span>
           <button
-            class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field text-[10px] text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
+            class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field text-[11px] text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
             :class="{ 'pointer-events-none opacity-40': speed === 1 && isPresetSpeed }"
             :disabled="speed === 1 && isPresetSpeed"
             @click="onSpeedPreset(1)"

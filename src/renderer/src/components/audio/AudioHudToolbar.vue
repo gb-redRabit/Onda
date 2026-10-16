@@ -91,7 +91,7 @@ const vizModeLabel = computed(() => {
       >
         <div class="flex items-center gap-1">
           <BarChart3 :size="12" />
-          <span class="text-[9px] uppercase font-medium">{{ vizModeLabel }}</span>
+          <span class="text-[10px] uppercase font-medium">{{ vizModeLabel }}</span>
         </div>
       </button>
       <button
@@ -99,7 +99,7 @@ const vizModeLabel = computed(() => {
         class="fx-noise p-1.5 fx-depth rounded-field backdrop-blur-sm transition-all"
         :class="
           props.vizSettingsOpen
-            ? 'text-primary bg-primary/10'
+            ? 'text-primary-text bg-primary/10'
             : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10 bg-base-300/80'
         "
         :title="$t('settings.audioViz')"

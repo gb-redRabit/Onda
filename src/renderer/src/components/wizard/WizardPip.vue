@@ -22,7 +22,7 @@ const docks = [
         class="flex items-start gap-3 p-3.5 fx-depth rounded-box border border-base-300 bg-base-200/(--glass-alpha)"
       >
         <span
-          class="w-9 h-9 shrink-0 rounded-field bg-primary/15 text-primary flex items-center justify-center"
+          class="w-9 h-9 shrink-0 rounded-field bg-primary/15 text-primary-text flex items-center justify-center"
         >
           <Tv2 :size="17" />
         </span>
@@ -36,7 +36,7 @@ const docks = [
         class="flex items-start gap-3 p-3.5 fx-depth rounded-box border border-base-300 bg-base-200/(--glass-alpha)"
       >
         <span
-          class="w-9 h-9 shrink-0 rounded-field bg-primary/15 text-primary flex items-center justify-center"
+          class="w-9 h-9 shrink-0 rounded-field bg-primary/15 text-primary-text flex items-center justify-center"
         >
           <PictureInPicture :size="17" />
         </span>
@@ -66,7 +66,7 @@ const docks = [
             class="px-3.5 py-2 fx-depth rounded-field text-sm font-medium border transition-colors"
             :class="
               settings.appearance.audioPipDock === m.id
-                ? 'border-primary bg-primary/10 text-primary'
+                ? 'border-primary bg-primary/10 text-primary-text'
                 : 'border-base-300 text-base-content/70 hover:bg-base-content/5'
             "
             @click="settings.updateAppearance({ audioPipDock: m.id })"

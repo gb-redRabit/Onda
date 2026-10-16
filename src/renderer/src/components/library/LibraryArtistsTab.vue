@@ -138,7 +138,7 @@ onUnmounted(() => grid.destroy());
               <div
                 class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0"
               >
-                <Mic2 :size="14" class="text-primary" />
+                <Mic2 :size="14" class="text-primary-text" />
               </div>
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-medium truncate">{{ sortedArtists[v.index][0] }}</div>
@@ -177,7 +177,7 @@ onUnmounted(() => grid.destroy());
               <div
                 class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-2"
               >
-                <Mic2 :size="24" class="text-primary" />
+                <Mic2 :size="24" class="text-primary-text" />
               </div>
               <div class="text-sm font-medium truncate w-full">{{ name }}</div>
               <div class="text-xs text-base-content/50 mt-0.5">

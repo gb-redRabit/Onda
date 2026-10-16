@@ -125,7 +125,7 @@ const trackCount = computed(() => saved.tracks.length);
         <!-- Zapisane utwory -->
         <section>
           <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 mb-3">
-            <Play :size="14" class="text-primary" />
+            <Play :size="14" class="text-primary-text" />
             {{ $t('saved.tracksTitle') }}
             <span class="text-base-content/60 text-xs">({{ trackCount }})</span>
           </h2>
@@ -199,7 +199,7 @@ const trackCount = computed(() => saved.tracks.length);
                     </div>
                     <span
                       v-if="s.duration"
-                      class="absolute bottom-1.5 right-1.5 bg-neutral/80 text-neutral-content text-[10px] px-1.5 py-0.5 rounded-field"
+                      class="absolute bottom-1.5 right-1.5 bg-neutral/80 text-neutral-content text-[11px] px-1.5 py-0.5 rounded-field"
                     >
                       {{ s.duration }}
                     </span>

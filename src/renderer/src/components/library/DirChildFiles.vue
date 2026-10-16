@@ -48,7 +48,7 @@ const { showImageMenu } = useLibraryContextMenu();
       />
       <button
         v-if="meta.directAudio.length > 50"
-        class="w-full py-2 text-xs text-primary hover:bg-primary/10 transition-colors"
+        class="w-full py-2 text-xs text-primary-text hover:bg-primary/10 transition-colors"
         @click="() => {}"
       >
         {{ $t('library.listTruncated', { shown: 50, total: meta.directAudio.length }) }}

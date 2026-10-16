@@ -104,7 +104,7 @@ async function openChannelInApp(url: string): Promise<void> {
 <template>
   <section>
     <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 mb-3">
-      <ListMusic :size="14" class="text-primary" />
+      <ListMusic :size="14" class="text-primary-text" />
       {{ t('saved.playlistsTitle') }}
       <span class="text-base-content/60 text-xs">({{ playlistCount }})</span>
     </h2>

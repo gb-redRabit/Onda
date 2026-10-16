@@ -110,7 +110,7 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
         class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors"
         :class="
           settings.youtube.method === m.value
-            ? 'border-primary bg-primary/10 text-primary font-medium'
+            ? 'border-primary bg-primary/10 text-primary-text font-medium'
             : 'border-base-300 bg-base-100 text-base-content/70 hover:bg-base-content/10'
         "
         @click="setMethod(m.value)"

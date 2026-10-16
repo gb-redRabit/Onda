@@ -29,7 +29,7 @@ const includeFields = defineModel<Record<string, boolean>>('includeFields', { re
       />
       <span class="w-14 shrink-0">{{ row.label }}</span>
       <span class="flex-1 truncate text-base-content/50 line-through">{{ row.old }}</span>
-      <span class="text-primary">→</span>
+      <span class="text-primary-text">→</span>
       <span class="flex-1 truncate font-medium">{{ row.now }}</span>
       <span
         v-if="applyResult"

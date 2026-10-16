@@ -16,7 +16,6 @@ export const usePlayerStore = defineStore('player', () => {
   const isMuted = ref(false);
   const volume = ref(0.8);
   const duration = ref(0);
-  const playbackRate = ref(1);
   const equalizerVisible = ref(false);
   const subtitlePanelVisible = ref(false);
   const equalizerBands = ref<EqBand[]>(cloneEqBands(DEFAULT_EQ_BANDS));
@@ -132,7 +131,6 @@ export const usePlayerStore = defineStore('player', () => {
     volume,
     currentTime,
     duration,
-    playbackRate,
     shuffle,
     repeat,
     queueVisible,

@@ -150,7 +150,7 @@ onMounted(() => {
     <div class="flex-1 overflow-y-auto p-4 space-y-3">
       <div
         v-if="status"
-        class="text-xs text-primary bg-primary/10 px-3 py-1.5 rounded-field text-center"
+        class="text-xs text-primary-text bg-primary/10 px-3 py-1.5 rounded-field text-center"
       >
         {{ status }}
       </div>

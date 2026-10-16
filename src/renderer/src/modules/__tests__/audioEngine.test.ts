@@ -287,6 +287,50 @@ describe('audioEngine video element routing', () => {
     expect(spy).toHaveBeenCalledWith('4');
     off();
   });
+
+  it('does not rebuild the IIR chain when switching tracks (only reconnects the head)', () => {
+    const el = new FakeAudio() as unknown as HTMLAudioElement;
+    engine.connectAudio(el);
+    const first = engine.eqFilters[0];
+
+    // Drugie wczytanie tego samego elementu (kolejny utwór) nie może alokować nowych filtrów.
+    engine.connectAudio(el);
+    expect(engine.eqFilters[0]).toBe(first);
+    expect(engine.sourceNode?.connect).toHaveBeenCalledWith(first);
+  });
+
+  it('skips the IIR rebuild when the same bands are set again', () => {
+    const el = new FakeAudio() as unknown as HTMLAudioElement;
+    engine.connectAudio(el);
+    const before = engine.eqFilters[0];
+
+    audioEngine.setEqBands([{ type: 'lowshelf', frequency: 60, q: 0.7, gain: 4 }]);
+    const after = engine.eqFilters[0];
+    expect(after).not.toBe(before);
+
+    audioEngine.setEqBands([{ type: 'lowshelf', frequency: 60, q: 0.7, gain: 4 }]);
+    expect(engine.eqFilters[0]).toBe(after);
+  });
+
+  it('preloadNext does not re-load the same track twice', () => {
+    const track = {
+      id: 'x',
+      name: 'x.mp3',
+      path: 'D:/music/x.mp3',
+      extension: 'mp3',
+      mimeType: 'audio/mpeg',
+      size: 1,
+      type: 'audio' as const,
+      addedAt: 0,
+      playCount: 0
+    };
+    audioEngine.preloadNext(track);
+    const preloadEl = (audioEngine as unknown as { preloadEl: FakeAudio }).preloadEl;
+    expect(preloadEl.load).toHaveBeenCalledTimes(1);
+
+    audioEngine.preloadNext(track);
+    expect(preloadEl.load).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('audioEngine saved position restore', () => {

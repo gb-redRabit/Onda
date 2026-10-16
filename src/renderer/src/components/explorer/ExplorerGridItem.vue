@@ -40,7 +40,7 @@ const typeIcon = computed(() => categoryIcon(props.item.extension));
 const size = computed(() => {
   switch (props.viewMode) {
     case 'small':
-      return { icon: 36, pad: 6, fs: 'text-[10px]', mb: 1 };
+      return { icon: 36, pad: 6, fs: 'text-[11px]', mb: 1 };
     case 'medium':
       return { icon: 48, pad: 10, fs: 'text-[11px]', mb: 1.5 };
     case 'large':
@@ -92,11 +92,11 @@ const size = computed(() => {
         marginBottom: `${size.mb * 4}px`
       }"
     >
-      <HardDrive v-if="isAtDrives" :size="Math.round(size.icon * 0.55)" class="text-primary" />
+      <HardDrive v-if="isAtDrives" :size="Math.round(size.icon * 0.55)" class="text-primary-text" />
       <FolderOpen
         v-else-if="item.isDirectory"
         :size="Math.round(size.icon * 0.55)"
-        class="text-primary"
+        class="text-primary-text"
       />
       <img v-else-if="mediaThumb" alt="" :src="mediaThumb" class="w-full h-full object-cover" />
       <img
@@ -119,12 +119,12 @@ const size = computed(() => {
     <span :class="`truncate w-full leading-tight font-medium ${size.fs}`">{{ item.name }}</span>
     <span
       v-if="isAtDrives && item.size > 0"
-      :class="`text-[10px] text-base-content/50 ${size.fs}`"
+      :class="`text-[11px] text-base-content/50 ${size.fs}`"
       >{{ formatFileSize(item.size) }}</span
     >
     <span
       v-if="isLibraryFolder && !isAtDrives"
-      class="absolute top-1 right-1 px-1 py-0.5 text-[8px] rounded-field bg-primary/20 text-primary font-bold border border-primary/40 leading-none"
+      class="absolute top-1 right-1 px-1 py-0.5 text-[8px] rounded-field bg-primary/20 text-primary-text font-bold border border-primary/40 leading-none"
       >LIB</span
     >
   </button>

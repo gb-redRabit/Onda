@@ -94,7 +94,7 @@ function displayKey(key: string): string {
         class="fx-noise px-3 py-1 fx-depth rounded-field border text-xs font-mono transition-colors min-w-15 text-center"
         :class="
           recording === action
-            ? 'border-primary bg-primary/10 text-primary animate-pulse'
+            ? 'border-primary bg-primary/10 text-primary-text animate-pulse'
             : 'border-base-300 bg-base-200/(--glass-alpha) text-base-content/70 hover:border-primary hover:text-base-content'
         "
         @click="startRecording(String(action))"

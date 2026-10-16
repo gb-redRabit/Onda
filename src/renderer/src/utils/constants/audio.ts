@@ -2,18 +2,10 @@
 // wzmocnienie jak w graficznym. Pasma są definiowane przez użytkownika (dodawane/usuwane).
 
 import type { EqBand, EqBandType } from '@shared/types/audio';
+import { EQ_LIMITS } from '@shared/eqSanitize';
 
 export type { EqBand, EqBandType };
-
-export const EQ_LIMITS = {
-  minFrequency: 20,
-  maxFrequency: 20000,
-  minQ: 0.3,
-  maxQ: 8,
-  minGain: -18,
-  maxGain: 18,
-  maxBands: 12
-} as const;
+export { EQ_LIMITS };
 
 /** Typowe częstotliwości korektora (tercje oktawy) — do „przyciągania". */
 export const EQ_SNAP_FREQS = [

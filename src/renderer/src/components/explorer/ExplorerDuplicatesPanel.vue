@@ -95,7 +95,7 @@ function revealDupFile(path: string) {
   >
     <div class="flex items-center justify-between px-3 py-2.5 border-b border-base-300 shrink-0">
       <h3 class="text-xs font-semibold text-base-content flex items-center gap-2">
-        <Copy :size="14" class="text-primary" /> {{ $t('explorer.duplicates') }}
+        <Copy :size="14" class="text-primary-text" /> {{ $t('explorer.duplicates') }}
       </h3>
       <button
         data-testid="explorer-duplicates-close"
@@ -139,12 +139,12 @@ function revealDupFile(path: string) {
           class="flex items-center gap-2 px-2.5 py-1.5 bg-base-100 border-b border-base-300 cursor-pointer hover:bg-base-content/10 transition-colors"
           @click="revealDupFile(group.original)"
         >
-          <FileText :size="13" class="text-primary shrink-0" />
+          <FileText :size="13" class="text-primary-text shrink-0" />
           <span class="text-xs font-medium text-base-content truncate flex-1">{{
             basenameOf(group.original)
           }}</span>
           <span
-            class="text-[10px] px-1.5 py-0.5 rounded-field bg-primary/15 text-primary font-semibold shrink-0"
+            class="text-[11px] px-1.5 py-0.5 rounded-field bg-primary/15 text-primary-text font-semibold shrink-0"
             >{{ $t('explorer.duplicatesOriginal') }}</span
           >
         </div>

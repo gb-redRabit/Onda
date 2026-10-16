@@ -76,7 +76,7 @@ const playBtnClass = computed(
 const playIconClass = computed(
   () => props.styles?.playIcon ?? (isBar.value ? 'text-base-200' : 'text-neutral-content')
 );
-const activeClass = computed(() => props.styles?.active ?? 'text-primary!');
+const activeClass = computed(() => props.styles?.active ?? 'text-primary-text!');
 const glowClass = computed(
   () => props.styles?.glow ?? (isBar.value ? '' : 'bg-neutral-content/10 blur-lg')
 );

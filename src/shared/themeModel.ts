@@ -5,6 +5,9 @@ export const COLOR_TOKEN_IDS = [
   'baseContent',
   'primary',
   'primaryContent',
+  // Wariant `primary` czytelny jako TEKST/ikona na powierzchniach bazowych (AA 4.5:1).
+  // `primary` pozostaje kolorem wypełnień (przyciski) z `primaryContent`.
+  'primaryText',
   'secondary',
   'secondaryContent',
   'accent',

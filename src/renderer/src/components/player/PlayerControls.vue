@@ -185,7 +185,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
           />
           <div
             v-else
-            class="w-full h-full flex items-center justify-center text-[10px] text-neutral-content/50"
+            class="w-full h-full flex items-center justify-center text-[11px] text-neutral-content/50"
           >
             {{ previewTimeLabel() }}
           </div>
@@ -250,7 +250,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
         <VideoFilterDropdown />
         <button
           class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
-          :class="{ 'text-primary!': player.nightMode }"
+          :class="{ 'text-primary-text!': player.nightMode }"
           data-night-mode
           :title="$t('player.nightMode')"
           :aria-label="$t('player.nightMode')"
@@ -270,7 +270,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
         </button>
         <button
           class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
-          :class="{ 'text-primary!': player.equalizerVisible }"
+          :class="{ 'text-primary-text!': player.equalizerVisible }"
           data-eq-toggle
           :aria-label="$t('common.equalizer')"
           @click="player.toggleEqualizer"
@@ -279,7 +279,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
         </button>
         <button
           class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
-          :class="{ 'text-primary!': player.queueVisible }"
+          :class="{ 'text-primary-text!': player.queueVisible }"
           :aria-label="$t('common.queue')"
           @click="player.toggleQueue"
         >

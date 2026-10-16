@@ -19,7 +19,7 @@ function openUpdates(): void {
     data-testid="update-banner"
     class="flex items-start gap-3 shrink-0 px-4 py-2 border-b border-primary/30 bg-primary/10"
   >
-    <ArrowDownToLine :size="16" class="mt-0.5 shrink-0 text-primary" />
+    <ArrowDownToLine :size="16" class="mt-0.5 shrink-0 text-primary-text" />
     <div class="min-w-0 flex-1">
       <div class="text-xs font-medium">
         {{

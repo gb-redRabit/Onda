@@ -1,11 +1,17 @@
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import type { Ref } from 'vue';
 import type { useI18n } from 'vue-i18n';
 import type { usePlayerStore } from '@renderer/stores/player';
 import type { useSettingsStore } from '@renderer/stores/settings';
 import type { useUIStore } from '@renderer/stores/ui';
-import { applyVolumeTarget, seekTarget, skipTarget } from '@renderer/utils/mediaTransport';
+import {
+  applyVolumeTarget,
+  seekTarget,
+  skipTarget,
+  clampSpeed
+} from '@renderer/utils/mediaTransport';
 import { useVideoPlayer } from '@renderer/composables/useVideoPlayer';
+import { useResumePrompt } from '@renderer/composables/useResumePrompt';
 import { audioEngine } from '@renderer/modules/audioEngine';
 
 interface PlayerControlsCtx {
@@ -24,7 +30,6 @@ export function usePlayerControls(ctx: PlayerControlsCtx) {
   const showControls = ref(true);
   let controlsTimeout: ReturnType<typeof setTimeout> | null = null;
   let controlsDeadline = 0;
-  let resumePromptTimer: ReturnType<typeof setTimeout> | null = null;
   let clickTimer: ReturnType<typeof setTimeout> | null = null;
 
   /** Minimalna zmiana terminu ukrycia, która uzasadnia przeplanowanie timera. */
@@ -78,7 +83,7 @@ export function usePlayerControls(ctx: PlayerControlsCtx) {
   }
 
   function setSpeed(speed: number) {
-    const clamped = Math.round(Math.max(0.2, Math.min(3, speed)) * 10) / 10;
+    const clamped = clampSpeed(speed);
     settings.updatePlayback({ playbackSpeed: clamped });
     if (vp.videoRef.value) vp.videoRef.value.playbackRate = clamped;
     player.clearResumePrompt();
@@ -132,53 +137,33 @@ export function usePlayerControls(ctx: PlayerControlsCtx) {
     toggleFullscreen();
   }
 
-  function onResumeContinue() {
-    const prompt = player.resumePrompt;
-    if (prompt) {
+  const {
+    pause: pauseResumePrompt,
+    resume: resumeResumePrompt,
+    onContinue: onResumeContinue,
+    onStart: onResumeStart
+  } = useResumePrompt({
+    onContinue: (prompt) => {
       if (player.currentTrack?.type === 'video' && vp.videoRef.value) {
         vp.videoRef.value.currentTime = prompt.position;
         player.currentTime = prompt.position;
         vp.videoRef.value.play().catch(() => {
           /* best-effort */
         });
-        window.api?.setPlaybackPosition(prompt.path, prompt.position);
       } else {
         audioEngine.seek(prompt.position);
         player.currentTime = prompt.position;
         audioEngine.play();
-        window.api?.setPlaybackPosition(prompt.path, prompt.position);
       }
-    }
-    player.clearResumePrompt();
-  }
-
-  function onResumeStart() {
-    const prompt = player.resumePrompt;
-    if (prompt) {
+      window.api?.setPlaybackPosition(prompt.path, prompt.position);
+    },
+    onStart: (prompt) => {
       window.api?.clearPlaybackPosition(prompt.path);
       audioEngine.clearSavedPosition(prompt.path);
     }
-    player.clearResumePrompt();
-  }
-
-  watch(
-    () => player.resumePrompt,
-    (prompt) => {
-      if (resumePromptTimer) {
-        clearTimeout(resumePromptTimer);
-        resumePromptTimer = null;
-      }
-      if (prompt) {
-        const timeout = Math.max(1, settings.playback.resumePromptTimeout || 7);
-        resumePromptTimer = setTimeout(() => {
-          player.clearResumePrompt();
-        }, timeout * 1000);
-      }
-    }
-  );
+  });
 
   function cleanup() {
-    if (resumePromptTimer) clearTimeout(resumePromptTimer);
     if (controlsTimeout) clearTimeout(controlsTimeout);
     if (clickTimer) clearTimeout(clickTimer);
   }
@@ -198,6 +183,8 @@ export function usePlayerControls(ctx: PlayerControlsCtx) {
     handleDoubleClick,
     onResumeContinue,
     onResumeStart,
+    pauseResumePrompt,
+    resumeResumePrompt,
     cleanup
   };
 }

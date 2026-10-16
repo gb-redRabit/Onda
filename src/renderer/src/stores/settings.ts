@@ -14,7 +14,9 @@ import type {
   DependencyStatus,
   GeneralSettings,
   StatusBarSettings,
-  HomeSettings
+  HomeSettings,
+  AudioLayoutElement,
+  AudioLayoutPreset
 } from '@renderer/types/settings';
 import {
   DEFAULT_APPEARANCE,
@@ -32,7 +34,6 @@ import {
   DEFAULT_STATUS_BAR,
   DEFAULT_HOME
 } from '@renderer/utils/constants';
-import type { AudioLayoutElement, AudioLayoutPreset } from '@renderer/types/settings';
 import { computePresetLayout, computeResetLayout } from '@renderer/utils/audioLayoutPresets';
 import { createSettingsPersistence } from './settings-persist';
 

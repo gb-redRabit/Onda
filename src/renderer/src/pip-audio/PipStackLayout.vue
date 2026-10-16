@@ -62,7 +62,7 @@ const {
         v-if="has('nextTrack') && nextTrackName"
         class="max-h-[18%] px-1 text-center [writing-mode:vertical-rl]"
       >
-        <span class="truncate text-[9px] text-base-content/60">&#x21B3; {{ nextTrackName }}</span>
+        <span class="truncate text-[10px] text-base-content/60">&#x21B3; {{ nextTrackName }}</span>
       </div>
 
       <PipTransport
@@ -76,7 +76,7 @@ const {
       />
 
       <div class="min-h-1 flex-1"></div>
-      <div v-if="has('progress')" class="shrink-0 tabular-nums text-[9px] text-base-content/50">
+      <div v-if="has('progress')" class="shrink-0 tabular-nums text-[10px] text-base-content/50">
         {{ fmt(currentTime) }} / {{ fmt(duration) }}
       </div>
 

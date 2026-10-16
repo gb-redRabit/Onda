@@ -52,7 +52,7 @@ const { t } = useI18n();
           <option value="">{{ t('youtube.profileNone') }}</option>
           <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
         </select>
-        <span v-else-if="profiles.length && hasSc" class="text-[10px] text-base-content/50">
+        <span v-else-if="profiles.length && hasSc" class="text-[11px] text-base-content/50">
           {{ t('youtube.batchProfilesScHint') }}
         </span>
         <div class="flex-1" />

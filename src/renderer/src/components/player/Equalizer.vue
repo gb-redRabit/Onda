@@ -17,6 +17,7 @@ import {
 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
+import { useUIStore } from '@renderer/stores/ui';
 import {
   EQUALIZER_PRESETS,
   EQUALIZER_PRESET_LABELS,
@@ -28,10 +29,12 @@ import {
   type EqBand,
   type EqBandType
 } from '@renderer/utils/constants/audio';
+import { sanitizeEqBands, sanitizeEqPreamp } from '@shared/eqSanitize';
 import { eqCurvePath, freqToRatio, ratioToFreq } from '@renderer/utils/eqCurve';
 
 const player = usePlayerStore();
 const audio = useAudioPlayer();
+const ui = useUIStore();
 const { applyEqBands } = audio;
 const { t } = useI18n();
 
@@ -115,21 +118,27 @@ const bandY = (gain: number) =>
 const spectrum = ref<number[]>([]);
 const SPECTRUM_BARS = 48;
 let raf = 0;
+// Bufor alokujemy raz (rozmiar zależy od fftSize, nie od klatki) — wcześniej `new Uint8Array`
+// powstawał 60×/s, co generowało stałą presję na GC.
+let spectrumBuf: Uint8Array<ArrayBuffer> | null = null;
 function tick() {
   raf = requestAnimationFrame(tick);
+  // Na pauzie nic nie rysujemy — animowanie wykresu dla zatrzymanego dźwięku to zgadywanie.
+  if (!player.isPlaying) return;
   const analyser = audio.getAnalyserNode();
   if (!analyser) return;
-  const data = new Uint8Array(analyser.frequencyBinCount);
-  analyser.getByteFrequencyData(data);
-  const nyquist = 24000;
+  spectrumBuf ??= new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(spectrumBuf);
+  // Nyquist z realnego próbkowania kontekstu (44.1/48/96 kHz), nie zaszyte 24 kHz.
+  const nyquist = (audio.getAudioContext()?.sampleRate ?? 48000) / 2;
   const bars: number[] = [];
   for (let i = 0; i < SPECTRUM_BARS; i++) {
     const f = Math.pow(
       10,
       Math.log10(20) + (i / SPECTRUM_BARS) * (Math.log10(20000) - Math.log10(20))
     );
-    const bin = Math.round((f / nyquist) * data.length);
-    bars.push((data[Math.min(data.length - 1, bin)] ?? 0) / 255);
+    const bin = Math.round((f / nyquist) * spectrumBuf.length);
+    bars.push((spectrumBuf[Math.min(spectrumBuf.length - 1, bin)] ?? 0) / 255);
   }
   spectrum.value = bars;
 }
@@ -299,13 +308,30 @@ const gainPct = (gain: number) =>
   ((gain - limits.minGain) / (limits.maxGain - limits.minGain)) * 100;
 
 // --- własne presety + eksport/import ---
+// Nazwę zbieramy we własnym polu w panelu, bo `window.prompt()` nie jest obsługiwane
+// w Electronie (rzuca „prompt() is and will not be supported") — wcześniej zapis presetu
+// był martwą funkcją, a domyślna nazwa mogła nadpisać istniejący preset bez ostrzeżenia.
+const naming = ref(false);
+const presetName = ref('');
+const canSavePreset = computed(() => {
+  const name = presetName.value.trim();
+  if (!name) return false;
+  return !(name in userPresets.value) && !(name in EQUALIZER_PRESETS);
+});
 function savePreset() {
-  const name = window.prompt(
-    t('equalizer.presetName'),
-    `${t('equalizer.custom')} ${Date.now() % 1000}`
-  );
+  presetName.value = `${t('equalizer.custom')} ${Object.keys(userPresets.value).length + 1}`;
+  naming.value = true;
+}
+function confirmSavePreset() {
+  const name = presetName.value.trim();
   if (!name) return;
+  if (name in userPresets.value || name in EQUALIZER_PRESETS) {
+    ui.notify('error', t('equalizer.savePreset'), t('equalizer.presetExists'));
+    return;
+  }
   audio.setEqUserPresets({ ...userPresets.value, [name]: cloneEqBands(bands.value) });
+  naming.value = false;
+  presetName.value = '';
 }
 function deletePreset(name: string) {
   const next = { ...userPresets.value };
@@ -318,19 +344,23 @@ async function exportEq() {
       JSON.stringify({ bands: bands.value, preamp: player.equalizerPreamp })
     );
   } catch {
-    /* brak schowka */
+    ui.notify('error', t('equalizer.export'), t('equalizer.exportError'));
   }
 }
 async function importEq() {
   try {
     const text = await navigator.clipboard.readText();
-    const parsed = JSON.parse(text) as { bands?: EqBand[]; preamp?: number };
-    if (Array.isArray(parsed.bands)) {
-      commit(parsed.bands);
-      if (typeof parsed.preamp === 'number') audio.setEqPreamp(parsed.preamp);
+    const parsed = JSON.parse(text) as { bands?: unknown; preamp?: unknown };
+    const importedBands = sanitizeEqBands(parsed.bands);
+    if (!importedBands || importedBands.length === 0) {
+      ui.notify('error', t('equalizer.import'), t('equalizer.importError'));
+      return;
     }
+    commit(importedBands);
+    const preamp = sanitizeEqPreamp(parsed.preamp);
+    if (preamp !== undefined) audio.setEqPreamp(preamp);
   } catch {
-    /* nieprawidłowy schowek */
+    ui.notify('error', t('equalizer.import'), t('equalizer.importError'));
   }
 }
 onMounted(() => {
@@ -349,7 +379,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
       <div class="flex items-center gap-1.5">
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
-          :class="player.equalizerEnabled ? 'text-primary' : 'text-base-content/40'"
+          :class="player.equalizerEnabled ? 'text-primary-text' : 'text-base-content/40'"
           data-testid="eq-power"
           :title="player.equalizerEnabled ? $t('equalizer.disable') : $t('equalizer.enable')"
           :aria-label="player.equalizerEnabled ? $t('equalizer.disable') : $t('equalizer.enable')"
@@ -363,7 +393,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
       <div class="flex items-center gap-1">
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
-          :class="player.equalizerMono ? 'text-primary' : 'text-base-content/50'"
+          :class="player.equalizerMono ? 'text-primary-text' : 'text-base-content/50'"
           data-testid="eq-mono"
           :title="$t('equalizer.mono')"
           :aria-label="$t('equalizer.mono')"
@@ -374,7 +404,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
         </button>
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
-          :class="player.nightMode ? 'text-primary' : 'text-base-content/50'"
+          :class="player.nightMode ? 'text-primary-text' : 'text-base-content/50'"
           data-testid="eq-night"
           :title="$t('player.nightMode')"
           :aria-label="$t('player.nightMode')"
@@ -385,7 +415,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
         </button>
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
-          :class="player.equalizerSnap ? 'text-primary' : 'text-base-content/50'"
+          :class="player.equalizerSnap ? 'text-primary-text' : 'text-base-content/50'"
           data-testid="eq-snap"
           :title="$t('equalizer.snap')"
           :aria-label="$t('equalizer.snap')"
@@ -396,7 +426,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
         </button>
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
-          :class="player.equalizerMulticolor ? 'text-primary' : 'text-base-content/50'"
+          :class="player.equalizerMulticolor ? 'text-primary-text' : 'text-base-content/50'"
           data-testid="eq-multicolor"
           :title="$t('equalizer.multicolor')"
           :aria-label="$t('equalizer.multicolor')"
@@ -417,7 +447,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
         </button>
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
-          :class="showControls ? 'text-primary' : 'text-base-content/50'"
+          :class="showControls ? 'text-primary-text' : 'text-base-content/50'"
           data-testid="eq-toggle-controls"
           :title="showControls ? $t('equalizer.hideControls') : $t('equalizer.showControls')"
           :aria-label="showControls ? $t('equalizer.hideControls') : $t('equalizer.showControls')"
@@ -438,7 +468,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
 
     <!-- preamp -->
     <div class="flex items-center gap-2 mb-3">
-      <span class="text-[10px] text-base-content/50 shrink-0">{{ $t('equalizer.preamp') }}</span>
+      <span class="text-[11px] text-base-content/50 shrink-0">{{ $t('equalizer.preamp') }}</span>
       <input
         type="range"
         min="-12"
@@ -450,7 +480,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
         class="flex-1 h-1 cursor-pointer accent-primary"
         @input="audio.setEqPreamp(Number(($event.target as HTMLInputElement).value))"
       />
-      <span class="w-14 text-right text-[10px] font-mono tabular-nums text-base-content/70"
+      <span class="w-14 text-right text-[11px] font-mono tabular-nums text-base-content/70"
         >{{ player.equalizerPreamp > 0 ? '+' : '' }}{{ player.equalizerPreamp }}
         {{ $t('equalizer.db') }}</span
       >
@@ -458,7 +488,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
 
     <!-- opóźnienie dźwięku (kompensacja lip-sync) -->
     <div class="flex items-center gap-2 mb-3">
-      <span class="text-[10px] text-base-content/50 shrink-0">{{
+      <span class="text-[11px] text-base-content/50 shrink-0">{{
         $t('equalizer.audioDelay')
       }}</span>
       <input
@@ -472,7 +502,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
         class="flex-1 h-1 cursor-pointer accent-primary"
         @input="audio.setAudioDelay(Number(($event.target as HTMLInputElement).value))"
       />
-      <span class="w-14 text-right text-[10px] font-mono tabular-nums text-base-content/70"
+      <span class="w-14 text-right text-[11px] font-mono tabular-nums text-base-content/70"
         >{{ player.audioDelayMs }} {{ $t('equalizer.ms') }}</span
       >
     </div>
@@ -499,7 +529,9 @@ onUnmounted(() => cancelAnimationFrame(raf));
         :data-testid="'eq-user-preset-' + name"
         class="fx-noise px-2.5 py-1 fx-depth rounded-field text-[11px] font-medium transition-colors border border-primary/40"
         :class="
-          activePreset === name ? 'bg-primary text-primary-content' : 'bg-primary/10 text-primary'
+          activePreset === name
+            ? 'bg-primary text-primary-content'
+            : 'bg-primary/10 text-primary-text'
         "
         @click="selectPreset(name)"
         @contextmenu.prevent="deletePreset(name)"
@@ -509,7 +541,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
       <span
         v-if="activePreset === 'custom'"
         data-testid="eq-preset-custom"
-        class="px-2.5 py-1 rounded-field text-[11px] font-medium bg-primary/15 text-primary border border-primary/40"
+        class="px-2.5 py-1 rounded-field text-[11px] font-medium bg-primary/15 text-primary-text border border-primary/40"
       >
         {{ $t('equalizer.custom') }}
       </span>
@@ -536,6 +568,41 @@ onUnmounted(() => cancelAnimationFrame(raf));
         @click="importEq"
       >
         <Upload :size="12" />
+      </button>
+    </div>
+
+    <!-- nazwa nowego presetu (zamiast window.prompt, którego Electron nie wspiera) -->
+    <div
+      v-if="naming"
+      class="flex items-center gap-2 mb-3"
+      data-testid="eq-preset-name"
+      @keydown.esc="naming = false"
+    >
+      <input
+        v-model="presetName"
+        type="text"
+        :aria-label="$t('equalizer.presetName')"
+        :placeholder="$t('equalizer.presetName')"
+        class="flex-1 min-w-0 px-2 py-1 rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none"
+        data-testid="eq-preset-name-input"
+        @keydown.enter="confirmSavePreset"
+      />
+      <button
+        type="button"
+        class="fx-noise px-2.5 py-1 fx-depth rounded-field bg-primary text-primary-content text-[11px] font-medium transition-colors disabled:opacity-40"
+        :disabled="!canSavePreset"
+        data-testid="eq-preset-name-confirm"
+        @click="confirmSavePreset"
+      >
+        {{ $t('equalizer.savePreset') }}
+      </button>
+      <button
+        type="button"
+        class="fx-noise px-2.5 py-1 fx-depth rounded-field bg-base-300 text-base-content/70 text-[11px] font-medium transition-colors"
+        data-testid="eq-preset-name-cancel"
+        @click="naming = false"
+      >
+        {{ $t('common.cancel') }}
       </button>
     </div>
 
@@ -590,19 +657,19 @@ onUnmounted(() => cancelAnimationFrame(raf));
         <path
           :d="curvePath"
           fill="none"
-          class="stroke-primary"
+          class="stroke-primary-text"
           stroke-width="2"
           vector-effect="non-scaling-stroke"
         />
       </svg>
 
       <!-- etykiety siatki -->
-      <span class="absolute left-1 top-0.5 text-[9px] text-base-content/30">+18</span>
-      <span class="absolute left-1 bottom-0.5 text-[9px] text-base-content/30">-18</span>
+      <span class="absolute left-1 top-0.5 text-[10px] text-base-content/30">+18</span>
+      <span class="absolute left-1 bottom-0.5 text-[10px] text-base-content/30">-18</span>
       <span
         v-for="f in GRID_FREQS"
         :key="'lf' + f"
-        class="absolute bottom-0.5 text-[9px] text-base-content/30 -translate-x-1/2"
+        class="absolute bottom-0.5 text-[10px] text-base-content/30 -translate-x-1/2"
         :style="{ left: freqToRatio(f, CURVE.minFreq, CURVE.maxFreq) * 100 + '%' }"
         >{{ f >= 1000 ? f / 1000 + 'k' : f }}</span
       >
@@ -612,7 +679,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
         v-for="(band, i) in bands"
         :key="'m' + i"
         type="button"
-        class="absolute w-5 h-5 flex items-center justify-center text-[9px] font-bold text-base-100 shadow cursor-grab active:cursor-grabbing"
+        class="absolute w-5 h-5 flex items-center justify-center text-[10px] font-bold text-base-100 shadow cursor-grab active:cursor-grabbing"
         :style="{
           left: bandX(band.frequency) + '%',
           top: bandY(band.gain + player.equalizerPreamp) + '%',
@@ -651,7 +718,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
           v-for="tp in bandTypes"
           :key="tp"
           class="w-full text-left px-2 py-1 rounded-field hover:bg-base-content/10 transition-colors"
-          :class="{ 'text-primary': bands[menuBand].type === tp }"
+          :class="{ 'text-primary-text': bands[menuBand].type === tp }"
           @click="setType(menuBand, tp)"
         >
           {{ typeLabel(tp) }}
@@ -683,7 +750,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
       >
         <div class="flex items-center gap-2">
           <span
-            class="shrink-0 w-4 h-4 flex items-center justify-center text-[9px] font-bold text-base-100"
+            class="shrink-0 w-4 h-4 flex items-center justify-center text-[10px] font-bold text-base-100"
             :style="{ backgroundColor: color(i), borderRadius: markerRadius(band.type) }"
             aria-hidden="true"
             >{{ i + 1 }}</span
@@ -705,7 +772,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
             :class="
               band.enabled === false
                 ? 'text-base-content/30 hover:text-base-content/60'
-                : 'text-primary hover:bg-base-content/10'
+                : 'text-primary-text hover:bg-base-content/10'
             "
             :data-testid="'eq-enable-' + i"
             :title="$t('equalizer.bandEnabled')"
@@ -717,7 +784,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
           </button>
           <button
             type="button"
-            class="shrink-0 px-1.5 py-1 rounded-field text-[10px] font-bold transition-colors"
+            class="shrink-0 px-1.5 py-1 rounded-field text-[11px] font-bold transition-colors"
             :class="
               solo === i
                 ? 'bg-primary text-primary-content'
@@ -744,7 +811,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
         </div>
 
         <div class="flex items-center gap-2 mt-1.5 pl-6">
-          <span class="w-3 text-[10px] text-base-content/50">F</span>
+          <span class="w-3 text-[11px] text-base-content/50">F</span>
           <input
             type="range"
             :min="0"
@@ -770,13 +837,13 @@ onUnmounted(() => cancelAnimationFrame(raf));
               })
             "
           />
-          <span class="w-18 text-right text-[10px] font-mono tabular-nums text-base-content/60"
+          <span class="w-18 text-right text-[11px] font-mono tabular-nums text-base-content/60"
             >{{ band.frequency }} {{ $t('equalizer.hz') }}</span
           >
         </div>
 
         <div v-if="band.type === 'peaking'" class="flex items-center gap-2 mt-1 pl-6">
-          <span class="w-3 text-[10px] text-base-content/50">Q</span>
+          <span class="w-3 text-[11px] text-base-content/50">Q</span>
           <input
             type="range"
             :min="limits.minQ"
@@ -798,13 +865,13 @@ onUnmounted(() => cancelAnimationFrame(raf));
               })
             "
           />
-          <span class="w-18 text-right text-[10px] font-mono tabular-nums text-base-content/60">{{
+          <span class="w-18 text-right text-[11px] font-mono tabular-nums text-base-content/60">{{
             band.q
           }}</span>
         </div>
 
         <div v-if="band.type !== 'peaking'" class="flex items-center gap-2 mt-1 pl-6">
-          <span class="w-3 text-[10px] text-base-content/50">S</span>
+          <span class="w-3 text-[11px] text-base-content/50">S</span>
           <input
             type="range"
             min="0.3"
@@ -821,13 +888,13 @@ onUnmounted(() => cancelAnimationFrame(raf));
               })
             "
           />
-          <span class="w-18 text-right text-[10px] font-mono tabular-nums text-base-content/60">{{
+          <span class="w-18 text-right text-[11px] font-mono tabular-nums text-base-content/60">{{
             band.slope ?? 1
           }}</span>
         </div>
 
         <div class="flex items-center gap-2 mt-1 pl-6">
-          <span class="w-3 text-[10px] text-base-content/50">G</span>
+          <span class="w-3 text-[11px] text-base-content/50">G</span>
           <div
             :data-testid="'eq-band-' + i"
             class="flex-1 relative h-4 cursor-pointer flex items-center"
@@ -863,7 +930,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
               }"
             />
           </div>
-          <span class="w-18 text-right text-[10px] font-mono tabular-nums text-base-content/60"
+          <span class="w-18 text-right text-[11px] font-mono tabular-nums text-base-content/60"
             >{{ band.gain > 0 ? '+' : '' }}{{ band.gain }} {{ $t('equalizer.db') }}</span
           >
         </div>

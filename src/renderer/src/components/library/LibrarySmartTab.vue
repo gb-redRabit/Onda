@@ -9,6 +9,7 @@ import {
   countSmartFolder,
   type SmartFolderId
 } from '@renderer/utils/smartFolders';
+import { shuffled } from '@renderer/utils/shuffle';
 import LibraryTracksTab from '@renderer/components/library/LibraryTracksTab.vue';
 
 // Zakładka „Inteligentne": wirtualne foldery liczone na bieżąco z metadanych i
@@ -49,12 +50,7 @@ function playAll(): void {
 }
 
 function shuffleAll(): void {
-  const list = [...currentTracks.value];
-  for (let i = list.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [list[i], list[j]] = [list[j], list[i]];
-  }
-  playList(list);
+  playList(shuffled(currentTracks.value));
 }
 </script>
 
@@ -81,7 +77,7 @@ function shuffleAll(): void {
         <component :is="folder.icon" :size="14" class="shrink-0 opacity-80" />
         <span class="truncate flex-1">{{ $t(folder.labelKey) }}</span>
         <span
-          class="px-1.5 py-0.5 rounded-selector text-[10px] font-bold leading-none border shrink-0"
+          class="px-1.5 py-0.5 rounded-selector text-[11px] font-bold leading-none border shrink-0"
           :class="
             selected === folder.id
               ? 'bg-primary-content/20 border-primary-content/20'

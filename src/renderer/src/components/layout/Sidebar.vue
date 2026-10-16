@@ -127,7 +127,7 @@ function onResizeStart(e: MouseEvent) {
             :is="item.icon"
             :size="18"
             class="shrink-0"
-            :class="{ 'animate-download-blink text-primary': item.blink }"
+            :class="{ 'animate-download-blink text-primary-text': item.blink }"
           />
           <span v-if="!collapsed" class="truncate">{{ item.label }}</span>
         </button>
@@ -155,9 +155,9 @@ function onResizeStart(e: MouseEvent) {
                 class="group flex items-center gap-2 px-3 py-2 rounded-field text-xs text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors cursor-pointer"
                 @click="router.push('/library?album=' + encodeURIComponent(album))"
               >
-                <Disc3 :size="13" class="shrink-0 text-primary/70" />
+                <Disc3 :size="13" class="shrink-0 text-primary-text/70" />
                 <span class="truncate flex-1">{{ album }}</span>
-                <span class="text-[10px] text-base-content/50">{{ tracks.length }}</span>
+                <span class="text-[11px] text-base-content/50">{{ tracks.length }}</span>
               </div>
             </div>
           </div>

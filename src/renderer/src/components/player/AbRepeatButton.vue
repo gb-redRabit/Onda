@@ -48,7 +48,7 @@ function onClick() {
     class="flex items-center gap-1 px-1.5 py-1 rounded-field text-[11px] font-medium transition-colors"
     :class="
       state === 'ab'
-        ? 'text-primary'
+        ? 'text-primary-text'
         : state === 'a'
           ? 'text-neutral-content'
           : 'text-neutral-content/60 hover:text-neutral-content/80'

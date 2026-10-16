@@ -84,9 +84,9 @@ function playPlaylist(playlistId: string) {
         @dragleave="dragOverPlaylistId = null"
         @drop.prevent="onPlaylistDrop($event, playlist.id)"
       >
-        <ListMusic :size="13" class="shrink-0 text-primary/70" />
+        <ListMusic :size="13" class="shrink-0 text-primary-text/70" />
         <span class="truncate flex-1">{{ playlist.name }}</span>
-        <span class="text-[10px] text-base-content/50">{{ playlist.tracks.length }}</span>
+        <span class="text-[11px] text-base-content/50">{{ playlist.tracks.length }}</span>
         <button
           class="fx-noise p-0.5 fx-depth rounded-field opacity-0 group-hover:opacity-100 text-base-content/50 hover:text-error transition-all"
           :aria-label="$t('common.delete')"

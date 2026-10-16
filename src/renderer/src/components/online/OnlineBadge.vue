@@ -14,14 +14,14 @@ const props = withDefaults(
 
 const variants: Record<string, string> = {
   default: 'bg-base-100 text-base-content/70 border border-base-300',
-  accent: 'bg-primary/10 text-primary',
+  accent: 'bg-primary/10 text-primary-text',
   green: 'bg-success/15 text-success',
   amber: 'bg-warning/15 text-warning',
   red: 'bg-error/15 text-error'
 };
 
 const sizes: Record<string, string> = {
-  sm: 'px-1.5 h-[calc(var(--size-selector)+4px)] text-[10px]',
+  sm: 'px-1.5 h-[calc(var(--size-selector)+4px)] text-[11px]',
   md: 'px-2 h-[calc(var(--size-selector)+6px)] text-xs'
 };
 

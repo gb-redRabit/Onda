@@ -40,10 +40,14 @@ export class AudioGraph {
   videoGainNode: GainNode | null = null;
   videoSourceEl: HTMLVideoElement | null = null;
   eqChainBuilt = false;
+  /** Sygnatura ostatnio zbudowanego łańcucha — patrz `computeEqSignature`. */
+  private eqSignature = '';
 
   ensureContext(): void {
     if (this.audioCtx) return;
-    this.audioCtx = new AudioContext();
+    // Odtwarzacz mediów, nie instrument — `playback` daje większy bufor kosztem
+    // opóźnienia wejścia, co realnie zmniejsza zużycie CPU/energii.
+    this.audioCtx = new AudioContext({ latencyHint: 'playback' });
     this.analyserNode = this.audioCtx.createAnalyser();
     this.analyserNode.fftSize = 2048;
     this.gainNode = this.audioCtx.createGain();
@@ -79,8 +83,9 @@ export class AudioGraph {
 
   /**
    * (Prze)budowuje IIR-y z bieżących pasm i łączy [źródło/wideo] → filtry → preamp.
-   * `IIRFilterNode` ma stałe współczynniki, więc każda zmiana pasma wymaga przebudowy
-   * (krótkie, jednorazowe rozłączenie łańcucha).
+   * `IIRFilterNode` ma stałe współczynniki, więc każda ZMIANA pasma wymaga przebudowy
+   * (krótkie, jednorazowe rozłączenie łańcucha). Nie jest to jednak potrzebne przy
+   * zwykłym przełączeniu utworu — dlatego `connectSource` tylko podłącza głowę łańcucha.
    */
   private rebuildEqFilters(): void {
     const ctx = this.audioCtx;
@@ -116,18 +121,39 @@ export class AudioGraph {
     });
     const first = this.eqFilters[0];
     if (first) {
-      if (this.sourceNode) this.sourceNode.connect(first);
-      if (this.videoGainNode) this.videoGainNode.connect(first);
       let prev: AudioNode = first;
       for (let i = 1; i < this.eqFilters.length; i++) {
         prev.connect(this.eqFilters[i]);
         prev = this.eqFilters[i];
       }
       if (this.preampNode) prev.connect(this.preampNode);
+    }
+    this.eqSignature = this.computeEqSignature();
+    this.connectChainHead();
+  }
+
+  /** Podłącza [źródło/wideo] do AKTUALNEJ głowy łańcucha (bez przebudowy filtrów). */
+  private connectChainHead(): void {
+    const first = this.eqFilters[0];
+    if (first) {
+      if (this.sourceNode) this.sourceNode.connect(first);
+      if (this.videoGainNode) this.videoGainNode.connect(first);
     } else {
       if (this.sourceNode && this.preampNode) this.sourceNode.connect(this.preampNode);
       if (this.videoGainNode && this.preampNode) this.videoGainNode.connect(this.preampNode);
     }
+  }
+
+  /** Sygnatura bieżących pasm/trybu/próbkowania — pozwala pominąć zbędną przebudowę. */
+  private computeEqSignature(): string {
+    const rate = this.audioCtx?.sampleRate ?? 0;
+    const bands = this.eqBands
+      .map(
+        (b) =>
+          `${b.type}:${b.frequency}:${b.q}:${b.gain}:${b.slope ?? ''}:${b.enabled === false ? 0 : 1}`
+      )
+      .join('|');
+    return `${this.eqEnabled ? 1 : 0}@${rate}@${bands}`;
   }
 
   connectSource(el: HTMLAudioElement): void {
@@ -145,7 +171,8 @@ export class AudioGraph {
     if (!this.eqChainBuilt) {
       this.ensureEqChain();
     } else {
-      this.rebuildEqFilters();
+      // Ten sam łańcuch filtrów — wystarczy podłączyć głowę (bez alokacji węzłów IIR).
+      this.connectChainHead();
     }
   }
 
@@ -237,7 +264,7 @@ export class AudioGraph {
 
     this.ensureEqChain();
     if (this.videoSourceNode) this.videoSourceNode.connect(this.videoGainNode!);
-    this.rebuildEqFilters();
+    this.connectChainHead();
 
     this.videoGainNode.gain.value = initialVolume;
   }
@@ -262,7 +289,9 @@ export class AudioGraph {
     this.videoSourceEl = null;
 
     if (!this.sourceNode) return;
-    this.rebuildEqFilters();
+    // Węzeł wideo zniknął razem ze swoją krawędzią; źródło audio nadal wisi na łańcuchu,
+    // ale podłączamy głowę ponownie (idempotentnie), bo mogło zostać odłączone.
+    this.connectChainHead();
   }
 
   setVideoVolume(v: number): void {
@@ -277,7 +306,11 @@ export class AudioGraph {
   /** Ustawia pasma i (prze)budowuje łańcuch IIR; nadmiarowe sloty stają się neutralne. */
   setEqBands(bands: readonly EqBand[]): void {
     this.eqBands = bands;
-    if (this.eqChainBuilt) this.rebuildEqFilters();
+    if (!this.eqChainBuilt) return;
+    // Pomijamy przebudowę, gdy nic się nie zmieniło (np. ponowne ustawienie tych samych
+    // pasm z UI) — alokacja nowych IIR-ów i trzaski były zbędne.
+    if (this.computeEqSignature() === this.eqSignature) return;
+    this.rebuildEqFilters();
   }
 
   /** Preamp: płaski gain wyjściowy korektora (dB). */

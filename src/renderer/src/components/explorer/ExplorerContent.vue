@@ -152,11 +152,15 @@ defineExpose({ reveal });
             :src="extraSmallIcon(files[virtualRow.index])!"
             class="w-4 h-4 object-contain shrink-0"
           />
-          <HardDrive v-else-if="explorer.isAtDrives" :size="12" class="text-primary shrink-0" />
+          <HardDrive
+            v-else-if="explorer.isAtDrives"
+            :size="12"
+            class="text-primary-text shrink-0"
+          />
           <FolderOpen
             v-else-if="files[virtualRow.index].isDirectory"
             :size="12"
-            class="text-primary shrink-0"
+            class="text-primary-text shrink-0"
           />
           <component
             :is="fileTypeIcon(files[virtualRow.index].extension)"
@@ -167,7 +171,7 @@ defineExpose({ reveal });
           <span class="truncate flex-1">{{ files[virtualRow.index].name }}</span>
           <span
             v-if="isLibraryFolder(files[virtualRow.index].path) && !explorer.isAtDrives"
-            class="text-[8px] px-1 rounded-field bg-primary/20 text-primary font-bold border border-primary/40"
+            class="text-[8px] px-1 rounded-field bg-primary/20 text-primary-text font-bold border border-primary/40"
             >LIB</span
           >
         </button>

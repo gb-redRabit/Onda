@@ -115,7 +115,7 @@ function lastCheckedLabel(ts?: number): string {
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2 flex-wrap">
           <button
-            class="text-sm font-semibold text-base-content truncate hover:text-primary transition-colors"
+            class="text-sm font-semibold text-base-content truncate hover:text-primary-text transition-colors"
             @click="emit('openChannel', sub.channelId)"
           >
             {{ sub.channelTitle }}

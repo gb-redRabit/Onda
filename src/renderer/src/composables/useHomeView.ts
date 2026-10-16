@@ -90,7 +90,12 @@ export function useHomeView() {
       color: 'text-base-content',
       tab: 'overview'
     },
-    { value: library.audioCount, key: 'home.audioFiles', color: 'text-primary', tab: 'tracks' },
+    {
+      value: library.audioCount,
+      key: 'home.audioFiles',
+      color: 'text-primary-text',
+      tab: 'tracks'
+    },
     { value: library.videoCount, key: 'home.videoFiles', color: 'text-success', tab: 'video' },
     { value: library.imageCount, key: 'home.imageFiles', color: 'text-secondary', tab: 'images' },
     {

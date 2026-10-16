@@ -264,7 +264,7 @@ async function onFactoryReset(): Promise<void> {
           />
           <span class="font-medium">{{ row.tool }}</span>
           <span
-            class="text-[10px] px-1.5 py-0.5 rounded-field bg-base-content/10 text-base-content/50 font-medium"
+            class="text-[11px] px-1.5 py-0.5 rounded-field bg-base-content/10 text-base-content/50 font-medium"
           >
             {{ sourceLabel(row.source) }}
           </span>
@@ -282,7 +282,7 @@ async function onFactoryReset(): Promise<void> {
           <div v-else class="text-base-content/60">{{ $t('settings.depMissing') }}</div>
           <div
             v-if="row.path"
-            class="text-[10px] font-mono text-base-content/60 truncate max-w-[320px]"
+            class="text-[11px] font-mono text-base-content/60 truncate max-w-[320px]"
             :title="row.path"
           >
             {{ row.path }}
@@ -300,13 +300,13 @@ async function onFactoryReset(): Promise<void> {
     </div>
     <div v-if="warnings.length" class="space-y-1">
       <div v-for="(w, i) in warnings" :key="i" class="flex items-start gap-2 text-xs">
-        <span class="font-mono text-[10px] text-base-content/60 shrink-0 pt-0.5">
+        <span class="font-mono text-[11px] text-base-content/60 shrink-0 pt-0.5">
           {{ formatTime(w.at) }}
         </span>
         <span class="text-base-content/70 wrap-break-word min-w-0">{{ w.text }}</span>
         <span
           v-if="w.count > 1"
-          class="text-[10px] px-1.5 py-0.5 rounded-field bg-warning/15 text-warning font-medium shrink-0"
+          class="text-[11px] px-1.5 py-0.5 rounded-field bg-warning/15 text-warning font-medium shrink-0"
         >
           ×{{ w.count }}
         </span>

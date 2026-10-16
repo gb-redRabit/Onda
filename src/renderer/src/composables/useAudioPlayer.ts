@@ -210,7 +210,6 @@ export function useAudioPlayer() {
       usePlayerStore().setVolume(v);
       audioEngine.setVolume(usePlayerStore().isMuted ? 0 : v);
     },
-    setPlaybackRate: (rate: number) => audioEngine.setPlaybackRate(rate),
     applyEqBands: (bands: EqBand[]) => {
       const player = usePlayerStore();
       player.equalizerBands = cloneEqBands(bands);

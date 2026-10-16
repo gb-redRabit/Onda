@@ -162,7 +162,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
               : detection.kind === 'web'
                 ? 'text-info'
                 : detection.kind === 'provider'
-                  ? 'text-primary'
+                  ? 'text-primary-text'
                   : 'text-error'
           "
           :title="detection.label"
@@ -205,7 +205,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
           <ListMusic :size="18" />
           <span
             v-if="batchCount && batchCount > 0"
-            class="absolute -top-1 -right-1 min-w-3.5 h-3.5 px-0.5 flex items-center justify-center bg-primary text-primary-content text-[9px] font-bold rounded-full"
+            class="absolute -top-1 -right-1 min-w-3.5 h-3.5 px-0.5 flex items-center justify-center bg-primary text-primary-content text-[10px] font-bold rounded-full"
           >
             {{ batchCount > 9 ? '9+' : batchCount }}
           </span>

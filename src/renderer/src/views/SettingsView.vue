@@ -331,7 +331,7 @@ onBeforeUnmount(() => {
                 </span>
                 <span
                   v-if="hit.kind === 'field'"
-                  class="shrink-0 text-[10px] uppercase tracking-wider text-base-content/60"
+                  class="shrink-0 text-[11px] uppercase tracking-wider text-base-content/60"
                 >
                   {{ t('settings.searchField') }}
                 </span>
@@ -347,7 +347,7 @@ onBeforeUnmount(() => {
             <h3
               class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-base-content/60 mb-3"
             >
-              <component :is="section.icon" :size="15" class="text-primary" />
+              <component :is="section.icon" :size="15" class="text-primary-text" />
               {{ t(section.labelKey) }}
             </h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -359,7 +359,7 @@ onBeforeUnmount(() => {
                 @click="openTab(tab.id)"
               >
                 <span
-                  class="grid place-items-center w-9 h-9 rounded-field bg-primary/10 text-primary shrink-0"
+                  class="grid place-items-center w-9 h-9 rounded-field bg-primary/10 text-primary-text shrink-0"
                 >
                   <component :is="tab.icon" :size="17" />
                 </span>
@@ -379,7 +379,7 @@ onBeforeUnmount(() => {
           <header class="mb-6 flex items-start gap-3">
             <span
               v-if="activeTabMeta"
-              class="grid place-items-center w-10 h-10 rounded-box bg-primary/10 text-primary shrink-0"
+              class="grid place-items-center w-10 h-10 rounded-box bg-primary/10 text-primary-text shrink-0"
             >
               <component :is="activeTabMeta.icon" :size="20" />
             </span>

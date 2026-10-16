@@ -146,7 +146,7 @@ function onInstall(): void {
     </div>
 
     <div v-if="state.status === 'available'" class="flex items-center justify-between py-1">
-      <div class="text-sm text-primary">
+      <div class="text-sm text-primary-text">
         {{ $t('settings.updateAvailable') }} v{{ state.version }}
       </div>
       <button

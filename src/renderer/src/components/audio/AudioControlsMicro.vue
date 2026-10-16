@@ -27,10 +27,10 @@ function togglePlay() {
       <Pause
         v-if="audio.isPlaying.value"
         :size="PLAY_SIZE.micro"
-        class="text-primary"
+        class="text-primary-text"
         fill="currentColor"
       />
-      <Play v-else :size="PLAY_SIZE.micro" class="text-primary ml-0.5" fill="currentColor" />
+      <Play v-else :size="PLAY_SIZE.micro" class="text-primary-text ml-0.5" fill="currentColor" />
     </button>
   </div>
 </template>

@@ -32,7 +32,7 @@ const { showImageMenu } = useLibraryContextMenu();
     />
     <button
       v-if="props.audio.length > props.audioLimit"
-      class="w-full py-2 text-xs text-primary hover:bg-primary/10 transition-colors border-t border-base-300/30"
+      class="w-full py-2 text-xs text-primary-text hover:bg-primary/10 transition-colors border-t border-base-300/30"
       @click="emit('more-audio')"
     >
       Pokaż więcej ({{ props.audio.length - props.audioLimit }} z {{ props.audio.length }})
@@ -55,7 +55,7 @@ const { showImageMenu } = useLibraryContextMenu();
     </button>
     <button
       v-if="props.images.length > props.imageLimit"
-      class="col-span-full py-2 text-xs text-primary hover:bg-primary/10 rounded-field transition-colors"
+      class="col-span-full py-2 text-xs text-primary-text hover:bg-primary/10 rounded-field transition-colors"
       @click="emit('more-images')"
     >
       Pokaż więcej obrazów ({{ props.images.length - props.imageLimit }})

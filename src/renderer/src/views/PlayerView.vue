@@ -267,6 +267,8 @@ onUnmounted(() => {
       :position="player.resumePrompt.position"
       @continue="ctl.onResumeContinue"
       @start="ctl.onResumeStart"
+      @pause="ctl.pauseResumePrompt"
+      @resume="ctl.resumeResumePrompt"
     />
 
     <PlayerControls

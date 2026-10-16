@@ -209,7 +209,7 @@ onBeforeUnmount(() => {
         <div class="text-xs text-base-content/70 mt-0.5">
           <button
             v-if="showChannel && channelTarget"
-            class="hover:text-primary transition-colors"
+            class="hover:text-primary-text transition-colors"
             @click.stop="onOpenChannel"
           >
             {{ video.channelTitle }}

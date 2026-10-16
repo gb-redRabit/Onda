@@ -43,7 +43,7 @@ const rows = computed(() => [
 <template>
   <div>
     <span
-      class="w-12 h-12 rounded-box bg-primary/15 text-primary flex items-center justify-center mb-4"
+      class="w-12 h-12 rounded-box bg-primary/15 text-primary-text flex items-center justify-center mb-4"
     >
       <CheckCircle2 :size="24" />
     </span>

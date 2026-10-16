@@ -23,7 +23,7 @@ const player = usePlayerStore();
         :key="i"
         class="flex items-center gap-2 text-xs text-base-content/70 truncate px-2 py-1.5 rounded-field hover:bg-base-content/10 hover:text-base-content transition-colors"
       >
-        <Music2 :size="11" class="shrink-0 text-primary" />
+        <Music2 :size="11" class="shrink-0 text-primary-text" />
         <span class="truncate">{{ track.metadata?.title || track.name }}</span>
       </div>
     </div>

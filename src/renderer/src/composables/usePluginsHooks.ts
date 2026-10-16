@@ -1,6 +1,7 @@
 import { watch } from 'vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useLibraryStore } from '@renderer/stores/library';
+import { useSettingsStore } from '@renderer/stores/settings';
 import { usePluginsStore, snapshotTrack, type TrackSnapshot } from '@renderer/stores/plugins';
 import { audioEvents } from '@renderer/utils/audioEvents';
 import type { PluginHookPayload } from '@renderer/modules/plugins/plugin-shim';
@@ -57,7 +58,7 @@ export function usePluginsHooks(): void {
       position,
       duration: player.duration,
       progress: player.progress,
-      rate: player.playbackRate,
+      rate: useSettingsStore().playback.playbackSpeed,
       playing: player.isPlaying,
       track: snapshotTrack(player.currentTrack)
     });

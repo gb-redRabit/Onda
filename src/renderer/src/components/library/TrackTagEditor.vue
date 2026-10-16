@@ -227,7 +227,7 @@ async function save() {
           <MediaCover :cover="coverObj" :size="32" fallback="music" />
         </div>
         <button
-          class="fx-noise flex items-center gap-1 px-3 py-1.5 fx-depth rounded-field text-xs font-medium bg-primary/10 text-primary hover:bg-primary hover:text-primary-content transition-colors"
+          class="fx-noise flex items-center gap-1 px-3 py-1.5 fx-depth rounded-field text-xs font-medium bg-primary/10 text-primary-text hover:bg-primary hover:text-primary-content transition-colors"
           :disabled="uploadingCover"
           @click="pickCover"
         >

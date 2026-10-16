@@ -102,7 +102,7 @@ onUnmounted(() => tabResizeObserver?.disconnect());
         <span data-tab-label class="truncate">{{ tabItem.label }}</span>
         <span
           data-tab-count
-          class="ml-0.5 px-1 sm:px-1.5 py-0.5 rounded-selector text-[10px] font-bold leading-none shrink-0 border"
+          class="ml-0.5 px-1 sm:px-1.5 py-0.5 rounded-selector text-[11px] font-bold leading-none shrink-0 border"
           :class="
             props.modelValue === tabItem.id
               ? 'bg-primary-content/20 text-primary-content border-primary-content/20'

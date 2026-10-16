@@ -6,13 +6,29 @@ import type { Directive } from 'vue';
 // `tabindex="0"` oraz Enter/Spacja wyzwalające `click`. Rejestrowana globalnie
 // w `main.ts` jako `v-activate`.
 
+function isSelf(e: KeyboardEvent): boolean {
+  return e.target === e.currentTarget;
+}
+
 function onKeydown(e: KeyboardEvent): void {
-  if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
-  // Zdarzenia z zagnieżdżonej kontrolki (np. przycisku w karcie) nie mogą
-  // aktywować całego wiersza.
-  if (e.target !== e.currentTarget) return;
-  e.preventDefault();
-  (e.currentTarget as HTMLElement).click();
+  if (!isSelf(e)) return;
+  // Enter aktywuje na `keydown` (jak natywny przycisk); Spacja dopiero na `keyup`,
+  // żeby przytrzymanie klawisza nie klikało wielokrotnie (zgodność z natywnym
+  // zachowaniem `<button>` i WCAG 2.1 — „visible focus + activatable”).
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).click();
+  } else if (e.key === ' ' || e.key === 'Spacebar') {
+    e.preventDefault();
+  }
+}
+
+function onKeyup(e: KeyboardEvent): void {
+  if (!isSelf(e)) return;
+  if (e.key === ' ' || e.key === 'Spacebar') {
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).click();
+  }
 }
 
 export const vActivate: Directive<HTMLElement> = {
@@ -20,8 +36,10 @@ export const vActivate: Directive<HTMLElement> = {
     if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
     if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
     el.addEventListener('keydown', onKeydown);
+    el.addEventListener('keyup', onKeyup);
   },
   beforeUnmount(el) {
     el.removeEventListener('keydown', onKeydown);
+    el.removeEventListener('keyup', onKeyup);
   }
 };

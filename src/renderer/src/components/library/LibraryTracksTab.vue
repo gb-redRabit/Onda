@@ -184,7 +184,7 @@ onUnmounted(() => {
           ><span class="sm:hidden">{{ $t('common.play') }}</span>
         </button>
         <button
-          class="p-2 rounded-full bg-base-100 border border-base-300 text-base-content/60 hover:text-primary hover:border-primary/30 transition-colors"
+          class="p-2 rounded-full bg-base-100 border border-base-300 text-base-content/60 hover:text-primary-text hover:border-primary/30 transition-colors"
           :title="$t('library.shuffle')"
           @click="emit('shuffleAll')"
         >
