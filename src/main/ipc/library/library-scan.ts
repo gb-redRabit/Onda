@@ -6,6 +6,7 @@ import type { MediaFile } from '../../../shared/types/media';
 import { VIDEO_EXTS, AUDIO_EXTS, IMAGE_EXTS } from '../../../shared/constants';
 import { MIME_TYPES } from '../../../shared/mime';
 import { logger } from '../../../shared/logger';
+import { mapLimit } from '../../utils/map-limit';
 import { getDuration } from '../media/media-handlers';
 import {
   classifyFolderType,
@@ -27,23 +28,6 @@ const VIDEO_EXT_SET = new Set(VIDEO_EXTS);
 const IMAGE_EXT_SET = new Set(IMAGE_EXTS);
 
 const SUBDIR_CONCURRENCY = 16;
-
-async function mapLimit<T, R>(
-  items: T[],
-  limit: number,
-  fn: (item: T) => Promise<R>
-): Promise<R[]> {
-  const results: R[] = new Array(items.length);
-  let index = 0;
-  const workers = Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, async () => {
-    while (index < items.length) {
-      const i = index++;
-      results[i] = await fn(items[i]);
-    }
-  });
-  await Promise.all(workers);
-  return results;
-}
 
 async function getAudioMetadata(
   filePath: string,

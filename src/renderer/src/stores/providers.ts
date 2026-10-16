@@ -6,6 +6,7 @@ import type { MediaFile } from '@renderer/types/media';
 import { getMimeType } from '@shared/mime';
 import { usePlayerStore } from '@renderer/stores/player';
 import { mediaServerBase } from '@renderer/utils/mediaUrl';
+import { mapLimit } from '@renderer/utils/mapLimit';
 
 // Store providerów linków (PikPak/MEGA/Drive…): auto-detekcja URL, przeglądanie
 // folderów, pobieranie 1:1 i oznaczanie „✓ Pobrano". Oznaczenia trzymane są lokalnie
@@ -254,33 +255,41 @@ export const useProvidersStore = defineStore('providers', () => {
     }
   }
 
-  // Rekurencyjne zbieranie plików folderu (BFS) z limitami bezpieczeństwa.
+  // Rekurencyjne zbieranie plików folderu (BFS) z limitami bezpieczeństwa i
+  // ograniczoną współbieżnością listowania (wcześniej jeden sekwencyjny IPC na folder).
   const BULK_MAX_FOLDERS = 200;
   const BULK_MAX_FILES = 500;
+  const FOLDER_CONCURRENCY = 4;
 
   async function collectFolderFiles(
     rootFolderId: string | null
   ): Promise<{ files: RemoteItem[]; truncated: boolean }> {
     const files: RemoteItem[] = [];
-    const queue: Array<string | null> = [rootFolderId];
+    const ref = plainSource();
+    if (!ref) return { files, truncated: false };
+    let frontier: Array<string | null> = [rootFolderId];
     let foldersVisited = 0;
-    while (queue.length && foldersVisited < BULK_MAX_FOLDERS && files.length < BULK_MAX_FILES) {
-      const folderId = queue.shift() ?? null;
-      foldersVisited++;
-      const ref = plainSource();
-      if (!ref) break;
-      try {
-        const res = (await window.api.invoke('providers:list', {
-          ref,
-          folderId: folderId ?? undefined
-        })) as { success: boolean; items: RemoteItem[] };
-        if (!res?.success) continue;
-        for (const item of res.items) {
-          if (item.kind === 'folder') queue.push(item.id);
-          else if (files.length < BULK_MAX_FILES) files.push(item);
+    while (frontier.length && foldersVisited < BULK_MAX_FOLDERS && files.length < BULK_MAX_FILES) {
+      const batch = frontier.slice(0, BULK_MAX_FOLDERS - foldersVisited);
+      frontier = frontier.slice(batch.length);
+      foldersVisited += batch.length;
+      const results = await mapLimit(batch, FOLDER_CONCURRENCY, async (folderId) => {
+        try {
+          const res = (await window.api.invoke('providers:list', {
+            ref,
+            folderId: folderId ?? undefined
+          })) as { success: boolean; items: RemoteItem[] };
+          return res?.success ? res.items : [];
+        } catch {
+          return [];
         }
-      } catch {
-        // pomiń folder, który się nie wczytał
+      });
+      for (const items of results) {
+        for (const item of items) {
+          if (files.length >= BULK_MAX_FILES) break;
+          if (item.kind === 'folder') frontier.push(item.id);
+          else files.push(item);
+        }
       }
     }
     const truncated = files.length >= BULK_MAX_FILES || foldersVisited >= BULK_MAX_FOLDERS;
