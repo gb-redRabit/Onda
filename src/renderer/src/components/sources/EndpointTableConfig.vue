@@ -106,6 +106,7 @@ const tableViews = [
         }}</span>
         <select
           v-model="model.tableMode"
+          :aria-label="t('sources.tableSource')"
           class="px-1.5 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none"
         >
           <option value="endpoint">{{ t('sources.tableSourceEndpoint') }}</option>
@@ -119,6 +120,7 @@ const tableViews = [
         <FieldLabel :text="t('sources.tableEndpointPath')" tight />
         <input
           v-model="model.tablePath"
+          :aria-label="t('sources.tableEndpointPath')"
           type="text"
           :list="fieldId('tpath')"
           :placeholder="t('sources.tableEndpointPathPh')"
@@ -136,6 +138,7 @@ const tableViews = [
         <FieldLabel :text="t('sources.tableArrayField')" tight />
         <input
           v-model="model.tableArrayField"
+          :aria-label="t('sources.tableArrayField')"
           type="text"
           :list="fieldId('tfield')"
           :placeholder="t('sources.tableArrayFieldPh')"
@@ -173,6 +176,7 @@ const tableViews = [
         <FieldLabel :text="t('sources.openRow')" />
         <select
           v-model="model.tableChildId"
+          :aria-label="t('sources.openRow')"
           class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
         >
           <option value="">{{ t('sources.noChild') }}</option>

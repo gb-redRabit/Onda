@@ -25,6 +25,7 @@ async function pickDownloadDir() {
           v-model="outputDir"
           type="text"
           :placeholder="defaultDir"
+          :aria-label="t('sources.downloadOutputDir')"
           class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
         />
         <button

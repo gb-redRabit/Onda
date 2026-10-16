@@ -289,6 +289,7 @@ export default {
     rangeTitleTemplate: 'Title template',
     back: 'Back',
     fTitle: 'title',
+    endpointPath: 'Endpoint path',
     fSubtitle: 'subtitle',
     fThumbnail: 'thumbnail',
     fPlayerUrl: 'Player (embed/iframe) — player URL',

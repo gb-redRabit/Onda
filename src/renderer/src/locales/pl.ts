@@ -290,6 +290,7 @@ export default {
     rangeTitleTemplate: 'Szablon tytułu',
     back: 'Wstecz',
     fTitle: 'tytuł',
+    endpointPath: 'Ścieżka endpointu',
     fSubtitle: 'podtytuł',
     fThumbnail: 'miniaturka',
     fPlayerUrl: 'Player (embed/iframe) — URL odtwarzacza',

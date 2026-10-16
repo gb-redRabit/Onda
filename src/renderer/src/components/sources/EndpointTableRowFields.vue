@@ -22,6 +22,7 @@ function fieldId(suffix: string): string {
         type="text"
         :list="fieldId('ttitle')"
         :placeholder="$t('sources.episodeTemplatePlaceholder') + ' {n}'"
+        :aria-label="t('sources.tableRowTitle')"
         class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
       />
       <datalist :id="fieldId('ttitle')">
@@ -35,6 +36,7 @@ function fieldId(suffix: string): string {
         type="text"
         :list="fieldId('tthumb')"
         placeholder="bg"
+        :aria-label="t('sources.tableRowThumb')"
         class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
       />
       <datalist :id="fieldId('tthumb')">
@@ -48,6 +50,7 @@ function fieldId(suffix: string): string {
         type="text"
         :list="fieldId('tplayer')"
         :placeholder="t('sources.tableRowPlayerPh')"
+        :aria-label="t('sources.tableRowPlayer')"
         class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
       />
       <datalist :id="fieldId('tplayer')">
@@ -61,6 +64,7 @@ function fieldId(suffix: string): string {
         type="text"
         :list="fieldId('trowkey')"
         placeholder="anime_episode_number"
+        :aria-label="t('sources.tableRowKey')"
         class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
       />
       <datalist :id="fieldId('trowkey')">
