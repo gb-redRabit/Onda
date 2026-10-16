@@ -265,8 +265,8 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
       <p v-if="searchError" class="text-xs text-error mt-3">{{ searchError }}</p>
     </PageHeader>
 
-    <div class="flex-1 overflow-auto p-4">
-      <template v-if="activeSection === 'subscriptions'">
+    <div class="flex-1 min-h-0">
+      <div v-if="activeSection === 'subscriptions'" class="h-full overflow-auto p-4">
         <OnlineSubscriptionsPanel
           :subscriptions="yt.subscriptions"
           :loaded="yt.subscriptionsLoaded"
@@ -280,39 +280,45 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
           @unfollow="confirmUnfollow"
         />
         <ProviderSubscriptionsPanel class="mt-4" @open="openProviderSub" />
-      </template>
+      </div>
 
-      <ProviderPanel v-else-if="activeSection === 'links'" />
+      <div v-else-if="activeSection === 'links'" class="h-full overflow-auto p-4">
+        <ProviderPanel />
+      </div>
 
-      <OnlineChannelView v-else-if="yt.channelLoading || yt.channel" />
+      <OnlineChannelView v-else-if="yt.channelLoading || yt.channel" class="h-full" />
 
-      <OnlineChannelError v-else-if="yt.channelError" :message="yt.channelError" @retry="submit" />
+      <div v-else-if="yt.channelError" class="h-full overflow-auto p-4">
+        <OnlineChannelError :message="yt.channelError" @retry="submit" />
+      </div>
 
-      <template v-else>
-        <OnlineResolvedPanel
-          v-model:expanded-id="expandedResolvedId"
-          v-model:range-start="rangeStart"
-          v-model:range-end="rangeEnd"
-          :resolved-loading="yt.resolvedLoading"
-          :resolved-capped="yt.resolvedCapped"
-          :selected-count="yt.selectedResolved.size"
-          :saved="resolvedSaved"
-          :saving="savingPlaylist"
-          @toggle-select="toggleSelect"
-          @quick-queue="quickQueueResolved"
-          @options="queueResolvedItem"
-          @open-window="openWatchUrl"
-          @open-channel="openChannelInApp"
-          @download-all="addSelectedToQueue"
-          @play-all="yt.playAllStreams(yt.resolved?.items ?? [])"
-          @save="saveResolvedPlaylist"
-          @clear="clearResolved"
-          @select-all="toggleSelectAll"
-          @select-range="selectRange"
-          @add-selected="addSelectedToQueue"
-          @load-more="yt.loadMoreResolved"
-        />
+      <OnlineResolvedPanel
+        v-else-if="yt.resolved"
+        v-model:expanded-id="expandedResolvedId"
+        v-model:range-start="rangeStart"
+        v-model:range-end="rangeEnd"
+        class="h-full"
+        :resolved-loading="yt.resolvedLoading"
+        :resolved-capped="yt.resolvedCapped"
+        :selected-count="yt.selectedResolved.size"
+        :saved="resolvedSaved"
+        :saving="savingPlaylist"
+        @toggle-select="toggleSelect"
+        @quick-queue="quickQueueResolved"
+        @options="queueResolvedItem"
+        @open-window="openWatchUrl"
+        @open-channel="openChannelInApp"
+        @download-all="addSelectedToQueue"
+        @play-all="yt.playAllStreams(yt.resolved?.items ?? [])"
+        @save="saveResolvedPlaylist"
+        @clear="clearResolved"
+        @select-all="toggleSelectAll"
+        @select-range="selectRange"
+        @add-selected="addSelectedToQueue"
+        @load-more="yt.loadMoreResolved"
+      />
 
+      <div v-else class="h-full overflow-auto p-4">
         <OnlineSearchResultsPanel
           v-model:expanded-id="expandedSearchId"
           @quick-queue="quickQueueVideo"
@@ -320,7 +326,7 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
           @open-window="openWatchUrl"
           @open-channel="openChannelInApp"
         />
-      </template>
+      </div>
     </div>
 
     <SubscribeConfigDialog

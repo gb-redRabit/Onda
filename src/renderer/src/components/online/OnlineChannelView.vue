@@ -20,6 +20,7 @@ import DownloadConfigDialog from './DownloadConfigDialog.vue';
 import OnlineConfirmDialog from './OnlineConfirmDialog.vue';
 import OnlineSegmentControl from './OnlineSegmentControl.vue';
 import OnlineMediaCard from './OnlineMediaCard.vue';
+import OnlineMediaGrid from './OnlineMediaGrid.vue';
 import OnlineChannelHeader from './OnlineChannelHeader.vue';
 import { useChannelInfiniteScroll } from '@renderer/composables/useChannelInfiniteScroll';
 import Loader from '@renderer/components/layout/Loader.vue';
@@ -100,6 +101,11 @@ const sortedVideos = computed(() => {
   if (channelSort.value === 'oldest') list.reverse();
   return list;
 });
+
+// Elementy bieżącej zakładki kanału (wideo posortowane / shorts) dla zwirtualizowanej siatki.
+const currentChannelItems = computed(() =>
+  yt.channelTab === 'videos' ? sortedVideos.value : yt.channelShorts
+);
 
 const queueTarget = ref<YouTubeVideo | null>(null);
 
@@ -187,12 +193,44 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="space-y-4 w-full">
+  <div class="flex h-full w-full flex-col">
     <Loader v-if="yt.channelLoading && !yt.channel" overlay :label="$t('common.loading')" />
     <template v-else-if="yt.channel">
-      <OnlineChannelHeader @toggle-follow="toggleFollow" />
+      <div class="shrink-0 space-y-4 px-4 pt-4">
+        <OnlineChannelHeader @toggle-follow="toggleFollow" />
 
-      <p v-if="yt.channelError" class="text-xs text-error">{{ channelErrorMessage }}</p>
+        <p v-if="yt.channelError" class="text-xs text-error">{{ channelErrorMessage }}</p>
+
+        <div class="flex items-center gap-3">
+          <OnlineSegmentControl
+            v-if="!isScChannel"
+            v-model="yt.channelTab"
+            :options="[
+              { value: 'videos', label: $t('youtube.videosTab') },
+              ...(yt.channelHasShorts ? [{ value: 'shorts', label: $t('youtube.shortsTab') }] : [])
+            ]"
+          />
+          <div class="flex-1" />
+          <div v-if="yt.channelTab === 'videos'" class="flex gap-1">
+            <button
+              v-for="opt in [
+                { key: 'default', label: $t('youtube.sortLatest') },
+                { key: 'oldest', label: $t('youtube.sortOldest') }
+              ] as const"
+              :key="opt.key"
+              class="fx-noise px-2 py-1 fx-depth rounded-field text-[11px] font-medium transition-colors"
+              :class="
+                channelSort === opt.key
+                  ? 'bg-primary text-primary-content'
+                  : 'text-base-content/50 hover:text-base-content/70'
+              "
+              @click="channelSort = opt.key"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
+        </div>
+      </div>
 
       <SubscribeConfigDialog
         v-if="subscribeOpen && yt.channel"
@@ -217,78 +255,49 @@ onUnmounted(() => {
         @cancel="unfollowOpen = false"
       />
 
-      <div class="flex items-center gap-3">
-        <OnlineSegmentControl
-          v-if="!isScChannel"
-          v-model="yt.channelTab"
-          :options="[
-            { value: 'videos', label: $t('youtube.videosTab') },
-            ...(yt.channelHasShorts ? [{ value: 'shorts', label: $t('youtube.shortsTab') }] : [])
-          ]"
-        />
-        <div class="flex-1" />
-        <div v-if="yt.channelTab === 'videos'" class="flex gap-1">
-          <button
-            v-for="opt in [
-              { key: 'default', label: $t('youtube.sortLatest') },
-              { key: 'oldest', label: $t('youtube.sortOldest') }
-            ] as const"
-            :key="opt.key"
-            class="fx-noise px-2 py-1 fx-depth rounded-field text-[11px] font-medium transition-colors"
-            :class="
-              channelSort === opt.key
-                ? 'bg-primary text-primary-content'
-                : 'text-base-content/50 hover:text-base-content/70'
-            "
-            @click="channelSort = opt.key"
-          >
-            {{ opt.label }}
-          </button>
-        </div>
-      </div>
-
       <div v-if="yt.channelLoading && !yt.channelItems.length" class="flex justify-center py-8">
         <Loader :size="56" :label="$t('common.loading')" />
       </div>
 
-      <div v-else-if="yt.channelItems.length" class="space-y-4">
-        <div
-          :class="[
-            yt.channelViewMode === 'grid'
-              ? 'grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-              : 'space-y-2'
-          ]"
-        >
+      <OnlineMediaGrid
+        v-else-if="yt.channelItems.length"
+        class="flex-1"
+        :items="currentChannelItems"
+        :col-width="yt.channelViewMode === 'grid' ? 300 : 1200"
+        :min-cols="yt.channelViewMode === 'grid' ? 2 : 1"
+        :estimate-row-height="yt.channelViewMode === 'grid' ? 300 : 150"
+        :gap-class="yt.channelViewMode === 'grid' ? 'gap-4' : 'gap-2'"
+      >
+        <template #default="{ item }">
           <OnlineMediaCard
-            v-for="v in yt.channelTab === 'videos' ? sortedVideos : yt.channelShorts"
-            :key="v.id"
-            :video="v"
+            :video="item"
             :short="yt.channelTab === 'shorts'"
-            :expanded="expandedId === v.id"
-            :downloaded="yt.isVideoDownloaded(v.id, yt.channel?.id)"
-            :cover-status="yt.coverStatusFor(v.id)"
-            :state="itemDownloadState(v.id)"
-            :watch-url="watchUrl(v)"
+            :expanded="expandedId === item.id"
+            :downloaded="yt.isVideoDownloaded(item.id, yt.channel?.id)"
+            :cover-status="yt.coverStatusFor(item.id)"
+            :state="itemDownloadState(item.id)"
+            :watch-url="watchUrl(item)"
             :layout="yt.channelViewMode"
             show-views
-            @expand="expandedId = v.id"
+            @expand="expandedId = item.id"
             @collapse="expandedId = null"
-            @queue="queueVideo(v)"
-            @play="yt.playStream(v)"
-            @options="openDownloadOptions(v)"
-            @open-window="openWatchWindow(v)"
+            @queue="queueVideo(item)"
+            @play="yt.playStream(item)"
+            @options="openDownloadOptions(item)"
+            @open-window="openWatchWindow(item)"
             @open-channel="yt.openChannel($event)"
           />
-        </div>
-      </div>
+        </template>
+        <template #footer>
+          <div v-if="yt.channelHasMore" :ref="setSentinel" class="flex justify-center py-4">
+            <Loader v-if="yt.channelLoading" :size="40" />
+          </div>
+        </template>
+      </OnlineMediaGrid>
 
       <p v-else class="text-sm text-base-content/50 py-8 text-center">
         {{ $t('youtube.noVideos') }}
       </p>
-
-      <div v-if="yt.channelHasMore" :ref="setSentinel" class="flex justify-center py-4">
-        <Loader v-if="yt.channelLoading" :size="40" />
-      </div>
     </template>
 
     <DownloadConfigDialog
