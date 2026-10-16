@@ -1,5 +1,7 @@
 import { app, ipcMain } from 'electron';
 import { join } from 'node:path';
+import http from 'node:http';
+import https from 'node:https';
 import { Readable } from 'node:stream';
 import { logger } from '../../../shared/logger';
 import {
@@ -14,7 +16,8 @@ import type {
   RemoteSubscriptionInput,
   RemoteSubscriptionPatch
 } from '../../../shared/types/providers';
-import { resolveNetworkTarget } from '../network-target';
+import { createPinnedLookup, resolveNetworkTarget } from '../network-target';
+import type { ResolvedNetworkTarget } from '../network-target';
 import {
   detectProvider,
   getProvider,
@@ -55,6 +58,7 @@ import {
 
 const sanitizeRef = sanitizeProviderRef;
 const MAX_STREAM_REDIRECTS = 5;
+const STREAM_UPSTREAM_TIMEOUT_MS = 30_000;
 
 function subsFile(): string {
   return join(app.getPath('userData'), 'remote-subscriptions.json');
@@ -90,61 +94,78 @@ export async function openHttpStream(
   range?: ProviderStreamRange,
   fallbackMime?: string
 ): Promise<{ stream: NodeJS.ReadableStream; mime?: string; size?: number }> {
-  const reqHeaders: Record<string, string> = { ...headers };
-  if (range) reqHeaders.Range = `bytes=${range.start}-${range.end ?? ''}`;
+  const baseHeaders: Record<string, string> = { ...headers };
+  if (range) baseHeaders.Range = `bytes=${range.start}-${range.end ?? ''}`;
   let currentUrl = url;
-  let res: Response | null = null;
+  let reqHeaders = baseHeaders;
+
   for (let hop = 0; hop <= MAX_STREAM_REDIRECTS; hop++) {
-    await resolveNetworkTarget(currentUrl);
-    res = await fetch(currentUrl, { headers: reqHeaders, redirect: 'manual' });
-    const location = res.headers.get('location');
-    if (res.status >= 300 && res.status < 400 && location) {
-      try {
-        await res.body?.cancel();
-      } catch {
-        /* ignoruj */
-      }
-      if (hop === MAX_STREAM_REDIRECTS) {
-        throw new Error('Too many redirects');
-      }
+    // Walidacja SSRF ORAZ PRZYPIĘCIE połączenia do zwalidowanych adresów IP.
+    // Wcześniej walidowano `resolveNetworkTarget`, ale połączenie szło przez globalny
+    // `fetch()`, który samodzielnie rozwiązuje DNS — domena kontrolowana przez
+    // atakującego mogła zwrócić publiczny adres przy walidacji, a prywatny przy
+    // połączeniu (DNS-rebinding → dostęp do loopback/LAN/metadanych).
+    const target = await resolveNetworkTarget(currentUrl);
+    const res = await openPinnedStream(target, reqHeaders);
+    const status = res.statusCode ?? 0;
+    const location = res.headers.location;
+    if (status >= 300 && status < 400 && location) {
+      res.resume();
+      if (hop === MAX_STREAM_REDIRECTS) throw new Error('Too many redirects');
       const nextUrl = new URL(location, currentUrl).toString();
-      if (new URL(nextUrl).origin !== new URL(currentUrl).origin) {
-        delete reqHeaders.Cookie;
-        delete reqHeaders.cookie;
-        delete reqHeaders.Authorization;
-        delete reqHeaders.authorization;
-      }
+      // Przy zmianie originu zdejmij WSZYSTKIE nagłówki wywołującego (Cookie,
+      // Authorization, Referer, podszywany UA), a nie tylko dwa pierwsze.
+      if (new URL(nextUrl).origin !== new URL(currentUrl).origin) reqHeaders = {};
       currentUrl = nextUrl;
       continue;
     }
-    break;
+    if (status !== 200 && status !== 206) {
+      res.resume();
+      throw new Error(`HTTP ${status}`);
+    }
+    const upstreamCt = res.headers['content-type'] || '';
+    logger.info(
+      'providers',
+      `stream upstream ${status} ct=${upstreamCt || '?'} host=${(() => {
+        try {
+          return new URL(currentUrl).hostname;
+        } catch {
+          return '?';
+        }
+      })()}`
+    );
+    // Preferuj konkretny typ multimedialny z upstreamu; inaczej użyj podpowiedzi z rozszerzenia
+    // (PikPak/MEGA często serwują `application/octet-stream`, którego <video> nie odtworzy).
+    const mime = /^(video|audio|image)\//i.test(upstreamCt)
+      ? upstreamCt
+      : fallbackMime || upstreamCt || 'application/octet-stream';
+    const contentRange = res.headers['content-range'] || '';
+    const size =
+      Number(contentRange.split('/')[1] || res.headers['content-length'] || 0) || undefined;
+    return { stream: res, mime, size };
   }
-  if (!res || (!res.ok && res.status !== 206)) throw new Error(`HTTP ${res?.status ?? 0}`);
-  if (!res.body) throw new Error('Brak treści odpowiedzi');
-  const upstreamCt = res.headers.get('content-type') || '';
-  logger.info(
-    'providers',
-    `stream upstream ${res.status} ct=${upstreamCt || '?'} host=${(() => {
-      try {
-        return new URL(currentUrl).hostname;
-      } catch {
-        return '?';
-      }
-    })()}`
-  );
-  // Preferuj konkretny typ multimedialny z upstreamu; inaczej użyj podpowiedzi z rozszerzenia
-  // (PikPak/MEGA często serwują `application/octet-stream`, którego <video> nie odtworzy).
-  const mime = /^(video|audio|image)\//i.test(upstreamCt)
-    ? upstreamCt
-    : fallbackMime || upstreamCt || 'application/octet-stream';
-  const contentRange = res.headers.get('content-range') || '';
-  const size =
-    Number(contentRange.split('/')[1] || res.headers.get('content-length') || 0) || undefined;
-  return {
-    stream: Readable.fromWeb(res.body as import('stream/web').ReadableStream),
-    mime,
-    size
-  };
+  throw new Error('Too many redirects');
+}
+
+// Otwiera strumień przez `http(s).request` z przypiętym DNS (`createPinnedLookup`),
+// więc połączenie trafia dokładnie w adresy zwalidowane przez `resolveNetworkTarget`.
+function openPinnedStream(
+  target: ResolvedNetworkTarget,
+  headers: Record<string, string>
+): Promise<http.IncomingMessage> {
+  return new Promise((resolve, reject) => {
+    const transport = target.url.protocol === 'https:' ? https : http;
+    const req = transport.request(
+      target.url,
+      { method: 'GET', headers, lookup: createPinnedLookup(target.addresses) },
+      resolve
+    );
+    req.setTimeout(STREAM_UPSTREAM_TIMEOUT_MS, () => {
+      req.destroy(new Error('upstream timeout'));
+    });
+    req.on('error', reject);
+    req.end();
+  });
 }
 
 // Czeka na pierwszy bajt strumienia, żeby wykryć błąd providera (np. limit) ZANIM
