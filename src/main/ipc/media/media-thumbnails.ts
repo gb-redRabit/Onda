@@ -176,24 +176,55 @@ async function buildThumbnail(filePath: string, maxSize: number): Promise<Buffer
   return buf;
 }
 
-export async function getThumbnail(filePath: string, maxSize: number): Promise<string | null> {
-  try {
-    maxSize = sanitizeThumbSize(maxSize);
-    const stamp = await sourceStamp(filePath);
-    const hash = createHash('md5')
-      .update(filePath + maxSize + stamp)
-      .digest('hex');
-    const cacheFile = join(cacheDir, `${hash}.jpg`);
-    const cached = await readCache(cacheFile);
-    if (cached) return cached;
+async function thumbnailCachePath(filePath: string, maxSize: number): Promise<string> {
+  const stamp = await sourceStamp(filePath);
+  const hash = createHash('md5')
+    .update(filePath + maxSize + stamp)
+    .digest('hex');
+  return join(cacheDir, `${hash}.jpg`);
+}
 
-    const buf = await buildThumbnail(filePath, maxSize);
-    if (!buf) return null;
+// Deduplikacja budowy tej samej miniatury MIĘDZY wywołaniami (getThumbnail +
+// batchThumbnails). Wcześniej `batchThumbnails` miał lokalny zbiór blokad z
+// odpytywaniem `setInterval` co 10 ms (busy-wait) i nie dzielił go z innymi
+// wywołaniami, więc dwie partie budowały ten sam plik równolegle.
+const inflightThumbs = new Map<string, Promise<string | null>>();
+
+function buildAndCacheThumbnail(
+  filePath: string,
+  maxSize: number,
+  cacheFile: string
+): Promise<string | null> {
+  const existing = inflightThumbs.get(cacheFile);
+  if (existing) return existing;
+  const p = (async (): Promise<string | null> => {
     await mkdir(cacheDir, { recursive: true }).catch(() => {
       /* best-effort */
     });
+    const buf = await buildThumbnail(filePath, maxSize);
+    if (!buf) return null;
     await writeFile(cacheFile, buf);
     return `data:image/jpeg;base64,${buf.toString('base64')}`;
+  })();
+  inflightThumbs.set(cacheFile, p);
+  void p.then(
+    () => {
+      if (inflightThumbs.get(cacheFile) === p) inflightThumbs.delete(cacheFile);
+    },
+    () => {
+      if (inflightThumbs.get(cacheFile) === p) inflightThumbs.delete(cacheFile);
+    }
+  );
+  return p;
+}
+
+export async function getThumbnail(filePath: string, maxSize: number): Promise<string | null> {
+  try {
+    maxSize = sanitizeThumbSize(maxSize);
+    const cacheFile = await thumbnailCachePath(filePath, maxSize);
+    const cached = await readCache(cacheFile);
+    if (cached) return cached;
+    return await buildAndCacheThumbnail(filePath, maxSize, cacheFile);
   } catch (e) {
     logger.warn('media', `getThumbnail failed for ${filePath}`, e);
     return null;
@@ -210,53 +241,25 @@ export async function batchThumbnails(
     /* best-effort */
   });
   const concurrency = Math.max(1, os.cpus().length - 1);
-  const batchThumbnailLocks = new Set<string>();
 
   for (let i = 0; i < files.length; i += concurrency) {
     const batch = files.slice(i, i + concurrency);
-    const promises = batch.map(async (filePath) => {
-      try {
-        const stamp = await sourceStamp(filePath);
-        const hash = createHash('md5')
-          .update(filePath + maxSize + stamp)
-          .digest('hex');
-        const cacheFile = join(cacheDir, `${hash}.jpg`);
-        const cached = await readCache(cacheFile);
-        if (cached) {
-          result[filePath] = cached;
-          return;
-        }
-
-        while (batchThumbnailLocks.has(cacheFile)) {
-          await new Promise<void>((resolve) => {
-            const check = setInterval(() => {
-              if (!batchThumbnailLocks.has(cacheFile)) {
-                clearInterval(check);
-                resolve();
-              }
-            }, 10);
-            setTimeout(() => {
-              clearInterval(check);
-              resolve();
-            }, 5000);
-          });
-        }
-        batchThumbnailLocks.add(cacheFile);
-
+    await Promise.all(
+      batch.map(async (filePath) => {
         try {
-          const buf = await buildThumbnail(filePath, maxSize);
-          if (buf) {
-            await writeFile(cacheFile, buf);
-            result[filePath] = `data:image/jpeg;base64,${buf.toString('base64')}`;
+          const cacheFile = await thumbnailCachePath(filePath, maxSize);
+          const cached = await readCache(cacheFile);
+          if (cached) {
+            result[filePath] = cached;
+            return;
           }
-        } finally {
-          batchThumbnailLocks.delete(cacheFile);
+          const dataUrl = await buildAndCacheThumbnail(filePath, maxSize, cacheFile);
+          if (dataUrl) result[filePath] = dataUrl;
+        } catch (e) {
+          logger.warn('media', `batch thumbnail skipped for ${filePath}`, e);
         }
-      } catch (e) {
-        logger.warn('media', `batch thumbnail skipped for ${filePath}`, e);
-      }
-    });
-    await Promise.all(promises);
+      })
+    );
   }
   return result;
 }
