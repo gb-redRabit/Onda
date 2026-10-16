@@ -212,18 +212,12 @@ export const useProvidersStore = defineStore('providers', () => {
     error.value = '';
   }
 
-  // MIME z rozszerzenia — przekazywany do serwera mediów, gdy upstream daje octet-stream.
-  function mimeFor(name: string): string {
-    if (/\.m2ts$/i.test(name)) return 'video/mp2t';
-    return getMimeType(name);
-  }
-
   // Podgląd/odtwarzanie w aplikacji (przez proxy serwera mediów).
   async function play(item: RemoteItem): Promise<boolean> {
     const ref = plainSource();
     if (!ref) return false;
     error.value = '';
-    const mime = mimeFor(item.name);
+    const mime = getMimeType(item.name);
     try {
       const res = (await window.api.invoke('providers:streamUrl', {
         ref,
