@@ -142,6 +142,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
         max="300"
         step="1"
         :value="settings.download.defaultCoverFrameTime"
+        :aria-label="$t('youtube.frameTimeLabel')"
         class="w-full"
         @input="
           settings.updateDownload({

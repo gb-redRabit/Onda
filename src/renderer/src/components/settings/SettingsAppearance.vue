@@ -33,6 +33,7 @@ const sidebarPositionOptions = computed(() =>
         min="12"
         max="18"
         :value="settings.appearance.fontSize"
+        :aria-label="$t('settings.fontSize')"
         class="w-full"
         @input="
           settings.updateAppearance({

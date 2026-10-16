@@ -34,6 +34,7 @@ const toggles = [
         min="0"
         max="100"
         :value="Math.round(settings.playback.defaultVolume * 100)"
+        :aria-label="$t('settings.defaultVolume')"
         class="w-full"
         @input="
           settings.updatePlayback({
@@ -65,6 +66,7 @@ const toggles = [
       max="10"
       step="1"
       :value="settings.playback.cursorTimeout"
+      :aria-label="$t('settings.cursorHideTimeout')"
       class="w-full"
       @input="
         settings.updatePlayback({
@@ -85,6 +87,7 @@ const toggles = [
       max="15"
       step="1"
       :value="settings.playback.resumePromptTimeout"
+      :aria-label="$t('settings.resumePromptTimeout')"
       class="w-full"
       @input="
         settings.updatePlayback({
@@ -109,6 +112,7 @@ const toggles = [
         max="3"
         step="0.25"
         :value="settings.playback.playbackSpeed"
+        :aria-label="$t('settings.defaultSpeed')"
         class="w-full"
         @input="
           settings.updatePlayback({

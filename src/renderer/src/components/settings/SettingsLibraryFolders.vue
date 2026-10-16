@@ -152,6 +152,7 @@ function folderIcon(type: string): string {
       max="10000"
       step="500"
       :value="settings.library.coverCacheMaxEntries ?? 2000"
+      :aria-label="$t('settings.coverCache')"
       class="w-full"
       @input="
         settings.updateLibrary({

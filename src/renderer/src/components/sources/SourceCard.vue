@@ -83,7 +83,9 @@ const typeIcon = {
       <div
         class="pointer-events-none absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/30 transition-colors"
       >
-        <div class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+        <div
+          class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
+        >
           <Eye :size="28" class="text-neutral-content drop-shadow" />
         </div>
       </div>

@@ -15,6 +15,7 @@ const settings = useSettingsStore();
       min="1"
       max="8"
       :value="settings.download.maxConcurrent"
+      :aria-label="$t('settings.maxConcurrent')"
       class="w-full"
       @input="
         settings.updateDownload({
@@ -35,6 +36,7 @@ const settings = useSettingsStore();
       min="0"
       max="5"
       :value="settings.download.retryAttempts ?? 3"
+      :aria-label="$t('settings.retryAttempts')"
       class="w-full"
       @input="
         settings.updateDownload({
