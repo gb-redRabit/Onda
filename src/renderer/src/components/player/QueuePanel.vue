@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { usePlayerStore } from '@renderer/stores/player';
 import { X, Music2, GripVertical, Trash2 } from '@lucide/vue';
@@ -8,8 +9,17 @@ import { buildMediaFile } from '@renderer/utils/explorerMedia';
 import type { MediaFile } from '@renderer/types/media';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import TrackInfo from '@renderer/components/TrackInfo.vue';
+import { usePromptDialog } from '@renderer/composables/usePromptDialog';
+import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 
 const player = usePlayerStore();
+const { t } = useI18n();
+const prompt = usePromptDialog();
+
+async function confirmClearQueue() {
+  if (!(await prompt.showConfirm(t('queue.clearConfirm')))) return;
+  player.clearQueue();
+}
 const dragOverIndex = ref<number | null>(null);
 const dragIndex = ref<number | null>(null);
 
@@ -155,7 +165,7 @@ function onFileDrop(e: DragEvent) {
           v-if="player.displayQueue.length"
           data-testid="queue-clear"
           class="text-[11px] text-base-content/50 hover:text-error transition-colors px-2 py-1"
-          @click="player.clearQueue"
+          @click="confirmClearQueue"
         >
           {{ $t('queue.clear') }}
         </button>
@@ -288,5 +298,15 @@ function onFileDrop(e: DragEvent) {
         }}</span>
       </div>
     </div>
+
+    <ExplorerPromptDialog
+      :visible="prompt.promptVisible.value"
+      :is-confirm="prompt.promptIsConfirm.value"
+      :message="prompt.promptMessage.value"
+      :value="prompt.promptValue.value"
+      @update:value="prompt.promptValue.value = $event"
+      @confirm="prompt.promptConfirm"
+      @cancel="prompt.promptCancel"
+    />
   </div>
 </template>

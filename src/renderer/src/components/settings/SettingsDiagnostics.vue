@@ -90,6 +90,7 @@ async function onDownload(): Promise<void> {
 }
 
 async function onClear(): Promise<void> {
+  if (!(await showConfirm(t('settings.clearLogsConfirm')))) return;
   const ok = await window.api?.clearLogs();
   if (ok) logs.value = '';
 }
@@ -103,6 +104,7 @@ function cacheDetail(result: AppCacheClearResult): string {
 
 async function onClearCache(): Promise<void> {
   if (cacheBusy.value) return;
+  if (!(await showConfirm(t('settings.cacheClearConfirm')))) return;
   cacheBusy.value = true;
   try {
     const res = await window.api?.clearCache();

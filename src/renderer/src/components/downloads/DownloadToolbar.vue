@@ -4,12 +4,20 @@ import { useI18n } from 'vue-i18n';
 import { Download, Pause, Play, Trash2, Upload, X, Gauge } from '@lucide/vue';
 import { useOnlineStore } from '@renderer/stores/online';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { usePromptDialog } from '@renderer/composables/usePromptDialog';
+import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 
 defineProps<{ activeCount: number; pausedCount: number; hasFinished: boolean }>();
 
 const yt = useOnlineStore();
 const settings = useSettingsStore();
 const { t } = useI18n();
+const prompt = usePromptDialog();
+
+async function clearFinished(): Promise<void> {
+  if (!(await prompt.showConfirm(t('downloads.clearFinishedConfirm')))) return;
+  await yt.clearFinishedDownloads();
+}
 
 /** Limity w KB/s; 0 = bez limitu. Wartość jest stosowana przez yt-dlp (`--limit-rate`). */
 const SPEED_OPTIONS = [0, 1024, 2048, 5120, 10240];
@@ -133,10 +141,20 @@ onMounted(async () => {
       v-if="hasFinished"
       data-testid="downloads-clear-finished"
       class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
-      @click="yt.clearFinishedDownloads"
+      @click="clearFinished"
     >
       <Trash2 :size="12" />
       {{ t('downloads.clearFinished') }}
     </button>
+
+    <ExplorerPromptDialog
+      :visible="prompt.promptVisible.value"
+      :is-confirm="prompt.promptIsConfirm.value"
+      :message="prompt.promptMessage.value"
+      :value="prompt.promptValue.value"
+      @update:value="prompt.promptValue.value = $event"
+      @confirm="prompt.promptConfirm"
+      @cancel="prompt.promptCancel"
+    />
   </div>
 </template>

@@ -740,6 +740,8 @@ export default {
     resetFactoryConfirm:
       'Usunąć WSZYSTKIE dane aplikacji?\n\nUstawienia, biblioteka, kolejka pobrań, subskrypcje, zapisane elementy, konta, wtyczki i cache zostaną usunięte, a aplikacja uruchomi się ponownie. Tej operacji nie można cofnąć.',
     resetFactoryRestarting: 'Trwa resetowanie… aplikacja uruchomi się ponownie.',
+    clearLogsConfirm: 'Wyczyścić plik logów?',
+    cacheClearConfirm: 'Wyczyścić pamięć podręczną aplikacji?',
     resetFactoryError: 'Błąd resetu fabrycznego',
     licenses: 'Licencje',
     licenseUnknown: 'Nieznana',
@@ -790,6 +792,7 @@ export default {
     libMixed: 'Mieszany',
     libUnknown: 'Nieznany',
     libRemove: 'Usuń',
+    libRemoveConfirm: 'Usunąć ten folder z biblioteki? Pliki na dysku zostaną zachowane.',
     libProgress: 'Skanowanie...',
     libScanError: 'Błąd skanowania biblioteki',
     libTotal: 'Łącznie:',
@@ -904,6 +907,8 @@ export default {
     coverCacheHint:
       'Zwykłe okładki są osadzane w pliku (małe miniatury 500px), klipy wideo mogą ważyć więcej — większy limit = rzadsze przebudowy.',
     coverCacheClear: 'Wyczyść cache okładek',
+    coverCacheClearConfirm:
+      'Wyczyścić cache okładek? Miniatury zostaną odtworzone w razie potrzeby.',
     coverCacheCleared: 'Cache wyczyszczony',
     coverCacheClearError: 'Błąd czyszczenia cache',
     fontCache: 'Cache czcionek napisów',
@@ -1742,6 +1747,7 @@ api.registerCommand({
     editMetadata: 'Edytuj metadane',
     play: 'Odtwórz',
     clearFinished: 'Wyczyść zakończone',
+    clearFinishedConfirm: 'Usunąć ukończone pobrania z listy? Pobrane pliki zostaną zachowane.',
     speedLimit: 'Limit prędkości pobierania',
     empty: 'Brak pobranych plików',
     inLibrary: 'w bibliotece',
@@ -2024,6 +2030,7 @@ api.registerCommand({
   queue: {
     title: 'Kolejka',
     clear: 'Wyczyść',
+    clearConfirm: 'Wyczyścić kolejkę odtwarzania?',
     nowPlaying: 'Teraz odtwarzane',
     empty: 'Kolejka jest pusta',
     dropHint: 'Upuść pliki tutaj aby dodać',

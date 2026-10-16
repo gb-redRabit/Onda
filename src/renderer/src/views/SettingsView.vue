@@ -54,6 +54,38 @@ function onMenuDocClick(e: MouseEvent): void {
 function onMenuDocKeydown(e: KeyboardEvent): void {
   if (e.key === 'Escape' && menuOpen.value) menuOpen.value = false;
 }
+
+// Menu „more" jako wzorzec WAI-ARIA menu: focus na pierwszym elemencie po otwarciu
+// i nawigacja strzałkami (wcześniej był to zwykły div z przyciskami).
+const menuRef = ref<HTMLElement | null>(null);
+watch(menuOpen, async (open) => {
+  if (!open) return;
+  await nextTick();
+  menuRef.value?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+});
+function onMenuKeydown(e: KeyboardEvent): void {
+  const menu = menuRef.value;
+  if (!menu) return;
+  const items = Array.from(menu.querySelectorAll<HTMLElement>('[role="menuitem"]'));
+  if (!items.length) return;
+  const idx = items.indexOf(document.activeElement as HTMLElement);
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    items[(idx + 1 + items.length) % items.length]?.focus();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    items[(idx - 1 + items.length) % items.length]?.focus();
+  } else if (e.key === 'Home') {
+    e.preventDefault();
+    items[0]?.focus();
+  } else if (e.key === 'End') {
+    e.preventDefault();
+    items[items.length - 1]?.focus();
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    menuOpen.value = false;
+  }
+}
 const highlightedId = ref<string | null>(null);
 
 // ---- Wyszukiwanie -----------------------------------------------------------
@@ -259,6 +291,8 @@ onBeforeUnmount(() => {
             :title="t('settings.more')"
             :aria-label="t('settings.more')"
             :aria-expanded="menuOpen"
+            aria-haspopup="menu"
+            aria-controls="settings-menu"
             data-testid="settings-more"
             @click="menuOpen = !menuOpen"
           >
@@ -271,10 +305,16 @@ onBeforeUnmount(() => {
       <template #overlay>
         <div
           v-if="menuOpen"
+          id="settings-menu"
+          ref="menuRef"
+          role="menu"
+          :aria-label="t('settings.more')"
           class="absolute right-6 top-full z-50 mt-1 w-56 rounded-box border border-base-300 bg-base-100 fx-depth p-1.5 text-[13px]"
           data-testid="settings-menu"
+          @keydown="onMenuKeydown"
         >
           <button
+            role="menuitem"
             class="flex items-center gap-2 w-full px-2.5 h-8 rounded-field text-left hover:bg-base-content/10 transition-colors"
             data-testid="settings-export"
             @click="onMenuAction('export')"
@@ -282,6 +322,7 @@ onBeforeUnmount(() => {
             <FileDown :size="14" />{{ t('settings.export') }}
           </button>
           <button
+            role="menuitem"
             class="flex items-center gap-2 w-full px-2.5 h-8 rounded-field text-left hover:bg-base-content/10 transition-colors"
             data-testid="settings-import"
             @click="onMenuAction('import')"
@@ -290,6 +331,7 @@ onBeforeUnmount(() => {
           </button>
           <div class="my-1 h-px bg-base-300" />
           <button
+            role="menuitem"
             class="flex items-center gap-2 w-full px-2.5 h-8 rounded-field text-left text-error hover:bg-error/10 transition-colors"
             data-testid="settings-reset-menu"
             @click="onMenuAction('reset')"

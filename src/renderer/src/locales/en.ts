@@ -737,6 +737,8 @@ export default {
     resetFactoryConfirm:
       'Delete ALL app data?\n\nSettings, the library, download queue, subscriptions, saved items, accounts, plugins and caches will be removed, then the app restarts. This cannot be undone.',
     resetFactoryRestarting: 'Resetting… the app will restart.',
+    clearLogsConfirm: 'Clear the log file?',
+    cacheClearConfirm: 'Clear the app cache?',
     resetFactoryError: 'Factory reset failed',
     licenses: 'Licenses',
     licenseUnknown: 'Unknown',
@@ -786,6 +788,7 @@ export default {
     libMixed: 'Mixed',
     libUnknown: 'Unknown',
     libRemove: 'Remove',
+    libRemoveConfirm: 'Remove this folder from the library? Files on disk are kept.',
     libProgress: 'Scanning...',
     libScanError: 'Library scan error',
     libTotal: 'Total:',
@@ -900,6 +903,7 @@ export default {
     coverCacheHint:
       'Normal covers are embedded in files (small 500px thumbs); video clips weigh more — higher limit = fewer rebuilds.',
     coverCacheClear: 'Clear cover cache',
+    coverCacheClearConfirm: 'Clear the cover cache? Thumbnails are regenerated when needed.',
     coverCacheCleared: 'Cache cleared',
     coverCacheClearError: 'Failed to clear cache',
     fontCache: 'Subtitle font cache',
@@ -1737,6 +1741,7 @@ api.registerCommand({
     editMetadata: 'Edit metadata',
     play: 'Play',
     clearFinished: 'Clear finished',
+    clearFinishedConfirm: 'Remove finished downloads from the list? Downloaded files are kept.',
     speedLimit: 'Download speed limit',
     empty: 'No downloaded files',
     inLibrary: 'in library',
@@ -2019,6 +2024,7 @@ api.registerCommand({
   queue: {
     title: 'Queue',
     clear: 'Clear',
+    clearConfirm: 'Clear the playback queue?',
     nowPlaying: 'Now playing',
     empty: 'Queue is empty',
     dropHint: 'Drop files here to add',
