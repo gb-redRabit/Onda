@@ -228,9 +228,3 @@ export async function clearFontCache(): Promise<{ removed: number; bytesFreed: n
   await saveIndex();
   return { removed, bytesFreed };
 }
-
-/** Tylko do testów: czyści stan w pamięci, aby ponownie wczytać indeks z dysku. */
-export function resetFontCacheForTests(): void {
-  index = null;
-  cacheDir = null;
-}

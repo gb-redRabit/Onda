@@ -5,8 +5,7 @@ import { throttleProvider } from '../provider-rate-limit';
 
 // Provider TeraBox (dawniej Baidu Netdisk international). EKSPERYMENTALNY: oparty na
 // niepublicznym API share (shorturlinfo/list/download). Publiczne linki zwykle działają
-// anonimowo, ale przepływ bywa kruchy (sign/timestamp, zmiany pól). Zweryfikuj na żywo
-// skryptem `scripts/terabox-spike.mjs`.
+// anonimowo, ale przepływ bywa kruchy (sign/timestamp, zmiany pól). Zweryfikuj na żywo.
 
 const DOMAINS = [
   'terabox.com',

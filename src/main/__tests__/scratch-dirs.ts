@@ -1,5 +1,5 @@
 import { mkdtemp, rm } from 'node:fs/promises';
-import { homedir, tmpdir } from 'node:os';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { isProtectedPath } from '../path-policy';
 
@@ -37,9 +37,4 @@ export async function makeGrantableScratch(prefix: string): Promise<{
     dir,
     cleanup: () => rm(dir, { recursive: true, force: true })
   };
-}
-
-/** Dla testów, które naprawdę potrzebują katalogu tymczasowego i nigdy nie sprawdzają polityki. */
-export function makeTempDir(prefix: string): Promise<string> {
-  return mkdtemp(join(tmpdir(), `onda-${prefix}-`));
 }

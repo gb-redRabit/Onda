@@ -1,6 +1,5 @@
 import { ipcMain } from 'electron';
 import type { AudioPipState } from '../../shared/types/pip';
-import { logger } from '../../shared/logger';
 import { sendToWindow } from '../utils/broadcast';
 
 // Rejestracja kanałów `audio-pip:*` dla okna PiP audio, wyodrębniona z
@@ -76,8 +75,4 @@ export function removeAudioPipIpc(): void {
   ipcMain.removeAllListeners('audio-pip:timeUpdate');
   ipcMain.removeAllListeners('audio-pip:vizData');
   ipcMain.removeAllListeners('audio-pip:theme');
-}
-
-export function warnPipReposition(e: unknown): void {
-  logger.warn('audio-pip', 'reposition failed', e);
 }

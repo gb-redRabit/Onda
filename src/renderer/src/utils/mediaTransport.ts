@@ -43,9 +43,6 @@ export function skipTarget(video: HTMLVideoElement | null, seconds: number): num
   return newTime;
 }
 
-/** Krok prędkości używany przez menu/skróty. */
-export const SPEED_STEP = 0.25;
-
 /**
  * Normalizuje prędkość odtwarzania: zakres 0.25–3× i siatka 0.05×.
  * Menu i skróty operują na wielokrotności 0.25, więc wcześniejsze zaokrąglanie do 0.1

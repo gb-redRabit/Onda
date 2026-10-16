@@ -5,7 +5,7 @@ import { throttleProvider } from '../provider-rate-limit';
 import { getProviderCookie } from '../provider-credentials';
 
 // Provider 123云盘. EKSPERYMENTALNY (niepubliczne API share). Polega na shareKey + opcjonalnym
-// haśle. Pola odpowiedzi bywają różne (InfoList/FileName/Type/Size). Spike: scripts/123pan-spike.mjs.
+// haśle. Pola odpowiedzi bywają różne (InfoList/FileName/Type/Size).
 
 const HOST_RE =
   /^https?:\/\/(?:www\.)?(?:123pan\.com|123684\.com|123865\.com|123912\.com|123pan\.cn|123pan\.cc)\//i;

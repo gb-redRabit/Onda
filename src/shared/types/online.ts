@@ -1,6 +1,4 @@
 import type {
-  IpcDownloadErrorCode,
-  IpcDownloadSource,
   IpcDownloadTask,
   IpcCoverSpec,
   IpcCoverStatus,
@@ -58,8 +56,6 @@ export interface YouTubeChannel {
 export type CoverStatus = IpcCoverStatus;
 export type CoverSpec = IpcCoverSpec;
 export type MetaOverride = IpcMetaOverride;
-export type DownloadSource = IpcDownloadSource;
-export type DownloadErrorCode = IpcDownloadErrorCode;
 export type SubscriptionDownloadPrefs = IpcSubscriptionDownloadPrefs;
 export type Subscription = IpcSubscription;
 

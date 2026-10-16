@@ -1,8 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { throttleProvider } from '../provider-rate-limit';
 
-// Klient anonimowego API udostępnień PikPak (port zweryfikowanego spike'a
-// `scripts/pikpak-spike.mjs` do TS w procesie głównym). Bez logowania, bez zależności
+// Klient anonimowego API udostępnień PikPak (logika przeniesiona do TS w procesie
+// głównym). Bez logowania, bez zależności
 // zewnętrznych — tylko wbudowany `fetch`/`crypto`. Podpisane URL-e wygasają, więc
 // `web_content_link` rozwiązujemy ŚWIEŻO przy każdej próbie (patrz download-attempt).
 
