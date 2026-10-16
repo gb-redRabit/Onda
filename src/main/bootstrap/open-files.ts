@@ -12,6 +12,11 @@ import type { BrowserWindow } from 'electron';
  */
 export class OpenFileForwarder {
   private pending: string[] = [];
+  // Czy renderer zarejestrował już listener i pobrał pliki (`app:getPendingFiles`).
+  // Dopóki false, zdarzenia są BUFOROWANE — wcześniej trafiały jednocześnie do
+  // `pending` i przez `send`, więc były dostarczane dwa razy, a po przeładowaniu
+  // renderera `app:getPendingFiles` odtwarzał stare pliki i pamięć rosła.
+  private rendererListening = false;
 
   constructor(
     private readonly getMainWindow: () => BrowserWindow | null,
@@ -30,18 +35,28 @@ export class OpenFileForwarder {
     if (paths.length) {
       // Przyznaje media serverowi dostęp do katalogów plików otwartych z OS.
       for (const p of paths) this.grantRoot(dirname(p));
-      this.pending.push(...paths);
     }
     this.focus();
+    if (!paths.length) return;
     const win = this.getMainWindow();
-    if (!paths.length || !win || win.webContents.isLoading()) return;
-    win.webContents.send('open-files', paths);
+    if (this.rendererListening && win && !win.isDestroyed() && !win.webContents.isLoading()) {
+      win.webContents.send('open-files', paths);
+    } else {
+      // Renderer jeszcze nie słucha (start/restart) — przetrzymaj do `takePending`.
+      this.pending.push(...paths);
+    }
   }
 
-  /** Zwraca przetrzymywane ścieżki i je czyści (renderer je pobrał). */
+  /** Renderer pobrał pliki — od teraz zdarzenia lecą bezpośrednio, a bufor wraca do niego. */
   takePending(): string[] {
+    this.rendererListening = true;
     const files = this.pending;
     this.pending = [];
     return files;
+  }
+
+  /** Renderer zaczyna się przeładowywać — wróć do buforowania, aż znów pobierze pending. */
+  resetListening(): void {
+    this.rendererListening = false;
   }
 }

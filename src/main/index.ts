@@ -219,6 +219,9 @@ app.whenReady().then(async () => {
     perf('did-finish-load');
     splash.onMainReady();
   });
+  // Renderer zaczyna się ładować/przeładowywać — wróć do buforowania plików z OS,
+  // żeby zdarzenie nie trafiło do starego (lub jeszcze niezamontowanego) kontekstu.
+  mainWindow.webContents.on('did-start-loading', () => openFiles.resetListening());
 
   splash.send(mainMessages().bootPipTray, 75);
   initAutoUpdater(() => mainWindow?.webContents ?? null);

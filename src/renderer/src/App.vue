@@ -131,6 +131,12 @@ onMounted(async () => {
     audioPip.setAutoShow(settings.appearance.audioPipAutoShow);
   }, onBootStepError);
 
+  // Zarejestruj globalne nasłuchy IPC ZANIM zgłosimy gotowość i pokażemy okno.
+  // Wcześniej działo się to dopiero po `await libraryReady`, więc przy dużej
+  // bibliotece klawisze mediów i akcje z tray nie reagowały przez kilka sekund po
+  // pokazaniu okna (wyglądało to jak awaria).
+  unregisterAppIpc = registerAppIpc({ player, router, route });
+
   // Zgłoś gotowość, gdy tylko powłoka jest wystrojona, zlokalizowana i namalowana —
   // main zamyka wtedy splash i pokazuje okno. Aktywacja modułów, rozgrzewanie audio,
   // przywracanie sesji i kreator pierwszego uruchomienia nie mogą go wstrzymywać.
@@ -173,8 +179,6 @@ onMounted(async () => {
     /* pamięć niedostępna */
   }
   if (!settings.general.firstRunDone) ui.openSetupWizard();
-
-  unregisterAppIpc = registerAppIpc({ player, router, route });
 });
 
 onBeforeUnmount(() => {

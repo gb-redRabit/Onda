@@ -19,6 +19,7 @@ describe('OpenFileForwarder', () => {
     const win = fakeWindow();
     const grantRoot = vi.fn();
     const forwarder = new OpenFileForwarder(() => win, grantRoot);
+    forwarder.takePending(); // renderer zgłosił gotowość
 
     forwarder.forward(['/a/b.mp3']);
 
@@ -38,6 +39,37 @@ describe('OpenFileForwarder', () => {
     expect(win.webContents.send).not.toHaveBeenCalled();
     expect(forwarder.takePending()).toEqual(['/a/b.mp3']);
     expect(forwarder.takePending()).toEqual([]);
+  });
+
+  // Regresja: `forward` dopisywał ścieżki do `pending` NAWET gdy wysyłał je przez
+  // `send`, więc po przeładowaniu renderera `app:getPendingFiles` odtwarzał już
+  // dostarczone pliki (pamięć rosła, plik otwierał się drugi raz).
+  it('does not replay delivered files after takePending', () => {
+    const win = fakeWindow();
+    const forwarder = new OpenFileForwarder(
+      () => win,
+      () => {}
+    );
+    forwarder.takePending();
+    forwarder.forward(['/a/b.mp3']);
+
+    expect(win.webContents.send).toHaveBeenCalledTimes(1);
+    expect(forwarder.takePending()).toEqual([]);
+  });
+
+  it('re-buffers events while the renderer reloads', () => {
+    const win = fakeWindow();
+    const forwarder = new OpenFileForwarder(
+      () => win,
+      () => {}
+    );
+    forwarder.takePending();
+    forwarder.resetListening(); // reload startuje
+
+    forwarder.forward(['/c/d.mp3']);
+
+    expect(win.webContents.send).not.toHaveBeenCalled();
+    expect(forwarder.takePending()).toEqual(['/c/d.mp3']);
   });
 
   it('focuses the window even when launched without files', () => {
