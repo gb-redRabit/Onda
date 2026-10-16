@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import type { AddressInfo } from 'net';
 import type { NetworkTargetOptions } from '../ipc/network-target';
 import { createMediaServer, type MediaServer } from '../media/media-server';
+import { setAllowedRadioHostPredicate } from '../media/media-server-guards';
 
 // Stacja radiowa to host dodany przez użytkownika, a `/stream` jest osiągalny z
 // renderera — więc stacja rozwiązująca się do prywatnego adresu zamieniała media
@@ -111,6 +112,8 @@ async function addStation(host: string): Promise<void> {
 
 beforeAll(async () => {
   radioDir = await mkdtemp(join(tmpdir(), 'onda-radio-'));
+  // Media server dostaje predykat radia przez DI (w aplikacji robi to bootstrap).
+  setAllowedRadioHostPredicate(radio.isAllowedRadioHost);
   mediaServer = await createMediaServer();
   upstream = http.createServer((req, res) => {
     if (req.url === '/private-redirect') {

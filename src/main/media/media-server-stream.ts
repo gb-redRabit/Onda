@@ -2,13 +2,13 @@ import http from 'http';
 import https from 'https';
 import { logger } from '../../shared/logger';
 import { createPinnedLookup, resolveNetworkTarget } from '../ipc/network-target';
-import { isAllowedRadioHost } from '../ipc/radio-store';
 import {
   isRegisteredGenericStreamUrl,
   getProviderStreamFactory
 } from './media-server-stream-registry';
 import { detectProviderLimit, formatProviderLimit } from '../ipc/providers/provider-limits';
 import {
+  isAllowedRadioHost,
   validateStreamUrl,
   STREAM_MAX_REDIRECTS,
   STREAM_MAX_ATTEMPTS,
