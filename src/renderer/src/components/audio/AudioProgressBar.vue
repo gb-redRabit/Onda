@@ -139,7 +139,7 @@ function onTrackKey(e: KeyboardEvent) {
       <div :class="fillClass" :style="{ width: progressPct + '%' }">
         <div
           v-if="!isThin"
-          class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+          class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary shadow-md opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
         />
       </div>
     </div>

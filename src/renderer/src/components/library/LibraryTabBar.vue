@@ -96,7 +96,7 @@ onUnmounted(() => tabResizeObserver?.disconnect());
           :size="14"
           class="shrink-0"
           :class="
-            props.modelValue === tabItem.id ? 'opacity-90' : 'opacity-60 group-hover:opacity-100'
+            props.modelValue === tabItem.id ? 'opacity-90' : 'opacity-60 group-hover:opacity-100 group-focus-within:opacity-100'
           "
         />
         <span data-tab-label class="truncate">{{ tabItem.label }}</span>

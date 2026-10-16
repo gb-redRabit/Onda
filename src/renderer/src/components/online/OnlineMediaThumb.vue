@@ -128,7 +128,7 @@ function onExpand(e?: MouseEvent) {
     >
       <div
         v-if="isPlayable"
-        class="opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center gap-3 pointer-events-none group-hover:pointer-events-auto"
+        class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 flex items-center gap-3 pointer-events-none group-hover:pointer-events-auto"
       >
         <button
           type="button"
@@ -155,7 +155,7 @@ function onExpand(e?: MouseEvent) {
          playlista Webcast, gdzie zapis/pobieranie są zbędne) -->
     <div
       v-if="layout !== 'list' && !hideQuickActions"
-      class="online-card-actions absolute bottom-1.5 left-1.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1 pointer-events-none group-hover:pointer-events-auto"
+      class="online-card-actions absolute bottom-1.5 left-1.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1 pointer-events-none group-hover:pointer-events-auto"
     >
       <OnlineIconButton
         :title="isSaved ? $t('saved.removeTrack') : $t('saved.saveTrack')"

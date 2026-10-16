@@ -83,13 +83,13 @@ const typeIcon = {
       <div
         class="pointer-events-none absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/30 transition-colors"
       >
-        <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+        <div class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
           <Eye :size="28" class="text-neutral-content drop-shadow" />
         </div>
       </div>
       <button
         v-if="downloadable && (item.mediaUrl || item.playerUrl)"
-        class="fx-noise absolute bottom-1.5 left-1.5 opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 fx-depth rounded-field text-neutral-content text-[11px] disabled:opacity-60"
+        class="fx-noise absolute bottom-1.5 left-1.5 opacity-60 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 fx-depth rounded-field text-neutral-content text-[11px] disabled:opacity-60"
         :class="
           downloaded ? 'bg-success/80 hover:bg-success/80' : 'bg-neutral/70 hover:bg-neutral/90'
         "

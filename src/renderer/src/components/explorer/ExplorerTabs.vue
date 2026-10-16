@@ -209,7 +209,7 @@ async function onTabDrop(e: DragEvent, idx: number) {
         :class="
           explorer.activeTabIndex === idx
             ? 'text-primary-content/80 hover:text-primary-content opacity-100'
-            : 'text-base-content/50 opacity-0 group-hover:opacity-100 hover:bg-base-content/10 hover:text-base-content'
+            : 'text-base-content/50 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-base-content/10 hover:text-base-content'
         "
         @click.stop="explorer.closeTab(idx)"
         ><X :size="10"

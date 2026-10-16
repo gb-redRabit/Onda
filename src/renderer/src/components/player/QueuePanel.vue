@@ -236,7 +236,7 @@ function onFileDrop(e: DragEvent) {
           >
             <GripVertical
               :size="12"
-              class="text-base-content/60 shrink-0 opacity-0 group-hover:opacity-100 cursor-grab"
+              class="text-base-content/60 shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 cursor-grab"
             />
             <div
               class="w-8 h-8 rounded-field bg-neutral flex items-center justify-center shrink-0 overflow-hidden"

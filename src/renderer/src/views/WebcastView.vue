@@ -167,7 +167,7 @@ const trackCount = computed(() => saved.tracks.length);
                       class="absolute inset-0 w-full h-full object-cover"
                     />
                     <div
-                      class="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 bg-neutral/30 transition-opacity"
+                      class="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 bg-neutral/30 transition-opacity"
                     >
                       <button
                         type="button"

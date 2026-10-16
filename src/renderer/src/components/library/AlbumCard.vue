@@ -85,13 +85,13 @@ function onDragStart(e: DragEvent) {
         class="absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/20 transition-colors"
       >
         <div
-          class="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          class="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
         >
           <Music2 :size="18" class="text-primary-content ml-0.5" />
         </div>
       </div>
       <div
-        class="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+        class="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
         @click.stop
       >
         <PlaylistAddMenu

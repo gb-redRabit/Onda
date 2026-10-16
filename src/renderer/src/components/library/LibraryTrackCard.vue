@@ -119,7 +119,7 @@ function onHoverLeave() {
         <button
           type="button"
           data-testid="library-track-play"
-          class="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+          class="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shadow-lg"
           :aria-label="$t('common.play')"
           @click.stop="playNow"
         >
@@ -129,7 +129,7 @@ function onHoverLeave() {
 
       <!-- Akcje w prawym górnym rogu -->
       <div
-        class="absolute top-1.5 right-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+        class="absolute top-1.5 right-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
         @click.stop
       >
         <button

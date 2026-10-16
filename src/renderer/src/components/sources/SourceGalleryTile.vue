@@ -86,7 +86,7 @@ const typeIcon = {
 
     <!-- Hover: wskaźnik podglądu + pobieranie -->
     <div
-      class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+      class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
     >
       <span
         class="flex items-center justify-center w-9 h-9 rounded-full bg-black/50 text-white backdrop-blur-sm"
@@ -103,7 +103,7 @@ const typeIcon = {
     </span>
     <button
       v-else-if="downloadable && (item.mediaUrl || item.playerUrl)"
-      class="fx-noise absolute bottom-1.5 right-1.5 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-black/60 text-white text-[11px] opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity disabled:opacity-60"
+      class="fx-noise absolute bottom-1.5 right-1.5 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-black/60 text-white text-[11px] opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity disabled:opacity-60"
       :title="$t('sources.download')"
       :aria-label="$t('sources.download')"
       :disabled="downloading"

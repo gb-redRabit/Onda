@@ -88,7 +88,7 @@ function playPlaylist(playlistId: string) {
         <span class="truncate flex-1">{{ playlist.name }}</span>
         <span class="text-[11px] text-base-content/50">{{ playlist.tracks.length }}</span>
         <button
-          class="fx-noise p-0.5 fx-depth rounded-field opacity-0 group-hover:opacity-100 text-base-content/50 hover:text-error transition-all"
+          class="fx-noise p-0.5 fx-depth rounded-field opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 text-base-content/50 hover:text-error transition-all"
           :aria-label="$t('common.delete')"
           @click.stop="library.deletePlaylist(playlist.id)"
         >

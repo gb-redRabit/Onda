@@ -330,7 +330,7 @@ async function confirmDownloadFolder(): Promise<void> {
               <button
                 type="button"
                 data-testid="providers-play"
-                class="absolute right-1 top-1 rounded-full bg-black/55 p-1.5 text-white opacity-0 transition-opacity hover:bg-black/75 group-hover:opacity-100 focus-visible:opacity-100"
+                class="absolute right-1 top-1 rounded-full bg-black/55 p-1.5 text-white opacity-0 transition-opacity hover:bg-black/75 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
                 :aria-label="t('providers.play')"
                 :title="t('providers.play')"
                 @click="store.play(item)"

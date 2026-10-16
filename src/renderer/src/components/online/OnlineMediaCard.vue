@@ -231,7 +231,7 @@ onBeforeUnmount(() => {
       <!-- Akcje listy -->
       <div
         v-if="layout === 'list'"
-        class="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+        class="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
       >
         <OnlineIconButton :title="$t('youtube.play')" @click="onListPlay">
           <Play :size="14" />
