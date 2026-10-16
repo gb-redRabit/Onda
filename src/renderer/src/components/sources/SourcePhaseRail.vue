@@ -31,13 +31,13 @@ const { t } = useI18n();
       @keydown.space.prevent="emit('select', i)"
     >
       <span
-        class="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono"
+        class="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-mono"
         :class="i === active ? 'bg-primary text-primary-content' : 'bg-base-content/10'"
         >{{ i }}</span
       >
       <span class="min-w-0 flex-1">
         <span class="block truncate font-medium">{{ p.label }}</span>
-        <span class="block text-[10px] text-base-content/50 truncate">
+        <span class="block text-[11px] text-base-content/50 truncate">
           {{
             p.kind === 'source'
               ? t('sources.phaseSource')
@@ -62,7 +62,7 @@ const { t } = useI18n();
       </button>
     </div>
     <button
-      class="mt-1 w-full flex items-center gap-1.5 px-2.5 py-2 text-xs text-primary hover:bg-primary/10 transition-colors"
+      class="mt-1 w-full flex items-center gap-1.5 px-2.5 py-2 text-xs text-primary-text hover:bg-primary/10 transition-colors"
       data-testid="sources-phase-add"
       @click="emit('add')"
     >

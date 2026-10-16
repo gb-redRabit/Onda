@@ -117,10 +117,11 @@ function move(index: number, dir: -1 | 1): void {
         draggable="true"
         class="group flex items-center gap-2 px-2.5 py-2 rounded-field cursor-pointer transition-colors"
         :class="[
-          s.id === activeSourceId ? 'bg-primary/10 text-primary' : 'hover:bg-base-content/10',
+          s.id === activeSourceId ? 'bg-primary/10 text-primary-text' : 'hover:bg-base-content/10',
           dragIndex === i ? 'opacity-50' : ''
         ]"
         :data-testid="`sources-item-${s.id}`"
+        :aria-current="s.id === activeSourceId ? 'true' : undefined"
         @click="emit('select', s.id)"
         @dragstart="onDragStart(i, $event)"
         @dragover="onDragOver($event)"

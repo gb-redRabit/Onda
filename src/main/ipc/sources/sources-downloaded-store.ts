@@ -1,7 +1,6 @@
-import { readFile, writeFile, mkdir } from 'fs/promises';
-import { dirname } from 'path';
+import { readFile } from 'fs/promises';
 import { logger } from '../../../shared/logger';
-import { createWriteLock } from '../../utils/write-queue';
+import { createWriteLock, writeJsonAtomic } from '../../utils/write-queue';
 
 // Trwały zapis elementów źródeł (po ich `id` API), których pobieranie zakończyło się
 // sukcesem. Trzymany poza szyfrowanym store ustawień i poza
@@ -41,8 +40,7 @@ async function read(filePath: string): Promise<DownloadedSourceItems> {
 }
 
 async function write(filePath: string, data: DownloadedSourceItems): Promise<void> {
-  await mkdir(dirname(filePath), { recursive: true });
-  await writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
+  await writeJsonAtomic(filePath, data);
 }
 
 export async function getDownloadedForSource(

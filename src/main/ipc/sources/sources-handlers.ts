@@ -17,7 +17,8 @@ import {
   fetchSourceItems,
   testSourceConnection,
   fetchTableRows,
-  resolveSourceHeaders
+  resolveSourceHeaders,
+  registerPlayableMediaUrls
 } from '../generic-fetch';
 import { scrapePlayerUrl } from '../player-scraper';
 import { resolveNetworkTarget, privateNetworkAllowedForTarget } from '../network-target';
@@ -275,7 +276,11 @@ export function registerSourcesHandlers(): void {
         ? sanitizeEndpoint(endpointRaw ?? source.endpoints[0], 0)
         : null;
       if (!source || !endpoint) return { items: [], hasMore: false, error: 'Invalid source' };
-      return fetchSourceItems(source, endpoint, opts);
+      const res = await fetchSourceItems(source, endpoint, opts);
+      // Odtwarzanie bez pobierania idzie przez proxy serwera mediów (`/stream?url=`) —
+      // zarejestruj publiczne adresy elementów, zanim renderer zacznie je odtwarzać.
+      registerPlayableMediaUrls(res.items);
+      return res;
     }
   );
 

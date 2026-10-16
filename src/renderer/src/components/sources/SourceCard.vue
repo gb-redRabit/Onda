@@ -49,14 +49,14 @@ const typeIcon = {
         </div>
       </div>
       <div
-        class="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-field bg-neutral/70 text-neutral-content text-[10px] font-medium uppercase"
+        class="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-field bg-neutral/70 text-neutral-content text-[11px] font-medium uppercase"
       >
         <component :is="typeIcon[item.type]" :size="10" />
         <span>{{ item.type }}</span>
       </div>
       <div
         v-if="item.duration"
-        class="absolute bottom-1.5 right-1.5 bg-neutral/80 text-neutral-content text-[10px] px-1.5 py-0.5 rounded-field"
+        class="absolute bottom-1.5 right-1.5 bg-neutral/80 text-neutral-content text-[11px] px-1.5 py-0.5 rounded-field"
       >
         {{ item.duration }}
       </div>
@@ -74,7 +74,7 @@ const typeIcon = {
       </div>
       <div
         v-if="downloaded && !selectable"
-        class="absolute top-1.5 right-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-field bg-success text-success-content text-[10px] font-medium"
+        class="absolute top-1.5 right-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-field bg-success text-success-content text-[11px] font-medium"
         :title="$t('sources.downloaded')"
       >
         <Check :size="10" />
@@ -89,7 +89,7 @@ const typeIcon = {
       </div>
       <button
         v-if="downloadable && (item.mediaUrl || item.playerUrl)"
-        class="fx-noise absolute bottom-1.5 left-1.5 opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 fx-depth rounded-field text-neutral-content text-[10px] disabled:opacity-60"
+        class="fx-noise absolute bottom-1.5 left-1.5 opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 fx-depth rounded-field text-neutral-content text-[11px] disabled:opacity-60"
         :class="
           downloaded ? 'bg-success/80 hover:bg-success/80' : 'bg-neutral/70 hover:bg-neutral/90'
         "

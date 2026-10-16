@@ -87,7 +87,7 @@ function isRowSelected(item: SourceItem): boolean {
         <div class="flex-1" />
         <button
           v-if="downloadable && rows.length"
-          class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-[10px] text-base-content/70 hover:bg-base-content/10 transition-colors"
+          class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-[11px] text-base-content/70 hover:bg-base-content/10 transition-colors"
           :title="$t('sources.downloadAllRows')"
           @click="emit('download-all', rows)"
         >

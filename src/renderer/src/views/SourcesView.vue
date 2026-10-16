@@ -168,7 +168,7 @@ onMounted(() => {
               </button>
               <span class="text-base-content/50">/</span>
             </span>
-            <span class="text-primary font-medium">{{ activeEndpoint?.name }}</span>
+            <span class="text-primary-text font-medium">{{ activeEndpoint?.name }}</span>
           </div>
           <input
             v-model="queryText"
@@ -268,7 +268,7 @@ onMounted(() => {
         />
         <p
           v-if="currentUrl"
-          class="px-4 py-1 text-[10px] font-mono text-base-content/50 truncate border-b border-base-300"
+          class="px-4 py-1 text-[11px] font-mono text-base-content/50 truncate border-b border-base-300"
           :title="currentUrl"
         >
           {{ currentUrl }}

@@ -50,7 +50,8 @@ function mimeFor(extension: string): string {
 /**
  * Buduje utwór strumieniowy do playerа z elementu źródła. `type: 'stream'` sprawia,
  * że `useAudioPlayer` kieruje go do `audioEngine.loadRemote` (proxy/direct fallback),
- * więc nie wymaga lokalnego pliku ani `grantMediaAccess`.
+ * więc nie wymaga lokalnego pliku ani `grantMediaAccess` i nie przenosi widoku do
+ * globalnego odtwarzacza — wideo zostaje w widoku Źródeł.
  */
 export function buildSourceStreamTrack(
   source: MediaSource,

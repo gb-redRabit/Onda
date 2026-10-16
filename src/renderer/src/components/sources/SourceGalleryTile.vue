@@ -52,14 +52,14 @@ const typeIcon = {
 
     <!-- Badge typu (lewy-górny) i czasu (prawy-górny) -->
     <span
-      class="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-field bg-black/60 text-white text-[10px] font-medium uppercase"
+      class="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-field bg-black/60 text-white text-[11px] font-medium uppercase"
     >
       <component :is="typeIcon[item.type]" :size="10" />
       {{ item.type }}
     </span>
     <span
       v-if="item.duration && !selectable"
-      class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-field bg-black/60 text-white text-[10px] font-mono"
+      class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-field bg-black/60 text-white text-[11px] font-mono"
     >
       {{ item.duration }}
     </span>
@@ -96,14 +96,14 @@ const typeIcon = {
     </div>
     <span
       v-if="downloaded"
-      class="absolute bottom-1.5 right-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-field bg-success text-success-content text-[10px] font-medium"
+      class="absolute bottom-1.5 right-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-field bg-success text-success-content text-[11px] font-medium"
       :title="$t('sources.downloaded')"
     >
       <Check :size="10" />
     </span>
     <button
       v-else-if="downloadable && (item.mediaUrl || item.playerUrl)"
-      class="fx-noise absolute bottom-1.5 right-1.5 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-black/60 text-white text-[10px] opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity disabled:opacity-60"
+      class="fx-noise absolute bottom-1.5 right-1.5 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-black/60 text-white text-[11px] opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity disabled:opacity-60"
       :title="$t('sources.download')"
       :aria-label="$t('sources.download')"
       :disabled="downloading"

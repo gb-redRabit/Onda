@@ -45,7 +45,7 @@ function browserUrl(item: SourceItem): string {
     <template v-if="props.item">
       <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
         <span
-          class="shrink-0 px-2 py-0.5 rounded-field bg-base-200 text-[10px] font-medium uppercase text-base-content/60"
+          class="shrink-0 px-2 py-0.5 rounded-field bg-base-200 text-[11px] font-medium uppercase text-base-content/60"
         >
           {{ props.item.type }}
         </span>
@@ -98,7 +98,7 @@ function browserUrl(item: SourceItem): string {
             :href="browserUrl(props.item)"
             target="_blank"
             rel="noreferrer"
-            class="text-sm text-primary hover:underline flex items-center gap-1"
+            class="text-sm text-primary-text hover:underline flex items-center gap-1"
           >
             {{ $t('sources.openInBrowser') }}
             <ExternalLink :size="14" />
@@ -137,7 +137,7 @@ function browserUrl(item: SourceItem): string {
               :href="browserUrl(props.item)"
               target="_blank"
               rel="noreferrer"
-              class="text-xs text-primary hover:underline break-all"
+              class="text-xs text-primary-text hover:underline break-all"
             >
               {{ browserUrl(props.item) }}
             </a>

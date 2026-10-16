@@ -151,7 +151,7 @@ const tableViews = [
           <FieldLabel :text="t('sources.tableRowKeys')" tight />
           <button
             type="button"
-            class="fx-noise flex items-center gap-1 px-1.5 py-0.5 fx-depth rounded-field text-primary text-[11px] font-medium hover:bg-primary/10 transition-colors"
+            class="fx-noise flex items-center gap-1 px-1.5 py-0.5 fx-depth rounded-field text-primary-text text-[11px] font-medium hover:bg-primary/10 transition-colors"
             @click="addPassKey(model.tablePassKeys)"
           >
             <Plus :size="10" />
