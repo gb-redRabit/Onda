@@ -2,6 +2,7 @@ import { matchesShortcut } from '@renderer/utils/shortcuts';
 import { applyVolumeTarget, seekTarget } from '@renderer/utils/mediaTransport';
 import { getActivePinia } from 'pinia';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useAudioFxStore } from '@renderer/stores/audioFx';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore } from '@renderer/stores/ui';
 import { useAudioPlayer } from './useAudioPlayer';
@@ -152,28 +153,28 @@ function handleAbShortcuts(e: KeyboardEvent): boolean {
 function handleEqShortcuts(e: KeyboardEvent): boolean {
   if (!getActivePinia()) return false;
   const shortcuts = useSettingsStore().shortcuts;
-  const player = usePlayerStore();
+  const fx = useAudioFxStore();
   const audio = useAudioPlayer();
 
   const toggle = shortcuts['eq-toggle'];
   if (toggle && matchesShortcut(toggle, e)) {
     e.preventDefault();
-    player.equalizerVisible = !player.equalizerVisible;
+    fx.equalizerVisible = !fx.equalizerVisible;
     return true;
   }
   const bypass = shortcuts['eq-bypass'];
   if (bypass && matchesShortcut(bypass, e)) {
     e.preventDefault();
-    audio.setEqEnabled(!player.equalizerEnabled);
+    audio.setEqEnabled(!fx.equalizerEnabled);
     return true;
   }
   const add = shortcuts['eq-add-band'];
   if (add && matchesShortcut(add, e)) {
     e.preventDefault();
-    if (player.equalizerBands.length < EQ_LIMITS.maxBands) {
-      const next = cloneEqBands(player.equalizerBands);
+    if (fx.equalizerBands.length < EQ_LIMITS.maxBands) {
+      const next = cloneEqBands(fx.equalizerBands);
       next.push({ type: 'peaking', frequency: 1000, q: 1, gain: 0 });
-      player.equalizerPreset = 'custom';
+      fx.equalizerPreset = 'custom';
       audio.applyEqBands(next);
     }
     return true;
@@ -181,20 +182,20 @@ function handleEqShortcuts(e: KeyboardEvent): boolean {
   const reset = shortcuts['eq-reset'];
   if (reset && matchesShortcut(reset, e)) {
     e.preventDefault();
-    player.equalizerPreset = 'flat';
+    fx.equalizerPreset = 'flat';
     audio.applyEqBands(cloneEqBands(EQUALIZER_PRESETS.flat));
     return true;
   }
   const snap = shortcuts['eq-snap'];
   if (snap && matchesShortcut(snap, e)) {
     e.preventDefault();
-    audio.setEqSnap(!player.equalizerSnap);
+    audio.setEqSnap(!fx.equalizerSnap);
     return true;
   }
   const mono = shortcuts['eq-mono'];
   if (mono && matchesShortcut(mono, e)) {
     e.preventDefault();
-    audio.setEqMono(!player.equalizerMono);
+    audio.setEqMono(!fx.equalizerMono);
     return true;
   }
   return false;

@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { ListMusic, Pause, Play, SlidersHorizontal, Volume2, VolumeX } from '@lucide/vue';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useAudioFxStore } from '@renderer/stores/audioFx';
 import { DENSITY, ICON, ICON_SM, PLAY_BOX, PLAY_SIZE } from '@renderer/utils/audioControls';
 import TransportButtons from '@renderer/components/player/TransportButtons.vue';
 
@@ -28,6 +29,7 @@ const props = defineProps<{
 }>();
 
 const player = usePlayerStore();
+const fx = useAudioFxStore();
 const audio = useAudioPlayer();
 const { t } = useI18n();
 
@@ -164,12 +166,12 @@ function onVolumeKey(e: KeyboardEvent) {
       <button
         :class="[
           d.extrasButton,
-          player.equalizerVisible ? 'bg-primary/10 text-primary-text' : TOGGLE_OFF
+          fx.equalizerVisible ? 'bg-primary/10 text-primary-text' : TOGGLE_OFF
         ]"
         :aria-label="t('common.equalizer')"
-        :aria-pressed="player.equalizerVisible"
+        :aria-pressed="fx.equalizerVisible"
         data-eq-toggle
-        @click="player.toggleEqualizer"
+        @click="fx.toggleEqualizer"
       >
         <SlidersHorizontal :size="iconSm" />
       </button>

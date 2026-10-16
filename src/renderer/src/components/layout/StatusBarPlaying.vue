@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Shuffle, Repeat, Repeat2, SlidersHorizontal } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useAudioFxStore } from '@renderer/stores/audioFx';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 
 const emit = defineEmits<{
@@ -11,6 +12,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const player = usePlayerStore();
+const fx = useAudioFxStore();
 const audio = useAudioPlayer();
 
 // Sekcja "playing" paska statusu powinna otwierać odtwarzacz AUDIO dla muzyki
@@ -88,7 +90,7 @@ const queuePosition = computed(() => {
         <Repeat v-else :size="11" />
       </span>
       <span
-        v-if="player.equalizerVisible"
+        v-if="fx.equalizerVisible"
         class="flex items-center text-primary-text"
         :title="$t('status.eq')"
       >

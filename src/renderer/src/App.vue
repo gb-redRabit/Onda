@@ -12,6 +12,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { i18n, loadLocaleMessages } from './i18n';
 import { useSettingsStore } from './stores/settings';
 import { usePlayerStore } from './stores/player';
+import { useAudioFxStore } from './stores/audioFx';
 import { useUIStore } from './stores/ui';
 import { useLibraryStore } from './stores/library';
 import { matchesShortcut, matchesPluginShortcut, navShortcutBindings } from './utils/shortcuts';
@@ -48,6 +49,7 @@ const ContextMenu = defineAsyncComponent(() => import('./components/ContextMenu.
 
 const settings = useSettingsStore();
 const player = usePlayerStore();
+const fx = useAudioFxStore();
 const ui = useUIStore();
 const library = useLibraryStore();
 const pluginsStore = usePluginsStore();
@@ -346,10 +348,7 @@ function onWindowBlur() {
         "
       />
       <Sidebar v-if="!isStandaloneWindow && settings.appearance.sidebarPosition === 'right'" />
-      <div
-        v-if="!isStandaloneWindow && player.equalizerVisible"
-        class="fixed bottom-24 right-6 z-40"
-      >
+      <div v-if="!isStandaloneWindow && fx.equalizerVisible" class="fixed bottom-24 right-6 z-40">
         <Equalizer />
       </div>
       <div

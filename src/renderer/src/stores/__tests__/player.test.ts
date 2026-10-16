@@ -251,14 +251,6 @@ describe('queue management', () => {
     store.toggleSubtitlePanel();
     expect(store.subtitlePanelVisible).toBe(false);
   });
-
-  it('toggleEqualizer flips equalizerVisible', () => {
-    const store = usePlayerStore();
-    store.toggleEqualizer();
-    expect(store.equalizerVisible).toBe(true);
-    store.toggleEqualizer();
-    expect(store.equalizerVisible).toBe(false);
-  });
 });
 
 describe('nextTrack', () => {

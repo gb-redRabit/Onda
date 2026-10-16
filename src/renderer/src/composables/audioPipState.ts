@@ -1,6 +1,7 @@
 import { currentTime, duration } from '@renderer/composables/useAudioPlayer';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useAudioFxStore } from '@renderer/stores/audioFx';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { getFrequencyBins as collectBins } from '@renderer/utils/audioViz';
 import type {
@@ -44,6 +45,7 @@ export function createEmptyAudioPipState(): AudioPipState {
 
 export function buildAudioPipState(): AudioPipState {
   const player = usePlayerStore();
+  const fx = useAudioFxStore();
   const track = player.currentTrack;
   const path = track?.path || '';
   const cached = player.getCover(path);
@@ -61,7 +63,7 @@ export function buildAudioPipState(): AudioPipState {
     duration: +duration.value,
     volume: +player.volume,
     isMuted: !!player.isMuted,
-    equalizerPreset: player.equalizerPreset || 'flat',
+    equalizerPreset: fx.equalizerPreset || 'flat',
     vizData: [],
     nextTrackName: '' + (nextTrack?.name || ''),
     nextTrackArtist: '' + (nextTrack?.metadata?.artist || '')

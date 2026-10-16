@@ -12,6 +12,7 @@ import {
   Disc3
 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useAudioFxStore } from '@renderer/stores/audioFx';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { formatDuration } from '@renderer/utils/formatters';
 import MediaCover from '@renderer/components/MediaCover.vue';
@@ -23,6 +24,7 @@ import AbRepeatButton from '@renderer/components/player/AbRepeatButton.vue';
 import AbRepeatMarkers from '@renderer/components/player/AbRepeatMarkers.vue';
 
 const player = usePlayerStore();
+const fx = useAudioFxStore();
 const audio = useAudioPlayer();
 const router = useRouter();
 const pluginsStore = usePluginsStore();
@@ -252,11 +254,11 @@ function togglePlay() {
       <AbRepeatButton :current-time="audio.currentTime.value" />
       <button
         class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-        :class="{ 'text-primary-text!': player.equalizerVisible }"
+        :class="{ 'text-primary-text!': fx.equalizerVisible }"
         data-eq-toggle
         data-testid="player-eq"
         :aria-label="$t('common.equalizer')"
-        @click="player.toggleEqualizer"
+        @click="fx.toggleEqualizer"
       >
         <SlidersHorizontal :size="15" />
       </button>

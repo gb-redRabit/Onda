@@ -13,6 +13,7 @@ import {
 } from '@lucide/vue';
 import { useI18n } from 'vue-i18n';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useAudioFxStore } from '@renderer/stores/audioFx';
 import { useUIStore } from '@renderer/stores/ui';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { formatDuration } from '@renderer/utils/formatters';
@@ -38,6 +39,7 @@ const emit = defineEmits<{
 }>();
 
 const player = usePlayerStore();
+const fx = useAudioFxStore();
 const audio = useAudioPlayer();
 const ui = useUIStore();
 const { t } = useI18n();
@@ -250,12 +252,12 @@ function onVolumeKeydown(e: KeyboardEvent) {
         <VideoFilterDropdown />
         <button
           class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
-          :class="{ 'text-primary-text!': player.nightMode }"
+          :class="{ 'text-primary-text!': fx.nightMode }"
           data-night-mode
           :title="$t('player.nightMode')"
           :aria-label="$t('player.nightMode')"
-          :aria-pressed="player.nightMode"
-          @click="audio.setNightMode(!player.nightMode)"
+          :aria-pressed="fx.nightMode"
+          @click="audio.setNightMode(!fx.nightMode)"
         >
           <Moon :size="16" />
         </button>
@@ -270,10 +272,10 @@ function onVolumeKeydown(e: KeyboardEvent) {
         </button>
         <button
           class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
-          :class="{ 'text-primary-text!': player.equalizerVisible }"
+          :class="{ 'text-primary-text!': fx.equalizerVisible }"
           data-eq-toggle
           :aria-label="$t('common.equalizer')"
-          @click="player.toggleEqualizer"
+          @click="fx.toggleEqualizer"
         >
           <SlidersHorizontal :size="16" />
         </button>

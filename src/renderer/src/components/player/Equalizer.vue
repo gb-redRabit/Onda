@@ -16,6 +16,7 @@ import {
   Moon
 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useAudioFxStore } from '@renderer/stores/audioFx';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { useUIStore } from '@renderer/stores/ui';
 import {
@@ -33,6 +34,7 @@ import { sanitizeEqBands, sanitizeEqPreamp } from '@shared/eqSanitize';
 import { eqCurvePath, freqToRatio, ratioToFreq } from '@renderer/utils/eqCurve';
 
 const player = usePlayerStore();
+const fx = useAudioFxStore();
 const audio = useAudioPlayer();
 const ui = useUIStore();
 const { applyEqBands } = audio;
@@ -50,7 +52,7 @@ function onClickOutside(e: MouseEvent) {
     !panel.value.contains(target) &&
     !(target as HTMLElement).closest('[data-eq-toggle]')
   ) {
-    player.equalizerVisible = false;
+    fx.equalizerVisible = false;
   }
 }
 onMounted(() => document.addEventListener('click', onClickOutside));
@@ -66,9 +68,9 @@ const presetLabels: Record<string, string> = {
   vocal: t('equalizer.vocal')
 };
 
-const bands = computed(() => player.equalizerBands);
-const color = (i: number) => (player.equalizerMulticolor ? eqBandColor(i) : 'var(--color-primary)');
-const snap = (freq: number) => (player.equalizerSnap ? snapFrequency(freq) : freq);
+const bands = computed(() => fx.equalizerBands);
+const color = (i: number) => (fx.equalizerMulticolor ? eqBandColor(i) : 'var(--color-primary)');
+const snap = (freq: number) => (fx.equalizerSnap ? snapFrequency(freq) : freq);
 
 // „Solo": odsłuchaj tylko jedno pasmo (reszta neutralna) — zmiana tylko na grafie, bez zapisu.
 const solo = ref<number | null>(null);
@@ -87,7 +89,7 @@ watch(bands, () => {
 const markerRadius = (type: EqBandType): string =>
   type === 'lowshelf' ? '50% 50% 18% 18%' : type === 'highshelf' ? '18% 18% 50% 50%' : '50%';
 
-const userPresets = computed(() => player.equalizerUserPresets ?? {});
+const userPresets = computed(() => fx.equalizerUserPresets ?? {});
 const activePreset = computed(() => {
   for (const name of Object.keys(userPresets.value)) {
     if (matchesEqPreset(bands.value, userPresets.value[name])) return name;
@@ -100,7 +102,7 @@ const activePreset = computed(() => {
 
 // --- krzywa ---
 const CURVE = { width: 480, height: 110, minFreq: 20, maxFreq: 20000, minDb: -18, maxDb: 18 };
-const curvePath = computed(() => eqCurvePath(bands.value, CURVE, player.equalizerPreamp));
+const curvePath = computed(() => eqCurvePath(bands.value, CURVE, fx.equalizerPreamp));
 const dbToY = (db: number) =>
   CURVE.height -
   ((Math.max(CURVE.minDb, Math.min(CURVE.maxDb, db)) - CURVE.minDb) / (CURVE.maxDb - CURVE.minDb)) *
@@ -160,7 +162,7 @@ const hoverBand = ref<number | null>(null);
 const menuBelow = computed(() =>
   menuBand.value === null
     ? true
-    : bandY((bands.value[menuBand.value]?.gain ?? 0) + player.equalizerPreamp) < 55
+    : bandY((bands.value[menuBand.value]?.gain ?? 0) + fx.equalizerPreamp) < 55
 );
 
 function timeFromEvent(e: PointerEvent | MouseEvent): { frequency: number; gain: number } | null {
@@ -171,7 +173,7 @@ function timeFromEvent(e: PointerEvent | MouseEvent): { frequency: number; gain:
   const ry = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
   return {
     frequency: Math.round(snap(ratioToFreq(rx, CURVE.minFreq, CURVE.maxFreq))),
-    gain: Math.round(CURVE.maxDb - ry * (CURVE.maxDb - CURVE.minDb) - player.equalizerPreamp)
+    gain: Math.round(CURVE.maxDb - ry * (CURVE.maxDb - CURVE.minDb) - fx.equalizerPreamp)
   };
 }
 function onCurveDown(i: number, e: PointerEvent) {
@@ -206,7 +208,7 @@ function onMarkerContext(e: MouseEvent, i: number) {
 }
 
 function commit(next: EqBand[], preset = 'custom') {
-  player.equalizerPreset = preset;
+  fx.equalizerPreset = preset;
   applyEqBands(next);
 }
 function selectPreset(name: string) {
@@ -341,7 +343,7 @@ function deletePreset(name: string) {
 async function exportEq() {
   try {
     await navigator.clipboard.writeText(
-      JSON.stringify({ bands: bands.value, preamp: player.equalizerPreamp })
+      JSON.stringify({ bands: bands.value, preamp: fx.equalizerPreamp })
     );
   } catch {
     ui.notify('error', t('equalizer.export'), t('equalizer.exportError'));
@@ -379,12 +381,12 @@ onUnmounted(() => cancelAnimationFrame(raf));
       <div class="flex items-center gap-1.5">
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
-          :class="player.equalizerEnabled ? 'text-primary-text' : 'text-base-content/40'"
+          :class="fx.equalizerEnabled ? 'text-primary-text' : 'text-base-content/40'"
           data-testid="eq-power"
-          :title="player.equalizerEnabled ? $t('equalizer.disable') : $t('equalizer.enable')"
-          :aria-label="player.equalizerEnabled ? $t('equalizer.disable') : $t('equalizer.enable')"
-          :aria-pressed="player.equalizerEnabled"
-          @click="audio.setEqEnabled(!player.equalizerEnabled)"
+          :title="fx.equalizerEnabled ? $t('equalizer.disable') : $t('equalizer.enable')"
+          :aria-label="fx.equalizerEnabled ? $t('equalizer.disable') : $t('equalizer.enable')"
+          :aria-pressed="fx.equalizerEnabled"
+          @click="audio.setEqEnabled(!fx.equalizerEnabled)"
         >
           <Power :size="14" />
         </button>
@@ -393,45 +395,45 @@ onUnmounted(() => cancelAnimationFrame(raf));
       <div class="flex items-center gap-1">
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
-          :class="player.equalizerMono ? 'text-primary-text' : 'text-base-content/50'"
+          :class="fx.equalizerMono ? 'text-primary-text' : 'text-base-content/50'"
           data-testid="eq-mono"
           :title="$t('equalizer.mono')"
           :aria-label="$t('equalizer.mono')"
-          :aria-pressed="player.equalizerMono"
-          @click="audio.setEqMono(!player.equalizerMono)"
+          :aria-pressed="fx.equalizerMono"
+          @click="audio.setEqMono(!fx.equalizerMono)"
         >
           <Combine :size="14" />
         </button>
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
-          :class="player.nightMode ? 'text-primary-text' : 'text-base-content/50'"
+          :class="fx.nightMode ? 'text-primary-text' : 'text-base-content/50'"
           data-testid="eq-night"
           :title="$t('player.nightMode')"
           :aria-label="$t('player.nightMode')"
-          :aria-pressed="player.nightMode"
-          @click="audio.setNightMode(!player.nightMode)"
+          :aria-pressed="fx.nightMode"
+          @click="audio.setNightMode(!fx.nightMode)"
         >
           <Moon :size="14" />
         </button>
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
-          :class="player.equalizerSnap ? 'text-primary-text' : 'text-base-content/50'"
+          :class="fx.equalizerSnap ? 'text-primary-text' : 'text-base-content/50'"
           data-testid="eq-snap"
           :title="$t('equalizer.snap')"
           :aria-label="$t('equalizer.snap')"
-          :aria-pressed="player.equalizerSnap"
-          @click="audio.setEqSnap(!player.equalizerSnap)"
+          :aria-pressed="fx.equalizerSnap"
+          @click="audio.setEqSnap(!fx.equalizerSnap)"
         >
           <Magnet :size="14" />
         </button>
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
-          :class="player.equalizerMulticolor ? 'text-primary-text' : 'text-base-content/50'"
+          :class="fx.equalizerMulticolor ? 'text-primary-text' : 'text-base-content/50'"
           data-testid="eq-multicolor"
           :title="$t('equalizer.multicolor')"
           :aria-label="$t('equalizer.multicolor')"
-          :aria-pressed="player.equalizerMulticolor"
-          @click="audio.setEqMulticolor(!player.equalizerMulticolor)"
+          :aria-pressed="fx.equalizerMulticolor"
+          @click="audio.setEqMulticolor(!fx.equalizerMulticolor)"
         >
           <Palette :size="14" />
         </button>
@@ -474,14 +476,14 @@ onUnmounted(() => cancelAnimationFrame(raf));
         min="-12"
         max="12"
         step="1"
-        :value="player.equalizerPreamp"
+        :value="fx.equalizerPreamp"
         data-testid="eq-preamp"
         :aria-label="$t('equalizer.preamp')"
         class="flex-1 h-1 cursor-pointer accent-primary"
         @input="audio.setEqPreamp(Number(($event.target as HTMLInputElement).value))"
       />
       <span class="w-14 text-right text-[11px] font-mono tabular-nums text-base-content/70"
-        >{{ player.equalizerPreamp > 0 ? '+' : '' }}{{ player.equalizerPreamp }}
+        >{{ fx.equalizerPreamp > 0 ? '+' : '' }}{{ fx.equalizerPreamp }}
         {{ $t('equalizer.db') }}</span
       >
     </div>
@@ -496,14 +498,14 @@ onUnmounted(() => cancelAnimationFrame(raf));
         min="0"
         max="500"
         step="10"
-        :value="player.audioDelayMs"
+        :value="fx.audioDelayMs"
         data-testid="eq-audio-delay"
         :aria-label="$t('equalizer.audioDelay')"
         class="flex-1 h-1 cursor-pointer accent-primary"
         @input="audio.setAudioDelay(Number(($event.target as HTMLInputElement).value))"
       />
       <span class="w-14 text-right text-[11px] font-mono tabular-nums text-base-content/70"
-        >{{ player.audioDelayMs }} {{ $t('equalizer.ms') }}</span
+        >{{ fx.audioDelayMs }} {{ $t('equalizer.ms') }}</span
       >
     </div>
 
@@ -682,7 +684,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
         class="absolute w-5 h-5 flex items-center justify-center text-[10px] font-bold text-base-100 shadow cursor-grab active:cursor-grabbing"
         :style="{
           left: bandX(band.frequency) + '%',
-          top: bandY(band.gain + player.equalizerPreamp) + '%',
+          top: bandY(band.gain + fx.equalizerPreamp) + '%',
           backgroundColor: color(i),
           borderRadius: markerRadius(band.type),
           opacity: band.enabled === false ? 0.35 : 1,
@@ -709,7 +711,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
         class="absolute z-50 w-36 p-1 rounded-field border border-base-300 bg-base-100 fx-depth text-[11px]"
         :style="{
           left: bandX(bands[menuBand].frequency) + '%',
-          top: bandY(bands[menuBand].gain + player.equalizerPreamp) + '%',
+          top: bandY(bands[menuBand].gain + fx.equalizerPreamp) + '%',
           transform: menuBelow ? 'translate(-50%, 14px)' : 'translate(-50%, calc(-100% - 14px))'
         }"
         @click.stop

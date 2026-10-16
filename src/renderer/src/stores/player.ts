@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
-import { DEFAULT_EQ_BANDS, cloneEqBands, type EqBand } from '@renderer/utils/constants/audio';
 import { usePlayerFavorites } from './player-favorites';
 import { usePlayerStats } from './player-stats';
 import { usePlayerSubtitles } from './player-subtitles';
@@ -16,19 +15,7 @@ export const usePlayerStore = defineStore('player', () => {
   const isMuted = ref(false);
   const volume = ref(0.8);
   const duration = ref(0);
-  const equalizerVisible = ref(false);
   const subtitlePanelVisible = ref(false);
-  const equalizerBands = ref<EqBand[]>(cloneEqBands(DEFAULT_EQ_BANDS));
-  const equalizerEnabled = ref(true);
-  const equalizerPreamp = ref(0);
-  const equalizerUserPresets = ref<Record<string, EqBand[]>>({});
-  const equalizerMulticolor = ref(false);
-  const equalizerSnap = ref(true);
-  const equalizerSolo = ref<number | null>(null);
-  const equalizerMono = ref(false);
-  const nightMode = ref(false);
-  const audioDelayMs = ref(0);
-  const equalizerPreset = ref('flat');
   const pendingFullscreen = ref(false);
   const resumePrompt = ref<{ path: string; position: number } | null>(null);
   // Utwór tylko do wyświetlania pokazywany, gdy URL strumienia YouTube jest rozwiązywany, więc
@@ -109,9 +96,6 @@ export const usePlayerStore = defineStore('player', () => {
   function toggleMute() {
     isMuted.value = !isMuted.value;
   }
-  function toggleEqualizer() {
-    equalizerVisible.value = !equalizerVisible.value;
-  }
   function toggleSubtitlePanel() {
     subtitlePanelVisible.value = !subtitlePanelVisible.value;
   }
@@ -134,19 +118,7 @@ export const usePlayerStore = defineStore('player', () => {
     shuffle,
     repeat,
     queueVisible,
-    equalizerVisible,
     subtitlePanelVisible,
-    equalizerBands,
-    equalizerEnabled,
-    equalizerPreamp,
-    equalizerUserPresets,
-    equalizerMulticolor,
-    equalizerSnap,
-    equalizerSolo,
-    equalizerMono,
-    nightMode,
-    audioDelayMs,
-    equalizerPreset,
     pipActive,
     pipTime,
     pendingFullscreen,
@@ -183,7 +155,6 @@ export const usePlayerStore = defineStore('player', () => {
     reorderQueue,
     insertInQueue,
     toggleQueue,
-    toggleEqualizer,
     toggleSubtitlePanel,
     nextTrack,
     prevTrack,
