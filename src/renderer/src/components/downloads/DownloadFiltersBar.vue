@@ -34,6 +34,7 @@ const { t } = useI18n();
     <select
       v-if="channels.length"
       v-model="channelFilter"
+      :aria-label="t('downloads.filterChannel')"
       class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none"
     >
       <option value="">{{ t('downloads.filterAllChannels') }}</option>

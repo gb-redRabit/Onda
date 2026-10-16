@@ -26,7 +26,9 @@ const {
   onVolumeInput,
   volLabel,
   volPct,
-  onProgressClick
+  isMuted,
+  onProgressClick,
+  onProgressKeydown
 } = props.state;
 </script>
 
@@ -37,7 +39,14 @@ const {
       v-if="has('progress')"
       class="group"
       :class="[EDGE_PROGRESS_TRACK_V, dock === 'left' ? 'order-2' : 'order-1']"
+      role="slider"
+      tabindex="0"
+      aria-label="Seek"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      :aria-valuenow="Math.round(progressPct)"
       @click="onProgressClick"
+      @keydown="onProgressKeydown"
       @dblclick.stop
     >
       <div :class="EDGE_PROGRESS_FILL_V" :style="{ height: progressPct + '%' }"></div>
@@ -89,6 +98,7 @@ const {
         :vol-label="volLabel"
         :vol-pct="volPct"
         :on-volume-input="onVolumeInput"
+        :muted="isMuted"
       />
     </div>
   </div>

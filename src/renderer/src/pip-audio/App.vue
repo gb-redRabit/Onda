@@ -20,8 +20,18 @@ const state = usePipAudioState(handlers);
 const viz = usePipVisualizer(state.vizData, state.isVertical);
 handlers.updateAccent = viz.updateAccent;
 
-const { isPlaying, dock, layoutKind, edge, peeked, has, progressPct, showMain, onProgressClick } =
-  state;
+const {
+  isPlaying,
+  dock,
+  layoutKind,
+  edge,
+  peeked,
+  has,
+  progressPct,
+  showMain,
+  onProgressClick,
+  onProgressKeydown
+} = state;
 
 function onRootDblClick(e: MouseEvent) {
   const t = e.target as HTMLElement;
@@ -48,7 +58,14 @@ const peekFillState = computed(() => pipPeekFillState(isPlaying.value));
       <div
         class="group"
         :class="[PEEK_TRACK, peekTrackGeom]"
+        role="slider"
+        tabindex="0"
+        aria-label="Seek"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        :aria-valuenow="Math.round(progressPct)"
         @click="onProgressClick"
+        @keydown="onProgressKeydown"
         @dblclick.stop
       >
         <div

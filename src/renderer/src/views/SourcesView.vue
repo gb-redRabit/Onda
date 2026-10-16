@@ -190,6 +190,7 @@ onMounted(() => {
               min="1"
               class="w-14 px-1.5 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-center font-mono focus:outline-none focus:ring-1 focus:ring-primary"
               :title="$t('sources.currentPage')"
+              :aria-label="$t('sources.currentPage')"
               @change="goToPage"
             />
             <IconButton

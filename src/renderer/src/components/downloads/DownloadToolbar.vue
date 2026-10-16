@@ -111,6 +111,7 @@ onMounted(async () => {
         type="time"
         class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none"
         :title="t('downloads.scheduleStart')"
+        :aria-label="t('downloads.scheduleStart')"
       />
       <button
         class="fx-noise px-2 py-1.5 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"

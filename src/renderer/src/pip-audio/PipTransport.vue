@@ -41,6 +41,10 @@ interface TransportButton {
   /** Tylko powtarzanie jednego nosi plakietkę; zwykłe powtarzanie i wyłączone nie. */
   badge: string;
   btnClass: string;
+  /** Dostępna nazwa dla czytnika ekranu (glify same nie niosą treści). */
+  label: string;
+  /** Czy przycisk jest przełącznikiem (shuffle/repeat) — dla `aria-pressed`. */
+  toggle: boolean;
 }
 
 const buttons = computed<TransportButton[]>(() => {
@@ -53,17 +57,29 @@ const buttons = computed<TransportButton[]>(() => {
           glyph: props.isPlaying ? '⏸' : '▶',
           active: false,
           badge: '',
-          btnClass: props.playBtnClass
+          btnClass: props.playBtnClass,
+          label: props.isPlaying ? 'Pause' : 'Play',
+          toggle: false
         };
       case 'shuffle':
-        return { action, glyph: '⇄', active: props.shuffle, badge: '', btnClass: props.btnClass };
+        return {
+          action,
+          glyph: '⇄',
+          active: props.shuffle,
+          badge: '',
+          btnClass: props.btnClass,
+          label: 'Shuffle',
+          toggle: true
+        };
       case 'repeat':
         return {
           action,
           glyph: '↻',
           active: props.repeat !== 'none',
           badge: props.repeat === 'one' ? '1' : '',
-          btnClass: props.btnClass
+          btnClass: props.btnClass,
+          label: props.repeat === 'one' ? 'Repeat one' : 'Repeat',
+          toggle: true
         };
       default:
         return {
@@ -71,7 +87,9 @@ const buttons = computed<TransportButton[]>(() => {
           glyph: action === 'prev' ? '⏮' : '⏭',
           active: false,
           badge: '',
-          btnClass: props.btnClass
+          btnClass: props.btnClass,
+          label: action === 'prev' ? 'Previous' : 'Next',
+          toggle: false
         };
     }
   });
@@ -89,6 +107,8 @@ const buttons = computed<TransportButton[]>(() => {
       :key="b.action"
       :data-testid="'pip-' + b.action"
       :class="[b.btnClass, b.active ? BTN_ACTIVE : '']"
+      :aria-label="b.label"
+      :aria-pressed="b.toggle ? b.active : undefined"
       @click.stop="send(b.action)"
     >
       {{ b.glyph }}<span v-if="b.badge" class="-ml-px text-[8px]">{{ b.badge }}</span>

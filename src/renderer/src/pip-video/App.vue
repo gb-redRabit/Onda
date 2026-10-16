@@ -41,6 +41,34 @@ const {
 
 const { subsVisible, toggleSubtitles } = sub;
 
+// Klawiaturowa obsługa paska postępu (rola slider): strzałki ±5 s, Home/End na krawędzie.
+function onProgressKeydown(e: KeyboardEvent) {
+  const v = videoRef.value;
+  if (!v || !v.duration) return;
+  switch (e.key) {
+    case 'ArrowRight':
+    case 'ArrowUp':
+      e.preventDefault();
+      v.currentTime = Math.min(v.duration, v.currentTime + 5);
+      break;
+    case 'ArrowLeft':
+    case 'ArrowDown':
+      e.preventDefault();
+      v.currentTime = Math.max(0, v.currentTime - 5);
+      break;
+    case 'Home':
+      e.preventDefault();
+      v.currentTime = 0;
+      break;
+    case 'End':
+      e.preventDefault();
+      v.currentTime = v.duration;
+      break;
+    default:
+      break;
+  }
+}
+
 onMounted(() => {
   if (props.preview) showOverlay.value = true;
 });
@@ -173,6 +201,9 @@ onMounted(() => {
           data-testid="pip-video-subs"
           class="w-8 h-4.5 rounded-full transition-colors relative"
           :class="subsVisible ? 'bg-primary' : ''"
+          role="switch"
+          :aria-checked="subsVisible"
+          :aria-label="t('subtitles')"
           :style="
             !subsVisible
               ? { background: 'color-mix(in srgb, var(--color-base-content) 10%, transparent)' }
@@ -198,6 +229,7 @@ onMounted(() => {
           max="200"
           step="5"
           :value="brightness"
+          :aria-label="t('brightness')"
           class="w-full h-0.75"
           :style="{ background: 'color-mix(in srgb, var(--color-base-content) 10%, transparent)' }"
           @input="brightness = parseInt(($event.target as HTMLInputElement).value)"
@@ -215,6 +247,7 @@ onMounted(() => {
           max="200"
           step="5"
           :value="contrast"
+          :aria-label="t('contrast')"
           class="w-full h-0.75"
           :style="{ background: 'color-mix(in srgb, var(--color-base-content) 10%, transparent)' }"
           @input="contrast = parseInt(($event.target as HTMLInputElement).value)"
@@ -240,7 +273,14 @@ onMounted(() => {
       ref="progressRef"
       class="relative h-1 shrink-0 cursor-pointer"
       :style="{ background: 'color-mix(in srgb, var(--color-base-content) 10%, transparent)' }"
+      role="slider"
+      tabindex="0"
+      aria-label="Seek"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      :aria-valuenow="Math.round(Number(progress) || 0)"
       @click="onProgressClick"
+      @keydown="onProgressKeydown"
       @mousemove="handleMouseMove"
       @mouseleave="handleMouseLeave"
     >

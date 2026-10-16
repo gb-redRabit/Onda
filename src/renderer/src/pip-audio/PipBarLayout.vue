@@ -23,6 +23,7 @@ const {
   currentTime,
   duration,
   onProgressClick,
+  onProgressKeydown,
   send,
   shuffle,
   repeat,
@@ -30,6 +31,7 @@ const {
   onVolumeInput,
   volLabel,
   volPct,
+  isMuted,
   eqPreset,
   selectEqPreset
 } = props.state;
@@ -42,7 +44,14 @@ const {
       v-if="has('progress')"
       class="group"
       :class="[EDGE_PROGRESS_TRACK_H, dock === 'top' ? 'order-2' : 'order-1']"
+      role="slider"
+      tabindex="0"
+      aria-label="Seek"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      :aria-valuenow="Math.round(progressPct)"
       @click="onProgressClick"
+      @keydown="onProgressKeydown"
       @dblclick.stop
     >
       <div :class="EDGE_PROGRESS_FILL_H" :style="{ width: progressPct + '%' }"></div>
@@ -99,6 +108,7 @@ const {
         :vol-label="volLabel"
         :vol-pct="volPct"
         :on-volume-input="onVolumeInput"
+        :muted="isMuted"
       />
 
       <PipEqPresets

@@ -108,6 +108,38 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
     api?.send('audio-pip:progressClick', pct);
   }
 
+  // Klawiaturowa obsługa paska postępu (rola slider): strzałki ±5 s, Home/End na krawędzie.
+  function seekBy(seconds: number) {
+    if (duration.value <= 0) return;
+    const next = Math.max(0, Math.min(duration.value, currentTime.value + seconds));
+    api?.send('audio-pip:progressClick', next / duration.value);
+  }
+
+  function onProgressKeydown(e: KeyboardEvent) {
+    switch (e.key) {
+      case 'ArrowRight':
+      case 'ArrowUp':
+        e.preventDefault();
+        seekBy(5);
+        break;
+      case 'ArrowLeft':
+      case 'ArrowDown':
+        e.preventDefault();
+        seekBy(-5);
+        break;
+      case 'Home':
+        e.preventDefault();
+        seekBy(-duration.value);
+        break;
+      case 'End':
+        e.preventDefault();
+        seekBy(duration.value);
+        break;
+      default:
+        break;
+    }
+  }
+
   function onVolumeInput(e: Event) {
     send('volume:' + parseFloat((e.target as HTMLInputElement).value).toFixed(2));
   }
@@ -239,6 +271,7 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
     showMain,
     send,
     onProgressClick,
+    onProgressKeydown,
     onVolumeInput,
     selectEqPreset
   };

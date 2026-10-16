@@ -22,6 +22,7 @@ const {
   duration,
   progressPct,
   onProgressClick,
+  onProgressKeydown,
   send,
   shuffle,
   repeat,
@@ -29,6 +30,7 @@ const {
   onVolumeInput,
   volLabel,
   volPct,
+  isMuted,
   eqPreset,
   selectEqPreset
 } = props.state;
@@ -68,7 +70,14 @@ const {
         <div
           data-testid="pip-progress"
           class="h-1 flex-1 cursor-pointer rounded bg-base-content/10"
+          role="slider"
+          tabindex="0"
+          aria-label="Seek"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          :aria-valuenow="Math.round(progressPct)"
           @click="onProgressClick"
+          @keydown="onProgressKeydown"
           @dblclick.stop
         >
           <div
@@ -103,6 +112,7 @@ const {
         :vol-label="volLabel"
         :vol-pct="volPct"
         :on-volume-input="onVolumeInput"
+        :muted="isMuted"
         slider-class="w-14"
       />
       <PipEqPresets v-if="has('eq')" :eq-preset="eqPreset" :select-eq-preset="selectEqPreset" />
