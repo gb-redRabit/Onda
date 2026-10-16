@@ -25,7 +25,7 @@ import { resolveScDownloadSource } from '../ipc/soundcloud/soundcloud-client';
 import { resolveProviderFileUrl, settleProviderDownload } from '../ipc/providers/registry';
 import { classifyYtDlpError, describeError, redactSecrets } from './error-classifier';
 import { addAllowedRoot } from '../media/media-server';
-import { persist, reportCompleted, jobAbortControllers } from './download-state';
+import { persist, persistThrottled, reportCompleted, jobAbortControllers } from './download-state';
 
 // Pojedyncza próba pobierania (strumień HTTP lub proces yt-dlp) dla jednego
 // zadania, wyodrębniona z `download-manager.ts` (plan 2.8).
@@ -73,7 +73,7 @@ async function runHttpAttempt(
             job.eta = formatEta((p.total - p.received) / Math.max(bps, 1));
           }
         }
-        persist(job);
+        persistThrottled(job);
       }
     });
     job.status = 'completed';
@@ -139,7 +139,7 @@ async function runStreamAttempt(
           job.speed = `${formatBytes(bps)}/s`;
           if (totalSize) job.eta = formatEta((totalSize - received) / Math.max(bps, 1));
         }
-        persist(job);
+        persistThrottled(job);
       }
       cb(null, chunk);
     }
@@ -316,7 +316,7 @@ export async function runJobAttempt(
       if (parsed.speed) job.speed = parsed.speed;
       if (parsed.eta) job.eta = parsed.eta;
     }
-    persist(job);
+    persistThrottled(job);
   };
   const processChunk = (chunk: Buffer, which: 'out' | 'err'): void => {
     const buffer = which === 'out' ? stdoutBuf : stderrBuf;

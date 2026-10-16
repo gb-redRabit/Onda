@@ -25,6 +25,7 @@ import {
   pipElementArray,
   SETTINGS_VERSION
 } from './settings-migrations';
+import { sanitizeEqBands } from '../../../shared/eqSanitize';
 
 const GEOMETRY_FIELDS: Record<string, Sanitizer> = {
   radiusBox: numClamped(0, 32),
@@ -144,35 +145,9 @@ const VISUALIZATION_FIELDS: Record<string, Sanitizer> = {
   fpsCap: numClamped(15, 120)
 };
 
-const EQ_BAND_FIELDS: Record<string, Sanitizer> = {
-  type: enumOf(['lowshelf', 'peaking', 'highshelf']),
-  frequency: numClamped(20, 20000),
-  q: numClamped(0.3, 8),
-  gain: numClamped(-18, 18),
-  slope: numClamped(0.3, 2),
-  enabled: bool
-};
-
-// Zestaw pasm korektora: maksymalnie 12, tylko kompletne (typ + wszystkie liczby).
-const eqBands: Sanitizer = (v) => {
-  if (!Array.isArray(v)) return undefined;
-  const band = obj(EQ_BAND_FIELDS);
-  const out: unknown[] = [];
-  for (const item of v) {
-    if (out.length >= 12) break;
-    const cleaned = band(item) as Record<string, unknown> | undefined;
-    if (
-      cleaned &&
-      cleaned.type &&
-      cleaned.frequency !== undefined &&
-      cleaned.q !== undefined &&
-      cleaned.gain !== undefined
-    ) {
-      out.push(cleaned);
-    }
-  }
-  return out;
-};
+// Zestaw pasm korektora: wspólny sanitizer (`shared/eqSanitize`) — te same granice
+// obowiązują import z schowka w rendererze, więc żywa sesja też jest chroniona.
+const eqBands: Sanitizer = (v) => sanitizeEqBands(v);
 
 const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
   normalization: bool,

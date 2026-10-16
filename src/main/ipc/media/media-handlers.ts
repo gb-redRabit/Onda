@@ -26,7 +26,7 @@ import {
 } from './media-transcode';
 import { isSafeAbsolutePath, isSafeStringArray } from '../../utils/validate';
 import { isProtectedPath, isSensitivePath } from '../../path-policy';
-import { isPathWithinAllowedRoots } from '../../media/media-server';
+import { isPathWithinAllowedRoots, addAllowedRoot } from '../../media/media-server';
 
 // Mutujące operacje plikowe (zmiana nazwy, tagi, okładka) muszą przejść tę samą
 // politykę co destrukcyjne kanały `fs:*`: odrzucamy wyłącznie korzenie wolumenów i
@@ -36,7 +36,6 @@ import { isPathWithinAllowedRoots } from '../../media/media-server';
 function isProtectedTarget(filePath: string): boolean {
   return isProtectedPath(filePath) || isProtectedPath(dirname(filePath));
 }
-import { addAllowedRoot } from '../../media/media-server';
 
 export async function getDuration(filePath: string): Promise<number> {
   const cached = getCachedDuration(filePath);

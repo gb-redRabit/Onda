@@ -1,10 +1,9 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron';
 import { writeFile, readFile } from 'fs/promises';
-import { getStore } from '../cover/cover-cache';
+import { getStore, applyCoverCacheSettings } from '../cover/cover-cache';
 import { isResetting } from '../factory-reset';
 import { configureAutoCheck } from '../../updater-scheduler';
 import { applyLogSettings } from '../../log-file';
-import { applyCoverCacheSettings } from '../cover/cover-cache';
 import { sanitizeSettings } from './settings-schema';
 import {
   encryptApiKeys,

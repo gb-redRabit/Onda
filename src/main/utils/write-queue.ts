@@ -1,3 +1,6 @@
+import { mkdir, rename, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
+
 /**
  * Serializuje asynchroniczne zapisy przez ograniczoną kolejkę FIFO zamiast
  * rosnącego w nieskończoność łańcucha promise'ów (`q = q.then(...)`), który
@@ -59,4 +62,17 @@ export function createWriteLock(): WriteLock {
     );
     return result;
   };
+}
+
+/**
+ * Atomowy zapis JSON: zapisuje do pliku tymczasowego i podmienia przez `rename`,
+ * więc awaria w trakcie nigdy nie pozostawi w połowie zapisanego pliku. Katalogi
+ * nadrzędne tworzone są automatycznie. Używane przez magazyny stanu zamiast
+ * ręcznie kopiowanego `mkdir` + `.tmp` + `rename`.
+ */
+export async function writeJsonAtomic(filePath: string, data: unknown): Promise<void> {
+  await mkdir(dirname(filePath), { recursive: true });
+  const tmp = `${filePath}.tmp`;
+  await writeFile(tmp, JSON.stringify(data, null, 2), 'utf-8');
+  await rename(tmp, filePath);
 }

@@ -105,7 +105,9 @@ export function registerOndaProtocolHandler(): void {
         return new Response('', { status: 404 });
       }
 
-      if (maxWidth > 0 && maxWidth < 4000) {
+      // `maxWidth` jest już przycięte do MAX_RESIZE_WIDTH powyżej — dodatkowy warunek
+      // `< 4000` odrzucał żądania dokładnie równe górnemu limitowi (w=4000 → 404).
+      if (maxWidth > 0) {
         const buf = await SharpService.resize(real, maxWidth);
         if (buf) {
           return new Response(new Uint8Array(buf), {

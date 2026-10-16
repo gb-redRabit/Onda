@@ -1,6 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { realpath } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile, realpath } from 'node:fs/promises';
 import { join } from 'node:path';
 import { makeGrantableScratch } from '../../__tests__/scratch-dirs';
 

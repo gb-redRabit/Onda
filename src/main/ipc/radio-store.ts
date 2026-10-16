@@ -1,10 +1,11 @@
 import { app, ipcMain } from 'electron';
-import { join, dirname } from 'path';
+import { join } from 'path';
 import { isIP } from 'node:net';
-import { readFile, writeFile, rename, mkdir } from 'fs/promises';
+import { readFile } from 'fs/promises';
 import type { IpcRadioStation } from '../../shared/types/ipc';
 import { logger } from '../../shared/logger';
 import { isNeverPublicAddress } from './network-target';
+import { createWriteLock, writeJsonAtomic } from '../utils/write-queue';
 
 const SCHEMA_VERSION = 1;
 const MAX_STATIONS = 200;
@@ -103,22 +104,15 @@ export async function loadRadioData(filePath: string): Promise<IpcRadioStation[]
   }
 }
 
-let writeChain: Promise<void> = Promise.resolve();
+const writeLock = createWriteLock();
 
 // Serializuje zapisy i podmienia plik atomowo (plik tymczasowy + rename), aby
 // awaria w trakcie zapisu nigdy nie pozostawiła w połowie zapisanego store.
 export function persistRadio(filePath: string, stations: IpcRadioStation[]): Promise<void> {
   const payload: PersistedRadio = { version: SCHEMA_VERSION, stations };
-  writeChain = writeChain.then(async () => {
-    await mkdir(dirname(filePath), { recursive: true });
-    const tmp = `${filePath}.tmp`;
-    await writeFile(tmp, JSON.stringify(payload), 'utf-8');
-    await rename(tmp, filePath);
-  });
-  writeChain = writeChain.catch((e) => {
+  return writeLock(() => writeJsonAtomic(filePath, payload)).catch((e) => {
     logger.warn('radio', 'failed to persist radio stations', e);
   });
-  return writeChain;
 }
 
 export function registerRadioHandlers(): void {

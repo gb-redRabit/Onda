@@ -21,6 +21,23 @@ export const jobAbortControllers = new Map<string, AbortController>();
 let emit: ((task: IpcDownloadTask) => void) | null = null;
 let queuePersistTimer: ReturnType<typeof setTimeout> | null = null;
 
+// Tyknięcia postępu przychodzą per chunk TCP / per linia yt-dlp — bez dławienia
+// zalewają renderer komunikatem IPC (i serializują migawkę) setki razy na sekundę.
+// Dławimy je do ~2/s, ale zmiany STATUSU zawsze wysyłają się natychmiast (inaczej UI
+// zawiesiłby się na starcie/pauzie/końcu). Ostatnie tyknięcie nie ginie: timer
+// docelowy domyka okno i emituje świeżą migawkę.
+const PROGRESS_EMIT_MIN_GAP_MS = 500;
+const pendingEmits = new Map<string, ReturnType<typeof setTimeout>>();
+const lastEmitAt = new Map<string, number>();
+
+function clearPendingEmit(id: string): void {
+  const timer = pendingEmits.get(id);
+  if (timer) {
+    clearTimeout(timer);
+    pendingEmits.delete(id);
+  }
+}
+
 export function setDownloadEmit(cb: ((task: IpcDownloadTask) => void) | null): void {
   emit = cb;
 }
@@ -62,6 +79,8 @@ export function flushQueueNow(): Promise<void> {
  * cofając anulowanie.
  */
 export function persist(job: Job): void {
+  // Natychmiastowa wysyłka unieważnia zakolejkowane tyknięcie — ta migawka jest świeższa.
+  clearPendingEmit(job.id);
   const copy = snapshotDownloadTask(job);
   const prev = knownStatuses.get(job.id);
   const tracked = jobs.get(job.id);
@@ -90,6 +109,39 @@ export function persist(job: Job): void {
 export function forgetJob(id: string): void {
   knownStatuses.delete(id);
   jobAbortControllers.delete(id);
+  clearPendingEmit(id);
+  lastEmitAt.delete(id);
+}
+
+/**
+ * Dławiona wersja `persist` dla tyknięć POSTĘPU (per chunk / per linia). Wysyła
+ * co najwyżej jedno zdarzenie na `PROGRESS_EMIT_MIN_GAP_MS`, zachowując ostatnie
+ * (timer docelowy). Zmiany statusu mają iść przez `persist` (natychmiast) — ta
+ * funkcja nie omija tamtych wywołań, tylko ogranicza szum postępu.
+ */
+export function persistThrottled(job: Job): void {
+  const now = Date.now();
+  const last = lastEmitAt.get(job.id) ?? 0;
+  if (now - last >= PROGRESS_EMIT_MIN_GAP_MS) {
+    lastEmitAt.set(job.id, now);
+    persist(job);
+    return;
+  }
+  if (pendingEmits.has(job.id)) return;
+  pendingEmits.set(
+    job.id,
+    setTimeout(
+      () => {
+        pendingEmits.delete(job.id);
+        // Zadanie mogło zostać ukończone/usunięte w międzyczasie — nie wskrzeszaj go.
+        const tracked = jobs.get(job.id);
+        if (!tracked) return;
+        lastEmitAt.set(job.id, Date.now());
+        persist(tracked);
+      },
+      PROGRESS_EMIT_MIN_GAP_MS - (now - last)
+    )
+  );
 }
 
 type DownloadCompletedHandler = (channelId: string, videoId: string) => void;
