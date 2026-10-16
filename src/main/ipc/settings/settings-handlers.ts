@@ -121,9 +121,9 @@ export function registerSettingsHandlers(): void {
       const storedNetwork = sanitizeSettings(store.store || {}).sanitized.network;
       restoreProxyPasswords(sanitized.network, storedNetwork);
       const secretSaved = encryptKeysOrDrop(sanitized);
-      for (const [key, value] of Object.entries(sanitized)) {
-        store.set(key, value);
-      }
+      // Jeden zapis zamiast N osobnych `store.set` — każde `set` re-szyfrowało cały
+      // config (pbkdf2Sync) i synchronicznie przepisywało plik na wątku głównym.
+      store.store = { ...(store.store || {}), ...sanitized };
       if (sanitized.general) {
         setCloseToTray(sanitized.general.closeToTray !== false);
         applyLogSettings(sanitized.general.logLevel, sanitized.general.logMaxSizeMB);
