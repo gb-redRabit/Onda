@@ -15,6 +15,11 @@ import { buildJob, type JobExtra } from '@renderer/utils/onlineJob';
 import { buildChannelJobs } from '@renderer/utils/onlineChannelJobs';
 import { resolveOnlineUrl, type OnlineResolveResponse } from '@renderer/utils/onlineResolve';
 import { resolveAllPlaylistItems } from '@renderer/utils/onlineResolveAll';
+import { mapLimit } from '@renderer/utils/mapLimit';
+
+// Ile linków rozwiązujemy równolegle. Bez limitu wklejenie 100 linków uruchamiało
+// 100 równoległych yt-dlp w procesie głównym (ryzyko throttlingu/bot-blocku YouTube).
+const RESOLVE_CONCURRENCY = 4;
 
 export interface OnlineQueueDeps {
   t: (key: string, values?: Record<string, unknown>) => string;
@@ -149,7 +154,7 @@ export function createOnlineQueue(deps: OnlineQueueDeps) {
       if (res?.success && jobs.length === 0) {
         useUIStore().notify('info', t('youtube.downloadAll'), t('youtube.nothingToQueue'));
       }
-      const addedCount = await submitJobs(jobs);
+      const addedCount = jobs.length ? await submitJobs(jobs) : 0;
       if (addedCount > 0) {
         useUIStore().notify(
           'success',
@@ -176,17 +181,16 @@ export function createOnlineQueue(deps: OnlineQueueDeps) {
   async function queueBatch(urls: string[], extra?: JobExtra): Promise<number> {
     queuingId.value = 'batch';
     try {
-      // Rozwiązywanie równoległe (bezpieczne: tylko sieć), kolejność zachowana.
-      const resolvedList = await Promise.all(
-        urls.map(async (url) => {
-          try {
-            const res = await resolveOnline(url);
-            return res?.success && res.result ? res.result : null;
-          } catch {
-            return null;
-          }
-        })
-      );
+      // Rozwiązywanie z ograniczoną współbieżnością (zachowuje kolejność); bez
+      // limitu partia N linków startowała N procesów yt-dlp naraz.
+      const resolvedList = await mapLimit(urls, RESOLVE_CONCURRENCY, async (url) => {
+        try {
+          const res = await resolveOnline(url);
+          return res?.success && res.result ? res.result : null;
+        } catch {
+          return null;
+        }
+      });
 
       const jobs: IpcDownloadJobInput[] = [];
       for (const result of resolvedList) {
