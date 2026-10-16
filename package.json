@@ -67,6 +67,7 @@
     "@types/node": "^22.19.1",
     "@vitejs/plugin-vue": "^6.0.2",
     "@vitest/coverage-v8": "^5.0.3",
+    "@vue/test-utils": "^2.5.1",
     "electron": "^44.5.1",
     "electron-builder": "^26.0.12",
     "electron-vite": "^5.0.0",
