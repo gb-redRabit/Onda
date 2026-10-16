@@ -13,7 +13,7 @@ import { useUIStore } from '@renderer/stores/ui';
 import { usePlayerStore } from '@renderer/stores/player';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
 import { useSourcesSelection } from '@renderer/composables/useSourcesSelection';
-import { buildSourceStreamTrack, isSourceItemPlayable } from '@renderer/utils/sourceStream';
+import { useSourcesActions } from '@renderer/composables/useSourcesActions';
 
 // Logika widoku Źródeł wyodrębniona z `SourcesView.vue` (template renderuje
 // wyłącznie zwrócony stan). Modalne komponenty pozostają w widoku.
@@ -28,13 +28,11 @@ export function useSourcesView() {
   const showGuide = ref(false);
   const editingSource = ref<MediaSource | null>(null);
   const previewItem = ref<SourceItem | null>(null);
-  const downloadingItem = ref<SourceItem | null>(null);
   const queryText = ref('');
   const pageInput = ref(1);
   const scrollRef = ref<HTMLElement | null>(null);
   const sortMode = ref<SourceSortMode>('none');
   const filterText = ref('');
-  const downloadingAll = ref(false);
 
   // Prezentacja elementów pochodzi z konfiguracji poziomu (kreator źródła):
   //  - lista → `endpoint.view` (karty/galeria/kompakt/karuzela/player),
@@ -99,6 +97,28 @@ export function useSourcesView() {
     isSelected,
     toggleSelect
   } = useSourcesSelection(selectPool);
+
+  const {
+    downloadingItem,
+    downloadingAll,
+    queueSourceItems,
+    onPlayNow,
+    onAddToQueue,
+    onBulkDownload,
+    onBulkQueue,
+    onBulkPlay,
+    onDownload,
+    onDownloadAll,
+    onUnmarkDownloaded
+  } = useSourcesActions({
+    sources,
+    player,
+    t,
+    showToast,
+    selectedItems,
+    clearSelection,
+    previewItem
+  });
 
   const activeSource = computed(() => sources.activeSource);
   const activeEndpoint = computed(() => sources.activeEndpoint);
@@ -191,89 +211,7 @@ export function useSourcesView() {
     sources.openTableRow(row).then(scrollToTop);
   }
 
-  // Odtwarzanie bez pobierania: element z bezpośrednim `mediaUrl` trafia do playerа
-  // jako strumień (silnik audio serwuje go przez lokalny proxy). `playerUrl` (embed)
-  // obsługuje okno podglądu, nie ten tor.
-  function queueSourceItems(items: SourceItem[]): number {
-    const source = sources.activeSource;
-    if (!source) return 0;
-    const tracks = items
-      .filter(isSourceItemPlayable)
-      .map((item, i) => buildSourceStreamTrack(source, item, i));
-    if (!tracks.length) return 0;
-    player.addToQueueMultiple(tracks);
-    return tracks.length;
-  }
-
-  function onPlayNow(item: SourceItem): void {
-    const source = sources.activeSource;
-    if (!source || !isSourceItemPlayable(item)) return;
-    const track = buildSourceStreamTrack(source, item, 0);
-    player.setTrack(track);
-    player.enrichTrack(track);
-    showToast(t('sources.nowPlaying', { title: track.name }));
-  }
-
-  function onAddToQueue(item: SourceItem): void {
-    if (queueSourceItems([item])) showToast(t('sources.queueAddedOne'));
-  }
-
-  async function onBulkDownload(): Promise<void> {
-    const list = selectedItems.value;
-    if (!list.length) return;
-    await onDownloadAll(list);
-    clearSelection();
-  }
-
-  function onBulkQueue(): void {
-    const n = queueSourceItems(selectedItems.value);
-    if (n) showToast(t('sources.queueAdded', { n }));
-  }
-
-  function onBulkPlay(): void {
-    const list = selectedItems.value.filter(isSourceItemPlayable);
-    if (!list.length) return;
-    onPlayNow(list[0]!);
-    if (list.length > 1) queueSourceItems(list.slice(1));
-  }
-
-  async function onDownload(item: SourceItem) {
-    downloadingItem.value = item;
-    try {
-      const res = await sources.enqueueDownload(item);
-      showToast(
-        res.ok
-          ? t('sources.toastQueuedOne')
-          : t('sources.toastFailed', { err: res.error || 'unknown' }),
-        res.ok
-      );
-    } finally {
-      downloadingItem.value = null;
-    }
-  }
-
-  async function onDownloadAll(list: SourceItem[]) {
-    downloadingAll.value = true;
-    try {
-      const res = await sources.enqueueAll(list);
-      showToast(
-        res.failed
-          ? t('sources.toastQueuedSome', { q: res.queued, f: res.failed })
-          : t('sources.toastQueued', { n: res.queued }),
-        res.failed === 0
-      );
-    } finally {
-      downloadingAll.value = false;
-    }
-  }
-
-  // Odznaczenie „pobrane" jest trwałe (zapis w main) i aktualizuje zbiór w store.
-  async function onUnmarkDownloaded(item: SourceItem): Promise<void> {
-    if (!item.id) return;
-    const ok = await sources.unmarkDownloaded(item.id);
-    showToast(ok ? t('sources.toastUnmarked') : t('sources.toastFailed', { err: 'unknown' }), ok);
-    if (ok) previewItem.value = null;
-  }
+  // Akcje na elementach (odtwarzanie/kolejka/pobieranie/odznaczanie) żyją w `useSourcesActions`.
 
   // Wejście do źródła zawsze ponownie sprawdza połączenie: przycisk na pasku zniknął,
   // a wynik steruje kropką statusu na pasku bocznym (zielona/czerwona) oraz krótkim
